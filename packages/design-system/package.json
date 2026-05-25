@@ -1,0 +1,27 @@
+{
+  "name": "@medea/design-system",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Medea design system — OKLCH tokens, @layer, light-dark(), container queries.",
+  "exports": {
+    ".": "./src/index.css",
+    "./tokens.css": "./src/index.css",
+    "./tokens": "./dist/tokens.js",
+    "./themes/dark": "./src/themes/medea-dark.css",
+    "./themes/light": "./src/themes/medea-light.css",
+    "./themes/hc": "./src/themes/medea-hc.css"
+  },
+  "files": ["src", "dist"],
+  "scripts": {
+    "build": "node ./tokens.config.mjs",
+    "lint": "stylelint \"src/**/*.css\"",
+    "typecheck": "echo 'no-ts'",
+    "test": "echo 'no-tests-yet'",
+    "clean": "rm -rf dist .turbo"
+  },
+  "devDependencies": {
+    "stylelint": "^16.13.2",
+    "stylelint-config-standard": "^36.0.1"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "@medea/utils",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./result": "./src/result/index.ts",
+    "./date": "./src/date/index.ts",
+    "./html": "./src/html/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "clean": "rm -rf dist .turbo"
+  },
+  "devDependencies": {
+    "@medea/eslint-config": "workspace:*",
+    "@medea/tsconfig": "workspace:*",
+    "eslint": "^9.18.0",
+    "typescript": "^5.7.3"
+  }
+}

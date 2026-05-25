@@ -1,0 +1,32 @@
+@layer components {
+  .anchor {
+    /* L'ancora è il child cloned. Niente styling diretto qui. */
+    display: contents;
+  }
+
+  .bubble {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    pointer-events: none;
+    background: var(--color-surface-3);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-md);
+    padding: var(--space-1_5) var(--space-2_5);
+    font-size: var(--font-size-xs);
+    box-shadow: var(--elevation-popover);
+    z-index: var(--z-tooltip);
+    opacity: 0;
+    transform: translateY(-2px);
+    transition:
+      opacity var(--motion-duration-fast) var(--motion-easing-standard),
+      transform var(--motion-duration-fast) var(--motion-easing-standard);
+    max-inline-size: 22rem;
+  }
+
+  .bubble[data-state='open'] {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
