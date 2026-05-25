@@ -1,0 +1,31 @@
+{
+  "name": "medea",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Medea — personal operational memory system, in forma di client email.",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@11.1.1",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules .turbo",
+    "tauri:dev": "pnpm --filter @medea/desktop tauri:dev",
+    "tauri:build": "pnpm --filter @medea/desktop tauri:build",
+    "tokens:build": "pnpm --filter @medea/design-system build",
+    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,json,md,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,json,md,css}\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.3"
+  }
+}

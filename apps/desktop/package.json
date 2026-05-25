@@ -1,0 +1,38 @@
+{
+  "name": "@medea/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Medea desktop shell (Tauri 2 — Win/macOS/Linux).",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'desktop tests in fase 3'",
+    "clean": "rm -rf dist .turbo src-tauri/target",
+    "tauri": "cargo tauri",
+    "tauri:dev": "cargo tauri dev",
+    "tauri:build": "cargo tauri build"
+  },
+  "dependencies": {
+    "@medea/design-system": "workspace:*",
+    "@medea/ui": "workspace:*",
+    "@medea/utils": "workspace:*",
+    "@tauri-apps/api": "^2.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@medea/eslint-config": "workspace:*",
+    "@medea/tsconfig": "workspace:*",
+    "@tauri-apps/cli": "^2.2.0",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.18.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7"
+  }
+}

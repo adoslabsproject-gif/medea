@@ -1,0 +1,41 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    "**/.env",
+    "tsconfig.json",
+    "rust-toolchain.toml"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "build/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"]
+    },
+    "clean": {
+      "cache": false
+    },
+    "tauri:dev": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["@medea/design-system#build", "@medea/ui#build"]
+    },
+    "tauri:build": {
+      "dependsOn": ["@medea/design-system#build", "@medea/ui#build", "^build"],
+      "outputs": ["src-tauri/target/release/bundle/**"]
+    }
+  }
+}

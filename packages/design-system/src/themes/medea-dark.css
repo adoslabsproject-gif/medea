@@ -1,0 +1,14 @@
+/*
+ * Tema dark esplicito.
+ *
+ * In condizioni normali NON serve includerlo: i token semantici usano
+ * `light-dark()` e seguono `color-scheme` automaticamente.
+ *
+ * Includere questo file e impostare `<html data-theme="dark">` se l'utente
+ * vuole forzare il tema indipendentemente dalle preferenze OS.
+ */
+@layer themes {
+  [data-theme='dark'] {
+    color-scheme: dark;
+  }
+}

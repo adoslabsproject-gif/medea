@@ -1,0 +1,17 @@
+/*
+ * Tema High Contrast (WCAG AAA).
+ *
+ * Sovrascrive le coppie semantiche con valori a contrasto massimizzato.
+ * Da rifinire in Fase 10 (a11y audit). Per ora ridefinisce solo le coppie
+ * più critiche per la leggibilità.
+ */
+@layer themes {
+  [data-theme='hc'] {
+    --color-text-primary: light-dark(oklch(0 0 0), oklch(1 0 0));
+    --color-text-secondary: light-dark(oklch(0.18 0 0), oklch(0.92 0 0));
+    --color-border-default: light-dark(oklch(0 0 0), oklch(1 0 0));
+    --color-focus-ring-default: light-dark(oklch(0.5 0.3 270), oklch(0.85 0.25 270));
+    --color-accent-default: light-dark(oklch(0.32 0.2 270), oklch(0.88 0.18 270));
+    --color-accent-on: light-dark(oklch(1 0 0), oklch(0 0 0));
+  }
+}

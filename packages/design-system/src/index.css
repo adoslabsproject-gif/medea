@@ -1,0 +1,22 @@
+/**
+ * Medea Design System — barrel entry.
+ *
+ * Importa questo file UNA SOLA volta nell'app root (`apps/desktop/src/main.tsx`
+ * e `apps/mobile/src/main.tsx`). I componenti NON devono mai re-importare token
+ * file individuali, solo consumare `var(--*)`.
+ */
+
+/* L'ordine dei layer va dichiarato per primo, prima di qualsiasi regola. */
+@import './layers.css';
+
+/* Token generati (color, space, typography, elevation, radius, motion, z, container). */
+@import '../dist/tokens.css';
+
+/* Reset, base, themes opzionali, utilities. */
+@import './reset.css';
+@import './base.css';
+@import './themes/medea-dark.css';
+@import './themes/medea-light.css';
+@import './themes/medea-hc.css';
+@import './utilities/sr-only.css';
+@import './utilities/stack.css';

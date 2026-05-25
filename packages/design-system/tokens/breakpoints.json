@@ -1,0 +1,11 @@
+{
+  "$comment": "Container query sizes — usati con @container, NON @media (i layout si adattano al container, non al viewport).",
+  "container": {
+    "xs": "20rem",
+    "sm": "30rem",
+    "md": "48rem",
+    "lg": "64rem",
+    "xl": "80rem",
+    "2xl": "96rem"
+  }
+}

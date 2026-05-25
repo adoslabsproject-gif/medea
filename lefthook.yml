@@ -1,0 +1,26 @@
+pre-commit:
+  parallel: true
+  commands:
+    prettier:
+      glob: "*.{ts,tsx,js,mjs,json,md,css}"
+      run: pnpm prettier --check {staged_files}
+    typecheck:
+      glob: "*.{ts,tsx}"
+      run: pnpm typecheck
+    rustfmt:
+      glob: "*.rs"
+      root: "apps/desktop/src-tauri"
+      run: cargo fmt --check
+    clippy:
+      glob: "*.rs"
+      root: "apps/desktop/src-tauri"
+      run: cargo clippy -- -D warnings
+
+commit-msg:
+  commands:
+    conventional:
+      run: |
+        if ! head -1 {1} | grep -qE '^(feat|fix|docs|style|refactor|perf|test|chore|build|ci|revert)(\(.+\))?!?: .+'; then
+          echo "Commit message must follow Conventional Commits (feat:, fix:, docs:, etc.)"
+          exit 1
+        fi

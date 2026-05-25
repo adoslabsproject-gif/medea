@@ -1,0 +1,11 @@
+{
+  "extends": "@medea/tsconfig/react.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    "noEmit": false,
+    "types": []
+  },
+  "include": ["src/**/*"]
+}

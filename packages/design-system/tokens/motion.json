@@ -1,0 +1,24 @@
+{
+  "motion": {
+    "duration": {
+      "instant": "0ms",
+      "fast":    "120ms",
+      "base":    "200ms",
+      "slow":    "320ms",
+      "slower":  "480ms"
+    },
+    "easing": {
+      "linear":   "linear",
+      "standard": "cubic-bezier(0.4, 0, 0.2, 1)",
+      "decel":    "cubic-bezier(0, 0, 0.2, 1)",
+      "accel":    "cubic-bezier(0.4, 0, 1, 1)",
+      "spring":   "cubic-bezier(0.16, 1, 0.30, 1)"
+    },
+    "view-transition": {
+      "$comment": "Nomi registrati per View Transitions API. Mai inventare nomi nei componenti.",
+      "page": "medea-page",
+      "panel": "medea-panel",
+      "message": "medea-message"
+    }
+  }
+}

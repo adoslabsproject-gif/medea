@@ -1,0 +1,9 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# pnpm 11 richiede esplicita approvazione per ogni dipendenza che dichiara
+# uno script di build. esbuild è dependency legittima di Vite e va compilato
+# (per i binari nativi della piattaforma).
+allowBuilds:
+  esbuild: true

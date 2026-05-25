@@ -1,0 +1,41 @@
+{
+  "name": "@medea/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Medea UI primitives — headless+styled React components driven by the design system.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./button": "./src/primitives/button/index.ts",
+    "./text-field": "./src/primitives/text-field/index.ts",
+    "./select": "./src/primitives/select/index.ts",
+    "./tooltip": "./src/primitives/tooltip/index.ts",
+    "./dialog": "./src/primitives/dialog/index.ts",
+    "./hooks": "./src/hooks/index.ts"
+  },
+  "files": ["src"],
+  "sideEffects": ["**/*.css"],
+  "scripts": {
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "clean": "rm -rf dist .turbo"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "dependencies": {
+    "@medea/design-system": "workspace:*"
+  },
+  "devDependencies": {
+    "@medea/eslint-config": "workspace:*",
+    "@medea/tsconfig": "workspace:*",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "eslint": "^9.18.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.3"
+  }
+}
