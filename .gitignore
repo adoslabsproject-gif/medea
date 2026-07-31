@@ -55,3 +55,6 @@ coverage/
 *.pem
 .history/
 .cache/
+
+# Istruzioni interne per gli agenti AI: restano locali, fuori dal repo.
+CLAUDE.md
