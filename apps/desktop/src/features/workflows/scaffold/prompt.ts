@@ -61,9 +61,11 @@ function sanitizeGoal(goal: string): string {
   return (
     goal
       .slice(0, MAX_GOAL_LEN)
-      // Spazio a larghezza zero dentro i backtick: rompe il tentativo di
-      // chiudere il blocco e proseguire con istruzioni proprie.
+      // Spazio a larghezza zero dentro i backtick e dentro le sequenze di
+      // uguali: rompe sia la chiusura di un blocco di codice, sia la forgia
+      // dei delimitatori "=== … ===" con cui il prompt segna le sezioni.
       .replace(/```/g, '`​``')
+      .replace(/===/g, '=​==')
       .replace(/\0/g, '')
   );
 }

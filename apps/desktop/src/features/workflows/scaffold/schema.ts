@@ -10,6 +10,19 @@
  * È lo stesso schema del server: un workflow generato qui si importa là.
  */
 
+/** Tipi di colonna ammessi per le tabelle richieste dal workflow. Unica fonte:
+ *  la usano sia lo schema JSON sia la validazione in `validate-tables`. */
+export const TABLE_COLUMN_TYPES = [
+  'text',
+  'integer',
+  'real',
+  'boolean',
+  'timestamp',
+  'json',
+] as const;
+
+export type TableColumnType = (typeof TABLE_COLUMN_TYPES)[number];
+
 export const SINGLESHOT_OUTPUT_SCHEMA = {
   type: 'object',
   properties: {
@@ -63,10 +76,7 @@ export const SINGLESHOT_OUTPUT_SCHEMA = {
               type: 'object',
               properties: {
                 name: { type: 'string' },
-                type: {
-                  type: 'string',
-                  enum: ['text', 'integer', 'real', 'boolean', 'timestamp', 'json'],
-                },
+                type: { type: 'string', enum: TABLE_COLUMN_TYPES },
                 nullable: { type: 'boolean' },
               },
               required: ['name', 'type'],
@@ -103,14 +113,44 @@ export interface ScaffoldOutput {
   }[];
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** Un nodo senza `config` oggetto farebbe esplodere riparazione e validazione:
+ *  qui si garantisce che ogni elemento abbia la forma minima su cui il resto
+ *  della pipeline può camminare senza eccezioni. */
+function isScaffoldNode(value: unknown): boolean {
+  if (!isPlainObject(value)) return false;
+  return (
+    typeof value.id === 'string' && typeof value.defId === 'string' && isPlainObject(value.config)
+  );
+}
+
+function isScaffoldEdge(value: unknown): boolean {
+  if (!isPlainObject(value)) return false;
+  return typeof value.from === 'string' && typeof value.to === 'string';
+}
+
+function isTableToCreate(value: unknown): boolean {
+  if (!isPlainObject(value)) return false;
+  if (typeof value.name !== 'string' || !Array.isArray(value.columns)) return false;
+  return value.columns.every(
+    (c) => isPlainObject(c) && typeof c.name === 'string' && typeof c.type === 'string',
+  );
+}
+
 /** Controllo di forma, prima che entrino in gioco catalogo e regole. */
 export function isScaffoldOutput(value: unknown): value is ScaffoldOutput {
-  if (typeof value !== 'object' || value === null) return false;
-  const v = value as Record<string, unknown>;
+  if (!isPlainObject(value)) return false;
   return (
-    typeof v.name === 'string' &&
-    typeof v.reasoning === 'string' &&
-    Array.isArray(v.nodes) &&
-    Array.isArray(v.edges)
+    typeof value.name === 'string' &&
+    typeof value.reasoning === 'string' &&
+    Array.isArray(value.nodes) &&
+    value.nodes.every(isScaffoldNode) &&
+    Array.isArray(value.edges) &&
+    value.edges.every(isScaffoldEdge) &&
+    (value.tablesToCreate === undefined ||
+      (Array.isArray(value.tablesToCreate) && value.tablesToCreate.every(isTableToCreate)))
   );
 }

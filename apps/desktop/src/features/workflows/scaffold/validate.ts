@@ -16,6 +16,7 @@
 import type { NodeDef } from '../types';
 
 import type { ScaffoldOutput } from './schema';
+import { validateTables } from './validate-tables';
 
 export type ViolationKind =
   | 'unknown_def'
@@ -26,7 +27,9 @@ export type ViolationKind =
   | 'duplicate_id'
   | 'dangling_edge'
   | 'invalid_port'
-  | 'self_loop';
+  | 'self_loop'
+  | 'invalid_table'
+  | 'invalid_column';
 
 export interface Violation {
   kind: ViolationKind;
@@ -84,24 +87,30 @@ export function validateNodes(output: ScaffoldOutput, catalog: Map<string, NodeD
         });
         continue;
       }
-      if (field.options && field.options.length > 0 && typeof value === 'string') {
+      if (field.options && field.options.length > 0 && value !== undefined && value !== null) {
         // Confronto senza distinzione di maiuscole: la normalizzazione
         // avviene dopo, qui interessa solo che il valore sia fra quelli veri.
-        const ok = field.options.some((o) => o.toLowerCase() === value.toLowerCase());
+        // Un valore non-stringa (oggetto, array) non può mai essere un enum.
+        const ok =
+          typeof value === 'string' &&
+          field.options.some((o) => o.toLowerCase() === value.toLowerCase());
         if (!ok) {
           violations.push({
             kind: 'invalid_enum',
             nodeId: node.id,
             defId: node.defId,
             field: key,
-            message: `"${key}" di ${node.defId} vale "${value}", ma sono ammessi solo: ${field.options.join(' | ')}.`,
+            message: `"${key}" di ${node.defId} vale ${JSON.stringify(value)}, ma sono ammessi solo: ${field.options.join(' | ')}.`,
           });
         }
       }
     }
 
     for (const field of fields) {
-      const present = node.config[field.key] !== undefined && node.config[field.key] !== '';
+      // `null` è assenza quanto `undefined`: i modelli lo usano spesso per
+      // dire "non lo so", e non deve contare come valore fornito.
+      const raw = node.config[field.key];
+      const present = raw !== undefined && raw !== null && raw !== '';
       if (field.required && !present && !isPickerField(field.type)) {
         violations.push({
           kind: 'missing_required',
@@ -189,7 +198,11 @@ export function validateScaffold(
   output: ScaffoldOutput,
   catalog: Map<string, NodeDef>,
 ): Violation[] {
-  return [...validateNodes(output, catalog), ...validateGraph(output, catalog)];
+  return [
+    ...validateNodes(output, catalog),
+    ...validateGraph(output, catalog),
+    ...validateTables(output),
+  ];
 }
 
 /** Le violazioni come le rilegge il modello nel tentativo successivo. */
