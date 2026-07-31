@@ -109,7 +109,18 @@ export interface NodeDef {
   color?: string;
   configFields?: NodeConfigField[];
   actions?: NodeAction[];
-  /** Porte in uscita dichiarate (es. `true`/`false` per logic_if). */
+  /**
+   * Vero per i nodi che scelgono una strada: `logic_if`, `logic_switch`,
+   * `logic_loop`. Solo questi hanno più porte in uscita.
+   */
+  branching?: boolean;
+  /** Le porte in uscita, per i nodi che ramificano (`true`/`false`). */
   outputPorts?: string[];
+  /**
+   * I campi che il nodo produce. **Non sono porte**: sono le chiavi del suo
+   * risultato, quelle che si leggono con `{{$node.x.json.campo}}`. Un nodo
+   * con diciassette campi non ha diciassette strade in uscita: ne ha una.
+   */
+  outputFields?: string[];
   searchAliases?: string[];
 }

@@ -81,8 +81,11 @@ function WorkflowNodeImpl({ data, selected }: NodeProps) {
   const typeKey = def?.type ?? 'action';
   const isUnknown = !def;
   const label = d.label ?? def?.label ?? humanize(d.defId);
-  const ports = def?.outputPorts ?? [];
-  const branching = ports.length > 0;
+  // Le porte si disegnano solo per i nodi che scelgono una strada. Gli altri
+  // hanno una sola uscita, anche quando dichiarano venti campi in uscita:
+  // quelli sono il contenuto del risultato, non venti direzioni.
+  const branching = def?.branching === true;
+  const ports = branching ? (def?.outputPorts ?? []) : [];
 
   const LucideIcon = resolveLucideIcon(iconNameFor(d.defId, def?.icon));
   const brand = brandIconFor(d.defId);

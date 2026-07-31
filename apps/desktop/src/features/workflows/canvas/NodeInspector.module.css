@@ -106,6 +106,56 @@
     gap: var(--space-4);
   }
 
+  /* I campi che il nodo produce: nome a sinistra, espressione a destra. */
+  .outputs {
+    margin-block-end: var(--space-3);
+  }
+
+  .outputsTitle {
+    margin: 0 0 var(--space-2);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-secondary);
+  }
+
+  .count {
+    font-weight: var(--font-weight-regular);
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--color-text-muted);
+  }
+
+  .fieldList {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .fieldRow {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+  }
+  .fieldRow:nth-child(odd) {
+    background: var(--color-surface-1);
+  }
+
+  .fieldName {
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-primary);
+  }
+
   .connections {
     margin: 0;
     padding: 0;

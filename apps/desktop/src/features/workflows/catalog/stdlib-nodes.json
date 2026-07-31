@@ -77,7 +77,7 @@
         "description": "Headers HTTP custom (es. User-Agent, Authorization)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "html",
       "cookies",
       "finalUrl",
@@ -212,7 +212,7 @@
         "description": "Headers HTTP custom."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "html",
       "cookies",
       "finalUrl",
@@ -273,7 +273,7 @@
         "description": "Tempo max che FlareSolverr ha per risolvere. Default 60s. Min 10s, max 180s."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "cookies",
       "cookieHeader",
       "cfClearance",
@@ -356,7 +356,7 @@
         "description": "HEAD request per filtrare siti morti. Accetta 200/405.\n• 0 = disabilita validation (più veloce, meno qualità)\n• 3000 = stretto (solo siti rapidissimi)\n• 5000 = default bilanciato\n• 10000 = tollerante (server lenti accettati)"
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "companies",
       "urls",
       "queries_used",
@@ -449,7 +449,7 @@
         "description": "Rate limit: max richieste parallele verso UN dominio. • 1 = ultra-conservativo (per siti fragili)\n• 2 = default bilanciato (good citizen)\n• 4 = veloce ma più aggressivo (rischio rate-limit del target)\nNON impatta multi-dominio: 100 domini diversi vengono fetchati in parallelo."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "emails",
       "primary_email",
       "source_page",
@@ -622,7 +622,7 @@
         "description": "Se ON + jobId esistente: resume da checkpoint. Altrimenti errore se jobId esiste."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "jobId",
       "status",
       "queueDepth",
@@ -659,7 +659,7 @@
         "description": "Header User-Agent. Alcuni CDN restringono i player ammessi (es. dash.js, ExoPlayer)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "type",
       "profiles",
       "totalDurationSec",
@@ -717,7 +717,7 @@
         "description": "IANA tz database. Default Europe/Rome (gestisce ora legale automaticamente). Altri: UTC, America/New_York, Asia/Tokyo. Se l'input è ISO con offset, viene convertito a questo TZ prima del formatting."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "formatted",
       "iso",
       "unix",
@@ -819,7 +819,7 @@
         "description": "Se ON: filtra anche email con local-part 1 char, dominio TLD < 2 char, e RFC 2606 reserved (.example/.test/.invalid). Disabilita SOLO se devi catturare anche email partial/incomplete (es. testing)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "primary_email",
       "all_emails",
       "counts",
@@ -877,7 +877,7 @@
         "description": "Descrizione 1 riga di cosa vendete. Aiuta il LLM a generare snippet che COLLEGA il loro business al vostro prodotto. Default: HYSY/Arifin marine thrusters. Personalizza per altre verticali."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "snippet",
       "evidence_quote",
       "confidence",
@@ -1348,7 +1348,7 @@
         "description": "Timeout per ciascuna query DNS (MX/A/AAAA). 4000ms = safe per il 99.9% degli upstream DNS. Aumentare a 8000 se i lookup avvengono via VPN/proxy lento."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "mx_valid",
       "mx_records",
       "disposable",
@@ -1382,7 +1382,7 @@
         "description": "Default 100KB. Se la pagina è più grande, viene troncata. Output include `truncatedChars` per sapere quanto è stato tagliato."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "url",
       "finalUrl",
       "status",
@@ -1551,7 +1551,7 @@
         "description": "dataUri (base64, per <img> in email HTML) o svg (markup grezzo). Entrambi sono sempre disponibili nell'output."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "svg",
       "dataUri",
       "imgTag",
@@ -1730,7 +1730,7 @@
         "description": "Header Referer (se il CDN restringe per origin)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "type",
       "variants",
       "segments",
@@ -1781,7 +1781,7 @@
         "description": "Map fieldName → selector. Forma scorciatoia: \"title\": \"h1\" equivale a {selector:\"h1\", extract:\"text\"}. Forma estesa: {selector, attr, extract, limit}. extract: text (default) | html | attr (richiede attr) | list (array)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "matched",
       "matchedCount",
       "totalFields",
@@ -2354,6 +2354,7 @@
         "description": "Solo modalità \"cycle\". CSV di tag — vengono eseguite solo le regole che hanno almeno uno di questi tag. Vuoto = tutte le regole abilitate."
       }
     ],
+    "branching": true,
     "outputPorts": [
       "success",
       "detection",
@@ -2404,7 +2405,7 @@
         "description": "Se la path non matcha nulla, ritorna questo valore. Senza fallback, il nodo ritorna null."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "value",
       "matchCount"
     ]
@@ -2476,7 +2477,7 @@
         "description": "Se specificate, ritorna count + density per ognuna di queste frasi (whole-token match)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "totalTokens",
       "uniqueTokens",
       "stoplistSize",
@@ -2543,7 +2544,7 @@
         "description": "Score minimo per output send_recommended=true. Default 50 = bilanciato. Alza a 70 per ridurre falsi positivi (meno volume ma più qualificati). Abbassa a 30 per scoperta wider (più volume, meno targeted)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "score",
       "category",
       "matched_positive",
@@ -2598,7 +2599,7 @@
         "description": "Stringa inserita tra descrizione e sotto-descrizione quando entrambe sono presenti. Default \" — \" (em dash). Altre opzioni: \" · \" (interpunct), \"\\n\" (newline, per wrap cella Excel), \" | \" (pipe)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "lines",
       "enrichedCount"
     ]
@@ -2666,7 +2667,7 @@
         "description": "User-Agent identificativo. Default identifica FlowForge."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "baseUrl",
       "totalLinks",
       "uniqueLinks",
@@ -2763,7 +2764,7 @@
         "description": "Massimo tempo di attesa risposta. 60000 = 1 min (default). LLM lunghi (reasoning + output >2k token) possono richiedere 90-180s — aumenta se vedi timeout."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "completion",
       "model",
       "provider",
@@ -2805,7 +2806,7 @@
         "description": "HTML statico per testing manuale. In produzione lascia su \"input\" e ricevi HTML dal nodo precedente."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "title",
       "description",
       "keywords",
@@ -3413,7 +3414,7 @@
         "description": "Timeout della richiesta in millisecondi. Default 30s."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "status",
       "operationId",
       "data"
@@ -3495,7 +3496,7 @@
         "description": "Nome file restituito in output (per allegato email o salvataggio). Default: \"document.pdf\". Estensione .pdf aggiunta se manca."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "filename",
       "binary",
       "sizeBytes",
@@ -3533,6 +3534,7 @@
         "defaultValue": "true"
       }
     ],
+    "branching": true,
     "outputPorts": [
       "received_message",
       "acceptance_receipt",
@@ -3649,7 +3651,7 @@
         "description": "Se ON (default): sulla pagina finale 2xx HTML fa un GET (capped a 512KB) per estrarre <meta refresh> e confrontare canonical/og:url con l'URL finale. OFF = salta la richiesta extra (solo la catena di redirect)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "startUrl",
       "finalUrl",
       "ok",
@@ -3704,7 +3706,7 @@
         "description": "Map fieldName → {patterns: [...], defaultValue?}. Forma scorciatoia: \"key\": \"regex\" (single pattern, flags=\"i\", group=1). Forma estesa: patterns array con {pattern, flags, group, transform}. transform: trim (default) | lowercase | uppercase | number | json | none."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "fields",
       "matched",
       "matchedCount",
@@ -3932,7 +3934,7 @@
         "description": "Vuoto = modello di default del gateway Liara. Per provider custom usa il loro model ID (es. gpt-4o-mini, llama-3.1-70b)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "extracted",
       "pages",
       "pagesScraped",
@@ -3979,7 +3981,7 @@
         "description": "Array di {name, key?, expect?}. name = path variabile (es. window.video, masterPlaylist, data). key = chiave da pescare dentro l'oggetto (opzionale, se vuoto ritorna l'intero blocco testuale). expect = number | string | raw (default raw). Number parsa solo digits."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "extracted",
       "matched",
       "matchedCount",
@@ -4344,7 +4346,7 @@
         "description": "HTML statico per testing manuale."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "url",
       "score",
       "grade",
@@ -4427,7 +4429,7 @@
         "defaultValue": "FlowForge/1.0 (+https://flowforge.automazionezeli.com)"
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "totalUrlsInSitemap",
       "filteredCount",
       "urls",
@@ -4502,7 +4504,7 @@
         "description": "Chiave di deduplica propagata nell'header Idempotency-Key. Vuota = generata automaticamente da run + nodo (stabile sui retry). Usa un ID di business (es. numero ordine) se il destinatario deve dedupare tra run diverse."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "delivered",
       "status",
       "response",
@@ -4545,7 +4547,7 @@
         "description": "Se ON, collassa whitespace multipli a un solo spazio e fa trim del risultato. Utile per output destinati a UI che non gradiscono \\n\\n consecutivi."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "text",
       "length"
     ]
@@ -4587,7 +4589,7 @@
         "description": "Variabili extra disponibili per interpolation (oltre a \"input\"). Esempio: host, region, version."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "url",
       "host",
       "path",
@@ -4648,7 +4650,7 @@
         "description": "Una stringa UA per riga. Se popolato, sovrascrive il pool predefinito."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "userAgent",
       "poolName",
       "poolSize",
@@ -4713,7 +4715,7 @@
         "description": "Contenuto video encoded base64 SENZA il prefisso \"data:video/mp4;base64,\". Limite raccomandato 10MB (oltre ffprobe HTTP timeout). Per file più grandi preferire `url` o `input`."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "duration",
       "bitRate",
       "formatName",
@@ -4813,7 +4815,7 @@
         "description": "Se ON: throw quando vision non ritorna JSON valido o schema mismatch. Se OFF: ritorna parseError/schemaValidationError senza throw."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "extracted",
       "rawResponse",
       "modelUsed",
@@ -5011,7 +5013,7 @@
         "description": "auto = sniffa Content-Type (json → parse, image → base64, altro → text). text/json/base64 = forza."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "status",
       "statusText",
       "url",
@@ -5046,7 +5048,7 @@
         "description": "Quanti risultati massimo. Brave: fino a 20; DuckDuckGo HTML: ~10 reali. Default 10."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "query",
       "provider",
       "results",
@@ -6178,7 +6180,7 @@
         "description": "State filter per listIssues."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "ok",
       "data",
       "count",
@@ -6306,7 +6308,7 @@
         "description": "Max 100 (hard cap HubSpot). Default 50."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "ok",
       "data",
       "objectId",
@@ -6362,7 +6364,7 @@
         "type": "expression"
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "ok",
       "issueId",
       "identifier",
@@ -6450,7 +6452,7 @@
         "description": "Max 100 (hard cap Notion). Default 50."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "ok",
       "data",
       "pageId",
@@ -6529,7 +6531,7 @@
         "description": "Required per create/update/upsert. Object con campi Salesforce (case-sensitive)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "ok",
       "data",
       "records",
@@ -6587,7 +6589,7 @@
         "description": "Default true."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "ok",
       "ts",
       "channel",
@@ -6652,7 +6654,7 @@
         "defaultValue": "false"
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "ok",
       "messageId",
       "chatId",
@@ -7216,6 +7218,7 @@
         "description": "Stringa stampata nell'output.reason per audit/UI operatrice. Placeholder: {label} {confidence} {threshold}. Es: \"low_confidence_{label}\" → \"low_confidence_legal_request\"."
       }
     ],
+    "branching": true,
     "outputPorts": [
       "auto",
       "review"
@@ -7281,7 +7284,7 @@
         "description": "Nomi labels esistenti nel team. Risolti via API (case-insensitive). Labels inesistenti vengono ignorate (warning in output)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "ok",
       "issueId",
       "identifier",
@@ -7344,7 +7347,7 @@
         "description": "Default true. Quando false, Slack non genera preview cards per i link nel messaggio."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "ok",
       "ts",
       "channel",
@@ -7416,7 +7419,7 @@
         "description": "Quando true, Telegram non genera preview cards per i link nel testo (solo per sendMessage)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "ok",
       "messageId",
       "chatId",
@@ -7447,7 +7450,7 @@
         "description": "Se on: valida l'XML contro lo schema ufficiale FatturaPA v1.2.2 (offline) e riporta le violazioni nel campo output \"xsd\" senza bloccare il parse."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "fatture",
       "count",
       "xsd"
@@ -7794,7 +7797,7 @@
         "description": "Stringa matched contro display_name. Usata dagli autocomplete Odoo. Operator default: \"ilike\" (case-insensitive substring). Ottimo per integrazioni \"type-ahead\" (es. search Cliente da nome parziale)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "result",
       "count"
     ]
@@ -7815,7 +7818,7 @@
         "description": "Il p7m in base64 (tipicamente l'allegato del nodo PEC/IMAP a monte). Vuoto = usa input.content del nodo precedente. XML in chiaro → pass-through con wasSigned:false."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "content",
       "wasSigned",
       "sizeBytes",
@@ -8458,7 +8461,7 @@
         "description": "true = bypass trash (irreversibile). Default WC: orders e products vanno in trash."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "result",
       "totalPages",
       "total"
@@ -8676,7 +8679,7 @@
         "description": "true = hard delete bypass trash (irreversibile)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "result",
       "totalPages"
     ]
@@ -8977,6 +8980,7 @@
         "description": "Usata SOLO se il builder visuale qui sopra è vuoto. Espressione JS che ritorna true/false. Variabili: input, output, ctx, vars."
       }
     ],
+    "branching": true,
     "outputPorts": [
       "true",
       "false"
@@ -9101,6 +9105,7 @@
         "description": "Nome del campo numerico da sommare/mediare. Ignorato per count/concat/collect. Es. con sum e aggregateField=amount, il risultato è la somma di tutti gli amount del gruppo."
       }
     ],
+    "branching": true,
     "outputPorts": [
       "body",
       "done"
@@ -9312,6 +9317,7 @@
         "description": "Se ON: quando nessun caso corrisponde, il nodo SOLLEVA un errore invece di instradare al ramo di fallback. Per workflow critici dove un input non gestito è un bug, non un caso \"default\"."
       }
     ],
+    "branching": true,
     "outputPorts": [
       "*"
     ]
@@ -9572,7 +9578,7 @@
         "description": "Opzionale. Quando settato, la key scade dopo N secondi dall'ultimo write. Cleanup avviene lazy al prossimo read (key scaduta → output.exists=false, row deleted)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "value",
       "exists",
       "updatedAt",
@@ -9636,7 +9642,7 @@
         "description": "Default 10s. Hard cap 60s. Oltre il cap → throw TimeoutError."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "feed",
       "items",
       "count",
@@ -10547,7 +10553,7 @@
         "description": "Identificativo bot inviato come header `User-Agent`. RFC-compliant include nome + versione + contatto. Alcuni feed (Bloomberg, FT) bloccano UA generici e richiedono identificazione esplicita. Default identifica FlowForge."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "format",
       "feedTitle",
       "feedLink",
@@ -10586,7 +10592,7 @@
         "description": "Se on: il workflow parte anche quando un utente MODIFICA un messaggio già inviato (kind=\"edited\"). Default off: solo messaggi nuovi e click sui bottoni (i re-edit sono rumore per un bot conversazionale)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "updateId",
       "kind",
       "messageId",
@@ -10950,7 +10956,7 @@
         "description": "Se on: il workflow parte anche per gli status dei messaggi INVIATI (sent, delivered, read, failed) con kind=\"status\". Default off: solo i messaggi in arrivo dei clienti (gli status di consegna sono rumore per un bot conversazionale)."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "messageId",
       "from",
       "profileName",
@@ -11022,7 +11028,7 @@
         "description": "Default: usa FLOWFORGE_PUBLIC_BASE_URL del container tenant. Override per email che vanno fuori dominio."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "url",
       "workflowId",
       "filters"
@@ -11074,7 +11080,7 @@
         "description": "Lingua per il campo `condition`: \"it\" → \"sereno/temporale\", \"en\" → \"clear/thunderstorm\"."
       }
     ],
-    "outputPorts": [
+    "outputFields": [
       "location",
       "current",
       "forecast"
