@@ -81,6 +81,8 @@ export interface NodeConfigField {
   pattern?: string;
   defaultValue?: string;
   description?: string;
+  /** Il testo di esempio dentro il campo vuoto. */
+  placeholder?: string;
   /** Mostra il campo solo quando un altro campo ha un certo valore. */
   showIf?: ShowIfRule;
   /** Il campo di cui questo elenco dipende (es. la tabella dipende dal database). */

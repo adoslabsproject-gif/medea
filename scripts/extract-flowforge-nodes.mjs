@@ -64,6 +64,15 @@ const out = [...defs.values()]
             ...(f.defaultValue !== undefined && f.defaultValue !== ''
               ? { defaultValue: String(f.defaultValue) }
               : {}),
+            // showIf e' cio' che tiene leggibile un pannello da 30 campi:
+            // host/porta/utente/password compaiono solo se NON si e' scelto
+            // un account. Senza, il pannello li mostra tutti sempre.
+            ...(f.showIf ? { showIf: f.showIf } : {}),
+            ...(f.dependsOn ? { dependsOn: f.dependsOn } : {}),
+            ...(f.placeholder ? { placeholder: f.placeholder } : {}),
+            // `help` diventa la descrizione mostrata sotto il campo: e' la
+            // frase che spiega cosa scriverci.
+            ...(f.help ? { description: f.help } : {}),
           })),
         }
       : {}),

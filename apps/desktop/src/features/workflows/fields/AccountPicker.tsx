@@ -1,13 +1,14 @@
 /**
  * L'account di posta, scelto fra quelli configurati in Medea.
  *
- * Sul server questo campo è un identificativo da incollare a mano; qui gli
- * account ci sono già, con le credenziali nel portachiavi. Chiedere di
- * riscriverli sarebbe chiedere all'utente di ripetere quello che il programma
- * sa già.
+ * Gli account ci sono già, con le credenziali nel portachiavi: chiedere di
+ * riscrivere host, porta, utente e password sarebbe chiedere all'utente di
+ * ripetere quello che il programma sa.
  *
- * Quello che finisce nel documento è l'identificativo, come in FlowForge: un
- * workflow esportato resta leggibile là, dove quell'id andrà rimappato.
+ * Restare vuoto è una scelta legittima, non un campo dimenticato: i nodi
+ * dichiarano `showIf: { systemAccountId: '' }` sui campi manuali, quindi
+ * lasciandolo vuoto compaiono host, porta e credenziali e si usa un indirizzo
+ * qualunque — anche uno che in Medea non è configurato.
  */
 
 import { useMailAccounts } from '../resources';
@@ -56,7 +57,7 @@ export function AccountPicker({ field, value, onChange }: Props) {
           onChange(e.target.value);
         }}
       >
-        <option value="">— scegli un account —</option>
+        <option value="">Un altro indirizzo (lo configuro qui sotto)</option>
         {accounts.map((a) => (
           <option key={a.id} value={a.id}>
             {a.displayName} · {a.emailAddress}
@@ -64,9 +65,16 @@ export function AccountPicker({ field, value, onChange }: Props) {
         ))}
         {value && !known && <option value={value}>{value} (non configurato qui)</option>}
       </select>
+      {value === '' && (
+        <p className={styles.hint}>
+          Senza un account di Medea compaiono qui sotto host, porta e credenziali: serve per usare
+          un indirizzo diverso da quelli configurati.
+        </p>
+      )}
       {accounts.length === 0 && (
         <p className={styles.hint}>
-          Nessun account configurato in Medea: aggiungine uno dalla sezione Posta.
+          Nessun account configurato in Medea: aggiungine uno dalla sezione Posta, oppure compila i
+          campi qui sotto.
         </p>
       )}
       {value && !known && (
