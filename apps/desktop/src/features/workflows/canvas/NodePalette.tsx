@@ -14,11 +14,20 @@ import type { NodeDef } from '../types';
 
 import styles from './NodePalette.module.css';
 
-interface Props {
-  onAdd: (def: NodeDef) => void;
+export interface InsertMode {
+  /** Cosa sta per succedere, detto per esteso. */
+  label: string;
+  onCancel: () => void;
 }
 
-export function NodePalette({ onAdd }: Props) {
+interface Props {
+  onAdd: (def: NodeDef) => void;
+  /** Quando c'è, il nodo scelto viene inserito su un collegamento invece
+   *  che appoggiato accanto agli altri. */
+  insertMode?: InsertMode;
+}
+
+export function NodePalette({ onAdd, insertMode }: Props) {
   const [query, setQuery] = useState('');
   const trimmed = query.trim();
 
@@ -33,6 +42,15 @@ export function NodePalette({ onAdd }: Props) {
 
   return (
     <aside className={styles.root} aria-label="Nodi disponibili">
+      {insertMode && (
+        <div className={styles.insertBanner} role="status">
+          <span>{insertMode.label}</span>
+          <button type="button" className={styles.insertCancel} onClick={insertMode.onCancel}>
+            Annulla
+          </button>
+        </div>
+      )}
+
       <div className={styles.searchRow}>
         <input
           type="search"

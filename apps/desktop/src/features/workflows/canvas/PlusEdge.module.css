@@ -1,0 +1,73 @@
+@layer features {
+  .path {
+    stroke: var(--color-border-strong);
+    stroke-width: 2;
+  }
+
+  /* Traccia invisibile e larga: serve a poter prendere il collegamento
+     senza dover centrare due pixel. */
+  .hitArea {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 20;
+    cursor: pointer;
+    pointer-events: stroke;
+  }
+
+  .tools {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px;
+    border-radius: var(--radius-full);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-default);
+    box-shadow: var(--elevation-2);
+    pointer-events: all;
+    opacity: 0;
+    transition: opacity var(--motion-duration-fast, 150ms) ease-out;
+  }
+  .tools[data-visible='true'] {
+    opacity: 1;
+  }
+
+  .action {
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 0.6875rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .action:hover {
+    background: var(--color-surface-3);
+    color: var(--color-text-primary);
+  }
+  .danger:hover {
+    background: var(--color-feedback-danger);
+    color: var(--color-accent-on);
+  }
+
+  /* Il fan-out attivo si vede sempre, non solo passandoci sopra: è una
+     scelta che cambia quante volte gira il nodo a valle. */
+  .mapBadge {
+    padding: 0 var(--space-1);
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--color-accent-default);
+    color: var(--color-accent-on);
+    font-family: var(--font-family-sans);
+    font-size: 0.5625rem;
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+  }
+}

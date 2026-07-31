@@ -6,16 +6,24 @@
  * si vedrebbe un mucchio di rettangoli sovrapposti — e la prima impressione
  * sarebbe che la generazione ha sbagliato, mentre è solo il disegno.
  *
- * L'algoritmo assegna a ogni nodo la sua distanza dal punto di partenza e
- * mette una colonna per distanza. Non è un layout perfetto, ma è leggibile e
- * deterministico: lo stesso workflow si ridisegna sempre uguale.
+ * Il disegno lo fa dagre, come nell'editor originale: stessa libreria, stessa
+ * direzione (da sinistra a destra), stesse distanze. Un workflow riordinato
+ * qui e uno riordinato là devono avere lo stesso aspetto.
  */
+
+import dagre from 'dagre';
 
 import type { CanvasNode, WorkflowEdge } from '../types';
 
 export const COLUMN_WIDTH = 280;
 export const ROW_HEIGHT = 150;
 export const ORIGIN = { x: 80, y: 80 };
+
+/** Le misure del nodo disegnato, e le distanze fra i nodi: sono quelle
+ *  dell'editor originale. */
+const NODE_WIDTH = 140;
+const NODE_HEIGHT = 120;
+const LAYOUT = { rankdir: 'LR', nodesep: 80, ranksep: 140, marginx: 40, marginy: 40 };
 
 /**
  * La profondità di ciascun nodo: 0 per chi non ha nessuno a monte, altrimenti
@@ -57,23 +65,34 @@ export function computeDepths(
   return depth;
 }
 
-/** Le nuove coordinate, una colonna per profondità. L'ordine dentro la
- *  colonna è quello in cui i nodi compaiono nel documento: stabile. */
+/** Le nuove coordinate: il flusso scorre da sinistra a destra, i rami si
+ *  aprono in verticale. */
 export function autoLayout(
   nodes: readonly CanvasNode[],
   edges: readonly WorkflowEdge[],
 ): CanvasNode[] {
-  const depth = computeDepths(nodes, edges);
-  const usedRows = new Map<number, number>();
+  if (nodes.length === 0) return [...nodes];
+
+  const g = new dagre.graphlib.Graph();
+  g.setDefaultEdgeLabel(() => ({}));
+  g.setGraph(LAYOUT);
+
+  for (const n of nodes) g.setNode(n.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
+  for (const e of edges) {
+    if (g.hasNode(e.from) && g.hasNode(e.to)) g.setEdge(e.from, e.to);
+  }
+
+  dagre.layout(g);
 
   return nodes.map((n) => {
-    const column = depth.get(n.id) ?? 0;
-    const row = usedRows.get(column) ?? 0;
-    usedRows.set(column, row + 1);
+    const placed = g.node(n.id) as { x?: number; y?: number } | undefined;
+    if (placed?.x === undefined || placed.y === undefined) return { ...n };
+    // dagre dà il centro del nodo, il canvas vuole l'angolo in alto a
+    // sinistra.
     return {
       ...n,
-      x: ORIGIN.x + column * COLUMN_WIDTH,
-      y: ORIGIN.y + row * ROW_HEIGHT,
+      x: Math.round(placed.x - NODE_WIDTH / 2),
+      y: Math.round(placed.y - NODE_HEIGHT / 2),
     };
   });
 }
