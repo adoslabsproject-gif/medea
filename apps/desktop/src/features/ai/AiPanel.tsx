@@ -7,10 +7,10 @@ import { Markdown } from '../shared/markdown';
 
 import styles from './AiPanel.module.css';
 import { aiApi } from './api';
+import { activeProvider, DEFAULT_PROVIDER_KEY, providerConnection } from './connection';
 import { ConsentCard } from './ConsentCard';
 import { ConversationsSidebar } from './ConversationsSidebar';
 import { sanitizeHtmlForLlm } from './html-sanitizer';
-import { getApiKey } from './keys';
 import { MemoryDrawer } from './MemoryDrawer';
 import { ProposalCard } from './ProposalCard';
 import {
@@ -40,7 +40,7 @@ import {
 } from './store/memory';
 import { callTool, consentAction, listTools, toOpenAiTools } from './tools';
 import type { ToolCall, ToolCallResult, ToolDescriptor } from './tools';
-import { CUSTOM_BASE_URL_KEY, CUSTOM_MODEL_KEY, providerLabel } from './types';
+import { providerLabel } from './types';
 import type { ChatTurn, ProviderId } from './types';
 
 interface Props {
@@ -49,28 +49,7 @@ interface Props {
   onClose: () => void;
 }
 
-const DEFAULT_PROVIDER_KEY = 'medea.ai.defaultProvider';
 const SIDEBAR_COLLAPSED_KEY = 'medea.ai.sidebarCollapsed';
-
-function defaultProvider(): ProviderId {
-  const stored = localStorage.getItem(DEFAULT_PROVIDER_KEY);
-  return (stored as ProviderId | null) ?? 'liara';
-}
-
-/** Parametri di connessione BYOK per il provider attivo. */
-async function providerConnection(provider: ProviderId): Promise<{
-  apiKey: string | undefined;
-  baseUrl: string | undefined;
-  model: string | undefined;
-}> {
-  const apiKey = (await getApiKey(provider)) || undefined;
-  if (provider !== 'custom') return { apiKey, baseUrl: undefined, model: undefined };
-  return {
-    apiKey,
-    baseUrl: localStorage.getItem(CUSTOM_BASE_URL_KEY) ?? undefined,
-    model: localStorage.getItem(CUSTOM_MODEL_KEY) ?? undefined,
-  };
-}
 
 /** Recupera il nome visualizzato dell'utente dal profilo locale.
  *  Ordine di fallback: profile.displayName → account.displayName → "Tu". */
@@ -167,7 +146,7 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [provider, setProvider] = useState<ProviderId>(() => defaultProvider());
+  const [provider, setProvider] = useState<ProviderId>(() => activeProvider());
   const [includeMessage, setIncludeMessage] = useState(true);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(
