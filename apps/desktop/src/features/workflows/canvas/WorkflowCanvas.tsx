@@ -25,6 +25,7 @@ import {
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { findNode } from '../catalog';
+import { ResizableColumn } from '../shared';
 import type { CanvasNode, NodeDef, Workflow, WorkflowEdge } from '../types';
 
 import { diagnose } from './diagnostics';
@@ -182,19 +183,21 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
 
   return (
     <div className={styles.root}>
-      <NodePalette
-        onAdd={addFromPalette}
-        {...(insertOn
-          ? {
-              insertMode: {
-                label: `Scegli il nodo da inserire fra "${insertOn.from}" e "${insertOn.to}"`,
-                onCancel: () => {
-                  setInsertOn(null);
+      <ResizableColumn storageKey="medea.workflows.paletteWidth" defaultWidth={240} handle="end">
+        <NodePalette
+          onAdd={addFromPalette}
+          {...(insertOn
+            ? {
+                insertMode: {
+                  label: `Scegli il nodo da inserire fra "${insertOn.from}" e "${insertOn.to}"`,
+                  onCancel: () => {
+                    setInsertOn(null);
+                  },
                 },
-              },
-            }
-          : {})}
-      />
+              }
+            : {})}
+        />
+      </ResizableColumn>
 
       <div className={styles.canvas}>
         <ReactFlow
@@ -252,23 +255,30 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
           con scritto «seleziona un nodo» ruba spazio al canvas per dire una
           cosa che si capisce da sola. */}
       {selected && (
-        <NodeInspector
-          node={selected}
-          def={defsById.get(selected.defId)}
-          issues={diag.issuesByNode.get(selected.id) ?? []}
-          nodes={workflow.nodes}
-          edges={workflow.edges}
-          defsById={defsById}
-          onChange={(config) => {
-            patchNodes(workflow.nodes.map((n) => (n.id === selected.id ? { ...n, config } : n)));
-          }}
-          onRename={(label) => {
-            patchNodes(workflow.nodes.map((n) => (n.id === selected.id ? { ...n, label } : n)));
-          }}
-          onDelete={() => {
-            removeNode(selected.id);
-          }}
-        />
+        <ResizableColumn
+          storageKey="medea.workflows.inspectorWidth"
+          defaultWidth={336}
+          minWidth={260}
+          handle="start"
+        >
+          <NodeInspector
+            node={selected}
+            def={defsById.get(selected.defId)}
+            issues={diag.issuesByNode.get(selected.id) ?? []}
+            nodes={workflow.nodes}
+            edges={workflow.edges}
+            defsById={defsById}
+            onChange={(config) => {
+              patchNodes(workflow.nodes.map((n) => (n.id === selected.id ? { ...n, config } : n)));
+            }}
+            onRename={(label) => {
+              patchNodes(workflow.nodes.map((n) => (n.id === selected.id ? { ...n, label } : n)));
+            }}
+            onDelete={() => {
+              removeNode(selected.id);
+            }}
+          />
+        </ResizableColumn>
       )}
     </div>
   );

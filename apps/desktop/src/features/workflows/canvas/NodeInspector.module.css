@@ -1,7 +1,7 @@
 @layer features {
   .root {
-    inline-size: 21rem;
-    flex-shrink: 0;
+    inline-size: 100%;
+    block-size: 100%;
     display: flex;
     flex-direction: column;
     min-block-size: 0;

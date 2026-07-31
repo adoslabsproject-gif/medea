@@ -12,7 +12,17 @@ import { useMemo, useState } from 'react';
 import { NODE_GROUPS, nodesByGroup, searchNodes } from '../catalog';
 import type { NodeDef } from '../types';
 
+import { brandIconFor } from './brand-icons';
+import { iconNameFor, resolveLucideIcon } from './icon-registry';
 import styles from './NodePalette.module.css';
+
+/** L'icona che vale per tutta una categoria, quando il nodo non ne ha una sua. */
+const CATEGORY_ICON: Record<string, string> = {
+  trigger: 'Zap',
+  action: 'MousePointerClick',
+  logic: 'GitBranchPlus',
+  ai: 'Sparkles',
+};
 
 export interface InsertMode {
   /** Cosa sta per succedere, detto per esteso. */
@@ -95,6 +105,15 @@ export function NodePalette({ onAdd, insertMode }: Props) {
 }
 
 function NodeItem({ def, onAdd }: { def: NodeDef; onAdd: (d: NodeDef) => void }) {
+  // Le stesse icone del canvas: un nodo si riconosce nella palette e si
+  // ritrova uguale una volta messo giù.
+  // Se il nodo non dichiara un'icona e non ce n'è una per il suo defId, si
+  // ripiega su quella della categoria: un puntino non dice niente.
+  const Icon =
+    resolveLucideIcon(iconNameFor(def.defId, def.icon)) ??
+    resolveLucideIcon(CATEGORY_ICON[def.type] ?? 'Hash');
+  const brand = brandIconFor(def.defId);
+
   return (
     <li>
       <button
@@ -106,8 +125,19 @@ function NodeItem({ def, onAdd }: { def: NodeDef; onAdd: (d: NodeDef) => void })
           onAdd(def);
         }}
       >
-        <span className={styles.itemLabel}>{def.label}</span>
-        <span className={styles.itemId}>{def.defId}</span>
+        <span className={styles.itemIcon} aria-hidden="true">
+          {brand ? (
+            <svg viewBox="0 0 24 24" width={14} height={14} fill={brand.bg}>
+              <path d={brand.svg} />
+            </svg>
+          ) : Icon ? (
+            <Icon size={14} strokeWidth={2} />
+          ) : null}
+        </span>
+        <span className={styles.itemBody}>
+          <span className={styles.itemLabel}>{def.label}</span>
+          <span className={styles.itemId}>{def.defId}</span>
+        </span>
       </button>
     </li>
   );
