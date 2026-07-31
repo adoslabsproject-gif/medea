@@ -45,7 +45,9 @@ pub fn analytics_top_customers(args: &Value) -> Result<Value> {
             .collect::<rusqlite::Result<_>>()?;
         Ok::<_, anyhow::Error>(r)
     })?;
-    Ok(json!({ "period": period, "from": from, "to": to, "by": by, "count": rows.len(), "results": rows }))
+    Ok(
+        json!({ "period": period, "from": from, "to": to, "by": by, "count": rows.len(), "results": rows }),
+    )
 }
 
 /// Top articoli per qty o amount in un periodo.
@@ -86,7 +88,9 @@ pub fn analytics_top_articles(args: &Value) -> Result<Value> {
             .collect::<rusqlite::Result<_>>()?;
         Ok::<_, anyhow::Error>(r)
     })?;
-    Ok(json!({ "period": period, "from": from, "to": to, "by": by, "count": rows.len(), "results": rows }))
+    Ok(
+        json!({ "period": period, "from": from, "to": to, "by": by, "count": rows.len(), "results": rows }),
+    )
 }
 
 /// Volume email per giorno/settimana/mese.
@@ -95,10 +99,14 @@ pub fn analytics_email_volume(args: &Value) -> Result<Value> {
     let group_by = s(args, "groupBy").unwrap_or_else(|| "month".into());
     let (from, to) = resolve_period(&period)?;
     let bucket = match group_by.as_str() {
-        "day"   => "strftime('%Y-%m-%d', internal_date)",
-        "week"  => "strftime('%Y-%W',    internal_date)",
+        "day" => "strftime('%Y-%m-%d', internal_date)",
+        "week" => "strftime('%Y-%W',    internal_date)",
         "month" => "strftime('%Y-%m',    internal_date)",
-        other => return Err(anyhow!("'groupBy' deve essere day|week|month (passato: {other})")),
+        other => {
+            return Err(anyhow!(
+                "'groupBy' deve essere day|week|month (passato: {other})"
+            ))
+        }
     };
     let sql = format!(
         "SELECT {bucket} AS bucket, COUNT(*) AS n
@@ -126,7 +134,7 @@ pub fn analytics_email_volume(args: &Value) -> Result<Value> {
 
 /// Clienti silenti da N mesi: nessun documento E nessuna email scambiata.
 pub fn analytics_customer_churn(args: &Value) -> Result<Value> {
-    let months = i(args, "months").unwrap_or(6).clamp(1, 120) as i64;
+    let months = i(args, "months").unwrap_or(6).clamp(1, 120);
     let cutoff = chrono::Local::now() - chrono::Duration::days(months * 30);
     let cutoff_iso = cutoff.format("%Y-%m-%d").to_string();
 
@@ -169,13 +177,16 @@ fn resolve_period(period: &str) -> Result<(String, String)> {
     let today = Local::now().date_naive();
     let fmt = |d: NaiveDate| d.format("%Y-%m-%d").to_string();
     let year_start = |y: i32| NaiveDate::from_ymd_opt(y, 1, 1).unwrap();
-    let year_end   = |y: i32| NaiveDate::from_ymd_opt(y, 12, 31).unwrap();
+    let year_end = |y: i32| NaiveDate::from_ymd_opt(y, 12, 31).unwrap();
 
     if period == "year" {
         return Ok((fmt(year_start(today.year())), fmt(year_end(today.year()))));
     }
     if period == "last-year" {
-        return Ok((fmt(year_start(today.year() - 1)), fmt(year_end(today.year() - 1))));
+        return Ok((
+            fmt(year_start(today.year() - 1)),
+            fmt(year_end(today.year() - 1)),
+        ));
     }
     if period == "month" {
         let start = NaiveDate::from_ymd_opt(today.year(), today.month(), 1).unwrap();
@@ -187,7 +198,11 @@ fn resolve_period(period: &str) -> Result<(String, String)> {
         return Ok((fmt(start), fmt(end)));
     }
     if period == "last-month" {
-        let (ly, lm) = if today.month() == 1 { (today.year() - 1, 12) } else { (today.year(), today.month() - 1) };
+        let (ly, lm) = if today.month() == 1 {
+            (today.year() - 1, 12)
+        } else {
+            (today.year(), today.month() - 1)
+        };
         let start = NaiveDate::from_ymd_opt(ly, lm, 1).unwrap();
         let end = if lm == 12 {
             NaiveDate::from_ymd_opt(ly + 1, 1, 1).unwrap() - Duration::days(1)
@@ -202,7 +217,10 @@ fn resolve_period(period: &str) -> Result<(String, String)> {
         return Ok((fmt(start), fmt(today)));
     }
     // q1-YYYY .. q4-YYYY
-    if let Some(rest) = period.strip_prefix("q").or_else(|| period.strip_prefix("Q")) {
+    if let Some(rest) = period
+        .strip_prefix("q")
+        .or_else(|| period.strip_prefix("Q"))
+    {
         if let Some((q, y)) = rest.split_once('-') {
             if let (Ok(qn), Ok(yn)) = (q.parse::<u32>(), y.parse::<i32>()) {
                 if (1..=4).contains(&qn) {

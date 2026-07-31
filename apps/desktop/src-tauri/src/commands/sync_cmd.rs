@@ -64,8 +64,7 @@ pub async fn mail_sync_folder(
     .map_err(|e| e.to_string())?;
 
     let known_uids: std::collections::HashSet<u32> = db::with_db(|c| {
-        db::messages::known_uids(c, &account_id, folder_id)
-            .map(|v| v.into_iter().collect())
+        db::messages::known_uids(c, &account_id, folder_id).map(|v| v.into_iter().collect())
     })
     .map_err(|e| e.to_string())?;
 
@@ -80,9 +79,8 @@ pub async fn mail_sync_folder(
     let uid_validity = mailbox.uid_validity.unwrap_or(0);
 
     // Aggiorna uid_validity nella folder
-    let _ = db::with_db(|c| {
-        db::messages::set_folder_uid_state(c, folder_id, uid_validity as u32, 0)
-    });
+    let _ =
+        db::with_db(|c| db::messages::set_folder_uid_state(c, folder_id, uid_validity as u32, 0));
 
     if total_msgs == 0 {
         let _ = session.logout().await;
@@ -114,10 +112,7 @@ pub async fn mail_sync_folder(
     // STEP 1: Fetch UID+FLAGS+INTERNALDATE+RFC822.SIZE+ENVELOPE — leggero, per dedup.
     use futures::TryStreamExt;
     let env_stream = session
-        .fetch(
-            &range,
-            "(UID FLAGS INTERNALDATE RFC822.SIZE ENVELOPE)",
-        )
+        .fetch(&range, "(UID FLAGS INTERNALDATE RFC822.SIZE ENVELOPE)")
         .await
         .map_err(|e| format!("FETCH envelope failed: {e}"))?;
 
@@ -260,19 +255,16 @@ fn persist_message(
     let is_flagged = flags
         .iter()
         .any(|fl| matches!(fl, async_imap::types::Flag::Flagged));
-    let size = f.size.unwrap_or_else(|| raw.len() as u32);
+    let size = f.size.unwrap_or(raw.len() as u32);
 
     // mail-parser è più affidabile dell'IMAP envelope per gli header.
     // Usiamolo come fonte primaria, l'envelope IMAP come fallback.
-    let subject: Option<String> = parsed
-        .subject()
-        .map(|s| s.to_string())
-        .or_else(|| {
-            f.envelope()
-                .and_then(|e| e.subject.as_ref())
-                .and_then(|s| std::str::from_utf8(s).ok())
-                .map(decode_mime_header)
-        });
+    let subject: Option<String> = parsed.subject().map(|s| s.to_string()).or_else(|| {
+        f.envelope()
+            .and_then(|e| e.subject.as_ref())
+            .and_then(|s| std::str::from_utf8(s).ok())
+            .map(decode_mime_header)
+    });
 
     let (from_name, from_address): (Option<String>, Option<String>) = parsed
         .from()

@@ -112,7 +112,11 @@ pub fn customer_classify(args: &Value) -> Result<Value> {
         "supplier" => (false, true),
         "both" => (true, true),
         "none" => (false, false),
-        _ => return Err(anyhow!("'role' deve essere 'client'|'supplier'|'both'|'none'")),
+        _ => {
+            return Err(anyhow!(
+                "'role' deve essere 'client'|'supplier'|'both'|'none'"
+            ))
+        }
     };
     let cur = db::with_db(|c| db::anag::get_organization(c, id))?
         .ok_or_else(|| anyhow!("organizzazione id={id} non trovata"))?;
@@ -294,7 +298,8 @@ pub fn article_bulk_update(args: &Value) -> Result<Value> {
         return Err(anyhow!("Troppi codici in un singolo bulk (max 1000)"));
     }
     let patch = args.get("patch").ok_or_else(|| anyhow!("manca 'patch'"))?;
-    if !patch.is_object() || patch.as_object().is_none_or(|o| o.is_empty()) {
+    // `is_none_or` richiederebbe Rust 1.82, oltre l'MSRV dichiarato (1.77).
+    if patch.as_object().map(|o| o.is_empty()).unwrap_or(true) {
         return Err(anyhow!("'patch' deve essere un object non vuoto"));
     }
     let mut updated: Vec<String> = Vec::new();

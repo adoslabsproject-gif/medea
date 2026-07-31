@@ -253,13 +253,7 @@ pub async fn imap_fetch_message(
             let filename = part.attachment_name().map(|s| s.to_string());
             let content_type = part
                 .content_type()
-                .map(|c| {
-                    format!(
-                        "{}/{}",
-                        c.ctype(),
-                        c.subtype().unwrap_or("octet-stream")
-                    )
-                })
+                .map(|c| format!("{}/{}", c.ctype(), c.subtype().unwrap_or("octet-stream")))
                 .unwrap_or_else(|| "application/octet-stream".to_string());
             AttachmentInfo {
                 filename,
@@ -311,7 +305,9 @@ pub async fn imap_append(
     };
     tracing::info!(
         "IMAP APPEND folder={} flags={:?} size={}",
-        folder, flags_opt, eml_bytes.len()
+        folder,
+        flags_opt,
+        eml_bytes.len()
     );
     let result: Result<(), String> = async {
         session
@@ -320,7 +316,8 @@ pub async fn imap_append(
             .map_err(|e| format!("APPEND a '{folder}' fallito: {e}"))?;
         tracing::info!("IMAP APPEND ok → {folder}");
         Ok(())
-    }.await;
+    }
+    .await;
 
     // Cerchiamo di chiudere comunque la sessione, ma non mascheriamo errori.
     let _ = session.logout().await;
@@ -347,7 +344,11 @@ async fn open_session(creds: &ImapCredentials) -> anyhow::Result<ImapSession> {
 
     let tcp = tokio::time::timeout(Duration::from_secs(15), TcpStream::connect(&addr))
         .await
-        .map_err(|_| anyhow::anyhow!("TCP timeout collegandomi a {addr} (host irraggiungibile o porta filtrata)"))?
+        .map_err(|_| {
+            anyhow::anyhow!(
+                "TCP timeout collegandomi a {addr} (host irraggiungibile o porta filtrata)"
+            )
+        })?
         .map_err(|e| anyhow::anyhow!("TCP connect a {addr} fallito: {e}"))?;
     let tcp_compat = tcp.compat();
 
@@ -363,7 +364,13 @@ async fn open_session(creds: &ImapCredentials) -> anyhow::Result<ImapSession> {
     let session = client
         .login(&creds.username, &creds.password)
         .await
-        .map_err(|(e, _)| anyhow::anyhow!("LOGIN IMAP fallito ({}@{}): {e}", creds.username, creds.host))?;
+        .map_err(|(e, _)| {
+            anyhow::anyhow!(
+                "LOGIN IMAP fallito ({}@{}): {e}",
+                creds.username,
+                creds.host
+            )
+        })?;
     Ok(session)
 }
 
@@ -386,10 +393,7 @@ fn build_summary(f: &Fetch) -> Option<MessageSummary> {
                 .as_ref()
                 .and_then(|n| std::str::from_utf8(n).ok())
                 .map(decode_mime_header);
-            let mailbox = a
-                .mailbox
-                .as_ref()
-                .and_then(|m| std::str::from_utf8(m).ok());
+            let mailbox = a.mailbox.as_ref().and_then(|m| std::str::from_utf8(m).ok());
             let host = a.host.as_ref().and_then(|h| std::str::from_utf8(h).ok());
             let addr = match (mailbox, host) {
                 (Some(m), Some(h)) => Some(format!("{m}@{h}")),
@@ -405,7 +409,10 @@ fn build_summary(f: &Fetch) -> Option<MessageSummary> {
             addrs
                 .iter()
                 .filter_map(|a| {
-                    let m = a.mailbox.as_ref().and_then(|m| std::str::from_utf8(m).ok())?;
+                    let m = a
+                        .mailbox
+                        .as_ref()
+                        .and_then(|m| std::str::from_utf8(m).ok())?;
                     let h = a.host.as_ref().and_then(|h| std::str::from_utf8(h).ok())?;
                     Some(format!("{m}@{h}"))
                 })

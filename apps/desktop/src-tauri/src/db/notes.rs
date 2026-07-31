@@ -97,7 +97,12 @@ pub fn search(conn: &Connection, query: &str, limit: u32) -> Result<Vec<NoteRow>
     Ok(rows)
 }
 
-pub fn update(conn: &Connection, id: i64, text: Option<&str>, importance: Option<&str>) -> Result<()> {
+pub fn update(
+    conn: &Connection,
+    id: i64,
+    text: Option<&str>,
+    importance: Option<&str>,
+) -> Result<()> {
     let now = Utc::now().to_rfc3339();
     let updated = conn.execute(
         "UPDATE notes

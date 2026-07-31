@@ -252,7 +252,12 @@ pub fn contact_set_flags(
 ) -> Result<()> {
     conn.execute(
         "UPDATE contacts SET is_client = ?1, is_supplier = ?2, updated_at = ?3 WHERE id = ?4",
-        params![is_client as i32, is_supplier as i32, Utc::now().to_rfc3339(), id],
+        params![
+            is_client as i32,
+            is_supplier as i32,
+            Utc::now().to_rfc3339(),
+            id
+        ],
     )?;
     Ok(())
 }
@@ -263,7 +268,7 @@ pub struct OrganizationUpdate {
     pub id: i64,
     pub display_name: Option<String>,
     pub vat_number: Option<String>,
-    pub address: Option<String>,                    // legacy free-text
+    pub address: Option<String>, // legacy free-text
     pub phone: Option<String>,
     pub website: Option<String>,
     pub notes: Option<String>,
@@ -291,7 +296,10 @@ pub struct OrganizationUpdate {
 pub fn organization_update(conn: &Connection, o: &OrganizationUpdate) -> Result<()> {
     // CHECK constraint guard
     if let Some(s) = o.shipping_terms.as_deref() {
-        if !matches!(s, "porto_franco" | "porto_assegnato" | "franco_con_addebito") {
+        if !matches!(
+            s,
+            "porto_franco" | "porto_assegnato" | "franco_con_addebito"
+        ) {
             anyhow::bail!(
                 "shipping_terms deve essere 'porto_franco' | 'porto_assegnato' | 'franco_con_addebito'"
             );
@@ -358,11 +366,15 @@ pub struct OrganizationInsert {
 
 pub fn organization_insert(conn: &Connection, o: &OrganizationInsert) -> Result<i64> {
     let now = Utc::now().to_rfc3339();
-    let domain = o.domain.clone().or_else(|| {
-        o.email_address.as_ref().and_then(|e| {
-            e.rsplit_once('@').map(|(_, d)| d.to_ascii_lowercase())
+    let domain = o
+        .domain
+        .clone()
+        .or_else(|| {
+            o.email_address
+                .as_ref()
+                .and_then(|e| e.rsplit_once('@').map(|(_, d)| d.to_ascii_lowercase()))
         })
-    }).unwrap_or_else(|| format!("manual:{}", uuid_short()));
+        .unwrap_or_else(|| format!("manual:{}", uuid_short()));
     conn.execute(
         "INSERT INTO organizations
             (domain, display_name, email_address, is_client, is_supplier, created_at, updated_at)
@@ -408,7 +420,12 @@ pub fn organization_set_roles(
         "UPDATE organizations
             SET is_client = ?1, is_supplier = ?2, updated_at = ?3
           WHERE id = ?4",
-        params![is_client as i32, is_supplier as i32, Utc::now().to_rfc3339(), id],
+        params![
+            is_client as i32,
+            is_supplier as i32,
+            Utc::now().to_rfc3339(),
+            id
+        ],
     )?;
     Ok(())
 }
@@ -439,11 +456,13 @@ pub fn list_brands(conn: &Connection) -> Result<Vec<BrandRow>> {
           ORDER BY display_order, name",
     )?;
     let rows = stmt
-        .query_map([], |r| Ok(BrandRow {
-            id: r.get(0)?,
-            name: r.get(1)?,
-            display_order: r.get(2)?,
-        }))?
+        .query_map([], |r| {
+            Ok(BrandRow {
+                id: r.get(0)?,
+                name: r.get(1)?,
+                display_order: r.get(2)?,
+            })
+        })?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     Ok(rows)
 }
@@ -465,13 +484,15 @@ pub fn list_categories(conn: &Connection) -> Result<Vec<CategoryRow>> {
           ORDER BY COALESCE(parent_id, 0), display_order, name",
     )?;
     let rows = stmt
-        .query_map([], |r| Ok(CategoryRow {
-            id: r.get(0)?,
-            parent_id: r.get(1)?,
-            name: r.get(2)?,
-            code: r.get(3)?,
-            display_order: r.get(4)?,
-        }))?
+        .query_map([], |r| {
+            Ok(CategoryRow {
+                id: r.get(0)?,
+                parent_id: r.get(1)?,
+                name: r.get(2)?,
+                code: r.get(3)?,
+                display_order: r.get(4)?,
+            })
+        })?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     Ok(rows)
 }
@@ -511,7 +532,13 @@ pub fn customer_discount_upsert(conn: &Connection, d: &CustomerDiscountInput) ->
              discount_pct = excluded.discount_pct,
              notes        = excluded.notes,
              updated_at   = excluded.updated_at",
-        params![d.customer_id, d.category_id, d.brand_id, d.discount_pct, d.notes],
+        params![
+            d.customer_id,
+            d.category_id,
+            d.brand_id,
+            d.discount_pct,
+            d.notes
+        ],
     )?;
     let id: i64 = conn.query_row(
         "SELECT id FROM customer_category_discounts
@@ -525,11 +552,17 @@ pub fn customer_discount_upsert(conn: &Connection, d: &CustomerDiscountInput) ->
 }
 
 pub fn customer_discount_delete(conn: &Connection, id: i64) -> Result<()> {
-    conn.execute("DELETE FROM customer_category_discounts WHERE id = ?1", params![id])?;
+    conn.execute(
+        "DELETE FROM customer_category_discounts WHERE id = ?1",
+        params![id],
+    )?;
     Ok(())
 }
 
-pub fn list_customer_discounts(conn: &Connection, customer_id: i64) -> Result<Vec<CustomerDiscountRow>> {
+pub fn list_customer_discounts(
+    conn: &Connection,
+    customer_id: i64,
+) -> Result<Vec<CustomerDiscountRow>> {
     let mut stmt = conn.prepare(
         "SELECT d.id, d.customer_id, d.category_id, c.name, d.brand_id, b.name,
                 d.discount_pct, d.notes
@@ -540,16 +573,18 @@ pub fn list_customer_discounts(conn: &Connection, customer_id: i64) -> Result<Ve
           ORDER BY (d.category_id IS NULL), (d.brand_id IS NULL), c.name, b.name",
     )?;
     let rows = stmt
-        .query_map(params![customer_id], |r| Ok(CustomerDiscountRow {
-            id: r.get(0)?,
-            customer_id: r.get(1)?,
-            category_id: r.get(2)?,
-            category_name: r.get(3)?,
-            brand_id: r.get(4)?,
-            brand_name: r.get(5)?,
-            discount_pct: r.get(6)?,
-            notes: r.get(7)?,
-        }))?
+        .query_map(params![customer_id], |r| {
+            Ok(CustomerDiscountRow {
+                id: r.get(0)?,
+                customer_id: r.get(1)?,
+                category_id: r.get(2)?,
+                category_name: r.get(3)?,
+                brand_id: r.get(4)?,
+                brand_name: r.get(5)?,
+                discount_pct: r.get(6)?,
+                notes: r.get(7)?,
+            })
+        })?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     Ok(rows)
 }
@@ -618,7 +653,10 @@ pub fn customer_price_override_upsert(
 }
 
 pub fn customer_price_override_delete(conn: &Connection, id: i64) -> Result<()> {
-    conn.execute("DELETE FROM customer_price_overrides WHERE id = ?1", params![id])?;
+    conn.execute(
+        "DELETE FROM customer_price_overrides WHERE id = ?1",
+        params![id],
+    )?;
     Ok(())
 }
 
@@ -673,8 +711,12 @@ fn validate_doc_input(d: &CustomerDocumentInput) -> Result<()> {
     }
     if !matches!(
         d.doc_type.as_str(),
-        "sales_order" | "sales_confirm" | "quote"
-            | "purchase_order" | "purchase_confirm" | "communication"
+        "sales_order"
+            | "sales_confirm"
+            | "quote"
+            | "purchase_order"
+            | "purchase_confirm"
+            | "communication"
     ) {
         anyhow::bail!(
             "doc_type non valido (atteso: sales_order|sales_confirm|quote|purchase_order|purchase_confirm|communication)"
@@ -885,18 +927,20 @@ pub fn list_customer_price_overrides(
           ORDER BY a.code",
     )?;
     let rows = stmt
-        .query_map(params![customer_id], |r| Ok(CustomerPriceOverrideRow {
-            id: r.get(0)?,
-            customer_id: r.get(1)?,
-            article_id: r.get(2)?,
-            article_code: r.get(3)?,
-            article_description: r.get(4)?,
-            unit_price: r.get(5)?,
-            currency: r.get(6)?,
-            notes: r.get(7)?,
-            valid_from: r.get(8)?,
-            valid_to: r.get(9)?,
-        }))?
+        .query_map(params![customer_id], |r| {
+            Ok(CustomerPriceOverrideRow {
+                id: r.get(0)?,
+                customer_id: r.get(1)?,
+                article_id: r.get(2)?,
+                article_code: r.get(3)?,
+                article_description: r.get(4)?,
+                unit_price: r.get(5)?,
+                currency: r.get(6)?,
+                notes: r.get(7)?,
+                valid_from: r.get(8)?,
+                valid_to: r.get(9)?,
+            })
+        })?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     Ok(rows)
 }

@@ -16,26 +16,37 @@ pub fn address_book_search(args: &Value) -> Result<Value> {
         return Ok(json!({ "organizations": [], "contacts": [] }));
     }
     let orgs = db::with_db(|c| db::anag::list_organizations(c, 5000, 0))?;
-    let org_hits: Vec<_> = orgs.iter().filter(|o| {
-        let n = vec![
-            o.display_name.as_deref().unwrap_or("").to_lowercase(),
-            o.domain.to_lowercase(),
-            o.vat_number.as_deref().unwrap_or("").to_lowercase(),
-            o.email_address.as_deref().unwrap_or("").to_lowercase(),
-        ];
-        n.iter().any(|x| x.contains(&q))
-    }).take(20).collect();
+    let org_hits: Vec<_> = orgs
+        .iter()
+        .filter(|o| {
+            let n = [
+                o.display_name.as_deref().unwrap_or("").to_lowercase(),
+                o.domain.to_lowercase(),
+                o.vat_number.as_deref().unwrap_or("").to_lowercase(),
+                o.email_address.as_deref().unwrap_or("").to_lowercase(),
+            ];
+            n.iter().any(|x| x.contains(&q))
+        })
+        .take(20)
+        .collect();
 
     let contacts = db::with_db(|c| db::anag::list_contacts(c, 5000, 0))?;
-    let contact_hits: Vec<_> = contacts.iter().filter(|c| {
-        let n = vec![
-            c.email_address.to_lowercase(),
-            c.display_name.as_deref().unwrap_or("").to_lowercase(),
-            c.organization_name.as_deref().unwrap_or("").to_lowercase(),
-            c.organization_domain.as_deref().unwrap_or("").to_lowercase(),
-        ];
-        n.iter().any(|x| x.contains(&q))
-    }).take(30).collect();
+    let contact_hits: Vec<_> = contacts
+        .iter()
+        .filter(|c| {
+            let n = [
+                c.email_address.to_lowercase(),
+                c.display_name.as_deref().unwrap_or("").to_lowercase(),
+                c.organization_name.as_deref().unwrap_or("").to_lowercase(),
+                c.organization_domain
+                    .as_deref()
+                    .unwrap_or("")
+                    .to_lowercase(),
+            ];
+            n.iter().any(|x| x.contains(&q))
+        })
+        .take(30)
+        .collect();
 
     Ok(json!({
         "query": query,
@@ -71,20 +82,24 @@ pub fn address_book_search(args: &Value) -> Result<Value> {
 pub fn customers_search(args: &Value) -> Result<Value> {
     let query = s(args, "query").ok_or_else(|| anyhow!("manca 'query'"))?;
     let role = s(args, "role").unwrap_or_else(|| "any".to_string());
-    let only_clients   = role == "client";
+    let only_clients = role == "client";
     let only_suppliers = role == "supplier";
 
     let q = query.to_lowercase();
     let list = db::with_db(|c| db::anag::list_business_partners(c, only_clients, only_suppliers))?;
-    let filtered: Vec<_> = list.iter().filter(|o| {
-        let needle = vec![
-            o.display_name.as_deref().unwrap_or("").to_lowercase(),
-            o.domain.to_lowercase(),
-            o.vat_number.as_deref().unwrap_or("").to_lowercase(),
-            o.email_address.as_deref().unwrap_or("").to_lowercase(),
-        ];
-        needle.iter().any(|n| n.contains(&q))
-    }).take(20).collect();
+    let filtered: Vec<_> = list
+        .iter()
+        .filter(|o| {
+            let needle = [
+                o.display_name.as_deref().unwrap_or("").to_lowercase(),
+                o.domain.to_lowercase(),
+                o.vat_number.as_deref().unwrap_or("").to_lowercase(),
+                o.email_address.as_deref().unwrap_or("").to_lowercase(),
+            ];
+            needle.iter().any(|n| n.contains(&q))
+        })
+        .take(20)
+        .collect();
 
     Ok(json!({
         "count": filtered.len(),
@@ -107,9 +122,9 @@ pub fn customers_get(args: &Value) -> Result<Value> {
     let id = i(args, "id").ok_or_else(|| anyhow!("manca 'id'"))?;
     let detail = db::with_db(|c| db::anag::get_organization(c, id))?
         .ok_or_else(|| anyhow!("organizzazione id={id} non trovata"))?;
-    let discounts  = db::with_db(|c| db::crud::list_customer_discounts(c, id))?;
-    let overrides  = db::with_db(|c| db::crud::list_customer_price_overrides(c, id))?;
-    let docs       = db::with_db(|c| db::crud::list_customer_documents(c, id, None))?;
+    let discounts = db::with_db(|c| db::crud::list_customer_discounts(c, id))?;
+    let overrides = db::with_db(|c| db::crud::list_customer_price_overrides(c, id))?;
+    let docs = db::with_db(|c| db::crud::list_customer_documents(c, id, None))?;
     let docs_top: Vec<_> = docs.iter().take(10).collect();
     Ok(json!({
         "id": detail.id,
@@ -176,15 +191,19 @@ pub fn articles_search(args: &Value) -> Result<Value> {
     let query = s(args, "query").ok_or_else(|| anyhow!("manca 'query'"))?;
     let q = query.to_lowercase();
     let list = db::with_db(|c| db::anag::list_articles(c, 1000, 0))?;
-    let filtered: Vec<_> = list.iter().filter(|a| {
-        let needle = vec![
-            a.code.to_lowercase(),
-            a.description.to_lowercase(),
-            a.brand_name.as_deref().unwrap_or("").to_lowercase(),
-            a.category_name.as_deref().unwrap_or("").to_lowercase(),
-        ];
-        needle.iter().any(|n| n.contains(&q))
-    }).take(30).collect();
+    let filtered: Vec<_> = list
+        .iter()
+        .filter(|a| {
+            let needle = [
+                a.code.to_lowercase(),
+                a.description.to_lowercase(),
+                a.brand_name.as_deref().unwrap_or("").to_lowercase(),
+                a.category_name.as_deref().unwrap_or("").to_lowercase(),
+            ];
+            needle.iter().any(|n| n.contains(&q))
+        })
+        .take(30)
+        .collect();
     Ok(json!({
         "count": filtered.len(),
         "results": filtered.iter().map(|a| json!({
@@ -207,7 +226,9 @@ pub fn articles_search(args: &Value) -> Result<Value> {
 pub fn articles_get(args: &Value) -> Result<Value> {
     let code = s(args, "code").ok_or_else(|| anyhow!("manca 'code'"))?;
     let list = db::with_db(|c| db::anag::list_articles(c, 5000, 0))?;
-    let found = list.iter().find(|a| a.code.eq_ignore_ascii_case(&code))
+    let found = list
+        .iter()
+        .find(|a| a.code.eq_ignore_ascii_case(&code))
         .ok_or_else(|| anyhow!("articolo '{code}' non trovato"))?;
     Ok(json!({
         "id": found.id,
@@ -280,8 +301,8 @@ pub fn documents_list(args: &Value) -> Result<Value> {
 
 pub fn messages_search_global(args: &Value) -> Result<Value> {
     let account_id = account_id(args)?;
-    let query      = s(args, "query").ok_or_else(|| anyhow!("manca 'query'"))?;
-    let limit      = i(args, "limit").unwrap_or(30).clamp(1, 100) as u32;
+    let query = s(args, "query").ok_or_else(|| anyhow!("manca 'query'"))?;
+    let limit = i(args, "limit").unwrap_or(30).clamp(1, 100) as u32;
     let hits = db::with_db(|c| db::messages::search_fts(c, &account_id, &query, limit))?;
     Ok(json!({
         "query": query,
@@ -299,8 +320,8 @@ pub fn messages_search_global(args: &Value) -> Result<Value> {
 
 pub fn messages_search_for_domain(args: &Value) -> Result<Value> {
     let account_id = account_id(args)?;
-    let domain     = s(args, "domain").ok_or_else(|| anyhow!("manca 'domain'"))?;
-    let limit      = i(args, "limit").unwrap_or(50).clamp(1, 200) as u32;
+    let domain = s(args, "domain").ok_or_else(|| anyhow!("manca 'domain'"))?;
+    let limit = i(args, "limit").unwrap_or(50).clamp(1, 200) as u32;
     let list = db::with_db(|c| db::messages::list_for_domain(c, &account_id, &domain, limit))?;
     Ok(json!({
         "count": list.len(),
@@ -341,9 +362,12 @@ pub fn attachments_list(args: &Value) -> Result<Value> {
 pub fn attachments_read_text(args: &Value) -> Result<Value> {
     let message_id = i(args, "messageId").ok_or_else(|| anyhow!("manca 'messageId'"))?;
     let part_index = i(args, "partIndex").ok_or_else(|| anyhow!("manca 'partIndex'"))? as usize;
-    let bytes_triple = db::with_db(|c| db::messages::get_attachment_bytes(c, message_id, part_index))?;
+    let bytes_triple =
+        db::with_db(|c| db::messages::get_attachment_bytes(c, message_id, part_index))?;
     let Some((filename, ctype, bytes)) = bytes_triple else {
-        return Err(anyhow!("Allegato non trovato (msg={message_id}, idx={part_index})"));
+        return Err(anyhow!(
+            "Allegato non trovato (msg={message_id}, idx={part_index})"
+        ));
     };
     let text = crate::ai_tools::attachments::extract_text(&filename, &bytes)?;
     let truncated = text.chars().count() > 20_000;
@@ -364,9 +388,14 @@ pub fn attachments_read_text(args: &Value) -> Result<Value> {
 // ── proposals (azioni con conferma utente) ─────────────────────────────────
 
 pub fn mail_compose_draft(args: &Value) -> Result<Value> {
-    let to: Vec<String> = args.get("to")
+    let to: Vec<String> = args
+        .get("to")
         .and_then(|v| v.as_array())
-        .map(|arr| arr.iter().filter_map(|x| x.as_str().map(String::from)).collect())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|x| x.as_str().map(String::from))
+                .collect()
+        })
         .unwrap_or_default();
     if to.is_empty() {
         return Err(anyhow!("'to' è obbligatorio (lista email destinatari)"));
@@ -374,9 +403,14 @@ pub fn mail_compose_draft(args: &Value) -> Result<Value> {
     let subject = s(args, "subject").unwrap_or_default();
     let body_text = s(args, "bodyText").unwrap_or_default();
     let body_html = s(args, "bodyHtml");
-    let cc: Vec<String> = args.get("cc")
+    let cc: Vec<String> = args
+        .get("cc")
         .and_then(|v| v.as_array())
-        .map(|arr| arr.iter().filter_map(|x| x.as_str().map(String::from)).collect())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|x| x.as_str().map(String::from))
+                .collect()
+        })
         .unwrap_or_default();
     let in_reply_to = s(args, "inReplyTo");
 
@@ -402,26 +436,39 @@ pub fn mail_compose_draft(args: &Value) -> Result<Value> {
 
 pub fn documents_compose_html(args: &Value) -> Result<Value> {
     let title = s(args, "title").ok_or_else(|| anyhow!("manca 'title'"))?;
-    let html  = s(args, "html").ok_or_else(|| anyhow!("manca 'html'"))?;
+    let html = s(args, "html").ok_or_else(|| anyhow!("manca 'html'"))?;
     // Cap hard: oltre questa soglia rifiutiamo la proposal per evitare crash
     // del WebView quando si rendea l'iframe. Il modello deve sintetizzare.
     const MAX_HTML_BYTES: usize = 200_000;
     if html.len() > MAX_HTML_BYTES {
         return Err(anyhow!(
             "Documento HTML troppo grande ({} bytes, max {}). Sintetizza il contenuto e ritenta.",
-            html.len(), MAX_HTML_BYTES
+            html.len(),
+            MAX_HTML_BYTES
         ));
     }
-    let kind  = s(args, "docKind").unwrap_or_else(|| "other".into());
+    let kind = s(args, "docKind").unwrap_or_else(|| "other".into());
     let customer_id = i(args, "customerId");
     let suggested_filename = s(args, "suggestedFilename").unwrap_or_else(|| {
-        let safe = title.chars()
-            .map(|c| if c.is_ascii_alphanumeric() || c == '-' || c == '_' { c.to_ascii_lowercase() } else { '-' })
+        let safe = title
+            .chars()
+            .map(|c| {
+                if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
+                    c.to_ascii_lowercase()
+                } else {
+                    '-'
+                }
+            })
             .collect::<String>();
         let safe = safe.trim_matches('-').to_string();
-        format!("{}-{}.html",
+        format!(
+            "{}-{}.html",
             kind,
-            if safe.is_empty() { "documento".to_string() } else { safe.chars().take(60).collect::<String>() }
+            if safe.is_empty() {
+                "documento".to_string()
+            } else {
+                safe.chars().take(60).collect::<String>()
+            }
         )
     });
 
@@ -478,7 +525,32 @@ fn strip_scripts(s: &str) -> String {
         }
     }
     let mut result = out;
-    for evt in ["onclick","onload","onerror","onmouseover","onfocus","onsubmit","onchange","oninput","onkeydown","onkeyup","onkeypress","onmousedown","onmouseup","onmouseenter","onmouseleave","onpaste","oncut","oncopy","onbeforeunload","onunload","onresize","onscroll","onwheel","ontoggle"] {
+    for evt in [
+        "onclick",
+        "onload",
+        "onerror",
+        "onmouseover",
+        "onfocus",
+        "onsubmit",
+        "onchange",
+        "oninput",
+        "onkeydown",
+        "onkeyup",
+        "onkeypress",
+        "onmousedown",
+        "onmouseup",
+        "onmouseenter",
+        "onmouseleave",
+        "onpaste",
+        "oncut",
+        "oncopy",
+        "onbeforeunload",
+        "onunload",
+        "onresize",
+        "onscroll",
+        "onwheel",
+        "ontoggle",
+    ] {
         result = strip_attr_ci(&result, evt);
     }
     result
@@ -496,7 +568,7 @@ fn strip_attr_ci(input: &str, attr: &str) -> String {
             Some(rel_pos) => {
                 let abs_attr = cursor + rel_pos;
                 // copia il pezzo prima dell'attributo
-                out.push_str(&s_slice_safe(input, cursor, abs_attr));
+                out.push_str(s_slice_safe(input, cursor, abs_attr));
                 // dopo l'attributo: skip whitespace, deve esserci `=` e una quote
                 let after_attr = abs_attr + attr_low.len();
                 if after_attr >= input.len() {
@@ -554,8 +626,12 @@ fn strip_attr_ci(input: &str, attr: &str) -> String {
 
 /// Slice UTF-8 safe — se il range cade dentro un char multibyte, ritorna fallback.
 fn s_slice_safe(s: &str, start: usize, end: usize) -> &str {
-    if start > s.len() || end > s.len() || start > end { return ""; }
-    if !s.is_char_boundary(start) || !s.is_char_boundary(end) { return ""; }
+    if start > s.len() || end > s.len() || start > end {
+        return "";
+    }
+    if !s.is_char_boundary(start) || !s.is_char_boundary(end) {
+        return "";
+    }
     &s[start..end]
 }
 
@@ -573,7 +649,8 @@ pub fn pricing_compare_lists(args: &Value) -> Result<Value> {
                JOIN articles a ON a.id = pli.article_id
                JOIN price_lists pl ON pl.id = pli.price_list_id
               WHERE a.code = ?1
-              ORDER BY pli.price ASC")?;
+              ORDER BY pli.price ASC",
+        )?;
         let r: Vec<(i64, String, bool, f64, f64)> = stmt
             .query_map(rusqlite::params![code], |r| {
                 Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?))
@@ -582,7 +659,9 @@ pub fn pricing_compare_lists(args: &Value) -> Result<Value> {
         Ok::<_, anyhow::Error>(r)
     })?;
     if rows.is_empty() {
-        return Ok(json!({ "code": code, "count": 0, "results": [], "note": "articolo non in nessun listino" }));
+        return Ok(
+            json!({ "code": code, "count": 0, "results": [], "note": "articolo non in nessun listino" }),
+        );
     }
     Ok(json!({
         "code": code,
@@ -623,7 +702,12 @@ pub fn articles_get_pricelist(args: &Value) -> Result<Value> {
             ),
         };
         let query = |r: &rusqlite::Row<'_>| {
-            Ok::<(i64, String, f64, f64), rusqlite::Error>((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
+            Ok::<(i64, String, f64, f64), rusqlite::Error>((
+                r.get(0)?,
+                r.get(1)?,
+                r.get(2)?,
+                r.get(3)?,
+            ))
         };
         match param {
             Some(p) => c.query_row(sql, rusqlite::params![code, p], query),
@@ -652,8 +736,14 @@ pub fn articles_by_brand(args: &Value) -> Result<Value> {
     let q = brand.to_lowercase();
     let list = db::with_db(|c| db::anag::list_articles(c, 5000, 0))?;
     // Filtro lato Rust per evitare query specifiche; sui 5447 articoli è ok.
-    let filtered: Vec<_> = list.iter()
-        .filter(|a| a.brand_name.as_deref().map(|n| n.to_lowercase().contains(&q)).unwrap_or(false))
+    let filtered: Vec<_> = list
+        .iter()
+        .filter(|a| {
+            a.brand_name
+                .as_deref()
+                .map(|n| n.to_lowercase().contains(&q))
+                .unwrap_or(false)
+        })
         .take(limit as usize)
         .collect();
     Ok(json!({
@@ -672,8 +762,14 @@ pub fn articles_by_category(args: &Value) -> Result<Value> {
     let limit = i(args, "limit").unwrap_or(50).clamp(1, 500) as u32;
     let q = cat.to_lowercase();
     let list = db::with_db(|c| db::anag::list_articles(c, 5000, 0))?;
-    let filtered: Vec<_> = list.iter()
-        .filter(|a| a.category_name.as_deref().map(|n| n.to_lowercase().contains(&q)).unwrap_or(false))
+    let filtered: Vec<_> = list
+        .iter()
+        .filter(|a| {
+            a.category_name
+                .as_deref()
+                .map(|n| n.to_lowercase().contains(&q))
+                .unwrap_or(false)
+        })
         .take(limit as usize)
         .collect();
     Ok(json!({
@@ -727,9 +823,11 @@ pub fn articles_usage_history(args: &Value) -> Result<Value> {
             }))
         };
         let results: Vec<Value> = if let Some(cid) = customer_id {
-            stmt.query_map(rusqlite::params![code, cid], mapper)?.collect::<rusqlite::Result<_>>()?
+            stmt.query_map(rusqlite::params![code, cid], mapper)?
+                .collect::<rusqlite::Result<_>>()?
         } else {
-            stmt.query_map(rusqlite::params![code], mapper)?.collect::<rusqlite::Result<_>>()?
+            stmt.query_map(rusqlite::params![code], mapper)?
+                .collect::<rusqlite::Result<_>>()?
         };
         Ok::<_, anyhow::Error>(results)
     })?;
@@ -745,13 +843,13 @@ pub fn customers_profile(args: &Value) -> Result<Value> {
 
     // Statistiche
     let total_docs = docs.len();
-    let total_amount: f64 = docs.iter()
-        .filter_map(|d| d.total_amount)
-        .sum();
+    let total_amount: f64 = docs.iter().filter_map(|d| d.total_amount).sum();
     let last_doc_date = docs.iter().map(|d| &d.doc_date).max().cloned();
     let by_type: std::collections::HashMap<String, usize> = {
         let mut m = std::collections::HashMap::new();
-        for d in &docs { *m.entry(d.doc_type.clone()).or_insert(0) += 1; }
+        for d in &docs {
+            *m.entry(d.doc_type.clone()).or_insert(0) += 1;
+        }
         m
     };
 

@@ -45,13 +45,15 @@ pub fn list_tables(conn: &Connection) -> Result<Vec<TableInfo>> {
             .query_row(&format!("SELECT COUNT(*) FROM \"{t}\""), [], |r| r.get(0))
             .unwrap_or(0);
         let cols: i64 = conn
-            .query_row(
-                "SELECT COUNT(*) FROM pragma_table_info(?1)",
-                [&t],
-                |r| r.get(0),
-            )
+            .query_row("SELECT COUNT(*) FROM pragma_table_info(?1)", [&t], |r| {
+                r.get(0)
+            })
             .unwrap_or(0);
-        out.push(TableInfo { name: t, row_count: cnt, column_count: cols });
+        out.push(TableInfo {
+            name: t,
+            row_count: cnt,
+            column_count: cols,
+        });
     }
     Ok(out)
 }
@@ -68,9 +70,8 @@ pub struct ColumnInfo {
 
 pub fn describe_table(conn: &Connection, table: &str) -> Result<Vec<ColumnInfo>> {
     ensure_allowed(conn, table)?;
-    let mut stmt = conn.prepare(
-        "SELECT name, type, \"notnull\", dflt_value, pk FROM pragma_table_info(?1)",
-    )?;
+    let mut stmt =
+        conn.prepare("SELECT name, type, \"notnull\", dflt_value, pk FROM pragma_table_info(?1)")?;
     let rows = stmt
         .query_map([table], |r| {
             Ok(ColumnInfo {
@@ -102,7 +103,9 @@ pub fn query_table(
 ) -> Result<TablePage> {
     ensure_allowed(conn, table)?;
     let total: i64 = conn
-        .query_row(&format!("SELECT COUNT(*) FROM \"{table}\""), [], |r| r.get(0))
+        .query_row(&format!("SELECT COUNT(*) FROM \"{table}\""), [], |r| {
+            r.get(0)
+        })
         .unwrap_or(0);
 
     let col_names = column_names(conn, table)?;
@@ -125,19 +128,20 @@ pub fn query_table(
 
     let mut stmt = conn.prepare(&sql)?;
     let n = stmt.column_count();
-    let rows_iter = stmt.query_map(
-        rusqlite::params_from_iter(params_vec.iter()),
-        |r| {
-            let mut row = Vec::with_capacity(n);
-            for i in 0..n {
-                let v: SqlValue = r.get::<_, SqlValue>(i)?;
-                row.push(value_to_json(&v));
-            }
-            Ok(row)
-        },
-    )?;
+    let rows_iter = stmt.query_map(rusqlite::params_from_iter(params_vec.iter()), |r| {
+        let mut row = Vec::with_capacity(n);
+        for i in 0..n {
+            let v: SqlValue = r.get::<_, SqlValue>(i)?;
+            row.push(value_to_json(&v));
+        }
+        Ok(row)
+    })?;
     let rows: Vec<Vec<Json>> = rows_iter.collect::<rusqlite::Result<Vec<_>>>()?;
-    Ok(TablePage { columns: col_names, rows, total })
+    Ok(TablePage {
+        columns: col_names,
+        rows,
+        total,
+    })
 }
 
 // ── CRUD generico ──────────────────────────────────────────────────────
@@ -155,7 +159,9 @@ pub struct CrudResult {
 pub fn row_insert(conn: &Connection, table: &str, values: &Json) -> Result<CrudResult> {
     ensure_allowed(conn, table)?;
     let cols_set = column_set(conn, table)?;
-    let obj = values.as_object().ok_or_else(|| anyhow!("'values' deve essere un oggetto"))?;
+    let obj = values
+        .as_object()
+        .ok_or_else(|| anyhow!("'values' deve essere un oggetto"))?;
     if obj.is_empty() {
         return Err(anyhow!("Nessuna colonna da inserire"));
     }
@@ -168,8 +174,15 @@ pub fn row_insert(conn: &Connection, table: &str, values: &Json) -> Result<CrudR
         cols_used.push(k);
         params.push(JsonSql(v.clone()));
     }
-    let placeholders = (1..=cols_used.len()).map(|i| format!("?{i}")).collect::<Vec<_>>().join(", ");
-    let col_quoted = cols_used.iter().map(|c| format!("\"{c}\"")).collect::<Vec<_>>().join(", ");
+    let placeholders = (1..=cols_used.len())
+        .map(|i| format!("?{i}"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let col_quoted = cols_used
+        .iter()
+        .map(|c| format!("\"{c}\""))
+        .collect::<Vec<_>>()
+        .join(", ");
     let sql = format!("INSERT INTO \"{table}\" ({col_quoted}) VALUES ({placeholders})");
     let affected = conn.execute(
         &sql,
@@ -195,7 +208,9 @@ pub fn row_update(
     if !cols_set.contains(pk_col) {
         return Err(anyhow!("PK column '{pk_col}' non esiste in {table}"));
     }
-    let obj = patch.as_object().ok_or_else(|| anyhow!("'patch' deve essere un oggetto"))?;
+    let obj = patch
+        .as_object()
+        .ok_or_else(|| anyhow!("'patch' deve essere un oggetto"))?;
     if obj.is_empty() {
         return Err(anyhow!("Nessuna colonna da aggiornare"));
     }
@@ -220,11 +235,20 @@ pub fn row_update(
         &sql,
         rusqlite::params_from_iter(params.iter().map(|p| p as &dyn ToSql)),
     )?;
-    Ok(CrudResult { ok: affected > 0, rows_affected: affected as i64, last_insert_rowid: None })
+    Ok(CrudResult {
+        ok: affected > 0,
+        rows_affected: affected as i64,
+        last_insert_rowid: None,
+    })
 }
 
 /// DELETE di una riga identificata da (pk_col, pk_val).
-pub fn row_delete(conn: &Connection, table: &str, pk_col: &str, pk_val: &Json) -> Result<CrudResult> {
+pub fn row_delete(
+    conn: &Connection,
+    table: &str,
+    pk_col: &str,
+    pk_val: &Json,
+) -> Result<CrudResult> {
     ensure_allowed(conn, table)?;
     let cols_set = column_set(conn, table)?;
     if !cols_set.contains(pk_col) {
@@ -232,7 +256,11 @@ pub fn row_delete(conn: &Connection, table: &str, pk_col: &str, pk_val: &Json) -
     }
     let sql = format!("DELETE FROM \"{table}\" WHERE \"{pk_col}\" = ?");
     let affected = conn.execute(&sql, rusqlite::params![JsonSql(pk_val.clone())])?;
-    Ok(CrudResult { ok: affected > 0, rows_affected: affected as i64, last_insert_rowid: None })
+    Ok(CrudResult {
+        ok: affected > 0,
+        rows_affected: affected as i64,
+        last_insert_rowid: None,
+    })
 }
 
 // ── helpers ────────────────────────────────────────────────────────────
@@ -278,9 +306,13 @@ impl ToSql for JsonSql {
             Json::Null => TV::Null,
             Json::Bool(b) => TV::Integer(if *b { 1 } else { 0 }),
             Json::Number(n) => {
-                if let Some(i) = n.as_i64() { TV::Integer(i) }
-                else if let Some(f) = n.as_f64() { TV::Real(f) }
-                else { TV::Text(n.to_string()) }
+                if let Some(i) = n.as_i64() {
+                    TV::Integer(i)
+                } else if let Some(f) = n.as_f64() {
+                    TV::Real(f)
+                } else {
+                    TV::Text(n.to_string())
+                }
             }
             Json::String(s) => TV::Text(s.clone()),
             other => TV::Text(other.to_string()),
@@ -294,7 +326,9 @@ pub fn primary_key(conn: &Connection, table: &str) -> Result<Option<String>> {
     ensure_allowed(conn, table)?;
     let mut stmt = conn.prepare("SELECT name, pk FROM pragma_table_info(?1) ORDER BY cid")?;
     let rows: Vec<(String, i64)> = stmt
-        .query_map([table], |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?)))?
+        .query_map([table], |r| {
+            Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))
+        })?
         .collect::<rusqlite::Result<_>>()?;
     Ok(rows.into_iter().find(|(_, pk)| *pk > 0).map(|(n, _)| n))
 }

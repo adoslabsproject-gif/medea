@@ -65,7 +65,11 @@ pub struct OrganizationRow {
     pub email_address: Option<String>,
 }
 
-pub fn list_organizations(conn: &Connection, limit: u32, offset: u32) -> Result<Vec<OrganizationRow>> {
+pub fn list_organizations(
+    conn: &Connection,
+    limit: u32,
+    offset: u32,
+) -> Result<Vec<OrganizationRow>> {
     let mut stmt = conn.prepare(
         "SELECT o.id, o.domain, o.display_name, o.vat_number, o.is_client, o.is_supplier,
                 (SELECT COUNT(*) FROM contacts c WHERE c.organization_id = o.id) AS contact_count,
@@ -101,9 +105,9 @@ pub fn list_business_partners(
     only_suppliers: bool,
 ) -> Result<Vec<OrganizationRow>> {
     let where_clause = match (only_clients, only_suppliers) {
-        (true, false)  => "WHERE o.is_client = 1",
-        (false, true)  => "WHERE o.is_supplier = 1",
-        _              => "WHERE o.is_client = 1 OR o.is_supplier = 1",
+        (true, false) => "WHERE o.is_client = 1",
+        (false, true) => "WHERE o.is_supplier = 1",
+        _ => "WHERE o.is_client = 1 OR o.is_supplier = 1",
     };
     let sql = format!(
         "SELECT o.id, o.domain, o.display_name, o.vat_number, o.is_client, o.is_supplier,
@@ -115,18 +119,20 @@ pub fn list_business_partners(
     );
     let mut stmt = conn.prepare(&sql)?;
     let rows = stmt
-        .query_map([], |r| Ok(OrganizationRow {
-            id: r.get(0)?,
-            domain: r.get(1)?,
-            display_name: r.get(2)?,
-            vat_number: r.get(3)?,
-            is_client: r.get::<_, i64>(4)? != 0,
-            is_supplier: r.get::<_, i64>(5)? != 0,
-            contact_count: r.get(6)?,
-            city: r.get(7)?,
-            country_iso2: r.get(8)?,
-            email_address: r.get(9)?,
-        }))?
+        .query_map([], |r| {
+            Ok(OrganizationRow {
+                id: r.get(0)?,
+                domain: r.get(1)?,
+                display_name: r.get(2)?,
+                vat_number: r.get(3)?,
+                is_client: r.get::<_, i64>(4)? != 0,
+                is_supplier: r.get::<_, i64>(5)? != 0,
+                contact_count: r.get(6)?,
+                city: r.get(7)?,
+                country_iso2: r.get(8)?,
+                email_address: r.get(9)?,
+            })
+        })?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     Ok(rows)
 }
@@ -157,7 +163,7 @@ pub struct OrganizationDetail {
     pub shipping_terms: Option<String>,
     pub preferred_language: Option<String>,
     pub notes: Option<String>,
-    pub address: Option<String>,     // legacy
+    pub address: Option<String>, // legacy
     pub is_client: bool,
     pub is_supplier: bool,
     pub created_at: String,
@@ -175,35 +181,37 @@ pub fn get_organization(conn: &Connection, id: i64) -> Result<Option<Organizatio
                     notes, address, is_client, is_supplier, created_at, updated_at
                FROM organizations WHERE id = ?1",
             params![id],
-            |r| Ok(OrganizationDetail {
-                id: r.get(0)?,
-                domain: r.get(1)?,
-                display_name: r.get(2)?,
-                vat_number: r.get(3)?,
-                tax_code: r.get(4)?,
-                sdi_code: r.get(5)?,
-                pec: r.get(6)?,
-                email_address: r.get(7)?,
-                phone: r.get(8)?,
-                website: r.get(9)?,
-                iban: r.get(10)?,
-                bank_name: r.get(11)?,
-                street_address: r.get(12)?,
-                city: r.get(13)?,
-                postal_code: r.get(14)?,
-                province: r.get(15)?,
-                country_iso2: r.get(16)?,
-                preferred_courier: r.get(17)?,
-                payment_terms: r.get(18)?,
-                shipping_terms: r.get(19)?,
-                preferred_language: r.get(20)?,
-                notes: r.get(21)?,
-                address: r.get(22)?,
-                is_client: r.get::<_, i64>(23)? != 0,
-                is_supplier: r.get::<_, i64>(24)? != 0,
-                created_at: r.get(25)?,
-                updated_at: r.get(26)?,
-            }),
+            |r| {
+                Ok(OrganizationDetail {
+                    id: r.get(0)?,
+                    domain: r.get(1)?,
+                    display_name: r.get(2)?,
+                    vat_number: r.get(3)?,
+                    tax_code: r.get(4)?,
+                    sdi_code: r.get(5)?,
+                    pec: r.get(6)?,
+                    email_address: r.get(7)?,
+                    phone: r.get(8)?,
+                    website: r.get(9)?,
+                    iban: r.get(10)?,
+                    bank_name: r.get(11)?,
+                    street_address: r.get(12)?,
+                    city: r.get(13)?,
+                    postal_code: r.get(14)?,
+                    province: r.get(15)?,
+                    country_iso2: r.get(16)?,
+                    preferred_courier: r.get(17)?,
+                    payment_terms: r.get(18)?,
+                    shipping_terms: r.get(19)?,
+                    preferred_language: r.get(20)?,
+                    notes: r.get(21)?,
+                    address: r.get(22)?,
+                    is_client: r.get::<_, i64>(23)? != 0,
+                    is_supplier: r.get::<_, i64>(24)? != 0,
+                    created_at: r.get(25)?,
+                    updated_at: r.get(26)?,
+                })
+            },
         )
         .optional()?;
     Ok(row)

@@ -7,12 +7,7 @@ use rusqlite::{params, Connection};
 /// Inserisce o aggiorna un contatto a partire da un indirizzo email + nome.
 /// Aggiorna `last_seen_at` e incrementa `message_count`.
 /// Auto-collega all'organizzazione tramite dominio (se esiste, altrimenti la crea).
-pub fn touch(
-    conn: &Connection,
-    email: &str,
-    name: Option<&str>,
-    seen_at: &str,
-) -> Result<i64> {
+pub fn touch(conn: &Connection, email: &str, name: Option<&str>, seen_at: &str) -> Result<i64> {
     let email_norm = email.trim().to_lowercase();
     if email_norm.is_empty() {
         anyhow::bail!("Empty email");
