@@ -90,7 +90,7 @@ export function TextField({ field, value, onChange }: Props) {
         type={field.type === 'number' ? 'number' : 'text'}
         className={styles.control}
         value={value}
-        placeholder={field.defaultValue ?? ''}
+        placeholder={field.placeholder ?? field.defaultValue ?? ''}
         onChange={(e) => {
           onChange(e.target.value);
         }}

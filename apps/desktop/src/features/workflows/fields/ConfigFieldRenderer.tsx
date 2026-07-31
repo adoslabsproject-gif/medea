@@ -118,7 +118,9 @@ export function ConfigFieldRenderer({
           value={text}
           onChange={onChange}
           rows={type === 'expression' ? 3 : 6}
-          {...(field.defaultValue ? { placeholder: field.defaultValue } : {})}
+          {...((field.placeholder ?? field.defaultValue)
+            ? { placeholder: field.placeholder ?? field.defaultValue ?? '' }
+            : {})}
           sources={sources}
         />
       </FieldShell>
