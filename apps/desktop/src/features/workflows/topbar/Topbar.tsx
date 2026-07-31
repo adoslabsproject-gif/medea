@@ -16,6 +16,7 @@ export interface TopbarActions {
   onRename: (name: string) => void;
   onSave: () => void;
   onDiscard: () => void;
+  onRun: () => void;
   onToggleEnabled: () => void;
   onToggleAssistant: () => void;
   onUndo: () => void;
@@ -37,6 +38,10 @@ interface Props {
   canDiscard: boolean;
   /** Vero mentre il salvataggio automatico sta scrivendo. */
   autosaving: boolean;
+  /** Vero quando il motore di esecuzione è pronto. */
+  runtimeReady: boolean;
+  /** Vero mentre un'esecuzione è in corso. */
+  running: boolean;
   /** Impedisce di attivare un workflow che non funzionerebbe. */
   blockedReason?: string;
   actions: TopbarActions;
@@ -51,6 +56,8 @@ export function Topbar({
   canRedo,
   canDiscard,
   autosaving,
+  runtimeReady,
+  running,
   blockedReason,
   actions,
 }: Props) {
@@ -158,6 +165,22 @@ export function Topbar({
           ⌗
         </button>
       </div>
+
+      {/* Eseguire adesso e' come si prova un workflow: non si aspetta che
+          scatti un trigger per sapere se funziona. */}
+      <button
+        type="button"
+        className={styles.run}
+        disabled={!runtimeReady || running || workflow.nodes.length === 0}
+        title={
+          !runtimeReady
+            ? 'Il motore di esecuzione non è ancora pronto'
+            : (blockedReason ?? 'Esegui adesso, senza aspettare il trigger')
+        }
+        onClick={actions.onRun}
+      >
+        {running ? '⟳ In corso…' : '▶ Esegui'}
+      </button>
 
       <button
         type="button"

@@ -13,7 +13,17 @@
 use anyhow::Result;
 use rusqlite::Connection;
 
-pub const SCHEMA_VERSION: i32 = 13;
+pub const SCHEMA_VERSION: i32 = 14;
+
+/// Migrazione v14 — `workflows.runtime_id`.
+///
+/// Il runtime tiene i workflow in un suo database, con i suoi
+/// identificativi. Per eseguirne uno bisogna prima mandarglielo, e poi
+/// ricordarsi con che nome lo conosce lui: senza questa colonna, ogni
+/// esecuzione ne creerebbe una copia nuova.
+const DDL_V14: &str = r#"
+ALTER TABLE workflows ADD COLUMN runtime_id TEXT;
+"#;
 
 /// Migrazione v13 — `workflow_runs`: lo storico delle esecuzioni.
 ///
@@ -641,6 +651,11 @@ pub fn ensure_schema(conn: &Connection) -> Result<()> {
     if current.unwrap_or(0) < 13 {
         tracing::info!("Migrazione → v13 (storico delle esecuzioni)…");
         conn.execute_batch(DDL_V13)?;
+    }
+
+    if current.unwrap_or(0) < 14 {
+        tracing::info!("Migrazione → v14 (collegamento al runtime)…");
+        conn.execute_batch(DDL_V14)?;
     }
 
     conn.execute(
