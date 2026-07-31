@@ -43,9 +43,13 @@ const TYPE_LABEL: Record<string, string> = {
 function fmtDate(iso: string): string {
   try {
     return new Date(iso).toLocaleDateString('it-IT', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
     });
-  } catch { return iso; }
+  } catch {
+    return iso;
+  }
 }
 
 function fmtAmount(v: number | null, currency: string): string {
@@ -67,26 +71,32 @@ export function DocumentsView() {
     setLoading(true);
     setError(null);
     invoke<DocumentRow[]>('db_list_all_documents', { docType: docType || null, limit: 500 })
-      .then((rows) => { if (!cancelled) setDocs(rows); })
-      .catch((e: unknown) => { if (!cancelled) setError(String(e)); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .then((rows) => {
+        if (!cancelled) setDocs(rows);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setError(String(e));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [docType]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return docs;
-    return docs.filter((d) =>
-      (d.organizationName ?? '').toLowerCase().includes(q)
-      || (d.docNumber ?? '').toLowerCase().includes(q)
-      || (d.notes ?? '').toLowerCase().includes(q),
+    return docs.filter(
+      (d) =>
+        (d.organizationName ?? '').toLowerCase().includes(q) ||
+        (d.docNumber ?? '').toLowerCase().includes(q) ||
+        (d.notes ?? '').toLowerCase().includes(q),
     );
   }, [docs, search]);
 
-  const total = useMemo(
-    () => filtered.reduce((s, d) => s + (d.totalAmount ?? 0), 0),
-    [filtered],
-  );
+  const total = useMemo(() => filtered.reduce((s, d) => s + (d.totalAmount ?? 0), 0), [filtered]);
 
   async function openAttachment(path: string) {
     try {
@@ -102,8 +112,8 @@ export function DocumentsView() {
         <div className={styles.titleGroup}>
           <h1 className={styles.title}>Documenti</h1>
           <p className={styles.subtitle}>
-            Preventivi, ordini e conferme registrati — creati dalla scheda di un partner
-            o dall&apos;assistente AI.
+            Preventivi, ordini e conferme registrati — creati dalla scheda di un partner o
+            dall&apos;assistente AI.
           </p>
         </div>
       </header>
@@ -112,11 +122,15 @@ export function DocumentsView() {
         <select
           className={ownStyles.select}
           value={docType}
-          onChange={(e) => { setDocType(e.target.value); }}
+          onChange={(e) => {
+            setDocType(e.target.value);
+          }}
           aria-label="Tipo documento"
         >
           {DOC_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>{t.label}</option>
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
           ))}
         </select>
         <input
@@ -124,10 +138,13 @@ export function DocumentsView() {
           className={ownStyles.search}
           placeholder="Cerca per partner, numero o note…"
           value={search}
-          onChange={(e) => { setSearch(e.target.value); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+          }}
         />
         <span className={ownStyles.summary}>
-          {filtered.length} document{filtered.length === 1 ? 'o' : 'i'} · totale {fmtAmount(total, 'EUR')}
+          {filtered.length} document{filtered.length === 1 ? 'o' : 'i'} · totale{' '}
+          {fmtAmount(total, 'EUR')}
         </span>
       </div>
 
@@ -136,8 +153,8 @@ export function DocumentsView() {
         {loading && <p className={styles.empty}>Caricamento…</p>}
         {!loading && filtered.length === 0 && (
           <p className={styles.empty}>
-            Nessun documento archiviato.<br />
-            I documenti si creano dalla scheda di un cliente/fornitore (tab «Documenti»)
+            Nessun documento archiviato.
+            <br />I documenti si creano dalla scheda di un cliente/fornitore (tab «Documenti»)
             oppure chiedendo all&apos;assistente AI di registrare un preventivo o un ordine.
           </p>
         )}
@@ -160,9 +177,7 @@ export function DocumentsView() {
                   <tr key={d.id}>
                     <td>{fmtDate(d.docDate)}</td>
                     <td>
-                      <span className={ownStyles.badge}>
-                        {TYPE_LABEL[d.docType] ?? d.docType}
-                      </span>
+                      <span className={ownStyles.badge}>{TYPE_LABEL[d.docType] ?? d.docType}</span>
                       {d.direction === 'incoming' ? ' ↓' : ' ↑'}
                     </td>
                     <td className={ownStyles.mono}>{d.docNumber ?? '—'}</td>
@@ -174,11 +189,15 @@ export function DocumentsView() {
                         <button
                           type="button"
                           className={ownStyles.linkBtn}
-                          onClick={() => { void openAttachment(d.attachmentPath ?? ''); }}
+                          onClick={() => {
+                            void openAttachment(d.attachmentPath ?? '');
+                          }}
                         >
                           📎 {d.attachmentFilename ?? 'apri'}
                         </button>
-                      ) : <span className={ownStyles.muted}>—</span>}
+                      ) : (
+                        <span className={ownStyles.muted}>—</span>
+                      )}
                     </td>
                   </tr>
                 ))}

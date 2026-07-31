@@ -92,12 +92,16 @@ export function consentAction(call: ToolCall, tool: ToolDescriptor | undefined):
   const val = (k: string) => {
     const v = a[k];
     switch (typeof v) {
-      case 'string': return v;
+      case 'string':
+        return v;
       case 'number':
       case 'bigint':
-      case 'boolean': return v.toString();
-      case 'undefined': return '';
-      default: return v === null ? '' : JSON.stringify(v);
+      case 'boolean':
+        return v.toString();
+      case 'undefined':
+        return '';
+      default:
+        return v === null ? '' : JSON.stringify(v);
     }
   };
   switch (call.name) {

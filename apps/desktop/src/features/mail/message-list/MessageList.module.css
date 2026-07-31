@@ -82,7 +82,7 @@
   }
 
   .table tbody td {
-    padding: 0.625rem var(--space-3);  /* ~10px verticali — densità Outlook compatto */
+    padding: 0.625rem var(--space-3); /* ~10px verticali — densità Outlook compatto */
     border-block-end: 1px solid var(--color-border-subtle);
     color: var(--color-text-primary);
     white-space: nowrap;
@@ -93,7 +93,7 @@
     font-size: var(--font-size-sm);
   }
   .table tbody tr {
-    block-size: 2.5rem;  /* altezza riga fissa minima per leggibilità */
+    block-size: 2.5rem; /* altezza riga fissa minima per leggibilità */
   }
 
   .table tbody tr {
@@ -132,15 +132,36 @@
   }
 
   /* Colonne — dim. centrata, date in una riga */
-  .colAtt    { inline-size: 2.25rem; text-align: center; }
-  .colFrom   { inline-size: 16rem; }
-  .colTo     { inline-size: 14rem;  color: var(--color-text-secondary); }
-  .colSubj   { inline-size: auto; }
-  .colDate   { inline-size: 10.5rem; color: var(--color-text-muted);
-               font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .colSize   { inline-size: 5.5rem; text-align: center;
-               color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
-  .colFolder { inline-size: 7rem;   color: var(--color-text-muted); }
+  .colAtt {
+    inline-size: 2.25rem;
+    text-align: center;
+  }
+  .colFrom {
+    inline-size: 16rem;
+  }
+  .colTo {
+    inline-size: 14rem;
+    color: var(--color-text-secondary);
+  }
+  .colSubj {
+    inline-size: auto;
+  }
+  .colDate {
+    inline-size: 10.5rem;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .colSize {
+    inline-size: 5.5rem;
+    text-align: center;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .colFolder {
+    inline-size: 7rem;
+    color: var(--color-text-muted);
+  }
 
   /* Sezione data — stile Outlook con barra colorata, senza gap dalla thead */
   .groupRow {
@@ -160,11 +181,13 @@
     padding: 6px var(--space-3) !important;
     block-size: auto;
   }
-  .groupRow:hover { background: linear-gradient(
+  .groupRow:hover {
+    background: linear-gradient(
       to right,
       color-mix(in oklch, var(--color-accent-default) 16%, var(--color-surface-2)),
       var(--color-surface-2) 60%
-    ) !important; }
+    ) !important;
+  }
   .groupLabel {
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
@@ -203,6 +226,8 @@
     vertical-align: middle;
   }
   @keyframes medea-list-spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 }

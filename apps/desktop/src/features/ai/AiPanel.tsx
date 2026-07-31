@@ -23,7 +23,15 @@ import {
   saveActive,
   updateConversation,
 } from './store/conversations';
-import type { Attachment, ChatMessageEx, ComposeDraftProposal, ComposeHtmlProposal, Conversation, Proposal, ProposalExecution } from './store/conversations';
+import type {
+  Attachment,
+  ChatMessageEx,
+  ComposeDraftProposal,
+  ComposeHtmlProposal,
+  Conversation,
+  Proposal,
+  ProposalExecution,
+} from './store/conversations';
 import {
   addMemory,
   buildMemoryBlock,
@@ -73,7 +81,9 @@ function readUserName(account: MailAccount): string {
       const p = JSON.parse(raw) as { displayName?: string };
       if (p.displayName?.trim()) return p.displayName.trim();
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return account.displayName?.trim() || 'Tu';
 }
 
@@ -143,7 +153,9 @@ async function fileToBase64(file: File): Promise<string> {
       const idx = s.indexOf(',');
       resolve(idx >= 0 ? s.slice(idx + 1) : s);
     };
-    r.onerror = () => { reject(r.error ?? new Error('FileReader error')); };
+    r.onerror = () => {
+      reject(r.error ?? new Error('FileReader error'));
+    };
     r.readAsDataURL(file);
   });
 }
@@ -167,9 +179,11 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
   const [toolRegistry, setToolRegistry] = useState<ToolDescriptor[]>([]);
   const [lastTrace, setLastTrace] = useState<ToolCallResult[]>([]);
   /** Tool sensibile in attesa di conferma: blocca il loop finché l'utente decide. */
-  const [pendingConsent, setPendingConsent] = useState<
-    { call: ToolCall; action: string; decide: (allow: boolean) => void } | null
-  >(null);
+  const [pendingConsent, setPendingConsent] = useState<{
+    call: ToolCall;
+    action: string;
+    decide: (allow: boolean) => void;
+  } | null>(null);
   const [userName, setUserName] = useState<string>(() => readUserName(account));
   const [userPhoto] = useState<string | null>(() => localStorage.getItem('medea.profile.photo.v1'));
 
@@ -178,7 +192,7 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const active = useMemo(
-    () => (activeId ? conversations.find((c) => c.id === activeId) ?? null : null),
+    () => (activeId ? (conversations.find((c) => c.id === activeId) ?? null) : null),
     [activeId, conversations],
   );
   const history: ChatMessageEx[] = active?.messages ?? [];
@@ -198,13 +212,16 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
     const list = listConversations(account.id);
     setConversations(list);
     const stored = loadActive(account.id);
-    const next = stored && list.some((c) => c.id === stored) ? stored : list[0]?.id ?? null;
+    const next = stored && list.some((c) => c.id === stored) ? stored : (list[0]?.id ?? null);
     setActiveId(next);
     saveActive(account.id, next);
     void runSilentInboxSync();
     void (async () => {
-      try { setToolRegistry(await listTools()); }
-      catch { /* ignore */ }
+      try {
+        setToolRegistry(await listTools());
+      } catch {
+        /* ignore */
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account.id]);
@@ -231,7 +248,9 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
       if (e.key === 'medea.profile.v2') setUserName(readUserName(account));
     };
     window.addEventListener('storage', onStorage);
-    return () => { window.removeEventListener('storage', onStorage); };
+    return () => {
+      window.removeEventListener('storage', onStorage);
+    };
   }, [account]);
 
   // ── Sync silenzioso INBOX (in background, non blocca UI) ────────────────────
@@ -311,9 +330,9 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
         // non ancora in state — la rileggiamo dallo storage.
         return listConversations(account.id);
       }
-      return prev.map((c) => (c.id === convId
-        ? { ...c, messages: next, updatedAt: new Date().toISOString() }
-        : c));
+      return prev.map((c) =>
+        c.id === convId ? { ...c, messages: next, updatedAt: new Date().toISOString() } : c,
+      );
     });
   }
 
@@ -336,7 +355,12 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
           continue;
         }
         const b64 = await fileToBase64(f);
-        next.push({ name: f.name, size: f.size, type: f.type || 'application/octet-stream', base64: b64 });
+        next.push({
+          name: f.name,
+          size: f.size,
+          type: f.type || 'application/octet-stream',
+          base64: b64,
+        });
       } catch (err) {
         setError(`Impossibile leggere ${f.name}: ${String(err)}`);
       }
@@ -352,10 +376,16 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
   async function buildLiveContext(): Promise<string> {
     const parts: string[] = [];
     const now = new Date();
-    parts.push(`Data/ora corrente: ${now.toLocaleString('it-IT', {
-      weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
-    })}`);
+    parts.push(
+      `Data/ora corrente: ${now.toLocaleString('it-IT', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })}`,
+    );
     parts.push(`Oggi = ${now.toLocaleDateString('it-IT')}`);
     parts.push(`Account attivo: ${account.displayName} <${account.emailAddress}>`);
     parts.push(`Account ID (per i tool): ${account.id}`);
@@ -379,7 +409,9 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
         if (p.notes) lines.push(`Note: ${p.notes}`);
         if (lines.length > 0) parts.push(`\n=== PROFILO UTENTE ===\n${lines.join('\n')}`);
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     const memBlock = await buildMemoryBlock();
     if (memBlock) parts.push('\n' + memBlock);
@@ -405,26 +437,38 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
     try {
       const recent = await mailApi.db.recentMessages(account.id, 30);
       if (recent.length > 0) {
-        const list = recent.map((m, i) => {
-          const d = m.internalDate
-            ? new Date(m.internalDate).toLocaleString('it-IT', {
-                day: '2-digit', month: '2-digit', year: '2-digit',
-                hour: '2-digit', minute: '2-digit',
-              })
-            : '';
-          const from = m.fromName ?? m.fromAddress ?? '?';
-          const subj = m.subject ?? '(senza oggetto)';
-          const folder = m.folderPath ? ` [${m.folderPath}]` : '';
-          const prev = m.preview ? ` — ${m.preview.slice(0, 100).replace(/\s+/g, ' ')}` : '';
-          const flags = [m.isSeen ? '' : '🔵', m.isFlagged ? '⭐' : '', m.hasAttachments ? '📎' : '']
-            .filter(Boolean).join(' ');
-          return `${(i + 1).toString().padStart(2, '0')}. ${d} | ${from}${folder}${flags ? ' ' + flags : ''} | ${subj}${prev}`;
-        }).join('\n');
+        const list = recent
+          .map((m, i) => {
+            const d = m.internalDate
+              ? new Date(m.internalDate).toLocaleString('it-IT', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : '';
+            const from = m.fromName ?? m.fromAddress ?? '?';
+            const subj = m.subject ?? '(senza oggetto)';
+            const folder = m.folderPath ? ` [${m.folderPath}]` : '';
+            const prev = m.preview ? ` — ${m.preview.slice(0, 100).replace(/\s+/g, ' ')}` : '';
+            const flags = [
+              m.isSeen ? '' : '🔵',
+              m.isFlagged ? '⭐' : '',
+              m.hasAttachments ? '📎' : '',
+            ]
+              .filter(Boolean)
+              .join(' ');
+            return `${(i + 1).toString().padStart(2, '0')}. ${d} | ${from}${folder}${flags ? ' ' + flags : ''} | ${subj}${prev}`;
+          })
+          .join('\n');
         parts.push(
           `\n=== ULTIME 30 EMAIL DELL'ACCOUNT (snapshot DB ordinato per data DESC — riga 01 = PIÙ RECENTE) ===\nLegenda: 🔵=non letta · ⭐=importante · 📎=allegato\n${list}\n=== FINE LISTA ===`,
         );
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     return parts.join('\n');
   }
@@ -623,9 +667,10 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
 
     let finalText = lastText.trim();
     if (finalText.length === 0) {
-      finalText = trace.length > 0
-        ? `_(L'assistente ha eseguito ${trace.length.toString()} chiamate tool ma non ha prodotto una risposta finale. Apri il pannello "🔧 tool call eseguite" qui sotto per vedere i dati grezzi.)_`
-        : '_(L\'assistente ha risposto con contenuto vuoto. Riprova o cambia provider.)_';
+      finalText =
+        trace.length > 0
+          ? `_(L'assistente ha eseguito ${trace.length.toString()} chiamate tool ma non ha prodotto una risposta finale. Apri il pannello "🔧 tool call eseguite" qui sotto per vedere i dati grezzi.)_`
+          : "_(L'assistente ha risposto con contenuto vuoto. Riprova o cambia provider.)_";
     }
     return { finalText, trace, proposals };
   }
@@ -647,7 +692,10 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
     setMessagesForConv(conv.id, nextHistory);
 
     // Se il titolo è ancora default, generalo dal primo messaggio user
-    if (conv.title === 'Nuova conversazione' && nextHistory.filter((m) => m.role === 'user').length === 1) {
+    if (
+      conv.title === 'Nuova conversazione' &&
+      nextHistory.filter((m) => m.role === 'user').length === 1
+    ) {
       const t = autoTitle(nextHistory);
       updateConversation(conv.id, { title: t });
     }
@@ -657,16 +705,21 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
     setError(null);
     setStreaming(true);
 
-    const placeholder: ChatMessageEx = { role: 'assistant', content: '', timestamp: new Date().toISOString() };
+    const placeholder: ChatMessageEx = {
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toISOString(),
+    };
     setActiveMessages([...nextHistory, placeholder]);
 
     try {
       const liveContext = await buildLiveContext();
-      const attachContext = pendingAttachments.length > 0
-        ? `\n\n=== ALLEGATI UTENTE ===\n${pendingAttachments
-            .map((a) => describeAttachment(a))
-            .join('\n')}\n=== FINE ALLEGATI ===\n`
-        : '';
+      const attachContext =
+        pendingAttachments.length > 0
+          ? `\n\n=== ALLEGATI UTENTE ===\n${pendingAttachments
+              .map((a) => describeAttachment(a))
+              .join('\n')}\n=== FINE ALLEGATI ===\n`
+          : '';
 
       const { finalText, trace, proposals } = await runWithTools({
         systemPrompt: buildSystemPrompt(liveContext, attachContext),
@@ -701,7 +754,11 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
     if (!active || active.messages.length < 2 || streaming) return;
     const base = active.messages.slice(0, -1);
     setActiveMessages(base);
-    const placeholder: ChatMessageEx = { role: 'assistant', content: '', timestamp: new Date().toISOString() };
+    const placeholder: ChatMessageEx = {
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toISOString(),
+    };
     setActiveMessages([...base, placeholder]);
     setStreaming(true);
     try {
@@ -715,12 +772,15 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
       setLastTrace(trace);
       const clean = stripMemoryMarkers(finalText);
       for (const t of extractMemoriesFromReply(finalText)) await addMemory(t, 'assistant');
-      setActiveMessages([...base, {
-        role: 'assistant',
-        content: clean,
-        timestamp: new Date().toISOString(),
-        ...(proposals.length > 0 ? { proposals } : {}),
-      }]);
+      setActiveMessages([
+        ...base,
+        {
+          role: 'assistant',
+          content: clean,
+          timestamp: new Date().toISOString(),
+          ...(proposals.length > 0 ? { proposals } : {}),
+        },
+      ]);
     } catch (e) {
       setError(String(e));
       setActiveMessages(base);
@@ -733,8 +793,12 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedIdx(idx);
-      setTimeout(() => { setCopiedIdx(null); }, 1500);
-    } catch { /* ignore */ }
+      setTimeout(() => {
+        setCopiedIdx(null);
+      }, 1500);
+    } catch {
+      /* ignore */
+    }
   }
 
   async function saveAsMemory(text: string) {
@@ -757,16 +821,16 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
         onRename={handleRename}
         onDelete={handleDelete}
         collapsed={sidebarCollapsed}
-        onToggle={() => { setSidebarCollapsed(!sidebarCollapsed); }}
+        onToggle={() => {
+          setSidebarCollapsed(!sidebarCollapsed);
+        }}
       />
 
       <div className={styles.main}>
         <header className={styles.head}>
           <div className={styles.title}>
             <span className={styles.glyph}>✨</span>
-            <span className={styles.titleText}>
-              {active?.title ?? 'Assistente AI'}
-            </span>
+            <span className={styles.titleText}>{active?.title ?? 'Assistente AI'}</span>
           </div>
           <div className={styles.headActions}>
             <button
@@ -782,7 +846,9 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
             <button
               type="button"
               className={styles.iconBtn}
-              onClick={() => { setMemoryOpen(true); }}
+              onClick={() => {
+                setMemoryOpen(true);
+              }}
               title="Memorie persistenti"
               aria-label="Memorie persistenti"
             >
@@ -807,7 +873,15 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
               <option value="grok">Grok</option>
               <option value="openrouter">OpenRouter</option>
             </select>
-            <button type="button" className={styles.iconBtn} onClick={onClose} title="Chiudi" aria-label="Chiudi">✕</button>
+            <button
+              type="button"
+              className={styles.iconBtn}
+              onClick={onClose}
+              title="Chiudi"
+              aria-label="Chiudi"
+            >
+              ✕
+            </button>
           </div>
         </header>
 
@@ -817,7 +891,8 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
               <div className={styles.emptyGlyph}>✨</div>
               <h2 className={styles.emptyTitle}>Come posso aiutarti?</h2>
               <p className={styles.emptyText}>
-                Posso leggere il DB locale, riassumere, scrivere bozze, estrarre task e ricordare fatti tra le conversazioni.
+                Posso leggere il DB locale, riassumere, scrivere bozze, estrarre task e ricordare
+                fatti tra le conversazioni.
               </p>
               <div className={styles.suggestionsGrid}>
                 {[
@@ -830,7 +905,10 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
                     key={s}
                     type="button"
                     className={styles.suggCard}
-                    onClick={() => { setInput(s); textareaRef.current?.focus(); }}
+                    onClick={() => {
+                      setInput(s);
+                      textareaRef.current?.focus();
+                    }}
                   >
                     {s}
                   </button>
@@ -848,11 +926,24 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
             return (
               <article key={i} className={`${styles.turn} ${styles[`turn_${m.role}`] ?? ''}`}>
                 <div className={styles.avatar} aria-hidden>
-                  {m.role === 'user'
-                    ? (userPhoto
-                        ? <img src={userPhoto} alt="" style={{ width: '1.5em', height: '1.5em', borderRadius: '50%', objectFit: 'cover' }} />
-                        : '👤')
-                    : '✨'}
+                  {m.role === 'user' ? (
+                    userPhoto ? (
+                      <img
+                        src={userPhoto}
+                        alt=""
+                        style={{
+                          width: '1.5em',
+                          height: '1.5em',
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    ) : (
+                      '👤'
+                    )
+                  ) : (
+                    '✨'
+                  )}
                 </div>
                 <div className={styles.turnBody}>
                   <div className={styles.turnHead}>
@@ -861,7 +952,10 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
                     </span>
                     {m.timestamp && (
                       <span className={styles.time}>
-                        {new Date(m.timestamp).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(m.timestamp).toLocaleTimeString('it-IT', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </span>
                     )}
                   </div>
@@ -875,13 +969,16 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
                     ) : m.role === 'assistant' ? (
                       <Markdown source={m.content} />
                     ) : (
-                      <div className={styles.userText}>{m.content || <em className={styles.muted}>(solo allegati)</em>}</div>
+                      <div className={styles.userText}>
+                        {m.content || <em className={styles.muted}>(solo allegati)</em>}
+                      </div>
                     )}
                     {m.attachments && m.attachments.length > 0 && (
                       <div className={styles.attachList}>
                         {m.attachments.map((a, k) => (
                           <div key={k} className={styles.attachChip}>
-                            📎 {a.name} <span className={styles.attachMeta}>· {fmtSize(a.size)}</span>
+                            📎 {a.name}{' '}
+                            <span className={styles.attachMeta}>· {fmtSize(a.size)}</span>
                           </div>
                         ))}
                       </div>
@@ -889,14 +986,18 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
                     {m.proposals && m.proposals.length > 0 && (
                       <div className={styles.proposalList}>
                         {m.proposals.map((p, k) => {
-                          const exec = (m.proposalExecutions ?? []).find((e) => e.proposalIndex === k);
+                          const exec = (m.proposalExecutions ?? []).find(
+                            (e) => e.proposalIndex === k,
+                          );
                           return (
                             <ProposalCard
                               key={k}
                               proposal={p}
                               account={account}
                               {...(exec ? { execution: exec } : {})}
-                              onExecuted={(ex) => { recordProposalExecution(i, { ...ex, proposalIndex: k }); }}
+                              onExecuted={(ex) => {
+                                recordProposalExecution(i, { ...ex, proposalIndex: k });
+                              }}
                             />
                           );
                         })}
@@ -906,17 +1007,31 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
                   {(showCopy || showRegen || showMemorize) && (
                     <div className={styles.actions}>
                       {showCopy && (
-                        <button type="button" className={styles.actionBtn} onClick={() => copyToClipboard(m.content, i)}>
+                        <button
+                          type="button"
+                          className={styles.actionBtn}
+                          onClick={() => copyToClipboard(m.content, i)}
+                        >
                           {copiedIdx === i ? '✓ Copiato' : '⎘ Copia'}
                         </button>
                       )}
                       {showMemorize && (
-                        <button type="button" className={styles.actionBtn} onClick={() => { void saveAsMemory(m.content); }}>
+                        <button
+                          type="button"
+                          className={styles.actionBtn}
+                          onClick={() => {
+                            void saveAsMemory(m.content);
+                          }}
+                        >
                           🧠 Salva come memoria
                         </button>
                       )}
                       {showRegen && (
-                        <button type="button" className={styles.actionBtn} onClick={() => void regenerateLast()}>
+                        <button
+                          type="button"
+                          className={styles.actionBtn}
+                          onClick={() => void regenerateLast()}
+                        >
                           ↻ Rigenera
                         </button>
                       )}
@@ -938,17 +1053,22 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
             <details className={styles.toolTrace}>
               <summary>
                 🔧 {lastTrace.length} tool call eseguite — clicca per dettagli
-                {lastTrace.some((t) => t.error) && <span className={styles.toolTraceError}> · errori presenti</span>}
+                {lastTrace.some((t) => t.error) && (
+                  <span className={styles.toolTraceError}> · errori presenti</span>
+                )}
               </summary>
               <div className={styles.toolTraceList}>
                 {lastTrace.map((t, i) => (
-                  <div key={i} className={`${styles.toolTraceItem} ${t.error ? styles.toolTraceItemError : ''}`}>
+                  <div
+                    key={i}
+                    className={`${styles.toolTraceItem} ${t.error ? styles.toolTraceItemError : ''}`}
+                  >
                     <div className={styles.toolTraceHead}>
                       <code>{t.call.name}</code>
                       <span className={styles.toolTraceDur}>{t.durationMs} ms</span>
                     </div>
                     <pre className={styles.toolTraceBody}>
-{`args: ${JSON.stringify(t.call.args)}
+                      {`args: ${JSON.stringify(t.call.args)}
 ${t.error ? 'ERROR: ' + t.error : 'result: ' + JSON.stringify(t.result, null, 2).slice(0, 1200) + (JSON.stringify(t.result).length > 1200 ? '…' : '')}`}
                     </pre>
                   </div>
@@ -962,7 +1082,15 @@ ${t.error ? 'ERROR: ' + t.error : 'result: ' + JSON.stringify(t.result, null, 2)
         {error && (
           <div className={styles.error} role="alert">
             <span>{error}</span>
-            <button type="button" onClick={() => { setError(null); }} aria-label="Chiudi errore">✕</button>
+            <button
+              type="button"
+              onClick={() => {
+                setError(null);
+              }}
+              aria-label="Chiudi errore"
+            >
+              ✕
+            </button>
           </div>
         )}
 
@@ -975,7 +1103,8 @@ ${t.error ? 'ERROR: ' + t.error : 'result: ' + JSON.stringify(t.result, null, 2)
                 <span className={styles.dot} />
               </span>
               <span className={styles.streamingText}>
-                {providerLabel(provider)} sta lavorando — {lastTrace.length > 0
+                {providerLabel(provider)} sta lavorando —{' '}
+                {lastTrace.length > 0
                   ? `${lastTrace.length.toString()} chiamate tool eseguite`
                   : 'analisi del contesto…'}
               </span>
@@ -988,7 +1117,16 @@ ${t.error ? 'ERROR: ' + t.error : 'result: ' + JSON.stringify(t.result, null, 2)
                 <div key={i} className={styles.pendingChip}>
                   {a.type.startsWith('image/') ? '🖼' : '📎'} {a.name}
                   <span className={styles.attachMeta}> · {fmtSize(a.size)}</span>
-                  <button type="button" className={styles.chipRemove} onClick={() => { removeAttachment(i); }} aria-label="Rimuovi">✕</button>
+                  <button
+                    type="button"
+                    className={styles.chipRemove}
+                    onClick={() => {
+                      removeAttachment(i);
+                    }}
+                    aria-label="Rimuovi"
+                  >
+                    ✕
+                  </button>
                 </div>
               ))}
             </div>
@@ -999,11 +1137,14 @@ ${t.error ? 'ERROR: ' + t.error : 'result: ' + JSON.stringify(t.result, null, 2)
               <input
                 type="checkbox"
                 checked={includeMessage}
-                onChange={(e) => { setIncludeMessage(e.target.checked); }}
+                onChange={(e) => {
+                  setIncludeMessage(e.target.checked);
+                }}
               />{' '}
               Includi email aperta nel contesto
               <span className={styles.contextHint}>
-                {' '}({activeMessage.subject?.slice(0, 50) ?? 'senza oggetto'}…)
+                {' '}
+                ({activeMessage.subject?.slice(0, 50) ?? 'senza oggetto'}…)
               </span>
             </label>
           )}
@@ -1013,7 +1154,9 @@ ${t.error ? 'ERROR: ' + t.error : 'result: ' + JSON.stringify(t.result, null, 2)
               ref={textareaRef}
               className={styles.textarea}
               value={input}
-              onChange={(e) => { setInput(e.target.value); }}
+              onChange={(e) => {
+                setInput(e.target.value);
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
@@ -1025,12 +1168,57 @@ ${t.error ? 'ERROR: ' + t.error : 'result: ' + JSON.stringify(t.result, null, 2)
             />
             <div className={styles.inputToolbar}>
               <div className={styles.inputTools}>
-                <button type="button" className={styles.toolBtn} onClick={() => { pickFiles('image/*'); }} title="Allega immagine" aria-label="Allega immagine">🖼</button>
-                <button type="button" className={styles.toolBtn} onClick={() => { pickFiles('.pdf,.doc,.docx,.txt,.csv,.xlsx,.xls'); }} title="Allega documento" aria-label="Allega documento">📎</button>
-                <button type="button" className={styles.toolBtn} onClick={() => { pickFiles('*/*'); }} title="Allega qualsiasi file" aria-label="Allega file">＋</button>
-                <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={(e) => { void onFileSelected(e); }} />
+                <button
+                  type="button"
+                  className={styles.toolBtn}
+                  onClick={() => {
+                    pickFiles('image/*');
+                  }}
+                  title="Allega immagine"
+                  aria-label="Allega immagine"
+                >
+                  🖼
+                </button>
+                <button
+                  type="button"
+                  className={styles.toolBtn}
+                  onClick={() => {
+                    pickFiles('.pdf,.doc,.docx,.txt,.csv,.xlsx,.xls');
+                  }}
+                  title="Allega documento"
+                  aria-label="Allega documento"
+                >
+                  📎
+                </button>
+                <button
+                  type="button"
+                  className={styles.toolBtn}
+                  onClick={() => {
+                    pickFiles('*/*');
+                  }}
+                  title="Allega qualsiasi file"
+                  aria-label="Allega file"
+                >
+                  ＋
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    void onFileSelected(e);
+                  }}
+                />
               </div>
-              <button type="button" className={styles.sendBtn} onClick={() => void send()} disabled={!canSend} title="Invia (Invio)" aria-label="Invia">
+              <button
+                type="button"
+                className={styles.sendBtn}
+                onClick={() => void send()}
+                disabled={!canSend}
+                title="Invia (Invio)"
+                aria-label="Invia"
+              >
                 {streaming && !isLastPlaceholder ? '…' : '▶'}
               </button>
             </div>
@@ -1039,12 +1227,26 @@ ${t.error ? 'ERROR: ' + t.error : 'result: ' + JSON.stringify(t.result, null, 2)
           <div className={styles.hint}>
             Provider: <strong>{providerLabel(provider)}</strong>
             <span> · BYOK — configura in Impostazioni → Modelli AI</span>
-            {lastSyncAt && <span> · INBOX agg. {new Date(lastSyncAt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</span>}
+            {lastSyncAt && (
+              <span>
+                {' '}
+                · INBOX agg.{' '}
+                {new Date(lastSyncAt).toLocaleTimeString('it-IT', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+            )}
           </div>
         </footer>
       </div>
 
-      <MemoryDrawer open={memoryOpen} onClose={() => { setMemoryOpen(false); }} />
+      <MemoryDrawer
+        open={memoryOpen}
+        onClose={() => {
+          setMemoryOpen(false);
+        }}
+      />
     </aside>
   );
 }

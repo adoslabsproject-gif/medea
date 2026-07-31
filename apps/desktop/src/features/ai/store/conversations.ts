@@ -42,17 +42,17 @@ export interface ProposalExecution {
   type: 'compose_draft' | 'compose_html';
   /** Stato finale dell'azione. */
   outcome: 'sent' | 'draft_saved' | 'doc_saved';
-  at: string;                                  // ISO timestamp
-  to?: string[];                                // per sent
+  at: string; // ISO timestamp
+  to?: string[]; // per sent
   subject?: string;
-  draftFolder?: string | null;                  // per draft_saved
+  draftFolder?: string | null; // per draft_saved
   archive?: {
     ok: boolean;
     folder: string | null;
     available: string[];
     error: string | null;
-  };                                            // per sent
-  filePath?: string;                            // per doc_saved
+  }; // per sent
+  filePath?: string; // per doc_saved
 }
 
 export interface ChatMessageEx extends ChatMessage {

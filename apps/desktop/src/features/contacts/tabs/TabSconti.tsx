@@ -26,7 +26,11 @@ interface DraftRow {
 }
 
 const NEW_DRAFT: DraftRow = {
-  id: null, categoryId: null, brandId: null, discountPct: 10, notes: '',
+  id: null,
+  categoryId: null,
+  brandId: null,
+  discountPct: 10,
+  notes: '',
 };
 
 export function TabSconti({ partner, brands, categories }: Props) {
@@ -41,9 +45,13 @@ export function TabSconti({ partner, brands, categories }: Props) {
     try {
       const r = await mailApi.db.listCustomerDiscounts(partner.id);
       setRows(r);
-    } catch (e) { setError(String(e)); }
+    } catch (e) {
+      setError(String(e));
+    }
   }
-  useEffect(() => { void refresh();   }, [partner.id]);
+  useEffect(() => {
+    void refresh();
+  }, [partner.id]);
 
   async function save() {
     if (!draft) return;
@@ -77,10 +85,8 @@ export function TabSconti({ partner, brands, categories }: Props) {
           La regola più specifica vince:
           <code className={own.code}>override</code> →
           <code className={own.code}>cat + marchio</code> →
-          <code className={own.code}>categoria</code> →
-          <code className={own.code}>marchio</code> →
-          <code className={own.code}>globale</code> →
-          listino base.
+          <code className={own.code}>categoria</code> →<code className={own.code}>marchio</code> →
+          <code className={own.code}>globale</code> → listino base.
         </p>
       </div>
 
@@ -92,7 +98,9 @@ export function TabSconti({ partner, brands, categories }: Props) {
         <button
           type="button"
           className={styles.smallBtn}
-          onClick={() => { setDraft({ ...NEW_DRAFT }); }}
+          onClick={() => {
+            setDraft({ ...NEW_DRAFT });
+          }}
         >
           ＋ Nuova regola
         </button>
@@ -101,7 +109,8 @@ export function TabSconti({ partner, brands, categories }: Props) {
       {rows.length === 0 && !draft && (
         <div className={styles.empty}>
           <div className={styles.emptyIcon}>🎯</div>
-          Nessuna scontistica impostata.<br />
+          Nessuna scontistica impostata.
+          <br />
           Aggiungi una regola per categoria, marchio, o entrambi.
         </div>
       )}
@@ -128,19 +137,25 @@ export function TabSconti({ partner, brands, categories }: Props) {
                   <button
                     type="button"
                     className={styles.smallBtn}
-                    onClick={() => { setDraft({
-                      id: r.id,
-                      categoryId: r.categoryId,
-                      brandId: r.brandId,
-                      discountPct: r.discountPct,
-                      notes: r.notes ?? '',
-                    }); }}
-                  >✎</button>
+                    onClick={() => {
+                      setDraft({
+                        id: r.id,
+                        categoryId: r.categoryId,
+                        brandId: r.brandId,
+                        discountPct: r.discountPct,
+                        notes: r.notes ?? '',
+                      });
+                    }}
+                  >
+                    ✎
+                  </button>
                   <button
                     type="button"
                     className={`${styles.smallBtn} ${styles.smallBtnDanger}`}
                     onClick={() => void remove(r.id)}
-                  >🗑</button>
+                  >
+                    🗑
+                  </button>
                 </td>
               </tr>
             ))}
@@ -152,12 +167,17 @@ export function TabSconti({ partner, brands, categories }: Props) {
                     className={own.select}
                     value={draft.categoryId ?? ''}
                     onChange={(e) => {
-                      setDraft({ ...draft, categoryId: e.target.value ? Number(e.target.value) : null });
+                      setDraft({
+                        ...draft,
+                        categoryId: e.target.value ? Number(e.target.value) : null,
+                      });
                     }}
                   >
                     <option value="">— tutte le categorie —</option>
                     {rootCategories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
                     ))}
                   </select>
                 </td>
@@ -166,12 +186,17 @@ export function TabSconti({ partner, brands, categories }: Props) {
                     className={own.select}
                     value={draft.brandId ?? ''}
                     onChange={(e) => {
-                      setDraft({ ...draft, brandId: e.target.value ? Number(e.target.value) : null });
+                      setDraft({
+                        ...draft,
+                        brandId: e.target.value ? Number(e.target.value) : null,
+                      });
                     }}
                   >
                     <option value="">— tutti i marchi —</option>
                     {brands.map((b) => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
                     ))}
                   </select>
                 </td>
@@ -194,14 +219,26 @@ export function TabSconti({ partner, brands, categories }: Props) {
                     className={own.text}
                     placeholder="opzionale"
                     value={draft.notes}
-                    onChange={(e) => { setDraft({ ...draft, notes: e.target.value }); }}
+                    onChange={(e) => {
+                      setDraft({ ...draft, notes: e.target.value });
+                    }}
                   />
                 </td>
                 <td className={own.rowActions}>
-                  <button type="button" className={`${styles.smallBtn} ${own.btnPrimary}`} onClick={() => void save()}>
+                  <button
+                    type="button"
+                    className={`${styles.smallBtn} ${own.btnPrimary}`}
+                    onClick={() => void save()}
+                  >
                     ✓ Salva
                   </button>
-                  <button type="button" className={styles.smallBtn} onClick={() => { setDraft(null); }}>
+                  <button
+                    type="button"
+                    className={styles.smallBtn}
+                    onClick={() => {
+                      setDraft(null);
+                    }}
+                  >
                     ✕
                   </button>
                 </td>

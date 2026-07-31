@@ -8,7 +8,11 @@
     "./react": "./react.js",
     "./node": "./node.js"
   },
-  "files": ["base.js", "react.js", "node.js"],
+  "files": [
+    "base.js",
+    "react.js",
+    "node.js"
+  ],
   "peerDependencies": {
     "eslint": "^9.18.0"
   },

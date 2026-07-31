@@ -35,19 +35,19 @@ utilizzabili da qualsiasi azienda.
 
 Funzionanti oggi:
 
-| Area | Stato |
-| --- | --- |
-| Shell desktop + design system + primitivi UI | 🟢 |
-| Account IMAP/SMTP, sync cartelle, lettura/invio | 🟢 |
-| DB locale SQLite + ricerca FTS5 | 🟢 |
-| Rubrica, anagrafiche, articoli, listini, documenti | 🟢 |
-| Pannello AI con tool-calling nativo + consent gate | 🟢 |
-| Promemoria con notifiche OS | 🟢 |
-| DB Studio (esplora/modifica tabelle) | 🟢 |
-| OAuth Google/Microsoft | ⏳ |
-| RAG / ricerca semantica con budget RAM | ⏳ |
-| Tauri Mobile Android | ⏳ |
-| Distribuzione + auto-update | ⏳ |
+| Area                                               | Stato |
+| -------------------------------------------------- | ----- |
+| Shell desktop + design system + primitivi UI       | 🟢    |
+| Account IMAP/SMTP, sync cartelle, lettura/invio    | 🟢    |
+| DB locale SQLite + ricerca FTS5                    | 🟢    |
+| Rubrica, anagrafiche, articoli, listini, documenti | 🟢    |
+| Pannello AI con tool-calling nativo + consent gate | 🟢    |
+| Promemoria con notifiche OS                        | 🟢    |
+| DB Studio (esplora/modifica tabelle)               | 🟢    |
+| OAuth Google/Microsoft                             | ⏳    |
+| RAG / ricerca semantica con budget RAM             | ⏳    |
+| Tauri Mobile Android                               | ⏳    |
+| Distribuzione + auto-update                        | ⏳    |
 
 Il tool system dell'AI è allineato per nomi e protocollo a quello dell'app
 Liara, così lo stesso modello fine-tuned funziona su entrambe: vedi

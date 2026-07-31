@@ -66,11 +66,7 @@ export async function seal(plainObj: unknown): Promise<SealedBlob> {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(getDevicePassphrase(), salt);
   const json = ENC.encode(JSON.stringify(plainObj));
-  const ctBuf = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv: iv as BufferSource },
-    key,
-    json,
-  );
+  const ctBuf = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv as BufferSource }, key, json);
   return { v: 1, salt: b64(salt), iv: b64(iv), ct: b64(new Uint8Array(ctBuf)) };
 }
 

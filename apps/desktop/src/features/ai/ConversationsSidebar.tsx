@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './ConversationsSidebar.module.css';
 import type { Conversation } from './store/conversations';
 
-
 interface Props {
   conversations: Conversation[];
   activeId: string | null;
@@ -31,9 +30,12 @@ function fmtWhen(iso: string): string {
     d.getDate() === yest.getDate();
   if (isYest) return 'Ieri';
   const sameYear = d.getFullYear() === now.getFullYear();
-  return d.toLocaleDateString('it-IT', sameYear
-    ? { day: '2-digit', month: 'short' }
-    : { day: '2-digit', month: 'short', year: '2-digit' });
+  return d.toLocaleDateString(
+    'it-IT',
+    sameYear
+      ? { day: '2-digit', month: 'short' }
+      : { day: '2-digit', month: 'short', year: '2-digit' },
+  );
 }
 
 function bucketOf(iso: string): string {
@@ -163,7 +165,9 @@ export function ConversationsSidebar({
           className={styles.search}
           placeholder="Cerca conversazione…"
           value={filter}
-          onChange={(e) => { setFilter(e.target.value); }}
+          onChange={(e) => {
+            setFilter(e.target.value);
+          }}
         />
       </div>
 
@@ -172,7 +176,8 @@ export function ConversationsSidebar({
           <div className={styles.empty}>
             <div className={styles.emptyIcon}>💬</div>
             <div className={styles.emptyText}>
-              Nessuna conversazione.<br />
+              Nessuna conversazione.
+              <br />
               Premi <strong>Nuova conversazione</strong> per iniziare.
             </div>
           </div>
@@ -184,7 +189,9 @@ export function ConversationsSidebar({
               <div
                 key={c.id}
                 className={`${styles.row} ${c.id === activeId ? styles.rowActive : ''}`}
-                onClick={() => { onSelect(c.id); }}
+                onClick={() => {
+                  onSelect(c.id);
+                }}
               >
                 {editing === c.id ? (
                   <input
@@ -192,7 +199,9 @@ export function ConversationsSidebar({
                     type="text"
                     className={styles.titleInput}
                     value={draftTitle}
-                    onChange={(e) => { setDraftTitle(e.target.value); }}
+                    onChange={(e) => {
+                      setDraftTitle(e.target.value);
+                    }}
                     onBlur={() => {
                       if (draftTitle.trim()) onRename(c.id, draftTitle.trim());
                       setEditing(null);
@@ -231,7 +240,11 @@ export function ConversationsSidebar({
                       <button
                         type="button"
                         className={`${styles.rowIconBtn} ${confirmingDelete === c.id ? styles.rowIconBtnDanger : ''}`}
-                        title={confirmingDelete === c.id ? 'Clicca di nuovo per confermare' : 'Elimina conversazione'}
+                        title={
+                          confirmingDelete === c.id
+                            ? 'Clicca di nuovo per confermare'
+                            : 'Elimina conversazione'
+                        }
                         aria-label="Elimina"
                         onClick={(e) => {
                           e.stopPropagation();

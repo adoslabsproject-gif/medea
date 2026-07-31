@@ -8,9 +8,7 @@
     "editor.defaultFormatter": "rust-lang.rust-analyzer",
     "editor.formatOnSave": true
   },
-  "rust-analyzer.linkedProjects": [
-    "apps/desktop/src-tauri/Cargo.toml"
-  ],
+  "rust-analyzer.linkedProjects": ["apps/desktop/src-tauri/Cargo.toml"],
   "rust-analyzer.cargo.features": [],
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,

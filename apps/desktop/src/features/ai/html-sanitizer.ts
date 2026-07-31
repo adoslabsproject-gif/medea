@@ -18,7 +18,8 @@ const COMMENT_RE = /<!--[\s\S]*?-->/g;
 const ON_ATTR_RE = /\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi;
 const STYLE_ATTR_RE = /\s+style\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi;
 const CLASS_ATTR_RE = /\s+class\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi;
-const JS_HREF_RE = /\s+(href|src|action|formaction)\s*=\s*("javascript:[^"]*"|'javascript:[^']*'|javascript:[^\s>]+)/gi;
+const JS_HREF_RE =
+  /\s+(href|src|action|formaction)\s*=\s*("javascript:[^"]*"|'javascript:[^']*'|javascript:[^\s>]+)/gi;
 const WS_RE = /\s+/g;
 
 export function sanitizeHtmlForLlm(html: string, maxChars = 5000): string {

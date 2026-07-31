@@ -20,9 +20,20 @@
     background: var(--color-surface-2);
     flex-shrink: 0;
   }
-  .titleGroup { display: flex; flex-direction: column; gap: var(--space-1); }
-  .title { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); }
-  .subtitle { font-size: var(--font-size-sm); color: var(--color-text-secondary); max-inline-size: 56rem; }
+  .titleGroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+  }
+  .subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    max-inline-size: 56rem;
+  }
   .statsRow {
     display: flex;
     gap: var(--space-3);
@@ -109,8 +120,9 @@
     border-radius: var(--radius-md);
     color: var(--color-text-primary);
     font-size: var(--font-size-sm);
-    transition: background var(--motion-duration-fast) var(--motion-easing-standard),
-                border-color var(--motion-duration-fast) var(--motion-easing-standard);
+    transition:
+      background var(--motion-duration-fast) var(--motion-easing-standard),
+      border-color var(--motion-duration-fast) var(--motion-easing-standard);
   }
   .tableItem:hover {
     background: color-mix(in oklch, var(--color-accent-default) 8%, transparent);
@@ -170,9 +182,16 @@
     color: var(--color-feedback-danger);
     border-radius: var(--radius-md);
     font-size: var(--font-size-sm);
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
-  .error button { background: transparent; border: 0; color: inherit; cursor: pointer; }
+  .error button {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+  }
 
   /* Hero tabella */
   .tableHero {
@@ -190,21 +209,21 @@
     flex-shrink: 0;
     flex-wrap: wrap;
   }
-  .tableHero[data-accent="green"] {
+  .tableHero[data-accent='green'] {
     background: linear-gradient(
       to right,
       color-mix(in oklch, var(--color-feedback-success) 14%, var(--color-surface-2)),
       var(--color-surface-2) 60%
     );
   }
-  .tableHero[data-accent="purple"] {
+  .tableHero[data-accent='purple'] {
     background: linear-gradient(
       to right,
       color-mix(in oklch, oklch(0.62 0.18 290) 14%, var(--color-surface-2)),
       var(--color-surface-2) 60%
     );
   }
-  .tableHero[data-accent="gray"] {
+  .tableHero[data-accent='gray'] {
     background: var(--color-surface-2);
   }
   .heroLeft {
@@ -236,7 +255,10 @@
     font-size: var(--font-size-sm);
     margin-block-start: var(--space-1);
   }
-  .heroMeta strong { color: var(--color-text-primary); font-weight: var(--font-weight-semibold); }
+  .heroMeta strong {
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-semibold);
+  }
   .heroActions {
     display: flex;
     align-items: center;
@@ -261,15 +283,21 @@
     gap: var(--space-2);
     font-weight: var(--font-weight-medium);
   }
-  .schemaPanel summary::-webkit-details-marker { display: none; }
-  .schemaPanel summary:hover { color: var(--color-text-primary); }
+  .schemaPanel summary::-webkit-details-marker {
+    display: none;
+  }
+  .schemaPanel summary:hover {
+    color: var(--color-text-primary);
+  }
   .schemaChev {
     display: inline-block;
     transition: transform var(--motion-duration-fast) var(--motion-easing-standard);
     font-size: 0.75rem;
     color: var(--color-text-muted);
   }
-  .schemaPanel[open] .schemaChev { transform: rotate(90deg); }
+  .schemaPanel[open] .schemaChev {
+    transform: rotate(90deg);
+  }
 
   .schemaGrid {
     display: grid;
@@ -295,7 +323,9 @@
     color: var(--color-text-primary);
     font-size: var(--font-size-sm);
   }
-  .pkBadge { margin-inline-end: var(--space-1); }
+  .pkBadge {
+    margin-inline-end: var(--space-1);
+  }
   .typeBadge {
     font-size: 0.7rem;
     padding: 0.05em 0.5em;
@@ -305,15 +335,22 @@
     letter-spacing: 0.04em;
     font-variant-numeric: tabular-nums;
   }
-  .type_integer, .type_int, .type_number, .type_real, .type_float {
+  .type_integer,
+  .type_int,
+  .type_number,
+  .type_real,
+  .type_float {
     background: color-mix(in oklch, var(--color-feedback-success) 18%, transparent);
     color: var(--color-feedback-success);
   }
-  .type_text, .type_string, .type_varchar {
+  .type_text,
+  .type_string,
+  .type_varchar {
     background: color-mix(in oklch, var(--color-accent-default) 18%, transparent);
     color: var(--color-accent-emphasis);
   }
-  .type_blob, .type_json {
+  .type_blob,
+  .type_json {
     background: color-mix(in oklch, oklch(0.62 0.18 290) 18%, transparent);
     color: oklch(0.62 0.18 290);
   }
@@ -368,7 +405,8 @@
   }
   .spinner {
     display: inline-block;
-    inline-size: 1rem; block-size: 1rem;
+    inline-size: 1rem;
+    block-size: 1rem;
     border: 2px solid var(--color-border-strong);
     border-right-color: transparent;
     border-radius: 50%;
@@ -376,7 +414,11 @@
     margin-inline-end: var(--space-2);
     vertical-align: middle;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 
   .dataTable {
     inline-size: 100%;
@@ -402,7 +444,8 @@
     z-index: 1;
     font-size: var(--font-size-xs);
   }
-  .rowNumHead, .rowNum {
+  .rowNumHead,
+  .rowNum {
     inline-size: 3.5rem;
     text-align: end;
     padding-inline-end: var(--space-3);
@@ -426,17 +469,38 @@
     line-height: 1.45;
     cursor: pointer;
   }
-  .dataTable tbody tr:last-child td { border-block-end: 0; }
+  .dataTable tbody tr:last-child td {
+    border-block-end: 0;
+  }
   .dataTable tbody tr:hover td {
     background: color-mix(in oklch, var(--color-accent-default) 5%, transparent);
   }
-  .cell {}
-  .cell_number { color: var(--color-feedback-success); font-variant-numeric: tabular-nums; text-align: end; }
-  .cell_boolean { color: oklch(0.62 0.18 290); }
-  .cell_string { color: var(--color-text-primary); }
-  .cell_json { color: oklch(0.62 0.18 290); font-family: var(--font-family-mono); font-size: 0.85em; }
-  .cell_date { color: oklch(0.55 0.18 50); font-variant-numeric: tabular-nums; }
-  .cell_null .nullVal { color: var(--color-text-muted); font-style: italic; }
+  .cell {
+  }
+  .cell_number {
+    color: var(--color-feedback-success);
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+  }
+  .cell_boolean {
+    color: oklch(0.62 0.18 290);
+  }
+  .cell_string {
+    color: var(--color-text-primary);
+  }
+  .cell_json {
+    color: oklch(0.62 0.18 290);
+    font-family: var(--font-family-mono);
+    font-size: 0.85em;
+  }
+  .cell_date {
+    color: oklch(0.55 0.18 50);
+    font-variant-numeric: tabular-nums;
+  }
+  .cell_null .nullVal {
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
 
   /* ── Chips per array / JSON ──────────────────────────────────── */
   .chipRow {
@@ -459,11 +523,31 @@
     line-height: 1.4;
     white-space: nowrap;
   }
-  .chip_acqua    { background: color-mix(in oklch, oklch(0.62 0.15 230) 14%, transparent); color: oklch(0.45 0.16 230); border-color: color-mix(in oklch, oklch(0.62 0.15 230) 25%, transparent); }
-  .chip_aria     { background: color-mix(in oklch, oklch(0.75 0.10 200) 14%, transparent); color: oklch(0.42 0.12 220); border-color: color-mix(in oklch, oklch(0.75 0.10 200) 28%, transparent); }
-  .chip_olio     { background: color-mix(in oklch, oklch(0.65 0.15 70) 14%, transparent);  color: oklch(0.42 0.16 60);  border-color: color-mix(in oklch, oklch(0.65 0.15 70) 28%, transparent); }
-  .chip_vapore   { background: color-mix(in oklch, oklch(0.70 0.12 320) 14%, transparent); color: oklch(0.42 0.16 320); border-color: color-mix(in oklch, oklch(0.70 0.12 320) 28%, transparent); }
-  .chip_gas      { background: color-mix(in oklch, oklch(0.70 0.12 140) 14%, transparent); color: oklch(0.42 0.16 140); border-color: color-mix(in oklch, oklch(0.70 0.12 140) 28%, transparent); }
+  .chip_acqua {
+    background: color-mix(in oklch, oklch(0.62 0.15 230) 14%, transparent);
+    color: oklch(0.45 0.16 230);
+    border-color: color-mix(in oklch, oklch(0.62 0.15 230) 25%, transparent);
+  }
+  .chip_aria {
+    background: color-mix(in oklch, oklch(0.75 0.1 200) 14%, transparent);
+    color: oklch(0.42 0.12 220);
+    border-color: color-mix(in oklch, oklch(0.75 0.1 200) 28%, transparent);
+  }
+  .chip_olio {
+    background: color-mix(in oklch, oklch(0.65 0.15 70) 14%, transparent);
+    color: oklch(0.42 0.16 60);
+    border-color: color-mix(in oklch, oklch(0.65 0.15 70) 28%, transparent);
+  }
+  .chip_vapore {
+    background: color-mix(in oklch, oklch(0.7 0.12 320) 14%, transparent);
+    color: oklch(0.42 0.16 320);
+    border-color: color-mix(in oklch, oklch(0.7 0.12 320) 28%, transparent);
+  }
+  .chip_gas {
+    background: color-mix(in oklch, oklch(0.7 0.12 140) 14%, transparent);
+    color: oklch(0.42 0.16 140);
+    border-color: color-mix(in oklch, oklch(0.7 0.12 140) 28%, transparent);
+  }
 
   /* JSON object pretty (multiline preview) */
   .jsonPretty {
@@ -486,12 +570,21 @@
     font-size: 0.78em;
     font-weight: 500;
   }
-  .boolBadge.true  { background: color-mix(in oklch, oklch(0.65 0.18 145) 14%, transparent); color: oklch(0.40 0.18 145); }
-  .boolBadge.false { background: color-mix(in oklch, oklch(0.65 0.18 25)  14%, transparent); color: oklch(0.42 0.18 25);  }
+  .boolBadge.true {
+    background: color-mix(in oklch, oklch(0.65 0.18 145) 14%, transparent);
+    color: oklch(0.4 0.18 145);
+  }
+  .boolBadge.false {
+    background: color-mix(in oklch, oklch(0.65 0.18 25) 14%, transparent);
+    color: oklch(0.42 0.18 25);
+  }
 
   /* Number cell — usato anche per ID con stile leggero, ma quando il nome
      della colonna è "id" o termina con "_id" forziamo soft per non gridare. */
-  .cell_id { color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+  .cell_id {
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
 
   /* Header: capitalized human-friendly */
   .dataTable thead th.colHead {
@@ -515,8 +608,14 @@
     padding: var(--space-12);
     color: var(--color-text-muted);
   }
-  .emptyGlyph { font-size: 3rem; }
-  .emptyData h3 { color: var(--color-text-primary); font-size: var(--font-size-lg); margin-block: var(--space-3); }
+  .emptyGlyph {
+    font-size: 3rem;
+  }
+  .emptyData h3 {
+    color: var(--color-text-primary);
+    font-size: var(--font-size-lg);
+    margin-block: var(--space-3);
+  }
 
   /* Paginator */
   .paginator {
@@ -534,7 +633,10 @@
     color: var(--color-text-secondary);
     font-variant-numeric: tabular-nums;
   }
-  .pageInfo strong { color: var(--color-text-primary); font-weight: var(--font-weight-semibold); }
+  .pageInfo strong {
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-semibold);
+  }
 
   /* Cell modal */
   .cellModalBackdrop {
@@ -580,7 +682,10 @@
     block-size: 1.75rem;
     border-radius: var(--radius-sm);
   }
-  .cellModalClose:hover { background: var(--color-surface-3); color: var(--color-text-primary); }
+  .cellModalClose:hover {
+    background: var(--color-surface-3);
+    color: var(--color-text-primary);
+  }
   .cellModalBody {
     flex: 1;
     overflow: auto;

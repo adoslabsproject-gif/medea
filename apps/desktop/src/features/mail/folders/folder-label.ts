@@ -12,7 +12,10 @@ export function folderLabel(name: string, attributes: string[] = []): string {
   if (attrs.includes('\\inbox') || n === 'inbox' || n === 'posta in arrivo') {
     return 'Posta in arrivo';
   }
-  if (attrs.includes('\\sent') || /^(sent|sent items|sent messages|inviat|posta inviata)$/.test(n)) {
+  if (
+    attrs.includes('\\sent') ||
+    /^(sent|sent items|sent messages|inviat|posta inviata)$/.test(n)
+  ) {
     return 'Inviata';
   }
   if (attrs.includes('\\drafts') || /^(drafts?|bozze|bozz)$/.test(n)) {

@@ -2,7 +2,7 @@
   "$comment": "Single source of truth: OKLCH (L C H). Cambi qui propagano ovunque.",
   "primitives": {
     "indigo": {
-      "50":  "oklch(0.97 0.018 270)",
+      "50": "oklch(0.97 0.018 270)",
       "100": "oklch(0.94 0.035 270)",
       "200": "oklch(0.88 0.065 270)",
       "300": "oklch(0.80 0.105 270)",
@@ -15,7 +15,7 @@
       "950": "oklch(0.18 0.060 270)"
     },
     "slate": {
-      "50":  "oklch(0.98 0.005 250)",
+      "50": "oklch(0.98 0.005 250)",
       "100": "oklch(0.95 0.008 250)",
       "200": "oklch(0.90 0.010 250)",
       "300": "oklch(0.82 0.012 250)",
@@ -51,35 +51,35 @@
   "semantic": {
     "$comment": "Coppia light-dark via light-dark(). Cambiare palette = modificare 6 valori e ribuildare.",
     "surface": {
-      "1": { "light": "{primitives.slate.50}",  "dark": "{primitives.slate.950}" },
+      "1": { "light": "{primitives.slate.50}", "dark": "{primitives.slate.950}" },
       "2": { "light": "{primitives.slate.100}", "dark": "{primitives.slate.900}" },
       "3": { "light": "{primitives.slate.200}", "dark": "{primitives.slate.800}" }
     },
     "border": {
-      "subtle":  { "light": "{primitives.slate.200}", "dark": "{primitives.slate.800}" },
+      "subtle": { "light": "{primitives.slate.200}", "dark": "{primitives.slate.800}" },
       "default": { "light": "{primitives.slate.300}", "dark": "{primitives.slate.700}" },
-      "strong":  { "light": "{primitives.slate.400}", "dark": "{primitives.slate.600}" }
+      "strong": { "light": "{primitives.slate.400}", "dark": "{primitives.slate.600}" }
     },
     "text": {
-      "primary":   { "light": "{primitives.slate.900}", "dark": "{primitives.slate.50}" },
+      "primary": { "light": "{primitives.slate.900}", "dark": "{primitives.slate.50}" },
       "secondary": { "light": "{primitives.slate.700}", "dark": "{primitives.slate.300}" },
-      "muted":     { "light": "{primitives.slate.500}", "dark": "{primitives.slate.400}" },
-      "inverted":  { "light": "{primitives.slate.50}",  "dark": "{primitives.slate.950}" }
+      "muted": { "light": "{primitives.slate.500}", "dark": "{primitives.slate.400}" },
+      "inverted": { "light": "{primitives.slate.50}", "dark": "{primitives.slate.950}" }
     },
     "accent": {
-      "subtle":    { "light": "{primitives.indigo.100}", "dark": "{primitives.indigo.900}" },
-      "default":   { "light": "{primitives.indigo.500}", "dark": "{primitives.indigo.400}" },
-      "emphasis":  { "light": "{primitives.indigo.600}", "dark": "{primitives.indigo.300}" },
-      "on":        { "light": "{primitives.slate.50}",   "dark": "{primitives.slate.950}" }
+      "subtle": { "light": "{primitives.indigo.100}", "dark": "{primitives.indigo.900}" },
+      "default": { "light": "{primitives.indigo.500}", "dark": "{primitives.indigo.400}" },
+      "emphasis": { "light": "{primitives.indigo.600}", "dark": "{primitives.indigo.300}" },
+      "on": { "light": "{primitives.slate.50}", "dark": "{primitives.slate.950}" }
     },
     "feedback": {
-      "success":  { "light": "{primitives.emerald.500}", "dark": "{primitives.emerald.400}" },
-      "warning":  { "light": "{primitives.amber.500}",   "dark": "{primitives.amber.400}" },
-      "danger":   { "light": "{primitives.rose.500}",    "dark": "{primitives.rose.400}" },
-      "info":     { "light": "{primitives.cyan.500}",    "dark": "{primitives.cyan.400}" }
+      "success": { "light": "{primitives.emerald.500}", "dark": "{primitives.emerald.400}" },
+      "warning": { "light": "{primitives.amber.500}", "dark": "{primitives.amber.400}" },
+      "danger": { "light": "{primitives.rose.500}", "dark": "{primitives.rose.400}" },
+      "info": { "light": "{primitives.cyan.500}", "dark": "{primitives.cyan.400}" }
     },
     "focus-ring": {
-      "default":  { "light": "{primitives.indigo.500}", "dark": "{primitives.indigo.300}" }
+      "default": { "light": "{primitives.indigo.500}", "dark": "{primitives.indigo.300}" }
     }
   }
 }

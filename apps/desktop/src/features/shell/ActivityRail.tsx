@@ -1,7 +1,6 @@
 import { Tooltip } from '@medea/ui';
 import type { ReactNode } from 'react';
 
-
 import styles from './ActivityRail.module.css';
 
 export type SectionId =
@@ -51,7 +50,9 @@ export function ActivityRail({ active, onSelect }: Props) {
                 aria-label={e.label}
                 aria-pressed={e.id === active}
                 className={`${styles.btn} ${e.id === active ? styles.active : ''}`}
-                onClick={() => { onSelect(e.id); }}
+                onClick={() => {
+                  onSelect(e.id);
+                }}
               >
                 <span className={styles.icon}>{e.icon}</span>
               </button>

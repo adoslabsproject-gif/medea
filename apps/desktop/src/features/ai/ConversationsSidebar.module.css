@@ -33,7 +33,9 @@
   line-height: 1;
   display: grid;
   place-items: center;
-  transition: background 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
 }
 .expandBtn:hover {
   background: rgba(255, 255, 255, 0.06);
@@ -56,17 +58,25 @@
   padding: 9px 12px;
   border-radius: 10px;
   border: 1px solid var(--color-accent-border, rgba(120, 130, 255, 0.32));
-  background: linear-gradient(180deg,
+  background: linear-gradient(
+    180deg,
     var(--color-accent-soft, rgba(120, 130, 255, 0.18)),
-    var(--color-accent-soft-2, rgba(120, 130, 255, 0.08)));
+    var(--color-accent-soft-2, rgba(120, 130, 255, 0.08))
+  );
   color: var(--color-text-primary, #e7e9ee);
   font-weight: 600;
   font-size: 13px;
   cursor: pointer;
-  transition: filter 0.12s, transform 0.06s;
+  transition:
+    filter 0.12s,
+    transform 0.06s;
 }
-.newBtn:hover { filter: brightness(1.1); }
-.newBtn:active { transform: translateY(1px); }
+.newBtn:hover {
+  filter: brightness(1.1);
+}
+.newBtn:active {
+  transform: translateY(1px);
+}
 
 .newBtnIcon {
   font-size: 16px;
@@ -85,7 +95,9 @@
   font-size: 14px;
   display: grid;
   place-items: center;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 .collapseBtn:hover {
   background: rgba(255, 255, 255, 0.06);
@@ -101,18 +113,22 @@
   height: 32px;
   padding: 0 10px;
   border-radius: 8px;
-  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.10));
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
   background: var(--color-surface-2, rgba(255, 255, 255, 0.04));
   color: var(--color-text-primary, #e7e9ee);
   font-size: 12.5px;
   outline: none;
-  transition: border-color 0.12s, background 0.12s;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
 }
 .search:focus {
   border-color: var(--color-accent, rgba(120, 130, 255, 0.55));
   background: var(--color-surface-3, rgba(255, 255, 255, 0.06));
 }
-.search::placeholder { color: var(--color-text-tertiary, #6b7388); }
+.search::placeholder {
+  color: var(--color-text-tertiary, #6b7388);
+}
 
 .list {
   flex: 1;
@@ -138,7 +154,9 @@
 .group {
   margin-top: 10px;
 }
-.group:first-child { margin-top: 4px; }
+.group:first-child {
+  margin-top: 4px;
+}
 
 .groupTitle {
   font-size: 10.5px;
@@ -157,7 +175,9 @@
   border-radius: 8px;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: background 0.1s, border-color 0.1s;
+  transition:
+    background 0.1s,
+    border-color 0.1s;
 }
 .row:hover {
   background: rgba(255, 255, 255, 0.04);
@@ -195,8 +215,12 @@
   opacity: 0;
   transition: opacity 0.12s;
 }
-.row:hover .rowActions { opacity: 1; }
-.rowActive .rowActions { opacity: 1; }
+.row:hover .rowActions {
+  opacity: 1;
+}
+.rowActive .rowActions {
+  opacity: 1;
+}
 
 .rowIconBtn {
   width: 24px;
@@ -209,7 +233,9 @@
   font-size: 12px;
   display: grid;
   place-items: center;
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
 }
 .rowIconBtn:hover {
   background: rgba(255, 255, 255, 0.08);
@@ -224,8 +250,12 @@
 }
 
 @keyframes pulseDanger {
-  from { box-shadow: 0 0 0 0 rgba(255, 80, 80, 0.45); }
-  to   { box-shadow: 0 0 0 4px rgba(255, 80, 80, 0); }
+  from {
+    box-shadow: 0 0 0 0 rgba(255, 80, 80, 0.45);
+  }
+  to {
+    box-shadow: 0 0 0 4px rgba(255, 80, 80, 0);
+  }
 }
 
 .titleInput {

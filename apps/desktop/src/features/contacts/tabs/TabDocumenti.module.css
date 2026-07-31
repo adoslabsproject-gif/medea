@@ -15,9 +15,19 @@
   background: var(--color-surface-2, rgba(255, 255, 255, 0.03));
 }
 
-.sectionTitle { display: flex; align-items: center; gap: 8px; }
-.icon { font-size: 16px; }
-.label { font-size: 13.5px; font-weight: 700; color: var(--color-text-primary); }
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.icon {
+  font-size: 16px;
+}
+.label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
 .count {
   font-size: 11px;
   padding: 2px 8px;
@@ -43,9 +53,17 @@
   color: var(--color-text-tertiary, #7a8294);
 }
 
-.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
-.right { text-align: right; font-variant-numeric: tabular-nums; }
-.muted { color: var(--color-text-tertiary, #7a8294); }
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+.right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.muted {
+  color: var(--color-text-tertiary, #7a8294);
+}
 .notes {
   max-width: 200px;
   font-size: 12px;
@@ -54,23 +72,31 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.rowActions { display: flex; gap: 4px; justify-content: flex-end; }
+.rowActions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
 .dangerActive {
   background: rgba(255, 80, 80, 0.18) !important;
-  border-color: rgba(255, 80, 80, 0.50) !important;
+  border-color: rgba(255, 80, 80, 0.5) !important;
   color: #ff6b6b !important;
   animation: pulseDanger 0.9s ease-in-out infinite alternate;
 }
 @keyframes pulseDanger {
-  from { box-shadow: 0 0 0 0 rgba(255, 80, 80, 0.45); }
-  to   { box-shadow: 0 0 0 4px rgba(255, 80, 80, 0); }
+  from {
+    box-shadow: 0 0 0 0 rgba(255, 80, 80, 0.45);
+  }
+  to {
+    box-shadow: 0 0 0 4px rgba(255, 80, 80, 0);
+  }
 }
 
 .errorBox {
   margin-bottom: 12px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: rgba(255, 90, 90, 0.10);
+  background: rgba(255, 90, 90, 0.1);
   border: 1px solid rgba(255, 90, 90, 0.35);
   color: #ff8888;
   font-size: 12.5px;
@@ -91,7 +117,7 @@
   width: min(520px, 96vw);
   max-height: 92vh;
   background: var(--color-surface-0, #14171d);
-  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.10));
+  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.1));
   border-radius: 14px;
   display: flex;
   flex-direction: column;
@@ -104,7 +130,11 @@
   padding: 12px 16px;
   border-bottom: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.06));
 }
-.modalHead h3 { margin: 0; font-size: 14px; font-weight: 700; }
+.modalHead h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
 
 .modalBody {
   flex: 1;
@@ -123,9 +153,17 @@
   border-top: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.06));
 }
 
-.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
 
-.formRow { display: flex; flex-direction: column; gap: 4px; }
+.formRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .formLabel {
   font-size: 11px;
   font-weight: 600;
@@ -138,18 +176,29 @@
   padding: 0 10px;
   border-radius: 8px;
   border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.12));
-  background: var(--color-surface-2, rgba(0, 0, 0, 0.20));
+  background: var(--color-surface-2, rgba(0, 0, 0, 0.2));
   color: var(--color-text-primary);
   font-size: 13px;
   font-family: inherit;
   outline: none;
 }
-.input:focus { border-color: var(--color-accent, rgba(120, 130, 255, 0.55)); }
-.textarea { min-height: 70px; resize: vertical; padding: 8px 10px; height: auto; line-height: 1.4; }
+.input:focus {
+  border-color: var(--color-accent, rgba(120, 130, 255, 0.55));
+}
+.textarea {
+  min-height: 70px;
+  resize: vertical;
+  padding: 8px 10px;
+  height: auto;
+  line-height: 1.4;
+}
 
 .btnPrimary {
-  background: linear-gradient(180deg,
-    rgba(120, 130, 255, 0.32), rgba(120, 130, 255, 0.14)) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(120, 130, 255, 0.32),
+    rgba(120, 130, 255, 0.14)
+  ) !important;
   border-color: rgba(120, 130, 255, 0.55) !important;
   color: #d9deff !important;
   font-weight: 700;

@@ -7,7 +7,9 @@
   }
 
   @media (max-width: 60rem) {
-    .root { grid-template-columns: 1fr; }
+    .root {
+      grid-template-columns: 1fr;
+    }
   }
 
   .form {
@@ -63,7 +65,9 @@
     font-size: 0.85rem;
   }
 
-  .fileBtn:hover { background: var(--color-surface-3); }
+  .fileBtn:hover {
+    background: var(--color-surface-3);
+  }
 
   .hint {
     margin: 0;
@@ -80,7 +84,7 @@
     color: var(--color-text-secondary);
   }
 
-  .colorRow input[type="color"] {
+  .colorRow input[type='color'] {
     inline-size: 3rem;
     block-size: 2rem;
     padding: 0;

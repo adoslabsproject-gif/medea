@@ -1,4 +1,3 @@
-
 import { Button, TextField } from '@medea/ui';
 import { listen } from '@tauri-apps/api/event';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -76,7 +75,9 @@ export function MailLayout({ account, onSwitchAccount }: Props) {
       setSyncProgress(e.payload);
     }).then((u) => unlistens.push(u));
     return () => {
-      unlistens.forEach((u) => { u(); });
+      unlistens.forEach((u) => {
+        u();
+      });
     };
   }, []);
 
@@ -227,7 +228,9 @@ export function MailLayout({ account, onSwitchAccount }: Props) {
   }
 
   /* ── Effetti ──────────────────────────────────────────────────────── */
-  useEffect(() => { void loadFolders(); }, [loadFolders]);
+  useEffect(() => {
+    void loadFolders();
+  }, [loadFolders]);
   /* Refresh lista dopo che AI invia/archivia. */
   useEffect(() => {
     function onMailboxChanged() {
@@ -276,7 +279,16 @@ export function MailLayout({ account, onSwitchAccount }: Props) {
     if (autoSyncedRef.current.has(key)) return;
     autoSyncedRef.current.add(key);
     void syncCurrent();
-  }, [folderId, messages.length, loadingMessages, syncing, syncingAll, account.id, folderPath, syncCurrent]);
+  }, [
+    folderId,
+    messages.length,
+    loadingMessages,
+    syncing,
+    syncingAll,
+    account.id,
+    folderPath,
+    syncCurrent,
+  ]);
 
   // Auto-sync ALL all'avvio: appena l'utente apre Medea e le folder sono note,
   // scarica TUTTE le cartelle principali in serie. Una volta per sessione.
@@ -290,9 +302,7 @@ export function MailLayout({ account, onSwitchAccount }: Props) {
   function buildQuoted(m: DbFullMessage): string {
     return `\n\n--- Messaggio originale ---\nDa: ${m.fromName ?? ''} <${
       m.fromAddress ?? ''
-    }>\nData: ${m.internalDate ?? ''}\nOggetto: ${m.subject ?? ''}\n\n${
-      m.bodyText ?? ''
-    }`;
+    }>\nData: ${m.internalDate ?? ''}\nOggetto: ${m.subject ?? ''}\n\n${m.bodyText ?? ''}`;
   }
 
   function startReply(all: boolean) {
@@ -300,7 +310,11 @@ export function MailLayout({ account, onSwitchAccount }: Props) {
     const myEmail = account.emailAddress.toLowerCase();
     const cc = all
       ? [...activeMsg.to, ...activeMsg.cc]
-          .filter((e) => e.toLowerCase() !== myEmail && e.toLowerCase() !== (activeMsg.fromAddress ?? '').toLowerCase())
+          .filter(
+            (e) =>
+              e.toLowerCase() !== myEmail &&
+              e.toLowerCase() !== (activeMsg.fromAddress ?? '').toLowerCase(),
+          )
           .join(', ')
       : '';
     setComposePrefill({
@@ -325,9 +339,11 @@ export function MailLayout({ account, onSwitchAccount }: Props) {
       mode: 'forward',
       to: '',
       cc: '',
-      subject: activeMsg.subject?.toLowerCase().startsWith('fw') || activeMsg.subject?.toLowerCase().startsWith('i:')
-        ? (activeMsg.subject ?? '')
-        : `Fw: ${activeMsg.subject ?? ''}`,
+      subject:
+        activeMsg.subject?.toLowerCase().startsWith('fw') ||
+        activeMsg.subject?.toLowerCase().startsWith('i:')
+          ? (activeMsg.subject ?? '')
+          : `Fw: ${activeMsg.subject ?? ''}`,
       body: buildQuoted(activeMsg),
       inReplyTo: null,
       references: [],
@@ -340,7 +356,9 @@ export function MailLayout({ account, onSwitchAccount }: Props) {
     setComposeOpen(true);
   }
 
-  async function handleReaderAction(action: 'reply' | 'replyAll' | 'forward' | 'flag' | 'unread' | 'delete') {
+  async function handleReaderAction(
+    action: 'reply' | 'replyAll' | 'forward' | 'flag' | 'unread' | 'delete',
+  ) {
     if (!activeMsg) return;
     try {
       switch (action) {
@@ -384,13 +402,7 @@ export function MailLayout({ account, onSwitchAccount }: Props) {
     <div className={styles.root}>
       <aside className={styles.sidebar}>
         <header className={styles.sidebarHead}>
-          <img
-            src="/icon.png"
-            alt="Medea"
-            className={styles.glyphImg}
-            width={32}
-            height={32}
-          />
+          <img src="/icon.png" alt="Medea" className={styles.glyphImg} width={32} height={32} />
           <div className={styles.accountInfo}>
             <div className={styles.accountName}>{account.displayName}</div>
             <div className={styles.accountEmail}>{account.emailAddress}</div>
@@ -427,16 +439,24 @@ export function MailLayout({ account, onSwitchAccount }: Props) {
             <select
               className={styles.scopeSelect}
               value={searchScope}
-              onChange={(e) => { setSearchScope(e.target.value as 'folder' | 'all'); }}
+              onChange={(e) => {
+                setSearchScope(e.target.value as 'folder' | 'all');
+              }}
               aria-label="Ambito di ricerca"
             >
               <option value="folder">In questa cartella</option>
               <option value="all">In tutte le email</option>
             </select>
             <TextField
-              placeholder={searchScope === 'all' ? 'Cerca in tutte le email (FTS5)…' : 'Filtra in questa cartella…'}
+              placeholder={
+                searchScope === 'all'
+                  ? 'Cerca in tutte le email (FTS5)…'
+                  : 'Filtra in questa cartella…'
+              }
               value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); }}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && searchScope === 'all') void runSearch();
                 if (e.key === 'Escape') {
@@ -466,7 +486,9 @@ export function MailLayout({ account, onSwitchAccount }: Props) {
             <Button
               variant={aiPanelOpen ? 'solid' : 'outline'}
               size="sm"
-              onClick={() => { setAiPanelOpen(!aiPanelOpen); }}
+              onClick={() => {
+                setAiPanelOpen(!aiPanelOpen);
+              }}
               title="AI Assistente"
             >
               ✨ AI
@@ -492,7 +514,9 @@ export function MailLayout({ account, onSwitchAccount }: Props) {
             <SearchResults
               results={searchResults}
               activeId={activeId}
-              onSelect={(id) => { setActiveId(id); }}
+              onSelect={(id) => {
+                setActiveId(id);
+              }}
               onClear={() => {
                 setSearchResults(null);
                 setSearchQuery('');
@@ -506,7 +530,9 @@ export function MailLayout({ account, onSwitchAccount }: Props) {
               loading={loadingMessages}
               activeId={activeId}
               filterText={searchScope === 'folder' ? searchQuery : ''}
-              onSelect={(id) => { setActiveId(id); }}
+              onSelect={(id) => {
+                setActiveId(id);
+              }}
             />
           )}
         </section>
@@ -517,7 +543,9 @@ export function MailLayout({ account, onSwitchAccount }: Props) {
           <MessageReader
             message={activeMsg}
             loading={loadingMessage}
-            onAction={(a) => { void handleReaderAction(a); }}
+            onAction={(a) => {
+              void handleReaderAction(a);
+            }}
           />
         </section>
       </div>
@@ -525,7 +553,13 @@ export function MailLayout({ account, onSwitchAccount }: Props) {
       {error && (
         <div className={styles.errorToast} role="alert">
           {error}
-          <button type="button" onClick={() => { setError(null); }} aria-label="Chiudi">
+          <button
+            type="button"
+            onClick={() => {
+              setError(null);
+            }}
+            aria-label="Chiudi"
+          >
             ✕
           </button>
         </div>
@@ -546,7 +580,9 @@ export function MailLayout({ account, onSwitchAccount }: Props) {
         <AiPanel
           account={account}
           activeMessage={activeMsg}
-          onClose={() => { setAiPanelOpen(false); }}
+          onClose={() => {
+            setAiPanelOpen(false);
+          }}
         />
       )}
     </div>
@@ -574,7 +610,9 @@ function SearchResults({ results, activeId, onSelect, onClear }: SearchProps) {
             key={r.messageId}
             type="button"
             className={`${styles.searchItem} ${r.messageId === activeId ? styles.searchActive : ''}`}
-            onClick={() => { onSelect(r.messageId); }}
+            onClick={() => {
+              onSelect(r.messageId);
+            }}
           >
             <div className={styles.searchItemTop}>
               <span className={styles.searchFrom}>{r.fromAddress ?? '?'}</span>

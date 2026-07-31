@@ -82,12 +82,7 @@ export function Dialog({
               </p>
             )}
           </div>
-          <button
-            type="button"
-            aria-label="Chiudi"
-            className={styles.closeBtn}
-            onClick={onClose}
-          >
+          <button type="button" aria-label="Chiudi" className={styles.closeBtn} onClick={onClose}>
             ✕
           </button>
         </header>

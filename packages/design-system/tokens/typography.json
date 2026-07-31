@@ -7,11 +7,11 @@
     },
     "size": {
       "$comment": "clamp(min, fluid, max) — fluid type su viewport. Niente px fissi.",
-      "xs":  "clamp(0.6875rem, 0.05vw + 0.68rem, 0.75rem)",
-      "sm":  "clamp(0.75rem,  0.10vw + 0.73rem, 0.875rem)",
-      "md":  "clamp(0.875rem, 0.15vw + 0.85rem, 1rem)",
-      "lg":  "clamp(1rem,     0.20vw + 0.96rem, 1.125rem)",
-      "xl":  "clamp(1.125rem, 0.30vw + 1.07rem, 1.25rem)",
+      "xs": "clamp(0.6875rem, 0.05vw + 0.68rem, 0.75rem)",
+      "sm": "clamp(0.75rem,  0.10vw + 0.73rem, 0.875rem)",
+      "md": "clamp(0.875rem, 0.15vw + 0.85rem, 1rem)",
+      "lg": "clamp(1rem,     0.20vw + 0.96rem, 1.125rem)",
+      "xl": "clamp(1.125rem, 0.30vw + 1.07rem, 1.25rem)",
       "2xl": "clamp(1.25rem,  0.50vw + 1.15rem, 1.5rem)",
       "3xl": "clamp(1.5rem,   0.80vw + 1.35rem, 1.875rem)",
       "4xl": "clamp(1.875rem, 1.20vw + 1.65rem, 2.5rem)"
@@ -24,14 +24,14 @@
     },
     "leading": {
       "tight": "1.2",
-      "snug":  "1.35",
+      "snug": "1.35",
       "normal": "1.5",
       "relaxed": "1.65"
     },
     "tracking": {
       "tight": "-0.01em",
       "normal": "0",
-      "wide":  "0.04em",
+      "wide": "0.04em",
       "wider": "0.08em"
     }
   }

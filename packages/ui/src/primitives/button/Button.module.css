@@ -60,7 +60,11 @@
     color: var(--color-accent-emphasis);
   }
   .soft:hover:not(:disabled) {
-    background-color: color-mix(in oklch, var(--color-accent-subtle), var(--color-accent-default) 12%);
+    background-color: color-mix(
+      in oklch,
+      var(--color-accent-subtle),
+      var(--color-accent-default) 12%
+    );
   }
 
   .outline {

@@ -61,26 +61,42 @@ export const CUSTOM_MODEL_KEY = 'medea.ai.custom.model';
 
 export function providerLabel(p: ProviderId): string {
   switch (p) {
-    case 'liara': return 'Liara';
-    case 'custom': return 'Endpoint personale';
-    case 'anthropic': return 'Claude';
-    case 'openai': return 'OpenAI';
-    case 'gemini': return 'Gemini';
-    case 'deepseek': return 'DeepSeek';
-    case 'grok': return 'Grok';
-    case 'openrouter': return 'OpenRouter';
+    case 'liara':
+      return 'Liara';
+    case 'custom':
+      return 'Endpoint personale';
+    case 'anthropic':
+      return 'Claude';
+    case 'openai':
+      return 'OpenAI';
+    case 'gemini':
+      return 'Gemini';
+    case 'deepseek':
+      return 'DeepSeek';
+    case 'grok':
+      return 'Grok';
+    case 'openrouter':
+      return 'OpenRouter';
   }
 }
 
 export function providerLong(p: ProviderId): string {
   switch (p) {
-    case 'liara': return 'Liara — modello proprio (nha-v1), richiede la tua API key';
-    case 'custom': return 'Endpoint personalizzato — OpenAI-compatibile (vLLM, gateway privato…)';
-    case 'anthropic': return 'Anthropic Claude — richiede API key';
-    case 'openai': return 'OpenAI — richiede API key';
-    case 'gemini': return 'Google Gemini — richiede API key';
-    case 'deepseek': return 'DeepSeek — richiede API key';
-    case 'grok': return 'xAI Grok — richiede API key';
-    case 'openrouter': return 'OpenRouter — richiede API key';
+    case 'liara':
+      return 'Liara — modello proprio (nha-v1), richiede la tua API key';
+    case 'custom':
+      return 'Endpoint personalizzato — OpenAI-compatibile (vLLM, gateway privato…)';
+    case 'anthropic':
+      return 'Anthropic Claude — richiede API key';
+    case 'openai':
+      return 'OpenAI — richiede API key';
+    case 'gemini':
+      return 'Google Gemini — richiede API key';
+    case 'deepseek':
+      return 'DeepSeek — richiede API key';
+    case 'grok':
+      return 'xAI Grok — richiede API key';
+    case 'openrouter':
+      return 'OpenRouter — richiede API key';
   }
 }

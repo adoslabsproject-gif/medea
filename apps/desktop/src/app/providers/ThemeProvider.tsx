@@ -35,7 +35,10 @@ export function ThemeProvider({ value, onChange, children }: Props) {
     }
   }, [value]);
 
-  const ctx = useMemo<ThemeContextValue>(() => ({ theme: value, setTheme: onChange }), [value, onChange]);
+  const ctx = useMemo<ThemeContextValue>(
+    () => ({ theme: value, setTheme: onChange }),
+    [value, onChange],
+  );
 
   return <ThemeContext.Provider value={ctx}>{children}</ThemeContext.Provider>;
 }

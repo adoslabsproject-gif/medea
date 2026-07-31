@@ -6,14 +6,18 @@ import type { OrganizationDetail } from '../../mail/types';
 import styles from './shared.module.css';
 import own from './TabNote.module.css';
 
-interface Props { partner: OrganizationDetail; }
+interface Props {
+  partner: OrganizationDetail;
+}
 
 export function TabNote({ partner }: Props) {
   const [text, setText] = useState(partner.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => { setText(partner.notes ?? ''); }, [partner.id, partner.notes]);
+  useEffect(() => {
+    setText(partner.notes ?? '');
+  }, [partner.id, partner.notes]);
 
   async function save() {
     setSaving(true);
@@ -46,7 +50,9 @@ export function TabNote({ partner }: Props) {
         emailAddress: partner.emailAddress,
       });
       setSaved(true);
-      setTimeout(() => { setSaved(false); }, 2000);
+      setTimeout(() => {
+        setSaved(false);
+      }, 2000);
     } finally {
       setSaving(false);
     }
@@ -57,7 +63,9 @@ export function TabNote({ partner }: Props) {
       <textarea
         className={own.textarea}
         value={text}
-        onChange={(e) => { setText(e.target.value); }}
+        onChange={(e) => {
+          setText(e.target.value);
+        }}
         placeholder="Note operative su questo cliente / fornitore. Es: 'Solo bonifici a 60gg dalla fattura', 'Spedire sempre con DHL Express', 'Contattare prima Mario per ordini > 5k€'…"
         rows={12}
       />

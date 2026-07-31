@@ -44,7 +44,13 @@ function computePosition(rect: DOMRect, placement: TooltipPlacement): CSSPropert
   }
 }
 
-export function Tooltip({ children, label, placement = 'top', delay = 250, id: idProp }: TooltipProps) {
+export function Tooltip({
+  children,
+  label,
+  placement = 'top',
+  delay = 250,
+  id: idProp,
+}: TooltipProps) {
   const reactId = useId();
   const id = idProp ?? `${reactId}-tooltip`;
   const [open, setOpen] = useState(false);
@@ -70,13 +76,18 @@ export function Tooltip({ children, label, placement = 'top', delay = 250, id: i
     setOpen(false);
   }, []);
 
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!open) return;
-    const handler = () => { refreshPosition(); };
+    const handler = () => {
+      refreshPosition();
+    };
     window.addEventListener('scroll', handler, true);
     window.addEventListener('resize', handler);
     return () => {

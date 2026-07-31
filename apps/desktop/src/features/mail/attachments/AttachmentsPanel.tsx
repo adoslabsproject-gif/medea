@@ -17,9 +17,12 @@ function fmtSize(b: number): string {
 
 function levelLabel(l: ThreatLevel): string {
   switch (l) {
-    case 'safe': return 'Sicuro';
-    case 'caution': return 'Attenzione';
-    case 'danger': return 'Pericoloso';
+    case 'safe':
+      return 'Sicuro';
+    case 'caution':
+      return 'Attenzione';
+    case 'danger':
+      return 'Pericoloso';
   }
 }
 
@@ -42,16 +45,26 @@ export function AttachmentsPanel({ messageId }: Props) {
     setError(null);
     if (messageId === null) return;
     setLoading(true);
-    void mailApi.db.listAttachments(messageId)
+    void mailApi.db
+      .listAttachments(messageId)
       .then((list) => {
         setItems(list.filter((a) => !a.isInline));
       })
-      .catch((e: unknown) => { setError(String(e)); })
-      .finally(() => { setLoading(false); });
+      .catch((e: unknown) => {
+        setError(String(e));
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [messageId]);
 
   if (messageId === null) return null;
-  if (loading) return <div className={styles.row}><span className={styles.muted}>Analizzo allegati…</span></div>;
+  if (loading)
+    return (
+      <div className={styles.row}>
+        <span className={styles.muted}>Analizzo allegati…</span>
+      </div>
+    );
   if (items.length === 0) return null;
 
   async function handleSave(entry: AttachmentEntry) {
@@ -82,9 +95,19 @@ export function AttachmentsPanel({ messageId }: Props) {
     <section className={styles.panel} aria-label="Allegati">
       <header className={styles.head}>
         <span className={styles.headIcon}>📎</span>
-        <span className={styles.headTitle}>{items.length} {items.length === 1 ? 'allegato' : 'allegati'}</span>
-        {danger > 0 && <span className={`${styles.headBadge} ${styles.level_danger}`}>{danger} pericoloso{danger > 1 ? 'si' : ''}</span>}
-        {caution > 0 && <span className={`${styles.headBadge} ${styles.level_caution}`}>{caution} attenzione</span>}
+        <span className={styles.headTitle}>
+          {items.length} {items.length === 1 ? 'allegato' : 'allegati'}
+        </span>
+        {danger > 0 && (
+          <span className={`${styles.headBadge} ${styles.level_danger}`}>
+            {danger} pericoloso{danger > 1 ? 'si' : ''}
+          </span>
+        )}
+        {caution > 0 && (
+          <span className={`${styles.headBadge} ${styles.level_caution}`}>
+            {caution} attenzione
+          </span>
+        )}
       </header>
 
       <div className={styles.list}>
@@ -93,25 +116,43 @@ export function AttachmentsPanel({ messageId }: Props) {
             key={a.index}
             type="button"
             className={`${styles.item} ${levelClass(a.threat.level)}`}
-            onClick={() => { setSelected(a); setSavedTo(null); setError(null); }}
+            onClick={() => {
+              setSelected(a);
+              setSavedTo(null);
+              setError(null);
+            }}
           >
             <span className={styles.itemIcon}>{a.threat.icon}</span>
             <div className={styles.itemMain}>
-              <div className={styles.itemName} title={a.filename}>{a.filename}</div>
+              <div className={styles.itemName} title={a.filename}>
+                {a.filename}
+              </div>
               <div className={styles.itemMeta}>
                 <span>{a.threat.category}</span>
                 <span> · </span>
                 <span>{fmtSize(a.sizeBytes)}</span>
               </div>
             </div>
-            <span className={`${styles.itemBadge} ${levelClass(a.threat.level)}`}>{levelLabel(a.threat.level)}</span>
+            <span className={`${styles.itemBadge} ${levelClass(a.threat.level)}`}>
+              {levelLabel(a.threat.level)}
+            </span>
           </button>
         ))}
       </div>
 
       {selected && (
-        <div className={styles.backdrop} onClick={() => { setSelected(null); }}>
-          <div className={styles.modal} onClick={(e) => { e.stopPropagation(); }}>
+        <div
+          className={styles.backdrop}
+          onClick={() => {
+            setSelected(null);
+          }}
+        >
+          <div
+            className={styles.modal}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
             <header className={`${styles.modalHead} ${levelClass(selected.threat.level)}`}>
               <span className={styles.modalIcon}>{selected.threat.icon}</span>
               <div className={styles.modalTitle}>
@@ -122,16 +163,41 @@ export function AttachmentsPanel({ messageId }: Props) {
                 </div>
                 <div className={styles.modalFilename}>{selected.filename}</div>
               </div>
-              <button type="button" className={styles.closeBtn} onClick={() => { setSelected(null); }} aria-label="Chiudi">✕</button>
+              <button
+                type="button"
+                className={styles.closeBtn}
+                onClick={() => {
+                  setSelected(null);
+                }}
+                aria-label="Chiudi"
+              >
+                ✕
+              </button>
             </header>
 
             <div className={styles.modalBody}>
               <dl className={styles.modalMeta}>
-                <div><dt>Tipo</dt><dd>{selected.threat.category}</dd></div>
-                <div><dt>MIME</dt><dd><code>{selected.contentType}</code></dd></div>
-                <div><dt>Dimensione</dt><dd>{fmtSize(selected.sizeBytes)}</dd></div>
+                <div>
+                  <dt>Tipo</dt>
+                  <dd>{selected.threat.category}</dd>
+                </div>
+                <div>
+                  <dt>MIME</dt>
+                  <dd>
+                    <code>{selected.contentType}</code>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Dimensione</dt>
+                  <dd>{fmtSize(selected.sizeBytes)}</dd>
+                </div>
                 {selected.threat.sha256Hex && (
-                  <div><dt>SHA-256</dt><dd className={styles.sha}><code>{selected.threat.sha256Hex}</code></dd></div>
+                  <div>
+                    <dt>SHA-256</dt>
+                    <dd className={styles.sha}>
+                      <code>{selected.threat.sha256Hex}</code>
+                    </dd>
+                  </div>
                 )}
               </dl>
 
@@ -141,7 +207,9 @@ export function AttachmentsPanel({ messageId }: Props) {
                     {selected.threat.level === 'safe' ? 'Note' : 'Motivi della segnalazione'}
                   </h4>
                   <ul className={styles.reasonList}>
-                    {selected.threat.reasons.map((r, i) => <li key={i}>{r}</li>)}
+                    {selected.threat.reasons.map((r, i) => (
+                      <li key={i}>{r}</li>
+                    ))}
                   </ul>
                 </section>
               )}
@@ -150,14 +218,17 @@ export function AttachmentsPanel({ messageId }: Props) {
                 <section className={styles.section}>
                   <h4 className={styles.sectionTitle}>Consigli</h4>
                   <ul className={styles.suggList}>
-                    {selected.threat.suggestions.map((s, i) => <li key={i}>{s}</li>)}
+                    {selected.threat.suggestions.map((s, i) => (
+                      <li key={i}>{s}</li>
+                    ))}
                   </ul>
                 </section>
               )}
 
               {selected.threat.level === 'danger' && (
                 <div className={styles.dangerBanner}>
-                  🚫 <strong>NON aprire.</strong> Salvalo SOLO se sei certo del mittente e sai cosa stai facendo.
+                  🚫 <strong>NON aprire.</strong> Salvalo SOLO se sei certo del mittente e sai cosa
+                  stai facendo.
                 </div>
               )}
 
@@ -181,7 +252,13 @@ export function AttachmentsPanel({ messageId }: Props) {
                 </a>
               )}
               <span style={{ flex: 1 }} />
-              <button type="button" className={styles.ghostBtn} onClick={() => { setSelected(null); }}>
+              <button
+                type="button"
+                className={styles.ghostBtn}
+                onClick={() => {
+                  setSelected(null);
+                }}
+              >
                 Chiudi
               </button>
               <button
@@ -190,7 +267,11 @@ export function AttachmentsPanel({ messageId }: Props) {
                 onClick={() => void handleSave(selected)}
                 disabled={saving}
               >
-                {saving ? 'Salvataggio…' : selected.threat.level === 'danger' ? '⚠️ Salva comunque' : '💾 Salva in Downloads/Medea'}
+                {saving
+                  ? 'Salvataggio…'
+                  : selected.threat.level === 'danger'
+                    ? '⚠️ Salva comunque'
+                    : '💾 Salva in Downloads/Medea'}
               </button>
             </footer>
           </div>
@@ -199,4 +280,3 @@ export function AttachmentsPanel({ messageId }: Props) {
     </section>
   );
 }
-

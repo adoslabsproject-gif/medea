@@ -26,7 +26,9 @@ type Inline =
 function parseInline(line: string): Inline[] {
   const out: Inline[] = [];
   let i = 0;
-  const push = (n: Inline) => { out.push(n); };
+  const push = (n: Inline) => {
+    out.push(n);
+  };
   while (i < line.length) {
     if (line.startsWith('**', i)) {
       const end = line.indexOf('**', i + 2);
@@ -177,7 +179,11 @@ function parseBlocks(src: string): Block[] {
     // paragraph: aggrega righe fino a riga vuota
     const buf: string[] = [line];
     i++;
-    while (i < lines.length && (lines[i] ?? '').trim() !== '' && !/^(#|>|\s*[-*]\s|\s*\d+\.\s|```)/.test(lines[i] ?? '')) {
+    while (
+      i < lines.length &&
+      (lines[i] ?? '').trim() !== '' &&
+      !/^(#|>|\s*[-*]\s|\s*\d+\.\s|```)/.test(lines[i] ?? '')
+    ) {
       buf.push(lines[i] ?? '');
       i++;
     }
@@ -189,16 +195,22 @@ function parseBlocks(src: string): Block[] {
 function renderInline(nodes: Inline[]): ReactNode {
   return nodes.map((n, i) => {
     switch (n.type) {
-      case 'text': return <span key={i}>{n.value}</span>;
-      case 'code': return <code key={i}>{n.value}</code>;
-      case 'bold': return <strong key={i}>{renderInline(n.children)}</strong>;
-      case 'em': return <em key={i}>{renderInline(n.children)}</em>;
-      case 'br': return <br key={i} />;
-      case 'link': return (
-        <a key={i} href={n.href} target="_blank" rel="noreferrer">
-          {renderInline(n.children)}
-        </a>
-      );
+      case 'text':
+        return <span key={i}>{n.value}</span>;
+      case 'code':
+        return <code key={i}>{n.value}</code>;
+      case 'bold':
+        return <strong key={i}>{renderInline(n.children)}</strong>;
+      case 'em':
+        return <em key={i}>{renderInline(n.children)}</em>;
+      case 'br':
+        return <br key={i} />;
+      case 'link':
+        return (
+          <a key={i} href={n.href} target="_blank" rel="noreferrer">
+            {renderInline(n.children)}
+          </a>
+        );
     }
   });
 }
@@ -213,38 +225,57 @@ export function Markdown({ source }: { source: string }) {
             const H = `h${b.level.toString()}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
             return <H key={i}>{renderInline(b.children)}</H>;
           }
-          case 'p': return <p key={i}>{renderInline(b.children)}</p>;
-          case 'ul': return (
-            <ul key={i}>
-              {b.items.map((it, j) => <li key={j}>{renderInline(it)}</li>)}
-            </ul>
-          );
-          case 'ol': return (
-            <ol key={i}>
-              {b.items.map((it, j) => <li key={j}>{renderInline(it)}</li>)}
-            </ol>
-          );
-          case 'pre': return (
-            <pre key={i} data-lang={b.lang ?? ''}>
-              <code>{b.text}</code>
-            </pre>
-          );
-          case 'quote': return <blockquote key={i}>{renderInline(b.children)}</blockquote>;
-          case 'table': return (
-            <div key={i} className="md-tableWrap">
-              <table>
-                <thead>
-                  <tr>{b.head.map((c, j) => <th key={j}>{renderInline(c)}</th>)}</tr>
-                </thead>
-                <tbody>
-                  {b.rows.map((row, j) => (
-                    <tr key={j}>{row.map((c, k) => <td key={k}>{renderInline(c)}</td>)}</tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          );
-          case 'hr': return <hr key={i} />;
+          case 'p':
+            return <p key={i}>{renderInline(b.children)}</p>;
+          case 'ul':
+            return (
+              <ul key={i}>
+                {b.items.map((it, j) => (
+                  <li key={j}>{renderInline(it)}</li>
+                ))}
+              </ul>
+            );
+          case 'ol':
+            return (
+              <ol key={i}>
+                {b.items.map((it, j) => (
+                  <li key={j}>{renderInline(it)}</li>
+                ))}
+              </ol>
+            );
+          case 'pre':
+            return (
+              <pre key={i} data-lang={b.lang ?? ''}>
+                <code>{b.text}</code>
+              </pre>
+            );
+          case 'quote':
+            return <blockquote key={i}>{renderInline(b.children)}</blockquote>;
+          case 'table':
+            return (
+              <div key={i} className="md-tableWrap">
+                <table>
+                  <thead>
+                    <tr>
+                      {b.head.map((c, j) => (
+                        <th key={j}>{renderInline(c)}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {b.rows.map((row, j) => (
+                      <tr key={j}>
+                        {row.map((c, k) => (
+                          <td key={k}>{renderInline(c)}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          case 'hr':
+            return <hr key={i} />;
         }
       })}
     </div>

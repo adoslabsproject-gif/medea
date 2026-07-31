@@ -30,8 +30,8 @@ export function NewPartnerDialog({ onClose, onCreated }: Props) {
     setSaving(true);
     setError(null);
     try {
-      const derivedDomain = domain.trim()
-        || (emailAddress.includes('@') ? emailAddress.split('@')[1] ?? '' : '');
+      const derivedDomain =
+        domain.trim() || (emailAddress.includes('@') ? (emailAddress.split('@')[1] ?? '') : '');
       const id = await mailApi.db.organizationInsert({
         displayName: displayName.trim(),
         domain: derivedDomain || null,
@@ -49,10 +49,18 @@ export function NewPartnerDialog({ onClose, onCreated }: Props) {
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => { e.stopPropagation(); }} style={{ width: 480 }}>
+      <div
+        className={styles.modal}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        style={{ width: 480 }}
+      >
         <header className={styles.head}>
           <h2 className={styles.title}>Nuova anagrafica</h2>
-          <button type="button" className={styles.closeBtn} onClick={onClose}>✕</button>
+          <button type="button" className={styles.closeBtn} onClick={onClose}>
+            ✕
+          </button>
         </header>
 
         <div className={styles.body}>
@@ -64,7 +72,9 @@ export function NewPartnerDialog({ onClose, onCreated }: Props) {
                   autoFocus
                   className={styles.input}
                   value={displayName}
-                  onChange={(e) => { setDisplayName(e.target.value); }}
+                  onChange={(e) => {
+                    setDisplayName(e.target.value);
+                  }}
                   placeholder="es. ACME Industries S.r.l."
                 />
               </label>
@@ -74,16 +84,22 @@ export function NewPartnerDialog({ onClose, onCreated }: Props) {
                   className={styles.input}
                   type="email"
                   value={emailAddress}
-                  onChange={(e) => { setEmailAddress(e.target.value); }}
+                  onChange={(e) => {
+                    setEmailAddress(e.target.value);
+                  }}
                   placeholder="info@acme.it"
                 />
               </label>
               <label className={styles.formRow}>
-                <span className={styles.formLabel}>Dominio (auto-derivato dall'email se vuoto)</span>
+                <span className={styles.formLabel}>
+                  Dominio (auto-derivato dall'email se vuoto)
+                </span>
                 <input
                   className={styles.input}
                   value={domain}
-                  onChange={(e) => { setDomain(e.target.value); }}
+                  onChange={(e) => {
+                    setDomain(e.target.value);
+                  }}
                   placeholder="acme.it"
                 />
               </label>
@@ -94,14 +110,28 @@ export function NewPartnerDialog({ onClose, onCreated }: Props) {
             <h3 className={styles.sectionTitle}>Ruoli</h3>
             <div className={styles.sectionBody}>
               <label className={styles.checkRow}>
-                <input type="checkbox" checked={isClient}
-                  onChange={(e) => { setIsClient(e.target.checked); }} />
-                <span>🤝 È un <strong>cliente</strong></span>
+                <input
+                  type="checkbox"
+                  checked={isClient}
+                  onChange={(e) => {
+                    setIsClient(e.target.checked);
+                  }}
+                />
+                <span>
+                  🤝 È un <strong>cliente</strong>
+                </span>
               </label>
               <label className={styles.checkRow}>
-                <input type="checkbox" checked={isSupplier}
-                  onChange={(e) => { setIsSupplier(e.target.checked); }} />
-                <span>🏭 È un <strong>fornitore</strong></span>
+                <input
+                  type="checkbox"
+                  checked={isSupplier}
+                  onChange={(e) => {
+                    setIsSupplier(e.target.checked);
+                  }}
+                />
+                <span>
+                  🏭 È un <strong>fornitore</strong>
+                </span>
               </label>
             </div>
           </section>
@@ -110,8 +140,15 @@ export function NewPartnerDialog({ onClose, onCreated }: Props) {
         </div>
 
         <footer className={styles.foot}>
-          <button type="button" className={styles.ghostBtn} onClick={onClose}>Annulla</button>
-          <button type="button" className={styles.primaryBtn} onClick={() => void save()} disabled={saving}>
+          <button type="button" className={styles.ghostBtn} onClick={onClose}>
+            Annulla
+          </button>
+          <button
+            type="button"
+            className={styles.primaryBtn}
+            onClick={() => void save()}
+            disabled={saving}
+          >
             {saving ? 'Creazione…' : 'Crea scheda'}
           </button>
         </footer>

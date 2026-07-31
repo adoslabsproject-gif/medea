@@ -3,7 +3,6 @@ import type { DbOrganizationRow } from '../mail/api';
 import styles from './PartnersSidebar.module.css';
 import type { PartnerFilter } from './types';
 
-
 interface Props {
   partners: DbOrganizationRow[];
   activeId: number | null;
@@ -25,9 +24,13 @@ function initials(name: string | null, domain: string): string {
 }
 
 export function PartnersSidebar({
-  partners, activeId, onSelect,
-  filter, onChangeFilter,
-  searchQuery, onChangeSearch,
+  partners,
+  activeId,
+  onSelect,
+  filter,
+  onChangeFilter,
+  searchQuery,
+  onChangeSearch,
   counts,
 }: Props) {
   return (
@@ -38,22 +41,41 @@ export function PartnersSidebar({
           className={styles.search}
           placeholder="Cerca per nome, P.IVA, dominio, email…"
           value={searchQuery}
-          onChange={(e) => { onChangeSearch(e.target.value); }}
+          onChange={(e) => {
+            onChangeSearch(e.target.value);
+          }}
         />
       </div>
 
       <div className={styles.tabsRow} role="tablist" aria-label="Filtro">
         <FilterTab
-          active={filter === 'all'} onClick={() => { onChangeFilter('all'); }}
-          icon="📚" label="Tutti" count={counts.all}
+          active={filter === 'all'}
+          onClick={() => {
+            onChangeFilter('all');
+          }}
+          icon="📚"
+          label="Tutti"
+          count={counts.all}
         />
         <FilterTab
-          active={filter === 'clients'} onClick={() => { onChangeFilter('clients'); }}
-          icon="🤝" label="Clienti" count={counts.clients} accent="emerald"
+          active={filter === 'clients'}
+          onClick={() => {
+            onChangeFilter('clients');
+          }}
+          icon="🤝"
+          label="Clienti"
+          count={counts.clients}
+          accent="emerald"
         />
         <FilterTab
-          active={filter === 'suppliers'} onClick={() => { onChangeFilter('suppliers'); }}
-          icon="🏭" label="Fornitori" count={counts.suppliers} accent="amber"
+          active={filter === 'suppliers'}
+          onClick={() => {
+            onChangeFilter('suppliers');
+          }}
+          icon="🏭"
+          label="Fornitori"
+          count={counts.suppliers}
+          accent="amber"
         />
       </div>
 
@@ -62,7 +84,8 @@ export function PartnersSidebar({
           <div className={styles.empty}>
             <div className={styles.emptyIcon}>📭</div>
             <p className={styles.emptyText}>
-              Nessuna anagrafica trovata.<br />
+              Nessuna anagrafica trovata.
+              <br />
               {filter !== 'all' && 'Cambia filtro o '}
               crea una nuova scheda dall'header.
             </p>
@@ -76,13 +99,13 @@ export function PartnersSidebar({
               key={p.id}
               type="button"
               className={`${styles.row} ${isActive ? styles.rowActive : ''}`}
-              onClick={() => { onSelect(p.id); }}
+              onClick={() => {
+                onSelect(p.id);
+              }}
             >
               <span className={styles.avatar}>{initials(p.displayName, p.domain)}</span>
               <span className={styles.rowMain}>
-                <span className={styles.rowTitle}>
-                  {p.displayName ?? p.domain}
-                </span>
+                <span className={styles.rowTitle}>{p.displayName ?? p.domain}</span>
                 <span className={styles.rowMeta}>
                   {p.vatNumber ? `P.IVA ${p.vatNumber}` : p.domain}
                   {p.city && ` · ${p.city}`}
@@ -90,7 +113,9 @@ export function PartnersSidebar({
               </span>
               <span className={styles.badges}>
                 {p.isClient && <span className={`${styles.badge} ${styles.badgeClient}`}>C</span>}
-                {p.isSupplier && <span className={`${styles.badge} ${styles.badgeSupplier}`}>F</span>}
+                {p.isSupplier && (
+                  <span className={`${styles.badge} ${styles.badgeSupplier}`}>F</span>
+                )}
                 {!p.isClient && !p.isSupplier && (
                   <span className={`${styles.badge} ${styles.badgeNone}`}>?</span>
                 )}
@@ -118,7 +143,9 @@ function FilterTab({ active, onClick, icon, label, count, accent }: TabProps) {
     active ? styles.tabActive : '',
     accent === 'emerald' ? styles.tabEmerald : '',
     accent === 'amber' ? styles.tabAmber : '',
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
   return (
     <button type="button" className={cls} onClick={onClick} role="tab" aria-selected={active}>
       <span className={styles.tabIcon}>{icon}</span>

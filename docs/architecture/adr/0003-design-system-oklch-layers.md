@@ -18,7 +18,7 @@ Adottiamo **tre pilastri CSS 2026** insieme:
 
 Tutti i valori sorgente nei file `packages/design-system/tokens/*.json` sono dichiarati in `oklch(L C H)`. L=Lightness percettiva, C=Chroma, H=Hue. Perché:
 
-- Variazioni di lightness sono *percettivamente uniformi*: una scala `--indigo-500` → `--indigo-600` ha sempre lo stesso "salto" perceivable, indipendentemente dall'hue. Con HSL non è vero (giallo e blu allo stesso L appaiono molto diversi).
+- Variazioni di lightness sono _percettivamente uniformi_: una scala `--indigo-500` → `--indigo-600` ha sempre lo stesso "salto" perceivable, indipendentemente dall'hue. Con HSL non è vero (giallo e blu allo stesso L appaiono molto diversi).
 - Il browser interpola colori in OKLCH in `color-mix()` senza il bandaggio tipico dell'RGB.
 - Permette palette generative (variando solo H si ottengono famiglie coerenti).
 

@@ -6,16 +6,19 @@ import type { DbContactRow, DbOrganizationRow } from '../mail/api';
 import styles from './AddressBookView.module.css';
 import { ContactMessagesPanel } from './ContactMessagesPanel';
 
-
 type TabId = 'orgs' | 'contacts';
 
 function fmtDate(iso: string | null): string {
   if (!iso) return '—';
   try {
     return new Date(iso).toLocaleDateString('it-IT', {
-      day: '2-digit', month: '2-digit', year: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
     });
-  } catch { return iso; }
+  } catch {
+    return iso;
+  }
 }
 
 function initials(name: string | null, fallback: string): string {
@@ -55,7 +58,9 @@ export function AddressBookView() {
       setLoading(false);
     }
   }
-  useEffect(() => { void refresh(); }, []);
+  useEffect(() => {
+    void refresh();
+  }, []);
 
   async function toggleContactClient(c: DbContactRow) {
     await mailApi.db.contactSetFlags(c.id, !c.isClient, c.isSupplier);
@@ -68,7 +73,7 @@ export function AddressBookView() {
   async function toggleOrgClient(o: DbOrganizationRow) {
     // Optimistic update: cambio subito UI, poi sincronizzo
     const next = !o.isClient;
-    setOrgs((prev) => prev.map((x) => x.id === o.id ? { ...x, isClient: next } : x));
+    setOrgs((prev) => prev.map((x) => (x.id === o.id ? { ...x, isClient: next } : x)));
     try {
       await mailApi.db.organizationSetRoles(o.id, next, o.isSupplier);
     } catch (e) {
@@ -78,7 +83,7 @@ export function AddressBookView() {
   }
   async function toggleOrgSupplier(o: DbOrganizationRow) {
     const next = !o.isSupplier;
-    setOrgs((prev) => prev.map((x) => x.id === o.id ? { ...x, isSupplier: next } : x));
+    setOrgs((prev) => prev.map((x) => (x.id === o.id ? { ...x, isSupplier: next } : x)));
     try {
       await mailApi.db.organizationSetRoles(o.id, o.isClient, next);
     } catch (e) {
@@ -89,19 +94,24 @@ export function AddressBookView() {
   async function deleteOrg(id: number) {
     if (confirmingDelete !== id) {
       setConfirmingDelete(id);
-      setTimeout(() => { setConfirmingDelete(null); }, 3000);
+      setTimeout(() => {
+        setConfirmingDelete(null);
+      }, 3000);
       return;
     }
     setConfirmingDelete(null);
     try {
       await mailApi.db.organizationDelete(id);
       void refresh();
-    } catch (e) { setError(String(e)); }
+    } catch (e) {
+      setError(String(e));
+    }
   }
 
   function toggleSelect(id: number) {
     const next = new Set(selected);
-    if (next.has(id)) next.delete(id); else next.add(id);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     setSelected(next);
   }
   function selectAllVisible(ids: number[]) {
@@ -111,7 +121,9 @@ export function AddressBookView() {
     if (selected.size === 0) return;
     if (!confirmingBulk) {
       setConfirmingBulk(true);
-      setTimeout(() => { setConfirmingBulk(false); }, 4000);
+      setTimeout(() => {
+        setConfirmingBulk(false);
+      }, 4000);
       return;
     }
     setConfirmingBulk(false);
@@ -120,23 +132,29 @@ export function AddressBookView() {
       console.info(`[Medea] bulk-deleted ${n} organizations`);
       setSelected(new Set());
       void refresh();
-    } catch (e) { setError(String(e)); }
+    } catch (e) {
+      setError(String(e));
+    }
   }
 
   const filteredContacts = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return contacts;
-    return contacts.filter((c) =>
-      c.emailAddress.toLowerCase().includes(q)
-      || (c.displayName ?? '').toLowerCase().includes(q)
-      || (c.organizationDomain ?? '').toLowerCase().includes(q)
-      || (c.organizationName ?? '').toLowerCase().includes(q),
+    return contacts.filter(
+      (c) =>
+        c.emailAddress.toLowerCase().includes(q) ||
+        (c.displayName ?? '').toLowerCase().includes(q) ||
+        (c.organizationDomain ?? '').toLowerCase().includes(q) ||
+        (c.organizationName ?? '').toLowerCase().includes(q),
     );
   }, [contacts, search]);
 
   /** Contatti raggruppati per dominio, gruppi ordinati per numerosità. */
   const groupedContacts = useMemo(() => {
-    const groups = new Map<string, { domain: string; orgName: string | null; items: DbContactRow[] }>();
+    const groups = new Map<
+      string,
+      { domain: string; orgName: string | null; items: DbContactRow[] }
+    >();
     for (const c of filteredContacts) {
       const domain = c.organizationDomain ?? c.emailAddress.split('@')[1] ?? '(sconosciuto)';
       const g = groups.get(domain) ?? { domain, orgName: null, items: [] };
@@ -151,10 +169,11 @@ export function AddressBookView() {
     const q = search.trim().toLowerCase();
     let list = orgs;
     if (q) {
-      list = list.filter((o) =>
-        o.domain.toLowerCase().includes(q)
-        || (o.displayName ?? '').toLowerCase().includes(q)
-        || (o.vatNumber ?? '').toLowerCase().includes(q),
+      list = list.filter(
+        (o) =>
+          o.domain.toLowerCase().includes(q) ||
+          (o.displayName ?? '').toLowerCase().includes(q) ||
+          (o.vatNumber ?? '').toLowerCase().includes(q),
       );
     }
     return list.sort((a, b) => b.contactCount - a.contactCount);
@@ -169,8 +188,8 @@ export function AddressBookView() {
             <h1 className={styles.titleText}>Rubrica indirizzi</h1>
             <p className={styles.titleHint}>
               Tutti gli indirizzi auto-aggregati dal sync IMAP. Clicca <strong>+C</strong> o
-              <strong> +F</strong> per marcare come <em>Cliente</em> o <em>Fornitore</em> — comparirà
-              automaticamente anche nella sezione <strong>🤝 Anagrafica</strong>.
+              <strong> +F</strong> per marcare come <em>Cliente</em> o <em>Fornitore</em> —
+              comparirà automaticamente anche nella sezione <strong>🤝 Anagrafica</strong>.
             </p>
           </div>
         </div>
@@ -178,7 +197,9 @@ export function AddressBookView() {
           <button
             type="button"
             className={`${styles.tabBtn} ${tab === 'orgs' ? styles.tabActive : ''}`}
-            onClick={() => { setTab('orgs'); }}
+            onClick={() => {
+              setTab('orgs');
+            }}
           >
             🏢 Aziende / domini
             <span className={styles.count}>{orgs.length}</span>
@@ -186,7 +207,9 @@ export function AddressBookView() {
           <button
             type="button"
             className={`${styles.tabBtn} ${tab === 'contacts' ? styles.tabActive : ''}`}
-            onClick={() => { setTab('contacts'); }}
+            onClick={() => {
+              setTab('contacts');
+            }}
           >
             👤 Persone (email)
             <span className={styles.count}>{contacts.length}</span>
@@ -198,11 +221,15 @@ export function AddressBookView() {
         <input
           type="search"
           className={styles.search}
-          placeholder={tab === 'orgs'
-            ? 'Cerca per dominio, ragione sociale, P.IVA…'
-            : 'Cerca per email, nome, dominio…'}
+          placeholder={
+            tab === 'orgs'
+              ? 'Cerca per dominio, ragione sociale, P.IVA…'
+              : 'Cerca per email, nome, dominio…'
+          }
           value={search}
-          onChange={(e) => { setSearch(e.target.value); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+          }}
         />
         <span className={styles.summary}>
           {tab === 'orgs'
@@ -226,13 +253,19 @@ export function AddressBookView() {
                     if (e.target.checked) selectAllVisible(filteredOrgs.map((o) => o.id));
                     else setSelected(new Set());
                   }}
-                />
-                {' '}Seleziona tutti i {filteredOrgs.length} visibili
+                />{' '}
+                Seleziona tutti i {filteredOrgs.length} visibili
               </label>
               {selected.size > 0 && (
                 <>
                   <span className={styles.bulkInfo}>{selected.size} selezionati</span>
-                  <button type="button" className={styles.btn} onClick={() => { setSelected(new Set()); }}>
+                  <button
+                    type="button"
+                    className={styles.btn}
+                    onClick={() => {
+                      setSelected(new Set());
+                    }}
+                  >
                     Deseleziona
                   </button>
                   <button
@@ -240,74 +273,100 @@ export function AddressBookView() {
                     className={`${styles.btn} ${confirmingBulk ? styles.btnDanger : ''}`}
                     onClick={() => void bulkDelete()}
                   >
-                    {confirmingBulk ? `✓ Conferma elimina ${selected.size}` : `🗑 Elimina ${selected.size}`}
+                    {confirmingBulk
+                      ? `✓ Conferma elimina ${selected.size}`
+                      : `🗑 Elimina ${selected.size}`}
                   </button>
                 </>
               )}
             </div>
           )}
-        <div className={styles.cardGrid}>
-          {filteredOrgs.length === 0 && (
-            <div className={styles.empty}>Nessuna azienda trovata.</div>
-          )}
-          {filteredOrgs.map((o) => {
-            const classified = o.isClient || o.isSupplier;
-            const isSel = selected.has(o.id);
-            return (
-              <div key={o.id} className={`${styles.card} ${classified ? styles.cardClassified : ''} ${isSel ? styles.cardSelected : ''}`}>
-                <div className={styles.cardHead}>
-                  <input
-                    type="checkbox"
-                    checked={isSel}
-                    onChange={() => { toggleSelect(o.id); }}
-                    style={{ marginRight: 8 }}
-                  />
-                  <div className={styles.avatar}>{initials(o.displayName, o.domain)}</div>
-                  <div className={styles.cardTitle}>
-                    <div className={styles.cardName}>{o.displayName ?? o.domain}</div>
-                    <div className={styles.cardDomain}>{o.domain}</div>
+          <div className={styles.cardGrid}>
+            {filteredOrgs.length === 0 && (
+              <div className={styles.empty}>Nessuna azienda trovata.</div>
+            )}
+            {filteredOrgs.map((o) => {
+              const classified = o.isClient || o.isSupplier;
+              const isSel = selected.has(o.id);
+              return (
+                <div
+                  key={o.id}
+                  className={`${styles.card} ${classified ? styles.cardClassified : ''} ${isSel ? styles.cardSelected : ''}`}
+                >
+                  <div className={styles.cardHead}>
+                    <input
+                      type="checkbox"
+                      checked={isSel}
+                      onChange={() => {
+                        toggleSelect(o.id);
+                      }}
+                      style={{ marginRight: 8 }}
+                    />
+                    <div className={styles.avatar}>{initials(o.displayName, o.domain)}</div>
+                    <div className={styles.cardTitle}>
+                      <div className={styles.cardName}>{o.displayName ?? o.domain}</div>
+                      <div className={styles.cardDomain}>{o.domain}</div>
+                    </div>
+                    <div className={styles.cardBadges}>
+                      {o.isClient && (
+                        <span className={`${styles.badge} ${styles.badgeClient}`}>Cliente</span>
+                      )}
+                      {o.isSupplier && (
+                        <span className={`${styles.badge} ${styles.badgeSupplier}`}>Fornitore</span>
+                      )}
+                    </div>
                   </div>
-                  <div className={styles.cardBadges}>
-                    {o.isClient   && <span className={`${styles.badge} ${styles.badgeClient}`}>Cliente</span>}
-                    {o.isSupplier && <span className={`${styles.badge} ${styles.badgeSupplier}`}>Fornitore</span>}
+
+                  <div className={styles.cardMeta}>
+                    <span>
+                      <strong>{o.contactCount}</strong> contatti
+                    </span>
+                    {o.vatNumber && (
+                      <span>
+                        P.IVA <code>{o.vatNumber}</code>
+                      </span>
+                    )}
+                    {o.city && (
+                      <span>
+                        {o.city}
+                        {o.countryIso2 && ` · ${o.countryIso2}`}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className={styles.cardActions}>
+                    <button
+                      type="button"
+                      className={`${styles.toggleBtn} ${o.isClient ? styles.toggleClient : ''}`}
+                      onClick={() => void toggleOrgClient(o)}
+                    >
+                      {o.isClient ? '✓ Cliente' : '+ Cliente'}
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.toggleBtn} ${o.isSupplier ? styles.toggleSupplier : ''}`}
+                      onClick={() => void toggleOrgSupplier(o)}
+                    >
+                      {o.isSupplier ? '✓ Fornitore' : '+ Fornitore'}
+                    </button>
+                    <span style={{ flex: 1 }} />
+                    <button
+                      type="button"
+                      className={`${styles.iconBtn} ${confirmingDelete === o.id ? styles.iconBtnDanger : ''}`}
+                      onClick={() => void deleteOrg(o.id)}
+                      title={
+                        confirmingDelete === o.id
+                          ? 'Clicca di nuovo per confermare'
+                          : 'Elimina dalla rubrica'
+                      }
+                    >
+                      {confirmingDelete === o.id ? '✓' : '🗑'}
+                    </button>
                   </div>
                 </div>
-
-                <div className={styles.cardMeta}>
-                  <span><strong>{o.contactCount}</strong> contatti</span>
-                  {o.vatNumber && <span>P.IVA <code>{o.vatNumber}</code></span>}
-                  {o.city && <span>{o.city}{o.countryIso2 && ` · ${o.countryIso2}`}</span>}
-                </div>
-
-                <div className={styles.cardActions}>
-                  <button
-                    type="button"
-                    className={`${styles.toggleBtn} ${o.isClient ? styles.toggleClient : ''}`}
-                    onClick={() => void toggleOrgClient(o)}
-                  >
-                    {o.isClient ? '✓ Cliente' : '+ Cliente'}
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.toggleBtn} ${o.isSupplier ? styles.toggleSupplier : ''}`}
-                    onClick={() => void toggleOrgSupplier(o)}
-                  >
-                    {o.isSupplier ? '✓ Fornitore' : '+ Fornitore'}
-                  </button>
-                  <span style={{ flex: 1 }} />
-                  <button
-                    type="button"
-                    className={`${styles.iconBtn} ${confirmingDelete === o.id ? styles.iconBtnDanger : ''}`}
-                    onClick={() => void deleteOrg(o.id)}
-                    title={confirmingDelete === o.id ? 'Clicca di nuovo per confermare' : 'Elimina dalla rubrica'}
-                  >
-                    {confirmingDelete === o.id ? '✓' : '🗑'}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
         </>
       )}
 
@@ -349,27 +408,39 @@ export function AddressBookView() {
                         <td className={styles.right}>{c.messageCount}</td>
                         <td className={styles.right}>{fmtDate(c.lastSeenAt)}</td>
                         <td>
-                          {c.isClient   && <span className={`${styles.badge} ${styles.badgeClient}`}>C</span>}
-                          {c.isSupplier && <span className={`${styles.badge} ${styles.badgeSupplier}`}>F</span>}
+                          {c.isClient && (
+                            <span className={`${styles.badge} ${styles.badgeClient}`}>C</span>
+                          )}
+                          {c.isSupplier && (
+                            <span className={`${styles.badge} ${styles.badgeSupplier}`}>F</span>
+                          )}
                           {!c.isClient && !c.isSupplier && <em className={styles.muted}>—</em>}
                         </td>
                         <td className={styles.cellActions}>
                           <button
                             type="button"
                             className={styles.toggleBtn}
-                            onClick={() => { setContactPanel(c); }}
+                            onClick={() => {
+                              setContactPanel(c);
+                            }}
                             title="Vedi le email scambiate con questo contatto"
-                          >✉ Email</button>
+                          >
+                            ✉ Email
+                          </button>
                           <button
                             type="button"
                             className={`${styles.toggleBtn} ${c.isClient ? styles.toggleClient : ''}`}
                             onClick={() => void toggleContactClient(c)}
-                          >{c.isClient ? '✓ C' : '+C'}</button>
+                          >
+                            {c.isClient ? '✓ C' : '+C'}
+                          </button>
                           <button
                             type="button"
                             className={`${styles.toggleBtn} ${c.isSupplier ? styles.toggleSupplier : ''}`}
                             onClick={() => void toggleContactSupplier(c)}
-                          >{c.isSupplier ? '✓ F' : '+F'}</button>
+                          >
+                            {c.isSupplier ? '✓ F' : '+F'}
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -384,7 +455,9 @@ export function AddressBookView() {
       {contactPanel && (
         <ContactMessagesPanel
           contact={contactPanel}
-          onClose={() => { setContactPanel(null); }}
+          onClose={() => {
+            setContactPanel(null);
+          }}
         />
       )}
     </div>

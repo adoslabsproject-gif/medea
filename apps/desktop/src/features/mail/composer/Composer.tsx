@@ -1,7 +1,6 @@
 import { Button, Dialog, TextField } from '@medea/ui';
 import { useEffect, useState } from 'react';
 
-
 import { applyTemplate, htmlToText, templateApi, textToHtml } from '../../email-template';
 import type { EmailTemplate, SenderInfo } from '../../email-template';
 import { sendAndArchive } from '../send';
@@ -39,7 +38,11 @@ function readSender(account: MailAccount): SenderInfo {
   try {
     const raw = localStorage.getItem('medea.profile.v2');
     const p = raw
-      ? (JSON.parse(raw) as { displayName?: string; organizationName?: string; emailSignature?: string })
+      ? (JSON.parse(raw) as {
+          displayName?: string;
+          organizationName?: string;
+          emailSignature?: string;
+        })
       : {};
     const name = p.displayName?.trim() ?? '';
     return {
@@ -69,9 +72,12 @@ export function Composer({ account, prefill, onClose }: Props) {
   const [useTemplate, setUseTemplate] = useState(true);
 
   useEffect(() => {
-    templateApi.getDefault()
+    templateApi
+      .getDefault()
       .then(setTemplate)
-      .catch((e: unknown) => { console.warn('[Medea] template non caricato:', e); });
+      .catch((e: unknown) => {
+        console.warn('[Medea] template non caricato:', e);
+      });
   }, []);
 
   async function send() {
@@ -85,8 +91,14 @@ export function Composer({ account, prefill, onClose }: Props) {
       const archive = await sendAndArchive(account, {
         fromName: account.displayName,
         fromAddress: account.emailAddress,
-        to: to.split(',').map((s) => s.trim()).filter(Boolean),
-        cc: cc.split(',').map((s) => s.trim()).filter(Boolean),
+        to: to
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
+        cc: cc
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
         subject,
         bodyText,
         bodyHtml,
@@ -134,20 +146,26 @@ export function Composer({ account, prefill, onClose }: Props) {
           label="A"
           placeholder="destinatario@example.com (più indirizzi separati da virgola)"
           value={to}
-          onChange={(e) => { setTo(e.target.value); }}
+          onChange={(e) => {
+            setTo(e.target.value);
+          }}
           fullWidth
         />
         <TextField
           label="Cc"
           placeholder="opzionale, separati da virgola"
           value={cc}
-          onChange={(e) => { setCc(e.target.value); }}
+          onChange={(e) => {
+            setCc(e.target.value);
+          }}
           fullWidth
         />
         <TextField
           label="Oggetto"
           value={subject}
-          onChange={(e) => { setSubject(e.target.value); }}
+          onChange={(e) => {
+            setSubject(e.target.value);
+          }}
           fullWidth
         />
         <label className={styles.bodyLabel}>
@@ -156,7 +174,9 @@ export function Composer({ account, prefill, onClose }: Props) {
             className={styles.body}
             rows={14}
             value={body}
-            onChange={(e) => { setBody(e.target.value); }}
+            onChange={(e) => {
+              setBody(e.target.value);
+            }}
             placeholder="Scrivi qui il testo dell'email…"
           />
         </label>
@@ -166,7 +186,9 @@ export function Composer({ account, prefill, onClose }: Props) {
             <input
               type="checkbox"
               checked={useTemplate}
-              onChange={(e) => { setUseTemplate(e.target.checked); }}
+              onChange={(e) => {
+                setUseTemplate(e.target.checked);
+              }}
             />{' '}
             Applica la carta intestata «{template.name}»
           </label>

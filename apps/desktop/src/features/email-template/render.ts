@@ -49,13 +49,14 @@ function defaultLayout(t: EmailTemplate, sender: SenderInfo): string {
   const subtitle = t.headerSubtitle ?? '';
   const footer = t.footerHtml ?? '';
 
-  const header = logo || title
-    ? `<tr><td style="padding:20px 24px;border-bottom:3px solid ${accent};">
+  const header =
+    logo || title
+      ? `<tr><td style="padding:20px 24px;border-bottom:3px solid ${accent};">
          ${logo}
          ${title ? `<div style="font-size:17px;font-weight:700;color:#111827;margin-top:${logo ? '10px' : '0'};">${title}</div>` : ''}
          ${subtitle ? `<div style="font-size:12px;color:#6b7280;margin-top:2px;">${subtitle}</div>` : ''}
        </td></tr>`
-    : '';
+      : '';
 
   const foot = footer
     ? `<tr><td style="padding:14px 24px;border-top:1px solid #e5e7eb;font-size:11px;color:#6b7280;line-height:1.5;">${footer}</td></tr>`
@@ -104,15 +105,20 @@ export function applyTemplate(
     : '';
 
   return skeleton
-    .split(PLACEHOLDERS.body).join(bodyHtml)
-    .split(PLACEHOLDERS.signature).join(signatureBlock)
-    .split(PLACEHOLDERS.logo).join(
+    .split(PLACEHOLDERS.body)
+    .join(bodyHtml)
+    .split(PLACEHOLDERS.signature)
+    .join(signatureBlock)
+    .split(PLACEHOLDERS.logo)
+    .join(
       template.logoDataUrl
         ? `<img src="${template.logoDataUrl}" alt="" style="max-height:56px;border:0;" />`
         : '',
     )
-    .split(PLACEHOLDERS.senderName).join(sender.displayName)
-    .split(PLACEHOLDERS.companyName).join(sender.organizationName);
+    .split(PLACEHOLDERS.senderName)
+    .join(sender.displayName)
+    .split(PLACEHOLDERS.companyName)
+    .join(sender.organizationName);
 }
 
 /** Anteprima con un corpo di esempio, per l'editor. */
