@@ -1,0 +1,51 @@
+@layer features {
+  .column {
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    min-block-size: 0;
+    min-inline-size: 0;
+  }
+
+  /* La maniglia è larga 8px ma il segno visivo è 1px: prendere un bordo di
+     un pixel al primo colpo non è un'interazione, è mira. */
+  .handle {
+    position: absolute;
+    inset-block: 0;
+    inline-size: 8px;
+    z-index: var(--z-raised);
+    cursor: col-resize;
+    touch-action: none;
+  }
+  .handle[data-side='start'] {
+    inset-inline-start: -4px;
+  }
+  .handle[data-side='end'] {
+    inset-inline-end: -4px;
+  }
+  .handle::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 50%;
+    inline-size: 1px;
+    background: transparent;
+    transition: background var(--motion-duration-fast, 150ms) ease-out;
+  }
+  .handle:hover::after,
+  .handle:focus-visible::after {
+    background: var(--color-accent-default);
+    inline-size: 2px;
+  }
+  .handle:focus-visible {
+    outline: none;
+  }
+
+  /* Durante il trascinamento il cursore non deve cambiare passando sopra il
+     testo, e niente deve essere selezionato per sbaglio. */
+  :global(body).resizing {
+    cursor: col-resize;
+    user-select: none;
+  }
+}

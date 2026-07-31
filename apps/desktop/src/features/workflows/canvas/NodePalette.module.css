@@ -1,7 +1,7 @@
 @layer features {
   .root {
-    inline-size: 15rem;
-    flex-shrink: 0;
+    inline-size: 100%;
+    block-size: 100%;
     display: flex;
     flex-direction: column;
     min-block-size: 0;
@@ -97,8 +97,8 @@
   .item {
     inline-size: 100%;
     display: flex;
-    flex-direction: column;
-    gap: 1px;
+    align-items: center;
+    gap: var(--space-2);
     padding: var(--space-2);
     border: 1px solid transparent;
     border-inline-start: 3px solid var(--color-border-strong);
@@ -118,27 +118,57 @@
   }
 
   .item[data-type='trigger'] {
+    --item-accent: var(--color-feedback-success);
     border-inline-start-color: var(--color-feedback-success);
   }
   .item[data-type='action'] {
+    --item-accent: var(--color-accent-default);
     border-inline-start-color: var(--color-accent-default);
   }
   .item[data-type='logic'] {
+    --item-accent: var(--color-feedback-warning);
     border-inline-start-color: var(--color-feedback-warning);
   }
   .item[data-type='ai'] {
+    --item-accent: var(--color-feedback-info);
     border-inline-start-color: var(--color-feedback-info);
+  }
+
+  /* L'icona ha il colore della categoria: la stessa lettura del canvas. */
+  .itemIcon {
+    flex-shrink: 0;
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+    color: var(--item-accent, var(--color-text-secondary));
+  }
+
+  .itemBody {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-inline-size: 0;
   }
 
   .itemLabel {
     font-size: var(--font-size-sm);
     color: var(--color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .itemId {
     font-family: var(--font-family-mono);
     font-size: var(--font-size-xs);
     color: var(--color-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .empty {

@@ -16,6 +16,7 @@ import { AssistantPanel } from './assistant';
 import { diagnose, globalIssues } from './canvas/diagnostics';
 import { WorkflowCanvas } from './canvas/WorkflowCanvas';
 import { findNode } from './catalog';
+import { ResizableColumn } from './shared';
 import { Topbar } from './topbar';
 import type { NodeDef } from './types';
 import { useWorkflowEditor } from './useWorkflowEditor';
@@ -84,14 +85,16 @@ export function WorkflowsView() {
 
   return (
     <div className={styles.root}>
-      <WorkflowList
-        items={editor.items}
-        activeId={activeId}
-        onOpen={(id) => void editor.open(id)}
-        onNew={editor.create}
-        onDuplicate={(id) => void editor.duplicate(id)}
-        onDelete={(id) => void editor.remove(id)}
-      />
+      <ResizableColumn storageKey="medea.workflows.listWidth" defaultWidth={240} handle="end">
+        <WorkflowList
+          items={editor.items}
+          activeId={activeId}
+          onOpen={(id) => void editor.open(id)}
+          onNew={editor.create}
+          onDuplicate={(id) => void editor.duplicate(id)}
+          onDelete={(id) => void editor.remove(id)}
+        />
+      </ResizableColumn>
 
       <div className={styles.main}>
         <Topbar
@@ -164,16 +167,23 @@ export function WorkflowsView() {
       </div>
 
       {assistantOpen && (
-        <AssistantPanel
-          workflow={workflow}
-          onApply={(wf) => {
-            editor.changeDistinct(wf);
-            editor.setNotice('Modifica applicata: controllala prima di attivare il workflow.');
-          }}
-          onClose={() => {
-            setAssistantOpen(false);
-          }}
-        />
+        <ResizableColumn
+          storageKey="medea.workflows.assistantWidth"
+          defaultWidth={368}
+          minWidth={280}
+          handle="start"
+        >
+          <AssistantPanel
+            workflow={workflow}
+            onApply={(wf) => {
+              editor.changeDistinct(wf);
+              editor.setNotice('Modifica applicata: controllala prima di attivare il workflow.');
+            }}
+            onClose={() => {
+              setAssistantOpen(false);
+            }}
+          />
+        </ResizableColumn>
       )}
     </div>
   );
