@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { workflowApi, type WorkflowSummary } from './api';
 import { emptyWorkflow } from './canvas/diagnostics';
 import { autoLayout } from './canvas/layout';
+import { setEnabledOnRuntime } from './runtime';
 import { exportFileName, fromImportJson, toExportJson, WorkflowImportError } from './topbar';
 import { useUndoRedo } from './topbar';
 import type { Workflow } from './types';
@@ -179,6 +180,13 @@ export function useWorkflowEditor(): WorkflowEditor {
     }
   }, [enabled, history, refresh]);
 
+  /**
+   * Attivare vuol dire far scattare i trigger, non spuntare una casella.
+   *
+   * Il workflow viene mandato al runtime con lo stato giusto e la
+   * pianificazione ricaricata: senza, «Attivo» scriverebbe un flag che nessuno
+   * legge, che è la cosa peggiore che possa fare un pulsante.
+   */
   const toggleEnabled = useCallback(
     async (blockedReason?: string) => {
       const next = !enabled;
@@ -187,15 +195,34 @@ export function useWorkflowEditor(): WorkflowEditor {
         setNotice(blockedReason);
         return;
       }
-      setEnabled(next);
-      if (workflow.id) {
-        await workflowApi.setEnabled(Number(workflow.id), next);
-        await refresh();
-      } else {
+      if (!workflow.id) {
+        setEnabled(next);
         setDirty(true);
+        return;
       }
+
+      setEnabled(next);
+      setNotice(next ? 'Attivo: accendo i trigger…' : 'Spengo i trigger…');
+      try {
+        await workflowApi.setEnabled(Number(workflow.id), next);
+        await setEnabledOnRuntime(workflow, next);
+        setNotice(
+          next
+            ? 'Attivo: i trigger sono accesi, il workflow parte da solo.'
+            : 'Disattivato: non partirà più da solo.',
+        );
+      } catch (e) {
+        // Il flag di Medea torna com'era: dire «attivo» quando il runtime non
+        // lo sa sarebbe una bugia.
+        setEnabled(!next);
+        await workflowApi.setEnabled(Number(workflow.id), !next);
+        setNotice(
+          `Non sono riuscito ad accendere i trigger: ${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+      await refresh();
     },
-    [enabled, workflow.id, refresh],
+    [enabled, workflow, refresh],
   );
 
   const duplicate = useCallback(

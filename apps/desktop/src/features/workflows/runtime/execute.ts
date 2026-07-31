@@ -17,7 +17,7 @@ import { runsApi } from '../runs';
 import type { RunStatus, RunStep } from '../runs';
 import type { Workflow } from '../types';
 
-import { runtimeApi } from './client';
+import { reloadRuntime, runtimeApi } from './client';
 
 /** Ogni quanto si chiede al runtime a che punto è. */
 const POLL_INTERVAL_MS = 400;
@@ -57,12 +57,13 @@ interface RuntimeStep {
 }
 
 /** Il corpo che il runtime si aspetta: il documento, senza i nostri campi. */
-function toRuntimeBody(workflow: Workflow) {
+function toRuntimeBody(workflow: Workflow, enabled?: boolean) {
   return {
     name: workflow.name,
     ...(workflow.description ? { description: workflow.description } : {}),
     nodes: workflow.nodes,
     edges: workflow.edges,
+    ...(enabled !== undefined ? { enabled } : {}),
   };
 }
 
@@ -70,10 +71,14 @@ function toRuntimeBody(workflow: Workflow) {
  * Assicura che il runtime abbia questo workflow, e restituisce il suo
  * identificativo là dentro.
  */
-export async function syncToRuntime(workflow: Workflow, runtimeId?: string): Promise<string> {
+export async function syncToRuntime(
+  workflow: Workflow,
+  runtimeId?: string,
+  enabled?: boolean,
+): Promise<string> {
   if (runtimeId) {
     try {
-      await runtimeApi.put(`/workflows/${runtimeId}`, toRuntimeBody(workflow));
+      await runtimeApi.put(`/workflows/${runtimeId}`, toRuntimeBody(workflow, enabled));
       return runtimeId;
     } catch {
       // Il runtime non lo conosce più (database azzerato, copia spostata):
@@ -83,7 +88,7 @@ export async function syncToRuntime(workflow: Workflow, runtimeId?: string): Pro
 
   const created = await runtimeApi.post<RuntimeWorkflowResponse>(
     '/workflows',
-    toRuntimeBody(workflow),
+    toRuntimeBody(workflow, enabled),
   );
   const id = created.workflow.id;
 
@@ -91,6 +96,20 @@ export async function syncToRuntime(workflow: Workflow, runtimeId?: string): Pro
     await invoke('workflow_set_runtime_id', { id: Number(workflow.id), runtimeId: id });
   }
   return id;
+}
+
+/**
+ * Attiva o disattiva il workflow **davvero**: lo manda al runtime con lo
+ * stato giusto e gli fa riprendere la pianificazione.
+ *
+ * Il riavvio è necessario perché lo scheduler carica i cron una volta sola
+ * all'avvio: senza, il pulsante «Attivo» scriverebbe un flag che nessuno
+ * legge — interfaccia che promette un comportamento inesistente.
+ */
+export async function setEnabledOnRuntime(workflow: Workflow, enabled: boolean): Promise<string> {
+  const runtimeId = await syncToRuntime(workflow, workflow.runtimeId, enabled);
+  await reloadRuntime();
+  return runtimeId;
 }
 
 /** I passi nella forma dello storico di Medea. */

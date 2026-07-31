@@ -21,6 +21,15 @@ pub fn workflow_runtime_stop() {
     runtime::stop();
 }
 
+/// Riavvia il runtime perché riprenda la pianificazione dei cron e i watcher
+/// dei trigger. Da chiamare quando un workflow viene attivato o disattivato.
+#[tauri::command]
+pub fn workflow_runtime_reload(app: tauri::AppHandle) -> Result<RuntimeStatus, String> {
+    let resource_dir = app.path().resource_dir().map_err(|e| e.to_string())?;
+    let data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    Ok(runtime::restart(&resource_dir, &data_dir))
+}
+
 /// Dove parlare al runtime e con quale token.
 ///
 /// Un comando solo perché sono una cosa sola: un indirizzo senza sessione non
