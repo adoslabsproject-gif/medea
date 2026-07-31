@@ -69,18 +69,34 @@ fn free_port() -> Result<u16> {
     Ok(listener.local_addr()?.port())
 }
 
-/// Dove sta il runtime impacchettato.
+/// La variabile con cui puntare a un runtime diverso da quello impacchettato.
+/// Serve in sviluppo, dove il bundle si ricostruisce di continuo.
+const RUNTIME_PATH_ENV: &str = "MEDEA_WORKFLOW_RUNTIME";
+
+/// Dove sta il runtime.
 ///
-/// In sviluppo si usa quello del repository di FlowForge, così non serve
-/// ricostruire il pacchetto a ogni modifica; nell'app installata sta accanto
-/// alle risorse.
-fn bundle_entry(resource_dir: &Path) -> Option<PathBuf> {
-    let candidates = [
-        resource_dir.join("runtime/main.js"),
-        // Sviluppo: il bundle prodotto da `tsup` nel repository FlowForge.
-        PathBuf::from("/Users/zelistore/zeliAI/apps/flowforge-runtime/dist/main.js"),
-    ];
-    candidates.into_iter().find(|p| p.exists())
+/// Nell'app installata sta accanto alle risorse. In sviluppo lo si indica con
+/// `MEDEA_WORKFLOW_RUNTIME`, **non** con un percorso scritto nel codice: un
+/// percorso che esiste su una macchina sola è una bugia che funziona finché
+/// non la si prova altrove.
+fn bundle_entry(resource_dir: &Path) -> Result<PathBuf> {
+    let packaged = resource_dir.join("runtime/main.js");
+    if packaged.exists() {
+        return Ok(packaged);
+    }
+
+    if let Ok(custom) = std::env::var(RUNTIME_PATH_ENV) {
+        let path = PathBuf::from(&custom);
+        if path.exists() {
+            return Ok(path);
+        }
+        anyhow::bail!("{RUNTIME_PATH_ENV} punta a «{custom}», che non esiste");
+    }
+
+    anyhow::bail!(
+        "il motore dei workflow non è installato con questa copia di Medea. \
+         In sviluppo, indica il bundle con {RUNTIME_PATH_ENV}=/percorso/a/flowforge-runtime/dist/main.js"
+    )
 }
 
 /// L'eseguibile Node da usare. Nell'app installata sarà quello impacchettato;
@@ -144,8 +160,7 @@ fn running(port: u16) -> RuntimeStatus {
 }
 
 fn spawn(resource_dir: &Path, data_dir: &Path) -> Result<u16> {
-    let entry = bundle_entry(resource_dir)
-        .context("il runtime dei workflow non è installato con questa copia di Medea")?;
+    let entry = bundle_entry(resource_dir)?;
     let node = node_binary(resource_dir);
     let port = free_port()?;
 
@@ -194,6 +209,21 @@ fn spawn(resource_dir: &Path, data_dir: &Path) -> Result<u16> {
 /// Ferma il runtime. Idempotente.
 pub fn stop() {
     *slot().lock().expect("runtime slot avvelenato") = None;
+}
+
+/// Riavvia il runtime, e restituisce lo stato risultante.
+///
+/// Serve per far riprendere la pianificazione: `SchedulerService` carica i
+/// cron **una volta sola all'avvio** e non li ricarica quando un workflow
+/// viene attivato. In produzione non si nota perché i cron li pianifica il
+/// portal centrale; in self-hosted il portal non c'è, quindi attivare un
+/// workflow non lo aggiungerebbe mai alla pianificazione.
+///
+/// Il runtime è nostro e riparte in circa un secondo: riavviarlo è un modo
+/// legittimo di ricaricare, e non richiede di modificare FlowForge.
+pub fn restart(resource_dir: &Path, data_dir: &Path) -> RuntimeStatus {
+    stop();
+    start(resource_dir, data_dir)
 }
 
 pub fn status() -> RuntimeStatus {

@@ -45,6 +45,18 @@ export function startRuntime(): Promise<RuntimeStatus> {
   return invoke('workflow_runtime_start');
 }
 
+/**
+ * Riavvia il runtime perché riprenda la pianificazione.
+ *
+ * Serve dopo aver attivato o disattivato un workflow: lo scheduler carica i
+ * cron una volta sola all'avvio, quindi senza questo un workflow attivato non
+ * entrerebbe mai in pianificazione.
+ */
+export async function reloadRuntime(): Promise<RuntimeStatus> {
+  forgetSession();
+  return invoke('workflow_runtime_reload');
+}
+
 export class RuntimeError extends Error {}
 
 /**

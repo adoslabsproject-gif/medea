@@ -135,6 +135,7 @@ pub fn run() {
             runtime_cmd::workflow_runtime_start,
             runtime_cmd::workflow_runtime_status,
             runtime_cmd::workflow_runtime_stop,
+            runtime_cmd::workflow_runtime_reload,
             runtime_cmd::workflow_runtime_session,
             runtime_cmd::workflow_runtime_forget,
             // Manutenzione dati
