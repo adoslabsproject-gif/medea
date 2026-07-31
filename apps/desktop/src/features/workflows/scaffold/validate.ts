@@ -50,7 +50,7 @@ const PICKER_TYPES = new Set([
   'account-picker',
 ]);
 
-export const PICKER_PLACEHOLDER = '__USE_PICKER__';
+export { PICKER_PLACEHOLDER } from '../constants';
 
 export function isPickerField(type: string): boolean {
   return PICKER_TYPES.has(type);

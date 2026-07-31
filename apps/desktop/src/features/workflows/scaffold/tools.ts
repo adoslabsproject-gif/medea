@@ -7,10 +7,10 @@
  * riceve. Si aggiungono capacità, non si toccano queste.
  */
 
+import { describeIssues, type QualityDatabase } from '../quality';
 import type { NodeDef } from '../types';
 
 import type { WorkflowBuilder, WorkflowSnapshot } from './builder';
-import { describeViolations } from './validate';
 
 export interface ToolDef {
   name: string;
@@ -22,6 +22,9 @@ export interface ToolDef {
 export interface ToolContext {
   builder: WorkflowBuilder;
   catalog: NodeDef[];
+  /** Schema dei database disponibili: abilita i controlli su tabelle e
+   *  colonne quando l'app lo conosce. */
+  databases?: readonly QualityDatabase[];
 }
 
 const obj = (
@@ -211,21 +214,30 @@ export function executeWorkflowTool(
     case 'validate_workflow': {
       const violations = ctx.builder.validate();
       const orphans = ctx.builder.orphanNodes();
+      // Il gate di qualità entra qui e non solo alla fine: se il modello
+      // scopre il segnaposto mentre costruisce, lo corregge subito invece di
+      // arrivare a `finish` e vedersi respingere tutto.
+      const quality = ctx.builder.quality(ctx.databases);
+      const blocking = quality.issues.filter((i) => i.severity !== 'info');
       return {
         data: {
-          valid: violations.length === 0 && orphans.length === 0,
-          issues: violations.map((v) => v.message),
+          valid: violations.length === 0 && orphans.length === 0 && !quality.shouldReject,
+          issues: [...violations.map((v) => v.message), ...describeIssues(blocking)],
           ...(orphans.length > 0 ? { orphanNodes: orphans } : {}),
         },
       };
     }
     case 'finish': {
       const violations = ctx.builder.validate();
+      const quality = ctx.builder.quality(ctx.databases);
       return {
         done: true,
         snapshot: ctx.builder.snapshot(),
         data: {
-          remainingIssues: violations.length > 0 ? describeViolations(violations) : [],
+          remainingIssues: [
+            ...violations.map((v) => v.message),
+            ...describeIssues(quality.issues.filter((i) => i.severity !== 'info')),
+          ],
         },
       };
     }

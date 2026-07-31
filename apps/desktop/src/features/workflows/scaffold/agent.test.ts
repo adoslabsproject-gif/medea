@@ -11,7 +11,12 @@ import { describe, expect, it } from 'vitest';
 
 import type { NodeDef } from '../types';
 
-import { agentToolsForProvider, runWorkflowAgent, type AgentChat, type AgentToolCall } from './agent';
+import {
+  agentToolsForProvider,
+  runWorkflowAgent,
+  type AgentChat,
+  type AgentToolCall,
+} from './agent';
 
 const CATALOG: NodeDef[] = [
   {
@@ -76,7 +81,13 @@ describe('costruzione guidata dagli strumenti', () => {
       chat: scriptedChat([
         [call('search_nodes', { query: 'pianificazione oraria' })],
         [call('add_node', { defId: 'trigger_cron', id: 'cron', config: { cron: '0 9 * * *' } })],
-        [call('add_node', { defId: 'action_http', id: 'fetch', config: { url: 'https://x.test' } })],
+        [
+          call('add_node', {
+            defId: 'action_http',
+            id: 'fetch',
+            config: { url: 'https://x.test' },
+          }),
+        ],
         [
           call('add_node', {
             defId: 'action_send_email',
@@ -84,7 +95,10 @@ describe('costruzione guidata dagli strumenti', () => {
             config: { to: 'io@x.test', subject: 'Report' },
           }),
         ],
-        [call('connect', { from: 'cron', to: 'fetch' }), call('connect', { from: 'fetch', to: 'notify' })],
+        [
+          call('connect', { from: 'cron', to: 'fetch' }),
+          call('connect', { from: 'fetch', to: 'notify' }),
+        ],
         [call('validate_workflow')],
         [call('finish')],
       ]),
@@ -104,7 +118,13 @@ describe('costruzione guidata dagli strumenti', () => {
       catalog: CATALOG,
       chat: scriptedChat([
         // Email senza oggetto: manca un campo obbligatorio.
-        [call('add_node', { defId: 'action_send_email', id: 'notify', config: { to: 'io@x.test' } })],
+        [
+          call('add_node', {
+            defId: 'action_send_email',
+            id: 'notify',
+            config: { to: 'io@x.test' },
+          }),
+        ],
         [call('finish')],
       ]),
     });
@@ -117,11 +137,88 @@ describe('costruzione guidata dagli strumenti', () => {
     }
   });
 
+  it('non consegna un workflow pieno di segnaposto, anche se ben formato', async () => {
+    const res = await runWorkflowAgent({
+      goal: 'x',
+      catalog: CATALOG,
+      chat: scriptedChat([
+        [call('add_node', { defId: 'trigger_cron', id: 'cron', config: { cron: '0 9 * * *' } })],
+        // URL fittizio: nessun campo obbligatorio manca, ma non funzionerà mai.
+        [
+          call('add_node', {
+            defId: 'action_http',
+            id: 'fetch',
+            config: { url: 'https://api.example.com/dati' },
+          }),
+        ],
+        [call('connect', { from: 'cron', to: 'fetch' })],
+        [call('finish')],
+        [call('finish')],
+        [call('finish')],
+        [call('finish')],
+      ]),
+    });
+
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(res.qualityIssues.some((i) => i.code === 'MOCK_PLACEHOLDER')).toBe(true);
+      expect(res.violations).toEqual([]);
+    }
+  });
+
+  it('dice al modello cosa non va invece di bocciarlo subito', async () => {
+    let turn = 0;
+    const chat: AgentChat = ({ history }) => {
+      turn++;
+      if (turn === 1) {
+        return Promise.resolve({
+          content: '',
+          toolCalls: [
+            call(
+              'add_node',
+              { defId: 'trigger_cron', id: 'cron', config: { cron: '0 9 * * *' } },
+              'a',
+            ),
+            call(
+              'add_node',
+              { defId: 'action_http', id: 'fetch', config: { url: 'https://api.example.com' } },
+              'b',
+            ),
+            call('connect', { from: 'cron', to: 'fetch' }, 'c'),
+            call('finish', {}, 'd'),
+          ],
+        });
+      }
+      // Il richiamo è arrivato e dice cosa correggere.
+      const ultimo = history[history.length - 1];
+      expect(ultimo?.role).toBe('user');
+      expect(ultimo?.content).toContain('MOCK_PLACEHOLDER');
+      return Promise.resolve({
+        content: '',
+        toolCalls: [
+          call(
+            'set_config',
+            { nodeId: 'fetch', config: { url: 'https://api.aziendareale.it' } },
+            'e',
+          ),
+          call('finish', {}, 'f'),
+        ],
+      });
+    };
+
+    const res = await runWorkflowAgent({ goal: 'x', catalog: CATALOG, chat });
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.workflow.nodes[1]?.config.url).toBe('https://api.aziendareale.it');
+  });
+
   it('riporta al modello il rifiuto di un defId inventato', async () => {
     const res = await runWorkflowAgent({
       goal: 'x',
       catalog: CATALOG,
-      chat: scriptedChat([[call('add_node', { defId: 'action_slack_inventato' })], [call('finish')]]),
+      chat: scriptedChat([
+        [call('add_node', { defId: 'action_slack_inventato' })],
+        [call('finish')],
+      ]),
     });
 
     const first = res.steps[0]?.result as { ok: boolean; error: string };
@@ -141,7 +238,7 @@ describe('costruzione guidata dagli strumenti', () => {
     expect(calls).toBeGreaterThan(1);
   });
 
-  it('si ferma invece di girare a vuoto all\'infinito', async () => {
+  it("si ferma invece di girare a vuoto all'infinito", async () => {
     const chat: AgentChat = () =>
       Promise.resolve({ content: '', toolCalls: [call('search_nodes', { query: 'email' })] });
     const res = await runWorkflowAgent({ goal: 'x', catalog: CATALOG, chat });
@@ -157,8 +254,16 @@ describe('costruzione guidata dagli strumenti', () => {
         return Promise.resolve({
           content: '',
           toolCalls: [
-            call('add_node', { defId: 'trigger_cron', id: 'cron', config: { cron: '0 9 * * *' } }, 'a'),
-            call('add_node', { defId: 'action_http', id: 'fetch', config: { url: 'https://x.test' } }, 'b'),
+            call(
+              'add_node',
+              { defId: 'trigger_cron', id: 'cron', config: { cron: '0 9 * * *' } },
+              'a',
+            ),
+            call(
+              'add_node',
+              { defId: 'action_http', id: 'fetch', config: { url: 'https://x.test' } },
+              'b',
+            ),
             call('connect', { from: 'cron', to: 'fetch' }, 'c'),
           ],
         });
@@ -201,18 +306,61 @@ describe('modifica di un workflow esistente', () => {
     }
   });
 
-  it('rimuove un nodo e i suoi collegamenti', async () => {
+  it('rimuove un nodo, i suoi collegamenti, e ricuce il flusso', async () => {
+    const treNodi = {
+      ...seed,
+      nodes: [
+        ...seed.nodes,
+        {
+          id: 'notify',
+          defId: 'action_send_email',
+          x: 440,
+          y: 0,
+          config: { to: 'io@aziendareale.it', subject: 'Fatto' },
+        },
+      ],
+      edges: [...seed.edges, { from: 'fetch', to: 'notify' }],
+    };
+
     const res = await runWorkflowAgent({
       goal: 'togli la chiamata http',
       catalog: CATALOG,
-      seed,
-      chat: scriptedChat([[call('delete_node', { nodeId: 'fetch' })], [call('finish')]]),
+      seed: treNodi,
+      chat: scriptedChat([
+        [call('delete_node', { nodeId: 'fetch' })],
+        [call('connect', { from: 'cron', to: 'notify' })],
+        [call('finish')],
+      ]),
     });
 
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.workflow.nodes).toHaveLength(1);
-      expect(res.workflow.edges).toHaveLength(0);
+      expect(res.workflow.nodes.map((n) => n.id)).toEqual(['cron', 'notify']);
+      // I due collegamenti che passavano dal nodo rimosso sono spariti con lui.
+      expect(res.workflow.edges).toEqual([{ from: 'cron', to: 'notify' }]);
+    }
+  });
+
+  it('non consegna un workflow che la rimozione ha lasciato monco', async () => {
+    const res = await runWorkflowAgent({
+      goal: 'togli la chiamata http',
+      catalog: CATALOG,
+      seed,
+      chat: scriptedChat([
+        [call('delete_node', { nodeId: 'fetch' })],
+        [call('finish')],
+        [call('finish')],
+        [call('finish')],
+        [call('finish')],
+      ]),
+    });
+
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      // Resta un trigger che non porta da nessuna parte: il workflow non
+      // farebbe mai nulla.
+      expect(res.qualityIssues.some((i) => i.code === 'ORPHAN_TRIGGER')).toBe(true);
+      expect(res.partial?.nodes).toHaveLength(1);
     }
   });
 });
