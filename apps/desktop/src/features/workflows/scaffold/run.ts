@@ -22,22 +22,38 @@ import { repairScaffold } from './repair';
 import { isScaffoldOutput, type ScaffoldOutput } from './schema';
 import { describeViolations, validateScaffold, type Violation } from './validate';
 
-/** Nodi sempre presenti nel catalogo mostrato al modello. */
-const CORE_DEF_IDS = [
+/**
+ * Nodi sempre presenti nel catalogo mostrato al modello.
+ *
+ * Copia esatta di `SCAFFOLD_CORE_DEFIDS` del server
+ * (`services/catalog-retrieval/scaffold-catalog.ts`). Non è una lista di
+ * comodo: il dataset di addestramento è costruito su questi, quindi togliere
+ * o aggiungere una voce disallinea il modello dal catalogo che riceve.
+ */
+export const SCAFFOLD_CORE_DEFIDS: readonly string[] = [
   'trigger_manual',
   'trigger_webhook',
   'trigger_cron',
   'trigger_imap',
+  'trigger_form',
   'logic_if',
   'logic_switch',
   'logic_loop',
   'logic_merge',
+  'logic_wait',
+  'logic_filter',
   'action_http',
-  'action_send_email',
+  'action_run_js',
+  'action_run_python',
   'action_set_fields',
   'action_template',
+  'action_json',
+  'action_file_write',
+  'action_send_email',
+  'action_webhook_respond',
   'db_query',
   'db_insert',
+  'db_update',
   'agent_extractor',
   'agent_chat',
 ];
@@ -86,7 +102,7 @@ export interface ScaffoldRequest {
 
 export async function runScaffold(req: ScaffoldRequest): Promise<ScaffoldResult> {
   const index = indexByDefId(req.catalog);
-  const shown = selectCatalog(req.catalog, req.goal, CORE_DEF_IDS);
+  const shown = selectCatalog(req.catalog, req.goal, [...SCAFFOLD_CORE_DEFIDS]);
   const system = req.llm.isTuned ? SCAFFOLD_SYSTEM_PROMPT_TUNED : SCAFFOLD_SYSTEM_PROMPT;
 
   let previousErrors: string | undefined;
