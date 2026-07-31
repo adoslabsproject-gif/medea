@@ -17,7 +17,7 @@ import { diagnose, globalIssues } from './canvas/diagnostics';
 import { WorkflowCanvas } from './canvas/WorkflowCanvas';
 import { findNode } from './catalog';
 import { RunsModal } from './runs';
-import { ResizableColumn } from './shared';
+import { CollapsibleColumn } from './shared';
 import { Topbar } from './topbar';
 import type { NodeDef } from './types';
 import { useWorkflowEditor } from './useWorkflowEditor';
@@ -88,7 +88,13 @@ export function WorkflowsView() {
 
   return (
     <div className={styles.root}>
-      <ResizableColumn storageKey="medea.workflows.listWidth" defaultWidth={240} handle="end">
+      <CollapsibleColumn
+        storageKey="medea.workflows.listCollapsed"
+        width={240}
+        side="start"
+        icon="⚡"
+        label="Workflow"
+      >
         <WorkflowList
           items={editor.items}
           activeId={activeId}
@@ -101,7 +107,7 @@ export function WorkflowsView() {
             setRunsFor({ id, name: found?.name ?? 'Workflow' });
           }}
         />
-      </ResizableColumn>
+      </CollapsibleColumn>
 
       <div className={styles.main}>
         <Topbar
@@ -184,11 +190,12 @@ export function WorkflowsView() {
       )}
 
       {assistantOpen && (
-        <ResizableColumn
-          storageKey="medea.workflows.assistantWidth"
-          defaultWidth={368}
-          minWidth={280}
-          handle="start"
+        <CollapsibleColumn
+          storageKey="medea.workflows.assistantCollapsed"
+          width={368}
+          side="end"
+          icon="✨"
+          label="Assistente"
         >
           <AssistantPanel
             workflow={workflow}
@@ -200,7 +207,7 @@ export function WorkflowsView() {
               setAssistantOpen(false);
             }}
           />
-        </ResizableColumn>
+        </CollapsibleColumn>
       )}
     </div>
   );

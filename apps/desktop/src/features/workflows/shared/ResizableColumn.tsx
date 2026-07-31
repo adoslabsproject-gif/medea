@@ -3,14 +3,19 @@
  *
  * Su un editor con quattro colonne — elenco, palette, canvas, pannello — la
  * larghezza giusta dipende da cosa si sta facendo: mentre si configura un
- * nodo serve spazio a destra, mentre si disegna serve al centro. Una misura
- * fissa va bene per nessuno dei due.
+ * nodo serve spazio a destra, mentre si disegna serve al centro.
  *
- * La misura scelta resta fra una sessione e l'altra, per chiave: chi allarga
- * il pannello dei nodi non se lo ritrova stretto il giorno dopo.
+ * Tre modi di rimetterla a posto, perché una colonna allargata per sbaglio
+ * non deve diventare un problema: **doppio click** sul bordo torna alla
+ * misura di partenza, le **frecce** la spostano di dieci pixel per volta, e
+ * il menu di sistema del pannello ha sempre il comando di ripristino.
+ *
+ * Il trascinamento usa la cattura del puntatore: gli eventi arrivano alla
+ * maniglia anche quando il mouse esce dalla colonna, che è esattamente quello
+ * che succede trascinando.
  */
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 
 import styles from './ResizableColumn.module.css';
 
@@ -34,67 +39,91 @@ function readStored(key: string, fallback: number): number {
 export function ResizableColumn({
   storageKey,
   defaultWidth,
-  minWidth = 180,
-  maxWidth = 720,
+  minWidth = 200,
+  maxWidth = 640,
   handle,
   children,
 }: Props) {
   const [width, setWidth] = useState(() => readStored(storageKey, defaultWidth));
+  const [dragging, setDragging] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const dragging = useRef(false);
 
   const clamp = useCallback(
-    (value: number) => Math.min(maxWidth, Math.max(minWidth, value)),
+    (value: number) => Math.min(maxWidth, Math.max(minWidth, Math.round(value))),
     [minWidth, maxWidth],
   );
 
-  useEffect(() => {
-    if (!dragging.current) return;
-    const onMove = (e: PointerEvent) => {
-      const box = ref.current?.getBoundingClientRect();
-      if (!box) return;
-      // La maniglia sta dal lato opposto al bordo da cui si misura: a destra
-      // la larghezza cresce trascinando verso sinistra.
-      const next = handle === 'start' ? box.right - e.clientX : e.clientX - box.left;
-      setWidth(clamp(next));
-    };
-    const onUp = () => {
-      dragging.current = false;
-      document.body.classList.remove(styles.resizing ?? '');
-      localStorage.setItem(storageKey, String(width));
-    };
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
-    return () => {
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
-    };
-  });
+  const store = useCallback(
+    (value: number) => {
+      localStorage.setItem(storageKey, String(value));
+    },
+    [storageKey],
+  );
+
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    // La cattura fa arrivare i movimenti a questo elemento anche quando il
+    // puntatore esce dalla colonna: senza, il trascinamento si perde appena
+    // si supera il bordo.
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDragging(true);
+  };
+
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (!dragging) return;
+    const box = ref.current?.getBoundingClientRect();
+    if (!box) return;
+    // La colonna cresce verso l'interno: a destra si allarga trascinando
+    // verso sinistra.
+    setWidth(clamp(handle === 'start' ? box.right - e.clientX : e.clientX - box.left));
+  };
+
+  const endDrag = (e: PointerEvent<HTMLDivElement>) => {
+    if (!dragging) return;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    setDragging(false);
+    store(width);
+  };
+
+  const reset = () => {
+    setWidth(defaultWidth);
+    store(defaultWidth);
+  };
+
+  const nudge = (delta: number) => {
+    setWidth((w) => {
+      const next = clamp(w + delta);
+      store(next);
+      return next;
+    });
+  };
 
   return (
-    <div ref={ref} className={styles.column} style={{ inlineSize: `${String(width)}px` }}>
+    <div
+      ref={ref}
+      className={styles.column}
+      data-dragging={dragging ? 'true' : undefined}
+      style={{ inlineSize: `${String(width)}px` }}
+    >
       <div
         className={styles.handle}
         data-side={handle}
         role="separator"
         aria-orientation="vertical"
-        aria-label="Ridimensiona la colonna"
+        aria-label="Ridimensiona la colonna — doppio click per rimetterla com’era"
+        title="Trascina per ridimensionare · doppio click per rimetterla com’era"
         tabIndex={0}
-        onPointerDown={(e) => {
-          e.preventDefault();
-          dragging.current = true;
-          document.body.classList.add(styles.resizing ?? '');
-        }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onDoubleClick={reset}
         onKeyDown={(e) => {
-          // Anche da tastiera: chi non usa il mouse deve poter allargare.
           const step = e.shiftKey ? 40 : 10;
-          if (e.key === 'ArrowLeft') {
-            setWidth((w) => clamp(handle === 'start' ? w + step : w - step));
-          } else if (e.key === 'ArrowRight') {
-            setWidth((w) => clamp(handle === 'start' ? w - step : w + step));
-          } else {
-            return;
-          }
+          const inward = handle === 'start' ? step : -step;
+          if (e.key === 'ArrowLeft') nudge(inward);
+          else if (e.key === 'ArrowRight') nudge(-inward);
+          else if (e.key === 'Home' || e.key === 'Escape') reset();
+          else return;
           e.preventDefault();
         }}
       />
