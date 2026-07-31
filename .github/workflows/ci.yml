@@ -68,6 +68,23 @@ jobs:
         with:
           workspaces: "apps/desktop/src-tauri"
 
+      # `tauri::generate_context!` valida `frontendDist` a compile time: senza
+      # `apps/desktop/dist` anche un semplice clippy fallisce.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Build frontend (richiesto da generate_context!)
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm tokens:build
+          pnpm --filter @medea/desktop exec vite build
+
       - name: Cargo fmt
         run: cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml -- --check
 
