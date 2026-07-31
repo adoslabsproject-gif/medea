@@ -19,7 +19,7 @@ import {
   SCAFFOLD_SYSTEM_PROMPT_TUNED,
 } from './prompt';
 import { repairScaffold } from './repair';
-import { isScaffoldOutput, type ScaffoldOutput } from './schema';
+import { isScaffoldOutput, SINGLESHOT_OUTPUT_SCHEMA, type ScaffoldOutput } from './schema';
 import { describeViolations, validateScaffold, type Violation } from './validate';
 
 /**
@@ -122,11 +122,7 @@ export async function runScaffold(req: ScaffoldRequest): Promise<ScaffoldResult>
 
     let raw: string;
     try {
-      raw = await req.llm.complete({
-        system,
-        user,
-        schema: (await import('./schema')).SINGLESHOT_OUTPUT_SCHEMA,
-      });
+      raw = await req.llm.complete({ system, user, schema: SINGLESHOT_OUTPUT_SCHEMA });
     } catch (e) {
       lastReason = `Il provider non ha risposto: ${String(e)}`;
       previousErrors = lastReason;
@@ -148,11 +144,21 @@ export async function runScaffold(req: ScaffoldRequest): Promise<ScaffoldResult>
       continue;
     }
 
-    req.onProgress?.('riparazione', attempt);
-    const repairs = repairScaffold(output, index);
+    // Riparazione e validazione non devono MAI propagare un'eccezione: un
+    // output patologico si traduce in un tentativo fallito, non in un crash.
+    let repairs: { applied: string[] };
+    let violations: Violation[];
+    try {
+      req.onProgress?.('riparazione', attempt);
+      repairs = repairScaffold(output, index);
 
-    req.onProgress?.('validazione', attempt);
-    const violations = validateScaffold(output, index);
+      req.onProgress?.('validazione', attempt);
+      violations = validateScaffold(output, index);
+    } catch (e) {
+      lastReason = `L'output ha una forma imprevista: ${e instanceof Error ? e.message : String(e)}`;
+      previousErrors = `${lastReason}\nRispondi SOLO con l'oggetto JSON conforme allo schema.`;
+      continue;
+    }
 
     if (violations.length === 0) {
       return {

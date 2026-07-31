@@ -12,12 +12,14 @@ import { describe, expect, it } from 'vitest';
 
 import type { NodeDef } from '../types';
 
+import { WorkflowBuilder } from './builder';
 import { indexByDefId } from './catalog';
 import { formatCatalogEntry } from './catalog';
 import { parseScaffoldJson } from './parse';
 import { repairScaffold } from './repair';
 import { runScaffold, type ScaffoldLlm } from './run';
 import type { ScaffoldOutput } from './schema';
+import { executeWorkflowTool, WORKFLOW_AGENT_TOOLS } from './tools';
 import { validateScaffold } from './validate';
 
 const CATALOG: NodeDef[] = [
@@ -285,5 +287,127 @@ describe('il ciclo completo', () => {
       llm: fakeLlm(['Mi dispiace, non posso.']),
     });
     expect(res.ok).toBe(false);
+  });
+});
+
+describe("i 9 tool dell'agente", () => {
+  it("mantiene nomi e ordine identici all'originale", () => {
+    expect(WORKFLOW_AGENT_TOOLS.map((t) => t.name)).toEqual([
+      'search_nodes',
+      'get_node_schema',
+      'add_node',
+      'connect',
+      'set_config',
+      'delete_node',
+      'disconnect',
+      'validate_workflow',
+      'finish',
+    ]);
+  });
+
+  it('espone parametri chiusi: niente campi inventati dal modello', () => {
+    for (const tool of WORKFLOW_AGENT_TOOLS) {
+      expect(tool.parameters.additionalProperties).toBe(false);
+      expect(tool.description.length).toBeGreaterThan(40);
+    }
+  });
+
+  function ctx() {
+    return { builder: new WorkflowBuilder(CATALOG), catalog: CATALOG };
+  }
+
+  it('search_nodes trova il nodo dalla descrizione a parole', () => {
+    const r = executeWorkflowTool(ctx(), 'search_nodes', { query: 'invia email' });
+    expect((r.data as { hits: { defId: string }[] }).hits[0]?.defId).toBe('action_send_email');
+  });
+
+  it('get_node_schema elenca campi, obbligatorietà ed enum', () => {
+    const r = executeWorkflowTool(ctx(), 'get_node_schema', { defId: 'action_http' });
+    const d = r.data as { fields: { key: string; required: boolean; options?: string[] }[] };
+    expect(d.fields.find((f) => f.key === 'url')?.required).toBe(true);
+    expect(d.fields.find((f) => f.key === 'method')?.options).toContain('POST');
+  });
+
+  it('add_node dice subito cosa resta da configurare', () => {
+    const r = executeWorkflowTool(ctx(), 'add_node', { defId: 'action_send_email' });
+    expect((r.data as { missingRequired: string[] }).missingRequired).toEqual(['to', 'subject']);
+  });
+
+  it('add_node rifiuta un defId inesistente indirizzando a search_nodes', () => {
+    const r = executeWorkflowTool(ctx(), 'add_node', { defId: 'action_fantasma' });
+    expect((r.data as { ok: boolean; error: string }).ok).toBe(false);
+    expect((r.data as { error: string }).error).toContain('search_nodes');
+  });
+
+  it('connect rifiuta una porta che non esiste', () => {
+    const c = ctx();
+    executeWorkflowTool(c, 'add_node', {
+      defId: 'logic_if',
+      id: 'check',
+      config: { conditionRules: '[]' },
+    });
+    executeWorkflowTool(c, 'add_node', {
+      defId: 'action_http',
+      id: 'call',
+      config: { url: 'https://x.test' },
+    });
+    const r = executeWorkflowTool(c, 'connect', { from: 'check', to: 'call', fromPort: 'forse' });
+    expect((r.data as { ok: boolean; error: string }).error).toContain('true | false');
+  });
+
+  it('delete_node porta via anche i collegamenti', () => {
+    const c = ctx();
+    executeWorkflowTool(c, 'add_node', {
+      defId: 'trigger_cron',
+      id: 'cron',
+      config: { cron: '0 9 * * *' },
+    });
+    executeWorkflowTool(c, 'add_node', {
+      defId: 'action_http',
+      id: 'call',
+      config: { url: 'https://x.test' },
+    });
+    executeWorkflowTool(c, 'connect', { from: 'cron', to: 'call' });
+    executeWorkflowTool(c, 'delete_node', { nodeId: 'call' });
+    expect(c.builder.snapshot().edges).toHaveLength(0);
+  });
+
+  it('validate_workflow segnala i nodi scollegati', () => {
+    const c = ctx();
+    executeWorkflowTool(c, 'add_node', { defId: 'trigger_cron', config: { cron: '0 9 * * *' } });
+    executeWorkflowTool(c, 'add_node', { defId: 'action_http', config: { url: 'https://x.test' } });
+    const r = executeWorkflowTool(c, 'validate_workflow', {});
+    expect((r.data as { valid: boolean; orphanNodes: string[] }).valid).toBe(false);
+    expect((r.data as { orphanNodes: string[] }).orphanNodes).toHaveLength(2);
+  });
+
+  it('finish chiude il ciclo restituendo il workflow', () => {
+    const c = ctx();
+    executeWorkflowTool(c, 'add_node', {
+      defId: 'trigger_cron',
+      id: 'cron',
+      config: { cron: '0 9 * * *' },
+    });
+    executeWorkflowTool(c, 'add_node', {
+      defId: 'action_http',
+      id: 'call',
+      config: { url: 'https://x.test' },
+    });
+    executeWorkflowTool(c, 'connect', { from: 'cron', to: 'call' });
+    const r = executeWorkflowTool(c, 'finish', {});
+    expect(r.done).toBe(true);
+    expect(r.snapshot?.nodes).toHaveLength(2);
+    expect((r.data as { remainingIssues: unknown[] }).remainingIssues).toHaveLength(0);
+  });
+
+  it('modificare un workflow esistente parte dal suo stato', () => {
+    const seed = {
+      nodes: [{ id: 'cron', defId: 'trigger_cron', x: 0, y: 0, config: { cron: '0 9 * * *' } }],
+      edges: [],
+    };
+    const builder = new WorkflowBuilder(CATALOG, 'Esistente', undefined, seed);
+    expect(builder.snapshot().nodes).toHaveLength(1);
+    executeWorkflowTool({ builder, catalog: CATALOG }, 'delete_node', { nodeId: 'cron' });
+    expect(builder.snapshot().nodes).toHaveLength(0);
   });
 });

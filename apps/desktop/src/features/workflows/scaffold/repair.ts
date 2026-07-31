@@ -55,7 +55,18 @@ export function applyDefaultsAndNormalize(
     if (!def) continue;
 
     for (const field of def.configFields ?? []) {
-      const value = node.config[field.key];
+      let value = node.config[field.key];
+
+      // Un enum arrivato come numero o booleano (es. `5` per "5") si porta a
+      // stringa prima del confronto: la scelta era giusta, il tipo no.
+      if (field.options && (typeof value === 'number' || typeof value === 'boolean')) {
+        const asString = String(value);
+        if (field.options.some((o) => o.toLowerCase() === asString.toLowerCase())) {
+          log.applied.push(`${node.id}.${field.key}: ${String(value)} portato a stringa`);
+          node.config[field.key] = asString;
+          value = asString;
+        }
+      }
 
       if (field.options && typeof value === 'string') {
         const match = field.options.find((o) => o.toLowerCase() === value.toLowerCase());
@@ -65,7 +76,8 @@ export function applyDefaultsAndNormalize(
         }
       }
 
-      const missing = value === undefined || value === '';
+      // `null` è il modo del modello di dire "non lo so": vale come assenza.
+      const missing = value === undefined || value === null || value === '';
       if (missing && field.defaultValue !== undefined) {
         node.config[field.key] = field.defaultValue;
         log.applied.push(`${node.id}.${field.key}: applicato il default "${field.defaultValue}"`);
@@ -118,6 +130,30 @@ export function pruneEdges(output: ScaffoldOutput, log: RepairLog): void {
   }
 }
 
+/** Nomi e tipi delle tabelle richieste: spazi tolti e minuscole. Un modello
+ *  che scrive "Tasks" o "TEXT" ha scelto bene ma formattato male. */
+export function normalizeTables(output: ScaffoldOutput, log: RepairLog): void {
+  for (const table of output.tablesToCreate ?? []) {
+    const name = table.name.trim().toLowerCase();
+    if (name !== table.name) {
+      log.applied.push(`tabella "${table.name}" normalizzata in "${name}"`);
+      table.name = name;
+    }
+    for (const col of table.columns) {
+      const colName = col.name.trim().toLowerCase();
+      if (colName !== col.name) {
+        log.applied.push(`colonna "${col.name}" di "${name}" normalizzata in "${colName}"`);
+        col.name = colName;
+      }
+      const type = col.type.trim().toLowerCase();
+      if (type !== col.type) {
+        log.applied.push(`tipo "${col.type}" di "${name}.${colName}" normalizzato in "${type}"`);
+        col.type = type;
+      }
+    }
+  }
+}
+
 /** Coordinate mancanti: griglia in cascata, poi il layout automatico rifinisce. */
 export function fillPositions(output: ScaffoldOutput): void {
   output.nodes.forEach((node, idx) => {
@@ -133,6 +169,7 @@ export function repairScaffold(output: ScaffoldOutput, catalog: Map<string, Node
   dedupeNodeIds(output, log);
   applyDefaultsAndNormalize(output, catalog, log);
   pruneEdges(output, log);
+  normalizeTables(output, log);
   fillPositions(output);
   return log;
 }
