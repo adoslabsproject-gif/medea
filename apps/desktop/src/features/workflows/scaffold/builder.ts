@@ -6,6 +6,7 @@
  * mossa successiva, senza doverglielo dire nel prompt.
  */
 
+import { gateWorkflow, type QualityDatabase, type QualityGateResult } from '../quality';
 import type { CanvasNode, NodeDef, WorkflowEdge } from '../types';
 
 import { indexByDefId } from './catalog';
@@ -131,6 +132,17 @@ export class WorkflowBuilder {
       },
       this.catalog,
     );
+  }
+
+  /**
+   * Il giudizio sulla qualità, oltre alla correttezza formale.
+   *
+   * `validate()` dice se il workflow è ben formato; questo dice se
+   * funzionerà. Sono due domande diverse e servono entrambe: un workflow può
+   * avere ogni campo al posto giusto e contenere `smtp.example.com`.
+   */
+  quality(databases?: readonly QualityDatabase[]): QualityGateResult {
+    return gateWorkflow({ nodes: this.nodes, edges: this.edges }, databases);
   }
 
   /** Nodi che non ricevono né emettono nulla: di solito è un pezzo dimenticato. */

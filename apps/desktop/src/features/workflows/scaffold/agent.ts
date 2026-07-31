@@ -10,15 +10,20 @@
  * dal suo stato invece di rigenerarlo da capo.
  */
 
+import { describeIssues, type QualityDatabase, type QualityIssue } from '../quality';
 import type { NodeDef, Workflow } from '../types';
 
 import { WorkflowBuilder, type WorkflowSnapshot } from './builder';
 import { executeWorkflowTool, WORKFLOW_AGENT_TOOLS } from './tools';
-import { describeViolations, type Violation } from './validate';
+import type { Violation } from './validate';
 
 /** Oltre questo numero di passi si ferma: un modello che gira a vuoto non
  *  deve poter consumare all'infinito. */
 const MAX_STEPS = 40;
+
+/** Quante volte gli si può dire «no, non è pronto» prima di arrendersi. Un
+ *  modello che non capisce al terzo richiamo non capirà al quarto. */
+const MAX_PUSHBACKS = 3;
 
 /** Chiamata a tool emessa dal modello, nella forma normalizzata dal backend. */
 export interface AgentToolCall {
@@ -62,6 +67,8 @@ export interface AgentFailure {
   steps: AgentStep[];
   reason: string;
   violations: Violation[];
+  /** I problemi di qualità che hanno concorso al rifiuto. */
+  qualityIssues: QualityIssue[];
   /** Lo stato raggiunto: anche incompleto può valere la pena mostrarlo. */
   partial?: WorkflowSnapshot;
 }
@@ -76,6 +83,8 @@ export interface AgentRequest {
   seed?: Workflow;
   /** Risorse reali: database, account email, credenziali disponibili. */
   context?: string;
+  /** Schema dei database noti: accende i controlli su tabelle e colonne. */
+  databases?: readonly QualityDatabase[];
   onStep?: (step: AgentStep) => void;
 }
 
@@ -120,33 +129,32 @@ export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> 
     req.seed?.description,
     req.seed ? { nodes: req.seed.nodes, edges: req.seed.edges } : undefined,
   );
-  const ctx = { builder, catalog: req.catalog };
+  const ctx = {
+    builder,
+    catalog: req.catalog,
+    ...(req.databases ? { databases: req.databases } : {}),
+  };
   const system = buildAgentSystemPrompt(req.goal, req.context, Boolean(req.seed));
   const tools = agentToolsForProvider();
 
   const history: AgentTurn[] = [{ role: 'user', content: req.goal }];
   const steps: AgentStep[] = [];
+  let pushbacks = 0;
 
   for (let step = 1; step <= MAX_STEPS; step++) {
     let reply: { content: string; toolCalls: AgentToolCall[] };
     try {
       reply = await req.chat({ system, history, tools });
     } catch (e) {
-      return {
-        ok: false,
-        steps,
-        reason: `Il provider non ha risposto: ${String(e)}`,
-        violations: builder.validate(),
-        partial: builder.snapshot(),
-      };
+      return failFrom(builder, steps, `Il provider non ha risposto: ${String(e)}`, req.databases);
     }
 
     if (reply.toolCalls.length === 0) {
       // Nessuno strumento chiamato: o ha finito senza dirlo, o si è perso.
       // Glielo si fa notare una volta, poi si chiude.
-      const violations = builder.validate();
-      if (builder.snapshot().nodes.length > 0 && violations.length === 0) {
-        return finishFrom(builder, steps);
+      const assessment = assess(builder, req.databases);
+      if (builder.snapshot().nodes.length > 0 && assessment.blocking.length === 0) {
+        return finishFrom(builder, steps, req.databases);
       }
       history.push(
         { role: 'assistant', content: reply.content },
@@ -169,6 +177,7 @@ export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> 
       })),
     });
 
+    let rejected = false;
     for (const call of reply.toolCalls) {
       const outcome = executeWorkflowTool(ctx, call.name, call.arguments);
       const record: AgentStep = {
@@ -187,36 +196,111 @@ export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> 
         name: call.name,
       });
 
-      if (outcome.done) {
-        return finishFrom(builder, steps);
+      if (!outcome.done) continue;
+
+      const assessment = assess(builder, req.databases);
+      if (assessment.blocking.length === 0) return finishFrom(builder, steps, req.databases);
+
+      // Ha dichiarato finito qualcosa che non lo è. Invece di bocciarlo
+      // subito gli si dice cosa manca: quasi sempre il giro dopo lo
+      // sistema, e un rifiuto secco butterebbe via tutto il lavoro fatto.
+      if (pushbacks >= MAX_PUSHBACKS) {
+        return failFrom(
+          builder,
+          steps,
+          `Il workflow ha ancora ${assessment.blocking.length} problemi dopo ${String(MAX_PUSHBACKS)} richiami:\n${assessment.blocking.join('\n')}`,
+          req.databases,
+        );
       }
+      pushbacks++;
+      history.push({
+        role: 'user',
+        content: [
+          'Non posso accettare il workflow: questi problemi lo renderebbero non funzionante.',
+          ...assessment.blocking,
+          '',
+          'Correggili con set_config / connect / delete_node, poi richiama validate_workflow e infine finish.',
+        ].join('\n'),
+      });
+      rejected = true;
+      break;
     }
+    if (rejected) continue;
   }
 
+  return failFrom(
+    builder,
+    steps,
+    `L'agente non ha concluso entro ${String(MAX_STEPS)} passi.`,
+    req.databases,
+  );
+}
+
+interface Assessment {
+  violations: Violation[];
+  qualityIssues: QualityIssue[];
+  /** I problemi che impediscono di consegnare il workflow, già in parole. */
+  blocking: string[];
+}
+
+/**
+ * Il giudizio completo: forma e sostanza insieme.
+ *
+ * Gli avvisi non bloccano — un `logic_switch` senza ramo di default è una
+ * scelta discutibile, non un errore — ma i problemi critici sì: quelli a
+ * runtime si romperebbero di sicuro.
+ */
+function assess(builder: WorkflowBuilder, databases?: readonly QualityDatabase[]): Assessment {
   const violations = builder.validate();
+  const quality = builder.quality(databases);
+  const critical = quality.issues.filter((i) => i.severity === 'critical');
+  return {
+    violations,
+    qualityIssues: quality.issues,
+    blocking: [...violations.map((v) => v.message), ...describeIssues(critical)],
+  };
+}
+
+function failFrom(
+  builder: WorkflowBuilder,
+  steps: AgentStep[],
+  reason: string,
+  databases?: readonly QualityDatabase[],
+): AgentFailure {
+  const assessment = assess(builder, databases);
   return {
     ok: false,
     steps,
-    reason: `L'agente non ha concluso entro ${MAX_STEPS} passi.`,
-    violations,
+    reason,
+    violations: assessment.violations,
+    qualityIssues: assessment.qualityIssues,
     partial: builder.snapshot(),
   };
 }
 
-/** Chiusura: si accetta solo un workflow che supera la validazione. */
-function finishFrom(builder: WorkflowBuilder, steps: AgentStep[]): AgentResult {
-  const violations = builder.validate();
+/** Chiusura: si consegna solo un workflow che sta in piedi. */
+function finishFrom(
+  builder: WorkflowBuilder,
+  steps: AgentStep[],
+  databases?: readonly QualityDatabase[],
+): AgentResult {
+  const assessment = assess(builder, databases);
   const snapshot = builder.snapshot();
 
-  if (violations.length > 0) {
-    return {
-      ok: false,
+  if (assessment.blocking.length > 0) {
+    return failFrom(
+      builder,
       steps,
-      reason: `Il workflow ha ${violations.length} problemi non risolti:\n${describeViolations(violations)}`,
-      violations,
-      partial: snapshot,
-    };
+      `Il workflow ha ${assessment.blocking.length} problemi non risolti:\n${assessment.blocking.join('\n')}`,
+      databases,
+    );
   }
+
+  // Ciò che resta sono avvisi e scelte da fare a mano: l'utente li vede, ma
+  // il workflow funziona.
+  const warnings = assessment.qualityIssues
+    .filter((i) => i.severity !== 'info')
+    .map((i) => i.message);
 
   return {
     ok: true,
@@ -228,6 +312,9 @@ function finishFrom(builder: WorkflowBuilder, steps: AgentStep[]): AgentResult {
       executionTarget: 'local',
     },
     steps,
-    remainingIssues: builder.orphanNodes().map((id) => `Il nodo "${id}" non è collegato a nulla.`),
+    remainingIssues: [
+      ...builder.orphanNodes().map((id) => `Il nodo "${id}" non è collegato a nulla.`),
+      ...warnings,
+    ],
   };
 }

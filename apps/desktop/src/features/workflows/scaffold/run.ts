@@ -9,7 +9,14 @@
  * modello addestrato su questo compito ne usa uno, uno generico due o tre.
  */
 
-import type { NodeDef, Workflow } from '../types';
+import {
+  describeIssues,
+  runQualityGate,
+  toGateInput,
+  type QualityDatabase,
+  type QualityIssue,
+} from '../quality';
+import type { CanvasNode, NodeDef, Workflow, WorkflowEdge } from '../types';
 
 import { indexByDefId, selectCatalog } from './catalog';
 import { parseScaffoldJson, ScaffoldParseError } from './parse';
@@ -78,6 +85,8 @@ export interface ScaffoldSuccess {
   attempts: number;
   /** Correzioni applicate senza disturbare il modello. */
   repairs: string[];
+  /** Avvisi rimasti: il workflow funziona, ma qualcosa merita un'occhiata. */
+  warnings: string[];
   tablesToCreate: ScaffoldOutput['tablesToCreate'];
 }
 
@@ -87,6 +96,8 @@ export interface ScaffoldFailure {
   /** Perché non ce l'ha fatta, in forma leggibile. */
   reason: string;
   violations: Violation[];
+  /** I problemi di qualità dell'ultimo tentativo. */
+  qualityIssues: QualityIssue[];
 }
 
 export type ScaffoldResult = ScaffoldSuccess | ScaffoldFailure;
@@ -96,6 +107,8 @@ export interface ScaffoldRequest {
   catalog: NodeDef[];
   llm: ScaffoldLlm;
   resources?: string[];
+  /** Schema dei database noti: accende i controlli su tabelle e colonne. */
+  databases?: readonly QualityDatabase[];
   /** Notifica di avanzamento per la UI. */
   onProgress?: (phase: string, attempt: number) => void;
 }
@@ -107,6 +120,7 @@ export async function runScaffold(req: ScaffoldRequest): Promise<ScaffoldResult>
 
   let previousErrors: string | undefined;
   let lastViolations: Violation[] = [];
+  let lastQualityIssues: QualityIssue[] = [];
   let lastReason = '';
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -160,37 +174,44 @@ export async function runScaffold(req: ScaffoldRequest): Promise<ScaffoldResult>
       continue;
     }
 
-    if (violations.length === 0) {
-      return {
-        ok: true,
-        workflow: {
-          name: output.name,
-          ...(output.description ? { description: output.description } : {}),
-          nodes: output.nodes.map((n) => ({
-            id: n.id,
-            defId: n.defId,
-            x: n.x ?? 0,
-            y: n.y ?? 0,
-            config: n.config,
-            ...(n.label ? { label: n.label } : {}),
-          })),
-          edges: output.edges.map((e) => ({
-            from: e.from,
-            to: e.to,
-            ...(e.fromPort ? { fromPort: e.fromPort } : {}),
-          })),
-          executionTarget: 'local',
-        },
-        reasoning: output.reasoning,
-        attempts: attempt,
-        repairs: repairs.applied,
-        tablesToCreate: output.tablesToCreate,
-      };
+    if (violations.length > 0) {
+      lastViolations = violations;
+      lastReason = `${violations.length} problemi nel workflow generato`;
+      previousErrors = describeViolations(violations);
+      continue;
     }
 
-    lastViolations = violations;
-    lastReason = `${violations.length} problemi nel workflow generato`;
-    previousErrors = describeViolations(violations);
+    // La forma è a posto; resta da capire se funzionerà. Il gate di qualità
+    // guarda quello che la validazione non può vedere: segnaposto, cicli,
+    // riferimenti a nodi non ancora eseguiti.
+    req.onProgress?.('qualità', attempt);
+    const nodes = toCanvasNodes(output);
+    const edges = toWorkflowEdges(output);
+    const quality = runQualityGate(toGateInput(nodes, edges, req.databases));
+    lastQualityIssues = quality.issues;
+
+    if (quality.shouldReject) {
+      const critical = quality.issues.filter((i) => i.severity === 'critical');
+      lastReason = `${critical.length} problemi che renderebbero il workflow non funzionante`;
+      previousErrors = describeIssues(critical).join('\n');
+      continue;
+    }
+
+    return {
+      ok: true,
+      workflow: {
+        name: output.name,
+        ...(output.description ? { description: output.description } : {}),
+        nodes,
+        edges,
+        executionTarget: 'local',
+      },
+      reasoning: output.reasoning,
+      attempts: attempt,
+      repairs: repairs.applied,
+      warnings: quality.issues.filter((i) => i.severity !== 'info').map((i) => i.message),
+      tablesToCreate: output.tablesToCreate,
+    };
   }
 
   return {
@@ -198,5 +219,25 @@ export async function runScaffold(req: ScaffoldRequest): Promise<ScaffoldResult>
     attempts: MAX_ATTEMPTS,
     reason: `Dopo ${MAX_ATTEMPTS} tentativi il workflow non è valido: ${lastReason}`,
     violations: lastViolations,
+    qualityIssues: lastQualityIssues,
   };
+}
+
+function toCanvasNodes(output: ScaffoldOutput): CanvasNode[] {
+  return output.nodes.map((n) => ({
+    id: n.id,
+    defId: n.defId,
+    x: n.x ?? 0,
+    y: n.y ?? 0,
+    config: n.config,
+    ...(n.label ? { label: n.label } : {}),
+  }));
+}
+
+function toWorkflowEdges(output: ScaffoldOutput): WorkflowEdge[] {
+  return output.edges.map((e) => ({
+    from: e.from,
+    to: e.to,
+    ...(e.fromPort ? { fromPort: e.fromPort } : {}),
+  }));
 }
