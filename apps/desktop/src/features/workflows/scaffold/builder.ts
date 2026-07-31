@@ -174,7 +174,7 @@ export class WorkflowBuilder {
       base
         .toLowerCase()
         .replace(/[^a-z0-9_]/g, '_')
-        .replace(/^[^a-z]+/, '') || 'node';
+        .replace(/^[^a-z]+/, '') || 'nodo';
     if (!this.hasNode(clean)) return clean;
     this.counter++;
     let candidate = `${clean}_${this.counter}`;

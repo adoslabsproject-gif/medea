@@ -3,27 +3,26 @@
  *
  * È lo stesso smistamento dell'editor di FlowForge: il nodo dichiara che
  * `cronExpression` è un `cron-builder` e qui compare il costruttore di
- * pianificazioni, non una casella di testo dove scrivere `0 9 * * *` a mano.
- * Con 145 nodi non esiste alternativa — mantenere 145 moduli scritti a mano
- * sarebbe impossibile.
+ * pianificazioni, non una casella dove scrivere `0 9 * * *` a mano. Con 145
+ * nodi non esiste alternativa — mantenere 145 moduli scritti a mano sarebbe
+ * impossibile.
  *
- * Un campo che va in errore non deve portarsi dietro tutto il pannello:
- * ognuno è isolato, e se si rompe si degrada a casella di testo invece di
- * lasciare l'utente davanti a una schermata vuota.
+ * Questo file fa solo lo smistamento: i controlli stanno nei file accanto.
  */
 
-import { PICKER_PLACEHOLDER } from '../constants';
 import type { NodeConfigField } from '../types';
 
+import { BooleanField, CodeField, SelectField, TextField } from './BasicFields';
 import { ChipListBuilder } from './ChipListBuilder';
 import { ConditionRulesBuilder } from './ConditionRulesBuilder';
 import { CronBuilder } from './CronBuilder';
 import { ExpressionPicker, type ExpressionSource } from './ExpressionPicker';
-import styles from './fields.module.css';
+import { asText, CODE_TYPES, LONG_TEXT_TYPES, PICKER_TYPES } from './field-kinds';
 import { FieldShell } from './FieldShell';
 import { FilterRowBuilder } from './FilterRowBuilder';
 import { FormFieldsBuilder } from './FormFieldsBuilder';
 import { KeyValueBuilder } from './KeyValueBuilder';
+import { PickerField, SecretField } from './PickerField';
 import { evaluateShowIf } from './show-if';
 import { SortRowBuilder } from './SortRowBuilder';
 import { SwitchCasesBuilder } from './SwitchCasesBuilder';
@@ -39,28 +38,23 @@ export interface ConfigFieldProps {
   sources?: readonly ExpressionSource[];
 }
 
-/** I tipi che si scrivono su più righe con carattere a larghezza fissa. */
-const CODE_TYPES = new Set(['code', 'json', 'javascript', 'python', 'sql', 'html']);
-const LONG_TEXT_TYPES = new Set(['textarea', 'expression', 'markdown', 'prompt', 'rich-text']);
+type StringControl = (props: {
+  value: string;
+  onChange: (v: string) => void;
+}) => React.ReactElement;
 
-/** I campi il cui valore l'utente sceglie da un elenco che qui non c'è ancora. */
-const PICKER_TYPES = new Set([
-  'db-picker',
-  'db-table-picker',
-  'db-collection-picker',
-  'workflow-picker',
-  'credential-picker',
-  'file-picker',
-  'directory-picker',
-  'account-picker',
-  'email-account-picker',
-]);
-
-function asText(value: unknown): string {
-  if (typeof value === 'string') return value;
-  if (value === undefined || value === null) return '';
-  return JSON.stringify(value);
-}
+/** I costruttori che prendono e restituiscono una stringa, per tipo. */
+const BUILDERS: Record<string, StringControl> = {
+  'cron-builder': CronBuilder,
+  'timezone-picker': TimezonePicker,
+  'key-value': KeyValueBuilder,
+  'chip-list': ChipListBuilder,
+  'switch-cases': SwitchCasesBuilder,
+  'condition-rules': ConditionRulesBuilder,
+  'filter-rows': FilterRowBuilder,
+  'sort-rows': SortRowBuilder,
+  'form-fields': FormFieldsBuilder,
+};
 
 export function ConfigFieldRenderer({
   field,
@@ -74,187 +68,41 @@ export function ConfigFieldRenderer({
   const type = field.type || 'text';
   const text = asText(value);
 
-  // Il booleano ha la casella accanto all'etichetta, non sotto: è l'unico
-  // campo in cui il controllo E l'etichetta sono la stessa cosa.
   if (type === 'boolean') {
     return (
-      <div className={styles.field}>
-        <label className={styles.checkRow}>
-          <input
-            type="checkbox"
-            checked={value === true || value === 'true'}
-            onChange={(e) => {
-              onChange(e.target.checked);
-            }}
-          />
-          {field.label ?? field.key}
-        </label>
-        {field.description && <p className={styles.hint}>{field.description}</p>}
-      </div>
+      <BooleanField
+        field={field}
+        checked={value === true || value === 'true'}
+        onChange={onChange}
+      />
     );
   }
 
-  if (type === 'cron-builder') {
+  const Builder = BUILDERS[type];
+  if (Builder) {
     return (
       <FieldShell field={field}>
-        <CronBuilder value={text} onChange={onChange} />
+        <Builder value={text} onChange={onChange} />
       </FieldShell>
     );
   }
 
-  if (type === 'timezone-picker') {
-    return (
-      <FieldShell field={field}>
-        <TimezonePicker value={text} onChange={onChange} />
-      </FieldShell>
-    );
-  }
-
-  if (type === 'key-value') {
-    return (
-      <FieldShell field={field}>
-        <KeyValueBuilder
-          value={text}
-          onChange={onChange}
-          {...(field.description ? { keyPlaceholder: 'chiave' } : {})}
-        />
-      </FieldShell>
-    );
-  }
-
-  if (type === 'chip-list') {
-    return (
-      <FieldShell field={field}>
-        <ChipListBuilder value={text} onChange={onChange} />
-      </FieldShell>
-    );
-  }
-
-  if (type === 'switch-cases') {
-    return (
-      <FieldShell field={field}>
-        <SwitchCasesBuilder value={text} onChange={onChange} />
-      </FieldShell>
-    );
-  }
-
-  if (type === 'filter-rows') {
-    return (
-      <FieldShell field={field}>
-        <FilterRowBuilder value={text} onChange={onChange} />
-      </FieldShell>
-    );
-  }
-
-  if (type === 'sort-rows') {
-    return (
-      <FieldShell field={field}>
-        <SortRowBuilder value={text} onChange={onChange} />
-      </FieldShell>
-    );
-  }
-
-  if (type === 'form-fields') {
-    return (
-      <FieldShell field={field}>
-        <FormFieldsBuilder value={text} onChange={onChange} />
-      </FieldShell>
-    );
-  }
-
-  if (type === 'condition-rules') {
-    return (
-      <FieldShell field={field}>
-        <ConditionRulesBuilder value={text} onChange={onChange} />
-      </FieldShell>
-    );
-  }
-
+  // Un elenco di valori ammessi vince sul tipo: se il nodo li dichiara, si
+  // sceglie fra quelli invece di scriverli.
   if (field.options && field.options.length > 0) {
-    return (
-      <FieldShell field={field}>
-        <select
-          className={styles.control}
-          value={text}
-          onChange={(e) => {
-            onChange(e.target.value);
-          }}
-        >
-          {!field.required && <option value="">— non impostato —</option>}
-          {field.options.map((o) => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
-        </select>
-      </FieldShell>
-    );
+    return <SelectField field={field} value={text} onChange={onChange} />;
   }
 
   if (type === 'secret') {
-    return (
-      <FieldShell field={field}>
-        <input
-          type="password"
-          className={styles.control}
-          value={text}
-          placeholder="{{secrets.NOME}}"
-          onChange={(e) => {
-            onChange(e.target.value);
-          }}
-        />
-        <p className={styles.hint}>
-          Meglio un riferimento <code>{'{{secrets.NOME}}'}</code> che il valore in chiaro: il
-          workflow viene salvato ed esportato così com’è.
-        </p>
-      </FieldShell>
-    );
+    return <SecretField field={field} value={text} onChange={onChange} />;
   }
 
   if (PICKER_TYPES.has(type)) {
-    return (
-      <FieldShell field={field}>
-        <div className={styles.row}>
-          <input
-            className={styles.control}
-            value={text}
-            onChange={(e) => {
-              onChange(e.target.value);
-            }}
-          />
-          <button
-            type="button"
-            className={styles.inlineBtn}
-            onClick={() => {
-              onChange(PICKER_PLACEHOLDER);
-            }}
-          >
-            Scelgo dopo
-          </button>
-        </div>
-        <p className={styles.hint}>
-          Va scelto da un elenco di risorse. Finché l’elenco non c’è, lascia{' '}
-          <code>{PICKER_PLACEHOLDER}</code>: il controllo di qualità sa che non è un valore
-          inventato e non lo segnala come errore.
-        </p>
-      </FieldShell>
-    );
+    return <PickerField field={field} value={text} onChange={onChange} />;
   }
 
   if (CODE_TYPES.has(type)) {
-    return (
-      <FieldShell field={field}>
-        <textarea
-          className={`${styles.control} ${styles.area} ${styles.mono}`}
-          rows={10}
-          spellCheck={false}
-          value={text}
-          onChange={(e) => {
-            onChange(e.target.value);
-          }}
-        />
-      </FieldShell>
-    );
+    return <CodeField field={field} value={text} onChange={onChange} />;
   }
 
   if (LONG_TEXT_TYPES.has(type)) {
@@ -271,17 +119,5 @@ export function ConfigFieldRenderer({
     );
   }
 
-  return (
-    <FieldShell field={field}>
-      <input
-        type={type === 'number' ? 'number' : 'text'}
-        className={styles.control}
-        value={text}
-        placeholder={field.defaultValue ?? ''}
-        onChange={(e) => {
-          onChange(e.target.value);
-        }}
-      />
-    </FieldShell>
-  );
+  return <TextField field={field} value={text} onChange={onChange} />;
 }

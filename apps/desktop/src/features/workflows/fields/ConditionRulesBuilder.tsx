@@ -11,107 +11,17 @@
 
 import { useState } from 'react';
 
+import {
+  defaultOpFor,
+  OPS_BY_TYPE,
+  parseRuleset,
+  TYPE_LABELS,
+  UNARY_OPS,
+  type Rule,
+  type RuleType,
+  type Ruleset,
+} from './condition-ops';
 import styles from './fields.module.css';
-
-type RuleType = 'string' | 'number' | 'date' | 'boolean' | 'any';
-
-interface Rule {
-  left: string;
-  op: string;
-  right?: string;
-  rightMax?: string;
-  type: RuleType;
-  caseSensitive?: boolean;
-}
-
-interface Ruleset {
-  combinator: 'AND' | 'OR';
-  rules: Rule[];
-}
-
-/** Gli stessi operatori dell'editor originale, con le stesse etichette. */
-const OPS_BY_TYPE: Record<RuleType, { value: string; label: string }[]> = {
-  string: [
-    { value: 'equals', label: 'è uguale a' },
-    { value: 'not-equals', label: 'è diverso da' },
-    { value: 'contains', label: 'contiene' },
-    { value: 'not-contains', label: 'non contiene' },
-    { value: 'starts-with', label: 'inizia con' },
-    { value: 'ends-with', label: 'finisce con' },
-    { value: 'matches-regex', label: 'corrisponde a regex' },
-    { value: 'is-empty', label: 'è vuoto' },
-    { value: 'is-not-empty', label: 'non è vuoto' },
-  ],
-  number: [
-    { value: 'eq', label: '=' },
-    { value: 'ne', label: '≠' },
-    { value: 'gt', label: '>' },
-    { value: 'gte', label: '≥' },
-    { value: 'lt', label: '<' },
-    { value: 'lte', label: '≤' },
-    { value: 'between', label: 'tra (min, max)' },
-  ],
-  date: [
-    { value: 'before', label: 'prima di' },
-    { value: 'after', label: 'dopo' },
-    { value: 'equals', label: 'è uguale a' },
-  ],
-  boolean: [
-    { value: 'is-true', label: 'è vero' },
-    { value: 'is-false', label: 'è falso' },
-  ],
-  any: [
-    { value: 'exists', label: 'esiste' },
-    { value: 'not-exists', label: 'non esiste' },
-    { value: 'equals', label: 'è uguale a' },
-    { value: 'not-equals', label: 'è diverso da' },
-  ],
-};
-
-const TYPE_LABELS: Record<RuleType, string> = {
-  string: 'testo',
-  number: 'numero',
-  date: 'data',
-  boolean: 'vero/falso',
-  any: 'qualsiasi',
-};
-
-/** Gli operatori che non hanno un secondo termine da confrontare. */
-const UNARY_OPS = new Set([
-  'is-empty',
-  'is-not-empty',
-  'is-true',
-  'is-false',
-  'exists',
-  'not-exists',
-]);
-
-function parse(raw: string): Ruleset {
-  if (!raw.trim()) return { combinator: 'AND', rules: [] };
-  try {
-    const obj: unknown = JSON.parse(raw);
-    if (obj && typeof obj === 'object' && Array.isArray((obj as Ruleset).rules)) {
-      const o = obj as Ruleset;
-      return {
-        combinator: o.combinator === 'OR' ? 'OR' : 'AND',
-        rules: o.rules.map((r) => {
-          const rule: Rule = {
-            left: r.left ?? '',
-            op: r.op ?? 'equals',
-            right: r.right ?? '',
-            rightMax: r.rightMax ?? '',
-            type: r.type ?? 'string',
-          };
-          if (r.caseSensitive !== undefined) rule.caseSensitive = r.caseSensitive;
-          return rule;
-        }),
-      };
-    }
-  } catch {
-    // Un valore illeggibile riparte da zero invece di bloccare il pannello.
-  }
-  return { combinator: 'AND', rules: [] };
-}
 
 interface Props {
   value: string;
@@ -119,7 +29,7 @@ interface Props {
 }
 
 export function ConditionRulesBuilder({ value, onChange }: Props) {
-  const [set, setSet] = useState<Ruleset>(() => parse(value));
+  const [set, setSet] = useState<Ruleset>(() => parseRuleset(value));
 
   const commit = (next: Ruleset) => {
     setSet(next);
@@ -164,7 +74,7 @@ export function ConditionRulesBuilder({ value, onChange }: Props) {
                 onChange={(e) => {
                   const type = e.target.value as RuleType;
                   // Cambiando tipo l'operatore precedente può non esistere più.
-                  patchRule(i, { type, op: OPS_BY_TYPE[type][0]?.value ?? 'equals' });
+                  patchRule(i, { type, op: defaultOpFor(type) });
                 }}
               >
                 {(Object.keys(OPS_BY_TYPE) as RuleType[]).map((t) => (
