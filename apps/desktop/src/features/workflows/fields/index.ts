@@ -17,6 +17,7 @@ export {
   serializeSwitchCases,
   toFieldKey,
 } from './serialization';
+export { AccountPicker } from './AccountPicker';
 export { BooleanField, CodeField, SelectField, TextField } from './BasicFields';
 export { defaultOpFor, OPS_BY_TYPE, parseRuleset, TYPE_LABELS, UNARY_OPS } from './condition-ops';
 export type { Rule, Ruleset, RuleType } from './condition-ops';
