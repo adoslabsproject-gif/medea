@@ -85,6 +85,39 @@ Anagrafiche, articoli, listini e documenti quando servono.
 </tr>
 </table>
 
+### ⚡ Workflow con i nodi
+
+Una tab con un editor visuale di automazioni: si trascinano i nodi, si collegano,
+si configurano. **145 nodi** — trigger a orario, webhook, chiamate HTTP, database,
+email, agenti AI, integrazioni — presi dal catalogo di FlowForge, con le stesse
+icone e le stesse definizioni.
+
+<table>
+<tr><td width="50%" valign="top">
+
+**Si disegna, o si descrive**
+
+Il canvas per chi sa cosa vuole. Per tutti gli altri c'è l'assistente: «ogni
+mattina alle 8 scarica gli ordini e mandami il riepilogo» diventa un workflow
+costruito un passo alla volta, con nove strumenti — cerca il nodo, ne legge lo
+schema, lo aggiunge, lo configura, valida, chiude.
+
+</td><td width="50%" valign="top">
+
+**Non si salva ciò che non funziona**
+
+Ventuno regole controllano il senso, non solo la forma: riferimenti a nodi che
+a runtime non sono ancora stati eseguiti, `example.com` rimasti nei campi,
+trigger che non portano a nulla, liste collegate a nodi che elaborano un
+elemento per volta, segreti scritti in chiaro. Un workflow con problemi critici
+non si attiva — né disegnato a mano né generato dall'AI.
+
+</td></tr>
+</table>
+
+Il formato del documento è **byte-compatibile** con FlowForge: un workflow
+esportato da Medea si importa sul server, e viceversa.
+
 ### Gli strumenti dell'assistente
 
 L'AI non è un chatbot incollato di lato: ha **63 strumenti** che agiscono davvero
@@ -191,7 +224,7 @@ macOS: `~/Library/Application Support/com.adoslabs.medea` · Windows:
 flowchart TB
     subgraph UI["Interfaccia · React 19 + Vite"]
         direction LR
-        MAIL[Posta] --- RUB[Rubrica] --- DOC[Documenti] --- AI[Assistente]
+        MAIL[Posta] --- RUB[Rubrica] --- DOC[Documenti] --- WF[Workflow] --- AI[Assistente]
     end
 
     subgraph CORE["Core · Rust"]
@@ -199,7 +232,7 @@ flowchart TB
         SYNC[Sync IMAP] --- SMTP[Invio SMTP] --- TOOLS[63 strumenti] --- SEC[Scanner + keychain]
     end
 
-    DB[(SQLite · FTS5<br/>11 migrazioni)]
+    DB[(SQLite · FTS5<br/>12 migrazioni)]
     MCP[[medea-mcp<br/>server MCP]]
 
     UI <-->|comandi Tauri| CORE
@@ -226,6 +259,7 @@ l'installer sta in pochi megabyte invece che in centinaia.
 mailer/
 ├── apps/desktop/
 │   ├── src/features/        posta · rubrica · contatti · documenti · assistente
+│   │                        workflow (canvas + scaffold + quality gate)
 │   └── src-tauri/src/
 │       ├── commands/        comandi esposti alla UI
 │       ├── ai_tools/        i 63 strumenti dell'assistente
@@ -236,6 +270,7 @@ mailer/
 │   ├── design-system/       token OKLCH, @layer, temi
 │   ├── ui/                  primitivi React accessibili
 │   └── utils/ · tsconfig/ · eslint-config/
+├── scripts/                 estrazione del catalogo nodi da FlowForge
 └── docs/architecture/adr/   decisioni architetturali
 ```
 
@@ -275,16 +310,19 @@ e `cargo check` a ogni push.
 
 ## Stato
 
-|     |                                                               |
-| --- | ------------------------------------------------------------- |
-| 🟢  | Posta: account, sync, lettura, invio, ricerca full-text       |
-| 🟢  | Assistente con 63 strumenti, conferma sulle scritture, vision |
-| 🟢  | BYOK con portachiavi, endpoint personale, abbonamento via MCP |
-| 🟢  | Rubrica, anagrafiche, articoli, listini, documenti            |
-| 🟢  | Template email, promemoria con notifiche, DB Studio           |
-| ⏳  | OAuth Google e Microsoft                                      |
-| ⏳  | Ricerca semantica con budget di memoria esplicito             |
-| ⏳  | Android via Tauri Mobile                                      |
+|     |                                                                |
+| --- | -------------------------------------------------------------- |
+| 🟢  | Posta: account, sync, lettura, invio, ricerca full-text        |
+| 🟢  | Assistente con 63 strumenti, conferma sulle scritture, vision  |
+| 🟢  | BYOK con portachiavi, endpoint personale, abbonamento via MCP  |
+| 🟢  | Rubrica, anagrafiche, articoli, listini, documenti             |
+| 🟢  | Template email, promemoria con notifiche, DB Studio            |
+| 🟢  | Workflow: canvas, 145 nodi, generazione a parole, 21 controlli |
+| ⏳  | Editor workflow: parità piena con FlowForge (vedi sotto)       |
+| ⏳  | Esecuzione dei workflow: runtime locale come processo figlio   |
+| ⏳  | OAuth Google e Microsoft                                       |
+| ⏳  | Ricerca semantica con budget di memoria esplicito              |
+| ⏳  | Android via Tauri Mobile                                       |
 
 ---
 
