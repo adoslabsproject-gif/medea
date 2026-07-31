@@ -14,7 +14,6 @@ import styles from './Topbar.module.css';
 
 export interface TopbarActions {
   onRename: (name: string) => void;
-  onTargetChange: (target: 'local' | 'server') => void;
   onSave: () => void;
   onToggleEnabled: () => void;
   onToggleAssistant: () => void;
@@ -107,18 +106,6 @@ export function Topbar({
           actions.onRename(e.target.value);
         }}
       />
-
-      <select
-        className={styles.target}
-        aria-label="Dove viene eseguito"
-        value={workflow.executionTarget ?? 'local'}
-        onChange={(e) => {
-          actions.onTargetChange(e.target.value as 'local' | 'server');
-        }}
-      >
-        <option value="local">Su questo computer</option>
-        <option value="server">Sul server</option>
-      </select>
 
       <div className={styles.group}>
         <button

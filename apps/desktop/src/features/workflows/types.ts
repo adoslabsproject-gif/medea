@@ -57,7 +57,16 @@ export interface Workflow {
   edges: WorkflowEdge[];
   nodeDefs?: NodeDef[];
   runVerbosity?: 'silent' | 'summary' | 'full';
-  /** Dove viene eseguito: sul PC o sul server sempre acceso. */
+  /**
+   * Dove viene eseguito. In Medea è **sempre** `local`: il workflow gira sul
+   * computer dell'utente, che è l'unico posto da cui si vede la sua posta, e
+   * non esiste un account sul server dove ospitarlo — il server fa solo da
+   * relay per i webhook in ingresso (ADR 0005).
+   *
+   * Il campo resta perché fa parte del formato condiviso con FlowForge: un
+   * workflow importato da là può dichiarare `server`, e riesportandolo deve
+   * ritrovarsi come l'ha lasciato.
+   */
   executionTarget?: 'local' | 'server';
 }
 

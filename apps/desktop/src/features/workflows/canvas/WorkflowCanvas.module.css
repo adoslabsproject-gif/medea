@@ -6,17 +6,23 @@
     overflow: hidden;
   }
 
+  /* La lavagna è grigio scuro, non nera: i nodi e i collegamenti si
+     staccano dal fondo, e il canvas si distingue dalle colonne laterali. */
   .canvas {
     flex: 1;
     min-inline-size: 0;
     position: relative;
-    background: var(--color-surface-1);
+    --canvas-bg: color-mix(in oklch, var(--color-surface-2) 55%, var(--color-surface-3));
+    background: var(--canvas-bg);
   }
 
   /* xyflow disegna con i propri colori: qui si riportano a quelli del tema,
      altrimenti il canvas resta chiaro anche in modalità scura. */
   .canvas :global(.react-flow__background) {
-    background: var(--color-surface-1);
+    background: var(--canvas-bg);
+  }
+  .canvas :global(.react-flow__background-pattern) {
+    color: var(--color-border-subtle);
   }
   .canvas :global(.react-flow__edge-path) {
     stroke: var(--color-border-strong);

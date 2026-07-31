@@ -1,0 +1,62 @@
+@layer features {
+  .trace {
+    margin-block-start: var(--space-2);
+  }
+
+  .summary {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    cursor: pointer;
+  }
+  .summary:hover {
+    color: var(--color-text-secondary);
+  }
+
+  .steps {
+    margin: var(--space-1) 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .step {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-inline-size: 0;
+    font-size: var(--font-size-xs);
+  }
+
+  /* Il verbo dice cosa ha fatto: si legge la colonna, non la riga. */
+  .verb {
+    flex-shrink: 0;
+    inline-size: 4.5rem;
+    color: var(--color-accent-default);
+    font-weight: var(--font-weight-semibold);
+  }
+  .step[data-tool='validate_workflow'] .verb,
+  .step[data-tool='finish'] .verb {
+    color: var(--color-feedback-success);
+  }
+  .step[data-tool='delete_node'] .verb,
+  .step[data-tool='disconnect'] .verb {
+    color: var(--color-feedback-warning);
+  }
+
+  .subject {
+    flex: 1;
+    min-inline-size: 0;
+    color: var(--color-text-secondary);
+    font-family: var(--font-family-mono);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .outcome {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+  }
+}

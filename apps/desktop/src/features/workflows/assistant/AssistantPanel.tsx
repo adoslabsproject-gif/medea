@@ -16,6 +16,7 @@ import type { Workflow } from '../types';
 
 import styles from './AssistantPanel.module.css';
 import { Composer } from './Composer';
+import { ConversationMenu } from './ConversationMenu';
 import { MessageList } from './MessageList';
 import { useWorkflowChat } from './useWorkflowChat';
 
@@ -44,13 +45,19 @@ export function AssistantPanel({ workflow, onApply, onClose }: Props) {
           <span className={styles.provider}>{providerLabel(provider)}</span>
         </div>
         <div className={styles.headActions}>
+          <ConversationMenu
+            conversations={chat.conversations}
+            activeId={chat.activeId}
+            onOpen={chat.open}
+            onRemove={chat.remove}
+          />
           {chat.messages.length > 0 && (
             <button
               type="button"
               className={styles.iconBtn}
               title="Nuova conversazione"
               aria-label="Nuova conversazione"
-              onClick={chat.clear}
+              onClick={chat.startNew}
             >
               ⟲
             </button>
@@ -76,6 +83,9 @@ export function AssistantPanel({ workflow, onApply, onClose }: Props) {
           if (next) onApply(next);
         }}
         onDismiss={chat.dismissPatch}
+        onEdit={(id, text) => {
+          void chat.editAndResend(id, text);
+        }}
       />
 
       <Composer

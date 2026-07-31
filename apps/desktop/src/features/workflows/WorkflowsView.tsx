@@ -109,9 +109,6 @@ export function WorkflowsView() {
             onRename: (name) => {
               editor.change({ ...workflow, name });
             },
-            onTargetChange: (executionTarget) => {
-              editor.changeDistinct({ ...workflow, executionTarget });
-            },
             onSave: () => void editor.save(),
             onToggleEnabled: () => void editor.toggleEnabled(blockedReason),
             onToggleAssistant: () => {
