@@ -1,0 +1,158 @@
+/**
+ * Il wizard che costruisce: stato e regia.
+ *
+ * L'agente lavora a passi e ci mette un minuto abbondante. Qui quei passi
+ * diventano una cronologia leggibile mentre accade, e il risultato passa dal
+ * controllo di qualità prima di essere offerto — mostrare un workflow e
+ * scoprire *dopo* che non si poteva attivare sarebbe peggio che non mostrarlo.
+ */
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import { autoLayout, needsLayout } from '../canvas/layout';
+import { allNodes } from '../catalog';
+import { gateWorkflow } from '../quality';
+import { createAgentChat, runWorkflowAgent, type AgentStep } from '../scaffold';
+import type { Workflow } from '../types';
+
+import { builtNodes, toTraceEntry } from './tool-labels';
+import type { WizardState } from './types';
+
+/** Ogni quanto si aggiorna il tempo trascorso. Un secondo basta: è un'attesa
+ *  lunga, e un contatore che corre sarebbe solo agitazione. */
+const TICK_MS = 1000;
+
+const EMPTY: WizardState = {
+  stage: 'goal',
+  goal: '',
+  elapsedMs: 0,
+  trace: [],
+  built: [],
+  warnings: [],
+  issues: [],
+  tables: [],
+};
+
+export interface Wizard extends WizardState {
+  setGoal: (goal: string) => void;
+  start: () => void;
+  /** Torna al punto di partenza tenendo l'obiettivo: si riprova a ritoccarlo. */
+  retry: () => void;
+  reset: () => void;
+}
+
+export function useWizard(): Wizard {
+  const [state, setState] = useState<WizardState>(EMPTY);
+  /** Vero finché il wizard è a schermo: chiuderlo non deve far scrivere
+   *  stato su un componente che non c'è più. */
+  const alive = useRef(true);
+  useEffect(
+    () => () => {
+      alive.current = false;
+    },
+    [],
+  );
+
+  // Il tempo scorre solo mentre costruisce.
+  useEffect(() => {
+    if (state.stage !== 'building') return;
+    const started = Date.now() - state.elapsedMs;
+    const timer = setInterval(() => {
+      setState((s) => (s.stage === 'building' ? { ...s, elapsedMs: Date.now() - started } : s));
+    }, TICK_MS);
+    return () => {
+      clearInterval(timer);
+    };
+    // `elapsedMs` di proposito fuori: rientrerebbe a ogni battito.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.stage]);
+
+  /** L'ultimo stato, leggibile dentro le funzioni asincrone senza rilegarle. */
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+  const setGoal = useCallback((goal: string) => {
+    setState((s) => ({ ...s, goal }));
+  }, []);
+
+  const start = useCallback(() => {
+    setState((s) => {
+      if (!s.goal.trim()) return s;
+      // Il motivo del fallimento precedente sparisce: si riparte pulito, e
+      // «assente» non è la stessa cosa di «vuoto».
+      const { reason: _ignored, ...rest } = s;
+      return { ...rest, stage: 'building', elapsedMs: 0, trace: [], built: [] };
+    });
+
+    void (async () => {
+      const goal = stateRef.current.goal.trim();
+      if (!goal) return;
+      const steps: AgentStep[] = [];
+
+      try {
+        const chat = await createAgentChat();
+        const result = await runWorkflowAgent({
+          goal,
+          catalog: [...allNodes()],
+          chat,
+          onStep: (step) => {
+            steps.push(step);
+            if (!alive.current) return;
+            setState((s) => ({
+              ...s,
+              trace: [...s.trace, toTraceEntry(step)],
+              built: builtNodes(steps),
+            }));
+          },
+        });
+
+        if (!alive.current) return;
+
+        if (!result.ok) {
+          setState((s) => ({
+            ...s,
+            stage: 'failed',
+            reason: result.reason,
+            issues: [...result.qualityIssues],
+          }));
+          return;
+        }
+
+        // Un workflow nato da zero non ha coordinate sensate: il disegno lo
+        // facciamo noi, altrimenti arriva come una pila di nodi sovrapposti.
+        const workflow: Workflow = {
+          ...result.workflow,
+          nodes: needsLayout(result.workflow.nodes)
+            ? autoLayout(result.workflow.nodes, result.workflow.edges)
+            : result.workflow.nodes,
+        };
+
+        const gate = gateWorkflow(workflow);
+        setState((s) => ({
+          ...s,
+          stage: 'review',
+          result: workflow,
+          issues: [...gate.issues],
+          warnings: [...result.remainingIssues],
+        }));
+      } catch (e) {
+        if (!alive.current) return;
+        setState((s) => ({
+          ...s,
+          stage: 'failed',
+          reason: e instanceof Error ? e.message : String(e),
+        }));
+      }
+    })();
+  }, []);
+
+  const retry = useCallback(() => {
+    setState((s) => ({ ...EMPTY, goal: s.goal }));
+  }, []);
+
+  const reset = useCallback(() => {
+    setState(EMPTY);
+  }, []);
+
+  return { ...state, setGoal, start, retry, reset };
+}

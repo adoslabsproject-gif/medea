@@ -35,6 +35,8 @@ export interface WorkflowEditor {
   change: (next: Workflow) => void;
   /** Una modifica che non va fusa con la precedente nella cronologia. */
   changeDistinct: (next: Workflow) => void;
+  /** Mette un documento nell'editor senza salvarlo: è una bozza da guardare. */
+  load: (workflow: Workflow, enabled: boolean) => void;
   open: (id: number) => Promise<void>;
   create: () => void;
   save: () => Promise<void>;
@@ -301,6 +303,7 @@ export function useWorkflowEditor(): WorkflowEditor {
     setNotice,
     change,
     changeDistinct,
+    load,
     open,
     create,
     save,

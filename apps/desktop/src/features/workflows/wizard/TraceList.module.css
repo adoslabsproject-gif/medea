@@ -1,0 +1,57 @@
+@layer features {
+  .list {
+    margin: 0;
+    padding: var(--space-2);
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+  }
+
+  .mark {
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
+  }
+
+  .failed .mark {
+    color: var(--color-text-danger, var(--color-text-primary));
+  }
+
+  .pending {
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+
+  .body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-inline-size: 0;
+  }
+
+  .label {
+    color: var(--color-text-secondary);
+  }
+
+  .detail {
+    color: var(--color-text-muted);
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-2xs, var(--font-size-xs));
+    overflow-wrap: anywhere;
+  }
+
+  .error {
+    color: var(--color-text-danger, var(--color-text-secondary));
+  }
+}

@@ -13,6 +13,8 @@ interface Props {
   activeId: number | null;
   onOpen: (id: number) => void;
   onNew: () => void;
+  /** Apre il wizard: si descrive a parole e lo costruisce l'assistente. */
+  onCreateWithAi: () => void;
   onDuplicate: (id: number) => void;
   onDelete: (id: number) => void;
   /** Apre lo storico delle esecuzioni di questo workflow. */
@@ -24,6 +26,7 @@ export function WorkflowList({
   activeId,
   onOpen,
   onNew,
+  onCreateWithAi,
   onDuplicate,
   onDelete,
   onShowRuns,
@@ -32,9 +35,19 @@ export function WorkflowList({
     <aside className={styles.root} aria-label="Workflow salvati">
       <div className={styles.head}>
         <h2 className={styles.title}>Workflow</h2>
-        <button type="button" className={styles.new} onClick={onNew}>
-          + Nuovo
-        </button>
+        <div className={styles.headActions}>
+          <button
+            type="button"
+            className={styles.assist}
+            title="Descrivi cosa deve fare e lo costruisce l'assistente"
+            onClick={onCreateWithAi}
+          >
+            ✨ Assistente
+          </button>
+          <button type="button" className={styles.new} onClick={onNew}>
+            + Nuovo
+          </button>
+        </div>
       </div>
 
       {items.length === 0 ? (
