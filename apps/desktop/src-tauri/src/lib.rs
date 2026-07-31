@@ -3,11 +3,12 @@
 pub mod ai_tools;
 mod commands;
 pub mod db;
+pub mod runtime;
 mod security;
 
 use commands::{
-    ai_cmd, ai_tools_cmd, claude_cli_cmd, db_cmd, imap_cmd, secrets_cmd, smtp_cmd, sync_cmd,
-    template_cmd, workflow_cmd,
+    ai_cmd, ai_tools_cmd, claude_cli_cmd, db_cmd, imap_cmd, runtime_cmd, secrets_cmd, smtp_cmd,
+    sync_cmd, template_cmd, workflow_cmd,
 };
 use tauri::Manager;
 
@@ -129,6 +130,12 @@ pub fn run() {
             workflow_cmd::workflow_run_save,
             workflow_cmd::workflow_run_delete,
             workflow_cmd::workflow_run_clear,
+            // Runtime dei workflow (processo figlio)
+            runtime_cmd::workflow_runtime_start,
+            runtime_cmd::workflow_runtime_status,
+            runtime_cmd::workflow_runtime_stop,
+            runtime_cmd::workflow_runtime_session,
+            runtime_cmd::workflow_runtime_forget,
             // Manutenzione dati
             db_cmd::db_business_data_stats,
             db_cmd::db_purge_business_data,
