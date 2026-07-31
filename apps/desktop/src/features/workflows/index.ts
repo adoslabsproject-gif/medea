@@ -14,6 +14,8 @@ export {
 } from './catalog';
 export type { NodeGroupId } from './catalog';
 export { PENDING_SECRET, PICKER_PLACEHOLDER } from './constants';
+export { runsApi, RunsModal } from './runs';
+export type { RunRecord, RunStatus, RunStep, RunSummary } from './runs';
 export { listMailAccounts, useMailAccounts } from './resources';
 export type { MailAccountRef } from './resources';
 export { AssistantPanel, computePatch, summarizePatch, useWorkflowChat } from './assistant';

@@ -13,7 +13,38 @@
 use anyhow::Result;
 use rusqlite::Connection;
 
-pub const SCHEMA_VERSION: i32 = 12;
+pub const SCHEMA_VERSION: i32 = 13;
+
+/// Migrazione v13 — `workflow_runs`: lo storico delle esecuzioni.
+///
+/// I passi stanno in un'unica colonna JSON, come nel runtime di FlowForge:
+/// un'esecuzione si legge sempre tutta insieme — «cosa è successo in questo
+/// giro» — e spezzarla in righe vorrebbe dire ricomporla a ogni apertura.
+///
+/// `ON DELETE CASCADE`: eliminando un workflow spariscono le sue esecuzioni.
+/// Tenere lo storico di qualcosa che non esiste più significa solo far
+/// crescere il file.
+const DDL_V13: &str = r#"
+CREATE TABLE IF NOT EXISTS workflow_runs (
+    id                   TEXT PRIMARY KEY,
+    workflow_id          INTEGER NOT NULL
+                         REFERENCES workflows(id) ON DELETE CASCADE,
+    status               TEXT NOT NULL DEFAULT 'pending'
+                         CHECK(status IN ('pending','running','success','partial',
+                                          'error','paused','cancelled')),
+    trigger_type         TEXT,
+    trigger_payload_json TEXT,
+    -- Un elemento per nodo eseguito: id, esito, durata, output, errore.
+    steps_json           TEXT NOT NULL DEFAULT '[]',
+    error_count          INTEGER NOT NULL DEFAULT 0,
+    total_duration_ms    INTEGER,
+    triggered_by         TEXT,
+    started_at           TEXT NOT NULL,
+    ended_at             TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_runs_workflow ON workflow_runs(workflow_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_runs_status ON workflow_runs(status);
+"#;
 
 /// Migrazione v12 — `workflows`: le automazioni disegnate sul canvas.
 ///
@@ -605,6 +636,11 @@ pub fn ensure_schema(conn: &Connection) -> Result<()> {
     if current.unwrap_or(0) < 12 {
         tracing::info!("Migrazione → v12 (workflows)…");
         conn.execute_batch(DDL_V12)?;
+    }
+
+    if current.unwrap_or(0) < 13 {
+        tracing::info!("Migrazione → v13 (storico delle esecuzioni)…");
+        conn.execute_batch(DDL_V13)?;
     }
 
     conn.execute(

@@ -18,6 +18,7 @@ pub mod reminders;
 pub mod schema;
 pub mod studio;
 pub mod templates;
+pub mod workflow_runs;
 pub mod workflows;
 
 use anyhow::{Context, Result};

@@ -123,6 +123,12 @@ pub fn run() {
             workflow_cmd::workflow_set_enabled,
             workflow_cmd::workflow_delete,
             workflow_cmd::workflow_duplicate,
+            // Storico delle esecuzioni
+            workflow_cmd::workflow_run_list,
+            workflow_cmd::workflow_run_get,
+            workflow_cmd::workflow_run_save,
+            workflow_cmd::workflow_run_delete,
+            workflow_cmd::workflow_run_clear,
             // Manutenzione dati
             db_cmd::db_business_data_stats,
             db_cmd::db_purge_business_data,
