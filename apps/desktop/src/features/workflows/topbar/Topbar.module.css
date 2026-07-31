@@ -1,0 +1,114 @@
+@layer features {
+  .root {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border-block-end: 1px solid var(--color-border-subtle);
+    background: var(--color-surface-2);
+    flex-shrink: 0;
+  }
+
+  .name {
+    flex: 1;
+    min-inline-size: 0;
+    padding: var(--space-2);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-primary);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+  }
+  .name:hover,
+  .name:focus-visible {
+    border-color: var(--color-border-default);
+    background: var(--color-surface-1);
+  }
+
+  .target {
+    padding: var(--space-2);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-sm);
+    flex-shrink: 0;
+  }
+
+  /* I comandi sul canvas stanno insieme: sono la stessa famiglia di azioni. */
+  .group {
+    display: flex;
+    gap: 1px;
+    padding: 2px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+    flex-shrink: 0;
+  }
+
+  .icon {
+    inline-size: 1.75rem;
+    block-size: 1.75rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+  }
+  .icon:hover:not(:disabled) {
+    background: var(--color-surface-3);
+    color: var(--color-text-primary);
+  }
+  .icon:disabled {
+    color: var(--color-text-muted);
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .ghost,
+  .toggle,
+  .save {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .ghost:hover,
+  .toggle:hover {
+    border-color: var(--color-accent-default);
+    color: var(--color-accent-default);
+  }
+  .ghost[data-on='true'] {
+    border-color: var(--color-accent-default);
+    background: var(--color-accent-subtle);
+    color: var(--color-accent-default);
+  }
+  .toggle[data-on='true'] {
+    border-color: var(--color-feedback-success);
+    color: var(--color-feedback-success);
+  }
+
+  .save {
+    border-color: var(--color-accent-default);
+    background: var(--color-accent-default);
+    color: var(--color-accent-on);
+    font-weight: var(--font-weight-semibold);
+  }
+  .save:disabled {
+    border-color: var(--color-border-default);
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: default;
+    font-weight: var(--font-weight-regular);
+  }
+}

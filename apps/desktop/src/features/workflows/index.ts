@@ -14,7 +14,11 @@ export {
 } from './catalog';
 export type { NodeGroupId } from './catalog';
 export { PENDING_SECRET, PICKER_PLACEHOLDER } from './constants';
-export { ScaffoldDialog } from './ScaffoldDialog';
+export { AssistantPanel, computePatch, summarizePatch, useWorkflowChat } from './assistant';
+export { exportFileName, fromImportJson, toExportJson, Topbar, useUndoRedo } from './topbar';
+export { useWorkflowEditor } from './useWorkflowEditor';
+export type { WorkflowEditor } from './useWorkflowEditor';
+export type { ChatMessage, PatchOps } from './assistant';
 export type {
   CanvasNode,
   NodeAction,
