@@ -8,7 +8,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  lineTotal,
   moveRow,
+  parseAttachments,
+  parseInvoiceLines,
+  serializeAttachments,
+  serializeInvoiceLines,
   parseFilters,
   parseKeyValue,
   parseSort,
@@ -135,5 +140,56 @@ describe('nome tecnico da etichetta', () => {
 
   it('un’etichetta senza lettere dà una chiave vuota, non spazzatura', () => {
     expect(toFieldKey('!!!')).toBe('');
+  });
+});
+
+describe('allegati', () => {
+  it('scrive la chiave giusta per ogni provenienza', () => {
+    const json = serializeAttachments([
+      { name: 'a.pdf', source: 'upload', value: 'QUJD', sizeBytes: 3 },
+      { name: 'b.pdf', source: 'url', value: 'https://reale.it/b.pdf' },
+      { name: 'c.pdf', source: 'path', value: '/tmp/c.pdf' },
+      { name: 'd.pdf', source: 'expression', value: '{{$node.crea.json.base64}}' },
+    ]);
+    expect(JSON.parse(json)).toEqual([
+      { name: 'a.pdf', base64: 'QUJD', sizeBytes: 3 },
+      { name: 'b.pdf', url: 'https://reale.it/b.pdf' },
+      { name: 'c.pdf', path: '/tmp/c.pdf' },
+      { name: 'd.pdf', base64: '{{$node.crea.json.base64}}', source: 'expression' },
+    ]);
+  });
+
+  it('distingue un’espressione da un file caricato al ritorno', () => {
+    const round = parseAttachments(
+      serializeAttachments([{ name: 'x', source: 'expression', value: '{{$node.a.json.b}}' }]),
+    );
+    expect(round[0]?.source).toBe('expression');
+  });
+
+  it('scarta le righe senza nome o senza contenuto', () => {
+    expect(serializeAttachments([{ name: '', source: 'url', value: 'https://x' }])).toBe('');
+    expect(serializeAttachments([{ name: 'x', source: 'url', value: '' }])).toBe('');
+  });
+});
+
+describe('righe di fattura', () => {
+  it('calcola il totale con l’IVA', () => {
+    expect(lineTotal({ name: 'x', quantity: 2, net_price: 100, vat: 22 })).toBeCloseTo(244);
+  });
+
+  it('senza IVA il totale è il netto', () => {
+    expect(lineTotal({ name: 'x', quantity: 3, net_price: 10 })).toBe(30);
+  });
+
+  it('non scrive la chiave IVA quando non c’è', () => {
+    const parsed = JSON.parse(
+      serializeInvoiceLines([{ name: 'x', quantity: 1, net_price: 5 }]),
+    ) as Record<string, unknown>[];
+    expect(parsed[0]).toEqual({ name: 'x', quantity: 1, net_price: 5 });
+  });
+
+  it('regge numeri scritti come testo', () => {
+    const lines = parseInvoiceLines('[{"name":"x","quantity":"2","net_price":"9.5","vat":"10"}]');
+    expect(lines[0]).toEqual({ name: 'x', quantity: 2, net_price: 9.5, vat: 10 });
   });
 });

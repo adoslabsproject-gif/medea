@@ -15,9 +15,17 @@ export {
   serializeKeyValue,
   serializeSort,
   serializeSwitchCases,
+  lineTotal,
+  parseAttachments,
+  parseInvoiceLines,
+  serializeAttachments,
+  serializeInvoiceLines,
   toFieldKey,
 } from './serialization';
+export type { Attachment, AttachmentSource, InvoiceLine } from './serialization';
 export { AccountPicker } from './AccountPicker';
+export { AttachmentsBuilder } from './AttachmentsBuilder';
+export { InvoiceLineBuilder } from './InvoiceLineBuilder';
 export { BooleanField, CodeField, SelectField, TextField } from './BasicFields';
 export { defaultOpFor, OPS_BY_TYPE, parseRuleset, TYPE_LABELS, UNARY_OPS } from './condition-ops';
 export type { Rule, Ruleset, RuleType } from './condition-ops';
