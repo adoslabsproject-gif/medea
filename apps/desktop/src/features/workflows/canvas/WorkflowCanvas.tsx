@@ -22,12 +22,14 @@ import {
   type Node,
   type NodeTypes,
 } from '@xyflow/react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { findNode } from '../catalog';
 import { ResizableColumn } from '../shared';
 import type { CanvasNode, NodeDef, Workflow, WorkflowEdge } from '../types';
 
+import { CanvasSearch } from './CanvasSearch';
+import { copySelection, duplicateNodes, paste, type Clipboard } from './clipboard';
 import { diagnose } from './diagnostics';
 import {
   addEdge,
@@ -61,6 +63,10 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
   /** Il collegamento su cui si sta inserendo un nodo, se l'utente ha
    *  premuto il «+». La palette cambia modo finché non sceglie. */
   const [insertOn, setInsertOn] = useState<WorkflowEdge | null>(null);
+  const [searching, setSearching] = useState(false);
+  /** Gli appunti vivono qui: incollare in un altro workflow non ha senso,
+   *  i nodi si porterebbero dietro riferimenti che là non esistono. */
+  const clipboard = useRef<Clipboard | null>(null);
 
   // I callback degli edge vivono dentro lo stato di xyflow e sopravvivono
   // ai ridisegni: devono vedere il documento di adesso, non quello di
@@ -69,6 +75,8 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
   workflowRef.current = workflow;
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const selectedIdRef = useRef(selectedId);
+  selectedIdRef.current = selectedId;
 
   const defsById = useMemo(() => {
     const map = new Map<string, NodeDef>();
@@ -179,6 +187,56 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
     [workflow, onChange, insertOn],
   );
 
+  // Le scorciatoie sui nodi. Valgono sul canvas, non mentre si scrive in un
+  // campo: copiare il testo di una configurazione deve copiare il testo.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const typing =
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.tagName === 'SELECT' ||
+        target?.isContentEditable === true;
+
+      const meta = e.metaKey || e.ctrlKey;
+      const key = e.key.toLowerCase();
+
+      if (meta && key === 'f') {
+        e.preventDefault();
+        setSearching(true);
+        return;
+      }
+      if (typing) return;
+
+      const wf = workflowRef.current;
+      const current = selectedIdRef.current;
+
+      if (meta && key === 'c' && current) {
+        clipboard.current = copySelection(wf, [current]);
+      } else if (meta && key === 'v' && clipboard.current) {
+        e.preventDefault();
+        const result = paste(wf, clipboard.current);
+        onChangeRef.current(result.workflow);
+        setSelectedId(result.newIds[0] ?? null);
+      } else if (meta && key === 'd' && current) {
+        e.preventDefault();
+        const result = duplicateNodes(wf, [current]);
+        if (result) {
+          onChangeRef.current(result.workflow);
+          setSelectedId(result.newIds[0] ?? null);
+        }
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && current) {
+        e.preventDefault();
+        onChangeRef.current(dropNode(wf, current));
+        setSelectedId(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
   const selected = workflow.nodes.find((n) => n.id === selectedId) ?? null;
 
   return (
@@ -237,6 +295,17 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
           minZoom={0.2}
           maxZoom={2}
         >
+          {searching && (
+            <CanvasSearch
+              nodes={workflow.nodes}
+              defsById={defsById}
+              onClose={() => {
+                setSearching(false);
+              }}
+              onSelect={setSelectedId}
+            />
+          )}
+
           <Background />
           <Controls />
           <MiniMap pannable zoomable maskColor="oklch(0 0 0 / 0.6)" />
