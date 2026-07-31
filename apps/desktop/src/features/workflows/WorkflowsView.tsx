@@ -24,6 +24,7 @@ import { Topbar } from './topbar';
 import type { NodeDef } from './types';
 import { useWorkflowEditor } from './useWorkflowEditor';
 import { useWorkflowRun } from './useWorkflowRun';
+import { WizardModal } from './wizard';
 import { WorkflowList } from './WorkflowList';
 import styles from './WorkflowsView.module.css';
 
@@ -39,6 +40,7 @@ export function WorkflowsView() {
   /** Il workflow di cui si stanno guardando le esecuzioni. */
   const [runsFor, setRunsFor] = useState<{ id: number; name: string } | null>(null);
   const [secretsOpen, setSecretsOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(
     () => localStorage.getItem(ASSISTANT_OPEN_KEY) !== 'false',
   );
@@ -106,6 +108,9 @@ export function WorkflowsView() {
           activeId={activeId}
           onOpen={(id) => void editor.open(id)}
           onNew={editor.create}
+          onCreateWithAi={() => {
+            setWizardOpen(true);
+          }}
           onDuplicate={(id) => void editor.duplicate(id)}
           onDelete={(id) => void editor.remove(id)}
           onShowRuns={(id) => {
@@ -214,6 +219,20 @@ export function WorkflowsView() {
           {editor.notice && <span className={styles.notice}>{editor.notice}</span>}
         </footer>
       </div>
+
+      {wizardOpen && (
+        <WizardModal
+          onClose={() => {
+            setWizardOpen(false);
+          }}
+          onImport={(built) => {
+            // Arriva come bozza: si apre nell'editor e si salva solo quando
+            // l'utente decide, come qualunque altra modifica.
+            editor.load(built, false);
+            setWizardOpen(false);
+          }}
+        />
+      )}
 
       {secretsOpen && (
         <SecretsDialog
