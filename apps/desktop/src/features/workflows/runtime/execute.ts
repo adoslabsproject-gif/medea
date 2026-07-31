@@ -6,54 +6,30 @@
  * aggiornano — per questo Medea ricorda `runtimeId`: senza, ogni giro
  * creerebbe un workflow nuovo là dentro.
  *
- * A esecuzione finita il risultato viene copiato nello storico di Medea. È
- * una duplicazione voluta: lo storico deve restare leggibile anche quando il
- * runtime non è in piedi, ed è dentro Medea che l'utente lo cerca.
+ * Il seguito è a eventi, non a domande ripetute: il runtime annuncia ogni
+ * passo mentre lo compie. Resta una verifica ogni tanto come rete di
+ * sicurezza — se il flusso cade a metà, l'esecuzione non deve restare
+ * «in corso» per sempre a schermo.
  */
 
 import { invoke } from '@tauri-apps/api/core';
 
-import { runsApi } from '../runs';
 import type { RunStatus, RunStep } from '../runs';
 import type { Workflow } from '../types';
 
 import { reloadRuntime, runtimeApi } from './client';
+import { closeRuntimeEvents, subscribeRuntime } from './events';
+import { FINISHED, fetchRun, toSteps } from './run-mapping';
+import type { RuntimeStep } from './run-mapping';
 
-/** Ogni quanto si chiede al runtime a che punto è. */
-const POLL_INTERVAL_MS = 400;
+/** Ogni quanto ci si accerta che l'esecuzione esista ancora, se tace. */
+const HEARTBEAT_MS = 4_000;
 /** Oltre questo tempo si smette di seguire: l'esecuzione continua, ma non la
  *  si aspetta più a schermo. */
 const FOLLOW_TIMEOUT_MS = 5 * 60 * 1000;
 
 interface RuntimeWorkflowResponse {
   workflow: { id: string };
-}
-
-interface RuntimeRunResponse {
-  runId: string;
-}
-
-interface RuntimeRunDetail {
-  run: {
-    id: string;
-    status: RunStatus;
-    errorCount: number;
-    totalDurationMs?: number;
-    startedAt: string;
-    endedAt?: string;
-    triggerType?: string | null;
-    steps: RuntimeStep[];
-  };
-}
-
-interface RuntimeStep {
-  nodeId: string;
-  defId?: string;
-  status: string;
-  durationMs?: number;
-  output?: string;
-  error?: string;
-  input?: string;
 }
 
 /** Il corpo che il runtime si aspetta: il documento, senza i nostri campi. */
@@ -109,23 +85,10 @@ export async function syncToRuntime(
 export async function setEnabledOnRuntime(workflow: Workflow, enabled: boolean): Promise<string> {
   const runtimeId = await syncToRuntime(workflow, workflow.runtimeId, enabled);
   await reloadRuntime();
+  // Il riavvio invalida la sessione: il flusso aperto sulla vecchia va
+  // riaperto, altrimenti gli ascoltatori restano attaccati a un processo morto.
+  closeRuntimeEvents();
   return runtimeId;
-}
-
-/** I passi nella forma dello storico di Medea. */
-function toSteps(steps: readonly RuntimeStep[]): RunStep[] {
-  return steps.map((s) => ({
-    nodeId: s.nodeId,
-    ...(s.defId ? { defId: s.defId } : {}),
-    status:
-      s.status === 'error' || s.status === 'skipped' || s.status === 'running'
-        ? s.status
-        : 'success',
-    ...(typeof s.durationMs === 'number' ? { durationMs: s.durationMs } : {}),
-    ...(s.output ? { output: s.output } : {}),
-    ...(s.error ? { error: s.error } : {}),
-    ...(s.input ? { input: s.input } : {}),
-  }));
 }
 
 export interface RunProgress {
@@ -136,19 +99,14 @@ export interface RunProgress {
   totalDurationMs?: number;
 }
 
-const FINISHED: ReadonlySet<RunStatus> = new Set([
-  'success',
-  'partial',
-  'error',
-  'cancelled',
-  'paused',
-]);
-
 /**
  * Esegue il workflow e resta a guardare finché non finisce.
  *
- * `onProgress` viene chiamato a ogni giro: è quello che permette di vedere i
+ * `onProgress` viene chiamato a ogni passo: è quello che permette di vedere i
  * nodi accendersi mentre succede, invece di aspettare in silenzio.
+ *
+ * Lo storico lo scrive il sorvegliante (`watcher.ts`), che ascolta lo stesso
+ * flusso: qui si guarda soltanto.
  */
 export async function runWorkflow(
   workflow: Workflow,
@@ -160,52 +118,93 @@ export async function runWorkflow(
   } = {},
 ): Promise<RunProgress> {
   const runtimeId = await syncToRuntime(workflow, options.runtimeId);
-  const started = await runtimeApi.post<RuntimeRunResponse>(`/workflows/${runtimeId}/run`, {
+  const started = await runtimeApi.post<{ runId: string }>(`/workflows/${runtimeId}/run`, {
     input: options.input ?? {},
   });
 
-  const deadline = Date.now() + FOLLOW_TIMEOUT_MS;
-  let last: RunProgress = { runId: started.runId, status: 'running', steps: [], errorCount: 0 };
-
-  for (;;) {
-    if (options.signal?.aborted) break;
-    if (Date.now() > deadline) break;
-
-    const detail = await runtimeApi.get<RuntimeRunDetail>(`/runs/${started.runId}`);
-    last = {
-      runId: detail.run.id,
-      status: detail.run.status,
-      steps: toSteps(detail.run.steps),
-      errorCount: detail.run.errorCount,
-      ...(detail.run.totalDurationMs !== undefined
-        ? { totalDurationMs: detail.run.totalDurationMs }
-        : {}),
-    };
-    options.onProgress?.(last);
-
-    if (FINISHED.has(last.status)) {
-      await mirror(workflow, detail.run);
-      break;
-    }
-    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-  }
-
-  return last;
+  return follow(started.runId, options);
 }
 
-/** Copia l'esecuzione nello storico di Medea. */
-async function mirror(workflow: Workflow, run: RuntimeRunDetail['run']): Promise<void> {
-  if (!workflow.id) return;
-  await runsApi.save({
-    id: run.id,
-    workflowId: Number(workflow.id),
-    status: run.status,
-    stepsJson: JSON.stringify(toSteps(run.steps)),
-    errorCount: run.errorCount,
-    ...(run.totalDurationMs !== undefined ? { totalDurationMs: run.totalDurationMs } : {}),
-    ...(run.triggerType ? { triggerType: run.triggerType } : {}),
-    startedAt: run.startedAt,
-    ...(run.endedAt ? { endedAt: run.endedAt } : {}),
-    triggeredBy: 'Medea',
+/**
+ * Segue un'esecuzione già avviata fino alla fine.
+ *
+ * I passi arrivano dagli eventi. La verifica periodica serve al caso in cui
+ * il flusso si interrompa: senza, un'esecuzione finita resterebbe «in corso»
+ * a schermo per sempre, che è il modo più efficace per far sembrare rotto
+ * qualcosa che ha funzionato.
+ */
+function follow(
+  runId: string,
+  options: { onProgress?: (progress: RunProgress) => void; signal?: AbortSignal } = {},
+): Promise<RunProgress> {
+  return new Promise<RunProgress>((resolve) => {
+    const steps = new Map<string, RunStep>();
+    let last: RunProgress = { runId, status: 'running', steps: [], errorCount: 0 };
+    let done = false;
+
+    const report = () => {
+      last = { ...last, steps: [...steps.values()] };
+      options.onProgress?.(last);
+    };
+
+    const finish = (progress: RunProgress) => {
+      if (done) return;
+      done = true;
+      clearInterval(heartbeat);
+      clearTimeout(deadline);
+      unsubscribe();
+      options.signal?.removeEventListener('abort', onAbort);
+      resolve(progress);
+    };
+
+    /** Chiede il quadro completo: alla fine, o quando il flusso tace. */
+    const reconcile = async () => {
+      try {
+        const run = await fetchRun(runId);
+        for (const step of toSteps(run.steps ?? [])) steps.set(step.nodeId, step);
+        last = {
+          runId,
+          status: run.status,
+          steps: [...steps.values()],
+          errorCount: run.errorCount ?? 0,
+          ...(run.totalDurationMs !== undefined ? { totalDurationMs: run.totalDurationMs } : {}),
+        };
+        options.onProgress?.(last);
+        if (FINISHED.has(run.status)) finish(last);
+      } catch {
+        // Il runtime non risponde: ci riproverà il battito successivo.
+      }
+    };
+
+    const unsubscribe = subscribeRuntime((event) => {
+      const data = event.data as { runId?: string; step?: RuntimeStep };
+      if (data.runId !== runId) return;
+
+      if (event.name === 'run.step' && data.step) {
+        const [mapped] = toSteps([data.step]);
+        if (mapped) steps.set(mapped.nodeId, mapped);
+        report();
+        return;
+      }
+
+      if (
+        event.name === 'run.completed' ||
+        event.name === 'run.errored' ||
+        event.name === 'run.paused' ||
+        event.name === 'run.cancelled'
+      ) {
+        void reconcile();
+      }
+    });
+
+    const heartbeat = setInterval(() => void reconcile(), HEARTBEAT_MS);
+    const deadline = setTimeout(() => {
+      finish(last);
+    }, FOLLOW_TIMEOUT_MS);
+
+    const onAbort = () => {
+      finish(last);
+    };
+    options.signal?.addEventListener('abort', onAbort, { once: true });
   });
 }

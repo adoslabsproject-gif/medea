@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { runtimeStatus, startRuntime, type RuntimeStatus } from './client';
 import { provisionRuntime } from './provision';
+import { startRunWatcher } from './watcher';
 
 /** Ogni quanto si ricontrolla, quando non è in piedi. */
 const RECHECK_MS = 5000;
@@ -72,6 +73,14 @@ export function useRuntime(): RuntimeState {
         setChecking(false);
       });
   }, [provision]);
+
+  // Finché la sezione è aperta si registra ogni esecuzione, comprese quelle
+  // partite da sole mentre la si guarda. Un secondo ascoltatore non pesa: il
+  // flusso è uno solo, e riscrivere la stessa riga dello storico è innocuo.
+  useEffect(() => {
+    if (!status.running) return;
+    return startRunWatcher();
+  }, [status.running]);
 
   // Finché non è in piedi si ricontrolla: parte in pochi secondi, e l'utente
   // non deve ricaricare niente per accorgersene.

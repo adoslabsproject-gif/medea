@@ -6,6 +6,7 @@ import { useAccountStore } from '../features/mail/store/account-store';
 import type { MailAccount } from '../features/mail/types';
 import { useReminderNotifications } from '../features/reminders/useReminderNotifications';
 import { AppShell } from '../features/shell';
+import { useAutonomousRuns } from '../features/workflows';
 
 import { THEME_KEY, ThemeProvider, type ThemeMode } from './providers/ThemeProvider';
 
@@ -29,6 +30,8 @@ function Root() {
   const [forceSetup, setForceSetup] = useState(false);
   const synced = useRef(false);
   useReminderNotifications();
+  // Le automazioni attive devono girare anche se non si apre mai la sezione.
+  useAutonomousRuns();
 
   // Al boot: assicura che gli account presenti in localStorage siano anche
   // nel DB SQLite (necessario per le foreign key di folders/messages).
