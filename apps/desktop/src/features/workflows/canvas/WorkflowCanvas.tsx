@@ -248,7 +248,10 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
         )}
       </div>
 
-      {selected ? (
+      {/* Il pannello del nodo compare quando serve. Tenere una colonna vuota
+          con scritto «seleziona un nodo» ruba spazio al canvas per dire una
+          cosa che si capisce da sola. */}
+      {selected && (
         <NodeInspector
           node={selected}
           def={defsById.get(selected.defId)}
@@ -266,10 +269,6 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
             removeNode(selected.id);
           }}
         />
-      ) : (
-        <aside className={styles.placeholder} aria-label="Configurazione del nodo">
-          <p>Seleziona un nodo per configurarlo.</p>
-        </aside>
       )}
     </div>
   );

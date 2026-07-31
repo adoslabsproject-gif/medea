@@ -39,7 +39,7 @@
     inset-block-start: 50%;
     inset-inline-start: 50%;
     transform: translate(-50%, -50%);
-    max-inline-size: 24rem;
+    max-inline-size: min(24rem, 80%);
     padding: var(--space-5);
     border: 1px dashed var(--color-border-default);
     border-radius: var(--radius-md);
@@ -52,19 +52,5 @@
   }
   .hint p + p {
     margin-block-start: var(--space-2);
-  }
-
-  .placeholder {
-    inline-size: 21rem;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-5);
-    border-inline-start: 1px solid var(--color-border-subtle);
-    background: var(--color-surface-2);
-    text-align: center;
-    font-size: var(--font-size-sm);
-    color: var(--color-text-muted);
   }
 }
