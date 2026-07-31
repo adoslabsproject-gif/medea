@@ -7,12 +7,13 @@
  * si è piantato.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { AgentStep } from '../scaffold';
 
 import styles from './MessageList.module.css';
 import { PatchDiff } from './PatchDiff';
+import { ToolTrace } from './ToolTrace';
 import type { ChatMessage } from './types';
 
 interface Props {
@@ -21,10 +22,13 @@ interface Props {
   liveSteps: AgentStep[];
   onApply: (messageId: string) => void;
   onDismiss: (messageId: string) => void;
+  /** Corregge una richiesta già inviata e rilancia da lì. */
+  onEdit: (messageId: string, text: string) => void;
 }
 
-export function MessageList({ messages, busy, liveSteps, onApply, onDismiss }: Props) {
+export function MessageList({ messages, busy, liveSteps, onApply, onDismiss, onEdit }: Props) {
   const endRef = useRef<HTMLDivElement>(null);
+  const [editing, setEditing] = useState<string | null>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' });
@@ -44,11 +48,36 @@ export function MessageList({ messages, busy, liveSteps, onApply, onDismiss }: P
 
       {messages.map((m) => (
         <article key={m.id} className={styles.message} data-role={m.role}>
-          <div className={styles.bubble}>
-            {m.text && <p className={styles.text}>{m.text}</p>}
-            {m.error && <pre className={styles.error}>{m.error}</pre>}
-            {m.steps && m.steps.length > 0 && <StepTrace steps={m.steps} />}
-          </div>
+          {editing === m.id ? (
+            <EditBox
+              initial={m.text}
+              onCancel={() => {
+                setEditing(null);
+              }}
+              onSubmit={(text) => {
+                setEditing(null);
+                onEdit(m.id, text);
+              }}
+            />
+          ) : (
+            <div className={styles.bubble}>
+              {m.text && <p className={styles.text}>{m.text}</p>}
+              {m.error && <pre className={styles.error}>{m.error}</pre>}
+              {m.steps && m.steps.length > 0 && <ToolTrace steps={m.steps} />}
+              {m.role === 'user' && !busy && (
+                <button
+                  type="button"
+                  className={styles.edit}
+                  title="Correggi questa richiesta e riparti da qui"
+                  onClick={() => {
+                    setEditing(m.id);
+                  }}
+                >
+                  ✎ Correggi
+                </button>
+              )}
+            </div>
+          )}
 
           {m.patch && (
             <PatchDiff
@@ -72,7 +101,7 @@ export function MessageList({ messages, busy, liveSteps, onApply, onDismiss }: P
               Sto costruendo
               <span className={styles.dots} aria-hidden="true" />
             </p>
-            {liveSteps.length > 0 && <StepTrace steps={liveSteps.slice(-6)} live />}
+            {liveSteps.length > 0 && <ToolTrace steps={liveSteps.slice(-6)} live />}
           </div>
         </article>
       )}
@@ -82,41 +111,57 @@ export function MessageList({ messages, busy, liveSteps, onApply, onDismiss }: P
   );
 }
 
-/** I passi dell'agente, in una riga ciascuno. Chiusi di default quando sono
- *  finiti: interessano mentre succedono, non dopo. */
-function StepTrace({ steps, live }: { steps: AgentStep[]; live?: boolean }) {
-  const list = (
-    <ol className={styles.steps}>
-      {steps.map((s) => (
-        <li key={s.step} className={styles.step}>
-          <code>{s.tool}</code>
-          <span className={styles.stepArgs}>{describeArgs(s)}</span>
-        </li>
-      ))}
-    </ol>
-  );
-
-  if (live) return list;
-
+/**
+ * La correzione di una richiesta già inviata.
+ *
+ * Quello che veniva dopo rispondeva a una domanda che non è più stata fatta:
+ * riscrivere qui taglia il seguito e riparte da questo punto.
+ */
+function EditBox({
+  initial,
+  onSubmit,
+  onCancel,
+}: {
+  initial: string;
+  onSubmit: (text: string) => void;
+  onCancel: () => void;
+}) {
+  const [text, setText] = useState(initial);
   return (
-    <details className={styles.trace}>
-      <summary className={styles.traceSummary}>
-        {steps.length} {steps.length === 1 ? 'passo' : 'passi'}
-      </summary>
-      {list}
-    </details>
+    <div className={styles.editBox}>
+      <textarea
+        className={styles.editInput}
+        rows={3}
+        autoFocus
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') onCancel();
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            onSubmit(text);
+          }
+        }}
+      />
+      <div className={styles.editActions}>
+        <span className={styles.editHint}>
+          Da qui in poi la conversazione riparte: le risposte successive vengono sostituite.
+        </span>
+        <button type="button" className={styles.editCancel} onClick={onCancel}>
+          Annulla
+        </button>
+        <button
+          type="button"
+          className={styles.editSend}
+          onClick={() => {
+            onSubmit(text);
+          }}
+        >
+          Rimanda
+        </button>
+      </div>
+    </div>
   );
-}
-
-/** Il riassunto di un passo: cosa ha toccato, non tutto il JSON. */
-function describeArgs(step: AgentStep): string {
-  const a = step.args;
-  const from = typeof a.from === 'string' ? a.from : '';
-  const to = typeof a.to === 'string' ? a.to : '';
-  if (from && to) return `${from} → ${to}`;
-  for (const key of ['defId', 'nodeId', 'query', 'id']) {
-    const v = a[key];
-    if (typeof v === 'string' && v) return v;
-  }
-  return '';
 }

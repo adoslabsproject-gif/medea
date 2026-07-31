@@ -228,10 +228,12 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
             setSelectedId(null);
           }}
           fitView
-          /* Senza un tetto allo zoom, un workflow con due nodi riempirebbe
-             lo schermo ingigantendoli: `fitView` ingrandisce finché non
-             riempie il canvas. */
-          fitViewOptions={{ maxZoom: 1, padding: 0.25 }}
+          /* Il tetto allo zoom sta sotto 1: `fitView` ingrandisce finché non
+             riempie il canvas, e con due nodi li mostrerebbe enormi. Meglio
+             partire un po' più larghi — si vede il contesto e si zooma se
+             serve, invece del contrario. */
+          fitViewOptions={{ maxZoom: 0.75, padding: 0.3 }}
+          defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
           minZoom={0.2}
           maxZoom={2}
         >
