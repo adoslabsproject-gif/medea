@@ -1,0 +1,143 @@
+@layer features {
+  .drawer {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-end: 0;
+    inline-size: min(30rem, 90vw);
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface-0);
+    border-inline-start: 1px solid var(--color-border-default);
+    box-shadow: var(--elevation-3, none);
+    z-index: var(--z-overlay);
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border-block-end: 1px solid var(--color-border-subtle);
+  }
+
+  .headText {
+    min-inline-size: 0;
+    flex: 1;
+  }
+
+  .name {
+    font-weight: 700;
+    color: var(--color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .address {
+    font-family: var(--font-family-mono, monospace);
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .closeBtn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+    padding: var(--space-2);
+    border-radius: var(--radius-sm, 4px);
+  }
+
+  .closeBtn:hover {
+    background: var(--color-surface-2);
+    color: var(--color-text-primary);
+  }
+
+  .list {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-2) var(--space-4) var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .row {
+    padding: var(--space-3);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md, 8px);
+    background: var(--color-surface-1);
+  }
+
+  .rowHead {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    font-size: 0.75rem;
+    margin-block-end: var(--space-1);
+  }
+
+  .dirIn,
+  .dirOut {
+    font-weight: 600;
+  }
+
+  .dirIn {
+    color: var(--color-accent);
+  }
+
+  .dirOut {
+    color: var(--color-text-secondary);
+  }
+
+  .date {
+    color: var(--color-text-tertiary);
+  }
+
+  .folder {
+    margin-inline-start: auto;
+    color: var(--color-text-tertiary);
+    font-size: 0.7rem;
+  }
+
+  .subject {
+    font-weight: 600;
+    color: var(--color-text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .unreadDot {
+    inline-size: 0.5rem;
+    block-size: 0.5rem;
+    border-radius: 50%;
+    background: var(--color-accent);
+    flex: none;
+  }
+
+  .preview {
+    margin-block-start: var(--space-1);
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .empty {
+    padding: var(--space-6);
+    text-align: center;
+    color: var(--color-text-tertiary);
+  }
+
+  .error {
+    padding: var(--space-4);
+    color: var(--color-text-primary);
+  }
+}

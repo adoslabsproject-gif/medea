@@ -1,9 +1,13 @@
-//! Tauri commands — Fase 0 placeholder.
-//!
-//! Le commands reali (accounts, oauth, sync, messages, send, ai) arriveranno
-//! in Fase 1+ e vivranno in moduli dedicati (`accounts.rs`, `messages.rs`,
-//! `oauth.rs`, `sync.rs`, `ai.rs`, …). Per ora un solo `ping` per dimostrare
-//! che il binding TS↔Rust funziona.
+//! Tauri commands esposti al frontend React.
+
+pub mod ai_cmd;
+pub mod ai_tools_cmd;
+pub mod db_cmd;
+pub mod imap_cmd;
+pub mod secrets_cmd;
+pub mod smtp_cmd;
+pub mod sync_cmd;
+pub mod template_cmd;
 
 #[tauri::command]
 pub fn ping() -> String {

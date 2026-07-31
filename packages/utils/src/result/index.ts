@@ -1,5 +1,5 @@
-export type Ok<T> = { readonly ok: true; readonly value: T };
-export type Err<E> = { readonly ok: false; readonly error: E };
+export interface Ok<T> { readonly ok: true; readonly value: T }
+export interface Err<E> { readonly ok: false; readonly error: E }
 export type Result<T, E = Error> = Ok<T> | Err<E>;
 
 export const ok = <T>(value: T): Ok<T> => ({ ok: true, value });
@@ -21,7 +21,7 @@ export const unwrap = <T, E>(r: Result<T, E>): T => {
 
 export const unwrapOr = <T, E>(r: Result<T, E>, fallback: T): T => (r.ok ? r.value : fallback);
 
-export const tryCatch = <T>(fn: () => T): Result<T, Error> => {
+export const tryCatch = <T>(fn: () => T): Result<T> => {
   try {
     return ok(fn());
   } catch (e) {
@@ -29,7 +29,7 @@ export const tryCatch = <T>(fn: () => T): Result<T, Error> => {
   }
 };
 
-export const tryCatchAsync = async <T>(fn: () => Promise<T>): Promise<Result<T, Error>> => {
+export const tryCatchAsync = async <T>(fn: () => Promise<T>): Promise<Result<T>> => {
   try {
     return ok(await fn());
   } catch (e) {

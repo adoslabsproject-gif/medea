@@ -1,0 +1,23 @@
+@layer features {
+  .root {
+    display: flex;
+    block-size: 100dvh;
+    inline-size: 100vw;
+    overflow: hidden;
+    background: var(--color-surface-1);
+  }
+  .workspace {
+    flex: 1;
+    min-inline-size: 0;
+    min-block-size: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .workspace > * {
+    flex: 1;
+    inline-size: 100%;
+    min-inline-size: 0;
+    min-block-size: 0;
+  }
+}

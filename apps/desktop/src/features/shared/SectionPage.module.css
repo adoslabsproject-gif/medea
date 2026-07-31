@@ -1,0 +1,88 @@
+@layer features {
+  .root {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-block-size: 0;
+    overflow: hidden;
+    background: var(--color-surface-1);
+  }
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-5);
+    border-block-end: 1px solid var(--color-border-subtle);
+    background: var(--color-surface-2);
+    flex-shrink: 0;
+  }
+  .titleGroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+  }
+  .subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+  }
+  .body {
+    flex: 1;
+    overflow: auto;
+    min-block-size: 0;
+    padding: var(--space-4) var(--space-5);
+  }
+  .empty {
+    text-align: center;
+    color: var(--color-text-muted);
+    padding: var(--space-12) var(--space-4);
+    font-style: italic;
+  }
+  .table {
+    inline-size: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: var(--font-size-sm);
+  }
+  .table th {
+    text-align: start;
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-block-end: 1px solid var(--color-border-default);
+    position: sticky;
+    inset-block-start: 0;
+  }
+  .table td {
+    padding: var(--space-2) var(--space-3);
+    border-block-end: 1px solid var(--color-border-subtle);
+    color: var(--color-text-primary);
+  }
+  .table tr:hover td {
+    background: color-mix(in oklch, var(--color-accent-default) 6%, transparent);
+  }
+  .badge {
+    display: inline-block;
+    padding: 0 var(--space-2);
+    font-size: var(--font-size-xs);
+    border-radius: var(--radius-full);
+    background: var(--color-surface-3);
+    color: var(--color-text-muted);
+  }
+  .badgeClient {
+    background: color-mix(in oklch, var(--color-feedback-success) 18%, transparent);
+    color: var(--color-feedback-success);
+  }
+  .badgeSupplier {
+    background: color-mix(in oklch, var(--color-feedback-info) 18%, transparent);
+    color: var(--color-feedback-info);
+  }
+}

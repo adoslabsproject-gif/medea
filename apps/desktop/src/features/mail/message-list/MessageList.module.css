@@ -1,0 +1,208 @@
+@layer features {
+  .root {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-block-size: 0;
+    min-inline-size: 0;
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2_5) var(--space-4);
+    border-block-end: 1px solid var(--color-border-subtle);
+    flex-shrink: 0;
+    background: var(--color-surface-2);
+  }
+  .folderName {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    text-transform: capitalize;
+    margin-inline-end: auto;
+  }
+  .counter {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .searchRow {
+    padding: var(--space-2) var(--space-3);
+    border-block-end: 1px solid var(--color-border-subtle);
+    flex-shrink: 0;
+  }
+
+  /* ── Tabella ─────────────────────────────────────────────────────── */
+  .tableWrap {
+    flex: 1;
+    min-block-size: 0;
+    overflow: auto;
+  }
+
+  .table {
+    inline-size: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: var(--font-size-sm);
+    table-layout: fixed;
+
+    /* Altezza dell'intestazione, dichiarata invece che dedotta: è lo stesso
+       valore su cui si ancora la barra di data sticky (.groupRow). Se i due
+       divergessero anche di un pixel si aprirebbe una fessura da cui si
+       vedrebbero scorrere le righe sotto. */
+    --mail-head-h: 2.25rem;
+  }
+
+  .table thead th {
+    position: sticky;
+    inset-block-start: 0;
+    block-size: var(--mail-head-h);
+    background: var(--color-surface-3);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-align: start;
+    padding: 0 var(--space-3);
+    border-block-end: 1px solid var(--color-border-default);
+    z-index: 2;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .sortable {
+    cursor: pointer;
+    transition: color var(--motion-duration-fast) var(--motion-easing-standard);
+  }
+  .sortable:hover {
+    color: var(--color-text-primary);
+  }
+
+  .table tbody td {
+    padding: 0.625rem var(--space-3);  /* ~10px verticali — densità Outlook compatto */
+    border-block-end: 1px solid var(--color-border-subtle);
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.45;
+    vertical-align: middle;
+    font-size: var(--font-size-sm);
+  }
+  .table tbody tr {
+    block-size: 2.5rem;  /* altezza riga fissa minima per leggibilità */
+  }
+
+  .table tbody tr {
+    cursor: pointer;
+    transition: background var(--motion-duration-fast) var(--motion-easing-standard);
+  }
+  .table tbody tr:hover {
+    background: color-mix(in oklch, var(--color-accent-default) 6%, transparent);
+  }
+  .table tbody tr:focus-visible {
+    outline: 2px solid var(--color-focus-ring-default);
+    outline-offset: -2px;
+  }
+  .unread td {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+  }
+  .unread td:first-child::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-accent-default);
+    margin-inline-end: var(--space-1);
+    vertical-align: middle;
+  }
+  .active {
+    background: color-mix(in oklch, var(--color-accent-default) 22%, transparent) !important;
+  }
+  .active td:first-child {
+    box-shadow: inset 3px 0 0 0 var(--color-accent-default);
+  }
+  .active td {
+    color: var(--color-text-primary);
+  }
+
+  /* Colonne — dim. centrata, date in una riga */
+  .colAtt    { inline-size: 2.25rem; text-align: center; }
+  .colFrom   { inline-size: 16rem; }
+  .colTo     { inline-size: 14rem;  color: var(--color-text-secondary); }
+  .colSubj   { inline-size: auto; }
+  .colDate   { inline-size: 10.5rem; color: var(--color-text-muted);
+               font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .colSize   { inline-size: 5.5rem; text-align: center;
+               color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+  .colFolder { inline-size: 7rem;   color: var(--color-text-muted); }
+
+  /* Sezione data — stile Outlook con barra colorata, senza gap dalla thead */
+  .groupRow {
+    background: linear-gradient(
+      to right,
+      color-mix(in oklch, var(--color-accent-default) 16%, var(--color-surface-2)),
+      var(--color-surface-2) 60%
+    );
+    border-block-end: 1px solid var(--color-border-default);
+    position: sticky;
+    /* Risale di 1px sotto l'intestazione: assorbe l'arrotondamento a
+       subpixel sui display Retina, che altrimenti lascia una fessura. */
+    inset-block-start: calc(var(--mail-head-h) - 1px);
+    z-index: 1;
+  }
+  .groupRow td {
+    padding: 6px var(--space-3) !important;
+    block-size: auto;
+  }
+  .groupRow:hover { background: linear-gradient(
+      to right,
+      color-mix(in oklch, var(--color-accent-default) 16%, var(--color-surface-2)),
+      var(--color-surface-2) 60%
+    ) !important; }
+  .groupLabel {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-accent-emphasis);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .groupCount {
+    margin-inline-start: var(--space-2_5);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    font-weight: var(--font-weight-medium);
+    font-variant-numeric: tabular-nums;
+    padding: var(--space-0_5) var(--space-1_5);
+    background: var(--color-surface-1);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--color-border-subtle);
+  }
+
+  .placeholder {
+    text-align: center;
+    color: var(--color-text-muted);
+    padding: var(--space-6);
+    font-style: italic;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 0.875rem;
+    height: 0.875rem;
+    border: 2px solid var(--color-border-strong);
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: medea-list-spin 0.7s linear infinite;
+    margin-inline-end: var(--space-2);
+    vertical-align: middle;
+  }
+  @keyframes medea-list-spin {
+    to { transform: rotate(360deg); }
+  }
+}

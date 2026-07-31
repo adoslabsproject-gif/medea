@@ -1,0 +1,87 @@
+.root {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+  overflow: hidden;
+  background: var(--color-surface-0, #0e1117);
+  color: var(--color-text-primary);
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px 14px;
+  border-block-end: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.06));
+}
+
+.title { display: flex; gap: 12px; align-items: flex-start; }
+.titleIcon {
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  font-size: 22px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(120, 130, 255, 0.20), rgba(180, 140, 255, 0.14));
+  border: 1px solid rgba(120, 130, 255, 0.35);
+  flex-shrink: 0;
+}
+.titleText { margin: 0; font-size: 18px; font-weight: 700; }
+.titleHint {
+  margin: 4px 0 0;
+  color: var(--color-text-tertiary, #7a8294);
+  font-size: 12.5px;
+  line-height: 1.45;
+  max-width: 760px;
+}
+
+.newBtn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid var(--color-accent-border, rgba(120, 130, 255, 0.45));
+  background: linear-gradient(180deg,
+    var(--color-accent-soft, rgba(120, 130, 255, 0.28)),
+    var(--color-accent-soft-2, rgba(120, 130, 255, 0.14)));
+  color: var(--color-text-primary);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: filter 0.12s;
+  flex-shrink: 0;
+}
+.newBtn:hover { filter: brightness(1.12); }
+
+.frame {
+  flex: 1;
+  display: flex;
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+.main {
+  flex: 1;
+  min-inline-size: 0;
+  overflow-y: auto;
+}
+
+.empty {
+  padding: 96px 24px;
+  text-align: center;
+  color: var(--color-text-tertiary, #7a8294);
+}
+.emptyIcon { font-size: 48px; opacity: 0.4; margin-bottom: 14px; }
+.emptyTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-secondary, #aab2c5);
+  margin: 0 0 6px;
+}
+.emptyText {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 420px;
+  margin-inline: auto;
+}
