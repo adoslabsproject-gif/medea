@@ -40,6 +40,11 @@ export function runtimeStatus(): Promise<RuntimeStatus> {
   return invoke('workflow_runtime_status');
 }
 
+/** Avvia il runtime se non è già in piedi. Idempotente. */
+export function startRuntime(): Promise<RuntimeStatus> {
+  return invoke('workflow_runtime_start');
+}
+
 export class RuntimeError extends Error {}
 
 /**

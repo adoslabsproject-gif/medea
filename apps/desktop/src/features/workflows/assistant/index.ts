@@ -1,5 +1,7 @@
 export { AssistantPanel } from './AssistantPanel';
 export { ConversationMenu } from './ConversationMenu';
+export { classify } from './intent';
+export type { Intent } from './intent';
 export {
   loadConversations,
   newConversationId,

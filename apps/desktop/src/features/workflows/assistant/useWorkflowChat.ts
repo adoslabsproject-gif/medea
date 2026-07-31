@@ -1,9 +1,14 @@
 /**
  * La conversazione: cosa succede quando l'utente scrive.
  *
- * Ogni messaggio fa girare l'agente sul workflow **corrente**, quindi la
- * seconda richiesta parte da dove ha lasciato la prima: «aggiungi un
- * controllo» funziona perché l'agente vede quello che ha già costruito.
+ * Prima si capisce **cosa vuole**: rispondere o costruire. Senza quel
+ * passaggio ogni messaggio diventerebbe un tentativo di costruire un
+ * workflow, «ciao» compreso.
+ *
+ * Quando è una richiesta di modifica, l'agente lavora sul workflow
+ * **corrente**, quindi la seconda richiesta parte da dove ha lasciato la
+ * prima: «aggiungi un controllo» funziona perché vede quello che ha già
+ * costruito.
  *
  * Niente viene applicato da solo. L'agente produce un workflow, qui se ne
  * calcola il diff, e il canvas cambia solo quando l'utente lo accetta.
@@ -29,6 +34,7 @@ import {
   type Conversation,
 } from './conversations';
 import { computePatch } from './diff';
+import { classify } from './intent';
 import { isEmptyPatch, type ChatMessage } from './types';
 
 let counter = 0;
@@ -120,9 +126,21 @@ export function useWorkflowChat({ workflow }: Options): WorkflowChat {
       };
 
       try {
+        // Prima si capisce cosa vuole: senza questo passaggio un saluto
+        // diventa un tentativo di costruzione che brucia quaranta passi.
+        const intent = await classify(
+          goal,
+          base,
+          history.slice(0, -1).map((m) => ({ role: m.role, text: m.text })),
+        );
+        if (intent.kind === 'reply') {
+          reply({ text: intent.text });
+          return;
+        }
+
         const chat = await createAgentChat();
         const result = await runWorkflowAgent({
-          goal,
+          goal: intent.goal,
           catalog: [...allNodes()],
           chat,
           ...(base.nodes.length > 0 ? { seed: base } : {}),
