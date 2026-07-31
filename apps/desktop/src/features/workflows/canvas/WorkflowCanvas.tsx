@@ -17,37 +17,38 @@ import {
   Controls,
   MiniMap,
   ReactFlow,
-  useEdgesState,
-  useNodesState,
   type Connection,
-  type Edge,
   type EdgeTypes,
   type Node,
   type NodeTypes,
 } from '@xyflow/react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { findNode } from '../catalog';
 import type { CanvasNode, NodeDef, Workflow, WorkflowEdge } from '../types';
 
 import { diagnose } from './diagnostics';
+import {
+  addEdge,
+  dropEdge,
+  dropNode,
+  edgeId,
+  insertBetween,
+  setMapMode,
+  uniqueNodeId,
+} from './graph-ops';
 import { nextFreeSpot } from './layout';
 import { NodeInspector } from './NodeInspector';
 import { NodePalette } from './NodePalette';
-import { PlusEdge, type MapMode, type PlusEdgeData } from './PlusEdge';
+import { PlusEdge, type MapMode } from './PlusEdge';
+import { useCanvasProjection } from './useCanvasProjection';
 import styles from './WorkflowCanvas.module.css';
-import { WorkflowNode, type WorkflowNodeData } from './WorkflowNode';
+import { WorkflowNode } from './WorkflowNode';
 
 import './xyflow.css';
 
 const NODE_TYPES: NodeTypes = { medea: WorkflowNode };
 const EDGE_TYPES: EdgeTypes = { plus: PlusEdge };
-
-/* Array tipizzati invece dei parametri di tipo espliciti: `useNodesState(NO_NODES)`
-   inferirebbe `never[]` e `useNodesState<Node>([])` ripete il tipo di
-   default. Così il tipo arriva dal valore iniziale. */
-const NO_NODES: Node[] = [];
-const NO_EDGES: Edge[] = [];
 
 interface Props {
   workflow: Workflow;
@@ -59,8 +60,6 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
   /** Il collegamento su cui si sta inserendo un nodo, se l'utente ha
    *  premuto il «+». La palette cambia modo finché non sceglie. */
   const [insertOn, setInsertOn] = useState<WorkflowEdge | null>(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState(NO_NODES);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(NO_EDGES);
 
   // I callback degli edge vivono dentro lo stato di xyflow e sopravvivono
   // ai ridisegni: devono vedere il documento di adesso, non quello di
@@ -84,79 +83,31 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
     [workflow.nodes, workflow.edges, defsById],
   );
 
-  /**
-   * Cosa deve far ridisegnare il canvas: la struttura e i problemi, non le
-   * coordinate. Senza questa distinzione ogni trascinamento ricostruirebbe
-   * tutti i nodi e xyflow perderebbe le misure.
-   */
-  const signature = useMemo(
-    () =>
-      JSON.stringify({
-        n: workflow.nodes.map((n) => [
-          n.id,
-          n.defId,
-          n.label,
-          n.config,
-          diag.missingByNode.get(n.id) ?? 0,
-          (diag.issuesByNode.get(n.id) ?? []).length,
-        ]),
-        e: workflow.edges,
-        s: selectedId,
-      }),
-    [workflow.nodes, workflow.edges, diag, selectedId],
+  // I callback dei collegamenti vivono dentro lo stato di xyflow e
+  // sopravvivono ai ridisegni: leggono il documento dal ref, quindi vedono
+  // sempre quello di adesso.
+  const edgeCallbacks = useMemo(
+    () => ({
+      onInsert: (edge: WorkflowEdge) => {
+        setInsertOn(edge);
+      },
+      onDelete: (edge: WorkflowEdge) => {
+        onChangeRef.current(dropEdge(workflowRef.current, edge));
+      },
+      onCycleMapMode: (edge: WorkflowEdge, next: MapMode) => {
+        onChangeRef.current(setMapMode(workflowRef.current, edge, next));
+      },
+    }),
+    [],
   );
 
-  useEffect(() => {
-    setNodes((previous) => {
-      const measured = new Map(previous.map((p) => [p.id, p]));
-      return workflow.nodes.map((n) => {
-        const def = defsById.get(n.defId);
-        const before = measured.get(n.id);
-        return {
-          // Le misure che xyflow ha già preso si conservano: ricalcolarle
-          // farebbe sfarfallare i collegamenti a ogni modifica.
-          ...before,
-          id: n.id,
-          type: 'medea',
-          position: before?.position ?? { x: n.x, y: n.y },
-          selected: n.id === selectedId,
-          data: {
-            ...(def ? { def } : {}),
-            defId: n.defId,
-            ...(n.label ? { label: n.label } : {}),
-            missing: diag.missingByNode.get(n.id) ?? 0,
-            issues: (diag.issuesByNode.get(n.id) ?? []).length,
-          } satisfies WorkflowNodeData,
-        };
-      });
-    });
-
-    setEdges(
-      workflow.edges.map((e, i) => ({
-        id: edgeId(e, i),
-        type: 'plus',
-        source: e.from,
-        target: e.to,
-        ...(e.fromPort ? { sourceHandle: e.fromPort, label: e.fromPort } : {}),
-        animated: true,
-        data: {
-          edge: e,
-          ...(e.mapMode ? { mapMode: e.mapMode } : {}),
-          onInsert: (target: WorkflowEdge) => {
-            setInsertOn(target);
-          },
-          onDelete: (target: WorkflowEdge) => {
-            onChangeRef.current(dropEdge(workflowRef.current, target));
-          },
-          onCycleMapMode: (target: WorkflowEdge, next: MapMode) => {
-            onChangeRef.current(setMapMode(workflowRef.current, target, next));
-          },
-        } satisfies PlusEdgeData,
-      })),
-    );
-    // `signature` riassume tutto ciò che deve provocare un ridisegno.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signature]);
+  const { nodes, edges, onNodesChange, onEdgesChange } = useCanvasProjection({
+    workflow,
+    defsById,
+    diag,
+    selectedId,
+    callbacks: edgeCallbacks,
+  });
 
   const patchNodes = useCallback(
     (next: CanvasNode[]) => {
@@ -167,11 +118,7 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
 
   const removeNode = useCallback(
     (id: string) => {
-      onChange({
-        ...workflow,
-        nodes: workflow.nodes.filter((n) => n.id !== id),
-        edges: workflow.edges.filter((e) => e.from !== id && e.to !== id),
-      });
+      onChange(dropNode(workflow, id));
       setSelectedId((current) => (current === id ? null : current));
     },
     [workflow, onChange],
@@ -194,17 +141,14 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
 
   const connect = useCallback(
     (conn: Connection) => {
-      if (!conn.source || !conn.target || conn.source === conn.target) return;
-      const edge: WorkflowEdge = {
-        from: conn.source,
-        to: conn.target,
-        ...(conn.sourceHandle ? { fromPort: conn.sourceHandle } : {}),
-      };
-      const exists = workflow.edges.some(
-        (e) => e.from === edge.from && e.to === edge.to && e.fromPort === edge.fromPort,
+      if (!conn.source || !conn.target) return;
+      onChange(
+        addEdge(workflow, {
+          from: conn.source,
+          to: conn.target,
+          ...(conn.sourceHandle ? { fromPort: conn.sourceHandle } : {}),
+        }),
       );
-      if (exists) return;
-      onChange({ ...workflow, edges: [...workflow.edges, edge] });
     },
     [workflow, onChange],
   );
@@ -212,7 +156,7 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
   const addFromPalette = useCallback(
     (def: NodeDef) => {
       const spot = nextFreeSpot(workflow.nodes);
-      const id = uniqueId(def.defId, workflow.nodes);
+      const id = uniqueNodeId(def.defId, workflow.nodes);
       const config: Record<string, unknown> = {};
       // I valori predefiniti si applicano subito: è ciò che rende un nodo
       // appena messo già quasi pronto invece che tutto da compilare.
@@ -329,56 +273,4 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
       )}
     </div>
   );
-}
-
-/** Il collegamento sparisce e ne nascono due, con il nuovo nodo in mezzo. */
-function insertBetween(wf: Workflow, edge: WorkflowEdge, node: CanvasNode): Workflow {
-  const others = wf.edges.filter((e) => !sameEdge(e, edge));
-  return {
-    ...wf,
-    nodes: [...wf.nodes, node],
-    edges: [
-      ...others,
-      { from: edge.from, to: node.id, ...(edge.fromPort ? { fromPort: edge.fromPort } : {}) },
-      { from: node.id, to: edge.to },
-    ],
-  };
-}
-
-function dropEdge(wf: Workflow, edge: WorkflowEdge): Workflow {
-  return { ...wf, edges: wf.edges.filter((e) => !sameEdge(e, edge)) };
-}
-
-function setMapMode(wf: Workflow, edge: WorkflowEdge, mode: MapMode): Workflow {
-  return {
-    ...wf,
-    edges: wf.edges.map((e) => {
-      if (!sameEdge(e, edge)) return e;
-      // Spento vuol dire assente: un campo `mapMode: undefined` finirebbe
-      // nel JSON esportato come rumore.
-      const { mapMode: _off, ...rest } = e;
-      return mode === 'off' ? rest : { ...rest, mapMode: mode };
-    }),
-  };
-}
-
-function sameEdge(a: WorkflowEdge, b: WorkflowEdge): boolean {
-  return a.from === b.from && a.to === b.to && (a.fromPort ?? '') === (b.fromPort ?? '');
-}
-
-/** L'id di un collegamento nel canvas. Include l'indice perché due nodi
- *  possono essere uniti da più rami (le porte di un `logic_if`). */
-function edgeId(e: WorkflowEdge, index: number): string {
-  return `${e.from}->${e.to}#${String(index)}`;
-}
-
-/** Gli stessi id leggibili che assegna l'agente: `action_http`, poi
- *  `action_http_2`. Un workflow costruito a mano e uno generato si leggono
- *  allo stesso modo. */
-function uniqueId(defId: string, nodes: readonly CanvasNode[]): string {
-  const base = defId.toLowerCase().replace(/[^a-z0-9_]/g, '_') || 'nodo';
-  if (!nodes.some((n) => n.id === base)) return base;
-  let i = 2;
-  while (nodes.some((n) => n.id === `${base}_${String(i)}`)) i++;
-  return `${base}_${String(i)}`;
 }
