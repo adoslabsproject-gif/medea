@@ -208,7 +208,9 @@
     cursor: pointer;
     font-size: var(--font-size-xs);
   }
-  .clearBtn:hover { text-decoration: underline; }
+  .clearBtn:hover {
+    text-decoration: underline;
+  }
 
   .searchBody {
     flex: 1;

@@ -50,7 +50,9 @@ export function FolderTree({ folders, loading, active, onSelect }: Props) {
             <button
               type="button"
               className={`${styles.item} ${f.name === active ? styles.active : ''}`}
-              onClick={() => { onSelect(f.name); }}
+              onClick={() => {
+                onSelect(f.name);
+              }}
             >
               <span className={styles.label}>{f.label}</span>
             </button>

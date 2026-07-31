@@ -10,7 +10,6 @@ import { PartnerDetail } from './PartnerDetail';
 import { PartnersSidebar } from './PartnersSidebar';
 import type { PartnerFilter } from './types';
 
-
 export function ContactsView() {
   const [partners, setPartners] = useState<DbOrganizationRow[]>([]);
   /** Universo completo (mai filtrato) per i conteggi reali nei chip. */
@@ -56,15 +55,16 @@ export function ContactsView() {
     setDetail(d);
   }
 
-  useEffect(() => { void refreshList(); /* eslint-disable-next-line */ }, [filter]);
-  useEffect(() => { void refreshDetail();   }, [activeId]);
+  useEffect(() => {
+    void refreshList(); /* eslint-disable-next-line */
+  }, [filter]);
+  useEffect(() => {
+    void refreshDetail();
+  }, [activeId]);
 
   useEffect(() => {
     void (async () => {
-      const [b, c] = await Promise.all([
-        mailApi.db.listBrands(),
-        mailApi.db.listCategories(),
-      ]);
+      const [b, c] = await Promise.all([mailApi.db.listBrands(), mailApi.db.listCategories()]);
       setBrands(b);
       setCategories(c);
     })();
@@ -73,11 +73,12 @@ export function ContactsView() {
   const filteredPartners = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return partners;
-    return partners.filter((p) =>
-      (p.displayName ?? '').toLowerCase().includes(q)
-      || p.domain.toLowerCase().includes(q)
-      || (p.vatNumber ?? '').toLowerCase().includes(q)
-      || (p.emailAddress ?? '').toLowerCase().includes(q),
+    return partners.filter(
+      (p) =>
+        (p.displayName ?? '').toLowerCase().includes(q) ||
+        p.domain.toLowerCase().includes(q) ||
+        (p.vatNumber ?? '').toLowerCase().includes(q) ||
+        (p.emailAddress ?? '').toLowerCase().includes(q),
     );
   }, [partners, searchQuery]);
 
@@ -108,12 +109,18 @@ export function ContactsView() {
           <div>
             <h1 className={styles.titleText}>Anagrafica Clienti &amp; Fornitori</h1>
             <p className={styles.titleHint}>
-              Schede gestionali (no rubrica): dati fiscali, indirizzo, default operativi,
-              listino dedicato, sconti per categoria × marchio, archivio documenti.
+              Schede gestionali (no rubrica): dati fiscali, indirizzo, default operativi, listino
+              dedicato, sconti per categoria × marchio, archivio documenti.
             </p>
           </div>
         </div>
-        <button type="button" className={styles.newBtn} onClick={() => { setNewOpen(true); }}>
+        <button
+          type="button"
+          className={styles.newBtn}
+          onClick={() => {
+            setNewOpen(true);
+          }}
+        >
           ＋ Nuova anagrafica
         </button>
       </header>
@@ -152,7 +159,10 @@ export function ContactsView() {
               categories={categories}
               onToggleRole={handleToggleRole}
               onDelete={() => void handleDelete()}
-              onSaved={() => { void refreshDetail(); void refreshList(); }}
+              onSaved={() => {
+                void refreshDetail();
+                void refreshList();
+              }}
             />
           )}
         </main>
@@ -160,7 +170,9 @@ export function ContactsView() {
 
       {newOpen && (
         <NewPartnerDialog
-          onClose={() => { setNewOpen(false); }}
+          onClose={() => {
+            setNewOpen(false);
+          }}
           onCreated={(id) => {
             setNewOpen(false);
             setActiveId(id);

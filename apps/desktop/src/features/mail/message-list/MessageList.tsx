@@ -94,7 +94,11 @@ function groupKey(iso: string | null, now: Date): { key: string; label: string; 
   const monthName = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' }).format(d);
   const monthCap = monthName.charAt(0).toUpperCase() + monthName.slice(1);
   // order: più recente prima — usa -timestamp truncato a mese
-  return { key: `${year.toString()}-${month.toString().padStart(2, '0')}`, label: monthCap, order: 4 + (10000 - year) * 12 + (11 - month) };
+  return {
+    key: `${year.toString()}-${month.toString().padStart(2, '0')}`,
+    label: monthCap,
+    order: 4 + (10000 - year) * 12 + (11 - month),
+  };
 }
 
 function sortMessages(messages: DbListedMessage[], key: SortKey, dir: SortDir): DbListedMessage[] {
@@ -152,7 +156,10 @@ export function MessageList({
     });
   }, [messages, filterText]);
 
-  const sorted = useMemo(() => sortMessages(filtered, sortKey, sortDir), [filtered, sortKey, sortDir]);
+  const sorted = useMemo(
+    () => sortMessages(filtered, sortKey, sortDir),
+    [filtered, sortKey, sortDir],
+  );
 
   // Raggruppamento solo se sort = date desc (il modo "naturale")
   const groups = useMemo(() => {
@@ -193,25 +200,49 @@ export function MessageList({
     <div className={styles.root}>
       <header className={styles.head}>
         <div className={styles.folderName}>{label}</div>
-        <span className={styles.counter}>{messages.length} messaggi · {filtered.length} visibili</span>
+        <span className={styles.counter}>
+          {messages.length} messaggi · {filtered.length} visibili
+        </span>
       </header>
 
       <div className={styles.tableWrap} role="region" aria-label={`Messaggi in ${label}`}>
         <table className={styles.table}>
           <thead>
             <tr>
-              <th className={styles.colAtt} aria-label="Allegato">📎</th>
-              <th className={`${styles.colFrom} ${styles.sortable}`} onClick={() => { clickHeader('from'); }}>
+              <th className={styles.colAtt} aria-label="Allegato">
+                📎
+              </th>
+              <th
+                className={`${styles.colFrom} ${styles.sortable}`}
+                onClick={() => {
+                  clickHeader('from');
+                }}
+              >
                 Da{sortIndicator('from')}
               </th>
               <th className={styles.colTo}>A</th>
-              <th className={`${styles.colSubj} ${styles.sortable}`} onClick={() => { clickHeader('subject'); }}>
+              <th
+                className={`${styles.colSubj} ${styles.sortable}`}
+                onClick={() => {
+                  clickHeader('subject');
+                }}
+              >
                 Oggetto{sortIndicator('subject')}
               </th>
-              <th className={`${styles.colDate} ${styles.sortable}`} onClick={() => { clickHeader('date'); }}>
+              <th
+                className={`${styles.colDate} ${styles.sortable}`}
+                onClick={() => {
+                  clickHeader('date');
+                }}
+              >
                 Data{sortIndicator('date')}
               </th>
-              <th className={`${styles.colSize} ${styles.sortable}`} onClick={() => { clickHeader('size'); }}>
+              <th
+                className={`${styles.colSize} ${styles.sortable}`}
+                onClick={() => {
+                  clickHeader('size');
+                }}
+              >
                 Dim.{sortIndicator('size')}
               </th>
               <th className={styles.colFolder}>Cartella</th>
@@ -282,7 +313,9 @@ function GroupRows({
             key={m.id}
             ref={isActive ? activeRef : undefined}
             className={`${isActive ? styles.active : ''} ${!m.isSeen ? styles.unread : ''}`}
-            onClick={() => { onSelect(m.id); }}
+            onClick={() => {
+              onSelect(m.id);
+            }}
             onContextMenu={(e) => {
               // Sopprimi il menu di sistema WebView; il menu app contestuale
               // verrà aggiunto come componente custom (TODO).

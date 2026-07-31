@@ -35,8 +35,14 @@ export default [
     },
     rules: {
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: { attributes: false } }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+        { checksVoidReturn: { attributes: false } },
+      ],
       // Interpolare un valore opzionale in un template è idiomatico nella UI
       // (`${subject ?? ''}`, contatori, flag): vietarlo produrrebbe centinaia
       // di cast senza alcun guadagno di correttezza.
@@ -52,7 +58,7 @@ export default [
       'no-restricted-syntax': [
         'error',
         {
-          selector: "Literal[value=/#[0-9a-fA-F]{3,8}/]",
+          selector: 'Literal[value=/#[0-9a-fA-F]{3,8}/]',
           message: 'Niente hex colors hard-coded — usa var(--color-*) dal design system.',
         },
       ],

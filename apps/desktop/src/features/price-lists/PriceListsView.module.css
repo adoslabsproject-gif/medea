@@ -13,9 +13,20 @@
     background: var(--color-surface-2);
     flex-shrink: 0;
   }
-  .titleGroup { display: flex; flex-direction: column; gap: var(--space-1); }
-  .title { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); }
-  .subtitle { font-size: var(--font-size-sm); color: var(--color-text-secondary); max-inline-size: 60rem; }
+  .titleGroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+  }
+  .subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    max-inline-size: 60rem;
+  }
 
   .error {
     margin: var(--space-3) var(--space-5);
@@ -24,9 +35,16 @@
     color: var(--color-feedback-danger);
     border-radius: var(--radius-md);
     font-size: var(--font-size-sm);
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
-  .error button { background: transparent; border: 0; color: inherit; cursor: pointer; }
+  .error button {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+  }
 
   .body {
     flex: 1;
@@ -60,7 +78,8 @@
   }
   .list {
     list-style: none;
-    margin: 0; padding: 0;
+    margin: 0;
+    padding: 0;
     overflow-y: auto;
     flex: 1;
   }
@@ -75,7 +94,9 @@
     cursor: pointer;
     border-inline-start: 3px solid transparent;
   }
-  .listItem:hover { background: color-mix(in oklch, var(--color-accent-default) 8%, transparent); }
+  .listItem:hover {
+    background: color-mix(in oklch, var(--color-accent-default) 8%, transparent);
+  }
   .activeItem {
     background: color-mix(in oklch, var(--color-accent-default) 18%, transparent);
     border-inline-start-color: var(--color-accent-default);
@@ -90,7 +111,9 @@
   .listItemName {
     font-weight: var(--font-weight-medium);
     color: var(--color-text-primary);
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .listItemMeta {
     font-size: var(--font-size-xs);
@@ -121,16 +144,28 @@
     gap: var(--space-3);
     margin-block-end: var(--space-4);
   }
-  .detailTitle { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); }
-  .detailSub { font-size: var(--font-size-sm); color: var(--color-text-secondary); margin-block-start: var(--space-1); }
-  .detailActions { display: flex; gap: var(--space-2); }
+  .detailTitle {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+  }
+  .detailSub {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-block-start: var(--space-1);
+  }
+  .detailActions {
+    display: flex;
+    gap: var(--space-2);
+  }
 
   .emptyDetail {
     text-align: center;
     padding: var(--space-12) var(--space-4);
     color: var(--color-text-muted);
   }
-  .emptyGlyph { font-size: 3rem; }
+  .emptyGlyph {
+    font-size: 3rem;
+  }
   .emptyDetail h2 {
     color: var(--color-text-primary);
     font-size: var(--font-size-lg);
@@ -163,13 +198,25 @@
     border-block-end: 1px solid var(--color-border-subtle);
     color: var(--color-text-primary);
   }
-  .itemsTable tbody tr:last-child td { border-block-end: 0; }
-  .itemsTable tbody tr:hover td { background: color-mix(in oklch, var(--color-accent-default) 5%, transparent); }
-  .numCell { text-align: end; font-variant-numeric: tabular-nums; }
+  .itemsTable tbody tr:last-child td {
+    border-block-end: 0;
+  }
+  .itemsTable tbody tr:hover td {
+    background: color-mix(in oklch, var(--color-accent-default) 5%, transparent);
+  }
+  .numCell {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+  }
 
-  .rowActions { display: flex; gap: var(--space-1); justify-content: flex-end; }
+  .rowActions {
+    display: flex;
+    gap: var(--space-1);
+    justify-content: flex-end;
+  }
   .rowBtn {
-    inline-size: 2rem; block-size: 2rem;
+    inline-size: 2rem;
+    block-size: 2rem;
     border: 1px solid transparent;
     background: transparent;
     border-radius: var(--radius-md);
@@ -189,9 +236,14 @@
     gap: var(--space-3);
   }
   .checkRow {
-    display: flex; align-items: center; gap: var(--space-2);
-    font-size: var(--font-size-sm); color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
     cursor: pointer;
   }
-  .checkRow input[type=checkbox] { accent-color: var(--color-accent-default); }
+  .checkRow input[type='checkbox'] {
+    accent-color: var(--color-accent-default);
+  }
 }

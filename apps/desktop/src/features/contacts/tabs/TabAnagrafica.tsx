@@ -7,7 +7,10 @@ import { SHIPPING_TERMS_OPTIONS } from '../types';
 import styles from './shared.module.css';
 import own from './TabAnagrafica.module.css';
 
-interface Props { partner: OrganizationDetail; onSaved?: () => void; }
+interface Props {
+  partner: OrganizationDetail;
+  onSaved?: () => void;
+}
 
 function detailToForm(p: OrganizationDetail): OrganizationUpdateFull {
   return {
@@ -64,7 +67,9 @@ export function TabAnagrafica({ partner, onSaved }: Props) {
       await mailApi.db.organizationUpdate(form);
       setPristine(form);
       setSavedFlash(true);
-      setTimeout(() => { setSavedFlash(false); }, 1500);
+      setTimeout(() => {
+        setSavedFlash(false);
+      }, 1500);
       onSaved?.();
     } catch (e) {
       setError(String(e));
@@ -81,119 +86,219 @@ export function TabAnagrafica({ partner, onSaved }: Props) {
   return (
     <div className={own.wrap}>
       <div className={own.grid}>
-
         <Section title="Identità">
           <Field label="Ragione sociale">
-            <input className={own.input} value={form.displayName ?? ''}
-              onChange={(e) => { set('displayName', e.target.value || null); }} />
+            <input
+              className={own.input}
+              value={form.displayName ?? ''}
+              onChange={(e) => {
+                set('displayName', e.target.value || null);
+              }}
+            />
           </Field>
           <Field label="Dominio email" hint="non modificabile">
             <input className={own.input} value={partner.domain} disabled />
           </Field>
           <Field label="Email ufficio">
-            <input className={own.input} type="email" value={form.emailAddress ?? ''}
+            <input
+              className={own.input}
+              type="email"
+              value={form.emailAddress ?? ''}
               placeholder="info@…"
-              onChange={(e) => { set('emailAddress', e.target.value || null); }} />
+              onChange={(e) => {
+                set('emailAddress', e.target.value || null);
+              }}
+            />
           </Field>
           <Field label="Telefono">
-            <input className={own.input} value={form.phone ?? ''}
+            <input
+              className={own.input}
+              value={form.phone ?? ''}
               placeholder="+39 …"
-              onChange={(e) => { set('phone', e.target.value || null); }} />
+              onChange={(e) => {
+                set('phone', e.target.value || null);
+              }}
+            />
           </Field>
           <Field label="Sito web">
-            <input className={own.input} type="url" value={form.website ?? ''}
+            <input
+              className={own.input}
+              type="url"
+              value={form.website ?? ''}
               placeholder="https://…"
-              onChange={(e) => { set('website', e.target.value || null); }} />
+              onChange={(e) => {
+                set('website', e.target.value || null);
+              }}
+            />
           </Field>
           <Field label="Lingua preferita">
-            <input className={own.input} maxLength={5} value={form.preferredLanguage ?? ''}
+            <input
+              className={own.input}
+              maxLength={5}
+              value={form.preferredLanguage ?? ''}
               placeholder="it / en / de…"
-              onChange={(e) => { set('preferredLanguage', e.target.value || null); }} />
+              onChange={(e) => {
+                set('preferredLanguage', e.target.value || null);
+              }}
+            />
           </Field>
         </Section>
 
         <Section title="Dati fiscali">
           <Field label="Partita IVA">
-            <input className={own.input} value={form.vatNumber ?? ''}
-              onChange={(e) => { set('vatNumber', e.target.value || null); }} />
+            <input
+              className={own.input}
+              value={form.vatNumber ?? ''}
+              onChange={(e) => {
+                set('vatNumber', e.target.value || null);
+              }}
+            />
           </Field>
           <Field label="Codice fiscale">
-            <input className={own.input} value={form.taxCode ?? ''}
-              onChange={(e) => { set('taxCode', e.target.value || null); }} />
+            <input
+              className={own.input}
+              value={form.taxCode ?? ''}
+              onChange={(e) => {
+                set('taxCode', e.target.value || null);
+              }}
+            />
           </Field>
           <Field label="Codice SDI">
-            <input className={own.input} maxLength={7} value={form.sdiCode ?? ''}
+            <input
+              className={own.input}
+              maxLength={7}
+              value={form.sdiCode ?? ''}
               placeholder="7 caratteri"
-              onChange={(e) => { set('sdiCode', e.target.value || null); }} />
+              onChange={(e) => {
+                set('sdiCode', e.target.value || null);
+              }}
+            />
           </Field>
           <Field label="PEC">
-            <input className={own.input} type="email" value={form.pec ?? ''}
-              onChange={(e) => { set('pec', e.target.value || null); }} />
+            <input
+              className={own.input}
+              type="email"
+              value={form.pec ?? ''}
+              onChange={(e) => {
+                set('pec', e.target.value || null);
+              }}
+            />
           </Field>
         </Section>
 
         <Section title="Sede / Indirizzo">
           <Field label="Via e numero">
-            <input className={own.input} value={form.streetAddress ?? ''}
-              onChange={(e) => { set('streetAddress', e.target.value || null); }} />
+            <input
+              className={own.input}
+              value={form.streetAddress ?? ''}
+              onChange={(e) => {
+                set('streetAddress', e.target.value || null);
+              }}
+            />
           </Field>
           <div className={own.row3}>
             <Field label="CAP">
-              <input className={own.input} maxLength={10} value={form.postalCode ?? ''}
-                onChange={(e) => { set('postalCode', e.target.value || null); }} />
+              <input
+                className={own.input}
+                maxLength={10}
+                value={form.postalCode ?? ''}
+                onChange={(e) => {
+                  set('postalCode', e.target.value || null);
+                }}
+              />
             </Field>
             <Field label="Città">
-              <input className={own.input} value={form.city ?? ''}
-                onChange={(e) => { set('city', e.target.value || null); }} />
+              <input
+                className={own.input}
+                value={form.city ?? ''}
+                onChange={(e) => {
+                  set('city', e.target.value || null);
+                }}
+              />
             </Field>
             <Field label="Prov.">
-              <input className={own.input} maxLength={3} value={form.province ?? ''}
-                onChange={(e) => { set('province', (e.target.value || '').toUpperCase() || null); }} />
+              <input
+                className={own.input}
+                maxLength={3}
+                value={form.province ?? ''}
+                onChange={(e) => {
+                  set('province', (e.target.value || '').toUpperCase() || null);
+                }}
+              />
             </Field>
           </div>
           <Field label="Paese (ISO-2)">
-            <input className={own.input} maxLength={2} value={form.countryIso2 ?? ''}
+            <input
+              className={own.input}
+              maxLength={2}
+              value={form.countryIso2 ?? ''}
               placeholder="IT"
-              onChange={(e) => { set('countryIso2', (e.target.value || '').toUpperCase() || null); }} />
+              onChange={(e) => {
+                set('countryIso2', (e.target.value || '').toUpperCase() || null);
+              }}
+            />
           </Field>
         </Section>
 
         <Section title="Banca">
           <Field label="IBAN">
-            <input className={own.input} value={form.iban ?? ''}
-              onChange={(e) => { set('iban', e.target.value || null); }} />
+            <input
+              className={own.input}
+              value={form.iban ?? ''}
+              onChange={(e) => {
+                set('iban', e.target.value || null);
+              }}
+            />
           </Field>
           <Field label="Banca">
-            <input className={own.input} value={form.bankName ?? ''}
-              onChange={(e) => { set('bankName', e.target.value || null); }} />
+            <input
+              className={own.input}
+              value={form.bankName ?? ''}
+              onChange={(e) => {
+                set('bankName', e.target.value || null);
+              }}
+            />
           </Field>
         </Section>
 
         <Section title="Default operativi">
           <Field label="Corriere abituale">
-            <input className={own.input} value={form.preferredCourier ?? ''}
+            <input
+              className={own.input}
+              value={form.preferredCourier ?? ''}
               placeholder="DHL / GLS / BRT / Mittente"
-              onChange={(e) => { set('preferredCourier', e.target.value || null); }} />
+              onChange={(e) => {
+                set('preferredCourier', e.target.value || null);
+              }}
+            />
           </Field>
           <Field label="Termini pagamento">
-            <input className={own.input} value={form.paymentTerms ?? ''}
+            <input
+              className={own.input}
+              value={form.paymentTerms ?? ''}
               placeholder="es. BB 60gg DF"
-              onChange={(e) => { set('paymentTerms', e.target.value || null); }} />
+              onChange={(e) => {
+                set('paymentTerms', e.target.value || null);
+              }}
+            />
           </Field>
           <Field label="Porto">
             <select
               className={own.input}
               value={form.shippingTerms ?? ''}
-              onChange={(e) => { set('shippingTerms', (e.target.value || null) as ShippingTerms | null); }}
+              onChange={(e) => {
+                set('shippingTerms', (e.target.value || null) as ShippingTerms | null);
+              }}
             >
               <option value="">— non impostato —</option>
               {SHIPPING_TERMS_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
               ))}
             </select>
           </Field>
         </Section>
-
       </div>
 
       {error && <div className={own.errorBox}>❌ {error}</div>}
@@ -210,7 +315,9 @@ export function TabAnagrafica({ partner, onSaved }: Props) {
             className={styles.smallBtn}
             onClick={discard}
             disabled={!dirty || saving}
-          >Annulla</button>
+          >
+            Annulla
+          </button>
           <button
             type="button"
             className={`${styles.smallBtn} ${own.btnPrimary}`}
@@ -234,7 +341,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className={own.field}>
       <span className={own.fieldLabel}>

@@ -7,7 +7,9 @@
   font-size: 12.5px;
   color: var(--color-text-secondary, #aab2c5);
 }
-.intro p { margin: 0; }
+.intro p {
+  margin: 0;
+}
 
 .code {
   display: inline-block;
@@ -15,15 +17,20 @@
   margin: 0 2px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 11px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   color: var(--color-text-primary);
 }
 
-.summary { font-size: 11.5px; color: var(--color-text-tertiary, #7a8294); }
+.summary {
+  font-size: 11.5px;
+  color: var(--color-text-tertiary, #7a8294);
+}
 
-.muted { color: var(--color-text-tertiary, #7a8294); }
+.muted {
+  color: var(--color-text-tertiary, #7a8294);
+}
 
 .date {
   font-size: 11.5px;
@@ -32,7 +39,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-.from { min-width: 0; }
+.from {
+  min-width: 0;
+}
 .fromName {
   font-size: 13px;
   font-weight: 600;
@@ -69,8 +78,13 @@
   max-width: 280px;
 }
 
-.flags { font-size: 13px; white-space: nowrap; }
-.flags span { margin-right: 4px; }
+.flags {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.flags span {
+  margin-right: 4px;
+}
 
 .unread .fromName,
 .unread .subject {
@@ -81,7 +95,7 @@
 .errorBox {
   padding: 10px 12px;
   border-radius: 8px;
-  background: rgba(255, 90, 90, 0.10);
+  background: rgba(255, 90, 90, 0.1);
   border: 1px solid rgba(255, 90, 90, 0.35);
   color: #ff8888;
   font-size: 12.5px;

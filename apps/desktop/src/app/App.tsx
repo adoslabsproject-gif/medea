@@ -70,7 +70,13 @@ function Root() {
         onSaved={(acc) => {
           void persistNew(acc);
         }}
-        {...(canCancel ? { onCancel: () => { setForceSetup(false); } } : {})}
+        {...(canCancel
+          ? {
+              onCancel: () => {
+                setForceSetup(false);
+              },
+            }
+          : {})}
       />
     );
   }
@@ -78,7 +84,9 @@ function Root() {
   return (
     <AppShell
       account={store.active}
-      onSwitchAccount={() => { setForceSetup(true); }}
+      onSwitchAccount={() => {
+        setForceSetup(true);
+      }}
     />
   );
 }

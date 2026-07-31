@@ -3,9 +3,5 @@
   "identifier": "desktop",
   "description": "Medea desktop capability set — least privilege from day one.",
   "windows": ["main"],
-  "permissions": [
-    "core:default",
-    "opener:allow-open-url",
-    "notification:default"
-  ]
+  "permissions": ["core:default", "opener:allow-open-url", "notification:default"]
 }

@@ -1,11 +1,14 @@
-
 import { Button, TextField } from '@medea/ui';
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useMemo, useState } from 'react';
 
 import styles from './DbStudioView.module.css';
 
-interface TableInfo { name: string; rowCount: number; columnCount: number; }
+interface TableInfo {
+  name: string;
+  rowCount: number;
+  columnCount: number;
+}
 interface ColumnInfo {
   name: string;
   dataType: string;
@@ -13,31 +16,35 @@ interface ColumnInfo {
   defaultValue: string | null;
   primaryKey: boolean;
 }
-interface TablePage { columns: string[]; rows: unknown[][]; total: number; }
+interface TablePage {
+  columns: string[];
+  rows: unknown[][];
+  total: number;
+}
 
 const PAGE_SIZE = 100;
 
 /** Mappa tabelle → icona, accent, gruppo logico */
 const TABLE_META: Record<string, { icon: string; group: string; accent: string }> = {
-  accounts:           { icon: '📧', group: 'Email',       accent: 'blue' },
-  folders:            { icon: '📁', group: 'Email',       accent: 'blue' },
-  messages:           { icon: '✉',  group: 'Email',       accent: 'blue' },
-  message_labels:     { icon: '🏷', group: 'Email',       accent: 'blue' },
-  attachments:        { icon: '📎', group: 'Email',       accent: 'blue' },
-  contacts:           { icon: '👤', group: 'Anagrafica',  accent: 'green' },
-  organizations:      { icon: '🏢', group: 'Anagrafica',  accent: 'green' },
-  articles:           { icon: '📦', group: 'Commercio',   accent: 'purple' },
-  article_brands:     { icon: '🏷', group: 'Commercio',   accent: 'purple' },
-  article_categories: { icon: '🗂', group: 'Commercio',   accent: 'purple' },
-  price_lists:        { icon: '€',  group: 'Commercio',   accent: 'purple' },
-  price_list_items:   { icon: '€',  group: 'Commercio',   accent: 'purple' },
-  customer_documents:        { icon: '📄', group: 'Commercio', accent: 'purple' },
-  customer_document_items:   { icon: '📄', group: 'Commercio', accent: 'purple' },
+  accounts: { icon: '📧', group: 'Email', accent: 'blue' },
+  folders: { icon: '📁', group: 'Email', accent: 'blue' },
+  messages: { icon: '✉', group: 'Email', accent: 'blue' },
+  message_labels: { icon: '🏷', group: 'Email', accent: 'blue' },
+  attachments: { icon: '📎', group: 'Email', accent: 'blue' },
+  contacts: { icon: '👤', group: 'Anagrafica', accent: 'green' },
+  organizations: { icon: '🏢', group: 'Anagrafica', accent: 'green' },
+  articles: { icon: '📦', group: 'Commercio', accent: 'purple' },
+  article_brands: { icon: '🏷', group: 'Commercio', accent: 'purple' },
+  article_categories: { icon: '🗂', group: 'Commercio', accent: 'purple' },
+  price_lists: { icon: '€', group: 'Commercio', accent: 'purple' },
+  price_list_items: { icon: '€', group: 'Commercio', accent: 'purple' },
+  customer_documents: { icon: '📄', group: 'Commercio', accent: 'purple' },
+  customer_document_items: { icon: '📄', group: 'Commercio', accent: 'purple' },
   customer_category_discounts: { icon: '💸', group: 'Commercio', accent: 'purple' },
-  customer_price_overrides:    { icon: '💸', group: 'Commercio', accent: 'purple' },
-  reminders:          { icon: '⏰', group: 'Sistema',     accent: 'gray' },
-  app_settings:       { icon: '⚙',  group: 'Sistema',     accent: 'gray' },
-  schema_version:     { icon: '🔖', group: 'Sistema',     accent: 'gray' },
+  customer_price_overrides: { icon: '💸', group: 'Commercio', accent: 'purple' },
+  reminders: { icon: '⏰', group: 'Sistema', accent: 'gray' },
+  app_settings: { icon: '⚙', group: 'Sistema', accent: 'gray' },
+  schema_version: { icon: '🔖', group: 'Sistema', accent: 'gray' },
 };
 
 function metaFor(name: string) {
@@ -48,12 +55,20 @@ function fmtNum(n: number): string {
   return new Intl.NumberFormat('it-IT').format(n);
 }
 
-type CellKind = 'null' | 'number' | 'boolean' | 'string' | 'json-array' | 'json-object' | 'date' | 'id';
+type CellKind =
+  | 'null'
+  | 'number'
+  | 'boolean'
+  | 'string'
+  | 'json-array'
+  | 'json-object'
+  | 'date'
+  | 'id';
 
 function inferType(value: unknown, colName?: string): CellKind {
   if (value === null || value === undefined) return 'null';
   if (typeof value === 'number') {
-    if (colName && (colName === 'id' || colName.endsWith("_id"))) return 'id';
+    if (colName && (colName === 'id' || colName.endsWith('_id'))) return 'id';
     return 'number';
   }
   if (typeof value === 'boolean') return 'boolean';
@@ -183,7 +198,10 @@ function toText(value: unknown): string {
 }
 
 /** Restituisce il ReactNode da renderizzare in cella + il testo "full" per modal e i metadata. */
-function renderCellNode(value: unknown, colName: string): { node: React.ReactNode; full: string; kind: CellKind } {
+function renderCellNode(
+  value: unknown,
+  colName: string,
+): { node: React.ReactNode; full: string; kind: CellKind } {
   if (value === null || value === undefined) {
     return { node: <span className={styles.nullVal}>NULL</span>, full: '', kind: 'null' };
   }
@@ -193,16 +211,24 @@ function renderCellNode(value: unknown, colName: string): { node: React.ReactNod
   if (kind === 'json-array') {
     try {
       const arr = JSON.parse(raw) as unknown[];
-      if (Array.isArray(arr) && arr.length > 0 && arr.every((x) => typeof x === 'string' || typeof x === 'number')) {
+      if (
+        Array.isArray(arr) &&
+        arr.length > 0 &&
+        arr.every((x) => typeof x === 'string' || typeof x === 'number')
+      ) {
         const labels = arr.map((x) => String(x));
         return {
           node: (
             <span className={styles.chipRow}>
               {labels.slice(0, 6).map((label, idx) => (
-                <span key={idx} className={`${styles.chip} ${chipClassForFluid(label)}`}>{label}</span>
+                <span key={idx} className={`${styles.chip} ${chipClassForFluid(label)}`}>
+                  {label}
+                </span>
               ))}
               {labels.length > 6 && (
-                <span className={styles.chip} title={labels.join(', ')}>+{labels.length - 6}</span>
+                <span className={styles.chip} title={labels.join(', ')}>
+                  +{labels.length - 6}
+                </span>
               )}
             </span>
           ),
@@ -210,7 +236,11 @@ function renderCellNode(value: unknown, colName: string): { node: React.ReactNod
           kind,
         };
       }
-      return { node: <pre className={styles.jsonPretty}>{JSON.stringify(arr, null, 2)}</pre>, full: JSON.stringify(arr, null, 2), kind };
+      return {
+        node: <pre className={styles.jsonPretty}>{JSON.stringify(arr, null, 2)}</pre>,
+        full: JSON.stringify(arr, null, 2),
+        kind,
+      };
     } catch {
       return { node: raw, full: raw, kind: 'string' };
     }
@@ -226,7 +256,10 @@ function renderCellNode(value: unknown, colName: string): { node: React.ReactNod
     }
   }
 
-  if (kind === 'boolean' || (kind === 'number' && (raw === '0' || raw === '1') && /^(is_|has_)/.test(colName))) {
+  if (
+    kind === 'boolean' ||
+    (kind === 'number' && (raw === '0' || raw === '1') && /^(is_|has_)/.test(colName))
+  ) {
     const truthy = raw === 'true' || raw === '1';
     return {
       node: (
@@ -244,10 +277,17 @@ function renderCellNode(value: unknown, colName: string): { node: React.ReactNod
   return { node: display, full: raw, kind };
 }
 
-type EditorMode = { kind: 'insert' } | { kind: 'edit'; pkCol: string; pkVal: unknown; initial: Record<string, unknown> };
+type EditorMode =
+  | { kind: 'insert' }
+  | { kind: 'edit'; pkCol: string; pkVal: unknown; initial: Record<string, unknown> };
 
 function RowEditor({
-  table, schema, mode, onClose, onSaved, setError,
+  table,
+  schema,
+  mode,
+  onClose,
+  onSaved,
+  setError,
 }: {
   table: string;
   schema: ColumnInfo[];
@@ -261,7 +301,7 @@ function RowEditor({
   const [values, setValues] = useState<Record<string, string | null>>(() => {
     const out: Record<string, string | null> = {};
     for (const c of schema) {
-      const v = (initial)[c.name];
+      const v = initial[c.name];
       out[c.name] = v === null || v === undefined ? null : toText(v);
     }
     return out;
@@ -276,7 +316,12 @@ function RowEditor({
     const out: Record<string, unknown> = {};
     for (const c of schema) {
       // Skip PK auto-increment in insert (lasciala vuota → SQLite assegna)
-      if (!isEdit && c.primaryKey && c.dataType.toUpperCase().includes('INT') && (values[c.name] == null || values[c.name] === '')) {
+      if (
+        !isEdit &&
+        c.primaryKey &&
+        c.dataType.toUpperCase().includes('INT') &&
+        (values[c.name] == null || values[c.name] === '')
+      ) {
         continue;
       }
       const raw = values[c.name];
@@ -285,7 +330,10 @@ function RowEditor({
           out[c.name] = null;
         } else {
           // forziamo stringa vuota per NOT NULL TEXT senza default
-          if (c.dataType.toUpperCase().includes('INT') || c.dataType.toUpperCase().includes('REAL')) {
+          if (
+            c.dataType.toUpperCase().includes('INT') ||
+            c.dataType.toUpperCase().includes('REAL')
+          ) {
             out[c.name] = 0;
           } else {
             out[c.name] = '';
@@ -314,7 +362,10 @@ function RowEditor({
       const payload = buildPayload();
       if (isEdit) {
         await invoke('db_studio_row_update', {
-          table, pkCol: mode.pkCol, pkVal: mode.pkVal, patch: payload,
+          table,
+          pkCol: mode.pkCol,
+          pkVal: mode.pkVal,
+          patch: payload,
         });
       } else {
         await invoke('db_studio_row_insert', { table, values: payload });
@@ -331,14 +382,29 @@ function RowEditor({
     <div className={styles.cellModalBackdrop} onClick={onClose}>
       <div
         className={styles.cellModal}
-        style={{ maxWidth: 720, width: '92vw', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
-        onClick={(e) => { e.stopPropagation(); }}
+        style={{
+          maxWidth: 720,
+          width: '92vw',
+          maxHeight: '85vh',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
       >
         <header className={styles.cellModalHead}>
           <span className={styles.cellModalCol}>
             {isEdit ? `✎ Modifica riga` : `+ Nuovo record`} — <code>{table}</code>
           </span>
-          <button type="button" className={styles.cellModalClose} onClick={onClose} aria-label="Chiudi">✕</button>
+          <button
+            type="button"
+            className={styles.cellModalClose}
+            onClick={onClose}
+            aria-label="Chiudi"
+          >
+            ✕
+          </button>
         </header>
         <div className={styles.cellModalBody} style={{ overflowY: 'auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
@@ -350,14 +416,25 @@ function RowEditor({
                 <label key={c.name} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
                     {c.primaryKey && '🔑 '}
-                    <code>{c.name}</code>
-                    {' '}<span style={{ color: 'var(--color-text-tertiary)' }}>· {c.dataType || 'TEXT'}{c.nullable ? '' : ' · NOT NULL'}</span>
+                    <code>{c.name}</code>{' '}
+                    <span style={{ color: 'var(--color-text-tertiary)' }}>
+                      · {c.dataType || 'TEXT'}
+                      {c.nullable ? '' : ' · NOT NULL'}
+                    </span>
                   </span>
                   {isLong ? (
                     <textarea
                       value={raw ?? ''}
-                      onChange={(e) => { setField(c.name, e.target.value); }}
-                      placeholder={c.defaultValue ? `default: ${c.defaultValue}` : c.nullable ? 'NULL ammesso (lascia vuoto)' : ''}
+                      onChange={(e) => {
+                        setField(c.name, e.target.value);
+                      }}
+                      placeholder={
+                        c.defaultValue
+                          ? `default: ${c.defaultValue}`
+                          : c.nullable
+                            ? 'NULL ammesso (lascia vuoto)'
+                            : ''
+                      }
                       style={{ fontFamily: 'monospace', fontSize: 12, padding: 8, minHeight: 64 }}
                     />
                   ) : (
@@ -365,8 +442,16 @@ function RowEditor({
                       type={t.includes('INT') || t.includes('REAL') ? 'number' : 'text'}
                       step={t.includes('REAL') ? 'any' : undefined}
                       value={raw ?? ''}
-                      onChange={(e) => { setField(c.name, e.target.value); }}
-                      placeholder={c.defaultValue ? `default: ${c.defaultValue}` : c.nullable ? 'NULL ammesso (lascia vuoto)' : ''}
+                      onChange={(e) => {
+                        setField(c.name, e.target.value);
+                      }}
+                      placeholder={
+                        c.defaultValue
+                          ? `default: ${c.defaultValue}`
+                          : c.nullable
+                            ? 'NULL ammesso (lascia vuoto)'
+                            : ''
+                      }
                       style={{ fontFamily: 'monospace', fontSize: 13, padding: '6px 8px' }}
                     />
                   )}
@@ -376,7 +461,9 @@ function RowEditor({
           </div>
         </div>
         <footer className={styles.cellModalFoot} style={{ gap: 8 }}>
-          <Button variant="ghost" onClick={onClose}>Annulla</Button>
+          <Button variant="ghost" onClick={onClose}>
+            Annulla
+          </Button>
           <Button variant="solid" onClick={() => void save()} isLoading={busy}>
             {isEdit ? '💾 Salva modifiche' : '✓ Crea record'}
           </Button>
@@ -396,7 +483,11 @@ export function DbStudioView() {
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cellModal, setCellModal] = useState<{ column: string; value: string; kind: string } | null>(null);
+  const [cellModal, setCellModal] = useState<{
+    column: string;
+    value: string;
+    kind: string;
+  } | null>(null);
   const [tableFilter, setTableFilter] = useState('');
   const [primaryKey, setPrimaryKey] = useState<string | null>(null);
   const [editor, setEditor] = useState<EditorMode | null>(null);
@@ -408,7 +499,9 @@ export function DbStudioView() {
         const ts = await invoke<TableInfo[]>('db_studio_list_tables');
         setTables(ts);
         if (ts.length > 0 && !activeTable) setActiveTable(ts[0]!.name);
-      } catch (e) { setError(String(e)); }
+      } catch (e) {
+        setError(String(e));
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -423,14 +516,22 @@ export function DbStudioView() {
       try {
         const [s, p, pk] = await Promise.all([
           invoke<ColumnInfo[]>('db_studio_describe_table', { table: activeTable }),
-          invoke<TablePage>('db_studio_query_table', { table: activeTable, limit: PAGE_SIZE, offset: 0, filter: null }),
+          invoke<TablePage>('db_studio_query_table', {
+            table: activeTable,
+            limit: PAGE_SIZE,
+            offset: 0,
+            filter: null,
+          }),
           invoke<string | null>('db_studio_primary_key', { table: activeTable }),
         ]);
         setSchema(s);
         setPage(p);
         setPrimaryKey(pk);
-      } catch (e) { setError(String(e)); }
-      finally { setLoading(false); }
+      } catch (e) {
+        setError(String(e));
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [activeTable]);
 
@@ -440,12 +541,17 @@ export function DbStudioView() {
     void (async () => {
       try {
         const p = await invoke<TablePage>('db_studio_query_table', {
-          table: activeTable, limit: PAGE_SIZE, offset: pageIndex * PAGE_SIZE,
+          table: activeTable,
+          limit: PAGE_SIZE,
+          offset: pageIndex * PAGE_SIZE,
           filter: filter.trim() || null,
         });
         setPage(p);
-      } catch (e) { setError(String(e)); }
-      finally { setLoading(false); }
+      } catch (e) {
+        setError(String(e));
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [pageIndex, filter, activeTable, refreshTick]);
 
@@ -454,7 +560,9 @@ export function DbStudioView() {
     try {
       const ts = await invoke<TableInfo[]>('db_studio_list_tables');
       setTables(ts);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   function startInsert() {
@@ -468,7 +576,9 @@ export function DbStudioView() {
     if (pkIdx < 0) return;
     const pkVal = page.rows[rowIdx]?.[pkIdx];
     const initial: Record<string, unknown> = {};
-    page.columns.forEach((c, i) => { initial[c] = page.rows[rowIdx]?.[i] ?? null; });
+    page.columns.forEach((c, i) => {
+      initial[c] = page.rows[rowIdx]?.[i] ?? null;
+    });
     setEditor({ kind: 'edit', pkCol: primaryKey, pkVal, initial });
   }
 
@@ -477,11 +587,18 @@ export function DbStudioView() {
     const pkIdx = page.columns.indexOf(primaryKey);
     if (pkIdx < 0) return;
     const pkVal = page.rows[rowIdx]?.[pkIdx];
-    if (!window.confirm(`Eliminare la riga con ${primaryKey} = ${String(pkVal)}? Operazione irreversibile.`)) return;
+    if (
+      !window.confirm(
+        `Eliminare la riga con ${primaryKey} = ${String(pkVal)}? Operazione irreversibile.`,
+      )
+    )
+      return;
     try {
       await invoke('db_studio_row_delete', { table: activeTable, pkCol: primaryKey, pkVal });
       await refreshAll();
-    } catch (e) { setError(String(e)); }
+    } catch (e) {
+      setError(String(e));
+    }
   }
 
   /** Scarica TUTTE le righe che soddisfano il filtro, non solo la pagina a
@@ -492,7 +609,9 @@ export function DbStudioView() {
     const rows: unknown[][] = [];
     for (let offset = 0; offset < page.total; offset += CHUNK) {
       const p = await invoke<TablePage>('db_studio_query_table', {
-        table: activeTable, limit: CHUNK, offset,
+        table: activeTable,
+        limit: CHUNK,
+        offset,
         filter: filter.trim() || null,
       });
       rows.push(...p.rows);
@@ -516,8 +635,11 @@ export function DbStudioView() {
         ...all.rows.map((r) => r.map(esc).join(',')),
       ].join('\n');
       download(csv, `${activeTable ?? 'table'}.csv`, 'text/csv;charset=utf-8');
-    } catch (e) { setError(String(e)); }
-    finally { setExporting(false); }
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setExporting(false);
+    }
   }
 
   async function exportJson() {
@@ -527,19 +649,27 @@ export function DbStudioView() {
       if (!all) return;
       const objs = all.rows.map((r) => {
         const o: Record<string, unknown> = {};
-        all.columns.forEach((c, i) => { o[c] = r[i]; });
+        all.columns.forEach((c, i) => {
+          o[c] = r[i];
+        });
         return o;
       });
       download(JSON.stringify(objs, null, 2), `${activeTable ?? 'table'}.json`, 'application/json');
-    } catch (e) { setError(String(e)); }
-    finally { setExporting(false); }
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setExporting(false);
+    }
   }
   function download(content: string, name: string, type: string) {
     const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = name;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
 
@@ -557,9 +687,7 @@ export function DbStudioView() {
       groups.set(g, arr);
     }
     const order = ['Email', 'Anagrafica', 'Commercio', 'Sistema', 'Altro'];
-    return order
-      .filter((g) => groups.has(g))
-      .map((g) => ({ group: g, items: groups.get(g)! }));
+    return order.filter((g) => groups.has(g)).map((g) => ({ group: g, items: groups.get(g)! }));
   }, [tables, tableFilter]);
 
   return (
@@ -589,7 +717,9 @@ export function DbStudioView() {
             <TextField
               placeholder="🔍 Cerca tabella…"
               value={tableFilter}
-              onChange={(e) => { setTableFilter(e.target.value); }}
+              onChange={(e) => {
+                setTableFilter(e.target.value);
+              }}
               size="sm"
               fullWidth
             />
@@ -607,7 +737,9 @@ export function DbStudioView() {
                           type="button"
                           className={`${styles.tableItem} ${t.name === activeTable ? styles.tableActive : ''}`}
                           data-accent={m.accent}
-                          onClick={() => { setActiveTable(t.name); }}
+                          onClick={() => {
+                            setActiveTable(t.name);
+                          }}
                         >
                           <span className={styles.tableIcon}>{m.icon}</span>
                           <span className={styles.tableInfo}>
@@ -629,7 +761,14 @@ export function DbStudioView() {
           {error && (
             <div className={styles.error}>
               {error}
-              <button type="button" onClick={() => { setError(null); }}>✕</button>
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                }}
+              >
+                ✕
+              </button>
             </div>
           )}
 
@@ -641,9 +780,13 @@ export function DbStudioView() {
                   <div>
                     <h2 className={styles.heroTitle}>{activeTable}</h2>
                     <div className={styles.heroMeta}>
-                      <span><strong>{fmtNum(page.total)}</strong> righe</span>
+                      <span>
+                        <strong>{fmtNum(page.total)}</strong> righe
+                      </span>
                       <span>·</span>
-                      <span><strong>{schema.length}</strong> colonne</span>
+                      <span>
+                        <strong>{schema.length}</strong> colonne
+                      </span>
                       <span>·</span>
                       <span>{metaFor(activeTable).group}</span>
                     </div>
@@ -653,14 +796,35 @@ export function DbStudioView() {
                   <TextField
                     placeholder="🔍 Filtra in qualsiasi colonna…"
                     value={filter}
-                    onChange={(e) => { setFilter(e.target.value); setPageIndex(0); }}
+                    onChange={(e) => {
+                      setFilter(e.target.value);
+                      setPageIndex(0);
+                    }}
                     size="sm"
                   />
-                  <Button variant="solid" size="sm" onClick={startInsert}>+ Nuovo record</Button>
-                  <Button variant="outline" size="sm" isLoading={exporting}
-                    onClick={() => { void exportCsv(); }}>⬇ CSV</Button>
-                  <Button variant="outline" size="sm" isLoading={exporting}
-                    onClick={() => { void exportJson(); }}>⬇ JSON</Button>
+                  <Button variant="solid" size="sm" onClick={startInsert}>
+                    + Nuovo record
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    isLoading={exporting}
+                    onClick={() => {
+                      void exportCsv();
+                    }}
+                  >
+                    ⬇ CSV
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    isLoading={exporting}
+                    onClick={() => {
+                      void exportJson();
+                    }}
+                  >
+                    ⬇ JSON
+                  </Button>
                 </div>
               </div>
 
@@ -677,7 +841,9 @@ export function DbStudioView() {
                           {c.primaryKey && <span className={styles.pkBadge}>🔑</span>}
                           {c.name}
                         </span>
-                        <span className={`${styles.typeBadge} ${styles[`type_${c.dataType.toLowerCase().split(' ')[0]}`] ?? styles.typeOther}`}>
+                        <span
+                          className={`${styles.typeBadge} ${styles[`type_${c.dataType.toLowerCase().split(' ')[0]}`] ?? styles.typeOther}`}
+                        >
                           {c.dataType || 'TEXT'}
                         </span>
                       </div>
@@ -729,12 +895,17 @@ export function DbStudioView() {
                           {r.map((cell, j) => {
                             const colName = page.columns[j] ?? '';
                             const c = renderCellNode(cell, colName);
-                            const kindClass = (styles as Record<string, string | undefined>)[`cell_${c.kind.replace('-', '_')}`] ?? '';
+                            const kindClass =
+                              (styles as Record<string, string | undefined>)[
+                                `cell_${c.kind.replace('-', '_')}`
+                              ] ?? '';
                             return (
                               <td
                                 key={j}
                                 className={`${styles.cell} ${kindClass}`}
-                                onClick={() => { setCellModal({ column: colName, value: c.full, kind: c.kind }); }}
+                                onClick={() => {
+                                  setCellModal({ column: colName, value: c.full, kind: c.kind });
+                                }}
                                 title={c.full}
                               >
                                 {c.node}
@@ -747,14 +918,28 @@ export function DbStudioView() {
                                 type="button"
                                 title="Modifica riga"
                                 style={{ marginRight: 4, padding: '2px 6px', cursor: 'pointer' }}
-                                onClick={(e) => { e.stopPropagation(); startEdit(i); }}
-                              >✎</button>
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEdit(i);
+                                }}
+                              >
+                                ✎
+                              </button>
                               <button
                                 type="button"
                                 title="Elimina riga"
-                                style={{ padding: '2px 6px', cursor: 'pointer', color: 'var(--color-danger-text, var(--color-text-primary))' }}
-                                onClick={(e) => { e.stopPropagation(); void deleteRow(i); }}
-                              >🗑</button>
+                                style={{
+                                  padding: '2px 6px',
+                                  cursor: 'pointer',
+                                  color: 'var(--color-danger-text, var(--color-text-primary))',
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void deleteRow(i);
+                                }}
+                              >
+                                🗑
+                              </button>
                             </td>
                           )}
                         </tr>
@@ -765,19 +950,52 @@ export function DbStudioView() {
               </div>
 
               <div className={styles.paginator}>
-                <Button variant="ghost" size="sm" onClick={() => { setPageIndex(0); }} isDisabled={pageIndex === 0}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setPageIndex(0);
+                  }}
+                  isDisabled={pageIndex === 0}
+                >
                   ⟵⟵ Inizio
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => { setPageIndex(Math.max(0, pageIndex - 1)); }} isDisabled={pageIndex === 0}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setPageIndex(Math.max(0, pageIndex - 1));
+                  }}
+                  isDisabled={pageIndex === 0}
+                >
                   ⟵ Indietro
                 </Button>
                 <span className={styles.pageInfo}>
-                  Righe <strong>{fmtNum(pageIndex * PAGE_SIZE + 1)}–{fmtNum(Math.min((pageIndex + 1) * PAGE_SIZE, page.total))}</strong> di {fmtNum(page.total)}
+                  Righe{' '}
+                  <strong>
+                    {fmtNum(pageIndex * PAGE_SIZE + 1)}–
+                    {fmtNum(Math.min((pageIndex + 1) * PAGE_SIZE, page.total))}
+                  </strong>{' '}
+                  di {fmtNum(page.total)}
                 </span>
-                <Button variant="ghost" size="sm" onClick={() => { setPageIndex(Math.min(lastPage, pageIndex + 1)); }} isDisabled={pageIndex >= lastPage}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setPageIndex(Math.min(lastPage, pageIndex + 1));
+                  }}
+                  isDisabled={pageIndex >= lastPage}
+                >
                   Avanti ⟶
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => { setPageIndex(lastPage); }} isDisabled={pageIndex >= lastPage}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setPageIndex(lastPage);
+                  }}
+                  isDisabled={pageIndex >= lastPage}
+                >
                   Fine ⟶⟶
                 </Button>
               </div>
@@ -791,27 +1009,56 @@ export function DbStudioView() {
           table={activeTable}
           schema={schema}
           mode={editor}
-          onClose={() => { setEditor(null); }}
-          onSaved={async () => { setEditor(null); await refreshAll(); }}
+          onClose={() => {
+            setEditor(null);
+          }}
+          onSaved={async () => {
+            setEditor(null);
+            await refreshAll();
+          }}
           setError={setError}
         />
       )}
 
       {cellModal && (
-        <div className={styles.cellModalBackdrop} onClick={() => { setCellModal(null); }}>
-          <div className={styles.cellModal} onClick={(e) => { e.stopPropagation(); }}>
+        <div
+          className={styles.cellModalBackdrop}
+          onClick={() => {
+            setCellModal(null);
+          }}
+        >
+          <div
+            className={styles.cellModal}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
             <header className={styles.cellModalHead}>
               <span className={styles.cellModalCol}>{cellModal.column}</span>
-              <span className={`${styles.typeBadge} ${styles[`type_${cellModal.kind}`] ?? ''}`}>{cellModal.kind}</span>
-              <button type="button" className={styles.cellModalClose} onClick={() => { setCellModal(null); }} aria-label="Chiudi">✕</button>
+              <span className={`${styles.typeBadge} ${styles[`type_${cellModal.kind}`] ?? ''}`}>
+                {cellModal.kind}
+              </span>
+              <button
+                type="button"
+                className={styles.cellModalClose}
+                onClick={() => {
+                  setCellModal(null);
+                }}
+                aria-label="Chiudi"
+              >
+                ✕
+              </button>
             </header>
             <div className={styles.cellModalBody}>
               <pre>{cellModal.value || '(vuoto)'}</pre>
             </div>
             <footer className={styles.cellModalFoot}>
               <Button
-                variant="outline" size="sm"
-                onClick={() => { void navigator.clipboard.writeText(cellModal.value); }}
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  void navigator.clipboard.writeText(cellModal.value);
+                }}
               >
                 ⎘ Copia valore
               </Button>

@@ -12,7 +12,9 @@ import type {
 import styles from './shared.module.css';
 import own from './TabDocumenti.module.css';
 
-interface Props { partner: OrganizationDetail; }
+interface Props {
+  partner: OrganizationDetail;
+}
 
 interface SectionMeta {
   type: DocType;
@@ -23,12 +25,42 @@ interface SectionMeta {
 }
 
 const SECTIONS: SectionMeta[] = [
-  { type: 'sales_order',      icon: '📥', label: 'Ordini cliente',              direction: 'incoming', hint: 'Ordini ricevuti dal cliente' },
-  { type: 'sales_confirm',    icon: '✅', label: "Conferme d'ordine cliente",   direction: 'outgoing', hint: 'Conferme emesse al cliente' },
-  { type: 'quote',            icon: '💬', label: 'Offerte',                     direction: 'outgoing', hint: 'Preventivi emessi' },
-  { type: 'purchase_order',   icon: '📤', label: 'Ordini fornitore',            direction: 'outgoing', hint: 'Ordini emessi al fornitore' },
-  { type: 'purchase_confirm', icon: '🔁', label: 'Conferme fornitore',          direction: 'incoming', hint: 'Conferme ricevute dal fornitore' },
-  { type: 'communication',    icon: '📨', label: 'Comunicazioni rilevanti',     direction: 'incoming', hint: 'Doc generici' },
+  {
+    type: 'sales_order',
+    icon: '📥',
+    label: 'Ordini cliente',
+    direction: 'incoming',
+    hint: 'Ordini ricevuti dal cliente',
+  },
+  {
+    type: 'sales_confirm',
+    icon: '✅',
+    label: "Conferme d'ordine cliente",
+    direction: 'outgoing',
+    hint: 'Conferme emesse al cliente',
+  },
+  { type: 'quote', icon: '💬', label: 'Offerte', direction: 'outgoing', hint: 'Preventivi emessi' },
+  {
+    type: 'purchase_order',
+    icon: '📤',
+    label: 'Ordini fornitore',
+    direction: 'outgoing',
+    hint: 'Ordini emessi al fornitore',
+  },
+  {
+    type: 'purchase_confirm',
+    icon: '🔁',
+    label: 'Conferme fornitore',
+    direction: 'incoming',
+    hint: 'Conferme ricevute dal fornitore',
+  },
+  {
+    type: 'communication',
+    icon: '📨',
+    label: 'Comunicazioni rilevanti',
+    direction: 'incoming',
+    hint: 'Doc generici',
+  },
 ];
 
 function fmtMoney(v: number | null, currency = 'EUR'): string {
@@ -37,8 +69,15 @@ function fmtMoney(v: number | null, currency = 'EUR'): string {
 }
 
 function fmtDate(iso: string): string {
-  try { return new Date(iso).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
-  catch { return iso; }
+  try {
+    return new Date(iso).toLocaleDateString('it-IT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  } catch {
+    return iso;
+  }
 }
 
 export function TabDocumenti({ partner }: Props) {
@@ -52,9 +91,13 @@ export function TabDocumenti({ partner }: Props) {
     try {
       const r = await mailApi.db.listCustomerDocuments(partner.id);
       setDocs(r);
-    } catch (e) { setError(String(e)); }
+    } catch (e) {
+      setError(String(e));
+    }
   }
-  useEffect(() => { void refresh();   }, [partner.id]);
+  useEffect(() => {
+    void refresh();
+  }, [partner.id]);
 
   const grouped = useMemo(() => {
     const m = new Map<DocType, CustomerDocumentRow[]>();
@@ -111,13 +154,17 @@ export function TabDocumenti({ partner }: Props) {
       await mailApi.db.customerDocumentUpsert(draft);
       setDraft(null);
       void refresh();
-    } catch (e) { setError(String(e)); }
+    } catch (e) {
+      setError(String(e));
+    }
   }
 
   async function remove(id: number) {
     if (confirmingDelete !== id) {
       setConfirmingDelete(id);
-      setTimeout(() => { setConfirmingDelete(null); }, 3000);
+      setTimeout(() => {
+        setConfirmingDelete(null);
+      }, 3000);
       return;
     }
     setConfirmingDelete(null);
@@ -140,7 +187,13 @@ export function TabDocumenti({ partner }: Props) {
                 <span className={own.count}>{list.length}</span>
               </div>
               <span className={own.hint}>{meta.hint}</span>
-              <button type="button" className={styles.smallBtn} onClick={() => { openNew(meta); }}>
+              <button
+                type="button"
+                className={styles.smallBtn}
+                onClick={() => {
+                  openNew(meta);
+                }}
+              >
                 ＋ Aggiungi
               </button>
             </header>
@@ -170,16 +223,28 @@ export function TabDocumenti({ partner }: Props) {
                       <td>
                         {d.attachmentFilename ? (
                           <span title={d.attachmentPath ?? ''}>📎 {d.attachmentFilename}</span>
-                        ) : <em className={own.muted}>—</em>}
+                        ) : (
+                          <em className={own.muted}>—</em>
+                        )}
                       </td>
                       <td className={own.notes}>{d.notes ?? <em className={own.muted}>—</em>}</td>
                       <td className={own.rowActions}>
-                        <button type="button" className={styles.smallBtn} onClick={() => { openEdit(d); }}>✎</button>
+                        <button
+                          type="button"
+                          className={styles.smallBtn}
+                          onClick={() => {
+                            openEdit(d);
+                          }}
+                        >
+                          ✎
+                        </button>
                         <button
                           type="button"
                           className={`${styles.smallBtn} ${confirmingDelete === d.id ? own.dangerActive : styles.smallBtnDanger}`}
                           onClick={() => void remove(d.id)}
-                        >{confirmingDelete === d.id ? '✓' : '🗑'}</button>
+                        >
+                          {confirmingDelete === d.id ? '✓' : '🗑'}
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -194,7 +259,9 @@ export function TabDocumenti({ partner }: Props) {
         <DocDialog
           draft={draft}
           setDraft={setDraft}
-          onClose={() => { setDraft(null); }}
+          onClose={() => {
+            setDraft(null);
+          }}
           onSave={() => void save()}
         />
       )}
@@ -212,64 +279,128 @@ interface DialogProps {
 function DocDialog({ draft, setDraft, onClose, onSave }: DialogProps) {
   return (
     <div className={own.backdrop} onClick={onClose}>
-      <div className={own.modal} onClick={(e) => { e.stopPropagation(); }}>
+      <div
+        className={own.modal}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+      >
         <header className={own.modalHead}>
           <h3>{draft.id ? 'Modifica documento' : 'Nuovo documento'}</h3>
-          <button type="button" className={styles.smallBtn} onClick={onClose}>✕</button>
+          <button type="button" className={styles.smallBtn} onClick={onClose}>
+            ✕
+          </button>
         </header>
         <div className={own.modalBody}>
           <Row label="Tipo documento">
-            <select className={own.input} value={draft.docType}
-              onChange={(e) => { setDraft({ ...draft, docType: e.target.value as DocType }); }}>
+            <select
+              className={own.input}
+              value={draft.docType}
+              onChange={(e) => {
+                setDraft({ ...draft, docType: e.target.value as DocType });
+              }}
+            >
               {SECTIONS.map((s) => (
-                <option key={s.type} value={s.type}>{s.icon} {s.label}</option>
+                <option key={s.type} value={s.type}>
+                  {s.icon} {s.label}
+                </option>
               ))}
             </select>
           </Row>
           <Row label="Direzione">
-            <select className={own.input} value={draft.direction}
-              onChange={(e) => { setDraft({ ...draft, direction: e.target.value as DocDirection }); }}>
+            <select
+              className={own.input}
+              value={draft.direction}
+              onChange={(e) => {
+                setDraft({ ...draft, direction: e.target.value as DocDirection });
+              }}
+            >
               <option value="incoming">📥 In ingresso</option>
               <option value="outgoing">📤 In uscita</option>
             </select>
           </Row>
           <div className={own.row2}>
             <Row label="Numero documento">
-              <input className={own.input} value={draft.docNumber ?? ''}
-                onChange={(e) => { setDraft({ ...draft, docNumber: e.target.value || null }); }} />
+              <input
+                className={own.input}
+                value={draft.docNumber ?? ''}
+                onChange={(e) => {
+                  setDraft({ ...draft, docNumber: e.target.value || null });
+                }}
+              />
             </Row>
             <Row label="Data">
-              <input type="date" className={own.input} value={draft.docDate}
-                onChange={(e) => { setDraft({ ...draft, docDate: e.target.value }); }} />
+              <input
+                type="date"
+                className={own.input}
+                value={draft.docDate}
+                onChange={(e) => {
+                  setDraft({ ...draft, docDate: e.target.value });
+                }}
+              />
             </Row>
           </div>
           <div className={own.row2}>
             <Row label="Stato">
-              <input className={own.input} placeholder="aperto / chiuso / evaso…" value={draft.status ?? ''}
-                onChange={(e) => { setDraft({ ...draft, status: e.target.value || null }); }} />
+              <input
+                className={own.input}
+                placeholder="aperto / chiuso / evaso…"
+                value={draft.status ?? ''}
+                onChange={(e) => {
+                  setDraft({ ...draft, status: e.target.value || null });
+                }}
+              />
             </Row>
             <Row label="Totale">
-              <input type="number" step={0.01} className={own.input} value={draft.totalAmount?.toString() ?? ''}
-                onChange={(e) => { setDraft({ ...draft, totalAmount: e.target.value === '' ? null : Number(e.target.value) }); }} />
+              <input
+                type="number"
+                step={0.01}
+                className={own.input}
+                value={draft.totalAmount?.toString() ?? ''}
+                onChange={(e) => {
+                  setDraft({
+                    ...draft,
+                    totalAmount: e.target.value === '' ? null : Number(e.target.value),
+                  });
+                }}
+              />
             </Row>
           </div>
           <Row label="Allegato — nome file">
-            <input className={own.input} value={draft.attachmentFilename ?? ''}
+            <input
+              className={own.input}
+              value={draft.attachmentFilename ?? ''}
               placeholder="ordine-2026-001.pdf"
-              onChange={(e) => { setDraft({ ...draft, attachmentFilename: e.target.value || null }); }} />
+              onChange={(e) => {
+                setDraft({ ...draft, attachmentFilename: e.target.value || null });
+              }}
+            />
           </Row>
           <Row label="Allegato — percorso locale">
-            <input className={own.input} value={draft.attachmentPath ?? ''}
+            <input
+              className={own.input}
+              value={draft.attachmentPath ?? ''}
               placeholder="es. ordine-2026-001.pdf (path assoluto auto-derivato)"
-              onChange={(e) => { setDraft({ ...draft, attachmentPath: e.target.value || null }); }} />
+              onChange={(e) => {
+                setDraft({ ...draft, attachmentPath: e.target.value || null });
+              }}
+            />
           </Row>
           <Row label="Note">
-            <textarea className={`${own.input} ${own.textarea}`} rows={3} value={draft.notes ?? ''}
-              onChange={(e) => { setDraft({ ...draft, notes: e.target.value || null }); }} />
+            <textarea
+              className={`${own.input} ${own.textarea}`}
+              rows={3}
+              value={draft.notes ?? ''}
+              onChange={(e) => {
+                setDraft({ ...draft, notes: e.target.value || null });
+              }}
+            />
           </Row>
         </div>
         <footer className={own.modalFoot}>
-          <button type="button" className={styles.smallBtn} onClick={onClose}>Annulla</button>
+          <button type="button" className={styles.smallBtn} onClick={onClose}>
+            Annulla
+          </button>
           <button type="button" className={`${styles.smallBtn} ${own.btnPrimary}`} onClick={onSave}>
             💾 Salva documento
           </button>

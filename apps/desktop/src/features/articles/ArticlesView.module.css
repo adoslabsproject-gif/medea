@@ -18,10 +18,25 @@
     gap: var(--space-4);
     flex-wrap: wrap;
   }
-  .titleGroup { display: flex; flex-direction: column; gap: var(--space-1); }
-  .title { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); }
-  .subtitle { font-size: var(--font-size-sm); color: var(--color-text-secondary); max-inline-size: 40rem; }
-  .actions { display: flex; gap: var(--space-2); align-items: center; }
+  .titleGroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+  }
+  .subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    max-inline-size: 40rem;
+  }
+  .actions {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+  }
 
   .error {
     margin: var(--space-3) var(--space-5);
@@ -34,10 +49,23 @@
     justify-content: space-between;
     align-items: center;
   }
-  .error button { background: transparent; border: 0; color: inherit; cursor: pointer; }
+  .error button {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+  }
 
-  .body { flex: 1; overflow: auto; padding: var(--space-4) var(--space-5); }
-  .empty { color: var(--color-text-muted); text-align: center; padding: var(--space-8); }
+  .body {
+    flex: 1;
+    overflow: auto;
+    padding: var(--space-4) var(--space-5);
+  }
+  .empty {
+    color: var(--color-text-muted);
+    text-align: center;
+    padding: var(--space-8);
+  }
 
   .emptyCard {
     background: var(--color-surface-2);
@@ -48,9 +76,18 @@
     max-inline-size: 36rem;
     margin: var(--space-6) auto;
   }
-  .emptyGlyph { font-size: 3rem; margin-block-end: var(--space-3); }
-  .emptyCard h2 { font-size: var(--font-size-lg); margin-block-end: var(--space-2); }
-  .emptyCard p { color: var(--color-text-secondary); margin-block-end: var(--space-4); }
+  .emptyGlyph {
+    font-size: 3rem;
+    margin-block-end: var(--space-3);
+  }
+  .emptyCard h2 {
+    font-size: var(--font-size-lg);
+    margin-block-end: var(--space-2);
+  }
+  .emptyCard p {
+    color: var(--color-text-secondary);
+    margin-block-end: var(--space-4);
+  }
 
   .table {
     inline-size: 100%;
@@ -79,19 +116,29 @@
     color: var(--color-text-primary);
     vertical-align: middle;
   }
-  .table tbody tr:last-child td { border-block-end: 0; }
-  .table tbody tr:hover td { background: color-mix(in oklch, var(--color-accent-default) 5%, transparent); }
-  .numCell { font-variant-numeric: tabular-nums; text-align: end; }
+  .table tbody tr:last-child td {
+    border-block-end: 0;
+  }
+  .table tbody tr:hover td {
+    background: color-mix(in oklch, var(--color-accent-default) 5%, transparent);
+  }
+  .numCell {
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+  }
   .badgeOk {
     background: color-mix(in oklch, var(--color-feedback-success) 18%, transparent);
     color: var(--color-feedback-success);
-    padding: 0 var(--space-2); border-radius: var(--radius-full);
-    font-size: var(--font-size-xs); font-weight: var(--font-weight-medium);
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
   }
   .badgeOff {
     background: var(--color-surface-3);
     color: var(--color-text-muted);
-    padding: 0 var(--space-2); border-radius: var(--radius-full);
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-full);
     font-size: var(--font-size-xs);
   }
 
@@ -101,7 +148,8 @@
     justify-content: flex-end;
   }
   .rowBtn {
-    inline-size: 2rem; block-size: 2rem;
+    inline-size: 2rem;
+    block-size: 2rem;
     border: 1px solid transparent;
     background: transparent;
     border-radius: var(--radius-md);
@@ -122,7 +170,9 @@
   }
   .editorGrid > :nth-child(3),
   .editorGrid > :nth-child(4),
-  .editorGrid > :last-child { grid-column: 1 / -1; }
+  .editorGrid > :last-child {
+    grid-column: 1 / -1;
+  }
 
   .checkRow {
     display: flex;
@@ -133,5 +183,7 @@
     cursor: pointer;
     padding-block-start: var(--space-2);
   }
-  .checkRow input[type=checkbox] { accent-color: var(--color-accent-default); }
+  .checkRow input[type='checkbox'] {
+    accent-color: var(--color-accent-default);
+  }
 }

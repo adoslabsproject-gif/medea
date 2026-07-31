@@ -1,7 +1,6 @@
 import { Button, Dialog, Select, TextField } from '@medea/ui';
 import { useCallback, useEffect, useState } from 'react';
 
-
 import { mailApi } from '../mail/api';
 import type { ArticleInput, DbArticleRow } from '../mail/api';
 
@@ -36,14 +35,17 @@ export function ArticlesView() {
 
   function toggleSelect(id: number) {
     const next = new Set(selected);
-    if (next.has(id)) next.delete(id); else next.add(id);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     setSelected(next);
   }
   async function bulkDelete() {
     if (selected.size === 0) return;
     if (!confirmingBulk) {
       setConfirmingBulk(true);
-      setTimeout(() => { setConfirmingBulk(false); }, 4000);
+      setTimeout(() => {
+        setConfirmingBulk(false);
+      }, 4000);
       return;
     }
     setConfirmingBulk(false);
@@ -51,7 +53,9 @@ export function ArticlesView() {
       await mailApi.db.bulkDeleteArticles(Array.from(selected));
       setSelected(new Set());
       await reload();
-    } catch (e) { setError(String(e)); }
+    } catch (e) {
+      setError(String(e));
+    }
   }
 
   const reload = useCallback(async () => {
@@ -66,7 +70,9 @@ export function ArticlesView() {
     }
   }, []);
 
-  useEffect(() => { void reload(); }, [reload]);
+  useEffect(() => {
+    void reload();
+  }, [reload]);
 
   function openNew() {
     setEditing({ ...EMPTY });
@@ -119,7 +125,9 @@ export function ArticlesView() {
   const filtered = items.filter((a) => {
     if (!filter.trim()) return true;
     const q = filter.toLowerCase();
-    return [a.code, a.description, a.categoryName, a.brandName, a.unit].some((v) => (v ?? '').toLowerCase().includes(q));
+    return [a.code, a.description, a.categoryName, a.brandName, a.unit].some((v) =>
+      (v ?? '').toLowerCase().includes(q),
+    );
   });
 
   return (
@@ -128,24 +136,36 @@ export function ArticlesView() {
         <div className={styles.titleGroup}>
           <h1 className={styles.title}>📦 Articoli</h1>
           <p className={styles.subtitle}>
-            Anagrafica unica articoli — codice, descrizione, prezzo base, IVA. Usata da tutti i listini.
+            Anagrafica unica articoli — codice, descrizione, prezzo base, IVA. Usata da tutti i
+            listini.
           </p>
         </div>
         <div className={styles.actions}>
           <TextField
             placeholder="🔍 Filtra per codice / descrizione / categoria…"
             value={filter}
-            onChange={(e) => { setFilter(e.target.value); }}
+            onChange={(e) => {
+              setFilter(e.target.value);
+            }}
             size="sm"
           />
-          <Button variant="solid" onClick={openNew}>+ Nuovo articolo</Button>
+          <Button variant="solid" onClick={openNew}>
+            + Nuovo articolo
+          </Button>
         </div>
       </header>
 
       {error && (
         <div className={styles.error}>
           {error}
-          <button type="button" onClick={() => { setError(null); }}>✕</button>
+          <button
+            type="button"
+            onClick={() => {
+              setError(null);
+            }}
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -156,89 +176,165 @@ export function ArticlesView() {
             <div className={styles.emptyGlyph}>📦</div>
             <h2>Nessun articolo {filter ? 'corrisponde al filtro' : ''}</h2>
             <p>Crea il primo articolo per iniziare a costruire i tuoi listini.</p>
-            <Button variant="solid" onClick={openNew}>+ Crea articolo</Button>
+            <Button variant="solid" onClick={openNew}>
+              + Crea articolo
+            </Button>
           </div>
         )}
         {filtered.length > 0 && (
           <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', fontSize: 12.5 }}>
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <input
-                type="checkbox"
-                checked={filtered.length > 0 && filtered.every((a) => selected.has(a.id))}
-                onChange={(e) => {
-                  if (e.target.checked) setSelected(new Set(filtered.map((a) => a.id)));
-                  else setSelected(new Set());
-                }}
-              />
-              Seleziona tutti i {filtered.length} visibili
-            </label>
-            {selected.size > 0 && (
-              <>
-                <span style={{ marginLeft: 'auto', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                  {selected.size} selezionati
-                </span>
-                <Button variant="ghost" size="sm" onClick={() => { setSelected(new Set()); }}>Deseleziona</Button>
-                <Button
-                  variant={confirmingBulk ? 'solid' : 'soft'}
-                  size="sm"
-                  onClick={() => void bulkDelete()}
-                >
-                  {confirmingBulk ? `✓ Conferma elimina ${selected.size.toString()}` : `🗑 Elimina ${selected.size.toString()}`}
-                </Button>
-              </>
-            )}
-          </div>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th style={{ width: 30 }}></th>
-                <th>Codice</th>
-                <th>Descrizione</th>
-                <th>UM</th>
-                <th>Categoria</th>
-                <th>Prezzo base</th>
-                <th>IVA</th>
-                <th>Stato</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((a) => (
-                <tr key={a.id} onDoubleClick={() => { openEdit(a); }}>
-                  <td><input type="checkbox" checked={selected.has(a.id)}
-                    onChange={() => { toggleSelect(a.id); }} /></td>
-                  <td><code>{a.code}</code></td>
-                  <td>{a.description}</td>
-                  <td>{a.unit ?? '—'}</td>
-                  <td>{a.categoryName ?? '—'}</td>
-                  <td className={styles.numCell}>
-                    {a.salePrice !== null
-                      ? new Intl.NumberFormat('it-IT', { style: 'currency', currency: a.currency ?? 'EUR' }).format(a.salePrice)
-                      : '—'}
-                  </td>
-                  <td className={styles.numCell}>{a.vatPercent !== null ? `${a.vatPercent.toFixed(0)}%` : '—'}</td>
-                  <td>{a.isActive ? <span className={styles.badgeOk}>attivo</span> : <span className={styles.badgeOff}>off</span>}</td>
-                  <td className={styles.rowActions}>
-                    <button type="button" className={styles.rowBtn} onClick={() => { openEdit(a); }} title="Modifica">✎</button>
-                    <button type="button" className={styles.rowBtn} onClick={() => void remove(a.id)} title="Elimina">🗑</button>
-                  </td>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '8px 0',
+                fontSize: 12.5,
+              }}
+            >
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="checkbox"
+                  checked={filtered.length > 0 && filtered.every((a) => selected.has(a.id))}
+                  onChange={(e) => {
+                    if (e.target.checked) setSelected(new Set(filtered.map((a) => a.id)));
+                    else setSelected(new Set());
+                  }}
+                />
+                Seleziona tutti i {filtered.length} visibili
+              </label>
+              {selected.size > 0 && (
+                <>
+                  <span
+                    style={{
+                      marginLeft: 'auto',
+                      fontWeight: 700,
+                      color: 'var(--color-text-primary)',
+                    }}
+                  >
+                    {selected.size} selezionati
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelected(new Set());
+                    }}
+                  >
+                    Deseleziona
+                  </Button>
+                  <Button
+                    variant={confirmingBulk ? 'solid' : 'soft'}
+                    size="sm"
+                    onClick={() => void bulkDelete()}
+                  >
+                    {confirmingBulk
+                      ? `✓ Conferma elimina ${selected.size.toString()}`
+                      : `🗑 Elimina ${selected.size.toString()}`}
+                  </Button>
+                </>
+              )}
+            </div>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th style={{ width: 30 }}></th>
+                  <th>Codice</th>
+                  <th>Descrizione</th>
+                  <th>UM</th>
+                  <th>Categoria</th>
+                  <th>Prezzo base</th>
+                  <th>IVA</th>
+                  <th>Stato</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((a) => (
+                  <tr
+                    key={a.id}
+                    onDoubleClick={() => {
+                      openEdit(a);
+                    }}
+                  >
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selected.has(a.id)}
+                        onChange={() => {
+                          toggleSelect(a.id);
+                        }}
+                      />
+                    </td>
+                    <td>
+                      <code>{a.code}</code>
+                    </td>
+                    <td>{a.description}</td>
+                    <td>{a.unit ?? '—'}</td>
+                    <td>{a.categoryName ?? '—'}</td>
+                    <td className={styles.numCell}>
+                      {a.salePrice !== null
+                        ? new Intl.NumberFormat('it-IT', {
+                            style: 'currency',
+                            currency: a.currency ?? 'EUR',
+                          }).format(a.salePrice)
+                        : '—'}
+                    </td>
+                    <td className={styles.numCell}>
+                      {a.vatPercent !== null ? `${a.vatPercent.toFixed(0)}%` : '—'}
+                    </td>
+                    <td>
+                      {a.isActive ? (
+                        <span className={styles.badgeOk}>attivo</span>
+                      ) : (
+                        <span className={styles.badgeOff}>off</span>
+                      )}
+                    </td>
+                    <td className={styles.rowActions}>
+                      <button
+                        type="button"
+                        className={styles.rowBtn}
+                        onClick={() => {
+                          openEdit(a);
+                        }}
+                        title="Modifica"
+                      >
+                        ✎
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.rowBtn}
+                        onClick={() => void remove(a.id)}
+                        title="Elimina"
+                      >
+                        🗑
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </>
         )}
       </div>
 
       <Dialog
         open={editorOpen}
-        onClose={() => { setEditorOpen(false); }}
+        onClose={() => {
+          setEditorOpen(false);
+        }}
         title={editing.id ? 'Modifica articolo' : 'Nuovo articolo'}
         size="lg"
         footer={
           <>
-            <Button variant="ghost" onClick={() => { setEditorOpen(false); }}>Annulla</Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setEditorOpen(false);
+              }}
+            >
+              Annulla
+            </Button>
             <Button variant="solid" onClick={() => void save()}>
               {editing.id ? 'Salva modifiche' : 'Crea articolo'}
             </Button>
@@ -249,14 +345,18 @@ export function ArticlesView() {
           <TextField
             label="Codice articolo *"
             value={editing.code}
-            onChange={(e) => { setEditing({ ...editing, code: e.target.value }); }}
+            onChange={(e) => {
+              setEditing({ ...editing, code: e.target.value });
+            }}
             placeholder="Es. ART-001"
             fullWidth
           />
           <Select
             label="Unità di misura"
             value={editing.unit ?? 'pz'}
-            onChange={(e) => { setEditing({ ...editing, unit: e.target.value }); }}
+            onChange={(e) => {
+              setEditing({ ...editing, unit: e.target.value });
+            }}
             items={[
               { value: 'pz', label: 'pz (pezzi)' },
               { value: 'kg', label: 'kg' },
@@ -275,7 +375,9 @@ export function ArticlesView() {
           <TextField
             label="Descrizione *"
             value={editing.description}
-            onChange={(e) => { setEditing({ ...editing, description: e.target.value }); }}
+            onChange={(e) => {
+              setEditing({ ...editing, description: e.target.value });
+            }}
             placeholder="Descrizione articolo"
             fullWidth
           />
@@ -316,7 +418,9 @@ export function ArticlesView() {
             <input
               type="checkbox"
               checked={editing.isActive ?? true}
-              onChange={(e) => { setEditing({ ...editing, isActive: e.target.checked }); }}
+              onChange={(e) => {
+                setEditing({ ...editing, isActive: e.target.checked });
+              }}
             />{' '}
             Articolo attivo (visibile nei listini)
           </label>

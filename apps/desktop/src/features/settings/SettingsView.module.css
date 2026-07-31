@@ -13,9 +13,19 @@
     background: var(--color-surface-2);
     flex-shrink: 0;
   }
-  .titleGroup { display: flex; flex-direction: column; gap: var(--space-1); }
-  .title { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); }
-  .subtitle { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+  .titleGroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+  }
+  .subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+  }
 
   .tabs {
     display: flex;
@@ -36,9 +46,10 @@
     font-weight: var(--font-weight-medium);
     color: var(--color-text-secondary);
     cursor: pointer;
-    transition: color var(--motion-duration-fast) var(--motion-easing-standard),
-                border-color var(--motion-duration-fast) var(--motion-easing-standard),
-                background var(--motion-duration-fast) var(--motion-easing-standard);
+    transition:
+      color var(--motion-duration-fast) var(--motion-easing-standard),
+      border-color var(--motion-duration-fast) var(--motion-easing-standard),
+      background var(--motion-duration-fast) var(--motion-easing-standard);
     display: flex;
     align-items: center;
     gap: var(--space-2);
@@ -52,7 +63,9 @@
     border-block-end-color: var(--color-accent-default);
     background: var(--color-surface-1);
   }
-  .tabActive:hover { background: var(--color-surface-1); }
+  .tabActive:hover {
+    background: var(--color-surface-1);
+  }
 
   .body {
     flex: 1;
@@ -106,8 +119,13 @@
     gap: var(--space-1_5);
   }
 
-  .textareaLabel { display: flex; flex-direction: column; gap: var(--space-1_5);
-                   font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+  .textareaLabel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1_5);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+  }
   .textarea {
     inline-size: 100%;
     min-block-size: 8rem;
@@ -166,7 +184,10 @@
     font-weight: var(--font-weight-semibold);
     inline-size: 14rem;
   }
-  .muted { color: var(--color-text-muted); font-size: var(--font-size-xs); }
+  .muted {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+  }
 
   .select {
     inline-size: 100%;
@@ -225,7 +246,9 @@
     border-radius: var(--radius-md);
     font-size: var(--font-size-md);
   }
-  .eyeBtn:hover { background: var(--color-surface-3); }
+  .eyeBtn:hover {
+    background: var(--color-surface-3);
+  }
 
   .savedToast {
     margin-block-start: var(--space-2);
@@ -290,8 +313,9 @@
     border: 1px solid var(--color-border-default);
     border-radius: var(--radius-xl);
     padding: var(--space-4);
-    transition: border-color var(--motion-duration-fast) var(--motion-easing-standard),
-                box-shadow var(--motion-duration-fast) var(--motion-easing-standard);
+    transition:
+      border-color var(--motion-duration-fast) var(--motion-easing-standard),
+      box-shadow var(--motion-duration-fast) var(--motion-easing-standard);
   }
   .accountActive {
     border-color: var(--color-accent-default);
@@ -348,9 +372,18 @@
     font-size: var(--font-size-sm);
     margin-block-end: var(--space-3);
   }
-  .accountCardData dt { color: var(--color-text-muted); font-weight: var(--font-weight-semibold); }
-  .accountCardData dd { color: var(--color-text-primary); overflow: hidden; text-overflow: ellipsis; }
-  .accountCardData > div { display: contents; }
+  .accountCardData dt {
+    color: var(--color-text-muted);
+    font-weight: var(--font-weight-semibold);
+  }
+  .accountCardData dd {
+    color: var(--color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .accountCardData > div {
+    display: contents;
+  }
   .accountCardActions {
     display: flex;
     flex-wrap: wrap;
@@ -364,7 +397,9 @@
     padding: var(--space-6);
     color: var(--color-text-muted);
   }
-  .emptyAccounts p { margin-block-end: var(--space-3); }
+  .emptyAccounts p {
+    margin-block-end: var(--space-3);
+  }
 
   .testResult {
     display: flex;
@@ -377,14 +412,24 @@
     font-size: var(--font-size-sm);
     margin-block-end: var(--space-2);
   }
-  .testOk { color: var(--color-feedback-success); font-weight: var(--font-weight-medium); }
-  .testKo { color: var(--color-feedback-danger); word-break: break-word; }
-  .testInfo { color: var(--color-accent-emphasis); }
+  .testOk {
+    color: var(--color-feedback-success);
+    font-weight: var(--font-weight-medium);
+  }
+  .testKo {
+    color: var(--color-feedback-danger);
+    word-break: break-word;
+  }
+  .testInfo {
+    color: var(--color-accent-emphasis);
+  }
 
   .pwdRow {
     display: flex;
     align-items: flex-end;
     gap: var(--space-2);
   }
-  .pwdRow > :first-child { flex: 1; }
+  .pwdRow > :first-child {
+    flex: 1;
+  }
 }

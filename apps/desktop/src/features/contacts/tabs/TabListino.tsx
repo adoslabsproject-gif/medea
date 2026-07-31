@@ -11,7 +11,9 @@ import type {
 import styles from './shared.module.css';
 import own from './TabListino.module.css';
 
-interface Props { partner: OrganizationDetail; }
+interface Props {
+  partner: OrganizationDetail;
+}
 
 interface DraftOverride {
   articleId: number;
@@ -51,7 +53,9 @@ export function TabListino({ partner }: Props) {
     });
     setResolvedMap(m);
   }
-  useEffect(() => { void refresh();   }, [partner.id]);
+  useEffect(() => {
+    void refresh();
+  }, [partner.id]);
 
   const overrideMap = useMemo(() => {
     const m = new Map<number, CustomerPriceOverrideRow>();
@@ -64,10 +68,12 @@ export function TabListino({ partner }: Props) {
     if (showOnlyOverrides) list = list.filter((a) => overrideMap.has(a.id));
     const q = search.trim().toLowerCase();
     if (q) {
-      list = list.filter((a) =>
-        a.code.toLowerCase().includes(q)
-        || a.description.toLowerCase().includes(q)
-        || (a.brandName ?? '').toLowerCase().includes(q));
+      list = list.filter(
+        (a) =>
+          a.code.toLowerCase().includes(q) ||
+          a.description.toLowerCase().includes(q) ||
+          (a.brandName ?? '').toLowerCase().includes(q),
+      );
     }
     return list;
   }, [articles, overrideMap, showOnlyOverrides, search]);
@@ -94,8 +100,8 @@ export function TabListino({ partner }: Props) {
       <div className={own.intro}>
         <p>
           Listino di vendita applicato a <strong>{partner.displayName ?? partner.domain}</strong>.
-          La colonna <strong>Prezzo finale</strong> è calcolata dal motore deterministico:
-          override del cliente vince sempre, altrimenti si applicano gli sconti per categoria/marchio
+          La colonna <strong>Prezzo finale</strong> è calcolata dal motore deterministico: override
+          del cliente vince sempre, altrimenti si applicano gli sconti per categoria/marchio
           definiti nel tab «Sconti».
         </p>
       </div>
@@ -106,13 +112,17 @@ export function TabListino({ partner }: Props) {
           className={styles.toolbarSearch}
           placeholder="Cerca per codice, descrizione, marchio…"
           value={search}
-          onChange={(e) => { setSearch(e.target.value); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+          }}
         />
         <label className={own.toggle}>
           <input
             type="checkbox"
             checked={showOnlyOverrides}
-            onChange={(e) => { setShowOnlyOverrides(e.target.checked); }}
+            onChange={(e) => {
+              setShowOnlyOverrides(e.target.checked);
+            }}
           />
           Solo override
         </label>
@@ -136,7 +146,11 @@ export function TabListino({ partner }: Props) {
         </thead>
         <tbody>
           {visible.length === 0 && (
-            <tr><td colSpan={8} className={styles.empty}>Nessun articolo.</td></tr>
+            <tr>
+              <td colSpan={8} className={styles.empty}>
+                Nessun articolo.
+              </td>
+            </tr>
           )}
           {visible.map((a) => {
             const ov = overrideMap.get(a.id);
@@ -155,7 +169,9 @@ export function TabListino({ partner }: Props) {
                     <span className={own.discountTag}>
                       {res.discountPctApplied.toFixed(1)}% <em>{res.discountSource}</em>
                     </span>
-                  ) : <em className={own.muted}>—</em>}
+                  ) : (
+                    <em className={own.muted}>—</em>
+                  )}
                 </td>
                 <td className={`${own.right} ${isOverride ? own.priceOverride : ''}`}>
                   {editing ? (
@@ -164,17 +180,35 @@ export function TabListino({ partner }: Props) {
                       step={0.01}
                       className={styles.numInput}
                       value={draft.unitPrice}
-                      onChange={(e) => { setDraft({ ...draft, unitPrice: Number(e.target.value) }); }}
+                      onChange={(e) => {
+                        setDraft({ ...draft, unitPrice: Number(e.target.value) });
+                      }}
                     />
                   ) : (
-                    <strong>{fmtMoney(res?.finalPrice ?? null, res?.currency ?? a.currency ?? 'EUR')}</strong>
+                    <strong>
+                      {fmtMoney(res?.finalPrice ?? null, res?.currency ?? a.currency ?? 'EUR')}
+                    </strong>
                   )}
                 </td>
                 <td className={own.rowActions}>
                   {editing ? (
                     <>
-                      <button type="button" className={`${styles.smallBtn} ${own.btnPrimary}`} onClick={() => void saveDraft()}>✓</button>
-                      <button type="button" className={styles.smallBtn} onClick={() => { setDraft(null); }}>✕</button>
+                      <button
+                        type="button"
+                        className={`${styles.smallBtn} ${own.btnPrimary}`}
+                        onClick={() => void saveDraft()}
+                      >
+                        ✓
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.smallBtn}
+                        onClick={() => {
+                          setDraft(null);
+                        }}
+                      >
+                        ✕
+                      </button>
                     </>
                   ) : (
                     <>
@@ -182,11 +216,13 @@ export function TabListino({ partner }: Props) {
                         type="button"
                         className={styles.smallBtn}
                         title={ov ? 'Modifica override' : 'Crea override per questo cliente'}
-                        onClick={() => { setDraft({
-                          articleId: a.id,
-                          unitPrice: ov?.unitPrice ?? (a.salePrice ?? 0),
-                          notes: ov?.notes ?? '',
-                        }); }}
+                        onClick={() => {
+                          setDraft({
+                            articleId: a.id,
+                            unitPrice: ov?.unitPrice ?? a.salePrice ?? 0,
+                            notes: ov?.notes ?? '',
+                          });
+                        }}
                       >
                         {ov ? '✎' : '＋'}
                       </button>
@@ -196,7 +232,9 @@ export function TabListino({ partner }: Props) {
                           className={`${styles.smallBtn} ${styles.smallBtnDanger}`}
                           onClick={() => void removeOverride(ov.id)}
                           title="Rimuovi override"
-                        >🗑</button>
+                        >
+                          🗑
+                        </button>
                       )}
                     </>
                   )}

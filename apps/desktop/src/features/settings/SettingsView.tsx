@@ -2,7 +2,6 @@ import { Button, Dialog, Select, TextField } from '@medea/ui';
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
 
-
 import { useTheme, type ThemeMode } from '../../app/providers/ThemeProvider';
 import { AccountSetup } from '../account-setup';
 import { getApiKey, setApiKey } from '../ai/keys';
@@ -36,12 +35,26 @@ interface Profile {
 }
 
 const EMPTY_PROFILE: Profile = {
-  displayName: '', role: '', phone: '', emailSignature: '',
-  organizationName: '', vatNumber: '', address: '', website: '', notes: '',
+  displayName: '',
+  role: '',
+  phone: '',
+  emailSignature: '',
+  organizationName: '',
+  vatNumber: '',
+  address: '',
+  website: '',
+  notes: '',
 };
 
 const PROVIDERS: ProviderId[] = [
-  'liara', 'custom', 'anthropic', 'openai', 'gemini', 'deepseek', 'grok', 'openrouter',
+  'liara',
+  'custom',
+  'anthropic',
+  'openai',
+  'gemini',
+  'deepseek',
+  'grok',
+  'openrouter',
 ];
 
 function loadProfile(): Profile {
@@ -49,7 +62,9 @@ function loadProfile(): Profile {
     const raw = localStorage.getItem(PROFILE_KEY);
     if (!raw) return EMPTY_PROFILE;
     return { ...EMPTY_PROFILE, ...(JSON.parse(raw) as Partial<Profile>) };
-  } catch { return EMPTY_PROFILE; }
+  } catch {
+    return EMPTY_PROFILE;
+  }
 }
 function loadPhoto(): string | null {
   return localStorage.getItem(PROFILE_PHOTO_KEY);
@@ -90,24 +105,44 @@ export function SettingsView({ account }: Props) {
       </header>
 
       <nav className={styles.tabs} role="tablist">
-        <button role="tab" aria-selected={tab === 'profile'}
+        <button
+          role="tab"
+          aria-selected={tab === 'profile'}
           className={`${styles.tab} ${tab === 'profile' ? styles.tabActive : ''}`}
-          onClick={() => { setTab('profile'); }}>
+          onClick={() => {
+            setTab('profile');
+          }}
+        >
           <span className={styles.tabIcon}>👤</span> Profilo personale
         </button>
-        <button role="tab" aria-selected={tab === 'accounts'}
+        <button
+          role="tab"
+          aria-selected={tab === 'accounts'}
           className={`${styles.tab} ${tab === 'accounts' ? styles.tabActive : ''}`}
-          onClick={() => { setTab('accounts'); }}>
+          onClick={() => {
+            setTab('accounts');
+          }}
+        >
           <span className={styles.tabIcon}>📧</span> Account email
         </button>
-        <button role="tab" aria-selected={tab === 'template'}
+        <button
+          role="tab"
+          aria-selected={tab === 'template'}
           className={`${styles.tab} ${tab === 'template' ? styles.tabActive : ''}`}
-          onClick={() => { setTab('template'); }}>
+          onClick={() => {
+            setTab('template');
+          }}
+        >
           <span className={styles.tabIcon}>📄</span> Template email
         </button>
-        <button role="tab" aria-selected={tab === 'ai'}
+        <button
+          role="tab"
+          aria-selected={tab === 'ai'}
           className={`${styles.tab} ${tab === 'ai' ? styles.tabActive : ''}`}
-          onClick={() => { setTab('ai'); }}>
+          onClick={() => {
+            setTab('ai');
+          }}
+        >
           <span className={styles.tabIcon}>✨</span> Modelli AI &amp; API keys
         </button>
       </nav>
@@ -135,7 +170,9 @@ function ProfileTab() {
     if (photo) localStorage.setItem(PROFILE_PHOTO_KEY, photo);
     else localStorage.removeItem(PROFILE_PHOTO_KEY);
     setSaved(true);
-    setTimeout(() => { setSaved(false); }, 1500);
+    setTimeout(() => {
+      setSaved(false);
+    }, 1500);
   }
 
   function onPhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
@@ -146,7 +183,9 @@ function ProfileTab() {
       return;
     }
     const r = new FileReader();
-    r.onload = () => { setPhoto(typeof r.result === 'string' ? r.result : ''); };
+    r.onload = () => {
+      setPhoto(typeof r.result === 'string' ? r.result : '');
+    };
     r.readAsDataURL(f);
   }
 
@@ -169,7 +208,12 @@ function ProfileTab() {
               {photo ? 'Cambia foto' : 'Carica foto'}
             </Button>
             {photo && (
-              <Button variant="ghost" onClick={() => { setPhoto(null); }}>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setPhoto(null);
+                }}
+              >
                 Rimuovi
               </Button>
             )}
@@ -178,11 +222,13 @@ function ProfileTab() {
               type="file"
               accept="image/*"
               style={{ display: 'none' }}
-              onChange={(e) => { onPhotoSelected(e); }}
+              onChange={(e) => {
+                onPhotoSelected(e);
+              }}
             />
             <p className={styles.muted}>
-              JPG/PNG, max 2 MB. Salvata localmente (base64 in localStorage).
-              Usata come avatar accanto ai tuoi messaggi nella chat AI.
+              JPG/PNG, max 2 MB. Salvata localmente (base64 in localStorage). Usata come avatar
+              accanto ai tuoi messaggi nella chat AI.
             </p>
           </div>
         </div>
@@ -191,22 +237,42 @@ function ProfileTab() {
       <div className={styles.section}>
         <h2 className={styles.sectionTitle}>👤 I tuoi dati</h2>
         <div className={styles.fieldStack}>
-          <TextField label="Nome e cognome"
+          <TextField
+            label="Nome e cognome"
             value={profile.displayName}
-            onChange={(e) => { setProfile({ ...profile, displayName: e.target.value }); }}
-            placeholder="Es. Nicola Cucurachi" fullWidth />
-          <TextField label="Ruolo"
+            onChange={(e) => {
+              setProfile({ ...profile, displayName: e.target.value });
+            }}
+            placeholder="Es. Nicola Cucurachi"
+            fullWidth
+          />
+          <TextField
+            label="Ruolo"
             value={profile.role}
-            onChange={(e) => { setProfile({ ...profile, role: e.target.value }); }}
-            placeholder="Es. Titolare, Commerciale" fullWidth />
-          <TextField label="Telefono"
+            onChange={(e) => {
+              setProfile({ ...profile, role: e.target.value });
+            }}
+            placeholder="Es. Titolare, Commerciale"
+            fullWidth
+          />
+          <TextField
+            label="Telefono"
             value={profile.phone}
-            onChange={(e) => { setProfile({ ...profile, phone: e.target.value }); }}
-            placeholder="+39 ..." fullWidth />
-          <TextField label="Sito web"
+            onChange={(e) => {
+              setProfile({ ...profile, phone: e.target.value });
+            }}
+            placeholder="+39 ..."
+            fullWidth
+          />
+          <TextField
+            label="Sito web"
             value={profile.website}
-            onChange={(e) => { setProfile({ ...profile, website: e.target.value }); }}
-            placeholder="https://..." fullWidth />
+            onChange={(e) => {
+              setProfile({ ...profile, website: e.target.value });
+            }}
+            placeholder="https://..."
+            fullWidth
+          />
         </div>
       </div>
 
@@ -215,7 +281,9 @@ function ProfileTab() {
         <Select
           label="Tema"
           value={theme}
-          onChange={(e) => { setTheme(e.target.value as ThemeMode); }}
+          onChange={(e) => {
+            setTheme(e.target.value as ThemeMode);
+          }}
           items={[
             { value: 'system', label: 'Automatico (segue il sistema)' },
             { value: 'light', label: 'Chiaro' },
@@ -229,18 +297,33 @@ function ProfileTab() {
       <div className={styles.section}>
         <h2 className={styles.sectionTitle}>🏢 Azienda (mittente)</h2>
         <div className={styles.fieldStack}>
-          <TextField label="Ragione sociale"
+          <TextField
+            label="Ragione sociale"
             value={profile.organizationName}
-            onChange={(e) => { setProfile({ ...profile, organizationName: e.target.value }); }}
-            placeholder="Es. ACME S.r.l." fullWidth />
-          <TextField label="P. IVA / VAT"
+            onChange={(e) => {
+              setProfile({ ...profile, organizationName: e.target.value });
+            }}
+            placeholder="Es. ACME S.r.l."
+            fullWidth
+          />
+          <TextField
+            label="P. IVA / VAT"
             value={profile.vatNumber}
-            onChange={(e) => { setProfile({ ...profile, vatNumber: e.target.value }); }}
-            placeholder="IT01234567890" fullWidth />
-          <TextField label="Indirizzo"
+            onChange={(e) => {
+              setProfile({ ...profile, vatNumber: e.target.value });
+            }}
+            placeholder="IT01234567890"
+            fullWidth
+          />
+          <TextField
+            label="Indirizzo"
             value={profile.address}
-            onChange={(e) => { setProfile({ ...profile, address: e.target.value }); }}
-            placeholder="Via, Civico, CAP, Città, Stato" fullWidth />
+            onChange={(e) => {
+              setProfile({ ...profile, address: e.target.value });
+            }}
+            placeholder="Via, Civico, CAP, Città, Stato"
+            fullWidth
+          />
         </div>
       </div>
 
@@ -253,8 +336,12 @@ function ProfileTab() {
               className={styles.textarea}
               rows={10}
               value={profile.emailSignature}
-              onChange={(e) => { setProfile({ ...profile, emailSignature: e.target.value }); }}
-              placeholder={'<p><strong>Mario Rossi</strong><br/>Titolare — ACME S.r.l.<br/>+39 ...</p>'}
+              onChange={(e) => {
+                setProfile({ ...profile, emailSignature: e.target.value });
+              }}
+              placeholder={
+                '<p><strong>Mario Rossi</strong><br/>Titolare — ACME S.r.l.<br/>+39 ...</p>'
+              }
             />
           </label>
           <div className={styles.firmaPreviewCol}>
@@ -275,7 +362,9 @@ function ProfileTab() {
           className={styles.textarea}
           rows={4}
           value={profile.notes}
-          onChange={(e) => { setProfile({ ...profile, notes: e.target.value }); }}
+          onChange={(e) => {
+            setProfile({ ...profile, notes: e.target.value });
+          }}
           placeholder="Note che l'AI può usare per personalizzare le risposte (es. tono formale/informale, settori che tratto, lingua principale dei clienti, ecc.)"
         />
       </div>
@@ -312,13 +401,22 @@ function MaintenanceSection() {
   function refresh() {
     invoke<BusinessStats>('db_business_data_stats')
       .then(setStats)
-      .catch((e: unknown) => { setError(String(e)); });
+      .catch((e: unknown) => {
+        setError(String(e));
+      });
   }
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const total = stats
-    ? stats.importedOrganizations + stats.articles + stats.priceLists
-      + stats.priceListItems + stats.discounts + stats.priceOverrides + stats.documents
+    ? stats.importedOrganizations +
+      stats.articles +
+      stats.priceLists +
+      stats.priceListItems +
+      stats.discounts +
+      stats.priceOverrides +
+      stats.documents
     : 0;
 
   async function purge() {
@@ -343,11 +441,10 @@ function MaintenanceSection() {
     <div className={`${styles.section} ${styles.formWide}`}>
       <h2 className={styles.sectionTitle}>🧹 Dati commerciali importati</h2>
       <p className={styles.muted}>
-        Nel database ci sono ancora {stats.importedOrganizations} anagrafiche da import
-        gestionale, {stats.articles} articoli, {stats.priceLists} listini
-        ({stats.priceListItems} righe), {stats.discounts} sconti,
-        {' '}{stats.priceOverrides} prezzi dedicati e {stats.documents} documenti.
-        Svuotarli lascia intatte <strong>email, cartelle, account e rubrica</strong>:
+        Nel database ci sono ancora {stats.importedOrganizations} anagrafiche da import gestionale,{' '}
+        {stats.articles} articoli, {stats.priceLists} listini ({stats.priceListItems} righe),{' '}
+        {stats.discounts} sconti, {stats.priceOverrides} prezzi dedicati e {stats.documents}{' '}
+        documenti. Svuotarli lascia intatte <strong>email, cartelle, account e rubrica</strong>:
         resta solo la struttura, pronta per i tuoi dati.
       </p>
       {done && <p className={styles.muted}>✓ {done}</p>}
@@ -355,13 +452,31 @@ function MaintenanceSection() {
       <div className={styles.actions}>
         {confirming ? (
           <>
-            <Button variant="ghost" onClick={() => { setConfirming(false); }}>Annulla</Button>
-            <Button variant="solid" isLoading={busy} onClick={() => { void purge(); }}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setConfirming(false);
+              }}
+            >
+              Annulla
+            </Button>
+            <Button
+              variant="solid"
+              isLoading={busy}
+              onClick={() => {
+                void purge();
+              }}
+            >
               ⚠️ Confermo: elimina {total} record
             </Button>
           </>
         ) : (
-          <Button variant="outline" onClick={() => { setConfirming(true); }}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setConfirming(true);
+            }}
+          >
             🧹 Svuota i dati commerciali
           </Button>
         )}
@@ -376,7 +491,9 @@ function AccountsTab({ activeId }: { activeId: string }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
-  const [testResults, setTestResults] = useState<Record<string, { imap: boolean | string; smtp: boolean | string } | undefined>>({});
+  const [testResults, setTestResults] = useState<
+    Record<string, { imap: boolean | string; smtp: boolean | string } | undefined>
+  >({});
   const [renaming, setRenaming] = useState<MailAccount | null>(null);
   const [renameValue, setRenameValue] = useState('');
 
@@ -401,7 +518,12 @@ function AccountsTab({ activeId }: { activeId: string }) {
   }
 
   async function deleteAccount(acc: MailAccount) {
-    if (!window.confirm(`Rimuovere l'account ${acc.emailAddress}? Le email scaricate restano nel DB locale finché non lo svuoti dal DB Studio.`)) return;
+    if (
+      !window.confirm(
+        `Rimuovere l'account ${acc.emailAddress}? Le email scaricate restano nel DB locale finché non lo svuoti dal DB Studio.`,
+      )
+    )
+      return;
     await store.removeAccount(acc.id);
   }
 
@@ -411,7 +533,9 @@ function AccountsTab({ activeId }: { activeId: string }) {
   }
   async function saveRename() {
     if (!renaming) return;
-    await store.updateAccount(renaming.id, { displayName: renameValue.trim() || renaming.emailAddress });
+    await store.updateAccount(renaming.id, {
+      displayName: renameValue.trim() || renaming.emailAddress,
+    });
     setRenaming(null);
   }
 
@@ -419,13 +543,24 @@ function AccountsTab({ activeId }: { activeId: string }) {
     return (
       <div>
         <div className={styles.accountsHead}>
-          <Button variant="ghost" onClick={() => { setAdding(false); }}>← Indietro</Button>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setAdding(false);
+            }}
+          >
+            ← Indietro
+          </Button>
         </div>
         <AccountSetup
           onSaved={(acc) => {
             void (async () => {
               await store.addAccount(acc);
-              try { await mailApi.db.accountUpsert(acc); } catch (e) { console.error(e); }
+              try {
+                await mailApi.db.accountUpsert(acc);
+              } catch (e) {
+                console.error(e);
+              }
               setAdding(false);
             })();
           }}
@@ -445,10 +580,16 @@ function AccountsTab({ activeId }: { activeId: string }) {
         account={acc}
         onSave={async (patched) => {
           await store.updateAccount(acc.id, patched);
-          try { await mailApi.db.accountUpsert({ ...acc, ...patched }); } catch (e) { console.error(e); }
+          try {
+            await mailApi.db.accountUpsert({ ...acc, ...patched });
+          } catch (e) {
+            console.error(e);
+          }
           setEditingId(null);
         }}
-        onCancel={() => { setEditingId(null); }}
+        onCancel={() => {
+          setEditingId(null);
+        }}
       />
     );
   }
@@ -458,14 +599,24 @@ function AccountsTab({ activeId }: { activeId: string }) {
       <div className={`${styles.section} ${styles.formWide}`}>
         <div className={styles.accountsHead}>
           <h2 className={styles.sectionTitle}>📧 Account configurati ({store.accounts.length})</h2>
-          <Button variant="solid" onClick={() => { setAdding(true); }}>+ Aggiungi account</Button>
+          <Button
+            variant="solid"
+            onClick={() => {
+              setAdding(true);
+            }}
+          >
+            + Aggiungi account
+          </Button>
         </div>
         <div className={styles.accountsList}>
           {store.accounts.map((a) => {
             const isActive = a.id === activeId;
             const res = testResults[a.id];
             return (
-              <article key={a.id} className={`${styles.accountCard} ${isActive ? styles.accountActive : ''}`}>
+              <article
+                key={a.id}
+                className={`${styles.accountCard} ${isActive ? styles.accountActive : ''}`}
+              >
                 <header className={styles.accountCardHead}>
                   <div className={styles.accountIcon}>
                     {(a.displayName.trim()[0] ?? a.emailAddress[0] ?? '?').toUpperCase()}
@@ -479,8 +630,25 @@ function AccountsTab({ activeId }: { activeId: string }) {
                   </div>
                 </header>
                 <dl className={styles.accountCardData}>
-                  <div><dt>IMAP</dt><dd><code>{a.imap.host}:{a.imap.port}</code> · user: {a.imap.username}</dd></div>
-                  <div><dt>SMTP</dt><dd><code>{a.smtp.host}:{a.smtp.port}</code> · user: {a.smtp.username} · {a.smtp.implicitTls ? 'TLS implicito' : 'STARTTLS'}</dd></div>
+                  <div>
+                    <dt>IMAP</dt>
+                    <dd>
+                      <code>
+                        {a.imap.host}:{a.imap.port}
+                      </code>{' '}
+                      · user: {a.imap.username}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>SMTP</dt>
+                    <dd>
+                      <code>
+                        {a.smtp.host}:{a.smtp.port}
+                      </code>{' '}
+                      · user: {a.smtp.username} ·{' '}
+                      {a.smtp.implicitTls ? 'TLS implicito' : 'STARTTLS'}
+                    </dd>
+                  </div>
                 </dl>
                 {res && (
                   <div className={styles.testResult}>
@@ -498,13 +666,30 @@ function AccountsTab({ activeId }: { activeId: string }) {
                       Imposta attivo
                     </Button>
                   )}
-                  <Button variant="outline" size="sm" onClick={() => void testAccount(a)} isLoading={testing === a.id}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void testAccount(a)}
+                    isLoading={testing === a.id}
+                  >
                     Test connessione
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => { setEditingId(a.id); }}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingId(a.id);
+                    }}
+                  >
                     Modifica server/credenziali
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => { startRename(a); }}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      startRename(a);
+                    }}
+                  >
                     Rinomina
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => void deleteAccount(a)}>
@@ -517,7 +702,14 @@ function AccountsTab({ activeId }: { activeId: string }) {
           {store.accounts.length === 0 && (
             <div className={styles.emptyAccounts}>
               <p>Nessun account configurato.</p>
-              <Button variant="solid" onClick={() => { setAdding(true); }}>+ Aggiungi il primo</Button>
+              <Button
+                variant="solid"
+                onClick={() => {
+                  setAdding(true);
+                }}
+              >
+                + Aggiungi il primo
+              </Button>
             </div>
           )}
         </div>
@@ -525,20 +717,33 @@ function AccountsTab({ activeId }: { activeId: string }) {
 
       <Dialog
         open={renaming !== null}
-        onClose={() => { setRenaming(null); }}
+        onClose={() => {
+          setRenaming(null);
+        }}
         title="Rinomina account"
         size="sm"
         footer={
           <>
-            <Button variant="ghost" onClick={() => { setRenaming(null); }}>Annulla</Button>
-            <Button variant="solid" onClick={() => void saveRename()}>Salva</Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setRenaming(null);
+              }}
+            >
+              Annulla
+            </Button>
+            <Button variant="solid" onClick={() => void saveRename()}>
+              Salva
+            </Button>
           </>
         }
       >
         <TextField
           label="Nome visualizzato"
           value={renameValue}
-          onChange={(e) => { setRenameValue(e.target.value); }}
+          onChange={(e) => {
+            setRenameValue(e.target.value);
+          }}
           placeholder="Es. Mario Rossi — ACME S.r.l."
           fullWidth
         />
@@ -549,7 +754,9 @@ function AccountsTab({ activeId }: { activeId: string }) {
 
 /* ───────────── ACCOUNT EDITOR (modifica server/credenziali) ───────────── */
 function AccountEditor({
-  account, onSave, onCancel,
+  account,
+  onSave,
+  onCancel,
 }: {
   account: MailAccount;
   onSave: (patch: Partial<MailAccount>) => Promise<void>;
@@ -604,7 +811,9 @@ function AccountEditor({
       setStatus({ kind: 'ok', text: '✓ IMAP OK' });
     } catch (e) {
       setStatus({ kind: 'err', text: `✗ IMAP: ${String(e)}` });
-    } finally { setBusy(null); }
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function testSmtp() {
@@ -621,14 +830,18 @@ function AccountEditor({
       setStatus({ kind: 'ok', text: '✓ SMTP OK' });
     } catch (e) {
       setStatus({ kind: 'err', text: `✗ SMTP: ${String(e)}` });
-    } finally { setBusy(null); }
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function save() {
     setBusy('save');
     try {
       await onSave(buildPatch());
-    } finally { setBusy(null); }
+    } finally {
+      setBusy(null);
+    }
   }
 
   return (
@@ -636,12 +849,17 @@ function AccountEditor({
       <div className={`${styles.section} ${styles.formWide}`}>
         <div className={styles.accountsHead}>
           <h2 className={styles.sectionTitle}>Modifica account {account.emailAddress}</h2>
-          <Button variant="ghost" onClick={onCancel}>← Annulla</Button>
+          <Button variant="ghost" onClick={onCancel}>
+            ← Annulla
+          </Button>
         </div>
         <div className={styles.fieldStack}>
-          <TextField label="Nome visualizzato"
+          <TextField
+            label="Nome visualizzato"
             value={displayName}
-            onChange={(e) => { setDisplayName(e.target.value); }}
+            onChange={(e) => {
+              setDisplayName(e.target.value);
+            }}
             placeholder="Es. Mario Rossi — ACME S.r.l."
             hint="Verrà mostrato come 'Da:' nelle email che invii."
             fullWidth
@@ -652,17 +870,48 @@ function AccountEditor({
       <div className={styles.section}>
         <h2 className={styles.sectionTitle}>📥 IMAP (ricezione)</h2>
         <div className={styles.fieldStack}>
-          <TextField label="Host" value={imapHost} onChange={(e) => { setImapHost(e.target.value); }} fullWidth />
-          <TextField label="Porta" value={imapPort} onChange={(e) => { setImapPort(e.target.value); }} inputMode="numeric" />
-          <TextField label="Username" value={imapUser} onChange={(e) => { setImapUser(e.target.value); }} fullWidth />
+          <TextField
+            label="Host"
+            value={imapHost}
+            onChange={(e) => {
+              setImapHost(e.target.value);
+            }}
+            fullWidth
+          />
+          <TextField
+            label="Porta"
+            value={imapPort}
+            onChange={(e) => {
+              setImapPort(e.target.value);
+            }}
+            inputMode="numeric"
+          />
+          <TextField
+            label="Username"
+            value={imapUser}
+            onChange={(e) => {
+              setImapUser(e.target.value);
+            }}
+            fullWidth
+          />
           <div className={styles.pwdRow}>
-            <TextField label="Password"
+            <TextField
+              label="Password"
               type={showImapPwd ? 'text' : 'password'}
               value={imapPassword}
-              onChange={(e) => { setImapPassword(e.target.value); }}
+              onChange={(e) => {
+                setImapPassword(e.target.value);
+              }}
               fullWidth
             />
-            <button type="button" className={styles.eyeBtn} onClick={() => { setShowImapPwd(!showImapPwd); }} aria-label="Mostra/nascondi">
+            <button
+              type="button"
+              className={styles.eyeBtn}
+              onClick={() => {
+                setShowImapPwd(!showImapPwd);
+              }}
+              aria-label="Mostra/nascondi"
+            >
               {showImapPwd ? '🙈' : '👁'}
             </button>
           </div>
@@ -675,23 +924,60 @@ function AccountEditor({
       <div className={styles.section}>
         <h2 className={styles.sectionTitle}>📤 SMTP (invio)</h2>
         <div className={styles.fieldStack}>
-          <TextField label="Host" value={smtpHost} onChange={(e) => { setSmtpHost(e.target.value); }} fullWidth />
-          <TextField label="Porta" value={smtpPort} onChange={(e) => { setSmtpPort(e.target.value); }} inputMode="numeric" />
-          <TextField label="Username" value={smtpUser} onChange={(e) => { setSmtpUser(e.target.value); }} fullWidth />
+          <TextField
+            label="Host"
+            value={smtpHost}
+            onChange={(e) => {
+              setSmtpHost(e.target.value);
+            }}
+            fullWidth
+          />
+          <TextField
+            label="Porta"
+            value={smtpPort}
+            onChange={(e) => {
+              setSmtpPort(e.target.value);
+            }}
+            inputMode="numeric"
+          />
+          <TextField
+            label="Username"
+            value={smtpUser}
+            onChange={(e) => {
+              setSmtpUser(e.target.value);
+            }}
+            fullWidth
+          />
           <div className={styles.pwdRow}>
-            <TextField label="Password"
+            <TextField
+              label="Password"
               type={showSmtpPwd ? 'text' : 'password'}
               value={smtpPassword}
-              onChange={(e) => { setSmtpPassword(e.target.value); }}
+              onChange={(e) => {
+                setSmtpPassword(e.target.value);
+              }}
               fullWidth
             />
-            <button type="button" className={styles.eyeBtn} onClick={() => { setShowSmtpPwd(!showSmtpPwd); }} aria-label="Mostra/nascondi">
+            <button
+              type="button"
+              className={styles.eyeBtn}
+              onClick={() => {
+                setShowSmtpPwd(!showSmtpPwd);
+              }}
+              aria-label="Mostra/nascondi"
+            >
               {showSmtpPwd ? '🙈' : '👁'}
             </button>
           </div>
           <label className={styles.checkRow}>
-            <input type="checkbox" checked={smtpImplicitTls} onChange={(e) => { setSmtpImplicitTls(e.target.checked); }} />
-            {' '}TLS implicito (porta 465). Disattiva per STARTTLS (587).
+            <input
+              type="checkbox"
+              checked={smtpImplicitTls}
+              onChange={(e) => {
+                setSmtpImplicitTls(e.target.checked);
+              }}
+            />{' '}
+            TLS implicito (porta 465). Disattiva per STARTTLS (587).
           </label>
           <Button variant="outline" onClick={() => void testSmtp()} isLoading={busy === 'smtp'}>
             Testa connessione SMTP
@@ -701,14 +987,24 @@ function AccountEditor({
 
       {status && (
         <div className={`${styles.formWide} ${styles.testResult}`}>
-          <span className={status.kind === 'ok' ? styles.testOk : status.kind === 'err' ? styles.testKo : styles.testInfo}>
+          <span
+            className={
+              status.kind === 'ok'
+                ? styles.testOk
+                : status.kind === 'err'
+                  ? styles.testKo
+                  : styles.testInfo
+            }
+          >
             {status.text}
           </span>
         </div>
       )}
 
       <div className={`${styles.actions} ${styles.formWide}`}>
-        <Button variant="ghost" onClick={onCancel}>Annulla</Button>
+        <Button variant="ghost" onClick={onCancel}>
+          Annulla
+        </Button>
         <Button variant="solid" size="lg" onClick={() => void save()} isLoading={busy === 'save'}>
           💾 Salva modifiche
         </Button>
@@ -756,7 +1052,9 @@ function AiKeysTab() {
   async function saveKey(provider: ProviderId) {
     await setApiKey(provider, keys[provider]);
     setSaved(provider);
-    setTimeout(() => { setSaved(null); }, 1200);
+    setTimeout(() => {
+      setSaved(null);
+    }, 1200);
   }
 
   function saveCustomConfig() {
@@ -775,13 +1073,15 @@ function AiKeysTab() {
         <Select
           label="Modello attivo"
           value={defaultProvider}
-          onChange={(e) => { setDefaultProvider(e.target.value as ProviderId); }}
+          onChange={(e) => {
+            setDefaultProvider(e.target.value as ProviderId);
+          }}
           items={PROVIDERS.map((p) => ({ value: p, label: providerLong(p) }))}
           fullWidth
         />
         <p className={styles.muted} style={{ marginBlockStart: 'var(--space-2)' }}>
-          Modello BYOK (bring-your-own-key): ogni provider usa la TUA chiave.
-          Nessun servizio è preconfigurato.
+          Modello BYOK (bring-your-own-key): ogni provider usa la TUA chiave. Nessun servizio è
+          preconfigurato.
         </p>
       </div>
 
@@ -791,25 +1091,35 @@ function AiKeysTab() {
           <TextField
             label="Base URL"
             value={customBaseUrl}
-            onChange={(e) => { setCustomBaseUrl(e.target.value); }}
+            onChange={(e) => {
+              setCustomBaseUrl(e.target.value);
+            }}
             placeholder="https://miohost.example.com/v1"
             fullWidth
           />
           <TextField
             label="Nome modello"
             value={customModel}
-            onChange={(e) => { setCustomModel(e.target.value); }}
+            onChange={(e) => {
+              setCustomModel(e.target.value);
+            }}
             placeholder="es. nome-modello-servito"
             fullWidth
           />
-          <Button variant="outline" size="sm" onClick={() => { saveCustomConfig(); }}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              saveCustomConfig();
+            }}
+          >
             Salva endpoint
           </Button>
         </div>
         <p className={styles.muted} style={{ marginBlockStart: 'var(--space-2)' }}>
           Per vLLM, gateway privati o qualsiasi server che espone
-          <code> /chat/completions</code>. La API key (se serve) va inserita
-          qui sotto nella riga «Endpoint personalizzato».
+          <code> /chat/completions</code>. La API key (se serve) va inserita qui sotto nella riga
+          «Endpoint personalizzato».
         </p>
       </div>
 
@@ -823,18 +1133,31 @@ function AiKeysTab() {
                 <input
                   type={showKey[p] ? 'text' : 'password'}
                   value={keys[p]}
-                  onChange={(e) => { setKeys({ ...keys, [p]: e.target.value }); }}
+                  onChange={(e) => {
+                    setKeys({ ...keys, [p]: e.target.value });
+                  }}
                   placeholder={`Inserisci la tua API key per ${p}`}
                   autoComplete="off"
                   spellCheck={false}
                   className={styles.keyInput}
                 />
-                <button type="button" className={styles.eyeBtn}
-                  onClick={() => { setShowKey({ ...showKey, [p]: !showKey[p] }); }}
-                  aria-label={showKey[p] ? 'Nascondi' : 'Mostra'}>
+                <button
+                  type="button"
+                  className={styles.eyeBtn}
+                  onClick={() => {
+                    setShowKey({ ...showKey, [p]: !showKey[p] });
+                  }}
+                  aria-label={showKey[p] ? 'Nascondi' : 'Mostra'}
+                >
                   {showKey[p] ? '🙈' : '👁'}
                 </button>
-                <Button variant="outline" size="sm" onClick={() => { void saveKey(p); }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    void saveKey(p);
+                  }}
+                >
                   {saved === p ? '✓ Salvata' : 'Salva'}
                 </Button>
               </div>
@@ -842,9 +1165,8 @@ function AiKeysTab() {
           ))}
         </div>
         <p className={styles.muted} style={{ marginBlockStart: 'var(--space-3)' }}>
-          Le chiavi sono salvate nel portachiavi di sistema
-          (macOS Keychain / Windows Credential Manager / Secret Service),
-          mai in chiaro su disco.
+          Le chiavi sono salvate nel portachiavi di sistema (macOS Keychain / Windows Credential
+          Manager / Secret Service), mai in chiaro su disco.
         </p>
       </div>
     </div>

@@ -9,9 +9,11 @@ import { useCallback } from 'react';
  */
 export function useViewTransition() {
   return useCallback((updater: () => void | Promise<void>) => {
-    const start = (document as Document & {
-      startViewTransition?: (cb: () => void | Promise<void>) => unknown;
-    }).startViewTransition;
+    const start = (
+      document as Document & {
+        startViewTransition?: (cb: () => void | Promise<void>) => unknown;
+      }
+    ).startViewTransition;
     if (typeof start === 'function') {
       start.call(document, updater);
     } else {

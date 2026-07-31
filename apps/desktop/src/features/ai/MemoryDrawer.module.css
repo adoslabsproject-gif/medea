@@ -11,23 +11,33 @@
 }
 
 @keyframes fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .panel {
   width: min(540px, 100vw);
   height: 100vh;
   background: var(--color-surface-0, #14171d);
-  border-left: 1px solid var(--color-border, rgba(255, 255, 255, 0.10));
+  border-left: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
   display: flex;
   flex-direction: column;
   animation: slide 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 @keyframes slide {
-  from { transform: translateX(20px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .head {
@@ -51,10 +61,8 @@
   border-radius: 10px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg,
-    rgba(180, 140, 255, 0.22),
-    rgba(120, 130, 255, 0.16));
-  border: 1px solid rgba(180, 140, 255, 0.30);
+  background: linear-gradient(135deg, rgba(180, 140, 255, 0.22), rgba(120, 130, 255, 0.16));
+  border: 1px solid rgba(180, 140, 255, 0.3);
   font-size: 18px;
 }
 
@@ -79,7 +87,9 @@
   cursor: pointer;
   font-size: 14px;
 }
-.closeBtn:hover { background: rgba(255, 255, 255, 0.06); }
+.closeBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
 
 .composer {
   padding: 12px 18px;
@@ -94,7 +104,7 @@
   max-height: 180px;
   padding: 10px;
   border-radius: 10px;
-  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.10));
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
   background: var(--color-surface-2, rgba(0, 0, 0, 0.25));
   color: var(--color-text-primary, #e7e9ee);
   font-size: 13px;
@@ -131,17 +141,24 @@
   padding: 0 16px;
   border-radius: 8px;
   border: 1px solid var(--color-accent-border, rgba(120, 130, 255, 0.32));
-  background: linear-gradient(180deg,
+  background: linear-gradient(
+    180deg,
     var(--color-accent-soft, rgba(120, 130, 255, 0.22)),
-    var(--color-accent-soft-2, rgba(120, 130, 255, 0.10)));
+    var(--color-accent-soft-2, rgba(120, 130, 255, 0.1))
+  );
   color: var(--color-text-primary, #e7e9ee);
   font-weight: 600;
   font-size: 12.5px;
   cursor: pointer;
   transition: filter 0.12s;
 }
-.addBtn:hover:not(:disabled) { filter: brightness(1.12); }
-.addBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.addBtn:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+.addBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 
 .list {
   flex: 1;
@@ -175,7 +192,9 @@
   border-radius: 10px;
   border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
   background: var(--color-surface-1, rgba(255, 255, 255, 0.03));
-  transition: border-color 0.12s, background 0.12s;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
 }
 .card:hover {
   border-color: var(--color-border-strong, rgba(255, 255, 255, 0.16));
@@ -183,16 +202,21 @@
 }
 
 .imp_high {
-  border-color: rgba(255, 180, 80, 0.30);
-  background: linear-gradient(90deg,
+  border-color: rgba(255, 180, 80, 0.3);
+  background: linear-gradient(
+    90deg,
     rgba(255, 180, 80, 0.08),
-    var(--color-surface-1, rgba(255, 255, 255, 0.03)));
+    var(--color-surface-1, rgba(255, 255, 255, 0.03))
+  );
 }
 .imp_low {
   opacity: 0.78;
 }
 
-.cardBody { flex: 1; min-width: 0; }
+.cardBody {
+  flex: 1;
+  min-width: 0;
+}
 .cardText {
   font-size: 13px;
   line-height: 1.5;
@@ -216,7 +240,7 @@
   height: 28px;
   text-align: center;
   border-radius: 6px;
-  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.10));
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
   background: transparent;
   color: var(--color-text-secondary, #aab2c5);
   font-size: 12px;
@@ -234,12 +258,15 @@
   font-size: 13px;
   display: grid;
   place-items: center;
-  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s,
+    border-color 0.1s;
 }
 .iconBtn:hover {
   background: rgba(255, 255, 255, 0.06);
   color: var(--color-text-primary, #e7e9ee);
-  border-color: var(--color-border, rgba(255, 255, 255, 0.10));
+  border-color: var(--color-border, rgba(255, 255, 255, 0.1));
 }
 
 .iconBtnDanger {
@@ -250,8 +277,12 @@
 }
 
 @keyframes pulseDanger {
-  from { box-shadow: 0 0 0 0 rgba(255, 80, 80, 0.45); }
-  to   { box-shadow: 0 0 0 4px rgba(255, 80, 80, 0); }
+  from {
+    box-shadow: 0 0 0 0 rgba(255, 80, 80, 0.45);
+  }
+  to {
+    box-shadow: 0 0 0 4px rgba(255, 80, 80, 0);
+  }
 }
 
 .editInput {
@@ -282,7 +313,7 @@
   padding: 1px 5px;
   border-radius: 4px;
   background: var(--color-surface-2, rgba(255, 255, 255, 0.06));
-  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.10));
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
   font-size: 10.5px;
   color: var(--color-text-primary, #e7e9ee);
 }

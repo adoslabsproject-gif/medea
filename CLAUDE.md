@@ -6,7 +6,7 @@
 
 Medea è un **personal operational memory system** in forma di client email. Il valore reale è **ridurre il carico cognitivo della posta**. L'AI fa SOLO 6 cose mail-centric: priorità, sintesi, ricerca semantica, risposta intelligente, estrazione task, follow-up. Tutto il resto è fuori scope.
 
-**Filtro mentale obbligatorio**: prima di proporre una feature, chiediti «questa cosa riduce il carico cognitivo della posta?». Se la risposta è no, *non* proporla.
+**Filtro mentale obbligatorio**: prima di proporre una feature, chiediti «questa cosa riduce il carico cognitivo della posta?». Se la risposta è no, _non_ proporla.
 
 ## Le tre verità tecniche
 
@@ -61,8 +61,8 @@ Medea è un **personal operational memory system** in forma di client email. Il 
 
 ## Cosa NON fare (esplicito)
 
-- Niente «Chat view» generica — l'AI vive in 6 *modes* mail-contextual in `features/ai-mail/`.
-- Niente tool explosion. Il registry (`ai_tools/mod.rs`) è allineato per **nomi e protocollo** a quello dell'app Liara (`/Users/zelistore/zeli-local`) perché Medea usa lo stesso modello fine-tuned: nomi snake_case, `email_*`, `calendar_*`, `note_*`, `contact_search`, `datetime`. Aggiungere un tool significa aggiungere superficie che il modello non conosce dal training: fallo solo se è davvero necessario, e mai rinominare quelli esistenti. Vedi ADR 0004.
+- Niente «Chat view» generica — l'AI vive in 6 _modes_ mail-contextual in `features/ai-mail/`.
+- Niente tool explosion. Il registry (`ai_tools/mod.rs`) è allineato per **nomi e protocollo** a quello dell'app Liara (`/Users/zelistore/zeli-local`) perché Medea usa lo stesso modello fine-tuned: nomi snake*case, `email*\_`, `calendar\_\_`, `note\_\*`, `contact_search`, `datetime`. Aggiungere un tool significa aggiungere superficie che il modello non conosce dal training: fallo solo se è davvero necessario, e mai rinominare quelli esistenti. Vedi ADR 0004.
 - Niente canvas/browser/web search/finance/screen/voice/RSS/agenti multipli dal toolkit NHA.
 - Niente fork conversazione esposto in UI in Fase 1 (la metadata `parent_id` c'è per il futuro, ma il prodotto non la espone).
 - Niente auto-send. Ogni mutation richiede conferma esplicita dell'utente.

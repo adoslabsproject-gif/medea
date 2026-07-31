@@ -7,12 +7,16 @@ import type { OrganizationDetail } from '../../mail/types';
 import styles from './shared.module.css';
 import own from './TabContatti.module.css';
 
-interface Props { partner: OrganizationDetail; }
+interface Props {
+  partner: OrganizationDetail;
+}
 
 function fmtDate(iso: string | null): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('it-IT', {
-    day: '2-digit', month: '2-digit', year: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
   });
 }
 
@@ -24,10 +28,15 @@ export function TabContatti({ partner }: Props) {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    void mailApi.db.listContacts(2000, 0)
+    void mailApi.db
+      .listContacts(2000, 0)
       .then(setAllContacts)
-      .catch((e: unknown) => { setError(String(e)); })
-      .finally(() => { setLoading(false); });
+      .catch((e: unknown) => {
+        setError(String(e));
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [partner.id]);
 
   // Mostriamo i contatti il cui dominio email = dominio dell'azienda,
@@ -55,8 +64,8 @@ export function TabContatti({ partner }: Props) {
       <div className={own.intro}>
         <p>
           Contatti email aggregati dal sync IMAP che appartengono al dominio
-          <strong> @{partner.domain}</strong>. Questo è il pezzo «rubrica» della scheda:
-          ogni mittente diventa una riga automaticamente.
+          <strong> @{partner.domain}</strong>. Questo è il pezzo «rubrica» della scheda: ogni
+          mittente diventa una riga automaticamente.
         </p>
       </div>
 
@@ -66,7 +75,8 @@ export function TabContatti({ partner }: Props) {
       {!loading && partnerContacts.length === 0 && (
         <div className={styles.empty}>
           <div className={styles.emptyIcon}>📭</div>
-          Nessun contatto email trovato per questo dominio.<br />
+          Nessun contatto email trovato per questo dominio.
+          <br />
           <em style={{ fontSize: 12 }}>
             Quando arriverà una mail da chiunque @{partner.domain} comparirà qui automaticamente.
           </em>
@@ -94,7 +104,9 @@ export function TabContatti({ partner }: Props) {
                 <td className={own.right}>{fmtDate(c.lastSeenAt)}</td>
                 <td>
                   {c.isClient && <span className={`${own.tag} ${own.tagClient}`}>Cliente</span>}
-                  {c.isSupplier && <span className={`${own.tag} ${own.tagSupplier}`}>Fornitore</span>}
+                  {c.isSupplier && (
+                    <span className={`${own.tag} ${own.tagSupplier}`}>Fornitore</span>
+                  )}
                   {!c.isClient && !c.isSupplier && <em className={own.muted}>—</em>}
                 </td>
                 <td>

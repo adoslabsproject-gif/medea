@@ -67,9 +67,16 @@ export function draftsCandidatesFor(email: string): string[] {
 export function sentCandidatesFor(email: string): string[] {
   const gmail = ['[Gmail]/Sent Mail', 'Gmail/Sent', 'Sent'];
   const generic = [
-    'Sent', 'Sent Items', 'Sent Messages', 'Sent Mail',
-    'Inviati', 'Posta inviata',
-    'INBOX/Sent', 'INBOX.Sent', 'INBOX/Inviati', 'INBOX.Inviati',
+    'Sent',
+    'Sent Items',
+    'Sent Messages',
+    'Sent Mail',
+    'Inviati',
+    'Posta inviata',
+    'INBOX/Sent',
+    'INBOX.Sent',
+    'INBOX/Inviati',
+    'INBOX.Inviati',
   ];
   return isGmail(email) ? [...gmail, ...generic] : [...generic, ...gmail];
 }
@@ -80,7 +87,10 @@ export function sentCandidatesFor(email: string): string[] {
  * Dopo l'archiviazione lancia il sync della cartella ed emette
  * `medea:mailbox-changed` (fire-and-forget).
  */
-export async function sendAndArchive(account: MailAccount, msg: OutgoingMessage): Promise<ArchiveResult> {
+export async function sendAndArchive(
+  account: MailAccount,
+  msg: OutgoingMessage,
+): Promise<ArchiveResult> {
   const smtpStatus = await mailApi.smtp.send(account.smtp, msg);
   console.info('[Medea] SMTP send ok:', smtpStatus);
 
@@ -107,12 +117,15 @@ export async function sendAndArchive(account: MailAccount, msg: OutgoingMessage)
 
   if (archivedFolder) {
     const folder = archivedFolder;
-    void mailApi.sync.folder(account.id, account.imap, folder, 'sent', 30)
+    void mailApi.sync
+      .folder(account.id, account.imap, folder, 'sent', 30)
       .then(() => {
         console.info('[Medea] sync Sent dopo invio: ok');
         window.dispatchEvent(new CustomEvent('medea:mailbox-changed', { detail: { folder } }));
       })
-      .catch((e: unknown) => { console.warn('[Medea] sync Sent fallito:', e); });
+      .catch((e: unknown) => {
+        console.warn('[Medea] sync Sent fallito:', e);
+      });
   }
 
   return {

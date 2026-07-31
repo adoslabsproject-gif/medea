@@ -25,9 +25,7 @@ export function AppShell({ account, onSwitchAccount }: Props) {
     <div className={styles.root}>
       <ActivityRail active={active} onSelect={setActive} />
       <div className={styles.workspace}>
-        {active === 'mail' && (
-          <MailLayout account={account} onSwitchAccount={onSwitchAccount} />
-        )}
+        {active === 'mail' && <MailLayout account={account} onSwitchAccount={onSwitchAccount} />}
         {active === 'address-book' && <AddressBookView />}
         {active === 'contacts' && <ContactsView />}
         {active === 'articles' && <ArticlesView />}

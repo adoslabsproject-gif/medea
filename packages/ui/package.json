@@ -13,8 +13,12 @@
     "./dialog": "./src/primitives/dialog/index.ts",
     "./hooks": "./src/hooks/index.ts"
   },
-  "files": ["src"],
-  "sideEffects": ["**/*.css"],
+  "files": [
+    "src"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
   "scripts": {
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",

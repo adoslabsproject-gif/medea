@@ -58,7 +58,9 @@ export function useReminderNotifications(): void {
     }
 
     void tick();
-    const timer = window.setInterval(() => { void tick(); }, POLL_MS);
+    const timer = window.setInterval(() => {
+      void tick();
+    }, POLL_MS);
     return () => {
       cancelled = true;
       window.clearInterval(timer);

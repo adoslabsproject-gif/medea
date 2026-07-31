@@ -1,20 +1,13 @@
 import { Button } from '@medea/ui';
 import { useEffect, useState } from 'react';
 
-
 import { mailApi } from '../api';
 import type { DbFullMessage, DbInlinePart } from '../api';
 import { AttachmentsPanel } from '../attachments/AttachmentsPanel';
 
 import styles from './MessageReader.module.css';
 
-export type ReaderAction =
-  | 'reply'
-  | 'replyAll'
-  | 'forward'
-  | 'flag'
-  | 'unread'
-  | 'delete';
+export type ReaderAction = 'reply' | 'replyAll' | 'forward' | 'flag' | 'unread' | 'delete';
 
 interface Props {
   message: DbFullMessage | null;
@@ -83,12 +76,13 @@ function replaceCidWithData(html: string, parts: DbInlinePart[]): string {
 function neutralizeCidUrls(html: string, resolve: (cid: string) => string): string {
   // 1) Attributi HTML standard (src/background/data/xlink:href)
   const attrRe = /(\b(?:src|background|data|xlink:href)\s*=\s*)(["'])cid:([^"']+)\2/gi;
-  let out = html.replace(attrRe, (_full, prefix: string, q: string, cid: string) =>
-    `${prefix}${q}${resolve(cid)}${q}`);
+  let out = html.replace(
+    attrRe,
+    (_full, prefix: string, q: string, cid: string) => `${prefix}${q}${resolve(cid)}${q}`,
+  );
   // 2) CSS url(cid:...) — dentro inline style o tag <style>
   const urlRe = /url\(\s*(['"]?)cid:([^)'"]+)\1\s*\)/gi;
-  out = out.replace(urlRe, (_full, q: string, cid: string) =>
-    `url(${q}${resolve(cid)}${q})`);
+  out = out.replace(urlRe, (_full, q: string, cid: string) => `url(${q}${resolve(cid)}${q})`);
   return out;
 }
 
@@ -159,31 +153,59 @@ export function MessageReader({ message, loading, onAction }: Props) {
     <div className={styles.root}>
       <header className={styles.head}>
         <div className={styles.toolbar}>
-          <Button variant="solid" size="sm" onClick={() => { onAction('reply'); }}>
+          <Button
+            variant="solid"
+            size="sm"
+            onClick={() => {
+              onAction('reply');
+            }}
+          >
             ↩ Rispondi
           </Button>
-          <Button variant="soft" size="sm" onClick={() => { onAction('replyAll'); }}>
+          <Button
+            variant="soft"
+            size="sm"
+            onClick={() => {
+              onAction('replyAll');
+            }}
+          >
             ↩↩ Rispondi a tutti
           </Button>
-          <Button variant="soft" size="sm" onClick={() => { onAction('forward'); }}>
+          <Button
+            variant="soft"
+            size="sm"
+            onClick={() => {
+              onAction('forward');
+            }}
+          >
             ↪ Inoltra
           </Button>
           <span className={styles.toolbarSep} />
           <Button
             variant={message.isFlagged ? 'solid' : 'ghost'}
             size="sm"
-            onClick={() => { onAction('flag'); }}
+            onClick={() => {
+              onAction('flag');
+            }}
             title={message.isFlagged ? 'Rimuovi stella' : 'Aggiungi stella'}
           >
             ★
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => { onAction('unread'); }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              onAction('unread');
+            }}
+          >
             {message.isSeen ? 'Segna non letto' : 'Segna letto'}
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => { onAction('delete'); }}
+            onClick={() => {
+              onAction('delete');
+            }}
             title="Cancellazione SOLO locale — il messaggio resta sul server IMAP"
           >
             🗑 Elimina

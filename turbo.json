@@ -1,10 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": [
-    "**/.env",
-    "tsconfig.json",
-    "rust-toolchain.toml"
-  ],
+  "globalDependencies": ["**/.env", "tsconfig.json", "rust-toolchain.toml"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

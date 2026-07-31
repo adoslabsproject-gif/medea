@@ -223,8 +223,7 @@ export type OrganizationUpdateInput = OrganizationUpdateFull;
 
 export const mailApi = {
   imap: {
-    test: (creds: ImapCredentials): Promise<boolean> =>
-      invoke('imap_test_connection', { creds }),
+    test: (creds: ImapCredentials): Promise<boolean> => invoke('imap_test_connection', { creds }),
     listFolders: (creds: ImapCredentials): Promise<FolderInfo[]> =>
       invoke('imap_list_folders', { creds }),
     append: (
@@ -232,14 +231,12 @@ export const mailApi = {
       folder: string,
       emlBytes: number[],
       flags: string[],
-    ): Promise<void> =>
-      invoke('imap_append', { creds, folder, emlBytes, flags }),
+    ): Promise<void> => invoke('imap_append', { creds, folder, emlBytes, flags }),
     listMessages: (
       creds: ImapCredentials,
       folder: string,
       limit: number,
-    ): Promise<MessageSummary[]> =>
-      invoke('imap_list_messages', { creds, folder, limit }),
+    ): Promise<MessageSummary[]> => invoke('imap_list_messages', { creds, folder, limit }),
     fetch: (creds: ImapCredentials, folder: string, uid: number): Promise<MessageFull> =>
       invoke('imap_fetch_message', { creds, folder, uid }),
   },
@@ -255,14 +252,12 @@ export const mailApi = {
     ): Promise<string> =>
       invoke('mail_send_and_archive_sent', { smtpCreds, imapCreds, sentFolder, msg }),
     /** Costruisce l'EML del messaggio senza inviarlo. Usato per APPEND-only (Drafts/Sent retry). */
-    buildEml: (msg: OutgoingMessage): Promise<number[]> =>
-      invoke('mail_build_eml', { msg }),
+    buildEml: (msg: OutgoingMessage): Promise<number[]> => invoke('mail_build_eml', { msg }),
     saveDraft: (
       imapCreds: ImapCredentials,
       draftsFolder: string,
       msg: OutgoingMessage,
-    ): Promise<void> =>
-      invoke('mail_save_draft', { imapCreds, draftsFolder, msg }),
+    ): Promise<void> => invoke('mail_save_draft', { imapCreds, draftsFolder, msg }),
   },
   db: {
     accountUpsert: (acc: MailAccount): Promise<void> => {
@@ -286,8 +281,7 @@ export const mailApi = {
       path: string,
       name: string,
       folderType: string,
-    ): Promise<number> =>
-      invoke('db_ensure_folder', { accountId, path, name, folderType }),
+    ): Promise<number> => invoke('db_ensure_folder', { accountId, path, name, folderType }),
     listMessages: (
       accountId: string,
       folderId: number,
@@ -295,8 +289,7 @@ export const mailApi = {
       offset: number,
     ): Promise<DbListedMessage[]> =>
       invoke('db_list_messages', { accountId, folderId, limit, offset }),
-    getMessage: (id: number): Promise<DbFullMessage | null> =>
-      invoke('db_get_message', { id }),
+    getMessage: (id: number): Promise<DbFullMessage | null> => invoke('db_get_message', { id }),
     recentMessages: (accountId: string, limit: number): Promise<DbListedMessage[]> =>
       invoke('db_recent_messages', { accountId, limit }),
     search: (accountId: string, query: string, limit: number): Promise<DbSearchHit[]> =>
@@ -341,8 +334,7 @@ export const mailApi = {
       invoke('db_organization_update', { org }),
     organizationInsert: (org: OrganizationInsertInput): Promise<number> =>
       invoke('db_organization_insert', { org }),
-    organizationDelete: (id: number): Promise<void> =>
-      invoke('db_organization_delete', { id }),
+    organizationDelete: (id: number): Promise<void> => invoke('db_organization_delete', { id }),
     bulkDeleteOrganizations: (ids: number[]): Promise<number> =>
       invoke('db_bulk_delete_organizations', { ids }),
     bulkDeleteArticles: (ids: number[]): Promise<number> =>

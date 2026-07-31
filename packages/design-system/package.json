@@ -12,7 +12,10 @@
     "./themes/light": "./src/themes/medea-light.css",
     "./themes/hc": "./src/themes/medea-hc.css"
   },
-  "files": ["src", "dist"],
+  "files": [
+    "src",
+    "dist"
+  ],
   "scripts": {
     "build": "node ./tokens.config.mjs",
     "lint": "stylelint \"src/**/*.css\"",

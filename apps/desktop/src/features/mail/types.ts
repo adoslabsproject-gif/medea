@@ -210,8 +210,12 @@ export interface PriceResolution {
 
 export type DocDirection = 'incoming' | 'outgoing';
 export type DocType =
-  | 'sales_order' | 'sales_confirm' | 'quote'
-  | 'purchase_order' | 'purchase_confirm' | 'communication';
+  | 'sales_order'
+  | 'sales_confirm'
+  | 'quote'
+  | 'purchase_order'
+  | 'purchase_confirm'
+  | 'communication';
 
 export interface CustomerDocumentInput {
   id?: number | null;

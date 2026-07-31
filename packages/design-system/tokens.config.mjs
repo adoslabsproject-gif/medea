@@ -19,7 +19,16 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const TOKENS_DIR = join(HERE, 'tokens');
 const DIST_DIR = join(HERE, 'dist');
 
-const FILES = ['color', 'space', 'typography', 'elevation', 'radius', 'motion', 'z-index', 'breakpoints'];
+const FILES = [
+  'color',
+  'space',
+  'typography',
+  'elevation',
+  'radius',
+  'motion',
+  'z-index',
+  'breakpoints',
+];
 
 function loadAll() {
   /** @type {Record<string, unknown>} */

@@ -1,7 +1,6 @@
 import { Button, Dialog, Select, TextField } from '@medea/ui';
 import { useCallback, useEffect, useState } from 'react';
 
-
 import { mailApi } from '../mail/api';
 import type {
   DbArticleRow,
@@ -53,16 +52,21 @@ export function PriceListsView() {
     }
   }, [activeId]);
 
-  useEffect(() => { void reload(); }, [reload]);
+  useEffect(() => {
+    void reload();
+  }, [reload]);
 
   useEffect(() => {
     if (activeId === null) {
       setItems([]);
       return;
     }
-    void mailApi.db.priceListItems(activeId).then(setItems).catch((e: unknown) => {
-      setError(String(e));
-    });
+    void mailApi.db
+      .priceListItems(activeId)
+      .then(setItems)
+      .catch((e: unknown) => {
+        setError(String(e));
+      });
   }, [activeId]);
 
   function openNew() {
@@ -83,7 +87,10 @@ export function PriceListsView() {
   }
   async function saveList() {
     setError(null);
-    if (!editing.name.trim()) { setError('Il nome del listino è obbligatorio.'); return; }
+    if (!editing.name.trim()) {
+      setError('Il nome del listino è obbligatorio.');
+      return;
+    }
     try {
       const id = await mailApi.db.priceListUpsert(editing);
       setEditorOpen(false);
@@ -171,7 +178,14 @@ export function PriceListsView() {
       {error && (
         <div className={styles.error}>
           {error}
-          <button type="button" onClick={() => { setError(null); }}>✕</button>
+          <button
+            type="button"
+            onClick={() => {
+              setError(null);
+            }}
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -179,7 +193,9 @@ export function PriceListsView() {
         <aside className={styles.sidebar}>
           <div className={styles.sidebarHead}>
             <span className={styles.sidebarTitle}>Listini ({lists.length})</span>
-            <Button variant="solid" size="sm" onClick={openNew}>+ Nuovo</Button>
+            <Button variant="solid" size="sm" onClick={openNew}>
+              + Nuovo
+            </Button>
           </div>
           <ul className={styles.list}>
             {lists.map((l) => (
@@ -187,7 +203,9 @@ export function PriceListsView() {
                 <button
                   type="button"
                   className={`${styles.listItem} ${l.id === activeId ? styles.activeItem : ''}`}
-                  onClick={() => { setActiveId(l.id); }}
+                  onClick={() => {
+                    setActiveId(l.id);
+                  }}
                 >
                   <div className={styles.listItemMain}>
                     <span className={styles.listItemName}>
@@ -202,9 +220,7 @@ export function PriceListsView() {
               </li>
             ))}
             {lists.length === 0 && (
-              <li className={styles.emptyList}>
-                Nessun listino. Crea il primo con «+ Nuovo».
-              </li>
+              <li className={styles.emptyList}>Nessun listino. Crea il primo con «+ Nuovo».</li>
             )}
           </ul>
         </aside>
@@ -225,16 +241,32 @@ export function PriceListsView() {
                     {active.name}
                   </h2>
                   <p className={styles.detailSub}>
-                    {active.organizationName
-                      ? <>Per cliente: <strong>{active.organizationName}</strong></>
-                      : <>Listino generale (valido per tutti i clienti senza listino dedicato)</>}
-                    {' · '}{active.itemCount} righe
+                    {active.organizationName ? (
+                      <>
+                        Per cliente: <strong>{active.organizationName}</strong>
+                      </>
+                    ) : (
+                      <>Listino generale (valido per tutti i clienti senza listino dedicato)</>
+                    )}
+                    {' · '}
+                    {active.itemCount} righe
                   </p>
                 </div>
                 <div className={styles.detailActions}>
-                  <Button variant="outline" onClick={() => { openEdit(active); }}>✎ Modifica</Button>
-                  <Button variant="ghost" onClick={() => void removeList(active.id)}>🗑 Elimina</Button>
-                  <Button variant="solid" onClick={openNewItem}>+ Aggiungi articolo</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      openEdit(active);
+                    }}
+                  >
+                    ✎ Modifica
+                  </Button>
+                  <Button variant="ghost" onClick={() => void removeList(active.id)}>
+                    🗑 Elimina
+                  </Button>
+                  <Button variant="solid" onClick={openNewItem}>
+                    + Aggiungi articolo
+                  </Button>
                 </div>
               </header>
 
@@ -260,23 +292,50 @@ export function PriceListsView() {
                     {items.map((it) => {
                       const net = it.price * (1 - it.discountPercent / 100);
                       return (
-                        <tr key={it.id} onDoubleClick={() => { openEditItem(it); }}>
-                          <td><code>{it.articleCode}</code></td>
+                        <tr
+                          key={it.id}
+                          onDoubleClick={() => {
+                            openEditItem(it);
+                          }}
+                        >
+                          <td>
+                            <code>{it.articleCode}</code>
+                          </td>
                           <td>{it.articleDescription}</td>
                           <td>{it.articleUnit ?? '—'}</td>
                           <td className={styles.numCell}>
-                            {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(it.price)}
+                            {new Intl.NumberFormat('it-IT', {
+                              style: 'currency',
+                              currency: 'EUR',
+                            }).format(it.price)}
                           </td>
                           <td className={styles.numCell}>{it.discountPercent.toFixed(1)}%</td>
                           <td className={styles.numCell}>
                             <strong>
-                              {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(net)}
+                              {new Intl.NumberFormat('it-IT', {
+                                style: 'currency',
+                                currency: 'EUR',
+                              }).format(net)}
                             </strong>
                           </td>
                           <td>{it.notes ?? ''}</td>
                           <td className={styles.rowActions}>
-                            <button type="button" className={styles.rowBtn} onClick={() => { openEditItem(it); }}>✎</button>
-                            <button type="button" className={styles.rowBtn} onClick={() => void removeItem(it.id)}>🗑</button>
+                            <button
+                              type="button"
+                              className={styles.rowBtn}
+                              onClick={() => {
+                                openEditItem(it);
+                              }}
+                            >
+                              ✎
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.rowBtn}
+                              onClick={() => void removeItem(it.id)}
+                            >
+                              🗑
+                            </button>
                           </td>
                         </tr>
                       );
@@ -292,13 +351,24 @@ export function PriceListsView() {
       {/* Editor listino */}
       <Dialog
         open={editorOpen}
-        onClose={() => { setEditorOpen(false); }}
+        onClose={() => {
+          setEditorOpen(false);
+        }}
         title={editing.id ? 'Modifica listino' : 'Nuovo listino'}
         size="md"
         footer={
           <>
-            <Button variant="ghost" onClick={() => { setEditorOpen(false); }}>Annulla</Button>
-            <Button variant="solid" onClick={() => void saveList()}>Salva</Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setEditorOpen(false);
+              }}
+            >
+              Annulla
+            </Button>
+            <Button variant="solid" onClick={() => void saveList()}>
+              Salva
+            </Button>
           </>
         }
       >
@@ -306,7 +376,9 @@ export function PriceListsView() {
           <TextField
             label="Nome listino *"
             value={editing.name}
-            onChange={(e) => { setEditing({ ...editing, name: e.target.value }); }}
+            onChange={(e) => {
+              setEditing({ ...editing, name: e.target.value });
+            }}
             placeholder="Es. Listino 2026, Listino Cliente Acme, ..."
             fullWidth
           />
@@ -330,7 +402,9 @@ export function PriceListsView() {
             <input
               type="checkbox"
               checked={editing.isDefault ?? false}
-              onChange={(e) => { setEditing({ ...editing, isDefault: e.target.checked }); }}
+              onChange={(e) => {
+                setEditing({ ...editing, isDefault: e.target.checked });
+              }}
             />{' '}
             Imposta come <strong>listino default</strong> (verrà disabilitato sugli altri)
           </label>
@@ -340,13 +414,24 @@ export function PriceListsView() {
       {/* Editor riga listino */}
       <Dialog
         open={itemEditorOpen}
-        onClose={() => { setItemEditorOpen(false); }}
+        onClose={() => {
+          setItemEditorOpen(false);
+        }}
         title={editingItem?.id ? 'Modifica riga listino' : 'Aggiungi articolo al listino'}
         size="md"
         footer={
           <>
-            <Button variant="ghost" onClick={() => { setItemEditorOpen(false); }}>Annulla</Button>
-            <Button variant="solid" onClick={() => void saveItem()}>Salva</Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setItemEditorOpen(false);
+              }}
+            >
+              Annulla
+            </Button>
+            <Button variant="solid" onClick={() => void saveItem()}>
+              Salva
+            </Button>
           </>
         }
       >
@@ -355,28 +440,39 @@ export function PriceListsView() {
             <Select
               label="Articolo"
               value={String(editingItem.articleId)}
-              onChange={(e) => { setEditingItem({ ...editingItem, articleId: Number(e.target.value) }); }}
-              items={articles.map((a) => ({ value: String(a.id), label: `${a.code} — ${a.description}` }))}
+              onChange={(e) => {
+                setEditingItem({ ...editingItem, articleId: Number(e.target.value) });
+              }}
+              items={articles.map((a) => ({
+                value: String(a.id),
+                label: `${a.code} — ${a.description}`,
+              }))}
               fullWidth
             />
             <TextField
               label="Prezzo (€)"
               type="number"
               value={String(editingItem.price)}
-              onChange={(e) => { setEditingItem({ ...editingItem, price: Number(e.target.value || 0) }); }}
+              onChange={(e) => {
+                setEditingItem({ ...editingItem, price: Number(e.target.value || 0) });
+              }}
               fullWidth
             />
             <TextField
               label="Sconto %"
               type="number"
               value={String(editingItem.discountPercent ?? 0)}
-              onChange={(e) => { setEditingItem({ ...editingItem, discountPercent: Number(e.target.value || 0) }); }}
+              onChange={(e) => {
+                setEditingItem({ ...editingItem, discountPercent: Number(e.target.value || 0) });
+              }}
               fullWidth
             />
             <TextField
               label="Note"
               value={editingItem.notes ?? ''}
-              onChange={(e) => { setEditingItem({ ...editingItem, notes: e.target.value }); }}
+              onChange={(e) => {
+                setEditingItem({ ...editingItem, notes: e.target.value });
+              }}
               placeholder="Note opzionali per questa riga"
               fullWidth
             />

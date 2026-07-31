@@ -12,7 +12,6 @@ import { TabNote } from './tabs/TabNote';
 import { TabSconti } from './tabs/TabSconti';
 import type { DetailTab } from './types';
 
-
 interface Props {
   partner: OrganizationDetail;
   brands: BrandRow[];
@@ -24,13 +23,13 @@ interface Props {
 }
 
 const TABS: { id: DetailTab; icon: string; label: string }[] = [
-  { id: 'anagrafica',    icon: '🪪', label: 'Anagrafica' },
-  { id: 'contatti',      icon: '📇', label: 'Contatti email' },
-  { id: 'listino',       icon: '💶', label: 'Listino dedicato' },
-  { id: 'sconti',        icon: '🎯', label: 'Sconti cat × marchio' },
-  { id: 'documenti',     icon: '📑', label: 'Documenti' },
+  { id: 'anagrafica', icon: '🪪', label: 'Anagrafica' },
+  { id: 'contatti', icon: '📇', label: 'Contatti email' },
+  { id: 'listino', icon: '💶', label: 'Listino dedicato' },
+  { id: 'sconti', icon: '🎯', label: 'Sconti cat × marchio' },
+  { id: 'documenti', icon: '📑', label: 'Documenti' },
   { id: 'comunicazioni', icon: '📨', label: 'Comunicazioni' },
-  { id: 'note',          icon: '📝', label: 'Note' },
+  { id: 'note', icon: '📝', label: 'Note' },
 ];
 
 function initials(d: OrganizationDetail): string {
@@ -42,7 +41,14 @@ function initials(d: OrganizationDetail): string {
   return (parts[0]!.charAt(0) + parts[1]!.charAt(0)).toUpperCase();
 }
 
-export function PartnerDetail({ partner, brands, categories, onToggleRole, onDelete, onSaved }: Props) {
+export function PartnerDetail({
+  partner,
+  brands,
+  categories,
+  onToggleRole,
+  onDelete,
+  onSaved,
+}: Props) {
   const [tab, setTab] = useState<DetailTab>('anagrafica');
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
@@ -52,7 +58,9 @@ export function PartnerDetail({ partner, brands, categories, onToggleRole, onDel
       setConfirmingDelete(false);
     } else {
       setConfirmingDelete(true);
-      setTimeout(() => { setConfirmingDelete(false); }, 3000);
+      setTimeout(() => {
+        setConfirmingDelete(false);
+      }, 3000);
     }
   }
 
@@ -64,8 +72,16 @@ export function PartnerDetail({ partner, brands, categories, onToggleRole, onDel
           <div className={styles.heroInfo}>
             <h2 className={styles.heroName}>{partner.displayName ?? partner.domain}</h2>
             <div className={styles.heroMeta}>
-              {partner.vatNumber && <span>P.IVA <strong>{partner.vatNumber}</strong></span>}
-              {partner.taxCode && <span>CF <strong>{partner.taxCode}</strong></span>}
+              {partner.vatNumber && (
+                <span>
+                  P.IVA <strong>{partner.vatNumber}</strong>
+                </span>
+              )}
+              {partner.taxCode && (
+                <span>
+                  CF <strong>{partner.taxCode}</strong>
+                </span>
+              )}
               {partner.city && (
                 <span>
                   {partner.city}
@@ -77,13 +93,21 @@ export function PartnerDetail({ partner, brands, categories, onToggleRole, onDel
             <div className={styles.heroRoles}>
               <RoleChip
                 active={partner.isClient}
-                onClick={() => { onToggleRole('client'); }}
-                icon="🤝" label="Cliente" accent="emerald"
+                onClick={() => {
+                  onToggleRole('client');
+                }}
+                icon="🤝"
+                label="Cliente"
+                accent="emerald"
               />
               <RoleChip
                 active={partner.isSupplier}
-                onClick={() => { onToggleRole('supplier'); }}
-                icon="🏭" label="Fornitore" accent="amber"
+                onClick={() => {
+                  onToggleRole('supplier');
+                }}
+                icon="🏭"
+                label="Fornitore"
+                accent="amber"
               />
             </div>
           </div>
@@ -106,7 +130,9 @@ export function PartnerDetail({ partner, brands, categories, onToggleRole, onDel
             key={t.id}
             type="button"
             className={`${styles.tab} ${tab === t.id ? styles.tabActive : ''}`}
-            onClick={() => { setTab(t.id); }}
+            onClick={() => {
+              setTab(t.id);
+            }}
             role="tab"
             aria-selected={tab === t.id}
           >
@@ -117,13 +143,17 @@ export function PartnerDetail({ partner, brands, categories, onToggleRole, onDel
       </nav>
 
       <div className={styles.tabContent}>
-        {tab === 'anagrafica'    && <TabAnagrafica partner={partner} {...(onSaved ? { onSaved } : {})} />}
-        {tab === 'contatti'      && <TabContatti partner={partner} />}
-        {tab === 'listino'       && <TabListino partner={partner} />}
-        {tab === 'sconti'        && <TabSconti partner={partner} brands={brands} categories={categories} />}
-        {tab === 'documenti'     && <TabDocumenti partner={partner} />}
+        {tab === 'anagrafica' && (
+          <TabAnagrafica partner={partner} {...(onSaved ? { onSaved } : {})} />
+        )}
+        {tab === 'contatti' && <TabContatti partner={partner} />}
+        {tab === 'listino' && <TabListino partner={partner} />}
+        {tab === 'sconti' && (
+          <TabSconti partner={partner} brands={brands} categories={categories} />
+        )}
+        {tab === 'documenti' && <TabDocumenti partner={partner} />}
         {tab === 'comunicazioni' && <TabComunicazioni partner={partner} />}
-        {tab === 'note'          && <TabNote partner={partner} />}
+        {tab === 'note' && <TabNote partner={partner} />}
       </div>
     </div>
   );
@@ -142,8 +172,10 @@ function RoleChip({ active, onClick, icon, label, accent }: RoleChipProps) {
     styles.roleChip,
     active ? styles.roleChipActive : '',
     accent === 'emerald' ? styles.roleChipEmerald : '',
-    accent === 'amber'   ? styles.roleChipAmber   : '',
-  ].filter(Boolean).join(' ');
+    accent === 'amber' ? styles.roleChipAmber : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
   return (
     <button type="button" className={cls} onClick={onClick}>
       <span>{icon}</span>

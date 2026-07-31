@@ -1,7 +1,6 @@
 import { Button, Select, TextField } from '@medea/ui';
 import { useState } from 'react';
 
-
 import { mailApi } from '../mail/api';
 import type { MailAccount } from '../mail/types';
 
@@ -79,7 +78,7 @@ const PRESETS: Record<Preset, PresetConfig> = {
     smtpHost: '',
     smtpPort: 587,
     smtpImplicitTls: false,
-    hint: "Inserisci host/porta esatti del tuo provider. IMAP standard: 993 (TLS). SMTP standard: 587 (STARTTLS) o 465 (implicit TLS).",
+    hint: 'Inserisci host/porta esatti del tuo provider. IMAP standard: 993 (TLS). SMTP standard: 587 (STARTTLS) o 465 (implicit TLS).',
   },
 };
 
@@ -142,7 +141,7 @@ export function AccountSetup({ onSaved, onCancel }: Props) {
   }
 
   function validate(): string | null {
-    if (!emailAddress.includes('@')) return "Inserisci un indirizzo email valido.";
+    if (!emailAddress.includes('@')) return 'Inserisci un indirizzo email valido.';
     if (password.length === 0) return 'Inserisci la password.';
     if (imapHost.trim().length === 0) return "Manca l'host IMAP.";
     if (smtpHost.trim().length === 0) return "Manca l'host SMTP.";
@@ -153,7 +152,10 @@ export function AccountSetup({ onSaved, onCancel }: Props) {
 
   async function testImap() {
     const v = validate();
-    if (v) { setStatus({ kind: 'err', text: v }); return; }
+    if (v) {
+      setStatus({ kind: 'err', text: v });
+      return;
+    }
     setBusy('testing-imap');
     const acc = buildAccount();
     setStatus({
@@ -172,7 +174,10 @@ export function AccountSetup({ onSaved, onCancel }: Props) {
 
   async function testSmtp() {
     const v = validate();
-    if (v) { setStatus({ kind: 'err', text: v }); return; }
+    if (v) {
+      setStatus({ kind: 'err', text: v });
+      return;
+    }
     setBusy('testing-smtp');
     const acc = buildAccount();
     setStatus({
@@ -235,7 +240,9 @@ export function AccountSetup({ onSaved, onCancel }: Props) {
           <Select
             label="Provider"
             value={preset}
-            onChange={(e) => { applyPreset(e.target.value as Preset); }}
+            onChange={(e) => {
+              applyPreset(e.target.value as Preset);
+            }}
             items={(Object.keys(PRESETS) as Preset[]).map((k) => ({
               value: k,
               label: PRESETS[k].label,
@@ -249,7 +256,9 @@ export function AccountSetup({ onSaved, onCancel }: Props) {
             label="Nome visualizzato"
             placeholder="Es. Mario Rossi — ACME S.r.l."
             value={displayName}
-            onChange={(e) => { setDisplayName(e.target.value); }}
+            onChange={(e) => {
+              setDisplayName(e.target.value);
+            }}
             fullWidth
           />
 
@@ -258,7 +267,9 @@ export function AccountSetup({ onSaved, onCancel }: Props) {
             type="email"
             placeholder="nome.cognome@dominio.it"
             value={emailAddress}
-            onChange={(e) => { setEmailAddress(e.target.value); }}
+            onChange={(e) => {
+              setEmailAddress(e.target.value);
+            }}
             autoComplete="email"
             hint="È l'indirizzo che apparirà come 'Da:' nelle email che invii."
             fullWidth
@@ -268,7 +279,9 @@ export function AccountSetup({ onSaved, onCancel }: Props) {
             label="Username (se diverso dall'email)"
             placeholder="Lascia vuoto se l'username è l'email stessa"
             value={username}
-            onChange={(e) => { setUsername(e.target.value); }}
+            onChange={(e) => {
+              setUsername(e.target.value);
+            }}
             autoComplete="username"
             hint="Alcuni provider aziendali / Exchange / hosting richiedono uno username diverso dall'indirizzo email (es. 'n.cucurachi' invece di 'n.cucurachi@dominio.it'). Lascia vuoto se non sei sicuro — verrà usata l'email."
             fullWidth
@@ -279,7 +292,9 @@ export function AccountSetup({ onSaved, onCancel }: Props) {
             type="password"
             placeholder="Password account (o App Password)"
             value={password}
-            onChange={(e) => { setPassword(e.target.value); }}
+            onChange={(e) => {
+              setPassword(e.target.value);
+            }}
             autoComplete="current-password"
             hint="Cifrata localmente (AES-GCM) prima di essere salvata. Mai inviata altrove."
             fullWidth
@@ -290,13 +305,17 @@ export function AccountSetup({ onSaved, onCancel }: Props) {
             <TextField
               label="Host IMAP"
               value={imapHost}
-              onChange={(e) => { setImapHost(e.target.value); }}
+              onChange={(e) => {
+                setImapHost(e.target.value);
+              }}
               fullWidth
             />
             <TextField
               label="Porta"
               value={imapPort}
-              onChange={(e) => { setImapPort(e.target.value); }}
+              onChange={(e) => {
+                setImapPort(e.target.value);
+              }}
               inputMode="numeric"
             />
           </div>
@@ -306,13 +325,17 @@ export function AccountSetup({ onSaved, onCancel }: Props) {
             <TextField
               label="Host SMTP"
               value={smtpHost}
-              onChange={(e) => { setSmtpHost(e.target.value); }}
+              onChange={(e) => {
+                setSmtpHost(e.target.value);
+              }}
               fullWidth
             />
             <TextField
               label="Porta"
               value={smtpPort}
-              onChange={(e) => { setSmtpPort(e.target.value); }}
+              onChange={(e) => {
+                setSmtpPort(e.target.value);
+              }}
               inputMode="numeric"
             />
           </div>
@@ -322,7 +345,9 @@ export function AccountSetup({ onSaved, onCancel }: Props) {
               <input
                 type="checkbox"
                 checked={smtpImplicitTls}
-                onChange={(e) => { setSmtpImplicitTls(e.target.checked); }}
+                onChange={(e) => {
+                  setSmtpImplicitTls(e.target.checked);
+                }}
               />{' '}
               SMTP usa TLS implicito (porta 465). Lascia disattivato per STARTTLS (587).
             </label>
@@ -333,7 +358,9 @@ export function AccountSetup({ onSaved, onCancel }: Props) {
               <input
                 type="checkbox"
                 checked={acceptInvalidCerts}
-                onChange={(e) => { setAcceptInvalidCerts(e.target.checked); }}
+                onChange={(e) => {
+                  setAcceptInvalidCerts(e.target.checked);
+                }}
               />{' '}
               Accetta certificati self-signed (solo server interni, sconsigliato).
             </label>

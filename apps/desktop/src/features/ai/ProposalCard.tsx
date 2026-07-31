@@ -6,7 +6,6 @@ import type { MailAccount } from '../mail/types';
 import styles from './ProposalCard.module.css';
 import type { Proposal, ProposalExecution } from './store/conversations';
 
-
 interface Props {
   proposal: Proposal;
   account: MailAccount;
@@ -19,12 +18,14 @@ interface Props {
 
 export function ProposalCard({ proposal, account, execution, onExecuted }: Props) {
   if (proposal.type === 'compose_draft') {
-    return <ComposeDraftCard
-      proposal={proposal}
-      account={account}
-      {...(execution ? { execution } : {})}
-      {...(onExecuted ? { onExecuted } : {})}
-    />;
+    return (
+      <ComposeDraftCard
+        proposal={proposal}
+        account={account}
+        {...(execution ? { execution } : {})}
+        {...(onExecuted ? { onExecuted } : {})}
+      />
+    );
   }
   if (proposal.type === 'compose_html') {
     return <HtmlDocCard proposal={proposal} account={account} />;
@@ -39,7 +40,7 @@ interface HtmlProps {
 
 const DOC_KIND_LABEL: Record<string, string> = {
   quote: '💬 Offerta',
-  order_confirm: '✅ Conferma d\'ordine',
+  order_confirm: "✅ Conferma d'ordine",
   letter: '✉️ Lettera',
   report: '📊 Report',
   communication: '📨 Comunicazione',
@@ -114,15 +115,23 @@ function HtmlDocCard({ proposal, account: _account }: HtmlProps) {
       {tooBig && !showFullPreview ? (
         <div className={styles.bigPreviewWarn}>
           <p>
-            📦 Documento HTML di <strong>{(htmlSize / 1024).toFixed(0)} KB</strong> —
-            anteprima inline disattivata per evitare freeze del WebView.
+            📦 Documento HTML di <strong>{(htmlSize / 1024).toFixed(0)} KB</strong> — anteprima
+            inline disattivata per evitare freeze del WebView.
           </p>
           <div className={styles.bigPreviewActions}>
-            <button type="button" className={styles.btnGhost} onClick={() => { setShowFullPreview(true); }}>
+            <button
+              type="button"
+              className={styles.btnGhost}
+              onClick={() => {
+                setShowFullPreview(true);
+              }}
+            >
               ⚠️ Mostra comunque (può rallentare l'app)
             </button>
             <span style={{ flex: 1 }} />
-            <span className={styles.muted}>Consiglio: 💾 Salva HTML, poi apri in browser esterno per stampa/PDF</span>
+            <span className={styles.muted}>
+              Consiglio: 💾 Salva HTML, poi apri in browser esterno per stampa/PDF
+            </span>
           </div>
         </div>
       ) : (
@@ -145,25 +154,45 @@ function HtmlDocCard({ proposal, account: _account }: HtmlProps) {
             <button
               type="button"
               className={styles.linkBtn}
-              onClick={() => void (async () => {
-                try {
-                  const { invoke } = await import('@tauri-apps/api/core');
-                  await invoke('reveal_in_file_manager', { path: savedTo });
-                } catch (e) { setError(`Apri Finder fallito: ${String(e)}`); }
-              })()}
-            >📁 Mostra nel Finder</button>
+              onClick={() =>
+                void (async () => {
+                  try {
+                    const { invoke } = await import('@tauri-apps/api/core');
+                    await invoke('reveal_in_file_manager', { path: savedTo });
+                  } catch (e) {
+                    setError(`Apri Finder fallito: ${String(e)}`);
+                  }
+                })()
+              }
+            >
+              📁 Mostra nel Finder
+            </button>
             <button
               type="button"
               className={styles.linkBtn}
-              onClick={() => void (async () => {
-                try {
-                  const { invoke } = await import('@tauri-apps/api/core');
-                  await invoke('open_path_in_default_app', { path: savedTo });
-                } catch (e) { setError(`Apri nel browser fallito: ${String(e)}`); }
-              })()}
-            >🌐 Apri nel browser</button>
+              onClick={() =>
+                void (async () => {
+                  try {
+                    const { invoke } = await import('@tauri-apps/api/core');
+                    await invoke('open_path_in_default_app', { path: savedTo });
+                  } catch (e) {
+                    setError(`Apri nel browser fallito: ${String(e)}`);
+                  }
+                })()
+              }
+            >
+              🌐 Apri nel browser
+            </button>
           </div>
-          <div style={{ fontSize: 10.5, opacity: 0.7, marginTop: 6, fontFamily: 'ui-monospace, monospace', wordBreak: 'break-all' }}>
+          <div
+            style={{
+              fontSize: 10.5,
+              opacity: 0.7,
+              marginTop: 6,
+              fontFamily: 'ui-monospace, monospace',
+              wordBreak: 'break-all',
+            }}
+          >
             {savedTo}
           </div>
         </div>
@@ -182,14 +211,16 @@ function HtmlDocCard({ proposal, account: _account }: HtmlProps) {
       </div>
 
       <div className={styles.disclaimer}>
-        Stampa → seleziona «Salva come PDF» nel dialog di stampa nativo (macOS: «PDF ▸ Salva come PDF»; Windows: «Microsoft Print to PDF»).
-        Il file HTML è self-contained: niente CDN, niente JavaScript — può essere aperto da qualsiasi browser.
+        Stampa → seleziona «Salva come PDF» nel dialog di stampa nativo (macOS: «PDF ▸ Salva come
+        PDF»; Windows: «Microsoft Print to PDF»). Il file HTML è self-contained: niente CDN, niente
+        JavaScript — può essere aperto da qualsiasi browser.
       </div>
 
       {composing && (
         <div style={{ marginTop: 12 }}>
           <div className={styles.attachedComposeNote}>
-            📨 Componi l'email col documento <strong>inline nel corpo</strong> (HTML renderizzato dal client del destinatario, non come allegato):
+            📨 Componi l'email col documento <strong>inline nel corpo</strong> (HTML renderizzato
+            dal client del destinatario, non come allegato):
           </div>
           <ComposeDraftCard
             account={_account}
@@ -227,14 +258,19 @@ function ComposeDraftCard({ proposal, account, execution, onExecuted }: ComposeP
   const [body, setBody] = useState(d.bodyText);
   const [busy, setBusy] = useState(false);
   // Stato iniziale: se c'è già un'execution salvata, ripristiniamo il tipo.
-  const [status, setStatus] = useState<'pending' | 'draft_saved' | 'sent' | null>(
-    () => execution?.outcome === 'sent' ? 'sent'
-      : execution?.outcome === 'draft_saved' ? 'draft_saved'
-      : null,
+  const [status, setStatus] = useState<'pending' | 'draft_saved' | 'sent' | null>(() =>
+    execution?.outcome === 'sent'
+      ? 'sent'
+      : execution?.outcome === 'draft_saved'
+        ? 'draft_saved'
+        : null,
   );
-  const [archiveStatus, setArchiveStatus] = useState<{ ok: boolean; folder: string | null; available: string[]; error: string | null } | null>(
-    () => execution?.archive ?? null,
-  );
+  const [archiveStatus, setArchiveStatus] = useState<{
+    ok: boolean;
+    folder: string | null;
+    available: string[];
+    error: string | null;
+  } | null>(() => execution?.archive ?? null);
   const [error, setError] = useState<string | null>(null);
   const [showHtml, setShowHtml] = useState(false);
 
@@ -250,7 +286,10 @@ function ComposeDraftCard({ proposal, account, execution, onExecuted }: ComposeP
   }, [execution]);
 
   function parseList(s: string): string[] {
-    return s.split(/[;,]/).map((x) => x.trim()).filter(Boolean);
+    return s
+      .split(/[;,]/)
+      .map((x) => x.trim())
+      .filter(Boolean);
   }
 
   function buildOutgoing() {
@@ -269,7 +308,8 @@ function ComposeDraftCard({ proposal, account, execution, onExecuted }: ComposeP
   }
 
   async function handleSaveDraft() {
-    setBusy(true); setError(null);
+    setBusy(true);
+    setError(null);
     try {
       const msg = buildOutgoing();
       const savedFolder = await saveDraftSmart(account, msg);
@@ -291,7 +331,8 @@ function ComposeDraftCard({ proposal, account, execution, onExecuted }: ComposeP
   }
 
   async function handleSendNow() {
-    setBusy(true); setError(null);
+    setBusy(true);
+    setError(null);
     try {
       const msg = buildOutgoing();
       const finalArchive = await sendAndArchive(account, msg);
@@ -320,25 +361,36 @@ function ComposeDraftCard({ proposal, account, execution, onExecuted }: ComposeP
         <div className={styles.headRow}>
           <span className={styles.icon}>{archiveOk ? '📤' : '⚠️'}</span>
           <div className={styles.title}>
-            {archiveOk ? 'Email inviata e archiviata' : 'Email inviata · ma copia in Inviati NON archiviata'}
+            {archiveOk
+              ? 'Email inviata e archiviata'
+              : 'Email inviata · ma copia in Inviati NON archiviata'}
           </div>
         </div>
         <div className={styles.detail}>
-          ✓ Inviata a <code>{to}</code>{subject ? ` · «${subject}»` : ''}.
+          ✓ Inviata a <code>{to}</code>
+          {subject ? ` · «${subject}»` : ''}.
           {archiveOk && archiveStatus?.folder && (
             <> Copia in IMAP «{archiveStatus.folder}» — visibile da tutti i client.</>
           )}
         </div>
         {!archiveOk && archiveStatus && (
-          <div className={styles.detail} style={{ color: 'var(--color-warning-text, var(--color-text-primary))' }}>
+          <div
+            className={styles.detail}
+            style={{ color: 'var(--color-warning-text, var(--color-text-primary))' }}
+          >
             ⚠️ <strong>Archive Sent fallita.</strong> Cartelle disponibili sul tuo server IMAP:
-            <code style={{ display: 'block', margin: '6px 0', fontSize: 11, whiteSpace: 'pre-wrap' }}>
-              {archiveStatus.available.length > 0 ? archiveStatus.available.join(' · ') : '(lista non disponibile)'}
+            <code
+              style={{ display: 'block', margin: '6px 0', fontSize: 11, whiteSpace: 'pre-wrap' }}
+            >
+              {archiveStatus.available.length > 0
+                ? archiveStatus.available.join(' · ')
+                : '(lista non disponibile)'}
             </code>
             Errore IMAP: <code style={{ fontSize: 11 }}>{archiveStatus.error}</code>
             <br />
             <em style={{ fontSize: 11, opacity: 0.85 }}>
-              Dimmi il nome esatto della tua cartella «Posta inviata» sul server <code>{account.imap.host}</code> e la imposto come default per il tuo account.
+              Dimmi il nome esatto della tua cartella «Posta inviata» sul server{' '}
+              <code>{account.imap.host}</code> e la imposto come default per il tuo account.
             </em>
           </div>
         )}
@@ -370,29 +422,51 @@ function ComposeDraftCard({ proposal, account, execution, onExecuted }: ComposeP
 
       <div className={styles.formGrid}>
         <Field label="A">
-          <input className={styles.input} value={to}
-            onChange={(e) => { setTo(e.target.value); }} />
+          <input
+            className={styles.input}
+            value={to}
+            onChange={(e) => {
+              setTo(e.target.value);
+            }}
+          />
         </Field>
         <Field label="Cc">
-          <input className={styles.input} value={cc}
-            onChange={(e) => { setCc(e.target.value); }} />
+          <input
+            className={styles.input}
+            value={cc}
+            onChange={(e) => {
+              setCc(e.target.value);
+            }}
+          />
         </Field>
         <Field label="Oggetto">
-          <input className={styles.input} value={subject}
-            onChange={(e) => { setSubject(e.target.value); }} />
+          <input
+            className={styles.input}
+            value={subject}
+            onChange={(e) => {
+              setSubject(e.target.value);
+            }}
+          />
         </Field>
         <Field label="Corpo">
           <textarea
             className={`${styles.input} ${styles.textarea}`}
             rows={6}
             value={body}
-            onChange={(e) => { setBody(e.target.value); }}
+            onChange={(e) => {
+              setBody(e.target.value);
+            }}
           />
         </Field>
         {d.bodyHtml && (
           <div className={styles.htmlWrap}>
-            <button type="button" className={styles.linkBtn}
-              onClick={() => { setShowHtml(!showHtml); }}>
+            <button
+              type="button"
+              className={styles.linkBtn}
+              onClick={() => {
+                setShowHtml(!showHtml);
+              }}
+            >
               {showHtml ? '▾ Nascondi anteprima HTML' : '▸ Mostra anteprima HTML'}
             </button>
             {showHtml && (
@@ -410,15 +484,26 @@ function ComposeDraftCard({ proposal, account, execution, onExecuted }: ComposeP
       {error && <div className={styles.error}>❌ {error}</div>}
 
       <div className={styles.actions}>
-        <button type="button" className={styles.btnGhost} onClick={() => void handleSaveDraft()} disabled={busy}>
+        <button
+          type="button"
+          className={styles.btnGhost}
+          onClick={() => void handleSaveDraft()}
+          disabled={busy}
+        >
           💾 Salva in Bozze IMAP
         </button>
-        <button type="button" className={styles.btnPrimary} onClick={() => void handleSendNow()} disabled={busy}>
+        <button
+          type="button"
+          className={styles.btnPrimary}
+          onClick={() => void handleSendNow()}
+          disabled={busy}
+        >
           📤 Invia ora
         </button>
       </div>
       <div className={styles.disclaimer}>
-        L'invio è una tua azione: io ho solo preparato la bozza. Cliccando «Invia ora» parte SMTP reale e la copia finisce in IMAP «Inviati».
+        L'invio è una tua azione: io ho solo preparato la bozza. Cliccando «Invia ora» parte SMTP
+        reale e la copia finisce in IMAP «Inviati».
       </div>
     </div>
   );

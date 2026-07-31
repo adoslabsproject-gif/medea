@@ -38,7 +38,8 @@ export function TemplateEditor({ sender }: Props) {
   const [advanced, setAdvanced] = useState(false);
 
   useEffect(() => {
-    templateApi.getDefault()
+    templateApi
+      .getDefault()
       .then((t) => {
         if (!t) return;
         setDraft({
@@ -54,7 +55,9 @@ export function TemplateEditor({ sender }: Props) {
         });
         setAdvanced(Boolean(t.customHtml?.trim()));
       })
-      .catch((e: unknown) => { setError(String(e)); });
+      .catch((e: unknown) => {
+        setError(String(e));
+      });
   }, []);
 
   function onLogo(e: React.ChangeEvent<HTMLInputElement>) {
@@ -78,7 +81,9 @@ export function TemplateEditor({ sender }: Props) {
       const id = await templateApi.upsert({ ...draft, isDefault: true });
       setDraft((d) => ({ ...d, id }));
       setSaved(true);
-      setTimeout(() => { setSaved(false); }, 1500);
+      setTimeout(() => {
+        setSaved(false);
+      }, 1500);
     } catch (e) {
       setError(String(e));
     }
@@ -92,15 +97,19 @@ export function TemplateEditor({ sender }: Props) {
         <TextField
           label="Nome template"
           value={draft.name}
-          onChange={(e) => { setDraft({ ...draft, name: e.target.value }); }}
+          onChange={(e) => {
+            setDraft({ ...draft, name: e.target.value });
+          }}
           fullWidth
         />
 
         <div className={styles.logoRow}>
           <div className={styles.logoBox}>
-            {draft.logoDataUrl
-              ? <img src={draft.logoDataUrl} alt="Logo" />
-              : <span className={styles.logoEmpty}>nessun logo</span>}
+            {draft.logoDataUrl ? (
+              <img src={draft.logoDataUrl} alt="Logo" />
+            ) : (
+              <span className={styles.logoEmpty}>nessun logo</span>
+            )}
           </div>
           <div className={styles.logoActions}>
             <label className={styles.fileBtn}>
@@ -108,14 +117,19 @@ export function TemplateEditor({ sender }: Props) {
               <input type="file" accept="image/*" onChange={onLogo} hidden />
             </label>
             {draft.logoDataUrl && (
-              <Button variant="ghost" size="sm"
-                onClick={() => { setDraft({ ...draft, logoDataUrl: null }); }}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setDraft({ ...draft, logoDataUrl: null });
+                }}
+              >
                 Rimuovi
               </Button>
             )}
             <p className={styles.hint}>
-              PNG/JPG, max 300 KB. Viene incorporato nell&apos;email come immagine
-              interna: si vede anche senza connessione e non è un tracker.
+              PNG/JPG, max 300 KB. Viene incorporato nell&apos;email come immagine interna: si vede
+              anche senza connessione e non è un tracker.
             </p>
           </div>
         </div>
@@ -123,14 +137,18 @@ export function TemplateEditor({ sender }: Props) {
         <TextField
           label="Titolo intestazione"
           value={draft.headerTitle ?? ''}
-          onChange={(e) => { setDraft({ ...draft, headerTitle: e.target.value || null }); }}
+          onChange={(e) => {
+            setDraft({ ...draft, headerTitle: e.target.value || null });
+          }}
           placeholder={sender.organizationName || 'Nome azienda'}
           fullWidth
         />
         <TextField
           label="Sottotitolo"
           value={draft.headerSubtitle ?? ''}
-          onChange={(e) => { setDraft({ ...draft, headerSubtitle: e.target.value || null }); }}
+          onChange={(e) => {
+            setDraft({ ...draft, headerSubtitle: e.target.value || null });
+          }}
           placeholder="es. Soluzioni industriali dal 1980"
           fullWidth
         />
@@ -140,7 +158,9 @@ export function TemplateEditor({ sender }: Props) {
           <input
             type="color"
             value={draft.accentColor}
-            onChange={(e) => { setDraft({ ...draft, accentColor: e.target.value }); }}
+            onChange={(e) => {
+              setDraft({ ...draft, accentColor: e.target.value });
+            }}
           />
           <code>{draft.accentColor}</code>
         </label>
@@ -151,7 +171,9 @@ export function TemplateEditor({ sender }: Props) {
             rows={3}
             className={styles.textarea}
             value={draft.footerHtml ?? ''}
-            onChange={(e) => { setDraft({ ...draft, footerHtml: e.target.value || null }); }}
+            onChange={(e) => {
+              setDraft({ ...draft, footerHtml: e.target.value || null });
+            }}
             placeholder="Ragione sociale · P.IVA · indirizzo · telefono"
           />
         </label>
@@ -171,14 +193,16 @@ export function TemplateEditor({ sender }: Props) {
         {advanced && (
           <label className={styles.textareaLabel}>
             <span>
-              HTML — usa {PLACEHOLDERS.body} per il corpo, {PLACEHOLDERS.signature} per la
-              firma, {PLACEHOLDERS.logo}, {PLACEHOLDERS.companyName}, {PLACEHOLDERS.senderName}
+              HTML — usa {PLACEHOLDERS.body} per il corpo, {PLACEHOLDERS.signature} per la firma,{' '}
+              {PLACEHOLDERS.logo}, {PLACEHOLDERS.companyName}, {PLACEHOLDERS.senderName}
             </span>
             <textarea
               rows={12}
               className={`${styles.textarea} ${styles.mono}`}
               value={draft.customHtml ?? ''}
-              onChange={(e) => { setDraft({ ...draft, customHtml: e.target.value || null }); }}
+              onChange={(e) => {
+                setDraft({ ...draft, customHtml: e.target.value || null });
+              }}
               placeholder="<table>…{{BODY}}…</table>"
             />
           </label>
@@ -187,13 +211,18 @@ export function TemplateEditor({ sender }: Props) {
         {error && <p className={styles.error}>❌ {error}</p>}
 
         <div className={styles.actions}>
-          <Button variant="solid" onClick={() => { void save(); }}>
+          <Button
+            variant="solid"
+            onClick={() => {
+              void save();
+            }}
+          >
             {saved ? '✓ Template salvato' : '💾 Salva template'}
           </Button>
         </div>
         <p className={styles.hint}>
-          Il template viene applicato ai messaggi nuovi e alle risposte. Nel Composer
-          puoi disattivarlo per il singolo messaggio.
+          Il template viene applicato ai messaggi nuovi e alle risposte. Nel Composer puoi
+          disattivarlo per il singolo messaggio.
         </p>
       </div>
 
