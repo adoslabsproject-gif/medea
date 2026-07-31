@@ -1,14 +1,15 @@
 /**
- * Lo stato del runtime, per la barra dell'editor.
+ * Il runtime: avviarlo e sapere se è pronto.
  *
- * Serve a rispondere a una domanda sola: **si può eseguire?** Un pulsante
- * «Esegui» che non fa niente perché il runtime non è partito è peggio di un
- * pulsante spento che dice perché.
+ * Si avvia **aprendo la sezione**, non premendo «Esegui»: metterci qualche
+ * secondo la prima volta è accettabile mentre si guarda il canvas, molto meno
+ * dopo aver premuto un pulsante. E chiedere solo lo stato senza mai avviarlo
+ * lascerebbe il pulsante spento per sempre.
  */
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { runtimeStatus, type RuntimeStatus } from './client';
+import { runtimeStatus, startRuntime, type RuntimeStatus } from './client';
 
 /** Ogni quanto si ricontrolla, quando non è in piedi. */
 const RECHECK_MS = 5000;
@@ -23,6 +24,7 @@ export function useRuntime(): RuntimeState {
   const [status, setStatus] = useState<RuntimeStatus>({ running: false });
   const [checking, setChecking] = useState(true);
 
+  /** Guarda e basta: serve al controllo periodico. */
   const refresh = useCallback(() => {
     setChecking(true);
     void runtimeStatus()
@@ -35,9 +37,19 @@ export function useRuntime(): RuntimeState {
       });
   }, []);
 
+  // All'apertura si prova ad avviarlo. Se è già in piedi non succede niente:
+  // il comando è idempotente.
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    setChecking(true);
+    void startRuntime()
+      .then(setStatus)
+      .catch((e: unknown) => {
+        setStatus({ running: false, error: e instanceof Error ? e.message : String(e) });
+      })
+      .finally(() => {
+        setChecking(false);
+      });
+  }, []);
 
   // Finché non è in piedi si ricontrolla: parte in pochi secondi, e l'utente
   // non deve ricaricare niente per accorgersene.
