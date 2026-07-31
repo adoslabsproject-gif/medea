@@ -15,6 +15,7 @@ import styles from './Topbar.module.css';
 export interface TopbarActions {
   onRename: (name: string) => void;
   onSave: () => void;
+  onDiscard: () => void;
   onToggleEnabled: () => void;
   onToggleAssistant: () => void;
   onUndo: () => void;
@@ -33,6 +34,9 @@ interface Props {
   assistantOpen: boolean;
   canUndo: boolean;
   canRedo: boolean;
+  canDiscard: boolean;
+  /** Vero mentre il salvataggio automatico sta scrivendo. */
+  autosaving: boolean;
   /** Impedisce di attivare un workflow che non funzionerebbe. */
   blockedReason?: string;
   actions: TopbarActions;
@@ -45,6 +49,8 @@ export function Topbar({
   assistantOpen,
   canUndo,
   canRedo,
+  canDiscard,
+  autosaving,
   blockedReason,
   actions,
 }: Props) {
@@ -80,6 +86,20 @@ export function Topbar({
           disabled: !saved,
           disabledReason: 'Non è ancora stato salvato',
           onSelect: actions.onDelete,
+        },
+      ],
+    },
+    {
+      label: 'Modifiche',
+      items: [
+        {
+          label: 'Scarta le modifiche',
+          icon: '↺',
+          hint: 'Torna a com’era all’apertura, o all’ultimo Salva',
+          danger: true,
+          disabled: !canDiscard,
+          disabledReason: 'Non ci sono modifiche da scartare',
+          onSelect: actions.onDiscard,
         },
       ],
     },
@@ -159,14 +179,16 @@ export function Topbar({
         {enabled ? 'Attivo' : 'Non attivo'}
       </button>
 
+      {/* Il salvataggio è automatico: il pulsante serve a fissare il punto a
+          cui torna «Scarta», e a dire che il lavoro è al sicuro. */}
       <button
         type="button"
         className={styles.save}
         disabled={!dirty}
-        title="Salva (Cmd/Ctrl+S)"
+        title="Salva ora e fissa il punto di ritorno (Cmd/Ctrl+S)"
         onClick={actions.onSave}
       >
-        {dirty ? 'Salva' : 'Salvato'}
+        {autosaving ? 'Salvo…' : dirty ? 'Salva' : 'Salvato'}
       </button>
 
       <MoreActionsMenu groups={groups} />

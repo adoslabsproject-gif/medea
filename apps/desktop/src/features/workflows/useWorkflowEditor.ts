@@ -8,7 +8,7 @@
  * debba saperne niente.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { workflowApi, type WorkflowSummary } from './api';
 import { emptyWorkflow } from './canvas/diagnostics';
@@ -16,6 +16,7 @@ import { autoLayout } from './canvas/layout';
 import { exportFileName, fromImportJson, toExportJson, WorkflowImportError } from './topbar';
 import { useUndoRedo } from './topbar';
 import type { Workflow } from './types';
+import { useAutosave } from './useAutosave';
 
 export interface WorkflowEditor {
   workflow: Workflow;
@@ -25,6 +26,10 @@ export interface WorkflowEditor {
   notice: string | null;
   canUndo: boolean;
   canRedo: boolean;
+  /** Vero quando c'è qualcosa da cui tornare indietro. */
+  canDiscard: boolean;
+  /** Vero mentre il salvataggio automatico sta scrivendo. */
+  autosaving: boolean;
   setNotice: (text: string | null) => void;
   change: (next: Workflow) => void;
   /** Una modifica che non va fusa con la precedente nella cronologia. */
@@ -37,6 +42,8 @@ export interface WorkflowEditor {
   remove: (id: number) => Promise<void>;
   undo: () => void;
   redo: () => void;
+  /** Torna a com'era all'apertura, o all'ultimo salvataggio esplicito. */
+  discard: () => void;
   relayout: () => void;
   exportJson: () => void;
   importJson: () => void;
@@ -48,7 +55,16 @@ export function useWorkflowEditor(): WorkflowEditor {
   const [enabled, setEnabled] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [autosaving, setAutosaving] = useState(false);
   const history = useUndoRedo();
+
+  /**
+   * Com'era il documento all'apertura, o all'ultimo «Salva» premuto a mano.
+   * È il punto a cui torna «Scarta»: con il salvataggio automatico l'ultimo
+   * istante è già sul disco, quindi tornare indietro di un istante non
+   * vorrebbe dire niente.
+   */
+  const baseline = useRef<Workflow | null>(null);
 
   const refresh = useCallback(async () => {
     setItems(await workflowApi.list());
@@ -82,6 +98,7 @@ export function useWorkflowEditor(): WorkflowEditor {
 
   const load = useCallback(
     (wf: Workflow, isEnabled: boolean) => {
+      baseline.current = wf;
       setWorkflow(wf);
       setEnabled(isEnabled);
       setDirty(false);
@@ -106,17 +123,61 @@ export function useWorkflowEditor(): WorkflowEditor {
     load(emptyWorkflow(), false);
   }, [load]);
 
-  const save = useCallback(async () => {
-    try {
-      const id = await workflowApi.save(workflow, enabled);
-      setWorkflow((w) => ({ ...w, id: String(id) }));
+  /** Scrive sul disco. `manual` segna anche il nuovo punto di ritorno. */
+  const persist = useCallback(
+    async (manual: boolean) => {
+      try {
+        if (!manual) setAutosaving(true);
+        const id = await workflowApi.save(workflow, enabled);
+        const saved: Workflow = { ...workflow, id: String(id) };
+        setWorkflow(saved);
+        setDirty(false);
+        if (manual) {
+          baseline.current = saved;
+          setNotice('Salvato.');
+        }
+        await refresh();
+      } catch (e) {
+        setNotice(e instanceof Error ? e.message : String(e));
+      } finally {
+        setAutosaving(false);
+      }
+    },
+    [workflow, enabled, refresh],
+  );
+
+  const save = useCallback(() => persist(true), [persist]);
+
+  // Si salva da soli quando l'utente si ferma. Un documento vuoto e senza
+  // nome non crea una riga solo perché la sezione è aperta.
+  useAutosave({
+    workflow,
+    dirty,
+    enabled: true,
+    onSave: () => {
+      void persist(false);
+    },
+  });
+
+  /**
+   * Scartare significa tornare al punto di partenza, e scriverlo: con il
+   * salvataggio automatico quello che c'è adesso è già sul disco, quindi
+   * annullarlo a metà lascerebbe due verità diverse.
+   */
+  const discard = useCallback(() => {
+    const base = baseline.current;
+    if (!base) return;
+    setWorkflow(base);
+    history.reset();
+    if (base.id) {
+      void workflowApi.save(base, enabled).then(refresh);
+      setNotice('Modifiche scartate.');
       setDirty(false);
-      setNotice('Salvato.');
-      await refresh();
-    } catch (e) {
-      setNotice(e instanceof Error ? e.message : String(e));
+    } else {
+      setDirty(true);
+      setNotice('Modifiche scartate.');
     }
-  }, [workflow, enabled, refresh]);
+  }, [enabled, history, refresh]);
 
   const toggleEnabled = useCallback(
     async (blockedReason?: string) => {
@@ -208,6 +269,8 @@ export function useWorkflowEditor(): WorkflowEditor {
     notice,
     canUndo: history.canUndo,
     canRedo: history.canRedo,
+    canDiscard: baseline.current !== null && dirty,
+    autosaving,
     setNotice,
     change,
     changeDistinct,
@@ -219,6 +282,7 @@ export function useWorkflowEditor(): WorkflowEditor {
     remove,
     undo,
     redo,
+    discard,
     relayout,
     exportJson,
     importJson,

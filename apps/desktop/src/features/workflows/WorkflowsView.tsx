@@ -104,12 +104,15 @@ export function WorkflowsView() {
           assistantOpen={assistantOpen}
           canUndo={editor.canUndo}
           canRedo={editor.canRedo}
+          canDiscard={editor.canDiscard}
+          autosaving={editor.autosaving}
           {...(blockedReason ? { blockedReason } : {})}
           actions={{
             onRename: (name) => {
               editor.change({ ...workflow, name });
             },
             onSave: () => void editor.save(),
+            onDiscard: editor.discard,
             onToggleEnabled: () => void editor.toggleEnabled(blockedReason),
             onToggleAssistant: () => {
               setAssistantOpen((v) => !v);
