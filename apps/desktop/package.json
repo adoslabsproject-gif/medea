@@ -12,9 +12,9 @@
     "typecheck": "tsc --noEmit",
     "test": "echo 'desktop tests in fase 3'",
     "clean": "rm -rf dist .turbo src-tauri/target",
-    "tauri": "cargo tauri",
-    "tauri:dev": "cargo tauri dev",
-    "tauri:build": "cargo tauri build"
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "dependencies": {
     "@medea/design-system": "workspace:*",
