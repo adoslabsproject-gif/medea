@@ -13,6 +13,12 @@ pub fn workflow_get(id: i64) -> Result<Option<WorkflowRow>, String> {
     db::with_db(|c| db::workflows::get(c, id)).map_err(|e| e.to_string())
 }
 
+/// Il workflow che il runtime conosce con questo nome, se c'è.
+#[tauri::command]
+pub fn workflow_by_runtime_id(runtime_id: String) -> Result<Option<WorkflowRow>, String> {
+    db::with_db(|c| db::workflows::by_runtime_id(c, &runtime_id)).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn workflow_save(workflow: WorkflowInput) -> Result<i64, String> {
     db::with_db(|c| db::workflows::upsert(c, &workflow)).map_err(|e| e.to_string())

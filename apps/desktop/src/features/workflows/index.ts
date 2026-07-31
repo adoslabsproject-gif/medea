@@ -16,6 +16,7 @@ export type { NodeGroupId } from './catalog';
 export { PENDING_SECRET, PICKER_PLACEHOLDER } from './constants';
 export { runsApi, RunsModal } from './runs';
 export { SecretsDialog } from './SecretsDialog';
+export { useAutonomousRuns } from './runtime';
 export { provisionRuntime, secretNames, setSecret, deleteSecret } from './runtime';
 export type { RunRecord, RunStatus, RunStep, RunSummary } from './runs';
 export { listMailAccounts, useMailAccounts } from './resources';

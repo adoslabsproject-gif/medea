@@ -120,6 +120,7 @@ pub fn run() {
             // Workflow (canvas locale)
             workflow_cmd::workflow_list,
             workflow_cmd::workflow_get,
+            workflow_cmd::workflow_by_runtime_id,
             workflow_cmd::workflow_save,
             workflow_cmd::workflow_set_enabled,
             workflow_cmd::workflow_delete,

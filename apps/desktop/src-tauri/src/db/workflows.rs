@@ -90,25 +90,46 @@ pub fn list(conn: &Connection) -> Result<Vec<WorkflowSummary>> {
     Ok(rows.collect::<std::result::Result<Vec<_>, _>>()?)
 }
 
+/// Una riga della tabella nella forma con cui la usa il resto dell'app.
+fn row_to_workflow(r: &rusqlite::Row<'_>) -> rusqlite::Result<WorkflowRow> {
+    Ok(WorkflowRow {
+        id: r.get(0)?,
+        name: r.get(1)?,
+        description: r.get(2)?,
+        graph_json: r.get(3)?,
+        execution_target: r.get(4)?,
+        enabled: r.get::<_, i64>(5)? != 0,
+        created_at: r.get(6)?,
+        updated_at: r.get(7)?,
+        runtime_id: r.get(8)?,
+    })
+}
+
+/// Il workflow che il runtime conosce con questo nome.
+///
+/// Serve a riconoscere le esecuzioni partite da sole: il runtime le annuncia
+/// col suo identificativo, e senza questa ricerca finirebbero nel vuoto invece
+/// che nello storico del workflow giusto.
+pub fn by_runtime_id(conn: &Connection, runtime_id: &str) -> Result<Option<WorkflowRow>> {
+    let mut stmt = conn.prepare(
+        "SELECT id, name, description, graph_json, execution_target, enabled, created_at, updated_at,
+                runtime_id
+         FROM workflows WHERE runtime_id = ?1",
+    )?;
+    let mut rows = stmt.query_map(params![runtime_id], row_to_workflow)?;
+    match rows.next() {
+        Some(row) => Ok(Some(row?)),
+        None => Ok(None),
+    }
+}
+
 pub fn get(conn: &Connection, id: i64) -> Result<Option<WorkflowRow>> {
     let mut stmt = conn.prepare(
         "SELECT id, name, description, graph_json, execution_target, enabled, created_at, updated_at,
                 runtime_id
          FROM workflows WHERE id = ?1",
     )?;
-    let mut rows = stmt.query_map(params![id], |r| {
-        Ok(WorkflowRow {
-            id: r.get(0)?,
-            name: r.get(1)?,
-            description: r.get(2)?,
-            graph_json: r.get(3)?,
-            execution_target: r.get(4)?,
-            enabled: r.get::<_, i64>(5)? != 0,
-            created_at: r.get(6)?,
-            updated_at: r.get(7)?,
-            runtime_id: r.get(8)?,
-        })
-    })?;
+    let mut rows = stmt.query_map(params![id], row_to_workflow)?;
     match rows.next() {
         Some(row) => Ok(Some(row?)),
         None => Ok(None),
