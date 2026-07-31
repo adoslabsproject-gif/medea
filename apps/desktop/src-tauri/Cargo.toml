@@ -7,6 +7,7 @@ edition = "2021"
 rust-version = "1.77"
 license = "UNLICENSED"
 publish = false
+default-run = "medea-desktop"
 
 [lib]
 name = "medea_desktop_lib"
@@ -16,11 +17,76 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2.0", features = [] }
 
 [dependencies]
+# Tauri
 tauri = { version = "2.0", features = [] }
 tauri-plugin-opener = "2.0"
+
+# Serde / JSON
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["compat"] }
+
+# Error handling
+anyhow = "1"
+thiserror = "2"
+
+# IMAP / SMTP / mail parsing
+async-imap = "0.10"
+async-native-tls = "0.5"
+futures = "0.3"
+lettre = { version = "0.11", default-features = false, features = [
+    "tokio1-native-tls",
+    "smtp-transport",
+    "builder",
+] }
+mail-parser = "0.10"
+
+# HTTP client (per AI providers, image proxy, ecc.)
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "blocking"] }
+
+# Date handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# SQLite locale (FTS5 + JSON1 nativi via bundled)
+rusqlite = { version = "0.32", features = ["bundled", "chrono", "serde_json"] }
+parking_lot = "0.12"
+once_cell = "1"
+
+# Hashing (thread-id, content hash)
+sha2 = "0.10"
+
+# Segreti in keychain OS (macOS Keychain / Windows Credential Manager / Secret Service)
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
+
+# Base64 (inline parts → data URL)
+base64 = "0.22"
+
+# Estrazione testo da allegati (PDF). Calamine = XLSX, docx-rs = DOCX (aggiunti next).
+pdf-extract = "0.7"
+calamine = "0.26"
+quick-xml = "0.36"
+zip = "2"
+
+# Notifiche OS native (promemoria in scadenza)
+tauri-plugin-notification = "2"
+
+# Tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+
+[profile.dev]
+incremental = true
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

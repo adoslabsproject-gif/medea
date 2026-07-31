@@ -10,7 +10,7 @@ Medea è un **personal operational memory system** in forma di client email. Il 
 
 ## Le tre verità tecniche
 
-1. **Il pezzo difficile è il sync mail**, non la UI e non i provider AI. IMAP è inconsistente, Gmail è "IMAP con personalità multiple". Una mail duplicata o una unread del 2018 fantasma = Medea sembra rotta. Il sync engine in `packages/mail-core/crates/mail-sync/` è il vero deliverable, non un sotto-modulo.
+1. **Il pezzo difficile è il sync mail**, non la UI e non i provider AI. IMAP è inconsistente, Gmail è "IMAP con personalità multiple". Una mail duplicata o una unread del 2018 fantasma = Medea sembra rotta. Il sync engine (`apps/desktop/src-tauri/src/commands/sync_cmd.rs` + `db/messages.rs`) è il vero deliverable, non un sotto-modulo.
 2. **RAM budget del RAG è critico** — embedding lazy, chunking intelligente, eviction cache, batching, priority indexing. Mai indicizzare l'intera mailbox al primo run.
 3. **L'AI deve ricordare e suggerire, non gridare.** Memoria operativa di lungo termine (mittenti, accordi, pattern) è il vero differenziatore.
 
@@ -37,7 +37,7 @@ Medea è un **personal operational memory system** in forma di client email. Il 
 - `verbatimModuleSyntax: true` → import dei type espliciti (`import type { Foo }`).
 - Niente `any`, niente `// @ts-ignore`. Se serve, c'è `Result<T, E>` in `@medea/utils/result`.
 
-### Rust (`mail-core` e `apps/*/src-tauri`)
+### Rust (`apps/desktop/src-tauri`)
 
 - `cargo fmt --check` + `cargo clippy -- -D warnings` in CI e pre-commit.
 - Niente `unwrap()` in produzione (fuori dai test). Usa `?` e tipi `Result` propri.
@@ -54,15 +54,15 @@ Medea è un **personal operational memory system** in forma di client email. Il 
 
 ### Sicurezza
 
-- Token via `OsKeychain` (Keychain/Credential Manager/Secret Service/Android Keystore). Fallback `EncryptedFileStore` AES-256-GCM, chiave da Argon2id(machine-id).
-- OAuth PKCE S256 obbligatorio. Callback solo loopback `127.0.0.1:[19847-19851]`. Manual code-paste fallback per ambienti firewalled (un certo numero di reti enterprise blocca il callback).
-- Body email HTML in `<iframe sandbox>` minimo, sanitizzato server-side con `ammonia`.
-- Tracker pixel: blocco di default, toggle utente per messaggio.
+- Segreti (API key BYOK e credenziali IMAP/SMTP) nel keychain di sistema via crate `keyring` — comandi `secret_set/get/delete` in `commands/secrets_cmd.rs`. Mai in chiaro su disco, mai in `localStorage`.
+- OAuth PKCE S256 obbligatorio quando arriverà. Callback solo loopback `127.0.0.1:[19847-19851]`. Manual code-paste fallback per ambienti firewalled (un certo numero di reti enterprise blocca il callback).
+- Body email HTML in `<iframe sandbox>` con sanitizzazione lato client (`MessageReader`); i `cid:` sono risolti in `data:` URI. La CSP in `tauri.conf.json` blocca le richieste remote, quindi i tracker pixel non partono.
+- Tracker pixel: bloccati dalla CSP (`img-src` senza http/https). Un eventuale toggle per messaggio va progettato senza allargare la CSP globale.
 
 ## Cosa NON fare (esplicito)
 
 - Niente «Chat view» generica — l'AI vive in 6 *modes* mail-contextual in `features/ai-mail/`.
-- Niente tool explosion — max 15 tool registrabili nell'AI, tutti mail-centric. La logica esistente in `nha-toolkit/src/services/tool-executor.mjs` (110+ tool) **non si porta tutta**: solo i 15 mail-specific.
+- Niente tool explosion. Il registry (`ai_tools/mod.rs`) è allineato per **nomi e protocollo** a quello dell'app Liara (`/Users/zelistore/zeli-local`) perché Medea usa lo stesso modello fine-tuned: nomi snake_case, `email_*`, `calendar_*`, `note_*`, `contact_search`, `datetime`. Aggiungere un tool significa aggiungere superficie che il modello non conosce dal training: fallo solo se è davvero necessario, e mai rinominare quelli esistenti. Vedi ADR 0004.
 - Niente canvas/browser/web search/finance/screen/voice/RSS/agenti multipli dal toolkit NHA.
 - Niente fork conversazione esposto in UI in Fase 1 (la metadata `parent_id` c'è per il futuro, ma il prodotto non la espone).
 - Niente auto-send. Ogni mutation richiede conferma esplicita dell'utente.
@@ -87,10 +87,10 @@ pnpm tokens:build              # genera packages/design-system/dist/tokens.css
 pnpm tauri:dev                 # shell desktop in dev
 pnpm tauri:build               # build .dmg/.exe/.deb/.appimage
 pnpm typecheck                 # tsc --noEmit
-pnpm lint                      # eslint
+pnpm lint                      # eslint + stylelint
 pnpm format                    # prettier
-cargo test --workspace         # da packages/mail-core (dopo Fase 1)
-cargo tauri android dev        # mobile (dopo Fase 8)
+cargo test                     # da apps/desktop/src-tauri
+cargo tauri android dev        # mobile (non ancora avviato)
 ```
 
 ## Decisioni architetturali

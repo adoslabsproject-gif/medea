@@ -1,0 +1,69 @@
+@layer features {
+  .rail {
+    inline-size: 3.25rem;
+    background: var(--color-surface-3);
+    border-inline-end: 1px solid var(--color-border-subtle);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-block: var(--space-2);
+    gap: var(--space-3);
+    flex-shrink: 0;
+  }
+
+  .brand {
+    inline-size: 2.25rem;
+    block-size: 2.25rem;
+    display: grid;
+    place-items: center;
+    padding-block-end: var(--space-2);
+    border-block-end: 1px solid var(--color-border-subtle);
+    margin-block-end: var(--space-1);
+  }
+  .brandIcon {
+    border-radius: var(--radius-md);
+  }
+
+  .list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    inline-size: 100%;
+    align-items: center;
+  }
+
+  .btn {
+    inline-size: 2.25rem;
+    block-size: 2.25rem;
+    border: 0;
+    background: transparent;
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    font-size: 1.1rem;
+    transition:
+      background var(--motion-duration-fast) var(--motion-easing-standard),
+      color var(--motion-duration-fast) var(--motion-easing-standard);
+  }
+  .btn:hover {
+    background: color-mix(in oklch, var(--color-accent-default) 14%, transparent);
+    color: var(--color-text-primary);
+  }
+  .active {
+    background: var(--color-accent-default);
+    color: var(--color-accent-on);
+  }
+  .active:hover {
+    background: var(--color-accent-emphasis);
+    color: var(--color-accent-on);
+  }
+
+  .icon {
+    line-height: 1;
+  }
+}

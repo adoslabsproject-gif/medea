@@ -15,35 +15,43 @@ L'AI in Medea fa **solo sei cose**, tutte mail-centric:
 
 Tutto qui. Niente canvas, niente browser tool, niente «AI Vegas Casino».
 
+Il client è **neutro**: nessun verticale di settore, nessun dato aziendale
+precablato. Anagrafiche, articoli, listini e documenti sono strutture generiche
+utilizzabili da qualsiasi azienda.
+
 ## Stack
 
-- **Tauri 2** desktop (Win/macOS/Linux) + **Tauri 2 Mobile** (Android `.apk`)
-- **Rust** core (cargo workspace `packages/mail-core/`)
+- **Tauri 2** desktop (Win/macOS/Linux); Tauri Mobile per Android è previsto ma non ancora avviato
+- **Rust** core nel crate `apps/desktop/src-tauri` (IMAP, SMTP, sync, SQLite, tool AI)
 - **React 19 + Vite + TypeScript strict** UI
 - **pnpm 11 workspaces + Turborepo 2** monorepo
-- Design system: **OKLCH** + `light-dark()` + **CSS `@layer`** + container queries
-- Vector store: **`sqlite-vec`** (estensione caricata da `rusqlite`)
-- AI: multi-provider (Liara default + Anthropic + OpenAI + Gemini + OpenRouter + Ollama)
+- Design system: **OKLCH** + `light-dark()` + **CSS `@layer`**
+- Persistenza: **SQLite** (`rusqlite`, bundled) con **FTS5** per la ricerca full-text
+- AI: **BYOK** — nessun provider preconfigurato. Anthropic, OpenAI, Gemini,
+  DeepSeek, Grok, OpenRouter, oppure un endpoint OpenAI-compatibile a scelta
+  (vLLM, gateway privato). Le chiavi stanno nel **keychain di sistema**.
 
 ## Stato attuale
 
-🟢 **Fase 0 — Scaffold** in piedi. Shell Tauri che apre una finestra "Medea" con design system OKLCH e 5 primitivi UI (Button, TextField, Select, Tooltip, Dialog).
+Funzionanti oggi:
 
-Le fasi successive (vedi `docs/architecture/adr/`):
-
-| Fase | Stato |
+| Area | Stato |
 | --- | --- |
-| 0. Scaffold | 🟢 done |
-| 1. `mail-core` base (Rust IMAP/SMTP/DB) | ⏳ next |
-| 2. **Sync engine** (il pezzo che decide tutto) | ⏳ |
-| 3. UI Email funzionante | ⏳ |
-| 4. Google OAuth + Gmail | ⏳ |
-| 5. AI mail capabilities (le 6 di sopra) | ⏳ |
-| 6. RAG con budget RAM esplicito | ⏳ |
-| 7. Microsoft + politeness AI | ⏳ |
-| 8. Tauri Mobile Android | ⏳ |
-| 9. Distribuzione + auto-update | ⏳ |
-| 10. i18n + a11y + tema light + encryption at rest | ⏳ |
+| Shell desktop + design system + primitivi UI | 🟢 |
+| Account IMAP/SMTP, sync cartelle, lettura/invio | 🟢 |
+| DB locale SQLite + ricerca FTS5 | 🟢 |
+| Rubrica, anagrafiche, articoli, listini, documenti | 🟢 |
+| Pannello AI con tool-calling nativo + consent gate | 🟢 |
+| Promemoria con notifiche OS | 🟢 |
+| DB Studio (esplora/modifica tabelle) | 🟢 |
+| OAuth Google/Microsoft | ⏳ |
+| RAG / ricerca semantica con budget RAM | ⏳ |
+| Tauri Mobile Android | ⏳ |
+| Distribuzione + auto-update | ⏳ |
+
+Il tool system dell'AI è allineato per nomi e protocollo a quello dell'app
+Liara, così lo stesso modello fine-tuned funziona su entrambe: vedi
+[ADR 0004](./docs/architecture/adr/0004-tool-system-allineato-liara-byok.md).
 
 ## Requisiti
 
@@ -51,7 +59,6 @@ Le fasi successive (vedi `docs/architecture/adr/`):
 - pnpm ≥ 9 (`corepack enable` raccomandato)
 - Rust stable (`rustup` legge `rust-toolchain.toml`)
 - macOS 11+, Windows 10+, Ubuntu 22.04+
-- Per build mobile: Android Studio + NDK r26
 
 ## Sviluppo
 
@@ -65,25 +72,25 @@ Altri script:
 
 ```bash
 pnpm typecheck        # tsc --noEmit su tutto il workspace
-pnpm lint             # eslint
-pnpm test             # vitest (quando ci saranno test)
+pnpm lint             # eslint (app + packages) e stylelint (design system)
 pnpm format           # prettier
 ```
+
+Test: `cargo test` dentro `apps/desktop/src-tauri` (pricing engine e scanner
+allegati). Non ci sono ancora test lato frontend.
 
 ## Struttura
 
 ```
 mailer/
 ├── apps/
-│   ├── desktop/      Tauri shell desktop (Win/macOS/Linux)
-│   └── mobile/       Tauri Mobile (Android, arriverà in Fase 8)
+│   └── desktop/          Tauri shell + React UI + crate Rust (src-tauri/)
 ├── packages/
-│   ├── design-system/  CSS-only: OKLCH tokens, @layer, light-dark()
-│   ├── ui/             primitivi React headless+styled
-│   ├── mail-core/      cargo workspace (arriverà in Fase 1)
-│   ├── mail-ipc/       wrapper TS type-safe su invoke/listen
-│   ├── ai-mail/        XState + hooks (Fase 5)
-│   ├── i18n/  utils/  tsconfig/  eslint-config/
+│   ├── design-system/    CSS-only: OKLCH tokens, @layer, temi
+│   ├── ui/               primitivi React (Button, TextField, Select, Tooltip, Dialog)
+│   ├── utils/            Result, date, html
+│   ├── tsconfig/         config TypeScript condivise
+│   └── eslint-config/    config ESLint condivise
 └── docs/architecture/adr/
 ```
 
@@ -91,7 +98,6 @@ mailer/
 
 - [`CLAUDE.md`](./CLAUDE.md) — guida per agenti AI sullo stack
 - [`docs/architecture/adr/`](./docs/architecture/adr/) — Architecture Decision Records
-- Piano architetturale completo: vedi ADR 0001 e 0002
 
 ## Licenza
 

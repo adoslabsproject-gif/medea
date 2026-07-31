@@ -7,16 +7,16 @@
  */
 
 /* L'ordine dei layer va dichiarato per primo, prima di qualsiasi regola. */
-@import './layers.css';
+@import url('./layers.css');
 
 /* Token generati (color, space, typography, elevation, radius, motion, z, container). */
-@import '../dist/tokens.css';
+@import url('../dist/tokens.css');
 
 /* Reset, base, themes opzionali, utilities. */
-@import './reset.css';
-@import './base.css';
-@import './themes/medea-dark.css';
-@import './themes/medea-light.css';
-@import './themes/medea-hc.css';
-@import './utilities/sr-only.css';
-@import './utilities/stack.css';
+@import url('./reset.css');
+@import url('./base.css');
+@import url('./themes/medea-dark.css');
+@import url('./themes/medea-light.css');
+@import url('./themes/medea-hc.css');
+@import url('./utilities/sr-only.css');
+@import url('./utilities/stack.css');

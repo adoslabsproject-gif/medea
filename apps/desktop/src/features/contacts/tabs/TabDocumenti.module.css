@@ -1,0 +1,158 @@
+.section {
+  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.06));
+  border-radius: 12px;
+  background: var(--color-surface-1, rgba(255, 255, 255, 0.02));
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.05));
+  background: var(--color-surface-2, rgba(255, 255, 255, 0.03));
+}
+
+.sectionTitle { display: flex; align-items: center; gap: 8px; }
+.icon { font-size: 16px; }
+.label { font-size: 13.5px; font-weight: 700; color: var(--color-text-primary); }
+.count {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(120, 130, 255, 0.16);
+  border: 1px solid rgba(120, 130, 255, 0.32);
+  color: #d9deff;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.hint {
+  flex: 1;
+  font-size: 11.5px;
+  color: var(--color-text-tertiary, #7a8294);
+  font-style: italic;
+}
+
+.empty {
+  padding: 18px 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-tertiary, #7a8294);
+}
+
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.right { text-align: right; font-variant-numeric: tabular-nums; }
+.muted { color: var(--color-text-tertiary, #7a8294); }
+.notes {
+  max-width: 200px;
+  font-size: 12px;
+  color: var(--color-text-secondary, #aab2c5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rowActions { display: flex; gap: 4px; justify-content: flex-end; }
+.dangerActive {
+  background: rgba(255, 80, 80, 0.18) !important;
+  border-color: rgba(255, 80, 80, 0.50) !important;
+  color: #ff6b6b !important;
+  animation: pulseDanger 0.9s ease-in-out infinite alternate;
+}
+@keyframes pulseDanger {
+  from { box-shadow: 0 0 0 0 rgba(255, 80, 80, 0.45); }
+  to   { box-shadow: 0 0 0 4px rgba(255, 80, 80, 0); }
+}
+
+.errorBox {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255, 90, 90, 0.10);
+  border: 1px solid rgba(255, 90, 90, 0.35);
+  color: #ff8888;
+  font-size: 12.5px;
+}
+
+/* ── Dialog ───────────────────────────────────────────────────────────────── */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: grid;
+  place-items: center;
+  z-index: 75;
+  backdrop-filter: blur(6px);
+}
+
+.modal {
+  width: min(520px, 96vw);
+  max-height: 92vh;
+  background: var(--color-surface-0, #14171d);
+  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.10));
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.06));
+}
+.modalHead h3 { margin: 0; font-size: 14px; font-weight: 700; }
+
+.modalBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modalFoot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.06));
+}
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.formRow { display: flex; flex-direction: column; gap: 4px; }
+.formLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-tertiary, #7a8294);
+}
+
+.input {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.12));
+  background: var(--color-surface-2, rgba(0, 0, 0, 0.20));
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+.input:focus { border-color: var(--color-accent, rgba(120, 130, 255, 0.55)); }
+.textarea { min-height: 70px; resize: vertical; padding: 8px 10px; height: auto; line-height: 1.4; }
+
+.btnPrimary {
+  background: linear-gradient(180deg,
+    rgba(120, 130, 255, 0.32), rgba(120, 130, 255, 0.14)) !important;
+  border-color: rgba(120, 130, 255, 0.55) !important;
+  color: #d9deff !important;
+  font-weight: 700;
+  height: 32px !important;
+  padding: 0 16px !important;
+}

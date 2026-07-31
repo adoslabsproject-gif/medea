@@ -3,6 +3,9 @@ import type { ReactNode } from 'react';
 
 export type ThemeMode = 'system' | 'light' | 'dark' | 'hc';
 
+/** Chiave localStorage della preferenza tema. */
+export const THEME_KEY = 'medea.theme';
+
 interface ThemeContextValue {
   theme: ThemeMode;
   setTheme: (m: ThemeMode) => void;

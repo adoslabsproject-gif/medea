@@ -10,6 +10,7 @@
   [data-theme='light'] {
     color-scheme: light;
   }
+
   [data-theme='dark'] {
     color-scheme: dark;
   }
@@ -46,13 +47,16 @@
     scrollbar-width: thin;
     scrollbar-color: var(--color-border-strong) transparent;
   }
+
   *::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
+
   *::-webkit-scrollbar-track {
     background: transparent;
   }
+
   *::-webkit-scrollbar-thumb {
     background-color: var(--color-border-strong);
     border-radius: var(--radius-full);
@@ -65,16 +69,19 @@
     line-height: var(--font-leading-tight);
     letter-spacing: var(--font-tracking-tight);
   }
+
   h2 {
     font-size: var(--font-size-2xl);
     font-weight: var(--font-weight-semibold);
     line-height: var(--font-leading-snug);
   }
+
   h3 {
     font-size: var(--font-size-xl);
     font-weight: var(--font-weight-semibold);
     line-height: var(--font-leading-snug);
   }
+
   code,
   pre,
   kbd,
@@ -87,6 +94,7 @@
     color: var(--color-accent-default);
     text-decoration: none;
   }
+
   a:hover {
     text-decoration: underline;
   }

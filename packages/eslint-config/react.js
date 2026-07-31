@@ -30,6 +30,9 @@ export default [
       ...reactHooks.configs.recommended.rules,
       'react/prop-types': 'off',
       'react/react-in-jsx-scope': 'off',
+      // La UI è in italiano: gli apostrofi nel testo JSX sono la norma e
+      // React li rende correttamente senza entity.
+      'react/no-unescaped-entities': 'off',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },

@@ -1,0 +1,95 @@
+@layer features {
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding-inline: var(--space-5);
+    padding-block-end: var(--space-3);
+    flex-wrap: wrap;
+  }
+
+  .select,
+  .search {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm, 6px);
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
+    font: inherit;
+  }
+
+  .search {
+    flex: 1;
+    min-inline-size: 12rem;
+  }
+
+  .summary {
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+  }
+
+  .tableWrap {
+    overflow-x: auto;
+  }
+
+  .table {
+    inline-size: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  .table thead th {
+    position: sticky;
+    inset-block-start: 0;
+    background: var(--color-surface-2);
+    text-align: start;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-tertiary);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .table tbody td {
+    padding: var(--space-2) var(--space-3);
+    border-block-end: 1px solid var(--color-border-subtle);
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.1em 0.5em;
+    border-radius: 999px;
+    background: var(--color-surface-2);
+    font-size: 0.75rem;
+  }
+
+  .right {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mono {
+    font-family: var(--font-family-mono, ui-monospace, monospace);
+    font-size: 0.85rem;
+  }
+
+  .muted {
+    color: var(--color-text-tertiary);
+  }
+
+  .linkBtn {
+    border: none;
+    background: none;
+    color: var(--color-accent);
+    cursor: pointer;
+    padding: 0;
+    font: inherit;
+  }
+
+  .error {
+    margin-inline: var(--space-5);
+    margin-block-end: var(--space-3);
+    color: var(--color-text-primary);
+  }
+}
