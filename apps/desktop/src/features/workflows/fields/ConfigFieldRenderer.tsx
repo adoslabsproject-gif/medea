@@ -12,6 +12,7 @@
 
 import type { NodeConfigField } from '../types';
 
+import { AccountPicker } from './AccountPicker';
 import { BooleanField, CodeField, SelectField, TextField } from './BasicFields';
 import { ChipListBuilder } from './ChipListBuilder';
 import { ConditionRulesBuilder } from './ConditionRulesBuilder';
@@ -95,6 +96,11 @@ export function ConfigFieldRenderer({
 
   if (type === 'secret') {
     return <SecretField field={field} value={text} onChange={onChange} />;
+  }
+
+  // Gli account di posta li conosce Medea: si scelgono, non si scrivono.
+  if (type === 'email-account-picker' || type === 'account-picker') {
+    return <AccountPicker field={field} value={text} onChange={onChange} />;
   }
 
   if (PICKER_TYPES.has(type)) {
