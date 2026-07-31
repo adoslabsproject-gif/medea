@@ -79,8 +79,17 @@ const out = [...defs.values()]
     ...(Array.isArray(d.actions) && d.actions.length > 0
       ? { actions: d.actions.map((a) => ({ id: a.id, ...(a.label ? { label: a.label } : {}) })) }
       : {}),
+    // `branching` distingue le PORTE dai CAMPI. Un logic_if ha due porte
+    // (true/false) e sono due strade diverse; un meta_extract ha diciassette
+    // "outputs" che sono i campi del suo risultato, non diciassette strade.
+    // Disegnarli tutti come porte e' esattamente il pasticcio da evitare.
+    ...(d.branching ? { branching: true } : {}),
     ...(Array.isArray(d.outputs) && d.outputs.length > 0
-      ? { outputPorts: d.outputs.map((o) => (typeof o === 'string' ? o : (o.id ?? o.name))) }
+      ? {
+          [d.branching ? 'outputPorts' : 'outputFields']: d.outputs.map((o) =>
+            typeof o === 'string' ? o : (o.id ?? o.name),
+          ),
+        }
       : {}),
   }));
 

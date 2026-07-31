@@ -122,14 +122,37 @@ export function NodeInspector({
         )}
 
         {tab === 'out' && (
-          <ConnectionList
-            empty="Nessun nodo a valle: il flusso finisce qui."
-            entries={downstream.map((e) => ({
-              id: e.to,
-              def: defsById.get(nodes.find((n) => n.id === e.to)?.defId ?? ''),
-              ...(e.fromPort ? { port: e.fromPort } : {}),
-            }))}
-          />
+          <>
+            {/* Quello che il nodo produce, con l'espressione per leggerlo: è
+                la domanda che ci si fa scrivendo la configurazione del nodo
+                dopo, e senza questa lista si tira a indovinare. */}
+            {def?.outputFields && def.outputFields.length > 0 && (
+              <section className={styles.outputs}>
+                <h4 className={styles.outputsTitle}>
+                  Campi prodotti <span className={styles.count}>{def.outputFields.length}</span>
+                </h4>
+                <ul className={styles.fieldList}>
+                  {def.outputFields.map((field) => (
+                    <li key={field} className={styles.fieldRow}>
+                      <span className={styles.fieldName}>{field}</span>
+                      <code className={styles.expression}>
+                        {`{{$node.${node.id}.json.${field}}}`}
+                      </code>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            <ConnectionList
+              empty="Nessun nodo a valle: il flusso finisce qui."
+              entries={downstream.map((e) => ({
+                id: e.to,
+                def: defsById.get(nodes.find((n) => n.id === e.to)?.defId ?? ''),
+                ...(e.fromPort ? { port: e.fromPort } : {}),
+              }))}
+            />
+          </>
         )}
       </div>
 
