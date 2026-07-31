@@ -13,49 +13,7 @@
 import { useState } from 'react';
 
 import styles from './fields.module.css';
-
-interface Pair {
-  k: string;
-  v: string;
-}
-
-function parsePairs(value: string): Pair[] {
-  if (!value.trim()) return [];
-  try {
-    const obj: unknown = JSON.parse(value);
-    if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) return [];
-    return Object.entries(obj as Record<string, unknown>).map(([k, v]) => ({
-      k,
-      v: typeof v === 'string' ? v : JSON.stringify(v),
-    }));
-  } catch {
-    return [];
-  }
-}
-
-/** Numeri, booleani e oggetti tornano al loro tipo; il resto resta testo. */
-function serialize(pairs: Pair[]): string {
-  const out: Record<string, unknown> = {};
-  for (const { k, v } of pairs) {
-    if (!k.trim()) continue;
-    const looksStructured =
-      v.startsWith('{') ||
-      v.startsWith('[') ||
-      v === 'true' ||
-      v === 'false' ||
-      /^-?\d+(\.\d+)?$/.test(v);
-    if (looksStructured) {
-      try {
-        out[k] = JSON.parse(v);
-        continue;
-      } catch {
-        // Non era JSON valido: resta una stringa.
-      }
-    }
-    out[k] = v;
-  }
-  return JSON.stringify(out, null, 2);
-}
+import { parseKeyValue, serializeKeyValue, type KeyValuePair } from './serialization';
 
 interface Props {
   value: string;
@@ -65,11 +23,11 @@ interface Props {
 }
 
 export function KeyValueBuilder({ value, onChange, keyPlaceholder, valuePlaceholder }: Props) {
-  const [pairs, setPairs] = useState<Pair[]>(() => parsePairs(value));
+  const [pairs, setPairs] = useState<KeyValuePair[]>(() => parseKeyValue(value));
 
-  const commit = (next: Pair[]) => {
+  const commit = (next: KeyValuePair[]) => {
     setPairs(next);
-    onChange(serialize(next));
+    onChange(serializeKeyValue(next));
   };
 
   return (
