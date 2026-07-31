@@ -17,6 +17,7 @@ export interface TopbarActions {
   onSave: () => void;
   onDiscard: () => void;
   onRun: () => void;
+  onSecrets: () => void;
   onToggleEnabled: () => void;
   onToggleAssistant: () => void;
   onUndo: () => void;
@@ -93,6 +94,17 @@ export function Topbar({
           disabled: !saved,
           disabledReason: 'Non è ancora stato salvato',
           onSelect: actions.onDelete,
+        },
+      ],
+    },
+    {
+      label: 'Credenziali',
+      items: [
+        {
+          label: 'Segreti',
+          icon: '🔑',
+          hint: 'API key e password, nel portachiavi del sistema',
+          onSelect: actions.onSecrets,
         },
       ],
     },

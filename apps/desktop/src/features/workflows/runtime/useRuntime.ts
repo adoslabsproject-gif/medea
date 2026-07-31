@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { runtimeStatus, startRuntime, type RuntimeStatus } from './client';
+import { provisionRuntime } from './provision';
 
 /** Ogni quanto si ricontrolla, quando non è in piedi. */
 const RECHECK_MS = 5000;
@@ -18,6 +19,8 @@ export interface RuntimeState {
   status: RuntimeStatus;
   checking: boolean;
   refresh: () => void;
+  /** Riconsegna segreti e account: da chiamare quando cambiano. */
+  provision: () => void;
 }
 
 export function useRuntime(): RuntimeState {
@@ -37,19 +40,38 @@ export function useRuntime(): RuntimeState {
       });
   }, []);
 
+  /**
+   * Consegna al runtime segreti e account di posta.
+   *
+   * Senza, `{{secrets.X}}` si risolve nel vuoto e `action_send_email` non
+   * trova l'account: il workflow gira e fallisce per una ragione che non si
+   * capisce guardando il canvas.
+   */
+  const provision = useCallback(() => {
+    void provisionRuntime().then((report) => {
+      if (report.problems.length > 0) {
+        // Non è un errore che ferma tutto: i pezzi passati sono passati.
+        console.warn('[runtime] problemi nel consegnare le credenziali', report.problems);
+      }
+    });
+  }, []);
+
   // All'apertura si prova ad avviarlo. Se è già in piedi non succede niente:
   // il comando è idempotente.
   useEffect(() => {
     setChecking(true);
     void startRuntime()
-      .then(setStatus)
+      .then((s) => {
+        setStatus(s);
+        if (s.running) provision();
+      })
       .catch((e: unknown) => {
         setStatus({ running: false, error: e instanceof Error ? e.message : String(e) });
       })
       .finally(() => {
         setChecking(false);
       });
-  }, []);
+  }, [provision]);
 
   // Finché non è in piedi si ricontrolla: parte in pochi secondi, e l'utente
   // non deve ricaricare niente per accorgersene.
@@ -61,5 +83,5 @@ export function useRuntime(): RuntimeState {
     };
   }, [status.running, refresh]);
 
-  return { status, checking, refresh };
+  return { status, checking, refresh, provision };
 }

@@ -18,6 +18,7 @@ import { WorkflowCanvas } from './canvas/WorkflowCanvas';
 import { findNode } from './catalog';
 import { RunsModal } from './runs';
 import { useRuntime } from './runtime';
+import { SecretsDialog } from './SecretsDialog';
 import { CollapsibleColumn } from './shared';
 import { Topbar } from './topbar';
 import type { NodeDef } from './types';
@@ -37,6 +38,7 @@ export function WorkflowsView() {
   const run = useWorkflowRun();
   /** Il workflow di cui si stanno guardando le esecuzioni. */
   const [runsFor, setRunsFor] = useState<{ id: number; name: string } | null>(null);
+  const [secretsOpen, setSecretsOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(
     () => localStorage.getItem(ASSISTANT_OPEN_KEY) !== 'false',
   );
@@ -132,6 +134,9 @@ export function WorkflowsView() {
             },
             onSave: () => void editor.save(),
             onDiscard: editor.discard,
+            onSecrets: () => {
+              setSecretsOpen(true);
+            },
             onRun: () => {
               // Si salva prima: eseguire una versione diversa da quella sul
               // disco vorrebbe dire che lo storico racconta un documento che
@@ -209,6 +214,15 @@ export function WorkflowsView() {
           {editor.notice && <span className={styles.notice}>{editor.notice}</span>}
         </footer>
       </div>
+
+      {secretsOpen && (
+        <SecretsDialog
+          onClose={() => {
+            setSecretsOpen(false);
+          }}
+          onChanged={runtime.provision}
+        />
+      )}
 
       {runsFor && (
         <RunsModal
