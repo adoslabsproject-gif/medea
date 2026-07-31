@@ -12,27 +12,7 @@
 import { useState } from 'react';
 
 import styles from './fields.module.css';
-
-interface Case {
-  value: string;
-  branch: string;
-}
-
-function parseCases(raw: string): Case[] {
-  if (!raw.trim()) return [];
-  return raw.split('\n').map((line) => {
-    const idx = line.indexOf('=');
-    if (idx < 0) return { value: line.trim(), branch: '' };
-    return { value: line.slice(0, idx).trim(), branch: line.slice(idx + 1).trim() };
-  });
-}
-
-function serializeCases(cases: Case[]): string {
-  return cases
-    .filter((c) => c.value.trim() !== '' || c.branch.trim() !== '')
-    .map((c) => `${c.value}=${c.branch}`)
-    .join('\n');
-}
+import { parseSwitchCases, serializeSwitchCases, type SwitchCase } from './serialization';
 
 interface Props {
   value: string;
@@ -40,11 +20,11 @@ interface Props {
 }
 
 export function SwitchCasesBuilder({ value, onChange }: Props) {
-  const [cases, setCases] = useState<Case[]>(() => parseCases(value));
+  const [cases, setCases] = useState<SwitchCase[]>(() => parseSwitchCases(value));
 
-  const commit = (next: Case[]) => {
+  const commit = (next: SwitchCase[]) => {
     setCases(next);
-    onChange(serializeCases(next));
+    onChange(serializeSwitchCases(next));
   };
 
   return (

@@ -12,7 +12,7 @@
 
 import { useState } from 'react';
 
-import { ConfigFieldRenderer } from '../fields';
+import { ConfigFieldRenderer, upstreamSources } from '../fields';
 import type { CanvasNode, NodeDef, WorkflowEdge } from '../types';
 
 import styles from './NodeInspector.module.css';
@@ -47,6 +47,7 @@ export function NodeInspector({
   const fields = def?.configFields ?? [];
 
   const upstream = edges.filter((e) => e.to === node.id);
+  const sources = upstreamSources(node.id, nodes, edges, defsById);
   const downstream = edges.filter((e) => e.from === node.id);
 
   return (
@@ -98,6 +99,7 @@ export function NodeInspector({
                   field={field}
                   value={node.config[field.key]}
                   allValues={node.config}
+                  sources={sources}
                   onChange={(next) => {
                     onChange({ ...node.config, [field.key]: next });
                   }}

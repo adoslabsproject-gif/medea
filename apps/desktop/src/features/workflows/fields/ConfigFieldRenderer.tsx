@@ -18,10 +18,14 @@ import type { NodeConfigField } from '../types';
 import { ChipListBuilder } from './ChipListBuilder';
 import { ConditionRulesBuilder } from './ConditionRulesBuilder';
 import { CronBuilder } from './CronBuilder';
+import { ExpressionPicker, type ExpressionSource } from './ExpressionPicker';
 import styles from './fields.module.css';
 import { FieldShell } from './FieldShell';
+import { FilterRowBuilder } from './FilterRowBuilder';
+import { FormFieldsBuilder } from './FormFieldsBuilder';
 import { KeyValueBuilder } from './KeyValueBuilder';
 import { evaluateShowIf } from './show-if';
+import { SortRowBuilder } from './SortRowBuilder';
 import { SwitchCasesBuilder } from './SwitchCasesBuilder';
 import { TimezonePicker } from './TimezonePicker';
 
@@ -31,6 +35,8 @@ export interface ConfigFieldProps {
   onChange: (next: unknown) => void;
   /** Tutti i valori del nodo: servono ai campi che dipendono da un altro. */
   allValues: Record<string, unknown>;
+  /** Cosa si può referenziare: i nodi a monte, i segreti, la data. */
+  sources?: readonly ExpressionSource[];
 }
 
 /** I tipi che si scrivono su più righe con carattere a larghezza fissa. */
@@ -56,7 +62,13 @@ function asText(value: unknown): string {
   return JSON.stringify(value);
 }
 
-export function ConfigFieldRenderer({ field, value, onChange, allValues }: ConfigFieldProps) {
+export function ConfigFieldRenderer({
+  field,
+  value,
+  onChange,
+  allValues,
+  sources = [],
+}: ConfigFieldProps) {
   if (!evaluateShowIf(field.showIf, allValues)) return null;
 
   const type = field.type || 'text';
@@ -122,6 +134,30 @@ export function ConfigFieldRenderer({ field, value, onChange, allValues }: Confi
     return (
       <FieldShell field={field}>
         <SwitchCasesBuilder value={text} onChange={onChange} />
+      </FieldShell>
+    );
+  }
+
+  if (type === 'filter-rows') {
+    return (
+      <FieldShell field={field}>
+        <FilterRowBuilder value={text} onChange={onChange} />
+      </FieldShell>
+    );
+  }
+
+  if (type === 'sort-rows') {
+    return (
+      <FieldShell field={field}>
+        <SortRowBuilder value={text} onChange={onChange} />
+      </FieldShell>
+    );
+  }
+
+  if (type === 'form-fields') {
+    return (
+      <FieldShell field={field}>
+        <FormFieldsBuilder value={text} onChange={onChange} />
       </FieldShell>
     );
   }
@@ -224,14 +260,12 @@ export function ConfigFieldRenderer({ field, value, onChange, allValues }: Confi
   if (LONG_TEXT_TYPES.has(type)) {
     return (
       <FieldShell field={field}>
-        <textarea
-          className={`${styles.control} ${styles.area}`}
-          rows={type === 'expression' ? 3 : 6}
+        <ExpressionPicker
           value={text}
-          placeholder={field.defaultValue ?? ''}
-          onChange={(e) => {
-            onChange(e.target.value);
-          }}
+          onChange={onChange}
+          rows={type === 'expression' ? 3 : 6}
+          {...(field.defaultValue ? { placeholder: field.defaultValue } : {})}
+          sources={sources}
         />
       </FieldShell>
     );
