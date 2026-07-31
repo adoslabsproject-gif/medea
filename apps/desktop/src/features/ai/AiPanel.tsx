@@ -603,6 +603,21 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
     let history = opts.history.slice();
     const trace: ToolCallResult[] = [];
     let lastText = '';
+
+    // Claude in abbonamento: il loop agentico è della CLI, che chiama i tool
+    // di Medea via MCP. Qui passiamo solo il turno e riceviamo il testo finale.
+    if (provider === 'claude-cli') {
+      const finalText = await aiApi.claudeCliRun({
+        prompt: history
+          .filter((t) => t.role === 'user' || t.role === 'assistant')
+          .map((t) => `${t.role === 'user' ? 'Utente' : 'Assistente'}: ${t.content}`)
+          .join('\n\n'),
+        systemPrompt: opts.systemPrompt,
+        allowTools: true,
+      });
+      return { finalText, trace, proposals };
+    }
+
     const conn = await providerConnection(provider);
     const tools = toolRegistry.length > 0 ? toOpenAiTools(toolRegistry) : undefined;
 
@@ -865,6 +880,7 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
               aria-label="Provider AI"
             >
               <option value="liara">Liara</option>
+              <option value="claude-cli">Claude (abbonamento)</option>
               <option value="custom">Endpoint personale</option>
               <option value="anthropic">Claude</option>
               <option value="openai">OpenAI</option>

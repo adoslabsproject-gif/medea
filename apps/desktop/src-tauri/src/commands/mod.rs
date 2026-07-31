@@ -2,6 +2,7 @@
 
 pub mod ai_cmd;
 pub mod ai_tools_cmd;
+pub mod claude_cli_cmd;
 pub mod db_cmd;
 pub mod imap_cmd;
 pub mod secrets_cmd;

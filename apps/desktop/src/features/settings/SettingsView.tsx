@@ -4,8 +4,16 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useTheme, type ThemeMode } from '../../app/providers/ThemeProvider';
 import { AccountSetup } from '../account-setup';
+import { aiApi } from '../ai/api';
+import type { ClaudeCliStatus } from '../ai/api';
 import { getApiKey, setApiKey } from '../ai/keys';
-import { CUSTOM_BASE_URL_KEY, CUSTOM_MODEL_KEY, providerLong, type ProviderId } from '../ai/types';
+import {
+  CUSTOM_BASE_URL_KEY,
+  CUSTOM_MODEL_KEY,
+  providerLong,
+  providerNeedsApiKey,
+  type ProviderId,
+} from '../ai/types';
 import { TemplateEditor } from '../email-template';
 import type { SenderInfo } from '../email-template';
 import { mailApi } from '../mail/api';
@@ -48,6 +56,7 @@ const EMPTY_PROFILE: Profile = {
 
 const PROVIDERS: ProviderId[] = [
   'liara',
+  'claude-cli',
   'custom',
   'anthropic',
   'openai',
@@ -377,6 +386,32 @@ function ProfileTab() {
 
       <MaintenanceSection />
     </div>
+  );
+}
+
+/* ───────────── CLAUDE IN ABBONAMENTO ───────────── */
+/** Stato della CLI `claude` locale: è lei a portare l'abbonamento. */
+function ClaudeCliStatusRow() {
+  const [status, setStatus] = useState<ClaudeCliStatus | null>(null);
+
+  useEffect(() => {
+    aiApi
+      .claudeCliStatus()
+      .then(setStatus)
+      .catch(() => {
+        setStatus(null);
+      });
+  }, []);
+
+  if (!status) return null;
+  return (
+    <p className={styles.muted} style={{ marginBlockStart: 'var(--space-2)' }}>
+      {status.available ? '✓' : '○'} <strong>Claude (abbonamento)</strong>: {status.message}
+      {status.version ? ` — ${status.version}` : ''}
+      <br />
+      Con questo provider i tool di Medea (posta, agenda, anagrafiche) passano dalla CLI via MCP:
+      niente API key, nessun costo a token.
+    </p>
   );
 }
 
@@ -1083,6 +1118,7 @@ function AiKeysTab() {
           Modello BYOK (bring-your-own-key): ogni provider usa la TUA chiave. Nessun servizio è
           preconfigurato.
         </p>
+        <ClaudeCliStatusRow />
       </div>
 
       <div className={`${styles.section} ${styles.formWide}`}>
@@ -1126,7 +1162,7 @@ function AiKeysTab() {
       <div className={`${styles.section} ${styles.formWide}`}>
         <h2 className={styles.sectionTitle}>🔑 API keys</h2>
         <div className={styles.keysList}>
-          {PROVIDERS.map((p) => (
+          {PROVIDERS.filter(providerNeedsApiKey).map((p) => (
             <div key={p} className={styles.keyRow}>
               <div className={styles.keyLabel}>{providerLong(p)}</div>
               <div className={styles.keyInputWrap}>
