@@ -9,6 +9,7 @@ pub mod secrets_cmd;
 pub mod smtp_cmd;
 pub mod sync_cmd;
 pub mod template_cmd;
+pub mod workflow_cmd;
 
 #[tauri::command]
 pub fn ping() -> String {

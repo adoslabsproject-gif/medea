@@ -5,4 +5,10 @@
  * di priorità). `overrides` è riservato a hot-fix puntuali e richiede commento
  * motivazionale obbligatorio.
  */
-@layer reset, tokens, base, themes, components, features, utilities, overrides;
+/**
+ * `vendor` sta subito dopo il reset: i fogli di stile di terze parti (il
+ * canvas xyflow, per esempio) arrivano senza layer e senza layer vincerebbero
+ * su tutto il resto, tema compreso. Importarli in `vendor` li rimette al
+ * livello che gli spetta — sopra il reset, sotto le nostre regole.
+ */
+@layer reset, vendor, tokens, base, themes, components, features, utilities, overrides;

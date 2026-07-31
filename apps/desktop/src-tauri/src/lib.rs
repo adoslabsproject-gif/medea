@@ -7,7 +7,7 @@ mod security;
 
 use commands::{
     ai_cmd, ai_tools_cmd, claude_cli_cmd, db_cmd, imap_cmd, secrets_cmd, smtp_cmd, sync_cmd,
-    template_cmd,
+    template_cmd, workflow_cmd,
 };
 use tauri::Manager;
 
@@ -116,6 +116,13 @@ pub fn run() {
             template_cmd::db_template_default,
             template_cmd::db_template_upsert,
             template_cmd::db_template_delete,
+            // Workflow (canvas locale)
+            workflow_cmd::workflow_list,
+            workflow_cmd::workflow_get,
+            workflow_cmd::workflow_save,
+            workflow_cmd::workflow_set_enabled,
+            workflow_cmd::workflow_delete,
+            workflow_cmd::workflow_duplicate,
             // Manutenzione dati
             db_cmd::db_business_data_stats,
             db_cmd::db_purge_business_data,

@@ -1,0 +1,220 @@
+@layer features {
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .label {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+  }
+
+  .required {
+    margin-inline-start: 2px;
+    color: var(--color-feedback-danger);
+  }
+
+  .hint {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    line-height: 1.5;
+  }
+  .hint code {
+    font-family: var(--font-family-mono);
+    color: var(--color-text-secondary);
+  }
+
+  .control {
+    inline-size: 100%;
+    min-inline-size: 0;
+    padding: var(--space-2);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-sm);
+  }
+  .control:focus-visible {
+    outline: 2px solid var(--color-focus-ring-default);
+    outline-offset: 1px;
+  }
+
+  .controlNarrow {
+    composes: control;
+    inline-size: auto;
+    flex: 0 0 auto;
+  }
+
+  .area {
+    resize: vertical;
+    line-height: 1.5;
+  }
+
+  .mono {
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
+  }
+
+  .builder {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .rowArrow {
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+
+  .rowRemove {
+    flex-shrink: 0;
+    padding: var(--space-1);
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+  }
+  .rowRemove:hover {
+    color: var(--color-feedback-danger);
+    background: var(--color-surface-3);
+  }
+
+  .addRow,
+  .inlineBtn {
+    align-self: flex-start;
+    padding: var(--space-1) var(--space-2);
+    border: 1px dashed var(--color-border-default);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .addRow:hover,
+  .inlineBtn:hover {
+    border-style: solid;
+    border-color: var(--color-accent-default);
+    color: var(--color-accent-default);
+  }
+  .inlineBtn {
+    flex-shrink: 0;
+  }
+
+  .ruleRow {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-2);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+  }
+
+  .checkRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+  }
+
+  .combinator,
+  .segmented {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+    align-self: flex-start;
+  }
+
+  .combinatorBtn,
+  .segment {
+    padding: var(--space-1) var(--space-2);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+  }
+  .combinatorBtn[data-on='true'],
+  .segment[data-on='true'] {
+    background: var(--color-accent-default);
+    color: var(--color-accent-on);
+  }
+
+  .presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+
+  .preset {
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-full);
+    background: var(--color-surface-1);
+    color: var(--color-text-secondary);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+  }
+  .preset[data-on='true'] {
+    border-color: var(--color-accent-default);
+    background: var(--color-accent-subtle);
+    color: var(--color-accent-default);
+  }
+
+  .preview {
+    padding: var(--space-2);
+    border-inline-start: 2px solid var(--color-accent-default);
+    background: var(--color-surface-1);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--color-surface-3);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-xs);
+  }
+
+  .chipRemove {
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 0.625rem;
+    cursor: pointer;
+    padding: 0;
+  }
+  .chipRemove:hover {
+    color: var(--color-feedback-danger);
+  }
+}

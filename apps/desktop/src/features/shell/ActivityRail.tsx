@@ -11,6 +11,7 @@ export type SectionId =
   | 'price-lists'
   | 'documents'
   | 'db-studio'
+  | 'workflows'
   | 'settings';
 
 interface Entry {
@@ -27,6 +28,7 @@ const ENTRIES: Entry[] = [
   { id: 'price-lists', label: 'Listini', icon: '€' },
   { id: 'documents', label: 'Documenti & Template', icon: '📄' },
   { id: 'db-studio', label: 'DB Studio', icon: '🗄' },
+  { id: 'workflows', label: 'Workflow & automazioni', icon: '⚡' },
   { id: 'settings', label: 'Profilo & Firma', icon: '⚙' },
 ];
 
