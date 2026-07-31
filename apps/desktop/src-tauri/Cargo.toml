@@ -60,6 +60,10 @@ sha2 = "0.10"
 
 # Segreti in keychain OS (macOS Keychain / Windows Credential Manager / Secret Service)
 keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
+# Casualità dal sistema operativo, per la password dell'utente locale del
+# runtime dei workflow: una password che nessuno digita non deve essere
+# indovinabile.
+getrandom = "0.3"
 
 # Base64 (inline parts → data URL)
 base64 = "0.22"
