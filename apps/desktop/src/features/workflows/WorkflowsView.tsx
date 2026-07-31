@@ -22,10 +22,21 @@ import { useWorkflowEditor } from './useWorkflowEditor';
 import { WorkflowList } from './WorkflowList';
 import styles from './WorkflowsView.module.css';
 
+/** Aperto o chiuso, la scelta resta fra una sessione e l'altra: chi lavora
+ *  col pannello lo vuole trovare aperto, chi non lo usa non vuole ritrovarselo
+ *  ogni volta. */
+const ASSISTANT_OPEN_KEY = 'medea.workflows.assistantOpen';
+
 export function WorkflowsView() {
   const editor = useWorkflowEditor();
-  const [assistantOpen, setAssistantOpen] = useState(true);
+  const [assistantOpen, setAssistantOpen] = useState(
+    () => localStorage.getItem(ASSISTANT_OPEN_KEY) !== 'false',
+  );
   const { workflow } = editor;
+
+  useEffect(() => {
+    localStorage.setItem(ASSISTANT_OPEN_KEY, String(assistantOpen));
+  }, [assistantOpen]);
 
   const defsById = useMemo(() => {
     const map = new Map<string, NodeDef>();
