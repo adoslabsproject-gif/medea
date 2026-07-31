@@ -42,6 +42,7 @@ export const RESERVED_TABLE_NAMES: ReadonlySet<string> = new Set([
   'price_lists',
   'reminders',
   'schema_version',
+  'workflows',
 ]);
 
 const COLUMN_TYPES = new Set<string>(TABLE_COLUMN_TYPES);

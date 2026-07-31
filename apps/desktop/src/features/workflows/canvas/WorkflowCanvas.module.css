@@ -1,0 +1,70 @@
+@layer features {
+  .root {
+    flex: 1;
+    display: flex;
+    min-block-size: 0;
+    overflow: hidden;
+  }
+
+  .canvas {
+    flex: 1;
+    min-inline-size: 0;
+    position: relative;
+    background: var(--color-surface-1);
+  }
+
+  /* xyflow disegna con i propri colori: qui si riportano a quelli del tema,
+     altrimenti il canvas resta chiaro anche in modalità scura. */
+  .canvas :global(.react-flow__background) {
+    background: var(--color-surface-1);
+  }
+  .canvas :global(.react-flow__edge-path) {
+    stroke: var(--color-border-strong);
+  }
+  .canvas :global(.react-flow__controls-button) {
+    background: var(--color-surface-2);
+    border-color: var(--color-border-subtle);
+    fill: var(--color-text-secondary);
+  }
+  .canvas :global(.react-flow__minimap) {
+    background: var(--color-surface-2);
+  }
+  .canvas :global(.react-flow__attribution) {
+    background: transparent;
+    font-size: var(--font-size-xs);
+  }
+
+  .hint {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    transform: translate(-50%, -50%);
+    max-inline-size: 24rem;
+    padding: var(--space-5);
+    border: 1px dashed var(--color-border-default);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-2);
+    text-align: center;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    line-height: 1.55;
+    pointer-events: none;
+  }
+  .hint p + p {
+    margin-block-start: var(--space-2);
+  }
+
+  .placeholder {
+    inline-size: 21rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-5);
+    border-inline-start: 1px solid var(--color-border-subtle);
+    background: var(--color-surface-2);
+    text-align: center;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+}

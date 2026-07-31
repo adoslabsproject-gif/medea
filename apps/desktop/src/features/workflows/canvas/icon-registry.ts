@@ -1,0 +1,343 @@
+/**
+ * icon-registry — registry ESPLICITO delle Lucide icon usate nel canvas/palette.
+ *
+ * RATIONALE (24 mag 2026 — incident "rombo universale"):
+ *   Usavamo `import * as LucideIcons from 'lucide-react'` + `LucideIcons[name]`
+ *   lookup runtime. Vite/Rollup in produzione fa tree-shaking aggressivo:
+ *   poiché nessun riferimento STATICO esiste a `LucideIcons.Database`,
+ *   `LucideIcons.GitBranch`, ecc., il bundler le DROPPA dal bundle finale.
+ *   Risultato: ~80% delle icone non disponibili a runtime → fallback emoji.
+ *
+ *   Pattern enterprise corretto: import nominali statici + Map name→Component.
+ *   Vite vede gli import e li mantiene nel bundle. Tradeoff: ~1KB ogni icona
+ *   (~80KB totali) ma le icone funzionano DAVVERO in produzione.
+ */
+import type { LucideIcon } from 'lucide-react';
+import {
+  // Triggers
+  Play,
+  Webhook,
+  Timer,
+  ClipboardList,
+  MailOpen,
+  FolderSearch,
+  DatabaseZap,
+  PlugZap,
+  Plug,
+  // Web & lead-gen
+  Globe,
+  Network,
+  Search,
+  Building2,
+  UserSearch,
+  AtSign,
+  ShieldCheck,
+  Target,
+  // Email & comm
+  Send,
+  Sparkles,
+  CornerDownLeft,
+  Beaker,
+  // Brand-driven
+  MessageSquare,
+  Bell,
+  FilePlus2,
+  CircleDot,
+  CreditCard,
+  SquareCheckBig,
+  // File system
+  FileDown,
+  FileUp,
+  FileSpreadsheet,
+  Table2,
+  // Document
+  FileText,
+  Type,
+  Braces,
+  CalendarClock,
+  ListChecks,
+  // Custom
+  Layers2,
+  Layers3,
+  Boxes,
+  // AI
+  ScanText,
+  BookOpen,
+  Tags,
+  Languages,
+  Router,
+  BarChartBig,
+  FileCode2,
+  ShieldAlert,
+  Bot,
+  Sparkle,
+  BookMarked,
+  Brain,
+  // DB
+  Database,
+  DatabaseBackup,
+  CopyPlus,
+  Trash2,
+  TerminalSquare,
+  Radio,
+  // Logic
+  GitBranch,
+  GitFork,
+  Repeat,
+  GitMerge,
+  Hourglass,
+  BellRing,
+  TimerReset,
+  Wand2,
+  Layers,
+  Workflow,
+  AlertOctagon,
+  Sigma,
+  Group,
+  Filter,
+  PanelTop,
+  Repeat2,
+  // Italia
+  Calculator,
+  Receipt,
+  CheckCircle2,
+  Mailbox,
+  Inbox,
+  UserCheck,
+  Globe2,
+  // Sticky
+  StickyNote,
+  // Category badges (small)
+  Zap,
+  MousePointerClick,
+  GitBranchPlus,
+  MessageCircle,
+  // Fallback
+  Hash,
+  Square,
+} from 'lucide-react';
+
+const REGISTRY: Record<string, LucideIcon> = {
+  Play,
+  Webhook,
+  Timer,
+  ClipboardList,
+  MailOpen,
+  FolderSearch,
+  DatabaseZap,
+  PlugZap,
+  Plug,
+  Globe,
+  Network,
+  Search,
+  Building2,
+  UserSearch,
+  AtSign,
+  ShieldCheck,
+  Target,
+  Send,
+  Sparkles,
+  CornerDownLeft,
+  Beaker,
+  MessageSquare,
+  Bell,
+  FilePlus2,
+  CircleDot,
+  CreditCard,
+  SquareCheckBig,
+  FileDown,
+  FileUp,
+  FileSpreadsheet,
+  Table2,
+  FileText,
+  Type,
+  Braces,
+  CalendarClock,
+  ListChecks,
+  Layers2,
+  Layers3,
+  Boxes,
+  ScanText,
+  BookOpen,
+  Tags,
+  Languages,
+  Router,
+  BarChartBig,
+  FileCode2,
+  ShieldAlert,
+  Bot,
+  Sparkle,
+  BookMarked,
+  Brain,
+  Database,
+  DatabaseBackup,
+  CopyPlus,
+  Trash2,
+  TerminalSquare,
+  Radio,
+  GitBranch,
+  GitFork,
+  Repeat,
+  GitMerge,
+  Hourglass,
+  BellRing,
+  TimerReset,
+  Wand2,
+  Layers,
+  Workflow,
+  AlertOctagon,
+  Sigma,
+  Group,
+  Filter,
+  PanelTop,
+  Repeat2,
+  Calculator,
+  Receipt,
+  CheckCircle2,
+  Mailbox,
+  Inbox,
+  UserCheck,
+  Globe2,
+  StickyNote,
+  Zap,
+  MousePointerClick,
+  GitBranchPlus,
+  MessageCircle,
+  Hash,
+  Square,
+};
+
+/**
+ * Override granulare defId → nome Lucide PascalCase. Single source of truth
+ * condivisa tra Canvas (WorkflowNode) e Palette (NodePaletteSidebar) — prima
+ * solo il canvas la usava, palette cadeva su def.icon spesso assente. Audit
+ * completo 81 defId del catalog FlowForge mappati a icona semanticamente
+ * coerente con la FUNZIONE del nodo (non il vendor: brand badge separato).
+ */
+export const NODE_ICON_OVERRIDE: Record<string, string> = {
+  // Triggers (7)
+  trigger_manual: 'Play',
+  trigger_webhook: 'Webhook',
+  trigger_websocket: 'PlugZap',
+  action_openapi: 'Plug',
+  trigger_cron: 'Timer',
+  trigger_form: 'ClipboardList',
+  trigger_imap: 'MailOpen',
+  trigger_file_watch: 'FolderSearch',
+  trigger_db_change: 'DatabaseZap',
+  // Web & lead-gen (8)
+  action_fetch_url: 'Globe',
+  action_http: 'Network',
+  action_web_search: 'Search',
+  action_company_search: 'Building2',
+  action_contact_discovery: 'UserSearch',
+  action_email_harvest: 'AtSign',
+  action_email_validate_mx: 'ShieldCheck',
+  action_lead_score: 'Target',
+  // Email & comm (4)
+  action_send_email: 'Send',
+  action_email_personalize: 'Sparkles',
+  action_webhook_respond: 'CornerDownLeft',
+  action_demo: 'Beaker',
+  // Community brand-driven (7) — big icon = funzione
+  community_telegram: 'Send',
+  community_slack: 'MessageSquare',
+  community_discord: 'Bell',
+  community_notion: 'FilePlus2',
+  community_github: 'CircleDot',
+  community_stripe: 'CreditCard',
+  community_linear: 'SquareCheckBig',
+  // File system (4)
+  action_file_read: 'FileDown',
+  action_file_write: 'FileUp',
+  action_xlsx_parse: 'FileSpreadsheet',
+  action_xlsx_build: 'Table2',
+  // Document / text (5)
+  action_pdf_parse: 'FileText',
+  action_text_template: 'Type',
+  action_json_extract: 'Braces',
+  action_date_format: 'CalendarClock',
+  action_lines_enrich: 'ListChecks',
+  // Custom placeholders (3)
+  action_a: 'Layers2',
+  action_b: 'Layers3',
+  action_my_custom: 'Boxes',
+  // AI agents (12)
+  agent_extractor: 'ScanText',
+  agent_summarizer: 'BookOpen',
+  agent_classifier: 'Tags',
+  agent_translator: 'Languages',
+  agent_intent_router: 'Router',
+  agent_data_analyst: 'BarChartBig',
+  agent_code_reviewer: 'FileCode2',
+  agent_security_audit: 'ShieldAlert',
+  ai_agent_tool_loop: 'Bot',
+  ai_embed: 'Sparkle',
+  ai_rag_search: 'BookMarked',
+  liara: 'Brain',
+  // DB (7)
+  db_query: 'Database',
+  db_insert: 'DatabaseBackup',
+  db_insert_batch: 'CopyPlus',
+  db_update: 'DatabaseZap',
+  db_delete: 'Trash2',
+  db_sql_query: 'TerminalSquare',
+  db_subscribe: 'Radio',
+  // Logic (16)
+  logic_if: 'GitBranch',
+  logic_switch: 'GitFork',
+  logic_loop: 'Repeat',
+  logic_merge: 'GitMerge',
+  logic_wait: 'Hourglass',
+  logic_wait_signal: 'BellRing',
+  logic_delay: 'TimerReset',
+  logic_transform: 'Wand2',
+  logic_paginate: 'Layers',
+  logic_subworkflow: 'Workflow',
+  logic_aggregate: 'Sigma',
+  logic_group_by: 'Group',
+  logic_distinct: 'Filter',
+  logic_window: 'PanelTop',
+  logic_convert: 'Repeat2',
+  // Italia (8)
+  italia_zucchetti_payroll: 'Calculator',
+  italia_sdi_send_invoice: 'Receipt',
+  italia_sdi_check_status: 'CheckCircle2',
+  italia_pec_aruba_send: 'Mailbox',
+  italia_pec_aruba_receive: 'Inbox',
+  italia_fatture_in_cloud_client: 'UserCheck',
+  italia_fatture_in_cloud_invoice: 'FileSpreadsheet',
+  italia_register_it_domain: 'Globe2',
+  // Sticky
+  note: 'StickyNote',
+};
+
+/**
+ * Helper: ritorna il nome Lucide da usare per un defId, dando priorità
+ * all'override (esplicito, coerente con la funzione) sul fallback `def.icon`
+ * (potrebbe essere generico o assente).
+ */
+export function iconNameFor(defId: string, fallback?: string): string | undefined {
+  return NODE_ICON_OVERRIDE[defId] ?? fallback;
+}
+
+/**
+ * Risolve un nome icona (PascalCase, kebab-case, snake_case, lowercase) al
+ * componente Lucide corrispondente. Usa il registry statico — NIENTE lookup
+ * dinamico su `import *` (che Vite tree-shake droppa). Ritorna null se
+ * l'icona non è registrata (caller deve usare fallback).
+ */
+export function resolveLucideIcon(name: string | undefined): LucideIcon | null {
+  if (!name) return null;
+  // 1) Match diretto PascalCase
+  if (REGISTRY[name]) return REGISTRY[name];
+  // 2) Capitalize first
+  const capped = name.charAt(0).toUpperCase() + name.slice(1);
+  if (REGISTRY[capped]) return REGISTRY[capped];
+  // 3) kebab/snake → PascalCase
+  const pascal = name
+    .split(/[-_\s]+/)
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
+    .join('');
+  return REGISTRY[pascal] ?? null;
+}

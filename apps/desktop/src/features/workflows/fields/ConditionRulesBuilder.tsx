@@ -1,0 +1,268 @@
+/**
+ * Le condizioni di un `logic_if`, scritte a regole invece che a mano.
+ *
+ * Formato salvato — quello che valuta il motore:
+ *   `{ combinator: 'AND'|'OR', rules: [{ left, op, right, rightMax?, type, caseSensitive? }] }`
+ *
+ * Gli operatori disponibili dipendono dal tipo scelto: su un numero non ha
+ * senso «contiene», su una stringa non ha senso «≥». È la differenza fra un
+ * campo che aiuta e un campo che lascia sbagliare.
+ */
+
+import { useState } from 'react';
+
+import styles from './fields.module.css';
+
+type RuleType = 'string' | 'number' | 'date' | 'boolean' | 'any';
+
+interface Rule {
+  left: string;
+  op: string;
+  right?: string;
+  rightMax?: string;
+  type: RuleType;
+  caseSensitive?: boolean;
+}
+
+interface Ruleset {
+  combinator: 'AND' | 'OR';
+  rules: Rule[];
+}
+
+/** Gli stessi operatori dell'editor originale, con le stesse etichette. */
+const OPS_BY_TYPE: Record<RuleType, { value: string; label: string }[]> = {
+  string: [
+    { value: 'equals', label: 'è uguale a' },
+    { value: 'not-equals', label: 'è diverso da' },
+    { value: 'contains', label: 'contiene' },
+    { value: 'not-contains', label: 'non contiene' },
+    { value: 'starts-with', label: 'inizia con' },
+    { value: 'ends-with', label: 'finisce con' },
+    { value: 'matches-regex', label: 'corrisponde a regex' },
+    { value: 'is-empty', label: 'è vuoto' },
+    { value: 'is-not-empty', label: 'non è vuoto' },
+  ],
+  number: [
+    { value: 'eq', label: '=' },
+    { value: 'ne', label: '≠' },
+    { value: 'gt', label: '>' },
+    { value: 'gte', label: '≥' },
+    { value: 'lt', label: '<' },
+    { value: 'lte', label: '≤' },
+    { value: 'between', label: 'tra (min, max)' },
+  ],
+  date: [
+    { value: 'before', label: 'prima di' },
+    { value: 'after', label: 'dopo' },
+    { value: 'equals', label: 'è uguale a' },
+  ],
+  boolean: [
+    { value: 'is-true', label: 'è vero' },
+    { value: 'is-false', label: 'è falso' },
+  ],
+  any: [
+    { value: 'exists', label: 'esiste' },
+    { value: 'not-exists', label: 'non esiste' },
+    { value: 'equals', label: 'è uguale a' },
+    { value: 'not-equals', label: 'è diverso da' },
+  ],
+};
+
+const TYPE_LABELS: Record<RuleType, string> = {
+  string: 'testo',
+  number: 'numero',
+  date: 'data',
+  boolean: 'vero/falso',
+  any: 'qualsiasi',
+};
+
+/** Gli operatori che non hanno un secondo termine da confrontare. */
+const UNARY_OPS = new Set([
+  'is-empty',
+  'is-not-empty',
+  'is-true',
+  'is-false',
+  'exists',
+  'not-exists',
+]);
+
+function parse(raw: string): Ruleset {
+  if (!raw.trim()) return { combinator: 'AND', rules: [] };
+  try {
+    const obj: unknown = JSON.parse(raw);
+    if (obj && typeof obj === 'object' && Array.isArray((obj as Ruleset).rules)) {
+      const o = obj as Ruleset;
+      return {
+        combinator: o.combinator === 'OR' ? 'OR' : 'AND',
+        rules: o.rules.map((r) => {
+          const rule: Rule = {
+            left: r.left ?? '',
+            op: r.op ?? 'equals',
+            right: r.right ?? '',
+            rightMax: r.rightMax ?? '',
+            type: r.type ?? 'string',
+          };
+          if (r.caseSensitive !== undefined) rule.caseSensitive = r.caseSensitive;
+          return rule;
+        }),
+      };
+    }
+  } catch {
+    // Un valore illeggibile riparte da zero invece di bloccare il pannello.
+  }
+  return { combinator: 'AND', rules: [] };
+}
+
+interface Props {
+  value: string;
+  onChange: (next: string) => void;
+}
+
+export function ConditionRulesBuilder({ value, onChange }: Props) {
+  const [set, setSet] = useState<Ruleset>(() => parse(value));
+
+  const commit = (next: Ruleset) => {
+    setSet(next);
+    onChange(JSON.stringify(next));
+  };
+
+  const patchRule = (index: number, patch: Partial<Rule>) => {
+    commit({
+      ...set,
+      rules: set.rules.map((r, i) => (i === index ? { ...r, ...patch } : r)),
+    });
+  };
+
+  return (
+    <div className={styles.builder}>
+      <div className={styles.combinator}>
+        {(['AND', 'OR'] as const).map((c) => (
+          <button
+            key={c}
+            type="button"
+            className={styles.combinatorBtn}
+            data-on={set.combinator === c ? 'true' : 'false'}
+            onClick={() => {
+              commit({ ...set, combinator: c });
+            }}
+          >
+            {c === 'AND' ? 'tutte le condizioni' : 'almeno una'}
+          </button>
+        ))}
+      </div>
+
+      {set.rules.map((rule, i) => {
+        const ops = OPS_BY_TYPE[rule.type];
+        const unary = UNARY_OPS.has(rule.op);
+        return (
+          <div key={i} className={styles.ruleRow}>
+            <div className={styles.row}>
+              <select
+                className={styles.controlNarrow}
+                aria-label="Tipo di confronto"
+                value={rule.type}
+                onChange={(e) => {
+                  const type = e.target.value as RuleType;
+                  // Cambiando tipo l'operatore precedente può non esistere più.
+                  patchRule(i, { type, op: OPS_BY_TYPE[type][0]?.value ?? 'equals' });
+                }}
+              >
+                {(Object.keys(OPS_BY_TYPE) as RuleType[]).map((t) => (
+                  <option key={t} value={t}>
+                    {TYPE_LABELS[t]}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className={styles.rowRemove}
+                aria-label="Rimuovi questa condizione"
+                onClick={() => {
+                  commit({ ...set, rules: set.rules.filter((_, j) => j !== i) });
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <input
+              className={styles.control}
+              placeholder="{{$node.passo.json.campo}}"
+              aria-label="Valore da confrontare"
+              value={rule.left}
+              onChange={(e) => {
+                patchRule(i, { left: e.target.value });
+              }}
+            />
+
+            <div className={styles.row}>
+              <select
+                className={styles.control}
+                aria-label="Operatore"
+                value={rule.op}
+                onChange={(e) => {
+                  patchRule(i, { op: e.target.value });
+                }}
+              >
+                {ops.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+
+              {!unary && (
+                <input
+                  className={styles.control}
+                  placeholder={rule.op === 'between' ? 'minimo' : 'valore'}
+                  aria-label="Termine di confronto"
+                  value={rule.right ?? ''}
+                  onChange={(e) => {
+                    patchRule(i, { right: e.target.value });
+                  }}
+                />
+              )}
+              {rule.op === 'between' && (
+                <input
+                  className={styles.control}
+                  placeholder="massimo"
+                  aria-label="Valore massimo"
+                  value={rule.rightMax ?? ''}
+                  onChange={(e) => {
+                    patchRule(i, { rightMax: e.target.value });
+                  }}
+                />
+              )}
+            </div>
+
+            {rule.type === 'string' && !unary && (
+              <label className={styles.checkRow}>
+                <input
+                  type="checkbox"
+                  checked={rule.caseSensitive === true}
+                  onChange={(e) => {
+                    patchRule(i, { caseSensitive: e.target.checked });
+                  }}
+                />
+                Distingui maiuscole e minuscole
+              </label>
+            )}
+          </div>
+        );
+      })}
+
+      <button
+        type="button"
+        className={styles.addRow}
+        onClick={() => {
+          commit({
+            ...set,
+            rules: [...set.rules, { left: '', op: 'equals', right: '', type: 'string' }],
+          });
+        }}
+      >
+        + Aggiungi condizione
+      </button>
+    </div>
+  );
+}

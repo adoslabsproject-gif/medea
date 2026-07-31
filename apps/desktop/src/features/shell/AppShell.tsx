@@ -9,6 +9,7 @@ import { MailLayout } from '../mail/layout/MailLayout';
 import type { MailAccount } from '../mail/types';
 import { PriceListsView } from '../price-lists/PriceListsView';
 import { SettingsView } from '../settings/SettingsView';
+import { WorkflowsView } from '../workflows';
 
 import { ActivityRail, type SectionId } from './ActivityRail';
 import styles from './AppShell.module.css';
@@ -32,6 +33,7 @@ export function AppShell({ account, onSwitchAccount }: Props) {
         {active === 'price-lists' && <PriceListsView />}
         {active === 'documents' && <DocumentsView />}
         {active === 'db-studio' && <DbStudioView />}
+        {active === 'workflows' && <WorkflowsView />}
         {active === 'settings' && <SettingsView account={account} />}
       </div>
     </div>

@@ -1,0 +1,10 @@
+/**
+ * Il foglio di stile di xyflow, messo nel layer che gli spetta.
+ *
+ * Importato direttamente da JavaScript arriverebbe senza layer, e in CSS
+ * cascade layers ciò che è senza layer vince su tutto ciò che è dentro un
+ * layer: il canvas resterebbe bianco anche in tema scuro, con i nostri
+ * override ignorati. Questo `@import ... layer(vendor)` lo rimette sotto le
+ * regole di Medea.
+ */
+@import '@xyflow/react/dist/style.css' layer(vendor);

@@ -13,7 +13,31 @@
 use anyhow::Result;
 use rusqlite::Connection;
 
-pub const SCHEMA_VERSION: i32 = 11;
+pub const SCHEMA_VERSION: i32 = 12;
+
+/// Migrazione v12 — `workflows`: le automazioni disegnate sul canvas.
+///
+/// Il grafo sta in un'unica colonna JSON invece che in tabelle `nodes` ed
+/// `edges` separate. È voluto: la forma del workflow deve restare
+/// byte-compatibile con quella del server, che lo tratta come un documento
+/// unico. Spezzarlo in righe significherebbe ricomporlo a ogni lettura e
+/// rischiare che le due rappresentazioni divergano.
+const DDL_V12: &str = r#"
+CREATE TABLE IF NOT EXISTS workflows (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    name             TEXT NOT NULL,
+    description      TEXT,
+    -- Il documento completo: nodes, edges, nodeDefs, executionTarget.
+    graph_json       TEXT NOT NULL,
+    -- 'local' sul PC, 'server' sulla macchina sempre accesa.
+    execution_target TEXT NOT NULL DEFAULT 'local'
+                     CHECK(execution_target IN ('local','server')),
+    enabled          INTEGER NOT NULL DEFAULT 0,
+    created_at       TEXT NOT NULL,
+    updated_at       TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_workflows_updated ON workflows(updated_at DESC);
+"#;
 
 /// Migrazione v11 — `email_templates`: la carta intestata applicata ai
 /// messaggi in uscita (nuovi e risposte).
@@ -578,6 +602,11 @@ pub fn ensure_schema(conn: &Connection) -> Result<()> {
         conn.execute_batch(DDL_V11)?;
     }
 
+    if current.unwrap_or(0) < 12 {
+        tracing::info!("Migrazione → v12 (workflows)…");
+        conn.execute_batch(DDL_V12)?;
+    }
+
     conn.execute(
         "INSERT OR REPLACE INTO schema_version(version, applied_at) VALUES (?1, datetime('now'))",
         rusqlite::params![SCHEMA_VERSION],
@@ -585,3 +614,7 @@ pub fn ensure_schema(conn: &Connection) -> Result<()> {
     tracing::info!("Schema portato a v{SCHEMA_VERSION}.");
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "schema_tests.rs"]
+mod tests;

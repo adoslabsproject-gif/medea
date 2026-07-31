@@ -5,6 +5,8 @@
  * viceversa. Ogni deviazione da questa forma rompe la compatibilità.
  */
 
+import type { ShowIfRule } from './fields/show-if';
+
 /** Nodo sul canvas. I valori di config sono normalizzati a stringa: è il
  *  motore a farne il parse a runtime (stessa scelta del server). */
 export interface CanvasNode {
@@ -70,6 +72,10 @@ export interface NodeConfigField {
   pattern?: string;
   defaultValue?: string;
   description?: string;
+  /** Mostra il campo solo quando un altro campo ha un certo valore. */
+  showIf?: ShowIfRule;
+  /** Il campo di cui questo elenco dipende (es. la tabella dipende dal database). */
+  dependsOn?: string;
 }
 
 export interface NodeAction {
@@ -83,6 +89,10 @@ export interface NodeDef {
   type: 'trigger' | 'action' | 'ai' | 'logic';
   label: string;
   description?: string;
+  /** Nome simbolico dell'icona dichiarato dal nodo (es. `clock`, `mail`). */
+  icon?: string;
+  /** Colore identificativo del nodo, come lo definisce il suo pacchetto. */
+  color?: string;
   configFields?: NodeConfigField[];
   actions?: NodeAction[];
   /** Porte in uscita dichiarate (es. `true`/`false` per logic_if). */
