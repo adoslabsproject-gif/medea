@@ -56,6 +56,9 @@ export interface Workflow {
   nodes: CanvasNode[];
   edges: WorkflowEdge[];
   nodeDefs?: NodeDef[];
+  /** Come lo conosce il runtime, quando gli è già stato mandato. Serve a non
+   *  creargliene una copia nuova a ogni esecuzione. */
+  runtimeId?: string;
   runVerbosity?: 'silent' | 'summary' | 'full';
   /**
    * Dove viene eseguito. In Medea è **sempre** `local`: il workflow gira sul

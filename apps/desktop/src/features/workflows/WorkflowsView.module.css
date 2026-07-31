@@ -132,6 +132,31 @@
     color: var(--color-text-muted);
   }
 
+  /* Il racconto dell'esecuzione sta accanto al verdetto: sono le due cose
+     che si guardano in fondo alla schermata. */
+  .runSummary {
+    flex-shrink: 0;
+    color: var(--color-text-secondary);
+  }
+  .runSummary[data-status='error'] {
+    color: var(--color-feedback-danger);
+  }
+  .runSummary[data-status='success'] {
+    color: var(--color-feedback-success);
+  }
+
+  .runError {
+    color: var(--color-feedback-danger);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .runtimeOff {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+  }
+
   .notice {
     margin-inline-start: auto;
     color: var(--color-text-muted);

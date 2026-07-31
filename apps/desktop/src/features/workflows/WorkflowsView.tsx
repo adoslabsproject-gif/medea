@@ -17,10 +17,12 @@ import { diagnose, globalIssues } from './canvas/diagnostics';
 import { WorkflowCanvas } from './canvas/WorkflowCanvas';
 import { findNode } from './catalog';
 import { RunsModal } from './runs';
+import { useRuntime } from './runtime';
 import { CollapsibleColumn } from './shared';
 import { Topbar } from './topbar';
 import type { NodeDef } from './types';
 import { useWorkflowEditor } from './useWorkflowEditor';
+import { useWorkflowRun } from './useWorkflowRun';
 import { WorkflowList } from './WorkflowList';
 import styles from './WorkflowsView.module.css';
 
@@ -31,6 +33,8 @@ const ASSISTANT_OPEN_KEY = 'medea.workflows.assistantOpen';
 
 export function WorkflowsView() {
   const editor = useWorkflowEditor();
+  const runtime = useRuntime();
+  const run = useWorkflowRun();
   /** Il workflow di cui si stanno guardando le esecuzioni. */
   const [runsFor, setRunsFor] = useState<{ id: number; name: string } | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(
@@ -119,6 +123,8 @@ export function WorkflowsView() {
           canRedo={editor.canRedo}
           canDiscard={editor.canDiscard}
           autosaving={editor.autosaving}
+          runtimeReady={runtime.status.running}
+          running={run.running}
           {...(blockedReason ? { blockedReason } : {})}
           actions={{
             onRename: (name) => {
@@ -126,6 +132,12 @@ export function WorkflowsView() {
             },
             onSave: () => void editor.save(),
             onDiscard: editor.discard,
+            onRun: () => {
+              // Si salva prima: eseguire una versione diversa da quella sul
+              // disco vorrebbe dire che lo storico racconta un documento che
+              // non esiste.
+              void editor.save().then(() => run.start(workflow));
+            },
             onToggleEnabled: () => void editor.toggleEnabled(blockedReason),
             onToggleAssistant: () => {
               setAssistantOpen((v) => !v);
@@ -144,7 +156,7 @@ export function WorkflowsView() {
           }}
         />
 
-        <WorkflowCanvas workflow={workflow} onChange={editor.change} />
+        <WorkflowCanvas workflow={workflow} onChange={editor.change} runByNode={run.stepsByNode} />
 
         <footer className={styles.foot} data-state={critical.length > 0 ? 'blocked' : 'ok'}>
           <div className={styles.verdict}>
@@ -173,6 +185,25 @@ export function WorkflowsView() {
                 <li key={i.code}>{i.message}</li>
               ))}
             </ul>
+          )}
+
+          {run.progress && (
+            <span className={styles.runSummary} data-status={run.progress.status}>
+              {run.running ? 'Esecuzione in corso' : 'Ultima esecuzione'}:{' '}
+              {run.progress.steps.filter((s) => s.status === 'success').length} riusciti
+              {run.progress.errorCount > 0 ? `, ${String(run.progress.errorCount)} falliti` : ''}
+              {run.progress.totalDurationMs !== undefined
+                ? ` · ${String(run.progress.totalDurationMs)} ms`
+                : ''}
+            </span>
+          )}
+
+          {run.error && <span className={styles.runError}>{run.error}</span>}
+
+          {!runtime.status.running && !runtime.checking && (
+            <span className={styles.runtimeOff} title={runtime.status.error ?? undefined}>
+              Motore non disponibile
+            </span>
           )}
 
           {editor.notice && <span className={styles.notice}>{editor.notice}</span>}

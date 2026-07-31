@@ -47,9 +47,11 @@ const EDGE_TYPES: EdgeTypes = { plus: PlusEdge };
 interface Props {
   workflow: Workflow;
   onChange: (wf: Workflow) => void;
+  /** L'esito per nodo dell'esecuzione in corso o appena finita. */
+  runByNode?: ReadonlyMap<string, { status: string; durationMs?: number }>;
 }
 
-export function WorkflowCanvas({ workflow, onChange }: Props) {
+export function WorkflowCanvas({ workflow, onChange, runByNode }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   /** Il collegamento su cui si sta inserendo un nodo, se l'utente ha
    *  premuto il «+». La palette cambia modo finché non sceglie. */
@@ -102,6 +104,7 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
     diag,
     selectedId,
     callbacks: edgeCallbacks,
+    ...(runByNode ? { runByNode } : {}),
   });
 
   const patchNodes = useCallback(

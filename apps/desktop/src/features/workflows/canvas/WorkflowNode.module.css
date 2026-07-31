@@ -265,6 +265,51 @@
     color: var(--color-text-inverted);
   }
 
+  /* Durante e dopo un'esecuzione il nodo si accende: e' come si capisce dove
+     si e' fermato senza aprire i log. */
+  .card[data-run='running'] {
+    box-shadow:
+      0 0 0 3px var(--color-accent-default),
+      0 8px 24px color-mix(in oklch, var(--color-accent-default) 35%, transparent);
+  }
+  .card[data-run='success'] {
+    box-shadow: 0 0 0 2px var(--color-feedback-success);
+  }
+  .card[data-run='error'] {
+    box-shadow: 0 0 0 2px var(--color-feedback-danger);
+  }
+  .card[data-run='skipped'] {
+    opacity: 0.55;
+  }
+
+  .runBadge {
+    position: absolute;
+    inset-block-start: -0.5rem;
+    inset-inline-start: -0.5rem;
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    font-size: 0.625rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-accent-on);
+    box-shadow: var(--elevation-2);
+  }
+  .runBadge[data-run='success'] {
+    background: var(--color-feedback-success);
+  }
+  .runBadge[data-run='error'] {
+    background: var(--color-feedback-danger);
+  }
+  .runBadge[data-run='running'] {
+    background: var(--color-accent-default);
+  }
+  .runBadge[data-run='skipped'] {
+    background: var(--color-border-strong);
+  }
+
   /* L'ingranaggio compare passandoci sopra: dice che il nodo si configura. */
   .gear {
     position: absolute;

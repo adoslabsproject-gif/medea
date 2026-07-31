@@ -124,6 +124,7 @@ pub fn run() {
             workflow_cmd::workflow_set_enabled,
             workflow_cmd::workflow_delete,
             workflow_cmd::workflow_duplicate,
+            workflow_cmd::workflow_set_runtime_id,
             // Storico delle esecuzioni
             workflow_cmd::workflow_run_list,
             workflow_cmd::workflow_run_get,

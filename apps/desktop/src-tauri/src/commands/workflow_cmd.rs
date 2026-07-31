@@ -33,6 +33,12 @@ pub fn workflow_duplicate(id: i64) -> Result<i64, String> {
     db::with_db(|c| db::workflows::duplicate(c, id)).map_err(|e| e.to_string())
 }
 
+/// Registra con che nome il runtime conosce questo workflow.
+#[tauri::command]
+pub fn workflow_set_runtime_id(id: i64, runtime_id: String) -> Result<(), String> {
+    db::with_db(|c| db::workflows::set_runtime_id(c, id, &runtime_id)).map_err(|e| e.to_string())
+}
+
 // ── Storico delle esecuzioni ────────────────────────────────────────────────
 
 use crate::db::workflow_runs::{RunInput, RunRow, RunSummary};

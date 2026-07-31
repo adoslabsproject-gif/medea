@@ -31,6 +31,9 @@ export interface WorkflowNodeData extends Record<string, unknown> {
   /** Problemi del quality gate riferiti a questo nodo. */
   issues: number;
   missingLabels?: string[];
+  /** L'esito dell'ultima esecuzione, mentre gira o appena finita. */
+  runStatus?: 'success' | 'error' | 'skipped' | 'running';
+  runDurationMs?: number;
 }
 
 /** Il distintivo piccolo dice di che TIPO è il nodo. Icone diverse da quelle
@@ -51,6 +54,20 @@ const TYPE_FALLBACK: Record<string, string> = {
   logic: '◆',
   ai: '✨',
 };
+
+const RUN_MARK: Record<string, string> = {
+  success: '✓',
+  error: '✕',
+  skipped: '·',
+  running: '⟳',
+};
+
+function runLabel(status: string): string {
+  if (status === 'success') return 'riuscito';
+  if (status === 'error') return 'fallito';
+  if (status === 'skipped') return 'saltato';
+  return 'in corso';
+}
 
 /** Un nome leggibile ricavato dal defId, per i nodi non installati. */
 function humanize(defId: string): string {
@@ -75,6 +92,7 @@ function WorkflowNodeImpl({ data, selected }: NodeProps) {
     <div
       className={`${styles.card} ${selected ? styles.selected : ''} ${isUnknown ? styles.unknown : ''}`}
       data-type={typeKey}
+      data-run={d.runStatus}
       title={def?.description ?? d.defId}
     >
       {/* Entrata a sinistra e in alto, uscita a destra e in basso: ogni lato
@@ -188,6 +206,22 @@ function WorkflowNodeImpl({ data, selected }: NodeProps) {
           aria-label={`Mancano ${String(d.missing)} campi obbligatori`}
         >
           ⚠
+        </span>
+      )}
+
+      {/* L'esito dell'esecuzione sta in alto a sinistra, dove non copre gli
+          avvisi di configurazione. */}
+      {d.runStatus && (
+        <span
+          className={styles.runBadge}
+          data-run={d.runStatus}
+          title={
+            d.runDurationMs !== undefined
+              ? `${runLabel(d.runStatus)} in ${String(d.runDurationMs)} ms`
+              : runLabel(d.runStatus)
+          }
+        >
+          {RUN_MARK[d.runStatus]}
         </span>
       )}
 

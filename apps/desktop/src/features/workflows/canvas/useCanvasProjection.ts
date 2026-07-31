@@ -18,6 +18,19 @@ import { edgeId } from './graph-ops';
 import type { MapMode, PlusEdgeData } from './PlusEdge';
 import type { WorkflowNodeData } from './WorkflowNode';
 
+/** L'esito di un nodo nella forma che il disegno si aspetta. */
+function runData(entry: { status: string; durationMs?: number } | undefined) {
+  if (!entry) return {};
+  const status =
+    entry.status === 'error' || entry.status === 'skipped' || entry.status === 'running'
+      ? entry.status
+      : ('success' as const);
+  return {
+    runStatus: status,
+    ...(entry.durationMs !== undefined ? { runDurationMs: entry.durationMs } : {}),
+  };
+}
+
 /* Array tipizzati invece dei parametri di tipo espliciti: `useNodesState([])`
    inferirebbe `never[]`. Così il tipo arriva dal valore iniziale. */
 const NO_NODES: Node[] = [];
@@ -35,9 +48,18 @@ interface Options {
   diag: Diagnostics;
   selectedId: string | null;
   callbacks: EdgeCallbacks;
+  /** L'esito per nodo dell'esecuzione in corso o appena finita. */
+  runByNode?: ReadonlyMap<string, { status: string; durationMs?: number }>;
 }
 
-export function useCanvasProjection({ workflow, defsById, diag, selectedId, callbacks }: Options) {
+export function useCanvasProjection({
+  workflow,
+  defsById,
+  diag,
+  selectedId,
+  callbacks,
+  runByNode,
+}: Options) {
   const [nodes, setNodes, onNodesChange] = useNodesState(NO_NODES);
   const [edges, setEdges, onEdgesChange] = useEdgesState(NO_EDGES);
 
@@ -58,8 +80,10 @@ export function useCanvasProjection({ workflow, defsById, diag, selectedId, call
         ]),
         e: workflow.edges,
         s: selectedId,
+        // L'esito cambia mentre gira: fa parte di cosa deve ridisegnarsi.
+        r: runByNode ? [...runByNode].map(([id, v]) => [id, v.status]) : null,
       }),
-    [workflow.nodes, workflow.edges, diag, selectedId],
+    [workflow.nodes, workflow.edges, diag, selectedId, runByNode],
   );
 
   useEffect(() => {
@@ -82,6 +106,7 @@ export function useCanvasProjection({ workflow, defsById, diag, selectedId, call
             ...(n.label ? { label: n.label } : {}),
             missing: diag.missingByNode.get(n.id) ?? 0,
             issues: (diag.issuesByNode.get(n.id) ?? []).length,
+            ...runData(runByNode?.get(n.id)),
           } satisfies WorkflowNodeData,
         };
       });

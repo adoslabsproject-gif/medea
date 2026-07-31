@@ -21,6 +21,8 @@ pub struct WorkflowRow {
     /// `local` | `server`
     pub execution_target: String,
     pub enabled: bool,
+    /// Come lo conosce il runtime, quando gli è già stato mandato.
+    pub runtime_id: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -90,7 +92,8 @@ pub fn list(conn: &Connection) -> Result<Vec<WorkflowSummary>> {
 
 pub fn get(conn: &Connection, id: i64) -> Result<Option<WorkflowRow>> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, description, graph_json, execution_target, enabled, created_at, updated_at
+        "SELECT id, name, description, graph_json, execution_target, enabled, created_at, updated_at,
+                runtime_id
          FROM workflows WHERE id = ?1",
     )?;
     let mut rows = stmt.query_map(params![id], |r| {
@@ -103,6 +106,7 @@ pub fn get(conn: &Connection, id: i64) -> Result<Option<WorkflowRow>> {
             enabled: r.get::<_, i64>(5)? != 0,
             created_at: r.get(6)?,
             updated_at: r.get(7)?,
+            runtime_id: r.get(8)?,
         })
     })?;
     match rows.next() {
@@ -160,6 +164,15 @@ pub fn upsert(conn: &Connection, wf: &WorkflowInput) -> Result<i64> {
     Ok(conn.last_insert_rowid())
 }
 
+/// Ricorda con che nome il runtime conosce questo workflow.
+pub fn set_runtime_id(conn: &Connection, id: i64, runtime_id: &str) -> Result<()> {
+    conn.execute(
+        "UPDATE workflows SET runtime_id = ?2 WHERE id = ?1",
+        params![id, runtime_id],
+    )?;
+    Ok(())
+}
+
 pub fn set_enabled(conn: &Connection, id: i64, enabled: bool) -> Result<()> {
     let now = Utc::now().to_rfc3339();
     conn.execute(
@@ -186,6 +199,8 @@ pub fn duplicate(conn: &Connection, id: i64) -> Result<i64> {
             execution_target: Some(source.execution_target),
             // Una copia non parte da sola: l'utente decide quando attivarla.
             enabled: Some(false),
+            // E non eredita il collegamento al runtime: e' un altro workflow,
+            // e dovra' essergli mandato per conto suo.
         },
     )
 }
