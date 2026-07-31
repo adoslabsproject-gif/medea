@@ -15,9 +15,19 @@ interface Props {
   onNew: () => void;
   onDuplicate: (id: number) => void;
   onDelete: (id: number) => void;
+  /** Apre lo storico delle esecuzioni di questo workflow. */
+  onShowRuns: (id: number) => void;
 }
 
-export function WorkflowList({ items, activeId, onOpen, onNew, onDuplicate, onDelete }: Props) {
+export function WorkflowList({
+  items,
+  activeId,
+  onOpen,
+  onNew,
+  onDuplicate,
+  onDelete,
+  onShowRuns,
+}: Props) {
   return (
     <aside className={styles.root} aria-label="Workflow salvati">
       <div className={styles.head}>
@@ -57,6 +67,17 @@ export function WorkflowList({ items, activeId, onOpen, onNew, onDuplicate, onDe
                   </span>
                 </button>
                 <div className={styles.actions}>
+                  <button
+                    type="button"
+                    className={styles.iconBtn}
+                    title="Esecuzioni e log"
+                    aria-label={`Esecuzioni di ${wf.name}`}
+                    onClick={() => {
+                      onShowRuns(wf.id);
+                    }}
+                  >
+                    ⏱
+                  </button>
                   <button
                     type="button"
                     className={styles.iconBtn}

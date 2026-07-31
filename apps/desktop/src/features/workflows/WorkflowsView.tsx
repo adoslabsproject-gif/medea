@@ -16,6 +16,7 @@ import { AssistantPanel } from './assistant';
 import { diagnose, globalIssues } from './canvas/diagnostics';
 import { WorkflowCanvas } from './canvas/WorkflowCanvas';
 import { findNode } from './catalog';
+import { RunsModal } from './runs';
 import { ResizableColumn } from './shared';
 import { Topbar } from './topbar';
 import type { NodeDef } from './types';
@@ -30,6 +31,8 @@ const ASSISTANT_OPEN_KEY = 'medea.workflows.assistantOpen';
 
 export function WorkflowsView() {
   const editor = useWorkflowEditor();
+  /** Il workflow di cui si stanno guardando le esecuzioni. */
+  const [runsFor, setRunsFor] = useState<{ id: number; name: string } | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(
     () => localStorage.getItem(ASSISTANT_OPEN_KEY) !== 'false',
   );
@@ -93,6 +96,10 @@ export function WorkflowsView() {
           onNew={editor.create}
           onDuplicate={(id) => void editor.duplicate(id)}
           onDelete={(id) => void editor.remove(id)}
+          onShowRuns={(id) => {
+            const found = editor.items.find((i) => i.id === id);
+            setRunsFor({ id, name: found?.name ?? 'Workflow' });
+          }}
         />
       </ResizableColumn>
 
@@ -165,6 +172,16 @@ export function WorkflowsView() {
           {editor.notice && <span className={styles.notice}>{editor.notice}</span>}
         </footer>
       </div>
+
+      {runsFor && (
+        <RunsModal
+          workflowId={runsFor.id}
+          workflowName={runsFor.name}
+          onClose={() => {
+            setRunsFor(null);
+          }}
+        />
+      )}
 
       {assistantOpen && (
         <ResizableColumn
