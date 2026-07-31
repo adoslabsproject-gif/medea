@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300" role="img" aria-label="Medea — client email con memoria operativa">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1020"/>
+      <stop offset="55%" stop-color="#141a35"/>
+      <stop offset="100%" stop-color="#1b1740"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#a5b4fc"/>
+      <stop offset="50%" stop-color="#c4b5fd"/>
+      <stop offset="100%" stop-color="#7dd3fc"/>
+    </linearGradient>
+    <linearGradient id="sweep" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.30"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+
+    <style>
+      .drift   { animation: drift 16s ease-in-out infinite; }
+      .drift2  { animation: drift 21s ease-in-out infinite reverse; }
+      .pulse   { animation: pulse 4.5s ease-in-out infinite; transform-origin: center; }
+      .sweep   { animation: sweep 7s linear infinite; }
+      .trace   { stroke-dasharray: 620; stroke-dashoffset: 620; animation: trace 4.5s ease-out forwards; }
+      .fade    { opacity: 0; animation: fade .9s ease-out forwards; }
+      .d1 { animation-delay: .35s } .d2 { animation-delay: .65s } .d3 { animation-delay: .95s }
+      .flow    { stroke-dasharray: 5 9; animation: flow 2.6s linear infinite; }
+
+      @keyframes drift { 0%,100% { transform: translate(0,0) } 50% { transform: translate(26px,-18px) } }
+      @keyframes pulse { 0%,100% { opacity:.55; transform:scale(1) } 50% { opacity:1; transform:scale(1.06) } }
+      @keyframes sweep { 0% { transform: translateX(-420px) } 100% { transform: translateX(1320px) } }
+      @keyframes trace { to { stroke-dashoffset: 0 } }
+      @keyframes fade  { to { opacity: 1 } }
+      @keyframes flow  { to { stroke-dashoffset: -56 } }
+
+      /* Rispetta chi ha disattivato le animazioni di sistema. */
+      @media (prefers-reduced-motion: reduce) {
+        .drift, .drift2, .pulse, .sweep, .trace, .fade, .flow { animation: none }
+        .trace { stroke-dashoffset: 0 } .fade { opacity: 1 }
+      }
+    </style>
+  </defs>
+
+  <rect width="1200" height="300" fill="url(#sky)"/>
+
+  <!-- aloni di fondo -->
+  <g filter="url(#soft)" opacity="0.5">
+    <circle class="drift"  cx="180" cy="80"  r="120" fill="#4f46e5" opacity="0.40"/>
+    <circle class="drift2" cx="1040" cy="230" r="140" fill="#0ea5e9" opacity="0.30"/>
+    <circle class="drift"  cx="880" cy="60"  r="90"  fill="#a855f7" opacity="0.28"/>
+  </g>
+
+  <!-- grafo: la posta che diventa memoria -->
+  <g transform="translate(92,150)">
+    <path class="trace" d="M0 0 C 90 -70, 150 70, 240 0 S 400 -70, 470 10"
+          fill="none" stroke="url(#ink)" stroke-width="2.5" opacity="0.85"/>
+    <path class="flow" d="M0 0 C 90 -70, 150 70, 240 0 S 400 -70, 470 10"
+          fill="none" stroke="#e0e7ff" stroke-width="1.2" opacity="0.55"/>
+    <g fill="#c7d2fe">
+      <circle class="pulse"    cx="0"   cy="0"  r="7"/>
+      <circle class="pulse d1" cx="240" cy="0"  r="6"/>
+      <circle class="pulse d2" cx="470" cy="10" r="8"/>
+    </g>
+  </g>
+
+  <!-- titolo -->
+  <g transform="translate(92,120)">
+    <text class="fade" x="0" y="0" font-family="ui-sans-serif,-apple-system,Segoe UI,Roboto,sans-serif"
+          font-size="17" letter-spacing="7" fill="#93a3d8">CLIENT EMAIL · TAURI 2 · RUST</text>
+    <text class="fade d1" x="0" y="72" font-family="ui-sans-serif,-apple-system,Segoe UI,Roboto,sans-serif"
+          font-size="88" font-weight="800" fill="url(#ink)">Medea</text>
+    <text class="fade d2" x="0" y="118" font-family="ui-sans-serif,-apple-system,Segoe UI,Roboto,sans-serif"
+          font-size="24" fill="#cbd5f5">La posta smette di essere una cosa da smaltire.</text>
+    <text class="fade d3" x="0" y="152" font-family="ui-sans-serif,-apple-system,Segoe UI,Roboto,sans-serif"
+          font-size="16" fill="#8fa0d0">Sincronizza, ricorda, risponde — con i tuoi modelli e le tue chiavi.</text>
+  </g>
+
+  <!-- riflesso che attraversa -->
+  <rect class="sweep" x="-420" y="0" width="420" height="300" fill="url(#sweep)" opacity="0.75"/>
+  <rect x="0" y="296" width="1200" height="4" fill="url(#ink)" opacity="0.8"/>
+</svg>
