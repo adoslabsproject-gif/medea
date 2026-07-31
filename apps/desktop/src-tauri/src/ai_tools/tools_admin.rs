@@ -12,7 +12,9 @@ pub fn security_attachment_threat(args: &Value) -> Result<Value> {
     let message_id = i(args, "messageId").ok_or_else(|| anyhow!("manca 'messageId'"))?;
     let part_index = i(args, "partIndex").ok_or_else(|| anyhow!("manca 'partIndex'"))? as usize;
     let attachments = db::with_db(|c| db::messages::list_attachments_with_threat(c, message_id))?;
-    let entry = attachments.into_iter().find(|a| a.index == part_index)
+    let entry = attachments
+        .into_iter()
+        .find(|a| a.index == part_index)
         .ok_or_else(|| anyhow!("Allegato idx={part_index} non trovato per msg={message_id}"))?;
     Ok(json!({
         "messageId": message_id,
@@ -33,7 +35,7 @@ pub fn security_scan_all_attachments(args: &Value) -> Result<Value> {
         let mut stmt = c.prepare(
             "SELECT id FROM messages
               WHERE account_id = ?1 AND has_attachments = 1 AND is_local_deleted = 0
-              ORDER BY internal_date DESC LIMIT 2000"
+              ORDER BY internal_date DESC LIMIT 2000",
         )?;
         let v: Vec<i64> = stmt
             .query_map(rusqlite::params![account_id], |r| r.get::<_, i64>(0))?
@@ -76,7 +78,8 @@ pub fn medea_system_status(_args: &Value) -> Result<Value> {
     let version = env!("CARGO_PKG_VERSION");
     let counts = db::with_db(|c| -> Result<Value> {
         let q = |sql: &str| -> Result<i64> {
-            c.query_row(sql, [], |r| r.get::<_, i64>(0)).map_err(anyhow::Error::from)
+            c.query_row(sql, [], |r| r.get::<_, i64>(0))
+                .map_err(anyhow::Error::from)
         };
         Ok(json!({
             "messages":   q("SELECT COUNT(*) FROM messages")?,
@@ -94,11 +97,9 @@ pub fn medea_system_status(_args: &Value) -> Result<Value> {
     })?;
     let last_sync: Option<String> = db::with_db(|c| {
         use rusqlite::OptionalExtension;
-        c.query_row(
-            "SELECT MAX(last_sync_at) FROM folders",
-            [],
-            |r| r.get::<_, Option<String>>(0),
-        )
+        c.query_row("SELECT MAX(last_sync_at) FROM folders", [], |r| {
+            r.get::<_, Option<String>>(0)
+        })
         .optional()
         .map(|v| v.flatten())
         .map_err(anyhow::Error::from)

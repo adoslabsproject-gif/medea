@@ -19,7 +19,11 @@ pub fn documents_compose_chart(args: &Value) -> Result<Value> {
         .ok_or_else(|| anyhow!("manca 'data' (array di {{label, value}})"))?
         .iter()
         .map(|v| {
-            let label = v.get("label").and_then(|x| x.as_str()).unwrap_or("").to_string();
+            let label = v
+                .get("label")
+                .and_then(|x| x.as_str())
+                .unwrap_or("")
+                .to_string();
             let value = v.get("value").and_then(|x| x.as_f64()).unwrap_or(0.0);
             (label, value)
         })
@@ -34,13 +38,21 @@ pub fn documents_compose_chart(args: &Value) -> Result<Value> {
         "area" => svg_line(&data, &title, true),
         "pie" => svg_pie(&data, &title, false),
         "donut" => svg_pie(&data, &title, true),
-        other => return Err(anyhow!("type '{other}' non supportato (bar|line|area|pie|donut)")),
+        other => {
+            return Err(anyhow!(
+                "type '{other}' non supportato (bar|line|area|pie|donut)"
+            ))
+        }
     };
     Ok(json!({ "kind": "read", "type": kind, "title": title, "svg": svg }))
 }
 
 fn svg_bar(data: &[(String, f64)], title: &str) -> String {
-    let max = data.iter().map(|(_, v)| *v).fold(0.0_f64, f64::max).max(1.0);
+    let max = data
+        .iter()
+        .map(|(_, v)| *v)
+        .fold(0.0_f64, f64::max)
+        .max(1.0);
     let bar_w = (SVG_W - MARGIN * 2.0) / data.len() as f64;
     let mut bars = String::new();
     for (i, (lab, v)) in data.iter().enumerate() {
@@ -64,15 +76,22 @@ fn svg_bar(data: &[(String, f64)], title: &str) -> String {
 }
 
 fn svg_line(data: &[(String, f64)], title: &str, area: bool) -> String {
-    let max = data.iter().map(|(_, v)| *v).fold(0.0_f64, f64::max).max(1.0);
+    let max = data
+        .iter()
+        .map(|(_, v)| *v)
+        .fold(0.0_f64, f64::max)
+        .max(1.0);
     let step = (SVG_W - MARGIN * 2.0) / (data.len() as f64 - 1.0).max(1.0);
     let mut path = String::from("M ");
     let mut points = String::new();
     for (i, (lab, v)) in data.iter().enumerate() {
         let x = MARGIN + step * i as f64;
         let y = SVG_H - MARGIN - (v / max) * (SVG_H - MARGIN * 2.0 - 24.0);
-        if i == 0 { path.push_str(&format!("{x:.1} {y:.1}")); }
-        else      { path.push_str(&format!(" L {x:.1} {y:.1}")); }
+        if i == 0 {
+            path.push_str(&format!("{x:.1} {y:.1}"));
+        } else {
+            path.push_str(&format!(" L {x:.1} {y:.1}"));
+        }
         points.push_str(&format!(
             "<circle cx='{x:.1}' cy='{y:.1}' r='3' fill='#5b8def'/>\
              <text x='{x:.1}' y='{yt:.1}' font-size='9' text-anchor='middle' fill='#666'>{lab}</text>",
@@ -83,9 +102,14 @@ fn svg_line(data: &[(String, f64)], title: &str, area: bool) -> String {
         let last_x = MARGIN + step * (data.len() as f64 - 1.0);
         format!(
             "<path d='{p} L {x:.1} {y:.1} L {x0} {y:.1} Z' fill='#5b8def' opacity='0.18'/>",
-            p = path, x = last_x, y = SVG_H - MARGIN, x0 = MARGIN
+            p = path,
+            x = last_x,
+            y = SVG_H - MARGIN,
+            x0 = MARGIN
         )
-    } else { String::new() };
+    } else {
+        String::new()
+    };
     wrap_svg(&format!(
         "<text x='{cx}' y='24' font-size='14' text-anchor='middle' fill='#222' font-weight='600'>{t}</text>\
          {area}<path d='{path}' fill='none' stroke='#5b8def' stroke-width='2'/>{pts}",
@@ -99,8 +123,10 @@ fn svg_pie(data: &[(String, f64)], title: &str, donut: bool) -> String {
     let cy = SVG_H / 2.0 + 8.0;
     let r = 130.0_f64;
     let inner = if donut { 60.0 } else { 0.0 };
-    let palette = ["#5b8def", "#7c5cd9", "#10b981", "#f59e0b", "#ef4444",
-                   "#06b6d4", "#ec4899", "#84cc16", "#6366f1", "#f43f5e"];
+    let palette = [
+        "#5b8def", "#7c5cd9", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#ec4899", "#84cc16",
+        "#6366f1", "#f43f5e",
+    ];
     let mut slices = String::new();
     let mut legend = String::new();
     let mut start = -std::f64::consts::FRAC_PI_2;
@@ -110,9 +136,9 @@ fn svg_pie(data: &[(String, f64)], title: &str, donut: bool) -> String {
         let color = palette[i % palette.len()];
         let large = if frac > 0.5 { 1 } else { 0 };
         let (x1, y1) = (cx + r * start.cos(), cy + r * start.sin());
-        let (x2, y2) = (cx + r * end.cos(),   cy + r * end.sin());
+        let (x2, y2) = (cx + r * end.cos(), cy + r * end.sin());
         if donut {
-            let (ix1, iy1) = (cx + inner * end.cos(),   cy + inner * end.sin());
+            let (ix1, iy1) = (cx + inner * end.cos(), cy + inner * end.sin());
             let (ix2, iy2) = (cx + inner * start.cos(), cy + inner * start.sin());
             slices.push_str(&format!(
                 "<path d='M {x1:.1} {y1:.1} A {r} {r} 0 {large} 1 {x2:.1} {y2:.1} \
@@ -128,8 +154,12 @@ fn svg_pie(data: &[(String, f64)], title: &str, donut: bool) -> String {
         legend.push_str(&format!(
             "<rect x='{lx}' y='{ly}' width='10' height='10' fill='{color}'/>\
              <text x='{tx}' y='{ty}' font-size='11' fill='#333'>{lab} ({pct:.1}%)</text>",
-            lx = 20, ly = 40 + i as i32 * 18, tx = 36, ty = 49 + i as i32 * 18,
-            lab = escape_xml(lab), pct = frac * 100.0
+            lx = 20,
+            ly = 40 + i as i32 * 18,
+            tx = 36,
+            ty = 49 + i as i32 * 18,
+            lab = escape_xml(lab),
+            pct = frac * 100.0
         ));
         start = end;
     }
@@ -144,15 +174,23 @@ fn wrap_svg(inner: &str) -> String {
     format!(
         "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 {w} {h}' \
          style='max-width:100%;height:auto;font-family:system-ui,sans-serif;'>{inner}</svg>",
-        w = SVG_W, h = SVG_H, inner = inner
+        w = SVG_W,
+        h = SVG_H,
+        inner = inner
     )
 }
 
 fn escape_xml(s: &str) -> String {
-    s.chars().map(|c| match c {
-        '<' => "&lt;".into(), '>' => "&gt;".into(), '&' => "&amp;".into(),
-        '"' => "&quot;".into(), '\'' => "&apos;".into(), _ => c.to_string(),
-    }).collect()
+    s.chars()
+        .map(|c| match c {
+            '<' => "&lt;".into(),
+            '>' => "&gt;".into(),
+            '&' => "&amp;".into(),
+            '"' => "&quot;".into(),
+            '\'' => "&apos;".into(),
+            _ => c.to_string(),
+        })
+        .collect()
 }
 
 // ── Tabella HTML stylata standalone ───────────────────────────────────────
@@ -160,13 +198,20 @@ fn escape_xml(s: &str) -> String {
 pub fn documents_compose_table(args: &Value) -> Result<Value> {
     let columns = ar(args, "columns")
         .ok_or_else(|| anyhow!("manca 'columns'"))?
-        .iter().filter_map(|v| v.as_str().map(String::from)).collect::<Vec<_>>();
-    let rows = ar(args, "rows")
-        .ok_or_else(|| anyhow!("manca 'rows'"))?;
+        .iter()
+        .filter_map(|v| v.as_str().map(String::from))
+        .collect::<Vec<_>>();
+    let rows = ar(args, "rows").ok_or_else(|| anyhow!("manca 'rows'"))?;
     let style = s(args, "style").unwrap_or_else(|| "default".into());
-    let header_bg = if style == "accent" { "#5b8def" } else { "#f4f4f6" };
+    let header_bg = if style == "accent" {
+        "#5b8def"
+    } else {
+        "#f4f4f6"
+    };
     let header_fg = if style == "accent" { "#fff" } else { "#222" };
-    let mut html = String::from("<table style='width:100%;border-collapse:collapse;font-family:system-ui;font-size:13px'>");
+    let mut html = String::from(
+        "<table style='width:100%;border-collapse:collapse;font-family:system-ui;font-size:13px'>",
+    );
     html.push_str("<thead><tr>");
     for c in &columns {
         html.push_str(&format!("<th style='background:{header_bg};color:{header_fg};padding:8px 10px;text-align:left;border-bottom:1px solid #ddd'>{}</th>", html_escape(c)));
@@ -184,7 +229,10 @@ pub fn documents_compose_table(args: &Value) -> Result<Value> {
                     Value::Null => "".to_string(),
                     other => other.to_string(),
                 };
-                html.push_str(&format!("<td style='padding:7px 10px;border-bottom:1px solid #eee'>{}</td>", html_escape(&txt)));
+                html.push_str(&format!(
+                    "<td style='padding:7px 10px;border-bottom:1px solid #eee'>{}</td>",
+                    html_escape(&txt)
+                ));
             }
         } else if let Some(obj) = row.as_object() {
             for c in &columns {
@@ -196,7 +244,10 @@ pub fn documents_compose_table(args: &Value) -> Result<Value> {
                     Value::Null => "".to_string(),
                     other => other.to_string(),
                 };
-                html.push_str(&format!("<td style='padding:7px 10px;border-bottom:1px solid #eee'>{}</td>", html_escape(&txt)));
+                html.push_str(&format!(
+                    "<td style='padding:7px 10px;border-bottom:1px solid #eee'>{}</td>",
+                    html_escape(&txt)
+                ));
             }
         }
         html.push_str("</tr>");
@@ -206,20 +257,26 @@ pub fn documents_compose_table(args: &Value) -> Result<Value> {
 }
 
 fn html_escape(s: &str) -> String {
-    s.chars().map(|c| match c {
-        '<' => "&lt;".into(), '>' => "&gt;".into(), '&' => "&amp;".into(),
-        '"' => "&quot;".into(), '\'' => "&#39;".into(), _ => c.to_string(),
-    }).collect()
+    s.chars()
+        .map(|c| match c {
+            '<' => "&lt;".into(),
+            '>' => "&gt;".into(),
+            '&' => "&amp;".into(),
+            '"' => "&quot;".into(),
+            '\'' => "&#39;".into(),
+            _ => c.to_string(),
+        })
+        .collect()
 }
 
 // ── Invoice A4 (pro-forma) ────────────────────────────────────────────────
 
 pub fn documents_compose_invoice(args: &Value) -> Result<Value> {
     let customer_id = i(args, "customerId").ok_or_else(|| anyhow!("manca 'customerId'"))?;
-    let doc_date = s(args, "docDate").unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string());
-    let doc_number = s(args, "docNumber").unwrap_or_else(|| {
-        format!("PF-{}", chrono::Local::now().format("%Y%m%d%H%M"))
-    });
+    let doc_date =
+        s(args, "docDate").unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string());
+    let doc_number = s(args, "docNumber")
+        .unwrap_or_else(|| format!("PF-{}", chrono::Local::now().format("%Y%m%d%H%M")));
     let items = ar(args, "items").cloned().unwrap_or_default();
     let cust = db::with_db(|c| db::anag::get_organization(c, customer_id))?
         .ok_or_else(|| anyhow!("cliente id={customer_id} non trovato"))?;
@@ -232,9 +289,18 @@ pub fn documents_compose_invoice(args: &Value) -> Result<Value> {
         let qty = it.get("qty").and_then(|v| v.as_f64()).unwrap_or(1.0);
         let art = articles.iter().find(|a| a.code.eq_ignore_ascii_case(code));
         let (desc, price) = match art {
-            Some(a) => (a.description.clone(), it.get("unitPrice").and_then(|v| v.as_f64()).or(a.sale_price).unwrap_or(0.0)),
+            Some(a) => (
+                a.description.clone(),
+                it.get("unitPrice")
+                    .and_then(|v| v.as_f64())
+                    .or(a.sale_price)
+                    .unwrap_or(0.0),
+            ),
             None => (
-                it.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                it.get("description")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
                 it.get("unitPrice").and_then(|v| v.as_f64()).unwrap_or(0.0),
             ),
         };
@@ -247,14 +313,14 @@ pub fn documents_compose_invoice(args: &Value) -> Result<Value> {
     }
     let vat = total * 0.22;
     let grand = total + vat;
-    let html = invoice_html(
-        &doc_number, &doc_date,
-        cust.display_name.as_deref().unwrap_or(&cust.domain),
-        cust.vat_number.as_deref().unwrap_or("—"),
-        cust.street_address.as_deref().unwrap_or("—"),
-        cust.city.as_deref().unwrap_or("—"),
-        &rows, total, vat, grand,
-    );
+    let party = InvoiceParty {
+        name: cust.display_name.as_deref().unwrap_or(&cust.domain),
+        vat: cust.vat_number.as_deref().unwrap_or("—"),
+        addr: cust.street_address.as_deref().unwrap_or("—"),
+        city: cust.city.as_deref().unwrap_or("—"),
+    };
+    let totals = InvoiceTotals { total, vat, grand };
+    let html = invoice_html(&doc_number, &doc_date, &party, &rows, &totals);
     Ok(json!({
         "kind": "proposal",
         "proposalType": "compose_html",
@@ -269,12 +335,33 @@ pub fn documents_compose_invoice(args: &Value) -> Result<Value> {
     }))
 }
 
+/// Dati di intestazione della fattura pro-forma.
+struct InvoiceParty<'a> {
+    name: &'a str,
+    vat: &'a str,
+    addr: &'a str,
+    city: &'a str,
+}
+
+/// Totali già calcolati (imponibile, IVA, totale documento).
+struct InvoiceTotals {
+    total: f64,
+    vat: f64,
+    grand: f64,
+}
+
 fn invoice_html(
-    num: &str, date: &str, cust_name: &str, cust_vat: &str,
-    cust_addr: &str, cust_city: &str, rows: &str,
-    total: f64, vat: f64, grand: f64,
+    num: &str,
+    date: &str,
+    party: &InvoiceParty<'_>,
+    rows: &str,
+    totals: &InvoiceTotals,
 ) -> String {
-    format!(r#"<!doctype html><html><head><meta charset='utf-8'><style>
+    let (cust_name, cust_vat, cust_addr, cust_city) =
+        (party.name, party.vat, party.addr, party.city);
+    let (total, vat, grand) = (totals.total, totals.vat, totals.grand);
+    format!(
+        r#"<!doctype html><html><head><meta charset='utf-8'><style>
 @page {{ size: A4; margin: 0; }}
 html {{ background: #e2e8f0; }}
 body {{ margin: 0; font-family: system-ui, sans-serif; color: #222; }}
@@ -308,10 +395,16 @@ td {{ padding: 8px 10px; border-bottom: 1px solid #eee; }}
 <tr><td></td><td></td><td></td><td class='grand'>Totale documento:</td><td class='num grand'>€ {grand:.2}</td></tr></table>
 <div class='foot'>Documento generato da Medea — pro-forma non fiscale. Validità offerta: 30 giorni. Pagamento secondo condizioni concordate.</div>
 </div></body></html>"#,
-        num = html_escape(num), date = html_escape(date),
-        cn = html_escape(cust_name), vatn = html_escape(cust_vat),
-        addr = html_escape(cust_addr), city = html_escape(cust_city),
-        rows = rows, tot = total, vat = vat, grand = grand,
+        num = html_escape(num),
+        date = html_escape(date),
+        cn = html_escape(cust_name),
+        vatn = html_escape(cust_vat),
+        addr = html_escape(cust_addr),
+        city = html_escape(cust_city),
+        rows = rows,
+        tot = total,
+        vat = vat,
+        grand = grand,
     )
 }
 
@@ -320,7 +413,10 @@ td {{ padding: 8px 10px; border-bottom: 1px solid #eee; }}
 pub fn documents_compose_letter(args: &Value) -> Result<Value> {
     let recipient_id = i(args, "recipientId").ok_or_else(|| anyhow!("manca 'recipientId'"))?;
     let template = s(args, "template").unwrap_or_else(|| "generic".into());
-    let fields = args.get("fields").cloned().unwrap_or(Value::Object(Default::default()));
+    let fields = args
+        .get("fields")
+        .cloned()
+        .unwrap_or(Value::Object(Default::default()));
     let r = db::with_db(|c| db::anag::get_organization(c, recipient_id))?
         .ok_or_else(|| anyhow!("destinatario id={recipient_id} non trovato"))?;
     let title = match template.as_str() {
@@ -355,9 +451,22 @@ pub fn documents_compose_letter(args: &Value) -> Result<Value> {
 
 fn letter_body(template: &str, fields: &Value) -> String {
     let get = |k: &str| -> String {
-        fields.get(k).and_then(|v| v.as_str()).map(|s| s.to_string())
-            .or_else(|| fields.get(k).and_then(|v| v.as_f64()).map(|n| format!("{n:.2}")))
-            .or_else(|| fields.get(k).and_then(|v| v.as_i64()).map(|n| n.to_string()))
+        fields
+            .get(k)
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .or_else(|| {
+                fields
+                    .get(k)
+                    .and_then(|v| v.as_f64())
+                    .map(|n| format!("{n:.2}"))
+            })
+            .or_else(|| {
+                fields
+                    .get(k)
+                    .and_then(|v| v.as_i64())
+                    .map(|n| n.to_string())
+            })
             .unwrap_or_default()
     };
     match template {
@@ -388,7 +497,8 @@ fn letter_body(template: &str, fields: &Value) -> String {
 
 fn letter_html(title: &str, dest_name: &str, addr: &str, city: &str, body: &str) -> String {
     let today = chrono::Local::now().format("%d/%m/%Y").to_string();
-    format!(r#"<!doctype html><html><head><meta charset='utf-8'><style>
+    format!(
+        r#"<!doctype html><html><head><meta charset='utf-8'><style>
 @page {{ size: A4; margin: 0; }}
 html {{ background: #e2e8f0; }}
 body {{ margin: 0; font-family: 'Times New Roman', Georgia, serif; color: #222; }}
@@ -410,9 +520,12 @@ h1 {{ font-size: 20px; font-weight: 600; margin: 0 0 24px 0; }}
   <p>Cordiali saluti</p>
 </div>
 </div></body></html>"#,
-        title = html_escape(title), dest = html_escape(dest_name),
-        addr = html_escape(addr), city = html_escape(city),
-        body = body, today = today,
+        title = html_escape(title),
+        dest = html_escape(dest_name),
+        addr = html_escape(addr),
+        city = html_escape(city),
+        body = body,
+        today = today,
     )
 }
 
@@ -421,18 +534,31 @@ h1 {{ font-size: 20px; font-weight: 600; margin: 0 0 24px 0; }}
 pub fn documents_compose_csv(args: &Value) -> Result<Value> {
     let columns = ar(args, "columns")
         .ok_or_else(|| anyhow!("manca 'columns'"))?
-        .iter().filter_map(|v| v.as_str().map(String::from)).collect::<Vec<_>>();
+        .iter()
+        .filter_map(|v| v.as_str().map(String::from))
+        .collect::<Vec<_>>();
     let rows = ar(args, "rows").cloned().unwrap_or_default();
     let filename = s(args, "filename").unwrap_or_else(|| "export.csv".into());
 
     let mut out = String::new();
-    out.push_str(&columns.iter().map(|c| csv_escape(c)).collect::<Vec<_>>().join(","));
+    out.push_str(
+        &columns
+            .iter()
+            .map(|c| csv_escape(c))
+            .collect::<Vec<_>>()
+            .join(","),
+    );
     out.push('\n');
     for row in &rows {
         let line: Vec<String> = if let Some(arr) = row.as_array() {
-            arr.iter().map(|c| csv_escape(&value_to_string(c))).collect()
+            arr.iter()
+                .map(|c| csv_escape(&value_to_string(c)))
+                .collect()
         } else if let Some(obj) = row.as_object() {
-            columns.iter().map(|k| csv_escape(&value_to_string(obj.get(k).unwrap_or(&Value::Null)))).collect()
+            columns
+                .iter()
+                .map(|k| csv_escape(&value_to_string(obj.get(k).unwrap_or(&Value::Null))))
+                .collect()
         } else {
             Vec::new()
         };

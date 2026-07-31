@@ -4,7 +4,9 @@ use anyhow::{anyhow, Result};
 use serde_json::Value;
 
 pub fn s(args: &Value, key: &str) -> Option<String> {
-    args.get(key).and_then(|v| v.as_str()).map(|s| s.to_string())
+    args.get(key)
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
 }
 pub fn i(args: &Value, key: &str) -> Option<i64> {
     args.get(key).and_then(|v| v.as_i64())

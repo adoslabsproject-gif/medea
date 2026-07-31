@@ -18,9 +18,11 @@ fn entry(key: &str) -> Result<Entry, String> {
 
 #[tauri::command]
 pub async fn secret_set(key: String, value: String) -> Result<(), String> {
-    tokio::task::spawn_blocking(move || entry(&key)?.set_password(&value).map_err(|e| e.to_string()))
-        .await
-        .map_err(|e| e.to_string())?
+    tokio::task::spawn_blocking(move || {
+        entry(&key)?.set_password(&value).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]

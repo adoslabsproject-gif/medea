@@ -58,9 +58,16 @@ pub fn upsert(conn: &Connection, t: &EmailTemplateInput) -> Result<i64> {
                     accent_color = ?7, custom_html = ?8, updated_at = ?9
                  WHERE id = ?10",
                 params![
-                    t.name.trim(), t.is_default as i32, t.logo_data_url,
-                    t.header_title, t.header_subtitle, t.footer_html,
-                    accent, t.custom_html, now, id
+                    t.name.trim(),
+                    t.is_default as i32,
+                    t.logo_data_url,
+                    t.header_title,
+                    t.header_subtitle,
+                    t.footer_html,
+                    accent,
+                    t.custom_html,
+                    now,
+                    id
                 ],
             )?;
             id
@@ -72,9 +79,15 @@ pub fn upsert(conn: &Connection, t: &EmailTemplateInput) -> Result<i64> {
                      footer_html, accent_color, custom_html, created_at, updated_at)
                  VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?9)",
                 params![
-                    t.name.trim(), t.is_default as i32, t.logo_data_url,
-                    t.header_title, t.header_subtitle, t.footer_html,
-                    accent, t.custom_html, now
+                    t.name.trim(),
+                    t.is_default as i32,
+                    t.logo_data_url,
+                    t.header_title,
+                    t.header_subtitle,
+                    t.footer_html,
+                    accent,
+                    t.custom_html,
+                    now
                 ],
             )?;
             conn.last_insert_rowid()

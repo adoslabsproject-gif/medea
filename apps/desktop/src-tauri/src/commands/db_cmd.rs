@@ -74,7 +74,8 @@ pub fn db_list_messages_for_address(
 pub fn db_business_data_stats() -> Result<serde_json::Value, String> {
     db::with_db(|c| {
         let q = |sql: &str| -> anyhow::Result<i64> {
-            c.query_row(sql, [], |r| r.get::<_, i64>(0)).map_err(anyhow::Error::from)
+            c.query_row(sql, [], |r| r.get::<_, i64>(0))
+                .map_err(anyhow::Error::from)
         };
         Ok(serde_json::json!({
             "importedOrganizations": q(
@@ -102,23 +103,39 @@ pub fn db_purge_business_data() -> Result<serde_json::Value, String> {
     db::with_db(|c| {
         let tx = c.transaction()?;
         let mut deleted = serde_json::Map::new();
-        let mut del = |tx: &rusqlite::Transaction<'_>, label: &str, sql: &str| -> anyhow::Result<()> {
-            let n = tx.execute(sql, [])?;
-            deleted.insert(label.to_string(), serde_json::json!(n));
-            Ok(())
-        };
+        let mut del =
+            |tx: &rusqlite::Transaction<'_>, label: &str, sql: &str| -> anyhow::Result<()> {
+                let n = tx.execute(sql, [])?;
+                deleted.insert(label.to_string(), serde_json::json!(n));
+                Ok(())
+            };
         // L'ordine rispetta le foreign key (i figli prima dei padri).
         del(&tx, "documentItems", "DELETE FROM customer_document_items")?;
         del(&tx, "documents", "DELETE FROM customer_documents")?;
         del(&tx, "priceListItems", "DELETE FROM price_list_items")?;
         del(&tx, "priceLists", "DELETE FROM price_lists")?;
-        del(&tx, "priceOverrides", "DELETE FROM customer_price_overrides")?;
+        del(
+            &tx,
+            "priceOverrides",
+            "DELETE FROM customer_price_overrides",
+        )?;
         del(&tx, "discounts", "DELETE FROM customer_category_discounts")?;
         del(&tx, "articles", "DELETE FROM articles")?;
-        del(&tx, "brands", "DELETE FROM article_brands WHERE name <> 'Altri'")?;
-        del(&tx, "categories", "DELETE FROM article_categories WHERE name <> 'Altri'")?;
-        del(&tx, "importedOrganizations",
-            "DELETE FROM organizations WHERE domain LIKE 'sigla:%'")?;
+        del(
+            &tx,
+            "brands",
+            "DELETE FROM article_brands WHERE name <> 'Altri'",
+        )?;
+        del(
+            &tx,
+            "categories",
+            "DELETE FROM article_categories WHERE name <> 'Altri'",
+        )?;
+        del(
+            &tx,
+            "importedOrganizations",
+            "DELETE FROM organizations WHERE domain LIKE 'sigla:%'",
+        )?;
         tx.commit()?;
         Ok(serde_json::Value::Object(deleted))
     })
@@ -234,9 +251,7 @@ pub fn db_list_business_partners(
 
 /// Scheda completa di un cliente/fornitore.
 #[tauri::command]
-pub fn db_get_organization(
-    id: i64,
-) -> Result<Option<db::anag::OrganizationDetail>, String> {
+pub fn db_get_organization(id: i64) -> Result<Option<db::anag::OrganizationDetail>, String> {
     db::with_db(|c| db::anag::get_organization(c, id)).map_err(|e| e.to_string())
 }
 
@@ -251,9 +266,7 @@ pub fn db_list_price_lists() -> Result<Vec<db::anag::PriceListRow>, String> {
 }
 
 #[tauri::command]
-pub fn db_get_inline_parts(
-    message_id: i64,
-) -> Result<Vec<db::messages::InlinePart>, String> {
+pub fn db_get_inline_parts(message_id: i64) -> Result<Vec<db::messages::InlinePart>, String> {
     db::with_db(|c| db::messages::get_inline_parts(c, message_id)).map_err(|e| e.to_string())
 }
 
@@ -272,13 +285,18 @@ pub fn db_list_attachments(
 #[tauri::command]
 pub fn reveal_in_file_manager(path: String) -> Result<(), String> {
     let result = if cfg!(target_os = "macos") {
-        std::process::Command::new("open").args(["-R", &path]).status()
+        std::process::Command::new("open")
+            .args(["-R", &path])
+            .status()
     } else if cfg!(target_os = "windows") {
         // explorer.exe /select,"C:\path\file.ext"
-        std::process::Command::new("explorer").args(["/select,", &path]).status()
+        std::process::Command::new("explorer")
+            .args(["/select,", &path])
+            .status()
     } else {
         // Linux: apri la cartella contenente (xdg-open non supporta select)
-        let parent = std::path::Path::new(&path).parent()
+        let parent = std::path::Path::new(&path)
+            .parent()
             .map(|p| p.to_string_lossy().to_string())
             .unwrap_or(path.clone());
         std::process::Command::new("xdg-open").arg(&parent).status()
@@ -305,30 +323,46 @@ pub fn open_path_in_default_app(path: String) -> Result<(), String> {
     // Costruisci file:// URL con encoding minimo per spazi/caratteri speciali.
     let abs = p.canonicalize().map_err(|e| format!("canonicalize: {e}"))?;
     let abs_str = abs.to_string_lossy().to_string();
-    let encoded: String = abs_str.chars().map(|c| match c {
-        ' ' => "%20".into(),
-        '?' => "%3F".into(),
-        '#' => "%23".into(),
-        '%' => "%25".into(),
-        c if c.is_ascii_alphanumeric() || matches!(c, '/' | '.' | '-' | '_' | ':') => c.to_string(),
-        c => {
-            let mut buf = [0u8; 4];
-            let s = c.encode_utf8(&mut buf);
-            s.bytes().map(|b| format!("%{:02X}", b)).collect()
-        }
-    }).collect();
+    let encoded: String = abs_str
+        .chars()
+        .map(|c| match c {
+            ' ' => "%20".into(),
+            '?' => "%3F".into(),
+            '#' => "%23".into(),
+            '%' => "%25".into(),
+            c if c.is_ascii_alphanumeric() || matches!(c, '/' | '.' | '-' | '_' | ':') => {
+                c.to_string()
+            }
+            c => {
+                let mut buf = [0u8; 4];
+                let s = c.encode_utf8(&mut buf);
+                s.bytes().map(|b| format!("%{:02X}", b)).collect()
+            }
+        })
+        .collect();
     let file_url = format!("file://{}", encoded);
 
     let result = if cfg!(target_os = "macos") {
         // -g = NON portare l'app in primo piano se è già aperta (così non
         // copre Medea senza motivo); -u accetta URL invece di path.
-        std::process::Command::new("open").args(["-u", &file_url]).status()
+        std::process::Command::new("open")
+            .args(["-u", &file_url])
+            .status()
     } else if cfg!(target_os = "windows") {
-        std::process::Command::new("cmd").args(["/C", "start", "", &abs_str]).status()
+        std::process::Command::new("cmd")
+            .args(["/C", "start", "", &abs_str])
+            .status()
     } else {
-        std::process::Command::new("xdg-open").arg(&abs_str).status()
+        std::process::Command::new("xdg-open")
+            .arg(&abs_str)
+            .status()
     };
-    tracing::info!("open_path_in_default_app path={} url={} result={:?}", path, file_url, result);
+    tracing::info!(
+        "open_path_in_default_app path={} url={} result={:?}",
+        path,
+        file_url,
+        result
+    );
     match result {
         Ok(s) if s.success() => Ok(()),
         Ok(s) => Err(format!("open exit code: {s}")),
@@ -357,10 +391,9 @@ pub fn db_save_attachment(
     dest_path: String,
 ) -> Result<String, String> {
     use std::path::Path;
-    let triple = db::with_db(|c| {
-        db::messages::get_attachment_bytes(c, message_id, part_index as usize)
-    })
-    .map_err(|e| e.to_string())?;
+    let triple =
+        db::with_db(|c| db::messages::get_attachment_bytes(c, message_id, part_index as usize))
+            .map_err(|e| e.to_string())?;
     let Some((_fname, _ctype, bytes)) = triple else {
         return Err("Allegato non trovato".into());
     };
@@ -476,8 +509,7 @@ pub fn db_studio_row_delete(
     pk_col: String,
     pk_val: serde_json::Value,
 ) -> Result<db::studio::CrudResult, String> {
-    db::with_db(|c| db::studio::row_delete(c, &table, &pk_col, &pk_val))
-        .map_err(|e| e.to_string())
+    db::with_db(|c| db::studio::row_delete(c, &table, &pk_col, &pk_val)).map_err(|e| e.to_string())
 }
 
 // ── CRUD: articoli ──────────────────────────────────────────────────────────
@@ -515,20 +547,14 @@ pub fn db_price_list_item_delete(id: i64) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn db_price_list_items(
-    price_list_id: i64,
-) -> Result<Vec<db::crud::PriceListItemRow>, String> {
+pub fn db_price_list_items(price_list_id: i64) -> Result<Vec<db::crud::PriceListItemRow>, String> {
     db::with_db(|c| db::crud::price_list_items(c, price_list_id)).map_err(|e| e.to_string())
 }
 
 // ── CRUD: anagrafica clienti/fornitori ─────────────────────────────────────
 
 #[tauri::command]
-pub fn db_contact_set_flags(
-    id: i64,
-    is_client: bool,
-    is_supplier: bool,
-) -> Result<(), String> {
+pub fn db_contact_set_flags(id: i64, is_client: bool, is_supplier: bool) -> Result<(), String> {
     db::with_db(|c| db::crud::contact_set_flags(c, id, is_client, is_supplier))
         .map_err(|e| e.to_string())
 }
@@ -550,7 +576,9 @@ pub fn db_organization_delete(id: i64) -> Result<(), String> {
 
 #[tauri::command]
 pub fn db_bulk_delete_organizations(ids: Vec<i64>) -> Result<i64, String> {
-    if ids.is_empty() { return Ok(0); }
+    if ids.is_empty() {
+        return Ok(0);
+    }
     db::with_db(|c| {
         let tx = c.transaction()?;
         let mut n = 0i64;
@@ -562,12 +590,15 @@ pub fn db_bulk_delete_organizations(ids: Vec<i64>) -> Result<i64, String> {
         }
         tx.commit()?;
         Ok(n)
-    }).map_err(|e: anyhow::Error| e.to_string())
+    })
+    .map_err(|e: anyhow::Error| e.to_string())
 }
 
 #[tauri::command]
 pub fn db_bulk_delete_articles(ids: Vec<i64>) -> Result<i64, String> {
-    if ids.is_empty() { return Ok(0); }
+    if ids.is_empty() {
+        return Ok(0);
+    }
     db::with_db(|c| {
         let tx = c.transaction()?;
         let mut n = 0i64;
@@ -579,7 +610,8 @@ pub fn db_bulk_delete_articles(ids: Vec<i64>) -> Result<i64, String> {
         }
         tx.commit()?;
         Ok(n)
-    }).map_err(|e: anyhow::Error| e.to_string())
+    })
+    .map_err(|e: anyhow::Error| e.to_string())
 }
 
 #[tauri::command]
@@ -610,8 +642,7 @@ pub fn db_list_categories() -> Result<Vec<db::crud::CategoryRow>, String> {
 pub fn db_customer_discount_upsert(
     discount: db::crud::CustomerDiscountInput,
 ) -> Result<i64, String> {
-    db::with_db(|c| db::crud::customer_discount_upsert(c, &discount))
-        .map_err(|e| e.to_string())
+    db::with_db(|c| db::crud::customer_discount_upsert(c, &discount)).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -623,8 +654,7 @@ pub fn db_customer_discount_delete(id: i64) -> Result<(), String> {
 pub fn db_list_customer_discounts(
     customer_id: i64,
 ) -> Result<Vec<db::crud::CustomerDiscountRow>, String> {
-    db::with_db(|c| db::crud::list_customer_discounts(c, customer_id))
-        .map_err(|e| e.to_string())
+    db::with_db(|c| db::crud::list_customer_discounts(c, customer_id)).map_err(|e| e.to_string())
 }
 
 // ── Override prezzo cliente × articolo ─────────────────────────────────────
@@ -639,8 +669,7 @@ pub fn db_customer_price_override_upsert(
 
 #[tauri::command]
 pub fn db_customer_price_override_delete(id: i64) -> Result<(), String> {
-    db::with_db(|c| db::crud::customer_price_override_delete(c, id))
-        .map_err(|e| e.to_string())
+    db::with_db(|c| db::crud::customer_price_override_delete(c, id)).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -654,9 +683,7 @@ pub fn db_list_customer_price_overrides(
 // ── Documenti ──────────────────────────────────────────────────────────────
 
 #[tauri::command]
-pub fn db_customer_document_upsert(
-    doc: db::crud::CustomerDocumentInput,
-) -> Result<i64, String> {
+pub fn db_customer_document_upsert(doc: db::crud::CustomerDocumentInput) -> Result<i64, String> {
     db::with_db(|c| db::crud::customer_document_upsert(c, &doc)).map_err(|e| e.to_string())
 }
 
@@ -670,10 +697,8 @@ pub fn db_list_customer_documents(
     organization_id: i64,
     doc_type: Option<String>,
 ) -> Result<Vec<db::crud::CustomerDocumentRow>, String> {
-    db::with_db(|c| {
-        db::crud::list_customer_documents(c, organization_id, doc_type.as_deref())
-    })
-    .map_err(|e| e.to_string())
+    db::with_db(|c| db::crud::list_customer_documents(c, organization_id, doc_type.as_deref()))
+        .map_err(|e| e.to_string())
 }
 
 // ── Pricing deterministico (esposto per Liara come tool) ───────────────────

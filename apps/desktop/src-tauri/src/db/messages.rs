@@ -530,11 +530,7 @@ pub struct FolderStats {
     pub unread: u32,
 }
 
-pub fn folder_stats(
-    conn: &Connection,
-    account_id: &str,
-    folder_id: i64,
-) -> Result<FolderStats> {
+pub fn folder_stats(conn: &Connection, account_id: &str, folder_id: i64) -> Result<FolderStats> {
     let (total, unread): (i64, i64) = conn.query_row(
         "SELECT COUNT(*),
                 SUM(CASE WHEN is_seen = 0 THEN 1 ELSE 0 END)
@@ -611,7 +607,9 @@ pub fn list_attachments_with_threat(
         )
         .optional()?
         .flatten();
-    let Some(raw) = raw else { return Ok(Vec::new()) };
+    let Some(raw) = raw else {
+        return Ok(Vec::new());
+    };
 
     let Some(parsed) = MessageParser::default().parse(&raw) else {
         return Ok(Vec::new());
@@ -626,8 +624,8 @@ pub fn list_attachments_with_threat(
                 let main = c.ctype();
                 let sub = c.subtype().unwrap_or("octet-stream");
                 let s = format!("{main}/{sub}");
-                let inline = part.is_content_type("text", "plain")
-                    || part.is_content_type("text", "html");
+                let inline =
+                    part.is_content_type("text", "plain") || part.is_content_type("text", "html");
                 (s, inline)
             }
             None => ("application/octet-stream".to_string(), false),
@@ -651,12 +649,8 @@ pub fn list_attachments_with_threat(
         };
         let size = bytes.len() as u64;
         let inline_flag = part.content_id().is_some();
-        let report = crate::security::attachments::analyze(
-            &filename,
-            &ctype_str,
-            size,
-            Some(bytes),
-        );
+        let report =
+            crate::security::attachments::analyze(&filename, &ctype_str, size, Some(bytes));
         out.push(crate::security::attachments::AttachmentEntry {
             index: i,
             filename,
@@ -687,8 +681,12 @@ pub fn get_attachment_bytes(
         .optional()?
         .flatten();
     let Some(raw) = raw else { return Ok(None) };
-    let Some(parsed) = MessageParser::default().parse(&raw) else { return Ok(None) };
-    let Some(part) = parsed.parts.get(part_index) else { return Ok(None) };
+    let Some(parsed) = MessageParser::default().parse(&raw) else {
+        return Ok(None);
+    };
+    let Some(part) = parsed.parts.get(part_index) else {
+        return Ok(None);
+    };
 
     let ctype = part
         .content_type()
@@ -722,7 +720,9 @@ pub fn get_inline_parts(conn: &Connection, message_id: i64) -> Result<Vec<Inline
         )
         .optional()?
         .flatten();
-    let Some(raw) = raw else { return Ok(Vec::new()) };
+    let Some(raw) = raw else {
+        return Ok(Vec::new());
+    };
 
     let Some(parsed) = MessageParser::default().parse(&raw) else {
         return Ok(Vec::new());
@@ -735,13 +735,7 @@ pub fn get_inline_parts(conn: &Connection, message_id: i64) -> Result<Vec<Inline
         let Some(cid) = cid else { continue };
         let ctype = part
             .content_type()
-            .map(|c| {
-                format!(
-                    "{}/{}",
-                    c.ctype(),
-                    c.subtype().unwrap_or("octet-stream")
-                )
-            })
+            .map(|c| format!("{}/{}", c.ctype(), c.subtype().unwrap_or("octet-stream")))
             .unwrap_or_else(|| "application/octet-stream".to_string());
         let bytes = match &part.body {
             PartType::Binary(b) => b.as_ref(),

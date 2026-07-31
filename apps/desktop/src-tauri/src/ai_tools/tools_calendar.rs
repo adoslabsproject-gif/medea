@@ -82,8 +82,8 @@ pub fn calendar_search(args: &Value) -> Result<Value> {
 /// Elimina (annulla) un evento dato il suo id.
 pub fn calendar_delete(args: &Value) -> Result<Value> {
     let id = i(args, "id").ok_or_else(|| anyhow!("manca 'id'"))?;
-    let existing = db::with_db(|c| get_db(c, id))?
-        .ok_or_else(|| anyhow!("Evento #{id} non trovato"))?;
+    let existing =
+        db::with_db(|c| get_db(c, id))?.ok_or_else(|| anyhow!("Evento #{id} non trovato"))?;
     db::with_db(|c| cancel_db(c, id))?;
     Ok(json!({
         "id": id,
@@ -102,9 +102,15 @@ pub fn calendar_update(args: &Value) -> Result<Value> {
     let updated = db::with_db(|c| get_db(c, id))?
         .ok_or_else(|| anyhow!("Evento #{id} non più leggibile dopo l'update"))?;
     let mut changed: Vec<String> = Vec::new();
-    if title.is_some() { changed.push(format!("titolo → {}", updated.text)); }
-    if when.is_some() { changed.push(format!("data → {}", updated.due_at)); }
-    if notes.is_some() { changed.push("note aggiornate".into()); }
+    if title.is_some() {
+        changed.push(format!("titolo → {}", updated.text));
+    }
+    if when.is_some() {
+        changed.push(format!("data → {}", updated.due_at));
+    }
+    if notes.is_some() {
+        changed.push("note aggiornate".into());
+    }
     Ok(json!({
         "id": id,
         "title": updated.text,

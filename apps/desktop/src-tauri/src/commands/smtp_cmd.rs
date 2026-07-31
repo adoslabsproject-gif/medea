@@ -47,10 +47,12 @@ pub struct OutgoingMessage {
 #[tauri::command]
 pub async fn smtp_test_connection(creds: SmtpCredentials) -> Result<bool, String> {
     let transport = build_transport(&creds).map_err(|e| e.to_string())?;
-    transport
-        .test_connection()
-        .await
-        .map_err(|e| format!("SMTP {}:{} ha rifiutato la connessione: {e}", creds.host, creds.port))?;
+    transport.test_connection().await.map_err(|e| {
+        format!(
+            "SMTP {}:{} ha rifiutato la connessione: {e}",
+            creds.host, creds.port
+        )
+    })?;
     Ok(true)
 }
 
@@ -124,13 +126,20 @@ pub async fn mail_send_and_archive_sent(
     let transport = build_transport(&smtp_creds).map_err(|e| e.to_string())?;
     let email = build_message(&msg).map_err(|e| format!("Failed to build message: {e}"))?;
     let eml_bytes = email.formatted();
-    let response = transport.send(email).await
+    let response = transport
+        .send(email)
+        .await
         .map_err(|e| format!("SMTP send failed: {e}"))?;
 
     // Append in IMAP Sent come messaggio già letto.
-    crate::commands::imap_cmd::imap_append(imap_creds, sent_folder, eml_bytes, vec!["\\Seen".into()])
-        .await
-        .map_err(|e| format!("Send OK ma archive Sent fallito: {e}"))?;
+    crate::commands::imap_cmd::imap_append(
+        imap_creds,
+        sent_folder,
+        eml_bytes,
+        vec!["\\Seen".into()],
+    )
+    .await
+    .map_err(|e| format!("Send OK ma archive Sent fallito: {e}"))?;
 
     Ok(format!("{:?}", response.code()))
 }
@@ -153,15 +162,18 @@ pub async fn mail_save_draft(
 ) -> Result<(), String> {
     let email = build_message(&msg).map_err(|e| format!("Failed to build message: {e}"))?;
     let eml_bytes = email.formatted();
-    crate::commands::imap_cmd::imap_append(imap_creds, drafts_folder, eml_bytes, vec!["\\Draft".into()])
-        .await
-        .map_err(|e| format!("Save draft IMAP fallito: {e}"))?;
+    crate::commands::imap_cmd::imap_append(
+        imap_creds,
+        drafts_folder,
+        eml_bytes,
+        vec!["\\Draft".into()],
+    )
+    .await
+    .map_err(|e| format!("Save draft IMAP fallito: {e}"))?;
     Ok(())
 }
 
-fn build_transport(
-    creds: &SmtpCredentials,
-) -> anyhow::Result<AsyncSmtpTransport<Tokio1Executor>> {
+fn build_transport(creds: &SmtpCredentials) -> anyhow::Result<AsyncSmtpTransport<Tokio1Executor>> {
     if creds.host.trim().is_empty() {
         anyhow::bail!("Host SMTP vuoto. Inserisci l'host nel form (es. smtp.gmail.com).");
     }

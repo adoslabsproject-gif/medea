@@ -55,7 +55,9 @@ pub fn messages_thread_get(args: &Value) -> Result<Value> {
             rusqlite::params![message_id],
             |r| r.get(0),
         )?;
-        let Some(tid) = thread_id else { return Ok::<Vec<Value>, anyhow::Error>(Vec::new()) };
+        let Some(tid) = thread_id else {
+            return Ok::<Vec<Value>, anyhow::Error>(Vec::new());
+        };
         let mut stmt = c.prepare(
             "SELECT m.id, m.subject, m.from_address, m.from_name,
                     m.internal_date, m.preview, m.is_seen, f.path
@@ -158,7 +160,10 @@ pub fn messages_unread_summary(args: &Value) -> Result<Value> {
             .collect::<rusqlite::Result<_>>()?;
         Ok::<_, anyhow::Error>(r)
     })?;
-    let total: i64 = rows.iter().filter_map(|r| r.get("unread").and_then(|v| v.as_i64())).sum();
+    let total: i64 = rows
+        .iter()
+        .filter_map(|r| r.get("unread").and_then(|v| v.as_i64()))
+        .sum();
     Ok(json!({ "totalUnread": total, "byDomain": rows }))
 }
 
@@ -173,15 +178,20 @@ pub fn messages_parse_order(args: &Value) -> Result<Value> {
     let mut hits: Vec<Value> = Vec::new();
     for line in body.lines().take(2000) {
         let trimmed = line.trim();
-        if trimmed.is_empty() { continue; }
+        if trimmed.is_empty() {
+            continue;
+        }
         // Cerca codici articolo conosciuti (case-insensitive contains su token)
         for art in &articles {
-            if art.code.len() < 3 { continue; }
+            if art.code.len() < 3 {
+                continue;
+            }
             let needle = art.code.to_lowercase();
             let hay = trimmed.to_lowercase();
             if hay.contains(&needle) {
                 // Cerca un numero (qty) accanto al codice
-                let qty: Option<f64> = trimmed.split(|c: char| !c.is_ascii_digit() && c != '.' && c != ',')
+                let qty: Option<f64> = trimmed
+                    .split(|c: char| !c.is_ascii_digit() && c != '.' && c != ',')
                     .filter_map(|tok| tok.replace(',', ".").parse::<f64>().ok())
                     .find(|&n| n > 0.0 && n < 100_000.0);
                 hits.push(json!({
@@ -193,7 +203,9 @@ pub fn messages_parse_order(args: &Value) -> Result<Value> {
                 break;
             }
         }
-        if hits.len() >= 200 { break; }
+        if hits.len() >= 200 {
+            break;
+        }
     }
     Ok(json!({
         "messageId": message_id,
@@ -203,7 +215,6 @@ pub fn messages_parse_order(args: &Value) -> Result<Value> {
         "items":     hits,
     }))
 }
-
 
 // ── Azioni locali reali (mai sul server IMAP) ─────────────────────────────
 
@@ -233,7 +244,10 @@ pub fn email_mark_seen(args: &Value) -> Result<Value> {
 /// Aggiunge/rimuove la stella su un messaggio. Scrittura locale reale.
 pub fn email_mark_flagged(args: &Value) -> Result<Value> {
     let message_id = i(args, "messageId").ok_or_else(|| anyhow!("manca 'messageId'"))?;
-    let flagged = args.get("flagged").and_then(|v| v.as_bool()).unwrap_or(true);
+    let flagged = args
+        .get("flagged")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(true);
     let subject = subject_of(message_id)?;
     db::with_db(|c| {
         c.execute(
@@ -361,7 +375,11 @@ fn draft_proposal(
     in_reply_to: Option<String>,
     send_requested: bool,
 ) -> Value {
-    let verb = if send_requested { "pronta da INVIARE" } else { "pronta" };
+    let verb = if send_requested {
+        "pronta da INVIARE"
+    } else {
+        "pronta"
+    };
     json!({
         "kind": "proposal",
         "proposalType": "compose_draft",
@@ -389,7 +407,10 @@ fn draft_proposal(
 
 fn list_arg(args: &Value, key: &str) -> Vec<String> {
     match args.get(key) {
-        Some(Value::Array(a)) => a.iter().filter_map(|x| x.as_str().map(String::from)).collect(),
+        Some(Value::Array(a)) => a
+            .iter()
+            .filter_map(|x| x.as_str().map(String::from))
+            .collect(),
         Some(Value::String(s)) => s
             .split([',', ';'])
             .map(|x| x.trim().to_string())
@@ -405,7 +426,9 @@ pub fn email_draft(args: &Value) -> Result<Value> {
     if to.is_empty() {
         return Err(anyhow!("'to' è obbligatorio (destinatario)"));
     }
-    let body = s(args, "body").or_else(|| s(args, "bodyText")).unwrap_or_default();
+    let body = s(args, "body")
+        .or_else(|| s(args, "bodyText"))
+        .unwrap_or_default();
     Ok(draft_proposal(
         to,
         list_arg(args, "cc"),
@@ -419,7 +442,9 @@ pub fn email_draft(args: &Value) -> Result<Value> {
 
 /// Risponde a un'email. Senza `messageId` risponde all'ULTIMA ricevuta.
 pub fn email_reply(args: &Value) -> Result<Value> {
-    let body = s(args, "body").or_else(|| s(args, "bodyText")).unwrap_or_default();
+    let body = s(args, "body")
+        .or_else(|| s(args, "bodyText"))
+        .unwrap_or_default();
     if body.trim().is_empty() {
         return Err(anyhow!("'body' è obbligatorio (testo della risposta)"));
     }
@@ -453,7 +478,13 @@ pub fn email_reply(args: &Value) -> Result<Value> {
         .summary
         .subject
         .clone()
-        .map(|s| if s.to_lowercase().starts_with("re:") { s } else { format!("Re: {s}") })
+        .map(|s| {
+            if s.to_lowercase().starts_with("re:") {
+                s
+            } else {
+                format!("Re: {s}")
+            }
+        })
         .unwrap_or_else(|| "Re:".to_string());
     Ok(draft_proposal(
         vec![to],
@@ -474,7 +505,9 @@ pub fn email_send(args: &Value) -> Result<Value> {
     if to.is_empty() {
         return Err(anyhow!("'to' è obbligatorio (destinatario)"));
     }
-    let body = s(args, "body").or_else(|| s(args, "bodyText")).unwrap_or_default();
+    let body = s(args, "body")
+        .or_else(|| s(args, "bodyText"))
+        .unwrap_or_default();
     Ok(draft_proposal(
         to,
         list_arg(args, "cc"),

@@ -1,8 +1,7 @@
 //! Applica le migrazioni schema al DB Medea (in caso l'app sia chiusa).
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let home = std::env::var("HOME")?;
-    let dir = std::path::PathBuf::from(home)
-        .join("Library/Application Support/com.adoslabs.medea");
+    let dir = std::path::PathBuf::from(home).join("Library/Application Support/com.adoslabs.medea");
     std::fs::create_dir_all(&dir)?;
     let db_path = dir.join("medea.db");
     println!("→ DB: {}", db_path.display());

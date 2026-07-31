@@ -24,11 +24,11 @@ pub struct PriceResolution {
     pub article_code: String,
     pub article_description: String,
     pub customer_id: i64,
-    pub list_price: Option<f64>,        // sale_price dell'articolo
-    pub override_price: Option<f64>,    // se presente, è il prezzo finale (non scontato)
-    pub discount_pct_applied: f64,      // 0 se nessuno
-    pub discount_source: Option<String>,// "override" | "cat+brand" | "cat" | "brand" | "global" | null
-    pub final_price: Option<f64>,       // calcolato; None se manca il listino e nessun override
+    pub list_price: Option<f64>,         // sale_price dell'articolo
+    pub override_price: Option<f64>,     // se presente, è il prezzo finale (non scontato)
+    pub discount_pct_applied: f64,       // 0 se nessuno
+    pub discount_source: Option<String>, // "override" | "cat+brand" | "cat" | "brand" | "global" | null
+    pub final_price: Option<f64>,        // calcolato; None se manca il listino e nessun override
     pub currency: String,
 }
 
@@ -42,21 +42,25 @@ struct DiscountRow {
 impl DiscountRow {
     fn specificity(&self) -> u8 {
         match (self.has_category, self.has_brand) {
-            (true,  true)  => 4,   // cat+brand
-            (true,  false) => 3,   // cat
-            (false, true)  => 2,   // brand
-            (false, false) => 1,   // global
+            (true, true) => 4,   // cat+brand
+            (true, false) => 3,  // cat
+            (false, true) => 2,  // brand
+            (false, false) => 1, // global
         }
     }
     fn source(&self) -> &'static str {
         match (self.has_category, self.has_brand) {
-            (true,  true)  => "cat+brand",
-            (true,  false) => "cat",
-            (false, true)  => "brand",
+            (true, true) => "cat+brand",
+            (true, false) => "cat",
+            (false, true) => "brand",
             (false, false) => "global",
         }
     }
 }
+
+/// Riga articolo usata dal motore prezzi:
+/// `(id, descrizione, prezzo di listino, brand_id, category_id, valuta)`.
+type ArticlePricingRow = (i64, String, Option<f64>, Option<i64>, Option<i64>, String);
 
 /// Risolve prezzo per (cliente, articolo per code). Cliente identificato per id.
 pub fn resolve_for_customer(
@@ -64,13 +68,22 @@ pub fn resolve_for_customer(
     customer_id: i64,
     article_code: &str,
 ) -> Result<Option<PriceResolution>> {
-    let row: Option<(i64, String, Option<f64>, Option<i64>, Option<i64>, String)> = conn
+    let row: Option<ArticlePricingRow> = conn
         .query_row(
             "SELECT id, description, sale_price, brand_id, category_id, COALESCE(currency, 'EUR')
                FROM articles
               WHERE code = ?1 AND is_active = 1",
             params![article_code],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?, r.get(5)?)),
+            |r| {
+                Ok((
+                    r.get(0)?,
+                    r.get(1)?,
+                    r.get(2)?,
+                    r.get(3)?,
+                    r.get(4)?,
+                    r.get(5)?,
+                ))
+            },
         )
         .optional()?;
     let Some((article_id, description, list_price, brand_id, category_id, currency)) = row else {
@@ -120,7 +133,7 @@ pub fn resolve_for_customer(
             Ok(DiscountRow {
                 pct: r.get(0)?,
                 has_category: cat.is_some(),
-                has_brand:    br.is_some(),
+                has_brand: br.is_some(),
             })
         })?
         .collect::<rusqlite::Result<Vec<_>>>()?;
@@ -163,8 +176,12 @@ mod tests {
 
     fn seed(c: &Connection) -> (i64, i64) {
         // Org cliente
-        c.execute("INSERT INTO organizations (domain, display_name, is_client, created_at, updated_at)
-                   VALUES ('acme.test','ACME spa', 1, datetime('now'), datetime('now'))", []).unwrap();
+        c.execute(
+            "INSERT INTO organizations (domain, display_name, is_client, created_at, updated_at)
+                   VALUES ('acme.test','ACME spa', 1, datetime('now'), datetime('now'))",
+            [],
+        )
+        .unwrap();
         let cust_id = c.last_insert_rowid();
 
         // Articolo con brand=1 (Parker) e categoria=1 (Elettrovalvole)
@@ -180,7 +197,9 @@ mod tests {
     fn list_price_only() {
         let c = mk();
         let (cust_id, _) = seed(&c);
-        let r = resolve_for_customer(&c, cust_id, "EV-100").unwrap().unwrap();
+        let r = resolve_for_customer(&c, cust_id, "EV-100")
+            .unwrap()
+            .unwrap();
         assert_eq!(r.final_price, Some(100.0));
         assert_eq!(r.discount_pct_applied, 0.0);
     }
@@ -189,9 +208,14 @@ mod tests {
     fn global_discount_applies() {
         let c = mk();
         let (cust_id, _) = seed(&c);
-        c.execute("INSERT INTO customer_category_discounts (customer_id, discount_pct) VALUES (?1, 10.0)",
-                  params![cust_id]).unwrap();
-        let r = resolve_for_customer(&c, cust_id, "EV-100").unwrap().unwrap();
+        c.execute(
+            "INSERT INTO customer_category_discounts (customer_id, discount_pct) VALUES (?1, 10.0)",
+            params![cust_id],
+        )
+        .unwrap();
+        let r = resolve_for_customer(&c, cust_id, "EV-100")
+            .unwrap()
+            .unwrap();
         assert_eq!(r.discount_pct_applied, 10.0);
         assert_eq!(r.final_price, Some(90.0));
         assert_eq!(r.discount_source.as_deref(), Some("global"));
@@ -201,11 +225,16 @@ mod tests {
     fn brand_beats_global() {
         let c = mk();
         let (cust_id, _) = seed(&c);
-        c.execute("INSERT INTO customer_category_discounts (customer_id, discount_pct) VALUES (?1, 5.0)",
-                  params![cust_id]).unwrap();
+        c.execute(
+            "INSERT INTO customer_category_discounts (customer_id, discount_pct) VALUES (?1, 5.0)",
+            params![cust_id],
+        )
+        .unwrap();
         c.execute("INSERT INTO customer_category_discounts (customer_id, brand_id, discount_pct) VALUES (?1, 1, 15.0)",
                   params![cust_id]).unwrap();
-        let r = resolve_for_customer(&c, cust_id, "EV-100").unwrap().unwrap();
+        let r = resolve_for_customer(&c, cust_id, "EV-100")
+            .unwrap()
+            .unwrap();
         assert_eq!(r.discount_pct_applied, 15.0);
         assert_eq!(r.final_price, Some(85.0));
         assert_eq!(r.discount_source.as_deref(), Some("brand"));
@@ -219,7 +248,9 @@ mod tests {
                   params![cust_id]).unwrap();
         c.execute("INSERT INTO customer_category_discounts (customer_id, category_id, brand_id, discount_pct) VALUES (?1, 1, 1, 20.0)",
                   params![cust_id]).unwrap();
-        let r = resolve_for_customer(&c, cust_id, "EV-100").unwrap().unwrap();
+        let r = resolve_for_customer(&c, cust_id, "EV-100")
+            .unwrap()
+            .unwrap();
         assert_eq!(r.discount_pct_applied, 20.0);
         assert_eq!(r.final_price, Some(80.0));
         assert_eq!(r.discount_source.as_deref(), Some("cat+brand"));
@@ -233,7 +264,9 @@ mod tests {
                   params![cust_id]).unwrap();
         c.execute("INSERT INTO customer_price_overrides (customer_id, article_id, unit_price) VALUES (?1, ?2, 42.5)",
                   params![cust_id, art_id]).unwrap();
-        let r = resolve_for_customer(&c, cust_id, "EV-100").unwrap().unwrap();
+        let r = resolve_for_customer(&c, cust_id, "EV-100")
+            .unwrap()
+            .unwrap();
         assert_eq!(r.override_price, Some(42.5));
         assert_eq!(r.final_price, Some(42.5));
         assert_eq!(r.discount_source.as_deref(), Some("override"));

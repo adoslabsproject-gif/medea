@@ -129,9 +129,15 @@ fn with_tools(mut body: serde_json::Value, req: &ChatRequest) -> serde_json::Val
 fn tool_calls_from_text(content: &str) -> Vec<ToolCallOut> {
     let mut out = Vec::new();
     for (idx, chunk) in content.split("<tool_call>").skip(1).enumerate() {
-        let Some(obj) = first_json_object(chunk) else { continue };
-        let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&obj) else { continue };
-        let Some(name) = parsed.get("name").and_then(|v| v.as_str()) else { continue };
+        let Some(obj) = first_json_object(chunk) else {
+            continue;
+        };
+        let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&obj) else {
+            continue;
+        };
+        let Some(name) = parsed.get("name").and_then(|v| v.as_str()) else {
+            continue;
+        };
         let arguments = parsed
             .get("arguments")
             .cloned()
@@ -154,9 +160,13 @@ fn first_json_object(s: &str) -> Option<String> {
     let mut escaped = false;
     for (i, &b) in bytes.iter().enumerate().skip(start) {
         if in_str {
-            if escaped { escaped = false; }
-            else if b == b'\\' { escaped = true; }
-            else if b == b'"' { in_str = false; }
+            if escaped {
+                escaped = false;
+            } else if b == b'\\' {
+                escaped = true;
+            } else if b == b'"' {
+                in_str = false;
+            }
             continue;
         }
         match b {
@@ -208,13 +218,20 @@ fn parse_openai_response(json: &serde_json::Value, label: &str) -> anyhow::Resul
                 .and_then(|v| v.as_str())
                 .map(String::from)
                 .unwrap_or_else(|| format!("call{idx:04}"));
-            tool_calls.push(ToolCallOut { id, name, arguments });
+            tool_calls.push(ToolCallOut {
+                id,
+                name,
+                arguments,
+            });
         }
     }
     if tool_calls.is_empty() {
         tool_calls = tool_calls_from_text(&content);
     }
-    Ok(ChatResponse { content, tool_calls })
+    Ok(ChatResponse {
+        content,
+        tool_calls,
+    })
 }
 
 #[tauri::command]
@@ -263,7 +280,9 @@ async fn call_openai_compat(
         .api_key
         .clone()
         .or_else(|| std::env::var(env_key).ok())
-        .ok_or_else(|| anyhow::anyhow!("{label} richiede una API key (Impostazioni → Modelli AI)"))?;
+        .ok_or_else(|| {
+            anyhow::anyhow!("{label} richiede una API key (Impostazioni → Modelli AI)")
+        })?;
     let body = with_tools(
         serde_json::json!({
             "model": req.model.as_deref().unwrap_or(default_model),
@@ -293,7 +312,9 @@ async fn call_gemini(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
         .api_key
         .clone()
         .or_else(|| std::env::var("GEMINI_API_KEY").ok())
-        .ok_or_else(|| anyhow::anyhow!("Gemini richiede una API key (Impostazioni → Modelli AI)"))?;
+        .ok_or_else(|| {
+            anyhow::anyhow!("Gemini richiede una API key (Impostazioni → Modelli AI)")
+        })?;
     let model = req.model.as_deref().unwrap_or("gemini-2.5-pro");
     let url = format!(
         "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
@@ -334,7 +355,10 @@ async fn call_gemini(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
         .ok_or_else(|| anyhow::anyhow!("Gemini: risposta inattesa"))?
         .to_string();
     let tool_calls = tool_calls_from_text(&content);
-    Ok(ChatResponse { content, tool_calls })
+    Ok(ChatResponse {
+        content,
+        tool_calls,
+    })
 }
 
 /// Liara — endpoint OpenAI-compatibile del modello proprio (`nha-v1`).
@@ -393,7 +417,12 @@ async fn post_openai_compatible(
         let resp = match builder.send().await {
             Ok(r) => r,
             Err(e) => {
-                tracing::warn!("{label} attempt {}/{} network error: {}", attempt, MAX_ATTEMPTS, e);
+                tracing::warn!(
+                    "{label} attempt {}/{} network error: {}",
+                    attempt,
+                    MAX_ATTEMPTS,
+                    e
+                );
                 last_err = Some(anyhow::anyhow!(
                     "{label}: rete fallita ({}): {e}. Riprova.",
                     classify_reqwest_err(&e)
@@ -432,9 +461,11 @@ async fn call_custom(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
         .model
         .as_deref()
         .filter(|m| !m.trim().is_empty())
-        .ok_or_else(|| anyhow::anyhow!(
-            "Modello non configurato per l'endpoint personalizzato (Impostazioni → Modelli AI)"
-        ))?;
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "Modello non configurato per l'endpoint personalizzato (Impostazioni → Modelli AI)"
+            )
+        })?;
 
     let body = with_tools(
         serde_json::json!({
@@ -446,15 +477,27 @@ async fn call_custom(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
         req,
     );
 
-    post_openai_compatible(req, &format!("{base_url}/chat/completions"), &body, "Endpoint personalizzato").await
+    post_openai_compatible(
+        req,
+        &format!("{base_url}/chat/completions"),
+        &body,
+        "Endpoint personalizzato",
+    )
+    .await
 }
 
 fn classify_reqwest_err(e: &reqwest::Error) -> &'static str {
-    if e.is_timeout() { "timeout" }
-    else if e.is_connect() { "connect" }
-    else if e.is_request() { "request build" }
-    else if e.is_body() { "body" }
-    else { "altro" }
+    if e.is_timeout() {
+        "timeout"
+    } else if e.is_connect() {
+        "connect"
+    } else if e.is_request() {
+        "request build"
+    } else if e.is_body() {
+        "body"
+    } else {
+        "altro"
+    }
 }
 
 /// Anthropic: tool-use nativo con schema proprio (`input_schema`, blocchi
@@ -464,7 +507,9 @@ async fn call_anthropic(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
         .api_key
         .clone()
         .or_else(|| std::env::var("ANTHROPIC_API_KEY").ok())
-        .ok_or_else(|| anyhow::anyhow!("Anthropic richiede una API key (Impostazioni → Modelli AI)"))?;
+        .ok_or_else(|| {
+            anyhow::anyhow!("Anthropic richiede una API key (Impostazioni → Modelli AI)")
+        })?;
 
     let mut messages: Vec<serde_json::Value> = Vec::with_capacity(req.history.len());
     for t in &req.history {
@@ -574,9 +619,20 @@ async fn call_anthropic(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
         match b.get("type").and_then(|v| v.as_str()) {
             Some("text") => content.push_str(b.get("text").and_then(|v| v.as_str()).unwrap_or("")),
             Some("tool_use") => tool_calls.push(ToolCallOut {
-                id: b.get("id").and_then(|v| v.as_str()).unwrap_or("call").to_string(),
-                name: b.get("name").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
-                arguments: b.get("input").cloned().unwrap_or_else(|| serde_json::json!({})),
+                id: b
+                    .get("id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("call")
+                    .to_string(),
+                name: b
+                    .get("name")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .to_string(),
+                arguments: b
+                    .get("input")
+                    .cloned()
+                    .unwrap_or_else(|| serde_json::json!({})),
             }),
             _ => {}
         }
@@ -584,7 +640,10 @@ async fn call_anthropic(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
     if tool_calls.is_empty() {
         tool_calls = tool_calls_from_text(&content);
     }
-    Ok(ChatResponse { content, tool_calls })
+    Ok(ChatResponse {
+        content,
+        tool_calls,
+    })
 }
 
 async fn call_openai(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
@@ -603,7 +662,9 @@ async fn call_openrouter(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
         .api_key
         .clone()
         .or_else(|| std::env::var("OPENROUTER_API_KEY").ok())
-        .ok_or_else(|| anyhow::anyhow!("OpenRouter richiede una API key (Impostazioni → Modelli AI)"))?;
+        .ok_or_else(|| {
+            anyhow::anyhow!("OpenRouter richiede una API key (Impostazioni → Modelli AI)")
+        })?;
     let body = with_tools(
         serde_json::json!({
             "model": req.model.as_deref().unwrap_or("anthropic/claude-sonnet-4.5"),
