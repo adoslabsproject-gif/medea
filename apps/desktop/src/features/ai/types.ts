@@ -2,6 +2,7 @@ export type ChatRole = 'user' | 'assistant' | 'system' | 'tool';
 
 export type ProviderId =
   | 'liara'
+  | 'claude-cli'
   | 'custom'
   | 'anthropic'
   | 'openai'
@@ -55,6 +56,11 @@ export interface ChatResponse {
   toolCalls: { id: string; name: string; arguments: Record<string, unknown> }[];
 }
 
+/** Provider che NON usano una API key: l'auth è altrove (CLI già loggata). */
+export function providerNeedsApiKey(p: ProviderId): boolean {
+  return p !== 'claude-cli';
+}
+
 /** Config non-segreta dell'endpoint personalizzato (la API key sta nel keychain). */
 export const CUSTOM_BASE_URL_KEY = 'medea.ai.custom.baseUrl';
 export const CUSTOM_MODEL_KEY = 'medea.ai.custom.model';
@@ -63,6 +69,8 @@ export function providerLabel(p: ProviderId): string {
   switch (p) {
     case 'liara':
       return 'Liara';
+    case 'claude-cli':
+      return 'Claude (abbonamento)';
     case 'custom':
       return 'Endpoint personale';
     case 'anthropic':
@@ -84,6 +92,8 @@ export function providerLong(p: ProviderId): string {
   switch (p) {
     case 'liara':
       return 'Liara — modello proprio (nha-v1), richiede la tua API key';
+    case 'claude-cli':
+      return 'Claude via CLI locale — usa il tuo abbonamento Pro/Max, nessun costo API';
     case 'custom':
       return 'Endpoint personalizzato — OpenAI-compatibile (vLLM, gateway privato…)';
     case 'anthropic':

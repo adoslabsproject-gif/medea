@@ -6,7 +6,8 @@ pub mod db;
 mod security;
 
 use commands::{
-    ai_cmd, ai_tools_cmd, db_cmd, imap_cmd, secrets_cmd, smtp_cmd, sync_cmd, template_cmd,
+    ai_cmd, ai_tools_cmd, claude_cli_cmd, db_cmd, imap_cmd, secrets_cmd, smtp_cmd, sync_cmd,
+    template_cmd,
 };
 use tauri::Manager;
 
@@ -107,6 +108,9 @@ pub fn run() {
             db_cmd::db_list_messages_for_domain,
             db_cmd::db_list_messages_for_address,
             db_cmd::db_list_all_documents,
+            // Claude in abbonamento (CLI locale + tool via MCP)
+            claude_cli_cmd::claude_cli_status,
+            claude_cli_cmd::claude_cli_run,
             // Template email (carta intestata)
             template_cmd::db_template_list,
             template_cmd::db_template_default,
