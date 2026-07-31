@@ -1,0 +1,133 @@
+@layer features {
+  /* L'area dei messaggi cresce ma deve poter scendere sotto il contenuto,
+     altrimenti in una colonna flex non scorre. */
+  .root {
+    flex: 1;
+    min-block-size: 0;
+    overflow-y: auto;
+    padding: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .empty {
+    margin: auto 0;
+    padding: var(--space-4);
+    text-align: center;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    line-height: 1.55;
+  }
+
+  .emptyHint {
+    margin-block-start: var(--space-2);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  .message {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    max-inline-size: 100%;
+  }
+  .message[data-role='user'] {
+    align-items: flex-end;
+  }
+
+  .bubble {
+    max-inline-size: 90%;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-3);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+  }
+  .message[data-role='user'] .bubble {
+    background: var(--color-accent-default);
+    color: var(--color-accent-on);
+  }
+
+  .text {
+    margin: 0;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+  }
+
+  .error {
+    margin: var(--space-2) 0 0;
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+    color: var(--color-feedback-danger);
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
+    white-space: pre-wrap;
+    max-block-size: 12rem;
+    overflow-y: auto;
+  }
+
+  .working {
+    margin: 0;
+    color: var(--color-text-secondary);
+  }
+
+  /* I puntini si fermano se l'utente ha chiesto meno animazioni. */
+  .dots::after {
+    content: '…';
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dots::after {
+      animation: none;
+    }
+  }
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .trace {
+    margin-block-start: var(--space-2);
+  }
+
+  .traceSummary {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    cursor: pointer;
+  }
+
+  .steps {
+    margin: var(--space-1) 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .step {
+    display: flex;
+    gap: var(--space-2);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    min-inline-size: 0;
+  }
+  .step code {
+    font-family: var(--font-family-mono);
+    color: var(--color-accent-default);
+    flex-shrink: 0;
+  }
+
+  .stepArgs {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

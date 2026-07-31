@@ -1,0 +1,168 @@
+@layer features {
+  .root {
+    border: 1px solid var(--color-accent-default);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-2);
+    overflow: hidden;
+  }
+
+  .head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-accent-subtle);
+  }
+
+  .title {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+  }
+
+  .summary {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+  }
+
+  /* Un diff lungo non deve mangiarsi la conversazione: scorre per conto suo. */
+  .body {
+    max-block-size: 30vh;
+    overflow-y: auto;
+    padding: var(--space-2) var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .group {
+    border-inline-start: 2px solid var(--color-border-strong);
+    padding-inline-start: var(--space-2);
+  }
+  .group[data-tone='add'] {
+    border-inline-start-color: var(--color-feedback-success);
+  }
+  .group[data-tone='remove'] {
+    border-inline-start-color: var(--color-feedback-danger);
+  }
+  .group[data-tone='change'] {
+    border-inline-start-color: var(--color-feedback-warning);
+  }
+
+  .groupTitle {
+    margin: 0 0 var(--space-1);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+  }
+
+  .count {
+    color: var(--color-text-muted);
+    font-weight: var(--font-weight-regular);
+  }
+
+  .items {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .item {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    font-size: var(--font-size-xs);
+  }
+
+  .itemName {
+    color: var(--color-text-primary);
+  }
+
+  .itemId,
+  .changeKey {
+    font-family: var(--font-family-mono);
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+  }
+
+  .itemMeta {
+    color: var(--color-text-muted);
+  }
+
+  .changes {
+    margin: var(--space-1) 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .change {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-1);
+    flex-wrap: wrap;
+    color: var(--color-text-muted);
+  }
+
+  .before {
+    color: var(--color-feedback-danger);
+    text-decoration: line-through;
+    overflow-wrap: anywhere;
+  }
+
+  .after {
+    color: var(--color-feedback-success);
+    overflow-wrap: anywhere;
+  }
+
+  .more {
+    margin-block-start: var(--space-1);
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-accent-default);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+  }
+
+  .foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-block-start: 1px solid var(--color-border-subtle);
+  }
+
+  .apply,
+  .dismiss {
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+  }
+
+  .apply {
+    border: none;
+    background: var(--color-accent-default);
+    color: var(--color-accent-on);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .dismiss {
+    border: 1px solid var(--color-border-default);
+    background: transparent;
+    color: var(--color-text-secondary);
+  }
+  .dismiss:hover {
+    border-color: var(--color-feedback-danger);
+    color: var(--color-feedback-danger);
+  }
+}

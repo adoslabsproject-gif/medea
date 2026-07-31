@@ -1,0 +1,77 @@
+@layer features {
+  /* Il piede non si comprime mai: la casella resta raggiungibile anche con
+     una conversazione lunga o un diff aperto. */
+  .root {
+    flex-shrink: 0;
+    padding: var(--space-3);
+    border-block-start: 1px solid var(--color-border-subtle);
+    background: var(--color-surface-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .suggestion {
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+    color: var(--color-text-secondary);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-xs);
+    text-align: start;
+    cursor: pointer;
+  }
+  .suggestion:hover {
+    border-color: var(--color-accent-default);
+    color: var(--color-text-primary);
+  }
+
+  .inputRow {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-2);
+  }
+
+  .input {
+    flex: 1;
+    min-inline-size: 0;
+    padding: var(--space-2);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-sm);
+    line-height: 1.25;
+    resize: none;
+    overflow-y: auto;
+  }
+  .input:focus-visible {
+    outline: 2px solid var(--color-focus-ring-default);
+    outline-offset: 1px;
+  }
+
+  .send {
+    flex-shrink: 0;
+    inline-size: 2rem;
+    block-size: 2rem;
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--color-accent-default);
+    color: var(--color-accent-on);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+  }
+  .send:disabled {
+    background: var(--color-surface-3);
+    color: var(--color-text-muted);
+    cursor: default;
+  }
+}

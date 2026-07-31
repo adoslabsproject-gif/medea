@@ -1,0 +1,59 @@
+@layer features {
+  .root {
+    inline-size: 23rem;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    min-block-size: 0;
+    border-inline-start: 1px solid var(--color-border-subtle);
+    background: var(--color-surface-2);
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-block-end: 1px solid var(--color-border-subtle);
+    flex-shrink: 0;
+  }
+
+  .titleGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-inline-size: 0;
+  }
+
+  .title {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+  }
+
+  .provider {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  .headActions {
+    display: flex;
+    gap: var(--space-1);
+    flex-shrink: 0;
+  }
+
+  .iconBtn {
+    padding: var(--space-1);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+  }
+  .iconBtn:hover {
+    background: var(--color-surface-3);
+    color: var(--color-text-primary);
+  }
+}

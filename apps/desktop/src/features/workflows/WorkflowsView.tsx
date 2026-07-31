@@ -1,40 +1,31 @@
 /**
- * La sezione Workflow: elenco a sinistra, editor al centro, verdetto in basso.
+ * La sezione Workflow: elenco, editor, assistente, verdetto.
  *
  * Una regola sola governa la barra in fondo: **un workflow con problemi
  * critici non si può attivare**. È lo stesso criterio che impedisce all'AI di
  * consegnarlo, applicato a ciò che l'utente disegna a mano — sarebbe assurdo
  * che il canvas accettasse in silenzio quello che il generatore rifiuta.
+ *
+ * Lo stato del documento e la cronologia vivono in `useWorkflowEditor`: qui
+ * si disegna e si collegano i pezzi.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { workflowApi, type WorkflowSummary } from './api';
-import { diagnose, emptyWorkflow, globalIssues } from './canvas/diagnostics';
+import { AssistantPanel } from './assistant';
+import { diagnose, globalIssues } from './canvas/diagnostics';
 import { WorkflowCanvas } from './canvas/WorkflowCanvas';
 import { findNode } from './catalog';
-import { ScaffoldDialog } from './ScaffoldDialog';
-import type { NodeDef, Workflow } from './types';
+import { Topbar } from './topbar';
+import type { NodeDef } from './types';
+import { useWorkflowEditor } from './useWorkflowEditor';
 import { WorkflowList } from './WorkflowList';
 import styles from './WorkflowsView.module.css';
 
 export function WorkflowsView() {
-  const [items, setItems] = useState<WorkflowSummary[]>([]);
-  const [workflow, setWorkflow] = useState<Workflow>(emptyWorkflow);
-  const [enabled, setEnabled] = useState(false);
-  const [dirty, setDirty] = useState(false);
-  const [scaffolding, setScaffolding] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
-
-  const refresh = useCallback(async () => {
-    setItems(await workflowApi.list());
-  }, []);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
-
-  const activeId = workflow.id ? Number(workflow.id) : null;
+  const editor = useWorkflowEditor();
+  const [assistantOpen, setAssistantOpen] = useState(true);
+  const { workflow } = editor;
 
   const defsById = useMemo(() => {
     const map = new Map<string, NodeDef>();
@@ -52,126 +43,81 @@ export function WorkflowsView() {
   const critical = diag.issues.filter((i) => i.severity === 'critical');
   const warnings = diag.issues.filter((i) => i.severity === 'medium');
   const global = globalIssues(diag.issues);
+  const blockedReason =
+    critical.length > 0 ? 'Non puoi attivarlo finché ci sono problemi da risolvere.' : undefined;
 
-  const change = useCallback((wf: Workflow) => {
-    setWorkflow(wf);
-    setDirty(true);
-  }, []);
+  // Le scorciatoie valgono su tutta la sezione, non solo sul canvas: si
+  // annulla anche mentre si scrive nel pannello di destra.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.metaKey && !e.ctrlKey) return;
+      const key = e.key.toLowerCase();
+      if (key === 's') {
+        e.preventDefault();
+        void editor.save();
+      } else if (key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        editor.undo();
+      } else if ((key === 'z' && e.shiftKey) || key === 'y') {
+        e.preventDefault();
+        editor.redo();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [editor]);
 
-  async function open(id: number) {
-    const loaded = await workflowApi.get(id);
-    if (!loaded) return;
-    setWorkflow(loaded);
-    setEnabled(items.find((i) => i.id === id)?.enabled ?? false);
-    setDirty(false);
-    setNotice(null);
-  }
-
-  async function save() {
-    try {
-      const id = await workflowApi.save(workflow, enabled);
-      setWorkflow((w) => ({ ...w, id: String(id) }));
-      setDirty(false);
-      setNotice('Salvato.');
-      await refresh();
-    } catch (e) {
-      setNotice(e instanceof Error ? e.message : String(e));
-    }
-  }
-
-  async function toggleEnabled() {
-    const next = !enabled;
-    // Attivare un workflow rotto significa farlo fallire al primo giro:
-    // meglio dirlo adesso.
-    if (next && critical.length > 0) {
-      setNotice('Non puoi attivarlo finché ci sono problemi da risolvere.');
-      return;
-    }
-    setEnabled(next);
-    if (activeId) {
-      await workflowApi.setEnabled(activeId, next);
-      await refresh();
-    } else {
-      setDirty(true);
-    }
-  }
+  const activeId = workflow.id ? Number(workflow.id) : null;
 
   return (
     <div className={styles.root}>
       <WorkflowList
-        items={items}
+        items={editor.items}
         activeId={activeId}
-        onOpen={(id) => void open(id)}
-        onNew={() => {
-          setWorkflow(emptyWorkflow());
-          setEnabled(false);
-          setDirty(false);
-          setNotice(null);
-        }}
-        onDuplicate={(id) => {
-          void workflowApi.duplicate(id).then(refresh);
-        }}
-        onDelete={(id) => {
-          void workflowApi.remove(id).then(async () => {
-            if (activeId === id) setWorkflow(emptyWorkflow());
-            await refresh();
-          });
-        }}
+        onOpen={(id) => void editor.open(id)}
+        onNew={editor.create}
+        onDuplicate={(id) => void editor.duplicate(id)}
+        onDelete={(id) => void editor.remove(id)}
       />
 
       <div className={styles.main}>
-        <header className={styles.head}>
-          <input
-            className={styles.name}
-            value={workflow.name}
-            aria-label="Nome del workflow"
-            onChange={(e) => {
-              change({ ...workflow, name: e.target.value });
-            }}
-          />
+        <Topbar
+          workflow={workflow}
+          dirty={editor.dirty}
+          enabled={editor.enabled}
+          assistantOpen={assistantOpen}
+          canUndo={editor.canUndo}
+          canRedo={editor.canRedo}
+          {...(blockedReason ? { blockedReason } : {})}
+          actions={{
+            onRename: (name) => {
+              editor.change({ ...workflow, name });
+            },
+            onTargetChange: (executionTarget) => {
+              editor.changeDistinct({ ...workflow, executionTarget });
+            },
+            onSave: () => void editor.save(),
+            onToggleEnabled: () => void editor.toggleEnabled(blockedReason),
+            onToggleAssistant: () => {
+              setAssistantOpen((v) => !v);
+            },
+            onUndo: editor.undo,
+            onRedo: editor.redo,
+            onAutoLayout: editor.relayout,
+            onImport: editor.importJson,
+            onExport: editor.exportJson,
+            onDuplicate: () => {
+              if (activeId) void editor.duplicate(activeId);
+            },
+            onDelete: () => {
+              if (activeId) void editor.remove(activeId);
+            },
+          }}
+        />
 
-          <select
-            className={styles.target}
-            aria-label="Dove viene eseguito"
-            value={workflow.executionTarget ?? 'local'}
-            onChange={(e) => {
-              change({ ...workflow, executionTarget: e.target.value as 'local' | 'server' });
-            }}
-          >
-            <option value="local">Su questo computer</option>
-            <option value="server">Sul server</option>
-          </select>
-
-          <button
-            type="button"
-            className={styles.ghost}
-            onClick={() => {
-              setScaffolding(true);
-            }}
-          >
-            ✨ {workflow.nodes.length > 0 ? 'Modifica a parole' : 'Descrivi a parole'}
-          </button>
-
-          <button
-            type="button"
-            className={styles.toggle}
-            data-on={enabled ? 'true' : 'false'}
-            onClick={() => void toggleEnabled()}
-          >
-            {enabled ? 'Attivo' : 'Non attivo'}
-          </button>
-
-          <button
-            type="button"
-            className={styles.save}
-            disabled={!dirty}
-            onClick={() => void save()}
-          >
-            {dirty ? 'Salva' : 'Salvato'}
-          </button>
-        </header>
-
-        <WorkflowCanvas workflow={workflow} onChange={change} />
+        <WorkflowCanvas workflow={workflow} onChange={editor.change} />
 
         <footer className={styles.foot} data-state={critical.length > 0 ? 'blocked' : 'ok'}>
           <div className={styles.verdict}>
@@ -202,20 +148,19 @@ export function WorkflowsView() {
             </ul>
           )}
 
-          {notice && <span className={styles.notice}>{notice}</span>}
+          {editor.notice && <span className={styles.notice}>{editor.notice}</span>}
         </footer>
       </div>
 
-      {scaffolding && (
-        <ScaffoldDialog
-          current={workflow}
-          onClose={() => {
-            setScaffolding(false);
+      {assistantOpen && (
+        <AssistantPanel
+          workflow={workflow}
+          onApply={(wf) => {
+            editor.changeDistinct(wf);
+            editor.setNotice('Modifica applicata: controllala prima di attivare il workflow.');
           }}
-          onGenerated={(wf) => {
-            change(wf);
-            setScaffolding(false);
-            setNotice('Workflow generato: controllalo prima di attivarlo.');
+          onClose={() => {
+            setAssistantOpen(false);
           }}
         />
       )}
