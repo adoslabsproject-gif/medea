@@ -21,10 +21,11 @@ import {
   useNodesState,
   type Connection,
   type Edge,
+  type EdgeTypes,
   type Node,
   type NodeTypes,
 } from '@xyflow/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { findNode } from '../catalog';
 import type { CanvasNode, NodeDef, Workflow, WorkflowEdge } from '../types';
@@ -33,12 +34,14 @@ import { diagnose } from './diagnostics';
 import { nextFreeSpot } from './layout';
 import { NodeInspector } from './NodeInspector';
 import { NodePalette } from './NodePalette';
+import { PlusEdge, type MapMode, type PlusEdgeData } from './PlusEdge';
 import styles from './WorkflowCanvas.module.css';
 import { WorkflowNode, type WorkflowNodeData } from './WorkflowNode';
 
 import './xyflow.css';
 
 const NODE_TYPES: NodeTypes = { medea: WorkflowNode };
+const EDGE_TYPES: EdgeTypes = { plus: PlusEdge };
 
 /* Array tipizzati invece dei parametri di tipo espliciti: `useNodesState(NO_NODES)`
    inferirebbe `never[]` e `useNodesState<Node>([])` ripete il tipo di
@@ -53,8 +56,19 @@ interface Props {
 
 export function WorkflowCanvas({ workflow, onChange }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  /** Il collegamento su cui si sta inserendo un nodo, se l'utente ha
+   *  premuto il «+». La palette cambia modo finché non sceglie. */
+  const [insertOn, setInsertOn] = useState<WorkflowEdge | null>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(NO_NODES);
   const [edges, setEdges, onEdgesChange] = useEdgesState(NO_EDGES);
+
+  // I callback degli edge vivono dentro lo stato di xyflow e sopravvivono
+  // ai ridisegni: devono vedere il documento di adesso, non quello di
+  // quando sono stati creati.
+  const workflowRef = useRef(workflow);
+  workflowRef.current = workflow;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   const defsById = useMemo(() => {
     const map = new Map<string, NodeDef>();
@@ -120,10 +134,24 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
     setEdges(
       workflow.edges.map((e, i) => ({
         id: edgeId(e, i),
+        type: 'plus',
         source: e.from,
         target: e.to,
         ...(e.fromPort ? { sourceHandle: e.fromPort, label: e.fromPort } : {}),
         animated: true,
+        data: {
+          edge: e,
+          ...(e.mapMode ? { mapMode: e.mapMode } : {}),
+          onInsert: (target: WorkflowEdge) => {
+            setInsertOn(target);
+          },
+          onDelete: (target: WorkflowEdge) => {
+            onChangeRef.current(dropEdge(workflowRef.current, target));
+          },
+          onCycleMapMode: (target: WorkflowEdge, next: MapMode) => {
+            onChangeRef.current(setMapMode(workflowRef.current, target, next));
+          },
+        } satisfies PlusEdgeData,
       })),
     );
     // `signature` riassume tutto ciò che deve provocare un ridisegno.
@@ -191,26 +219,45 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
       for (const f of def.configFields ?? []) {
         if (f.defaultValue !== undefined) config[f.key] = f.defaultValue;
       }
-      onChange({
-        ...workflow,
-        nodes: [...workflow.nodes, { id, defId: def.defId, x: spot.x, y: spot.y, config }],
-      });
+      const node: CanvasNode = { id, defId: def.defId, x: spot.x, y: spot.y, config };
+
+      if (insertOn) {
+        // Inserire in mezzo significa spezzare il collegamento in due, non
+        // aggiungere un nodo scollegato accanto.
+        onChange(insertBetween(workflow, insertOn, node));
+        setInsertOn(null);
+      } else {
+        onChange({ ...workflow, nodes: [...workflow.nodes, node] });
+      }
       setSelectedId(id);
     },
-    [workflow, onChange],
+    [workflow, onChange, insertOn],
   );
 
   const selected = workflow.nodes.find((n) => n.id === selectedId) ?? null;
 
   return (
     <div className={styles.root}>
-      <NodePalette onAdd={addFromPalette} />
+      <NodePalette
+        onAdd={addFromPalette}
+        {...(insertOn
+          ? {
+              insertMode: {
+                label: `Scegli il nodo da inserire fra "${insertOn.from}" e "${insertOn.to}"`,
+                onCancel: () => {
+                  setInsertOn(null);
+                },
+              },
+            }
+          : {})}
+      />
 
       <div className={styles.canvas}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
           nodeTypes={NODE_TYPES}
+          edgeTypes={EDGE_TYPES}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onNodeDragStop={(_, __, dragged) => {
@@ -282,6 +329,41 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
       )}
     </div>
   );
+}
+
+/** Il collegamento sparisce e ne nascono due, con il nuovo nodo in mezzo. */
+function insertBetween(wf: Workflow, edge: WorkflowEdge, node: CanvasNode): Workflow {
+  const others = wf.edges.filter((e) => !sameEdge(e, edge));
+  return {
+    ...wf,
+    nodes: [...wf.nodes, node],
+    edges: [
+      ...others,
+      { from: edge.from, to: node.id, ...(edge.fromPort ? { fromPort: edge.fromPort } : {}) },
+      { from: node.id, to: edge.to },
+    ],
+  };
+}
+
+function dropEdge(wf: Workflow, edge: WorkflowEdge): Workflow {
+  return { ...wf, edges: wf.edges.filter((e) => !sameEdge(e, edge)) };
+}
+
+function setMapMode(wf: Workflow, edge: WorkflowEdge, mode: MapMode): Workflow {
+  return {
+    ...wf,
+    edges: wf.edges.map((e) => {
+      if (!sameEdge(e, edge)) return e;
+      // Spento vuol dire assente: un campo `mapMode: undefined` finirebbe
+      // nel JSON esportato come rumore.
+      const { mapMode: _off, ...rest } = e;
+      return mode === 'off' ? rest : { ...rest, mapMode: mode };
+    }),
+  };
+}
+
+function sameEdge(a: WorkflowEdge, b: WorkflowEdge): boolean {
+  return a.from === b.from && a.to === b.to && (a.fromPort ?? '') === (b.fromPort ?? '');
 }
 
 /** L'id di un collegamento nel canvas. Include l'indice perché due nodi
