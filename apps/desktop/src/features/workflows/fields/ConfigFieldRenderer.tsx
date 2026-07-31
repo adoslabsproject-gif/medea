@@ -13,6 +13,7 @@
 import type { NodeConfigField } from '../types';
 
 import { AccountPicker } from './AccountPicker';
+import { AttachmentsBuilder } from './AttachmentsBuilder';
 import { BooleanField, CodeField, SelectField, TextField } from './BasicFields';
 import { ChipListBuilder } from './ChipListBuilder';
 import { ConditionRulesBuilder } from './ConditionRulesBuilder';
@@ -22,6 +23,7 @@ import { asText, CODE_TYPES, LONG_TEXT_TYPES, PICKER_TYPES } from './field-kinds
 import { FieldShell } from './FieldShell';
 import { FilterRowBuilder } from './FilterRowBuilder';
 import { FormFieldsBuilder } from './FormFieldsBuilder';
+import { InvoiceLineBuilder } from './InvoiceLineBuilder';
 import { KeyValueBuilder } from './KeyValueBuilder';
 import { PickerField, SecretField } from './PickerField';
 import { evaluateShowIf } from './show-if';
@@ -55,6 +57,8 @@ const BUILDERS: Record<string, StringControl> = {
   'filter-rows': FilterRowBuilder,
   'sort-rows': SortRowBuilder,
   'form-fields': FormFieldsBuilder,
+  attachments: AttachmentsBuilder,
+  'invoice-lines': InvoiceLineBuilder,
 };
 
 export function ConfigFieldRenderer({

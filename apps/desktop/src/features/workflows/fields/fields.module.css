@@ -281,6 +281,37 @@
     overflow-wrap: anywhere;
   }
 
+  /* Il campo file resta invisibile: si apre dal pulsante accanto. */
+  .hiddenInput {
+    display: none;
+  }
+
+  .error {
+    padding: var(--space-2);
+    border: 1px solid var(--color-feedback-danger);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+    color: var(--color-feedback-danger);
+    font-size: var(--font-size-xs);
+    line-height: 1.4;
+  }
+
+  /* Su una fattura il numero che conta è quello in fondo. */
+  .lineTotal {
+    margin-inline-start: auto;
+    flex-shrink: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .grandTotal {
+    margin-inline-start: auto;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+
   .chips {
     display: flex;
     flex-wrap: wrap;

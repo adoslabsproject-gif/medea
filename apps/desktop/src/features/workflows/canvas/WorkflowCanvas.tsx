@@ -17,34 +17,25 @@ import {
   Controls,
   MiniMap,
   ReactFlow,
-  type Connection,
   type EdgeTypes,
-  type Node,
   type NodeTypes,
 } from '@xyflow/react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { findNode } from '../catalog';
 import { ResizableColumn } from '../shared';
 import type { CanvasNode, NodeDef, Workflow, WorkflowEdge } from '../types';
 
 import { CanvasSearch } from './CanvasSearch';
-import { copySelection, duplicateNodes, paste, type Clipboard } from './clipboard';
 import { diagnose } from './diagnostics';
-import {
-  addEdge,
-  dropEdge,
-  dropNode,
-  edgeId,
-  insertBetween,
-  setMapMode,
-  uniqueNodeId,
-} from './graph-ops';
+import { dropEdge, dropNode, insertBetween, setMapMode, uniqueNodeId } from './graph-ops';
 import { nextFreeSpot } from './layout';
 import { NodeInspector } from './NodeInspector';
 import { NodePalette } from './NodePalette';
 import { PlusEdge, type MapMode } from './PlusEdge';
+import { useCanvasHandlers } from './useCanvasHandlers';
 import { useCanvasProjection } from './useCanvasProjection';
+import { useCanvasShortcuts } from './useCanvasShortcuts';
 import styles from './WorkflowCanvas.module.css';
 import { WorkflowNode } from './WorkflowNode';
 
@@ -64,9 +55,6 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
    *  premuto il «+». La palette cambia modo finché non sceglie. */
   const [insertOn, setInsertOn] = useState<WorkflowEdge | null>(null);
   const [searching, setSearching] = useState(false);
-  /** Gli appunti vivono qui: incollare in un altro workflow non ha senso,
-   *  i nodi si porterebbero dietro riferimenti che là non esistono. */
-  const clipboard = useRef<Clipboard | null>(null);
 
   // I callback degli edge vivono dentro lo stato di xyflow e sopravvivono
   // ai ridisegni: devono vedere il documento di adesso, non quello di
@@ -75,8 +63,6 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
   workflowRef.current = workflow;
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
-  const selectedIdRef = useRef(selectedId);
-  selectedIdRef.current = selectedId;
 
   const defsById = useMemo(() => {
     const map = new Map<string, NodeDef>();
@@ -133,34 +119,11 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
     [workflow, onChange],
   );
 
-  /** Finito il trascinamento la posizione diventa parte del documento: è
-   *  quella che verrà salvata e ritrovata alla riapertura. */
-  const commitPositions = useCallback(
-    (moved: Node[]) => {
-      const byId = new Map(moved.map((m) => [m.id, m.position]));
-      patchNodes(
-        workflow.nodes.map((n) => {
-          const p = byId.get(n.id);
-          return p ? { ...n, x: Math.round(p.x), y: Math.round(p.y) } : n;
-        }),
-      );
-    },
-    [workflow.nodes, patchNodes],
-  );
-
-  const connect = useCallback(
-    (conn: Connection) => {
-      if (!conn.source || !conn.target) return;
-      onChange(
-        addEdge(workflow, {
-          from: conn.source,
-          to: conn.target,
-          ...(conn.sourceHandle ? { fromPort: conn.sourceHandle } : {}),
-        }),
-      );
-    },
-    [workflow, onChange],
-  );
+  const { commitPositions, connect, removeEdges } = useCanvasHandlers({
+    workflow,
+    onChange,
+    patchNodes,
+  });
 
   const addFromPalette = useCallback(
     (def: NodeDef) => {
@@ -187,55 +150,15 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
     [workflow, onChange, insertOn],
   );
 
-  // Le scorciatoie sui nodi. Valgono sul canvas, non mentre si scrive in un
-  // campo: copiare il testo di una configurazione deve copiare il testo.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      const typing =
-        target?.tagName === 'INPUT' ||
-        target?.tagName === 'TEXTAREA' ||
-        target?.tagName === 'SELECT' ||
-        target?.isContentEditable === true;
-
-      const meta = e.metaKey || e.ctrlKey;
-      const key = e.key.toLowerCase();
-
-      if (meta && key === 'f') {
-        e.preventDefault();
-        setSearching(true);
-        return;
-      }
-      if (typing) return;
-
-      const wf = workflowRef.current;
-      const current = selectedIdRef.current;
-
-      if (meta && key === 'c' && current) {
-        clipboard.current = copySelection(wf, [current]);
-      } else if (meta && key === 'v' && clipboard.current) {
-        e.preventDefault();
-        const result = paste(wf, clipboard.current);
-        onChangeRef.current(result.workflow);
-        setSelectedId(result.newIds[0] ?? null);
-      } else if (meta && key === 'd' && current) {
-        e.preventDefault();
-        const result = duplicateNodes(wf, [current]);
-        if (result) {
-          onChangeRef.current(result.workflow);
-          setSelectedId(result.newIds[0] ?? null);
-        }
-      } else if ((e.key === 'Delete' || e.key === 'Backspace') && current) {
-        e.preventDefault();
-        onChangeRef.current(dropNode(wf, current));
-        setSelectedId(null);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('keydown', onKey);
-    };
-  }, []);
+  useCanvasShortcuts({
+    workflow,
+    selectedId,
+    onChange,
+    onSelect: setSelectedId,
+    onSearch: () => {
+      setSearching(true);
+    },
+  });
 
   const selected = workflow.nodes.find((n) => n.id === selectedId) ?? null;
 
@@ -271,13 +194,7 @@ export function WorkflowCanvas({ workflow, onChange }: Props) {
           onNodesDelete={(deleted) => {
             for (const n of deleted) removeNode(n.id);
           }}
-          onEdgesDelete={(deleted) => {
-            const gone = new Set(deleted.map((e) => e.id));
-            onChange({
-              ...workflow,
-              edges: workflow.edges.filter((e, i) => !gone.has(edgeId(e, i))),
-            });
-          }}
+          onEdgesDelete={removeEdges}
           onConnect={connect}
           onNodeClick={(_, node) => {
             setSelectedId(node.id);

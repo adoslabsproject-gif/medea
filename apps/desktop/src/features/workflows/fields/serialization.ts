@@ -160,3 +160,108 @@ export function toFieldKey(label: string): string {
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_|_$/g, '');
 }
+
+// ── Allegati ──────────────────────────────────────────────────────────────
+
+export type AttachmentSource = 'upload' | 'url' | 'path' | 'expression';
+
+export interface Attachment {
+  name: string;
+  /** Da dove arriva il contenuto. */
+  source: AttachmentSource;
+  /** Il base64 per `upload`, l'espressione per `expression`, l'indirizzo o
+   *  il percorso per gli altri. */
+  value: string;
+  contentType?: string;
+  sizeBytes?: number;
+}
+
+export function parseAttachments(raw: string): Attachment[] {
+  return parseArray(raw).flatMap((item): Attachment[] => {
+    const a = asRecord(item);
+    if (!a) return [];
+    const name = str(a.name);
+    if (typeof a.url === 'string') {
+      return [{ name, source: 'url' as const, value: a.url }];
+    }
+    if (typeof a.path === 'string') {
+      return [{ name, source: 'path' as const, value: a.path }];
+    }
+    if (typeof a.base64 === 'string') {
+      // `source: 'expression'` distingue un'espressione da un file caricato:
+      // stessi byte nel documento, controlli diversi nel pannello.
+      const source: AttachmentSource = a.source === 'expression' ? 'expression' : 'upload';
+      const size = typeof a.sizeBytes === 'number' ? { sizeBytes: a.sizeBytes } : {};
+      const type = typeof a.contentType === 'string' ? { contentType: a.contentType } : {};
+      return [{ name, source, value: a.base64, ...type, ...size }];
+    }
+    return [];
+  });
+}
+
+/** Il formato che legge il motore: chiavi diverse a seconda della provenienza. */
+export function serializeAttachments(items: readonly Attachment[]): string {
+  const out = items
+    .filter((a) => a.name.trim() !== '' && a.value !== '')
+    .map((a) => {
+      const base: Record<string, string | number> = { name: a.name };
+      if (a.contentType) base.contentType = a.contentType;
+      if (a.source === 'upload') base.base64 = a.value;
+      else if (a.source === 'expression') {
+        base.base64 = a.value;
+        base.source = 'expression';
+      } else if (a.source === 'url') base.url = a.value;
+      else base.path = a.value;
+      if (a.sizeBytes && a.source === 'upload') base.sizeBytes = a.sizeBytes;
+      return base;
+    });
+  return out.length === 0 ? '' : JSON.stringify(out);
+}
+
+// ── Righe di una fattura ──────────────────────────────────────────────────
+
+export interface InvoiceLine {
+  name: string;
+  quantity: number;
+  net_price: number;
+  vat?: number;
+  description?: string;
+}
+
+export function parseInvoiceLines(raw: string): InvoiceLine[] {
+  return parseArray(raw).flatMap((item) => {
+    const o = asRecord(item);
+    if (!o) return [];
+    const line: InvoiceLine = {
+      name: str(o.name),
+      quantity: Number(o.quantity ?? 1) || 0,
+      net_price: Number(o.net_price ?? 0) || 0,
+    };
+    const vat = Number(o.vat);
+    if (o.vat !== undefined && o.vat !== null && !Number.isNaN(vat)) line.vat = vat;
+    if (typeof o.description === 'string') line.description = o.description;
+    return [line];
+  });
+}
+
+export function serializeInvoiceLines(lines: readonly InvoiceLine[]): string {
+  return JSON.stringify(
+    lines
+      .filter((l) => l.name.trim() !== '')
+      .map((l) => ({
+        name: l.name.trim(),
+        quantity: l.quantity,
+        net_price: l.net_price,
+        ...(l.vat !== undefined ? { vat: l.vat } : {}),
+        ...(l.description?.trim() ? { description: l.description.trim() } : {}),
+      })),
+    null,
+    2,
+  );
+}
+
+/** Il totale di una riga, IVA compresa: si vede mentre si compila. */
+export function lineTotal(line: InvoiceLine): number {
+  const net = line.quantity * line.net_price;
+  return line.vat ? net * (1 + line.vat / 100) : net;
+}
