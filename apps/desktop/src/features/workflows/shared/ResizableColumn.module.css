@@ -8,44 +8,44 @@
     min-inline-size: 0;
   }
 
-  /* La maniglia è larga 8px ma il segno visivo è 1px: prendere un bordo di
+  /* La zona sensibile è larga 10px, il segno visivo 1: prendere un bordo di
      un pixel al primo colpo non è un'interazione, è mira. */
   .handle {
     position: absolute;
     inset-block: 0;
-    inline-size: 8px;
+    inline-size: 10px;
     z-index: var(--z-raised);
     cursor: col-resize;
     touch-action: none;
   }
   .handle[data-side='start'] {
-    inset-inline-start: -4px;
+    inset-inline-start: -5px;
   }
   .handle[data-side='end'] {
-    inset-inline-end: -4px;
+    inset-inline-end: -5px;
   }
+
   .handle::after {
     content: '';
     position: absolute;
     inset-block: 0;
     inset-inline-start: 50%;
-    inline-size: 1px;
+    inline-size: 2px;
+    transform: translateX(-50%);
     background: transparent;
     transition: background var(--motion-duration-fast, 150ms) ease-out;
   }
   .handle:hover::after,
-  .handle:focus-visible::after {
+  .handle:focus-visible::after,
+  .column[data-dragging='true'] .handle::after {
     background: var(--color-accent-default);
-    inline-size: 2px;
   }
   .handle:focus-visible {
     outline: none;
   }
 
-  /* Durante il trascinamento il cursore non deve cambiare passando sopra il
-     testo, e niente deve essere selezionato per sbaglio. */
-  :global(body).resizing {
-    cursor: col-resize;
+  /* Mentre si trascina niente deve essere selezionato per sbaglio. */
+  .column[data-dragging='true'] {
     user-select: none;
   }
 }
