@@ -22,6 +22,7 @@ import styles from './NodeInspector.module.css';
 import { NodeTestPanel } from './NodeTestPanel';
 import { PinPanel } from './PinPanel';
 import { WebhookAddress } from './WebhookAddress';
+import { WebhookTester } from './WebhookTester';
 
 type Tab = 'config' | 'in' | 'out' | 'test';
 
@@ -155,6 +156,9 @@ export function NodeInspector({
               runtimeId={runtimeId}
               {...(lastOutputs?.has(node.id) ? { lastOutput: lastOutputs.get(node.id) } : {})}
             />
+            {node.defId === 'trigger_webhook' && (
+              <WebhookTester runtimeId={runtimeId} config={node.config} />
+            )}
           </>
         )}
 
