@@ -2,7 +2,16 @@ name: Release installers
 
 # Costruisce .dmg (macOS) e .exe (Windows NSIS) sui runner GitHub: il .exe
 # non è producibile da macOS, quindi la CI è l'unico modo per averlo.
-# Si lancia a mano (workflow_dispatch) o pubblicando un tag `v*`.
+#
+# Due modi di lanciarlo, con esiti diversi di proposito:
+#
+#   • tag `v*`  → RILASCIO. Il nome e il numero vengono dal tag, la release
+#                 nasce pubblica, e le note sono quelle di `docs/note-release.md`.
+#   • a mano    → PROVA. Numero `v<versione>-dev-<N>`, release in bozza: serve
+#                 a vedere se compila, non a farla scaricare a qualcuno.
+#
+# Il numero di versione vero sta in `apps/desktop/src-tauri/tauri.conf.json` ed
+# è lo stesso in altri tre file — `src/app/versione.test.ts` lo verifica.
 
 on:
   push:
@@ -56,14 +65,35 @@ jobs:
       - name: Build design tokens
         run: pnpm tokens:build
 
+      # La versione dichiarata dall'app, letta dove la legge Tauri: cosi' il
+      # nome della release non puo' discostarsi da quello degli installatori.
+      - name: Leggi la versione
+        id: versione
+        shell: bash
+        run: |
+          v=$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').version")
+          echo "numero=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Note di rilascio
+        id: note
+        shell: bash
+        run: |
+          {
+            echo 'testo<<FINE'
+            cat docs/note-release.md
+            echo FINE
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build app + installers
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: apps/desktop
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v0.0.0-dev-{0}', github.run_number) }}
-          releaseName: 'Medea ${{ github.ref_name }}'
-          releaseBody: 'Installer generati automaticamente dalla CI.'
-          releaseDraft: true
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}-dev-{1}', steps.versione.outputs.numero, github.run_number) }}
+          releaseName: ${{ github.ref_type == 'tag' && format('Medea {0}', steps.versione.outputs.numero) || format('Medea {0} — prova {1}', steps.versione.outputs.numero, github.run_number) }}
+          releaseBody: ${{ steps.note.outputs.testo }}
+          # Da un tag la release nasce pubblica: e' quello il gesto con cui si
+          # decide di pubblicare. A mano resta in bozza.
+          releaseDraft: ${{ github.ref_type != 'tag' }}
           args: ${{ matrix.args }}
