@@ -12,7 +12,7 @@
 
 import { useState } from 'react';
 
-import { ConfigFieldRenderer, upstreamSources } from '../fields';
+import { ConfigFieldRenderer, outputPrefix, upstreamSources } from '../fields';
 import type { CanvasNode, NodeDef, WorkflowEdge } from '../types';
 
 import { ErrorHandling } from './ErrorHandling';
@@ -42,6 +42,8 @@ interface Props {
   runtimeReady: boolean;
   /** Come il motore conosce questo workflow: serve all'indirizzo del webhook. */
   runtimeId?: string;
+  /** Cosa ha prodotto ogni nodo nell'ultima esecuzione. */
+  lastOutputs?: ReadonlyMap<string, unknown>;
 }
 
 export function NodeInspector({
@@ -57,6 +59,7 @@ export function NodeInspector({
   onDelete,
   runtimeReady,
   runtimeId,
+  lastOutputs,
 }: Props) {
   const [tab, setTab] = useState<Tab>('config');
   // I campi dipendono da cosa fa il nodo: quelli di comunità ne hanno un
@@ -64,7 +67,7 @@ export function NodeInspector({
   const fields = fieldsFor(def, node.config);
 
   const upstream = edges.filter((e) => e.to === node.id);
-  const sources = upstreamSources(node.id, nodes, edges, defsById);
+  const sources = upstreamSources(node.id, nodes, edges, defsById, lastOutputs);
   const downstream = edges.filter((e) => e.from === node.id);
 
   return (
@@ -174,7 +177,7 @@ export function NodeInspector({
                     <li key={field} className={styles.fieldRow}>
                       <span className={styles.fieldName}>{field}</span>
                       <code className={styles.expression}>
-                        {`{{$node.${node.id}.json.${field}}}`}
+                        {`{{${outputPrefix(node.id, def)}.${field}}}`}
                       </code>
                     </li>
                   ))}

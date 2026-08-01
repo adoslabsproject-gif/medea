@@ -4,7 +4,7 @@ export { ConfigFieldRenderer } from './ConfigFieldRenderer';
 export type { ConfigFieldProps } from './ConfigFieldRenderer';
 export { BUILTIN_SOURCES, ExpressionPicker } from './ExpressionPicker';
 export type { ExpressionSource } from './ExpressionPicker';
-export { upstreamSources } from './sources';
+export { keysFromOutput, outputPrefix, upstreamSources } from './sources';
 export {
   moveRow,
   parseFilters,

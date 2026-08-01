@@ -215,8 +215,8 @@ Le chiavi non toccano mai `localStorage`.
 
 <div align="center">
 
-|            macOS             |    Windows    |               Linux                |
-| :--------------------------: | :-----------: | :--------------------------------: |
+|            macOS             |    Windows    |              Linux               |
+| :--------------------------: | :-----------: | :------------------------------: |
 | `.dmg` Apple Silicon + Intel | `.exe` (NSIS) | `.deb` · `.AppImage` — in arrivo |
 
 </div>
