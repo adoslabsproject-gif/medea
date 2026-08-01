@@ -1,0 +1,144 @@
+@layer features {
+  .root {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .tabs {
+    display: flex;
+    gap: var(--space-1);
+  }
+
+  .tab {
+    padding: 2px var(--space-2);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+  }
+  .tab[data-on='true'] {
+    border-color: var(--color-border-default);
+    background: var(--color-surface-3);
+    color: var(--color-text-primary);
+  }
+
+  .raw {
+    margin: 0;
+    max-block-size: 18rem;
+    overflow: auto;
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-primary);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .tree,
+  .children {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tree {
+    max-block-size: 18rem;
+    overflow: auto;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding-block: 1px;
+    font-size: var(--font-size-xs);
+  }
+  .row:hover {
+    background: var(--color-surface-3);
+  }
+
+  .twist {
+    inline-size: 1rem;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .twist:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+
+  .key {
+    font-family: var(--font-family-mono);
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+  }
+
+  .value {
+    font-family: var(--font-family-mono);
+    color: var(--color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-inline-size: 0;
+  }
+  /* I contenitori si distinguono dai valori: dicono quanto c'è dentro, non
+     cosa — e non vanno letti come se fossero il dato. */
+  .value[data-kind='oggetto'],
+  .value[data-kind='lista'],
+  .value[data-kind='vuoto'] {
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+
+  /* Compare al passaggio: presente quando serve, invisibile mentre si legge. */
+  .copy {
+    margin-inline-start: auto;
+    padding-inline: var(--space-1);
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    opacity: 0;
+    flex-shrink: 0;
+  }
+  .row:hover .copy {
+    opacity: 1;
+  }
+  .copy:hover {
+    color: var(--color-text-primary);
+  }
+
+  .tableWrap {
+    max-block-size: 18rem;
+    overflow: auto;
+  }
+
+  .table {
+    border-collapse: collapse;
+    font-size: var(--font-size-xs);
+    inline-size: 100%;
+  }
+  .table th,
+  .table td {
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--color-border-subtle);
+    text-align: start;
+    white-space: nowrap;
+  }
+  .table th {
+    position: sticky;
+    inset-block-start: 0;
+    background: var(--color-surface-2);
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-medium);
+  }
+  .table td {
+    font-family: var(--font-family-mono);
+    color: var(--color-text-primary);
+  }
+}

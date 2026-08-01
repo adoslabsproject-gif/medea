@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 
+import { DataView } from './DataView';
 import styles from './RunStepList.module.css';
 import {
   formatDuration,
@@ -105,8 +106,20 @@ function StepRow({
       {open && hasDetail && (
         <div className={styles.detail}>
           {step.error && <Block label="Errore" text={step.error} tone="error" />}
-          {step.input && <Block label="Ingresso" text={step.input} />}
-          {step.output && <Block label="Uscita" text={step.output} />}
+          {step.input && (
+            <div className={styles.block}>
+              <span className={styles.blockLabel}>Ingresso</span>
+              <DataView text={step.input} />
+            </div>
+          )}
+          {step.output && (
+            <div className={styles.block}>
+              <span className={styles.blockLabel}>Uscita</span>
+              {/* Il percorso da cui nascono le espressioni copiabili: è la
+                  ragione per cui si guarda un'uscita. */}
+              <DataView text={step.output} basePath={`$node.${step.nodeId}.json`} />
+            </div>
+          )}
         </div>
       )}
 
