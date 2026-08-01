@@ -15,6 +15,8 @@ export { startRunWatcher } from './watcher';
 export { replayRun } from './replay';
 export type { ReplayResult } from './replay';
 export { testNode } from './test-node';
+export { getVersion, listVersions, rollbackVersion, snapshotVersion } from './versions';
+export type { WorkflowVersion } from './versions';
 export type { NodeTestResult } from './test-node';
 export { missingTables, planTables } from './table-plan';
 export type { PlannedTable, PlannedColumn, ColumnType } from './table-plan';

@@ -5,3 +5,5 @@ export { Topbar } from './Topbar';
 export type { TopbarActions } from './Topbar';
 export { useUndoRedo } from './useUndoRedo';
 export type { UndoRedo } from './useUndoRedo';
+export { sanitizeWorkflow } from './sanitize';
+export type { SanitizeReport } from './sanitize';

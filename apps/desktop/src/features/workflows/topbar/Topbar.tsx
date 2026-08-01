@@ -18,6 +18,7 @@ export interface TopbarActions {
   onDiscard: () => void;
   onRun: () => void;
   onSecrets: () => void;
+  onVersions: () => void;
   onToggleEnabled: () => void;
   onToggleAssistant: () => void;
   onUndo: () => void;
@@ -94,6 +95,17 @@ export function Topbar({
           disabled: !saved,
           disabledReason: 'Non è ancora stato salvato',
           onSelect: actions.onDelete,
+        },
+      ],
+    },
+    {
+      label: 'Storia',
+      items: [
+        {
+          label: 'Versioni',
+          icon: '🕐',
+          hint: 'Com’è stato questo workflow, e come tornarci',
+          onSelect: actions.onVersions,
         },
       ],
     },

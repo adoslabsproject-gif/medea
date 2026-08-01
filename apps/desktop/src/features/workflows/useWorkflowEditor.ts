@@ -14,7 +14,13 @@ import { workflowApi, type WorkflowSummary } from './api';
 import { emptyWorkflow } from './canvas/diagnostics';
 import { autoLayout } from './canvas/layout';
 import { setEnabledOnRuntime } from './runtime';
-import { exportFileName, fromImportJson, toExportJson, WorkflowImportError } from './topbar';
+import {
+  exportFileName,
+  fromImportJson,
+  sanitizeWorkflow,
+  toExportJson,
+  WorkflowImportError,
+} from './topbar';
 import { useUndoRedo } from './topbar';
 import type { Workflow } from './types';
 import { useAutosave } from './useAutosave';
@@ -260,7 +266,17 @@ export function useWorkflowEditor(): WorkflowEditor {
   }, [workflow, changeDistinct]);
 
   const exportJson = useCallback(() => {
-    const blob = new Blob([toExportJson(workflow)], { type: 'application/json' });
+    // Si esporta la versione ripulita: un workflow finisce in una chat, in un
+    // repository, in un allegato, e una password scritta in un campo sarebbe
+    // appena diventata pubblica. Chi preme «Esporta» vuole condividere
+    // l'automazione, non le sue credenziali.
+    const { workflow: clean, replaced } = sanitizeWorkflow(workflow);
+    if (replaced.length > 0) {
+      setNotice(
+        `Esportato senza credenziali: ${String(replaced.length)} ${replaced.length === 1 ? 'campo sostituito' : 'campi sostituiti'} con riferimenti a segreti.`,
+      );
+    }
+    const blob = new Blob([toExportJson(clean)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
