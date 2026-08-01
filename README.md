@@ -215,9 +215,9 @@ Le chiavi non toccano mai `localStorage`.
 
 <div align="center">
 
-|            macOS             |    Windows    |        Linux         |
-| :--------------------------: | :-----------: | :------------------: |
-| `.dmg` Apple Silicon + Intel | `.exe` (NSIS) | `.deb` · `.AppImage` |
+|            macOS             |    Windows    |               Linux                |
+| :--------------------------: | :-----------: | :--------------------------------: |
+| `.dmg` Apple Silicon + Intel | `.exe` (NSIS) | `.deb` · `.AppImage` — in arrivo |
 
 </div>
 
@@ -257,7 +257,7 @@ flowchart TB
         SYNC[Sync IMAP] --- SMTP[Invio SMTP] --- TOOLS[63 strumenti] --- SEC[Scanner + keychain]
     end
 
-    DB[(SQLite · FTS5<br/>14 migrazioni)]
+    DB[(SQLite · FTS5<br/>15 migrazioni)]
     MCP[[medea-mcp<br/>server MCP]]
 
     UI <-->|comandi Tauri| CORE
