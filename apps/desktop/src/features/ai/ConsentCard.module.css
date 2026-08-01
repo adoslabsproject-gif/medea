@@ -31,7 +31,7 @@
   .details {
     margin-block-end: var(--space-3);
     font-size: 0.8rem;
-    color: var(--color-text-tertiary);
+    color: var(--color-text-muted);
   }
 
   .details summary {
@@ -70,8 +70,8 @@
   }
 
   .allow {
-    background: var(--color-accent);
-    border-color: var(--color-accent);
-    color: var(--color-surface-0);
+    background: var(--color-accent-default);
+    border-color: var(--color-accent-default);
+    color: var(--color-accent-on);
   }
 }

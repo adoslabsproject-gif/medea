@@ -47,6 +47,13 @@ pub struct WorkflowSummary {
     pub enabled: bool,
     pub node_count: i64,
     pub updated_at: String,
+    /// Con che identificativo lo conosce il motore, se ci è già arrivato.
+    ///
+    /// Costa una colonna in più su una query che già la legge, e risparmia di
+    /// riaprire il documento intero ogni volta che serve parlare al motore di
+    /// un workflow che non è quello aperto — riesecuzioni, elenco dei form,
+    /// versioni.
+    pub runtime_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -79,7 +86,8 @@ fn count_nodes(graph_json: &str) -> i64 {
 
 pub fn list(conn: &Connection) -> Result<Vec<WorkflowSummary>> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, description, graph_json, execution_target, enabled, updated_at
+        "SELECT id, name, description, graph_json, execution_target, enabled, updated_at,
+                runtime_id
          FROM workflows ORDER BY updated_at DESC",
     )?;
     let rows = stmt.query_map([], |r| {
@@ -92,6 +100,7 @@ pub fn list(conn: &Connection) -> Result<Vec<WorkflowSummary>> {
             enabled: r.get::<_, i64>(5)? != 0,
             node_count: count_nodes(&graph),
             updated_at: r.get(6)?,
+            runtime_id: r.get(7)?,
         })
     })?;
     Ok(rows.collect::<std::result::Result<Vec<_>, _>>()?)

@@ -45,7 +45,7 @@
 
   .logoEmpty {
     font-size: 0.75rem;
-    color: var(--color-text-tertiary);
+    color: var(--color-text-muted);
   }
 
   .logoActions {
@@ -72,7 +72,7 @@
   .hint {
     margin: 0;
     font-size: 0.78rem;
-    color: var(--color-text-tertiary);
+    color: var(--color-text-muted);
     line-height: 1.45;
   }
 
@@ -147,7 +147,7 @@
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--color-text-tertiary);
+    color: var(--color-text-muted);
   }
 
   .preview {

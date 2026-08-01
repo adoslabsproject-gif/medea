@@ -102,7 +102,7 @@
   .table thead th {
     background: var(--color-surface-3);
     text-align: start;
-    padding: var(--space-2_5) var(--space-3);
+    padding: var(--space-2-5) var(--space-3);
     font-size: var(--font-size-xs);
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -111,7 +111,7 @@
     border-block-end: 1px solid var(--color-border-default);
   }
   .table tbody td {
-    padding: var(--space-2_5) var(--space-3);
+    padding: var(--space-2-5) var(--space-3);
     border-block-end: 1px solid var(--color-border-subtle);
     color: var(--color-text-primary);
     vertical-align: middle;
