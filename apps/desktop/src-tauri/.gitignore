@@ -1,0 +1,3 @@
+# Il motore dei workflow impacchettato: centinaia di MB, si rigenera con
+# `pnpm runtime:package`. Non appartiene alla cronologia del codice.
+resources/runtime/

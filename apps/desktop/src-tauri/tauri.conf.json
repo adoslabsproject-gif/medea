@@ -44,6 +44,7 @@
   "bundle": {
     "active": true,
     "targets": ["nsis", "dmg", "deb", "appimage"],
+    "resources": ["resources/runtime"],
     "category": "Productivity",
     "shortDescription": "Personal operational memory system — Medea.",
     "longDescription": "Medea is a personal operational memory system built around your email. It reduces the cognitive load of mail by helping with priority, summarisation, semantic search, intelligent replies, task extraction, and follow-ups.",
