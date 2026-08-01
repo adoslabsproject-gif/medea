@@ -25,6 +25,10 @@ export interface TopbarActions {
   onVersions: () => void;
   onNodes: () => void;
   onRelay: () => void;
+  /** Etichette, quanto registra, workflow di emergenza. */
+  onSettings: () => void;
+  /** Salva il disegno come immagine. */
+  onExportPng: () => void;
   onToggleEnabled: () => void;
   /** Manda in produzione la bozza: da lì in poi è quella che gira. */
   onPublish: () => void;
@@ -121,6 +125,17 @@ export function Topbar({
       ],
     },
     {
+      label: 'Questo workflow',
+      items: [
+        {
+          label: 'Impostazioni',
+          icon: '⚙',
+          hint: 'Etichette, cosa registra, cosa fare se fallisce',
+          onSelect: actions.onSettings,
+        },
+      ],
+    },
+    {
       label: 'Storia',
       items: [
         {
@@ -170,6 +185,12 @@ export function Topbar({
           icon: '▶',
           hint: 'Il finto ingresso del trigger, per provare senza aspettarlo',
           onSelect: actions.onRunWith,
+        },
+        {
+          label: 'Esporta come immagine',
+          icon: '🖼',
+          hint: 'Per mettere il disegno in una email o in un documento',
+          onSelect: actions.onExportPng,
         },
         {
           label: 'Riordina i nodi',

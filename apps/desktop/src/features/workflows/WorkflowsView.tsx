@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { workflowApi } from './api';
 import { AssistantPanel } from './assistant';
 import { diagnose, globalIssues } from './canvas/diagnostics';
+import { exportPng } from './canvas/export-png';
 import { WorkflowCanvas } from './canvas/WorkflowCanvas';
 import { findNode } from './catalog';
 import { missingSecrets } from './missing-secrets';
@@ -32,6 +33,7 @@ import { useWorkflowRun } from './useWorkflowRun';
 import { VersionsDialog } from './VersionsDialog';
 import { TablesBanner, WizardModal } from './wizard';
 import { WorkflowList } from './WorkflowList';
+import { WorkflowSettingsDialog } from './WorkflowSettingsDialog';
 import styles from './WorkflowsView.module.css';
 
 /** Aperto o chiuso, la scelta resta fra una sessione e l'altra: chi lavora
@@ -58,6 +60,7 @@ export function WorkflowsView() {
   const [nodesOpen, setNodesOpen] = useState(false);
   const [relayOpen, setRelayOpen] = useState(false);
   const [triggerInputOpen, setTriggerInputOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(
     () => localStorage.getItem(ASSISTANT_OPEN_KEY) !== 'false',
   );
@@ -190,6 +193,12 @@ export function WorkflowsView() {
             },
             onRelay: () => {
               setRelayOpen(true);
+            },
+            onSettings: () => {
+              setSettingsOpen(true);
+            },
+            onExportPng: () => {
+              exportPng(workflow, defsById);
             },
             onVersions: () => {
               // Le versioni le tiene il motore, e il motore conosce il
@@ -359,6 +368,16 @@ export function WorkflowsView() {
           onLoad={(restored) => {
             // Arriva come bozza: si guarda, e si salva solo se convince.
             editor.load(restored, editor.enabled);
+          }}
+        />
+      )}
+
+      {settingsOpen && (
+        <WorkflowSettingsDialog
+          workflow={workflow}
+          onChange={editor.change}
+          onClose={() => {
+            setSettingsOpen(false);
           }}
         />
       )}

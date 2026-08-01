@@ -36,6 +36,7 @@ import { NodeInspector } from './NodeInspector';
 import { NodePalette } from './NodePalette';
 import { PlusEdge, type MapMode } from './PlusEdge';
 import { SelectionBar } from './SelectionBar';
+import { newNote, StickyNotes } from './StickyNotes';
 import { useCanvasHandlers } from './useCanvasHandlers';
 import { useCanvasProjection } from './useCanvasProjection';
 import { useCanvasShortcuts } from './useCanvasShortcuts';
@@ -272,6 +273,20 @@ export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = f
   return (
     <div className={styles.root}>
       <ResizableColumn storageKey="medea.workflows.paletteWidth" defaultWidth={240} handle="end">
+        <button
+          type="button"
+          className={styles.addNote}
+          title="Una nota spiega PERCHÉ, che nessun nome di nodo può dire"
+          onClick={() => {
+            onChange({
+              ...workflow,
+              notes: [...(workflow.notes ?? []), newNote(workflow.notes ?? [])],
+            });
+          }}
+        >
+          + Nota
+        </button>
+
         {rifiuto && (
           <div className={styles.refused} role="status">
             {rifiuto}
@@ -378,6 +393,10 @@ export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = f
               onSelect={setSelectedId}
             />
           )}
+
+          {/* Le note stanno DENTRO il riquadro del canvas ma fuori dal
+              grafo: non partecipano all'esecuzione, e il motore non le vede. */}
+          <StickyNotes workflow={workflow} onChange={onChange} />
 
           <Background />
           <Controls />
