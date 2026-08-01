@@ -23,7 +23,8 @@ export interface WorkflowRun {
   /** L'esito per nodo, per accendere il canvas mentre gira. */
   stepsByNode: Map<string, RunStep>;
   error: string | null;
-  start: (workflow: Workflow) => Promise<void>;
+  /** Esegue. `input` è il finto ingresso del trigger, quando se ne dà uno. */
+  start: (workflow: Workflow, input?: unknown) => Promise<void>;
   cancel: () => void;
   clear: () => void;
 }
@@ -34,7 +35,7 @@ export function useWorkflowRun(): WorkflowRun {
   const [error, setError] = useState<string | null>(null);
   const controller = useRef<AbortController | null>(null);
 
-  const start = useCallback(async (workflow: Workflow) => {
+  const start = useCallback(async (workflow: Workflow, input?: unknown) => {
     controller.current?.abort();
     const ac = new AbortController();
     controller.current = ac;
@@ -45,7 +46,10 @@ export function useWorkflowRun(): WorkflowRun {
 
     try {
       const result = await runWorkflow(workflow, {
-        ...(workflow.runtimeId ? { runtimeId: workflow.runtimeId } : {}),
+        // La copia di PROVA, non quella pubblicata: premere «Esegui» non
+        // deve cambiare cosa gira alle otto del mattino.
+        ...(workflow.draftRuntimeId ? { runtimeId: workflow.draftRuntimeId } : {}),
+        ...(input !== undefined ? { input } : {}),
         signal: ac.signal,
         onProgress: setProgress,
       });

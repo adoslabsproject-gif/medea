@@ -24,6 +24,7 @@ import { syncToRuntime, useRuntime } from './runtime';
 import { SecretsDialog } from './SecretsDialog';
 import { CollapsibleColumn } from './shared';
 import { Topbar } from './topbar';
+import { savedTriggerInput, TriggerInputDialog } from './TriggerInputDialog';
 import type { NodeDef } from './types';
 import { useWorkflowEditor } from './useWorkflowEditor';
 import { useWorkflowRun } from './useWorkflowRun';
@@ -55,6 +56,7 @@ export function WorkflowsView() {
   const [versionsOpen, setVersionsOpen] = useState(false);
   const [nodesOpen, setNodesOpen] = useState(false);
   const [relayOpen, setRelayOpen] = useState(false);
+  const [triggerInputOpen, setTriggerInputOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(
     () => localStorage.getItem(ASSISTANT_OPEN_KEY) !== 'false',
   );
@@ -203,11 +205,16 @@ export function WorkflowsView() {
                 });
             },
             onStop: run.cancel,
+            onRunWith: () => {
+              setTriggerInputOpen(true);
+            },
             onRun: () => {
               // Si salva prima: eseguire una versione diversa da quella sul
               // disco vorrebbe dire che lo storico racconta un documento che
               // non esiste.
-              void editor.save().then(() => run.start(workflow));
+              // Con i dati di prova già scelti, si riusano: chi mette a
+              // punto un workflow lo esegue venti volte di fila.
+              void editor.save().then(() => run.start(workflow, savedTriggerInput(workflow.id)));
             },
             onToggleEnabled: () => void editor.toggleEnabled(blockedReason),
             onPublish: () => void editor.publish(),
@@ -320,6 +327,18 @@ export function WorkflowsView() {
           onLoad={(restored) => {
             // Arriva come bozza: si guarda, e si salva solo se convince.
             editor.load(restored, editor.enabled);
+          }}
+        />
+      )}
+
+      {triggerInputOpen && (
+        <TriggerInputDialog
+          workflowId={workflow.id}
+          onClose={() => {
+            setTriggerInputOpen(false);
+          }}
+          onRun={(input) => {
+            void editor.save().then(() => run.start(workflow, input));
           }}
         />
       )}

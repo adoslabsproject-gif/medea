@@ -19,6 +19,8 @@ export interface TopbarActions {
   onRun: () => void;
   /** Smette di seguire l'esecuzione in corso. */
   onStop: () => void;
+  /** Apre la finestra per scegliere con che dati eseguire. */
+  onRunWith: () => void;
   onSecrets: () => void;
   onVersions: () => void;
   onNodes: () => void;
@@ -163,6 +165,12 @@ export function Topbar({
     {
       label: 'Canvas',
       items: [
+        {
+          label: 'Esegui con dati di prova',
+          icon: '▶',
+          hint: 'Il finto ingresso del trigger, per provare senza aspettarlo',
+          onSelect: actions.onRunWith,
+        },
         {
           label: 'Riordina i nodi',
           icon: '⌗',

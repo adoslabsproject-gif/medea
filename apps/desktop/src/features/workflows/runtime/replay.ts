@@ -31,6 +31,14 @@ export async function replayRun(args: {
   fromNode: string;
   /** Fin dove arrivare. Assente: fino alla fine. */
   toNode?: string;
+  /**
+   * Le uscite dei nodi a monte, cambiate a mano prima di ripartire.
+   *
+   * È la differenza fra «rifai lo stesso giro» e «rifallo come sarebbe
+   * andato se quel campo fosse stato diverso»: senza, per provare un caso
+   * limite bisogna far accadere davvero quel caso.
+   */
+  overrides?: Record<string, unknown>;
 }): Promise<ReplayResult> {
   const query = new URLSearchParams({ fromNode: args.fromNode });
   if (args.toNode) query.set('toNode', args.toNode);
@@ -38,7 +46,11 @@ export async function replayRun(args: {
   const response = await runtimeApi.post<{
     run?: { runId?: string; status?: string };
     pinnedCount?: number;
-  }>(`/workflows/${args.runtimeWorkflowId}/runs/${args.runId}/replay?${query.toString()}`, {});
+  }>(`/workflows/${args.runtimeWorkflowId}/runs/${args.runId}/replay?${query.toString()}`, {
+    ...(args.overrides && Object.keys(args.overrides).length > 0
+      ? { pinnedOverrides: args.overrides }
+      : {}),
+  });
 
   return {
     runId: response.run?.runId ?? '',
