@@ -14,7 +14,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { allNodes, findNode } from './index';
+import { allNodes, findNode, searchNodes } from './index';
 
 /** Quanti nodi dichiara il runtime di FlowForge su `/api/v1/nodes`. */
 const NODI_DEL_MOTORE = 193;
@@ -90,5 +90,49 @@ describe('come si presentano sul disegno', () => {
     const { iconNameFor, resolveLucideIcon } = await import('../canvas/icon-registry');
     const senzaIcona = allNodes().filter((n) => !resolveLucideIcon(iconNameFor(n.defId, n.icon)));
     expect(senzaIcona.map((n) => `${n.defId} (${n.icon ?? 'nessuna'})`)).toEqual([]);
+  });
+});
+
+describe('i campi che l’estrattore deve conservare', () => {
+  it('ogni nodo dichiara la versione della sua definizione', () => {
+    // Senza, un workflow salvato mesi fa usa un nodo cambiato da allora e
+    // nessuno se ne accorge.
+    const senza = allNodes().filter((n) => !n.defVersion);
+    expect(senza.map((n) => n.defId)).toEqual([]);
+  });
+
+  it('gli alias di ricerca sopravvivono all’estrazione', () => {
+    const conAlias = allNodes().filter((n) => (n.searchAliases?.length ?? 0) > 0);
+    expect(conAlias.length).toBeGreaterThan(20);
+  });
+
+  it('i campi di codice dichiarano in che lingua sono scritti', () => {
+    // È quello che permette a CODE_NODE_LANG_MISMATCH di accorgersi di uno
+    // SELECT dentro un campo JavaScript.
+    const conLingua = allNodes().flatMap((n) => (n.configFields ?? []).filter((f) => f.language));
+    expect(conLingua.length).toBeGreaterThan(40);
+  });
+
+  it('i contratti di uscita non vengono buttati', () => {
+    // Sono quelli che impediscono all'assistente di inventare i nomi delle
+    // chiavi quando scrive un'espressione.
+    const conContratto = allNodes().filter((n) => n.outputContract);
+    expect(conContratto.length).toBeGreaterThan(0);
+  });
+
+  it('la descrizione lunga resta accanto a quella corta', () => {
+    // La palette mostra la prima frase; l'assistente ha bisogno del resto per
+    // scegliere il nodo giusto.
+    const conLunga = allNodes().filter((n) => n.descriptionLong);
+    expect(conLunga.length).toBeGreaterThan(150);
+  });
+});
+
+describe('la ricerca nella palette', () => {
+  it('trova un nodo dal suo alias, non solo dal nome', () => {
+    // `wa` non compare in «WhatsApp Trigger»: senza gli alias, chi scrive la
+    // parola giusta non trova niente.
+    const risultati = searchNodes('wa');
+    expect(risultati.some((n) => n.defId.includes('whatsapp'))).toBe(true);
   });
 });

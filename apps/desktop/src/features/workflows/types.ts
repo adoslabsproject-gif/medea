@@ -82,7 +82,18 @@ export interface NodeConfigField {
   required?: boolean;
   options?: string[];
   pattern?: string;
+  /** Cosa dire quando il valore non rispetta il pattern. Senza, il messaggio
+   *  d'errore è l'espressione regolare — che non aiuta nessuno. */
+  patternMessage?: string;
   defaultValue?: string;
+  /**
+   * In che lingua è scritto un campo di codice.
+   *
+   * La usano la regola di qualità `CODE_NODE_LANG_MISMATCH` — che si accorge
+   * di uno `SELECT` dentro un campo JavaScript — e l'editor per evidenziare.
+   * Senza, un blocco SQL e uno JavaScript sono la stessa casella grigia.
+   */
+  language?: 'javascript' | 'typescript' | 'json' | 'yaml' | 'sql' | 'jsonata';
   description?: string;
   /** Il testo di esempio dentro il campo vuoto. */
   placeholder?: string;
@@ -95,6 +106,22 @@ export interface NodeConfigField {
 export interface NodeAction {
   id: string;
   label?: string;
+  description?: string;
+  /** I campi che compaiono solo quando è scelta questa azione. */
+  configFields?: NodeConfigField[];
+}
+
+/**
+ * Cosa produce davvero un nodo, campo per campo.
+ *
+ * Serve a non far inventare all'assistente i nomi delle chiavi quando scrive
+ * `{{$node.x.json.qualcosa}}`: senza, sui casi limite tira a indovinare — un
+ * `partnerId: 0` al posto del `null` che il nodo restituisce sul serio.
+ */
+export interface OutputContract {
+  fields: { name: string; type?: string; description?: string }[];
+  /** Note che valgono su più campi insieme, tipo «se non trova nulla, tutti null». */
+  notes?: string;
 }
 
 /** Definizione di un nodo del catalogo. */
@@ -122,5 +149,25 @@ export interface NodeDef {
    * con diciassette campi non ha diciassette strade in uscita: ne ha una.
    */
   outputFields?: string[];
+  /**
+   * Le parole con cui un nodo si cerca ma che nel suo nome non compaiono:
+   * «wa» per WhatsApp, «posta» per email. Senza, la ricerca trova solo chi
+   * già sa come si chiama la cosa che sta cercando.
+   */
   searchAliases?: string[];
+  /**
+   * La versione della **definizione**, non del pacchetto.
+   *
+   * È quella che permette di accorgersi che un workflow salvato mesi fa usa
+   * un nodo cambiato da allora. Senza, la deriva passa inosservata finché
+   * qualcosa non smette di funzionare senza motivo apparente.
+   */
+  defVersion?: string;
+  /** La descrizione per esteso, quando dice più della prima frase. La palette
+   *  mostra `description`; questa serve all'assistente per scegliere. */
+  descriptionLong?: string;
+  outputContract?: OutputContract;
+  /** Il nodo si riprova da sé: il motore non deve rifarlo, e il pannello dei
+   *  tentativi non deve offrirlo. */
+  selfManagedRetry?: boolean;
 }
