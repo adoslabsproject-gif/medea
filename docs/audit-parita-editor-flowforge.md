@@ -4,6 +4,15 @@
 > impressioni) + inventario funzione-per-funzione dei due editor.
 > Fonti: `/Users/zelistore/zeliai/apps/flowforge-editor` vs
 > `apps/desktop/src/features/workflows` (HEAD 74232d4).
+>
+> **Aggiornamento — verifica della sera (HEAD 28fcc0b)**: diff dei nodi
+> rieseguito e checklist ricontrollata sul codice. Stato: **P0 7/7 chiusi**
+> (estrattore, action picker, bozza v15, error handling, multi-selezione+DnD,
+> CodeMirror, «Ferma»); **P1 chiusi 7/9** (run inspector, pin data, I/O reali,
+> webhook tester, picker DB, diff versioni, AI explain — restano mock trigger
+> data e pin-edit del replay); sul **catalogo resta una sola differenza**, la
+> descrizione troncata alla prima frase (scelta deliberata, documentata
+> nell'estrattore). Subworkflow in lavorazione. P2 aggiornato in coda.
 
 ## Qualità dei nodi — verdetto misurato
 
@@ -67,16 +76,21 @@ che boccia i nodi senza alias).
   manca l'editor degli override).
 - **AI explain / AI debug del run fallito**.
 
-## Gap P2 — rifiniture
+## Gap P2 — rifiniture (stato alla verifica serale)
 
-Sticky notes/gruppi con resize · command palette Cmd+K · snap-to-grid ·
-riconnessione edge trascinando un capo · blocco trigger→trigger ·
-colorazione degli edge con lo stato del run · export PNG · import n8n e
-import da URL/incolla · estrazione subworkflow (+ `SubworkflowPicker` per
-`logic_subworkflow`) · error-workflow binding · metadati (tag, runVerbosity
-in UI) · anteprima del form pubblico + lista form · banner segreti mancanti
-pre-esecuzione · tour di onboarding · traduzione errori in italiano ·
-`Cmd/Ctrl+Space` per i suggerimenti · rich-text TipTap (oggi textarea).
+Ancora aperti: sticky notes/gruppi con resize · command palette Cmd+K ·
+snap-to-grid · riconnessione edge trascinando un capo · blocco
+trigger→trigger · colorazione degli edge con lo stato del run · export PNG ·
+import n8n e import da URL/incolla · error-workflow binding · metadati (tag,
+runVerbosity in UI) · anteprima del form pubblico + lista form · banner
+segreti mancanti pre-esecuzione · tour di onboarding · rich-text ricco ·
+suggerimenti espressioni da schema inferito sui dati reali.
+
+In lavorazione: subworkflow (`SubworkflowNote`, collaudo in corso).
+
+Non-gap per scelta architetturale: `$env` non esiste in Medea perché il suo
+ruolo lo copre `{{secrets.*}}` dal keychain (superiore all'originale);
+l'editor codice è CodeMirror 6 invece di Monaco (JS/JSON/SQL, più leggero).
 
 ## Dove Medea è già superiore
 
