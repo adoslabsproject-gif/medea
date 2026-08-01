@@ -31,6 +31,8 @@ export {
   setRelayEnabled,
   setRelayUrl,
 } from './relay-settings';
+export { clearPin, listPins, setPin } from './pins';
+export type { Pin } from './pins';
 export { testNode } from './test-node';
 export { webhookAddress } from './webhook';
 export type { WebhookAddress } from './webhook';
