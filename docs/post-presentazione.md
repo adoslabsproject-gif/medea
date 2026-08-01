@@ -90,6 +90,11 @@ Le tabelle che un workflow dà per esistenti vengono lette dal workflow stesso �
 un nodo che scrive su un database nomina la tabella e le colonne — e si creano
 premendo un pulsante, invece di scoprire alla prima esecuzione che non c'erano.
 
+E si può bussare da fuori: un nodo webhook ha il suo indirizzo, scritto nel
+pannello con il tasto per copiarlo. È un indirizzo locale — `127.0.0.1`, non
+raggiungibile da internet — e serve a incastrare Medea in quello che c'è già
+sulla macchina: uno script, un altro programma, un tunnel aperto apposta.
+
 ## Sotto
 
 Tauri 2: un processo Rust, la WebView del sistema operativo, un file SQLite.
@@ -117,8 +122,12 @@ descrivono a parole, passano i controlli di qualità e **si eseguono**: sandbox
 JavaScript, espressioni fra nodi, rami condizionali, chiamate HTTP reali, un
 nodo che fallisce che ferma il flusso. Il cron parte da solo.
 
-Manca ancora: le versioni con ritorno indietro, la prova del singolo nodo, la
-riesecuzione di un'esecuzione passata, i nodi di comunità dal registry. E i
-webhook in ingresso, che sono l'unica cosa per cui serve un server — un computer
-dietro NAT non è raggiungibile dall'esterno, e quel pezzo resterà disattivato di
-default.
+Ci sono anche le versioni con ritorno indietro, la prova del singolo nodo su una
+bozza non salvata, la riesecuzione di un'esecuzione passata a partire da un
+punto, e i pacchetti `.ffnode` installabili da file — con l'avviso che sono
+codice di terzi e il verdetto sulla firma scritto a parole.
+
+Manca il relay per raggiungere il computer **da internet**. È l'unica cosa per
+cui serve un server: un computer dietro NAT non è raggiungibile dall'esterno.
+Quel pezzo resterà disattivato di default — aprire un ingresso è una scelta
+consapevole.

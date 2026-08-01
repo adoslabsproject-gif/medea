@@ -62,9 +62,12 @@ Si riusa **as-is** il formato `.ffnode` (zip firmato Ed25519) e il protocollo
 del registry: cache 5 minuti, fallback stale fino a un'ora se offline, nodi
 installati che restano sul disco.
 
-**Non ancora fatto.** I 193 nodi preinstallati coprono il catalogo del server;
-il registry serve per i nodi di comunità, che sono un'aggiunta, non una
-mancanza.
+**Fatto a metà, e di proposito.** Un pacchetto `.ffnode` si installa da un
+**file scelto a mano**: il formato è quello, il motore ne verifica la firma, e
+il nodo compare nella palette. Il _registro remoto_ non c'è, e non è una
+mancanza — un pacchetto contiene codice di terzi che verrà eseguito su quel
+computer, e la decisione di fidarsi deve restare una decisione, non un click
+accanto a un nome in una lista.
 
 ### 4. Dove si esegue: solo locale
 
@@ -88,6 +91,12 @@ canale e mette in coda quello che arriva mentre il dispositivo è offline.
 **Non ancora fatto**, e resta l'unica funzione che richiede un server. Sarà
 **disattivata di default**: aprire un ingresso da internet è una scelta
 consapevole, non un'impostazione predefinita.
+
+Nel frattempo i webhook **locali** funzionano: il motore ascolta su una porta
+stabile (39100–39119) e il token si deriva da un segreto tenuto nel
+portachiavi, così l'indirizzo copiato oggi vale anche domani. Serve a un altro
+programma sulla stessa macchina, a uno script, a un tunnel aperto apposta —
+ed è quanto un'app senza server può offrire onestamente.
 
 ## Struttura dei moduli
 
@@ -120,9 +129,11 @@ apps/desktop/src-tauri/src/
 2. ✅ AI scaffold col contratto esplicito e la validazione a 3 livelli, più il
    controllo di qualità (ADR 0006) e il wizard che mostra i passi.
 3. ✅ Motore e esecuzione reale, impacchettati e autonomi (ADR 0007, ADR 0008).
-4. ⬜ Registry dei nodi `.ffnode`.
-5. ⬜ Relay per i webhook e promozione del motore a servizio di sistema.
+4. ✅ Pacchetti `.ffnode` installabili da file (senza registro remoto).
+5. ⬜ Relay per i webhook da internet, e motore come servizio di sistema.
 
-Restano aperte, oltre ai punti 4 e 5: versioni e ritorno indietro, bozza
-separata dal salvato, dati fissati per la prova, prova del singolo nodo,
-riesecuzione, esportazione ripulita dalle credenziali.
+Fatte dopo la stesura: versioni con ritorno indietro, prova del singolo nodo su
+bozza non salvata, riesecuzione da un punto, esportazione ripulita dalle
+credenziali, webhook locali.
+
+Restano aperte: bozza separata dal salvato, dati fissati sui nodi, e il punto 5.
