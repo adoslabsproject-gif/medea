@@ -10,7 +10,6 @@
 //! servizio da amministrare: è un dettaglio di come Medea esegue.
 
 use anyhow::{Context, Result};
-use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
@@ -21,6 +20,7 @@ use serde::Serialize;
 
 mod orphan;
 pub mod session;
+mod webhook;
 
 /// Quanto si aspetta che il runtime risponda prima di dichiararlo non partito.
 const STARTUP_TIMEOUT: Duration = Duration::from_secs(30);
@@ -64,13 +64,6 @@ fn slot() -> &'static Mutex<Option<RuntimeProcess>> {
 
 fn last_error() -> &'static Mutex<Option<String>> {
     LAST_ERROR.get_or_init(|| Mutex::new(None))
-}
-
-/// Una porta libera scelta dal sistema: due Medea aperte non devono
-/// litigare, e una porta fissa prima o poi è occupata da qualcun altro.
-fn free_port() -> Result<u16> {
-    let listener = TcpListener::bind("127.0.0.1:0").context("nessuna porta libera")?;
-    Ok(listener.local_addr()?.port())
 }
 
 /// La variabile con cui puntare a un runtime diverso da quello impacchettato.
@@ -180,7 +173,9 @@ fn running(port: u16) -> RuntimeStatus {
 fn spawn(resource_dir: &Path, data_dir: &Path) -> Result<u16> {
     let entry = bundle_entry(resource_dir)?;
     let node = node_binary(resource_dir);
-    let port = free_port()?;
+    // Una porta stabile, così gli indirizzi dei webhook restano validi fra
+    // un'apertura e l'altra dell'app.
+    let port = webhook::choose_port()?;
 
     // I dati del runtime stanno accanto a quelli di Medea, non in una
     // cartella di sistema: disinstallare l'app deve portarsi via tutto.
@@ -190,6 +185,14 @@ fn spawn(resource_dir: &Path, data_dir: &Path) -> Result<u16> {
     // Un motore rimasto in piedi da una chiusura brusca terrebbe la sua porta
     // e continuerebbe a eseguire i workflow di un'app che non c'è più.
     orphan::kill_stale(&runtime_data);
+
+    // Se il portachiavi non risponde si parte lo stesso: i webhook non
+    // funzioneranno, tutto il resto sì. Un motore che non parte per colpa di
+    // una funzione che l'utente magari non usa sarebbe sproporzionato.
+    let webhook_secret = webhook::secret().unwrap_or_else(|e| {
+        tracing::warn!("Segreto dei webhook non disponibile: {e}");
+        String::new()
+    });
 
     tracing::info!("Avvio runtime workflow: {} (porta {port})", entry.display());
 
@@ -204,6 +207,14 @@ fn spawn(resource_dir: &Path, data_dir: &Path) -> Result<u16> {
         // Nessun portale, nessuna licenza: qui non c'è un tenant remoto a cui
         // rispondere.
         .env("CORS_ORIGINS", "http://localhost:1420,tauri://localhost")
+        // Da qui il motore deriva i token dei webhook e compone gli indirizzi
+        // da mostrare. Senza il segreto risponderebbe «token non derivabile»,
+        // e senza l'indirizzo darebbe un percorso senza sapere dove attaccarlo.
+        .env("FLOWFORGE_SSO_SECRET", &webhook_secret)
+        .env(
+            "FLOWFORGE_PUBLIC_BASE_URL",
+            format!("http://127.0.0.1:{port}"),
+        )
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()

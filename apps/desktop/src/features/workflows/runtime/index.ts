@@ -22,6 +22,8 @@ export {
 } from './community';
 export type { CommunityNode } from './community';
 export { testNode } from './test-node';
+export { webhookAddress } from './webhook';
+export type { WebhookAddress } from './webhook';
 export { getVersion, listVersions, rollbackVersion, snapshotVersion } from './versions';
 export type { WorkflowVersion } from './versions';
 export type { NodeTestResult } from './test-node';
