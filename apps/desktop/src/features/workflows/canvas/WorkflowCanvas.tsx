@@ -21,7 +21,7 @@ import {
   type NodeTypes,
   type ReactFlowInstance,
 } from '@xyflow/react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { findNode } from '../catalog';
 import { useLastRunOutputs } from '../runs';
@@ -64,6 +64,8 @@ export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = f
    *  premuto il «+». La palette cambia modo finché non sceglie. */
   const [insertOn, setInsertOn] = useState<WorkflowEdge | null>(null);
   const [searching, setSearching] = useState(false);
+  /** Perché l'ultimo collegamento è stato rifiutato. Sparisce da solo. */
+  const [rifiuto, setRifiuto] = useState<string | null>(null);
   /** L'istanza di React Flow, presa all'avvio: serve a tradurre le coordinate
    *  del puntatore in quelle del disegno. `useReactFlow` non si può usare qui
    *  — vorrebbe un provider attorno al componente che disegna il canvas. */
@@ -136,10 +138,12 @@ export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = f
     [workflow, onChange],
   );
 
-  const { commitPositions, connect, removeEdges } = useCanvasHandlers({
+  const { commitPositions, connect, reconnect, removeEdges } = useCanvasHandlers({
     workflow,
     onChange,
     patchNodes,
+    defsById,
+    onRefused: setRifiuto,
   });
 
   /**
@@ -241,6 +245,18 @@ export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = f
     [workflow, onChange],
   );
 
+  // Il motivo del rifiuto si legge e se ne va: è un'informazione di un
+  // istante, non un errore da chiudere.
+  useEffect(() => {
+    if (!rifiuto) return;
+    const timer = setTimeout(() => {
+      setRifiuto(null);
+    }, 3500);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [rifiuto]);
+
   useCanvasShortcuts({
     workflow,
     selectedId,
@@ -256,6 +272,12 @@ export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = f
   return (
     <div className={styles.root}>
       <ResizableColumn storageKey="medea.workflows.paletteWidth" defaultWidth={240} handle="end">
+        {rifiuto && (
+          <div className={styles.refused} role="status">
+            {rifiuto}
+          </div>
+        )}
+
         <SelectionBar
           count={selectedIds.length}
           onClear={() => {
@@ -303,6 +325,12 @@ export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = f
           }}
           onEdgesDelete={removeEdges}
           onConnect={connect}
+          onReconnect={reconnect}
+          /* Alla griglia: un disegno con i nodi allineati si legge, uno con
+             i nodi a due pixel di scarto sembra sciatto senza che si capisca
+             perché. Venti pixel è abbastanza fine da non combattere. */
+          snapToGrid
+          snapGrid={[20, 20]}
           onNodeClick={(_, node) => {
             setSelectedId(node.id);
           }}

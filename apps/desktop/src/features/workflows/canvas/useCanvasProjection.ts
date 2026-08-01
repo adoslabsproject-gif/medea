@@ -122,6 +122,11 @@ export function useCanvasProjection({
         animated: true,
         data: {
           edge: e,
+          // Lo stato di chi sta a monte colora la freccia: durante
+          // un'esecuzione si vede dove è arrivato il flusso senza leggere i
+          // badge nodo per nodo, e dopo un fallimento si vede da dove in poi
+          // non è passato niente.
+          ...(runByNode?.get(e.from)?.status ? { runStatus: runByNode.get(e.from)?.status } : {}),
           ...(e.mapMode ? { mapMode: e.mapMode } : {}),
           onInsert: callbacks.onInsert,
           onDelete: callbacks.onDelete,

@@ -71,7 +71,15 @@ export function PlusEdge({
 
   return (
     <>
-      <BaseEdge id={id} path={path} {...(markerEnd ? { markerEnd } : {})} className={styles.path} />
+      <BaseEdge
+        id={id}
+        path={path}
+        {...(markerEnd ? { markerEnd } : {})}
+        className={styles.path}
+        // Lo stato di chi sta a monte: durante un'esecuzione si vede dove è
+        // arrivato il flusso senza leggere i badge nodo per nodo.
+        data-run={data?.runStatus ?? undefined}
+      />
 
       {/* Una traccia larga e invisibile: prendere al volo una linea di due
           pixel è un esercizio di mira, non un'interazione. */}

@@ -70,4 +70,20 @@
     letter-spacing: 0.06em;
     cursor: pointer;
   }
+
+  /* Il colore dello stato del nodo a monte. Serve durante l'esecuzione, e
+     subito dopo un fallimento: si vede da dove in poi non è passato niente. */
+  .path[data-run='success'] {
+    stroke: var(--color-feedback-success);
+  }
+  .path[data-run='error'] {
+    stroke: var(--color-feedback-danger);
+  }
+  .path[data-run='running'] {
+    stroke: var(--color-accent-solid);
+  }
+  .path[data-run='skipped'] {
+    stroke: var(--color-text-muted);
+    stroke-dasharray: 4 4;
+  }
 }
