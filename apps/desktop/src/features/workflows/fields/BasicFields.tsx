@@ -9,6 +9,7 @@
 
 import type { NodeConfigField } from '../types';
 
+import { CodeEditor } from './CodeEditor';
 import styles from './fields.module.css';
 import { FieldShell } from './FieldShell';
 
@@ -70,14 +71,14 @@ export function SelectField({ field, value, onChange }: Props) {
 export function CodeField({ field, value, onChange }: Props) {
   return (
     <FieldShell field={field}>
-      <textarea
-        className={`${styles.control} ${styles.area} ${styles.mono}`}
-        rows={10}
-        spellCheck={false}
+      {/* La lingua la dichiara il nodo. Quando non la dichiara — succede su
+          tre campi su quarantaquattro — l'editor resta senza colore, che è
+          meglio che colorarlo con le regole di un'altra lingua. */}
+      <CodeEditor
         value={value}
-        onChange={(e) => {
-          onChange(e.target.value);
-        }}
+        {...(field.language ? { language: field.language } : {})}
+        {...(field.placeholder ? { placeholder: field.placeholder } : {})}
+        onChange={onChange}
       />
     </FieldShell>
   );
