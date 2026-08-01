@@ -4,8 +4,7 @@
   che l'app sa fare, si cambia questo file e non l'interfaccia di GitHub.
 -->
 
-Prima versione scaricabile di **Medea** — client email desktop con dentro un
-editor di workflow a nodi.
+**Medea** — client email desktop con dentro un editor di workflow a nodi.
 
 ## Cosa scaricare
 
@@ -54,8 +53,10 @@ versione con il motore incluso arriverà.
 
 Chi compila l'app da sé, avendo accesso al runtime di FlowForge, ha tutto:
 esecuzione locale, cron e trigger che partono da soli, segreti nel portachiavi,
-prova del singolo nodo, riesecuzione da un punto, e webhook — anche da internet,
-attraverso un relay, con una funzione che resta spenta finché non la si accende.
+prova del singolo nodo, dati fissati, riesecuzione da un punto — anche
+cambiando i dati di prima — tester dei webhook con firma vera, confronto fra
+versioni, e webhook da internet attraverso un relay, spento finché non lo si
+accende.
 
 ## Il resto
 
