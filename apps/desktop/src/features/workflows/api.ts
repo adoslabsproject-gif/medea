@@ -28,6 +28,8 @@ export interface WorkflowRecord {
   executionTarget: 'local' | 'server';
   enabled: boolean;
   runtimeId?: string;
+  draftRuntimeId?: string;
+  publishedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -43,6 +45,8 @@ export function toWorkflow(record: WorkflowRecord): Workflow {
     edges: graph.edges ?? [],
     ...(graph.nodeDefs ? { nodeDefs: graph.nodeDefs } : {}),
     ...(record.runtimeId ? { runtimeId: record.runtimeId } : {}),
+    ...(record.draftRuntimeId ? { draftRuntimeId: record.draftRuntimeId } : {}),
+    ...(record.publishedAt ? { publishedAt: record.publishedAt } : {}),
     executionTarget: record.executionTarget,
   };
 }

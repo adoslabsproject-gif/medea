@@ -31,7 +31,7 @@ const RETRY_MAX_MS = 60_000;
 const FORWARDABLE = /^\/webhooks\/[A-Za-z0-9/_-]*$/;
 
 export interface RelayConfig {
-  /** L'indirizzo del relay, per esempio `https://app.automazionezeli.com/relay`. */
+  /** L'indirizzo del relay, per esempio `https://automazionezeli.com/relay`. */
   baseUrl: string;
   /** Il segreto di questa installazione. Non lascia mai il computer, se non
    *  per presentarsi al relay. */

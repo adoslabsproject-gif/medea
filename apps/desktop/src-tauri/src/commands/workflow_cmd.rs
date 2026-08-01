@@ -39,10 +39,23 @@ pub fn workflow_duplicate(id: i64) -> Result<i64, String> {
     db::with_db(|c| db::workflows::duplicate(c, id)).map_err(|e| e.to_string())
 }
 
-/// Registra con che nome il runtime conosce questo workflow.
+/// Registra con che nome il runtime conosce la copia PUBBLICATA.
 #[tauri::command]
 pub fn workflow_set_runtime_id(id: i64, runtime_id: String) -> Result<(), String> {
     db::with_db(|c| db::workflows::set_runtime_id(c, id, &runtime_id)).map_err(|e| e.to_string())
+}
+
+/// Registra con che nome il runtime conosce la copia di PROVA.
+#[tauri::command]
+pub fn workflow_set_draft_runtime_id(id: i64, runtime_id: String) -> Result<(), String> {
+    db::with_db(|c| db::workflows::set_draft_runtime_id(c, id, &runtime_id))
+        .map_err(|e| e.to_string())
+}
+
+/// Segna che la bozza è diventata quello che gira.
+#[tauri::command]
+pub fn workflow_mark_published(id: i64) -> Result<(), String> {
+    db::with_db(|c| db::workflows::mark_published(c, id)).map_err(|e| e.to_string())
 }
 
 // ── Storico delle esecuzioni ────────────────────────────────────────────────

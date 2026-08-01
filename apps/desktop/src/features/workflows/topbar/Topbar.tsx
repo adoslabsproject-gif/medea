@@ -24,6 +24,8 @@ export interface TopbarActions {
   onNodes: () => void;
   onRelay: () => void;
   onToggleEnabled: () => void;
+  /** Manda in produzione la bozza: da lì in poi è quella che gira. */
+  onPublish: () => void;
   onToggleAssistant: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -50,6 +52,8 @@ interface Props {
   running: boolean;
   /** Impedisce di attivare un workflow che non funzionerebbe. */
   blockedReason?: string;
+  /** Vero quando la bozza ha modifiche che il motore non sta ancora eseguendo. */
+  unpublished: boolean;
   actions: TopbarActions;
 }
 
@@ -65,6 +69,7 @@ export function Topbar({
   runtimeReady,
   running,
   blockedReason,
+  unpublished,
   actions,
 }: Props) {
   const saved = Boolean(workflow.id);
@@ -252,6 +257,20 @@ export function Topbar({
       >
         ✨ Assistente
       </button>
+
+      {/* Un workflow attivo che è stato modificato sta eseguendo ancora la
+          versione di prima: e' giusto cosi' — provare non deve mandare in
+          produzione — ma va detto, e va dato il modo di pubblicare. */}
+      {enabled && unpublished && (
+        <button
+          type="button"
+          className={styles.publish}
+          title="Il motore sta ancora eseguendo la versione precedente. Questo la aggiorna."
+          onClick={actions.onPublish}
+        >
+          ↑ Pubblica
+        </button>
+      )}
 
       <button
         type="button"

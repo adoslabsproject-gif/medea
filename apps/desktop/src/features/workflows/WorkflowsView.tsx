@@ -108,6 +108,16 @@ export function WorkflowsView() {
 
   const activeId = workflow.id ? Number(workflow.id) : null;
 
+  /**
+   * Ci sono modifiche che il motore non sta ancora eseguendo?
+   *
+   * Vale solo per i workflow attivi: su uno spento non c'è niente in
+   * esecuzione da cui la bozza possa discostarsi. `dirty` copre le modifiche
+   * appena fatte; `publishedAt` assente copre quelle fatte prima e già
+   * salvate.
+   */
+  const unpublished = editor.enabled && (editor.dirty || !workflow.publishedAt);
+
   return (
     <div className={styles.root}>
       <CollapsibleColumn
@@ -150,6 +160,7 @@ export function WorkflowsView() {
           autosaving={editor.autosaving}
           runtimeReady={runtime.status.running}
           running={run.running}
+          unpublished={unpublished}
           {...(blockedReason ? { blockedReason } : {})}
           actions={{
             onRename: (name) => {
@@ -199,6 +210,7 @@ export function WorkflowsView() {
               void editor.save().then(() => run.start(workflow));
             },
             onToggleEnabled: () => void editor.toggleEnabled(blockedReason),
+            onPublish: () => void editor.publish(),
             onToggleAssistant: () => {
               setAssistantOpen((v) => !v);
             },

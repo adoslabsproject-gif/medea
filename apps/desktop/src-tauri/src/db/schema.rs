@@ -13,7 +13,28 @@
 use anyhow::Result;
 use rusqlite::Connection;
 
-pub const SCHEMA_VERSION: i32 = 14;
+pub const SCHEMA_VERSION: i32 = 15;
+
+/// Migrazione v15 — la bozza separata da quello che gira davvero.
+///
+/// Il motore tiene UNA copia per workflow, ed è quella che lo scheduler
+/// esegue. Finché premere «Esegui» ci scriveva sopra la bozza, provare una
+/// modifica su un workflow attivo la mandava in produzione senza che nessuno
+/// l'avesse chiesto: si cambiava un indirizzo per vedere l'effetto, e il cron
+/// delle otto del mattino dopo usava quello.
+///
+/// Da qui due copie distinte nel motore:
+///
+///   `runtime_id`        quella PUBBLICATA — la esegue lo scheduler
+///   `draft_runtime_id`  quella di PROVA — sempre spenta, ci scrive «Esegui»
+///
+/// `published_at` dice quando la bozza è diventata pubblicata: confrontandolo
+/// con `updated_at` si sa se ci sono modifiche non ancora in produzione, che è
+/// l'unica cosa che l'utente ha bisogno di vedere.
+const DDL_V15: &str = r#"
+ALTER TABLE workflows ADD COLUMN draft_runtime_id TEXT;
+ALTER TABLE workflows ADD COLUMN published_at TEXT;
+"#;
 
 /// Migrazione v14 — `workflows.runtime_id`.
 ///
@@ -656,6 +677,11 @@ pub fn ensure_schema(conn: &Connection) -> Result<()> {
     if current.unwrap_or(0) < 14 {
         tracing::info!("Migrazione → v14 (collegamento al runtime)…");
         conn.execute_batch(DDL_V14)?;
+    }
+
+    if current.unwrap_or(0) < 15 {
+        tracing::info!("Migrazione → v15 (bozza separata dal pubblicato)…");
+        conn.execute_batch(DDL_V15)?;
     }
 
     conn.execute(
