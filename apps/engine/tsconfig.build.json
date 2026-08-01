@@ -1,0 +1,15 @@
+{
+  // Il typecheck di quello che finisce davvero nel bundle.
+  //
+  // I file di prova del motore non ci finiscono, e nel workspace di Medea
+  // alcune loro asserzioni non compilano: le versioni delle dipendenze
+  // risolte qui non sono identiche a quelle del monorepo da cui il motore
+  // proviene, e `res.json()` di hono tipizza il corpo come `unknown` invece
+  // che come l'oggetto atteso.
+  //
+  // È un debito, ed è dichiarato: 9 file, tutti `.test.ts`. Il codice di
+  // produzione compila senza un solo errore, e questa configurazione lo
+  // verifica a ogni build invece di saltare il controllo del tutto.
+  "extends": "./tsconfig.json",
+  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts", "**/__tests__/**"]
+}

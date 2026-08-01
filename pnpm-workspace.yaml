@@ -1,9 +1,22 @@
 packages:
   - "apps/*"
   - "packages/*"
+  # Il motore dei workflow: vive qui dentro, non in un altro repo sul
+  # computer di chi sviluppa. I suoi pacchetti sono annidati su due livelli
+  # (`nodes/stdlib`, `db-studio/core`, …), quindi servono entrambe le righe.
+  - "packages/engine/*"
+  - "packages/engine/*/*"
 
 # pnpm 11 richiede esplicita approvazione per ogni dipendenza che dichiara
 # uno script di build. esbuild è dependency legittima di Vite e va compilato
 # (per i binari nativi della piattaforma).
 allowBuilds:
+  argon2: true
+  better-sqlite3: true
+  cpu-features: true
   esbuild: true
+  isolated-vm: true
+  msgpackr-extract: true
+  protobufjs: true
+  re2: true
+  ssh2: true

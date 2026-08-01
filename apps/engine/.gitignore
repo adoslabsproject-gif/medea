@@ -1,0 +1,3 @@
+# Coverage report (vitest v8) e blob report dello sharding
+coverage/
+.vitest-reports/

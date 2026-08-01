@@ -59,16 +59,21 @@ function run(command, args, cwd) {
   execFileSync(command, args, { cwd, stdio: 'inherit' });
 }
 
-/** La cartella del runtime di FlowForge, da cui si prende tutto. */
+/**
+ * La cartella del motore: `apps/engine`, dentro questo repo.
+ *
+ * Fino al 2026-08-01 stava altrove — nel monorepo di FlowForge, sul computer
+ * di chi sviluppa — e si indicava con `FLOWFORGE_RUNTIME_SRC`. Voleva dire che
+ * Medea si poteva costruire completa **su una macchina sola**: la CI produceva
+ * installatori con la cartella del motore vuota, e chi li scaricava trovava un
+ * editor che disegna workflow e non ne esegue nessuno.
+ *
+ * Adesso il motore è di Medea. La variabile resta accettata, per chi volesse
+ * costruire da una copia diversa, ma non serve più a nessuno.
+ */
 function sourceDir() {
   const declared = process.env.FLOWFORGE_RUNTIME_SRC;
-  if (!declared) {
-    fail(
-      'manca FLOWFORGE_RUNTIME_SRC: indica la cartella apps/flowforge-runtime del repo di FlowForge.\n' +
-        '  Un percorso scritto qui dentro funzionerebbe su una macchina sola.',
-    );
-  }
-  const path = resolve(declared);
+  const path = declared ? resolve(declared) : join(ROOT, 'apps/engine');
   if (!existsSync(join(path, 'package.json'))) fail(`in «${path}» non c'è un package.json`);
   return path;
 }
