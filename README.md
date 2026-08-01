@@ -257,7 +257,7 @@ flowchart TB
         SYNC[Sync IMAP] --- SMTP[Invio SMTP] --- TOOLS[63 strumenti] --- SEC[Scanner + keychain]
     end
 
-    DB[(SQLite · FTS5<br/>12 migrazioni)]
+    DB[(SQLite · FTS5<br/>14 migrazioni)]
     MCP[[medea-mcp<br/>server MCP]]
 
     UI <-->|comandi Tauri| CORE
