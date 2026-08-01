@@ -30,6 +30,7 @@ import type { CanvasNode, NodeDef, Workflow, WorkflowEdge } from '../types';
 
 import { CanvasSearch } from './CanvasSearch';
 import { diagnose } from './diagnostics';
+import { draggedNode } from './drag-node';
 import { dropEdge, dropNode, insertBetween, setMapMode, uniqueNodeId } from './graph-ops';
 import { nextFreeSpot } from './layout';
 import { NodeInspector } from './NodeInspector';
@@ -189,7 +190,7 @@ export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = f
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
-      const defId = event.dataTransfer.getData('application/medea-node');
+      const defId = draggedNode(event.dataTransfer);
       if (!defId) return;
       const def = findNode(defId);
       if (!def) return;
