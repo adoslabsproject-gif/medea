@@ -69,7 +69,25 @@ export interface Workflow {
   draftRuntimeId?: string;
   /** Quando la bozza è diventata quello che gira. Assente: mai pubblicato. */
   publishedAt?: string;
+  /**
+   * Quanto un'esecuzione registra di sé.
+   *
+   * Un workflow che gira ogni minuto e registra tutto riempie il database di
+   * roba che nessuno leggerà; uno che si sta mettendo a punto vuole vedere
+   * ingressi e uscite di ogni passo.
+   */
   runVerbosity?: 'silent' | 'summary' | 'full';
+  /** Etichette per ritrovarlo fra trenta. */
+  tags?: string[];
+  /**
+   * Le note appiccicate sul disegno.
+   *
+   * Un workflow spiega COSA fa; una nota spiega **perché** — «qui aspettiamo
+   * perché il gestionale impiega due minuti a indicizzare», «questo ramo c'è
+   * solo per i clienti esteri». È la cosa che manca quando lo si riapre dopo
+   * sei mesi, e nessun nome di nodo può dirla.
+   */
+  notes?: StickyNote[];
   /**
    * Dove viene eseguito. In Medea è **sempre** `local`: il workflow gira sul
    * computer dell'utente, che è l'unico posto da cui si vede la sua posta, e
@@ -81,6 +99,14 @@ export interface Workflow {
    * ritrovarsi come l'ha lasciato.
    */
   executionTarget?: 'local' | 'server';
+}
+
+/** Una nota appiccicata al disegno. Non partecipa all'esecuzione. */
+export interface StickyNote {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
 }
 
 /** Un campo di configurazione di un nodo, con i vincoli che il modello deve

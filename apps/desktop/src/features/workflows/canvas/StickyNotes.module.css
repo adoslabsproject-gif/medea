@@ -1,0 +1,38 @@
+@layer features {
+  /* Sopra il disegno ma sotto i pannelli: si legge senza coprire quello che
+     si sta configurando. */
+  .note {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    inline-size: 14rem;
+    z-index: 4;
+    padding: var(--space-2);
+    border: 1px solid var(--color-border-warning, var(--color-border-default));
+    border-radius: var(--radius-sm);
+    background: color-mix(
+      in oklch,
+      var(--color-feedback-warning, #eab308) 18%,
+      var(--color-surface-2)
+    );
+    box-shadow: var(--elevation-card, 0 1px 3px oklch(0 0 0 / 0.2));
+  }
+
+  .text,
+  .editor {
+    inline-size: 100%;
+    border: none;
+    background: transparent;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-xs);
+    text-align: start;
+    white-space: pre-wrap;
+    cursor: text;
+  }
+
+  .editor {
+    min-block-size: 4rem;
+    resize: vertical;
+    outline: none;
+  }
+}
