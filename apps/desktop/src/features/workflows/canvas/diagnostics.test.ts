@@ -23,7 +23,6 @@ const TRIGGER: NodeDef = {
   type: 'trigger',
   label: 'A mano',
   description: 'parte quando lo si fa partire',
-  category: 'trigger',
   configFields: [],
 };
 
@@ -32,7 +31,6 @@ const AZIONE: NodeDef = {
   type: 'action',
   label: 'Codice',
   description: 'esegue del codice',
-  category: 'action',
   configFields: [],
 };
 
