@@ -3,8 +3,12 @@
  *
  * `stdlib-nodes.json` è **generato**, non scritto a mano: lo produce
  * `scripts/extract-flowforge-nodes.mjs` leggendo i pacchetti compilati di
- * FlowForge. È l'unico modo per tenere allineate 145 definizioni senza
+ * FlowForge. È l'unico modo per tenere allineate 193 definizioni senza
  * ricopiarle — e senza ricopiarle significa che non possono divergere.
+ *
+ * 193 è lo stesso numero che il runtime dichiara su `/api/v1/nodes`: se le
+ * due cifre si separano, la palette offre nodi che nessuno sa eseguire (o
+ * nasconde nodi che funzionano). `catalog.guard.test.ts` lo verifica.
  *
  * Quando arriverà il registry `.ffnode` questi diventeranno i nodi
  * preinstallati e gli altri si aggiungeranno accanto: `allNodes()` resta il
