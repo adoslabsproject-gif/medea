@@ -8,3 +8,9 @@ target
 **/src-tauri/target
 **/src-tauri/gen
 pnpm-lock.yaml
+
+# I testi di licenza NON si riformattano: vanno tenuti identici alla versione
+# pubblicata da chi li ha scritti. Prettier vorrebbe togliere i doppi spazi
+# dopo il punto, che nel testo canonico di PolyForm ci sono.
+LICENSE.md
+LICENSE
