@@ -97,7 +97,7 @@ export function RelayDialog({ onClose }: Props) {
           <input
             id="relay-url"
             className={styles.input}
-            placeholder="https://api.automazionezeli.com/relay"
+            placeholder="https://app.automazionezeli.com/relay"
             value={url}
             disabled={enabled}
             onChange={(e) => {
