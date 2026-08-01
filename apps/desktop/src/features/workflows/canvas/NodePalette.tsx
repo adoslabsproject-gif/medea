@@ -124,6 +124,15 @@ function NodeItem({ def, onAdd }: { def: NodeDef; onAdd: (d: NodeDef) => void })
         className={styles.item}
         data-type={def.type}
         title={def.description ?? def.defId}
+        /* Si può cliccare — e il nodo va dove c'è posto — oppure trascinare,
+           e allora va dove lo si lascia. La seconda è come si costruisce un
+           disegno che si vuole leggibile: mettendo le cose dove servono, non
+           riordinandole dopo. */
+        draggable
+        onDragStart={(event) => {
+          event.dataTransfer.setData('application/medea-node', def.defId);
+          event.dataTransfer.effectAllowed = 'copy';
+        }}
         onClick={() => {
           onAdd(def);
         }}
