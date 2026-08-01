@@ -80,9 +80,13 @@ const RUNTIME_PATH_ENV: &str = "MEDEA_WORKFLOW_RUNTIME";
 /// percorso che esiste su una macchina sola è una bugia che funziona finché
 /// non la si prova altrove.
 fn bundle_entry(resource_dir: &Path) -> Result<PathBuf> {
-    let packaged = resource_dir.join("runtime/main.js");
-    if packaged.exists() {
-        return Ok(packaged);
+    // `main.js` sta dentro `dist/` perché importa i suoi fratelli con
+    // percorsi relativi: spostarlo di una cartella li spezzerebbe tutti.
+    for candidate in ["runtime/dist/main.js", "runtime/main.js"] {
+        let packaged = resource_dir.join(candidate);
+        if packaged.exists() {
+            return Ok(packaged);
+        }
     }
 
     if let Ok(custom) = std::env::var(RUNTIME_PATH_ENV) {

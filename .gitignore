@@ -58,3 +58,6 @@ coverage/
 
 # Istruzioni interne per gli agenti AI: restano locali, fuori dal repo.
 CLAUDE.md
+
+# Il runtime, avviato a mano per un collaudo, scrive qui il suo database.
+data/

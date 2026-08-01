@@ -20,7 +20,8 @@
     "tauri:build": "pnpm --filter @medea/desktop tauri:build",
     "tokens:build": "pnpm --filter @medea/design-system build",
     "format": "prettier --write \"**/*.{ts,tsx,js,mjs,json,md,css}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,json,md,css}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,json,md,css}\"",
+    "runtime:package": "node scripts/package-runtime.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
