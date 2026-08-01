@@ -3,12 +3,14 @@
  *
  * È lo stesso smistamento dell'editor di FlowForge: il nodo dichiara che
  * `cronExpression` è un `cron-builder` e qui compare il costruttore di
- * pianificazioni, non una casella dove scrivere `0 9 * * *` a mano. Con 145
- * nodi non esiste alternativa — mantenere 145 moduli scritti a mano sarebbe
+ * pianificazioni, non una casella dove scrivere `0 9 * * *` a mano. Con 193
+ * nodi non esiste alternativa — mantenere 193 moduli scritti a mano sarebbe
  * impossibile.
  *
  * Questo file fa solo lo smistamento: i controlli stanno nei file accanto.
  */
+
+import { lazy, Suspense } from 'react';
 
 import type { NodeConfigField } from '../types';
 
@@ -20,6 +22,7 @@ import { ConditionRulesBuilder } from './ConditionRulesBuilder';
 import { CronBuilder } from './CronBuilder';
 import { ExpressionPicker, type ExpressionSource } from './ExpressionPicker';
 import { asText, CODE_TYPES, LONG_TEXT_TYPES, PICKER_TYPES } from './field-kinds';
+import styles from './fields.module.css';
 import { FieldShell } from './FieldShell';
 import { FilterRowBuilder } from './FilterRowBuilder';
 import { FormFieldsBuilder } from './FormFieldsBuilder';
@@ -30,6 +33,20 @@ import { evaluateShowIf } from './show-if';
 import { SortRowBuilder } from './SortRowBuilder';
 import { SwitchCasesBuilder } from './SwitchCasesBuilder';
 import { TimezonePicker } from './TimezonePicker';
+
+/**
+ * L'editor ricco arriva solo quando serve.
+ *
+ * Porta con sé ProseMirror: 0,36 MB, su tre campi in tutto il catalogo
+ * (`action_send_email.body`, `action_gmail.bodyHtml`,
+ * `trigger_form.successMessage`). Farli pagare all'avvio a chi apre la posta
+ * e non tocca i workflow sarebbe sproporzionato; caricarli quando si apre uno
+ * di quei tre campi non si nota.
+ */
+const RichTextEditor = lazy(async () => {
+  const m = await import('./RichTextEditor');
+  return { default: m.RichTextEditor };
+});
 
 export interface ConfigFieldProps {
   field: NodeConfigField;
@@ -113,6 +130,36 @@ export function ConfigFieldRenderer({
 
   if (CODE_TYPES.has(type)) {
     return <CodeField field={field} value={text} onChange={onChange} />;
+  }
+
+  // Il corpo di una email si scrive, non si programma: qui e solo qui vale
+  // la pena di un editor vero. Gli altri campi lunghi restano una casella di
+  // testo, che per un prompt o un'espressione è la forma giusta.
+  if (type === 'rich-text') {
+    return (
+      <FieldShell field={field}>
+        {/* Mentre arriva: una casella normale, non uno spazio vuoto. Chi ha
+            appena cliccato sul campo deve poter cominciare a scrivere. */}
+        <Suspense
+          fallback={
+            <textarea
+              className={`${styles.control ?? ''} ${styles.area ?? ''}`}
+              defaultValue={text}
+              rows={6}
+            />
+          }
+        >
+          <RichTextEditor
+            value={text}
+            onChange={onChange}
+            {...((field.placeholder ?? field.defaultValue)
+              ? { placeholder: field.placeholder ?? field.defaultValue ?? '' }
+              : {})}
+            sources={sources}
+          />
+        </Suspense>
+      </FieldShell>
+    );
   }
 
   if (LONG_TEXT_TYPES.has(type)) {
