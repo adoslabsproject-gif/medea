@@ -11,8 +11,14 @@
 
 import { useEffect, useState } from 'react';
 
-import { getVersion, listVersions, rollbackVersion, snapshotVersion } from './runtime';
-import type { WorkflowVersion } from './runtime';
+import {
+  diffVersions,
+  getVersion,
+  listVersions,
+  rollbackVersion,
+  snapshotVersion,
+} from './runtime';
+import type { VersionDiff, WorkflowVersion } from './runtime';
 import type { Workflow } from './types';
 import styles from './VersionsDialog.module.css';
 
@@ -36,6 +42,9 @@ export function VersionsDialog({ runtimeId, workflow, onClose, onLoad }: Props) 
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [comment, setComment] = useState('');
+  /** Le due versioni da confrontare, nell'ordine in cui si sono scelte. */
+  const [confronto, setConfronto] = useState<string[]>([]);
+  const [differenze, setDifferenze] = useState<VersionDiff | null>(null);
 
   const refresh = () => {
     void listVersions(runtimeId)
@@ -71,6 +80,29 @@ export function VersionsDialog({ runtimeId, workflow, onClose, onLoad }: Props) 
     nodes: (document.nodes ?? []) as Workflow['nodes'],
     edges: (document.edges ?? []) as Workflow['edges'],
   });
+
+  /**
+   * Sceglie o toglie una versione dal confronto.
+   *
+   * Due alla volta: confrontarne tre non vuol dire niente, e la terza
+   * scelta sostituisce la più vecchia invece di essere ignorata — chi la
+   * preme sta cambiando idea, non sbagliando.
+   */
+  const perConfronto = (id: string) => {
+    setDifferenze(null);
+    setConfronto((attuali) => {
+      if (attuali.includes(id)) return attuali.filter((x) => x !== id);
+      return attuali.length < 2 ? [...attuali, id] : [attuali[1] ?? '', id];
+    });
+  };
+
+  const confronta = () => {
+    const [a, b] = confronto;
+    if (!a || !b) return;
+    act('confronto', async () => {
+      setDifferenze(await diffVersions(runtimeId, a, b));
+    });
+  };
 
   const act = (id: string, run: () => Promise<void>) => {
     setBusy(id);
@@ -125,6 +157,31 @@ export function VersionsDialog({ runtimeId, workflow, onClose, onLoad }: Props) 
 
         {error && <p className={styles.error}>{error}</p>}
 
+        {confronto.length === 2 && (
+          <div className={styles.compare}>
+            <span className={styles.compareLabel}>Due versioni scelte</span>
+            <button type="button" className={styles.snapshot} onClick={confronta}>
+              Cosa è cambiato
+            </button>
+          </div>
+        )}
+
+        {differenze && (
+          <div className={styles.diff}>
+            {/* Il confronto lavora sui NODI: non dice cosa è cambiato dentro
+                uno, dice dove guardare — che davanti a venti nodi è quasi
+                tutto il lavoro. */}
+            <DiffLine label="Aggiunti" ids={differenze.added} />
+            <DiffLine label="Tolti" ids={differenze.removed} />
+            <DiffLine label="Cambiati" ids={differenze.changed} />
+            {differenze.added.length === 0 &&
+              differenze.removed.length === 0 &&
+              differenze.changed.length === 0 && (
+                <span className={styles.same}>Nessuna differenza fra i nodi.</span>
+              )}
+          </div>
+        )}
+
         <div className={styles.body}>
           {versions === null ? (
             <p className={styles.empty}>Carico…</p>
@@ -145,6 +202,17 @@ export function VersionsDialog({ runtimeId, workflow, onClose, onLoad }: Props) 
                     </span>
                   </div>
                   <div className={styles.actions}>
+                    <button
+                      type="button"
+                      className={styles.pick}
+                      data-on={confronto.includes(version.id) ? 'true' : 'false'}
+                      title="Scegline due per vedere cosa è cambiato"
+                      onClick={() => {
+                        perConfronto(version.id);
+                      }}
+                    >
+                      {confronto.includes(version.id) ? '✓ scelta' : 'Confronta'}
+                    </button>
                     <button
                       type="button"
                       className={styles.secondary}
@@ -181,5 +249,15 @@ export function VersionsDialog({ runtimeId, workflow, onClose, onLoad }: Props) 
         </div>
       </div>
     </div>
+  );
+}
+
+/** Una riga del confronto. Le righe vuote non si mostrano: dicono niente. */
+function DiffLine({ label, ids }: { label: string; ids: string[] }) {
+  if (ids.length === 0) return null;
+  return (
+    <span className={styles.diffLine}>
+      <strong>{label}:</strong> {ids.join(', ')}
+    </span>
   );
 }

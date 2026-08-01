@@ -8,7 +8,7 @@
  * va detto, non nascosto dietro una lista vuota identica al caso normale.
  */
 
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('./runtime', () => ({
@@ -16,6 +16,7 @@ vi.mock('./runtime', () => ({
   getVersion: vi.fn(),
   rollbackVersion: vi.fn(),
   snapshotVersion: vi.fn(),
+  diffVersions: vi.fn(),
 }));
 
 import * as runtime from './runtime';
@@ -97,6 +98,81 @@ describe('il pannello delle versioni', () => {
 
     await waitFor(() => {
       expect(screen.getByText('il runtime ha risposto 503')).toBeTruthy();
+    });
+  });
+});
+
+describe('il confronto fra versioni', () => {
+  const due = [
+    {
+      id: 'v1',
+      versionNumber: 1,
+      createdAt: '2026-08-01T09:00:00.000Z',
+      createdBy: null,
+      comment: 'auto',
+    },
+    {
+      id: 'v2',
+      versionNumber: 2,
+      createdAt: '2026-08-01T10:00:00.000Z',
+      createdBy: null,
+      comment: null,
+    },
+  ];
+
+  it('serve sceglierne due: con una sola non si confronta niente', async () => {
+    listVersions.mockResolvedValue(due);
+    render(
+      <VersionsDialog runtimeId="wf1" workflow={workflow} onClose={vi.fn()} onLoad={vi.fn()} />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: 'Confronta' })).toHaveLength(2);
+    });
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Confronta' })[0]!);
+    expect(screen.queryByRole('button', { name: 'Cosa è cambiato' })).toBeNull();
+  });
+
+  it('con due scelte, dice dove guardare', async () => {
+    listVersions.mockResolvedValue(due);
+    vi.mocked(runtime.diffVersions).mockResolvedValue({
+      added: ['invia'],
+      removed: [],
+      changed: ['ogni_ora'],
+    });
+
+    render(
+      <VersionsDialog runtimeId="wf1" workflow={workflow} onClose={vi.fn()} onLoad={vi.fn()} />,
+    );
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: 'Confronta' })).toHaveLength(2);
+    });
+
+    for (const b of screen.getAllByRole('button', { name: 'Confronta' })) fireEvent.click(b);
+    fireEvent.click(screen.getByRole('button', { name: 'Cosa è cambiato' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/invia/)).toBeTruthy();
+    });
+    expect(screen.getByText(/ogni_ora/)).toBeTruthy();
+  });
+
+  it('due versioni identiche lo dicono, invece di mostrare tre righe vuote', async () => {
+    listVersions.mockResolvedValue(due);
+    vi.mocked(runtime.diffVersions).mockResolvedValue({ added: [], removed: [], changed: [] });
+
+    render(
+      <VersionsDialog runtimeId="wf1" workflow={workflow} onClose={vi.fn()} onLoad={vi.fn()} />,
+    );
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: 'Confronta' })).toHaveLength(2);
+    });
+    for (const b of screen.getAllByRole('button', { name: 'Confronta' })) fireEvent.click(b);
+    fireEvent.click(screen.getByRole('button', { name: 'Cosa è cambiato' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Nessuna differenza/)).toBeTruthy();
     });
   });
 });

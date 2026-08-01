@@ -72,3 +72,30 @@ export async function rollbackVersion(
   );
   return workflow;
 }
+
+export interface VersionDiff {
+  /** I nodi che nella seconda versione ci sono e nella prima no. */
+  added: string[];
+  /** Quelli spariti. */
+  removed: string[];
+  /** Quelli rimasti ma cambiati: configurazione, posizione, nome. */
+  changed: string[];
+}
+
+/**
+ * Cosa è cambiato fra due versioni.
+ *
+ * Il confronto lo fa il motore, e lavora sui NODI: quali sono comparsi, quali
+ * spariti, quali sono rimasti ma diversi. Non dice *cosa* è cambiato dentro
+ * un nodo — per quello si aprono le due versioni — ma dice dove guardare, che
+ * davanti a venti nodi è il novanta per cento del lavoro.
+ */
+export async function diffVersions(
+  runtimeWorkflowId: string,
+  versionA: string,
+  versionB: string,
+): Promise<VersionDiff> {
+  return runtimeApi.get<VersionDiff>(
+    `/workflows/${runtimeWorkflowId}/versions/${versionA}/diff/${versionB}`,
+  );
+}
