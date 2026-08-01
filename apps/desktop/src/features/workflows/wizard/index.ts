@@ -1,4 +1,5 @@
 export { WizardModal } from './WizardModal';
+export { TablesBanner } from './TablesBanner';
 export { useWizard } from './useWizard';
 export type { Wizard } from './useWizard';
 export { WIZARD_EXAMPLES } from './examples';

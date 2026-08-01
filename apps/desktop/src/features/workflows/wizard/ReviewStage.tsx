@@ -14,6 +14,7 @@ import type { QualityIssue } from '../quality';
 import type { Workflow } from '../types';
 
 import styles from './ReviewStage.module.css';
+import { TablesBanner } from './TablesBanner';
 import { TraceList } from './TraceList';
 import type { TraceEntry } from './types';
 
@@ -40,6 +41,8 @@ export function ReviewStage({ workflow, issues, warnings, trace, onImport, onRet
         <p className={styles.name}>{workflow.name}</p>
         {workflow.description && <p className={styles.description}>{workflow.description}</p>}
       </div>
+
+      <TablesBanner workflow={workflow} />
 
       {critical.length > 0 && (
         <section className={`${styles.block} ${styles.critical}`}>
