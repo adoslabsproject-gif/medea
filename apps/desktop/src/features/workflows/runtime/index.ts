@@ -21,6 +21,16 @@ export {
   uninstallCommunityNode,
 } from './community';
 export type { CommunityNode } from './community';
+export { relayState, startRelay, stopRelay, subscribeRelay } from './relay';
+export type { RelayConfig, RelayState } from './relay';
+export {
+  forgetRelayToken,
+  relayEnabled,
+  relayToken,
+  relayUrl,
+  setRelayEnabled,
+  setRelayUrl,
+} from './relay-settings';
 export { testNode } from './test-node';
 export { webhookAddress } from './webhook';
 export type { WebhookAddress } from './webhook';
