@@ -86,9 +86,17 @@ interface Props {
   onSaved: (acc: MailAccount) => void;
   /** Se fornito, mostra un bottone «← Indietro» che chiama questa callback. */
   onCancel?: () => void;
+  /**
+   * Se fornito, si può entrare senza configurare niente.
+   *
+   * Al primo avvio è l'unica via d'uscita: prima non c'era, e chi voleva
+   * soltanto vedere com'è fatta l'app doveva consegnare le credenziali della
+   * propria posta per scoprirlo.
+   */
+  onSkip?: () => void;
 }
 
-export function AccountSetup({ onSaved, onCancel }: Props) {
+export function AccountSetup({ onSaved, onCancel, onSkip }: Props) {
   const [preset, setPreset] = useState<Preset>('gmail');
   const [displayName, setDisplayName] = useState('');
   const [emailAddress, setEmailAddress] = useState('');
@@ -232,6 +240,11 @@ export function AccountSetup({ onSaved, onCancel }: Props) {
           {onCancel && (
             <Button variant="ghost" size="sm" onClick={onCancel}>
               ← Indietro
+            </Button>
+          )}
+          {onSkip && (
+            <Button variant="ghost" size="sm" onClick={onSkip}>
+              Guarda prima l’app →
             </Button>
           )}
         </header>

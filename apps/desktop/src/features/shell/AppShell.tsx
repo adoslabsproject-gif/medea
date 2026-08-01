@@ -13,9 +13,11 @@ import { WorkflowsView } from '../workflows';
 
 import { ActivityRail, type SectionId } from './ActivityRail';
 import styles from './AppShell.module.css';
+import { NoAccount } from './NoAccount';
 
 interface Props {
-  account: MailAccount;
+  /** Assente quando si è scelto di guardare l'app senza configurare la posta. */
+  account: MailAccount | null;
   onSwitchAccount: () => void;
 }
 
@@ -26,7 +28,12 @@ export function AppShell({ account, onSwitchAccount }: Props) {
     <div className={styles.root}>
       <ActivityRail active={active} onSelect={setActive} />
       <div className={styles.workspace}>
-        {active === 'mail' && <MailLayout account={account} onSwitchAccount={onSwitchAccount} />}
+        {active === 'mail' &&
+          (account ? (
+            <MailLayout account={account} onSwitchAccount={onSwitchAccount} />
+          ) : (
+            <NoAccount what="La posta" onConfigure={onSwitchAccount} />
+          ))}
         {active === 'address-book' && <AddressBookView />}
         {active === 'contacts' && <ContactsView />}
         {active === 'articles' && <ArticlesView />}
@@ -34,7 +41,12 @@ export function AppShell({ account, onSwitchAccount }: Props) {
         {active === 'documents' && <DocumentsView />}
         {active === 'db-studio' && <DbStudioView />}
         {active === 'workflows' && <WorkflowsView />}
-        {active === 'settings' && <SettingsView account={account} />}
+        {active === 'settings' &&
+          (account ? (
+            <SettingsView account={account} />
+          ) : (
+            <NoAccount what="Quello che c'è da impostare" onConfigure={onSwitchAccount} />
+          ))}
       </div>
     </div>
   );
