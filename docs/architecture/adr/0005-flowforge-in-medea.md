@@ -69,6 +69,14 @@ mancanza — un pacchetto contiene codice di terzi che verrà eseguito su quel
 computer, e la decisione di fidarsi deve restare una decisione, non un click
 accanto a un nome in una lista.
 
+Quella scelta però regge solo se l'altra metà è solida: quando un workflow
+importato usa un nodo che qui non è installato, l'app lo dice **e impedisce di
+attivarlo**. Fino al 2026-08-01 lo segnalava soltanto — il messaggio compariva
+sul nodo, ma il workflow si accendeva lo stesso e falliva alla prima
+esecuzione, di solito di notte per mano di un cron. Adesso è un problema
+critico (`NODE_NOT_INSTALLED`), come un campo obbligatorio vuoto, e
+`diagnostics.test.ts` verifica proprio che blocchi.
+
 ### 4. Dove si esegue: solo locale
 
 L'ADR originale prevedeva due destinazioni, locale e server, come proprietà del
@@ -136,7 +144,9 @@ apps/desktop/src-tauri/src/
    controllo di qualità (ADR 0006) e il wizard che mostra i passi.
 3. ✅ Motore e esecuzione reale, impacchettati e autonomi (ADR 0007, ADR 0008).
 4. ✅ Pacchetti `.ffnode` installabili da file (senza registro remoto).
-5. ⬜ Relay per i webhook da internet, e motore come servizio di sistema.
+5. 🟡 Relay per i webhook da internet: **fatto** (`apps/webhook-relay`, dietro
+   `automazionezeli.com/relay/`, vedi punto 5 qui sopra). Motore come servizio
+   di sistema — cioè automazioni che girano a Medea chiusa: **non ancora**.
 
 Fatte dopo la stesura: versioni con ritorno indietro, prova del singolo nodo su
 bozza non salvata, riesecuzione da un punto, esportazione ripulita dalle
