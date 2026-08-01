@@ -1,0 +1,11 @@
+@layer features {
+  /* L'altezza cresce col contenuto ma non oltre: un campo che diventa lungo
+     una pagina spinge fuori schermo tutto quello che viene dopo. */
+  .root :global(.cm-editor) {
+    max-block-size: 20rem;
+  }
+
+  .root :global(.cm-scroller) {
+    overflow: auto;
+  }
+}
