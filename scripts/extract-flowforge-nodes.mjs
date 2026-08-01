@@ -89,6 +89,27 @@ const fullDescription = (text) => {
   return text === firstSentence(text) ? undefined : text;
 };
 
+/** Un campo di configurazione, nella forma che usa l'editor. */
+const configField = (f) => ({
+  key: f.key,
+  ...(f.label ? { label: f.label } : {}),
+  type: f.type,
+  ...(f.required ? { required: true } : {}),
+  ...(Array.isArray(f.options) && f.options.length > 0
+    ? { options: f.options.map((o) => (typeof o === 'string' ? o : o.value)) }
+    : {}),
+  ...(f.pattern ? { pattern: f.pattern } : {}),
+  ...(f.patternMessage ? { patternMessage: f.patternMessage } : {}),
+  ...(f.language ? { language: f.language } : {}),
+  ...(f.defaultValue !== undefined && f.defaultValue !== ''
+    ? { defaultValue: String(f.defaultValue) }
+    : {}),
+  ...(f.showIf ? { showIf: f.showIf } : {}),
+  ...(f.dependsOn ? { dependsOn: f.dependsOn } : {}),
+  ...(f.placeholder ? { placeholder: f.placeholder } : {}),
+  ...(f.help ? { description: f.help } : {}),
+});
+
 const out = [...defs.values()]
   .sort((a, b) => a.id.localeCompare(b.id))
   .map((d) => ({
@@ -150,8 +171,24 @@ const out = [...defs.values()]
           })),
         }
       : {}),
+    // Le operazioni per intero, campi compresi. Nessun nodo della stdlib le
+    // usa oggi — è un pattern dei pacchetti di comunità — ma tenerne solo id
+    // ed etichetta significherebbe, il giorno che uno ne dichiara, un nodo
+    // che non si può configurare.
     ...(Array.isArray(d.actions) && d.actions.length > 0
-      ? { actions: d.actions.map((a) => ({ id: a.id, ...(a.label ? { label: a.label } : {}) })) }
+      ? {
+          actions: d.actions.map((a) => ({
+            id: a.id,
+            ...(a.label ? { label: a.label } : {}),
+            ...(a.description ? { description: a.description } : {}),
+            ...(a.category ? { category: a.category } : {}),
+            ...(a.resource ? { resource: a.resource } : {}),
+            ...(a.aiAction ? { aiAction: true } : {}),
+            ...(Array.isArray(a.configFields) && a.configFields.length > 0
+              ? { configFields: a.configFields.map(configField) }
+              : {}),
+          })),
+        }
       : {}),
     // `branching` distingue le PORTE dai CAMPI. Un logic_if ha due porte
     // (true/false) e sono due strade diverse; un meta_extract ha diciassette

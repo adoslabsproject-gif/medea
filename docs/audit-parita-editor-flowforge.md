@@ -11,15 +11,15 @@
 `options`, `actions`, `branching`, porte. La struttura è fedele. Le
 degradazioni sono 7, tutte nell'estrattore (`scripts/extract-flowforge-nodes.mjs`):
 
-| # | Campo perso | Portata | Impatto |
-|---|---|---|---|
-| 1 | `version` (defVersion) | 193 nodi | pinning versione morto: niente `versionDrift`, niente `NodeVersionNotice` |
-| 2 | `description` troncata a 1 frase | 192 | palette più povera + retrieval lessicale AI più debole |
-| 3 | `language` sui campi `code` | 45 campi | `CODE_NODE_LANG_MISMATCH` e l'editor codice non sanno il linguaggio |
-| 4 | `searchAliases` | 25 nodi | ricerca palette e catalogo AI perdono gli alias |
-| 5 | `outputContract` | 5 nodi | perso il grounding anti-allucinazione nel prompt |
-| 6 | `selfManagedRetry` | `action_http` | la UI non può avvisare del doppio retry |
-| 7 | `patternMessage` | 1 campo | messaggio di validazione perso |
+| #   | Campo perso                      | Portata       | Impatto                                                                   |
+| --- | -------------------------------- | ------------- | ------------------------------------------------------------------------- |
+| 1   | `version` (defVersion)           | 193 nodi      | pinning versione morto: niente `versionDrift`, niente `NodeVersionNotice` |
+| 2   | `description` troncata a 1 frase | 192           | palette più povera + retrieval lessicale AI più debole                    |
+| 3   | `language` sui campi `code`      | 45 campi      | `CODE_NODE_LANG_MISMATCH` e l'editor codice non sanno il linguaggio       |
+| 4   | `searchAliases`                  | 25 nodi       | ricerca palette e catalogo AI perdono gli alias                           |
+| 5   | `outputContract`                 | 5 nodi        | perso il grounding anti-allucinazione nel prompt                          |
+| 6   | `selfManagedRetry`               | `action_http` | la UI non può avvisare del doppio retry                                   |
+| 7   | `patternMessage`                 | 1 campo       | messaggio di validazione perso                                            |
 
 **Fix**: l'estrattore deve conservare questi 7 campi. In più la palette
 (`catalog/index.ts:74`) ignora `searchAliases` anche quando c'è, e manca il
