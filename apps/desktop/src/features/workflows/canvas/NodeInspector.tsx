@@ -16,8 +16,9 @@ import { ConfigFieldRenderer, upstreamSources } from '../fields';
 import type { CanvasNode, NodeDef, WorkflowEdge } from '../types';
 
 import styles from './NodeInspector.module.css';
+import { NodeTestPanel } from './NodeTestPanel';
 
-type Tab = 'config' | 'in' | 'out';
+type Tab = 'config' | 'in' | 'out' | 'test';
 
 interface Props {
   node: CanvasNode;
@@ -30,6 +31,8 @@ interface Props {
   onChange: (config: Record<string, unknown>) => void;
   onRename: (label: string) => void;
   onDelete: () => void;
+  /** Vero quando il motore è in piedi: senza, la prova non è possibile. */
+  runtimeReady: boolean;
 }
 
 export function NodeInspector({
@@ -42,6 +45,7 @@ export function NodeInspector({
   onChange,
   onRename,
   onDelete,
+  runtimeReady,
 }: Props) {
   const [tab, setTab] = useState<Tab>('config');
   const fields = def?.configFields ?? [];
@@ -73,6 +77,7 @@ export function NodeInspector({
           onSelect={setTab}
           label={`Uscite (${downstream.length})`}
         />
+        <TabButton id="test" active={tab} onSelect={setTab} label="Prova" />
       </div>
 
       {issues.length > 0 && tab === 'config' && (
@@ -107,6 +112,10 @@ export function NodeInspector({
               ))
             )}
           </>
+        )}
+
+        {tab === 'test' && (
+          <NodeTestPanel node={node} nodes={nodes} edges={edges} ready={runtimeReady} />
         )}
 
         {tab === 'in' && (

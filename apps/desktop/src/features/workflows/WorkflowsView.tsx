@@ -12,6 +12,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { workflowApi } from './api';
 import { AssistantPanel } from './assistant';
 import { diagnose, globalIssues } from './canvas/diagnostics';
 import { WorkflowCanvas } from './canvas/WorkflowCanvas';
@@ -38,7 +39,14 @@ export function WorkflowsView() {
   const runtime = useRuntime();
   const run = useWorkflowRun();
   /** Il workflow di cui si stanno guardando le esecuzioni. */
-  const [runsFor, setRunsFor] = useState<{ id: number; name: string } | null>(null);
+  /** Il workflow di cui si guardano le esecuzioni. `runtimeId` serve alla
+   *  riesecuzione: si legge dal disco perché la riga dell'elenco non lo porta,
+   *  e può essere un workflow diverso da quello aperto nell'editor. */
+  const [runsFor, setRunsFor] = useState<{
+    id: number;
+    name: string;
+    runtimeId?: string;
+  } | null>(null);
   const [secretsOpen, setSecretsOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(
@@ -115,7 +123,11 @@ export function WorkflowsView() {
           onDelete={(id) => void editor.remove(id)}
           onShowRuns={(id) => {
             const found = editor.items.find((i) => i.id === id);
-            setRunsFor({ id, name: found?.name ?? 'Workflow' });
+            const name = found?.name ?? 'Workflow';
+            setRunsFor({ id, name });
+            void workflowApi.get(id).then((loaded) => {
+              if (loaded?.runtimeId) setRunsFor({ id, name, runtimeId: loaded.runtimeId });
+            });
           }}
         />
       </CollapsibleColumn>
@@ -175,7 +187,12 @@ export function WorkflowsView() {
           </div>
         )}
 
-        <WorkflowCanvas workflow={workflow} onChange={editor.change} runByNode={run.stepsByNode} />
+        <WorkflowCanvas
+          workflow={workflow}
+          onChange={editor.change}
+          runByNode={run.stepsByNode}
+          runtimeReady={runtime.status.running}
+        />
 
         <footer className={styles.foot} data-state={critical.length > 0 ? 'blocked' : 'ok'}>
           <div className={styles.verdict}>
@@ -256,6 +273,7 @@ export function WorkflowsView() {
         <RunsModal
           workflowId={runsFor.id}
           workflowName={runsFor.name}
+          {...(runsFor.runtimeId ? { runtimeId: runsFor.runtimeId } : {})}
           onClose={() => {
             setRunsFor(null);
           }}

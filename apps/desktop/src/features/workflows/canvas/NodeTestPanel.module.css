@@ -1,0 +1,97 @@
+@layer features {
+  .root {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .label {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+  }
+
+  .input {
+    inline-size: 100%;
+    padding: var(--space-2);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
+    resize: vertical;
+  }
+
+  .hint {
+    margin: 0;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  .error {
+    margin: 0;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-danger, var(--color-text-primary));
+  }
+
+  .run {
+    align-self: flex-start;
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: var(--color-accent-solid);
+    color: var(--color-accent-on-solid);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+  }
+  .run:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .result {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-1);
+  }
+
+  .failed {
+    border-color: var(--color-border-danger, var(--color-border-default));
+  }
+
+  .resultHead {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+  }
+
+  .time {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pre {
+    margin: 0;
+    max-block-size: 14rem;
+    overflow: auto;
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-primary);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .empty {
+    margin: 0;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+}
