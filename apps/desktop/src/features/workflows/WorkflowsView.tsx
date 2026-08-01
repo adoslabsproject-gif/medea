@@ -191,6 +191,7 @@ export function WorkflowsView() {
                   );
                 });
             },
+            onStop: run.cancel,
             onRun: () => {
               // Si salva prima: eseguire una versione diversa da quella sul
               // disco vorrebbe dire che lo storico racconta un documento che

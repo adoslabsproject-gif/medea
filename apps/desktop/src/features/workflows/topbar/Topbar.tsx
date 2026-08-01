@@ -17,6 +17,8 @@ export interface TopbarActions {
   onSave: () => void;
   onDiscard: () => void;
   onRun: () => void;
+  /** Smette di seguire l'esecuzione in corso. */
+  onStop: () => void;
   onSecrets: () => void;
   onVersions: () => void;
   onNodes: () => void;
@@ -210,20 +212,36 @@ export function Topbar({
       </div>
 
       {/* Eseguire adesso e' come si prova un workflow: non si aspetta che
-          scatti un trigger per sapere se funziona. */}
-      <button
-        type="button"
-        className={styles.run}
-        disabled={!runtimeReady || running || workflow.nodes.length === 0}
-        title={
-          !runtimeReady
-            ? 'Il motore di esecuzione non è ancora pronto'
-            : (blockedReason ?? 'Esegui adesso, senza aspettare il trigger')
-        }
-        onClick={actions.onRun}
-      >
-        {running ? '⟳ In corso…' : '▶ Esegui'}
-      </button>
+          scatti un trigger per sapere se funziona.
+
+          Mentre gira, lo stesso posto diventa «Ferma»: un'esecuzione partita
+          per sbaglio — su un workflow che manda email, o che scrive su un
+          database — deve potersi interrompere da dove la si e' avviata, non
+          costringere a chiudere l'app. */}
+      {running ? (
+        <button
+          type="button"
+          className={styles.stop}
+          title="Smetti di seguire questa esecuzione"
+          onClick={actions.onStop}
+        >
+          ■ Ferma
+        </button>
+      ) : (
+        <button
+          type="button"
+          className={styles.run}
+          disabled={!runtimeReady || workflow.nodes.length === 0}
+          title={
+            !runtimeReady
+              ? 'Il motore di esecuzione non è ancora pronto'
+              : (blockedReason ?? 'Esegui adesso, senza aspettare il trigger')
+          }
+          onClick={actions.onRun}
+        >
+          ▶ Esegui
+        </button>
+      )}
 
       <button
         type="button"

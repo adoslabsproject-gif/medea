@@ -70,10 +70,23 @@ for (const pkg of PACKAGES) {
   }
 }
 
+/**
+ * La prima frase: è quella che sta in una riga di palette.
+ *
+ * Non sostituisce l'originale — la accompagna. Troncare e basta indeboliva la
+ * ricerca dell'assistente, che di quel testo si serve per capire cosa fa un
+ * nodo prima di sceglierlo.
+ */
 const firstSentence = (text) => {
   if (typeof text !== 'string') return undefined;
   const cut = text.split(/(?<=[.—])\s/)[0] ?? text;
   return cut.length > 240 ? `${cut.slice(0, 237)}…` : cut;
+};
+
+/** Il testo per esteso, quando dice più della prima frase. */
+const fullDescription = (text) => {
+  if (typeof text !== 'string' || !text) return undefined;
+  return text === firstSentence(text) ? undefined : text;
 };
 
 const out = [...defs.values()]
@@ -85,6 +98,25 @@ const out = [...defs.values()]
     ...(d.icon ? { icon: d.icon } : {}),
     ...(d.color ? { color: d.color } : {}),
     ...(firstSentence(d.description) ? { description: firstSentence(d.description) } : {}),
+    // Il testo per esteso: serve all'assistente per capire cosa fa un nodo
+    // prima di sceglierlo. La palette continua a mostrare `description`.
+    ...(fullDescription(d.description) ? { descriptionLong: d.description } : {}),
+    // La versione della DEFINIZIONE, non del pacchetto: è quella che permette
+    // di accorgersi che un workflow salvato mesi fa usa un nodo cambiato da
+    // allora. Senza, la deriva passa inosservata.
+    ...(d.version ? { defVersion: d.version } : {}),
+    // Le parole con cui un nodo si cerca ma che nel nome non compaiono:
+    // «wa» per WhatsApp, «posta» per email. Senza, la ricerca trova solo chi
+    // già sa come si chiama la cosa.
+    ...(Array.isArray(d.searchAliases) && d.searchAliases.length > 0
+      ? { searchAliases: [...d.searchAliases] }
+      : {}),
+    // Cosa produce davvero, campo per campo. Serve a non far inventare
+    // all'assistente i nomi delle chiavi quando scrive un'espressione.
+    ...(d.outputContract ? { outputContract: d.outputContract } : {}),
+    // Il nodo si riprova da sé: il motore non deve rifarlo, e il pannello dei
+    // tentativi non deve offrirlo.
+    ...(d.selfManagedRetry ? { selfManagedRetry: true } : {}),
     ...(Array.isArray(d.configFields) && d.configFields.length > 0
       ? {
           configFields: d.configFields.map((f) => ({
@@ -96,6 +128,13 @@ const out = [...defs.values()]
               ? { options: f.options.map((o) => (typeof o === 'string' ? o : o.value)) }
               : {}),
             ...(f.pattern ? { pattern: f.pattern } : {}),
+            // Cosa dire quando il valore non rispetta il pattern. Senza, il
+            // messaggio è l'espressione regolare — che non aiuta nessuno.
+            ...(f.patternMessage ? { patternMessage: f.patternMessage } : {}),
+            // In che lingua è scritto un campo di codice. Lo usano la regola
+            // di qualità CODE_NODE_LANG_MISMATCH e l'editor per evidenziare:
+            // senza, un blocco SQL e uno JavaScript sono la stessa casella.
+            ...(f.language ? { language: f.language } : {}),
             ...(f.defaultValue !== undefined && f.defaultValue !== ''
               ? { defaultValue: String(f.defaultValue) }
               : {}),

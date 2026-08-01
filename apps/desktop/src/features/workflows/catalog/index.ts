@@ -71,11 +71,24 @@ export function searchNodes(query: string, limit = 40): NodeDef[] {
 
   return catalog
     .map((def) => {
-      const hay = [def.defId, def.label, def.description ?? ''].join(' ').toLowerCase();
+      // Gli alias sono le parole con cui un nodo si cerca ma che nel suo nome
+      // non compaiono — «wa» per WhatsApp, «posta» per email. Il
+      // `search_nodes` dell'assistente li guardava già; la palette no, e chi
+      // scriveva la parola giusta non trovava niente.
+      const alias = (def.searchAliases ?? []).map((a) => a.toLowerCase());
+      const hay = [def.defId, def.label, def.description ?? '', alias.join(' ')]
+        .join(' ')
+        .toLowerCase();
       // L'etichetta pesa il doppio: chi cerca "email" vuole prima i nodi che
-      // si chiamano così, non quelli che la nominano nella descrizione.
+      // si chiamano così, non quelli che la nominano nella descrizione. Un
+      // alias che combacia in pieno pesa uguale: chi scrive «wa» sta cercando
+      // WhatsApp, non un nodo che contiene quelle due lettere per caso.
       const score = terms.reduce(
-        (s, t) => s + (def.label.toLowerCase().includes(t) ? 2 : 0) + (hay.includes(t) ? 1 : 0),
+        (s, t) =>
+          s +
+          (def.label.toLowerCase().includes(t) ? 2 : 0) +
+          (alias.includes(t) ? 2 : 0) +
+          (hay.includes(t) ? 1 : 0),
         0,
       );
       return { def, score };
