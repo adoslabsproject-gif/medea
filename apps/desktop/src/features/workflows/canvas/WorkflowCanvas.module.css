@@ -59,4 +59,22 @@
   .hint p + p {
     margin-block-start: var(--space-2);
   }
+
+  /* Il motivo per cui un collegamento non si può fare: in alto, dove sta
+     l'attenzione mentre si trascina, e per pochi secondi. */
+  .refused {
+    position: absolute;
+    inset-block-start: var(--space-4);
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+    z-index: var(--z-sticky, 10);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border-warning, var(--color-border-default));
+    border-radius: var(--radius-full, 999px);
+    background: var(--color-surface-2);
+    box-shadow: var(--elevation-dialog);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+  }
 }
