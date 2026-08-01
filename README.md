@@ -372,6 +372,16 @@ e `cargo check` a ogni push.
 
 ---
 
+## Licenza
+
+[**PolyForm Noncommercial 1.0.0**](LICENSE.md): il codice si può leggere, usare,
+modificare e ridistribuire liberamente **per scopi non commerciali** — studio,
+ricerca, progetti personali, organizzazioni non profit. Qualsiasi uso
+commerciale richiede una licenza separata: [apri una issue](../../issues) per
+parlarne.
+
+---
+
 <div align="center">
 
 **[Architecture Decision Records](docs/architecture/adr/)** — perché Tauri e non Electron,
