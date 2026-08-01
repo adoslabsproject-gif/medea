@@ -18,6 +18,7 @@ import { diagnose, globalIssues } from './canvas/diagnostics';
 import { exportPng } from './canvas/export-png';
 import { WorkflowCanvas } from './canvas/WorkflowCanvas';
 import { findNode } from './catalog';
+import { CommandPalette, type Comando } from './CommandPalette';
 import { missingSecrets } from './missing-secrets';
 import { NodesDialog } from './NodesDialog';
 import { RelayDialog } from './RelayDialog';
@@ -61,6 +62,7 @@ export function WorkflowsView() {
   const [relayOpen, setRelayOpen] = useState(false);
   const [triggerInputOpen, setTriggerInputOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(
     () => localStorage.getItem(ASSISTANT_OPEN_KEY) !== 'false',
   );
@@ -101,6 +103,11 @@ export function WorkflowsView() {
       } else if (key === 'z' && !e.shiftKey) {
         e.preventDefault();
         editor.undo();
+      } else if (key === 'k') {
+        // Cmd+K: la quarta strada per arrivare a un'azione, dopo barra, menu
+        // e scorciatoia — l'unica che non chiede di ricordarsi dov'è.
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
       } else if ((key === 'z' && e.shiftKey) || key === 'y') {
         e.preventDefault();
         editor.redo();
@@ -123,6 +130,96 @@ export function WorkflowsView() {
    * salvate.
    */
   const unpublished = editor.enabled && (editor.dirty || !workflow.publishedAt);
+
+  /**
+   * Tutto quello che si può fare, cercabile per nome.
+   *
+   * Sono le stesse azioni della barra e del menu: la palette non ne aggiunge,
+   * toglie il bisogno di ricordarsi dove sono.
+   */
+  const comandi: Comando[] = [
+    { id: 'salva', label: 'Salva', hint: 'Cmd+S', run: () => void editor.save() },
+    {
+      id: 'esegui',
+      label: 'Esegui',
+      hint: 'senza aspettare il trigger',
+      disabled: !runtime.status.running || workflow.nodes.length === 0,
+      run: () => void editor.save().then(() => run.start(workflow, savedTriggerInput(workflow.id))),
+    },
+    {
+      id: 'esegui-con',
+      label: 'Esegui con dati di prova',
+      run: () => {
+        setTriggerInputOpen(true);
+      },
+    },
+    {
+      id: 'pubblica',
+      label: 'Pubblica',
+      hint: 'manda in produzione questa versione',
+      disabled: !unpublished,
+      run: () => void editor.publish(),
+    },
+    {
+      id: 'attiva',
+      label: editor.enabled ? 'Disattiva' : 'Attiva',
+      run: () => void editor.toggleEnabled(blockedReason),
+    },
+    { id: 'riordina', label: 'Riordina i nodi', run: editor.relayout },
+    {
+      id: 'segreti',
+      label: 'Segreti',
+      run: () => {
+        setSecretsOpen(true);
+      },
+    },
+    {
+      id: 'versioni',
+      label: 'Versioni',
+      run: () => {
+        setVersionsOpen(true);
+      },
+    },
+    {
+      id: 'impostazioni',
+      label: 'Impostazioni del workflow',
+      hint: 'etichette, storico, emergenza',
+      run: () => {
+        setSettingsOpen(true);
+      },
+    },
+    {
+      id: 'nodi',
+      label: 'Nodi aggiuntivi',
+      run: () => {
+        setNodesOpen(true);
+      },
+    },
+    {
+      id: 'raggiungibilita',
+      label: 'Raggiungibilità da internet',
+      run: () => {
+        setRelayOpen(true);
+      },
+    },
+    {
+      id: 'png',
+      label: 'Esporta come immagine',
+      run: () => {
+        exportPng(workflow, defsById);
+      },
+    },
+    { id: 'json', label: 'Esporta in JSON', run: editor.exportJson },
+    { id: 'importa', label: 'Importa da JSON', run: editor.importJson },
+    {
+      id: 'esecuzioni',
+      label: 'Esecuzioni di questo workflow',
+      disabled: !workflow.id,
+      run: () => {
+        if (workflow.id) setRunsFor({ id: Number(workflow.id), name: workflow.name });
+      },
+    },
+  ];
 
   /**
    * I segreti che il workflow nomina e che non esistono.
@@ -368,6 +465,15 @@ export function WorkflowsView() {
           onLoad={(restored) => {
             // Arriva come bozza: si guarda, e si salva solo se convince.
             editor.load(restored, editor.enabled);
+          }}
+        />
+      )}
+
+      {paletteOpen && (
+        <CommandPalette
+          comandi={comandi}
+          onClose={() => {
+            setPaletteOpen(false);
           }}
         />
       )}
