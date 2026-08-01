@@ -88,9 +88,11 @@ Anagrafiche, articoli, listini e documenti quando servono.
 ### ⚡ Workflow con i nodi
 
 Una tab con un editor visuale di automazioni: si trascinano i nodi, si collegano,
-si configurano. **145 nodi** — trigger a orario, webhook, chiamate HTTP, database,
+si configurano. **193 nodi** — trigger a orario, webhook, chiamate HTTP, database,
 email, agenti AI, integrazioni — presi dal catalogo di FlowForge, con le stesse
-icone e le stesse definizioni.
+icone e le stesse definizioni. E si **eseguono**: il motore di FlowForge viaggia
+dentro l'app, con il suo Node e le sue dipendenze, e gira sul computer senza
+chiedere niente a nessun server.
 
 <table>
 <tr><td width="50%" valign="top">
@@ -111,6 +113,28 @@ a runtime non sono ancora stati eseguiti, `example.com` rimasti nei campi,
 trigger che non portano a nulla, liste collegate a nodi che elaborano un
 elemento per volta, segreti scritti in chiaro. Un workflow con problemi critici
 non si attiva — né disegnato a mano né generato dall'AI.
+
+</td></tr>
+</table>
+
+<table>
+<tr><td width="50%" valign="top">
+
+**Girano da soli**
+
+Un cron alle 8, una casella in ascolto: partono anche se la sezione Workflow
+non si apre mai, e l'esecuzione compare nello storico con scritto chi l'ha
+avviata. Se non c'è nessuna automazione attiva il motore non parte affatto —
+sono decine di MB e un processo in più per niente.
+
+</td><td width="50%" valign="top">
+
+**Le credenziali non stanno nel documento**
+
+`{{secrets.API_KEY}}` si risolve dal **portachiavi del sistema**, e gli account
+di posta configurati in Medea diventano quelli che i nodi usano per inviare e
+leggere. Un workflow si esporta senza portarsi via niente. Qui Medea fa meglio
+dell'originale, dove le variabili stanno in chiaro nel database.
 
 </td></tr>
 </table>
@@ -246,9 +270,15 @@ flowchart TB
     style MCP fill:#2e1065,stroke:#a855f7,color:#f3e8ff
 ```
 
-Niente Electron, niente sidecar Node, niente server: **una finestra nativa, un
-processo Rust, un file SQLite**. La WebView è quella del sistema operativo, quindi
-l'installer sta in pochi megabyte invece che in centinaia.
+Niente Electron, niente server: **una finestra nativa, un processo Rust, un file
+SQLite**. La WebView è quella del sistema operativo.
+
+L'unica eccezione è il motore dei workflow, che è il runtime di FlowForge e
+quindi gira su Node: viaggia dentro l'app come processo figlio, parte solo
+quando serve e muore col padre. Costa 595 MB nell'installer, ed è il prezzo per
+avere tutti e 193 i nodi e la sandbox `isolated-vm` invece di una manciata di
+nodi riscritti. Il conto, e le riduzioni provate e scartate, stanno in
+[ADR 0008](docs/architecture/adr/0008-motore-impacchettato.md).
 
 <details>
 <summary><b>Struttura del repository</b></summary>
@@ -259,7 +289,7 @@ l'installer sta in pochi megabyte invece che in centinaia.
 mailer/
 ├── apps/desktop/
 │   ├── src/features/        posta · rubrica · contatti · documenti · assistente
-│   │                        workflow (canvas + scaffold + quality gate)
+│   │                        workflow (canvas · scaffold · qualità · motore)
 │   └── src-tauri/src/
 │       ├── commands/        comandi esposti alla UI
 │       ├── ai_tools/        i 63 strumenti dell'assistente
@@ -270,7 +300,7 @@ mailer/
 │   ├── design-system/       token OKLCH, @layer, temi
 │   ├── ui/                  primitivi React accessibili
 │   └── utils/ · tsconfig/ · eslint-config/
-├── scripts/                 estrazione del catalogo nodi da FlowForge
+├── scripts/                 catalogo nodi, impacchettamento del motore, collaudi
 └── docs/architecture/adr/   decisioni architetturali
 ```
 
@@ -285,6 +315,17 @@ pnpm install
 pnpm tokens:build     # genera i token del design system
 pnpm tauri:dev        # apre l'app in sviluppo
 ```
+
+Per eseguire i workflow serve il motore impacchettato. Si costruisce una volta,
+e va rifatto sulla piattaforma di destinazione — Node e i moduli nativi sono
+compilati per quella:
+
+```bash
+FLOWFORGE_RUNTIME_SRC=/percorso/a/flowforge-runtime pnpm runtime:package
+```
+
+In sviluppo si può puntare a un motore già compilato senza impacchettarlo:
+`MEDEA_WORKFLOW_RUNTIME=/percorso/a/dist/main.js`.
 
 <details>
 <summary><b>Qualità del codice</b></summary>
@@ -310,19 +351,22 @@ e `cargo check` a ogni push.
 
 ## Stato
 
-|     |                                                                |
-| --- | -------------------------------------------------------------- |
-| 🟢  | Posta: account, sync, lettura, invio, ricerca full-text        |
-| 🟢  | Assistente con 63 strumenti, conferma sulle scritture, vision  |
-| 🟢  | BYOK con portachiavi, endpoint personale, abbonamento via MCP  |
-| 🟢  | Rubrica, anagrafiche, articoli, listini, documenti             |
-| 🟢  | Template email, promemoria con notifiche, DB Studio            |
-| 🟢  | Workflow: canvas, 145 nodi, generazione a parole, 21 controlli |
-| ⏳  | Editor workflow: parità piena con FlowForge (vedi sotto)       |
-| ⏳  | Esecuzione dei workflow: runtime locale come processo figlio   |
-| ⏳  | OAuth Google e Microsoft                                       |
-| ⏳  | Ricerca semantica con budget di memoria esplicito              |
-| ⏳  | Android via Tauri Mobile                                       |
+|     |                                                                   |
+| --- | ----------------------------------------------------------------- |
+| 🟢  | Posta: account, sync, lettura, invio, ricerca full-text           |
+| 🟢  | Assistente con 63 strumenti, conferma sulle scritture, vision     |
+| 🟢  | BYOK con portachiavi, endpoint personale, abbonamento via MCP     |
+| 🟢  | Rubrica, anagrafiche, articoli, listini, documenti                |
+| 🟢  | Template email, promemoria con notifiche, DB Studio               |
+| 🟢  | Workflow: canvas, 193 nodi, generazione a parole, 21 controlli    |
+| 🟢  | Esecuzione locale: motore impacchettato, cron e trigger attivi    |
+| 🟢  | Segreti nel portachiavi, account di posta consegnati ai nodi      |
+| ⏳  | Editor workflow: versioni, prova del singolo nodo, riesecuzione   |
+| ⏳  | Nodi di comunità dal registry `.ffnode`                           |
+| ⏳  | Webhook in ingresso via relay (l'unica cosa che chiede un server) |
+| ⏳  | OAuth Google e Microsoft                                          |
+| ⏳  | Ricerca semantica con budget di memoria esplicito                 |
+| ⏳  | Android via Tauri Mobile                                          |
 
 ---
 

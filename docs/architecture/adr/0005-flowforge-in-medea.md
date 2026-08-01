@@ -1,9 +1,11 @@
-# ADR 0005 — FlowForge dentro Medea: canvas locale, runtime sidecar, relay sul server
+# ADR 0005 — FlowForge dentro Medea: canvas locale, motore impacchettato
 
-- **Stato**: proposto (2026-07-31)
-- **Contesto**: Medea deve avere una tab **Workflow** con le stesse capacità di
-  FlowForge (`/Users/zelistore/zeliAI`), self-hosted sul PC dell'utente, senza
-  registrazione, con i nodi scaricati dal nostro registry ma poi autonoma.
+- **Stato**: **accettato** — proposto il 2026-07-31, in gran parte realizzato
+  al 2026-08-01. Le parti ancora aperte sono elencate in fondo, con il nome
+  di chi le ha prese in carico dopo (ADR 0007, ADR 0008).
+- **Contesto**: Medea deve avere una sezione **Workflow** con le stesse
+  capacità di FlowForge (`/Users/zelistore/zeliAI`), sul computer dell'utente,
+  senza registrazione e senza dipendere da un server.
 
 ## Vincolo non negoziabile: l'AI scaffold
 
@@ -24,50 +26,68 @@ Conseguenze pratiche:
    porte e id) gira in Medea prima di salvare, e in caso di errore il modello
    riceve il motivo e riprova: mai un workflow rotto salvato in silenzio.
 
+A questi si è aggiunto un quarto livello che l'ADR originale non prevedeva: il
+**controllo di qualità a 21 regole** portato dal server (ADR 0006). Non
+verifica che il workflow sia valido — verifica che sia _sensato_.
+
 ## Decisioni
 
-### 1. Runtime come processo figlio (sidecar)
+### 1. Il motore è il runtime di FlowForge, impacchettato dentro l'app
 
-Il runtime Node di FlowForge viene impacchettato e avviato da Tauri su porta
-effimera, con health-check e spegnimento legato al processo padre. È l'unica
-strada che conserva i 186 nodi e la sandbox `isolated-vm` (modulo nativo C++,
-senza equivalente in Rust).
+Il runtime Node viene avviato da Tauri su porta effimera, con controllo di
+salute e spegnimento legato al processo padre. È l'unica strada che conserva
+**193 nodi** e la sandbox `isolated-vm` (modulo nativo C++, senza equivalente
+in Rust).
 
-Costo accettato: l'installer passa da ~8 MB a ~100 MB.
+> Correzione rispetto alla stesura originale: i nodi sono 193, non 186, ed è il
+> numero che il runtime dichiara su `/api/v1/nodes`. Il catalogo di Medea è
+> verificato contro quella cifra da `catalog.guard.test.ts` — se le due si
+> separano, la palette offre nodi che nessuno sa eseguire.
+
+Costo accettato: **595 MB**, non i ~100 MB stimati qui. La differenza è tutta
+nei moduli nativi e in `duckdb`, che il runtime importa all'avvio anche se
+nessun nodo del catalogo lo usa. Il conto dettagliato, e le tre riduzioni
+provate e scartate, stanno in **ADR 0008**.
 
 ### 2. Nessuna registrazione
 
 FlowForge è multi-tenant e `getTenantId` lancia se manca l'auth: non si
 disattiva, si **auto-provisiona**. Al primo avvio Medea crea l'owner locale,
-salva il token nel **keychain** (già in uso per chiavi API e credenziali IMAP)
-e lo usa in silenzio. Zero schermate di accesso.
+salva la password nel **portachiavi del sistema** (già in uso per chiavi API e
+credenziali IMAP) e la usa in silenzio. Zero schermate di accesso.
 
 ### 3. Nodi dal registry, poi autonomia
 
 Si riusa **as-is** il formato `.ffnode` (zip firmato Ed25519) e il protocollo
 del registry: cache 5 minuti, fallback stale fino a un'ora se offline, nodi
-installati che restano sul disco. È già esattamente il comportamento richiesto.
+installati che restano sul disco.
 
-### 4. Dove si esegue: locale o server, per workflow
+**Non ancora fatto.** I 193 nodi preinstallati coprono il catalogo del server;
+il registry serve per i nodi di comunità, che sono un'aggiunta, non una
+mancanza.
 
-- **Locale** tutto ciò che tocca dati locali — la posta vive nel SQLite del PC,
-  il server non la vede.
-- **Sul server** ciò che deve girare a macchina spenta: FlowForge in produzione
-  ha già i container per tenant.
+### 4. Dove si esegue: solo locale
 
-Stesso editor, stessi nodi, la destinazione è una proprietà del workflow.
+L'ADR originale prevedeva due destinazioni, locale e server, come proprietà del
+workflow. **Superato**: l'app deve essere autonoma per tutto il possibile, e un
+workflow che gira su un server richiederebbe l'account che Medea non ha e non
+vuole. Il campo `executionTarget` resta nel documento per compatibilità con lo
+schema del server, ma in Medea vale sempre `local`.
+
+Le automazioni girano anche quando la sezione Workflow è chiusa, e le
+esecuzioni partite da sole — cron, casella in ascolto — finiscono nello storico
+come tutte le altre. Vedi **ADR 0007**.
 
 ### 5. Webhook via relay sul server esistente
 
-Il PC dietro NAT non è raggiungibile dall'esterno, ma può aprire un canale **in
-uscita**: Medea tiene un WebSocket verso `hooks.automazionezeli.com`, il relay
-instrada la chiamata HTTP dentro quel canale e mette in coda su Dragonfly
-quello che arriva mentre il dispositivo è offline.
+Il computer dietro NAT non è raggiungibile dall'esterno, ma può aprire un
+canale **in uscita**: Medea tiene un WebSocket verso
+`hooks.automazionezeli.com`, il relay instrada la chiamata HTTP dentro quel
+canale e mette in coda quello che arriva mentre il dispositivo è offline.
 
-nginx sul server gestisce già l'upgrade WebSocket. Ogni installazione ha un id
-e un token nel keychain: senza, chiunque conosca l'URL potrebbe iniettare
-eventi nel PC dell'utente. Funzione **disattivata di default**: aprire un
-ingresso da internet è una scelta consapevole.
+**Non ancora fatto**, e resta l'unica funzione che richiede un server. Sarà
+**disattivata di default**: aprire un ingresso da internet è una scelta
+consapevole, non un'impostazione predefinita.
 
 ## Struttura dei moduli
 
@@ -78,29 +98,31 @@ apps/desktop/src/features/workflows/
 ├── index.ts                    barrel: unica API pubblica
 ├── types.ts                    schema workflow (port di core-schema)
 ├── api.ts                      wrapper invoke() verso i comandi Tauri
-├── canvas/                     editor xyflow
-│   ├── WorkflowCanvas.tsx      canvas e interazioni
-│   ├── WorkflowNode.tsx        nodo singolo
-│   ├── NodePalette.tsx         palette e ricerca
-│   └── layout.ts               posizionamento automatico
-├── scaffold/                   generazione da linguaggio naturale
-│   ├── prompt.ts               costruzione del prompt (contratto esplicito)
-│   ├── catalog.ts              catalogo nodi compattato per il modello
-│   ├── parse.ts                estrazione del JSON dalla risposta
-│   └── validate.ts             i 3 livelli di validazione
-├── runs/                       esecuzioni e log
-└── registry/                   nodi scaricati dal sito
+├── canvas/                     editor xyflow, icone, disposizione automatica
+├── catalog/                    i 193 nodi, generati dai pacchetti di FlowForge
+├── scaffold/                   generazione da linguaggio naturale (agente)
+├── quality/                    le 21 regole del controllo di qualità
+├── wizard/                     creazione guidata, con i passi in chiaro
+├── assistant/                  il pannello conversazionale
+├── runtime/                    sessione, eventi, segreti, tabelle, esecuzione
+├── runs/                       storico e log per nodo
+└── fields/                     i tipi di campo della configurazione
 
 apps/desktop/src-tauri/src/
 ├── commands/workflow_cmd.rs    comandi esposti alla UI
-├── sidecar/                    avvio, health-check, spegnimento del runtime
+├── runtime/                    avvio, salute, spegnimento del motore
 └── db/workflows.rs             persistenza locale
 ```
 
-## Ordine di lavoro
+## Ordine di lavoro, e dove si è arrivati
 
-1. Canvas con i nodi base e persistenza locale (valore visibile subito).
-2. **AI scaffold** col contratto esplicito e la validazione a 3 livelli.
-3. Sidecar del runtime e esecuzione reale.
-4. Registry dei nodi `.ffnode`.
-5. Relay per i webhook e promozione del runtime a servizio di sistema.
+1. ✅ Canvas con i nodi base e persistenza locale.
+2. ✅ AI scaffold col contratto esplicito e la validazione a 3 livelli, più il
+   controllo di qualità (ADR 0006) e il wizard che mostra i passi.
+3. ✅ Motore e esecuzione reale, impacchettati e autonomi (ADR 0007, ADR 0008).
+4. ⬜ Registry dei nodi `.ffnode`.
+5. ⬜ Relay per i webhook e promozione del motore a servizio di sistema.
+
+Restano aperte, oltre ai punti 4 e 5: versioni e ritorno indietro, bozza
+separata dal salvato, dati fissati per la prova, prova del singolo nodo,
+riesecuzione, esportazione ripulita dalle credenziali.
