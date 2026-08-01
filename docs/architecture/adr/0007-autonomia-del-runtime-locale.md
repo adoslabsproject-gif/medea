@@ -11,7 +11,7 @@ nodi, anche quando non c'è nessuno davanti allo schermo. Un editor che non
 esegue è un disegnatore di diagrammi.
 
 La strada è quella dell'ADR 0005: **riusare il runtime vero come processo
-figlio**, non riscriverlo. Riscrivere 145 esecutori significa inseguire per
+figlio**, non riscriverlo. Riscrivere 193 esecutori significa inseguire per
 sempre, e «quasi tutti funzionano» non è una risposta.
 
 ## Cosa è già dimostrato
@@ -94,7 +94,7 @@ consegna al runtime le credenziali IMAP/SMTP. Finché non si fa,
 > diventano account del runtime. La consegna avviene all'apertura della
 > sessione — vedi `runtime/secrets.ts` e `runtime/provision.ts`.
 
-### 4. Il catalogo è parziale
+### 4. Il catalogo era parziale
 
 145 defId estratti contro i 193 che il runtime carica. Mancano pezzi grossi:
 `logic_subworkflow`, `action_pdf_parse`, `action_xlsx_*`, `db_sql_query`, otto

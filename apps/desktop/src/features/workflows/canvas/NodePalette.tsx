@@ -2,7 +2,7 @@
  * La palette dei nodi disponibili.
  *
  * La ricerca è la stessa che usa l'agente (`catalog.searchNodes`): scrivendo
- * «invia email» l'utente trova quello che troverebbe il modello. Sono 145
+ * «invia email» l'utente trova quello che troverebbe il modello. Sono 193
  * nodi — senza una ricerca decente sarebbero inutilizzabili, e senza la
  * stessa ricerca sarebbero due prodotti diversi.
  */
