@@ -65,6 +65,20 @@ jobs:
       - name: Build design tokens
         run: pnpm tokens:build
 
+      # Il motore dei workflow. Senza questo passo l'installatore esce con la
+      # cartella `resources/runtime` vuota — e' successo fino alla 0.2.0: chi
+      # scaricava trovava un editor che disegna workflow e non ne esegue
+      # nessuno. Prima i pacchetti, poi il bundle, poi la copia che viaggia
+      # con l'app (dipendenze di produzione + il Node del runner).
+      - name: Costruisci i pacchetti del motore
+        run: pnpm -r --filter "./packages/engine/**" --filter "./packages/engine-shared" build
+
+      - name: Costruisci il motore
+        run: pnpm --filter @flowforge/runtime build
+
+      - name: Impacchetta il motore dentro l'app
+        run: node scripts/package-runtime.mjs
+
       # La versione dichiarata dall'app, letta dove la legge Tauri: cosi' il
       # nome della release non puo' discostarsi da quello degli installatori.
       - name: Leggi la versione

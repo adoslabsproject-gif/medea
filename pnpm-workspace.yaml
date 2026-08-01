@@ -20,3 +20,10 @@ allowBuilds:
   protobufjs: true
   re2: true
   ssh2: true
+
+# `tauri build` imposta NODE_ENV=production per il passo del frontend. pnpm lo
+# legge, deduce che le dipendenze di sviluppo non servano più e si offre di
+# togliere `node_modules` per reinstallarlo senza — in mezzo a una build, con
+# il typecheck che di quelle dipendenze vive. Il controllo qui non serve:
+# l'installazione la governa chi lancia i comandi, non un passo intermedio.
+verifyDepsBeforeRun: false

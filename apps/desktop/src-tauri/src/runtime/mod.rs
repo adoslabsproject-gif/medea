@@ -110,7 +110,16 @@ fn bundle_entry(resource_dir: &Path) -> Result<PathBuf> {
 /// L'eseguibile Node da usare. Nell'app installata sarà quello impacchettato;
 /// in sviluppo quello di sistema.
 fn node_binary(resource_dir: &Path) -> PathBuf {
-    for candidate in ["resources/runtime/node", "runtime/node"] {
+    // Su Windows l'eseguibile si chiama `node.exe`: cercare solo `node`
+    // significherebbe non trovarlo mai lì, ricadere su quello di sistema — che
+    // su un computer qualunque non c'è — e avere un'app che non esegue niente
+    // proprio dove l'abbiamo appena impacchettata.
+    let names: [&str; 2] = if cfg!(windows) {
+        ["resources/runtime/node.exe", "runtime/node.exe"]
+    } else {
+        ["resources/runtime/node", "runtime/node"]
+    };
+    for candidate in names {
         let bundled = resource_dir.join(candidate);
         if bundled.exists() {
             return bundled;
