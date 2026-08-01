@@ -59,6 +59,16 @@ export interface Workflow {
   /** Come lo conosce il runtime, quando gli è già stato mandato. Serve a non
    *  creargliene una copia nuova a ogni esecuzione. */
   runtimeId?: string;
+  /**
+   * La copia di PROVA nel motore: sempre spenta, ci scrive «Esegui».
+   *
+   * Serve a provare una modifica senza che diventi quello che gira: il motore
+   * tiene una copia sola per identificativo, e quella pubblicata è ciò che lo
+   * scheduler esegue.
+   */
+  draftRuntimeId?: string;
+  /** Quando la bozza è diventata quello che gira. Assente: mai pubblicato. */
+  publishedAt?: string;
   runVerbosity?: 'silent' | 'summary' | 'full';
   /**
    * Dove viene eseguito. In Medea è **sempre** `local`: il workflow gira sul

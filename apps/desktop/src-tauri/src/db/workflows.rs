@@ -21,8 +21,15 @@ pub struct WorkflowRow {
     /// `local` | `server`
     pub execution_target: String,
     pub enabled: bool,
-    /// Come lo conosce il runtime, quando gli è già stato mandato.
+    /// Come lo conosce il runtime: è la copia PUBBLICATA, quella che lo
+    /// scheduler esegue.
     pub runtime_id: Option<String>,
+    /// La copia di PROVA, sempre spenta nel motore: ci scrive «Esegui», così
+    /// provare una modifica non la manda in produzione.
+    pub draft_runtime_id: Option<String>,
+    /// Quando la bozza è diventata quello che gira. Confrontato con
+    /// `updated_at` dice se ci sono modifiche non ancora pubblicate.
+    pub published_at: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -102,6 +109,8 @@ fn row_to_workflow(r: &rusqlite::Row<'_>) -> rusqlite::Result<WorkflowRow> {
         created_at: r.get(6)?,
         updated_at: r.get(7)?,
         runtime_id: r.get(8)?,
+        draft_runtime_id: r.get(9)?,
+        published_at: r.get(10)?,
     })
 }
 
@@ -113,7 +122,7 @@ fn row_to_workflow(r: &rusqlite::Row<'_>) -> rusqlite::Result<WorkflowRow> {
 pub fn by_runtime_id(conn: &Connection, runtime_id: &str) -> Result<Option<WorkflowRow>> {
     let mut stmt = conn.prepare(
         "SELECT id, name, description, graph_json, execution_target, enabled, created_at, updated_at,
-                runtime_id
+                runtime_id, draft_runtime_id, published_at
          FROM workflows WHERE runtime_id = ?1",
     )?;
     let mut rows = stmt.query_map(params![runtime_id], row_to_workflow)?;
@@ -126,7 +135,7 @@ pub fn by_runtime_id(conn: &Connection, runtime_id: &str) -> Result<Option<Workf
 pub fn get(conn: &Connection, id: i64) -> Result<Option<WorkflowRow>> {
     let mut stmt = conn.prepare(
         "SELECT id, name, description, graph_json, execution_target, enabled, created_at, updated_at,
-                runtime_id
+                runtime_id, draft_runtime_id, published_at
          FROM workflows WHERE id = ?1",
     )?;
     let mut rows = stmt.query_map(params![id], row_to_workflow)?;
@@ -186,6 +195,28 @@ pub fn upsert(conn: &Connection, wf: &WorkflowInput) -> Result<i64> {
 }
 
 /// Ricorda con che nome il runtime conosce questo workflow.
+/// Registra la copia di PROVA: quella su cui scrive «Esegui».
+///
+/// È sempre spenta nel motore, e lo scheduler non la guarda. Serve a provare
+/// una modifica senza che diventi quello che gira alle otto del mattino.
+pub fn set_draft_runtime_id(conn: &Connection, id: i64, runtime_id: &str) -> Result<()> {
+    conn.execute(
+        "UPDATE workflows SET draft_runtime_id = ?2 WHERE id = ?1",
+        params![id, runtime_id],
+    )?;
+    Ok(())
+}
+
+/// Segna che la bozza è diventata quello che gira.
+pub fn mark_published(conn: &Connection, id: i64) -> Result<()> {
+    conn.execute(
+        "UPDATE workflows SET published_at = datetime('now') WHERE id = ?1",
+        params![id],
+    )?;
+    Ok(())
+}
+
+/// Registra la copia PUBBLICATA: quella che lo scheduler esegue.
 pub fn set_runtime_id(conn: &Connection, id: i64, runtime_id: &str) -> Result<()> {
     conn.execute(
         "UPDATE workflows SET runtime_id = ?2 WHERE id = ?1",

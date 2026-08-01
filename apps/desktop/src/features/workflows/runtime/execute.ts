@@ -44,17 +44,32 @@ function toRuntimeBody(workflow: Workflow, enabled?: boolean) {
 }
 
 /**
+ * Quale delle due copie: quella che gira, o quella di prova.
+ *
+ * Il motore ne tiene una per identificativo, e quella pubblicata è ciò che lo
+ * scheduler esegue. Scriverci sopra per provare una modifica significherebbe
+ * mandarla in produzione senza che nessuno l'abbia chiesto.
+ */
+type Copia = 'pubblicata' | 'prova';
+
+/**
  * Assicura che il runtime abbia questo workflow, e restituisce il suo
  * identificativo là dentro.
+ *
+ * La copia di **prova** viaggia sempre spenta: esiste per essere eseguita a
+ * mano, non per far scattare trigger.
  */
 export async function syncToRuntime(
   workflow: Workflow,
   runtimeId?: string,
   enabled?: boolean,
+  copia: Copia = 'pubblicata',
 ): Promise<string> {
+  const body = toRuntimeBody(workflow, copia === 'prova' ? false : enabled);
+
   if (runtimeId) {
     try {
-      await runtimeApi.put(`/workflows/${runtimeId}`, toRuntimeBody(workflow, enabled));
+      await runtimeApi.put(`/workflows/${runtimeId}`, body);
       return runtimeId;
     } catch {
       // Il runtime non lo conosce più (database azzerato, copia spostata):
@@ -62,14 +77,14 @@ export async function syncToRuntime(
     }
   }
 
-  const created = await runtimeApi.post<RuntimeWorkflowResponse>(
-    '/workflows',
-    toRuntimeBody(workflow, enabled),
-  );
+  const created = await runtimeApi.post<RuntimeWorkflowResponse>('/workflows', body);
   const id = created.workflow.id;
 
   if (workflow.id) {
-    await invoke('workflow_set_runtime_id', { id: Number(workflow.id), runtimeId: id });
+    await invoke(copia === 'prova' ? 'workflow_set_draft_runtime_id' : 'workflow_set_runtime_id', {
+      id: Number(workflow.id),
+      runtimeId: id,
+    });
   }
   return id;
 }
@@ -83,7 +98,10 @@ export async function syncToRuntime(
  * legge — interfaccia che promette un comportamento inesistente.
  */
 export async function setEnabledOnRuntime(workflow: Workflow, enabled: boolean): Promise<string> {
-  const runtimeId = await syncToRuntime(workflow, workflow.runtimeId, enabled);
+  const runtimeId = await syncToRuntime(workflow, workflow.runtimeId, enabled, 'pubblicata');
+  // Attivare È pubblicare: da questo momento quello che gira è il documento
+  // che si sta guardando, e le modifiche successive restano bozza.
+  if (workflow.id) await invoke('workflow_mark_published', { id: Number(workflow.id) });
   await reloadRuntime();
   // Il riavvio invalida la sessione: il flusso aperto sulla vecchia va
   // riaperto, altrimenti gli ascoltatori restano attaccati a un processo morto.
@@ -117,7 +135,15 @@ export async function runWorkflow(
     signal?: AbortSignal;
   } = {},
 ): Promise<RunProgress> {
-  const runtimeId = await syncToRuntime(workflow, options.runtimeId);
+  // Sulla copia di PROVA, mai su quella pubblicata. Prima «Esegui» ci
+  // scriveva sopra: si cambiava un indirizzo per vedere l'effetto, e il cron
+  // del mattino dopo usava quello.
+  const runtimeId = await syncToRuntime(
+    workflow,
+    options.runtimeId ?? workflow.draftRuntimeId,
+    false,
+    'prova',
+  );
   const started = await runtimeApi.post<{ runId: string }>(`/workflows/${runtimeId}/run`, {
     input: options.input ?? {},
   });

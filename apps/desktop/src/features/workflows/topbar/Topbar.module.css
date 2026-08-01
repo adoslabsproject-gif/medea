@@ -155,4 +155,20 @@
   .stop:hover {
     background: color-mix(in oklch, var(--color-feedback-danger) 12%, transparent);
   }
+
+  /* «Pubblica» compare solo quando serve: un workflow attivo con modifiche
+     che il motore non sta ancora eseguendo. */
+  .publish {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-accent-solid);
+    border-radius: var(--radius-sm);
+    background: var(--color-accent-solid);
+    color: var(--color-accent-on-solid);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
 }

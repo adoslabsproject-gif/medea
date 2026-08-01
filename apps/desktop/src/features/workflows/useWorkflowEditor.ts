@@ -47,6 +47,8 @@ export interface WorkflowEditor {
   create: () => void;
   save: () => Promise<void>;
   toggleEnabled: (blockedReason?: string) => Promise<void>;
+  /** Manda in produzione la bozza corrente. */
+  publish: () => Promise<void>;
   duplicate: (id: number) => Promise<void>;
   remove: (id: number) => Promise<void>;
   undo: () => void;
@@ -195,6 +197,29 @@ export function useWorkflowEditor(): WorkflowEditor {
    * pianificazione ricaricata: senza, «Attivo» scriverebbe un flag che nessuno
    * legge, che è la cosa peggiore che possa fare un pulsante.
    */
+  /**
+   * Manda in produzione quello che si sta guardando.
+   *
+   * Serve perché «Esegui» scrive sulla copia di PROVA: un workflow attivo
+   * continua a eseguire la versione di prima finché non lo si dice. È
+   * voluto — provare una modifica non deve cambiare cosa gira alle otto del
+   * mattino — ma qualcuno deve poterlo decidere.
+   */
+  const publish = useCallback(async () => {
+    if (!workflow.id) return;
+    setNotice('Pubblico…');
+    try {
+      await persist(true);
+      await setEnabledOnRuntime(workflow, true);
+      setNotice('Pubblicato: da adesso il motore esegue questa versione.');
+      await refresh();
+      const aggiornato = await workflowApi.get(Number(workflow.id));
+      if (aggiornato) baseline.current = aggiornato;
+    } catch (e) {
+      setNotice(`Non sono riuscito a pubblicare: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }, [workflow, persist, refresh]);
+
   const toggleEnabled = useCallback(
     async (blockedReason?: string) => {
       const next = !enabled;
@@ -324,6 +349,7 @@ export function useWorkflowEditor(): WorkflowEditor {
     create,
     save,
     toggleEnabled,
+    publish,
     duplicate,
     remove,
     undo,
