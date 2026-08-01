@@ -20,6 +20,7 @@ export { RelayDialog } from './RelayDialog';
 export { SecretsDialog } from './SecretsDialog';
 export { TriggerInputDialog } from './TriggerInputDialog';
 export { WorkflowSettingsDialog } from './WorkflowSettingsDialog';
+export { CommandPalette } from './CommandPalette';
 export { VersionsDialog } from './VersionsDialog';
 export { WizardModal } from './wizard';
 export { useAutonomousRuns } from './runtime';
