@@ -16,17 +16,17 @@
  * Il secondo punto conta quanto il primo: senza, una ricorsione riempie il
  * disco di esecuzioni e satura la macchina.
  *
- * ───── Quello che `wait` NON fa ─────
+ * ───── Che «aspetta» aspetti davvero ─────
  *
- * Il campo si chiama «aspetta», ma il motore risponde `202` appena la nuova
- * esecuzione è in coda — è asincrono di proposito, per non morire sui
- * workflow che durano minuti. L'esecutore del nodo legge quella risposta e
- * quindi riceve un'esecuzione appena nata: `status: running`, zero passi.
+ * `POST /workflows/:id/run` risponde `202` appena la run è in coda — è
+ * asincrono di proposito, per non morire sui workflow che durano minuti — e
+ * per un po' l'esecutore restituiva quella risposta come risultato: il
+ * chiamante riceveva `status: running` e zero passi, cioè un'esecuzione
+ * appena nata invece dell'output del sub.
  *
- * Il chiamato gira e finisce; il chiamante non lo sa. È un limite del nodo
- * nel motore, non di Medea, e il collaudo lo fissa invece di far finta che
- * non ci sia: se un giorno l'esecutore imparasse ad aspettare, questo test
- * fallirebbe e ci direbbe che il limite non c'è più.
+ * Adesso l'esecutore interroga `GET /runs/:id` finché la run non è in uno
+ * stato terminale, e questo collaudo lo verifica: se qualcuno tornasse alla
+ * risposta immediata, l'ultimo controllo fallirebbe.
  *
  * Uso: node scripts/collaudo-subworkflow.mjs [http://127.0.0.1:PORTA]
  */
@@ -170,29 +170,29 @@ async function main() {
   );
 
   console.log('');
-  // L'esecuzione del figlio, guardata a parte: il padre non la aspetta, ma
-  // deve essere partita e deve finire.
+  // L'esecuzione del figlio, ritrovata dal suo identificativo: il dispatch la
+  // chiama `runId`, la lettura la chiama `id`, e leggere il campo sbagliato
+  // non fallisce — restituisce `undefined`.
   const idFiglio = JSON.parse(passo?.output ?? '{}').runId;
-  const figliaFinita = idFiglio
-    ? await attendi(async () => {
-        const d = await call(`/runs/${idFiglio}`);
-        return ['success', 'error', 'partial'].includes(d.run.status) ? d : null;
-      })
-    : null;
-  console.log(`  Esecuzione del figlio: ${figliaFinita?.run.status ?? 'mai partita'}`);
+  const figliaFinita = idFiglio ? await call(`/runs/${idFiglio}`) : null;
+  console.log(`  Esecuzione del figlio: ${figliaFinita?.run.status ?? 'non ritrovata'}`);
 
   const esito = [
     ['la chiamata riesce', passo?.status === 'success'],
-    ['il figlio parte davvero', Boolean(idFiglio)],
-    ['e arriva in fondo', figliaFinita?.run.status === 'success'],
+    ['il chiamante riceve l’identificativo del chiamato', Boolean(idFiglio)],
+    ['e quella esecuzione esiste davvero', figliaFinita?.run.status === 'success'],
     ['chi chiama sé stesso viene fermato', passoRicorsivo?.status === 'error'],
     [
       'e il motivo lo dice',
       Boolean(passoRicorsivo?.error?.toLowerCase().includes('self-recursion')),
     ],
-    // Il limite, fissato: `wait` non aspetta. Se un giorno cambiasse, questo
-    // test fallirebbe — ed è esattamente quello che deve fare.
-    ['«aspetta» non aspetta ancora', JSON.parse(passo?.output ?? '{}').status === 'running'],
+    // Il punto: «aspetta» aspetta. Se qualcuno tornasse alla risposta
+    // immediata del dispatch, qui si vedrebbe `running` con zero passi.
+    ['«aspetta» aspetta davvero', JSON.parse(passo?.output ?? '{}').status === 'success'],
+    [
+      'e il chiamante riceve i passi del chiamato',
+      (JSON.parse(passo?.output ?? '{}').steps ?? []).length > 0,
+    ],
   ];
   for (const [cosa, ok] of esito) console.log(`  ${ok ? '✓' : '✗'} ${cosa}`);
 

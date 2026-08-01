@@ -21,7 +21,6 @@ import { NodeActionPicker } from './NodeActionPicker';
 import styles from './NodeInspector.module.css';
 import { NodeTestPanel } from './NodeTestPanel';
 import { PinPanel } from './PinPanel';
-import { SubworkflowNote } from './SubworkflowNote';
 import { WebhookAddress } from './WebhookAddress';
 import { WebhookTester } from './WebhookTester';
 
@@ -115,7 +114,6 @@ export function NodeInspector({
           <>
             {def?.description && <p className={styles.description}>{def.description}</p>}
             {node.defId === 'trigger_webhook' && <WebhookAddress runtimeId={runtimeId} />}
-            {node.defId === 'logic_subworkflow' && <SubworkflowNote config={node.config} />}
             {def && hasActions(def) && (
               <NodeActionPicker def={def} config={node.config} onChange={onChange} />
             )}
