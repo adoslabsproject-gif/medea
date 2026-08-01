@@ -19,6 +19,7 @@ use std::time::{Duration, Instant};
 use once_cell::sync::OnceCell;
 use serde::Serialize;
 
+mod orphan;
 pub mod session;
 
 /// Quanto si aspetta che il runtime risponda prima di dichiararlo non partito.
@@ -40,6 +41,8 @@ pub struct RuntimeStatus {
 struct RuntimeProcess {
     child: Child,
     port: u16,
+    /// Dove sta il biglietto col numero del processo, da togliere alla fine.
+    data: PathBuf,
 }
 
 impl Drop for RuntimeProcess {
@@ -48,6 +51,7 @@ impl Drop for RuntimeProcess {
         // chiusa: si spegne insieme a lei.
         let _ = self.child.kill();
         let _ = self.child.wait();
+        orphan::forget(&self.data);
     }
 }
 
@@ -183,6 +187,10 @@ fn spawn(resource_dir: &Path, data_dir: &Path) -> Result<u16> {
     let runtime_data = data_dir.join("workflow-runtime");
     std::fs::create_dir_all(&runtime_data).context("cartella dati del runtime")?;
 
+    // Un motore rimasto in piedi da una chiusura brusca terrebbe la sua porta
+    // e continuerebbe a eseguire i workflow di un'app che non c'è più.
+    orphan::kill_stale(&runtime_data);
+
     tracing::info!("Avvio runtime workflow: {} (porta {port})", entry.display());
 
     let child = Command::new(&node)
@@ -201,7 +209,12 @@ fn spawn(resource_dir: &Path, data_dir: &Path) -> Result<u16> {
         .spawn()
         .with_context(|| format!("impossibile avviare {}", node.display()))?;
 
-    let mut process = RuntimeProcess { child, port };
+    orphan::remember(&runtime_data, child.id());
+    let mut process = RuntimeProcess {
+        child,
+        port,
+        data: runtime_data.clone(),
+    };
 
     let deadline = Instant::now() + STARTUP_TIMEOUT;
     while Instant::now() < deadline {
