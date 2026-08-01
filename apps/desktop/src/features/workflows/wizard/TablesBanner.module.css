@@ -1,0 +1,73 @@
+@layer features {
+  .root {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border: 1px solid var(--color-border-warning, var(--color-border-default));
+    border-radius: var(--radius-md);
+    background: var(--color-surface-1);
+  }
+
+  .done,
+  .failed {
+    margin: 0;
+    display: block;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .failed {
+    border-color: var(--color-border-danger, var(--color-border-default));
+  }
+
+  .text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-inline-size: 0;
+  }
+
+  .title {
+    margin: 0;
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+  }
+
+  .body {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .list {
+    margin: 0;
+    padding-inline-start: var(--space-5);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+  }
+
+  .columns {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+  }
+
+  .create {
+    flex-shrink: 0;
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: var(--color-accent-solid);
+    color: var(--color-accent-on-solid);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+  }
+  .create:disabled {
+    opacity: 0.5;
+    cursor: progress;
+  }
+}

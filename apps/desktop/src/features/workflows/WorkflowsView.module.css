@@ -162,4 +162,9 @@
     color: var(--color-text-muted);
     flex-shrink: 0;
   }
+
+  /* Il pannello delle tabelle mancanti, fra la barra e la lavagna. */
+  .tables:not(:empty) {
+    padding: var(--space-2) var(--space-3) 0;
+  }
 }

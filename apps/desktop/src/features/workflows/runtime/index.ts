@@ -12,6 +12,10 @@ export { runWorkflow, setEnabledOnRuntime, syncToRuntime } from './execute';
 export { closeRuntimeEvents, subscribeRuntime } from './events';
 export type { RuntimeEvent } from './events';
 export { startRunWatcher } from './watcher';
+export { missingTables, planTables } from './table-plan';
+export type { PlannedTable, PlannedColumn, ColumnType } from './table-plan';
+export { createTables, existingTables, forgetWorkingDatabase, workingDatabase } from './tables';
+export type { CreateReport } from './tables';
 export { provisionRuntime } from './provision';
 export type { ProvisionReport } from './provision';
 export {

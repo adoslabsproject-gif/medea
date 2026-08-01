@@ -24,7 +24,7 @@ import { Topbar } from './topbar';
 import type { NodeDef } from './types';
 import { useWorkflowEditor } from './useWorkflowEditor';
 import { useWorkflowRun } from './useWorkflowRun';
-import { WizardModal } from './wizard';
+import { TablesBanner, WizardModal } from './wizard';
 import { WorkflowList } from './WorkflowList';
 import styles from './WorkflowsView.module.css';
 
@@ -165,6 +165,15 @@ export function WorkflowsView() {
             },
           }}
         />
+
+        {/* Le tabelle che il workflow dà per esistenti. Sta qui e non solo
+            nel wizard perché il problema è dello stesso peso quando il
+            workflow lo si disegna a mano. */}
+        {runtime.status.running && (
+          <div className={styles.tables}>
+            <TablesBanner workflow={workflow} />
+          </div>
+        )}
 
         <WorkflowCanvas workflow={workflow} onChange={editor.change} runByNode={run.stepsByNode} />
 
