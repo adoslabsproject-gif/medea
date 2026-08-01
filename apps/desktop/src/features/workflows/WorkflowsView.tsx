@@ -17,10 +17,11 @@ import { AssistantPanel } from './assistant';
 import { diagnose, globalIssues } from './canvas/diagnostics';
 import { WorkflowCanvas } from './canvas/WorkflowCanvas';
 import { findNode } from './catalog';
+import { missingSecrets } from './missing-secrets';
 import { NodesDialog } from './NodesDialog';
 import { RelayDialog } from './RelayDialog';
 import { RunsModal } from './runs';
-import { syncToRuntime, useRuntime } from './runtime';
+import { secretNames, syncToRuntime, useRuntime } from './runtime';
 import { SecretsDialog } from './SecretsDialog';
 import { CollapsibleColumn } from './shared';
 import { Topbar } from './topbar';
@@ -119,6 +120,17 @@ export function WorkflowsView() {
    * salvate.
    */
   const unpublished = editor.enabled && (editor.dirty || !workflow.publishedAt);
+
+  /**
+   * I segreti che il workflow nomina e che non esistono.
+   *
+   * Senza, il workflow parte, arriva a quel nodo e fallisce con un «401» del
+   * servizio esterno — che manda a cercare il problema dalla parte sbagliata.
+   */
+  const secretiMancanti = useMemo(
+    () => missingSecrets(workflow, secretNames()),
+    [workflow, secretsOpen],
+  );
 
   return (
     <div className={styles.root}>
@@ -234,6 +246,26 @@ export function WorkflowsView() {
             },
           }}
         />
+
+        {secretiMancanti.length > 0 && (
+          <div className={styles.missingSecrets} role="status">
+            <span>
+              {secretiMancanti.length === 1
+                ? 'Un segreto nominato non esiste:'
+                : 'Alcuni segreti nominati non esistono:'}{' '}
+              <code>{secretiMancanti.join(', ')}</code>. Il workflow fallirebbe arrivando lì.
+            </span>
+            <button
+              type="button"
+              className={styles.missingAction}
+              onClick={() => {
+                setSecretsOpen(true);
+              }}
+            >
+              Definiscili
+            </button>
+          </div>
+        )}
 
         {/* Le tabelle che il workflow dà per esistenti. Sta qui e non solo
             nel wizard perché il problema è dello stesso peso quando il
