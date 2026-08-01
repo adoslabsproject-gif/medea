@@ -35,8 +35,10 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   readdirSync,
   rmSync,
+  writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -250,8 +252,18 @@ async function main() {
   // Solo quello che serve a eseguire: i sorgenti e la configurazione di
   // sviluppo del runtime non c'entrano niente con l'app installata.
   console.log('  Metto insieme il pacchetto…');
+  // Il README della cartella è TRACCIATO: è l'unica cosa che tiene
+  // `resources/runtime` dentro git, e senza di lui ogni compilazione su una
+  // copia pulita fallisce con «resource path doesn't exist». Cancellarlo qui
+  // e non rimetterlo — come faceva questa riga — significa che il commit
+  // successivo porta via la rimozione e rompe la CI.
+  const segnaposto = existsSync(join(TARGET, 'README.md'))
+    ? readFileSync(join(TARGET, 'README.md'), 'utf8')
+    : null;
+
   rmSync(TARGET, { recursive: true, force: true });
   mkdirSync(TARGET, { recursive: true });
+  if (segnaposto !== null) writeFileSync(join(TARGET, 'README.md'), segnaposto);
   for (const name of ['dist', 'node_modules', 'package.json', 'node']) {
     const from = join(staging, name);
     if (existsSync(from)) {
