@@ -19,6 +19,7 @@ export interface TopbarActions {
   onRun: () => void;
   onSecrets: () => void;
   onVersions: () => void;
+  onNodes: () => void;
   onToggleEnabled: () => void;
   onToggleAssistant: () => void;
   onUndo: () => void;
@@ -95,6 +96,17 @@ export function Topbar({
           disabled: !saved,
           disabledReason: 'Non è ancora stato salvato',
           onSelect: actions.onDelete,
+        },
+      ],
+    },
+    {
+      label: 'Nodi',
+      items: [
+        {
+          label: 'Nodi aggiuntivi',
+          icon: '🧩',
+          hint: 'Installa un pacchetto .ffnode da file',
+          onSelect: actions.onNodes,
         },
       ],
     },

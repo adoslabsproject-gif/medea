@@ -9,7 +9,7 @@
 
 import { useMemo, useState } from 'react';
 
-import { NODE_GROUPS, nodesByGroup, searchNodes } from '../catalog';
+import { NODE_GROUPS, nodesByGroup, searchNodes, useCommunityNodes } from '../catalog';
 import type { NodeDef } from '../types';
 
 import { brandIconFor } from './brand-icons';
@@ -41,13 +41,16 @@ export function NodePalette({ onAdd, insertMode }: Props) {
   const [query, setQuery] = useState('');
   const trimmed = query.trim();
 
-  const results = useMemo(() => (trimmed ? searchNodes(trimmed) : null), [trimmed]);
+  // I nodi aggiuntivi arrivano quando il motore risponde, non al primo
+  // disegno: la palette deve accorgersene.
+  const extra = useCommunityNodes();
+  const results = useMemo(() => (trimmed ? searchNodes(trimmed) : null), [trimmed, extra]);
   const groups = useMemo(
     () =>
       NODE_GROUPS.map((g) => ({ ...g, nodes: nodesByGroup(g.id) })).filter(
         (g) => g.nodes.length > 0,
       ),
-    [],
+    [extra],
   );
 
   return (

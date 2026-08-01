@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { runtimeStatus, startRuntime, type RuntimeStatus } from './client';
+import { refreshCommunityNodes } from './community';
 import { provisionRuntime } from './provision';
 import { startRunWatcher } from './watcher';
 
@@ -64,7 +65,13 @@ export function useRuntime(): RuntimeState {
     void startRuntime()
       .then((s) => {
         setStatus(s);
-        if (s.running) provision();
+        if (s.running) {
+          provision();
+          // I nodi aggiuntivi vivono nel motore: senza questa chiamata la
+          // palette mostrerebbe solo i preinstallati, e un pacchetto appena
+          // installato sembrerebbe sparito.
+          void refreshCommunityNodes();
+        }
       })
       .catch((e: unknown) => {
         setStatus({ running: false, error: e instanceof Error ? e.message : String(e) });
