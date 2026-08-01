@@ -14,6 +14,13 @@ export type { RuntimeEvent } from './events';
 export { startRunWatcher } from './watcher';
 export { replayRun } from './replay';
 export type { ReplayResult } from './replay';
+export {
+  installCommunityNode,
+  listCommunityNodes,
+  refreshCommunityNodes,
+  uninstallCommunityNode,
+} from './community';
+export type { CommunityNode } from './community';
 export { testNode } from './test-node';
 export { getVersion, listVersions, rollbackVersion, snapshotVersion } from './versions';
 export type { WorkflowVersion } from './versions';
