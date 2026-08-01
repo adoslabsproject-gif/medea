@@ -18,13 +18,14 @@ import { diagnose, globalIssues } from './canvas/diagnostics';
 import { WorkflowCanvas } from './canvas/WorkflowCanvas';
 import { findNode } from './catalog';
 import { RunsModal } from './runs';
-import { useRuntime } from './runtime';
+import { syncToRuntime, useRuntime } from './runtime';
 import { SecretsDialog } from './SecretsDialog';
 import { CollapsibleColumn } from './shared';
 import { Topbar } from './topbar';
 import type { NodeDef } from './types';
 import { useWorkflowEditor } from './useWorkflowEditor';
 import { useWorkflowRun } from './useWorkflowRun';
+import { VersionsDialog } from './VersionsDialog';
 import { TablesBanner, WizardModal } from './wizard';
 import { WorkflowList } from './WorkflowList';
 import styles from './WorkflowsView.module.css';
@@ -49,6 +50,7 @@ export function WorkflowsView() {
   } | null>(null);
   const [secretsOpen, setSecretsOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(
     () => localStorage.getItem(ASSISTANT_OPEN_KEY) !== 'false',
   );
@@ -154,6 +156,31 @@ export function WorkflowsView() {
             onSecrets: () => {
               setSecretsOpen(true);
             },
+            onVersions: () => {
+              // Le versioni le tiene il motore, e il motore conosce il
+              // workflow solo dopo che gliel'abbiamo mandato: un documento
+              // mai eseguito non ne ha ancora nessuna. Si manda adesso, così
+              // la prima versione è quella che si sta guardando.
+              if (workflow.runtimeId) {
+                setVersionsOpen(true);
+                return;
+              }
+              void editor
+                .save()
+                .then(() => syncToRuntime(workflow, undefined))
+                .then(() => {
+                  if (workflow.id) return editor.open(Number(workflow.id));
+                  return undefined;
+                })
+                .then(() => {
+                  setVersionsOpen(true);
+                })
+                .catch(() => {
+                  editor.setNotice(
+                    'Il motore non è raggiungibile: le versioni non sono disponibili.',
+                  );
+                });
+            },
             onRun: () => {
               // Si salva prima: eseguire una versione diversa da quella sul
               // disco vorrebbe dire che lo storico racconta un documento che
@@ -256,6 +283,20 @@ export function WorkflowsView() {
             // l'utente decide, come qualunque altra modifica.
             editor.load(built, false);
             setWizardOpen(false);
+          }}
+        />
+      )}
+
+      {versionsOpen && workflow.runtimeId && (
+        <VersionsDialog
+          runtimeId={workflow.runtimeId}
+          workflow={workflow}
+          onClose={() => {
+            setVersionsOpen(false);
+          }}
+          onLoad={(restored) => {
+            // Arriva come bozza: si guarda, e si salva solo se convince.
+            editor.load(restored, editor.enabled);
           }}
         />
       )}
