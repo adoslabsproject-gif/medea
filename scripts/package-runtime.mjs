@@ -56,8 +56,19 @@ function fail(message) {
   process.exit(1);
 }
 
+/**
+ * Lancia un comando e aspetta che finisca.
+ *
+ * `shell: true` su Windows, e non per abitudine: lì `pnpm` non è un
+ * eseguibile ma `pnpm.cmd`, uno script che solo l'interprete dei comandi sa
+ * avviare. Senza, si ottiene `spawnSync pnpm ENOENT` — provato in CI — e la
+ * costruzione per Windows muore prima di cominciare.
+ *
+ * Gli argomenti sono nostri e nessuno arriva da fuori, quindi la shell qui
+ * non apre nessuna porta.
+ */
 function run(command, args, cwd) {
-  execFileSync(command, args, { cwd, stdio: 'inherit' });
+  execFileSync(command, args, { cwd, stdio: 'inherit', shell: process.platform === 'win32' });
 }
 
 /**
