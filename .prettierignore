@@ -14,3 +14,9 @@ pnpm-lock.yaml
 # dopo il punto, che nel testo canonico di PolyForm ci sono.
 LICENSE.md
 LICENSE
+
+# Il catalogo dei nodi è GENERATO da scripts/extract-flowforge-nodes.mjs.
+# Formattarlo a mano vuol dire che il prossimo `pnpm` di rigenerazione lo
+# rimette com'era e la CI torna rossa: si formatta chi lo scrive, non chi lo
+# legge.
+apps/desktop/src/features/workflows/catalog/stdlib-nodes.json

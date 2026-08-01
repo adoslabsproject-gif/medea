@@ -38,6 +38,7 @@ interface RuntimeNodeDescriptor {
   color?: string;
   description?: string;
   configFields?: unknown[];
+  actions?: unknown[];
   outputs?: string[];
   package?: string;
   vendor?: string;
@@ -93,6 +94,13 @@ function toNodeDef(d: RuntimeNodeDescriptor): NodeDef {
     ...(d.description ? { description: d.description } : {}),
     ...(Array.isArray(d.configFields) && d.configFields.length > 0
       ? { configFields: d.configFields as NonNullable<NodeDef['configFields']> }
+      : {}),
+    // Le operazioni: un pacchetto di comunità non è un nodo per operazione,
+    // è UN nodo che ne dichiara fino a settantacinque. Buttarle via — come
+    // faceva questa funzione — rendeva quei nodi inconfigurabili: si
+    // trascinavano sul disegno e non c'era modo di dire cosa dovessero fare.
+    ...(Array.isArray(d.actions) && d.actions.length > 0
+      ? { actions: d.actions as NonNullable<NodeDef['actions']> }
       : {}),
     ...(Array.isArray(d.outputs) && d.outputs.length > 0 ? { outputFields: d.outputs } : {}),
   };

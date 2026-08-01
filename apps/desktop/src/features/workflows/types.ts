@@ -107,7 +107,13 @@ export interface NodeAction {
   id: string;
   label?: string;
   description?: string;
-  /** I campi che compaiono solo quando è scelta questa azione. */
+  /** Il gruppo in cui l'operazione compare nell'elenco. */
+  category?: string;
+  /** La risorsa su cui agisce, nel modello risorsa/operazione. */
+  resource?: string;
+  /** Vero per le operazioni che si appoggiano a un modello. */
+  aiAction?: boolean;
+  /** I campi che compaiono solo quando è scelta questa operazione. */
   configFields?: NodeConfigField[];
 }
 

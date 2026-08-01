@@ -15,6 +15,8 @@ import { useState } from 'react';
 import { ConfigFieldRenderer, upstreamSources } from '../fields';
 import type { CanvasNode, NodeDef, WorkflowEdge } from '../types';
 
+import { fieldsFor, hasActions } from './node-actions';
+import { NodeActionPicker } from './NodeActionPicker';
 import styles from './NodeInspector.module.css';
 import { NodeTestPanel } from './NodeTestPanel';
 import { WebhookAddress } from './WebhookAddress';
@@ -52,7 +54,9 @@ export function NodeInspector({
   runtimeId,
 }: Props) {
   const [tab, setTab] = useState<Tab>('config');
-  const fields = def?.configFields ?? [];
+  // I campi dipendono da cosa fa il nodo: quelli di comunità ne hanno un
+  // gruppo condiviso e uno per ogni operazione che dichiarano.
+  const fields = fieldsFor(def, node.config);
 
   const upstream = edges.filter((e) => e.to === node.id);
   const sources = upstreamSources(node.id, nodes, edges, defsById);
@@ -100,6 +104,9 @@ export function NodeInspector({
           <>
             {def?.description && <p className={styles.description}>{def.description}</p>}
             {node.defId === 'trigger_webhook' && <WebhookAddress runtimeId={runtimeId} />}
+            {def && hasActions(def) && (
+              <NodeActionPicker def={def} config={node.config} onChange={onChange} />
+            )}
             {fields.length === 0 ? (
               <p className={styles.none}>Questo nodo non ha impostazioni.</p>
             ) : (
