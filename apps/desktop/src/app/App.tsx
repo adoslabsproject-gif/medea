@@ -28,6 +28,10 @@ export function App() {
 function Root() {
   const store = useAccountStore();
   const [forceSetup, setForceSetup] = useState(false);
+  /** Chi ha scelto di guardare l'app senza configurare la posta. Vale per
+   *  questa sessione: alla riapertura la domanda torna, perché senza un
+   *  account l'app fa meno di quello che sa fare. */
+  const [skipped, setSkipped] = useState(false);
   const synced = useRef(false);
   useReminderNotifications();
   // Le automazioni attive devono girare anche se non si apre mai la sezione.
@@ -64,15 +68,24 @@ function Root() {
     return null;
   }
 
-  if (forceSetup || !store.active) {
-    // Mostra il bottone "← Indietro" solo se c'è già un account: al primo lancio
-    // l'utente DEVE configurare un account, niente uscita.
+  if (forceSetup || (!store.active && !skipped)) {
+    // «← Indietro» solo se un account c'è già: torna dove si stava.
+    // «Guarda prima l'app» solo se non c'è: è la via d'uscita del primo
+    // avvio, e con un account configurato non avrebbe senso.
     const canCancel = !!store.active;
     return (
       <AccountSetup
         onSaved={(acc) => {
           void persistNew(acc);
         }}
+        {...(canCancel
+          ? {}
+          : {
+              onSkip: () => {
+                setSkipped(true);
+                setForceSetup(false);
+              },
+            })}
         {...(canCancel
           ? {
               onCancel: () => {

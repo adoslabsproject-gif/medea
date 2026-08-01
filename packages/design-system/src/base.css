@@ -98,4 +98,27 @@
   a:hover {
     text-decoration: underline;
   }
+
+  /* ── Menù a tendina ──────────────────────────────────────────────────
+   *
+   * Il popup di un `<select>` lo disegna il sistema operativo, non noi: gli
+   * `<option>` finiscono fuori dal documento e non ereditano niente dal
+   * contenitore. Senza queste due righe, su macOS in tema scuro la voce
+   * selezionata veniva scritta in bianco su bianco — c'era, ma non si
+   * leggeva.
+   *
+   * Sta qui e non nel componente `Select` perché nell'app ci sono sedici
+   * `<select>` scritti a mano che il primitivo non lo usano: correggerlo in
+   * un posto solo è l'unico modo perché non ricapiti al diciassettesimo.
+   */
+  option {
+    background-color: var(--color-surface-2);
+    color: var(--color-text-primary);
+  }
+
+  /* Il campo chiuso: `color-scheme` fa disegnare al sistema la freccia e lo
+   * sfondo del popup con la tavolozza giusta per il tema corrente. */
+  select {
+    color-scheme: inherit;
+  }
 }
