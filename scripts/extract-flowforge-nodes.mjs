@@ -3,6 +3,12 @@
  *
  * Le descrizioni originali sono lunghe migliaia di caratteri: servono al
  * modello sul server, non alla palette. Qui si tiene la prima frase.
+ *
+ * I pacchetti espongono i nodi in due forme diverse: alcuni un oggetto per
+ * nodo, altri un unico array `stdlibNodes` con tutto dentro. Guardare solo la
+ * prima ne faceva sparire 48 su 193 — fra cui tutti gli `agent_*` e le
+ * utilità di trasformazione. Un estrattore che ne prende una parte e tace è
+ * peggio di uno che fallisce: il catalogo sembra completo.
  */
 import { writeFileSync } from 'node:fs';
 
@@ -16,13 +22,30 @@ const PACKAGES = [
 ];
 
 const defs = new Map();
-const collect = (mod) => {
-  for (const value of Object.values(mod)) {
-    if (!value || typeof value !== 'object') continue;
-    const def = value.def;
-    if (!def || typeof def.id !== 'string' || typeof def.type !== 'string') continue;
-    defs.set(def.id, def);
+
+/** Vero se questo è davvero un nodo e non una funzione di supporto. */
+const isNode = (value) =>
+  value &&
+  typeof value === 'object' &&
+  value.def &&
+  typeof value.def.id === 'string' &&
+  typeof value.def.type === 'string';
+
+/** Raccoglie da un valore esportato, qualunque forma abbia. */
+const take = (value, depth = 0) => {
+  if (!value || typeof value !== 'object' || depth > 2) return;
+  if (isNode(value)) {
+    defs.set(value.def.id, value.def);
+    return;
   }
+  // Un array di nodi (`stdlibNodes`), o un oggetto che li raggruppa.
+  for (const inner of Array.isArray(value) ? value : Object.values(value)) {
+    take(inner, depth + 1);
+  }
+};
+
+const collect = (mod) => {
+  for (const value of Object.values(mod)) take(value);
 };
 
 for (const pkg of PACKAGES) {

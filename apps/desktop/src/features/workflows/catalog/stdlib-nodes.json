@@ -1,5 +1,477 @@
 [
   {
+    "defId": "action_aggregate",
+    "type": "action",
+    "label": "Statistiche",
+    "icon": "bar-chart",
+    "color": "#9333ea",
+    "description": "Calcola statistiche aggregate su un array di numeri (o su un campo numerico di un array di oggetti) in JavaScript puro (zero dipendenze) —",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Statistica",
+        "type": "select",
+        "required": true,
+        "options": [
+          "all",
+          "sum",
+          "avg",
+          "min",
+          "max",
+          "median",
+          "stddev",
+          "count"
+        ],
+        "defaultValue": "all",
+        "description": "\"all\" = tutte insieme. Oppure scegline una sola come risultato principale."
+      },
+      {
+        "key": "items",
+        "label": "Array",
+        "type": "expression",
+        "defaultValue": "input",
+        "description": "Array di numeri o di oggetti. Vuoto = usa l'input del nodo."
+      },
+      {
+        "key": "key",
+        "label": "Campo numerico (dot-path)",
+        "type": "text",
+        "placeholder": "es. ordine.totale",
+        "description": "Se gli elementi sono oggetti, il campo da aggregare. Vuoto = gli elementi sono già numeri."
+      }
+    ],
+    "outputFields": [
+      "default"
+    ]
+  },
+  {
+    "defId": "action_api_response",
+    "type": "action",
+    "label": "API: Risposta REST",
+    "icon": "send",
+    "color": "#0284c7",
+    "description": "Trasforma il tuo workflow in una vera API REST con risposta STRUTTURATA e coerente, in JavaScript puro (zero dipendenze).",
+    "configFields": [
+      {
+        "key": "mode",
+        "label": "Tipo di risposta",
+        "type": "select",
+        "required": true,
+        "options": [
+          "success",
+          "error"
+        ],
+        "defaultValue": "success",
+        "description": "success = { ok:true, data } · error = { ok:false, error } con status mappato automaticamente."
+      },
+      {
+        "key": "data",
+        "label": "Dati (payload)",
+        "type": "expression",
+        "defaultValue": "input",
+        "showIf": {
+          "field": "mode",
+          "equals": "success"
+        },
+        "description": "Il contenuto della risposta (oggetto/JSON o expression upstream). Vuoto = usa l'input del nodo."
+      },
+      {
+        "key": "statusSuccess",
+        "label": "Status di successo",
+        "type": "select",
+        "options": [
+          "200",
+          "201",
+          "202",
+          "204"
+        ],
+        "defaultValue": "200",
+        "showIf": {
+          "field": "mode",
+          "equals": "success"
+        },
+        "description": "200 OK · 201 Created · 202 Accepted · 204 No Content (senza body)."
+      },
+      {
+        "key": "meta",
+        "label": "Meta (JSON, opzionale)",
+        "type": "json",
+        "showIf": {
+          "field": "mode",
+          "equals": "success"
+        },
+        "placeholder": "{ \"page\": 1, \"pageSize\": 20, \"total\": 137 }",
+        "description": "Metadati aggiunti come { ok, data, meta }. Tipico per paginazione/totali."
+      },
+      {
+        "key": "errorCode",
+        "label": "Codice errore",
+        "type": "select",
+        "options": [
+          "bad_request",
+          "unauthorized",
+          "forbidden",
+          "not_found",
+          "conflict",
+          "validation_error",
+          "rate_limited",
+          "server_error"
+        ],
+        "defaultValue": "bad_request",
+        "showIf": {
+          "field": "mode",
+          "equals": "error"
+        },
+        "description": "Mappa automaticamente sullo status HTTP (es. not_found→404, validation_error→422)."
+      },
+      {
+        "key": "errorMessage",
+        "label": "Messaggio errore",
+        "type": "text",
+        "showIf": {
+          "field": "mode",
+          "equals": "error"
+        },
+        "placeholder": "Risorsa non trovata",
+        "description": "Messaggio leggibile. Vuoto = derivato dal codice."
+      },
+      {
+        "key": "errorDetails",
+        "label": "Dettagli errore (JSON, opzionale)",
+        "type": "json",
+        "showIf": {
+          "field": "mode",
+          "equals": "error"
+        },
+        "placeholder": "{ \"field\": \"email\", \"reason\": \"formato non valido\" }",
+        "description": "Dettagli strutturati (es. errori di validazione per campo)."
+      },
+      {
+        "key": "envelope",
+        "label": "Envelope { ok, data/error }",
+        "type": "boolean",
+        "defaultValue": "true",
+        "description": "Avvolge la risposta nel formato standard. Disattiva per restituire i dati grezzi."
+      },
+      {
+        "key": "cors",
+        "label": "Abilita CORS",
+        "type": "boolean",
+        "description": "Aggiunge gli header CORS — necessario se l'API è chiamata dal browser di una SPA."
+      },
+      {
+        "key": "corsOrigin",
+        "label": "CORS Origin",
+        "type": "text",
+        "defaultValue": "*",
+        "showIf": {
+          "field": "cors",
+          "equals": "true"
+        },
+        "description": "Origine consentita (* o un dominio specifico)."
+      },
+      {
+        "key": "corsMethods",
+        "label": "CORS Metodi",
+        "type": "text",
+        "defaultValue": "GET,POST,PUT,DELETE,OPTIONS",
+        "showIf": {
+          "field": "cors",
+          "equals": "true"
+        }
+      },
+      {
+        "key": "corsHeaders",
+        "label": "CORS Header consentiti",
+        "type": "text",
+        "defaultValue": "Content-Type,Authorization",
+        "showIf": {
+          "field": "cors",
+          "equals": "true"
+        }
+      },
+      {
+        "key": "corsCredentials",
+        "label": "CORS Credentials",
+        "type": "boolean",
+        "showIf": {
+          "field": "cors",
+          "equals": "true"
+        },
+        "description": "Consente l'invio di cookie/credenziali (Access-Control-Allow-Credentials)."
+      },
+      {
+        "key": "headers",
+        "label": "Header personalizzati (JSON)",
+        "type": "json",
+        "placeholder": "{ \"Cache-Control\": \"no-store\", \"X-Api-Version\": \"1\" }",
+        "description": "Header extra. I valori con a-capo (CRLF) vengono scartati (anti-injection)."
+      }
+    ],
+    "outputFields": [
+      "default"
+    ]
+  },
+  {
+    "defId": "action_array",
+    "type": "action",
+    "label": "Array",
+    "icon": "list",
+    "color": "#0ea5e9",
+    "description": "Coltellino svizzero per collezioni —",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Operazione",
+        "type": "select",
+        "required": true,
+        "options": [
+          "unique",
+          "sort",
+          "group",
+          "chunk",
+          "flatten",
+          "pick",
+          "slice",
+          "reverse"
+        ],
+        "defaultValue": "unique",
+        "description": "Cosa fare con l'array. Ogni operazione mostra solo i suoi parametri."
+      },
+      {
+        "key": "items",
+        "label": "Array",
+        "type": "expression",
+        "defaultValue": "input",
+        "description": "L'array su cui operare. Vuoto = usa l'input del nodo (array o stringa JSON)."
+      },
+      {
+        "key": "key",
+        "label": "Campo chiave (dot-path)",
+        "type": "text",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "unique",
+            "sort",
+            "group"
+          ]
+        },
+        "placeholder": "es. cliente.email",
+        "description": "Campo su cui operare (annidato con il punto). UNIQUE/SORT senza chiave usano il valore intero."
+      },
+      {
+        "key": "direction",
+        "label": "Direzione",
+        "type": "select",
+        "options": [
+          "asc",
+          "desc"
+        ],
+        "defaultValue": "asc",
+        "showIf": {
+          "field": "operation",
+          "equals": "sort"
+        }
+      },
+      {
+        "key": "size",
+        "label": "Dimensione blocco",
+        "type": "number",
+        "defaultValue": "10",
+        "showIf": {
+          "field": "operation",
+          "equals": "chunk"
+        },
+        "description": "Quanti elementi per blocco."
+      },
+      {
+        "key": "depth",
+        "label": "Profondità",
+        "type": "number",
+        "defaultValue": "1",
+        "showIf": {
+          "field": "operation",
+          "equals": "flatten"
+        },
+        "description": "Livelli di annidamento da appiattire."
+      },
+      {
+        "key": "fields",
+        "label": "Campi da tenere",
+        "type": "text",
+        "showIf": {
+          "field": "operation",
+          "equals": "pick"
+        },
+        "placeholder": "nome, email, cliente.città",
+        "description": "Elenco separato da virgole dei campi (dot-path) da proiettare."
+      },
+      {
+        "key": "start",
+        "label": "Da indice",
+        "type": "number",
+        "defaultValue": "0",
+        "showIf": {
+          "field": "operation",
+          "equals": "slice"
+        },
+        "description": "Indice iniziale (negativo = dalla fine)."
+      },
+      {
+        "key": "end",
+        "label": "A indice (escluso)",
+        "type": "number",
+        "showIf": {
+          "field": "operation",
+          "equals": "slice"
+        },
+        "description": "Indice finale escluso. Vuoto = fino alla fine."
+      }
+    ],
+    "outputFields": [
+      "default"
+    ]
+  },
+  {
+    "defId": "action_asset_batch_download",
+    "type": "action",
+    "label": "Asset Batch Download",
+    "icon": "download-cloud",
+    "color": "#0ea5e9",
+    "description": "Scarica in parallelo array di URL binari (immagini, PDF, video, CSS, JS) e salva su disco preservando il path-tree del sito.",
+    "configFields": [
+      {
+        "key": "items",
+        "label": "URL da scaricare",
+        "type": "text",
+        "required": true,
+        "placeholder": "https://x.com/img/a.png\nhttps://x.com/img/b.jpg\n— OR — JSON [{\"url\":\"...\",\"savePath\":\"img/a.png\"}]",
+        "description": "Uno per riga o virgola-separati. In alternativa JSON array di {url, savePath?}. savePath è relativo a basePath; se omesso, derivato da URL.pathname."
+      },
+      {
+        "key": "basePath",
+        "label": "Directory base (assoluta)",
+        "type": "text",
+        "required": true,
+        "placeholder": "/opt/zeliai/shared/mirror/zelistore.it",
+        "description": "Directory dove salvare. DEVE essere assoluta. Verrà creata se non esiste. Tutti i file finiscono dentro questa cartella (traversal-safe)."
+      },
+      {
+        "key": "concurrency",
+        "label": "Concorrenza download",
+        "type": "number",
+        "defaultValue": "4",
+        "description": "Numero di download paralleli. Default 4. Max 16. Più alto = più veloce ma più aggressivo sul server."
+      },
+      {
+        "key": "perHostMinDelayMs",
+        "label": "Delay minimo per host (ms)",
+        "type": "number",
+        "defaultValue": "100",
+        "description": "Pausa minima tra request allo stesso host. Asset = file statici servibili da CDN, default 100ms basso."
+      },
+      {
+        "key": "timeoutMs",
+        "label": "Timeout per asset (ms)",
+        "type": "number",
+        "defaultValue": "30000",
+        "description": "Timeout sulla singola download. Default 30s. Aumenta per video grandi."
+      },
+      {
+        "key": "maxAssets",
+        "label": "Max asset per run",
+        "type": "number",
+        "defaultValue": "1000",
+        "description": "Hard cap sul numero di asset scaricati. Default 1000, max 50000."
+      },
+      {
+        "key": "maxTotalBytes",
+        "label": "Max bytes totali",
+        "type": "number",
+        "defaultValue": "1073741824",
+        "description": "Hard cap sui bytes totali scaricati nella run. Default 1 GiB. Quando raggiunto, gli asset rimanenti vengono marcati \"skipped-cap\"."
+      },
+      {
+        "key": "maxPerAssetBytes",
+        "label": "Max bytes per asset",
+        "type": "number",
+        "defaultValue": "52428800",
+        "description": "Hard cap sulla singola download. Default 50 MiB. Asset più grandi vengono marcati \"skipped-cap\"."
+      },
+      {
+        "key": "resumeOnSha256Match",
+        "label": "Resume su SHA256 esistente",
+        "type": "boolean",
+        "defaultValue": "true",
+        "description": "Se ON e il file esiste già su disco, calcola SHA-256 locale e skippa la fetch (risparmia banda). Spegnere per forzare re-download."
+      },
+      {
+        "key": "referer",
+        "label": "Referer (esplicito)",
+        "type": "text",
+        "placeholder": "https://x.com/",
+        "description": "Header Referer da inviare. Alcuni CDN bloccano hotlink senza Referer corretto."
+      },
+      {
+        "key": "userAgent",
+        "label": "User-Agent",
+        "type": "text",
+        "defaultValue": "FlowForge-AssetFetch/1.0",
+        "description": "User-Agent dichiarato. Default RFC-compliant."
+      }
+    ]
+  },
+  {
+    "defId": "action_browser_automate",
+    "type": "action",
+    "label": "Browser: Automazione",
+    "icon": "mouse-pointer-click",
+    "color": "#7c3aed",
+    "description": "Automazione browser INTERATTIVA multi-step su un endpoint Playwright BYO (Bring Your Own Browser) —",
+    "configFields": [
+      {
+        "key": "startUrl",
+        "label": "URL iniziale",
+        "type": "expression",
+        "required": true,
+        "placeholder": "https://portale.esempio.it/login",
+        "description": "La pagina da cui parte la sessione. Validata anti-SSRF (no IP interni)."
+      },
+      {
+        "key": "steps",
+        "label": "Passi (JSON)",
+        "type": "json",
+        "required": true,
+        "placeholder": "[\n  { \"action\": \"waitFor\", \"selector\": \"#user\" },\n  { \"action\": \"type\", \"selector\": \"#user\", \"text\": \"{{ $secrets.PORTAL_USER }}\" },\n  { \"action\": \"type\", \"selector\": \"#pass\", \"text\": \"{{ $secrets.PORTAL_PASS }}\" },\n  { \"action\": \"click\", \"selector\": \"button[type=submit]\" },\n  { \"action\": \"extract\", \"selector\": \".report-total\", \"name\": \"totale\" }\n]",
+        "description": "Sequenza di passi: goto/waitFor/click/type/extract/screenshot. Max 50."
+      },
+      {
+        "key": "endpoint",
+        "label": "Endpoint browser (BYO)",
+        "type": "text",
+        "placeholder": "vuoto = env FLOWFORGE_BROWSER_ENDPOINT",
+        "description": "Server Playwright esterno (browserless self-host o endpoint Zeli managed). Vuoto = usa env."
+      },
+      {
+        "key": "apiKey",
+        "label": "API key endpoint",
+        "type": "secret",
+        "description": "Token Bearer per l'endpoint browser, se richiesto."
+      },
+      {
+        "key": "timeoutMs",
+        "label": "Timeout (ms)",
+        "type": "number",
+        "defaultValue": "30000",
+        "description": "Tempo massimo dell'intera sessione (2.000-120.000 ms)."
+      }
+    ],
+    "outputFields": [
+      "default"
+    ]
+  },
+  {
     "defId": "action_browser_render",
     "type": "action",
     "label": "Browser Render (headless)",
@@ -281,6 +753,47 @@
       "html",
       "finalUrl",
       "sessionId"
+    ]
+  },
+  {
+    "defId": "action_coalesce",
+    "type": "action",
+    "label": "Primo valido",
+    "icon": "git-merge",
+    "color": "#65a30d",
+    "description": "Restituisce il PRIMO valore presente tra più sorgenti, con un valore di default finale —",
+    "configFields": [
+      {
+        "key": "source",
+        "label": "Oggetto sorgente",
+        "type": "expression",
+        "defaultValue": "input",
+        "description": "L'oggetto da cui leggere. Vuoto = usa l'input del nodo."
+      },
+      {
+        "key": "paths",
+        "label": "Percorsi in ordine di priorità",
+        "type": "chip-list",
+        "required": true,
+        "placeholder": "nickname, profilo.nome, email",
+        "description": "Elenco ordinato di dot-path: viene scelto il primo che ha un valore."
+      },
+      {
+        "key": "default",
+        "label": "Valore di default",
+        "type": "text",
+        "description": "Usato se nessuna sorgente ha un valore."
+      },
+      {
+        "key": "treatEmptyAsMissing",
+        "label": "Stringa vuota = mancante",
+        "type": "boolean",
+        "defaultValue": "true",
+        "description": "Salta anche i campi presenti ma vuoti (\"\")."
+      }
+    ],
+    "outputFields": [
+      "default"
     ]
   },
   {
@@ -637,6 +1150,236 @@
     ]
   },
   {
+    "defId": "action_crypto",
+    "type": "action",
+    "label": "Crypto",
+    "icon": "lock",
+    "color": "#6366f1",
+    "description": "Coltellino svizzero crittografico enterprise basato esclusivamente su `node:crypto` (zero dipendenze esterne, nessuna superficie d'attacco supply-chain) per tutte le operazioni di integrità, autenticazione e codifica dei dati nei workflow.",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Operazione",
+        "type": "select",
+        "required": true,
+        "options": [
+          "hash",
+          "hmac",
+          "hmac-verify",
+          "encode",
+          "decode",
+          "random"
+        ],
+        "defaultValue": "hash",
+        "description": "hash = digest one-way · hmac = firma con chiave · hmac-verify = verifica firma webhook (timing-safe) · encode/decode = base64/hex · random = bytes sicuri."
+      },
+      {
+        "key": "value",
+        "label": "Valore in ingresso",
+        "type": "expression",
+        "defaultValue": "input",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "hash",
+            "hmac",
+            "hmac-verify",
+            "encode",
+            "decode"
+          ]
+        },
+        "description": "Testo o espressione da elaborare. Vuoto = usa l'input del nodo."
+      },
+      {
+        "key": "algorithm",
+        "label": "Algoritmo",
+        "type": "select",
+        "options": [
+          "sha256",
+          "sha512",
+          "sha384",
+          "sha1",
+          "md5"
+        ],
+        "defaultValue": "sha256",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "hash",
+            "hmac",
+            "hmac-verify"
+          ]
+        },
+        "description": "SHA-256 raccomandato. MD5/SHA-1 solo per compatibilità legacy (NON sicuri per firme)."
+      },
+      {
+        "key": "key",
+        "label": "Chiave segreta (HMAC)",
+        "type": "secret",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "hmac",
+            "hmac-verify"
+          ]
+        },
+        "description": "Il signing secret (es. webhook secret di Stripe/GitHub). Mai committare in chiaro."
+      },
+      {
+        "key": "expected",
+        "label": "Firma attesa (da verificare)",
+        "type": "expression",
+        "showIf": {
+          "field": "operation",
+          "equals": "hmac-verify"
+        },
+        "description": "La firma ricevuta (es. header X-Hub-Signature-256 / Stripe-Signature) da confrontare a tempo costante. Nella stessa codifica dell'output (hex/base64)."
+      },
+      {
+        "key": "encoding",
+        "label": "Codifica output",
+        "type": "select",
+        "options": [
+          "hex",
+          "base64"
+        ],
+        "defaultValue": "hex",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "hash",
+            "hmac",
+            "hmac-verify",
+            "random"
+          ]
+        }
+      },
+      {
+        "key": "targetFormat",
+        "label": "Codifica destinazione",
+        "type": "select",
+        "options": [
+          "base64",
+          "base64url",
+          "hex"
+        ],
+        "defaultValue": "base64",
+        "showIf": {
+          "field": "operation",
+          "equals": "encode"
+        }
+      },
+      {
+        "key": "sourceFormat",
+        "label": "Codifica sorgente",
+        "type": "select",
+        "options": [
+          "base64",
+          "base64url",
+          "hex"
+        ],
+        "defaultValue": "base64",
+        "showIf": {
+          "field": "operation",
+          "equals": "decode"
+        }
+      },
+      {
+        "key": "bytes",
+        "label": "Numero di byte",
+        "type": "number",
+        "defaultValue": "32",
+        "showIf": {
+          "field": "operation",
+          "equals": "random"
+        },
+        "description": "Quanti byte casuali generare (1-1024). 32 = 256 bit, standard per secret/token."
+      }
+    ]
+  },
+  {
+    "defId": "action_csv",
+    "type": "action",
+    "label": "CSV",
+    "icon": "table",
+    "color": "#16a34a",
+    "description": "Nodo CSV bidirezionale conforme a RFC 4180, in JavaScript puro (zero dipendenze, nessuna superficie supply-chain), per convertire tra il formato tabellare universale dei dati aziendali e gli array di oggetti che attraversano il workflow.",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Operazione",
+        "type": "select",
+        "required": true,
+        "options": [
+          "parse",
+          "stringify"
+        ],
+        "defaultValue": "parse",
+        "description": "parse = CSV testo → array di oggetti · stringify = array → testo CSV."
+      },
+      {
+        "key": "text",
+        "label": "Testo CSV",
+        "type": "expression",
+        "defaultValue": "input",
+        "showIf": {
+          "field": "operation",
+          "equals": "parse"
+        },
+        "description": "Il contenuto CSV da analizzare. Vuoto = usa l'input del nodo."
+      },
+      {
+        "key": "items",
+        "label": "Array di righe",
+        "type": "expression",
+        "defaultValue": "input",
+        "showIf": {
+          "field": "operation",
+          "equals": "stringify"
+        },
+        "description": "Array di oggetti da serializzare. Vuoto = usa l'input del nodo."
+      },
+      {
+        "key": "delimiter",
+        "label": "Delimitatore",
+        "type": "select",
+        "options": [
+          ",",
+          ";",
+          "\\t",
+          "|"
+        ],
+        "defaultValue": ",",
+        "description": "Virgola (standard) · punto e virgola (Excel IT) · \\t tab · pipe. "
+      },
+      {
+        "key": "hasHeader",
+        "label": "Prima riga = intestazione",
+        "type": "boolean",
+        "defaultValue": "true",
+        "showIf": {
+          "field": "operation",
+          "equals": "parse"
+        },
+        "description": "Se attivo, la prima riga dà i nomi dei campi (output: array di oggetti)."
+      },
+      {
+        "key": "includeHeader",
+        "label": "Includi intestazione",
+        "type": "boolean",
+        "defaultValue": "true",
+        "showIf": {
+          "field": "operation",
+          "equals": "stringify"
+        },
+        "description": "Scrive la riga di intestazione con i nomi delle colonne."
+      }
+    ],
+    "outputFields": [
+      "default"
+    ]
+  },
+  {
     "defId": "action_dash_probe",
     "type": "action",
     "label": "DASH Probe (mpd)",
@@ -727,6 +1470,189 @@
       "weekday",
       "hour",
       "minute"
+    ]
+  },
+  {
+    "defId": "action_datetime",
+    "type": "action",
+    "label": "Data/Ora",
+    "icon": "clock",
+    "color": "#0d9488",
+    "description": "Nodo data/ora completo in JavaScript puro (solo Date + Intl, zero dipendenze) con supporto NATIVO a fuso orario e locale italiano —",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Operazione",
+        "type": "select",
+        "required": true,
+        "options": [
+          "now",
+          "format",
+          "add",
+          "subtract",
+          "diff"
+        ],
+        "defaultValue": "format",
+        "description": "now = adesso · format = formatta · add/subtract = sposta · diff = differenza tra due date."
+      },
+      {
+        "key": "date",
+        "label": "Data",
+        "type": "expression",
+        "defaultValue": "input",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "format",
+            "add",
+            "subtract",
+            "diff"
+          ]
+        },
+        "placeholder": "ISO, epoch, \"now\" o input",
+        "description": "La data di partenza (ISO, epoch sec/ms, o \"now\"). Vuoto = usa l'input del nodo."
+      },
+      {
+        "key": "dateB",
+        "label": "Seconda data",
+        "type": "expression",
+        "defaultValue": "now",
+        "showIf": {
+          "field": "operation",
+          "equals": "diff"
+        },
+        "description": "La data di confronto per DIFF (differenza = secondaData − data)."
+      },
+      {
+        "key": "preset",
+        "label": "Formato",
+        "type": "select",
+        "options": [
+          "datetime",
+          "date",
+          "time",
+          "full",
+          "iso",
+          "relative"
+        ],
+        "defaultValue": "datetime",
+        "showIf": {
+          "field": "operation",
+          "equals": "format"
+        },
+        "description": "Come formattare. \"relative\" = \"3 ore fa\" · \"iso\" = 8601 · gli altri rispettano locale+timezone."
+      },
+      {
+        "key": "timezone",
+        "label": "Fuso orario",
+        "type": "timezone-picker",
+        "defaultValue": "Europe/Rome",
+        "showIf": {
+          "field": "operation",
+          "equals": "format"
+        },
+        "description": "Fuso IANA per la formattazione (es. Europe/Rome)."
+      },
+      {
+        "key": "locale",
+        "label": "Lingua",
+        "type": "select",
+        "options": [
+          "it-IT",
+          "en-US",
+          "en-GB",
+          "de-DE",
+          "fr-FR",
+          "es-ES"
+        ],
+        "defaultValue": "it-IT",
+        "showIf": {
+          "field": "operation",
+          "equals": "format"
+        },
+        "description": "Lingua per nomi di mese/giorno e formato relativo."
+      },
+      {
+        "key": "amount",
+        "label": "Quantità",
+        "type": "number",
+        "defaultValue": "1",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "add",
+            "subtract"
+          ]
+        },
+        "description": "Quante unità aggiungere/sottrarre."
+      },
+      {
+        "key": "unit",
+        "label": "Unità",
+        "type": "select",
+        "options": [
+          "seconds",
+          "minutes",
+          "hours",
+          "days",
+          "weeks",
+          "months",
+          "years"
+        ],
+        "defaultValue": "days",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "add",
+            "subtract",
+            "diff"
+          ]
+        },
+        "description": "Unità di tempo per add/subtract/diff."
+      }
+    ],
+    "outputFields": [
+      "default"
+    ]
+  },
+  {
+    "defId": "action_diff",
+    "type": "action",
+    "label": "Confronta",
+    "icon": "git-compare",
+    "color": "#ea580c",
+    "description": "Confronta due valori e rileva ESATTAMENTE cosa è cambiato, in JavaScript puro (zero dipendenze) —",
+    "configFields": [
+      {
+        "key": "mode",
+        "label": "Modalità",
+        "type": "select",
+        "required": true,
+        "options": [
+          "object",
+          "text"
+        ],
+        "defaultValue": "object",
+        "description": "object = deep diff tra oggetti · text = diff riga per riga."
+      },
+      {
+        "key": "a",
+        "label": "Valore A (precedente)",
+        "type": "expression",
+        "defaultValue": "input",
+        "description": "Il primo valore (lo stato \"prima\"). Vuoto = usa l'input del nodo."
+      },
+      {
+        "key": "b",
+        "label": "Valore B (nuovo)",
+        "type": "expression",
+        "required": true,
+        "description": "Il secondo valore (lo stato \"dopo\") da confrontare con A."
+      }
+    ],
+    "outputFields": [
+      "equal",
+      "different"
     ]
   },
   {
@@ -1461,6 +2387,34 @@
     ]
   },
   {
+    "defId": "action_filter",
+    "type": "action",
+    "label": "Filtra",
+    "icon": "filter",
+    "color": "#dc2626",
+    "description": "Filtra un array di elementi secondo una o più condizioni combinate con AND/OR, in JavaScript puro (zero dipendenze) —",
+    "configFields": [
+      {
+        "key": "items",
+        "label": "Array da filtrare",
+        "type": "expression",
+        "defaultValue": "input",
+        "description": "L'array di elementi. Vuoto = usa l'input del nodo."
+      },
+      {
+        "key": "conditions",
+        "label": "Condizioni",
+        "type": "condition-rules",
+        "required": true,
+        "description": "Costruttore visuale: combina più regole \"campo · operatore · valore\" con AND/OR."
+      }
+    ],
+    "outputFields": [
+      "kept",
+      "removed"
+    ]
+  },
+  {
     "defId": "action_generate_chart",
     "type": "action",
     "label": "Grafico: Genera (SVG)",
@@ -1740,6 +2694,97 @@
       "endlist",
       "url",
       "raw"
+    ]
+  },
+  {
+    "defId": "action_html_extract",
+    "type": "action",
+    "label": "Estrai da HTML",
+    "icon": "code",
+    "color": "#7c3aed",
+    "description": "Estrae dati strutturati da una pagina/frammento HTML in JavaScript puro (zero dipendenze) —",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Cosa estrarre",
+        "type": "select",
+        "required": true,
+        "options": [
+          "text",
+          "links",
+          "images",
+          "title",
+          "meta",
+          "headings"
+        ],
+        "defaultValue": "text",
+        "description": "text = solo testo · links/images = elenchi · title/meta/headings = metadati struttura."
+      },
+      {
+        "key": "html",
+        "label": "HTML",
+        "type": "expression",
+        "defaultValue": "input",
+        "description": "Il contenuto HTML da analizzare. Vuoto = usa l'input del nodo."
+      }
+    ],
+    "outputFields": [
+      "default"
+    ]
+  },
+  {
+    "defId": "action_html_mirror_rewrite",
+    "type": "action",
+    "label": "HTML Mirror Rewrite",
+    "icon": "file-symlink",
+    "color": "#16a34a",
+    "description": "Riscrive un HTML per la navigazione offline come fa wget --mirror: trasforma URL assoluti di asset (img/css/js/video/iframe) in path locali relativi, in base alla mappa assetMap (output di action_asset_batch_download).",
+    "configFields": [
+      {
+        "key": "html",
+        "label": "HTML sorgente",
+        "type": "textarea",
+        "required": true,
+        "placeholder": "{{$node.spider.json.pages[0].html}}",
+        "description": "HTML completo della pagina. Tipicamente da action_recursive_spider o action_web_fetch_advanced."
+      },
+      {
+        "key": "pageUrl",
+        "label": "URL pagina sorgente",
+        "type": "text",
+        "required": true,
+        "placeholder": "https://example.com/blog/post-1/",
+        "description": "URL assoluto della pagina originale. Necessario per risolvere link relativi prima di mapparli."
+      },
+      {
+        "key": "htmlSaveDir",
+        "label": "Directory dove salverai l'HTML",
+        "type": "text",
+        "required": true,
+        "placeholder": "/opt/mirror/zelistore.it/blog/post-1",
+        "description": "Path assoluto della cartella in cui scriverai l'HTML output. Tutti i link locali vengono calcolati relativi a QUESTA directory."
+      },
+      {
+        "key": "assetMap",
+        "label": "Asset map (url → local path)",
+        "type": "json",
+        "defaultValue": "{}",
+        "description": "JSON object {url assoluto: percorso filesystem}. Tipicamente {{$node.asset_download.json.stats.assetMap}}. URL non in mappa restano assoluti."
+      },
+      {
+        "key": "stripQuery",
+        "label": "Rimuovi query string",
+        "type": "boolean",
+        "defaultValue": "true",
+        "description": "Se ON, i path locali NON includono \"?foo=bar\". Default ON perché le query non hanno senso su file:// locale."
+      },
+      {
+        "key": "stripFragment",
+        "label": "Rimuovi fragment (#anchor)",
+        "type": "boolean",
+        "defaultValue": "false",
+        "description": "Se OFF (default), i \"#anchor\" vengono preservati — VLC/browser li onorano anche su file://. ON solo per output puramente statico."
+      }
     ]
   },
   {
@@ -2363,6 +3408,85 @@
     ]
   },
   {
+    "defId": "action_json",
+    "type": "action",
+    "label": "JSON",
+    "icon": "braces",
+    "color": "#f59e0b",
+    "description": "Manipolatore di oggetti JSON via dot-path, in JavaScript puro (zero dipendenze) —",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Operazione",
+        "type": "select",
+        "required": true,
+        "options": [
+          "get",
+          "set",
+          "pick",
+          "omit",
+          "merge",
+          "flatten",
+          "keys",
+          "values"
+        ],
+        "defaultValue": "get",
+        "description": "Cosa fare con l'oggetto. Ogni operazione mostra solo i campi che le servono."
+      },
+      {
+        "key": "source",
+        "label": "Oggetto sorgente",
+        "type": "expression",
+        "defaultValue": "input",
+        "description": "L'oggetto/JSON su cui operare. Vuoto = usa l'input del nodo."
+      },
+      {
+        "key": "path",
+        "label": "Percorso (dot-path)",
+        "type": "text",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "get",
+            "set"
+          ]
+        },
+        "placeholder": "es. data.user.email",
+        "description": "Percorso del campo con la notazione a punti."
+      },
+      {
+        "key": "value",
+        "label": "Valore",
+        "type": "expression",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "set",
+            "merge"
+          ]
+        },
+        "description": "SET: il valore da scrivere (JSON o stringa). MERGE: l'oggetto JSON da fondere."
+      },
+      {
+        "key": "paths",
+        "label": "Percorsi (separati da virgola)",
+        "type": "text",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "pick",
+            "omit"
+          ]
+        },
+        "placeholder": "email, cliente.città, totale",
+        "description": "PICK: i campi da tenere. OMIT: i campi da rimuovere."
+      }
+    ],
+    "outputFields": [
+      "default"
+    ]
+  },
+  {
     "defId": "action_json_extract",
     "type": "action",
     "label": "JSON: Estrai valore (JSONPath)",
@@ -2408,6 +3532,96 @@
     "outputFields": [
       "value",
       "matchCount"
+    ]
+  },
+  {
+    "defId": "action_jwt",
+    "type": "action",
+    "label": "JWT",
+    "icon": "key",
+    "color": "#8b5cf6",
+    "description": "Nodo JWT (JSON Web Token) completo —",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Operazione",
+        "type": "select",
+        "required": true,
+        "options": [
+          "sign",
+          "verify",
+          "decode"
+        ],
+        "defaultValue": "verify",
+        "description": "sign = crea token · verify = valida firma+scadenza · decode = leggi senza verificare (debug)."
+      },
+      {
+        "key": "algorithm",
+        "label": "Algoritmo",
+        "type": "select",
+        "options": [
+          "HS256",
+          "HS384",
+          "HS512"
+        ],
+        "defaultValue": "HS256",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "sign",
+            "verify"
+          ]
+        }
+      },
+      {
+        "key": "secret",
+        "label": "Secret di firma",
+        "type": "secret",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "sign",
+            "verify"
+          ]
+        },
+        "description": "Chiave segreta condivisa (HMAC). Obbligatoria per sign/verify."
+      },
+      {
+        "key": "payload",
+        "label": "Payload (JSON)",
+        "type": "json",
+        "defaultValue": "{\n  \"sub\": \"user-123\"\n}",
+        "showIf": {
+          "field": "operation",
+          "equals": "sign"
+        },
+        "description": "Claim del token. iat (e exp se imposti la durata) sono aggiunti automaticamente."
+      },
+      {
+        "key": "expiresIn",
+        "label": "Scadenza (secondi)",
+        "type": "number",
+        "defaultValue": "3600",
+        "showIf": {
+          "field": "operation",
+          "equals": "sign"
+        },
+        "description": "Durata di validità in secondi (es. 900 = 15 min). Vuoto/0 = nessuna scadenza."
+      },
+      {
+        "key": "token",
+        "label": "Token",
+        "type": "expression",
+        "defaultValue": "input",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "verify",
+            "decode"
+          ]
+        },
+        "description": "Il JWT da verificare/decodificare. Vuoto = usa l'input del nodo."
+      }
     ]
   },
   {
@@ -2776,6 +3990,27 @@
     ]
   },
   {
+    "defId": "action_markdown",
+    "type": "action",
+    "label": "Markdown → HTML",
+    "icon": "file-text",
+    "color": "#db2777",
+    "description": "Converte testo Markdown in HTML SICURO, in JavaScript puro (zero dipendenze) —",
+    "configFields": [
+      {
+        "key": "markdown",
+        "label": "Markdown",
+        "type": "textarea",
+        "defaultValue": "input",
+        "placeholder": "# Titolo\n\nTesto **in grassetto** e [un link](https://example.com).",
+        "description": "Il testo Markdown da convertire. Vuoto = usa l'input del nodo."
+      }
+    ],
+    "outputFields": [
+      "default"
+    ]
+  },
+  {
     "defId": "action_meta_extract",
     "type": "action",
     "label": "Meta Extract (SEO + OG + Twitter + JSON-LD)",
@@ -2824,6 +4059,157 @@
       "hreflang",
       "metaExtra",
       "warnings"
+    ]
+  },
+  {
+    "defId": "action_mock_data",
+    "type": "action",
+    "label": "Dati di test",
+    "icon": "database",
+    "color": "#0d9488",
+    "description": "Genera dati di test realistici con dataset ITALIANO (nomi, cognomi, città, aziende verosimili) in JavaScript puro (zero dipendenze) —",
+    "configFields": [
+      {
+        "key": "schema",
+        "label": "Schema (campo → tipo)",
+        "type": "key-value",
+        "description": "Ogni riga: nome del campo → tipo (fullName, email, phone, city, uuid, integer, pastDate, …). Vuoto = schema di default."
+      },
+      {
+        "key": "count",
+        "label": "Quanti record",
+        "type": "number",
+        "defaultValue": "10",
+        "description": "Da 1 a 1.000."
+      },
+      {
+        "key": "seed",
+        "label": "Seed (riproducibilità)",
+        "type": "text",
+        "placeholder": "es. test-ordini",
+        "description": "Una stringa qualsiasi: stesso seed = stessi dati a ogni esecuzione. Vuoto = casuale."
+      }
+    ],
+    "outputFields": [
+      "default"
+    ]
+  },
+  {
+    "defId": "action_number",
+    "type": "action",
+    "label": "Numero",
+    "icon": "calculator",
+    "color": "#ca8a04",
+    "description": "Coltellino svizzero numerico in JavaScript puro (Math + Intl, zero dipendenze) con formattazione monetaria e numerica ITALIANA/europea nativa —",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Operazione",
+        "type": "select",
+        "required": true,
+        "options": [
+          "round",
+          "floor",
+          "ceil",
+          "abs",
+          "clamp",
+          "percent",
+          "currency",
+          "format",
+          "parse"
+        ],
+        "defaultValue": "round",
+        "description": "Cosa calcolare/formattare. Ogni operazione mostra solo i suoi parametri."
+      },
+      {
+        "key": "value",
+        "label": "Valore",
+        "type": "expression",
+        "defaultValue": "input",
+        "description": "Il numero (o stringa numerica in qualsiasi formato). Vuoto = usa l'input del nodo."
+      },
+      {
+        "key": "decimals",
+        "label": "Decimali",
+        "type": "number",
+        "defaultValue": "2",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "round",
+            "format"
+          ]
+        },
+        "description": "Numero di cifre decimali."
+      },
+      {
+        "key": "min",
+        "label": "Minimo",
+        "type": "number",
+        "showIf": {
+          "field": "operation",
+          "equals": "clamp"
+        }
+      },
+      {
+        "key": "max",
+        "label": "Massimo",
+        "type": "number",
+        "showIf": {
+          "field": "operation",
+          "equals": "clamp"
+        }
+      },
+      {
+        "key": "total",
+        "label": "Totale (base %)",
+        "type": "number",
+        "showIf": {
+          "field": "operation",
+          "equals": "percent"
+        },
+        "description": "Se valorizzato: risultato = (valore/100) × totale. Vuoto: valore × 100."
+      },
+      {
+        "key": "currency",
+        "label": "Valuta",
+        "type": "select",
+        "options": [
+          "EUR",
+          "USD",
+          "GBP",
+          "CHF"
+        ],
+        "defaultValue": "EUR",
+        "showIf": {
+          "field": "operation",
+          "equals": "currency"
+        }
+      },
+      {
+        "key": "locale",
+        "label": "Lingua/formato",
+        "type": "select",
+        "options": [
+          "it-IT",
+          "en-US",
+          "en-GB",
+          "de-DE",
+          "fr-FR"
+        ],
+        "defaultValue": "it-IT",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "currency",
+            "format"
+          ]
+        },
+        "description": "Determina separatori delle migliaia e dei decimali."
+      }
+    ],
+    "outputFields": [
+      "default"
     ]
   },
   {
@@ -3505,6 +4891,52 @@
     ]
   },
   {
+    "defId": "action_pdf_parse",
+    "type": "action",
+    "label": "PDF: Parse (text extraction)",
+    "icon": "file-text",
+    "color": "#ef4444",
+    "description": "Estrazione testo da PDF con cascata 2-stage qualità-prima: pdf-parse libreria gratuita (~50ms, zero cost, no API) come tentativo veloce → fallback automatico a Claude Sonnet vision (cost ~$0.003-0.015/PDF, latency 2-5s) quando pdf-parse …",
+    "configFields": [
+      {
+        "key": "path",
+        "label": "File PDF su disco (opzionale)",
+        "type": "file-picker",
+        "placeholder": "es. ordine.pdf o {{input.attachment.path}}",
+        "description": "Path nel sandbox del tenant. Se vuoto, l'engine cerca i bytes in \"Base64\" qui sotto. Uno dei due è obbligatorio."
+      },
+      {
+        "key": "base64",
+        "label": "Base64 dei bytes PDF (opzionale)",
+        "type": "expression",
+        "placeholder": "{{$node.ImapTrigger.json.attachments[0].base64}}",
+        "description": "Stringa base64 del PDF (es. allegato email). Massimo 32 MB. Si usa quando il PDF arriva via webhook/email senza essere salvato su disco."
+      },
+      {
+        "key": "mode",
+        "label": "Strategia estrazione",
+        "type": "select",
+        "options": [
+          "auto",
+          "pdf-parse-only",
+          "llm-only"
+        ],
+        "defaultValue": "auto",
+        "description": "auto = prova pdf-parse, fa fallback LLM-vision se la qualità è bassa (raccomandato). pdf-parse-only = solo libreria gratis, niente API LLM (costo zero, ma fallisce su PDF scannerizzati). llm-only = salta pdf-parse e va diretto su Claude Sonnet (massima qualità, max costo per call)."
+      }
+    ],
+    "outputFields": [
+      "text",
+      "confidence",
+      "mode",
+      "pages",
+      "sizeBytes",
+      "usedLlmFallback",
+      "llmModel",
+      "cheapAttempt"
+    ]
+  },
+  {
     "defId": "action_pec_classify",
     "type": "action",
     "label": "PEC: Classify",
@@ -3610,6 +5042,94 @@
         "type": "text",
         "defaultValue": "pecType",
         "description": "Default \"pecType\". Quando presente (es. \"acceptance\", \"delivery\", \"rejection\", \"message\") viene salvato nel manifest JSONL per filtraggio audit."
+      }
+    ]
+  },
+  {
+    "defId": "action_recursive_spider",
+    "type": "action",
+    "label": "Recursive Spider (in-process)",
+    "icon": "spider",
+    "color": "#7c3aed",
+    "description": "Crawler ricorsivo in-process per discovery URL e mirror sito SENZA hostare un servizio esterno (a differenza di action_crawler_distributed BYO).",
+    "configFields": [
+      {
+        "key": "seeds",
+        "label": "Seed URLs",
+        "type": "text",
+        "required": true,
+        "placeholder": "https://example.com/, https://example.com/blog",
+        "description": "Lista URL di partenza separati da virgola o newline. Devono essere http(s)://. Lo spider farà BFS partendo da questi."
+      },
+      {
+        "key": "maxDepth",
+        "label": "Profondità massima",
+        "type": "number",
+        "defaultValue": "3",
+        "description": "Quanti livelli di link seguire dai seed. 0 = solo i seed. 3 = seed → click → click → click. Max 50."
+      },
+      {
+        "key": "maxPages",
+        "label": "Pagine massime (hard cap)",
+        "type": "number",
+        "defaultValue": "100",
+        "description": "Stop al raggiungimento. Le pagine non visitate restano in `frontier` (output) per resume futuro. Max 5000."
+      },
+      {
+        "key": "sameOriginOnly",
+        "label": "Solo same-origin",
+        "type": "boolean",
+        "defaultValue": "true",
+        "description": "Se ON, i link verso altri host vengono ignorati. Combinare con allowDomains per multi-host controllato."
+      },
+      {
+        "key": "allowDomains",
+        "label": "Domini consentiti (whitelist)",
+        "type": "text",
+        "placeholder": "example.com, sub.example.com",
+        "description": "Override di sameOriginOnly: se valorizzato, accetta link verso questi host (anche sotto-domini). Vuoto = solo origin del seed."
+      },
+      {
+        "key": "denyPatterns",
+        "label": "Pattern URL da escludere (regex)",
+        "type": "text",
+        "placeholder": "/login, \\.pdf$, /admin/",
+        "description": "Regex valutate sull'URL assoluto. Separati da virgola o newline. Es. \"/admin/, /api/, \\.pdf$\"."
+      },
+      {
+        "key": "concurrency",
+        "label": "Concorrenza (fetch in parallelo)",
+        "type": "number",
+        "defaultValue": "4",
+        "description": "Worker simultanei. 1=seriale, 4=default sano per single tenant, max 16. Più alto = più veloce ma più aggressivo sul server target."
+      },
+      {
+        "key": "perHostMinDelayMs",
+        "label": "Delay minimo per host (ms)",
+        "type": "number",
+        "defaultValue": "500",
+        "description": "Token bucket per-host: garantisce >= N ms fra due request allo stesso host. 0 = nessun rate limit. Default 500ms = ~2 req/sec."
+      },
+      {
+        "key": "respectRobots",
+        "label": "Rispetta robots.txt",
+        "type": "boolean",
+        "defaultValue": "true",
+        "description": "Fetch /robots.txt una volta per host, applica Disallow + Crawl-Delay. Spegnere SOLO se hai diritti sul target."
+      },
+      {
+        "key": "timeoutMs",
+        "label": "Timeout per pagina (ms)",
+        "type": "number",
+        "defaultValue": "20000",
+        "description": "Hard timeout sulla singola fetch. Pagine timeout vanno nei result con error=\"timeout...\" e link=[]."
+      },
+      {
+        "key": "userAgent",
+        "label": "User-Agent",
+        "type": "text",
+        "placeholder": "FlowForge-Spider/1.0 (+https://flowforge.automazionezeli.com)",
+        "description": "User-Agent dichiarato. Default RFC-compliant. Override SOLO per propri siti che bloccano UA generici."
       }
     ]
   },
@@ -4372,6 +5892,57 @@
     ]
   },
   {
+    "defId": "action_set_fields",
+    "type": "action",
+    "label": "Imposta campi",
+    "icon": "edit-3",
+    "color": "#0891b2",
+    "description": "Modella un oggetto impostando, rinominando e rimuovendo PIÙ campi in un solo nodo —",
+    "configFields": [
+      {
+        "key": "source",
+        "label": "Oggetto sorgente",
+        "type": "expression",
+        "defaultValue": "input",
+        "description": "L'oggetto da modellare. Vuoto = usa l'input del nodo."
+      },
+      {
+        "key": "assignments",
+        "label": "Imposta campi (percorso → valore)",
+        "type": "key-value",
+        "description": "Ogni riga crea/sovrascrive un campo (dot-path supportato). Es. cliente.stato → attivo."
+      },
+      {
+        "key": "coerceTypes",
+        "label": "Converti tipi automaticamente",
+        "type": "boolean",
+        "defaultValue": "true",
+        "description": "\"42\"→numero, \"true\"→booleano, JSON→oggetto. Disattiva per tenere tutto come stringa."
+      },
+      {
+        "key": "renameFields",
+        "label": "Rinomina campi (da → a)",
+        "type": "key-value",
+        "description": "Sposta un campo da un percorso a un altro. Es. Email → email."
+      },
+      {
+        "key": "removeFields",
+        "label": "Rimuovi campi",
+        "type": "chip-list",
+        "description": "Percorsi dei campi da eliminare (separati da virgola)."
+      },
+      {
+        "key": "keepOnly",
+        "label": "Tieni solo i campi impostati",
+        "type": "boolean",
+        "description": "Parte da un oggetto vuoto: il risultato contiene SOLO i campi che imposti (whitelist)."
+      }
+    ],
+    "outputFields": [
+      "default"
+    ]
+  },
+  {
     "defId": "action_sitemap_crawler",
     "type": "action",
     "label": "Sitemap Crawler",
@@ -4436,6 +6007,40 @@
       "includeRegex",
       "excludeRegex",
       "lastmodSinceIso"
+    ]
+  },
+  {
+    "defId": "action_template",
+    "type": "action",
+    "label": "Template",
+    "icon": "file-text",
+    "color": "#8b5cf6",
+    "description": "Motore di template testuale in JavaScript puro (zero dipendenze) per comporre stringhe dinamiche —",
+    "configFields": [
+      {
+        "key": "template",
+        "label": "Template",
+        "type": "textarea",
+        "required": true,
+        "placeholder": "Ciao {{ nome || \"Cliente\" }},\nil tuo ordine {{ ordine.id }} è confermato.",
+        "description": "Testo con segnaposto {{ percorso.dot }}. Usa || per un valore di default."
+      },
+      {
+        "key": "context",
+        "label": "Dati (contesto)",
+        "type": "expression",
+        "defaultValue": "input",
+        "description": "Oggetto/JSON con i valori da interpolare. Vuoto = usa l'input del nodo."
+      },
+      {
+        "key": "escapeHtml",
+        "label": "Escape HTML (anti-XSS)",
+        "type": "boolean",
+        "description": "Neutralizza < > & \" ' nei valori interpolati. Attiva SEMPRE se il risultato è HTML con dati utente."
+      }
+    ],
+    "outputFields": [
+      "default"
     ]
   },
   {
@@ -4517,6 +6122,148 @@
     ]
   },
   {
+    "defId": "action_text",
+    "type": "action",
+    "label": "Testo",
+    "icon": "type",
+    "color": "#ec4899",
+    "description": "Coltellino svizzero per le stringhe —",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Operazione",
+        "type": "select",
+        "required": true,
+        "options": [
+          "uppercase",
+          "lowercase",
+          "capitalize",
+          "title",
+          "trim",
+          "slugify",
+          "truncate",
+          "replace",
+          "extract",
+          "split",
+          "pad"
+        ],
+        "defaultValue": "uppercase",
+        "description": "Cosa fare con il testo. Ogni operazione mostra solo i suoi parametri."
+      },
+      {
+        "key": "value",
+        "label": "Testo in ingresso",
+        "type": "expression",
+        "defaultValue": "input",
+        "description": "Il testo da elaborare. Vuoto = usa l'input del nodo."
+      },
+      {
+        "key": "length",
+        "label": "Lunghezza",
+        "type": "number",
+        "defaultValue": "50",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "truncate",
+            "pad"
+          ]
+        },
+        "description": "TRUNCATE: caratteri massimi · PAD: lunghezza finale."
+      },
+      {
+        "key": "suffix",
+        "label": "Suffisso / carattere riempimento",
+        "type": "text",
+        "defaultValue": "…",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "truncate",
+            "pad"
+          ]
+        },
+        "description": "TRUNCATE: testo aggiunto in coda · PAD: carattere di riempimento."
+      },
+      {
+        "key": "padSide",
+        "label": "Lato riempimento",
+        "type": "select",
+        "options": [
+          "start",
+          "end"
+        ],
+        "defaultValue": "start",
+        "showIf": {
+          "field": "operation",
+          "equals": "pad"
+        }
+      },
+      {
+        "key": "search",
+        "label": "Cerca / pattern / separatore",
+        "type": "text",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "replace",
+            "extract",
+            "split"
+          ]
+        },
+        "description": "REPLACE: testo o regex da cercare · EXTRACT: pattern regex · SPLIT: separatore (\\n per a-capo)."
+      },
+      {
+        "key": "replacement",
+        "label": "Sostituzione",
+        "type": "text",
+        "showIf": {
+          "field": "operation",
+          "equals": "replace"
+        },
+        "description": "Testo con cui sostituire (supporta $1, $2 per i gruppi se usi regex)."
+      },
+      {
+        "key": "useRegex",
+        "label": "Usa espressione regolare",
+        "type": "boolean",
+        "showIf": {
+          "field": "operation",
+          "equals": "replace"
+        },
+        "description": "Interpreta \"Cerca\" come regex invece che testo letterale."
+      },
+      {
+        "key": "flags",
+        "label": "Flag regex",
+        "type": "text",
+        "defaultValue": "g",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "replace",
+            "extract"
+          ]
+        },
+        "placeholder": "g, i, m, s",
+        "description": "g=globale i=case-insensitive m=multiline s=dotall. EXTRACT forza sempre g."
+      },
+      {
+        "key": "trimParts",
+        "label": "Trim delle parti",
+        "type": "boolean",
+        "showIf": {
+          "field": "operation",
+          "equals": "split"
+        },
+        "description": "Rimuove gli spazi attorno a ogni parte dopo lo split."
+      }
+    ],
+    "outputFields": [
+      "default"
+    ]
+  },
+  {
     "defId": "action_text_template",
     "type": "action",
     "label": "Testo: Componi da template",
@@ -4550,6 +6297,89 @@
     "outputFields": [
       "text",
       "length"
+    ]
+  },
+  {
+    "defId": "action_url",
+    "type": "action",
+    "label": "URL",
+    "icon": "link",
+    "color": "#2563eb",
+    "description": "Nodo per costruire, analizzare e modificare URL e query string in modo SICURO, basato sull'oggetto URL nativo (zero dipendenze) invece delle fragili concatenazioni di stringhe che rompono l'encoding.",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Operazione",
+        "type": "select",
+        "required": true,
+        "options": [
+          "parse",
+          "build",
+          "setQuery",
+          "removeQuery",
+          "encode",
+          "decode"
+        ],
+        "defaultValue": "parse",
+        "description": "parse = scomponi · build = componi · setQuery/removeQuery = modifica parametri · encode/decode."
+      },
+      {
+        "key": "url",
+        "label": "URL",
+        "type": "expression",
+        "defaultValue": "input",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "parse",
+            "setQuery",
+            "removeQuery",
+            "encode",
+            "decode"
+          ]
+        },
+        "description": "L'URL su cui operare (o il valore per encode/decode). Vuoto = input del nodo."
+      },
+      {
+        "key": "base",
+        "label": "URL base",
+        "type": "expression",
+        "showIf": {
+          "field": "operation",
+          "equals": "build"
+        },
+        "placeholder": "https://api.esempio.it",
+        "description": "L'origine + eventuale percorso base da cui partire."
+      },
+      {
+        "key": "path",
+        "label": "Percorso",
+        "type": "text",
+        "showIf": {
+          "field": "operation",
+          "equals": "build"
+        },
+        "placeholder": "/v1/ordini",
+        "description": "Il percorso da impostare sull'URL base."
+      },
+      {
+        "key": "params",
+        "label": "Parametri query (JSON)",
+        "type": "json",
+        "showIf": {
+          "field": "operation",
+          "in": [
+            "build",
+            "setQuery",
+            "removeQuery"
+          ]
+        },
+        "placeholder": "{ \"page\": 1, \"q\": \"caffè\" }",
+        "description": "Oggetto chiave/valore: ogni valore viene codificato automaticamente. (Per REMOVE: le chiavi da togliere.)"
+      }
+    ],
+    "outputFields": [
+      "default"
     ]
   },
   {
@@ -4656,6 +6486,82 @@
       "poolSize",
       "strategy",
       "index"
+    ]
+  },
+  {
+    "defId": "action_uuid",
+    "type": "action",
+    "label": "Genera ID",
+    "icon": "hash",
+    "color": "#06b6d4",
+    "description": "Generatore di identificatori unici enterprise per ogni esigenza di chiavi, correlation-id, idempotency e ordinamento, con cinque formati selezionabili da dropdown —",
+    "configFields": [
+      {
+        "key": "version",
+        "label": "Formato ID",
+        "type": "select",
+        "required": true,
+        "options": [
+          "v4",
+          "v7",
+          "ulid",
+          "short",
+          "nanoid"
+        ],
+        "defaultValue": "v4",
+        "description": "v4 = random standard · v7 = ordinabile (ottimo per PK DB) · ulid/nanoid = compatti URL-safe · short = slug breve."
+      },
+      {
+        "key": "count",
+        "label": "Quanti ID",
+        "type": "number",
+        "defaultValue": "1",
+        "description": "Da 1 a 10.000. >1 → output { ids: [...] }."
+      },
+      {
+        "key": "uppercase",
+        "label": "Maiuscolo",
+        "type": "boolean",
+        "description": "ID in MAIUSCOLO invece di minuscolo."
+      }
+    ]
+  },
+  {
+    "defId": "action_validate",
+    "type": "action",
+    "label": "Valida",
+    "icon": "shield-check",
+    "color": "#059669",
+    "description": "Validatore enterprise di formati con CHECKSUM REALI —",
+    "configFields": [
+      {
+        "key": "type",
+        "label": "Tipo da validare",
+        "type": "select",
+        "required": true,
+        "options": [
+          "email",
+          "url",
+          "piva",
+          "codice_fiscale",
+          "iban",
+          "phone_it",
+          "json"
+        ],
+        "defaultValue": "email",
+        "description": "email · url · piva (P.IVA IT) · codice_fiscale (CF IT) · iban · phone_it · json."
+      },
+      {
+        "key": "value",
+        "label": "Valore",
+        "type": "expression",
+        "defaultValue": "input",
+        "description": "Il valore da validare. Vuoto = usa l'input del nodo."
+      }
+    ],
+    "outputFields": [
+      "valid",
+      "invalid"
     ]
   },
   {
@@ -5056,6 +6962,190 @@
     ]
   },
   {
+    "defId": "action_webhook_respond",
+    "type": "action",
+    "label": "Webhook: Respond",
+    "icon": "link",
+    "color": "#22c55e",
+    "description": "Risponde alla richiesta HTTP del trigger_webhook con body, status code e headers personalizzati.",
+    "configFields": [
+      {
+        "key": "respondWith",
+        "label": "Tipo di risposta",
+        "type": "select",
+        "required": true,
+        "options": [
+          "json",
+          "text",
+          "html",
+          "redirect",
+          "binary",
+          "empty",
+          "custom"
+        ],
+        "defaultValue": "json",
+        "description": "json = serializza input come application/json (default per API REST). text = plain text. html = pagina HTML (text/html). redirect = 302 con header Location verso un altro URL. binary = file binario (input atteso in base64, output con il contentType configurato — es. application/pdf, image/png). empty = 204 No Content, nessun body (per webhook ACK silenziosi tipo Slack). custom = controllo totale su body + contentType + headers (per casi avanzati)."
+      },
+      {
+        "key": "statusPreset",
+        "label": "Codice di stato",
+        "type": "select",
+        "options": [
+          "200 OK",
+          "201 Created",
+          "202 Accepted",
+          "204 No Content",
+          "301 Moved Permanently",
+          "302 Found",
+          "304 Not Modified",
+          "400 Bad Request",
+          "401 Unauthorized",
+          "403 Forbidden",
+          "404 Not Found",
+          "409 Conflict",
+          "410 Gone",
+          "422 Unprocessable Entity",
+          "429 Too Many Requests",
+          "500 Internal Server Error",
+          "502 Bad Gateway",
+          "503 Service Unavailable",
+          "Custom (specifica sotto)"
+        ],
+        "defaultValue": "200 OK",
+        "description": "Codice HTTP da restituire. I preset coprono il 95% dei casi. Scegli \"Custom\" e usa il campo \"Status personalizzato\" sotto per codici non standard (es. 418 I'm a teapot, 451 Unavailable for Legal Reasons)."
+      },
+      {
+        "key": "status",
+        "label": "Status personalizzato",
+        "type": "number",
+        "showIf": {
+          "field": "statusPreset",
+          "equals": "Custom (specifica sotto)"
+        },
+        "placeholder": "es. 418",
+        "description": "Usato SOLO quando \"Codice di stato\" = Custom. Range 100-599."
+      },
+      {
+        "key": "body",
+        "label": "Body della risposta",
+        "type": "expression",
+        "showIf": {
+          "field": "respondWith",
+          "in": [
+            "json",
+            "text",
+            "html"
+          ]
+        },
+        "placeholder": "{\"ok\":true,\"data\":{{$node.Transform.json}}}    oppure    <html><h1>{{input.title}}</h1></html>",
+        "description": "Contenuto da restituire. Supporta {{espressioni}} con valori dai nodi precedenti. Se VUOTO: per JSON serializza l'input del nodo precedente; per Text/HTML usa l'input come stringa."
+      },
+      {
+        "key": "redirectLocation",
+        "label": "URL di redirect",
+        "type": "expression",
+        "showIf": {
+          "field": "respondWith",
+          "equals": "redirect"
+        },
+        "placeholder": "https://example.com/grazie  oppure  /pagina/successo?id={{input.orderId}}",
+        "description": "Destinazione del redirect. Può essere assoluto (https://...) o relativo (/path). Imposta automaticamente lo header \"Location\" e usa status 302 se non specificato."
+      },
+      {
+        "key": "binaryData",
+        "label": "Dati binari (base64)",
+        "type": "expression",
+        "showIf": {
+          "field": "respondWith",
+          "equals": "binary"
+        },
+        "placeholder": "{{$node.PDF_Generate.base64}}",
+        "description": "Body binario codificato in base64. Tipicamente l'output di un nodo File Read o PDF Generate. Viene decodificato server-side prima di scriverlo sulla response."
+      },
+      {
+        "key": "binaryContentType",
+        "label": "Content-Type binario",
+        "type": "select",
+        "options": [
+          "application/pdf",
+          "application/zip",
+          "image/png",
+          "image/jpeg",
+          "image/gif",
+          "image/webp",
+          "image/svg+xml",
+          "audio/mpeg",
+          "audio/wav",
+          "video/mp4",
+          "application/octet-stream"
+        ],
+        "defaultValue": "application/octet-stream",
+        "showIf": {
+          "field": "respondWith",
+          "equals": "binary"
+        },
+        "description": "MIME del file binario. application/octet-stream = \"scarica come file generico\"."
+      },
+      {
+        "key": "binaryFilename",
+        "label": "Nome file (per download)",
+        "type": "expression",
+        "showIf": {
+          "field": "respondWith",
+          "equals": "binary"
+        },
+        "placeholder": "report-{{input.id}}.pdf",
+        "description": "Quando impostato, aggiunge header Content-Disposition: attachment; filename=\"...\" così il browser apre il dialogo di salvataggio invece di renderizzare inline."
+      },
+      {
+        "key": "contentType",
+        "label": "Content-Type personalizzato",
+        "type": "select",
+        "options": [
+          "application/json",
+          "text/html; charset=utf-8",
+          "text/plain; charset=utf-8",
+          "application/xml",
+          "text/xml",
+          "text/csv",
+          "application/javascript",
+          "application/yaml",
+          "application/octet-stream"
+        ],
+        "defaultValue": "application/json",
+        "showIf": {
+          "field": "respondWith",
+          "equals": "custom"
+        },
+        "description": "MIME esplicito del body. Usato solo in modalità Custom (le altre modalità impostano automaticamente il tipo corretto)."
+      },
+      {
+        "key": "customBody",
+        "label": "Body custom",
+        "type": "expression",
+        "showIf": {
+          "field": "respondWith",
+          "equals": "custom"
+        },
+        "placeholder": "qualsiasi stringa, supporta {{espressioni}}",
+        "description": "Body completamente sotto il tuo controllo. Vuoto = stringa vuota."
+      },
+      {
+        "key": "corsOrigin",
+        "label": "Access-Control-Allow-Origin",
+        "type": "text",
+        "placeholder": "*  oppure  https://miosito.com",
+        "description": "Header CORS. Necessario se la response viene letta da un browser su un dominio diverso. \"*\" = qualsiasi origine (più permissivo). Per produzione metti il tuo dominio."
+      },
+      {
+        "key": "headersJson",
+        "label": "Headers HTTP extra",
+        "type": "key-value",
+        "description": "Headers aggiuntivi oltre a Content-Type/Location/Content-Disposition (gestiti sopra). Es. Cache-Control=no-cache, X-Request-Id={{$run.id}}, ETag=\"abc123\"."
+      }
+    ]
+  },
+  {
     "defId": "action_whatsapp_send",
     "type": "action",
     "label": "WhatsApp",
@@ -5179,6 +7269,315 @@
         "label": "Includi log nell'output",
         "type": "boolean",
         "defaultValue": "true"
+      }
+    ]
+  },
+  {
+    "defId": "action_xlsx_build",
+    "type": "action",
+    "label": "Excel: Build (array → xlsx)",
+    "icon": "file-spreadsheet",
+    "color": "#10b981",
+    "description": "Generator enterprise di file Excel formato .xlsx (Office Open XML SpreadsheetML, lo standard Microsoft Excel 2007+ universalmente compatibile con Excel desktop Windows/Mac, Excel Web, LibreOffice Calc, OpenOffice Calc, Google Sheets impo…",
+    "configFields": [
+      {
+        "key": "sheetName",
+        "label": "Nome foglio",
+        "type": "expression",
+        "defaultValue": "Sheet1",
+        "placeholder": "es. Ordini, Cedolini, RighiOrdine",
+        "description": "Nome del foglio nel workbook generato. Default \"Sheet1\"."
+      },
+      {
+        "key": "dataExpression",
+        "label": "Sorgente righe (opzionale)",
+        "type": "expression",
+        "placeholder": "{{$node.extract_of.json.lines}}",
+        "description": "Espressione che ritorna l'array di oggetti riga (es. {{$node.NomeNodo.json.lines}}). Se vuoto, l'engine usa l'input del nodo precedente. Utile quando il nodo precedente NON è la sorgente dati (es. dopo db_insert_batch che ritorna solo {headerId})."
+      },
+      {
+        "key": "groupByKey",
+        "label": "Raggruppa per (multi-scheda)",
+        "type": "text",
+        "placeholder": "es. supplier_name",
+        "description": "Nome del campo per cui raggruppare. Crea UNA SCHEDA Excel per ogni valore distinto. Esempio: groupByKey=\"supplier_name\" → un foglio per fornitore. Lascia vuoto per un singolo foglio con tutte le righe."
+      },
+      {
+        "key": "columns",
+        "label": "Colonne (opzionale)",
+        "type": "text",
+        "placeholder": "data:Data:date_dmy,prezzo:Prezzo:eur_4,sconto:Sconto:percent_2",
+        "description": "Sintassi \"key:Label:formato,...\" (formato è opzionale). Senza formato i valori vengono scritti come arrivano. Formati disponibili (mostrati con LOCALE ITALIANA):\n• text → testo grezzo (es. codici con zeri iniziali \"001234\")\n• integer → 1.234\n• number_2 → 1.234,56\n• number_4 → 1.234,5678\n• eur_2 → 1.234,56 €\n• eur_4 → 1.234,5678 €\n• percent_2 → 10,00%\n• date_dmy → 23-05-2026\n• datetime → 23-05-2026 14:30\n\nEsempio Ordini Fornitori: \"nr_ordine:NR.ORDINE:text,data:DATA:date_dmy,descr:DESCRIZIONE,qta:QTA:integer,prezzo:PREZZO UNITARIO:eur_4,sconto:SCONTO:percent_2,totale:TOTALE RIGA:eur_2\".\n\nIl nodo: 1) coerce stringhe italiane \"10,50\" → numero 10.5; 2) auto-fit larghezza colonne; 3) header bold + sfondo grigio + prima riga frozen; 4) auto-filter su tutte le colonne. Federico-grade out of the box."
+      },
+      {
+        "key": "freezeHeader",
+        "label": "Blocca riga header durante scroll",
+        "type": "boolean",
+        "defaultValue": "true",
+        "description": "Quando l'utente scrolla verso il basso, la riga header rimane visibile. Disabilita SOLO se serve compatibilità con un tool antiquato che non gestisce frozen panes."
+      },
+      {
+        "key": "autoFilter",
+        "label": "Aggiungi filtri colonna (frecce dropdown)",
+        "type": "boolean",
+        "defaultValue": "true",
+        "description": "Aggiunge un menu a tendina su ogni colonna header per filtrare/ordinare. Standard in Excel/LibreOffice. Disabilita per export \"scheda stampa\" senza interazione."
+      },
+      {
+        "key": "forceItalianStrings",
+        "label": "Forza formato italiano universale (consigliato)",
+        "type": "boolean",
+        "defaultValue": "true",
+        "description": "ON (default): i valori numerici (€, %, decimali) vengono scritti come STRINGHE già formattate in italiano (es. \"1.234,56 €\", \"0,00%\"). Funziona su QUALUNQUE viewer (Excel Android, Google Sheets, Numbers macOS, LibreOffice). Trade-off: perdi ordering/sum numerico Excel-side. OFF: usa numFmt con LCID [$-410]: il viewer deve riconoscere il LCID italiano (Excel Office IT ok, Numbers macOS no, Excel Android no). Lascia ON se il tuo cliente apre il file con Excel mobile, Google Sheets o Numbers."
+      },
+      {
+        "key": "path",
+        "label": "Salva su disco (opzionale)",
+        "type": "file-picker",
+        "placeholder": "es. output/{{$today}}/ordini.xlsx",
+        "description": "Path nel sandbox del tenant dove salvare il file. Se vuoto, il file NON viene salvato — l'output ritorna come base64, ideale per allegato Send Email node."
+      }
+    ],
+    "outputFields": [
+      "path",
+      "binary",
+      "fileName",
+      "sheetName",
+      "rowsWritten",
+      "sizeBytes",
+      "contentType"
+    ]
+  },
+  {
+    "defId": "action_xlsx_parse",
+    "type": "action",
+    "label": "Excel: Parse (xlsx → array)",
+    "icon": "table",
+    "color": "#10b981",
+    "description": "Parser enterprise per file Microsoft Excel formato .xlsx (Office Open XML SpreadsheetML, lo standard Excel 2007+ universalmente usato nei workflow business italiani: commercialisti, controlling, sales reporting, magazzino, ordini, fattur…",
+    "configFields": [
+      {
+        "key": "path",
+        "label": "File Excel sul disco (opzionale)",
+        "type": "file-picker",
+        "placeholder": "es. import.xlsx o {{input.attachmentPath}}",
+        "description": "Path nel sandbox del tenant. Se vuoto, l'engine cerca i bytes in \"Base64\" qui sotto. Uno dei due è obbligatorio."
+      },
+      {
+        "key": "base64",
+        "label": "Base64 dei bytes Excel (opzionale)",
+        "type": "expression",
+        "placeholder": "{{$node.ImapTrigger.json.attachment[0].base64}}",
+        "description": "Stringa base64 dei bytes del file. Usato tipicamente per parsare allegati ricevuti via email/webhook senza salvarli su disco."
+      },
+      {
+        "key": "sheetName",
+        "label": "Nome foglio (opzionale)",
+        "type": "expression",
+        "placeholder": "es. Ordini o Sheet1",
+        "description": "Nome del foglio da leggere. Vuoto = primo foglio del workbook. Se sbagli il nome, l'engine ti dice nei suoi errori quali fogli ci sono."
+      },
+      {
+        "key": "headerRow",
+        "label": "Riga header",
+        "type": "number",
+        "defaultValue": "1",
+        "description": "1 = prima riga è l'header (default, formato Excel standard). 0 = nessun header, righe come array posizionali (col_1, col_2, …). N = la riga N è l'header (utile per file con titolo/logo nelle prime righe)."
+      }
+    ],
+    "outputFields": [
+      "rows",
+      "sheetName",
+      "totalRows",
+      "columns",
+      "columnCount",
+      "headerRow",
+      "emptyCellsCount",
+      "truncated"
+    ]
+  },
+  {
+    "defId": "agent_classifier",
+    "type": "ai",
+    "label": "Agent: Classifier",
+    "icon": "tag",
+    "color": "#f59e0b",
+    "description": "Agent LLM classifier: assegna l'input a una delle label custom (config.labels).",
+    "configFields": [
+      {
+        "key": "labels",
+        "label": "Etichette possibili",
+        "type": "chip-list",
+        "required": true,
+        "placeholder": "es. spam, urgente, supporto, vendita",
+        "description": "Lista di etichette tra cui il classifier può scegliere. Una per chip (o incolla virgola-separate)."
+      },
+      {
+        "key": "provider",
+        "label": "LLM provider (opzionale, override)",
+        "type": "select",
+        "options": [
+          "",
+          "liara",
+          "anthropic",
+          "openai",
+          "gemini",
+          "mistral",
+          "groq",
+          "openrouter",
+          "ollama"
+        ],
+        "description": "Vuoto = usa il default da Settings → AI Providers. Selezionalo SOLO per override locale (es. account diverso per questo nodo)."
+      },
+      {
+        "key": "apiKey",
+        "label": "API key (override)",
+        "type": "secret",
+        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+      },
+      {
+        "key": "model",
+        "label": "Modello (override)",
+        "type": "text",
+        "placeholder": "es. claude-sonnet-4-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+      },
+      {
+        "key": "baseUrl",
+        "label": "Base URL (per Ollama / self-hosted)",
+        "type": "text",
+        "showIf": {
+          "field": "provider",
+          "in": [
+            "ollama"
+          ]
+        },
+        "placeholder": "http://localhost:11434"
+      },
+      {
+        "key": "extraContext",
+        "label": "Contesto aggiuntivo (opzionale)",
+        "type": "expression",
+        "placeholder": "Esempi di output desiderato, glossario di dominio, regole speciali...",
+        "description": "Testo aggiunto al prompt PRIMA dell'input. Utile per \"few-shot examples\" o vincoli che il system prompt non copre."
+      }
+    ]
+  },
+  {
+    "defId": "agent_code_reviewer",
+    "type": "ai",
+    "label": "Agent: Code Reviewer",
+    "icon": "git-pull-request",
+    "color": "#8b5cf6",
+    "description": "Agent LLM senior code reviewer: rileva bug, anti-pattern, perf issue, missing error handling, miglioramenti idiomatici lingua-specifici.",
+    "configFields": [
+      {
+        "key": "provider",
+        "label": "LLM provider (opzionale, override)",
+        "type": "select",
+        "options": [
+          "",
+          "liara",
+          "anthropic",
+          "openai",
+          "gemini",
+          "mistral",
+          "groq",
+          "openrouter",
+          "ollama"
+        ],
+        "description": "Vuoto = usa il default da Settings → AI Providers. Selezionalo SOLO per override locale (es. account diverso per questo nodo)."
+      },
+      {
+        "key": "apiKey",
+        "label": "API key (override)",
+        "type": "secret",
+        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+      },
+      {
+        "key": "model",
+        "label": "Modello (override)",
+        "type": "text",
+        "placeholder": "es. claude-sonnet-4-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+      },
+      {
+        "key": "baseUrl",
+        "label": "Base URL (per Ollama / self-hosted)",
+        "type": "text",
+        "showIf": {
+          "field": "provider",
+          "in": [
+            "ollama"
+          ]
+        },
+        "placeholder": "http://localhost:11434"
+      },
+      {
+        "key": "extraContext",
+        "label": "Contesto aggiuntivo (opzionale)",
+        "type": "expression",
+        "placeholder": "Esempi di output desiderato, glossario di dominio, regole speciali...",
+        "description": "Testo aggiunto al prompt PRIMA dell'input. Utile per \"few-shot examples\" o vincoli che il system prompt non copre."
+      }
+    ]
+  },
+  {
+    "defId": "agent_data_analyst",
+    "type": "ai",
+    "label": "Agent: Data Analyst",
+    "icon": "bar-chart",
+    "color": "#0ea5e9",
+    "description": "Agent LLM data analyst: analizza dati tabulari (JSON/CSV) ed estrae distribuzioni per colonna, outlier (metodo IQR), correlazioni tra colonne (Pearson r), missing-value pattern, trend chiave.",
+    "configFields": [
+      {
+        "key": "provider",
+        "label": "LLM provider (opzionale, override)",
+        "type": "select",
+        "options": [
+          "",
+          "liara",
+          "anthropic",
+          "openai",
+          "gemini",
+          "mistral",
+          "groq",
+          "openrouter",
+          "ollama"
+        ],
+        "description": "Vuoto = usa il default da Settings → AI Providers. Selezionalo SOLO per override locale (es. account diverso per questo nodo)."
+      },
+      {
+        "key": "apiKey",
+        "label": "API key (override)",
+        "type": "secret",
+        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+      },
+      {
+        "key": "model",
+        "label": "Modello (override)",
+        "type": "text",
+        "placeholder": "es. claude-sonnet-4-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+      },
+      {
+        "key": "baseUrl",
+        "label": "Base URL (per Ollama / self-hosted)",
+        "type": "text",
+        "showIf": {
+          "field": "provider",
+          "in": [
+            "ollama"
+          ]
+        },
+        "placeholder": "http://localhost:11434"
+      },
+      {
+        "key": "extraContext",
+        "label": "Contesto aggiuntivo (opzionale)",
+        "type": "expression",
+        "placeholder": "Esempi di output desiderato, glossario di dominio, regole speciali...",
+        "description": "Testo aggiunto al prompt PRIMA dell'input. Utile per \"few-shot examples\" o vincoli che il system prompt non copre."
       }
     ]
   },
@@ -5329,6 +7728,222 @@
     ]
   },
   {
+    "defId": "agent_extractor",
+    "type": "ai",
+    "label": "Agent: Entity Extractor",
+    "icon": "crosshair",
+    "color": "#06b6d4",
+    "description": "Agent LLM entity extractor: dato testo non strutturato + JSON schema (config.schema), estrae fields conformi.",
+    "configFields": [
+      {
+        "key": "schema",
+        "label": "JSON Schema da estrarre",
+        "type": "code",
+        "required": true,
+        "placeholder": "{ \"nome\": \"string\", \"email\": \"string\", \"telefono\": \"string|null\" }",
+        "description": "Schema dei campi da estrarre. L'agent leggerà il testo input e produrrà un JSON che matcha questo schema. Campi non trovati = null."
+      },
+      {
+        "key": "provider",
+        "label": "LLM provider (opzionale, override)",
+        "type": "select",
+        "options": [
+          "",
+          "liara",
+          "anthropic",
+          "openai",
+          "gemini",
+          "mistral",
+          "groq",
+          "openrouter",
+          "ollama"
+        ],
+        "description": "Vuoto = usa il default da Settings → AI Providers. Selezionalo SOLO per override locale (es. account diverso per questo nodo)."
+      },
+      {
+        "key": "apiKey",
+        "label": "API key (override)",
+        "type": "secret",
+        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+      },
+      {
+        "key": "model",
+        "label": "Modello (override)",
+        "type": "text",
+        "placeholder": "es. claude-sonnet-4-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+      },
+      {
+        "key": "baseUrl",
+        "label": "Base URL (per Ollama / self-hosted)",
+        "type": "text",
+        "showIf": {
+          "field": "provider",
+          "in": [
+            "ollama"
+          ]
+        },
+        "placeholder": "http://localhost:11434"
+      },
+      {
+        "key": "extraContext",
+        "label": "Contesto aggiuntivo (opzionale)",
+        "type": "expression",
+        "placeholder": "Esempi di output desiderato, glossario di dominio, regole speciali...",
+        "description": "Testo aggiunto al prompt PRIMA dell'input. Utile per \"few-shot examples\" o vincoli che il system prompt non copre."
+      }
+    ]
+  },
+  {
+    "defId": "agent_html_extractor",
+    "type": "ai",
+    "label": "Agent: HTML Extractor (AI)",
+    "icon": "wand-2",
+    "color": "#a855f7",
+    "description": "Estrai dati strutturati da HTML descrivendo in linguaggio naturale cosa vuoi (NO selettori CSS).",
+    "configFields": [
+      {
+        "key": "instruction",
+        "label": "Istruzione (cosa estrarre)",
+        "type": "textarea",
+        "required": true,
+        "placeholder": "es. \"Titolo articolo, autore, data pubblicazione (formato ISO), lista commenti con nome+testo, prezzo se presente.\"",
+        "description": "Descrivi in italiano (o inglese) quali campi vuoi estrarre dal HTML. L'AI interpreta + cerca nel DOM senza selettori CSS."
+      },
+      {
+        "key": "schema",
+        "label": "JSON Schema output",
+        "type": "code",
+        "required": true,
+        "placeholder": "{\n  \"title\": \"string\",\n  \"author\": \"string\",\n  \"publishedAt\": \"string (ISO date)\",\n  \"price\": \"number|null\",\n  \"comments\": [{ \"name\": \"string\", \"text\": \"string\" }]\n}",
+        "description": "Schema atteso dell'output. Tipi: string, number, boolean, array. Usa \"|null\" per opzionali. L'AI rispetta lo schema, set null se campo non trovato."
+      },
+      {
+        "key": "maxHtmlChars",
+        "label": "Max HTML char in input",
+        "type": "number",
+        "defaultValue": "20000",
+        "description": "Limita HTML inviato all'AI per controllare costo token. Default 20K (~5K token). Min 1K, max 100K."
+      },
+      {
+        "key": "provider",
+        "label": "LLM provider (opzionale, override)",
+        "type": "select",
+        "options": [
+          "",
+          "liara",
+          "anthropic",
+          "openai",
+          "gemini",
+          "mistral",
+          "groq",
+          "openrouter",
+          "ollama"
+        ],
+        "description": "Vuoto = usa il default da Settings → AI Providers. Selezionalo SOLO per override locale (es. account diverso per questo nodo)."
+      },
+      {
+        "key": "apiKey",
+        "label": "API key (override)",
+        "type": "secret",
+        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+      },
+      {
+        "key": "model",
+        "label": "Modello (override)",
+        "type": "text",
+        "placeholder": "es. claude-sonnet-4-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+      },
+      {
+        "key": "baseUrl",
+        "label": "Base URL (per Ollama / self-hosted)",
+        "type": "text",
+        "showIf": {
+          "field": "provider",
+          "in": [
+            "ollama"
+          ]
+        },
+        "placeholder": "http://localhost:11434"
+      },
+      {
+        "key": "extraContext",
+        "label": "Contesto aggiuntivo (opzionale)",
+        "type": "expression",
+        "placeholder": "Esempi di output desiderato, glossario di dominio, regole speciali...",
+        "description": "Testo aggiunto al prompt PRIMA dell'input. Utile per \"few-shot examples\" o vincoli che il system prompt non copre."
+      }
+    ]
+  },
+  {
+    "defId": "agent_intent_router",
+    "type": "ai",
+    "label": "Agent: Intent Router",
+    "icon": "git-fork",
+    "color": "#ec4899",
+    "description": "Agent LLM intent router per workflow customer-facing: classifica user message contro lista intents (config.intents), output { intent, confidence, reasoning }.",
+    "configFields": [
+      {
+        "key": "intents",
+        "label": "Intent possibili",
+        "type": "chip-list",
+        "required": true,
+        "placeholder": "es. acquisto, supporto, reclamo, info",
+        "description": "Lista di intent (categorie di intenzione utente). Se nessuno matcha, l'agent ritorna \"fallback\"."
+      },
+      {
+        "key": "provider",
+        "label": "LLM provider (opzionale, override)",
+        "type": "select",
+        "options": [
+          "",
+          "liara",
+          "anthropic",
+          "openai",
+          "gemini",
+          "mistral",
+          "groq",
+          "openrouter",
+          "ollama"
+        ],
+        "description": "Vuoto = usa il default da Settings → AI Providers. Selezionalo SOLO per override locale (es. account diverso per questo nodo)."
+      },
+      {
+        "key": "apiKey",
+        "label": "API key (override)",
+        "type": "secret",
+        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+      },
+      {
+        "key": "model",
+        "label": "Modello (override)",
+        "type": "text",
+        "placeholder": "es. claude-sonnet-4-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+      },
+      {
+        "key": "baseUrl",
+        "label": "Base URL (per Ollama / self-hosted)",
+        "type": "text",
+        "showIf": {
+          "field": "provider",
+          "in": [
+            "ollama"
+          ]
+        },
+        "placeholder": "http://localhost:11434"
+      },
+      {
+        "key": "extraContext",
+        "label": "Contesto aggiuntivo (opzionale)",
+        "type": "expression",
+        "placeholder": "Esempi di output desiderato, glossario di dominio, regole speciali...",
+        "description": "Testo aggiunto al prompt PRIMA dell'input. Utile per \"few-shot examples\" o vincoli che il system prompt non copre."
+      }
+    ]
+  },
+  {
     "defId": "agent_legal_compliance",
     "type": "action",
     "label": "Legal Compliance (GDPR + eIDAS + AI Act)",
@@ -5406,6 +8021,391 @@
         "type": "boolean",
         "defaultValue": "false",
         "description": "Default OFF: il nodo usa compendio normative inline (out-of-the-box, zero setup). ON: abilita tool searchKnowledge su collection legal_kb_it_eu — richiede popolazione manuale del KB con full-text articoli/giurisprudenza."
+      }
+    ]
+  },
+  {
+    "defId": "agent_security_audit",
+    "type": "ai",
+    "label": "Agent: Security Audit",
+    "icon": "shield-alert",
+    "color": "#dc2626",
+    "description": "Agent LLM senior security engineer: audita codice/config contro OWASP Top 10, injection vector (SQLi/XSS/SSRF/CSRF), secret leakage in plaintext, weak crypto (MD5/SHA1/DES), supply-chain risks (deprecated deps, typosquat).",
+    "configFields": [
+      {
+        "key": "provider",
+        "label": "LLM provider (opzionale, override)",
+        "type": "select",
+        "options": [
+          "",
+          "liara",
+          "anthropic",
+          "openai",
+          "gemini",
+          "mistral",
+          "groq",
+          "openrouter",
+          "ollama"
+        ],
+        "description": "Vuoto = usa il default da Settings → AI Providers. Selezionalo SOLO per override locale (es. account diverso per questo nodo)."
+      },
+      {
+        "key": "apiKey",
+        "label": "API key (override)",
+        "type": "secret",
+        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+      },
+      {
+        "key": "model",
+        "label": "Modello (override)",
+        "type": "text",
+        "placeholder": "es. claude-sonnet-4-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+      },
+      {
+        "key": "baseUrl",
+        "label": "Base URL (per Ollama / self-hosted)",
+        "type": "text",
+        "showIf": {
+          "field": "provider",
+          "in": [
+            "ollama"
+          ]
+        },
+        "placeholder": "http://localhost:11434"
+      },
+      {
+        "key": "extraContext",
+        "label": "Contesto aggiuntivo (opzionale)",
+        "type": "expression",
+        "placeholder": "Esempi di output desiderato, glossario di dominio, regole speciali...",
+        "description": "Testo aggiunto al prompt PRIMA dell'input. Utile per \"few-shot examples\" o vincoli che il system prompt non copre."
+      }
+    ]
+  },
+  {
+    "defId": "agent_selector_inference",
+    "type": "ai",
+    "label": "Agent: Selector Inference (AI)",
+    "icon": "crosshair",
+    "color": "#ec4899",
+    "description": "Genera selettori CSS/XPath automaticamente da 1-2 esempi label-value.",
+    "configFields": [
+      {
+        "key": "examples",
+        "label": "Esempi label → valore atteso",
+        "type": "code",
+        "required": true,
+        "placeholder": "{\n  \"title\": \"iPhone 16 Pro\",\n  \"price\": \"€1.249,00\",\n  \"stock\": \"Disponibile\"\n}",
+        "description": "Map di {nomeCampo: valoreAtteso}. L'AI cerca elementi nel DOM che producono ESATTAMENTE questi valori, poi genera selettori CSS robusti. 2-3 esempi sono ideali (più sono, meglio è il pattern matching)."
+      },
+      {
+        "key": "preferDataAttrs",
+        "label": "Preferisci selettori semantici",
+        "type": "boolean",
+        "defaultValue": "true",
+        "description": "Se ON, l'AI preferisce classi semantiche (.product-title) o data-* attributi (data-testid=\"title\") sopra :nth-child o XPath posizionale (più robusti a cambi layout)."
+      },
+      {
+        "key": "maxHtmlChars",
+        "label": "Max HTML char in input",
+        "type": "number",
+        "defaultValue": "20000",
+        "description": "Limita HTML inviato all'AI. Default 20K."
+      },
+      {
+        "key": "provider",
+        "label": "LLM provider (opzionale, override)",
+        "type": "select",
+        "options": [
+          "",
+          "liara",
+          "anthropic",
+          "openai",
+          "gemini",
+          "mistral",
+          "groq",
+          "openrouter",
+          "ollama"
+        ],
+        "description": "Vuoto = usa il default da Settings → AI Providers. Selezionalo SOLO per override locale (es. account diverso per questo nodo)."
+      },
+      {
+        "key": "apiKey",
+        "label": "API key (override)",
+        "type": "secret",
+        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+      },
+      {
+        "key": "model",
+        "label": "Modello (override)",
+        "type": "text",
+        "placeholder": "es. claude-sonnet-4-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+      },
+      {
+        "key": "baseUrl",
+        "label": "Base URL (per Ollama / self-hosted)",
+        "type": "text",
+        "showIf": {
+          "field": "provider",
+          "in": [
+            "ollama"
+          ]
+        },
+        "placeholder": "http://localhost:11434"
+      },
+      {
+        "key": "extraContext",
+        "label": "Contesto aggiuntivo (opzionale)",
+        "type": "expression",
+        "placeholder": "Esempi di output desiderato, glossario di dominio, regole speciali...",
+        "description": "Testo aggiunto al prompt PRIMA dell'input. Utile per \"few-shot examples\" o vincoli che il system prompt non copre."
+      }
+    ]
+  },
+  {
+    "defId": "agent_summarizer",
+    "type": "ai",
+    "label": "Agent: Summarizer",
+    "icon": "file-text",
+    "color": "#22c55e",
+    "description": "Agent LLM (usa il provider configurato in Settings → AI Providers: Anthropic, OpenAI, Gemini, Mistral, Groq, OpenRouter, Ollama o Liara) che produce un summary strutturato 3-tier: TL;DR (1 frase), 5 bullet point, paragrafo (~150 word).",
+    "configFields": [
+      {
+        "key": "provider",
+        "label": "LLM provider (opzionale, override)",
+        "type": "select",
+        "options": [
+          "",
+          "liara",
+          "anthropic",
+          "openai",
+          "gemini",
+          "mistral",
+          "groq",
+          "openrouter",
+          "ollama"
+        ],
+        "description": "Vuoto = usa il default da Settings → AI Providers. Selezionalo SOLO per override locale (es. account diverso per questo nodo)."
+      },
+      {
+        "key": "apiKey",
+        "label": "API key (override)",
+        "type": "secret",
+        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+      },
+      {
+        "key": "model",
+        "label": "Modello (override)",
+        "type": "text",
+        "placeholder": "es. claude-sonnet-4-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+      },
+      {
+        "key": "baseUrl",
+        "label": "Base URL (per Ollama / self-hosted)",
+        "type": "text",
+        "showIf": {
+          "field": "provider",
+          "in": [
+            "ollama"
+          ]
+        },
+        "placeholder": "http://localhost:11434"
+      },
+      {
+        "key": "extraContext",
+        "label": "Contesto aggiuntivo (opzionale)",
+        "type": "expression",
+        "placeholder": "Esempi di output desiderato, glossario di dominio, regole speciali...",
+        "description": "Testo aggiunto al prompt PRIMA dell'input. Utile per \"few-shot examples\" o vincoli che il system prompt non copre."
+      }
+    ]
+  },
+  {
+    "defId": "agent_translator",
+    "type": "ai",
+    "label": "Agent: Translator",
+    "icon": "languages",
+    "color": "#a855f7",
+    "description": "Agent LLM translator professionale: traduce input nella lingua target (config.targetLanguage IT/EN/DE/FR/ES/PT/...).",
+    "configFields": [
+      {
+        "key": "targetLanguage",
+        "label": "Lingua di destinazione",
+        "type": "select",
+        "required": true,
+        "options": [
+          "italiano",
+          "inglese",
+          "francese",
+          "tedesco",
+          "spagnolo",
+          "portoghese",
+          "cinese",
+          "giapponese",
+          "arabo",
+          "russo"
+        ],
+        "defaultValue": "italiano",
+        "description": "Lingua in cui tradurre. Per altre lingue usa il campo \"Lingua custom\" sotto."
+      },
+      {
+        "key": "customTargetLanguage",
+        "label": "Lingua custom (override)",
+        "type": "text",
+        "placeholder": "es. catalano, swahili, latino",
+        "description": "Se la lingua non è in lista, scrivila qui. Sovrascrive il select sopra."
+      },
+      {
+        "key": "provider",
+        "label": "LLM provider (opzionale, override)",
+        "type": "select",
+        "options": [
+          "",
+          "liara",
+          "anthropic",
+          "openai",
+          "gemini",
+          "mistral",
+          "groq",
+          "openrouter",
+          "ollama"
+        ],
+        "description": "Vuoto = usa il default da Settings → AI Providers. Selezionalo SOLO per override locale (es. account diverso per questo nodo)."
+      },
+      {
+        "key": "apiKey",
+        "label": "API key (override)",
+        "type": "secret",
+        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+      },
+      {
+        "key": "model",
+        "label": "Modello (override)",
+        "type": "text",
+        "placeholder": "es. claude-sonnet-4-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+      },
+      {
+        "key": "baseUrl",
+        "label": "Base URL (per Ollama / self-hosted)",
+        "type": "text",
+        "showIf": {
+          "field": "provider",
+          "in": [
+            "ollama"
+          ]
+        },
+        "placeholder": "http://localhost:11434"
+      },
+      {
+        "key": "extraContext",
+        "label": "Contesto aggiuntivo (opzionale)",
+        "type": "expression",
+        "placeholder": "Esempi di output desiderato, glossario di dominio, regole speciali...",
+        "description": "Testo aggiunto al prompt PRIMA dell'input. Utile per \"few-shot examples\" o vincoli che il system prompt non copre."
+      }
+    ]
+  },
+  {
+    "defId": "agent_validator",
+    "type": "ai",
+    "label": "Agent: Schema Validator",
+    "icon": "shield-check",
+    "color": "#10b981",
+    "description": "Validate structured input against JSON Schema + business rules.",
+    "configFields": [
+      {
+        "key": "schema",
+        "label": "JSON Schema di validazione",
+        "type": "code",
+        "required": true,
+        "placeholder": "{\n  \"type\": \"object\",\n  \"required\": [\"email\", \"totale\"],\n  \"properties\": {\n    \"email\": { \"type\": \"string\", \"pattern\": \"^[^@]+@[^@]+$\" },\n    \"totale\": { \"type\": \"number\", \"minimum\": 0 },\n    \"tipo\": { \"type\": \"string\", \"enum\": [\"contratto\",\"fattura\",\"preventivo\"] }\n  }\n}",
+        "description": "JSON Schema standard (draft-07). Definisce type/required/properties/pattern/enum/min/max. L'agent verifica che l'input rispetti lo schema e ritorna errors[] con path JSONPath."
+      },
+      {
+        "key": "businessRules",
+        "label": "Regole di business (opzionale)",
+        "type": "textarea",
+        "placeholder": "es. \"Se totale > 10000, customer_vat deve essere presente\"\n\"Se tipo=preventivo, deadline deve essere entro 30 giorni\"",
+        "description": "Regole in linguaggio naturale che vanno OLTRE il JSON Schema. L'agent le applica una per riga."
+      },
+      {
+        "key": "strictMode",
+        "label": "Strict mode (rifiuta campi extra)",
+        "type": "boolean",
+        "defaultValue": "false",
+        "description": "Se true, qualsiasi field non dichiarato nello schema produce un errore. Se false, campi extra sono ignorati."
+      },
+      {
+        "key": "normalize",
+        "label": "Auto-normalize (trim/lowercase/parse)",
+        "type": "boolean",
+        "defaultValue": "true",
+        "description": "Se true, prova fix non-distruttivi prima di failare: trim stringhe, lowercase email, parse number da stringa numerica. Output in \"normalized\"."
+      },
+      {
+        "key": "onInvalidBehavior",
+        "label": "Cosa fare se invalido",
+        "type": "select",
+        "options": [
+          "continue",
+          "halt",
+          "branch"
+        ],
+        "defaultValue": "continue",
+        "description": "continue=passa output al next con valid:false; halt=ferma workflow con errore; branch=usa con logic_if su output.valid per branching."
+      },
+      {
+        "key": "provider",
+        "label": "LLM provider (opzionale, override)",
+        "type": "select",
+        "options": [
+          "",
+          "liara",
+          "anthropic",
+          "openai",
+          "gemini",
+          "mistral",
+          "groq",
+          "openrouter",
+          "ollama"
+        ],
+        "description": "Vuoto = usa il default da Settings → AI Providers. Selezionalo SOLO per override locale (es. account diverso per questo nodo)."
+      },
+      {
+        "key": "apiKey",
+        "label": "API key (override)",
+        "type": "secret",
+        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+      },
+      {
+        "key": "model",
+        "label": "Modello (override)",
+        "type": "text",
+        "placeholder": "es. claude-sonnet-4-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+      },
+      {
+        "key": "baseUrl",
+        "label": "Base URL (per Ollama / self-hosted)",
+        "type": "text",
+        "showIf": {
+          "field": "provider",
+          "in": [
+            "ollama"
+          ]
+        },
+        "placeholder": "http://localhost:11434"
+      },
+      {
+        "key": "extraContext",
+        "label": "Contesto aggiuntivo (opzionale)",
+        "type": "expression",
+        "placeholder": "Esempi di output desiderato, glossario di dominio, regole speciali...",
+        "description": "Testo aggiunto al prompt PRIMA dell'input. Utile per \"few-shot examples\" o vincoli che il system prompt non copre."
       }
     ]
   },
@@ -5932,6 +8932,182 @@
     ]
   },
   {
+    "defId": "community_asana",
+    "type": "action",
+    "label": "Asana",
+    "icon": "check-square",
+    "color": "#f06a6a",
+    "description": "Connettore enterprise per Asana —",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Operazione",
+        "type": "select",
+        "required": true,
+        "options": [
+          "createTask",
+          "getTask",
+          "addComment"
+        ],
+        "defaultValue": "createTask",
+        "description": "createTask = nuovo task. getTask = leggi. addComment = commenta."
+      },
+      {
+        "key": "name",
+        "label": "Titolo task",
+        "type": "expression",
+        "placeholder": "Richiamare {{input.cliente}}",
+        "description": "Titolo del task. Obbligatorio per createTask."
+      },
+      {
+        "key": "notes",
+        "label": "Descrizione",
+        "type": "expression",
+        "placeholder": "Dettagli del task...",
+        "description": "Note/descrizione (opzionale, solo createTask)."
+      },
+      {
+        "key": "projectId",
+        "label": "Progetto/i (gid)",
+        "type": "expression",
+        "placeholder": "1201234567890",
+        "description": "GID progetto Asana. Più progetti separati da virgola. Alternativa: workspace."
+      },
+      {
+        "key": "workspace",
+        "label": "Workspace (gid)",
+        "type": "expression",
+        "placeholder": "1101234567890",
+        "description": "GID workspace (usato se nessun progetto specificato)."
+      },
+      {
+        "key": "assignee",
+        "label": "Assegnatario (gid/email)",
+        "type": "expression",
+        "placeholder": "me oppure 12345 oppure user@x.it",
+        "description": "GID utente, email, o \"me\" (opzionale)."
+      },
+      {
+        "key": "dueOn",
+        "label": "Scadenza",
+        "type": "expression",
+        "placeholder": "2026-06-30",
+        "description": "Data scadenza in formato YYYY-MM-DD (opzionale)."
+      },
+      {
+        "key": "taskId",
+        "label": "Task GID (getTask/addComment)",
+        "type": "expression",
+        "placeholder": "1209876543210",
+        "description": "GID del task per getTask o addComment."
+      },
+      {
+        "key": "commentText",
+        "label": "Testo commento (addComment)",
+        "type": "expression",
+        "placeholder": "Aggiornamento: completato lo step 1.",
+        "description": "Testo del commento (solo addComment)."
+      },
+      {
+        "key": "integrationLabel",
+        "label": "Etichetta credenziali (opzionale)",
+        "type": "text",
+        "placeholder": "Default account",
+        "description": "Per gestire più account dello stesso provider. Lascia vuoto per il default."
+      }
+    ]
+  },
+  {
+    "defId": "community_box",
+    "type": "action",
+    "label": "Box",
+    "icon": "package",
+    "color": "#0061d5",
+    "description": "Connettore enterprise per Box.com —",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Operazione",
+        "type": "select",
+        "required": true,
+        "options": [
+          "listFolder",
+          "createFolder",
+          "getItem",
+          "createSharedLink",
+          "deleteFile"
+        ],
+        "defaultValue": "listFolder",
+        "description": "Cosa fare su Box."
+      },
+      {
+        "key": "folderId",
+        "label": "Folder ID (listFolder)",
+        "type": "expression",
+        "placeholder": "0",
+        "description": "ID numerico cartella. \"0\" = root. Solo listFolder."
+      },
+      {
+        "key": "parentId",
+        "label": "Parent folder ID (createFolder)",
+        "type": "expression",
+        "placeholder": "0",
+        "description": "ID cartella genitore dove creare. \"0\" = root."
+      },
+      {
+        "key": "name",
+        "label": "Nome cartella (createFolder)",
+        "type": "expression",
+        "placeholder": "Progetto 2026",
+        "description": "Nome nuova cartella (solo createFolder)."
+      },
+      {
+        "key": "itemId",
+        "label": "File/Folder ID",
+        "type": "expression",
+        "placeholder": "123456789",
+        "description": "ID numerico per getItem/createSharedLink/deleteFile."
+      },
+      {
+        "key": "itemType",
+        "label": "Tipo item (getItem)",
+        "type": "select",
+        "options": [
+          "files",
+          "folders"
+        ],
+        "defaultValue": "files",
+        "description": "getItem: file o cartella."
+      },
+      {
+        "key": "access",
+        "label": "Visibilità link (createSharedLink)",
+        "type": "select",
+        "options": [
+          "open",
+          "company",
+          "collaborators"
+        ],
+        "defaultValue": "open",
+        "description": "open=pubblico, company=solo azienda, collaborators=solo collaboratori."
+      },
+      {
+        "key": "limit",
+        "label": "Limit (listFolder)",
+        "type": "number",
+        "defaultValue": "100",
+        "description": "Max items per listFolder (1-1000)."
+      },
+      {
+        "key": "integrationLabel",
+        "label": "Etichetta credenziali (opzionale)",
+        "type": "text",
+        "placeholder": "Default account",
+        "description": "Per gestire più account dello stesso provider. Lascia vuoto per il default."
+      }
+    ]
+  },
+  {
     "defId": "community_calendly",
     "type": "action",
     "label": "Calendly",
@@ -6055,6 +9231,118 @@
         "type": "expression",
         "placeholder": "{\"title\":\"...\", \"color\":3447003, \"fields\":[...]}",
         "description": "Embed Card Discord format. Max 6000 char tot. Usa Embed Visualizer per preview."
+      },
+      {
+        "key": "integrationLabel",
+        "label": "Etichetta credenziali (opzionale)",
+        "type": "text",
+        "placeholder": "Default account",
+        "description": "Per gestire più account dello stesso provider. Lascia vuoto per il default."
+      }
+    ]
+  },
+  {
+    "defId": "community_dropbox",
+    "type": "action",
+    "label": "Dropbox",
+    "icon": "folder",
+    "color": "#0061ff",
+    "description": "Connettore enterprise per Dropbox —",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Operazione",
+        "type": "select",
+        "required": true,
+        "options": [
+          "listFolder",
+          "createFolder",
+          "getMetadata",
+          "createSharedLink",
+          "deletePath"
+        ],
+        "defaultValue": "listFolder",
+        "description": "Cosa fare con il path Dropbox."
+      },
+      {
+        "key": "path",
+        "label": "Percorso Dropbox",
+        "type": "expression",
+        "placeholder": "/Fatture/2026",
+        "description": "Percorso file o cartella (inizia con /). Vuoto o \"/\" = root. Per listFolder vuoto = root."
+      },
+      {
+        "key": "recursive",
+        "label": "Ricorsivo (listFolder)",
+        "type": "boolean",
+        "defaultValue": "false",
+        "description": "Se attivo, listFolder scende in tutte le sottocartelle."
+      },
+      {
+        "key": "autorename",
+        "label": "Auto-rename (createFolder)",
+        "type": "boolean",
+        "defaultValue": "false",
+        "description": "Se la cartella esiste, ne crea una con suffisso invece di errore."
+      },
+      {
+        "key": "integrationLabel",
+        "label": "Etichetta credenziali (opzionale)",
+        "type": "text",
+        "placeholder": "Default account",
+        "description": "Per gestire più account dello stesso provider. Lascia vuoto per il default."
+      }
+    ]
+  },
+  {
+    "defId": "community_gcs",
+    "type": "action",
+    "label": "Google Cloud Storage",
+    "icon": "cloud",
+    "color": "#4285f4",
+    "description": "Connettore enterprise per Google Cloud Storage (GCS) —",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Operazione",
+        "type": "select",
+        "required": true,
+        "options": [
+          "listObjects",
+          "getObjectMetadata",
+          "deleteObject"
+        ],
+        "defaultValue": "listObjects",
+        "description": "Cosa fare sugli oggetti del bucket."
+      },
+      {
+        "key": "bucket",
+        "label": "Bucket",
+        "type": "expression",
+        "required": true,
+        "placeholder": "mio-bucket-prod",
+        "description": "Nome bucket GCS (3-63 char, lowercase). Supporta {{input.bucket}}."
+      },
+      {
+        "key": "prefix",
+        "label": "Prefix (listObjects)",
+        "type": "expression",
+        "placeholder": "fatture/2026/",
+        "description": "Filtra oggetti per prefisso (es. cartella virtuale). Solo listObjects."
+      },
+      {
+        "key": "objectName",
+        "label": "Nome oggetto",
+        "type": "expression",
+        "placeholder": "fatture/2026/F123.pdf",
+        "description": "Nome completo oggetto per getObjectMetadata/deleteObject."
+      },
+      {
+        "key": "maxResults",
+        "label": "Max risultati (listObjects)",
+        "type": "number",
+        "defaultValue": "100",
+        "description": "Max oggetti per pagina (1-1000)."
       },
       {
         "key": "integrationLabel",
@@ -6375,6 +9663,78 @@
     ]
   },
   {
+    "defId": "community_mailchimp",
+    "type": "action",
+    "label": "Mailchimp",
+    "icon": "mail",
+    "color": "#ffe01b",
+    "description": "Connettore enterprise per Mailchimp —",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Operazione",
+        "type": "select",
+        "required": true,
+        "options": [
+          "addMember",
+          "getMember",
+          "addTag"
+        ],
+        "defaultValue": "addMember"
+      },
+      {
+        "key": "listId",
+        "label": "Audience ID (listId)",
+        "type": "expression",
+        "required": true,
+        "placeholder": "a1b2c3d4e5",
+        "description": "Audience/List ID Mailchimp (Settings → Audience name and defaults). Supporta {{input.listId}}."
+      },
+      {
+        "key": "email",
+        "label": "Email contatto",
+        "type": "expression",
+        "required": true,
+        "placeholder": "mario.rossi@example.it",
+        "description": "Email del contatto. Usata come chiave idempotente (MD5 lowercase)."
+      },
+      {
+        "key": "status",
+        "label": "Stato iscrizione",
+        "type": "select",
+        "options": [
+          "subscribed",
+          "pending",
+          "unsubscribed",
+          "cleaned"
+        ],
+        "defaultValue": "subscribed",
+        "description": "Solo addMember. \"pending\" = double opt-in GDPR."
+      },
+      {
+        "key": "mergeFieldsJson",
+        "label": "Merge fields (JSON)",
+        "type": "expression",
+        "placeholder": "{\"FNAME\":\"Mario\",\"LNAME\":\"Rossi\"}",
+        "description": "Campi merge per addMember (FNAME, LNAME, ecc.)."
+      },
+      {
+        "key": "tag",
+        "label": "Tag (addTag)",
+        "type": "expression",
+        "placeholder": "lead-2026",
+        "description": "Nome tag da applicare (solo operation=addTag)."
+      },
+      {
+        "key": "integrationLabel",
+        "label": "Etichetta credenziali (opzionale)",
+        "type": "text",
+        "placeholder": "Default account",
+        "description": "Per gestire più account dello stesso provider. Lascia vuoto per il default."
+      }
+    ]
+  },
+  {
     "defId": "community_notion",
     "type": "action",
     "label": "Notion: Pages / Databases",
@@ -6539,6 +9899,162 @@
       "totalSize",
       "recordId",
       "created"
+    ]
+  },
+  {
+    "defId": "community_sendgrid",
+    "type": "action",
+    "label": "SendGrid Email",
+    "icon": "send",
+    "color": "#1a82e2",
+    "description": "Connettore enterprise per SendGrid (la piattaforma email transazionale acquisita da Twilio nel 2019, 80k+ paying customer, leader della categoria insieme a Postmark/Mailgun/SES per ESP managed cloud) via Mail Send API v3 ufficiale.",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Tipo invio",
+        "type": "select",
+        "required": true,
+        "options": [
+          "sendEmail",
+          "sendTemplate"
+        ],
+        "defaultValue": "sendEmail",
+        "description": "sendEmail = corpo libero. sendTemplate = Dynamic Template SendGrid."
+      },
+      {
+        "key": "to",
+        "label": "Destinatario",
+        "type": "expression",
+        "required": true,
+        "placeholder": "cliente@example.it",
+        "description": "Email destinatario. Supporta {{input.email}}."
+      },
+      {
+        "key": "from",
+        "label": "Mittente (verificato su SendGrid)",
+        "type": "expression",
+        "required": true,
+        "placeholder": "noreply@tuodominio.it",
+        "description": "Email mittente VERIFICATA in SendGrid (Sender Authentication), altrimenti rifiutata."
+      },
+      {
+        "key": "fromName",
+        "label": "Nome mittente",
+        "type": "text",
+        "placeholder": "Studio Zeli",
+        "description": "Nome visualizzato (opzionale). Es. \"Studio Zeli <noreply@...>\"."
+      },
+      {
+        "key": "replyTo",
+        "label": "Reply-To",
+        "type": "expression",
+        "placeholder": "assistenza@tuodominio.it",
+        "description": "Email per le risposte (opzionale)."
+      },
+      {
+        "key": "subject",
+        "label": "Oggetto",
+        "type": "expression",
+        "placeholder": "Conferma ordine #{{input.orderId}}",
+        "description": "Oggetto email. Obbligatorio per sendEmail (ignorato per template)."
+      },
+      {
+        "key": "contentType",
+        "label": "Formato corpo",
+        "type": "select",
+        "options": [
+          "text/plain",
+          "text/html"
+        ],
+        "defaultValue": "text/plain",
+        "description": "text/html per email formattate, text/plain per testo semplice."
+      },
+      {
+        "key": "body",
+        "label": "Corpo email",
+        "type": "expression",
+        "placeholder": "Ciao {{input.nome}}, il tuo ordine è confermato.",
+        "description": "Contenuto email. Obbligatorio per sendEmail."
+      },
+      {
+        "key": "templateId",
+        "label": "Template ID (sendTemplate)",
+        "type": "expression",
+        "placeholder": "d-xxxxxxxxxxxxxxxx",
+        "description": "ID Dynamic Template SendGrid. Obbligatorio per sendTemplate."
+      },
+      {
+        "key": "dynamicDataJson",
+        "label": "Dati template (JSON)",
+        "type": "expression",
+        "placeholder": "{\"nome\":\"Mario\",\"ordine\":\"#123\"}",
+        "description": "Variabili da iniettare nel template (solo sendTemplate)."
+      },
+      {
+        "key": "integrationLabel",
+        "label": "Etichetta credenziali (opzionale)",
+        "type": "text",
+        "placeholder": "Default account",
+        "description": "Per gestire più account dello stesso provider. Lascia vuoto per il default."
+      }
+    ]
+  },
+  {
+    "defId": "community_shopify",
+    "type": "action",
+    "label": "Shopify",
+    "icon": "shopping-bag",
+    "color": "#96bf48",
+    "description": "Connettore enterprise per Shopify —",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Operazione",
+        "type": "select",
+        "required": true,
+        "options": [
+          "getOrder",
+          "createOrder",
+          "listProducts",
+          "createProduct"
+        ],
+        "defaultValue": "getOrder"
+      },
+      {
+        "key": "orderId",
+        "label": "Order ID",
+        "type": "expression",
+        "placeholder": "450789469",
+        "description": "ID numerico ordine. Obbligatorio per getOrder. Supporta {{input.orderId}}."
+      },
+      {
+        "key": "orderJson",
+        "label": "Order (JSON)",
+        "type": "expression",
+        "placeholder": "{\"line_items\":[{\"variant_id\":447654529,\"quantity\":1}],\"email\":\"x@y.it\"}",
+        "description": "Corpo ordine per createOrder (oggetto Shopify \"order\" senza wrapper)."
+      },
+      {
+        "key": "productJson",
+        "label": "Product (JSON)",
+        "type": "expression",
+        "placeholder": "{\"title\":\"T-Shirt\",\"variants\":[{\"price\":\"19.90\"}]}",
+        "description": "Corpo prodotto per createProduct (oggetto Shopify \"product\" senza wrapper)."
+      },
+      {
+        "key": "limit",
+        "label": "Limit (listProducts)",
+        "type": "number",
+        "defaultValue": "50",
+        "description": "Max prodotti per listProducts (1-250)."
+      },
+      {
+        "key": "integrationLabel",
+        "label": "Etichetta credenziali (opzionale)",
+        "type": "text",
+        "placeholder": "Default account",
+        "description": "Per gestire più account dello stesso provider. Lascia vuoto per il default."
+      }
     ]
   },
   {
@@ -6728,6 +10244,63 @@
         "key": "commentText",
         "label": "Comment text (per addComment)",
         "type": "expression"
+      },
+      {
+        "key": "integrationLabel",
+        "label": "Etichetta credenziali (opzionale)",
+        "type": "text",
+        "placeholder": "Default account",
+        "description": "Per gestire più account dello stesso provider. Lascia vuoto per il default."
+      }
+    ]
+  },
+  {
+    "defId": "community_twilio",
+    "type": "action",
+    "label": "Twilio SMS/WhatsApp",
+    "icon": "message-circle",
+    "color": "#f22f46",
+    "description": "Connettore enterprise per Twilio —",
+    "configFields": [
+      {
+        "key": "operation",
+        "label": "Operazione",
+        "type": "select",
+        "required": true,
+        "options": [
+          "sendSms",
+          "sendWhatsapp",
+          "getMessage"
+        ],
+        "defaultValue": "sendSms"
+      },
+      {
+        "key": "to",
+        "label": "Destinatario (E.164)",
+        "type": "expression",
+        "placeholder": "+393331234567",
+        "description": "Numero destinatario in formato E.164. Obbligatorio per send. Supporta {{input.phone}}."
+      },
+      {
+        "key": "fromNumber",
+        "label": "Mittente (E.164)",
+        "type": "expression",
+        "placeholder": "+390212345678",
+        "description": "Numero Twilio mittente. Se vuoto usa il fromNumber del vault."
+      },
+      {
+        "key": "body",
+        "label": "Testo messaggio",
+        "type": "expression",
+        "placeholder": "Il tuo codice è {{input.otp}}",
+        "description": "Testo (max 1600 char). Obbligatorio per sendSms/sendWhatsapp."
+      },
+      {
+        "key": "messageSid",
+        "label": "Message SID (getMessage)",
+        "type": "expression",
+        "placeholder": "SMxxxxxxxx",
+        "description": "SID del messaggio per getMessage (stato delivery)."
       },
       {
         "key": "integrationLabel",
