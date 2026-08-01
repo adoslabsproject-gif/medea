@@ -1,0 +1,46 @@
+{
+  "name": "@zeliai/shared",
+  "version": "0.1.0",
+  "description": "Shared utilities for ZeliAI — circuit breakers, IP utils, common types",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./admission": {
+      "types": "./dist/admission/index.d.ts",
+      "import": "./dist/admission/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "lint": "eslint src",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rm -rf dist",
+    "sync:bot-list": "node scripts/sync-bot-list.mjs",
+    "sync:bot-ipranges": "node scripts/sync-bot-ipranges.mjs"
+  },
+  "devDependencies": {
+    "@flowforge/eslint-config": "workspace:*",
+    "@types/node": "^22.10.0",
+    "@vitest/coverage-v8": "^2.1.5",
+    "eslint": "^9.39.0",
+    "ioredis": "^5.9.3",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.5"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  }
+}
