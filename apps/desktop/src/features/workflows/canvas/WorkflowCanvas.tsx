@@ -24,6 +24,7 @@ import {
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { findNode } from '../catalog';
+import { useLastRunOutputs } from '../runs';
 import { ResizableColumn } from '../shared';
 import type { CanvasNode, NodeDef, Workflow, WorkflowEdge } from '../types';
 
@@ -67,6 +68,9 @@ export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = f
    *  del puntatore in quelle del disegno. `useReactFlow` non si può usare qui
    *  — vorrebbe un provider attorno al componente che disegna il canvas. */
   const flow = useRef<ReactFlowInstance | null>(null);
+  /** Cosa ha prodotto ogni nodo l'ultima volta: i suggerimenti di espressione
+   *  che ne nascono sono quelli veri, non quelli dichiarati. */
+  const lastOutputs = useLastRunOutputs(workflow.id ? Number(workflow.id) : null);
 
   // I callback degli edge vivono dentro lo stato di xyflow e sopravvivono
   // ai ridisegni: devono vedere il documento di adesso, non quello di
@@ -392,6 +396,7 @@ export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = f
               );
             }}
             runtimeReady={runtimeReady}
+            lastOutputs={lastOutputs}
             {...(workflow.runtimeId ? { runtimeId: workflow.runtimeId } : {})}
             onDelete={() => {
               removeNode(selected.id);
