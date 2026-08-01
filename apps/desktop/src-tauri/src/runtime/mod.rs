@@ -211,6 +211,14 @@ fn spawn(resource_dir: &Path, data_dir: &Path) -> Result<u16> {
         // da mostrare. Senza il segreto risponderebbe «token non derivabile»,
         // e senza l'indirizzo darebbe un percorso senza sapere dove attaccarlo.
         .env("FLOWFORGE_SSO_SECRET", &webhook_secret)
+        // Un nodo «subworkflow» chiama il motore per far partire un altro
+        // workflow, e senza queste due variabili chiamerebbe `127.0.0.1:3100`
+        // — la porta di FlowForge sul server, dove qui non c'è niente — con
+        // una richiesta che verrebbe comunque rifiutata perché non
+        // autenticata. Il segreto è lo stesso dei webhook: è un canale interno
+        // fra il motore e sé stesso, non esce dalla macchina.
+        .env("FLOWFORGE_RUNTIME_URL", format!("http://127.0.0.1:{port}"))
+        .env("FLOWFORGE_INTERNAL_TOKEN", &webhook_secret)
         .env(
             "FLOWFORGE_PUBLIC_BASE_URL",
             format!("http://127.0.0.1:{port}"),
