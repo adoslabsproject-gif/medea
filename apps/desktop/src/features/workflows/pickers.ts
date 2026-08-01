@@ -56,14 +56,29 @@ export async function listTables(databaseId: string | undefined): Promise<Scelta
   return (database.tables ?? []).map((t) => ({ value: t.name, label: t.name }));
 }
 
-/** Gli altri workflow: servono ai nodi che ne chiamano uno. */
+/**
+ * Gli altri workflow, per i nodi che ne chiamano uno.
+ *
+ * Il valore è l'identificativo che ha **nel motore**, non quello di Medea: è
+ * il motore a far partire il workflow chiamato, e l'id di Medea per lui non
+ * vuol dire niente. Chi non è mai stato mandato al motore non compare — non
+ * si può chiamare qualcosa che dall'altra parte non esiste — e l'elenco lo
+ * dice invece di lasciarlo sparire in silenzio.
+ */
 export async function listWorkflows(): Promise<Scelta[]> {
   const items = await workflowApi.list();
-  return items.map((w) => ({
-    value: String(w.id),
-    label: w.name,
-    hint: w.enabled ? 'attivo' : 'non attivo',
-  }));
+  const scelte: Scelta[] = [];
+
+  for (const item of items) {
+    const record = await workflowApi.get(item.id);
+    if (!record?.runtimeId) continue;
+    scelte.push({
+      value: record.runtimeId,
+      label: item.name,
+      hint: item.enabled ? 'attivo' : 'non attivo',
+    });
+  }
+  return scelte;
 }
 
 /** I segreti definiti, per nome. Il valore non si mostra mai. */
