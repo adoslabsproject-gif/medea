@@ -86,7 +86,7 @@
     background: var(--color-surface-3);
   }
   .action[data-on='true'] {
-    border-color: var(--color-accent-solid);
+    border-color: var(--color-accent-default);
     background: var(--color-surface-3);
   }
 

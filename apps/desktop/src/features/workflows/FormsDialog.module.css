@@ -1,0 +1,230 @@
+@layer features {
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    display: grid;
+    place-items: center;
+    padding: var(--space-5);
+    background: oklch(0 0 0 / 0.55);
+  }
+
+  .panel {
+    inline-size: min(46rem, 100%);
+    max-block-size: 82vh;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-2);
+    box-shadow: var(--elevation-dialog);
+    overflow: hidden;
+  }
+
+  .head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border-block-end: 1px solid var(--color-border-subtle);
+  }
+
+  .title {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+  }
+
+  .subtitle {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  .close {
+    padding: var(--space-1);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+  }
+
+  .close:hover {
+    background: var(--color-surface-3);
+    color: var(--color-text-primary);
+  }
+
+  .body {
+    flex: 1;
+    min-block-size: 0;
+    overflow-y: auto;
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .card {
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-1);
+    padding: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .cardHead {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .identity {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-inline-size: 0;
+  }
+
+  .name {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+  }
+
+  .meta {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  .off {
+    color: var(--color-feedback-warning);
+  }
+
+  /* Il numero di invii è la cosa che si cerca aprendo questa finestra:
+     è grande perché si legga senza fermarsi a leggere. */
+  .counts {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.1;
+  }
+
+  .count {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+  }
+
+  .countLabel {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  .urlRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .url {
+    flex: 1;
+    min-inline-size: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-3);
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .last {
+    flex: 1;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  .small {
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-2);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+  }
+
+  .small:hover {
+    background: var(--color-surface-3);
+    color: var(--color-text-primary);
+  }
+
+  .submissions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    border-block-start: 1px solid var(--color-border-subtle);
+    padding-block-start: var(--space-2);
+    max-block-size: 18rem;
+    overflow-y: auto;
+  }
+
+  .submission {
+    display: flex;
+    gap: var(--space-2);
+    align-items: baseline;
+    font-size: var(--font-size-xs);
+  }
+
+  /* Un invio che ha fatto fallire il workflow resta un invio ricevuto: si
+     mostra comunque, marcato, perché il dato è arrivato lo stesso. */
+  .submission[data-status='error'] .subWhen {
+    color: var(--color-feedback-danger);
+  }
+
+  .subWhen {
+    flex: 0 0 auto;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .subInput {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-secondary);
+  }
+
+  .hint {
+    margin: 0;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  .error {
+    margin: 0;
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--font-size-xs);
+    color: var(--color-feedback-danger);
+  }
+
+  .foot {
+    padding: var(--space-3) var(--space-4);
+    border-block-start: 1px solid var(--color-border-subtle);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+}

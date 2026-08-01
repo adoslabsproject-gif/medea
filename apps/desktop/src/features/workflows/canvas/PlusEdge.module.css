@@ -80,7 +80,7 @@
     stroke: var(--color-feedback-danger);
   }
   .path[data-run='running'] {
-    stroke: var(--color-accent-solid);
+    stroke: var(--color-accent-default);
   }
   .path[data-run='skipped'] {
     stroke: var(--color-text-muted);

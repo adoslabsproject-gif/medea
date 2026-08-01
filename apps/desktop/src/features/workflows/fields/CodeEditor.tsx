@@ -72,7 +72,7 @@ const tema = EditorView.theme({
     border: '1px solid var(--color-border-default)',
     borderRadius: 'var(--radius-sm)',
   },
-  '&.cm-focused': { outline: '2px solid var(--color-accent-solid)', outlineOffset: '1px' },
+  '&.cm-focused': { outline: '2px solid var(--color-accent-default)', outlineOffset: '1px' },
   '.cm-content': { fontFamily: 'var(--font-family-mono)', padding: 'var(--space-2)' },
   '.cm-gutters': {
     backgroundColor: 'transparent',

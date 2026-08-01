@@ -83,7 +83,7 @@
     white-space: nowrap;
   }
   .snapshot:hover:not(:disabled) {
-    border-color: var(--color-accent-solid);
+    border-color: var(--color-accent-default);
     color: var(--color-text-primary);
   }
 
@@ -170,8 +170,8 @@
 
   .primary {
     border: 1px solid transparent;
-    background: var(--color-accent-solid);
-    color: var(--color-accent-on-solid);
+    background: var(--color-accent-default);
+    color: var(--color-accent-on);
   }
 
   .secondary {
@@ -230,7 +230,7 @@
     cursor: pointer;
   }
   .pick[data-on='true'] {
-    border-color: var(--color-accent-solid);
+    border-color: var(--color-accent-default);
     color: var(--color-text-primary);
   }
 }

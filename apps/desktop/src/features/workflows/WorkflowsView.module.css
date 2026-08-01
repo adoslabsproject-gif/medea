@@ -195,6 +195,6 @@
     cursor: pointer;
   }
   .missingAction:hover {
-    border-color: var(--color-accent-solid);
+    border-color: var(--color-accent-default);
   }
 }

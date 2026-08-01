@@ -75,7 +75,13 @@ L'ADR originale prevedeva due destinazioni, locale e server, come proprietà del
 workflow. **Superato**: l'app deve essere autonoma per tutto il possibile, e un
 workflow che gira su un server richiederebbe l'account che Medea non ha e non
 vuole. Il campo `executionTarget` resta nel documento per compatibilità con lo
-schema del server, ma in Medea vale sempre `local`.
+schema del server, ma in Medea **non viene onorato**: qualunque cosa dica, si
+esegue qui.
+
+Un workflow importato da FlowForge che dichiara `server` lo mostra
+nell'elenco come «importato» — non come «sul server», che era quello che
+l'etichetta diceva prima e che era falso. Offrire una scelta fra locale e
+remoto sarebbe peggio ancora: un interruttore che non cambia niente.
 
 Le automazioni girano anche quando la sezione Workflow è chiusa, e le
 esecuzioni partite da sole — cron, casella in ascolto — finiscono nello storico

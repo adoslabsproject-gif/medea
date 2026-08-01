@@ -427,7 +427,7 @@
 }
 .domainSummary::before {
   content: '▸';
-  color: var(--color-text-tertiary);
+  color: var(--color-text-muted);
 }
 .domainGroup[open] > .domainSummary::before {
   content: '▾';
@@ -444,6 +444,6 @@
 }
 .domainCount {
   margin-left: auto;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-muted);
   font-size: 12px;
 }

@@ -23,7 +23,7 @@
     resize: vertical;
   }
   .input:focus-visible {
-    outline: 2px solid var(--color-accent-solid);
+    outline: 2px solid var(--color-accent-default);
     outline-offset: 1px;
   }
 
@@ -64,7 +64,7 @@
     cursor: pointer;
   }
   .chip:hover {
-    border-color: var(--color-accent-solid);
+    border-color: var(--color-accent-default);
     color: var(--color-text-primary);
   }
 
@@ -77,8 +77,8 @@
     padding: var(--space-2) var(--space-5);
     border: 1px solid transparent;
     border-radius: var(--radius-md);
-    background: var(--color-accent-solid);
-    color: var(--color-accent-on-solid);
+    background: var(--color-accent-default);
+    color: var(--color-accent-on);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     cursor: pointer;

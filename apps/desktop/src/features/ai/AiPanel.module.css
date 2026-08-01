@@ -72,7 +72,7 @@
     font-size: 11.5px;
   }
   .toolTraceDur {
-    color: var(--color-text-tertiary);
+    color: var(--color-text-muted);
     font-variant-numeric: tabular-nums;
     font-size: 10.5px;
   }
@@ -151,7 +151,7 @@
     border-radius: var(--radius-md);
     color: var(--color-text-primary);
     font-size: var(--font-size-sm);
-    padding: var(--space-1_5) var(--space-2_5);
+    padding: var(--space-1-5) var(--space-2-5);
     cursor: pointer;
     min-inline-size: 8rem;
   }
@@ -207,14 +207,14 @@
     margin-block-start: var(--space-4);
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--space-2_5);
+    gap: var(--space-2-5);
     inline-size: 100%;
   }
   .suggCard {
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-lg);
-    padding: var(--space-3) var(--space-3_5);
+    padding: var(--space-3) var(--space-3-5);
     text-align: start;
     color: var(--color-text-primary);
     font-size: var(--font-size-sm);
@@ -280,7 +280,7 @@
     font-size: var(--font-size-md);
     line-height: var(--font-leading-relaxed);
     word-break: break-word;
-    padding: var(--space-4) var(--space-4_5, 1.1rem);
+    padding: var(--space-4) var(--space-4-5, 1.1rem);
     border-radius: var(--radius-xl);
     border: 1px solid var(--color-border-subtle);
   }
@@ -439,7 +439,7 @@
   .attachList {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-1_5);
+    gap: var(--space-1-5);
     margin-block-start: var(--space-2);
   }
   .attachChip {
@@ -449,7 +449,7 @@
     background: var(--color-surface-3);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-full);
-    padding: var(--space-0_5) var(--space-2_5);
+    padding: var(--space-0-5) var(--space-2-5);
     font-size: var(--font-size-xs);
   }
   .attachMeta {
@@ -507,7 +507,7 @@
   .pendingList {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-1_5);
+    gap: var(--space-1-5);
     margin-block-end: var(--space-2);
   }
   .pendingChip {
@@ -517,7 +517,7 @@
     background: color-mix(in oklch, var(--color-accent-default) 10%, var(--color-surface-1));
     border: 1px solid color-mix(in oklch, var(--color-accent-default) 30%, transparent);
     border-radius: var(--radius-full);
-    padding: var(--space-1) var(--space-2_5);
+    padding: var(--space-1) var(--space-2-5);
     font-size: var(--font-size-xs);
   }
   .chipRemove {
@@ -536,7 +536,7 @@
   .contextToggle {
     display: flex;
     align-items: center;
-    gap: var(--space-1_5);
+    gap: var(--space-1-5);
     font-size: var(--font-size-xs);
     color: var(--color-text-secondary);
     cursor: pointer;
@@ -640,7 +640,7 @@
   }
 
   .hint {
-    margin-block-start: var(--space-2_5);
+    margin-block-start: var(--space-2-5);
     font-size: var(--font-size-xs);
     color: var(--color-text-muted);
     text-align: center;
@@ -653,7 +653,7 @@
     color: var(--color-text-secondary);
     cursor: pointer;
     font-size: var(--font-size-xs);
-    padding: var(--space-1) var(--space-2_5);
+    padding: var(--space-1) var(--space-2-5);
     border-radius: var(--radius-md);
     transition:
       background var(--motion-duration-fast) var(--motion-easing-standard),

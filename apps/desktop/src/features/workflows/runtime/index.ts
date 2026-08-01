@@ -64,3 +64,5 @@ export type { RunProgress } from './execute';
 export { useRuntime } from './useRuntime';
 export { useAutonomousRuns } from './useAutonomousRuns';
 export type { RuntimeState } from './useRuntime';
+export { listForms, submissions } from './forms';
+export type { PublicForm, Submission } from './forms';

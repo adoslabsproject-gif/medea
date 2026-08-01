@@ -75,8 +75,22 @@ export function WorkflowList({
                     <span className={styles.name}>{wf.name}</span>
                   </span>
                   <span className={styles.meta}>
-                    {wf.nodeCount} nodi ·{' '}
-                    {wf.executionTarget === 'server' ? 'sul server' : 'locale'}
+                    {wf.nodeCount} nodi
+                    {/* «sul server» diceva una cosa falsa: in Medea si esegue
+                        sempre qui. Il campo esiste solo perché un workflow
+                        importato da FlowForge può dichiararlo, e riesportandolo
+                        deve ritrovarselo — ma qui gira in locale, e vale la
+                        pena dirlo a chi lo importa invece di lasciarglielo
+                        credere. */}
+                    {wf.executionTarget === 'server' && (
+                      <span
+                        className={styles.imported}
+                        title="Arriva da FlowForge, dove girava sul server. Qui gira su questo computer."
+                      >
+                        {' '}
+                        · importato
+                      </span>
+                    )}
                   </span>
                 </button>
                 <div className={styles.actions}>

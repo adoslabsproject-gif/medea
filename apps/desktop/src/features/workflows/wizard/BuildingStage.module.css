@@ -15,7 +15,7 @@
     inline-size: 1.5rem;
     block-size: 1.5rem;
     border: 2px solid var(--color-border-default);
-    border-block-start-color: var(--color-accent-solid);
+    border-block-start-color: var(--color-accent-default);
     border-radius: 50%;
     animation: wizard-spin 900ms linear infinite;
     flex-shrink: 0;

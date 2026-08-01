@@ -417,7 +417,7 @@ function RowEditor({
                   <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
                     {c.primaryKey && '🔑 '}
                     <code>{c.name}</code>{' '}
-                    <span style={{ color: 'var(--color-text-tertiary)' }}>
+                    <span style={{ color: 'var(--color-text-muted)' }}>
                       · {c.dataType || 'TEXT'}
                       {c.nullable ? '' : ' · NOT NULL'}
                     </span>

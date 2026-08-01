@@ -18,6 +18,8 @@ export interface WorkflowSummary {
   enabled: boolean;
   nodeCount: number;
   updatedAt: string;
+  /** Con che identificativo lo conosce il motore, se ci è già arrivato. */
+  runtimeId?: string;
 }
 
 export interface WorkflowRecord {

@@ -94,7 +94,7 @@
     cursor: pointer;
   }
   .addNote:hover {
-    border-color: var(--color-accent-solid);
+    border-color: var(--color-accent-default);
     color: var(--color-text-primary);
   }
 }

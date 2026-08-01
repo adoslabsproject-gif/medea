@@ -45,7 +45,7 @@
     white-space: nowrap;
   }
   .assist:hover {
-    border-color: var(--color-accent-solid);
+    border-color: var(--color-accent-default);
     color: var(--color-text-primary);
   }
 
@@ -168,5 +168,12 @@
   }
   .iconBtn:hover {
     color: var(--color-text-primary);
+  }
+
+  /* Un workflow che dichiara di girare sul server: qui gira comunque in
+     locale, e l'etichetta lo dice invece di ripetere una cosa falsa. */
+  .imported {
+    color: var(--color-text-muted);
+    font-style: italic;
   }
 }

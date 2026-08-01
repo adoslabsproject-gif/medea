@@ -19,6 +19,7 @@ import { exportPng } from './canvas/export-png';
 import { WorkflowCanvas } from './canvas/WorkflowCanvas';
 import { findNode } from './catalog';
 import { CommandPalette, type Comando } from './CommandPalette';
+import { FormsDialog } from './FormsDialog';
 import { missingSecrets } from './missing-secrets';
 import { NodesDialog } from './NodesDialog';
 import { RelayDialog } from './RelayDialog';
@@ -63,6 +64,7 @@ export function WorkflowsView() {
   const [triggerInputOpen, setTriggerInputOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [formsOpen, setFormsOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(
     () => localStorage.getItem(ASSISTANT_OPEN_KEY) !== 'false',
   );
@@ -171,6 +173,14 @@ export function WorkflowsView() {
       label: 'Segreti',
       run: () => {
         setSecretsOpen(true);
+      },
+    },
+    {
+      id: 'form',
+      label: 'Form pubblici',
+      hint: 'gli indirizzi da mandare e cosa è arrivato',
+      run: () => {
+        setFormsOpen(true);
       },
     },
     {
@@ -465,6 +475,23 @@ export function WorkflowsView() {
           onLoad={(restored) => {
             // Arriva come bozza: si guarda, e si salva solo se convince.
             editor.load(restored, editor.enabled);
+          }}
+        />
+      )}
+
+      {formsOpen && (
+        <FormsDialog
+          onClose={() => {
+            setFormsOpen(false);
+          }}
+          onOpen={(runtimeId) => {
+            // L'elenco dei form parla la lingua del motore: gli identificativi
+            // sono i suoi. Il sommario porta `runtimeId` proprio per poter
+            // fare questo passaggio senza riaprire ogni documento.
+            const riga = editor.items.find((i) => i.runtimeId === runtimeId);
+            if (!riga) return;
+            void editor.open(riga.id);
+            setFormsOpen(false);
           }}
         />
       )}
