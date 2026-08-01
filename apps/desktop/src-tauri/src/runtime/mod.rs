@@ -80,9 +80,16 @@ const RUNTIME_PATH_ENV: &str = "MEDEA_WORKFLOW_RUNTIME";
 /// percorso che esiste su una macchina sola è una bugia che funziona finché
 /// non la si prova altrove.
 fn bundle_entry(resource_dir: &Path) -> Result<PathBuf> {
-    // `main.js` sta dentro `dist/` perché importa i suoi fratelli con
-    // percorsi relativi: spostarlo di una cartella li spezzerebbe tutti.
-    for candidate in ["runtime/dist/main.js", "runtime/main.js"] {
+    // Due cose insieme. `main.js` sta dentro `dist/` perché importa i suoi
+    // fratelli con percorsi relativi, e spostarlo di una cartella li
+    // spezzerebbe tutti. E Tauri conserva il percorso dichiarato in
+    // `bundle.resources`, quindi la cartella arriva sotto `resources/` —
+    // provato: in sviluppo finisce in `target/debug/resources/runtime`.
+    for candidate in [
+        "resources/runtime/dist/main.js",
+        "runtime/dist/main.js",
+        "runtime/main.js",
+    ] {
         let packaged = resource_dir.join(candidate);
         if packaged.exists() {
             return Ok(packaged);
@@ -106,10 +113,13 @@ fn bundle_entry(resource_dir: &Path) -> Result<PathBuf> {
 /// L'eseguibile Node da usare. Nell'app installata sarà quello impacchettato;
 /// in sviluppo quello di sistema.
 fn node_binary(resource_dir: &Path) -> PathBuf {
-    let bundled = resource_dir.join("runtime/node");
-    if bundled.exists() {
-        return bundled;
+    for candidate in ["resources/runtime/node", "runtime/node"] {
+        let bundled = resource_dir.join(candidate);
+        if bundled.exists() {
+            return bundled;
+        }
     }
+    // In sviluppo, senza pacchetto, si usa quello di sistema.
     PathBuf::from("node")
 }
 
