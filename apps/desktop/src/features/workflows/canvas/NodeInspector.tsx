@@ -17,6 +17,7 @@ import type { CanvasNode, NodeDef, WorkflowEdge } from '../types';
 
 import styles from './NodeInspector.module.css';
 import { NodeTestPanel } from './NodeTestPanel';
+import { WebhookAddress } from './WebhookAddress';
 
 type Tab = 'config' | 'in' | 'out' | 'test';
 
@@ -33,6 +34,8 @@ interface Props {
   onDelete: () => void;
   /** Vero quando il motore è in piedi: senza, la prova non è possibile. */
   runtimeReady: boolean;
+  /** Come il motore conosce questo workflow: serve all'indirizzo del webhook. */
+  runtimeId?: string;
 }
 
 export function NodeInspector({
@@ -46,6 +49,7 @@ export function NodeInspector({
   onRename,
   onDelete,
   runtimeReady,
+  runtimeId,
 }: Props) {
   const [tab, setTab] = useState<Tab>('config');
   const fields = def?.configFields ?? [];
@@ -95,6 +99,7 @@ export function NodeInspector({
         {tab === 'config' && (
           <>
             {def?.description && <p className={styles.description}>{def.description}</p>}
+            {node.defId === 'trigger_webhook' && <WebhookAddress runtimeId={runtimeId} />}
             {fields.length === 0 ? (
               <p className={styles.none}>Questo nodo non ha impostazioni.</p>
             ) : (
