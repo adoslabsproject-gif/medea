@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { replayRun } from '../runtime';
 
 import { runsApi } from './api';
+import { ReplayDialog } from './ReplayDialog';
 import styles from './RunsModal.module.css';
 import { RunStepList } from './RunStepList';
 import {
@@ -39,6 +40,8 @@ export function RunsModal({ workflowId, workflowName, runtimeId, onClose }: Prop
   const [loading, setLoading] = useState(true);
   const [replaying, setReplaying] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  /** Il nodo da cui si sta per ripartire, mentre si decide se cambiare i dati. */
+  const [replayFrom, setReplayFrom] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -72,12 +75,17 @@ export function RunsModal({ workflowId, workflowName, runtimeId, onClose }: Prop
    * buttato — e se uno di quelli manda una email, è anche una email in più a
    * ogni tentativo.
    */
-  function replay(fromNode: string) {
+  function replay(fromNode: string, overrides: Record<string, unknown> = {}) {
     const run = selected;
     if (!run || !runtimeId) return;
     setReplaying(fromNode);
     setNotice(null);
-    void replayRun({ runtimeWorkflowId: runtimeId, runId: run.id, fromNode })
+    void replayRun({
+      runtimeWorkflowId: runtimeId,
+      runId: run.id,
+      fromNode,
+      ...(Object.keys(overrides).length > 0 ? { overrides } : {}),
+    })
       .then(async (result) => {
         setNotice(
           `Ripartita da ${fromNode}: ${result.status}, ${String(result.reused)} ${result.reused === 1 ? 'passo riusato' : 'passi riusati'}.`,
@@ -181,7 +189,13 @@ export function RunsModal({ workflowId, workflowName, runtimeId, onClose }: Prop
               <RunStepList
                 run={selected}
                 steps={parseSteps(selected)}
-                {...(runtimeId ? { onReplay: replay } : {})}
+                {...(runtimeId
+                  ? {
+                      onReplay: (fromNode: string) => {
+                        setReplayFrom(fromNode);
+                      },
+                    }
+                  : {})}
                 replaying={replaying}
               />
             ) : (
@@ -190,6 +204,24 @@ export function RunsModal({ workflowId, workflowName, runtimeId, onClose }: Prop
           </section>
         </div>
       </div>
+
+      {replayFrom && selected && (
+        <ReplayDialog
+          fromNode={replayFrom}
+          // Solo i passi PRIMA di quello da cui si riparte: quelli dopo
+          // verranno rieseguiti, e cambiarne l'uscita non vorrebbe dire niente.
+          upstream={parseSteps(selected).slice(
+            0,
+            parseSteps(selected).findIndex((s) => s.nodeId === replayFrom),
+          )}
+          onClose={() => {
+            setReplayFrom(null);
+          }}
+          onReplay={(overrides) => {
+            replay(replayFrom, overrides);
+          }}
+        />
+      )}
     </div>
   );
 }
