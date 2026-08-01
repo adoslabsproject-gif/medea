@@ -12,6 +12,27 @@
  */
 import { writeFileSync } from 'node:fs';
 
+/**
+ * Dove sta il repository di FlowForge, da cui si leggono i pacchetti
+ * compilati.
+ *
+ * Arriva dall'ambiente e non è scritto qui dentro: un percorso che esiste su
+ * una macchina sola è una bugia che funziona finché non la si prova altrove —
+ * e, in un repository pubblico, dice a chiunque come sono organizzate le
+ * cartelle di chi lo ha scritto.
+ *
+ * Uso:
+ *   FLOWFORGE_SRC=/percorso/a/zeliAI node scripts/extract-flowforge-nodes.mjs <destinazione>
+ */
+const SORGENTE = process.env.FLOWFORGE_SRC;
+if (!SORGENTE) {
+  console.error(
+    'Manca FLOWFORGE_SRC: indica la radice del repository di FlowForge.\n' +
+      '  FLOWFORGE_SRC=/percorso/a/zeliAI node scripts/extract-flowforge-nodes.mjs <destinazione>',
+  );
+  process.exit(1);
+}
+
 const PACKAGES = ['stdlib', 'db', 'ai-agents', 'llm', 'integrations-core', 'integrations-italia'];
 
 const defs = new Map();
@@ -43,7 +64,7 @@ const collect = (mod) => {
 
 for (const pkg of PACKAGES) {
   try {
-    collect(await import(`/Users/zelistore/zeliAI/packages/flowforge/nodes/${pkg}/dist/index.js`));
+    collect(await import(`${SORGENTE}/packages/flowforge/nodes/${pkg}/dist/index.js`));
   } catch (e) {
     console.warn(`salto ${pkg}: ${e.message.split('\n')[0]}`);
   }

@@ -3,7 +3,7 @@
 - **Stato**: accettato (2026-07-31)
 - **Contesto**: pivot del prodotto — Medea diventa un client email **neutro**
   (nessun verticale Zeli/elettrovalvole), con l'obiettivo di usare **lo stesso
-  modello fine-tuned** dell'app Liara (`/Users/zelistore/zeli-local`,
+  modello fine-tuned** dell'app Liara (repository privato,
   modello `liara-24b` / alias `nha-v1` servito via vLLM OpenAI-compatible).
 
 ## Decisione 1 — BYOK come unico modo (già implementato)

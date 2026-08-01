@@ -21,16 +21,38 @@
  * pubblico per usarlo.
  *
  * Uso:
- *   node scripts/collaudo-relay.mjs [http://127.0.0.1:PORTA_MOTORE]
+ *   node scripts/collaudo-relay.mjs [motore] [relay]
+ *
+ * Esempi:
+ *   node scripts/collaudo-relay.mjs
+ *   node scripts/collaudo-relay.mjs http://127.0.0.1:39100 https://automazionezeli.com/relay
  */
 
 import { spawn } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
 
 const MOTORE = process.argv[2] ?? 'http://127.0.0.1:39100';
+
+/**
+ * Il relay da provare.
+ *
+ * Senza argomento se ne avvia uno qui e si prova contro quello. Con un
+ * indirizzo — `https://automazionezeli.com/relay` — si prova quello VERO, in
+ * produzione, che è l'unica prova che conta davvero: in mezzo ci sono
+ * Cloudflare e nginx, e un WebSocket può inciampare in entrambi senza che
+ * niente lo faccia sospettare in locale.
+ */
+const RELAY_ESTERNO = process.argv[3] ?? '';
 const RELAY_PORT = 39500;
-const RELAY = `http://127.0.0.1:${String(RELAY_PORT)}`;
-const RELAY_ENTRY = '/Users/zelistore/zeliAI/apps/webhook-relay/dist/index.js';
+const RELAY = RELAY_ESTERNO || `http://127.0.0.1:${String(RELAY_PORT)}/relay`;
+/**
+ * Il relay compilato, quando se ne avvia uno qui.
+ *
+ * Dall'ambiente e non scritto qui dentro: vale lo stesso motivo dell'altro
+ * script — un percorso assoluto in un repository pubblico racconta com'è
+ * fatto il computer di chi lo ha scritto, e funziona solo su quello.
+ */
+const RELAY_ENTRY = process.env.WEBHOOK_RELAY_ENTRY ?? '../zeliAI/apps/webhook-relay/dist/index.js';
 
 const EMAIL = 'collaudo@localhost.local';
 const PASSWORD = 'Collaudo-Medea-2026!';
@@ -66,7 +88,7 @@ async function authenticate() {
 /** Il client: lo stesso protocollo di `runtime/relay.ts`, in miniatura. */
 function connectClient(secret) {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(`ws://127.0.0.1:${String(RELAY_PORT)}/relay/socket`);
+    const ws = new WebSocket(`${RELAY.replace(/^http/, 'ws')}/socket`);
     const forwardable = /^\/webhooks\/[A-Za-z0-9/_-]*$/;
 
     ws.addEventListener('open', () => {
@@ -133,11 +155,16 @@ async function main() {
   console.log(`Collaudo del relay\n  motore: ${MOTORE}\n  relay:  ${RELAY}\n`);
   await authenticate();
 
-  console.log('  Avvio il relay…');
-  const relay = spawn('node', [RELAY_ENTRY], {
-    env: { ...process.env, PORT: String(RELAY_PORT), HOST: '127.0.0.1' },
-    stdio: ['ignore', 'ignore', 'inherit'],
-  });
+  let relay = null;
+  if (!RELAY_ESTERNO) {
+    console.log('  Avvio un relay qui…');
+    relay = spawn('node', [RELAY_ENTRY], {
+      env: { ...process.env, PORT: String(RELAY_PORT), HOST: '127.0.0.1' },
+      stdio: ['ignore', 'ignore', 'inherit'],
+    });
+  } else {
+    console.log('  Uso il relay in produzione.');
+  }
 
   const vivo = await attendi(async () => {
     try {
@@ -147,8 +174,8 @@ async function main() {
     }
   });
   if (!vivo) {
-    relay.kill();
-    console.log('\n✗ Il relay non parte.');
+    relay?.kill();
+    console.log('\n✗ Il relay non risponde.');
     process.exit(1);
   }
 
@@ -179,7 +206,7 @@ async function main() {
   });
 
   const { webhook } = await call(`/workflows/${workflow.id}/webhook-url`);
-  const pubblico = `${RELAY}/relay/h/${client.installId}${webhook.path}`;
+  const pubblico = `${RELAY}/h/${client.installId}${webhook.path}`;
   console.log(`  Indirizzo pubblico: ${pubblico}`);
 
   const risposta = await fetch(pubblico, {
@@ -196,16 +223,16 @@ async function main() {
   const passo = run?.run.steps.find((s) => s.nodeId === 'eco');
 
   // Il confine: un percorso che non è un webhook non deve passare.
-  const intruso = await fetch(`${RELAY}/relay/h/${client.installId}/api/v1/workflows`);
+  const intruso = await fetch(`${RELAY}/h/${client.installId}/api/v1/workflows`);
   console.log(`  Tentativo su un percorso non-webhook: ${String(intruso.status)}`);
 
   // E un identificativo che non esiste non deve rivelare se esiste o no.
-  const sconosciuto = await fetch(`${RELAY}/relay/h/${'0'.repeat(24)}/webhooks/x/y`, {
+  const sconosciuto = await fetch(`${RELAY}/h/${'0'.repeat(24)}/webhooks/x/y`, {
     method: 'POST',
   });
 
   client.close();
-  relay.kill();
+  relay?.kill();
 
   console.log('');
   const esito = [

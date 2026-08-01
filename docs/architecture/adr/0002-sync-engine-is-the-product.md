@@ -69,7 +69,7 @@ Sono parte del contratto del sync engine, non «se rimane tempo»:
 
 ## Riferimenti
 
-- Architettura del sync: §3 del piano `/Users/zelistore/.claude/plans/sharded-wandering-moth.md`
-- Logica di riferimento JS: `/Users/zelistore/nha-toolkit/src/services/email-imap.mjs`
+- Architettura del sync: §3 del piano interno, non incluso nel repository.
+- Logica di riferimento JS: `email-imap.mjs` del toolkit NHA (repository privato).
 - `greenmail`: https://greenmail-mail-test.github.io/greenmail/
 - `async-imap`: https://crates.io/crates/async-imap

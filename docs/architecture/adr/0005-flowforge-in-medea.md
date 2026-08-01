@@ -4,7 +4,7 @@
   al 2026-08-01. Le parti ancora aperte sono elencate in fondo, con il nome
   di chi le ha prese in carico dopo (ADR 0007, ADR 0008).
 - **Contesto**: Medea deve avere una sezione **Workflow** con le stesse
-  capacità di FlowForge (`/Users/zelistore/zeliAI`), sul computer dell'utente,
+  capacità di FlowForge (repository privato), sul computer dell'utente,
   senza registrazione e senza dipendere da un server.
 
 ## Vincolo non negoziabile: l'AI scaffold
