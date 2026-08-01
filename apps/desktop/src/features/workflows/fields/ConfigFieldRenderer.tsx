@@ -108,7 +108,7 @@ export function ConfigFieldRenderer({
   }
 
   if (PICKER_TYPES.has(type)) {
-    return <PickerField field={field} value={text} onChange={onChange} />;
+    return <PickerField field={field} value={text} onChange={onChange} allValues={allValues} />;
   }
 
   if (CODE_TYPES.has(type)) {
