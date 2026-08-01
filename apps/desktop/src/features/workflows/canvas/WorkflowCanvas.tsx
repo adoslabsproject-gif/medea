@@ -19,6 +19,7 @@ import {
   ReactFlow,
   type EdgeTypes,
   type NodeTypes,
+  type ReactFlowInstance,
 } from '@xyflow/react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
@@ -33,6 +34,7 @@ import { nextFreeSpot } from './layout';
 import { NodeInspector } from './NodeInspector';
 import { NodePalette } from './NodePalette';
 import { PlusEdge, type MapMode } from './PlusEdge';
+import { SelectionBar } from './SelectionBar';
 import { useCanvasHandlers } from './useCanvasHandlers';
 import { useCanvasProjection } from './useCanvasProjection';
 import { useCanvasShortcuts } from './useCanvasShortcuts';
@@ -55,10 +57,16 @@ interface Props {
 
 export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = false }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  /** Tutti i nodi presi insieme, quando se ne prende più d'uno. */
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   /** Il collegamento su cui si sta inserendo un nodo, se l'utente ha
    *  premuto il «+». La palette cambia modo finché non sceglie. */
   const [insertOn, setInsertOn] = useState<WorkflowEdge | null>(null);
   const [searching, setSearching] = useState(false);
+  /** L'istanza di React Flow, presa all'avvio: serve a tradurre le coordinate
+   *  del puntatore in quelle del disegno. `useReactFlow` non si può usare qui
+   *  — vorrebbe un provider attorno al componente che disegna il canvas. */
+  const flow = useRef<ReactFlowInstance | null>(null);
 
   // I callback degli edge vivono dentro lo stato di xyflow e sopravvivono
   // ai ridisegni: devono vedere il documento di adesso, non quello di
@@ -130,9 +138,16 @@ export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = f
     patchNodes,
   });
 
+  /**
+   * Mette un nodo sul disegno, eventualmente in un punto preciso.
+   *
+   * Senza coordinate lo si mette dove c'è posto — è quello che serve al
+   * click sulla palette. Con le coordinate lo si mette dove è stato
+   * lasciato cadere, che è la sola cosa che rende utile il trascinamento.
+   */
   const addFromPalette = useCallback(
-    (def: NodeDef) => {
-      const spot = nextFreeSpot(workflow.nodes);
+    (def: NodeDef, at?: { x: number; y: number }) => {
+      const spot = at ?? nextFreeSpot(workflow.nodes);
       const id = uniqueNodeId(def.defId, workflow.nodes);
       const config: Record<string, unknown> = {};
       // I valori predefiniti si applicano subito: è ciò che rende un nodo
@@ -155,6 +170,73 @@ export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = f
     [workflow, onChange, insertOn],
   );
 
+  /**
+   * Il nodo lasciato cadere dalla palette.
+   *
+   * Le coordinate del puntatore sono quelle dello schermo: vanno riportate
+   * nel sistema del disegno, altrimenti il nodo compare a metri di distanza
+   * da dove lo si è lasciato.
+   */
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+      const defId = event.dataTransfer.getData('application/medea-node');
+      if (!defId) return;
+      const def = findNode(defId);
+      if (!def) return;
+
+      const point = flow.current?.screenToFlowPosition({ x: event.clientX, y: event.clientY });
+      if (!point) return;
+      // Il puntatore sta al centro di quello che si trascina: il nodo va
+      // spostato di mezza carta, o risulta sempre in basso a destra.
+      addFromPalette(def, { x: point.x - 70, y: point.y - 60 });
+    },
+    [addFromPalette],
+  );
+
+  /**
+   * Copia più nodi insieme, con i loro collegamenti interni.
+   *
+   * Le copie nascono spostate: sovrapposte all'originale sembrerebbero non
+   * essere state create. E i collegamenti si portano dietro solo quelli fra
+   * nodi copiati — un collegamento verso l'esterno finirebbe su un nodo che
+   * la copia non ha.
+   */
+  const duplicateNodes = useCallback(
+    (ids: readonly string[]) => {
+      const insieme = new Set(ids);
+      const daCopiare = workflow.nodes.filter((n) => insieme.has(n.id));
+      if (daCopiare.length === 0) return;
+
+      const rinomina = new Map<string, string>();
+      const copie: CanvasNode[] = [];
+      let esistenti = workflow.nodes;
+
+      for (const node of daCopiare) {
+        const id = uniqueNodeId(node.defId, esistenti);
+        rinomina.set(node.id, id);
+        const copia: CanvasNode = { ...node, id, x: node.x + 40, y: node.y + 40 };
+        copie.push(copia);
+        esistenti = [...esistenti, copia];
+      }
+
+      const collegamenti = workflow.edges
+        .filter((e) => insieme.has(e.from) && insieme.has(e.to))
+        .map((e) => ({
+          ...e,
+          from: rinomina.get(e.from) ?? e.from,
+          to: rinomina.get(e.to) ?? e.to,
+        }));
+
+      onChange({
+        ...workflow,
+        nodes: [...workflow.nodes, ...copie],
+        edges: [...workflow.edges, ...collegamenti],
+      });
+    },
+    [workflow, onChange],
+  );
+
   useCanvasShortcuts({
     workflow,
     selectedId,
@@ -170,6 +252,22 @@ export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = f
   return (
     <div className={styles.root}>
       <ResizableColumn storageKey="medea.workflows.paletteWidth" defaultWidth={240} handle="end">
+        <SelectionBar
+          count={selectedIds.length}
+          onClear={() => {
+            setSelectedIds([]);
+            setSelectedId(null);
+          }}
+          onDelete={() => {
+            for (const id of selectedIds) removeNode(id);
+            setSelectedIds([]);
+            setSelectedId(null);
+          }}
+          onDuplicate={() => {
+            duplicateNodes(selectedIds);
+          }}
+        />
+
         <NodePalette
           onAdd={addFromPalette}
           {...(insertOn
@@ -204,9 +302,30 @@ export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = f
           onNodeClick={(_, node) => {
             setSelectedId(node.id);
           }}
+          onSelectionChange={({ nodes: selezionati }) => {
+            setSelectedIds(selezionati.map((n) => n.id));
+          }}
           onPaneClick={() => {
             setSelectedId(null);
           }}
+          onInit={(instance) => {
+            flow.current = instance;
+          }}
+          onDrop={onDrop}
+          onDragOver={(event) => {
+            // Senza questo il browser rifiuta il rilascio e non arriva mai
+            // un `drop`: è la riga che fa la differenza fra un trascinamento
+            // che funziona e uno che sembra rotto.
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'copy';
+          }}
+          /* Tenendo Maiusc si tira un rettangolo e si prendono più nodi
+             insieme; con Cmd/Ctrl si aggiunge un nodo alla volta. Sono le
+             stesse dita di qualunque editor grafico: non c'è niente da
+             imparare. */
+          selectionKeyCode="Shift"
+          multiSelectionKeyCode={['Meta', 'Control']}
+          deleteKeyCode={['Backspace', 'Delete']}
           fitView
           /* Il tetto allo zoom sta sotto 1: `fitView` ingrandisce finché non
              riempie il canvas, e con due nodi li mostrerebbe enormi. Meglio
