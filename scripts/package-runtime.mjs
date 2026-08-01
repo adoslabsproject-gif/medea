@@ -36,6 +36,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  statSync,
   readdirSync,
   rmSync,
   writeFileSync,
@@ -89,10 +90,34 @@ function workspaceRoot(from) {
   }
 }
 
+/**
+ * Come si chiama l'eseguibile di Node su questo sistema.
+ *
+ * Su Windows è `node.exe`, e copiarlo senza estensione produce un file che
+ * non si lascia lanciare — la CI costruisce anche lì, quindi non è un caso
+ * teorico.
+ */
+const NODE_EXE = process.platform === 'win32' ? 'node.exe' : 'node';
+
 /** Quanto pesa una cartella, in MB. Serve solo a dirlo a chi guarda. */
 function sizeMb(path) {
-  const out = execFileSync('du', ['-sm', path], { encoding: 'utf8' });
-  return Number.parseInt(out.split('\t')[0] ?? '0', 10);
+  // `du` non esiste su Windows, e questo numero serve solo a stamparlo: si
+  // conta con `fs`, che funziona ovunque, invece di far fallire la build per
+  // una riga di log.
+  let bytes = 0;
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.isFile()) bytes += statSync(full).size;
+    }
+  };
+  try {
+    walk(path);
+  } catch {
+    return 0;
+  }
+  return Math.round(bytes / 1024 / 1024);
 }
 
 /** Toglie ogni `node_modules/**\/.bin`, a qualunque profondità. */
@@ -157,7 +182,7 @@ function prune(root) {
 async function smoke(target) {
   const port = 39300 + Number(process.hrtime.bigint() % 200n);
   const data = mkdtempSync(join(tmpdir(), 'medea-runtime-smoke-'));
-  const node = join(target, 'node');
+  const node = join(target, NODE_EXE);
   const child = spawn(node, [join(target, 'dist/main.js')], {
     env: { ...process.env, PORT: String(port), DATA_DIR: data, NODE_ENV: 'production' },
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -252,7 +277,7 @@ async function main() {
   console.log(`    ${String(removed)} mappe dei sorgenti rimosse.`);
 
   console.log('  Copio l’eseguibile Node…');
-  cpSync(process.execPath, join(staging, 'node'), { dereference: true });
+  cpSync(process.execPath, join(staging, NODE_EXE), { dereference: true });
 
   // Solo quello che serve a eseguire: i sorgenti e la configurazione di
   // sviluppo del runtime non c'entrano niente con l'app installata.
@@ -269,7 +294,7 @@ async function main() {
   rmSync(TARGET, { recursive: true, force: true });
   mkdirSync(TARGET, { recursive: true });
   if (segnaposto !== null) writeFileSync(join(TARGET, 'README.md'), segnaposto);
-  for (const name of ['dist', 'node_modules', 'package.json', 'node']) {
+  for (const name of ['dist', 'node_modules', 'package.json', NODE_EXE]) {
     const from = join(staging, name);
     if (existsSync(from)) {
       cpSync(from, join(TARGET, name), { recursive: true, dereference: true });
@@ -280,8 +305,8 @@ async function main() {
   // 0755 e non «+x»: il Node di sistema è di sola lettura, e una copia che
   // resta tale non si lascia sovrascrivere alla costruzione successiva —
   // Tauri si ferma con «Permission denied» mentre raccoglie le risorse.
-  if (existsSync(join(TARGET, 'node'))) {
-    chmodSync(join(TARGET, 'node'), 0o755);
+  if (existsSync(join(TARGET, NODE_EXE))) {
+    chmodSync(join(TARGET, NODE_EXE), 0o755);
   }
 
   rmSync(staging, { recursive: true, force: true });
