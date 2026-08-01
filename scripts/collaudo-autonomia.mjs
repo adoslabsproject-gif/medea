@@ -88,7 +88,7 @@ async function main() {
   });
   console.log('  Workflow attivato.');
   console.log(
-    '  NOTA: lo scheduler carica i cron solo all\'avvio, quindi va riavviato.\n' +
+    "  NOTA: lo scheduler carica i cron solo all'avvio, quindi va riavviato.\n" +
       '        È quello che fa Medea quando premi «Attivo».\n',
   );
 

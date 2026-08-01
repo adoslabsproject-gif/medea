@@ -1,3 +1,10 @@
 # Il motore dei workflow impacchettato: centinaia di MB, si rigenera con
 # `pnpm runtime:package`. Non appartiene alla cronologia del codice.
-resources/runtime/
+#
+# La CARTELLA però deve esistere: `tauri.conf.json` la dichiara fra le
+# risorse del pacchetto, e Tauri si rifiuta di compilare se un percorso
+# dichiarato non c'è. Senza il README qui sotto, ogni build su una copia
+# pulita del repo — la CI, la costruzione degli installatori — fallirebbe
+# con «resource path doesn't exist».
+resources/runtime/*
+!resources/runtime/README.md

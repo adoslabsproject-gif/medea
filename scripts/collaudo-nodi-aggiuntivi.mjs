@@ -105,7 +105,7 @@ function buildPackage(version) {
   // CommonJS, non ESM: la sandbox valuta uno script.
   writeFileSync(
     join(inside, 'executor.js'),
-    "module.exports = async function execute(config) {\n" +
+    'module.exports = async function execute(config) {\n' +
       "  return { saluto: `Ciao ${config.nome || 'mondo'}` };\n" +
       '};\n',
   );
