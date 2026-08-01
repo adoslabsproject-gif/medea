@@ -9,6 +9,7 @@
 import { useState } from 'react';
 
 import { DataView } from './DataView';
+import { ExplainError } from './ExplainError';
 import styles from './RunStepList.module.css';
 import {
   formatDuration,
@@ -105,7 +106,12 @@ function StepRow({
 
       {open && hasDetail && (
         <div className={styles.detail}>
-          {step.error && <Block label="Errore" text={step.error} tone="error" />}
+          {step.error && (
+            <>
+              <Block label="Errore" text={step.error} tone="error" />
+              <ExplainError step={step} />
+            </>
+          )}
           {step.input && (
             <div className={styles.block}>
               <span className={styles.blockLabel}>Ingresso</span>
