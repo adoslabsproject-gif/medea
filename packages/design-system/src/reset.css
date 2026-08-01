@@ -11,6 +11,17 @@
     padding: 0;
   }
 
+  /* Un `<dialog>` aperto con `showModal()` lo centra il browser da sé, con
+   * `margin: auto` nel suo foglio di stile predefinito. L'azzeramento
+   * universale qui sopra glielo toglieva, e OGNI modale dell'app finiva
+   * nell'angolo in alto a sinistra invece che al centro.
+   *
+   * Segnalato su «nuovo articolo» e «nuovo listino», ma riguardava tutti e
+   * dodici i modali che usano il primitivo `Dialog`. */
+  dialog {
+    margin: auto;
+  }
+
   html {
     text-size-adjust: 100%;
     tab-size: 4;
