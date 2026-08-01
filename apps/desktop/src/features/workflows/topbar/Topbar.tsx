@@ -20,6 +20,7 @@ export interface TopbarActions {
   onSecrets: () => void;
   onVersions: () => void;
   onNodes: () => void;
+  onRelay: () => void;
   onToggleEnabled: () => void;
   onToggleAssistant: () => void;
   onUndo: () => void;
@@ -124,6 +125,12 @@ export function Topbar({
     {
       label: 'Credenziali',
       items: [
+        {
+          label: 'Raggiungibilità',
+          icon: '🌐',
+          hint: 'Farsi raggiungere da internet per i webhook',
+          onSelect: actions.onRelay,
+        },
         {
           label: 'Segreti',
           icon: '🔑',

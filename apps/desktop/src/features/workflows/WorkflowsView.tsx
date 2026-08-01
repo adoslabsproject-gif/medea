@@ -18,6 +18,7 @@ import { diagnose, globalIssues } from './canvas/diagnostics';
 import { WorkflowCanvas } from './canvas/WorkflowCanvas';
 import { findNode } from './catalog';
 import { NodesDialog } from './NodesDialog';
+import { RelayDialog } from './RelayDialog';
 import { RunsModal } from './runs';
 import { syncToRuntime, useRuntime } from './runtime';
 import { SecretsDialog } from './SecretsDialog';
@@ -53,6 +54,7 @@ export function WorkflowsView() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
   const [nodesOpen, setNodesOpen] = useState(false);
+  const [relayOpen, setRelayOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(
     () => localStorage.getItem(ASSISTANT_OPEN_KEY) !== 'false',
   );
@@ -160,6 +162,9 @@ export function WorkflowsView() {
             },
             onNodes: () => {
               setNodesOpen(true);
+            },
+            onRelay: () => {
+              setRelayOpen(true);
             },
             onVersions: () => {
               // Le versioni le tiene il motore, e il motore conosce il
@@ -302,6 +307,14 @@ export function WorkflowsView() {
           onLoad={(restored) => {
             // Arriva come bozza: si guarda, e si salva solo se convince.
             editor.load(restored, editor.enabled);
+          }}
+        />
+      )}
+
+      {relayOpen && (
+        <RelayDialog
+          onClose={() => {
+            setRelayOpen(false);
           }}
         />
       )}

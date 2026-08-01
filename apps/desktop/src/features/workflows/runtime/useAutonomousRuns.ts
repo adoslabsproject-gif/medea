@@ -16,6 +16,8 @@ import { workflowApi } from '../api';
 
 import { startRuntime } from './client';
 import { provisionRuntime } from './provision';
+import { startRelay, stopRelay } from './relay';
+import { relayEnabled, relayToken, relayUrl } from './relay-settings';
 import { startRunWatcher } from './watcher';
 
 export function useAutonomousRuns(): void {
@@ -42,6 +44,14 @@ export function useAutonomousRuns(): void {
         if (gone()) return;
 
         stop = startRunWatcher();
+
+        // Il canale verso l'esterno, se qualcuno lo ha acceso. Spento di
+        // default: una chiamata da internet che fa eseguire un workflow su
+        // questo computer è una cosa che si sceglie.
+        const url = relayUrl();
+        if (relayEnabled() && url) {
+          startRelay({ baseUrl: url, token: await relayToken() });
+        }
       } catch (e) {
         console.warn('[workflow] automazioni non avviate', e);
       }
@@ -50,6 +60,7 @@ export function useAutonomousRuns(): void {
     return () => {
       mounted.abort();
       stop?.();
+      stopRelay();
     };
   }, []);
 }
