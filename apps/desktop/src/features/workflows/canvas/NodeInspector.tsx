@@ -20,6 +20,7 @@ import { fieldsFor, hasActions } from './node-actions';
 import { NodeActionPicker } from './NodeActionPicker';
 import styles from './NodeInspector.module.css';
 import { NodeTestPanel } from './NodeTestPanel';
+import { PinPanel } from './PinPanel';
 import { WebhookAddress } from './WebhookAddress';
 
 type Tab = 'config' | 'in' | 'out' | 'test';
@@ -147,7 +148,14 @@ export function NodeInspector({
         )}
 
         {tab === 'test' && (
-          <NodeTestPanel node={node} nodes={nodes} edges={edges} ready={runtimeReady} />
+          <>
+            <NodeTestPanel node={node} nodes={nodes} edges={edges} ready={runtimeReady} />
+            <PinPanel
+              nodeId={node.id}
+              runtimeId={runtimeId}
+              {...(lastOutputs?.has(node.id) ? { lastOutput: lastOutputs.get(node.id) } : {})}
+            />
+          </>
         )}
 
         {tab === 'in' && (
