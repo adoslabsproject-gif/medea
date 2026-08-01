@@ -36,8 +36,14 @@ export type { Pin } from './pins';
 export { testNode } from './test-node';
 export { webhookAddress } from './webhook';
 export type { WebhookAddress } from './webhook';
-export { getVersion, listVersions, rollbackVersion, snapshotVersion } from './versions';
-export type { WorkflowVersion } from './versions';
+export {
+  diffVersions,
+  getVersion,
+  listVersions,
+  rollbackVersion,
+  snapshotVersion,
+} from './versions';
+export type { VersionDiff, WorkflowVersion } from './versions';
 export type { NodeTestResult } from './test-node';
 export { missingTables, planTables } from './table-plan';
 export type { PlannedTable, PlannedColumn, ColumnType } from './table-plan';
