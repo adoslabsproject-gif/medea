@@ -1,0 +1,101 @@
+@layer features {
+  .root {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding-block-start: var(--space-3);
+    margin-block-start: var(--space-3);
+    border-block-start: 1px solid var(--color-border-subtle);
+  }
+
+  .title {
+    margin: 0;
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+  }
+
+  .inline {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .number {
+    inline-size: 6rem;
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+  }
+
+  .unit,
+  .hint,
+  .muted {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  .hint {
+    margin: 0;
+  }
+
+  /* Un nodo che riprova da sé: dirlo evita che qualcuno moltiplichi i
+     tentativi senza accorgersene. */
+  .selfManaged {
+    margin: 0;
+    padding: var(--space-2);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+  }
+
+  .check {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    cursor: pointer;
+  }
+
+  .categories {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding-inline-start: var(--space-5);
+  }
+
+  .category {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    cursor: pointer;
+  }
+
+  .categoryLabel {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+  }
+
+  .categoryHint {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+}

@@ -267,6 +267,11 @@ export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = f
             onRename={(label) => {
               patchNodes(workflow.nodes.map((n) => (n.id === selected.id ? { ...n, label } : n)));
             }}
+            onNodeChange={(patch) => {
+              patchNodes(
+                workflow.nodes.map((n) => (n.id === selected.id ? { ...n, ...patch } : n)),
+              );
+            }}
             runtimeReady={runtimeReady}
             {...(workflow.runtimeId ? { runtimeId: workflow.runtimeId } : {})}
             onDelete={() => {

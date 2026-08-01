@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { ConfigFieldRenderer, upstreamSources } from '../fields';
 import type { CanvasNode, NodeDef, WorkflowEdge } from '../types';
 
+import { ErrorHandling } from './ErrorHandling';
 import { fieldsFor, hasActions } from './node-actions';
 import { NodeActionPicker } from './NodeActionPicker';
 import styles from './NodeInspector.module.css';
@@ -33,6 +34,9 @@ interface Props {
   defsById: ReadonlyMap<string, NodeDef>;
   onChange: (config: Record<string, unknown>) => void;
   onRename: (label: string) => void;
+  /** Cambia una proprietà del nodo che non sta nella configurazione —
+   *  `continueOnFail` vive sul nodo, non fra i suoi campi. */
+  onNodeChange: (patch: Partial<CanvasNode>) => void;
   onDelete: () => void;
   /** Vero quando il motore è in piedi: senza, la prova non è possibile. */
   runtimeReady: boolean;
@@ -49,6 +53,7 @@ export function NodeInspector({
   defsById,
   onChange,
   onRename,
+  onNodeChange,
   onDelete,
   runtimeReady,
   runtimeId,
@@ -122,6 +127,18 @@ export function NodeInspector({
                   }}
                 />
               ))
+            )}
+
+            {/* In fondo, dopo la configurazione: si decide cosa fare quando
+                fallisce solo dopo aver stabilito cosa deve fare. I trigger
+                non lo hanno — non c'è un «dopo» a cui passare l'errore. */}
+            {def?.type !== 'trigger' && (
+              <ErrorHandling
+                node={node}
+                def={def}
+                onNodeChange={onNodeChange}
+                onConfigChange={onChange}
+              />
             )}
           </>
         )}
