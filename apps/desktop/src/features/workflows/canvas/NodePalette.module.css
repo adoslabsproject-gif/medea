@@ -107,6 +107,11 @@
     text-align: start;
     cursor: pointer;
     font-family: var(--font-family-sans);
+    /* Un `div` non eredita quello che il browser dà ai pulsanti: senza queste
+       due righe la voce cambia dimensione del testo e si lascia selezionare
+       mentre la si trascina. */
+    font-size: var(--font-size-xs);
+    user-select: none;
   }
   .item:hover {
     background: var(--color-surface-3);

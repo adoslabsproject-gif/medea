@@ -13,6 +13,7 @@ import { NODE_GROUPS, nodesByGroup, searchNodes, useCommunityNodes } from '../ca
 import type { NodeDef } from '../types';
 
 import { brandIconFor } from './brand-icons';
+import { setDraggedNode } from './drag-node';
 import { iconNameFor, resolveLucideIcon } from './icon-registry';
 import styles from './NodePalette.module.css';
 
@@ -119,8 +120,17 @@ function NodeItem({ def, onAdd }: { def: NodeDef; onAdd: (d: NodeDef) => void })
 
   return (
     <li>
-      <button
-        type="button"
+      {/* Un `div` e non un `button`, e non è una svista.
+          WebKit — cioè la WebView di sistema con cui Medea gira sul Mac — non
+          avvia il trascinamento sui controlli di modulo: `draggable` su un
+          `<button>` viene semplicemente ignorato, e si resta a guardare un
+          nodo che non si lascia prendere. Su un elemento qualunque funziona.
+          Il ruolo, la tabulazione e i tasti restituiscono tutto quello che il
+          `<button>` dava: si raggiunge col Tab e si aggiunge con Invio o con
+          la barra spaziatrice. */}
+      <div
+        role="button"
+        tabIndex={0}
         className={styles.item}
         data-type={def.type}
         title={def.description ?? def.defId}
@@ -130,11 +140,16 @@ function NodeItem({ def, onAdd }: { def: NodeDef; onAdd: (d: NodeDef) => void })
            riordinandole dopo. */
         draggable
         onDragStart={(event) => {
-          event.dataTransfer.setData('application/medea-node', def.defId);
-          event.dataTransfer.effectAllowed = 'copy';
+          setDraggedNode(event.dataTransfer, def.defId);
         }}
         onClick={() => {
           onAdd(def);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            onAdd(def);
+          }
         }}
       >
         <span className={styles.itemIcon} aria-hidden="true">
@@ -150,7 +165,7 @@ function NodeItem({ def, onAdd }: { def: NodeDef; onAdd: (d: NodeDef) => void })
           <span className={styles.itemLabel}>{def.label}</span>
           <span className={styles.itemId}>{def.defId}</span>
         </span>
-      </button>
+      </div>
     </li>
   );
 }
