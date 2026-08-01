@@ -12,14 +12,7 @@
  */
 import { writeFileSync } from 'node:fs';
 
-const PACKAGES = [
-  'stdlib',
-  'db',
-  'ai-agents',
-  'llm',
-  'integrations-core',
-  'integrations-italia',
-];
+const PACKAGES = ['stdlib', 'db', 'ai-agents', 'llm', 'integrations-core', 'integrations-italia'];
 
 const defs = new Map();
 
@@ -50,9 +43,7 @@ const collect = (mod) => {
 
 for (const pkg of PACKAGES) {
   try {
-    collect(
-      await import(`/Users/zelistore/zeliAI/packages/flowforge/nodes/${pkg}/dist/index.js`),
-    );
+    collect(await import(`/Users/zelistore/zeliAI/packages/flowforge/nodes/${pkg}/dist/index.js`));
   } catch (e) {
     console.warn(`salto ${pkg}: ${e.message.split('\n')[0]}`);
   }
@@ -116,7 +107,9 @@ const out = [...defs.values()]
       : {}),
   }));
 
-writeFileSync(process.argv[2], JSON.stringify(out, null, 2));
+// La riga a capo finale non è un vezzo: senza, il controllo di formato
+// della CI boccia il file a ogni rigenerazione.
+writeFileSync(process.argv[2], `${JSON.stringify(out, null, 2)}\n`);
 console.log(`${out.length} nodi estratti`);
 const byType = {};
 for (const d of out) byType[d.type] = (byType[d.type] ?? 0) + 1;

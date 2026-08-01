@@ -12,16 +12,7 @@
         "label": "Statistica",
         "type": "select",
         "required": true,
-        "options": [
-          "all",
-          "sum",
-          "avg",
-          "min",
-          "max",
-          "median",
-          "stddev",
-          "count"
-        ],
+        "options": ["all", "sum", "avg", "min", "max", "median", "stddev", "count"],
         "defaultValue": "all",
         "description": "\"all\" = tutte insieme. Oppure scegline una sola come risultato principale."
       },
@@ -40,9 +31,7 @@
         "description": "Se gli elementi sono oggetti, il campo da aggregare. Vuoto = gli elementi sono già numeri."
       }
     ],
-    "outputFields": [
-      "default"
-    ]
+    "outputFields": ["default"]
   },
   {
     "defId": "action_api_response",
@@ -57,10 +46,7 @@
         "label": "Tipo di risposta",
         "type": "select",
         "required": true,
-        "options": [
-          "success",
-          "error"
-        ],
+        "options": ["success", "error"],
         "defaultValue": "success",
         "description": "success = { ok:true, data } · error = { ok:false, error } con status mappato automaticamente."
       },
@@ -79,12 +65,7 @@
         "key": "statusSuccess",
         "label": "Status di successo",
         "type": "select",
-        "options": [
-          "200",
-          "201",
-          "202",
-          "204"
-        ],
+        "options": ["200", "201", "202", "204"],
         "defaultValue": "200",
         "showIf": {
           "field": "mode",
@@ -208,9 +189,7 @@
         "description": "Header extra. I valori con a-capo (CRLF) vengono scartati (anti-injection)."
       }
     ],
-    "outputFields": [
-      "default"
-    ]
+    "outputFields": ["default"]
   },
   {
     "defId": "action_array",
@@ -225,16 +204,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "unique",
-          "sort",
-          "group",
-          "chunk",
-          "flatten",
-          "pick",
-          "slice",
-          "reverse"
-        ],
+        "options": ["unique", "sort", "group", "chunk", "flatten", "pick", "slice", "reverse"],
         "defaultValue": "unique",
         "description": "Cosa fare con l'array. Ogni operazione mostra solo i suoi parametri."
       },
@@ -251,11 +221,7 @@
         "type": "text",
         "showIf": {
           "field": "operation",
-          "in": [
-            "unique",
-            "sort",
-            "group"
-          ]
+          "in": ["unique", "sort", "group"]
         },
         "placeholder": "es. cliente.email",
         "description": "Campo su cui operare (annidato con il punto). UNIQUE/SORT senza chiave usano il valore intero."
@@ -264,10 +230,7 @@
         "key": "direction",
         "label": "Direzione",
         "type": "select",
-        "options": [
-          "asc",
-          "desc"
-        ],
+        "options": ["asc", "desc"],
         "defaultValue": "asc",
         "showIf": {
           "field": "operation",
@@ -329,9 +292,7 @@
         "description": "Indice finale escluso. Vuoto = fino alla fine."
       }
     ],
-    "outputFields": [
-      "default"
-    ]
+    "outputFields": ["default"]
   },
   {
     "defId": "action_asset_batch_download",
@@ -467,9 +428,7 @@
         "description": "Tempo massimo dell'intera sessione (2.000-120.000 ms)."
       }
     ],
-    "outputFields": [
-      "default"
-    ]
+    "outputFields": ["default"]
   },
   {
     "defId": "action_browser_render",
@@ -549,12 +508,7 @@
         "description": "Headers HTTP custom (es. User-Agent, Authorization)."
       }
     ],
-    "outputFields": [
-      "html",
-      "cookies",
-      "finalUrl",
-      "screenshotBase64"
-    ]
+    "outputFields": ["html", "cookies", "finalUrl", "screenshotBase64"]
   },
   {
     "defId": "action_browser_stealth",
@@ -721,12 +675,7 @@
         "key": "cmd",
         "label": "Comando",
         "type": "select",
-        "options": [
-          "request.get",
-          "request.post",
-          "sessions.create",
-          "sessions.destroy"
-        ],
+        "options": ["request.get", "request.post", "sessions.create", "sessions.destroy"],
         "defaultValue": "request.get",
         "description": "request.get = solve + GET URL. request.post = solve + POST. sessions.* = gestione persistent session (riduce solve time su request successive)."
       },
@@ -792,9 +741,7 @@
         "description": "Salta anche i campi presenti ma vuoti (\"\")."
       }
     ],
-    "outputFields": [
-      "default"
-    ]
+    "outputFields": ["default"]
   },
   {
     "defId": "action_company_search",
@@ -988,12 +935,7 @@
         "label": "Azione",
         "type": "select",
         "required": true,
-        "options": [
-          "start",
-          "status",
-          "stop",
-          "results"
-        ],
+        "options": ["start", "status", "stop", "results"],
         "defaultValue": "start",
         "description": "start = avvia nuovo job (ritorna jobId). status = metriche job (richiede jobId). stop = termina job. results = paginated batch (richiede jobId+cursor opzionale)."
       },
@@ -1162,14 +1104,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "hash",
-          "hmac",
-          "hmac-verify",
-          "encode",
-          "decode",
-          "random"
-        ],
+        "options": ["hash", "hmac", "hmac-verify", "encode", "decode", "random"],
         "defaultValue": "hash",
         "description": "hash = digest one-way · hmac = firma con chiave · hmac-verify = verifica firma webhook (timing-safe) · encode/decode = base64/hex · random = bytes sicuri."
       },
@@ -1180,13 +1115,7 @@
         "defaultValue": "input",
         "showIf": {
           "field": "operation",
-          "in": [
-            "hash",
-            "hmac",
-            "hmac-verify",
-            "encode",
-            "decode"
-          ]
+          "in": ["hash", "hmac", "hmac-verify", "encode", "decode"]
         },
         "description": "Testo o espressione da elaborare. Vuoto = usa l'input del nodo."
       },
@@ -1194,21 +1123,11 @@
         "key": "algorithm",
         "label": "Algoritmo",
         "type": "select",
-        "options": [
-          "sha256",
-          "sha512",
-          "sha384",
-          "sha1",
-          "md5"
-        ],
+        "options": ["sha256", "sha512", "sha384", "sha1", "md5"],
         "defaultValue": "sha256",
         "showIf": {
           "field": "operation",
-          "in": [
-            "hash",
-            "hmac",
-            "hmac-verify"
-          ]
+          "in": ["hash", "hmac", "hmac-verify"]
         },
         "description": "SHA-256 raccomandato. MD5/SHA-1 solo per compatibilità legacy (NON sicuri per firme)."
       },
@@ -1218,10 +1137,7 @@
         "type": "secret",
         "showIf": {
           "field": "operation",
-          "in": [
-            "hmac",
-            "hmac-verify"
-          ]
+          "in": ["hmac", "hmac-verify"]
         },
         "description": "Il signing secret (es. webhook secret di Stripe/GitHub). Mai committare in chiaro."
       },
@@ -1239,30 +1155,18 @@
         "key": "encoding",
         "label": "Codifica output",
         "type": "select",
-        "options": [
-          "hex",
-          "base64"
-        ],
+        "options": ["hex", "base64"],
         "defaultValue": "hex",
         "showIf": {
           "field": "operation",
-          "in": [
-            "hash",
-            "hmac",
-            "hmac-verify",
-            "random"
-          ]
+          "in": ["hash", "hmac", "hmac-verify", "random"]
         }
       },
       {
         "key": "targetFormat",
         "label": "Codifica destinazione",
         "type": "select",
-        "options": [
-          "base64",
-          "base64url",
-          "hex"
-        ],
+        "options": ["base64", "base64url", "hex"],
         "defaultValue": "base64",
         "showIf": {
           "field": "operation",
@@ -1273,11 +1177,7 @@
         "key": "sourceFormat",
         "label": "Codifica sorgente",
         "type": "select",
-        "options": [
-          "base64",
-          "base64url",
-          "hex"
-        ],
+        "options": ["base64", "base64url", "hex"],
         "defaultValue": "base64",
         "showIf": {
           "field": "operation",
@@ -1310,10 +1210,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "parse",
-          "stringify"
-        ],
+        "options": ["parse", "stringify"],
         "defaultValue": "parse",
         "description": "parse = CSV testo → array di oggetti · stringify = array → testo CSV."
       },
@@ -1343,12 +1240,7 @@
         "key": "delimiter",
         "label": "Delimitatore",
         "type": "select",
-        "options": [
-          ",",
-          ";",
-          "\\t",
-          "|"
-        ],
+        "options": [",", ";", "\\t", "|"],
         "defaultValue": ",",
         "description": "Virgola (standard) · punto e virgola (Excel IT) · \\t tab · pipe. "
       },
@@ -1375,9 +1267,7 @@
         "description": "Scrive la riga di intestazione con i nomi delle colonne."
       }
     ],
-    "outputFields": [
-      "default"
-    ]
+    "outputFields": ["default"]
   },
   {
     "defId": "action_dash_probe",
@@ -1432,15 +1322,7 @@
         "key": "preset",
         "label": "Formato di output",
         "type": "select",
-        "options": [
-          "it_long",
-          "it_short",
-          "it_iso",
-          "us_short",
-          "iso8601",
-          "unix",
-          "custom"
-        ],
+        "options": ["it_long", "it_short", "it_iso", "us_short", "iso8601", "unix", "custom"],
         "defaultValue": "it_long",
         "description": "• it_long: \"venerdì 23 maggio 2026\" (per email/messaggi formali)\n• it_short: \"23/05/2026\" (compatto, scontrini, tabelle)\n• it_iso: \"23-05-2026\" (Excel-friendly, ordinabile come stringa)\n• us_short: \"5/23/2026\"\n• iso8601: \"2026-05-23T10:30:00.000Z\" (interoperabilità)\n• unix: 1748996400 (epoch seconds, per chiavi/timestamp)\n• custom: usa il campo \"Formato custom\" sotto (specifica yyyy-MM-dd HH:mm:ss)"
       },
@@ -1485,13 +1367,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "now",
-          "format",
-          "add",
-          "subtract",
-          "diff"
-        ],
+        "options": ["now", "format", "add", "subtract", "diff"],
         "defaultValue": "format",
         "description": "now = adesso · format = formatta · add/subtract = sposta · diff = differenza tra due date."
       },
@@ -1502,12 +1378,7 @@
         "defaultValue": "input",
         "showIf": {
           "field": "operation",
-          "in": [
-            "format",
-            "add",
-            "subtract",
-            "diff"
-          ]
+          "in": ["format", "add", "subtract", "diff"]
         },
         "placeholder": "ISO, epoch, \"now\" o input",
         "description": "La data di partenza (ISO, epoch sec/ms, o \"now\"). Vuoto = usa l'input del nodo."
@@ -1527,14 +1398,7 @@
         "key": "preset",
         "label": "Formato",
         "type": "select",
-        "options": [
-          "datetime",
-          "date",
-          "time",
-          "full",
-          "iso",
-          "relative"
-        ],
+        "options": ["datetime", "date", "time", "full", "iso", "relative"],
         "defaultValue": "datetime",
         "showIf": {
           "field": "operation",
@@ -1557,14 +1421,7 @@
         "key": "locale",
         "label": "Lingua",
         "type": "select",
-        "options": [
-          "it-IT",
-          "en-US",
-          "en-GB",
-          "de-DE",
-          "fr-FR",
-          "es-ES"
-        ],
+        "options": ["it-IT", "en-US", "en-GB", "de-DE", "fr-FR", "es-ES"],
         "defaultValue": "it-IT",
         "showIf": {
           "field": "operation",
@@ -1579,10 +1436,7 @@
         "defaultValue": "1",
         "showIf": {
           "field": "operation",
-          "in": [
-            "add",
-            "subtract"
-          ]
+          "in": ["add", "subtract"]
         },
         "description": "Quante unità aggiungere/sottrarre."
       },
@@ -1590,30 +1444,16 @@
         "key": "unit",
         "label": "Unità",
         "type": "select",
-        "options": [
-          "seconds",
-          "minutes",
-          "hours",
-          "days",
-          "weeks",
-          "months",
-          "years"
-        ],
+        "options": ["seconds", "minutes", "hours", "days", "weeks", "months", "years"],
         "defaultValue": "days",
         "showIf": {
           "field": "operation",
-          "in": [
-            "add",
-            "subtract",
-            "diff"
-          ]
+          "in": ["add", "subtract", "diff"]
         },
         "description": "Unità di tempo per add/subtract/diff."
       }
     ],
-    "outputFields": [
-      "default"
-    ]
+    "outputFields": ["default"]
   },
   {
     "defId": "action_diff",
@@ -1628,10 +1468,7 @@
         "label": "Modalità",
         "type": "select",
         "required": true,
-        "options": [
-          "object",
-          "text"
-        ],
+        "options": ["object", "text"],
         "defaultValue": "object",
         "description": "object = deep diff tra oggetti · text = diff riga per riga."
       },
@@ -1650,10 +1487,7 @@
         "description": "Il secondo valore (lo stato \"dopo\") da confrontare con A."
       }
     ],
-    "outputFields": [
-      "equal",
-      "different"
-    ]
+    "outputFields": ["equal", "different"]
   },
   {
     "defId": "action_email_clean",
@@ -1745,12 +1579,7 @@
         "description": "Se ON: filtra anche email con local-part 1 char, dominio TLD < 2 char, e RFC 2606 reserved (.example/.test/.invalid). Disabilita SOLO se devi catturare anche email partial/incomplete (es. testing)."
       }
     ],
-    "outputFields": [
-      "primary_email",
-      "all_emails",
-      "counts",
-      "has_emails"
-    ]
+    "outputFields": ["primary_email", "all_emails", "counts", "has_emails"]
   },
   {
     "defId": "action_email_personalize",
@@ -1788,10 +1617,7 @@
         "key": "tone",
         "label": "Tono comunicazione",
         "type": "select",
-        "options": [
-          "formal",
-          "conversational"
-        ],
+        "options": ["formal", "conversational"],
         "defaultValue": "formal",
         "description": "• formal (default per B2B nautico): voi-form, tono professionale\n• conversational: tu-form, più diretto. Usa solo per startup/agencies, MAI per cantieri tradizionali."
       },
@@ -1853,11 +1679,7 @@
         "key": "security",
         "label": "Sicurezza connessione",
         "type": "select",
-        "options": [
-          "starttls",
-          "tls",
-          "none"
-        ],
+        "options": ["starttls", "tls", "none"],
         "defaultValue": "starttls",
         "showIf": {
           "field": "systemAccountId",
@@ -1931,10 +1753,7 @@
         "key": "bodyType",
         "label": "Tipo corpo",
         "type": "select",
-        "options": [
-          "html",
-          "text"
-        ],
+        "options": ["html", "text"],
         "defaultValue": "html",
         "description": "HTML = formattazione + immagini + tracking pixel. Text = solo testo, pixel non iniettato (text/plain non supporta <img>). Per email commerciali usa SEMPRE html."
       },
@@ -2059,11 +1878,7 @@
         "key": "security",
         "label": "Sicurezza",
         "type": "select",
-        "options": [
-          "starttls",
-          "tls",
-          "none"
-        ],
+        "options": ["starttls", "tls", "none"],
         "defaultValue": "starttls",
         "showIf": {
           "field": "systemAccountId",
@@ -2123,10 +1938,7 @@
         "key": "bodyType",
         "label": "Tipo corpo",
         "type": "select",
-        "options": [
-          "html",
-          "text"
-        ],
+        "options": ["html", "text"],
         "defaultValue": "html",
         "description": "HTML obbligatorio se vuoi il tracking pixel."
       },
@@ -2339,13 +2151,7 @@
         "key": "encoding",
         "label": "Encoding",
         "type": "select",
-        "options": [
-          "utf8",
-          "utf16le",
-          "base64",
-          "hex",
-          "binary"
-        ],
+        "options": ["utf8", "utf16le", "base64", "hex", "binary"],
         "defaultValue": "utf8",
         "description": "utf8/utf16le → output `content` stringa (testo/JSON/CSV). base64/hex/binary → output `binary`: un HANDLE BinaryData (ref content-addressed sul disco del tenant, dedup, streaming) invece di gonfiare il JSON. Si collega a Write File / email / PDF / Excel che consumano BinaryData. Consigliato per immagini/PDF/file binari."
       }
@@ -2377,10 +2183,7 @@
         "key": "mode",
         "label": "Modalità scrittura",
         "type": "select",
-        "options": [
-          "overwrite",
-          "append"
-        ],
+        "options": ["overwrite", "append"],
         "defaultValue": "overwrite",
         "description": "overwrite = sovrascrive. append = aggiunge in coda."
       }
@@ -2409,10 +2212,7 @@
         "description": "Costruttore visuale: combina più regole \"campo · operatore · valore\" con AND/OR."
       }
     ],
-    "outputFields": [
-      "kept",
-      "removed"
-    ]
+    "outputFields": ["kept", "removed"]
   },
   {
     "defId": "action_generate_chart",
@@ -2426,12 +2226,7 @@
         "key": "chartType",
         "label": "Tipo di grafico",
         "type": "select",
-        "options": [
-          "bar",
-          "line",
-          "area",
-          "pie"
-        ],
+        "options": ["bar", "line", "area", "pie"],
         "defaultValue": "bar",
         "description": "Barre (categorie), linea/area (andamento nel tempo), torta (composizione %)."
       },
@@ -2484,12 +2279,7 @@
         "key": "palette",
         "label": "Palette colori",
         "type": "select",
-        "options": [
-          "default",
-          "blues",
-          "greens",
-          "warm"
-        ],
+        "options": ["default", "blues", "greens", "warm"],
         "defaultValue": "default",
         "description": "Schema colori del grafico."
       },
@@ -2497,23 +2287,12 @@
         "key": "outputFormat",
         "label": "Formato output principale",
         "type": "select",
-        "options": [
-          "dataUri",
-          "svg"
-        ],
+        "options": ["dataUri", "svg"],
         "defaultValue": "dataUri",
         "description": "dataUri (base64, per <img> in email HTML) o svg (markup grezzo). Entrambi sono sempre disponibili nell'output."
       }
     ],
-    "outputFields": [
-      "svg",
-      "dataUri",
-      "imgTag",
-      "width",
-      "height",
-      "pointCount",
-      "primary"
-    ]
+    "outputFields": ["svg", "dataUri", "imgTag", "width", "height", "pointCount", "primary"]
   },
   {
     "defId": "action_gmail",
@@ -2528,11 +2307,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "send",
-          "list",
-          "get"
-        ],
+        "options": ["send", "list", "get"],
         "defaultValue": "send",
         "description": "send = invia · list = cerca messaggi · get = leggi un messaggio."
       },
@@ -2709,14 +2484,7 @@
         "label": "Cosa estrarre",
         "type": "select",
         "required": true,
-        "options": [
-          "text",
-          "links",
-          "images",
-          "title",
-          "meta",
-          "headings"
-        ],
+        "options": ["text", "links", "images", "title", "meta", "headings"],
         "defaultValue": "text",
         "description": "text = solo testo · links/images = elenchi · title/meta/headings = metadati struttura."
       },
@@ -2728,9 +2496,7 @@
         "description": "Il contenuto HTML da analizzare. Vuoto = usa l'input del nodo."
       }
     ],
-    "outputFields": [
-      "default"
-    ]
+    "outputFields": ["default"]
   },
   {
     "defId": "action_html_mirror_rewrite",
@@ -2799,10 +2565,7 @@
         "key": "htmlSource",
         "label": "Sorgente HTML",
         "type": "select",
-        "options": [
-          "input",
-          "explicit"
-        ],
+        "options": ["input", "explicit"],
         "defaultValue": "input",
         "description": "input = HTML dal nodo precedente (estrae da string, .body o .html). explicit = HTML scritto a mano nel campo sotto."
       },
@@ -2826,12 +2589,7 @@
         "description": "Map fieldName → selector. Forma scorciatoia: \"title\": \"h1\" equivale a {selector:\"h1\", extract:\"text\"}. Forma estesa: {selector, attr, extract, limit}. extract: text (default) | html | attr (richiede attr) | list (array)."
       }
     ],
-    "outputFields": [
-      "matched",
-      "matchedCount",
-      "totalFields",
-      "fields"
-    ]
+    "outputFields": ["matched", "matchedCount", "totalFields", "fields"]
   },
   {
     "defId": "action_http",
@@ -2846,15 +2604,7 @@
         "label": "Metodo HTTP",
         "type": "select",
         "required": true,
-        "options": [
-          "GET",
-          "POST",
-          "PUT",
-          "PATCH",
-          "DELETE",
-          "HEAD",
-          "OPTIONS"
-        ],
+        "options": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
         "defaultValue": "GET",
         "description": "GET=leggi · POST=crea · PUT/PATCH=aggiorna · DELETE=cancella · HEAD=solo headers · OPTIONS=preflight CORS."
       },
@@ -2870,14 +2620,7 @@
         "key": "authMode",
         "label": "Autenticazione",
         "type": "select",
-        "options": [
-          "none",
-          "basic",
-          "bearer",
-          "apikey-header",
-          "custom",
-          "oauth2"
-        ],
+        "options": ["none", "basic", "bearer", "apikey-header", "custom", "oauth2"],
         "defaultValue": "none",
         "description": "none = nessuna (o gestita via Headers). basic = HTTP Basic (user+password → Base64). bearer = \"Authorization: Bearer <token>\" (JWT, OAuth access tokens). apikey-header = header custom con il valore (X-API-Key, X-Auth-Token, ecc). custom = nome+valore header completamente liberi. oauth2 = OAuth2 client_credentials (machine-to-machine): il nodo richiede da sé l'access-token al token endpoint e lo inietta come Bearer (token cachato fino a scadenza)."
       },
@@ -2992,10 +2735,7 @@
         "key": "oauth2AuthStyle",
         "label": "Invio credenziali client",
         "type": "select",
-        "options": [
-          "header",
-          "body"
-        ],
+        "options": ["header", "body"],
         "defaultValue": "header",
         "showIf": {
           "field": "authMode",
@@ -3037,11 +2777,7 @@
         "type": "code",
         "showIf": {
           "field": "bodyType",
-          "in": [
-            "json",
-            "raw-text",
-            "raw-binary-base64"
-          ]
+          "in": ["json", "raw-text", "raw-binary-base64"]
         },
         "placeholder": "{ \"key\": \"{{input.value}}\" }",
         "description": "Per json: JSON. Per raw-text: testo libero. Per raw-binary-base64: stringa base64."
@@ -3069,10 +2805,7 @@
         "type": "key-value",
         "showIf": {
           "field": "bodyType",
-          "in": [
-            "form-urlencoded",
-            "multipart"
-          ]
+          "in": ["form-urlencoded", "multipart"]
         },
         "description": "Coppie nome-valore del form. Per multipart con file: il valore puo` essere base64."
       },
@@ -3080,13 +2813,7 @@
         "key": "paginationMode",
         "label": "Pagination",
         "type": "select",
-        "options": [
-          "none",
-          "page-number",
-          "offset-limit",
-          "cursor",
-          "link-header"
-        ],
+        "options": ["none", "page-number", "offset-limit", "cursor", "link-header"],
         "defaultValue": "none",
         "description": "none = singola chiamata. page-number = ?page=1&limit=N, ?page=2&limit=N, ... (stop quando items < limit). offset-limit = ?offset=0&limit=N, ?offset=N&limit=N, ... cursor = leggi next_cursor dalla risposta, passa come ?cursor=... link-header = segui Link: <url>; rel=\"next\" (GitHub, Mastodon)."
       },
@@ -3097,12 +2824,7 @@
         "defaultValue": "10",
         "showIf": {
           "field": "paginationMode",
-          "in": [
-            "page-number",
-            "offset-limit",
-            "cursor",
-            "link-header"
-          ]
+          "in": ["page-number", "offset-limit", "cursor", "link-header"]
         },
         "description": "Limite di sicurezza — interrompe il loop anche se ci sono altre pagine."
       },
@@ -3113,10 +2835,7 @@
         "defaultValue": "50",
         "showIf": {
           "field": "paginationMode",
-          "in": [
-            "page-number",
-            "offset-limit"
-          ]
+          "in": ["page-number", "offset-limit"]
         }
       },
       {
@@ -3125,12 +2844,7 @@
         "type": "text",
         "showIf": {
           "field": "paginationMode",
-          "in": [
-            "page-number",
-            "offset-limit",
-            "cursor",
-            "link-header"
-          ]
+          "in": ["page-number", "offset-limit", "cursor", "link-header"]
         },
         "placeholder": "es. data, items, results",
         "description": "Se valorizzato, concatena response[campo]. Se vuoto, concatena l'intera response."
@@ -3162,10 +2876,7 @@
         "defaultValue": "limit",
         "showIf": {
           "field": "paginationMode",
-          "in": [
-            "page-number",
-            "offset-limit"
-          ]
+          "in": ["page-number", "offset-limit"]
         }
       },
       {
@@ -3213,12 +2924,7 @@
         "key": "retryStrategy",
         "label": "Chi gestisce il retry",
         "type": "select",
-        "options": [
-          "auto",
-          "node",
-          "workflow",
-          "none"
-        ],
+        "options": ["auto", "node", "workflow", "none"],
         "defaultValue": "auto",
         "description": "UN SOLO livello di retry (mai annidato). auto (default) = questo nodo HTTP ritenta internamente (consigliato: conosce retryOnStatus + Retry-After). node = come auto, esplicito. workflow = NON ritenta il nodo; lascia il retry al motore del workflow (retry generico per categoria d'errore). none = nessun retry."
       },
@@ -3267,12 +2973,7 @@
         "key": "responseFormat",
         "label": "Formato risposta",
         "type": "select",
-        "options": [
-          "auto",
-          "json",
-          "text",
-          "binary"
-        ],
+        "options": ["auto", "json", "text", "binary"],
         "defaultValue": "auto",
         "description": "auto = sniff dal Content-Type (default; octet-stream → handle binary). json = parse forzato (errore se non valido). text = stringa raw. binary = download come HANDLE BinaryData (ref content-addressed su disco): i byte NON entrano nel JSON → per PDF/immagini/file, anche grandi. Si collega a Write File / email / pdf / excel che consumano BinaryData (senza store: inline base64, fail-soft)."
       },
@@ -3333,10 +3034,7 @@
         "label": "Modalità",
         "type": "select",
         "required": true,
-        "options": [
-          "single",
-          "cycle"
-        ],
+        "options": ["single", "cycle"],
         "defaultValue": "single",
         "description": "single = scegli UNA regola sotto. cycle = esegui automaticamente TUTTE le regole abilitate per il tenant. Per il dettaglio delle regole disponibili, apri il pannello \"🧹 Salute dati\" dalla sidebar."
       },
@@ -3400,12 +3098,7 @@
       }
     ],
     "branching": true,
-    "outputPorts": [
-      "success",
-      "detection",
-      "clean",
-      "error"
-    ]
+    "outputPorts": ["success", "detection", "clean", "error"]
   },
   {
     "defId": "action_json",
@@ -3420,16 +3113,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "get",
-          "set",
-          "pick",
-          "omit",
-          "merge",
-          "flatten",
-          "keys",
-          "values"
-        ],
+        "options": ["get", "set", "pick", "omit", "merge", "flatten", "keys", "values"],
         "defaultValue": "get",
         "description": "Cosa fare con l'oggetto. Ogni operazione mostra solo i campi che le servono."
       },
@@ -3446,10 +3130,7 @@
         "type": "text",
         "showIf": {
           "field": "operation",
-          "in": [
-            "get",
-            "set"
-          ]
+          "in": ["get", "set"]
         },
         "placeholder": "es. data.user.email",
         "description": "Percorso del campo con la notazione a punti."
@@ -3460,10 +3141,7 @@
         "type": "expression",
         "showIf": {
           "field": "operation",
-          "in": [
-            "set",
-            "merge"
-          ]
+          "in": ["set", "merge"]
         },
         "description": "SET: il valore da scrivere (JSON o stringa). MERGE: l'oggetto JSON da fondere."
       },
@@ -3473,18 +3151,13 @@
         "type": "text",
         "showIf": {
           "field": "operation",
-          "in": [
-            "pick",
-            "omit"
-          ]
+          "in": ["pick", "omit"]
         },
         "placeholder": "email, cliente.città, totale",
         "description": "PICK: i campi da tenere. OMIT: i campi da rimuovere."
       }
     ],
-    "outputFields": [
-      "default"
-    ]
+    "outputFields": ["default"]
   },
   {
     "defId": "action_json_extract",
@@ -3513,11 +3186,7 @@
         "key": "mode",
         "label": "Modalità output",
         "type": "select",
-        "options": [
-          "first",
-          "all",
-          "count"
-        ],
+        "options": ["first", "all", "count"],
         "defaultValue": "first",
         "description": "\"first\" (default): primo match (utile per campi singoli, es. $.user.email). \"all\": array di TUTTI i match (utile per estrazioni multiple, es. $..title). \"count\": numero di match (utile per validazioni \"esiste almeno N elementi\")."
       },
@@ -3529,10 +3198,7 @@
         "description": "Se la path non matcha nulla, ritorna questo valore. Senza fallback, il nodo ritorna null."
       }
     ],
-    "outputFields": [
-      "value",
-      "matchCount"
-    ]
+    "outputFields": ["value", "matchCount"]
   },
   {
     "defId": "action_jwt",
@@ -3547,11 +3213,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "sign",
-          "verify",
-          "decode"
-        ],
+        "options": ["sign", "verify", "decode"],
         "defaultValue": "verify",
         "description": "sign = crea token · verify = valida firma+scadenza · decode = leggi senza verificare (debug)."
       },
@@ -3559,18 +3221,11 @@
         "key": "algorithm",
         "label": "Algoritmo",
         "type": "select",
-        "options": [
-          "HS256",
-          "HS384",
-          "HS512"
-        ],
+        "options": ["HS256", "HS384", "HS512"],
         "defaultValue": "HS256",
         "showIf": {
           "field": "operation",
-          "in": [
-            "sign",
-            "verify"
-          ]
+          "in": ["sign", "verify"]
         }
       },
       {
@@ -3579,10 +3234,7 @@
         "type": "secret",
         "showIf": {
           "field": "operation",
-          "in": [
-            "sign",
-            "verify"
-          ]
+          "in": ["sign", "verify"]
         },
         "description": "Chiave segreta condivisa (HMAC). Obbligatoria per sign/verify."
       },
@@ -3615,10 +3267,7 @@
         "defaultValue": "input",
         "showIf": {
           "field": "operation",
-          "in": [
-            "verify",
-            "decode"
-          ]
+          "in": ["verify", "decode"]
         },
         "description": "Il JWT da verificare/decodificare. Vuoto = usa l'input del nodo."
       }
@@ -3643,15 +3292,7 @@
         "key": "lang",
         "label": "Lingua stoplist",
         "type": "select",
-        "options": [
-          "auto",
-          "it",
-          "en",
-          "de",
-          "fr",
-          "es",
-          "both"
-        ],
+        "options": ["auto", "it", "en", "de", "fr", "es", "both"],
         "defaultValue": "auto",
         "description": "auto/both = IT+EN (default sicuro). it/en/de/fr/es = stoplist della singola lingua. Per altre lingue usa \"Stopwords aggiuntive\"."
       },
@@ -3729,10 +3370,7 @@
         "key": "profile",
         "label": "Profile vertical",
         "type": "select",
-        "options": [
-          "marine-thrusters",
-          "custom"
-        ],
+        "options": ["marine-thrusters", "custom"],
         "defaultValue": "marine-thrusters",
         "description": "• marine-thrusters: pre-set per Arifin/HYSY (bow thruster, yacht, cantiere navale, marina, refit, ecc. in 6 lingue)\n• custom: usa customPositiveJson/customNegativeJson sotto."
       },
@@ -3813,10 +3451,7 @@
         "description": "Stringa inserita tra descrizione e sotto-descrizione quando entrambe sono presenti. Default \" — \" (em dash). Altre opzioni: \" · \" (interpunct), \"\\n\" (newline, per wrap cella Excel), \" | \" (pipe)."
       }
     ],
-    "outputFields": [
-      "lines",
-      "enrichedCount"
-    ]
+    "outputFields": ["lines", "enrichedCount"]
   },
   {
     "defId": "action_link_audit",
@@ -3844,11 +3479,7 @@
         "key": "scope",
         "label": "Filtra scope da verificare",
         "type": "select",
-        "options": [
-          "all",
-          "internal",
-          "external"
-        ],
+        "options": ["all", "internal", "external"],
         "defaultValue": "all",
         "description": "all = controlla TUTTI i link http(s). internal = solo stesso host. external = solo host diversi."
       },
@@ -3963,10 +3594,7 @@
         "key": "responseFormat",
         "label": "Formato risposta",
         "type": "select",
-        "options": [
-          "text",
-          "json"
-        ],
+        "options": ["text", "json"],
         "defaultValue": "text",
         "description": "text = stringa libera (default). json = forza il LLM a rispondere con JSON valido (parsato in output.jsonParsed automaticamente). Per json, suggerisci la struttura nel prompt: \"Rispondi SOLO con {key1, key2, ...}\"."
       },
@@ -4006,9 +3634,7 @@
         "description": "Il testo Markdown da convertire. Vuoto = usa l'input del nodo."
       }
     ],
-    "outputFields": [
-      "default"
-    ]
+    "outputFields": ["default"]
   },
   {
     "defId": "action_meta_extract",
@@ -4022,10 +3648,7 @@
         "key": "htmlSource",
         "label": "Sorgente HTML",
         "type": "select",
-        "options": [
-          "input",
-          "explicit"
-        ],
+        "options": ["input", "explicit"],
         "defaultValue": "input",
         "description": "input = HTML dal nodo precedente (legge string, .body o .html). explicit = HTML statico per testing."
       },
@@ -4090,9 +3713,7 @@
         "description": "Una stringa qualsiasi: stesso seed = stessi dati a ogni esecuzione. Vuoto = casuale."
       }
     ],
-    "outputFields": [
-      "default"
-    ]
+    "outputFields": ["default"]
   },
   {
     "defId": "action_number",
@@ -4135,10 +3756,7 @@
         "defaultValue": "2",
         "showIf": {
           "field": "operation",
-          "in": [
-            "round",
-            "format"
-          ]
+          "in": ["round", "format"]
         },
         "description": "Numero di cifre decimali."
       },
@@ -4174,12 +3792,7 @@
         "key": "currency",
         "label": "Valuta",
         "type": "select",
-        "options": [
-          "EUR",
-          "USD",
-          "GBP",
-          "CHF"
-        ],
+        "options": ["EUR", "USD", "GBP", "CHF"],
         "defaultValue": "EUR",
         "showIf": {
           "field": "operation",
@@ -4190,27 +3803,16 @@
         "key": "locale",
         "label": "Lingua/formato",
         "type": "select",
-        "options": [
-          "it-IT",
-          "en-US",
-          "en-GB",
-          "de-DE",
-          "fr-FR"
-        ],
+        "options": ["it-IT", "en-US", "en-GB", "de-DE", "fr-FR"],
         "defaultValue": "it-IT",
         "showIf": {
           "field": "operation",
-          "in": [
-            "currency",
-            "format"
-          ]
+          "in": ["currency", "format"]
         },
         "description": "Determina separatori delle migliaia e dei decimali."
       }
     ],
-    "outputFields": [
-      "default"
-    ]
+    "outputFields": ["default"]
   },
   {
     "defId": "action_odoo_create_lead",
@@ -4478,13 +4080,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "search_read",
-          "create",
-          "write",
-          "unlink",
-          "call_method"
-        ],
+        "options": ["search_read", "create", "write", "unlink", "call_method"],
         "defaultValue": "search_read",
         "description": "search_read = leggi record (SELECT). create = crea nuovo record. write = aggiorna record esistenti. unlink = cancella record (rispetta record rules). call_method = chiama metodo arbitrario (es. action_confirm sull'ordine)."
       },
@@ -4557,10 +4153,7 @@
         "type": "code",
         "showIf": {
           "field": "operation",
-          "in": [
-            "create",
-            "write"
-          ]
+          "in": ["create", "write"]
         },
         "placeholder": "{\"name\": \"Mario Rossi\", \"email\": \"mario@example.it\", \"phone\": \"+39 333 1234567\"}",
         "description": "Oggetto JSON con i campi da scrivere. Per relazioni many2one usa l'ID numerico (es. company_id: 1). Per many2many usa il \"command Odoo\" [(6, 0, [id1, id2])]. Per binary upload (allegati) usa base64."
@@ -4571,10 +4164,7 @@
         "type": "code",
         "showIf": {
           "field": "operation",
-          "in": [
-            "write",
-            "unlink"
-          ]
+          "in": ["write", "unlink"]
         },
         "placeholder": "[42, 7]    oppure    {{$node.search.json.body}}",
         "description": "Array di ID numerici dei record da modificare o cancellare. Tipicamente l'output di un nodo search_read precedente."
@@ -4800,11 +4390,7 @@
         "description": "Timeout della richiesta in millisecondi. Default 30s."
       }
     ],
-    "outputFields": [
-      "status",
-      "operationId",
-      "data"
-    ]
+    "outputFields": ["status", "operationId", "data"]
   },
   {
     "defId": "action_pdf_generate",
@@ -4854,12 +4440,7 @@
         "key": "pageSize",
         "label": "Formato pagina",
         "type": "select",
-        "options": [
-          "A4",
-          "A5",
-          "LETTER",
-          "LEGAL"
-        ],
+        "options": ["A4", "A5", "LETTER", "LEGAL"],
         "defaultValue": "A4",
         "description": "A4 standard EU. LETTER standard US. A5 mezza-pagina per ricevute compatte."
       },
@@ -4867,10 +4448,7 @@
         "key": "orientation",
         "label": "Orientamento",
         "type": "select",
-        "options": [
-          "portrait",
-          "landscape"
-        ],
+        "options": ["portrait", "landscape"],
         "defaultValue": "portrait",
         "description": "portrait = verticale (default). landscape = orizzontale (utile per tabelle larghe)."
       },
@@ -4882,13 +4460,7 @@
         "description": "Nome file restituito in output (per allegato email o salvataggio). Default: \"document.pdf\". Estensione .pdf aggiunta se manca."
       }
     ],
-    "outputFields": [
-      "filename",
-      "binary",
-      "sizeBytes",
-      "pageCount",
-      "mimeType"
-    ]
+    "outputFields": ["filename", "binary", "sizeBytes", "pageCount", "mimeType"]
   },
   {
     "defId": "action_pdf_parse",
@@ -4916,11 +4488,7 @@
         "key": "mode",
         "label": "Strategia estrazione",
         "type": "select",
-        "options": [
-          "auto",
-          "pdf-parse-only",
-          "llm-only"
-        ],
+        "options": ["auto", "pdf-parse-only", "llm-only"],
         "defaultValue": "auto",
         "description": "auto = prova pdf-parse, fa fallback LLM-vision se la qualità è bassa (raccomandato). pdf-parse-only = solo libreria gratis, niente API LLM (costo zero, ma fallisce su PDF scannerizzati). llm-only = salta pdf-parse e va diretto su Claude Sonnet (massima qualità, max costo per call)."
       }
@@ -4967,12 +4535,7 @@
       }
     ],
     "branching": true,
-    "outputPorts": [
-      "received_message",
-      "acceptance_receipt",
-      "delivery_receipt",
-      "rejection"
-    ]
+    "outputPorts": ["received_message", "acceptance_receipt", "delivery_receipt", "rejection"]
   },
   {
     "defId": "action_pec_legal_archive",
@@ -5000,11 +4563,7 @@
         "key": "hashAlgorithm",
         "label": "Algoritmo hash",
         "type": "select",
-        "options": [
-          "sha256",
-          "sha384",
-          "sha512"
-        ],
+        "options": ["sha256", "sha384", "sha512"],
         "defaultValue": "sha256",
         "description": "Default sha256 (industry standard 2026). sha384/sha512 più lenti ma migliore margine criptografico — usali se la policy aziendale lo richiede."
       },
@@ -5200,10 +4759,7 @@
         "key": "textSource",
         "label": "Sorgente testo",
         "type": "select",
-        "options": [
-          "input",
-          "explicit"
-        ],
+        "options": ["input", "explicit"],
         "defaultValue": "input",
         "description": "input = stringa dal nodo precedente (legge .body, .text, .html, o tutto l'oggetto). explicit = testo qui sotto."
       },
@@ -5226,12 +4782,7 @@
         "description": "Map fieldName → {patterns: [...], defaultValue?}. Forma scorciatoia: \"key\": \"regex\" (single pattern, flags=\"i\", group=1). Forma estesa: patterns array con {pattern, flags, group, transform}. transform: trim (default) | lowercase | uppercase | number | json | none."
       }
     ],
-    "outputFields": [
-      "fields",
-      "matched",
-      "matchedCount",
-      "totalFields"
-    ]
+    "outputFields": ["fields", "matched", "matchedCount", "totalFields"]
   },
   {
     "defId": "action_run_js",
@@ -5371,13 +4922,7 @@
         "key": "forceStage",
         "label": "Forza stage",
         "type": "select",
-        "options": [
-          "auto",
-          "fetch_simple",
-          "browser_render",
-          "browser_stealth",
-          "vision_extract"
-        ],
+        "options": ["auto", "fetch_simple", "browser_render", "browser_stealth", "vision_extract"],
         "defaultValue": "auto",
         "description": "auto = pipeline upgrade adaptive (RACCOMANDATO). fetch_simple = solo HTTP GET. browser_render = headless per SPA. browser_stealth = anti-bot enterprise. vision_extract = canvas/PDF visually-only."
       },
@@ -5475,10 +5020,7 @@
         "key": "htmlSource",
         "label": "Sorgente HTML",
         "type": "select",
-        "options": [
-          "input",
-          "explicit"
-        ],
+        "options": ["input", "explicit"],
         "defaultValue": "input",
         "description": "input = HTML dal nodo precedente. explicit = HTML scritto qui (testing)."
       },
@@ -5501,13 +5043,7 @@
         "description": "Array di {name, key?, expect?}. name = path variabile (es. window.video, masterPlaylist, data). key = chiave da pescare dentro l'oggetto (opzionale, se vuoto ritorna l'intero blocco testuale). expect = number | string | raw (default raw). Number parsa solo digits."
       }
     ],
-    "outputFields": [
-      "extracted",
-      "matched",
-      "matchedCount",
-      "requested",
-      "scriptsScanned"
-    ]
+    "outputFields": ["extracted", "matched", "matchedCount", "requested", "scriptsScanned"]
   },
   {
     "defId": "action_security_audit",
@@ -5595,11 +5131,7 @@
         "key": "security",
         "label": "Security",
         "type": "select",
-        "options": [
-          "tls",
-          "starttls",
-          "plain"
-        ],
+        "options": ["tls", "starttls", "plain"],
         "defaultValue": "tls",
         "showIf": {
           "field": "systemAccountId",
@@ -5632,10 +5164,7 @@
         "key": "authMode",
         "label": "Autenticazione",
         "type": "select",
-        "options": [
-          "password",
-          "oauth2"
-        ],
+        "options": ["password", "oauth2"],
         "defaultValue": "password",
         "showIf": {
           "field": "systemAccountId",
@@ -5747,11 +5276,7 @@
         "label": "Body type",
         "type": "select",
         "required": true,
-        "options": [
-          "text",
-          "html",
-          "markdown"
-        ],
+        "options": ["text", "html", "markdown"],
         "defaultValue": "html",
         "description": "text = plain text puro (massima deliverability, nessuna formattazione). html = formattato (link/grassetto/colori, default). markdown = scrivi in markdown, l'engine converte in HTML server-side (per template AI-generated)."
       },
@@ -5767,11 +5292,7 @@
         "key": "priority",
         "label": "Priorità",
         "type": "select",
-        "options": [
-          "normal",
-          "high",
-          "low"
-        ],
+        "options": ["normal", "high", "low"],
         "defaultValue": "normal",
         "description": "high = X-Priority: 1 + Importance: High (icona \"!\" in alcuni client). low = X-Priority: 5 + Importance: Low. normal = nessuno header (default). NON è un canale prioritario reale — i server SMTP non accelerano per priorità."
       },
@@ -5785,11 +5306,7 @@
         "key": "deliverabilityCheck",
         "label": "Pre-flight deliverability (SPF/DKIM/DMARC)",
         "type": "select",
-        "options": [
-          "off",
-          "warn",
-          "strict"
-        ],
+        "options": ["off", "warn", "strict"],
         "defaultValue": "off",
         "description": "Verifica i record DNS del dominio mittente PRIMA di inviare. Senza autenticazione DKIM/SPF, ~60% delle email finisce in spam (Gmail/Outlook bulk-sender 2026).\n\n• off (default): nessun check, back-compat.\n• warn: esegue check, logga warning + lo include nei result.warnings, MA invia comunque.\n• strict: esegue check, FALLISCE il nodo se SPF/DKIM/DMARC mancanti. CONSIGLIATO per cold outreach + workflow lead-gen dove deliverability è critica.\n\nCache 1h sul fromAddress → costo DNS ~0 in produzione. Output del nodo include sempre il report quando il check è attivo (visibile nel RunInspector)."
       },
@@ -5848,10 +5365,7 @@
         "key": "htmlSource",
         "label": "Sorgente HTML",
         "type": "select",
-        "options": [
-          "input",
-          "explicit"
-        ],
+        "options": ["input", "explicit"],
         "defaultValue": "input",
         "description": "input = HTML dal nodo precedente. explicit = HTML statico per testing."
       },
@@ -5938,9 +5452,7 @@
         "description": "Parte da un oggetto vuoto: il risultato contiene SOLO i campi che imposti (whitelist)."
       }
     ],
-    "outputFields": [
-      "default"
-    ]
+    "outputFields": ["default"]
   },
   {
     "defId": "action_sitemap_crawler",
@@ -6039,9 +5551,7 @@
         "description": "Neutralizza < > & \" ' nei valori interpolati. Attiva SEMPRE se il risultato è HTML con dati utente."
       }
     ],
-    "outputFields": [
-      "default"
-    ]
+    "outputFields": ["default"]
   },
   {
     "defId": "action_tenant_collab",
@@ -6164,10 +5674,7 @@
         "defaultValue": "50",
         "showIf": {
           "field": "operation",
-          "in": [
-            "truncate",
-            "pad"
-          ]
+          "in": ["truncate", "pad"]
         },
         "description": "TRUNCATE: caratteri massimi · PAD: lunghezza finale."
       },
@@ -6178,10 +5685,7 @@
         "defaultValue": "…",
         "showIf": {
           "field": "operation",
-          "in": [
-            "truncate",
-            "pad"
-          ]
+          "in": ["truncate", "pad"]
         },
         "description": "TRUNCATE: testo aggiunto in coda · PAD: carattere di riempimento."
       },
@@ -6189,10 +5693,7 @@
         "key": "padSide",
         "label": "Lato riempimento",
         "type": "select",
-        "options": [
-          "start",
-          "end"
-        ],
+        "options": ["start", "end"],
         "defaultValue": "start",
         "showIf": {
           "field": "operation",
@@ -6205,11 +5706,7 @@
         "type": "text",
         "showIf": {
           "field": "operation",
-          "in": [
-            "replace",
-            "extract",
-            "split"
-          ]
+          "in": ["replace", "extract", "split"]
         },
         "description": "REPLACE: testo o regex da cercare · EXTRACT: pattern regex · SPLIT: separatore (\\n per a-capo)."
       },
@@ -6240,10 +5737,7 @@
         "defaultValue": "g",
         "showIf": {
           "field": "operation",
-          "in": [
-            "replace",
-            "extract"
-          ]
+          "in": ["replace", "extract"]
         },
         "placeholder": "g, i, m, s",
         "description": "g=globale i=case-insensitive m=multiline s=dotall. EXTRACT forza sempre g."
@@ -6259,9 +5753,7 @@
         "description": "Rimuove gli spazi attorno a ogni parte dopo lo split."
       }
     ],
-    "outputFields": [
-      "default"
-    ]
+    "outputFields": ["default"]
   },
   {
     "defId": "action_text_template",
@@ -6294,10 +5786,7 @@
         "description": "Se ON, collassa whitespace multipli a un solo spazio e fa trim del risultato. Utile per output destinati a UI che non gradiscono \\n\\n consecutivi."
       }
     ],
-    "outputFields": [
-      "text",
-      "length"
-    ]
+    "outputFields": ["text", "length"]
   },
   {
     "defId": "action_url",
@@ -6312,14 +5801,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "parse",
-          "build",
-          "setQuery",
-          "removeQuery",
-          "encode",
-          "decode"
-        ],
+        "options": ["parse", "build", "setQuery", "removeQuery", "encode", "decode"],
         "defaultValue": "parse",
         "description": "parse = scomponi · build = componi · setQuery/removeQuery = modifica parametri · encode/decode."
       },
@@ -6330,13 +5812,7 @@
         "defaultValue": "input",
         "showIf": {
           "field": "operation",
-          "in": [
-            "parse",
-            "setQuery",
-            "removeQuery",
-            "encode",
-            "decode"
-          ]
+          "in": ["parse", "setQuery", "removeQuery", "encode", "decode"]
         },
         "description": "L'URL su cui operare (o il valore per encode/decode). Vuoto = input del nodo."
       },
@@ -6368,19 +5844,13 @@
         "type": "json",
         "showIf": {
           "field": "operation",
-          "in": [
-            "build",
-            "setQuery",
-            "removeQuery"
-          ]
+          "in": ["build", "setQuery", "removeQuery"]
         },
         "placeholder": "{ \"page\": 1, \"q\": \"caffè\" }",
         "description": "Oggetto chiave/valore: ogni valore viene codificato automaticamente. (Per REMOVE: le chiavi da togliere.)"
       }
     ],
-    "outputFields": [
-      "default"
-    ]
+    "outputFields": ["default"]
   },
   {
     "defId": "action_url_template",
@@ -6419,13 +5889,7 @@
         "description": "Variabili extra disponibili per interpolation (oltre a \"input\"). Esempio: host, region, version."
       }
     ],
-    "outputFields": [
-      "url",
-      "host",
-      "path",
-      "protocol",
-      "params"
-    ]
+    "outputFields": ["url", "host", "path", "protocol", "params"]
   },
   {
     "defId": "action_user_agent_rotate",
@@ -6439,13 +5903,7 @@
         "key": "pool",
         "label": "Pool UA",
         "type": "select",
-        "options": [
-          "desktop",
-          "mobile",
-          "tablet",
-          "bot",
-          "all"
-        ],
+        "options": ["desktop", "mobile", "tablet", "bot", "all"],
         "defaultValue": "desktop",
         "description": "desktop = Chrome/Firefox/Safari desktop. mobile = iOS/Android. tablet = iPad/Galaxy Tab. bot = Googlebot/Bingbot/FlowForge. all = mix tutto."
       },
@@ -6453,11 +5911,7 @@
         "key": "strategy",
         "label": "Strategia rotation",
         "type": "select",
-        "options": [
-          "random",
-          "deterministic",
-          "sequential"
-        ],
+        "options": ["random", "deterministic", "sequential"],
         "defaultValue": "random",
         "description": "random = pick random ad ogni call. deterministic = hash(seedField input) → stesso UA per stessa key (sticky per utente). sequential = round-robin time-based (cambia ogni secondo)."
       },
@@ -6480,13 +5934,7 @@
         "description": "Una stringa UA per riga. Se popolato, sovrascrive il pool predefinito."
       }
     ],
-    "outputFields": [
-      "userAgent",
-      "poolName",
-      "poolSize",
-      "strategy",
-      "index"
-    ]
+    "outputFields": ["userAgent", "poolName", "poolSize", "strategy", "index"]
   },
   {
     "defId": "action_uuid",
@@ -6501,13 +5949,7 @@
         "label": "Formato ID",
         "type": "select",
         "required": true,
-        "options": [
-          "v4",
-          "v7",
-          "ulid",
-          "short",
-          "nanoid"
-        ],
+        "options": ["v4", "v7", "ulid", "short", "nanoid"],
         "defaultValue": "v4",
         "description": "v4 = random standard · v7 = ordinabile (ottimo per PK DB) · ulid/nanoid = compatti URL-safe · short = slug breve."
       },
@@ -6539,15 +5981,7 @@
         "label": "Tipo da validare",
         "type": "select",
         "required": true,
-        "options": [
-          "email",
-          "url",
-          "piva",
-          "codice_fiscale",
-          "iban",
-          "phone_it",
-          "json"
-        ],
+        "options": ["email", "url", "piva", "codice_fiscale", "iban", "phone_it", "json"],
         "defaultValue": "email",
         "description": "email · url · piva (P.IVA IT) · codice_fiscale (CF IT) · iban · phone_it · json."
       },
@@ -6559,10 +5993,7 @@
         "description": "Il valore da validare. Vuoto = usa l'input del nodo."
       }
     ],
-    "outputFields": [
-      "valid",
-      "invalid"
-    ]
+    "outputFields": ["valid", "invalid"]
   },
   {
     "defId": "action_video_metadata",
@@ -6590,11 +6021,7 @@
         "key": "inputType",
         "label": "Sorgente video",
         "type": "select",
-        "options": [
-          "url",
-          "input",
-          "base64"
-        ],
+        "options": ["url", "input", "base64"],
         "defaultValue": "url",
         "description": "url = URL HTTP pubblico che il wrapper scaricherà. input = legge `url` o `dataBase64` dall'output del nodo precedente (es. download da S3, file_read). base64 = dati video inline (max 10MB consigliato, oltre usa URL)."
       },
@@ -6705,11 +6132,7 @@
         "key": "mimeType",
         "label": "MIME type screenshot",
         "type": "select",
-        "options": [
-          "image/png",
-          "image/jpeg",
-          "image/webp"
-        ],
+        "options": ["image/png", "image/jpeg", "image/webp"],
         "defaultValue": "image/png",
         "description": "Formato base64 dello screenshot."
       },
@@ -6752,15 +6175,7 @@
         "key": "method",
         "label": "Metodo HTTP",
         "type": "select",
-        "options": [
-          "GET",
-          "POST",
-          "PUT",
-          "PATCH",
-          "DELETE",
-          "HEAD",
-          "OPTIONS"
-        ],
+        "options": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
         "defaultValue": "GET",
         "description": "GET = leggi (default scraping). POST = form / API call. HEAD = solo headers (check esistenza/redirect)."
       },
@@ -6793,12 +6208,7 @@
         "key": "headerPreset",
         "label": "Preset Headers",
         "type": "select",
-        "options": [
-          "browser-document",
-          "browser-embed",
-          "api-json",
-          "minimal"
-        ],
+        "options": ["browser-document", "browser-embed", "api-json", "minimal"],
         "defaultValue": "browser-document",
         "description": "browser-document = navigazione pagina (Sec-Fetch-Mode navigate, Accept HTML). browser-embed = iframe/embed (Sec-Fetch-Dest iframe). api-json = API REST (Accept JSON). minimal = solo Accept */*."
       },
@@ -6840,12 +6250,7 @@
         "key": "bodyType",
         "label": "Tipo body",
         "type": "select",
-        "options": [
-          "none",
-          "json",
-          "form-urlencoded",
-          "raw-text"
-        ],
+        "options": ["none", "json", "form-urlencoded", "raw-text"],
         "defaultValue": "none",
         "description": "Per GET/HEAD lasciare \"none\". JSON = Content-Type application/json. form-urlencoded = key=value&..."
       },
@@ -6855,11 +6260,7 @@
         "type": "code",
         "showIf": {
           "field": "bodyType",
-          "in": [
-            "json",
-            "form-urlencoded",
-            "raw-text"
-          ]
+          "in": ["json", "form-urlencoded", "raw-text"]
         },
         "placeholder": "{\"key\": \"value\"}",
         "description": "Per json: JSON valido. Per form-urlencoded: key=value&... Per raw-text: testo libero."
@@ -6909,26 +6310,12 @@
         "key": "responseFormat",
         "label": "Formato risposta",
         "type": "select",
-        "options": [
-          "auto",
-          "text",
-          "json",
-          "base64"
-        ],
+        "options": ["auto", "text", "json", "base64"],
         "defaultValue": "auto",
         "description": "auto = sniffa Content-Type (json → parse, image → base64, altro → text). text/json/base64 = forza."
       }
     ],
-    "outputFields": [
-      "status",
-      "statusText",
-      "url",
-      "headers",
-      "setCookie",
-      "body",
-      "attempt",
-      "ok"
-    ]
+    "outputFields": ["status", "statusText", "url", "headers", "setCookie", "body", "attempt", "ok"]
   },
   {
     "defId": "action_web_search",
@@ -6954,12 +6341,7 @@
         "description": "Quanti risultati massimo. Brave: fino a 20; DuckDuckGo HTML: ~10 reali. Default 10."
       }
     ],
-    "outputFields": [
-      "query",
-      "provider",
-      "results",
-      "count"
-    ]
+    "outputFields": ["query", "provider", "results", "count"]
   },
   {
     "defId": "action_webhook_respond",
@@ -6974,15 +6356,7 @@
         "label": "Tipo di risposta",
         "type": "select",
         "required": true,
-        "options": [
-          "json",
-          "text",
-          "html",
-          "redirect",
-          "binary",
-          "empty",
-          "custom"
-        ],
+        "options": ["json", "text", "html", "redirect", "binary", "empty", "custom"],
         "defaultValue": "json",
         "description": "json = serializza input come application/json (default per API REST). text = plain text. html = pagina HTML (text/html). redirect = 302 con header Location verso un altro URL. binary = file binario (input atteso in base64, output con il contentType configurato — es. application/pdf, image/png). empty = 204 No Content, nessun body (per webhook ACK silenziosi tipo Slack). custom = controllo totale su body + contentType + headers (per casi avanzati)."
       },
@@ -7031,11 +6405,7 @@
         "type": "expression",
         "showIf": {
           "field": "respondWith",
-          "in": [
-            "json",
-            "text",
-            "html"
-          ]
+          "in": ["json", "text", "html"]
         },
         "placeholder": "{\"ok\":true,\"data\":{{$node.Transform.json}}}    oppure    <html><h1>{{input.title}}</h1></html>",
         "description": "Contenuto da restituire. Supporta {{espressioni}} con valori dai nodi precedenti. Se VUOTO: per JSON serializza l'input del nodo precedente; per Text/HTML usa l'input come stringa."
@@ -7172,12 +6542,7 @@
         "key": "apiVersion",
         "label": "Versione API Graph",
         "type": "select",
-        "options": [
-          "v18.0",
-          "v19.0",
-          "v20.0",
-          "v21.0"
-        ],
+        "options": ["v18.0", "v19.0", "v20.0", "v21.0"],
         "defaultValue": "v20.0",
         "description": "Default v20.0. Cambia solo se Meta annuncia una deprecation."
       },
@@ -7194,10 +6559,7 @@
         "label": "Modalita`",
         "type": "select",
         "required": true,
-        "options": [
-          "text",
-          "template"
-        ],
+        "options": ["text", "template"],
         "defaultValue": "text",
         "description": "text = messaggio di testo libero. RICHIEDE che il cliente ti abbia scritto negli ultimi 24h (regola Meta). template = template pre-approvato in WhatsApp Business Manager. Funziona SEMPRE — l'unico modo per iniziare una nuova conversazione."
       },
@@ -7448,9 +6810,7 @@
         "type": "text",
         "showIf": {
           "field": "provider",
-          "in": [
-            "ollama"
-          ]
+          "in": ["ollama"]
         },
         "placeholder": "http://localhost:11434"
       },
@@ -7507,9 +6867,7 @@
         "type": "text",
         "showIf": {
           "field": "provider",
-          "in": [
-            "ollama"
-          ]
+          "in": ["ollama"]
         },
         "placeholder": "http://localhost:11434"
       },
@@ -7566,9 +6924,7 @@
         "type": "text",
         "showIf": {
           "field": "provider",
-          "in": [
-            "ollama"
-          ]
+          "in": ["ollama"]
         },
         "placeholder": "http://localhost:11434"
       },
@@ -7659,13 +7015,7 @@
         "key": "lang",
         "label": "Lingua",
         "type": "select",
-        "options": [
-          "auto",
-          "it",
-          "en",
-          "de",
-          "fr"
-        ],
+        "options": ["auto", "it", "en", "de", "fr"],
         "defaultValue": "auto",
         "description": "`auto` (default) rileva da stop-word italiani/inglesi/tedeschi/francesi. Forza una lingua quando hai un mercato specifico e vuoi consistenza."
       },
@@ -7779,9 +7129,7 @@
         "type": "text",
         "showIf": {
           "field": "provider",
-          "in": [
-            "ollama"
-          ]
+          "in": ["ollama"]
         },
         "placeholder": "http://localhost:11434"
       },
@@ -7861,9 +7209,7 @@
         "type": "text",
         "showIf": {
           "field": "provider",
-          "in": [
-            "ollama"
-          ]
+          "in": ["ollama"]
         },
         "placeholder": "http://localhost:11434"
       },
@@ -7928,9 +7274,7 @@
         "type": "text",
         "showIf": {
           "field": "provider",
-          "in": [
-            "ollama"
-          ]
+          "in": ["ollama"]
         },
         "placeholder": "http://localhost:11434"
       },
@@ -7994,11 +7338,7 @@
         "key": "jurisdiction",
         "label": "Giurisdizione",
         "type": "select",
-        "options": [
-          "it_eu",
-          "eu",
-          "it"
-        ],
+        "options": ["it_eu", "eu", "it"],
         "defaultValue": "it_eu",
         "description": "it_eu = Italia + EU (default), eu = solo EU, it = solo Italia (D.lgs. nazionali)."
       },
@@ -8006,12 +7346,7 @@
         "key": "severityFloor",
         "label": "Severity minima",
         "type": "select",
-        "options": [
-          "critical",
-          "high",
-          "medium",
-          "low"
-        ],
+        "options": ["critical", "high", "medium", "low"],
         "defaultValue": "medium",
         "description": "Soglia minima findings nel report. medium = ignora \"low\" notes pedanti."
       },
@@ -8068,9 +7403,7 @@
         "type": "text",
         "showIf": {
           "field": "provider",
-          "in": [
-            "ollama"
-          ]
+          "in": ["ollama"]
         },
         "placeholder": "http://localhost:11434"
       },
@@ -8149,9 +7482,7 @@
         "type": "text",
         "showIf": {
           "field": "provider",
-          "in": [
-            "ollama"
-          ]
+          "in": ["ollama"]
         },
         "placeholder": "http://localhost:11434"
       },
@@ -8208,9 +7539,7 @@
         "type": "text",
         "showIf": {
           "field": "provider",
-          "in": [
-            "ollama"
-          ]
+          "in": ["ollama"]
         },
         "placeholder": "http://localhost:11434"
       },
@@ -8294,9 +7623,7 @@
         "type": "text",
         "showIf": {
           "field": "provider",
-          "in": [
-            "ollama"
-          ]
+          "in": ["ollama"]
         },
         "placeholder": "http://localhost:11434"
       },
@@ -8350,11 +7677,7 @@
         "key": "onInvalidBehavior",
         "label": "Cosa fare se invalido",
         "type": "select",
-        "options": [
-          "continue",
-          "halt",
-          "branch"
-        ],
+        "options": ["continue", "halt", "branch"],
         "defaultValue": "continue",
         "description": "continue=passa output al next con valid:false; halt=ferma workflow con errore; branch=usa con logic_if su output.valid per branching."
       },
@@ -8394,9 +7717,7 @@
         "type": "text",
         "showIf": {
           "field": "provider",
-          "in": [
-            "ollama"
-          ]
+          "in": ["ollama"]
         },
         "placeholder": "http://localhost:11434"
       },
@@ -8457,14 +7778,7 @@
         "key": "summaryLanguage",
         "label": "Lingua summary",
         "type": "select",
-        "options": [
-          "auto",
-          "it",
-          "en",
-          "de",
-          "fr",
-          "es"
-        ],
+        "options": ["auto", "it", "en", "de", "fr", "es"],
         "defaultValue": "auto",
         "description": "Lingua output summary. \"auto\" usa la lingua rilevata da Whisper sul transcript."
       },
@@ -8523,9 +7837,7 @@
         "type": "text",
         "showIf": {
           "field": "provider",
-          "in": [
-            "ollama"
-          ]
+          "in": ["ollama"]
         },
         "placeholder": "http://localhost:11434"
       },
@@ -8554,11 +7866,7 @@
         "key": "embedProvider",
         "label": "Provider embedding (per rag_search)",
         "type": "select",
-        "options": [
-          "openai",
-          "voyage",
-          "ollama"
-        ],
+        "options": ["openai", "voyage", "ollama"],
         "defaultValue": "openai",
         "description": "Usato solo se l'agent invoca il tool rag_search. Deve matchare il provider con cui hai popolato il vector DB."
       },
@@ -8568,10 +7876,7 @@
         "type": "secret",
         "showIf": {
           "field": "embedProvider",
-          "in": [
-            "openai",
-            "voyage"
-          ]
+          "in": ["openai", "voyage"]
         },
         "description": "Necessaria per openai/voyage. Vuoto per ollama (locale)."
       },
@@ -8616,11 +7921,7 @@
         "key": "model",
         "label": "Modello",
         "type": "select",
-        "options": [
-          "claude-opus-4-5",
-          "claude-sonnet-4-5",
-          "claude-haiku-4-5"
-        ],
+        "options": ["claude-opus-4-5", "claude-sonnet-4-5", "claude-haiku-4-5"],
         "defaultValue": "claude-sonnet-4-5",
         "description": "Opus = potenza massima (costoso). Sonnet = bilanciato (default). Haiku = economico, veloce. Docs: docs.anthropic.com/en/docs/about-claude/models"
       },
@@ -8667,11 +7968,7 @@
         "key": "model",
         "label": "Modello",
         "type": "select",
-        "options": [
-          "gemini-2.0-flash",
-          "gemini-1.5-pro",
-          "gemini-1.5-flash"
-        ],
+        "options": ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"],
         "defaultValue": "gemini-2.0-flash",
         "description": "gemini-2.0-flash = nuovo, veloce (default). 1.5-pro = qualità più alta. Docs: ai.google.dev/gemini-api/docs/models"
       },
@@ -8720,14 +8017,7 @@
         "key": "model",
         "label": "Modello",
         "type": "select",
-        "options": [
-          "llama3.2",
-          "llama3.1:70b",
-          "mistral",
-          "mixtral",
-          "qwen2.5:14b",
-          "phi3"
-        ],
+        "options": ["llama3.2", "llama3.1:70b", "mistral", "mixtral", "qwen2.5:14b", "phi3"],
         "defaultValue": "llama3.2",
         "description": "Modelli devi averli pull-ati localmente con `ollama pull <nome>` prima. Docs: ollama.com/library"
       },
@@ -8774,12 +8064,7 @@
         "key": "model",
         "label": "Modello",
         "type": "select",
-        "options": [
-          "gpt-4o",
-          "gpt-4o-mini",
-          "gpt-4-turbo",
-          "gpt-3.5-turbo"
-        ],
+        "options": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
         "defaultValue": "gpt-4o-mini",
         "description": "gpt-4o = top quality. gpt-4o-mini = veloce/economico (default). gpt-3.5-turbo = legacy. Docs: platform.openai.com/docs/models"
       },
@@ -8872,13 +8157,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "listRecords",
-          "getRecord",
-          "createRecord",
-          "updateRecord",
-          "deleteRecord"
-        ],
+        "options": ["listRecords", "getRecord", "createRecord", "updateRecord", "deleteRecord"],
         "defaultValue": "listRecords"
       },
       {
@@ -8944,11 +8223,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "createTask",
-          "getTask",
-          "addComment"
-        ],
+        "options": ["createTask", "getTask", "addComment"],
         "defaultValue": "createTask",
         "description": "createTask = nuovo task. getTask = leggi. addComment = commenta."
       },
@@ -9030,13 +8305,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "listFolder",
-          "createFolder",
-          "getItem",
-          "createSharedLink",
-          "deleteFile"
-        ],
+        "options": ["listFolder", "createFolder", "getItem", "createSharedLink", "deleteFile"],
         "defaultValue": "listFolder",
         "description": "Cosa fare su Box."
       },
@@ -9072,10 +8341,7 @@
         "key": "itemType",
         "label": "Tipo item (getItem)",
         "type": "select",
-        "options": [
-          "files",
-          "folders"
-        ],
+        "options": ["files", "folders"],
         "defaultValue": "files",
         "description": "getItem: file o cartella."
       },
@@ -9083,11 +8349,7 @@
         "key": "access",
         "label": "Visibilità link (createSharedLink)",
         "type": "select",
-        "options": [
-          "open",
-          "company",
-          "collaborators"
-        ],
+        "options": ["open", "company", "collaborators"],
         "defaultValue": "open",
         "description": "open=pubblico, company=solo azienda, collaborators=solo collaboratori."
       },
@@ -9120,13 +8382,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "listScheduledEvents",
-          "getEvent",
-          "listInvitees",
-          "getInvitee",
-          "cancelEvent"
-        ],
+        "options": ["listScheduledEvents", "getEvent", "listInvitees", "getInvitee", "cancelEvent"],
         "defaultValue": "listScheduledEvents"
       },
       {
@@ -9151,11 +8407,7 @@
         "key": "status",
         "label": "Status filter",
         "type": "select",
-        "options": [
-          "active",
-          "canceled",
-          "all"
-        ],
+        "options": ["active", "canceled", "all"],
         "defaultValue": "active"
       },
       {
@@ -9197,10 +8449,7 @@
         "label": "Modalità",
         "type": "select",
         "required": true,
-        "options": [
-          "webhook",
-          "bot"
-        ],
+        "options": ["webhook", "bot"],
         "defaultValue": "webhook",
         "description": "webhook = semplice (URL + nessuna auth). bot = avanzato (Bot Token + canali multipli)."
       },
@@ -9254,13 +8503,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "listFolder",
-          "createFolder",
-          "getMetadata",
-          "createSharedLink",
-          "deletePath"
-        ],
+        "options": ["listFolder", "createFolder", "getMetadata", "createSharedLink", "deletePath"],
         "defaultValue": "listFolder",
         "description": "Cosa fare con il path Dropbox."
       },
@@ -9307,11 +8550,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "listObjects",
-          "getObjectMetadata",
-          "deleteObject"
-        ],
+        "options": ["listObjects", "getObjectMetadata", "deleteObject"],
         "defaultValue": "listObjects",
         "description": "Cosa fare sugli oggetti del bucket."
       },
@@ -9459,21 +8698,12 @@
         "key": "state",
         "label": "Filtro state (per listIssues)",
         "type": "select",
-        "options": [
-          "open",
-          "closed",
-          "all"
-        ],
+        "options": ["open", "closed", "all"],
         "defaultValue": "open",
         "description": "State filter per listIssues."
       }
     ],
-    "outputFields": [
-      "ok",
-      "data",
-      "count",
-      "rateLimitRemaining"
-    ]
+    "outputFields": ["ok", "data", "count", "rateLimitRemaining"]
   },
   {
     "defId": "community_google_sheets",
@@ -9488,12 +8718,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "getValues",
-          "updateValues",
-          "appendValues",
-          "batchGet"
-        ],
+        "options": ["getValues", "updateValues", "appendValues", "batchGet"],
         "defaultValue": "getValues"
       },
       {
@@ -9523,10 +8748,7 @@
         "key": "valueInputOption",
         "label": "Modo input",
         "type": "select",
-        "options": [
-          "RAW",
-          "USER_ENTERED"
-        ],
+        "options": ["RAW", "USER_ENTERED"],
         "defaultValue": "USER_ENTERED",
         "description": "RAW = come testo grezzo. USER_ENTERED = parsa formula/date/numeri come la UI."
       },
@@ -9596,12 +8818,7 @@
         "description": "Max 100 (hard cap HubSpot). Default 50."
       }
     ],
-    "outputFields": [
-      "ok",
-      "data",
-      "objectId",
-      "count"
-    ]
+    "outputFields": ["ok", "data", "objectId", "count"]
   },
   {
     "defId": "community_linear",
@@ -9652,15 +8869,7 @@
         "type": "expression"
       }
     ],
-    "outputFields": [
-      "ok",
-      "issueId",
-      "identifier",
-      "url",
-      "title",
-      "state",
-      "warnings"
-    ]
+    "outputFields": ["ok", "issueId", "identifier", "url", "title", "state", "warnings"]
   },
   {
     "defId": "community_mailchimp",
@@ -9675,11 +8884,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "addMember",
-          "getMember",
-          "addTag"
-        ],
+        "options": ["addMember", "getMember", "addTag"],
         "defaultValue": "addMember"
       },
       {
@@ -9702,12 +8907,7 @@
         "key": "status",
         "label": "Stato iscrizione",
         "type": "select",
-        "options": [
-          "subscribed",
-          "pending",
-          "unsubscribed",
-          "cleaned"
-        ],
+        "options": ["subscribed", "pending", "unsubscribed", "cleaned"],
         "defaultValue": "subscribed",
         "description": "Solo addMember. \"pending\" = double opt-in GDPR."
       },
@@ -9752,12 +8952,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "createPage",
-          "queryDatabase",
-          "updatePage",
-          "getPage"
-        ],
+        "options": ["createPage", "queryDatabase", "updatePage", "getPage"],
         "defaultValue": "createPage"
       },
       {
@@ -9771,10 +8966,7 @@
         "key": "parentType",
         "label": "Tipo parent",
         "type": "select",
-        "options": [
-          "database_id",
-          "page_id"
-        ],
+        "options": ["database_id", "page_id"],
         "defaultValue": "database_id",
         "description": "database_id (default) per pages in db, page_id per child pages."
       },
@@ -9812,15 +9004,7 @@
         "description": "Max 100 (hard cap Notion). Default 50."
       }
     ],
-    "outputFields": [
-      "ok",
-      "data",
-      "pageId",
-      "results",
-      "count",
-      "hasMore",
-      "nextCursor"
-    ]
+    "outputFields": ["ok", "data", "pageId", "results", "count", "hasMore", "nextCursor"]
   },
   {
     "defId": "community_salesforce",
@@ -9840,14 +9024,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "query",
-          "create",
-          "update",
-          "upsert",
-          "delete",
-          "get"
-        ],
+        "options": ["query", "create", "update", "upsert", "delete", "get"],
         "defaultValue": "query"
       },
       {
@@ -9891,15 +9068,7 @@
         "description": "Required per create/update/upsert. Object con campi Salesforce (case-sensitive)."
       }
     ],
-    "outputFields": [
-      "ok",
-      "data",
-      "records",
-      "count",
-      "totalSize",
-      "recordId",
-      "created"
-    ]
+    "outputFields": ["ok", "data", "records", "count", "totalSize", "recordId", "created"]
   },
   {
     "defId": "community_sendgrid",
@@ -9914,10 +9083,7 @@
         "label": "Tipo invio",
         "type": "select",
         "required": true,
-        "options": [
-          "sendEmail",
-          "sendTemplate"
-        ],
+        "options": ["sendEmail", "sendTemplate"],
         "defaultValue": "sendEmail",
         "description": "sendEmail = corpo libero. sendTemplate = Dynamic Template SendGrid."
       },
@@ -9962,10 +9128,7 @@
         "key": "contentType",
         "label": "Formato corpo",
         "type": "select",
-        "options": [
-          "text/plain",
-          "text/html"
-        ],
+        "options": ["text/plain", "text/html"],
         "defaultValue": "text/plain",
         "description": "text/html per email formattate, text/plain per testo semplice."
       },
@@ -10012,12 +9175,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "getOrder",
-          "createOrder",
-          "listProducts",
-          "createProduct"
-        ],
+        "options": ["getOrder", "createOrder", "listProducts", "createProduct"],
         "defaultValue": "getOrder"
       },
       {
@@ -10105,12 +9263,7 @@
         "description": "Default true."
       }
     ],
-    "outputFields": [
-      "ok",
-      "ts",
-      "channel",
-      "message"
-    ]
+    "outputFields": ["ok", "ts", "channel", "message"]
   },
   {
     "defId": "community_telegram",
@@ -10148,12 +9301,7 @@
         "key": "parseMode",
         "label": "Formato parse",
         "type": "select",
-        "options": [
-          "MarkdownV2",
-          "HTML",
-          "Markdown",
-          "none"
-        ],
+        "options": ["MarkdownV2", "HTML", "Markdown", "none"],
         "defaultValue": "MarkdownV2",
         "description": "Default MarkdownV2."
       },
@@ -10170,13 +9318,7 @@
         "defaultValue": "false"
       }
     ],
-    "outputFields": [
-      "ok",
-      "messageId",
-      "chatId",
-      "date",
-      "mode"
-    ]
+    "outputFields": ["ok", "messageId", "chatId", "date", "mode"]
   },
   {
     "defId": "community_trello",
@@ -10191,13 +9333,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "createCard",
-          "updateCard",
-          "addComment",
-          "listCards",
-          "getBoardLists"
-        ],
+        "options": ["createCard", "updateCard", "addComment", "listCards", "getBoardLists"],
         "defaultValue": "createCard"
       },
       {
@@ -10267,11 +9403,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "sendSms",
-          "sendWhatsapp",
-          "getMessage"
-        ],
+        "options": ["sendSms", "sendWhatsapp", "getMessage"],
         "defaultValue": "sendSms"
       },
       {
@@ -10324,13 +9456,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "listForms",
-          "getForm",
-          "listResponses",
-          "getResponse",
-          "deleteResponses"
-        ],
+        "options": ["listForms", "getForm", "listResponses", "getResponse", "deleteResponses"],
         "defaultValue": "listResponses"
       },
       {
@@ -10348,11 +9474,7 @@
         "key": "completed",
         "label": "Solo completate",
         "type": "select",
-        "options": [
-          "true",
-          "false",
-          "any"
-        ],
+        "options": ["true", "false", "any"],
         "defaultValue": "true"
       },
       {
@@ -10450,10 +9572,7 @@
         "key": "onConflict",
         "label": "Se la riga esiste già",
         "type": "select",
-        "options": [
-          "fail",
-          "ignore"
-        ],
+        "options": ["fail", "ignore"],
         "defaultValue": "fail",
         "description": "\"fail\" (raccomandato per dati di business): se la riga c'è già, segnala errore — così ti accorgi di duplicati indesiderati (es. ordine 12345 ricevuto due volte). \"ignore\" (raccomandato per marker idempotenti): se la riga c'è già, considera l'inserimento già fatto e continua senza errore — utile per tabelle \"dedup\" come processed_emails / processed_webhooks dove ri-eseguire lo stesso evento è normale e atteso."
       }
@@ -10517,10 +9636,7 @@
         "key": "onConflict",
         "label": "Se l'header esiste già",
         "type": "select",
-        "options": [
-          "fail",
-          "ignore"
-        ],
+        "options": ["fail", "ignore"],
         "defaultValue": "fail",
         "description": "\"fail\" (default): se l'header viola un UNIQUE/PK, errore (utile per accorgersi di duplicati indesiderati). \"ignore\": se l'header esiste già, salta l'intero batch atomico e ritorna { alreadyExisted: true } — utile per workflow ricevuti più volte sullo stesso input (es. webhook con retry, email duplicate)."
       },
@@ -10679,12 +9795,7 @@
         "label": "Eventi da monitorare",
         "type": "select",
         "required": true,
-        "options": [
-          "insert",
-          "update",
-          "delete",
-          "all"
-        ],
+        "options": ["insert", "update", "delete", "all"],
         "defaultValue": "all",
         "description": "all = qualsiasi cambio. Combinazioni custom non supportate qui — usa 2 trigger separati se serve."
       },
@@ -10792,10 +9903,7 @@
       }
     ],
     "branching": true,
-    "outputPorts": [
-      "auto",
-      "review"
-    ]
+    "outputPorts": ["auto", "review"]
   },
   {
     "defId": "integration_linear_create_issue",
@@ -10857,15 +9965,7 @@
         "description": "Nomi labels esistenti nel team. Risolti via API (case-insensitive). Labels inesistenti vengono ignorate (warning in output)."
       }
     ],
-    "outputFields": [
-      "ok",
-      "issueId",
-      "identifier",
-      "url",
-      "title",
-      "state",
-      "warnings"
-    ]
+    "outputFields": ["ok", "issueId", "identifier", "url", "title", "state", "warnings"]
   },
   {
     "defId": "integration_slack_post",
@@ -10920,12 +10020,7 @@
         "description": "Default true. Quando false, Slack non genera preview cards per i link nel messaggio."
       }
     ],
-    "outputFields": [
-      "ok",
-      "ts",
-      "channel",
-      "message"
-    ]
+    "outputFields": ["ok", "ts", "channel", "message"]
   },
   {
     "defId": "integration_telegram_send",
@@ -10968,12 +10063,7 @@
         "key": "parseMode",
         "label": "Formato parse",
         "type": "select",
-        "options": [
-          "MarkdownV2",
-          "HTML",
-          "Markdown",
-          "none"
-        ],
+        "options": ["MarkdownV2", "HTML", "Markdown", "none"],
         "defaultValue": "MarkdownV2",
         "description": "MarkdownV2 (default, strict escape) / HTML / Markdown (legacy) / none (plain). MarkdownV2 richiede escape di . - ! ( ) [ ] _ * — vedi core.telegram.org/bots/api#markdownv2-style."
       },
@@ -10992,13 +10082,7 @@
         "description": "Quando true, Telegram non genera preview cards per i link nel testo (solo per sendMessage)."
       }
     ],
-    "outputFields": [
-      "ok",
-      "messageId",
-      "chatId",
-      "date",
-      "mode"
-    ]
+    "outputFields": ["ok", "messageId", "chatId", "date", "mode"]
   },
   {
     "defId": "italia_fatturapa_parse",
@@ -11023,11 +10107,7 @@
         "description": "Se on: valida l'XML contro lo schema ufficiale FatturaPA v1.2.2 (offline) e riporta le violazioni nel campo output \"xsd\" senza bloccare il parse."
       }
     ],
-    "outputFields": [
-      "fatture",
-      "count",
-      "xsd"
-    ]
+    "outputFields": ["fatture", "count", "xsd"]
   },
   {
     "defId": "italia_fatture_in_cloud_client",
@@ -11123,12 +10203,7 @@
         "key": "paymentMethod",
         "label": "Metodo pagamento",
         "type": "select",
-        "options": [
-          "MP01 - Contanti",
-          "MP05 - Bonifico",
-          "MP08 - Carta",
-          "MP19 - SDD"
-        ],
+        "options": ["MP01 - Contanti", "MP05 - Bonifico", "MP08 - Carta", "MP19 - SDD"],
         "defaultValue": "MP05 - Bonifico",
         "description": "Codici standard SDI per fatturazione elettronica."
       },
@@ -11228,11 +10303,7 @@
         "type": "expression",
         "showIf": {
           "field": "action",
-          "in": [
-            "search_read",
-            "search",
-            "name_search"
-          ]
+          "in": ["search_read", "search", "name_search"]
         },
         "placeholder": "[[\"is_company\",\"=\",true],[\"country_id.code\",\"=\",\"IT\"]]",
         "description": "Filtro polish notation. AND implicito, OR esplicito con \"|\" prefix, NOT con \"!\" prefix. Operators: =, !=, >, >=, <, <=, like, ilike, in, not in, child_of, =like. Esempi: [[\"state\",\"=\",\"draft\"]] · [[\"name\",\"ilike\",\"%mario%\"]] · [\"|\",[\"a\",\"=\",1],[\"b\",\"=\",2]] · [[\"partner_id.country_id.code\",\"=\",\"IT\"]] (dot-traversal)."
@@ -11243,11 +10314,7 @@
         "type": "expression",
         "showIf": {
           "field": "action",
-          "in": [
-            "search_read",
-            "read",
-            "fields_get"
-          ]
+          "in": ["search_read", "read", "fields_get"]
         },
         "placeholder": "[\"id\",\"name\",\"vat\",\"email\",\"country_id\"]",
         "description": "Array JSON di field names. Vuoto = tutti i campi (SCONSIGLIATO, payload pesante). Relazioni many2one ritornano [id, \"display_name\"]. one2many/many2many ritornano [id1, id2, ...]. Usa dot-traversal NEL domain (non nei fields)."
@@ -11258,10 +10325,7 @@
         "type": "expression",
         "showIf": {
           "field": "action",
-          "in": [
-            "create",
-            "write"
-          ]
+          "in": ["create", "write"]
         },
         "placeholder": "{\"name\":\"Cliente Test\",\"email\":\"x@y.it\",\"is_company\":true,\"country_id\":110}",
         "description": "Object JSON field→value. Per many2one passa l'ID intero (es. country_id: 110). Per one2many/many2many usa il formato special Odoo: [[0,0,{...}]] crea child, [[1,id,{...}]] aggiorna, [[2,id]] elimina, [[3,id]] dissocia (no delete), [[4,id]] associa, [[6,0,[id1,id2]]] replace all."
@@ -11272,12 +10336,7 @@
         "type": "expression",
         "showIf": {
           "field": "action",
-          "in": [
-            "read",
-            "write",
-            "unlink",
-            "execute_method"
-          ]
+          "in": ["read", "write", "unlink", "execute_method"]
         },
         "placeholder": "[42, 43, 44]",
         "description": "Array JSON di interi. Per write/unlink: i records modificati/cancellati. Per execute_method: i records su cui il metodo opera (convenzione Odoo). Singolo ID: [42] (sempre array)."
@@ -11322,11 +10381,7 @@
         "defaultValue": "100",
         "showIf": {
           "field": "action",
-          "in": [
-            "search_read",
-            "search",
-            "name_search"
-          ]
+          "in": ["search_read", "search", "name_search"]
         },
         "description": "Max records ritornati. Per export grandi (>100k): usa limit=500 + loop su offset. Default 100 per evitare payload accidentali da 100MB."
       },
@@ -11337,10 +10392,7 @@
         "defaultValue": "0",
         "showIf": {
           "field": "action",
-          "in": [
-            "search_read",
-            "search"
-          ]
+          "in": ["search_read", "search"]
         },
         "description": "Offset per pagination. Loop deterministico: offset=0,500,1000... finché result.length < limit (= ultima pagina)."
       },
@@ -11350,10 +10402,7 @@
         "type": "expression",
         "showIf": {
           "field": "action",
-          "in": [
-            "search_read",
-            "search"
-          ]
+          "in": ["search_read", "search"]
         },
         "placeholder": "create_date desc, id desc",
         "description": "Sintassi SQL-like. Esempi: \"create_date desc\" · \"name asc, id desc\" · \"priority asc, write_date desc\". Per pagination stabile usa SEMPRE un tiebreak su id."
@@ -11370,10 +10419,7 @@
         "description": "Stringa matched contro display_name. Usata dagli autocomplete Odoo. Operator default: \"ilike\" (case-insensitive substring). Ottimo per integrazioni \"type-ahead\" (es. search Cliente da nome parziale)."
       }
     ],
-    "outputFields": [
-      "result",
-      "count"
-    ]
+    "outputFields": ["result", "count"]
   },
   {
     "defId": "italia_p7m_extract",
@@ -11391,12 +10437,7 @@
         "description": "Il p7m in base64 (tipicamente l'allegato del nodo PEC/IMAP a monte). Vuoto = usa input.content del nodo precedente. XML in chiaro → pass-through con wasSigned:false."
       }
     ],
-    "outputFields": [
-      "content",
-      "wasSigned",
-      "sizeBytes",
-      "contentIsXml"
-    ]
+    "outputFields": ["content", "wasSigned", "sizeBytes", "contentIsXml"]
   },
   {
     "defId": "italia_pec_aruba_receive",
@@ -11475,10 +10516,7 @@
         "key": "transport",
         "label": "Modalità di invio",
         "type": "select",
-        "options": [
-          "smtp",
-          "soap"
-        ],
+        "options": ["smtp", "soap"],
         "defaultValue": "smtp",
         "description": "smtp = standard SMTP via nodemailer, supporta allegati (raccomandato). soap = legacy SOAP WSSE Aruba, NIENTE ALLEGATI."
       },
@@ -11554,11 +10592,7 @@
         "key": "smtpSecurity",
         "label": "Cifratura SMTP",
         "type": "select",
-        "options": [
-          "tls",
-          "starttls",
-          "plain"
-        ],
+        "options": ["tls", "starttls", "plain"],
         "defaultValue": "tls",
         "showIf": {
           "field": "transport",
@@ -11607,15 +10641,7 @@
         "label": "Tipo record DNS",
         "type": "select",
         "required": true,
-        "options": [
-          "A",
-          "AAAA",
-          "CNAME",
-          "MX",
-          "TXT",
-          "SRV",
-          "CAA"
-        ],
+        "options": ["A", "AAAA", "CNAME", "MX", "TXT", "SRV", "CAA"],
         "defaultValue": "A",
         "description": "A = IPv4 · AAAA = IPv6 · CNAME = alias dominio · MX = mail server · TXT = SPF/DKIM/DMARC/verification · SRV = service location · CAA = autorità di certificazione autorizzate."
       },
@@ -11816,14 +10842,7 @@
         "label": "Azione",
         "type": "select",
         "required": true,
-        "options": [
-          "list",
-          "get",
-          "create",
-          "update",
-          "delete",
-          "batch"
-        ],
+        "options": ["list", "get", "create", "update", "delete", "batch"],
         "defaultValue": "list",
         "description": "list = GET many. get = GET one by ID. create = POST. update = PUT. delete = DELETE (?force=true per hard delete). batch = POST .../batch (fino a 100 ops in 1 round-trip)."
       },
@@ -11859,11 +10878,7 @@
         "type": "expression",
         "showIf": {
           "field": "resource",
-          "in": [
-            "products/variations",
-            "orders/notes",
-            "orders/refunds"
-          ]
+          "in": ["products/variations", "orders/notes", "orders/refunds"]
         },
         "placeholder": "42",
         "description": "Per nested resources (variations under product, notes/refunds under order). Es: resource=\"products/variations\", parentId=42 → /products/42/variations."
@@ -11874,11 +10889,7 @@
         "type": "expression",
         "showIf": {
           "field": "action",
-          "in": [
-            "get",
-            "update",
-            "delete"
-          ]
+          "in": ["get", "update", "delete"]
         },
         "description": "ID risorsa (intero). Obbligatorio per get/update/delete."
       },
@@ -11962,16 +10973,7 @@
         "key": "orderby",
         "label": "Order by",
         "type": "select",
-        "options": [
-          "date",
-          "id",
-          "include",
-          "title",
-          "slug",
-          "price",
-          "popularity",
-          "rating"
-        ],
+        "options": ["date", "id", "include", "title", "slug", "price", "popularity", "rating"],
         "defaultValue": "date",
         "showIf": {
           "field": "action",
@@ -11983,10 +10985,7 @@
         "key": "orderDir",
         "label": "Order direction",
         "type": "select",
-        "options": [
-          "asc",
-          "desc"
-        ],
+        "options": ["asc", "desc"],
         "defaultValue": "desc",
         "showIf": {
           "field": "action",
@@ -11999,10 +10998,7 @@
         "type": "expression",
         "showIf": {
           "field": "action",
-          "in": [
-            "create",
-            "update"
-          ]
+          "in": ["create", "update"]
         },
         "placeholder": "{\"name\":\"Maglietta XL\",\"type\":\"simple\",\"regular_price\":\"29.90\",\"stock_quantity\":10,\"manage_stock\":true}",
         "description": "Per create/update. Schema completo: https://woocommerce.github.io/woocommerce-rest-api-docs/. Per products: name, type, regular_price, sale_price, stock_quantity, manage_stock, categories[], images[], attributes[], variations[]."
@@ -12022,10 +11018,7 @@
         "key": "force",
         "label": "Force delete (hard)",
         "type": "select",
-        "options": [
-          "false",
-          "true"
-        ],
+        "options": ["false", "true"],
         "defaultValue": "false",
         "showIf": {
           "field": "action",
@@ -12034,11 +11027,7 @@
         "description": "true = bypass trash (irreversibile). Default WC: orders e products vanno in trash."
       }
     ],
-    "outputFields": [
-      "result",
-      "totalPages",
-      "total"
-    ]
+    "outputFields": ["result", "totalPages", "total"]
   },
   {
     "defId": "italia_wordpress",
@@ -12077,14 +11066,7 @@
         "label": "Azione",
         "type": "select",
         "required": true,
-        "options": [
-          "list",
-          "get",
-          "create",
-          "update",
-          "delete",
-          "upload_media"
-        ],
+        "options": ["list", "get", "create", "update", "delete", "upload_media"],
         "defaultValue": "list",
         "description": "list = GET many. get = GET one by ID. create = POST. update = POST (PATCH idempotent). delete = DELETE (move to trash, ?force=true per hard delete). upload_media = POST multipart."
       },
@@ -12093,16 +11075,7 @@
         "label": "Resource",
         "type": "select",
         "required": true,
-        "options": [
-          "posts",
-          "pages",
-          "media",
-          "users",
-          "categories",
-          "tags",
-          "comments",
-          "custom"
-        ],
+        "options": ["posts", "pages", "media", "users", "categories", "tags", "comments", "custom"],
         "defaultValue": "posts",
         "description": "Endpoint WP. \"custom\" = path arbitrary (es. custom post type / plugin REST). Per CPT: usa \"custom\" con customPath = \"/mio_cpt\"."
       },
@@ -12123,11 +11096,7 @@
         "type": "expression",
         "showIf": {
           "field": "action",
-          "in": [
-            "get",
-            "update",
-            "delete"
-          ]
+          "in": ["get", "update", "delete"]
         },
         "description": "ID risorsa (intero) per get/update/delete."
       },
@@ -12168,15 +11137,7 @@
         "key": "status",
         "label": "Status filter",
         "type": "select",
-        "options": [
-          "publish",
-          "draft",
-          "pending",
-          "private",
-          "future",
-          "trash",
-          "any"
-        ],
+        "options": ["publish", "draft", "pending", "private", "future", "trash", "any"],
         "showIf": {
           "field": "action",
           "equals": "list"
@@ -12187,17 +11148,11 @@
         "key": "embed",
         "label": "Embed relations",
         "type": "select",
-        "options": [
-          "false",
-          "true"
-        ],
+        "options": ["false", "true"],
         "defaultValue": "false",
         "showIf": {
           "field": "action",
-          "in": [
-            "list",
-            "get"
-          ]
+          "in": ["list", "get"]
         },
         "description": "?_embed=true espande author/featured_media/replies/term inline (più payload ma meno round-trip)."
       },
@@ -12207,10 +11162,7 @@
         "type": "expression",
         "showIf": {
           "field": "action",
-          "in": [
-            "create",
-            "update"
-          ]
+          "in": ["create", "update"]
         },
         "placeholder": "{\"title\":\"Mio articolo\",\"content\":\"<p>HTML</p>\",\"status\":\"draft\",\"categories\":[5]}",
         "description": "Per create/update. Campi standard WP: title, content, excerpt, status, categories[], tags[], featured_media, slug, meta {}. Status \"draft\" raccomandato per primo INSERT (rivedi prima di publish)."
@@ -12240,10 +11192,7 @@
         "key": "force",
         "label": "Force delete (hard)",
         "type": "select",
-        "options": [
-          "false",
-          "true"
-        ],
+        "options": ["false", "true"],
         "defaultValue": "false",
         "showIf": {
           "field": "action",
@@ -12252,10 +11201,7 @@
         "description": "true = hard delete bypass trash (irreversibile)."
       }
     ],
-    "outputFields": [
-      "result",
-      "totalPages"
-    ]
+    "outputFields": ["result", "totalPages"]
   },
   {
     "defId": "italia_zucchetti_payroll",
@@ -12327,16 +11273,7 @@
         "label": "Funzione di riduzione",
         "type": "select",
         "required": true,
-        "options": [
-          "count",
-          "sum",
-          "avg",
-          "min",
-          "max",
-          "median",
-          "concat",
-          "collect"
-        ],
+        "options": ["count", "sum", "avg", "min", "max", "median", "concat", "collect"],
         "defaultValue": "count",
         "description": "count = quanti item. sum = somma (richiede campo). avg = media. min/max = estremi. median = mediana (robusta agli outlier). concat = concatena i valori del campo come stringa CSV. collect = raccoglie i valori del campo in un array. sum/avg/min/max/median SKIPPANO i valori non-numerici (contati in skippedNonNumeric)."
       },
@@ -12383,11 +11320,7 @@
         "label": "Formato di input",
         "type": "select",
         "required": true,
-        "options": [
-          "json",
-          "csv",
-          "text"
-        ],
+        "options": ["json", "csv", "text"],
         "defaultValue": "json",
         "description": "Come è il dato in input. json = stringa JSON o oggetto già parsato. csv = stringa CSV (con header sulla prima riga). text = stringa qualsiasi."
       },
@@ -12396,11 +11329,7 @@
         "label": "Formato di output",
         "type": "select",
         "required": true,
-        "options": [
-          "json",
-          "csv",
-          "text"
-        ],
+        "options": ["json", "csv", "text"],
         "defaultValue": "csv",
         "description": "json = oggetto/array JS · csv = stringa CSV con header · text = stringa (auto-stringify per non-string)."
       },
@@ -12408,12 +11337,7 @@
         "key": "delimiter",
         "label": "Delimitatore CSV",
         "type": "select",
-        "options": [
-          "auto",
-          ",",
-          ";",
-          "\\t"
-        ],
+        "options": ["auto", ",", ";", "\\t"],
         "defaultValue": "auto",
         "description": "Separatore di colonna. auto = rileva tra virgola/punto-e-virgola/tab dalla prima riga (in lettura). In scrittura \"auto\" usa la virgola. Scegli \";\" per i gestionali italiani, \"\\t\" per TSV."
       },
@@ -12554,10 +11478,7 @@
       }
     ],
     "branching": true,
-    "outputPorts": [
-      "true",
-      "false"
-    ]
+    "outputPorts": ["true", "false"]
   },
   {
     "defId": "logic_loop",
@@ -12580,14 +11501,7 @@
         "label": "Strategia di iterazione",
         "type": "select",
         "required": true,
-        "options": [
-          "naive",
-          "batch",
-          "bulk",
-          "queue",
-          "aggregate",
-          "auto"
-        ],
+        "options": ["naive", "batch", "bulk", "queue", "aggregate", "auto"],
         "defaultValue": "naive",
         "description": "naive = uno alla volta (semplice). batch = in chunk (più veloce). bulk = singola chiamata bulk (se l'API supporta). queue = asincrono via BullMQ. aggregate = solo riduzione (no body). auto = engine sceglie il meglio."
       },
@@ -12613,11 +11527,7 @@
         "key": "errorPolicy",
         "label": "Politica di gestione errori",
         "type": "select",
-        "options": [
-          "stop",
-          "continue",
-          "dlq"
-        ],
+        "options": ["stop", "continue", "dlq"],
         "defaultValue": "continue",
         "description": "stop = ferma il loop al primo errore. continue = registra l'errore e prosegue. dlq = push in dead-letter queue per retry differito."
       },
@@ -12650,15 +11560,7 @@
         "key": "aggregateReducer",
         "label": "Funzione di riduzione",
         "type": "select",
-        "options": [
-          "count",
-          "sum",
-          "avg",
-          "min",
-          "max",
-          "concat",
-          "collect"
-        ],
+        "options": ["count", "sum", "avg", "min", "max", "concat", "collect"],
         "defaultValue": "count",
         "showIf": {
           "field": "strategy",
@@ -12679,10 +11581,7 @@
       }
     ],
     "branching": true,
-    "outputPorts": [
-      "body",
-      "done"
-    ]
+    "outputPorts": ["body", "done"]
   },
   {
     "defId": "logic_merge",
@@ -12697,13 +11596,7 @@
         "label": "Strategia di merge",
         "type": "select",
         "required": true,
-        "options": [
-          "all",
-          "concat-arrays",
-          "any",
-          "first",
-          "last"
-        ],
+        "options": ["all", "concat-arrays", "any", "first", "last"],
         "defaultValue": "all",
         "description": "• all (default): output = { branches: {nodeId: output, ...} }\n• concat-arrays: estrae output.<arrayProperty>[] di ogni branch + concatena in 1 array unico (use case 3 search → 60 result)\n• any/first: prende il primo branch (idx più basso)\n• last: prende l'ultimo"
       },
@@ -12745,10 +11638,7 @@
         "label": "Metodo HTTP",
         "type": "select",
         "required": true,
-        "options": [
-          "GET",
-          "POST"
-        ],
+        "options": ["GET", "POST"],
         "defaultValue": "GET",
         "description": "GET = standard per API REST GraphQL paginate. POST = quando la pagina è nel body (alcune API enterprise come Salesforce Bulk). Per altri metodi usa `action_http` in un `logic_loop`."
       },
@@ -12763,12 +11653,7 @@
         "label": "Strategia paginazione",
         "type": "select",
         "required": true,
-        "options": [
-          "page-number",
-          "cursor",
-          "offset-limit",
-          "link-header"
-        ],
+        "options": ["page-number", "cursor", "offset-limit", "link-header"],
         "defaultValue": "page-number",
         "description": "page-number = ?page=N · cursor = ?after=<token> · offset-limit = ?offset=N&limit=M · link-header = legge Link header RFC 5988."
       },
@@ -12835,10 +11720,7 @@
         "key": "wait",
         "label": "Attendi completamento",
         "type": "select",
-        "options": [
-          "true",
-          "false"
-        ],
+        "options": ["true", "false"],
         "defaultValue": "true",
         "description": "true = aspetta la fine e ricevi l'output. false = fire-and-forget, ritorna subito con runId del sub-workflow."
       }
@@ -12891,9 +11773,7 @@
       }
     ],
     "branching": true,
-    "outputPorts": [
-      "*"
-    ]
+    "outputPorts": ["*"]
   },
   {
     "defId": "logic_transform",
@@ -12926,11 +11806,7 @@
         "label": "Mode",
         "type": "select",
         "required": true,
-        "options": [
-          "timer",
-          "webhook",
-          "either"
-        ],
+        "options": ["timer", "webhook", "either"],
         "defaultValue": "timer",
         "description": "timer = riprende dopo `durationMs` (default 60s). webhook = riprende quando arriva POST su `/api/v1/workflows/:wfId/wait-resume/:runId` (max attesa `maxWaitMs`). either = il primo dei due che scade vince (early-exit)."
       },
@@ -13023,14 +11899,7 @@
         "key": "granularity",
         "label": "Granularità",
         "type": "select",
-        "options": [
-          "fixed",
-          "minute",
-          "hour",
-          "day",
-          "week",
-          "month"
-        ],
+        "options": ["fixed", "minute", "hour", "day", "week", "month"],
         "defaultValue": "fixed",
         "description": "fixed = finestre di durata costante (vedi \"Dimensione finestra\"), allineate a UTC. minute/hour/day/week/month = finestre di CALENDARIO allineate ai confini civili nella timezone scelta (mesi/settimane reali, DST-safe)."
       },
@@ -13057,10 +11926,7 @@
         "key": "weekStart",
         "label": "Inizio settimana (granularità \"week\")",
         "type": "select",
-        "options": [
-          "monday",
-          "sunday"
-        ],
+        "options": ["monday", "sunday"],
         "defaultValue": "monday",
         "showIf": {
           "field": "granularity",
@@ -13090,13 +11956,7 @@
         "label": "Operazione",
         "type": "select",
         "required": true,
-        "options": [
-          "get",
-          "set",
-          "append",
-          "delete",
-          "list"
-        ],
+        "options": ["get", "set", "append", "delete", "list"],
         "defaultValue": "get",
         "description": "get = leggi valore. set = scrivi/sovrascrivi. append = aggiungi a stringa. delete = rimuovi. list = lista tutte le key di questo workflow."
       },
@@ -13192,11 +12052,7 @@
         "key": "renderFormat",
         "label": "Formato render output",
         "type": "select",
-        "options": [
-          "none",
-          "markdown",
-          "html"
-        ],
+        "options": ["none", "markdown", "html"],
         "defaultValue": "none",
         "description": "\"none\" = solo array items strutturato. \"markdown\" = aggiunge campo `markdown` con bullet list (per Liara/Slack/email). \"html\" = aggiunge campo `html` con <ul><li> (per email HTML/dashboard)."
       },
@@ -13215,13 +12071,7 @@
         "description": "Default 10s. Hard cap 60s. Oltre il cap → throw TimeoutError."
       }
     ],
-    "outputFields": [
-      "feed",
-      "items",
-      "count",
-      "markdown",
-      "html"
-    ]
+    "outputFields": ["feed", "items", "count", "markdown", "html"]
   },
   {
     "defId": "rag_ingest",
@@ -13261,11 +12111,7 @@
         "key": "provider",
         "label": "Provider embedding",
         "type": "select",
-        "options": [
-          "openai",
-          "voyage",
-          "ollama"
-        ],
+        "options": ["openai", "voyage", "ollama"],
         "defaultValue": "openai"
       },
       {
@@ -13284,11 +12130,7 @@
         "key": "distance",
         "label": "Distanza",
         "type": "select",
-        "options": [
-          "cosine",
-          "euclidean",
-          "dot"
-        ],
+        "options": ["cosine", "euclidean", "dot"],
         "defaultValue": "cosine"
       },
       {
@@ -13331,11 +12173,7 @@
         "key": "provider",
         "label": "Provider embedding",
         "type": "select",
-        "options": [
-          "openai",
-          "voyage",
-          "ollama"
-        ],
+        "options": ["openai", "voyage", "ollama"],
         "defaultValue": "openai",
         "description": "DEVE combaciare col provider/modello usato in ingest (stesso spazio vettoriale)."
       },
@@ -13425,12 +12263,7 @@
         "label": "Operations",
         "type": "select",
         "required": true,
-        "options": [
-          "insert",
-          "update",
-          "delete",
-          "all"
-        ],
+        "options": ["insert", "update", "delete", "all"],
         "defaultValue": "all"
       },
       {
@@ -13518,11 +12351,7 @@
         "key": "markSeen",
         "label": "Quando marcare come letta",
         "type": "select",
-        "options": [
-          "on-success",
-          "always",
-          "never"
-        ],
+        "options": ["on-success", "always", "never"],
         "defaultValue": "on-success",
         "description": "on-success (raccomandato) = marca letta solo se il workflow completa. always = sempre. never = mai."
       },
@@ -13530,11 +12359,7 @@
         "key": "tlsMode",
         "label": "Cifratura",
         "type": "select",
-        "options": [
-          "tls",
-          "starttls",
-          "plain"
-        ],
+        "options": ["tls", "starttls", "plain"],
         "defaultValue": "tls",
         "description": "tls = porta 993 (raccomandato). starttls = 143. plain = nessuna cifratura."
       }
@@ -13552,10 +12377,7 @@
         "key": "aiTriage",
         "label": "Triage AI (Liara)",
         "type": "select",
-        "options": [
-          "false",
-          "true"
-        ],
+        "options": ["false", "true"],
         "defaultValue": "false",
         "description": "Se attivo, il payload in ingresso include `aiTriage` con la diagnosi AI del run fallito (explanation, fix, rootCause, risk, confidence) generata PRIMA del lancio dell'handler — pronta per email/notifiche senza altri nodi AI. Fail-soft: se la diagnosi fallisce o tarda, l'handler parte comunque senza. Default spento: zero costo LLM se non richiesto."
       }
@@ -13589,12 +12411,7 @@
         "label": "Events",
         "type": "select",
         "required": true,
-        "options": [
-          "add",
-          "change",
-          "unlink",
-          "all"
-        ],
+        "options": ["add", "change", "unlink", "all"],
         "defaultValue": "all",
         "description": "add = file nuovo creato. change = file esistente modificato (write). unlink = file cancellato. all = tutti e 3 (default). Per ingest pipeline tipicamente serve solo \"add\" — il workflow gestisce un file una volta sola."
       },
@@ -13780,11 +12597,7 @@
         "key": "markSeen",
         "label": "Quando marcare l'email come letta",
         "type": "select",
-        "options": [
-          "on-success",
-          "always",
-          "never"
-        ],
+        "options": ["on-success", "always", "never"],
         "defaultValue": "on-success",
         "description": "on-success (raccomandato per produzione) = l'email resta UNREAD finché il workflow non completa con successo, così un ordine fallito viene ri-tentato al prossimo poll. always = marca sempre letta (rischio: ordine perso se il run fallisce). never = non marca mai, l'operatore gestisce i flag a mano."
       },
@@ -13792,11 +12605,7 @@
         "key": "tlsMode",
         "label": "Cifratura",
         "type": "select",
-        "options": [
-          "tls",
-          "starttls",
-          "plain"
-        ],
+        "options": ["tls", "starttls", "plain"],
         "defaultValue": "tls",
         "description": "tls = porta 993 (raccomandato). starttls = porta 143. plain = NESSUNA cifratura (usare solo in rete fidata)."
       }
@@ -13851,12 +12660,7 @@
         "key": "saslMechanism",
         "label": "Autenticazione SASL",
         "type": "select",
-        "options": [
-          "none",
-          "plain",
-          "scram-sha-256",
-          "scram-sha-512"
-        ],
+        "options": ["none", "plain", "scram-sha-256", "scram-sha-512"],
         "defaultValue": "none",
         "description": "Meccanismo SASL. none = nessuna auth (broker aperti / reti fidate). plain / scram-sha-256 / scram-sha-512 per i cluster gestiti. Richiede username e password qui sotto."
       },
@@ -13990,12 +12794,7 @@
         "key": "initialBacklog",
         "label": "Backlog iniziale",
         "type": "select",
-        "options": [
-          "skip",
-          "last-24h",
-          "last-week",
-          "all"
-        ],
+        "options": ["skip", "last-24h", "last-week", "all"],
         "defaultValue": "skip",
         "description": "Cosa fare al PRIMO avvio del trigger (quando lastSeenId e` ignoto). skip = ignora tutto il preesistente (default, comportamento \"da ora in poi\"). last-24h / last-week = recupera solo i record creati nelle ultime 24h / settimana. all = scorre TUTTI i record esistenti (può essere migliaia, attento al cost)."
       },
@@ -14043,10 +12842,7 @@
         "key": "ackMode",
         "label": "Modalità di conferma",
         "type": "select",
-        "options": [
-          "manual",
-          "auto"
-        ],
+        "options": ["manual", "auto"],
         "defaultValue": "manual",
         "description": "manual (default, consigliata): il messaggio è confermato SOLO se il run parte con successo; su errore torna in coda e viene riconsegnato. Automatica: il broker lo considera consegnato subito — un run fallito lo perde."
       },
@@ -14126,14 +12922,7 @@
         "description": "Identificativo bot inviato come header `User-Agent`. RFC-compliant include nome + versione + contatto. Alcuni feed (Bloomberg, FT) bloccano UA generici e richiedono identificazione esplicita. Default identifica FlowForge."
       }
     ],
-    "outputFields": [
-      "format",
-      "feedTitle",
-      "feedLink",
-      "itemsCount",
-      "totalParsed",
-      "items"
-    ]
+    "outputFields": ["format", "feedTitle", "feedLink", "itemsCount", "totalParsed", "items"]
   },
   {
     "defId": "trigger_telegram",
@@ -14196,16 +12985,7 @@
         "label": "Metodo HTTP accettato",
         "type": "select",
         "required": true,
-        "options": [
-          "POST",
-          "GET",
-          "PUT",
-          "PATCH",
-          "DELETE",
-          "HEAD",
-          "OPTIONS",
-          "ANY"
-        ],
+        "options": ["POST", "GET", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "ANY"],
         "defaultValue": "POST",
         "description": "POST = riceve payload nel body (default per la maggioranza dei webhook). GET = solo query string (ping/test/pagine). PUT/PATCH/DELETE per REST. HEAD = solo headers (health check). OPTIONS = preflight CORS. ANY = accetta qualsiasi metodo. Solo questo metodo è accettato — gli altri ritornano 405."
       },
@@ -14220,13 +13000,7 @@
         "key": "authMode",
         "label": "Autenticazione richiesta",
         "type": "select",
-        "options": [
-          "none",
-          "header-token",
-          "basic-auth",
-          "hmac-signature",
-          "jwt"
-        ],
+        "options": ["none", "header-token", "basic-auth", "hmac-signature", "jwt"],
         "defaultValue": "none",
         "description": "none = aperto (PROTEGGI con IP allowlist sotto). header-token = \"Authorization: Bearer <token>\". basic-auth = HTTP Basic standard. hmac-signature = firma HMAC del body (Stripe, GitHub, Shopify, Twilio). jwt = JSON Web Token firmato (verifica issuer/audience/exp)."
       },
@@ -14236,10 +13010,7 @@
         "type": "secret",
         "showIf": {
           "field": "authMode",
-          "in": [
-            "header-token",
-            "basic-auth"
-          ]
+          "in": ["header-token", "basic-auth"]
         },
         "description": "header-token: il token segreto. basic-auth: la sola password (lo username va sotto)."
       },
@@ -14288,11 +13059,7 @@
         "key": "hmacAlgo",
         "label": "Algoritmo HMAC",
         "type": "select",
-        "options": [
-          "sha256",
-          "sha1",
-          "sha512"
-        ],
+        "options": ["sha256", "sha1", "sha512"],
         "defaultValue": "sha256",
         "showIf": {
           "field": "authMode",
@@ -14314,16 +13081,7 @@
         "key": "jwtAlgo",
         "label": "Algoritmo JWT",
         "type": "select",
-        "options": [
-          "HS256",
-          "HS384",
-          "HS512",
-          "RS256",
-          "RS384",
-          "RS512",
-          "ES256",
-          "ES384"
-        ],
+        "options": ["HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "ES256", "ES384"],
         "defaultValue": "HS256",
         "showIf": {
           "field": "authMode",
@@ -14392,11 +13150,7 @@
         "key": "responseMode",
         "label": "Come rispondere al chiamante",
         "type": "select",
-        "options": [
-          "immediate",
-          "wait-for-workflow",
-          "use-respond-node"
-        ],
+        "options": ["immediate", "wait-for-workflow", "use-respond-node"],
         "defaultValue": "immediate",
         "description": "immediate = 202 Accepted appena ricevuta (raccomandato per webhook esterni). wait-for-workflow = aspetta il workflow e ritorna {runId, status} JSON. use-respond-node = aspetta il workflow E usa un nodo \"Webhook: Respond\" alla fine per personalizzare body/status/headers (per HTML pages, redirect, ecc.)."
       },
@@ -14404,11 +13158,7 @@
         "key": "responseShape",
         "label": "Shape dell'output (modalità wait-for-workflow)",
         "type": "select",
-        "options": [
-          "envelope",
-          "last-step-output",
-          "all-steps-output"
-        ],
+        "options": ["envelope", "last-step-output", "all-steps-output"],
         "defaultValue": "envelope",
         "showIf": {
           "field": "responseMode",
@@ -14564,12 +13314,7 @@
         "key": "statusFilter",
         "label": "Filtro stato",
         "type": "select",
-        "options": [
-          "all",
-          "success",
-          "error",
-          "running"
-        ],
+        "options": ["all", "success", "error", "running"],
         "defaultValue": "all",
         "description": "Pre-filtra il run history su uno specifico stato."
       },
@@ -14601,11 +13346,7 @@
         "description": "Default: usa FLOWFORGE_PUBLIC_BASE_URL del container tenant. Override per email che vanno fuori dominio."
       }
     ],
-    "outputFields": [
-      "url",
-      "workflowId",
-      "filters"
-    ]
+    "outputFields": ["url", "workflowId", "filters"]
   },
   {
     "defId": "weather_node",
@@ -14634,10 +13375,7 @@
         "key": "units",
         "label": "Unità misura",
         "type": "select",
-        "options": [
-          "metric",
-          "imperial"
-        ],
+        "options": ["metric", "imperial"],
         "defaultValue": "metric",
         "description": "Default metric (°C, km/h, mm). Imperial converte °C→°F, km/h→mph, mm→inch."
       },
@@ -14645,18 +13383,11 @@
         "key": "language",
         "label": "Lingua condizioni",
         "type": "select",
-        "options": [
-          "it",
-          "en"
-        ],
+        "options": ["it", "en"],
         "defaultValue": "it",
         "description": "Lingua per il campo `condition`: \"it\" → \"sereno/temporale\", \"en\" → \"clear/thunderstorm\"."
       }
     ],
-    "outputFields": [
-      "location",
-      "current",
-      "forecast"
-    ]
+    "outputFields": ["location", "current", "forecast"]
   }
 ]
