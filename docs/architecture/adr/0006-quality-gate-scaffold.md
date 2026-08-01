@@ -37,11 +37,11 @@ diversi sullo stesso file e non sa a quale credere.
 
 Tre livelli di gravità, con conseguenze diverse:
 
-| Gravità    | Significato                              | Conseguenza                    |
-| ---------- | ---------------------------------------- | ------------------------------ |
-| `critical` | a runtime si romperebbe di sicuro        | il workflow non passa          |
-| `medium`   | funziona, ma qualcosa non va             | avviso mostrato all'utente     |
-| `info`     | osservazione                             | nessuna, resta nel resoconto   |
+| Gravità    | Significato                       | Conseguenza                  |
+| ---------- | --------------------------------- | ---------------------------- |
+| `critical` | a runtime si romperebbe di sicuro | il workflow non passa        |
+| `medium`   | funziona, ma qualcosa non va      | avviso mostrato all'utente   |
+| `info`     | osservazione                      | nessuna, resta nel resoconto |
 
 ## Il richiamo invece del rifiuto
 

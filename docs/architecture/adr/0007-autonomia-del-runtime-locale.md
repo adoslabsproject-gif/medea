@@ -89,12 +89,23 @@ Stesso discorso per la posta: oggi viaggia solo `systemAccountId`, ma nessuno
 consegna al runtime le credenziali IMAP/SMTP. Finché non si fa,
 `action_send_email` e `trigger_imap` non possono funzionare.
 
+> **Risolto il 2026-08-01.** I segreti si definiscono dalla barra dell'editor e
+> il valore sta nel portachiavi del sistema; gli account di posta di Medea
+> diventano account del runtime. La consegna avviene all'apertura della
+> sessione — vedi `runtime/secrets.ts` e `runtime/provision.ts`.
+
 ### 4. Il catalogo è parziale
 
 145 defId estratti contro i 193 che il runtime carica. Mancano pezzi grossi:
 `logic_subworkflow`, `action_pdf_parse`, `action_xlsx_*`, `db_sql_query`, otto
 `agent_*`. Da capire se è un filtro voluto dello script di estrazione o è
 deriva.
+
+> **Risolto il 2026-08-01.** Era deriva: i pacchetti espongono i nodi in due
+> forme — un oggetto per nodo, e un unico array `stdlibNodes` — e l'estrattore
+> leggeva solo la prima. Adesso il catalogo ne ha 193, gli stessi che il
+> runtime dichiara, e `catalog.guard.test.ts` verifica l'uguaglianza fra i due
+> insiemi a ogni esecuzione dei test.
 
 E mancano del tutto i pacchetti `.ffnode` della community — 391 azioni fra
 Telegram, GitHub, Slack, Stripe. È la fase 4 dell'ADR 0005: registry, verifica

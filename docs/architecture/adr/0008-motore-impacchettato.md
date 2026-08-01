@@ -37,7 +37,7 @@ continuo.
 ## Perché non si può fare più piccolo
 
 **595 MB.** È molto, e non è negoziabile senza rinunciare a qualcosa che
-l'utente ha chiesto esplicitamente: *tutti* i nodi eseguibili, come sul
+l'utente ha chiesto esplicitamente: _tutti_ i nodi eseguibili, come sul
 server.
 
 I moduli nativi — `better-sqlite3`, `isolated-vm`, `argon2`, `duckdb` — non si
@@ -50,7 +50,7 @@ Sono state provate, e scartate, tre riduzioni:
   ma il runtime lo importa all'avvio. Tolto, non parte affatto.
 - **Togliere `typescript`** (23 MB): è dichiarato come dipendenza di
   sviluppo, e il runtime lo carica all'avvio per compilare i nodi
-  personalizzati. Va *aggiunto*, non tolto — è l'unica cosa che il `deploy`
+  personalizzati. Va _aggiunto_, non tolto — è l'unica cosa che il `deploy`
   di produzione dimentica.
 - **Cancellare i file `.d.ts`**: la libreria `typescript` è fatta
   praticamente solo di quelli.

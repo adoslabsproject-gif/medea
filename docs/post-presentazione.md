@@ -12,8 +12,11 @@ locale con ricerca full-text, la invia via SMTP. Fin qui niente di nuovo.
 La differenza è cosa ci sta accanto: una tab **Workflow** con un editor visuale
 di automazioni. Si trascinano i nodi sul canvas, si collegano, si configurano.
 Trigger a orario, webhook, chiamate HTTP, query su database, invio email, agenti
-AI, integrazioni con servizi esterni: 145 nodi, gli stessi di FlowForge, con le
+AI, integrazioni con servizi esterni: 193 nodi, gli stessi di FlowForge, con le
 stesse definizioni e le stesse icone.
+
+E si eseguono. Non «si esporteranno da qualche parte che li esegue»: girano sul
+computer, con il motore che sta dentro l'app.
 
 Il formato del documento è compatibile in entrambe le direzioni: un workflow
 disegnato in Medea si importa sul server, e uno costruito sul server si apre in
@@ -69,11 +72,34 @@ Quando è l'assistente a sbagliare, non viene bocciato al primo colpo: gli si
 dice cosa non va e ha tre tentativi per correggere. Quasi sempre al secondo giro
 il workflow è a posto.
 
+## Girano da soli
+
+Un'automazione che parte solo mentre la si guarda non è un'automazione, è un
+pulsante con un ritardo. In Medea un cron delle 8 scatta anche se la sezione
+Workflow non si è mai aperta, e l'esecuzione finisce nello storico con scritto
+chi l'ha avviata — «cron», non «Medea». Se non c'è nessuna automazione attiva il
+motore non parte affatto.
+
+Le credenziali non stanno nel documento. `{{secrets.API_KEY}}` si risolve dal
+portachiavi del sistema operativo, e gli account di posta già configurati in
+Medea diventano quelli che i nodi usano per inviare e leggere. Un workflow si
+esporta senza portarsi via niente di riservato: sull'originale quelle variabili
+stanno in chiaro nel database.
+
+Le tabelle che un workflow dà per esistenti vengono lette dal workflow stesso —
+un nodo che scrive su un database nomina la tabella e le colonne — e si creano
+premendo un pulsante, invece di scoprire alla prima esecuzione che non c'erano.
+
 ## Sotto
 
 Tauri 2: un processo Rust, la WebView del sistema operativo, un file SQLite.
-Niente Electron, niente server, niente sidecar Node. L'installer sta in pochi
-megabyte invece che in centinaia.
+Niente Electron, niente server.
+
+Il motore dei workflow è l'eccezione: è il runtime di FlowForge, quindi Node, e
+viaggia dentro l'app con le sue dipendenze e il suo interprete. Sono 595 MB,
+quasi tutti moduli nativi che non si possono impacchettare altrimenti. È il
+prezzo per avere 193 nodi veri e la sandbox `isolated-vm`, invece di una
+manciata di nodi riscritti che fanno il 10% del lavoro.
 
 L'assistente ha 63 strumenti che agiscono davvero sul sistema — leggere la
 posta, cercare fra i contatti, comporre documenti, gestire promemoria — e ogni
@@ -86,10 +112,13 @@ Codice: [github.com/adoslabsproject-gif/medea](https://github.com/adoslabsprojec
 
 ## Stato
 
-Posta, assistente, rubrica, documenti e canvas dei workflow funzionano. La
-generazione a parole funziona. I controlli di qualità funzionano.
+Posta, assistente, rubrica, documenti funzionano. I workflow si disegnano, si
+descrivono a parole, passano i controlli di qualità e **si eseguono**: sandbox
+JavaScript, espressioni fra nodi, rami condizionali, chiamate HTTP reali, un
+nodo che fallisce che ferma il flusso. Il cron parte da solo.
 
-Manca l'esecuzione: i workflow si disegnano e si salvano, ma il runtime che li
-fa girare è il pezzo successivo. E l'editor non ha ancora tutto quello che ha
-quello originale — alcuni controlli specializzati e alcune scorciatoie sono da
-portare.
+Manca ancora: le versioni con ritorno indietro, la prova del singolo nodo, la
+riesecuzione di un'esecuzione passata, i nodi di comunità dal registry. E i
+webhook in ingresso, che sono l'unica cosa per cui serve un server — un computer
+dietro NAT non è raggiungibile dall'esterno, e quel pezzo resterà disattivato di
+default.
