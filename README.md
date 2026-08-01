@@ -90,7 +90,8 @@ Anagrafiche, articoli, listini e documenti quando servono.
 Una tab con un editor visuale di automazioni: si trascinano i nodi, si collegano,
 si configurano. **193 nodi** — trigger a orario, webhook, chiamate HTTP, database,
 email, agenti AI, integrazioni — presi dal catalogo di FlowForge, con le stesse
-icone e le stesse definizioni. E si **eseguono**: il motore di FlowForge viaggia
+icone e le stesse definizioni, più i pacchetti `.ffnode` che si installano da
+file. E si **eseguono**: il motore di FlowForge viaggia
 dentro l'app, con il suo Node e le sue dipendenze, e gira sul computer senza
 chiedere niente a nessun server.
 
@@ -351,22 +352,23 @@ e `cargo check` a ogni push.
 
 ## Stato
 
-|     |                                                                   |
-| --- | ----------------------------------------------------------------- |
-| 🟢  | Posta: account, sync, lettura, invio, ricerca full-text           |
-| 🟢  | Assistente con 63 strumenti, conferma sulle scritture, vision     |
-| 🟢  | BYOK con portachiavi, endpoint personale, abbonamento via MCP     |
-| 🟢  | Rubrica, anagrafiche, articoli, listini, documenti                |
-| 🟢  | Template email, promemoria con notifiche, DB Studio               |
-| 🟢  | Workflow: canvas, 193 nodi, generazione a parole, 21 controlli    |
-| 🟢  | Esecuzione locale: motore impacchettato, cron e trigger attivi    |
-| 🟢  | Segreti nel portachiavi, account di posta consegnati ai nodi      |
-| ⏳  | Editor workflow: versioni, prova del singolo nodo, riesecuzione   |
-| ⏳  | Nodi di comunità dal registry `.ffnode`                           |
-| ⏳  | Webhook in ingresso via relay (l'unica cosa che chiede un server) |
-| ⏳  | OAuth Google e Microsoft                                          |
-| ⏳  | Ricerca semantica con budget di memoria esplicito                 |
-| ⏳  | Android via Tauri Mobile                                          |
+|     |                                                                  |
+| --- | ---------------------------------------------------------------- |
+| 🟢  | Posta: account, sync, lettura, invio, ricerca full-text          |
+| 🟢  | Assistente con 63 strumenti, conferma sulle scritture, vision    |
+| 🟢  | BYOK con portachiavi, endpoint personale, abbonamento via MCP    |
+| 🟢  | Rubrica, anagrafiche, articoli, listini, documenti               |
+| 🟢  | Template email, promemoria con notifiche, DB Studio              |
+| 🟢  | Workflow: canvas, 193 nodi, generazione a parole, 21 controlli   |
+| 🟢  | Esecuzione locale: motore impacchettato, cron e trigger attivi   |
+| 🟢  | Segreti nel portachiavi, account di posta consegnati ai nodi     |
+| 🟢  | Versioni, prova del singolo nodo, riesecuzione, export ripulito  |
+| 🟢  | Nodi aggiuntivi `.ffnode` installati da file                     |
+| 🟢  | Webhook locali: un programma sulla macchina fa partire un flusso |
+| ⏳  | Relay per raggiungere il computer da internet (chiede un server) |
+| ⏳  | OAuth Google e Microsoft                                         |
+| ⏳  | Ricerca semantica con budget di memoria esplicito                |
+| ⏳  | Android via Tauri Mobile                                         |
 
 ---
 
