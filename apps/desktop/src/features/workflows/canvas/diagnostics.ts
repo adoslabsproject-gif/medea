@@ -41,6 +41,15 @@ export function diagnose(
 ): Diagnostics {
   const missingByNode = new Map<string, number>();
   const issuesByNode = new Map<string, string[]>();
+  /**
+   * I nodi che il catalogo non conosce.
+   *
+   * Vengono da un workflow importato che usa un pacchetto `.ffnode` non
+   * installato qui. Sono un problema **critico**, non un avviso: il motore
+   * non ha l'esecutore, e attivare il workflow lo stesso vuol dire scoprirlo
+   * alle tre di notte, quando il cron parte e fallisce.
+   */
+  const nonInstallati: QualityIssue[] = [];
 
   for (const node of nodes) {
     const missing = missingRequired(node, defsById.get(node.defId));
@@ -49,11 +58,15 @@ export function diagnose(
       issuesByNode.set(node.id, [`Campi obbligatori da compilare: ${missing.join(', ')}.`]);
     }
     if (!defsById.has(node.defId)) {
+      const messaggio = `Il nodo "${node.defId}" non è installato: il workflow non partirà.`;
       const existing = issuesByNode.get(node.id) ?? [];
-      issuesByNode.set(node.id, [
-        ...existing,
-        `Il nodo "${node.defId}" non è installato: il workflow non partirà.`,
-      ]);
+      issuesByNode.set(node.id, [...existing, messaggio]);
+      nonInstallati.push({
+        severity: 'critical',
+        code: 'NODE_NOT_INSTALLED',
+        nodeId: node.id,
+        message: messaggio,
+      });
     }
   }
 
@@ -68,8 +81,8 @@ export function diagnose(
   return {
     missingByNode,
     issuesByNode,
-    issues: quality.issues,
-    ok: !quality.shouldReject && !anyMissing,
+    issues: [...nonInstallati, ...quality.issues],
+    ok: !quality.shouldReject && !anyMissing && nonInstallati.length === 0,
   };
 }
 

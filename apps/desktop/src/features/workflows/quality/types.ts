@@ -38,7 +38,8 @@ export type QualityCode =
   | 'LOOKUP_WITHOUT_BRANCH'
   | 'TRIGGER_WITHOUT_ACTION'
   | 'AUDIT_NOT_TERMINAL'
-  | 'SENSITIVE_HARDCODED';
+  | 'SENSITIVE_HARDCODED'
+  | 'NODE_NOT_INSTALLED';
 
 export interface QualityIssue {
   severity: QualitySeverity;
