@@ -10,6 +10,8 @@
 
 import { useEffect, useState } from 'react';
 
+import { replayRun } from '../runtime';
+
 import { runsApi } from './api';
 import styles from './RunsModal.module.css';
 import { RunStepList } from './RunStepList';
@@ -25,13 +27,18 @@ import {
 interface Props {
   workflowId: number;
   workflowName: string;
+  /** L'identificativo con cui il runtime conosce questo workflow: senza,
+   *  non si può ripartire da un nodo — il runtime non saprebbe cosa. */
+  runtimeId?: string;
   onClose: () => void;
 }
 
-export function RunsModal({ workflowId, workflowName, onClose }: Props) {
+export function RunsModal({ workflowId, workflowName, runtimeId, onClose }: Props) {
   const [runs, setRuns] = useState<RunSummary[]>([]);
   const [selected, setSelected] = useState<RunRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const [replaying, setReplaying] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -56,6 +63,33 @@ export function RunsModal({ workflowId, workflowName, onClose }: Props) {
 
   async function openRun(id: string) {
     setSelected(await runsApi.get(id));
+  }
+
+  /**
+   * Riparte da un nodo riusando le uscite già registrate.
+   *
+   * Rifare i primi quattro nodi per capire perché fallisce il quinto è tempo
+   * buttato — e se uno di quelli manda una email, è anche una email in più a
+   * ogni tentativo.
+   */
+  function replay(fromNode: string) {
+    const run = selected;
+    if (!run || !runtimeId) return;
+    setReplaying(fromNode);
+    setNotice(null);
+    void replayRun({ runtimeWorkflowId: runtimeId, runId: run.id, fromNode })
+      .then(async (result) => {
+        setNotice(
+          `Ripartita da ${fromNode}: ${result.status}, ${String(result.reused)} ${result.reused === 1 ? 'passo riusato' : 'passi riusati'}.`,
+        );
+        setRuns(await runsApi.list(workflowId));
+      })
+      .catch((e: unknown) => {
+        setNotice(e instanceof Error ? e.message : String(e));
+      })
+      .finally(() => {
+        setReplaying(null);
+      });
   }
 
   useEffect(() => {
@@ -108,8 +142,8 @@ export function RunsModal({ workflowId, workflowName, onClose }: Props) {
               <p className={styles.empty}>Carico…</p>
             ) : runs.length === 0 ? (
               <p className={styles.empty}>
-                Questo workflow non è ancora stato eseguito. Lo storico si riempirà da solo quando
-                il motore di esecuzione sarà collegato.
+                Questo workflow non è ancora stato eseguito. Lo storico si riempie da solo, anche
+                per le esecuzioni che partono da un cron o da una casella in ascolto.
               </p>
             ) : (
               <ul className={styles.runs}>
@@ -138,8 +172,18 @@ export function RunsModal({ workflowId, workflowName, onClose }: Props) {
           </aside>
 
           <section className={styles.detail} aria-label="Dettaglio dell'esecuzione">
+            {notice && (
+              <p className={styles.notice} role="status">
+                {notice}
+              </p>
+            )}
             {selected ? (
-              <RunStepList run={selected} steps={parseSteps(selected)} />
+              <RunStepList
+                run={selected}
+                steps={parseSteps(selected)}
+                {...(runtimeId ? { onReplay: replay } : {})}
+                replaying={replaying}
+              />
             ) : (
               <p className={styles.empty}>Scegli un'esecuzione per vederne i passi.</p>
             )}

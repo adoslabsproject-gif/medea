@@ -21,9 +21,15 @@ import {
 interface Props {
   run: RunRecord;
   steps: RunStep[];
+  /** Riparte da questo nodo riusando quello che c'era prima. Assente quando
+   *  non è possibile: il motore spento, o un workflow che il runtime non
+   *  conosce ancora. */
+  onReplay?: (fromNode: string) => void;
+  /** Il nodo da cui si sta ripartendo in questo momento. */
+  replaying?: string | null;
 }
 
-export function RunStepList({ run, steps }: Props) {
+export function RunStepList({ run, steps, onReplay, replaying }: Props) {
   return (
     <>
       <header className={styles.head}>
@@ -44,7 +50,13 @@ export function RunStepList({ run, steps }: Props) {
       ) : (
         <ol className={styles.steps}>
           {steps.map((step, i) => (
-            <StepRow key={`${step.nodeId}-${String(i)}`} step={step} index={i + 1} />
+            <StepRow
+              key={`${step.nodeId}-${String(i)}`}
+              step={step}
+              index={i + 1}
+              {...(onReplay ? { onReplay } : {})}
+              busy={replaying === step.nodeId}
+            />
           ))}
         </ol>
       )}
@@ -52,7 +64,17 @@ export function RunStepList({ run, steps }: Props) {
   );
 }
 
-function StepRow({ step, index }: { step: RunStep; index: number }) {
+function StepRow({
+  step,
+  index,
+  onReplay,
+  busy = false,
+}: {
+  step: RunStep;
+  index: number;
+  onReplay?: (fromNode: string) => void;
+  busy?: boolean;
+}) {
   // Un passo fallito si apre da solo: è quello che si sta cercando.
   const [open, setOpen] = useState(step.status === 'error');
   const hasDetail = Boolean(step.error ?? step.output ?? step.input);
@@ -86,6 +108,20 @@ function StepRow({ step, index }: { step: RunStep; index: number }) {
           {step.input && <Block label="Ingresso" text={step.input} />}
           {step.output && <Block label="Uscita" text={step.output} />}
         </div>
+      )}
+
+      {onReplay && (
+        <button
+          type="button"
+          className={styles.replay}
+          disabled={busy}
+          title="Riparte da qui riusando le uscite dei nodi precedenti"
+          onClick={() => {
+            onReplay(step.nodeId);
+          }}
+        >
+          {busy ? 'Riparto…' : 'Riparti da qui'}
+        </button>
       )}
     </li>
   );

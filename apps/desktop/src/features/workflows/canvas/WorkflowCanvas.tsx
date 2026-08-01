@@ -49,9 +49,11 @@ interface Props {
   onChange: (wf: Workflow) => void;
   /** L'esito per nodo dell'esecuzione in corso o appena finita. */
   runByNode?: ReadonlyMap<string, { status: string; durationMs?: number }>;
+  /** Vero quando il motore è in piedi: abilita la prova del singolo nodo. */
+  runtimeReady?: boolean;
 }
 
-export function WorkflowCanvas({ workflow, onChange, runByNode }: Props) {
+export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = false }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   /** Il collegamento su cui si sta inserendo un nodo, se l'utente ha
    *  premuto il «+». La palette cambia modo finché non sceglie. */
@@ -265,6 +267,7 @@ export function WorkflowCanvas({ workflow, onChange, runByNode }: Props) {
             onRename={(label) => {
               patchNodes(workflow.nodes.map((n) => (n.id === selected.id ? { ...n, label } : n)));
             }}
+            runtimeReady={runtimeReady}
             onDelete={() => {
               removeNode(selected.id);
             }}
