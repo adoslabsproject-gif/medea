@@ -42,3 +42,8 @@ export { evaluateShowIf } from './show-if';
 export type { ShowIfRule } from './show-if';
 export { SwitchCasesBuilder } from './SwitchCasesBuilder';
 export { TimezonePicker } from './TimezonePicker';
+
+/* `RichTextEditor` e lo schema NON stanno qui di proposito: si arriva
+   all'editor ricco solo per import dinamico (vedi `ConfigFieldRenderer`).
+   Esportarlo dal barrel lo riporterebbe nel bundle d'avvio — ProseMirror
+   compreso — e il caricamento pigro non servirebbe più a niente. */
