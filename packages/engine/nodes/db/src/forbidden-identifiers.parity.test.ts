@@ -1,7 +1,7 @@
 /**
  * PARITY GUARD anti-drift — il guard del sandbox `new Function` di
  * `db_insert_batch.childRowsExpression` (DB_FORBIDDEN_IDENTIFIERS) è una COPIA
- * di quello canonico in `apps/flowforge-runtime/src/engine/interpreter.ts`
+ * di quello canonico in `apps/engine/src/engine/interpreter.ts`
  * (FORBIDDEN_IDENTIFIERS). Le copie DERIVANO: il 2026-06-20 la copia db si era
  * persa `Proxy`/`Reflect`/`WeakRef` (aggiunti all'interpreter) → childRowsExpression
  * era l'anello debole (sandbox-escape via Reflect/Proxy).
@@ -9,7 +9,7 @@
  * Questo test ASSERISCE che la copia db sia un SUPERSET dell'originale: se
  * qualcuno aggiunge un identifier vietato all'interpreter ma NON a db, qui
  * diventa ROSSO. (Finché le due liste non sono promosse a un pacchetto condiviso
- * `@flowforge/expression-guard`, questa è la rete che impedisce la divergenza.)
+ * `@medea/engine-expression-guard`, questa è la rete che impedisce la divergenza.)
  *
  * @module forbidden-identifiers.parity
  */
@@ -21,7 +21,7 @@ import { dirname, join } from 'node:path';
 const here = dirname(fileURLToPath(import.meta.url));
 const dbIndex = readFileSync(join(here, 'index.ts'), 'utf8');
 const interpreter = readFileSync(
-  join(here, '..', '..', '..', '..', '..', 'apps', 'flowforge-runtime', 'src', 'engine', 'interpreter.ts'),
+  join(here, '..', '..', '..', '..', '..', 'apps', 'engine', 'src', 'engine', 'interpreter.ts'),
   'utf8',
 );
 

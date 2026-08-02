@@ -10,8 +10,8 @@
  * questo test si rompe SUBITO — invece di lasciare due tenant in produzione a
  * parlarsi nel vuoto con 401.
  *
- * Pinna anche: i 4 punti di registrazione del nodo, il contratto
- * def.configFields ↔ chiavi lette dall'executor, il catalog generato.
+ * Pinna anche: i 3 punti di registrazione del nodo e il contratto
+ * def.configFields ↔ chiavi lette dall'executor.
  *
  * @vitest-environment node
  */
@@ -39,8 +39,8 @@ import {
   COLLAB_TIMESTAMP_HEADER,
   signCollabPayload,
 } from './tenant-collab-protocol.js';
-import { tenantCollabNode } from '@flowforge/nodes-stdlib';
-import type { CanvasNode } from '@flowforge/core-schema';
+import { tenantCollabNode } from '@medea/engine-nodes-stdlib';
+import type { CanvasNode } from '@medea/engine-core-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const read = (rel: string): string => readFileSync(join(__dirname, rel), 'utf-8');
@@ -127,11 +127,11 @@ describe('handshake REALE mittente → authorize() ricevente', () => {
   });
 });
 
-describe('contratto def ↔ executor ↔ registrazione (4 punti) ↔ catalog', () => {
+describe('contratto def ↔ executor ↔ registrazione (3 punti)', () => {
   const executorSrc = read('./tenant-collab.ts');
   const runtimeRegistrySrc = read('./registry.ts');
-  const stdlibRegistrySrc = read('../../../../packages/flowforge/nodes/stdlib/src/registry.ts');
-  const stdlibIndexSrc = read('../../../../packages/flowforge/nodes/stdlib/src/index.ts');
+  const stdlibRegistrySrc = read('../../../../packages/engine/nodes/stdlib/src/registry.ts');
+  const stdlibIndexSrc = read('../../../../packages/engine/nodes/stdlib/src/index.ts');
 
   it('ogni configField del def è letto dall\'executor (cfg.<key>) — zero campi fantasma', () => {
     const keys = (tenantCollabNode.def.configFields ?? []).map((f) => f.key);
@@ -151,15 +151,10 @@ describe('contratto def ↔ executor ↔ registrazione (4 punti) ↔ catalog', (
     expect(stdlibIndexSrc).toMatch(/export \{ tenantCollabNode \} from '\.\/actions\/tenant-collab\.js'/);
   });
 
-  it('punto 4 — il catalog generato del portal include il nodo (categoria integrations) + EN override', () => {
-    const generated = read('../../../portal/src/data/node-defs.generated.json');
-    const parsed = JSON.parse(generated) as { nodes: { id: string; category: string }[] };
-    const entry = parsed.nodes.find((n) => n.id === 'action_tenant_collab');
-    expect(entry, 'action_tenant_collab assente da node-defs.generated.json — rilancia sync-node-defs.mjs').toBeTruthy();
-    expect(entry!.category).toBe('integrations');
-    const enCatalog = read('../../../portal/src/data/node-catalog.en.ts');
-    expect(enCatalog).toContain('action_tenant_collab');
-  });
+  // Il quarto punto di registrazione — il catalog generato del portal web —
+  // qui non esiste: Medea non ha un portal, il catalogo dei nodi lo costruisce
+  // il desktop da `features/workflows/catalog/`. Il controllo è stato tolto il
+  // 2026-08-02 insieme agli altri riferimenti al monorepo di provenienza.
 
   it('la description del def DOCUMENTA la config del ricevente (help in-workspace auto)', () => {
     const desc = tenantCollabNode.def.description;

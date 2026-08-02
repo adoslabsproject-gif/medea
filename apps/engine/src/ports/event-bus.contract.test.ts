@@ -31,12 +31,23 @@ function eventNames(): string[] {
   return [...m![1]!.matchAll(/'([^']+)'/g)].map((x) => x[1]!);
 }
 
-// Eventi con un CONSUMER reale (verificato sotto contro i file consumer).
-// Forma forte: questo set DEVE coincidere con l'intera union — nessun orfano.
+// Gli eventi che il motore dichiara di emettere. Forma forte: questo set DEVE
+// coincidere con l'intera union — un evento nella union e non qui è un evento
+// che nessuno ha mai cablato.
 const CONSUMED = new Set<string>([
   'run.started', 'run.step', 'run.step.log', 'run.completed', 'run.errored',
   'run.deleted', 'run.paused', 'run.resumed', 'run.cancelled',
   'workflow.created', 'workflow.updated', 'workflow.deleted',
+]);
+
+// Di quegli eventi, quelli che l'interfaccia di Medea ascolta davvero oggi.
+//
+// Gli altri il motore li emette lo stesso: li consumava l'editor web da cui il
+// motore deriva, e in Medea non hanno ancora un ascoltatore. Non è un guasto —
+// è il conto esatto di quanto della superficie del motore l'app usa per ora.
+// Se un listener sparisce, il test qui sotto se ne accorge.
+const CONSUMED_BY_DESKTOP = new Set<string>([
+  'run.started', 'run.completed', 'run.errored', 'run.paused', 'run.cancelled',
 ]);
 
 describe('event-bus — ZERO eventi orfani (forma forte)', () => {
@@ -57,13 +68,21 @@ describe('event-bus — ZERO eventi orfani (forma forte)', () => {
     expect(stale, `CONSUMED stantii (rimossi dalla union): ${stale.join(', ')}`).toEqual([]);
   });
 
-  it('🔒 ogni evento CONSUMED è DAVVERO referenziato in un file consumer (no commento-fake)', () => {
-    // I due consumer SSE reali del client.
+  it('🔒 gli eventi che il desktop dichiara di ascoltare hanno DAVVERO un listener', () => {
+    // I consumer SSE reali: quelli di Medea, sotto `features/workflows/runtime`.
+    // Prima del 2026-08-02 questa lettura puntava alle viste dell'editor web di
+    // provenienza, che in questo repository non esistono.
     const consumers =
-      read('../../../flowforge-editor/src/views/dashboard/useDashboardStream.ts') +
-      read('../../../flowforge-editor/src/views/welcome/WorkflowRunDrawer.tsx');
-    const missing = [...CONSUMED].filter((ev) => !consumers.includes(`'${ev}'`));
-    expect(missing, `marcati CONSUMED ma nessun listener trovato: ${missing.join(', ')}`).toEqual([]);
+      read('../../../desktop/src/features/workflows/runtime/sse.ts') +
+      read('../../../desktop/src/features/workflows/runtime/watcher.ts') +
+      read('../../../desktop/src/features/workflows/runtime/run-mapping.ts');
+    const missing = [...CONSUMED_BY_DESKTOP].filter((ev) => !consumers.includes(`'${ev}'`));
+    expect(missing, `dichiarati ascoltati ma nessun listener trovato: ${missing.join(', ')}`).toEqual([]);
+  });
+
+  it('gli eventi ascoltati dal desktop appartengono tutti alla union', () => {
+    const unknown = [...CONSUMED_BY_DESKTOP].filter((ev) => !names.includes(ev));
+    expect(unknown, `ascoltati ma non più emessi: ${unknown.join(', ')}`).toEqual([]);
   });
 
   it('🔒 nessun evento orfano storico (janitor.*/loop.*/iteration.*) è rientrato nella union', () => {
