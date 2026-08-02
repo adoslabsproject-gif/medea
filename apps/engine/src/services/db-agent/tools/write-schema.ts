@@ -23,8 +23,16 @@ const NAME = /^[a-z_][a-z0-9_]*$/;
 // Gli esterni con credenziali NON sono qui di proposito: il modello non inventa
 // host/password — quelli passano dal form UI.
 const CREATABLE_ENGINES = [
-  'sqlite', 'duckdb', 'vector-embedded', // embedded
-  'postgres', 'pgvector', 'mysql', 'mssql', 'mongodb', 'redis', 'qdrant', // managed
+  'sqlite',
+  'duckdb',
+  'vector-embedded', // embedded
+  'postgres',
+  'pgvector',
+  'mysql',
+  'mssql',
+  'mongodb',
+  'redis',
+  'qdrant', // managed
 ] as const;
 
 const CreateDatabaseSchema = z
@@ -40,14 +48,18 @@ const CreateDatabaseSchema = z
 
 const createDatabaseTool: DbAgentToolDef = {
   name: 'create_database',
-  description: 'Crea un database nel workspace. engine: sqlite (default, embedded zero-config), duckdb, vector-embedded, oppure managed (postgres/pgvector/mysql/mssql/mongodb/redis/qdrant) con managed=true (installa un sidecar nel tenant, richiede il consenso scritture).',
+  description:
+    'Crea un database nel workspace. engine: sqlite (default, embedded zero-config), duckdb, vector-embedded, oppure managed (postgres/pgvector/mysql/mssql/mongodb/redis/qdrant) con managed=true (installa un sidecar nel tenant, richiede il consenso scritture).',
   parameters: {
     type: 'object',
     properties: {
       name: { type: 'string', description: 'snake_case, max 63 char' },
       description: { type: 'string' },
       engine: { type: 'string', enum: [...CREATABLE_ENGINES], description: 'default sqlite' },
-      managed: { type: 'boolean', description: 'true = installa il server DB nel tenant (postgres/mongodb/…)' },
+      managed: {
+        type: 'boolean',
+        description: 'true = installa il server DB nel tenant (postgres/mongodb/…)',
+      },
     },
     required: ['name'],
     additionalProperties: false,
@@ -60,7 +72,9 @@ const createDatabaseTool: DbAgentToolDef = {
     // Gate human-in-the-loop: installare un container DB alloca risorse/quota →
     // come le scritture, va abilitato esplicitamente dall'utente (mai dall'LLM).
     if (managed && !ctx.allowWrites) {
-      throw new ConfirmationRequiredError(`Installare un database "${engine}" nel tenant consuma quota e crea un container: abilita "Consenti modifiche" per procedere.`);
+      throw new ConfirmationRequiredError(
+        `Installare un database "${engine}" nel tenant consuma quota e crea un container: abilita "Consenti modifiche" per procedere.`,
+      );
     }
     try {
       const created = await createTenantDatabase({
@@ -92,13 +106,18 @@ const CreateTableSchema = z
 
 const createTableTool: DbAgentToolDef = {
   name: 'create_table',
-  description: 'Crea una tabella in un database del workspace. columns: [{name, type, constraints?}].',
+  description:
+    'Crea una tabella in un database del workspace. columns: [{name, type, constraints?}].',
   parameters: {
     type: 'object',
     properties: {
       databaseId: { type: 'string' },
       name: { type: 'string', description: 'snake_case' },
-      columns: { type: 'array', items: { type: 'object' }, description: '[{name,type,constraints?}]' },
+      columns: {
+        type: 'array',
+        items: { type: 'object' },
+        description: '[{name,type,constraints?}]',
+      },
     },
     required: ['databaseId', 'name', 'columns'],
     additionalProperties: false,
@@ -113,7 +132,11 @@ const createTableTool: DbAgentToolDef = {
       columns: a.columns.map((col) => buildColumn(a.name, col)),
       indexes: [],
     };
-    await ctx.dbStudio.applyMigration(a.databaseId, [{ kind: 'create_table', table }], ctx.tenantId);
+    await ctx.dbStudio.applyMigration(
+      a.databaseId,
+      [{ kind: 'create_table', table }],
+      ctx.tenantId,
+    );
     return { created: a.name, columns: table.columns.length };
   },
 };
@@ -127,7 +150,11 @@ const addColumnTool: DbAgentToolDef = {
   description: 'Aggiunge una colonna a una tabella esistente. column: {name, type, constraints?}.',
   parameters: {
     type: 'object',
-    properties: { databaseId: { type: 'string' }, table: { type: 'string' }, column: { type: 'object' } },
+    properties: {
+      databaseId: { type: 'string' },
+      table: { type: 'string' },
+      column: { type: 'object' },
+    },
     required: ['databaseId', 'table', 'column'],
     additionalProperties: false,
   },
@@ -135,14 +162,23 @@ const addColumnTool: DbAgentToolDef = {
   handler: async (ctx, args) => {
     const a = args as z.infer<typeof AddColumnSchema>;
     loadOwnedDatabase(ctx, a.databaseId);
-    const action: MigrationAction = { kind: 'add_column', tableName: a.table, column: buildColumn(a.table, a.column) };
+    const action: MigrationAction = {
+      kind: 'add_column',
+      tableName: a.table,
+      column: buildColumn(a.table, a.column),
+    };
     await ctx.dbStudio.applyMigration(a.databaseId, [action], ctx.tenantId);
     return { added: `${a.table}.${a.column.name}` };
   },
 };
 
 const DropColumnSchema = z
-  .object({ databaseId: z.string().min(1), table: z.string().min(1), columnName: z.string().min(1), confirm: z.boolean() })
+  .object({
+    databaseId: z.string().min(1),
+    table: z.string().min(1),
+    columnName: z.string().min(1),
+    confirm: z.boolean(),
+  })
   .strict();
 
 const dropColumnTool: DbAgentToolDef = {
@@ -164,21 +200,32 @@ const dropColumnTool: DbAgentToolDef = {
   handler: async (ctx, args) => {
     const a = args as z.infer<typeof DropColumnSchema>;
     if (!a.confirm) {
-      throw new ConfirmationRequiredError(`drop_column è distruttivo: passa confirm=true per rimuovere "${a.table}.${a.columnName}".`);
+      throw new ConfirmationRequiredError(
+        `drop_column è distruttivo: passa confirm=true per rimuovere "${a.table}.${a.columnName}".`,
+      );
     }
     loadOwnedDatabase(ctx, a.databaseId);
-    await ctx.dbStudio.applyMigration(a.databaseId, [{ kind: 'drop_column', tableName: a.table, columnName: a.columnName }], ctx.tenantId);
+    await ctx.dbStudio.applyMigration(
+      a.databaseId,
+      [{ kind: 'drop_column', tableName: a.table, columnName: a.columnName }],
+      ctx.tenantId,
+    );
     return { dropped: `${a.table}.${a.columnName}` };
   },
 };
 
 const DropTableSchema = z
-  .object({ databaseId: z.string().min(1), tableName: z.string().min(1), confirmTableName: z.string().min(1) })
+  .object({
+    databaseId: z.string().min(1),
+    tableName: z.string().min(1),
+    confirmTableName: z.string().min(1),
+  })
   .strict();
 
 const dropTableTool: DbAgentToolDef = {
   name: 'drop_table',
-  description: 'Elimina una tabella (DISTRUTTIVO). confirmTableName deve combaciare ESATTAMENTE con tableName.',
+  description:
+    'Elimina una tabella (DISTRUTTIVO). confirmTableName deve combaciare ESATTAMENTE con tableName.',
   parameters: {
     type: 'object',
     properties: {
@@ -194,10 +241,16 @@ const dropTableTool: DbAgentToolDef = {
   handler: async (ctx, args) => {
     const a = args as z.infer<typeof DropTableSchema>;
     if (a.confirmTableName !== a.tableName) {
-      throw new ConfirmationRequiredError(`drop_table è distruttivo: passa confirmTableName="${a.tableName}" per confermare.`);
+      throw new ConfirmationRequiredError(
+        `drop_table è distruttivo: passa confirmTableName="${a.tableName}" per confermare.`,
+      );
     }
     loadOwnedDatabase(ctx, a.databaseId);
-    await ctx.dbStudio.applyMigration(a.databaseId, [{ kind: 'drop_table', tableName: a.tableName }], ctx.tenantId);
+    await ctx.dbStudio.applyMigration(
+      a.databaseId,
+      [{ kind: 'drop_table', tableName: a.tableName }],
+      ctx.tenantId,
+    );
     return { dropped: a.tableName };
   },
 };
@@ -233,7 +286,18 @@ const addIndexTool: DbAgentToolDef = {
     loadOwnedDatabase(ctx, a.databaseId);
     await ctx.dbStudio.applyMigration(
       a.databaseId,
-      [{ kind: 'add_index', tableName: a.table, index: { id: a.indexName, name: a.indexName, columns: a.columns, unique: a.unique ?? false } }],
+      [
+        {
+          kind: 'add_index',
+          tableName: a.table,
+          index: {
+            id: a.indexName,
+            name: a.indexName,
+            columns: a.columns,
+            unique: a.unique ?? false,
+          },
+        },
+      ],
       ctx.tenantId,
     );
     return { created: a.indexName, on: `${a.table}(${a.columns.join(', ')})` };

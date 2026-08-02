@@ -152,23 +152,33 @@ export async function parsePackage(buffer: Buffer): Promise<ExtractedPackage> {
   if (!files['executor.js']) throw new Error('Package invalido: executor.js mancante');
 
   let manifestRaw: unknown;
-  try { manifestRaw = JSON.parse(files['manifest.json'].toString('utf8')); }
-  catch (err) { throw new Error(`manifest.json non è JSON valido: ${(err as Error).message}`); }
+  try {
+    manifestRaw = JSON.parse(files['manifest.json'].toString('utf8'));
+  } catch (err) {
+    throw new Error(`manifest.json non è JSON valido: ${(err as Error).message}`);
+  }
   const manifest = ManifestSchema.parse(manifestRaw);
 
   let defRaw: unknown;
-  try { defRaw = JSON.parse(files['nodedef.json'].toString('utf8')); }
-  catch (err) { throw new Error(`nodedef.json non è JSON valido: ${(err as Error).message}`); }
+  try {
+    defRaw = JSON.parse(files['nodedef.json'].toString('utf8'));
+  } catch (err) {
+    throw new Error(`nodedef.json non è JSON valido: ${(err as Error).message}`);
+  }
   const def = NodeDefSchema.parse(defRaw);
 
   if (def.vendor !== manifest.vendor) {
-    throw new Error(`vendor mismatch: nodedef.vendor="${def.vendor ?? ''}" != manifest.vendor="${manifest.vendor}"`);
+    throw new Error(
+      `vendor mismatch: nodedef.vendor="${def.vendor ?? ''}" != manifest.vendor="${manifest.vendor}"`,
+    );
   }
   if (def.id !== manifest.id) {
     throw new Error(`id mismatch: nodedef.id="${def.id}" != manifest.id="${manifest.id}"`);
   }
   if (def.version !== manifest.version) {
-    throw new Error(`version mismatch: nodedef.version="${def.version ?? ''}" != manifest.version="${manifest.version}"`);
+    throw new Error(
+      `version mismatch: nodedef.version="${def.version ?? ''}" != manifest.version="${manifest.version}"`,
+    );
   }
 
   const out: ExtractedPackage = {
@@ -241,7 +251,9 @@ export async function installFromBuffer(
       throw new Error('Firma manifest non valida — pacchetto rifiutato');
     }
     if (options?.requireSignature) {
-      throw new Error('Pacchetto NON firmato — rifiutato su questo canale di install (richiesta firma del publisher)');
+      throw new Error(
+        'Pacchetto NON firmato — rifiutato su questo canale di install (richiesta firma del publisher)',
+      );
     }
   }
   const dir = join(dataDir(), pkg.manifest.vendor, pkg.manifest.id, `v${pkg.manifest.version}`);
@@ -264,7 +276,10 @@ export async function installFromBuffer(
   };
   installedNodes.set(packageKey(pkg.manifest.vendor, pkg.manifest.id), installed);
   installedByDefId.set(pkg.def.id, installed);
-  logger.info({ vendor: pkg.manifest.vendor, id: pkg.manifest.id, version: pkg.manifest.version, verified }, 'Community node installed');
+  logger.info(
+    { vendor: pkg.manifest.vendor, id: pkg.manifest.id, version: pkg.manifest.version, verified },
+    'Community node installed',
+  );
   return installed;
 }
 
@@ -347,7 +362,9 @@ export async function loadInstalledFromDisk(): Promise<number> {
       if (!id.isDirectory()) continue;
       const idDir = join(vendorDir, id.name);
       const versions = await readdir(idDir, { withFileTypes: true });
-      const versionDirs = versions.filter((v) => v.isDirectory() && v.name.startsWith('v')).map((v) => v.name);
+      const versionDirs = versions
+        .filter((v) => v.isDirectory() && v.name.startsWith('v'))
+        .map((v) => v.name);
       if (versionDirs.length === 0) continue;
       // Pick highest semver.
       const sorted = versionDirs.sort((a, b) => compareSemver(b.slice(1), a.slice(1)));
@@ -360,8 +377,12 @@ export async function loadInstalledFromDisk(): Promise<number> {
         ]);
         const manifest = ManifestSchema.parse(JSON.parse(m));
         const def = NodeDefSchema.parse(JSON.parse(d));
-        const iconSvg = await readFile(join(activeVersionDir, 'icon.svg'), 'utf8').catch(() => undefined);
-        const readmeMd = await readFile(join(activeVersionDir, 'README.md'), 'utf8').catch(() => undefined);
+        const iconSvg = await readFile(join(activeVersionDir, 'icon.svg'), 'utf8').catch(
+          () => undefined,
+        );
+        const readmeMd = await readFile(join(activeVersionDir, 'README.md'), 'utf8').catch(
+          () => undefined,
+        );
         const verified = verifyManifestSignature({ manifest, def, executorSource: e });
         const entry: InstalledNode = {
           manifest,

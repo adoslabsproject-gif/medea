@@ -28,7 +28,13 @@ describe('action_hls_probe', () => {
 720p.m3u8
 #EXT-X-STREAM-INF:BANDWIDTH=3500000,RESOLUTION=1920x1080,CODECS="avc1.640028,mp4a.40.2"
 1080p.m3u8`;
-    global.fetch = vi.fn(async () => new Response(master, { status: 200, headers: { 'content-type': 'application/vnd.apple.mpegurl' } }));
+    global.fetch = vi.fn(
+      async () =>
+        new Response(master, {
+          status: 200,
+          headers: { 'content-type': 'application/vnd.apple.mpegurl' },
+        }),
+    );
     const r = await hlsProbeNode.executor!({ url: 'https://cdn.x/master.m3u8' }, null, CTX);
     const out = r.output as { type: string; variants: { bandwidth: number; resolution: string }[] };
     expect(out.type).toBe('master');
@@ -49,7 +55,13 @@ segment1.ts
 #EXT-X-ENDLIST`;
     global.fetch = vi.fn(async () => new Response(media, { status: 200 }));
     const r = await hlsProbeNode.executor!({ url: 'https://cdn.x/media.m3u8' }, null, CTX);
-    const out = r.output as { type: string; segments: { duration: number }[]; totalDuration: number; targetDuration: number; endlist: boolean };
+    const out = r.output as {
+      type: string;
+      segments: { duration: number }[];
+      totalDuration: number;
+      targetDuration: number;
+      endlist: boolean;
+    };
     expect(out.type).toBe('media');
     expect(out.segments.length).toBe(2);
     expect(out.totalDuration).toBe(20);
@@ -59,8 +71,9 @@ segment1.ts
 
   it('non-m3u8 → throw "Not a valid HLS"', async () => {
     global.fetch = vi.fn(async () => new Response('<html>not hls</html>', { status: 200 }));
-    await expect(hlsProbeNode.executor!({ url: 'https://x.io/page.html' }, null, CTX))
-      .rejects.toThrow(/Not a valid HLS/);
+    await expect(
+      hlsProbeNode.executor!({ url: 'https://x.io/page.html' }, null, CTX),
+    ).rejects.toThrow(/Not a valid HLS/);
   });
 });
 
@@ -82,9 +95,16 @@ describe('action_dash_probe', () => {
     </AdaptationSet>
   </Period>
 </MPD>`;
-    global.fetch = vi.fn(async () => new Response(mpd, { status: 200, headers: { 'content-type': 'application/dash+xml' } }));
+    global.fetch = vi.fn(
+      async () =>
+        new Response(mpd, { status: 200, headers: { 'content-type': 'application/dash+xml' } }),
+    );
     const r = await dashProbeNode.executor!({ url: 'https://cdn.x/movie.mpd' }, null, CTX);
-    const out = r.output as { type: string; totalDurationSec: number; counts: { videoSets: number; audioSets: number; totalRepresentations: number } };
+    const out = r.output as {
+      type: string;
+      totalDurationSec: number;
+      counts: { videoSets: number; audioSets: number; totalRepresentations: number };
+    };
     expect(out.type).toBe('static');
     expect(out.totalDurationSec).toBe(5400); // 1h30m
     expect(out.counts.videoSets).toBe(1);
@@ -95,31 +115,61 @@ describe('action_dash_probe', () => {
 
 describe('action_video_metadata', () => {
   it('throw se endpoint mancante', async () => {
-    await expect(videoMetadataNode.executor!({ url: 'https://x.mp4' }, null, CTX))
-      .rejects.toThrow(/ffprobe endpoint not configured/);
+    await expect(videoMetadataNode.executor!({ url: 'https://x.mp4' }, null, CTX)).rejects.toThrow(
+      /ffprobe endpoint not configured/,
+    );
   });
 
   it('throw se url+dataBase64 entrambi vuoti', async () => {
     process.env.MEDEA_FFPROBE_ENDPOINT = 'http://ffp.local:8080';
-    await expect(videoMetadataNode.executor!({}, null, CTX))
-      .rejects.toThrow(/url or dataBase64 required/);
+    await expect(videoMetadataNode.executor!({}, null, CTX)).rejects.toThrow(
+      /url or dataBase64 required/,
+    );
   });
 
   it('happy path: estrai convenience fields da ffprobe response', async () => {
-    global.fetch = vi.fn(async () => new Response(JSON.stringify({
-      format: { duration: '60.5', bit_rate: '5000000', format_name: 'mov,mp4,m4a', size: '37000000' },
-      streams: [
-        { codec_type: 'video', codec_name: 'h264', width: 1920, height: 1080, r_frame_rate: '25/1' },
-        { codec_type: 'audio', codec_name: 'aac', tags: { language: 'ita' } },
-        { codec_type: 'audio', codec_name: 'aac', tags: { language: 'eng' } },
-        { codec_type: 'subtitle', tags: { language: 'ita' } },
-      ],
-    }), { status: 200 }));
-    const r = await videoMetadataNode.executor!({
-      endpoint: 'http://ffp.local:8080',
-      url: 'https://x.mp4',
-    }, null, CTX);
-    const out = r.output as { duration: number; videoCodec: string; videoWidth: number; audioTracks: number; audioLanguages: string[]; subtitleTracks: number };
+    global.fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            format: {
+              duration: '60.5',
+              bit_rate: '5000000',
+              format_name: 'mov,mp4,m4a',
+              size: '37000000',
+            },
+            streams: [
+              {
+                codec_type: 'video',
+                codec_name: 'h264',
+                width: 1920,
+                height: 1080,
+                r_frame_rate: '25/1',
+              },
+              { codec_type: 'audio', codec_name: 'aac', tags: { language: 'ita' } },
+              { codec_type: 'audio', codec_name: 'aac', tags: { language: 'eng' } },
+              { codec_type: 'subtitle', tags: { language: 'ita' } },
+            ],
+          }),
+          { status: 200 },
+        ),
+    );
+    const r = await videoMetadataNode.executor!(
+      {
+        endpoint: 'http://ffp.local:8080',
+        url: 'https://x.mp4',
+      },
+      null,
+      CTX,
+    );
+    const out = r.output as {
+      duration: number;
+      videoCodec: string;
+      videoWidth: number;
+      audioTracks: number;
+      audioLanguages: string[];
+      subtitleTracks: number;
+    };
     expect(out.duration).toBe(60.5);
     expect(out.videoCodec).toBe('h264');
     expect(out.videoWidth).toBe(1920);
@@ -156,9 +206,17 @@ describe('trigger_rss_feed', () => {
     </item>
   </channel>
 </rss>`;
-    global.fetch = vi.fn(async () => new Response(rss, { status: 200, headers: { 'content-type': 'application/rss+xml' } }));
+    global.fetch = vi.fn(
+      async () =>
+        new Response(rss, { status: 200, headers: { 'content-type': 'application/rss+xml' } }),
+    );
     const r = await rssFeedTriggerNode.executor!({ url: 'https://blog.io/feed.xml' }, null, CTX);
-    const out = r.output as { format: string; feedTitle: string; itemsCount: number; items: { title: string; publishedAt: string }[] };
+    const out = r.output as {
+      format: string;
+      feedTitle: string;
+      itemsCount: number;
+      items: { title: string; publishedAt: string }[];
+    };
     expect(out.format).toBe('rss');
     expect(out.feedTitle).toBe('My Blog');
     expect(out.itemsCount).toBe(2);
@@ -179,9 +237,16 @@ describe('trigger_rss_feed', () => {
     <author><name>Anna</name></author>
   </entry>
 </feed>`;
-    global.fetch = vi.fn(async () => new Response(atom, { status: 200, headers: { 'content-type': 'application/atom+xml' } }));
+    global.fetch = vi.fn(
+      async () =>
+        new Response(atom, { status: 200, headers: { 'content-type': 'application/atom+xml' } }),
+    );
     const r = await rssFeedTriggerNode.executor!({ url: 'https://atom.io/feed' }, null, CTX);
-    const out = r.output as { format: string; itemsCount: number; items: { title: string; link: string }[] };
+    const out = r.output as {
+      format: string;
+      itemsCount: number;
+      items: { title: string; link: string }[];
+    };
     expect(out.format).toBe('atom');
     expect(out.itemsCount).toBe(1);
     expect(out.items[0]!.link).toBe('https://atom.io/e1');
@@ -194,10 +259,14 @@ describe('trigger_rss_feed', () => {
   <item><guid>2</guid><title>New</title><link>/n</link><pubDate>Wed, 30 May 2026 00:00:00 GMT</pubDate></item>
 </channel></rss>`;
     global.fetch = vi.fn(async () => new Response(rss, { status: 200 }));
-    const r = await rssFeedTriggerNode.executor!({
-      url: 'https://blog.io/feed.xml',
-      sinceIso: '2026-05-15T00:00:00Z',
-    }, null, CTX);
+    const r = await rssFeedTriggerNode.executor!(
+      {
+        url: 'https://blog.io/feed.xml',
+        sinceIso: '2026-05-15T00:00:00Z',
+      },
+      null,
+      CTX,
+    );
     const out = r.output as { itemsCount: number; items: { title: string }[] };
     expect(out.itemsCount).toBe(1);
     expect(out.items[0]!.title).toBe('New');
@@ -215,9 +284,16 @@ describe('action_sitemap_crawler', () => {
   <url><loc>https://x.io/p1</loc><lastmod>2026-05-01</lastmod></url>
   <url><loc>https://x.io/p2</loc><lastmod>2026-05-30</lastmod></url>
 </urlset>`;
-    global.fetch = vi.fn(async () => new Response(xml, { status: 200, headers: { 'content-type': 'application/xml' } }));
+    global.fetch = vi.fn(
+      async () =>
+        new Response(xml, { status: 200, headers: { 'content-type': 'application/xml' } }),
+    );
     const r = await sitemapCrawlerNode.executor!({ url: 'https://x.io/sitemap.xml' }, null, CTX);
-    const out = r.output as { totalUrlsInSitemap: number; filteredCount: number; urls: { loc: string }[] };
+    const out = r.output as {
+      totalUrlsInSitemap: number;
+      filteredCount: number;
+      urls: { loc: string }[];
+    };
     expect(out.totalUrlsInSitemap).toBe(2);
     expect(out.filteredCount).toBe(2);
     expect(out.urls[0]!.loc).toBe('https://x.io/p1');
@@ -231,10 +307,14 @@ describe('action_sitemap_crawler', () => {
   <url><loc>https://x.io/blog/post2</loc></url>
 </urlset>`;
     global.fetch = vi.fn(async () => new Response(xml, { status: 200 }));
-    const r = await sitemapCrawlerNode.executor!({
-      url: 'https://x.io/sitemap.xml',
-      includeRegex: '/blog/',
-    }, null, CTX);
+    const r = await sitemapCrawlerNode.executor!(
+      {
+        url: 'https://x.io/sitemap.xml',
+        includeRegex: '/blog/',
+      },
+      null,
+      CTX,
+    );
     const out = r.output as { filteredCount: number; urls: { loc: string }[] };
     expect(out.filteredCount).toBe(2);
     expect(out.urls.every((u) => u.loc.includes('/blog/'))).toBe(true);
@@ -247,10 +327,14 @@ describe('action_sitemap_crawler', () => {
   <url><loc>https://x.io/new</loc><lastmod>2026-05-30</lastmod></url>
 </urlset>`;
     global.fetch = vi.fn(async () => new Response(xml, { status: 200 }));
-    const r = await sitemapCrawlerNode.executor!({
-      url: 'https://x.io/sitemap.xml',
-      lastmodSinceIso: '2026-05-01',
-    }, null, CTX);
+    const r = await sitemapCrawlerNode.executor!(
+      {
+        url: 'https://x.io/sitemap.xml',
+        lastmodSinceIso: '2026-05-01',
+      },
+      null,
+      CTX,
+    );
     const out = r.output as { filteredCount: number; urls: { loc: string }[] };
     expect(out.filteredCount).toBe(1);
     expect(out.urls[0]!.loc).toBe('https://x.io/new');
@@ -258,7 +342,13 @@ describe('action_sitemap_crawler', () => {
 });
 
 describe('Batch 3 — def metadata', () => {
-  const all = [hlsProbeNode, dashProbeNode, videoMetadataNode, rssFeedTriggerNode, sitemapCrawlerNode];
+  const all = [
+    hlsProbeNode,
+    dashProbeNode,
+    videoMetadataNode,
+    rssFeedTriggerNode,
+    sitemapCrawlerNode,
+  ];
 
   it('tutti hanno description > 100 char', () => {
     for (const node of all) {

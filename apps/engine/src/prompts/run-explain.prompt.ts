@@ -32,14 +32,21 @@ import type { NodeDef } from '@medea/engine-core-schema';
  * a parte da buildRunExplainUserContent.
  */
 const CATALOG_DESC_MAX = 120;
-function catalogLine(d: { id: string; type: string; description?: string; label?: string }): string {
+function catalogLine(d: {
+  id: string;
+  type: string;
+  description?: string;
+  label?: string;
+}): string {
   const raw = (d.description ?? d.label ?? '').split('\n')[0] ?? '';
   // Prima frase se chiude entro il cap, altrimenti taglio duro con ellissi.
   const sentenceEnd = raw.indexOf('. ');
-  const firstSentence = sentenceEnd > 0 && sentenceEnd < CATALOG_DESC_MAX ? raw.slice(0, sentenceEnd + 1) : raw;
-  const desc = firstSentence.length > CATALOG_DESC_MAX
-    ? `${firstSentence.slice(0, CATALOG_DESC_MAX - 1)}…`
-    : firstSentence;
+  const firstSentence =
+    sentenceEnd > 0 && sentenceEnd < CATALOG_DESC_MAX ? raw.slice(0, sentenceEnd + 1) : raw;
+  const desc =
+    firstSentence.length > CATALOG_DESC_MAX
+      ? `${firstSentence.slice(0, CATALOG_DESC_MAX - 1)}…`
+      : firstSentence;
   return `- ${d.id} (${d.type}): ${desc}`;
 }
 
@@ -201,9 +208,8 @@ export function buildRunExplainUserContent(args: {
   failedNodeConfig?: Record<string, unknown>;
 }): string {
   const errorTrim = (args.errorMessage ?? '').slice(0, 2000);
-  const outputTrim = args.failedNodeOutput !== undefined
-    ? JSON.stringify(args.failedNodeOutput).slice(0, 1500)
-    : '';
+  const outputTrim =
+    args.failedNodeOutput !== undefined ? JSON.stringify(args.failedNodeOutput).slice(0, 1500) : '';
   const workflowJson = JSON.stringify(args.workflow, null, 2).slice(0, 8000);
 
   // NodeDef del nodo fallito — inietta configFields + types per zero ambiguity
@@ -211,11 +217,15 @@ export function buildRunExplainUserContent(args: {
   if (args.failedNodeDefId) {
     const def = stdlibNodeDefs().find((d: NodeDef) => d.id === args.failedNodeDefId);
     if (def) {
-      const fields = (def.configFields ?? []).map((f) => {
-        const opts = (f as { options?: string[] }).options ? ` [opzioni: ${(f as { options?: string[] }).options?.join(', ')}]` : '';
-        const req = f.required ? ' (richiesto)' : '';
-        return `  - \`${f.key}\` (${f.type}${opts})${req}: ${f.help ?? f.label ?? ''}`;
-      }).join('\n');
+      const fields = (def.configFields ?? [])
+        .map((f) => {
+          const opts = (f as { options?: string[] }).options
+            ? ` [opzioni: ${(f as { options?: string[] }).options?.join(', ')}]`
+            : '';
+          const req = f.required ? ' (richiesto)' : '';
+          return `  - \`${f.key}\` (${f.type}${opts})${req}: ${f.help ?? f.label ?? ''}`;
+        })
+        .join('\n');
       nodeDefContext = `\n\nNodeDef del nodo fallito (\`${def.id}\`):\n${def.description ?? def.label ?? ''}\n\nCampi config accettati:\n${fields}\n`;
     }
   }

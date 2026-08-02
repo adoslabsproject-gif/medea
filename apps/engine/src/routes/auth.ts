@@ -4,7 +4,12 @@ import { deleteCookie } from 'hono/cookie';
 import { sessionCookieName } from '@/lib/session-cookie.js';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { hashPassword, verifyPassword, issueSessionToken, verifySessionToken } from '@medea/engine-auth-local';
+import {
+  hashPassword,
+  verifyPassword,
+  issueSessionToken,
+  verifySessionToken,
+} from '@medea/engine-auth-local';
 import { parseSessionFromCookieHeader } from '@/lib/session-cookie.js';
 import { revokeSession } from '@/services/security/session-revocation.js';
 import { logger } from '@/lib/logger.js';
@@ -77,10 +82,14 @@ export function createAuthRoutes(): Hono {
         { tenantId, email, ip: c.req.header('x-forwarded-for') ?? 'n/a' },
         'register: blocked (container-per-tenant mode — use SSO from portal)',
       );
-      return c.json({
-        error: 'Registrazione disabilitata in container mode. Usa SSO dal portal automazionezeli.com.',
-        code: 'CONTAINER_MODE_NO_REGISTER',
-      }, 403);
+      return c.json(
+        {
+          error:
+            'Registrazione disabilitata in container mode. Usa SSO dal portal automazionezeli.com.',
+          code: 'CONTAINER_MODE_NO_REGISTER',
+        },
+        403,
+      );
     }
 
     // Gate signup pubblico — Federico-grade:
@@ -95,30 +104,44 @@ export function createAuthRoutes(): Hono {
     //     deve già esserci per quel tenant) — un nuovo tenant si crea SOLO
     //     via /auth/signup, che ha la propria env-gate.
     const signupAllowed = process.env.MEDEA_ALLOW_SIGNUP === '1';
-    const totalUsers = (sqlite
-      .prepare('SELECT COUNT(*) as c FROM users')
-      .get() as { c: number }).c;
-    const tenantUserCount = (sqlite
-      .prepare('SELECT COUNT(*) as c FROM users WHERE tenant_id = ?')
-      .get(tenantId) as { c: number }).c;
+    const totalUsers = (sqlite.prepare('SELECT COUNT(*) as c FROM users').get() as { c: number }).c;
+    const tenantUserCount = (
+      sqlite.prepare('SELECT COUNT(*) as c FROM users WHERE tenant_id = ?').get(tenantId) as {
+        c: number;
+      }
+    ).c;
     const isFreshInstall = totalUsers === 0;
     const tenantExists = tenantUserCount > 0;
 
     if (!signupAllowed && !isFreshInstall) {
-      logger.warn({ tenantId, email, ip: c.req.header('x-forwarded-for') ?? 'n/a' }, 'register: blocked (signup disabled, not fresh install)');
-      return c.json({
-        error: 'Registrazione disabilitata. Chiedi a un admin di crearti l\'account dal pannello Users, oppure imposta MEDEA_ALLOW_SIGNUP=1 sul runtime per consentire il signup pubblico.',
-        code: 'SIGNUP_DISABLED',
-      }, 403);
+      logger.warn(
+        { tenantId, email, ip: c.req.header('x-forwarded-for') ?? 'n/a' },
+        'register: blocked (signup disabled, not fresh install)',
+      );
+      return c.json(
+        {
+          error:
+            "Registrazione disabilitata. Chiedi a un admin di crearti l'account dal pannello Users, oppure imposta MEDEA_ALLOW_SIGNUP=1 sul runtime per consentire il signup pubblico.",
+          code: 'SIGNUP_DISABLED',
+        },
+        403,
+      );
     }
     if (signupAllowed && !tenantExists) {
       // Anche con signup pubblico abilitato: rifiutiamo i tenant inventati.
       // Per creare un NUOVO tenant l'utente deve passare da /auth/signup.
-      logger.warn({ tenantId, email }, 'register: blocked (tenant does not exist; use /auth/signup)');
-      return c.json({
-        error: 'Tenant inesistente. Per creare un nuovo tenant usa /auth/signup. Per registrarsi su un tenant esistente devi conoscerne lo slug corretto.',
-        code: 'TENANT_NOT_FOUND',
-      }, 404);
+      logger.warn(
+        { tenantId, email },
+        'register: blocked (tenant does not exist; use /auth/signup)',
+      );
+      return c.json(
+        {
+          error:
+            'Tenant inesistente. Per creare un nuovo tenant usa /auth/signup. Per registrarsi su un tenant esistente devi conoscerne lo slug corretto.',
+          code: 'TENANT_NOT_FOUND',
+        },
+        404,
+      );
     }
 
     const existing = sqlite
@@ -129,9 +152,11 @@ export function createAuthRoutes(): Hono {
     const hash = await hashPassword(password);
     const id = nanoid();
     const now = new Date().toISOString();
-    const ownerCount = (sqlite
-      .prepare("SELECT COUNT(*) as c FROM users WHERE tenant_id = ? AND role = 'owner'")
-      .get(tenantId) as { c: number }).c;
+    const ownerCount = (
+      sqlite
+        .prepare("SELECT COUNT(*) as c FROM users WHERE tenant_id = ? AND role = 'owner'")
+        .get(tenantId) as { c: number }
+    ).c;
     const role: UserRow['role'] = ownerCount === 0 ? 'owner' : 'viewer';
 
     sqlite
@@ -140,7 +165,10 @@ export function createAuthRoutes(): Hono {
       )
       .run(id, tenantId, email, displayName, hash, role, now, now);
 
-    logger.info({ userId: id, tenantId, role, freshInstall: isFreshInstall, signupAllowed }, 'User registered');
+    logger.info(
+      { userId: id, tenantId, role, freshInstall: isFreshInstall, signupAllowed },
+      'User registered',
+    );
     return c.json({ user: { id, email, displayName, role, tenantId } }, 201);
   });
 
@@ -166,25 +194,34 @@ export function createAuthRoutes(): Hono {
       .prepare('SELECT * FROM users WHERE tenant_id = ? AND email = ? AND enabled = 1')
       .get(tenantId, email) as UserRow | undefined;
     if (!user) {
-      await new Promise<void>((r) => { setTimeout(r, 100); });
+      await new Promise<void>((r) => {
+        setTimeout(r, 100);
+      });
       trackFailedLogin({ email, tenantId, ipAddress });
       return c.json({ error: 'Invalid email or password' }, 401);
     }
 
     // CHECK LOCKOUT: se locked_until in futuro → 423 Locked
     const nowIso = new Date().toISOString();
-    const userExt = user as UserRow & { locked_until?: string | null; failed_login_count?: number; lockout_level?: number };
+    const userExt = user as UserRow & {
+      locked_until?: string | null;
+      failed_login_count?: number;
+      lockout_level?: number;
+    };
     if (userExt.locked_until && userExt.locked_until > nowIso) {
       logger.warn(
         { userId: user.id, email, lockedUntil: userExt.locked_until, tenantId, ipAddress },
         '[SECURITY AUTH-2] login attempt during lockout',
       );
       trackFailedLogin({ email, tenantId, ipAddress });
-      return c.json({
-        error: 'Account temporarily locked due to too many failed attempts. Try later.',
-        code: 'ACCOUNT_LOCKED',
-        retryAfter: userExt.locked_until,
-      }, 423);
+      return c.json(
+        {
+          error: 'Account temporarily locked due to too many failed attempts. Try later.',
+          code: 'ACCOUNT_LOCKED',
+          retryAfter: userExt.locked_until,
+        },
+        423,
+      );
     }
 
     const ok = await verifyPassword(user.password_hash, password);
@@ -198,18 +235,31 @@ export function createAuthRoutes(): Hono {
       if (newCount >= FAIL_THRESHOLD) {
         // Escalation: 1° lockout 15min, 2° 1h, 3°+ 24h
         newLockoutLevel = Math.min(3, newLockoutLevel + 1);
-        const lockoutMs = newLockoutLevel === 1 ? 15 * 60_000
-          : newLockoutLevel === 2 ? 60 * 60_000
-          : 24 * 60 * 60_000;
+        const lockoutMs =
+          newLockoutLevel === 1
+            ? 15 * 60_000
+            : newLockoutLevel === 2
+              ? 60 * 60_000
+              : 24 * 60 * 60_000;
         newLockedUntil = new Date(Date.now() + lockoutMs).toISOString();
       }
 
-      sqlite.prepare(
-        'UPDATE users SET failed_login_count = ?, locked_until = ?, lockout_level = ? WHERE id = ?',
-      ).run(newCount, newLockedUntil, newLockoutLevel, user.id);
+      sqlite
+        .prepare(
+          'UPDATE users SET failed_login_count = ?, locked_until = ?, lockout_level = ? WHERE id = ?',
+        )
+        .run(newCount, newLockedUntil, newLockoutLevel, user.id);
 
       logger.warn(
-        { userId: user.id, email, failedCount: newCount, lockoutLevel: newLockoutLevel, lockedUntil: newLockedUntil, tenantId, ipAddress },
+        {
+          userId: user.id,
+          email,
+          failedCount: newCount,
+          lockoutLevel: newLockoutLevel,
+          lockedUntil: newLockedUntil,
+          tenantId,
+          ipAddress,
+        },
         '[SECURITY AUTH-2] failed login',
       );
       trackFailedLogin({ email, tenantId, ipAddress });
@@ -217,9 +267,11 @@ export function createAuthRoutes(): Hono {
     }
 
     // SUCCESS: reset lockout state
-    sqlite.prepare(
-      'UPDATE users SET failed_login_count = 0, locked_until = NULL, lockout_level = 0, last_login_at = ? WHERE id = ?',
-    ).run(nowIso, user.id);
+    sqlite
+      .prepare(
+        'UPDATE users SET failed_login_count = 0, locked_until = NULL, lockout_level = 0, last_login_at = ? WHERE id = ?',
+      )
+      .run(nowIso, user.id);
 
     const keys = await getAuthKeys();
     const token = await issueSessionToken({
@@ -328,7 +380,7 @@ export function createAuthRoutes(): Hono {
     }
     const { sqlite } = getDatabase();
     const row = sqlite
-      .prepare("SELECT COUNT(*) as c FROM users WHERE tenant_id = ?")
+      .prepare('SELECT COUNT(*) as c FROM users WHERE tenant_id = ?')
       .get(tenantId) as { c: number } | undefined;
     const userCount = row?.c ?? 0;
     const signupAllowed = process.env.MEDEA_ALLOW_SIGNUP === '1';
@@ -349,24 +401,34 @@ export function createAuthRoutes(): Hono {
     // env set dal portal al provision). Self-service multi-tenant signup non
     // ha senso qui — il provisioning di nuovi tenant avviene SOLO dal portal.
     if ((process.env.MEDEA_TENANT_ID ?? '').trim() !== '') {
-      return c.json({
-        error: 'Signup non disponibile in container mode. Usa il portal automazionezeli.com.',
-        code: 'CONTAINER_MODE_NO_SIGNUP',
-      }, 403);
+      return c.json(
+        {
+          error: 'Signup non disponibile in container mode. Usa il portal automazionezeli.com.',
+          code: 'CONTAINER_MODE_NO_SIGNUP',
+        },
+        403,
+      );
     }
     if (process.env.MEDEA_ALLOW_SIGNUP !== '1') {
-      return c.json({ error: 'Self-service signup non abilitato. Imposta MEDEA_ALLOW_SIGNUP=1 sul runtime.' }, 403);
+      return c.json(
+        { error: 'Self-service signup non abilitato. Imposta MEDEA_ALLOW_SIGNUP=1 sul runtime.' },
+        403,
+      );
     }
     const raw = (await c.req.json()) as unknown;
     if (!raw || typeof raw !== 'object') return c.json({ error: 'Body required' }, 400);
     const body = raw as Record<string, unknown>;
-    const tenantSlug = typeof body.tenantSlug === 'string' ? body.tenantSlug.trim().toLowerCase() : '';
+    const tenantSlug =
+      typeof body.tenantSlug === 'string' ? body.tenantSlug.trim().toLowerCase() : '';
     const email = typeof body.email === 'string' ? body.email.trim() : '';
     const password = typeof body.password === 'string' ? body.password : '';
     const displayName = typeof body.displayName === 'string' ? body.displayName.trim() : '';
 
     if (!/^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/u.test(tenantSlug)) {
-      return c.json({ error: 'tenantSlug deve essere alfanumerico (a-z, 0-9, trattino), 3-64 char.' }, 400);
+      return c.json(
+        { error: 'tenantSlug deve essere alfanumerico (a-z, 0-9, trattino), 3-64 char.' },
+        400,
+      );
     }
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/u.test(email)) {
       return c.json({ error: 'Email non valida' }, 400);
@@ -381,7 +443,7 @@ export function createAuthRoutes(): Hono {
     const { sqlite } = getDatabase();
     // Reject if tenant already has users (i.e. the slug is taken)
     const taken = sqlite
-      .prepare("SELECT COUNT(*) as c FROM users WHERE tenant_id = ?")
+      .prepare('SELECT COUNT(*) as c FROM users WHERE tenant_id = ?')
       .get(tenantSlug) as { c: number } | undefined;
     if ((taken?.c ?? 0) > 0) {
       return c.json({ error: 'Tenant slug già in uso.' }, 409);
@@ -408,11 +470,14 @@ export function createAuthRoutes(): Hono {
       privateKeyPem: keys.privateKeyPem,
     });
 
-    return c.json({
-      tenantId: tenantSlug,
-      user: { id, email, displayName, role: 'owner' },
-      token: sessionToken,
-    }, 201);
+    return c.json(
+      {
+        tenantId: tenantSlug,
+        user: { id, email, displayName, role: 'owner' },
+        token: sessionToken,
+      },
+      201,
+    );
   });
 
   /**

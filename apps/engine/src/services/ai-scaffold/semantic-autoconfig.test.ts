@@ -12,10 +12,20 @@ import type { NodeCatalogEntry } from './node-catalog.js';
 
 const CATALOG: NodeCatalogEntry[] = [
   {
-    defId: 'action_http_request', type: 'action', label: 'HTTP', description: '',
+    defId: 'action_http_request',
+    type: 'action',
+    label: 'HTTP',
+    description: '',
     fields: [
       { key: 'url', label: 'URL', type: 'text', required: true }, // NO default → resta al repair
-      { key: 'method', label: 'Method', type: 'select', required: true, options: ['GET', 'POST'], defaultValue: 'GET' },
+      {
+        key: 'method',
+        label: 'Method',
+        type: 'select',
+        required: true,
+        options: ['GET', 'POST'],
+        defaultValue: 'GET',
+      },
       { key: 'timeout', label: 'Timeout', type: 'number', required: false, defaultValue: '30' },
       { key: 'verifySsl', label: 'Verify', type: 'boolean', required: false, defaultValue: 'true' },
       { key: 'apiKey', label: 'Key', type: 'secret', required: true, defaultValue: 'NOPE' }, // secret → mai riempito
@@ -32,7 +42,13 @@ describe('fill_default', () => {
   it('riempie un required mancante che HA un default (method → GET)', () => {
     const r = run([{ id: 'n', defId: 'action_http_request', config: { url: 'https://x' } }]);
     expect(r.nodes[0]!.config!.method).toBe('GET');
-    expect(r.applied).toContainEqual({ kind: 'fill_default', nodeId: 'n', defId: 'action_http_request', key: 'method', value: 'GET' });
+    expect(r.applied).toContainEqual({
+      kind: 'fill_default',
+      nodeId: 'n',
+      defId: 'action_http_request',
+      key: 'method',
+      value: 'GET',
+    });
   });
 
   it('🚨 coerce number: defaultValue "30" → 30 (numero, non stringa)', () => {
@@ -58,42 +74,74 @@ describe('fill_default', () => {
   });
 
   it('🚨 NON sovrascrive un valore GIÀ presente', () => {
-    const r = run([{ id: 'n', defId: 'action_http_request', config: { url: 'https://x', timeout: 99 } }]);
+    const r = run([
+      { id: 'n', defId: 'action_http_request', config: { url: 'https://x', timeout: 99 } },
+    ]);
     expect(r.nodes[0]!.config!.timeout).toBe(99);
     expect(r.applied.some((f) => f.key === 'timeout')).toBe(false);
   });
 
-  it.each([undefined, null, ''])('valore vuoto (%s) → trattato come mancante e riempito', (empty) => {
-    const r = run([{ id: 'n', defId: 'action_http_request', config: { url: 'https://x', method: empty as unknown } }]);
-    expect(r.nodes[0]!.config!.method).toBe('GET');
-  });
+  it.each([undefined, null, ''])(
+    'valore vuoto (%s) → trattato come mancante e riempito',
+    (empty) => {
+      const r = run([
+        {
+          id: 'n',
+          defId: 'action_http_request',
+          config: { url: 'https://x', method: empty as unknown },
+        },
+      ]);
+      expect(r.nodes[0]!.config!.method).toBe('GET');
+    },
+  );
 });
 
 describe('normalize_enum', () => {
   it('🚨 "get" → "GET" (case-fix al valore canonico)', () => {
-    const r = run([{ id: 'n', defId: 'action_http_request', config: { url: 'https://x', method: 'get' } }]);
+    const r = run([
+      { id: 'n', defId: 'action_http_request', config: { url: 'https://x', method: 'get' } },
+    ]);
     expect(r.nodes[0]!.config!.method).toBe('GET');
-    expect(r.applied).toContainEqual({ kind: 'normalize_enum', nodeId: 'n', defId: 'action_http_request', key: 'method', value: 'GET', previous: 'get' });
+    expect(r.applied).toContainEqual({
+      kind: 'normalize_enum',
+      nodeId: 'n',
+      defId: 'action_http_request',
+      key: 'method',
+      value: 'GET',
+      previous: 'get',
+    });
   });
 
   it('"Post" → "POST"', () => {
-    const r = run([{ id: 'n', defId: 'action_http_request', config: { url: 'https://x', method: 'Post' } }]);
+    const r = run([
+      { id: 'n', defId: 'action_http_request', config: { url: 'https://x', method: 'Post' } },
+    ]);
     expect(r.nodes[0]!.config!.method).toBe('POST');
   });
 
   it('valore già canonico → nessun intervento', () => {
-    const r = run([{ id: 'n', defId: 'action_http_request', config: { url: 'https://x', method: 'POST' } }]);
+    const r = run([
+      { id: 'n', defId: 'action_http_request', config: { url: 'https://x', method: 'POST' } },
+    ]);
     expect(r.applied.some((f) => f.kind === 'normalize_enum')).toBe(false);
   });
 
   it('🚨 valore enum NON riconducibile (PATCH) → NON inventato (resta, al validatore)', () => {
-    const r = run([{ id: 'n', defId: 'action_http_request', config: { url: 'https://x', method: 'PATCH' } }]);
+    const r = run([
+      { id: 'n', defId: 'action_http_request', config: { url: 'https://x', method: 'PATCH' } },
+    ]);
     expect(r.nodes[0]!.config!.method).toBe('PATCH');
     expect(r.applied.some((f) => f.kind === 'normalize_enum')).toBe(false);
   });
 
   it('🚨 espressione su enum → MAI toccata (method intatto; nessuna fix SU method)', () => {
-    const r = run([{ id: 'n', defId: 'action_http_request', config: { url: 'https://x', method: '{{ vars.m }}' } }]);
+    const r = run([
+      {
+        id: 'n',
+        defId: 'action_http_request',
+        config: { url: 'https://x', method: '{{ vars.m }}' },
+      },
+    ]);
     expect(r.nodes[0]!.config!.method).toBe('{{ vars.m }}');
     expect(r.applied.some((f) => f.key === 'method')).toBe(false); // né normalize né fill su method
   });
@@ -112,7 +160,7 @@ describe('robustezza & immutabilità', () => {
     expect(r.nodes[0]!.config!.timeout).toBe(30);
   });
 
-  it('🚨 NON muta l\'input (config originale invariata)', () => {
+  it("🚨 NON muta l'input (config originale invariata)", () => {
     const input = [{ id: 'n', defId: 'action_http_request', config: { url: 'https://x' } }];
     const snapshot = JSON.stringify(input);
     applyDeterministicAutoConfig(input, SPEC);
@@ -121,7 +169,16 @@ describe('robustezza & immutabilità', () => {
 
   it('preserva campi extra del nodo (x/y/label)', () => {
     const r = applyDeterministicAutoConfig(
-      [{ id: 'n', defId: 'action_http_request', config: { url: 'https://x' }, x: 5, y: 7, label: 'L' }],
+      [
+        {
+          id: 'n',
+          defId: 'action_http_request',
+          config: { url: 'https://x' },
+          x: 5,
+          y: 7,
+          label: 'L',
+        },
+      ],
       SPEC,
     );
     expect(r.nodes[0]).toMatchObject({ x: 5, y: 7, label: 'L' });

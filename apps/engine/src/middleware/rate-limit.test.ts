@@ -35,7 +35,11 @@ vi.mock('@/lib/metrics-store.js', () => ({
 
 import { rateLimit, llmRateLimit, _resetRateLimitState } from './rate-limit.js';
 
-interface AuthLike { tenantId?: string; userId?: string; sub?: string }
+interface AuthLike {
+  tenantId?: string;
+  userId?: string;
+  sub?: string;
+}
 
 function appWithAuth(
   auth: AuthLike | undefined,
@@ -144,7 +148,12 @@ describe('rateLimit — perTenant scope', () => {
     await app.request('/hit');
     const res = await app.request('/hit');
     expect(res.status).toBe(429);
-    const body = await res.json() as { error: string; scope: string; message: string; retryAfterSeconds: number };
+    const body = (await res.json()) as {
+      error: string;
+      scope: string;
+      message: string;
+      retryAfterSeconds: number;
+    };
     expect(body.error).toBe('rate_limit_exceeded');
     expect(body.scope).toBe('tenant');
     expect(body.message).toContain('Troppe richieste per il tenant');
@@ -157,10 +166,12 @@ describe('rateLimit — perTenant scope', () => {
     const app = appWithAuth({ tenantId: 'acme' }, mw);
     await app.request('/hit');
     await app.request('/hit');
-    expect(counterIncMock).toHaveBeenCalledWith(expect.objectContaining({
-      name: 'flowforge_rate_limit_exceeded_total',
-      tags: { label: 'mlbl', scope: 'tenant' },
-    }));
+    expect(counterIncMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'flowforge_rate_limit_exceeded_total',
+        tags: { label: 'mlbl', scope: 'tenant' },
+      }),
+    );
   });
 
   it('tenant DIVERSI non interferiscono (isolation)', async () => {
@@ -193,7 +204,7 @@ describe('rateLimit — perUser scope', () => {
     const app = appWithAuth({ tenantId: 't', userId: 'u1' }, mw);
     await app.request('/hit');
     const res = await app.request('/hit');
-    const body = await res.json() as { scope: string; message: string };
+    const body = (await res.json()) as { scope: string; message: string };
     expect(body.scope).toBe('user');
     expect(body.message).toContain('Troppe richieste per il tuo account');
   });
@@ -203,9 +214,11 @@ describe('rateLimit — perUser scope', () => {
     const app = appWithAuth({ tenantId: 't', userId: 'u' }, mw);
     await app.request('/hit');
     await app.request('/hit');
-    expect(counterIncMock).toHaveBeenCalledWith(expect.objectContaining({
-      tags: { label: 'metr', scope: 'user' },
-    }));
+    expect(counterIncMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tags: { label: 'metr', scope: 'user' },
+      }),
+    );
   });
 });
 
@@ -218,7 +231,7 @@ describe('rateLimit — tenant + user combined', () => {
     await app.request('/hit');
     const res = await app.request('/hit');
     expect(res.status).toBe(429);
-    const body = await res.json() as { scope: string };
+    const body = (await res.json()) as { scope: string };
     expect(body.scope).toBe('tenant');
   });
 
@@ -229,7 +242,7 @@ describe('rateLimit — tenant + user combined', () => {
     await app.request('/hit');
     const res = await app.request('/hit');
     expect(res.status).toBe(429);
-    const body = await res.json() as { scope: string };
+    const body = (await res.json()) as { scope: string };
     expect(body.scope).toBe('user');
   });
 });
@@ -346,7 +359,7 @@ describe('rateLimit — llmRateLimit preset', () => {
     }
     const res = await app.request('/hit');
     expect(res.status).toBe(429);
-    const body = await res.json() as { scope: string };
+    const body = (await res.json()) as { scope: string };
     expect(body.scope).toBe('user');
   });
 
@@ -355,7 +368,7 @@ describe('rateLimit — llmRateLimit preset', () => {
     const aliceApp = appWithAuth({ tenantId: 't', userId: 'alice' }, mw);
     for (let i = 1; i <= 10; i += 1) await aliceApp.request('/hit');
     const aliceBlocked = await aliceApp.request('/hit');
-    expect((await aliceBlocked.json() as { scope: string }).scope).toBe('user');
+    expect(((await aliceBlocked.json()) as { scope: string }).scope).toBe('user');
 
     // Bob arriva: tenant counter già a 10, può fare altri 10 prima del tenant 30
     const bobApp = appWithAuth({ tenantId: 't', userId: 'bob' }, mw);

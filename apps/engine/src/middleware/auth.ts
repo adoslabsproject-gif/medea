@@ -32,15 +32,17 @@ export interface AuthMiddlewareOptions {
 
 export function authMiddleware(options: AuthMiddlewareOptions) {
   const required = options.required ?? true;
-  const publicPaths = new Set(options.publicPaths ?? [
-    '/health',
-    '/ready',
-    '/api/v1/auth/login',
-    '/api/v1/auth/register',
-    '/api/v1/auth/signup',
-    '/api/v1/auth/status',
-    '/api/v1/client-errors',
-  ]);
+  const publicPaths = new Set(
+    options.publicPaths ?? [
+      '/health',
+      '/ready',
+      '/api/v1/auth/login',
+      '/api/v1/auth/register',
+      '/api/v1/auth/signup',
+      '/api/v1/auth/status',
+      '/api/v1/client-errors',
+    ],
+  );
   // SECURITY #200 P0-1: NO wildcard bypass su /api/v1/auth/oauth/* né
   // /api/v1/auth/saml/* — gli endpoint amministrativi (provider CRUD)
   // sotto quei prefix devono richiedere JWT. Solo callback + metadata SAML
@@ -118,7 +120,11 @@ export function authMiddleware(options: AuthMiddlewareOptions) {
     // → tokenFromCookie sempre null → 401 + redirect loop SSO bootstrap.
     // Order: __Host- PRIMARY (prod), fallback legacy `ff_session=`.
     const tokenFromCookie = (() => {
-      const segs = c.req.header('cookie')?.split(';').map((s) => s.trim()) ?? [];
+      const segs =
+        c.req
+          .header('cookie')
+          ?.split(';')
+          .map((s) => s.trim()) ?? [];
       const primary = segs.find((s) => s.startsWith('__Host-ff_session='));
       if (primary) return primary.slice('__Host-ff_session='.length);
       const legacy = segs.find((s) => s.startsWith('ff_session='));
@@ -184,12 +190,14 @@ export function authMiddleware(options: AuthMiddlewareOptions) {
     // Enforce SOLO se MEDEA_TENANT_ID è configurato: in dev / disaster
     // recovery (single-tenant non impostato → '') non blocchiamo, coerente con
     // il fallback 'default' del path internal-token.
-    if (
-      config.MEDEA_TENANT_ID !== '' &&
-      payload.tenantId !== config.MEDEA_TENANT_ID
-    ) {
+    if (config.MEDEA_TENANT_ID !== '' && payload.tenantId !== config.MEDEA_TENANT_ID) {
       logger.warn(
-        { path: c.req.path, sub: payload.sub, tokenTenant: payload.tenantId, containerTenant: config.MEDEA_TENANT_ID },
+        {
+          path: c.req.path,
+          sub: payload.sub,
+          tokenTenant: payload.tenantId,
+          containerTenant: config.MEDEA_TENANT_ID,
+        },
         '[SECURITY] cross-tenant session token rejected (tenantId mismatch)',
       );
       if (required) return c.json({ error: 'Unauthorized: tenant scope mismatch' }, 401);
@@ -221,7 +229,10 @@ export function requireRole(...allowedRoles: SessionTokenPayload['role'][]) {
       return;
     }
     if (!allowedRoles.includes(auth.role)) {
-      return c.json({ error: `Forbidden: role ${auth.role} not in ${allowedRoles.join(',')}` }, 403);
+      return c.json(
+        { error: `Forbidden: role ${auth.role} not in ${allowedRoles.join(',')}` },
+        403,
+      );
     }
     await next();
     return;

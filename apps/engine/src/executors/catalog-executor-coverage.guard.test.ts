@@ -53,7 +53,11 @@ const CATALOG: NodeModule[] = [
  * aggiunto un executor, il test lo segnala → nessun drift silenzioso.
  */
 const ENGINE_CONTROL_FLOW = new Set<string>([
-  'logic_if', 'logic_switch', 'logic_loop', 'logic_delay', 'logic_wait_signal',
+  'logic_if',
+  'logic_switch',
+  'logic_loop',
+  'logic_delay',
+  'logic_wait_signal',
 ]);
 
 /** Replica la risoluzione runtime, senza toccare community/custom. */
@@ -63,7 +67,9 @@ function hasExecutor(m: NodeModule): boolean {
 
 /** Un nodo NON richiede executor se è un trigger o una primitiva di flusso. */
 function engineHandled(m: NodeModule): boolean {
-  return m.def.type === 'trigger' || m.def.id.startsWith('trigger_') || ENGINE_CONTROL_FLOW.has(m.def.id);
+  return (
+    m.def.type === 'trigger' || m.def.id.startsWith('trigger_') || ENGINE_CONTROL_FLOW.has(m.def.id)
+  );
 }
 
 describe('catalog executor coverage — nessuna facciata', () => {
@@ -72,20 +78,26 @@ describe('catalog executor coverage — nessuna facciata', () => {
   });
 
   it('🚨 ogni nodo-azione ha un executor risolvibile (server override o module.executor)', () => {
-    const facciate = CATALOG
-      .filter((m) => !engineHandled(m))
+    const facciate = CATALOG.filter((m) => !engineHandled(m))
       .filter((m) => !hasExecutor(m))
       .map((m) => `${m.def.id} (${m.def.type})`);
-    expect(facciate, `FACCIATE — nodi nel catalogo SENZA executor: ${facciate.join(', ')}`).toEqual([]);
+    expect(facciate, `FACCIATE — nodi nel catalogo SENZA executor: ${facciate.join(', ')}`).toEqual(
+      [],
+    );
   });
 
   it('🚨 ANCORA: ogni primitiva di flusso esiste nel catalogo E non ha executor (no drift del Set)', () => {
     for (const id of ENGINE_CONTROL_FLOW) {
       const m = CATALOG.find((n) => n.def.id === id);
-      expect(m, `control-flow "${id}" non è più nel catalogo — aggiorna ENGINE_CONTROL_FLOW`).toBeDefined();
+      expect(
+        m,
+        `control-flow "${id}" non è più nel catalogo — aggiorna ENGINE_CONTROL_FLOW`,
+      ).toBeDefined();
       // Se un giorno una primitiva ottiene un executor reale, va TOLTA dal Set
       // (non è più "engine-handled puro"): questo assert lo forza a emergere.
-      expect(hasExecutor(m!), `"${id}" ora HA un executor → rimuovilo da ENGINE_CONTROL_FLOW`).toBe(false);
+      expect(hasExecutor(m!), `"${id}" ora HA un executor → rimuovilo da ENGINE_CONTROL_FLOW`).toBe(
+        false,
+      );
     }
   });
 

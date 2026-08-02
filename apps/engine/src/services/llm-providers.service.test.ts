@@ -24,8 +24,12 @@ const m = vi.hoisted(() => {
     run: vi.fn().mockReturnValue({ changes: 1 }),
     auditAppend: vi.fn().mockResolvedValue(undefined),
     encryptSecret: vi.fn().mockReturnValue({
-      ciphertext: 'ct', nonce: 'n', authTag: 't',
-      dekCiphertext: 'dc', dekNonce: 'dn', dekAuthTag: 'dt',
+      ciphertext: 'ct',
+      nonce: 'n',
+      authTag: 't',
+      dekCiphertext: 'dc',
+      dekNonce: 'dn',
+      dekAuthTag: 'dt',
     }),
     decryptSecret: vi.fn().mockReturnValue('plaintext-key'),
     loadMaster: vi.fn().mockReturnValue('master-fake-32-chars-min-padding!!!!'),
@@ -73,7 +77,7 @@ vi.mock('@/lib/logger.js');
 
 beforeEach(() => {
   vi.clearAllMocks();
-  m.get.mockReturnValue(undefined);  // no existing credential
+  m.get.mockReturnValue(undefined); // no existing credential
   m.run.mockReturnValue({ changes: 1 });
   m.auditAppend.mockResolvedValue(undefined);
 });
@@ -83,22 +87,24 @@ describe('#208 P0-9 — upsert await audit', () => {
     const { LlmProvidersService } = await import('./llm-providers.service.js');
     const svc = new LlmProvidersService();
     await svc.upsert('tenant-1', 'anthropic', { apiKey: 'sk-ant-test', actorId: 'user-1' });
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: 'tenant-1',
-      action: 'llm_provider.upsert',
-      resourceType: 'llm_provider',
-      resourceId: 'anthropic',
-      actorId: 'user-1',
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant-1',
+        action: 'llm_provider.upsert',
+        resourceType: 'llm_provider',
+        resourceId: 'anthropic',
+        actorId: 'user-1',
+      }),
+    );
   });
 
   it('upsert audit rejection PROPAGA al caller (await, no swallow)', async () => {
     m.auditAppend.mockRejectedValueOnce(new Error('audit DB down'));
     const { LlmProvidersService } = await import('./llm-providers.service.js');
     const svc = new LlmProvidersService();
-    await expect(
-      svc.upsert('tenant-1', 'openai', { apiKey: 'sk-test' }),
-    ).rejects.toThrow(/audit DB down/);
+    await expect(svc.upsert('tenant-1', 'openai', { apiKey: 'sk-test' })).rejects.toThrow(
+      /audit DB down/,
+    );
   });
 
   it('upsert(liara) senza defaultModel → no-op, NO audit', async () => {
@@ -112,9 +118,9 @@ describe('#208 P0-9 — upsert await audit', () => {
   it('upsert(openai) senza apiKey → throw senza audit', async () => {
     const { LlmProvidersService } = await import('./llm-providers.service.js');
     const svc = new LlmProvidersService();
-    await expect(
-      svc.upsert('tenant-1', 'openai', { apiKey: '' }),
-    ).rejects.toThrow(/apiKey richiesta/);
+    await expect(svc.upsert('tenant-1', 'openai', { apiKey: '' })).rejects.toThrow(
+      /apiKey richiesta/,
+    );
     expect(m.auditAppend).not.toHaveBeenCalled();
   });
 });
@@ -126,11 +132,13 @@ describe('#208 P0-9 — remove await audit', () => {
     const svc = new LlmProvidersService();
     const r = await svc.remove('tenant-1', 'anthropic', 'admin-1');
     expect(r).toBe(true);
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'llm_provider.remove',
-      resourceId: 'anthropic',
-      actorId: 'admin-1',
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'llm_provider.remove',
+        resourceId: 'anthropic',
+        actorId: 'admin-1',
+      }),
+    );
   });
 
   it('remove changes=0 → NO audit + return false', async () => {
@@ -186,7 +194,7 @@ describe('list() — provider visibility rules (2026-05-29)', () => {
     const ollama = list.find((p) => p.provider === 'ollama');
     expect(ollama).toBeDefined();
     expect(ollama!.freeTier).toBe(false); // ← bug fix
-    expect(ollama!.hasKey).toBe(false);    // no credenziale stored
+    expect(ollama!.hasKey).toBe(false); // no credenziale stored
     // Conseguenza UX (filtro client `hasKey || freeTier`): ollama NON appare
     // nel dropdown finché l'utente non registra la credenziale baseUrl.
   });

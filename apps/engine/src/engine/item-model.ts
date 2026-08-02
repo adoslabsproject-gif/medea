@@ -78,7 +78,10 @@ export function deriveOutputItems(args: {
   if (declared !== undefined) {
     if (sourceNodeId === undefined) return declared;
     return declared.map((it) =>
-      it.pairedItem === undefined ? it : { ...it, pairedItem: enrichRefs(it.pairedItem, sourceNodeId) });
+      it.pairedItem === undefined
+        ? it
+        : { ...it, pairedItem: enrichRefs(it.pairedItem, sourceNodeId) },
+    );
   }
   const items = normalizeToItems(output);
   if (sourceNodeId === undefined || sourceItemCount === undefined || sourceItemCount === 0) {
@@ -93,7 +96,10 @@ export function deriveOutputItems(args: {
     return items.map((it, i) => pairTo(it, { item: i, sourceNodeId }));
   }
   if (items.length === 1 && items[0] !== undefined) {
-    const all = Array.from({ length: sourceItemCount }, (_, i): PairedItemRef => ({ item: i, sourceNodeId }));
+    const all = Array.from(
+      { length: sourceItemCount },
+      (_, i): PairedItemRef => ({ item: i, sourceNodeId }),
+    );
     return [pairTo(items[0], all)];
   }
   return items;

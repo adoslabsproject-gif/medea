@@ -28,15 +28,18 @@ import { ensureCredentialsTable } from './credentials.service.js';
 import { runOutboxSweepOnce } from './error-outbox/worker.js';
 import { buildOutboxDispatchers } from './error-outbox/wiring.js';
 import { makeErrorHandlerStarter } from './error-outbox/error-handler-starter.js';
-import { checkErrorFanoutRateLimit, __testHooks__ as rateLimitHooks } from './error-outbox/fanout-rate-limit.js';
+import {
+  checkErrorFanoutRateLimit,
+  __testHooks__ as rateLimitHooks,
+} from './error-outbox/fanout-rate-limit.js';
 
 const bus = new InMemoryEventBus();
 const workflows = new WorkflowService(bus);
 const runService = new RunService(bus);
 
-let brokenWfId = '';   // workflow che fallisce SEMPRE (defId inesistente)
-let handlerAId = '';   // error-handler per-workflow
-let handlerBId = '';   // error-handler catch-all tenant
+let brokenWfId = ''; // workflow che fallisce SEMPRE (defId inesistente)
+let handlerAId = ''; // error-handler per-workflow
+let handlerBId = ''; // error-handler catch-all tenant
 
 async function createBrokenWorkflow(name: string, errorWorkflowId?: string): Promise<string> {
   const wf = await workflows.create({
@@ -55,7 +58,9 @@ function buildRealDispatchers(): ReturnType<typeof buildOutboxDispatchers> {
   const startErrorHandler = makeErrorHandlerStarter({
     getWorkflow: (id, tenantId) => workflows.get(id, tenantId),
     explainRun: (tenantId, runId) => new AiExplainService().explain({ tenantId, runId }),
-    startAsync: async (input) => { await runService.startAsync(input); },
+    startAsync: async (input) => {
+      await runService.startAsync(input);
+    },
   });
   return buildOutboxDispatchers({
     getWorkflow: (id, tenantId) => workflows.get(id, tenantId),
@@ -75,9 +80,9 @@ async function sweepOutbox(): Promise<void> {
 
 function fanoutRowCount(runId: string): number {
   const { sqlite } = getDatabase();
-  const row = sqlite.prepare(
-    "SELECT COUNT(*) AS c FROM error_outbox WHERE run_id = ? AND channel = 'fanout'",
-  ).get(runId) as { c: number };
+  const row = sqlite
+    .prepare("SELECT COUNT(*) AS c FROM error_outbox WHERE run_id = ? AND channel = 'fanout'")
+    .get(runId) as { c: number };
   return row.c;
 }
 
@@ -86,13 +91,19 @@ beforeAll(async () => {
   ensureCredentialsTable();
   brokenWfId = await createBrokenWorkflow('gap5-broken');
   const handlerA = await workflows.create({
-    name: 'gap5-handler-A', enabled: true, tenantId: 'default',
-    nodes: [{ id: 't', defId: 'trigger_error', x: 0, y: 0, config: {} }], edges: [],
+    name: 'gap5-handler-A',
+    enabled: true,
+    tenantId: 'default',
+    nodes: [{ id: 't', defId: 'trigger_error', x: 0, y: 0, config: {} }],
+    edges: [],
   });
   handlerAId = handlerA.id;
   const handlerB = await workflows.create({
-    name: 'gap5-handler-B', enabled: true, tenantId: 'default',
-    nodes: [{ id: 't', defId: 'trigger_error', x: 0, y: 0, config: {} }], edges: [],
+    name: 'gap5-handler-B',
+    enabled: true,
+    tenantId: 'default',
+    nodes: [{ id: 't', defId: 'trigger_error', x: 0, y: 0, config: {} }],
+    edges: [],
   });
   handlerBId = handlerB.id;
 }, 30_000);
@@ -129,9 +140,11 @@ describe('🚨 audit strutturato — la scatola nera del run fallito', () => {
     expect(result.status).toBe('error');
 
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare(
-      "SELECT * FROM audit_log WHERE action = 'workflow.run.errored' AND resource_id = ? LIMIT 1",
-    ).get(result.runId) as { metadata_json: string; resource_type: string } | undefined;
+    const row = sqlite
+      .prepare(
+        "SELECT * FROM audit_log WHERE action = 'workflow.run.errored' AND resource_id = ? LIMIT 1",
+      )
+      .get(result.runId) as { metadata_json: string; resource_type: string } | undefined;
     expect(row).toBeDefined();
     expect(row!.resource_type).toBe('run');
     const meta = JSON.parse(row!.metadata_json) as Record<string, unknown>;
@@ -149,11 +162,18 @@ describe('🚨 catch-all tenant — binding a due livelli (DUREVOLE via outbox)'
   it('🚨 workflow SENZA handler proprio + flag tenant → fan-out sul catch-all con payload E4', async () => {
     setTenantErrorWorkflowId(handlerBId);
     const spy = vi.spyOn(runService, 'startAsync').mockResolvedValue({ runId: 'spy-run' } as never);
-    const run = await runService.executeWithPins({ workflowId: brokenWfId, tenantId: 'default', triggerInput: { q: 1 } }, new Map());
+    const run = await runService.executeWithPins(
+      { workflowId: brokenWfId, tenantId: 'default', triggerInput: { q: 1 } },
+      new Map(),
+    );
     expect(fanoutRowCount(run.runId)).toBe(1); // riga 'fanout' enqueued atomicamente
     await sweepOutbox();
     expect(spy).toHaveBeenCalledTimes(1);
-    const arg = spy.mock.calls[0]![0] as { workflowId: string; triggerType: string; triggerInput: Record<string, unknown> };
+    const arg = spy.mock.calls[0]![0] as {
+      workflowId: string;
+      triggerType: string;
+      triggerInput: Record<string, unknown>;
+    };
     expect(arg.workflowId).toBe(handlerBId);
     expect(arg.triggerType).toBe('error-handler');
     expect(arg.triggerInput.workflowId).toBe(brokenWfId);
@@ -166,7 +186,10 @@ describe('🚨 catch-all tenant — binding a due livelli (DUREVOLE via outbox)'
     const withOwn = await createBrokenWorkflow('gap5-broken-own', handlerAId);
     setTenantErrorWorkflowId(handlerBId);
     const spy = vi.spyOn(runService, 'startAsync').mockResolvedValue({ runId: 'spy-run' } as never);
-    await runService.executeWithPins({ workflowId: withOwn, tenantId: 'default', triggerInput: {} }, new Map());
+    await runService.executeWithPins(
+      { workflowId: withOwn, tenantId: 'default', triggerInput: {} },
+      new Map(),
+    );
     await sweepOutbox();
     expect(spy).toHaveBeenCalledTimes(1);
     expect((spy.mock.calls[0]![0] as { workflowId: string }).workflowId).toBe(handlerAId); // NON handlerB
@@ -175,7 +198,10 @@ describe('🚨 catch-all tenant — binding a due livelli (DUREVOLE via outbox)'
   it('🚨 ANTI-SELF sul catch-all: flag tenant = il workflow stesso → NESSUNA riga fanout', async () => {
     setTenantErrorWorkflowId(brokenWfId); // configurazione illegale
     const spy = vi.spyOn(runService, 'startAsync').mockResolvedValue({ runId: 'spy-run' } as never);
-    const run = await runService.executeWithPins({ workflowId: brokenWfId, tenantId: 'default', triggerInput: {} }, new Map());
+    const run = await runService.executeWithPins(
+      { workflowId: brokenWfId, tenantId: 'default', triggerInput: {} },
+      new Map(),
+    );
     expect(fanoutRowCount(run.runId)).toBe(0); // il writer NON crea la riga (anti-self)
     await sweepOutbox();
     expect(spy).not.toHaveBeenCalled();
@@ -185,7 +211,12 @@ describe('🚨 catch-all tenant — binding a due livelli (DUREVOLE via outbox)'
     setTenantErrorWorkflowId(handlerBId);
     const spy = vi.spyOn(runService, 'startAsync').mockResolvedValue({ runId: 'spy-run' } as never);
     const run = await runService.executeWithPins(
-      { workflowId: brokenWfId, tenantId: 'default', triggerType: 'error-handler', triggerInput: {} },
+      {
+        workflowId: brokenWfId,
+        tenantId: 'default',
+        triggerType: 'error-handler',
+        triggerInput: {},
+      },
       new Map(),
     );
     expect(fanoutRowCount(run.runId)).toBe(0); // anti-loop: nessuna riga per run 'error-handler'
@@ -197,8 +228,11 @@ describe('🚨 catch-all tenant — binding a due livelli (DUREVOLE via outbox)'
 describe('🚨 GAP 5 (c) — triage AI opt-in nel payload handler (DUREVOLE)', () => {
   it('🚨 trigger_error con aiTriage=true → payload arricchito con la diagnosi', async () => {
     const triageHandler = await workflows.create({
-      name: 'gap5-handler-triage', enabled: true, tenantId: 'default',
-      nodes: [{ id: 't', defId: 'trigger_error', x: 0, y: 0, config: { aiTriage: 'true' } }], edges: [],
+      name: 'gap5-handler-triage',
+      enabled: true,
+      tenantId: 'default',
+      nodes: [{ id: 't', defId: 'trigger_error', x: 0, y: 0, config: { aiTriage: 'true' } }],
+      edges: [],
     });
     setTenantErrorWorkflowId(triageHandler.id);
     const explainSpy = vi.spyOn(AiExplainService.prototype, 'explain').mockResolvedValue({
@@ -209,11 +243,16 @@ describe('🚨 GAP 5 (c) — triage AI opt-in nel payload handler (DUREVOLE)', (
       confidence: 0.95,
     } as never);
     const spy = vi.spyOn(runService, 'startAsync').mockResolvedValue({ runId: 'spy-run' } as never);
-    const run = await runService.executeWithPins({ workflowId: brokenWfId, tenantId: 'default', triggerInput: {} }, new Map());
+    const run = await runService.executeWithPins(
+      { workflowId: brokenWfId, tenantId: 'default', triggerInput: {} },
+      new Map(),
+    );
     await sweepOutbox();
     expect(spy).toHaveBeenCalledTimes(1);
     expect(explainSpy).toHaveBeenCalledWith({ tenantId: 'default', runId: run.runId });
-    const payload = (spy.mock.calls[0]![0] as { triggerInput: { aiTriage?: Record<string, unknown> } }).triggerInput;
+    const payload = (
+      spy.mock.calls[0]![0] as { triggerInput: { aiTriage?: Record<string, unknown> } }
+    ).triggerInput;
     expect(payload.aiTriage).toMatchObject({
       explanation: 'Il nodo boom usa un defId inesistente',
       fix: 'Sostituisci il defId con uno del catalogo',
@@ -224,26 +263,38 @@ describe('🚨 GAP 5 (c) — triage AI opt-in nel payload handler (DUREVOLE)', (
 
   it('🚨 SENZA opt-in → explain MAI chiamato (zero costo LLM di default)', async () => {
     setTenantErrorWorkflowId(handlerBId); // handler senza aiTriage
-    const explainSpy = vi.spyOn(AiExplainService.prototype, 'explain').mockResolvedValue({} as never);
+    const explainSpy = vi
+      .spyOn(AiExplainService.prototype, 'explain')
+      .mockResolvedValue({} as never);
     const spy = vi.spyOn(runService, 'startAsync').mockResolvedValue({ runId: 'spy-run' } as never);
-    await runService.executeWithPins({ workflowId: brokenWfId, tenantId: 'default', triggerInput: {} }, new Map());
+    await runService.executeWithPins(
+      { workflowId: brokenWfId, tenantId: 'default', triggerInput: {} },
+      new Map(),
+    );
     await sweepOutbox();
     expect(spy).toHaveBeenCalledTimes(1);
     expect(explainSpy).not.toHaveBeenCalled();
   });
 
-  it('🚨 FAIL-SOFT: explain esplode → l\'handler parte COMUNQUE, senza aiTriage', async () => {
+  it("🚨 FAIL-SOFT: explain esplode → l'handler parte COMUNQUE, senza aiTriage", async () => {
     const triageHandler = await workflows.create({
-      name: 'gap5-handler-triage-boom', enabled: true, tenantId: 'default',
-      nodes: [{ id: 't', defId: 'trigger_error', x: 0, y: 0, config: { aiTriage: 'true' } }], edges: [],
+      name: 'gap5-handler-triage-boom',
+      enabled: true,
+      tenantId: 'default',
+      nodes: [{ id: 't', defId: 'trigger_error', x: 0, y: 0, config: { aiTriage: 'true' } }],
+      edges: [],
     });
     setTenantErrorWorkflowId(triageHandler.id);
     vi.spyOn(AiExplainService.prototype, 'explain').mockRejectedValue(new Error('LLM giù'));
     const spy = vi.spyOn(runService, 'startAsync').mockResolvedValue({ runId: 'spy-run' } as never);
-    await runService.executeWithPins({ workflowId: brokenWfId, tenantId: 'default', triggerInput: {} }, new Map());
+    await runService.executeWithPins(
+      { workflowId: brokenWfId, tenantId: 'default', triggerInput: {} },
+      new Map(),
+    );
     await sweepOutbox();
     expect(spy).toHaveBeenCalledTimes(1);
-    const payload = (spy.mock.calls[0]![0] as { triggerInput: Record<string, unknown> }).triggerInput;
+    const payload = (spy.mock.calls[0]![0] as { triggerInput: Record<string, unknown> })
+      .triggerInput;
     expect(payload.aiTriage).toBeUndefined();
     expect(payload.failedNodeId).toBe('boom'); // il resto del payload è integro
   });

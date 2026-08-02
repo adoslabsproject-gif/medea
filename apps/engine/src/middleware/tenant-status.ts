@@ -22,7 +22,11 @@
 
 import type { MiddlewareHandler } from 'hono';
 import { getTenantIdOrNull } from '@/lib/tenant.js';
-import { tenantService, TenantNotFoundError, TenantNotActiveError } from '@/services/tenant.service.js';
+import {
+  tenantService,
+  TenantNotFoundError,
+  TenantNotActiveError,
+} from '@/services/tenant.service.js';
 
 /**
  * READ_ONLY_METHODS — letture sempre permesse anche su tenant suspended.
@@ -79,16 +83,22 @@ export function tenantStatusMiddleware(): MiddlewareHandler {
       tenantService.assertActive(tenantId);
     } catch (e) {
       if (e instanceof TenantNotFoundError) {
-        return c.json({
-          error: 'tenant_not_found',
-          message: `Tenant "${tenantId}" non esiste o è stato eliminato.`,
-        }, 404);
+        return c.json(
+          {
+            error: 'tenant_not_found',
+            message: `Tenant "${tenantId}" non esiste o è stato eliminato.`,
+          },
+          404,
+        );
       }
       if (e instanceof TenantNotActiveError) {
-        return c.json({
-          error: 'tenant_not_active',
-          message: e.message,
-        }, 403);
+        return c.json(
+          {
+            error: 'tenant_not_active',
+            message: e.message,
+          },
+          403,
+        );
       }
       throw e;
     }

@@ -27,14 +27,18 @@ export const emailTriageCommercialistaExecutor: NodeExecutor = async (rawConfig,
 
   const classifyOpts: ClassifyOptions = {};
   if (cfg.operatorsJson) classifyOpts.operators = coerceStringRecord(cfg.operatorsJson);
-  if (cfg.replyTemplatesJson) classifyOpts.replyTemplates = coerceStringRecord(cfg.replyTemplatesJson);
+  if (cfg.replyTemplatesJson)
+    classifyOpts.replyTemplates = coerceStringRecord(cfg.replyTemplatesJson);
   if (cfg.urgencyJson) classifyOpts.urgency = coerceUrgencyRecord(cfg.urgencyJson);
 
-  const result = classifyCommercialistaEmail({
-    subject: pickString(obj?.[cfg.subjectField]),
-    body: pickString(obj?.[cfg.bodyField]),
-    from: pickString(obj?.[cfg.fromField]),
-  }, classifyOpts);
+  const result = classifyCommercialistaEmail(
+    {
+      subject: pickString(obj?.[cfg.subjectField]),
+      body: pickString(obj?.[cfg.bodyField]),
+      from: pickString(obj?.[cfg.fromField]),
+    },
+    classifyOpts,
+  );
 
   const ret: NodeExecutionResult = {
     output: {
@@ -96,6 +100,15 @@ function coerceUrgencyRecord(
 }
 
 function isCommercialistaLabel(s: string): s is CommercialistaLabel {
-  return ['fiscale', 'iva', 'f24', 'forfettario', 'sollecito',
-    'pec_legal', 'payment', 'bilancio', 'altro'].includes(s);
+  return [
+    'fiscale',
+    'iva',
+    'f24',
+    'forfettario',
+    'sollecito',
+    'pec_legal',
+    'payment',
+    'bilancio',
+    'altro',
+  ].includes(s);
 }

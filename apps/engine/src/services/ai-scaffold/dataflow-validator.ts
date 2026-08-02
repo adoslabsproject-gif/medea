@@ -32,13 +32,19 @@ export interface DfNode {
   defId: string;
   config: Record<string, unknown>;
 }
-export interface DfEdge { from: string; to: string }
+export interface DfEdge {
+  from: string;
+  to: string;
+}
 
 // Riferimenti: `$node.X.json…`, `node.X.json…`, dentro `{{ }}` o nudi.
 const NODE_REF_RE = /\$?node\.([a-zA-Z0-9_-]+)\.json\b/gu;
 
 /** Predecessori raggiungibili (BFS all'indietro) per ogni nodo. */
-function buildReachablePreds(nodes: readonly DfNode[], edges: readonly DfEdge[]): Map<string, Set<string>> {
+function buildReachablePreds(
+  nodes: readonly DfNode[],
+  edges: readonly DfEdge[],
+): Map<string, Set<string>> {
   const directPreds = new Map<string, string[]>();
   for (const n of nodes) directPreds.set(n.id, []);
   for (const e of edges) directPreds.get(e.to)?.push(e.from);
@@ -79,7 +85,10 @@ function refsIn(value: unknown): string[] {
  *
  * Ritorna gli edge da AGGIUNGERE (il chiamante li applica).
  */
-export function healDataflowReachability(nodes: readonly DfNode[], edges: readonly DfEdge[]): DfEdge[] {
+export function healDataflowReachability(
+  nodes: readonly DfNode[],
+  edges: readonly DfEdge[],
+): DfEdge[] {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const preds = buildReachablePreds(nodes, edges);
   const toAdd: DfEdge[] = [];
@@ -105,7 +114,10 @@ export function healDataflowReachability(nodes: readonly DfNode[], edges: readon
   return toAdd;
 }
 
-export function validateDataflow(nodes: readonly DfNode[], edges: readonly DfEdge[]): DataflowIssue[] {
+export function validateDataflow(
+  nodes: readonly DfNode[],
+  edges: readonly DfEdge[],
+): DataflowIssue[] {
   const issues: DataflowIssue[] = [];
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const preds = buildReachablePreds(nodes, edges);
@@ -134,12 +146,17 @@ export function validateDataflow(nodes: readonly DfNode[], edges: readonly DfEdg
     // 2) CATENA json_extract: Y(json_extract) che estrae un campo nested
     //    dall'output di X(json_extract) → sospetto (X produce un valore, non un oggetto).
     if (node.defId === 'action_json_extract') {
-      const src = typeof node.config.sourceExpression === 'string' ? node.config.sourceExpression : '';
+      const src =
+        typeof node.config.sourceExpression === 'string' ? node.config.sourceExpression : '';
       const path = typeof node.config.path === 'string' ? node.config.path : '';
       // src = `$node.X.json` (output INTERO di X, senza sub-path) → match esatto.
       // Strip del wrapper `{{ }}` (es. `{{$node.sender.json}}`) — senza, la catena
       // sfuggiva (bug fresh-gen IMAP CRM: domain estrae $.address da sender wrappato).
-      const srcInner = src.trim().replace(/^\{\{\s*/u, '').replace(/\s*\}\}$/u, '').trim();
+      const srcInner = src
+        .trim()
+        .replace(/^\{\{\s*/u, '')
+        .replace(/\s*\}\}$/u, '')
+        .trim();
       const m = /^\$?node\.([a-zA-Z0-9_-]+)\.json$/u.exec(srcInner);
       const x = m ? byId.get(m[1]!) : undefined;
       const accessesNestedField = /^\$\.[a-zA-Z_]/u.test(path.trim()); // es. $.domain

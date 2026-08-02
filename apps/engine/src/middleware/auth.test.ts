@@ -39,15 +39,20 @@ beforeEach(() => {
 const FAKE_PUBLIC_KEY = '-----BEGIN PUBLIC KEY-----\nFAKE\n-----END PUBLIC KEY-----';
 const FUTURE_EXP = Math.floor(Date.now() / 1000) + 3600;
 
-async function buildApp(opts: { required?: boolean; publicPrefixes?: string[]; publicPathPatterns?: RegExp[] } = {}) {
+async function buildApp(
+  opts: { required?: boolean; publicPrefixes?: string[]; publicPathPatterns?: RegExp[] } = {},
+) {
   const { authMiddleware } = await import('./auth.js');
   const app = new Hono();
-  app.use('/api/v1/*', authMiddleware({
-    publicKeyPem: FAKE_PUBLIC_KEY,
-    required: opts.required ?? true,
-    ...(opts.publicPrefixes ? { publicPrefixes: opts.publicPrefixes } : {}),
-    ...(opts.publicPathPatterns ? { publicPathPatterns: opts.publicPathPatterns } : {}),
-  }));
+  app.use(
+    '/api/v1/*',
+    authMiddleware({
+      publicKeyPem: FAKE_PUBLIC_KEY,
+      required: opts.required ?? true,
+      ...(opts.publicPrefixes ? { publicPrefixes: opts.publicPrefixes } : {}),
+      ...(opts.publicPathPatterns ? { publicPathPatterns: opts.publicPathPatterns } : {}),
+    }),
+  );
   app.get('/api/v1/me', (c) => c.json({ auth: c.get('auth') }));
   app.get('/api/v1/share/public', (c) => c.json({ ok: true }));
   app.get('/api/v1/auth/oauth/google/callback', (c) => c.json({ ok: 'callback' }));
@@ -126,7 +131,7 @@ describe('authMiddleware — internal token (H1 timing-safe)', () => {
     const res = await app.request('/api/v1/me', {
       headers: {
         'x-internal-token': 'super-secret-internal-token-32chars',
-        'x-tenant-id': '../../etc/passwd',  // path traversal attempt
+        'x-tenant-id': '../../etc/passwd', // path traversal attempt
       },
     });
     expect(res.status).toBe(200);
@@ -209,9 +214,7 @@ describe('authMiddleware — P0-1 #200 NO wildcard bypass OAuth/SAML admin', () 
   it('publicPathPatterns: SAML metadata dinamico → bypass (200)', async () => {
     const app = await buildApp({
       required: true,
-      publicPathPatterns: [
-        /^\/api\/v1\/auth\/saml\/[a-zA-Z0-9_-]+\/metadata$/,
-      ],
+      publicPathPatterns: [/^\/api\/v1\/auth\/saml\/[a-zA-Z0-9_-]+\/metadata$/],
     });
     const res = await app.request('/api/v1/auth/saml/okta/metadata');
     expect(res.status).toBe(200);
@@ -220,9 +223,7 @@ describe('authMiddleware — P0-1 #200 NO wildcard bypass OAuth/SAML admin', () 
   it('publicPathPatterns: admin /providers NON match pattern → 401', async () => {
     const app = await buildApp({
       required: true,
-      publicPathPatterns: [
-        /^\/api\/v1\/auth\/oauth\/[a-zA-Z0-9_-]+\/callback$/,
-      ],
+      publicPathPatterns: [/^\/api\/v1\/auth\/oauth\/[a-zA-Z0-9_-]+\/callback$/],
     });
     const res = await app.request('/api/v1/auth/oauth/providers');
     expect(res.status).toBe(401);
@@ -231,9 +232,7 @@ describe('authMiddleware — P0-1 #200 NO wildcard bypass OAuth/SAML admin', () 
   it('publicPathPatterns rifiuta path injection (no `..` né newline)', async () => {
     const app = await buildApp({
       required: true,
-      publicPathPatterns: [
-        /^\/api\/v1\/auth\/oauth\/[a-zA-Z0-9_-]+\/callback$/,
-      ],
+      publicPathPatterns: [/^\/api\/v1\/auth\/oauth\/[a-zA-Z0-9_-]+\/callback$/],
     });
     const res = await app.request('/api/v1/auth/oauth/google/callback/../providers');
     // Path normalizzato dal router; in ogni caso il pattern `$` chiude la stringa
@@ -271,7 +270,7 @@ describe('authMiddleware — bearer JWT', () => {
       const lastCall = verifyMock.mock.calls.at(-1) as [string, string];
       expect(lastCall[0]).not.toBe('null');
     }
-    expect(res.status).toBe(401);     // verifyMock ritorna null → no auth
+    expect(res.status).toBe(401); // verifyMock ritorna null → no auth
   });
 
   it('#203 P0-4: ignora "Bearer cookie-session" sentinel → tenta JWT col cookie HttpOnly', async () => {
@@ -279,7 +278,10 @@ describe('authMiddleware — bearer JWT', () => {
     // Il middleware DEVE skippare il verify del Bearer (che fallirebbe) e
     // procedere col cookie ff_session HttpOnly.
     verifyMock.mockResolvedValue({
-      sub: 'user-1', email: 'u@x.it', role: 'editor', tenantId: 'tenant-default',
+      sub: 'user-1',
+      email: 'u@x.it',
+      role: 'editor',
+      tenantId: 'tenant-default',
     });
     const app = await buildApp();
     const res = await app.request('/api/v1/me', {
@@ -298,7 +300,12 @@ describe('authMiddleware — bearer JWT', () => {
 });
 
 describe('authMiddleware — blocklist di revoca (DB tenant reale, NON fail-open)', () => {
-  const basePayload = { tenantId: 'tenant-default', email: 'u@x.it', role: 'owner', exp: FUTURE_EXP };
+  const basePayload = {
+    tenantId: 'tenant-default',
+    email: 'u@x.it',
+    role: 'owner',
+    exp: FUTURE_EXP,
+  };
 
   it('token valido NON revocato → 200 (baseline)', async () => {
     verifyMock.mockResolvedValue({ ...basePayload, sub: 'u-ok', iat: 1000, jti: 'jti-ok' });
@@ -314,14 +321,19 @@ describe('authMiddleware — blocklist di revoca (DB tenant reale, NON fail-open
     const app = await buildApp();
     const res = await app.request('/api/v1/me', { headers: { authorization: 'Bearer x' } });
     expect(res.status).toBe(401);
-    expect((await res.json() as { error: string }).error).toMatch(/revoked/i);
+    expect(((await res.json()) as { error: string }).error).toMatch(/revoked/i);
   });
 
   it('revoca-tutte utente (cutoff): token con iat < cutoff → 401', async () => {
     const { revokeAllUserSessions } = await import('@/services/security/session-revocation.js');
     const nowSec = Math.floor(Date.now() / 1000);
     revokeAllUserSessions('u-cut');
-    verifyMock.mockResolvedValue({ ...basePayload, sub: 'u-cut', iat: nowSec - 100, jti: 'jti-old' });
+    verifyMock.mockResolvedValue({
+      ...basePayload,
+      sub: 'u-cut',
+      iat: nowSec - 100,
+      jti: 'jti-old',
+    });
     const app = await buildApp();
     const res = await app.request('/api/v1/me', { headers: { authorization: 'Bearer x' } });
     expect(res.status).toBe(401);
@@ -331,7 +343,12 @@ describe('authMiddleware — blocklist di revoca (DB tenant reale, NON fail-open
     const { revokeAllUserSessions } = await import('@/services/security/session-revocation.js');
     const nowSec = Math.floor(Date.now() / 1000);
     revokeAllUserSessions('u-relog');
-    verifyMock.mockResolvedValue({ ...basePayload, sub: 'u-relog', iat: nowSec + 10, jti: 'jti-fresh' });
+    verifyMock.mockResolvedValue({
+      ...basePayload,
+      sub: 'u-relog',
+      iat: nowSec + 10,
+      jti: 'jti-fresh',
+    });
     const app = await buildApp();
     const res = await app.request('/api/v1/me', { headers: { authorization: 'Bearer x' } });
     expect(res.status).toBe(200);
@@ -343,31 +360,46 @@ describe('authMiddleware — cross-tenant scope assertion (defense-in-depth 2026
     // env = 'tenant-default' (beforeEach). Token forgiato/leakato di un ALTRO
     // workspace → DEVE essere rifiutato anche se la firma fosse valida.
     verifyMock.mockResolvedValue({
-      sub: 'user-evil', email: 'e@x.it', role: 'owner', tenantId: 'tenant-ALTRO-workspace',
+      sub: 'user-evil',
+      email: 'e@x.it',
+      role: 'owner',
+      tenantId: 'tenant-ALTRO-workspace',
     });
     const app = await buildApp();
-    const res = await app.request('/api/v1/me', { headers: { authorization: 'Bearer cross.tenant.jwt' } });
+    const res = await app.request('/api/v1/me', {
+      headers: { authorization: 'Bearer cross.tenant.jwt' },
+    });
     expect(res.status).toBe(401);
-    expect((await res.json() as { error: string }).error).toMatch(/tenant scope mismatch/i);
+    expect(((await res.json()) as { error: string }).error).toMatch(/tenant scope mismatch/i);
   });
 
-  it('SECURITY: superadmin con token di un altro workspace NON bypassa l\'assertion', async () => {
+  it("SECURITY: superadmin con token di un altro workspace NON bypassa l'assertion", async () => {
     // superadmin ha accesso cross-tenant via SSO fresh (tenantId=quel workspace),
     // NON riusando un token mintato per un altro container.
     verifyMock.mockResolvedValue({
-      sub: 'root', email: 'root@zeli.it', role: 'superadmin', tenantId: 'tenant-ALTRO',
+      sub: 'root',
+      email: 'root@zeli.it',
+      role: 'superadmin',
+      tenantId: 'tenant-ALTRO',
     });
     const app = await buildApp();
-    const res = await app.request('/api/v1/me', { headers: { authorization: 'Bearer super.cross.jwt' } });
+    const res = await app.request('/api/v1/me', {
+      headers: { authorization: 'Bearer super.cross.jwt' },
+    });
     expect(res.status).toBe(401);
   });
 
   it('token con tenantId === MEDEA_TENANT_ID → 200 (baseline)', async () => {
     verifyMock.mockResolvedValue({
-      sub: 'user-ok', email: 'u@x.it', role: 'editor', tenantId: 'tenant-default',
+      sub: 'user-ok',
+      email: 'u@x.it',
+      role: 'editor',
+      tenantId: 'tenant-default',
     });
     const app = await buildApp();
-    const res = await app.request('/api/v1/me', { headers: { authorization: 'Bearer same.tenant.jwt' } });
+    const res = await app.request('/api/v1/me', {
+      headers: { authorization: 'Bearer same.tenant.jwt' },
+    });
     expect(res.status).toBe(200);
     const body = (await res.json()) as { auth: { tenantId: string } };
     expect(body.auth.tenantId).toBe('tenant-default');
@@ -376,7 +408,10 @@ describe('authMiddleware — cross-tenant scope assertion (defense-in-depth 2026
   it('MEDEA_TENANT_ID vuoto (dev / disaster recovery) → assertion NON enforced', async () => {
     process.env.MEDEA_TENANT_ID = '';
     verifyMock.mockResolvedValue({
-      sub: 'user-dev', email: 'd@x.it', role: 'owner', tenantId: 'qualsiasi-tenant',
+      sub: 'user-dev',
+      email: 'd@x.it',
+      role: 'owner',
+      tenantId: 'qualsiasi-tenant',
     });
     const app = await buildApp();
     const res = await app.request('/api/v1/me', { headers: { authorization: 'Bearer dev.jwt' } });
@@ -385,16 +420,19 @@ describe('authMiddleware — cross-tenant scope assertion (defense-in-depth 2026
 });
 
 describe('authMiddleware — allowlist REALE (auth-public-paths) ↔ middleware', () => {
-  it('config di produzione: /auth/logout bypassa l\'auth, un endpoint sensibile NO', async () => {
+  it("config di produzione: /auth/logout bypassa l'auth, un endpoint sensibile NO", async () => {
     const { authMiddleware } = await import('./auth.js');
     const { PUBLIC_PATH_PATTERNS, PUBLIC_PREFIXES } = await import('./auth-public-paths.js');
     const app = new Hono();
-    app.use('/api/v1/*', authMiddleware({
-      publicKeyPem: FAKE_PUBLIC_KEY,
-      required: true,
-      publicPrefixes: [...PUBLIC_PREFIXES],
-      publicPathPatterns: [...PUBLIC_PATH_PATTERNS],
-    }));
+    app.use(
+      '/api/v1/*',
+      authMiddleware({
+        publicKeyPem: FAKE_PUBLIC_KEY,
+        required: true,
+        publicPrefixes: [...PUBLIC_PREFIXES],
+        publicPathPatterns: [...PUBLIC_PATH_PATTERNS],
+      }),
+    );
     app.post('/api/v1/auth/logout', (c) => c.json({ ok: true }));
     app.get('/api/v1/users/me', (c) => c.json({ ok: true }));
     // /auth/logout → bypass (200 SENZA auth, col pattern reale di produzione)

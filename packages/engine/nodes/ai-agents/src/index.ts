@@ -19,7 +19,12 @@ import { logLlmExchange } from '@medea/engine-nodes-stdlib';
 // timeout, no breaker). Un provider down = workflow appeso forever.
 // Pattern unificato: safeFetchWithRedirects + executeWithHostBreaker.
 import { executeWithHostBreaker } from '@medea/engine-nodes-stdlib';
-import { safeFetchWithRedirects, readJsonCapped, readTextTruncated, internalGatewayTrustedHost } from '@medea/engine-safe-fetch';
+import {
+  safeFetchWithRedirects,
+  readJsonCapped,
+  readTextTruncated,
+  internalGatewayTrustedHost,
+} from '@medea/engine-safe-fetch';
 
 // Fase 1a (#12): ogni agent_* espone `output._llm` (token in/out, modello,
 // provider, fromApi). Helper in modulo separato (llm-usage.ts, no-monoliti).
@@ -39,7 +44,13 @@ const LLM_PROVIDER_TIMEOUT_MS = 60_000;
 
 async function gatewayFetch(
   url: string,
-  init: { method?: string; headers?: Record<string, string>; body?: string; allowDockerNet?: boolean; allowedHosts?: readonly string[] },
+  init: {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+    allowDockerNet?: boolean;
+    allowedHosts?: readonly string[];
+  },
 ): Promise<Response> {
   return executeWithHostBreaker(url, () => {
     const opts: Parameters<typeof safeFetchWithRedirects>[1] = {
@@ -84,7 +95,8 @@ const AGENTS: AgentDefinition[] = [
       'Output JSON: { findings: [{ severity, title, line, remediation }], summary }. Severity: critical/high/medium/low. ' +
       'Use case: pre-merge PR review automatico, audit periodico repo legacy, ' +
       'CI gate su pattern vietati, due diligence code acquisition.',
-    systemPrompt: 'You are a senior security engineer. Audit the input for OWASP Top 10 vulnerabilities, injection vectors, secrets in plaintext, weak crypto, and supply-chain risks. Respond as JSON: {"findings":[{"severity":"critical|high|medium|low","title":"...","line":N,"remediation":"..."}],"summary":"..."}',
+    systemPrompt:
+      'You are a senior security engineer. Audit the input for OWASP Top 10 vulnerabilities, injection vectors, secrets in plaintext, weak crypto, and supply-chain risks. Respond as JSON: {"findings":[{"severity":"critical|high|medium|low","title":"...","line":N,"remediation":"..."}],"summary":"..."}',
     outputFormat: 'json',
   },
   {
@@ -97,7 +109,8 @@ const AGENTS: AgentDefinition[] = [
       'Output JSON: { issues: [{ severity (blocker/major/minor), file, line, message, suggestion }], overall_grade (A-F), summary }. ' +
       'Use case: PR review automatico pre-merge GitHub/GitLab, training junior dev con feedback dettagliato, ' +
       'audit refactoring legacy, gate CI per blocker severity, code quality dashboard team.',
-    systemPrompt: 'You are a senior code reviewer. Review the input code for bugs, anti-patterns, performance issues, missing error handling, and idiomatic improvements. Respond as JSON: {"issues":[{"severity":"blocker|major|minor","file":"...","line":N,"message":"...","suggestion":"..."}],"overall_grade":"A|B|C|D|F","summary":"..."}',
+    systemPrompt:
+      'You are a senior code reviewer. Review the input code for bugs, anti-patterns, performance issues, missing error handling, and idiomatic improvements. Respond as JSON: {"issues":[{"severity":"blocker|major|minor","file":"...","line":N,"message":"...","suggestion":"..."}],"overall_grade":"A|B|C|D|F","summary":"..."}',
     outputFormat: 'json',
   },
   {
@@ -111,7 +124,8 @@ const AGENTS: AgentDefinition[] = [
       'Output JSON: { columns: [{ name, type, missing, stats }], correlations: [{ a, b, r }], anomalies, insights }. ' +
       'Use case: EDA preliminare su CSV uploaded, anomaly detection metriche business, ' +
       'pre-processing dataset per ML, audit qualità dati post-import legacy.',
-    systemPrompt: 'You are a data analyst. Given tabular data, identify: distribution shape per column, outliers (IQR method), correlations between columns, missing-value patterns, key trends. Respond as JSON: {"columns":[{"name":"...","type":"...","missing":N,"stats":{}}],"correlations":[{"a":"...","b":"...","r":0.0}],"anomalies":[...],"insights":[...]}',
+    systemPrompt:
+      'You are a data analyst. Given tabular data, identify: distribution shape per column, outliers (IQR method), correlations between columns, missing-value patterns, key trends. Respond as JSON: {"columns":[{"name":"...","type":"...","missing":N,"stats":{}}],"correlations":[{"a":"...","b":"...","r":0.0}],"anomalies":[...],"insights":[...]}',
     outputFormat: 'json',
   },
   {
@@ -125,7 +139,8 @@ const AGENTS: AgentDefinition[] = [
       'Preserva named entities (people/orgs/dates/amounts/tech terms) verbatim — no parafrasi. Output JSON typed. ' +
       'Use case: digest email lunghe, riassunto articoli RSS per newsletter, brief meeting notes, abstract documenti legali/PDF. ' +
       'Token budget controllato. Compatibile output→input chain per filter/route downstream.',
-    systemPrompt: 'You are a precise summarizer. Produce a 3-tier summary of the input: (1) one-sentence TL;DR, (2) 5 key bullet points, (3) detailed paragraph (~150 words). Preserve all named entities (people, organizations, dates, monetary values, technical terms) verbatim. Respond as JSON: {"tldr":"...","bullets":[...],"detailed":"...","entities":{"people":[],"orgs":[],"dates":[],"amounts":[],"tech":[]}}',
+    systemPrompt:
+      'You are a precise summarizer. Produce a 3-tier summary of the input: (1) one-sentence TL;DR, (2) 5 key bullet points, (3) detailed paragraph (~150 words). Preserve all named entities (people, organizations, dates, monetary values, technical terms) verbatim. Respond as JSON: {"tldr":"...","bullets":[...],"detailed":"...","entities":{"people":[],"orgs":[],"dates":[],"amounts":[],"tech":[]}}',
     outputFormat: 'json',
   },
   {
@@ -140,7 +155,8 @@ const AGENTS: AgentDefinition[] = [
       'Output text plain (no JSON wrapper). Engine sceglie modello cheaper per token budget. ' +
       'Use case: i18n contenuti email/website, traduzione ticket support multi-lingua, ' +
       'localizzazione descrizioni prodotto, traduzione documenti legali (con disclaimer).',
-    systemPrompt: 'You are a professional translator. Translate the input into the target language specified in the targetLanguage config. Preserve markdown formatting, code blocks, URLs, named entities, and tone. If the input mixes languages, translate only the source language portion. Respond with the translated text only, no commentary.',
+    systemPrompt:
+      'You are a professional translator. Translate the input into the target language specified in the targetLanguage config. Preserve markdown formatting, code blocks, URLs, named entities, and tone. If the input mixes languages, translate only the source language portion. Respond with the translated text only, no commentary.',
     outputFormat: 'text',
   },
   {
@@ -149,12 +165,13 @@ const AGENTS: AgentDefinition[] = [
     icon: 'tag',
     color: '#f59e0b',
     description:
-      'Agent LLM classifier: assegna l\'input a una delle label custom (config.labels). Output: { label, confidence 0-1, alternatives[] }. ' +
+      "Agent LLM classifier: assegna l'input a una delle label custom (config.labels). Output: { label, confidence 0-1, alternatives[] }. " +
       'Se nessuna label matcha → fallback "other" con score basso. Confidence usable in if/switch downstream per threshold gating. ' +
       'Use case: triage email (lead/support/spam/ordine), classificazione ticket per team, ' +
       'routing per categoria prodotto e-commerce, content moderation pre-pubblicazione, ' +
       'tagging automatico documenti per archivio.',
-    systemPrompt: 'You are a classifier. Given input text and a list of candidate labels (in config.labels), assign the most appropriate label. If none fit well, label as "other". Respond as JSON: {"label":"...","confidence":0.0-1.0,"alternatives":[{"label":"...","confidence":0.0}]}',
+    systemPrompt:
+      'You are a classifier. Given input text and a list of candidate labels (in config.labels), assign the most appropriate label. If none fit well, label as "other". Respond as JSON: {"label":"...","confidence":0.0-1.0,"alternatives":[{"label":"...","confidence":0.0}]}',
     outputFormat: 'json',
   },
   {
@@ -169,7 +186,8 @@ const AGENTS: AgentDefinition[] = [
       'Use case: parse email ordine (importo/cliente/sku/qty), estrazione anagrafica da CV, ' +
       'invoice extraction (numero/data/importo/IVA/righe), contatti da firma email, ' +
       'parametri da messaggio chat (date/luoghi/persone) per scheduling/CRM.',
-    systemPrompt: 'You are an entity extractor. Given input text and a JSON schema in config.schema, extract the fields conforming to the schema. If a field is not present, set it to null. If a field allows multiple, return an array. Respond as JSON matching the requested schema.',
+    systemPrompt:
+      'You are an entity extractor. Given input text and a JSON schema in config.schema, extract the fields conforming to the schema. If a field is not present, set it to null. If a field allows multiple, return an array. Respond as JSON matching the requested schema.',
     outputFormat: 'json',
   },
   {
@@ -183,7 +201,8 @@ const AGENTS: AgentDefinition[] = [
       'Pair with logic_switch downstream: ogni intent diventa una branch separata del workflow. ' +
       'Use case: chatbot multi-intent (order/refund/info/cancel → 4 rami), routing email per dipartimento, ' +
       'voice assistant action dispatcher, ticket support priority/category auto-tag.',
-    systemPrompt: 'You are an intent classifier for a customer-facing workflow. Given the user message and a list of intent names (config.intents), return the most likely intent. If none fit, return "fallback". Respond with JSON: {"intent":"...","confidence":0.0-1.0,"reasoning":"..."}',
+    systemPrompt:
+      'You are an intent classifier for a customer-facing workflow. Given the user message and a list of intent names (config.intents), return the most likely intent. If none fit, return "fallback". Respond with JSON: {"intent":"...","confidence":0.0-1.0,"reasoning":"..."}',
     outputFormat: 'json',
   },
   {
@@ -191,8 +210,10 @@ const AGENTS: AgentDefinition[] = [
     label: 'Agent: HTML Extractor (AI)',
     icon: 'wand-2',
     color: '#a855f7',
-    description: 'Estrai dati strutturati da HTML descrivendo in linguaggio naturale cosa vuoi (NO selettori CSS). L\'AI legge il DOM + l\'instruction → ritorna JSON conforme allo schema specificato. Top 2026: scraping AI-powered che resiste a cambi di layout (selettori CSS si rompono, l\'AI no).',
-    systemPrompt: 'Sei un estrattore intelligente di dati da HTML. Ricevi: (1) il body HTML completo della pagina; (2) un\'instruction in linguaggio naturale che descrive COSA estrarre (es. "titolo articolo, autore, data pubblicazione, lista commenti"); (3) un JSON schema (config.schema) che definisce la forma dell\'output. Analizza il DOM, capisci la struttura, estrai i campi richiesti. Se un campo non esiste set null. Per liste di items ritorna array. NON inventare dati: se non c\'è, null. Rispondi SOLO JSON valido conforme allo schema, niente prefissi tipo "Ecco i dati:".',
+    description:
+      "Estrai dati strutturati da HTML descrivendo in linguaggio naturale cosa vuoi (NO selettori CSS). L'AI legge il DOM + l'instruction → ritorna JSON conforme allo schema specificato. Top 2026: scraping AI-powered che resiste a cambi di layout (selettori CSS si rompono, l'AI no).",
+    systemPrompt:
+      'Sei un estrattore intelligente di dati da HTML. Ricevi: (1) il body HTML completo della pagina; (2) un\'instruction in linguaggio naturale che descrive COSA estrarre (es. "titolo articolo, autore, data pubblicazione, lista commenti"); (3) un JSON schema (config.schema) che definisce la forma dell\'output. Analizza il DOM, capisci la struttura, estrai i campi richiesti. Se un campo non esiste set null. Per liste di items ritorna array. NON inventare dati: se non c\'è, null. Rispondi SOLO JSON valido conforme allo schema, niente prefissi tipo "Ecco i dati:".',
     outputFormat: 'json',
   },
   {
@@ -200,8 +221,10 @@ const AGENTS: AgentDefinition[] = [
     label: 'Agent: Selector Inference (AI)',
     icon: 'crosshair',
     color: '#ec4899',
-    description: 'Genera selettori CSS/XPath automaticamente da 1-2 esempi label-value. Tu fornisci HTML + esempi tipo {"price": "€42.50"} → l\'AI genera selettori robusti che catturano gli stessi valori. Output usabile direttamente in action_html_select. Self-healing scraping (rigenera quando il sito cambia).',
-    systemPrompt: 'Sei un generatore esperto di selettori CSS per scraping. Ricevi: (1) HTML completo della pagina; (2) una mappa di esempi {fieldName: expectedValue} dove l\'utente dice "questo campo deve produrre questo valore" (es. {"price": "€42.50", "title": "iPhone 16 Pro"}). Analizza il DOM, trova gli elementi che contengono ESATTAMENTE quei valori, e ritorna selettori CSS robusti (preferisci classi semantiche o attributi data-* sopra :nth-child quando possibile). Per ogni campo proponi: il selettore primario + 1-2 fallback. Output JSON: {"selectors": {<fieldName>: {"primary": "...", "fallbacks": [...], "extract": "text|attr", "attr": "..."}}, "confidence": 0.0-1.0, "notes": "..."}.',
+    description:
+      'Genera selettori CSS/XPath automaticamente da 1-2 esempi label-value. Tu fornisci HTML + esempi tipo {"price": "€42.50"} → l\'AI genera selettori robusti che catturano gli stessi valori. Output usabile direttamente in action_html_select. Self-healing scraping (rigenera quando il sito cambia).',
+    systemPrompt:
+      'Sei un generatore esperto di selettori CSS per scraping. Ricevi: (1) HTML completo della pagina; (2) una mappa di esempi {fieldName: expectedValue} dove l\'utente dice "questo campo deve produrre questo valore" (es. {"price": "€42.50", "title": "iPhone 16 Pro"}). Analizza il DOM, trova gli elementi che contengono ESATTAMENTE quei valori, e ritorna selettori CSS robusti (preferisci classi semantiche o attributi data-* sopra :nth-child quando possibile). Per ogni campo proponi: il selettore primario + 1-2 fallback. Output JSON: {"selectors": {<fieldName>: {"primary": "...", "fallbacks": [...], "extract": "text|attr", "attr": "..."}}, "confidence": 0.0-1.0, "notes": "..."}.',
     outputFormat: 'json',
   },
   {
@@ -209,15 +232,23 @@ const AGENTS: AgentDefinition[] = [
     label: 'Agent: Schema Validator',
     icon: 'shield-check',
     color: '#10b981',
-    description: 'Validate structured input against JSON Schema + business rules. Returns valid/errors/normalized. Top 2026: schema, custom rules, strict mode, error path, normalize-on-fix.',
-    systemPrompt: 'Sei un validatore strict di dati strutturati. Ricevi: (1) input JSON da validare; (2) schema JSON Schema (config.schema) — type/properties/required/enum/pattern/min/max; (3) opzionali regole business (config.businessRules) in linguaggio naturale; (4) flag config.strictMode (true = reject extra fields, false = allow). \n\nValuta in 3 step:\n  A. Schema-shape: tutti i required ci sono? tipi giusti? pattern/enum rispettati?\n  B. Business rules: ogni regola applicata, raccolta violazioni.\n  C. Se config.normalize=true: applica fix triviali (trim string, lowercase email, parse number da string numerica). Niente fix che cambino semantica.\n\nRispondi SOLO JSON: {"valid": bool, "errors": [{"path":"$.field","rule":"required|type|pattern|enum|min|max|business","message":"..."}], "normalized": <object o null>, "summary":"breve riassunto IT"}',
+    description:
+      'Validate structured input against JSON Schema + business rules. Returns valid/errors/normalized. Top 2026: schema, custom rules, strict mode, error path, normalize-on-fix.',
+    systemPrompt:
+      'Sei un validatore strict di dati strutturati. Ricevi: (1) input JSON da validare; (2) schema JSON Schema (config.schema) — type/properties/required/enum/pattern/min/max; (3) opzionali regole business (config.businessRules) in linguaggio naturale; (4) flag config.strictMode (true = reject extra fields, false = allow). \n\nValuta in 3 step:\n  A. Schema-shape: tutti i required ci sono? tipi giusti? pattern/enum rispettati?\n  B. Business rules: ogni regola applicata, raccolta violazioni.\n  C. Se config.normalize=true: applica fix triviali (trim string, lowercase email, parse number da string numerica). Niente fix che cambino semantica.\n\nRispondi SOLO JSON: {"valid": bool, "errors": [{"path":"$.field","rule":"required|type|pattern|enum|min|max|business","message":"..."}], "normalized": <object o null>, "summary":"breve riassunto IT"}',
     outputFormat: 'json',
   },
 ];
 
 /** Shape usage OpenAI-format (liara/openai/openrouter/mistral/groq). */
-interface OpenAiUsage { prompt_tokens?: number; completion_tokens?: number }
-const openAiCounts = (u: OpenAiUsage | undefined): ApiTokenCounts => ({ input: u?.prompt_tokens, output: u?.completion_tokens });
+interface OpenAiUsage {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+}
+const openAiCounts = (u: OpenAiUsage | undefined): ApiTokenCounts => ({
+  input: u?.prompt_tokens,
+  output: u?.completion_tokens,
+});
 
 /**
  * Una chiamata LLM completa. Ritorna il testo della risposta + l'usage token
@@ -225,7 +256,14 @@ const openAiCounts = (u: OpenAiUsage | undefined): ApiTokenCounts => ({ input: u
  * — vedi buildAgentUsage). Il testo è IDENTICO a prima della Fase 1a: l'usage
  * è un canale aggiuntivo, non tocca il contenuto.
  */
-async function dispatchLLM(provider: string, apiKey: string, model: string, system: string, user: string, baseUrl?: string): Promise<{ text: string; usage: AgentLlmUsage }> {
+async function dispatchLLM(
+  provider: string,
+  apiKey: string,
+  model: string,
+  system: string,
+  user: string,
+  baseUrl?: string,
+): Promise<{ text: string; usage: AgentLlmUsage }> {
   switch (provider) {
     case 'liara': {
       // Free-tier hosted model (Qwen3 32B + NHA-v1 LoRA) — no API key needed.
@@ -239,9 +277,10 @@ async function dispatchLLM(provider: string, apiKey: string, model: string, syst
       // We read env directly here because this package is browser-safe and
       // can't import from apps/runtime/src/config.ts. The runtime callers
       // who want to override should pass `baseUrl` via context.llmProviders.
-      const internalGateway = typeof process !== 'undefined' && process.env.MEDEA_LIARA_BASE_URL
-        ? process.env.MEDEA_LIARA_BASE_URL.replace(/\/$/, '')
-        : undefined;
+      const internalGateway =
+        typeof process !== 'undefined' && process.env.MEDEA_LIARA_BASE_URL
+          ? process.env.MEDEA_LIARA_BASE_URL.replace(/\/$/, '')
+          : undefined;
       const liaraDefault = internalGateway ?? 'https://liara.nothumanallowed.com';
       const base = baseUrl ?? liaraDefault;
       // Path = `/chat/completions` SENZA `/v1`: il gateway Liara (MEDEA_LIARA_BASE_URL
@@ -259,7 +298,8 @@ async function dispatchLLM(provider: string, apiKey: string, model: string, syst
       const trustedHost = internalGatewayTrustedHost(base, internalGateway);
       // AUTH: il gateway Liara ESIGE la license come Bearer (senza → 400 "license required").
       // Letta dall'env del container (come la chat, llm-chat.service). BYOK (apiKey) → fallback.
-      const licenseKey = typeof process !== 'undefined' ? (process.env.MEDEA_LICENSE_KEY ?? '') : '';
+      const licenseKey =
+        typeof process !== 'undefined' ? (process.env.MEDEA_LICENSE_KEY ?? '') : '';
       const authBearer = licenseKey || apiKey;
       const systemNoThink = `/no_think\n${system}`;
       const effectiveModel = model || 'nha-v1';
@@ -271,7 +311,10 @@ async function dispatchLLM(provider: string, apiKey: string, model: string, syst
         },
         body: JSON.stringify({
           model: effectiveModel,
-          messages: [{ role: 'system', content: systemNoThink }, { role: 'user', content: user }],
+          messages: [
+            { role: 'system', content: systemNoThink },
+            { role: 'user', content: user },
+          ],
           temperature: 0.7,
           max_tokens: 2048,
           chat_template_kwargs: { enable_thinking: false },
@@ -279,29 +322,62 @@ async function dispatchLLM(provider: string, apiKey: string, model: string, syst
         ...(trustedHost ? { allowedHosts: [trustedHost] } : {}),
       });
       if (!res.ok) throw new Error(`Liara ${String(res.status)}: ${await errBody(res)}`);
-      const data = await readJsonCapped<{ choices?: { message: { content: string } }[]; usage?: OpenAiUsage }>(res);
+      const data = await readJsonCapped<{
+        choices?: { message: { content: string } }[];
+        usage?: OpenAiUsage;
+      }>(res);
       const raw = data.choices?.[0]?.message.content ?? '';
       return {
         // Safety: strip any residual <think>...</think> block that may leak through
         text: raw.replace(/<think>[\s\S]*?<\/think>\s*/g, '').trim(),
         // Stima sul RAW pre-strip: gli eventuali token di thinking sono stati
         // comunque generati (e contati/billati dal gateway).
-        usage: buildAgentUsage({ provider: 'liara', model: effectiveModel, sentSystem: systemNoThink, sentUser: user, receivedText: raw, api: openAiCounts(data.usage) }),
+        usage: buildAgentUsage({
+          provider: 'liara',
+          model: effectiveModel,
+          sentSystem: systemNoThink,
+          sentUser: user,
+          receivedText: raw,
+          api: openAiCounts(data.usage),
+        }),
       };
     }
     case 'anthropic': {
       const effectiveModel = model || 'claude-sonnet-4-5';
       const res = await gatewayFetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: effectiveModel, max_tokens: 4096, system, messages: [{ role: 'user', content: user }] }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: effectiveModel,
+          max_tokens: 4096,
+          system,
+          messages: [{ role: 'user', content: user }],
+        }),
       });
       if (!res.ok) throw new Error(`Anthropic ${String(res.status)}: ${await errBody(res)}`);
-      const data = await readJsonCapped<{ content?: { type: string; text?: string }[]; usage?: { input_tokens?: number; output_tokens?: number } }>(res);
-      const text = data.content?.filter((b) => b.type === 'text').map((b) => b.text ?? '').join('') ?? '';
+      const data = await readJsonCapped<{
+        content?: { type: string; text?: string }[];
+        usage?: { input_tokens?: number; output_tokens?: number };
+      }>(res);
+      const text =
+        data.content
+          ?.filter((b) => b.type === 'text')
+          .map((b) => b.text ?? '')
+          .join('') ?? '';
       return {
         text,
-        usage: buildAgentUsage({ provider: 'anthropic', model: effectiveModel, sentSystem: system, sentUser: user, receivedText: text, api: { input: data.usage?.input_tokens, output: data.usage?.output_tokens } }),
+        usage: buildAgentUsage({
+          provider: 'anthropic',
+          model: effectiveModel,
+          sentSystem: system,
+          sentUser: user,
+          receivedText: text,
+          api: { input: data.usage?.input_tokens, output: data.usage?.output_tokens },
+        }),
       };
     }
     case 'openai': {
@@ -309,29 +385,65 @@ async function dispatchLLM(provider: string, apiKey: string, model: string, syst
       const res = await gatewayFetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({ model: effectiveModel, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
+        body: JSON.stringify({
+          model: effectiveModel,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user },
+          ],
+        }),
       });
       if (!res.ok) throw new Error(`OpenAI ${String(res.status)}: ${await errBody(res)}`);
-      const data = await readJsonCapped<{ choices?: { message: { content: string } }[]; usage?: OpenAiUsage }>(res);
+      const data = await readJsonCapped<{
+        choices?: { message: { content: string } }[];
+        usage?: OpenAiUsage;
+      }>(res);
       const text = data.choices?.[0]?.message.content ?? '';
       return {
         text,
-        usage: buildAgentUsage({ provider: 'openai', model: effectiveModel, sentSystem: system, sentUser: user, receivedText: text, api: openAiCounts(data.usage) }),
+        usage: buildAgentUsage({
+          provider: 'openai',
+          model: effectiveModel,
+          sentSystem: system,
+          sentUser: user,
+          receivedText: text,
+          api: openAiCounts(data.usage),
+        }),
       };
     }
     case 'openrouter': {
       const effectiveModel = model || 'anthropic/claude-sonnet-4.5';
       const res = await gatewayFetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}`, 'X-Title': 'FlowForge' },
-        body: JSON.stringify({ model: effectiveModel, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+          'X-Title': 'FlowForge',
+        },
+        body: JSON.stringify({
+          model: effectiveModel,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user },
+          ],
+        }),
       });
       if (!res.ok) throw new Error(`OpenRouter ${String(res.status)}: ${await errBody(res)}`);
-      const data = await readJsonCapped<{ choices?: { message: { content: string } }[]; usage?: OpenAiUsage }>(res);
+      const data = await readJsonCapped<{
+        choices?: { message: { content: string } }[];
+        usage?: OpenAiUsage;
+      }>(res);
       const text = data.choices?.[0]?.message.content ?? '';
       return {
         text,
-        usage: buildAgentUsage({ provider: 'openrouter', model: effectiveModel, sentSystem: system, sentUser: user, receivedText: text, api: openAiCounts(data.usage) }),
+        usage: buildAgentUsage({
+          provider: 'openrouter',
+          model: effectiveModel,
+          sentSystem: system,
+          sentUser: user,
+          receivedText: text,
+          api: openAiCounts(data.usage),
+        }),
       };
     }
     case 'ollama': {
@@ -344,36 +456,70 @@ async function dispatchLLM(provider: string, apiKey: string, model: string, syst
       const res = await gatewayFetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: effectiveModel, stream: false, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
+        body: JSON.stringify({
+          model: effectiveModel,
+          stream: false,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user },
+          ],
+        }),
         allowDockerNet: true,
         ...(ollamaHosts ? { allowedHosts: [ollamaHosts] } : {}),
       });
       if (!res.ok) throw new Error(`Ollama ${String(res.status)}: ${await errBody(res)}`);
-      const data = await readJsonCapped<{ message?: { content?: string }; prompt_eval_count?: number; eval_count?: number }>(res);
+      const data = await readJsonCapped<{
+        message?: { content?: string };
+        prompt_eval_count?: number;
+        eval_count?: number;
+      }>(res);
       const text = data.message?.content ?? '';
       return {
         text,
-        usage: buildAgentUsage({ provider: 'ollama', model: effectiveModel, sentSystem: system, sentUser: user, receivedText: text, api: { input: data.prompt_eval_count, output: data.eval_count } }),
+        usage: buildAgentUsage({
+          provider: 'ollama',
+          model: effectiveModel,
+          sentSystem: system,
+          sentUser: user,
+          receivedText: text,
+          api: { input: data.prompt_eval_count, output: data.eval_count },
+        }),
       };
     }
     case 'gemini': {
       const m = model || 'gemini-2.0-flash';
       // API key nell'HEADER x-goog-api-key, NON in query (?key=): una key nell'URL
       // finisce nei log/breaker-key e su redirect cross-host NON viene strippata.
-      const res = await gatewayFetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: system }] },
-          contents: [{ role: 'user', parts: [{ text: user }] }],
-        }),
-      });
+      const res = await gatewayFetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: system }] },
+            contents: [{ role: 'user', parts: [{ text: user }] }],
+          }),
+        },
+      );
       if (!res.ok) throw new Error(`Gemini ${String(res.status)}: ${await errBody(res)}`);
-      const data = await readJsonCapped<{ candidates?: { content?: { parts?: { text?: string }[] } }[]; usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } }>(res);
+      const data = await readJsonCapped<{
+        candidates?: { content?: { parts?: { text?: string }[] } }[];
+        usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
+      }>(res);
       const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
       return {
         text,
-        usage: buildAgentUsage({ provider: 'gemini', model: m, sentSystem: system, sentUser: user, receivedText: text, api: { input: data.usageMetadata?.promptTokenCount, output: data.usageMetadata?.candidatesTokenCount } }),
+        usage: buildAgentUsage({
+          provider: 'gemini',
+          model: m,
+          sentSystem: system,
+          sentUser: user,
+          receivedText: text,
+          api: {
+            input: data.usageMetadata?.promptTokenCount,
+            output: data.usageMetadata?.candidatesTokenCount,
+          },
+        }),
       };
     }
     case 'mistral': {
@@ -381,14 +527,30 @@ async function dispatchLLM(provider: string, apiKey: string, model: string, syst
       const res = await gatewayFetch('https://api.mistral.ai/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({ model: effectiveModel, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
+        body: JSON.stringify({
+          model: effectiveModel,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user },
+          ],
+        }),
       });
       if (!res.ok) throw new Error(`Mistral ${String(res.status)}: ${await errBody(res)}`);
-      const data = await readJsonCapped<{ choices?: { message: { content: string } }[]; usage?: OpenAiUsage }>(res);
+      const data = await readJsonCapped<{
+        choices?: { message: { content: string } }[];
+        usage?: OpenAiUsage;
+      }>(res);
       const text = data.choices?.[0]?.message.content ?? '';
       return {
         text,
-        usage: buildAgentUsage({ provider: 'mistral', model: effectiveModel, sentSystem: system, sentUser: user, receivedText: text, api: openAiCounts(data.usage) }),
+        usage: buildAgentUsage({
+          provider: 'mistral',
+          model: effectiveModel,
+          sentSystem: system,
+          sentUser: user,
+          receivedText: text,
+          api: openAiCounts(data.usage),
+        }),
       };
     }
     case 'groq': {
@@ -396,17 +558,36 @@ async function dispatchLLM(provider: string, apiKey: string, model: string, syst
       const res = await gatewayFetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({ model: effectiveModel, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
+        body: JSON.stringify({
+          model: effectiveModel,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user },
+          ],
+        }),
       });
       if (!res.ok) throw new Error(`Groq ${String(res.status)}: ${await errBody(res)}`);
-      const data = await readJsonCapped<{ choices?: { message: { content: string } }[]; usage?: OpenAiUsage }>(res);
+      const data = await readJsonCapped<{
+        choices?: { message: { content: string } }[];
+        usage?: OpenAiUsage;
+      }>(res);
       const text = data.choices?.[0]?.message.content ?? '';
       return {
         text,
-        usage: buildAgentUsage({ provider: 'groq', model: effectiveModel, sentSystem: system, sentUser: user, receivedText: text, api: openAiCounts(data.usage) }),
+        usage: buildAgentUsage({
+          provider: 'groq',
+          model: effectiveModel,
+          sentSystem: system,
+          sentUser: user,
+          receivedText: text,
+          api: openAiCounts(data.usage),
+        }),
       };
     }
-    default: throw new Error(`Unknown LLM provider: ${provider}. Supported: anthropic, openai, gemini, mistral, groq, openrouter, ollama.`);
+    default:
+      throw new Error(
+        `Unknown LLM provider: ${provider}. Supported: anthropic, openai, gemini, mistral, groq, openrouter, ollama.`,
+      );
   }
 }
 
@@ -431,7 +612,11 @@ function buildAgentConfigPreamble(agentId: string, config: Record<string, unknow
   if (agentId === 'agent_extractor' && typeof config.schema === 'string' && config.schema.trim()) {
     lines.push(`Target JSON schema:\n${config.schema}`);
   }
-  if (agentId === 'agent_intent_router' && typeof config.intents === 'string' && config.intents.trim()) {
+  if (
+    agentId === 'agent_intent_router' &&
+    typeof config.intents === 'string' &&
+    config.intents.trim()
+  ) {
     lines.push(`Candidate intents: ${config.intents}`);
   }
   if (agentId === 'agent_validator') {
@@ -446,7 +631,8 @@ function buildAgentConfigPreamble(agentId: string, config: Record<string, unknow
     lines.push(`\nstrictMode=${strict.toString()}, normalize=${normalize.toString()}`);
   }
   if (agentId === 'agent_translator') {
-    const custom = typeof config.customTargetLanguage === 'string' ? config.customTargetLanguage.trim() : '';
+    const custom =
+      typeof config.customTargetLanguage === 'string' ? config.customTargetLanguage.trim() : '';
     const sel = typeof config.targetLanguage === 'string' ? config.targetLanguage.trim() : '';
     const lang = custom || sel || 'italiano';
     lines.push(`Target language: ${lang}`);
@@ -467,8 +653,13 @@ function buildAgentConfigPreamble(agentId: string, config: Record<string, unknow
     if (typeof config.examples === 'string' && config.examples.trim()) {
       lines.push(`Esempi {campo: valore atteso}:\n${config.examples}`);
     }
-    const preferSemantic = config.preferDataAttrs === undefined || config.preferDataAttrs === true || config.preferDataAttrs === 'true';
-    lines.push(`\npreferDataAttrs=${preferSemantic.toString()} (true = preferisci classi semantiche / data-* a :nth-child)`);
+    const preferSemantic =
+      config.preferDataAttrs === undefined ||
+      config.preferDataAttrs === true ||
+      config.preferDataAttrs === 'true';
+    lines.push(
+      `\npreferDataAttrs=${preferSemantic.toString()} (true = preferisci classi semantiche / data-* a :nth-child)`,
+    );
   }
   return lines.length > 0 ? `[Agent config]\n${lines.join('\n')}\n\n---\n\n` : '';
 }
@@ -491,19 +682,40 @@ function makeAgentExecutor(agent: AgentDefinition): NodeExecutor {
     const start = Date.now();
     const resolved = resolveLlmConfig(config, context.llmProviders);
     const extraContext = typeof config.extraContext === 'string' ? config.extraContext : '';
-    const userPayload = applyHtmlCap(agent.id, typeof input === 'string' ? input : JSON.stringify(input), config);
+    const userPayload = applyHtmlCap(
+      agent.id,
+      typeof input === 'string' ? input : JSON.stringify(input),
+      config,
+    );
     const configPreamble = buildAgentConfigPreamble(agent.id, config);
-    const finalUser = [configPreamble, extraContext ? `${extraContext}\n\n---\n\n` : '', userPayload]
+    const finalUser = [
+      configPreamble,
+      extraContext ? `${extraContext}\n\n---\n\n` : '',
+      userPayload,
+    ]
       .filter((s) => s.length > 0)
       .join('');
 
-    const llmRes = await dispatchLLM(resolved.provider, resolved.apiKey, resolved.model, agent.systemPrompt, finalUser, resolved.baseUrl);
+    const llmRes = await dispatchLLM(
+      resolved.provider,
+      resolved.apiKey,
+      resolved.model,
+      agent.systemPrompt,
+      finalUser,
+      resolved.baseUrl,
+    );
     const text = llmRes.text;
     // Usage cumulativo del nodo: la 2ª chiamata del repair pass (sotto) si somma.
     let usage = llmRes.usage;
     // Fase 3 (#15): il system prompt è NASCOSTO all'utente per design — il log
     // per-run è l'unico posto dove può vederlo insieme a ciò che è stato inviato.
-    logLlmExchange(context, { provider: usage.provider, model: usage.model, system: agent.systemPrompt, user: finalUser, response: text });
+    logLlmExchange(context, {
+      provider: usage.provider,
+      model: usage.model,
+      system: agent.systemPrompt,
+      user: finalUser,
+      response: text,
+    });
 
     let parsed: unknown = text;
     if (agent.outputFormat === 'json') {
@@ -520,15 +732,29 @@ function makeAgentExecutor(agent: AgentDefinition): NodeExecutor {
         const repairSystem =
           'Sei un riparatore di JSON. Riceverai del testo che doveva essere un JSON valido ' +
           'matching un certo schema, ma ha errori sintattici. Restituisci SOLO il JSON corretto, ' +
-          'nient\'altro: niente preambolo, niente backtick, niente spiegazioni.';
+          "nient'altro: niente preambolo, niente backtick, niente spiegazioni.";
         const repairUser =
           `Schema atteso:\n${typeof config.schema === 'string' ? config.schema : '(qualsiasi JSON valido)'}\n\n` +
           `Output ricevuto (NON parseabile, errore: ${first.error}):\n${text}\n\n` +
           'Rispondi con SOLO il JSON corretto.';
         try {
-          const repairRes = await dispatchLLM(resolved.provider, resolved.apiKey, resolved.model, repairSystem, repairUser, resolved.baseUrl);
+          const repairRes = await dispatchLLM(
+            resolved.provider,
+            resolved.apiKey,
+            resolved.model,
+            repairSystem,
+            repairUser,
+            resolved.baseUrl,
+          );
           usage = sumAgentUsage(usage, repairRes.usage);
-          logLlmExchange(context, { provider: usage.provider, model: usage.model, system: repairSystem, user: repairUser, response: repairRes.text, phase: 'repair' });
+          logLlmExchange(context, {
+            provider: usage.provider,
+            model: usage.model,
+            system: repairSystem,
+            user: repairUser,
+            response: repairRes.text,
+            phase: 'repair',
+          });
           const second = extractJson(repairRes.text);
           if (second.ok) {
             parsed = second.value;
@@ -536,7 +762,11 @@ function makeAgentExecutor(agent: AgentDefinition): NodeExecutor {
             parsed = { _raw: text, _rawRepaired: repairRes.text, _parseError: second.error };
           }
         } catch (err) {
-          parsed = { _raw: text, _parseError: first.error, _repairError: err instanceof Error ? err.message : String(err) };
+          parsed = {
+            _raw: text,
+            _parseError: first.error,
+            _repairError: err instanceof Error ? err.message : String(err),
+          };
         }
       }
     }
@@ -551,13 +781,20 @@ function makeAgentExecutor(agent: AgentDefinition): NodeExecutor {
 function extractJson(text: string): { ok: true; value: unknown } | { ok: false; error: string } {
   const stripped = text.replace(/```(?:json)?\s*|\s*```/g, '');
   // Try object first, then array.
-  const candidates: [string, string][] = [['{', '}'], ['[', ']']];
+  const candidates: [string, string][] = [
+    ['{', '}'],
+    ['[', ']'],
+  ];
   for (const [open, close] of candidates) {
     const start = stripped.indexOf(open);
     const end = stripped.lastIndexOf(close);
     if (start >= 0 && end > start) {
       const slice = stripped.slice(start, end + 1);
-      try { return { ok: true, value: JSON.parse(slice) }; } catch { /* try next */ }
+      try {
+        return { ok: true, value: JSON.parse(slice) };
+      } catch {
+        /* try next */
+      }
     }
   }
   return { ok: false, error: 'no balanced JSON found' };
@@ -592,7 +829,7 @@ function agentSpecificFields(agentId: string): ConfigFieldLite[] {
           language: 'json',
           required: true,
           placeholder: '{ "nome": "string", "email": "string", "telefono": "string|null" }',
-          help: 'Schema dei campi da estrarre. L\'agent leggerà il testo input e produrrà un JSON che matcha questo schema. Campi non trovati = null.',
+          help: "Schema dei campi da estrarre. L'agent leggerà il testo input e produrrà un JSON che matcha questo schema. Campi non trovati = null.",
         },
       ];
     case 'agent_intent_router':
@@ -613,7 +850,18 @@ function agentSpecificFields(agentId: string): ConfigFieldLite[] {
           label: 'Lingua di destinazione',
           type: 'select',
           required: true,
-          options: ['italiano', 'inglese', 'francese', 'tedesco', 'spagnolo', 'portoghese', 'cinese', 'giapponese', 'arabo', 'russo'],
+          options: [
+            'italiano',
+            'inglese',
+            'francese',
+            'tedesco',
+            'spagnolo',
+            'portoghese',
+            'cinese',
+            'giapponese',
+            'arabo',
+            'russo',
+          ],
           defaultValue: 'italiano',
           help: 'Lingua in cui tradurre. Per altre lingue usa il campo "Lingua custom" sotto.',
         },
@@ -633,8 +881,9 @@ function agentSpecificFields(agentId: string): ConfigFieldLite[] {
           label: 'Istruzione (cosa estrarre)',
           type: 'textarea',
           required: true,
-          placeholder: 'es. "Titolo articolo, autore, data pubblicazione (formato ISO), lista commenti con nome+testo, prezzo se presente."',
-          help: 'Descrivi in italiano (o inglese) quali campi vuoi estrarre dal HTML. L\'AI interpreta + cerca nel DOM senza selettori CSS.',
+          placeholder:
+            'es. "Titolo articolo, autore, data pubblicazione (formato ISO), lista commenti con nome+testo, prezzo se presente."',
+          help: "Descrivi in italiano (o inglese) quali campi vuoi estrarre dal HTML. L'AI interpreta + cerca nel DOM senza selettori CSS.",
         },
         {
           key: 'schema',
@@ -642,7 +891,8 @@ function agentSpecificFields(agentId: string): ConfigFieldLite[] {
           type: 'code',
           language: 'json',
           required: true,
-          placeholder: '{\n  "title": "string",\n  "author": "string",\n  "publishedAt": "string (ISO date)",\n  "price": "number|null",\n  "comments": [{ "name": "string", "text": "string" }]\n}',
+          placeholder:
+            '{\n  "title": "string",\n  "author": "string",\n  "publishedAt": "string (ISO date)",\n  "price": "number|null",\n  "comments": [{ "name": "string", "text": "string" }]\n}',
           help: 'Schema atteso dell\'output. Tipi: string, number, boolean, array. Usa "|null" per opzionali. L\'AI rispetta lo schema, set null se campo non trovato.',
         },
         {
@@ -651,7 +901,7 @@ function agentSpecificFields(agentId: string): ConfigFieldLite[] {
           type: 'number',
           required: false,
           defaultValue: '20000',
-          help: 'Limita HTML inviato all\'AI per controllare costo token. Default 20K (~5K token). Min 1K, max 100K.',
+          help: "Limita HTML inviato all'AI per controllare costo token. Default 20K (~5K token). Min 1K, max 100K.",
         },
       ];
     case 'agent_selector_inference':
@@ -662,8 +912,9 @@ function agentSpecificFields(agentId: string): ConfigFieldLite[] {
           type: 'code',
           language: 'json',
           required: true,
-          placeholder: '{\n  "title": "iPhone 16 Pro",\n  "price": "€1.249,00",\n  "stock": "Disponibile"\n}',
-          help: 'Map di {nomeCampo: valoreAtteso}. L\'AI cerca elementi nel DOM che producono ESATTAMENTE questi valori, poi genera selettori CSS robusti. 2-3 esempi sono ideali (più sono, meglio è il pattern matching).',
+          placeholder:
+            '{\n  "title": "iPhone 16 Pro",\n  "price": "€1.249,00",\n  "stock": "Disponibile"\n}',
+          help: "Map di {nomeCampo: valoreAtteso}. L'AI cerca elementi nel DOM che producono ESATTAMENTE questi valori, poi genera selettori CSS robusti. 2-3 esempi sono ideali (più sono, meglio è il pattern matching).",
         },
         {
           key: 'preferDataAttrs',
@@ -679,7 +930,7 @@ function agentSpecificFields(agentId: string): ConfigFieldLite[] {
           type: 'number',
           required: false,
           defaultValue: '20000',
-          help: 'Limita HTML inviato all\'AI. Default 20K.',
+          help: "Limita HTML inviato all'AI. Default 20K.",
         },
       ];
     case 'agent_validator':
@@ -690,16 +941,18 @@ function agentSpecificFields(agentId: string): ConfigFieldLite[] {
           type: 'code',
           language: 'json',
           required: true,
-          placeholder: '{\n  "type": "object",\n  "required": ["email", "totale"],\n  "properties": {\n    "email": { "type": "string", "pattern": "^[^@]+@[^@]+$" },\n    "totale": { "type": "number", "minimum": 0 },\n    "tipo": { "type": "string", "enum": ["contratto","fattura","preventivo"] }\n  }\n}',
-          help: 'JSON Schema standard (draft-07). Definisce type/required/properties/pattern/enum/min/max. L\'agent verifica che l\'input rispetti lo schema e ritorna errors[] con path JSONPath.',
+          placeholder:
+            '{\n  "type": "object",\n  "required": ["email", "totale"],\n  "properties": {\n    "email": { "type": "string", "pattern": "^[^@]+@[^@]+$" },\n    "totale": { "type": "number", "minimum": 0 },\n    "tipo": { "type": "string", "enum": ["contratto","fattura","preventivo"] }\n  }\n}',
+          help: "JSON Schema standard (draft-07). Definisce type/required/properties/pattern/enum/min/max. L'agent verifica che l'input rispetti lo schema e ritorna errors[] con path JSONPath.",
         },
         {
           key: 'businessRules',
           label: 'Regole di business (opzionale)',
           type: 'textarea',
           required: false,
-          placeholder: 'es. "Se totale > 10000, customer_vat deve essere presente"\n"Se tipo=preventivo, deadline deve essere entro 30 giorni"',
-          help: 'Regole in linguaggio naturale che vanno OLTRE il JSON Schema. L\'agent le applica una per riga.',
+          placeholder:
+            'es. "Se totale > 10000, customer_vat deve essere presente"\n"Se tipo=preventivo, deadline deve essere entro 30 giorni"',
+          help: "Regole in linguaggio naturale che vanno OLTRE il JSON Schema. L'agent le applica una per riga.",
         },
         {
           key: 'strictMode',
@@ -753,14 +1006,51 @@ function makeAgentNode(agent: AgentDefinition): NodeModule {
           label: 'LLM provider (opzionale, override)',
           type: 'select',
           required: false,
-          options: ['', 'liara', 'anthropic', 'openai', 'gemini', 'mistral', 'groq', 'openrouter', 'ollama'],
+          options: [
+            '',
+            'liara',
+            'anthropic',
+            'openai',
+            'gemini',
+            'mistral',
+            'groq',
+            'openrouter',
+            'ollama',
+          ],
           defaultValue: '',
           help: 'Vuoto = usa il default da Settings → AI Providers. Selezionalo SOLO per override locale (es. account diverso per questo nodo).',
         },
-        { key: 'apiKey', label: 'API key (override)', type: 'secret', required: false, help: 'Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria).' },
-        { key: 'model', label: 'Modello (override)', type: 'text', required: false, placeholder: 'es. claude-sonnet-4-5', help: 'Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1.' },
-        { key: 'baseUrl', label: 'Base URL (per Ollama / self-hosted)', type: 'text', required: false, placeholder: 'http://localhost:11434', showIf: { field: 'provider', in: ['ollama'] } },
-        { key: 'extraContext', label: 'Contesto aggiuntivo (opzionale)', type: 'expression', required: false, placeholder: 'Esempi di output desiderato, glossario di dominio, regole speciali...', help: 'Testo aggiunto al prompt PRIMA dell\'input. Utile per "few-shot examples" o vincoli che il system prompt non copre.' },
+        {
+          key: 'apiKey',
+          label: 'API key (override)',
+          type: 'secret',
+          required: false,
+          help: 'Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria).',
+        },
+        {
+          key: 'model',
+          label: 'Modello (override)',
+          type: 'text',
+          required: false,
+          placeholder: 'es. claude-sonnet-4-5',
+          help: 'Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1.',
+        },
+        {
+          key: 'baseUrl',
+          label: 'Base URL (per Ollama / self-hosted)',
+          type: 'text',
+          required: false,
+          placeholder: 'http://localhost:11434',
+          showIf: { field: 'provider', in: ['ollama'] },
+        },
+        {
+          key: 'extraContext',
+          label: 'Contesto aggiuntivo (opzionale)',
+          type: 'expression',
+          required: false,
+          placeholder: 'Esempi di output desiderato, glossario di dominio, regole speciali...',
+          help: 'Testo aggiunto al prompt PRIMA dell\'input. Utile per "few-shot examples" o vincoli che il system prompt non copre.',
+        },
       ],
       vendor: 'flowforge',
       version: '1.1.0',
@@ -773,5 +1063,8 @@ import { agentToolLoopNode } from './tool-loop.js';
 
 export { agentToolLoopNode } from './tool-loop.js';
 
-export const aiAgentNodes: readonly NodeModule[] = [...AGENTS.map(makeAgentNode), agentToolLoopNode];
+export const aiAgentNodes: readonly NodeModule[] = [
+  ...AGENTS.map(makeAgentNode),
+  agentToolLoopNode,
+];
 export const AI_AGENT_DEFINITIONS = AGENTS;

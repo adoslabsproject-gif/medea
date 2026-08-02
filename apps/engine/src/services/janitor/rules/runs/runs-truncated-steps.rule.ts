@@ -111,22 +111,24 @@ decide manualmente.
       if (out.length >= ctx.maxRows) break;
       const runningSteps = countRunningSteps(r.steps_json);
       if (runningSteps === 0) continue;
-      out.push(buildDetectedRow({
-        id: r.id,
-        reason: `Run chiuso (ended_at=${r.ended_at ?? '?'}) ma ${runningSteps.toString()} step ancora in status='running'`,
-        severity: 'warning',
-        raw: {
+      out.push(
+        buildDetectedRow({
           id: r.id,
-          workflow_id: r.workflow_id,
-          tenant_id: r.tenant_id,
-          status: r.status,
-          started_at: r.started_at,
-          ended_at: r.ended_at,
-          steps_json: r.steps_json,
-          error_count: r.error_count,
-        },
-        ...(r.tenant_id ? { tenantId: r.tenant_id } : {}),
-      }));
+          reason: `Run chiuso (ended_at=${r.ended_at ?? '?'}) ma ${runningSteps.toString()} step ancora in status='running'`,
+          severity: 'warning',
+          raw: {
+            id: r.id,
+            workflow_id: r.workflow_id,
+            tenant_id: r.tenant_id,
+            status: r.status,
+            started_at: r.started_at,
+            ended_at: r.ended_at,
+            steps_json: r.steps_json,
+            error_count: r.error_count,
+          },
+          ...(r.tenant_id ? { tenantId: r.tenant_id } : {}),
+        }),
+      );
     }
     return out;
   },
@@ -164,7 +166,8 @@ decide manualmente.
         };
       });
       if (mutated === 0) continue;
-      const newErrorCount = (typeof r.raw.error_count === 'number' ? r.raw.error_count : 0) + mutated;
+      const newErrorCount =
+        (typeof r.raw.error_count === 'number' ? r.raw.error_count : 0) + mutated;
       const newStepsJson = JSON.stringify(patched).replace(/'/g, "''");
       const escId = String(r.id).replace(/'/g, "''");
       await ctx.adapter.executeRaw(`

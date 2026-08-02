@@ -52,8 +52,8 @@ const REFRESH_LEEWAY_MS = 5 * 60_000;
 
 interface PortalRefreshResponse {
   access_token: string;
-  expires_at: string;            // ISO
-  refresh_token?: string;        // present iff Google rotated
+  expires_at: string; // ISO
+  refresh_token?: string; // present iff Google rotated
 }
 
 export class EmailOAuthService {
@@ -91,7 +91,10 @@ export class EmailOAuthService {
     });
     if (!res.ok) {
       const text = (await readTextTruncated(res, 65_536)).text;
-      logger.error({ status: res.status, body: text.slice(0, 200), url }, 'portal refresh call failed');
+      logger.error(
+        { status: res.status, body: text.slice(0, 200), url },
+        'portal refresh call failed',
+      );
       throw new Error(`Portal refresh failed: ${res.status} ${text.slice(0, 200)}`);
     }
     const data = await readJsonCapped<PortalRefreshResponse>(res);

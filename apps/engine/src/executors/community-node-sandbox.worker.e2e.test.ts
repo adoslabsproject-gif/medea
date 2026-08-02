@@ -51,7 +51,7 @@ describe.skipIf(!WORKER_AVAILABLE)('🚨 sandbox worker_thread E2E', () => {
     const src = `module.exports = async function(config, input, context) {
       return { result: input.n * 2, tenantId: context.tenantId };
     };`;
-    const result = await runInSandbox(src, baseInput) as { result: number; tenantId: string };
+    const result = (await runInSandbox(src, baseInput)) as { result: number; tenantId: string };
     expect(result.result).toBe(14);
     expect(result.tenantId).toBe('test-tenant');
   });
@@ -128,7 +128,7 @@ describe.skipIf(!WORKER_AVAILABLE)('🚨 sandbox worker_thread E2E', () => {
         return 'caught: ' + (e && e.message ? e.message : String(e));
       }
     };`;
-    const r = await runInSandbox(src, baseInput) as string;
+    const r = (await runInSandbox(src, baseInput)) as string;
     expect(r).not.toBe('NO_BLOCK_BAD');
     expect(r).toMatch(/SSRF|BLOCKED|LINK_LOCAL|loopback/i);
   }, 15_000);
@@ -143,7 +143,7 @@ describe.skipIf(!WORKER_AVAILABLE)('🚨 sandbox worker_thread E2E', () => {
         return 'caught: ' + (e && e.message ? e.message : String(e));
       }
     };`;
-    const r = await runInSandbox(src, baseInput) as string;
+    const r = (await runInSandbox(src, baseInput)) as string;
     expect(r).not.toBe('NO_BLOCK_BAD');
     expect(r).toMatch(/SSRF|BLOCKED|LOOPBACK|loopback/i);
   }, 15_000);

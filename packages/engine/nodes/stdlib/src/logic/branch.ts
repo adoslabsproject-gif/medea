@@ -23,12 +23,12 @@ export const ifNode: NodeModule = {
     description:
       'Operatore di branching binario condizionale enterprise — il control flow primitive di qualsiasi ' +
       'pipeline che ha bisogno di prendere una decisione "questo va a sinistra, quest\'altro a destra" e che ' +
-      'corrisponde concettualmente all\'if-else dei linguaggi di programmazione classici. Valuta una ' +
+      "corrisponde concettualmente all'if-else dei linguaggi di programmazione classici. Valuta una " +
       'condizione e instrada il workflow lungo il ramo "true" (yes) oppure il ramo "false" (no) — l\'engine ' +
       'FlowForge esegue SOLO il ramo scelto (vedere chosenBranch + workflow-engine strategy logic-if), evitando ' +
       'fan-out su entrambi e sprecando risorse + side effects indesiderati. ' +
       'Due modalità di definizione della condizione mutuamente esclusive per coprire spettro complete dei case: ' +
-      '(1) Builder visuale multi-regola — l\'interfaccia no-code per non-developer commercialisti/marketing/' +
+      "(1) Builder visuale multi-regola — l'interfaccia no-code per non-developer commercialisti/marketing/" +
       'amministrativi: aggiungi una o più regole composabili con combinatori AND/OR (logical operator scelto ' +
       'top-level), ogni regola consiste di un field path (dot-notation come "$node.triage.json.label"), un ' +
       'operatore type-aware (per stringhe: equals, not_equals, contains, starts_with, ends_with, matches_regex, ' +
@@ -36,16 +36,16 @@ export const ifNode: NodeModule = {
       'in, not_in, contains_any, contains_all, size_equals; per booleani: is_true, is_false; universal: ' +
       'exists, not_exists per null/undefined check), e un valore di confronto (può essere literal o ' +
       'expression {{$node.config.threshold}} valutata runtime); ' +
-      '(2) Espressione JavaScript libera — back-compat con l\'engine v1 e fallback per condizioni veramente ' +
+      "(2) Espressione JavaScript libera — back-compat con l'engine v1 e fallback per condizioni veramente " +
       'complesse non esprimibili nel builder (es. "input.amount > input.user.tier_limit && Date.parse(input.due) ' +
       '< Date.now()") — valutata dall\'interprete sicuro del runtime (denylist anti-escape + scope curato + ' +
-      'timeout 250ms; il confine forte è l\'isolamento per-tenant in container Docker), con accesso a $node, ' +
+      "timeout 250ms; il confine forte è l'isolamento per-tenant in container Docker), con accesso a $node, " +
       '$input, $vars + helper tipo $date, $string e le pipe (| upper, | round, | currency, …). ' +
       'Use case canonici: routing email triagata (è un ordine cliente? → ramo Salesforce updateOrder, altrimenti ' +
       '→ ramo notifications agli operatori); gate su soglia di confidence di un classifier ML (confidence > 0.8 ' +
       '→ ramo auto-processed, altrimenti → ramo human_review); permission check pre-action (user.role === ' +
-      '\'admin\' → ramo dangerous_action allowed, altrimenti → ramo deny + audit log); A/B routing ' +
-      'utenti su feature flag (user.experiment_cohort === \'B\' → ramo new_experience, altrimenti → ramo ' +
+      "'admin' → ramo dangerous_action allowed, altrimenti → ramo deny + audit log); A/B routing " +
+      "utenti su feature flag (user.experiment_cohort === 'B' → ramo new_experience, altrimenti → ramo " +
       'control); validazione amount per workflow finanziari (amount > 10000 → ramo approval_workflow CFO, ' +
       'altrimenti → ramo auto_approve immediato).',
     configFields: [
@@ -95,15 +95,15 @@ export const switchNode: NodeModule = {
     icon: 'git-fork',
     color: '#f59e0b',
     description:
-      'Operatore di branching N-way enterprise — l\'equivalent del switch/case dei linguaggi di programmazione ' +
+      "Operatore di branching N-way enterprise — l'equivalent del switch/case dei linguaggi di programmazione " +
       'classici (Java, C#, JavaScript, Python match) applicato al workflow orchestration. Mentre logic_if ' +
       'è binario (true/false), logic_switch instrada il flusso su uno tra molti rami in base al valore di ' +
-      'un\'espressione discriminante — pattern fondamentale per routing a dispatcher basato su tipo di ' +
+      "un'espressione discriminante — pattern fondamentale per routing a dispatcher basato su tipo di " +
       'evento, categoria, status, regione, customer tier, e centinaia di altri campi categorical che ' +
       'richiedono "se è A vai qui, se è B vai là, se è C ancora altrove, altrimenti gestisci come default". ' +
       'Ogni "case" è una porta di output dedicata del nodo nel grafo del workflow editor, etichettata con il ' +
       'valore matched (es. "order_confirmed", "refund_requested", "subscription_cancelled") — l\'utente collega ' +
-      'visualmente ogni porta a una catena di azioni diversa, e l\'engine FlowForge esegue SOLO il ramo scelto ' +
+      "visualmente ogni porta a una catena di azioni diversa, e l'engine FlowForge esegue SOLO il ramo scelto " +
       'in base alla chosenBranch decision (vedere workflow-engine strategy logic-switch) evitando fan-out su ' +
       'tutti i rami e sprecando risorse + side effects indesiderati. ' +
       'Modalità di matching per case: ' +
@@ -111,7 +111,7 @@ export const switchNode: NodeModule = {
       '"42" matcha 42 number, "true" matcha boolean true) — il pattern più semplice e più comune che copre ' +
       '90% degli use case enum-like; ' +
       '(2) Condition-rules sidecar — per case con logica complessa che NON è esprimibile come singolo literal ' +
-      '(es. "matcha questo case se amount > 1000 AND country in [\'IT\', \'ES\']"), ogni case può avere un ' +
+      "(es. \"matcha questo case se amount > 1000 AND country in ['IT', 'ES']\"), ogni case può avere un " +
       'condition-rules array opzionale che fa override del literal match con AND/OR builder visuale identico ' +
       'a logic_if — pattern hybrid per ottenere il visual N-way switch con la potenza condizionale del if. ' +
       'Ramo di fallback "default" obbligatorio attivabile: quando nessun case matcha, il flusso prosegue ' +

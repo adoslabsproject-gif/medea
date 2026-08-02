@@ -86,7 +86,13 @@ export async function withRetry<T>(
       const jitter = exp * (0.75 + Math.random() * 0.5);
       const delay = Math.min(Math.round(jitter), maxDelayMs);
       logger.warn(
-        { label: opts.label ?? 'withRetry', attempt: attempt + 1, retries, delayMs: delay, err: errMessage(err) },
+        {
+          label: opts.label ?? 'withRetry',
+          attempt: attempt + 1,
+          retries,
+          delayMs: delay,
+          err: errMessage(err),
+        },
         'Retrying after transient failure',
       );
       await sleep(delay);
@@ -104,7 +110,8 @@ function isRetryable(err: unknown): boolean {
   }
   // Plain Error from fetch / undici / network layers
   const msg = errMessage(err).toLowerCase();
-  if (msg.includes('etimedout') || msg.includes('econnreset') || msg.includes('eai_again')) return true;
+  if (msg.includes('etimedout') || msg.includes('econnreset') || msg.includes('eai_again'))
+    return true;
   if (msg.includes('socket hang up') || msg.includes('network')) return true;
   if (msg.includes('fetch failed')) return true;
   return false;
@@ -166,7 +173,11 @@ export function isOAuthExpiringSoon(expiresAt: number | null | undefined): boole
  * A lazy require defers the crash to the first call to that executor and
  * lets us print a useful "run pnpm install" message instead of a stack trace.
  */
-export async function lazyRequire<T>(modulePath: string, friendlyName: string, provider: IntegrationProvider): Promise<T> {
+export async function lazyRequire<T>(
+  modulePath: string,
+  friendlyName: string,
+  provider: IntegrationProvider,
+): Promise<T> {
   try {
     const mod = (await import(modulePath)) as T;
     return mod;

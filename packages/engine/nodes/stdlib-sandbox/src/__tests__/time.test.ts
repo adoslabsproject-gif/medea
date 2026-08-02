@@ -5,11 +5,19 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-  nowIso, fromIso, toIso,
-  addDays, addHours, addMinutes, addSeconds,
-  diffSeconds, diffDays,
-  toDateString, toTimeString,
-  startOfDay, endOfDay,
+  nowIso,
+  fromIso,
+  toIso,
+  addDays,
+  addHours,
+  addMinutes,
+  addSeconds,
+  diffSeconds,
+  diffDays,
+  toDateString,
+  toTimeString,
+  startOfDay,
+  endOfDay,
 } from '../time.js';
 
 describe('nowIso', () => {
@@ -67,21 +75,19 @@ describe('add helpers', () => {
 
 describe('diff helpers', () => {
   it('diffSeconds', () => {
-    expect(diffSeconds(
-      new Date('2026-06-08T12:01:30Z'),
-      new Date('2026-06-08T12:00:00Z'),
-    )).toBe(90);
+    expect(diffSeconds(new Date('2026-06-08T12:01:30Z'), new Date('2026-06-08T12:00:00Z'))).toBe(
+      90,
+    );
   });
 
   it('diffDays', () => {
-    expect(diffDays(
-      new Date('2026-06-15T12:00:00Z'),
-      new Date('2026-06-08T12:00:00Z'),
-    )).toBe(7);
+    expect(diffDays(new Date('2026-06-15T12:00:00Z'), new Date('2026-06-08T12:00:00Z'))).toBe(7);
   });
 
   it('🚨 diff negative se a < b', () => {
-    expect(diffSeconds(new Date('2026-06-08T12:00:00Z'), new Date('2026-06-08T12:01:00Z'))).toBe(-60);
+    expect(diffSeconds(new Date('2026-06-08T12:00:00Z'), new Date('2026-06-08T12:01:00Z'))).toBe(
+      -60,
+    );
   });
 });
 

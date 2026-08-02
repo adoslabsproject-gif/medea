@@ -86,7 +86,11 @@ function notifySentinelAsync(payload: SentinelHoneypotPayload): void {
     })
     .catch((err: unknown) => {
       logger.warn(
-        { err: err instanceof Error ? err.message : String(err), ip: payload.ip, endpoint: payload.endpoint },
+        {
+          err: err instanceof Error ? err.message : String(err),
+          ip: payload.ip,
+          endpoint: payload.endpoint,
+        },
         'sentinel honeypot/hit failed (degraded — request still 404)',
       );
     })

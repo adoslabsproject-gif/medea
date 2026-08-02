@@ -8,7 +8,11 @@
  *
  * @module services/private-generations/ensure-db
  */
-import { CREATE_GENERATIONS_TABLE_SQL, GENERATIONS_DB_NAME, GENERATIONS_MIGRATIONS } from './schema.js';
+import {
+  CREATE_GENERATIONS_TABLE_SQL,
+  GENERATIONS_DB_NAME,
+  GENERATIONS_MIGRATIONS,
+} from './schema.js';
 import type { DbStudioPort, CreateEmbeddedDb } from './types.js';
 import { loggerFor } from '@/lib/logger.js';
 
@@ -37,7 +41,12 @@ export async function ensureGenerationsDb(deps: EnsureDbDeps): Promise<string> {
   const db = existing ?? (await deps.createEmbeddedDb(GENERATIONS_DB_NAME));
 
   // DDL idempotente: sicuro anche se la tabella esiste già (IF NOT EXISTS).
-  await deps.dbStudio.executeRaw(db.id, CREATE_GENERATIONS_TABLE_SQL, { dryRun: false, rowLimit: 0 }, deps.tenantId);
+  await deps.dbStudio.executeRaw(
+    db.id,
+    CREATE_GENERATIONS_TABLE_SQL,
+    { dryRun: false, rowLimit: 0 },
+    deps.tenantId,
+  );
 
   // Migrazioni additive (colonne nuove su tabelle preesistenti). Best-effort:
   // "duplicate column" se già applicata → si ignora.
@@ -48,7 +57,8 @@ export async function ensureGenerationsDb(deps: EnsureDbDeps): Promise<string> {
       const msg = err instanceof Error ? err.message : String(err);
       // "colonna già presente" è l'esito atteso (migrazione idempotente) → ignora.
       // Qualsiasi altro errore è un problema REALE da rendere visibile (non silenziare).
-      if (!ALREADY_APPLIED.test(msg)) log.warn({ err: msg, sql }, '[private-gen] migrazione generations fallita');
+      if (!ALREADY_APPLIED.test(msg))
+        log.warn({ err: msg, sql }, '[private-gen] migrazione generations fallita');
     }
   }
 

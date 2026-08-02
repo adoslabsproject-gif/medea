@@ -36,8 +36,9 @@ describe('validateSqlIdentifier — accepted', () => {
 
 describe('validateSqlIdentifier — rejected (anti-injection)', () => {
   it('SQL injection classico: ");DROP TABLE users;--', () => {
-    expect(() => validateSqlIdentifier('id");DROP TABLE users;--'))
-      .toThrow(/Invalid SQL identifier/);
+    expect(() => validateSqlIdentifier('id");DROP TABLE users;--')).toThrow(
+      /Invalid SQL identifier/,
+    );
   });
 
   it('spazio singolo', () => {
@@ -45,8 +46,7 @@ describe('validateSqlIdentifier — rejected (anti-injection)', () => {
   });
 
   it('quote singolo', () => {
-    expect(() => validateSqlIdentifier("id'='1"))
-      .toThrow();
+    expect(() => validateSqlIdentifier("id'='1")).toThrow();
   });
 
   it('backtick', () => {

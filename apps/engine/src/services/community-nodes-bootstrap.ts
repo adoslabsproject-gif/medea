@@ -61,7 +61,8 @@ async function readManifestMinimal(dir: string): Promise<ManifestMinimal | null>
       typeof parsed.vendor !== 'string' ||
       typeof parsed.id !== 'string' ||
       typeof parsed.version !== 'string'
-    ) return null;
+    )
+      return null;
     return { vendor: parsed.vendor, id: parsed.id, version: parsed.version };
   } catch {
     return null;
@@ -82,7 +83,10 @@ export async function seedCommunityDefaults(): Promise<SeedResult> {
   const result: SeedResult = { seeded: [], skipped: [], errors: [] };
 
   if (!existsSync(sourceDefaultsDir())) {
-    logger.info({ source: sourceDefaultsDir() }, 'community defaults dir not present in image — skip seeding');
+    logger.info(
+      { source: sourceDefaultsDir() },
+      'community defaults dir not present in image — skip seeding',
+    );
     return result;
   }
 
@@ -90,7 +94,10 @@ export async function seedCommunityDefaults(): Promise<SeedResult> {
   try {
     entries = await readdir(sourceDefaultsDir());
   } catch (err) {
-    logger.warn({ err: err instanceof Error ? err.message : String(err) }, 'community defaults readdir failed');
+    logger.warn(
+      { err: err instanceof Error ? err.message : String(err) },
+      'community defaults readdir failed',
+    );
     return result;
   }
 
@@ -118,7 +125,10 @@ export async function seedCommunityDefaults(): Promise<SeedResult> {
         }
       }
       result.seeded.push(`${manifest.vendor}/${manifest.id}@${manifest.version}`);
-      logger.info({ vendor: manifest.vendor, id: manifest.id, version: manifest.version }, 'community default seeded');
+      logger.info(
+        { vendor: manifest.vendor, id: manifest.id, version: manifest.version },
+        'community default seeded',
+      );
     } catch (err) {
       result.errors.push({
         vendor: `${manifest.vendor}/${manifest.id}`,

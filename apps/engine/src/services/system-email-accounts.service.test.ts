@@ -39,12 +39,21 @@ beforeEach(() => {
   m.db = new Database(':memory:');
 });
 
-const baseUpsert = (tenantId = 't1', label = 'Marketing'): Parameters<SystemEmailAccountsService['upsert']>[0] => ({
+const baseUpsert = (
+  tenantId = 't1',
+  label = 'Marketing',
+): Parameters<SystemEmailAccountsService['upsert']>[0] => ({
   tenantId,
   label,
   fromAddress: 'mkt@x.com',
   isDefault: false,
-  smtp: { host: 'smtp.example.com', port: 587, security: 'starttls', username: 'mkt@x.com', password: 'pw-strong' },
+  smtp: {
+    host: 'smtp.example.com',
+    port: 587,
+    security: 'starttls',
+    username: 'mkt@x.com',
+    password: 'pw-strong',
+  },
   imap: { host: 'imap.example.com', port: 993, username: 'mkt@x.com', password: 'imap-pw' },
 });
 
@@ -60,7 +69,10 @@ describe('ensureTable + columns idempotency', () => {
 
   it('tabella ha colonna auth_type con default password', () => {
     new SystemEmailAccountsService();
-    const cols = m.db!.prepare("PRAGMA table_info('system_email_accounts')").all() as { name: string; dflt_value: string | null }[];
+    const cols = m.db!.prepare("PRAGMA table_info('system_email_accounts')").all() as {
+      name: string;
+      dflt_value: string | null;
+    }[];
     const authType = cols.find((c) => c.name === 'auth_type');
     expect(authType).toBeDefined();
     expect(authType!.dflt_value).toContain('password');
@@ -68,7 +80,9 @@ describe('ensureTable + columns idempotency', () => {
 
   it('tabella ha colonne oauth_* (refresh + access)', () => {
     new SystemEmailAccountsService();
-    const cols = m.db!.prepare("PRAGMA table_info('system_email_accounts')").all() as { name: string }[];
+    const cols = m.db!.prepare("PRAGMA table_info('system_email_accounts')").all() as {
+      name: string;
+    }[];
     const names = cols.map((c) => c.name);
     expect(names).toContain('oauth_provider');
     expect(names).toContain('oauth_refresh_ciphertext');
@@ -92,7 +106,9 @@ describe('upsert password account — happy path', () => {
   it('🚨 plaintext password NON viene scritto nel DB row', () => {
     const svc = new SystemEmailAccountsService();
     const acct = svc.upsert(baseUpsert());
-    const row = m.db!.prepare('SELECT * FROM system_email_accounts WHERE id = ?').get(acct.id) as Record<string, unknown>;
+    const row = m
+      .db!.prepare('SELECT * FROM system_email_accounts WHERE id = ?')
+      .get(acct.id) as Record<string, unknown>;
     expect(JSON.stringify(row)).not.toContain('pw-strong');
     expect(JSON.stringify(row)).not.toContain('imap-pw');
     expect(row.smtp_pw_ciphertext).toBeTruthy();
@@ -103,11 +119,18 @@ describe('upsert password account — happy path', () => {
   it('update con password vuota: mantiene cipher esistente (COALESCE)', () => {
     const svc = new SystemEmailAccountsService();
     const a1 = svc.upsert(baseUpsert());
-    const rowBefore = m.db!.prepare('SELECT smtp_pw_ciphertext FROM system_email_accounts WHERE id = ?').get(a1.id) as { smtp_pw_ciphertext: string };
+    const rowBefore = m
+      .db!.prepare('SELECT smtp_pw_ciphertext FROM system_email_accounts WHERE id = ?')
+      .get(a1.id) as { smtp_pw_ciphertext: string };
     const cipherBefore = rowBefore.smtp_pw_ciphertext;
 
-    svc.upsert({ ...baseUpsert(), label: 'Renamed', smtp: { ...baseUpsert().smtp, password: '' } }, a1.id);
-    const rowAfter = m.db!.prepare('SELECT smtp_pw_ciphertext, label FROM system_email_accounts WHERE id = ?').get(a1.id) as { smtp_pw_ciphertext: string; label: string };
+    svc.upsert(
+      { ...baseUpsert(), label: 'Renamed', smtp: { ...baseUpsert().smtp, password: '' } },
+      a1.id,
+    );
+    const rowAfter = m
+      .db!.prepare('SELECT smtp_pw_ciphertext, label FROM system_email_accounts WHERE id = ?')
+      .get(a1.id) as { smtp_pw_ciphertext: string; label: string };
     expect(rowAfter.label).toBe('Renamed');
     expect(rowAfter.smtp_pw_ciphertext).toBe(cipherBefore);
   });
@@ -115,9 +138,20 @@ describe('upsert password account — happy path', () => {
   it('update con password nuova: cipher diverso (re-encrypted)', () => {
     const svc = new SystemEmailAccountsService();
     const a1 = svc.upsert(baseUpsert());
-    const cipherBefore = (m.db!.prepare('SELECT smtp_pw_ciphertext FROM system_email_accounts WHERE id = ?').get(a1.id) as { smtp_pw_ciphertext: string }).smtp_pw_ciphertext;
-    svc.upsert({ ...baseUpsert(), smtp: { ...baseUpsert().smtp, password: 'new-rotated-pw' } }, a1.id);
-    const cipherAfter = (m.db!.prepare('SELECT smtp_pw_ciphertext FROM system_email_accounts WHERE id = ?').get(a1.id) as { smtp_pw_ciphertext: string }).smtp_pw_ciphertext;
+    const cipherBefore = (
+      m
+        .db!.prepare('SELECT smtp_pw_ciphertext FROM system_email_accounts WHERE id = ?')
+        .get(a1.id) as { smtp_pw_ciphertext: string }
+    ).smtp_pw_ciphertext;
+    svc.upsert(
+      { ...baseUpsert(), smtp: { ...baseUpsert().smtp, password: 'new-rotated-pw' } },
+      a1.id,
+    );
+    const cipherAfter = (
+      m
+        .db!.prepare('SELECT smtp_pw_ciphertext FROM system_email_accounts WHERE id = ?')
+        .get(a1.id) as { smtp_pw_ciphertext: string }
+    ).smtp_pw_ciphertext;
     expect(cipherAfter).not.toBe(cipherBefore);
   });
 
@@ -135,8 +169,12 @@ describe('default-account uniqueness', () => {
     const svc = new SystemEmailAccountsService();
     const a1 = svc.upsert({ ...baseUpsert('t1', 'A'), isDefault: true });
     const a2 = svc.upsert({ ...baseUpsert('t1', 'B'), isDefault: true });
-    const a1After = m.db!.prepare('SELECT is_default FROM system_email_accounts WHERE id = ?').get(a1.id) as { is_default: number };
-    const a2After = m.db!.prepare('SELECT is_default FROM system_email_accounts WHERE id = ?').get(a2.id) as { is_default: number };
+    const a1After = m
+      .db!.prepare('SELECT is_default FROM system_email_accounts WHERE id = ?')
+      .get(a1.id) as { is_default: number };
+    const a2After = m
+      .db!.prepare('SELECT is_default FROM system_email_accounts WHERE id = ?')
+      .get(a2.id) as { is_default: number };
     expect(a1After.is_default).toBe(0);
     expect(a2After.is_default).toBe(1);
   });
@@ -145,8 +183,12 @@ describe('default-account uniqueness', () => {
     const svc = new SystemEmailAccountsService();
     const a1 = svc.upsert({ ...baseUpsert('tA', 'A'), isDefault: true });
     const a2 = svc.upsert({ ...baseUpsert('tB', 'B'), isDefault: true });
-    const a1After = m.db!.prepare('SELECT is_default FROM system_email_accounts WHERE id = ?').get(a1.id) as { is_default: number };
-    const a2After = m.db!.prepare('SELECT is_default FROM system_email_accounts WHERE id = ?').get(a2.id) as { is_default: number };
+    const a1After = m
+      .db!.prepare('SELECT is_default FROM system_email_accounts WHERE id = ?')
+      .get(a1.id) as { is_default: number };
+    const a2After = m
+      .db!.prepare('SELECT is_default FROM system_email_accounts WHERE id = ?')
+      .get(a2.id) as { is_default: number };
     expect(a1After.is_default).toBe(1);
     expect(a2After.is_default).toBe(1);
   });
@@ -189,7 +231,7 @@ describe('list / picker / getDefault — tenant isolation', () => {
     expect(svc.getDefault('t1')).toBeNull();
   });
 
-  it('getDefault: ritorna l\'account con isDefault=true', () => {
+  it("getDefault: ritorna l'account con isDefault=true", () => {
     const svc = new SystemEmailAccountsService();
     svc.upsert(baseUpsert());
     const def = svc.upsert({ ...baseUpsert('t1', 'Default'), isDefault: true });
@@ -271,7 +313,9 @@ describe('upsertOAuthAccount — Google XOAUTH2', () => {
   it('🚨 access_token e refresh_token NON in plaintext nel DB', () => {
     const svc = new SystemEmailAccountsService();
     const a = svc.upsertOAuthAccount(oauthArgs);
-    const row = m.db!.prepare('SELECT * FROM system_email_accounts WHERE id = ?').get(a.id) as Record<string, unknown>;
+    const row = m
+      .db!.prepare('SELECT * FROM system_email_accounts WHERE id = ?')
+      .get(a.id) as Record<string, unknown>;
     expect(JSON.stringify(row)).not.toContain('RT-LONG-LIVED');
     expect(JSON.stringify(row)).not.toContain('AT-SHORT-LIVED');
     expect(row.oauth_refresh_ciphertext).toBeTruthy();
@@ -282,8 +326,12 @@ describe('upsertOAuthAccount — Google XOAUTH2', () => {
     const svc = new SystemEmailAccountsService();
     const a1 = svc.upsert({ ...baseUpsert('t1', 'SMTP'), isDefault: true });
     const a2 = svc.upsertOAuthAccount(oauthArgs);
-    const r1 = m.db!.prepare('SELECT is_default FROM system_email_accounts WHERE id = ?').get(a1.id) as { is_default: number };
-    const r2 = m.db!.prepare('SELECT is_default FROM system_email_accounts WHERE id = ?').get(a2.id) as { is_default: number };
+    const r1 = m
+      .db!.prepare('SELECT is_default FROM system_email_accounts WHERE id = ?')
+      .get(a1.id) as { is_default: number };
+    const r2 = m
+      .db!.prepare('SELECT is_default FROM system_email_accounts WHERE id = ?')
+      .get(a2.id) as { is_default: number };
     expect(r1.is_default).toBe(0);
     expect(r2.is_default).toBe(1);
   });
@@ -342,17 +390,35 @@ describe('updateOAuthAccessToken — token rotation', () => {
   it('aggiorna access cipher + expiresAt, refresh resta', () => {
     const svc = new SystemEmailAccountsService();
     const a = svc.upsertOAuthAccount({
-      tenantId: 't1', label: 'g', fromAddress: 'a@b', isDefault: false,
-      provider: 'google', email: 'a@b', refreshToken: 'RT-1', accessToken: 'AT-old',
-      expiresAt: new Date(0), scope: 's',
+      tenantId: 't1',
+      label: 'g',
+      fromAddress: 'a@b',
+      isDefault: false,
+      provider: 'google',
+      email: 'a@b',
+      refreshToken: 'RT-1',
+      accessToken: 'AT-old',
+      expiresAt: new Date(0),
+      scope: 's',
     });
-    const refreshBefore = (m.db!.prepare('SELECT oauth_refresh_ciphertext FROM system_email_accounts WHERE id = ?').get(a.id) as { oauth_refresh_ciphertext: string }).oauth_refresh_ciphertext;
+    const refreshBefore = (
+      m
+        .db!.prepare('SELECT oauth_refresh_ciphertext FROM system_email_accounts WHERE id = ?')
+        .get(a.id) as { oauth_refresh_ciphertext: string }
+    ).oauth_refresh_ciphertext;
 
     svc.updateOAuthAccessToken({
-      tenantId: 't1', accountId: a.id, accessToken: 'AT-new', expiresAt: new Date('2030-01-01'),
+      tenantId: 't1',
+      accountId: a.id,
+      accessToken: 'AT-new',
+      expiresAt: new Date('2030-01-01'),
     });
 
-    const after = m.db!.prepare('SELECT oauth_refresh_ciphertext, oauth_expires_at FROM system_email_accounts WHERE id = ?').get(a.id) as { oauth_refresh_ciphertext: string; oauth_expires_at: string };
+    const after = m
+      .db!.prepare(
+        'SELECT oauth_refresh_ciphertext, oauth_expires_at FROM system_email_accounts WHERE id = ?',
+      )
+      .get(a.id) as { oauth_refresh_ciphertext: string; oauth_expires_at: string };
     expect(after.oauth_refresh_ciphertext).toBe(refreshBefore); // refresh inalterato
     expect(after.oauth_expires_at).toBe(new Date('2030-01-01').toISOString());
     const resolved = svc.resolveOAuthForExecutor('t1', a.id);
@@ -363,12 +429,22 @@ describe('updateOAuthAccessToken — token rotation', () => {
   it('🚨 cross-tenant updateOAuthAccessToken non aggiorna account altrui', () => {
     const svc = new SystemEmailAccountsService();
     const a = svc.upsertOAuthAccount({
-      tenantId: 'tA', label: 'g', fromAddress: 'a@b', isDefault: false,
-      provider: 'google', email: 'a@b', refreshToken: 'RT-1', accessToken: 'AT-old',
-      expiresAt: new Date(0), scope: 's',
+      tenantId: 'tA',
+      label: 'g',
+      fromAddress: 'a@b',
+      isDefault: false,
+      provider: 'google',
+      email: 'a@b',
+      refreshToken: 'RT-1',
+      accessToken: 'AT-old',
+      expiresAt: new Date(0),
+      scope: 's',
     });
     svc.updateOAuthAccessToken({
-      tenantId: 'tB', accountId: a.id, accessToken: 'AT-stolen', expiresAt: new Date('2030-01-01'),
+      tenantId: 'tB',
+      accountId: a.id,
+      accessToken: 'AT-stolen',
+      expiresAt: new Date('2030-01-01'),
     });
     const resolved = svc.resolveOAuthForExecutor('tA', a.id);
     expect(resolved!.accessToken).toBe('AT-old'); // non modificato

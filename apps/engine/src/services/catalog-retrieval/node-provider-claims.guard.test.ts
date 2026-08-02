@@ -22,8 +22,12 @@ import { llmNodes } from '@medea/engine-nodes-llm';
 import type { NodeModule } from '@medea/engine-nodes-stdlib';
 
 const ALL_NODES: NodeModule[] = [
-  ...stdlibNodes, ...dbNodes, ...coreIntegrationNodes,
-  ...italianConnectors, ...aiAgentNodes, ...llmNodes,
+  ...stdlibNodes,
+  ...dbNodes,
+  ...coreIntegrationNodes,
+  ...italianConnectors,
+  ...aiAgentNodes,
+  ...llmNodes,
 ];
 
 // Nomi-PROVIDER inequivocabili (NON model name come Claude/GPT/Grok → evitano falsi
@@ -63,7 +67,9 @@ describe('GUARD codebase-wide — claim provider ⊆ campo provider', () => {
       const desc = node.def.description;
       for (const [id, re] of Object.entries(PROVIDER_TOKENS)) {
         if (re.test(desc) && !opts.includes(id)) {
-          offenders.push(`${node.def.id}: cita "${id}" ma non è tra le opzioni provider [${opts.join(',')}]`);
+          offenders.push(
+            `${node.def.id}: cita "${id}" ma non è tra le opzioni provider [${opts.join(',')}]`,
+          );
         }
       }
     }

@@ -49,9 +49,7 @@ export function allowedCollabHostSuffixes(): string[] {
   return parsed.length > 0 ? parsed : DEFAULT_ALLOWED_HOST_SUFFIXES;
 }
 
-export type CollabUrlCheck =
-  | { ok: true; url: URL }
-  | { ok: false; reason: string };
+export type CollabUrlCheck = { ok: true; url: URL } | { ok: false; reason: string };
 
 /**
  * Allowlist SSRF del bridge: SOLO webhook FlowForge tenant.
@@ -67,13 +65,16 @@ export function validateCollabUrl(raw: string): CollabUrlCheck {
   try {
     url = new URL(raw.trim());
   } catch {
-    return { ok: false, reason: 'URL non valido — copia l\'URL webhook dal workflow del destinatario' };
+    return {
+      ok: false,
+      reason: "URL non valido — copia l'URL webhook dal workflow del destinatario",
+    };
   }
   if (url.protocol !== 'https:') {
     return { ok: false, reason: 'È ammesso solo https://' };
   }
   if (url.username !== '' || url.password !== '') {
-    return { ok: false, reason: 'Credenziali nell\'URL non ammesse' };
+    return { ok: false, reason: "Credenziali nell'URL non ammesse" };
   }
   if (url.port !== '') {
     return { ok: false, reason: 'Porta esplicita non ammessa (i webhook FlowForge sono su 443)' };
@@ -102,7 +103,11 @@ export function validateCollabUrl(raw: string): CollabUrlCheck {
  * il signed-payload format 'ts.body' che authorize() verifica di default
  * quando hmacTimestampHeader è configurato.
  */
-export function signCollabPayload(args: { body: string; token: string; timestampSec: number }): string {
+export function signCollabPayload(args: {
+  body: string;
+  token: string;
+  timestampSec: number;
+}): string {
   return createHmac('sha256', args.token)
     .update(`${String(args.timestampSec)}.${args.body}`)
     .digest('hex');

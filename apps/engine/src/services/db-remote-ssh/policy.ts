@@ -28,7 +28,10 @@ import { validateIpForFetch, isIP } from '@medea/engine-safe-fetch';
 import { classifyStatement, assertSafeRawStatement } from '@medea/engine-db-studio-engine';
 
 export class SshPolicyError extends Error {
-  constructor(readonly code: 'HOST_KEY' | 'SSH_HOST_BLOCKED' | 'READ_ONLY' | 'CONFIG', message: string) {
+  constructor(
+    readonly code: 'HOST_KEY' | 'SSH_HOST_BLOCKED' | 'READ_ONLY' | 'CONFIG',
+    message: string,
+  ) {
     super(message);
     this.name = 'SshPolicyError';
   }
@@ -38,15 +41,19 @@ export class SshPolicyError extends Error {
 const FINGERPRINT_RE = /^(SHA256:)?[A-Za-z0-9+/=:]{16,}$/i;
 
 const SshAuthSchema = z.discriminatedUnion('method', [
-  z.object({
-    method: z.literal('key'),
-    privateKeySecretRef: z.string().min(1),
-    passphraseSecretRef: z.string().min(1).optional(),
-  }).strict(),
-  z.object({
-    method: z.literal('password'),
-    passwordSecretRef: z.string().min(1),
-  }).strict(),
+  z
+    .object({
+      method: z.literal('key'),
+      privateKeySecretRef: z.string().min(1),
+      passphraseSecretRef: z.string().min(1).optional(),
+    })
+    .strict(),
+  z
+    .object({
+      method: z.literal('password'),
+      passwordSecretRef: z.string().min(1),
+    })
+    .strict(),
 ]);
 
 export const SshDbConnectionConfigSchema = z
@@ -57,7 +64,9 @@ export const SshDbConnectionConfigSchema = z
         port: z.number().int().min(1).max(65535).default(22),
         user: z.string().min(1).max(255),
         // Pinning OBBLIGATORIO: nessun default, nessun "accetta qualsiasi".
-        hostKeyFingerprint: z.string().regex(FINGERPRINT_RE, 'fingerprint host-key non valido (atteso SHA256:… )'),
+        hostKeyFingerprint: z
+          .string()
+          .regex(FINGERPRINT_RE, 'fingerprint host-key non valido (atteso SHA256:… )'),
         auth: SshAuthSchema,
       })
       .strict(),
@@ -102,7 +111,9 @@ export function classifySshHost(host: string): SshHostVerdict {
   const h = host.trim();
   if (isIP(h) !== 0) {
     const res = validateIpForFetch(h);
-    return res.ok ? { kind: 'ip-allowed' } : { kind: 'ip-blocked', reason: res.reason ?? 'BLOCKED_PRIVATE_IP' };
+    return res.ok
+      ? { kind: 'ip-allowed' }
+      : { kind: 'ip-blocked', reason: res.reason ?? 'BLOCKED_PRIVATE_IP' };
   }
   return { kind: 'hostname-needs-dns' };
 }
@@ -111,7 +122,10 @@ export function classifySshHost(host: string): SshHostVerdict {
 export function assertSshHostAllowed(host: string): SshHostVerdict {
   const v = classifySshHost(host);
   if (v.kind === 'ip-blocked') {
-    throw new SshPolicyError('SSH_HOST_BLOCKED', `Host SSH "${host}" è un indirizzo privato/riservato (${v.reason}): bloccato per prevenire pivot nella rete interna.`);
+    throw new SshPolicyError(
+      'SSH_HOST_BLOCKED',
+      `Host SSH "${host}" è un indirizzo privato/riservato (${v.reason}): bloccato per prevenire pivot nella rete interna.`,
+    );
   }
   return v;
 }
@@ -123,12 +137,18 @@ export function assertSshHostAllowed(host: string): SshHostVerdict {
 export function assertReadOnlyQuery(sql: string): void {
   const kind = classifyStatement(sql);
   if (kind !== 'select' && kind !== 'explain') {
-    throw new SshPolicyError('READ_ONLY', `La connessione SSH-DB è in sola lettura: ammessi solo SELECT/EXPLAIN (statement classificato "${kind}").`);
+    throw new SshPolicyError(
+      'READ_ONLY',
+      `La connessione SSH-DB è in sola lettura: ammessi solo SELECT/EXPLAIN (statement classificato "${kind}").`,
+    );
   }
   try {
     assertSafeRawStatement(sql);
   } catch (e) {
-    throw new SshPolicyError('READ_ONLY', e instanceof Error ? e.message : 'statement non consentito');
+    throw new SshPolicyError(
+      'READ_ONLY',
+      e instanceof Error ? e.message : 'statement non consentito',
+    );
   }
 }
 

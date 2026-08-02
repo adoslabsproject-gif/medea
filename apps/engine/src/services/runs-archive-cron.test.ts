@@ -17,12 +17,21 @@ beforeEach(() => {
   vi.resetModules();
   vi.useFakeTimers();
   delete process.env.MEDEA_RUNS_ARCHIVE_DAYS;
-  archiveAllMock.mockResolvedValue({ workflowsScanned: 0, workflowsArchived: 0, totalRows: 0, totalBytes: 0 });
+  archiveAllMock.mockResolvedValue({
+    workflowsScanned: 0,
+    workflowsArchived: 0,
+    totalRows: 0,
+    totalBytes: 0,
+  });
 });
 
-afterEach(() => { vi.useRealTimers(); });
+afterEach(() => {
+  vi.useRealTimers();
+});
 
-async function load() { return import('./runs-archive-cron.js'); }
+async function load() {
+  return import('./runs-archive-cron.js');
+}
 
 describe('🚨 lifecycle', () => {
   it('🚨 start: log info "started"', async () => {
@@ -91,23 +100,29 @@ describe('🚨 tick execution', () => {
     m.startRunsArchiveCron();
     // jitter casuale: firstFire tra 5 min e 15 min — verifico che PRIMA di 4min non spara
     vi.advanceTimersByTime(4 * 60_000);
-    await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
     expect(archiveAllMock).not.toHaveBeenCalled();
     // dopo 16 min sicuramente sparato
     vi.advanceTimersByTime(12 * 60_000);
-    await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
     expect(archiveAllMock).toHaveBeenCalled();
     m.stopRunsArchiveCron();
   });
 
   it('🚨 archive non-zero → log info batch completed', async () => {
     archiveAllMock.mockResolvedValueOnce({
-      workflowsScanned: 5, workflowsArchived: 3, totalRows: 1000, totalBytes: 5000,
+      workflowsScanned: 5,
+      workflowsArchived: 3,
+      totalRows: 1000,
+      totalBytes: 5000,
     });
     const m = await load();
     m.startRunsArchiveCron();
     vi.advanceTimersByTime(20 * 60_000);
-    await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
     expect(loggerMock.info).toHaveBeenCalledWith(
       expect.objectContaining({ workflowsArchived: 3, retentionDays: 30 }),
       '[runs-archive-cron] batch completed',
@@ -119,8 +134,11 @@ describe('🚨 tick execution', () => {
     const m = await load();
     m.startRunsArchiveCron();
     vi.advanceTimersByTime(20 * 60_000);
-    await Promise.resolve(); await Promise.resolve();
-    const completedCalls = loggerMock.info.mock.calls.filter((c) => c[1] === '[runs-archive-cron] batch completed');
+    await Promise.resolve();
+    await Promise.resolve();
+    const completedCalls = loggerMock.info.mock.calls.filter(
+      (c) => c[1] === '[runs-archive-cron] batch completed',
+    );
     expect(completedCalls.length).toBe(0);
     m.stopRunsArchiveCron();
   });
@@ -130,7 +148,8 @@ describe('🚨 tick execution', () => {
     const m = await load();
     m.startRunsArchiveCron();
     vi.advanceTimersByTime(20 * 60_000);
-    await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
     expect(loggerMock.warn).toHaveBeenCalledWith(
       expect.objectContaining({ err: expect.any(Error) }),
       '[runs-archive-cron] cycle failed',

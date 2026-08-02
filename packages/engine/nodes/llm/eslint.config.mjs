@@ -37,7 +37,7 @@ export default [
             {
               group: ['node:*'],
               message:
-                "Import statico da node:* è vietato (rompe il bundle Vite editor). " +
+                'Import statico da node:* è vietato (rompe il bundle Vite editor). ' +
                 "Usa lazy: `type X = typeof import('node:crypto');` + `await import('node:crypto')` dentro funzioni async.",
             },
           ],

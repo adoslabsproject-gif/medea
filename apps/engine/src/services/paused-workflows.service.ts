@@ -83,36 +83,48 @@ export class PausedWorkflowsService implements IPauseHandler {
     const { sqlite } = getDatabase();
     const id = nanoid();
     const now = new Date().toISOString();
-    const timeoutAt = input.timeoutSeconds > 0
-      ? new Date(Date.now() + input.timeoutSeconds * 1000).toISOString()
-      : null;
+    const timeoutAt =
+      input.timeoutSeconds > 0
+        ? new Date(Date.now() + input.timeoutSeconds * 1000).toISOString()
+        : null;
 
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO paused_workflows (
         id, run_id, workflow_id, tenant_id, signal_name, at_node_id,
         outputs_by_id_json, visited_json, pending_queue_json, item_graph_json,
         resume_payload_json, status, timeout_at, match_key, match_value, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'waiting', ?, ?, ?, ?)
-    `).run(
-      id,
-      input.runId,
-      input.workflowId,
-      input.tenantId,
-      input.signalName,
-      input.atNodeId,
-      JSON.stringify(Object.fromEntries(input.outputsById)),
-      JSON.stringify([...input.visited]),
-      JSON.stringify(input.pendingQueue),
-      JSON.stringify(Object.fromEntries(input.itemGraph)),
-      JSON.stringify(input.defaultPayload ?? {}),
-      timeoutAt,
-      input.matchKey ?? null,
-      input.matchValue ?? null,
-      now,
-    );
+    `,
+      )
+      .run(
+        id,
+        input.runId,
+        input.workflowId,
+        input.tenantId,
+        input.signalName,
+        input.atNodeId,
+        JSON.stringify(Object.fromEntries(input.outputsById)),
+        JSON.stringify([...input.visited]),
+        JSON.stringify(input.pendingQueue),
+        JSON.stringify(Object.fromEntries(input.itemGraph)),
+        JSON.stringify(input.defaultPayload ?? {}),
+        timeoutAt,
+        input.matchKey ?? null,
+        input.matchValue ?? null,
+        now,
+      );
 
     logger.info(
-      { id, runId: input.runId, signal: input.signalName, matchKey: input.matchKey, matchValue: input.matchValue, timeoutAt },
+      {
+        id,
+        runId: input.runId,
+        signal: input.signalName,
+        matchKey: input.matchKey,
+        matchValue: input.matchValue,
+        timeoutAt,
+      },
       'Workflow paused',
     );
     return id;
@@ -137,13 +149,18 @@ export class PausedWorkflowsService implements IPauseHandler {
    */
   resumeBySignal(tenantId: string, signalName: string, payload: unknown): PausedRow[] {
     const { sqlite } = getDatabase();
-    const rows = sqlite.prepare(`
+    const rows = sqlite
+      .prepare(
+        `
       SELECT * FROM paused_workflows
       WHERE tenant_id = ? AND signal_name = ? AND status = 'waiting'
       ORDER BY created_at ASC
-    `).all(tenantId, signalName) as DbRow[];
+    `,
+      )
+      .all(tenantId, signalName) as DbRow[];
 
-    const payloadIsObject = payload !== null && typeof payload === 'object' && !Array.isArray(payload);
+    const payloadIsObject =
+      payload !== null && typeof payload === 'object' && !Array.isArray(payload);
     const matched: DbRow[] = [];
     for (const row of rows) {
       if (row.match_key === null || row.match_value === null) {
@@ -169,12 +186,16 @@ export class PausedWorkflowsService implements IPauseHandler {
     const now = new Date().toISOString();
     const result: PausedRow[] = [];
     for (const row of matched) {
-      const claimed = sqlite.prepare(`
+      const claimed = sqlite
+        .prepare(
+          `
         UPDATE paused_workflows
         SET status = 'resumed', resume_payload_json = ?, resumed_at = ?
         WHERE id = ? AND status = 'waiting'
         RETURNING id
-      `).all(JSON.stringify(payload ?? {}), now, row.id) as { id: string }[];
+      `,
+        )
+        .all(JSON.stringify(payload ?? {}), now, row.id) as { id: string }[];
       if (claimed.length === 0) {
         // Un'altra signal-tx ha già claimato questo paused_workflows.id.
         // Skip silenzioso — no duplicate runs.resumeFromPause.
@@ -198,10 +219,14 @@ export class PausedWorkflowsService implements IPauseHandler {
   sweepTimeouts(): PausedRow[] {
     const { sqlite } = getDatabase();
     const now = new Date().toISOString();
-    const rows = sqlite.prepare(`
+    const rows = sqlite
+      .prepare(
+        `
       SELECT * FROM paused_workflows
       WHERE status = 'waiting' AND timeout_at IS NOT NULL AND timeout_at < ?
-    `).all(now) as DbRow[];
+    `,
+      )
+      .all(now) as DbRow[];
 
     // AUDIT FIX WE-7 (2026-06-09 HIGH): UPDATE ... RETURNING per atomic claim.
     // Pre-fix: SELECT + UPDATE WHERE id=? senza filtro status. Due janitor
@@ -211,12 +236,16 @@ export class PausedWorkflowsService implements IPauseHandler {
     const out: PausedRow[] = [];
     for (const row of rows) {
       const defaultPayload: unknown = JSON.parse(row.resume_payload_json ?? '{}');
-      const claimed = sqlite.prepare(`
+      const claimed = sqlite
+        .prepare(
+          `
         UPDATE paused_workflows
         SET status = 'timeout', resumed_at = ?
         WHERE id = ? AND status = 'waiting'
         RETURNING id
-      `).all(now, row.id) as { id: string }[];
+      `,
+        )
+        .all(now, row.id) as { id: string }[];
       if (claimed.length === 0) continue; // racer wins, skip
       out.push(this.mapRow(row, defaultPayload));
     }
@@ -229,25 +258,37 @@ export class PausedWorkflowsService implements IPauseHandler {
   listByTenant(tenantId: string, status?: PausedRow['status']): PausedRow[] {
     const { sqlite } = getDatabase();
     const rows = status
-      ? sqlite.prepare(`
+      ? (sqlite
+          .prepare(
+            `
           SELECT * FROM paused_workflows WHERE tenant_id = ? AND status = ?
           ORDER BY created_at DESC LIMIT 200
-        `).all(tenantId, status) as DbRow[]
-      : sqlite.prepare(`
+        `,
+          )
+          .all(tenantId, status) as DbRow[])
+      : (sqlite
+          .prepare(
+            `
           SELECT * FROM paused_workflows WHERE tenant_id = ?
           ORDER BY created_at DESC LIMIT 200
-        `).all(tenantId) as DbRow[];
+        `,
+          )
+          .all(tenantId) as DbRow[]);
     return rows.map((r) => this.mapRow(r));
   }
 
   cancel(id: string, tenantId: string): boolean {
     const { sqlite } = getDatabase();
     const now = new Date().toISOString();
-    const res = sqlite.prepare(`
+    const res = sqlite
+      .prepare(
+        `
       UPDATE paused_workflows
       SET status = 'cancelled', resumed_at = ?
       WHERE id = ? AND tenant_id = ? AND status = 'waiting'
-    `).run(now, id, tenantId);
+    `,
+      )
+      .run(now, id, tenantId);
     return res.changes > 0;
   }
 
@@ -263,12 +304,14 @@ export class PausedWorkflowsService implements IPauseHandler {
       visited: JSON.parse(row.visited_json) as string[],
       pendingQueue: JSON.parse(row.pending_queue_json) as QueueItem[],
       // Righe pre-4.2: colonna NULL → grafo vuoto (lineage assente, mai sbagliato).
-      itemGraph: row.item_graph_json !== null && row.item_graph_json !== undefined
-        ? JSON.parse(row.item_graph_json) as Record<string, ExecutionItem[]>
-        : {},
+      itemGraph:
+        row.item_graph_json !== null && row.item_graph_json !== undefined
+          ? (JSON.parse(row.item_graph_json) as Record<string, ExecutionItem[]>)
+          : {},
       status: row.status as PausedRow['status'],
       timeoutAt: row.timeout_at,
-      defaultPayload: override ?? (row.resume_payload_json !== null ? JSON.parse(row.resume_payload_json) : null),
+      defaultPayload:
+        override ?? (row.resume_payload_json !== null ? JSON.parse(row.resume_payload_json) : null),
       matchKey: row.match_key,
       matchValue: row.match_value,
       createdAt: row.created_at,

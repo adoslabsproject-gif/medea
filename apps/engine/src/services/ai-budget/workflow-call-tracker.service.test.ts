@@ -30,8 +30,11 @@ vi.mock('@/storage/db.js', () => ({
             all: (...p: unknown[]) => stmt.all(...p),
           };
         },
-        exec: (sql: string) => { conn.exec(sql); },
-        transaction: <T extends unknown[], R>(fn: (...args: T) => R) => conn.transaction(fn) as unknown as (...args: T) => R,
+        exec: (sql: string) => {
+          conn.exec(sql);
+        },
+        transaction: <T extends unknown[], R>(fn: (...args: T) => R) =>
+          conn.transaction(fn) as unknown as (...args: T) => R,
       },
     };
   },
@@ -48,9 +51,15 @@ beforeEach(() => {
   // Insert dummy runs row to satisfy FK.
   // Insert dummy workflow + runs to satisfy FK chain.
   const now = new Date().toISOString();
-  conn.prepare(`INSERT INTO workflows (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)`).run('wf-1', 'Test Workflow', now, now);
-  conn.prepare(`INSERT INTO runs (id, workflow_id, status, started_at) VALUES (?, ?, 'success', ?)`).run('run-1', 'wf-1', new Date().toISOString());
-  conn.prepare(`INSERT INTO runs (id, workflow_id, status, started_at) VALUES (?, ?, 'success', ?)`).run('run-2', 'wf-1', new Date().toISOString());
+  conn
+    .prepare(`INSERT INTO workflows (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)`)
+    .run('wf-1', 'Test Workflow', now, now);
+  conn
+    .prepare(`INSERT INTO runs (id, workflow_id, status, started_at) VALUES (?, ?, 'success', ?)`)
+    .run('run-1', 'wf-1', new Date().toISOString());
+  conn
+    .prepare(`INSERT INTO runs (id, workflow_id, status, started_at) VALUES (?, ?, 'success', ?)`)
+    .run('run-2', 'wf-1', new Date().toISOString());
   dbConnections.push(conn);
 });
 
@@ -103,7 +112,7 @@ describe('estimateCostUsd', () => {
 
   it('Gemini 2.0 Flash BYOK pricing (~$0.10/M input)', () => {
     const cost = estimateCostUsd('gemini', 'gemini-2.0-flash', 1_000_000, 0);
-    expect(cost).toBeCloseTo(0.10, 4);
+    expect(cost).toBeCloseTo(0.1, 4);
   });
 
   it('REGRESSION: pricing table provider-agnostic — Liara NON è 100× più cara di altri (no anti-customer bias)', () => {
@@ -119,10 +128,16 @@ describe('WorkflowCallTracker.record', () => {
   it('record() INSERT row + UPDATE budget atomically', () => {
     const tracker = new WorkflowCallTracker();
     const id = tracker.record({
-      runId: 'run-1', workflowId: 'wf-1', nodeId: 'agent_1', defId: 'agent_classifier',
-      provider: 'liara', model: 'qwen3-32b',
-      inputTokens: 1000, outputTokens: 200,
-      latencyMs: 1234, status: 'ok',
+      runId: 'run-1',
+      workflowId: 'wf-1',
+      nodeId: 'agent_1',
+      defId: 'agent_classifier',
+      provider: 'liara',
+      model: 'qwen3-32b',
+      inputTokens: 1000,
+      outputTokens: 200,
+      latencyMs: 1234,
+      status: 'ok',
     });
     expect(id).toMatch(/^[0-9a-f-]{36}$/);
     const calls = tracker.listByRun('run-1');
@@ -134,13 +149,25 @@ describe('WorkflowCallTracker.record', () => {
   it('UPSERT budget: 2 record stesso giorno → row unica con call_count=2', () => {
     const tracker = new WorkflowCallTracker();
     tracker.record({
-      runId: 'run-1', workflowId: 'wf-1', nodeId: 'n1', defId: 'agent_classifier',
-      provider: 'liara', inputTokens: 100, outputTokens: 50, status: 'ok',
+      runId: 'run-1',
+      workflowId: 'wf-1',
+      nodeId: 'n1',
+      defId: 'agent_classifier',
+      provider: 'liara',
+      inputTokens: 100,
+      outputTokens: 50,
+      status: 'ok',
     });
     tracker.record({
-      runId: 'run-2', workflowId: 'wf-1', nodeId: 'n2', defId: 'ai_anthropic',
-      provider: 'anthropic', model: 'claude-haiku-4-5',
-      inputTokens: 200, outputTokens: 100, status: 'ok',
+      runId: 'run-2',
+      workflowId: 'wf-1',
+      nodeId: 'n2',
+      defId: 'ai_anthropic',
+      provider: 'anthropic',
+      model: 'claude-haiku-4-5',
+      inputTokens: 200,
+      outputTokens: 100,
+      status: 'ok',
     });
     const today = todayUtc(); // stessa data business-TZ del service (no flakiness UTC)
     const budget = tracker.readDailyBudget(today, today);
@@ -154,9 +181,15 @@ describe('WorkflowCallTracker.record', () => {
   it('REGRESSION: status="error" incrementa error_count', () => {
     const tracker = new WorkflowCallTracker();
     tracker.record({
-      runId: 'run-1', workflowId: 'wf-1', nodeId: 'n1', defId: 'ai_anthropic',
-      provider: 'anthropic', inputTokens: 100, outputTokens: 0,
-      status: 'error', errorMessage: 'rate limited',
+      runId: 'run-1',
+      workflowId: 'wf-1',
+      nodeId: 'n1',
+      defId: 'ai_anthropic',
+      provider: 'anthropic',
+      inputTokens: 100,
+      outputTokens: 0,
+      status: 'error',
+      errorMessage: 'rate limited',
     });
     const today = todayUtc(); // stessa data business-TZ del service (no flakiness UTC)
     const budget = tracker.readDailyBudget(today, today);
@@ -168,8 +201,14 @@ describe('WorkflowCallTracker.record', () => {
   it('REGRESSION: status="ok" NON incrementa error_count', () => {
     const tracker = new WorkflowCallTracker();
     tracker.record({
-      runId: 'run-1', workflowId: 'wf-1', nodeId: 'n1', defId: 'agent_classifier',
-      provider: 'liara', inputTokens: 100, outputTokens: 50, status: 'ok',
+      runId: 'run-1',
+      workflowId: 'wf-1',
+      nodeId: 'n1',
+      defId: 'agent_classifier',
+      provider: 'liara',
+      inputTokens: 100,
+      outputTokens: 50,
+      status: 'ok',
     });
     const today = todayUtc(); // stessa data business-TZ del service (no flakiness UTC)
     const budget = tracker.readDailyBudget(today, today);
@@ -180,8 +219,14 @@ describe('WorkflowCallTracker.record', () => {
   it('cache_hit field persistito (semantic/prompt cache observability)', () => {
     const tracker = new WorkflowCallTracker();
     tracker.record({
-      runId: 'run-1', workflowId: 'wf-1', nodeId: 'n1', defId: 'agent_classifier',
-      provider: 'liara', inputTokens: 100, outputTokens: 0, status: 'ok',
+      runId: 'run-1',
+      workflowId: 'wf-1',
+      nodeId: 'n1',
+      defId: 'agent_classifier',
+      provider: 'liara',
+      inputTokens: 100,
+      outputTokens: 0,
+      status: 'ok',
       cacheHit: 'semantic',
     });
     const calls = tracker.listByRun('run-1');
@@ -194,8 +239,14 @@ describe('WorkflowCallTracker.recordChatBudget', () => {
     const tracker = new WorkflowCallTracker();
     tracker.recordChatBudget({ inputTokens: 500, outputTokens: 200, provider: 'liara' });
     tracker.record({
-      runId: 'run-1', workflowId: 'wf-1', nodeId: 'n1', defId: 'agent_classifier',
-      provider: 'liara', inputTokens: 100, outputTokens: 50, status: 'ok',
+      runId: 'run-1',
+      workflowId: 'wf-1',
+      nodeId: 'n1',
+      defId: 'agent_classifier',
+      provider: 'liara',
+      inputTokens: 100,
+      outputTokens: 50,
+      status: 'ok',
     });
     const today = todayUtc(); // stessa data business-TZ del service (no flakiness UTC)
     const budget = tracker.readDailyBudget(today, today);
@@ -208,9 +259,39 @@ describe('WorkflowCallTracker.recordChatBudget', () => {
 describe('WorkflowCallTracker.byModelBreakdown', () => {
   it('aggrega per provider+model lato workflow', () => {
     const tracker = new WorkflowCallTracker();
-    tracker.record({ runId: 'run-1', workflowId: 'wf-1', nodeId: 'n1', defId: 'agent_classifier', provider: 'anthropic', model: 'claude-haiku-4-5', inputTokens: 100, outputTokens: 50, status: 'ok' });
-    tracker.record({ runId: 'run-1', workflowId: 'wf-1', nodeId: 'n2', defId: 'agent_classifier', provider: 'anthropic', model: 'claude-haiku-4-5', inputTokens: 200, outputTokens: 100, status: 'ok' });
-    tracker.record({ runId: 'run-2', workflowId: 'wf-1', nodeId: 'n3', defId: 'agent_classifier', provider: 'openai', model: 'gpt-4o-mini', inputTokens: 50, outputTokens: 25, status: 'ok' });
+    tracker.record({
+      runId: 'run-1',
+      workflowId: 'wf-1',
+      nodeId: 'n1',
+      defId: 'agent_classifier',
+      provider: 'anthropic',
+      model: 'claude-haiku-4-5',
+      inputTokens: 100,
+      outputTokens: 50,
+      status: 'ok',
+    });
+    tracker.record({
+      runId: 'run-1',
+      workflowId: 'wf-1',
+      nodeId: 'n2',
+      defId: 'agent_classifier',
+      provider: 'anthropic',
+      model: 'claude-haiku-4-5',
+      inputTokens: 200,
+      outputTokens: 100,
+      status: 'ok',
+    });
+    tracker.record({
+      runId: 'run-2',
+      workflowId: 'wf-1',
+      nodeId: 'n3',
+      defId: 'agent_classifier',
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      inputTokens: 50,
+      outputTokens: 25,
+      status: 'ok',
+    });
     const rows = tracker.byModelBreakdown('2020-01-01T00:00:00.000Z', '2100-01-01T00:00:00.000Z');
     const haiku = rows.find((r) => r.model === 'claude-haiku-4-5');
     expect(haiku?.callCount).toBe(2);
@@ -223,8 +304,28 @@ describe('WorkflowCallTracker.byModelBreakdown', () => {
 
   it('error_count solo per status != ok', () => {
     const tracker = new WorkflowCallTracker();
-    tracker.record({ runId: 'run-1', workflowId: 'wf-1', nodeId: 'n1', defId: 'd', provider: 'liara', model: 'qwen3', inputTokens: 10, outputTokens: 5, status: 'ok' });
-    tracker.record({ runId: 'run-1', workflowId: 'wf-1', nodeId: 'n2', defId: 'd', provider: 'liara', model: 'qwen3', inputTokens: 10, outputTokens: 0, status: 'timeout' });
+    tracker.record({
+      runId: 'run-1',
+      workflowId: 'wf-1',
+      nodeId: 'n1',
+      defId: 'd',
+      provider: 'liara',
+      model: 'qwen3',
+      inputTokens: 10,
+      outputTokens: 5,
+      status: 'ok',
+    });
+    tracker.record({
+      runId: 'run-1',
+      workflowId: 'wf-1',
+      nodeId: 'n2',
+      defId: 'd',
+      provider: 'liara',
+      model: 'qwen3',
+      inputTokens: 10,
+      outputTokens: 0,
+      status: 'timeout',
+    });
     const rows = tracker.byModelBreakdown('2020-01-01T00:00:00.000Z', '2100-01-01T00:00:00.000Z');
     const row = rows.find((r) => r.provider === 'liara');
     expect(row?.callCount).toBe(2);
@@ -234,8 +335,28 @@ describe('WorkflowCallTracker.byModelBreakdown', () => {
   it('ordina per cost desc (modello più costoso in cima)', () => {
     const tracker = new WorkflowCallTracker();
     // openai/gpt-4o ha cost più alto di liara per stessi token
-    tracker.record({ runId: 'run-1', workflowId: 'wf-1', nodeId: 'n1', defId: 'd', provider: 'liara', model: 'qwen3', inputTokens: 1000, outputTokens: 500, status: 'ok' });
-    tracker.record({ runId: 'run-1', workflowId: 'wf-1', nodeId: 'n2', defId: 'd', provider: 'openai', model: 'gpt-4o', inputTokens: 1000, outputTokens: 500, status: 'ok' });
+    tracker.record({
+      runId: 'run-1',
+      workflowId: 'wf-1',
+      nodeId: 'n1',
+      defId: 'd',
+      provider: 'liara',
+      model: 'qwen3',
+      inputTokens: 1000,
+      outputTokens: 500,
+      status: 'ok',
+    });
+    tracker.record({
+      runId: 'run-1',
+      workflowId: 'wf-1',
+      nodeId: 'n2',
+      defId: 'd',
+      provider: 'openai',
+      model: 'gpt-4o',
+      inputTokens: 1000,
+      outputTokens: 500,
+      status: 'ok',
+    });
     const rows = tracker.byModelBreakdown('2020-01-01T00:00:00.000Z', '2100-01-01T00:00:00.000Z');
     expect(rows[0]?.model).toBe('gpt-4o');
     expect(rows[1]?.model).toBe('qwen3');
@@ -244,7 +365,17 @@ describe('WorkflowCallTracker.byModelBreakdown', () => {
 
   it('finestra temporale filtra correttamente', () => {
     const tracker = new WorkflowCallTracker();
-    tracker.record({ runId: 'run-1', workflowId: 'wf-1', nodeId: 'n1', defId: 'd', provider: 'liara', model: 'qwen3', inputTokens: 100, outputTokens: 50, status: 'ok' });
+    tracker.record({
+      runId: 'run-1',
+      workflowId: 'wf-1',
+      nodeId: 'n1',
+      defId: 'd',
+      provider: 'liara',
+      model: 'qwen3',
+      inputTokens: 100,
+      outputTokens: 50,
+      status: 'ok',
+    });
     // Empty range future → no rows.
     const rows = tracker.byModelBreakdown('2100-01-01T00:00:00.000Z', '2200-01-01T00:00:00.000Z');
     expect(rows.length).toBe(0);
@@ -260,8 +391,26 @@ describe('WorkflowCallTracker.byModelBreakdown', () => {
 describe('WorkflowCallTracker.listByRun', () => {
   it('ordering chronological', () => {
     const tracker = new WorkflowCallTracker();
-    tracker.record({ runId: 'run-1', workflowId: 'wf-1', nodeId: 'a', defId: 'agent_classifier', provider: 'liara', inputTokens: 10, outputTokens: 5, status: 'ok' });
-    tracker.record({ runId: 'run-1', workflowId: 'wf-1', nodeId: 'b', defId: 'agent_extractor', provider: 'liara', inputTokens: 20, outputTokens: 10, status: 'ok' });
+    tracker.record({
+      runId: 'run-1',
+      workflowId: 'wf-1',
+      nodeId: 'a',
+      defId: 'agent_classifier',
+      provider: 'liara',
+      inputTokens: 10,
+      outputTokens: 5,
+      status: 'ok',
+    });
+    tracker.record({
+      runId: 'run-1',
+      workflowId: 'wf-1',
+      nodeId: 'b',
+      defId: 'agent_extractor',
+      provider: 'liara',
+      inputTokens: 20,
+      outputTokens: 10,
+      status: 'ok',
+    });
     const calls = tracker.listByRun('run-1');
     expect(calls.length).toBe(2);
     // ordering by created_at ASC
@@ -271,8 +420,26 @@ describe('WorkflowCallTracker.listByRun', () => {
 
   it('limit cap a 1000 + isolamento per run', () => {
     const tracker = new WorkflowCallTracker();
-    tracker.record({ runId: 'run-1', workflowId: 'wf-1', nodeId: 'n1', defId: 'd', provider: 'liara', inputTokens: 1, outputTokens: 1, status: 'ok' });
-    tracker.record({ runId: 'run-2', workflowId: 'wf-1', nodeId: 'n2', defId: 'd', provider: 'liara', inputTokens: 1, outputTokens: 1, status: 'ok' });
+    tracker.record({
+      runId: 'run-1',
+      workflowId: 'wf-1',
+      nodeId: 'n1',
+      defId: 'd',
+      provider: 'liara',
+      inputTokens: 1,
+      outputTokens: 1,
+      status: 'ok',
+    });
+    tracker.record({
+      runId: 'run-2',
+      workflowId: 'wf-1',
+      nodeId: 'n2',
+      defId: 'd',
+      provider: 'liara',
+      inputTokens: 1,
+      outputTokens: 1,
+      status: 'ok',
+    });
     expect(tracker.listByRun('run-1').length).toBe(1);
     expect(tracker.listByRun('run-2').length).toBe(1);
   });

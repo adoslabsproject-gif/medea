@@ -42,13 +42,16 @@ export class NotificationEmitterAdapter implements INotificationEmitter {
       return Promise.resolve();
     }
 
-    logger.warn({
-      ruleId: report.ruleId,
-      tenantId: report.tenantId,
-      rowsQuarantined: report.rowsQuarantined,
-      critical: report.bySeverity.critical,
-      dataSourceRef: report.dataSourceRef,
-    }, 'Janitor: detection critica');
+    logger.warn(
+      {
+        ruleId: report.ruleId,
+        tenantId: report.tenantId,
+        rowsQuarantined: report.rowsQuarantined,
+        critical: report.bySeverity.critical,
+        dataSourceRef: report.dataSourceRef,
+      },
+      'Janitor: detection critica',
+    );
 
     const recipients = this.notifications.tenantAdminUserIds(report.tenantId);
     if (recipients.length === 0) {

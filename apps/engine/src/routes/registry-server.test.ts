@@ -64,7 +64,7 @@ describe('🚨 GET /nodes.json', () => {
   it('🚨 EMPTY registry (no file) → 200 con index vuoto valid', async () => {
     const res = await makeApp().request('/registry/nodes.json');
     expect(res.status).toBe(200);
-    const json = await res.json() as { version: number; updatedAt: string; nodes: unknown[] };
+    const json = (await res.json()) as { version: number; updatedAt: string; nodes: unknown[] };
     expect(json.version).toBe(1);
     expect(json.nodes).toEqual([]);
     expect(json.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/u);
@@ -127,7 +127,7 @@ describe('🚨 GET /packages/:filename — SECURITY path traversal', () => {
   it('🚨 ATTACK: filename SENZA .ffnode extension → 400', async () => {
     const res = await makeApp().request('/registry/packages/no-extension');
     expect(res.status).toBe(400);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toMatch(/\.ffnode/u);
   });
 
@@ -192,13 +192,13 @@ describe('🚨 GET /_files (admin debug)', () => {
     await rm(join(regDir, 'packages'), { recursive: true, force: true });
     const res = await makeApp().request('/registry/_files');
     expect(res.status).toBe(200);
-    const json = await res.json() as { files: unknown[] };
+    const json = (await res.json()) as { files: unknown[] };
     expect(json.files).toEqual([]);
   });
 
   it('🚨 vuoto → files:[]', async () => {
     const res = await makeApp().request('/registry/_files');
-    const json = await res.json() as { files: unknown[] };
+    const json = (await res.json()) as { files: unknown[] };
     expect(json.files).toEqual([]);
   });
 
@@ -208,7 +208,7 @@ describe('🚨 GET /_files (admin debug)', () => {
     await writeFile(join(regDir, 'packages', 'README.md'), 'docs');
     await writeFile(join(regDir, 'packages', '.DS_Store'), '');
     const res = await makeApp().request('/registry/_files');
-    const json = await res.json() as { files: { name: string }[] };
+    const json = (await res.json()) as { files: { name: string }[] };
     expect(json.files).toHaveLength(2);
     expect(json.files.every((f) => f.name.endsWith('.ffnode'))).toBe(true);
   });
@@ -216,7 +216,7 @@ describe('🚨 GET /_files (admin debug)', () => {
   it('🚨 file entry: name + size + mtime ISO', async () => {
     await writeFile(join(regDir, 'packages', 'test.ffnode'), 'abc123');
     const res = await makeApp().request('/registry/_files');
-    const json = await res.json() as { files: { name: string; size: number; mtime: string }[] };
+    const json = (await res.json()) as { files: { name: string; size: number; mtime: string }[] };
     expect(json.files[0]).toMatchObject({ name: 'test.ffnode', size: 6 });
     expect(json.files[0]!.mtime).toMatch(/^\d{4}-\d{2}-\d{2}T/u);
   });

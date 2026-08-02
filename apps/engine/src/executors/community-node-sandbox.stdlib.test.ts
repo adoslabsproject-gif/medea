@@ -30,9 +30,15 @@ const baseInput: SandboxInput = {
 
 describe('🚨 SANDBOX STDLIB INJECTION — E2E inside isolated-vm', () => {
   it('SANDBOX_STDLIB_INFO esposto: helpers + bytes', () => {
-    expect(SANDBOX_STDLIB_INFO.helpers).toEqual(
-      ['csv', 'crypto', 'transform', 'text', 'url', 'jsonpath', 'time'],
-    );
+    expect(SANDBOX_STDLIB_INFO.helpers).toEqual([
+      'csv',
+      'crypto',
+      'transform',
+      'text',
+      'url',
+      'jsonpath',
+      'time',
+    ]);
     expect(SANDBOX_STDLIB_INFO.bytes).toBeGreaterThan(1000);
     expect(SANDBOX_STDLIB_INFO.bytes).toBeLessThan(20_000);
     expect(SANDBOX_STDLIB_INFO.globalName).toBe('ff');
@@ -133,7 +139,7 @@ describe('🚨 SANDBOX STDLIB INJECTION — E2E inside isolated-vm', () => {
       ...baseInput,
       input: { csv: 'name,score\nalice,85\nbob,92\nalice,78\nbob,95' },
     };
-    const r = await runInSandbox(source, inputWithCsv) as {
+    const r = (await runInSandbox(source, inputWithCsv)) as {
       best: { name: string; slug: string; avgScore: number };
       worst: { name: string; slug: string; avgScore: number };
       allHashes: string[];
@@ -162,8 +168,13 @@ describe('🚨 SANDBOX STDLIB INJECTION — E2E inside isolated-vm', () => {
     `;
     const r = await runInSandbox(source, baseInput);
     expect(r).toEqual({
-      csv: 'function', crypto: 'function', transform: 'function',
-      text: 'function', url: 'function', jsonpath: 'function', time: 'function',
+      csv: 'function',
+      crypto: 'function',
+      transform: 'function',
+      text: 'function',
+      url: 'function',
+      jsonpath: 'function',
+      time: 'function',
     });
   });
 
@@ -178,7 +189,7 @@ describe('🚨 SANDBOX STDLIB INJECTION — E2E inside isolated-vm', () => {
         };
       };
     `;
-    const r = await runInSandbox(source, baseInput) as Record<string, string>;
+    const r = (await runInSandbox(source, baseInput)) as Record<string, string>;
     expect(r.process).toBe('undefined');
     expect(r.require).toBe('undefined');
     // Buffer è un shim 2-method (Buffer.from + toString), non real Buffer
@@ -195,10 +206,10 @@ describe('🚨 SANDBOX STDLIB INJECTION — E2E inside isolated-vm', () => {
       };
     `;
     const r = await runInSandbox(source, baseInput);
-    expect(r).toBe(true);  // mutation locale OK
+    expect(r).toBe(true); // mutation locale OK
     // Run successivo — fresh isolate, ff originale
     const cleanSource = `module.exports = async function() { return typeof ff.csv.parseCsv; };`;
     const r2 = await runInSandbox(cleanSource, baseInput);
-    expect(r2).toBe('function');  // isolato dal precedente
+    expect(r2).toBe('function'); // isolato dal precedente
   });
 });

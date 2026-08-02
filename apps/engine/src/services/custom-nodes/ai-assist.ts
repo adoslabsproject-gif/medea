@@ -64,7 +64,6 @@ export interface AiAssistResponse {
   tokens?: { input: number; output: number };
 }
 
-
 const SYSTEM_PROMPT = `Sei un assistente specializzato nello sviluppo di custom nodes per FlowForge — una piattaforma SaaS di workflow automation enterprise.
 
 Un custom node consiste in 3 file TypeScript:
@@ -134,7 +133,7 @@ function buildUserPrompt(req: AiAssistRequest): string {
         '',
         'Rispondi:',
         '1. Una breve spiegazione del problema (1-2 frasi).',
-        '2. Il file completo corretto in un fence `'+'``ts:'+file+'`'+'``.',
+        '2. Il file completo corretto in un fence `' + '``ts:' + file + '`' + '``.',
       ].join('\n');
     }
 
@@ -169,7 +168,7 @@ function buildUserPrompt(req: AiAssistRequest): string {
         '',
         'Rispondi con:',
         '1. Una nota breve su cosa hai cambiato.',
-        '2. Il file completo riscritto in `'+'``ts:executor`'+'``.',
+        '2. Il file completo riscritto in `' + '``ts:executor`' + '``.',
       ].join('\n');
 
     case 'chat':
@@ -177,14 +176,20 @@ function buildUserPrompt(req: AiAssistRequest): string {
         '# Conversazione sul custom node',
         '',
         'I 3 file CORRENTI del nodo (contesto — NON ripeterli se non servono):',
-        '```ts:executor', req.sources?.executor ?? '(vuoto)', '```',
-        '```ts:definition', req.sources?.definition ?? '(vuoto)', '```',
-        '```ts:schema', req.sources?.schema ?? '(vuoto)', '```',
+        '```ts:executor',
+        req.sources?.executor ?? '(vuoto)',
+        '```',
+        '```ts:definition',
+        req.sources?.definition ?? '(vuoto)',
+        '```',
+        '```ts:schema',
+        req.sources?.schema ?? '(vuoto)',
+        '```',
         '',
         `Messaggio dell'utente: ${req.prompt ?? '(vuoto)'}`,
         '',
         'Rispondi in modo CONVERSAZIONALE, conciso e in italiano (saluti, domande,',
-        'spiegazioni a parole). Applica modifiche al codice SOLO se l\'utente lo',
+        "spiegazioni a parole). Applica modifiche al codice SOLO se l'utente lo",
         'chiede ESPLICITAMENTE: in quel caso, e solo allora, emetti i file completi',
         'nei fence ```ts:executor / ```ts:definition / ```ts:schema. Altrimenti',
         'NON emettere codice.',
@@ -217,7 +222,9 @@ export async function callAiAssist(req: AiAssistRequest): Promise<AiAssistRespon
   // tenant NON raggiungono liara:3003). Throws su HTTP error → la route 500.
   // Timeout 240s: Qwen3 thinking + explain/refactor coi sorgenti interi supera i
   // 60s, specie con la GPU in coda.
-  const messages: { role: string; content: string }[] = [{ role: 'system', content: SYSTEM_PROMPT }];
+  const messages: { role: string; content: string }[] = [
+    { role: 'system', content: SYSTEM_PROMPT },
+  ];
   if (req.crossSurfaceContext && req.crossSurfaceContext.trim().length > 0) {
     messages.push({ role: 'system', content: req.crossSurfaceContext });
   }

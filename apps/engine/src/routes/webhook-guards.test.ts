@@ -8,8 +8,10 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  checkWebhookRateLimit, __resetWebhookRateLimit,
-  webhookIdempotencySeen, __resetWebhookIdempotency,
+  checkWebhookRateLimit,
+  __resetWebhookRateLimit,
+  webhookIdempotencySeen,
+  __resetWebhookIdempotency,
   bodyHash,
 } from './webhook-guards.js';
 
@@ -53,7 +55,7 @@ describe('checkWebhookRateLimit', () => {
     const now = 5000;
     expect(checkWebhookRateLimit('node:1.1.1.1', 1, now).allowed).toBe(true);
     expect(checkWebhookRateLimit('node:1.1.1.1', 1, now).allowed).toBe(false); // stessa chiave esaurita
-    expect(checkWebhookRateLimit('node:2.2.2.2', 1, now).allowed).toBe(true);  // chiave diversa fresca
+    expect(checkWebhookRateLimit('node:2.2.2.2', 1, now).allowed).toBe(true); // chiave diversa fresca
   });
 });
 
@@ -70,14 +72,14 @@ describe('webhookIdempotencySeen', () => {
 
   it('🚨 chiave diversa o nodeId diverso → non duplicato (scope corretto)', () => {
     webhookIdempotencySeen('node', 'idem-1', 1000);
-    expect(webhookIdempotencySeen('node', 'idem-2', 1000)).toBe(false);     // key diversa
-    expect(webhookIdempotencySeen('node-X', 'idem-1', 1000)).toBe(false);   // nodeId diverso
+    expect(webhookIdempotencySeen('node', 'idem-2', 1000)).toBe(false); // key diversa
+    expect(webhookIdempotencySeen('node-X', 'idem-1', 1000)).toBe(false); // nodeId diverso
   });
 
   it('🚨 dopo il TTL la chiave NON è più duplicato (scade)', () => {
     const ttl = 1000;
     expect(webhookIdempotencySeen('node', 'k', 0, ttl)).toBe(false);
-    expect(webhookIdempotencySeen('node', 'k', 500, ttl)).toBe(true);   // entro TTL
+    expect(webhookIdempotencySeen('node', 'k', 500, ttl)).toBe(true); // entro TTL
     expect(webhookIdempotencySeen('node', 'k', 2000, ttl)).toBe(false); // oltre TTL → riemesso
   });
 });

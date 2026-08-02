@@ -22,7 +22,7 @@ export const whatsAppSendNodeDef: NodeDef = {
     'numero E.164 obbligatoria (+393331234567) con conversione automatica dai formati nazionali comuni. Rate limit ' +
     'Meta rispettato con backoff esponenziale e jitter. Errori semantici espliciti: 132xxx (template), 131xxx ' +
     '(numero), 80007 (rate). Output: { messageId, recipient, mode, response, billable, conversationCategory }. ' +
-    'L\'integrazione passa SOLO per Phone Number ID assegnato dall\'app WhatsApp Business dedicata — nessun ' +
+    "L'integrazione passa SOLO per Phone Number ID assegnato dall'app WhatsApp Business dedicata — nessun " +
     'accesso al numero personale del proprietario. Costi conversazione visibili in Insights Meta. ' +
     'Use case: notifica spedizione e-commerce con tracking number via template UTILITY, conferma appuntamento ' +
     'studio commercialista 24h prima con template AUTHENTICATION, ricezione documento via media header (cliente ' +
@@ -37,7 +37,8 @@ export const whatsAppSendNodeDef: NodeDef = {
       type: 'text',
       required: true,
       placeholder: '1234567890123456',
-      help: 'NON e` il tuo numero di telefono. E` l\'ID NUMERICO che trovi nel pannello Meta ' +
+      help:
+        "NON e` il tuo numero di telefono. E` l'ID NUMERICO che trovi nel pannello Meta " +
         'Business → WhatsApp → Configurazione API. Composto da soli numeri.',
     },
     {
@@ -45,7 +46,8 @@ export const whatsAppSendNodeDef: NodeDef = {
       label: 'Access Token (permanente)',
       type: 'secret',
       required: true,
-      help: 'Token di accesso permanente da Meta Business → Sistema Users → ' +
+      help:
+        'Token di accesso permanente da Meta Business → Sistema Users → ' +
         'genera token con permesso whatsapp_business_messaging. ' +
         'Bypassa scadenza, da custodire come segreto.',
     },
@@ -66,7 +68,8 @@ export const whatsAppSendNodeDef: NodeDef = {
       type: 'expression',
       required: true,
       placeholder: '+39 333 1234567   oppure   {{input.phone}}',
-      help: 'Numero di telefono del destinatario in formato E.164. ' +
+      help:
+        'Numero di telefono del destinatario in formato E.164. ' +
         'Spazi/trattini/parentesi vengono rimossi automaticamente. ' +
         'Il `+` opzionale.',
     },
@@ -79,10 +82,11 @@ export const whatsAppSendNodeDef: NodeDef = {
       required: true,
       options: ['text', 'template'],
       defaultValue: 'text',
-      help: 'text = messaggio di testo libero. RICHIEDE che il cliente ti abbia scritto ' +
+      help:
+        'text = messaggio di testo libero. RICHIEDE che il cliente ti abbia scritto ' +
         'negli ultimi 24h (regola Meta). ' +
         'template = template pre-approvato in WhatsApp Business Manager. ' +
-        'Funziona SEMPRE — l\'unico modo per iniziare una nuova conversazione.',
+        "Funziona SEMPRE — l'unico modo per iniziare una nuova conversazione.",
     },
 
     // ────────── Text mode ──────────
@@ -101,7 +105,8 @@ export const whatsAppSendNodeDef: NodeDef = {
       type: 'boolean',
       required: false,
       defaultValue: 'false',
-      help: 'Se on, WhatsApp genera anteprime per i link nel body. ' +
+      help:
+        'Se on, WhatsApp genera anteprime per i link nel body. ' +
         'Default off (UX piu` pulita + niente costo extra per la preview).',
       showIf: { field: 'mode', equals: 'text' },
     },
@@ -113,7 +118,8 @@ export const whatsAppSendNodeDef: NodeDef = {
       type: 'text',
       required: false,
       placeholder: 'pec_ricevuta_consegna',
-      help: 'Nome esatto del template come approvato in WhatsApp Business Manager. ' +
+      help:
+        'Nome esatto del template come approvato in WhatsApp Business Manager. ' +
         'Case-sensitive. Solo template "APPROVED" funzionano (PENDING / REJECTED danno errore).',
       showIf: { field: 'mode', equals: 'template' },
     },
@@ -124,7 +130,8 @@ export const whatsAppSendNodeDef: NodeDef = {
       required: false,
       defaultValue: 'it',
       placeholder: 'it    oppure    en_US',
-      help: 'Codice lingua del template. Deve combaciare ESATTAMENTE con quello scelto ' +
+      help:
+        'Codice lingua del template. Deve combaciare ESATTAMENTE con quello scelto ' +
         'in WhatsApp Business Manager. Formato xx oppure xx_XX.',
       showIf: { field: 'mode', equals: 'template' },
     },
@@ -134,8 +141,10 @@ export const whatsAppSendNodeDef: NodeDef = {
       type: 'code',
       language: 'json',
       required: false,
-      placeholder: '[{"type":"body","parameters":[{"type":"text","text":"{{input.nome}}"},{"type":"text","text":"{{$today}}"}]}]',
-      help: 'Array di components per popolare le variabili del template (placeholder {{1}}, {{2}}, ecc). ' +
+      placeholder:
+        '[{"type":"body","parameters":[{"type":"text","text":"{{input.nome}}"},{"type":"text","text":"{{$today}}"}]}]',
+      help:
+        'Array di components per popolare le variabili del template (placeholder {{1}}, {{2}}, ecc). ' +
         'Tipi parametro: text, currency, date_time, image, document, video. ' +
         'Vuoto = nessuna variabile (template fissi). ' +
         'Per dettagli: https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages',
@@ -153,7 +162,7 @@ export const whatsAppSendNodeDef: NodeDef = {
     },
     {
       key: 'includePipelineLog',
-      label: 'Includi log nell\'output',
+      label: "Includi log nell'output",
       type: 'boolean',
       required: false,
       defaultValue: 'true',

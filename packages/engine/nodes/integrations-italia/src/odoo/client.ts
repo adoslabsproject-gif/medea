@@ -88,7 +88,12 @@ async function jsonRpcCall<T>(
     safeFetchWithRedirects(endpoint, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', method: 'call', params: { service, method, args }, id }),
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'call',
+        params: { service, method, args },
+        id,
+      }),
       timeoutMs,
     }),
   );
@@ -132,7 +137,9 @@ export async function odooAuthenticate(conn: OdooConnection): Promise<number> {
 /**
  * Versione Odoo + info server. Utile per /health pre-check.
  */
-export async function odooServerVersion(url: string): Promise<{ server_version: string; server_version_info: unknown[] }> {
+export async function odooServerVersion(
+  url: string,
+): Promise<{ server_version: string; server_version_info: unknown[] }> {
   return jsonRpcCall(url, 'common', 'version', []);
 }
 

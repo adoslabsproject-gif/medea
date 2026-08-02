@@ -60,7 +60,7 @@ const NORMAL = [
   'Message-ID: <chat-1@gmail.com>',
   'Content-Type: text/plain',
   '',
-  'Ci vediamo all\'una!',
+  "Ci vediamo all'una!",
 ].join('\r\n');
 
 describe('parseBounce — detection + estrazione', () => {
@@ -90,12 +90,24 @@ describe('parseBounce — detection + estrazione', () => {
   });
 
   it('🚨 detection debole: solo MAILER-DAEMON SENZA subject-failure né DSN → null (1 segnale debole non basta)', () => {
-    const src = ['From: MAILER-DAEMON@x.com', 'Subject: Hello there', 'Content-Type: text/plain', '', 'ciao'].join('\r\n');
+    const src = [
+      'From: MAILER-DAEMON@x.com',
+      'Subject: Hello there',
+      'Content-Type: text/plain',
+      '',
+      'ciao',
+    ].join('\r\n');
     expect(parseBounce({ source: src })).toBeNull();
   });
 
   it('🚨 detection debole: MAILER-DAEMON + subject-failure (no parti DSN) → riconosciuto', () => {
-    const src = ['From: MAILER-DAEMON@x.com', 'Subject: Mail delivery failed: returning message', 'Content-Type: text/plain', '', 'failure'].join('\r\n');
+    const src = [
+      'From: MAILER-DAEMON@x.com',
+      'Subject: Mail delivery failed: returning message',
+      'Content-Type: text/plain',
+      '',
+      'failure',
+    ].join('\r\n');
     const r = parseBounce({ source: src });
     expect(r).not.toBeNull();
     expect(r!.bounceType).toBe('unknown'); // nessun codice → unknown
@@ -104,8 +116,10 @@ describe('parseBounce — detection + estrazione', () => {
 
   it('🚨 Status assente → classifica dal Diagnostic-Code SMTP (550 → hard)', () => {
     const src = [
-      'Content-Type: message/delivery-status', '',
-      'Final-Recipient: rfc822; x@y.com', 'Action: failed',
+      'Content-Type: message/delivery-status',
+      '',
+      'Final-Recipient: rfc822; x@y.com',
+      'Action: failed',
       'Diagnostic-Code: smtp; 550 mailbox unavailable',
     ].join('\r\n');
     const r = parseBounce({ source: src });
@@ -115,15 +129,27 @@ describe('parseBounce — detection + estrazione', () => {
   });
 
   it('🚨 malformato: Action presente ma niente Status/Final-Recipient → non basta come DSN forte → null se nessun altro segnale', () => {
-    const src = ['From: x@y.com', 'Subject: ok', 'Content-Type: text/plain', '', 'Action: failed'].join('\r\n');
+    const src = [
+      'From: x@y.com',
+      'Subject: ok',
+      'Content-Type: text/plain',
+      '',
+      'Action: failed',
+    ].join('\r\n');
     expect(parseBounce({ source: src })).toBeNull();
   });
 
   it('🚨 più Final-Recipient duplicati → dedup + normalizzazione (lowercase, no <>)', () => {
     const src = [
-      'Content-Type: message/delivery-status', '',
-      'Final-Recipient: rfc822; <A@B.com>', 'Action: failed', 'Status: 5.0.0',
-      '', 'Final-Recipient: rfc822; a@b.com', 'Action: failed', 'Status: 5.0.0',
+      'Content-Type: message/delivery-status',
+      '',
+      'Final-Recipient: rfc822; <A@B.com>',
+      'Action: failed',
+      'Status: 5.0.0',
+      '',
+      'Final-Recipient: rfc822; a@b.com',
+      'Action: failed',
+      'Status: 5.0.0',
     ].join('\r\n');
     const r = parseBounce({ source: src });
     expect(r!.failedRecipients).toEqual(['a@b.com']);
@@ -131,9 +157,12 @@ describe('parseBounce — detection + estrazione', () => {
 
   it('Original-Message-ID esplicito → usato direttamente', () => {
     const src = [
-      'Content-Type: message/delivery-status', '',
+      'Content-Type: message/delivery-status',
+      '',
       'Original-Message-ID: <explicit-7@me.com>',
-      'Final-Recipient: rfc822; x@y.com', 'Action: failed', 'Status: 5.1.1',
+      'Final-Recipient: rfc822; x@y.com',
+      'Action: failed',
+      'Status: 5.1.1',
     ].join('\r\n');
     expect(parseBounce({ source: src })!.originalMessageId).toBe('<explicit-7@me.com>');
   });

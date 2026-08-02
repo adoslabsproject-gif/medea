@@ -89,7 +89,12 @@ vi.mock('./audit.service.js', () => ({
 vi.mock('./tenant.service.js', () => ({
   tenantService: { checkQuota: vi.fn() },
   QuotaExceededError: class extends Error {
-    constructor(public tenantId: string, public kind: string, public limit: number, public current: number) {
+    constructor(
+      public tenantId: string,
+      public kind: string,
+      public limit: number,
+      public current: number,
+    ) {
       super(`Quota exceeded: ${kind} (${String(current)}/${String(limit)})`);
     }
   },
@@ -104,7 +109,11 @@ vi.mock('@/lib/metrics-store.js', () => ({
 vi.mock('@/lib/safe-parse-json.js', () => ({
   safeParseJson: (s: string | null | undefined) => {
     if (s === null || s === undefined) return null;
-    try { return JSON.parse(s); } catch { return s; }
+    try {
+      return JSON.parse(s);
+    } catch {
+      return s;
+    }
   },
 }));
 
@@ -113,23 +122,25 @@ import { WorkflowService, diagnoseWorkflowRow } from './workflow.service.js';
 
 const eventBus = { emit: m.emit, subscribe: vi.fn(), unsubscribe: vi.fn() };
 
-function makeRow(over: Partial<{
-  id: string;
-  tenantId: string;
-  name: string;
-  enabled: boolean;
-  nodes: unknown[];
-  edges: unknown[];
-  nodeDefs: unknown[];
-  description: string;
-  draftJson: string | null;
-  draftUpdatedAt: string | null;
-  tagsJson: string | null;
-  folderId: string | null;
-  onErrorJson: string | null;
-  concurrencyLimit: number | null;
-  breakpointsJson: string | null;
-}> = {}) {
+function makeRow(
+  over: Partial<{
+    id: string;
+    tenantId: string;
+    name: string;
+    enabled: boolean;
+    nodes: unknown[];
+    edges: unknown[];
+    nodeDefs: unknown[];
+    description: string;
+    draftJson: string | null;
+    draftUpdatedAt: string | null;
+    tagsJson: string | null;
+    folderId: string | null;
+    onErrorJson: string | null;
+    concurrencyLimit: number | null;
+    breakpointsJson: string | null;
+  }> = {},
+) {
   const now = '2026-05-29T10:00:00.000Z';
   return {
     id: over.id ?? 'wf-1',
@@ -169,7 +180,10 @@ beforeEach(() => {
 // ════════════════════════════════════════════════════════════════════
 describe('diagnoseWorkflowRow', () => {
   it('returns ok:true per row con schema valido', () => {
-    const row = makeRow({ name: 'X', nodes: [{ id: 'n1', defId: 'noop', x: 0, y: 0, config: {} }] });
+    const row = makeRow({
+      name: 'X',
+      nodes: [{ id: 'n1', defId: 'noop', x: 0, y: 0, config: {} }],
+    });
     const res = diagnoseWorkflowRow(row as never);
     expect(res.ok).toBe(true);
     expect(res.issues).toBeUndefined();
@@ -219,10 +233,12 @@ describe('WorkflowService.list', () => {
       expect.objectContaining({ workflowId: 'wf-bad', tenantId: 'tenant-a' }),
       expect.any(String),
     );
-    expect(m.counterInc).toHaveBeenCalledWith(expect.objectContaining({
-      name: 'flowforge_workflow_schema_invalid_total',
-      tags: { tenant: 'tenant-a' },
-    }));
+    expect(m.counterInc).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'flowforge_workflow_schema_invalid_total',
+        tags: { tenant: 'tenant-a' },
+      }),
+    );
   });
 
   it('non chiama dedupedWarn se tutte le row sono ok', async () => {
@@ -244,7 +260,9 @@ describe('WorkflowService.listByCustomWebhookPath', () => {
       makeRow({
         id: 'wf-orders',
         enabled: true,
-        nodes: [{ id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 'orders' } }],
+        nodes: [
+          { id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 'orders' } },
+        ],
       }),
     ]);
     const svc = new WorkflowService(eventBus as never);
@@ -258,7 +276,9 @@ describe('WorkflowService.listByCustomWebhookPath', () => {
       makeRow({
         id: 'wf-off',
         enabled: false,
-        nodes: [{ id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 'orders' } }],
+        nodes: [
+          { id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 'orders' } },
+        ],
       }),
     ]);
     const svc = new WorkflowService(eventBus as never);
@@ -271,7 +291,9 @@ describe('WorkflowService.listByCustomWebhookPath', () => {
       makeRow({
         id: 'wf-orders-v2',
         enabled: true,
-        nodes: [{ id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 'orders/v2' } }],
+        nodes: [
+          { id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 'orders/v2' } },
+        ],
       }),
     ]);
     const svc = new WorkflowService(eventBus as never);
@@ -334,7 +356,7 @@ describe('WorkflowService.get', () => {
 // per il fan-out engine. Niente WorkflowSchema.parse necessario.
 // ════════════════════════════════════════════════════════════════════
 describe('WorkflowService.getErrorWorkflowId — E4 fan-out lookup', () => {
-  it('ritorna l\'id quando settato sulla row', async () => {
+  it("ritorna l'id quando settato sulla row", async () => {
     m.selectRows.mockResolvedValue([{ errorWorkflowId: 'wf-error-handler' }]);
     const svc = new WorkflowService(eventBus as never);
     const res = await svc.getErrorWorkflowId('wf-1', 'tenant-a');
@@ -362,14 +384,15 @@ describe('WorkflowService.getErrorWorkflowId — E4 fan-out lookup', () => {
 // ════════════════════════════════════════════════════════════════════
 describe('WorkflowService create/update — contract indirection webhook', () => {
   const CABLED_TOKEN = 'deadbeef'.repeat(4); // 32 hex
-  const targetRow = () => makeRow({
-    id: 'wf-target',
-    tenantId: 'tenant-a',
-    enabled: true,
-    nodes: [{ id: 'trig', defId: 'trigger_webhook', x: 0, y: 0, config: { authMode: 'none' } }],
-  });
+  const targetRow = () =>
+    makeRow({
+      id: 'wf-target',
+      tenantId: 'tenant-a',
+      enabled: true,
+      nodes: [{ id: 'trig', defId: 'trigger_webhook', x: 0, y: 0, config: { authMode: 'none' } }],
+    });
 
-  it('create(): il link cablato diventa ref:// PRIMA dell\'insert — il token non tocca il disco', async () => {
+  it("create(): il link cablato diventa ref:// PRIMA dell'insert — il token non tocca il disco", async () => {
     let capturedNodesJson = '';
     m.insertRun.mockImplementationOnce((vals: { nodesJson: string }) => {
       capturedNodesJson = vals.nodesJson;
@@ -381,9 +404,17 @@ describe('WorkflowService create/update — contract indirection webhook', () =>
     await svc.create({
       name: 'Pagine',
       tenantId: 'tenant-a',
-      nodes: [{ id: 'html', defId: 'action_webhook_respond', x: 0, y: 0, config: {
-        body: `<a href="/webhooks/wf-target/${CABLED_TOKEN}">vai</a>`,
-      } }],
+      nodes: [
+        {
+          id: 'html',
+          defId: 'action_webhook_respond',
+          x: 0,
+          y: 0,
+          config: {
+            body: `<a href="/webhooks/wf-target/${CABLED_TOKEN}">vai</a>`,
+          },
+        },
+      ],
     });
 
     expect(capturedNodesJson).toContain('ref://wf/wf-target/webhook');
@@ -393,37 +424,67 @@ describe('WorkflowService create/update — contract indirection webhook', () =>
   it('update(): stesso contract sul path di modifica', async () => {
     m.selectRows.mockResolvedValue([targetRow()]);
     const svc = new WorkflowService(eventBus as never);
-    await svc.update('wf-target', {
-      nodes: [{ id: 'html', defId: 'action_webhook_respond', x: 0, y: 0, config: {
-        url: `/webhooks/wf-target/${CABLED_TOKEN}?x=1`,
-      } }],
-    }, 'tenant-a');
+    await svc.update(
+      'wf-target',
+      {
+        nodes: [
+          {
+            id: 'html',
+            defId: 'action_webhook_respond',
+            x: 0,
+            y: 0,
+            config: {
+              url: `/webhooks/wf-target/${CABLED_TOKEN}?x=1`,
+            },
+          },
+        ],
+      },
+      'tenant-a',
+    );
 
     const nodesJson = m.capturedUpdatePatch?.nodesJson as string;
     expect(nodesJson).toContain('ref://wf/wf-target/webhook?x=1');
     expect(nodesJson).not.toContain(CABLED_TOKEN);
   });
 
-  it('CONSERVATIVO: target header-token → il link resta com\'era (il segmento è il secret utente)', async () => {
+  it("CONSERVATIVO: target header-token → il link resta com'era (il segmento è il secret utente)", async () => {
     let capturedNodesJson = '';
     m.insertRun.mockImplementationOnce((vals: { nodesJson: string }) => {
       capturedNodesJson = vals.nodesJson;
       return Promise.resolve();
     });
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-target',
-      tenantId: 'tenant-a',
-      enabled: true,
-      nodes: [{ id: 'trig', defId: 'trigger_webhook', x: 0, y: 0, config: { authMode: 'header-token', authSecret: CABLED_TOKEN } }],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-target',
+        tenantId: 'tenant-a',
+        enabled: true,
+        nodes: [
+          {
+            id: 'trig',
+            defId: 'trigger_webhook',
+            x: 0,
+            y: 0,
+            config: { authMode: 'header-token', authSecret: CABLED_TOKEN },
+          },
+        ],
+      }),
+    ]);
 
     const svc = new WorkflowService(eventBus as never);
     await svc.create({
       name: 'Pagine',
       tenantId: 'tenant-a',
-      nodes: [{ id: 'html', defId: 'action_http', x: 0, y: 0, config: {
-        url: `/webhooks/wf-target/${CABLED_TOKEN}`,
-      } }],
+      nodes: [
+        {
+          id: 'html',
+          defId: 'action_http',
+          x: 0,
+          y: 0,
+          config: {
+            url: `/webhooks/wf-target/${CABLED_TOKEN}`,
+          },
+        },
+      ],
     });
 
     expect(capturedNodesJson).toContain(`/webhooks/wf-target/${CABLED_TOKEN}`);
@@ -442,11 +503,21 @@ describe('WorkflowService.create — security tokens', () => {
       return Promise.resolve();
     });
     // get() called dopo insert per fetch del workflow creato
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-new',
-      tenantId: 'tenant-a',
-      nodes: [{ id: 'form-1', defId: 'trigger_form', x: 0, y: 0, config: { publicToken: 'will-be-set' } }],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-new',
+        tenantId: 'tenant-a',
+        nodes: [
+          {
+            id: 'form-1',
+            defId: 'trigger_form',
+            x: 0,
+            y: 0,
+            config: { publicToken: 'will-be-set' },
+          },
+        ],
+      }),
+    ]);
 
     const svc = new WorkflowService(eventBus as never);
     await svc.create({
@@ -467,17 +538,29 @@ describe('WorkflowService.create — security tokens', () => {
       capturedNodes = JSON.parse(vals.nodesJson);
       return Promise.resolve();
     });
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-new',
-      tenantId: 'tenant-a',
-      nodes: [{ id: 'form-1', defId: 'trigger_form', x: 0, y: 0, config: { publicToken: existingToken } }],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-new',
+        tenantId: 'tenant-a',
+        nodes: [
+          {
+            id: 'form-1',
+            defId: 'trigger_form',
+            x: 0,
+            y: 0,
+            config: { publicToken: existingToken },
+          },
+        ],
+      }),
+    ]);
 
     const svc = new WorkflowService(eventBus as never);
     await svc.create({
       name: 'Form WF',
       tenantId: 'tenant-a',
-      nodes: [{ id: 'form-1', defId: 'trigger_form', x: 0, y: 0, config: { publicToken: existingToken } }],
+      nodes: [
+        { id: 'form-1', defId: 'trigger_form', x: 0, y: 0, config: { publicToken: existingToken } },
+      ],
     });
 
     const formNode = capturedNodes[0] as { config: { publicToken: string } };
@@ -490,17 +573,23 @@ describe('WorkflowService.create — security tokens', () => {
       capturedNodes = JSON.parse(vals.nodesJson);
       return Promise.resolve();
     });
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-new',
-      tenantId: 'tenant-a',
-      nodes: [{ id: 'form-1', defId: 'trigger_form', x: 0, y: 0, config: { publicToken: 'short' } }],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-new',
+        tenantId: 'tenant-a',
+        nodes: [
+          { id: 'form-1', defId: 'trigger_form', x: 0, y: 0, config: { publicToken: 'short' } },
+        ],
+      }),
+    ]);
 
     const svc = new WorkflowService(eventBus as never);
     await svc.create({
       name: 'Form WF',
       tenantId: 'tenant-a',
-      nodes: [{ id: 'form-1', defId: 'trigger_form', x: 0, y: 0, config: { publicToken: 'short' } }],
+      nodes: [
+        { id: 'form-1', defId: 'trigger_form', x: 0, y: 0, config: { publicToken: 'short' } },
+      ],
     });
 
     const formNode = capturedNodes[0] as { config: { publicToken: string } };
@@ -514,10 +603,12 @@ describe('WorkflowService.create — security tokens', () => {
       capturedNodes = JSON.parse(vals.nodesJson);
       return Promise.resolve();
     });
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-new',
-      nodes: [{ id: 'n1', defId: 'action_http', x: 0, y: 0, config: { url: 'https://x.com' } }],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-new',
+        nodes: [{ id: 'n1', defId: 'action_http', x: 0, y: 0, config: { url: 'https://x.com' } }],
+      }),
+    ]);
 
     const svc = new WorkflowService(eventBus as never);
     await svc.create({
@@ -535,22 +626,28 @@ describe('WorkflowService.create — security tokens', () => {
     const svc = new WorkflowService(eventBus as never);
     await svc.create({ name: 'X', tenantId: 'tenant-a', createdBy: 'user-1' });
 
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: 'tenant-a',
-      action: 'workflow.create',
-      resourceType: 'workflow',
-      actorId: 'user-1',
-    }));
-    expect(m.emit).toHaveBeenCalledWith(expect.objectContaining({
-      name: 'workflow.created',
-      tenantId: 'tenant-a',
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant-a',
+        action: 'workflow.create',
+        resourceType: 'workflow',
+        actorId: 'user-1',
+      }),
+    );
+    expect(m.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'workflow.created',
+        tenantId: 'tenant-a',
+      }),
+    );
   });
 
   it('throws se get() post-insert ritorna null (consistency check)', async () => {
     m.selectRows.mockResolvedValue([]); // get() ritorna null
     const svc = new WorkflowService(eventBus as never);
-    await expect(svc.create({ name: 'X', tenantId: 'tenant-a' })).rejects.toThrow(/not found after insert/);
+    await expect(svc.create({ name: 'X', tenantId: 'tenant-a' })).rejects.toThrow(
+      /not found after insert/,
+    );
   });
 });
 
@@ -568,10 +665,16 @@ describe('WorkflowService.update — orphan edges validator', () => {
     m.selectRows.mockResolvedValue([existing]);
 
     const svc = new WorkflowService(eventBus as never);
-    await expect(svc.update('wf-1', {
-      nodes: [{ id: 'n1', defId: 'action_http', x: 0, y: 0, config: {} }],
-      edges: [{ from: 'ghost', to: 'n1' }],
-    }, 'tenant-a')).rejects.toThrow(/edge orfani.*ghost/);
+    await expect(
+      svc.update(
+        'wf-1',
+        {
+          nodes: [{ id: 'n1', defId: 'action_http', x: 0, y: 0, config: {} }],
+          edges: [{ from: 'ghost', to: 'n1' }],
+        },
+        'tenant-a',
+      ),
+    ).rejects.toThrow(/edge orfani.*ghost/);
   });
 
   it('REFUSES update con edge.to che punta a nodo inesistente', async () => {
@@ -583,22 +686,41 @@ describe('WorkflowService.update — orphan edges validator', () => {
     m.selectRows.mockResolvedValue([existing]);
 
     const svc = new WorkflowService(eventBus as never);
-    await expect(svc.update('wf-1', {
-      nodes: [{ id: 'n1', defId: 'action_http', x: 0, y: 0, config: {} }],
-      edges: [{ from: 'n1', to: 'ghost' }],
-    }, 'tenant-a')).rejects.toThrow(/edge orfani/);
+    await expect(
+      svc.update(
+        'wf-1',
+        {
+          nodes: [{ id: 'n1', defId: 'action_http', x: 0, y: 0, config: {} }],
+          edges: [{ from: 'n1', to: 'ghost' }],
+        },
+        'tenant-a',
+      ),
+    ).rejects.toThrow(/edge orfani/);
   });
 
   it('🔒 edge orfani → WorkflowValidationError (httpStatus 400, NON 500)', async () => {
     const { WorkflowValidationError } = await import('./workflow.service.js');
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-1', nodes: [{ id: 'n1', defId: 'action_http', x: 0, y: 0, config: {} }], edges: [],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-1',
+        nodes: [{ id: 'n1', defId: 'action_http', x: 0, y: 0, config: {} }],
+        edges: [],
+      }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
-    const err = await svc.update('wf-1', {
-      nodes: [{ id: 'n1', defId: 'action_http', x: 0, y: 0, config: {} }],
-      edges: [{ from: 'n1', to: 'ghost' }],
-    }, 'tenant-a').then(() => null, (e: unknown) => e);
+    const err = await svc
+      .update(
+        'wf-1',
+        {
+          nodes: [{ id: 'n1', defId: 'action_http', x: 0, y: 0, config: {} }],
+          edges: [{ from: 'n1', to: 'ghost' }],
+        },
+        'tenant-a',
+      )
+      .then(
+        () => null,
+        (e: unknown) => e,
+      );
     expect(err).toBeInstanceOf(WorkflowValidationError);
     expect((err as InstanceType<typeof WorkflowValidationError>).httpStatus).toBe(400);
     expect((err as InstanceType<typeof WorkflowValidationError>).expose).toBe(true);
@@ -607,15 +729,23 @@ describe('WorkflowService.update — orphan edges validator', () => {
   it('ACCETTA update con edges che puntano a nodi esistenti', async () => {
     const existing = makeRow({
       id: 'wf-1',
-      nodes: [{ id: 'n1', defId: 'a', x: 0, y: 0, config: {} }, { id: 'n2', defId: 'b', x: 0, y: 0, config: {} }],
+      nodes: [
+        { id: 'n1', defId: 'a', x: 0, y: 0, config: {} },
+        { id: 'n2', defId: 'b', x: 0, y: 0, config: {} },
+      ],
     });
-    m.selectRows.mockResolvedValueOnce([existing]) // get() pre-validation
-                .mockResolvedValueOnce([existing]); // get() post-update
+    m.selectRows
+      .mockResolvedValueOnce([existing]) // get() pre-validation
+      .mockResolvedValueOnce([existing]); // get() post-update
 
     const svc = new WorkflowService(eventBus as never);
-    const res = await svc.update('wf-1', {
-      edges: [{ from: 'n1', to: 'n2' }],
-    }, 'tenant-a');
+    const res = await svc.update(
+      'wf-1',
+      {
+        edges: [{ from: 'n1', to: 'n2' }],
+      },
+      'tenant-a',
+    );
     expect(res).toBeDefined();
   });
 
@@ -627,7 +757,11 @@ describe('WorkflowService.update — orphan edges validator', () => {
   });
 
   it('azzera draft on manual save (draftJson + draftUpdatedAt = NULL)', async () => {
-    const existing = makeRow({ id: 'wf-1', draftJson: '{"old":"draft"}', draftUpdatedAt: '2026-01-01' });
+    const existing = makeRow({
+      id: 'wf-1',
+      draftJson: '{"old":"draft"}',
+      draftUpdatedAt: '2026-01-01',
+    });
     m.selectRows.mockResolvedValue([existing]);
     const svc = new WorkflowService(eventBus as never);
     await svc.update('wf-1', { name: 'New name' }, 'tenant-a');
@@ -653,17 +787,21 @@ describe('WorkflowService.delete', () => {
     const svc = new WorkflowService(eventBus as never);
     const res = await svc.delete('wf-1', 'tenant-a', 'user-1');
     expect(res).toBe(true);
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: 'tenant-a',
-      action: 'workflow.delete',
-      resourceId: 'wf-1',
-      actorId: 'user-1',
-    }));
-    expect(m.emit).toHaveBeenCalledWith(expect.objectContaining({
-      name: 'workflow.deleted',
-      tenantId: 'tenant-a',
-      data: { id: 'wf-1' },
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant-a',
+        action: 'workflow.delete',
+        resourceId: 'wf-1',
+        actorId: 'user-1',
+      }),
+    );
+    expect(m.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'workflow.deleted',
+        tenantId: 'tenant-a',
+        data: { id: 'wf-1' },
+      }),
+    );
   });
 });
 
@@ -687,29 +825,35 @@ describe('WorkflowService.saveDraft + getDraft + discardDraft', () => {
   });
 
   it('getDraft returns null se draftJson è null', async () => {
-    m.selectRows.mockResolvedValue([makeRow({ id: 'wf-1', draftJson: null, draftUpdatedAt: null })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({ id: 'wf-1', draftJson: null, draftUpdatedAt: null }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     const res = await svc.getDraft('wf-1', 'tenant-a');
     expect(res).toBeNull();
   });
 
   it('getDraft returns null se draftJson malformed (safeParseJson ritorna string)', async () => {
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-1',
-      draftJson: '{this-is-not-json',
-      draftUpdatedAt: '2026-05-29T00:00:00Z',
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-1',
+        draftJson: '{this-is-not-json',
+        draftUpdatedAt: '2026-05-29T00:00:00Z',
+      }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     const res = await svc.getDraft('wf-1', 'tenant-a');
     expect(res).toBeNull();
   });
 
   it('getDraft returns payload + savedAt se ok', async () => {
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-1',
-      draftJson: JSON.stringify({ name: 'WIP' }),
-      draftUpdatedAt: '2026-05-29T10:00:00Z',
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-1',
+        draftJson: JSON.stringify({ name: 'WIP' }),
+        draftUpdatedAt: '2026-05-29T10:00:00Z',
+      }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     const res = await svc.getDraft('wf-1', 'tenant-a');
     expect(res).toEqual({ payload: { name: 'WIP' }, savedAt: '2026-05-29T10:00:00Z' });
@@ -742,10 +886,20 @@ describe('WorkflowService.exportBundle — secret redaction', () => {
   });
 
   it('AZZERA campo che contiene "credential" + popola placeholders', async () => {
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-1',
-      nodes: [{ id: 'n1', defId: 'action_http', x: 0, y: 0, config: { credentialId: 'cred-abc-1234567890abcd' } }],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-1',
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'action_http',
+            x: 0,
+            y: 0,
+            config: { credentialId: 'cred-abc-1234567890abcd' },
+          },
+        ],
+      }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     const res = await svc.exportBundle('wf-1', 'tenant-a');
     expect(res).not.toBeNull();
@@ -759,18 +913,26 @@ describe('WorkflowService.exportBundle — secret redaction', () => {
   });
 
   it('AZZERA campi password/secret/apikey/token/bearer', async () => {
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-1',
-      nodes: [
-        { id: 'n1', defId: 'trigger_imap', x: 0, y: 0, config: {
-          password: 'plain-password',
-          apiKey: 'secret-key-xyz',
-          token: 'bearer-abc',
-          secret: 'webhook-secret',
-          bearerAuth: 'eyJh...long-jwt',
-        }},
-      ],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-1',
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            x: 0,
+            y: 0,
+            config: {
+              password: 'plain-password',
+              apiKey: 'secret-key-xyz',
+              token: 'bearer-abc',
+              secret: 'webhook-secret',
+              bearerAuth: 'eyJh...long-jwt',
+            },
+          },
+        ],
+      }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     const res = await svc.exportBundle('wf-1', 'tenant-a');
     const cfg = (res!.workflow.nodes[0] as { config: Record<string, string> }).config;
@@ -783,10 +945,20 @@ describe('WorkflowService.exportBundle — secret redaction', () => {
   });
 
   it('AZZERA publicToken di trigger_form + note "rigenerato in import"', async () => {
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-1',
-      nodes: [{ id: 'form-1', defId: 'trigger_form', x: 0, y: 0, config: { publicToken: 'old-token-32chars-abcdef' } }],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-1',
+        nodes: [
+          {
+            id: 'form-1',
+            defId: 'trigger_form',
+            x: 0,
+            y: 0,
+            config: { publicToken: 'old-token-32chars-abcdef' },
+          },
+        ],
+      }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     const res = await svc.exportBundle('wf-1', 'tenant-a');
     const cfg = (res!.workflow.nodes[0] as { config: { publicToken: string } }).config;
@@ -821,11 +993,13 @@ describe('WorkflowService.exportBundle — secret redaction', () => {
     m.selectRows.mockResolvedValue([makeRow({ id: 'wf-1', tenantId: 'tenant-a' })]);
     const svc = new WorkflowService(eventBus as never);
     await svc.exportBundle('wf-1', 'tenant-a');
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: 'tenant-a',
-      action: 'workflow.export',
-      resourceId: 'wf-1',
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant-a',
+        action: 'workflow.export',
+        resourceId: 'wf-1',
+      }),
+    );
   });
 });
 
@@ -833,7 +1007,9 @@ describe('WorkflowService.exportBundle — secret redaction', () => {
 // importBundle — VALIDATION + auto-rename + disabled-by-default
 // ════════════════════════════════════════════════════════════════════
 describe('WorkflowService.importBundle', () => {
-  function validBundle(over: Partial<{ name: string; schemaVersion: string; checksum: string }> = {}) {
+  function validBundle(
+    over: Partial<{ name: string; schemaVersion: string; checksum: string }> = {},
+  ) {
     return {
       schemaVersion: over.schemaVersion ?? '1.0.0',
       exportedAt: '2026-05-29T00:00:00Z',
@@ -858,10 +1034,12 @@ describe('WorkflowService.importBundle', () => {
 
   it('REJECT bundle schemaVersion diverso da 1.0.0', async () => {
     const svc = new WorkflowService(eventBus as never);
-    await expect(svc.importBundle(validBundle({ schemaVersion: '2.0.0' }), 'tenant-a'))
-      .rejects.toThrow(/schemaVersion.*non supportato/);
-    await expect(svc.importBundle({ workflow: { name: 'X' } }, 'tenant-a'))
-      .rejects.toThrow(/schemaVersion.*mancante/);
+    await expect(
+      svc.importBundle(validBundle({ schemaVersion: '2.0.0' }), 'tenant-a'),
+    ).rejects.toThrow(/schemaVersion.*non supportato/);
+    await expect(svc.importBundle({ workflow: { name: 'X' } }, 'tenant-a')).rejects.toThrow(
+      /schemaVersion.*mancante/,
+    );
   });
 
   it('REJECT bundle senza workflow.name', async () => {
@@ -872,14 +1050,25 @@ describe('WorkflowService.importBundle', () => {
   });
 
   it('WARNING (non-blocker) su checksum mismatch', async () => {
-    m.selectRows.mockResolvedValueOnce([]).mockResolvedValueOnce([makeRow({ id: 'wf-new', tenantId: 'tenant-a', name: 'Imported WF' })]);
+    m.selectRows
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        makeRow({ id: 'wf-new', tenantId: 'tenant-a', name: 'Imported WF' }),
+      ]);
     const svc = new WorkflowService(eventBus as never);
-    const res = await svc.importBundle(validBundle({ checksum: 'tampered-checksum-no-match' }), 'tenant-a');
+    const res = await svc.importBundle(
+      validBundle({ checksum: 'tampered-checksum-no-match' }),
+      'tenant-a',
+    );
     expect(res.warnings.some((w) => w.includes('Checksum'))).toBe(true);
   });
 
   it('WARNING su bundle senza checksum (impossibile verificare integrity)', async () => {
-    m.selectRows.mockResolvedValueOnce([]).mockResolvedValueOnce([makeRow({ id: 'wf-new', tenantId: 'tenant-a', name: 'Imported WF' })]);
+    m.selectRows
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        makeRow({ id: 'wf-new', tenantId: 'tenant-a', name: 'Imported WF' }),
+      ]);
     const svc = new WorkflowService(eventBus as never);
     const b = validBundle();
     b.checksum = '';
@@ -888,11 +1077,18 @@ describe('WorkflowService.importBundle', () => {
   });
 
   it('AUTO-RENAME se nome collide nel tenant (suffix "(importato)")', async () => {
-    m.selectRows.mockResolvedValueOnce([makeRow({ id: 'existing', tenantId: 'tenant-a', name: 'Imported WF' })])
-                .mockResolvedValueOnce([makeRow({ id: 'wf-new', tenantId: 'tenant-a', name: 'Imported WF (importato)' })]);
+    m.selectRows
+      .mockResolvedValueOnce([
+        makeRow({ id: 'existing', tenantId: 'tenant-a', name: 'Imported WF' }),
+      ])
+      .mockResolvedValueOnce([
+        makeRow({ id: 'wf-new', tenantId: 'tenant-a', name: 'Imported WF (importato)' }),
+      ]);
     const svc = new WorkflowService(eventBus as never);
     const res = await svc.importBundle(validBundle(), 'tenant-a');
-    expect(res.warnings.some((w) => w.includes('già esistente') && w.includes('(importato)'))).toBe(true);
+    expect(res.warnings.some((w) => w.includes('già esistente') && w.includes('(importato)'))).toBe(
+      true,
+    );
   });
 
   it('workflow creato è ENABLED=false di default (user deve riconfigurare + abilitare)', async () => {
@@ -901,14 +1097,22 @@ describe('WorkflowService.importBundle', () => {
       capturedInsert = vals;
       return Promise.resolve();
     });
-    m.selectRows.mockResolvedValueOnce([]).mockResolvedValueOnce([makeRow({ id: 'wf-new', tenantId: 'tenant-a', name: 'Imported WF' })]);
+    m.selectRows
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        makeRow({ id: 'wf-new', tenantId: 'tenant-a', name: 'Imported WF' }),
+      ]);
     const svc = new WorkflowService(eventBus as never);
     await svc.importBundle(validBundle(), 'tenant-a');
     expect(capturedInsert.enabled).toBe(false);
   });
 
   it('emette audit workflow.import con metadata warning/placeholders count', async () => {
-    m.selectRows.mockResolvedValueOnce([]).mockResolvedValueOnce([makeRow({ id: 'wf-new', tenantId: 'tenant-a', name: 'Imported WF' })]);
+    m.selectRows
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        makeRow({ id: 'wf-new', tenantId: 'tenant-a', name: 'Imported WF' }),
+      ]);
     const svc = new WorkflowService(eventBus as never);
     const bundle = {
       ...validBundle(),
@@ -916,14 +1120,16 @@ describe('WorkflowService.importBundle', () => {
     };
     await svc.importBundle(bundle as Parameters<typeof svc.importBundle>[0], 'tenant-a', 'user-1');
 
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: 'tenant-a',
-      action: 'workflow.import',
-      actorId: 'user-1',
-      metadata: expect.objectContaining({
-        placeholders: 1,
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant-a',
+        action: 'workflow.import',
+        actorId: 'user-1',
+        metadata: expect.objectContaining({
+          placeholders: 1,
+        }),
       }),
-    }));
+    );
   });
 });
 
@@ -1000,12 +1206,20 @@ describe('WorkflowService.listByCustomWebhookPathAnyTenant', () => {
   it('match exact cross-tenant', async () => {
     m.selectRows.mockResolvedValue([
       makeRow({
-        id: 'wf-1', tenantId: 'tenant-a', enabled: true,
-        nodes: [{ id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 'orders' } }],
+        id: 'wf-1',
+        tenantId: 'tenant-a',
+        enabled: true,
+        nodes: [
+          { id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 'orders' } },
+        ],
       }),
       makeRow({
-        id: 'wf-2', tenantId: 'tenant-b', enabled: true,
-        nodes: [{ id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 'orders' } }],
+        id: 'wf-2',
+        tenantId: 'tenant-b',
+        enabled: true,
+        nodes: [
+          { id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 'orders' } },
+        ],
       }),
     ]);
     const svc = new WorkflowService(eventBus as never);
@@ -1021,8 +1235,11 @@ describe('WorkflowService.listByCustomWebhookPathAnyTenant', () => {
   it('skip workflow disabled', async () => {
     m.selectRows.mockResolvedValue([
       makeRow({
-        id: 'wf-off', enabled: false,
-        nodes: [{ id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 'orders' } }],
+        id: 'wf-off',
+        enabled: false,
+        nodes: [
+          { id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 'orders' } },
+        ],
       }),
     ]);
     const svc = new WorkflowService(eventBus as never);
@@ -1065,13 +1282,24 @@ describe('WorkflowService.create — ensureFormTriggerTokens edge cases', () => 
       capturedNodes = JSON.parse(vals.nodesJson);
       return Promise.resolve();
     });
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-new',
-      nodes: [{ id: 'form-1', defId: 'trigger_form', x: 0, y: 0, config: { publicToken: 'abc-32-char-token-xxxxxxxxx' } }],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-new',
+        nodes: [
+          {
+            id: 'form-1',
+            defId: 'trigger_form',
+            x: 0,
+            y: 0,
+            config: { publicToken: 'abc-32-char-token-xxxxxxxxx' },
+          },
+        ],
+      }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     await svc.create({
-      name: 'F', tenantId: 'tenant-a',
+      name: 'F',
+      tenantId: 'tenant-a',
       nodes: [{ id: 'form-1', defId: 'trigger_form', x: 0, y: 0 } as unknown], // no config
     });
     const node = capturedNodes[0] as { config: { publicToken: string } };
@@ -1113,14 +1341,22 @@ describe('WorkflowService.update — null branches', () => {
     });
     m.selectRows.mockResolvedValue([existing]);
     const svc = new WorkflowService(eventBus as never);
-    await expect(svc.update('wf-1', {
-      nodes: [{ id: 'n1', defId: 'a', x: 0, y: 0, config: {} }],
-      edges: [
-        { from: 'ghost1', to: 'n1' }, { from: 'n1', to: 'ghost2' },
-        { from: 'ghost3', to: 'n1' }, { from: 'n1', to: 'ghost4' },
-        { from: 'ghost5', to: 'n1' },
-      ],
-    }, 'tenant-a')).rejects.toThrow(/altri/);
+    await expect(
+      svc.update(
+        'wf-1',
+        {
+          nodes: [{ id: 'n1', defId: 'a', x: 0, y: 0, config: {} }],
+          edges: [
+            { from: 'ghost1', to: 'n1' },
+            { from: 'n1', to: 'ghost2' },
+            { from: 'ghost3', to: 'n1' },
+            { from: 'n1', to: 'ghost4' },
+            { from: 'ghost5', to: 'n1' },
+          ],
+        },
+        'tenant-a',
+      ),
+    ).rejects.toThrow(/altri/);
   });
 });
 
@@ -1143,31 +1379,39 @@ describe('WorkflowService.exportBundle — branch edges', () => {
   });
 
   it('workflow con tags → bundle.workflow.tags settato', async () => {
-    m.selectRows.mockResolvedValue([makeRow({ id: 'wf-1', tagsJson: JSON.stringify(['prod', 'critical']) })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({ id: 'wf-1', tagsJson: JSON.stringify(['prod', 'critical']) }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     const res = await svc.exportBundle('wf-1', 'tenant-a');
     expect(res!.workflow.tags).toEqual(['prod', 'critical']);
   });
 
   it('node con config {} (vuoto) → 0 placeholders', async () => {
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-1',
-      nodes: [{ id: 'n1', defId: 'noop', x: 0, y: 0, config: {} }],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-1',
+        nodes: [{ id: 'n1', defId: 'noop', x: 0, y: 0, config: {} }],
+      }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     const res = await svc.exportBundle('wf-1', 'tenant-a');
     expect(res!.credentialPlaceholders).toHaveLength(0);
   });
 
   it('valore credenziale corto (<16 char) NON viene flaggato come credential', async () => {
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-1',
-      nodes: [{ id: 'n1', defId: 'action_http', x: 0, y: 0, config: { credentialId: 'short' } }],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-1',
+        nodes: [{ id: 'n1', defId: 'action_http', x: 0, y: 0, config: { credentialId: 'short' } }],
+      }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     const res = await svc.exportBundle('wf-1', 'tenant-a');
     // credentialId vuoto rimane vuoto (sotto threshold 16)
-    expect(res!.credentialPlaceholders.find((p) => p.configPath === 'credentialId')).toBeUndefined();
+    expect(
+      res!.credentialPlaceholders.find((p) => p.configPath === 'credentialId'),
+    ).toBeUndefined();
   });
 });
 
@@ -1181,7 +1425,9 @@ describe('WorkflowService.importBundle — multi-collision', () => {
         makeRow({ id: 'e1', tenantId: 'tenant-a', name: 'Imported WF' }),
         makeRow({ id: 'e2', tenantId: 'tenant-a', name: 'Imported WF (importato)' }),
       ])
-      .mockResolvedValueOnce([makeRow({ id: 'wf-new', tenantId: 'tenant-a', name: 'Imported WF (importato 2)' })]);
+      .mockResolvedValueOnce([
+        makeRow({ id: 'wf-new', tenantId: 'tenant-a', name: 'Imported WF (importato 2)' }),
+      ]);
     const svc = new WorkflowService(eventBus as never);
     const bundle = {
       schemaVersion: '1.0.0',
@@ -1205,8 +1451,8 @@ describe('WorkflowService.importBundle — multi-collision', () => {
       notes: [],
     };
     await svc.importBundle(bundle, 'tenant-a'); // no actorId
-    const auditCall = m.auditAppend.mock.calls.find((c) =>
-      (c[0] as { action: string }).action === 'workflow.import',
+    const auditCall = m.auditAppend.mock.calls.find(
+      (c) => (c[0] as { action: string }).action === 'workflow.import',
     );
     expect(auditCall?.[0]).toBeDefined();
     expect((auditCall?.[0] as Record<string, unknown>).actorId).toBeUndefined();
@@ -1226,13 +1472,17 @@ describe('WorkflowService — branch fillers ?? defaults', () => {
   });
 
   it('row con breakpointsJson valido → safeParseJson branch', async () => {
-    m.selectRows.mockResolvedValue([makeRow({ id: 'wf-bp', breakpointsJson: JSON.stringify(['n1']) })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({ id: 'wf-bp', breakpointsJson: JSON.stringify(['n1']) }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     await svc.list();
   });
 
   it('row con onErrorJson valido → safeParseJson branch', async () => {
-    m.selectRows.mockResolvedValue([makeRow({ id: 'wf-oe', onErrorJson: JSON.stringify({ webhookUrl: 'x' }) })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({ id: 'wf-oe', onErrorJson: JSON.stringify({ webhookUrl: 'x' }) }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     await svc.list();
   });
@@ -1244,19 +1494,27 @@ describe('WorkflowService — branch fillers ?? defaults', () => {
   });
 
   it('listByCustomWebhookPath: node.config.customPath non-string → fallback ""', async () => {
-    m.selectRows.mockResolvedValue([makeRow({
-      enabled: true,
-      nodes: [{ id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 123 as never } }],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        enabled: true,
+        nodes: [
+          { id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 123 as never } },
+        ],
+      }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     expect(await svc.listByCustomWebhookPath('t', 'foo')).toEqual([]);
   });
 
   it('listByCustomWebhookPathAnyTenant: customPath non-string → fallback ""', async () => {
-    m.selectRows.mockResolvedValue([makeRow({
-      enabled: true,
-      nodes: [{ id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 123 as never } }],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        enabled: true,
+        nodes: [
+          { id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 123 as never } },
+        ],
+      }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     expect(await svc.listByCustomWebhookPathAnyTenant('foo')).toEqual([]);
   });
@@ -1291,8 +1549,8 @@ describe('WorkflowService — branch fillers ?? defaults', () => {
     m.selectRows.mockResolvedValue([makeRow({ id: 'wf-noact' })]);
     const svc = new WorkflowService(eventBus as never);
     await svc.update('wf-noact', { name: 'New' }, 'tenant-a');
-    const auditCall = m.auditAppend.mock.calls.find((c) =>
-      (c[0] as { action: string }).action === 'workflow.update',
+    const auditCall = m.auditAppend.mock.calls.find(
+      (c) => (c[0] as { action: string }).action === 'workflow.update',
     );
     expect((auditCall?.[0] as Record<string, unknown>).actorId).toBeUndefined();
   });
@@ -1300,20 +1558,41 @@ describe('WorkflowService — branch fillers ?? defaults', () => {
   it('update CON tutti i campi opzionali defined + actorId', async () => {
     m.selectRows.mockResolvedValue([makeRow({ id: 'wf-1' })]);
     const svc = new WorkflowService(eventBus as never);
-    await svc.update('wf-1', {
-      name: 'N', description: 'D', enabled: true,
-      nodes: [{ id: 'n1', defId: 'noop', x: 0, y: 0, config: {} }],
-      edges: [], nodeDefs: [], breakpoints: [], tags: ['t'],
-      folderId: 'f', onError: { emailTo: 'x@x' }, concurrencyLimit: 3,
-      actorId: 'u-1',
-    }, 'tenant-a');
+    await svc.update(
+      'wf-1',
+      {
+        name: 'N',
+        description: 'D',
+        enabled: true,
+        nodes: [{ id: 'n1', defId: 'noop', x: 0, y: 0, config: {} }],
+        edges: [],
+        nodeDefs: [],
+        breakpoints: [],
+        tags: ['t'],
+        folderId: 'f',
+        onError: { emailTo: 'x@x' },
+        concurrencyLimit: 3,
+        actorId: 'u-1',
+      },
+      'tenant-a',
+    );
   });
 
   it('exportBundle: node con defId → type esposto correttamente', async () => {
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-1',
-      nodes: [{ id: 'n1', defId: 'action_http', x: 0, y: 0, config: { credentialId: 'cred-abc-1234567890abcd' } }],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-1',
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'action_http',
+            x: 0,
+            y: 0,
+            config: { credentialId: 'cred-abc-1234567890abcd' },
+          },
+        ],
+      }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     const r = await svc.exportBundle('wf-1', 'tenant-a');
     const ph = r!.credentialPlaceholders.find((p) => p.configPath === 'credentialId');
@@ -1323,31 +1602,50 @@ describe('WorkflowService — branch fillers ?? defaults', () => {
   it('importBundle senza nodes/edges/nodeDefs → fallback []', async () => {
     m.selectRows.mockResolvedValueOnce([]).mockResolvedValueOnce([makeRow({ id: 'wf-min' })]);
     const svc = new WorkflowService(eventBus as never);
-    const r = await svc.importBundle({
-      schemaVersion: '1.0.0',
-      workflow: { name: 'M' },
-    }, 'tenant-a');
+    const r = await svc.importBundle(
+      {
+        schemaVersion: '1.0.0',
+        workflow: { name: 'M' },
+      },
+      'tenant-a',
+    );
     expect(r.workflow.id).toBeDefined();
   });
 
   it('importBundle senza credentialPlaceholders → fallback []', async () => {
     m.selectRows.mockResolvedValueOnce([]).mockResolvedValueOnce([makeRow({ id: 'wf-m2' })]);
     const svc = new WorkflowService(eventBus as never);
-    const r = await svc.importBundle({
-      schemaVersion: '1.0.0',
-      workflow: { name: 'M2', nodes: [], edges: [], nodeDefs: [] },
-    }, 'tenant-a');
+    const r = await svc.importBundle(
+      {
+        schemaVersion: '1.0.0',
+        workflow: { name: 'M2', nodes: [], edges: [], nodeDefs: [] },
+      },
+      'tenant-a',
+    );
     expect(r.credentialPlaceholders).toEqual([]);
   });
 
   it('importBundle CON description/tags definito + actorId', async () => {
-    m.selectRows.mockResolvedValueOnce([]).mockResolvedValueOnce([makeRow({ id: 'wf-d', description: 'd' })]);
+    m.selectRows
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([makeRow({ id: 'wf-d', description: 'd' })]);
     const svc = new WorkflowService(eventBus as never);
-    await svc.importBundle({
-      schemaVersion: '1.0.0',
-      workflow: { name: 'D', description: 'descr', tags: ['t1'], nodes: [], edges: [], nodeDefs: [] },
-      checksum: '',
-    }, 'tenant-a', 'u-1');
+    await svc.importBundle(
+      {
+        schemaVersion: '1.0.0',
+        workflow: {
+          name: 'D',
+          description: 'descr',
+          tags: ['t1'],
+          nodes: [],
+          edges: [],
+          nodeDefs: [],
+        },
+        checksum: '',
+      },
+      'tenant-a',
+      'u-1',
+    );
   });
 
   it('safeRowToWorkflow dedupedWarn con tenantId NULL → fallback "default"', async () => {
@@ -1361,65 +1659,84 @@ describe('WorkflowService — branch fillers ?? defaults', () => {
       expect.objectContaining({ tenantId: 'default' }),
       expect.any(String),
     );
-    expect(m.counterInc).toHaveBeenCalledWith(expect.objectContaining({
-      tags: { tenant: 'default' },
-    }));
+    expect(m.counterInc).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tags: { tenant: 'default' },
+      }),
+    );
   });
 
   it('listByCustomWebhookPath: workflow con node non-trigger_webhook → continue branch', async () => {
-    m.selectRows.mockResolvedValue([makeRow({
-      enabled: true,
-      nodes: [
-        { id: 'n0', defId: 'action_http', x: 0, y: 0, config: {} }, // SKIPPED
-        { id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 'orders' } },
-      ],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        enabled: true,
+        nodes: [
+          { id: 'n0', defId: 'action_http', x: 0, y: 0, config: {} }, // SKIPPED
+          { id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 'orders' } },
+        ],
+      }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     const r = await svc.listByCustomWebhookPath('t', 'orders');
     expect(r).toHaveLength(1);
   });
 
   it('listByCustomWebhookPathAnyTenant: workflow con node non-trigger_webhook → continue branch', async () => {
-    m.selectRows.mockResolvedValue([makeRow({
-      enabled: true,
-      nodes: [
-        { id: 'n0', defId: 'action_http', x: 0, y: 0, config: {} },
-        { id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 'orders' } },
-      ],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        enabled: true,
+        nodes: [
+          { id: 'n0', defId: 'action_http', x: 0, y: 0, config: {} },
+          { id: 'n1', defId: 'trigger_webhook', x: 0, y: 0, config: { customPath: 'orders' } },
+        ],
+      }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     const r = await svc.listByCustomWebhookPathAnyTenant('orders');
     expect(r).toHaveLength(1);
   });
 
   it('exportBundle: campo "credential" con value < 16 char → NON pushato come placeholder', async () => {
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-1',
-      nodes: [{ id: 'n1', defId: 'action_http', x: 0, y: 0, config: { credentialId: 'short' } }],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-1',
+        nodes: [{ id: 'n1', defId: 'action_http', x: 0, y: 0, config: { credentialId: 'short' } }],
+      }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     const r = await svc.exportBundle('wf-1', 'tenant-a');
     expect(r!.credentialPlaceholders).toHaveLength(0);
   });
 
   it('exportBundle: campo non-credential con stringa lunga → NON placeholder (per credential)', async () => {
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-1',
-      nodes: [{ id: 'n1', defId: 'action_http', x: 0, y: 0, config: { url: 'https://example.com/very/long/url' } }],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-1',
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'action_http',
+            x: 0,
+            y: 0,
+            config: { url: 'https://example.com/very/long/url' },
+          },
+        ],
+      }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     const r = await svc.exportBundle('wf-1', 'tenant-a');
     expect(r!.credentialPlaceholders).toHaveLength(0);
   });
 
   it('exportBundle: campo "password" con value VUOTO → NON pushato (length>0 check)', async () => {
-    m.selectRows.mockResolvedValue([makeRow({
-      id: 'wf-1',
-      nodes: [{ id: 'n1', defId: 'trigger_imap', x: 0, y: 0, config: { password: '' } }],
-    })]);
+    m.selectRows.mockResolvedValue([
+      makeRow({
+        id: 'wf-1',
+        nodes: [{ id: 'n1', defId: 'trigger_imap', x: 0, y: 0, config: { password: '' } }],
+      }),
+    ]);
     const svc = new WorkflowService(eventBus as never);
     const r = await svc.exportBundle('wf-1', 'tenant-a');
     expect(r!.credentialPlaceholders).toHaveLength(0);
   });
-
 });

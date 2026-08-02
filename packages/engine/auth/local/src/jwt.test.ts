@@ -20,11 +20,20 @@ describe('JWT RS256 session tokens', () => {
 
   it('emette un jti univoco (UUID v4) — fondamento della blocklist di revoca', async () => {
     const { privateKeyPem, publicKeyPem } = await generateSessionKeyPair();
-    const issue = (): Promise<string> => issueSessionToken({ userId: 'u-1', tenantId: 't-1', email: 'a@b.com', role: 'owner', privateKeyPem });
+    const issue = (): Promise<string> =>
+      issueSessionToken({
+        userId: 'u-1',
+        tenantId: 't-1',
+        email: 'a@b.com',
+        role: 'owner',
+        privateKeyPem,
+      });
     const p1 = await verifySessionToken(await issue(), publicKeyPem);
     const p2 = await verifySessionToken(await issue(), publicKeyPem);
     expect(p1?.jti).toBeDefined();
-    expect(p1?.jti).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u);
+    expect(p1?.jti).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
+    );
     expect(p1?.jti).not.toBe(p2?.jti); // univoco per ogni token emesso
   });
 

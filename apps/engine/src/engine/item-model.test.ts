@@ -61,10 +61,13 @@ describe('resolvePairedItem — casi base', () => {
   it('passthrough 1→1 single-hop: B.item[1] → A.item[1]', () => {
     const g: RunItemGraph = new Map([
       ['A', items({ x: 'a0' }, { x: 'a1' })],
-      ['B', [
-        { json: { y: 'b0' }, pairedItem: lineage.oneToOne(0) },
-        { json: { y: 'b1' }, pairedItem: lineage.oneToOne(1) },
-      ]],
+      [
+        'B',
+        [
+          { json: { y: 'b0' }, pairedItem: lineage.oneToOne(0) },
+          { json: { y: 'b1' }, pairedItem: lineage.oneToOne(1) },
+        ],
+      ],
     ]);
     const r = resolvePairedItem(g, 'B', 1, 'A', linearPredecessor({ B: 'A' }));
     expect(r?.json).toEqual({ x: 'a1' });
@@ -84,18 +87,25 @@ describe('resolvePairedItem — filter che droppa item (re-indicizzazione)', () 
     // A: [a0,a1,a2,a3]; filtro tiene a1,a3 → B:[{from a1},{from a3}]
     const g: RunItemGraph = new Map([
       ['A', items({ n: 0 }, { n: 1 }, { n: 2 }, { n: 3 })],
-      ['B', [
-        { json: { n: 1 }, pairedItem: lineage.from(1) },
-        { json: { n: 3 }, pairedItem: lineage.from(3) },
-      ]],
+      [
+        'B',
+        [
+          { json: { n: 1 }, pairedItem: lineage.from(1) },
+          { json: { n: 3 }, pairedItem: lineage.from(3) },
+        ],
+      ],
     ]);
-    expect(resolvePairedItem(g, 'B', 0, 'A', linearPredecessor({ B: 'A' }))?.json).toEqual({ n: 1 });
-    expect(resolvePairedItem(g, 'B', 1, 'A', linearPredecessor({ B: 'A' }))?.json).toEqual({ n: 3 });
+    expect(resolvePairedItem(g, 'B', 0, 'A', linearPredecessor({ B: 'A' }))?.json).toEqual({
+      n: 1,
+    });
+    expect(resolvePairedItem(g, 'B', 1, 'A', linearPredecessor({ B: 'A' }))?.json).toEqual({
+      n: 3,
+    });
   });
 });
 
 describe('resolvePairedItem — multi-hop (C→B→A) sopravvive alla catena', () => {
-  it('da C.item[0], dopo un filtro in B, risolve l\'item corretto di A', () => {
+  it("da C.item[0], dopo un filtro in B, risolve l'item corretto di A", () => {
     const g: RunItemGraph = new Map([
       ['A', items({ id: 'a0' }, { id: 'a1' }, { id: 'a2' })],
       // B filtra: tiene a2 → B[0] ← A[2]
@@ -115,12 +125,15 @@ describe('resolvePairedItem — map 1→N (un input genera più output)', () => 
   it('B esplode A[0] in 3 item: tutti risalgono ad A[0]', () => {
     const g: RunItemGraph = new Map([
       ['A', items({ csv: 'r0' }, { csv: 'r1' })],
-      ['B', [
-        { json: { row: 0 }, pairedItem: lineage.from(0) },
-        { json: { row: 1 }, pairedItem: lineage.from(0) },
-        { json: { row: 2 }, pairedItem: lineage.from(0) },
-        { json: { row: 3 }, pairedItem: lineage.from(1) },
-      ]],
+      [
+        'B',
+        [
+          { json: { row: 0 }, pairedItem: lineage.from(0) },
+          { json: { row: 1 }, pairedItem: lineage.from(0) },
+          { json: { row: 2 }, pairedItem: lineage.from(0) },
+          { json: { row: 3 }, pairedItem: lineage.from(1) },
+        ],
+      ],
     ]);
     const pred = linearPredecessor({ B: 'A' });
     expect(resolvePairedItem(g, 'B', 0, 'A', pred)?.json).toEqual({ csv: 'r0' });
@@ -146,10 +159,13 @@ describe('resolvePairedItem — branch + merge con sourceNodeId', () => {
     const g: RunItemGraph = new Map([
       ['A', items({ src: 'A', i: 0 }, { src: 'A', i: 1 })],
       ['B', items({ src: 'B', i: 0 })],
-      ['M', [
-        { json: { merged: 'a' }, pairedItem: { item: 1, sourceNodeId: 'A' } },
-        { json: { merged: 'b' }, pairedItem: { item: 0, sourceNodeId: 'B' } },
-      ]],
+      [
+        'M',
+        [
+          { json: { merged: 'a' }, pairedItem: { item: 1, sourceNodeId: 'A' } },
+          { json: { merged: 'b' }, pairedItem: { item: 0, sourceNodeId: 'B' } },
+        ],
+      ],
     ]);
     // predecessorOf NON è univoco per M (2 input) → DEVE usare sourceNodeId.
     const pred = (_n: string): string | undefined => undefined;
@@ -179,9 +195,7 @@ describe('resolvePairedItem — robustezza (no crash, no loop infinito)', () => 
   });
 
   it('nodo target assente dal grafo → undefined', () => {
-    const g: RunItemGraph = new Map([
-      ['B', [{ json: { y: 1 }, pairedItem: lineage.from(0) }]],
-    ]);
+    const g: RunItemGraph = new Map([['B', [{ json: { y: 1 }, pairedItem: lineage.from(0) }]]]);
     expect(resolvePairedItem(g, 'B', 0, 'A', linearPredecessor({ B: 'A' }))).toBeUndefined();
   });
 
@@ -198,13 +212,18 @@ describe('resolvePairedItem — robustezza (no crash, no loop infinito)', () => 
 // deriveOutputItems — fase 4.2: come l'engine costruisce il grafo
 // ─────────────────────────────────────────────────────────────────
 
-describe('deriveOutputItems — items DICHIARATI dall\'executor (precedenza 1)', () => {
+describe("deriveOutputItems — items DICHIARATI dall'executor (precedenza 1)", () => {
   it('declared usati as-is, con ENRICHMENT del sourceNodeId runtime sui ref che non lo dichiarano', () => {
     const declared: ExecutionItem[] = [
       { json: { v: 'a3' }, pairedItem: { item: 2 } },
       { json: { v: 'x' }, pairedItem: { item: 0, sourceNodeId: 'OTHER' } }, // già esplicito → intatto
     ];
-    const r = deriveOutputItems({ output: { blob: true }, declared, sourceNodeId: 'A', sourceItemCount: 4 });
+    const r = deriveOutputItems({
+      output: { blob: true },
+      declared,
+      sourceNodeId: 'A',
+      sourceItemCount: 4,
+    });
     expect(r[0]?.pairedItem).toEqual({ item: 2, sourceNodeId: 'A' });
     expect(r[1]?.pairedItem).toEqual({ item: 0, sourceNodeId: 'OTHER' });
   });
@@ -226,9 +245,14 @@ describe('deriveOutputItems — items DICHIARATI dall\'executor (precedenza 1)',
     expect(r[0]?.pairedItem).toEqual({ item: 1 });
   });
 
-  it('declared vince sull\'euristica: 1 output da 3 input NON diventa fromMany', () => {
+  it("declared vince sull'euristica: 1 output da 3 input NON diventa fromMany", () => {
     const declared: ExecutionItem[] = [{ json: { v: 'a2' }, pairedItem: { item: 2 } }];
-    const r = deriveOutputItems({ output: { blob: 1 }, declared, sourceNodeId: 'A', sourceItemCount: 3 });
+    const r = deriveOutputItems({
+      output: { blob: 1 },
+      declared,
+      sourceNodeId: 'A',
+      sourceItemCount: 3,
+    });
     expect(r).toHaveLength(1);
     expect(r[0]?.pairedItem).toEqual({ item: 2, sourceNodeId: 'A' });
   });
@@ -236,13 +260,21 @@ describe('deriveOutputItems — items DICHIARATI dall\'executor (precedenza 1)',
 
 describe('deriveOutputItems — euristica conservativa (parità n8n item-linking)', () => {
   it('sorgente con 1 item → OGNI output deriva da {item:0}', () => {
-    const r = deriveOutputItems({ output: [{ a: 1 }, { a: 2 }, { a: 3 }], sourceNodeId: 'S', sourceItemCount: 1 });
+    const r = deriveOutputItems({
+      output: [{ a: 1 }, { a: 2 }, { a: 3 }],
+      sourceNodeId: 'S',
+      sourceItemCount: 1,
+    });
     expect(r).toHaveLength(3);
     for (const it of r) expect(it.pairedItem).toEqual({ item: 0, sourceNodeId: 'S' });
   });
 
   it('stessa cardinalità → pairing posizionale 1:1 (indici REALI, non 0 fisso)', () => {
-    const r = deriveOutputItems({ output: [{ a: 1 }, { a: 2 }, { a: 3 }], sourceNodeId: 'S', sourceItemCount: 3 });
+    const r = deriveOutputItems({
+      output: [{ a: 1 }, { a: 2 }, { a: 3 }],
+      sourceNodeId: 'S',
+      sourceItemCount: 3,
+    });
     expect(r.map((it) => it.pairedItem)).toEqual([
       { item: 0, sourceNodeId: 'S' },
       { item: 1, sourceNodeId: 'S' },
@@ -250,7 +282,7 @@ describe('deriveOutputItems — euristica conservativa (parità n8n item-linking
     ]);
   });
 
-  it('N→1 (aggregazione) → l\'unico output deriva da TUTTI gli input (fromMany)', () => {
+  it("N→1 (aggregazione) → l'unico output deriva da TUTTI gli input (fromMany)", () => {
     const r = deriveOutputItems({ output: { sum: 6 }, sourceNodeId: 'S', sourceItemCount: 3 });
     expect(r).toHaveLength(1);
     expect(r[0]?.pairedItem).toEqual([
@@ -261,16 +293,17 @@ describe('deriveOutputItems — euristica conservativa (parità n8n item-linking
   });
 
   it('🚨 cardinalità non deducibile (3→2) → NESSUN pairing: mai lineage inventato', () => {
-    const r = deriveOutputItems({ output: [{ a: 1 }, { a: 2 }], sourceNodeId: 'S', sourceItemCount: 3 });
+    const r = deriveOutputItems({
+      output: [{ a: 1 }, { a: 2 }],
+      sourceNodeId: 'S',
+      sourceItemCount: 3,
+    });
     expect(r).toHaveLength(2);
     for (const it of r) expect(it.pairedItem).toBeUndefined();
   });
 
-  it('item che dichiara già il PROPRIO pairedItem → MAI sovrascritto dall\'euristica', () => {
-    const out: ExecutionItem[] = [
-      { json: { v: 1 }, pairedItem: { item: 5 } },
-      { json: { v: 2 } },
-    ];
+  it("item che dichiara già il PROPRIO pairedItem → MAI sovrascritto dall'euristica", () => {
+    const out: ExecutionItem[] = [{ json: { v: 1 }, pairedItem: { item: 5 } }, { json: { v: 2 } }];
     const r = deriveOutputItems({ output: out, sourceNodeId: 'S', sourceItemCount: 2 });
     expect(r[0]?.pairedItem).toEqual({ item: 5 }); // intatto
     expect(r[1]?.pairedItem).toEqual({ item: 1, sourceNodeId: 'S' }); // euristica 1:1
@@ -278,10 +311,13 @@ describe('deriveOutputItems — euristica conservativa (parità n8n item-linking
 
   it('sorgente assente (root/trigger) o vuota → item senza lineage', () => {
     expect(deriveOutputItems({ output: [{ a: 1 }] })[0]?.pairedItem).toBeUndefined();
-    expect(deriveOutputItems({ output: [{ a: 1 }], sourceNodeId: 'S', sourceItemCount: 0 })[0]?.pairedItem).toBeUndefined();
+    expect(
+      deriveOutputItems({ output: [{ a: 1 }], sourceNodeId: 'S', sourceItemCount: 0 })[0]
+        ?.pairedItem,
+    ).toBeUndefined();
   });
 
-  it('non muta l\'output reale: il pairedItem vive solo sulla copia nel grafo', () => {
+  it("non muta l'output reale: il pairedItem vive solo sulla copia nel grafo", () => {
     const out = [{ a: 1 }];
     deriveOutputItems({ output: out, sourceNodeId: 'S', sourceItemCount: 1 });
     expect(out[0]).toEqual({ a: 1 }); // il dato che viaggia resta pulito
@@ -317,11 +353,10 @@ describe('deriveFanOutItems — lineage by-construction del fan-out (GAP 1 × GA
   });
 
   it('error-item soft-failed occupa la SUA posizione col SUO lineage', () => {
-    const r = deriveFanOutItems([
-      { ok: 1 },
-      { error: { message: 'boom', index: 1 } },
-      { ok: 3 },
-    ], 'src');
+    const r = deriveFanOutItems(
+      [{ ok: 1 }, { error: { message: 'boom', index: 1 } }, { ok: 3 }],
+      'src',
+    );
     expect(r[1]?.pairedItem).toEqual({ item: 1, sourceNodeId: 'src' });
   });
 });

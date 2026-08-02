@@ -20,7 +20,11 @@ describe('QualityGate — circular references', () => {
     const wf: QualityGateInput = {
       nodes: [
         { id: 'extract', defId: 'agent_extractor', config: {} },
-        { id: 'notion', defId: 'community_notion', config: { databaseId: '{{$node.db_insert.json.id}}' } },
+        {
+          id: 'notion',
+          defId: 'community_notion',
+          config: { databaseId: '{{$node.db_insert.json.id}}' },
+        },
         { id: 'db_insert', defId: 'db_insert', config: { rowJson: '{{$node.extract.json}}' } },
       ],
       edges: [
@@ -51,9 +55,7 @@ describe('QualityGate — circular references', () => {
 
   it('detect: referencia a nodo INESISTENTE → critical', () => {
     const wf: QualityGateInput = {
-      nodes: [
-        { id: 'a', defId: 'action_http', config: { url: '{{$node.ghost.json.url}}' } },
-      ],
+      nodes: [{ id: 'a', defId: 'action_http', config: { url: '{{$node.ghost.json.url}}' } }],
       edges: [],
     };
     const r = runQualityGate(wf);
@@ -64,13 +66,13 @@ describe('QualityGate — circular references', () => {
 
   it('detect: self-reference $node.X dentro X → critical', () => {
     const wf: QualityGateInput = {
-      nodes: [
-        { id: 'x', defId: 'action_http', config: { body: '{{$node.x.json.body}}' } },
-      ],
+      nodes: [{ id: 'x', defId: 'action_http', config: { body: '{{$node.x.json.body}}' } }],
       edges: [],
     };
     const r = runQualityGate(wf);
-    expect(r.issues.some((i) => i.code === 'CIRCULAR_REFERENCE' && i.message.includes('se stesso'))).toBe(true);
+    expect(
+      r.issues.some((i) => i.code === 'CIRCULAR_REFERENCE' && i.message.includes('se stesso')),
+    ).toBe(true);
   });
 
   it('multi-hop ancestor: A→B→C→D, D referencia A → OK (A è ancestor)', () => {
@@ -95,7 +97,9 @@ describe('QualityGate — circular references', () => {
 describe('QualityGate — mock placeholders', () => {
   it('detect: smtp.example.com → critical', () => {
     const wf: QualityGateInput = {
-      nodes: [{ id: 'mail', defId: 'action_send_email', config: { host: 'smtp.example.com', port: 465 } }],
+      nodes: [
+        { id: 'mail', defId: 'action_send_email', config: { host: 'smtp.example.com', port: 465 } },
+      ],
       edges: [],
     };
     const r = runQualityGate(wf);
@@ -117,7 +121,13 @@ describe('QualityGate — mock placeholders', () => {
 
   it('detect: bucket "my-bucket" in directory → critical', () => {
     const wf: QualityGateInput = {
-      nodes: [{ id: 't', defId: 'trigger_file_watch', config: { directory: 's3://my-bucket/docs', glob: '*.pdf' } }],
+      nodes: [
+        {
+          id: 't',
+          defId: 'trigger_file_watch',
+          config: { directory: 's3://my-bucket/docs', glob: '*.pdf' },
+        },
+      ],
       edges: [{ from: 't', to: 't' }], // dummy to avoid orphan
     };
     const r = runQualityGate(wf);
@@ -127,7 +137,13 @@ describe('QualityGate — mock placeholders', () => {
 
   it('OK: {{secrets.X}} non triggera mock detection', () => {
     const wf: QualityGateInput = {
-      nodes: [{ id: 'h', defId: 'action_http', config: { url: '{{secrets.LEGAL_QUEUE_URL}}', body: 'x' } }],
+      nodes: [
+        {
+          id: 'h',
+          defId: 'action_http',
+          config: { url: '{{secrets.LEGAL_QUEUE_URL}}', body: 'x' },
+        },
+      ],
       edges: [],
     };
     const r = runQualityGate(wf);
@@ -147,7 +163,12 @@ describe('QualityGate — mock placeholders', () => {
         edges: [],
       };
       const r = runQualityGate(wf);
-      expect(r.issues.some((i) => i.code === 'MOCK_PLACEHOLDER' && i.message.toLowerCase().includes(marker.toLowerCase()))).toBe(true);
+      expect(
+        r.issues.some(
+          (i) =>
+            i.code === 'MOCK_PLACEHOLDER' && i.message.toLowerCase().includes(marker.toLowerCase()),
+        ),
+      ).toBe(true);
     }
   });
 });
@@ -156,10 +177,14 @@ describe('QualityGate — switch defaultCase', () => {
   it('detect: logic_switch con cases ma senza defaultCase → medium', () => {
     const wf: QualityGateInput = {
       nodes: [
-        { id: 'sw', defId: 'logic_switch', config: {
-          expression: '{{$node.cls.json.label}}',
-          cases: '{"contratto":"a","fattura":"b"}',
-        } },
+        {
+          id: 'sw',
+          defId: 'logic_switch',
+          config: {
+            expression: '{{$node.cls.json.label}}',
+            cases: '{"contratto":"a","fattura":"b"}',
+          },
+        },
       ],
       edges: [],
     };
@@ -172,10 +197,14 @@ describe('QualityGate — switch defaultCase', () => {
   it('OK: logic_switch con defaultCase definito', () => {
     const wf: QualityGateInput = {
       nodes: [
-        { id: 'sw', defId: 'logic_switch', config: {
-          cases: { x: 'a', y: 'b' },
-          defaultCase: 'fallback',
-        } },
+        {
+          id: 'sw',
+          defId: 'logic_switch',
+          config: {
+            cases: { x: 'a', y: 'b' },
+            defaultCase: 'fallback',
+          },
+        },
       ],
       edges: [],
     };
@@ -255,13 +284,32 @@ describe('QualityGate — Document Intelligence Pipeline (real bug case)', () =>
     // ha SMTP fittizio + switch senza default.
     const wf: QualityGateInput = {
       nodes: [
-        { id: 'trigger_file', defId: 'trigger_file_watch', config: { directory: 's3://my-bucket/documents', glob: '*.pdf', events: 'add' } },
+        {
+          id: 'trigger_file',
+          defId: 'trigger_file_watch',
+          config: { directory: 's3://my-bucket/documents', glob: '*.pdf', events: 'add' },
+        },
         { id: 'extract', defId: 'agent_extractor', config: { schema: '{}' } },
         { id: 'cls', defId: 'agent_classifier', config: { labels: '["contratto","fattura"]' } },
-        { id: 'sw', defId: 'logic_switch', config: { expression: '{{$node.cls.json.label}}', cases: '{"contratto":"a","fattura":"b"}' } },
-        { id: 'notion', defId: 'community_notion', config: { databaseId: '{{$node.db_insert.json.id}}' } },
+        {
+          id: 'sw',
+          defId: 'logic_switch',
+          config: {
+            expression: '{{$node.cls.json.label}}',
+            cases: '{"contratto":"a","fattura":"b"}',
+          },
+        },
+        {
+          id: 'notion',
+          defId: 'community_notion',
+          config: { databaseId: '{{$node.db_insert.json.id}}' },
+        },
         { id: 'db_insert', defId: 'db_insert', config: { rowJson: '{{$node.extract.json}}' } },
-        { id: 'mail', defId: 'action_send_email', config: { host: 'smtp.example.com', from: 'noreply@example.com' } },
+        {
+          id: 'mail',
+          defId: 'action_send_email',
+          config: { host: 'smtp.example.com', from: 'noreply@example.com' },
+        },
       ],
       edges: [
         { from: 'trigger_file', to: 'extract' },
@@ -287,7 +335,11 @@ describe('QualityGate — extended MOCK_PATTERNS (2026-05-31 bug fix)', () => {
   it('detect: bucket-name in directory → critical', () => {
     const wf: QualityGateInput = {
       nodes: [
-        { id: 't', defId: 'trigger_file_watch', config: { directory: 's3://bucket-name/docs', glob: '*.pdf' } },
+        {
+          id: 't',
+          defId: 'trigger_file_watch',
+          config: { directory: 's3://bucket-name/docs', glob: '*.pdf' },
+        },
         { id: 'h', defId: 'action_http', config: {} },
       ],
       edges: [{ from: 't', to: 'h' }],
@@ -300,7 +352,13 @@ describe('QualityGate — extended MOCK_PATTERNS (2026-05-31 bug fix)', () => {
 
   it('detect: noreply@company.com → critical (config field "from")', () => {
     const wf: QualityGateInput = {
-      nodes: [{ id: 'm', defId: 'action_send_email', config: { from: 'noreply@company.com', host: 'smtp.gmail.com' } }],
+      nodes: [
+        {
+          id: 'm',
+          defId: 'action_send_email',
+          config: { from: 'noreply@company.com', host: 'smtp.gmail.com' },
+        },
+      ],
       edges: [],
     };
     const r = runQualityGate(wf);
@@ -347,7 +405,13 @@ describe('QualityGate — extended MOCK_PATTERNS (2026-05-31 bug fix)', () => {
 
   it('OK: {{secrets.X}} NON triggera (template engine valido)', () => {
     const wf: QualityGateInput = {
-      nodes: [{ id: 'h', defId: 'action_http', config: { url: '{{secrets.API_URL}}', body: '{{secrets.API_TOKEN}}' } }],
+      nodes: [
+        {
+          id: 'h',
+          defId: 'action_http',
+          config: { url: '{{secrets.API_URL}}', body: '{{secrets.API_TOKEN}}' },
+        },
+      ],
       edges: [],
     };
     const r = runQualityGate(wf);
@@ -370,10 +434,14 @@ describe('QualityGate — SWITCH_INVALID_CASE_KEY (rule 8, workflow-killer 2026-
     const wf: QualityGateInput = {
       nodes: [
         { id: 'cron', defId: 'trigger_cron', config: { cronExpression: '0 7 * * 1' } },
-        { id: 'sw', defId: 'logic_switch', config: {
-          expression: '{{$node.audit.json.score}}',
-          cases: '{"score < 90":"branch_alert","score >= 90":"branch_ok"}',
-        } },
+        {
+          id: 'sw',
+          defId: 'logic_switch',
+          config: {
+            expression: '{{$node.audit.json.score}}',
+            cases: '{"score < 90":"branch_alert","score >= 90":"branch_ok"}',
+          },
+        },
       ],
       edges: [{ from: 'cron', to: 'sw' }],
     };
@@ -390,10 +458,14 @@ describe('QualityGate — SWITCH_INVALID_CASE_KEY (rule 8, workflow-killer 2026-
     const wf: QualityGateInput = {
       nodes: [
         { id: 'cron', defId: 'trigger_cron', config: {} },
-        { id: 'sw', defId: 'logic_switch', config: {
-          expression: 'x',
-          cases: '{"name == \\"admin\\" && active": "a","x || y": "b"}',
-        } },
+        {
+          id: 'sw',
+          defId: 'logic_switch',
+          config: {
+            expression: 'x',
+            cases: '{"name == \\"admin\\" && active": "a","x || y": "b"}',
+          },
+        },
       ],
       edges: [{ from: 'cron', to: 'sw' }],
     };
@@ -405,11 +477,15 @@ describe('QualityGate — SWITCH_INVALID_CASE_KEY (rule 8, workflow-killer 2026-
     const wf: QualityGateInput = {
       nodes: [
         { id: 'cron', defId: 'trigger_cron', config: {} },
-        { id: 'sw', defId: 'logic_switch', config: {
-          expression: '{{$node.cls.json.label}}',
-          cases: '{"contratto":"branch_a","fattura":"branch_b","preventivo":"branch_c"}',
-          defaultCase: 'branch_d',
-        } },
+        {
+          id: 'sw',
+          defId: 'logic_switch',
+          config: {
+            expression: '{{$node.cls.json.label}}',
+            cases: '{"contratto":"branch_a","fattura":"branch_b","preventivo":"branch_c"}',
+            defaultCase: 'branch_d',
+          },
+        },
       ],
       edges: [{ from: 'cron', to: 'sw' }],
     };
@@ -421,10 +497,17 @@ describe('QualityGate — SWITCH_INVALID_CASE_KEY (rule 8, workflow-killer 2026-
     const wf: QualityGateInput = {
       nodes: [
         { id: 'cron', defId: 'trigger_cron', config: {} },
-        { id: 'sw', defId: 'logic_switch', config: {
-          expression: 'x',
-          cases: [{ case: 'x < 5', output: 'low' }, { case: 'x >= 5', output: 'high' }],
-        } },
+        {
+          id: 'sw',
+          defId: 'logic_switch',
+          config: {
+            expression: 'x',
+            cases: [
+              { case: 'x < 5', output: 'low' },
+              { case: 'x >= 5', output: 'high' },
+            ],
+          },
+        },
       ],
       edges: [{ from: 'cron', to: 'sw' }],
     };
@@ -440,9 +523,20 @@ describe('QualityGate — AGGREGATION_INSIDE_LOOP (rule 9, workflow-killer 2026-
         { id: 't', defId: 'trigger_manual', config: {} },
         { id: 'loop', defId: 'logic_loop', config: { itemsExpression: '{{$node.x.json.urls}}' } },
         { id: 'fetch', defId: 'action_fetch_url', config: { url: '{{$node.loop.json.item}}' } },
-        { id: 'analyst', defId: 'agent_data_analyst', config: { provider: 'openai', extraContext: 'Genera un report aggregato keyword density' } },
+        {
+          id: 'analyst',
+          defId: 'agent_data_analyst',
+          config: {
+            provider: 'openai',
+            extraContext: 'Genera un report aggregato keyword density',
+          },
+        },
       ],
-      edges: [{ from: 't', to: 'loop' }, { from: 'loop', to: 'fetch' }, { from: 'fetch', to: 'analyst' }],
+      edges: [
+        { from: 't', to: 'loop' },
+        { from: 'loop', to: 'fetch' },
+        { from: 'fetch', to: 'analyst' },
+      ],
     };
     const r = runQualityGate(wf);
     const a = r.issues.find((i) => i.code === 'AGGREGATION_INSIDE_LOOP');
@@ -457,9 +551,16 @@ describe('QualityGate — AGGREGATION_INSIDE_LOOP (rule 9, workflow-killer 2026-
       nodes: [
         { id: 't', defId: 'trigger_manual', config: {} },
         { id: 'loop', defId: 'logic_loop', config: { itemsExpression: '{{$x}}' } },
-        { id: 'mail', defId: 'action_send_email', config: { subject: 'Report giornaliero', to: 'a@b.io' } },
+        {
+          id: 'mail',
+          defId: 'action_send_email',
+          config: { subject: 'Report giornaliero', to: 'a@b.io' },
+        },
       ],
-      edges: [{ from: 't', to: 'loop' }, { from: 'loop', to: 'mail' }],
+      edges: [
+        { from: 't', to: 'loop' },
+        { from: 'loop', to: 'mail' },
+      ],
     };
     const r = runQualityGate(wf);
     expect(r.issues.some((i) => i.code === 'AGGREGATION_INSIDE_LOOP')).toBe(true);
@@ -470,9 +571,16 @@ describe('QualityGate — AGGREGATION_INSIDE_LOOP (rule 9, workflow-killer 2026-
       nodes: [
         { id: 't', defId: 'trigger_manual', config: {} },
         { id: 'loop', defId: 'logic_loop', config: { itemsExpression: '{{$x}}' } },
-        { id: 'mail', defId: 'action_send_email', config: { subject: 'Conferma ordine', to: 'a@b.io' } },
+        {
+          id: 'mail',
+          defId: 'action_send_email',
+          config: { subject: 'Conferma ordine', to: 'a@b.io' },
+        },
       ],
-      edges: [{ from: 't', to: 'loop' }, { from: 'loop', to: 'mail' }],
+      edges: [
+        { from: 't', to: 'loop' },
+        { from: 'loop', to: 'mail' },
+      ],
     };
     const r = runQualityGate(wf);
     expect(r.issues.filter((i) => i.code === 'AGGREGATION_INSIDE_LOOP')).toHaveLength(0);
@@ -494,7 +602,13 @@ describe('QualityGate — AGGREGATION_INSIDE_LOOP (rule 9, workflow-killer 2026-
 describe('QualityGate — IT placeholders extended (Keyword Density Multi-Articolo 2026-05-31)', () => {
   it('detect: miosito.com → medium', () => {
     const wf: QualityGateInput = {
-      nodes: [{ id: 's', defId: 'action_sitemap_crawler', config: { url: 'https://miosito.com/sitemap.xml' } }],
+      nodes: [
+        {
+          id: 's',
+          defId: 'action_sitemap_crawler',
+          config: { url: 'https://miosito.com/sitemap.xml' },
+        },
+      ],
       edges: [],
     };
     const r = runQualityGate(wf);
@@ -505,7 +619,9 @@ describe('QualityGate — IT placeholders extended (Keyword Density Multi-Artico
 
   it('detect: tuosito.it → medium', () => {
     const wf: QualityGateInput = {
-      nodes: [{ id: 's', defId: 'action_web_fetch_advanced', config: { url: 'https://tuosito.it/api' } }],
+      nodes: [
+        { id: 's', defId: 'action_web_fetch_advanced', config: { url: 'https://tuosito.it/api' } },
+      ],
       edges: [],
     };
     const r = runQualityGate(wf);
@@ -532,7 +648,12 @@ describe('QualityGate — DUPLICATE_NODES (rule 6)', () => {
         { id: 'db3', defId: 'db_insert', config: { table: 'logs', rowJson: '{"x":1}' } },
         { id: 'db4', defId: 'db_insert', config: { table: 'logs', rowJson: '{"x":1}' } },
       ],
-      edges: [{ from: 't', to: 'db1' }, { from: 't', to: 'db2' }, { from: 't', to: 'db3' }, { from: 't', to: 'db4' }],
+      edges: [
+        { from: 't', to: 'db1' },
+        { from: 't', to: 'db2' },
+        { from: 't', to: 'db3' },
+        { from: 't', to: 'db4' },
+      ],
     };
     const r = runQualityGate(wf);
     const d = r.issues.find((i) => i.code === 'DUPLICATE_NODES');
@@ -549,7 +670,10 @@ describe('QualityGate — DUPLICATE_NODES (rule 6)', () => {
         { id: 'db1', defId: 'db_insert', config: { table: 'logs', rowJson: '{"x":1}' } },
         { id: 'db2', defId: 'db_insert', config: { table: 'logs', rowJson: '{"x":2}' } },
       ],
-      edges: [{ from: 't', to: 'db1' }, { from: 't', to: 'db2' }],
+      edges: [
+        { from: 't', to: 'db1' },
+        { from: 't', to: 'db2' },
+      ],
     };
     const r = runQualityGate(wf);
     expect(r.issues.filter((i) => i.code === 'DUPLICATE_NODES')).toHaveLength(0);
@@ -573,7 +697,9 @@ describe('QualityGate — SUSPICIOUS_RESOURCE_ID (rule 7)', () => {
 
   it('detect: systemAccountId="email-account-1" → critical', () => {
     const wf: QualityGateInput = {
-      nodes: [{ id: 'm', defId: 'action_send_email', config: { systemAccountId: 'email-account-1' } }],
+      nodes: [
+        { id: 'm', defId: 'action_send_email', config: { systemAccountId: 'email-account-1' } },
+      ],
       edges: [],
     };
     const r = runQualityGate(wf);
@@ -582,7 +708,13 @@ describe('QualityGate — SUSPICIOUS_RESOURCE_ID (rule 7)', () => {
 
   it('OK: databaseId UUID reale', () => {
     const wf: QualityGateInput = {
-      nodes: [{ id: 'n', defId: 'db_insert', config: { databaseId: 'd43e6f82-b056-4481-8284-8b812f499b77', table: 'logs' } }],
+      nodes: [
+        {
+          id: 'n',
+          defId: 'db_insert',
+          config: { databaseId: 'd43e6f82-b056-4481-8284-8b812f499b77', table: 'logs' },
+        },
+      ],
       edges: [],
     };
     const r = runQualityGate(wf);
@@ -591,7 +723,13 @@ describe('QualityGate — SUSPICIOUS_RESOURCE_ID (rule 7)', () => {
 
   it('OK: databaseId nanoid (hash-like 21 char)', () => {
     const wf: QualityGateInput = {
-      nodes: [{ id: 'n', defId: 'db_insert', config: { databaseId: 'QhktHRtIKHL5aniYhgRvz', table: 'logs' } }],
+      nodes: [
+        {
+          id: 'n',
+          defId: 'db_insert',
+          config: { databaseId: 'QhktHRtIKHL5aniYhgRvz', table: 'logs' },
+        },
+      ],
       edges: [],
     };
     const r = runQualityGate(wf);
@@ -600,7 +738,9 @@ describe('QualityGate — SUSPICIOUS_RESOURCE_ID (rule 7)', () => {
 
   it('OK: {{secrets.X}} template skipped (resolved at runtime)', () => {
     const wf: QualityGateInput = {
-      nodes: [{ id: 'n', defId: 'db_insert', config: { databaseId: '{{secrets.DB_ID}}', table: 'logs' } }],
+      nodes: [
+        { id: 'n', defId: 'db_insert', config: { databaseId: '{{secrets.DB_ID}}', table: 'logs' } },
+      ],
       edges: [],
     };
     const r = runQualityGate(wf);
@@ -622,7 +762,11 @@ describe('QualityGate — result struct', () => {
     const wf: QualityGateInput = {
       nodes: [
         { id: 't', defId: 'trigger_webhook', config: {} },
-        { id: 'm', defId: 'action_send_email', config: { host: 'smtp.gmail.com', from: 'a@real.io' } },
+        {
+          id: 'm',
+          defId: 'action_send_email',
+          config: { host: 'smtp.gmail.com', from: 'a@real.io' },
+        },
       ],
       edges: [{ from: 't', to: 'm' }],
     };
@@ -655,7 +799,11 @@ describe('Quality gate — ARRAY_TO_SCALAR_WITHOUT_LOOP (rule 2026-06-07)', () =
     const r = runQualityGate({
       nodes: [
         { id: 't', defId: 'trigger_manual', config: {} },
-        { id: 'crawl', defId: 'action_sitemap_crawler', config: { url: 'https://x.it/sitemap.xml' } },
+        {
+          id: 'crawl',
+          defId: 'action_sitemap_crawler',
+          config: { url: 'https://x.it/sitemap.xml' },
+        },
         { id: 'seo', defId: 'action_seo_audit', config: {} },
       ],
       edges: [
@@ -674,7 +822,11 @@ describe('Quality gate — ARRAY_TO_SCALAR_WITHOUT_LOOP (rule 2026-06-07)', () =
     const r = runQualityGate({
       nodes: [
         { id: 't', defId: 'trigger_manual', config: {} },
-        { id: 'crawl', defId: 'action_sitemap_crawler', config: { url: 'https://x.it/sitemap.xml' } },
+        {
+          id: 'crawl',
+          defId: 'action_sitemap_crawler',
+          config: { url: 'https://x.it/sitemap.xml' },
+        },
         { id: 'loop', defId: 'logic_loop', config: { strategy: 'naive' } },
         { id: 'seo', defId: 'action_seo_audit', config: {} },
       ],
@@ -727,14 +879,26 @@ describe('Quality gate — FAN_IN_WITHOUT_MERGE (rule 2026-06-07)', () => {
         { id: 'b', defId: 'action_http', config: { url: 'y' } },
         { id: 'c', defId: 'action_http', config: { url: 'z' } },
         { id: 'd', defId: 'action_http', config: { url: 'w' } },
-        { id: 'sink', defId: 'action_send_email', config: { to: 'a@b.io', from: 'c@d.io', subject: 's', body: 'b' } },
+        {
+          id: 'sink',
+          defId: 'action_send_email',
+          config: { to: 'a@b.io', from: 'c@d.io', subject: 's', body: 'b' },
+        },
       ],
       edges: [
-        { from: 't', to: 'a' }, { from: 't', to: 'b' }, { from: 't', to: 'c' }, { from: 't', to: 'd' },
-        { from: 'a', to: 'sink' }, { from: 'b', to: 'sink' }, { from: 'c', to: 'sink' }, { from: 'd', to: 'sink' },
+        { from: 't', to: 'a' },
+        { from: 't', to: 'b' },
+        { from: 't', to: 'c' },
+        { from: 't', to: 'd' },
+        { from: 'a', to: 'sink' },
+        { from: 'b', to: 'sink' },
+        { from: 'c', to: 'sink' },
+        { from: 'd', to: 'sink' },
       ],
     });
-    expect(r.issues.some((i) => i.code === 'FAN_IN_WITHOUT_MERGE' && i.nodeId === 'sink')).toBe(true);
+    expect(r.issues.some((i) => i.code === 'FAN_IN_WITHOUT_MERGE' && i.nodeId === 'sink')).toBe(
+      true,
+    );
   });
 
   it('4 edge → agent_data_analyst (aggregator) → no issue', () => {
@@ -746,8 +910,10 @@ describe('Quality gate — FAN_IN_WITHOUT_MERGE (rule 2026-06-07)', () => {
         { id: 'agg', defId: 'agent_data_analyst', config: { provider: 'liara' } },
       ],
       edges: [
-        { from: 't', to: 'a' }, { from: 't', to: 'b' },
-        { from: 'a', to: 'agg' }, { from: 'b', to: 'agg' },
+        { from: 't', to: 'a' },
+        { from: 't', to: 'b' },
+        { from: 'a', to: 'agg' },
+        { from: 'b', to: 'agg' },
       ],
     });
     expect(r.issues.some((i) => i.code === 'FAN_IN_WITHOUT_MERGE')).toBe(false);
@@ -762,8 +928,10 @@ describe('Quality gate — FAN_IN_WITHOUT_MERGE (rule 2026-06-07)', () => {
         { id: 'sw', defId: 'logic_switch', config: { cases: '{"x":"a"}', default: 'a' } },
       ],
       edges: [
-        { from: 't', to: 'a' }, { from: 't', to: 'b' },
-        { from: 'a', to: 'sw' }, { from: 'b', to: 'sw' },
+        { from: 't', to: 'a' },
+        { from: 't', to: 'b' },
+        { from: 'a', to: 'sw' },
+        { from: 'b', to: 'sw' },
       ],
     });
     expect(r.issues.some((i) => i.code === 'FAN_IN_WITHOUT_MERGE')).toBe(false);
@@ -773,7 +941,11 @@ describe('Quality gate — FAN_IN_WITHOUT_MERGE (rule 2026-06-07)', () => {
     const r = runQualityGate({
       nodes: [
         { id: 't', defId: 'trigger_manual', config: {} },
-        { id: 'sink', defId: 'action_send_email', config: { to: 'a@b.io', from: 'c@d.io', subject: 's', body: 'b' } },
+        {
+          id: 'sink',
+          defId: 'action_send_email',
+          config: { to: 'a@b.io', from: 'c@d.io', subject: 's', body: 'b' },
+        },
       ],
       edges: [{ from: 't', to: 'sink' }],
     });
@@ -850,7 +1022,11 @@ describe('Quality gate — OBSOLETE_MODEL (rule 2026-06-07)', () => {
     const r = runQualityGate({
       nodes: [
         { id: 't', defId: 'trigger_manual', config: {} },
-        { id: 'a', defId: 'agent_data_analyst', config: { provider: 'anthropic', model: 'claude-3-haiku-20240307' } },
+        {
+          id: 'a',
+          defId: 'agent_data_analyst',
+          config: { provider: 'anthropic', model: 'claude-3-haiku-20240307' },
+        },
       ],
       edges: [{ from: 't', to: 'a' }],
     });
@@ -865,7 +1041,11 @@ describe('Quality gate — OBSOLETE_MODEL (rule 2026-06-07)', () => {
     const r = runQualityGate({
       nodes: [
         { id: 't', defId: 'trigger_manual', config: {} },
-        { id: 'a', defId: 'agent_summarizer', config: { provider: 'anthropic', model: 'claude-sonnet-4-5' } },
+        {
+          id: 'a',
+          defId: 'agent_summarizer',
+          config: { provider: 'anthropic', model: 'claude-sonnet-4-5' },
+        },
       ],
       edges: [{ from: 't', to: 'a' }],
     });
@@ -876,7 +1056,11 @@ describe('Quality gate — OBSOLETE_MODEL (rule 2026-06-07)', () => {
     const r = runQualityGate({
       nodes: [
         { id: 't', defId: 'trigger_manual', config: {} },
-        { id: 'a', defId: 'agent_classifier', config: { provider: 'openai', model: 'gpt-3.5-turbo-0613' } },
+        {
+          id: 'a',
+          defId: 'agent_classifier',
+          config: { provider: 'openai', model: 'gpt-3.5-turbo-0613' },
+        },
       ],
       edges: [{ from: 't', to: 'a' }],
     });
@@ -887,7 +1071,11 @@ describe('Quality gate — OBSOLETE_MODEL (rule 2026-06-07)', () => {
     const r = runQualityGate({
       nodes: [
         { id: 't', defId: 'trigger_manual', config: {} },
-        { id: 'a', defId: 'action_http', config: { provider: 'openai', model: 'gpt-3.5-turbo-0613' } },
+        {
+          id: 'a',
+          defId: 'action_http',
+          config: { provider: 'openai', model: 'gpt-3.5-turbo-0613' },
+        },
       ],
       edges: [{ from: 't', to: 'a' }],
     });
@@ -896,7 +1084,8 @@ describe('Quality gate — OBSOLETE_MODEL (rule 2026-06-07)', () => {
 });
 
 describe('QualityGate — CODE_NODE_LANG_MISMATCH (bug user 2026-06-09)', () => {
-  const PYTHON_CODE = 'import json, os\ndata = json.loads(os.environ.get("MEDEA_INPUT", "{}"))\nprint(data)';
+  const PYTHON_CODE =
+    'import json, os\ndata = json.loads(os.environ.get("MEDEA_INPUT", "{}"))\nprint(data)';
   const JS_CODE = 'const x = input.items || [];\nreturn { n: x.length };';
 
   it('codice Python in action_run_js → critical + shouldReject', () => {
@@ -966,26 +1155,30 @@ describe('QualityGate — CODE_NODE_LANG_MISMATCH (bug user 2026-06-09)', () => 
 
 describe('QualityGate — DB_COLUMN_NOT_IN_SCHEMA (bug user 2026-06-09)', () => {
   // Schema reale price_monitoring del tenant senza1dio.
-  const DBS = [{
-    id: 'QhktHRtIKHL5aniYhgRvz',
-    tables: ['price_monitoring', 'customers', 'orders'],
-    columns: {
-      price_monitoring: ['id', 'url', 'price', 'median_price', 'timestamp'],
-      customers: ['id', 'name', 'email'],
+  const DBS = [
+    {
+      id: 'QhktHRtIKHL5aniYhgRvz',
+      tables: ['price_monitoring', 'customers', 'orders'],
+      columns: {
+        price_monitoring: ['id', 'url', 'price', 'median_price', 'timestamp'],
+        customers: ['id', 'name', 'email'],
+      },
     },
-  }];
+  ];
 
   it('db_insert rowJson con colonne inesistenti (code/created_at) → critical', () => {
     const r = runQualityGate({
-      nodes: [{
-        id: 'db_insert_1',
-        defId: 'db_insert',
-        config: {
-          databaseId: 'QhktHRtIKHL5aniYhgRvz',
-          table: 'price_monitoring',
-          rowJson: '{"code":"{{$node.action_1.json.stdout}}","created_at":"{{$now}}"}',
+      nodes: [
+        {
+          id: 'db_insert_1',
+          defId: 'db_insert',
+          config: {
+            databaseId: 'QhktHRtIKHL5aniYhgRvz',
+            table: 'price_monitoring',
+            rowJson: '{"code":"{{$node.action_1.json.stdout}}","created_at":"{{$now}}"}',
+          },
         },
-      }],
+      ],
       edges: [],
       databases: DBS,
     });
@@ -1002,15 +1195,17 @@ describe('QualityGate — DB_COLUMN_NOT_IN_SCHEMA (bug user 2026-06-09)', () => 
 
   it('db_insert rowJson con SOLO colonne valide → nessun issue', () => {
     const r = runQualityGate({
-      nodes: [{
-        id: 'i',
-        defId: 'db_insert',
-        config: {
-          databaseId: 'QhktHRtIKHL5aniYhgRvz',
-          table: 'price_monitoring',
-          rowJson: '{"url":"https://x","price":9.9,"timestamp":"{{$now}}"}',
+      nodes: [
+        {
+          id: 'i',
+          defId: 'db_insert',
+          config: {
+            databaseId: 'QhktHRtIKHL5aniYhgRvz',
+            table: 'price_monitoring',
+            rowJson: '{"url":"https://x","price":9.9,"timestamp":"{{$now}}"}',
+          },
         },
-      }],
+      ],
       edges: [],
       databases: DBS,
     });
@@ -1019,15 +1214,17 @@ describe('QualityGate — DB_COLUMN_NOT_IN_SCHEMA (bug user 2026-06-09)', () => 
 
   it('rowJson come oggetto (non stringa) viene comunque validato', () => {
     const r = runQualityGate({
-      nodes: [{
-        id: 'i',
-        defId: 'db_insert',
-        config: {
-          databaseId: 'QhktHRtIKHL5aniYhgRvz',
-          table: 'customers',
-          rowJson: { id: '1', nome: 'x' }, // "nome" non esiste (è "name")
+      nodes: [
+        {
+          id: 'i',
+          defId: 'db_insert',
+          config: {
+            databaseId: 'QhktHRtIKHL5aniYhgRvz',
+            table: 'customers',
+            rowJson: { id: '1', nome: 'x' }, // "nome" non esiste (è "name")
+          },
         },
-      }],
+      ],
       edges: [],
       databases: DBS,
     });
@@ -1038,16 +1235,18 @@ describe('QualityGate — DB_COLUMN_NOT_IN_SCHEMA (bug user 2026-06-09)', () => 
 
   it('db_update valida sia whereJson sia patchJson', () => {
     const r = runQualityGate({
-      nodes: [{
-        id: 'u',
-        defId: 'db_update',
-        config: {
-          databaseId: 'QhktHRtIKHL5aniYhgRvz',
-          table: 'customers',
-          whereJson: '{"id":"1"}',           // valido
-          patchJson: '{"phone":"+39"}',       // "phone" non esiste
+      nodes: [
+        {
+          id: 'u',
+          defId: 'db_update',
+          config: {
+            databaseId: 'QhktHRtIKHL5aniYhgRvz',
+            table: 'customers',
+            whereJson: '{"id":"1"}', // valido
+            patchJson: '{"phone":"+39"}', // "phone" non esiste
+          },
         },
-      }],
+      ],
       edges: [],
       databases: DBS,
     });
@@ -1059,15 +1258,17 @@ describe('QualityGate — DB_COLUMN_NOT_IN_SCHEMA (bug user 2026-06-09)', () => 
 
   it('chiavi che sono espressioni {{...}} vengono ignorate (non sono nomi-colonna)', () => {
     const r = runQualityGate({
-      nodes: [{
-        id: 'i',
-        defId: 'db_insert',
-        config: {
-          databaseId: 'QhktHRtIKHL5aniYhgRvz',
-          table: 'price_monitoring',
-          rowJson: '{"{{dynamicCol}}":"v","url":"https://x"}',
+      nodes: [
+        {
+          id: 'i',
+          defId: 'db_insert',
+          config: {
+            databaseId: 'QhktHRtIKHL5aniYhgRvz',
+            table: 'price_monitoring',
+            rowJson: '{"{{dynamicCol}}":"v","url":"https://x"}',
+          },
         },
-      }],
+      ],
       edges: [],
       databases: DBS,
     });
@@ -1076,11 +1277,17 @@ describe('QualityGate — DB_COLUMN_NOT_IN_SCHEMA (bug user 2026-06-09)', () => 
 
   it('databaseId placeholder __USE_PICKER__ → skip (utente sceglierà post-import)', () => {
     const r = runQualityGate({
-      nodes: [{
-        id: 'i',
-        defId: 'db_insert',
-        config: { databaseId: '__USE_PICKER__', table: 'price_monitoring', rowJson: '{"foo":"bar"}' },
-      }],
+      nodes: [
+        {
+          id: 'i',
+          defId: 'db_insert',
+          config: {
+            databaseId: '__USE_PICKER__',
+            table: 'price_monitoring',
+            rowJson: '{"foo":"bar"}',
+          },
+        },
+      ],
       edges: [],
       databases: DBS,
     });
@@ -1089,11 +1296,17 @@ describe('QualityGate — DB_COLUMN_NOT_IN_SCHEMA (bug user 2026-06-09)', () => 
 
   it('tabella senza info colonne (non in columns map) → skip colonna (table check resta)', () => {
     const r = runQualityGate({
-      nodes: [{
-        id: 'i',
-        defId: 'db_insert',
-        config: { databaseId: 'QhktHRtIKHL5aniYhgRvz', table: 'orders', rowJson: '{"whatever":"x"}' },
-      }],
+      nodes: [
+        {
+          id: 'i',
+          defId: 'db_insert',
+          config: {
+            databaseId: 'QhktHRtIKHL5aniYhgRvz',
+            table: 'orders',
+            rowJson: '{"whatever":"x"}',
+          },
+        },
+      ],
       edges: [],
       databases: DBS, // 'orders' è in tables ma NON in columns → skip colonna
     });
@@ -1102,11 +1315,13 @@ describe('QualityGate — DB_COLUMN_NOT_IN_SCHEMA (bug user 2026-06-09)', () => 
 
   it('databases senza columns del tutto → rule disattivata (backward compat)', () => {
     const r = runQualityGate({
-      nodes: [{
-        id: 'i',
-        defId: 'db_insert',
-        config: { databaseId: 'd1', table: 'price_monitoring', rowJson: '{"nope":"x"}' },
-      }],
+      nodes: [
+        {
+          id: 'i',
+          defId: 'db_insert',
+          config: { databaseId: 'd1', table: 'price_monitoring', rowJson: '{"nope":"x"}' },
+        },
+      ],
       edges: [],
       databases: [{ id: 'd1', tables: ['price_monitoring'] }], // no columns
     });
@@ -1126,14 +1341,17 @@ describe('QualityGate — integrazione: workflow ROTTO REALE "Crea Node Code" (2
           defId: 'action_run_js',
           config: {
             code: 'import json, os\ndata = json.loads(os.environ.get("MEDEA_INPUT", "{}"))\nprint({"received_keys": list(data.keys()), "count": len(data)})',
-            timeoutMs: '30000', parseStdoutJson: 'true', allowNetwork: 'false',
+            timeoutMs: '30000',
+            parseStdoutJson: 'true',
+            allowNetwork: 'false',
           },
         },
         {
           id: 'db_insert_1',
           defId: 'db_insert',
           config: {
-            databaseId: 'QhktHRtIKHL5aniYhgRvz', table: 'price_monitoring',
+            databaseId: 'QhktHRtIKHL5aniYhgRvz',
+            table: 'price_monitoring',
             rowJson: '{"code":"{{$node.action_1.json.stdout}}","created_at":"{{$now}}"}',
             onConflict: 'fail',
           },
@@ -1143,11 +1361,13 @@ describe('QualityGate — integrazione: workflow ROTTO REALE "Crea Node Code" (2
         { from: 'trigger_1', to: 'action_1' },
         { from: 'action_1', to: 'db_insert_1' },
       ],
-      databases: [{
-        id: 'QhktHRtIKHL5aniYhgRvz',
-        tables: ['price_monitoring'],
-        columns: { price_monitoring: ['id', 'url', 'price', 'median_price', 'timestamp'] },
-      }],
+      databases: [
+        {
+          id: 'QhktHRtIKHL5aniYhgRvz',
+          tables: ['price_monitoring'],
+          columns: { price_monitoring: ['id', 'url', 'price', 'median_price', 'timestamp'] },
+        },
+      ],
     });
     expect(r.shouldReject).toBe(true);
     const codes = new Set(r.issues.map((i) => i.code));

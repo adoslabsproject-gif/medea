@@ -21,7 +21,10 @@
  */
 import type { NodeCatalogEntry } from '@/services/ai-scaffold/node-catalog.js';
 import type { LlmTurn } from '@/services/db-agent/chat/types.js';
-import { analyzePendingSecrets, type PendingSecretRef } from '@/services/ai-scaffold/pending-secrets.js';
+import {
+  analyzePendingSecrets,
+  type PendingSecretRef,
+} from '@/services/ai-scaffold/pending-secrets.js';
 import { runWorkflowAgent, type WorkflowAgentStep } from '@/services/workflow-agent/loop.js';
 import { WorkflowBuilder, type WorkflowSnapshot } from '@/services/workflow-agent/state.js';
 import { buildWorkflowModifyPrompt } from '@/services/workflow-agent/modify-prompt.js';
@@ -70,7 +73,9 @@ export function summarizeModification(
 ): string {
   if (!patchHasOps(patch)) {
     const t = modelText.trim();
-    return t.length > 0 ? t : 'Non ho applicato modifiche: la richiesta non comporta cambiamenti al workflow.';
+    return t.length > 0
+      ? t
+      : 'Non ho applicato modifiche: la richiesta non comporta cambiamenti al workflow.';
   }
   const parts: string[] = [];
   const added = patch.addNodes?.length ?? 0;
@@ -83,7 +88,9 @@ export function summarizeModification(
   if (removed > 0) parts.push(`rimosso ${removed.toString()} nodo/i`);
   if (edgesAdded > 0) parts.push(`creato ${edgesAdded.toString()} collegamento/i`);
   if (edgesRemoved > 0) parts.push(`rimosso ${edgesRemoved.toString()} collegamento/i`);
-  const lines = [`Ho preparato questa modifica: ${parts.join(', ')}. Controlla l'anteprima e conferma.`];
+  const lines = [
+    `Ho preparato questa modifica: ${parts.join(', ')}. Controlla l'anteprima e conferma.`,
+  ];
   if (pendingSecrets.length > 0) {
     const names = pendingSecrets.map((s) => s.name).join(', ');
     lines.push(`⚠️ Da configurare a mano prima di attivare: ${names}.`);
@@ -106,7 +113,10 @@ export async function modifyWorkflow(input: ModifyWorkflowInput): Promise<Modify
 
   const agent = await runWorkflowAgent({
     catalog: input.catalog,
-    prompt: { goal: input.request, ...(input.extraContext ? { extraContext: input.extraContext } : {}) },
+    prompt: {
+      goal: input.request,
+      ...(input.extraContext ? { extraContext: input.extraContext } : {}),
+    },
     llmTurn: input.llmTurn,
     builder,
     systemPrompt,
@@ -120,7 +130,12 @@ export async function modifyWorkflow(input: ModifyWorkflowInput): Promise<Modify
     nodes: agent.snapshot.nodes.map((n) => ({ id: n.id, config: n.config })),
     configuredSecrets: input.configuredSecrets,
   });
-  const message = summarizeModification(patch, agent.remainingIssues, pendingSecrets, agent.finalText);
+  const message = summarizeModification(
+    patch,
+    agent.remainingIssues,
+    pendingSecrets,
+    agent.finalText,
+  );
 
   return {
     patch,

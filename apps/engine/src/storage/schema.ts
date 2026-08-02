@@ -105,7 +105,18 @@ export const runs = sqliteTable(
     // da un process specifico e non devono essere ri-claimati. La transizione
     // finale ('success'/'error'/'partial'/'paused'/'cancelled') è settata da
     // run.service.resumeFromCheckpoint a fine esecuzione.
-    status: text('status', { enum: ['pending', 'running', 'recovering', 'success', 'partial', 'error', 'paused', 'cancelled'] })
+    status: text('status', {
+      enum: [
+        'pending',
+        'running',
+        'recovering',
+        'success',
+        'partial',
+        'error',
+        'paused',
+        'cancelled',
+      ],
+    })
       .notNull()
       .default('pending'),
     triggerType: text('trigger_type'),
@@ -315,9 +326,9 @@ export const customNodes = sqliteTable(
     sourceDefinition: text('source_definition').notNull(),
     sourceSchema: text('source_schema').notNull(),
     compiledExecutor: text('compiled_executor'),
-    compileWarnings: text('compile_warnings'),   // JSON array
+    compileWarnings: text('compile_warnings'), // JSON array
     compileAt: text('compile_at'),
-    testRuns: text('test_runs'),                  // JSON array max 20
+    testRuns: text('test_runs'), // JSON array max 20
     marketplaceSubmissionId: text('marketplace_submission_id'),
     marketplaceSubmittedAt: text('marketplace_submitted_at'),
     marketplacePublishedAt: text('marketplace_published_at'),
@@ -335,7 +346,9 @@ export const customNodeVersions = sqliteTable(
   'custom_node_versions',
   {
     id: text('id').primaryKey(),
-    customNodeId: text('custom_node_id').notNull().references(() => customNodes.id, { onDelete: 'cascade' }),
+    customNodeId: text('custom_node_id')
+      .notNull()
+      .references(() => customNodes.id, { onDelete: 'cascade' }),
     semver: text('semver').notNull(),
     sourceExecutor: text('source_executor').notNull(),
     sourceDefinition: text('source_definition').notNull(),

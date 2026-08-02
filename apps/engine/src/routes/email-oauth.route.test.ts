@@ -44,10 +44,21 @@ import { createEmailOauthRoutes } from './email-oauth.route.js';
 import type { AuthContext } from '@/middleware/auth.js';
 
 function deriveKey(secret: string): Uint8Array {
-  return new Uint8Array(hkdfSync('sha256', Buffer.from(secret, 'utf8'), Buffer.alloc(0), Buffer.from('flowforge-sso-jwe-v1', 'utf8'), 32) as ArrayBuffer);
+  return new Uint8Array(
+    hkdfSync(
+      'sha256',
+      Buffer.from(secret, 'utf8'),
+      Buffer.alloc(0),
+      Buffer.from('flowforge-sso-jwe-v1', 'utf8'),
+      32,
+    ) as ArrayBuffer,
+  );
 }
 
-async function buildHandoffJwe(payload: Record<string, unknown>, opts: { audience?: string; issuer?: string; secret?: string } = {}): Promise<string> {
+async function buildHandoffJwe(
+  payload: Record<string, unknown>,
+  opts: { audience?: string; issuer?: string; secret?: string } = {},
+): Promise<string> {
   const key = deriveKey(opts.secret ?? SECRET);
   return await new EncryptJWT(payload)
     .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
@@ -61,13 +72,20 @@ async function buildHandoffJwe(payload: Record<string, unknown>, opts: { audienc
 /** App con auth pre-iniettata via middleware sintetico. Accetta auth
  *  parziale (di solito basta role+tenantId per il test); espande con i
  *  campi obbligatori AuthContext (userId, email) usando default. */
-async function appAuthRequest(auth: Partial<AuthContext> | null, path: string, init?: RequestInit): Promise<Response> {
+async function appAuthRequest(
+  auth: Partial<AuthContext> | null,
+  path: string,
+  init?: RequestInit,
+): Promise<Response> {
   const { Hono } = await import('hono');
   const router = new Hono();
   router.use('*', async (c, next) => {
     if (auth) {
       const full: AuthContext = {
-        userId: 'u-test', email: 'test@x', tenantId: 't-default', role: 'owner',
+        userId: 'u-test',
+        email: 'test@x',
+        tenantId: 't-default',
+        role: 'owner',
         ...auth,
       } as AuthContext;
       c.set('auth', full);
@@ -88,9 +106,13 @@ beforeEach(() => {
   process.env.MEDEA_SSO_SECRET = SECRET;
   process.env.MEDEA_TENANT_ID = EXPECTED_TENANT;
   process.env.MEDEA_TENANT_SLUG = 'acme';
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-    ok: true, json: async () => ({ enabled: true }),
-  }));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ enabled: true }),
+    }),
+  );
 });
 
 describe('GET /email-accounts/oauth/google/start — auth gates', () => {
@@ -101,18 +123,27 @@ describe('GET /email-accounts/oauth/google/start — auth gates', () => {
   });
 
   it('role viewer → 403', async () => {
-    const res = await appAuthRequest({ role: 'viewer', tenantId: 't1' }, '/email-accounts/oauth/google/start');
+    const res = await appAuthRequest(
+      { role: 'viewer', tenantId: 't1' },
+      '/email-accounts/oauth/google/start',
+    );
     expect(res.status).toBe(403);
-    expect((await res.json() as { error: string }).error).toContain('owner/superadmin');
+    expect(((await res.json()) as { error: string }).error).toContain('owner/superadmin');
   });
 
   it('role editor → 403', async () => {
-    const res = await appAuthRequest({ role: 'editor', tenantId: 't1' }, '/email-accounts/oauth/google/start');
+    const res = await appAuthRequest(
+      { role: 'editor', tenantId: 't1' },
+      '/email-accounts/oauth/google/start',
+    );
     expect(res.status).toBe(403);
   });
 
   it('role operator → 403', async () => {
-    const res = await appAuthRequest({ role: 'operator', tenantId: 't1' }, '/email-accounts/oauth/google/start');
+    const res = await appAuthRequest(
+      { role: 'operator', tenantId: 't1' },
+      '/email-accounts/oauth/google/start',
+    );
     expect(res.status).toBe(403);
   });
 
@@ -131,12 +162,15 @@ describe('GET /email-accounts/oauth/google/start — auth gates', () => {
       headers: { host: 'random-host.example.org' },
     });
     expect(res.status).toBe(500);
-    expect((await res.json() as { error: string }).error).toBe('tenant_slug_unknown');
+    expect(((await res.json()) as { error: string }).error).toBe('tenant_slug_unknown');
   });
 
   it('MEDEA_TENANT_SLUG da env → 302 portal con tenant=<slug>', async () => {
     process.env.MEDEA_TENANT_SLUG = 'acme-corp';
-    const res = await appAuthRequest({ role: 'owner', tenantId: 'workspace-X' }, '/email-accounts/oauth/google/start');
+    const res = await appAuthRequest(
+      { role: 'owner', tenantId: 'workspace-X' },
+      '/email-accounts/oauth/google/start',
+    );
     expect(res.status).toBe(302);
     const loc = res.headers.get('location') ?? '';
     expect(loc).toContain('/api/v1/email-oauth/google/start');
@@ -163,13 +197,18 @@ describe('GET /email-accounts/oauth/google/start — auth gates', () => {
   });
 
   it('superadmin role → pass (oltre owner)', async () => {
-    const res = await appAuthRequest({ role: 'superadmin', tenantId: 't1' }, '/email-accounts/oauth/google/start');
+    const res = await appAuthRequest(
+      { role: 'superadmin', tenantId: 't1' },
+      '/email-accounts/oauth/google/start',
+    );
     expect(res.status).toBe(302);
   });
 
   it('query params (label/fromAddress/isDefault/accountId) propagati al portal', async () => {
-    const res = await appAuthRequest({ role: 'owner', tenantId: 'w' },
-      '/email-accounts/oauth/google/start?label=Marketing&fromAddress=mark@x.com&isDefault=true&accountId=acc-1');
+    const res = await appAuthRequest(
+      { role: 'owner', tenantId: 'w' },
+      '/email-accounts/oauth/google/start?label=Marketing&fromAddress=mark@x.com&isDefault=true&accountId=acc-1',
+    );
     const loc = res.headers.get('location') ?? '';
     expect(loc).toContain('label=Marketing');
     expect(loc).toContain('fromAddress=mark');
@@ -179,7 +218,10 @@ describe('GET /email-accounts/oauth/google/start — auth gates', () => {
 
   it('MEDEA_PORTAL_BASE_URL override default', async () => {
     process.env.MEDEA_PORTAL_BASE_URL = 'https://portal-staging.example.com';
-    const res = await appAuthRequest({ role: 'owner', tenantId: 'w' }, '/email-accounts/oauth/google/start');
+    const res = await appAuthRequest(
+      { role: 'owner', tenantId: 'w' },
+      '/email-accounts/oauth/google/start',
+    );
     expect(res.headers.get('location') ?? '').toContain('portal-staging.example.com');
     delete process.env.MEDEA_PORTAL_BASE_URL;
   });
@@ -192,33 +234,53 @@ describe('GET /email-accounts/oauth/google/status', () => {
   });
 
   it('portal ok + enabled=true → 200 { enabled: true }', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true, json: async () => ({ enabled: true }),
-    }));
-    const res = await appAuthRequest({ role: 'owner', tenantId: 't' }, '/email-accounts/oauth/google/status');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ enabled: true }),
+      }),
+    );
+    const res = await appAuthRequest(
+      { role: 'owner', tenantId: 't' },
+      '/email-accounts/oauth/google/status',
+    );
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ enabled: true });
   });
 
   it('portal ok + enabled=false → 200 { enabled: false }', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true, json: async () => ({ enabled: false }),
-    }));
-    const res = await appAuthRequest({ role: 'owner', tenantId: 't' }, '/email-accounts/oauth/google/status');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ enabled: false }),
+      }),
+    );
+    const res = await appAuthRequest(
+      { role: 'owner', tenantId: 't' },
+      '/email-accounts/oauth/google/status',
+    );
     expect(await res.json()).toEqual({ enabled: false });
   });
 
   it('portal HTTP 500 → enabled=false reason="portal HTTP 500"', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }));
-    const res = await appAuthRequest({ role: 'owner', tenantId: 't' }, '/email-accounts/oauth/google/status');
-    const body = await res.json() as { enabled: boolean; reason?: string };
+    const res = await appAuthRequest(
+      { role: 'owner', tenantId: 't' },
+      '/email-accounts/oauth/google/status',
+    );
+    const body = (await res.json()) as { enabled: boolean; reason?: string };
     expect(body.enabled).toBe(false);
     expect(body.reason).toContain('portal HTTP 500');
   });
 
   it('portal unreachable (fetch throw) → enabled=false reason="portal_unreachable"', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('ECONNREFUSED')));
-    const res = await appAuthRequest({ role: 'owner', tenantId: 't' }, '/email-accounts/oauth/google/status');
+    const res = await appAuthRequest(
+      { role: 'owner', tenantId: 't' },
+      '/email-accounts/oauth/google/status',
+    );
     expect(await res.json()).toEqual({ enabled: false, reason: 'portal_unreachable' });
   });
 });
@@ -311,7 +373,9 @@ describe('GET /email-accounts/oauth/google/import — JWE handoff', () => {
   });
 
   it('upsert throw → oauthError=import_failed + detail truncato 200 char', async () => {
-    upsertAccountMock.mockImplementation(() => { throw new Error('X'.repeat(500)); });
+    upsertAccountMock.mockImplementation(() => {
+      throw new Error('X'.repeat(500));
+    });
     const jwe = await buildHandoffJwe(validPayload);
     const res = await appAuthRequest(null, `/email-accounts/oauth/google/import?handoff=${jwe}`);
     const loc = res.headers.get('location') ?? '';

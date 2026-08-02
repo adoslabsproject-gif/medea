@@ -12,7 +12,11 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { LlmProvidersService, SUPPORTED_PROVIDERS, type LlmProvider } from '@/services/llm-providers.service.js';
+import {
+  LlmProvidersService,
+  SUPPORTED_PROVIDERS,
+  type LlmProvider,
+} from '@/services/llm-providers.service.js';
 import { getTenantId } from '@/lib/tenant.js';
 import { getActorId } from '@/lib/actor.js';
 import { TenantAiPreferencesService } from '@/services/tenant-ai-preferences.service.js';
@@ -31,9 +35,15 @@ const UpsertSchema = z.object({
   // allowDockerNet NON passato → blocca anche la flowforge-net. NB: ciò rende
   // Ollama-localhost non salvabile nel SaaS (corretto: nel cloud serve un
   // endpoint PUBBLICO; Ollama-locale è del guscio installabile).
-  baseUrl: z.string().max(500).url().optional().or(z.literal(''))
+  baseUrl: z
+    .string()
+    .max(500)
+    .url()
+    .optional()
+    .or(z.literal(''))
     .refine((v) => !v || validateUrlForFetch(v).ok, {
-      message: 'baseUrl non ammesso: deve essere un endpoint HTTP(S) PUBBLICO. Host interni/privati/localhost sono bloccati (protezione SSRF).',
+      message:
+        'baseUrl non ammesso: deve essere un endpoint HTTP(S) PUBBLICO. Host interni/privati/localhost sono bloccati (protezione SSRF).',
     }),
 });
 
@@ -60,7 +70,8 @@ export function createLlmProvidersRoutes(): Hono {
   app.get('/preferences', (c) => {
     const tenantId = getTenantId(c);
     const prefs = tenantPrefs.get(tenantId);
-    const configured = service.list(tenantId)
+    const configured = service
+      .list(tenantId)
       .filter((p) => p.hasKey)
       .map((p) => ({ provider: p.provider, hasKey: true }));
     return c.json({
@@ -96,7 +107,8 @@ export function createLlmProvidersRoutes(): Hono {
     if (body.allowLiara !== undefined) patch.allowLiara = body.allowLiara;
     if (body.defaultLlmProvider !== undefined) patch.defaultLlmProvider = body.defaultLlmProvider;
     tenantPrefs.set(tenantId, patch);
-    const configured = service.list(tenantId)
+    const configured = service
+      .list(tenantId)
       .filter((p) => p.hasKey)
       .map((p) => ({ provider: p.provider, hasKey: true }));
     return c.json({
@@ -113,14 +125,18 @@ export function createLlmProvidersRoutes(): Hono {
     const actorId = getActorId(c) ?? undefined;
     const providerParam = c.req.param('provider');
     if (!providerParam || !isValidProvider(providerParam)) {
-      return c.json({ error: `Provider non valido. Supportati: ${SUPPORTED_PROVIDERS.join(', ')}` }, 400);
+      return c.json(
+        { error: `Provider non valido. Supportati: ${SUPPORTED_PROVIDERS.join(', ')}` },
+        400,
+      );
     }
     const body = c.req.valid('json');
     try {
       const opts: { apiKey: string; defaultModel?: string; baseUrl?: string; actorId?: string } = {
         apiKey: body.apiKey ?? '',
       };
-      if (body.defaultModel && body.defaultModel.trim() !== '') opts.defaultModel = body.defaultModel;
+      if (body.defaultModel && body.defaultModel.trim() !== '')
+        opts.defaultModel = body.defaultModel;
       if (body.baseUrl && body.baseUrl !== '') opts.baseUrl = body.baseUrl;
       if (actorId !== undefined) opts.actorId = actorId;
       await service.upsert(tenantId, providerParam, opts);

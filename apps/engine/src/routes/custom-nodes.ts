@@ -81,7 +81,10 @@ const PostmanImportBodySchema = z.object({
 });
 
 /** Resolve workspaceId + actor user_id da auth context (JWT-bound). */
-function resolveCtx(c: { get: (k: string) => unknown }): { workspaceId: string; actorUserId: string } {
+function resolveCtx(c: { get: (k: string) => unknown }): {
+  workspaceId: string;
+  actorUserId: string;
+} {
   const auth = c.get('auth') as { userId?: string; tenantId?: string } | undefined;
   return {
     workspaceId: auth?.tenantId ?? 'default',
@@ -94,7 +97,12 @@ function resolveCtx(c: { get: (k: string) => unknown }): { workspaceId: string; 
  * Pattern: handler awaits service → catch → throw HTTPException equivalent.
  * Hono c.json(body, status) e\` la via piu\` pulita senza middleware errore.
  */
-function errorResponse(err: unknown): { status: number; body: { error: { code: string; message: string; meta?: Record<string, unknown>; status: number } } } {
+function errorResponse(err: unknown): {
+  status: number;
+  body: {
+    error: { code: string; message: string; meta?: Record<string, unknown>; status: number };
+  };
+} {
   if (err instanceof CustomNodeError) {
     return {
       status: err.status,
@@ -142,11 +150,13 @@ const RollbackBodySchema = z.object({
 const CompileBodySchema = z.object({
   /** Override: compila usando questi source (non-persisted preview).
    *  Se omesso, usa i source attualmente salvati sul DB. */
-  sources: z.object({
-    executor: z.string(),
-    definition: z.string(),
-    schema: z.string(),
-  }).optional(),
+  sources: z
+    .object({
+      executor: z.string(),
+      definition: z.string(),
+      schema: z.string(),
+    })
+    .optional(),
 });
 
 const SourcesSchema = z.object({
@@ -160,11 +170,13 @@ const AiAssistBodySchema = z.object({
   prompt: z.string().optional(),
   sources: SourcesSchema.optional(),
   selectedText: z.string().optional(),
-  diagnostic: z.object({
-    message: z.string(),
-    line: z.number(),
-    file: z.enum(['executor', 'definition', 'schema']),
-  }).optional(),
+  diagnostic: z
+    .object({
+      message: z.string(),
+      line: z.number(),
+      file: z.enum(['executor', 'definition', 'schema']),
+    })
+    .optional(),
 });
 
 const InlineCompletionBodySchema = z.object({
@@ -176,11 +188,13 @@ const InlineCompletionBodySchema = z.object({
 
 const TestRunBodySchema = z.object({
   /** Override: compila just-in-time questi source. Se omesso, usa compiledExecutor DB. */
-  sources: z.object({
-    executor: z.string(),
-    definition: z.string(),
-    schema: z.string(),
-  }).optional(),
+  sources: z
+    .object({
+      executor: z.string(),
+      definition: z.string(),
+      schema: z.string(),
+    })
+    .optional(),
   /** Mock input al nodo (JSON arbitrario). */
   input: z.unknown().default({}),
   /** Mock config passato a executor(config, input, ctx). */
@@ -250,7 +264,10 @@ export function createCustomNodesRoutes(): Hono {
       const cleanFilter = Object.fromEntries(
         Object.entries(filter).filter(([, v]) => v !== undefined),
       );
-      const res = await listCustomNodes({ workspaceId: resolveCtx(c).workspaceId, filter: cleanFilter });
+      const res = await listCustomNodes({
+        workspaceId: resolveCtx(c).workspaceId,
+        filter: cleanFilter,
+      });
       // Backward-compat alias: UI editor cerca `rows`, backend ritorna `items`.
       // Espongo entrambi finche\` tutte le SPA distribuite non sono ricompilate.
       return c.json({
@@ -313,7 +330,10 @@ export function createCustomNodesRoutes(): Hono {
       return c.json({ node, stats: generated.stats, warnings: generated.warnings }, 201);
     } catch (err) {
       if (err instanceof OpenApiParseError) {
-        return c.json({ error: { code: 'OPENAPI_PARSE_ERROR', message: err.message, status: 400 } }, 400);
+        return c.json(
+          { error: { code: 'OPENAPI_PARSE_ERROR', message: err.message, status: 400 } },
+          400,
+        );
       }
       const r = errorResponse(err);
       return c.json(r.body, r.status as Parameters<typeof c.json>[1]);
@@ -348,10 +368,16 @@ export function createCustomNodesRoutes(): Hono {
           sourceSchema: generated.sourceSchema,
         },
       });
-      return c.json({ node, stats: generated.stats, warnings: [...convertWarnings, ...generated.warnings] }, 201);
+      return c.json(
+        { node, stats: generated.stats, warnings: [...convertWarnings, ...generated.warnings] },
+        201,
+      );
     } catch (err) {
       if (err instanceof PostmanParseError || err instanceof OpenApiParseError) {
-        return c.json({ error: { code: 'POSTMAN_PARSE_ERROR', message: err.message, status: 400 } }, 400);
+        return c.json(
+          { error: { code: 'POSTMAN_PARSE_ERROR', message: err.message, status: 400 } },
+          400,
+        );
       }
       const r = errorResponse(err);
       return c.json(r.body, r.status as Parameters<typeof c.json>[1]);
@@ -363,7 +389,11 @@ export function createCustomNodesRoutes(): Hono {
     try {
       const id = c.req.param('id');
       const node = await getCustomNode({ workspaceId: resolveCtx(c).workspaceId, id });
-      if (!node) return c.json({ error: { code: 'NOT_FOUND', message: `Custom node ${id} not found`, status: 404 } }, 404);
+      if (!node)
+        return c.json(
+          { error: { code: 'NOT_FOUND', message: `Custom node ${id} not found`, status: 404 } },
+          404,
+        );
       return c.json(node);
     } catch (err) {
       const r = errorResponse(err);
@@ -462,14 +492,18 @@ export function createCustomNodesRoutes(): Hono {
     try {
       const id = c.req.param('id');
       const body = c.req.valid('json');
-      const { compileCustomNodeSources } = await import('@/services/custom-nodes/compile.service.js');
+      const { compileCustomNodeSources } =
+        await import('@/services/custom-nodes/compile.service.js');
       const { runInSandbox } = await import('@/executors/community-node-sandbox.js');
       const { getCustomNode, appendTestRun } = await import('@/services/custom-nodes/index.js');
 
       const wsId = resolveCtx(c).workspaceId;
       const node = await getCustomNode({ workspaceId: wsId, id });
       if (!node) {
-        return c.json({ error: { code: 'NOT_FOUND', message: `Custom node ${id} not found`, status: 404 } }, 404);
+        return c.json(
+          { error: { code: 'NOT_FOUND', message: `Custom node ${id} not found`, status: 404 } },
+          404,
+        );
       }
 
       // 1. Compila just-in-time se sources passati; altrimenti usa compiledExecutor
@@ -504,16 +538,20 @@ export function createCustomNodesRoutes(): Hono {
       let output: unknown = null;
       let errMsg: string | null = null;
       try {
-        output = await runInSandbox(adapted, {
-          config: body.config,
-          input: body.input ?? null,
-          context: {
-            tenantId: wsId,
-            runId: `test-${Date.now().toString(36)}`,
-            workflowId: 'test-runner',
-            nodeId: id,
+        output = await runInSandbox(
+          adapted,
+          {
+            config: body.config,
+            input: body.input ?? null,
+            context: {
+              tenantId: wsId,
+              runId: `test-${Date.now().toString(36)}`,
+              workflowId: 'test-runner',
+              nodeId: id,
+            },
           },
-        }, trace);
+          trace,
+        );
       } catch (err) {
         errMsg = err instanceof Error ? err.message : String(err);
       }
@@ -554,57 +592,84 @@ export function createCustomNodesRoutes(): Hono {
 
   /** POST /api/v1/custom-nodes/:id/ai-assist — chiama Liara gateway.
    *  Rate-limit LLM standard (30 req/min tenant, 10 req/min user). */
-  app.post('/:id/ai-assist', llmRateLimit('custom-nodes.ai-assist'), zValidator('json', AiAssistBodySchema), async (c) => {
-    try {
-      const id = c.req.param('id');
-      const body = c.req.valid('json');
-      const { callAiAssist } = await import('@/services/custom-nodes/ai-assist.js');
-      const ctx = resolveCtx(c);
-      const wsId = ctx.workspaceId;
-      // Se sources non passati, carica dal DB del nodo (per esempio explain/fix di un nodo esistente)
-      let sources = body.sources;
-      if (!sources) {
-        const { getCustomNode } = await import('@/services/custom-nodes/index.js');
-        const node = await getCustomNode({ workspaceId: wsId, id });
-        if (node) {
-          sources = {
-            executor: node.sourceExecutor,
-            definition: node.sourceDefinition,
-            schema: node.sourceSchema,
-          };
-        }
-      }
-      const req: Parameters<typeof callAiAssist>[0] = {
-        action: body.action,
-        workspaceId: wsId,
-      };
-      if (body.prompt !== undefined) req.prompt = body.prompt;
-      if (sources !== undefined) req.sources = sources;
-      if (body.selectedText !== undefined) req.selectedText = body.selectedText;
-      if (body.diagnostic !== undefined) req.diagnostic = body.diagnostic;
-      // Contesto cross-surface: cosa l'utente stava facendo nelle ALTRE schede
-      // (es. il workflow editor) → Liara nell'editor nodi "ricorda". Fail-soft.
-      const { buildCrossSurfaceContext } = await import('@/services/ai-conversations/cross-surface-context.js');
-      const cross = buildCrossSurfaceContext(ctx.actorUserId, wsId);
-      if (cross) req.crossSurfaceContext = cross;
-      const result = await callAiAssist(req);
-      // Persisti l'interazione come conversazione 'node_editor' → le ALTRE schede
-      // (workflow editor) la vedono via cross-surface context. Accumula sulla
-      // conversazione node_editor più recente del workspace. Fail-soft: la
-      // persistenza NON deve mai rompere l'ai-assist.
+  app.post(
+    '/:id/ai-assist',
+    llmRateLimit('custom-nodes.ai-assist'),
+    zValidator('json', AiAssistBodySchema),
+    async (c) => {
       try {
-        const { conversationService } = await import('@/services/ai-conversations/index.js');
-        const recent = conversationService.listForUser(ctx.actorUserId, { workspaceId: wsId, surface: 'node_editor', limit: 1 });
-        const conv = recent[0] ?? conversationService.create({ userId: ctx.actorUserId, workspaceId: wsId, surface: 'node_editor' });
-        conversationService.appendMessage({ conversationId: conv.id, role: 'user', content: `[${body.action}] ${(body.prompt ?? id).slice(0, 500)}` });
-        if (result.text) conversationService.appendMessage({ conversationId: conv.id, role: 'assistant', content: result.text.slice(0, 2000) });
-      } catch { /* fail-soft */ }
-      return c.json(result);
-    } catch (err) {
-      const r = errorResponse(err);
-      return c.json(r.body, r.status as Parameters<typeof c.json>[1]);
-    }
-  });
+        const id = c.req.param('id');
+        const body = c.req.valid('json');
+        const { callAiAssist } = await import('@/services/custom-nodes/ai-assist.js');
+        const ctx = resolveCtx(c);
+        const wsId = ctx.workspaceId;
+        // Se sources non passati, carica dal DB del nodo (per esempio explain/fix di un nodo esistente)
+        let sources = body.sources;
+        if (!sources) {
+          const { getCustomNode } = await import('@/services/custom-nodes/index.js');
+          const node = await getCustomNode({ workspaceId: wsId, id });
+          if (node) {
+            sources = {
+              executor: node.sourceExecutor,
+              definition: node.sourceDefinition,
+              schema: node.sourceSchema,
+            };
+          }
+        }
+        const req: Parameters<typeof callAiAssist>[0] = {
+          action: body.action,
+          workspaceId: wsId,
+        };
+        if (body.prompt !== undefined) req.prompt = body.prompt;
+        if (sources !== undefined) req.sources = sources;
+        if (body.selectedText !== undefined) req.selectedText = body.selectedText;
+        if (body.diagnostic !== undefined) req.diagnostic = body.diagnostic;
+        // Contesto cross-surface: cosa l'utente stava facendo nelle ALTRE schede
+        // (es. il workflow editor) → Liara nell'editor nodi "ricorda". Fail-soft.
+        const { buildCrossSurfaceContext } =
+          await import('@/services/ai-conversations/cross-surface-context.js');
+        const cross = buildCrossSurfaceContext(ctx.actorUserId, wsId);
+        if (cross) req.crossSurfaceContext = cross;
+        const result = await callAiAssist(req);
+        // Persisti l'interazione come conversazione 'node_editor' → le ALTRE schede
+        // (workflow editor) la vedono via cross-surface context. Accumula sulla
+        // conversazione node_editor più recente del workspace. Fail-soft: la
+        // persistenza NON deve mai rompere l'ai-assist.
+        try {
+          const { conversationService } = await import('@/services/ai-conversations/index.js');
+          const recent = conversationService.listForUser(ctx.actorUserId, {
+            workspaceId: wsId,
+            surface: 'node_editor',
+            limit: 1,
+          });
+          const conv =
+            recent[0] ??
+            conversationService.create({
+              userId: ctx.actorUserId,
+              workspaceId: wsId,
+              surface: 'node_editor',
+            });
+          conversationService.appendMessage({
+            conversationId: conv.id,
+            role: 'user',
+            content: `[${body.action}] ${(body.prompt ?? id).slice(0, 500)}`,
+          });
+          if (result.text)
+            conversationService.appendMessage({
+              conversationId: conv.id,
+              role: 'assistant',
+              content: result.text.slice(0, 2000),
+            });
+        } catch {
+          /* fail-soft */
+        }
+        return c.json(result);
+      } catch (err) {
+        const r = errorResponse(err);
+        return c.json(r.body, r.status as Parameters<typeof c.json>[1]);
+      }
+    },
+  );
 
   /** POST /api/v1/custom-nodes/:id/publish-private — abilita il nodo nel runtime. */
   app.post('/:id/publish-private', async (c) => {
@@ -695,30 +760,38 @@ export function createCustomNodesRoutes(): Hono {
    *
    * Rate-limited insieme agli altri AI endpoint per fairness.
    */
-  app.post('/:id/inline-completion', llmRateLimit('custom-nodes.inline-completion'), zValidator('json', InlineCompletionBodySchema), async (c) => {
-    try {
-      const id = c.req.param('id') ?? '';
-      // Body invalido → 400 (zValidator, come l'originale). Il fail-soft "mai
-      // errore sull'IDE" resta sul catch: un'eccezione della chiamata LLM → 200
-      // con completion vuota (sotto), MAI un 500.
-      const body = c.req.valid('json');
-      const wsId = resolveCtx(c).workspaceId;
-      const { callInlineCompletion } = await import('@/services/custom-nodes/ai-inline.js');
-      const res = await callInlineCompletion({
-        workspaceId: wsId,
-        nodeId: id,
-        file: body.file.slice(0, 64),
-        contextBefore: body.contextBefore.slice(-4_000),
-        cursorLine: Math.max(1, Math.floor(body.cursorLine)),
-        cursorColumn: Math.max(1, Math.floor(body.cursorColumn)),
-      });
-      return c.json(res);
-    } catch (err) {
-      logger.warn({ err: (err as Error).message }, '[custom-nodes.inline-completion] error, fallback empty');
-      // MAI 500 sull'IDE — il ghost text è "best effort"
-      return c.json({ completion: '', tokensIn: 0, tokensOut: 0, fromCache: false });
-    }
-  });
+  app.post(
+    '/:id/inline-completion',
+    llmRateLimit('custom-nodes.inline-completion'),
+    zValidator('json', InlineCompletionBodySchema),
+    async (c) => {
+      try {
+        const id = c.req.param('id') ?? '';
+        // Body invalido → 400 (zValidator, come l'originale). Il fail-soft "mai
+        // errore sull'IDE" resta sul catch: un'eccezione della chiamata LLM → 200
+        // con completion vuota (sotto), MAI un 500.
+        const body = c.req.valid('json');
+        const wsId = resolveCtx(c).workspaceId;
+        const { callInlineCompletion } = await import('@/services/custom-nodes/ai-inline.js');
+        const res = await callInlineCompletion({
+          workspaceId: wsId,
+          nodeId: id,
+          file: body.file.slice(0, 64),
+          contextBefore: body.contextBefore.slice(-4_000),
+          cursorLine: Math.max(1, Math.floor(body.cursorLine)),
+          cursorColumn: Math.max(1, Math.floor(body.cursorColumn)),
+        });
+        return c.json(res);
+      } catch (err) {
+        logger.warn(
+          { err: (err as Error).message },
+          '[custom-nodes.inline-completion] error, fallback empty',
+        );
+        // MAI 500 sull'IDE — il ghost text è "best effort"
+        return c.json({ completion: '', tokensIn: 0, tokensOut: 0, fromCache: false });
+      }
+    },
+  );
 
   app.post('/:id/compile', zValidator('json', CompileBodySchema), async (c) => {
     try {
@@ -729,7 +802,10 @@ export function createCustomNodesRoutes(): Hono {
       if (!sources) {
         const node = await getCustomNode({ workspaceId: resolveCtx(c).workspaceId, id });
         if (!node) {
-          return c.json({ error: { code: 'NOT_FOUND', message: `Custom node ${id} not found`, status: 404 } }, 404);
+          return c.json(
+            { error: { code: 'NOT_FOUND', message: `Custom node ${id} not found`, status: 404 } },
+            404,
+          );
         }
         sources = {
           executor: node.sourceExecutor,

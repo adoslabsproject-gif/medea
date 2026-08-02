@@ -38,7 +38,8 @@ function gatewayBase(): string | undefined {
 export function resolveLlmEndpoint(explicit: string | undefined): string {
   const cleaned = (explicit ?? '').trim();
   if (cleaned && cleaned !== LEGACY_ENDPOINT_DEFAULT) return cleaned;
-  const envOverride = typeof process !== 'undefined' ? (process.env.MEDEA_LIARA_ENDPOINT ?? '').trim() : '';
+  const envOverride =
+    typeof process !== 'undefined' ? (process.env.MEDEA_LIARA_ENDPOINT ?? '').trim() : '';
   if (envOverride) return envOverride;
   const base = gatewayBase();
   if (base) return `${base}/chat/completions`;
@@ -88,11 +89,25 @@ export function extractJsonLoose(text: string): unknown {
   if (!text) throw new Error('empty');
   const fence = /```(?:json)?\s*([\s\S]*?)\s*```/i.exec(text);
   const candidate = fence?.[1]?.trim() ?? text.trim();
-  try { return JSON.parse(candidate); } catch { /* fall */ }
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    /* fall */
+  }
   const stripped = candidate.replace(/,(\s*[}\]])/g, '$1');
-  try { return JSON.parse(stripped); } catch { /* fall */ }
+  try {
+    return JSON.parse(stripped);
+  } catch {
+    /* fall */
+  }
   const obj = /\{[\s\S]*\}|\[[\s\S]*\]/.exec(candidate);
-  if (obj) { try { return JSON.parse(obj[0]); } catch { /* fall */ } }
+  if (obj) {
+    try {
+      return JSON.parse(obj[0]);
+    } catch {
+      /* fall */
+    }
+  }
   throw new Error('not parseable');
 }
 
@@ -106,8 +121,10 @@ export async function extractWithLlm(args: ExtractWithLlmArgs): Promise<ExtractW
   // gateway metered ESIGE il Bearer license, come la chat e gli agent_*).
   // Catena su `||`, NON `??`: un campo secret VUOTO salvato in config (o una
   // env vuota) deve cadere sulla license, non silenziare l'auth → 401.
-  const licenseKey = typeof process !== 'undefined' ? (process.env.MEDEA_LICENSE_KEY ?? '').trim() : '';
-  const envKey = typeof process !== 'undefined' ? (process.env.MEDEA_LIARA_API_KEY ?? '').trim() : '';
+  const licenseKey =
+    typeof process !== 'undefined' ? (process.env.MEDEA_LICENSE_KEY ?? '').trim() : '';
+  const envKey =
+    typeof process !== 'undefined' ? (process.env.MEDEA_LIARA_API_KEY ?? '').trim() : '';
   const apiKey = (args.apiKey ?? '').trim() || envKey || licenseKey;
   // Model: la sentinella legacy 'liara-distilled' (mai servita da vLLM) conta
   // come "non impostato" → campo omesso → il gateway inietta il suo default.
@@ -156,7 +173,7 @@ export async function extractWithLlm(args: ExtractWithLlmArgs): Promise<ExtractW
     throw new Error(`LLM extract failed: ${res.status.toString()} ${errText.slice(0, 300)}`);
   }
 
-  const data = await res.json() as {
+  const data = (await res.json()) as {
     choices?: { message?: { content?: string } }[];
     model?: string;
     usage?: { prompt_tokens?: number; completion_tokens?: number };
@@ -175,8 +192,13 @@ export async function extractWithLlm(args: ExtractWithLlmArgs): Promise<ExtractW
   // (stessa costante ~3.5 char/token di llm-chat.service / nodes-ai-agents).
   const apiIn = data.usage?.prompt_tokens;
   const apiOut = data.usage?.completion_tokens;
-  const fromApi = typeof apiIn === 'number' && Number.isFinite(apiIn) && apiIn >= 0
-    && typeof apiOut === 'number' && Number.isFinite(apiOut) && apiOut >= 0;
+  const fromApi =
+    typeof apiIn === 'number' &&
+    Number.isFinite(apiIn) &&
+    apiIn >= 0 &&
+    typeof apiOut === 'number' &&
+    Number.isFinite(apiOut) &&
+    apiOut >= 0;
   const estimate = (s: string): number => Math.ceil(s.length / 3.5);
   const usage = {
     input: fromApi ? apiIn : estimate(systemPrompt) + estimate(userPrompt),

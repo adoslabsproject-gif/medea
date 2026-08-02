@@ -28,23 +28,40 @@ import type { ToolResult } from '@/services/ai-scaffold/types.js';
 import { buildNodeCatalog } from '@/services/ai-scaffold/node-catalog.js';
 import { estimateComplexity } from '@/services/ai-scaffold/tools/complexity-gate.js';
 
-interface PlannedNode { id: string; defId: string; purpose: string }
-interface PlannedEdge { from: string; to: string; fromPort?: string }
+interface PlannedNode {
+  id: string;
+  defId: string;
+  purpose: string;
+}
+interface PlannedEdge {
+  from: string;
+  to: string;
+  fromPort?: string;
+}
 
 const MIN_REASONING_CHARS = 60;
 const MIN_PURPOSE_CHARS = 10;
 
-export function proposePlanHandler(session: ScaffoldSession, args: Record<string, unknown>): ToolResult {
+export function proposePlanHandler(
+  session: ScaffoldSession,
+  args: Record<string, unknown>,
+): ToolResult {
   // ── 1. Validate basic shape ─────────────────────────────────────────
   const nodesRaw = args.nodes;
   const edgesRaw = args.edges;
   const reasoning = coerceString(args.reasoning ?? '').trim();
 
   if (!Array.isArray(nodesRaw) || nodesRaw.length === 0) {
-    return { ok: false, error: 'propose_plan: campo "nodes" deve essere array non vuoto di {id,defId,purpose}.' };
+    return {
+      ok: false,
+      error: 'propose_plan: campo "nodes" deve essere array non vuoto di {id,defId,purpose}.',
+    };
   }
   if (!Array.isArray(edgesRaw)) {
-    return { ok: false, error: 'propose_plan: campo "edges" deve essere array (anche vuoto) di {from,to,fromPort?}.' };
+    return {
+      ok: false,
+      error: 'propose_plan: campo "edges" deve essere array (anche vuoto) di {from,to,fromPort?}.',
+    };
   }
   if (reasoning.length < MIN_REASONING_CHARS) {
     return {
@@ -69,20 +86,35 @@ export function proposePlanHandler(session: ScaffoldSession, args: Record<string
     const purpose = coerceString(obj.purpose ?? '').trim();
 
     if (!id || !/^[a-z][a-z0-9_]*$/i.test(id)) {
-      return { ok: false, error: `propose_plan: nodes[${idx.toString()}].id "${id}" non valido (richiesto snake_case alfanumerico, inizio con lettera).` };
+      return {
+        ok: false,
+        error: `propose_plan: nodes[${idx.toString()}].id "${id}" non valido (richiesto snake_case alfanumerico, inizio con lettera).`,
+      };
     }
     if (seenIds.has(id)) {
-      return { ok: false, error: `propose_plan: nodes[${idx.toString()}].id "${id}" duplicato. Ogni id deve essere univoco nel plan.` };
+      return {
+        ok: false,
+        error: `propose_plan: nodes[${idx.toString()}].id "${id}" duplicato. Ogni id deve essere univoco nel plan.`,
+      };
     }
     seenIds.add(id);
     if (!defId) {
-      return { ok: false, error: `propose_plan: nodes[${idx.toString()}].defId mancante per id="${id}".` };
+      return {
+        ok: false,
+        error: `propose_plan: nodes[${idx.toString()}].defId mancante per id="${id}".`,
+      };
     }
     if (!catalogIds.has(defId)) {
-      return { ok: false, error: `propose_plan: nodes[${idx.toString()}].defId "${defId}" non nel catalogo runtime. Chiama list_node_catalog() per vedere ${catalog.length.toString()} defId reali.` };
+      return {
+        ok: false,
+        error: `propose_plan: nodes[${idx.toString()}].defId "${defId}" non nel catalogo runtime. Chiama list_node_catalog() per vedere ${catalog.length.toString()} defId reali.`,
+      };
     }
     if (purpose.length < MIN_PURPOSE_CHARS) {
-      return { ok: false, error: `propose_plan: nodes[${idx.toString()}].purpose troppo corto per id="${id}" (richiesto >= ${MIN_PURPOSE_CHARS.toString()} chars). Spiega COSA fa questo nodo dentro al flow, non solo ripetere il defId.` };
+      return {
+        ok: false,
+        error: `propose_plan: nodes[${idx.toString()}].purpose troppo corto per id="${id}" (richiesto >= ${MIN_PURPOSE_CHARS.toString()} chars). Spiega COSA fa questo nodo dentro al flow, non solo ripetere il defId.`,
+      };
     }
     nodes.push({ id, defId, purpose });
   }
@@ -97,10 +129,16 @@ export function proposePlanHandler(session: ScaffoldSession, args: Record<string
     const from = coerceString(obj.from ?? '').trim();
     const to = coerceString(obj.to ?? '').trim();
     if (!seenIds.has(from)) {
-      return { ok: false, error: `propose_plan: edges[${idx.toString()}].from="${from}" non riferisce un node.id del plan. Aggiungi prima il nodo "${from}" alla lista nodes.` };
+      return {
+        ok: false,
+        error: `propose_plan: edges[${idx.toString()}].from="${from}" non riferisce un node.id del plan. Aggiungi prima il nodo "${from}" alla lista nodes.`,
+      };
     }
     if (!seenIds.has(to)) {
-      return { ok: false, error: `propose_plan: edges[${idx.toString()}].to="${to}" non riferisce un node.id del plan.` };
+      return {
+        ok: false,
+        error: `propose_plan: edges[${idx.toString()}].to="${to}" non riferisce un node.id del plan.`,
+      };
     }
     const edge: PlannedEdge = { from, to };
     if (typeof obj.fromPort === 'string' && obj.fromPort.length > 0) {
@@ -123,24 +161,38 @@ export function proposePlanHandler(session: ScaffoldSession, args: Record<string
       'ENTITÀ RILEVATE NEL TUO GOAL (devi rappresentarle TUTTE nel plan):',
     ];
     if (estimate.matched.actionVerbs.length > 0) {
-      lines.push(`  - Verbi/azioni (${estimate.matched.actionVerbs.length.toString()}): ${estimate.matched.actionVerbs.join(', ')}`);
+      lines.push(
+        `  - Verbi/azioni (${estimate.matched.actionVerbs.length.toString()}): ${estimate.matched.actionVerbs.join(', ')}`,
+      );
       lines.push(`    → 1 nodo per ognuno (agent_*/action_*/db_*/logic_*)`);
     }
     if (estimate.matched.integrations.length > 0) {
-      lines.push(`  - Integrazioni esterne (${estimate.matched.integrations.length.toString()}): ${estimate.matched.integrations.join(', ')}`);
+      lines.push(
+        `  - Integrazioni esterne (${estimate.matched.integrations.length.toString()}): ${estimate.matched.integrations.join(', ')}`,
+      );
       lines.push(`    → 1 nodo community_<vendor> o action_http per ognuna`);
     }
     if (estimate.matched.branches.length > 0) {
-      lines.push(`  - Segnali di branching (${estimate.matched.branches.length.toString()}): ${estimate.matched.branches.join(', ')}`);
+      lines.push(
+        `  - Segnali di branching (${estimate.matched.branches.length.toString()}): ${estimate.matched.branches.join(', ')}`,
+      );
       lines.push(`    → 1 logic_if o logic_switch per ogni decisione + 1 nodo per ogni ramo`);
     }
     if (estimate.matched.documentTypes.length > 0) {
-      lines.push(`  - Tipi documento elencati (${estimate.matched.documentTypes.length.toString()}): ${estimate.matched.documentTypes.join(', ')}`);
-      lines.push(`    → ognuno tipicamente diventa un ramo dello switch (1 nodo + relativi action)`);
+      lines.push(
+        `  - Tipi documento elencati (${estimate.matched.documentTypes.length.toString()}): ${estimate.matched.documentTypes.join(', ')}`,
+      );
+      lines.push(
+        `    → ognuno tipicamente diventa un ramo dello switch (1 nodo + relativi action)`,
+      );
     }
     lines.push('');
-    lines.push(`AZIONE: ricomponi il plan partendo dalla lista sopra. NON tagliare entità per stare sotto i limiti — il workflow incompleto NON soddisfa il goal utente. Esempio: se il goal dice "branching per tipo: contratto → X, fattura → Y, preventivo → Z", servono ALMENO logic_switch + 3 rami + 3 action di destinazione = 7+ nodi solo per quella sezione.`);
-    lines.push(`Ricomponi e richiama propose_plan con almeno ${estimate.minNodes.toString()} nodi.`);
+    lines.push(
+      `AZIONE: ricomponi il plan partendo dalla lista sopra. NON tagliare entità per stare sotto i limiti — il workflow incompleto NON soddisfa il goal utente. Esempio: se il goal dice "branching per tipo: contratto → X, fattura → Y, preventivo → Z", servono ALMENO logic_switch + 3 rami + 3 action di destinazione = 7+ nodi solo per quella sezione.`,
+    );
+    lines.push(
+      `Ricomponi e richiama propose_plan con almeno ${estimate.minNodes.toString()} nodi.`,
+    );
     return { ok: false, error: lines.join('\n') };
   }
 
@@ -150,7 +202,8 @@ export function proposePlanHandler(session: ScaffoldSession, args: Record<string
   if (roots.length === 0) {
     return {
       ok: false,
-      error: 'propose_plan: nessun nodo "root" (senza edge entrante). Tipicamente il primo nodo è un trigger (trigger_imap, trigger_webhook, trigger_cron, ecc.) che non ha input. Almeno UN nodo del plan deve essere root.',
+      error:
+        'propose_plan: nessun nodo "root" (senza edge entrante). Tipicamente il primo nodo è un trigger (trigger_imap, trigger_webhook, trigger_cron, ecc.) che non ha input. Almeno UN nodo del plan deve essere root.',
     };
   }
 
@@ -171,14 +224,32 @@ export function proposePlanHandler(session: ScaffoldSession, args: Record<string
   // di TUTTI i defId del plan in un colpo solo, embedded nel tool_result
   // accepted. Liara fa add_node corretto al PRIMO tentativo → 1 iter/nodo.
   const distinctDefIds = [...new Set(nodes.map((n) => n.defId))];
-  const fieldsByDefId: Record<string, { required: string[]; allFields: { key: string; type: string; required: boolean; options?: string[]; defaultValue?: string }[] }> = {};
+  const fieldsByDefId: Record<
+    string,
+    {
+      required: string[];
+      allFields: {
+        key: string;
+        type: string;
+        required: boolean;
+        options?: string[];
+        defaultValue?: string;
+      }[];
+    }
+  > = {};
   for (const defId of distinctDefIds) {
     const entry = catalog.find((c) => c.defId === defId);
     if (!entry) continue;
     fieldsByDefId[defId] = {
       required: entry.fields.filter((f) => f.required).map((f) => f.key),
       allFields: entry.fields.map((f) => {
-        const out: { key: string; type: string; required: boolean; options?: string[]; defaultValue?: string } = {
+        const out: {
+          key: string;
+          type: string;
+          required: boolean;
+          options?: string[];
+          defaultValue?: string;
+        } = {
           key: f.key,
           type: f.type,
           required: !!f.required,

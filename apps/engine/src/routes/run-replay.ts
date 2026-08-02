@@ -69,7 +69,11 @@ export function createRunReplayRoutes(eventBus: IEventBus): Hono {
     if (!originalRun) return c.json({ error: 'Original run not found' }, 404);
 
     let originalSteps: RunStep[] = [];
-    try { originalSteps = JSON.parse(originalRun.stepsJson) as RunStep[]; } catch { /* keep empty */ }
+    try {
+      originalSteps = JSON.parse(originalRun.stepsJson) as RunStep[];
+    } catch {
+      /* keep empty */
+    }
 
     // Compute the "ancestors" of fromNode — all nodes that the engine traversed
     // BEFORE reaching fromNode. We pin their outputs so the engine skips them.
@@ -79,7 +83,11 @@ export function createRunReplayRoutes(eventBus: IEventBus): Hono {
       if (step.nodeId === fromNode) break;
       if (step.status === 'success' && step.output) {
         let parsed: unknown = step.output;
-        try { parsed = JSON.parse(step.output); } catch { /* keep string */ }
+        try {
+          parsed = JSON.parse(step.output);
+        } catch {
+          /* keep string */
+        }
         pinnedOutputs.set(step.nodeId, parsed);
       }
     }
@@ -98,12 +106,21 @@ export function createRunReplayRoutes(eventBus: IEventBus): Hono {
           // Pin-edit: l'utente modifica i dati a monte e ri-esegue il nodo.
           // Solo chiavi che sono nodi REALI del workflow (una chiave fantasma
           // è un errore del client, non un soft-ignore: 400 esplicito).
-          if (body.pinnedOverrides === null || typeof body.pinnedOverrides !== 'object' || Array.isArray(body.pinnedOverrides)) {
+          if (
+            body.pinnedOverrides === null ||
+            typeof body.pinnedOverrides !== 'object' ||
+            Array.isArray(body.pinnedOverrides)
+          ) {
             return c.json({ error: '`pinnedOverrides` must be an object map nodeId→output' }, 400);
           }
-          for (const [nodeId, value] of Object.entries(body.pinnedOverrides as Record<string, unknown>)) {
+          for (const [nodeId, value] of Object.entries(
+            body.pinnedOverrides as Record<string, unknown>,
+          )) {
             if (!nodeIds.has(nodeId)) {
-              return c.json({ error: `pinnedOverrides: node "${nodeId}" not found in workflow` }, 400);
+              return c.json(
+                { error: `pinnedOverrides: node "${nodeId}" not found in workflow` },
+                400,
+              );
             }
             pinnedOutputs.set(nodeId, value); // override DOPO i pin storici: vince l'edit
             overriddenCount += 1;
@@ -142,5 +159,9 @@ export function createRunReplayRoutes(eventBus: IEventBus): Hono {
 }
 
 function safeParseJson(s: string): unknown {
-  try { return JSON.parse(s); } catch { return s; }
+  try {
+    return JSON.parse(s);
+  } catch {
+    return s;
+  }
 }

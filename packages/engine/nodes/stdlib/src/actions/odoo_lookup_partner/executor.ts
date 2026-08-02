@@ -36,8 +36,10 @@ export const odooLookupPartnerExecutor: NodeExecutor = async (rawConfig, _input,
   if (context.abortSignal?.aborted) throw new AbortedError();
 
   const auth: OdooAuth = {
-    baseUrl: cfg.baseUrl, database: cfg.database,
-    login: cfg.login, password: cfg.password,
+    baseUrl: cfg.baseUrl,
+    database: cfg.database,
+    login: cfg.login,
+    password: cfg.password,
   };
   const transport = makeSafeFetchOdooTransport(cfg.followRedirects);
   const signal = context.abortSignal;
@@ -47,14 +49,24 @@ export const odooLookupPartnerExecutor: NodeExecutor = async (rawConfig, _input,
   const uid = await authenticate(auth, transport, fetchOpts);
 
   const domain = buildDomain(cfg);
-  const returnFields = cfg.returnFields.split(',').map((f) => f.trim()).filter(Boolean);
+  const returnFields = cfg.returnFields
+    .split(',')
+    .map((f) => f.trim())
+    .filter(Boolean);
 
   const kwargs: Record<string, OdooValue> = { fields: returnFields, limit: 1 };
-  const found = await executeKw(auth, uid, {
-    model: 'res.partner', method: 'search_read',
-    positional: [domain as OdooValue],
-    kwargs,
-  }, transport, fetchOpts) as Record<string, OdooValue>[];
+  const found = (await executeKw(
+    auth,
+    uid,
+    {
+      model: 'res.partner',
+      method: 'search_read',
+      positional: [domain as OdooValue],
+      kwargs,
+    },
+    transport,
+    fetchOpts,
+  )) as Record<string, OdooValue>[];
 
   if (found.length > 0) {
     return {
@@ -72,15 +84,32 @@ export const odooLookupPartnerExecutor: NodeExecutor = async (rawConfig, _input,
 
   // ── create path ──
   const createValues = buildCreateValues(cfg);
-  const newId = await executeKw(auth, uid, {
-    model: 'res.partner', method: 'create', positional: [createValues], kwargs: {},
-  }, transport, fetchOpts) as number;
+  const newId = (await executeKw(
+    auth,
+    uid,
+    {
+      model: 'res.partner',
+      method: 'create',
+      positional: [createValues],
+      kwargs: {},
+    },
+    transport,
+    fetchOpts,
+  )) as number;
 
   // Re-read with returnFields so downstream sees the same shape as the hit case.
-  const created = await executeKw(auth, uid, {
-    model: 'res.partner', method: 'read',
-    positional: [[newId]], kwargs: { fields: returnFields },
-  }, transport, fetchOpts) as Record<string, OdooValue>[];
+  const created = (await executeKw(
+    auth,
+    uid,
+    {
+      model: 'res.partner',
+      method: 'read',
+      positional: [[newId]],
+      kwargs: { fields: returnFields },
+    },
+    transport,
+    fetchOpts,
+  )) as Record<string, OdooValue>[];
 
   return {
     output: { found: false, created: true, partner: created[0] ?? { id: newId }, partnerId: newId },
@@ -96,7 +125,7 @@ type Domain = readonly OdooValue[];
 
 export function buildDomain(cfg: OdooLookupPartnerConfig): Domain {
   const conds: OdooValue[] = [];
-  if (cfg.email)   conds.push(['email', '=ilike', cfg.email.trim()]);
+  if (cfg.email) conds.push(['email', '=ilike', cfg.email.trim()]);
   else if (cfg.vat) conds.push(['vat', '=', normaliseVat(cfg.vat)]);
   else if (cfg.phone) conds.push(['phone', '=', normalisePhone(cfg.phone)]);
   else if (cfg.name) conds.push(['name', 'ilike', cfg.name.trim()]);
@@ -108,7 +137,7 @@ export function buildDomain(cfg: OdooLookupPartnerConfig): Domain {
 function buildCreateValues(cfg: OdooLookupPartnerConfig): Record<string, OdooValue> {
   const v: Record<string, OdooValue> = {};
   if (cfg.name) v.name = cfg.name.trim();
-  else if (cfg.email) v.name = cfg.email.trim();   // schema enforces one of these
+  else if (cfg.email) v.name = cfg.email.trim(); // schema enforces one of these
   if (cfg.email) v.email = cfg.email.trim();
   if (cfg.phone) v.phone = cfg.phone.trim();
   if (cfg.vat) v.vat = normaliseVat(cfg.vat);

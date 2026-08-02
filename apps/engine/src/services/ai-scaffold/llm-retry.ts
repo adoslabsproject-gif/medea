@@ -29,13 +29,17 @@ export async function callLlmWithRetry(
       lastErr = e;
       const msg = e instanceof Error ? e.message : String(e);
       const m = /\b(429|5\d\d)\b/.exec(msg);
-      const isTransient = /\b(429|502|503|504|ECONNRESET|ENOTFOUND|ETIMEDOUT|fetch failed|network)\b/i.test(msg);
+      const isTransient =
+        /\b(429|502|503|504|ECONNRESET|ENOTFOUND|ETIMEDOUT|fetch failed|network)\b/i.test(msg);
       // 401/403/4xx-other are NOT retried.
       if (!isTransient || /\b40[134]\b/.test(msg)) throw e;
       if (attempt === opts.maxAttempts - 1) break;
       const code = m?.[1] ?? 'transient';
       const delay = Math.floor(opts.baseDelayMs * Math.pow(2, attempt) * (1 + Math.random() * 0.3));
-      logger.warn({ attempt: attempt + 1, max: opts.maxAttempts, delayMs: delay, code }, 'AiScaffold LLM transient error — retrying');
+      logger.warn(
+        { attempt: attempt + 1, max: opts.maxAttempts, delayMs: delay, code },
+        'AiScaffold LLM transient error — retrying',
+      );
       await new Promise<void>((r) => setTimeout(r, delay));
     }
   }

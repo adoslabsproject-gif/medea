@@ -31,7 +31,11 @@ export type CodeLang = 'python' | 'javascript' | 'ambiguous';
  */
 const PYTHON_SIGNALS: readonly { re: RegExp; weight: number; tag: string }[] = [
   // `import json, os` / `import sys` — in JS è `import x from '...'` (ha sempre `from`+stringa).
-  { re: /^[ \t]*import[ \t]+[A-Za-z_]\w*(?:[ \t]*,[ \t]*[A-Za-z_]\w*)*[ \t]*(?:#.*)?$/m, weight: 3, tag: 'py-import' },
+  {
+    re: /^[ \t]*import[ \t]+[A-Za-z_]\w*(?:[ \t]*,[ \t]*[A-Za-z_]\w*)*[ \t]*(?:#.*)?$/m,
+    weight: 3,
+    tag: 'py-import',
+  },
   { re: /^[ \t]*from[ \t]+[\w.]+[ \t]+import[ \t]+/m, weight: 3, tag: 'py-from-import' },
   // `def name(` — JS usa `function`.
   { re: /\bdef[ \t]+[A-Za-z_]\w*[ \t]*\(/, weight: 3, tag: 'py-def' },
@@ -52,7 +56,11 @@ const PYTHON_SIGNALS: readonly { re: RegExp; weight: number; tag: string }[] = [
   // dunder
   { re: /\b__\w+__\b/, weight: 1, tag: 'py-dunder' },
   // block colon: `:` a fine riga seguito da indentazione (if/for/while/def/with/try).
-  { re: /\b(?:if|for|while|with|try|except|else|class)\b[^\n]*:[ \t]*(?:#.*)?\n[ \t]+\S/, weight: 2, tag: 'py-block-colon' },
+  {
+    re: /\b(?:if|for|while|with|try|except|else|class)\b[^\n]*:[ \t]*(?:#.*)?\n[ \t]+\S/,
+    weight: 2,
+    tag: 'py-block-colon',
+  },
 ];
 
 /**
@@ -82,7 +90,11 @@ const JS_SIGNALS: readonly { re: RegExp; weight: number; tag: string }[] = [
   // optional chaining / nullish coalescing — solo JS moderno.
   { re: /\?\.[A-Za-z_$]|(?<![?])\?\?(?!\?)/, weight: 1, tag: 'js-optional-chain' },
   // `${...}` interpolation o backtick (debole).
-  { re: /(?:^|[^.\w])(?:Array|Object|Math|Number|Boolean)\.[A-Za-z]/, weight: 1, tag: 'js-global-method' },
+  {
+    re: /(?:^|[^.\w])(?:Array|Object|Math|Number|Boolean)\.[A-Za-z]/,
+    weight: 1,
+    tag: 'js-global-method',
+  },
 ];
 
 export interface CodeLangScore {

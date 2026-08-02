@@ -22,7 +22,7 @@ import { runNodeFixtures, type NodeFixture } from '../fixtures.js';
 import type { CommunityNodeDefinition } from '../index.js';
 
 async function importDefault<T>(path: string): Promise<T> {
-  const mod = await import(pathToFileURL(resolve(path)).href) as Record<string, unknown>;
+  const mod = (await import(pathToFileURL(resolve(path)).href)) as Record<string, unknown>;
   return (mod.default ?? mod) as T;
 }
 
@@ -30,9 +30,10 @@ async function loadFixtures(path: string): Promise<NodeFixture[]> {
   if (path.endsWith('.json')) {
     return JSON.parse(readFileSync(resolve(path), 'utf8')) as NodeFixture[];
   }
-  const mod = await import(pathToFileURL(resolve(path)).href) as Record<string, unknown>;
+  const mod = (await import(pathToFileURL(resolve(path)).href)) as Record<string, unknown>;
   const arr = (mod.default ?? mod.fixtures) as NodeFixture[] | undefined;
-  if (!Array.isArray(arr)) throw new Error(`Il file fixtures "${path}" deve esportare un array (default o "fixtures")`);
+  if (!Array.isArray(arr))
+    throw new Error(`Il file fixtures "${path}" deve esportare un array (default o "fixtures")`);
   return arr;
 }
 
@@ -53,7 +54,9 @@ async function main(): Promise<void> {
       console.log(`  ✗ ${r.name}\n      ${r.detail.replace(/\n/gu, '\n      ')}`);
     }
   }
-  console.log(`\n${String(summary.passed)}/${String(summary.total)} fixture passati${summary.failed > 0 ? ` — ${String(summary.failed)} falliti` : ''}`);
+  console.log(
+    `\n${String(summary.passed)}/${String(summary.total)} fixture passati${summary.failed > 0 ? ` — ${String(summary.failed)} falliti` : ''}`,
+  );
   process.exit(summary.failed > 0 ? 1 : 0);
 }
 

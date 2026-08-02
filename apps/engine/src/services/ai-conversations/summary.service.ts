@@ -52,8 +52,12 @@ export function estimateMsgTokens(m: Pick<AiMessageRow, 'content' | 'tokens'>): 
 
 /** Target (in token) del summary in funzione della soglia di contesto. Pura. */
 export function summaryTargetTokens(maxContextTokens?: number): number {
-  const base = maxContextTokens && maxContextTokens > 0 ? maxContextTokens : FALLBACK_CONTEXT_TOKENS;
-  return Math.min(SUMMARY_MAX_TOKENS, Math.max(SUMMARY_MIN_TOKENS, Math.floor(base * SUMMARY_FRACTION)));
+  const base =
+    maxContextTokens && maxContextTokens > 0 ? maxContextTokens : FALLBACK_CONTEXT_TOKENS;
+  return Math.min(
+    SUMMARY_MAX_TOKENS,
+    Math.max(SUMMARY_MIN_TOKENS, Math.floor(base * SUMMARY_FRACTION)),
+  );
 }
 
 /**
@@ -126,32 +130,31 @@ export async function trySummarize(
   // folda il prefisso più vecchio. keepBudget = frazione della soglia → dopo il
   // fold i vivi scendono ben sotto la soglia (no loop, no overflow).
   const all = conversationService.getRecentMessages(conversationId, 500);
-  const keepBudget = opts.maxContextTokens && opts.maxContextTokens > 0
-    ? Math.floor(opts.maxContextTokens * KEEP_RECENT_FRACTION)
-    : DEFAULT_KEEP_TOKENS;
+  const keepBudget =
+    opts.maxContextTokens && opts.maxContextTokens > 0
+      ? Math.floor(opts.maxContextTokens * KEEP_RECENT_FRACTION)
+      : DEFAULT_KEEP_TOKENS;
   const toFold = selectFoldablePrefix(all, keepBudget);
   if (toFold.length === 0) return { summarized: false, reason: 'not_enough_to_fold' };
 
-  const previousSummary = conv.summary
-    ? `Riassunto precedente:\n${conv.summary}\n\n`
-    : '';
-  const turnsBlock = toFold
-    .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
-    .join('\n\n');
+  const previousSummary = conv.summary ? `Riassunto precedente:\n${conv.summary}\n\n` : '';
+  const turnsBlock = toFold.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join('\n\n');
   const userPrompt = `${previousSummary}Nuovi turni da incorporare:\n\n${turnsBlock}\n\nScrivi ora il riassunto aggiornato e condensato.`;
 
   let summary: string;
   try {
     const baseUrlOrUndefined = baseUrl ?? undefined;
-    summary = (await dispatchLLMChat(
-      provider,
-      apiKey,
-      model,
-      buildSummarySystemPrompt(summaryTargetTokens(opts.maxContextTokens)),
-      userPrompt,
-      baseUrlOrUndefined,
-      [],
-    )).trim();
+    summary = (
+      await dispatchLLMChat(
+        provider,
+        apiKey,
+        model,
+        buildSummarySystemPrompt(summaryTargetTokens(opts.maxContextTokens)),
+        userPrompt,
+        baseUrlOrUndefined,
+        [],
+      )
+    ).trim();
   } catch (err) {
     logger.warn(
       { conversationId, err: err instanceof Error ? err.message : String(err) },
@@ -161,7 +164,10 @@ export async function trySummarize(
   }
 
   if (!summary || summary.length < 16) {
-    logger.warn({ conversationId, summaryLength: summary.length }, '[ai-conv.summary] empty/short summary, skip');
+    logger.warn(
+      { conversationId, summaryLength: summary.length },
+      '[ai-conv.summary] empty/short summary, skip',
+    );
     return { summarized: false, reason: 'empty' };
   }
 
@@ -171,7 +177,12 @@ export async function trySummarize(
 
   conversationService.applySummary(conversationId, summary, lastFoldedMessage.createdAt);
   logger.info(
-    { conversationId, foldedTurns: toFold.length, keptTurns: all.length - toFold.length, summaryLength: summary.length },
+    {
+      conversationId,
+      foldedTurns: toFold.length,
+      keptTurns: all.length - toFold.length,
+      summaryLength: summary.length,
+    },
     '[ai-conv.summary] applied',
   );
   return { summarized: true };

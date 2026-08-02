@@ -38,58 +38,122 @@ export const odooCreateLeadNodeDef: NodeDef = {
 
   configFields: [
     // Auth
-    { key: 'baseUrl', label: 'URL Odoo', type: 'text', required: true,
-      placeholder: 'https://miostudio.odoo.com' },
+    {
+      key: 'baseUrl',
+      label: 'URL Odoo',
+      type: 'text',
+      required: true,
+      placeholder: 'https://miostudio.odoo.com',
+    },
     { key: 'database', label: 'Database', type: 'text', required: true },
     { key: 'login', label: 'Login', type: 'text', required: true },
     { key: 'password', label: 'Password / API Key', type: 'secret', required: true },
 
     // Lead core
-    { key: 'name', label: 'Titolo opportunità', type: 'text', required: true,
+    {
+      key: 'name',
+      label: 'Titolo opportunità',
+      type: 'text',
+      required: true,
       placeholder: 'Mario Rossi - 730 2025',
-      help: 'Visualizzato come opportunità nella pipeline CRM. Required.' },
-    { key: 'emailFrom', label: 'Email cliente', type: 'text', required: false,
-      placeholder: 'mario@cliente.it' },
-    { key: 'phone', label: 'Telefono cliente', type: 'text', required: false },
-    { key: 'partnerName', label: 'Nome cliente', type: 'text', required: false,
-      placeholder: 'Mario Rossi',
-      help: 'Solo quando il partner non è già linkato via partnerId.' },
-    { key: 'description', label: 'Descrizione (testo / HTML)', type: 'textarea',
+      help: 'Visualizzato come opportunità nella pipeline CRM. Required.',
+    },
+    {
+      key: 'emailFrom',
+      label: 'Email cliente',
+      type: 'text',
       required: false,
-      help: 'Visualizzata sull\'opportunità. Accetta plain text o HTML basic.' },
+      placeholder: 'mario@cliente.it',
+    },
+    { key: 'phone', label: 'Telefono cliente', type: 'text', required: false },
+    {
+      key: 'partnerName',
+      label: 'Nome cliente',
+      type: 'text',
+      required: false,
+      placeholder: 'Mario Rossi',
+      help: 'Solo quando il partner non è già linkato via partnerId.',
+    },
+    {
+      key: 'description',
+      label: 'Descrizione (testo / HTML)',
+      type: 'textarea',
+      required: false,
+      help: "Visualizzata sull'opportunità. Accetta plain text o HTML basic.",
+    },
 
     // Linking
-    { key: 'partnerId', label: 'partner_id (linka esistente)', type: 'number',
+    {
+      key: 'partnerId',
+      label: 'partner_id (linka esistente)',
+      type: 'number',
       required: false,
-      help: 'Salta name/phone auto-link → usa direttamente il partner indicato.' },
+      help: 'Salta name/phone auto-link → usa direttamente il partner indicato.',
+    },
 
     // Tags
-    { key: 'tagNames', label: 'Tag (comma-separated)', type: 'text', required: false,
+    {
+      key: 'tagNames',
+      label: 'Tag (comma-separated)',
+      type: 'text',
+      required: false,
       placeholder: 'urgente,fiscale,2025',
-      help: 'Risolti via crm.tag name_create (idempotente: tag esistenti ' +
-        'riusati, nuovi creati). Comando many2many (6,0,[id,…]).' },
+      help:
+        'Risolti via crm.tag name_create (idempotente: tag esistenti ' +
+        'riusati, nuovi creati). Comando many2many (6,0,[id,…]).',
+    },
 
     // Assignment
-    { key: 'userId', label: 'Assegna a user_id', type: 'number', required: false,
-      help: 'Sales rep responsabile.' },
+    {
+      key: 'userId',
+      label: 'Assegna a user_id',
+      type: 'number',
+      required: false,
+      help: 'Sales rep responsabile.',
+    },
     { key: 'teamId', label: 'Sales team_id', type: 'number', required: false },
 
     // Commercial
-    { key: 'expectedRevenue', label: 'Expected revenue', type: 'number',
-      required: false, help: 'Decimale nell\'unità monetaria company.' },
-    { key: 'probability', label: 'Probability %', type: 'number', required: false,
-      help: 'Range 0-100. Vuoto = default Odoo (calcolato dallo stage).' },
+    {
+      key: 'expectedRevenue',
+      label: 'Expected revenue',
+      type: 'number',
+      required: false,
+      help: "Decimale nell'unità monetaria company.",
+    },
+    {
+      key: 'probability',
+      label: 'Probability %',
+      type: 'number',
+      required: false,
+      help: 'Range 0-100. Vuoto = default Odoo (calcolato dallo stage).',
+    },
 
     // Override
-    { key: 'model', label: 'Model (override)', type: 'text', required: false,
+    {
+      key: 'model',
+      label: 'Model (override)',
+      type: 'text',
+      required: false,
       defaultValue: 'crm.lead',
-      help: 'Cambiare solo se l\'installazione Odoo ha rinominato crm.lead.' },
+      help: "Cambiare solo se l'installazione Odoo ha rinominato crm.lead.",
+    },
 
     // Knobs
-    { key: 'timeoutMs', label: 'Timeout (ms)', type: 'number', required: false,
-      defaultValue: '60000' },
-    { key: 'followRedirects', label: 'Segui redirect', type: 'boolean',
-      required: false, defaultValue: 'true' },
+    {
+      key: 'timeoutMs',
+      label: 'Timeout (ms)',
+      type: 'number',
+      required: false,
+      defaultValue: '60000',
+    },
+    {
+      key: 'followRedirects',
+      label: 'Segui redirect',
+      type: 'boolean',
+      required: false,
+      defaultValue: 'true',
+    },
   ],
 
   vendor: 'flowforge',

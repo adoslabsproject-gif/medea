@@ -4,16 +4,33 @@
  * @vitest-environment node
  */
 import { describe, it, expect, vi } from 'vitest';
-import { makeEmailDispatcher, type EmailDispatcherDeps, type FailureEmailPayload } from './email.dispatcher.js';
+import {
+  makeEmailDispatcher,
+  type EmailDispatcherDeps,
+  type FailureEmailPayload,
+} from './email.dispatcher.js';
 import type { ErrorOutboxRecord } from '../repository.js';
 
 function rec(over: Partial<ErrorOutboxRecord> = {}): ErrorOutboxRecord {
   return {
-    id: 'o1', runId: 'r1', channel: 'email', workflowId: 'wf-1', tenantId: 't-1',
-    errorNodeId: 'n', errorMessage: 'boom', errorHash: 'h', durationMs: 5,
-    startedAt: '2026-06-19T10:00:00.000Z', triggerType: 'manual', triggerInputJson: null,
-    status: 'pending', attempts: 0, nextAttemptAt: '2026-06-19T10:00:00.000Z',
-    lastError: null, createdAt: '2026-06-19T10:00:00.000Z', updatedAt: '2026-06-19T10:00:00.000Z',
+    id: 'o1',
+    runId: 'r1',
+    channel: 'email',
+    workflowId: 'wf-1',
+    tenantId: 't-1',
+    errorNodeId: 'n',
+    errorMessage: 'boom',
+    errorHash: 'h',
+    durationMs: 5,
+    startedAt: '2026-06-19T10:00:00.000Z',
+    triggerType: 'manual',
+    triggerInputJson: null,
+    status: 'pending',
+    attempts: 0,
+    nextAttemptAt: '2026-06-19T10:00:00.000Z',
+    lastError: null,
+    createdAt: '2026-06-19T10:00:00.000Z',
+    updatedAt: '2026-06-19T10:00:00.000Z',
     ...over,
   };
 }
@@ -32,11 +49,17 @@ describe('email dispatcher', () => {
     const d = makeEmailDispatcher(deps({ sendViaPortal }));
     await expect(d(rec())).resolves.toBeUndefined();
     expect(sendViaPortal).toHaveBeenCalledTimes(1);
-    expect(sendViaPortal.mock.calls[0]![0]).toMatchObject({ to: 'ops@example.com', runId: 'r1', workflowId: 'wf-1' });
+    expect(sendViaPortal.mock.calls[0]![0]).toMatchObject({
+      to: 'ops@example.com',
+      runId: 'r1',
+      workflowId: 'wf-1',
+    });
   });
 
   it('sendViaPortal throwa → il dispatcher throwa (→ retry/dead nel worker)', async () => {
-    const d = makeEmailDispatcher(deps({ sendViaPortal: vi.fn(() => Promise.reject(new Error('portal 503'))) }));
+    const d = makeEmailDispatcher(
+      deps({ sendViaPortal: vi.fn(() => Promise.reject(new Error('portal 503'))) }),
+    );
     await expect(d(rec())).rejects.toThrow(/portal 503/);
   });
 
@@ -49,7 +72,9 @@ describe('email dispatcher', () => {
 
   it('onError senza emailTo → no-op', async () => {
     const sendViaPortal = vi.fn((_p: FailureEmailPayload) => Promise.resolve());
-    const d = makeEmailDispatcher(deps({ loadOnError: async () => ({ emailTo: undefined }), sendViaPortal }));
+    const d = makeEmailDispatcher(
+      deps({ loadOnError: async () => ({ emailTo: undefined }), sendViaPortal }),
+    );
     await d(rec());
     expect(sendViaPortal).not.toHaveBeenCalled();
   });

@@ -30,7 +30,8 @@ function makeLookup(overrides: Partial<WebhookOwnerLookup> = {}): WebhookOwnerLo
   return {
     byId: vi.fn(async (id: string) => ({ id, authMode: 'none' })),
     byCustomPath: vi.fn(async (path: string) =>
-      path === 'streammy/search' ? { id: 'wf_search', authMode: 'none' } : null),
+      path === 'streammy/search' ? { id: 'wf_search', authMode: 'none' } : null,
+    ),
     ...overrides,
   };
 }
@@ -51,7 +52,9 @@ afterEach(() => {
 
 describe('CONTRACT guarigione (il caso Streammy)', () => {
   it('link cablato col token MORTO → ref → risolve col token CORRENTE: il link torna vivo', async () => {
-    const nodes = [node({ html: `<a href="/webhooks/c/streammy/search/${deadToken('wf_search')}">Cerca</a>` })];
+    const nodes = [
+      node({ html: `<a href="/webhooks/c/streammy/search/${deadToken('wf_search')}">Cerca</a>` }),
+    ];
     const { nodes: out, converted } = await normalizeNodesWebhookLinks(nodes, makeLookup());
     expect(converted).toBe(1);
     const html = (out[0] as { config: { html: string } }).config.html;
@@ -65,14 +68,20 @@ describe('CONTRACT guarigione (il caso Streammy)', () => {
 
   it('link default-path con query string: ref sostituito chirurgicamente, query intatta', async () => {
     const url = `/webhooks/wf_detail/${deadToken('wf_detail')}?titleId={id}&slug={slug}`;
-    const { nodes: out, converted } = await normalizeNodesWebhookLinks([node({ url })], makeLookup());
+    const { nodes: out, converted } = await normalizeNodesWebhookLinks(
+      [node({ url })],
+      makeLookup(),
+    );
     expect(converted).toBe(1);
-    expect((out[0] as { config: { url: string } }).config.url)
-      .toBe('ref://wf/wf_detail/webhook?titleId={id}&slug={slug}');
+    expect((out[0] as { config: { url: string } }).config.url).toBe(
+      'ref://wf/wf_detail/webhook?titleId={id}&slug={slug}',
+    );
   });
 
   it('IDEMPOTENZA: la seconda passata è un no-op totale', async () => {
-    const nodes = [node({ html: `<a href="/webhooks/c/streammy/search/${deadToken('wf_search')}">x</a>` })];
+    const nodes = [
+      node({ html: `<a href="/webhooks/c/streammy/search/${deadToken('wf_search')}">x</a>` }),
+    ];
     const first = await normalizeNodesWebhookLinks(nodes, makeLookup());
     const second = await normalizeNodesWebhookLinks(first.nodes, makeLookup());
     expect(second.converted).toBe(0);
@@ -82,7 +91,9 @@ describe('CONTRACT guarigione (il caso Streammy)', () => {
   it('stesso target ripetuto N volte = 1 solo lookup, N conversioni', async () => {
     const lookup = makeLookup();
     const t = deadToken('wf_x');
-    const nodes = [node({ a: `/webhooks/wf_x/${t}`, b: `vedi /webhooks/wf_x/${t} e /webhooks/wf_x/${t}` })];
+    const nodes = [
+      node({ a: `/webhooks/wf_x/${t}`, b: `vedi /webhooks/wf_x/${t} e /webhooks/wf_x/${t}` }),
+    ];
     const { converted } = await normalizeNodesWebhookLinks(nodes, lookup);
     expect(converted).toBe(3);
     expect(vi.mocked(lookup.byId)).toHaveBeenCalledTimes(1);
@@ -91,9 +102,15 @@ describe('CONTRACT guarigione (il caso Streammy)', () => {
 
 describe('conservatività — nel dubbio NON toccare (con motivo registrato)', () => {
   it('authMode header-token: MAI riscritto (il segmento è il secret utente)', async () => {
-    const lookup = makeLookup({ byId: vi.fn(async (id: string) => ({ id, authMode: 'header-token' })) });
+    const lookup = makeLookup({
+      byId: vi.fn(async (id: string) => ({ id, authMode: 'header-token' })),
+    });
     const url = `/webhooks/wf_ht/${'a1b2'.repeat(8)}`;
-    const { nodes: out, converted, skipped } = await normalizeNodesWebhookLinks([node({ url })], lookup);
+    const {
+      nodes: out,
+      converted,
+      skipped,
+    } = await normalizeNodesWebhookLinks([node({ url })], lookup);
     expect(converted).toBe(0);
     expect((out[0] as { config: { url: string } }).config.url).toBe(url);
     expect(skipped.some((s) => s.includes('header-token'))).toBe(true);
@@ -118,11 +135,13 @@ describe('conservatività — nel dubbio NON toccare (con motivo registrato)', (
     const t = deadToken('wf_abs');
     const mine = `https://cucurachi.app.automazionezeli.com/webhooks/wf_abs/${t}`;
     const foreign = `https://altro-tenant.example.com/webhooks/wf_abs/${t}`;
-    const { nodes: out, converted, skipped } = await normalizeNodesWebhookLinks(
-      [node({ mine, foreign })],
-      makeLookup(),
-      { sameHosts: ['cucurachi.app.automazionezeli.com'] },
-    );
+    const {
+      nodes: out,
+      converted,
+      skipped,
+    } = await normalizeNodesWebhookLinks([node({ mine, foreign })], makeLookup(), {
+      sameHosts: ['cucurachi.app.automazionezeli.com'],
+    });
     expect(converted).toBe(1);
     const cfg = (out[0] as { config: { mine: string; foreign: string } }).config;
     expect(cfg.mine).toBe('ref://wf/wf_abs/webhook');
@@ -157,17 +176,21 @@ describe('bug-bounty — pattern ostili', () => {
 
   it('strutture annidate (array/oggetti/misti) convertite in profondità, tipi non-stringa preservati', async () => {
     const t = deadToken('wf_deep');
-    const nodes = [node({
-      lista: [{ url: `/webhooks/wf_deep/${t}` }, 42, null, true],
-      annidato: { livello2: { html: `x /webhooks/wf_deep/${t} y` } },
-      numero: 7,
-    })];
+    const nodes = [
+      node({
+        lista: [{ url: `/webhooks/wf_deep/${t}` }, 42, null, true],
+        annidato: { livello2: { html: `x /webhooks/wf_deep/${t} y` } },
+        numero: 7,
+      }),
+    ];
     const { nodes: out, converted } = await normalizeNodesWebhookLinks(nodes, makeLookup());
     expect(converted).toBe(2);
     const cfg = (out[0] as { config: Record<string, unknown> }).config;
     expect((cfg.lista as unknown[])[0]).toEqual({ url: 'ref://wf/wf_deep/webhook' });
     expect((cfg.lista as unknown[]).slice(1)).toEqual([42, null, true]);
-    expect((cfg.annidato as { livello2: { html: string } }).livello2.html).toBe('x ref://wf/wf_deep/webhook y');
+    expect((cfg.annidato as { livello2: { html: string } }).livello2.html).toBe(
+      'x ref://wf/wf_deep/webhook y',
+    );
     expect(cfg.numero).toBe(7);
   });
 
@@ -181,7 +204,7 @@ describe('bug-bounty — pattern ostili', () => {
   });
 });
 
-describe('defaultSameHosts — host del tenant dall\'env di provisioning', () => {
+describe("defaultSameHosts — host del tenant dall'env di provisioning", () => {
   const backup: Record<string, string | undefined> = {};
   beforeEach(() => {
     backup.MEDEA_PUBLIC_BASE_URL = process.env.MEDEA_PUBLIC_BASE_URL;
@@ -196,7 +219,8 @@ describe('defaultSameHosts — host del tenant dall\'env di provisioning', () =>
 
   it('unisce base URL + CORS origins, dedup, lowercase, ignora origin malformate', () => {
     process.env.MEDEA_PUBLIC_BASE_URL = 'https://Cucurachi.app.automazionezeli.com';
-    process.env.CORS_ORIGINS = 'https://cucurachi.app.automazionezeli.com, https://flowforge.automazionezeli.com, non-un-url,';
+    process.env.CORS_ORIGINS =
+      'https://cucurachi.app.automazionezeli.com, https://flowforge.automazionezeli.com, non-un-url,';
     const hosts = defaultSameHosts();
     expect(hosts).toContain('cucurachi.app.automazionezeli.com');
     expect(hosts).toContain('flowforge.automazionezeli.com');

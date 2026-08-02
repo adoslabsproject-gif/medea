@@ -17,7 +17,12 @@ export interface IRuleConfigRepository {
   /** Insert se mancante. */
   upsert(config: RuleConfig): Promise<void>;
   /** Patch in-place — merge sui campi presenti. Throw se config inesistente. */
-  patch(ruleId: string, tenantId: string, patch: RuleConfigPatch, updatedBy?: string): Promise<RuleConfig>;
+  patch(
+    ruleId: string,
+    tenantId: string,
+    patch: RuleConfigPatch,
+    updatedBy?: string,
+  ): Promise<RuleConfig>;
   /** Delete — torna ai default della rule. */
   delete(ruleId: string, tenantId: string): Promise<void>;
 }

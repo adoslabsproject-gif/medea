@@ -25,14 +25,30 @@ const m = vi.hoisted(() => {
   };
   class FakeAdapter {
     engine = 'sqlite';
-    async connect(d: unknown) { return mockFns.connect(d); }
-    async applyMigration(a: unknown) { return mockFns.applyMigration(a); }
-    async previewMigration(a: unknown) { return mockFns.previewMigration(a); }
-    async query(s: unknown) { return mockFns.query(s); }
-    async insert(t: string, r: unknown) { return mockFns.insert(t, r); }
-    async update(t: string, w: unknown, p: unknown) { return mockFns.updateRow(t, w, p); }
-    async delete(t: string, w: unknown) { return mockFns.deleteRow(t, w); }
-    async introspect() { return mockFns.introspect(); }
+    async connect(d: unknown) {
+      return mockFns.connect(d);
+    }
+    async applyMigration(a: unknown) {
+      return mockFns.applyMigration(a);
+    }
+    async previewMigration(a: unknown) {
+      return mockFns.previewMigration(a);
+    }
+    async query(s: unknown) {
+      return mockFns.query(s);
+    }
+    async insert(t: string, r: unknown) {
+      return mockFns.insert(t, r);
+    }
+    async update(t: string, w: unknown, p: unknown) {
+      return mockFns.updateRow(t, w, p);
+    }
+    async delete(t: string, w: unknown) {
+      return mockFns.deleteRow(t, w);
+    }
+    async introspect() {
+      return mockFns.introspect();
+    }
   }
   return { ...mockFns, FakeAdapter };
 });
@@ -51,7 +67,12 @@ vi.mock('@medea/engine-db-studio-duckdb', () => ({ DuckDbAdapter: m.FakeAdapter 
 import { DbStudioService } from '@/services/db-studio.service.js';
 import { createDbAgentContext, executeDbAgentTool, listDbAgentTools } from '../index.js';
 import type { DbAgentContext } from '../index.js';
-import { buildMigrationActions, planHasDestructive, SchemaPlanSchema, type PlanAction } from '../plan.js';
+import {
+  buildMigrationActions,
+  planHasDestructive,
+  SchemaPlanSchema,
+  type PlanAction,
+} from '../plan.js';
 
 const TENANT_A = 'tenant-a';
 const TENANT_B = 'tenant-b';
@@ -61,17 +82,36 @@ function seedTable(name = 'orders'): Table {
     id: name,
     name,
     columns: [
-      { id: `${name}.id`, name: 'id', type: 'integer', constraints: { primaryKey: true, nullable: false, unique: true } },
-      { id: `${name}.amount`, name: 'amount', type: 'decimal', constraints: { primaryKey: false, nullable: true, unique: false } },
+      {
+        id: `${name}.id`,
+        name: 'id',
+        type: 'integer',
+        constraints: { primaryKey: true, nullable: false, unique: true },
+      },
+      {
+        id: `${name}.amount`,
+        name: 'amount',
+        type: 'decimal',
+        constraints: { primaryKey: false, nullable: true, unique: false },
+      },
     ],
     indexes: [],
   };
 }
 
-function makeDb(svc: DbStudioService, tenantId: string, name: string, tables: Table[] = []): string {
+function makeDb(
+  svc: DbStudioService,
+  tenantId: string,
+  name: string,
+  tables: Table[] = [],
+): string {
   return svc.create({
-    tenantId, name, description: 'seed',
-    connection: { engine: 'sqlite', embedded: true }, tables, relations: [],
+    tenantId,
+    name,
+    description: 'seed',
+    connection: { engine: 'sqlite', embedded: true },
+    tables,
+    relations: [],
   }).id;
 }
 
@@ -99,22 +139,36 @@ beforeEach(() => {
 
 describe('plan: mapping verso MigrationAction + rilevazione distruttive', () => {
   const plan: PlanAction[] = [
-    { op: 'create_table', table: 'customers', columns: [{ name: 'id', type: 'integer', constraints: { primaryKey: true } }] },
+    {
+      op: 'create_table',
+      table: 'customers',
+      columns: [{ name: 'id', type: 'integer', constraints: { primaryKey: true } }],
+    },
     { op: 'add_index', table: 'customers', indexName: 'idx_id', columns: ['id'] },
-    { op: 'add_foreign_key', name: 'fk_o_c', fromTable: 'orders', fromColumn: 'cust_id', toTable: 'customers', toColumn: 'id' },
+    {
+      op: 'add_foreign_key',
+      name: 'fk_o_c',
+      fromTable: 'orders',
+      fromColumn: 'cust_id',
+      toTable: 'customers',
+      toColumn: 'id',
+    },
   ];
 
-  it('mappa 1:1 preservando l\'ordine e i kind del core', () => {
+  it("mappa 1:1 preservando l'ordine e i kind del core", () => {
     const actions = buildMigrationActions(plan);
     expect(actions.map((a) => a.kind)).toEqual(['create_table', 'add_index', 'add_relation']);
   });
 
   it('add_foreign_key → add_relation con onDelete default restrict', () => {
     const [rel] = buildMigrationActions([plan[2]!]);
-    expect(rel).toMatchObject({ kind: 'add_relation', relation: { name: 'fk_o_c', fromTable: 'orders', toTable: 'customers', onDelete: 'restrict' } });
+    expect(rel).toMatchObject({
+      kind: 'add_relation',
+      relation: { name: 'fk_o_c', fromTable: 'orders', toTable: 'customers', onDelete: 'restrict' },
+    });
   });
 
-  it('planHasDestructive: true solo se c\'è drop_table/drop_column', () => {
+  it("planHasDestructive: true solo se c'è drop_table/drop_column", () => {
     expect(planHasDestructive(plan)).toBe(false);
     expect(planHasDestructive([{ op: 'drop_table', table: 'x' }])).toBe(true);
     expect(planHasDestructive([{ op: 'drop_column', table: 'x', columnName: 'y' }])).toBe(true);
@@ -130,11 +184,13 @@ describe('plan: mapping verso MigrationAction + rilevazione distruttive', () => 
 // ───────────────────────── preview / apply ─────────────────────────
 
 describe('preview_schema_plan / apply_schema_plan', () => {
-  it('preview ritorna l\'SQL SENZA applicare (apply mai chiamato)', async () => {
+  it("preview ritorna l'SQL SENZA applicare (apply mai chiamato)", async () => {
     const dbA = makeDb(svc, TENANT_A, 'app', [seedTable()]);
     const r = (await executeDbAgentTool(ctxA, 'preview_schema_plan', {
       databaseId: dbA,
-      plan: [{ op: 'create_table', table: 'customers', columns: [{ name: 'id', type: 'integer' }] }],
+      plan: [
+        { op: 'create_table', table: 'customers', columns: [{ name: 'id', type: 'integer' }] },
+      ],
     })) as { ok: true; data: { sql: string; actions: number; destructive: boolean } };
     expect(r.ok).toBe(true);
     expect(r.data.sql).toContain('CREATE TABLE');
@@ -146,10 +202,17 @@ describe('preview_schema_plan / apply_schema_plan', () => {
   it('apply NON-distruttivo: una sola applyMigration con TUTTE le azioni (atomico)', async () => {
     const dbA = makeDb(svc, TENANT_A, 'app', [seedTable()]);
     const plan = [
-      { op: 'create_table', table: 'customers', columns: [{ name: 'id', type: 'integer', constraints: { primaryKey: true } }] },
+      {
+        op: 'create_table',
+        table: 'customers',
+        columns: [{ name: 'id', type: 'integer', constraints: { primaryKey: true } }],
+      },
       { op: 'add_index', table: 'customers', indexName: 'idx_id', columns: ['id'] },
     ];
-    const r = (await executeDbAgentTool(ctxA, 'apply_schema_plan', { databaseId: dbA, plan })) as { ok: true; data: { applied: number } };
+    const r = (await executeDbAgentTool(ctxA, 'apply_schema_plan', { databaseId: dbA, plan })) as {
+      ok: true;
+      data: { applied: number };
+    };
     expect(r.ok).toBe(true);
     expect(r.data.applied).toBe(2);
     expect(m.applyMigration).toHaveBeenCalledTimes(1);
@@ -183,8 +246,14 @@ describe('preview_schema_plan / apply_schema_plan', () => {
   it('🚨 preview/apply su DB di altro tenant → TENANT_SCOPE, niente preview né apply', async () => {
     const dbB = makeDb(svc, TENANT_B, 'secret', [seedTable()]);
     const plan = [{ op: 'create_table', table: 'x', columns: [{ name: 'id', type: 'integer' }] }];
-    const p = (await executeDbAgentTool(ctxA, 'preview_schema_plan', { databaseId: dbB, plan })) as { ok: false; code: string };
-    const ap = (await executeDbAgentTool(ctxA, 'apply_schema_plan', { databaseId: dbB, plan })) as { ok: false; code: string };
+    const p = (await executeDbAgentTool(ctxA, 'preview_schema_plan', {
+      databaseId: dbB,
+      plan,
+    })) as { ok: false; code: string };
+    const ap = (await executeDbAgentTool(ctxA, 'apply_schema_plan', { databaseId: dbB, plan })) as {
+      ok: false;
+      code: string;
+    };
     expect(p.code).toBe('TENANT_SCOPE');
     expect(ap.code).toBe('TENANT_SCOPE');
     expect(m.previewMigration).not.toHaveBeenCalled();
@@ -208,7 +277,11 @@ describe('parità dati: update_rows / delete_rows', () => {
   it('update_rows con where+patch+confirm → updateRow del service', async () => {
     const dbA = makeDb(svc, TENANT_A, 'app', [seedTable()]);
     const r = (await executeDbAgentTool(ctxA, 'update_rows', {
-      databaseId: dbA, table: 'orders', where: { id: 1 }, patch: { amount: 42 }, confirm: true,
+      databaseId: dbA,
+      table: 'orders',
+      where: { id: 1 },
+      patch: { amount: 42 },
+      confirm: true,
     })) as { ok: true; data: { result: unknown } };
     expect(r.ok).toBe(true);
     expect(m.updateRow).toHaveBeenCalledWith('orders', { id: 1 }, { amount: 42 });
@@ -216,28 +289,50 @@ describe('parità dati: update_rows / delete_rows', () => {
 
   it('update_rows where VUOTO → TOOL_VALIDATION (non aggiorna tutte le righe), service mai chiamato', async () => {
     const dbA = makeDb(svc, TENANT_A, 'app', [seedTable()]);
-    const r = (await executeDbAgentTool(ctxA, 'update_rows', { databaseId: dbA, table: 'orders', where: {}, patch: { amount: 1 }, confirm: true })) as { ok: false; code: string };
+    const r = (await executeDbAgentTool(ctxA, 'update_rows', {
+      databaseId: dbA,
+      table: 'orders',
+      where: {},
+      patch: { amount: 1 },
+      confirm: true,
+    })) as { ok: false; code: string };
     expect(r.code).toBe('TOOL_VALIDATION');
     expect(m.updateRow).not.toHaveBeenCalled();
   });
 
   it('update_rows confirm=false → CONFIRMATION_REQUIRED', async () => {
     const dbA = makeDb(svc, TENANT_A, 'app', [seedTable()]);
-    const r = (await executeDbAgentTool(ctxA, 'update_rows', { databaseId: dbA, table: 'orders', where: { id: 1 }, patch: { amount: 1 }, confirm: false })) as { ok: false; code: string };
+    const r = (await executeDbAgentTool(ctxA, 'update_rows', {
+      databaseId: dbA,
+      table: 'orders',
+      where: { id: 1 },
+      patch: { amount: 1 },
+      confirm: false,
+    })) as { ok: false; code: string };
     expect(r.code).toBe('CONFIRMATION_REQUIRED');
     expect(m.updateRow).not.toHaveBeenCalled();
   });
 
   it('delete_rows where VUOTO → TOOL_VALIDATION (no svuota-tabella), service mai chiamato', async () => {
     const dbA = makeDb(svc, TENANT_A, 'app', [seedTable()]);
-    const r = (await executeDbAgentTool(ctxA, 'delete_rows', { databaseId: dbA, table: 'orders', where: {}, confirm: true })) as { ok: false; code: string };
+    const r = (await executeDbAgentTool(ctxA, 'delete_rows', {
+      databaseId: dbA,
+      table: 'orders',
+      where: {},
+      confirm: true,
+    })) as { ok: false; code: string };
     expect(r.code).toBe('TOOL_VALIDATION');
     expect(m.deleteRow).not.toHaveBeenCalled();
   });
 
   it('delete_rows con where+confirm → deleteRow del service', async () => {
     const dbA = makeDb(svc, TENANT_A, 'app', [seedTable()]);
-    const r = await executeDbAgentTool(ctxA, 'delete_rows', { databaseId: dbA, table: 'orders', where: { id: 7 }, confirm: true });
+    const r = await executeDbAgentTool(ctxA, 'delete_rows', {
+      databaseId: dbA,
+      table: 'orders',
+      where: { id: 7 },
+      confirm: true,
+    });
     expect(r.ok).toBe(true);
     expect(m.deleteRow).toHaveBeenCalledWith('orders', { id: 7 });
   });
@@ -245,8 +340,19 @@ describe('parità dati: update_rows / delete_rows', () => {
   it('🔒 gate: update/delete con allowWrites=false → CONFIRMATION_REQUIRED, service MAI chiamato (anche con confirm:true)', async () => {
     const ctxRO = createDbAgentContext(TENANT_A, svc, false);
     const dbA = makeDb(svc, TENANT_A, 'app', [seedTable()]);
-    const u = (await executeDbAgentTool(ctxRO, 'update_rows', { databaseId: dbA, table: 'orders', where: { id: 1 }, patch: { amount: 1 }, confirm: true })) as { ok: false; code: string };
-    const d = (await executeDbAgentTool(ctxRO, 'delete_rows', { databaseId: dbA, table: 'orders', where: { id: 1 }, confirm: true })) as { ok: false; code: string };
+    const u = (await executeDbAgentTool(ctxRO, 'update_rows', {
+      databaseId: dbA,
+      table: 'orders',
+      where: { id: 1 },
+      patch: { amount: 1 },
+      confirm: true,
+    })) as { ok: false; code: string };
+    const d = (await executeDbAgentTool(ctxRO, 'delete_rows', {
+      databaseId: dbA,
+      table: 'orders',
+      where: { id: 1 },
+      confirm: true,
+    })) as { ok: false; code: string };
     expect(u.code).toBe('CONFIRMATION_REQUIRED');
     expect(d.code).toBe('CONFIRMATION_REQUIRED');
     expect(m.updateRow).not.toHaveBeenCalled();
@@ -255,8 +361,19 @@ describe('parità dati: update_rows / delete_rows', () => {
 
   it('🚨 update/delete su DB altrui → TENANT_SCOPE, service mai chiamato', async () => {
     const dbB = makeDb(svc, TENANT_B, 'secret', [seedTable()]);
-    const u = (await executeDbAgentTool(ctxA, 'update_rows', { databaseId: dbB, table: 'orders', where: { id: 1 }, patch: { amount: 1 }, confirm: true })) as { ok: false; code: string };
-    const d = (await executeDbAgentTool(ctxA, 'delete_rows', { databaseId: dbB, table: 'orders', where: { id: 1 }, confirm: true })) as { ok: false; code: string };
+    const u = (await executeDbAgentTool(ctxA, 'update_rows', {
+      databaseId: dbB,
+      table: 'orders',
+      where: { id: 1 },
+      patch: { amount: 1 },
+      confirm: true,
+    })) as { ok: false; code: string };
+    const d = (await executeDbAgentTool(ctxA, 'delete_rows', {
+      databaseId: dbB,
+      table: 'orders',
+      where: { id: 1 },
+      confirm: true,
+    })) as { ok: false; code: string };
     expect(u.code).toBe('TENANT_SCOPE');
     expect(d.code).toBe('TENANT_SCOPE');
     expect(m.updateRow).not.toHaveBeenCalled();
@@ -267,10 +384,15 @@ describe('parità dati: update_rows / delete_rows', () => {
 // ───────────────────────── run_select groupBy ─────────────────────────
 
 describe('run_select groupBy', () => {
-  it('passa groupBy nella spec all\'adapter', async () => {
+  it("passa groupBy nella spec all'adapter", async () => {
     const dbA = makeDb(svc, TENANT_A, 'app', [seedTable()]);
     m.query.mockResolvedValue([{ amount: 9.99 }]);
-    const r = await executeDbAgentTool(ctxA, 'run_select', { databaseId: dbA, table: 'orders', select: ['amount'], groupBy: ['amount'] });
+    const r = await executeDbAgentTool(ctxA, 'run_select', {
+      databaseId: dbA,
+      table: 'orders',
+      select: ['amount'],
+      groupBy: ['amount'],
+    });
     expect(r.ok).toBe(true);
     const spec = m.query.mock.calls[0]![0] as { groupBy?: string[] };
     expect(spec.groupBy).toEqual(['amount']);
@@ -282,7 +404,11 @@ describe('run_select groupBy', () => {
 describe('🔒 contratto: parameters JSON-schema coerente con lo zod (anti-drift)', () => {
   it('nessun tool dichiara tenantId; ogni "required" è tra le properties; properties non vuote', () => {
     for (const t of listDbAgentTools()) {
-      const params = t.parameters as { properties?: Record<string, unknown>; required?: string[]; additionalProperties?: boolean };
+      const params = t.parameters as {
+        properties?: Record<string, unknown>;
+        required?: string[];
+        additionalProperties?: boolean;
+      };
       const props = params.properties ?? {};
       const required = params.required ?? [];
       // 1. tenantId MAI esposto al modello

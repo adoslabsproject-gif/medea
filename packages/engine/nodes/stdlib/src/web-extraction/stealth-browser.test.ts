@@ -17,8 +17,12 @@ const { safeFetchWithRedirects } = await import('@medea/engine-safe-fetch');
 const mockedFetch = vi.mocked(safeFetchWithRedirects);
 
 const ctx = {
-  tenantId: 't1', workflowId: 'w1', runId: 'r1', nodeId: 'n1',
-  secrets: {}, llmProviders: {},
+  tenantId: 't1',
+  workflowId: 'w1',
+  runId: 'r1',
+  nodeId: 'n1',
+  secrets: {},
+  llmProviders: {},
 } as const;
 
 beforeEach(() => {
@@ -145,7 +149,8 @@ describe('stealthBrowserNode.executor', () => {
     if (!stealthBrowserNode.executor) throw new Error('executor mancante');
     await stealthBrowserNode.executor(
       { url: 'https://test.com', endpoint: 'https://config-endpoint.com' },
-      null, ctx,
+      null,
+      ctx,
     );
     const [calledUrl] = mockedFetch.mock.calls[0]!;
     expect(calledUrl).toBe('https://config-endpoint.com/stealth-render');
@@ -153,11 +158,17 @@ describe('stealthBrowserNode.executor', () => {
 
   it('apiKey → Authorization header Bearer', async () => {
     process.env.MEDEA_STEALTH_ENDPOINT = 'https://x.com';
-    mockedFetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) } as unknown as Response);
+    mockedFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    } as unknown as Response);
 
     if (!stealthBrowserNode.executor) throw new Error('executor mancante');
     await stealthBrowserNode.executor(
-      { url: 'https://test.com', apiKey: 'sk-secret-123' }, null, ctx,
+      { url: 'https://test.com', apiKey: 'sk-secret-123' },
+      null,
+      ctx,
     );
     const opts = mockedFetch.mock.calls[0]![1] as { headers: Record<string, string> };
     expect(opts.headers.Authorization).toBe('Bearer sk-secret-123');
@@ -165,15 +176,24 @@ describe('stealthBrowserNode.executor', () => {
 
   it('request body contiene fingerprint + stealthPlugins + URL', async () => {
     process.env.MEDEA_STEALTH_ENDPOINT = 'https://x.com';
-    mockedFetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) } as unknown as Response);
+    mockedFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    } as unknown as Response);
 
     if (!stealthBrowserNode.executor) throw new Error('executor mancante');
     await stealthBrowserNode.executor(
       { url: 'https://target.com', fingerprintPreset: 'mobile-safari-it' },
-      null, ctx,
+      null,
+      ctx,
     );
     const opts = mockedFetch.mock.calls[0]![1] as { body: string };
-    const body = JSON.parse(opts.body) as { url: string; fingerprint: { userAgent: string; viewport: { width: number } }; stealthPlugins: string[] };
+    const body = JSON.parse(opts.body) as {
+      url: string;
+      fingerprint: { userAgent: string; viewport: { width: number } };
+      stealthPlugins: string[];
+    };
     expect(body.url).toBe('https://target.com');
     expect(body.fingerprint.viewport.width).toBe(390);
     expect(body.fingerprint.userAgent).toContain('iPhone');
@@ -184,66 +204,98 @@ describe('stealthBrowserNode.executor', () => {
 
   it('scrollLazy + scrollSteps clampa a 30 max', async () => {
     process.env.MEDEA_STEALTH_ENDPOINT = 'https://x.com';
-    mockedFetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) } as unknown as Response);
+    mockedFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    } as unknown as Response);
 
     if (!stealthBrowserNode.executor) throw new Error('executor mancante');
     await stealthBrowserNode.executor(
-      { url: 'https://t.com', scrollLazy: true, scrollSteps: 9999 }, null, ctx,
+      { url: 'https://t.com', scrollLazy: true, scrollSteps: 9999 },
+      null,
+      ctx,
     );
-    const body = JSON.parse((mockedFetch.mock.calls[0]![1] as { body: string }).body) as { scrollLazy: { steps: number } };
+    const body = JSON.parse((mockedFetch.mock.calls[0]![1] as { body: string }).body) as {
+      scrollLazy: { steps: number };
+    };
     expect(body.scrollLazy.steps).toBe(30);
   });
 
   it('blockResources CSV → array trim/filter', async () => {
     process.env.MEDEA_STEALTH_ENDPOINT = 'https://x.com';
-    mockedFetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) } as unknown as Response);
+    mockedFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    } as unknown as Response);
 
     if (!stealthBrowserNode.executor) throw new Error('executor mancante');
     await stealthBrowserNode.executor(
-      { url: 'https://t.com', blockResources: ' image , font ,  , media' }, null, ctx,
+      { url: 'https://t.com', blockResources: ' image , font ,  , media' },
+      null,
+      ctx,
     );
-    const body = JSON.parse((mockedFetch.mock.calls[0]![1] as { body: string }).body) as { blockResources: string[] };
+    const body = JSON.parse((mockedFetch.mock.calls[0]![1] as { body: string }).body) as {
+      blockResources: string[];
+    };
     expect(body.blockResources).toEqual(['image', 'font', 'media']);
   });
 
   it('extraHeaders JSON string → parsed', async () => {
     process.env.MEDEA_STEALTH_ENDPOINT = 'https://x.com';
-    mockedFetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) } as unknown as Response);
+    mockedFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    } as unknown as Response);
 
     if (!stealthBrowserNode.executor) throw new Error('executor mancante');
     await stealthBrowserNode.executor(
-      { url: 'https://t.com', extraHeaders: '{"X-Custom":"v1"}' }, null, ctx,
+      { url: 'https://t.com', extraHeaders: '{"X-Custom":"v1"}' },
+      null,
+      ctx,
     );
-    const body = JSON.parse((mockedFetch.mock.calls[0]![1] as { body: string }).body) as { extraHeaders: Record<string, string> };
+    const body = JSON.parse((mockedFetch.mock.calls[0]![1] as { body: string }).body) as {
+      extraHeaders: Record<string, string>;
+    };
     expect(body.extraHeaders['X-Custom']).toBe('v1');
   });
 
   it('endpoint non-ok → throw con status + body slice', async () => {
     process.env.MEDEA_STEALTH_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({
-      ok: false, status: 502, text: async () => 'Bad Gateway internal',
+      ok: false,
+      status: 502,
+      text: async () => 'Bad Gateway internal',
     } as unknown as Response);
 
     if (!stealthBrowserNode.executor) throw new Error('executor mancante');
-    await expect(
-      stealthBrowserNode.executor({ url: 'https://t.com' }, null, ctx),
-    ).rejects.toThrow(/Stealth browser failed: 502.*Bad Gateway/);
+    await expect(stealthBrowserNode.executor({ url: 'https://t.com' }, null, ctx)).rejects.toThrow(
+      /Stealth browser failed: 502.*Bad Gateway/,
+    );
   });
 
   it('output ha tutti i campi attesi + fingerprintUsed esposto', async () => {
     process.env.MEDEA_STEALTH_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({
-        html: '<h1>OK</h1>', cookies: ['s=1'], finalUrl: 'https://t.com/final',
-        screenshotBase64: 'iVBOR...', harBase64: 'eyJ...',
+        html: '<h1>OK</h1>',
+        cookies: ['s=1'],
+        finalUrl: 'https://t.com/final',
+        screenshotBase64: 'iVBOR...',
+        harBase64: 'eyJ...',
         metrics: { ttfbMs: 120, loadMs: 800, scriptCount: 10, xhrCount: 5 },
       }),
     } as unknown as Response);
 
     if (!stealthBrowserNode.executor) throw new Error('executor mancante');
     const res = await stealthBrowserNode.executor(
-      { url: 'https://t.com', fingerprintPreset: 'desktop-chrome-en' }, null, ctx,
+      { url: 'https://t.com', fingerprintPreset: 'desktop-chrome-en' },
+      null,
+      ctx,
     );
     const out = res.output as Record<string, unknown>;
     expect(out.html).toBe('<h1>OK</h1>');

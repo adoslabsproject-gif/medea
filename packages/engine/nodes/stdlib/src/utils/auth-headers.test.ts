@@ -52,7 +52,11 @@ describe('buildAuthHeaders', () => {
     });
 
     it('honors custom header name', () => {
-      const r = buildAuthHeaders({ authMode: 'apikey-header', apiKeyHeaderName: 'X-Token', apiKeyValue: 'k123' });
+      const r = buildAuthHeaders({
+        authMode: 'apikey-header',
+        apiKeyHeaderName: 'X-Token',
+        apiKeyValue: 'k123',
+      });
       expect(r['X-Token']).toBe('k123');
     });
 
@@ -68,7 +72,11 @@ describe('buildAuthHeaders', () => {
     });
 
     it('honors custom header name', () => {
-      const r = buildAuthHeaders({ authMode: 'custom', customAuthHeaderName: 'X-Sig', customAuthHeaderValue: 'abc' });
+      const r = buildAuthHeaders({
+        authMode: 'custom',
+        customAuthHeaderName: 'X-Sig',
+        customAuthHeaderValue: 'abc',
+      });
       expect(r['X-Sig']).toBe('abc');
     });
 

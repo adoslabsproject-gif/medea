@@ -90,8 +90,12 @@ export function resolveOutputDims(
   formH: number,
 ): Dims {
   if (
-    typeof srcW === 'number' && typeof srcH === 'number' &&
-    Number.isFinite(srcW) && Number.isFinite(srcH) && srcW > 0 && srcH > 0
+    typeof srcW === 'number' &&
+    typeof srcH === 'number' &&
+    Number.isFinite(srcW) &&
+    Number.isFinite(srcH) &&
+    srcW > 0 &&
+    srcH > 0
   ) {
     return fitToModel(srcW, srcH);
   }

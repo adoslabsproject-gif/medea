@@ -44,7 +44,8 @@ export type WebhookRef = z.infer<typeof WebhookRefSchema>;
  * al primo carattere fuori charset (quote, spazio, `?`, `#`, `<` …) così un
  * ref dentro HTML/JSON/query-string viene catturato senza mangiarsi il resto.
  */
-const REF_SCAN_RE = /ref:\/\/wf\/([A-Za-z0-9][A-Za-z0-9_-]{0,63})\/webhook(?:\/c\/((?:[A-Za-z0-9._~-]+\/)*[A-Za-z0-9._~-]+))?/gu;
+const REF_SCAN_RE =
+  /ref:\/\/wf\/([A-Za-z0-9][A-Za-z0-9_-]{0,63})\/webhook(?:\/c\/((?:[A-Za-z0-9._~-]+\/)*[A-Za-z0-9._~-]+))?/gu;
 
 /** Serializza un ref validato nella forma canonica `ref://…`. */
 export function buildWebhookRef(ref: WebhookRef): string {
@@ -62,9 +63,8 @@ export function parseWebhookRef(text: string): WebhookRef | null {
   const re = new RegExp(`^${REF_SCAN_RE.source}$`, 'u');
   const m = re.exec(text);
   if (!m) return null;
-  const candidate: WebhookRef = m[2] !== undefined
-    ? { workflowId: m[1]!, customPath: m[2] }
-    : { workflowId: m[1]! };
+  const candidate: WebhookRef =
+    m[2] !== undefined ? { workflowId: m[1]!, customPath: m[2] } : { workflowId: m[1]! };
   const parsed = WebhookRefSchema.safeParse(candidate);
   return parsed.success ? parsed.data : null;
 }
@@ -92,7 +92,8 @@ export function buildWebhookPathFromRef(ref: WebhookRef): string | null {
 export function resolveWebhookRefs(text: string): string {
   if (!text.includes('ref://wf/')) return text;
   return text.replace(REF_SCAN_RE, (whole, workflowId: string, customPath: string | undefined) => {
-    const candidate: WebhookRef = customPath !== undefined ? { workflowId, customPath } : { workflowId };
+    const candidate: WebhookRef =
+      customPath !== undefined ? { workflowId, customPath } : { workflowId };
     const parsed = WebhookRefSchema.safeParse(candidate);
     if (!parsed.success) return whole;
     const path = buildWebhookPathFromRef(parsed.data);

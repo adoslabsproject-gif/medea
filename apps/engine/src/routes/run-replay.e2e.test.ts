@@ -41,7 +41,9 @@ async function logLines(name: string): Promise<number> {
   try {
     const txt = await readFile(join(tenantFiles, name), 'utf8');
     return txt.split('\n').filter((l) => l.length > 0).length;
-  } catch { return 0; }
+  } catch {
+    return 0;
+  }
 }
 
 async function replayHttp(qs: string, body?: unknown): Promise<Response> {
@@ -78,7 +80,10 @@ beforeAll(async () => {
   // 'n2-runn2-run' = 1 sola "riga" e il conteggio mente (bug catturato in
   // prima stesura di QUESTO test — la misura era rotta, non il sistema).
   const fw = (n: string) => ({
-    id: n, defId: 'action_file_write', x: 0, y: 0,
+    id: n,
+    defId: 'action_file_write',
+    x: 0,
+    y: 0,
     config: { path: `${n}.log`, content: `${n}-run\n`, mode: 'append' },
   });
   const wf = await workflows.create({
@@ -86,12 +91,19 @@ beforeAll(async () => {
     enabled: true,
     tenantId: 'default',
     nodes: [fw('n1'), fw('n2'), fw('n3')],
-    edges: [{ from: 'n1', to: 'n2' }, { from: 'n2', to: 'n3' }],
+    edges: [
+      { from: 'n1', to: 'n2' },
+      { from: 'n2', to: 'n3' },
+    ],
   });
   wfId = wf.id;
 
   // Semina la run storica ESEGUENDO davvero (RunService reale → engine reale).
-  const seeded = await runService.execute({ workflowId: wfId, tenantId: 'default', triggerInput: { seed: true } });
+  const seeded = await runService.execute({
+    workflowId: wfId,
+    tenantId: 'default',
+    triggerInput: { seed: true },
+  });
   seedRunId = seeded.runId;
 }, 30_000);
 
@@ -113,13 +125,15 @@ describe('🚨🚨 E2E full-request-path — replay parziale attraverso TUTTO lo
       pinnedOverrides: { n1: { tag: 'EDITED-BY-USER' } },
     });
     expect(res.status).toBe(200);
-    const json = await res.json() as {
+    const json = (await res.json()) as {
       run: { status: string; steps: { nodeId: string; input?: string }[] };
-      pinnedCount: number; overriddenCount: number; stoppedAfterNode?: string;
+      pinnedCount: number;
+      overriddenCount: number;
+      stoppedAfterNode?: string;
     };
     expect(json.run.status).toBe('success');
     expect(json.stoppedAfterNode).toBe('n2');
-    expect(json.pinnedCount).toBe(1);     // n1 (storico, poi sovrascritto dall'edit)
+    expect(json.pinnedCount).toBe(1); // n1 (storico, poi sovrascritto dall'edit)
     expect(json.overriddenCount).toBe(1);
 
     // PROVA FISICA: solo n2 è girato davvero.
@@ -150,9 +164,13 @@ describe('🚨🚨 E2E full-request-path — replay parziale attraverso TUTTO lo
 
   it('🚨 il replay è una RUN PERSISTITA reale (status success in tabella runs)', async () => {
     const res = await replayHttp('?fromNode=n3&toNode=n3');
-    const json = await res.json() as { run: { runId: string } };
+    const json = (await res.json()) as { run: { runId: string } };
     // riusa la stessa surface reale: la lista run del workflow contiene il replay
-    const list = await runService.list(wfId, 'default') as { id: string; status: string; triggerType?: string }[];
+    const list = (await runService.list(wfId, 'default')) as {
+      id: string;
+      status: string;
+      triggerType?: string;
+    }[];
     const replayRow = list.find((r) => r.id === json.run.runId);
     expect(replayRow).toBeDefined();
     expect(replayRow!.status).toBe('success');

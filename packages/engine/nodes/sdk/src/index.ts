@@ -24,7 +24,11 @@ import type { NodeModule, NodeExecutor } from '@medea/engine-nodes-stdlib';
 export const NodeManifestSchema = z.object({
   name: z.string().regex(/^@?[a-z0-9-]+\/[a-z0-9-]+$/),
   version: z.string().regex(/^\d+\.\d+\.\d+(-[\w.-]+)?$/),
-  author: z.object({ name: z.string(), email: z.string().email().optional(), url: z.string().url().optional() }),
+  author: z.object({
+    name: z.string(),
+    email: z.string().email().optional(),
+    url: z.string().url().optional(),
+  }),
   license: z.string().default('MIT'),
   flowforgeApiVersion: z.string().regex(/^\d+\.\d+$/),
   nodes: z.array(z.string()),

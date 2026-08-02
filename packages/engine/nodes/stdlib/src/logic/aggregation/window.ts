@@ -21,11 +21,19 @@ function toEpochMs(raw: unknown): number | null {
   return null;
 }
 
-const CALENDAR_GRANULARITIES = new Set<CalendarGranularity>(['minute', 'hour', 'day', 'week', 'month']);
+const CALENDAR_GRANULARITIES = new Set<CalendarGranularity>([
+  'minute',
+  'hour',
+  'day',
+  'week',
+  'month',
+]);
 
 function resolveGranularity(raw: unknown): 'fixed' | CalendarGranularity {
   const g = typeof raw === 'string' ? raw.trim() : '';
-  return CALENDAR_GRANULARITIES.has(g as CalendarGranularity) ? (g as CalendarGranularity) : 'fixed';
+  return CALENDAR_GRANULARITIES.has(g as CalendarGranularity)
+    ? (g as CalendarGranularity)
+    : 'fixed';
 }
 
 const executor: NodeExecutor = async (config, input) => {
@@ -44,10 +52,14 @@ const executor: NodeExecutor = async (config, input) => {
   const undated: unknown[] = [];
   for (const item of items) {
     const ts = toEpochMs(getField(item, tsField));
-    if (ts === null) { undated.push(item); continue; }
-    const bucket = granularity === 'fixed'
-      ? Math.floor(ts / windowMs) * windowMs
-      : bucketStart(ts, granularity, timeZone, weekStartsMonday);
+    if (ts === null) {
+      undated.push(item);
+      continue;
+    }
+    const bucket =
+      granularity === 'fixed'
+        ? Math.floor(ts / windowMs) * windowMs
+        : bucketStart(ts, granularity, timeZone, weekStartsMonday);
     const key = new Date(bucket).toISOString();
     (windows[key] ??= []).push(item);
   }
@@ -81,7 +93,7 @@ export const windowNode: NodeModule = {
       'produce i bucket — la primitiva per dashboard time-series, KPI rolling, analytics per cohort temporali, ' +
       'alerting su anomalie rispetto a baseline storica. ' +
       'Due modalità di finestratura: ' +
-      '(1) FISSA (default) — finestre di durata costante in secondi (windowSeconds), allineate all\'epoch UTC: ' +
+      "(1) FISSA (default) — finestre di durata costante in secondi (windowSeconds), allineate all'epoch UTC: " +
       'semplice e deterministica per qualsiasi durata (es. 300s = 5 minuti, 3600s = 1 ora); ' +
       '(2) CALENDARIO timezone-aware — granularity minute/hour/day/week/month allineata ai confini CIVILI nella ' +
       'timezone scelta (default UTC, es. "Europe/Rome"): day = mezzanotte locale, week = lunedì ISO 8601 (o ' +
@@ -156,7 +168,7 @@ export const windowNode: NodeModule = {
         type: 'number',
         required: false,
         defaultValue: '100000',
-        help: 'Hard cap anti-OOM sul numero di item processati. Se l\'input supera questa soglia viene troncato e finestra solo i primi N (warning emesso). Default 100k, tetto 1M.',
+        help: "Hard cap anti-OOM sul numero di item processati. Se l'input supera questa soglia viene troncato e finestra solo i primi N (warning emesso). Default 100k, tetto 1M.",
       },
     ],
     vendor: 'flowforge',

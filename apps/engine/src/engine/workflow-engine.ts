@@ -22,8 +22,19 @@
 import { coerceString } from '@/lib/coerce.js';
 import { nanoid } from 'nanoid';
 import type { CanvasNode, Edge, Workflow, RunStep } from '@medea/engine-core-schema';
-import { classifyNodeVersionCompat, nodeVersionDrift, isBreakingNodeVersionDrift } from '@medea/engine-core-schema';
-import { stdlibNodes, findStdlibNode, NodeError, categoryOf, type NodeErrorCategory, type NodeModule } from '@medea/engine-nodes-stdlib';
+import {
+  classifyNodeVersionCompat,
+  nodeVersionDrift,
+  isBreakingNodeVersionDrift,
+} from '@medea/engine-core-schema';
+import {
+  stdlibNodes,
+  findStdlibNode,
+  NodeError,
+  categoryOf,
+  type NodeErrorCategory,
+  type NodeModule,
+} from '@medea/engine-nodes-stdlib';
 import { getInstalledByDefId } from '@/services/community-nodes.service.js';
 import { loadCustomNodeForRun } from '@/services/custom-nodes/runtime-loader.js';
 import { loadConfig } from '@/config.js';
@@ -64,7 +75,11 @@ function resolveCustomNodeModule(defId: string): NodeModule | undefined {
   return {
     def,
     executor: () => {
-      return Promise.reject(new Error('Custom node executor must be dispatched via resolveServerExecutor — direct module.executor call is a bug.'));
+      return Promise.reject(
+        new Error(
+          'Custom node executor must be dispatched via resolveServerExecutor — direct module.executor call is a bug.',
+        ),
+      );
     },
   };
 }
@@ -79,7 +94,11 @@ function resolveCommunityNodeModule(defId: string): NodeModule | undefined {
   return {
     def: entry.def,
     executor: () => {
-      return Promise.reject(new Error('Community node executor must be dispatched via resolveServerExecutor — direct module.executor call is a bug.'));
+      return Promise.reject(
+        new Error(
+          'Community node executor must be dispatched via resolveServerExecutor — direct module.executor call is a bug.',
+        ),
+      );
     },
   };
 }
@@ -320,7 +339,9 @@ function buildAliasMap(nodes: readonly CanvasNode[]): Map<string, string> {
     if (!n.name) continue;
     const existing = seen.get(n.name);
     if (existing !== undefined && existing !== n.id) {
-      throw new Error(`Duplicate node alias "${n.name}" — used by nodes ${existing} and ${n.id}. Rename one.`);
+      throw new Error(
+        `Duplicate node alias "${n.name}" — used by nodes ${existing} and ${n.id}. Rename one.`,
+      );
     }
     seen.set(n.name, n.id);
     out.set(n.id, n.name);
@@ -348,9 +369,7 @@ function findRoots(workflow: Workflow, adj: AdjacencyMap): CanvasNode[] {
   // I sticky frame (defId='note') sono UI-only, non sono entry-point del flow.
   // Senza questo filter, un sticky senza edge incoming verrebbe trattato come
   // root dell'engine → tentativo di esecuzione → "Unknown node def: note".
-  return workflow.nodes.filter((node) =>
-    node.defId !== 'note' && !adj.incoming.has(node.id),
-  );
+  return workflow.nodes.filter((node) => node.defId !== 'note' && !adj.incoming.has(node.id));
 }
 
 /**
@@ -367,9 +386,11 @@ function findRoots(workflow: Workflow, adj: AdjacencyMap): CanvasNode[] {
  * port). The `branching` flag now makes the intent explicit.
  */
 function nodeIsBranchable(module: NodeModule): boolean {
-  return module.def.branching === true
-    && Array.isArray(module.def.outputs)
-    && module.def.outputs.length > 0;
+  return (
+    module.def.branching === true &&
+    Array.isArray(module.def.outputs) &&
+    module.def.outputs.length > 0
+  );
 }
 
 /**
@@ -415,7 +436,9 @@ export function shouldSoftFail(
 function safeStringify(value: unknown): string {
   try {
     const s = typeof value === 'string' ? value : JSON.stringify(value);
-    return s.length > 32_000 ? `${s.slice(0, 32_000)}…[truncated ${(s.length - 32_000).toString()} bytes]` : s;
+    return s.length > 32_000
+      ? `${s.slice(0, 32_000)}…[truncated ${(s.length - 32_000).toString()} bytes]`
+      : s;
   } catch {
     return '<unserializable>';
   }
@@ -446,8 +469,8 @@ export class WorkflowEngine implements INodeExecutor {
     this.llmProviders = options.llmProviders ?? noopLlmProviderRegistry;
     this.globalVariables = options.globalVariables ?? noopGlobalVariableRegistry;
     this.binaryStore = options.binaryStore ?? noopBinaryStore;
-    this.checkpointEveryNodes = options.checkpointEveryNodes
-      ?? Number(process.env.MEDEA_CHECKPOINT_EVERY_NODES ?? 5);
+    this.checkpointEveryNodes =
+      options.checkpointEveryNodes ?? Number(process.env.MEDEA_CHECKPOINT_EVERY_NODES ?? 5);
     this.dispatchStrategies = options.dispatchStrategies ?? DEFAULT_DISPATCH_STRATEGIES;
     // IterationCoordinator delegates node execution back to this engine
     // via the INodeExecutor interface — we are both client and provider
@@ -457,10 +480,12 @@ export class WorkflowEngine implements INodeExecutor {
 
   /** Resolve a NodeModule by defId. Public — used by IterationCoordinator. */
   resolveNodeModule(defId: string): NodeModule | undefined {
-    return this.nodeRegistry.find((n) => n.def.id === defId)
-      ?? findStdlibNode(defId)
-      ?? resolveCustomNodeModule(defId)
-      ?? resolveCommunityNodeModule(defId);
+    return (
+      this.nodeRegistry.find((n) => n.def.id === defId) ??
+      findStdlibNode(defId) ??
+      resolveCustomNodeModule(defId) ??
+      resolveCommunityNodeModule(defId)
+    );
   }
 
   /**
@@ -542,8 +567,24 @@ export class WorkflowEngine implements INodeExecutor {
    * trigger pass-through, executor lookup, retry policy, step assembly,
    * and event emission.
    */
-  async executeNode(args: ExecuteNodeArgs): Promise<{ output: unknown; chosenBranch: string | undefined; step: RunStep; items?: ExecutionItem[]; quotaError?: QuotaPauseError }> {
-    const { node, module, carriedInput, outputsById, pinnedOutputs, tenantId, runId, workflowId, loop } = args;
+  async executeNode(args: ExecuteNodeArgs): Promise<{
+    output: unknown;
+    chosenBranch: string | undefined;
+    step: RunStep;
+    items?: ExecutionItem[];
+    quotaError?: QuotaPauseError;
+  }> {
+    const {
+      node,
+      module,
+      carriedInput,
+      outputsById,
+      pinnedOutputs,
+      tenantId,
+      runId,
+      workflowId,
+      loop,
+    } = args;
     const stepStartedAt = Date.now();
 
     const step: RunStep = {
@@ -573,7 +614,12 @@ export class WorkflowEngine implements INodeExecutor {
       step.status = 'skipped';
       step.endedAt = Date.now();
       step.durationMs = step.endedAt - stepStartedAt;
-      this.eventBus.emit({ name: 'run.step', tenantId, data: { runId, step }, ts: new Date().toISOString() });
+      this.eventBus.emit({
+        name: 'run.step',
+        tenantId,
+        data: { runId, step },
+        ts: new Date().toISOString(),
+      });
       return { output: undefined, chosenBranch: undefined, step };
     }
 
@@ -582,7 +628,12 @@ export class WorkflowEngine implements INodeExecutor {
       step.error = `Unknown node def: ${node.defId}`;
       step.endedAt = Date.now();
       step.durationMs = step.endedAt - stepStartedAt;
-      this.eventBus.emit({ name: 'run.step', tenantId, data: { runId, step }, ts: new Date().toISOString() });
+      this.eventBus.emit({
+        name: 'run.step',
+        tenantId,
+        data: { runId, step },
+        ts: new Date().toISOString(),
+      });
       return { output: undefined, chosenBranch: undefined, step };
     }
 
@@ -595,7 +646,15 @@ export class WorkflowEngine implements INodeExecutor {
       runId,
       stepNodeId: node.id,
       workspaceId: tenantId,
-      minLevel: (process.env.MEDEA_LOG_MIN_LEVEL as 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | undefined) ?? 'debug',
+      minLevel:
+        (process.env.MEDEA_LOG_MIN_LEVEL as
+          | 'trace'
+          | 'debug'
+          | 'info'
+          | 'warn'
+          | 'error'
+          | 'fatal'
+          | undefined) ?? 'debug',
     });
     step.spanId = collector.spanId;
     step.traceId = collector.traceId;
@@ -691,7 +750,12 @@ export class WorkflowEngine implements INodeExecutor {
       step.durationMs = step.endedAt - stepStartedAt;
       finalizeLogs();
       liveDispose();
-      this.eventBus.emit({ name: 'run.step', tenantId, data: { runId, step }, ts: new Date().toISOString() });
+      this.eventBus.emit({
+        name: 'run.step',
+        tenantId,
+        data: { runId, step },
+        ts: new Date().toISOString(),
+      });
       return { output, chosenBranch, step, ...(items !== undefined ? { items } : {}) };
     } catch (error) {
       step.status = 'error';
@@ -708,16 +772,29 @@ export class WorkflowEngine implements INodeExecutor {
       // #226 anche nel catch path: salva i logs catturati FINO al throw.
       // Questo include il `collector.debug([custom-node] dispatching)` E i
       // logs del sandbox forwarded prima del fail.
-      collector.error(`Node execution failed: ${step.error}`, error instanceof NodeError ? { code: error.code } : undefined);
+      collector.error(
+        `Node execution failed: ${step.error}`,
+        error instanceof NodeError ? { code: error.code } : undefined,
+      );
       finalizeLogs();
       liveDispose();
       logger.warn({ nodeId: node.id, err: error }, 'Node execution failed');
-      this.eventBus.emit({ name: 'run.step', tenantId, data: { runId, step }, ts: new Date().toISOString() });
+      this.eventBus.emit({
+        name: 'run.step',
+        tenantId,
+        data: { runId, step },
+        ts: new Date().toISOString(),
+      });
       // Quota LLM esaurita (no BYOK): l'errore (anche se wrappato in NodeError dal
       // middleware, originale in .cause) segnala al BFS di SOSPENDERE il run e
       // riprenderlo al rinnovo, invece di fallire. Vedi engine/quota-pause.ts.
       const quotaError = asQuotaPauseError(error);
-      return { output: undefined, chosenBranch: undefined, step, ...(quotaError ? { quotaError } : {}) };
+      return {
+        output: undefined,
+        chosenBranch: undefined,
+        step,
+        ...(quotaError ? { quotaError } : {}),
+      };
     }
   }
 
@@ -774,14 +851,25 @@ export class WorkflowEngine implements INodeExecutor {
     const { node, module, items, steps, tenantId, runId } = fanArgs;
     const maxItems = Number(process.env.MEDEA_ENGINE_MAX_MAP_ITEMS ?? '1000');
     const emitStep = (step: RunStep): void => {
-      this.eventBus.emit({ name: 'run.step', tenantId, data: { runId, step }, ts: new Date().toISOString() });
+      this.eventBus.emit({
+        name: 'run.step',
+        tenantId,
+        data: { runId, step },
+        ts: new Date().toISOString(),
+      });
     };
     if (items.length > maxItems) {
       const message = `Edge map: ${String(items.length)} item superano il cap ${String(maxItems)} (MEDEA_ENGINE_MAX_MAP_ITEMS). Filtra a monte o usa logic_loop con strategy batch.`;
       const errStep: RunStep = {
-        nodeId: node.id, nodeLabel: module.def.label, status: 'error', output: '',
-        startedAt: Date.now(), endedAt: Date.now(), durationMs: 0,
-        error: message, nodeConfig: node.config,
+        nodeId: node.id,
+        nodeLabel: module.def.label,
+        status: 'error',
+        output: '',
+        startedAt: Date.now(),
+        endedAt: Date.now(),
+        durationMs: 0,
+        error: message,
+        nodeConfig: node.config,
       };
       if (module.def.icon !== undefined) errStep.nodeIcon = module.def.icon;
       steps.push(errStep);
@@ -790,29 +878,56 @@ export class WorkflowEngine implements INodeExecutor {
     }
 
     const results: unknown[] = [];
-    const actionDefault = module.def.actions?.find((a) => a.id === node.config.__action)?.continueOnFailDefault;
+    const actionDefault = module.def.actions?.find(
+      (a) => a.id === node.config.__action,
+    )?.continueOnFailDefault;
     const effectiveContinueOnFail = resolveContinueOnFail(node.continueOnFail, actionDefault);
     for (let i = 0; i < items.length; i += 1) {
       if (fanArgs.cancelSignal?.aborted) {
         throw new DOMException(`Run ${runId} cancelled by user`, 'AbortError');
       }
       const res = await this.executeNode({
-        node, module, carriedInput: items[i],
+        node,
+        module,
+        carriedInput: items[i],
         outputsById: fanArgs.outputsById,
         nodeAliases: fanArgs.nodeAliases,
-        tenantId, runId, workflowId: fanArgs.workflowId,
-        loop: { item: items[i], index: i, total: items.length, first: i === 0, last: i === items.length - 1, loopId: `map:${node.id}`, strategy: 'naive' },
+        tenantId,
+        runId,
+        workflowId: fanArgs.workflowId,
+        loop: {
+          item: items[i],
+          index: i,
+          total: items.length,
+          first: i === 0,
+          last: i === items.length - 1,
+          loopId: `map:${node.id}`,
+          strategy: 'naive',
+        },
         ...(fanArgs.pinnedOutputs ? { pinnedOutputs: fanArgs.pinnedOutputs } : {}),
-        ...(fanArgs.subworkflowDepth !== undefined ? { subworkflowDepth: fanArgs.subworkflowDepth } : {}),
+        ...(fanArgs.subworkflowDepth !== undefined
+          ? { subworkflowDepth: fanArgs.subworkflowDepth }
+          : {}),
         ...(fanArgs.lineage !== undefined ? { lineage: fanArgs.lineage } : {}),
       });
       steps.push(res.step);
       if (res.step.status === 'error') {
-        const softened = shouldSoftFail(effectiveContinueOnFail, node.continueOnFailOn, res.step.errorCategory ?? null);
+        const softened = shouldSoftFail(
+          effectiveContinueOnFail,
+          node.continueOnFailOn,
+          res.step.errorCategory ?? null,
+        );
         if (softened) {
           res.step.continued = true;
           // L'error-item OCCUPA la posizione i → allineamento per indice intatto.
-          results.push({ error: { message: res.step.error ?? 'item failed', nodeId: node.id, defId: module.def.id, index: i } });
+          results.push({
+            error: {
+              message: res.step.error ?? 'item failed',
+              nodeId: node.id,
+              defId: module.def.id,
+              index: i,
+            },
+          });
           continue;
         }
         // FATALE: tronca. I risultati processati restano allineati (0..i-1).
@@ -830,8 +945,8 @@ export class WorkflowEngine implements INodeExecutor {
     // Defensive: this should never happen because NodeExecutorStrategy
     // is a catch-all. If we get here, someone removed it from the chain.
     throw new Error(
-      `No dispatch strategy matched node ${ctx.node.id} (defId=${ctx.module.def.id}). `
-      + 'Did you remove NodeExecutorStrategy from the chain?',
+      `No dispatch strategy matched node ${ctx.node.id} (defId=${ctx.module.def.id}). ` +
+        'Did you remove NodeExecutorStrategy from the chain?',
     );
   }
 
@@ -896,20 +1011,28 @@ export class WorkflowEngine implements INodeExecutor {
     // Su threshold → throw RunQuotaExceededError, run marcato 'error' con
     // motivazione esplicita. Audit log include il cap hit per ops visibility.
     const MAX_STEP_COUNT = Number(process.env.MEDEA_ENGINE_MAX_STEPS ?? '10000');
-    const MAX_RUN_DURATION_MS = Number(process.env.MEDEA_ENGINE_MAX_RUN_DURATION_MS ?? String(30 * 60_000));
+    const MAX_RUN_DURATION_MS = Number(
+      process.env.MEDEA_ENGINE_MAX_RUN_DURATION_MS ?? String(30 * 60_000),
+    );
     const MAX_QUEUE_SIZE = Number(process.env.MEDEA_ENGINE_MAX_QUEUE_SIZE ?? '5000');
     let totalStepsExecuted = 0;
 
     while (queue.length > 0) {
       // WE-6 cap checks PRIMA del dispatch.
       if (totalStepsExecuted >= MAX_STEP_COUNT) {
-        throw new Error(`Engine cap hit: max-step-count=${String(MAX_STEP_COUNT)} (workflow=${workflow.id})`);
+        throw new Error(
+          `Engine cap hit: max-step-count=${String(MAX_STEP_COUNT)} (workflow=${workflow.id})`,
+        );
       }
       if (Date.now() - startedAt > MAX_RUN_DURATION_MS) {
-        throw new Error(`Engine cap hit: max-run-duration=${String(MAX_RUN_DURATION_MS)}ms (workflow=${workflow.id})`);
+        throw new Error(
+          `Engine cap hit: max-run-duration=${String(MAX_RUN_DURATION_MS)}ms (workflow=${workflow.id})`,
+        );
       }
       if (queue.length > MAX_QUEUE_SIZE) {
-        throw new Error(`Engine cap hit: max-queue-size=${String(MAX_QUEUE_SIZE)} (workflow=${workflow.id})`);
+        throw new Error(
+          `Engine cap hit: max-queue-size=${String(MAX_QUEUE_SIZE)} (workflow=${workflow.id})`,
+        );
       }
       totalStepsExecuted += 1;
       // Cooperative cancel check: prima di dispatchare il prossimo nodo,
@@ -948,8 +1071,15 @@ export class WorkflowEngine implements INodeExecutor {
       // ambiguità silenziosa); 'auto' su non-array → pass-through standard;
       // 'each' su non-array → violazione di contratto, errore esplicito.
       const mapMode = item.mapMode ?? 'off';
-      if (mapMode !== 'off' && module !== undefined && args.pinnedOutputs?.get(nodeId) === undefined) {
-        const unmappable = module.def.id === 'logic_wait_signal' || module.def.id === 'logic_loop' || nodeIsBranchable(module);
+      if (
+        mapMode !== 'off' &&
+        module !== undefined &&
+        args.pinnedOutputs?.get(nodeId) === undefined
+      ) {
+        const unmappable =
+          module.def.id === 'logic_wait_signal' ||
+          module.def.id === 'logic_loop' ||
+          nodeIsBranchable(module);
         const isArray = Array.isArray(carriedInput);
         if (unmappable || (mapMode === 'each' && !isArray)) {
           const message = unmappable
@@ -957,16 +1087,34 @@ export class WorkflowEngine implements INodeExecutor {
             : `Edge mapMode="each" richiede un input ARRAY, ricevuto ${carriedInput === null ? 'null' : typeof carriedInput}. Usa "auto" se l'input può non essere una lista.`;
           errorCount += 1;
           const errStep: RunStep = {
-            nodeId, nodeLabel: module.def.label, status: 'error', output: '',
-            startedAt: Date.now(), endedAt: Date.now(), durationMs: 0,
-            error: message, nodeConfig: node.config,
+            nodeId,
+            nodeLabel: module.def.label,
+            status: 'error',
+            output: '',
+            startedAt: Date.now(),
+            endedAt: Date.now(),
+            durationMs: 0,
+            error: message,
+            nodeConfig: node.config,
           };
           if (module.def.icon !== undefined) errStep.nodeIcon = module.def.icon;
           steps.push(errStep);
-          this.eventBus.emit({ name: 'run.step', tenantId, data: { runId, step: errStep }, ts: new Date().toISOString() });
+          this.eventBus.emit({
+            name: 'run.step',
+            tenantId,
+            data: { runId, step: errStep },
+            ts: new Date().toISOString(),
+          });
           // Semantica fatale standard: prosegue SOLO sugli error-edge.
-          for (const edge of (adj.outgoing.get(nodeId) ?? []).filter((e) => e.fromPort === 'error')) {
-            queue.push({ nodeId: edge.to, carriedInput: { error: { message, nodeId } }, mapMode: edge.mapMode, sourceNodeId: nodeId });
+          for (const edge of (adj.outgoing.get(nodeId) ?? []).filter(
+            (e) => e.fromPort === 'error',
+          )) {
+            queue.push({
+              nodeId: edge.to,
+              carriedInput: { error: { message, nodeId } },
+              mapMode: edge.mapMode,
+              sourceNodeId: nodeId,
+            });
           }
           if (args.stopAfterNodeId === nodeId) break;
           continue;
@@ -976,12 +1124,21 @@ export class WorkflowEngine implements INodeExecutor {
           // Anti-runaway WE-6: ogni item conta come step + cap dedicato.
           totalStepsExecuted += items.length;
           const fan = await this.executeFanOut({
-            node, module, items, outputsById, nodeAliases, tenantId, runId,
-            workflowId: workflow.id, steps,
+            node,
+            module,
+            items,
+            outputsById,
+            nodeAliases,
+            tenantId,
+            runId,
+            workflowId: workflow.id,
+            steps,
             lineage: lineageArgs,
             ...(args.pinnedOutputs ? { pinnedOutputs: args.pinnedOutputs } : {}),
             ...(args.cancelSignal ? { cancelSignal: args.cancelSignal } : {}),
-            ...(args.subworkflowDepth !== undefined ? { subworkflowDepth: args.subworkflowDepth } : {}),
+            ...(args.subworkflowDepth !== undefined
+              ? { subworkflowDepth: args.subworkflowDepth }
+              : {}),
           });
           errorCount += fan.fatalErrors;
           outputsById.set(nodeId, fan.results);
@@ -994,7 +1151,12 @@ export class WorkflowEngine implements INodeExecutor {
             ? downstream.filter((e) => e.fromPort === 'error')
             : downstream.filter((e) => e.fromPort !== 'error');
           for (const edge of toFollow) {
-            queue.push({ nodeId: edge.to, carriedInput: fan.results, mapMode: edge.mapMode, sourceNodeId: nodeId });
+            queue.push({
+              nodeId: edge.to,
+              carriedInput: fan.results,
+              mapMode: edge.mapMode,
+              sourceNodeId: nodeId,
+            });
           }
           stepCountSinceCheckpoint += items.length;
           if (args.stopAfterNodeId === nodeId) break;
@@ -1006,8 +1168,17 @@ export class WorkflowEngine implements INodeExecutor {
       // ── Async frame: wait_signal ──────────────────────────────
       if (module?.def.id === 'logic_wait_signal') {
         const pauseInfo = this.suspendOnSignal({
-          node, module, carriedInput, queue, outputsById, visited, itemGraph,
-          runId, tenantId, workflowId: workflow.id, steps,
+          node,
+          module,
+          carriedInput,
+          queue,
+          outputsById,
+          visited,
+          itemGraph,
+          runId,
+          tenantId,
+          workflowId: workflow.id,
+          steps,
         });
         pausedId = pauseInfo.pausedId;
         pausedOnSignal = pauseInfo.signalName;
@@ -1033,7 +1204,9 @@ export class WorkflowEngine implements INodeExecutor {
             steps,
             outerVisited: visited,
             outerOutputs: outputsById,
-            ...(args.subworkflowDepth !== undefined ? { subworkflowDepth: args.subworkflowDepth } : {}),
+            ...(args.subworkflowDepth !== undefined
+              ? { subworkflowDepth: args.subworkflowDepth }
+              : {}),
           });
           errorCount += loopResult.errors;
           // GAP #2: registra la vista item del loop output. L'euristica
@@ -1041,17 +1214,27 @@ export class WorkflowEngine implements INodeExecutor {
           // cardinalità diverse → niente pairing (onesto). I body node non
           // entrano nel grafo (N esecuzioni non indicizzabili per nodeId) ma
           // il loro scope.lineage risolve la sorgente e tutta la catena a monte.
-          itemGraph.set(nodeId, deriveOutputItems({
-            output: loopResult.output,
-            ...(item.sourceNodeId !== undefined ? {
-              sourceNodeId: item.sourceNodeId,
-              sourceItemCount: itemGraph.get(item.sourceNodeId)?.length ?? 0,
-            } : {}),
-          }));
+          itemGraph.set(
+            nodeId,
+            deriveOutputItems({
+              output: loopResult.output,
+              ...(item.sourceNodeId !== undefined
+                ? {
+                    sourceNodeId: item.sourceNodeId,
+                    sourceItemCount: itemGraph.get(item.sourceNodeId)?.length ?? 0,
+                  }
+                : {}),
+            }),
+          );
           const downstream = adj.outgoing.get(nodeId) ?? [];
           const toFollow = downstream.filter((e) => e.fromPort === loopResult.chosenBranch);
           for (const edge of toFollow) {
-            queue.push({ nodeId: edge.to, carriedInput: loopResult.output, mapMode: edge.mapMode, sourceNodeId: nodeId });
+            queue.push({
+              nodeId: edge.to,
+              carriedInput: loopResult.output,
+              mapMode: edge.mapMode,
+              sourceNodeId: nodeId,
+            });
           }
         } catch (err) {
           errorCount += 1;
@@ -1069,7 +1252,12 @@ export class WorkflowEngine implements INodeExecutor {
           };
           if (module.def.icon !== undefined) errStep.nodeIcon = module.def.icon;
           steps.push(errStep);
-          this.eventBus.emit({ name: 'run.step', tenantId, data: { runId, step: errStep }, ts: new Date().toISOString() });
+          this.eventBus.emit({
+            name: 'run.step',
+            tenantId,
+            data: { runId, step: errStep },
+            ts: new Date().toISOString(),
+          });
         }
         // GAP 4: stop-after anche sul ramo loop (il `continue` sotto salta
         // il check di fine-body del nodo standard).
@@ -1102,8 +1290,18 @@ export class WorkflowEngine implements INodeExecutor {
         visited.delete(nodeId);
         queue.unshift(item);
         const pauseInfo = this.suspendOnQuota({
-          node, module, carriedInput, queue, outputsById, visited, itemGraph,
-          runId, tenantId, workflowId: workflow.id, steps, quotaError: res.quotaError,
+          node,
+          module,
+          carriedInput,
+          queue,
+          outputsById,
+          visited,
+          itemGraph,
+          runId,
+          tenantId,
+          workflowId: workflow.id,
+          steps,
+          quotaError: res.quotaError,
         });
         pausedId = pauseInfo.pausedId;
         pausedOnSignal = pauseInfo.signalName;
@@ -1125,7 +1323,13 @@ export class WorkflowEngine implements INodeExecutor {
           res.step.versionDrift = drift;
           if (isBreakingNodeVersionDrift(compat)) {
             logger.warn(
-              { nodeId: node.id, defId: module.def.id, pinned: node.defVersion, current: module.def.version, drift },
+              {
+                nodeId: node.id,
+                defId: module.def.id,
+                pinned: node.defVersion,
+                current: module.def.version,
+                drift,
+              },
               'Node version drift (potentially breaking) — workflow node may need migration',
             );
           }
@@ -1143,13 +1347,20 @@ export class WorkflowEngine implements INodeExecutor {
       // l'operation selezionata (config.__action) può dichiarare un
       // `continueOnFailDefault`. L'istanza lo EREDITA, salvo override esplicito
       // via node.continueOnFail. Precedenza: istanza > default operation > false.
-      const actionDefault = module?.def.actions?.find((a) => a.id === node.config.__action)?.continueOnFailDefault;
+      const actionDefault = module?.def.actions?.find(
+        (a) => a.id === node.config.__action,
+      )?.continueOnFailDefault;
       const effectiveContinueOnFail = resolveContinueOnFail(node.continueOnFail, actionDefault);
       // Granularità per categoria: usa la categoria già risolta nel catch (con
       // retryable corretto) e prosegui solo se rientra nel filtro dell'istanza.
       // Vuoto = continua su tutto (booleano storico).
-      const softFailed = res.step.status === 'error'
-        && shouldSoftFail(effectiveContinueOnFail, node.continueOnFailOn, res.step.errorCategory ?? null);
+      const softFailed =
+        res.step.status === 'error' &&
+        shouldSoftFail(
+          effectiveContinueOnFail,
+          node.continueOnFailOn,
+          res.step.errorCategory ?? null,
+        );
       if (res.step.status === 'error' && !softFailed) errorCount += 1;
       let effectiveOutput = res.output;
       if (softFailed) {
@@ -1171,14 +1382,19 @@ export class WorkflowEngine implements INodeExecutor {
       if (res.step.status === 'error' && !softFailed) {
         itemGraph.set(nodeId, []);
       } else {
-        itemGraph.set(nodeId, deriveOutputItems({
-          output: effectiveOutput,
-          ...(softFailed || res.items === undefined ? {} : { declared: res.items }),
-          ...(item.sourceNodeId !== undefined ? {
-            sourceNodeId: item.sourceNodeId,
-            sourceItemCount: itemGraph.get(item.sourceNodeId)?.length ?? 0,
-          } : {}),
-        }));
+        itemGraph.set(
+          nodeId,
+          deriveOutputItems({
+            output: effectiveOutput,
+            ...(softFailed || res.items === undefined ? {} : { declared: res.items }),
+            ...(item.sourceNodeId !== undefined
+              ? {
+                  sourceNodeId: item.sourceNodeId,
+                  sourceItemCount: itemGraph.get(item.sourceNodeId)?.length ?? 0,
+                }
+              : {}),
+          }),
+        );
       }
 
       // GAP 4 (esecuzione parziale): il nodo target ha completato → stop.
@@ -1205,7 +1421,12 @@ export class WorkflowEngine implements INodeExecutor {
         toFollow = downstream.filter((edge) => edge.fromPort !== 'error');
       }
       for (const edge of toFollow) {
-        queue.push({ nodeId: edge.to, carriedInput: effectiveOutput, mapMode: edge.mapMode, sourceNodeId: nodeId });
+        queue.push({
+          nodeId: edge.to,
+          carriedInput: effectiveOutput,
+          mapMode: edge.mapMode,
+          sourceNodeId: nodeId,
+        });
       }
 
       // ── Periodic checkpoint ──────────────────────────────────
@@ -1231,14 +1452,28 @@ export class WorkflowEngine implements INodeExecutor {
     }
 
     const totalDurationMs = Date.now() - startedAt;
-    const status: WorkflowRunResult['status'] = pausedId !== undefined
-      ? 'paused'
-      : errorCount === 0 ? 'success' : errorCount === steps.length ? 'error' : 'partial';
+    const status: WorkflowRunResult['status'] =
+      pausedId !== undefined
+        ? 'paused'
+        : errorCount === 0
+          ? 'success'
+          : errorCount === steps.length
+            ? 'error'
+            : 'partial';
 
     this.eventBus.emit({
-      name: status === 'error' ? 'run.errored' : status === 'paused' ? 'run.paused' : 'run.completed',
+      name:
+        status === 'error' ? 'run.errored' : status === 'paused' ? 'run.paused' : 'run.completed',
       tenantId,
-      data: { runId, status, totalDurationMs, errorCount, stepsCount: steps.length, pausedId, pausedOnSignal },
+      data: {
+        runId,
+        status,
+        totalDurationMs,
+        errorCount,
+        stepsCount: steps.length,
+        pausedId,
+        pausedOnSignal,
+      },
       ts: new Date().toISOString(),
     });
 
@@ -1267,11 +1502,27 @@ export class WorkflowEngine implements INodeExecutor {
     workflowId: string;
     steps: RunStep[];
   }): { pausedId: string; signalName: string } {
-    const { node, module, carriedInput, queue, outputsById, visited, itemGraph, runId, tenantId, workflowId, steps } = args;
+    const {
+      node,
+      module,
+      carriedInput,
+      queue,
+      outputsById,
+      visited,
+      itemGraph,
+      runId,
+      tenantId,
+      workflowId,
+      steps,
+    } = args;
     const signalName = String(node.config.signalName ?? '');
     const timeoutSeconds = Math.max(0, Number(node.config.timeoutSeconds ?? 2_592_000));
     let defaultPayload: unknown = {};
-    try { defaultPayload = JSON.parse(String(node.config.defaultPayload ?? '{}')); } catch { /* keep {} */ }
+    try {
+      defaultPayload = JSON.parse(String(node.config.defaultPayload ?? '{}'));
+    } catch {
+      /* keep {} */
+    }
 
     // Evaluate the optional match-value expression so the SignalService
     // can route a single signal to the right paused workflow.
@@ -1289,9 +1540,13 @@ export class WorkflowEngine implements INodeExecutor {
           execution: { id: runId },
         };
         const evaluated = evaluateExpression(matchValueExpr, scope);
-        matchValue = evaluated === null || evaluated === undefined ? undefined : coerceString(evaluated);
+        matchValue =
+          evaluated === null || evaluated === undefined ? undefined : coerceString(evaluated);
       } catch (err) {
-        logger.warn({ err, nodeId: node.id }, 'wait_signal: matchValue expression failed — proceeding without match');
+        logger.warn(
+          { err, nodeId: node.id },
+          'wait_signal: matchValue expression failed — proceeding without match',
+        );
       }
     }
 
@@ -1357,7 +1612,20 @@ export class WorkflowEngine implements INodeExecutor {
     steps: RunStep[];
     quotaError: QuotaPauseError;
   }): { pausedId: string; signalName: string } {
-    const { node, module, carriedInput, queue, outputsById, visited, itemGraph, runId, tenantId, workflowId, steps, quotaError } = args;
+    const {
+      node,
+      module,
+      carriedInput,
+      queue,
+      outputsById,
+      visited,
+      itemGraph,
+      runId,
+      tenantId,
+      workflowId,
+      steps,
+      quotaError,
+    } = args;
     const signalName = quotaResumeSignal(tenantId);
     const timeoutSeconds = secondsUntilQuotaReset(quotaError.periodEndIso);
 
@@ -1366,7 +1634,12 @@ export class WorkflowEngine implements INodeExecutor {
       nodeLabel: module.def.label,
       status: 'paused',
       input: safeStringify(carriedInput),
-      output: JSON.stringify({ pausedOnQuota: true, signalName, timeoutSeconds, periodEndIso: quotaError.periodEndIso }),
+      output: JSON.stringify({
+        pausedOnQuota: true,
+        signalName,
+        timeoutSeconds,
+        periodEndIso: quotaError.periodEndIso,
+      }),
       startedAt: Date.now(),
       endedAt: Date.now(),
       durationMs: 0,

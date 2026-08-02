@@ -13,12 +13,11 @@
  */
 
 /** Lancia se `value` è null/undefined; altrimenti lo restringe a `T`. */
-export function assertDefined<T>(
-  value: T | null | undefined,
-  label = 'value',
-): asserts value is T {
+export function assertDefined<T>(value: T | null | undefined, label = 'value'): asserts value is T {
   if (value === null || value === undefined) {
-    throw new Error(`assertDefined: ${label} è ${value === null ? 'null' : 'undefined'} (atteso definito)`);
+    throw new Error(
+      `assertDefined: ${label} è ${value === null ? 'null' : 'undefined'} (atteso definito)`,
+    );
   }
 }
 

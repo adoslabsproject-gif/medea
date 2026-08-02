@@ -47,7 +47,7 @@ const SYSTEM_PROMPT = [
   '  5. Match indentation of the line containing the cursor.',
   '  6. Use APIs from @medea/engine-community-node-sdk, zod, @medea/engine-safe-fetch only.',
   '  7. If you cannot suggest meaningfully, output EMPTY string.',
-  '  8. No await/async/return etc. that doesn\'t make sense given the surrounding code.',
+  "  8. No await/async/return etc. that doesn't make sense given the surrounding code.",
   '  9. Never insert imports — the editor handles those separately.',
   ' 10. Never insert comments — code only.',
 ].join('\n');
@@ -95,7 +95,9 @@ export function sanitizeCompletion(raw: string, contextBefore: string): string {
   return s.trim();
 }
 
-export async function callInlineCompletion(req: InlineCompletionRequest): Promise<InlineCompletionResponse> {
+export async function callInlineCompletion(
+  req: InlineCompletionRequest,
+): Promise<InlineCompletionResponse> {
   // ⛔ FIX 2026-06-13: passa dal GATEWAY PORTAL (helper condiviso) — prima
   // puntava a liara:3003, irraggiungibile dai container tenant → ghost-text
   // MORTO in prod (fallback empty silenzioso). Fail-soft: qualunque errore → vuoto.

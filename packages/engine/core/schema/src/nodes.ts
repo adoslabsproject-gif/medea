@@ -14,25 +14,25 @@ export const ConfigFieldTypeSchema = z.enum([
   'code',
   'expression',
   // Dynamic pickers — the renderer fetches options from the runtime API
-  'db-picker',         // dropdown of tenant's databases (DB Studio)
-  'db-table-picker',   // dropdown of tables in the selected database (uses `dependsOn` field)
+  'db-picker', // dropdown of tenant's databases (DB Studio)
+  'db-table-picker', // dropdown of tables in the selected database (uses `dependsOn` field)
   'db-collection-picker', // dropdown of vector collections in the selected database
-  'workflow-picker',   // dropdown of tenant's workflows (excluding current)
-  'form-fields',       // visual drag&drop form builder — value is JSON array of {key,label,type,required,options?,placeholder?}
-  'key-value',         // {string: string} editor — used for headers, where clauses, patch sets
-  'chip-list',         // string[] editor — comma-paste or one-at-a-time chips
-  'filter-rows',       // array of {column, op, value} — DB query filters
-  'sort-rows',         // array of {column, direction} — DB query ORDER BY
-  'invoice-lines',     // array of {name, quantity, net_price, vat?} — invoice line items
+  'workflow-picker', // dropdown of tenant's workflows (excluding current)
+  'form-fields', // visual drag&drop form builder — value is JSON array of {key,label,type,required,options?,placeholder?}
+  'key-value', // {string: string} editor — used for headers, where clauses, patch sets
+  'chip-list', // string[] editor — comma-paste or one-at-a-time chips
+  'filter-rows', // array of {column, op, value} — DB query filters
+  'sort-rows', // array of {column, direction} — DB query ORDER BY
+  'invoice-lines', // array of {name, quantity, net_price, vat?} — invoice line items
   'email-account-picker', // dropdown of system_email_accounts (label + from)
-  'attachments',       // array of {name, base64|path|url, contentType} — file upload + base64 in browser
-  'rich-text',         // WYSIWYG HTML editor (TipTap) — emits HTML by default
-  'file-picker',       // browse tenant sandbox + pick a file path (writes the path string)
-  'directory-picker',  // browse tenant sandbox + pick a directory path
-  'cron-builder',      // visual cron editor (every minute/hour/day...) with human-readable preview
-  'switch-cases',      // builder of {match: value, branch: name} rows for logic_switch
-  'timezone-picker',   // curated IANA timezone select with search
-  'condition-rules',   // visual multi-rule builder for IF/Switch v2 — JSON value of shape { combinator, rules: [...] }
+  'attachments', // array of {name, base64|path|url, contentType} — file upload + base64 in browser
+  'rich-text', // WYSIWYG HTML editor (TipTap) — emits HTML by default
+  'file-picker', // browse tenant sandbox + pick a file path (writes the path string)
+  'directory-picker', // browse tenant sandbox + pick a directory path
+  'cron-builder', // visual cron editor (every minute/hour/day...) with human-readable preview
+  'switch-cases', // builder of {match: value, branch: name} rows for logic_switch
+  'timezone-picker', // curated IANA timezone select with search
+  'condition-rules', // visual multi-rule builder for IF/Switch v2 — JSON value of shape { combinator, rules: [...] }
 ]);
 export type ConfigFieldType = z.infer<typeof ConfigFieldTypeSchema>;
 
@@ -154,7 +154,10 @@ export type PerCallCost = z.infer<typeof PerCallCostSchema>;
  * The action's own `configFields` render BELOW shared, only for that action.
  */
 export const NodeActionSchema = z.object({
-  id: z.string().min(1).regex(/^[a-z0-9_-]+$/i),
+  id: z
+    .string()
+    .min(1)
+    .regex(/^[a-z0-9_-]+$/i),
   label: z.string().min(1),
   description: z.string().optional(),
   /** Renders ✨ badge in the action picker — purely cosmetic but signals "this is AI-powered". */
@@ -192,7 +195,10 @@ export type NodeAction = z.infer<typeof NodeActionSchema>;
  * così i `showIf` dei campi possono dipendere da essa.
  */
 export const NodeResourceSchema = z.object({
-  id: z.string().min(1).regex(/^[a-z0-9_-]+$/i),
+  id: z
+    .string()
+    .min(1)
+    .regex(/^[a-z0-9_-]+$/i),
   label: z.string().min(1),
   description: z.string().optional(),
   icon: z.string().optional(),
@@ -215,7 +221,10 @@ export type NodeResource = z.infer<typeof NodeResourceSchema>;
  * Campo additivo+opzionale → zero impatto sui NodeDef esistenti.
  */
 export const NodeTriggerSchema = z.object({
-  id: z.string().min(1).regex(/^[a-z0-9_-]+$/i, 'Trigger ID must be alphanumeric with - or _'),
+  id: z
+    .string()
+    .min(1)
+    .regex(/^[a-z0-9_-]+$/i, 'Trigger ID must be alphanumeric with - or _'),
   label: z.string().min(1),
   description: z.string().optional(),
   mode: z.enum(['polling', 'stream']),
@@ -246,7 +255,10 @@ export const OutputContractSchema = z.object({
 export type OutputContract = z.infer<typeof OutputContractSchema>;
 
 export const NodeDefSchema = z.object({
-  id: z.string().min(1).regex(/^[a-z0-9_-]+$/i, 'Node ID must be alphanumeric with - or _'),
+  id: z
+    .string()
+    .min(1)
+    .regex(/^[a-z0-9_-]+$/i, 'Node ID must be alphanumeric with - or _'),
   type: NodeCategorySchema,
   label: z.string().min(1),
   icon: z.string(),
@@ -301,7 +313,10 @@ export const NodeDefSchema = z.object({
    */
   branching: z.boolean().optional(),
   vendor: z.string().optional(),
-  version: z.string().regex(/^\d+\.\d+\.\d+$/).optional(),
+  version: z
+    .string()
+    .regex(/^\d+\.\d+\.\d+$/)
+    .optional(),
   deprecated: z.boolean().optional(),
   /** Bulk endpoint metadata — Loop strategy='auto' picks 'bulk' when present. */
   bulk: BulkCapabilitySchema.optional(),

@@ -6,11 +6,22 @@ import { notificationsBus } from './notifications-bus.js';
 import type { Notification } from './notifications.service.js';
 
 function notif(over: Partial<Notification> = {}): Notification {
-  return { id: 'n1', userId: 'u-ada', type: 'mention', workflowId: 'wf1', nodeId: null, actorName: 'marco@x.it', preview: 'ciao', read: false, createdAt: '2026-06-09T12:00:00.000Z', ...over };
+  return {
+    id: 'n1',
+    userId: 'u-ada',
+    type: 'mention',
+    workflowId: 'wf1',
+    nodeId: null,
+    actorName: 'marco@x.it',
+    preview: 'ciao',
+    read: false,
+    createdAt: '2026-06-09T12:00:00.000Z',
+    ...over,
+  };
 }
 
 describe('notificationsBus', () => {
-  it('emitToUser consegna solo al subscriber di quell\'utente', () => {
+  it("emitToUser consegna solo al subscriber di quell'utente", () => {
     const ada = vi.fn();
     const marco = vi.fn();
     const offAda = notificationsBus.subscribe('u-ada', ada);
@@ -22,7 +33,8 @@ describe('notificationsBus', () => {
     expect(ada).toHaveBeenCalledTimes(1);
     expect(ada).toHaveBeenCalledWith(n);
     expect(marco).not.toHaveBeenCalled();
-    offAda(); offMarco();
+    offAda();
+    offMarco();
   });
 
   it('più subscriber dello stesso utente (multi-tab) ricevono entrambi', () => {
@@ -35,7 +47,8 @@ describe('notificationsBus', () => {
     notificationsBus.emitToUser('u-x', notif({ userId: 'u-x' }));
     expect(tab1).toHaveBeenCalledTimes(1);
     expect(tab2).toHaveBeenCalledTimes(1);
-    off1(); off2();
+    off1();
+    off2();
   });
 
   it('unsubscribe rimuove il listener (no consegna dopo)', () => {
@@ -48,7 +61,9 @@ describe('notificationsBus', () => {
   });
 
   it('emit verso utente senza subscriber è no-op (nessun throw)', () => {
-    expect(() => { notificationsBus.emitToUser('u-nobody', notif()); }).not.toThrow();
+    expect(() => {
+      notificationsBus.emitToUser('u-nobody', notif());
+    }).not.toThrow();
     expect(notificationsBus.listenerCount('u-nobody')).toBe(0);
   });
 });

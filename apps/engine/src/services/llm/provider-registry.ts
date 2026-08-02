@@ -58,22 +58,43 @@ const OPENAI_PATH = '/chat/completions';
  */
 const SPECS: Readonly<Record<LlmProvider, ProviderSpec>> = {
   liara: {
-    format: 'openai', auth: 'none', chatModel: '', pingModel: 'nha-v1', openAiToolCompat: true,
+    format: 'openai',
+    auth: 'none',
+    chatModel: '',
+    pingModel: 'nha-v1',
+    openAiToolCompat: true,
     // baseUrl runtime = gateway portal (MEDEA_LIARA_BASE_URL); il chiamante lo passa.
-    endpoint: { kind: 'self-host', defaultBaseUrl: 'https://liara.nothumanallowed.com', chatPath: OPENAI_PATH, toolPath: OPENAI_PATH },
+    endpoint: {
+      kind: 'self-host',
+      defaultBaseUrl: 'https://liara.nothumanallowed.com',
+      chatPath: OPENAI_PATH,
+      toolPath: OPENAI_PATH,
+    },
   },
   openai: {
-    format: 'openai', auth: 'bearer', chatModel: 'gpt-4o-mini', pingModel: 'gpt-4o-mini', openAiToolCompat: true,
+    format: 'openai',
+    auth: 'bearer',
+    chatModel: 'gpt-4o-mini',
+    pingModel: 'gpt-4o-mini',
+    openAiToolCompat: true,
     endpoint: { kind: 'fixed', chatUrl: 'https://api.openai.com/v1/chat/completions' },
   },
   anthropic: {
-    format: 'anthropic', auth: 'anthropic', chatModel: 'claude-3-5-haiku-latest', pingModel: 'claude-3-5-haiku-latest', openAiToolCompat: false,
+    format: 'anthropic',
+    auth: 'anthropic',
+    chatModel: 'claude-3-5-haiku-latest',
+    pingModel: 'claude-3-5-haiku-latest',
+    openAiToolCompat: false,
     endpoint: { kind: 'fixed', chatUrl: 'https://api.anthropic.com/v1/messages' },
   },
   gemini: {
     // Wire NATIVO Google (generateContent) per la chat semplice; per il tool-calling
     // c'è l'endpoint OpenAI-compat di Google (toolUrl, auth Bearer).
-    format: 'gemini', auth: 'gemini-query', chatModel: 'gemini-2.0-flash', pingModel: 'gemini-2.0-flash', openAiToolCompat: true,
+    format: 'gemini',
+    auth: 'gemini-query',
+    chatModel: 'gemini-2.0-flash',
+    pingModel: 'gemini-2.0-flash',
+    openAiToolCompat: true,
     endpoint: {
       kind: 'fixed',
       chatUrl: 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
@@ -81,42 +102,82 @@ const SPECS: Readonly<Record<LlmProvider, ProviderSpec>> = {
     },
   },
   mistral: {
-    format: 'openai', auth: 'bearer', chatModel: 'mistral-large-latest', pingModel: 'mistral-small-latest', openAiToolCompat: true,
+    format: 'openai',
+    auth: 'bearer',
+    chatModel: 'mistral-large-latest',
+    pingModel: 'mistral-small-latest',
+    openAiToolCompat: true,
     endpoint: { kind: 'fixed', chatUrl: 'https://api.mistral.ai/v1/chat/completions' },
   },
   groq: {
-    format: 'openai', auth: 'bearer', chatModel: 'llama-3.3-70b-versatile', pingModel: 'llama-3.3-70b-versatile', openAiToolCompat: true,
+    format: 'openai',
+    auth: 'bearer',
+    chatModel: 'llama-3.3-70b-versatile',
+    pingModel: 'llama-3.3-70b-versatile',
+    openAiToolCompat: true,
     endpoint: { kind: 'fixed', chatUrl: 'https://api.groq.com/openai/v1/chat/completions' },
   },
   grok: {
-    format: 'openai', auth: 'bearer', chatModel: 'grok-2-latest', pingModel: 'grok-2-latest', openAiToolCompat: true,
+    format: 'openai',
+    auth: 'bearer',
+    chatModel: 'grok-2-latest',
+    pingModel: 'grok-2-latest',
+    openAiToolCompat: true,
     endpoint: { kind: 'fixed', chatUrl: 'https://api.x.ai/v1/chat/completions' },
   },
   deepseek: {
-    format: 'openai', auth: 'bearer', chatModel: 'deepseek-chat', pingModel: 'deepseek-chat', openAiToolCompat: true,
+    format: 'openai',
+    auth: 'bearer',
+    chatModel: 'deepseek-chat',
+    pingModel: 'deepseek-chat',
+    openAiToolCompat: true,
     endpoint: { kind: 'fixed', chatUrl: 'https://api.deepseek.com/v1/chat/completions' },
   },
   perplexity: {
     // OpenAI-compat (api.perplexity.ai, Bearer). Sonar = chat search-augmented con
     // citazioni live. openAiToolCompat=false: Perplexity NON espone function-calling
     // → non instradabile al DB-agent (resolveToolEndpoint ritorna null = errore chiaro).
-    format: 'openai', auth: 'bearer', chatModel: 'sonar', pingModel: 'sonar', openAiToolCompat: false,
+    format: 'openai',
+    auth: 'bearer',
+    chatModel: 'sonar',
+    pingModel: 'sonar',
+    openAiToolCompat: false,
     endpoint: { kind: 'fixed', chatUrl: 'https://api.perplexity.ai/chat/completions' },
   },
   openrouter: {
     // Gateway multi-modello: NESSUN default vendor-specifico per la chat (model
     // obbligatorio "vendor/name"); il ping usa un modello economico noto.
-    format: 'openai', auth: 'bearer', chatModel: '', pingModel: 'anthropic/claude-3-5-haiku', openAiToolCompat: true,
-    extraHeaders: { 'X-Title': 'FlowForge', 'HTTP-Referer': 'https://flowforge.automazionezeli.com' },
+    format: 'openai',
+    auth: 'bearer',
+    chatModel: '',
+    pingModel: 'anthropic/claude-3-5-haiku',
+    openAiToolCompat: true,
+    extraHeaders: {
+      'X-Title': 'FlowForge',
+      'HTTP-Referer': 'https://flowforge.automazionezeli.com',
+    },
     endpoint: { kind: 'fixed', chatUrl: 'https://openrouter.ai/api/v1/chat/completions' },
   },
   ollama: {
-    format: 'ollama', auth: 'none', chatModel: 'llama3.2', pingModel: 'llama3.2', openAiToolCompat: true,
+    format: 'ollama',
+    auth: 'none',
+    chatModel: 'llama3.2',
+    pingModel: 'llama3.2',
+    openAiToolCompat: true,
     // Ollama nativo: /api/chat per la chat; /v1/chat/completions (OpenAI-compat) per i tool.
-    endpoint: { kind: 'self-host', defaultBaseUrl: 'http://localhost:11434', chatPath: '/api/chat', toolPath: '/v1/chat/completions' },
+    endpoint: {
+      kind: 'self-host',
+      defaultBaseUrl: 'http://localhost:11434',
+      chatPath: '/api/chat',
+      toolPath: '/v1/chat/completions',
+    },
   },
   voyage: {
-    format: 'embeddings', auth: 'bearer', chatModel: 'voyage-3', pingModel: 'voyage-3', openAiToolCompat: false,
+    format: 'embeddings',
+    auth: 'bearer',
+    chatModel: 'voyage-3',
+    pingModel: 'voyage-3',
+    openAiToolCompat: false,
     endpoint: { kind: 'fixed', chatUrl: 'https://api.voyageai.com/v1/embeddings' },
   },
 };
@@ -173,9 +234,16 @@ export function resolveToolEndpoint(
   const spec = getProviderSpec(provider);
   if (!spec.openAiToolCompat) return null;
   const model = requestedModel.trim() || spec.chatModel;
-  const base: ToolEndpointTarget = { url: '', model, ...(spec.extraHeaders ? { extraHeaders: spec.extraHeaders } : {}) };
+  const base: ToolEndpointTarget = {
+    url: '',
+    model,
+    ...(spec.extraHeaders ? { extraHeaders: spec.extraHeaders } : {}),
+  };
   if (spec.endpoint.kind === 'self-host') {
-    return { ...base, url: joinBaseUrl(baseUrl ?? spec.endpoint.defaultBaseUrl, spec.endpoint.toolPath) };
+    return {
+      ...base,
+      url: joinBaseUrl(baseUrl ?? spec.endpoint.defaultBaseUrl, spec.endpoint.toolPath),
+    };
   }
   // fixed: gemini ha un toolUrl dedicato (OpenAI-compat di Google); gli altri usano chatUrl.
   return { ...base, url: spec.endpoint.toolUrl ?? spec.endpoint.chatUrl };
@@ -199,7 +267,11 @@ export function fixedOpenAiCompatTarget(
     throw new Error(`${provider} non è un provider OpenAI-compat a endpoint fisso`);
   }
   const model = requestedModel.trim() || (usePingModel ? spec.pingModel : spec.chatModel);
-  return { url: spec.endpoint.chatUrl, model, ...(spec.extraHeaders ? { extraHeaders: spec.extraHeaders } : {}) };
+  return {
+    url: spec.endpoint.chatUrl,
+    model,
+    ...(spec.extraHeaders ? { extraHeaders: spec.extraHeaders } : {}),
+  };
 }
 
 /** I provider a endpoint fisso con wire OpenAI-compat — il ramo generico dei consumer.

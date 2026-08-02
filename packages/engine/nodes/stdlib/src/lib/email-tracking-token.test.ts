@@ -22,7 +22,7 @@ import {
   DEFAULT_TOKEN_TTL_SECONDS,
 } from './email-tracking-token.js';
 
-const SECRET = 'a'.repeat(64);   // 64-char hex-ish, exceeds 32 min
+const SECRET = 'a'.repeat(64); // 64-char hex-ish, exceeds 32 min
 const PAYLOAD = {
   w: '00000000-0000-0000-0000-000000000123',
   l: 'lead-9999',
@@ -119,8 +119,13 @@ describe('verifyTrackingToken — security & tamper', () => {
     const { token } = await signTrackingToken(PAYLOAD, SECRET);
     const [, sig] = token.split('.');
     // Replace payload body with a forged one but keep original sig.
-    const forgedPayload = Buffer.from(JSON.stringify({ ...PAYLOAD, l: 'attacker-lead', t: 9_999_999_999 }))
-      .toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const forgedPayload = Buffer.from(
+      JSON.stringify({ ...PAYLOAD, l: 'attacker-lead', t: 9_999_999_999 }),
+    )
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
     const forged = `${forgedPayload}.${sig}`;
     const v = await verifyTrackingToken(forged, SECRET);
     expect(v.ok).toBe(false);
@@ -209,10 +214,16 @@ describe('verifyTrackingToken — malformed inputs', () => {
     // first (because we can't compute the right HMAC without knowing the
     // secret), so we expect either bad-json (if you happen to land on a
     // collision) or sig-mismatch — both safe rejections.
-    const fakePayload = Buffer.from('not-a-json{').toString('base64')
-      .replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
-    const fakeSig = Buffer.from('xx').toString('base64')
-      .replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const fakePayload = Buffer.from('not-a-json{')
+      .toString('base64')
+      .replace(/=+$/, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
+    const fakeSig = Buffer.from('xx')
+      .toString('base64')
+      .replace(/=+$/, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
     const v = await verifyTrackingToken(`${fakePayload}.${fakeSig}`, SECRET);
     expect(v.ok).toBe(false);
   });
@@ -221,11 +232,18 @@ describe('verifyTrackingToken — malformed inputs', () => {
     // Hand-craft a payload with missing fields, sign it, verify.
     // Even with valid sig, the schema check (isPayload) must reject.
     const { createHmac: hmac } = await import('node:crypto');
-    const incompleteJson = JSON.stringify({ w: 'x' });  // missing l, c, s, k, t
-    const payloadB64 = Buffer.from(incompleteJson).toString('base64')
-      .replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
-    const sig = hmac('sha256', SECRET).update(payloadB64).digest('base64')
-      .replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const incompleteJson = JSON.stringify({ w: 'x' }); // missing l, c, s, k, t
+    const payloadB64 = Buffer.from(incompleteJson)
+      .toString('base64')
+      .replace(/=+$/, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
+    const sig = hmac('sha256', SECRET)
+      .update(payloadB64)
+      .digest('base64')
+      .replace(/=+$/, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
     const v = await verifyTrackingToken(`${payloadB64}.${sig}`, SECRET);
     expect(v.ok).toBe(false);
     if (!v.ok) expect(v.reason).toBe('bad-json');
@@ -284,14 +302,18 @@ describe('isTrackingBot', () => {
   });
 
   it('does NOT flag a real Chrome on macOS', () => {
-    expect(isTrackingBot(
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    )).toBe(false);
+    expect(
+      isTrackingBot(
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      ),
+    ).toBe(false);
   });
 
   it('does NOT flag a real iPhone Safari', () => {
-    expect(isTrackingBot(
-      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1',
-    )).toBe(false);
+    expect(
+      isTrackingBot(
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1',
+      ),
+    ).toBe(false);
   });
 });

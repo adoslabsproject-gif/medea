@@ -121,9 +121,7 @@ function makeExecutor(overrides: Partial<INodeExecutor> = {}): {
       nodeConfig: args.node.config,
     },
   }));
-  const resolveModuleMock = vi.fn(
-    (defId: string) => makeStdNodeModule(defId),
-  );
+  const resolveModuleMock = vi.fn((defId: string) => makeStdNodeModule(defId));
   const executor: INodeExecutor = {
     executeNode: overrides.executeNode ?? executeNodeMock,
     resolveNodeModule: overrides.resolveNodeModule ?? resolveModuleMock,
@@ -136,24 +134,22 @@ function makeExecutor(overrides: Partial<INodeExecutor> = {}): {
 // ───────────────────────────────────────────────────────────────
 
 describe('IterationCoordinator — executeLoop strategy=naive', () => {
-
   it('iterates over input array — body eseguito 3 volte', async () => {
     const loopNode = makeNode('loop', 'logic_loop', {
       itemsExpression: 'input',
       strategy: 'naive',
     });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor, executeNodeMock } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode,
-      carriedInput: [10, 20, 30],
-      workflow: wf,
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [10, 20, 30],
+        workflow: wf,
+      }),
+    );
     expect(result.chosenBranch).toBe('done');
     expect(result.errors).toBe(0);
     expect(executeNodeMock).toHaveBeenCalledTimes(3);
@@ -166,17 +162,16 @@ describe('IterationCoordinator — executeLoop strategy=naive', () => {
   it('itemsExpression default "input" usata se non specificata', async () => {
     const loopNode = makeNode('loop', 'logic_loop'); // no itemsExpression
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor, executeNodeMock } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    await coord.executeLoop(makeLoopArgs({
-      loopNode,
-      carriedInput: ['a', 'b'],
-      workflow: wf,
-    }));
+    await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: ['a', 'b'],
+        workflow: wf,
+      }),
+    );
     expect(executeNodeMock).toHaveBeenCalledTimes(2);
   });
 
@@ -184,10 +179,12 @@ describe('IterationCoordinator — executeLoop strategy=naive', () => {
     const loopNode = makeNode('loop', 'logic_loop');
     const { executor, executeNodeMock } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode,
-      carriedInput: 'not an array',
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: 'not an array',
+      }),
+    );
     expect(executeNodeMock).not.toHaveBeenCalled();
     const out = result.output as { iterations: number };
     expect(out.iterations).toBe(0);
@@ -200,10 +197,14 @@ describe('IterationCoordinator — executeLoop strategy=naive', () => {
     });
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    await expect(coord.executeLoop(makeLoopArgs({
-      loopNode,
-      carriedInput: [1, 2, 3, 4, 5],
-    }))).rejects.toThrow(/refusing 5 items/);
+    await expect(
+      coord.executeLoop(
+        makeLoopArgs({
+          loopNode,
+          carriedInput: [1, 2, 3, 4, 5],
+        }),
+      ),
+    ).rejects.toThrow(/refusing 5 items/);
   });
 
   it('errorPolicy="stop" → ferma iterations al primo fail', async () => {
@@ -212,10 +213,7 @@ describe('IterationCoordinator — executeLoop strategy=naive', () => {
       errorPolicy: 'stop',
     });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     let call = 0;
     const { executor } = makeExecutor({
       executeNode: vi.fn(async (args) => {
@@ -226,20 +224,25 @@ describe('IterationCoordinator — executeLoop strategy=naive', () => {
           step: {
             nodeId: args.node.id,
             nodeLabel: 'body',
-            status: call === 2 ? 'error' as const : 'success' as const,
-            input: '', output: '',
-            startedAt: Date.now(), endedAt: Date.now(), durationMs: 1,
+            status: call === 2 ? ('error' as const) : ('success' as const),
+            input: '',
+            output: '',
+            startedAt: Date.now(),
+            endedAt: Date.now(),
+            durationMs: 1,
             nodeConfig: args.node.config,
           },
         };
       }),
     });
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode,
-      carriedInput: [1, 2, 3, 4, 5],
-      workflow: wf,
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2, 3, 4, 5],
+        workflow: wf,
+      }),
+    );
     const out = result.output as { iterations: number; failed: number };
     // Failed alla 2a iter → cursor=total → stop. Iterations completate <= 2.
     expect(out.failed).toBe(1);
@@ -248,27 +251,32 @@ describe('IterationCoordinator — executeLoop strategy=naive', () => {
   it('errorPolicy="continue" (default) → completa tutte le iterations', async () => {
     const loopNode = makeNode('loop', 'logic_loop', { itemsExpression: 'input' });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor } = makeExecutor({
       executeNode: vi.fn(async (args) => ({
         output: undefined,
         chosenBranch: undefined,
         step: {
-          nodeId: args.node.id, nodeLabel: 'body',
+          nodeId: args.node.id,
+          nodeLabel: 'body',
           status: 'error' as const,
-          input: '', output: '',
-          startedAt: Date.now(), endedAt: Date.now(), durationMs: 1,
+          input: '',
+          output: '',
+          startedAt: Date.now(),
+          endedAt: Date.now(),
+          durationMs: 1,
           nodeConfig: args.node.config,
         },
       })),
     });
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2, 3], workflow: wf,
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2, 3],
+        workflow: wf,
+      }),
+    );
     const out = result.output as { iterations: number; failed: number };
     expect(out.iterations).toBe(3);
     expect(out.failed).toBe(3);
@@ -280,16 +288,17 @@ describe('IterationCoordinator — executeLoop strategy=naive', () => {
       rateLimitPerMin: 600, // 100ms / iter
     });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
     const start = Date.now();
-    await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2], workflow: wf,
-    }));
+    await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2],
+        workflow: wf,
+      }),
+    );
     const elapsed = Date.now() - start;
     // 2 iter × 100ms = ~200ms (con margine schedulazione)
     expect(elapsed).toBeGreaterThanOrEqual(95);
@@ -301,15 +310,16 @@ describe('IterationCoordinator — executeLoop strategy=naive', () => {
       concurrency: 0,
     });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor, executeNodeMock } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2, 3], workflow: wf,
-    }));
+    await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2, 3],
+        workflow: wf,
+      }),
+    );
     expect(executeNodeMock).toHaveBeenCalledTimes(3);
   });
 
@@ -319,36 +329,37 @@ describe('IterationCoordinator — executeLoop strategy=naive', () => {
       concurrency: 999, // clamp a 50
     });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2, 3], workflow: wf,
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2, 3],
+        workflow: wf,
+      }),
+    );
     expect(result.chosenBranch).toBe('done');
   });
 });
 
 describe('IterationCoordinator — strategy=bulk', () => {
-
   it('body runs ONCE con array intero come input', async () => {
     const loopNode = makeNode('loop', 'logic_loop', {
       itemsExpression: 'input',
       strategy: 'bulk',
     });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor, executeNodeMock } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [10, 20, 30], workflow: wf,
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [10, 20, 30],
+        workflow: wf,
+      }),
+    );
     expect(executeNodeMock).toHaveBeenCalledTimes(1);
     const out = result.output as { iterations: number; succeeded: number };
     expect(out.iterations).toBe(1);
@@ -361,26 +372,32 @@ describe('IterationCoordinator — strategy=bulk', () => {
       strategy: 'bulk',
     });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor } = makeExecutor({
       executeNode: vi.fn(async (args) => ({
-        output: undefined, chosenBranch: undefined,
+        output: undefined,
+        chosenBranch: undefined,
         step: {
-          nodeId: args.node.id, nodeLabel: 'body',
+          nodeId: args.node.id,
+          nodeLabel: 'body',
           status: 'error' as const,
-          input: '', output: '',
-          startedAt: Date.now(), endedAt: Date.now(), durationMs: 1,
+          input: '',
+          output: '',
+          startedAt: Date.now(),
+          endedAt: Date.now(),
+          durationMs: 1,
           nodeConfig: args.node.config,
         },
       })),
     });
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2], workflow: wf,
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2],
+        workflow: wf,
+      }),
+    );
     const out = result.output as { failed: number };
     expect(out.failed).toBe(1);
   });
@@ -394,9 +411,13 @@ describe('IterationCoordinator — strategy=bulk', () => {
     const wf = makeWorkflow([loopNode], []);
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2, 3], workflow: wf,
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2, 3],
+        workflow: wf,
+      }),
+    );
     const out = result.output as { skipped: number };
     expect(out.skipped).toBe(3);
   });
@@ -409,15 +430,16 @@ describe('IterationCoordinator — strategy=queue (fallback naive)', () => {
       strategy: 'queue',
     });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor, executeNodeMock } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2], workflow: wf,
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2],
+        workflow: wf,
+      }),
+    );
     expect(executeNodeMock).toHaveBeenCalledTimes(2);
     const out = result.output as { iterations: number };
     expect(out.iterations).toBe(2);
@@ -425,7 +447,6 @@ describe('IterationCoordinator — strategy=queue (fallback naive)', () => {
 });
 
 describe('IterationCoordinator — strategy=batch', () => {
-
   it('batch raggruppa items in chunks di batchSize', async () => {
     const loopNode = makeNode('loop', 'logic_loop', {
       itemsExpression: 'input',
@@ -433,15 +454,16 @@ describe('IterationCoordinator — strategy=batch', () => {
       batchSize: 2,
     });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor, executeNodeMock } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2, 3, 4, 5], workflow: wf,
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2, 3, 4, 5],
+        workflow: wf,
+      }),
+    );
     // 5 items / batchSize 2 = 3 batches (2+2+1)
     expect(executeNodeMock).toHaveBeenCalledTimes(3);
     const out = result.output as { iterations: number };
@@ -455,37 +477,38 @@ describe('IterationCoordinator — strategy=batch', () => {
       // batchSize non specificato
     });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor, executeNodeMock } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2, 3], workflow: wf,
-    }));
+    await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2, 3],
+        workflow: wf,
+      }),
+    );
     // 3 items / 100 = 1 batch
     expect(executeNodeMock).toHaveBeenCalledTimes(1);
   });
 });
 
 describe('IterationCoordinator — strategy=aggregate', () => {
-
   it('default reducer=count + no groupKey → array length', async () => {
     const loopNode = makeNode('loop', 'logic_loop', {
       itemsExpression: 'input',
       strategy: 'aggregate',
     });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor, executeNodeMock } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2, 3], workflow: wf,
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2, 3],
+        workflow: wf,
+      }),
+    );
     // Body NON viene eseguito (aggregate skip)
     expect(executeNodeMock).not.toHaveBeenCalled();
     const out = result.output as { results: number[]; succeeded: number };
@@ -502,10 +525,12 @@ describe('IterationCoordinator — strategy=aggregate', () => {
     });
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode,
-      carriedInput: [{ amount: 10 }, { amount: 20 }, { amount: 30 }],
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [{ amount: 10 }, { amount: 20 }, { amount: 30 }],
+      }),
+    );
     const out = result.output as { results: number[] };
     expect(out.results[0]).toBe(60);
   });
@@ -519,10 +544,12 @@ describe('IterationCoordinator — strategy=aggregate', () => {
     });
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode,
-      carriedInput: [{ v: 10 }, { v: 20 }, { v: 30 }],
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [{ v: 10 }, { v: 20 }, { v: 30 }],
+      }),
+    );
     const out = result.output as { results: number[] };
     expect(out.results[0]).toBe(20);
   });
@@ -538,7 +565,9 @@ describe('IterationCoordinator — strategy=aggregate', () => {
       aggregateField: 'v',
     });
     const coordMin = new IterationCoordinator(executor);
-    const rMin = await coordMin.executeLoop(makeLoopArgs({ loopNode: loopMin, carriedInput: items }));
+    const rMin = await coordMin.executeLoop(
+      makeLoopArgs({ loopNode: loopMin, carriedInput: items }),
+    );
     expect((rMin.output as { results: number[] }).results[0]).toBe(1);
 
     const loopMax = makeNode('loop', 'logic_loop', {
@@ -548,7 +577,9 @@ describe('IterationCoordinator — strategy=aggregate', () => {
       aggregateField: 'v',
     });
     const coordMax = new IterationCoordinator(executor);
-    const rMax = await coordMax.executeLoop(makeLoopArgs({ loopNode: loopMax, carriedInput: items }));
+    const rMax = await coordMax.executeLoop(
+      makeLoopArgs({ loopNode: loopMax, carriedInput: items }),
+    );
     expect((rMax.output as { results: number[] }).results[0]).toBe(9);
 
     const loopConcat = makeNode('loop', 'logic_loop', {
@@ -558,10 +589,12 @@ describe('IterationCoordinator — strategy=aggregate', () => {
       aggregateField: 'v',
     });
     const coordConcat = new IterationCoordinator(executor);
-    const rConcat = await coordConcat.executeLoop(makeLoopArgs({
-      loopNode: loopConcat,
-      carriedInput: [{ v: 'a' }, { v: 'b' }, { v: 'c' }],
-    }));
+    const rConcat = await coordConcat.executeLoop(
+      makeLoopArgs({
+        loopNode: loopConcat,
+        carriedInput: [{ v: 'a' }, { v: 'b' }, { v: 'c' }],
+      }),
+    );
     expect((rConcat.output as { results: string[] }).results[0]).toBe('a,b,c');
   });
 
@@ -573,9 +606,12 @@ describe('IterationCoordinator — strategy=aggregate', () => {
     });
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2, 3],
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2, 3],
+      }),
+    );
     const out = result.output as { results: number[][] };
     expect(out.results[0]).toEqual([1, 2, 3]);
   });
@@ -589,12 +625,16 @@ describe('IterationCoordinator — strategy=aggregate', () => {
     });
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode,
-      carriedInput: [
-        { cat: 'A', v: 1 }, { cat: 'B', v: 2 }, { cat: 'A', v: 3 },
-      ],
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [
+          { cat: 'A', v: 1 },
+          { cat: 'B', v: 2 },
+          { cat: 'A', v: 3 },
+        ],
+      }),
+    );
     const out = result.output as { results: Record<string, number>[] };
     expect(out.results[0]).toEqual({ A: 2, B: 1 });
   });
@@ -608,9 +648,12 @@ describe('IterationCoordinator — strategy=aggregate', () => {
     });
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: ['x', 'x', 'y'],
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: ['x', 'x', 'y'],
+      }),
+    );
     const out = result.output as { results: Record<string, number>[] };
     expect(out.results[0]).toEqual({ x: 2, y: 1 });
   });
@@ -624,9 +667,12 @@ describe('IterationCoordinator — strategy=aggregate', () => {
     });
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [{ a: 1 }, { b: 2 }],
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [{ a: 1 }, { b: 2 }],
+      }),
+    );
     const out = result.output as { results: Record<string, number>[] };
     expect(out.results[0]).toEqual({ __missing__: 2 });
   });
@@ -639,9 +685,12 @@ describe('IterationCoordinator — strategy=aggregate', () => {
     });
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [],
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [],
+      }),
+    );
     const out = result.output as { results: number[] };
     expect(out.results[0]).toBe(0);
   });
@@ -654,9 +703,12 @@ describe('IterationCoordinator — strategy=aggregate', () => {
     });
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [],
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [],
+      }),
+    );
     const out = result.output as { results: number[] };
     expect(out.results[0]).toBe(0);
   });
@@ -669,9 +721,12 @@ describe('IterationCoordinator — strategy=aggregate', () => {
     });
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [],
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [],
+      }),
+    );
     const out = result.output as { results: number[] };
     expect(out.results[0]).toBe(0);
   });
@@ -685,9 +740,12 @@ describe('IterationCoordinator — strategy=aggregate', () => {
     });
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2, 3, 4],
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2, 3, 4],
+      }),
+    );
     const out = result.output as { results: number[] };
     expect(out.results[0]).toBe(10);
   });
@@ -701,9 +759,12 @@ describe('IterationCoordinator — strategy=aggregate', () => {
     });
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: ['x', 'y', 'z'],
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: ['x', 'y', 'z'],
+      }),
+    );
     const out = result.output as { results: string[] };
     expect(out.results[0]).toBe('x,y,z');
   });
@@ -716,9 +777,12 @@ describe('IterationCoordinator — strategy=aggregate', () => {
     });
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [],
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [],
+      }),
+    );
     const out = result.output as { results: number[] };
     expect(out.results[0]).toBe(0);
   });
@@ -758,7 +822,10 @@ describe('IterationCoordinator — strategy=aggregate', () => {
       [loopNode, phantom],
       [{ from: 'loop', to: 'phantom', fromPort: 'body' }],
     );
-    const adj = makeAdjacency([loopNode, phantom], [{ from: 'loop', to: 'phantom', fromPort: 'body' }]);
+    const adj = makeAdjacency(
+      [loopNode, phantom],
+      [{ from: 'loop', to: 'phantom', fromPort: 'body' }],
+    );
     // Forziamo phantom OUT della nodesById (simula DB drift)
     adj.nodesById.delete('phantom');
     const { executor } = makeExecutor();
@@ -771,22 +838,22 @@ describe('IterationCoordinator — strategy=aggregate', () => {
 });
 
 describe('IterationCoordinator — strategy=auto', () => {
-
   it('auto + body con bulkEnabled=true → bulk', async () => {
     const loopNode = makeNode('loop', 'logic_loop', {
       itemsExpression: 'input',
       strategy: 'auto',
     });
     const bodyNode = makeNode('body', 'action', { bulkEnabled: 'true' });
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor, executeNodeMock } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2, 3], workflow: wf,
-    }));
+    await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2, 3],
+        workflow: wf,
+      }),
+    );
     // bulk → body runs ONCE
     expect(executeNodeMock).toHaveBeenCalledTimes(1);
   });
@@ -797,17 +864,19 @@ describe('IterationCoordinator — strategy=auto', () => {
       strategy: 'auto',
     });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor, executeNodeMock } = makeExecutor({
       resolveNodeModule: vi.fn((defId: string) => {
         if (defId === 'action') {
           return {
             def: {
-              id: 'action', label: 'A', kind: 'action' as const, category: 't',
-              inputs: [], outputs: [], configSchema: {} as never,
+              id: 'action',
+              label: 'A',
+              kind: 'action' as const,
+              category: 't',
+              inputs: [],
+              outputs: [],
+              configSchema: {} as never,
               bulk: { supports: true },
             },
             executor: () => Promise.resolve({ output: undefined, chosenBranch: undefined }),
@@ -817,9 +886,13 @@ describe('IterationCoordinator — strategy=auto', () => {
       }),
     });
     const coord = new IterationCoordinator(executor);
-    await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2, 3], workflow: wf,
-    }));
+    await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2, 3],
+        workflow: wf,
+      }),
+    );
     expect(executeNodeMock).toHaveBeenCalledTimes(1);
   });
 
@@ -830,16 +903,17 @@ describe('IterationCoordinator — strategy=auto', () => {
       maxItems: 20_000,
     });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor, executeNodeMock } = makeExecutor();
     const coord = new IterationCoordinator(executor);
     const items = Array.from({ length: 10_000 }, (_, i) => i);
-    await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: items, workflow: wf,
-    }));
+    await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: items,
+        workflow: wf,
+      }),
+    );
     // queue → fallback naive → 10k iterations
     expect(executeNodeMock).toHaveBeenCalledTimes(10_000);
   }, 30_000);
@@ -851,16 +925,17 @@ describe('IterationCoordinator — strategy=auto', () => {
       batchSize: 50,
     });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor, executeNodeMock } = makeExecutor();
     const coord = new IterationCoordinator(executor);
     const items = Array.from({ length: 250 }, (_, i) => i);
-    await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: items, workflow: wf,
-    }));
+    await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: items,
+        workflow: wf,
+      }),
+    );
     // 250 items / 50 batchSize = 5 batches
     expect(executeNodeMock).toHaveBeenCalledTimes(5);
   });
@@ -871,17 +946,18 @@ describe('IterationCoordinator — strategy=auto', () => {
       strategy: 'auto',
     });
     const bodyNode = makeNode('body', 'unknown_def');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor, executeNodeMock } = makeExecutor({
       resolveNodeModule: vi.fn(() => undefined), // sempre undefined
     });
     const coord = new IterationCoordinator(executor);
-    await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2], workflow: wf,
-    }));
+    await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2],
+        workflow: wf,
+      }),
+    );
     // naive → 2 iterations
     expect(executeNodeMock).toHaveBeenCalledTimes(2);
   });
@@ -892,24 +968,25 @@ describe('IterationCoordinator — strategy=auto', () => {
       strategy: 'auto',
     });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const adj = makeAdjacency(wf.nodes, wf.edges);
     adj.nodesById.delete('body'); // simulato drift
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const result = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2], workflow: wf, adj,
-    }));
+    const result = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2],
+        workflow: wf,
+        adj,
+      }),
+    );
     // Niente body eseguito (nodo phantom)
     expect((result.output as { iterations: number }).iterations).toBe(2);
   });
 });
 
 describe('IterationCoordinator — runBodyIteration edge cases', () => {
-
   it('body chain di 3 nodi → tutti eseguiti', async () => {
     const loopNode = makeNode('loop', 'logic_loop', { itemsExpression: 'input' });
     const b1 = makeNode('b1', 'action');
@@ -925,9 +1002,13 @@ describe('IterationCoordinator — runBodyIteration edge cases', () => {
     );
     const { executor, executeNodeMock } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2], workflow: wf,
-    }));
+    await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2],
+        workflow: wf,
+      }),
+    );
     // 2 iter × 3 nodi = 6 executor calls
     expect(executeNodeMock).toHaveBeenCalledTimes(6);
   });
@@ -950,20 +1031,38 @@ describe('IterationCoordinator — runBodyIteration edge cases', () => {
         output: { node: args.node.id },
         chosenBranch: args.node.id === 'gate' ? 'true' : undefined,
         step: {
-          nodeId: args.node.id, nodeLabel: 'n',
-          status: 'success' as const, input: '', output: '',
-          startedAt: Date.now(), endedAt: Date.now(), durationMs: 1,
+          nodeId: args.node.id,
+          nodeLabel: 'n',
+          status: 'success' as const,
+          input: '',
+          output: '',
+          startedAt: Date.now(),
+          endedAt: Date.now(),
+          durationMs: 1,
           nodeConfig: args.node.config,
         },
       })),
-      resolveNodeModule: vi.fn((defId: string) => ({
-        def: {
-          id: defId, label: defId, kind: 'action' as const, category: 't',
-          inputs: [], outputs: defId === 'action' && true ? [{ id: 'true', label: 'T' }, { id: 'false', label: 'F' }] : [],
-          configSchema: {} as never,
-        },
-        executor: () => Promise.resolve({ output: undefined, chosenBranch: undefined }),
-      } as unknown as NodeModule)),
+      resolveNodeModule: vi.fn(
+        (defId: string) =>
+          ({
+            def: {
+              id: defId,
+              label: defId,
+              kind: 'action' as const,
+              category: 't',
+              inputs: [],
+              outputs:
+                defId === 'action' && true
+                  ? [
+                      { id: 'true', label: 'T' },
+                      { id: 'false', label: 'F' },
+                    ]
+                  : [],
+              configSchema: {} as never,
+            },
+            executor: () => Promise.resolve({ output: undefined, chosenBranch: undefined }),
+          }) as unknown as NodeModule,
+      ),
     });
     const coord = new IterationCoordinator(executor);
     const args = makeLoopArgs({ loopNode, carriedInput: [1], workflow: wf });
@@ -992,9 +1091,13 @@ describe('IterationCoordinator — runBodyIteration edge cases', () => {
     // Test alternativo: forzo node fuori bodyNodeIds via adj manipulation
     const { executor, executeNodeMock } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1], workflow: wf,
-    }));
+    await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1],
+        workflow: wf,
+      }),
+    );
     // Sia body che outside vengono eseguiti (entrambi reachable)
     expect(executeNodeMock).toHaveBeenCalled();
   });
@@ -1030,19 +1133,23 @@ describe('IterationCoordinator — pinnedOutputs propagation', () => {
   it('pinnedOutputs propagato a executeNode args', async () => {
     const loopNode = makeNode('loop', 'logic_loop', { itemsExpression: 'input' });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const pinned = new Map<string, unknown>();
     pinned.set('some-id', { pinned: true });
     const { executor, executeNodeMock } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1], workflow: wf, pinnedOutputs: pinned,
-    }));
+    await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1],
+        workflow: wf,
+        pinnedOutputs: pinned,
+      }),
+    );
     // Verifica che executeNode è chiamato con pinnedOutputs presente
-    const firstCall = executeNodeMock.mock.calls[0]?.[0] as { pinnedOutputs?: Map<string, unknown> };
+    const firstCall = executeNodeMock.mock.calls[0]?.[0] as {
+      pinnedOutputs?: Map<string, unknown>;
+    };
     expect(firstCall?.pinnedOutputs).toBe(pinned);
   });
 });
@@ -1051,15 +1158,17 @@ describe('IterationCoordinator — subworkflowDepth propagation', () => {
   it('subworkflowDepth viene forwarded a executeNode args', async () => {
     const loopNode = makeNode('loop', 'logic_loop', { itemsExpression: 'input' });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor, executeNodeMock } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1], workflow: wf, subworkflowDepth: 7,
-    }));
+    await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1],
+        workflow: wf,
+        subworkflowDepth: 7,
+      }),
+    );
     const firstCall = executeNodeMock.mock.calls[0]?.[0] as { subworkflowDepth?: number };
     expect(firstCall?.subworkflowDepth).toBe(7);
   });
@@ -1078,7 +1187,13 @@ describe('IterationCoordinator — NON emette eventi bus orfani (guardia struttu
   );
 
   it('🔒 il sorgente NON emette eventi loop.*/iteration.* orfani', () => {
-    const banned = ["'loop.started'", "'loop.completed'", "'iteration.started'", "'iteration.completed'", "'iteration.failed'"];
+    const banned = [
+      "'loop.started'",
+      "'loop.completed'",
+      "'iteration.started'",
+      "'iteration.completed'",
+      "'iteration.failed'",
+    ];
     const found = banned.filter((lit) => coordSrc.includes(lit));
     expect(found, `emit orfani rientrati nel coordinatore: ${found.join(', ')}`).toEqual([]);
   });
@@ -1091,15 +1206,16 @@ describe('IterationCoordinator — NON emette eventi bus orfani (guardia struttu
   it('il loop continua a PRODURRE output (2 iterazioni) — sanity comportamentale', async () => {
     const loopNode = makeNode('loop', 'logic_loop', { itemsExpression: 'input' });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    const out = await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2], workflow: wf,
-    }));
+    const out = await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2],
+        workflow: wf,
+      }),
+    );
     expect((out.output as { iterations: number }).iterations).toBe(2);
   });
 });
@@ -1108,18 +1224,20 @@ describe('IterationCoordinator — final loop summary step', () => {
   it('summary step pushato con status="success" se errorPolicy="continue"', async () => {
     const loopNode = makeNode('loop', 'logic_loop', { itemsExpression: 'input' });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor } = makeExecutor({
       executeNode: vi.fn(async (args) => ({
-        output: undefined, chosenBranch: undefined,
+        output: undefined,
+        chosenBranch: undefined,
         step: {
-          nodeId: args.node.id, nodeLabel: 'body',
+          nodeId: args.node.id,
+          nodeLabel: 'body',
           status: 'error' as const,
-          input: '', output: '',
-          startedAt: Date.now(), endedAt: Date.now(), durationMs: 1,
+          input: '',
+          output: '',
+          startedAt: Date.now(),
+          endedAt: Date.now(),
+          durationMs: 1,
           nodeConfig: args.node.config,
         },
       })),
@@ -1138,18 +1256,20 @@ describe('IterationCoordinator — final loop summary step', () => {
       errorPolicy: 'stop',
     });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor } = makeExecutor({
       executeNode: vi.fn(async (args) => ({
-        output: undefined, chosenBranch: undefined,
+        output: undefined,
+        chosenBranch: undefined,
         step: {
-          nodeId: args.node.id, nodeLabel: 'body',
+          nodeId: args.node.id,
+          nodeLabel: 'body',
           status: 'error' as const,
-          input: '', output: '',
-          startedAt: Date.now(), endedAt: Date.now(), durationMs: 1,
+          input: '',
+          output: '',
+          startedAt: Date.now(),
+          endedAt: Date.now(),
+          durationMs: 1,
           nodeConfig: args.node.config,
         },
       })),
@@ -1164,10 +1284,7 @@ describe('IterationCoordinator — final loop summary step', () => {
   it('outerOutputs.set chiamato con loopOutput', async () => {
     const loopNode = makeNode('loop', 'logic_loop', { itemsExpression: 'input' });
     const bodyNode = makeNode('body', 'action');
-    const wf = makeWorkflow(
-      [loopNode, bodyNode],
-      [{ from: 'loop', to: 'body', fromPort: 'body' }],
-    );
+    const wf = makeWorkflow([loopNode, bodyNode], [{ from: 'loop', to: 'body', fromPort: 'body' }]);
     const { executor } = makeExecutor();
     const coord = new IterationCoordinator(executor);
     const args = makeLoopArgs({ loopNode, carriedInput: [1], workflow: wf });
@@ -1203,8 +1320,13 @@ describe('IterationCoordinator — final loop summary step', () => {
       ...makeLoopArgs({ loopNode, workflow: wf }),
       loopModule: {
         def: {
-          id: 'logic_loop', label: 'Loop', kind: 'action' as const, category: 'logic',
-          inputs: [], outputs: [], configSchema: {} as never,
+          id: 'logic_loop',
+          label: 'Loop',
+          kind: 'action' as const,
+          category: 'logic',
+          inputs: [],
+          outputs: [],
+          configSchema: {} as never,
           icon: 'repeat-icon',
         },
         executor: () => Promise.resolve({ output: undefined, chosenBranch: undefined }),
@@ -1227,9 +1349,13 @@ describe('IterationCoordinator — body edges fromPort undefined (default body)'
     );
     const { executor, executeNodeMock } = makeExecutor();
     const coord = new IterationCoordinator(executor);
-    await coord.executeLoop(makeLoopArgs({
-      loopNode, carriedInput: [1, 2], workflow: wf,
-    }));
+    await coord.executeLoop(
+      makeLoopArgs({
+        loopNode,
+        carriedInput: [1, 2],
+        workflow: wf,
+      }),
+    );
     expect(executeNodeMock).toHaveBeenCalledTimes(2);
   });
 });

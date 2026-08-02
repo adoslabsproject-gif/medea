@@ -42,8 +42,14 @@ describe('classifyPecType — header PEC normati', () => {
 });
 
 // ── Helper: costruisce un EML minimale con header + body + (opz.) allegato ──────
-function eml(headers: Record<string, string>, body: string, attachment?: { name: string; type: string; data: string }): string {
-  const hd = Object.entries(headers).map(([k, v]) => `${k}: ${v}`).join('\r\n');
+function eml(
+  headers: Record<string, string>,
+  body: string,
+  attachment?: { name: string; type: string; data: string },
+): string {
+  const hd = Object.entries(headers)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join('\r\n');
   if (!attachment) {
     return `${hd}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${body}`;
   }
@@ -68,13 +74,16 @@ function eml(headers: Record<string, string>, body: string, attachment?: { name:
 
 describe('buildPecMessage — integrazione simpleParser', () => {
   it('🚨 estrae messageId/from/to/subject/body + pecType da una PEC ricevuta', async () => {
-    const raw = eml({
-      'Message-ID': '<abc@pec.it>',
-      From: 'mittente@pec.it',
-      To: 'destinatario@pec.it',
-      Subject: 'Comunicazione',
-      'X-Trasporto': 'posta-certificata',
-    }, 'Corpo del messaggio PEC.');
+    const raw = eml(
+      {
+        'Message-ID': '<abc@pec.it>',
+        From: 'mittente@pec.it',
+        To: 'destinatario@pec.it',
+        Subject: 'Comunicazione',
+        'X-Trasporto': 'posta-certificata',
+      },
+      'Corpo del messaggio PEC.',
+    );
     const msg = buildPecMessage(await simpleParser(raw));
     expect(msg.messageId).toBe('<abc@pec.it>');
     expect(msg.from).toBe('mittente@pec.it');
@@ -86,43 +95,63 @@ describe('buildPecMessage — integrazione simpleParser', () => {
   });
 
   it('🚨 ricevuta di avvenuta-consegna → pecType delivery + header esposti', async () => {
-    const raw = eml({
-      'Message-ID': '<r1@pec.it>',
-      From: 'posta-certificata@pec.aruba.it',
-      To: 'mittente@pec.it',
-      Subject: 'CONSEGNA: Comunicazione',
-      'X-Ricevuta': 'avvenuta-consegna',
-      'X-Riferimento-Message-ID': '<abc@pec.it>',
-    }, 'Ricevuta di avvenuta consegna.');
+    const raw = eml(
+      {
+        'Message-ID': '<r1@pec.it>',
+        From: 'posta-certificata@pec.aruba.it',
+        To: 'mittente@pec.it',
+        Subject: 'CONSEGNA: Comunicazione',
+        'X-Ricevuta': 'avvenuta-consegna',
+        'X-Riferimento-Message-ID': '<abc@pec.it>',
+      },
+      'Ricevuta di avvenuta consegna.',
+    );
     const msg = buildPecMessage(await simpleParser(raw));
     expect(msg.pecType).toBe('delivery');
     expect(msg.pecHeaders['X-Riferimento-Message-ID']).toBe('<abc@pec.it>');
   });
 
   it('🚨 allegato → metadata + base64; size sotto soglia incluso', async () => {
-    const raw = eml({
-      From: 'a@pec.it', To: 'b@pec.it', Subject: 'con allegato',
-      'X-Trasporto': 'posta-certificata',
-    }, 'vedi allegato', { name: 'fattura.xml', type: 'application/xml', data: '<Fattura/>' });
+    const raw = eml(
+      {
+        From: 'a@pec.it',
+        To: 'b@pec.it',
+        Subject: 'con allegato',
+        'X-Trasporto': 'posta-certificata',
+      },
+      'vedi allegato',
+      { name: 'fattura.xml', type: 'application/xml', data: '<Fattura/>' },
+    );
     const msg = buildPecMessage(await simpleParser(raw));
     expect(msg.attachments).toHaveLength(1);
     expect(msg.attachments[0]?.filename).toBe('fattura.xml');
     expect(msg.attachments[0]?.contentType).toContain('xml');
-    expect(Buffer.from(msg.attachments[0]?.contentBase64 ?? '', 'base64').toString()).toBe('<Fattura/>');
+    expect(Buffer.from(msg.attachments[0]?.contentBase64 ?? '', 'base64').toString()).toBe(
+      '<Fattura/>',
+    );
   });
 
   it('🚨 allegato oltre maxAttachmentBytes → metadata sì, base64 vuoto (no bloat)', async () => {
-    const raw = eml({
-      From: 'a@pec.it', To: 'b@pec.it', Subject: 'big',
-      'X-Trasporto': 'posta-certificata',
-    }, 'big', { name: 'big.bin', type: 'application/octet-stream', data: 'XXXXXXXXXX' });
+    const raw = eml(
+      {
+        From: 'a@pec.it',
+        To: 'b@pec.it',
+        Subject: 'big',
+        'X-Trasporto': 'posta-certificata',
+      },
+      'big',
+      { name: 'big.bin', type: 'application/octet-stream', data: 'XXXXXXXXXX' },
+    );
     const msg = buildPecMessage(await simpleParser(raw), { maxAttachmentBytes: 1 });
     expect(msg.attachments[0]?.size).toBeGreaterThan(1);
     expect(msg.attachments[0]?.contentBase64).toBe('');
   });
 
   it('🚨 body troncato a maxBodyChars', async () => {
-    const raw = eml({ From: 'a@pec.it', To: 'b@pec.it', Subject: 's', 'X-Trasporto': 'posta-certificata' }, 'X'.repeat(500));
+    const raw = eml(
+      { From: 'a@pec.it', To: 'b@pec.it', Subject: 's', 'X-Trasporto': 'posta-certificata' },
+      'X'.repeat(500),
+    );
     const msg = buildPecMessage(await simpleParser(raw), { maxBodyChars: 100 });
     expect(msg.body.length).toBe(100);
   });

@@ -19,7 +19,10 @@ export type DbAgentErrorCode =
   | 'INTERNAL';
 
 export class DbAgentError extends Error {
-  constructor(readonly code: DbAgentErrorCode, message: string) {
+  constructor(
+    readonly code: DbAgentErrorCode,
+    message: string,
+  ) {
     super(message);
     this.name = 'DbAgentError';
   }

@@ -56,7 +56,8 @@ const UpdateRowsSchema = z
 
 const updateRowsTool: DbAgentToolDef = {
   name: 'update_rows',
-  description: 'Aggiorna le righe che combaciano col filtro WHERE (uguaglianza). Richiede where NON vuoto, patch NON vuoto e confirm=true.',
+  description:
+    'Aggiorna le righe che combaciano col filtro WHERE (uguaglianza). Richiede where NON vuoto, patch NON vuoto e confirm=true.',
   parameters: {
     type: 'object',
     properties: {
@@ -73,11 +74,22 @@ const updateRowsTool: DbAgentToolDef = {
   destructive: true,
   handler: async (ctx, args) => {
     const a = args as z.infer<typeof UpdateRowsSchema>;
-    if (Object.keys(a.where).length === 0) throw new ToolValidationError('update_rows: where vuoto non ammesso (aggiornerebbe TUTTE le righe).');
-    if (Object.keys(a.patch).length === 0) throw new ToolValidationError('update_rows: patch vuoto, niente da aggiornare.');
-    if (!a.confirm) throw new ConfirmationRequiredError('update_rows modifica dati: passa confirm=true.');
+    if (Object.keys(a.where).length === 0)
+      throw new ToolValidationError(
+        'update_rows: where vuoto non ammesso (aggiornerebbe TUTTE le righe).',
+      );
+    if (Object.keys(a.patch).length === 0)
+      throw new ToolValidationError('update_rows: patch vuoto, niente da aggiornare.');
+    if (!a.confirm)
+      throw new ConfirmationRequiredError('update_rows modifica dati: passa confirm=true.');
     assertTableExists(ctx, a.databaseId, a.table);
-    const result = await ctx.dbStudio.updateRow(a.databaseId, a.table, a.where, a.patch, ctx.tenantId);
+    const result = await ctx.dbStudio.updateRow(
+      a.databaseId,
+      a.table,
+      a.where,
+      a.patch,
+      ctx.tenantId,
+    );
     return { updated: true, table: a.table, result };
   },
 };
@@ -93,7 +105,8 @@ const DeleteRowsSchema = z
 
 const deleteRowsTool: DbAgentToolDef = {
   name: 'delete_rows',
-  description: 'Elimina le righe che combaciano col filtro WHERE (uguaglianza). Richiede where NON vuoto e confirm=true (no svuota-tabella accidentale).',
+  description:
+    'Elimina le righe che combaciano col filtro WHERE (uguaglianza). Richiede where NON vuoto e confirm=true (no svuota-tabella accidentale).',
   parameters: {
     type: 'object',
     properties: {
@@ -109,8 +122,12 @@ const deleteRowsTool: DbAgentToolDef = {
   destructive: true,
   handler: async (ctx, args) => {
     const a = args as z.infer<typeof DeleteRowsSchema>;
-    if (Object.keys(a.where).length === 0) throw new ToolValidationError('delete_rows: where vuoto non ammesso (cancellerebbe TUTTE le righe).');
-    if (!a.confirm) throw new ConfirmationRequiredError('delete_rows cancella dati: passa confirm=true.');
+    if (Object.keys(a.where).length === 0)
+      throw new ToolValidationError(
+        'delete_rows: where vuoto non ammesso (cancellerebbe TUTTE le righe).',
+      );
+    if (!a.confirm)
+      throw new ConfirmationRequiredError('delete_rows cancella dati: passa confirm=true.');
     assertTableExists(ctx, a.databaseId, a.table);
     const result = await ctx.dbStudio.deleteRow(a.databaseId, a.table, a.where, ctx.tenantId);
     return { deleted: true, table: a.table, result };

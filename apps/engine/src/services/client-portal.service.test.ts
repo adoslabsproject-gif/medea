@@ -30,11 +30,29 @@ vi.mock('@/storage/db.js', () => ({
       prepare: (sql: string) => ({
         run: (...params: unknown[]) => {
           if (sql.startsWith('INSERT INTO viewer_share_tokens')) {
-            const [id, tenant_id, token, name, permissions_json, created_by, created_at, expires_at] = params;
+            const [
+              id,
+              tenant_id,
+              token,
+              name,
+              permissions_json,
+              created_by,
+              created_at,
+              expires_at,
+            ] = params;
             m.rows.push({
-              id, tenant_id, token, name, mode: 'portal',
-              permissions_json, created_by, created_at, expires_at,
-              revoked_at: null, last_accessed_at: null, access_count: 0,
+              id,
+              tenant_id,
+              token,
+              name,
+              mode: 'portal',
+              permissions_json,
+              created_by,
+              created_at,
+              expires_at,
+              revoked_at: null,
+              last_accessed_at: null,
+              access_count: 0,
             });
             return { changes: 1 };
           }
@@ -171,7 +189,10 @@ describe('ClientPortalService — create', () => {
 describe('ClientPortalService — verify', () => {
   it('token valido in portal mode → ritorna PortalToken + bump access', async () => {
     const svc = new ClientPortalService();
-    const created = await svc.create('tenant-a', { name: 'T', permissions: { workflowIds: ['wf-1'] } });
+    const created = await svc.create('tenant-a', {
+      name: 'T',
+      permissions: { workflowIds: ['wf-1'] },
+    });
     const verified = svc.verify('tenant-a', created.token);
     expect(verified).not.toBeNull();
     expect(verified!.id).toBe(created.id);
@@ -203,10 +224,18 @@ describe('ClientPortalService — verify', () => {
   it('token con mode=readonly (legacy) → null (richiede portal mode)', () => {
     const svc = new ClientPortalService();
     m.rows.push({
-      id: 'legacy', tenant_id: 'tenant-a', token: 'legacy-token-readonly',
-      name: 'Legacy', mode: 'readonly', permissions_json: null,
-      created_by: null, created_at: '2026-01-01', expires_at: null,
-      revoked_at: null, last_accessed_at: null, access_count: 0,
+      id: 'legacy',
+      tenant_id: 'tenant-a',
+      token: 'legacy-token-readonly',
+      name: 'Legacy',
+      mode: 'readonly',
+      permissions_json: null,
+      created_by: null,
+      created_at: '2026-01-01',
+      expires_at: null,
+      revoked_at: null,
+      last_accessed_at: null,
+      access_count: 0,
     });
     expect(svc.verify('tenant-a', 'legacy-token-readonly')).toBeNull();
   });
@@ -230,7 +259,10 @@ describe('ClientPortalService — listVisibleWorkflows (filtering)', () => {
     addWorkflow({ id: 'wf-2', name: 'Nascosto' });
     addWorkflow({ id: 'wf-3', name: 'AltroVisibile' });
     const svc = new ClientPortalService();
-    const t = await svc.create('tenant-a', { name: 'T', permissions: { workflowIds: ['wf-1', 'wf-3'] } });
+    const t = await svc.create('tenant-a', {
+      name: 'T',
+      permissions: { workflowIds: ['wf-1', 'wf-3'] },
+    });
     const result = svc.listVisibleWorkflows(t);
     expect(result.map((w) => w.id).sort()).toEqual(['wf-1', 'wf-3']);
   });
@@ -240,7 +272,10 @@ describe('ClientPortalService — listVisibleWorkflows (filtering)', () => {
     addWorkflow({ id: 'wf-2', name: 'B', tags: ['internal'] });
     addWorkflow({ id: 'wf-3', name: 'C', tags: ['client-facing'] });
     const svc = new ClientPortalService();
-    const t = await svc.create('tenant-a', { name: 'T', permissions: { workflowTags: ['client-facing'] } });
+    const t = await svc.create('tenant-a', {
+      name: 'T',
+      permissions: { workflowTags: ['client-facing'] },
+    });
     const result = svc.listVisibleWorkflows(t);
     expect(result.map((w) => w.id).sort()).toEqual(['wf-1', 'wf-3']);
   });
@@ -297,11 +332,20 @@ describe('ClientPortalService — listVisibleWorkflows (filtering)', () => {
 
   it('tags parsing safe vs JSON malformed', async () => {
     m.workflows.push({
-      id: 'wf-broken', tenant_id: 'tenant-a', name: 'Broken', description: null, enabled: 1,
-      tags_json: 'not-json-{', nodes_json: '[]', updated_at: '2026-01-01',
+      id: 'wf-broken',
+      tenant_id: 'tenant-a',
+      name: 'Broken',
+      description: null,
+      enabled: 1,
+      tags_json: 'not-json-{',
+      nodes_json: '[]',
+      updated_at: '2026-01-01',
     });
     const svc = new ClientPortalService();
-    const t = await svc.create('tenant-a', { name: 'T', permissions: { workflowIds: ['wf-broken'] } });
+    const t = await svc.create('tenant-a', {
+      name: 'T',
+      permissions: { workflowIds: ['wf-broken'] },
+    });
     const result = svc.listVisibleWorkflows(t);
     expect(result).toHaveLength(1);
     expect(result[0]!.tags).toEqual([]);
@@ -313,7 +357,10 @@ describe('ClientPortalService — canRunWorkflow (gating)', () => {
     addWorkflow({ id: 'wf-1', triggerType: 'trigger_manual' });
     const svc = new ClientPortalService();
     const t = await svc.create('tenant-a', { name: 'T', permissions: { workflowIds: ['wf-1'] } });
-    const result = svc.canRunWorkflow(t, { id: 'wf-1', nodesJson: JSON.stringify([{ defId: 'trigger_manual' }]) });
+    const result = svc.canRunWorkflow(t, {
+      id: 'wf-1',
+      nodesJson: JSON.stringify([{ defId: 'trigger_manual' }]),
+    });
     expect(result.ok).toBe(false);
     expect((result as { reason: string }).reason).toMatch(/allowRun=false/);
   });
@@ -407,7 +454,12 @@ describe('computeExposedFields — Sprint 3 field whitelist', () => {
     const { computeExposedFields } = await import('./client-portal.service.js');
     const wf = {
       nodes: [{ id: 'n1', defId: 'send_email', label: 'Invio email', config: { to: 'a@b.it' } }],
-      nodeDefs: [{ id: 'send_email', configFields: [{ key: 'to', label: 'Destinatario', exposeToClient: true, type: 'text' }] }],
+      nodeDefs: [
+        {
+          id: 'send_email',
+          configFields: [{ key: 'to', label: 'Destinatario', exposeToClient: true, type: 'text' }],
+        },
+      ],
     };
     const result = computeExposedFields(wf);
     expect(result).toHaveLength(1);
@@ -423,20 +475,42 @@ describe('computeExposedFields — Sprint 3 field whitelist', () => {
     const { computeExposedFields } = await import('./client-portal.service.js');
     const wf = {
       nodes: [{ id: 'n1', defId: 'send_email', config: { to: 'x' } }],
-      nodeDefs: [{ id: 'send_email', configFields: [{
-        key: 'to', label: 'smtp_recipient', clientLabel: 'Email destinatario', exposeToClient: true, type: 'text',
-      }] }],
+      nodeDefs: [
+        {
+          id: 'send_email',
+          configFields: [
+            {
+              key: 'to',
+              label: 'smtp_recipient',
+              clientLabel: 'Email destinatario',
+              exposeToClient: true,
+              type: 'text',
+            },
+          ],
+        },
+      ],
     };
     expect(computeExposedFields(wf)[0]!.label).toBe('Email destinatario');
   });
 
-  it('clientHint override → ha precedenza sull\'help tecnico', async () => {
+  it("clientHint override → ha precedenza sull'help tecnico", async () => {
     const { computeExposedFields } = await import('./client-portal.service.js');
     const wf = {
       nodes: [{ id: 'n1', defId: 'd', config: {} }],
-      nodeDefs: [{ id: 'd', configFields: [{
-        key: 'k', label: 'L', help: 'Dev hint', clientHint: 'Client friendly hint', exposeToClient: true,
-      }] }],
+      nodeDefs: [
+        {
+          id: 'd',
+          configFields: [
+            {
+              key: 'k',
+              label: 'L',
+              help: 'Dev hint',
+              clientHint: 'Client friendly hint',
+              exposeToClient: true,
+            },
+          ],
+        },
+      ],
     };
     expect(computeExposedFields(wf)[0]!.hint).toBe('Client friendly hint');
   });
@@ -445,9 +519,19 @@ describe('computeExposedFields — Sprint 3 field whitelist', () => {
     const { computeExposedFields } = await import('./client-portal.service.js');
     const wf = {
       nodes: [{ id: 'n1', defId: 'send_email', config: { password: 'supersecret123' } }],
-      nodeDefs: [{ id: 'send_email', configFields: [{
-        key: 'password', label: 'Password', type: 'secret', exposeToClient: true,
-      }] }],
+      nodeDefs: [
+        {
+          id: 'send_email',
+          configFields: [
+            {
+              key: 'password',
+              label: 'Password',
+              type: 'secret',
+              exposeToClient: true,
+            },
+          ],
+        },
+      ],
     };
     const result = computeExposedFields(wf);
     expect(result[0]!.currentValue).toBe('••••••••');
@@ -458,7 +542,12 @@ describe('computeExposedFields — Sprint 3 field whitelist', () => {
     const { computeExposedFields } = await import('./client-portal.service.js');
     const wf = {
       nodes: [{ id: 'n1', defId: 'd', config: {} }],
-      nodeDefs: [{ id: 'd', configFields: [{ key: 'password', label: 'P', type: 'secret', exposeToClient: true }] }],
+      nodeDefs: [
+        {
+          id: 'd',
+          configFields: [{ key: 'password', label: 'P', type: 'secret', exposeToClient: true }],
+        },
+      ],
     };
     const result = computeExposedFields(wf);
     expect(result[0]!.currentValue).toBe('');
@@ -469,11 +558,20 @@ describe('computeExposedFields — Sprint 3 field whitelist', () => {
     const { computeExposedFields } = await import('./client-portal.service.js');
     const wf = {
       nodes: [{ id: 'n1', defId: 'hubspot', config: { contact_email: 'x@y.it' } }],
-      nodeDefs: [{
-        id: 'hubspot',
-        configFields: [{ key: 'auth_token', label: 'Auth' }],
-        actions: [{ id: 'createContact', configFields: [{ key: 'contact_email', label: 'Email', exposeToClient: true, type: 'text' }] }],
-      }],
+      nodeDefs: [
+        {
+          id: 'hubspot',
+          configFields: [{ key: 'auth_token', label: 'Auth' }],
+          actions: [
+            {
+              id: 'createContact',
+              configFields: [
+                { key: 'contact_email', label: 'Email', exposeToClient: true, type: 'text' },
+              ],
+            },
+          ],
+        },
+      ],
     };
     const result = computeExposedFields(wf);
     expect(result).toHaveLength(1);
@@ -484,7 +582,9 @@ describe('computeExposedFields — Sprint 3 field whitelist', () => {
     const { computeExposedFields } = await import('./client-portal.service.js');
     const wf = {
       nodes: [{ id: 'n1', defId: 'unknown_def', config: {} }],
-      nodeDefs: [{ id: 'other_def', configFields: [{ key: 'k', label: 'L', exposeToClient: true }] }],
+      nodeDefs: [
+        { id: 'other_def', configFields: [{ key: 'k', label: 'L', exposeToClient: true }] },
+      ],
     };
     expect(computeExposedFields(wf)).toEqual([]);
   });
@@ -494,7 +594,16 @@ describe('validateExposedFieldValue — Sprint 3 validation', () => {
   it('required + value vuoto → error', async () => {
     const { validateExposedFieldValue } = await import('./client-portal.service.js');
     const result = validateExposedFieldValue(
-      { nodeId: 'n1', nodeLabel: 'N', fieldKey: 'k', label: 'L', type: 'text', required: true, currentValue: '', redacted: false },
+      {
+        nodeId: 'n1',
+        nodeLabel: 'N',
+        fieldKey: 'k',
+        label: 'L',
+        type: 'text',
+        required: true,
+        currentValue: '',
+        redacted: false,
+      },
       '   ',
     );
     expect(result.ok).toBe(false);
@@ -504,7 +613,16 @@ describe('validateExposedFieldValue — Sprint 3 validation', () => {
   it('value > 10k char → error', async () => {
     const { validateExposedFieldValue } = await import('./client-portal.service.js');
     const result = validateExposedFieldValue(
-      { nodeId: 'n1', nodeLabel: 'N', fieldKey: 'k', label: 'L', type: 'text', required: false, currentValue: '', redacted: false },
+      {
+        nodeId: 'n1',
+        nodeLabel: 'N',
+        fieldKey: 'k',
+        label: 'L',
+        type: 'text',
+        required: false,
+        currentValue: '',
+        redacted: false,
+      },
       'a'.repeat(10_001),
     );
     expect(result.ok).toBe(false);
@@ -514,11 +632,16 @@ describe('validateExposedFieldValue — Sprint 3 validation', () => {
     const { validateExposedFieldValue } = await import('./client-portal.service.js');
     const result = validateExposedFieldValue(
       {
-        nodeId: 'n1', nodeLabel: 'N', fieldKey: 'k', label: 'L',
-        type: 'text', required: false,
+        nodeId: 'n1',
+        nodeLabel: 'N',
+        fieldKey: 'k',
+        label: 'L',
+        type: 'text',
+        required: false,
         pattern: '^[a-z]+@[a-z]+\\.it$',
         patternMessage: 'Email italiana richiesta',
-        currentValue: '', redacted: false,
+        currentValue: '',
+        redacted: false,
       },
       'not-an-email',
     );
@@ -530,10 +653,15 @@ describe('validateExposedFieldValue — Sprint 3 validation', () => {
     const { validateExposedFieldValue } = await import('./client-portal.service.js');
     const result = validateExposedFieldValue(
       {
-        nodeId: 'n1', nodeLabel: 'N', fieldKey: 'k', label: 'L',
-        type: 'text', required: false,
+        nodeId: 'n1',
+        nodeLabel: 'N',
+        fieldKey: 'k',
+        label: 'L',
+        type: 'text',
+        required: false,
         pattern: '^[a-z]+@[a-z]+\\.it$',
-        currentValue: '', redacted: false,
+        currentValue: '',
+        redacted: false,
       },
       'mario@example.it',
     );
@@ -544,10 +672,15 @@ describe('validateExposedFieldValue — Sprint 3 validation', () => {
     const { validateExposedFieldValue } = await import('./client-portal.service.js');
     const result = validateExposedFieldValue(
       {
-        nodeId: 'n1', nodeLabel: 'N', fieldKey: 'k', label: 'L',
-        type: 'text', required: false,
+        nodeId: 'n1',
+        nodeLabel: 'N',
+        fieldKey: 'k',
+        label: 'L',
+        type: 'text',
+        required: false,
         pattern: '[(broken regex',
-        currentValue: '', redacted: false,
+        currentValue: '',
+        redacted: false,
       },
       'qualsiasi valore',
     );
@@ -603,10 +736,18 @@ describe('ClientPortalService — permissions parsing safety', () => {
   it('permissions_json malformed → fallback ai default safe', async () => {
     // Inject token con permissions_json corrotto
     m.rows.push({
-      id: 'broken', tenant_id: 'tenant-a', token: 'tok-broken',
-      name: 'Broken', mode: 'portal', permissions_json: 'not-json{',
-      created_by: null, created_at: '2026-01-01', expires_at: null,
-      revoked_at: null, last_accessed_at: null, access_count: 0,
+      id: 'broken',
+      tenant_id: 'tenant-a',
+      token: 'tok-broken',
+      name: 'Broken',
+      mode: 'portal',
+      permissions_json: 'not-json{',
+      created_by: null,
+      created_at: '2026-01-01',
+      expires_at: null,
+      revoked_at: null,
+      last_accessed_at: null,
+      access_count: 0,
     });
     const svc = new ClientPortalService();
     const t = svc.verify('tenant-a', 'tok-broken');

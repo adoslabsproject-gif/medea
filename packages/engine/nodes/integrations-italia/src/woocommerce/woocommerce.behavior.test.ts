@@ -26,19 +26,31 @@ const run = woocommerceNode.executor!;
 describe('italia_woocommerce — behavior (input rotto)', () => {
   it('🚨 create con data JSON malformato → errore PULITO che nomina il campo (no SyntaxError opaco)', async () => {
     await expect(
-      run({ ...creds, action: 'create', resource: 'products', data: '{bad json' }, undefined, ctx()),
+      run(
+        { ...creds, action: 'create', resource: 'products', data: '{bad json' },
+        undefined,
+        ctx(),
+      ),
     ).rejects.toThrow(/il campo "data" non è JSON valido/);
   });
 
   it('🚨 update con data JSON malformato → errore PULITO (scatta prima della rete)', async () => {
     await expect(
-      run({ ...creds, action: 'update', resource: 'products', id: '42', data: 'NOPE' }, undefined, ctx()),
+      run(
+        { ...creds, action: 'update', resource: 'products', id: '42', data: 'NOPE' },
+        undefined,
+        ctx(),
+      ),
     ).rejects.toThrow(/il campo "data" non è JSON valido/);
   });
 
   it('🚨 batch con batchData JSON malformato → errore PULITO che nomina batchData', async () => {
     await expect(
-      run({ ...creds, action: 'batch', resource: 'products', batchData: '{,,,}' }, undefined, ctx()),
+      run(
+        { ...creds, action: 'batch', resource: 'products', batchData: '{,,,}' },
+        undefined,
+        ctx(),
+      ),
     ).rejects.toThrow(/il campo "batchData" non è JSON valido/);
   });
 

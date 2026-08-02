@@ -56,7 +56,7 @@ describe('🚨 SystemClock — IClock impl', () => {
   it('🚨 IClock contract: monotonic forward', async () => {
     const clock = new SystemClock();
     const a = clock.epochMs();
-    await new Promise(r => setTimeout(r, 5));
+    await new Promise((r) => setTimeout(r, 5));
     const b = clock.epochMs();
     expect(b).toBeGreaterThan(a);
   });

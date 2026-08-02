@@ -26,8 +26,8 @@ export const SLUG_MAX_LEN = 64;
 export const SEMVER_RE = /^\d+\.\d+\.\d+$/;
 
 /** Source code limits — anti-DoS al server compile (esbuild). */
-export const SOURCE_MAX_BYTES = 256 * 1024;     // 256KB per file (executor/definition/schema)
-export const ICON_SVG_MAX_BYTES = 32 * 1024;    // 32KB inline SVG
+export const SOURCE_MAX_BYTES = 256 * 1024; // 256KB per file (executor/definition/schema)
+export const ICON_SVG_MAX_BYTES = 32 * 1024; // 32KB inline SVG
 
 /** Test runs ring buffer — N max conservati in DB. */
 export const TEST_RUNS_RING_SIZE = 20;
@@ -65,14 +65,9 @@ const slugField = z
 // Reserved for future API contract validating client-supplied semver (publish)
 export const semverField = z.string().regex(SEMVER_RE, 'semver must be X.Y.Z');
 
-const sourceField = z
-  .string()
-  .max(SOURCE_MAX_BYTES, `max ${SOURCE_MAX_BYTES} bytes`);
+const sourceField = z.string().max(SOURCE_MAX_BYTES, `max ${SOURCE_MAX_BYTES} bytes`);
 
-const iconSvgField = z
-  .string()
-  .max(ICON_SVG_MAX_BYTES)
-  .optional();
+const iconSvgField = z.string().max(ICON_SVG_MAX_BYTES).optional();
 
 export const CustomNodeCreateInputSchema = z.object({
   slug: slugField,
@@ -117,7 +112,7 @@ export const TestRunInputSchema = z.object({
 export type TestRunInput = z.infer<typeof TestRunInputSchema>;
 
 export interface TestRunRecord {
-  at: string;                // ISO timestamp
+  at: string; // ISO timestamp
   input: unknown;
   output: unknown;
   ok: boolean;
@@ -147,8 +142,19 @@ export type CustomNodeVersion = CustomNodeVersionRow;
 /** Lightweight view per liste — esclude i source che possono essere 256KB cad. */
 export type CustomNodeSummary = Pick<
   CustomNode,
-  | 'id' | 'workspaceId' | 'ownerUserId' | 'slug' | 'displayName'
-  | 'description' | 'iconSvg' | 'category' | 'semver' | 'status'
-  | 'compileAt' | 'marketplaceSubmittedAt' | 'marketplacePublishedAt'
-  | 'createdAt' | 'updatedAt'
+  | 'id'
+  | 'workspaceId'
+  | 'ownerUserId'
+  | 'slug'
+  | 'displayName'
+  | 'description'
+  | 'iconSvg'
+  | 'category'
+  | 'semver'
+  | 'status'
+  | 'compileAt'
+  | 'marketplaceSubmittedAt'
+  | 'marketplacePublishedAt'
+  | 'createdAt'
+  | 'updatedAt'
 >;

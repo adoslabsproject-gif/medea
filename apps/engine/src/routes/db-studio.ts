@@ -20,8 +20,18 @@ import { logger } from '@/lib/logger.js';
 import { sanitizedErrorResponse } from '@/lib/error-response.js';
 import { getTenantId } from '@/lib/tenant.js';
 import { stream } from 'hono/streaming';
-import { csvHeaderLine, csvBodyLines, unionColumns, sanitizeFilename, exportStamp } from '@/services/db-studio/db-export.js';
-import { parseDumpTables, createTableStatement, insertStatement } from '@/services/db-studio/sql-dump.js';
+import {
+  csvHeaderLine,
+  csvBodyLines,
+  unionColumns,
+  sanitizeFilename,
+  exportStamp,
+} from '@/services/db-studio/db-export.js';
+import {
+  parseDumpTables,
+  createTableStatement,
+  insertStatement,
+} from '@/services/db-studio/sql-dump.js';
 
 const CreateDbSchema = z.object({
   name: z.string().min(1).max(200),
@@ -85,7 +95,8 @@ function cellToText(v: unknown): string {
 
 function readOnlyBody(): { error: string; code: string } {
   return {
-    error: 'Workspace in sola lettura (spazio disco oltre il limite): scrittura bloccata. Riduci i dati o riattiva un piano.',
+    error:
+      'Workspace in sola lettura (spazio disco oltre il limite): scrittura bloccata. Riduci i dati o riattiva un piano.',
     code: 'WORKSPACE_READ_ONLY',
   };
 }
@@ -106,7 +117,9 @@ export function createDbStudioRoutes(): Hono {
     // riceve mai password/chiavi (cifrate a riposo). Idempotente sui cross-tenant
     // già redatti dal service. Per editare, il campo vuoto/'***redacted***' in
     // update significa "mantieni" (vedi service.update).
-    const list = (isCrossTenant ? service.listAllAcrossTenants() : service.list(tenantId)).map(redactConnectionSecrets);
+    const list = (isCrossTenant ? service.listAllAcrossTenants() : service.list(tenantId)).map(
+      redactConnectionSecrets,
+    );
     return c.json({ databases: list, total: list.length, crossTenant: isCrossTenant });
   });
 
@@ -132,9 +145,12 @@ export function createDbStudioRoutes(): Hono {
     if (conn.managed === true) {
       try {
         const created = await createTenantDatabase({
-          tenantId, name: body.name,
+          tenantId,
+          name: body.name,
           ...(body.description !== undefined ? { description: body.description } : {}),
-          engine: conn.engine, managed: true, dbStudio: service,
+          engine: conn.engine,
+          managed: true,
+          dbStudio: service,
         });
         return c.json({ database: redactConnectionSecrets(created) }, 201);
       } catch (err) {
@@ -149,11 +165,15 @@ export function createDbStudioRoutes(): Hono {
   });
 
   // Test connessione PRIMA del salvataggio (UI: bottone "Test connection").
-  app.post('/databases/test-connection', zValidator('json', z.object({ connection: DatabaseConnectionSchema })), async (c) => {
-    const tenantId = getTenantId(c);
-    const result = await service.testConnection(c.req.valid('json').connection, tenantId);
-    return c.json(result, result.ok ? 200 : 422);
-  });
+  app.post(
+    '/databases/test-connection',
+    zValidator('json', z.object({ connection: DatabaseConnectionSchema })),
+    async (c) => {
+      const tenantId = getTenantId(c);
+      const result = await service.testConnection(c.req.valid('json').connection, tenantId);
+      return c.json(result, result.ok ? 200 : 422);
+    },
+  );
 
   app.put('/databases/:id', zValidator('json', UpdateDbSchema), (c) => {
     const tenantId = getTenantId(c);
@@ -176,34 +196,50 @@ export function createDbStudioRoutes(): Hono {
     return c.body(null, 204);
   });
 
-  app.post('/databases/:id/migrations/preview', zValidator('json', MigrationRequestSchema), async (c) => {
-    const tenantId = getTenantId(c);
-    try {
-      const sql = await service.previewMigration(c.req.param('id'), c.req.valid('json').actions, tenantId);
-      return c.json({ sql });
-    } catch (error) {
-      return sanitizedErrorResponse(c, error, {
-        code: 'DB_MIGRATION_PREVIEW_FAILED',
-        userMessage: 'Anteprima migration fallita — verifica syntax SQL e schema target',
-        logContext: { op: 'db-studio.migration.preview', dbId: c.req.param('id') },
-      });
-    }
-  });
+  app.post(
+    '/databases/:id/migrations/preview',
+    zValidator('json', MigrationRequestSchema),
+    async (c) => {
+      const tenantId = getTenantId(c);
+      try {
+        const sql = await service.previewMigration(
+          c.req.param('id'),
+          c.req.valid('json').actions,
+          tenantId,
+        );
+        return c.json({ sql });
+      } catch (error) {
+        return sanitizedErrorResponse(c, error, {
+          code: 'DB_MIGRATION_PREVIEW_FAILED',
+          userMessage: 'Anteprima migration fallita — verifica syntax SQL e schema target',
+          logContext: { op: 'db-studio.migration.preview', dbId: c.req.param('id') },
+        });
+      }
+    },
+  );
 
-  app.post('/databases/:id/migrations/apply', zValidator('json', MigrationRequestSchema), async (c) => {
-    if (isWorkspaceReadOnly()) return c.json(readOnlyBody(), 423);
-    const tenantId = getTenantId(c);
-    try {
-      const result = await service.applyMigration(c.req.param('id'), c.req.valid('json').actions, tenantId);
-      return c.json(result);
-    } catch (error) {
-      return sanitizedErrorResponse(c, error, {
-        code: 'DB_MIGRATION_APPLY_FAILED',
-        userMessage: 'Esecuzione migration fallita',
-        logContext: { op: 'db-studio.migration.apply', dbId: c.req.param('id') },
-      });
-    }
-  });
+  app.post(
+    '/databases/:id/migrations/apply',
+    zValidator('json', MigrationRequestSchema),
+    async (c) => {
+      if (isWorkspaceReadOnly()) return c.json(readOnlyBody(), 423);
+      const tenantId = getTenantId(c);
+      try {
+        const result = await service.applyMigration(
+          c.req.param('id'),
+          c.req.valid('json').actions,
+          tenantId,
+        );
+        return c.json(result);
+      } catch (error) {
+        return sanitizedErrorResponse(c, error, {
+          code: 'DB_MIGRATION_APPLY_FAILED',
+          userMessage: 'Esecuzione migration fallita',
+          logContext: { op: 'db-studio.migration.apply', dbId: c.req.param('id') },
+        });
+      }
+    },
+  );
 
   app.post('/databases/:id/query', zValidator('json', QuerySpecSchema), async (c) => {
     const tenantId = getTenantId(c);
@@ -248,7 +284,9 @@ export function createDbStudioRoutes(): Hono {
     let sqlColumns: string[] = [];
     let createDdl = '';
     if (format === 'sql') {
-      const dumpTable = parseDumpTables(await service.introspect(id, tenantId)).find((t) => t.name === table);
+      const dumpTable = parseDumpTables(await service.introspect(id, tenantId)).find(
+        (t) => t.name === table,
+      );
       sqlColumns = dumpTable?.columns.map((col) => col.name) ?? [];
       if (sqlColumns.length === 0) {
         const firstRow = (await service.fetchTablePage(id, table, 1, 0, tenantId))[0];
@@ -257,9 +295,12 @@ export function createDbStudioRoutes(): Hono {
       createDdl = dumpTable ? createTableStatement(table, dumpTable.columns) : '';
     }
     const base = `${sanitizeFilename(table)}-${exportStamp()}`;
-    const contentType = format === 'csv'
-      ? 'text/csv; charset=utf-8'
-      : format === 'sql' ? 'application/sql; charset=utf-8' : 'application/json; charset=utf-8';
+    const contentType =
+      format === 'csv'
+        ? 'text/csv; charset=utf-8'
+        : format === 'sql'
+          ? 'application/sql; charset=utf-8'
+          : 'application/json; charset=utf-8';
     c.header('Content-Type', contentType);
     c.header('Content-Disposition', `attachment; filename="${base}.${format}"`);
     c.header('X-Content-Type-Options', 'nosniff');
@@ -267,30 +308,45 @@ export function createDbStudioRoutes(): Hono {
       if (format === 'csv') {
         await s.write(String.fromCharCode(0xfeff)); // BOM UTF-8 → Excel apre con encoding corretto.
         let columns: string[] | null = null;
-        await service.streamTableRows(id, table, async (rows) => {
-          if (columns === null) {
-            columns = unionColumns(rows);
-            await s.write(csvHeaderLine(columns));
-          }
-          if (columns.length > 0) await s.write(`\r\n${csvBodyLines(rows, columns)}`);
-        }, tenantId);
+        await service.streamTableRows(
+          id,
+          table,
+          async (rows) => {
+            if (columns === null) {
+              columns = unionColumns(rows);
+              await s.write(csvHeaderLine(columns));
+            }
+            if (columns.length > 0) await s.write(`\r\n${csvBodyLines(rows, columns)}`);
+          },
+          tenantId,
+        );
       } else if (format === 'sql') {
         if (createDdl) await s.write(`${createDdl}\n`);
         if (sqlColumns.length > 0) {
-          await service.streamTableRows(id, table, async (rows) => {
-            const lines = rows.map((r) => insertStatement(table, sqlColumns, r)).join('\n');
-            if (lines.length > 0) await s.write(`${lines}\n`);
-          }, tenantId);
+          await service.streamTableRows(
+            id,
+            table,
+            async (rows) => {
+              const lines = rows.map((r) => insertStatement(table, sqlColumns, r)).join('\n');
+              if (lines.length > 0) await s.write(`${lines}\n`);
+            },
+            tenantId,
+          );
         }
       } else {
         await s.write('[');
         let first = true;
-        await service.streamTableRows(id, table, async (rows) => {
-          for (const r of rows) {
-            await s.write(`${first ? '' : ','}${JSON.stringify(r)}`);
-            first = false;
-          }
-        }, tenantId);
+        await service.streamTableRows(
+          id,
+          table,
+          async (rows) => {
+            for (const r of rows) {
+              await s.write(`${first ? '' : ','}${JSON.stringify(r)}`);
+              first = false;
+            }
+          },
+          tenantId,
+        );
         await s.write(']');
       }
     });
@@ -335,11 +391,22 @@ export function createDbStudioRoutes(): Hono {
           firstTable = false;
           let firstRow = true;
           try {
-            await service.streamTableRows(id, t.name, async (rows) => {
-              for (const r of rows) { await s.write(`${firstRow ? '' : ','}${JSON.stringify(r)}`); firstRow = false; }
-            }, tenantId);
+            await service.streamTableRows(
+              id,
+              t.name,
+              async (rows) => {
+                for (const r of rows) {
+                  await s.write(`${firstRow ? '' : ','}${JSON.stringify(r)}`);
+                  firstRow = false;
+                }
+              },
+              tenantId,
+            );
           } catch (err) {
-            logger.warn({ dbId: id, table: t.name, err: err instanceof Error ? err.message : String(err) }, '[db-studio.backup] tabella saltata');
+            logger.warn(
+              { dbId: id, table: t.name, err: err instanceof Error ? err.message : String(err) },
+              '[db-studio.backup] tabella saltata',
+            );
           }
           await s.write(']');
         }
@@ -350,20 +417,30 @@ export function createDbStudioRoutes(): Hono {
     // format === 'sql' — dump ripristinabile.
     c.header('Content-Type', 'application/sql; charset=utf-8');
     return stream(c, async (s) => {
-      await s.write(`-- FlowForge backup SQL\n-- database: ${database.name}\n-- exported: ${new Date().toISOString()}\n-- tables: ${String(tables.length)}\n`);
+      await s.write(
+        `-- FlowForge backup SQL\n-- database: ${database.name}\n-- exported: ${new Date().toISOString()}\n-- tables: ${String(tables.length)}\n`,
+      );
       for (const t of tables) {
         await s.write(`\n-- ─── Tabella: ${t.name} ───\n`);
         await s.write(`${createTableStatement(t.name, t.columns)}\n`);
         const colNames = t.columns.map((col) => col.name);
         if (colNames.length === 0) continue; // niente colonne note → solo DDL placeholder
         try {
-          await service.streamTableRows(id, t.name, async (rows) => {
-            const lines = rows.map((r) => insertStatement(t.name, colNames, r)).join('\n');
-            if (lines.length > 0) await s.write(`${lines}\n`);
-          }, tenantId);
+          await service.streamTableRows(
+            id,
+            t.name,
+            async (rows) => {
+              const lines = rows.map((r) => insertStatement(t.name, colNames, r)).join('\n');
+              if (lines.length > 0) await s.write(`${lines}\n`);
+            },
+            tenantId,
+          );
         } catch (err) {
           await s.write(`-- (errore lettura righe di ${t.name}: tabella saltata)\n`);
-          logger.warn({ dbId: id, table: t.name, err: err instanceof Error ? err.message : String(err) }, '[db-studio.backup] tabella saltata');
+          logger.warn(
+            { dbId: id, table: t.name, err: err instanceof Error ? err.message : String(err) },
+            '[db-studio.backup] tabella saltata',
+          );
         }
       }
     });
@@ -477,7 +554,11 @@ export function createDbStudioRoutes(): Hono {
     // (un tenant in disk over-quota grace non deve crescere via auto-embed bulk).
     if (isWorkspaceReadOnly()) {
       return c.json(
-        { error: 'Workspace in sola lettura (spazio disco oltre il limite): indicizzazione bloccata. Riduci i dati o riattiva un piano.', code: 'WORKSPACE_READ_ONLY' },
+        {
+          error:
+            'Workspace in sola lettura (spazio disco oltre il limite): indicizzazione bloccata. Riduci i dati o riattiva un piano.',
+          code: 'WORKSPACE_READ_ONLY',
+        },
         423,
       );
     }
@@ -490,15 +571,20 @@ export function createDbStudioRoutes(): Hono {
     const dimensions = dimensionsForModel(body.model);
 
     try {
-      const queryResult = await service.query(
+      const queryResult = (await service.query(
         sourceId,
         { table: body.sourceTable, filters: [], orderBy: [], limit: body.limit },
         tenantId,
-      ) as { rows: Record<string, unknown>[] };
+      )) as { rows: Record<string, unknown>[] };
 
       const rows = queryResult.rows;
       if (rows.length === 0) {
-        return c.json({ ok: true, indexed: 0, skipped: 0, message: 'Tabella vuota — nessun record indicizzato.' });
+        return c.json({
+          ok: true,
+          indexed: 0,
+          skipped: 0,
+          message: 'Tabella vuota — nessun record indicizzato.',
+        });
       }
 
       // QUOTA: proiezione AGGREGATA per-tenant prima di scrivere — l'auto-embed NON
@@ -506,16 +592,31 @@ export function createDbStudioRoutes(): Hono {
       // PULITA 413 (non mascherata dal catch generico) col motivo, così l'utente sa
       // che deve ridurre i dati / fare upgrade.
       try {
-        await assertBulkQuota(tenantId, rows.length, body.model, vectorPlanLimitsFromConfig(), vector);
+        await assertBulkQuota(
+          tenantId,
+          rows.length,
+          body.model,
+          vectorPlanLimitsFromConfig(),
+          vector,
+        );
       } catch (quotaErr) {
         return c.json(
-          { error: quotaErr instanceof Error ? quotaErr.message : String(quotaErr), code: 'VECTOR_QUOTA_EXCEEDED' },
+          {
+            error: quotaErr instanceof Error ? quotaErr.message : String(quotaErr),
+            code: 'VECTOR_QUOTA_EXCEEDED',
+          },
           413,
         );
       }
 
       // ensureCollection DOPO il gate quota (no collezione fantasma su batch rifiutato).
-      await vector.ensureCollection(body.targetDatabaseId, body.targetCollection, dimensions, body.distance, tenantId);
+      await vector.ensureCollection(
+        body.targetDatabaseId,
+        body.targetCollection,
+        dimensions,
+        body.distance,
+        tenantId,
+      );
 
       const embedReq = {
         provider: body.provider,
@@ -562,7 +663,10 @@ export function createDbStudioRoutes(): Hono {
             continue;
           }
 
-          const payload: Record<string, unknown> = { _source_table: body.sourceTable, _source_id: id };
+          const payload: Record<string, unknown> = {
+            _source_table: body.sourceTable,
+            _source_id: id,
+          };
           const payloadCols = body.payloadColumns ?? Object.keys(row);
           for (const col of payloadCols) {
             if (row[col] !== undefined) payload[col] = row[col];
@@ -588,7 +692,14 @@ export function createDbStudioRoutes(): Hono {
         'Auto-embed completed',
       );
 
-      const response: { ok: true; indexed: number; skipped: number; total: number; dimensions: number; errors?: string[] } = {
+      const response: {
+        ok: true;
+        indexed: number;
+        skipped: number;
+        total: number;
+        dimensions: number;
+        errors?: string[];
+      } = {
         ok: true,
         indexed,
         skipped,
@@ -646,7 +757,11 @@ export function createDbStudioRoutes(): Hono {
       return sanitizedErrorResponse(c, error, {
         code: 'DB_TABLE_PREVIEW_FAILED',
         userMessage: 'Preview tabella fallita — schema illegibile o adapter non supportato',
-        logContext: { op: 'db-studio.table.preview', dbId: c.req.param('id'), table: c.req.param('name') },
+        logContext: {
+          op: 'db-studio.table.preview',
+          dbId: c.req.param('id'),
+          table: c.req.param('name'),
+        },
       });
     }
   });
@@ -658,21 +773,34 @@ export function createDbStudioRoutes(): Hono {
     const tableName = c.req.param('name');
     if (!id || !tableName) return c.json({ error: 'Bad request' }, 400);
     let body: { confirm?: string } = {};
-    try { body = await c.req.json<{ confirm?: string }>(); } catch { /* empty body ok if confirm wrong */ }
+    try {
+      body = await c.req.json<{ confirm?: string }>();
+    } catch {
+      /* empty body ok if confirm wrong */
+    }
     if (body.confirm !== tableName) {
-      return c.json({
-        error: `Conferma mancante. Per svuotare la tabella "${tableName}" il body deve contenere {"confirm": "${tableName}"}.`,
-        code: 'CONFIRM_MISMATCH',
-      }, 400);
+      return c.json(
+        {
+          error: `Conferma mancante. Per svuotare la tabella "${tableName}" il body deve contenere {"confirm": "${tableName}"}.`,
+          code: 'CONFIRM_MISMATCH',
+        },
+        400,
+      );
     }
     // Sanity: tableName deve essere SQL-safe (no spazi, no quote, no ';')
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(tableName)) {
       return c.json({ error: 'Nome tabella non valido', code: 'INVALID_TABLE_NAME' }, 400);
     }
     try {
-      const result = await service.executeRaw(id, `DELETE FROM "${tableName}"`, { dryRun: false, rowLimit: 0 }, tenantId);
+      const result = await service.executeRaw(
+        id,
+        `DELETE FROM "${tableName}"`,
+        { dryRun: false, rowLimit: 0 },
+        tenantId,
+      );
       logger.warn({ tenantId, dbId: id, tableName, result }, 'DB Studio: TRUNCATE table executed');
-      const resultObj = (result && typeof result === 'object') ? result as Record<string, unknown> : {};
+      const resultObj =
+        result && typeof result === 'object' ? (result as Record<string, unknown>) : {};
       return c.json({ ok: true, table: tableName, ...resultObj });
     } catch (error) {
       return sanitizedErrorResponse(c, error, {

@@ -49,7 +49,13 @@ function truthfulStatus(rawStatus: string, errorCount: number): RunStatus {
   if (rawStatus === 'error') return 'error';
   if (rawStatus === 'paused') return 'paused';
   if (rawStatus === 'partial' || errorCount > 0) return 'partial';
-  if (rawStatus === 'success' || rawStatus === 'pending' || rawStatus === 'running' || rawStatus === 'cancelled') return rawStatus;
+  if (
+    rawStatus === 'success' ||
+    rawStatus === 'pending' ||
+    rawStatus === 'running' ||
+    rawStatus === 'cancelled'
+  )
+    return rawStatus;
   return 'partial';
 }
 
@@ -200,7 +206,10 @@ export class RunService {
     // un piccolo delay nell'ottenere il runId. In pratica, l'INSERT è <5ms.
     const inputWithId: ExecuteRunInput = { ...input, runId: runIdEarly };
     void this.executeWithPins(inputWithId, pins).catch((err: unknown) => {
-      logger.error({ err, runId: runIdEarly, workflowId: input.workflowId }, 'Async run failed in background');
+      logger.error(
+        { err, runId: runIdEarly, workflowId: input.workflowId },
+        'Async run failed in background',
+      );
     });
     return {
       runId: runIdEarly,
@@ -228,7 +237,13 @@ export class RunService {
     runId: string,
     input: ExecuteRunInput,
     tenantId: string,
-  ): Promise<{ runId: string; status: string; steps: unknown[]; totalDurationMs: number; errorCount: number }> {
+  ): Promise<{
+    runId: string;
+    status: string;
+    steps: unknown[];
+    totalDurationMs: number;
+    errorCount: number;
+  }> {
     if (isWorkspaceReadOnly()) {
       throw new WorkspaceReadOnlyError();
     }
@@ -249,7 +264,10 @@ export class RunService {
         workflowId: workflow.id,
         tenantId,
         status: 'pending',
-        input: typeof input.triggerInput === 'string' ? input.triggerInput : JSON.stringify(input.triggerInput ?? null),
+        input:
+          typeof input.triggerInput === 'string'
+            ? input.triggerInput
+            : JSON.stringify(input.triggerInput ?? null),
         stepsJson: '[]',
         errorCount: 0,
         totalDurationMs: 0,
@@ -258,7 +276,8 @@ export class RunService {
       };
       if (input.triggerType !== undefined) pendingRow.triggerType = input.triggerType;
       if (input.triggeredBy !== undefined) pendingRow.triggeredBy = input.triggeredBy;
-      if (input.triggerInput !== undefined) pendingRow.triggerPayloadJson = JSON.stringify(input.triggerInput);
+      if (input.triggerInput !== undefined)
+        pendingRow.triggerPayloadJson = JSON.stringify(input.triggerInput);
       await db.insert(runs).values(pendingRow).onConflictDoNothing();
     }
 
@@ -276,13 +295,22 @@ export class RunService {
       // Enqueue fallito → la row `pending` resterebbe orfana. Puliscila e
       // rilancia così il caller HTTP riceve un 5xx esplicito.
       if (trackRun) {
-        await db.delete(runs).where(eq(runs.id, runId)).catch(() => undefined);
+        await db
+          .delete(runs)
+          .where(eq(runs.id, runId))
+          .catch(() => undefined);
       }
-      logger.error({ err, runId, workflowId: workflow.id }, '[QUEUE] enqueue fallito — row pending rimossa');
+      logger.error(
+        { err, runId, workflowId: workflow.id },
+        '[QUEUE] enqueue fallito — row pending rimossa',
+      );
       throw err;
     }
 
-    logger.info({ runId, workflowId: workflow.id, tenantId }, '[QUEUE] run accodato (modalità distribuita)');
+    logger.info(
+      { runId, workflowId: workflow.id, tenantId },
+      '[QUEUE] run accodato (modalità distribuita)',
+    );
     return { runId, status: 'pending', steps: [], totalDurationMs: 0, errorCount: 0 };
   }
 
@@ -290,7 +318,10 @@ export class RunService {
    * Replay variant — caller supplies a pin map (e.g. for resume-from-step).
    * Same lifecycle as execute() but bypasses the persistent PinService.
    */
-  async executeWithPins(input: ExecuteRunInput, pinnedOutputs: Map<string, unknown>): Promise<{
+  async executeWithPins(
+    input: ExecuteRunInput,
+    pinnedOutputs: Map<string, unknown>,
+  ): Promise<{
     runId: string;
     status: string;
     steps: unknown[];
@@ -345,8 +376,8 @@ export class RunService {
     //   'full'    → comportamento storico (steps completi).
     //
     // Back-compat: NULL → legge ephemeralRuns (true=silent, false=full).
-    const verbosity: 'silent' | 'summary' | 'full' = workflow.runVerbosity
-      ?? (workflow.ephemeralRuns ? 'silent' : 'full');
+    const verbosity: 'silent' | 'summary' | 'full' =
+      workflow.runVerbosity ?? (workflow.ephemeralRuns ? 'silent' : 'full');
     const trackRun = verbosity !== 'silent';
     const trimSteps = verbosity === 'summary';
 
@@ -366,7 +397,10 @@ export class RunService {
         workflowId: workflow.id,
         tenantId,
         status: 'running',
-        input: typeof input.triggerInput === 'string' ? input.triggerInput : JSON.stringify(input.triggerInput ?? null),
+        input:
+          typeof input.triggerInput === 'string'
+            ? input.triggerInput
+            : JSON.stringify(input.triggerInput ?? null),
         stepsJson: '[]',
         errorCount: 0,
         totalDurationMs: 0,
@@ -375,16 +409,20 @@ export class RunService {
       };
       if (input.triggerType !== undefined) earlyRow.triggerType = input.triggerType;
       if (input.triggeredBy !== undefined) earlyRow.triggeredBy = input.triggeredBy;
-      if (input.triggerInput !== undefined) earlyRow.triggerPayloadJson = JSON.stringify(input.triggerInput);
+      if (input.triggerInput !== undefined)
+        earlyRow.triggerPayloadJson = JSON.stringify(input.triggerInput);
       // Upsert (non plain insert): in QUEUE MODE il main process ha già
       // inserito una row `pending` con questo runId (vedi `dispatchToQueue`).
       // Quando il worker esegue, qui la transizioniamo `pending → running`
       // invece di crashare su conflitto PK. Per i run inline (runId nuovo via
       // nanoid) non c'è mai conflitto → si comporta come un insert normale.
-      await db.insert(runs).values(earlyRow).onConflictDoUpdate({
-        target: runs.id,
-        set: { status: 'running', startedAt, endedAt: null },
-      });
+      await db
+        .insert(runs)
+        .values(earlyRow)
+        .onConflictDoUpdate({
+          target: runs.id,
+          set: { status: 'running', startedAt, endedAt: null },
+        });
     }
 
     // ── UPDATE incrementale steps_json ─────────────────────────────────
@@ -410,7 +448,7 @@ export class RunService {
       if (typeof s.errorCount === 'number') out.errorCount = s.errorCount;
       // Conservare il messaggio d'errore (corto) — utile per cronologia
       // anche in modalità summary; clamp a 500 char per sicurezza.
-      if (typeof s.error === 'string') out.error = (s.error).slice(0, 500);
+      if (typeof s.error === 'string') out.error = s.error.slice(0, 500);
       return out;
     };
     const serializeSteps = (steps: readonly unknown[]): string =>
@@ -423,8 +461,12 @@ export class RunService {
         if (!stepsDirty) return;
         stepsDirty = false;
         const json = serializeSteps(accumulatedSteps);
-        db.update(runs).set({ stepsJson: json }).where(eq(runs.id, runIdEarly))
-          .catch((e: unknown) => { logger.warn({ err: e, runId: runIdEarly }, 'Incremental steps_json update failed'); });
+        db.update(runs)
+          .set({ stepsJson: json })
+          .where(eq(runs.id, runIdEarly))
+          .catch((e: unknown) => {
+            logger.warn({ err: e, runId: runIdEarly }, 'Incremental steps_json update failed');
+          });
       }, 2000);
     };
     // Cooperative cancellation: registra AbortController per questo run.
@@ -438,13 +480,15 @@ export class RunService {
     // accumulatedSteps in memoria → niente flush DB.
     const unsubscribeStep = trackRun
       ? this.eventBus.subscribeTo('run.step', (evt) => {
-        const data = (evt as { data?: { runId?: string; step?: unknown } }).data;
-        if (data?.runId !== runIdEarly || !data.step) return;
-        accumulatedSteps.push(data.step);
-        stepsDirty = true;
-        scheduleFlush();
-      })
-      : (() => { /* no-op unsubscribe */ });
+          const data = (evt as { data?: { runId?: string; step?: unknown } }).data;
+          if (data?.runId !== runIdEarly || !data.step) return;
+          accumulatedSteps.push(data.step);
+          stepsDirty = true;
+          scheduleFlush();
+        })
+      : () => {
+          /* no-op unsubscribe */
+        };
 
     let result;
     try {
@@ -456,7 +500,9 @@ export class RunService {
         ...(pinnedOutputs.size > 0 ? { pinnedOutputs } : {}),
         runId: runIdEarly,
         cancelSignal: cancelCtrl.signal,
-        ...(input.subworkflowDepth !== undefined ? { subworkflowDepth: input.subworkflowDepth } : {}),
+        ...(input.subworkflowDepth !== undefined
+          ? { subworkflowDepth: input.subworkflowDepth }
+          : {}),
         ...(input.stopAfterNodeId !== undefined ? { stopAfterNodeId: input.stopAfterNodeId } : {}),
       });
     } catch (err) {
@@ -465,9 +511,11 @@ export class RunService {
       // distingue: cancelled = grigio "interrotto dall'utente",
       // error = rosso "esecuzione fallita".
       const isAbort =
-        err instanceof Error && (err.name === 'AbortError' || /aborted|cancelled/i.test(err.message));
+        err instanceof Error &&
+        (err.name === 'AbortError' || /aborted|cancelled/i.test(err.message));
       if (trackRun) {
-        await db.update(runs)
+        await db
+          .update(runs)
           .set({
             status: isAbort ? 'cancelled' : 'error',
             stepsJson: serializeSteps(accumulatedSteps),
@@ -529,8 +577,9 @@ export class RunService {
       let resolvedErrWfId: string | null = null;
       if (result.status === 'error' && input.triggerType !== 'error-handler') {
         try {
-          resolvedErrWfId = (await this.workflows.getErrorWorkflowId(workflow.id, tenantId))
-            ?? getTenantErrorWorkflowId();
+          resolvedErrWfId =
+            (await this.workflows.getErrorWorkflowId(workflow.id, tenantId)) ??
+            getTenantErrorWorkflowId();
         } catch (e) {
           logger.warn(
             { err: e instanceof Error ? e.message : String(e), workflowId: workflow.id },
@@ -539,9 +588,10 @@ export class RunService {
         }
       }
 
-      const triggerInputJson = typeof input.triggerInput === 'string'
-        ? input.triggerInput
-        : JSON.stringify(input.triggerInput ?? null);
+      const triggerInputJson =
+        typeof input.triggerInput === 'string'
+          ? input.triggerInput
+          : JSON.stringify(input.triggerInput ?? null);
       const outboxEvents = isErrored
         ? buildErrorOutboxEvents({
             runId: result.runId,
@@ -583,12 +633,21 @@ export class RunService {
         resourceType: 'workflow',
         resourceId: workflow.id,
         ...(input.triggeredBy !== undefined ? { actorId: input.triggeredBy } : {}),
-        metadata: { runId: result.runId, status: result.status, durationMs: result.totalDurationMs },
+        metadata: {
+          runId: result.runId,
+          status: result.status,
+          durationMs: result.totalDurationMs,
+        },
       });
     }
 
     logger.info(
-      { runId: result.runId, workflowId: workflow.id, status: result.status, durationMs: result.totalDurationMs },
+      {
+        runId: result.runId,
+        workflowId: workflow.id,
+        status: result.status,
+        durationMs: result.totalDurationMs,
+      },
       'Run completed',
     );
 
@@ -656,17 +715,19 @@ export class RunService {
    *     Se nodeId appare più volte (es. dentro un loop), pinna fino al
    *     PRIMO occorrenza (replay riesegue da quella in poi).
    */
-  async replay(runId: string, opts: { fromStep?: number; fromNodeId?: string; tenantId?: string }): Promise<unknown> {
+  async replay(
+    runId: string,
+    opts: { fromStep?: number; fromNodeId?: string; tenantId?: string },
+  ): Promise<unknown> {
     const { db } = getDatabase();
     const existing = await db.select().from(runs).where(eq(runs.id, runId)).limit(1);
     const prior = existing[0];
     if (!prior) throw new Error(`Run ${runId} not found`);
     const tenantId = opts.tenantId ?? prior.tenantId ?? 'default';
     const stepsRaw = safeParseJson(prior.stepsJson);
-    const priorSteps: { nodeId: string; output: string; status: string }[] =
-      Array.isArray(stepsRaw)
-        ? (stepsRaw as { nodeId: string; output: string; status: string }[])
-        : [];
+    const priorSteps: { nodeId: string; output: string; status: string }[] = Array.isArray(stepsRaw)
+      ? (stepsRaw as { nodeId: string; output: string; status: string }[])
+      : [];
 
     const triggerInput: unknown = prior.input ? safeParseJson(prior.input) : null;
 
@@ -690,7 +751,11 @@ export class RunService {
         const s = priorSteps[i];
         if (s?.status !== 'success') continue;
         let parsed: unknown;
-        try { parsed = JSON.parse(s.output); } catch { parsed = s.output; }
+        try {
+          parsed = JSON.parse(s.output);
+        } catch {
+          parsed = s.output;
+        }
         pins.set(s.nodeId, parsed);
       }
     }
@@ -722,9 +787,7 @@ export class RunService {
     // ripristiniamo status='running' per visibilità esterna (dashboard, route
     // GET /runs/active) → atomic single-claim garantito by claim phase.
     const { db: dbResume } = getDatabase();
-    await dbResume.update(runs)
-      .set({ status: 'running' })
-      .where(eq(runs.id, runId));
+    await dbResume.update(runs).set({ status: 'running' }).where(eq(runs.id, runId));
     const snapshot: EngineSnapshot = {
       runId: cp.runId,
       workflowId: cp.workflowId,
@@ -742,7 +805,8 @@ export class RunService {
     const result = await this.engine.resume(snapshot, workflow);
     // Mark the run row as finished
     const { db } = getDatabase();
-    await db.update(runs)
+    await db
+      .update(runs)
       .set({
         status: truthfulStatus(result.status, result.errorCount),
         endedAt: new Date().toISOString(),
@@ -762,7 +826,9 @@ export class RunService {
   async resumeFromPause(row: PausedRow): Promise<unknown> {
     const workflow = await this.workflows.get(row.workflowId, row.tenantId);
     if (!workflow) {
-      throw new Error(`Workflow ${row.workflowId} not found — cannot resume paused run ${row.runId}`);
+      throw new Error(
+        `Workflow ${row.workflowId} not found — cannot resume paused run ${row.runId}`,
+      );
     }
     // Seeding della coda di resume, diverso per TIPO di pausa:
     //  • wait_signal (utente): semina il DOWNSTREAM del nodo wait col payload
@@ -801,7 +867,8 @@ export class RunService {
       const priorParsed = safeParseJson(prior.stepsJson);
       const priorSteps: unknown[] = Array.isArray(priorParsed) ? priorParsed : [];
       const combined = [...priorSteps, ...result.steps];
-      await db.update(runs)
+      await db
+        .update(runs)
         .set({
           status: truthfulStatus(result.status, result.errorCount),
           stepsJson: JSON.stringify(combined),
@@ -828,7 +895,10 @@ export class RunService {
    * Long-running awaits (fetch, db query, setTimeout in retry, signal
    * loops) all respect AbortController natively — this is the 99% case.
    */
-  async cancel(runId: string, tenantId = 'default'): Promise<{ found: boolean; alreadyDone?: boolean; status?: string }> {
+  async cancel(
+    runId: string,
+    tenantId = 'default',
+  ): Promise<{ found: boolean; alreadyDone?: boolean; status?: string }> {
     const ctrl = RunService.cancelTokens.get(runId);
     if (ctrl) {
       if (ctrl.signal.aborted) {
@@ -926,7 +996,14 @@ export class RunService {
     finishedAt: string | null;
     totalDurationMs: number | null;
     errorCount: number | null;
-    steps: { nodeId: string; nodeLabel: string; status: string; startedAt?: string | null; finishedAt?: string | null; durationMs?: number | null }[];
+    steps: {
+      nodeId: string;
+      nodeLabel: string;
+      status: string;
+      startedAt?: string | null;
+      finishedAt?: string | null;
+      durationMs?: number | null;
+    }[];
   } | null> {
     const { db } = getDatabase();
     const rows = await db
@@ -936,7 +1013,14 @@ export class RunService {
       .limit(1);
     const row = rows[0];
     if (!row) return null;
-    let steps: { nodeId: string; nodeLabel: string; status: string; startedAt?: string | null; finishedAt?: string | null; durationMs?: number | null }[] = [];
+    let steps: {
+      nodeId: string;
+      nodeLabel: string;
+      status: string;
+      startedAt?: string | null;
+      finishedAt?: string | null;
+      durationMs?: number | null;
+    }[] = [];
     const parsed = safeParseJson(row.stepsJson);
     if (Array.isArray(parsed)) {
       steps = parsed
@@ -990,14 +1074,16 @@ export class RunService {
   async listRecent(
     tenantId: string,
     limit = 20,
-  ): Promise<{
-    id: string;
-    workflowId: string;
-    status: string;
-    startedAt: string | null;
-    finishedAt: string | null;
-    totalDurationMs: number | null;
-  }[]> {
+  ): Promise<
+    {
+      id: string;
+      workflowId: string;
+      status: string;
+      startedAt: string | null;
+      finishedAt: string | null;
+      totalDurationMs: number | null;
+    }[]
+  > {
     const { db } = getDatabase();
     const capped = Math.min(500, Math.max(1, Math.floor(limit)));
     const rows = await db

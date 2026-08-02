@@ -18,7 +18,10 @@ import {
 describe('CustomNodeError base — status + code + meta', () => {
   it('costruisce con tutti i campi', () => {
     const e = new CustomNodeError({
-      code: 'X', message: 'msg', status: 500, meta: { foo: 'bar' },
+      code: 'X',
+      message: 'msg',
+      status: 500,
+      meta: { foo: 'bar' },
     });
     expect(e.code).toBe('X');
     expect(e.status).toBe(500);
@@ -72,7 +75,10 @@ describe('CustomNodeConflictError — 409', () => {
 describe('🚨 CustomNodeQuotaExceededError — 402', () => {
   it('status 402 + meta con limit details', () => {
     const e = new CustomNodeQuotaExceededError({
-      current: 5, limit: 5, planCode: 'free', suggestedPlan: 'pro',
+      current: 5,
+      limit: 5,
+      planCode: 'free',
+      suggestedPlan: 'pro',
     });
     expect(e.status).toBe(402);
     expect(e.code).toBe('CUSTOM_NODE_QUOTA_EXCEEDED');
@@ -83,7 +89,9 @@ describe('🚨 CustomNodeQuotaExceededError — 402', () => {
 
   it('suggestedPlan opzionale (no "Upgrade to" se omitted)', () => {
     const e = new CustomNodeQuotaExceededError({
-      current: 5, limit: 5, planCode: 'enterprise',
+      current: 5,
+      limit: 5,
+      planCode: 'enterprise',
     });
     expect(e.message).not.toContain('Upgrade');
   });
@@ -98,7 +106,10 @@ describe('CustomNodeForbiddenError — 403', () => {
 describe('🚨 CustomNodeCompileError — 422 (TS errors)', () => {
   it('status 422 + meta diagnostics', () => {
     const diagnostics = [{ line: 5, col: 10, message: 'Type X' }];
-    const e = new CustomNodeCompileError('compile failed', { diagnostics, sourceFile: 'executor.ts' });
+    const e = new CustomNodeCompileError('compile failed', {
+      diagnostics,
+      sourceFile: 'executor.ts',
+    });
     expect(e.status).toBe(422);
     expect(e.code).toBe('CUSTOM_NODE_COMPILE_ERROR');
     expect(e.meta).toEqual({ diagnostics, sourceFile: 'executor.ts' });
@@ -108,7 +119,9 @@ describe('🚨 CustomNodeCompileError — 422 (TS errors)', () => {
 describe('🚨 CustomNodeSecurityViolationError — 422 (forbidden import/eval)', () => {
   it('status 422 + meta violation details', () => {
     const e = new CustomNodeSecurityViolationError('eval() not allowed', {
-      pattern: 'eval', line: 42, file: 'executor.ts',
+      pattern: 'eval',
+      line: 42,
+      file: 'executor.ts',
     });
     expect(e.status).toBe(422);
     expect(e.code).toBe('CUSTOM_NODE_SECURITY_VIOLATION');

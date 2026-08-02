@@ -17,9 +17,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const m = vi.hoisted(() => ({
-  preparedStatements: new Map<string, { run: ReturnType<typeof vi.fn>; get: ReturnType<typeof vi.fn>; all: ReturnType<typeof vi.fn> }>(),
+  preparedStatements: new Map<
+    string,
+    { run: ReturnType<typeof vi.fn>; get: ReturnType<typeof vi.fn>; all: ReturnType<typeof vi.fn> }
+  >(),
   sqliteExec: vi.fn(),
-  sqlitePragma: vi.fn(() => [{ name: 'id' }, { name: 'workflow_id' }, { name: 'version_number' }, { name: 'spec_json' }, { name: 'created_at' }, { name: 'created_by' }, { name: 'comment' }, { name: 'tenant_id' }] as { name: string }[]),
+  sqlitePragma: vi.fn(
+    () =>
+      [
+        { name: 'id' },
+        { name: 'workflow_id' },
+        { name: 'version_number' },
+        { name: 'spec_json' },
+        { name: 'created_at' },
+        { name: 'created_by' },
+        { name: 'comment' },
+        { name: 'tenant_id' },
+      ] as { name: string }[],
+  ),
 }));
 
 vi.mock('@/storage/db.js', () => ({
@@ -79,15 +94,21 @@ describe('WorkflowVersionsService — N1 schema evolution', () => {
   it('aggiunge tenant_id se PRAGMA table_info non lo include', async () => {
     // Override pragma per simulare schema legacy senza tenant_id
     m.sqlitePragma.mockReturnValueOnce([
-      { name: 'id' }, { name: 'workflow_id' }, { name: 'version_number' },
-      { name: 'spec_json' }, { name: 'created_at' }, { name: 'created_by' },
+      { name: 'id' },
+      { name: 'workflow_id' },
+      { name: 'version_number' },
+      { name: 'spec_json' },
+      { name: 'created_at' },
+      { name: 'created_by' },
       { name: 'comment' },
     ]);
     const { WorkflowVersionsService } = await import('./workflow-versions.service.js');
     new WorkflowVersionsService(fakeEventBus() as never);
     // Cerca tra le exec quella ALTER TABLE
-    const alterCalled = m.sqliteExec.mock.calls.some(([sql]) =>
-      typeof sql === 'string' && sql.includes('ALTER TABLE workflow_versions ADD COLUMN tenant_id')
+    const alterCalled = m.sqliteExec.mock.calls.some(
+      ([sql]) =>
+        typeof sql === 'string' &&
+        sql.includes('ALTER TABLE workflow_versions ADD COLUMN tenant_id'),
     );
     expect(alterCalled).toBe(true);
   });
@@ -95,8 +116,10 @@ describe('WorkflowVersionsService — N1 schema evolution', () => {
   it('NON aggiunge tenant_id se già presente', async () => {
     const { WorkflowVersionsService } = await import('./workflow-versions.service.js');
     new WorkflowVersionsService(fakeEventBus() as never);
-    const alterCalled = m.sqliteExec.mock.calls.some(([sql]) =>
-      typeof sql === 'string' && sql.includes('ALTER TABLE workflow_versions ADD COLUMN tenant_id')
+    const alterCalled = m.sqliteExec.mock.calls.some(
+      ([sql]) =>
+        typeof sql === 'string' &&
+        sql.includes('ALTER TABLE workflow_versions ADD COLUMN tenant_id'),
     );
     expect(alterCalled).toBe(false);
   });
@@ -117,8 +140,8 @@ describe('WorkflowVersionsService — snapshot inserisce tenant_id', () => {
     svc.snapshot(wf as never, 'tenant-A', 'user-1', 'init');
 
     // Verifica che esista una prepare con tenant_id NELL'INSERT
-    const insertSql = [...m.preparedStatements.keys()].find((s) =>
-      s.includes('INSERT INTO workflow_versions') && s.includes('tenant_id')
+    const insertSql = [...m.preparedStatements.keys()].find(
+      (s) => s.includes('INSERT INTO workflow_versions') && s.includes('tenant_id'),
     );
     expect(insertSql).toBeDefined();
     const insertStmt = m.preparedStatements.get(insertSql!);
@@ -135,8 +158,10 @@ describe('WorkflowVersionsService — list/get scoped per tenant', () => {
     const { WorkflowVersionsService } = await import('./workflow-versions.service.js');
     const svc = new WorkflowVersionsService(fakeEventBus() as never);
     svc.list('wf-1', 'tenant-A');
-    const selectSql = [...m.preparedStatements.keys()].find((s) =>
-      s.includes('SELECT id, version_number') && s.includes('WHERE workflow_id = ? AND tenant_id = ?')
+    const selectSql = [...m.preparedStatements.keys()].find(
+      (s) =>
+        s.includes('SELECT id, version_number') &&
+        s.includes('WHERE workflow_id = ? AND tenant_id = ?'),
     );
     expect(selectSql).toBeDefined();
     const stmt = m.preparedStatements.get(selectSql!);
@@ -150,8 +175,8 @@ describe('WorkflowVersionsService — list/get scoped per tenant', () => {
     const svc = new WorkflowVersionsService(fakeEventBus() as never);
     // Setup: stmt.get ritorna undefined (no row matching tenant)
     const result = svc.get('v-cross-tenant', 'tenant-A');
-    const selectSql = [...m.preparedStatements.keys()].find((s) =>
-      s.startsWith('SELECT *') && s.includes('AND tenant_id = ?')
+    const selectSql = [...m.preparedStatements.keys()].find(
+      (s) => s.startsWith('SELECT *') && s.includes('AND tenant_id = ?'),
     );
     expect(selectSql).toBeDefined();
     const stmt = m.preparedStatements.get(selectSql!);
@@ -196,7 +221,8 @@ describe('WorkflowVersionsService — diff scoped per tenant', () => {
     // Setup: entrambe le get ritornano workflow piatto
     const selectStmt = {
       run: vi.fn(),
-      get: vi.fn()
+      get: vi
+        .fn()
         .mockReturnValueOnce({ spec_json: JSON.stringify({ id: 'wf', nodes: [{ id: 'n1' }] }) })
         .mockReturnValueOnce({ spec_json: JSON.stringify({ id: 'wf', nodes: [{ id: 'n2' }] }) }),
       all: vi.fn(),
@@ -218,7 +244,8 @@ describe('WorkflowVersionsService — diff scoped per tenant', () => {
     const svc = new WorkflowVersionsService(fakeEventBus() as never);
     const selectStmt = {
       run: vi.fn(),
-      get: vi.fn()
+      get: vi
+        .fn()
         .mockReturnValueOnce({ spec_json: JSON.stringify({ id: 'wf', nodes: [] }) })
         .mockReturnValueOnce(undefined), // versione di altro tenant
       all: vi.fn(),

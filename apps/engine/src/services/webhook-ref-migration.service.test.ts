@@ -50,13 +50,23 @@ const eventBus = { emit: vi.fn(), on: vi.fn() } as unknown as IEventBus;
 const OLD_TOKEN = 'bde9139b'.repeat(4); // 32 hex — il token morto del caso reale
 
 function triggerNode(config: Record<string, unknown> = {}): Record<string, unknown> {
-  return { id: 'trig', defId: 'trigger_webhook', config: { authMode: 'none', ...config }, x: 0, y: 0 };
+  return {
+    id: 'trig',
+    defId: 'trigger_webhook',
+    config: { authMode: 'none', ...config },
+    x: 0,
+    y: 0,
+  };
 }
 
 function wfTarget(): Record<string, unknown> {
   return {
-    id: 'wf_search', tenantId: 't1', name: 'Search', enabled: true,
-    nodes: [triggerNode({ customPath: 'streammy/search' })], edges: [],
+    id: 'wf_search',
+    tenantId: 't1',
+    name: 'Search',
+    enabled: true,
+    nodes: [triggerNode({ customPath: 'streammy/search' })],
+    edges: [],
   };
 }
 
@@ -65,21 +75,32 @@ function wfConsumer(nodes: unknown[]): Record<string, unknown> {
 }
 
 function cabledNodes(): unknown[] {
-  return [{
-    id: 'html', defId: 'action_webhook_respond', x: 0, y: 0,
-    config: {
-      body: `<a href="/webhooks/c/streammy/search/${OLD_TOKEN}">cerca</a> <a href="/webhooks/wf_search/${OLD_TOKEN}">alt</a>`,
+  return [
+    {
+      id: 'html',
+      defId: 'action_webhook_respond',
+      x: 0,
+      y: 0,
+      config: {
+        body: `<a href="/webhooks/c/streammy/search/${OLD_TOKEN}">cerca</a> <a href="/webhooks/wf_search/${OLD_TOKEN}">alt</a>`,
+      },
     },
-  }];
+  ];
 }
 
 function spyReaders(all: Record<string, unknown>[]): void {
   vi.spyOn(WorkflowService.prototype, 'listAllAcrossTenants').mockResolvedValue(all as never);
-  vi.spyOn(WorkflowService.prototype, 'getByIdAnyTenant').mockImplementation((async (id: string) =>
-    all.find((w) => w.id === id) ?? null) as never);
-  vi.spyOn(WorkflowService.prototype, 'listByCustomWebhookPathAnyTenant').mockImplementation((async (path: string) =>
-    all.filter((w) => (w.nodes as { defId: string; config: Record<string, unknown> }[])
-      .some((n) => n.defId === 'trigger_webhook' && n.config.customPath === path))) as never);
+  vi.spyOn(WorkflowService.prototype, 'getByIdAnyTenant').mockImplementation(
+    (async (id: string) => all.find((w) => w.id === id) ?? null) as never,
+  );
+  vi.spyOn(WorkflowService.prototype, 'listByCustomWebhookPathAnyTenant').mockImplementation(
+    (async (path: string) =>
+      all.filter((w) =>
+        (w.nodes as { defId: string; config: Record<string, unknown> }[]).some(
+          (n) => n.defId === 'trigger_webhook' && n.config.customPath === path,
+        ),
+      )) as never,
+  );
 }
 
 beforeEach(() => {
@@ -105,11 +126,13 @@ describe('runWebhookRefMigration', () => {
     expect(nodesJson).not.toContain(OLD_TOKEN); // il token morto è SPARITO dal DB
     // Audit trail del write di sistema.
     expect(m.auditAppend).toHaveBeenCalledTimes(1);
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'workflow.webhook_links_migrated',
-      resourceId: 'wf_pages',
-      tenantId: 't1',
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'workflow.webhook_links_migrated',
+        resourceId: 'wf_pages',
+        tenantId: 't1',
+      }),
+    );
   });
 
   it('IDEMPOTENZA: sul risultato della prima passata, la seconda non scrive nulla', async () => {
@@ -132,10 +155,19 @@ describe('runWebhookRefMigration', () => {
 
   it('customPath AMBIGUO (2 workflow) → skip onesto, zero write', async () => {
     const twin = { ...wfTarget(), id: 'wf_search_2' };
-    spyReaders([wfTarget(), twin, wfConsumer([{
-      id: 'html', defId: 'action_webhook_respond', x: 0, y: 0,
-      config: { body: `<a href="/webhooks/c/streammy/search/${OLD_TOKEN}">x</a>` },
-    }])]);
+    spyReaders([
+      wfTarget(),
+      twin,
+      wfConsumer([
+        {
+          id: 'html',
+          defId: 'action_webhook_respond',
+          x: 0,
+          y: 0,
+          config: { body: `<a href="/webhooks/c/streammy/search/${OLD_TOKEN}">x</a>` },
+        },
+      ]),
+    ]);
     const report = await runWebhookRefMigration(eventBus);
 
     expect(report.workflowsConverted).toBe(0);

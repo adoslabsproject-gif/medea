@@ -16,10 +16,10 @@ export const pecLegalArchiveNodeDef: NodeDef = {
     'Archivia messaggi PEC (Posta Elettronica Certificata) in conformità alla normativa italiana sulla ' +
     'conservazione a norma di legge dei documenti informatici fiscali e amministrativi: DPR 445/2000 (testo unico ' +
     'documentazione amministrativa), DM 17/06/2014 (regole tecniche conservazione), AgID Linee Guida 2020 + ' +
-    'aggiornamento 2024 (formato + metadati + impronta crittografica). Salva l\'eml raw sul volume persistente ' +
+    "aggiornamento 2024 (formato + metadati + impronta crittografica). Salva l'eml raw sul volume persistente " +
     'del tenant in modalità append-only con umask 0600 (lettura/scrittura solo per il processo runtime ' +
     'proprietario, nessun accesso ad altri utenti del container — defense-in-depth contro lateral movement). ' +
-    'Calcola tre digest crittografici dell\'intero messaggio originale (SHA-256 minimum normativo, SHA-384 + ' +
+    "Calcola tre digest crittografici dell'intero messaggio originale (SHA-256 minimum normativo, SHA-384 + " +
     'SHA-512 per future-proof contro deprecation futura SHA-256 sopra 2030), li serializza in un sidecar JSON ' +
     'firmato. Registra timestamp ISO 8601 UTC certo (clock NTP del server) e durata conservazione configurabile ' +
     '(default 10 anni = 3650 giorni come da art. 2220 Codice Civile per documenti contabili, ma estendibile a 15 ' +
@@ -45,7 +45,8 @@ export const pecLegalArchiveNodeDef: NodeDef = {
       type: 'text',
       required: false,
       defaultValue: '/data/pec-archive',
-      help: 'Path assoluto sul volume tenant. Default /data/pec-archive — ' +
+      help:
+        'Path assoluto sul volume tenant. Default /data/pec-archive — ' +
         'stesso volume del DB SQLite, persistente attraverso il restart del ' +
         'container. NON usare /tmp (volatile). I file vengono creati con ' +
         'umask 0600 (solo il processo tenant può leggerli).',
@@ -56,7 +57,8 @@ export const pecLegalArchiveNodeDef: NodeDef = {
       type: 'number',
       required: false,
       defaultValue: '3650',
-      help: 'Default 3650 (10 anni) per documenti fiscali IT (DPR 600/73 ' +
+      help:
+        'Default 3650 (10 anni) per documenti fiscali IT (DPR 600/73 ' +
         'art. 22). Per documenti civili 2922 (8 anni). Range minimo 365 ' +
         '(1 anno) — sotto è inutile. Il valore viene stampato sul ' +
         'conservationUntil in output per audit.',
@@ -68,7 +70,8 @@ export const pecLegalArchiveNodeDef: NodeDef = {
       required: false,
       options: ['sha256', 'sha384', 'sha512'],
       defaultValue: 'sha256',
-      help: 'Default sha256 (industry standard 2026). sha384/sha512 più ' +
+      help:
+        'Default sha256 (industry standard 2026). sha384/sha512 più ' +
         'lenti ma migliore margine criptografico — usali se la policy ' +
         'aziendale lo richiede.',
     },
@@ -78,9 +81,10 @@ export const pecLegalArchiveNodeDef: NodeDef = {
       type: 'boolean',
       required: false,
       defaultValue: 'true',
-      help: 'Quando ON, ogni file .eml ha accanto un .sha256 con l\'hash ' +
+      help:
+        "Quando ON, ogni file .eml ha accanto un .sha256 con l'hash " +
         '+ il nome file (formato compatibile con shasum -c). Default ON. ' +
-        'Disabilita solo se vuoi gestire l\'integrity con un altro tool.',
+        "Disabilita solo se vuoi gestire l'integrity con un altro tool.",
     },
     {
       key: 'rawField',
@@ -96,7 +100,8 @@ export const pecLegalArchiveNodeDef: NodeDef = {
       type: 'text',
       required: false,
       defaultValue: 'messageId',
-      help: 'Default "messageId" (header Message-ID RFC 2822). ' +
+      help:
+        'Default "messageId" (header Message-ID RFC 2822). ' +
         'Cambia se l\'upstream lo chiama "id" o "uid".',
     },
     {
@@ -105,8 +110,9 @@ export const pecLegalArchiveNodeDef: NodeDef = {
       type: 'text',
       required: false,
       defaultValue: 'receivedAt',
-      help: 'Default "receivedAt". Stringa ISO 8601 UTC. Concorre alla ' +
-        'derivazione deterministica dell\'archiveId.',
+      help:
+        'Default "receivedAt". Stringa ISO 8601 UTC. Concorre alla ' +
+        "derivazione deterministica dell'archiveId.",
     },
     {
       key: 'pecTypeField',
@@ -114,7 +120,8 @@ export const pecLegalArchiveNodeDef: NodeDef = {
       type: 'text',
       required: false,
       defaultValue: 'pecType',
-      help: 'Default "pecType". Quando presente (es. "acceptance", ' +
+      help:
+        'Default "pecType". Quando presente (es. "acceptance", ' +
         '"delivery", "rejection", "message") viene salvato nel manifest ' +
         'JSONL per filtraggio audit.',
     },

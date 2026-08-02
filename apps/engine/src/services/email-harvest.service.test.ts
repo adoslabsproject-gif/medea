@@ -63,7 +63,9 @@ describe('🚨 Strategy 1: mailto links', () => {
     const r = harvestEmails('<a href="mailto:sales@acme.com">Sales</a>');
     expect(r.all_emails).toHaveLength(1);
     expect(r.all_emails[0]).toEqual({
-      email: 'sales@acme.com', confidence: 100, source: 'mailto',
+      email: 'sales@acme.com',
+      confidence: 100,
+      source: 'mailto',
     });
     expect(r.counts.mailto).toBe(1);
   });
@@ -101,7 +103,9 @@ describe('🚨 Strategy 1: mailto links', () => {
 describe('🚨 Strategy 2: Cloudflare Email Protection decoder', () => {
   it('🚨 data-cfemail attribute → XOR decode con primo byte = key', () => {
     const encoded = encodeCloudflare('hello@acme.com', 0x42);
-    const r = harvestEmails(`<a class="__cf_email__" data-cfemail="${encoded}">[email protected]</a>`);
+    const r = harvestEmails(
+      `<a class="__cf_email__" data-cfemail="${encoded}">[email protected]</a>`,
+    );
     const email = r.all_emails.find((e) => e.email === 'hello@acme.com');
     expect(email?.confidence).toBe(95);
     expect(email?.source).toBe('cloudflare');

@@ -59,26 +59,86 @@ export const SUPPORTED_PROVIDERS: readonly LlmProvider[] = [
   'voyage',
 ];
 
-const PROVIDER_DOC: Record<LlmProvider, { label: string; freeTier: boolean; description: string; signupUrl?: string }> = {
+const PROVIDER_DOC: Record<
+  LlmProvider,
+  { label: string; freeTier: boolean; description: string; signupUrl?: string }
+> = {
   liara: {
     label: 'Liara (free tier)',
     freeTier: true,
-    description: 'Modello self-hosted Zeli SRL (Qwen3-VL-32B testo+vision, FP8 su Blackwell GPU). Nessuna API key richiesta.',
+    description:
+      'Modello self-hosted Zeli SRL (Qwen3-VL-32B testo+vision, FP8 su Blackwell GPU). Nessuna API key richiesta.',
   },
-  openai: { label: 'OpenAI (ChatGPT)', freeTier: false, description: 'GPT-4o, GPT-4.1, o1, ecc.', signupUrl: 'https://platform.openai.com/api-keys' },
-  anthropic: { label: 'Anthropic Claude', freeTier: false, description: 'Claude Sonnet/Opus/Haiku.', signupUrl: 'https://console.anthropic.com/' },
-  gemini: { label: 'Google Gemini', freeTier: false, description: 'Gemini 2.0 Flash / Pro.', signupUrl: 'https://aistudio.google.com/apikey' },
-  grok: { label: 'Grok (X.AI)', freeTier: false, description: 'Grok 2 / Grok 3 by X.AI.', signupUrl: 'https://console.x.ai/' },
-  deepseek: { label: 'DeepSeek', freeTier: false, description: 'DeepSeek Chat / Coder / V3.', signupUrl: 'https://platform.deepseek.com/api_keys' },
-  perplexity: { label: 'Perplexity (Sonar)', freeTier: false, description: 'Sonar / Sonar Pro con web search integrata (risposte con citazioni live).', signupUrl: 'https://www.perplexity.ai/settings/api' },
-  mistral: { label: 'Mistral AI', freeTier: false, description: 'Mistral Large / Medium / Small.', signupUrl: 'https://console.mistral.ai/' },
-  groq: { label: 'Groq (LPU)', freeTier: false, description: 'Llama 3.3 70B su LPU dedicata (free tier disponibile).', signupUrl: 'https://console.groq.com/' },
-  openrouter: { label: 'OpenRouter (gateway 100+ modelli)', freeTier: false, description: 'Gateway unificato — porta il tuo modello preferito specificando model="vendor/name".', signupUrl: 'https://openrouter.ai/keys' },
+  openai: {
+    label: 'OpenAI (ChatGPT)',
+    freeTier: false,
+    description: 'GPT-4o, GPT-4.1, o1, ecc.',
+    signupUrl: 'https://platform.openai.com/api-keys',
+  },
+  anthropic: {
+    label: 'Anthropic Claude',
+    freeTier: false,
+    description: 'Claude Sonnet/Opus/Haiku.',
+    signupUrl: 'https://console.anthropic.com/',
+  },
+  gemini: {
+    label: 'Google Gemini',
+    freeTier: false,
+    description: 'Gemini 2.0 Flash / Pro.',
+    signupUrl: 'https://aistudio.google.com/apikey',
+  },
+  grok: {
+    label: 'Grok (X.AI)',
+    freeTier: false,
+    description: 'Grok 2 / Grok 3 by X.AI.',
+    signupUrl: 'https://console.x.ai/',
+  },
+  deepseek: {
+    label: 'DeepSeek',
+    freeTier: false,
+    description: 'DeepSeek Chat / Coder / V3.',
+    signupUrl: 'https://platform.deepseek.com/api_keys',
+  },
+  perplexity: {
+    label: 'Perplexity (Sonar)',
+    freeTier: false,
+    description: 'Sonar / Sonar Pro con web search integrata (risposte con citazioni live).',
+    signupUrl: 'https://www.perplexity.ai/settings/api',
+  },
+  mistral: {
+    label: 'Mistral AI',
+    freeTier: false,
+    description: 'Mistral Large / Medium / Small.',
+    signupUrl: 'https://console.mistral.ai/',
+  },
+  groq: {
+    label: 'Groq (LPU)',
+    freeTier: false,
+    description: 'Llama 3.3 70B su LPU dedicata (free tier disponibile).',
+    signupUrl: 'https://console.groq.com/',
+  },
+  openrouter: {
+    label: 'OpenRouter (gateway 100+ modelli)',
+    freeTier: false,
+    description:
+      'Gateway unificato — porta il tuo modello preferito specificando model="vendor/name".',
+    signupUrl: 'https://openrouter.ai/keys',
+  },
   // freeTier: false — Ollama richiede installazione locale dell'utente +
   // configurazione baseUrl in Settings. Senza credenziale registrata NON
   // appare nel dropdown (UX: niente provider non-disponibili).
-  ollama: { label: 'Ollama (locale)', freeTier: false, description: 'LLM locale self-hosted. Usa baseUrl per puntare al tuo Ollama (default: http://localhost:11434).' },
-  voyage: { label: 'Voyage AI (embeddings)', freeTier: false, description: 'Embeddings per RAG.', signupUrl: 'https://dash.voyageai.com/' },
+  ollama: {
+    label: 'Ollama (locale)',
+    freeTier: false,
+    description:
+      'LLM locale self-hosted. Usa baseUrl per puntare al tuo Ollama (default: http://localhost:11434).',
+  },
+  voyage: {
+    label: 'Voyage AI (embeddings)',
+    freeTier: false,
+    description: 'Embeddings per RAG.',
+    signupUrl: 'https://dash.voyageai.com/',
+  },
 };
 
 interface CredentialRow {
@@ -131,20 +191,32 @@ export class LlmProvidersService {
     // `name` è per-provider per soddisfare UNIQUE(tenant_id,name) — un tenant può
     // avere TUTTI i provider, non uno solo. Bug 2026-06-17.)
     const rows = sqlite
-      .prepare('SELECT provider, metadata_json, updated_at FROM user_credentials WHERE tenant_id = ? AND provider LIKE ?')
-      .all(tenantId, `${KEY_PREFIX}%`) as { provider: string; metadata_json: string | null; updated_at: string }[];
+      .prepare(
+        'SELECT provider, metadata_json, updated_at FROM user_credentials WHERE tenant_id = ? AND provider LIKE ?',
+      )
+      .all(tenantId, `${KEY_PREFIX}%`) as {
+      provider: string;
+      metadata_json: string | null;
+      updated_at: string;
+    }[];
 
     const byProvider = new Map<string, { metadata: ProviderMeta; updatedAt: string }>();
     for (const r of rows) {
       let meta: ProviderMeta = {};
-      try { meta = r.metadata_json ? (JSON.parse(r.metadata_json) as ProviderMeta) : {}; } catch { /* ignore */ }
+      try {
+        meta = r.metadata_json ? (JSON.parse(r.metadata_json) as ProviderMeta) : {};
+      } catch {
+        /* ignore */
+      }
       byProvider.set(r.provider, { metadata: meta, updatedAt: r.updated_at });
     }
 
     // On-prem builds (MEDEA_DISABLE_LIARA=true) hide liara from the list
     // entirely — the admin must configure a different provider.
     const liaraOk = isLiaraEnabled();
-    const visibleProviders = liaraOk ? SUPPORTED_PROVIDERS : SUPPORTED_PROVIDERS.filter((p) => p !== 'liara');
+    const visibleProviders = liaraOk
+      ? SUPPORTED_PROVIDERS
+      : SUPPORTED_PROVIDERS.filter((p) => p !== 'liara');
 
     return visibleProviders.map((p) => {
       const stored = byProvider.get(providerToStorageKey(p));
@@ -165,7 +237,11 @@ export class LlmProvidersService {
     });
   }
 
-  async upsert(tenantId: string, provider: LlmProvider, opts: { apiKey: string; defaultModel?: string; baseUrl?: string; actorId?: string }): Promise<void> {
+  async upsert(
+    tenantId: string,
+    provider: LlmProvider,
+    opts: { apiKey: string; defaultModel?: string; baseUrl?: string; actorId?: string },
+  ): Promise<void> {
     if (provider === 'liara') {
       // Liara is free-tier, no key needed. Still allow saving defaultModel as a preference.
       if (!opts.defaultModel) return;
@@ -189,7 +265,8 @@ export class LlmProvidersService {
       .get(tenantId, storageKey) as { id?: string } | undefined;
 
     const meta: ProviderMeta = {};
-    if (opts.defaultModel !== undefined && opts.defaultModel !== '') meta.defaultModel = opts.defaultModel;
+    if (opts.defaultModel !== undefined && opts.defaultModel !== '')
+      meta.defaultModel = opts.defaultModel;
     if (opts.baseUrl !== undefined && opts.baseUrl !== '') meta.baseUrl = opts.baseUrl;
     const metadataJson = JSON.stringify(meta);
 
@@ -208,13 +285,38 @@ export class LlmProvidersService {
         .prepare(
           'UPDATE user_credentials SET name = ?, ciphertext = ?, nonce = ?, auth_tag = ?, dek_ciphertext = ?, dek_nonce = ?, dek_auth_tag = ?, metadata_json = ?, updated_at = ? WHERE id = ?',
         )
-        .run(rowName, enc.ciphertext, enc.nonce, enc.authTag, enc.dekCiphertext, enc.dekNonce, enc.dekAuthTag, metadataJson, now, existing.id);
+        .run(
+          rowName,
+          enc.ciphertext,
+          enc.nonce,
+          enc.authTag,
+          enc.dekCiphertext,
+          enc.dekNonce,
+          enc.dekAuthTag,
+          metadataJson,
+          now,
+          existing.id,
+        );
     } else {
       sqlite
         .prepare(
           'INSERT INTO user_credentials (id, tenant_id, name, provider, ciphertext, nonce, auth_tag, dek_ciphertext, dek_nonce, dek_auth_tag, metadata_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         )
-        .run(id, tenantId, rowName, storageKey, enc.ciphertext, enc.nonce, enc.authTag, enc.dekCiphertext, enc.dekNonce, enc.dekAuthTag, metadataJson, now, now);
+        .run(
+          id,
+          tenantId,
+          rowName,
+          storageKey,
+          enc.ciphertext,
+          enc.nonce,
+          enc.authTag,
+          enc.dekCiphertext,
+          enc.dekNonce,
+          enc.dekAuthTag,
+          metadataJson,
+          now,
+          now,
+        );
     }
 
     // #208 P0-9: await — audit durable.
@@ -234,7 +336,10 @@ export class LlmProvidersService {
    * Server-side decrypt — returns the plaintext apiKey + metadata for the
    * runtime to use when executing AI nodes. NEVER expose this over HTTP.
    */
-  get(tenantId: string, provider: LlmProvider): { apiKey: string; defaultModel?: string; baseUrl?: string } | null {
+  get(
+    tenantId: string,
+    provider: LlmProvider,
+  ): { apiKey: string; defaultModel?: string; baseUrl?: string } | null {
     if (provider === 'liara') {
       // Free tier — no key, server uses the (configurable) Liara endpoint.
       // BUT: when on-prem decoupling is enabled, treat as if not configured
@@ -268,7 +373,11 @@ export class LlmProvidersService {
 
     let meta: ProviderMeta = {};
     if (row.metadata_json) {
-      try { meta = JSON.parse(row.metadata_json) as ProviderMeta; } catch { /* ignore */ }
+      try {
+        meta = JSON.parse(row.metadata_json) as ProviderMeta;
+      } catch {
+        /* ignore */
+      }
     }
 
     const result: { apiKey: string; defaultModel?: string; baseUrl?: string } = { apiKey };
@@ -281,8 +390,12 @@ export class LlmProvidersService {
    * Load all configured providers for a tenant in one shot — used by the
    * workflow engine to inject `context.llmProviders` into the executor.
    */
-  getAll(tenantId: string): Partial<Record<LlmProvider, { apiKey: string; defaultModel?: string; baseUrl?: string }>> {
-    const out: Partial<Record<LlmProvider, { apiKey: string; defaultModel?: string; baseUrl?: string }>> = {};
+  getAll(
+    tenantId: string,
+  ): Partial<Record<LlmProvider, { apiKey: string; defaultModel?: string; baseUrl?: string }>> {
+    const out: Partial<
+      Record<LlmProvider, { apiKey: string; defaultModel?: string; baseUrl?: string }>
+    > = {};
     for (const p of SUPPORTED_PROVIDERS) {
       const cfg = this.get(tenantId, p);
       if (cfg) out[p] = cfg;

@@ -19,13 +19,18 @@ import { makeErrorHandlerStarter } from './error-handler-starter.js';
 import { buildOutboxDispatchers } from './wiring.js';
 import { startOutboxScheduler, type OutboxSchedulerHandle } from './scheduler.js';
 
-export function startErrorOutbox(deps: { eventBus: IEventBus; runService: RunService }): OutboxSchedulerHandle {
+export function startErrorOutbox(deps: {
+  eventBus: IEventBus;
+  runService: RunService;
+}): OutboxSchedulerHandle {
   const workflows = new WorkflowService(deps.eventBus);
 
   const startErrorHandler = makeErrorHandlerStarter({
     getWorkflow: (id, tenantId) => workflows.get(id, tenantId),
     explainRun: (tenantId, runId) => new AiExplainService().explain({ tenantId, runId }),
-    startAsync: async (input) => { await deps.runService.startAsync(input); },
+    startAsync: async (input) => {
+      await deps.runService.startAsync(input);
+    },
   });
 
   const dispatchers = buildOutboxDispatchers({

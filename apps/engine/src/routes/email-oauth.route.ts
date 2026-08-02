@@ -140,10 +140,14 @@ export function createEmailOauthRoutes(): Hono {
 
     const slug = tenantSlug(c);
     if (!slug) {
-      return c.json({
-        error: 'tenant_slug_unknown',
-        message: 'Runtime non sa il proprio tenant slug. Imposta MEDEA_TENANT_SLUG nell\'env del container.',
-      }, 500);
+      return c.json(
+        {
+          error: 'tenant_slug_unknown',
+          message:
+            "Runtime non sa il proprio tenant slug. Imposta MEDEA_TENANT_SLUG nell'env del container.",
+        },
+        500,
+      );
     }
 
     const url = new URL(c.req.url);
@@ -219,7 +223,10 @@ export function createEmailOauthRoutes(): Hono {
       claims = payload as HandoffClaims;
       aud = (Array.isArray(payload.aud) ? payload.aud[0] : payload.aud) ?? '';
     } catch (err) {
-      logger.warn({ err: err instanceof Error ? err.message : err }, 'email-oauth handoff JWE decrypt failed');
+      logger.warn(
+        { err: err instanceof Error ? err.message : err },
+        'email-oauth handoff JWE decrypt failed',
+      );
       return redirectToSettings({ oauthError: 'handoff_invalid' });
     }
 
@@ -243,8 +250,23 @@ export function createEmailOauthRoutes(): Hono {
       return redirectToSettings({ oauthError: 'handoff_audience_mismatch' });
     }
 
-    if (!claims.email || !claims.accessToken || !claims.refreshToken || !claims.expiresAt || !claims.scope) {
-      logger.warn({ claims: { ...claims, accessToken: !!claims.accessToken, refreshToken: !!claims.refreshToken } }, 'email-oauth handoff missing fields');
+    if (
+      !claims.email ||
+      !claims.accessToken ||
+      !claims.refreshToken ||
+      !claims.expiresAt ||
+      !claims.scope
+    ) {
+      logger.warn(
+        {
+          claims: {
+            ...claims,
+            accessToken: !!claims.accessToken,
+            refreshToken: !!claims.refreshToken,
+          },
+        },
+        'email-oauth handoff missing fields',
+      );
       return redirectToSettings({ oauthError: 'handoff_incomplete' });
     }
 
@@ -263,7 +285,10 @@ export function createEmailOauthRoutes(): Hono {
       };
       if (claims.existingAccountId) upsertArgs.existingId = claims.existingAccountId;
       const account = accountsSvc.upsertOAuthAccount(upsertArgs);
-      logger.info({ tenantId: expectedAud, accountId: account.id, email: claims.email }, 'email-oauth handoff imported');
+      logger.info(
+        { tenantId: expectedAud, accountId: account.id, email: claims.email },
+        'email-oauth handoff imported',
+      );
       return redirectToSettings({ oauthSuccess: '1', accountId: account.id, email: claims.email });
     } catch (err) {
       logger.error({ err }, 'email-oauth import upsert failed');

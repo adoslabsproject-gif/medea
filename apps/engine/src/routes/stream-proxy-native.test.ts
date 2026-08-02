@@ -7,7 +7,16 @@
 import { describe, it, expect } from 'vitest';
 import { __testExports, verifyProxySignature } from './stream-proxy-native.js';
 
-const { base64UrlDecode, base64UrlEncode, computeSig, safeStringEqual, rewriteM3u, looksLikeM3u8, findProxyConfig, STREAM_PROXY_RE } = __testExports;
+const {
+  base64UrlDecode,
+  base64UrlEncode,
+  computeSig,
+  safeStringEqual,
+  rewriteM3u,
+  looksLikeM3u8,
+  findProxyConfig,
+  STREAM_PROXY_RE,
+} = __testExports;
 
 describe('stream-proxy-native — path matching', () => {
   const cases: [string, boolean, string?, string?][] = [
@@ -134,7 +143,12 @@ describe('stream-proxy-native — M3U8 detection + rewrite', () => {
       '#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",NAME="ita",URI="https://upstream.com/audio.m3u8"',
       '',
     ].join('\n');
-    const out = rewriteM3u(body, { baseUrl: 'https://upstream.com/master.m3u8', proxyBase: PROXY_BASE, secret: SECRET, ttlSec: 3600 });
+    const out = rewriteM3u(body, {
+      baseUrl: 'https://upstream.com/master.m3u8',
+      proxyBase: PROXY_BASE,
+      secret: SECRET,
+      ttlSec: 3600,
+    });
     expect(out).toContain('URI="https://my.host.com/webhooks/c/stream/proxy.m3u8/tok123?u=');
     expect(out).toContain('&e=');
     expect(out).toContain('&sig=');
@@ -148,19 +162,24 @@ describe('stream-proxy-native — M3U8 detection + rewrite', () => {
       'https://upstream.com/video-1080p.m3u8',
       '',
     ].join('\n');
-    const out = rewriteM3u(body, { baseUrl: 'https://upstream.com/master.m3u8', proxyBase: PROXY_BASE, secret: SECRET, ttlSec: 3600 });
+    const out = rewriteM3u(body, {
+      baseUrl: 'https://upstream.com/master.m3u8',
+      proxyBase: PROXY_BASE,
+      secret: SECRET,
+      ttlSec: 3600,
+    });
     expect(out).toContain('my.host.com/webhooks/c/stream/proxy.m3u8/tok123?u=');
     expect(out).not.toMatch(/^https:\/\/upstream\.com\/video-1080p\.m3u8/mu);
   });
 
   it('preserve comment lines + relative URL via baseUrl', () => {
-    const body = [
-      '#EXTM3U',
-      '#EXTINF:6.0,',
-      'segment-001.ts',
-      '',
-    ].join('\n');
-    const out = rewriteM3u(body, { baseUrl: 'https://upstream.com/dir/playlist.m3u8', proxyBase: PROXY_BASE, secret: SECRET, ttlSec: 3600 });
+    const body = ['#EXTM3U', '#EXTINF:6.0,', 'segment-001.ts', ''].join('\n');
+    const out = rewriteM3u(body, {
+      baseUrl: 'https://upstream.com/dir/playlist.m3u8',
+      proxyBase: PROXY_BASE,
+      secret: SECRET,
+      ttlSec: 3600,
+    });
     expect(out).toContain('#EXTM3U');
     expect(out).toContain('#EXTINF:6.0,');
     // segment-001.ts → risolvuto contro baseUrl → signed proxy URL
@@ -173,13 +192,17 @@ describe('stream-proxy-native — findProxyConfig', () => {
   it('estrae signSecret/referer/userAgent/timeoutMs dal nodo custom_action_stream_proxy', () => {
     const nodes = JSON.stringify([
       { id: 'trigger_webhook_1', defId: 'trigger_webhook', config: {} },
-      { id: 'sp1', defId: 'custom_action_stream_proxy', config: {
-        signSecret: '4be069f9fa0333334abcdef0123',
-        referer: 'https://streamingcommunityz.eu/',
-        userAgent: 'Mozilla/5.0',
-        timeoutMs: 45000,
-        mode: 'serve',
-      } },
+      {
+        id: 'sp1',
+        defId: 'custom_action_stream_proxy',
+        config: {
+          signSecret: '4be069f9fa0333334abcdef0123',
+          referer: 'https://streamingcommunityz.eu/',
+          userAgent: 'Mozilla/5.0',
+          timeoutMs: 45000,
+          mode: 'serve',
+        },
+      },
     ]);
     const cfg = findProxyConfig(nodes);
     expect(cfg).not.toBeNull();
@@ -195,7 +218,9 @@ describe('stream-proxy-native — findProxyConfig', () => {
   });
 
   it('ritorna null se signSecret troppo corto (<16)', () => {
-    const nodes = JSON.stringify([{ id: 'sp1', defId: 'custom_action_stream_proxy', config: { signSecret: 'short' } }]);
+    const nodes = JSON.stringify([
+      { id: 'sp1', defId: 'custom_action_stream_proxy', config: { signSecret: 'short' } },
+    ]);
     expect(findProxyConfig(nodes)).toBeNull();
   });
 

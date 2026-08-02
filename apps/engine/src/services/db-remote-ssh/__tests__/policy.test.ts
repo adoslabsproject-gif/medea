@@ -25,7 +25,13 @@ function validConfig(over: Record<string, unknown> = {}): Record<string, unknown
       hostKeyFingerprint: 'SHA256:abcdEFGH1234567890abcdefghIJKLmnopqrstuvwx',
       auth: { method: 'key', privateKeySecretRef: 'vault://ssh/key' },
     },
-    db: { engine: 'postgres', host: '10.0.0.5', port: 5432, database: 'app', passwordSecretRef: 'vault://db/pw' },
+    db: {
+      engine: 'postgres',
+      host: '10.0.0.5',
+      port: 5432,
+      database: 'app',
+      passwordSecretRef: 'vault://db/pw',
+    },
     readOnly: true,
     ...over,
   };
@@ -33,7 +39,9 @@ function validConfig(over: Record<string, unknown> = {}): Record<string, unknown
 
 describe('parseSshDbConfig — struttura & strict', () => {
   it('config valido → parse, default port 22 e readOnly true', () => {
-    const c = parseSshDbConfig(validConfig({ ssh: { ...((validConfig().ssh) as object), port: undefined } as object }));
+    const c = parseSshDbConfig(
+      validConfig({ ssh: { ...(validConfig().ssh as object), port: undefined } as object }),
+    );
     expect(c.ssh.port).toBe(22);
     expect(c.readOnly).toBe(true);
   });
@@ -45,8 +53,16 @@ describe('parseSshDbConfig — struttura & strict', () => {
   });
 
   it('🔒 fingerprint vuoto / placeholder corto → CONFIG', () => {
-    expect(() => parseSshDbConfig(validConfig({ ssh: { ...(validConfig().ssh as object), hostKeyFingerprint: '' } }))).toThrow(/fingerprint|CONFIG|host-key/i);
-    expect(() => parseSshDbConfig(validConfig({ ssh: { ...(validConfig().ssh as object), hostKeyFingerprint: 'x' } }))).toThrow(SshPolicyError);
+    expect(() =>
+      parseSshDbConfig(
+        validConfig({ ssh: { ...(validConfig().ssh as object), hostKeyFingerprint: '' } }),
+      ),
+    ).toThrow(/fingerprint|CONFIG|host-key/i);
+    expect(() =>
+      parseSshDbConfig(
+        validConfig({ ssh: { ...(validConfig().ssh as object), hostKeyFingerprint: 'x' } }),
+      ),
+    ).toThrow(SshPolicyError);
   });
 
   it('campo extra (strict) → CONFIG; rifiuta un eventuale "command" (no exec channel)', () => {
@@ -56,20 +72,45 @@ describe('parseSshDbConfig — struttura & strict', () => {
   });
 
   it('porte fuori range / engine non supportato → CONFIG', () => {
-    expect(() => parseSshDbConfig(validConfig({ ssh: { ...(validConfig().ssh as object), port: 70000 } }))).toThrow(SshPolicyError);
-    expect(() => parseSshDbConfig(validConfig({ db: { engine: 'oracle', host: 'h', port: 1, database: 'd' } }))).toThrow(SshPolicyError);
+    expect(() =>
+      parseSshDbConfig(validConfig({ ssh: { ...(validConfig().ssh as object), port: 70000 } })),
+    ).toThrow(SshPolicyError);
+    expect(() =>
+      parseSshDbConfig(
+        validConfig({ db: { engine: 'oracle', host: 'h', port: 1, database: 'd' } }),
+      ),
+    ).toThrow(SshPolicyError);
   });
 
   it('auth password: solo passwordSecretRef; auth key: privateKeySecretRef obbligatorio', () => {
-    const pw = parseSshDbConfig(validConfig({ ssh: { ...(validConfig().ssh as object), auth: { method: 'password', passwordSecretRef: 'vault://p' } } }));
+    const pw = parseSshDbConfig(
+      validConfig({
+        ssh: {
+          ...(validConfig().ssh as object),
+          auth: { method: 'password', passwordSecretRef: 'vault://p' },
+        },
+      }),
+    );
     expect(pw.ssh.auth.method).toBe('password');
     // key senza privateKeySecretRef → CONFIG
-    expect(() => parseSshDbConfig(validConfig({ ssh: { ...(validConfig().ssh as object), auth: { method: 'key' } } }))).toThrow(SshPolicyError);
+    expect(() =>
+      parseSshDbConfig(
+        validConfig({ ssh: { ...(validConfig().ssh as object), auth: { method: 'key' } } }),
+      ),
+    ).toThrow(SshPolicyError);
   });
 });
 
-describe('🚨 SSRF guard sull\'host SSH', () => {
-  const blocked = ['127.0.0.1', '10.0.0.1', '192.168.1.1', '172.16.0.1', '169.254.169.254', '::1', '0.0.0.0'];
+describe("🚨 SSRF guard sull'host SSH", () => {
+  const blocked = [
+    '127.0.0.1',
+    '10.0.0.1',
+    '192.168.1.1',
+    '172.16.0.1',
+    '169.254.169.254',
+    '::1',
+    '0.0.0.0',
+  ];
   for (const ip of blocked) {
     it(`IP privato/riservato bloccato: ${ip}`, () => {
       expect(classifySshHost(ip).kind).toBe('ip-blocked');
@@ -115,18 +156,35 @@ describe('🚨 read-only enforcement (riusa classifyStatement reale)', () => {
 
 describe('secretRefsOf — enumerazione segreti da risolvere', () => {
   it('auth key con passphrase + db user/pw', () => {
-    const c = parseSshDbConfig(validConfig({
-      ssh: { ...(validConfig().ssh as object), auth: { method: 'key', privateKeySecretRef: 'k', passphraseSecretRef: 'pp' } },
-      db: { engine: 'mysql', host: 'h', port: 3306, database: 'd', userSecretRef: 'u', passwordSecretRef: 'pw' },
-    })) as SshDbConnectionConfig;
+    const c = parseSshDbConfig(
+      validConfig({
+        ssh: {
+          ...(validConfig().ssh as object),
+          auth: { method: 'key', privateKeySecretRef: 'k', passphraseSecretRef: 'pp' },
+        },
+        db: {
+          engine: 'mysql',
+          host: 'h',
+          port: 3306,
+          database: 'd',
+          userSecretRef: 'u',
+          passwordSecretRef: 'pw',
+        },
+      }),
+    ) as SshDbConnectionConfig;
     expect(secretRefsOf(c).sort()).toEqual(['k', 'pp', 'pw', 'u'].sort());
   });
 
   it('auth password senza db secret → un solo ref', () => {
-    const c = parseSshDbConfig(validConfig({
-      ssh: { ...(validConfig().ssh as object), auth: { method: 'password', passwordSecretRef: 'only' } },
-      db: { engine: 'postgres', host: 'h', port: 5432, database: 'd' },
-    }));
+    const c = parseSshDbConfig(
+      validConfig({
+        ssh: {
+          ...(validConfig().ssh as object),
+          auth: { method: 'password', passwordSecretRef: 'only' },
+        },
+        db: { engine: 'postgres', host: 'h', port: 5432, database: 'd' },
+      }),
+    );
     expect(secretRefsOf(c)).toEqual(['only']);
   });
 

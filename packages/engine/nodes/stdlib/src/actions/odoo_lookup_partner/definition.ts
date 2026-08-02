@@ -14,7 +14,7 @@ export const odooLookupPartnerNodeDef: NodeDef = {
   color: '#7c3aed',
   description:
     'Wrapper enterprise specializzato sopra action_odoo_rpc che incapsula la ricerca di una res.partner in Odoo ' +
-    'con strategia multi-campo deterministica nel rispetto della cascata di affidabilità tipica di un\'anagrafica ' +
+    "con strategia multi-campo deterministica nel rispetto della cascata di affidabilità tipica di un'anagrafica " +
     'commerciale italiana: cerca prima per Partita IVA (univoco per legge, formato IT99999999999 con validazione ' +
     'checksum), poi per codice fiscale persona fisica (16 char alphanumeric con check), poi per email business ' +
     '(univoca nel 95% dei casi), poi per numero di telefono normalizzato E.164 (rimuovendo spazi e prefissi ' +
@@ -23,7 +23,7 @@ export const odooLookupPartnerNodeDef: NodeDef = {
     'tecnici (model, operation, domain JSON con triple [campo, operatore, valore], fields array, limit, ' +
     'order, ecc.) a soli 4-5 campi human-readable inseribili in 30 secondi da un commercialista non-developer. ' +
     'Opzione createIfMissing: se la ricerca non produce match, crea atomicamente il partner con i dati forniti ' +
-    'in input (1 chiamata RPC aggiuntiva nell\'esecuzione, transazione atomica server-side Odoo — nessun rischio ' +
+    "in input (1 chiamata RPC aggiuntiva nell'esecuzione, transazione atomica server-side Odoo — nessun rischio " +
     'di partial state); senza questa opzione semplicemente ritorna found=false per gestione downstream esplicita. ' +
     'Output strutturato pronto per workflow downstream: { found, partnerId, name, email, phone, vat, ' +
     'fiscalCode, companyId, customerRank, supplierRank, isCompany, createdNow, matchedBy }. ' +
@@ -38,50 +38,116 @@ export const odooLookupPartnerNodeDef: NodeDef = {
 
   configFields: [
     // Auth
-    { key: 'baseUrl', label: 'URL Odoo', type: 'text', required: true,
+    {
+      key: 'baseUrl',
+      label: 'URL Odoo',
+      type: 'text',
+      required: true,
       placeholder: 'https://miostudio.odoo.com',
-      help: 'URL base senza /xmlrpc — viene aggiunto automaticamente.' },
-    { key: 'database', label: 'Database', type: 'text', required: true,
-      placeholder: 'miostudio-prod' },
-    { key: 'login', label: 'Login (email)', type: 'text', required: true,
-      placeholder: 'studio@cliente.it' },
-    { key: 'password', label: 'Password / API Key', type: 'secret', required: true,
-      help: 'Usa API Key (user → preferences → API Keys) — bypassa 2FA e non scade.' },
+      help: 'URL base senza /xmlrpc — viene aggiunto automaticamente.',
+    },
+    {
+      key: 'database',
+      label: 'Database',
+      type: 'text',
+      required: true,
+      placeholder: 'miostudio-prod',
+    },
+    {
+      key: 'login',
+      label: 'Login (email)',
+      type: 'text',
+      required: true,
+      placeholder: 'studio@cliente.it',
+    },
+    {
+      key: 'password',
+      label: 'Password / API Key',
+      type: 'secret',
+      required: true,
+      help: 'Usa API Key (user → preferences → API Keys) — bypassa 2FA e non scade.',
+    },
 
     // Identifiers
-    { key: 'email', label: 'Email da cercare', type: 'text', required: false,
+    {
+      key: 'email',
+      label: 'Email da cercare',
+      type: 'text',
+      required: false,
       placeholder: 'mario@cliente.it',
-      help: 'Match case-insensitive (=ilike). Massimo priorità.' },
-    { key: 'vat', label: 'P.IVA / VAT', type: 'text', required: false,
+      help: 'Match case-insensitive (=ilike). Massimo priorità.',
+    },
+    {
+      key: 'vat',
+      label: 'P.IVA / VAT',
+      type: 'text',
+      required: false,
       placeholder: '12345678901',
-      help: 'Normalizzato (rimuove spazi, prefisso IT). Match esatto.' },
-    { key: 'phone', label: 'Telefono', type: 'text', required: false,
+      help: 'Normalizzato (rimuove spazi, prefisso IT). Match esatto.',
+    },
+    {
+      key: 'phone',
+      label: 'Telefono',
+      type: 'text',
+      required: false,
       placeholder: '333 1234567',
-      help: 'Normalizzato a soli digit. Match esatto sul valore normalizzato.' },
-    { key: 'name', label: 'Nome (fallback)', type: 'text', required: false,
+      help: 'Normalizzato a soli digit. Match esatto sul valore normalizzato.',
+    },
+    {
+      key: 'name',
+      label: 'Nome (fallback)',
+      type: 'text',
+      required: false,
       placeholder: 'Mario Rossi',
-      help: 'Match ilike — ultimo tentativo se email/vat/phone non danno hit.' },
+      help: 'Match ilike — ultimo tentativo se email/vat/phone non danno hit.',
+    },
 
     // Scope
-    { key: 'companyId', label: 'company_id (multi-company)', type: 'number', required: false,
+    {
+      key: 'companyId',
+      label: 'company_id (multi-company)',
+      type: 'number',
+      required: false,
       placeholder: '1',
-      help: 'Restringe la ricerca alla company indicata. Vuoto = tutte.' },
+      help: 'Restringe la ricerca alla company indicata. Vuoto = tutte.',
+    },
 
     // Options
-    { key: 'createIfMissing', label: 'Crea se non trovato', type: 'boolean',
-      required: false, defaultValue: 'false',
-      help: 'Se ON e il search ritorna 0 risultati, crea un nuovo res.partner ' +
-        'usando i campi email/name/phone/vat forniti. L\'output `created:true` ' +
-        'distingue il caso. Richiede almeno email O name per il create.' },
-    { key: 'returnFields', label: 'Campi da restituire', type: 'text', required: false,
+    {
+      key: 'createIfMissing',
+      label: 'Crea se non trovato',
+      type: 'boolean',
+      required: false,
+      defaultValue: 'false',
+      help:
+        'Se ON e il search ritorna 0 risultati, crea un nuovo res.partner ' +
+        "usando i campi email/name/phone/vat forniti. L'output `created:true` " +
+        'distingue il caso. Richiede almeno email O name per il create.',
+    },
+    {
+      key: 'returnFields',
+      label: 'Campi da restituire',
+      type: 'text',
+      required: false,
       defaultValue: 'id,name,email,phone,vat,company_id,user_id',
-      help: 'Lista comma-separated. Default copre il 90% dei flussi.' },
+      help: 'Lista comma-separated. Default copre il 90% dei flussi.',
+    },
 
     // Knobs
-    { key: 'timeoutMs', label: 'Timeout (ms)', type: 'number', required: false,
-      defaultValue: '60000' },
-    { key: 'followRedirects', label: 'Segui redirect', type: 'boolean',
-      required: false, defaultValue: 'true' },
+    {
+      key: 'timeoutMs',
+      label: 'Timeout (ms)',
+      type: 'number',
+      required: false,
+      defaultValue: '60000',
+    },
+    {
+      key: 'followRedirects',
+      label: 'Segui redirect',
+      type: 'boolean',
+      required: false,
+      defaultValue: 'true',
+    },
   ],
 
   vendor: 'flowforge',
@@ -94,13 +160,30 @@ export const odooLookupPartnerNodeDef: NodeDef = {
   // accurata per l'analisi AI; verificato anti-drift in index.test.ts.
   outputContract: {
     fields: [
-      { name: 'found', type: 'boolean', desc: 'true se un partner corrispondente esisteva già in Odoo' },
-      { name: 'created', type: 'boolean', desc: 'true SOLO se il partner è stato creato adesso (miss + createIfMissing=true)' },
-      { name: 'partnerId', type: 'number | null', desc: 'id Odoo del partner (trovato o creato); NULL se non trovato e createIfMissing=false' },
-      { name: 'partner', type: 'object | null', desc: 'record Odoo con i returnFields (name/email/vat/… stanno QUI dentro, NON top-level); null se non trovato e !createIfMissing' },
+      {
+        name: 'found',
+        type: 'boolean',
+        desc: 'true se un partner corrispondente esisteva già in Odoo',
+      },
+      {
+        name: 'created',
+        type: 'boolean',
+        desc: 'true SOLO se il partner è stato creato adesso (miss + createIfMissing=true)',
+      },
+      {
+        name: 'partnerId',
+        type: 'number | null',
+        desc: 'id Odoo del partner (trovato o creato); NULL se non trovato e createIfMissing=false',
+      },
+      {
+        name: 'partner',
+        type: 'object | null',
+        desc: 'record Odoo con i returnFields (name/email/vat/… stanno QUI dentro, NON top-level); null se non trovato e !createIfMissing',
+      },
     ],
-    notes: 'Miss + createIfMissing=false → { found:false, created:false, partner:null, partnerId:null }. '
-      + 'Per il caso "cliente sconosciuto" collega un ramo che testa partnerId/found (es. logic_if su partnerId == null), '
-      + 'NON assumere un id fittizio (NON è 0).',
+    notes:
+      'Miss + createIfMissing=false → { found:false, created:false, partner:null, partnerId:null }. ' +
+      'Per il caso "cliente sconosciuto" collega un ramo che testa partnerId/found (es. logic_if su partnerId == null), ' +
+      'NON assumere un id fittizio (NON è 0).',
   },
 };

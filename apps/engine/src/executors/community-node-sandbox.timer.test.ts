@@ -29,7 +29,7 @@ describe('#223 timer shim — sandbox', () => {
         return { typeofST: typeof setTimeout, typeofCT: typeof clearTimeout };
       };
     `;
-    const out = await runInSandbox(source, baseInput) as { typeofST: string; typeofCT: string };
+    const out = (await runInSandbox(source, baseInput)) as { typeofST: string; typeofCT: string };
     expect(out.typeofST).toBe('function');
     expect(out.typeofCT).toBe('function');
   });
@@ -40,7 +40,7 @@ describe('#223 timer shim — sandbox', () => {
         return { typeofSI: typeof setInterval, typeofCI: typeof clearInterval };
       };
     `;
-    const out = await runInSandbox(source, baseInput) as { typeofSI: string; typeofCI: string };
+    const out = (await runInSandbox(source, baseInput)) as { typeofSI: string; typeofCI: string };
     expect(out.typeofSI).toBe('function');
     expect(out.typeofCI).toBe('function');
   });
@@ -55,7 +55,7 @@ describe('#223 timer shim — sandbox', () => {
         });
       };
     `;
-    const out = await runInSandbox(source, baseInput) as { invoked: boolean };
+    const out = (await runInSandbox(source, baseInput)) as { invoked: boolean };
     expect(out.invoked).toBe(true);
   });
 
@@ -70,12 +70,12 @@ describe('#223 timer shim — sandbox', () => {
         });
       };
     `;
-    const out = await runInSandbox(source, baseInput) as { fired: boolean };
+    const out = (await runInSandbox(source, baseInput)) as { fired: boolean };
     expect(out.fired).toBe(false);
   }, 15_000); // timeout ampio: lo spawn isolated-vm + i timer interni (600ms)
-              // possono slittare quando la suite gira a piena concorrenza
-              // (worker CPU-starved). La logica resta deterministica (margine
-              // 300ms cancellato vs 600ms resolve); qui difendiamo solo dal carico.
+  // possono slittare quando la suite gira a piena concorrenza
+  // (worker CPU-starved). La logica resta deterministica (margine
+  // 300ms cancellato vs 600ms resolve); qui difendiamo solo dal carico.
 
   it('AbortSignal.timeout(ms) funziona (depende da setTimeout shim)', async () => {
     const source = `
@@ -88,7 +88,7 @@ describe('#223 timer shim — sandbox', () => {
         });
       };
     `;
-    const out = await runInSandbox(source, baseInput) as { aborted: boolean; reason: string };
+    const out = (await runInSandbox(source, baseInput)) as { aborted: boolean; reason: string };
     expect(out.aborted).toBe(true);
     expect(out.reason).toBe('TimeoutError');
   });
@@ -105,7 +105,9 @@ describe('#223 timer shim — sandbox', () => {
           return { neverReached: true };
         };
       `;
-      await expect(runInSandbox(source, baseInput)).rejects.toThrow(/timeout host|hang async|await non risolto/u);
+      await expect(runInSandbox(source, baseInput)).rejects.toThrow(
+        /timeout host|hang async|await non risolto/u,
+      );
     } finally {
       delete process.env.MEDEA_SANDBOX_EXEC_TIMEOUT_MS;
     }
@@ -122,7 +124,9 @@ describe('#223 timer shim — sandbox', () => {
         return { created: n };
       };
     `;
-    await expect(runInSandbox(source, baseInput)).rejects.toThrow(/Limite timer sandbox|timer sandbox superato/u);
+    await expect(runInSandbox(source, baseInput)).rejects.toThrow(
+      /Limite timer sandbox|timer sandbox superato/u,
+    );
   });
 
   // ROOT CAUSE #3 (2026-06-09): `const fetch` dentro ctx.eval() ha block-scope —
@@ -147,7 +151,10 @@ describe('#223 timer shim — sandbox', () => {
         };
       };
     `;
-    const result = await runInSandbox(source, baseInput) as { output: unknown; durationMs: number };
+    const result = (await runInSandbox(source, baseInput)) as {
+      output: unknown;
+      durationMs: number;
+    };
     expect(result).toEqual({
       output: { liveHost: 'https://example.com', baseUrl: 'https://example.com' },
       durationMs: 42,
@@ -163,7 +170,7 @@ describe('#223 timer shim — sandbox', () => {
         return { foo: 'bar', count: 7 };
       };
     `;
-    const result = await runInSandbox(source, baseInput) as { foo: string; count: number };
+    const result = (await runInSandbox(source, baseInput)) as { foo: string; count: number };
     // runInSandbox ritorna VALUE puro (no wrap). custom-node.ts farà il wrap.
     expect(result).toEqual({ foo: 'bar', count: 7 });
   });
@@ -185,10 +192,16 @@ describe('#223 timer shim — sandbox', () => {
         };
       };
     `;
-    const out = await runInSandbox(source, baseInput) as {
-      protocol: string; host: string; hostname: string;
-      pathname: string; search: string; hash: string;
-      href: string; canParseValid: boolean; canParseInvalid: boolean;
+    const out = (await runInSandbox(source, baseInput)) as {
+      protocol: string;
+      host: string;
+      hostname: string;
+      pathname: string;
+      search: string;
+      hash: string;
+      href: string;
+      canParseValid: boolean;
+      canParseInvalid: boolean;
     };
     expect(out.protocol).toBe('https:');
     expect(out.host).toBe('streamingcommunityz.eu');
@@ -218,7 +231,7 @@ describe('#223 timer shim — sandbox', () => {
         return { snap1, snap2 };
       };
     `;
-    const out = await runInSandbox(source, baseInput) as {
+    const out = (await runInSandbox(source, baseInput)) as {
       snap1: { search: string; href: string };
       snap2: { search: string; href: string };
     };
@@ -240,8 +253,11 @@ describe('#223 timer shim — sandbox', () => {
         };
       };
     `;
-    const out = await runInSandbox(source, baseInput) as {
-      getA: string; getAllA: string[]; has: boolean; serialized: string;
+    const out = (await runInSandbox(source, baseInput)) as {
+      getA: string;
+      getAllA: string[];
+      has: boolean;
+      serialized: string;
     };
     expect(out.getA).toBe('1');
     expect(out.getAllA).toEqual(['1', '3']);
@@ -275,7 +291,11 @@ describe('#223 timer shim — sandbox', () => {
         };
       };
     `;
-    const out = await runInSandbox(source, baseInput) as { eu: string; company: string; path: string };
+    const out = (await runInSandbox(source, baseInput)) as {
+      eu: string;
+      company: string;
+      path: string;
+    };
     expect(out.eu).toBe('https://streamingcommunityz.eu');
     expect(out.company).toBe('https://streamingcommunityz.company');
     expect(out.path).toBe('https://example.com/sub');
@@ -302,8 +322,11 @@ describe('#223 timer shim — sandbox', () => {
         };
       };
     `;
-    const out = await runInSandbox(source, baseInput) as {
-      fromAB: string; fromU8: string; fromArr: string; lenAB: number;
+    const out = (await runInSandbox(source, baseInput)) as {
+      fromAB: string;
+      fromU8: string;
+      fromArr: string;
+      lenAB: number;
     };
     expect(out.fromAB).toBe('hello');
     expect(out.fromU8).toBe('hello');
@@ -321,8 +344,11 @@ describe('#223 timer shim — sandbox', () => {
         return { hmac, hash, uuid, uuidValid: /^[0-9a-f-]{36}$/i.test(uuid) };
       };
     `;
-    const out = await runInSandbox(source, baseInput) as {
-      hmac: string; hash: string; uuid: string; uuidValid: boolean;
+    const out = (await runInSandbox(source, baseInput)) as {
+      hmac: string;
+      hash: string;
+      uuid: string;
+      uuidValid: boolean;
     };
     // SHA-256 HMAC("secret", "hello") = "88aab3ede8d3adf94d26ab90d3bafd4a2083070c3bcce9c014ee04a443847c0b"
     expect(out.hmac).toBe('88aab3ede8d3adf94d26ab90d3bafd4a2083070c3bcce9c014ee04a443847c0b');
@@ -337,7 +363,7 @@ describe('#223 timer shim — sandbox', () => {
         return { uuid: crypto.randomUUID() };
       };
     `;
-    const out = await runInSandbox(source, baseInput) as { uuid: string };
+    const out = (await runInSandbox(source, baseInput)) as { uuid: string };
     expect(out.uuid).toMatch(/^[0-9a-f-]{36}$/i);
   });
 
@@ -352,8 +378,10 @@ describe('#223 timer shim — sandbox', () => {
         };
       };
     `;
-    const out = await runInSandbox(source, baseInput) as {
-      asciiLen: number; utf8Len: number; isBufferFalse: boolean;
+    const out = (await runInSandbox(source, baseInput)) as {
+      asciiLen: number;
+      utf8Len: number;
+      isBufferFalse: boolean;
     };
     expect(out.asciiLen).toBe(5);
     expect(out.utf8Len).toBe(5);
@@ -372,9 +400,12 @@ describe('#223 timer shim — sandbox', () => {
         };
       };
     `;
-    const out = await runInSandbox(source, baseInput) as {
-      typeofFetch: string; typeofBuffer: string; typeofConsole: string;
-      typeofAtob: string; typeofAbortController: string;
+    const out = (await runInSandbox(source, baseInput)) as {
+      typeofFetch: string;
+      typeofBuffer: string;
+      typeofConsole: string;
+      typeofAtob: string;
+      typeofAbortController: string;
     };
     expect(out.typeofFetch).toBe('function');
     expect(out.typeofBuffer).toBe('object');
@@ -445,7 +476,7 @@ describe('#223 timer shim — sandbox', () => {
         });
       };
     `;
-    const out = await runInSandbox(source, baseInput) as { aborted: boolean; hadTimer: boolean };
+    const out = (await runInSandbox(source, baseInput)) as { aborted: boolean; hadTimer: boolean };
     expect(out.aborted).toBe(false);
     expect(out.hadTimer).toBe(true);
   });

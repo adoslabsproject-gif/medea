@@ -107,21 +107,23 @@ quindi:
       if (corrupted.length >= ctx.maxRows) break;
       const issue = checkStepsJson(r.steps_json);
       if (!issue) continue;
-      corrupted.push(buildDetectedRow({
-        id: r.id,
-        reason: `steps_json corrotto: ${issue}`,
-        severity: 'critical',
-        raw: {
+      corrupted.push(
+        buildDetectedRow({
           id: r.id,
-          workflow_id: r.workflow_id,
-          tenant_id: r.tenant_id,
-          status: r.status,
-          started_at: r.started_at,
-          ended_at: r.ended_at,
-          steps_json: r.steps_json,
-        },
-        ...(r.tenant_id ? { tenantId: r.tenant_id } : {}),
-      }));
+          reason: `steps_json corrotto: ${issue}`,
+          severity: 'critical',
+          raw: {
+            id: r.id,
+            workflow_id: r.workflow_id,
+            tenant_id: r.tenant_id,
+            status: r.status,
+            started_at: r.started_at,
+            ended_at: r.ended_at,
+            steps_json: r.steps_json,
+          },
+          ...(r.tenant_id ? { tenantId: r.tenant_id } : {}),
+        }),
+      );
     }
     return corrupted;
   },

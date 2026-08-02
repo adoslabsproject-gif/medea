@@ -88,7 +88,9 @@ function extractSecretReferences(value: unknown): string[] {
     return value.flatMap((v) => extractSecretReferences(v));
   }
   if (value && typeof value === 'object') {
-    return Object.values(value as Record<string, unknown>).flatMap((v) => extractSecretReferences(v));
+    return Object.values(value as Record<string, unknown>).flatMap((v) =>
+      extractSecretReferences(v),
+    );
   }
   return [];
 }

@@ -27,7 +27,7 @@ export const emailMxNode: NodeModule = {
       'sending). Verifica multi-livello complementari per coverage completa: ' +
       '(1) MX record lookup via DNS query asincrona — il record MX (Mail eXchanger) del dominio dichiara i ' +
       'server SMTP autoritativi del dominio per la ricezione email (es. acme.com MX points a 10 mail.acme.com); ' +
-      'l\'assenza di MX record è strong signal di dominio non email-capable; ' +
+      "l'assenza di MX record è strong signal di dominio non email-capable; " +
       '(2) Fallback A record check (RFC 5321 compliance) — se MX manca, il client SMTP è tenuto da specifica a ' +
       'tentare il A record (IP del dominio) — il nodo replica questa logica per parità di comportamento col ' +
       'mailer reale; ' +
@@ -61,7 +61,7 @@ export const emailMxNode: NodeModule = {
         type: 'expression',
         required: true,
         placeholder: '{{$node.harvest.json.primary_email}}',
-        help: 'Indirizzo email completo (local@domain). Tipicamente output di un nodo action_email_harvest (campo primary_email) o di un\'estrazione manuale.',
+        help: "Indirizzo email completo (local@domain). Tipicamente output di un nodo action_email_harvest (campo primary_email) o di un'estrazione manuale.",
       },
       {
         key: 'minConfidence',

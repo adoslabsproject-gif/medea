@@ -67,17 +67,32 @@ function isValueReference(id: tsNS.Identifier): boolean {
   if (ts.isQualifiedName(p) && p.right === id) return false;
   // Nomi in posizione di DICHIARAZIONE/binding.
   if (
-    (ts.isVariableDeclaration(p) || ts.isParameter(p) || ts.isBindingElement(p) ||
-      ts.isFunctionDeclaration(p) || ts.isFunctionExpression(p) || ts.isClassDeclaration(p) ||
-      ts.isClassExpression(p) || ts.isMethodDeclaration(p) || ts.isPropertyDeclaration(p) ||
-      ts.isPropertySignature(p) || ts.isEnumDeclaration(p) || ts.isModuleDeclaration(p) ||
-      ts.isTypeAliasDeclaration(p) || ts.isInterfaceDeclaration(p) || ts.isTypeParameterDeclaration(p)) &&
+    (ts.isVariableDeclaration(p) ||
+      ts.isParameter(p) ||
+      ts.isBindingElement(p) ||
+      ts.isFunctionDeclaration(p) ||
+      ts.isFunctionExpression(p) ||
+      ts.isClassDeclaration(p) ||
+      ts.isClassExpression(p) ||
+      ts.isMethodDeclaration(p) ||
+      ts.isPropertyDeclaration(p) ||
+      ts.isPropertySignature(p) ||
+      ts.isEnumDeclaration(p) ||
+      ts.isModuleDeclaration(p) ||
+      ts.isTypeAliasDeclaration(p) ||
+      ts.isInterfaceDeclaration(p) ||
+      ts.isTypeParameterDeclaration(p)) &&
     (p as { name?: tsNS.Node }).name === id
   ) {
     return false;
   }
   // Specifier di import/export (nomi, non valori).
-  if (ts.isImportSpecifier(p) || ts.isExportSpecifier(p) || ts.isNamespaceImport(p) || ts.isImportClause(p)) {
+  if (
+    ts.isImportSpecifier(p) ||
+    ts.isExportSpecifier(p) ||
+    ts.isNamespaceImport(p) ||
+    ts.isImportClause(p)
+  ) {
     return false;
   }
   // Chiave di property assignment in object literal (la SHORTHAND invece è una referenza).
@@ -106,7 +121,14 @@ function scanOne(file: FileName, code: string): CompileDiagnostic[] {
 
   const report = (node: tsNS.Node, message: string, code2: string): void => {
     const { line, character } = sf.getLineAndCharacterOfPosition(node.getStart(sf));
-    violations.push({ severity: 'error', line: line + 1, col: character + 1, message, code: code2, file });
+    violations.push({
+      severity: 'error',
+      line: line + 1,
+      col: character + 1,
+      message,
+      code: code2,
+      file,
+    });
   };
 
   const visit = (node: tsNS.Node): void => {
@@ -124,7 +146,11 @@ function scanOne(file: FileName, code: string): CompileDiagnostic[] {
     }
     // 3) `import(...)` dinamico (qualunque specifier: non staticamente verificabile).
     if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
-      report(node, 'import() dinamico vietato (solo import statici)', 'SECURITY_AST_DYNAMIC_IMPORT');
+      report(
+        node,
+        'import() dinamico vietato (solo import statici)',
+        'SECURITY_AST_DYNAMIC_IMPORT',
+      );
     }
     // 4) `__proto__` in property-access O element-access computed (prototype pollution).
     if (ts.isPropertyAccessExpression(node) && node.name.text === '__proto__') {
@@ -135,7 +161,11 @@ function scanOne(file: FileName, code: string): CompileDiagnostic[] {
       ts.isStringLiteralLike(node.argumentExpression) &&
       node.argumentExpression.text === '__proto__'
     ) {
-      report(node, "accesso computed a '__proto__' vietato (prototype pollution)", 'SECURITY_AST_PROTO');
+      report(
+        node,
+        "accesso computed a '__proto__' vietato (prototype pollution)",
+        'SECURITY_AST_PROTO',
+      );
     }
     ts.forEachChild(node, visit);
   };
@@ -147,7 +177,11 @@ function scanOne(file: FileName, code: string): CompileDiagnostic[] {
  * Scan AST dei 3 sorgenti del custom-node. Ritorna i violations (mai throw — il caller
  * decide hard-fail). Complementare a `securityScan` regex: questa è la rete fine.
  */
-export async function astSecurityScan(sources: { executor: string; definition: string; schema: string }): Promise<CompileDiagnostic[]> {
+export async function astSecurityScan(sources: {
+  executor: string;
+  definition: string;
+  schema: string;
+}): Promise<CompileDiagnostic[]> {
   await ensureTs(); // carica typescript SOLO ora (mai a boot)
   return [
     ...scanOne('executor', sources.executor),

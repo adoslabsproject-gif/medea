@@ -69,24 +69,34 @@ function defaultContext(over?: Partial<ExecutionContext>): ExecutionContext {
 }
 
 /** Esegue un singolo fixture contro il nodo, ritornando l'esito. */
-export async function runNodeFixture(spec: CommunityNodeDefinition, fx: NodeFixture): Promise<FixtureResult> {
-  const action = fx.action
-    ? spec.actions.find((a) => a.id === fx.action)
-    : spec.actions[0];
+export async function runNodeFixture(
+  spec: CommunityNodeDefinition,
+  fx: NodeFixture,
+): Promise<FixtureResult> {
+  const action = fx.action ? spec.actions.find((a) => a.id === fx.action) : spec.actions[0];
   if (!action) {
-    return { name: fx.name, passed: false, detail: `azione "${fx.action ?? '(prima)'}" non trovata nel nodo` };
+    return {
+      name: fx.name,
+      passed: false,
+      detail: `azione "${fx.action ?? '(prima)'}" non trovata nel nodo`,
+    };
   }
   const ctx = defaultContext({ ...fx.context, action: action.id });
   const expectError = 'errorMatch' in fx.expect ? fx.expect.errorMatch : null;
   try {
     const output = await action.execute(fx.config ?? {}, fx.input, ctx);
     if (expectError !== null) {
-      return { name: fx.name, passed: false, detail: `atteso errore contenente "${expectError}", ma l'azione è riuscita` };
+      return {
+        name: fx.name,
+        passed: false,
+        detail: `atteso errore contenente "${expectError}", ma l'azione è riuscita`,
+      };
     }
     const expected = (fx.expect as { output: unknown }).output;
     if (deepEqual(output, expected)) return { name: fx.name, passed: true, detail: '' };
     return {
-      name: fx.name, passed: false,
+      name: fx.name,
+      passed: false,
       detail: `output diverso dall'atteso.\n  atteso:   ${JSON.stringify(expected)}\n  ricevuto: ${JSON.stringify(output)}`,
     };
   } catch (err) {
@@ -94,14 +104,21 @@ export async function runNodeFixture(spec: CommunityNodeDefinition, fx: NodeFixt
     if (expectError !== null) {
       return expectError === '' || message.includes(expectError)
         ? { name: fx.name, passed: true, detail: '' }
-        : { name: fx.name, passed: false, detail: `errore "${message}" non contiene "${expectError}"` };
+        : {
+            name: fx.name,
+            passed: false,
+            detail: `errore "${message}" non contiene "${expectError}"`,
+          };
     }
     return { name: fx.name, passed: false, detail: `errore inatteso: ${message}` };
   }
 }
 
 /** Esegue tutti i fixture e produce un sommario aggregato. */
-export async function runNodeFixtures(spec: CommunityNodeDefinition, fixtures: readonly NodeFixture[]): Promise<FixtureSummary> {
+export async function runNodeFixtures(
+  spec: CommunityNodeDefinition,
+  fixtures: readonly NodeFixture[],
+): Promise<FixtureSummary> {
   const results: FixtureResult[] = [];
   for (const fx of fixtures) {
     results.push(await runNodeFixture(spec, fx));

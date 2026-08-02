@@ -13,12 +13,16 @@ describe('telemetry', () => {
     });
 
     it('passes through async body', async () => {
-      const r = await withSpan('x', { 'a': 1 }, async () => Promise.resolve('hi'));
+      const r = await withSpan('x', { a: 1 }, async () => Promise.resolve('hi'));
       expect(r).toBe('hi');
     });
 
     it('re-throws body errors transparently', async () => {
-      await expect(withSpan('x', {}, () => { throw new Error('boom'); })).rejects.toThrow('boom');
+      await expect(
+        withSpan('x', {}, () => {
+          throw new Error('boom');
+        }),
+      ).rejects.toThrow('boom');
     });
   });
 
@@ -66,7 +70,11 @@ describe('telemetry', () => {
     });
 
     it('records exception + marks ERROR on throw, re-throws', async () => {
-      await expect(withSpan('x', {}, () => { throw new Error('boom'); })).rejects.toThrow('boom');
+      await expect(
+        withSpan('x', {}, () => {
+          throw new Error('boom');
+        }),
+      ).rejects.toThrow('boom');
       expect(mockSpan.recordException).toHaveBeenCalled();
       expect(mockSpan.setStatus).toHaveBeenCalledWith({ code: 2, message: 'boom' });
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('error.type', 'Error');
@@ -75,8 +83,12 @@ describe('telemetry', () => {
     });
 
     it('wraps non-Error throws into Error before recordException', async () => {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error -- Legacy throw pattern compatibile API esistente
-      await expect(withSpan('x', {}, () => { throw 'str'; })).rejects.toBe('str');
+      await expect(
+        withSpan('x', {}, () => {
+          // eslint-disable-next-line @typescript-eslint/only-throw-error -- Legacy throw pattern compatibile API esistente
+          throw 'str';
+        }),
+      ).rejects.toBe('str');
       expect(mockSpan.recordException).toHaveBeenCalledWith(expect.any(Error));
     });
   });
@@ -101,7 +113,10 @@ describe('telemetry', () => {
     });
 
     it('SCRUB query string da http.url (anti secret leak)', () => {
-      const a = httpSpanAttrs('GET', 'https://api.stripe.com/v1/charges?api_key=sk_live_SECRET&customer=cus_123');
+      const a = httpSpanAttrs(
+        'GET',
+        'https://api.stripe.com/v1/charges?api_key=sk_live_SECRET&customer=cus_123',
+      );
       expect(a['http.url']).toBe('https://api.stripe.com/v1/charges');
       expect(String(a['http.url'])).not.toContain('SECRET');
       expect(String(a['http.url'])).not.toContain('api_key');
@@ -115,13 +130,19 @@ describe('telemetry', () => {
     });
 
     it('SCRUB combinato — userInfo + query + fragment', () => {
-      const a = httpSpanAttrs('POST', 'https://u:p@api.x.com:8443/v1/data?token=SECRET&debug=1#section');
+      const a = httpSpanAttrs(
+        'POST',
+        'https://u:p@api.x.com:8443/v1/data?token=SECRET&debug=1#section',
+      );
       expect(a['http.url']).toBe('https://api.x.com:8443/v1/data');
       expect(a['http.host']).toBe('api.x.com:8443');
     });
 
     it('SCRUB preserva path completo (no over-stripping)', () => {
-      const a = httpSpanAttrs('GET', 'https://api.example.com/v2/users/12345/orders/abc-def?expand=line_items');
+      const a = httpSpanAttrs(
+        'GET',
+        'https://api.example.com/v2/users/12345/orders/abc-def?expand=line_items',
+      );
       expect(a['http.url']).toBe('https://api.example.com/v2/users/12345/orders/abc-def');
     });
 

@@ -5,10 +5,7 @@
  * un numero illimitato di destinatari = invii illimitati (DoS/toll). `.max(10000)` chiude.
  */
 import { describe, it, expect } from 'vitest';
-import {
-  EmailSendTrackedBatchConfigSchema,
-  EmailSendTrackedBatchInputSchema,
-} from './schema.js';
+import { EmailSendTrackedBatchConfigSchema, EmailSendTrackedBatchInputSchema } from './schema.js';
 
 const recipient = (i: number) => ({ leadId: `lead-${i}`, to: `u${i}@example.com` });
 const makeRecipients = (n: number) => Array.from({ length: n }, (_, i) => recipient(i));

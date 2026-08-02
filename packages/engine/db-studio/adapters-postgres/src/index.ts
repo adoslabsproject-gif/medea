@@ -16,8 +16,20 @@ import type {
   Table,
   Relation,
 } from '@medea/engine-db-studio-core';
-import { renderCreateViewSql, renderDropViewSql, fkRowsToRelations } from '@medea/engine-db-studio-core';
-import type { IDatabaseAdapter, QueryResult, ExecuteResult, RawQueryResult, RawQueryOptions, BatchOp, BatchResult } from '@medea/engine-db-studio-engine';
+import {
+  renderCreateViewSql,
+  renderDropViewSql,
+  fkRowsToRelations,
+} from '@medea/engine-db-studio-core';
+import type {
+  IDatabaseAdapter,
+  QueryResult,
+  ExecuteResult,
+  RawQueryResult,
+  RawQueryOptions,
+  BatchOp,
+  BatchResult,
+} from '@medea/engine-db-studio-engine';
 import { classifyStatement, splitStatements } from '@medea/engine-db-studio-engine';
 
 /**
@@ -82,49 +94,75 @@ function renderMigrationAction(action: MigrationAction): string {
         const cs = idx.columns.map(quoteIdent).join(', ');
         return `CREATE ${unique}INDEX IF NOT EXISTS ${quoteIdent(idx.name)} ON ${quoteIdent(action.table.name)} (${cs});`;
       });
-      return [`CREATE TABLE IF NOT EXISTS ${quoteIdent(action.table.name)} (\n  ${cols}\n);`, ...indexes].join('\n');
+      return [
+        `CREATE TABLE IF NOT EXISTS ${quoteIdent(action.table.name)} (\n  ${cols}\n);`,
+        ...indexes,
+      ].join('\n');
     }
-    case 'drop_table': return `DROP TABLE IF EXISTS ${quoteIdent(action.tableName)} CASCADE;`;
-    case 'rename_table': return `ALTER TABLE ${quoteIdent(action.from)} RENAME TO ${quoteIdent(action.to)};`;
-    case 'add_column': return `ALTER TABLE ${quoteIdent(action.tableName)} ADD COLUMN ${renderColumn(action.column)};`;
-    case 'drop_column': return `ALTER TABLE ${quoteIdent(action.tableName)} DROP COLUMN ${quoteIdent(action.columnName)};`;
-    case 'rename_column': return `ALTER TABLE ${quoteIdent(action.tableName)} RENAME COLUMN ${quoteIdent(action.from)} TO ${quoteIdent(action.to)};`;
+    case 'drop_table':
+      return `DROP TABLE IF EXISTS ${quoteIdent(action.tableName)} CASCADE;`;
+    case 'rename_table':
+      return `ALTER TABLE ${quoteIdent(action.from)} RENAME TO ${quoteIdent(action.to)};`;
+    case 'add_column':
+      return `ALTER TABLE ${quoteIdent(action.tableName)} ADD COLUMN ${renderColumn(action.column)};`;
+    case 'drop_column':
+      return `ALTER TABLE ${quoteIdent(action.tableName)} DROP COLUMN ${quoteIdent(action.columnName)};`;
+    case 'rename_column':
+      return `ALTER TABLE ${quoteIdent(action.tableName)} RENAME COLUMN ${quoteIdent(action.from)} TO ${quoteIdent(action.to)};`;
     case 'alter_column': {
       const parts: string[] = [];
       const c = action.patch;
-      if (c.type) parts.push(`ALTER COLUMN ${quoteIdent(action.columnName)} TYPE ${TYPE_TO_PG[c.type]}`);
-      if (c.constraints?.nullable === false) parts.push(`ALTER COLUMN ${quoteIdent(action.columnName)} SET NOT NULL`);
-      if (c.constraints?.nullable === true) parts.push(`ALTER COLUMN ${quoteIdent(action.columnName)} DROP NOT NULL`);
-      return parts.length > 0 ? `ALTER TABLE ${quoteIdent(action.tableName)} ${parts.join(', ')};` : '';
+      if (c.type)
+        parts.push(`ALTER COLUMN ${quoteIdent(action.columnName)} TYPE ${TYPE_TO_PG[c.type]}`);
+      if (c.constraints?.nullable === false)
+        parts.push(`ALTER COLUMN ${quoteIdent(action.columnName)} SET NOT NULL`);
+      if (c.constraints?.nullable === true)
+        parts.push(`ALTER COLUMN ${quoteIdent(action.columnName)} DROP NOT NULL`);
+      return parts.length > 0
+        ? `ALTER TABLE ${quoteIdent(action.tableName)} ${parts.join(', ')};`
+        : '';
     }
     case 'add_relation': {
       const fkName = `${action.relation.fromTable}_${action.relation.fromColumn}_fk`;
       return `ALTER TABLE ${quoteIdent(action.relation.fromTable)} ADD CONSTRAINT ${quoteIdent(fkName)} FOREIGN KEY (${quoteIdent(action.relation.fromColumn)}) REFERENCES ${quoteIdent(action.relation.toTable)}(${quoteIdent(action.relation.toColumn)}) ON DELETE ${action.relation.onDelete.toUpperCase()};`;
     }
-    case 'drop_relation': return `-- Drop relation ${action.relationId} (run ALTER TABLE ... DROP CONSTRAINT manually if you know the name)`;
+    case 'drop_relation':
+      return `-- Drop relation ${action.relationId} (run ALTER TABLE ... DROP CONSTRAINT manually if you know the name)`;
     case 'add_index': {
       const unique = action.index.unique ? 'UNIQUE ' : '';
       const cols = action.index.columns.map(quoteIdent).join(', ');
       return `CREATE ${unique}INDEX IF NOT EXISTS ${quoteIdent(action.index.name)} ON ${quoteIdent(action.tableName)} (${cols});`;
     }
-    case 'drop_index': return `DROP INDEX IF EXISTS ${quoteIdent(action.indexName)};`;
-    case 'create_view': return renderCreateViewSql(action.view, quoteIdent);
-    case 'drop_view': return renderDropViewSql(action.viewName, quoteIdent);
+    case 'drop_index':
+      return `DROP INDEX IF EXISTS ${quoteIdent(action.indexName)};`;
+    case 'create_view':
+      return renderCreateViewSql(action.view, quoteIdent);
+    case 'drop_view':
+      return renderDropViewSql(action.viewName, quoteIdent);
   }
 }
 
 function filterToFragment(filter: QueryFilter): { sql: string; param: unknown } | { sql: string } {
   const col = quoteIdent(filter.column);
   switch (filter.op) {
-    case 'eq': return { sql: `${col} = $1`, param: filter.value };
-    case 'neq': return { sql: `${col} != $1`, param: filter.value };
-    case 'gt': return { sql: `${col} > $1`, param: filter.value };
-    case 'gte': return { sql: `${col} >= $1`, param: filter.value };
-    case 'lt': return { sql: `${col} < $1`, param: filter.value };
-    case 'lte': return { sql: `${col} <= $1`, param: filter.value };
-    case 'like': return { sql: `${col} LIKE $1`, param: filter.value };
-    case 'isNull': return { sql: `${col} IS NULL` };
-    case 'notNull': return { sql: `${col} IS NOT NULL` };
+    case 'eq':
+      return { sql: `${col} = $1`, param: filter.value };
+    case 'neq':
+      return { sql: `${col} != $1`, param: filter.value };
+    case 'gt':
+      return { sql: `${col} > $1`, param: filter.value };
+    case 'gte':
+      return { sql: `${col} >= $1`, param: filter.value };
+    case 'lt':
+      return { sql: `${col} < $1`, param: filter.value };
+    case 'lte':
+      return { sql: `${col} <= $1`, param: filter.value };
+    case 'like':
+      return { sql: `${col} LIKE $1`, param: filter.value };
+    case 'isNull':
+      return { sql: `${col} IS NULL` };
+    case 'notNull':
+      return { sql: `${col} IS NOT NULL` };
     case 'in': {
       const values = Array.isArray(filter.value) ? filter.value : [filter.value];
       return { sql: `${col} = ANY($1)`, param: values };
@@ -139,9 +177,15 @@ export class PostgresAdapter implements IDatabaseAdapter {
   connect(database: Database): Promise<void> {
     const url = buildPostgresUrl(database.connection);
     if (!url) {
-      return Promise.reject(new Error('PostgresAdapter requires either connection.url or hostname+port+database'));
+      return Promise.reject(
+        new Error('PostgresAdapter requires either connection.url or hostname+port+database'),
+      );
     }
-    this.sql = postgres(url, { onnotice: () => { /* suppress NOTICE */ } });
+    this.sql = postgres(url, {
+      onnotice: () => {
+        /* suppress NOTICE */
+      },
+    });
     return Promise.resolve();
   }
 
@@ -159,25 +203,42 @@ export class PostgresAdapter implements IDatabaseAdapter {
 
   previewMigration(actions: readonly MigrationAction[]): Promise<string> {
     try {
-      const result = actions.map(renderMigrationAction).filter((s) => s.trim().length > 0).join('\n\n');
+      const result = actions
+        .map(renderMigrationAction)
+        .filter((s) => s.trim().length > 0)
+        .join('\n\n');
       return Promise.resolve(result);
     } catch (error) {
       return Promise.reject(error instanceof Error ? error : new Error(String(error)));
     }
   }
 
-  async applyMigration(actions: readonly MigrationAction[]): Promise<{ sql: string; affectedTables: string[] }> {
+  async applyMigration(
+    actions: readonly MigrationAction[],
+  ): Promise<{ sql: string; affectedTables: string[] }> {
     const sql = this.requireSql();
-    const text = actions.map(renderMigrationAction).filter((s) => s.trim().length > 0).join('\n\n');
+    const text = actions
+      .map(renderMigrationAction)
+      .filter((s) => s.trim().length > 0)
+      .join('\n\n');
     await sql.begin(async (tx) => {
-      for (const stmt of text.split(/;\s*\n/).map((s) => s.trim()).filter((s) => s && !s.startsWith('--'))) {
+      for (const stmt of text
+        .split(/;\s*\n/)
+        .map((s) => s.trim())
+        .filter((s) => s && !s.startsWith('--'))) {
         await tx.unsafe(stmt + ';');
       }
     });
     const affected = new Set<string>();
     for (const a of actions) {
       if (a.kind === 'create_table') affected.add(a.table.name);
-      else if (a.kind === 'drop_table' || a.kind === 'add_column' || a.kind === 'drop_column' || a.kind === 'alter_column') affected.add(a.tableName);
+      else if (
+        a.kind === 'drop_table' ||
+        a.kind === 'add_column' ||
+        a.kind === 'drop_column' ||
+        a.kind === 'alter_column'
+      )
+        affected.add(a.tableName);
       else if (a.kind === 'rename_table') affected.add(a.to);
     }
     return { sql: text, affectedTables: [...affected] };
@@ -188,7 +249,8 @@ export class PostgresAdapter implements IDatabaseAdapter {
     const start = Date.now();
     const filters = spec.filters ?? [];
     const orderBy = spec.orderBy ?? [];
-    const select = spec.select && spec.select.length > 0 ? spec.select.map(quoteIdent).join(', ') : '*';
+    const select =
+      spec.select && spec.select.length > 0 ? spec.select.map(quoteIdent).join(', ') : '*';
 
     const params: unknown[] = [];
     const whereParts: string[] = [];
@@ -202,10 +264,13 @@ export class PostgresAdapter implements IDatabaseAdapter {
       }
     }
     const whereClause = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
-    const orderClause = orderBy.length ? `ORDER BY ${orderBy.map((o) => `${quoteIdent(o.column)} ${o.direction.toUpperCase()}`).join(', ')}` : '';
+    const orderClause = orderBy.length
+      ? `ORDER BY ${orderBy.map((o) => `${quoteIdent(o.column)} ${o.direction.toUpperCase()}`).join(', ')}`
+      : '';
     const limitClause = spec.limit !== undefined ? `LIMIT ${spec.limit.toString()}` : '';
     const offsetClause = spec.offset !== undefined ? `OFFSET ${spec.offset.toString()}` : '';
-    const text = `SELECT ${select} FROM ${quoteIdent(spec.table)} ${whereClause} ${orderClause} ${limitClause} ${offsetClause}`.trim();
+    const text =
+      `SELECT ${select} FROM ${quoteIdent(spec.table)} ${whereClause} ${orderClause} ${limitClause} ${offsetClause}`.trim();
 
     const rows = (await sql.unsafe(text, params as never)) as unknown as T[];
     return { rows, rowCount: rows.length, durationMs: Date.now() - start };
@@ -217,7 +282,9 @@ export class PostgresAdapter implements IDatabaseAdapter {
     const cols = Object.keys(row);
     const placeholders = cols.map((_, i) => `$${(i + 1).toString()}`).join(', ');
     const text = `INSERT INTO ${quoteIdent(tableName)} (${cols.map(quoteIdent).join(', ')}) VALUES (${placeholders}) RETURNING *`;
-    const rows = (await sql.unsafe(text, Object.values(row) as never)) as unknown as { id?: string | number }[];
+    const rows = (await sql.unsafe(text, Object.values(row) as never)) as unknown as {
+      id?: string | number;
+    }[];
     const first = rows[0];
     const result: ExecuteResult = {
       affectedRows: rows.length,
@@ -227,16 +294,28 @@ export class PostgresAdapter implements IDatabaseAdapter {
     return result;
   }
 
-  async update(tableName: string, where: Record<string, unknown>, patch: Record<string, unknown>): Promise<ExecuteResult> {
+  async update(
+    tableName: string,
+    where: Record<string, unknown>,
+    patch: Record<string, unknown>,
+  ): Promise<ExecuteResult> {
     const sql = this.requireSql();
     const start = Date.now();
     const setCols = Object.keys(patch);
     const whereCols = Object.keys(where);
     const setParts = setCols.map((c, i) => `${quoteIdent(c)} = $${(i + 1).toString()}`).join(', ');
-    const whereParts = whereCols.map((c, i) => `${quoteIdent(c)} = $${(i + 1 + setCols.length).toString()}`).join(' AND ');
+    const whereParts = whereCols
+      .map((c, i) => `${quoteIdent(c)} = $${(i + 1 + setCols.length).toString()}`)
+      .join(' AND ');
     const text = `UPDATE ${quoteIdent(tableName)} SET ${setParts} WHERE ${whereParts}`;
-    const result = await sql.unsafe(text, [...Object.values(patch), ...Object.values(where)] as never);
-    return { affectedRows: (result as { count?: number }).count ?? 0, durationMs: Date.now() - start };
+    const result = await sql.unsafe(text, [
+      ...Object.values(patch),
+      ...Object.values(where),
+    ] as never);
+    return {
+      affectedRows: (result as { count?: number }).count ?? 0,
+      durationMs: Date.now() - start,
+    };
   }
 
   /** Atomic batch: header + children in one transaction. postgres-js
@@ -252,27 +331,40 @@ export class PostgresAdapter implements IDatabaseAdapter {
         const op = ops[index]!;
         if (op.kind === 'insert') {
           const cols = Object.keys(op.row);
-          if (cols.length === 0) throw new Error(`transaction[${index.toString()}]: insert row has no columns`);
+          if (cols.length === 0)
+            throw new Error(`transaction[${index.toString()}]: insert row has no columns`);
           const placeholders = cols.map((_, i) => `$${(i + 1).toString()}`).join(', ');
           const text = `INSERT INTO ${quoteIdent(op.table)} (${cols.map(quoteIdent).join(', ')}) VALUES (${placeholders}) RETURNING *`;
-          const rows = (await tx.unsafe(text, Object.values(op.row) as never)) as unknown as { id?: string | number }[];
+          const rows = (await tx.unsafe(text, Object.values(op.row) as never)) as unknown as {
+            id?: string | number;
+          }[];
           const insertedId = rows[0]?.id;
           if (op.as && insertedId !== undefined) bindings[op.as] = insertedId;
-          const step: BatchResult['steps'][number] = { index, kind: 'insert', affectedRows: rows.length };
+          const step: BatchResult['steps'][number] = {
+            index,
+            kind: 'insert',
+            affectedRows: rows.length,
+          };
           if (insertedId !== undefined) step.insertedId = insertedId;
           steps.push(step);
         } else if (op.kind === 'insertMany') {
-          if (op.rows.length === 0) { steps.push({ index, kind: 'insertMany', affectedRows: 0 }); continue; }
+          if (op.rows.length === 0) {
+            steps.push({ index, kind: 'insertMany', affectedRows: 0 });
+            continue;
+          }
           let refValue: string | number | undefined;
           if (op.refColumn && op.refFrom) {
             const bound = bindings[op.refFrom];
             if (bound === undefined) {
-              throw new Error(`transaction[${index.toString()}]: refFrom "${op.refFrom}" is not bound by any earlier step`);
+              throw new Error(
+                `transaction[${index.toString()}]: refFrom "${op.refFrom}" is not bound by any earlier step`,
+              );
             }
             refValue = bound;
           }
           const baseCols = Object.keys(op.rows[0] ?? {});
-          if (baseCols.length === 0) throw new Error(`transaction[${index.toString()}]: insertMany rows have no columns`);
+          if (baseCols.length === 0)
+            throw new Error(`transaction[${index.toString()}]: insertMany rows have no columns`);
           const finalCols = op.refColumn ? [...baseCols, op.refColumn] : baseCols;
           const placeholders = finalCols.map((_, i) => `$${(i + 1).toString()}`).join(', ');
           const text = `INSERT INTO ${quoteIdent(op.table)} (${finalCols.map(quoteIdent).join(', ')}) VALUES (${placeholders})`;
@@ -294,10 +386,15 @@ export class PostgresAdapter implements IDatabaseAdapter {
     const sql = this.requireSql();
     const start = Date.now();
     const whereCols = Object.keys(where);
-    const whereParts = whereCols.map((c, i) => `${quoteIdent(c)} = $${(i + 1).toString()}`).join(' AND ');
+    const whereParts = whereCols
+      .map((c, i) => `${quoteIdent(c)} = $${(i + 1).toString()}`)
+      .join(' AND ');
     const text = `DELETE FROM ${quoteIdent(tableName)} WHERE ${whereParts}`;
     const result = await sql.unsafe(text, Object.values(where) as never);
-    return { affectedRows: (result as { count?: number }).count ?? 0, durationMs: Date.now() - start };
+    return {
+      affectedRows: (result as { count?: number }).count ?? 0,
+      durationMs: Date.now() - start,
+    };
   }
 
   async introspect(): Promise<Table[]> {
@@ -309,7 +406,14 @@ export class PostgresAdapter implements IDatabaseAdapter {
     `;
     const result: Table[] = [];
     for (const t of tables) {
-      const cols = await sql<{ column_name: string; data_type: string; is_nullable: string; column_default: string | null }[]>`
+      const cols = await sql<
+        {
+          column_name: string;
+          data_type: string;
+          is_nullable: string;
+          column_default: string | null;
+        }[]
+      >`
         SELECT column_name, data_type, is_nullable, column_default
         FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = ${t.table_name}
@@ -337,7 +441,15 @@ export class PostgresAdapter implements IDatabaseAdapter {
    */
   async introspectRelations(): Promise<Relation[]> {
     const sql = this.requireSql();
-    const rows = await sql<{ from_table: string; from_column: string; to_table: string; to_column: string; on_delete: string }[]>`
+    const rows = await sql<
+      {
+        from_table: string;
+        from_column: string;
+        to_table: string;
+        to_column: string;
+        on_delete: string;
+      }[]
+    >`
       SELECT
         kcu.table_name  AS from_table,
         kcu.column_name AS from_column,
@@ -356,10 +468,15 @@ export class PostgresAdapter implements IDatabaseAdapter {
       WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = 'public'
       ORDER BY from_table, from_column
     `;
-    return fkRowsToRelations(rows.map((r) => ({
-      fromTable: r.from_table, fromColumn: r.from_column,
-      toTable: r.to_table, toColumn: r.to_column, onDelete: r.on_delete,
-    })));
+    return fkRowsToRelations(
+      rows.map((r) => ({
+        fromTable: r.from_table,
+        fromColumn: r.from_column,
+        toTable: r.to_table,
+        toColumn: r.to_column,
+        onDelete: r.on_delete,
+      })),
+    );
   }
 
   async executeRaw(text: string, opts: RawQueryOptions = {}): Promise<RawQueryResult> {
@@ -402,19 +519,37 @@ export class PostgresAdapter implements IDatabaseAdapter {
           const kind = classifyStatement(stmt);
           const isSelect = kind === 'select' || kind === 'explain';
           if (isSelect) {
-            const limited = opts.rowLimit !== undefined
-              ? `${stmt.replace(/;?\s*$/, '')} LIMIT ${opts.rowLimit.toString()}`
-              : stmt;
+            const limited =
+              opts.rowLimit !== undefined
+                ? `${stmt.replace(/;?\s*$/, '')} LIMIT ${opts.rowLimit.toString()}`
+                : stmt;
             const r = await tx.unsafe(limited);
             const rows = r as unknown as Record<string, unknown>[];
             const columns = rows[0] ? Object.keys(rows[0]).map((name) => ({ name })) : [];
-            lastKind = kind; lastRows = rows; lastColumns = columns; lastAffected = undefined;
-            breakdown.push({ index: i, kind, rowCount: rows.length, sqlPreview: stmt.slice(0, 120) + (stmt.length > 120 ? '…' : '') });
+            lastKind = kind;
+            lastRows = rows;
+            lastColumns = columns;
+            lastAffected = undefined;
+            breakdown.push({
+              index: i,
+              kind,
+              rowCount: rows.length,
+              sqlPreview: stmt.slice(0, 120) + (stmt.length > 120 ? '…' : ''),
+            });
           } else {
             const r = await tx.unsafe(stmt);
             const meta = r as unknown as { count?: number };
-            lastKind = kind; lastRows = []; lastColumns = []; lastAffected = meta.count ?? 0;
-            breakdown.push({ index: i, kind, rowCount: 0, affectedRows: lastAffected, sqlPreview: stmt.slice(0, 120) + (stmt.length > 120 ? '…' : '') });
+            lastKind = kind;
+            lastRows = [];
+            lastColumns = [];
+            lastAffected = meta.count ?? 0;
+            breakdown.push({
+              index: i,
+              kind,
+              rowCount: 0,
+              affectedRows: lastAffected,
+              sqlPreview: stmt.slice(0, 120) + (stmt.length > 120 ? '…' : ''),
+            });
           }
         }
       };
@@ -422,15 +557,19 @@ export class PostgresAdapter implements IDatabaseAdapter {
       // Always wrap in tx — even single-statement, for consistent semantics
       // with dryRun rollback below.
       if (opts.dryRun) {
+        await sql
+          .begin(async (tx) => {
+            await work(tx);
+            throw new __RollbackSentinel();
+          })
+          .catch((err: unknown) => {
+            if (err instanceof __RollbackSentinel) return;
+            throw err;
+          });
+      } else {
         await sql.begin(async (tx) => {
           await work(tx);
-          throw new __RollbackSentinel();
-        }).catch((err: unknown) => {
-          if (err instanceof __RollbackSentinel) return;
-          throw err;
         });
-      } else {
-        await sql.begin(async (tx) => { await work(tx); });
       }
 
       return {

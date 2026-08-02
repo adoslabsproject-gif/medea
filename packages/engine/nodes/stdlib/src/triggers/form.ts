@@ -15,10 +15,10 @@ export const formTriggerNode: NodeModule = {
       'Generatore di form HTML pubblico no-code enterprise — il classico "drop a form on your website" feature ' +
       'che rende possibile collezionare input da audience esterna (clienti, prospect, candidati, segnalanti) ' +
       'senza richiedere account FlowForge né uno sviluppatore frontend per costruire HTML/JS form a mano. Il ' +
-      'drag&drop fields builder dell\'editor permette al business user (commercialista, marketing manager, HR ' +
+      "drag&drop fields builder dell'editor permette al business user (commercialista, marketing manager, HR " +
       'recruiter) di comporre il form in 2 minuti scegliendo tipi di campo con configurazione visuale (label, ' +
       'placeholder, required, validation regex, default, opzioni select), preview real-time del risultato HTML ' +
-      'finale, e l\'expression di pubblicazione genera un URL univoco di tipo ' +
+      "finale, e l'expression di pubblicazione genera un URL univoco di tipo " +
       'https://<tenant>.app.automazionezeli.com/forms/<workflowId>/<publicToken> che può essere embedded in ' +
       'iframe sul sito esterno, condiviso come link sui social, allegato in email marketing, stampato su ' +
       'volantini come QR code. ' +
@@ -47,7 +47,14 @@ export const formTriggerNode: NodeModule = {
       'di una posizione lavorativa, clienti che chiedono preventivo, partecipanti a evento webinar); ' +
       'registrazione utenti a community con verifica email automatica downstream.',
     configFields: [
-      { key: 'title', label: 'Titolo del form', type: 'text', required: true, defaultValue: 'Nuova segnalazione', help: 'Mostrato in testa alla pagina pubblica del form e nel tab del browser.' },
+      {
+        key: 'title',
+        label: 'Titolo del form',
+        type: 'text',
+        required: true,
+        defaultValue: 'Nuova segnalazione',
+        help: 'Mostrato in testa alla pagina pubblica del form e nel tab del browser.',
+      },
       {
         key: 'fieldsJson',
         label: 'Campi del form',
@@ -61,11 +68,32 @@ export const formTriggerNode: NodeModule = {
         label: 'Token pubblico (auto-generato)',
         type: 'text',
         required: true,
-        help: 'Token segreto che protegge l\'URL pubblico del form. Senza questo token, l\'URL /forms/<workflowId>/<token> non funziona. Il token viene generato automaticamente al primo salvataggio — NON modificarlo a mano se hai già condiviso il link. Per invalidare l\'URL vecchio: cancella il token e salva (ne verrà generato uno nuovo).',
+        help: "Token segreto che protegge l'URL pubblico del form. Senza questo token, l'URL /forms/<workflowId>/<token> non funziona. Il token viene generato automaticamente al primo salvataggio — NON modificarlo a mano se hai già condiviso il link. Per invalidare l'URL vecchio: cancella il token e salva (ne verrà generato uno nuovo).",
       },
-      { key: 'submitLabel', label: 'Testo bottone invio', type: 'text', required: false, defaultValue: 'Invia', help: 'Etichetta del bottone di submit (es. "Invia", "Conferma", "Procedi").' },
-      { key: 'successMessage', label: 'Messaggio di conferma', type: 'rich-text', required: false, defaultValue: 'Grazie! La tua segnalazione è stata ricevuta.', help: 'Mostrato all\'utente dopo l\'invio. Supporta formattazione (grassetto, link, liste).' },
-      { key: 'rateLimitPerMin', label: 'Rate limit per IP/minuto', type: 'number', required: false, defaultValue: '10', help: 'Massimo numero di submit dallo stesso IP al minuto. 0 = nessun limite (sconsigliato per form pubblici).' },
+      {
+        key: 'submitLabel',
+        label: 'Testo bottone invio',
+        type: 'text',
+        required: false,
+        defaultValue: 'Invia',
+        help: 'Etichetta del bottone di submit (es. "Invia", "Conferma", "Procedi").',
+      },
+      {
+        key: 'successMessage',
+        label: 'Messaggio di conferma',
+        type: 'rich-text',
+        required: false,
+        defaultValue: 'Grazie! La tua segnalazione è stata ricevuta.',
+        help: "Mostrato all'utente dopo l'invio. Supporta formattazione (grassetto, link, liste).",
+      },
+      {
+        key: 'rateLimitPerMin',
+        label: 'Rate limit per IP/minuto',
+        type: 'number',
+        required: false,
+        defaultValue: '10',
+        help: 'Massimo numero di submit dallo stesso IP al minuto. 0 = nessun limite (sconsigliato per form pubblici).',
+      },
     ],
     vendor: 'flowforge',
     version: '1.0.0',
@@ -92,7 +120,7 @@ export const fileWatchTriggerNode: NodeModule = {
       'Implementazione: chokidar usa fs.watch nativo di Node.js con fallback su polling per filesystem che non ' +
       'supportano inotify (es. mount NFS, container Docker overlay2 in alcune config Kubernetes), garantendo ' +
       'cross-platform consistency (Linux inotify, macOS FSEvents, Windows ReadDirectoryChangesW). Debounce ' +
-      'configurabile (default 300ms) per evitare event flood quando un\'applicazione scrive il file a chunks ' +
+      "configurabile (default 300ms) per evitare event flood quando un'applicazione scrive il file a chunks " +
       '(es. SFTP upload progressivo, browser drag-drop multi-MB) — il trigger attende stabilità della dimensione ' +
       'prima di firmare il workflow, evitando di processare file half-written. ' +
       'Sicurezza: path allowlist obbligatorio (root path della cartella + descendant), NO escape verso /etc o ' +
@@ -106,7 +134,7 @@ export const fileWatchTriggerNode: NodeModule = {
       'Use case: ingest automatico di CSV uploadati via SFTP dal commercialista esterno alle 23:00 nella ' +
       'cartella drop/ → workflow parse + INSERT in db_query bulk; monitoraggio della cartella ' +
       'shared/pec-fatture-2026/ → ogni nuovo PDF triggers OCR via action_vision_extract + creazione fattura ' +
-      'Odoo via action_odoo_create_lead; processing immediato di video caricati dall\'utente in dropbox/ → ' +
+      "Odoo via action_odoo_create_lead; processing immediato di video caricati dall'utente in dropbox/ → " +
       'action_video_metadata per estrarre durata e codec → action_ffmpeg_thumbnail per genere preview JPG; ' +
       'data ingestion sistema SAP che esporta giornalmente CSV in formato fixed-width nella cartella di scambio.',
     configFields: [
@@ -173,14 +201,14 @@ export const dbChangeTriggerNode: NodeModule = {
       'semantics garantita dallo state store del trigger), oppure modalità real-time via trigger SQL nativo ' +
       'PostgreSQL/SQLite (LISTEN/NOTIFY pubblicato da AFTER INSERT/UPDATE/DELETE FOR EACH ROW, latency sotto i ' +
       '50ms ma richiede privilegi DBA per CREATE TRIGGER — usabile quando il tenant ha schema isolato). ' +
-      'Filtri configurabili: where clause SQL-like su uno o più campi (es. "status = \'pending\' AND amount > ' +
+      "Filtri configurabili: where clause SQL-like su uno o più campi (es. \"status = 'pending' AND amount > " +
       '1000" — solo gli ordini grossi attendono pagamento triggera il flow), watch su una SPECIFICA colonna per ' +
       'UPDATE (es. "scatena solo se cambia il campo `delivery_status`, ignora aggiornamenti su `last_login`" — ' +
       'fondamentale per evitare loop quando il workflow stesso scrive in altre colonne della stessa tabella). ' +
-      'Input al workflow downstream: { event: \'insert\'|\'update\'|\'delete\', row (oggetto completo della riga ' +
+      "Input al workflow downstream: { event: 'insert'|'update'|'delete', row (oggetto completo della riga " +
       'corrente), oldRow? (snapshot pre-modifica per UPDATE, utile per audit log "campo X passato da Y a Z"), ' +
       'table (nome della tabella per multi-tabella workflow di logging), changedColumns? (lista delle colonne ' +
-      'effettivamente cambiate nell\'UPDATE), timestamp (ISO 8601 dell\'evento DB) }. ' +
+      "effettivamente cambiate nell'UPDATE), timestamp (ISO 8601 dell'evento DB) }. " +
       'Use case: notifica admin via action_email_send_tracked quando insert in ordini_pending con importo > €500 ' +
       '(escalation EU "Codice del Consumatore" rimborsi); sync esterno verso HubSpot CRM tramite action_http post ' +
       'update di customers.email per allineare il marketing pipeline; audit trigger su tabella users per ' +
@@ -211,7 +239,13 @@ export const dbChangeTriggerNode: NodeModule = {
         options: ['insert', 'update', 'delete', 'all'],
         defaultValue: 'all',
       },
-      { key: 'pollIntervalSec', label: 'Polling interval (sec)', type: 'number', required: false, defaultValue: '5' },
+      {
+        key: 'pollIntervalSec',
+        label: 'Polling interval (sec)',
+        type: 'number',
+        required: false,
+        defaultValue: '5',
+      },
     ],
     vendor: 'flowforge',
     version: '1.0.0',
@@ -267,14 +301,54 @@ export const imapTriggerNode: NodeModule = {
         label: 'Account email (Settings → Email Accounts)',
         type: 'email-account-picker',
         required: false,
-        help: 'Se selezionato, l\'engine usa IMAP host/port/credentials di quell\'account.',
+        help: "Se selezionato, l'engine usa IMAP host/port/credentials di quell'account.",
       },
-      { key: 'host', label: 'IMAP host', type: 'text', required: false, placeholder: 'imap.example.com', showIf: { field: 'systemAccountId', equals: '' } },
-      { key: 'port', label: 'Port', type: 'number', required: false, defaultValue: '993', showIf: { field: 'systemAccountId', equals: '' } },
-      { key: 'username', label: 'Username', type: 'text', required: false, showIf: { field: 'systemAccountId', equals: '' } },
-      { key: 'password', label: 'Password', type: 'secret', required: false, showIf: { field: 'systemAccountId', equals: '' } },
-      { key: 'mailbox', label: 'Cartella IMAP', type: 'text', required: false, defaultValue: 'INBOX', help: 'INBOX = posta in arrivo. Altri esempi: Sent, Drafts, Spam, [Gmail]/All Mail.' },
-      { key: 'pollIntervalSec', label: 'Intervallo polling (secondi)', type: 'number', required: false, defaultValue: '60', help: 'Frequenza con cui controllare nuove email. 60s default. Più basso = più chiamate IMAP.' },
+      {
+        key: 'host',
+        label: 'IMAP host',
+        type: 'text',
+        required: false,
+        placeholder: 'imap.example.com',
+        showIf: { field: 'systemAccountId', equals: '' },
+      },
+      {
+        key: 'port',
+        label: 'Port',
+        type: 'number',
+        required: false,
+        defaultValue: '993',
+        showIf: { field: 'systemAccountId', equals: '' },
+      },
+      {
+        key: 'username',
+        label: 'Username',
+        type: 'text',
+        required: false,
+        showIf: { field: 'systemAccountId', equals: '' },
+      },
+      {
+        key: 'password',
+        label: 'Password',
+        type: 'secret',
+        required: false,
+        showIf: { field: 'systemAccountId', equals: '' },
+      },
+      {
+        key: 'mailbox',
+        label: 'Cartella IMAP',
+        type: 'text',
+        required: false,
+        defaultValue: 'INBOX',
+        help: 'INBOX = posta in arrivo. Altri esempi: Sent, Drafts, Spam, [Gmail]/All Mail.',
+      },
+      {
+        key: 'pollIntervalSec',
+        label: 'Intervallo polling (secondi)',
+        type: 'number',
+        required: false,
+        defaultValue: '60',
+        help: 'Frequenza con cui controllare nuove email. 60s default. Più basso = più chiamate IMAP.',
+      },
       {
         key: 'filterSubject',
         label: 'Filtro subject (regex, opzionale)',
@@ -300,7 +374,7 @@ export const imapTriggerNode: NodeModule = {
         help:
           'Lista ESPLICITA di indirizzi email autorizzati a triggerare questo workflow. Più stringente del "filtro mittente" regex. ' +
           'Se popolato: solo le email da indirizzi in questa lista vengono accettate, tutto il resto viene scartato con audit log. ' +
-          'Use case: la casella IMAP è pubblicamente conosciuta (es. ordini@example.com), ma vuoi accettare ordini SOLO da fornitori/dipendenti specifici — impedisce a estranei di triggerare workflow conoscendo l\'indirizzo. ' +
+          "Use case: la casella IMAP è pubblicamente conosciuta (es. ordini@example.com), ma vuoi accettare ordini SOLO da fornitori/dipendenti specifici — impedisce a estranei di triggerare workflow conoscendo l'indirizzo. " +
           'Vuoto = solo il filterFrom regex viene applicato.',
       },
       {
@@ -337,14 +411,22 @@ export const imapTriggerNode: NodeModule = {
       },
       {
         key: 'markSeen',
-        label: 'Quando marcare l\'email come letta',
+        label: "Quando marcare l'email come letta",
         type: 'select',
         options: ['on-success', 'always', 'never'],
         required: false,
         defaultValue: 'on-success',
-        help: 'on-success (raccomandato per produzione) = l\'email resta UNREAD finché il workflow non completa con successo, così un ordine fallito viene ri-tentato al prossimo poll. always = marca sempre letta (rischio: ordine perso se il run fallisce). never = non marca mai, l\'operatore gestisce i flag a mano.',
+        help: "on-success (raccomandato per produzione) = l'email resta UNREAD finché il workflow non completa con successo, così un ordine fallito viene ri-tentato al prossimo poll. always = marca sempre letta (rischio: ordine perso se il run fallisce). never = non marca mai, l'operatore gestisce i flag a mano.",
       },
-      { key: 'tlsMode', label: 'Cifratura', type: 'select', options: ['tls', 'starttls', 'plain'], required: false, defaultValue: 'tls', help: 'tls = porta 993 (raccomandato). starttls = porta 143. plain = NESSUNA cifratura (usare solo in rete fidata).' },
+      {
+        key: 'tlsMode',
+        label: 'Cifratura',
+        type: 'select',
+        options: ['tls', 'starttls', 'plain'],
+        required: false,
+        defaultValue: 'tls',
+        help: 'tls = porta 993 (raccomandato). starttls = porta 143. plain = NESSUNA cifratura (usare solo in rete fidata).',
+      },
     ],
     vendor: 'flowforge',
     version: '2.0.0',

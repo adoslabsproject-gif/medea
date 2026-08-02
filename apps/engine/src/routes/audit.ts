@@ -65,7 +65,13 @@ export function createAuditRoutes(): Hono {
         action: r.action,
         resourceType: r.resourceType,
         resourceId: r.resourceId ?? null,
-        metadata: (() => { try { return JSON.parse(r.metadataJson ?? '{}') as unknown; } catch { return r.metadataJson; } })(),
+        metadata: (() => {
+          try {
+            return JSON.parse(r.metadataJson ?? '{}') as unknown;
+          } catch {
+            return r.metadataJson;
+          }
+        })(),
         createdAt: r.createdAt,
         hash: r.hash,
         prevHash: r.prevHash,
@@ -99,21 +105,34 @@ export function createAuditRoutes(): Hono {
       });
     }
 
-    const header = ['id', 'tenant_id', 'actor_id', 'action', 'resource_type', 'resource_id', 'metadata', 'created_at', 'hash', 'prev_hash'];
+    const header = [
+      'id',
+      'tenant_id',
+      'actor_id',
+      'action',
+      'resource_type',
+      'resource_id',
+      'metadata',
+      'created_at',
+      'hash',
+      'prev_hash',
+    ];
     const csv = [
       header.join(','),
-      ...rows.map((r) => [
-        toCsvCell(r.id),
-        toCsvCell(r.tenantId),
-        toCsvCell(r.actorId),
-        toCsvCell(r.action),
-        toCsvCell(r.resourceType),
-        toCsvCell(r.resourceId),
-        toCsvCell(r.metadataJson),
-        toCsvCell(r.createdAt),
-        toCsvCell(r.hash),
-        toCsvCell(r.prevHash),
-      ].join(',')),
+      ...rows.map((r) =>
+        [
+          toCsvCell(r.id),
+          toCsvCell(r.tenantId),
+          toCsvCell(r.actorId),
+          toCsvCell(r.action),
+          toCsvCell(r.resourceType),
+          toCsvCell(r.resourceId),
+          toCsvCell(r.metadataJson),
+          toCsvCell(r.createdAt),
+          toCsvCell(r.hash),
+          toCsvCell(r.prevHash),
+        ].join(','),
+      ),
     ].join('\n');
 
     return new Response(csv, {

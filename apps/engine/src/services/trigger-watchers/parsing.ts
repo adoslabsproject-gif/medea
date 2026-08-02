@@ -34,7 +34,10 @@ import { logger } from '@/lib/logger.js';
 export function resolveJsonPointer(doc: unknown, pointer: string): unknown {
   if (pointer === '') return doc;
   if (!pointer.startsWith('/')) return undefined;
-  const tokens = pointer.slice(1).split('/').map((t) => t.replace(/~1/g, '/').replace(/~0/g, '~'));
+  const tokens = pointer
+    .slice(1)
+    .split('/')
+    .map((t) => t.replace(/~1/g, '/').replace(/~0/g, '~'));
   let cur: unknown = doc;
   for (const tok of tokens) {
     if (cur === null || typeof cur !== 'object') return undefined;
@@ -100,9 +103,7 @@ export function parseAllowlist(raw: unknown): string[] {
   }
   return Array.from(
     new Set(
-      tokens
-        .map((s) => s.trim().toLowerCase())
-        .filter((s) => s.length > 0 && s.includes('@')),
+      tokens.map((s) => s.trim().toLowerCase()).filter((s) => s.length > 0 && s.includes('@')),
     ),
   );
 }

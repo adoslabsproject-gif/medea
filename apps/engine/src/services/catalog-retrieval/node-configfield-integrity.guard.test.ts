@@ -23,8 +23,12 @@ import type { NodeModule } from '@medea/engine-nodes-stdlib';
 import type { NodeDef } from '@medea/engine-core-schema';
 
 const ALL_NODES: NodeModule[] = [
-  ...stdlibNodes, ...dbNodes, ...coreIntegrationNodes,
-  ...italianConnectors, ...aiAgentNodes, ...llmNodes,
+  ...stdlibNodes,
+  ...dbNodes,
+  ...coreIntegrationNodes,
+  ...italianConnectors,
+  ...aiAgentNodes,
+  ...llmNodes,
 ];
 
 type Field = NonNullable<NodeDef['configFields']>[number];
@@ -55,7 +59,9 @@ describe('GUARD codebase-wide — integrità configField', () => {
           if (f.type === 'select' && typeof f.defaultValue === 'string' && f.defaultValue !== '') {
             const opts = f.options ?? [];
             if (!opts.includes(f.defaultValue)) {
-              offenders.push(`${n.def.id}/${g.scope}/${f.key}: default "${f.defaultValue}" ∉ [${opts.join(',')}]`);
+              offenders.push(
+                `${n.def.id}/${g.scope}/${f.key}: default "${f.defaultValue}" ∉ [${opts.join(',')}]`,
+              );
             }
           }
         }
@@ -75,7 +81,9 @@ describe('GUARD codebase-wide — integrità configField', () => {
         for (const f of g.fields) {
           const showIf = (f as { showIf?: { field?: string } }).showIf;
           if (showIf?.field && !localKeys.has(showIf.field)) {
-            offenders.push(`${n.def.id}/${g.scope}/${f.key}: showIf.field "${showIf.field}" non esiste`);
+            offenders.push(
+              `${n.def.id}/${g.scope}/${f.key}: showIf.field "${showIf.field}" non esiste`,
+            );
           }
         }
       }

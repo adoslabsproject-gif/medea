@@ -24,18 +24,29 @@ function field(key: string, type: string, extra: Partial<NodeCatalogEntry['field
 
 describe('buildNodeConfigSpec — mappatura tipi → kind', () => {
   it.each([
-    ['text', 'string'], ['textarea', 'string'], ['secret', 'string'], ['code', 'string'],
-    ['file-picker', 'string'], ['cron-builder', 'string'], ['db-table-picker', 'string'],
-    ['number', 'number'], ['boolean', 'boolean'],
-    ['json', 'structured'], ['key-value', 'structured'], ['filter-rows', 'structured'],
-    ['form-fields', 'structured'], ['condition-rules', 'structured'],
+    ['text', 'string'],
+    ['textarea', 'string'],
+    ['secret', 'string'],
+    ['code', 'string'],
+    ['file-picker', 'string'],
+    ['cron-builder', 'string'],
+    ['db-table-picker', 'string'],
+    ['number', 'number'],
+    ['boolean', 'boolean'],
+    ['json', 'structured'],
+    ['key-value', 'structured'],
+    ['filter-rows', 'structured'],
+    ['form-fields', 'structured'],
+    ['condition-rules', 'structured'],
   ])('tipo %s → kind %s', (type, kind) => {
     const spec = buildNodeConfigSpec(entry({ defId: 'n', fields: [field('k', type)] }));
     expect(spec.keys.get('k')!.kind).toBe(kind);
   });
 
   it('select CON options → enum (+ options copiati)', () => {
-    const spec = buildNodeConfigSpec(entry({ defId: 'n', fields: [field('mode', 'select', { options: ['a', 'b'] })] }));
+    const spec = buildNodeConfigSpec(
+      entry({ defId: 'n', fields: [field('mode', 'select', { options: ['a', 'b'] })] }),
+    );
     expect(spec.keys.get('mode')!.kind).toBe('enum');
     expect(spec.keys.get('mode')!.options).toEqual(['a', 'b']);
   });
@@ -47,21 +58,27 @@ describe('buildNodeConfigSpec — mappatura tipi → kind', () => {
   });
 
   it('tipo SCONOSCIUTO → structured (difensivo, non vincola a un tipo sbagliato)', () => {
-    const spec = buildNodeConfigSpec(entry({ defId: 'n', fields: [field('x', 'some-future-type')] }));
+    const spec = buildNodeConfigSpec(
+      entry({ defId: 'n', fields: [field('x', 'some-future-type')] }),
+    );
     expect(spec.keys.get('x')!.kind).toBe('structured');
   });
 });
 
 describe('buildNodeConfigSpec — secret & required', () => {
   it('🚨 secret → secret:true e required SEMPRE false (pending, mai forzato)', () => {
-    const spec = buildNodeConfigSpec(entry({ defId: 'n', fields: [field('apiKey', 'secret', { required: true })] }));
+    const spec = buildNodeConfigSpec(
+      entry({ defId: 'n', fields: [field('apiKey', 'secret', { required: true })] }),
+    );
     const k = spec.keys.get('apiKey')!;
     expect(k.secret).toBe(true);
     expect(k.required).toBe(false);
   });
 
   it('campo required non-secret → required:true', () => {
-    const spec = buildNodeConfigSpec(entry({ defId: 'n', fields: [field('url', 'text', { required: true })] }));
+    const spec = buildNodeConfigSpec(
+      entry({ defId: 'n', fields: [field('url', 'text', { required: true })] }),
+    );
     expect(spec.keys.get('url')!.required).toBe(true);
   });
 
@@ -72,16 +89,20 @@ describe('buildNodeConfigSpec — secret & required', () => {
 });
 
 describe('buildNodeConfigSpec — defaultValue', () => {
-  it('cattura defaultValue quando presente (per l\'auto-config deterministica)', () => {
-    const spec = buildNodeConfigSpec(entry({ defId: 'n', fields: [field('method', 'select', { options: ['GET'], defaultValue: 'GET' })] }));
+  it("cattura defaultValue quando presente (per l'auto-config deterministica)", () => {
+    const spec = buildNodeConfigSpec(
+      entry({
+        defId: 'n',
+        fields: [field('method', 'select', { options: ['GET'], defaultValue: 'GET' })],
+      }),
+    );
     expect(spec.keys.get('method')!.defaultValue).toBe('GET');
   });
 
   it('assente/vuoto → defaultValue undefined (non stringa vuota)', () => {
-    const spec = buildNodeConfigSpec(entry({ defId: 'n', fields: [
-      field('a', 'text'),
-      field('b', 'text', { defaultValue: '' }),
-    ] }));
+    const spec = buildNodeConfigSpec(
+      entry({ defId: 'n', fields: [field('a', 'text'), field('b', 'text', { defaultValue: '' })] }),
+    );
     expect(spec.keys.get('a')!.defaultValue).toBeUndefined();
     expect(spec.keys.get('b')!.defaultValue).toBeUndefined();
   });
@@ -92,7 +113,14 @@ describe('buildNodeConfigSpec — multi-azione', () => {
     defId: 'community_telegram',
     fields: [field('botToken', 'secret', { required: true })], // shared
     actions: [
-      { id: 'send_message', label: 'Send', fields: [field('chatId', 'text', { required: true }), field('text', 'textarea', { required: true })] },
+      {
+        id: 'send_message',
+        label: 'Send',
+        fields: [
+          field('chatId', 'text', { required: true }),
+          field('text', 'textarea', { required: true }),
+        ],
+      },
       { id: 'get_updates', label: 'Get', fields: [field('limit', 'number')] },
     ],
   });
@@ -132,7 +160,7 @@ describe('buildNodeConfigSpec — multi-azione', () => {
 });
 
 describe('buildCatalogSpec — indicizzazione', () => {
-  it('indicizza per defId; defId duplicato → vince l\'ultimo (allineato a de-dup catalog)', () => {
+  it("indicizza per defId; defId duplicato → vince l'ultimo (allineato a de-dup catalog)", () => {
     const spec = buildCatalogSpec([
       entry({ defId: 'dup', fields: [field('a', 'text')] }),
       entry({ defId: 'dup', fields: [field('b', 'number')] }),
@@ -143,10 +171,16 @@ describe('buildCatalogSpec — indicizzazione', () => {
 });
 
 describe('isExpressionValue', () => {
-  it.each(['{{ $json.x }}', 'prefisso {{ vars.y }} suffisso', '{{secrets.K}}'])('%s → true', (v) => {
-    expect(isExpressionValue(v)).toBe(true);
-  });
-  it.each(['plain', '', '{{ incompleto', 'incompleto }}', 42, null, undefined, {}])('%s → false', (v) => {
-    expect(isExpressionValue(v)).toBe(false);
-  });
+  it.each(['{{ $json.x }}', 'prefisso {{ vars.y }} suffisso', '{{secrets.K}}'])(
+    '%s → true',
+    (v) => {
+      expect(isExpressionValue(v)).toBe(true);
+    },
+  );
+  it.each(['plain', '', '{{ incompleto', 'incompleto }}', 42, null, undefined, {}])(
+    '%s → false',
+    (v) => {
+      expect(isExpressionValue(v)).toBe(false);
+    },
+  );
 });

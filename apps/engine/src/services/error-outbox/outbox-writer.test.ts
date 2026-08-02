@@ -26,8 +26,11 @@ function wrap(db: Database.Database): SqliteCompatProxy {
         all: (...p: unknown[]) => s.all(...(p as Parameters<typeof s.all>)),
       };
     },
-    exec: (sql: string) => { db.exec(sql); },
-    transaction: <T extends unknown[], R>(fn: (...a: T) => R) => db.transaction(fn) as (...a: T) => R,
+    exec: (sql: string) => {
+      db.exec(sql);
+    },
+    transaction: <T extends unknown[], R>(fn: (...a: T) => R) =>
+      db.transaction(fn) as (...a: T) => R,
   };
 }
 
@@ -78,7 +81,9 @@ describe('buildErrorOutboxEvents — selezione canali + anti-loop (#4) + anti-se
   });
 
   it('solo webhook configurato → solo fanout + webhook', () => {
-    const ev = buildErrorOutboxEvents(params({ onError: { webhookUrl: 'https://x', emailTo: undefined } }));
+    const ev = buildErrorOutboxEvents(
+      params({ onError: { webhookUrl: 'https://x', emailTo: undefined } }),
+    );
     expect(ev.map((e) => e.channel).sort()).toEqual(['fanout', 'webhook']);
   });
 
@@ -103,7 +108,10 @@ describe('computeErrorHash — deterministico', () => {
 
 describe('enqueueErrorOutbox — atomico (#3)', () => {
   let raw: Database.Database;
-  beforeEach(() => { raw = new Database(':memory:'); raw.exec(ERROR_OUTBOX_DDL); });
+  beforeEach(() => {
+    raw = new Database(':memory:');
+    raw.exec(ERROR_OUTBOX_DDL);
+  });
 
   it('inserisce tutti i canali + ritorna il count; ri-enqueue → 0 nuovi (dedup)', () => {
     const sqlite = wrap(raw);
@@ -130,8 +138,11 @@ describe('enqueueErrorOutbox — atomico (#3)', () => {
           all: (...p: unknown[]) => s.all(...(p as Parameters<typeof s.all>)),
         };
       },
-      exec: (sql: string) => { raw.exec(sql); },
-      transaction: <T extends unknown[], R>(fn: (...a: T) => R) => raw.transaction(fn) as (...a: T) => R,
+      exec: (sql: string) => {
+        raw.exec(sql);
+      },
+      transaction: <T extends unknown[], R>(fn: (...a: T) => R) =>
+        raw.transaction(fn) as (...a: T) => R,
     };
     const ev = buildErrorOutboxEvents(params()); // 3 eventi → il 2° fa throw
     expect(() => enqueueErrorOutbox(faulty, ev)).toThrow(/disk full/);

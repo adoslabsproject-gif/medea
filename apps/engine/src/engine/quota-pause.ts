@@ -70,7 +70,10 @@ const FALLBACK_PAUSE_SECONDS = 24 * 60 * 60;
  * abbonamento). `null`/malformato → 24h. Clamp a ≥60s così il janitor non
  * riprende immediatamente un run la cui quota è ancora esaurita (loop).
  */
-export function secondsUntilQuotaReset(periodEndIso: string | null, now: Date = new Date()): number {
+export function secondsUntilQuotaReset(
+  periodEndIso: string | null,
+  now: Date = new Date(),
+): number {
   if (!periodEndIso) return FALLBACK_PAUSE_SECONDS;
   const end = new Date(`${periodEndIso}T00:00:00Z`);
   if (Number.isNaN(end.getTime())) return FALLBACK_PAUSE_SECONDS;

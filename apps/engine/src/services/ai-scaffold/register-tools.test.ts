@@ -28,14 +28,33 @@ import './register-tools.js';
 function makeMockSession(): Record<string, unknown> {
   const session: Record<string, unknown> = {};
   const methods = [
-    'toolListDatabases', 'toolReadDbSchema', 'toolListWorkflows', 'toolReadWorkflow',
-    'toolListNodeCatalog', 'toolListEmailAccounts', 'toolListSecrets', 'toolListLlmProviders',
-    'toolListDraftNodes', 'toolListRecentRuns', 'toolReadRun', 'toolCheckSettingsHealth',
-    'toolCreateDatabase', 'toolCreateTable', 'toolAddColumn', 'toolDropColumn',
-    'toolDropTable', 'toolRenameColumn', 'toolAddIndex',
+    'toolListDatabases',
+    'toolReadDbSchema',
+    'toolListWorkflows',
+    'toolReadWorkflow',
+    'toolListNodeCatalog',
+    'toolListEmailAccounts',
+    'toolListSecrets',
+    'toolListLlmProviders',
+    'toolListDraftNodes',
+    'toolListRecentRuns',
+    'toolReadRun',
+    'toolCheckSettingsHealth',
+    'toolCreateDatabase',
+    'toolCreateTable',
+    'toolAddColumn',
+    'toolDropColumn',
+    'toolDropTable',
+    'toolRenameColumn',
+    'toolAddIndex',
     'toolProposePlan',
-    'toolAddNode', 'toolUpdateNode', 'toolDeleteNode', 'toolConnectNodes',
-    'toolDisconnectNodes', 'toolFinalizeWorkflow', 'toolAbort',
+    'toolAddNode',
+    'toolUpdateNode',
+    'toolDeleteNode',
+    'toolConnectNodes',
+    'toolDisconnectNodes',
+    'toolFinalizeWorkflow',
+    'toolAbort',
   ];
   for (const m of methods) {
     session[m] = (args: unknown) => ({ ok: true, data: { method: m, args } });
@@ -56,16 +75,33 @@ describe('registry — registrazione boot 28 tool', () => {
   it('tutti i tool Discovery sono presenti', () => {
     const names = toolRegistry.names();
     const discovery = [
-      'list_databases', 'read_db_schema', 'list_existing_workflows', 'read_workflow',
-      'list_node_catalog', 'list_email_accounts', 'list_secrets', 'list_llm_providers',
-      'list_draft_nodes', 'list_recent_runs', 'read_run', 'check_settings_health',
+      'list_databases',
+      'read_db_schema',
+      'list_existing_workflows',
+      'read_workflow',
+      'list_node_catalog',
+      'list_email_accounts',
+      'list_secrets',
+      'list_llm_providers',
+      'list_draft_nodes',
+      'list_recent_runs',
+      'read_run',
+      'check_settings_health',
     ];
     for (const d of discovery) expect(names).toContain(d);
   });
 
   it('tutti i tool DB Mutation sono presenti', () => {
     const names = toolRegistry.names();
-    const dbMut = ['create_database', 'create_table', 'add_column', 'drop_column', 'drop_table', 'rename_column', 'add_index'];
+    const dbMut = [
+      'create_database',
+      'create_table',
+      'add_column',
+      'drop_column',
+      'drop_table',
+      'rename_column',
+      'add_index',
+    ];
     for (const d of dbMut) expect(names).toContain(d);
   });
 
@@ -75,7 +111,15 @@ describe('registry — registrazione boot 28 tool', () => {
 
   it('tutti i tool Workflow Mutation sono presenti', () => {
     const names = toolRegistry.names();
-    const wfMut = ['add_node', 'update_node', 'delete_node', 'connect_nodes', 'disconnect_nodes', 'finalize_workflow', 'abort'];
+    const wfMut = [
+      'add_node',
+      'update_node',
+      'delete_node',
+      'connect_nodes',
+      'disconnect_nodes',
+      'finalize_workflow',
+      'abort',
+    ];
     for (const w of wfMut) expect(names).toContain(w);
   });
 
@@ -118,13 +162,17 @@ describe('execute() — dispatch + validation', () => {
 
   it('read_db_schema con databaseId valido → dispatch', async () => {
     const session = makeMockSession();
-    const r = await toolRegistry.execute(session as never, 'read_db_schema', { databaseId: 'db-1' });
+    const r = await toolRegistry.execute(session as never, 'read_db_schema', {
+      databaseId: 'db-1',
+    });
     expect(r.ok).toBe(true);
   });
 
   it('🚨 create_database: name con char proibiti → error regex', async () => {
     const session = makeMockSession();
-    const r = await toolRegistry.execute(session as never, 'create_database', { name: 'has-dash!' });
+    const r = await toolRegistry.execute(session as never, 'create_database', {
+      name: 'has-dash!',
+    });
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.error).toContain('name');
@@ -139,14 +187,17 @@ describe('execute() — dispatch + validation', () => {
 
   it('create_database: name valido snake_case → ok', async () => {
     const session = makeMockSession();
-    const r = await toolRegistry.execute(session as never, 'create_database', { name: 'my_orders' });
+    const r = await toolRegistry.execute(session as never, 'create_database', {
+      name: 'my_orders',
+    });
     expect(r.ok).toBe(true);
   });
 
   it('🚨 drop_table: confirmTableName obbligatorio (safety gate)', async () => {
     const session = makeMockSession();
     const r = await toolRegistry.execute(session as never, 'drop_table', {
-      databaseId: 'db', tableName: 'users',
+      databaseId: 'db',
+      tableName: 'users',
     });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toContain('confirmTableName');
@@ -155,7 +206,9 @@ describe('execute() — dispatch + validation', () => {
   it('drop_table con confirmTableName → ok', async () => {
     const session = makeMockSession();
     const r = await toolRegistry.execute(session as never, 'drop_table', {
-      databaseId: 'db', tableName: 'users', confirmTableName: 'users',
+      databaseId: 'db',
+      tableName: 'users',
+      confirmTableName: 'users',
     });
     expect(r.ok).toBe(true);
   });
@@ -173,7 +226,7 @@ describe('execute() — dispatch + validation', () => {
   it('🚨 propose_plan: nodes vuoto → error', async () => {
     const session = makeMockSession();
     const r = await toolRegistry.execute(session as never, 'propose_plan', {
-      reasoning: 'A' .repeat(60),
+      reasoning: 'A'.repeat(60),
       nodes: [],
       edges: [],
     });
@@ -193,7 +246,8 @@ describe('execute() — dispatch + validation', () => {
   it('propose_plan valido → ok', async () => {
     const session = makeMockSession();
     const r = await toolRegistry.execute(session as never, 'propose_plan', {
-      reasoning: 'Ho decomposto il goal in 1 nodo http_request che fetcha l\'API e ritorna i dati al chiamante via output.',
+      reasoning:
+        "Ho decomposto il goal in 1 nodo http_request che fetcha l'API e ritorna i dati al chiamante via output.",
       nodes: [{ id: 'fetch_data', defId: 'http_request', purpose: 'fetch i dati' }],
       edges: [],
     });
@@ -203,7 +257,9 @@ describe('execute() — dispatch + validation', () => {
   it('add_node con id + defId → dispatch', async () => {
     const session = makeMockSession();
     const r = await toolRegistry.execute(session as never, 'add_node', {
-      id: 'n1', defId: 'http_request', config: { url: 'https://x' },
+      id: 'n1',
+      defId: 'http_request',
+      config: { url: 'https://x' },
     });
     expect(r.ok).toBe(true);
   });
@@ -211,7 +267,8 @@ describe('execute() — dispatch + validation', () => {
   it('connect_nodes con from+to → dispatch (fromPort opzionale)', async () => {
     const session = makeMockSession();
     const r = await toolRegistry.execute(session as never, 'connect_nodes', {
-      from: 'n1', to: 'n2',
+      from: 'n1',
+      to: 'n2',
     });
     expect(r.ok).toBe(true);
   });
@@ -232,7 +289,9 @@ describe('execute() — dispatch + validation', () => {
 describe('execute() — handler error catch', () => {
   it('handler throw → ok:false con error message', async () => {
     const throwSession = {
-      toolListDatabases: () => { throw new Error('storage down'); },
+      toolListDatabases: () => {
+        throw new Error('storage down');
+      },
     };
     const r = await toolRegistry.execute(throwSession as never, 'list_databases', {});
     expect(r.ok).toBe(false);
@@ -241,7 +300,9 @@ describe('execute() — handler error catch', () => {
 
   it('handler async throw → ok:false (await catched)', async () => {
     const throwSession = {
-      toolCreateDatabase: async () => { throw new Error('db locked'); },
+      toolCreateDatabase: async () => {
+        throw new Error('db locked');
+      },
     };
     const r = await toolRegistry.execute(throwSession as never, 'create_database', { name: 'x' });
     expect(r.ok).toBe(false);
@@ -250,7 +311,9 @@ describe('execute() — handler error catch', () => {
 
   it('handler ritorna value non-Error → string conversion', async () => {
     const throwSession = {
-      toolListDatabases: () => { throw 'plain string'; },
+      toolListDatabases: () => {
+        throw 'plain string';
+      },
     };
     const r = await toolRegistry.execute(throwSession as never, 'list_databases', {});
     expect(r.ok).toBe(false);

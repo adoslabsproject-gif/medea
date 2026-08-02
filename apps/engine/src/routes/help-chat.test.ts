@@ -26,7 +26,10 @@ vi.mock('@/services/llm-chat.service.js', () => ({
 }));
 
 class NoLlmProviderErrorMock extends Error {
-  constructor(message: string) { super(message); this.name = 'NoLlmProviderError'; }
+  constructor(message: string) {
+    super(message);
+    this.name = 'NoLlmProviderError';
+  }
 }
 const llmResolverMock = { resolve: vi.fn() };
 vi.mock('@/services/llm-resolver.service.js', () => ({
@@ -93,7 +96,8 @@ describe('🚨 input validation (Zod)', () => {
   it('🚨 messages > 20 → 400', async () => {
     const app = makeApp();
     const msgs = Array.from({ length: 21 }, (_, i) => ({
-      role: i % 2 === 0 ? 'user' : 'assistant', content: 'x',
+      role: i % 2 === 0 ? 'user' : 'assistant',
+      content: 'x',
     }));
     const res = await postChat(app, { messages: msgs });
     expect(res.status).toBe(400);
@@ -133,7 +137,7 @@ describe('🚨 input validation (Zod)', () => {
       ],
     });
     expect(res.status).toBe(400);
-    const json = await res.json() as { message: string };
+    const json = (await res.json()) as { message: string };
     expect(json.message).toMatch(/ultimo messaggio.*utente/iu);
   });
 });
@@ -148,7 +152,7 @@ describe('🚨 LLM resolver failure modes', () => {
       messages: [{ role: 'user', content: 'ciao' }],
     });
     expect(res.status).toBe(503);
-    const json = await res.json() as { error: string; message: string };
+    const json = (await res.json()) as { error: string; message: string };
     expect(json.error).toBe('no_provider');
     expect(json.message).toBe('No LLM configured for tenant');
   });
@@ -182,7 +186,7 @@ describe('🚨 LLM dispatch happy + failure', () => {
       messages: [{ role: 'user', content: 'chi sei?' }],
     });
     expect(res.status).toBe(200);
-    const json = await res.json() as { reply: string; provider: string };
+    const json = (await res.json()) as { reply: string; provider: string };
     expect(json.reply).toMatch(/Liara/u);
     expect(json.provider).toBe('liara');
   });
@@ -225,7 +229,7 @@ describe('🚨 LLM dispatch happy + failure', () => {
       messages: [{ role: 'user', content: 'ciao' }],
     });
     expect(res.status).toBe(502);
-    const json = await res.json() as { error: string; message: string };
+    const json = (await res.json()) as { error: string; message: string };
     expect(json.error).toBe('llm_failed');
     expect(json.message).toBe('vLLM timeout 30s');
     expect(loggerMock.error).toHaveBeenCalled();
@@ -237,7 +241,7 @@ describe('🚨 LLM dispatch happy + failure', () => {
     const res = await postChat(app, {
       messages: [{ role: 'user', content: 'ciao' }],
     });
-    const json = await res.json() as { message: string };
+    const json = (await res.json()) as { message: string };
     expect(json.message).toBe('Errore LLM');
   });
 });
@@ -245,7 +249,9 @@ describe('🚨 LLM dispatch happy + failure', () => {
 describe('🚨 message conversation patterns', () => {
   beforeEach(() => {
     llmResolverMock.resolve.mockReturnValue({
-      provider: 'liara', apiKey: 'k', model: 'm',
+      provider: 'liara',
+      apiKey: 'k',
+      model: 'm',
     });
     dispatchLLMChatMock.mockResolvedValue('ok');
   });
@@ -263,7 +269,8 @@ describe('🚨 message conversation patterns', () => {
 
   it('🚨 20 messaggi (boundary upper) → 200', async () => {
     const msgs = Array.from({ length: 20 }, (_, i) => ({
-      role: i % 2 === 0 ? 'user' : 'assistant', content: `msg-${i}`,
+      role: i % 2 === 0 ? 'user' : 'assistant',
+      content: `msg-${i}`,
     }));
     const app = makeApp();
     const res = await postChat(app, { messages: msgs });

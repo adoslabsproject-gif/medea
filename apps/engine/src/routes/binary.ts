@@ -29,7 +29,11 @@
 import { Hono } from 'hono';
 import { stream } from 'hono/streaming';
 import { Readable } from 'node:stream';
-import { getBinaryStore, InvalidBinaryRefError, BinaryNotFoundError } from '@/services/binary-store.service.js';
+import {
+  getBinaryStore,
+  InvalidBinaryRefError,
+  BinaryNotFoundError,
+} from '@/services/binary-store.service.js';
 import { logger } from '@/lib/logger.js';
 
 const log = logger.child({ mod: 'binary-route' });
@@ -40,7 +44,12 @@ const log = logger.child({ mod: 'binary-route' });
  * application/* — quelli passano SEMPRE come attachment octet-stream.
  */
 const INLINE_SAFE_MIME = new Set<string>([
-  'image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/bmp', 'image/avif',
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'image/bmp',
+  'image/avif',
 ]);
 
 /** Sanitizza un fileName per l'header Content-Disposition (anti CRLF / quote). */

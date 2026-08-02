@@ -54,12 +54,20 @@ describe('DB schema-coverage — ogni query prepara contro lo schema REALE', () 
     const files = collectTsFiles(SRC_ROOT);
     for (const file of files) {
       for (const create of extractCreateTables(readFileSync(file, 'utf8'))) {
-        try { db.exec(create); } catch { /* IF NOT EXISTS idempotente / FK forward-ref → ok */ }
+        try {
+          db.exec(create);
+        } catch {
+          /* IF NOT EXISTS idempotente / FK forward-ref → ok */
+        }
       }
     }
     for (const file of files) {
       for (const { table, col } of extractAddColumns(readFileSync(file, 'utf8'))) {
-        try { db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`); } catch { /* colonna/tabella già gestita → ok */ }
+        try {
+          db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`);
+        } catch {
+          /* colonna/tabella già gestita → ok */
+        }
       }
     }
   });
@@ -80,16 +88,22 @@ describe('DB schema-coverage — ogni query prepara contro lo schema REALE', () 
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           if (isSchemaDrift(msg)) {
-            failures.push(`${relative(SRC_ROOT, file)}: ${msg}\n    SQL: ${trimmed.slice(0, 120).replace(/\s+/g, ' ')}`);
+            failures.push(
+              `${relative(SRC_ROOT, file)}: ${msg}\n    SQL: ${trimmed.slice(0, 120).replace(/\s+/g, ' ')}`,
+            );
           }
         }
       }
     }
 
-     
-    console.log(`[db-schema-coverage] static-validated=${String(staticCount)} failures=${String(failures.length)}`);
+    console.log(
+      `[db-schema-coverage] static-validated=${String(staticCount)} failures=${String(failures.length)}`,
+    );
     expect(staticCount).toBeGreaterThan(100); // sanity: stiamo davvero scansionando
-    expect(failures, `\nSchema-drift STATICO (colonna/tabella fantasma):\n${failures.join('\n')}\n`).toEqual([]);
+    expect(
+      failures,
+      `\nSchema-drift STATICO (colonna/tabella fantasma):\n${failures.join('\n')}\n`,
+    ).toEqual([]);
   });
 
   it('zero schema-drift e zero buchi silenziosi nelle query DINAMICHE (${} risolto)', () => {
@@ -107,7 +121,10 @@ describe('DB schema-coverage — ogni query prepara contro lo schema REALE', () 
         dynamicCount += 1;
 
         const res = resolveDynamicSql(sql, EXPORT_TABLES);
-        if (res.kind === 'introspective') { introspective += 1; continue; }
+        if (res.kind === 'introspective') {
+          introspective += 1;
+          continue;
+        }
         if (res.kind === 'irreducible') {
           irreducible.push(`${relative(SRC_ROOT, file)}: ${res.reason}`);
           continue;
@@ -119,20 +136,29 @@ describe('DB schema-coverage — ogni query prepara contro lo schema REALE', () 
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
             if (isSchemaDrift(msg)) {
-              driftFailures.push(`${relative(SRC_ROOT, file)}: ${msg}\n    SQL: ${variant.slice(0, 120)}`);
+              driftFailures.push(
+                `${relative(SRC_ROOT, file)}: ${msg}\n    SQL: ${variant.slice(0, 120)}`,
+              );
             }
           }
         }
       }
     }
 
-     
-    console.log(`[db-schema-coverage] dynamic=${String(dynamicCount)} resolved-variants=${String(resolvedVariants)} introspective=${String(introspective)} irreducible=${String(irreducible.length)} drift=${String(driftFailures.length)}`);
+    console.log(
+      `[db-schema-coverage] dynamic=${String(dynamicCount)} resolved-variants=${String(resolvedVariants)} introspective=${String(introspective)} irreducible=${String(irreducible.length)} drift=${String(driftFailures.length)}`,
+    );
 
     // Anti-erosione: ogni dinamica DEVE essere resolved o introspective. Una forma
     // nuova non gestita compare qui e blocca il merge → niente skip di nascosto.
-    expect(irreducible, `\nQuery dinamiche NON risolte (aggiungi una regola a resolveDynamicSql):\n${irreducible.join('\n')}\n`).toEqual([]);
-    expect(driftFailures, `\nSchema-drift DINAMICO (colonna/tabella fantasma nella parte statica):\n${driftFailures.join('\n')}\n`).toEqual([]);
+    expect(
+      irreducible,
+      `\nQuery dinamiche NON risolte (aggiungi una regola a resolveDynamicSql):\n${irreducible.join('\n')}\n`,
+    ).toEqual([]);
+    expect(
+      driftFailures,
+      `\nSchema-drift DINAMICO (colonna/tabella fantasma nella parte statica):\n${driftFailures.join('\n')}\n`,
+    ).toEqual([]);
     expect(dynamicCount).toBeGreaterThan(0); // sanity: il caso dinamico esiste davvero
   });
 });

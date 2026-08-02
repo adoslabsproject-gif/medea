@@ -228,7 +228,15 @@ const SLUG_INVALID_RE = /[^a-z0-9_-]+/gu;
 export function deriveSlugFromDefId(defId: string): string {
   const lower = defId.toLowerCase();
   // Strip prefisso categoria nota se presente.
-  const STRIPPABLE = ['action_', 'agent_', 'db_', 'flow_', 'logic_', 'integration_', 'integrations_'];
+  const STRIPPABLE = [
+    'action_',
+    'agent_',
+    'db_',
+    'flow_',
+    'logic_',
+    'integration_',
+    'integrations_',
+  ];
   let core = lower;
   for (const prefix of STRIPPABLE) {
     if (core.startsWith(prefix)) {
@@ -236,7 +244,11 @@ export function deriveSlugFromDefId(defId: string): string {
       break;
     }
   }
-  return core.replace(/_/gu, '-').replace(SLUG_INVALID_RE, '').replace(/-+/gu, '-').replace(/^-|-$/gu, '');
+  return core
+    .replace(/_/gu, '-')
+    .replace(SLUG_INVALID_RE, '')
+    .replace(/-+/gu, '-')
+    .replace(/^-|-$/gu, '');
 }
 
 /**
@@ -256,7 +268,10 @@ export function deriveDisplayName(defId: string): string {
  * Costruisce un planning di sintesi per ciascun missing defId.
  * Pure — no LLM call, no DB call. Output deterministico per (input, opts).
  */
-export function planSynthesis(missing: readonly MissingDefId[], opts: PlannerOptions): SynthesisPlan {
+export function planSynthesis(
+  missing: readonly MissingDefId[],
+  opts: PlannerOptions,
+): SynthesisPlan {
   const items: PlanItem[] = [];
   const skipped: SynthesisPlan['skipped'] = [];
 
@@ -397,7 +412,10 @@ export async function executeSynthesisPlan(
  * invariati (referenziano node.id, non defId). Config invariati.
  * Pure, idempotent. Defensive copy del workflow.
  */
-export function applyDefIdMapping(workflow: Workflow, mapping: ReadonlyMap<string, string>): Workflow {
+export function applyDefIdMapping(
+  workflow: Workflow,
+  mapping: ReadonlyMap<string, string>,
+): Workflow {
   return {
     ...workflow,
     nodes: workflow.nodes.map((n) => {

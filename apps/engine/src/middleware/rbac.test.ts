@@ -37,11 +37,12 @@ function appWithAuth(
   return app;
 }
 
-const fakeAuth = (role: Role, tenantId = 'tenant-1'): AuthContext => ({
-  userId: 'user-1',
-  tenantId,
-  role,
-} as AuthContext);
+const fakeAuth = (role: Role, tenantId = 'tenant-1'): AuthContext =>
+  ({
+    userId: 'user-1',
+    tenantId,
+    role,
+  }) as AuthContext;
 
 describe('requireRole — 401 quando auth assente', () => {
   it('no auth context → 401 "Unauthorized"', async () => {
@@ -93,7 +94,7 @@ describe('requireRole — role hierarchy (viewer < operator < editor < owner < s
         expect(await res.json()).toEqual({ ok: true });
       } else {
         expect(res.status).toBe(403);
-        const body = await res.json() as { error: string };
+        const body = (await res.json()) as { error: string };
         expect(body.error).toContain(`requires role ${minRole} or higher`);
         expect(body.error).toContain(`you are ${userRole}`);
       }
@@ -126,12 +127,18 @@ describe('requireTenant — cross-tenant isolation', () => {
   });
 
   it('auth.tenantId matcha → pass 200', async () => {
-    const res = await appWithAuth(fakeAuth('viewer', 'acme'), { kind: 'tenant', tenantId: 'acme' }).request('/protected');
+    const res = await appWithAuth(fakeAuth('viewer', 'acme'), {
+      kind: 'tenant',
+      tenantId: 'acme',
+    }).request('/protected');
     expect(res.status).toBe(200);
   });
 
   it('auth.tenantId NON matcha → 403 "cross-tenant access blocked"', async () => {
-    const res = await appWithAuth(fakeAuth('owner', 'acme'), { kind: 'tenant', tenantId: 'evil-corp' }).request('/protected');
+    const res = await appWithAuth(fakeAuth('owner', 'acme'), {
+      kind: 'tenant',
+      tenantId: 'evil-corp',
+    }).request('/protected');
     expect(res.status).toBe(403);
     expect(await res.json()).toEqual({ error: 'Forbidden: cross-tenant access blocked' });
   });
@@ -140,12 +147,18 @@ describe('requireTenant — cross-tenant isolation', () => {
     // requireTenant non ha esonero superadmin: anche superadmin deve essere
     // sul tenantId esatto. Cross-tenant per superadmin va via x-tenant-id
     // header gestito altrove (getTenantId helper).
-    const res = await appWithAuth(fakeAuth('superadmin', 'acme'), { kind: 'tenant', tenantId: 'evil-corp' }).request('/protected');
+    const res = await appWithAuth(fakeAuth('superadmin', 'acme'), {
+      kind: 'tenant',
+      tenantId: 'evil-corp',
+    }).request('/protected');
     expect(res.status).toBe(403);
   });
 
   it('case-sensitive tenant id ("Acme" != "acme") → 403', async () => {
-    const res = await appWithAuth(fakeAuth('owner', 'Acme'), { kind: 'tenant', tenantId: 'acme' }).request('/protected');
+    const res = await appWithAuth(fakeAuth('owner', 'Acme'), {
+      kind: 'tenant',
+      tenantId: 'acme',
+    }).request('/protected');
     expect(res.status).toBe(403);
   });
 });
@@ -225,7 +238,7 @@ describe('rbac — composability (chain di middleware)', () => {
     app.get('/p', (c) => c.json({ ok: true }));
     const res = await app.request('/p');
     expect(res.status).toBe(403);
-    const body = await res.json() as { error: string };
+    const body = (await res.json()) as { error: string };
     expect(body.error).toContain('requires role editor');
   });
 });

@@ -37,7 +37,11 @@ export function loadOwnedDatabase(ctx: DbAgentContext, databaseId: unknown): Dat
  * @throws TenantScopeError se il DB non è del tenant (via loadOwnedDatabase).
  * @throws ToolValidationError se la tabella non esiste nel DB.
  */
-export function assertTableExists(ctx: DbAgentContext, databaseId: unknown, tableName: string): Database {
+export function assertTableExists(
+  ctx: DbAgentContext,
+  databaseId: unknown,
+  tableName: string,
+): Database {
   const db = loadOwnedDatabase(ctx, databaseId);
   if (!db.tables.some((t) => t.name === tableName)) {
     throw new ToolValidationError(`Tabella "${tableName}" non esiste nel database "${db.name}".`);

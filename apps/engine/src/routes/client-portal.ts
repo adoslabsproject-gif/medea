@@ -62,9 +62,11 @@ const CreateTokenSchema = z.object({
   expiresInDays: z.number().int().positive().max(3650).optional(),
 });
 
-const RunPortalSchema = z.object({
-  triggerInput: z.record(z.string(), z.unknown()).optional(),
-}).optional();
+const RunPortalSchema = z
+  .object({
+    triggerInput: z.record(z.string(), z.unknown()).optional(),
+  })
+  .optional();
 
 const UpdateExposedFieldSchema = z.object({
   nodeId: z.string().min(1).max(128),
@@ -81,17 +83,28 @@ const UpdateExposedFieldSchema = z.object({
  */
 function redactPortalInfo(token: PortalToken): {
   name: string;
-  permissions: Pick<PortalPermissions, 'allowRun' | 'showHistory' | 'showLiveCanvas' | 'brandName' | 'brandLogoUrl'>;
+  permissions: Pick<
+    PortalPermissions,
+    'allowRun' | 'showHistory' | 'showLiveCanvas' | 'brandName' | 'brandLogoUrl'
+  >;
   expiresAt?: string;
 } {
   const result: ReturnType<typeof redactPortalInfo> = {
     name: token.name,
     permissions: {
       ...(token.permissions.allowRun !== undefined ? { allowRun: token.permissions.allowRun } : {}),
-      ...(token.permissions.showHistory !== undefined ? { showHistory: token.permissions.showHistory } : {}),
-      ...(token.permissions.showLiveCanvas !== undefined ? { showLiveCanvas: token.permissions.showLiveCanvas } : {}),
-      ...(token.permissions.brandName !== undefined ? { brandName: token.permissions.brandName } : {}),
-      ...(token.permissions.brandLogoUrl !== undefined ? { brandLogoUrl: token.permissions.brandLogoUrl } : {}),
+      ...(token.permissions.showHistory !== undefined
+        ? { showHistory: token.permissions.showHistory }
+        : {}),
+      ...(token.permissions.showLiveCanvas !== undefined
+        ? { showLiveCanvas: token.permissions.showLiveCanvas }
+        : {}),
+      ...(token.permissions.brandName !== undefined
+        ? { brandName: token.permissions.brandName }
+        : {}),
+      ...(token.permissions.brandLogoUrl !== undefined
+        ? { brandLogoUrl: token.permissions.brandLogoUrl }
+        : {}),
     },
   };
   if (token.expiresAt !== undefined) result.expiresAt = token.expiresAt;
@@ -212,12 +225,18 @@ export function createClientPortalPublicRoutes(eventBus: IEventBus): Hono {
     // REDACTED — solo id, defId, label, x, y. Nessun config (no credential
     // leak). Edges solo id, source, target, handles.
     let canvasNodes: { id: string; defId?: string; label?: string; x?: number; y?: number }[] = [];
-    let canvasEdges: { id?: string; source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null }[] = [];
+    let canvasEdges: {
+      id?: string;
+      source: string;
+      target: string;
+      sourceHandle?: string | null;
+      targetHandle?: string | null;
+    }[] = [];
     try {
       const wf = await workflows.get(run.workflowId, verified.tenantId);
       if (wf) {
-        const wfNodes = Array.isArray(wf.nodes) ? wf.nodes as Record<string, unknown>[] : [];
-        const wfEdges = Array.isArray(wf.edges) ? wf.edges as Record<string, unknown>[] : [];
+        const wfNodes = Array.isArray(wf.nodes) ? (wf.nodes as Record<string, unknown>[]) : [];
+        const wfEdges = Array.isArray(wf.edges) ? (wf.edges as Record<string, unknown>[]) : [];
         canvasNodes = wfNodes
           .filter((n): n is Record<string, unknown> => !!n && typeof n === 'object')
           .map((n) => ({
@@ -233,8 +252,12 @@ export function createClientPortalPublicRoutes(eventBus: IEventBus): Hono {
             ...(typeof e.id === 'string' ? { id: e.id } : {}),
             source: coerceString(e.source ?? ''),
             target: coerceString(e.target ?? ''),
-            ...(typeof e.sourceHandle === 'string' || e.sourceHandle === null ? { sourceHandle: e.sourceHandle } : {}),
-            ...(typeof e.targetHandle === 'string' || e.targetHandle === null ? { targetHandle: e.targetHandle } : {}),
+            ...(typeof e.sourceHandle === 'string' || e.sourceHandle === null
+              ? { sourceHandle: e.sourceHandle }
+              : {}),
+            ...(typeof e.targetHandle === 'string' || e.targetHandle === null
+              ? { targetHandle: e.targetHandle }
+              : {}),
           }));
       }
     } catch {
@@ -324,7 +347,8 @@ export function createClientPortalPublicRoutes(eventBus: IEventBus): Hono {
         if (!n || typeof n !== 'object') continue;
         const nodeAny = n as { id?: string; config?: Record<string, unknown> };
         if (nodeAny.id !== body.nodeId) continue;
-        const cfg = (nodeAny.config && typeof nodeAny.config === 'object') ? { ...nodeAny.config } : {};
+        const cfg =
+          nodeAny.config && typeof nodeAny.config === 'object' ? { ...nodeAny.config } : {};
         const oldVal = cfg[body.fieldKey];
         if (typeof oldVal === 'string') oldRedacted = redactForAudit(oldVal);
         cfg[body.fieldKey] = body.value;
@@ -354,48 +378,55 @@ export function createClientPortalPublicRoutes(eventBus: IEventBus): Hono {
   );
 
   // POST /api/v1/portal/:tenantId/:token/workflows/:wfId/run  → execute (gate 3-AND)
-  app.post('/portal/:tenantId/:token/workflows/:wfId/run', zValidator('json', RunPortalSchema), async (c) => {
-    const verified = verifyOrReject(c);
-    if (verified instanceof Response) return verified;
-    const wfId = c.req.param('wfId');
-    if (!wfId) return c.json({ error: 'Bad request' }, 400);
-    const wf = await workflows.get(wfId, verified.tenantId);
-    if (!wf) return c.json({ error: 'Workflow not found' }, 404);
-    const gate = svc.canRunWorkflow(verified, {
-      id: wf.id,
-      nodesJson: JSON.stringify(wf.nodes),
-    });
-    if (!gate.ok) {
-      return c.json({ error: 'Not allowed', reason: gate.reason }, 403);
-    }
+  app.post(
+    '/portal/:tenantId/:token/workflows/:wfId/run',
+    zValidator('json', RunPortalSchema),
+    async (c) => {
+      const verified = verifyOrReject(c);
+      if (verified instanceof Response) return verified;
+      const wfId = c.req.param('wfId');
+      if (!wfId) return c.json({ error: 'Bad request' }, 400);
+      const wf = await workflows.get(wfId, verified.tenantId);
+      if (!wf) return c.json({ error: 'Workflow not found' }, 404);
+      const gate = svc.canRunWorkflow(verified, {
+        id: wf.id,
+        nodesJson: JSON.stringify(wf.nodes),
+      });
+      if (!gate.ok) {
+        return c.json({ error: 'Not allowed', reason: gate.reason }, 403);
+      }
 
-    const body = c.req.valid('json');
-    const triggerInput = body?.triggerInput ?? {};
-    const result = await runs.execute({
-      workflowId: wf.id,
-      tenantId: verified.tenantId,
-      triggerType: 'portal',
-      triggerInput,
-      triggeredBy: `portal:${verified.id}`,
-    });
+      const body = c.req.valid('json');
+      const triggerInput = body?.triggerInput ?? {};
+      const result = await runs.execute({
+        workflowId: wf.id,
+        tenantId: verified.tenantId,
+        triggerType: 'portal',
+        triggerInput,
+        triggeredBy: `portal:${verified.id}`,
+      });
 
-    // Audit con portal token id (chi ha autorizzato) — distinto dai run normali
-    await svc.auditPortalRun({
-      tenantId: verified.tenantId,
-      tokenId: verified.id,
-      workflowId: wf.id,
-      runId: result.runId,
-      triggerInputSummary: Object.keys(triggerInput).reduce<Record<string, unknown>>((acc, k) => {
-        acc[k] = '<redacted>';
-        return acc;
-      }, {}),
-    });
+      // Audit con portal token id (chi ha autorizzato) — distinto dai run normali
+      await svc.auditPortalRun({
+        tenantId: verified.tenantId,
+        tokenId: verified.id,
+        workflowId: wf.id,
+        runId: result.runId,
+        triggerInputSummary: Object.keys(triggerInput).reduce<Record<string, unknown>>((acc, k) => {
+          acc[k] = '<redacted>';
+          return acc;
+        }, {}),
+      });
 
-    return c.json({
-      runId: result.runId,
-      status: result.status,
-    }, 202);
-  });
+      return c.json(
+        {
+          runId: result.runId,
+          status: result.status,
+        },
+        202,
+      );
+    },
+  );
 
   return app;
 }

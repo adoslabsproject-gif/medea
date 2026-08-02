@@ -39,10 +39,15 @@ afterEach(() => {
 
 describe('refreshAccessToken (portal-centric)', () => {
   it('POSTs to portal with HMAC signature, returns parsed tokens', async () => {
-    const captured: { url?: string; body?: { ts: number; refresh_token: string; sig: string } } = {};
+    const captured: { url?: string; body?: { ts: number; refresh_token: string; sig: string } } =
+      {};
     global.fetch = vi.fn().mockImplementation(async (url: string, init: RequestInit) => {
       captured.url = url;
-      captured.body = JSON.parse(init.body as string) as { ts: number; refresh_token: string; sig: string };
+      captured.body = JSON.parse(init.body as string) as {
+        ts: number;
+        refresh_token: string;
+        sig: string;
+      };
       return {
         ok: true,
         json: async () => ({
@@ -88,8 +93,9 @@ describe('refreshAccessToken (portal-centric)', () => {
       status: 502,
       text: async () => '{"error":"google_refresh_failed"}',
     } as Response);
-    await expect(new EmailOAuthService().refreshAccessToken('RT'))
-      .rejects.toThrow(/Portal refresh failed: 502/);
+    await expect(new EmailOAuthService().refreshAccessToken('RT')).rejects.toThrow(
+      /Portal refresh failed: 502/,
+    );
   });
 
   it('throws when access_token missing in portal response', async () => {
@@ -97,8 +103,9 @@ describe('refreshAccessToken (portal-centric)', () => {
       ok: true,
       json: async () => ({ expires_at: new Date().toISOString() }),
     } as Response);
-    await expect(new EmailOAuthService().refreshAccessToken('RT'))
-      .rejects.toThrow(/missing access_token \/ expires_at/);
+    await expect(new EmailOAuthService().refreshAccessToken('RT')).rejects.toThrow(
+      /missing access_token \/ expires_at/,
+    );
   });
 });
 

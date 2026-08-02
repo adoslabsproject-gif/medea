@@ -14,9 +14,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ManageQuarantineUseCase } from './manage-quarantine.usecase.js';
 import { SYSTEM_REF } from '@/services/janitor/domain/index.js';
-import type {
-  IQuarantineGateway, IAuditEmitter,
-} from '@/services/janitor/ports/index.js';
+import type { IQuarantineGateway, IAuditEmitter } from '@/services/janitor/ports/index.js';
 import type { QuarantineRecord } from '@/services/janitor/domain/index.js';
 
 const mkRec = (over: Partial<QuarantineRecord> = {}): QuarantineRecord => ({
@@ -42,7 +40,12 @@ beforeEach(() => {
     ensureSchema: vi.fn(),
     quarantineRow: vi.fn(),
     list: vi.fn(async () => []),
-    stats: vi.fn(async () => ({ total: 0, byTable: {}, byRule: {}, bySeverity: { critical: 0, warning: 0 } })),
+    stats: vi.fn(async () => ({
+      total: 0,
+      byTable: {},
+      byRule: {},
+      bySeverity: { critical: 0, warning: 0 },
+    })),
     restore: vi.fn(),
     purge: vi.fn(),
   };
@@ -69,24 +72,34 @@ describe('🚨 restore — audit-before-mutation + lookup', () => {
   it('🚨 record trovato → audit emit → restore', async () => {
     (quarantine.list as ReturnType<typeof vi.fn>).mockResolvedValue([mkRec({ id: 42 })]);
     await uc.restore({
-      quarantineId: 42, dataSourceRef: SYSTEM_REF, tenantId: 't1', actorId: 'alice',
+      quarantineId: 42,
+      dataSourceRef: SYSTEM_REF,
+      tenantId: 't1',
+      actorId: 'alice',
     });
     expect(audit.emit).toHaveBeenCalledBefore(quarantine.restore as never);
-    expect(audit.emit).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'janitor.quarantine.restore',
-      resourceType: 'quarantined_row',
-      resourceId: '42',
-      actorId: 'alice',
-      tenantId: 't1',
-    }));
+    expect(audit.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'janitor.quarantine.restore',
+        resourceType: 'quarantined_row',
+        resourceId: '42',
+        actorId: 'alice',
+        tenantId: 't1',
+      }),
+    );
     expect(quarantine.restore).toHaveBeenCalledWith(42, SYSTEM_REF);
   });
 
   it('🚨 record NOT FOUND → THROW (fail-loud)', async () => {
     (quarantine.list as ReturnType<typeof vi.fn>).mockResolvedValue([]);
-    await expect(uc.restore({
-      quarantineId: 999, dataSourceRef: SYSTEM_REF, tenantId: 't1', actorId: 'alice',
-    })).rejects.toThrow(/non trovato/);
+    await expect(
+      uc.restore({
+        quarantineId: 999,
+        dataSourceRef: SYSTEM_REF,
+        tenantId: 't1',
+        actorId: 'alice',
+      }),
+    ).rejects.toThrow(/non trovato/);
     expect(quarantine.restore).not.toHaveBeenCalled();
     expect(audit.emit).not.toHaveBeenCalled();
   });
@@ -95,7 +108,10 @@ describe('🚨 restore — audit-before-mutation + lookup', () => {
     const rec = mkRec({ id: 42, rawJson: '{"sensitive":"data"}' });
     (quarantine.list as ReturnType<typeof vi.fn>).mockResolvedValue([rec]);
     await uc.restore({
-      quarantineId: 42, dataSourceRef: SYSTEM_REF, tenantId: 't1', actorId: 'alice',
+      quarantineId: 42,
+      dataSourceRef: SYSTEM_REF,
+      tenantId: 't1',
+      actorId: 'alice',
     });
     const call = (audit.emit as ReturnType<typeof vi.fn>).mock.calls[0]![0] as {
       metadata: Record<string, unknown>;
@@ -109,49 +125,75 @@ describe('🚨 restore — audit-before-mutation + lookup', () => {
 
 describe('🚨 purge — confirmation token hard gate', () => {
   it('🚨 SECURITY: confirmationToken mancante (string vuota) → THROW', async () => {
-    await expect(uc.purge({
-      quarantineId: 42, dataSourceRef: SYSTEM_REF,
-      tenantId: 't1', actorId: 'alice', confirmationToken: '',
-    })).rejects.toThrow(/DELETE-PERMANENT/);
+    await expect(
+      uc.purge({
+        quarantineId: 42,
+        dataSourceRef: SYSTEM_REF,
+        tenantId: 't1',
+        actorId: 'alice',
+        confirmationToken: '',
+      }),
+    ).rejects.toThrow(/DELETE-PERMANENT/);
     expect(quarantine.purge).not.toHaveBeenCalled();
   });
 
   it('🚨 SECURITY: confirmationToken case sensitive', async () => {
-    await expect(uc.purge({
-      quarantineId: 42, dataSourceRef: SYSTEM_REF,
-      tenantId: 't1', actorId: 'alice', confirmationToken: 'delete-permanent',
-    })).rejects.toThrow(/DELETE-PERMANENT/);
+    await expect(
+      uc.purge({
+        quarantineId: 42,
+        dataSourceRef: SYSTEM_REF,
+        tenantId: 't1',
+        actorId: 'alice',
+        confirmationToken: 'delete-permanent',
+      }),
+    ).rejects.toThrow(/DELETE-PERMANENT/);
   });
 
   it('🚨 SECURITY: confirmationToken wrong literal → THROW', async () => {
-    await expect(uc.purge({
-      quarantineId: 42, dataSourceRef: SYSTEM_REF,
-      tenantId: 't1', actorId: 'alice', confirmationToken: 'CONFIRM',
-    })).rejects.toThrow(/DELETE-PERMANENT/);
+    await expect(
+      uc.purge({
+        quarantineId: 42,
+        dataSourceRef: SYSTEM_REF,
+        tenantId: 't1',
+        actorId: 'alice',
+        confirmationToken: 'CONFIRM',
+      }),
+    ).rejects.toThrow(/DELETE-PERMANENT/);
   });
 
   it('🚨 token corretto + record found → purge eseguito', async () => {
     (quarantine.list as ReturnType<typeof vi.fn>).mockResolvedValue([mkRec({ id: 42 })]);
     await uc.purge({
-      quarantineId: 42, dataSourceRef: SYSTEM_REF,
-      tenantId: 't1', actorId: 'alice', confirmationToken: 'DELETE-PERMANENT',
+      quarantineId: 42,
+      dataSourceRef: SYSTEM_REF,
+      tenantId: 't1',
+      actorId: 'alice',
+      confirmationToken: 'DELETE-PERMANENT',
     });
     expect(quarantine.purge).toHaveBeenCalledWith(42, SYSTEM_REF);
   });
 
   it('🚨 token corretto MA record not found → THROW', async () => {
     (quarantine.list as ReturnType<typeof vi.fn>).mockResolvedValue([]);
-    await expect(uc.purge({
-      quarantineId: 999, dataSourceRef: SYSTEM_REF,
-      tenantId: 't1', actorId: 'alice', confirmationToken: 'DELETE-PERMANENT',
-    })).rejects.toThrow(/non trovato/);
+    await expect(
+      uc.purge({
+        quarantineId: 999,
+        dataSourceRef: SYSTEM_REF,
+        tenantId: 't1',
+        actorId: 'alice',
+        confirmationToken: 'DELETE-PERMANENT',
+      }),
+    ).rejects.toThrow(/non trovato/);
   });
 
   it('🚨 audit metadata include warning string (compliance evidence)', async () => {
     (quarantine.list as ReturnType<typeof vi.fn>).mockResolvedValue([mkRec({ id: 42 })]);
     await uc.purge({
-      quarantineId: 42, dataSourceRef: SYSTEM_REF,
-      tenantId: 't1', actorId: 'alice', confirmationToken: 'DELETE-PERMANENT',
+      quarantineId: 42,
+      dataSourceRef: SYSTEM_REF,
+      tenantId: 't1',
+      actorId: 'alice',
+      confirmationToken: 'DELETE-PERMANENT',
     });
     const call = (audit.emit as ReturnType<typeof vi.fn>).mock.calls[0]![0] as {
       metadata: { warning: string };
@@ -162,8 +204,11 @@ describe('🚨 purge — confirmation token hard gate', () => {
   it('🚨 audit-before-mutation order (purge dopo)', async () => {
     (quarantine.list as ReturnType<typeof vi.fn>).mockResolvedValue([mkRec({ id: 42 })]);
     await uc.purge({
-      quarantineId: 42, dataSourceRef: SYSTEM_REF,
-      tenantId: 't1', actorId: 'alice', confirmationToken: 'DELETE-PERMANENT',
+      quarantineId: 42,
+      dataSourceRef: SYSTEM_REF,
+      tenantId: 't1',
+      actorId: 'alice',
+      confirmationToken: 'DELETE-PERMANENT',
     });
     expect(audit.emit).toHaveBeenCalledBefore(quarantine.purge as never);
   });

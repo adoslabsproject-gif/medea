@@ -19,13 +19,29 @@
 import { nanoid } from 'nanoid';
 import type { Logger } from 'pino';
 import type {
-  Rule, RuleConfig, JanitorRuleReport, JanitorContext, DetectedRow,
-  CorruptionSeverity, DataSourceRef,
+  Rule,
+  RuleConfig,
+  JanitorRuleReport,
+  JanitorContext,
+  DetectedRow,
+  CorruptionSeverity,
+  DataSourceRef,
 } from '@/services/janitor/domain/index.js';
-import { aggregateBySeverity, emptyBySeverity, isCodeRule, validateParams } from '@/services/janitor/domain/index.js';
+import {
+  aggregateBySeverity,
+  emptyBySeverity,
+  isCodeRule,
+  validateParams,
+} from '@/services/janitor/domain/index.js';
 import type {
-  IClock, ILockGateway, IDataSourceResolver, IQuarantineGateway,
-  IRunLogRepository, IAuditEmitter, INotificationEmitter, IRuleConfigRepository,
+  IClock,
+  ILockGateway,
+  IDataSourceResolver,
+  IQuarantineGateway,
+  IRunLogRepository,
+  IAuditEmitter,
+  INotificationEmitter,
+  IRuleConfigRepository,
 } from '@/services/janitor/ports/index.js';
 
 export interface ExecuteRuleInput {
@@ -81,8 +97,12 @@ export class ExecuteRuleUseCase {
     if (!acquired) {
       ruleLogger.info('Skip: lock già detenuto');
       const failArgs: Parameters<typeof this.failReport>[0] = {
-        cycleId, rule: input.rule, tenantId: input.tenantId,
-        startedAt, dryRun: input.dryRun, triggeredBy: input.triggeredBy,
+        cycleId,
+        rule: input.rule,
+        tenantId: input.tenantId,
+        startedAt,
+        dryRun: input.dryRun,
+        triggeredBy: input.triggeredBy,
         error: 'Lock già detenuto da un altro processo',
       };
       if (input.overrides?.dataSourceRef !== undefined) {
@@ -122,9 +142,14 @@ export class ExecuteRuleUseCase {
         const msg = err instanceof Error ? err.message : String(err);
         ruleLogger.error({ err }, 'detect() ha lanciato eccezione');
         const report = this.failReport({
-          cycleId, rule: input.rule, tenantId: input.tenantId,
-          dataSourceRef: config.dataSourceRef, startedAt, dryRun: input.dryRun,
-          triggeredBy: input.triggeredBy, error: `detect() error: ${msg}`,
+          cycleId,
+          rule: input.rule,
+          tenantId: input.tenantId,
+          dataSourceRef: config.dataSourceRef,
+          startedAt,
+          dryRun: input.dryRun,
+          triggeredBy: input.triggeredBy,
+          error: `detect() error: ${msg}`,
         });
         if (!input.dryRun) await this.runLog.appendRule(report);
         return { report, detected: [] };
@@ -132,7 +157,12 @@ export class ExecuteRuleUseCase {
 
       // 5. Repair opzionale
       let repairedIds: ReadonlySet<string> = new Set();
-      if (!input.dryRun && isCodeRule(input.rule) && typeof input.rule.repair === 'function' && detected.length > 0) {
+      if (
+        !input.dryRun &&
+        isCodeRule(input.rule) &&
+        typeof input.rule.repair === 'function' &&
+        detected.length > 0
+      ) {
         try {
           const result = await input.rule.repair(ctx, detected);
           repairedIds = new Set(result.repairedIds);
@@ -306,7 +336,9 @@ export class ExecuteRuleUseCase {
     error: string;
   }): JanitorRuleReport {
     const endedAt = this.clock.now();
-    const dsr = args.dataSourceRef ?? (args.rule.kind === 'code' ? args.rule.defaultDataSource : args.rule.dataSourceRef);
+    const dsr =
+      args.dataSourceRef ??
+      (args.rule.kind === 'code' ? args.rule.defaultDataSource : args.rule.dataSourceRef);
     return Object.freeze({
       cycleId: args.cycleId,
       ruleId: args.rule.id,

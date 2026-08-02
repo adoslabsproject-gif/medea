@@ -22,12 +22,17 @@ import {
 } from './parsing.js';
 
 describe('resolveJsonPointer — RFC 6901', () => {
-  const doc = { type: 'trade', data: { price: 0, tags: ['a', 'b'], ok: false }, 'a/b': 1, 'm~n': 2 };
+  const doc = {
+    type: 'trade',
+    data: { price: 0, tags: ['a', 'b'], ok: false },
+    'a/b': 1,
+    'm~n': 2,
+  };
 
   it('pointer vuoto → documento intero; valori falsy sono match validi', () => {
     expect(resolveJsonPointer(doc, '')).toBe(doc);
-    expect(resolveJsonPointer(doc, '/data/price')).toBe(0);   // 0 ≠ undefined
-    expect(resolveJsonPointer(doc, '/data/ok')).toBe(false);  // false ≠ undefined
+    expect(resolveJsonPointer(doc, '/data/price')).toBe(0); // 0 ≠ undefined
+    expect(resolveJsonPointer(doc, '/data/ok')).toBe(false); // false ≠ undefined
   });
 
   it('token escaping ~1→/ e ~0→~ (ordine RFC corretto)', () => {
@@ -103,13 +108,21 @@ describe('parseAllowlist', () => {
     expect(parseAllowlist('["a@x.com","b@y.com"]')).toEqual(['a@x.com', 'b@y.com']);
   });
   it('separatori virgola / punto-e-virgola / newline', () => {
-    expect(parseAllowlist('a@x.com, b@y.com;c@z.com\nd@w.com')).toEqual(['a@x.com', 'b@y.com', 'c@z.com', 'd@w.com']);
+    expect(parseAllowlist('a@x.com, b@y.com;c@z.com\nd@w.com')).toEqual([
+      'a@x.com',
+      'b@y.com',
+      'c@z.com',
+      'd@w.com',
+    ]);
   });
   it('string[] già parsato', () => {
     expect(parseAllowlist(['a@x.com', 'b@y.com'])).toEqual(['a@x.com', 'b@y.com']);
   });
   it('🚨 dedup + lowercase + trim, e scarta i non-email (no @)', () => {
-    expect(parseAllowlist(' A@X.com , a@x.com ,  notanemail , B@Y.com ')).toEqual(['a@x.com', 'b@y.com']);
+    expect(parseAllowlist(' A@X.com , a@x.com ,  notanemail , B@Y.com ')).toEqual([
+      'a@x.com',
+      'b@y.com',
+    ]);
   });
   it('🚨 JSON malformato che inizia con [ → token grezzo COL bracket (quirk caratterizzato)', () => {
     // Il fallback su JSON.parse fallito NON strippa il `[`: il token resta
@@ -121,7 +134,10 @@ describe('parseAllowlist', () => {
     expect(parseAllowlist('[bad json')).toEqual([]); // niente @ → scartato
   });
   it('array con elementi non-string → ignorati', () => {
-    expect(parseAllowlist(['a@x.com', 42, null, { x: 1 }, 'b@y.com'])).toEqual(['a@x.com', 'b@y.com']);
+    expect(parseAllowlist(['a@x.com', 42, null, { x: 1 }, 'b@y.com'])).toEqual([
+      'a@x.com',
+      'b@y.com',
+    ]);
   });
   it('forme non valide → []', () => {
     for (const v of [undefined, null, 42, {}, '', '   ', true]) {
@@ -178,7 +194,7 @@ describe('safeRegex — hardening pattern operatore (RE2, anti-ReDoS)', () => {
 
 describe('pickAddress / collectAddresses', () => {
   const ao = (addrs: { address?: string }[]): AddressObject =>
-    ({ value: addrs, html: '', text: '' } as unknown as AddressObject);
+    ({ value: addrs, html: '', text: '' }) as unknown as AddressObject;
 
   it('pickAddress: assente → "" (mai undefined)', () => {
     expect(pickAddress(undefined)).toBe('');
@@ -187,7 +203,9 @@ describe('pickAddress / collectAddresses', () => {
   });
   it('pickAddress: primo indirizzo (oggetto o array)', () => {
     expect(pickAddress(ao([{ address: 'a@x.com' }, { address: 'b@y.com' }]))).toBe('a@x.com');
-    expect(pickAddress([ao([{ address: 'first@x.com' }]), ao([{ address: 'second@x.com' }])])).toBe('first@x.com');
+    expect(pickAddress([ao([{ address: 'first@x.com' }]), ao([{ address: 'second@x.com' }])])).toBe(
+      'first@x.com',
+    );
   });
   it('🚨 collectAddresses: appiattisce array e SCARTA le entry senza address', () => {
     const got = collectAddresses([

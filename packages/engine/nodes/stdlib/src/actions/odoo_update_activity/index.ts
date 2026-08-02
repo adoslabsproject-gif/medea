@@ -14,7 +14,7 @@ export const odooUpdateActivityActionNode: NodeModule = {
   executor: wrap(odooUpdateActivityExecutor, [
     httpMiddlewarePreset({
       urlFrom: (c) => {
-        const u = (c).baseUrl;
+        const u = c.baseUrl;
         return typeof u === 'string' && u.length > 0 ? u : undefined;
       },
       methodFrom: () => 'POST',
@@ -23,7 +23,4 @@ export const odooUpdateActivityActionNode: NodeModule = {
 };
 
 export { odooUpdateActivityExecutor, odooUpdateActivityNodeDef };
-export {
-  OdooUpdateActivityConfigSchema,
-  type OdooUpdateActivityConfig,
-} from './schema.js';
+export { OdooUpdateActivityConfigSchema, type OdooUpdateActivityConfig } from './schema.js';

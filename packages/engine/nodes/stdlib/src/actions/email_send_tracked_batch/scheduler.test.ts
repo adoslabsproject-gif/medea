@@ -28,8 +28,13 @@ function fakeClock() {
   let t = 1_700_000_000_000;
   return {
     now: () => t,
-    advance: (ms: number) => { t += ms; },
-    sleep: (ms: number): Promise<void> => { t += ms; return Promise.resolve(); },
+    advance: (ms: number) => {
+      t += ms;
+    },
+    sleep: (ms: number): Promise<void> => {
+      t += ms;
+      return Promise.resolve();
+    },
   };
 }
 
@@ -39,11 +44,18 @@ describe('runBatch — steady-state cadence', () => {
     const sleepCalls: number[] = [];
     const out = await runBatch({
       items: items(3),
-      ratePerHour: 60,        // 1/min = 60_000ms interval
-      jitter: 0,              // disable jitter for deterministic test
+      ratePerHour: 60, // 1/min = 60_000ms interval
+      jitter: 0, // disable jitter for deterministic test
       now: clk.now,
-      sleep: async (ms) => { sleepCalls.push(ms); return clk.sleep(ms); },
-      attempt: async (item) => ({ ok: true, messageId: `mid-${item.index}`, sendId: `sid-${item.index}` }),
+      sleep: async (ms) => {
+        sleepCalls.push(ms);
+        return clk.sleep(ms);
+      },
+      attempt: async (item) => ({
+        ok: true,
+        messageId: `mid-${item.index}`,
+        sendId: `sid-${item.index}`,
+      }),
     });
     expect(out.stats.sent).toBe(3);
     expect(out.stats.failed).toBe(0);
@@ -60,9 +72,12 @@ describe('runBatch — steady-state cadence', () => {
       items: items(4),
       ratePerHour: 60,
       jitter: 0.2,
-      random: () => 0.5,        // deterministic random → delta = 0
+      random: () => 0.5, // deterministic random → delta = 0
       now: clk.now,
-      sleep: async (ms) => { sleeps.push(ms); return clk.sleep(ms); },
+      sleep: async (ms) => {
+        sleeps.push(ms);
+        return clk.sleep(ms);
+      },
       attempt: async (item) => ({ ok: true, messageId: 'x', sendId: `s-${item.index}` }),
     });
     // random()=0.5 → delta = (0.5*2-1)*span = 0 → identical baseline
@@ -80,9 +95,15 @@ describe('runBatch — retry + backoff', () => {
     let firstItemAttempts = 0;
     await runBatch({
       items: items(1),
-      ratePerHour: 60, jitter: 0, maxAttempts: 4, backoffBaseMs: 1_000,
+      ratePerHour: 60,
+      jitter: 0,
+      maxAttempts: 4,
+      backoffBaseMs: 1_000,
       now: clk.now,
-      sleep: async (ms) => { sleeps.push(ms); return clk.sleep(ms); },
+      sleep: async (ms) => {
+        sleeps.push(ms);
+        return clk.sleep(ms);
+      },
       attempt: async (_item, attempt) => {
         firstItemAttempts = attempt;
         if (attempt < 4) return { ok: false, retry: true, error: '429 throttled' };
@@ -98,7 +119,9 @@ describe('runBatch — retry + backoff', () => {
     let attempts = 0;
     const out = await runBatch({
       items: items(1),
-      ratePerHour: 60, jitter: 0, maxAttempts: 5,
+      ratePerHour: 60,
+      jitter: 0,
+      maxAttempts: 5,
       sleep: async () => undefined,
       attempt: async (_item, n) => {
         attempts = n;
@@ -114,7 +137,10 @@ describe('runBatch — retry + backoff', () => {
   it('exhausted retry budget → ok=false, attempts=maxAttempts', async () => {
     const out = await runBatch({
       items: items(1),
-      ratePerHour: 60, jitter: 0, maxAttempts: 3, backoffBaseMs: 100,
+      ratePerHour: 60,
+      jitter: 0,
+      maxAttempts: 3,
+      backoffBaseMs: 100,
       sleep: async () => undefined,
       attempt: async (): Promise<AttemptResult> => ({ ok: false, retry: true, error: '429' }),
     });
@@ -129,8 +155,9 @@ describe('runBatch — budget / abort', () => {
     const clk = fakeClock();
     const out = await runBatch({
       items: items(10),
-      ratePerHour: 60, jitter: 0,
-      budgetMs: 90_000,        // ~1.5 minutes → only 1-2 items fit
+      ratePerHour: 60,
+      jitter: 0,
+      budgetMs: 90_000, // ~1.5 minutes → only 1-2 items fit
       now: clk.now,
       sleep: async (ms) => clk.sleep(ms),
       attempt: async (item) => ({ ok: true, messageId: 'x', sendId: `s-${item.index}` }),
@@ -147,7 +174,8 @@ describe('runBatch — budget / abort', () => {
     let processed = 0;
     const out = await runBatch({
       items: items(5),
-      ratePerHour: 60, jitter: 0,
+      ratePerHour: 60,
+      jitter: 0,
       signal: ac.signal,
       now: clk.now,
       sleep: async (ms) => clk.sleep(ms),
@@ -168,7 +196,7 @@ describe('runBatch — effectiveRatePerHour', () => {
     const clk = fakeClock();
     const out = await runBatch({
       items: items(6),
-      ratePerHour: 3600,       // 1/sec → 1_000ms interval
+      ratePerHour: 3600, // 1/sec → 1_000ms interval
       jitter: 0,
       now: clk.now,
       sleep: async (ms) => clk.sleep(ms),
@@ -186,7 +214,10 @@ describe('runBatch — attempt throws', () => {
     let n = 0;
     const out = await runBatch({
       items: items(1),
-      ratePerHour: 60, jitter: 0, maxAttempts: 3, backoffBaseMs: 100,
+      ratePerHour: 60,
+      jitter: 0,
+      maxAttempts: 3,
+      backoffBaseMs: 100,
       sleep: async () => undefined,
       attempt: async () => {
         n += 1;

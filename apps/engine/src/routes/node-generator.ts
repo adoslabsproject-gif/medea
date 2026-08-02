@@ -10,7 +10,12 @@ import { requireRole } from '@/middleware/rbac.js';
 import { getTenantId } from '@/lib/tenant.js';
 import { llmResolver, NoLlmProviderError } from '@/services/llm-resolver.service.js';
 import { dispatchLLMChat, dispatchLLMChatStreaming } from '@/services/llm-chat.service.js';
-import type { ILLMProvider, LLMCompletionRequest, LLMCompletionResponse, LLMStreamChunk } from '@/ports/llm-provider.js';
+import type {
+  ILLMProvider,
+  LLMCompletionRequest,
+  LLMCompletionResponse,
+  LLMStreamChunk,
+} from '@/ports/llm-provider.js';
 
 /**
  * Provider-agnostic dispatcher adapter — exposes the ILLMProvider interface
@@ -32,11 +37,17 @@ class ResolvedLLMProvider implements ILLMProvider {
 
   /** Scompone i messaggi del request nel formato (system, user, history) atteso
    *  dal dispatcher multi-provider. Condiviso da complete() e stream(). */
-  private split(req: LLMCompletionRequest): { system: string; user: string; history: { role: 'user' | 'assistant'; content: string }[] } {
+  private split(req: LLMCompletionRequest): {
+    system: string;
+    user: string;
+    history: { role: 'user' | 'assistant'; content: string }[];
+  } {
     const systemMsg = req.messages.find((m) => m.role === 'system');
     const userMsgs = req.messages.filter((m) => m.role !== 'system');
     const last = userMsgs[userMsgs.length - 1];
-    const history = userMsgs.slice(0, -1).map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+    const history = userMsgs
+      .slice(0, -1)
+      .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
     return { system: systemMsg?.content ?? '', user: last?.content ?? '', history };
   }
 
@@ -73,7 +84,12 @@ class ResolvedLLMProvider implements ILLMProvider {
     type Item = { kind: 'delta'; value: string } | { kind: 'end'; error?: unknown };
     const buffer: Item[] = [];
     let notify: (() => void) | null = null;
-    const push = (item: Item): void => { buffer.push(item); const n = notify; notify = null; if (n) n(); };
+    const push = (item: Item): void => {
+      buffer.push(item);
+      const n = notify;
+      notify = null;
+      if (n) n();
+    };
 
     // Fire-and-forget: il .then con DUE handler garantisce che la promise non
     // rigetti mai (no unhandled rejection); l'errore arriva come item `end`.
@@ -85,10 +101,16 @@ class ResolvedLLMProvider implements ILLMProvider {
       user,
       undefined,
       history,
-      (delta) => { push({ kind: 'delta', value: delta }); },
+      (delta) => {
+        push({ kind: 'delta', value: delta });
+      },
     ).then(
-      () => { push({ kind: 'end' }); },
-      (error: unknown) => { push({ kind: 'end', error }); },
+      () => {
+        push({ kind: 'end' });
+      },
+      (error: unknown) => {
+        push({ kind: 'end', error });
+      },
     );
 
     for (;;) {
@@ -96,7 +118,9 @@ class ResolvedLLMProvider implements ILLMProvider {
       if (item === undefined) {
         // Coda vuota: sospendi finché un push non risveglia. L'executor assegna
         // `notify` sincronicamente prima del suspend → nessun wake-up perso.
-        await new Promise<void>((resolve) => { notify = resolve; });
+        await new Promise<void>((resolve) => {
+          notify = resolve;
+        });
         continue;
       }
       if (item.kind === 'delta') {
@@ -105,7 +129,9 @@ class ResolvedLLMProvider implements ILLMProvider {
       }
       // kind === 'end'
       if (item.error !== undefined) {
-        throw item.error instanceof Error ? item.error : new Error('Node generation stream failed.');
+        throw item.error instanceof Error
+          ? item.error
+          : new Error('Node generation stream failed.');
       }
       yield { delta: '', done: true, finishReason: 'stop' };
       return;
@@ -166,83 +192,104 @@ export function createNodeGeneratorRoutes(): Hono {
   // via LLM (abuso costo + incoerenza privilegi, dato che il persist è owner-only).
   app.use('/node-generator/*', requireRole('owner'));
 
-  app.post('/node-generator/generate', llmRateLimit('node-generator'), zValidator('json', GenerateNodeSchema), (c) => {
-    const startTime = Date.now();
-    const tenantId = getTenantId(c);
-    // Attore per l'attribuzione dell'interazione AI: dal CONTEXT JWT (set dal
-    // middleware auth dopo verifySession), NON dall'header `x-user-id` che è
-    // client-spoofabile (parità con custom-nodes.ts). La route è owner-only
-    // (requireRole('owner') sotto) → auth è garantito.
-    const actorUserId = (c.get('auth') as { userId?: string } | undefined)?.userId;
-    const headerKey = c.req.header('x-llm-api-key');
-    const headerProvider = c.req.header('x-llm-provider');
+  app.post(
+    '/node-generator/generate',
+    llmRateLimit('node-generator'),
+    zValidator('json', GenerateNodeSchema),
+    (c) => {
+      const startTime = Date.now();
+      const tenantId = getTenantId(c);
+      // Attore per l'attribuzione dell'interazione AI: dal CONTEXT JWT (set dal
+      // middleware auth dopo verifySession), NON dall'header `x-user-id` che è
+      // client-spoofabile (parità con custom-nodes.ts). La route è owner-only
+      // (requireRole('owner') sotto) → auth è garantito.
+      const actorUserId = (c.get('auth') as { userId?: string } | undefined)?.userId;
+      const headerKey = c.req.header('x-llm-api-key');
+      const headerProvider = c.req.header('x-llm-provider');
 
-    // Resolve LLM provider via the tenant resolver — Liara default, BYO
-    // (Anthropic/OpenAI/Gemini/Mistral/Groq/OpenRouter/Ollama) when configured.
-    // NEVER hardcode a vendor name here.
-    let resolved;
-    try {
-      const opts: { headerApiKey?: string; requestedProvider?: string } = {};
-      if (headerKey) opts.headerApiKey = headerKey;
-      if (headerProvider) opts.requestedProvider = headerProvider;
-      resolved = llmResolver.resolve(tenantId, opts);
-    } catch (e) {
-      if (e instanceof NoLlmProviderError) {
-        return c.json({ error: e.message }, e.httpStatus ?? 400);
-      }
-      throw e;
-    }
-
-    const body = c.req.valid('json');
-    const modelLabel = `${resolved.provider}/${resolved.model || 'default'}`;
-    const llm = new ResolvedLLMProvider(resolved.provider, resolved.apiKey, resolved.model);
-    const service = new NodeGeneratorService(llm);
-    const generateInput: Parameters<NodeGeneratorService['generate']>[0] = { description: body.description };
-    if (body.openApiUrl !== undefined) generateInput.openApiUrl = body.openApiUrl;
-    if (body.language !== undefined) generateInput.language = body.language;
-
-    // ── Ramo STREAMING (SSE): delta live → done col nodo → error su guasto ──
-    if (body.stream) {
-      return streamSSE(c, async (stream) => {
-        try {
-          let result: GeneratedNode | null = null;
-          for await (const ev of service.generateStream(generateInput)) {
-            if (ev.type === 'delta') {
-              await stream.writeSSE({ event: 'delta', data: JSON.stringify({ text: ev.text }) });
-            } else {
-              result = ev.node;
-            }
-          }
-          if (!result) throw new Error('Stream ended without a generated node');
-          const interactionId = recordGeneration(new AIInteractionsService(), {
-            tenantId, ...(actorUserId ? { userId: actorUserId } : {}),
-            prompt: body.description, result, modelLabel, latencyMs: Date.now() - startTime,
-          });
-          await stream.writeSSE({ event: 'done', data: JSON.stringify({ node: result, interactionId }) });
-        } catch (error) {
-          logger.error({ err: error }, 'Node generation (stream) failed');
-          const message = error instanceof Error ? error.message : String(error);
-          await stream.writeSSE({ event: 'error', data: JSON.stringify({ error: message, status: errorStatus(message) }) });
-        }
-      });
-    }
-
-    // ── Ramo JSON sincrono (default, retrocompatibile) ──
-    return (async () => {
+      // Resolve LLM provider via the tenant resolver — Liara default, BYO
+      // (Anthropic/OpenAI/Gemini/Mistral/Groq/OpenRouter/Ollama) when configured.
+      // NEVER hardcode a vendor name here.
+      let resolved;
       try {
-        const result = await service.generate(generateInput);
-        const interactionId = recordGeneration(new AIInteractionsService(), {
-          tenantId, ...(actorUserId ? { userId: actorUserId } : {}),
-          prompt: body.description, result, modelLabel, latencyMs: Date.now() - startTime,
-        });
-        return c.json({ node: result, interactionId }, 200);
-      } catch (error) {
-        logger.error({ err: error }, 'Node generation failed');
-        const message = error instanceof Error ? error.message : String(error);
-        return c.json({ error: message }, errorStatus(message));
+        const opts: { headerApiKey?: string; requestedProvider?: string } = {};
+        if (headerKey) opts.headerApiKey = headerKey;
+        if (headerProvider) opts.requestedProvider = headerProvider;
+        resolved = llmResolver.resolve(tenantId, opts);
+      } catch (e) {
+        if (e instanceof NoLlmProviderError) {
+          return c.json({ error: e.message }, e.httpStatus ?? 400);
+        }
+        throw e;
       }
-    })();
-  });
+
+      const body = c.req.valid('json');
+      const modelLabel = `${resolved.provider}/${resolved.model || 'default'}`;
+      const llm = new ResolvedLLMProvider(resolved.provider, resolved.apiKey, resolved.model);
+      const service = new NodeGeneratorService(llm);
+      const generateInput: Parameters<NodeGeneratorService['generate']>[0] = {
+        description: body.description,
+      };
+      if (body.openApiUrl !== undefined) generateInput.openApiUrl = body.openApiUrl;
+      if (body.language !== undefined) generateInput.language = body.language;
+
+      // ── Ramo STREAMING (SSE): delta live → done col nodo → error su guasto ──
+      if (body.stream) {
+        return streamSSE(c, async (stream) => {
+          try {
+            let result: GeneratedNode | null = null;
+            for await (const ev of service.generateStream(generateInput)) {
+              if (ev.type === 'delta') {
+                await stream.writeSSE({ event: 'delta', data: JSON.stringify({ text: ev.text }) });
+              } else {
+                result = ev.node;
+              }
+            }
+            if (!result) throw new Error('Stream ended without a generated node');
+            const interactionId = recordGeneration(new AIInteractionsService(), {
+              tenantId,
+              ...(actorUserId ? { userId: actorUserId } : {}),
+              prompt: body.description,
+              result,
+              modelLabel,
+              latencyMs: Date.now() - startTime,
+            });
+            await stream.writeSSE({
+              event: 'done',
+              data: JSON.stringify({ node: result, interactionId }),
+            });
+          } catch (error) {
+            logger.error({ err: error }, 'Node generation (stream) failed');
+            const message = error instanceof Error ? error.message : String(error);
+            await stream.writeSSE({
+              event: 'error',
+              data: JSON.stringify({ error: message, status: errorStatus(message) }),
+            });
+          }
+        });
+      }
+
+      // ── Ramo JSON sincrono (default, retrocompatibile) ──
+      return (async () => {
+        try {
+          const result = await service.generate(generateInput);
+          const interactionId = recordGeneration(new AIInteractionsService(), {
+            tenantId,
+            ...(actorUserId ? { userId: actorUserId } : {}),
+            prompt: body.description,
+            result,
+            modelLabel,
+            latencyMs: Date.now() - startTime,
+          });
+          return c.json({ node: result, interactionId }, 200);
+        } catch (error) {
+          logger.error({ err: error }, 'Node generation failed');
+          const message = error instanceof Error ? error.message : String(error);
+          return c.json({ error: message }, errorStatus(message));
+        }
+      })();
+    },
+  );
 
   return app;
 }

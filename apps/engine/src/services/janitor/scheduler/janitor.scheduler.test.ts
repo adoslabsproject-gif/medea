@@ -22,7 +22,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { JanitorScheduler } from './janitor.scheduler.js';
 import { SYSTEM_REF } from '@/services/janitor/domain/index.js';
 import type {
-  IClock, IRuleConfigRepository, IRuleRegistry, ILockGateway,
+  IClock,
+  IRuleConfigRepository,
+  IRuleRegistry,
+  ILockGateway,
 } from '@/services/janitor/ports/index.js';
 import type { Logger } from 'pino';
 
@@ -35,9 +38,14 @@ const mkClock = (fixedNow: Date): IClock => ({
   nowIso: vi.fn(() => fixedNow.toISOString()),
 });
 
-const mkConfig = (over: Partial<{
-  ruleId: string; enabled: boolean; schedule: string; tenantId: string;
-}> = {}) => ({
+const mkConfig = (
+  over: Partial<{
+    ruleId: string;
+    enabled: boolean;
+    schedule: string;
+    tenantId: string;
+  }> = {},
+) => ({
   ruleId: over.ruleId ?? 'rule.a',
   tenantId: over.tenantId ?? 't1',
   enabled: over.enabled ?? true,
@@ -77,23 +85,36 @@ describe('🚨 JanitorScheduler — start idempotency', () => {
   it('🚨 start chiamato 2x → NON avvia 2 timer', async () => {
     const cfgRepo: IRuleConfigRepository = {
       listAll: vi.fn(async () => []),
-      list: vi.fn(), get: vi.fn(), upsert: vi.fn(), patch: vi.fn(), delete: vi.fn(),
+      list: vi.fn(),
+      get: vi.fn(),
+      upsert: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
     };
     const registry: IRuleRegistry = {
-      get: vi.fn(), listAll: vi.fn(() => []),
-      registerCodeRule: vi.fn(), registerDslRule: vi.fn(),
-      unregisterDslRule: vi.fn(), listForTenant: vi.fn(() => []),
+      get: vi.fn(),
+      listAll: vi.fn(() => []),
+      registerCodeRule: vi.fn(),
+      registerDslRule: vi.fn(),
+      unregisterDslRule: vi.fn(),
+      listForTenant: vi.fn(() => []),
     };
     const locks: ILockGateway = {
-      acquire: vi.fn(() => true), release: vi.fn(),
-      cleanupStale: vi.fn(() => 0), listActive: vi.fn(() => []),
+      acquire: vi.fn(() => true),
+      release: vi.fn(),
+      cleanupStale: vi.fn(() => 0),
+      listActive: vi.fn(() => []),
     };
     const exec = { execute: vi.fn() };
     const logger = mkLogger();
 
     const s = new JanitorScheduler(
       mkClock(new Date('2026-06-08T12:00:00Z')),
-      cfgRepo, registry, locks, exec as never, logger,
+      cfgRepo,
+      registry,
+      locks,
+      exec as never,
+      logger,
     );
     s.start();
     s.start(); // dup
@@ -104,15 +125,23 @@ describe('🚨 JanitorScheduler — start idempotency', () => {
   it('🚨 start chiama cleanupStale (1x al boot, resilience post-crash)', async () => {
     const cfgRepo: IRuleConfigRepository = {
       listAll: vi.fn(async () => []),
-      list: vi.fn(), get: vi.fn(), upsert: vi.fn(), patch: vi.fn(), delete: vi.fn(),
+      list: vi.fn(),
+      get: vi.fn(),
+      upsert: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
     };
     const registry: IRuleRegistry = {
-      get: vi.fn(), listAll: vi.fn(() => []),
-      registerCodeRule: vi.fn(), registerDslRule: vi.fn(),
-      unregisterDslRule: vi.fn(), listForTenant: vi.fn(() => []),
+      get: vi.fn(),
+      listAll: vi.fn(() => []),
+      registerCodeRule: vi.fn(),
+      registerDslRule: vi.fn(),
+      unregisterDslRule: vi.fn(),
+      listForTenant: vi.fn(() => []),
     };
     const locks: ILockGateway = {
-      acquire: vi.fn(() => true), release: vi.fn(),
+      acquire: vi.fn(() => true),
+      release: vi.fn(),
       cleanupStale: vi.fn(() => 3),
       listActive: vi.fn(() => []),
     };
@@ -121,11 +150,18 @@ describe('🚨 JanitorScheduler — start idempotency', () => {
 
     const s = new JanitorScheduler(
       mkClock(new Date('2026-06-08T12:00:00Z')),
-      cfgRepo, registry, locks, exec as never, logger,
+      cfgRepo,
+      registry,
+      locks,
+      exec as never,
+      logger,
     );
     s.start();
     expect(locks.cleanupStale).toHaveBeenCalledTimes(1);
-    expect(logger.info).toHaveBeenCalledWith({ staleCount: 3 }, expect.stringContaining('stale lock cleanup'));
+    expect(logger.info).toHaveBeenCalledWith(
+      { staleCount: 3 },
+      expect.stringContaining('stale lock cleanup'),
+    );
     vi.clearAllTimers();
   });
 });
@@ -136,51 +172,82 @@ describe('🚨 JanitorScheduler — tick logic', () => {
     const config = mkConfig({ schedule: '* * * * *' }); // ogni minuto
     const cfgRepo: IRuleConfigRepository = {
       listAll: vi.fn(async () => [config]),
-      list: vi.fn(), get: vi.fn(), upsert: vi.fn(), patch: vi.fn(), delete: vi.fn(),
+      list: vi.fn(),
+      get: vi.fn(),
+      upsert: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
     };
     const rule = mkCodeRule('rule.a');
     const registry: IRuleRegistry = {
       get: vi.fn(() => rule) as IRuleRegistry['get'],
-      listAll: vi.fn(() => []), registerCodeRule: vi.fn(), registerDslRule: vi.fn(),
-      unregisterDslRule: vi.fn(), listForTenant: vi.fn(() => []),
+      listAll: vi.fn(() => []),
+      registerCodeRule: vi.fn(),
+      registerDslRule: vi.fn(),
+      unregisterDslRule: vi.fn(),
+      listForTenant: vi.fn(() => []),
     };
     const locks: ILockGateway = {
-      acquire: vi.fn(() => true), release: vi.fn(),
-      cleanupStale: vi.fn(() => 0), listActive: vi.fn(() => []),
+      acquire: vi.fn(() => true),
+      release: vi.fn(),
+      cleanupStale: vi.fn(() => 0),
+      listActive: vi.fn(() => []),
     };
     const exec = { execute: vi.fn(async () => ({ detected: [], report: {} })) };
 
     const s = new JanitorScheduler(
-      mkClock(fixedNow), cfgRepo, registry, locks, exec as never, mkLogger(),
+      mkClock(fixedNow),
+      cfgRepo,
+      registry,
+      locks,
+      exec as never,
+      mkLogger(),
     );
     s.start();
     // start chiama tick subito (microtask)
     await vi.runOnlyPendingTimersAsync();
     expect(exec.execute).toHaveBeenCalledTimes(1);
-    expect(exec.execute).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: 't1', triggeredBy: 'scheduler', dryRun: false,
-    }));
+    expect(exec.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 't1',
+        triggeredBy: 'scheduler',
+        dryRun: false,
+      }),
+    );
     vi.clearAllTimers();
   });
 
   it('🚨 enabled=false → SKIP execute', async () => {
     const cfgRepo: IRuleConfigRepository = {
       listAll: vi.fn(async () => [mkConfig({ enabled: false })]),
-      list: vi.fn(), get: vi.fn(), upsert: vi.fn(), patch: vi.fn(), delete: vi.fn(),
+      list: vi.fn(),
+      get: vi.fn(),
+      upsert: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
     };
     const registry: IRuleRegistry = {
       get: vi.fn(() => mkCodeRule('rule.a')) as IRuleRegistry['get'],
-      listAll: vi.fn(() => []), registerCodeRule: vi.fn(), registerDslRule: vi.fn(),
-      unregisterDslRule: vi.fn(), listForTenant: vi.fn(() => []),
+      listAll: vi.fn(() => []),
+      registerCodeRule: vi.fn(),
+      registerDslRule: vi.fn(),
+      unregisterDslRule: vi.fn(),
+      listForTenant: vi.fn(() => []),
     };
     const locks: ILockGateway = {
-      acquire: vi.fn(() => true), release: vi.fn(),
-      cleanupStale: vi.fn(() => 0), listActive: vi.fn(() => []),
+      acquire: vi.fn(() => true),
+      release: vi.fn(),
+      cleanupStale: vi.fn(() => 0),
+      listActive: vi.fn(() => []),
     };
     const exec = { execute: vi.fn() };
     const s = new JanitorScheduler(
       mkClock(new Date('2026-06-08T12:00:00Z')),
-      cfgRepo, registry, locks, exec as never, mkLogger(),
+      cfgRepo,
+      registry,
+      locks,
+      exec as never,
+      mkLogger(),
     );
     s.start();
     await vi.runOnlyPendingTimersAsync();
@@ -193,20 +260,34 @@ describe('🚨 JanitorScheduler — tick logic', () => {
     // schedule "0 * * * *" = solo a minuto 0
     const cfgRepo: IRuleConfigRepository = {
       listAll: vi.fn(async () => [mkConfig({ schedule: '0 * * * *' })]),
-      list: vi.fn(), get: vi.fn(), upsert: vi.fn(), patch: vi.fn(), delete: vi.fn(),
+      list: vi.fn(),
+      get: vi.fn(),
+      upsert: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
     };
     const registry: IRuleRegistry = {
       get: vi.fn(() => mkCodeRule('rule.a')) as IRuleRegistry['get'],
-      listAll: vi.fn(() => []), registerCodeRule: vi.fn(), registerDslRule: vi.fn(),
-      unregisterDslRule: vi.fn(), listForTenant: vi.fn(() => []),
+      listAll: vi.fn(() => []),
+      registerCodeRule: vi.fn(),
+      registerDslRule: vi.fn(),
+      unregisterDslRule: vi.fn(),
+      listForTenant: vi.fn(() => []),
     };
     const locks: ILockGateway = {
-      acquire: vi.fn(() => true), release: vi.fn(),
-      cleanupStale: vi.fn(() => 0), listActive: vi.fn(() => []),
+      acquire: vi.fn(() => true),
+      release: vi.fn(),
+      cleanupStale: vi.fn(() => 0),
+      listActive: vi.fn(() => []),
     };
     const exec = { execute: vi.fn() };
     const s = new JanitorScheduler(
-      mkClock(fixedNow), cfgRepo, registry, locks, exec as never, mkLogger(),
+      mkClock(fixedNow),
+      cfgRepo,
+      registry,
+      locks,
+      exec as never,
+      mkLogger(),
     );
     s.start();
     await vi.runOnlyPendingTimersAsync();
@@ -217,22 +298,35 @@ describe('🚨 JanitorScheduler — tick logic', () => {
   it('🚨 rule.id not in registry → SKIP + counter notFound', async () => {
     const cfgRepo: IRuleConfigRepository = {
       listAll: vi.fn(async () => [mkConfig({ ruleId: 'missing.rule' })]),
-      list: vi.fn(), get: vi.fn(), upsert: vi.fn(), patch: vi.fn(), delete: vi.fn(),
+      list: vi.fn(),
+      get: vi.fn(),
+      upsert: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
     };
     const registry: IRuleRegistry = {
       get: vi.fn(() => null), // mai trovato
-      listAll: vi.fn(() => []), registerCodeRule: vi.fn(), registerDslRule: vi.fn(),
-      unregisterDslRule: vi.fn(), listForTenant: vi.fn(() => []),
+      listAll: vi.fn(() => []),
+      registerCodeRule: vi.fn(),
+      registerDslRule: vi.fn(),
+      unregisterDslRule: vi.fn(),
+      listForTenant: vi.fn(() => []),
     };
     const locks: ILockGateway = {
-      acquire: vi.fn(() => true), release: vi.fn(),
-      cleanupStale: vi.fn(() => 0), listActive: vi.fn(() => []),
+      acquire: vi.fn(() => true),
+      release: vi.fn(),
+      cleanupStale: vi.fn(() => 0),
+      listActive: vi.fn(() => []),
     };
     const exec = { execute: vi.fn() };
     const logger = mkLogger();
     const s = new JanitorScheduler(
       mkClock(new Date('2026-06-08T12:00:00Z')),
-      cfgRepo, registry, locks, exec as never, logger,
+      cfgRepo,
+      registry,
+      locks,
+      exec as never,
+      logger,
     );
     s.start();
     await vi.runOnlyPendingTimersAsync();
@@ -248,22 +342,35 @@ describe('🚨 JanitorScheduler — tick logic', () => {
   it('🚨 cron MALFORMATA → warn + skip (no crash)', async () => {
     const cfgRepo: IRuleConfigRepository = {
       listAll: vi.fn(async () => [mkConfig({ schedule: 'NOT A CRON' })]),
-      list: vi.fn(), get: vi.fn(), upsert: vi.fn(), patch: vi.fn(), delete: vi.fn(),
+      list: vi.fn(),
+      get: vi.fn(),
+      upsert: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
     };
     const registry: IRuleRegistry = {
       get: vi.fn(() => mkCodeRule('rule.a')) as IRuleRegistry['get'],
-      listAll: vi.fn(() => []), registerCodeRule: vi.fn(), registerDslRule: vi.fn(),
-      unregisterDslRule: vi.fn(), listForTenant: vi.fn(() => []),
+      listAll: vi.fn(() => []),
+      registerCodeRule: vi.fn(),
+      registerDslRule: vi.fn(),
+      unregisterDslRule: vi.fn(),
+      listForTenant: vi.fn(() => []),
     };
     const locks: ILockGateway = {
-      acquire: vi.fn(() => true), release: vi.fn(),
-      cleanupStale: vi.fn(() => 0), listActive: vi.fn(() => []),
+      acquire: vi.fn(() => true),
+      release: vi.fn(),
+      cleanupStale: vi.fn(() => 0),
+      listActive: vi.fn(() => []),
     };
     const exec = { execute: vi.fn() };
     const logger = mkLogger();
     const s = new JanitorScheduler(
       mkClock(new Date('2026-06-08T12:00:00Z')),
-      cfgRepo, registry, locks, exec as never, logger,
+      cfgRepo,
+      registry,
+      locks,
+      exec as never,
+      logger,
     );
     s.start();
     await vi.runOnlyPendingTimersAsync();
@@ -277,23 +384,30 @@ describe('🚨 JanitorScheduler — tick logic', () => {
 
   it('🚨 executeRule THROW → catch, log error, continua altri', async () => {
     const cfgRepo: IRuleConfigRepository = {
-      listAll: vi.fn(async () => [
-        mkConfig({ ruleId: 'rule.a' }),
-        mkConfig({ ruleId: 'rule.b' }),
-      ]),
-      list: vi.fn(), get: vi.fn(), upsert: vi.fn(), patch: vi.fn(), delete: vi.fn(),
+      listAll: vi.fn(async () => [mkConfig({ ruleId: 'rule.a' }), mkConfig({ ruleId: 'rule.b' })]),
+      list: vi.fn(),
+      get: vi.fn(),
+      upsert: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
     };
     const registry: IRuleRegistry = {
       get: vi.fn((id: string) => mkCodeRule(id)),
-      listAll: vi.fn(() => []), registerCodeRule: vi.fn(), registerDslRule: vi.fn(),
-      unregisterDslRule: vi.fn(), listForTenant: vi.fn(() => []),
+      listAll: vi.fn(() => []),
+      registerCodeRule: vi.fn(),
+      registerDslRule: vi.fn(),
+      unregisterDslRule: vi.fn(),
+      listForTenant: vi.fn(() => []),
     };
     const locks: ILockGateway = {
-      acquire: vi.fn(() => true), release: vi.fn(),
-      cleanupStale: vi.fn(() => 0), listActive: vi.fn(() => []),
+      acquire: vi.fn(() => true),
+      release: vi.fn(),
+      cleanupStale: vi.fn(() => 0),
+      listActive: vi.fn(() => []),
     };
     const exec = {
-      execute: vi.fn()
+      execute: vi
+        .fn()
         .mockImplementationOnce(async () => {
           throw new Error('boom-a');
         })
@@ -302,7 +416,11 @@ describe('🚨 JanitorScheduler — tick logic', () => {
     const logger = mkLogger();
     const s = new JanitorScheduler(
       mkClock(new Date('2026-06-08T12:00:00Z')),
-      cfgRepo, registry, locks, exec as never, logger,
+      cfgRepo,
+      registry,
+      locks,
+      exec as never,
+      logger,
     );
     s.start();
     await vi.runOnlyPendingTimersAsync();
@@ -321,21 +439,35 @@ describe('🚨 JanitorScheduler — drift protection', () => {
     const fixedNow = new Date('2026-06-08T12:00:30Z'); // minuto 12:00
     const cfgRepo: IRuleConfigRepository = {
       listAll: vi.fn(async () => [mkConfig({ schedule: '* * * * *' })]),
-      list: vi.fn(), get: vi.fn(), upsert: vi.fn(), patch: vi.fn(), delete: vi.fn(),
+      list: vi.fn(),
+      get: vi.fn(),
+      upsert: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
     };
     const registry: IRuleRegistry = {
       get: vi.fn(() => mkCodeRule('rule.a')) as IRuleRegistry['get'],
-      listAll: vi.fn(() => []), registerCodeRule: vi.fn(), registerDslRule: vi.fn(),
-      unregisterDslRule: vi.fn(), listForTenant: vi.fn(() => []),
+      listAll: vi.fn(() => []),
+      registerCodeRule: vi.fn(),
+      registerDslRule: vi.fn(),
+      unregisterDslRule: vi.fn(),
+      listForTenant: vi.fn(() => []),
     };
     const locks: ILockGateway = {
-      acquire: vi.fn(() => true), release: vi.fn(),
-      cleanupStale: vi.fn(() => 0), listActive: vi.fn(() => []),
+      acquire: vi.fn(() => true),
+      release: vi.fn(),
+      cleanupStale: vi.fn(() => 0),
+      listActive: vi.fn(() => []),
     };
     const exec = { execute: vi.fn(async () => ({ detected: [], report: {} })) };
 
     const s = new JanitorScheduler(
-      mkClock(fixedNow), cfgRepo, registry, locks, exec as never, mkLogger(),
+      mkClock(fixedNow),
+      cfgRepo,
+      registry,
+      locks,
+      exec as never,
+      mkLogger(),
     );
     s.start(); // tick 1 immediato
     await vi.runOnlyPendingTimersAsync();
@@ -352,22 +484,35 @@ describe('🚨 JanitorScheduler — stop graceful', () => {
   it('🚨 stop clear timer + flag', async () => {
     const cfgRepo: IRuleConfigRepository = {
       listAll: vi.fn(async () => []),
-      list: vi.fn(), get: vi.fn(), upsert: vi.fn(), patch: vi.fn(), delete: vi.fn(),
+      list: vi.fn(),
+      get: vi.fn(),
+      upsert: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
     };
     const registry: IRuleRegistry = {
-      get: vi.fn(), listAll: vi.fn(() => []),
-      registerCodeRule: vi.fn(), registerDslRule: vi.fn(),
-      unregisterDslRule: vi.fn(), listForTenant: vi.fn(() => []),
+      get: vi.fn(),
+      listAll: vi.fn(() => []),
+      registerCodeRule: vi.fn(),
+      registerDslRule: vi.fn(),
+      unregisterDslRule: vi.fn(),
+      listForTenant: vi.fn(() => []),
     };
     const locks: ILockGateway = {
-      acquire: vi.fn(() => true), release: vi.fn(),
-      cleanupStale: vi.fn(() => 0), listActive: vi.fn(() => []),
+      acquire: vi.fn(() => true),
+      release: vi.fn(),
+      cleanupStale: vi.fn(() => 0),
+      listActive: vi.fn(() => []),
     };
     const exec = { execute: vi.fn() };
     const logger = mkLogger();
     const s = new JanitorScheduler(
       mkClock(new Date('2026-06-08T12:00:00Z')),
-      cfgRepo, registry, locks, exec as never, logger,
+      cfgRepo,
+      registry,
+      locks,
+      exec as never,
+      logger,
     );
     s.start();
     await vi.runOnlyPendingTimersAsync();

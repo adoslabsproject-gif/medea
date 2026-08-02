@@ -34,11 +34,15 @@ describe('scaffold-jobs — il risultato sopravvive al drop della connessione SS
   });
 
   it('hard cap MAX_JOBS → non cresce illimitato (anti-leak)', () => {
-    for (let i = 0; i < 250; i++) { createJob(`bulk-${i.toString()}`); }
+    for (let i = 0; i < 250; i++) {
+      createJob(`bulk-${i.toString()}`);
+    }
     // dopo il cap, i più vecchi sono droppati; il più recente resta.
     expect(getJob('bulk-249')).toBeDefined();
     let present = 0;
-    for (let i = 0; i < 250; i++) { if (getJob(`bulk-${i.toString()}`)) present++; }
+    for (let i = 0; i < 250; i++) {
+      if (getJob(`bulk-${i.toString()}`)) present++;
+    }
     expect(present).toBeLessThanOrEqual(200);
   });
 });

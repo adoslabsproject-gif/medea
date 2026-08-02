@@ -14,15 +14,24 @@
 import type { ChatTurn, LlmTurn } from '@/services/db-agent/chat/types.js';
 import type { NodeCatalogEntry } from '@/services/ai-scaffold/node-catalog.js';
 import { WorkflowBuilder, type WorkflowSnapshot } from '@/services/workflow-agent/state.js';
-import { buildWorkflowAgentPrompt, type WorkflowAgentPromptContext } from '@/services/workflow-agent/prompt.js';
 import {
-  listWorkflowTools, executeWorkflowTool, isFinishTool, type WorkflowAgentContext,
+  buildWorkflowAgentPrompt,
+  type WorkflowAgentPromptContext,
+} from '@/services/workflow-agent/prompt.js';
+import {
+  listWorkflowTools,
+  executeWorkflowTool,
+  isFinishTool,
+  type WorkflowAgentContext,
 } from '@/services/workflow-agent/tools.js';
 import { describeViolation } from '@/services/ai-scaffold/catalog-validator.js';
 
 const DEFAULT_MAX_ITERATIONS = 16;
 
-export interface WorkflowAgentStep { tool: string; ok: boolean }
+export interface WorkflowAgentStep {
+  tool: string;
+  ok: boolean;
+}
 
 export interface RunWorkflowAgentOptions {
   catalog: NodeCatalogEntry[];
@@ -49,7 +58,8 @@ export interface RunWorkflowAgentOptions {
   systemPrompt?: string;
 }
 
-const DEFAULT_INITIAL_MESSAGE = 'Costruisci il workflow per il goal indicato. Inizia con search_nodes.';
+const DEFAULT_INITIAL_MESSAGE =
+  'Costruisci il workflow per il goal indicato. Inizia con search_nodes.';
 
 export interface WorkflowAgentResult {
   snapshot: WorkflowSnapshot;
@@ -67,17 +77,24 @@ export interface WorkflowAgentResult {
   finalText: string;
 }
 
-export async function runWorkflowAgent(opts: RunWorkflowAgentOptions): Promise<WorkflowAgentResult> {
+export async function runWorkflowAgent(
+  opts: RunWorkflowAgentOptions,
+): Promise<WorkflowAgentResult> {
   const maxIterations = opts.maxIterations ?? DEFAULT_MAX_ITERATIONS;
   const builder = opts.builder ?? new WorkflowBuilder(opts.catalog);
   const ctx: WorkflowAgentContext = { builder, catalog: opts.catalog };
   const system = opts.systemPrompt ?? buildWorkflowAgentPrompt(opts.prompt);
   const tools = listWorkflowTools();
-  const messages: ChatTurn[] = [{ role: 'user', content: opts.initialUserMessage ?? DEFAULT_INITIAL_MESSAGE }];
+  const messages: ChatTurn[] = [
+    { role: 'user', content: opts.initialUserMessage ?? DEFAULT_INITIAL_MESSAGE },
+  ];
   const steps: WorkflowAgentStep[] = [];
   let lastText = '';
 
-  const result = (reason: WorkflowAgentResult['stoppedReason'], iterations: number): WorkflowAgentResult => ({
+  const result = (
+    reason: WorkflowAgentResult['stoppedReason'],
+    iterations: number,
+  ): WorkflowAgentResult => ({
     snapshot: builder.snapshot(),
     remainingIssues: builder.validate().map(describeViolation),
     steps,
@@ -100,7 +117,13 @@ export async function runWorkflowAgent(opts: RunWorkflowAgentOptions): Promise<W
       const res = executeWorkflowTool(ctx, call.name, call.args);
       // step.ok riflette l'esito dell'OPERAZIONE: il tool può eseguire (res.ok)
       // ma l'operazione del builder fallire (data.ok===false, es. defId errato).
-      const opOk = res.ok && !(typeof res.data === 'object' && res.data !== null && (res.data as { ok?: unknown }).ok === false);
+      const opOk =
+        res.ok &&
+        !(
+          typeof res.data === 'object' &&
+          res.data !== null &&
+          (res.data as { ok?: unknown }).ok === false
+        );
       steps.push({ tool: call.name, ok: opOk });
       opts.onStep?.({ tool: call.name, ok: opOk });
       messages.push({ role: 'tool', toolCallId: call.id, content: JSON.stringify(res) });

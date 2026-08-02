@@ -1,7 +1,13 @@
 import { join } from 'node:path';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
-import { constantTimeEquals, verifyInternalToken, requireInternalToken, getOutboundPortalToken, getLoopbackInternalToken } from './internal-token.js';
+import {
+  constantTimeEquals,
+  verifyInternalToken,
+  requireInternalToken,
+  getOutboundPortalToken,
+  getLoopbackInternalToken,
+} from './internal-token.js';
 
 const SECRET = 'a'.repeat(40);
 
@@ -15,7 +21,9 @@ describe('constantTimeEquals', () => {
 });
 
 describe('verifyInternalToken — fail-closed', () => {
-  afterEach(() => { delete process.env.MEDEA_INTERNAL_TOKEN; });
+  afterEach(() => {
+    delete process.env.MEDEA_INTERNAL_TOKEN;
+  });
 
   it('secret non configurato → sempre false (anche con input non vuoto)', () => {
     delete process.env.MEDEA_INTERNAL_TOKEN;
@@ -39,7 +47,9 @@ describe('requireInternalToken — middleware', () => {
     app.get('/x', (c) => c.json({ ok: true }));
     return app;
   };
-  afterEach(() => { delete process.env.MEDEA_INTERNAL_TOKEN; });
+  afterEach(() => {
+    delete process.env.MEDEA_INTERNAL_TOKEN;
+  });
 
   it('secret non configurato → 401', async () => {
     delete process.env.MEDEA_INTERNAL_TOKEN;
@@ -64,8 +74,14 @@ describe('requireInternalToken — middleware', () => {
 });
 
 describe('getOutboundPortalToken', () => {
-  beforeEach(() => { delete process.env.PORTAL_CALLBACK_TOKEN; delete process.env.MEDEA_INTERNAL_TOKEN; });
-  afterEach(() => { delete process.env.PORTAL_CALLBACK_TOKEN; delete process.env.MEDEA_INTERNAL_TOKEN; });
+  beforeEach(() => {
+    delete process.env.PORTAL_CALLBACK_TOKEN;
+    delete process.env.MEDEA_INTERNAL_TOKEN;
+  });
+  afterEach(() => {
+    delete process.env.PORTAL_CALLBACK_TOKEN;
+    delete process.env.MEDEA_INTERNAL_TOKEN;
+  });
 
   it('preferisce PORTAL_CALLBACK_TOKEN', () => {
     process.env.PORTAL_CALLBACK_TOKEN = 'portal';
@@ -82,8 +98,14 @@ describe('getOutboundPortalToken', () => {
 });
 
 describe('getLoopbackInternalToken — loopback runtime→se stesso (gap #7)', () => {
-  beforeEach(() => { delete process.env.PORTAL_CALLBACK_TOKEN; delete process.env.MEDEA_INTERNAL_TOKEN; });
-  afterEach(() => { delete process.env.PORTAL_CALLBACK_TOKEN; delete process.env.MEDEA_INTERNAL_TOKEN; });
+  beforeEach(() => {
+    delete process.env.PORTAL_CALLBACK_TOKEN;
+    delete process.env.MEDEA_INTERNAL_TOKEN;
+  });
+  afterEach(() => {
+    delete process.env.PORTAL_CALLBACK_TOKEN;
+    delete process.env.MEDEA_INTERNAL_TOKEN;
+  });
 
   it('ritorna MEDEA_INTERNAL_TOKEN', () => {
     process.env.MEDEA_INTERNAL_TOKEN = 'internal';
@@ -129,7 +151,10 @@ describe('🔒 [GUARD anti-classe] requireInternalToken mai montato senza path-s
     const walk = (dir: string): void => {
       for (const e of readdirSync(dir)) {
         const p = join(dir, e);
-        if (statSync(p).isDirectory()) { walk(p); continue; }
+        if (statSync(p).isDirectory()) {
+          walk(p);
+          continue;
+        }
         if (!p.endsWith('.ts') || p.endsWith('.test.ts')) continue;
         const src = readFileSync(p, 'utf8');
         // QUALSIASI `.use(...requireInternalToken...)` è vietato: anche
@@ -140,6 +165,9 @@ describe('🔒 [GUARD anti-classe] requireInternalToken mai montato senza path-s
       }
     };
     walk(SRC);
-    expect(offenders, `monta il middleware con un path scope, es. app.use('/internal/*', requireInternalToken()): ${offenders.join(', ')}`).toEqual([]);
+    expect(
+      offenders,
+      `monta il middleware con un path scope, es. app.use('/internal/*', requireInternalToken()): ${offenders.join(', ')}`,
+    ).toEqual([]);
   });
 });

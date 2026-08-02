@@ -49,7 +49,8 @@ class P7mError extends Error {}
 function readTlv(buf: Buffer, off: number): Tlv {
   if (off + 2 > buf.length) throw new P7mError(`ASN.1 troncato a offset ${String(off)}`);
   const tag = buf[off]!;
-  if ((tag & 0x1f) === 0x1f) throw new P7mError('tag ASN.1 multi-byte non supportato (mai presente nei p7m SdI)');
+  if ((tag & 0x1f) === 0x1f)
+    throw new P7mError('tag ASN.1 multi-byte non supportato (mai presente nei p7m SdI)');
   const lenByte = buf[off + 1]!;
   let start = off + 2;
   let length: number;
@@ -66,7 +67,8 @@ function readTlv(buf: Buffer, off: number): Tlv {
     length = lenByte;
   }
   const end = start + length;
-  if (end > buf.length) throw new P7mError('contenuto ASN.1 oltre la fine del buffer (file troncato?)');
+  if (end > buf.length)
+    throw new P7mError('contenuto ASN.1 oltre la fine del buffer (file troncato?)');
   return { tag, constructed: (tag & 0x20) !== 0, start, length, end };
 }
 
@@ -79,7 +81,10 @@ function readOid(buf: Buffer, tlv: Tlv): string {
     value = value * 128 + (b & 0x7f);
     if ((b & 0x80) === 0) {
       if (parts.length === 0) {
-        parts.push(Math.floor(value / 40) > 2 ? 2 : Math.floor(value / 40), Math.floor(value / 40) > 2 ? value - 80 : value % 40);
+        parts.push(
+          Math.floor(value / 40) > 2 ? 2 : Math.floor(value / 40),
+          Math.floor(value / 40) > 2 ? value - 80 : value % 40,
+        );
       } else {
         parts.push(value);
       }
@@ -96,7 +101,8 @@ function octetStringBytes(buf: Buffer, tlv: Tlv): Buffer {
   let off = tlv.start;
   while (off < tlv.end) {
     const inner = readTlv(buf, off);
-    if ((inner.tag & 0x1f) !== 0x04) throw new P7mError('segmento inatteso dentro OCTET STRING costruito');
+    if ((inner.tag & 0x1f) !== 0x04)
+      throw new P7mError('segmento inatteso dentro OCTET STRING costruito');
     chunks.push(octetStringBytes(buf, inner));
     off = inner.end;
   }
@@ -109,12 +115,16 @@ function octetStringBytes(buf: Buffer, tlv: Tlv): Buffer {
  */
 export function extractP7mContent(der: Buffer): Buffer {
   const contentInfo = readTlv(der, 0);
-  if (contentInfo.tag !== 0x30) throw new P7mError('il file non inizia con una SEQUENCE ASN.1: non è un p7m');
+  if (contentInfo.tag !== 0x30)
+    throw new P7mError('il file non inizia con una SEQUENCE ASN.1: non è un p7m');
   const oidTlv = readTlv(der, contentInfo.start);
-  if ((oidTlv.tag & 0x1f) !== 0x06) throw new P7mError('ContentInfo senza contentType OID: non è un p7m');
+  if ((oidTlv.tag & 0x1f) !== 0x06)
+    throw new P7mError('ContentInfo senza contentType OID: non è un p7m');
   const oid = readOid(der, oidTlv);
   if (oid !== OID_SIGNED_DATA) {
-    throw new P7mError(`contentType ${oid} non è SignedData (${OID_SIGNED_DATA}): busta CMS non firmata o tipo diverso`);
+    throw new P7mError(
+      `contentType ${oid} non è SignedData (${OID_SIGNED_DATA}): busta CMS non firmata o tipo diverso`,
+    );
   }
   const explicit0 = readTlv(der, oidTlv.end);
   if (explicit0.tag !== 0xa0) throw new P7mError('SignedData assente ([0] EXPLICIT mancante)');
@@ -128,9 +138,12 @@ export function extractP7mContent(der: Buffer): Buffer {
   if (encap.tag !== 0x30) throw new P7mError('encapContentInfo non trovato');
   const eContentType = readTlv(der, encap.start);
   const eOid = readOid(der, eContentType);
-  if (eOid !== OID_DATA) throw new P7mError(`eContentType ${eOid} non è "data": payload non estraibile`);
+  if (eOid !== OID_DATA)
+    throw new P7mError(`eContentType ${eOid} non è "data": payload non estraibile`);
   if (eContentType.end >= encap.end) {
-    throw new P7mError('eContent ASSENTE: firma detached — il contenuto viaggia in un file separato');
+    throw new P7mError(
+      'eContent ASSENTE: firma detached — il contenuto viaggia in un file separato',
+    );
   }
   const eContentWrap = readTlv(der, eContentType.end);
   if (eContentWrap.tag !== 0xa0) throw new P7mError('eContent [0] EXPLICIT mancante');
@@ -177,7 +190,8 @@ function pickAttachment(input: unknown): unknown {
   // esplicitamente a unknown[] per non propagare `any` (gate no-unsafe-*).
   const atts: unknown[] = raw;
   const p7m = atts.find((a): boolean => {
-    const name = a !== null && typeof a === 'object' ? (a as { filename?: unknown }).filename : undefined;
+    const name =
+      a !== null && typeof a === 'object' ? (a as { filename?: unknown }).filename : undefined;
     return typeof name === 'string' && /\.p7m$/iu.test(name);
   });
   return p7m ?? atts[0];
@@ -194,12 +208,18 @@ export const p7mExtractExecutor: NodeExecutor = async (config, input, context) =
     buf = binBytes;
   } else {
     // 2/3) Stringa da config o input.content.
-    const raw = typeof config.content === 'string' && config.content !== ''
-      ? config.content
-      : (input && typeof input === 'object' && typeof (input as Record<string, unknown>).content === 'string'
-        ? (input as Record<string, unknown>).content as string
-        : '');
-    if (raw === '') throw new Error('italia_p7m_extract: nessun contenuto — passa il p7m come allegato binario (input), oppure in base64 nel campo "content"');
+    const raw =
+      typeof config.content === 'string' && config.content !== ''
+        ? config.content
+        : input &&
+            typeof input === 'object' &&
+            typeof (input as Record<string, unknown>).content === 'string'
+          ? ((input as Record<string, unknown>).content as string)
+          : '';
+    if (raw === '')
+      throw new Error(
+        'italia_p7m_extract: nessun contenuto — passa il p7m come allegato binario (input), oppure in base64 nel campo "content"',
+      );
     buf = Buffer.from(raw, 'utf8');
   }
 
@@ -207,14 +227,21 @@ export const p7mExtractExecutor: NodeExecutor = async (config, input, context) =
   const asText = buf.toString('utf8').trimStart();
   if (asText.startsWith('<?xml') || asText.startsWith('<')) {
     return {
-      output: { content: buf.toString('utf8'), wasSigned: false, sizeBytes: buf.length, contentIsXml: true },
+      output: {
+        content: buf.toString('utf8'),
+        wasSigned: false,
+        sizeBytes: buf.length,
+        contentIsXml: true,
+      },
       durationMs: Date.now() - start,
     };
   }
 
   const der = coerceToDer(buf);
   if (der[0] !== 0x30) {
-    throw new Error('italia_p7m_extract: il contenuto non è né XML né un p7m DER/base64 riconoscibile');
+    throw new Error(
+      'italia_p7m_extract: il contenuto non è né XML né un p7m DER/base64 riconoscibile',
+    );
   }
   let payload: Buffer;
   try {

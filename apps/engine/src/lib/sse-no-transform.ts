@@ -109,7 +109,10 @@ export function streamSSENoTransform(
           },
           writeComment(text: string): Promise<void> {
             if (closed) return Promise.resolve();
-            const lines = text.split('\n').map((l) => `:${l}`).join('\n');
+            const lines = text
+              .split('\n')
+              .map((l) => `:${l}`)
+              .join('\n');
             try {
               controller.enqueue(encoder.encode(lines + '\n\n'));
             } catch {
@@ -142,7 +145,13 @@ export function streamSSENoTransform(
             /* already closed */
           }
         };
-        signal.addEventListener('abort', () => { void onClientAbort(); }, { once: true });
+        signal.addEventListener(
+          'abort',
+          () => {
+            void onClientAbort();
+          },
+          { once: true },
+        );
 
         try {
           await cb(sse);

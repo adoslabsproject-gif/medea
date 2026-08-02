@@ -4,7 +4,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseRuleset, evaluateRule, evaluateRuleset, type EvalContext } from './condition-rules.js';
+import {
+  parseRuleset,
+  evaluateRule,
+  evaluateRuleset,
+  type EvalContext,
+} from './condition-rules.js';
 
 const baseCtx: EvalContext = {
   input: {
@@ -21,7 +26,9 @@ const baseCtx: EvalContext = {
 
 describe('parseRuleset', () => {
   it('parses JSON string', () => {
-    const r = parseRuleset('{"combinator":"OR","rules":[{"left":"input.x","op":"equals","right":"y"}]}');
+    const r = parseRuleset(
+      '{"combinator":"OR","rules":[{"left":"input.x","op":"equals","right":"y"}]}',
+    );
     expect(r?.combinator).toBe('OR');
     expect(r?.rules.length).toBe(1);
   });
@@ -47,23 +54,59 @@ describe('parseRuleset', () => {
 });
 
 describe('evaluateRule — string operators', () => {
-  const t = (op: string, left = 'input.status', right = 'active', extra: Record<string, unknown> = {}): boolean =>
-    evaluateRule({ left, op, right, type: 'string', ...extra }, baseCtx);
+  const t = (
+    op: string,
+    left = 'input.status',
+    right = 'active',
+    extra: Record<string, unknown> = {},
+  ): boolean => evaluateRule({ left, op, right, type: 'string', ...extra }, baseCtx);
 
-  it('equals', () => { expect(t('equals')).toBe(true); expect(t('equals', 'input.status', 'inactive')).toBe(false); });
-  it('not-equals', () => { expect(t('not-equals', 'input.status', 'inactive')).toBe(true); });
-  it('contains', () => { expect(t('contains', 'input.email', 'example')).toBe(true); });
-  it('not-contains', () => { expect(t('not-contains', 'input.email', 'foo')).toBe(true); });
-  it('starts-with', () => { expect(t('starts-with', 'input.email', 'alice')).toBe(true); });
-  it('ends-with', () => { expect(t('ends-with', 'input.email', '.com')).toBe(true); });
-  it('matches-regex', () => { expect(t('matches-regex', 'input.email', '^[a-z]+@')).toBe(true); });
-  it('is-empty / is-not-empty', () => {
-    expect(evaluateRule({ left: 'input.missing', op: 'is-empty', type: 'string' }, baseCtx)).toBe(true);
-    expect(evaluateRule({ left: 'input.status', op: 'is-not-empty', type: 'string' }, baseCtx)).toBe(true);
+  it('equals', () => {
+    expect(t('equals')).toBe(true);
+    expect(t('equals', 'input.status', 'inactive')).toBe(false);
   });
-  it('case-insensitive by default', () => { expect(t('equals', 'input.status', 'ACTIVE')).toBe(true); });
+  it('not-equals', () => {
+    expect(t('not-equals', 'input.status', 'inactive')).toBe(true);
+  });
+  it('contains', () => {
+    expect(t('contains', 'input.email', 'example')).toBe(true);
+  });
+  it('not-contains', () => {
+    expect(t('not-contains', 'input.email', 'foo')).toBe(true);
+  });
+  it('starts-with', () => {
+    expect(t('starts-with', 'input.email', 'alice')).toBe(true);
+  });
+  it('ends-with', () => {
+    expect(t('ends-with', 'input.email', '.com')).toBe(true);
+  });
+  it('matches-regex', () => {
+    expect(t('matches-regex', 'input.email', '^[a-z]+@')).toBe(true);
+  });
+  it('is-empty / is-not-empty', () => {
+    expect(evaluateRule({ left: 'input.missing', op: 'is-empty', type: 'string' }, baseCtx)).toBe(
+      true,
+    );
+    expect(
+      evaluateRule({ left: 'input.status', op: 'is-not-empty', type: 'string' }, baseCtx),
+    ).toBe(true);
+  });
+  it('case-insensitive by default', () => {
+    expect(t('equals', 'input.status', 'ACTIVE')).toBe(true);
+  });
   it('case-sensitive when toggled', () => {
-    expect(evaluateRule({ left: 'input.status', op: 'equals', right: 'ACTIVE', type: 'string', caseSensitive: true }, baseCtx)).toBe(false);
+    expect(
+      evaluateRule(
+        {
+          left: 'input.status',
+          op: 'equals',
+          right: 'ACTIVE',
+          type: 'string',
+          caseSensitive: true,
+        },
+        baseCtx,
+      ),
+    ).toBe(false);
   });
 });
 
@@ -85,36 +128,66 @@ describe('evaluateRule — number operators', () => {
   });
 
   it('between (uses rightMax)', () => {
-    expect(evaluateRule({ left: 'input.age', op: 'between', right: '25', rightMax: '35', type: 'number' }, baseCtx)).toBe(true);
-    expect(evaluateRule({ left: 'input.age', op: 'between', right: '40', rightMax: '50', type: 'number' }, baseCtx)).toBe(false);
+    expect(
+      evaluateRule(
+        { left: 'input.age', op: 'between', right: '25', rightMax: '35', type: 'number' },
+        baseCtx,
+      ),
+    ).toBe(true);
+    expect(
+      evaluateRule(
+        { left: 'input.age', op: 'between', right: '40', rightMax: '50', type: 'number' },
+        baseCtx,
+      ),
+    ).toBe(false);
   });
 
   it('handles floats', () => {
-    expect(evaluateRule({ left: 'input.score', op: 'gte', right: '87.0', type: 'number' }, baseCtx)).toBe(true);
+    expect(
+      evaluateRule({ left: 'input.score', op: 'gte', right: '87.0', type: 'number' }, baseCtx),
+    ).toBe(true);
   });
 });
 
 describe('evaluateRule — date operators', () => {
   it('before / after', () => {
-    expect(evaluateRule({ left: 'input.createdAt', op: 'after', right: '2026-01-01', type: 'date' }, baseCtx)).toBe(true);
-    expect(evaluateRule({ left: 'input.createdAt', op: 'before', right: '2025-12-01', type: 'date' }, baseCtx)).toBe(false);
+    expect(
+      evaluateRule(
+        { left: 'input.createdAt', op: 'after', right: '2026-01-01', type: 'date' },
+        baseCtx,
+      ),
+    ).toBe(true);
+    expect(
+      evaluateRule(
+        { left: 'input.createdAt', op: 'before', right: '2025-12-01', type: 'date' },
+        baseCtx,
+      ),
+    ).toBe(false);
   });
 
   it('returns false for invalid dates', () => {
-    expect(evaluateRule({ left: 'input.status', op: 'before', right: 'invalid', type: 'date' }, baseCtx)).toBe(false);
+    expect(
+      evaluateRule({ left: 'input.status', op: 'before', right: 'invalid', type: 'date' }, baseCtx),
+    ).toBe(false);
   });
 });
 
 describe('evaluateRule — boolean / existence', () => {
   it('is-true / is-false', () => {
-    expect(evaluateRule({ left: 'input.flagged', op: 'is-true', type: 'boolean' }, baseCtx)).toBe(true);
-    expect(evaluateRule({ left: 'input.flagged', op: 'is-false', type: 'boolean' }, baseCtx)).toBe(false);
+    expect(evaluateRule({ left: 'input.flagged', op: 'is-true', type: 'boolean' }, baseCtx)).toBe(
+      true,
+    );
+    expect(evaluateRule({ left: 'input.flagged', op: 'is-false', type: 'boolean' }, baseCtx)).toBe(
+      false,
+    );
   });
 
   it('exists / not-exists', () => {
     expect(evaluateRule({ left: 'input.status', op: 'exists', type: 'any' }, baseCtx)).toBe(true);
     expect(evaluateRule({ left: 'input.missing', op: 'exists', type: 'any' }, baseCtx)).toBe(false);
-    expect(evaluateRule({ left: 'input.missing', op: 'not-exists', type: 'any' }, baseCtx)).toBe(true);
+    expect(evaluateRule({ left: 'input.missing', op: 'not-exists', type: 'any' }, baseCtx)).toBe(
+      true,
+    );
   });
 });
 
@@ -155,7 +228,10 @@ describe('evaluateRuleset — combinators', () => {
 
 describe('evalPath — literals and dotted paths', () => {
   it('resolves vars.region', () => {
-    const r = evaluateRule({ left: 'vars.region', op: 'equals', right: 'eu-west', type: 'string' }, baseCtx);
+    const r = evaluateRule(
+      { left: 'vars.region', op: 'equals', right: 'eu-west', type: 'string' },
+      baseCtx,
+    );
     expect(r).toBe(true);
   });
 });
@@ -178,17 +254,26 @@ describe('matches-regex — anti-ReDoS (H2)', () => {
 
   it('anti-regressione: un pattern valido continua a matchare correttamente', () => {
     expect(
-      evaluateRule({ left: 'input', op: 'matches-regex', right: '^ab+c$', type: 'string' }, { input: 'abbbc' }),
+      evaluateRule(
+        { left: 'input', op: 'matches-regex', right: '^ab+c$', type: 'string' },
+        { input: 'abbbc' },
+      ),
     ).toBe(true);
     expect(
-      evaluateRule({ left: 'input', op: 'matches-regex', right: '^ab+c$', type: 'string' }, { input: 'axc' }),
+      evaluateRule(
+        { left: 'input', op: 'matches-regex', right: '^ab+c$', type: 'string' },
+        { input: 'axc' },
+      ),
     ).toBe(false);
   });
 
   it('un pattern non-RE2 (backreference) → false, mai crash (UnsafeRegexError gestita)', () => {
     // RE2 rifiuta le backreference → safeUserRegex lancia → catch ritorna false.
     expect(
-      evaluateRule({ left: 'input', op: 'matches-regex', right: '(\\w)\\1', type: 'string' }, { input: 'aa' }),
+      evaluateRule(
+        { left: 'input', op: 'matches-regex', right: '(\\w)\\1', type: 'string' },
+        { input: 'aa' },
+      ),
     ).toBe(false);
   });
 });

@@ -87,7 +87,9 @@ function formatZodIssues(issues: readonly ZodIssue[]): string {
  *   const Schema = defineConfigSchema({ url: z.string().url() });
  *   // valida `url` MA non blocca campi extra (compat con configFields legacy).
  */
-export function defineConfigSchema<T extends z.ZodRawShape>(shape: T): z.ZodObject<T, 'passthrough'> {
+export function defineConfigSchema<T extends z.ZodRawShape>(
+  shape: T,
+): z.ZodObject<T, 'passthrough'> {
   return z.object(shape).passthrough();
 }
 
@@ -109,26 +111,41 @@ export const commonSchemas = {
 
   /** URL valida (http/https), no scheme custom. */
   httpUrl: () =>
-    z.string().url().refine((u) => /^https?:\/\//iu.test(u), { message: 'URL deve iniziare con http:// o https://' }),
+    z
+      .string()
+      .url()
+      .refine((u) => /^https?:\/\//iu.test(u), {
+        message: 'URL deve iniziare con http:// o https://',
+      }),
 
   /** Booleano permissivo (accetta 'true'/'false' string). */
   boolish: (defaultValue = false) =>
-    z.union([z.boolean(), z.literal('true').transform(() => true), z.literal('false').transform(() => false)]).default(defaultValue),
+    z
+      .union([
+        z.boolean(),
+        z.literal('true').transform(() => true),
+        z.literal('false').transform(() => false),
+      ])
+      .default(defaultValue),
 
   /** Key-value JSON string → Record<string,string>. Vuoto o invalido → {}. */
   kvJsonString: () =>
-    z.string().optional().default('').transform((raw): Record<string, string> => {
-      if (!raw || raw.trim() === '') return {};
-      try {
-        const parsed: unknown = JSON.parse(raw);
-        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
-        const out: Record<string, string> = {};
-        for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
-          out[k] = String(v);
+    z
+      .string()
+      .optional()
+      .default('')
+      .transform((raw): Record<string, string> => {
+        if (!raw || raw.trim() === '') return {};
+        try {
+          const parsed: unknown = JSON.parse(raw);
+          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+          const out: Record<string, string> = {};
+          for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+            out[k] = String(v);
+          }
+          return out;
+        } catch {
+          return {};
         }
-        return out;
-      } catch {
-        return {};
-      }
-    }),
+      }),
 };

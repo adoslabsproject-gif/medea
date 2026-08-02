@@ -8,8 +8,20 @@ import { describe, it, expect } from 'vitest';
 import { PostgresAdapter } from './index.js';
 
 const FK_ROWS = [
-  { from_table: 'orders', from_column: 'user_id', to_table: 'users', to_column: 'id', on_delete: 'CASCADE' },
-  { from_table: 'orders', from_column: 'shop_id', to_table: 'shops', to_column: 'id', on_delete: 'SET NULL' },
+  {
+    from_table: 'orders',
+    from_column: 'user_id',
+    to_table: 'users',
+    to_column: 'id',
+    on_delete: 'CASCADE',
+  },
+  {
+    from_table: 'orders',
+    from_column: 'shop_id',
+    to_table: 'shops',
+    to_column: 'id',
+    on_delete: 'SET NULL',
+  },
 ];
 
 function adapterWithSql(rows: unknown[]): { adapter: PostgresAdapter; query: () => string } {
@@ -28,8 +40,21 @@ describe('PostgresAdapter.introspectRelations — mapping', () => {
     const { adapter } = adapterWithSql(FK_ROWS);
     const rels = await adapter.introspectRelations();
     expect(rels).toHaveLength(2);
-    expect(rels[0]).toMatchObject({ fromTable: 'orders', fromColumn: 'user_id', toTable: 'users', toColumn: 'id', onDelete: 'cascade', kind: 'one-to-many' });
-    expect(rels[1]).toMatchObject({ fromTable: 'orders', fromColumn: 'shop_id', toTable: 'shops', toColumn: 'id', onDelete: 'set null' });
+    expect(rels[0]).toMatchObject({
+      fromTable: 'orders',
+      fromColumn: 'user_id',
+      toTable: 'users',
+      toColumn: 'id',
+      onDelete: 'cascade',
+      kind: 'one-to-many',
+    });
+    expect(rels[1]).toMatchObject({
+      fromTable: 'orders',
+      fromColumn: 'shop_id',
+      toTable: 'shops',
+      toColumn: 'id',
+      onDelete: 'set null',
+    });
   });
 
   it('la query interroga information_schema per le FOREIGN KEY (composite-safe)', async () => {
@@ -48,7 +73,9 @@ describe('PostgresAdapter.introspectRelations — mapping', () => {
 
 describe('PostgresAdapter — rename_column', () => {
   it('ALTER TABLE RENAME COLUMN nativo', async () => {
-    const sql = await new PostgresAdapter().previewMigration([{ kind: 'rename_column', tableName: 'users', from: 'name', to: 'full_name' }]);
+    const sql = await new PostgresAdapter().previewMigration([
+      { kind: 'rename_column', tableName: 'users', from: 'name', to: 'full_name' },
+    ]);
     expect(sql).toMatch(/ALTER TABLE "users" RENAME COLUMN "name" TO "full_name"/u);
   });
 });

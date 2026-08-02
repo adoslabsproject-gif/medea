@@ -96,7 +96,11 @@ vi.mock('@/storage/db.js', () => ({
     // reale è mockato via outbox-writer sotto).
     sqlite: {
       transaction: (fn: (...a: unknown[]) => unknown) => fn,
-      prepare: () => ({ run: () => ({ changes: 0, lastInsertRowid: 0 }), get: () => undefined, all: () => [] }),
+      prepare: () => ({
+        run: () => ({ changes: 0, lastInsertRowid: 0 }),
+        get: () => undefined,
+        all: () => [],
+      }),
       exec: () => undefined,
     },
   }),
@@ -165,7 +169,7 @@ vi.mock('@/lib/logger.js');
 // altri test). WorkspaceReadOnlyError resta quello reale.
 const roState = vi.hoisted(() => ({ readOnly: false }));
 vi.mock('./readonly-flag.service.js', async (orig) => {
-  const actual = await orig() as typeof ReadonlyFlagServiceNS;
+  const actual = (await orig()) as typeof ReadonlyFlagServiceNS;
   return { ...actual, isWorkspaceReadOnly: () => roState.readOnly };
 });
 
@@ -188,7 +192,13 @@ describe('#208 P0-9 — RunService.cancel() await audit', () => {
   it('cancel su orphan run (no token in memory, row running) → await audit + return cancelled', async () => {
     // Row in DB → status='running' (orphan): force-mark cancelled + audit append.
     m.select.mockResolvedValueOnce([
-      { id: 'run-1', tenantId: 'tenant-1', status: 'running', startedAt: new Date().toISOString(), workflowId: 'wf-1' },
+      {
+        id: 'run-1',
+        tenantId: 'tenant-1',
+        status: 'running',
+        startedAt: new Date().toISOString(),
+        workflowId: 'wf-1',
+      },
     ]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
@@ -199,12 +209,14 @@ describe('#208 P0-9 — RunService.cancel() await audit', () => {
     const r = await svc.cancel('run-1', 'tenant-1');
     expect(r.found).toBe(true);
     expect(r.status).toBe('cancelled');
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'run.cancel',
-      resourceType: 'run',
-      resourceId: 'run-1',
-      metadata: expect.objectContaining({ source: 'api', orphan: true }),
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'run.cancel',
+        resourceType: 'run',
+        resourceId: 'run-1',
+        metadata: expect.objectContaining({ source: 'api', orphan: true }),
+      }),
+    );
     // DB update chiamato per il force-mark
     expect(m.update).toHaveBeenCalled();
   });
@@ -213,7 +225,9 @@ describe('#208 P0-9 — RunService.cancel() await audit', () => {
     m.select.mockResolvedValueOnce([]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
     const r = await svc.cancel('run-missing', 'tenant-1');
     expect(r.found).toBe(false);
@@ -222,11 +236,18 @@ describe('#208 P0-9 — RunService.cancel() await audit', () => {
 
   it('cancel su run già terminale (status=success) → alreadyDone:true, NO audit', async () => {
     m.select.mockResolvedValueOnce([
-      { id: 'run-done', tenantId: 'tenant-1', status: 'success', startedAt: new Date().toISOString() },
+      {
+        id: 'run-done',
+        tenantId: 'tenant-1',
+        status: 'success',
+        startedAt: new Date().toISOString(),
+      },
     ]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
     const r = await svc.cancel('run-done', 'tenant-1');
     expect(r.alreadyDone).toBe(true);
@@ -236,12 +257,20 @@ describe('#208 P0-9 — RunService.cancel() await audit', () => {
 
   it('cancel orphan con audit rejection → throw propagato (no swallow)', async () => {
     m.select.mockResolvedValueOnce([
-      { id: 'run-2', tenantId: 'tenant-1', status: 'running', startedAt: new Date().toISOString(), workflowId: 'wf-2' },
+      {
+        id: 'run-2',
+        tenantId: 'tenant-1',
+        status: 'running',
+        startedAt: new Date().toISOString(),
+        workflowId: 'wf-2',
+      },
     ]);
     m.auditAppend.mockRejectedValueOnce(new Error('audit chain broken'));
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
     await expect(svc.cancel('run-2', 'tenant-1')).rejects.toThrow(/audit chain broken/);
   });
@@ -255,7 +284,9 @@ describe('RunService — lifecycle execute()', () => {
     // workflow not found → throw (path testabile senza far girare engine)
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
     await expect(svc.execute({ workflowId: 'wf-missing' })).rejects.toThrow(/not found/);
   });
@@ -267,7 +298,9 @@ describe('RunService — lifecycle execute()', () => {
     const svc = new RunService({ emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn() } as never);
     // Anche con un workflow ESISTENTE l'esecuzione è bloccata PRIMA: il gate è in
     // cima a executeWithPins → blocca manual/scheduled/triggered/resume uniformemente.
-    await expect(svc.execute({ workflowId: 'wf-any', tenantId: 'default' })).rejects.toBeInstanceOf(WorkspaceReadOnlyError);
+    await expect(svc.execute({ workflowId: 'wf-any', tenantId: 'default' })).rejects.toBeInstanceOf(
+      WorkspaceReadOnlyError,
+    );
   });
 
   it('🔒 Layer 2: il gate read-only precede il check "workflow not found" (blocco totale)', async () => {
@@ -275,16 +308,21 @@ describe('RunService — lifecycle execute()', () => {
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({ emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn() } as never);
     // wf-missing normalmente → /not found/. In read-only → WORKSPACE_READ_ONLY prima.
-    await expect(svc.execute({ workflowId: 'wf-missing' })).rejects.toThrow(/sola lettura|read-only|WORKSPACE_READ_ONLY/i);
+    await expect(svc.execute({ workflowId: 'wf-missing' })).rejects.toThrow(
+      /sola lettura|read-only|WORKSPACE_READ_ONLY/i,
+    );
   });
 
   it('execute throws se workflow non trovato (tenant isolation defense)', async () => {
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
-    await expect(svc.execute({ workflowId: 'wf-other-tenant', tenantId: 'tenant-a' }))
-      .rejects.toThrow(/Workflow wf-other-tenant not found/);
+    await expect(
+      svc.execute({ workflowId: 'wf-other-tenant', tenantId: 'tenant-a' }),
+    ).rejects.toThrow(/Workflow wf-other-tenant not found/);
   });
 });
 
@@ -317,7 +355,11 @@ describe('RunService — ephemeralRuns: niente INSERT/UPDATE/audit', () => {
     setupEphemeralWorkflow();
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(() => () => { /* unsub */ }),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(() => () => {
+        /* unsub */
+      }),
     } as never);
     const res = await svc.execute({ workflowId: 'wf-stream-proxy', tenantId: 'default' });
     expect(m.engineRun).toHaveBeenCalledTimes(1);
@@ -326,10 +368,14 @@ describe('RunService — ephemeralRuns: niente INSERT/UPDATE/audit', () => {
 
   it('ephemeralRuns=true → eventBus.subscribeTo("run.step") NON viene chiamato (no accumulator)', async () => {
     setupEphemeralWorkflow();
-    const subscribeTo = vi.fn(() => () => { /* unsub */ });
+    const subscribeTo = vi.fn(() => () => {
+      /* unsub */
+    });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo,
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo,
     } as never);
     await svc.execute({ workflowId: 'wf-stream-proxy', tenantId: 'default' });
     expect(subscribeTo).not.toHaveBeenCalled();
@@ -339,7 +385,11 @@ describe('RunService — ephemeralRuns: niente INSERT/UPDATE/audit', () => {
     setupEphemeralWorkflow();
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(() => () => { /* unsub */ }),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(() => () => {
+        /* unsub */
+      }),
     } as never);
     await svc.execute({ workflowId: 'wf-stream-proxy', tenantId: 'default' });
     expect(m.auditAppend).not.toHaveBeenCalled();
@@ -347,16 +397,28 @@ describe('RunService — ephemeralRuns: niente INSERT/UPDATE/audit', () => {
 
   it('runVerbosity=silent → equivalente di ephemeralRuns=true (back-compat moderno)', async () => {
     m.workflowGet.mockResolvedValueOnce({
-      id: 'wf-silent', name: 'X', nodes: [], edges: [], enabled: true,
+      id: 'wf-silent',
+      name: 'X',
+      nodes: [],
+      edges: [],
+      enabled: true,
       runVerbosity: 'silent',
     });
     m.engineRun.mockResolvedValueOnce({
-      runId: 'r-1', status: 'success', steps: [], errorCount: 0, totalDurationMs: 1,
+      runId: 'r-1',
+      status: 'success',
+      steps: [],
+      errorCount: 0,
+      totalDurationMs: 1,
     });
-    const subscribeTo = vi.fn(() => () => { /* unsub */ });
+    const subscribeTo = vi.fn(() => () => {
+      /* unsub */
+    });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo,
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo,
     } as never);
     await svc.execute({ workflowId: 'wf-silent', tenantId: 'default' });
     expect(subscribeTo).not.toHaveBeenCalled();
@@ -365,22 +427,44 @@ describe('RunService — ephemeralRuns: niente INSERT/UPDATE/audit', () => {
 
   it('runVerbosity=summary → INSERT row + audit, ma steps_json trimmed (no input/output)', async () => {
     m.workflowGet.mockResolvedValueOnce({
-      id: 'wf-summary', name: 'X', nodes: [], edges: [], enabled: true,
+      id: 'wf-summary',
+      name: 'X',
+      nodes: [],
+      edges: [],
+      enabled: true,
       runVerbosity: 'summary',
     });
     m.engineRun.mockResolvedValueOnce({
-      runId: 'r-1', status: 'success',
+      runId: 'r-1',
+      status: 'success',
       steps: [
-        { nodeId: 'a', status: 'success', durationMs: 12, errorCount: 0,
-          input: '<unserializable>', output: 'AAA'.repeat(10000) },
-        { nodeId: 'b', status: 'success', durationMs: 7, errorCount: 0,
-          input: 'pesante', output: 'BBB'.repeat(10000) },
+        {
+          nodeId: 'a',
+          status: 'success',
+          durationMs: 12,
+          errorCount: 0,
+          input: '<unserializable>',
+          output: 'AAA'.repeat(10000),
+        },
+        {
+          nodeId: 'b',
+          status: 'success',
+          durationMs: 7,
+          errorCount: 0,
+          input: 'pesante',
+          output: 'BBB'.repeat(10000),
+        },
       ],
-      errorCount: 0, totalDurationMs: 19,
+      errorCount: 0,
+      totalDurationMs: 19,
     });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(() => () => { /* unsub */ }),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(() => () => {
+        /* unsub */
+      }),
     } as never);
     await svc.execute({ workflowId: 'wf-summary', tenantId: 'default' });
     // summary mode: audit chiamato (riga in `runs` esiste), m.update chiamato
@@ -391,18 +475,35 @@ describe('RunService — ephemeralRuns: niente INSERT/UPDATE/audit', () => {
 
   it('runVerbosity=full → comportamento storico (steps completi con input/output)', async () => {
     m.workflowGet.mockResolvedValueOnce({
-      id: 'wf-full', name: 'X', nodes: [], edges: [], enabled: true,
+      id: 'wf-full',
+      name: 'X',
+      nodes: [],
+      edges: [],
+      enabled: true,
       runVerbosity: 'full',
     });
     m.engineRun.mockResolvedValueOnce({
-      runId: 'r-1', status: 'success',
-      steps: [{ nodeId: 'a', status: 'success', durationMs: 5, errorCount: 0,
-        output: 'payload-grande-completo' }],
-      errorCount: 0, totalDurationMs: 5,
+      runId: 'r-1',
+      status: 'success',
+      steps: [
+        {
+          nodeId: 'a',
+          status: 'success',
+          durationMs: 5,
+          errorCount: 0,
+          output: 'payload-grande-completo',
+        },
+      ],
+      errorCount: 0,
+      totalDurationMs: 5,
     });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(() => () => { /* unsub */ }),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(() => () => {
+        /* unsub */
+      }),
     } as never);
     await svc.execute({ workflowId: 'wf-full', tenantId: 'default' });
     expect(m.auditAppend).toHaveBeenCalledTimes(1);
@@ -414,8 +515,14 @@ describe('RunService — ephemeralRuns: niente INSERT/UPDATE/audit', () => {
     // Verifica la funzione interna `trimStep` esercitando il comportamento
     // via JSON.stringify del payload trim-ato e di quello full.
     const steps = [
-      { nodeId: 'a', status: 'success', durationMs: 12, errorCount: 0,
-        input: 'pesante', output: 'AAA'.repeat(100) },
+      {
+        nodeId: 'a',
+        status: 'success',
+        durationMs: 12,
+        errorCount: 0,
+        input: 'pesante',
+        output: 'AAA'.repeat(100),
+      },
     ];
     // Riproduce la logica del trimStep esposta nel service (test contract).
     const trimmed = steps.map((s) => {
@@ -436,17 +543,29 @@ describe('RunService — ephemeralRuns: niente INSERT/UPDATE/audit', () => {
 
   it('runVerbosity NULL + ephemeralRuns=true → silent (back-compat)', async () => {
     m.workflowGet.mockResolvedValueOnce({
-      id: 'wf-backcompat', name: 'X', nodes: [], edges: [], enabled: true,
+      id: 'wf-backcompat',
+      name: 'X',
+      nodes: [],
+      edges: [],
+      enabled: true,
       ephemeralRuns: true,
       // runVerbosity intenzionalmente undefined → fallback su ephemeralRuns
     });
     m.engineRun.mockResolvedValueOnce({
-      runId: 'r-1', status: 'success', steps: [], errorCount: 0, totalDurationMs: 1,
+      runId: 'r-1',
+      status: 'success',
+      steps: [],
+      errorCount: 0,
+      totalDurationMs: 1,
     });
-    const subscribeTo = vi.fn(() => () => { /* unsub */ });
+    const subscribeTo = vi.fn(() => () => {
+      /* unsub */
+    });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo,
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo,
     } as never);
     await svc.execute({ workflowId: 'wf-backcompat', tenantId: 'default' });
     // Comportamento silent: subscribe non chiamato
@@ -463,12 +582,20 @@ describe('RunService — ephemeralRuns: niente INSERT/UPDATE/audit', () => {
       // ephemeralRuns undefined → trackRun=true
     });
     m.engineRun.mockResolvedValueOnce({
-      runId: 'r-1', status: 'success', steps: [], errorCount: 0, totalDurationMs: 1,
+      runId: 'r-1',
+      status: 'success',
+      steps: [],
+      errorCount: 0,
+      totalDurationMs: 1,
     });
-    const subscribeTo = vi.fn(() => () => { /* unsub */ });
+    const subscribeTo = vi.fn(() => () => {
+      /* unsub */
+    });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo,
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo,
     } as never);
     await svc.execute({ workflowId: 'wf-normal', tenantId: 'default' });
     expect(subscribeTo).toHaveBeenCalledTimes(1);
@@ -483,12 +610,15 @@ describe('RunService.cancel — active token branch', () => {
   it('returns alreadyDone:true se controller già aborted (idempotent)', async () => {
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
     // Inject token già aborted via static map (defense-in-depth: testiamo il
     // branch idempotent)
-     
-    const tokens = (RunService as unknown as { cancelTokens: Map<string, AbortController> }).cancelTokens;
+
+    const tokens = (RunService as unknown as { cancelTokens: Map<string, AbortController> })
+      .cancelTokens;
     const ctrl = new AbortController();
     ctrl.abort();
     tokens.set('run-active', ctrl);
@@ -504,9 +634,12 @@ describe('RunService.cancel — active token branch', () => {
   it('abort controller + await audit + return cancelling (status=cancelling)', async () => {
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
-    const tokens = (RunService as unknown as { cancelTokens: Map<string, AbortController> }).cancelTokens;
+    const tokens = (RunService as unknown as { cancelTokens: Map<string, AbortController> })
+      .cancelTokens;
     const ctrl = new AbortController();
     tokens.set('run-live', ctrl);
 
@@ -514,11 +647,13 @@ describe('RunService.cancel — active token branch', () => {
     expect(ctrl.signal.aborted).toBe(true);
     expect(r.status).toBe('cancelling');
     expect(r.alreadyDone).toBe(false);
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'run.cancel',
-      resourceId: 'run-live',
-      metadata: expect.objectContaining({ source: 'api' }),
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'run.cancel',
+        resourceId: 'run-live',
+        metadata: expect.objectContaining({ source: 'api' }),
+      }),
+    );
     // metadata.orphan NON deve esserci per active branch
     const call = m.auditAppend.mock.calls[0]?.[0] as { metadata?: Record<string, unknown> };
     expect(call?.metadata?.orphan).toBeUndefined();
@@ -532,11 +667,18 @@ describe('RunService.cancel — active token branch', () => {
 describe('RunService.cancel — terminal status idempotency', () => {
   it('partial status → alreadyDone, NO audit', async () => {
     m.select.mockResolvedValueOnce([
-      { id: 'run-partial', tenantId: 'tenant-1', status: 'partial', startedAt: new Date().toISOString() },
+      {
+        id: 'run-partial',
+        tenantId: 'tenant-1',
+        status: 'partial',
+        startedAt: new Date().toISOString(),
+      },
     ]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
     const r = await svc.cancel('run-partial', 'tenant-1');
     expect(r.alreadyDone).toBe(true);
@@ -550,7 +692,9 @@ describe('RunService.cancel — terminal status idempotency', () => {
     ]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
     const r = await svc.cancel('run-err', 'tenant-1');
     expect(r.alreadyDone).toBe(true);
@@ -559,11 +703,18 @@ describe('RunService.cancel — terminal status idempotency', () => {
 
   it('cancelled status → alreadyDone, NO audit (idempotent double-cancel)', async () => {
     m.select.mockResolvedValueOnce([
-      { id: 'run-c', tenantId: 'tenant-1', status: 'cancelled', startedAt: new Date().toISOString() },
+      {
+        id: 'run-c',
+        tenantId: 'tenant-1',
+        status: 'cancelled',
+        startedAt: new Date().toISOString(),
+      },
     ]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
     const r = await svc.cancel('run-c', 'tenant-1');
     expect(r.alreadyDone).toBe(true);
@@ -575,7 +726,9 @@ describe('RunService.cancel — terminal status idempotency', () => {
     ]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
     const r = await svc.cancel('run-p', 'tenant-1');
     expect(r.alreadyDone).toBe(true);
@@ -587,7 +740,9 @@ describe('RunService.cancel — terminal status idempotency', () => {
     m.select.mockResolvedValueOnce([]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
     const r = await svc.cancel('run-other-tenant', 'tenant-wrong');
     expect(r.found).toBe(false);
@@ -600,25 +755,37 @@ describe('RunService.cancel — terminal status idempotency', () => {
 describe('RunService.cancel — event bus emission', () => {
   it('emit run.cancelled su orphan branch', async () => {
     m.select.mockResolvedValueOnce([
-      { id: 'run-orphan', tenantId: 'tenant-1', status: 'running', workflowId: 'wf-1', startedAt: new Date().toISOString() },
+      {
+        id: 'run-orphan',
+        tenantId: 'tenant-1',
+        status: 'running',
+        workflowId: 'wf-1',
+        startedAt: new Date().toISOString(),
+      },
     ]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
     await svc.cancel('run-orphan', 'tenant-1');
-    expect(m.emit).toHaveBeenCalledWith(expect.objectContaining({
-      name: 'run.cancelled',
-      tenantId: 'tenant-1',
-      data: expect.objectContaining({ runId: 'run-orphan', workflowId: 'wf-1', orphan: true }),
-    }));
+    expect(m.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'run.cancelled',
+        tenantId: 'tenant-1',
+        data: expect.objectContaining({ runId: 'run-orphan', workflowId: 'wf-1', orphan: true }),
+      }),
+    );
   });
 
   it('NO event emit su run inesistente', async () => {
     m.select.mockResolvedValueOnce([]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
     await svc.cancel('run-x', 'tenant-1');
     expect(m.emit).not.toHaveBeenCalled();
@@ -626,11 +793,18 @@ describe('RunService.cancel — event bus emission', () => {
 
   it('NO event emit su already-terminal', async () => {
     m.select.mockResolvedValueOnce([
-      { id: 'run-done', tenantId: 'tenant-1', status: 'success', startedAt: new Date().toISOString() },
+      {
+        id: 'run-done',
+        tenantId: 'tenant-1',
+        status: 'success',
+        startedAt: new Date().toISOString(),
+      },
     ]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
     await svc.cancel('run-done', 'tenant-1');
     expect(m.emit).not.toHaveBeenCalled();
@@ -645,7 +819,9 @@ describe('RunService.replay', () => {
     m.select.mockResolvedValueOnce([]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
     await expect(svc.replay('run-x', {})).rejects.toThrow(/Run run-x not found/);
   });
@@ -664,28 +840,31 @@ describe('RunService.replay', () => {
     ]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
     // Workflow get returns null → executeWithPins throws
     await expect(svc.replay('run-1', {})).rejects.toThrow(/Workflow wf-deleted not found/);
   });
 
   it('replay default usa tenantId dal prior run row (no opts.tenantId)', async () => {
-    m.select
-      .mockResolvedValueOnce([
-        {
-          id: 'run-1',
-          tenantId: 'tenant-from-row',
-          workflowId: 'wf-deleted',
-          status: 'success',
-          stepsJson: '[]',
-          input: 'null',
-          startedAt: new Date().toISOString(),
-        },
-      ]);
+    m.select.mockResolvedValueOnce([
+      {
+        id: 'run-1',
+        tenantId: 'tenant-from-row',
+        workflowId: 'wf-deleted',
+        status: 'success',
+        stepsJson: '[]',
+        input: 'null',
+        startedAt: new Date().toISOString(),
+      },
+    ]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(),
     } as never);
     // Pop next workflow.get → null per testare l'errore con tenantId derivato
     await expect(svc.replay('run-1', {})).rejects.toThrow(/Workflow wf-deleted not found/);
@@ -698,7 +877,8 @@ describe('RunService.replay', () => {
 describe('RunService — static state guards', () => {
   it('cancelTokens map exists (singleton state)', async () => {
     const { RunService } = await import('./run.service.js');
-    const tokens = (RunService as unknown as { cancelTokens: Map<string, AbortController> }).cancelTokens;
+    const tokens = (RunService as unknown as { cancelTokens: Map<string, AbortController> })
+      .cancelTokens;
     expect(tokens).toBeInstanceOf(Map);
   });
 
@@ -712,7 +892,16 @@ describe('RunService — static state guards', () => {
 // ════════════════════════════════════════════════════════════════════
 // executeWithPins — full lifecycle con engine.run mockato
 // ════════════════════════════════════════════════════════════════════
-function makeWorkflow(over: Partial<{ id: string; concurrencyLimit: number; nodes: unknown[]; edges: unknown[]; runVerbosity: 'silent' | 'summary' | 'full'; ephemeralRuns: boolean }> = {}) {
+function makeWorkflow(
+  over: Partial<{
+    id: string;
+    concurrencyLimit: number;
+    nodes: unknown[];
+    edges: unknown[];
+    runVerbosity: 'silent' | 'summary' | 'full';
+    ephemeralRuns: boolean;
+  }> = {},
+) {
   return {
     id: over.id ?? 'wf-test',
     name: 'Test WF',
@@ -733,29 +922,41 @@ describe('RunService.executeWithPins — lifecycle paths', () => {
   it('SUCCESS path: engine ritorna success → status mapped + checkpoint purge + audit', async () => {
     m.workflowGet.mockResolvedValue(makeWorkflow({ id: 'wf-1' }));
     m.engineRun.mockResolvedValue({
-      runId: 'r-1', status: 'success', steps: [], totalDurationMs: 100, errorCount: 0,
+      runId: 'r-1',
+      status: 'success',
+      steps: [],
+      totalDurationMs: 100,
+      errorCount: 0,
     });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     const res = await svc.execute({ workflowId: 'wf-1', tenantId: 't' });
     expect(res.status).toBe('success');
     expect(m.checkpointsPurge).toHaveBeenCalledWith('r-1');
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'workflow.run',
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'workflow.run',
+      }),
+    );
   });
 
   it('PARTIAL path: errorCount>0 → status forced "partial" (truthful, no fake success)', async () => {
     m.workflowGet.mockResolvedValue(makeWorkflow({ id: 'wf-2' }));
     m.engineRun.mockResolvedValue({
-      runId: 'r-2', status: 'success', steps: [{ nodeId: 'n1', status: 'error', error: 'fail' }], totalDurationMs: 50, errorCount: 1,
+      runId: 'r-2',
+      status: 'success',
+      steps: [{ nodeId: 'n1', status: 'error', error: 'fail' }],
+      totalDurationMs: 50,
+      errorCount: 1,
     });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     const res = await svc.execute({ workflowId: 'wf-2' });
@@ -770,7 +971,8 @@ describe('RunService.executeWithPins — lifecycle paths', () => {
     m.engineRun.mockRejectedValue(new Error('engine crash'));
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await expect(svc.execute({ workflowId: 'wf-err' })).rejects.toThrow(/engine crash/);
@@ -781,14 +983,17 @@ describe('RunService.executeWithPins — lifecycle paths', () => {
     m.engineRun.mockRejectedValue(Object.assign(new Error('aborted'), { name: 'AbortError' }));
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     const res = await svc.execute({ workflowId: 'wf-abort' });
     expect(res.status).toBe('cancelled');
-    expect(m.emit).toHaveBeenCalledWith(expect.objectContaining({
-      name: 'run.cancelled',
-    }));
+    expect(m.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'run.cancelled',
+      }),
+    );
   });
 
   it('CONCURRENCY LIMIT: throw se inflight >= limit', async () => {
@@ -798,22 +1003,29 @@ describe('RunService.executeWithPins — lifecycle paths', () => {
     const inflight = (RunService as unknown as { inflight: Map<string, number> }).inflight;
     inflight.set('t-cap:wf-cap', 1);
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
-    await expect(svc.execute({ workflowId: 'wf-cap', tenantId: 't-cap' }))
-      .rejects.toThrow(/concurrent-run limit/);
+    await expect(svc.execute({ workflowId: 'wf-cap', tenantId: 't-cap' })).rejects.toThrow(
+      /concurrent-run limit/,
+    );
     inflight.delete('t-cap:wf-cap');
   });
 
   it('PAUSED path: engine ritorna paused → endedAt=null (no purge)', async () => {
     m.workflowGet.mockResolvedValue(makeWorkflow({ id: 'wf-pause' }));
     m.engineRun.mockResolvedValue({
-      runId: 'r-pause', status: 'paused', steps: [], totalDurationMs: 30, errorCount: 0,
+      runId: 'r-pause',
+      status: 'paused',
+      steps: [],
+      totalDurationMs: 30,
+      errorCount: 0,
     });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     const res = await svc.execute({ workflowId: 'wf-pause' });
@@ -824,11 +1036,16 @@ describe('RunService.executeWithPins — lifecycle paths', () => {
   it('subworkflowDepth propagato a engine.run via opts', async () => {
     m.workflowGet.mockResolvedValue(makeWorkflow({ id: 'wf-sub' }));
     m.engineRun.mockResolvedValue({
-      runId: 'r-sub', status: 'success', steps: [], totalDurationMs: 5, errorCount: 0,
+      runId: 'r-sub',
+      status: 'success',
+      steps: [],
+      totalDurationMs: 5,
+      errorCount: 0,
     });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.execute({ workflowId: 'wf-sub', subworkflowDepth: 3 });
@@ -838,10 +1055,17 @@ describe('RunService.executeWithPins — lifecycle paths', () => {
 
   it('triggerInput string passato as-is, non-string JSON.stringified', async () => {
     m.workflowGet.mockResolvedValue(makeWorkflow({ id: 'wf-trig' }));
-    m.engineRun.mockResolvedValue({ runId: 'r', status: 'success', steps: [], totalDurationMs: 0, errorCount: 0 });
+    m.engineRun.mockResolvedValue({
+      runId: 'r',
+      status: 'success',
+      steps: [],
+      totalDurationMs: 0,
+      errorCount: 0,
+    });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.execute({ workflowId: 'wf-trig', triggerInput: { x: 1 } });
@@ -855,10 +1079,16 @@ describe('RunService.executeWithPins — lifecycle paths', () => {
 describe('RunService.startAsync', () => {
   it('ritorna runId IMMEDIATAMENTE con status=running', async () => {
     m.workflowGet.mockResolvedValue(makeWorkflow({ id: 'wf-async' }));
-    m.engineRun.mockImplementation(() => new Promise(() => { /* never resolve */ }));
+    m.engineRun.mockImplementation(
+      () =>
+        new Promise(() => {
+          /* never resolve */
+        }),
+    );
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     const res = await svc.startAsync({ workflowId: 'wf-async' });
@@ -873,30 +1103,49 @@ describe('RunService.startAsync', () => {
 // ════════════════════════════════════════════════════════════════════
 describe('RunService.startAsync — queue mode (MEDEA_QUEUE_MODE=redis)', () => {
   const savedMode = process.env.MEDEA_QUEUE_MODE;
-  beforeEach(() => { process.env.MEDEA_QUEUE_MODE = 'redis'; });
+  beforeEach(() => {
+    process.env.MEDEA_QUEUE_MODE = 'redis';
+  });
   afterAll(() => {
     if (savedMode === undefined) delete process.env.MEDEA_QUEUE_MODE;
     else process.env.MEDEA_QUEUE_MODE = savedMode;
   });
 
-  function makeSvc(RunService: new (bus: unknown) => { startAsync: (i: unknown) => Promise<{ runId: string; status: string }> }) {
-    return new RunService({ emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(() => () => undefined) });
+  function makeSvc(
+    RunService: new (bus: unknown) => {
+      startAsync: (i: unknown) => Promise<{ runId: string; status: string }>;
+    },
+  ) {
+    return new RunService({
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(() => () => undefined),
+    });
   }
 
   it('🚨 NON esegue inline: inserisce una row pending + accoda, ritorna status=pending', async () => {
     m.workflowGet.mockResolvedValue(makeWorkflow({ id: 'wf-q' }));
     const { RunService } = await import('./run.service.js');
     const svc = makeSvc(RunService as never);
-    const res = await svc.startAsync({ workflowId: 'wf-q', tenantId: 't-q', triggerType: 'manual', triggeredBy: 'u-q' });
+    const res = await svc.startAsync({
+      workflowId: 'wf-q',
+      tenantId: 't-q',
+      triggerType: 'manual',
+      triggeredBy: 'u-q',
+    });
 
     expect(res.status).toBe('pending');
     expect(res.runId).toBeDefined();
     // engine NON deve essere stato chiamato (esecuzione delegata al worker)
     expect(m.engineRun).not.toHaveBeenCalled();
     // row pending inserita con lo stesso runId
-    expect(m.insertValues).toHaveBeenCalledWith(expect.objectContaining({ id: res.runId, status: 'pending', workflowId: 'wf-q' }));
+    expect(m.insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({ id: res.runId, status: 'pending', workflowId: 'wf-q' }),
+    );
     // job accodato con lo stesso runId
-    expect(m.enqueueRun).toHaveBeenCalledWith(expect.objectContaining({ runId: res.runId, workflowId: 'wf-q', tenantId: 't-q' }));
+    expect(m.enqueueRun).toHaveBeenCalledWith(
+      expect.objectContaining({ runId: res.runId, workflowId: 'wf-q', tenantId: 't-q' }),
+    );
   });
 
   it('🚨 workflow inesistente → throw PRIMA di accodare (404 sincrono, niente job orfano)', async () => {
@@ -935,9 +1184,11 @@ describe('RunService.startAsync — queue mode (MEDEA_QUEUE_MODE=redis)', () => 
 // ════════════════════════════════════════════════════════════════════
 describe('RunService.replay — pinning + tenant', () => {
   it('replay con fromStep pinna steps[0..N-1] success', async () => {
-    m.select
-      .mockResolvedValueOnce([{
-        id: 'r-prior', tenantId: 't', workflowId: 'wf-prior',
+    m.select.mockResolvedValueOnce([
+      {
+        id: 'r-prior',
+        tenantId: 't',
+        workflowId: 'wf-prior',
         stepsJson: JSON.stringify([
           { nodeId: 'n1', output: '{"v":1}', status: 'success' },
           { nodeId: 'n2', output: '{"v":2}', status: 'success' },
@@ -945,12 +1196,20 @@ describe('RunService.replay — pinning + tenant', () => {
         ]),
         input: '{"trigger":1}',
         startedAt: new Date().toISOString(),
-      }]);
+      },
+    ]);
     m.workflowGet.mockResolvedValue(makeWorkflow({ id: 'wf-prior' }));
-    m.engineRun.mockResolvedValue({ runId: 'r-new', status: 'success', steps: [], totalDurationMs: 10, errorCount: 0 });
+    m.engineRun.mockResolvedValue({
+      runId: 'r-new',
+      status: 'success',
+      steps: [],
+      totalDurationMs: 10,
+      errorCount: 0,
+    });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.replay('r-prior', { fromStep: 2 });
@@ -961,10 +1220,12 @@ describe('RunService.replay — pinning + tenant', () => {
   });
 
   // D2 (2026-06-06): replay UX-friendly per nodeId — editor "Re-esegui da qui"
-  it('replay con fromNodeId → risolve a fromStep dell\'indice del nodeId', async () => {
-    m.select
-      .mockResolvedValueOnce([{
-        id: 'r-prior', tenantId: 't', workflowId: 'wf-prior',
+  it("replay con fromNodeId → risolve a fromStep dell'indice del nodeId", async () => {
+    m.select.mockResolvedValueOnce([
+      {
+        id: 'r-prior',
+        tenantId: 't',
+        workflowId: 'wf-prior',
         stepsJson: JSON.stringify([
           { nodeId: 'http_a', output: '{"v":1}', status: 'success' },
           { nodeId: 'parse_b', output: '{"v":2}', status: 'success' },
@@ -972,17 +1233,28 @@ describe('RunService.replay — pinning + tenant', () => {
         ]),
         input: '{"trigger":1}',
         startedAt: new Date().toISOString(),
-      }]);
+      },
+    ]);
     m.workflowGet.mockResolvedValue(makeWorkflow({ id: 'wf-prior' }));
-    m.engineRun.mockResolvedValue({ runId: 'r-new', status: 'success', steps: [], totalDurationMs: 10, errorCount: 0 });
+    m.engineRun.mockResolvedValue({
+      runId: 'r-new',
+      status: 'success',
+      steps: [],
+      totalDurationMs: 10,
+      errorCount: 0,
+    });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     // "send_c" è index 2 → pinna [0,1] (http_a, parse_b)
     await svc.replay('r-prior', { fromNodeId: 'send_c' });
-    const args = m.engineRun.mock.calls[0]?.[0] as { pinnedOutputs?: Map<string, unknown>; triggeredBy?: string };
+    const args = m.engineRun.mock.calls[0]?.[0] as {
+      pinnedOutputs?: Map<string, unknown>;
+      triggeredBy?: string;
+    };
     expect(args.pinnedOutputs?.size).toBe(2);
     expect(args.pinnedOutputs?.get('http_a')).toEqual({ v: 1 });
     expect(args.pinnedOutputs?.get('parse_b')).toEqual({ v: 2 });
@@ -990,32 +1262,50 @@ describe('RunService.replay — pinning + tenant', () => {
   });
 
   it('replay con fromNodeId mancante in history → throw chiaro', async () => {
-    m.select.mockResolvedValueOnce([{
-      id: 'r-prior', tenantId: 't', workflowId: 'wf-prior',
-      stepsJson: JSON.stringify([
-        { nodeId: 'a', output: '{"v":1}', status: 'success' },
-      ]),
-      input: 'null', startedAt: new Date().toISOString(),
-    }]);
+    m.select.mockResolvedValueOnce([
+      {
+        id: 'r-prior',
+        tenantId: 't',
+        workflowId: 'wf-prior',
+        stepsJson: JSON.stringify([{ nodeId: 'a', output: '{"v":1}', status: 'success' }]),
+        input: 'null',
+        startedAt: new Date().toISOString(),
+      },
+    ]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
-    await expect(svc.replay('r-prior', { fromNodeId: 'nonexistent' }))
-      .rejects.toThrow(/Node nonexistent not found in run/);
+    await expect(svc.replay('r-prior', { fromNodeId: 'nonexistent' })).rejects.toThrow(
+      /Node nonexistent not found in run/,
+    );
   });
 
   it('replay senza fromStep → NO pinning (full re-run)', async () => {
-    m.select.mockResolvedValueOnce([{
-      id: 'r-full', tenantId: 't', workflowId: 'wf-full',
-      stepsJson: '[]', input: 'null', startedAt: new Date().toISOString(),
-    }]);
+    m.select.mockResolvedValueOnce([
+      {
+        id: 'r-full',
+        tenantId: 't',
+        workflowId: 'wf-full',
+        stepsJson: '[]',
+        input: 'null',
+        startedAt: new Date().toISOString(),
+      },
+    ]);
     m.workflowGet.mockResolvedValue(makeWorkflow({ id: 'wf-full' }));
-    m.engineRun.mockResolvedValue({ runId: 'r-n', status: 'success', steps: [], totalDurationMs: 1, errorCount: 0 });
+    m.engineRun.mockResolvedValue({
+      runId: 'r-n',
+      status: 'success',
+      steps: [],
+      totalDurationMs: 1,
+      errorCount: 0,
+    });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.replay('r-full', {});
@@ -1033,7 +1323,8 @@ describe('RunService.resumeFromCheckpoint', () => {
     m.checkpointsLatest.mockReturnValue(null);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await expect(svc.resumeFromCheckpoint('r-x')).rejects.toThrow(/No checkpoint/);
@@ -1041,13 +1332,19 @@ describe('RunService.resumeFromCheckpoint', () => {
 
   it('throw se workflow cancellato', async () => {
     m.checkpointsLatest.mockReturnValue({
-      runId: 'r-1', workflowId: 'wf-deleted', tenantId: 't',
-      outputsById: {}, visited: [], pendingQueue: [], itemGraph: {},
+      runId: 'r-1',
+      workflowId: 'wf-deleted',
+      tenantId: 't',
+      outputsById: {},
+      visited: [],
+      pendingQueue: [],
+      itemGraph: {},
     });
     m.workflowGet.mockResolvedValue(null);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await expect(svc.resumeFromCheckpoint('r-1')).rejects.toThrow(/Workflow wf-deleted not found/);
@@ -1055,8 +1352,12 @@ describe('RunService.resumeFromCheckpoint', () => {
 
   it('success → engine.resume + checkpoint purge', async () => {
     m.checkpointsLatest.mockReturnValue({
-      runId: 'r-1', workflowId: 'wf-1', tenantId: 't',
-      outputsById: { n1: { v: 1 } }, visited: ['n1'], pendingQueue: [],
+      runId: 'r-1',
+      workflowId: 'wf-1',
+      tenantId: 't',
+      outputsById: { n1: { v: 1 } },
+      visited: ['n1'],
+      pendingQueue: [],
       // GAP #2: il lineage del checkpoint deve arrivare INTATTO allo snapshot.
       itemGraph: { n1: [{ json: { v: 1 }, pairedItem: { item: 0, sourceNodeId: 'n0' } }] },
     });
@@ -1064,26 +1365,35 @@ describe('RunService.resumeFromCheckpoint', () => {
     m.engineResume.mockResolvedValue({ runId: 'r-1', status: 'success', errorCount: 0 });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.resumeFromCheckpoint('r-1');
     expect(m.checkpointsPurge).toHaveBeenCalledWith('r-1');
     // GAP #2: lo snapshot passato a engine.resume porta il grafo come Map.
     const snap = m.engineResume.mock.calls[0]?.[0] as { itemGraph: Map<string, unknown[]> };
-    expect(snap.itemGraph.get('n1')).toEqual([{ json: { v: 1 }, pairedItem: { item: 0, sourceNodeId: 'n0' } }]);
+    expect(snap.itemGraph.get('n1')).toEqual([
+      { json: { v: 1 }, pairedItem: { item: 0, sourceNodeId: 'n0' } },
+    ]);
   });
 
   it('non-success → NO purge', async () => {
     m.checkpointsLatest.mockReturnValue({
-      runId: 'r-2', workflowId: 'wf-1', tenantId: 't',
-      outputsById: {}, visited: [], pendingQueue: [], itemGraph: {},
+      runId: 'r-2',
+      workflowId: 'wf-1',
+      tenantId: 't',
+      outputsById: {},
+      visited: [],
+      pendingQueue: [],
+      itemGraph: {},
     });
     m.workflowGet.mockResolvedValue(makeWorkflow({ id: 'wf-1' }));
     m.engineResume.mockResolvedValue({ runId: 'r-2', status: 'error', errorCount: 1 });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.resumeFromCheckpoint('r-2');
@@ -1099,36 +1409,62 @@ describe('RunService.resumeFromPause', () => {
     m.workflowGet.mockResolvedValue(null);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     const row = {
-      runId: 'r-paused', workflowId: 'wf-gone', tenantId: 't',
-      atNodeId: 'wait-1', defaultPayload: { signal: 'go' },
-      outputsById: {}, visited: [], pendingQueue: [], itemGraph: {},
+      runId: 'r-paused',
+      workflowId: 'wf-gone',
+      tenantId: 't',
+      atNodeId: 'wait-1',
+      defaultPayload: { signal: 'go' },
+      outputsById: {},
+      visited: [],
+      pendingQueue: [],
+      itemGraph: {},
     };
     await expect(svc.resumeFromPause(row as never)).rejects.toThrow(/Workflow wf-gone not found/);
   });
 
   it('resume con downstream edges seeded + engine.resume', async () => {
-    m.workflowGet.mockResolvedValue(makeWorkflow({
-      id: 'wf-1',
-      edges: [{ from: 'wait-1', to: 'n2' }, { from: 'wait-1', to: 'n3' }, { from: 'other', to: 'n4' }],
-    }));
+    m.workflowGet.mockResolvedValue(
+      makeWorkflow({
+        id: 'wf-1',
+        edges: [
+          { from: 'wait-1', to: 'n2' },
+          { from: 'wait-1', to: 'n3' },
+          { from: 'other', to: 'n4' },
+        ],
+      }),
+    );
     m.engineResume.mockResolvedValue({ runId: 'r-p', status: 'success', errorCount: 0, steps: [] });
-    m.select.mockResolvedValueOnce([{
-      id: 'r-p', workflowId: 'wf-1', tenantId: 't',
-      stepsJson: '[]', errorCount: 0, startedAt: new Date().toISOString(),
-    }]);
+    m.select.mockResolvedValueOnce([
+      {
+        id: 'r-p',
+        workflowId: 'wf-1',
+        tenantId: 't',
+        stepsJson: '[]',
+        errorCount: 0,
+        startedAt: new Date().toISOString(),
+      },
+    ]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     const row = {
-      runId: 'r-p', workflowId: 'wf-1', tenantId: 't',
-      atNodeId: 'wait-1', defaultPayload: { signal: 'data' },
-      outputsById: {}, visited: ['wait-1'], pendingQueue: [], itemGraph: {},
+      runId: 'r-p',
+      workflowId: 'wf-1',
+      tenantId: 't',
+      atNodeId: 'wait-1',
+      defaultPayload: { signal: 'data' },
+      outputsById: {},
+      visited: ['wait-1'],
+      pendingQueue: [],
+      itemGraph: {},
     };
     await svc.resumeFromPause(row as never);
     const snapshotArg = m.engineResume.mock.calls[0]?.[0] as { pendingQueue: { nodeId: string }[] };
@@ -1140,30 +1476,46 @@ describe('RunService.resumeFromPause', () => {
   });
 
   it('PAUSA-QUOTA (quota:renewed:*): NESSUN seeding downstream → ri-esegue il nodo ri-accodato', async () => {
-    m.workflowGet.mockResolvedValue(makeWorkflow({
-      id: 'wf-1',
-      edges: [{ from: 'qn', to: 'after' }], // downstream del nodo LLM
-    }));
+    m.workflowGet.mockResolvedValue(
+      makeWorkflow({
+        id: 'wf-1',
+        edges: [{ from: 'qn', to: 'after' }], // downstream del nodo LLM
+      }),
+    );
     m.engineResume.mockResolvedValue({ runId: 'r-q', status: 'success', errorCount: 0, steps: [] });
-    m.select.mockResolvedValueOnce([{
-      id: 'r-q', workflowId: 'wf-1', tenantId: 't',
-      stepsJson: '[]', errorCount: 0, startedAt: new Date().toISOString(),
-    }]);
+    m.select.mockResolvedValueOnce([
+      {
+        id: 'r-q',
+        workflowId: 'wf-1',
+        tenantId: 't',
+        stepsJson: '[]',
+        errorCount: 0,
+        startedAt: new Date().toISOString(),
+      },
+    ]);
     const { RunService } = await import('./run.service.js');
-    const svc = new RunService({ emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(() => () => undefined) } as never);
+    const svc = new RunService({
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(() => () => undefined),
+    } as never);
     const row = {
-      runId: 'r-q', workflowId: 'wf-1', tenantId: 't',
-      signalName: 'quota:renewed:t',          // ← pausa-quota
-      atNodeId: 'qn', defaultPayload: {},
-      outputsById: {}, visited: [],
+      runId: 'r-q',
+      workflowId: 'wf-1',
+      tenantId: 't',
+      signalName: 'quota:renewed:t', // ← pausa-quota
+      atNodeId: 'qn',
+      defaultPayload: {},
+      outputsById: {},
+      visited: [],
       pendingQueue: [{ nodeId: 'qn', carriedInput: { x: 1 } }], // nodo LLM ri-accodato dall'engine
       itemGraph: {},
     };
     await svc.resumeFromPause(row as never);
     const snapshotArg = m.engineResume.mock.calls[0]?.[0] as { pendingQueue: { nodeId: string }[] };
     const ids = snapshotArg.pendingQueue.map((q) => q.nodeId);
-    expect(ids).toEqual(['qn']);          // SOLO il nodo da ri-eseguire
-    expect(ids).not.toContain('after');   // NIENTE downstream seeded (sarebbe skip della ri-esecuzione)
+    expect(ids).toEqual(['qn']); // SOLO il nodo da ri-eseguire
+    expect(ids).not.toContain('after'); // NIENTE downstream seeded (sarebbe skip della ri-esecuzione)
   });
 });
 
@@ -1175,7 +1527,8 @@ describe('RunService.getById', () => {
     m.select.mockResolvedValueOnce([]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     const r = await svc.getById('r-x', 't');
@@ -1183,18 +1536,26 @@ describe('RunService.getById', () => {
   });
 
   it('parse steps + map nodeLabel fallback nodeId', async () => {
-    m.select.mockResolvedValueOnce([{
-      id: 'r-1', workflowId: 'wf-1', tenantId: 't',
-      status: 'success', startedAt: 'now', endedAt: 'later',
-      totalDurationMs: 100, errorCount: 0,
-      stepsJson: JSON.stringify([
-        { nodeId: 'n1', nodeLabel: 'Step One', status: 'success', durationMs: 10 },
-        { nodeId: 'n2', status: 'success' }, // no nodeLabel → fallback
-      ]),
-    }]);
+    m.select.mockResolvedValueOnce([
+      {
+        id: 'r-1',
+        workflowId: 'wf-1',
+        tenantId: 't',
+        status: 'success',
+        startedAt: 'now',
+        endedAt: 'later',
+        totalDurationMs: 100,
+        errorCount: 0,
+        stepsJson: JSON.stringify([
+          { nodeId: 'n1', nodeLabel: 'Step One', status: 'success', durationMs: 10 },
+          { nodeId: 'n2', status: 'success' }, // no nodeLabel → fallback
+        ]),
+      },
+    ]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     const r = await svc.getById('r-1', 't');
@@ -1204,15 +1565,23 @@ describe('RunService.getById', () => {
   });
 
   it('steps array vuoto se stepsJson malformed', async () => {
-    m.select.mockResolvedValueOnce([{
-      id: 'r-2', workflowId: 'wf-1', tenantId: 't',
-      status: 'success', startedAt: 'now', endedAt: null,
-      totalDurationMs: null, errorCount: null,
-      stepsJson: '{this-is-not-json',
-    }]);
+    m.select.mockResolvedValueOnce([
+      {
+        id: 'r-2',
+        workflowId: 'wf-1',
+        tenantId: 't',
+        status: 'success',
+        startedAt: 'now',
+        endedAt: null,
+        totalDurationMs: null,
+        errorCount: null,
+        stepsJson: '{this-is-not-json',
+      },
+    ]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     const r = await svc.getById('r-2', 't');
@@ -1223,11 +1592,22 @@ describe('RunService.getById', () => {
 describe('RunService.list', () => {
   it('returns array di run mapped', async () => {
     m.select.mockResolvedValueOnce([
-      { id: 'r-1', workflowId: 'wf-1', tenantId: 't', status: 'success', startedAt: 'now', endedAt: 'later', totalDurationMs: 100, errorCount: 0, stepsJson: '[]' },
+      {
+        id: 'r-1',
+        workflowId: 'wf-1',
+        tenantId: 't',
+        status: 'success',
+        startedAt: 'now',
+        endedAt: 'later',
+        totalDurationMs: 100,
+        errorCount: 0,
+        stepsJson: '[]',
+      },
     ]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     const r = await svc.list('wf-1', 't');
@@ -1238,7 +1618,8 @@ describe('RunService.list', () => {
     m.select.mockResolvedValueOnce([]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     const r = await svc.list('wf-x');
@@ -1252,16 +1633,27 @@ describe('RunService.list', () => {
 describe('RunService.executeWithPins — truthfulStatus mapping all branches', () => {
   async function runWithStatus(status: string, errorCount = 0) {
     m.workflowGet.mockResolvedValue({
-      id: 'wf-x', name: 'X', enabled: true, schemaVersion: '1.0.0',
-      nodes: [], edges: [], nodeDefs: [],
-      createdAt: '2026', updatedAt: '2026',
+      id: 'wf-x',
+      name: 'X',
+      enabled: true,
+      schemaVersion: '1.0.0',
+      nodes: [],
+      edges: [],
+      nodeDefs: [],
+      createdAt: '2026',
+      updatedAt: '2026',
     });
     m.engineRun.mockResolvedValue({
-      runId: 'r-x', status, steps: [], totalDurationMs: 1, errorCount,
+      runId: 'r-x',
+      status,
+      steps: [],
+      totalDurationMs: 1,
+      errorCount,
     });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     return svc.execute({ workflowId: 'wf-x' });
@@ -1303,20 +1695,38 @@ describe('RunService.executeWithPins — truthfulStatus mapping all branches', (
 // ════════════════════════════════════════════════════════════════════
 describe('RunService.replay — edge cases branch fillers', () => {
   it('fromStep=0 → no pinning (boundary)', async () => {
-    m.select.mockResolvedValueOnce([{
-      id: 'r-1', tenantId: 't', workflowId: 'wf-1',
-      stepsJson: JSON.stringify([{ nodeId: 'n1', output: '{"v":1}', status: 'success' }]),
-      input: 'null', startedAt: new Date().toISOString(),
-    }]);
+    m.select.mockResolvedValueOnce([
+      {
+        id: 'r-1',
+        tenantId: 't',
+        workflowId: 'wf-1',
+        stepsJson: JSON.stringify([{ nodeId: 'n1', output: '{"v":1}', status: 'success' }]),
+        input: 'null',
+        startedAt: new Date().toISOString(),
+      },
+    ]);
     m.workflowGet.mockResolvedValue({
-      id: 'wf-1', name: 'X', enabled: true, schemaVersion: '1.0.0',
-      nodes: [], edges: [], nodeDefs: [],
-      createdAt: '2026', updatedAt: '2026',
+      id: 'wf-1',
+      name: 'X',
+      enabled: true,
+      schemaVersion: '1.0.0',
+      nodes: [],
+      edges: [],
+      nodeDefs: [],
+      createdAt: '2026',
+      updatedAt: '2026',
     });
-    m.engineRun.mockResolvedValue({ runId: 'r-n', status: 'success', steps: [], totalDurationMs: 1, errorCount: 0 });
+    m.engineRun.mockResolvedValue({
+      runId: 'r-n',
+      status: 'success',
+      steps: [],
+      totalDurationMs: 1,
+      errorCount: 0,
+    });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.replay('r-1', { fromStep: 0 });
@@ -1325,23 +1735,41 @@ describe('RunService.replay — edge cases branch fillers', () => {
   });
 
   it('fromStep con step NON-success → skip pin (continue)', async () => {
-    m.select.mockResolvedValueOnce([{
-      id: 'r-1', tenantId: 't', workflowId: 'wf-1',
-      stepsJson: JSON.stringify([
-        { nodeId: 'n1', output: '{"v":1}', status: 'success' },
-        { nodeId: 'n2', output: 'err msg', status: 'error' },
-      ]),
-      input: 'null', startedAt: new Date().toISOString(),
-    }]);
+    m.select.mockResolvedValueOnce([
+      {
+        id: 'r-1',
+        tenantId: 't',
+        workflowId: 'wf-1',
+        stepsJson: JSON.stringify([
+          { nodeId: 'n1', output: '{"v":1}', status: 'success' },
+          { nodeId: 'n2', output: 'err msg', status: 'error' },
+        ]),
+        input: 'null',
+        startedAt: new Date().toISOString(),
+      },
+    ]);
     m.workflowGet.mockResolvedValue({
-      id: 'wf-1', name: 'X', enabled: true, schemaVersion: '1.0.0',
-      nodes: [], edges: [], nodeDefs: [],
-      createdAt: '2026', updatedAt: '2026',
+      id: 'wf-1',
+      name: 'X',
+      enabled: true,
+      schemaVersion: '1.0.0',
+      nodes: [],
+      edges: [],
+      nodeDefs: [],
+      createdAt: '2026',
+      updatedAt: '2026',
     });
-    m.engineRun.mockResolvedValue({ runId: 'r-n', status: 'success', steps: [], totalDurationMs: 1, errorCount: 0 });
+    m.engineRun.mockResolvedValue({
+      runId: 'r-n',
+      status: 'success',
+      steps: [],
+      totalDurationMs: 1,
+      errorCount: 0,
+    });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.replay('r-1', { fromStep: 2 });
@@ -1350,22 +1778,40 @@ describe('RunService.replay — edge cases branch fillers', () => {
   });
 
   it('fromStep con step output NON-JSON → parsed = raw string', async () => {
-    m.select.mockResolvedValueOnce([{
-      id: 'r-1', tenantId: 't', workflowId: 'wf-1',
-      stepsJson: JSON.stringify([
-        { nodeId: 'n1', output: 'plain-text-output', status: 'success' },
-      ]),
-      input: 'null', startedAt: new Date().toISOString(),
-    }]);
+    m.select.mockResolvedValueOnce([
+      {
+        id: 'r-1',
+        tenantId: 't',
+        workflowId: 'wf-1',
+        stepsJson: JSON.stringify([
+          { nodeId: 'n1', output: 'plain-text-output', status: 'success' },
+        ]),
+        input: 'null',
+        startedAt: new Date().toISOString(),
+      },
+    ]);
     m.workflowGet.mockResolvedValue({
-      id: 'wf-1', name: 'X', enabled: true, schemaVersion: '1.0.0',
-      nodes: [], edges: [], nodeDefs: [],
-      createdAt: '2026', updatedAt: '2026',
+      id: 'wf-1',
+      name: 'X',
+      enabled: true,
+      schemaVersion: '1.0.0',
+      nodes: [],
+      edges: [],
+      nodeDefs: [],
+      createdAt: '2026',
+      updatedAt: '2026',
     });
-    m.engineRun.mockResolvedValue({ runId: 'r-n', status: 'success', steps: [], totalDurationMs: 1, errorCount: 0 });
+    m.engineRun.mockResolvedValue({
+      runId: 'r-n',
+      status: 'success',
+      steps: [],
+      totalDurationMs: 1,
+      errorCount: 0,
+    });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.replay('r-1', { fromStep: 1 });
@@ -1374,20 +1820,38 @@ describe('RunService.replay — edge cases branch fillers', () => {
   });
 
   it('replay con stepsJson non-array (corrupted) → priorSteps = [] (fallback)', async () => {
-    m.select.mockResolvedValueOnce([{
-      id: 'r-x', tenantId: 't', workflowId: 'wf-x',
-      stepsJson: '{"not":"array"}', // object invece di array
-      input: 'null', startedAt: new Date().toISOString(),
-    }]);
+    m.select.mockResolvedValueOnce([
+      {
+        id: 'r-x',
+        tenantId: 't',
+        workflowId: 'wf-x',
+        stepsJson: '{"not":"array"}', // object invece di array
+        input: 'null',
+        startedAt: new Date().toISOString(),
+      },
+    ]);
     m.workflowGet.mockResolvedValue({
-      id: 'wf-x', name: 'X', enabled: true, schemaVersion: '1.0.0',
-      nodes: [], edges: [], nodeDefs: [],
-      createdAt: '2026', updatedAt: '2026',
+      id: 'wf-x',
+      name: 'X',
+      enabled: true,
+      schemaVersion: '1.0.0',
+      nodes: [],
+      edges: [],
+      nodeDefs: [],
+      createdAt: '2026',
+      updatedAt: '2026',
     });
-    m.engineRun.mockResolvedValue({ runId: 'r-x', status: 'success', steps: [], totalDurationMs: 1, errorCount: 0 });
+    m.engineRun.mockResolvedValue({
+      runId: 'r-x',
+      status: 'success',
+      steps: [],
+      totalDurationMs: 1,
+      errorCount: 0,
+    });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.replay('r-x', { fromStep: 5 });
@@ -1396,14 +1860,21 @@ describe('RunService.replay — edge cases branch fillers', () => {
   });
 
   it('replay opts.tenantId override → usato vs prior.tenantId', async () => {
-    m.select.mockResolvedValueOnce([{
-      id: 'r-1', tenantId: 't-row', workflowId: 'wf-d', // different
-      stepsJson: '[]', input: 'null', startedAt: new Date().toISOString(),
-    }]);
+    m.select.mockResolvedValueOnce([
+      {
+        id: 'r-1',
+        tenantId: 't-row',
+        workflowId: 'wf-d', // different
+        stepsJson: '[]',
+        input: 'null',
+        startedAt: new Date().toISOString(),
+      },
+    ]);
     m.workflowGet.mockResolvedValue(null);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await expect(svc.replay('r-1', { tenantId: 't-override' })).rejects.toThrow();
@@ -1416,11 +1887,19 @@ describe('RunService.replay — edge cases branch fillers', () => {
 describe('RunService.listRecent', () => {
   it('returns array mapped + cap a 500 anche se limit > 500', async () => {
     m.select.mockResolvedValueOnce([
-      { id: 'r-1', workflowId: 'wf-1', status: 'success', startedAt: 'now', endedAt: 'later', totalDurationMs: 100 },
+      {
+        id: 'r-1',
+        workflowId: 'wf-1',
+        status: 'success',
+        startedAt: 'now',
+        endedAt: 'later',
+        totalDurationMs: 100,
+      },
     ]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     const r = await svc.listRecent('t', 10000);
@@ -1432,7 +1911,8 @@ describe('RunService.listRecent', () => {
     m.select.mockResolvedValueOnce([]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     const r = await svc.listRecent('t', 0);
@@ -1443,7 +1923,8 @@ describe('RunService.listRecent', () => {
     m.select.mockResolvedValueOnce([]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     // 🚨 RESILIENCE: float limit (5.7) → service deve coercerlo a int senza crash.
@@ -1463,9 +1944,15 @@ describe('RunService.executeWithPins — scheduleFlush + cleanup', () => {
   it('engine emit run.step events → accumulateSteps + scheduleFlush triggered → setTimeout fires DB update', async () => {
     vi.useFakeTimers();
     m.workflowGet.mockResolvedValue({
-      id: 'wf-flush', name: 'X', enabled: true, schemaVersion: '1.0.0',
-      nodes: [], edges: [], nodeDefs: [],
-      createdAt: '2026', updatedAt: '2026',
+      id: 'wf-flush',
+      name: 'X',
+      enabled: true,
+      schemaVersion: '1.0.0',
+      nodes: [],
+      edges: [],
+      nodeDefs: [],
+      createdAt: '2026',
+      updatedAt: '2026',
     });
 
     let stepCallback: ((evt: unknown) => void) | undefined;
@@ -1486,7 +1973,9 @@ describe('RunService.executeWithPins — scheduleFlush + cleanup', () => {
         stepCallback?.({ data: { runId, step: { nodeId: 'n1', status: 'success' } } });
         stepCallback?.({ data: { runId, step: { nodeId: 'n2', status: 'success' } } });
       }, 100);
-      return new Promise((res) => { resolveEngine = res; });
+      return new Promise((res) => {
+        resolveEngine = res;
+      });
     });
 
     const { RunService } = await import('./run.service.js');
@@ -1498,7 +1987,13 @@ describe('RunService.executeWithPins — scheduleFlush + cleanup', () => {
     // Avanza 2000ms per scatenare scheduleFlush setTimeout
     await vi.advanceTimersByTimeAsync(2000);
     // Ora risolvi engine.run
-    resolveEngine({ runId: 'wf-flush-r1', status: 'success', steps: [{ nodeId: 'n1' }, { nodeId: 'n2' }], totalDurationMs: 100, errorCount: 0 });
+    resolveEngine({
+      runId: 'wf-flush-r1',
+      status: 'success',
+      steps: [{ nodeId: 'n1' }, { nodeId: 'n2' }],
+      totalDurationMs: 100,
+      errorCount: 0,
+    });
     await vi.advanceTimersByTimeAsync(10);
     await promise;
     vi.useRealTimers();
@@ -1508,14 +2003,21 @@ describe('RunService.executeWithPins — scheduleFlush + cleanup', () => {
 
   it('engine throws non-Abort error → status=error UPDATE + throw propagated', async () => {
     m.workflowGet.mockResolvedValue({
-      id: 'wf-err', name: 'X', enabled: true, schemaVersion: '1.0.0',
-      nodes: [], edges: [], nodeDefs: [],
-      createdAt: '2026', updatedAt: '2026',
+      id: 'wf-err',
+      name: 'X',
+      enabled: true,
+      schemaVersion: '1.0.0',
+      nodes: [],
+      edges: [],
+      nodeDefs: [],
+      createdAt: '2026',
+      updatedAt: '2026',
     });
     m.engineRun.mockRejectedValue(new Error('something broke'));
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await expect(svc.execute({ workflowId: 'wf-err' })).rejects.toThrow(/something broke/);
@@ -1525,14 +2027,21 @@ describe('RunService.executeWithPins — scheduleFlush + cleanup', () => {
 
   it('engine throws "aborted" error → cancelled return path', async () => {
     m.workflowGet.mockResolvedValue({
-      id: 'wf-abort', name: 'X', enabled: true, schemaVersion: '1.0.0',
-      nodes: [], edges: [], nodeDefs: [],
-      createdAt: '2026', updatedAt: '2026',
+      id: 'wf-abort',
+      name: 'X',
+      enabled: true,
+      schemaVersion: '1.0.0',
+      nodes: [],
+      edges: [],
+      nodeDefs: [],
+      createdAt: '2026',
+      updatedAt: '2026',
     });
     m.engineRun.mockRejectedValue(new Error('Run aborted by user'));
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     const r = await svc.execute({ workflowId: 'wf-abort' });
@@ -1542,19 +2051,28 @@ describe('RunService.executeWithPins — scheduleFlush + cleanup', () => {
 
   it('engine error (errorCount>0) → buildErrorOutboxEvents + enqueue ATOMICO col mark-errored', async () => {
     m.workflowGet.mockResolvedValue({
-      id: 'wf-fail', name: 'WF Fail', enabled: true, schemaVersion: '1.0.0',
-      nodes: [], edges: [], nodeDefs: [],
-      createdAt: '2026', updatedAt: '2026',
+      id: 'wf-fail',
+      name: 'WF Fail',
+      enabled: true,
+      schemaVersion: '1.0.0',
+      nodes: [],
+      edges: [],
+      nodeDefs: [],
+      createdAt: '2026',
+      updatedAt: '2026',
     });
     m.engineRun.mockResolvedValue({
-      runId: 'r-fail', status: 'partial',
+      runId: 'r-fail',
+      status: 'partial',
       steps: [{ nodeId: 'n1', status: 'error', error: 'boom' }],
-      totalDurationMs: 50, errorCount: 1,
+      totalDurationMs: 50,
+      errorCount: 1,
     });
     m.buildEvents.mockReturnValueOnce([{ id: 'r-fail:webhook', channel: 'webhook' }]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     const r = await svc.execute({ workflowId: 'wf-fail' });
@@ -1562,7 +2080,10 @@ describe('RunService.executeWithPins — scheduleFlush + cleanup', () => {
     // L'enqueue avviene con i dati REALI del run errato.
     expect(m.buildEvents).toHaveBeenCalledTimes(1);
     expect(m.buildEvents.mock.calls[0]![0]).toMatchObject({
-      runId: 'r-fail', workflowId: 'wf-fail', errorNodeId: 'n1', errorMessage: 'boom',
+      runId: 'r-fail',
+      workflowId: 'wf-fail',
+      errorNodeId: 'n1',
+      errorMessage: 'boom',
     });
     // mark-errored (update) + enqueue entrambi avvenuti (atomicità #3 testata in outbox-writer).
     expect(m.update).toHaveBeenCalled();
@@ -1571,14 +2092,28 @@ describe('RunService.executeWithPins — scheduleFlush + cleanup', () => {
 
   it('inflight cleanup: dopo run, inflight Map decrement + delete se 0', async () => {
     m.workflowGet.mockResolvedValue({
-      id: 'wf-cl', name: 'X', enabled: true, schemaVersion: '1.0.0',
-      nodes: [], edges: [], nodeDefs: [], concurrencyLimit: 5,
-      createdAt: '2026', updatedAt: '2026',
+      id: 'wf-cl',
+      name: 'X',
+      enabled: true,
+      schemaVersion: '1.0.0',
+      nodes: [],
+      edges: [],
+      nodeDefs: [],
+      concurrencyLimit: 5,
+      createdAt: '2026',
+      updatedAt: '2026',
     });
-    m.engineRun.mockResolvedValue({ runId: 'r', status: 'success', steps: [], totalDurationMs: 1, errorCount: 0 });
+    m.engineRun.mockResolvedValue({
+      runId: 'r',
+      status: 'success',
+      steps: [],
+      totalDurationMs: 1,
+      errorCount: 0,
+    });
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.execute({ workflowId: 'wf-cl', tenantId: 't' });
@@ -1589,17 +2124,30 @@ describe('RunService.executeWithPins — scheduleFlush + cleanup', () => {
 
   it('inflight decrement preserves count se altri run paralleli', async () => {
     m.workflowGet.mockResolvedValue({
-      id: 'wf-multi', name: 'X', enabled: true, schemaVersion: '1.0.0',
-      nodes: [], edges: [], nodeDefs: [],
-      createdAt: '2026', updatedAt: '2026',
+      id: 'wf-multi',
+      name: 'X',
+      enabled: true,
+      schemaVersion: '1.0.0',
+      nodes: [],
+      edges: [],
+      nodeDefs: [],
+      createdAt: '2026',
+      updatedAt: '2026',
     });
-    m.engineRun.mockResolvedValue({ runId: 'r', status: 'success', steps: [], totalDurationMs: 1, errorCount: 0 });
+    m.engineRun.mockResolvedValue({
+      runId: 'r',
+      status: 'success',
+      steps: [],
+      totalDurationMs: 1,
+      errorCount: 0,
+    });
     const { RunService } = await import('./run.service.js');
     // pre-popola inflight con count=3 (simula altri 3 run paralleli)
     const inflight = (RunService as unknown as { inflight: Map<string, number> }).inflight;
     inflight.set('t-m:wf-multi', 3);
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.execute({ workflowId: 'wf-multi', tenantId: 't-m' });
@@ -1612,7 +2160,8 @@ describe('RunService.executeWithPins — scheduleFlush + cleanup', () => {
     m.workflowGet.mockRejectedValue(new Error('workflow lookup failed'));
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     const r = await svc.startAsync({ workflowId: 'wf-x' });
@@ -1629,33 +2178,63 @@ describe('RunService.executeWithPins — scheduleFlush + cleanup', () => {
 describe('RunService.resumeFromPause — branch fillers', () => {
   it('resume con prior.stepsJson NON-array → priorSteps=[]', async () => {
     m.workflowGet.mockResolvedValue({
-      id: 'wf-1', name: 'X', enabled: true, schemaVersion: '1.0.0',
-      nodes: [], edges: [{ from: 'wait-1', to: 'n2' }], nodeDefs: [],
-      createdAt: '2026', updatedAt: '2026',
+      id: 'wf-1',
+      name: 'X',
+      enabled: true,
+      schemaVersion: '1.0.0',
+      nodes: [],
+      edges: [{ from: 'wait-1', to: 'n2' }],
+      nodeDefs: [],
+      createdAt: '2026',
+      updatedAt: '2026',
     });
-    m.engineResume.mockResolvedValue({ runId: 'r-p', status: 'success', errorCount: 0, steps: [{ nodeId: 'n2' }] });
-    m.select.mockResolvedValueOnce([{
-      id: 'r-p', workflowId: 'wf-1', tenantId: 't',
-      stepsJson: '{"not":"array"}', errorCount: 0, startedAt: new Date().toISOString(),
-    }]);
+    m.engineResume.mockResolvedValue({
+      runId: 'r-p',
+      status: 'success',
+      errorCount: 0,
+      steps: [{ nodeId: 'n2' }],
+    });
+    m.select.mockResolvedValueOnce([
+      {
+        id: 'r-p',
+        workflowId: 'wf-1',
+        tenantId: 't',
+        stepsJson: '{"not":"array"}',
+        errorCount: 0,
+        startedAt: new Date().toISOString(),
+      },
+    ]);
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.resumeFromPause({
-      runId: 'r-p', workflowId: 'wf-1', tenantId: 't',
-      atNodeId: 'wait-1', defaultPayload: {},
-      outputsById: {}, visited: [], pendingQueue: [], itemGraph: {},
+      runId: 'r-p',
+      workflowId: 'wf-1',
+      tenantId: 't',
+      atNodeId: 'wait-1',
+      defaultPayload: {},
+      outputsById: {},
+      visited: [],
+      pendingQueue: [],
+      itemGraph: {},
     } as never);
     expect(m.update).toHaveBeenCalled();
   });
 
   it('finally clearTimeout: step event registrato MA engine throws prima del flush → flushTimer cleared', async () => {
     m.workflowGet.mockResolvedValue({
-      id: 'wf-tm', name: 'X', enabled: true, schemaVersion: '1.0.0',
-      nodes: [], edges: [], nodeDefs: [],
-      createdAt: '2026', updatedAt: '2026',
+      id: 'wf-tm',
+      name: 'X',
+      enabled: true,
+      schemaVersion: '1.0.0',
+      nodes: [],
+      edges: [],
+      nodeDefs: [],
+      createdAt: '2026',
+      updatedAt: '2026',
     });
     let stepCb: ((evt: unknown) => void) | undefined;
     const bus = {
@@ -1677,17 +2256,20 @@ describe('RunService.resumeFromPause — branch fillers', () => {
     await expect(svc.execute({ workflowId: 'wf-tm' })).rejects.toThrow(/quick fail/);
   });
 
-  it('E4 — run error con errorWorkflowId → buildEvents riceve l\'errWfId risolto (fanout durevole)', async () => {
+  it("E4 — run error con errorWorkflowId → buildEvents riceve l'errWfId risolto (fanout durevole)", async () => {
     m.workflowGet.mockResolvedValue(makeWorkflow({ id: 'wf-prod' }));
     m.engineRun.mockResolvedValue({
-      runId: 'r-prod', status: 'error',
+      runId: 'r-prod',
+      status: 'error',
       steps: [{ nodeId: 'n-fail', status: 'error', error: 'BOOM' }],
-      totalDurationMs: 5, errorCount: 1,
+      totalDurationMs: 5,
+      errorCount: 1,
     });
     m.getErrorWorkflowId.mockResolvedValue('wf-err-handler');
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.execute({ workflowId: 'wf-prod', tenantId: 't', triggerInput: { x: 1 } });
@@ -1707,18 +2289,22 @@ describe('RunService.resumeFromPause — branch fillers', () => {
   it('E4 — anti-loop: run "error-handler" NON risolve errWfId (writer non crea fanout)', async () => {
     m.workflowGet.mockResolvedValue(makeWorkflow({ id: 'wf-handler' }));
     m.engineRun.mockResolvedValue({
-      runId: 'r-handler', status: 'error',
+      runId: 'r-handler',
+      status: 'error',
       steps: [{ nodeId: 'n-x', status: 'error', error: 'meta-fail' }],
-      totalDurationMs: 5, errorCount: 1,
+      totalDurationMs: 5,
+      errorCount: 1,
     });
     m.getErrorWorkflowId.mockResolvedValue('wf-other-handler');
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.execute({
-      workflowId: 'wf-handler', tenantId: 't',
+      workflowId: 'wf-handler',
+      tenantId: 't',
       triggerType: 'error-handler', // ← già un error workflow
     });
     // resolve saltato (anti-loop): errWfId passato null + triggerType propagato al writer.
@@ -1732,29 +2318,40 @@ describe('RunService.resumeFromPause — branch fillers', () => {
   it('E4 — anti-self: il writer riceve errWfId === workflow.id (skip nel writer, testato in outbox-writer)', async () => {
     m.workflowGet.mockResolvedValue(makeWorkflow({ id: 'wf-self' }));
     m.engineRun.mockResolvedValue({
-      runId: 'r-self', status: 'error',
+      runId: 'r-self',
+      status: 'error',
       steps: [{ nodeId: 'n-x', status: 'error', error: 'x' }],
-      totalDurationMs: 1, errorCount: 1,
+      totalDurationMs: 1,
+      errorCount: 1,
     });
     m.getErrorWorkflowId.mockResolvedValue('wf-self'); // self-reference
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.execute({ workflowId: 'wf-self', tenantId: 't' });
-    expect(m.buildEvents.mock.calls[0]![0]).toMatchObject({ errorWorkflowId: 'wf-self', workflowId: 'wf-self' });
+    expect(m.buildEvents.mock.calls[0]![0]).toMatchObject({
+      errorWorkflowId: 'wf-self',
+      workflowId: 'wf-self',
+    });
   });
 
-  it('E4 — no enqueue su status=success (nessun evento d\'errore)', async () => {
+  it("E4 — no enqueue su status=success (nessun evento d'errore)", async () => {
     m.workflowGet.mockResolvedValue(makeWorkflow({ id: 'wf-ok' }));
     m.engineRun.mockResolvedValue({
-      runId: 'r-ok', status: 'success', steps: [], totalDurationMs: 1, errorCount: 0,
+      runId: 'r-ok',
+      status: 'success',
+      steps: [],
+      totalDurationMs: 1,
+      errorCount: 0,
     });
     m.getErrorWorkflowId.mockResolvedValue('wf-err-handler');
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.execute({ workflowId: 'wf-ok', tenantId: 't' });
@@ -1765,21 +2362,34 @@ describe('RunService.resumeFromPause — branch fillers', () => {
 
   it('resume con prior row null → skip UPDATE branch', async () => {
     m.workflowGet.mockResolvedValue({
-      id: 'wf-1', name: 'X', enabled: true, schemaVersion: '1.0.0',
-      nodes: [], edges: [], nodeDefs: [],
-      createdAt: '2026', updatedAt: '2026',
+      id: 'wf-1',
+      name: 'X',
+      enabled: true,
+      schemaVersion: '1.0.0',
+      nodes: [],
+      edges: [],
+      nodeDefs: [],
+      createdAt: '2026',
+      updatedAt: '2026',
     });
     m.engineResume.mockResolvedValue({ runId: 'r-p', status: 'success', errorCount: 0, steps: [] });
     m.select.mockResolvedValueOnce([]); // prior row missing
     const { RunService } = await import('./run.service.js');
     const svc = new RunService({
-      emit: m.emit, subscribe: vi.fn(),
+      emit: m.emit,
+      subscribe: vi.fn(),
       subscribeTo: vi.fn(() => () => undefined),
     } as never);
     await svc.resumeFromPause({
-      runId: 'r-p', workflowId: 'wf-1', tenantId: 't',
-      atNodeId: 'wait-1', defaultPayload: {},
-      outputsById: {}, visited: [], pendingQueue: [], itemGraph: {},
+      runId: 'r-p',
+      workflowId: 'wf-1',
+      tenantId: 't',
+      atNodeId: 'wait-1',
+      defaultPayload: {},
+      outputsById: {},
+      visited: [],
+      pendingQueue: [],
+      itemGraph: {},
     } as never);
     // Non c'è UPDATE conditional (prior null → skip)
   });
@@ -1793,17 +2403,29 @@ describe('RunService.resumeFromPause — branch fillers', () => {
 describe('🚨 fine-run → recordRunOutcomeForTemplate (feedback loop)', () => {
   const setupRun = (engineResult: Record<string, unknown>): void => {
     m.workflowGet.mockResolvedValueOnce({
-      id: 'wf-fb', name: 'FB', nodes: [{ id: 'a', defId: 'trigger_manual' }], edges: [],
-      enabled: true, ephemeralRuns: true,
+      id: 'wf-fb',
+      name: 'FB',
+      nodes: [{ id: 'a', defId: 'trigger_manual' }],
+      edges: [],
+      enabled: true,
+      ephemeralRuns: true,
     });
     m.engineRun.mockResolvedValueOnce({
-      runId: 'r-fb', steps: [], errorCount: 0, totalDurationMs: 3, ...engineResult,
+      runId: 'r-fb',
+      steps: [],
+      errorCount: 0,
+      totalDurationMs: 3,
+      ...engineResult,
     });
   };
   const makeSvc = async (): Promise<{ execute: (i: unknown) => Promise<unknown> }> => {
     const { RunService } = await import('./run.service.js');
     return new RunService({
-      emit: m.emit, subscribe: vi.fn(), subscribeTo: vi.fn(() => () => { /* unsub */ }),
+      emit: m.emit,
+      subscribe: vi.fn(),
+      subscribeTo: vi.fn(() => () => {
+        /* unsub */
+      }),
     } as never) as never;
   };
 

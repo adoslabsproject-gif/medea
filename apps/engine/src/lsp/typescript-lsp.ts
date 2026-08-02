@@ -33,7 +33,7 @@ import type * as FsNS from 'node:fs';
 import type * as tsTypes from 'typescript';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
- 
+
 const ts = require('typescript') as typeof TypescriptNS;
 
 const SDK_LIB = `
@@ -193,9 +193,11 @@ export class TypeScriptLsp {
       const lc = sourceFile.getLineAndCharacterOfPosition(start);
       result.push({
         severity:
-          d.category === ts.DiagnosticCategory.Error ? 'error'
-          : d.category === ts.DiagnosticCategory.Warning ? 'warning'
-          : 'info',
+          d.category === ts.DiagnosticCategory.Error
+            ? 'error'
+            : d.category === ts.DiagnosticCategory.Warning
+              ? 'warning'
+              : 'info',
         line: lc.line + 1,
         col: lc.character + 1,
         message: ts.flattenDiagnosticMessageText(d.messageText, '\n'),
@@ -241,7 +243,9 @@ export class TypeScriptLsp {
     const contents = docs ? `${displayText}\n\n${docs}` : displayText;
     if (!contents) return null;
     const startLc = sourceFile.getLineAndCharacterOfPosition(info.textSpan.start);
-    const endLc = sourceFile.getLineAndCharacterOfPosition(info.textSpan.start + info.textSpan.length);
+    const endLc = sourceFile.getLineAndCharacterOfPosition(
+      info.textSpan.start + info.textSpan.length,
+    );
     return {
       contents,
       range: {

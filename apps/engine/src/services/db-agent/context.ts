@@ -50,7 +50,9 @@ export function createDbAgentContext(
 ): DbAgentContext {
   const t = (tenantId ?? '').trim();
   if (!t) {
-    throw new TenantScopeError('Contesto DB-agent senza tenant: rifiutato. Il tenant va derivato server-side dalla sessione.');
+    throw new TenantScopeError(
+      'Contesto DB-agent senza tenant: rifiutato. Il tenant va derivato server-side dalla sessione.',
+    );
   }
   return Object.freeze({ tenantId: t, dbStudio: dbStudio ?? new DbStudioService(), allowWrites });
 }

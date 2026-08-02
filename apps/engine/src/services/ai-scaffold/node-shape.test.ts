@@ -92,7 +92,10 @@ describe('getNodeShape — unknown nodes', () => {
   });
 
   it('defId sconosciuto → unknown/unknown', () => {
-    expect(getNodeShape('definitely_does_not_exist')).toEqual({ input: 'unknown', output: 'unknown' });
+    expect(getNodeShape('definitely_does_not_exist')).toEqual({
+      input: 'unknown',
+      output: 'unknown',
+    });
   });
 
   it('isArrayProducer/isScalarConsumer/isAggregator false su unknown', () => {

@@ -35,13 +35,13 @@ export const emailTriageB2BSalesNodeDef: NodeDef = {
     'forward_to_human_inbox, send_unsubscribe_confirm), replyDraft (bozza di risposta pre-tradotta nella stessa ' +
     'lingua del prospect, tono professionale + customizzabile con templating downstream) }. ' +
     'Confidence sotto la soglia (default 0.7) viene declassata a needs_human_review per evitare azioni ' +
-    'automatiche imbarazzanti su email ambigue — l\'AE conferma manualmente la categoria, e il signal feedback ' +
+    "automatiche imbarazzanti su email ambigue — l'AE conferma manualmente la categoria, e il signal feedback " +
     'può alimentare retraining della pipeline. ' +
-    'Pattern di composizione: collegare l\'output a logic_switch sul campo label con 8+1 (review) branch — ogni ' +
+    "Pattern di composizione: collegare l'output a logic_switch sul campo label con 8+1 (review) branch — ogni " +
     'branch ha una catena di azioni diversa (interested_buy → action_send_email con quote PDF + create lead in ' +
     'crm.lead Odoo; not_interested → archive + decrement engagement score; OOO → schedule re-send tra +14 giorni). ' +
     'Use case: azienda food italiana fa export Germania, riceve 80 risposte/giorno a campagna outreach buyer ' +
-    'tedeschi e l\'agent classifica automaticamente; SaaS B2B europeo gestisce inbound demo request in 5 lingue ' +
+    "tedeschi e l'agent classifica automaticamente; SaaS B2B europeo gestisce inbound demo request in 5 lingue " +
     'senza traduzioni manuali; vinaio piccolo invia outreach a importatori UK e categoria interested_tasting ' +
     'attiva automaticamente la spedizione del kit assaggio con tracking corriere; consulenza enterprise riceve ' +
     'risposte VP/C-level e wrong_recipient instrada SDR al referente corretto entro 5 minuti.',
@@ -52,7 +52,7 @@ export const emailTriageB2BSalesNodeDef: NodeDef = {
       type: 'text',
       required: false,
       defaultValue: 'subject',
-      help: 'Nome del campo nell\\\'input upstream che contiene il subject email. Default: `subject` (trigger IMAP).',
+      help: "Nome del campo nell\\'input upstream che contiene il subject email. Default: `subject` (trigger IMAP).",
     },
     {
       key: 'bodyField',
@@ -60,7 +60,7 @@ export const emailTriageB2BSalesNodeDef: NodeDef = {
       type: 'text',
       required: false,
       defaultValue: 'body',
-      help: 'Nome del campo nell\\\'input upstream che contiene il corpo email (plain text o HTML). Default: `body`.',
+      help: "Nome del campo nell\\'input upstream che contiene il corpo email (plain text o HTML). Default: `body`.",
     },
     {
       key: 'fromField',
@@ -77,7 +77,8 @@ export const emailTriageB2BSalesNodeDef: NodeDef = {
       required: false,
       options: ['auto', 'it', 'en', 'de', 'fr'],
       defaultValue: 'auto',
-      help: '`auto` (default) rileva da stop-word italiani/inglesi/tedeschi/francesi. ' +
+      help:
+        '`auto` (default) rileva da stop-word italiani/inglesi/tedeschi/francesi. ' +
         'Forza una lingua quando hai un mercato specifico e vuoi consistenza.',
     },
     {
@@ -86,7 +87,8 @@ export const emailTriageB2BSalesNodeDef: NodeDef = {
       type: 'number',
       required: false,
       defaultValue: '0.7',
-      help: 'Sotto questa soglia la label viene sostituita da `needs_human_review` e ' +
+      help:
+        'Sotto questa soglia la label viene sostituita da `needs_human_review` e ' +
         '`suggestedAction = forward_to_human`. Alza per essere più conservativi (più review umane), ' +
         'abbassa per più automazione (più rischio di errori).',
     },

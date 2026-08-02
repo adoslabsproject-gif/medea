@@ -58,7 +58,11 @@ const m = vi.hoisted(() => ({
 }));
 
 vi.mock('./db-studio.service.js', () => ({
-  DbStudioService: class { constructor() { m.DbStudioMock(); } },
+  DbStudioService: class {
+    constructor() {
+      m.DbStudioMock();
+    }
+  },
 }));
 
 vi.mock('./ai-scaffold/register-tools.js', () => ({}));
@@ -190,7 +194,10 @@ describe('🚨 tool* delegator methods', () => {
     ['toolListDraftNodes', 'listDraftNodes'],
     ['toolCheckSettingsHealth', 'checkSettingsHealth'],
   ])('%s → delega a %s handler senza args', (method, handler) => {
-    (m[handler as keyof typeof m] as ReturnType<typeof vi.fn>).mockReturnValue({ ok: true, data: null });
+    (m[handler as keyof typeof m] as ReturnType<typeof vi.fn>).mockReturnValue({
+      ok: true,
+      data: null,
+    });
     const s = new ScaffoldSession('t1');
     (s as unknown as Record<string, () => unknown>)[method]?.();
     expect(m[handler as keyof typeof m]).toHaveBeenCalledWith(s);
@@ -211,7 +218,10 @@ describe('🚨 tool* delegator methods', () => {
     ['toolReadRun', 'readRun'],
     ['toolRenameColumn', 'renameColumn'],
   ])('%s(args) → delega a %s(session, args)', (method, handler) => {
-    (m[handler as keyof typeof m] as ReturnType<typeof vi.fn>).mockReturnValue({ ok: true, data: null });
+    (m[handler as keyof typeof m] as ReturnType<typeof vi.fn>).mockReturnValue({
+      ok: true,
+      data: null,
+    });
     const s = new ScaffoldSession('t1');
     const args = { test: 'arg' };
     (s as unknown as Record<string, (a: unknown) => unknown>)[method]?.(args);
@@ -228,7 +238,10 @@ describe('🚨 tool* delegator methods', () => {
     ['toolListWorkflows', 'listWorkflows'],
     ['toolReadWorkflow', 'readWorkflow'],
   ])('async %s(args) → delega a %s(session, args)', async (method, handler) => {
-    (m[handler as keyof typeof m] as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, data: null });
+    (m[handler as keyof typeof m] as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      data: null,
+    });
     const s = new ScaffoldSession('t1');
     const args = { test: 'arg' };
     await (s as unknown as Record<string, (a?: unknown) => Promise<unknown>>)[method]?.(args);
@@ -294,7 +307,10 @@ describe('🚨 SSE adapter singleshot — phase events mapping', () => {
     const svc = new AiScaffoldService();
     await svc.scaffold({ goal: 'my-goal', tenantId: 't1' } as never, collectingProgress);
     emitterFromSource?.({ type: 'start' });
-    const start = collectedEvents.find((e) => (e as { type: string }).type === 'start') as { goal: string; maxIter: number };
+    const start = collectedEvents.find((e) => (e as { type: string }).type === 'start') as {
+      goal: string;
+      maxIter: number;
+    };
     expect(start).toBeDefined();
     expect(start.goal).toBe('my-goal');
     expect(start.maxIter).toBe(12);
@@ -304,7 +320,9 @@ describe('🚨 SSE adapter singleshot — phase events mapping', () => {
     const svc = new AiScaffoldService();
     await svc.scaffold({ goal: 'g', tenantId: 't1' } as never, collectingProgress);
     emitterFromSource?.({ type: 'analyzing' });
-    const tc = collectedEvents.find((e) => (e as { type: string; tool?: string }).tool === 'singleshot_analyze');
+    const tc = collectedEvents.find(
+      (e) => (e as { type: string; tool?: string }).tool === 'singleshot_analyze',
+    );
     expect(tc).toBeDefined();
     const iterStart = collectedEvents.find((e) => (e as { type: string }).type === 'iter_start');
     expect(iterStart).toBeDefined();
@@ -315,7 +333,9 @@ describe('🚨 SSE adapter singleshot — phase events mapping', () => {
     await svc.scaffold({ goal: 'g', tenantId: 't1' } as never, collectingProgress);
     emitterFromSource?.({ type: 'analyzing' });
     emitterFromSource?.({ type: 'generating' });
-    const toolResults = collectedEvents.filter((e) => (e as { type: string }).type === 'tool_result');
+    const toolResults = collectedEvents.filter(
+      (e) => (e as { type: string }).type === 'tool_result',
+    );
     // closePhase chiamato per chiudere analyzing prima di aprire generating
     expect(toolResults).toHaveLength(1);
     expect((toolResults[0] as { ok: boolean }).ok).toBe(true);
@@ -342,7 +362,9 @@ describe('🚨 SSE adapter singleshot — phase events mapping', () => {
     const svc = new AiScaffoldService();
     await svc.scaffold({ goal: 'g', tenantId: 't1' } as never, collectingProgress);
     emitterFromSource?.({ type: 'node_added', index: 0, payload: { id: 'n1', defId: 'a' } });
-    const ev = collectedEvents.find((e) => (e as { type: string }).type === 'singleshot_node_added');
+    const ev = collectedEvents.find(
+      (e) => (e as { type: string }).type === 'singleshot_node_added',
+    );
     expect(ev).toBeDefined();
     expect((ev as { node: { id: string } }).node.id).toBe('n1');
   });
@@ -351,7 +373,9 @@ describe('🚨 SSE adapter singleshot — phase events mapping', () => {
     const svc = new AiScaffoldService();
     await svc.scaffold({ goal: 'g', tenantId: 't1' } as never, collectingProgress);
     emitterFromSource?.({ type: 'edge_added', index: 0, payload: { from: 'n1', to: 'n2' } });
-    const ev = collectedEvents.find((e) => (e as { type: string }).type === 'singleshot_edge_added');
+    const ev = collectedEvents.find(
+      (e) => (e as { type: string }).type === 'singleshot_edge_added',
+    );
     expect(ev).toBeDefined();
   });
 
@@ -360,7 +384,8 @@ describe('🚨 SSE adapter singleshot — phase events mapping', () => {
     await svc.scaffold({ goal: 'g', tenantId: 't1' } as never, collectingProgress);
     emitterFromSource?.({ type: 'token_usage', tokens: { input: 100, output: 200 } });
     const ev = collectedEvents.find((e) => (e as { type: string }).type === 'token_usage') as {
-      cumulative: { input: number; output: number }; lastCall: { input: number; output: number };
+      cumulative: { input: number; output: number };
+      lastCall: { input: number; output: number };
     };
     expect(ev).toBeDefined();
     expect(ev.cumulative.input).toBe(100);
@@ -370,7 +395,10 @@ describe('🚨 SSE adapter singleshot — phase events mapping', () => {
   it('🚨 event "meta" → JSON parse + singleshot_meta', async () => {
     const svc = new AiScaffoldService();
     await svc.scaffold({ goal: 'g', tenantId: 't1' } as never, collectingProgress);
-    emitterFromSource?.({ type: 'meta', detail: JSON.stringify({ name: 'wf', reasoning: 'analysis' }) });
+    emitterFromSource?.({
+      type: 'meta',
+      detail: JSON.stringify({ name: 'wf', reasoning: 'analysis' }),
+    });
     const ev = collectedEvents.find((e) => (e as { type: string }).type === 'singleshot_meta') as {
       meta: { name: string; reasoning: string };
     };

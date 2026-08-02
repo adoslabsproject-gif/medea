@@ -10,7 +10,7 @@ export const fileReadNode: NodeModule = {
     description:
       'Nodo di lettura file enterprise dal filesystem persistente del container tenant FlowForge — controparte ' +
       'inversa di action_file_write, condivide le stesse guardrail di sicurezza zero-trust. Legge il contenuto ' +
-      'di un file all\'interno della cartella sandbox del tenant (/data per il container Docker corrispondente), ' +
+      "di un file all'interno della cartella sandbox del tenant (/data per il container Docker corrispondente), " +
       'con allowlist enforcement server-side: no escape ../, no symlink resolution (link simbolici a file fuori ' +
       'sandbox rifiutati prima del read), no accesso a directory di sistema /etc /proc /sys, ownership check ' +
       'sul UID del processo runtime, cap di sicurezza su dimensione file leggibile (default 100MB per evitare ' +
@@ -31,7 +31,7 @@ export const fileReadNode: NodeModule = {
       'progressivo SFTP → action_file_read fallisce con ENOENT → retry con logic_delay 5s gestisce gracefully); ' +
       'file > cap dimensione → FILE_TOO_LARGE 413. ' +
       'Use case: caricare file di configurazione statici (config.json, mappe lookup, blocklist) per uso ' +
-      'lungo l\'intero workflow batch; leggere CSV uploaded dal cliente via SFTP nella cartella drop/ + ' +
+      "lungo l'intero workflow batch; leggere CSV uploaded dal cliente via SFTP nella cartella drop/ + " +
       'parsing tramite logic_convert per ingest in db_query bulk insert; lettura di template documenti markdown ' +
       'pre-creati dal customer (es. "template_offerta_v3.md") per generation downstream tramite action_pdf_generate ' +
       'con expression substitution dei placeholder cliente-specifici; ingest di file droppati da action_file_write ' +
@@ -54,10 +54,11 @@ export const fileReadNode: NodeModule = {
         required: false,
         options: ['utf8', 'utf16le', 'base64', 'hex', 'binary'],
         defaultValue: 'utf8',
-        help: 'utf8/utf16le → output `content` stringa (testo/JSON/CSV). '
-          + 'base64/hex/binary → output `binary`: un HANDLE BinaryData (ref content-addressed sul disco '
-          + 'del tenant, dedup, streaming) invece di gonfiare il JSON. Si collega a Write File / email / '
-          + 'PDF / Excel che consumano BinaryData. Consigliato per immagini/PDF/file binari.',
+        help:
+          'utf8/utf16le → output `content` stringa (testo/JSON/CSV). ' +
+          'base64/hex/binary → output `binary`: un HANDLE BinaryData (ref content-addressed sul disco ' +
+          'del tenant, dedup, streaming) invece di gonfiare il JSON. Si collega a Write File / email / ' +
+          'PDF / Excel che consumano BinaryData. Consigliato per immagini/PDF/file binari.',
       },
     ],
     vendor: 'flowforge',
@@ -74,9 +75,9 @@ export const fileWriteNode: NodeModule = {
     color: '#3b82f6',
     description:
       'Nodo di scrittura file enterprise sul filesystem persistente del container tenant FlowForge — ' +
-      'l\'equivalente managed-cloud di un fs.writeFile Node.js con guard-rail di sicurezza multipli + audit + ' +
+      "l'equivalente managed-cloud di un fs.writeFile Node.js con guard-rail di sicurezza multipli + audit + " +
       'expression templating. Scrive il contenuto fornito (string, JSON serializzato, output di altri nodi via ' +
-      'expression {{$node.X.json.body}}) in un file all\'interno della cartella sandbox del tenant ' +
+      "expression {{$node.X.json.body}}) in un file all'interno della cartella sandbox del tenant " +
       '(/data per il container Docker corrispondente, cap di 1GB per tenant FREE / 10GB PRO / 100GB TEAM). ' +
       'Sicurezza zero-trust: allowlist enforced server-side (no escape ../, no symlink resolution, no overwrite ' +
       'di file system del container tipo /etc, /usr, /var/run), validazione path canonicalizzato prima della ' +
@@ -89,7 +90,7 @@ export const fileWriteNode: NodeModule = {
       'file esistente — fondamentale per logfile incrementali che crescono nel tempo, per evitare race condition ' +
       'su concurrent write di workflow paralleli sullo stesso file il nodo usa O_APPEND atomico syscall-level). ' +
       'Supporta interamente il sistema di template FlowForge: {{espressioni}} nel contenuto vengono valutate ' +
-      'dall\'expression engine prima della scrittura (accesso a $node, $input, $vars, helpers come $date.now, ' +
+      "dall'expression engine prima della scrittura (accesso a $node, $input, $vars, helpers come $date.now, " +
       '$string.upper, $crypto.sha256). ' +
       'Output: { path (absolute resolved), bytesWritten (per audit + quota), mode (overwrite|append), ' +
       'mtimeIso, sha256? (computato se sha256 fornito come check di integrità) }. ' +
@@ -108,7 +109,13 @@ export const fileWriteNode: NodeModule = {
         placeholder: 'es. output.json (relativo) o /tmp/log.txt',
         help: 'Path nel sandbox del tenant. La cartella viene creata se non esiste.',
       },
-      { key: 'content', label: 'Contenuto', type: 'textarea', required: false, help: 'Testo o JSON.stringify(...). Supporta {{espressioni}}. Lascialo VUOTO per scrivere un file binario: se a monte arriva un handle BinaryData (es. da Read File con output binario, o un nodo PDF), ne vengono scritti i byte reali (no conversione a stringa). Content esplicito ha precedenza.' },
+      {
+        key: 'content',
+        label: 'Contenuto',
+        type: 'textarea',
+        required: false,
+        help: 'Testo o JSON.stringify(...). Supporta {{espressioni}}. Lascialo VUOTO per scrivere un file binario: se a monte arriva un handle BinaryData (es. da Read File con output binario, o un nodo PDF), ne vengono scritti i byte reali (no conversione a stringa). Content esplicito ha precedenza.',
+      },
       {
         key: 'mode',
         label: 'Modalità scrittura',

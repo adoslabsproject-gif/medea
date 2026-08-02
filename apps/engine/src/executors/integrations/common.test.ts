@@ -24,9 +24,8 @@ vi.mock('@/services/integrations/store.js', () => ({
 
 vi.mock('@/lib/logger.js');
 
-const {
-  IntegrationError, withRetry, requireIntegration, isOAuthExpiringSoon, lazyRequire,
-} = await import('./common.js');
+const { IntegrationError, withRetry, requireIntegration, isOAuthExpiringSoon, lazyRequire } =
+  await import('./common.js');
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -83,7 +82,10 @@ describe('🚨 withRetry — exponential backoff + jitter', () => {
       call += 1;
       if (call < 3) {
         throw new IntegrationError({
-          provider: 'x' as never, code: 'TRANSIENT', message: 'err', retryable: true,
+          provider: 'x' as never,
+          code: 'TRANSIENT',
+          message: 'err',
+          retryable: true,
         });
       }
       return 'eventually-ok';
@@ -96,8 +98,11 @@ describe('🚨 withRetry — exponential backoff + jitter', () => {
   it('🚨 SECURITY: 4xx → NO retry (client error)', async () => {
     const op = vi.fn(async () => {
       throw new IntegrationError({
-        provider: 'x' as never, code: 'BAD_REQ', message: 'm',
-        httpStatus: 400, retryable: false,
+        provider: 'x' as never,
+        code: 'BAD_REQ',
+        message: 'm',
+        httpStatus: 400,
+        retryable: false,
       });
     });
     await expect(withRetry(op, { baseDelayMs: 1 })).rejects.toThrow();
@@ -110,7 +115,10 @@ describe('🚨 withRetry — exponential backoff + jitter', () => {
       call += 1;
       if (call < 2) {
         throw new IntegrationError({
-          provider: 'x' as never, code: 'SERVER_ERR', message: 'm', httpStatus: 503,
+          provider: 'x' as never,
+          code: 'SERVER_ERR',
+          message: 'm',
+          httpStatus: 503,
         });
       }
       return 'recovered';
@@ -123,7 +131,10 @@ describe('🚨 withRetry — exponential backoff + jitter', () => {
   it('🚨 retry exhausted → throw last error', async () => {
     const op = vi.fn(async () => {
       throw new IntegrationError({
-        provider: 'x' as never, code: 'TRANSIENT', message: 'persistent', retryable: true,
+        provider: 'x' as never,
+        code: 'TRANSIENT',
+        message: 'persistent',
+        retryable: true,
       });
     });
     await expect(withRetry(op, { retries: 2, baseDelayMs: 1 })).rejects.toThrow(/persistent/);
@@ -196,7 +207,10 @@ describe('🚨 withRetry — exponential backoff + jitter', () => {
   it('🚨 BOUNDARY: retries=0 → 1 sola call, throw immediato', async () => {
     const op = vi.fn(async () => {
       throw new IntegrationError({
-        provider: 'x' as never, code: 'C', message: 'm', retryable: true,
+        provider: 'x' as never,
+        code: 'C',
+        message: 'm',
+        retryable: true,
       });
     });
     await expect(withRetry(op, { retries: 0, baseDelayMs: 1 })).rejects.toThrow();
@@ -209,9 +223,13 @@ describe('🚨 withRetry — exponential backoff + jitter', () => {
     let call = 0;
     const op = vi.fn(async () => {
       call += 1;
-      if (call < 3) throw new IntegrationError({
-        provider: 'x' as never, code: 'C', message: 'm', retryable: true,
-      });
+      if (call < 3)
+        throw new IntegrationError({
+          provider: 'x' as never,
+          code: 'C',
+          message: 'm',
+          retryable: true,
+        });
       return 'ok';
     });
     const start = Date.now();
@@ -232,7 +250,9 @@ describe('🚨 requireIntegration — fail-loud', () => {
 
   it('🚨 integration MISSING → IntegrationError NOT_CONFIGURED', () => {
     getIntegrationMock.mockReturnValue(null);
-    expect(() => requireIntegration({ provider: 'slack' as never, tenantId: 't1' })).toThrow(IntegrationError);
+    expect(() => requireIntegration({ provider: 'slack' as never, tenantId: 't1' })).toThrow(
+      IntegrationError,
+    );
     try {
       requireIntegration({ provider: 'slack' as never, tenantId: 't1' });
     } catch (e) {
@@ -278,7 +298,7 @@ describe('🚨 isOAuthExpiringSoon — 5min safety margin', () => {
     expect(isOAuthExpiringSoon(Date.now() + 2 * 60 * 1000)).toBe(true);
   });
 
-  it('🚨 expiresAt nel passato → true (token gia\' scaduto)', () => {
+  it("🚨 expiresAt nel passato → true (token gia' scaduto)", () => {
     expect(isOAuthExpiringSoon(Date.now() - 1000)).toBe(true);
   });
 
@@ -300,8 +320,9 @@ describe('🚨 lazyRequire — graceful module load', () => {
   });
 
   it('🚨 module MANCANTE → IntegrationError MODULE_NOT_INSTALLED', async () => {
-    await expect(lazyRequire('@medea/engine-non-existent-package-xyz', 'fake-package', 'slack' as never))
-      .rejects.toThrow(IntegrationError);
+    await expect(
+      lazyRequire('@medea/engine-non-existent-package-xyz', 'fake-package', 'slack' as never),
+    ).rejects.toThrow(IntegrationError);
     try {
       await lazyRequire('@medea/engine-non-existent-package-xyz', 'fake-package', 'slack' as never);
     } catch (e) {

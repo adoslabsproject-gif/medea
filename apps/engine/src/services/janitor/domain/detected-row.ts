@@ -39,19 +39,20 @@ export function buildDetectedRow(args: {
   raw: Record<string, unknown>;
   tenantId?: string;
 }): DetectedRow {
-  const out: DetectedRow = args.tenantId !== undefined
-    ? {
-      id: args.id,
-      reason: args.reason,
-      severity: args.severity,
-      raw: Object.freeze({ ...args.raw }),
-      tenantId: args.tenantId,
-    }
-    : {
-      id: args.id,
-      reason: args.reason,
-      severity: args.severity,
-      raw: Object.freeze({ ...args.raw }),
-    };
+  const out: DetectedRow =
+    args.tenantId !== undefined
+      ? {
+          id: args.id,
+          reason: args.reason,
+          severity: args.severity,
+          raw: Object.freeze({ ...args.raw }),
+          tenantId: args.tenantId,
+        }
+      : {
+          id: args.id,
+          reason: args.reason,
+          severity: args.severity,
+          raw: Object.freeze({ ...args.raw }),
+        };
   return Object.freeze(out);
 }

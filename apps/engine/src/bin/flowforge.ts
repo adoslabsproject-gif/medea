@@ -79,8 +79,11 @@ function openBrowser(url: string): void {
 }
 
 function printBanner(host: string, port: number): void {
-  const localUrl = host === '0.0.0.0' ? `http://localhost:${port.toString()}` : `http://${host}:${port.toString()}`;
-   
+  const localUrl =
+    host === '0.0.0.0'
+      ? `http://localhost:${port.toString()}`
+      : `http://${host}:${port.toString()}`;
+
   console.log('');
   console.log('  ╭───────────────────────────────────────────────────────╮');
   console.log('  │                                                       │');
@@ -100,7 +103,6 @@ function printBanner(host: string, port: number): void {
   console.log('  │   Press Ctrl+C to stop                                │');
   console.log('  ╰───────────────────────────────────────────────────────╯');
   console.log('');
-   
 }
 
 async function runServe(args: string[]): Promise<void> {
@@ -116,7 +118,10 @@ async function runServe(args: string[]): Promise<void> {
     process.env.MEDEA_INTERNAL_TOKEN = crypto.randomBytes(32).toString('hex');
   }
 
-  logger.info({ env: config.NODE_ENV, port: config.PORT, host: config.HOST }, 'Starting FlowForge runtime');
+  logger.info(
+    { env: config.NODE_ENV, port: config.PORT, host: config.HOST },
+    'Starting FlowForge runtime',
+  );
   runMigrations();
 
   const eventBus = new InMemoryEventBus();
@@ -130,7 +135,10 @@ async function runServe(args: string[]): Promise<void> {
       logger.info(report, 'Migrazione webhook-ref completata: link cablati → ref:// (indirection)');
     }
   } catch (err) {
-    logger.error({ err: err instanceof Error ? err.message : String(err) }, 'Migrazione webhook-ref fallita — boot prosegue, workflow invariati');
+    logger.error(
+      { err: err instanceof Error ? err.message : String(err) },
+      'Migrazione webhook-ref fallita — boot prosegue, workflow invariati',
+    );
   }
 
   // ─── Janitor — Data Quality Self-Healing ──────────────────────
@@ -156,7 +164,10 @@ async function runServe(args: string[]): Promise<void> {
     logger.info({ port: info.port, host: info.address }, 'FlowForge runtime listening');
     printBanner(config.HOST, info.port);
     if (!noOpen) {
-      const target = config.HOST === '0.0.0.0' ? `http://localhost:${info.port.toString()}` : `http://${config.HOST}:${info.port.toString()}`;
+      const target =
+        config.HOST === '0.0.0.0'
+          ? `http://localhost:${info.port.toString()}`
+          : `http://${config.HOST}:${info.port.toString()}`;
       openBrowser(target);
     }
   });
@@ -236,9 +247,16 @@ async function runServe(args: string[]): Promise<void> {
   } catch (err) {
     logger.error({ err }, 'ai_interactions sweep at boot failed');
   }
-  const aiSweepTimer = setInterval(() => {
-    try { aiInteractions.sweep(); } catch (err) { logger.error({ err }, 'ai_interactions sweep failed'); }
-  }, 24 * 60 * 60 * 1000);
+  const aiSweepTimer = setInterval(
+    () => {
+      try {
+        aiInteractions.sweep();
+      } catch (err) {
+        logger.error({ err }, 'ai_interactions sweep failed');
+      }
+    },
+    24 * 60 * 60 * 1000,
+  );
   aiSweepTimer.unref();
 
   const scheduler = new SchedulerService(eventBus);
@@ -272,13 +290,18 @@ async function runServe(args: string[]): Promise<void> {
 
   const recovery = new CheckpointRecoveryService(
     checkpointService,
-    async (runId): Promise<void> => { await runService.resumeFromCheckpoint(runId); },
+    async (runId): Promise<void> => {
+      await runService.resumeFromCheckpoint(runId);
+    },
   );
-  void recovery.recover().then((count) => {
-    if (count > 0) logger.info({ count }, 'Recovered interrupted runs from checkpoints');
-  }).catch((err: unknown) => {
-    logger.error({ err }, 'Checkpoint recovery failed');
-  });
+  void recovery
+    .recover()
+    .then((count) => {
+      if (count > 0) logger.info({ count }, 'Recovered interrupted runs from checkpoints');
+    })
+    .catch((err: unknown) => {
+      logger.error({ err }, 'Checkpoint recovery failed');
+    });
 
   // Paused-workflows janitor: every 60s sweep for timed-out async frames
   // and resume them with their default payload.
@@ -313,15 +336,20 @@ async function runServe(args: string[]): Promise<void> {
       void closeDatabase();
       process.exit(0);
     });
-    setTimeout(() => { process.exit(0); }, 5000).unref();
+    setTimeout(() => {
+      process.exit(0);
+    }, 5000).unref();
   };
-  process.on('SIGINT', (sig) => { void shutdown(sig); });
-  process.on('SIGTERM', (sig) => { void shutdown(sig); });
+  process.on('SIGINT', (sig) => {
+    void shutdown(sig);
+  });
+  process.on('SIGTERM', (sig) => {
+    void shutdown(sig);
+  });
 }
 
 function runWorker(): void {
   if (!isQueueModeEnabled()) {
-     
     console.error('MEDEA_QUEUE_MODE is not "redis". Worker will not start.');
     process.exit(2);
   }
@@ -346,12 +374,15 @@ function runWorker(): void {
     await shutdownQueue();
     process.exit(0);
   };
-  process.on('SIGINT', (sig) => { void shutdown(sig); });
-  process.on('SIGTERM', (sig) => { void shutdown(sig); });
+  process.on('SIGINT', (sig) => {
+    void shutdown(sig);
+  });
+  process.on('SIGTERM', (sig) => {
+    void shutdown(sig);
+  });
 }
 
 function printHelp(): void {
-   
   console.log('flowforge — on-prem workflow automation\n');
   console.log('Usage:');
   console.log('  flowforge [serve]            Start API + UI server (opens browser)');
@@ -363,7 +394,6 @@ function printHelp(): void {
   console.log('  MEDEA_MASTER_PASSWORD (required in production)');
   console.log('  MEDEA_QUEUE_MODE=redis + MEDEA_REDIS_URL (queue mode)');
   console.log('\nDocs: https://flowforge.dev/docs');
-   
 }
 
 async function main(): Promise<void> {
@@ -385,7 +415,7 @@ async function main(): Promise<void> {
     await runPromoteSuperadmin(args.slice(1));
     return;
   }
-   
+
   console.error(`Unknown command: ${cmd}\n`);
   printHelp();
   process.exit(2);
@@ -399,7 +429,6 @@ async function main(): Promise<void> {
 async function runPromoteSuperadmin(args: string[]): Promise<void> {
   const email = args[0];
   if (!email) {
-     
     console.error('Usage: flowforge promote-superadmin <email>');
     process.exit(2);
   }
@@ -407,20 +436,24 @@ async function runPromoteSuperadmin(args: string[]): Promise<void> {
   runMigrations();
   const { getDatabase } = await import('../storage/db.js');
   const { sqlite } = getDatabase();
-  const row = sqlite.prepare('SELECT id, email, role FROM users WHERE email = ?').get(email) as { id: string; email: string; role: string } | undefined;
+  const row = sqlite.prepare('SELECT id, email, role FROM users WHERE email = ?').get(email) as
+    | { id: string; email: string; role: string }
+    | undefined;
   if (!row) {
-     
     console.error(`User not found: ${email}`);
     process.exit(1);
   }
   if (row.role === 'superadmin') {
-     
     console.log(`User ${email} is already superadmin.`);
     return;
   }
-  sqlite.prepare("UPDATE users SET role = 'superadmin', updated_at = ? WHERE id = ?").run(new Date().toISOString(), row.id);
-   
-  console.log(`✓ User ${email} promoted from "${row.role}" to "superadmin". They will need to log in again to pick up the new role.`);
+  sqlite
+    .prepare("UPDATE users SET role = 'superadmin', updated_at = ? WHERE id = ?")
+    .run(new Date().toISOString(), row.id);
+
+  console.log(
+    `✓ User ${email} promoted from "${row.role}" to "superadmin". They will need to log in again to pick up the new role.`,
+  );
 }
 
 void main().catch((err: unknown) => {

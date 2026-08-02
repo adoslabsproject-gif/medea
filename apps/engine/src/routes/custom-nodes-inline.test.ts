@@ -56,7 +56,10 @@ function makeApp() {
   const app = new Hono();
   // Inject mock auth ctx per resolveCtx (reads c.get('auth'))
   app.use('*', async (c, next) => {
-    (c as unknown as { set: (k: string, v: unknown) => void }).set('auth', { userId: 'u_test', tenantId: 'ws_test' });
+    (c as unknown as { set: (k: string, v: unknown) => void }).set('auth', {
+      userId: 'u_test',
+      tenantId: 'ws_test',
+    });
     await next();
   });
   app.route('/', createCustomNodesRoutes());
@@ -64,7 +67,9 @@ function makeApp() {
 }
 
 describe('POST /:id/inline-completion', () => {
-  beforeEach(() => { callInlineCompletionMock.mockReset(); });
+  beforeEach(() => {
+    callInlineCompletionMock.mockReset();
+  });
 
   it('success path: chiama service + ritorna body', async () => {
     callInlineCompletionMock.mockResolvedValue({
@@ -77,7 +82,12 @@ describe('POST /:id/inline-completion', () => {
     const res = await app.request('/cn_abc/inline-completion', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ file: 'executor.ts', contextBefore: 'ctx', cursorLine: 5, cursorColumn: 10 }),
+      body: JSON.stringify({
+        file: 'executor.ts',
+        contextBefore: 'ctx',
+        cursorLine: 5,
+        cursorColumn: 10,
+      }),
     });
     expect(res.status).toBe(200);
     const json = await jsonBody(res);
@@ -98,7 +108,12 @@ describe('POST /:id/inline-completion', () => {
     const res = await app.request('/cn_x/inline-completion', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ file: 'executor.ts', contextBefore: 123, cursorLine: 1, cursorColumn: 1 }),
+      body: JSON.stringify({
+        file: 'executor.ts',
+        contextBefore: 123,
+        cursorLine: 1,
+        cursorColumn: 1,
+      }),
     });
     expect(res.status).toBe(400);
     expect(callInlineCompletionMock).not.toHaveBeenCalled();
@@ -115,7 +130,12 @@ describe('POST /:id/inline-completion', () => {
   });
 
   it('truncate contextBefore a 4000 char', async () => {
-    callInlineCompletionMock.mockResolvedValue({ completion: '', tokensIn: 0, tokensOut: 0, fromCache: false });
+    callInlineCompletionMock.mockResolvedValue({
+      completion: '',
+      tokensIn: 0,
+      tokensOut: 0,
+      fromCache: false,
+    });
     const app = makeApp();
     const huge = 'A'.repeat(10_000);
     await app.request('/cn_x/inline-completion', {
@@ -128,7 +148,12 @@ describe('POST /:id/inline-completion', () => {
   });
 
   it('truncate file name a 64 char', async () => {
-    callInlineCompletionMock.mockResolvedValue({ completion: '', tokensIn: 0, tokensOut: 0, fromCache: false });
+    callInlineCompletionMock.mockResolvedValue({
+      completion: '',
+      tokensIn: 0,
+      tokensOut: 0,
+      fromCache: false,
+    });
     const app = makeApp();
     const longName = 'x'.repeat(200) + '.ts';
     await app.request('/cn_x/inline-completion', {
@@ -141,7 +166,12 @@ describe('POST /:id/inline-completion', () => {
   });
 
   it('clamp cursorLine >= 1', async () => {
-    callInlineCompletionMock.mockResolvedValue({ completion: '', tokensIn: 0, tokensOut: 0, fromCache: false });
+    callInlineCompletionMock.mockResolvedValue({
+      completion: '',
+      tokensIn: 0,
+      tokensOut: 0,
+      fromCache: false,
+    });
     const app = makeApp();
     await app.request('/cn_x/inline-completion', {
       method: 'POST',
@@ -168,12 +198,22 @@ describe('POST /:id/inline-completion', () => {
   });
 
   it('floor cursorLine fractionario', async () => {
-    callInlineCompletionMock.mockResolvedValue({ completion: '', tokensIn: 0, tokensOut: 0, fromCache: false });
+    callInlineCompletionMock.mockResolvedValue({
+      completion: '',
+      tokensIn: 0,
+      tokensOut: 0,
+      fromCache: false,
+    });
     const app = makeApp();
     await app.request('/cn_x/inline-completion', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ file: 'f.ts', contextBefore: '', cursorLine: 5.7, cursorColumn: 10.99 }),
+      body: JSON.stringify({
+        file: 'f.ts',
+        contextBefore: '',
+        cursorLine: 5.7,
+        cursorColumn: 10.99,
+      }),
     });
     const arg = callInlineCompletionMock.mock.calls[0]![0];
     expect(arg.cursorLine).toBe(5);

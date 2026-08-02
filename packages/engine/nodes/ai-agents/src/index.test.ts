@@ -80,7 +80,8 @@ describe('aiAgentNodes', () => {
     ] as const;
 
     it('every A3.3 stabilized agent has description ≥150 char + ≥25 distinct words + IT + Use case (anti-gaming)', () => {
-      const englishVerbs = /^(Run|Send|Trigger|Execute|Read|Write|Get|Update|Delete|Create|Fetch|Query|Pause|Reshape|Call|Catch|Invoke|Push|Pull|Poll|Auto|Watch|Make|Build|Sleep|Wait|Receive|Calculate|Connect|Insert|Iterate|Iterates|Schedule|Subscribe|Classify|Extract|Translate|Faithful|Produce|Generate)\b/;
+      const englishVerbs =
+        /^(Run|Send|Trigger|Execute|Read|Write|Get|Update|Delete|Create|Fetch|Query|Pause|Reshape|Call|Catch|Invoke|Push|Pull|Poll|Auto|Watch|Make|Build|Sleep|Wait|Receive|Calculate|Connect|Insert|Iterate|Iterates|Schedule|Subscribe|Classify|Extract|Translate|Faithful|Produce|Generate)\b/;
       const offenders: string[] = [];
       for (const id of A33_STABILIZED_AGENT_IDS) {
         const def = AI_AGENT_DEFINITIONS.find((d) => d.id === id);
@@ -97,7 +98,9 @@ describe('aiAgentNodes', () => {
         }
         const distinctWords = new Set(desc.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? []);
         if (distinctWords.size < 25) {
-          offenders.push(`${id}: only ${String(distinctWords.size)} distinct words (<25 = gameable)`);
+          offenders.push(
+            `${id}: only ${String(distinctWords.size)} distinct words (<25 = gameable)`,
+          );
         }
         if (!/use case/i.test(desc)) {
           offenders.push(`${id}: missing "use case" enumeration`);
@@ -125,11 +128,15 @@ describe('internalGatewayTrustedHost — esenzione SSRF per il gateway interno (
   });
 
   it('🚨 MUTATION: BYOK con origin DIVERSO (api.openai.com) → undefined (guard pieno, niente esenzione)', () => {
-    expect(internalGatewayTrustedHost('https://api.openai.com/v1/chat/completions', GW)).toBeUndefined();
+    expect(
+      internalGatewayTrustedHost('https://api.openai.com/v1/chat/completions', GW),
+    ).toBeUndefined();
   });
 
   it('🚨 porta diversa = origin diverso → undefined (non apre 172.20.0.1 su altre porte)', () => {
-    expect(internalGatewayTrustedHost('http://172.20.0.1:9999/v1/chat/completions', GW)).toBeUndefined();
+    expect(
+      internalGatewayTrustedHost('http://172.20.0.1:9999/v1/chat/completions', GW),
+    ).toBeUndefined();
   });
 
   it('gateway non configurato → undefined', () => {

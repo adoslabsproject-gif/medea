@@ -29,7 +29,13 @@
  * have human review before training_split assignment.
  */
 
-export type PIIClass = 'email' | 'codice_fiscale' | 'partita_iva' | 'iban' | 'phone' | 'credit_card';
+export type PIIClass =
+  | 'email'
+  | 'codice_fiscale'
+  | 'partita_iva'
+  | 'iban'
+  | 'phone'
+  | 'credit_card';
 
 export interface RedactionResult {
   redacted: string;
@@ -38,13 +44,23 @@ export interface RedactionResult {
 }
 
 const EMPTY_COUNTS = (): Record<PIIClass, number> => ({
-  email: 0, codice_fiscale: 0, partita_iva: 0, iban: 0, phone: 0, credit_card: 0,
+  email: 0,
+  codice_fiscale: 0,
+  partita_iva: 0,
+  iban: 0,
+  phone: 0,
+  credit_card: 0,
 });
 
 // Order matters: process IBAN before partita_iva so the digits inside an IBAN
 // don't get over-matched as a P.IVA. Process codice_fiscale before phone for
 // the same reason (16-char strings with digits could partially match phone).
-const PATTERNS: { className: PIIClass; regex: RegExp; placeholder: string; postValidate?: (m: string) => boolean }[] = [
+const PATTERNS: {
+  className: PIIClass;
+  regex: RegExp;
+  placeholder: string;
+  postValidate?: (m: string) => boolean;
+}[] = [
   // Email — RFC-5321-ish, conservative
   {
     className: 'email',

@@ -21,9 +21,16 @@
  * @module services/ai-scaffold/semantic-rules
  */
 import type { QualityGateInput, QualityIssue } from '@/services/ai-scaffold/quality-gate.js';
-import { asStr, buildGraph, reachesForward, type SemNode } from '@/services/ai-scaffold/semantic-rules-shared.js';
 import {
-  checkTriggerWithoutAction, checkAuditNotTerminal, checkSensitiveHardcoded,
+  asStr,
+  buildGraph,
+  reachesForward,
+  type SemNode,
+} from '@/services/ai-scaffold/semantic-rules-shared.js';
+import {
+  checkTriggerWithoutAction,
+  checkAuditNotTerminal,
+  checkSensitiveHardcoded,
 } from '@/services/ai-scaffold/semantic-rules-config.js';
 
 /** Condizione che TESTA un errore/fallimento (true ⇒ ERRORE). */
@@ -32,7 +39,9 @@ const ERROR_CONDITION_RE =
 
 /** Un nodo che REGISTRA/INSTRADA un fallimento (dead-letter, alert, error-log). */
 function isErrorSink(node: SemNode): boolean {
-  const hay = [node.id, node.defId, asStr(node.config.table), asStr(node.config.channel)].join(' ').toLowerCase();
+  const hay = [node.id, node.defId, asStr(node.config.table), asStr(node.config.channel)]
+    .join(' ')
+    .toLowerCase();
   return /\bdlq\b|dead.?letter|fallit|errori?\b|error|fail/.test(hay);
 }
 
@@ -42,15 +51,20 @@ function isEntityLookup(node: SemNode): boolean {
   const method = asStr(node.config.method).toUpperCase();
   if (method && method !== 'GET') return false;
   const hay = [node.id, asStr(node.config.url), asStr(node.config.path)].join(' ').toLowerCase();
-  return /lookup|\bfind\b|search|\/profile|exists|get.?by|\/contact|\/customer|\/cliente|crm/.test(hay);
+  return /lookup|\bfind\b|search|\/profile|exists|get.?by|\/contact|\/customer|\/cliente|crm/.test(
+    hay,
+  );
 }
 
 /** POST/insert che CREA una nuova entità. */
 function isEntityCreate(node: SemNode): boolean {
   const method = asStr(node.config.method).toUpperCase();
-  const hay = [node.id, node.defId, asStr(node.config.url), asStr(node.config.path)].join(' ').toLowerCase();
+  const hay = [node.id, node.defId, asStr(node.config.url), asStr(node.config.path)]
+    .join(' ')
+    .toLowerCase();
   const looksCreate = /\bcre[a|ate]|\bnew\b|insert|\/contact|\/customer|register/.test(hay);
-  if (node.defId === 'db_insert') return looksCreate || /crea|create|new/.test(node.id.toLowerCase());
+  if (node.defId === 'db_insert')
+    return looksCreate || /crea|create|new/.test(node.id.toLowerCase());
   return method === 'POST' && looksCreate;
 }
 

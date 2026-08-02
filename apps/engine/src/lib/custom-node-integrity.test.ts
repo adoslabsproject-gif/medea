@@ -45,7 +45,12 @@ describe('round-trip', () => {
 
 describe('🚨 TAMPER detection — ogni campo del pacchetto', () => {
   const fields: (keyof CustomNodePackage)[] = [
-    'slug', 'semver', 'sourceExecutor', 'sourceDefinition', 'sourceSchema', 'compiledExecutor',
+    'slug',
+    'semver',
+    'sourceExecutor',
+    'sourceDefinition',
+    'sourceSchema',
+    'compiledExecutor',
   ];
   it.each(fields)('manomissione di "%s" → digest_mismatch', (field) => {
     const integrity = makePackageIntegrity(PKG, SECRET);
@@ -57,15 +62,21 @@ describe('🚨 TAMPER detection — ogni campo del pacchetto', () => {
 
   it('executor sostituito con payload malevolo → digest_mismatch (lo scenario reale)', () => {
     const integrity = makePackageIntegrity(PKG, SECRET);
-    const evil: CustomNodePackage = { ...PKG, sourceExecutor: 'export const executor = async () => { /* exfiltrate */ };' };
+    const evil: CustomNodePackage = {
+      ...PKG,
+      sourceExecutor: 'export const executor = async () => { /* exfiltrate */ };',
+    };
     expect(verifyPackageIntegrity(evil, integrity, SECRET).reason).toBe('digest_mismatch');
   });
 
-  it('🚨 compiledExecutor sostituito (l\'artefatto ESEGUITO) → digest_mismatch', () => {
+  it("🚨 compiledExecutor sostituito (l'artefatto ESEGUITO) → digest_mismatch", () => {
     // Il bypass storico: firmare solo i sorgenti lascia il bundle eseguito
     // manomettibile. Il bundle DEVE essere nel digest.
     const integrity = makePackageIntegrity(PKG, SECRET);
-    const evil: CustomNodePackage = { ...PKG, compiledExecutor: '(function(){ /* exfiltrate */ })()' };
+    const evil: CustomNodePackage = {
+      ...PKG,
+      compiledExecutor: '(function(){ /* exfiltrate */ })()',
+    };
     expect(verifyPackageIntegrity(evil, integrity, SECRET).reason).toBe('digest_mismatch');
   });
 });
@@ -73,7 +84,9 @@ describe('🚨 TAMPER detection — ogni campo del pacchetto', () => {
 describe('🚨 autenticità — firma', () => {
   it('secret sbagliato in verify → signature_mismatch', () => {
     const integrity = makePackageIntegrity(PKG, SECRET);
-    expect(verifyPackageIntegrity(PKG, integrity, 'wrong-secret-wrong-secret-wrong!!').reason).toBe('signature_mismatch');
+    expect(verifyPackageIntegrity(PKG, integrity, 'wrong-secret-wrong-secret-wrong!!').reason).toBe(
+      'signature_mismatch',
+    );
   });
 
   it('firma forgiata (digest coerente ma HMAC inventato) → signature_mismatch', () => {
@@ -122,14 +135,20 @@ describe('record malformato / algo', () => {
     expect(verifyPackageIntegrity(PKG, undefined, SECRET).reason).toBe('malformed');
   });
   it('digest/signature mancanti → malformed', () => {
-    expect(verifyPackageIntegrity(PKG, { algo: INTEGRITY_ALGO, digest: 'x' } as never, SECRET).reason).toBe('malformed');
+    expect(
+      verifyPackageIntegrity(PKG, { algo: INTEGRITY_ALGO, digest: 'x' } as never, SECRET).reason,
+    ).toBe('malformed');
   });
   it('algo sconosciuto → algo_unsupported', () => {
     const integrity = makePackageIntegrity(PKG, SECRET);
-    expect(verifyPackageIntegrity(PKG, { ...integrity, algo: 'md5' as never }, SECRET).reason).toBe('algo_unsupported');
+    expect(verifyPackageIntegrity(PKG, { ...integrity, algo: 'md5' as never }, SECRET).reason).toBe(
+      'algo_unsupported',
+    );
   });
   it('digest di lunghezza diversa → digest_mismatch senza crash', () => {
     const integrity = makePackageIntegrity(PKG, SECRET);
-    expect(verifyPackageIntegrity(PKG, { ...integrity, digest: 'abc' }, SECRET).reason).toBe('digest_mismatch');
+    expect(verifyPackageIntegrity(PKG, { ...integrity, digest: 'abc' }, SECRET).reason).toBe(
+      'digest_mismatch',
+    );
   });
 });

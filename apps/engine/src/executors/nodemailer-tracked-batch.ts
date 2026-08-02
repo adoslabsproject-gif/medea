@@ -41,14 +41,16 @@ export const sendEmailTrackedBatchExecutor: NodeExecutor = async (rawConfig, inp
   const incomingRecipients = Array.isArray(incoming.recipients) ? incoming.recipients : undefined;
   const recipients = cfg.recipients ?? incomingRecipients;
   if (!Array.isArray(recipients) || recipients.length === 0) {
-    throw new Error('action_email_send_tracked_batch: lista destinatari vuota (campo `recipients` config o `$json.recipients` upstream)');
+    throw new Error(
+      'action_email_send_tracked_batch: lista destinatari vuota (campo `recipients` config o `$json.recipients` upstream)',
+    );
   }
 
   // The single-send executor enforces its own consent gate — but doing
   // the check ONCE here for the batch lets us fail fast before any send.
   if (cfg.requireConsent && incoming.consentVerified !== true) {
     throw new Error(
-      'action_email_send_tracked_batch: invio rifiutato — l\'input upstream non porta `consentVerified=true`.',
+      "action_email_send_tracked_batch: invio rifiutato — l'input upstream non porta `consentVerified=true`.",
     );
   }
 
@@ -58,7 +60,13 @@ export const sendEmailTrackedBatchExecutor: NodeExecutor = async (rawConfig, inp
   }));
 
   const attempt = async (item: BatchItem, _attemptIdx: number): Promise<AttemptResult> => {
-    const rec = item.overrides as { leadId?: string; to?: string; fromAddress?: string; templateVars?: Record<string, string | number | boolean | null>; sendId?: string };
+    const rec = item.overrides as {
+      leadId?: string;
+      to?: string;
+      fromAddress?: string;
+      templateVars?: Record<string, string | number | boolean | null>;
+      sendId?: string;
+    };
     if (!rec.leadId || !rec.to) {
       return { ok: false, retry: false, error: `recipient #${item.index}: leadId/to mancanti` };
     }
@@ -90,7 +98,8 @@ export const sendEmailTrackedBatchExecutor: NodeExecutor = async (rawConfig, inp
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       // Gmail / SMTP 4xx codes are retryable; 5xx and config errors are not.
-      const retry = /\b(429|421|450|451|452)\b/.test(msg) || /timeout|ECONN|ENOTFOUND|throttl/i.test(msg);
+      const retry =
+        /\b(429|421|450|451|452)\b/.test(msg) || /timeout|ECONN|ENOTFOUND|throttl/i.test(msg);
       return { ok: false, retry, error: msg };
     }
   };
@@ -107,12 +116,15 @@ export const sendEmailTrackedBatchExecutor: NodeExecutor = async (rawConfig, inp
     attempt,
   });
 
-  logger.info({
-    component: 'email-send-tracked-batch',
-    campaignId: cfg.campaignId,
-    ...result.stats,
-    items: items.length,
-  }, 'batch send completed');
+  logger.info(
+    {
+      component: 'email-send-tracked-batch',
+      campaignId: cfg.campaignId,
+      ...result.stats,
+      items: items.length,
+    },
+    'batch send completed',
+  );
 
   return {
     output: {
@@ -133,7 +145,10 @@ export const sendEmailTrackedBatchExecutor: NodeExecutor = async (rawConfig, inp
  * and overkill for the variable-substitution patterns the workflow
  * authors use here.
  */
-function interpolate(template: string, vars: Record<string, string | number | boolean | null> | undefined): string {
+function interpolate(
+  template: string,
+  vars: Record<string, string | number | boolean | null> | undefined,
+): string {
   const bag = vars ?? {};
   return template.replace(/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/g, (_full, key: string) => {
     const v = bag[key];

@@ -33,9 +33,16 @@ afterEach(() => {
 
 function makeWf(): Workflow {
   return {
-    id: 'wf-od', tenantId: 'tenant-a', name: 'OD', enabled: true,
-    schemaVersion: '1.0.0', nodes: [], edges: [], nodeDefs: [],
-    createdAt: '2026-06-12', updatedAt: '2026-06-12',
+    id: 'wf-od',
+    tenantId: 'tenant-a',
+    name: 'OD',
+    enabled: true,
+    schemaVersion: '1.0.0',
+    nodes: [],
+    edges: [],
+    nodeDefs: [],
+    createdAt: '2026-06-12',
+    updatedAt: '2026-06-12',
   } as unknown as Workflow;
 }
 
@@ -44,8 +51,12 @@ function makeNode(config: Record<string, string>): CanvasNode {
 }
 
 const VALID = {
-  baseUrl: 'https://odoo.test', database: 'db', login: 'u', password: 'p',
-  model: 'res.partner', pollIntervalSec: '10',
+  baseUrl: 'https://odoo.test',
+  database: 'db',
+  login: 'u',
+  password: 'p',
+  model: 'res.partner',
+  pollIntervalSec: '10',
 };
 
 interface DlqRow {
@@ -72,7 +83,9 @@ class FakeOdooDb implements OdooSqlite {
           const row = this.state.get(`${String(wfId)}::${String(model)}`);
           return row ? { last_id_seen: row.last_id_seen } : undefined;
         },
-        run: () => { throw new Error('unexpected run on SELECT'); },
+        run: () => {
+          throw new Error('unexpected run on SELECT');
+        },
       };
     }
     if (sql.includes('INSERT INTO odoo_state')) {
@@ -81,7 +94,7 @@ class FakeOdooDb implements OdooSqlite {
         run: (wfId, model, lastId, _pollAt, error) => {
           this.state.set(`${String(wfId)}::${String(model)}`, {
             last_id_seen: lastId as number,
-            last_error: (error as string | null),
+            last_error: error as string | null,
           });
         },
       };
@@ -89,11 +102,18 @@ class FakeOdooDb implements OdooSqlite {
     if (sql.includes('SELECT id, retry_count FROM odoo_dlq')) {
       return {
         get: (wfId, model, recordId) => {
-          const row = this.dlq.find((r) =>
-            r.workflow_id === wfId && r.model === model && r.record_id === recordId && r.dlqd_at === null);
+          const row = this.dlq.find(
+            (r) =>
+              r.workflow_id === wfId &&
+              r.model === model &&
+              r.record_id === recordId &&
+              r.dlqd_at === null,
+          );
           return row ? { id: row.id, retry_count: row.retry_count } : undefined;
         },
-        run: () => { throw new Error('unexpected run on SELECT'); },
+        run: () => {
+          throw new Error('unexpected run on SELECT');
+        },
       };
     }
     if (sql.includes('UPDATE odoo_dlq')) {
@@ -104,7 +124,8 @@ class FakeOdooDb implements OdooSqlite {
           if (!row) throw new Error('dlq row not found');
           row.retry_count = nextRetry as number;
           row.error_message = msg as string;
-          row.dlqd_at = (nextRetry2 as number) >= (maxRetry as number) ? new Date().toISOString() : null;
+          row.dlqd_at =
+            (nextRetry2 as number) >= (maxRetry as number) ? new Date().toISOString() : null;
         },
       };
     }
@@ -114,9 +135,13 @@ class FakeOdooDb implements OdooSqlite {
         run: (wfId, model, recordId, json, msg) => {
           this.dlq.push({
             id: this.nextDlqId++,
-            workflow_id: wfId as string, model: model as string, record_id: recordId as number,
-            record_json: json as string, error_message: msg as string,
-            retry_count: 1, dlqd_at: null,
+            workflow_id: wfId as string,
+            model: model as string,
+            record_id: recordId as number,
+            record_json: json as string,
+            error_message: msg as string,
+            retry_count: 1,
+            dlqd_at: null,
           });
         },
       };
@@ -125,7 +150,12 @@ class FakeOdooDb implements OdooSqlite {
   }
 }
 
-interface ExecuteKwCall { model: string; method: string; positional: unknown[]; kwargs: Record<string, unknown> }
+interface ExecuteKwCall {
+  model: string;
+  method: string;
+  positional: unknown[];
+  kwargs: Record<string, unknown>;
+}
 
 function makeDeps(over: Partial<OdooPollerDeps> = {}): {
   deps: OdooPollerDeps;
@@ -206,7 +236,11 @@ describe('seed policy (primo tick, nessuno stato persistito)', () => {
     vi.setSystemTime(new Date('2026-06-12T12:00:00Z'));
     const { deps, executeKw } = makeDeps();
     executeKw.mockResolvedValueOnce([40]).mockResolvedValueOnce([]);
-    const job = startOdooPoller(makeWf(), makeNode({ ...VALID, initialBacklog: 'last-24h' }), deps)!;
+    const job = startOdooPoller(
+      makeWf(),
+      makeNode({ ...VALID, initialBacklog: 'last-24h' }),
+      deps,
+    )!;
     await vi.advanceTimersByTimeAsync(10_000);
     const seedCall = kwCall(executeKw, 0);
     expect(seedCall.method).toBe('search');
@@ -267,14 +301,22 @@ describe('poll → dispatch e cursore', () => {
     const made = makeDeps();
     withState(made);
     const { deps, db, executeKw, dispatched } = made;
-    executeKw.mockResolvedValueOnce([{ id: 101, name: 'a' }, { id: 102, name: 'b' }]);
+    executeKw.mockResolvedValueOnce([
+      { id: 101, name: 'a' },
+      { id: 102, name: 'b' },
+    ]);
     const job = startOdooPoller(makeWf(), makeNode(VALID), deps)!;
     await vi.advanceTimersByTimeAsync(10_000);
     expect(dispatched).toHaveLength(2);
     const first = dispatched[0]!;
     expect(first.triggerType).toBe('odoo_polling');
     expect(first.tenantId).toBe('tenant-a');
-    const ti = first.triggerInput as { model: string; recordId: number; record: unknown; triggeredAt: string };
+    const ti = first.triggerInput as {
+      model: string;
+      recordId: number;
+      record: unknown;
+      triggeredAt: string;
+    };
     expect(ti.model).toBe('res.partner');
     expect(ti.recordId).toBe(101);
     expect(ti.record).toEqual({ id: 101, name: 'a' });
@@ -290,7 +332,11 @@ describe('poll → dispatch e cursore', () => {
     withState(made);
     const { deps, executeKw } = made;
     executeKw.mockResolvedValue([]);
-    const job = startOdooPoller(makeWf(), makeNode({ ...VALID, pollIntervalSec: 'abc', batchLimit: 'xx', timeoutMs: 'boom' }), deps)!;
+    const job = startOdooPoller(
+      makeWf(),
+      makeNode({ ...VALID, pollIntervalSec: 'abc', batchLimit: 'xx', timeoutMs: 'boom' }),
+      deps,
+    )!;
     expect(spy.mock.calls[0]![1]).toBe(60_000); // default, non NaN
     await vi.advanceTimersByTimeAsync(60_000);
     expect(kwCall(executeKw, 0).kwargs.limit).toBe(50);
@@ -305,7 +351,11 @@ describe('poll → dispatch e cursore', () => {
     withState(made);
     const { deps, executeKw } = made;
     executeKw.mockResolvedValueOnce([]);
-    const job = startOdooPoller(makeWf(), makeNode({ ...VALID, batchLimit: '99999', timeoutMs: '999999999' }), deps)!;
+    const job = startOdooPoller(
+      makeWf(),
+      makeNode({ ...VALID, batchLimit: '99999', timeoutMs: '999999999' }),
+      deps,
+    )!;
     await vi.advanceTimersByTimeAsync(10_000);
     expect(kwCall(executeKw, 0).kwargs.limit).toBe(500);
     expect((executeKw.mock.calls[0]![4] as { timeoutMs: number }).timeoutMs).toBe(180_000);
@@ -318,7 +368,11 @@ describe('poll → dispatch e cursore', () => {
     withState(made);
     const { deps, executeKw } = made;
     executeKw.mockResolvedValue([]);
-    const job = startOdooPoller(makeWf(), makeNode({ ...VALID, fieldsJson: '["name","email"]' }), deps)!;
+    const job = startOdooPoller(
+      makeWf(),
+      makeNode({ ...VALID, fieldsJson: '["name","email"]' }),
+      deps,
+    )!;
     await vi.advanceTimersByTimeAsync(10_000);
     expect(kwCall(executeKw, 0).kwargs.fields).toEqual(['name', 'email']);
     clearInterval(job.timer);
@@ -326,7 +380,11 @@ describe('poll → dispatch e cursore', () => {
     const made2 = makeDeps();
     withState(made2);
     made2.executeKw.mockResolvedValue([]);
-    const job2 = startOdooPoller(makeWf(), makeNode({ ...VALID, fieldsJson: '{rotto' }), made2.deps)!;
+    const job2 = startOdooPoller(
+      makeWf(),
+      makeNode({ ...VALID, fieldsJson: '{rotto' }),
+      made2.deps,
+    )!;
     await vi.advanceTimersByTimeAsync(10_000);
     expect(kwCall(made2.executeKw, 0).kwargs.fields).toBeUndefined();
     clearInterval(job2.timer);
@@ -351,7 +409,12 @@ describe('poll → dispatch e cursore', () => {
     withState(made);
     const { deps, authenticate, executeKw } = made;
     let release!: (v: number) => void;
-    authenticate.mockImplementationOnce(() => new Promise<number>((r) => { release = r; }));
+    authenticate.mockImplementationOnce(
+      () =>
+        new Promise<number>((r) => {
+          release = r;
+        }),
+    );
     const job = startOdooPoller(makeWf(), makeNode(VALID), deps)!;
     await vi.advanceTimersByTimeAsync(10_000); // tick 1 in volo
     await vi.advanceTimersByTimeAsync(10_000); // tick 2 saltato
@@ -366,7 +429,11 @@ describe('poll → dispatch e cursore', () => {
   it('breaker open (execute lancia) → persist con errore, poller vivo', async () => {
     vi.useFakeTimers();
     const made = makeDeps({
-      getBreaker: () => ({ execute: async () => { throw new Error('breaker open'); } }),
+      getBreaker: () => ({
+        execute: async () => {
+          throw new Error('breaker open');
+        },
+      }),
     });
     withState(made);
     const { deps, db } = made;
@@ -383,7 +450,8 @@ describe('WE-15 poison-pill DLQ — ciclo COMPLETO behaviorale', () => {
     vi.useFakeTimers();
     const made = makeDeps({
       dispatchRun: vi.fn(async (input: TriggerRunInput) => {
-        if ((input.triggerInput as { recordId: number }).recordId === 101) throw new Error('poison');
+        if ((input.triggerInput as { recordId: number }).recordId === 101)
+          throw new Error('poison');
         return { runId: 'r', status: 'success', errorCount: 0 };
       }),
     });
@@ -396,7 +464,12 @@ describe('WE-15 poison-pill DLQ — ciclo COMPLETO behaviorale', () => {
     // Tick 1: INSERT retry_count=1, batch stoppato (102 NON dispatchato), cursore fermo.
     await vi.advanceTimersByTimeAsync(10_000);
     expect(db.dlq).toHaveLength(1);
-    expect(db.dlq[0]).toMatchObject({ record_id: 101, retry_count: 1, dlqd_at: null, error_message: 'poison' });
+    expect(db.dlq[0]).toMatchObject({
+      record_id: 101,
+      retry_count: 1,
+      dlqd_at: null,
+      error_message: 'poison',
+    });
     expect(db.state.get('wf-od::res.partner')!.last_id_seen).toBe(100);
     expect((deps.dispatchRun as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
 
@@ -423,7 +496,9 @@ describe('WE-15 poison-pill DLQ — ciclo COMPLETO behaviorale', () => {
   it('record_json troncato a 32768 char (cap anti-bloat)', async () => {
     vi.useFakeTimers();
     const made = makeDeps({
-      dispatchRun: async () => { throw new Error('boom'); },
+      dispatchRun: async () => {
+        throw new Error('boom');
+      },
     });
     made.db.state.set('wf-od::res.partner', { last_id_seen: 100, last_error: null });
     const { deps, db, executeKw } = made;
@@ -438,7 +513,11 @@ describe('WE-15 poison-pill DLQ — ciclo COMPLETO behaviorale', () => {
     const { logger } = await import('@/lib/logger.js');
     const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => logger);
     vi.useFakeTimers();
-    const made = makeDeps({ dispatchRun: async () => { throw new Error('boom'); } });
+    const made = makeDeps({
+      dispatchRun: async () => {
+        throw new Error('boom');
+      },
+    });
     made.db.state.set('wf-od::res.partner', { last_id_seen: 100, last_error: null });
     const brokenDlq = made.db;
     const origPrepare = brokenDlq.prepare.bind(brokenDlq);

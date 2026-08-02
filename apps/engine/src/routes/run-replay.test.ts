@@ -42,10 +42,18 @@ vi.mock('@/services/run.service.js', () => ({
 
 const runsRow = { current: null as Record<string, unknown> | null };
 const mockDb = {
-  select: vi.fn(function (this: typeof mockDb) { return this; }),
-  from: vi.fn(function (this: typeof mockDb) { return this; }),
-  where: vi.fn(function (this: typeof mockDb) { return this; }),
-  orderBy: vi.fn(function (this: typeof mockDb) { return this; }),
+  select: vi.fn(function (this: typeof mockDb) {
+    return this;
+  }),
+  from: vi.fn(function (this: typeof mockDb) {
+    return this;
+  }),
+  where: vi.fn(function (this: typeof mockDb) {
+    return this;
+  }),
+  orderBy: vi.fn(function (this: typeof mockDb) {
+    return this;
+  }),
   limit: vi.fn(() => Promise.resolve(runsRow.current ? [runsRow.current] : [])),
 };
 vi.mock('@/storage/db.js', () => ({
@@ -57,7 +65,9 @@ vi.mock('@/storage/schema.js', () => ({
 }));
 
 vi.mock('drizzle-orm', () => ({
-  eq: () => ({}), and: () => ({}), desc: () => ({}),
+  eq: () => ({}),
+  and: () => ({}),
+  desc: () => ({}),
 }));
 
 vi.mock('@/lib/tenant.js', () => ({
@@ -75,7 +85,12 @@ function makeApp(): Hono {
   return app;
 }
 
-async function replay(wfId: string, runId: string, fromNode: string, body?: unknown): Promise<Response> {
+async function replay(
+  wfId: string,
+  runId: string,
+  fromNode: string,
+  body?: unknown,
+): Promise<Response> {
   const app = makeApp();
   const url = `/api/v1/workflows/${wfId}/runs/${runId}/replay${fromNode ? `?fromNode=${fromNode}` : ''}`;
   return app.request(url, {
@@ -103,7 +118,7 @@ describe('🚨 input validation', () => {
   it('🚨 fromNode query mancante → 400', async () => {
     const res = await replay('wf-1', 'run-1', '');
     expect(res.status).toBe(400);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toMatch(/fromNode/u);
   });
 
@@ -117,7 +132,7 @@ describe('🚨 input validation', () => {
     runsRow.current = null; // no run row
     const res = await replay('wf-1', 'run-missing', 'node-x');
     expect(res.status).toBe(404);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toMatch(/Original run/u);
   });
 });
@@ -135,7 +150,7 @@ describe('🚨 pinnedOutputs BFS walk', () => {
     };
     const res = await replay('wf-1', 'run-1', 'n3');
     expect(res.status).toBe(200);
-    const json = await res.json() as { pinnedCount: number; replayedFromNode: string };
+    const json = (await res.json()) as { pinnedCount: number; replayedFromNode: string };
     expect(json.pinnedCount).toBe(2); // n1 + n2
     expect(json.replayedFromNode).toBe('n3');
     const pinsArg = executeWithPinsMock.mock.calls[0]![1] as Map<string, unknown>;
@@ -154,7 +169,7 @@ describe('🚨 pinnedOutputs BFS walk', () => {
       input: null,
     };
     const res = await replay('wf-1', 'run-1', 'n3');
-    const json = await res.json() as { pinnedCount: number };
+    const json = (await res.json()) as { pinnedCount: number };
     expect(json.pinnedCount).toBe(1); // solo n1 (n2 errored)
   });
 
@@ -167,7 +182,7 @@ describe('🚨 pinnedOutputs BFS walk', () => {
       input: null,
     };
     const res = await replay('wf-1', 'run-1', 'fromX');
-    const json = await res.json() as { pinnedCount: number };
+    const json = (await res.json()) as { pinnedCount: number };
     expect(json.pinnedCount).toBe(1); // solo n2
   });
 
@@ -191,7 +206,7 @@ describe('🚨 pinnedOutputs BFS walk', () => {
     };
     const res = await replay('wf-1', 'run-1', 'any');
     expect(res.status).toBe(200);
-    const json = await res.json() as { pinnedCount: number };
+    const json = (await res.json()) as { pinnedCount: number };
     expect(json.pinnedCount).toBe(0);
   });
 
@@ -204,7 +219,7 @@ describe('🚨 pinnedOutputs BFS walk', () => {
       input: null,
     };
     const res = await replay('wf-1', 'run-1', 'n1');
-    const json = await res.json() as { pinnedCount: number };
+    const json = (await res.json()) as { pinnedCount: number };
     expect(json.pinnedCount).toBe(0);
   });
 
@@ -218,7 +233,7 @@ describe('🚨 pinnedOutputs BFS walk', () => {
       input: null,
     };
     const res = await replay('wf-1', 'run-1', 'n9'); // n9 esiste nel wf, mai raggiunto
-    const json = await res.json() as { pinnedCount: number };
+    const json = (await res.json()) as { pinnedCount: number };
     expect(json.pinnedCount).toBe(3);
   });
 
@@ -229,7 +244,7 @@ describe('🚨 pinnedOutputs BFS walk', () => {
     };
     const res = await replay('wf-1', 'run-1', 'fromXYZ');
     expect(res.status).toBe(400);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toMatch(/fromNode "fromXYZ" not found/u);
     expect(executeWithPinsMock).not.toHaveBeenCalled(); // NESSUNA run lanciata
   });
@@ -258,7 +273,7 @@ describe('🚨 triggerInput override', () => {
   it('🚨 body malformato → 400 esplicito (un edit perso in silenzio è il bug peggiore)', async () => {
     const res = await replay('wf-1', 'run-1', 'node-x', '{{{NOT-JSON');
     expect(res.status).toBe(400);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toMatch(/Invalid JSON/u);
     expect(executeWithPinsMock).not.toHaveBeenCalled();
   });
@@ -297,7 +312,11 @@ describe('🚨 triggerType + triggeredBy', () => {
 
 // ─── GAP 4: esecuzione parziale + pin-edit ─────────────────────────────────
 
-async function replayPartial(fromNode: string, toNode: string | undefined, body?: unknown): Promise<Response> {
+async function replayPartial(
+  fromNode: string,
+  toNode: string | undefined,
+  body?: unknown,
+): Promise<Response> {
   const app = makeApp();
   const qs = `?fromNode=${fromNode}${toNode !== undefined ? `&toNode=${toNode}` : ''}`;
   return app.request(`/api/v1/workflows/wf-1/runs/run-1/replay${qs}`, {
@@ -323,7 +342,7 @@ describe('🚨 GAP 4 — toNode (esecuzione parziale)', () => {
     expect(res.status).toBe(200);
     const inputArg = executeWithPinsMock.mock.calls[0]![0] as { stopAfterNodeId?: string };
     expect(inputArg.stopAfterNodeId).toBe('n2');
-    const json = await res.json() as { stoppedAfterNode?: string };
+    const json = (await res.json()) as { stoppedAfterNode?: string };
     expect(json.stoppedAfterNode).toBe('n2');
   });
 
@@ -336,7 +355,7 @@ describe('🚨 GAP 4 — toNode (esecuzione parziale)', () => {
   it('🚨 toNode fantasma → 400, nessuna run', async () => {
     const res = await replayPartial('n2', 'ghost');
     expect(res.status).toBe(400);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toMatch(/toNode "ghost" not found/u);
     expect(executeWithPinsMock).not.toHaveBeenCalled();
   });
@@ -363,13 +382,13 @@ describe('🚨 GAP 4 — pinnedOverrides (pin-edit al volo)', () => {
     };
   });
 
-  it('🚨 override VINCE sul pin storico (l\'edit dell\'utente è la verità)', async () => {
+  it("🚨 override VINCE sul pin storico (l'edit dell'utente è la verità)", async () => {
     const res = await replayPartial('n3', 'n3', { pinnedOverrides: { n1: { k: 'EDITATO' } } });
     expect(res.status).toBe(200);
     const pins = executeWithPinsMock.mock.calls[0]![1] as Map<string, unknown>;
     expect(pins.get('n1')).toEqual({ k: 'EDITATO' }); // non più "storico"
-    expect(pins.get('n2')).toEqual({ k: 2 });          // gli altri pin intatti
-    const json = await res.json() as { overriddenCount: number; pinnedCount: number };
+    expect(pins.get('n2')).toEqual({ k: 2 }); // gli altri pin intatti
+    const json = (await res.json()) as { overriddenCount: number; pinnedCount: number };
     expect(json.overriddenCount).toBe(1);
     expect(json.pinnedCount).toBe(2);
   });
@@ -384,7 +403,7 @@ describe('🚨 GAP 4 — pinnedOverrides (pin-edit al volo)', () => {
   it('🚨 override su nodo fantasma → 400, nessuna run', async () => {
     const res = await replayPartial('n2', undefined, { pinnedOverrides: { ghost: 1 } });
     expect(res.status).toBe(400);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toMatch(/node "ghost" not found/u);
     expect(executeWithPinsMock).not.toHaveBeenCalled();
   });

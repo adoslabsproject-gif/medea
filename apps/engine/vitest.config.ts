@@ -44,8 +44,8 @@ export default defineConfig({
         '**/*.test.ts',
         '**/*.spec.ts',
         '**/types.ts',
-        'src/bin/**',                  // CLI entrypoint, banner-only
-        'src/storage/migrate.ts',      // schema DDL idempotente
+        'src/bin/**', // CLI entrypoint, banner-only
+        'src/storage/migrate.ts', // schema DDL idempotente
       ],
       thresholds: {
         // Soft global targets — buoni come baseline iniziale,

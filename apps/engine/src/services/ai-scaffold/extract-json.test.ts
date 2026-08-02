@@ -31,7 +31,9 @@ describe('parseScaffoldJson', () => {
   });
 
   it('🚨 nessun JSON → errore chiaro', () => {
-    expect(() => parseScaffoldJson('Mi dispiace, non posso aiutarti.')).toThrow(/oggetto JSON valido/u);
+    expect(() => parseScaffoldJson('Mi dispiace, non posso aiutarti.')).toThrow(
+      /oggetto JSON valido/u,
+    );
   });
 });
 

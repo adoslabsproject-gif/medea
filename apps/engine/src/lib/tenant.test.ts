@@ -37,7 +37,10 @@ beforeEach(() => {
 function makeCtx(opts: {
   // Sotto `exactOptionalPropertyTypes` esplicitiamo `undefined` per consentire
   // ai test di passare `auth: undefined` come fixture (caso "header senza auth").
-  auth?: { tenantId: string; role: 'admin' | 'editor' | 'viewer' | 'superadmin'; email?: string } | null | undefined;
+  auth?:
+    | { tenantId: string; role: 'admin' | 'editor' | 'viewer' | 'superadmin'; email?: string }
+    | null
+    | undefined;
   headers?: Record<string, string>;
   path?: string;
   method?: string;
@@ -209,7 +212,9 @@ describe('🚨 getContainerTenantId — env source-of-truth for PUBLIC routes', 
     expect(getContainerTenantId.length).toBe(0);
     configMock.tenantId = 'tenant-real-uuid';
     // Anche "passando" roba a forza, il valore resta quello dell'env.
-    expect((getContainerTenantId as (x?: unknown) => string)('x-tenant-id: attacker')).toBe('tenant-real-uuid');
+    expect((getContainerTenantId as (x?: unknown) => string)('x-tenant-id: attacker')).toBe(
+      'tenant-real-uuid',
+    );
   });
 
   it('🚨 stringa vuota in env → la ritorna tale e quale (non maschera misconfig)', () => {
@@ -237,7 +242,9 @@ describe('🚨 Security regression — tenant isolation bug class', () => {
     // Pre-fix il codice ritornava 'default' silenzioso → bug isolamento
     expect(() => getTenantId(c as never)).toThrow();
     // Mai 'default'
-    try { getTenantId(c as never); } catch (e) {
+    try {
+      getTenantId(c as never);
+    } catch (e) {
       expect((e as Error).message).not.toContain('default');
     }
   });

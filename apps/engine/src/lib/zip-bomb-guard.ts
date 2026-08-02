@@ -22,7 +22,10 @@ export const DEFAULT_MAX_UNCOMPRESSED_BYTES = 250 * 1024 * 1024;
 
 /** Sollevata quando lo ZIP dichiara un contenuto non compresso oltre il tetto. */
 export class ZipBombError extends Error {
-  constructor(readonly declaredBytes: number, readonly maxBytes: number) {
+  constructor(
+    readonly declaredBytes: number,
+    readonly maxBytes: number,
+  ) {
     super(
       `file ZIP/XLSX rifiutato: contenuto non compresso dichiarato ${(declaredBytes / 1048576).toFixed(1)} MB ` +
         `oltre il limite di ${(maxBytes / 1048576).toFixed(0)} MB (protezione anti zip-bomb).`,
@@ -74,7 +77,10 @@ export function sumDeclaredUncompressedBytes(buf: Buffer): number | null {
  * Lancia {@link ZipBombError} se lo ZIP dichiara più di `maxBytes` non compressi.
  * No-op se il buffer non è uno ZIP (il parser a valle gestirà l'errore di formato).
  */
-export function assertNotZipBomb(buf: Buffer, maxBytes: number = DEFAULT_MAX_UNCOMPRESSED_BYTES): void {
+export function assertNotZipBomb(
+  buf: Buffer,
+  maxBytes: number = DEFAULT_MAX_UNCOMPRESSED_BYTES,
+): void {
   const declared = sumDeclaredUncompressedBytes(buf);
   if (declared !== null && declared > maxBytes) {
     throw new ZipBombError(declared, maxBytes);
@@ -85,7 +91,11 @@ const LFH_SIG = 0x04034b50; // Local File Header
 
 /** Posizione [start,end) dei dati COMPRESSI di un'entry nel local file header. `null` se
  *  l'header non è valido o i dati escono dal buffer. */
-function localDataRange(buf: Buffer, lhOffset: number, compSize: number): { start: number; end: number } | null {
+function localDataRange(
+  buf: Buffer,
+  lhOffset: number,
+  compSize: number,
+): { start: number; end: number } | null {
   if (lhOffset + 30 > buf.length || buf.readUInt32LE(lhOffset) !== LFH_SIG) return null;
   const nameLen = buf.readUInt16LE(lhOffset + 26);
   const extraLen = buf.readUInt16LE(lhOffset + 28);
@@ -113,7 +123,12 @@ function inflateCountWithinBudget(compressed: Buffer, budget: number): Promise<n
         reject(new ZipBombError(produced, budget));
       }
     });
-    inflate.on('end', () => { if (!settled) { settled = true; resolve(produced); } });
+    inflate.on('end', () => {
+      if (!settled) {
+        settled = true;
+        resolve(produced);
+      }
+    });
     inflate.on('error', (err) => {
       if (settled) return;
       settled = true;
@@ -132,7 +147,10 @@ function inflateCountWithinBudget(compressed: Buffer, budget: number): Promise<n
  * decompresso reale supera il tetto, SENZA mai materializzarlo (abort early via destroy).
  * No-op se il buffer non è uno ZIP.
  */
-export async function assertNoZipBombDeep(buf: Buffer, maxBytes: number = DEFAULT_MAX_UNCOMPRESSED_BYTES): Promise<void> {
+export async function assertNoZipBombDeep(
+  buf: Buffer,
+  maxBytes: number = DEFAULT_MAX_UNCOMPRESSED_BYTES,
+): Promise<void> {
   assertNotZipBomb(buf, maxBytes); // 1) pass cheap: naive bombs + ZIP64 sentinel
   const eocd = findEocd(buf);
   if (eocd < 0) return;

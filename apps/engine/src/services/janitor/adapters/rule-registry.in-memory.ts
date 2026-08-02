@@ -26,7 +26,9 @@ export class InMemoryRuleRegistry implements IRuleRegistry {
 
   registerCodeRule(rule: CodeRule): void {
     if (!isValidRuleId(rule.id)) {
-      throw new Error(`Invalid CodeRule id "${rule.id}" — expected pattern <scope>.<table>.<problem>`);
+      throw new Error(
+        `Invalid CodeRule id "${rule.id}" — expected pattern <scope>.<table>.<problem>`,
+      );
     }
     const existing = this.rules.get(rule.id);
     if (existing?.kind === 'dsl') {
@@ -48,7 +50,10 @@ export class InMemoryRuleRegistry implements IRuleRegistry {
     const idx = this.tenantIndex.get(rule.tenantId) ?? new Set();
     idx.add(rule.id);
     this.tenantIndex.set(rule.tenantId, idx);
-    this.logger.info({ ruleId: rule.id, kind: 'dsl', tenantId: rule.tenantId }, 'Janitor DSL rule registered');
+    this.logger.info(
+      { ruleId: rule.id, kind: 'dsl', tenantId: rule.tenantId },
+      'Janitor DSL rule registered',
+    );
   }
 
   unregisterDslRule(ruleId: string): void {

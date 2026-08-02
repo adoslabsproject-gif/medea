@@ -16,12 +16,25 @@ import {
 import type { LlmTurnInput } from '../index.js';
 
 const TOOLS = [
-  { name: 'create_table', description: 'crea tabella', parameters: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'], additionalProperties: false } },
+  {
+    name: 'create_table',
+    description: 'crea tabella',
+    parameters: {
+      type: 'object',
+      properties: { name: { type: 'string' } },
+      required: ['name'],
+      additionalProperties: false,
+    },
+  },
 ];
 
 describe('buildChatCompletionsRequest', () => {
   it('system in testa, tools in formato function, tool_choice auto', () => {
-    const input: LlmTurnInput = { system: 'SYS', messages: [{ role: 'user', content: 'ciao' }], tools: TOOLS };
+    const input: LlmTurnInput = {
+      system: 'SYS',
+      messages: [{ role: 'user', content: 'ciao' }],
+      tools: TOOLS,
+    };
     const req = buildChatCompletionsRequest(input, 'qwen3-32b');
     expect(req.messages[0]).toEqual({ role: 'system', content: 'SYS' });
     expect(req.messages[1]).toEqual({ role: 'user', content: 'ciao' });
@@ -40,7 +53,11 @@ describe('buildChatCompletionsRequest', () => {
       system: 's',
       messages: [
         { role: 'user', content: 'crea customers' },
-        { role: 'assistant', content: '', toolCalls: [{ id: 'c1', name: 'create_table', args: { name: 'customers' } }] },
+        {
+          role: 'assistant',
+          content: '',
+          toolCalls: [{ id: 'c1', name: 'create_table', args: { name: 'customers' } }],
+        },
         { role: 'tool', toolCallId: 'c1', content: '{"ok":true}' },
       ],
       tools: TOOLS,
@@ -50,7 +67,11 @@ describe('buildChatCompletionsRequest', () => {
     expect(assistant.role).toBe('assistant');
     expect(assistant.content).toBeNull(); // contenuto vuoto → null (valido OpenAI)
     expect(assistant.tool_calls).toEqual([
-      { id: 'c1', type: 'function', function: { name: 'create_table', arguments: '{"name":"customers"}' } },
+      {
+        id: 'c1',
+        type: 'function',
+        function: { name: 'create_table', arguments: '{"name":"customers"}' },
+      },
     ]);
     const toolMsg = req.messages[3]!;
     expect(toolMsg).toEqual({ role: 'tool', content: '{"ok":true}', tool_call_id: 'c1' });
@@ -59,28 +80,56 @@ describe('buildChatCompletionsRequest', () => {
 
 describe('parseChatCompletionsResponse', () => {
   it('content senza tool_calls → final', () => {
-    const r = parseChatCompletionsResponse({ choices: [{ message: { content: 'Ecco le tabelle.' } }] });
+    const r = parseChatCompletionsResponse({
+      choices: [{ message: { content: 'Ecco le tabelle.' } }],
+    });
     expect(r).toEqual({ kind: 'final', text: 'Ecco le tabelle.' });
   });
 
   it('tool_calls → kind tools con arguments PARSATI da stringa JSON', () => {
     const r = parseChatCompletionsResponse({
-      choices: [{ message: { content: null, tool_calls: [{ id: 'x1', function: { name: 'create_table', arguments: '{"name":"orders"}' } }] } }],
+      choices: [
+        {
+          message: {
+            content: null,
+            tool_calls: [
+              { id: 'x1', function: { name: 'create_table', arguments: '{"name":"orders"}' } },
+            ],
+          },
+        },
+      ],
     });
-    expect(r).toEqual({ kind: 'tools', toolCalls: [{ id: 'x1', name: 'create_table', args: { name: 'orders' } }] });
+    expect(r).toEqual({
+      kind: 'tools',
+      toolCalls: [{ id: 'x1', name: 'create_table', args: { name: 'orders' } }],
+    });
   });
 
   it('arguments JSON malformato → args {} (fail-soft, no throw)', () => {
-    const r = parseChatCompletionsResponse({ choices: [{ message: { tool_calls: [{ id: 'x', function: { name: 'run_select', arguments: '{rotto' } }] } }] });
+    const r = parseChatCompletionsResponse({
+      choices: [
+        {
+          message: {
+            tool_calls: [{ id: 'x', function: { name: 'run_select', arguments: '{rotto' } }],
+          },
+        },
+      ],
+    });
     expect(r).toMatchObject({ kind: 'tools', toolCalls: [{ name: 'run_select', args: {} }] });
   });
 
-  it('id tool-call mancante → id sintetico stabile; più tool calls preservano l\'ordine', () => {
+  it("id tool-call mancante → id sintetico stabile; più tool calls preservano l'ordine", () => {
     const r = parseChatCompletionsResponse({
-      choices: [{ message: { tool_calls: [
-        { function: { name: 'a', arguments: '{}' } },
-        { function: { name: 'b', arguments: '{}' } },
-      ] } }],
+      choices: [
+        {
+          message: {
+            tool_calls: [
+              { function: { name: 'a', arguments: '{}' } },
+              { function: { name: 'b', arguments: '{}' } },
+            ],
+          },
+        },
+      ],
     });
     expect(r.kind).toBe('tools');
     if (r.kind === 'tools') {
@@ -90,7 +139,9 @@ describe('parseChatCompletionsResponse', () => {
   });
 
   it('tool_calls array VUOTO → final (non si entra nel ramo tools)', () => {
-    const r = parseChatCompletionsResponse({ choices: [{ message: { content: 'ok', tool_calls: [] } }] });
+    const r = parseChatCompletionsResponse({
+      choices: [{ message: { content: 'ok', tool_calls: [] } }],
+    });
     expect(r).toEqual({ kind: 'final', text: 'ok' });
   });
 
@@ -105,11 +156,32 @@ describe('makeOpenAiLlmTurn — trasporto con fetch stubbato', () => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue({
       ok: true,
       status: 200,
-      json: () => Promise.resolve({ choices: [{ message: { tool_calls: [{ id: 'c1', function: { name: 'list_databases', arguments: '{}' } }] } }] }),
+      json: () =>
+        Promise.resolve({
+          choices: [
+            {
+              message: {
+                tool_calls: [{ id: 'c1', function: { name: 'list_databases', arguments: '{}' } }],
+              },
+            },
+          ],
+        }),
     } as Response);
-    const turn = makeOpenAiLlmTurn({ endpoint: 'https://liara.local/chat/completions', apiKey: 'k', model: 'qwen', fetchImpl });
-    const res = await turn({ system: 's', messages: [{ role: 'user', content: 'elenca db' }], tools: TOOLS });
-    expect(res).toEqual({ kind: 'tools', toolCalls: [{ id: 'c1', name: 'list_databases', args: {} }] });
+    const turn = makeOpenAiLlmTurn({
+      endpoint: 'https://liara.local/chat/completions',
+      apiKey: 'k',
+      model: 'qwen',
+      fetchImpl,
+    });
+    const res = await turn({
+      system: 's',
+      messages: [{ role: 'user', content: 'elenca db' }],
+      tools: TOOLS,
+    });
+    expect(res).toEqual({
+      kind: 'tools',
+      toolCalls: [{ id: 'c1', name: 'list_databases', args: {} }],
+    });
     const [url, init] = fetchImpl.mock.calls[0]!;
     expect(url).toBe('https://liara.local/chat/completions');
     expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer k');
@@ -119,7 +191,9 @@ describe('makeOpenAiLlmTurn — trasporto con fetch stubbato', () => {
   });
 
   it('HTTP non-ok → throw (guasto infra, il loop lo propaga)', async () => {
-    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue({ ok: false, status: 503, json: () => Promise.resolve({}) } as Response);
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue({ ok: false, status: 503, json: () => Promise.resolve({}) } as Response);
     const turn = makeOpenAiLlmTurn({ endpoint: 'https://x/y', fetchImpl });
     await expect(turn({ system: 's', messages: [], tools: [] })).rejects.toThrow(/503/);
   });

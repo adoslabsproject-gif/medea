@@ -67,9 +67,7 @@ export function computeGraphSignature(
  * Estrae l'insieme dei defId usati nel workflow (deduplicato + ordinato).
  * Usato per filter "il template ha telegram?" + per signature overlap score.
  */
-export function extractDefIds(
-  nodes: readonly { defId: string }[],
-): string[] {
+export function extractDefIds(nodes: readonly { defId: string }[]): string[] {
   return Array.from(new Set(nodes.map((n) => n.defId))).sort();
 }
 
@@ -79,22 +77,114 @@ export function extractDefIds(
  */
 const STOPWORDS: ReadonlySet<string> = new Set([
   // IT
-  'il', 'la', 'lo', 'le', 'gli', 'i', 'un', 'una', 'uno',
-  'di', 'da', 'a', 'in', 'su', 'per', 'con', 'tra', 'fra',
-  'che', 'e', 'o', 'ma', 'se', 'come', 'quando', 'dove', 'perche\'',
-  'del', 'della', 'dello', 'dei', 'degli', 'delle',
-  'al', 'alla', 'allo', 'ai', 'agli', 'alle',
-  'mi', 'ti', 'si', 'ci', 'vi', 'ne', 'lo', 'la',
-  'questo', 'questa', 'quello', 'quella',
-  'sono', 'sei', 'e\'', 'siamo', 'siete', 'fanno',
-  'fa', 'ha', 'ho', 'hai', 'abbiamo', 'avete',
-  'devo', 'devi', 'deve', 'dobbiamo', 'dovete', 'devono',
+  'il',
+  'la',
+  'lo',
+  'le',
+  'gli',
+  'i',
+  'un',
+  'una',
+  'uno',
+  'di',
+  'da',
+  'a',
+  'in',
+  'su',
+  'per',
+  'con',
+  'tra',
+  'fra',
+  'che',
+  'e',
+  'o',
+  'ma',
+  'se',
+  'come',
+  'quando',
+  'dove',
+  "perche'",
+  'del',
+  'della',
+  'dello',
+  'dei',
+  'degli',
+  'delle',
+  'al',
+  'alla',
+  'allo',
+  'ai',
+  'agli',
+  'alle',
+  'mi',
+  'ti',
+  'si',
+  'ci',
+  'vi',
+  'ne',
+  'lo',
+  'la',
+  'questo',
+  'questa',
+  'quello',
+  'quella',
+  'sono',
+  'sei',
+  "e'",
+  'siamo',
+  'siete',
+  'fanno',
+  'fa',
+  'ha',
+  'ho',
+  'hai',
+  'abbiamo',
+  'avete',
+  'devo',
+  'devi',
+  'deve',
+  'dobbiamo',
+  'dovete',
+  'devono',
   // EN
-  'the', 'a', 'an', 'of', 'to', 'in', 'on', 'at', 'for', 'with', 'by',
-  'and', 'or', 'but', 'if', 'as', 'is', 'are', 'was', 'were',
-  'this', 'that', 'these', 'those',
-  'i', 'you', 'he', 'she', 'it', 'we', 'they',
-  'my', 'your', 'his', 'her', 'its', 'our', 'their',
+  'the',
+  'a',
+  'an',
+  'of',
+  'to',
+  'in',
+  'on',
+  'at',
+  'for',
+  'with',
+  'by',
+  'and',
+  'or',
+  'but',
+  'if',
+  'as',
+  'is',
+  'are',
+  'was',
+  'were',
+  'this',
+  'that',
+  'these',
+  'those',
+  'i',
+  'you',
+  'he',
+  'she',
+  'it',
+  'we',
+  'they',
+  'my',
+  'your',
+  'his',
+  'her',
+  'its',
+  'our',
+  'their',
 ]);
 
 /**
@@ -192,8 +282,7 @@ export function computeRetrievalScore(opts: {
   successRate: number;
   cosine: number;
 }): number {
-  return 0.50 * opts.promptJaccard
-    + 0.40 * opts.cosine
-    + 0.10 * opts.successRate
-    + 0.00 * opts.graphOverlap; // reserved for second-pass retrieval
+  return (
+    0.5 * opts.promptJaccard + 0.4 * opts.cosine + 0.1 * opts.successRate + 0.0 * opts.graphOverlap
+  ); // reserved for second-pass retrieval
 }

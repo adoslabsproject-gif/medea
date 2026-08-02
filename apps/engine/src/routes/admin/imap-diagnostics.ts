@@ -15,7 +15,8 @@ export function registerImapDiagnosticsRoutes(app: Hono): void {
   app.get('/admin/imap/diagnose/:accountId', async (c) => {
     const accountId = c.req.param('accountId');
     const tenantId = c.req.query('tenant') ?? 'default';
-    const { SystemEmailAccountsService } = await import('../../services/system-email-accounts.service.js');
+    const { SystemEmailAccountsService } =
+      await import('../../services/system-email-accounts.service.js');
     const svc = new SystemEmailAccountsService();
     const account = svc.resolveForExecutor(tenantId, accountId);
     if (!account) {
@@ -48,7 +49,11 @@ export function registerImapDiagnosticsRoutes(app: Hono): void {
       const boxes = await client.list();
       for (const box of boxes) {
         try {
-          const status = await client.status(box.path, { messages: true, unseen: true, recent: true });
+          const status = await client.status(box.path, {
+            messages: true,
+            unseen: true,
+            recent: true,
+          });
           (report.mailboxes as unknown[]).push({
             path: box.path,
             name: box.name,
@@ -58,7 +63,10 @@ export function registerImapDiagnosticsRoutes(app: Hono): void {
             recent: status.recent ?? 0,
           });
         } catch (e) {
-          (report.mailboxes as unknown[]).push({ path: box.path, error: e instanceof Error ? e.message : String(e) });
+          (report.mailboxes as unknown[]).push({
+            path: box.path,
+            error: e instanceof Error ? e.message : String(e),
+          });
         }
       }
       // 2) Su INBOX, run la SEARCH ESATTA del watcher + lista 10 UID recenti con metadata.
@@ -70,7 +78,11 @@ export function registerImapDiagnosticsRoutes(app: Hono): void {
         const allUidsRaw = await client.search({ all: true }, { uid: true });
         const allUids = Array.isArray(allUidsRaw) ? allUidsRaw : [];
         const recent = allUids.slice(-10);
-        for await (const msg of client.fetch(recent.length > 0 ? recent : '1:10', { envelope: true, flags: true, uid: true }, { uid: true })) {
+        for await (const msg of client.fetch(
+          recent.length > 0 ? recent : '1:10',
+          { envelope: true, flags: true, uid: true },
+          { uid: true },
+        )) {
           (report.inboxRecent as unknown[]).push({
             uid: msg.uid,
             seqno: msg.seq,
@@ -88,7 +100,11 @@ export function registerImapDiagnosticsRoutes(app: Hono): void {
       await client.logout();
     } catch (err) {
       report.fatal = err instanceof Error ? err.message : String(err);
-      try { await client.logout(); } catch { /* ignore */ }
+      try {
+        await client.logout();
+      } catch {
+        /* ignore */
+      }
     }
     return c.json(report);
   });

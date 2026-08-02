@@ -46,17 +46,12 @@ describe('🚨 aggregateBySeverity — count per severity', () => {
   });
 
   it('🚨 solo critical → warning=0', () => {
-    const r = aggregateBySeverity([
-      { severity: 'critical' },
-      { severity: 'critical' },
-    ]);
+    const r = aggregateBySeverity([{ severity: 'critical' }, { severity: 'critical' }]);
     expect(r).toEqual({ critical: 2, warning: 0 });
   });
 
   it('🚨 solo warning → critical=0', () => {
-    const r = aggregateBySeverity([
-      { severity: 'warning' },
-    ]);
+    const r = aggregateBySeverity([{ severity: 'warning' }]);
     expect(r).toEqual({ critical: 0, warning: 1 });
   });
 
@@ -67,7 +62,7 @@ describe('🚨 aggregateBySeverity — count per severity', () => {
 
   it('🚨 1000 elementi performance', () => {
     const rows = Array.from({ length: 1000 }, (_, i) => ({
-      severity: i % 3 === 0 ? 'critical' as const : 'warning' as const,
+      severity: i % 3 === 0 ? ('critical' as const) : ('warning' as const),
     }));
     const r = aggregateBySeverity(rows);
     expect(r.critical + r.warning).toBe(1000);

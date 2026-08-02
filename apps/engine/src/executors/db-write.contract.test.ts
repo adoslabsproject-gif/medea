@@ -23,12 +23,16 @@ const serverSrc = read('../server.ts');
 describe('contratto db-write ↔ db-studio', () => {
   it('callDb instrada su /api/v1/db (montato in server.ts)', () => {
     expect(dbWriteSrc).toMatch(/\$\{RUNTIME_BASE\}\/api\/v1\/db\$\{path\}/);
-    expect(serverSrc).toMatch(/app\.route\(\s*['"]\/api\/v1\/db['"]\s*,\s*createDbStudioRoutes\(\)\s*\)/);
+    expect(serverSrc).toMatch(
+      /app\.route\(\s*['"]\/api\/v1\/db['"]\s*,\s*createDbStudioRoutes\(\)\s*\)/,
+    );
   });
 
-  it('db_update chiama /databases/:id/update e l\'endpoint ESISTE con schema {table,where,patch}', () => {
+  it("db_update chiama /databases/:id/update e l'endpoint ESISTE con schema {table,where,patch}", () => {
     // databaseId vincolato (assertDatabaseId) + encodeURIComponent prima del path.
-    expect(dbWriteSrc).toMatch(/callDb\(`\/databases\/\$\{encodeURIComponent\(assertDatabaseId\(databaseId, 'db_update'\)\)\}\/update`/);
+    expect(dbWriteSrc).toMatch(
+      /callDb\(\s*`\/databases\/\$\{encodeURIComponent\(assertDatabaseId\(databaseId, 'db_update'\)\)\}\/update`/,
+    );
     expect(dbStudioSrc).toMatch(/app\.post\(\s*['"]\/databases\/:id\/update['"]/);
     // schema deve accettare esattamente i campi inviati dal nodo
     const updateSchema = /UpdateRowSchema = z\.object\(\{([\s\S]*?)\}\)/.exec(dbStudioSrc);
@@ -38,8 +42,10 @@ describe('contratto db-write ↔ db-studio', () => {
     }
   });
 
-  it('db_delete chiama /databases/:id/delete e l\'endpoint ESISTE con schema {table,where}', () => {
-    expect(dbWriteSrc).toMatch(/callDb\(`\/databases\/\$\{encodeURIComponent\(assertDatabaseId\(databaseId, 'db_delete'\)\)\}\/delete`/);
+  it("db_delete chiama /databases/:id/delete e l'endpoint ESISTE con schema {table,where}", () => {
+    expect(dbWriteSrc).toMatch(
+      /callDb\(\s*`\/databases\/\$\{encodeURIComponent\(assertDatabaseId\(databaseId, 'db_delete'\)\)\}\/delete`/,
+    );
     expect(dbStudioSrc).toMatch(/app\.post\(\s*['"]\/databases\/:id\/delete['"]/);
     const deleteSchema = /DeleteRowSchema = z\.object\(\{([\s\S]*?)\}\)/.exec(dbStudioSrc);
     expect(deleteSchema, 'DeleteRowSchema non trovato').toBeTruthy();
@@ -59,19 +65,35 @@ describe('contratto db-write ↔ db-studio', () => {
 });
 
 describe('🚨🚨 db-write — path-injection su databaseId (verso API interna con X-Internal-Token)', () => {
-  const ctx = { tenantId: 't1', runId: 'r', workflowId: 'w', nodeId: 'n', secrets: {}, llmProviders: [], nodeOutputs: {} } as never;
+  const ctx = {
+    tenantId: 't1',
+    runId: 'r',
+    workflowId: 'w',
+    nodeId: 'n',
+    secrets: {},
+    llmProviders: [],
+    nodeOutputs: {},
+  } as never;
   // databaseId ostile → assertDatabaseId lancia durante la costruzione del path,
   // PRIMA di qualsiasi fetch (nessun mock necessario: il throw precede callDb).
   for (const bad of ['../../internal/secrets', 'a/b', 'x%2e%2e', 'id?admin=1', 'a'.repeat(129)]) {
     it(`db_update rifiuta databaseId "${bad.slice(0, 24)}…"`, async () => {
-      await expect(dbUpdateExecutor(
-        { databaseId: bad, table: 't', whereJson: '{"id":1}', patchJson: '{"x":1}' } as never, null as never, ctx,
-      )).rejects.toThrow(/databaseId non valido/u);
+      await expect(
+        dbUpdateExecutor(
+          { databaseId: bad, table: 't', whereJson: '{"id":1}', patchJson: '{"x":1}' } as never,
+          null as never,
+          ctx,
+        ),
+      ).rejects.toThrow(/databaseId non valido/u);
     });
     it(`db_delete rifiuta databaseId "${bad.slice(0, 24)}…"`, async () => {
-      await expect(dbDeleteExecutor(
-        { databaseId: bad, table: 't', whereJson: '{"id":1}', confirmDelete: true } as never, null as never, ctx,
-      )).rejects.toThrow(/databaseId non valido/u);
+      await expect(
+        dbDeleteExecutor(
+          { databaseId: bad, table: 't', whereJson: '{"id":1}', confirmDelete: true } as never,
+          null as never,
+          ctx,
+        ),
+      ).rejects.toThrow(/databaseId non valido/u);
     });
   }
 });

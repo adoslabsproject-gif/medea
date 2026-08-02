@@ -67,7 +67,8 @@ export const runTsExecutor: NodeExecutor = async (rawConfig, input, context) => 
   const cfg = rawConfig;
   const code = coerceString(cfg.code ?? '').trim();
   if (!code) throw new Error('action_run_ts: campo "code" obbligatorio.');
-  if (code.length > MAX_CODE_BYTES) throw new Error('action_run_ts: codice troppo lungo (max 50KB).');
+  if (code.length > MAX_CODE_BYTES)
+    throw new Error('action_run_ts: codice troppo lungo (max 50KB).');
 
   const timeoutMs = clampNumber(cfg.timeoutMs, MIN_TIMEOUT_MS, MAX_TIMEOUT_MS, 5000);
   const memoryLimitMb = clampNumber(cfg.memoryLimitMb, MIN_MEM_MB, MAX_MEM_MB, 128);

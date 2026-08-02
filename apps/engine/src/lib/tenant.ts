@@ -62,8 +62,8 @@ export function getTenantId(c: Context): string {
     // class of isolation bug we're fixing here.
     throw new Error(
       `getTenantId() called on unauthenticated request (path=${c.req.path}). ` +
-      `Either the route shouldn't need a tenant (public), or authMiddleware ` +
-      `is missing required=true above this handler.`,
+        `Either the route shouldn't need a tenant (public), or authMiddleware ` +
+        `is missing required=true above this handler.`,
     );
   }
 

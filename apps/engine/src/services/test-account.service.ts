@@ -51,7 +51,10 @@ export async function provisionTestAccount(): Promise<void> {
         mkdirSync(dirname(PASSWORD_FILE), { recursive: true });
         writeFileSync(PASSWORD_FILE, password, { mode: 0o600 });
       } catch (err) {
-        logger.warn({ err, PASSWORD_FILE }, 'Cannot persist e2e password file — set MEDEA_E2E_PASSWORD env');
+        logger.warn(
+          { err, PASSWORD_FILE },
+          'Cannot persist e2e password file — set MEDEA_E2E_PASSWORD env',
+        );
       }
     }
   }
@@ -78,5 +81,8 @@ export async function provisionTestAccount(): Promise<void> {
       'INSERT INTO users (id, tenant_id, email, display_name, password_hash, role, enabled, created_at, updated_at, is_system) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, 1)',
     )
     .run(id, tenantId, email, 'E2E Test Account', hash, 'editor', now, now);
-  logger.info({ userId: id, tenantId, email, isSystem: true }, 'E2E test account provisioned (hidden from /users API)');
+  logger.info(
+    { userId: id, tenantId, email, isSystem: true },
+    'E2E test account provisioned (hidden from /users API)',
+  );
 }

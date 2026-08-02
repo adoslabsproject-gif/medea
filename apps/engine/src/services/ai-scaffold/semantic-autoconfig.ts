@@ -22,7 +22,11 @@
  *
  * @module services/ai-scaffold/semantic-autoconfig
  */
-import { isExpressionValue, type ConfigKeySpec, type NodeConfigSpec } from '@/services/ai-scaffold/catalog-spec.js';
+import {
+  isExpressionValue,
+  type ConfigKeySpec,
+  type NodeConfigSpec,
+} from '@/services/ai-scaffold/catalog-spec.js';
 
 export interface AutoConfigNode {
   id: string;
@@ -96,7 +100,13 @@ export function applyDeterministicAutoConfig<N extends AutoConfigNode>(
       if (!isMissing(config[keySpec.key])) continue;
       const value = coerceDefault(keySpec.defaultValue, keySpec);
       config[keySpec.key] = value;
-      applied.push({ kind: 'fill_default', nodeId: node.id, defId: node.defId, key: keySpec.key, value });
+      applied.push({
+        kind: 'fill_default',
+        nodeId: node.id,
+        defId: node.defId,
+        key: keySpec.key,
+        value,
+      });
     }
 
     // 2. normalize_enum — case-fix di un valore enum altrimenti corretto.
@@ -108,7 +118,14 @@ export function applyDeterministicAutoConfig<N extends AutoConfigNode>(
       const canon = canonicalEnum(value, keySpec.options);
       if (canon !== null) {
         config[keySpec.key] = canon;
-        applied.push({ kind: 'normalize_enum', nodeId: node.id, defId: node.defId, key: keySpec.key, value: canon, previous: value });
+        applied.push({
+          kind: 'normalize_enum',
+          nodeId: node.id,
+          defId: node.defId,
+          key: keySpec.key,
+          value: canon,
+          previous: value,
+        });
       }
     }
 

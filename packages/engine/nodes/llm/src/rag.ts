@@ -1,13 +1,23 @@
 import type { NodeModule, NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { executeWithHostBreaker } from '@medea/engine-nodes-stdlib';
-import { safeFetchWithRedirects, readJsonCapped, readTextTruncated } from '@medea/engine-safe-fetch';
+import {
+  safeFetchWithRedirects,
+  readJsonCapped,
+  readTextTruncated,
+} from '@medea/engine-safe-fetch';
 
 // Isomorfico: importato anche dal bundle browser dell'editor (dead-code lì, ma
 // il top-level gira a load). `process` esiste solo sul runtime server → guard.
-const RUNTIME_BASE = (typeof process !== 'undefined' ? process.env.MEDEA_RUNTIME_URL : undefined) ?? 'http://127.0.0.1:3100';
+const RUNTIME_BASE =
+  (typeof process !== 'undefined' ? process.env.MEDEA_RUNTIME_URL : undefined) ??
+  'http://127.0.0.1:3100';
 /** host:porta del runtime interno (loopback) per l'esenzione SSRF mirata. */
 const RUNTIME_HOST = ((): string => {
-  try { return new URL(RUNTIME_BASE).host.toLowerCase(); } catch { return ''; }
+  try {
+    return new URL(RUNTIME_BASE).host.toLowerCase();
+  } catch {
+    return '';
+  }
 })();
 
 const PROVIDER_TIMEOUT_MS = 30_000;
@@ -49,20 +59,34 @@ async function gatewayJsonPost<T>(
   });
 }
 
-interface EmbedResult { vector: number[]; tokensUsed: number | null }
+interface EmbedResult {
+  vector: number[];
+  tokensUsed: number | null;
+}
 
 /** Estrae i token consumati dalle varie shape `usage` dei provider (null se assente). */
 function pickTokens(v: unknown): number | null {
   if (typeof v !== 'object' || v === null) return null;
-  const o = v as { usage?: { total_tokens?: unknown; input_tokens?: unknown }; meta?: { billed_units?: { input_tokens?: unknown } } };
+  const o = v as {
+    usage?: { total_tokens?: unknown; input_tokens?: unknown };
+    meta?: { billed_units?: { input_tokens?: unknown } };
+  };
   const cand = o.usage?.total_tokens ?? o.usage?.input_tokens ?? o.meta?.billed_units?.input_tokens;
   return typeof cand === 'number' && Number.isFinite(cand) ? cand : null;
 }
 
-async function callEmbed(provider: string, apiKey: string, model: string, text: string): Promise<EmbedResult> {
+async function callEmbed(
+  provider: string,
+  apiKey: string,
+  model: string,
+  text: string,
+): Promise<EmbedResult> {
   switch (provider) {
     case 'openai': {
-      const { data } = await gatewayJsonPost<{ data: { embedding: number[] }[]; usage?: { total_tokens?: number } }>(
+      const { data } = await gatewayJsonPost<{
+        data: { embedding: number[] }[];
+        usage?: { total_tokens?: number };
+      }>(
         'https://api.openai.com/v1/embeddings',
         { model: model || 'text-embedding-3-small', input: text },
         { Authorization: `Bearer ${apiKey}` },
@@ -70,7 +94,10 @@ async function callEmbed(provider: string, apiKey: string, model: string, text: 
       return { vector: data.data[0]?.embedding ?? [], tokensUsed: pickTokens(data) };
     }
     case 'cohere': {
-      const { data } = await gatewayJsonPost<{ embeddings: { float: number[][] }; meta?: { billed_units?: { input_tokens?: number } } }>(
+      const { data } = await gatewayJsonPost<{
+        embeddings: { float: number[][] };
+        meta?: { billed_units?: { input_tokens?: number } };
+      }>(
         'https://api.cohere.com/v2/embed',
         { model: model || 'embed-multilingual-v3.0', texts: [text], input_type: 'search_document' },
         { Authorization: `Bearer ${apiKey}` },
@@ -78,7 +105,10 @@ async function callEmbed(provider: string, apiKey: string, model: string, text: 
       return { vector: data.embeddings.float[0] ?? [], tokensUsed: pickTokens(data) };
     }
     case 'voyage': {
-      const { data } = await gatewayJsonPost<{ data: { embedding: number[] }[]; usage?: { total_tokens?: number } }>(
+      const { data } = await gatewayJsonPost<{
+        data: { embedding: number[] }[];
+        usage?: { total_tokens?: number };
+      }>(
         'https://api.voyageai.com/v1/embeddings',
         { model: model || 'voyage-3', input: text },
         { Authorization: `Bearer ${apiKey}` },
@@ -88,7 +118,13 @@ async function callEmbed(provider: string, apiKey: string, model: string, text: 
     case 'ollama': {
       const baseUrl = process.env.MEDEA_OLLAMA_URL ?? 'http://localhost:11434';
       // Ollama spesso loopback → allowDockerNet non basta; esenta l'host esatto (env sistema).
-      const ollamaHost = ((): string => { try { return new URL(baseUrl).host.toLowerCase(); } catch { return ''; } })();
+      const ollamaHost = ((): string => {
+        try {
+          return new URL(baseUrl).host.toLowerCase();
+        } catch {
+          return '';
+        }
+      })();
       const { data } = await gatewayJsonPost<{ embedding?: number[] }>(
         `${baseUrl}/api/embeddings`,
         { model: model || 'nomic-embed-text', prompt: text },
@@ -107,14 +143,18 @@ const embedExecutor: NodeExecutor = async (config, input, _context) => {
   const provider = typeof config.provider === 'string' ? config.provider : 'openai';
   const apiKey = typeof config.apiKey === 'string' ? config.apiKey : '';
   const model = typeof config.model === 'string' ? config.model : '';
-  const text = typeof config.text === 'string' && config.text.length > 0
-    ? config.text
-    : typeof input === 'string'
-      ? input
-      : JSON.stringify(input);
+  const text =
+    typeof config.text === 'string' && config.text.length > 0
+      ? config.text
+      : typeof input === 'string'
+        ? input
+        : JSON.stringify(input);
 
   const { vector, tokensUsed } = await callEmbed(provider, apiKey, model, text);
-  return { output: { text, vector, dimensions: vector.length, provider, model, tokensUsed }, durationMs: Date.now() - start };
+  return {
+    output: { text, vector, dimensions: vector.length, provider, model, tokensUsed },
+    durationMs: Date.now() - start,
+  };
 };
 
 const ragSearchExecutor: NodeExecutor = async (config, input, context) => {
@@ -124,15 +164,17 @@ const ragSearchExecutor: NodeExecutor = async (config, input, context) => {
   const provider = typeof config.embedProvider === 'string' ? config.embedProvider : 'openai';
   const apiKey = typeof config.apiKey === 'string' ? config.apiKey : '';
   const model = typeof config.embedModel === 'string' ? config.embedModel : '';
-  const queryText = typeof config.queryText === 'string' && config.queryText.length > 0
-    ? config.queryText
-    : typeof input === 'string'
-      ? input
-      : JSON.stringify(input);
+  const queryText =
+    typeof config.queryText === 'string' && config.queryText.length > 0
+      ? config.queryText
+      : typeof input === 'string'
+        ? input
+        : JSON.stringify(input);
   const topK = Number(config.topK ?? 5);
   const minScore = config.minScore !== undefined ? Number(config.minScore) : undefined;
 
-  if (!databaseId || !collection) throw new Error('ai_rag_search: databaseId and collection are required');
+  if (!databaseId || !collection)
+    throw new Error('ai_rag_search: databaseId and collection are required');
 
   const { vector } = await callEmbed(provider, apiKey, model, queryText);
 
@@ -175,16 +217,31 @@ export const aiEmbedNode: NodeModule = {
         defaultValue: 'openai',
         help: 'openai = text-embedding-3-small (default, qualità/costo ottimo). cohere/voyage = qualità top per RAG. ollama = locale, gratis ma più lento.',
       },
-      { key: 'apiKey', label: 'API key', type: 'secret', required: false, showIf: { field: 'provider', in: ['openai', 'cohere', 'voyage'] }, help: 'Necessaria per i provider cloud. Non serve per ollama (locale).' },
+      {
+        key: 'apiKey',
+        label: 'API key',
+        type: 'secret',
+        required: false,
+        showIf: { field: 'provider', in: ['openai', 'cohere', 'voyage'] },
+        help: 'Necessaria per i provider cloud. Non serve per ollama (locale).',
+      },
       {
         key: 'model',
         label: 'Modello embedding',
         type: 'text',
         required: false,
-        placeholder: 'text-embedding-3-small (OpenAI), embed-english-v3.0 (Cohere), voyage-3 (Voyage)',
+        placeholder:
+          'text-embedding-3-small (OpenAI), embed-english-v3.0 (Cohere), voyage-3 (Voyage)',
         help: 'Modello specifico del provider. Vuoto = default. Per OpenAI: text-embedding-3-small (1536 dim) o text-embedding-3-large (3072 dim).',
       },
-      { key: 'text', label: 'Testo da embeddare', type: 'expression', required: false, placeholder: '{{input.text}}', help: 'Testo di cui calcolare il vettore. Se vuoto, usa l\'input.' },
+      {
+        key: 'text',
+        label: 'Testo da embeddare',
+        type: 'expression',
+        required: false,
+        placeholder: '{{input.text}}',
+        help: "Testo di cui calcolare il vettore. Se vuoto, usa l'input.",
+      },
     ],
     vendor: 'flowforge',
     version: '1.2.0',
@@ -206,9 +263,29 @@ export const aiRagSearchNode: NodeModule = {
       'Use case: RAG retrieval pre-LLM completion (Q&A su docs), suggest articoli correlati per CMS, ' +
       'semantic search prodotti e-commerce, dedup ticket support tramite similarity ≥0.8.',
     configFields: [
-      { key: 'databaseId', label: 'Database vettoriale', type: 'db-picker', required: true, help: 'Database FlowForge configurato come vector store (DB Studio → Databases).' },
-      { key: 'collection', label: 'Collezione', type: 'db-collection-picker', required: true, dependsOn: 'databaseId', help: 'Collezione (namespace) di vettori dentro il database selezionato.' },
-      { key: 'queryText', label: 'Testo query', type: 'expression', required: false, placeholder: '{{input.question}}', help: 'Testo da cercare. Viene embedded e confrontato con i vettori in DB. Vuoto = usa input.' },
+      {
+        key: 'databaseId',
+        label: 'Database vettoriale',
+        type: 'db-picker',
+        required: true,
+        help: 'Database FlowForge configurato come vector store (DB Studio → Databases).',
+      },
+      {
+        key: 'collection',
+        label: 'Collezione',
+        type: 'db-collection-picker',
+        required: true,
+        dependsOn: 'databaseId',
+        help: 'Collezione (namespace) di vettori dentro il database selezionato.',
+      },
+      {
+        key: 'queryText',
+        label: 'Testo query',
+        type: 'expression',
+        required: false,
+        placeholder: '{{input.question}}',
+        help: 'Testo da cercare. Viene embedded e confrontato con i vettori in DB. Vuoto = usa input.',
+      },
       {
         key: 'embedProvider',
         label: 'Provider embedding (per la query)',
@@ -218,10 +295,37 @@ export const aiRagSearchNode: NodeModule = {
         defaultValue: 'openai',
         help: 'Deve essere lo STESSO provider usato quando hai popolato il DB, altrimenti i vettori non sono confrontabili.',
       },
-      { key: 'apiKey', label: 'API key embedding', type: 'secret', required: false, showIf: { field: 'embedProvider', in: ['openai', 'cohere', 'voyage'] } },
-      { key: 'embedModel', label: 'Modello embedding', type: 'text', required: false, placeholder: 'es. text-embedding-3-small', help: 'DEVE matchare il modello usato all\'embedding originale per avere stesse dimensioni.' },
-      { key: 'topK', label: 'Top-K risultati', type: 'number', required: false, defaultValue: '5', help: 'Numero massimo di risultati ritornati (default 5).' },
-      { key: 'minScore', label: 'Score minimo (0-1)', type: 'number', required: false, placeholder: '0.7', help: 'Filtra i risultati con similarità < soglia. 0.7+ = molto rilevante, 0.5+ = generico, vuoto = nessun filtro.' },
+      {
+        key: 'apiKey',
+        label: 'API key embedding',
+        type: 'secret',
+        required: false,
+        showIf: { field: 'embedProvider', in: ['openai', 'cohere', 'voyage'] },
+      },
+      {
+        key: 'embedModel',
+        label: 'Modello embedding',
+        type: 'text',
+        required: false,
+        placeholder: 'es. text-embedding-3-small',
+        help: "DEVE matchare il modello usato all'embedding originale per avere stesse dimensioni.",
+      },
+      {
+        key: 'topK',
+        label: 'Top-K risultati',
+        type: 'number',
+        required: false,
+        defaultValue: '5',
+        help: 'Numero massimo di risultati ritornati (default 5).',
+      },
+      {
+        key: 'minScore',
+        label: 'Score minimo (0-1)',
+        type: 'number',
+        required: false,
+        placeholder: '0.7',
+        help: 'Filtra i risultati con similarità < soglia. 0.7+ = molto rilevante, 0.5+ = generico, vuoto = nessun filtro.',
+      },
     ],
     vendor: 'flowforge',
     version: '1.2.0',

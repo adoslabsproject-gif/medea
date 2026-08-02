@@ -21,7 +21,7 @@ export const leadScoreNode: NodeModule = {
     color: '#22c55e',
     description:
       'Lead scorer deterministico enterprise — calcola un punteggio normalizzato 0-100 di qualifica per un ' +
-      'lead B2B basato sull\'analisi del contenuto testuale della pagina web target (la home, about, products ' +
+      "lead B2B basato sull'analisi del contenuto testuale della pagina web target (la home, about, products " +
       'page del prospect tipicamente). NO LLM nel core scoring: pure function rule-based che pesa keyword ' +
       'positive (industry match, signal di product fit, tier value della company), penalizza keyword negative ' +
       'off-topic (settori che non sono il nostro target), bonus per criteri demografici (tier country EU/USA ' +
@@ -103,7 +103,15 @@ export const leadScoreNode: NodeModule = {
         help: 'Score minimo per output send_recommended=true. Default 50 = bilanciato. Alza a 70 per ridurre falsi positivi (meno volume ma più qualificati). Abbassa a 30 per scoperta wider (più volume, meno targeted).',
       },
     ],
-    outputs: ['score', 'category', 'matched_positive', 'matched_negative', 'country_bonus', 'send_recommended', 'reason'],
+    outputs: [
+      'score',
+      'category',
+      'matched_positive',
+      'matched_negative',
+      'country_bonus',
+      'send_recommended',
+      'reason',
+    ],
     vendor: 'flowforge',
     version: '1.0.0',
   },

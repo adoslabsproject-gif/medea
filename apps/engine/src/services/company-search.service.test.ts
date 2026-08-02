@@ -53,7 +53,8 @@ describe('#202 P0-3 — companySearch.headValidate SSRF guard', () => {
       results: [{ url: 'http://10.0.0.5/', title: 'private', snippet: 's' }],
     });
     m.validateUrl.mockImplementation((url: string) => {
-      if (url.includes('10.0.0.5')) return { ok: false, reason: 'BLOCKED_PRIVATE_IP', detail: 'rfc1918' };
+      if (url.includes('10.0.0.5'))
+        return { ok: false, reason: 'BLOCKED_PRIVATE_IP', detail: 'rfc1918' };
       return { ok: true };
     });
     const { companySearch } = await import('./company-search.service.js');
@@ -95,7 +96,8 @@ describe('#202 P0-3 — companySearch.headValidate SSRF guard', () => {
       results: [{ url: 'https://redirector-3.example.com/', title: 'r', snippet: 'r' }],
     });
     m.validateUrl.mockImplementation((url: string) => {
-      if (url.includes('169.254')) return { ok: false, reason: 'BLOCKED_LINK_LOCAL', detail: 'IMDS' };
+      if (url.includes('169.254'))
+        return { ok: false, reason: 'BLOCKED_LINK_LOCAL', detail: 'IMDS' };
       return { ok: true };
     });
     // HEAD inziale ritorna 302 → http://169.254.169.254/latest/
@@ -141,7 +143,9 @@ describe('llm_usage (Fase 1b #13) — token della query expansion nel result', (
     m.webSearch.mockResolvedValue({ provider: 'ddg', results: [] });
     const { dispatchLLMChat } = await import('./llm-chat.service.js');
     vi.mocked(dispatchLLMChat).mockImplementation((async (...args: unknown[]) => {
-      const listener = args[7] as ((u: { input: number; output: number; fromApi: boolean }) => void) | undefined;
+      const listener = args[7] as
+        | ((u: { input: number; output: number; fromApi: boolean }) => void)
+        | undefined;
       listener?.({ input: 40, output: 12, fromApi: true });
       return '["cantieri navali italia","yacht builders liguria"]';
     }) as typeof dispatchLLMChat);

@@ -15,9 +15,24 @@
  * tag by user_id or workflow_id (high-cardinality → memory blowup).
  */
 
-interface CounterEntry { value: number; help: string; type: 'counter' }
-interface HistogramEntry { sum: number; count: number; buckets: number[]; bucketCounts: number[]; help: string; type: 'histogram' }
-interface GaugeEntry { value: number; help: string; type: 'gauge' }
+interface CounterEntry {
+  value: number;
+  help: string;
+  type: 'counter';
+}
+interface HistogramEntry {
+  sum: number;
+  count: number;
+  buckets: number[];
+  bucketCounts: number[];
+  help: string;
+  type: 'histogram';
+}
+interface GaugeEntry {
+  value: number;
+  help: string;
+  type: 'gauge';
+}
 type Entry = CounterEntry | HistogramEntry | GaugeEntry;
 
 const STORE = new Map<string, Entry>();
@@ -26,7 +41,10 @@ const STORE = new Map<string, Entry>();
 const LATENCY_BUCKETS_MS = [50, 100, 250, 500, 1000, 2500, 5000, 10_000, 30_000];
 
 function tagsToKey(name: string, tags: Record<string, string> = {}): string {
-  const sortedTags = Object.keys(tags).sort().map((k) => `${k}="${tags[k]!.replace(/"/g, '\\"')}"`).join(',');
+  const sortedTags = Object.keys(tags)
+    .sort()
+    .map((k) => `${k}="${tags[k]!.replace(/"/g, '\\"')}"`)
+    .join(',');
   return sortedTags.length > 0 ? `${name}{${sortedTags}}` : name;
 }
 
@@ -34,7 +52,12 @@ function tagsToKey(name: string, tags: Record<string, string> = {}): string {
  * Increment a counter by 1 (or by the given amount).
  * Idempotent on first-call: counter is created lazily with help text.
  */
-export function counterInc(args: { name: string; help: string; tags?: Record<string, string>; amount?: number }): void {
+export function counterInc(args: {
+  name: string;
+  help: string;
+  tags?: Record<string, string>;
+  amount?: number;
+}): void {
   const key = tagsToKey(args.name, args.tags);
   const existing = STORE.get(key);
   if (existing?.type === 'counter') {
@@ -45,7 +68,12 @@ export function counterInc(args: { name: string; help: string; tags?: Record<str
 }
 
 /** Observe a latency value (ms) for a histogram. */
-export function histogramObserve(args: { name: string; help: string; tags?: Record<string, string>; value: number }): void {
+export function histogramObserve(args: {
+  name: string;
+  help: string;
+  tags?: Record<string, string>;
+  value: number;
+}): void {
   const key = tagsToKey(args.name, args.tags);
   const existing = STORE.get(key);
   if (existing?.type === 'histogram') {
@@ -68,7 +96,12 @@ export function histogramObserve(args: { name: string; help: string; tags?: Reco
 }
 
 /** Set a gauge to a specific value. */
-export function gaugeSet(args: { name: string; help: string; tags?: Record<string, string>; value: number }): void {
+export function gaugeSet(args: {
+  name: string;
+  help: string;
+  tags?: Record<string, string>;
+  value: number;
+}): void {
   const key = tagsToKey(args.name, args.tags);
   STORE.set(key, { type: 'gauge', value: args.value, help: args.help });
 }
@@ -79,7 +112,14 @@ export function gaugeSet(args: { name: string; help: string; tags?: Record<strin
  */
 export function renderPrometheus(): string {
   // Group entries by metric base-name so we emit "# HELP" / "# TYPE" once.
-  const byName = new Map<string, { help: string; type: 'counter' | 'histogram' | 'gauge'; entries: { key: string; entry: Entry }[] }>();
+  const byName = new Map<
+    string,
+    {
+      help: string;
+      type: 'counter' | 'histogram' | 'gauge';
+      entries: { key: string; entry: Entry }[];
+    }
+  >();
   for (const [key, entry] of STORE) {
     const name = key.split('{')[0]!;
     const bucket = byName.get(name) ?? { help: entry.help, type: entry.type, entries: [] };
@@ -99,9 +139,13 @@ export function renderPrometheus(): string {
         const baseTags = key.includes('{') ? key.slice(key.indexOf('{') + 1, -1) : '';
         const prefix = baseTags ? `${name}_bucket{${baseTags},le=` : `${name}_bucket{le=`;
         for (let i = 0; i < entry.buckets.length; i += 1) {
-          lines.push(`${prefix}"${entry.buckets[i]!.toString()}"} ${entry.bucketCounts[i]!.toString()}`);
+          lines.push(
+            `${prefix}"${entry.buckets[i]!.toString()}"} ${entry.bucketCounts[i]!.toString()}`,
+          );
         }
-        const infLine = baseTags ? `${name}_bucket{${baseTags},le="+Inf"} ${entry.count.toString()}` : `${name}_bucket{le="+Inf"} ${entry.count.toString()}`;
+        const infLine = baseTags
+          ? `${name}_bucket{${baseTags},le="+Inf"} ${entry.count.toString()}`
+          : `${name}_bucket{le="+Inf"} ${entry.count.toString()}`;
         lines.push(infLine);
         lines.push(`${name}_sum${baseTags ? `{${baseTags}}` : ''} ${entry.sum.toString()}`);
         lines.push(`${name}_count${baseTags ? `{${baseTags}}` : ''} ${entry.count.toString()}`);

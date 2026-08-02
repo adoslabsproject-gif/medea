@@ -57,16 +57,26 @@ function buildFakeBus() {
     publish: vi.fn(),
     emit: vi.fn(),
     subscribeTo: vi.fn(),
-    __emit: (ev: unknown) => { if (subscriber) subscriber(ev); },
-  } as unknown as { subscribe: ReturnType<typeof vi.fn>; publish: ReturnType<typeof vi.fn>; emit: ReturnType<typeof vi.fn>; subscribeTo: ReturnType<typeof vi.fn>; __emit: (ev: unknown) => void };
+    __emit: (ev: unknown) => {
+      if (subscriber) subscriber(ev);
+    },
+  } as unknown as {
+    subscribe: ReturnType<typeof vi.fn>;
+    publish: ReturnType<typeof vi.fn>;
+    emit: ReturnType<typeof vi.fn>;
+    subscribeTo: ReturnType<typeof vi.fn>;
+    __emit: (ev: unknown) => void;
+  };
 }
 
 beforeEach(() => {
   loggerSpy.warn.mockClear();
   loggerSpy.info.mockClear();
   loggerSpy.error.mockClear();
-  workflowListMock.mockReset(); workflowListMock.mockReturnValue([]);
-  workflowAllMock.mockReset(); workflowAllMock.mockReturnValue([]);
+  workflowListMock.mockReset();
+  workflowListMock.mockReturnValue([]);
+  workflowAllMock.mockReset();
+  workflowAllMock.mockReturnValue([]);
   auditSpy.mockReset();
 });
 
@@ -79,7 +89,9 @@ async function readSSEHeaders(app: Hono, path: string): Promise<Headers | null> 
   // Avvia richiesta, abortisce dopo 80ms (gli header sono già flushati al
   // primo writeSSE("hello")). Restituisce null se l'abort batte la response.
   const controller = new AbortController();
-  setTimeout(() => { controller.abort(); }, 80);
+  setTimeout(() => {
+    controller.abort();
+  }, 80);
   try {
     const res = await app.request(path, { signal: controller.signal });
     return res.headers;
@@ -247,17 +259,29 @@ describe('🔒 AUDIT cross-tenant superadmin — /workflows (fix 2026-06-15)', (
     const make = await importRoutes();
     const bus = buildFakeBus();
     const app = new Hono();
-    app.use('*', async (c, next) => { c.set('auth' as never, auth as never); await next(); });
+    app.use('*', async (c, next) => {
+      c.set('auth' as never, auth as never);
+      await next();
+    });
     app.route('/api/v1/dashboard', make(bus));
     return app;
   }
 
   it('superadmin SENZA x-tenant-id → AUDITa (action workflows, scope all-tenants)', async () => {
-    const app = await appWithAuth({ userId: 'sa-1', email: 'sa@x.it', role: 'superadmin', tenantId: 'platform' });
+    const app = await appWithAuth({
+      userId: 'sa-1',
+      email: 'sa@x.it',
+      role: 'superadmin',
+      tenantId: 'platform',
+    });
     const res = await app.request('/api/v1/dashboard/workflows');
     expect(res.status).toBe(200);
     expect(auditSpy).toHaveBeenCalledTimes(1);
-    expect(auditSpy.mock.calls[0]![0]).toMatchObject({ userId: 'sa-1', action: 'dashboard.workflows', scope: 'all-tenants' });
+    expect(auditSpy.mock.calls[0]![0]).toMatchObject({
+      userId: 'sa-1',
+      action: 'dashboard.workflows',
+      scope: 'all-tenants',
+    });
     expect(workflowAllMock).toHaveBeenCalled();
   });
 
@@ -271,7 +295,9 @@ describe('🔒 AUDIT cross-tenant superadmin — /workflows (fix 2026-06-15)', (
 
   it('superadmin CON x-tenant-id (impersonate) → NESSUN audit cross-tenant (scope singolo)', async () => {
     const app = await appWithAuth({ userId: 'sa-1', role: 'superadmin', tenantId: 'platform' });
-    const res = await app.request('/api/v1/dashboard/workflows', { headers: { 'x-tenant-id': 't-target' } });
+    const res = await app.request('/api/v1/dashboard/workflows', {
+      headers: { 'x-tenant-id': 't-target' },
+    });
     expect(res.status).toBe(200);
     expect(auditSpy).not.toHaveBeenCalled();
   });

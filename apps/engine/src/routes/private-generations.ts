@@ -49,7 +49,8 @@ export function createPrivateGenerationsRoutes(): Hono {
   app.post('/internal/private-gen/save', gate, zValidator('json', SaveSchema), async (c) => {
     const body = c.req.valid('json');
     const bytes = Buffer.from(body.dataBase64, 'base64');
-    if (bytes.length === 0) return c.json({ ok: false, error: 'media base64 non valido o vuoto' }, 400);
+    if (bytes.length === 0)
+      return c.json({ ok: false, error: 'media base64 non valido o vuoto' }, 400);
     try {
       const service = createPrivateGenerationsService();
       const res = await service.save({
@@ -66,7 +67,10 @@ export function createPrivateGenerationsRoutes(): Hono {
       });
       return c.json({ ok: true, ...res }, 201);
     } catch (err) {
-      log.error({ err: err instanceof Error ? err.message : String(err) }, 'save generazione fallito');
+      log.error(
+        { err: err instanceof Error ? err.message : String(err) },
+        'save generazione fallito',
+      );
       return c.json({ ok: false, error: 'salvataggio fallito' }, 500);
     }
   });
@@ -78,7 +82,10 @@ export function createPrivateGenerationsRoutes(): Hono {
       await createPrivateGenerationsService().rate(id, rating);
       return c.json({ ok: true }, 200);
     } catch (err) {
-      log.error({ err: err instanceof Error ? err.message : String(err) }, 'rate generazione fallito');
+      log.error(
+        { err: err instanceof Error ? err.message : String(err) },
+        'rate generazione fallito',
+      );
       return c.json({ ok: false, error: 'voto fallito' }, 500);
     }
   });
@@ -87,10 +94,15 @@ export function createPrivateGenerationsRoutes(): Hono {
   app.get('/internal/private-gen/list', gate, async (c) => {
     const limit = Number(c.req.query('limit') ?? '50');
     try {
-      const items = await createPrivateGenerationsService().list(Number.isFinite(limit) ? limit : 50);
+      const items = await createPrivateGenerationsService().list(
+        Number.isFinite(limit) ? limit : 50,
+      );
       return c.json({ ok: true, items }, 200);
     } catch (err) {
-      log.error({ err: err instanceof Error ? err.message : String(err) }, 'list generazioni fallito');
+      log.error(
+        { err: err instanceof Error ? err.message : String(err) },
+        'list generazioni fallito',
+      );
       return c.json({ ok: false, error: 'lista fallita' }, 500);
     }
   });

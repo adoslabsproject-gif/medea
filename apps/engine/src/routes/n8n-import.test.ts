@@ -60,7 +60,7 @@ describe('🚨 input validation', () => {
   it('🚨 body null → 400', async () => {
     const res = await importN8n('null');
     expect(res.status).toBe(400);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toMatch(/JSON object/u);
   });
 
@@ -84,7 +84,11 @@ describe('🚨 input validation', () => {
   it('🚨 body vuoto {} → 201 workflow vuoto', async () => {
     const res = await importN8n({});
     expect(res.status).toBe(201);
-    const created = workflowCreateMock.mock.calls[0]![0] as { name: string; nodes: unknown[]; edges: unknown[] };
+    const created = workflowCreateMock.mock.calls[0]![0] as {
+      name: string;
+      nodes: unknown[];
+      edges: unknown[];
+    };
     expect(created.name).toBe('Imported from n8n');
     expect(created.nodes).toEqual([]);
     expect(created.edges).toEqual([]);
@@ -158,17 +162,38 @@ describe('🚨 node type mapping', () => {
 
   it('🚨 IF n8n (v2) → logic_if con conditionRules mappate (end-to-end)', async () => {
     await importN8n({
-      nodes: [{
-        name: 'Gate', type: 'n8n-nodes-base.if',
-        parameters: { conditions: { combinator: 'and', conditions: [
-          { leftValue: '={{ $json.status }}', rightValue: 'active', operator: { type: 'string', operation: 'equals' } },
-        ] } },
-      }],
+      nodes: [
+        {
+          name: 'Gate',
+          type: 'n8n-nodes-base.if',
+          parameters: {
+            conditions: {
+              combinator: 'and',
+              conditions: [
+                {
+                  leftValue: '={{ $json.status }}',
+                  rightValue: 'active',
+                  operator: { type: 'string', operation: 'equals' },
+                },
+              ],
+            },
+          },
+        },
+      ],
     });
-    const created = workflowCreateMock.mock.calls[0]![0] as { nodes: { defId: string; config: Record<string, string> }[] };
+    const created = workflowCreateMock.mock.calls[0]![0] as {
+      nodes: { defId: string; config: Record<string, string> }[];
+    };
     expect(created.nodes[0]!.defId).toBe('logic_if');
-    const rules = JSON.parse(created.nodes[0]!.config.conditionRules ?? '{}') as { rules: { left: string; op: string; right: string }[] };
-    expect(rules.rules[0]).toEqual({ left: 'input.status', op: 'equals', type: 'string', right: 'active' });
+    const rules = JSON.parse(created.nodes[0]!.config.conditionRules ?? '{}') as {
+      rules: { left: string; op: string; right: string }[];
+    };
+    expect(rules.rules[0]).toEqual({
+      left: 'input.status',
+      op: 'equals',
+      type: 'string',
+      right: 'active',
+    });
   });
 
   it('🚨 Function n8n = CODE → action_run_js (non logic_transform); Set → logic_transform', async () => {
@@ -190,7 +215,7 @@ describe('🚨 node type mapping', () => {
         { name: 'Custom2', type: 'community.foo' },
       ],
     });
-    const json = await res.json() as { stats: { unmappedTypes: string[]; warnings: string } };
+    const json = (await res.json()) as { stats: { unmappedTypes: string[]; warnings: string } };
     expect(json.stats.unmappedTypes).toHaveLength(2);
     expect(json.stats.unmappedTypes).toContain('n8n-nodes-base.veryCustomThing');
     expect(json.stats.warnings).toMatch(/2 node type\(s\)/u);
@@ -204,7 +229,7 @@ describe('🚨 node type mapping', () => {
     const res = await importN8n({
       nodes: [{ name: 'X', type: 'n8n-nodes-base.httpRequest' }],
     });
-    const json = await res.json() as { stats: { warnings: string | null } };
+    const json = (await res.json()) as { stats: { warnings: string | null } };
     expect(json.stats.warnings).toBeNull();
   });
 
@@ -215,7 +240,7 @@ describe('🚨 node type mapping', () => {
         type: 'totally.unknown',
       })),
     });
-    const json = await res.json() as { stats: { unmappedTypes: string[] } };
+    const json = (await res.json()) as { stats: { unmappedTypes: string[] } };
     expect(json.stats.unmappedTypes).toHaveLength(1);
   });
 });
@@ -251,9 +276,7 @@ describe('🚨 ID sanitization', () => {
 
   it('🚨 ID presente → NO suffix index', async () => {
     await importN8n({
-      nodes: [
-        { id: 'my-id', name: 'X', type: 'n8n-nodes-base.httpRequest' },
-      ],
+      nodes: [{ id: 'my-id', name: 'X', type: 'n8n-nodes-base.httpRequest' }],
     });
     const created = workflowCreateMock.mock.calls[0]![0] as { nodes: { id: string }[] };
     expect(created.nodes[0]!.id).toBe('my-id');
@@ -296,7 +319,13 @@ describe('🚨 position handling', () => {
   it('🚨 position parziale: solo X → Y default fallback (??=100)', async () => {
     // position è tuple [number, number], se è [500] (1 elemento) → position[1] = undefined → ?? 100
     await importN8n({
-      nodes: [{ name: 'X', type: 'n8n-nodes-base.httpRequest', position: [500] as unknown as [number, number] }],
+      nodes: [
+        {
+          name: 'X',
+          type: 'n8n-nodes-base.httpRequest',
+          position: [500] as unknown as [number, number],
+        },
+      ],
     });
     const created = workflowCreateMock.mock.calls[0]![0] as { nodes: { x: number; y: number }[] };
     expect(created.nodes[0]!.x).toBe(500);
@@ -307,13 +336,17 @@ describe('🚨 position handling', () => {
 describe('🚨 parameters / config conversion', () => {
   it('🚨 parameters string preserved as-is', async () => {
     await importN8n({
-      nodes: [{
-        name: 'X',
-        type: 'n8n-nodes-base.httpRequest',
-        parameters: { url: 'https://api.example.com', method: 'GET' },
-      }],
+      nodes: [
+        {
+          name: 'X',
+          type: 'n8n-nodes-base.httpRequest',
+          parameters: { url: 'https://api.example.com', method: 'GET' },
+        },
+      ],
     });
-    const created = workflowCreateMock.mock.calls[0]![0] as { nodes: { config: Record<string, string> }[] };
+    const created = workflowCreateMock.mock.calls[0]![0] as {
+      nodes: { config: Record<string, string> }[];
+    };
     expect(created.nodes[0]!.config.url).toBe('https://api.example.com');
     expect(created.nodes[0]!.config.method).toBe('GET');
   });
@@ -321,13 +354,17 @@ describe('🚨 parameters / config conversion', () => {
   it('🚨 tipo PASSTHROUGH (Set): parametri non-string preservati via JSON.stringify', async () => {
     // I tipi a struttura complessa (Set/IF/Switch) preservano i param RAW per review.
     await importN8n({
-      nodes: [{
-        name: 'X',
-        type: 'n8n-nodes-base.set',
-        parameters: { timeout: 30000, enabled: true, tags: ['a', 'b'], opts: { retry: 3 } },
-      }],
+      nodes: [
+        {
+          name: 'X',
+          type: 'n8n-nodes-base.set',
+          parameters: { timeout: 30000, enabled: true, tags: ['a', 'b'], opts: { retry: 3 } },
+        },
+      ],
     });
-    const created = workflowCreateMock.mock.calls[0]![0] as { nodes: { config: Record<string, string> }[] };
+    const created = workflowCreateMock.mock.calls[0]![0] as {
+      nodes: { config: Record<string, string> }[];
+    };
     expect(created.nodes[0]!.config.timeout).toBe('30000');
     expect(created.nodes[0]!.config.enabled).toBe('true');
     expect(created.nodes[0]!.config.tags).toBe('["a","b"]');
@@ -338,46 +375,72 @@ describe('🚨 parameters / config conversion', () => {
     await importN8n({
       nodes: [{ name: 'X', type: 'n8n-nodes-base.set' }],
     });
-    const created = workflowCreateMock.mock.calls[0]![0] as { nodes: { config: Record<string, string> }[] };
+    const created = workflowCreateMock.mock.calls[0]![0] as {
+      nodes: { config: Record<string, string> }[];
+    };
     expect(Object.keys(created.nodes[0]!.config)).toEqual(['_n8nOriginalType']);
   });
 
   it('🚨 MAPPING REALE HTTP: url/method/body ai campi FlowForge (non raw n8n)', async () => {
     await importN8n({
-      nodes: [{
-        name: 'X', type: 'n8n-nodes-base.httpRequest',
-        parameters: { method: 'post', url: 'https://api.com/x', jsonBody: '{"a":1}', timeout: 30000, authentication: 'genericCredentialType' },
-      }],
+      nodes: [
+        {
+          name: 'X',
+          type: 'n8n-nodes-base.httpRequest',
+          parameters: {
+            method: 'post',
+            url: 'https://api.com/x',
+            jsonBody: '{"a":1}',
+            timeout: 30000,
+            authentication: 'genericCredentialType',
+          },
+        },
+      ],
     });
-    const created = workflowCreateMock.mock.calls[0]![0] as { nodes: { config: Record<string, string> }[] };
+    const created = workflowCreateMock.mock.calls[0]![0] as {
+      nodes: { config: Record<string, string> }[];
+    };
     const cfg = created.nodes[0]!.config;
-    expect(cfg.method).toBe('POST');           // normalizzato uppercase
+    expect(cfg.method).toBe('POST'); // normalizzato uppercase
     expect(cfg.url).toBe('https://api.com/x');
     expect(cfg.bodyType).toBe('json');
     expect(cfg.body).toBe('{"a":1}');
-    expect(cfg.timeout).toBeUndefined();        // param n8n non pertinente: NON copiato raw
+    expect(cfg.timeout).toBeUndefined(); // param n8n non pertinente: NON copiato raw
   });
 
   it('🚨 ESPRESSIONI transpilate: $node["Nome"] → $node.<id>, leading = strippato', async () => {
     await importN8n({
       nodes: [
         { name: 'Trigger', type: 'n8n-nodes-base.webhook', parameters: { path: 'hook' } },
-        { name: 'Call', type: 'n8n-nodes-base.httpRequest', parameters: { url: '=https://api.com/{{ $node["Trigger"].json["userId"] }}' } },
+        {
+          name: 'Call',
+          type: 'n8n-nodes-base.httpRequest',
+          parameters: { url: '=https://api.com/{{ $node["Trigger"].json["userId"] }}' },
+        },
       ],
     });
-    const created = workflowCreateMock.mock.calls[0]![0] as { nodes: { id: string; config: Record<string, string> }[] };
+    const created = workflowCreateMock.mock.calls[0]![0] as {
+      nodes: { id: string; config: Record<string, string> }[];
+    };
     const triggerId = created.nodes[0]!.id;
     expect(created.nodes[1]!.config.url).toBe(`https://api.com/{{$node.${triggerId}.json.userId}}`);
   });
 
   it('🚨 WARNING di mapping esposti nelle stats (auth/header/espressioni da rivedere)', async () => {
     const res = await importN8n({
-      nodes: [{
-        name: 'Call', type: 'n8n-nodes-base.httpRequest',
-        parameters: { url: 'https://x', authentication: 'genericCredentialType', sendHeaders: true },
-      }],
+      nodes: [
+        {
+          name: 'Call',
+          type: 'n8n-nodes-base.httpRequest',
+          parameters: {
+            url: 'https://x',
+            authentication: 'genericCredentialType',
+            sendHeaders: true,
+          },
+        },
+      ],
     });
-    const json = await res.json() as { stats: { mappingWarnings: string[] } };
+    const json = (await res.json()) as { stats: { mappingWarnings: string[] } };
     expect(json.stats.mappingWarnings.some((w) => w.includes('autenticazione'))).toBe(true);
     expect(json.stats.mappingWarnings.some((w) => w.includes('header'))).toBe(true);
   });
@@ -386,7 +449,9 @@ describe('🚨 parameters / config conversion', () => {
     await importN8n({
       nodes: [{ name: 'X', type: 'n8n-nodes-base.httpRequest' }],
     });
-    const created = workflowCreateMock.mock.calls[0]![0] as { nodes: { config: Record<string, string> }[] };
+    const created = workflowCreateMock.mock.calls[0]![0] as {
+      nodes: { config: Record<string, string> }[];
+    };
     expect(created.nodes[0]!.config._n8nOriginalType).toBe('n8n-nodes-base.httpRequest');
   });
 
@@ -394,7 +459,9 @@ describe('🚨 parameters / config conversion', () => {
     await importN8n({
       nodes: [{ name: 'X', type: 'n8n-nodes-base.veryCustomThing' }],
     });
-    const created = workflowCreateMock.mock.calls[0]![0] as { nodes: { config: Record<string, string>; defId: string }[] };
+    const created = workflowCreateMock.mock.calls[0]![0] as {
+      nodes: { config: Record<string, string>; defId: string }[];
+    };
     expect(created.nodes[0]!.defId).toBe('action_http');
     expect(created.nodes[0]!.config._n8nOriginalType).toBe('n8n-nodes-base.veryCustomThing');
   });
@@ -411,10 +478,12 @@ describe('🚨 connections / edges', () => {
         A: { main: [[{ node: 'B' }]] },
       },
     });
-    const created = workflowCreateMock.mock.calls[0]![0] as { edges: { from: string; to: string }[] };
+    const created = workflowCreateMock.mock.calls[0]![0] as {
+      edges: { from: string; to: string }[];
+    };
     expect(created.edges).toHaveLength(1);
     expect(created.edges[0]).toEqual({ from: 'a', to: 'b' });
-    const json = await res.json() as { stats: { edgesImported: number } };
+    const json = (await res.json()) as { stats: { edgesImported: number } };
     expect(json.stats.edgesImported).toBe(1);
   });
 
@@ -431,7 +500,9 @@ describe('🚨 connections / edges', () => {
         },
       },
     });
-    const created = workflowCreateMock.mock.calls[0]![0] as { edges: { from: string; to: string }[] };
+    const created = workflowCreateMock.mock.calls[0]![0] as {
+      edges: { from: string; to: string }[];
+    };
     expect(created.edges).toHaveLength(2);
     expect(created.edges.some((e) => e.to === 't1')).toBe(true);
     expect(created.edges.some((e) => e.to === 't2')).toBe(true);
@@ -446,14 +517,13 @@ describe('🚨 connections / edges', () => {
       ],
       connections: {
         IF: {
-          main: [
-            [{ node: 'TrueBranch' }],
-            [{ node: 'FalseBranch' }],
-          ],
+          main: [[{ node: 'TrueBranch' }], [{ node: 'FalseBranch' }]],
         },
       },
     });
-    const created = workflowCreateMock.mock.calls[0]![0] as { edges: { from: string; to: string }[] };
+    const created = workflowCreateMock.mock.calls[0]![0] as {
+      edges: { from: string; to: string }[];
+    };
     expect(created.edges).toHaveLength(2);
   });
 
@@ -531,7 +601,14 @@ describe('🚨 stats response shape', () => {
       ],
       connections: { A: { main: [[{ node: 'B' }]] } },
     });
-    const json = await res.json() as { stats: { nodesImported: number; edgesImported: number; unmappedTypes: string[]; warnings: string | null } };
+    const json = (await res.json()) as {
+      stats: {
+        nodesImported: number;
+        edgesImported: number;
+        unmappedTypes: string[];
+        warnings: string | null;
+      };
+    };
     expect(json.stats.nodesImported).toBe(2);
     expect(json.stats.edgesImported).toBe(1);
     expect(json.stats.unmappedTypes).toEqual(['unknown.xyz']);
@@ -541,7 +618,7 @@ describe('🚨 stats response shape', () => {
   it('🚨 workflow object ritornato dentro response', async () => {
     workflowCreateMock.mockResolvedValueOnce({ id: 'wf-NEW', name: 'X' });
     const res = await importN8n({ name: 'X' });
-    const json = await res.json() as { workflow: { id: string } };
+    const json = (await res.json()) as { workflow: { id: string } };
     expect(json.workflow.id).toBe('wf-NEW');
   });
 });
@@ -560,7 +637,9 @@ describe('🚨 name collision edge case', () => {
         Duplicate: { main: [[{ node: 'Target' }]] },
       },
     });
-    const created = workflowCreateMock.mock.calls[0]![0] as { edges: { from: string; to: string }[] };
+    const created = workflowCreateMock.mock.calls[0]![0] as {
+      edges: { from: string; to: string }[];
+    };
     // L'edge esce dal SECONDO (last-in-map wins)
     expect(created.edges).toHaveLength(1);
     expect(created.edges[0]!.from).toBe('second');

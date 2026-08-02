@@ -33,14 +33,23 @@ vi.mock('@/storage/db.js', () => ({
             all: (...p: unknown[]) => stmt.all(...p),
           };
         },
-        exec: (sql: string) => { conn.exec(sql); },
-        transaction: <T extends unknown[], R>(fn: (...args: T) => R) => conn.transaction(fn) as unknown as (...args: T) => R,
+        exec: (sql: string) => {
+          conn.exec(sql);
+        },
+        transaction: <T extends unknown[], R>(fn: (...args: T) => R) =>
+          conn.transaction(fn) as unknown as (...args: T) => R,
       },
     };
   },
 }));
 
-import { securityScan, compileCustomNodeSources, compileAndPersist, compileFailureFromError, actionableMessage } from './compile.service.js';
+import {
+  securityScan,
+  compileCustomNodeSources,
+  compileAndPersist,
+  compileFailureFromError,
+  actionableMessage,
+} from './compile.service.js';
 import { createCustomNode, getCustomNode } from './service.js';
 import { CustomNodeSecurityViolationError, CustomNodeCompileError } from './errors.js';
 
@@ -98,7 +107,10 @@ describe('🚨 securityScan (defense layer 1)', () => {
   });
 
   it('🚨 new Function() → violation', () => {
-    const out = securityScan({ ...CLEAN_SOURCES, executor: 'const fn = new Function("return 1");' });
+    const out = securityScan({
+      ...CLEAN_SOURCES,
+      executor: 'const fn = new Function("return 1");',
+    });
     expect(out.some((v) => v.message.includes('Function()'))).toBe(true);
   });
 
@@ -133,7 +145,10 @@ describe('🚨 securityScan (defense layer 1)', () => {
   });
 
   it('🚨 node:worker_threads → violation', () => {
-    const out = securityScan({ ...CLEAN_SOURCES, executor: 'import { Worker } from "node:worker_threads";' });
+    const out = securityScan({
+      ...CLEAN_SOURCES,
+      executor: 'import { Worker } from "node:worker_threads";',
+    });
     expect(out.some((v) => v.message.includes('worker_threads'))).toBe(true);
   });
 
@@ -143,7 +158,10 @@ describe('🚨 securityScan (defense layer 1)', () => {
   });
 
   it('🚨 dynamic import() → violation', () => {
-    const out = securityScan({ ...CLEAN_SOURCES, executor: 'const m = await import("./malicious");' });
+    const out = securityScan({
+      ...CLEAN_SOURCES,
+      executor: 'const m = await import("./malicious");',
+    });
     expect(out.some((v) => /Dynamic import\(\)/i.test(v.message))).toBe(true);
   });
 
@@ -204,10 +222,12 @@ export const executor = async <T extends User>(_c: unknown, input: T) => {
 
 describe('🚨 compileCustomNodeSources (failure modes)', () => {
   it('🚨 security violation → throws SecurityViolationError (esbuild NON chiamato)', async () => {
-    await expect(compileCustomNodeSources({
-      ...CLEAN_SOURCES,
-      executor: 'eval("malicious")',
-    })).rejects.toThrow(CustomNodeSecurityViolationError);
+    await expect(
+      compileCustomNodeSources({
+        ...CLEAN_SOURCES,
+        executor: 'eval("malicious")',
+      }),
+    ).rejects.toThrow(CustomNodeSecurityViolationError);
   });
 
   it('🚨 security error meta.file = "executor"', async () => {
@@ -223,37 +243,47 @@ describe('🚨 compileCustomNodeSources (failure modes)', () => {
 
   it('🚨🐛 security violation: messaggio con CAUSA+posizione + diagnostics popolati (non solo conteggio)', async () => {
     try {
-      await compileCustomNodeSources({ ...CLEAN_SOURCES, executor: 'export const executor = async () => eval("x");' });
+      await compileCustomNodeSources({
+        ...CLEAN_SOURCES,
+        executor: 'export const executor = async () => eval("x");',
+      });
       throw new Error('should have thrown');
     } catch (err) {
       expect(err).toBeInstanceOf(CustomNodeSecurityViolationError);
       const e = err as CustomNodeSecurityViolationError;
       // NON più il conteggio nudo "1 security violation(s) detected"
       expect(e.message).not.toMatch(/violation\(s\) detected/u);
-      expect(e.message).toMatch(/eval/u);            // causa reale
-      expect(e.message).toContain('executor:');      // posizione file:line
+      expect(e.message).toMatch(/eval/u); // causa reale
+      expect(e.message).toContain('executor:'); // posizione file:line
       const diags = (e.meta as { diagnostics?: unknown[] }).diagnostics ?? [];
-      expect(diags.length).toBeGreaterThan(0);       // visibili nel pannello editor
+      expect(diags.length).toBeGreaterThan(0); // visibili nel pannello editor
     }
   });
 
   it('🚨 TS syntax error → CompileError con diagnostics non vuoto', async () => {
-    await expect(compileCustomNodeSources({
-      ...CLEAN_SOURCES,
-      executor: 'export const executor = async () => { return { ; this is broken',
-    })).rejects.toThrow(CustomNodeCompileError);
+    await expect(
+      compileCustomNodeSources({
+        ...CLEAN_SOURCES,
+        executor: 'export const executor = async () => { return { ; this is broken',
+      }),
+    ).rejects.toThrow(CustomNodeCompileError);
   });
 
   it('🚨 schema syntax error → CompileError', async () => {
-    await expect(compileCustomNodeSources({
-      ...CLEAN_SOURCES,
-      schema: 'export const schema = { broken: <<< };',
-    })).rejects.toThrow(CustomNodeCompileError);
+    await expect(
+      compileCustomNodeSources({
+        ...CLEAN_SOURCES,
+        schema: 'export const schema = { broken: <<< };',
+      }),
+    ).rejects.toThrow(CustomNodeCompileError);
   });
 
   it('🚨 errore strutturato (TS syntax) → messaggio "N error(s)" + diagnostics non vuoto', async () => {
     try {
-      await compileCustomNodeSources({ ...CLEAN_SOURCES, executor: 'export const executor = async () => { return { ; broken' });
+      await compileCustomNodeSources({
+        ...CLEAN_SOURCES,
+        executor: 'export const executor = async () => { return { ; broken',
+      });
       throw new Error('should have thrown');
     } catch (err) {
       expect(err).toBeInstanceOf(CustomNodeCompileError);
@@ -262,14 +292,16 @@ describe('🚨 compileCustomNodeSources (failure modes)', () => {
       expect((e.meta.diagnostics as unknown[]).length).toBeGreaterThan(0);
     }
   });
-
 });
 
 describe('🚨🐛 compileFailureFromError (FIX incidente "Streammy" — no più "0 error(s)")', () => {
   it('BuildFailure con errors strutturati → "N error(s)" + diagnostics mappati', () => {
     const buildFailure = {
       errors: [
-        { text: 'Could not resolve "cheerio"', location: { file: 'virtual:executor', line: 2, column: 7 } },
+        {
+          text: 'Could not resolve "cheerio"',
+          location: { file: 'virtual:executor', line: 2, column: 7 },
+        },
         { text: 'Unexpected token', location: { file: 'virtual:schema', line: 5, column: 1 } },
       ],
     };
@@ -370,7 +402,8 @@ describe('🚨 actionableMessage (DX: errori import azionabili)', () => {
 describe('🚨 compileAndPersist (DB integration)', () => {
   it('🚨 happy path: compile + UPDATE row con compiled_executor + status candidate', async () => {
     const node = await createCustomNode({
-      workspaceId: 'ws-1', ownerUserId: 'u-1',
+      workspaceId: 'ws-1',
+      ownerUserId: 'u-1',
       input: {
         slug: 'compile-test',
         displayName: 'Compile Test',
@@ -394,7 +427,8 @@ describe('🚨 compileAndPersist (DB integration)', () => {
 
   it('🚨 security violation NON persiste (throws PRIMA di UPDATE)', async () => {
     const node = await createCustomNode({
-      workspaceId: 'ws-1', ownerUserId: 'u-1',
+      workspaceId: 'ws-1',
+      ownerUserId: 'u-1',
       input: {
         slug: 'compile-fail',
         displayName: 'X',
@@ -403,11 +437,13 @@ describe('🚨 compileAndPersist (DB integration)', () => {
         sourceSchema: CLEAN_SOURCES.schema,
       },
     });
-    await expect(compileAndPersist({
-      workspaceId: 'ws-1',
-      id: node.id,
-      sources: { ...CLEAN_SOURCES, executor: 'eval("x")' },
-    })).rejects.toThrow(CustomNodeSecurityViolationError);
+    await expect(
+      compileAndPersist({
+        workspaceId: 'ws-1',
+        id: node.id,
+        sources: { ...CLEAN_SOURCES, executor: 'eval("x")' },
+      }),
+    ).rejects.toThrow(CustomNodeSecurityViolationError);
     // DB row deve restare con status='draft' e compiled_executor null
     const after = await getCustomNode({ workspaceId: 'ws-1', id: node.id });
     expect(after!.status).toBe('draft');

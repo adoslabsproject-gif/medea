@@ -34,23 +34,50 @@ const SHA256_HEX = /^[0-9a-f]{64}$/u;
 
 function makeWorkflow(partial: Partial<Workflow>): Workflow {
   return {
-    schemaVersion: '1.0.0', id: 'wf-bin', name: 'Bin', enabled: true,
-    nodes: [], edges: [], nodeDefs: [],
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    schemaVersion: '1.0.0',
+    id: 'wf-bin',
+    name: 'Bin',
+    enabled: true,
+    nodes: [],
+    edges: [],
+    nodeDefs: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     ...partial,
   };
 }
 
-function defOf(id: string): { id: string; label: string; kind: 'action'; category: string; inputs: string[]; outputs: string[]; configSchema: never } {
-  return { id, label: id, kind: 'action', category: 'test', inputs: [], outputs: [], configSchema: {} as never };
+function defOf(id: string): {
+  id: string;
+  label: string;
+  kind: 'action';
+  category: string;
+  inputs: string[];
+  outputs: string[];
+  configSchema: never;
+} {
+  return {
+    id,
+    label: id,
+    kind: 'action',
+    category: 'test',
+    inputs: [],
+    outputs: [],
+    configSchema: {} as never,
+  };
 }
 
 let root = '';
 let store: BinaryStore;
-beforeEach(async () => { root = await mkdtemp(join(tmpdir(), 'binctx-')); store = new BinaryStore(join(root, 'blobs')); });
-afterEach(async () => { await rm(root, { recursive: true, force: true }); });
+beforeEach(async () => {
+  root = await mkdtemp(join(tmpdir(), 'binctx-'));
+  store = new BinaryStore(join(root, 'blobs'));
+});
+afterEach(async () => {
+  await rm(root, { recursive: true, force: true });
+});
 
-describe('🚨 GAP2 step2 — execCtx.writeBinary/readBinary cablati nell\'engine', () => {
+describe("🚨 GAP2 step2 — execCtx.writeBinary/readBinary cablati nell'engine", () => {
   it('🚨 writer produce BinaryData ref (no byte inline) → reader lo rilegge via ref', async () => {
     let writtenBin: BinaryData | undefined;
     let readBack: Buffer | undefined;
@@ -91,7 +118,7 @@ describe('🚨 GAP2 step2 — execCtx.writeBinary/readBinary cablati nell\'engin
     expect(isBinaryData(writtenBin)).toBe(true);
     expect(writtenBin!.encoding).toBe('ref');
     expect(writtenBin!.ref).toMatch(SHA256_HEX);
-    expect(writtenBin!.data).toBeUndefined();          // niente base64 in outputsById
+    expect(writtenBin!.data).toBeUndefined(); // niente base64 in outputsById
     expect(writtenBin!.size).toBe(PAYLOAD.byteLength);
     expect(writtenBin!.fileName).toBe('f.txt');
 
@@ -107,7 +134,9 @@ describe('🚨 GAP2 step2 — execCtx.writeBinary/readBinary cablati nell\'engin
     const w = (id: string) => ({
       def: defOf(id),
       executor: async (_c: unknown, _i: unknown, ctx: NodeExecutionContext) => ({
-        output: await ctx.writeBinary!(Buffer.from('same-bytes'), { mimeType: 'application/octet-stream' }),
+        output: await ctx.writeBinary!(Buffer.from('same-bytes'), {
+          mimeType: 'application/octet-stream',
+        }),
         chosenBranch: undefined,
       }),
     });
@@ -127,20 +156,24 @@ describe('🚨 GAP2 step2 — execCtx.writeBinary/readBinary cablati nell\'engin
     expect(await store.list()).toHaveLength(1); // dedup content-addressed
   });
 
-  it('🚨 writeBinaryStream: nodo produce ref da uno STREAM multi-chunk → reader rilegge (writeStream NON e\' codice morto)', async () => {
+  it("🚨 writeBinaryStream: nodo produce ref da uno STREAM multi-chunk → reader rilegge (writeStream NON e' codice morto)", async () => {
     let bin: BinaryData | undefined;
     let readBack: Buffer | undefined;
     // chunk costruiti programmaticamente (incl. high bytes 0xce/0x94) -> ASCII source
-    const chunks = [Buffer.from('part-1-'), Buffer.from('part-2-'), Buffer.from([0xce, 0x94, 0xcf, 0x83])];
+    const chunks = [
+      Buffer.from('part-1-'),
+      Buffer.from('part-2-'),
+      Buffer.from([0xce, 0x94, 0xcf, 0x83]),
+    ];
     const full = Buffer.concat(chunks);
 
     const writer = {
       def: defOf('s_writer'),
       executor: async (_c: unknown, _i: unknown, ctx: NodeExecutionContext) => {
-        bin = await ctx.writeBinaryStream!(
-          Readable.from(chunks),
-          { mimeType: 'application/octet-stream', fileName: 'big.bin' },
-        );
+        bin = await ctx.writeBinaryStream!(Readable.from(chunks), {
+          mimeType: 'application/octet-stream',
+          fileName: 'big.bin',
+        });
         return { output: bin, chosenBranch: undefined };
       },
     };
@@ -193,7 +226,9 @@ describe('🚨 GAP2 step2 — execCtx.writeBinary/readBinary cablati nell\'engin
     };
     // engine SENZA binaryStore -> usa noopBinaryStore (fail-fast)
     const engine = new WorkflowEngine(new InMemoryEventBus(), { nodeRegistry: [writer as never] });
-    const workflow = makeWorkflow({ nodes: [{ id: 'n1', defId: 'bin_writer', x: 0, y: 0, config: {} }] });
+    const workflow = makeWorkflow({
+      nodes: [{ id: 'n1', defId: 'bin_writer', x: 0, y: 0, config: {} }],
+    });
     const result = await engine.run({ workflow, triggerInput: {} });
     expect(result.status).not.toBe('success');
     expect(caught).toBeDefined();

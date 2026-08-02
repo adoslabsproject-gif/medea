@@ -31,13 +31,19 @@ interface NewsOutput {
   html?: string;
 }
 
-interface CacheEntry { value: NewsOutput; expiresAt: number }
+interface CacheEntry {
+  value: NewsOutput;
+  expiresAt: number;
+}
 const cache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const CACHE_MAX = 200;
 
 function stripHtml(s: string): string {
-  return s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  return s
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function truncate(s: string, max = 280): string {
@@ -68,15 +74,20 @@ export function parseFeed(xml: string): { feed: NewsOutput['feed']; items: NewsI
     const feed = $('feed').first();
     feedMeta = {
       title: feed.children('title').first().text().trim(),
-      link: feed.children("link[rel='alternate']").attr('href') ?? feed.children('link').attr('href') ?? '',
+      link:
+        feed.children("link[rel='alternate']").attr('href') ??
+        feed.children('link').attr('href') ??
+        '',
       description: feed.children('subtitle').first().text().trim(),
       lang: feed.attr('xml:lang') ?? '',
     };
     feed.find('entry').each((_, el) => {
       const e = $(el);
       const title = e.find('title').first().text().trim();
-      const link = e.find("link[rel='alternate']").attr('href') ?? e.find('link').attr('href') ?? '';
-      const pubRaw = e.find('updated').first().text().trim() || e.find('published').first().text().trim();
+      const link =
+        e.find("link[rel='alternate']").attr('href') ?? e.find('link').attr('href') ?? '';
+      const pubRaw =
+        e.find('updated').first().text().trim() || e.find('published').first().text().trim();
       const { iso, ts } = parseDate(pubRaw);
       const summary = e.find('summary').first().text() || e.find('content').first().text();
       const author = e.find('author > name').first().text().trim();
@@ -86,14 +97,18 @@ export function parseFeed(xml: string): { feed: NewsOutput['feed']; items: NewsI
         if (term) cats.push(term);
       });
       items.push({
-        title, link, pubDate: iso, pubTimestamp: ts,
+        title,
+        link,
+        pubDate: iso,
+        pubTimestamp: ts,
         snippet: truncate(stripHtml(summary), 280),
         author: author || null,
         categories: cats,
       });
     });
   } else {
-    const channel = $('rss channel').first().length > 0 ? $('rss channel').first() : $('channel').first();
+    const channel =
+      $('rss channel').first().length > 0 ? $('rss channel').first() : $('channel').first();
     feedMeta = {
       title: channel.children('title').first().text().trim(),
       link: channel.children('link').first().text().trim(),
@@ -104,17 +119,24 @@ export function parseFeed(xml: string): { feed: NewsOutput['feed']; items: NewsI
       const e = $(el);
       const title = e.find('title').first().text().trim();
       const link = e.find('link').first().text().trim() || e.find('guid').first().text().trim();
-      const pubRaw = e.find('pubDate').first().text().trim() || e.find('dc\\:date,date').first().text().trim();
+      const pubRaw =
+        e.find('pubDate').first().text().trim() || e.find('dc\\:date,date').first().text().trim();
       const { iso, ts } = parseDate(pubRaw);
-      const description = e.find('description').first().text() || e.find('content\\:encoded').first().text();
-      const author = e.find('author').first().text().trim() || e.find('dc\\:creator,creator').first().text().trim();
+      const description =
+        e.find('description').first().text() || e.find('content\\:encoded').first().text();
+      const author =
+        e.find('author').first().text().trim() ||
+        e.find('dc\\:creator,creator').first().text().trim();
       const cats: string[] = [];
       e.find('category').each((_i, c) => {
         const term = $(c).text().trim();
         if (term) cats.push(term);
       });
       items.push({
-        title, link, pubDate: iso, pubTimestamp: ts,
+        title,
+        link,
+        pubDate: iso,
+        pubTimestamp: ts,
         snippet: truncate(stripHtml(description), 280),
         author: author || null,
         categories: cats,
@@ -126,19 +148,25 @@ export function parseFeed(xml: string): { feed: NewsOutput['feed']; items: NewsI
 }
 
 function renderMarkdown(items: NewsItem[]): string {
-  return items.map((it) => {
-    const date = it.pubDate ? ` _(${it.pubDate.slice(0, 10)})_` : '';
-    const snippet = it.snippet ? `\n  ${it.snippet}` : '';
-    return `- **[${it.title}](${it.link})**${date}${snippet}`;
-  }).join('\n');
+  return items
+    .map((it) => {
+      const date = it.pubDate ? ` _(${it.pubDate.slice(0, 10)})_` : '';
+      const snippet = it.snippet ? `\n  ${it.snippet}` : '';
+      return `- **[${it.title}](${it.link})**${date}${snippet}`;
+    })
+    .join('\n');
 }
 
 function renderHtml(items: NewsItem[]): string {
-  const li = items.map((it) => {
-    const date = it.pubDate ? ` <span style="color:#999">(${it.pubDate.slice(0, 10)})</span>` : '';
-    const snippet = it.snippet ? `<br><span style="font-size:0.9em">${it.snippet}</span>` : '';
-    return `  <li><a href="${it.link}"><strong>${it.title}</strong></a>${date}${snippet}</li>`;
-  }).join('\n');
+  const li = items
+    .map((it) => {
+      const date = it.pubDate
+        ? ` <span style="color:#999">(${it.pubDate.slice(0, 10)})</span>`
+        : '';
+      const snippet = it.snippet ? `<br><span style="font-size:0.9em">${it.snippet}</span>` : '';
+      return `  <li><a href="${it.link}"><strong>${it.title}</strong></a>${date}${snippet}</li>`;
+    })
+    .join('\n');
   return `<ul>\n${li}\n</ul>`;
 }
 
@@ -150,13 +178,16 @@ export const newsDisplayExecutor: NodeExecutor = async (rawConfig, _input, conte
 
   const limitRaw = Number(cfg.limit ?? 10);
   const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(Math.floor(limitRaw), 100)) : 10;
-  const renderFormat: 'none' | 'markdown' | 'html' = cfg.renderFormat === 'markdown' ? 'markdown' : cfg.renderFormat === 'html' ? 'html' : 'none';
+  const renderFormat: 'none' | 'markdown' | 'html' =
+    cfg.renderFormat === 'markdown' ? 'markdown' : cfg.renderFormat === 'html' ? 'html' : 'none';
   const sinceHoursRaw = Number(cfg.sinceHours ?? NaN);
-  const sinceHours = Number.isFinite(sinceHoursRaw) && sinceHoursRaw > 0 ? Math.floor(sinceHoursRaw) : null;
+  const sinceHours =
+    Number.isFinite(sinceHoursRaw) && sinceHoursRaw > 0 ? Math.floor(sinceHoursRaw) : null;
   const timeoutMsRaw = Number(cfg.timeoutMs ?? 10_000);
-  const timeoutMs = Number.isFinite(timeoutMsRaw) && timeoutMsRaw > 0
-    ? Math.min(Math.floor(timeoutMsRaw), 60_000)
-    : 10_000;
+  const timeoutMs =
+    Number.isFinite(timeoutMsRaw) && timeoutMsRaw > 0
+      ? Math.min(Math.floor(timeoutMsRaw), 60_000)
+      : 10_000;
 
   const cacheKey = `${feedUrl}|${limit.toString()}|${renderFormat}|${sinceHours?.toString() ?? '-'}`;
   const cached = cache.get(cacheKey);
@@ -206,4 +237,12 @@ export const newsDisplayExecutor: NodeExecutor = async (rawConfig, _input, conte
   return { output, durationMs: Date.now() - start } satisfies NodeExecutionResult;
 };
 
-export const __test__ = { parseFeed, renderMarkdown, renderHtml, parseDate, stripHtml, truncate, clearCache: (): void => cache.clear() };
+export const __test__ = {
+  parseFeed,
+  renderMarkdown,
+  renderHtml,
+  parseDate,
+  stripHtml,
+  truncate,
+  clearCache: (): void => cache.clear(),
+};

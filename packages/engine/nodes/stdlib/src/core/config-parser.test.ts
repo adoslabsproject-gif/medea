@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-import { parseConfig, parseConfigOrThrow, defineConfigSchema, commonSchemas } from './config-parser.js';
+import {
+  parseConfig,
+  parseConfigOrThrow,
+  defineConfigSchema,
+  commonSchemas,
+} from './config-parser.js';
 import { ValidationError } from './node-error.js';
 
 describe('config-parser', () => {
@@ -61,8 +66,9 @@ describe('config-parser', () => {
     });
 
     it('throws ValidationError on failure', () => {
-      expect(() => parseConfigOrThrow(z.object({ a: z.string() }), { a: 5 }))
-        .toThrow(ValidationError);
+      expect(() => parseConfigOrThrow(z.object({ a: z.string() }), { a: 5 })).toThrow(
+        ValidationError,
+      );
     });
   });
 

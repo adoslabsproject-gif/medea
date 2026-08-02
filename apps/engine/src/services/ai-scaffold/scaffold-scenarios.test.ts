@@ -61,10 +61,26 @@ describe('Smoke E2E #1 — IMAP-driven CRM enrichment (fan-in classico)', () => 
       nodes: [
         { id: 'imap_1', defId: 'trigger_imap', config: { folder: 'sales' } },
         { id: 'extract_1', defId: 'agent_extractor', config: { provider: 'anthropic' } },
-        { id: 'clearbit_1', defId: 'action_http', config: { url: 'https://clearbit.com/api/companies/{{$node.extract_1.json.domain}}' } },
-        { id: 'fetch_home_1', defId: 'action_http', config: { url: 'https://{{$node.extract_1.json.domain}}' } },
-        { id: 'linkedin_1', defId: 'action_http', config: { url: 'https://linkedin.com/search/{{$node.extract_1.json.company}}' } },
-        { id: 'log_audit_1', defId: 'db_insert', config: { databaseId: '__USE_PICKER__', table: 'crm_log' } },
+        {
+          id: 'clearbit_1',
+          defId: 'action_http',
+          config: { url: 'https://clearbit.com/api/companies/{{$node.extract_1.json.domain}}' },
+        },
+        {
+          id: 'fetch_home_1',
+          defId: 'action_http',
+          config: { url: 'https://{{$node.extract_1.json.domain}}' },
+        },
+        {
+          id: 'linkedin_1',
+          defId: 'action_http',
+          config: { url: 'https://linkedin.com/search/{{$node.extract_1.json.company}}' },
+        },
+        {
+          id: 'log_audit_1',
+          defId: 'db_insert',
+          config: { databaseId: '__USE_PICKER__', table: 'crm_log' },
+        },
       ],
       edges: [
         { from: 'imap_1', to: 'extract_1' },
@@ -87,12 +103,16 @@ describe('Smoke E2E #2 — Webhook con placeholder hardcoded (SMTP host + norepl
     const raw: ScenarioWorkflow = {
       nodes: [
         { id: 'wh_1', defId: 'trigger_webhook', config: { customPath: 'leads' } },
-        { id: 'email_1', defId: 'action_send_email', config: {
-          smtpHost: 'smtp.example.com',
-          smtpUser: 'noreply@example.com',
-          smtpPassword: '{{secrets.SMTP_PASSWORD}}',
-          to: '{{$node.wh_1.json.email}}',
-        } },
+        {
+          id: 'email_1',
+          defId: 'action_send_email',
+          config: {
+            smtpHost: 'smtp.example.com',
+            smtpUser: 'noreply@example.com',
+            smtpPassword: '{{secrets.SMTP_PASSWORD}}',
+            to: '{{$node.wh_1.json.email}}',
+          },
+        },
       ],
       edges: [{ from: 'wh_1', to: 'email_1' }],
     };
@@ -113,11 +133,30 @@ describe('Smoke E2E #3 — Cron daily summary con loop+aggregator', () => {
     const raw: ScenarioWorkflow = {
       nodes: [
         { id: 'cron_1', defId: 'trigger_cron', config: { cronExpression: '0 9 * * *' } },
-        { id: 'query_1', defId: 'db_query', config: { databaseId: '__USE_PICKER__', sql: 'SELECT * FROM orders WHERE created_at > now() - interval \'1 day\'' } },
-        { id: 'loop_1', defId: 'logic_loop', config: { itemsExpression: 'input', strategy: 'naive' } },
+        {
+          id: 'query_1',
+          defId: 'db_query',
+          config: {
+            databaseId: '__USE_PICKER__',
+            sql: "SELECT * FROM orders WHERE created_at > now() - interval '1 day'",
+          },
+        },
+        {
+          id: 'loop_1',
+          defId: 'logic_loop',
+          config: { itemsExpression: 'input', strategy: 'naive' },
+        },
         { id: 'classify_1', defId: 'agent_classifier', config: { provider: 'liara' } },
-        { id: 'summary_1', defId: 'agent_summarizer', config: { provider: 'liara', __action: 'summarize_report_orders' } },
-        { id: 'email_1', defId: 'action_send_email', config: { to: '{{secrets.MANAGER_EMAIL}}', subject: 'Daily report' } },
+        {
+          id: 'summary_1',
+          defId: 'agent_summarizer',
+          config: { provider: 'liara', __action: 'summarize_report_orders' },
+        },
+        {
+          id: 'email_1',
+          defId: 'action_send_email',
+          config: { to: '{{secrets.MANAGER_EMAIL}}', subject: 'Daily report' },
+        },
       ],
       edges: [
         { from: 'cron_1', to: 'query_1' },
@@ -140,10 +179,22 @@ describe('Smoke E2E #4 — Multi-vendor parallel + flow_merge gia esplicito', ()
     const raw: ScenarioWorkflow = {
       nodes: [
         { id: 'webhook_1', defId: 'trigger_webhook', config: {} },
-        { id: 'stripe_1', defId: 'action_http', config: { url: 'https://api.stripe.com/v1/charges' } },
-        { id: 'paypal_1', defId: 'action_http', config: { url: 'https://api.paypal.com/v1/payments' } },
+        {
+          id: 'stripe_1',
+          defId: 'action_http',
+          config: { url: 'https://api.stripe.com/v1/charges' },
+        },
+        {
+          id: 'paypal_1',
+          defId: 'action_http',
+          config: { url: 'https://api.paypal.com/v1/payments' },
+        },
         { id: 'merge_1', defId: 'flow_merge', config: { strategy: 'concat' } },
-        { id: 'db_1', defId: 'db_insert', config: { databaseId: '__USE_PICKER__', table: 'payments' } },
+        {
+          id: 'db_1',
+          defId: 'db_insert',
+          config: { databaseId: '__USE_PICKER__', table: 'payments' },
+        },
       ],
       edges: [
         { from: 'webhook_1', to: 'stripe_1' },
@@ -166,17 +217,25 @@ describe('Smoke E2E #5 — File watch + classifier + 3 ramo logic_switch', () =>
       nodes: [
         { id: 'watch_1', defId: 'trigger_file_watch', config: { path: '/inbox' } },
         { id: 'classify_1', defId: 'agent_classifier', config: { provider: 'liara' } },
-        { id: 'switch_1', defId: 'logic_switch', config: {
-          expression: '{{$node.classify_1.json.category}}',
-          cases: [
-            { key: 'invoice', label: 'Fatture' },
-            { key: 'contract', label: 'Contratti' },
-            { key: 'quote', label: 'Preventivi' },
-          ],
-          defaultCase: 'unknown',
-        } },
+        {
+          id: 'switch_1',
+          defId: 'logic_switch',
+          config: {
+            expression: '{{$node.classify_1.json.category}}',
+            cases: [
+              { key: 'invoice', label: 'Fatture' },
+              { key: 'contract', label: 'Contratti' },
+              { key: 'quote', label: 'Preventivi' },
+            ],
+            defaultCase: 'unknown',
+          },
+        },
         { id: 'erp_1', defId: 'action_http', config: { url: 'https://erp.internal/api/invoice' } },
-        { id: 'legal_1', defId: 'action_http', config: { url: 'https://legal.internal/api/contract' } },
+        {
+          id: 'legal_1',
+          defId: 'action_http',
+          config: { url: 'https://legal.internal/api/contract' },
+        },
         { id: 'crm_1', defId: 'action_http', config: { url: 'https://crm.internal/api/quote' } },
         { id: 'manual_1', defId: 'community_slack', config: { channel: '#manual-review' } },
       ],
@@ -198,9 +257,17 @@ describe('Smoke E2E #6 — Stripe webhook + validate + atomic DB insert', () => 
   it('Standard webhook→agent→db pipeline → no fix necessari', () => {
     const raw: ScenarioWorkflow = {
       nodes: [
-        { id: 'wh_1', defId: 'trigger_webhook', config: { customPath: 'stripe', signSecret: '{{secrets.STRIPE_WEBHOOK_SECRET}}' } },
+        {
+          id: 'wh_1',
+          defId: 'trigger_webhook',
+          config: { customPath: 'stripe', signSecret: '{{secrets.STRIPE_WEBHOOK_SECRET}}' },
+        },
         { id: 'validate_1', defId: 'agent_validator', config: { provider: 'liara' } },
-        { id: 'db_1', defId: 'db_insert', config: { databaseId: '__USE_PICKER__', table: 'stripe_events' } },
+        {
+          id: 'db_1',
+          defId: 'db_insert',
+          config: { databaseId: '__USE_PICKER__', table: 'stripe_events' },
+        },
       ],
       edges: [
         { from: 'wh_1', to: 'validate_1' },
@@ -240,11 +307,19 @@ describe('Smoke E2E #8 — Agent con provider hallucinato openai', () => {
     const raw: ScenarioWorkflow = {
       nodes: [
         { id: 'wh_1', defId: 'trigger_webhook', config: {} },
-        { id: 'agent_1', defId: 'agent_extractor', config: { provider: 'openai', model: 'gpt-4o', apiKey: '{{secrets.OPENAI_API_KEY}}' } },
+        {
+          id: 'agent_1',
+          defId: 'agent_extractor',
+          config: { provider: 'openai', model: 'gpt-4o', apiKey: '{{secrets.OPENAI_API_KEY}}' },
+        },
       ],
       edges: [{ from: 'wh_1', to: 'agent_1' }],
     };
-    const rOverride = autoFixWorkflow({ nodes: raw.nodes.map((n) => ({ ...n })), edges: raw.edges, tenantDefaultLlmProvider: 'anthropic' });
+    const rOverride = autoFixWorkflow({
+      nodes: raw.nodes.map((n) => ({ ...n })),
+      edges: raw.edges,
+      tenantDefaultLlmProvider: 'anthropic',
+    });
     const appliedOverride = Array.from(new Set(rOverride.appliedFixes.map((f) => f.type)));
     expect(appliedOverride).toContain('agent_provider_normalized');
     const agent = rOverride.nodes.find((n) => n.id === 'agent_1')!;
@@ -257,11 +332,19 @@ describe('Smoke E2E #8 — Agent con provider hallucinato openai', () => {
     const raw: ScenarioWorkflow = {
       nodes: [
         { id: 'wh_1', defId: 'trigger_webhook', config: {} },
-        { id: 'agent_1', defId: 'agent_extractor', config: { provider: 'openai', model: 'gpt-4o', apiKey: 'sk-real-custom' } },
+        {
+          id: 'agent_1',
+          defId: 'agent_extractor',
+          config: { provider: 'openai', model: 'gpt-4o', apiKey: 'sk-real-custom' },
+        },
       ],
       edges: [{ from: 'wh_1', to: 'agent_1' }],
     };
-    const r = autoFixWorkflow({ nodes: raw.nodes.map((n) => ({ ...n })), edges: raw.edges, tenantDefaultLlmProvider: 'anthropic' });
+    const r = autoFixWorkflow({
+      nodes: raw.nodes.map((n) => ({ ...n })),
+      edges: raw.edges,
+      tenantDefaultLlmProvider: 'anthropic',
+    });
     const agent = r.nodes.find((n) => n.id === 'agent_1')!;
     expect(agent.config.provider).toBe('anthropic'); // sempre normalizzato
     expect(agent.config.apiKey).toBe('sk-real-custom'); // preservato — by design
@@ -276,19 +359,43 @@ describe('Smoke E2E #9 — Anti-fraud price monitoring (5 vendor parallelo, fan-
     const raw: ScenarioWorkflow = {
       nodes: [
         { id: 'cron_1', defId: 'trigger_cron', config: { cronExpression: '*/30 * * * *' } },
-        { id: 'amazon_1', defId: 'action_http', config: { url: 'https://amazon.com/api/products' } },
+        {
+          id: 'amazon_1',
+          defId: 'action_http',
+          config: { url: 'https://amazon.com/api/products' },
+        },
         { id: 'ebay_1', defId: 'action_http', config: { url: 'https://ebay.com/api/products' } },
-        { id: 'aliexpress_1', defId: 'action_http', config: { url: 'https://aliexpress.com/api/products' } },
-        { id: 'shopify_1', defId: 'action_http', config: { url: 'https://shopify.com/api/products' } },
-        { id: 'walmart_1', defId: 'action_http', config: { url: 'https://walmart.com/api/products' } },
-        { id: 'log_1', defId: 'db_insert', config: { databaseId: '__USE_PICKER__', table: 'price_monitoring' } },
+        {
+          id: 'aliexpress_1',
+          defId: 'action_http',
+          config: { url: 'https://aliexpress.com/api/products' },
+        },
+        {
+          id: 'shopify_1',
+          defId: 'action_http',
+          config: { url: 'https://shopify.com/api/products' },
+        },
+        {
+          id: 'walmart_1',
+          defId: 'action_http',
+          config: { url: 'https://walmart.com/api/products' },
+        },
+        {
+          id: 'log_1',
+          defId: 'db_insert',
+          config: { databaseId: '__USE_PICKER__', table: 'price_monitoring' },
+        },
       ],
       edges: [
-        { from: 'cron_1', to: 'amazon_1' }, { from: 'cron_1', to: 'ebay_1' },
-        { from: 'cron_1', to: 'aliexpress_1' }, { from: 'cron_1', to: 'shopify_1' },
+        { from: 'cron_1', to: 'amazon_1' },
+        { from: 'cron_1', to: 'ebay_1' },
+        { from: 'cron_1', to: 'aliexpress_1' },
+        { from: 'cron_1', to: 'shopify_1' },
         { from: 'cron_1', to: 'walmart_1' },
-        { from: 'amazon_1', to: 'log_1' }, { from: 'ebay_1', to: 'log_1' },
-        { from: 'aliexpress_1', to: 'log_1' }, { from: 'shopify_1', to: 'log_1' },
+        { from: 'amazon_1', to: 'log_1' },
+        { from: 'ebay_1', to: 'log_1' },
+        { from: 'aliexpress_1', to: 'log_1' },
+        { from: 'shopify_1', to: 'log_1' },
         { from: 'walmart_1', to: 'log_1' },
       ],
     };
@@ -309,25 +416,45 @@ describe('Smoke E2E #10 — IMAP triage commercialista (Liara → email_triage �
     const raw: ScenarioWorkflow = {
       nodes: [
         { id: 'imap_1', defId: 'trigger_imap', config: { folder: 'INBOX' } },
-        { id: 'triage_1', defId: 'agent_email_triage_commercialista', config: { provider: 'liara' } },
-        { id: 'switch_1', defId: 'logic_switch', config: {
-          expression: '{{$node.triage_1.json.label}}',
-          cases: [
-            { key: 'fattura', label: 'Fattura' },
-            { key: 'preventivo', label: 'Preventivo' },
-            { key: 'rimborso', label: 'Rimborso' },
-            { key: 'reminder', label: 'Reminder' },
-            { key: 'errore', label: 'Errore' },
-          ],
-          defaultCase: 'altro',
-        } },
+        {
+          id: 'triage_1',
+          defId: 'agent_email_triage_commercialista',
+          config: { provider: 'liara' },
+        },
+        {
+          id: 'switch_1',
+          defId: 'logic_switch',
+          config: {
+            expression: '{{$node.triage_1.json.label}}',
+            cases: [
+              { key: 'fattura', label: 'Fattura' },
+              { key: 'preventivo', label: 'Preventivo' },
+              { key: 'rimborso', label: 'Rimborso' },
+              { key: 'reminder', label: 'Reminder' },
+              { key: 'errore', label: 'Errore' },
+            ],
+            defaultCase: 'altro',
+          },
+        },
         // 6 ramo terminali (5 cases + default)
         { id: 'odoo_invoice', defId: 'action_http', config: { url: 'https://odoo/api/invoice' } },
         { id: 'odoo_quote', defId: 'action_http', config: { url: 'https://odoo/api/quote' } },
-        { id: 'refund_db', defId: 'db_insert', config: { databaseId: '__USE_PICKER__', table: 'refunds' } },
+        {
+          id: 'refund_db',
+          defId: 'db_insert',
+          config: { databaseId: '__USE_PICKER__', table: 'refunds' },
+        },
         { id: 'reminder_slack', defId: 'community_slack', config: { channel: '#reminders' } },
-        { id: 'error_db', defId: 'db_insert', config: { databaseId: '__USE_PICKER__', table: 'errors' } },
-        { id: 'manual_db', defId: 'db_insert', config: { databaseId: '__USE_PICKER__', table: 'manual_review' } },
+        {
+          id: 'error_db',
+          defId: 'db_insert',
+          config: { databaseId: '__USE_PICKER__', table: 'errors' },
+        },
+        {
+          id: 'manual_db',
+          defId: 'db_insert',
+          config: { databaseId: '__USE_PICKER__', table: 'manual_review' },
+        },
       ],
       edges: [
         { from: 'imap_1', to: 'triage_1' },
@@ -351,17 +478,25 @@ describe('Smoke E2E #11 — Workflow Stripe + Notion + Slack notify (4-layer pat
       nodes: [
         { id: 'wh_1', defId: 'trigger_webhook', config: { customPath: 'stripe' } },
         { id: 'classify_1', defId: 'agent_classifier', config: { provider: 'liara' } },
-        { id: 'switch_1', defId: 'logic_switch', config: {
-          expression: '{{$node.classify_1.json.type}}',
-          cases: [
-            { key: 'subscription_created', label: 'Sub Created' },
-            { key: 'payment_failed', label: 'Failed' },
-          ],
-          defaultCase: 'other',
-        } },
+        {
+          id: 'switch_1',
+          defId: 'logic_switch',
+          config: {
+            expression: '{{$node.classify_1.json.type}}',
+            cases: [
+              { key: 'subscription_created', label: 'Sub Created' },
+              { key: 'payment_failed', label: 'Failed' },
+            ],
+            defaultCase: 'other',
+          },
+        },
         { id: 'notion_1', defId: 'community_notion', config: { databaseId: '__USE_PICKER__' } },
         { id: 'slack_1', defId: 'community_slack', config: { channel: '#alerts' } },
-        { id: 'db_1', defId: 'db_insert', config: { databaseId: '__USE_PICKER__', table: 'events' } },
+        {
+          id: 'db_1',
+          defId: 'db_insert',
+          config: { databaseId: '__USE_PICKER__', table: 'events' },
+        },
       ],
       edges: [
         { from: 'wh_1', to: 'classify_1' },
@@ -381,13 +516,29 @@ describe('Smoke E2E #12 — Compound: tutti i pattern bug LLM in unico workflow'
     const raw: ScenarioWorkflow = {
       nodes: [
         { id: 'wh_1', defId: 'trigger_webhook', config: {} },
-        { id: 'agent_1', defId: 'agent_extractor', config: { provider: 'openai', model: 'gpt-3.5-turbo-0613' } },
-        { id: 'email_1', defId: 'action_send_email', config: {
-          smtpHost: 'smtp.example.com',
-          to: 'noreply@example.com',
-        } },
-        { id: 'http_a', defId: 'action_http', config: { url: 'https://api.same.com', method: 'POST' } },
-        { id: 'http_b', defId: 'action_http', config: { url: 'https://api.same.com', method: 'POST' } },
+        {
+          id: 'agent_1',
+          defId: 'agent_extractor',
+          config: { provider: 'openai', model: 'gpt-3.5-turbo-0613' },
+        },
+        {
+          id: 'email_1',
+          defId: 'action_send_email',
+          config: {
+            smtpHost: 'smtp.example.com',
+            to: 'noreply@example.com',
+          },
+        },
+        {
+          id: 'http_a',
+          defId: 'action_http',
+          config: { url: 'https://api.same.com', method: 'POST' },
+        },
+        {
+          id: 'http_b',
+          defId: 'action_http',
+          config: { url: 'https://api.same.com', method: 'POST' },
+        },
         { id: 'db_1', defId: 'db_insert', config: { databaseId: '__USE_PICKER__', table: 'logs' } },
       ],
       edges: [

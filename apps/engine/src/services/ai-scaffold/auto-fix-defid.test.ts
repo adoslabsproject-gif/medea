@@ -59,14 +59,16 @@ describe('findBaseDefId — strip suffix progressivo', () => {
   });
 
   it('action_web_fetch_advanced_extra → action_web_fetch_advanced', () => {
-    expect(findBaseDefId('action_web_fetch_advanced_extra', CATALOG)).toBe('action_web_fetch_advanced');
+    expect(findBaseDefId('action_web_fetch_advanced_extra', CATALOG)).toBe(
+      'action_web_fetch_advanced',
+    );
   });
 
   it('action_fetch_url_homepage → action_fetch_url', () => {
     expect(findBaseDefId('action_fetch_url_homepage', CATALOG)).toBe('action_fetch_url');
   });
 
-  it('community_<vendor> SKIPPED — vendor è parte dell\'identità (no strip)', () => {
+  it("community_<vendor> SKIPPED — vendor è parte dell'identità (no strip)", () => {
     expect(findBaseDefId('community_unknown_vendor', CATALOG)).toBeNull();
     expect(findBaseDefId('community_telegram_send', CATALOG)).toBeNull();
   });
@@ -112,7 +114,13 @@ describe('autoFixInventedDefIds — integrazione su multiple nodi', () => {
   it('preserva config originale durante rimap (URL Clearbit non perso)', () => {
     const r = autoFixInventedDefIds(
       {
-        nodes: [{ id: 'n1', defId: 'action_http_clearbit', config: { url: 'https://clearbit.com/v2/companies/find', method: 'GET' } }],
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'action_http_clearbit',
+            config: { url: 'https://clearbit.com/v2/companies/find', method: 'GET' },
+          },
+        ],
       },
       CATALOG,
     );
@@ -194,9 +202,12 @@ describe('🔒 alias flow_merge → logic_merge (vocabolario scaffold → defId 
   });
 
   it('autoFixInventedDefIds rimappa un nodo flow_merge → logic_merge', () => {
-    const r = autoFixInventedDefIds({
-      nodes: [{ id: 'm', defId: 'flow_merge', config: { strategy: 'concat' } }],
-    }, KNOWN);
+    const r = autoFixInventedDefIds(
+      {
+        nodes: [{ id: 'm', defId: 'flow_merge', config: { strategy: 'concat' } }],
+      },
+      KNOWN,
+    );
     expect(r.nodes[0]!.defId).toBe('logic_merge');
     expect(r.appliedFixes[0]!.before).toBe('flow_merge');
     expect(r.appliedFixes[0]!.after).toBe('logic_merge');
@@ -204,14 +215,22 @@ describe('🔒 alias flow_merge → logic_merge (vocabolario scaffold → defId 
 });
 
 describe('🔌 alias n8n / nomi generici → defId FlowForge (migrante n8n)', () => {
-  const CAT = new Set(['action_run_js', 'action_run_python', 'action_http', 'logic_transform', 'logic_if', 'logic_merge', 'trigger_webhook']);
+  const CAT = new Set([
+    'action_run_js',
+    'action_run_python',
+    'action_http',
+    'logic_transform',
+    'logic_if',
+    'logic_merge',
+    'trigger_webhook',
+  ]);
 
   it.each([
     ['code', 'action_run_js'],
-    ['function', 'action_run_js'],          // Function n8n = CODE, non Set
+    ['function', 'action_run_js'], // Function n8n = CODE, non Set
     ['python', 'action_run_python'],
     ['httpRequest', 'action_http'],
-    ['HTTP Request', 'action_http'],        // con spazio (normalizzato)
+    ['HTTP Request', 'action_http'], // con spazio (normalizzato)
     ['n8n-nodes-base.set', 'logic_transform'],
     ['set', 'logic_transform'],
     ['if', 'logic_if'],
@@ -223,17 +242,23 @@ describe('🔌 alias n8n / nomi generici → defId FlowForge (migrante n8n)', ()
   });
 
   it('autoFixInventedDefIds normalizza un nodo "code" emesso da Liara → action_run_js', () => {
-    const r = autoFixInventedDefIds({
-      nodes: [{ id: 'c', defId: 'code', config: { code: 'return 1' } }],
-    }, CAT);
+    const r = autoFixInventedDefIds(
+      {
+        nodes: [{ id: 'c', defId: 'code', config: { code: 'return 1' } }],
+      },
+      CAT,
+    );
     expect(r.nodes[0]!.defId).toBe('action_run_js');
     expect(r.appliedFixes[0]).toMatchObject({ before: 'code', after: 'action_run_js' });
   });
 
   it('un defId REALE non viene toccato (no falso mapping su nodi validi)', () => {
-    const r = autoFixInventedDefIds({
-      nodes: [{ id: 'x', defId: 'action_http', config: {} }],
-    }, CAT);
+    const r = autoFixInventedDefIds(
+      {
+        nodes: [{ id: 'x', defId: 'action_http', config: {} }],
+      },
+      CAT,
+    );
     expect(r.appliedFixes).toHaveLength(0);
     expect(r.nodes[0]!.defId).toBe('action_http');
   });

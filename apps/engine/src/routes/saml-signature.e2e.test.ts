@@ -62,7 +62,8 @@ function buildResponse(email: string): { xml: string } {
   const before = iso(new Date(now.getTime() - 5 * 60_000));
   const after = iso(new Date(now.getTime() + 5 * 60_000));
   const instant = iso(now);
-  const NS = 'xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"';
+  const NS =
+    'xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"';
   const assertion =
     `<saml:Assertion ${NS} ID="${assId}" Version="2.0" IssueInstant="${instant}">` +
     `<saml:Issuer>${IDP}</saml:Issuer>` +
@@ -93,7 +94,10 @@ function signElement(xml: string, localName: string): string {
     digestAlgorithm: ALG.digest,
   });
   s.computeSignature(xml, {
-    location: { reference: `//*[local-name(.)='${localName}']/*[local-name(.)='Issuer']`, action: 'after' },
+    location: {
+      reference: `//*[local-name(.)='${localName}']/*[local-name(.)='Issuer']`,
+      action: 'after',
+    },
   });
   return s.getSignedXml();
 }
@@ -105,9 +109,9 @@ function makeSamlSp(): SAML {
     entryPoint: `${IDP}/sso`,
     issuer: SP_ISSUER,
     idpCert: CERT,
-    wantAssertionsSigned: true,        // mirror saml.ts:51
-    wantAuthnResponseSigned: true,     // mirror saml.ts:56
-    signatureAlgorithm: 'sha256',      // mirror saml.ts:57
+    wantAssertionsSigned: true, // mirror saml.ts:51
+    wantAuthnResponseSigned: true, // mirror saml.ts:56
+    signatureAlgorithm: 'sha256', // mirror saml.ts:57
     audience: SP_ISSUER,
   });
 }
@@ -120,13 +124,16 @@ describe('🚨 SAML signature E2E — vero @node-saml (no mock)', () => {
   it('🚨 doppia firma valida (assertion+response) → ACCETTATA, email estratta', async () => {
     let xml = buildResponse(EMAIL).xml;
     xml = signElement(xml, 'Assertion'); // firma assertion PRIMA
-    xml = signElement(xml, 'Response');  // poi la response (copre l'assertion firmata)
+    xml = signElement(xml, 'Response'); // poi la response (copre l'assertion firmata)
 
     const saml = makeSamlSp();
     const { profile } = await saml.validatePostResponseAsync({ SAMLResponse: toB64(xml) });
     expect(profile).toBeTruthy();
-    const email = (profile as Record<string, unknown>)?.email
-      ?? (profile as Record<string, unknown>)?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
+    const email =
+      (profile as Record<string, unknown>)?.email ??
+      (profile as Record<string, unknown>)?.[
+        'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'
+      ];
     expect(email).toBe(EMAIL);
   });
 
@@ -139,7 +146,9 @@ describe('🚨 SAML signature E2E — vero @node-saml (no mock)', () => {
     expect(tampered).not.toBe(xml);
 
     const saml = makeSamlSp();
-    await expect(saml.validatePostResponseAsync({ SAMLResponse: toB64(tampered) })).rejects.toThrow();
+    await expect(
+      saml.validatePostResponseAsync({ SAMLResponse: toB64(tampered) }),
+    ).rejects.toThrow();
   });
 
   it('🚨 assertion NON firmata (solo Response) → RIFIUTATA (wantAssertionsSigned in vigore)', async () => {

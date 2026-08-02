@@ -48,7 +48,11 @@ const lastLogAt = new Map<string, number>();
  * @param err      l'errore che ha impedito la decisione (per fingerprint + payload).
  * @param extra    contesto aggiuntivo per il log (mai secret/PII).
  */
-export function recordFailOpen(control: FailOpenControl, err: unknown, extra?: Record<string, unknown>): void {
+export function recordFailOpen(
+  control: FailOpenControl,
+  err: unknown,
+  extra?: Record<string, unknown>,
+): void {
   // 1) Metrica SEMPRE — è il segnale alertabile, non deve mai essere throttled.
   counterInc({
     name: 'flowforge_fail_open_total',

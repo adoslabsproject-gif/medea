@@ -50,7 +50,11 @@ export class GlobalVariablesService implements IGlobalVariableRegistry {
       .all(tenantId) as { name: string; value_json: string }[];
     const out: Record<string, unknown> = {};
     for (const r of rows) {
-      try { out[r.name] = JSON.parse(r.value_json) as unknown; } catch { out[r.name] = r.value_json; }
+      try {
+        out[r.name] = JSON.parse(r.value_json) as unknown;
+      } catch {
+        out[r.name] = r.value_json;
+      }
     }
     return out;
   }

@@ -29,13 +29,13 @@ export const emailTriageCommercialistaNodeDef: NodeDef = {
     '(array di termini italiani specifici trovati, utile per audit + debug), suggestedOperator (default mapping: ' +
     'fiscale→commercialista_senior, iva→specialista_iva, forfettario→junior, ecc., overridabile via ' +
     'operatorsJson), suggestedReplyTemplate (placeholder reply context-aware: "Buongiorno {{nome}}, abbiamo ' +
-    'ricevuto la sua richiesta sull\'argomento {{label}}. La presa in carico è confermata, le risponderemo entro ' +
+    "ricevuto la sua richiesta sull'argomento {{label}}. La presa in carico è confermata, le risponderemo entro " +
     '{{urgency_sla}} ore." con variabili pronte per nodemailer), urgencyTier (low/medium/high/critical derivato ' +
     'da signal "scadenza", "AdE", "termine", "ravvedimento", "ricorso") }. ' +
     'Pure function: nessun LLM call, nessuna chiamata di rete, deterministica con latenza < 5ms — eseguibile ' +
     'tranquillamente in pipeline real-time anche su 1000 email/giorno senza saturare il gateway LLM né incidere ' +
     'sui costi BYOK Anthropic/OpenAI del cliente. ' +
-    'Pattern di composizione raccomandato: collegare l\'output a flow_human_review_decision sulla confidence ' +
+    "Pattern di composizione raccomandato: collegare l'output a flow_human_review_decision sulla confidence " +
     '(soglia 0.7) — basso confidence o label "altro" routing alla coda umana del titolare studio; sull\'altra ' +
     'branch auto-approved, agganciare action_email_send_tracked usando ' +
     '{{$node.triage.json.suggestedReplyTemplate}} come body e operatore assegnato da suggestedOperator. ' +
@@ -46,12 +46,27 @@ export const emailTriageCommercialistaNodeDef: NodeDef = {
     'tag su crm.lead per analytics business; pre-step a un agent LLM più costoso quando confidence bassa.',
 
   configFields: [
-    { key: 'subjectField', label: 'Campo input — subject', type: 'text',
-      required: false, defaultValue: 'subject' },
-    { key: 'bodyField', label: 'Campo input — body', type: 'text',
-      required: false, defaultValue: 'body' },
-    { key: 'fromField', label: 'Campo input — from', type: 'text',
-      required: false, defaultValue: 'from' },
+    {
+      key: 'subjectField',
+      label: 'Campo input — subject',
+      type: 'text',
+      required: false,
+      defaultValue: 'subject',
+    },
+    {
+      key: 'bodyField',
+      label: 'Campo input — body',
+      type: 'text',
+      required: false,
+      defaultValue: 'body',
+    },
+    {
+      key: 'fromField',
+      label: 'Campo input — from',
+      type: 'text',
+      required: false,
+      defaultValue: 'from',
+    },
 
     {
       key: 'operatorsJson',
@@ -60,7 +75,8 @@ export const emailTriageCommercialistaNodeDef: NodeDef = {
       language: 'json',
       required: false,
       placeholder: '{"fiscale":"anna@studio","f24":"marco@studio"}',
-      help: 'Mappa label→email operatrice. Le label non specificate ' +
+      help:
+        'Mappa label→email operatrice. Le label non specificate ' +
         'usano il default. Default: fiscale@studio, iva@studio, ' +
         'pagamenti@studio (f24), titolare@studio (sollecito), ' +
         'archivio@studio (pec_legal), amministrazione@studio (payment), ' +
@@ -73,7 +89,8 @@ export const emailTriageCommercialistaNodeDef: NodeDef = {
       language: 'json',
       required: false,
       placeholder: '{"f24":"Riceverà l\'F24 entro 24h."}',
-      help: 'Mappa label→testo risposta. Default: skeleton IT polite per ' +
+      help:
+        'Mappa label→testo risposta. Default: skeleton IT polite per ' +
         'ogni categoria. Visualizzabile come body sendEmail downstream.',
     },
     {
@@ -83,7 +100,8 @@ export const emailTriageCommercialistaNodeDef: NodeDef = {
       language: 'json',
       required: false,
       placeholder: '{"payment":"normal"}',
-      help: 'Valori: high / normal / low. Default high: sollecito + ' +
+      help:
+        'Valori: high / normal / low. Default high: sollecito + ' +
         'pec_legal + f24. Default low: payment + altro. ' +
         'normal: tutti gli altri.',
     },

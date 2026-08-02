@@ -31,7 +31,9 @@ describe('🚨 no token configured → warn + return null', () => {
     const m = await load();
     const r = await m.promoteToCommunity({} as any);
     expect(r).toBeNull();
-    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('MEDEA_INTERNAL_TOKEN not set'));
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      expect.stringContaining('MEDEA_INTERNAL_TOKEN not set'),
+    );
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
@@ -58,7 +60,9 @@ describe('🚨 token resolution', () => {
 });
 
 describe('🚨 promoteToCommunity', () => {
-  beforeEach(() => { process.env.MEDEA_INTERNAL_TOKEN = 'token'; });
+  beforeEach(() => {
+    process.env.MEDEA_INTERNAL_TOKEN = 'token';
+  });
 
   it('🚨 POST /api/v1/internal/templates/promote con body', async () => {
     fetchMock.mockResolvedValueOnce({
@@ -67,22 +71,38 @@ describe('🚨 promoteToCommunity', () => {
     });
     const m = await load();
     const req: any = {
-      name: 'My Tpl', language: 'it', graphSignature: 'sig',
-      graphDefIds: ['http'], workflowJson: {}, promptText: 'P', promptTokens: ['t'],
+      name: 'My Tpl',
+      language: 'it',
+      graphSignature: 'sig',
+      graphDefIds: ['http'],
+      workflowJson: {},
+      promptText: 'P',
+      promptTokens: ['t'],
       sourceWorkspaceId: 'ws-1',
     };
     const r = await m.promoteToCommunity(req);
     expect(r?.id).toBe('tpl-x');
-    expect(at(fetchMock.mock.calls, 0, 'fetch-calls')[0]).toContain('/api/v1/internal/templates/promote');
-    const body = JSON.parse((at(fetchMock.mock.calls, 0, 'fetch-calls')[1] as RequestInit).body as string);
+    expect(at(fetchMock.mock.calls, 0, 'fetch-calls')[0]).toContain(
+      '/api/v1/internal/templates/promote',
+    );
+    const body = JSON.parse(
+      (at(fetchMock.mock.calls, 0, 'fetch-calls')[1] as RequestInit).body as string,
+    );
     expect(body.name).toBe('My Tpl');
   });
 
   it('🚨 non-2xx → null + warn log', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false, status: 503, text: () => Promise.resolve('busy') });
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      text: () => Promise.resolve('busy'),
+    });
     const m = await load();
     expect(await m.promoteToCommunity({} as any)).toBeNull();
-    expect(loggerMock.warn).toHaveBeenCalledWith(expect.objectContaining({ status: 503 }), expect.any(String));
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 503 }),
+      expect.any(String),
+    );
   });
 
   it('🚨 fetch throw → null (graceful)', async () => {
@@ -97,7 +117,9 @@ describe('🚨 promoteToCommunity', () => {
 });
 
 describe('🚨 retrieveFromCommunity', () => {
-  beforeEach(() => { process.env.MEDEA_INTERNAL_TOKEN = 'token'; });
+  beforeEach(() => {
+    process.env.MEDEA_INTERNAL_TOKEN = 'token';
+  });
 
   it('🚨 happy: templates parsed', async () => {
     fetchMock.mockResolvedValueOnce({
@@ -111,7 +133,9 @@ describe('🚨 retrieveFromCommunity', () => {
 });
 
 describe('🚨 recordCommunityImport + unshareFromCommunity', () => {
-  beforeEach(() => { process.env.MEDEA_INTERNAL_TOKEN = 'token'; });
+  beforeEach(() => {
+    process.env.MEDEA_INTERNAL_TOKEN = 'token';
+  });
 
   it('🚨 import ok=true → return true', async () => {
     fetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ ok: true }) });
@@ -134,8 +158,12 @@ describe('🚨 recordCommunityImport + unshareFromCommunity', () => {
   it('🚨 unshare con reason', async () => {
     fetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ ok: true }) });
     const m = await load();
-    expect(await m.unshareFromCommunity({ templateId: 't', sourceWorkspaceId: 'ws', reason: 'GDPR' })).toBe(true);
-    const body = JSON.parse((at(fetchMock.mock.calls, 0, 'fetch-calls')[1] as RequestInit).body as string);
+    expect(
+      await m.unshareFromCommunity({ templateId: 't', sourceWorkspaceId: 'ws', reason: 'GDPR' }),
+    ).toBe(true);
+    const body = JSON.parse(
+      (at(fetchMock.mock.calls, 0, 'fetch-calls')[1] as RequestInit).body as string,
+    );
     expect(body.reason).toBe('GDPR');
   });
 });

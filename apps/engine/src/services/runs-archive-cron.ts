@@ -31,10 +31,7 @@ async function runOnce(): Promise<void> {
   try {
     const res = await archiveAllWorkflows(retentionDays);
     if (res.workflowsArchived > 0) {
-      logger.info?.(
-        { ...res, retentionDays },
-        '[runs-archive-cron] batch completed',
-      );
+      logger.info?.({ ...res, retentionDays }, '[runs-archive-cron] batch completed');
     }
   } catch (e) {
     logger.warn?.({ err: e }, '[runs-archive-cron] cycle failed');
@@ -46,11 +43,17 @@ export function startRunsArchiveCron(): void {
   // Jitter ±5 min sul primo run per anti-convergence multi-tenant.
   const jitterMs = Math.floor((Math.random() - 0.5) * 10 * 60 * 1000);
   const firstFire = 10 * 60 * 1000 + jitterMs; // 10min nominal ± 5min
-  setTimeout(() => { void runOnce(); }, firstFire).unref?.();
-  timer = setInterval(() => { void runOnce(); }, WEEK_MS);
+  setTimeout(() => {
+    void runOnce();
+  }, firstFire).unref?.();
+  timer = setInterval(() => {
+    void runOnce();
+  }, WEEK_MS);
   timer.unref?.();
-  logger.info?.({ retentionDays: readRetentionDays(), firstFireMs: firstFire },
-    'runs-archive-cron started');
+  logger.info?.(
+    { retentionDays: readRetentionDays(), firstFireMs: firstFire },
+    'runs-archive-cron started',
+  );
 }
 
 export function stopRunsArchiveCron(): void {

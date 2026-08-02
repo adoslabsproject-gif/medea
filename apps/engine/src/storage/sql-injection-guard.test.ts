@@ -68,57 +68,70 @@ const ALLOWED: Record<string, { count: number; reason: string }> = {
   // ── Identificatori validati / hardcoded ──────────────────────────────
   'storage/migrate.ts': {
     count: 2,
-    reason: 'ensureColumn(): table/column passano da assertSqlIdent() prima dell\'interpolazione; definition vieta terminatori di statement.',
+    reason:
+      "ensureColumn(): table/column passano da assertSqlIdent() prima dell'interpolazione; definition vieta terminatori di statement.",
   },
   'storage/db.ts': {
     count: 1,
-    reason: 'addColumn(): name/type sono LETTERALI hardcoded nel codice di migrazione (folder_id/TEXT, ...), mai input utente.',
+    reason:
+      'addColumn(): name/type sono LETTERALI hardcoded nel codice di migrazione (folder_id/TEXT, ...), mai input utente.',
   },
   'routes/tenant-health.ts': {
     count: 1,
-    reason: 'countRows(): table è un union-type letterale \'workflows\' | \'runs\' — il compilatore vieta ogni altro valore.',
+    reason:
+      "countRows(): table è un union-type letterale 'workflows' | 'runs' — il compilatore vieta ogni altro valore.",
   },
   'routes/backup.ts': {
     count: 3,
-    reason: 'table/cols validati contro EXPORT_TABLES + PRAGMA table_info (whitelist esplicita documentata inline); valori parametrizzati.',
+    reason:
+      'table/cols validati contro EXPORT_TABLES + PRAGMA table_info (whitelist esplicita documentata inline); valori parametrizzati.',
   },
   'services/ai-scaffold/template-cache/template.service.ts': {
     count: 1,
-    reason: 'bumpCounter(): col = ok ? "success_count" : "fail_count" — ternario di due letterali, mai input.',
+    reason:
+      'bumpCounter(): col = ok ? "success_count" : "fail_count" — ternario di due letterali, mai input.',
   },
   // ── whereSql / sets da frammenti hardcoded uniti con join ────────────
   'routes/users.ts': {
     count: 1,
-    reason: 'PATCH users: gli SET sono frammenti hardcoded ("display_name = ?", ...) uniti con join; i VALORI sono parametrizzati.',
+    reason:
+      'PATCH users: gli SET sono frammenti hardcoded ("display_name = ?", ...) uniti con join; i VALORI sono parametrizzati.',
   },
   'routes/ai-chat.ts': {
     count: 2,
-    reason: 'whereSql da frammenti hardcoded ("tenant_id = ?", "user_id = ?", "surface = ?") uniti con join; valori parametrizzati.',
+    reason:
+      'whereSql da frammenti hardcoded ("tenant_id = ?", "user_id = ?", "surface = ?") uniti con join; valori parametrizzati.',
   },
   'services/ai-conversations/conversation.service.ts': {
     count: 1,
-    reason: 'conditions da frammenti hardcoded ("user_id = ?", "deleted_at IS NULL", "surface = ?") uniti con join; valori parametrizzati.',
+    reason:
+      'conditions da frammenti hardcoded ("user_id = ?", "deleted_at IS NULL", "surface = ?") uniti con join; valori parametrizzati.',
   },
   'services/ai-interactions.service.ts': {
     count: 3,
-    reason: 'whereSql da frammenti hardcoded uniti con join; LIMIT/OFFSET e i valori WHERE sono parametrizzati (?).',
+    reason:
+      'whereSql da frammenti hardcoded uniti con join; LIMIT/OFFSET e i valori WHERE sono parametrizzati (?).',
   },
   'services/custom-nodes/service.ts': {
     count: 3,
-    reason: 'whereSql da frammenti hardcoded ("status = ?", "category = ?", "owner_user_id = ?") uniti con join; valori parametrizzati.',
+    reason:
+      'whereSql da frammenti hardcoded ("status = ?", "category = ?", "owner_user_id = ?") uniti con join; valori parametrizzati.',
   },
   'services/tenant.service.ts': {
     count: 3,
-    reason: 'list()/count()/update(): whereSql da frammenti hardcoded ("status = ?", "plan = ?", "deleted_at IS NULL") e sets hardcoded, uniti con join; valori parametrizzati.',
+    reason:
+      'list()/count()/update(): whereSql da frammenti hardcoded ("status = ?", "plan = ?", "deleted_at IS NULL") e sets hardcoded, uniti con join; valori parametrizzati.',
   },
   'services/workflow-control-tools.service.ts': {
     count: 1,
-    reason: 'listWorkflows(): where = enabledOnly ? "WHERE enabled = 1" : "" — letterale binario, nessun input.',
+    reason:
+      'listWorkflows(): where = enabledOnly ? "WHERE enabled = 1" : "" — letterale binario, nessun input.',
   },
   // ── placeholders = ids.map(() => "?") (soli punti-interrogativi) ──────
   'routes/runs-history.ts': {
     count: 6,
-    reason: 'whereSql da frammenti hardcoded + placeholders = ids.map(() => "?") per le clausole IN; valori parametrizzati.',
+    reason:
+      'whereSql da frammenti hardcoded + placeholders = ids.map(() => "?") per le clausole IN; valori parametrizzati.',
   },
   'routes/dashboard.ts': {
     count: 1,
@@ -126,11 +139,13 @@ const ALLOWED: Record<string, { count: number; reason: string }> = {
   },
   'services/checkpoint.service.ts': {
     count: 2,
-    reason: 'run id IN (${placeholders}/${claimedPh}) con placeholders = soli "?"; il resto della query è statico.',
+    reason:
+      'run id IN (${placeholders}/${claimedPh}) con placeholders = soli "?"; il resto della query è statico.',
   },
   'services/client-portal.service.ts': {
     count: 1,
-    reason: 'conditions con id IN (${placeholders}) — placeholders soli "?"; altre condizioni frammenti hardcoded; valori parametrizzati.',
+    reason:
+      'conditions con id IN (${placeholders}) — placeholders soli "?"; altre condizioni frammenti hardcoded; valori parametrizzati.',
   },
 };
 
@@ -144,15 +159,15 @@ describe('SQL injection guard — identificatori interpolati (anti-drift)', () =
       if (!allow) {
         problems.push(
           `NUOVO file con SQL raw interpolato: "${site.rel}" (${site.count} siti). ` +
-          `Verifica che ogni \${…} sia un identificatore VALIDATO (assertSqlIdent/whitelist/union) ` +
-          `o un frammento di soli "?", poi dichiaralo in ALLOWED con la ragione. Se è un valore, usa "?".`,
+            `Verifica che ogni \${…} sia un identificatore VALIDATO (assertSqlIdent/whitelist/union) ` +
+            `o un frammento di soli "?", poi dichiaralo in ALLOWED con la ragione. Se è un valore, usa "?".`,
         );
         continue;
       }
       if (allow.count !== site.count) {
         problems.push(
           `CAMBIATO il numero di query dinamiche in "${site.rel}": atteso ${allow.count}, trovato ${site.count}. ` +
-          `Un sito è stato aggiunto/rimosso — ri-verifica la sicurezza di TUTTI i \${…} SQL del file e aggiorna il count.`,
+            `Un sito è stato aggiunto/rimosso — ri-verifica la sicurezza di TUTTI i \${…} SQL del file e aggiorna il count.`,
         );
       }
     }
@@ -161,14 +176,16 @@ describe('SQL injection guard — identificatori interpolati (anti-drift)', () =
     const scannedRels = new Set(sites.map((s) => s.rel));
     for (const rel of Object.keys(ALLOWED)) {
       if (!scannedRels.has(rel)) {
-        problems.push(`"${rel}" è in ALLOWED ma non ha più SQL raw interpolato: rimuovilo dall'allowlist.`);
+        problems.push(
+          `"${rel}" è in ALLOWED ma non ha più SQL raw interpolato: rimuovilo dall'allowlist.`,
+        );
       }
     }
 
     expect(problems, `\n${problems.join('\n')}\n`).toEqual([]);
   });
 
-  it('l\'allowlist non è vuota (il guard sta davvero scansionando, non un no-op verde)', () => {
+  it("l'allowlist non è vuota (il guard sta davvero scansionando, non un no-op verde)", () => {
     // Anti green-fake: se il regex smettesse di matchare, scanSites() tornerebbe
     // [] e il test sopra passerebbe banalmente. Questo lo impedisce.
     expect(scanSites().length).toBeGreaterThanOrEqual(6);

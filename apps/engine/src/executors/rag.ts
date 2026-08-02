@@ -11,7 +11,11 @@
 import type { NodeExecutor, NodeExecutionResult } from '@medea/engine-nodes-stdlib';
 import { VectorService } from '@/services/vector.service.js';
 import { embedText, type EmbeddingProvider } from '@/services/embeddings.service.js';
-import { ingestText, vectorPlanLimitsFromConfig, type VectorDistance } from '@/services/vector-ingest.js';
+import {
+  ingestText,
+  vectorPlanLimitsFromConfig,
+  type VectorDistance,
+} from '@/services/vector-ingest.js';
 import { frameRagResults } from './rag-guard.js';
 
 const VALID_PROVIDERS = new Set<EmbeddingProvider>(['openai', 'voyage', 'ollama']);
@@ -27,7 +31,8 @@ function num(config: Record<string, unknown>, key: string): number | undefined {
   return undefined;
 }
 function jsonObj(value: unknown): Record<string, unknown> | undefined {
-  if (value && typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
+  if (value && typeof value === 'object' && !Array.isArray(value))
+    return value as Record<string, unknown>;
   if (typeof value === 'string' && value.trim() !== '') {
     try {
       const p = JSON.parse(value) as unknown;
@@ -47,7 +52,10 @@ function resolveProvider(config: Record<string, unknown>): EmbeddingProvider {
   return p as EmbeddingProvider;
 }
 
-function embeddingReq(config: Record<string, unknown>, text: string): Parameters<typeof embedText>[0] {
+function embeddingReq(
+  config: Record<string, unknown>,
+  text: string,
+): Parameters<typeof embedText>[0] {
   const provider = resolveProvider(config);
   const model = str(config, 'model', 'text-embedding-3-small');
   const apiKey = str(config, 'apiKey');
@@ -65,7 +73,8 @@ export const ragSearchExecutor: NodeExecutor = async (config, input, context) =>
   const start = Date.now();
   const databaseId = str(config, 'databaseId');
   const collection = str(config, 'collection');
-  if (!databaseId || !collection) throw new Error('rag_search: databaseId e collection sono obbligatori');
+  if (!databaseId || !collection)
+    throw new Error('rag_search: databaseId e collection sono obbligatori');
 
   // query: dal config, altrimenti dall'input (stringa o { query }/{ text })
   let query = str(config, 'query');
@@ -73,10 +82,12 @@ export const ragSearchExecutor: NodeExecutor = async (config, input, context) =>
     if (typeof input === 'string') query = input;
     else {
       const obj = input as Record<string, unknown> | null;
-      query = typeof obj?.query === 'string' ? obj.query : typeof obj?.text === 'string' ? obj.text : '';
+      query =
+        typeof obj?.query === 'string' ? obj.query : typeof obj?.text === 'string' ? obj.text : '';
     }
   }
-  if (query.trim() === '') throw new Error('rag_search: query vuota (config.query o input.query/text)');
+  if (query.trim() === '')
+    throw new Error('rag_search: query vuota (config.query o input.query/text)');
 
   const topK = num(config, 'topK') ?? 5;
   const minScore = num(config, 'minScore');
@@ -92,9 +103,17 @@ export const ragSearchExecutor: NodeExecutor = async (config, input, context) =>
   const searchRes = (await vs.search(
     databaseId,
     collection,
-    { vector, topK, ...(minScore !== undefined ? { minScore } : {}), ...(filter ? { filter } : {}) },
+    {
+      vector,
+      topK,
+      ...(minScore !== undefined ? { minScore } : {}),
+      ...(filter ? { filter } : {}),
+    },
     tenantId,
-  )) as { results: { id: string; score: number; payload?: Record<string, unknown> }[]; count: number };
+  )) as {
+    results: { id: string; score: number; payload?: Record<string, unknown> }[];
+    count: number;
+  };
   const raw = searchRes.results;
 
   // SICUREZZA: ogni chunk recuperato è incapsulato come DATO non fidato (anti
@@ -110,7 +129,8 @@ export const ragIngestExecutor: NodeExecutor = async (config, input, context) =>
   const start = Date.now();
   const databaseId = str(config, 'databaseId');
   const collection = str(config, 'collection');
-  if (!databaseId || !collection) throw new Error('rag_ingest: databaseId e collection sono obbligatori');
+  if (!databaseId || !collection)
+    throw new Error('rag_ingest: databaseId e collection sono obbligatori');
 
   // contenuto: dal config, altrimenti dall'input (stringa o { content }/{ text })
   let content = str(config, 'content');
@@ -118,10 +138,16 @@ export const ragIngestExecutor: NodeExecutor = async (config, input, context) =>
     if (typeof input === 'string') content = input;
     else {
       const obj = input as Record<string, unknown> | null;
-      content = typeof obj?.content === 'string' ? obj.content : typeof obj?.text === 'string' ? obj.text : '';
+      content =
+        typeof obj?.content === 'string'
+          ? obj.content
+          : typeof obj?.text === 'string'
+            ? obj.text
+            : '';
     }
   }
-  if (content.trim() === '') throw new Error('rag_ingest: contenuto vuoto (config.content o input.content/text)');
+  if (content.trim() === '')
+    throw new Error('rag_ingest: contenuto vuoto (config.content o input.content/text)');
 
   // provider validato qui (throw su provider non valido prima di qualsiasi I/O).
   const provider = resolveProvider(config);
@@ -151,6 +177,9 @@ export const ragIngestExecutor: NodeExecutor = async (config, input, context) =>
     planLimits: vectorPlanLimitsFromConfig(),
   });
 
-  const ret: NodeExecutionResult = { output: { id: result.id, upserted: result.upserted }, durationMs: Date.now() - start };
+  const ret: NodeExecutionResult = {
+    output: { id: result.id, upserted: result.upserted },
+    durationMs: Date.now() - start,
+  };
   return ret;
 };

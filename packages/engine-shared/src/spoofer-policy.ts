@@ -30,10 +30,10 @@
 import { classifyBot } from './bot-allowlist.js';
 
 export type SpooferAction =
-  | 'ban_immediate'        // spoofer confermato — ban 7gg + audit
-  | 'allow_verified'       // bot legit verificato via DNS
-  | 'allow_ua_trust'       // bot legit (vendor non pubblica DNS suffix)
-  | 'allow_unknown';       // UA non in allowlist — passa al next layer (Behavioral)
+  | 'ban_immediate' // spoofer confermato — ban 7gg + audit
+  | 'allow_verified' // bot legit verificato via DNS
+  | 'allow_ua_trust' // bot legit (vendor non pubblica DNS suffix)
+  | 'allow_unknown'; // UA non in allowlist — passa al next layer (Behavioral)
 
 export interface SpooferDecision {
   action: SpooferAction;

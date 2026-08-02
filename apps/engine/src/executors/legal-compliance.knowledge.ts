@@ -64,7 +64,10 @@ e-Privacy 2002/58/EC + D.Lgs 196/2003 art.122 IT:
 `.trim();
 
 export const SEVERITY_RANK: Record<string, number> = {
-  critical: 4, high: 3, medium: 2, low: 1,
+  critical: 4,
+  high: 3,
+  medium: 2,
+  low: 1,
 };
 
 export interface Finding {
@@ -119,7 +122,8 @@ export function applySeverityFloor(findings: Finding[], floor: string): Finding[
 export function computeScore(findings: Finding[]): number {
   let score = 100;
   for (const f of findings) {
-    score -= f.severity === 'critical' ? 25 : f.severity === 'high' ? 12 : f.severity === 'medium' ? 5 : 2;
+    score -=
+      f.severity === 'critical' ? 25 : f.severity === 'high' ? 12 : f.severity === 'medium' ? 5 : 2;
   }
   return Math.max(0, Math.min(100, score));
 }

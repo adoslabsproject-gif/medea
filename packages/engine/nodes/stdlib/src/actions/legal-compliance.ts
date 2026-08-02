@@ -44,7 +44,7 @@ export const legalComplianceNode: NodeModule = {
       'context window, preservando i confini logici di paragrafi/sezioni; (2) ai_rag_search su una KB ' +
       'normative pre-indicizzata via embedding BGE-M3 1024-dim dei testi ufficiali AgID/EUR-Lex con i 1500+ ' +
       'articoli rilevanti dei 6 framework supportati; (3) Liara LLM analizza ogni chunk con il context ' +
-      'normativo retrieved e produce findings strutturati con CITAZIONE ESPLICITA dell\'articolo violato + ' +
+      "normativo retrieved e produce findings strutturati con CITAZIONE ESPLICITA dell'articolo violato + " +
       'reasoning step-by-step; (4) fusion finale dei findings con severity ranking (critical → high → ' +
       'medium → low → info) e dedup di issue duplicate. ' +
       'Output rich strutturato per consumo umano + machine: { score (0-100 normalizzato di compliance, < 50 ' +
@@ -92,7 +92,17 @@ export const legalComplianceNode: NodeModule = {
         type: 'select',
         required: false,
         defaultValue: 'auto',
-        options: ['auto', 'privacy_policy', 'terms_of_service', 'dpa', 'contract_b2b', 'contract_b2c', 'cookie_banner', 'dpia', 'other'],
+        options: [
+          'auto',
+          'privacy_policy',
+          'terms_of_service',
+          'dpa',
+          'contract_b2b',
+          'contract_b2c',
+          'cookie_banner',
+          'dpia',
+          'other',
+        ],
         help: 'Type hint per prompt specializzato. "auto" detect dal contenuto via LLM.',
       },
       {

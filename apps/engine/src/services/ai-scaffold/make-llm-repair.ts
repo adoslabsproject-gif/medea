@@ -16,7 +16,11 @@ import { buildRepairPrompt } from '@/services/ai-scaffold/repair-prompt.js';
 import type { RepairFn, RepairedNode } from '@/services/ai-scaffold/semantic-repair.js';
 
 /** Chiamata LLM strutturata: prompt + schema → testo JSON. */
-export type StructuredDispatch = (args: { system: string; user: string; schema: object }) => Promise<string>;
+export type StructuredDispatch = (args: {
+  system: string;
+  user: string;
+  schema: object;
+}) => Promise<string>;
 
 export interface MakeLlmRepairOptions {
   dispatch: StructuredDispatch;
@@ -41,7 +45,13 @@ function parseFixes(raw: string): RepairedNode[] {
     if (typeof f !== 'object' || f === null) continue;
     const id = (f as { id?: unknown }).id;
     const config = (f as { config?: unknown }).config;
-    if (typeof id === 'string' && id.length > 0 && typeof config === 'object' && config !== null && !Array.isArray(config)) {
+    if (
+      typeof id === 'string' &&
+      id.length > 0 &&
+      typeof config === 'object' &&
+      config !== null &&
+      !Array.isArray(config)
+    ) {
       out.push({ id, config: config as Record<string, unknown> });
     }
   }
@@ -56,10 +66,16 @@ export function makeLlmRepairFn(opts: MakeLlmRepairOptions): RepairFn {
     try {
       const raw = await opts.dispatch({ system, user, schema });
       const fixes = parseFixes(raw);
-      logger.info({ violations: violations.length, fixes: fixes.length }, '[SEMANTIC-REPAIR] LLM repair round');
+      logger.info(
+        { violations: violations.length, fixes: fixes.length },
+        '[SEMANTIC-REPAIR] LLM repair round',
+      );
       return fixes;
     } catch (err) {
-      logger.warn({ err: err instanceof Error ? err.message : String(err) }, '[SEMANTIC-REPAIR] LLM repair failed (soft) → nessuna fix');
+      logger.warn(
+        { err: err instanceof Error ? err.message : String(err) },
+        '[SEMANTIC-REPAIR] LLM repair failed (soft) → nessuna fix',
+      );
       return [];
     }
   };

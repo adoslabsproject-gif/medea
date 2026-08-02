@@ -89,22 +89,41 @@ export function createTelegramTriggerRoutes(eventBus: IEventBus): Hono {
 
     if (!workflow.enabled) {
       // 200 comunque: un non-2xx fa ritentare Telegram e accumula la coda.
-      logger.warn({ workflowId, updateId: event.updateId }, 'Telegram update dropped: workflow disabled');
+      logger.warn(
+        { workflowId, updateId: event.updateId },
+        'Telegram update dropped: workflow disabled',
+      );
       return c.json({ ok: true, received: 0, dropped: 1 }, 200);
     }
 
     // Envelope webhook-shaped per il pannello "listen" dell'editor.
-    publishTestEvent(tenantId, workflow.id, { method: 'POST', headers: {}, query: {}, body: event });
-    void runs.execute({
-      workflowId: workflow.id,
-      triggerType: 'telegram',
-      triggerInput: event,
-      tenantId,
-    })
-      .then((r) => { logger.info({ runId: r.runId, status: r.status, workflowId }, 'Telegram-triggered run completed'); })
-      .catch((err: unknown) => { logger.error({ err, workflowId }, 'Telegram-triggered run failed'); });
+    publishTestEvent(tenantId, workflow.id, {
+      method: 'POST',
+      headers: {},
+      query: {},
+      body: event,
+    });
+    void runs
+      .execute({
+        workflowId: workflow.id,
+        triggerType: 'telegram',
+        triggerInput: event,
+        tenantId,
+      })
+      .then((r) => {
+        logger.info(
+          { runId: r.runId, status: r.status, workflowId },
+          'Telegram-triggered run completed',
+        );
+      })
+      .catch((err: unknown) => {
+        logger.error({ err, workflowId }, 'Telegram-triggered run failed');
+      });
 
-    logger.info({ workflowId, updateId: event.updateId, bodyHash: bodyHash(rawBody) }, 'Telegram webhook hit');
+    logger.info(
+      { workflowId, updateId: event.updateId, bodyHash: bodyHash(rawBody) },
+      'Telegram webhook hit',
+    );
     return c.json({ ok: true, received: 1 }, 200);
   });
 

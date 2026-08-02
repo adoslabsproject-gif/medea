@@ -57,7 +57,10 @@ export function startOutboxScheduler(deps: OutboxSchedulerDeps): OutboxScheduler
         logger.info({ ...res }, '[error-outbox] sweep');
       }
     } catch (e) {
-      logger.error({ err: e instanceof Error ? e.message : String(e) }, '[error-outbox] sweep failed (fail-soft)');
+      logger.error(
+        { err: e instanceof Error ? e.message : String(e) },
+        '[error-outbox] sweep failed (fail-soft)',
+      );
     } finally {
       inFlight = false;
     }
@@ -70,13 +73,20 @@ export function startOutboxScheduler(deps: OutboxSchedulerDeps): OutboxScheduler
       if (deleted > 0) logger.info({ deleted }, '[error-outbox] gc');
       return deleted;
     } catch (e) {
-      logger.error({ err: e instanceof Error ? e.message : String(e) }, '[error-outbox] gc failed (fail-soft)');
+      logger.error(
+        { err: e instanceof Error ? e.message : String(e) },
+        '[error-outbox] gc failed (fail-soft)',
+      );
       return 0;
     }
   }
 
-  const sweepTimer = setInterval(() => { void sweepNow(); }, sweepInterval);
-  const gcTimer = setInterval(() => { gcNow(); }, gcInterval);
+  const sweepTimer = setInterval(() => {
+    void sweepNow();
+  }, sweepInterval);
+  const gcTimer = setInterval(() => {
+    gcNow();
+  }, gcInterval);
   // unref: lo scheduler non deve tenere vivo il processo da solo.
   sweepTimer.unref?.();
   gcTimer.unref?.();

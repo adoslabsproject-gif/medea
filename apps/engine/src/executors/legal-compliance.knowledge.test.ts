@@ -15,9 +15,17 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-  LEGAL_KNOWLEDGE_INLINE, SEVERITY_RANK,
-  MIN_DOC_CHARS, MAX_DOC_CHARS, CHUNK_SIZE, CHUNK_OVERLAP, MAX_CHUNKS,
-  chunkDocument, dedupFindings, applySeverityFloor, computeScore,
+  LEGAL_KNOWLEDGE_INLINE,
+  SEVERITY_RANK,
+  MIN_DOC_CHARS,
+  MAX_DOC_CHARS,
+  CHUNK_SIZE,
+  CHUNK_OVERLAP,
+  MAX_CHUNKS,
+  chunkDocument,
+  dedupFindings,
+  applySeverityFloor,
+  computeScore,
   type Finding,
 } from './legal-compliance.knowledge.js';
 
@@ -113,7 +121,8 @@ describe('🚨 dedupFindings — chiave (framework|article|title) case-insensiti
     framework: over.framework ?? 'GDPR',
     article: over.article ?? 'art.6',
     title: over.title ?? 'Base giuridica',
-    excerpt: 'x', remediation: 'y',
+    excerpt: 'x',
+    remediation: 'y',
   });
 
   it('🚨 dedupe duplicati esatti', () => {
@@ -139,7 +148,7 @@ describe('🚨 dedupFindings — chiave (framework|article|title) case-insensiti
       mkF({ severity: 'high', article: 'a4' }),
     ];
     const out = dedupFindings(all);
-    expect(out.map(f => f.severity)).toEqual(['critical', 'high', 'medium', 'low']);
+    expect(out.map((f) => f.severity)).toEqual(['critical', 'high', 'medium', 'low']);
   });
 
   it('🚨 array vuoto → []', () => {
@@ -149,13 +158,18 @@ describe('🚨 dedupFindings — chiave (framework|article|title) case-insensiti
 
 describe('🚨 applySeverityFloor — filter sotto soglia', () => {
   const mkF = (sev: 'critical' | 'high' | 'medium' | 'low'): Finding => ({
-    severity: sev, framework: 'GDPR', article: 'a', title: 't', excerpt: 'e', remediation: 'r',
+    severity: sev,
+    framework: 'GDPR',
+    article: 'a',
+    title: 't',
+    excerpt: 'e',
+    remediation: 'r',
   });
 
   it('🚨 floor=medium → critical+high+medium PASS, low BLOCK', () => {
     const all = [mkF('low'), mkF('medium'), mkF('high'), mkF('critical')];
     const out = applySeverityFloor(all, 'medium');
-    expect(out.map(f => f.severity).sort()).toEqual(['critical', 'high', 'medium']);
+    expect(out.map((f) => f.severity).sort()).toEqual(['critical', 'high', 'medium']);
   });
 
   it('🚨 floor=critical → solo critical', () => {
@@ -182,7 +196,12 @@ describe('🚨 applySeverityFloor — filter sotto soglia', () => {
 
 describe('🚨 computeScore — penalty per severity', () => {
   const mkF = (sev: 'critical' | 'high' | 'medium' | 'low'): Finding => ({
-    severity: sev, framework: 'X', article: 'a', title: 't', excerpt: 'e', remediation: 'r',
+    severity: sev,
+    framework: 'X',
+    article: 'a',
+    title: 't',
+    excerpt: 'e',
+    remediation: 'r',
   });
 
   it('🚨 nessuna finding → score=100', () => {

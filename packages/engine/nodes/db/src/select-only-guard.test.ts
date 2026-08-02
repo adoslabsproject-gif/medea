@@ -1,8 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import { assertSelectOnly, sqlSkeleton } from './select-only-guard.js';
 
-const ok = (sql: string): void => { expect(() => { assertSelectOnly(sql); }).not.toThrow(); };
-const ko = (sql: string, re: RegExp): void => { expect(() => { assertSelectOnly(sql); }).toThrow(re); };
+const ok = (sql: string): void => {
+  expect(() => {
+    assertSelectOnly(sql);
+  }).not.toThrow();
+};
+const ko = (sql: string, re: RegExp): void => {
+  expect(() => {
+    assertSelectOnly(sql);
+  }).toThrow(re);
+};
 
 describe('sqlSkeleton — rimuove stringhe/commenti (no falsi positivi)', () => {
   it('svuota letterali e commenti', () => {
@@ -15,24 +23,36 @@ describe('sqlSkeleton — rimuove stringhe/commenti (no falsi positivi)', () => 
 });
 
 describe('assertSelectOnly — SELECT legittimi PASSANO', () => {
-  it('SELECT semplice', () => { ok('SELECT * FROM clienti'); });
+  it('SELECT semplice', () => {
+    ok('SELECT * FROM clienti');
+  });
   it('JOIN/GROUP BY/ORDER/LIMIT/OFFSET', () => {
-    ok('SELECT o.id, count(*) FROM orders o JOIN lines l ON l.oid=o.id GROUP BY o.id ORDER BY o.id LIMIT 50 OFFSET 10');
+    ok(
+      'SELECT o.id, count(*) FROM orders o JOIN lines l ON l.oid=o.id GROUP BY o.id ORDER BY o.id LIMIT 50 OFFSET 10',
+    );
   });
   it('CTE WITH di sola lettura', () => {
-    ok('WITH recenti AS (SELECT * FROM orders WHERE created_at > now() - interval \'7 day\') SELECT * FROM recenti');
+    ok(
+      "WITH recenti AS (SELECT * FROM orders WHERE created_at > now() - interval '7 day') SELECT * FROM recenti",
+    );
   });
   it('🔒 letterale che CONTIENE "delete"/"drop" → OK (è una stringa, non DML)', () => {
-    ok("SELECT * FROM tickets WHERE titolo = 'richiesta di delete account' AND note = 'drop off point'");
+    ok(
+      "SELECT * FROM tickets WHERE titolo = 'richiesta di delete account' AND note = 'drop off point'",
+    );
   });
   it('commento che cita DML → OK', () => {
     ok('SELECT * FROM t -- TODO: poi serve un UPDATE su questa');
   });
-  it('; finale tollerato', () => { ok('SELECT 1;'); });
-  it('UNION di SELECT → OK', () => { ok('SELECT a FROM t1 UNION SELECT a FROM t2'); });
+  it('; finale tollerato', () => {
+    ok('SELECT 1;');
+  });
+  it('UNION di SELECT → OK', () => {
+    ok('SELECT a FROM t1 UNION SELECT a FROM t2');
+  });
   it('🔒 "into" in stringa o dentro una parola → OK (no falso positivo del fix INTO)', () => {
     ok("SELECT * FROM logs WHERE msg = 'moved into archive'"); // letterale, svuotato dallo skeleton
-    ok('SELECT fall_into_bucket FROM metrics');                // "into" senza word-boundary
+    ok('SELECT fall_into_bucket FROM metrics'); // "into" senza word-boundary
   });
 });
 
@@ -77,7 +97,7 @@ describe('🚨 assertSelectOnly — BYPASS bloccati', () => {
   it('🚨 SELECT … INTO nuova_tabella (Postgres/MSSQL) → BLOCCATO', () => {
     ko('SELECT * INTO evil_copy FROM users', /solo SELECT|INTO/i);
     ko('SELECT id, email INTO TEMP staging FROM customers', /INTO/i);
-    ko("WITH x AS (SELECT 1) SELECT * INTO dump FROM x", /INTO/i);
+    ko('WITH x AS (SELECT 1) SELECT * INTO dump FROM x', /INTO/i);
   });
 
   // 🚨🚨 BYPASS marcatore-commento-dentro-stringa (skeleton sequenziale era forabile).

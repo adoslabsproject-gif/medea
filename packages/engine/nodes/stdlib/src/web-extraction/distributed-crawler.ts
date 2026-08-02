@@ -55,16 +55,23 @@ export function buildCrawlerRequest(config: Record<string, unknown>): CrawlerSta
     .split(/[,\n]/)
     .map((s) => s.trim())
     .filter((s) => /^https?:\/\//i.test(s));
-  if (seeds.length === 0) throw new Error('no valid seed URL (must start with http:// or https://)');
+  if (seeds.length === 0)
+    throw new Error('no valid seed URL (must start with http:// or https://)');
 
   const allowRaw = String(config.allowDomains ?? '').trim();
   const allowDomains = allowRaw
-    ? allowRaw.split(/[,\s]+/).map((s) => s.trim()).filter(Boolean)
+    ? allowRaw
+        .split(/[,\s]+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
     : seeds.map((u) => new URL(u).hostname);
 
   const denyRaw = String(config.denyPatterns ?? '').trim();
   const denyPatterns = denyRaw
-    ? denyRaw.split(/[,\n]/).map((s) => s.trim()).filter(Boolean)
+    ? denyRaw
+        .split(/[,\n]/)
+        .map((s) => s.trim())
+        .filter(Boolean)
     : [];
 
   return {
@@ -81,7 +88,9 @@ export function buildCrawlerRequest(config: Record<string, unknown>): CrawlerSta
     },
     parallelism: Math.max(1, Math.min(Number(config.parallelism ?? 4), 50)),
     rateLimitPerHostQps: Math.max(0.1, Math.min(Number(config.rateLimitPerHostQps ?? 2), 50)),
-    userAgent: String(config.userAgent ?? 'FlowForge-Crawler/1.0 (+https://flowforge.automazionezeli.com)').trim(),
+    userAgent: String(
+      config.userAgent ?? 'FlowForge-Crawler/1.0 (+https://flowforge.automazionezeli.com)',
+    ).trim(),
     callbackUrl: String(config.callbackUrl ?? '').trim() || undefined,
     callbackSecret: String(config.callbackSecret ?? '').trim() || undefined,
     callbackBatchSize: Math.max(1, Math.min(Number(config.callbackBatchSize ?? 10), 1000)),
@@ -94,7 +103,9 @@ const executor: NodeExecutor = async (config, _input, _context) => {
   const start = Date.now();
   const endpoint = String(config.endpoint ?? process.env.MEDEA_CRAWLER_ENDPOINT ?? '').trim();
   if (!endpoint) {
-    throw new Error('Crawler endpoint not configured. Set MEDEA_CRAWLER_ENDPOINT env or fill "endpoint" config field. BYO: deploy crawler service (Heritrix/Scrapy-cluster/custom) or managed Zeli endpoint.');
+    throw new Error(
+      'Crawler endpoint not configured. Set MEDEA_CRAWLER_ENDPOINT env or fill "endpoint" config field. BYO: deploy crawler service (Heritrix/Scrapy-cluster/custom) or managed Zeli endpoint.',
+    );
   }
 
   const apiKey = String(config.apiKey ?? '').trim();
@@ -115,9 +126,16 @@ const executor: NodeExecutor = async (config, _input, _context) => {
       const errText = await res.text().catch(() => '');
       throw new Error(`Crawler start failed: ${res.status.toString()} ${errText.slice(0, 300)}`);
     }
-    const data = await res.json() as { jobId: string; status: string; queueDepth?: number };
+    const data = (await res.json()) as { jobId: string; status: string; queueDepth?: number };
     return {
-      output: { jobId: data.jobId, status: data.status, queueDepth: data.queueDepth ?? 0, seeds: reqBody.seeds, maxDepth: reqBody.maxDepth, maxPages: reqBody.maxPages },
+      output: {
+        jobId: data.jobId,
+        status: data.status,
+        queueDepth: data.queueDepth ?? 0,
+        seeds: reqBody.seeds,
+        maxDepth: reqBody.maxDepth,
+        maxPages: reqBody.maxPages,
+      },
       durationMs: Date.now() - start,
     };
   }
@@ -125,20 +143,30 @@ const executor: NodeExecutor = async (config, _input, _context) => {
   if (action === 'status') {
     const jobId = String(config.jobId ?? '').trim();
     if (!jobId) throw new Error('jobId required for action=status');
-    const res = await safeFetchWithRedirects(`${endpoint.replace(/\/$/, '')}/crawl/${encodeURIComponent(jobId)}/status`, {
-      method: 'GET', headers: reqHeaders, timeoutMs: 10_000,
-    });
+    const res = await safeFetchWithRedirects(
+      `${endpoint.replace(/\/$/, '')}/crawl/${encodeURIComponent(jobId)}/status`,
+      {
+        method: 'GET',
+        headers: reqHeaders,
+        timeoutMs: 10_000,
+      },
+    );
     if (!res.ok) throw new Error(`Crawler status failed: ${res.status.toString()}`);
-    const data = await res.json() as Record<string, unknown>;
+    const data = (await res.json()) as Record<string, unknown>;
     return { output: data, durationMs: Date.now() - start };
   }
 
   if (action === 'stop') {
     const jobId = String(config.jobId ?? '').trim();
     if (!jobId) throw new Error('jobId required for action=stop');
-    const res = await safeFetchWithRedirects(`${endpoint.replace(/\/$/, '')}/crawl/${encodeURIComponent(jobId)}/stop`, {
-      method: 'POST', headers: reqHeaders, timeoutMs: 10_000,
-    });
+    const res = await safeFetchWithRedirects(
+      `${endpoint.replace(/\/$/, '')}/crawl/${encodeURIComponent(jobId)}/stop`,
+      {
+        method: 'POST',
+        headers: reqHeaders,
+        timeoutMs: 10_000,
+      },
+    );
     if (!res.ok) throw new Error(`Crawler stop failed: ${res.status.toString()}`);
     return { output: { jobId, stopped: true }, durationMs: Date.now() - start };
   }
@@ -148,10 +176,17 @@ const executor: NodeExecutor = async (config, _input, _context) => {
     if (!jobId) throw new Error('jobId required for action=results');
     const cursor = String(config.cursor ?? '').trim();
     const url = `${endpoint.replace(/\/$/, '')}/crawl/${encodeURIComponent(jobId)}/results${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`;
-    const res = await safeFetchWithRedirects(url, { method: 'GET', headers: reqHeaders, timeoutMs: 30_000 });
+    const res = await safeFetchWithRedirects(url, {
+      method: 'GET',
+      headers: reqHeaders,
+      timeoutMs: 30_000,
+    });
     if (!res.ok) throw new Error(`Crawler results failed: ${res.status.toString()}`);
-    const data = await res.json() as { items: unknown[]; nextCursor?: string };
-    return { output: { items: data.items, nextCursor: data.nextCursor ?? null, count: data.items.length }, durationMs: Date.now() - start };
+    const data = (await res.json()) as { items: unknown[]; nextCursor?: string };
+    return {
+      output: { items: data.items, nextCursor: data.nextCursor ?? null, count: data.items.length },
+      durationMs: Date.now() - start,
+    };
   }
 
   throw new Error(`unknown action "${action}" (use: start, status, stop, results)`);
@@ -197,29 +232,180 @@ export const distributedCrawlerNode: NodeModule = {
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [
-      { key: 'action', label: 'Azione', type: 'select', required: true, defaultValue: 'start', options: ['start', 'status', 'stop', 'results'], help: 'start = avvia nuovo job (ritorna jobId). status = metriche job (richiede jobId). stop = termina job. results = paginated batch (richiede jobId+cursor opzionale).' },
-      { key: 'endpoint', label: 'Crawler endpoint', type: 'text', required: false, placeholder: 'https://crawler.miosito.com (vuoto = env MEDEA_CRAWLER_ENDPOINT)', help: 'Servizio crawler self-host o managed Zeli.' },
+      {
+        key: 'action',
+        label: 'Azione',
+        type: 'select',
+        required: true,
+        defaultValue: 'start',
+        options: ['start', 'status', 'stop', 'results'],
+        help: 'start = avvia nuovo job (ritorna jobId). status = metriche job (richiede jobId). stop = termina job. results = paginated batch (richiede jobId+cursor opzionale).',
+      },
+      {
+        key: 'endpoint',
+        label: 'Crawler endpoint',
+        type: 'text',
+        required: false,
+        placeholder: 'https://crawler.miosito.com (vuoto = env MEDEA_CRAWLER_ENDPOINT)',
+        help: 'Servizio crawler self-host o managed Zeli.',
+      },
       { key: 'apiKey', label: 'API Key', type: 'secret', required: false, help: 'Bearer token.' },
-      { key: 'jobId', label: 'Job ID (status/stop/results)', type: 'text', required: false, placeholder: 'crawl_abc123', help: 'Required per status/stop/results. Per start, opzionale (auto-generato se vuoto) o per resume (con resume=true).' },
-      { key: 'seeds', label: 'Seed URLs', type: 'textarea', required: false, placeholder: 'https://site.com\nhttps://site.com/blog', help: 'URLs iniziali (comma o newline). Required per action=start.' },
-      { key: 'maxDepth', label: 'Max depth', type: 'number', required: false, defaultValue: '3', help: 'Profondita\\` max link da seed. 0 = solo seed. Max 10.' },
-      { key: 'maxPages', label: 'Max pages', type: 'number', required: false, defaultValue: '1000', help: 'Pagine totali max. Hard stop. Min 1, max 100k.' },
-      { key: 'allowDomains', label: 'Allow domains', type: 'text', required: false, placeholder: 'site.com, www.site.com (vuoto = hostname dei seeds)', help: 'Solo questi domini vengono crawled. Default: hostname dei seeds (no cross-domain).' },
-      { key: 'denyPatterns', label: 'Deny patterns (regex)', type: 'textarea', required: false, placeholder: '/admin/.*\n.*\\.pdf$\n/logout', help: 'Regex URL da NON crawlare (es. /admin, /logout, file binari).' },
-      { key: 'respectRobots', label: 'Respect robots.txt', type: 'boolean', required: false, defaultValue: 'true', help: 'RFC 9309 compliance. Default ON (raccomandato).' },
-      { key: 'sitemapFirst', label: 'Sitemap-first seed', type: 'boolean', required: false, defaultValue: 'false', help: 'Prima di crawlare HTML, fetcha sitemap.xml e accoda quegli URL in priorita\\`.' },
-      { key: 'bloomCapacity', label: 'Bloom filter capacity', type: 'number', required: false, defaultValue: '1000000', help: 'Slot per dedup URL. Default 1M = ~7MB RAM. Aumenta per crawl giganti.' },
-      { key: 'bloomFpr', label: 'Bloom FP rate', type: 'number', required: false, defaultValue: '0.001', help: 'False positive rate. Default 0.001 (0.1%). Lower = piu\\` RAM.' },
-      { key: 'parallelism', label: 'Worker paralleli', type: 'number', required: false, defaultValue: '4', help: 'Coroutine paralleli per il job. Max 50.' },
-      { key: 'rateLimitPerHostQps', label: 'Rate-limit per host (QPS)', type: 'number', required: false, defaultValue: '2', help: 'Max requests/sec per hostname (politeness). Default 2 QPS.' },
-      { key: 'userAgent', label: 'User-Agent', type: 'text', required: false, defaultValue: 'FlowForge-Crawler/1.0 (+https://flowforge.automazionezeli.com)', help: 'UA identificativo (etica, transparency).' },
-      { key: 'callbackUrl', label: 'Callback webhook', type: 'text', required: false, placeholder: 'https://tenant.app.automazionezeli.com/webhooks/crawler', help: 'Webhook FlowForge che riceve batch di pages. Vuoto = no callback, usa action=results.' },
-      { key: 'callbackSecret', label: 'Callback secret', type: 'secret', required: false, help: 'HMAC secret per autenticare il callback. Validato da trigger_webhook a downstream.' },
-      { key: 'callbackBatchSize', label: 'Batch size callback', type: 'number', required: false, defaultValue: '10', help: 'Pagine per callback POST. Default 10. Max 1000.' },
-      { key: 'cursor', label: 'Cursor (results)', type: 'text', required: false, help: 'Cursor paginazione per action=results.' },
-      { key: 'resume', label: 'Resume job', type: 'boolean', required: false, defaultValue: 'false', help: 'Se ON + jobId esistente: resume da checkpoint. Altrimenti errore se jobId esiste.' },
+      {
+        key: 'jobId',
+        label: 'Job ID (status/stop/results)',
+        type: 'text',
+        required: false,
+        placeholder: 'crawl_abc123',
+        help: 'Required per status/stop/results. Per start, opzionale (auto-generato se vuoto) o per resume (con resume=true).',
+      },
+      {
+        key: 'seeds',
+        label: 'Seed URLs',
+        type: 'textarea',
+        required: false,
+        placeholder: 'https://site.com\nhttps://site.com/blog',
+        help: 'URLs iniziali (comma o newline). Required per action=start.',
+      },
+      {
+        key: 'maxDepth',
+        label: 'Max depth',
+        type: 'number',
+        required: false,
+        defaultValue: '3',
+        help: 'Profondita\\` max link da seed. 0 = solo seed. Max 10.',
+      },
+      {
+        key: 'maxPages',
+        label: 'Max pages',
+        type: 'number',
+        required: false,
+        defaultValue: '1000',
+        help: 'Pagine totali max. Hard stop. Min 1, max 100k.',
+      },
+      {
+        key: 'allowDomains',
+        label: 'Allow domains',
+        type: 'text',
+        required: false,
+        placeholder: 'site.com, www.site.com (vuoto = hostname dei seeds)',
+        help: 'Solo questi domini vengono crawled. Default: hostname dei seeds (no cross-domain).',
+      },
+      {
+        key: 'denyPatterns',
+        label: 'Deny patterns (regex)',
+        type: 'textarea',
+        required: false,
+        placeholder: '/admin/.*\n.*\\.pdf$\n/logout',
+        help: 'Regex URL da NON crawlare (es. /admin, /logout, file binari).',
+      },
+      {
+        key: 'respectRobots',
+        label: 'Respect robots.txt',
+        type: 'boolean',
+        required: false,
+        defaultValue: 'true',
+        help: 'RFC 9309 compliance. Default ON (raccomandato).',
+      },
+      {
+        key: 'sitemapFirst',
+        label: 'Sitemap-first seed',
+        type: 'boolean',
+        required: false,
+        defaultValue: 'false',
+        help: 'Prima di crawlare HTML, fetcha sitemap.xml e accoda quegli URL in priorita\\`.',
+      },
+      {
+        key: 'bloomCapacity',
+        label: 'Bloom filter capacity',
+        type: 'number',
+        required: false,
+        defaultValue: '1000000',
+        help: 'Slot per dedup URL. Default 1M = ~7MB RAM. Aumenta per crawl giganti.',
+      },
+      {
+        key: 'bloomFpr',
+        label: 'Bloom FP rate',
+        type: 'number',
+        required: false,
+        defaultValue: '0.001',
+        help: 'False positive rate. Default 0.001 (0.1%). Lower = piu\\` RAM.',
+      },
+      {
+        key: 'parallelism',
+        label: 'Worker paralleli',
+        type: 'number',
+        required: false,
+        defaultValue: '4',
+        help: 'Coroutine paralleli per il job. Max 50.',
+      },
+      {
+        key: 'rateLimitPerHostQps',
+        label: 'Rate-limit per host (QPS)',
+        type: 'number',
+        required: false,
+        defaultValue: '2',
+        help: 'Max requests/sec per hostname (politeness). Default 2 QPS.',
+      },
+      {
+        key: 'userAgent',
+        label: 'User-Agent',
+        type: 'text',
+        required: false,
+        defaultValue: 'FlowForge-Crawler/1.0 (+https://flowforge.automazionezeli.com)',
+        help: 'UA identificativo (etica, transparency).',
+      },
+      {
+        key: 'callbackUrl',
+        label: 'Callback webhook',
+        type: 'text',
+        required: false,
+        placeholder: 'https://tenant.app.automazionezeli.com/webhooks/crawler',
+        help: 'Webhook FlowForge che riceve batch di pages. Vuoto = no callback, usa action=results.',
+      },
+      {
+        key: 'callbackSecret',
+        label: 'Callback secret',
+        type: 'secret',
+        required: false,
+        help: 'HMAC secret per autenticare il callback. Validato da trigger_webhook a downstream.',
+      },
+      {
+        key: 'callbackBatchSize',
+        label: 'Batch size callback',
+        type: 'number',
+        required: false,
+        defaultValue: '10',
+        help: 'Pagine per callback POST. Default 10. Max 1000.',
+      },
+      {
+        key: 'cursor',
+        label: 'Cursor (results)',
+        type: 'text',
+        required: false,
+        help: 'Cursor paginazione per action=results.',
+      },
+      {
+        key: 'resume',
+        label: 'Resume job',
+        type: 'boolean',
+        required: false,
+        defaultValue: 'false',
+        help: 'Se ON + jobId esistente: resume da checkpoint. Altrimenti errore se jobId esiste.',
+      },
     ],
-    outputs: ['jobId', 'status', 'queueDepth', 'items', 'nextCursor', 'count', 'seeds', 'maxDepth', 'maxPages', 'pagesCrawled', 'stopped'],
+    outputs: [
+      'jobId',
+      'status',
+      'queueDepth',
+      'items',
+      'nextCursor',
+      'count',
+      'seeds',
+      'maxDepth',
+      'maxPages',
+      'pagesCrawled',
+      'stopped',
+    ],
   },
   executor,
 };

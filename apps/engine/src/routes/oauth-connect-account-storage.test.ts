@@ -28,30 +28,44 @@ let app: Hono;
 beforeAll(() => {
   runMigrations();
   app = new Hono();
-  app.use('*', async (c, next) => { c.set('auth', authCtx); await next(); });
+  app.use('*', async (c, next) => {
+    c.set('auth', authCtx);
+    await next();
+  });
   app.route('/api/v1/oauth-connect', createOAuthConnectRoutes());
   registerAccountStorageRoute(app);
 });
 
 const req = (method: string, path: string, body?: unknown): Promise<Response> =>
-  Promise.resolve(app.request(path, {
-    method,
-    headers: { 'content-type': 'application/json' },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  }));
+  Promise.resolve(
+    app.request(path, {
+      method,
+      headers: { 'content-type': 'application/json' },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    }),
+  );
 
 describe('oauth-connect — gate, validazione, error-path', () => {
   it('senza auth → 401 su /providers e /start', async () => {
     authCtx = null;
     expect((await req('GET', '/api/v1/oauth-connect/providers')).status).toBe(401);
-    expect((await req('POST', '/api/v1/oauth-connect/start', { provider: 'google', credentialName: 'x' })).status).toBe(401);
+    expect(
+      (
+        await req('POST', '/api/v1/oauth-connect/start', {
+          provider: 'google',
+          credentialName: 'x',
+        })
+      ).status,
+    ).toBe(401);
   });
 
   it('GET /providers → lista i 4 provider noti con flag configured booleano', async () => {
     asUser();
     const res = await req('GET', '/api/v1/oauth-connect/providers');
     expect(res.status).toBe(200);
-    const data = await res.json() as { providers: { id: string; label: string; configured: boolean }[] };
+    const data = (await res.json()) as {
+      providers: { id: string; label: string; configured: boolean }[];
+    };
     const ids = data.providers.map((p) => p.id).sort();
     expect(ids).toEqual(['github', 'google', 'notion', 'slack']);
     expect(data.providers.every((p) => typeof p.configured === 'boolean')).toBe(true);
@@ -59,23 +73,36 @@ describe('oauth-connect — gate, validazione, error-path', () => {
 
   it('POST /start: provider FUORI enum → 400 (zValidator); credentialName vuoto → 400', async () => {
     asUser();
-    expect((await req('POST', '/api/v1/oauth-connect/start', { provider: 'facebook', credentialName: 'x' })).status).toBe(400);
-    expect((await req('POST', '/api/v1/oauth-connect/start', { provider: 'google', credentialName: '' })).status).toBe(400);
+    expect(
+      (
+        await req('POST', '/api/v1/oauth-connect/start', {
+          provider: 'facebook',
+          credentialName: 'x',
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (await req('POST', '/api/v1/oauth-connect/start', { provider: 'google', credentialName: '' }))
+        .status,
+    ).toBe(400);
   });
 
   it('POST /start con provider valido ma NON configurato (no client_id env) → 400 con messaggio chiaro', async () => {
     asUser();
-    const res = await req('POST', '/api/v1/oauth-connect/start', { provider: 'google', credentialName: 'la-mia-cred' });
+    const res = await req('POST', '/api/v1/oauth-connect/start', {
+      provider: 'google',
+      credentialName: 'la-mia-cred',
+    });
     // In test l'env OAuth non è settato → service.start lancia "non configurato".
     expect(res.status).toBe(400);
-    expect((await res.json() as { error: string }).error).toMatch(/non configurato|sconosciuto/i);
+    expect(((await res.json()) as { error: string }).error).toMatch(/non configurato|sconosciuto/i);
   });
 
   it('GET /callback?error=access_denied → HTML "annullato" (200, browser-facing)', async () => {
     authCtx = null; // il callback NON richiede auth (lo autentica lo state)
     const res = await req('GET', '/api/v1/oauth-connect/callback?error=access_denied');
     expect(res.status).toBe(200);
-    expect((await res.text())).toMatch(/annullato/i);
+    expect(await res.text()).toMatch(/annullato/i);
   });
 
   it('GET /callback senza code/state → 400; con state INVENTATO → 500 (complete lancia su state ignoto)', async () => {
@@ -83,7 +110,7 @@ describe('oauth-connect — gate, validazione, error-path', () => {
     expect((await req('GET', '/api/v1/oauth-connect/callback')).status).toBe(400);
     const bad = await req('GET', '/api/v1/oauth-connect/callback?code=abc&state=non-esiste');
     expect(bad.status).toBe(500);
-    expect((await bad.text())).toMatch(/fallita/i);
+    expect(await bad.text()).toMatch(/fallita/i);
   });
 });
 
@@ -92,7 +119,7 @@ describe('account-storage — contratto della dashboard', () => {
     asUser();
     const res = await req('GET', '/api/v1/account/storage');
     expect(res.status).toBe(200);
-    const d = await res.json() as {
+    const d = (await res.json()) as {
       plan: { code: string; freeTier: boolean };
       total: { bytes: number };
       workflowData: { quotaBytes: number; usedBytes: number; usedPercent: number };

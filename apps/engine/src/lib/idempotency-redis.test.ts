@@ -38,7 +38,9 @@ function makeMockRedis() {
     }),
     del: vi.fn(async (...keys: string[]) => {
       let n = 0;
-      for (const k of keys) { if (store.delete(k)) n += 1; }
+      for (const k of keys) {
+        if (store.delete(k)) n += 1;
+      }
       return n;
     }),
     scanStream: vi.fn(({ match }: { match: string }) => {
@@ -106,7 +108,10 @@ describe('RedisIdempotencyStore', () => {
     it('handles corrupted output JSON gracefully', async () => {
       await store.acquire('k1', 60_000);
       // Inietta output non valido direttamente nello store mock
-      redis._store.set('ff:idem:k1:output', { value: 'not json{}', expiresAt: Date.now() + 60_000 });
+      redis._store.set('ff:idem:k1:output', {
+        value: 'not json{}',
+        expiresAt: Date.now() + 60_000,
+      });
       const r = await store.acquire('k1', 60_000);
       expect(r.acquired).toBe(false);
       expect(r.previousOutput).toBeUndefined();

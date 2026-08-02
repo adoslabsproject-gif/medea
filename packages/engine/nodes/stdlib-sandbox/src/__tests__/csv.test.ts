@@ -21,7 +21,10 @@ describe('parseCsv — happy path', () => {
 
   it('no header → array di array', () => {
     const r = parseCsv('a,b,c\n1,2,3', { hasHeader: false });
-    expect(r).toEqual([['a', 'b', 'c'], ['1', '2', '3']]);
+    expect(r).toEqual([
+      ['a', 'b', 'c'],
+      ['1', '2', '3'],
+    ]);
   });
 
   it('custom delimiter ;', () => {
@@ -48,12 +51,18 @@ describe('🚨 parseCsv — RFC 4180 edge cases (anti-regression)', () => {
 
   it('CRLF line endings', () => {
     const r = parseCsv('a,b\r\n1,2\r\n3,4');
-    expect(r).toEqual([{ a: '1', b: '2' }, { a: '3', b: '4' }]);
+    expect(r).toEqual([
+      { a: '1', b: '2' },
+      { a: '3', b: '4' },
+    ]);
   });
 
   it('CR-only (legacy Mac) line endings', () => {
     const r = parseCsv('a,b\r1,2\r3,4');
-    expect(r).toEqual([{ a: '1', b: '2' }, { a: '3', b: '4' }]);
+    expect(r).toEqual([
+      { a: '1', b: '2' },
+      { a: '3', b: '4' },
+    ]);
   });
 
   it('🚨 BOM UTF-8 stripped', () => {
@@ -84,7 +93,10 @@ describe('🚨 parseCsv — RFC 4180 edge cases (anti-regression)', () => {
 
 describe('stringifyCsv — happy path', () => {
   it('array of objects con header inferito', () => {
-    const out = stringifyCsv([{ a: 1, b: 'x' }, { a: 2, b: 'y' }]);
+    const out = stringifyCsv([
+      { a: 1, b: 'x' },
+      { a: 2, b: 'y' },
+    ]);
     expect(out).toBe('a,b\n1,x\n2,y');
   });
 
@@ -94,7 +106,10 @@ describe('stringifyCsv — happy path', () => {
   });
 
   it('array of array (no header)', () => {
-    const out = stringifyCsv([['a', 'b'], [1, 2]]);
+    const out = stringifyCsv([
+      ['a', 'b'],
+      [1, 2],
+    ]);
     expect(out).toBe('a,b\n1,2');
   });
 
@@ -141,10 +156,7 @@ describe('🔁 round-trip identity (anti-regression)', () => {
   });
 
   it('🚨 round-trip preserva quote interne + comma interne + newline', () => {
-    const data = [
-      { complex: 'has "quotes", and\nnewlines' },
-      { complex: 'simple' },
-    ];
+    const data = [{ complex: 'has "quotes", and\nnewlines' }, { complex: 'simple' }];
     const csv = stringifyCsv(data);
     const back = parseCsv(csv);
     expect(back).toEqual(data);

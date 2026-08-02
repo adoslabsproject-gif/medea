@@ -20,10 +20,15 @@ import { provisionManagedDb, isManagedEngine } from './managed-db-client.js';
 
 /** Engine che girano DENTRO il runtime (nessun server esterno, nessuna credenziale). */
 const EMBEDDED_ENGINES = new Set(['sqlite', 'duckdb', 'vector-embedded']);
-export function isEmbeddedEngine(engine: string): boolean { return EMBEDDED_ENGINES.has(engine); }
+export function isEmbeddedEngine(engine: string): boolean {
+  return EMBEDDED_ENGINES.has(engine);
+}
 
 export class CreateDatabaseError extends Error {
-  constructor(readonly code: 'ENGINE_NOT_MANAGEABLE' | 'ENGINE_NEEDS_CONNECTION', message: string) {
+  constructor(
+    readonly code: 'ENGINE_NOT_MANAGEABLE' | 'ENGINE_NEEDS_CONNECTION',
+    message: string,
+  ) {
     super(message);
     this.name = 'CreateDatabaseError';
   }
@@ -51,27 +56,45 @@ export async function createTenantDatabase(input: CreateTenantDatabaseInput): Pr
 
   if (input.managed) {
     if (!isManagedEngine(engine)) {
-      throw new CreateDatabaseError('ENGINE_NOT_MANAGEABLE', `L'engine "${engine}" non può essere installato nel tenant (usa una connessione esterna).`);
+      throw new CreateDatabaseError(
+        'ENGINE_NOT_MANAGEABLE',
+        `L'engine "${engine}" non può essere installato nel tenant (usa una connessione esterna).`,
+      );
     }
     const p = await provisionManagedDb(tenantId, engine); // può lanciare ManagedDbError
     return dbStudio.create({
-      tenantId, name, description,
+      tenantId,
+      name,
+      description,
       connection: {
-        engine, embedded: false, managed: true, provisionStatus: 'ready',
-        hostname: p.host, port: p.port, database: p.database, username: p.username,
+        engine,
+        embedded: false,
+        managed: true,
+        provisionStatus: 'ready',
+        hostname: p.host,
+        port: p.port,
+        database: p.database,
+        username: p.username,
         passwordSecretRef: p.password, // credenziale letterale (sqlite tenant isolato)
         sslMode: 'disable', // sidecar su rete docker interna, no TLS
       },
-      tables: [], relations: [],
+      tables: [],
+      relations: [],
     });
   }
 
   if (!isEmbeddedEngine(engine)) {
-    throw new CreateDatabaseError('ENGINE_NEEDS_CONNECTION', `L'engine "${engine}" richiede una connessione esterna o l'installazione nel tenant (managed=true).`);
+    throw new CreateDatabaseError(
+      'ENGINE_NEEDS_CONNECTION',
+      `L'engine "${engine}" richiede una connessione esterna o l'installazione nel tenant (managed=true).`,
+    );
   }
   return dbStudio.create({
-    tenantId, name, description,
+    tenantId,
+    name,
+    description,
     connection: { engine, embedded: true },
-    tables: [], relations: [],
+    tables: [],
+    relations: [],
   });
 }

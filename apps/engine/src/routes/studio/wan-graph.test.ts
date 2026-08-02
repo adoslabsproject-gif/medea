@@ -1,15 +1,37 @@
 import { describe, it, expect } from 'vitest';
-import { buildWanVideoGraph, buildWanExtendGraph, resolveWanLora, listWanLoras, type WanVideoSpec, type WanExtendSpec } from './wan-graph.js';
+import {
+  buildWanVideoGraph,
+  buildWanExtendGraph,
+  resolveWanLora,
+  listWanLoras,
+  type WanVideoSpec,
+  type WanExtendSpec,
+} from './wan-graph.js';
 
 function baseSpec(over: Partial<WanVideoSpec> = {}): WanVideoSpec {
   return {
-    mode: 'i2v', prompt: 'p', negative: 'n', width: 832, height: 480, length: 49, fps: 16,
-    seed: 7, steps: 30, cfg: 5, startImage: 'foto.png', loras: [], turbo: false, ...over,
+    mode: 'i2v',
+    prompt: 'p',
+    negative: 'n',
+    width: 832,
+    height: 480,
+    length: 49,
+    fps: 16,
+    seed: 7,
+    steps: 30,
+    cfg: 5,
+    startImage: 'foto.png',
+    loras: [],
+    turbo: false,
+    ...over,
   };
 }
 
 /** Estrae la catena di lora_name lungo un model path partendo da uno stadio (h/l). */
-function chainFiles(graph: Record<string, { class_type: string; inputs: Record<string, unknown> }>, stage: 'h' | 'l'): string[] {
+function chainFiles(
+  graph: Record<string, { class_type: string; inputs: Record<string, unknown> }>,
+  stage: 'h' | 'l',
+): string[] {
   const files: string[] = [];
   for (let i = 0; ; i++) {
     const node = graph[`lora_${stage}${i.toString()}`];
@@ -62,8 +84,15 @@ describe('buildWanVideoGraph — i2v base', () => {
     expect(g.ks1!.inputs.latent_image).toEqual(['i2v', 2]);
   });
 
-  it('🚨 LoRA su ENTRAMBI gli stadi: HIGH sul path di unet_h, LOW su unet_l; msh/msl puntano all\'ultimo lora', () => {
-    const g = buildWanVideoGraph(baseSpec({ loras: [{ name: 'animeStyle', weight: 0.8 }, { name: 'generalNSFW', weight: 0.6 }] }));
+  it("🚨 LoRA su ENTRAMBI gli stadi: HIGH sul path di unet_h, LOW su unet_l; msh/msl puntano all'ultimo lora", () => {
+    const g = buildWanVideoGraph(
+      baseSpec({
+        loras: [
+          { name: 'animeStyle', weight: 0.8 },
+          { name: 'generalNSFW', weight: 0.6 },
+        ],
+      }),
+    );
     const high = chainFiles(g, 'h');
     const low = chainFiles(g, 'l');
     expect(high).toEqual([
@@ -85,7 +114,16 @@ describe('buildWanVideoGraph — i2v base', () => {
   });
 
   it('LoRA non disponibile per la modalità → SCARTATO (t2v + switchToAnime)', () => {
-    const g = buildWanVideoGraph(baseSpec({ mode: 't2v', startImage: undefined, loras: [{ name: 'switchToAnime', weight: 1 }, { name: 'animeStyle', weight: 1 }] }));
+    const g = buildWanVideoGraph(
+      baseSpec({
+        mode: 't2v',
+        startImage: undefined,
+        loras: [
+          { name: 'switchToAnime', weight: 1 },
+          { name: 'animeStyle', weight: 1 },
+        ],
+      }),
+    );
     const high = chainFiles(g, 'h');
     expect(high).toHaveLength(1); // solo animeStyle (T2V); switchToAnime scartato
     expect(high[0]).toMatch(/animeStyle-T2V_HIGH/);
@@ -99,14 +137,16 @@ describe('buildWanVideoGraph — i2v base', () => {
 
 describe('buildWanVideoGraph — ⚡Turbo (lightning)', () => {
   it('turbo: aggiunge lightning (high+low) come PRIMO lora + steps=4 / cfg=1 / split 2+2', () => {
-    const g = buildWanVideoGraph(baseSpec({ turbo: true, loras: [{ name: 'animeStyle', weight: 0.8 }] }));
+    const g = buildWanVideoGraph(
+      baseSpec({ turbo: true, loras: [{ name: 'animeStyle', weight: 0.8 }] }),
+    );
     const high = chainFiles(g, 'h');
     expect(high[0]).toMatch(/lightning-speed_I2V_HIGH/); // lightning per primo
     expect(high[1]).toMatch(/animeStyle-I2V_HIGH/);
     expect(chainFiles(g, 'l')[0]).toMatch(/lightning-speed_I2V_LOW/);
     expect(g.ks1!.inputs.steps).toBe(4);
     expect(g.ks1!.inputs.cfg).toBe(1);
-    expect(g.ks1!.inputs.end_at_step).toBe(2);   // half = 2
+    expect(g.ks1!.inputs.end_at_step).toBe(2); // half = 2
     expect(g.ks2!.inputs.start_at_step).toBe(2);
   });
 
@@ -157,7 +197,7 @@ describe('buildWanVideoGraph — slow-motion fluido (interpolazione RIFE)', () =
     expect(g.vid!.inputs.images).toEqual(['decode', 0]);
   });
 
-  it('slowmo=2: inserisce RIFE loader+interpolate, CreateVideo legge dall\'interp', () => {
+  it("slowmo=2: inserisce RIFE loader+interpolate, CreateVideo legge dall'interp", () => {
     const g = buildWanVideoGraph(baseSpec({ slowmo: 2 }));
     // MUTATION: senza il ramo interp → images resta ['decode',0] → rosso.
     expect(g.interpModel!.class_type).toBe('FrameInterpolationModelLoader');
@@ -182,9 +222,23 @@ describe('buildWanVideoGraph — slow-motion fluido (interpolazione RIFE)', () =
 
 describe('buildWanExtendGraph — estensione (concat in ComfyUI, no ffmpeg)', () => {
   function extSpec(over: Partial<WanExtendSpec> = {}): WanExtendSpec {
-    return { sourceFile: 'clip.mp4', sourceFrames: 25, prompt: 'continua', negative: 'n', width: 480, height: 480, length: 25, seed: 5, steps: 30, cfg: 5, loras: [], turbo: false, ...over };
+    return {
+      sourceFile: 'clip.mp4',
+      sourceFrames: 25,
+      prompt: 'continua',
+      negative: 'n',
+      width: 480,
+      height: 480,
+      length: 25,
+      seed: 5,
+      steps: 30,
+      cfg: 5,
+      loras: [],
+      turbo: false,
+      ...over,
+    };
   }
-  it('🚨 carica il video → estrae l\'ULTIMO frame (sourceFrames-1) → i2v da lì → concat + fps del sorgente', () => {
+  it("🚨 carica il video → estrae l'ULTIMO frame (sourceFrames-1) → i2v da lì → concat + fps del sorgente", () => {
     const g = buildWanExtendGraph(extSpec());
     expect(g.src!.class_type).toBe('LoadVideo');
     expect(g.src!.inputs.file).toBe('clip.mp4');
@@ -201,7 +255,9 @@ describe('buildWanExtendGraph — estensione (concat in ComfyUI, no ffmpeg)', ()
     expect(g.vid!.inputs.fps).toEqual(['gvc', 2]); // fps del sorgente, non un literal
   });
   it('LoRA su ENTRAMBI gli stadi + turbo anche in estensione', () => {
-    const g = buildWanExtendGraph(extSpec({ turbo: true, loras: [{ name: 'animeStyle', weight: 0.8 }] }));
+    const g = buildWanExtendGraph(
+      extSpec({ turbo: true, loras: [{ name: 'animeStyle', weight: 0.8 }] }),
+    );
     expect(chainFiles(g, 'h')[0]).toMatch(/lightning-speed_I2V_HIGH/);
     expect(chainFiles(g, 'h')[1]).toMatch(/animeStyle-I2V_HIGH/);
     expect(chainFiles(g, 'l')[1]).toMatch(/animeStyle-I2V_LOW/);
@@ -258,7 +314,7 @@ describe('buildWanExtendGraph — estensione (concat in ComfyUI, no ffmpeg)', ()
     expect(g.vid!.inputs.images).toEqual(['combined', 0]);
   });
 
-  it('🚨 slowmo=2: interpola l\'INTERO concat (RIFE) → CreateVideo legge dall\'interp', () => {
+  it("🚨 slowmo=2: interpola l'INTERO concat (RIFE) → CreateVideo legge dall'interp", () => {
     const g = buildWanExtendGraph(extSpec({ slowmo: 2 }));
     // MUTATION: senza appendSlowmo nell'extend → images resta ['combined',0] → rosso.
     expect(g.interpModel!.class_type).toBe('FrameInterpolationModelLoader');

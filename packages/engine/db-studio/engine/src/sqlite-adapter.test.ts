@@ -17,9 +17,24 @@ const customersTable: Table = {
   id: 'customers',
   name: 'customers',
   columns: [
-    { id: 'id', name: 'id', type: 'integer', constraints: { primaryKey: true, nullable: false, unique: false } },
-    { id: 'email', name: 'email', type: 'text', constraints: { unique: true, nullable: false, primaryKey: false } },
-    { id: 'amount', name: 'amount', type: 'decimal', constraints: { nullable: true, unique: false, primaryKey: false } },
+    {
+      id: 'id',
+      name: 'id',
+      type: 'integer',
+      constraints: { primaryKey: true, nullable: false, unique: false },
+    },
+    {
+      id: 'email',
+      name: 'email',
+      type: 'text',
+      constraints: { unique: true, nullable: false, primaryKey: false },
+    },
+    {
+      id: 'amount',
+      name: 'amount',
+      type: 'decimal',
+      constraints: { nullable: true, unique: false, primaryKey: false },
+    },
   ],
   indexes: [],
 };
@@ -44,7 +59,9 @@ describe('SqliteAdapter', () => {
   });
 
   it('preview returns SQL without executing', async () => {
-    const preview = await adapter.previewMigration([{ kind: 'create_table', table: customersTable }]);
+    const preview = await adapter.previewMigration([
+      { kind: 'create_table', table: customersTable },
+    ]);
     expect(preview).toContain('CREATE TABLE');
     const introspected = await adapter.introspect();
     expect(introspected.find((t) => t.name === 'customers')).toBeUndefined();
@@ -70,7 +87,10 @@ describe('SqliteAdapter', () => {
     await adapter.insert('customers', { id: 1, email: 'a@b.com', amount: 100 });
     const upd = await adapter.update('customers', { id: 1 }, { amount: 999 });
     expect(upd.affectedRows).toBe(1);
-    const result = await adapter.query({ table: 'customers', filters: [{ column: 'id', op: 'eq', value: 1 }] });
+    const result = await adapter.query({
+      table: 'customers',
+      filters: [{ column: 'id', op: 'eq', value: 1 }],
+    });
     expect((result.rows[0] as { amount: number }).amount).toBe(999);
   });
 
@@ -91,32 +111,77 @@ describe('SqliteAdapter', () => {
 
   describe('transaction (atomic batch)', () => {
     const ordersTable: Table = {
-      id: 'orders', name: 'orders', columns: [
-        { id: 'id', name: 'id', type: 'integer', constraints: { primaryKey: true, nullable: false, unique: false } },
-        { id: 'supplier_code', name: 'supplier_code', type: 'text', constraints: { nullable: false, unique: false, primaryKey: false } },
-      ], indexes: [],
+      id: 'orders',
+      name: 'orders',
+      columns: [
+        {
+          id: 'id',
+          name: 'id',
+          type: 'integer',
+          constraints: { primaryKey: true, nullable: false, unique: false },
+        },
+        {
+          id: 'supplier_code',
+          name: 'supplier_code',
+          type: 'text',
+          constraints: { nullable: false, unique: false, primaryKey: false },
+        },
+      ],
+      indexes: [],
     };
     const linesTable: Table = {
-      id: 'order_lines', name: 'order_lines', columns: [
-        { id: 'id', name: 'id', type: 'integer', constraints: { primaryKey: true, nullable: false, unique: false } },
-        { id: 'order_id', name: 'order_id', type: 'integer', constraints: { nullable: false, unique: false, primaryKey: false } },
-        { id: 'sku', name: 'sku', type: 'text', constraints: { nullable: false, unique: false, primaryKey: false } },
-        { id: 'qty', name: 'qty', type: 'integer', constraints: { nullable: false, unique: false, primaryKey: false } },
-      ], indexes: [],
+      id: 'order_lines',
+      name: 'order_lines',
+      columns: [
+        {
+          id: 'id',
+          name: 'id',
+          type: 'integer',
+          constraints: { primaryKey: true, nullable: false, unique: false },
+        },
+        {
+          id: 'order_id',
+          name: 'order_id',
+          type: 'integer',
+          constraints: { nullable: false, unique: false, primaryKey: false },
+        },
+        {
+          id: 'sku',
+          name: 'sku',
+          type: 'text',
+          constraints: { nullable: false, unique: false, primaryKey: false },
+        },
+        {
+          id: 'qty',
+          name: 'qty',
+          type: 'integer',
+          constraints: { nullable: false, unique: false, primaryKey: false },
+        },
+      ],
+      indexes: [],
     };
 
     beforeEach(async () => {
-      await adapter.applyMigration([{ kind: 'create_table', table: ordersTable }, { kind: 'create_table', table: linesTable }]);
+      await adapter.applyMigration([
+        { kind: 'create_table', table: ordersTable },
+        { kind: 'create_table', table: linesTable },
+      ]);
     });
 
     it('commits header + children atomically and propagates FK', async () => {
       const result = await adapter.transaction([
         { kind: 'insert', table: 'orders', row: { supplier_code: 'F139' }, as: 'orderId' },
-        { kind: 'insertMany', table: 'order_lines', rows: [
-          { sku: 'A1', qty: 10 },
-          { sku: 'A2', qty: 20 },
-          { sku: 'A3', qty: 30 },
-        ], refColumn: 'order_id', refFrom: 'orderId' },
+        {
+          kind: 'insertMany',
+          table: 'order_lines',
+          rows: [
+            { sku: 'A1', qty: 10 },
+            { sku: 'A2', qty: 20 },
+            { sku: 'A3', qty: 30 },
+          ],
+          refColumn: 'order_id',
+          refFrom: 'orderId',
+        },
       ]);
       expect(result.bindings.orderId).toBeGreaterThan(0);
       expect(result.steps).toHaveLength(2);
@@ -129,17 +194,28 @@ describe('SqliteAdapter', () => {
 
     it('rolls back EVERYTHING when a child insert fails', async () => {
       // Force a failure: missing required column `qty` on the second row.
-      await expect(adapter.transaction([
-        { kind: 'insert', table: 'orders', row: { supplier_code: 'F999' }, as: 'orderId' },
-        { kind: 'insertMany', table: 'order_lines', rows: [
-          { sku: 'OK1', qty: 1 },
-          // @ts-expect-error intentionally invalid for test
-          { sku: 'BAD', missing_field: 99 },
-        ], refColumn: 'order_id', refFrom: 'orderId' },
-      ])).rejects.toThrow();
+      await expect(
+        adapter.transaction([
+          { kind: 'insert', table: 'orders', row: { supplier_code: 'F999' }, as: 'orderId' },
+          {
+            kind: 'insertMany',
+            table: 'order_lines',
+            rows: [
+              { sku: 'OK1', qty: 1 },
+              // @ts-expect-error intentionally invalid for test
+              { sku: 'BAD', missing_field: 99 },
+            ],
+            refColumn: 'order_id',
+            refFrom: 'orderId',
+          },
+        ]),
+      ).rejects.toThrow();
 
       // Header must NOT be persisted (atomic rollback).
-      const orders = await adapter.query({ table: 'orders', filters: [{ column: 'supplier_code', op: 'eq', value: 'F999' }] });
+      const orders = await adapter.query({
+        table: 'orders',
+        filters: [{ column: 'supplier_code', op: 'eq', value: 'F999' }],
+      });
       expect(orders.rows).toHaveLength(0);
       const lines = await adapter.query({ table: 'order_lines' });
       expect(lines.rows).toHaveLength(0);
@@ -150,26 +226,71 @@ describe('SqliteAdapter', () => {
       // workflow generates UUIDs and the children must reference THAT,
       // not the internal sqlite rowid.
       const ordersText: Table = {
-        id: 'orders_text', name: 'orders_text', columns: [
-          { id: 'id', name: 'id', type: 'text', constraints: { primaryKey: true, nullable: false, unique: false } },
-          { id: 'order_number', name: 'order_number', type: 'text', constraints: { nullable: false, unique: false, primaryKey: false } },
-        ], indexes: [],
+        id: 'orders_text',
+        name: 'orders_text',
+        columns: [
+          {
+            id: 'id',
+            name: 'id',
+            type: 'text',
+            constraints: { primaryKey: true, nullable: false, unique: false },
+          },
+          {
+            id: 'order_number',
+            name: 'order_number',
+            type: 'text',
+            constraints: { nullable: false, unique: false, primaryKey: false },
+          },
+        ],
+        indexes: [],
       };
       const linesText: Table = {
-        id: 'lines_text', name: 'lines_text', columns: [
-          { id: 'id', name: 'id', type: 'text', constraints: { primaryKey: true, nullable: false, unique: false } },
-          { id: 'order_id', name: 'order_id', type: 'text', constraints: { nullable: false, unique: false, primaryKey: false } },
-          { id: 'sku', name: 'sku', type: 'text', constraints: { nullable: false, unique: false, primaryKey: false } },
-        ], indexes: [],
+        id: 'lines_text',
+        name: 'lines_text',
+        columns: [
+          {
+            id: 'id',
+            name: 'id',
+            type: 'text',
+            constraints: { primaryKey: true, nullable: false, unique: false },
+          },
+          {
+            id: 'order_id',
+            name: 'order_id',
+            type: 'text',
+            constraints: { nullable: false, unique: false, primaryKey: false },
+          },
+          {
+            id: 'sku',
+            name: 'sku',
+            type: 'text',
+            constraints: { nullable: false, unique: false, primaryKey: false },
+          },
+        ],
+        indexes: [],
       };
-      await adapter.applyMigration([{ kind: 'create_table', table: ordersText }, { kind: 'create_table', table: linesText }]);
+      await adapter.applyMigration([
+        { kind: 'create_table', table: ordersText },
+        { kind: 'create_table', table: linesText },
+      ]);
 
       const r = await adapter.transaction([
-        { kind: 'insert', table: 'orders_text', row: { id: 'ord-uuid-abc', order_number: '2600070' }, as: 'orderId' },
-        { kind: 'insertMany', table: 'lines_text', rows: [
-          { id: 'line-1', sku: 'A1' },
-          { id: 'line-2', sku: 'A2' },
-        ], refColumn: 'order_id', refFrom: 'orderId' },
+        {
+          kind: 'insert',
+          table: 'orders_text',
+          row: { id: 'ord-uuid-abc', order_number: '2600070' },
+          as: 'orderId',
+        },
+        {
+          kind: 'insertMany',
+          table: 'lines_text',
+          rows: [
+            { id: 'line-1', sku: 'A1' },
+            { id: 'line-2', sku: 'A2' },
+          ],
+          refColumn: 'order_id',
+          refFrom: 'orderId',
+        },
       ]);
       expect(r.bindings.orderId).toBe('ord-uuid-abc');
       const lines = await adapter.query({ table: 'lines_text' });
@@ -177,9 +298,17 @@ describe('SqliteAdapter', () => {
     });
 
     it('throws when refFrom is not bound', async () => {
-      await expect(adapter.transaction([
-        { kind: 'insertMany', table: 'order_lines', rows: [{ sku: 'X', qty: 1 }], refColumn: 'order_id', refFrom: 'missing' },
-      ])).rejects.toThrow(/refFrom/);
+      await expect(
+        adapter.transaction([
+          {
+            kind: 'insertMany',
+            table: 'order_lines',
+            rows: [{ sku: 'X', qty: 1 }],
+            refColumn: 'order_id',
+            refFrom: 'missing',
+          },
+        ]),
+      ).rejects.toThrow(/refFrom/);
     });
   });
 });

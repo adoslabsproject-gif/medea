@@ -71,7 +71,10 @@ export class NoLlmProviderError extends Error {
    *  - 402: quota exceeded (Payment Required)
    *  - 403: provider available ma forbidden (e.g. plan gating)
    */
-  constructor(message: string, public readonly httpStatus: 401 | 402 | 403 = 401) {
+  constructor(
+    message: string,
+    public readonly httpStatus: 401 | 402 | 403 = 401,
+  ) {
     super(message);
     this.name = 'NoLlmProviderError';
   }
@@ -143,7 +146,8 @@ export class LlmResolverService {
     // (preferenza o selettore), mai come ripiego nascosto.
     const all = this.providers.getAll(tenantId);
     const liaraOk = isLiaraAllowedForTenant(tenantId);
-    const configured = this.providers.list(tenantId)
+    const configured = this.providers
+      .list(tenantId)
       .filter((p) => p.hasKey)
       .map((p) => ({ provider: p.provider, hasKey: true }));
     const chosen = tenantAiPreferences.resolveDefaultProvider(tenantId, configured);
@@ -183,16 +187,18 @@ export class LlmResolverService {
    * applica errore chiaro / pausa.
    */
   resolveExternalFallback(tenantId: string): ResolvedLlm | null {
-    const externalConfigured = this.providers.list(tenantId)
+    const externalConfigured = this.providers
+      .list(tenantId)
       .filter((p) => p.hasKey && p.provider !== 'liara')
       .map((p) => ({ provider: p.provider, hasKey: true }));
     const first = externalConfigured[0];
     if (!first) return null;
 
     const preferred = tenantAiPreferences.resolveDefaultProvider(tenantId, externalConfigured);
-    const pick = preferred && preferred !== 'liara' && isSupportedProvider(preferred)
-      ? preferred
-      : first.provider;
+    const pick =
+      preferred && preferred !== 'liara' && isSupportedProvider(preferred)
+        ? preferred
+        : first.provider;
 
     const stored = this.providers.getAll(tenantId)[pick];
     if (!stored) return null;

@@ -7,10 +7,35 @@ import { searchNodes } from './node-search.js';
 import type { NodeCatalogEntry } from '@/services/ai-scaffold/node-catalog.js';
 
 const CATALOG: NodeCatalogEntry[] = [
-  { defId: 'action_send_email', type: 'action', label: 'Invia Email', description: 'Manda una email via SMTP', fields: [], searchAliases: ['mail', 'posta'] },
-  { defId: 'action_http_request', type: 'action', label: 'HTTP Request', description: 'Chiama un endpoint HTTP', fields: [] },
-  { defId: 'db_insert', type: 'action', label: 'DB Insert', description: 'Inserisci righe in una tabella database', fields: [] },
-  { defId: 'trigger_webhook', type: 'trigger', label: 'Webhook', description: 'Avvia su richiesta HTTP in ingresso', fields: [] },
+  {
+    defId: 'action_send_email',
+    type: 'action',
+    label: 'Invia Email',
+    description: 'Manda una email via SMTP',
+    fields: [],
+    searchAliases: ['mail', 'posta'],
+  },
+  {
+    defId: 'action_http_request',
+    type: 'action',
+    label: 'HTTP Request',
+    description: 'Chiama un endpoint HTTP',
+    fields: [],
+  },
+  {
+    defId: 'db_insert',
+    type: 'action',
+    label: 'DB Insert',
+    description: 'Inserisci righe in una tabella database',
+    fields: [],
+  },
+  {
+    defId: 'trigger_webhook',
+    type: 'trigger',
+    label: 'Webhook',
+    description: 'Avvia su richiesta HTTP in ingresso',
+    fields: [],
+  },
 ];
 
 describe('searchNodes', () => {

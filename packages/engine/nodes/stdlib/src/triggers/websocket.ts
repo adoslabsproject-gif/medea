@@ -50,7 +50,7 @@ export const websocketTriggerNode: NodeModule = {
         language: 'json',
         placeholder: '{ "Authorization": "Bearer xxx" }',
         help:
-          'Header inviati durante l\'handshake HTTP di upgrade. Oggetto JSON ' +
+          "Header inviati durante l'handshake HTTP di upgrade. Oggetto JSON " +
           'chiave→valore. Usali per autenticare (Bearer, Cookie, API key) o per ' +
           'negoziare un sub-protocollo. Vuoto = nessun header custom.',
       },
@@ -61,7 +61,7 @@ export const websocketTriggerNode: NodeModule = {
         required: false,
         placeholder: '{ "op": "subscribe", "channel": "trades" }',
         help:
-          'Messaggio inviato SUBITO dopo l\'apertura della connessione (e dopo ' +
+          "Messaggio inviato SUBITO dopo l'apertura della connessione (e dopo " +
           'ogni riconnessione). Tipicamente un JSON di subscribe richiesto dal ' +
           'provider per iniziare a ricevere lo stream. Vuoto = nessun invio.',
       },

@@ -9,8 +9,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import {
-  subscribeForTestEvent, hasTestListener,
-  publishTestEvent, cancelTestListener,
+  subscribeForTestEvent,
+  hasTestListener,
+  publishTestEvent,
+  cancelTestListener,
 } from './test-event-bus.service.js';
 
 beforeEach(() => {

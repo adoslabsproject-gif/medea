@@ -62,7 +62,10 @@ describe('WhatsAppSendConfigSchema', () => {
   });
   it('rejects malformed componentsJson', () => {
     const r = WhatsAppSendConfigSchema.safeParse({
-      ...BASE, mode: 'template', templateName: 't', languageCode: 'it',
+      ...BASE,
+      mode: 'template',
+      templateName: 't',
+      languageCode: 'it',
       componentsJson: '{not array}',
     });
     expect(r.success).toBe(false);
@@ -79,11 +82,19 @@ describe('WhatsAppSendConfigSchema', () => {
 
 describe('whatsAppSendExecutor — text mode', () => {
   it('returns messageId and shapes output', async () => {
-    mockedFetch.mockResolvedValueOnce(rsp(JSON.stringify({
-      messaging_product: 'whatsapp',
-      messages: [{ id: 'wamid.111' }],
-    })));
-    const out = await whatsAppSendExecutor({ ...BASE, mode: 'text', body: 'Ciao Mario' }, null, ctx);
+    mockedFetch.mockResolvedValueOnce(
+      rsp(
+        JSON.stringify({
+          messaging_product: 'whatsapp',
+          messages: [{ id: 'wamid.111' }],
+        }),
+      ),
+    );
+    const out = await whatsAppSendExecutor(
+      { ...BASE, mode: 'text', body: 'Ciao Mario' },
+      null,
+      ctx,
+    );
     const o = out.output as Record<string, unknown>;
     expect(o.messageId).toBe('wamid.111');
     expect(o.mode).toBe('text');
@@ -91,9 +102,14 @@ describe('whatsAppSendExecutor — text mode', () => {
   });
 
   it('emits pipelineSteps when log is on', async () => {
-    mockedFetch.mockResolvedValueOnce(rsp(JSON.stringify({ messaging_product: 'whatsapp', messages: [{ id: 'x' }] })));
+    mockedFetch.mockResolvedValueOnce(
+      rsp(JSON.stringify({ messaging_product: 'whatsapp', messages: [{ id: 'x' }] })),
+    );
     const out = await whatsAppSendExecutor({ ...BASE, mode: 'text', body: 'x' }, null, ctx);
-    const steps = (out.output as Record<string, unknown>).pipelineSteps as Record<string, unknown>[];
+    const steps = (out.output as Record<string, unknown>).pipelineSteps as Record<
+      string,
+      unknown
+    >[];
     expect(steps).toHaveLength(1);
     expect(steps[0]?.name).toBe('whatsapp_send_text');
   });
@@ -101,18 +117,27 @@ describe('whatsAppSendExecutor — text mode', () => {
 
 describe('whatsAppSendExecutor — template mode', () => {
   it('forwards components and reports template info in evidence', async () => {
-    mockedFetch.mockResolvedValueOnce(rsp(JSON.stringify({ messaging_product: 'whatsapp', messages: [{ id: 'wamid.tpl' }] })));
-    const out = await whatsAppSendExecutor({
-      ...BASE,
-      mode: 'template',
-      templateName: 'pec_ricevuta_consegna',
-      languageCode: 'it',
-      componentsJson: '[{"type":"body","parameters":[{"type":"text","text":"Mario"}]}]',
-    }, null, ctx);
+    mockedFetch.mockResolvedValueOnce(
+      rsp(JSON.stringify({ messaging_product: 'whatsapp', messages: [{ id: 'wamid.tpl' }] })),
+    );
+    const out = await whatsAppSendExecutor(
+      {
+        ...BASE,
+        mode: 'template',
+        templateName: 'pec_ricevuta_consegna',
+        languageCode: 'it',
+        componentsJson: '[{"type":"body","parameters":[{"type":"text","text":"Mario"}]}]',
+      },
+      null,
+      ctx,
+    );
     expect((out.output as Record<string, unknown>).messageId).toBe('wamid.tpl');
 
     // Check the HTTP body
-    const sentBody = JSON.parse(mockedFetch.mock.calls[0]?.[1]?.body as string) as Record<string, unknown>;
+    const sentBody = JSON.parse(mockedFetch.mock.calls[0]?.[1]?.body as string) as Record<
+      string,
+      unknown
+    >;
     expect(sentBody.type).toBe('template');
     const tpl = sentBody.template as Record<string, unknown>;
     expect(tpl.name).toBe('pec_ricevuta_consegna');
@@ -126,13 +151,20 @@ describe('whatsAppSendExecutor — template mode', () => {
 
 describe('whatsAppSendExecutor — error mapping', () => {
   it('maps Meta error to ValidationError carrying metaCode', async () => {
-    mockedFetch.mockResolvedValueOnce(rsp(JSON.stringify({
-      error: { code: 131047, message: 'Re-engagement window closed' },
-    }), 400));
+    mockedFetch.mockResolvedValueOnce(
+      rsp(
+        JSON.stringify({
+          error: { code: 131047, message: 'Re-engagement window closed' },
+        }),
+        400,
+      ),
+    );
     let caught: unknown = null;
     try {
       await whatsAppSendExecutor({ ...BASE, mode: 'text', body: 'x' }, null, ctx);
-    } catch (e) { caught = e; }
+    } catch (e) {
+      caught = e;
+    }
     expect(caught).toBeInstanceOf(ValidationError);
     expect((caught as ValidationError).message).toMatch(/131047/);
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime — TS narrow ottimistico
@@ -141,16 +173,20 @@ describe('whatsAppSendExecutor — error mapping', () => {
 
   it('throws HttpError on Meta 500 with no JSON body', async () => {
     mockedFetch.mockResolvedValueOnce(rsp('<html>boom</html>', 500));
-    await expect(whatsAppSendExecutor({ ...BASE, mode: 'text', body: 'x' }, null, ctx))
-      .rejects.toBeInstanceOf(HttpError);
+    await expect(
+      whatsAppSendExecutor({ ...BASE, mode: 'text', body: 'x' }, null, ctx),
+    ).rejects.toBeInstanceOf(HttpError);
   });
 
   it('throws AbortedError when context.abortSignal is pre-aborted', async () => {
-    const ctrl = new AbortController(); ctrl.abort();
-    await expect(whatsAppSendExecutor(
-      { ...BASE, mode: 'text', body: 'x' }, null,
-      { ...ctx, abortSignal: ctrl.signal },
-    )).rejects.toBeInstanceOf(AbortedError);
+    const ctrl = new AbortController();
+    ctrl.abort();
+    await expect(
+      whatsAppSendExecutor({ ...BASE, mode: 'text', body: 'x' }, null, {
+        ...ctx,
+        abortSignal: ctrl.signal,
+      }),
+    ).rejects.toBeInstanceOf(AbortedError);
     expect(mockedFetch).not.toHaveBeenCalled();
   });
 });

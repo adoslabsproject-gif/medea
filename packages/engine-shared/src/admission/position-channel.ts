@@ -39,7 +39,12 @@ export async function publishQueued(
   pos: { position: number; ahead: number },
   ttlSeconds: number = DEFAULT_TTL_SEC,
 ): Promise<void> {
-  await redis.set(keyFor(requestId), JSON.stringify({ s: 'q', p: pos.position, a: pos.ahead }), 'EX', ttlSeconds);
+  await redis.set(
+    keyFor(requestId),
+    JSON.stringify({ s: 'q', p: pos.position, a: pos.ahead }),
+    'EX',
+    ttlSeconds,
+  );
 }
 
 /** Segnala che la richiesta è stata AMMESSA (il client può smettere di attendere). */
@@ -52,7 +57,10 @@ export async function publishAdmitted(
 }
 
 /** Legge lo stato corrente. Chiave assente o malformata → 'gone' (fail-safe). */
-export async function readPosition(redis: PositionRedis, requestId: string): Promise<QueuePosition> {
+export async function readPosition(
+  redis: PositionRedis,
+  requestId: string,
+): Promise<QueuePosition> {
   const raw = await redis.get(keyFor(requestId));
   if (raw === null || raw === '') return { state: 'gone' };
   try {

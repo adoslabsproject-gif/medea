@@ -14,16 +14,34 @@ vi.mock('@/services/company-search.service.js', () => ({
 
 import { companySearchExecutor } from './company-search.js';
 
-const ctx = (tenantId = 'tenant-x') => ({
-  workflowId: 'wf', runId: 'r', nodeId: 'n', tenantId, userId: 'u',
-  defId: 'action_company_search', secrets: {}, llmProviders: [], nodeOutputs: {},
-}) as unknown as Parameters<typeof companySearchExecutor>[2];
+const ctx = (tenantId = 'tenant-x') =>
+  ({
+    workflowId: 'wf',
+    runId: 'r',
+    nodeId: 'n',
+    tenantId,
+    userId: 'u',
+    defId: 'action_company_search',
+    secrets: {},
+    llmProviders: [],
+    nodeOutputs: {},
+  }) as unknown as Parameters<typeof companySearchExecutor>[2];
 
 const run = (config: Record<string, unknown>) =>
   companySearchExecutor(config as never, null as never, ctx());
 
 const BASE_RESULT = {
-  companies: [{ url: 'https://acme.it/', domain: 'acme.it', title: 'Acme', snippet: 's', source_provider: 'ddg', matched_query: 'seed', boost_factors: [] }],
+  companies: [
+    {
+      url: 'https://acme.it/',
+      domain: 'acme.it',
+      title: 'Acme',
+      snippet: 's',
+      source_provider: 'ddg',
+      matched_query: 'seed',
+      boost_factors: [],
+    },
+  ],
   queries_used: ['seed'],
   queries_generated_by_llm: false,
   total_raw_results: 1,
@@ -75,7 +93,11 @@ describe('company-search — mapping output', () => {
     });
     const res = await run({ seedPrompt: 'seed' });
     expect((res.output as { _llm: unknown })._llm).toEqual({
-      inputTokens: 40, outputTokens: 12, model: 'nha-v1', provider: 'liara', fromApi: true,
+      inputTokens: 40,
+      outputTokens: 12,
+      model: 'nha-v1',
+      provider: 'liara',
+      fromApi: true,
     });
   });
 

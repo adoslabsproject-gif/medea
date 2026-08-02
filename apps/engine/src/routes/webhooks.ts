@@ -23,7 +23,11 @@ import { safeParseJson } from '@/lib/safe-parse-json.js';
 import { resumeWait } from '@/executors/wait.js';
 import { publishTestEvent } from '@/services/test-event-bus.service.js';
 import { WEBHOOK_RESPONSE_KEY, type WebhookResponsePayload } from '@/executors/webhook-respond.js';
-import { checkWebhookRateLimit, webhookIdempotencySeen, bodyHash } from '@/routes/webhook-guards.js';
+import {
+  checkWebhookRateLimit,
+  webhookIdempotencySeen,
+  bodyHash,
+} from '@/routes/webhook-guards.js';
 import { verifyDefaultWebhookToken } from '@/lib/webhook-token.js';
 import type { Workflow, CanvasNode } from '@medea/engine-core-schema';
 
@@ -34,7 +38,8 @@ import type { Workflow, CanvasNode } from '@medea/engine-core-schema';
  * legitimate UAs containing these substrings (e.g. "robots") are accepted
  * since the toggle is opt-in for noise reduction, not security.
  */
-const BOT_UA_PATTERN = /bot|crawler|spider|scrape|slurp|googlebot|bingbot|baiduspider|yandex|duckduckbot/iu;
+const BOT_UA_PATTERN =
+  /bot|crawler|spider|scrape|slurp|googlebot|bingbot|baiduspider|yandex|duckduckbot/iu;
 
 /**
  * NodeConfig stores values as `string | undefined` after JSON round-trip
@@ -74,7 +79,11 @@ function verifyJwt(
   let payload: { iss?: string; aud?: string | string[]; exp?: number };
   try {
     header = JSON.parse(fromB64Url(headerB64).toString('utf8')) as { alg?: string };
-    payload = JSON.parse(fromB64Url(payloadB64).toString('utf8')) as { iss?: string; aud?: string | string[]; exp?: number };
+    payload = JSON.parse(fromB64Url(payloadB64).toString('utf8')) as {
+      iss?: string;
+      aud?: string | string[];
+      exp?: number;
+    };
   } catch {
     return false;
   }
@@ -87,7 +96,9 @@ function verifyJwt(
 
   let sigValid = false;
   if (algo.startsWith('HS')) {
-    const expected = createHmac(algo.replace('HS', 'sha'), secretOrKey).update(signingInput).digest();
+    const expected = createHmac(algo.replace('HS', 'sha'), secretOrKey)
+      .update(signingInput)
+      .digest();
     // timingSafeEqual richiede length match → check esplicito prima.
     // Senza, l'oracle di lunghezza permette di restringere il search-space
     // dell'HMAC secret via tempi di risposta differenziali (Buffer.equals
@@ -150,18 +161,19 @@ export function extractWebhookResponse(steps: unknown[]): WebhookResponsePayload
     if (!payload || typeof payload !== 'object') continue;
     const p = payload as Record<string, unknown>;
     if (
-      typeof p.status === 'number'
-      && typeof p.contentType === 'string'
-      && typeof p.body === 'string'
+      typeof p.status === 'number' &&
+      typeof p.contentType === 'string' &&
+      typeof p.body === 'string'
     ) {
       return {
         status: p.status,
         contentType: p.contentType,
         body: p.body,
         bodyIsBase64: p.bodyIsBase64 === true,
-        headers: typeof p.headers === 'object' && p.headers !== null
-          ? (p.headers as Record<string, string>)
-          : {},
+        headers:
+          typeof p.headers === 'object' && p.headers !== null
+            ? (p.headers as Record<string, string>)
+            : {},
       };
     }
   }
@@ -185,7 +197,10 @@ function constantTimeCompare(a: string, b: string): boolean {
 
 function ipMatchesAllowlist(ip: string, allowlist: string): boolean {
   if (!allowlist.trim()) return true;
-  const allowed = allowlist.split(',').map((s) => s.trim()).filter(Boolean);
+  const allowed = allowlist
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
   if (allowed.length === 0) return true;
   for (const entry of allowed) {
     if (entry === ip) return true;
@@ -202,7 +217,8 @@ function ipMatchesAllowlist(ip: string, allowlist: string): boolean {
 function ipv4InCidr(ip: string, baseIp: string, bits: number): boolean {
   const toInt = (s: string): number | null => {
     const parts = s.split('.').map(Number);
-    if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n) || n < 0 || n > 255)) return null;
+    if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n) || n < 0 || n > 255))
+      return null;
     return ((parts[0]! << 24) | (parts[1]! << 16) | (parts[2]! << 8) | parts[3]!) >>> 0;
   };
   const a = toInt(ip);
@@ -259,7 +275,14 @@ export function __resetWebhookSignatureCache(): void {
  */
 export { deriveDefaultWebhookToken } from '@/lib/webhook-token.js';
 
-export function authorize(node: CanvasNode, headers: Record<string, string>, body: string, providedToken: string, remoteIp: string, workflowId: string): boolean {
+export function authorize(
+  node: CanvasNode,
+  headers: Record<string, string>,
+  body: string,
+  providedToken: string,
+  remoteIp: string,
+  workflowId: string,
+): boolean {
   const mode = node.config.authMode ?? 'none';
   const secret = node.config.authSecret ?? '';
   const ipAllowlist = node.config.ipAllowlist ?? '';
@@ -292,7 +315,8 @@ export function authorize(node: CanvasNode, headers: Record<string, string>, bod
     const decoded = Buffer.from(auth.slice(6), 'base64').toString('utf8');
     // New shape: basicAuthUsername field + authSecret holds only the password.
     // Old shape (back-compat): authSecret holds the entire "user:pass" string.
-    const username = typeof node.config.basicAuthUsername === 'string' ? node.config.basicAuthUsername : '';
+    const username =
+      typeof node.config.basicAuthUsername === 'string' ? node.config.basicAuthUsername : '';
     const expected = username ? `${username}:${secret}` : secret;
     return constantTimeCompare(decoded, expected);
   }
@@ -300,15 +324,19 @@ export function authorize(node: CanvasNode, headers: Record<string, string>, bod
   if (mode === 'hmac-signature') {
     // New shape: hmacSecret + hmacHeader + hmacAlgo allow per-provider config.
     // Old shape (back-compat): authSecret + hardcoded x-flowforge-signature + sha256.
-    const hmacSecret = typeof node.config.hmacSecret === 'string' && node.config.hmacSecret !== ''
-      ? node.config.hmacSecret
-      : secret;
-    const headerName = typeof node.config.hmacHeader === 'string' && node.config.hmacHeader !== ''
-      ? node.config.hmacHeader.toLowerCase()
-      : 'x-flowforge-signature';
-    const algo = typeof node.config.hmacAlgo === 'string' && ['sha256', 'sha1', 'sha512'].includes(node.config.hmacAlgo)
-      ? node.config.hmacAlgo
-      : 'sha256';
+    const hmacSecret =
+      typeof node.config.hmacSecret === 'string' && node.config.hmacSecret !== ''
+        ? node.config.hmacSecret
+        : secret;
+    const headerName =
+      typeof node.config.hmacHeader === 'string' && node.config.hmacHeader !== ''
+        ? node.config.hmacHeader.toLowerCase()
+        : 'x-flowforge-signature';
+    const algo =
+      typeof node.config.hmacAlgo === 'string' &&
+      ['sha256', 'sha1', 'sha512'].includes(node.config.hmacAlgo)
+        ? node.config.hmacAlgo
+        : 'sha256';
     let signature = headers[headerName] ?? '';
     // Provider quirks: GitHub uses "sha256=<hex>" format, strip the prefix.
     if (signature.startsWith(`${algo}=`)) signature = signature.slice(algo.length + 1);
@@ -335,9 +363,10 @@ export function authorize(node: CanvasNode, headers: Record<string, string>, bod
     //
     // Quando timestamp header NON configurato → legacy mode (back-compat
     // GitHub-style) ma WARN log per security audit visibility.
-    const tsHeaderName = typeof node.config.hmacTimestampHeader === 'string' && node.config.hmacTimestampHeader !== ''
-      ? node.config.hmacTimestampHeader.toLowerCase()
-      : '';
+    const tsHeaderName =
+      typeof node.config.hmacTimestampHeader === 'string' && node.config.hmacTimestampHeader !== ''
+        ? node.config.hmacTimestampHeader.toLowerCase()
+        : '';
     if (tsHeaderName !== '') {
       const tsRaw = headers[tsHeaderName] ?? '';
       const ts = Number(tsRaw);
@@ -346,9 +375,10 @@ export function authorize(node: CanvasNode, headers: Record<string, string>, bod
       const nowSec = Math.floor(Date.now() / 1000);
       if (Math.abs(nowSec - ts) > tolerance) return false;
       // signed payload format: default "ts.body" (Stripe-like)
-      const fmt = typeof node.config.hmacSignedPayloadFormat === 'string'
-        ? node.config.hmacSignedPayloadFormat
-        : 'ts.body';
+      const fmt =
+        typeof node.config.hmacSignedPayloadFormat === 'string'
+          ? node.config.hmacSignedPayloadFormat
+          : 'ts.body';
       const signedBody = fmt === 'body' ? body : `${tsRaw}.${body}`;
       const expected = createHmac(algo, hmacSecret).update(signedBody).digest('hex');
       const sigValid = constantTimeCompare(signature, expected);
@@ -402,7 +432,8 @@ export function createWebhookRoutes(eventBus: IEventBus): Hono {
     const out: Record<string, string> = {
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS',
-      'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Tenant-Id, X-Webhook-Signature, Stripe-Signature, X-Hub-Signature-256, X-Shopify-Hmac-Sha256, X-Twilio-Signature, X-Webhook-Signature',
+      'Access-Control-Allow-Headers':
+        'Authorization, Content-Type, X-Tenant-Id, X-Webhook-Signature, Stripe-Signature, X-Hub-Signature-256, X-Shopify-Hmac-Sha256, X-Twilio-Signature, X-Webhook-Signature',
       'Access-Control-Max-Age': '86400',
     };
     if (asBool(node.config.corsAllowCredentials)) {
@@ -440,12 +471,16 @@ export function createWebhookRoutes(eventBus: IEventBus): Hono {
     }
 
     // Enforce configured method (default POST). 'ANY' = accept everything.
-    const allowedMethod = typeof node.config.method === 'string' ? node.config.method.toUpperCase() : 'POST';
+    const allowedMethod =
+      typeof node.config.method === 'string' ? node.config.method.toUpperCase() : 'POST';
     if (allowedMethod !== 'ANY' && c.req.method !== allowedMethod) {
-      return new Response(JSON.stringify({ error: `Method ${c.req.method} not allowed; expected ${allowedMethod}` }), {
-        status: 405,
-        headers: { 'Content-Type': 'application/json', Allow: allowedMethod, ...cors },
-      });
+      return new Response(
+        JSON.stringify({ error: `Method ${c.req.method} not allowed; expected ${allowedMethod}` }),
+        {
+          status: 405,
+          headers: { 'Content-Type': 'application/json', Allow: allowedMethod, ...cors },
+        },
+      );
     }
 
     const headers: Record<string, string> = {};
@@ -464,7 +499,9 @@ export function createWebhookRoutes(eventBus: IEventBus): Hono {
       }
     }
 
-    const remoteIp = (c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip') ?? '').split(',')[0]?.trim() ?? '';
+    const remoteIp =
+      (c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip') ?? '').split(',')[0]?.trim() ??
+      '';
 
     // Rate-limit per-webhook (fixed window 1 min) — PRIMA di leggere il body, così un
     // flood viene respinto a costo ~0. Chiave per (nodeId, ip): un IP abusivo non
@@ -472,10 +509,17 @@ export function createWebhookRoutes(eventBus: IEventBus): Hono {
     const rateLimitPerMin = Number(node.config.rateLimitPerMin ?? 0);
     const rate = checkWebhookRateLimit(`${node.id}:${remoteIp}`, rateLimitPerMin);
     if (!rate.allowed) {
-      logger.warn({ workflowId, ip: remoteIp, limitPerMin: rateLimitPerMin }, 'Webhook rate-limited');
+      logger.warn(
+        { workflowId, ip: remoteIp, limitPerMin: rateLimitPerMin },
+        'Webhook rate-limited',
+      );
       return new Response(JSON.stringify({ error: 'Too Many Requests' }), {
         status: 429,
-        headers: { 'Content-Type': 'application/json', 'Retry-After': String(rate.retryAfterSec), ...cors },
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': String(rate.retryAfterSec),
+          ...cors,
+        },
       });
     }
 
@@ -483,7 +527,10 @@ export function createWebhookRoutes(eventBus: IEventBus): Hono {
 
     if (!authorize(node, headers, body, token, remoteIp, workflowId)) {
       logger.warn({ workflowId, ip: remoteIp }, 'Webhook auth failed');
-      const challengeHeaders: Record<string, string> = { 'Content-Type': 'application/json', ...cors };
+      const challengeHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...cors,
+      };
       // basic-auth: SENZA l'header WWW-Authenticate il browser non mostra il
       // popup di login nativo (vede solo il JSON {"error":"Unauthorized"}). Con
       // esso, il browser chiede user/password e ritenta con l'header Authorization.
@@ -499,14 +546,27 @@ export function createWebhookRoutes(eventBus: IEventBus): Hono {
     // Audit on-hit: traccia ogni hit AUTORIZZATO con ip + method + digest del body
     // (SHA-256, non il payload in chiaro → niente PII nei log). Forensics + dedup-debug.
     const hitBodyHash = bodyHash(body);
-    logger.info({ workflowId, nodeId: node.id, ip: remoteIp, method: c.req.method, bodyHash: hitBodyHash, bytes: body.length }, 'Webhook hit');
+    logger.info(
+      {
+        workflowId,
+        nodeId: node.id,
+        ip: remoteIp,
+        method: c.req.method,
+        bodyHash: hitBodyHash,
+        bytes: body.length,
+      },
+      'Webhook hit',
+    );
 
     // Idempotency-Key dedup (pattern Stripe): se il client manda lo stesso
     // Idempotency-Key entro il TTL, è un retry → NON rieseguiamo il workflow,
     // rispondiamo 200 {duplicate:true}. Header assente = nessuna idempotenza richiesta.
     const idempotencyKey = (headers['idempotency-key'] ?? '').trim();
     if (idempotencyKey !== '' && webhookIdempotencySeen(node.id, idempotencyKey)) {
-      logger.info({ workflowId, nodeId: node.id, idempotencyKey }, 'Webhook duplicate Idempotency-Key — skip run');
+      logger.info(
+        { workflowId, nodeId: node.id, idempotencyKey },
+        'Webhook duplicate Idempotency-Key — skip run',
+      );
       return new Response(JSON.stringify({ ok: true, duplicate: true, idempotencyKey }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', ...cors },
@@ -525,7 +585,13 @@ export function createWebhookRoutes(eventBus: IEventBus): Hono {
     // rawBody capture — surface the exact bytes received so downstream nodes
     // can rebuild HMAC signatures or feed raw payloads to external verifiers.
     const includeRawBody = asBool(node.config.rawBody);
-    const triggerInput: { method: string; headers: Record<string, string>; body: unknown; query: Record<string, string>; rawBody?: string } = {
+    const triggerInput: {
+      method: string;
+      headers: Record<string, string>;
+      body: unknown;
+      query: Record<string, string>;
+      rawBody?: string;
+    } = {
       method: c.req.method,
       headers,
       body: parsedBody,
@@ -548,12 +614,18 @@ export function createWebhookRoutes(eventBus: IEventBus): Hono {
     // success ma non funziona". Now: a Webhook→Respond pair just works,
     // no matter what the trigger has configured.
     const hasRespondNode = workflow.nodes.some((n) => n.defId === 'action_webhook_respond');
-    const responseModeRaw = typeof node.config.responseMode === 'string' ? node.config.responseMode : 'immediate';
-    let responseMode = ['immediate', 'wait-for-workflow', 'use-respond-node'].includes(responseModeRaw)
+    const responseModeRaw =
+      typeof node.config.responseMode === 'string' ? node.config.responseMode : 'immediate';
+    let responseMode = ['immediate', 'wait-for-workflow', 'use-respond-node'].includes(
+      responseModeRaw,
+    )
       ? responseModeRaw
       : 'immediate';
     if (hasRespondNode && responseMode === 'immediate') {
-      logger.info({ workflowId }, 'Auto-promoting responseMode immediate→use-respond-node because workflow contains action_webhook_respond');
+      logger.info(
+        { workflowId },
+        'Auto-promoting responseMode immediate→use-respond-node because workflow contains action_webhook_respond',
+      );
       responseMode = 'use-respond-node';
     }
 
@@ -565,9 +637,17 @@ export function createWebhookRoutes(eventBus: IEventBus): Hono {
     };
 
     if (responseMode === 'immediate') {
-      void runs.execute(runArgs)
-        .then((r) => { logger.info({ runId: r.runId, status: r.status, workflowId }, 'Webhook fire-and-forget run completed'); })
-        .catch((err: unknown) => { logger.error({ err, workflowId }, 'Webhook fire-and-forget run failed'); });
+      void runs
+        .execute(runArgs)
+        .then((r) => {
+          logger.info(
+            { runId: r.runId, status: r.status, workflowId },
+            'Webhook fire-and-forget run completed',
+          );
+        })
+        .catch((err: unknown) => {
+          logger.error({ err, workflowId }, 'Webhook fire-and-forget run failed');
+        });
       return new Response(JSON.stringify({ accepted: true }), {
         status: 202,
         headers: { 'Content-Type': 'application/json', ...cors },
@@ -606,7 +686,8 @@ export function createWebhookRoutes(eventBus: IEventBus): Hono {
       // Normalizza i byte a Uint8Array<ArrayBuffer> (via new Uint8Array) → body
       // valido sia con la lib DOM del typecheck locale sia con la lib Node della
       // build Docker, senza nominare BodyInit (assente in quest'ultima).
-      const responseBody = typeof bodyOut === 'string' || bodyOut === null ? bodyOut : new Uint8Array(bodyOut);
+      const responseBody =
+        typeof bodyOut === 'string' || bodyOut === null ? bodyOut : new Uint8Array(bodyOut);
       return new Response(responseBody, {
         status: customResponse.status,
         headers: responseHeaders,
@@ -617,7 +698,8 @@ export function createWebhookRoutes(eventBus: IEventBus): Hono {
     // step.output e` JSON-stringified dal workflow-engine: safeParseJson()
     // ricompone l'object prima del JSON.stringify finale, altrimenti il
     // client riceveva la stringa nidificata escaped invece dell'object.
-    const shape = typeof node.config.responseShape === 'string' ? node.config.responseShape : 'envelope';
+    const shape =
+      typeof node.config.responseShape === 'string' ? node.config.responseShape : 'envelope';
     let envelopeBody: unknown;
     if (shape === 'last-step-output') {
       const last = result.steps[result.steps.length - 1] as { output?: unknown } | undefined;
@@ -683,7 +765,10 @@ export function createWebhookRoutes(eventBus: IEventBus): Hono {
     const matches = await workflows.listByCustomWebhookPathAnyTenant(customPath);
     if (matches.length === 0) return c.json({ error: 'No webhook for that custom path' }, 404);
     if (matches.length > 1) {
-      logger.warn({ customPath, count: matches.length }, 'Multiple webhooks share the same customPath — using the first');
+      logger.warn(
+        { customPath, count: matches.length },
+        'Multiple webhooks share the same customPath — using the first',
+      );
     }
     return runWebhook(c, matches[0]!.id, token);
   };

@@ -73,7 +73,7 @@ describe('🚨 race dedup ↔ GC: touch fallito = blob sparito → RISCRIVERE, m
     await expect(store.read(second.ref)).resolves.toEqual(PAYLOAD); // il ref è VIVO
   });
 
-  it('🚨 writeStream: lo staging è promosso a final (era l\'UNICA copia dei byte)', async () => {
+  it("🚨 writeStream: lo staging è promosso a final (era l'UNICA copia dei byte)", async () => {
     const first = await store.writeBuffer(PAYLOAD);
 
     armGcWinsRace();

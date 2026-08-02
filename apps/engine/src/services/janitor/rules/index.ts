@@ -21,9 +21,4 @@ export const BUILTIN_CODE_RULES: readonly CodeRule[] = Object.freeze([
   runsOrphanCheckpointRule,
 ]);
 
-export {
-  runsZombieRule,
-  runsCorruptedJsonRule,
-  runsTruncatedStepsRule,
-  runsOrphanCheckpointRule,
-};
+export { runsZombieRule, runsCorruptedJsonRule, runsTruncatedStepsRule, runsOrphanCheckpointRule };

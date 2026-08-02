@@ -8,7 +8,9 @@ import { assertHostAllowed, HostNotAllowedError } from './host-allowlist.js';
 
 const ok = (url: string, allow: string[]) => assertHostAllowed(url, allow);
 const blocked = (url: string, allow: string[]) =>
-  expect(() => assertHostAllowed(url, allow), `doveva bloccare ${url}`).toThrow(HostNotAllowedError);
+  expect(() => assertHostAllowed(url, allow), `doveva bloccare ${url}`).toThrow(
+    HostNotAllowedError,
+  );
 
 describe('assertHostAllowed', () => {
   it('host esatto consentito', () => {
@@ -17,8 +19,12 @@ describe('assertHostAllowed', () => {
   });
 
   it('sotto-dominio del suffisso consentito (*.suffix)', () => {
-    expect(() => ok('https://eu11.my.salesforce.com/services/data', ['salesforce.com', 'force.com'])).not.toThrow();
-    expect(() => ok('https://mydomain.my.force.com/x', ['salesforce.com', 'force.com'])).not.toThrow();
+    expect(() =>
+      ok('https://eu11.my.salesforce.com/services/data', ['salesforce.com', 'force.com']),
+    ).not.toThrow();
+    expect(() =>
+      ok('https://mydomain.my.force.com/x', ['salesforce.com', 'force.com']),
+    ).not.toThrow();
   });
 
   it('🚨 EXFIL: host attaccante arbitrario → bloccato', () => {

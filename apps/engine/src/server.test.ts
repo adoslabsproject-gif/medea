@@ -82,8 +82,11 @@ describe('server onError handler — C3 leak fix', () => {
     const app = buildAppWithOnError();
     await app.request('/boom', { headers: { 'x-request-id': 'req-prod' } });
     expect(loggerErrorSpy).toHaveBeenCalledTimes(1);
-    const [logCtx] = loggerErrorSpy.mock.calls[0] as [{ err: Error; reqId: string; path: string; method: string }, string];
-    expect(logCtx.err.message).toContain('column tenant_id');     // log interno SI
+    const [logCtx] = loggerErrorSpy.mock.calls[0] as [
+      { err: Error; reqId: string; path: string; method: string },
+      string,
+    ];
+    expect(logCtx.err.message).toContain('column tenant_id'); // log interno SI
     expect(logCtx.reqId).toBe('req-prod');
     expect(logCtx.path).toBe('/boom');
     expect(logCtx.method).toBe('GET');

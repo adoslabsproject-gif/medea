@@ -15,15 +15,37 @@ import { InMemoryEventBus } from '@/adapters/event-bus-memory.js';
 import type { Workflow } from '@medea/engine-core-schema';
 import type { NodeExecutionContext } from '@medea/engine-nodes-stdlib';
 
-function defOf(id: string): { id: string; label: string; kind: 'action'; category: string; inputs: string[]; outputs: string[]; configSchema: never } {
-  return { id, label: id, kind: 'action', category: 'test', inputs: [], outputs: [], configSchema: {} as never };
+function defOf(id: string): {
+  id: string;
+  label: string;
+  kind: 'action';
+  category: string;
+  inputs: string[];
+  outputs: string[];
+  configSchema: never;
+} {
+  return {
+    id,
+    label: id,
+    kind: 'action',
+    category: 'test',
+    inputs: [],
+    outputs: [],
+    configSchema: {} as never,
+  };
 }
 
 function makeWorkflow(partial: Partial<Workflow>): Workflow {
   return {
-    schemaVersion: '1.0.0', id: 'wf-partial', name: 'Partial', enabled: true,
-    nodes: [], edges: [], nodeDefs: [],
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    schemaVersion: '1.0.0',
+    id: 'wf-partial',
+    name: 'Partial',
+    enabled: true,
+    nodes: [],
+    edges: [],
+    nodeDefs: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     ...partial,
   };
 }
@@ -47,7 +69,9 @@ function makeEngine(...defIds: string[]): WorkflowEngine {
   });
 }
 
-beforeEach(() => { executed = []; });
+beforeEach(() => {
+  executed = [];
+});
 
 // Catena lineare a → b → c (node id === def id per leggibilità)
 function linearWorkflow(): Workflow {
@@ -57,14 +81,19 @@ function linearWorkflow(): Workflow {
       { id: 'b', defId: 'b', x: 1, y: 0, config: {} },
       { id: 'c', defId: 'c', x: 2, y: 0, config: {} },
     ],
-    edges: [{ from: 'a', to: 'b' }, { from: 'b', to: 'c' }],
+    edges: [
+      { from: 'a', to: 'b' },
+      { from: 'b', to: 'c' },
+    ],
   });
 }
 
 describe('🚨 stopAfterNodeId — il grafo a valle NON gira', () => {
   it('🚨 stop sul nodo centrale: a,b eseguiti, c MAI; status success', async () => {
     const result = await makeEngine('a', 'b', 'c').run({
-      workflow: linearWorkflow(), triggerInput: {}, stopAfterNodeId: 'b',
+      workflow: linearWorkflow(),
+      triggerInput: {},
+      stopAfterNodeId: 'b',
     });
     expect(result.status).toBe('success');
     expect(executed).toEqual(['a', 'b']);
@@ -75,7 +104,8 @@ describe('🚨 stopAfterNodeId — il grafo a valle NON gira', () => {
 
   it('🚨 senza stopAfterNodeId il comportamento resta INVARIATO (tutta la catena)', async () => {
     const result = await makeEngine('a', 'b', 'c').run({
-      workflow: linearWorkflow(), triggerInput: {},
+      workflow: linearWorkflow(),
+      triggerInput: {},
     });
     expect(result.status).toBe('success');
     expect(executed).toEqual(['a', 'b', 'c']);
@@ -85,7 +115,10 @@ describe('🚨 stopAfterNodeId — il grafo a valle NON gira', () => {
     // replay fromNode=b&toNode=b: a pinnato col suo output storico, b ri-eseguito, c mai
     const pins = new Map<string, unknown>([['a', { ran: 'a', historical: true }]]);
     const result = await makeEngine('a', 'b', 'c').run({
-      workflow: linearWorkflow(), triggerInput: {}, pinnedOutputs: pins, stopAfterNodeId: 'b',
+      workflow: linearWorkflow(),
+      triggerInput: {},
+      pinnedOutputs: pins,
+      stopAfterNodeId: 'b',
     });
     expect(result.status).toBe('success');
     expect(executed).toEqual(['b']); // SOLO il target ha eseguito codice vero
@@ -102,7 +135,10 @@ describe('🚨 stopAfterNodeId — il grafo a valle NON gira', () => {
         { id: 'b', defId: 'b', x: 1, y: 0, config: {} },
         { id: 'd', defId: 'd', x: 1, y: 1, config: {} },
       ],
-      edges: [{ from: 'a', to: 'b' }, { from: 'a', to: 'd' }],
+      edges: [
+        { from: 'a', to: 'b' },
+        { from: 'a', to: 'd' },
+      ],
     });
     await makeEngine('a', 'b', 'd').run({ workflow: wf, triggerInput: {}, stopAfterNodeId: 'b' });
     expect(executed).toEqual(['a', 'b']); // d era in coda ma è stato scartato
@@ -111,7 +147,9 @@ describe('🚨 stopAfterNodeId — il grafo a valle NON gira', () => {
   it('stopAfterNodeId mai raggiunto (altro ramo morto) → run completa normale', async () => {
     // 'z' esiste nel registry ma non è nel grafo raggiungibile → nessuno stop
     const result = await makeEngine('a', 'b', 'c', 'z').run({
-      workflow: linearWorkflow(), triggerInput: {}, stopAfterNodeId: 'z',
+      workflow: linearWorkflow(),
+      triggerInput: {},
+      stopAfterNodeId: 'z',
     });
     expect(result.status).toBe('success');
     expect(executed).toEqual(['a', 'b', 'c']);
@@ -124,7 +162,13 @@ describe('🚨 stopAfterNodeId — il grafo a valle NON gira', () => {
     const workflow = makeWorkflow({
       nodes: [
         { id: 'trig', defId: 'trigger_manual', x: 0, y: 0, config: {} },
-        { id: 'loop', defId: 'logic_loop', x: 1, y: 0, config: { itemsExpression: 'input.items', strategy: 'naive' } },
+        {
+          id: 'loop',
+          defId: 'logic_loop',
+          x: 1,
+          y: 0,
+          config: { itemsExpression: 'input.items', strategy: 'naive' },
+        },
         { id: 'body', defId: 'logic_delay', x: 2, y: 0, config: { durationMs: '1' } },
         { id: 'after', defId: 'logic_delay', x: 3, y: 0, config: { durationMs: '1' } },
       ],
@@ -135,7 +179,9 @@ describe('🚨 stopAfterNodeId — il grafo a valle NON gira', () => {
       ],
     });
     const result = await engine.run({
-      workflow, triggerInput: { items: ['a', 'b'] }, stopAfterNodeId: 'loop',
+      workflow,
+      triggerInput: { items: ['a', 'b'] },
+      stopAfterNodeId: 'loop',
     });
     expect(result.status).toBe('success');
     const nodeIds = result.steps.map((s) => s.nodeId);

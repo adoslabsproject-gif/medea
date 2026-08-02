@@ -13,7 +13,10 @@ function textUpdate(over: Record<string, unknown> = {}): Record<string, unknown>
   return {
     update_id: 1001,
     message: {
-      message_id: 5, from: FROM, chat: CHAT, date: 1751810400,
+      message_id: 5,
+      from: FROM,
+      chat: CHAT,
+      date: 1751810400,
       text: 'Vorrei una margherita',
       ...over,
     },
@@ -24,9 +27,18 @@ describe('normalizeTelegramUpdate — message', () => {
   it('text: chatId/userId/username/testo/timestamp ISO estratti', () => {
     const e = normalizeTelegramUpdate(textUpdate())!;
     expect(e).toMatchObject({
-      updateId: 1001, kind: 'message', messageId: 5, chatId: 42, chatType: 'private',
-      userId: 777, username: 'nicola84', firstName: 'Nicola',
-      text: 'Vorrei una margherita', interactive: null, media: null, location: null,
+      updateId: 1001,
+      kind: 'message',
+      messageId: 5,
+      chatId: 42,
+      chatType: 'private',
+      userId: 777,
+      username: 'nicola84',
+      firstName: 'Nicola',
+      text: 'Vorrei una margherita',
+      interactive: null,
+      media: null,
+      location: null,
       replyToMessageId: null,
     });
     expect(e.timestamp).toBe(new Date(1751810400 * 1000).toISOString());
@@ -34,32 +46,49 @@ describe('normalizeTelegramUpdate — message', () => {
   });
 
   it('foto: prende il file_id alla MASSIMA risoluzione (ultimo PhotoSize) + caption come text', () => {
-    const e = normalizeTelegramUpdate(textUpdate({
-      text: undefined,
+    const e = normalizeTelegramUpdate(
+      textUpdate({
+        text: undefined,
+        caption: 'il mio scontrino',
+        photo: [
+          { file_id: 'small', width: 90 },
+          { file_id: 'medium', width: 320 },
+          { file_id: 'BEST', width: 1280 },
+        ],
+      }),
+    )!;
+    expect(e.media).toEqual({
+      kind: 'photo',
+      fileId: 'BEST',
+      mimeType: null,
+      fileName: null,
       caption: 'il mio scontrino',
-      photo: [
-        { file_id: 'small', width: 90 },
-        { file_id: 'medium', width: 320 },
-        { file_id: 'BEST', width: 1280 },
-      ],
-    }))!;
-    expect(e.media).toEqual({ kind: 'photo', fileId: 'BEST', mimeType: null, fileName: null, caption: 'il mio scontrino' });
+    });
     expect(e.text).toBe('il mio scontrino');
   });
 
   it('document: mime e filename nel media ref', () => {
-    const e = normalizeTelegramUpdate(textUpdate({
-      text: undefined,
-      document: { file_id: 'DOC1', mime_type: 'application/pdf', file_name: 'menu.pdf' },
-    }))!;
-    expect(e.media).toMatchObject({ kind: 'document', fileId: 'DOC1', mimeType: 'application/pdf', fileName: 'menu.pdf' });
+    const e = normalizeTelegramUpdate(
+      textUpdate({
+        text: undefined,
+        document: { file_id: 'DOC1', mime_type: 'application/pdf', file_name: 'menu.pdf' },
+      }),
+    )!;
+    expect(e.media).toMatchObject({
+      kind: 'document',
+      fileId: 'DOC1',
+      mimeType: 'application/pdf',
+      fileName: 'menu.pdf',
+    });
   });
 
   it('location + reply_to_message', () => {
-    const e = normalizeTelegramUpdate(textUpdate({
-      location: { latitude: 40.35, longitude: 18.17 },
-      reply_to_message: { message_id: 3 },
-    }))!;
+    const e = normalizeTelegramUpdate(
+      textUpdate({
+        location: { latitude: 40.35, longitude: 18.17 },
+        reply_to_message: { message_id: 3 },
+      }),
+    )!;
     expect(e.location).toEqual({ latitude: 40.35, longitude: 18.17 });
     expect(e.replyToMessageId).toBe(3);
   });
@@ -73,7 +102,13 @@ describe('normalizeTelegramUpdate — callback_query (bottoni inline)', () => {
         id: 'cbq1',
         from: { id: 999, username: 'cliccatore', first_name: 'Luca' },
         data: 'CONFERMA_ORDINE',
-        message: { message_id: 9, chat: CHAT, date: 1751810400, text: 'Confermi il tuo ordine?', from: { id: 111 } },
+        message: {
+          message_id: 9,
+          chat: CHAT,
+          date: 1751810400,
+          text: 'Confermi il tuo ordine?',
+          from: { id: 111 },
+        },
       },
     })!;
     expect(e.kind).toBe('callback');
@@ -85,10 +120,12 @@ describe('normalizeTelegramUpdate — callback_query (bottoni inline)', () => {
   });
 
   it('🚨 callback senza data → null (non azionabile)', () => {
-    expect(normalizeTelegramUpdate({
-      update_id: 1003,
-      callback_query: { id: 'x', from: FROM, message: { message_id: 9, chat: CHAT, date: 1 } },
-    })).toBeNull();
+    expect(
+      normalizeTelegramUpdate({
+        update_id: 1003,
+        callback_query: { id: 'x', from: FROM, message: { message_id: 9, chat: CHAT, date: 1 } },
+      }),
+    ).toBeNull();
   });
 });
 

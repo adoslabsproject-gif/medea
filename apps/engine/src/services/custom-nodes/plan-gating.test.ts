@@ -32,8 +32,11 @@ vi.mock('@/storage/db.js', () => ({
             all: (...p: unknown[]) => stmt.all(...p),
           };
         },
-        exec: (sql: string) => { conn.exec(sql); },
-        transaction: <T extends unknown[], R>(fn: (...args: T) => R) => conn.transaction(fn) as unknown as (...args: T) => R,
+        exec: (sql: string) => {
+          conn.exec(sql);
+        },
+        transaction: <T extends unknown[], R>(fn: (...args: T) => R) =>
+          conn.transaction(fn) as unknown as (...args: T) => R,
       },
     };
   },
@@ -46,10 +49,7 @@ import {
   assertCanCreateMoreCustomNodes,
   assertCanPublishMarketplace,
 } from './plan-gating.js';
-import {
-  CustomNodeQuotaExceededError,
-  CustomNodeForbiddenError,
-} from './errors.js';
+import { CustomNodeQuotaExceededError, CustomNodeForbiddenError } from './errors.js';
 import { createCustomNode, archiveCustomNode } from './service.js';
 
 const WS = 'ws-quota-test';
@@ -164,7 +164,11 @@ describe('🚨 countActiveCustomNodes', () => {
 
   it('🚨 archived nodes esclusi dal count', async () => {
     process.env.MEDEA_PLAN_CODE = 'pro';
-    const a = await createCustomNode({ workspaceId: WS, ownerUserId: 'u-1', input: validInput('aaa') });
+    const a = await createCustomNode({
+      workspaceId: WS,
+      ownerUserId: 'u-1',
+      input: validInput('aaa'),
+    });
     await createCustomNode({ workspaceId: WS, ownerUserId: 'u-1', input: validInput('bbb') });
     await archiveCustomNode({ workspaceId: WS, id: a.id });
     expect(await countActiveCustomNodes(WS)).toBe(1);
@@ -201,7 +205,11 @@ describe('🚨 assertCanCreateMoreCustomNodes (quota enforcement)', () => {
     await expect(assertCanCreateMoreCustomNodes(WS)).resolves.toBeUndefined();
     // simula 5 inserimenti diretti per skip create overhead
     for (let i = 0; i < 5; i++) {
-      await createCustomNode({ workspaceId: WS, ownerUserId: 'u-1', input: validInput(`bulk${i.toString()}`) });
+      await createCustomNode({
+        workspaceId: WS,
+        ownerUserId: 'u-1',
+        input: validInput(`bulk${i.toString()}`),
+      });
     }
     await expect(assertCanCreateMoreCustomNodes(WS)).resolves.toBeUndefined();
   });
@@ -209,7 +217,11 @@ describe('🚨 assertCanCreateMoreCustomNodes (quota enforcement)', () => {
   it('🚨 error meta include current+limit+planCode+suggestedPlan', async () => {
     process.env.MEDEA_PLAN_CODE = 'starter';
     for (let i = 0; i < 3; i++) {
-      await createCustomNode({ workspaceId: WS, ownerUserId: 'u-1', input: validInput(`m${i.toString()}`) });
+      await createCustomNode({
+        workspaceId: WS,
+        ownerUserId: 'u-1',
+        input: validInput(`m${i.toString()}`),
+      });
     }
     try {
       await assertCanCreateMoreCustomNodes(WS);

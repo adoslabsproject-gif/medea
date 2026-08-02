@@ -15,7 +15,10 @@ export function parseMentions(body: string): string[] {
   let m: RegExpExecArray | null;
   while ((m = re.exec(body)) !== null) {
     const handle = m[1]!;
-    if (!seen.has(handle)) { seen.add(handle); out.push(handle); }
+    if (!seen.has(handle)) {
+      seen.add(handle);
+      out.push(handle);
+    }
   }
   return out;
 }

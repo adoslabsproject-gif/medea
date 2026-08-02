@@ -24,7 +24,9 @@ describe('sleep', () => {
   it('throws AbortError if signal aborted mid-sleep', async () => {
     const ctrl = new AbortController();
     const p = sleep(500, ctrl.signal);
-    setTimeout(() => { ctrl.abort(); }, 30);
+    setTimeout(() => {
+      ctrl.abort();
+    }, 30);
     const start = Date.now();
     await expect(p).rejects.toThrow('Aborted');
     expect(Date.now() - start).toBeLessThan(200); // resolved early

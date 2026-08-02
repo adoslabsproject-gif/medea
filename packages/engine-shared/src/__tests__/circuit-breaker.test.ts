@@ -37,7 +37,11 @@ describe('CircuitBreaker — base', () => {
 
   it('execute propaga errori', async () => {
     const cb = new CircuitBreaker('test', opts);
-    await expect(cb.execute(async () => { throw new Error('boom'); })).rejects.toThrow('boom');
+    await expect(
+      cb.execute(async () => {
+        throw new Error('boom');
+      }),
+    ).rejects.toThrow('boom');
     cb.destroy();
   });
 });
@@ -46,7 +50,11 @@ describe('CircuitBreaker — CLOSED → OPEN dopo failureThreshold', () => {
   it('apre dopo N failures consecutive', async () => {
     const cb = new CircuitBreaker('test', opts);
     for (let i = 0; i < 3; i++) {
-      await expect(cb.execute(async () => { throw new Error('fail'); })).rejects.toThrow();
+      await expect(
+        cb.execute(async () => {
+          throw new Error('fail');
+        }),
+      ).rejects.toThrow();
     }
     expect(cb.getState()).toBe('open');
     cb.destroy();
@@ -54,11 +62,27 @@ describe('CircuitBreaker — CLOSED → OPEN dopo failureThreshold', () => {
 
   it('un success resetta il counter failures', async () => {
     const cb = new CircuitBreaker('test', opts);
-    await expect(cb.execute(async () => { throw new Error('f'); })).rejects.toThrow();
-    await expect(cb.execute(async () => { throw new Error('f'); })).rejects.toThrow();
+    await expect(
+      cb.execute(async () => {
+        throw new Error('f');
+      }),
+    ).rejects.toThrow();
+    await expect(
+      cb.execute(async () => {
+        throw new Error('f');
+      }),
+    ).rejects.toThrow();
     await cb.execute(async () => 'ok'); // reset counter
-    await expect(cb.execute(async () => { throw new Error('f'); })).rejects.toThrow();
-    await expect(cb.execute(async () => { throw new Error('f'); })).rejects.toThrow();
+    await expect(
+      cb.execute(async () => {
+        throw new Error('f');
+      }),
+    ).rejects.toThrow();
+    await expect(
+      cb.execute(async () => {
+        throw new Error('f');
+      }),
+    ).rejects.toThrow();
     expect(cb.getState()).toBe('closed'); // ancora chiuso, contiamo da 0 dopo success
     cb.destroy();
   });
@@ -69,7 +93,11 @@ describe('CircuitBreaker — CLOSED → OPEN dopo failureThreshold', () => {
       isFailure: (err: unknown) => !(err instanceof Error) || !err.message.includes('404'),
     });
     for (let i = 0; i < 10; i++) {
-      await expect(cb.execute(async () => { throw new Error('404 Not Found'); })).rejects.toThrow();
+      await expect(
+        cb.execute(async () => {
+          throw new Error('404 Not Found');
+        }),
+      ).rejects.toThrow();
     }
     expect(cb.getState()).toBe('closed'); // 404 non conta → mai aperto
     cb.destroy();
@@ -81,7 +109,11 @@ describe('CircuitBreaker — OPEN reject immediately', () => {
     const cb = new CircuitBreaker('test', opts);
     // Forza OPEN
     for (let i = 0; i < 3; i++) {
-      await expect(cb.execute(async () => { throw new Error('f'); })).rejects.toThrow();
+      await expect(
+        cb.execute(async () => {
+          throw new Error('f');
+        }),
+      ).rejects.toThrow();
     }
     expect(cb.getState()).toBe('open');
 
@@ -94,7 +126,11 @@ describe('CircuitBreaker — OPEN reject immediately', () => {
   it('CircuitOpenError contiene il nome del breaker', async () => {
     const cb = new CircuitBreaker('payment-gateway', opts);
     for (let i = 0; i < 3; i++) {
-      await expect(cb.execute(async () => { throw new Error('f'); })).rejects.toThrow();
+      await expect(
+        cb.execute(async () => {
+          throw new Error('f');
+        }),
+      ).rejects.toThrow();
     }
     try {
       await cb.execute(async () => 'x');
@@ -109,7 +145,11 @@ describe('CircuitBreaker — OPEN reject immediately', () => {
   it('totalRejected incrementa su OPEN reject', async () => {
     const cb = new CircuitBreaker('test', opts);
     for (let i = 0; i < 3; i++) {
-      await expect(cb.execute(async () => { throw new Error('f'); })).rejects.toThrow();
+      await expect(
+        cb.execute(async () => {
+          throw new Error('f');
+        }),
+      ).rejects.toThrow();
     }
     await expect(cb.execute(async () => 'x')).rejects.toThrow();
     await expect(cb.execute(async () => 'x')).rejects.toThrow();
@@ -125,7 +165,11 @@ describe('CircuitBreaker — OPEN → HALF_OPEN dopo resetTimeout', () => {
   it('transitions to HALF_OPEN dopo resetTimeout ms', async () => {
     const cb = new CircuitBreaker('test', opts);
     for (let i = 0; i < 3; i++) {
-      await expect(cb.execute(async () => { throw new Error('f'); })).rejects.toThrow();
+      await expect(
+        cb.execute(async () => {
+          throw new Error('f');
+        }),
+      ).rejects.toThrow();
     }
     expect(cb.getState()).toBe('open');
 
@@ -143,7 +187,11 @@ describe('CircuitBreaker — HALF_OPEN probe atomic lock', () => {
     const cb = new CircuitBreaker('test', opts);
     // Forza HALF_OPEN
     for (let i = 0; i < 3; i++) {
-      await expect(cb.execute(async () => { throw new Error('f'); })).rejects.toThrow();
+      await expect(
+        cb.execute(async () => {
+          throw new Error('f');
+        }),
+      ).rejects.toThrow();
     }
     vi.advanceTimersByTime(150);
 
@@ -164,7 +212,11 @@ describe('CircuitBreaker — HALF_OPEN probe atomic lock', () => {
   it('probe success → state diventa CLOSED dopo successThreshold success', async () => {
     const cb = new CircuitBreaker('test', opts);
     for (let i = 0; i < 3; i++) {
-      await expect(cb.execute(async () => { throw new Error('f'); })).rejects.toThrow();
+      await expect(
+        cb.execute(async () => {
+          throw new Error('f');
+        }),
+      ).rejects.toThrow();
     }
     vi.advanceTimersByTime(150);
     expect(cb.getState()).toBe('half_open');
@@ -179,12 +231,20 @@ describe('CircuitBreaker — HALF_OPEN probe atomic lock', () => {
   it('probe failure → torna a OPEN', async () => {
     const cb = new CircuitBreaker('test', opts);
     for (let i = 0; i < 3; i++) {
-      await expect(cb.execute(async () => { throw new Error('f'); })).rejects.toThrow();
+      await expect(
+        cb.execute(async () => {
+          throw new Error('f');
+        }),
+      ).rejects.toThrow();
     }
     vi.advanceTimersByTime(150);
     expect(cb.getState()).toBe('half_open');
 
-    await expect(cb.execute(async () => { throw new Error('still down'); })).rejects.toThrow();
+    await expect(
+      cb.execute(async () => {
+        throw new Error('still down');
+      }),
+    ).rejects.toThrow();
     expect(cb.getState()).toBe('open');
     cb.destroy();
   });
@@ -194,7 +254,11 @@ describe('CircuitBreaker — reset() / destroy()', () => {
   it('reset() forza CLOSED', async () => {
     const cb = new CircuitBreaker('test', opts);
     for (let i = 0; i < 3; i++) {
-      await expect(cb.execute(async () => { throw new Error('f'); })).rejects.toThrow();
+      await expect(
+        cb.execute(async () => {
+          throw new Error('f');
+        }),
+      ).rejects.toThrow();
     }
     expect(cb.getState()).toBe('open');
     cb.reset();
@@ -204,7 +268,11 @@ describe('CircuitBreaker — reset() / destroy()', () => {
 
   it('reset() resetta counters', async () => {
     const cb = new CircuitBreaker('test', opts);
-    await expect(cb.execute(async () => { throw new Error('f'); })).rejects.toThrow();
+    await expect(
+      cb.execute(async () => {
+        throw new Error('f');
+      }),
+    ).rejects.toThrow();
     cb.reset();
     expect(cb.getStats().failures).toBe(0);
     expect(cb.getStats().successes).toBe(0);
@@ -238,7 +306,11 @@ describe('CircuitBreaker — getStats', () => {
     const cb = new CircuitBreaker('test', opts);
     await cb.execute(async () => 'ok');
     await cb.execute(async () => 'ok');
-    await expect(cb.execute(async () => { throw new Error('f'); })).rejects.toThrow();
+    await expect(
+      cb.execute(async () => {
+        throw new Error('f');
+      }),
+    ).rejects.toThrow();
     const stats = cb.getStats();
     expect(stats.totalSuccesses).toBe(2);
     expect(stats.totalFailures).toBe(1);
@@ -257,7 +329,11 @@ describe('CircuitBreaker — onStateChange callback', () => {
       onStateChange: (from, to, name) => transitions.push([from, to, name]),
     });
     for (let i = 0; i < 3; i++) {
-      await expect(cb.execute(async () => { throw new Error('f'); })).rejects.toThrow();
+      await expect(
+        cb.execute(async () => {
+          throw new Error('f');
+        }),
+      ).rejects.toThrow();
     }
     expect(transitions).toContainEqual(['closed', 'open', 'test']);
     cb.destroy();

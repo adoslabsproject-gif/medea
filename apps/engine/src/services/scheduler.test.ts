@@ -46,8 +46,8 @@ describe('SchedulerService.matchesCron', () => {
     it('🚨 stesso istante UTC, ora diversa per timezone diversa', () => {
       // 07:00 UTC = 09:00 a Roma (CEST, +2 a maggio).
       const instant = new Date('2026-05-19T07:00:00Z');
-      expect(matches('0 9 * * *', instant, 'Europe/Rome')).toBe(true);   // 09:00 locale Roma
-      expect(matches('0 9 * * *', instant, 'UTC')).toBe(false);          // 07:00 UTC
+      expect(matches('0 9 * * *', instant, 'Europe/Rome')).toBe(true); // 09:00 locale Roma
+      expect(matches('0 9 * * *', instant, 'UTC')).toBe(false); // 07:00 UTC
       expect(matches('0 7 * * *', instant, 'UTC')).toBe(true);
     });
 

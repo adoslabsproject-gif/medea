@@ -14,7 +14,7 @@ export const odooRpcActionNode: NodeModule = {
   executor: wrap(odooRpcExecutor, [
     httpMiddlewarePreset({
       urlFrom: (c) => {
-        const u = (c).baseUrl;
+        const u = c.baseUrl;
         return typeof u === 'string' && u.length > 0 ? u : undefined;
       },
       methodFrom: () => 'POST',

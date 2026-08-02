@@ -33,6 +33,9 @@ export function recordRunOutcomeForTemplate(
     templateCache.recordOutcome(templateId, ok);
     logger.debug({ templateId, ok }, '[template-feedback] run outcome registrato sul template');
   } catch (err) {
-    logger.debug({ err: err instanceof Error ? err.message : String(err) }, '[template-feedback] failed (fail-soft)');
+    logger.debug(
+      { err: err instanceof Error ? err.message : String(err) },
+      '[template-feedback] failed (fail-soft)',
+    );
   }
 }

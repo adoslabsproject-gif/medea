@@ -114,47 +114,156 @@ export interface QualityGateResult {
  */
 const MOCK_PATTERNS: readonly { regex: RegExp; reason: string; suggest?: string }[] = [
   // ── Domini/host fittizi ─────────────────────────────────────────────
-  { regex: /\bsmtp\.example\.com\b/i, reason: 'SMTP host fittizio "smtp.example.com"', suggest: 'smtp.gmail.com / smtp.orion.it / il tuo host reale' },
-  { regex: /\bexample\.(com|org|net|io|biz)\b/i, reason: 'dominio fittizio "example.*"', suggest: 'il tuo dominio reale (es. miosito.com)' },
-  { regex: /\b(your|my|company|yourcompany|mycompany|acme|foo|bar|test|demo|sample|miosito|mio-sito|tuosito|tuo-sito|tuodominio|miodominio|nostrosito|nostrodominio|placeholder|esempio)\.(com|org|net|io|biz|local|it|eu)\b/i, reason: 'dominio placeholder fittizio (anche miosito/tuosito/tuodominio italiani)', suggest: 'il dominio reale o {{secrets.DOMAIN}} / {{secrets.SITE_URL}}' },
-  { regex: /\bcompany\.com\b/i, reason: 'dominio fittizio "company.com"', suggest: 'il tuo dominio aziendale reale' },
-  { regex: /\b(yourdomain|domain|hostname|server)\.(com|local|tld)\b/i, reason: 'host placeholder generico', suggest: 'l\'host reale (es. miosito.com)' },
-  { regex: /\b(localhost|0\.0\.0\.0|127\.0\.0\.1)\b/i, reason: 'host loopback (probabilmente non intenzionale)', suggest: 'l\'IP/host pubblico reale' },
+  {
+    regex: /\bsmtp\.example\.com\b/i,
+    reason: 'SMTP host fittizio "smtp.example.com"',
+    suggest: 'smtp.gmail.com / smtp.orion.it / il tuo host reale',
+  },
+  {
+    regex: /\bexample\.(com|org|net|io|biz)\b/i,
+    reason: 'dominio fittizio "example.*"',
+    suggest: 'il tuo dominio reale (es. miosito.com)',
+  },
+  {
+    regex:
+      /\b(your|my|company|yourcompany|mycompany|acme|foo|bar|test|demo|sample|miosito|mio-sito|tuosito|tuo-sito|tuodominio|miodominio|nostrosito|nostrodominio|placeholder|esempio)\.(com|org|net|io|biz|local|it|eu)\b/i,
+    reason: 'dominio placeholder fittizio (anche miosito/tuosito/tuodominio italiani)',
+    suggest: 'il dominio reale o {{secrets.DOMAIN}} / {{secrets.SITE_URL}}',
+  },
+  {
+    regex: /\bcompany\.com\b/i,
+    reason: 'dominio fittizio "company.com"',
+    suggest: 'il tuo dominio aziendale reale',
+  },
+  {
+    regex: /\b(yourdomain|domain|hostname|server)\.(com|local|tld)\b/i,
+    reason: 'host placeholder generico',
+    suggest: "l'host reale (es. miosito.com)",
+  },
+  {
+    regex: /\b(localhost|0\.0\.0\.0|127\.0\.0\.1)\b/i,
+    reason: 'host loopback (probabilmente non intenzionale)',
+    suggest: "l'IP/host pubblico reale",
+  },
 
   // ── Email destinatario / from ──────────────────────────────────────
-  { regex: /\bnoreply@(?!example\.|test\.|sample\.)[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/i, reason: 'email noreply con dominio placeholder', suggest: '{{secrets.NOREPLY_EMAIL}} o email aziendale reale' },
-  { regex: /\b(management|admin|test|user|info|support|hello|contact|sales|marketing|root)@(?!.*\.)/i, reason: 'email destinatario incompleta', suggest: 'email completa reale o {{secrets.EMAIL}}' },
-  { regex: /\b[A-Za-z0-9._%+-]+@(company|yourcompany|mycompany|acme|foo|bar|test|demo|sample|placeholder)\.[A-Za-z]{2,}\b/i, reason: 'email con dominio aziendale placeholder', suggest: '{{secrets.EMAIL}} o indirizzo reale' },
+  {
+    regex: /\bnoreply@(?!example\.|test\.|sample\.)[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/i,
+    reason: 'email noreply con dominio placeholder',
+    suggest: '{{secrets.NOREPLY_EMAIL}} o email aziendale reale',
+  },
+  {
+    regex:
+      /\b(management|admin|test|user|info|support|hello|contact|sales|marketing|root)@(?!.*\.)/i,
+    reason: 'email destinatario incompleta',
+    suggest: 'email completa reale o {{secrets.EMAIL}}',
+  },
+  {
+    regex:
+      /\b[A-Za-z0-9._%+-]+@(company|yourcompany|mycompany|acme|foo|bar|test|demo|sample|placeholder)\.[A-Za-z]{2,}\b/i,
+    reason: 'email con dominio aziendale placeholder',
+    suggest: '{{secrets.EMAIL}} o indirizzo reale',
+  },
 
   // ── Bucket / storage ────────────────────────────────────────────────
-  { regex: /\bs3:\/\/(my-bucket|your-bucket|bucket-name|bucket|test-bucket|sample-bucket|demo-bucket|example-bucket|company-bucket|tenant-bucket|placeholder-bucket)(?:[/-]|$)/i, reason: 'S3 bucket placeholder', suggest: 's3://nome-bucket-reale-tenant o {{secrets.S3_BUCKET}}' },
-  { regex: /\bgs:\/\/(my-bucket|your-bucket|bucket-name|bucket)\b/i, reason: 'GCS bucket placeholder', suggest: 'gs://bucket-reale o {{secrets.GCS_BUCKET}}' },
-  { regex: /\b(my-bucket|your-bucket|bucket-name|tenant-bucket|placeholder-bucket)\b/i, reason: 'nome bucket placeholder', suggest: 'nome bucket reale o {{secrets.BUCKET_NAME}}' },
+  {
+    regex:
+      /\bs3:\/\/(my-bucket|your-bucket|bucket-name|bucket|test-bucket|sample-bucket|demo-bucket|example-bucket|company-bucket|tenant-bucket|placeholder-bucket)(?:[/-]|$)/i,
+    reason: 'S3 bucket placeholder',
+    suggest: 's3://nome-bucket-reale-tenant o {{secrets.S3_BUCKET}}',
+  },
+  {
+    regex: /\bgs:\/\/(my-bucket|your-bucket|bucket-name|bucket)\b/i,
+    reason: 'GCS bucket placeholder',
+    suggest: 'gs://bucket-reale o {{secrets.GCS_BUCKET}}',
+  },
+  {
+    regex: /\b(my-bucket|your-bucket|bucket-name|tenant-bucket|placeholder-bucket)\b/i,
+    reason: 'nome bucket placeholder',
+    suggest: 'nome bucket reale o {{secrets.BUCKET_NAME}}',
+  },
 
   // ── Credenziali / API key ──────────────────────────────────────────
-  { regex: /\byour[_-]?api[_-]?key\b/i, reason: 'API key placeholder "your-api-key"', suggest: '{{secrets.API_KEY}} o key reale' },
-  { regex: /\b(your|my|test|sample|demo)[_-]?(token|secret|password|api_?key|access_?key|client_?id|client_?secret)\b/i, reason: 'credential placeholder', suggest: '{{secrets.X}} con il vero secret' },
-  { regex: /\bsk_(test|live)_(your|placeholder|sample)/i, reason: 'Stripe key placeholder', suggest: '{{secrets.STRIPE_KEY}}' },
-  { regex: /\bAKIA[A-Z0-9]{16}\b/, reason: 'AWS Access Key ID hardcoded (security risk)', suggest: '{{secrets.AWS_ACCESS_KEY_ID}}' },
+  {
+    regex: /\byour[_-]?api[_-]?key\b/i,
+    reason: 'API key placeholder "your-api-key"',
+    suggest: '{{secrets.API_KEY}} o key reale',
+  },
+  {
+    regex:
+      /\b(your|my|test|sample|demo)[_-]?(token|secret|password|api_?key|access_?key|client_?id|client_?secret)\b/i,
+    reason: 'credential placeholder',
+    suggest: '{{secrets.X}} con il vero secret',
+  },
+  {
+    regex: /\bsk_(test|live)_(your|placeholder|sample)/i,
+    reason: 'Stripe key placeholder',
+    suggest: '{{secrets.STRIPE_KEY}}',
+  },
+  {
+    regex: /\bAKIA[A-Z0-9]{16}\b/,
+    reason: 'AWS Access Key ID hardcoded (security risk)',
+    suggest: '{{secrets.AWS_ACCESS_KEY_ID}}',
+  },
 
   // ── Account/resource ID placeholder ────────────────────────────────
-  { regex: /\b(email|smtp|imap|account|user|db|database|workspace|project|tenant)[_-]?(account[_-]?)?[_-]?[0-9]+\b/i, reason: 'ID risorsa placeholder (es. account-1, db-1, user-123)', suggest: 'seleziona via dropdown UI (es. email-account-picker / db-picker) o usa il vero ID' },
-  { regex: /\b(account|workspace|project|tenant|database|table)[_-]?(name|id)[_-]?(here|placeholder|example|sample)\b/i, reason: 'ID risorsa placeholder generico', suggest: 'ID reale dal tenant' },
-  { regex: /\bdb[_-]?(opportunities|customers|orders|invoices|leads)\b/i, reason: 'database ID placeholder generico ("db_opportunities" non è un vero ID)', suggest: 'seleziona via db-picker UI o usa l\'UUID reale' },
+  {
+    regex:
+      /\b(email|smtp|imap|account|user|db|database|workspace|project|tenant)[_-]?(account[_-]?)?[_-]?[0-9]+\b/i,
+    reason: 'ID risorsa placeholder (es. account-1, db-1, user-123)',
+    suggest: 'seleziona via dropdown UI (es. email-account-picker / db-picker) o usa il vero ID',
+  },
+  {
+    regex:
+      /\b(account|workspace|project|tenant|database|table)[_-]?(name|id)[_-]?(here|placeholder|example|sample)\b/i,
+    reason: 'ID risorsa placeholder generico',
+    suggest: 'ID reale dal tenant',
+  },
+  {
+    regex: /\bdb[_-]?(opportunities|customers|orders|invoices|leads)\b/i,
+    reason: 'database ID placeholder generico ("db_opportunities" non è un vero ID)',
+    suggest: "seleziona via db-picker UI o usa l'UUID reale",
+  },
 
   // ── URL/endpoint generici ──────────────────────────────────────────
-  { regex: /\bhttps?:\/\/(api|service|endpoint|server|host)\.(example|company|yourcompany|placeholder)\.(com|org|net)\b/i, reason: 'URL endpoint placeholder', suggest: 'URL reale del servizio o {{secrets.API_URL}}' },
-  { regex: /\bhttps?:\/\/(api|service|server)\.example\.com/i, reason: 'API URL fittizio', suggest: 'URL reale del tuo servizio' },
+  {
+    regex:
+      /\bhttps?:\/\/(api|service|endpoint|server|host)\.(example|company|yourcompany|placeholder)\.(com|org|net)\b/i,
+    reason: 'URL endpoint placeholder',
+    suggest: 'URL reale del servizio o {{secrets.API_URL}}',
+  },
+  {
+    regex: /\bhttps?:\/\/(api|service|server)\.example\.com/i,
+    reason: 'API URL fittizio',
+    suggest: 'URL reale del tuo servizio',
+  },
 
   // ── Token literali generici ────────────────────────────────────────
   { regex: /\bxxx+\b/i, reason: 'placeholder generico "xxx…"', suggest: 'valore reale' },
   { regex: /\bTODO\b/, reason: 'placeholder "TODO" non risolto', suggest: 'completa il valore' },
   { regex: /\bFIXME\b/, reason: 'placeholder "FIXME" non risolto', suggest: 'risolvi il valore' },
-  { regex: /\bplaceholder\b/i, reason: 'token literale "placeholder"', suggest: 'sostituisci con valore reale' },
+  {
+    regex: /\bplaceholder\b/i,
+    reason: 'token literale "placeholder"',
+    suggest: 'sostituisci con valore reale',
+  },
   { regex: /\bchange[_-]?me\b/i, reason: 'token literale "change_me"', suggest: 'valore reale' },
-  { regex: /\b(your|my|sample|test|example|demo)[_-]?(value|name|id|key|token|url|host|port|password|secret)\b/i, reason: 'placeholder generico tipo "your_value"', suggest: 'valore reale o {{secrets.X}}' },
-  { regex: /<[A-Z_]{3,}>/, reason: 'placeholder angular brackets <NOME_VAR>', suggest: 'sostituisci con valore reale o {{espressione}}' },
-  { regex: /\$\{[A-Z_]{3,}\}/, reason: 'placeholder shell-style ${NOME_VAR} non risolto', suggest: 'usa {{secrets.X}} o {{$node.Y.json}} (FlowForge expression syntax)' },
+  {
+    regex:
+      /\b(your|my|sample|test|example|demo)[_-]?(value|name|id|key|token|url|host|port|password|secret)\b/i,
+    reason: 'placeholder generico tipo "your_value"',
+    suggest: 'valore reale o {{secrets.X}}',
+  },
+  {
+    regex: /<[A-Z_]{3,}>/,
+    reason: 'placeholder angular brackets <NOME_VAR>',
+    suggest: 'sostituisci con valore reale o {{espressione}}',
+  },
+  {
+    regex: /\$\{[A-Z_]{3,}\}/,
+    reason: 'placeholder shell-style ${NOME_VAR} non risolto',
+    suggest: 'usa {{secrets.X}} o {{$node.Y.json}} (FlowForge expression syntax)',
+  },
 ];
 
 /**
@@ -256,8 +365,10 @@ function checkMockPlaceholders(input: QualityGateInput): QualityIssue[] {
         if (!regex.test(str)) continue;
         // Severity: SMTP/host/url/bucket/account_id/database/credentials sono critical
         // (workflow rotto al primo run). Email destinatario è medium (utente può capirlo).
-        const critical = /smtp|url|host|bucket|endpoint|directory|account|database|table|api_?key|token|secret|password|credential|workspace|tenant/i.test(field)
-          || /smtp\.example|my-bucket|your-api-key/i.test(str);
+        const critical =
+          /smtp|url|host|bucket|endpoint|directory|account|database|table|api_?key|token|secret|password|credential|workspace|tenant/i.test(
+            field,
+          ) || /smtp\.example|my-bucket|your-api-key/i.test(str);
         const suggestion = suggest ? ` → suggerito: ${suggest}` : '';
         issues.push({
           severity: critical ? 'critical' : 'medium',
@@ -302,7 +413,11 @@ function checkSwitchDefault(input: QualityGateInput): QualityIssue[] {
 }
 
 function safeParseJson(s: string): unknown {
-  try { return JSON.parse(s); } catch { return null; }
+  try {
+    return JSON.parse(s);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -341,9 +456,13 @@ const OPERATOR_IN_CASE_RE = /(<|>|<=|>=|==|===|!=|!==|&&|\|\||\(|\))/;
  *
  * Severity: critical (impatto economico: N×$$$ + spam email user).
  */
-const AGGREGATION_KEYWORDS_RE = /(report|riepilogo|riassunto|summary|aggregat|totale|consolidat|sintesi|recap|digest)/i;
+const AGGREGATION_KEYWORDS_RE =
+  /(report|riepilogo|riassunto|summary|aggregat|totale|consolidat|sintesi|recap|digest)/i;
 
-function findDownstreamNodes(startNodeId: string, edges: readonly { from: string; to: string }[]): Set<string> {
+function findDownstreamNodes(
+  startNodeId: string,
+  edges: readonly { from: string; to: string }[],
+): Set<string> {
   const out = new Set<string>();
   const stack = [startNodeId];
   while (stack.length > 0) {
@@ -374,9 +493,10 @@ function checkAggregationInsideLoop(input: QualityGateInput): QualityIssue[] {
     for (const dsId of downstream) {
       const dsNode = input.nodes.find((n) => n.id === dsId);
       if (!dsNode) continue;
-      const isAggregator = dsNode.defId === 'agent_data_analyst'
-        || dsNode.defId === 'agent_summarizer'
-        || dsNode.defId === 'action_send_email';
+      const isAggregator =
+        dsNode.defId === 'agent_data_analyst' ||
+        dsNode.defId === 'agent_summarizer' ||
+        dsNode.defId === 'action_send_email';
       if (!isAggregator) continue;
       const cfgText = JSON.stringify(dsNode.config);
       if (!AGGREGATION_KEYWORDS_RE.test(cfgText)) continue;
@@ -417,7 +537,12 @@ function checkSwitchInvalidCaseKey(input: QualityGateInput): QualityIssue[] {
       code: 'SWITCH_INVALID_CASE_KEY',
       nodeId: node.id,
       field: 'cases',
-      message: `Switch "${node.id}" ha case keys con OPERATORI (es. ${invalid.slice(0, 2).map((k) => `"${k}"`).join(', ')}). Il logic_switch fa SOLO equality match (string === string), NON valuta espressioni. → Workflow cadrebbe SEMPRE sul fallbackBranch. SOLUZIONE: usa logic_if (vero engine condition) invece di logic_switch. Oppure pre-computa la label discreta in un agent_classifier upstream.`,
+      message: `Switch "${node.id}" ha case keys con OPERATORI (es. ${invalid
+        .slice(0, 2)
+        .map((k) => `"${k}"`)
+        .join(
+          ', ',
+        )}). Il logic_switch fa SOLO equality match (string === string), NON valuta espressioni. → Workflow cadrebbe SEMPRE sul fallbackBranch. SOLUZIONE: usa logic_if (vero engine condition) invece di logic_switch. Oppure pre-computa la label discreta in un agent_classifier upstream.`,
     });
   }
   return issues;
@@ -552,17 +677,24 @@ function checkSuspiciousResourceIds(input: QualityGateInput): QualityIssue[] {
       // UI usa per forzare un dropdown pre-import. NON è ID fittizio LLM, è
       // segnaposto deterministicco — non flaggare come SUSPICIOUS.
       if (val === '__USE_PICKER__') continue;
-      const isIdField = /^(databaseId|tableId|workspaceId|projectId|accountId|userId|tenantId|systemAccountId|botId|channelId|spaceId|orgId)$/i.test(field)
-        || /^(database|table|workspace|project|account|tenant|email_account|system_account)_?(id|name|key)$/i.test(field);
+      const isIdField =
+        /^(databaseId|tableId|workspaceId|projectId|accountId|userId|tenantId|systemAccountId|botId|channelId|spaceId|orgId)$/i.test(
+          field,
+        ) ||
+        /^(database|table|workspace|project|account|tenant|email_account|system_account)_?(id|name|key)$/i.test(
+          field,
+        );
       if (!isIdField) continue;
       // Valore "ID-like"? UUID o hash-id passa, altrimenti suspect
       const looksLikeRealId = UUID_RE.test(val) || HASH_ID_RE.test(val);
       // Parole sospette ANCHE dentro snake_case / kebab-case (es. "db_placeholder_xxx",
       // "email-account-1"). Match con (?:^|[_\-]) come boundary alternativo.
-      const SUSPECT_WORD_RE = /(?:^|[_\-\s])(name|placeholder|example|sample|here|todo|fixme|test|demo|fake|mock|your|my|company|new|generic|opportunities|customers|orders|invoices|leads|account|database|table)(?:[_\-\s]|$)/i;
+      const SUSPECT_WORD_RE =
+        /(?:^|[_\-\s])(name|placeholder|example|sample|here|todo|fixme|test|demo|fake|mock|your|my|company|new|generic|opportunities|customers|orders|invoices|leads|account|database|table)(?:[_\-\s]|$)/i;
       const hasSuspectWord = SUSPECT_WORD_RE.test(val);
       // Pattern lazy "tipo_nome_ID" senza vero hash (es. db_opportunities = 2 parts senza alfanumerico randomico)
-      const LAZY_ID_RE = /^(db|acc|tenant|workspace|project|user|email|smtp|imap|system|sys|table|tbl|col|field|node|wf|workflow)[_-][a-z]+(?:[_-][a-z]+)?$/i;
+      const LAZY_ID_RE =
+        /^(db|acc|tenant|workspace|project|user|email|smtp|imap|system|sys|table|tbl|col|field|node|wf|workflow)[_-][a-z]+(?:[_-][a-z]+)?$/i;
       const hasLazyPrefix = LAZY_ID_RE.test(val);
       if (!looksLikeRealId || hasSuspectWord || hasLazyPrefix) {
         issues.push({
@@ -671,7 +803,8 @@ function checkFanInWithoutMerge(input: QualityGateInput): QualityIssue[] {
     if (count < 2) continue;
     if (isAggregator(node.defId)) continue;
     // `logic_if`/`logic_switch` are also fan-in tolerant (they pick ONE branch).
-    if (node.defId === 'logic_if' || node.defId === 'logic_switch' || node.defId === 'logic_join') continue;
+    if (node.defId === 'logic_if' || node.defId === 'logic_switch' || node.defId === 'logic_join')
+      continue;
     issues.push({
       severity: 'critical',
       code: 'FAN_IN_WITHOUT_MERGE',
@@ -692,7 +825,12 @@ function checkFanInWithoutMerge(input: QualityGateInput): QualityIssue[] {
 // Skip se databaseId è un placeholder (__USE_PICKER__ / template).
 // ────────────────────────────────────────────────────────────────────────────
 const DB_NODES_WITH_TABLE: ReadonlySet<string> = new Set([
-  'db_query', 'db_insert', 'db_insert_batch', 'db_update', 'db_delete', 'db_subscribe',
+  'db_query',
+  'db_insert',
+  'db_insert_batch',
+  'db_update',
+  'db_delete',
+  'db_subscribe',
 ]);
 function checkDbTableNotInSchema(input: QualityGateInput): QualityIssue[] {
   const issues: QualityIssue[] = [];
@@ -703,8 +841,8 @@ function checkDbTableNotInSchema(input: QualityGateInput): QualityIssue[] {
   }
   for (const node of input.nodes) {
     if (!DB_NODES_WITH_TABLE.has(node.defId)) continue;
-    const dbId = typeof node.config.databaseId === 'string' ? (node.config.databaseId) : '';
-    const table = typeof node.config.table === 'string' ? (node.config.table) : '';
+    const dbId = typeof node.config.databaseId === 'string' ? node.config.databaseId : '';
+    const table = typeof node.config.table === 'string' ? node.config.table : '';
     // Skip placeholder/expression sources — user will configure post-import.
     if (!dbId || !table) continue;
     if (dbId === '__USE_PICKER__' || dbId.includes('{{')) continue;
@@ -721,7 +859,11 @@ function checkDbTableNotInSchema(input: QualityGateInput): QualityIssue[] {
       field: 'table',
       message:
         `Nodo "${node.id}" (${node.defId}) referenzia tabella "${table}" sul database "${dbId}", ` +
-        `ma quella tabella NON esiste nello schema. Tabelle disponibili: [${Array.from(knownTables).map((t) => `"${t}"`).join(', ') || '(nessuna)'}]. ` +
+        `ma quella tabella NON esiste nello schema. Tabelle disponibili: [${
+          Array.from(knownTables)
+            .map((t) => `"${t}"`)
+            .join(', ') || '(nessuna)'
+        }]. ` +
         `Scegli una tabella esistente OPPURE crea prima la tabella via create_table.`,
     });
   }
@@ -770,7 +912,9 @@ function checkCodeNodeLangMismatch(input: QualityGateInput): QualityIssue[] {
 // + violazione NOT NULL. Il DB_TABLE check passava (la tabella esisteva), ma
 // le colonne erano sbagliate. Critical.
 // ────────────────────────────────────────────────────────────────────────────
-const DB_COLUMN_FIELDS: Readonly<Record<string, { tableField: string; columnFields: readonly string[] }>> = {
+const DB_COLUMN_FIELDS: Readonly<
+  Record<string, { tableField: string; columnFields: readonly string[] }>
+> = {
   db_insert: { tableField: 'table', columnFields: ['rowJson'] },
   db_update: { tableField: 'table', columnFields: ['whereJson', 'patchJson'] },
   db_delete: { tableField: 'table', columnFields: ['whereJson'] },
@@ -790,7 +934,9 @@ function extractColumnKeys(raw: unknown): string[] | null {
     obj = safeParseJson(trimmed);
   }
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
-  return Object.keys(obj as Record<string, unknown>).filter((k) => k.length > 0 && !k.includes('{{'));
+  return Object.keys(obj as Record<string, unknown>).filter(
+    (k) => k.length > 0 && !k.includes('{{'),
+  );
 }
 
 function checkDbColumnNotInSchema(input: QualityGateInput): QualityIssue[] {
@@ -808,10 +954,19 @@ function checkDbColumnNotInSchema(input: QualityGateInput): QualityIssue[] {
   for (const node of input.nodes) {
     const spec = DB_COLUMN_FIELDS[node.defId];
     if (!spec) continue;
-    const dbId = typeof node.config.databaseId === 'string' ? (node.config.databaseId) : '';
-    const table = typeof node.config[spec.tableField] === 'string' ? (node.config[spec.tableField] as string) : '';
+    const dbId = typeof node.config.databaseId === 'string' ? node.config.databaseId : '';
+    const table =
+      typeof node.config[spec.tableField] === 'string'
+        ? (node.config[spec.tableField] as string)
+        : '';
     if (!dbId || !table) continue;
-    if (dbId === '__USE_PICKER__' || table === '__USE_PICKER__' || dbId.includes('{{') || table.includes('{{')) continue;
+    if (
+      dbId === '__USE_PICKER__' ||
+      table === '__USE_PICKER__' ||
+      dbId.includes('{{') ||
+      table.includes('{{')
+    )
+      continue;
     const cols = columnsByDbTable.get(`${dbId}::${table}`);
     if (!cols || cols.size === 0) continue; // tabella non nel column-map → skip (table check copre l'esistenza)
     for (const field of spec.columnFields) {
@@ -826,7 +981,9 @@ function checkDbColumnNotInSchema(input: QualityGateInput): QualityIssue[] {
         field,
         message:
           `Nodo "${node.id}" (${node.defId}) campo "${field}" referenzia colonne ${unknown.map((c) => `"${c}"`).join(', ')} ` +
-          `che NON esistono nella tabella "${table}". Colonne disponibili: [${Array.from(cols).map((c) => `"${c}"`).join(', ')}]. ` +
+          `che NON esistono nella tabella "${table}". Colonne disponibili: [${Array.from(cols)
+            .map((c) => `"${c}"`)
+            .join(', ')}]. ` +
           `A runtime: errore "no such column" (+ eventuali NOT NULL violate). Usa SOLO le colonne esistenti, ` +
           `oppure aggiungile prima via create_table/add_column.`,
       });
@@ -842,29 +999,53 @@ function checkDbColumnNotInSchema(input: QualityGateInput): QualityIssue[] {
 // already clears il field se è obsoleto.
 // ────────────────────────────────────────────────────────────────────────────
 const OBSOLETE_MODELS_BY_PROVIDER: ReadonlyMap<string, ReadonlySet<string>> = new Map([
-  ['openai', new Set([
-    'gpt-3.5-turbo-0301', 'gpt-3.5-turbo-0613', 'gpt-3.5-turbo-16k-0613',
-    'gpt-4-0314', 'gpt-4-0613', 'gpt-4-32k-0314', 'gpt-4-32k-0613',
-    'text-davinci-003', 'text-davinci-002', 'code-davinci-002',
-  ])],
-  ['anthropic', new Set([
-    'claude-instant-1', 'claude-instant-1.2',
-    'claude-1', 'claude-1.3', 'claude-2', 'claude-2.0', 'claude-2.1',
-    'claude-3-haiku-20240307', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229',
-  ])],
-  ['gemini', new Set([
-    'gemini-pro', 'gemini-pro-vision', 'gemini-1.0-pro',
-  ])],
-  ['mistral', new Set([
-    'mistral-tiny', 'mistral-small', 'mistral-medium',  // unversioned (without -latest) deprecated 2024
-  ])],
+  [
+    'openai',
+    new Set([
+      'gpt-3.5-turbo-0301',
+      'gpt-3.5-turbo-0613',
+      'gpt-3.5-turbo-16k-0613',
+      'gpt-4-0314',
+      'gpt-4-0613',
+      'gpt-4-32k-0314',
+      'gpt-4-32k-0613',
+      'text-davinci-003',
+      'text-davinci-002',
+      'code-davinci-002',
+    ]),
+  ],
+  [
+    'anthropic',
+    new Set([
+      'claude-instant-1',
+      'claude-instant-1.2',
+      'claude-1',
+      'claude-1.3',
+      'claude-2',
+      'claude-2.0',
+      'claude-2.1',
+      'claude-3-haiku-20240307',
+      'claude-3-opus-20240229',
+      'claude-3-sonnet-20240229',
+    ]),
+  ],
+  ['gemini', new Set(['gemini-pro', 'gemini-pro-vision', 'gemini-1.0-pro'])],
+  [
+    'mistral',
+    new Set([
+      'mistral-tiny',
+      'mistral-small',
+      'mistral-medium', // unversioned (without -latest) deprecated 2024
+    ]),
+  ],
 ]);
 function checkObsoleteModel(input: QualityGateInput): QualityIssue[] {
   const issues: QualityIssue[] = [];
   for (const node of input.nodes) {
     if (!node.defId.startsWith('agent_')) continue;
-    const provider = typeof node.config.provider === 'string' ? (node.config.provider).toLowerCase() : '';
-    const model = typeof node.config.model === 'string' ? (node.config.model).trim() : '';
+    const provider =
+      typeof node.config.provider === 'string' ? node.config.provider.toLowerCase() : '';
+    const model = typeof node.config.model === 'string' ? node.config.model.trim() : '';
     if (!provider || !model) continue;
     const obsolete = OBSOLETE_MODELS_BY_PROVIDER.get(provider);
     if (!obsolete?.has(model)) continue;
@@ -909,12 +1090,15 @@ export function runQualityGate(input: QualityGateInput): QualityGateResult {
   });
   const shouldReject = issues.some((i) => i.severity === 'critical');
   if (issues.length > 0) {
-    logger.warn({
-      total: issues.length,
-      critical: issues.filter((i) => i.severity === 'critical').length,
-      medium: issues.filter((i) => i.severity === 'medium').length,
-      codes: Array.from(new Set(issues.map((i) => i.code))),
-    }, '[quality-gate] issues detected');
+    logger.warn(
+      {
+        total: issues.length,
+        critical: issues.filter((i) => i.severity === 'critical').length,
+        medium: issues.filter((i) => i.severity === 'medium').length,
+        codes: Array.from(new Set(issues.map((i) => i.code))),
+      },
+      '[quality-gate] issues detected',
+    );
   }
   return { ok: !shouldReject, issues, shouldReject };
 }

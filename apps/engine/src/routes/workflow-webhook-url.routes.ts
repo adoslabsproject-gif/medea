@@ -46,8 +46,14 @@ function findWebhookNode(workflow: Workflow): CanvasNode | undefined {
  * l'auth (derivato); per `header-token` è confrontato con authSecret; per
  * basic/hmac/jwt l'auth avviene via header e il segmento è uno slug cosmetico.
  */
-function tokenSegment(workflowId: string, node: CanvasNode): { segment: string | null; authMode: string } {
-  const authMode = typeof node.config.authMode === 'string' && node.config.authMode !== '' ? node.config.authMode : 'none';
+function tokenSegment(
+  workflowId: string,
+  node: CanvasNode,
+): { segment: string | null; authMode: string } {
+  const authMode =
+    typeof node.config.authMode === 'string' && node.config.authMode !== ''
+      ? node.config.authMode
+      : 'none';
   if (authMode === 'none') {
     const derived = deriveDefaultWebhookToken(workflowId);
     return { segment: derived === '' ? null : derived, authMode };
@@ -82,17 +88,27 @@ export function registerWorkflowWebhookUrlRoutes(app: Hono, service: WorkflowSer
       // authMode none senza secret container (dev) o header-token senza
       // authSecret configurato: nessun URL VERO esiste — fail-visible, mai
       // un placeholder copiabile spacciato per token.
-      return c.json({ error: authMode === 'none'
-        ? 'SSO secret non configurato: il token webhook non è derivabile'
-        : 'authSecret non configurato per header-token' }, 503);
+      return c.json(
+        {
+          error:
+            authMode === 'none'
+              ? 'SSO secret non configurato: il token webhook non è derivabile'
+              : 'authSecret non configurato per header-token',
+        },
+        503,
+      );
     }
 
-    const rawCustomPath = typeof node.config.customPath === 'string' ? node.config.customPath.trim().replace(/^\/+|\/+$/gu, '') : '';
+    const rawCustomPath =
+      typeof node.config.customPath === 'string'
+        ? node.config.customPath.trim().replace(/^\/+|\/+$/gu, '')
+        : '';
     const customPath = rawCustomPath === '' ? null : rawCustomPath;
 
-    const path = customPath !== null
-      ? `/webhooks/c/${customPath}/${segment}`
-      : `/webhooks/${workflow.id}/${segment}`;
+    const path =
+      customPath !== null
+        ? `/webhooks/c/${customPath}/${segment}`
+        : `/webhooks/${workflow.id}/${segment}`;
 
     const base = loadConfig().MEDEA_PUBLIC_BASE_URL;
     const url = base ? `${base.replace(/\/+$/u, '')}${path}` : null;
@@ -101,9 +117,8 @@ export function registerWorkflowWebhookUrlRoutes(app: Hono, service: WorkflowSer
     // solo se il customPath rispetta il charset dello schema ref.
     let ref: string | null = null;
     if (authMode === 'none') {
-      const candidate = customPath !== null
-        ? { workflowId: workflow.id, customPath }
-        : { workflowId: workflow.id };
+      const candidate =
+        customPath !== null ? { workflowId: workflow.id, customPath } : { workflowId: workflow.id };
       if (WebhookRefSchema.safeParse(candidate).success) ref = buildWebhookRef(candidate);
     }
 

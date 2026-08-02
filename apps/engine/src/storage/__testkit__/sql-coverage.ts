@@ -40,7 +40,13 @@ const stripQuotes = (t: string): string => t.replace(/^[`"]|[`"]$/g, '');
  */
 export function collectTsFiles(dir: string, acc: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
-    if (name === 'node_modules' || name === 'dist' || name === '__tests__' || name === '__testkit__') continue;
+    if (
+      name === 'node_modules' ||
+      name === 'dist' ||
+      name === '__tests__' ||
+      name === '__testkit__'
+    )
+      continue;
     const full = join(dir, name);
     if (statSync(full).isDirectory()) {
       collectTsFiles(full, acc);
@@ -81,7 +87,13 @@ export function extractCreateTables(src: string): string[] {
     for (let i = open; i < src.length; i += 1) {
       const ch = src[i];
       if (ch === '(') depth += 1;
-      else if (ch === ')') { depth -= 1; if (depth === 0) { end = i; break; } }
+      else if (ch === ')') {
+        depth -= 1;
+        if (depth === 0) {
+          end = i;
+          break;
+        }
+      }
     }
     if (end !== -1) {
       const stmt = src.slice(m.index, end + 1);
@@ -98,7 +110,9 @@ export function extractCreateTables(src: string): string[] {
  */
 export function extractAddColumns(src: string): { table: string; col: string }[] {
   const out: { table: string; col: string }[] = [];
-  for (const m of src.matchAll(/ALTER TABLE\s+[`"]?([\w.]+)[`"]?\s+ADD COLUMN\s+[`"]?(\w+)[`"]?/gi)) {
+  for (const m of src.matchAll(
+    /ALTER TABLE\s+[`"]?([\w.]+)[`"]?\s+ADD COLUMN\s+[`"]?(\w+)[`"]?/gi,
+  )) {
     if (!m[0].includes('${') && m[1] && m[2]) out.push({ table: m[1], col: m[2] });
   }
   return out;
@@ -118,15 +132,17 @@ export function extractAddColumns(src: string): { table: string; col: string }[]
  * rende il gate anti-erosione anziché vacuo.
  */
 function neutralizeFragments(sql: string): string {
-  return sql
-    .replace(/\bIN\s*\(\s*\$\{[^}]*\}\s*\)/gi, 'IN (?)')
-    .replace(/\bVALUES\s*\(\s*\$\{[^}]*\}\s*\)/gi, 'VALUES (?)')
-    .replace(/\bWHERE\s+\$\{[^}]*\}/gi, 'WHERE 1=1')
-    // Clausola trailing (whereSql opzionale): SOLO se seguita da ORDER/LIMIT/
-    // GROUP o fine query — non un `${}` in mezzo ad altre clausole.
-    .replace(/\s+\$\{[^}]*\}(?=\s+ORDER\b|\s+LIMIT\b|\s+GROUP\b|\s*$)/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return (
+    sql
+      .replace(/\bIN\s*\(\s*\$\{[^}]*\}\s*\)/gi, 'IN (?)')
+      .replace(/\bVALUES\s*\(\s*\$\{[^}]*\}\s*\)/gi, 'VALUES (?)')
+      .replace(/\bWHERE\s+\$\{[^}]*\}/gi, 'WHERE 1=1')
+      // Clausola trailing (whereSql opzionale): SOLO se seguita da ORDER/LIMIT/
+      // GROUP o fine query — non un `${}` in mezzo ad altre clausole.
+      .replace(/\s+\$\{[^}]*\}(?=\s+ORDER\b|\s+LIMIT\b|\s+GROUP\b|\s*$)/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  );
 }
 
 /**
@@ -136,7 +152,10 @@ function neutralizeFragments(sql: string): string {
  * @param allowlistTables  tabelle reali su cui espandere le query a nome-tabella
  *   dinamico (`FROM ${table}` / `INTO ${table}`), tipicamente `EXPORT_TABLES`.
  */
-export function resolveDynamicSql(rawSql: string, allowlistTables: readonly string[]): DynamicResolution {
+export function resolveDynamicSql(
+  rawSql: string,
+  allowlistTables: readonly string[],
+): DynamicResolution {
   const sql = rawSql.replace(/\s+/g, ' ').trim();
 
   // 1. PRAGMA introspettivo: `PRAGMA table_info(x)` su tabella inesistente NON
@@ -162,7 +181,11 @@ export function resolveDynamicSql(rawSql: string, allowlistTables: readonly stri
   const ins = /^INSERT(?:\s+OR\s+\w+)?\s+INTO\s+(\$\{[^}]*\}|[`"]?[\w.]+[`"]?)/i.exec(sql);
   if (ins?.[1]) {
     const targets = hasPlaceholder(ins[1]) ? allowlistTables : [stripQuotes(ins[1])];
-    return { kind: 'resolved', variants: targets.map((t) => `SELECT 1 FROM ${t} LIMIT 0`), note: 'INSERT→esistenza tabella' };
+    return {
+      kind: 'resolved',
+      variants: targets.map((t) => `SELECT 1 FROM ${t} LIMIT 0`),
+      note: 'INSERT→esistenza tabella',
+    };
   }
 
   // 4. SELECT/DELETE con TABELLA dinamica (`FROM ${table}`): espandi su OGNI tabella
@@ -182,7 +205,11 @@ export function resolveDynamicSql(rawSql: string, allowlistTables: readonly stri
   // 5. Tabella STATICA, frammenti solo in WHERE/IN/clausola-trailing: neutralizza.
   const probe = neutralizeFragments(sql);
   if (!hasPlaceholder(probe)) {
-    return { kind: 'resolved', variants: [probe], note: 'frammenti neutralizzati (WHERE/IN/clausola)' };
+    return {
+      kind: 'resolved',
+      variants: [probe],
+      note: 'frammenti neutralizzati (WHERE/IN/clausola)',
+    };
   }
 
   // 6. Forma non riconosciuta: il gate la segnala (no skip silenzioso).

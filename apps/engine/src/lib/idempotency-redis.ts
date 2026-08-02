@@ -62,8 +62,11 @@ export class RedisIdempotencyStore implements IdempotencyStore {
     const base: AcquireResult = { acquired: false };
     if (previousAt && Number.isFinite(previousAt)) base.previousAt = previousAt;
     if (outputStr) {
-      try { base.previousOutput = JSON.parse(outputStr) as unknown; }
-      catch { /* output corrotto — restituisci solo previousAt */ }
+      try {
+        base.previousOutput = JSON.parse(outputStr) as unknown;
+      } catch {
+        /* output corrotto — restituisci solo previousAt */
+      }
     }
     return base;
   }
@@ -75,8 +78,11 @@ export class RedisIdempotencyStore implements IdempotencyStore {
     const residualMs = await this.redis.pttl(lockKey);
     if (residualMs <= 0) return; // lock gia\` scaduto/rilasciato — no-op
     let payload: string;
-    try { payload = JSON.stringify(output); }
-    catch { payload = JSON.stringify({ __unserializable: String(output) }); }
+    try {
+      payload = JSON.stringify(output);
+    } catch {
+      payload = JSON.stringify({ __unserializable: String(output) });
+    }
     await this.redis.set(outputKey, payload, 'PX', residualMs);
   }
 
@@ -96,7 +102,9 @@ export class RedisIdempotencyStore implements IdempotencyStore {
     return new Promise<number>((resolve, reject) => {
       let count = 0;
       const stream = this.redis.scanStream({ match: pattern, count: 100 });
-      stream.on('data', (keys: string[]) => { count += keys.length; });
+      stream.on('data', (keys: string[]) => {
+        count += keys.length;
+      });
       stream.on('end', () => resolve(count));
       stream.on('error', (err) => reject(err));
     });
@@ -140,7 +148,11 @@ export async function createRedisIdempotencyStoreIfEnabled(): Promise<RedisStore
   const dedicatedUrl = process.env.MEDEA_IDEMPOTENCY_REDIS_URL;
   if (dedicatedUrl) {
     const conn = await createManagedConnection(dedicatedUrl);
-    return { store: new RedisIdempotencyStore({ redis: conn }), source: 'dedicated', redisUrl: dedicatedUrl };
+    return {
+      store: new RedisIdempotencyStore({ redis: conn }),
+      source: 'dedicated',
+      redisUrl: dedicatedUrl,
+    };
   }
 
   const isQueueMode = (process.env.MEDEA_QUEUE_MODE ?? '').toLowerCase() === 'redis';
@@ -150,7 +162,11 @@ export async function createRedisIdempotencyStoreIfEnabled(): Promise<RedisStore
     // Riusa la connection BullMQ — import lazy per evitare dipendenza ciclica.
     const { getQueueConnection } = await import('@/services/queue.service.js');
     try {
-      return { store: new RedisIdempotencyStore({ redis: getQueueConnection() }), source: 'bullmq', redisUrl: sharedUrl };
+      return {
+        store: new RedisIdempotencyStore({ redis: getQueueConnection() }),
+        source: 'bullmq',
+        redisUrl: sharedUrl,
+      };
     } catch {
       // BullMQ non disponibile — cade nel branch standalone sotto.
     }
@@ -158,7 +174,11 @@ export async function createRedisIdempotencyStoreIfEnabled(): Promise<RedisStore
 
   if (sharedUrl) {
     const conn = await createManagedConnection(sharedUrl);
-    return { store: new RedisIdempotencyStore({ redis: conn }), source: 'standalone', redisUrl: sharedUrl };
+    return {
+      store: new RedisIdempotencyStore({ redis: conn }),
+      source: 'standalone',
+      redisUrl: sharedUrl,
+    };
   }
 
   return null;
@@ -200,7 +220,10 @@ async function createManagedConnection(url: string): Promise<IORedis> {
  */
 export async function closeManagedRedisConnection(): Promise<void> {
   if (!_managedConnection) return;
-  try { await _managedConnection.quit(); }
-  catch { _managedConnection.disconnect(); }
+  try {
+    await _managedConnection.quit();
+  } catch {
+    _managedConnection.disconnect();
+  }
   _managedConnection = null;
 }

@@ -164,7 +164,12 @@ export function resetDefaultIdempotencyStore(): void {
  * usa la signature legacy `makeIdempotencyKeyLegacy` (deprecata). Il middleware
  * `withIdempotency` v3.0 setta automaticamente tenantId dal ctx.
  */
-export function makeIdempotencyKey(tenantId: string, runId: string, nodeId: string, ...subKeys: string[]): string {
+export function makeIdempotencyKey(
+  tenantId: string,
+  runId: string,
+  nodeId: string,
+  ...subKeys: string[]
+): string {
   return [tenantId, runId, nodeId, ...subKeys].join(':');
 }
 
@@ -174,6 +179,10 @@ export function makeIdempotencyKey(tenantId: string, runId: string, nodeId: stri
  * store condiviso (multi-pod o multi-tenant) usa `makeIdempotencyKey` con
  * tenantId esplicito. Sostituito automaticamente nei middleware v3.0.
  */
-export function makeIdempotencyKeyLegacy(runId: string, nodeId: string, ...subKeys: string[]): string {
+export function makeIdempotencyKeyLegacy(
+  runId: string,
+  nodeId: string,
+  ...subKeys: string[]
+): string {
   return [runId, nodeId, ...subKeys].join(':');
 }

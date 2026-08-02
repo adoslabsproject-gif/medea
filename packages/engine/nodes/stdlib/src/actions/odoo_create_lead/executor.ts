@@ -24,8 +24,20 @@ import {
 import { makeSafeFetchOdooTransport } from '../../lib/odoo/safe-fetch-transport.js';
 import { OdooCreateLeadConfigSchema, type OdooCreateLeadConfig } from './schema.js';
 
-const RETURN_FIELDS = ['id', 'name', 'email_from', 'phone', 'partner_id', 'tag_ids',
-  'user_id', 'team_id', 'expected_revenue', 'probability', 'stage_id', 'create_date'];
+const RETURN_FIELDS = [
+  'id',
+  'name',
+  'email_from',
+  'phone',
+  'partner_id',
+  'tag_ids',
+  'user_id',
+  'team_id',
+  'expected_revenue',
+  'probability',
+  'stage_id',
+  'create_date',
+];
 
 export const odooCreateLeadExecutor: NodeExecutor = async (rawConfig, _input, context) => {
   const startedAt = Date.now();
@@ -35,8 +47,10 @@ export const odooCreateLeadExecutor: NodeExecutor = async (rawConfig, _input, co
   if (context.abortSignal?.aborted) throw new AbortedError();
 
   const auth: OdooAuth = {
-    baseUrl: cfg.baseUrl, database: cfg.database,
-    login: cfg.login, password: cfg.password,
+    baseUrl: cfg.baseUrl,
+    database: cfg.database,
+    login: cfg.login,
+    password: cfg.password,
   };
   const transport = makeSafeFetchOdooTransport(cfg.followRedirects);
   const signal = context.abortSignal;
@@ -54,19 +68,34 @@ export const odooCreateLeadExecutor: NodeExecutor = async (rawConfig, _input, co
   const tagIds: number[] = [];
   if (cfg.tagNames && cfg.tagNames.length > 0) {
     for (const name of cfg.tagNames) {
-      const existing = await executeKw(auth, uid, {
-        model: 'crm.tag', method: 'search_read',
-        positional: [[['name', '=', name]]],
-        kwargs: { fields: ['id'], limit: 1 },
-      }, transport, fetchOpts) as { id: number }[];
+      const existing = (await executeKw(
+        auth,
+        uid,
+        {
+          model: 'crm.tag',
+          method: 'search_read',
+          positional: [[['name', '=', name]]],
+          kwargs: { fields: ['id'], limit: 1 },
+        },
+        transport,
+        fetchOpts,
+      )) as { id: number }[];
       if (existing.length > 0) {
         tagIds.push(existing[0]!.id);
         continue;
       }
-      const created = await executeKw(auth, uid, {
-        model: 'crm.tag', method: 'name_create',
-        positional: [name], kwargs: {},
-      }, transport, fetchOpts) as [number, string];
+      const created = (await executeKw(
+        auth,
+        uid,
+        {
+          model: 'crm.tag',
+          method: 'name_create',
+          positional: [name],
+          kwargs: {},
+        },
+        transport,
+        fetchOpts,
+      )) as [number, string];
       if (Array.isArray(created) && typeof created[0] === 'number') {
         tagIds.push(created[0]);
       }
@@ -75,14 +104,31 @@ export const odooCreateLeadExecutor: NodeExecutor = async (rawConfig, _input, co
 
   const values = buildValues(cfg, tagIds);
 
-  const newId = await executeKw(auth, uid, {
-    model: cfg.model, method: 'create', positional: [values], kwargs: {},
-  }, transport, fetchOpts) as number;
+  const newId = (await executeKw(
+    auth,
+    uid,
+    {
+      model: cfg.model,
+      method: 'create',
+      positional: [values],
+      kwargs: {},
+    },
+    transport,
+    fetchOpts,
+  )) as number;
 
-  const created = await executeKw(auth, uid, {
-    model: cfg.model, method: 'read',
-    positional: [[newId]], kwargs: { fields: RETURN_FIELDS },
-  }, transport, fetchOpts) as Record<string, OdooValue>[];
+  const created = (await executeKw(
+    auth,
+    uid,
+    {
+      model: cfg.model,
+      method: 'read',
+      positional: [[newId]],
+      kwargs: { fields: RETURN_FIELDS },
+    },
+    transport,
+    fetchOpts,
+  )) as Record<string, OdooValue>[];
 
   return {
     output: {
@@ -99,7 +145,10 @@ export const odooCreateLeadExecutor: NodeExecutor = async (rawConfig, _input, co
 // Helpers
 // ────────────────────────────────────────────────────────────────────────────
 
-export function buildValues(cfg: OdooCreateLeadConfig, tagIds: number[]): Record<string, OdooValue> {
+export function buildValues(
+  cfg: OdooCreateLeadConfig,
+  tagIds: number[],
+): Record<string, OdooValue> {
   const v: Record<string, OdooValue> = { name: cfg.name };
   if (cfg.emailFrom) v.email_from = cfg.emailFrom;
   if (cfg.phone) v.phone = cfg.phone;

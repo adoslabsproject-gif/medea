@@ -48,9 +48,7 @@ describe('N19 — routes/janitor.ts: dsl-rules mutation routes gated by requireR
 
   it('REGRESSION: GET /dsl-rules NOT gated (lower roles can still list)', () => {
     // List remains open to viewer+ — only mutations require owner.
-    expect(routeSource).toMatch(
-      /app\.get\(\s*['"]\/dsl-rules['"]\s*,\s*async/,
-    );
+    expect(routeSource).toMatch(/app\.get\(\s*['"]\/dsl-rules['"]\s*,\s*async/);
   });
 
   it('REGRESSION: rule run + cycle still ungated (operator/editor can trigger ad-hoc runs)', () => {
@@ -78,7 +76,9 @@ describe('N19 — runDslDetect passes readOnly:true to executeRaw', () => {
   });
 
   it('rowLimit ancora presente (no regressione SELECT cap)', () => {
-    expect(usecaseSource).toMatch(/rowLimit:\s*ctx\.maxRows[^}]*readOnly:\s*true|readOnly:\s*true[^}]*rowLimit:\s*ctx\.maxRows/);
+    expect(usecaseSource).toMatch(
+      /rowLimit:\s*ctx\.maxRows[^}]*readOnly:\s*true|readOnly:\s*true[^}]*rowLimit:\s*ctx\.maxRows/,
+    );
   });
 });
 
@@ -122,9 +122,11 @@ beforeAll(() => {
   // (comportamento pinnato sotto): creiamo un DB DbStudio vero per tenant.
   for (const t of [T_A, T_B]) {
     const db = dbStudio.create({
-      tenantId: t, name: 'main',
+      tenantId: t,
+      name: 'main',
       connection: { engine: 'sqlite', embedded: true },
-      tables: [], relations: [],
+      tables: [],
+      relations: [],
     } as never);
     dbIds.set(t, db.id);
   }
@@ -132,23 +134,40 @@ beforeAll(() => {
     dbStudio,
   });
   app = new Hono();
-  app.use('*', async (c, next) => { c.set('auth', authCtx); await next(); });
+  app.use('*', async (c, next) => {
+    c.set('auth', authCtx);
+    await next();
+  });
   app.route('/api/v1/janitor', createJanitorRoutes(runtime));
 });
 
 afterAll(() => {
-  const sqlite = getDatabase().sqlite as unknown as { prepare: (s: string) => { run: (...p: unknown[]) => unknown } };
-  for (const table of ['janitor_dsl_rules', 'janitor_rule_configs', 'janitor_run_log', 'db_studio_databases']) {
+  const sqlite = getDatabase().sqlite as unknown as {
+    prepare: (s: string) => { run: (...p: unknown[]) => unknown };
+  };
+  for (const table of [
+    'janitor_dsl_rules',
+    'janitor_rule_configs',
+    'janitor_run_log',
+    'db_studio_databases',
+  ]) {
     sqlite.prepare(`DELETE FROM ${table} WHERE tenant_id LIKE 'test-jan-%'`).run();
   }
 });
 
-const req = (method: string, path: string, body?: unknown, headers: Record<string, string> = {}): Promise<Response> =>
-  Promise.resolve(app.request(`/api/v1/janitor${path}`, {
-    method,
-    headers: { 'content-type': 'application/json', ...headers },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  }));
+const req = (
+  method: string,
+  path: string,
+  body?: unknown,
+  headers: Record<string, string> = {},
+): Promise<Response> =>
+  Promise.resolve(
+    app.request(`/api/v1/janitor${path}`, {
+      method,
+      headers: { 'content-type': 'application/json', ...headers },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    }),
+  );
 
 /** Ref canonico per-tenant (forma `tenant:<tenantId>:<dbId>` del dominio). */
 const refFor = (tenantId: string): string => `tenant:${tenantId}:${dbIds.get(tenantId) ?? 'main'}`;
@@ -163,7 +182,11 @@ const dslFor = (tenantId: string): Record<string, unknown> => ({
 describeE2E('sicurezza — auth e RBAC (full request path)', () => {
   it('senza auth → MAI 200 (getTenantId fail-loud, niente fallback silenzioso a default)', async () => {
     authCtx = null;
-    for (const [method, path] of [['GET', '/rules'], ['GET', '/dsl-rules'], ['GET', '/locks']] as const) {
+    for (const [method, path] of [
+      ['GET', '/rules'],
+      ['GET', '/dsl-rules'],
+      ['GET', '/locks'],
+    ] as const) {
       const res = await req(method, path);
       expect(res.status, `${method} ${path} senza auth`).not.toBe(200);
     }
@@ -175,11 +198,18 @@ describeE2E('sicurezza — auth e RBAC (full request path)', () => {
     asUser(T_A, 'operator');
     expect((await req('POST', '/dsl-rules', dslFor(T_A))).status).toBe(403);
     asUser(T_A, 'owner');
-    expect((await req('POST', '/dsl-rules', { ...dslFor(T_A), title: 'rbac-owner-ok' })).status).toBe(201);
+    expect(
+      (await req('POST', '/dsl-rules', { ...dslFor(T_A), title: 'rbac-owner-ok' })).status,
+    ).toBe(201);
   });
 
   it("ANTI-REGRESSIONE fail-closed 28096ac6: ruolo IGNOTO ('admin' legacy) → 403, NON pass-through", async () => {
-    authCtx = { userId: 'u-x', tenantId: T_A, email: 'x@test.it', role: 'admin' as AuthContext['role'] };
+    authCtx = {
+      userId: 'u-x',
+      tenantId: T_A,
+      email: 'x@test.it',
+      role: 'admin' as AuthContext['role'],
+    };
     expect((await req('POST', '/dsl-rules', dslFor(T_A))).status).toBe(403);
     expect((await req('DELETE', '/dsl-rules/qualunque')).status).toBe(403);
   });
@@ -189,14 +219,14 @@ describeE2E('sicurezza — auth e RBAC (full request path)', () => {
     await req('POST', '/dsl-rules', { ...dslFor(T_A), title: 'spoof-target-A' });
     asUser(T_B, 'owner');
     const res = await req('GET', '/dsl-rules', undefined, { 'x-tenant-id': T_A });
-    const data = await res.json() as { rules: { title: string }[] };
+    const data = (await res.json()) as { rules: { title: string }[] };
     expect(data.rules.some((r) => r.title === 'spoof-target-A')).toBe(false);
   });
 
   it('superadmin + x-tenant-id → override LEGITTIMO (admin dashboard cross-tenant)', async () => {
     asUser('tenant-admin', 'superadmin');
     const res = await req('GET', '/dsl-rules', undefined, { 'x-tenant-id': T_A });
-    const data = await res.json() as { rules: { title: string }[] };
+    const data = (await res.json()) as { rules: { title: string }[] };
     expect(data.rules.some((r) => r.title === 'spoof-target-A')).toBe(true);
   });
 });
@@ -204,17 +234,21 @@ describeE2E('sicurezza — auth e RBAC (full request path)', () => {
 describeE2E('isolamento tenant sulle DSL rules (SQLite reale)', () => {
   it('la rule di A non è visibile, modificabile né cancellabile da B — e resta INTATTA', async () => {
     asUser(T_A, 'owner');
-    const created = await (await req('POST', '/dsl-rules', { ...dslFor(T_A), title: 'isolata-di-A' })).json() as { rule: { id: string } };
+    const created = (await (
+      await req('POST', '/dsl-rules', { ...dslFor(T_A), title: 'isolata-di-A' })
+    ).json()) as { rule: { id: string } };
     const ruleId = created.rule.id;
 
     asUser(T_B, 'owner');
-    const list = await (await req('GET', '/dsl-rules')).json() as { rules: { id: string }[] };
+    const list = (await (await req('GET', '/dsl-rules')).json()) as { rules: { id: string }[] };
     expect(list.rules.some((r) => r.id === ruleId)).toBe(false);
     expect((await req('PATCH', `/dsl-rules/${ruleId}`, { title: 'hijack' })).status).toBe(400);
     expect((await req('DELETE', `/dsl-rules/${ruleId}`)).status).toBe(400);
 
     asUser(T_A, 'owner');
-    const listA = await (await req('GET', '/dsl-rules')).json() as { rules: { id: string; title: string }[] };
+    const listA = (await (await req('GET', '/dsl-rules')).json()) as {
+      rules: { id: string; title: string }[];
+    };
     expect(listA.rules.find((r) => r.id === ruleId)?.title).toBe('isolata-di-A');
   });
 });
@@ -231,9 +265,13 @@ describeE2E('contratto ingest↔retrieval su DB reale', () => {
       tags: ['orders', 'critical'],
       defaultSeverity: 'critical' as const,
     };
-    const created = await (await req('POST', '/dsl-rules', payload)).json() as { rule: Record<string, unknown> };
+    const created = (await (await req('POST', '/dsl-rules', payload)).json()) as {
+      rule: Record<string, unknown>;
+    };
     asUser(T_A, 'viewer'); // la LIST è aperta ai ruoli bassi (debugging quotidiano)
-    const list = await (await req('GET', '/dsl-rules')).json() as { rules: Record<string, unknown>[] };
+    const list = (await (await req('GET', '/dsl-rules')).json()) as {
+      rules: Record<string, unknown>[];
+    };
     const found = list.rules.find((r) => r.id === created.rule.id);
     expect(found).toMatchObject({
       title: 'roundtrip-completo',
@@ -247,19 +285,28 @@ describeE2E('contratto ingest↔retrieval su DB reale', () => {
 
   it('PATCH /rules/:builtin persiste la config e GET riflette isPersistedConfig; reset torna ai default', async () => {
     asUser(T_A, 'owner');
-    const all = await (await req('GET', '/rules')).json() as { rules: { rule: { id: string }; isPersistedConfig: boolean }[] };
+    const all = (await (await req('GET', '/rules')).json()) as {
+      rules: { rule: { id: string }; isPersistedConfig: boolean }[];
+    };
     expect(all.rules.length).toBeGreaterThan(0); // registry builtin caricato dal factory
     const ruleId = all.rules[0]!.rule.id;
     expect(all.rules[0]!.isPersistedConfig).toBe(false); // tenant vergine: default
 
-    expect((await req('PATCH', `/rules/${ruleId}`, { enabled: false, maxRowsPerRun: 7 })).status).toBe(200);
-    const detail = await (await req('GET', `/rules/${ruleId}`)).json() as { config: { enabled: boolean; maxRowsPerRun: number }; isPersistedConfig: boolean };
+    expect(
+      (await req('PATCH', `/rules/${ruleId}`, { enabled: false, maxRowsPerRun: 7 })).status,
+    ).toBe(200);
+    const detail = (await (await req('GET', `/rules/${ruleId}`)).json()) as {
+      config: { enabled: boolean; maxRowsPerRun: number };
+      isPersistedConfig: boolean;
+    };
     expect(detail.isPersistedConfig).toBe(true);
     expect(detail.config.enabled).toBe(false);
     expect(detail.config.maxRowsPerRun).toBe(7);
 
     expect((await req('POST', `/rules/${ruleId}/reset`)).status).toBe(200);
-    const after = await (await req('GET', `/rules/${ruleId}`)).json() as { isPersistedConfig: boolean };
+    const after = (await (await req('GET', `/rules/${ruleId}`)).json()) as {
+      isPersistedConfig: boolean;
+    };
     expect(after.isPersistedConfig).toBe(false);
   });
 
@@ -271,9 +318,9 @@ describeE2E('contratto ingest↔retrieval su DB reale', () => {
 
   it('GET /history e /history/trend su tenant vergine → shape contrattuale vuota (no 500)', async () => {
     asUser(T_B, 'viewer');
-    const h = await (await req('GET', '/history')).json() as { reports: unknown[] };
+    const h = (await (await req('GET', '/history')).json()) as { reports: unknown[] };
     expect(Array.isArray(h.reports)).toBe(true);
-    const t = await (await req('GET', '/history/trend?days=7')).json() as { buckets: unknown[] };
+    const t = (await (await req('GET', '/history/trend?days=7')).json()) as { buckets: unknown[] };
     expect(Array.isArray(t.buckets)).toBe(true);
   });
 });
@@ -282,14 +329,37 @@ describeE2E('guardrail distruttivi e validazioni', () => {
   it("purge quarantena: confirmationToken DEVE essere il literal 'DELETE-PERMANENT' (typo/assente → 400)", async () => {
     asUser(T_A, 'owner');
     expect((await req('DELETE', '/quarantine/1', { dataSourceRef: refFor(T_A) })).status).toBe(400);
-    expect((await req('DELETE', '/quarantine/1', { confirmationToken: 'delete-permanent', dataSourceRef: refFor(T_A) })).status).toBe(400);
-    expect((await req('DELETE', '/quarantine/1', { confirmationToken: 'DELETE', dataSourceRef: refFor(T_A) })).status).toBe(400);
+    expect(
+      (
+        await req('DELETE', '/quarantine/1', {
+          confirmationToken: 'delete-permanent',
+          dataSourceRef: refFor(T_A),
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await req('DELETE', '/quarantine/1', {
+          confirmationToken: 'DELETE',
+          dataSourceRef: refFor(T_A),
+        })
+      ).status,
+    ).toBe(400);
   });
 
   it('quarantine id NON numerico → 400 sia su restore che su purge (mai NaN nel gateway)', async () => {
     asUser(T_A, 'owner');
-    expect((await req('DELETE', '/quarantine/abc', { confirmationToken: 'DELETE-PERMANENT', dataSourceRef: refFor(T_A) })).status).toBe(400);
-    expect((await req('POST', '/quarantine/abc/restore', { dataSourceRef: refFor(T_A) })).status).toBe(400);
+    expect(
+      (
+        await req('DELETE', '/quarantine/abc', {
+          confirmationToken: 'DELETE-PERMANENT',
+          dataSourceRef: refFor(T_A),
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (await req('POST', '/quarantine/abc/restore', { dataSourceRef: refFor(T_A) })).status,
+    ).toBe(400);
   });
 
   it('restore: body non-JSON → 400; dataSourceRef mancante/invalido → 400', async () => {
@@ -297,13 +367,23 @@ describeE2E('guardrail distruttivi e validazioni', () => {
     const noBody = await app.request('/api/v1/janitor/quarantine/1/restore', { method: 'POST' });
     expect(noBody.status).toBe(400);
     expect((await req('POST', '/quarantine/1/restore', {})).status).toBe(400);
-    expect((await req('POST', '/quarantine/1/restore', { dataSourceRef: 'garbage///' })).status).toBe(400);
+    expect(
+      (await req('POST', '/quarantine/1/restore', { dataSourceRef: 'garbage///' })).status,
+    ).toBe(400);
   });
 
-  it("SICUREZZA N19 behaviorale: repairSql DELETE/INSERT/DDL → 400 (solo UPDATE ammesso — il repair non può distruggere)", async () => {
+  it('SICUREZZA N19 behaviorale: repairSql DELETE/INSERT/DDL → 400 (solo UPDATE ammesso — il repair non può distruggere)', async () => {
     asUser(T_A, 'owner');
-    for (const sql of ['DELETE FROM b2b_orders WHERE id = :pk', 'INSERT INTO b2b_orders (id) VALUES (:pk)', 'DROP TABLE b2b_orders']) {
-      const res = await req('POST', '/dsl-rules', { ...dslFor(T_A), title: `repair-${sql.slice(0, 6)}`, repairSql: sql });
+    for (const sql of [
+      'DELETE FROM b2b_orders WHERE id = :pk',
+      'INSERT INTO b2b_orders (id) VALUES (:pk)',
+      'DROP TABLE b2b_orders',
+    ]) {
+      const res = await req('POST', '/dsl-rules', {
+        ...dslFor(T_A),
+        title: `repair-${sql.slice(0, 6)}`,
+        repairSql: sql,
+      });
       expect(res.status, `repairSql "${sql.slice(0, 20)}…" deve essere rigettato`).toBe(400);
     }
   });
@@ -312,21 +392,29 @@ describeE2E('guardrail distruttivi e validazioni', () => {
     asUser(T_A, 'owner');
     const { detectSql: _omit, ...senzaDetect } = dslFor(T_A);
     expect((await req('POST', '/dsl-rules', senzaDetect)).status).toBe(400);
-    expect((await req('POST', '/dsl-rules', { ...dslFor(T_A), dataSourceRef: 'non-un-ref' })).status).toBe(400);
+    expect(
+      (await req('POST', '/dsl-rules', { ...dslFor(T_A), dataSourceRef: 'non-un-ref' })).status,
+    ).toBe(400);
   });
 
   it('PATCH rule config: dataSourceRef invalido → 400, schedule oltre 80 char → 400', async () => {
     asUser(T_A, 'owner');
-    const all = await (await req('GET', '/rules')).json() as { rules: { rule: { id: string } }[] };
+    const all = (await (await req('GET', '/rules')).json()) as {
+      rules: { rule: { id: string } }[];
+    };
     const ruleId = all.rules[0]!.rule.id;
-    expect((await req('PATCH', `/rules/${ruleId}`, { dataSourceRef: 'garbage///' })).status).toBe(400);
+    expect((await req('PATCH', `/rules/${ruleId}`, { dataSourceRef: 'garbage///' })).status).toBe(
+      400,
+    );
     expect((await req('PATCH', `/rules/${ruleId}`, { schedule: 'x'.repeat(81) })).status).toBe(400);
   });
 
   it('GET /quarantine: limit oltre 500 → 400 (cap anti-dump); filtri validi → shape {records:[]}', async () => {
     asUser(T_A, 'owner');
     expect((await req('GET', '/quarantine?limit=9999')).status).toBe(400);
-    const ok = await (await req('GET', '/quarantine?limit=10&severity=critical')).json() as { records: unknown[] };
+    const ok = (await (await req('GET', '/quarantine?limit=10&severity=critical')).json()) as {
+      records: unknown[];
+    };
     expect(Array.isArray(ok.records)).toBe(true);
   });
 
@@ -334,7 +422,7 @@ describeE2E('guardrail distruttivi e validazioni', () => {
     asUser(T_A, 'owner');
     const res = await req('GET', '/datasources');
     expect(res.status).toBe(200);
-    const data = await res.json() as { datasources: unknown[] };
+    const data = (await res.json()) as { datasources: unknown[] };
     expect(Array.isArray(data.datasources)).toBe(true);
   });
 });

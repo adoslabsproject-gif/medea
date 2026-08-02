@@ -29,8 +29,11 @@ vi.mock('@/storage/db.js', () => ({
             all: (...p: unknown[]) => stmt.all(...p),
           };
         },
-        exec: (sql: string) => { conn.exec(sql); },
-        transaction: <T extends unknown[], R>(fn: (...args: T) => R) => conn.transaction(fn) as unknown as (...args: T) => R,
+        exec: (sql: string) => {
+          conn.exec(sql);
+        },
+        transaction: <T extends unknown[], R>(fn: (...args: T) => R) =>
+          conn.transaction(fn) as unknown as (...args: T) => R,
       },
     };
   },
@@ -55,7 +58,14 @@ describe('customNodeExecutor — skip pattern (regression blocker)', () => {
     const result = await customNodeExecutor(
       { __action: 'noop' },
       { hello: 'world' },
-      { tenantId: 'ws-X', runId: 'r1', workflowId: 'wf', nodeId: 'n1', defId: 'custom_node', secrets: {} },
+      {
+        tenantId: 'ws-X',
+        runId: 'r1',
+        workflowId: 'wf',
+        nodeId: 'n1',
+        defId: 'custom_node',
+        secrets: {},
+      },
     );
     expect(result.output).toMatchObject({
       skipped: expect.stringContaining('Custom node "custom_node" non disponibile'),
@@ -66,19 +76,42 @@ describe('customNodeExecutor — skip pattern (regression blocker)', () => {
   it('defId draft (status=draft) → skipped (loader filtra non-runnable)', async () => {
     const conn = dbConnections[0]!;
     const now = new Date().toISOString();
-    conn.prepare(`
+    conn
+      .prepare(
+        `
       INSERT INTO custom_nodes (
         id, workspace_id, owner_user_id, slug, display_name, status, semver,
         source_executor, source_definition, source_schema, compiled_executor,
         created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      'id-1', 'ws-X', 'owner', 'wip_node', 'WIP', 'draft', '0.1.0',
-      'x', 'x', 'x', '(function(){})()', now, now,
-    );
+    `,
+      )
+      .run(
+        'id-1',
+        'ws-X',
+        'owner',
+        'wip_node',
+        'WIP',
+        'draft',
+        '0.1.0',
+        'x',
+        'x',
+        'x',
+        '(function(){})()',
+        now,
+        now,
+      );
     const result = await customNodeExecutor(
-      {}, {},
-      { tenantId: 'ws-X', runId: 'r1', workflowId: 'wf', nodeId: 'n1', defId: 'custom_wip_node', secrets: {} },
+      {},
+      {},
+      {
+        tenantId: 'ws-X',
+        runId: 'r1',
+        workflowId: 'wf',
+        nodeId: 'n1',
+        defId: 'custom_wip_node',
+        secrets: {},
+      },
     );
     expect(result.output).toMatchObject({
       skipped: expect.stringContaining('non disponibile'),
@@ -87,15 +120,24 @@ describe('customNodeExecutor — skip pattern (regression blocker)', () => {
 
   it('defId malformato (es. lettere maiuscole) → skipped', async () => {
     const result = await customNodeExecutor(
-      {}, {},
-      { tenantId: 'ws-X', runId: 'r1', workflowId: 'wf', nodeId: 'n1', defId: 'custom_Foo', secrets: {} },
+      {},
+      {},
+      {
+        tenantId: 'ws-X',
+        runId: 'r1',
+        workflowId: 'wf',
+        nodeId: 'n1',
+        defId: 'custom_Foo',
+        secrets: {},
+      },
     );
     expect(result.output).toMatchObject({ skipped: expect.stringContaining('non disponibile') });
   });
 
   it('defId vuoto → skipped (no crash)', async () => {
     const result = await customNodeExecutor(
-      {}, {},
+      {},
+      {},
       { tenantId: 'ws-X', runId: 'r1', workflowId: 'wf', nodeId: 'n1', defId: '', secrets: {} },
     );
     expect(result.output).toMatchObject({ skipped: expect.any(String) });

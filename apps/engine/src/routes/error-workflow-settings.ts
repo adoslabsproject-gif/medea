@@ -56,9 +56,12 @@ export function createErrorWorkflowSettingsRoutes(eventBus: IEventBus): Hono {
         return c.json({ error: `Workflow "${next}" not found in tenant` }, 400);
       }
       if (!wf.nodes.some((n) => n.defId === 'trigger_error')) {
-        return c.json({
-          error: `Workflow "${wf.name}" non ha un nodo trigger_error: aggiungilo come entry-point dell'handler prima di impostarlo come catch-all.`,
-        }, 400);
+        return c.json(
+          {
+            error: `Workflow "${wf.name}" non ha un nodo trigger_error: aggiungilo come entry-point dell'handler prima di impostarlo come catch-all.`,
+          },
+          400,
+        );
       }
     }
 
@@ -73,7 +76,9 @@ export function createErrorWorkflowSettingsRoutes(eventBus: IEventBus): Hono {
         resourceId: 'error_workflow_id',
         metadata: { previous, next },
       });
-    } catch { /* fail-soft: il setting è applicato, l'audit non lo annulla */ }
+    } catch {
+      /* fail-soft: il setting è applicato, l'audit non lo annulla */
+    }
     return c.json({ ok: true, errorWorkflowId: next });
   });
 

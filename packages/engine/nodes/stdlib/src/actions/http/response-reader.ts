@@ -27,7 +27,11 @@ export function filenameFromContentDisposition(cd: string | null): string | unde
   const raw = star?.[3] ?? plain?.[1];
   if (raw === undefined) return undefined;
   let decoded = raw.trim();
-  try { decoded = decodeURIComponent(decoded); } catch { /* non url-encoded → ok */ }
+  try {
+    decoded = decodeURIComponent(decoded);
+  } catch {
+    /* non url-encoded → ok */
+  }
   // basename: niente separatori di path (no `../`, no `/etc/...`).
   const base = decoded.split(/[/\\]/u).pop() ?? decoded;
   return base.length > 0 ? base.slice(0, 255) : undefined;
@@ -46,11 +50,21 @@ function formatMb(bytes: number): string {
  *     supera il cap → cancella lo stream e lancia, senza mai bufferizzare tutto.
  * Fallback per Response senza stream (mock/test): legge per formato + post-check.
  */
-export async function readBodyWithCap(res: Response, capBytes: number, prefer: 'binary' | 'text'): Promise<Buffer> {
+export async function readBodyWithCap(
+  res: Response,
+  capBytes: number,
+  prefer: 'binary' | 'text',
+): Promise<Buffer> {
   const declared = Number(res.headers.get('content-length'));
   if (Number.isFinite(declared) && declared > capBytes) {
-    try { await res.body?.cancel(); } catch { /* best-effort */ }
-    throw new ValidationError(`Risposta troppo grande: ${formatMb(declared)} dichiarati, oltre il limite di ${formatMb(capBytes)}. Aumenta "Max risposta (MB)" o restringi la richiesta.`);
+    try {
+      await res.body?.cancel();
+    } catch {
+      /* best-effort */
+    }
+    throw new ValidationError(
+      `Risposta troppo grande: ${formatMb(declared)} dichiarati, oltre il limite di ${formatMb(capBytes)}. Aumenta "Max risposta (MB)" o restringi la richiesta.`,
+    );
   }
   const body = res.body;
   if (body && typeof body.getReader === 'function') {
@@ -65,8 +79,14 @@ export async function readBodyWithCap(res: Response, capBytes: number, prefer: '
       if (value.byteLength > 0) {
         total += value.byteLength;
         if (total > capBytes) {
-          try { await reader.cancel(); } catch { /* best-effort */ }
-          throw new ValidationError(`Risposta troppo grande: superato il limite di ${formatMb(capBytes)} durante il download. Aumenta "Max risposta (MB)" o restringi la richiesta.`);
+          try {
+            await reader.cancel();
+          } catch {
+            /* best-effort */
+          }
+          throw new ValidationError(
+            `Risposta troppo grande: superato il limite di ${formatMb(capBytes)} durante il download. Aumenta "Max risposta (MB)" o restringi la richiesta.`,
+          );
         }
         chunks.push(Buffer.from(value));
       }
@@ -74,11 +94,14 @@ export async function readBodyWithCap(res: Response, capBytes: number, prefer: '
     return Buffer.concat(chunks);
   }
   // Response senza stream leggibile (mock/test): leggi per formato + post-check size.
-  const buf = prefer === 'binary'
-    ? Buffer.from(await res.arrayBuffer())
-    : Buffer.from(await res.text(), 'utf-8');
+  const buf =
+    prefer === 'binary'
+      ? Buffer.from(await res.arrayBuffer())
+      : Buffer.from(await res.text(), 'utf-8');
   if (buf.byteLength > capBytes) {
-    throw new ValidationError(`Risposta troppo grande: ${formatMb(buf.byteLength)}, oltre il limite di ${formatMb(capBytes)}.`);
+    throw new ValidationError(
+      `Risposta troppo grande: ${formatMb(buf.byteLength)}, oltre il limite di ${formatMb(capBytes)}.`,
+    );
   }
   return buf;
 }
@@ -95,7 +118,10 @@ export async function readResponse(
   capBytes: number,
 ): Promise<unknown> {
   const contentType = res.headers.get('content-type') ?? '';
-  if (format === 'binary' || (format === 'auto' && contentType.startsWith('application/octet-stream'))) {
+  if (
+    format === 'binary' ||
+    (format === 'auto' && contentType.startsWith('application/octet-stream'))
+  ) {
     const buf = await readBodyWithCap(res, capBytes, 'binary');
     const fileName = filenameFromContentDisposition(res.headers.get('content-disposition'));
     const mimeType = contentType.split(';')[0]?.trim() || 'application/octet-stream';
@@ -103,11 +129,22 @@ export async function readResponse(
       return await writeBinary(buf, { mimeType, ...(fileName !== undefined ? { fileName } : {}) });
     }
     const { makeBinaryInline } = await import('@medea/engine-core-schema');
-    return makeBinaryInline({ mimeType, data: buf.toString('base64'), ...(fileName !== undefined ? { fileName } : {}) });
+    return makeBinaryInline({
+      mimeType,
+      data: buf.toString('base64'),
+      ...(fileName !== undefined ? { fileName } : {}),
+    });
   }
   const text = (await readBodyWithCap(res, capBytes, 'text')).toString('utf-8');
-  if (format === 'json' || (format === 'auto' && contentType.includes('application/json') && text)) {
-    try { return JSON.parse(text); } catch { return text; }
+  if (
+    format === 'json' ||
+    (format === 'auto' && contentType.includes('application/json') && text)
+  ) {
+    try {
+      return JSON.parse(text);
+    } catch {
+      return text;
+    }
   }
   return text;
 }

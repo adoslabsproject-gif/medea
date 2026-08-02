@@ -23,7 +23,6 @@ export class LogicIfStrategy implements INodeDispatchStrategy {
     return ctx.module.def.id === 'logic_if';
   }
 
-   
   execute(ctx: DispatchContext): Promise<DispatchResult> {
     // Priority 1: structured rules from the visual builder.
     const rulesRaw = ctx.interpolatedConfig.conditionRules;

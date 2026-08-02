@@ -8,7 +8,13 @@
  *    inline in node config.
  */
 
-import { createHash, createSign, randomBytes, createPrivateKey, X509Certificate } from 'node:crypto';
+import {
+  createHash,
+  createSign,
+  randomBytes,
+  createPrivateKey,
+  X509Certificate,
+} from 'node:crypto';
 import { readFileSync, existsSync } from 'node:fs';
 import { createTransport, type SendMailOptions } from 'nodemailer';
 import { safeAttachmentPath } from '@/lib/mail-attachment-path.js';
@@ -78,7 +84,10 @@ function asString(v: unknown): string {
 }
 
 function escapeXml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c] ?? c));
+  return s.replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c] ?? c,
+  );
 }
 
 /**
@@ -96,8 +105,12 @@ function escapeXml(s: string): string {
  */
 function wsseDigest(password: string, nonceB64: string, created: string): string {
   const nonceBuf = Buffer.from(nonceB64, 'base64');
-  const data = Buffer.concat([nonceBuf, Buffer.from(created, 'utf8'), Buffer.from(password, 'utf8')]);
-  return createHash('sha1').update(data).digest('base64');  
+  const data = Buffer.concat([
+    nonceBuf,
+    Buffer.from(created, 'utf8'),
+    Buffer.from(password, 'utf8'),
+  ]);
+  return createHash('sha1').update(data).digest('base64');
 }
 
 function buildPecSoapEnvelope(opts: {
@@ -163,7 +176,8 @@ export const pecArubaSendExecutor: NodeExecutor = async (config, _input, context
   const transport = asString(config.transport ?? 'smtp');
   if (transport === 'soap') {
     const envelope = buildPecSoapEnvelope({ username, password, to, subject, body });
-    const endpoint = asString(config.endpoint) || 'https://ws.pec.aruba.it/PecManagement/services/PecService';
+    const endpoint =
+      asString(config.endpoint) || 'https://ws.pec.aruba.it/PecManagement/services/PecService';
     // Anti-esfiltrazione: user/password PEC sono dentro l'envelope SOAP → mai a host arbitrario.
     guardCredentialHost(endpoint, PEC_ARUBA_HOSTS, 'italia_pec_send (SOAP)');
     const res = await safeOutboundFetch(endpoint, {
@@ -172,10 +186,16 @@ export const pecArubaSendExecutor: NodeExecutor = async (config, _input, context
       body: envelope,
     });
     const responseText = (await readTextTruncated(res, SOAP_MAX_BYTES)).text;
-    if (!res.ok) throw new Error(`PEC Aruba (SOAP) ${String(res.status)}: ${responseText.slice(0, 500)}`);
+    if (!res.ok)
+      throw new Error(`PEC Aruba (SOAP) ${String(res.status)}: ${responseText.slice(0, 500)}`);
     const messageIdMatch = /<MessageId>([^<]+)<\/MessageId>/.exec(responseText);
     return {
-      output: { sent: true, transport: 'soap', messageId: messageIdMatch?.[1] ?? null, rawResponse: responseText.slice(0, 2000) },
+      output: {
+        sent: true,
+        transport: 'soap',
+        messageId: messageIdMatch?.[1] ?? null,
+        rawResponse: responseText.slice(0, 2000),
+      },
       durationMs: Date.now() - start,
     };
   }
@@ -198,21 +218,23 @@ export const pecArubaSendExecutor: NodeExecutor = async (config, _input, context
     } catch {
       throw new Error('italia_pec_aruba_send: attachmentsJson is not valid JSON');
     }
-    attachments = await Promise.all(parsed.map(async (a) => {
-      const att: NonNullable<SendMailOptions['attachments']>[number] = {
-        filename: a.filename ?? a.name ?? 'attachment',
-      };
-      if (a.contentType) att.contentType = a.contentType;
-      // REF-PRIMARIO: handle BinaryData ha precedenza → risolve i byte.
-      const binBytes = await resolveBinaryValue(a, context.readBinary);
-      if (binBytes) att.content = binBytes;
-      // `path`/`url` → SOLO URL http(s) validati SSRF (mai un path su filesystem: LFI →
-      // /app/.env esfiltrerebbe i segreti del container). Vedi safeAttachmentPath.
-      else if (a.path) att.path = safeAttachmentPath(a.path);
-      else if (a.url) att.path = safeAttachmentPath(a.url);
-      else if (a.base64) att.content = Buffer.from(a.base64, 'base64');
-      return att;
-    }));
+    attachments = await Promise.all(
+      parsed.map(async (a) => {
+        const att: NonNullable<SendMailOptions['attachments']>[number] = {
+          filename: a.filename ?? a.name ?? 'attachment',
+        };
+        if (a.contentType) att.contentType = a.contentType;
+        // REF-PRIMARIO: handle BinaryData ha precedenza → risolve i byte.
+        const binBytes = await resolveBinaryValue(a, context.readBinary);
+        if (binBytes) att.content = binBytes;
+        // `path`/`url` → SOLO URL http(s) validati SSRF (mai un path su filesystem: LFI →
+        // /app/.env esfiltrerebbe i segreti del container). Vedi safeAttachmentPath.
+        else if (a.path) att.path = safeAttachmentPath(a.path);
+        else if (a.url) att.path = safeAttachmentPath(a.url);
+        else if (a.base64) att.content = Buffer.from(a.base64, 'base64');
+        return att;
+      }),
+    );
   }
 
   assertConnectHostAllowed(smtpHost, 'PEC SMTP'); // SSRF: smtpHost da config → no rete interna
@@ -231,7 +253,7 @@ export const pecArubaSendExecutor: NodeExecutor = async (config, _input, context
       to,
       subject,
       text: body, // plain-text body. HTML body deliberately omitted: PEC
-                   // operators prefer plain text for legal preservation.
+      // operators prefer plain text for legal preservation.
       ...(attachments ? { attachments } : {}),
     });
     return {
@@ -269,7 +291,10 @@ export const zucchettiPayrollExecutor: NodeExecutor = async (config, _input, _co
     headers: { Authorization: `Bearer ${apiToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ companyCode, period, dryRun }),
   });
-  if (!res.ok) throw new Error(`Zucchetti ${String(res.status)}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 400)}`);
+  if (!res.ok)
+    throw new Error(
+      `Zucchetti ${String(res.status)}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 400)}`,
+    );
   return { output: await readJsonCapped<unknown>(res), durationMs: Date.now() - start };
 };
 
@@ -314,7 +339,9 @@ function buildSignedProperties(opts: {
   signingTime: string;
   signatureId: string;
 }): string {
-  const certDigest = createHash('sha256').update(Buffer.from(opts.certB64, 'base64')).digest('base64');
+  const certDigest = createHash('sha256')
+    .update(Buffer.from(opts.certB64, 'base64'))
+    .digest('base64');
   return [
     `<xades:SignedProperties xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" Id="${opts.signatureId}-signedprops">`,
     '<xades:SignedSignatureProperties>',
@@ -351,7 +378,13 @@ function parseCertMetadata(certPem: string): { issuer: string; serial: string } 
   }
   // `cert.issuer` è multi-riga "C=..\nO=..\nCN=.." (ordine DER); XAdES X509IssuerName
   // vuole la forma RFC2253/4514 (RDN più specifico per primo, separati da virgola).
-  const issuer = cert.issuer.split('\n').map((s) => s.trim()).filter(Boolean).reverse().join(',') || 'CN=Unknown';
+  const issuer =
+    cert.issuer
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .reverse()
+      .join(',') || 'CN=Unknown';
   // `cert.serialNumber` è esadecimale; XAdES X509SerialNumber vuole il decimale.
   const serial = BigInt(`0x${cert.serialNumber}`).toString(10);
   return { issuer, serial };
@@ -379,7 +412,8 @@ export const sdiSendInvoiceExecutor: NodeExecutor = async (config, _input, _cont
   const validateXsd = config.validateXsd !== false && config.validateXsd !== 'false';
 
   if (!xmlContent) throw new Error('italia_sdi_send_invoice: invoiceXml richiesto');
-  if (!username || !password) throw new Error('italia_sdi_send_invoice: sdiUsername + sdiPassword richiesti');
+  if (!username || !password)
+    throw new Error('italia_sdi_send_invoice: sdiUsername + sdiPassword richiesti');
 
   // Validazione XSD pre-invio sull'XML originale (la firma aggiunge solo ds:Signature,
   // opzionale nello schema). Fattura non conforme → fail-fast con gli errori XSD, prima
@@ -389,9 +423,9 @@ export const sdiSendInvoiceExecutor: NodeExecutor = async (config, _input, _cont
     if (!xsd.valid) {
       const detail = xsd.errors.slice(0, 5).join(' | ');
       throw new Error(
-        `italia_sdi_send_invoice: la fattura NON è conforme allo schema XSD FatturaPA v1.2.2 `
-        + `(il SdI la scarterebbe). Correggi l'XML a monte. Errori: ${detail}`
-        + (xsd.errors.length > 5 ? ` …(+${(xsd.errors.length - 5).toString()} altri)` : ''),
+        `italia_sdi_send_invoice: la fattura NON è conforme allo schema XSD FatturaPA v1.2.2 ` +
+          `(il SdI la scarterebbe). Correggi l'XML a monte. Errori: ${detail}` +
+          (xsd.errors.length > 5 ? ` …(+${(xsd.errors.length - 5).toString()} altri)` : ''),
       );
     }
   }
@@ -411,7 +445,13 @@ export const sdiSendInvoiceExecutor: NodeExecutor = async (config, _input, _cont
 
     const canonical = canonicalize(xmlContent);
     const docDigest = createHash('sha256').update(canonical).digest('base64');
-    const signedProps = buildSignedProperties({ certB64, certIssuer: issuer, certSerial: serial, signingTime, signatureId });
+    const signedProps = buildSignedProperties({
+      certB64,
+      certIssuer: issuer,
+      certSerial: serial,
+      signingTime,
+      signatureId,
+    });
     const propsDigest = createHash('sha256').update(signedProps).digest('base64');
 
     const signedInfo = [
@@ -449,7 +489,10 @@ export const sdiSendInvoiceExecutor: NodeExecutor = async (config, _input, _cont
     ].join('');
 
     // Insert before root closing tag (FatturaElettronica)
-    signedXml = canonical.replace(/<\/FatturaElettronica>$/u, `${signatureBlock}</FatturaElettronica>`);
+    signedXml = canonical.replace(
+      /<\/FatturaElettronica>$/u,
+      `${signatureBlock}</FatturaElettronica>`,
+    );
     if (signedXml === canonical) {
       throw new Error('italia_sdi_send_invoice: root <FatturaElettronica> non trovata nel XML');
     }
@@ -458,7 +501,8 @@ export const sdiSendInvoiceExecutor: NodeExecutor = async (config, _input, _cont
   // Upload to SDICoop via TrasmissioneFatture SOAP endpoint.
   const fileName = asString(config.fileName) || `IT${Date.now().toString()}_FF.xml`;
   const auth = Buffer.from(`${username}:${password}`).toString('base64');
-  const sdiUrl = asString(config.sdiUrl) || 'https://servizi.fatturapa.it/Services/SdIRiceviFile/RiceviFile';
+  const sdiUrl =
+    asString(config.sdiUrl) || 'https://servizi.fatturapa.it/Services/SdIRiceviFile/RiceviFile';
   // Anti-esfiltrazione: le credenziali SDICoop (Basic auth) solo verso domini FatturaPA.
   guardCredentialHost(sdiUrl, SDI_HOSTS, 'italia_sdi_send_invoice');
 

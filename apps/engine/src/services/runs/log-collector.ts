@@ -108,7 +108,10 @@ export function genSpanId(): string {
 /**
  * Serializza fields JSON con cap MAX_FIELDS_BYTES e fallback per circular.
  */
-export function safeSerializeFields(fields: Record<string, unknown>): { fields: Record<string, unknown>; truncated: boolean } {
+export function safeSerializeFields(fields: Record<string, unknown>): {
+  fields: Record<string, unknown>;
+  truncated: boolean;
+} {
   let json: string;
   try {
     json = JSON.stringify(fields, replacerWithCircularGuard());
@@ -124,7 +127,7 @@ export function safeSerializeFields(fields: Record<string, unknown>): { fields: 
   for (const [k, v] of Object.entries(fields)) {
     const entryStr = `${JSON.stringify(k)}:${JSON.stringify(v) ?? '"<unserializable>"'}`;
     if (entryStr.length > budget) {
-      out.__truncated_keys = (out.__truncated_keys ?? []);
+      out.__truncated_keys = out.__truncated_keys ?? [];
       (out.__truncated_keys as string[]).push(k);
       continue;
     }
@@ -205,7 +208,12 @@ export class LogCollector {
    *
    * Source default 'engine' (override per sandbox/user/network).
    */
-  log(level: LogLevel, msg: string, fields?: Record<string, unknown>, source: LogSource = 'engine'): void {
+  log(
+    level: LogLevel,
+    msg: string,
+    fields?: Record<string, unknown>,
+    source: LogSource = 'engine',
+  ): void {
     if (LOG_LEVEL_RANK[level] < LOG_LEVEL_RANK[this.opts.minLevel]) return;
 
     // Truncate msg
@@ -267,21 +275,43 @@ export class LogCollector {
         ...(f ?? {}),
       };
       switch (level) {
-        case 'trace': case 'debug': runsLogger.debug(psr3Fields, m); break;
-        case 'info': runsLogger.info(psr3Fields, m); break;
-        case 'warn': runsLogger.warn(psr3Fields, m); break;
-        case 'error': case 'fatal': runsLogger.error(psr3Fields, m); break;
+        case 'trace':
+        case 'debug':
+          runsLogger.debug(psr3Fields, m);
+          break;
+        case 'info':
+          runsLogger.info(psr3Fields, m);
+          break;
+        case 'warn':
+          runsLogger.warn(psr3Fields, m);
+          break;
+        case 'error':
+        case 'fatal':
+          runsLogger.error(psr3Fields, m);
+          break;
       }
     }
   }
 
   /** Convenience helpers. */
-  trace(msg: string, fields?: Record<string, unknown>, source?: LogSource): void { this.log('trace', msg, fields, source); }
-  debug(msg: string, fields?: Record<string, unknown>, source?: LogSource): void { this.log('debug', msg, fields, source); }
-  info(msg: string, fields?: Record<string, unknown>, source?: LogSource): void { this.log('info', msg, fields, source); }
-  warn(msg: string, fields?: Record<string, unknown>, source?: LogSource): void { this.log('warn', msg, fields, source); }
-  error(msg: string, fields?: Record<string, unknown>, source?: LogSource): void { this.log('error', msg, fields, source); }
-  fatal(msg: string, fields?: Record<string, unknown>, source?: LogSource): void { this.log('fatal', msg, fields, source); }
+  trace(msg: string, fields?: Record<string, unknown>, source?: LogSource): void {
+    this.log('trace', msg, fields, source);
+  }
+  debug(msg: string, fields?: Record<string, unknown>, source?: LogSource): void {
+    this.log('debug', msg, fields, source);
+  }
+  info(msg: string, fields?: Record<string, unknown>, source?: LogSource): void {
+    this.log('info', msg, fields, source);
+  }
+  warn(msg: string, fields?: Record<string, unknown>, source?: LogSource): void {
+    this.log('warn', msg, fields, source);
+  }
+  error(msg: string, fields?: Record<string, unknown>, source?: LogSource): void {
+    this.log('error', msg, fields, source);
+  }
+  fatal(msg: string, fields?: Record<string, unknown>, source?: LogSource): void {
+    this.log('fatal', msg, fields, source);
+  }
 
   /**
    * Ingestion batch da fonte esterna (es. console.log capturati dal sandbox

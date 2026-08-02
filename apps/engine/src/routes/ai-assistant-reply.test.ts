@@ -34,7 +34,7 @@ describe('stripCodeFences', () => {
 });
 
 describe('extractFirstJsonObject — scan bilanciato', () => {
-  it('estrae l\'oggetto in mezzo a prosa', () => {
+  it("estrae l'oggetto in mezzo a prosa", () => {
     expect(extractFirstJsonObject('bla bla {"a":1} ciao')).toEqual({ a: 1 });
   });
   it('🔒 ignora le graffe DENTRO le stringhe (non si ferma alla } interna)', () => {
@@ -43,8 +43,10 @@ describe('extractFirstJsonObject — scan bilanciato', () => {
       ok: true,
     });
   });
-  it('🔒 gestisce l\'escape dei doppi apici nelle stringhe', () => {
-    expect(extractFirstJsonObject('{"q":"dice \\"ciao}\\" a tutti"}')).toEqual({ q: 'dice "ciao}" a tutti' });
+  it("🔒 gestisce l'escape dei doppi apici nelle stringhe", () => {
+    expect(extractFirstJsonObject('{"q":"dice \\"ciao}\\" a tutti"}')).toEqual({
+      q: 'dice "ciao}" a tutti',
+    });
   });
   it('oggetti annidati → ritorna il primo bilanciato completo', () => {
     expect(extractFirstJsonObject('pre {"a":{"b":2}} post')).toEqual({ a: { b: 2 } });
@@ -81,8 +83,11 @@ describe('coerceAssistantReply — invariante: SEMPRE un reply valido, MAI throw
     expect(r.reply.message).toBe('Certo, posso aiutarti!');
   });
 
-  it('🚨 prosa + JSON valido in mezzo → estrae l\'envelope', () => {
-    const r = coerceAssistantReply('Ecco:\n{"message":"fatto","patch":{"removeNodeIds":["n1"]}}\nok?', safeParse);
+  it("🚨 prosa + JSON valido in mezzo → estrae l'envelope", () => {
+    const r = coerceAssistantReply(
+      'Ecco:\n{"message":"fatto","patch":{"removeNodeIds":["n1"]}}\nok?',
+      safeParse,
+    );
     expect(r.conformed).toBe(true);
     if (!r.conformed) throw new Error('atteso conformed:true');
     expect(r.reply.message).toBe('fatto');
@@ -97,7 +102,10 @@ describe('coerceAssistantReply — invariante: SEMPRE un reply valido, MAI throw
 
   it('🚨 JSON con message valido MA patch malformata → tiene SOLO il message (scarta patch rotta)', () => {
     // patch.addNodes con elemento senza defId → Zod fallisce. Si salva il messaggio.
-    const r = coerceAssistantReply('{"message":"ci provo","patch":{"addNodes":[{"id":"n1"}]}}', safeParse);
+    const r = coerceAssistantReply(
+      '{"message":"ci provo","patch":{"addNodes":[{"id":"n1"}]}}',
+      safeParse,
+    );
     expect(r.conformed).toBe(false);
     expect(r.reply.message).toBe('ci provo');
     expect('patch' in r.reply).toBe(false);
@@ -138,8 +146,12 @@ describe('🔒 ANTI-DRIFT: schema guided_json ↔ AssistantReplySchema (Zod)', (
     expect(AssistantReplySchema.safeParse(sample).success).toBe(true);
     // Le chiavi di patch dichiarate nello schema guided_json coincidono ESATTAMENTE
     // con quelle Zod → se una delle due deriva, questo test rompe.
-    const jsonSchemaPatchKeys = Object.keys(ASSISTANT_REPLY_JSON_SCHEMA.properties.patch.properties).sort();
-    const zodPatchKeys = Object.keys((AssistantReplySchema.shape.patch.unwrap() as z.ZodObject<z.ZodRawShape>).shape).sort();
+    const jsonSchemaPatchKeys = Object.keys(
+      ASSISTANT_REPLY_JSON_SCHEMA.properties.patch.properties,
+    ).sort();
+    const zodPatchKeys = Object.keys(
+      (AssistantReplySchema.shape.patch.unwrap() as z.ZodObject<z.ZodRawShape>).shape,
+    ).sort();
     expect(jsonSchemaPatchKeys).toEqual(zodPatchKeys);
     expect(jsonSchemaPatchKeys).toEqual(sample.patch && Object.keys(sample.patch).sort());
   });

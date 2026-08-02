@@ -15,7 +15,13 @@
  * the DEK ciphers, not the data ciphers — cheap rotation.
  */
 
-import { randomBytes, createCipheriv, createDecipheriv, scryptSync, timingSafeEqual } from 'node:crypto';
+import {
+  randomBytes,
+  createCipheriv,
+  createDecipheriv,
+  scryptSync,
+  timingSafeEqual,
+} from 'node:crypto';
 import { z } from 'zod';
 
 const ALG_DATA = 'aes-256-gcm';
@@ -66,7 +72,12 @@ export function deriveKek(password: string, salt: Buffer): Buffer {
   if (!password || password.length < 12) {
     throw new Error('Master password must be at least 12 characters');
   }
-  return scryptSync(password, salt, KEY_BYTES, { N: KEK_SCRYPT_N, r: 8, p: 1, maxmem: KEK_SCRYPT_MAXMEM });
+  return scryptSync(password, salt, KEY_BYTES, {
+    N: KEK_SCRYPT_N,
+    r: 8,
+    p: 1,
+    maxmem: KEK_SCRYPT_MAXMEM,
+  });
 }
 
 interface EncryptResult {

@@ -112,7 +112,7 @@ describe('🚨 GET /budget — date defaults + totals', () => {
     readDailyBudgetMock.mockReturnValue([]);
     const res = await makeApp('viewer').request('/m/ai-metrics/budget');
     expect(res.status).toBe(200);
-    const json = await res.json() as { from: string; to: string };
+    const json = (await res.json()) as { from: string; to: string };
     expect(json.from).toMatch(/^\d{4}-\d{2}-\d{2}$/u);
     expect(json.to).toMatch(/^\d{4}-\d{2}-\d{2}$/u);
     // from < to (7gg diff)
@@ -126,11 +126,34 @@ describe('🚨 GET /budget — date defaults + totals', () => {
 
   it('🚨 totals: aggrega ALL fields (input/output/cost/calls/errors)', async () => {
     readDailyBudgetMock.mockReturnValue([
-      { day: '2026-06-07', inputTokens: 100, outputTokens: 50, costUsd: 0.05, callCount: 2, errorCount: 0 },
-      { day: '2026-06-08', inputTokens: 200, outputTokens: 80, costUsd: 0.10, callCount: 5, errorCount: 1 },
+      {
+        day: '2026-06-07',
+        inputTokens: 100,
+        outputTokens: 50,
+        costUsd: 0.05,
+        callCount: 2,
+        errorCount: 0,
+      },
+      {
+        day: '2026-06-08',
+        inputTokens: 200,
+        outputTokens: 80,
+        costUsd: 0.1,
+        callCount: 5,
+        errorCount: 1,
+      },
     ]);
     const res = await makeApp('viewer').request('/m/ai-metrics/budget');
-    const json = await res.json() as { totals: { inputTokens: number; outputTokens: number; costUsd: number; callCount: number; errorCount: number }; daily: unknown[] };
+    const json = (await res.json()) as {
+      totals: {
+        inputTokens: number;
+        outputTokens: number;
+        costUsd: number;
+        callCount: number;
+        errorCount: number;
+      };
+      daily: unknown[];
+    };
     expect(json.totals).toEqual({
       inputTokens: 300,
       outputTokens: 130,
@@ -144,7 +167,7 @@ describe('🚨 GET /budget — date defaults + totals', () => {
   it('🚨 empty rows → totals tutti a 0', async () => {
     readDailyBudgetMock.mockReturnValue([]);
     const res = await makeApp('viewer').request('/m/ai-metrics/budget');
-    const json = await res.json() as { totals: { inputTokens: number; callCount: number } };
+    const json = (await res.json()) as { totals: { inputTokens: number; callCount: number } };
     expect(json.totals.inputTokens).toBe(0);
     expect(json.totals.callCount).toBe(0);
   });
@@ -152,10 +175,14 @@ describe('🚨 GET /budget — date defaults + totals', () => {
 
 describe('🚨 GET /queue', () => {
   it('🚨 ritorna llmQueue.stats() direct', async () => {
-    llmQueueStatsMock.mockReturnValue({ depth: 12, active: 3, perPriority: { high: 5, normal: 7 } });
+    llmQueueStatsMock.mockReturnValue({
+      depth: 12,
+      active: 3,
+      perPriority: { high: 5, normal: 7 },
+    });
     const res = await makeApp('viewer').request('/m/ai-metrics/queue');
     expect(res.status).toBe(200);
-    const json = await res.json() as { depth: number; perPriority: Record<string, number> };
+    const json = (await res.json()) as { depth: number; perPriority: Record<string, number> };
     expect(json.depth).toBe(12);
     expect(json.perPriority.high).toBe(5);
   });
@@ -173,11 +200,29 @@ describe('🚨 GET /by-model — date range conversion ISO', () => {
 
   it('🚨 totals include totalTokens (estende budget totals)', async () => {
     byModelBreakdownMock.mockReturnValue([
-      { model: 'claude-3-5', inputTokens: 100, outputTokens: 50, totalTokens: 150, costUsd: 0.05, callCount: 2, errorCount: 0 },
-      { model: 'gpt-4', inputTokens: 200, outputTokens: 80, totalTokens: 280, costUsd: 0.10, callCount: 5, errorCount: 1 },
+      {
+        model: 'claude-3-5',
+        inputTokens: 100,
+        outputTokens: 50,
+        totalTokens: 150,
+        costUsd: 0.05,
+        callCount: 2,
+        errorCount: 0,
+      },
+      {
+        model: 'gpt-4',
+        inputTokens: 200,
+        outputTokens: 80,
+        totalTokens: 280,
+        costUsd: 0.1,
+        callCount: 5,
+        errorCount: 1,
+      },
     ]);
     const res = await makeApp('viewer').request('/m/ai-metrics/by-model');
-    const json = await res.json() as { totals: { totalTokens: number; inputTokens: number; outputTokens: number } };
+    const json = (await res.json()) as {
+      totals: { totalTokens: number; inputTokens: number; outputTokens: number };
+    };
     expect(json.totals.totalTokens).toBe(430);
     expect(json.totals.inputTokens).toBe(300);
     expect(json.totals.outputTokens).toBe(130);
@@ -185,10 +230,18 @@ describe('🚨 GET /by-model — date range conversion ISO', () => {
 
   it('🚨 rows propagated to response as `rows` (not `daily`)', async () => {
     byModelBreakdownMock.mockReturnValue([
-      { model: 'claude-3-5', inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, callCount: 0, errorCount: 0 },
+      {
+        model: 'claude-3-5',
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        costUsd: 0,
+        callCount: 0,
+        errorCount: 0,
+      },
     ]);
     const res = await makeApp('viewer').request('/m/ai-metrics/by-model');
-    const json = await res.json() as { rows: unknown[]; daily?: unknown };
+    const json = (await res.json()) as { rows: unknown[]; daily?: unknown };
     expect(json.rows).toHaveLength(1);
     expect(json.daily).toBeUndefined();
   });
@@ -197,7 +250,13 @@ describe('🚨 GET /by-model — date range conversion ISO', () => {
 describe('🚨 GET /conversations/summary — SQLite real queries', () => {
   it('🚨 vuoto → tutti i contatori a 0, avgMessages=0 (NULL handling)', async () => {
     const res = await makeApp('viewer').request('/m/ai-metrics/conversations/summary');
-    const json = await res.json() as { totalOpenConversations: number; totalMessages: number; avgMessagesPerConv: number; bySurface: unknown[]; pendingHardPurge: number };
+    const json = (await res.json()) as {
+      totalOpenConversations: number;
+      totalMessages: number;
+      avgMessagesPerConv: number;
+      bySurface: unknown[];
+      pendingHardPurge: number;
+    };
     expect(json.totalOpenConversations).toBe(0);
     expect(json.totalMessages).toBe(0);
     expect(json.avgMessagesPerConv).toBe(0); // NULL → 0
@@ -206,40 +265,61 @@ describe('🚨 GET /conversations/summary — SQLite real queries', () => {
   });
 
   it('🚨 totalOpenConversations counts solo NOT deleted', async () => {
-    mockDb.sqlite!.prepare('INSERT INTO ai_conversations (id, surface, message_count) VALUES (?, ?, ?)').run('c1', 'chat', 5);
-    mockDb.sqlite!.prepare('INSERT INTO ai_conversations (id, surface, message_count) VALUES (?, ?, ?)').run('c2', 'chat', 10);
-    mockDb.sqlite!.prepare(`INSERT INTO ai_conversations (id, surface, message_count, deleted_at) VALUES (?, ?, ?, ?)`)
+    mockDb
+      .sqlite!.prepare('INSERT INTO ai_conversations (id, surface, message_count) VALUES (?, ?, ?)')
+      .run('c1', 'chat', 5);
+    mockDb
+      .sqlite!.prepare('INSERT INTO ai_conversations (id, surface, message_count) VALUES (?, ?, ?)')
+      .run('c2', 'chat', 10);
+    mockDb
+      .sqlite!.prepare(
+        `INSERT INTO ai_conversations (id, surface, message_count, deleted_at) VALUES (?, ?, ?, ?)`,
+      )
       .run('c3', 'chat', 3, new Date().toISOString());
     const res = await makeApp('viewer').request('/m/ai-metrics/conversations/summary');
-    const json = await res.json() as { totalOpenConversations: number; pendingHardPurge: number };
+    const json = (await res.json()) as { totalOpenConversations: number; pendingHardPurge: number };
     expect(json.totalOpenConversations).toBe(2);
     expect(json.pendingHardPurge).toBe(1);
   });
 
   it('🚨 avgMessagesPerConv calcolato correttamente', async () => {
-    mockDb.sqlite!.prepare('INSERT INTO ai_conversations (id, surface, message_count) VALUES (?, ?, ?)').run('c1', 'chat', 10);
-    mockDb.sqlite!.prepare('INSERT INTO ai_conversations (id, surface, message_count) VALUES (?, ?, ?)').run('c2', 'chat', 20);
+    mockDb
+      .sqlite!.prepare('INSERT INTO ai_conversations (id, surface, message_count) VALUES (?, ?, ?)')
+      .run('c1', 'chat', 10);
+    mockDb
+      .sqlite!.prepare('INSERT INTO ai_conversations (id, surface, message_count) VALUES (?, ?, ?)')
+      .run('c2', 'chat', 20);
     const res = await makeApp('viewer').request('/m/ai-metrics/conversations/summary');
-    const json = await res.json() as { avgMessagesPerConv: number };
+    const json = (await res.json()) as { avgMessagesPerConv: number };
     expect(json.avgMessagesPerConv).toBe(15);
   });
 
   it('🚨 bySurface aggrega per categoria', async () => {
-    mockDb.sqlite!.prepare('INSERT INTO ai_conversations (id, surface, message_count) VALUES (?, ?, ?)').run('c1', 'chat', 0);
-    mockDb.sqlite!.prepare('INSERT INTO ai_conversations (id, surface, message_count) VALUES (?, ?, ?)').run('c2', 'chat', 0);
-    mockDb.sqlite!.prepare('INSERT INTO ai_conversations (id, surface, message_count) VALUES (?, ?, ?)').run('c3', 'workflow', 0);
+    mockDb
+      .sqlite!.prepare('INSERT INTO ai_conversations (id, surface, message_count) VALUES (?, ?, ?)')
+      .run('c1', 'chat', 0);
+    mockDb
+      .sqlite!.prepare('INSERT INTO ai_conversations (id, surface, message_count) VALUES (?, ?, ?)')
+      .run('c2', 'chat', 0);
+    mockDb
+      .sqlite!.prepare('INSERT INTO ai_conversations (id, surface, message_count) VALUES (?, ?, ?)')
+      .run('c3', 'workflow', 0);
     const res = await makeApp('viewer').request('/m/ai-metrics/conversations/summary');
-    const json = await res.json() as { bySurface: { surface: string; c: number }[] };
+    const json = (await res.json()) as { bySurface: { surface: string; c: number }[] };
     expect(json.bySurface).toHaveLength(2);
     const chat = json.bySurface.find((s) => s.surface === 'chat');
     expect(chat!.c).toBe(2);
   });
 
   it('🚨 totalMessages counta TUTTI i messages (no tenant filter — single-tenant container)', async () => {
-    mockDb.sqlite!.prepare('INSERT INTO ai_messages (id, conversation_id) VALUES (?, ?)').run('m1', 'c1');
-    mockDb.sqlite!.prepare('INSERT INTO ai_messages (id, conversation_id) VALUES (?, ?)').run('m2', 'c1');
+    mockDb
+      .sqlite!.prepare('INSERT INTO ai_messages (id, conversation_id) VALUES (?, ?)')
+      .run('m1', 'c1');
+    mockDb
+      .sqlite!.prepare('INSERT INTO ai_messages (id, conversation_id) VALUES (?, ?)')
+      .run('m2', 'c1');
     const res = await makeApp('viewer').request('/m/ai-metrics/conversations/summary');
-    const json = await res.json() as { totalMessages: number };
+    const json = (await res.json()) as { totalMessages: number };
     expect(json.totalMessages).toBe(2);
   });
 });
@@ -265,7 +345,7 @@ describe('🚨 POST /gdpr-purge — RBAC superadmin/operator only', () => {
     runPurgeOnceMock.mockResolvedValue({ purged: 5, errors: 0 });
     const res = await makeApp('superadmin').request('/m/ai-metrics/gdpr-purge', { method: 'POST' });
     expect(res.status).toBe(200);
-    const json = await res.json() as { purged: number };
+    const json = (await res.json()) as { purged: number };
     expect(json.purged).toBe(5);
   });
 

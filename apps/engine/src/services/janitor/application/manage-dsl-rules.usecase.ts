@@ -12,10 +12,16 @@
 import { nanoid } from 'nanoid';
 import { classifyStatement } from '@medea/engine-db-studio-engine';
 import type {
-  DslRule, DataSourceRef, CorruptionSeverity,
+  DslRule,
+  DataSourceRef,
+  CorruptionSeverity,
 } from '@/services/janitor/domain/index.js';
 import { Err, Ok, type Result } from '@/services/janitor/domain/index.js';
-import type { IRuleRegistry, IAuditEmitter, IDataSourceResolver } from '@/services/janitor/ports/index.js';
+import type {
+  IRuleRegistry,
+  IAuditEmitter,
+  IDataSourceResolver,
+} from '@/services/janitor/ports/index.js';
 import { engineSupportsRawSql } from '@/services/janitor/domain/data-source-ref.js';
 import { validateCronExpression } from './cron-evaluator.js';
 import type { DslRuleRepository } from '@/services/janitor/adapters/dsl-rule.repository.js';
@@ -118,14 +124,16 @@ export class ManageDslRulesUseCase {
       id: existing.id,
       tenantId: existing.tenantId,
       title: input.title !== undefined ? input.title.trim() : existing.title,
-      description: input.description !== undefined ? input.description.trim() : existing.description,
+      description:
+        input.description !== undefined ? input.description.trim() : existing.description,
       dataSourceRef: existing.dataSourceRef,
       targetTable: existing.targetTable,
       targetPkColumn: existing.targetPkColumn,
       detectSql: input.detectSql !== undefined ? input.detectSql.trim() : existing.detectSql,
-      placeholders: input.placeholders !== undefined
-        ? Object.freeze({ ...input.placeholders })
-        : existing.placeholders,
+      placeholders:
+        input.placeholders !== undefined
+          ? Object.freeze({ ...input.placeholders })
+          : existing.placeholders,
       tags: input.tags !== undefined ? Object.freeze([...input.tags]) : existing.tags,
       defaultSeverity: input.defaultSeverity ?? existing.defaultSeverity,
       defaultSchedule: input.defaultSchedule ?? existing.defaultSchedule,
@@ -140,9 +148,10 @@ export class ManageDslRulesUseCase {
     //   • input string → aggiorna
     let merged: DslRule;
     if (input.repairSql === undefined) {
-      merged = existing.repairSql !== undefined
-        ? Object.freeze({ ...baseDsl, repairSql: existing.repairSql })
-        : Object.freeze(baseDsl);
+      merged =
+        existing.repairSql !== undefined
+          ? Object.freeze({ ...baseDsl, repairSql: existing.repairSql })
+          : Object.freeze(baseDsl);
     } else if (input.repairSql === null) {
       merged = Object.freeze(baseDsl);
     } else {
@@ -208,15 +217,21 @@ export class ManageDslRulesUseCase {
     defaultMaxRowsPerRun?: number;
   }): Promise<Result<DslRule, string>> {
     if (!input.title.trim()) return Err('Titolo obbligatorio');
-    if (!IDENTIFIER_RE.test(input.targetTable)) return Err(`Nome tabella non valido: "${input.targetTable}"`);
-    if (!IDENTIFIER_RE.test(input.targetPkColumn)) return Err(`Nome colonna PK non valido: "${input.targetPkColumn}"`);
+    if (!IDENTIFIER_RE.test(input.targetTable))
+      return Err(`Nome tabella non valido: "${input.targetTable}"`);
+    if (!IDENTIFIER_RE.test(input.targetPkColumn))
+      return Err(`Nome colonna PK non valido: "${input.targetPkColumn}"`);
 
     if (input.defaultSchedule !== undefined) {
       const schedErr = validateCronExpression(input.defaultSchedule);
       if (schedErr) return Err(`Schedule non valido: ${schedErr}`);
     }
     if (input.defaultMaxRowsPerRun !== undefined) {
-      if (!Number.isInteger(input.defaultMaxRowsPerRun) || input.defaultMaxRowsPerRun < 1 || input.defaultMaxRowsPerRun > 100_000) {
+      if (
+        !Number.isInteger(input.defaultMaxRowsPerRun) ||
+        input.defaultMaxRowsPerRun < 1 ||
+        input.defaultMaxRowsPerRun > 100_000
+      ) {
         return Err('defaultMaxRowsPerRun deve essere intero tra 1 e 100.000');
       }
     }
@@ -226,7 +241,9 @@ export class ManageDslRulesUseCase {
     try {
       adapter = await this.resolver.resolve(input.dataSourceRef);
     } catch (err) {
-      return Err(`Data source non risolvibile: ${err instanceof Error ? err.message : String(err)}`);
+      return Err(
+        `Data source non risolvibile: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
     if (!engineSupportsRawSql(adapter.engine)) {
       return Err(`Engine "${adapter.engine}" non supporta SQL — usa un data source SQL`);
@@ -235,14 +252,18 @@ export class ManageDslRulesUseCase {
     // detectSql DEVE essere SELECT/WITH
     const detectKind = classifyStatement(input.detectSql);
     if (detectKind !== 'select') {
-      return Err(`detectSql deve essere SELECT/WITH, trovato "${detectKind}". Niente DML/DDL nelle detection.`);
+      return Err(
+        `detectSql deve essere SELECT/WITH, trovato "${detectKind}". Niente DML/DDL nelle detection.`,
+      );
     }
 
     // repairSql, se presente, DEVE essere UPDATE
     if (input.repairSql) {
       const repairKind = classifyStatement(input.repairSql);
       if (repairKind !== 'update') {
-        return Err(`repairSql deve essere UPDATE, trovato "${repairKind}". Niente DELETE/INSERT/DDL.`);
+        return Err(
+          `repairSql deve essere UPDATE, trovato "${repairKind}". Niente DELETE/INSERT/DDL.`,
+        );
       }
     }
 

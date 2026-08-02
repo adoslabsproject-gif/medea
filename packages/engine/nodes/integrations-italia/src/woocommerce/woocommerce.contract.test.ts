@@ -23,13 +23,20 @@ describe('italia_woocommerce — contract (anti-drift)', () => {
     expect(description).toMatch(/consumer_key/i);
   });
 
-  it('🚨 l\'enum action è quello reale (incl. batch citato in description)', () => {
-    expect([...options('action')].sort()).toEqual(['batch', 'create', 'delete', 'get', 'list', 'update']);
+  it("🚨 l'enum action è quello reale (incl. batch citato in description)", () => {
+    expect([...options('action')].sort()).toEqual([
+      'batch',
+      'create',
+      'delete',
+      'get',
+      'list',
+      'update',
+    ]);
     // "batch endpoint" è l'unica action nominata esplicitamente nella description.
     expect(description.toLowerCase()).toContain('batch');
   });
 
-  it('le resource citate nella description esistono nell\'enum', () => {
+  it("le resource citate nella description esistono nell'enum", () => {
     const resources = options('resource');
     for (const r of ['products', 'orders', 'customers', 'coupons']) {
       expect(resources).toContain(r);

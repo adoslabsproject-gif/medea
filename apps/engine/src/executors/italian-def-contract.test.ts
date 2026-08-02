@@ -17,7 +17,13 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import type { NodeModule } from '@medea/engine-nodes-stdlib';
-import { sdiSendInvoice, sdiCheckStatus, pecArubaSend, pecArubaReceive, zucchettiPayroll } from '@medea/engine-nodes-integrations-italia';
+import {
+  sdiSendInvoice,
+  sdiCheckStatus,
+  pecArubaSend,
+  pecArubaReceive,
+  zucchettiPayroll,
+} from '@medea/engine-nodes-integrations-italia';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const srcCache = new Map<string, string>();
@@ -45,14 +51,39 @@ function defKeys(mod: NodeModule): Set<string> {
 }
 
 const PAIRS: { executor: string; file: string; def: NodeModule; label: string }[] = [
-  { executor: 'sdiSendInvoiceExecutor', file: 'italian.ts', def: sdiSendInvoice, label: 'italia_sdi_send_invoice' },
-  { executor: 'sdiCheckStatusExecutor', file: 'italian.ts', def: sdiCheckStatus, label: 'italia_sdi_check_status' },
-  { executor: 'pecArubaSendExecutor', file: 'italian.ts', def: pecArubaSend, label: 'italia_pec_aruba_send' },
-  { executor: 'pecArubaReceiveExecutor', file: 'pec-receive.ts', def: pecArubaReceive, label: 'italia_pec_aruba_receive' },
-  { executor: 'zucchettiPayrollExecutor', file: 'italian.ts', def: zucchettiPayroll, label: 'italia_zucchetti_payroll' },
+  {
+    executor: 'sdiSendInvoiceExecutor',
+    file: 'italian.ts',
+    def: sdiSendInvoice,
+    label: 'italia_sdi_send_invoice',
+  },
+  {
+    executor: 'sdiCheckStatusExecutor',
+    file: 'italian.ts',
+    def: sdiCheckStatus,
+    label: 'italia_sdi_check_status',
+  },
+  {
+    executor: 'pecArubaSendExecutor',
+    file: 'italian.ts',
+    def: pecArubaSend,
+    label: 'italia_pec_aruba_send',
+  },
+  {
+    executor: 'pecArubaReceiveExecutor',
+    file: 'pec-receive.ts',
+    def: pecArubaReceive,
+    label: 'italia_pec_aruba_receive',
+  },
+  {
+    executor: 'zucchettiPayrollExecutor',
+    file: 'italian.ts',
+    def: zucchettiPayroll,
+    label: 'italia_zucchetti_payroll',
+  },
 ];
 
-describe('🚨 contract cross-app — config.X dell\'executor ⊆ configFields della def', () => {
+describe("🚨 contract cross-app — config.X dell'executor ⊆ configFields della def", () => {
   for (const { executor, file, def, label } of PAIRS) {
     it(`[${label}] ogni config.<key> letta da ${executor} è dichiarata nella def`, () => {
       const reads = configReads(executorBody(file, executor));

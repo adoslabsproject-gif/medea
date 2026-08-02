@@ -37,8 +37,11 @@ vi.mock('@/storage/db.js', () => ({
             all: (...p: unknown[]) => stmt.all(...p),
           };
         },
-        exec: (sql: string) => { conn.exec(sql); },
-        transaction: <T extends unknown[], R>(fn: (...args: T) => R) => conn.transaction(fn) as unknown as (...args: T) => R,
+        exec: (sql: string) => {
+          conn.exec(sql);
+        },
+        transaction: <T extends unknown[], R>(fn: (...args: T) => R) =>
+          conn.transaction(fn) as unknown as (...args: T) => R,
       },
     };
   },
@@ -100,7 +103,11 @@ afterEach(() => {
 
 describe('🚨 createCustomNode', () => {
   it('🚨 happy path: insert con semver 0.1.0 + status draft + snapshot version', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
     expect(node.id).toMatch(/^[0-9a-f-]{36}$/);
     expect(node.workspaceId).toBe(WS_A);
     expect(node.ownerUserId).toBe(USER_1);
@@ -117,17 +124,24 @@ describe('🚨 createCustomNode', () => {
   });
 
   it('🚨 slug invalido (UPPER) → Zod rejects', async () => {
-    await expect(createCustomNode({
-      workspaceId: WS_A, ownerUserId: USER_1,
-      input: { ...baseInput, slug: 'My-Node' },
-    })).rejects.toThrow(/lowercase|kebab-case/);
+    await expect(
+      createCustomNode({
+        workspaceId: WS_A,
+        ownerUserId: USER_1,
+        input: { ...baseInput, slug: 'My-Node' },
+      }),
+    ).rejects.toThrow(/lowercase|kebab-case/);
   });
 
   it('🚨 slug duplicato per stesso tenant (status!=archived) → ConflictError', async () => {
     await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
-    await expect(createCustomNode({
-      workspaceId: WS_A, ownerUserId: USER_2, input: baseInput,
-    })).rejects.toThrow(CustomNodeConflictError);
+    await expect(
+      createCustomNode({
+        workspaceId: WS_A,
+        ownerUserId: USER_2,
+        input: baseInput,
+      }),
+    ).rejects.toThrow(CustomNodeConflictError);
   });
 
   it('🚨 stesso slug in tenant diversi → OK (tenant isolation)', async () => {
@@ -140,30 +154,39 @@ describe('🚨 createCustomNode', () => {
 
   it('🚨 plan Free (quota=0) → QuotaExceededError al primo create', async () => {
     process.env.MEDEA_PLAN_CODE = 'free';
-    await expect(createCustomNode({
-      workspaceId: WS_A, ownerUserId: USER_1, input: baseInput,
-    })).rejects.toThrow(CustomNodeQuotaExceededError);
+    await expect(
+      createCustomNode({
+        workspaceId: WS_A,
+        ownerUserId: USER_1,
+        input: baseInput,
+      }),
+    ).rejects.toThrow(CustomNodeQuotaExceededError);
   });
 
   it('🚨 plan Starter (quota=3) → 4° create throws QuotaExceeded', async () => {
     process.env.MEDEA_PLAN_CODE = 'starter';
     for (let i = 1; i <= 3; i++) {
       await createCustomNode({
-        workspaceId: WS_A, ownerUserId: USER_1,
+        workspaceId: WS_A,
+        ownerUserId: USER_1,
         input: { ...baseInput, slug: `node-${i.toString()}` },
       });
     }
-    await expect(createCustomNode({
-      workspaceId: WS_A, ownerUserId: USER_1,
-      input: { ...baseInput, slug: 'node-4' },
-    })).rejects.toThrow(/quota exceeded.*starter|3\/3/i);
+    await expect(
+      createCustomNode({
+        workspaceId: WS_A,
+        ownerUserId: USER_1,
+        input: { ...baseInput, slug: 'node-4' },
+      }),
+    ).rejects.toThrow(/quota exceeded.*starter|3\/3/i);
   });
 
   it('🚨 plan Enterprise (unlimited) → 200° create OK', async () => {
     process.env.MEDEA_PLAN_CODE = 'enterprise';
     for (let i = 1; i <= 5; i++) {
       const n = await createCustomNode({
-        workspaceId: WS_A, ownerUserId: USER_1,
+        workspaceId: WS_A,
+        ownerUserId: USER_1,
         input: { ...baseInput, slug: `bulk-${i.toString()}` },
       });
       expect(n.id).toBeDefined();
@@ -172,21 +195,31 @@ describe('🚨 createCustomNode', () => {
 
   it('🚨 source troppo grande (>256KB) → Zod rejects', async () => {
     const huge = 'x'.repeat(257 * 1024);
-    await expect(createCustomNode({
-      workspaceId: WS_A, ownerUserId: USER_1,
-      input: { ...baseInput, sourceExecutor: huge },
-    })).rejects.toThrow(/bytes|max/);
+    await expect(
+      createCustomNode({
+        workspaceId: WS_A,
+        ownerUserId: USER_1,
+        input: { ...baseInput, sourceExecutor: huge },
+      }),
+    ).rejects.toThrow(/bytes|max/);
   });
 });
 
 describe('🚨 getCustomNode / getCustomNodeBySlug / listCustomNodes', () => {
   it('🚨 get by id null se non esiste', async () => {
-    const r = await getCustomNode({ workspaceId: WS_A, id: '00000000-0000-0000-0000-000000000000' });
+    const r = await getCustomNode({
+      workspaceId: WS_A,
+      id: '00000000-0000-0000-0000-000000000000',
+    });
     expect(r).toBeNull();
   });
 
   it('🚨 get by slug ignora archived', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
     await archiveCustomNode({ workspaceId: WS_A, id: node.id });
     const r = await getCustomNodeBySlug({ workspaceId: WS_A, slug: 'my-node' });
     expect(r).toBeNull();
@@ -195,7 +228,8 @@ describe('🚨 getCustomNode / getCustomNodeBySlug / listCustomNodes', () => {
   it('🚨 list filtrato per status + pagination', async () => {
     for (let i = 1; i <= 5; i++) {
       await createCustomNode({
-        workspaceId: WS_A, ownerUserId: USER_1,
+        workspaceId: WS_A,
+        ownerUserId: USER_1,
         input: { ...baseInput, slug: `list-${i.toString()}` },
       });
     }
@@ -205,8 +239,16 @@ describe('🚨 getCustomNode / getCustomNodeBySlug / listCustomNodes', () => {
   });
 
   it('🚨 list filtrato per ownerUserId', async () => {
-    await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: { ...baseInput, slug: 'aa' } });
-    await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_2, input: { ...baseInput, slug: 'bb' } });
+    await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: { ...baseInput, slug: 'aa' },
+    });
+    await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_2,
+      input: { ...baseInput, slug: 'bb' },
+    });
     const r = await listCustomNodes({ workspaceId: WS_A, filter: { ownerUserId: USER_1 } });
     expect(r.items).toHaveLength(1);
     expect(r.items[0]!.slug).toBe('aa');
@@ -226,9 +268,15 @@ describe('🚨 getCustomNode / getCustomNodeBySlug / listCustomNodes', () => {
 
 describe('🚨 updateCustomNode', () => {
   it('🚨 source touch → semver patch bump 0.1.0 → 0.1.1 + snapshot creato', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
     const updated = await updateCustomNode({
-      workspaceId: WS_A, id: node.id, actorUserId: USER_1,
+      workspaceId: WS_A,
+      id: node.id,
+      actorUserId: USER_1,
       input: { sourceExecutor: 'export const executor = async () => ({ output: { v: 2 } });' },
     });
     expect(updated.semver).toBe('0.1.1');
@@ -240,9 +288,15 @@ describe('🚨 updateCustomNode', () => {
   });
 
   it('🚨 metadata-only update (displayName) → NO semver bump + NO new snapshot', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
     const updated = await updateCustomNode({
-      workspaceId: WS_A, id: node.id, actorUserId: USER_1,
+      workspaceId: WS_A,
+      id: node.id,
+      actorUserId: USER_1,
       input: { displayName: 'My Node v2 Title' },
     });
     expect(updated.semver).toBe('0.1.0');
@@ -252,9 +306,15 @@ describe('🚨 updateCustomNode', () => {
   });
 
   it('🚨 source touch con semverBump=minor → 0.1.0 → 0.2.0', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
     const updated = await updateCustomNode({
-      workspaceId: WS_A, id: node.id, actorUserId: USER_1,
+      workspaceId: WS_A,
+      id: node.id,
+      actorUserId: USER_1,
       input: {
         sourceExecutor: 'export const executor = async () => ({});',
         semverBump: 'minor',
@@ -264,25 +324,38 @@ describe('🚨 updateCustomNode', () => {
   });
 
   it('🚨 source touch con semverBump=major → 0.1.0 → 1.0.0', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
     const updated = await updateCustomNode({
-      workspaceId: WS_A, id: node.id, actorUserId: USER_1,
+      workspaceId: WS_A,
+      id: node.id,
+      actorUserId: USER_1,
       input: { sourceExecutor: 'export const executor = async () => ({});', semverBump: 'major' },
     });
     expect(updated.semver).toBe('1.0.0');
   });
 
   it('🚨 source touch invalida compiled bundle (cache eviction)', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
     await persistCompileResult({
-      workspaceId: WS_A, id: node.id,
+      workspaceId: WS_A,
+      id: node.id,
       compiledExecutor: '(()=>{})()',
       warnings: [],
     });
     const beforeUpdate = await getCustomNode({ workspaceId: WS_A, id: node.id });
     expect(beforeUpdate!.compiledExecutor).toBe('(()=>{})()');
     const updated = await updateCustomNode({
-      workspaceId: WS_A, id: node.id, actorUserId: USER_1,
+      workspaceId: WS_A,
+      id: node.id,
+      actorUserId: USER_1,
       input: { sourceExecutor: 'export const executor = async () => ({});' },
     });
     expect(updated.compiledExecutor).toBeNull();
@@ -290,31 +363,51 @@ describe('🚨 updateCustomNode', () => {
   });
 
   it('🚨 update di archived → ValidationError', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
     await archiveCustomNode({ workspaceId: WS_A, id: node.id });
-    await expect(updateCustomNode({
-      workspaceId: WS_A, id: node.id, actorUserId: USER_1,
-      input: { displayName: 'New' },
-    })).rejects.toThrow(CustomNodeValidationError);
+    await expect(
+      updateCustomNode({
+        workspaceId: WS_A,
+        id: node.id,
+        actorUserId: USER_1,
+        input: { displayName: 'New' },
+      }),
+    ).rejects.toThrow(CustomNodeValidationError);
   });
 
   it('🚨 update di id non esistente → NotFoundError', async () => {
-    await expect(updateCustomNode({
-      workspaceId: WS_A, id: '00000000-0000-0000-0000-000000000000', actorUserId: USER_1,
-      input: { displayName: 'X' },
-    })).rejects.toThrow(CustomNodeNotFoundError);
+    await expect(
+      updateCustomNode({
+        workspaceId: WS_A,
+        id: '00000000-0000-0000-0000-000000000000',
+        actorUserId: USER_1,
+        input: { displayName: 'X' },
+      }),
+    ).rejects.toThrow(CustomNodeNotFoundError);
   });
 });
 
 describe('🚨 rollbackToVersion', () => {
   it('🚨 rollback a versione 0.1.0 carica source originale + bump patch a 0.1.2', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
     await updateCustomNode({
-      workspaceId: WS_A, id: node.id, actorUserId: USER_1,
+      workspaceId: WS_A,
+      id: node.id,
+      actorUserId: USER_1,
       input: { sourceExecutor: 'export const executor = async () => ({ v: "second" });' },
     }); // 0.1.1
     const rolled = await rollbackToVersion({
-      workspaceId: WS_A, customNodeId: node.id, actorUserId: USER_1,
+      workspaceId: WS_A,
+      customNodeId: node.id,
+      actorUserId: USER_1,
       semverTarget: '0.1.0',
     });
     expect(rolled.semver).toBe('0.1.2'); // bumped patch dopo rollback
@@ -328,43 +421,71 @@ describe('🚨 rollbackToVersion', () => {
   });
 
   it('🚨 rollback a versione inesistente → NotFoundError', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
-    await expect(rollbackToVersion({
-      workspaceId: WS_A, customNodeId: node.id, actorUserId: USER_1,
-      semverTarget: '99.0.0',
-    })).rejects.toThrow(CustomNodeNotFoundError);
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
+    await expect(
+      rollbackToVersion({
+        workspaceId: WS_A,
+        customNodeId: node.id,
+        actorUserId: USER_1,
+        semverTarget: '99.0.0',
+      }),
+    ).rejects.toThrow(CustomNodeNotFoundError);
   });
 });
 
 describe('🚨 archiveCustomNode', () => {
   it('🚨 soft-delete → slug riusabile dopo archive', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
     await archiveCustomNode({ workspaceId: WS_A, id: node.id });
     // Re-create con stesso slug ora OK
-    const node2 = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
+    const node2 = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
     expect(node2.id).not.toBe(node.id);
     expect(node2.status).toBe('draft');
   });
 
   it('🚨 archive idempotente (re-archive = no-op)', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
     await archiveCustomNode({ workspaceId: WS_A, id: node.id });
     await expect(archiveCustomNode({ workspaceId: WS_A, id: node.id })).resolves.toBeUndefined();
   });
 
   it('🚨 archive id non esistente → NotFoundError', async () => {
-    await expect(archiveCustomNode({
-      workspaceId: WS_A, id: '00000000-0000-0000-0000-000000000000',
-    })).rejects.toThrow(CustomNodeNotFoundError);
+    await expect(
+      archiveCustomNode({
+        workspaceId: WS_A,
+        id: '00000000-0000-0000-0000-000000000000',
+      }),
+    ).rejects.toThrow(CustomNodeNotFoundError);
   });
 });
 
 describe('🚨 persistCompileResult', () => {
   it('🚨 status draft → candidate al primo compile', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
     expect(node.status).toBe('draft');
     await persistCompileResult({
-      workspaceId: WS_A, id: node.id,
+      workspaceId: WS_A,
+      id: node.id,
       compiledExecutor: '(()=>{ return { output: {} }; })()',
       warnings: [],
     });
@@ -375,11 +496,18 @@ describe('🚨 persistCompileResult', () => {
   });
 
   it('🚨 persist con warnings → JSON parsed sul read', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
     await persistCompileResult({
-      workspaceId: WS_A, id: node.id,
+      workspaceId: WS_A,
+      id: node.id,
       compiledExecutor: 'x',
-      warnings: [{ severity: 'warning', line: 5, col: 10, message: 'unused var', file: 'executor' }],
+      warnings: [
+        { severity: 'warning', line: 5, col: 10, message: 'unused var', file: 'executor' },
+      ],
     });
     const after = await getCustomNode({ workspaceId: WS_A, id: node.id });
     expect(after!.compileWarnings).toHaveLength(1);
@@ -390,11 +518,24 @@ describe('🚨 persistCompileResult', () => {
   it('🚨 con MEDEA_REGISTRY_SECRET → calcola e persiste digest+firma integrità', async () => {
     process.env.MEDEA_REGISTRY_SECRET = 'svc-test-registry-secret-32-bytes!!';
     try {
-      const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
-      await persistCompileResult({ workspaceId: WS_A, id: node.id, compiledExecutor: '(()=>{})()', warnings: [] });
-      const raw = dbConnections[dbConnections.length - 1]!
-        .prepare('SELECT integrity_digest, integrity_signature, integrity_algo FROM custom_nodes WHERE id = ?')
-        .get(node.id) as { integrity_digest: string | null; integrity_signature: string | null; integrity_algo: string | null };
+      const node = await createCustomNode({
+        workspaceId: WS_A,
+        ownerUserId: USER_1,
+        input: baseInput,
+      });
+      await persistCompileResult({
+        workspaceId: WS_A,
+        id: node.id,
+        compiledExecutor: '(()=>{})()',
+        warnings: [],
+      });
+      const raw = dbConnections[dbConnections.length - 1]!.prepare(
+        'SELECT integrity_digest, integrity_signature, integrity_algo FROM custom_nodes WHERE id = ?',
+      ).get(node.id) as {
+        integrity_digest: string | null;
+        integrity_signature: string | null;
+        integrity_algo: string | null;
+      };
       expect(raw.integrity_digest).toMatch(/^[0-9a-f]{64}$/);
       expect(raw.integrity_signature).toMatch(/^[0-9a-f]{64}$/);
       expect(raw.integrity_algo).toBe('sha256+hmac-sha256');
@@ -403,32 +544,58 @@ describe('🚨 persistCompileResult', () => {
     }
   });
 
-  it('🚨 CONTRACT persist↔verify: la firma copre il compiledExecutor (l\'artefatto eseguito)', async () => {
+  it("🚨 CONTRACT persist↔verify: la firma copre il compiledExecutor (l'artefatto eseguito)", async () => {
     // Anti-regressione del bypass "firma solo i sorgenti": il record persistito
     // deve verificare col bundle persistito e FALLIRE con un bundle diverso.
     process.env.MEDEA_REGISTRY_SECRET = 'svc-test-registry-secret-32-bytes!!';
     try {
-      const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
+      const node = await createCustomNode({
+        workspaceId: WS_A,
+        ownerUserId: USER_1,
+        input: baseInput,
+      });
       const compiled = '(()=>{ return { output: { n: 1 } }; })()';
-      await persistCompileResult({ workspaceId: WS_A, id: node.id, compiledExecutor: compiled, warnings: [] });
-      const raw = dbConnections[dbConnections.length - 1]!
-        .prepare('SELECT slug, semver, source_executor, source_definition, source_schema, compiled_executor, integrity_digest, integrity_signature, integrity_algo FROM custom_nodes WHERE id = ?')
-        .get(node.id) as {
-          slug: string; semver: string; source_executor: string; source_definition: string;
-          source_schema: string; compiled_executor: string; integrity_digest: string;
-          integrity_signature: string; integrity_algo: string;
-        };
+      await persistCompileResult({
+        workspaceId: WS_A,
+        id: node.id,
+        compiledExecutor: compiled,
+        warnings: [],
+      });
+      const raw = dbConnections[dbConnections.length - 1]!.prepare(
+        'SELECT slug, semver, source_executor, source_definition, source_schema, compiled_executor, integrity_digest, integrity_signature, integrity_algo FROM custom_nodes WHERE id = ?',
+      ).get(node.id) as {
+        slug: string;
+        semver: string;
+        source_executor: string;
+        source_definition: string;
+        source_schema: string;
+        compiled_executor: string;
+        integrity_digest: string;
+        integrity_signature: string;
+        integrity_algo: string;
+      };
       const { verifyPackageIntegrity } = await import('@/lib/custom-node-integrity.js');
       const pkg = {
-        slug: raw.slug, semver: raw.semver,
-        sourceExecutor: raw.source_executor, sourceDefinition: raw.source_definition,
-        sourceSchema: raw.source_schema, compiledExecutor: raw.compiled_executor,
+        slug: raw.slug,
+        semver: raw.semver,
+        sourceExecutor: raw.source_executor,
+        sourceDefinition: raw.source_definition,
+        sourceSchema: raw.source_schema,
+        compiledExecutor: raw.compiled_executor,
       };
-      const record = { algo: raw.integrity_algo as never, digest: raw.integrity_digest, signature: raw.integrity_signature };
-      expect(verifyPackageIntegrity(pkg, record, 'svc-test-registry-secret-32-bytes!!')).toEqual({ valid: true });
+      const record = {
+        algo: raw.integrity_algo as never,
+        digest: raw.integrity_digest,
+        signature: raw.integrity_signature,
+      };
+      expect(verifyPackageIntegrity(pkg, record, 'svc-test-registry-secret-32-bytes!!')).toEqual({
+        valid: true,
+      });
       // Bundle diverso → la stessa firma NON deve più valere.
       const swapped = { ...pkg, compiledExecutor: '(()=>{ /* altro bundle */ })()' };
-      expect(verifyPackageIntegrity(swapped, record, 'svc-test-registry-secret-32-bytes!!').valid).toBe(false);
+      expect(
+        verifyPackageIntegrity(swapped, record, 'svc-test-registry-secret-32-bytes!!').valid,
+      ).toBe(false);
     } finally {
       delete process.env.MEDEA_REGISTRY_SECRET;
     }
@@ -440,11 +607,20 @@ describe('🚨 persistCompileResult', () => {
     delete process.env.MEDEA_REGISTRY_SECRET;
     delete process.env.MEDEA_INTERNAL_TOKEN;
     try {
-      const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
-      await persistCompileResult({ workspaceId: WS_A, id: node.id, compiledExecutor: 'x', warnings: [] });
-      const raw = dbConnections[dbConnections.length - 1]!
-        .prepare('SELECT integrity_digest FROM custom_nodes WHERE id = ?')
-        .get(node.id) as { integrity_digest: string | null };
+      const node = await createCustomNode({
+        workspaceId: WS_A,
+        ownerUserId: USER_1,
+        input: baseInput,
+      });
+      await persistCompileResult({
+        workspaceId: WS_A,
+        id: node.id,
+        compiledExecutor: 'x',
+        warnings: [],
+      });
+      const raw = dbConnections[dbConnections.length - 1]!.prepare(
+        'SELECT integrity_digest FROM custom_nodes WHERE id = ?',
+      ).get(node.id) as { integrity_digest: string | null };
       expect(raw.integrity_digest).toBeNull();
     } finally {
       if (prevReg !== undefined) process.env.MEDEA_REGISTRY_SECRET = prevReg;
@@ -455,11 +631,22 @@ describe('🚨 persistCompileResult', () => {
 
 describe('🚨 appendTestRun (ring buffer)', () => {
   it('🚨 ring buffer max TEST_RUNS_RING_SIZE → drop oldest', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
     for (let i = 1; i <= TEST_RUNS_RING_SIZE + 5; i++) {
       await appendTestRun({
-        workspaceId: WS_A, id: node.id,
-        record: { at: new Date().toISOString(), input: { i }, output: { ok: true }, ok: true, durationMs: i },
+        workspaceId: WS_A,
+        id: node.id,
+        record: {
+          at: new Date().toISOString(),
+          input: { i },
+          output: { ok: true },
+          ok: true,
+          durationMs: i,
+        },
       });
     }
     const after = await getCustomNode({ workspaceId: WS_A, id: node.id });
@@ -472,9 +659,28 @@ describe('🚨 appendTestRun (ring buffer)', () => {
 
 describe('🚨 listTestRuns (FIX A3 — ring buffer ora esposto)', () => {
   it('ritorna i run newest-first scritti da appendTestRun', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
-    await appendTestRun({ workspaceId: WS_A, id: node.id, record: { at: '2026-06-13T08:00:00Z', input: { i: 1 }, output: {}, ok: true, durationMs: 1 } });
-    await appendTestRun({ workspaceId: WS_A, id: node.id, record: { at: '2026-06-13T09:00:00Z', input: { i: 2 }, output: {}, ok: false, durationMs: 2, error: 'x' } });
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
+    await appendTestRun({
+      workspaceId: WS_A,
+      id: node.id,
+      record: { at: '2026-06-13T08:00:00Z', input: { i: 1 }, output: {}, ok: true, durationMs: 1 },
+    });
+    await appendTestRun({
+      workspaceId: WS_A,
+      id: node.id,
+      record: {
+        at: '2026-06-13T09:00:00Z',
+        input: { i: 2 },
+        output: {},
+        ok: false,
+        durationMs: 2,
+        error: 'x',
+      },
+    });
     const runs = await listTestRuns({ workspaceId: WS_A, id: node.id });
     expect(runs).toHaveLength(2);
     expect((runs[0] as { durationMs: number }).durationMs).toBe(2); // newest-first
@@ -482,7 +688,11 @@ describe('🚨 listTestRuns (FIX A3 — ring buffer ora esposto)', () => {
   });
 
   it('nodo senza run → array vuoto', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
     expect(await listTestRuns({ workspaceId: WS_A, id: node.id })).toEqual([]);
   });
 
@@ -491,16 +701,30 @@ describe('🚨 listTestRuns (FIX A3 — ring buffer ora esposto)', () => {
   });
 
   it('🚨 isolamento tenant: WS_B NON vede i run di WS_A (throw NotFound)', async () => {
-    const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
-    await appendTestRun({ workspaceId: WS_A, id: node.id, record: { at: '2026-06-13T08:00:00Z', input: {}, output: {}, ok: true, durationMs: 1 } });
+    const node = await createCustomNode({
+      workspaceId: WS_A,
+      ownerUserId: USER_1,
+      input: baseInput,
+    });
+    await appendTestRun({
+      workspaceId: WS_A,
+      id: node.id,
+      record: { at: '2026-06-13T08:00:00Z', input: {}, output: {}, ok: true, durationMs: 1 },
+    });
     await expect(listTestRuns({ workspaceId: WS_B, id: node.id })).rejects.toThrow();
   });
 });
 
 describe('🚨 bumpSemver (pure function)', () => {
-  it('🚨 patch: 1.2.3 → 1.2.4', () => { expect(bumpSemver('1.2.3', 'patch')).toBe('1.2.4'); });
-  it('🚨 minor: 1.2.3 → 1.3.0', () => { expect(bumpSemver('1.2.3', 'minor')).toBe('1.3.0'); });
-  it('🚨 major: 1.2.3 → 2.0.0', () => { expect(bumpSemver('1.2.3', 'major')).toBe('2.0.0'); });
+  it('🚨 patch: 1.2.3 → 1.2.4', () => {
+    expect(bumpSemver('1.2.3', 'patch')).toBe('1.2.4');
+  });
+  it('🚨 minor: 1.2.3 → 1.3.0', () => {
+    expect(bumpSemver('1.2.3', 'minor')).toBe('1.3.0');
+  });
+  it('🚨 major: 1.2.3 → 2.0.0', () => {
+    expect(bumpSemver('1.2.3', 'major')).toBe('2.0.0');
+  });
   it('🚨 malformed → throws ValidationError', () => {
     expect(() => bumpSemver('1.2', 'patch')).toThrow(CustomNodeValidationError);
     expect(() => bumpSemver('v1.2.3', 'patch')).toThrow(CustomNodeValidationError);
@@ -510,87 +734,165 @@ describe('🚨 bumpSemver (pure function)', () => {
 describe('🚨 submitCustomNodeToMarketplace — state machine + gates', () => {
   it('candidate + compiled + plan pro → marketplace_pending', async () => {
     const node = await createCustomNode({
-      workspaceId: 'ws-1', ownerUserId: 'u',
+      workspaceId: 'ws-1',
+      ownerUserId: 'u',
       input: {
-        slug: 'mk1', displayName: 'MK1',
-        sourceExecutor: 'a', sourceDefinition: 'b', sourceSchema: 'c',
+        slug: 'mk1',
+        displayName: 'MK1',
+        sourceExecutor: 'a',
+        sourceDefinition: 'b',
+        sourceSchema: 'c',
       },
     });
     await persistCompileResult({
-      workspaceId: 'ws-1', id: node.id,
+      workspaceId: 'ws-1',
+      id: node.id,
       compiledExecutor: '(function(){})()',
       warnings: [],
     });
     const submitted = await submitCustomNodeToMarketplace({
-      workspaceId: 'ws-1', id: node.id, actorUserId: 'u',
+      workspaceId: 'ws-1',
+      id: node.id,
+      actorUserId: 'u',
     });
     expect(submitted.status).toBe('marketplace_pending');
   });
 
   it('senza compiled → throws (compile required)', async () => {
     const node = await createCustomNode({
-      workspaceId: 'ws-1', ownerUserId: 'u',
-      input: { slug: 'mk2', displayName: 'MK2', sourceExecutor: 'a', sourceDefinition: 'b', sourceSchema: 'c' },
+      workspaceId: 'ws-1',
+      ownerUserId: 'u',
+      input: {
+        slug: 'mk2',
+        displayName: 'MK2',
+        sourceExecutor: 'a',
+        sourceDefinition: 'b',
+        sourceSchema: 'c',
+      },
     });
-    await expect(submitCustomNodeToMarketplace({ workspaceId: 'ws-1', id: node.id, actorUserId: 'u' }))
-      .rejects.toThrow(/Compile required/u);
+    await expect(
+      submitCustomNodeToMarketplace({ workspaceId: 'ws-1', id: node.id, actorUserId: 'u' }),
+    ).rejects.toThrow(/Compile required/u);
   });
 
   it('archived → throws', async () => {
     const node = await createCustomNode({
-      workspaceId: 'ws-1', ownerUserId: 'u',
-      input: { slug: 'mk3', displayName: 'MK3', sourceExecutor: 'a', sourceDefinition: 'b', sourceSchema: 'c' },
+      workspaceId: 'ws-1',
+      ownerUserId: 'u',
+      input: {
+        slug: 'mk3',
+        displayName: 'MK3',
+        sourceExecutor: 'a',
+        sourceDefinition: 'b',
+        sourceSchema: 'c',
+      },
     });
     await archiveCustomNode({ workspaceId: 'ws-1', id: node.id });
-    await expect(submitCustomNodeToMarketplace({ workspaceId: 'ws-1', id: node.id, actorUserId: 'u' }))
-      .rejects.toThrow(/archived/u);
+    await expect(
+      submitCustomNodeToMarketplace({ workspaceId: 'ws-1', id: node.id, actorUserId: 'u' }),
+    ).rejects.toThrow(/archived/u);
   });
 
   it('compiled con security errors → throws', async () => {
     const node = await createCustomNode({
-      workspaceId: 'ws-1', ownerUserId: 'u',
-      input: { slug: 'mk4', displayName: 'MK4', sourceExecutor: 'a', sourceDefinition: 'b', sourceSchema: 'c' },
+      workspaceId: 'ws-1',
+      ownerUserId: 'u',
+      input: {
+        slug: 'mk4',
+        displayName: 'MK4',
+        sourceExecutor: 'a',
+        sourceDefinition: 'b',
+        sourceSchema: 'c',
+      },
     });
     await persistCompileResult({
-      workspaceId: 'ws-1', id: node.id,
+      workspaceId: 'ws-1',
+      id: node.id,
       compiledExecutor: '(function(){})()',
-      warnings: [{ severity: 'error', line: 1, col: 1, message: 'eval forbidden', code: 'SEC', file: 'executor' }],
+      warnings: [
+        {
+          severity: 'error',
+          line: 1,
+          col: 1,
+          message: 'eval forbidden',
+          code: 'SEC',
+          file: 'executor',
+        },
+      ],
     });
-    await expect(submitCustomNodeToMarketplace({ workspaceId: 'ws-1', id: node.id, actorUserId: 'u' }))
-      .rejects.toThrow(/errori di sicurezza/u);
+    await expect(
+      submitCustomNodeToMarketplace({ workspaceId: 'ws-1', id: node.id, actorUserId: 'u' }),
+    ).rejects.toThrow(/errori di sicurezza/u);
   });
 
   it('già marketplace_pending → throws (idempotency)', async () => {
     const node = await createCustomNode({
-      workspaceId: 'ws-1', ownerUserId: 'u',
-      input: { slug: 'mk5', displayName: 'MK5', sourceExecutor: 'a', sourceDefinition: 'b', sourceSchema: 'c' },
+      workspaceId: 'ws-1',
+      ownerUserId: 'u',
+      input: {
+        slug: 'mk5',
+        displayName: 'MK5',
+        sourceExecutor: 'a',
+        sourceDefinition: 'b',
+        sourceSchema: 'c',
+      },
     });
-    await persistCompileResult({ workspaceId: 'ws-1', id: node.id, compiledExecutor: 'x', warnings: [] });
+    await persistCompileResult({
+      workspaceId: 'ws-1',
+      id: node.id,
+      compiledExecutor: 'x',
+      warnings: [],
+    });
     await submitCustomNodeToMarketplace({ workspaceId: 'ws-1', id: node.id, actorUserId: 'u' });
-    await expect(submitCustomNodeToMarketplace({ workspaceId: 'ws-1', id: node.id, actorUserId: 'u' }))
-      .rejects.toThrow(/already pending/u);
+    await expect(
+      submitCustomNodeToMarketplace({ workspaceId: 'ws-1', id: node.id, actorUserId: 'u' }),
+    ).rejects.toThrow(/already pending/u);
   });
 });
 
 describe('🚨 withdrawCustomNodeFromMarketplace — state machine', () => {
   it('marketplace_pending → candidate', async () => {
     const node = await createCustomNode({
-      workspaceId: 'ws-1', ownerUserId: 'u',
-      input: { slug: 'wd1', displayName: 'WD1', sourceExecutor: 'a', sourceDefinition: 'b', sourceSchema: 'c' },
+      workspaceId: 'ws-1',
+      ownerUserId: 'u',
+      input: {
+        slug: 'wd1',
+        displayName: 'WD1',
+        sourceExecutor: 'a',
+        sourceDefinition: 'b',
+        sourceSchema: 'c',
+      },
     });
-    await persistCompileResult({ workspaceId: 'ws-1', id: node.id, compiledExecutor: 'x', warnings: [] });
+    await persistCompileResult({
+      workspaceId: 'ws-1',
+      id: node.id,
+      compiledExecutor: 'x',
+      warnings: [],
+    });
     await submitCustomNodeToMarketplace({ workspaceId: 'ws-1', id: node.id, actorUserId: 'u' });
-    const withdrawn = await withdrawCustomNodeFromMarketplace({ workspaceId: 'ws-1', id: node.id, actorUserId: 'u' });
+    const withdrawn = await withdrawCustomNodeFromMarketplace({
+      workspaceId: 'ws-1',
+      id: node.id,
+      actorUserId: 'u',
+    });
     expect(withdrawn.status).toBe('candidate');
   });
 
   it('NON pending → throws', async () => {
     const node = await createCustomNode({
-      workspaceId: 'ws-1', ownerUserId: 'u',
-      input: { slug: 'wd2', displayName: 'WD2', sourceExecutor: 'a', sourceDefinition: 'b', sourceSchema: 'c' },
+      workspaceId: 'ws-1',
+      ownerUserId: 'u',
+      input: {
+        slug: 'wd2',
+        displayName: 'WD2',
+        sourceExecutor: 'a',
+        sourceDefinition: 'b',
+        sourceSchema: 'c',
+      },
     });
-    await expect(withdrawCustomNodeFromMarketplace({ workspaceId: 'ws-1', id: node.id, actorUserId: 'u' }))
-      .rejects.toThrow(/non "marketplace_pending"/u);
+    await expect(
+      withdrawCustomNodeFromMarketplace({ workspaceId: 'ws-1', id: node.id, actorUserId: 'u' }),
+    ).rejects.toThrow(/non "marketplace_pending"/u);
   });
 });
 
@@ -598,20 +900,40 @@ describe('🚨 withdrawCustomNodeFromMarketplace — state machine', () => {
 describe('🚨 publishCustomNodePrivate — state machine', () => {
   it('candidate + compiled → published_priv', async () => {
     const node = await createCustomNode({
-      workspaceId: 'ws-1', ownerUserId: 'u',
-      input: { slug: 'pp1', displayName: 'PP1', sourceExecutor: 'a', sourceDefinition: 'b', sourceSchema: 'c' },
+      workspaceId: 'ws-1',
+      ownerUserId: 'u',
+      input: {
+        slug: 'pp1',
+        displayName: 'PP1',
+        sourceExecutor: 'a',
+        sourceDefinition: 'b',
+        sourceSchema: 'c',
+      },
     });
-    await persistCompileResult({ workspaceId: 'ws-1', id: node.id, compiledExecutor: 'x', warnings: [] });
+    await persistCompileResult({
+      workspaceId: 'ws-1',
+      id: node.id,
+      compiledExecutor: 'x',
+      warnings: [],
+    });
     const published = await publishCustomNodePrivate({ workspaceId: 'ws-1', id: node.id });
     expect(published.status).toBe('published_priv');
   });
 
   it('senza compile → throws', async () => {
     const node = await createCustomNode({
-      workspaceId: 'ws-1', ownerUserId: 'u',
-      input: { slug: 'pp2', displayName: 'PP2', sourceExecutor: 'a', sourceDefinition: 'b', sourceSchema: 'c' },
+      workspaceId: 'ws-1',
+      ownerUserId: 'u',
+      input: {
+        slug: 'pp2',
+        displayName: 'PP2',
+        sourceExecutor: 'a',
+        sourceDefinition: 'b',
+        sourceSchema: 'c',
+      },
     });
-    await expect(publishCustomNodePrivate({ workspaceId: 'ws-1', id: node.id }))
-      .rejects.toThrow(/Compile required/u);
+    await expect(publishCustomNodePrivate({ workspaceId: 'ws-1', id: node.id })).rejects.toThrow(
+      /Compile required/u,
+    );
   });
 });

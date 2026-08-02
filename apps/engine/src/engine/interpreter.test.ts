@@ -20,13 +20,19 @@ describe('evaluateExpression', () => {
   });
 
   it('boolean comparison for if-node', () => {
-    expect(evaluateExpression('input.status === "active"', { input: { status: 'active' } })).toBe(true);
-    expect(evaluateExpression('input.status === "active"', { input: { status: 'inactive' } })).toBe(false);
+    expect(evaluateExpression('input.status === "active"', { input: { status: 'active' } })).toBe(
+      true,
+    );
+    expect(evaluateExpression('input.status === "active"', { input: { status: 'inactive' } })).toBe(
+      false,
+    );
   });
 
   // ── L (2026-06-05): scope `secrets` tenant-level ──
   it('legge secrets.API_TOKEN (tenant-level)', () => {
-    expect(evaluateExpression('secrets.API_TOKEN', { secrets: { API_TOKEN: 'sk_test_123' } })).toBe('sk_test_123');
+    expect(evaluateExpression('secrets.API_TOKEN', { secrets: { API_TOKEN: 'sk_test_123' } })).toBe(
+      'sk_test_123',
+    );
   });
 
   it('secrets supporta optional chaining su chiave mancante', () => {
@@ -120,8 +126,9 @@ describe('evaluateExpression — security hardening (anti-bypass)', () => {
   });
 
   it('blocks bracket-access "constructor" chain', () => {
-    expect(() => evaluateExpression('({})["constructor"]["constructor"]("return 1")()', {}))
-      .toThrow(InterpreterError);
+    expect(() =>
+      evaluateExpression('({})["constructor"]["constructor"]("return 1")()', {}),
+    ).toThrow(InterpreterError);
   });
 
   it('blocks single-quote bracket-access "constructor"', () => {
@@ -295,11 +302,11 @@ describe('filter pipes — round/currency/date/replace/slice/join', () => {
   it("| date:'YYYY-MM-DD' formatta ISO timestamp", () => {
     expect(evaluateExpression("input.ts | date:'YYYY-MM-DD'", scope)).toBe('2026-06-05');
   });
-  it("| date HH:mm:ss tokens", () => {
+  it('| date HH:mm:ss tokens', () => {
     const out = evaluateExpression("input.ts | date:'HH:mm:ss'", scope) as string;
     expect(out).toMatch(/^\d{2}:\d{2}:\d{2}$/);
   });
-  it("| date invalida → empty string (safe)", () => {
+  it('| date invalida → empty string (safe)', () => {
     expect(evaluateExpression("'not-a-date' | date:'YYYY'", scope)).toBe('');
   });
 
@@ -310,17 +317,17 @@ describe('filter pipes — round/currency/date/replace/slice/join', () => {
     expect(evaluateExpression("input.msg | replace:'l',''", scope)).toBe('heo word');
   });
 
-  it("| slice:0,5 su stringa", () => {
+  it('| slice:0,5 su stringa', () => {
     expect(evaluateExpression('input.bigstr | slice:0,5', scope)).toBe('abcde');
   });
-  it("| slice:0,2 su array", () => {
+  it('| slice:0,2 su array', () => {
     expect(evaluateExpression('input.tags | slice:0,2', scope)).toEqual(['a', 'b']);
   });
 
   it("| join:','", () => {
     expect(evaluateExpression("input.tags | join:','", scope)).toBe('a,b,c');
   });
-  it("| join no-op su stringa", () => {
+  it('| join no-op su stringa', () => {
     expect(evaluateExpression("input.msg | join:','", scope)).toBe('hello world');
   });
 

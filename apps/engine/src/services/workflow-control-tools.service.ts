@@ -51,7 +51,11 @@ export interface WorkflowDetail extends WorkflowSummary {
 
 function parseJsonSafe<T>(s: string | null | undefined, fallback: T): T {
   if (!s) return fallback;
-  try { return JSON.parse(s) as T; } catch { return fallback; }
+  try {
+    return JSON.parse(s) as T;
+  } catch {
+    return fallback;
+  }
 }
 
 /**
@@ -60,9 +64,11 @@ function parseJsonSafe<T>(s: string | null | undefined, fallback: T): T {
 export function listWorkflows(opts: { enabledOnly?: boolean } = {}): WorkflowSummary[] {
   const { sqlite } = getDatabase();
   const where = opts.enabledOnly ? 'WHERE enabled = 1' : '';
-  const rows = sqlite.prepare(
-    `SELECT id, name, description, enabled, nodes_json, updated_at FROM workflows ${where} ORDER BY updated_at DESC LIMIT 200`,
-  ).all() as Record<string, unknown>[];
+  const rows = sqlite
+    .prepare(
+      `SELECT id, name, description, enabled, nodes_json, updated_at FROM workflows ${where} ORDER BY updated_at DESC LIMIT 200`,
+    )
+    .all() as Record<string, unknown>[];
   return rows.map((r) => ({
     id: r.id as string,
     name: r.name as string,
@@ -78,14 +84,20 @@ export function listWorkflows(opts: { enabledOnly?: boolean } = {}): WorkflowSum
  */
 export function getWorkflow(workflowId: string): WorkflowDetail | null {
   const { sqlite } = getDatabase();
-  const row = sqlite.prepare(
-    `SELECT id, name, description, enabled, nodes_json, edges_json, updated_at FROM workflows WHERE id = ?`,
-  ).get(workflowId) as Record<string, unknown> | undefined;
+  const row = sqlite
+    .prepare(
+      `SELECT id, name, description, enabled, nodes_json, edges_json, updated_at FROM workflows WHERE id = ?`,
+    )
+    .get(workflowId) as Record<string, unknown> | undefined;
   if (!row) return null;
   const nodes = parseJsonSafe<{ id: string; defId: string; config?: Record<string, unknown> }[]>(
-    row.nodes_json as string, [],
+    row.nodes_json as string,
+    [],
   ).map((n) => ({ id: n.id, defId: n.defId, config: n.config ?? {} }));
-  const edges = parseJsonSafe<{ from: string; to: string; fromPort?: string }[]>(row.edges_json as string, []);
+  const edges = parseJsonSafe<{ from: string; to: string; fromPort?: string }[]>(
+    row.edges_json as string,
+    [],
+  );
   return {
     id: row.id as string,
     name: row.name as string,
@@ -103,20 +115,27 @@ export function getWorkflow(workflowId: string): WorkflowDetail | null {
  * vecchi). Non valida il config schema — il chiamante deve passare valori
  * conformi al NodeDef.
  */
-export function configureNode(input: ConfigureNodeInput): { ok: true; updatedConfig: Record<string, unknown> } | { ok: false; error: string } {
+export function configureNode(
+  input: ConfigureNodeInput,
+): { ok: true; updatedConfig: Record<string, unknown> } | { ok: false; error: string } {
   const { sqlite } = getDatabase();
-  const row = sqlite.prepare(`SELECT nodes_json FROM workflows WHERE id = ?`).get(input.workflowId) as { nodes_json: string } | undefined;
+  const row = sqlite
+    .prepare(`SELECT nodes_json FROM workflows WHERE id = ?`)
+    .get(input.workflowId) as { nodes_json: string } | undefined;
   if (!row) return { ok: false, error: `Workflow not found: ${input.workflowId}` };
-  const nodes = parseJsonSafe<{ id: string; defId: string; config?: Record<string, unknown> }[]>(row.nodes_json, []);
+  const nodes = parseJsonSafe<{ id: string; defId: string; config?: Record<string, unknown> }[]>(
+    row.nodes_json,
+    [],
+  );
   const target = nodes.find((n) => n.id === input.nodeId);
   if (!target) return { ok: false, error: `Node not found: ${input.nodeId}` };
 
   const mergedConfig = { ...(target.config ?? {}), ...input.configPatch };
   target.config = mergedConfig;
   const now = new Date().toISOString();
-  sqlite.prepare(`UPDATE workflows SET nodes_json = ?, updated_at = ? WHERE id = ?`).run(
-    JSON.stringify(nodes), now, input.workflowId,
-  );
+  sqlite
+    .prepare(`UPDATE workflows SET nodes_json = ?, updated_at = ? WHERE id = ?`)
+    .run(JSON.stringify(nodes), now, input.workflowId);
   logger.info(
     { workflowId: input.workflowId, nodeId: input.nodeId, keys: Object.keys(input.configPatch) },
     '[workflow-control] node configured',
@@ -127,14 +146,18 @@ export function configureNode(input: ConfigureNodeInput): { ok: true; updatedCon
 /**
  * Attiva/disattiva il workflow (toggle enabled flag).
  */
-export function setWorkflowEnabled(input: ToggleWorkflowInput): { ok: true; enabled: boolean } | { ok: false; error: string } {
+export function setWorkflowEnabled(
+  input: ToggleWorkflowInput,
+): { ok: true; enabled: boolean } | { ok: false; error: string } {
   const { sqlite } = getDatabase();
-  const row = sqlite.prepare(`SELECT id FROM workflows WHERE id = ?`).get(input.workflowId) as { id: string } | undefined;
+  const row = sqlite.prepare(`SELECT id FROM workflows WHERE id = ?`).get(input.workflowId) as
+    | { id: string }
+    | undefined;
   if (!row) return { ok: false, error: `Workflow not found: ${input.workflowId}` };
   const now = new Date().toISOString();
-  sqlite.prepare(`UPDATE workflows SET enabled = ?, updated_at = ? WHERE id = ?`).run(
-    input.enabled ? 1 : 0, now, input.workflowId,
-  );
+  sqlite
+    .prepare(`UPDATE workflows SET enabled = ?, updated_at = ? WHERE id = ?`)
+    .run(input.enabled ? 1 : 0, now, input.workflowId);
   logger.info(
     { workflowId: input.workflowId, enabled: input.enabled },
     '[workflow-control] enabled flag updated',
@@ -146,7 +169,9 @@ export function setWorkflowEnabled(input: ToggleWorkflowInput): { ok: true; enab
  * Esegue manualmente un workflow. Dispatch via RunService stesso pattern
  * usato da /runs route. Il run e\` async — ritorna runId immediatamente.
  */
-export async function runWorkflow(input: RunWorkflowInput): Promise<{ ok: true; runId: string } | { ok: false; error: string }> {
+export async function runWorkflow(
+  input: RunWorkflowInput,
+): Promise<{ ok: true; runId: string } | { ok: false; error: string }> {
   const wf = getWorkflow(input.workflowId);
   if (!wf) return { ok: false, error: `Workflow not found: ${input.workflowId}` };
 

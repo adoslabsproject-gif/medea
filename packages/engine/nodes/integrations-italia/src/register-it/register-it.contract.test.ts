@@ -16,7 +16,7 @@ const recordType = def.configFields?.find((f) => f.key === 'recordType');
 const types = recordType?.type === 'select' ? recordType.options : [];
 
 describe('italia_register_it_domain — contract (anti-drift)', () => {
-  it('🚨 ogni record type citato nella description esiste nell\'enum (CAA incluso)', () => {
+  it("🚨 ogni record type citato nella description esiste nell'enum (CAA incluso)", () => {
     for (const t of ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'SRV', 'CAA']) {
       expect(description, `record "${t}" citato ma non nell'enum`).toContain(t);
       expect(types, `record "${t}" non nell'enum recordType`).toContain(t);

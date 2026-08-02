@@ -24,7 +24,6 @@ export class TriggerPassthroughStrategy implements INodeDispatchStrategy {
     return ctx.module.def.type === 'trigger' || ctx.module.def.id.startsWith('trigger_');
   }
 
-   
   execute(ctx: DispatchContext): Promise<DispatchResult> {
     return Promise.resolve({
       output: ctx.carriedInput ?? null,

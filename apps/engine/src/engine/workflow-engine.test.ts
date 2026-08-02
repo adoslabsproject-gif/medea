@@ -86,7 +86,13 @@ describe('WorkflowEngine', () => {
     const workflow = makeWorkflow({
       nodes: [
         { id: 'trig', defId: 'trigger_manual', x: 0, y: 0, config: {} },
-        { id: 'gate', defId: 'logic_if', x: 100, y: 0, config: { condition: 'input.allow === true' } },
+        {
+          id: 'gate',
+          defId: 'logic_if',
+          x: 100,
+          y: 0,
+          config: { condition: 'input.allow === true' },
+        },
         { id: 'yes', defId: 'logic_delay', x: 200, y: 0, config: { durationMs: '5' } },
         { id: 'no', defId: 'logic_delay', x: 200, y: 100, config: { durationMs: '5' } },
       ],
@@ -122,7 +128,10 @@ describe('WorkflowEngine', () => {
         { id: 'boom', defId: 'does_not_exist', x: 100, y: 0, config: {}, continueOnFail: true },
         { id: 'after', defId: 'logic_delay', x: 200, y: 0, config: { durationMs: '3' } },
       ],
-      edges: [{ from: 'trig', to: 'boom' }, { from: 'boom', to: 'after' }],
+      edges: [
+        { from: 'trig', to: 'boom' },
+        { from: 'boom', to: 'after' },
+      ],
     });
     const result = await engine.run({ workflow });
     const boom = result.steps.find((s) => s.nodeId === 'boom');
@@ -145,7 +154,10 @@ describe('WorkflowEngine', () => {
         { id: 'boom', defId: 'does_not_exist', x: 100, y: 0, config: {} },
         { id: 'after', defId: 'logic_delay', x: 200, y: 0, config: { durationMs: '3' } },
       ],
-      edges: [{ from: 'trig', to: 'boom' }, { from: 'boom', to: 'after' }],
+      edges: [
+        { from: 'trig', to: 'boom' },
+        { from: 'boom', to: 'after' },
+      ],
     });
     const result = await engine.run({ workflow });
     const boom = result.steps.find((s) => s.nodeId === 'boom');
@@ -167,7 +179,7 @@ describe('WorkflowEngine', () => {
       expect(resolveContinueOnFail(false, false)).toBe(false);
       expect(resolveContinueOnFail(false, undefined)).toBe(false);
     });
-    it('istanza=undefined → EREDITA il default dell\'operation', () => {
+    it("istanza=undefined → EREDITA il default dell'operation", () => {
       expect(resolveContinueOnFail(undefined, true)).toBe(true);
       expect(resolveContinueOnFail(undefined, false)).toBe(false);
     });
@@ -244,9 +256,22 @@ describe('WorkflowEngine', () => {
   it('resolves $node.<alias>.json when nodes have a user-defined name', async () => {
     const workflow = makeWorkflow({
       nodes: [
-        { id: 'n-cryptic-id-1234', defId: 'trigger_manual', x: 0, y: 0, config: {}, name: 'trigger' },
+        {
+          id: 'n-cryptic-id-1234',
+          defId: 'trigger_manual',
+          x: 0,
+          y: 0,
+          config: {},
+          name: 'trigger',
+        },
         // Expression references the alias `trigger`, NOT the cryptic id.
-        { id: 'n-cryptic-id-5678', defId: 'logic_delay', x: 100, y: 0, config: { durationMs: '{{vars.trigger.ms}}' } },
+        {
+          id: 'n-cryptic-id-5678',
+          defId: 'logic_delay',
+          x: 100,
+          y: 0,
+          config: { durationMs: '{{vars.trigger.ms}}' },
+        },
       ],
       edges: [{ from: 'n-cryptic-id-1234', to: 'n-cryptic-id-5678' }],
     });
@@ -259,7 +284,13 @@ describe('WorkflowEngine', () => {
     const workflow = makeWorkflow({
       nodes: [
         { id: 'my_trigger', defId: 'trigger_manual', x: 0, y: 0, config: {} },
-        { id: 'my_delay', defId: 'logic_delay', x: 100, y: 0, config: { durationMs: '{{vars.my_trigger.ms}}' } },
+        {
+          id: 'my_delay',
+          defId: 'logic_delay',
+          x: 100,
+          y: 0,
+          config: { durationMs: '{{vars.my_trigger.ms}}' },
+        },
       ],
       edges: [{ from: 'my_trigger', to: 'my_delay' }],
     });
@@ -306,7 +337,9 @@ describe('WorkflowEngine', () => {
       ],
       edges: [{ from: 'id1', to: 'id2' }],
     });
-    await expect(engine.run({ workflow, triggerInput: {} })).rejects.toThrow(/Duplicate node alias/);
+    await expect(engine.run({ workflow, triggerInput: {} })).rejects.toThrow(
+      /Duplicate node alias/,
+    );
   });
 });
 
@@ -315,9 +348,7 @@ describe('WorkflowEngine', () => {
 // Aggiunti 2026-05-30 per portare workflow-engine.ts da 59.81% → 100%.
 // ═══════════════════════════════════════════════════════════════════════
 import type { Workflow as WF, CanvasNode as CN, Edge as E } from '@medea/engine-core-schema';
-import type {
-  IPauseHandler, ICheckpointHandler, PauseArgs, CheckpointArgs,
-} from './ports.js';
+import type { IPauseHandler, ICheckpointHandler, PauseArgs, CheckpointArgs } from './ports.js';
 import type { INodeDispatchStrategy } from './strategies/index.js';
 import type { EngineSnapshot } from './workflow-engine.js';
 
@@ -335,12 +366,17 @@ describe('WorkflowEngine — constructor options', () => {
         { id: 'n2', defId: 'logic_delay', x: 100, y: 0, config: { durationMs: '1' } },
         { id: 'n3', defId: 'logic_delay', x: 200, y: 0, config: { durationMs: '1' } },
       ],
-      edges: [{ from: 'n1', to: 'n2' }, { from: 'n2', to: 'n3' }],
+      edges: [
+        { from: 'n1', to: 'n2' },
+        { from: 'n2', to: 'n3' },
+      ],
     });
     await engine.run({ workflow });
     expect(cpHandler.save).toHaveBeenCalled();
     // Almeno 2 checkpoint (3 nodi / every:1, l'ultimo nodo non sempre triggera).
-    expect((cpHandler.save as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect((cpHandler.save as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThanOrEqual(
+      2,
+    );
   });
 
   it('MEDEA_CHECKPOINT_EVERY_NODES env var fallback', async () => {
@@ -378,9 +414,19 @@ describe('WorkflowEngine — constructor options', () => {
 
   it('custom nodeRegistry override (test isolato)', async () => {
     const bus = new InMemoryEventBus();
-    const customExecutor = vi.fn().mockResolvedValue({ output: { custom: true }, chosenBranch: undefined });
+    const customExecutor = vi
+      .fn()
+      .mockResolvedValue({ output: { custom: true }, chosenBranch: undefined });
     const customModule = {
-      def: { id: 'custom_node', label: 'Custom', kind: 'action' as const, category: 'test', inputs: [], outputs: [], configSchema: {} as never },
+      def: {
+        id: 'custom_node',
+        label: 'Custom',
+        kind: 'action' as const,
+        category: 'test',
+        inputs: [],
+        outputs: [],
+        configSchema: {} as never,
+      },
       executor: customExecutor,
     };
     const engine = new WorkflowEngine(bus, {
@@ -398,14 +444,24 @@ describe('WorkflowEngine — constructor options', () => {
 describe('WorkflowEngine — NodeError typed → step.errorCode', () => {
   function failWith(err: Error): unknown {
     return {
-      def: { id: 'failnode', label: 'F', kind: 'action' as const, category: 'test', inputs: [], outputs: [], configSchema: {} as never },
+      def: {
+        id: 'failnode',
+        label: 'F',
+        kind: 'action' as const,
+        category: 'test',
+        inputs: [],
+        outputs: [],
+        configSchema: {} as never,
+      },
       executor: vi.fn().mockRejectedValue(err),
     };
   }
   async function runFailing(err: Error): ReturnType<WorkflowEngine['run']> {
     const bus = new InMemoryEventBus();
     const engine = new WorkflowEngine(bus, { nodeRegistry: [failWith(err) as never] });
-    const workflow = makeWorkflow({ nodes: [{ id: 'n1', defId: 'failnode', x: 0, y: 0, config: {} }] });
+    const workflow = makeWorkflow({
+      nodes: [{ id: 'n1', defId: 'failnode', x: 0, y: 0, config: {} }],
+    });
     return engine.run({ workflow, triggerInput: {} });
   }
 
@@ -429,7 +485,9 @@ describe('WorkflowEngine — NodeError typed → step.errorCode', () => {
   it('errore engine-level (def sconosciuta, non passa da withErrorMapping) → nessun errorCode', async () => {
     const bus = new InMemoryEventBus();
     const engine = new WorkflowEngine(bus);
-    const workflow = makeWorkflow({ nodes: [{ id: 'n1', defId: 'does_not_exist', x: 0, y: 0, config: {} }] });
+    const workflow = makeWorkflow({
+      nodes: [{ id: 'n1', defId: 'does_not_exist', x: 0, y: 0, config: {} }],
+    });
     const r = await engine.run({ workflow, triggerInput: {} });
     expect(r.steps[0]?.status).toBe('error');
     expect(r.steps[0]?.errorCode).toBeUndefined();
@@ -440,7 +498,17 @@ describe('WorkflowEngine — NodeError typed → step.errorCode', () => {
       const bus = new InMemoryEventBus();
       const engine = new WorkflowEngine(bus, { nodeRegistry: [failWith(err) as never] });
       const workflow = makeWorkflow({
-        nodes: [{ id: 'n1', defId: 'failnode', x: 0, y: 0, config: {}, continueOnFail: true, continueOnFailOn: ['network'] }],
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'failnode',
+            x: 0,
+            y: 0,
+            config: {},
+            continueOnFail: true,
+            continueOnFailOn: ['network'],
+          },
+        ],
       });
       return engine.run({ workflow, triggerInput: {} });
     };
@@ -456,15 +524,36 @@ describe('WorkflowEngine — NodeError typed → step.errorCode', () => {
 describe('WorkflowEngine — Versioned Node API (drift osservabilità)', () => {
   function moduleWithVersion(version?: string): unknown {
     return {
-      def: { id: 'vnode', label: 'V', kind: 'action' as const, category: 'test', inputs: [], outputs: [], configSchema: {} as never, ...(version ? { version } : {}) },
+      def: {
+        id: 'vnode',
+        label: 'V',
+        kind: 'action' as const,
+        category: 'test',
+        inputs: [],
+        outputs: [],
+        configSchema: {} as never,
+        ...(version ? { version } : {}),
+      },
       executor: vi.fn().mockResolvedValue({ output: { ok: true }, chosenBranch: undefined }),
     };
   }
-  function runWithVersions(pinned: string | undefined, current: string | undefined): ReturnType<WorkflowEngine['run']> {
+  function runWithVersions(
+    pinned: string | undefined,
+    current: string | undefined,
+  ): ReturnType<WorkflowEngine['run']> {
     const bus = new InMemoryEventBus();
     const engine = new WorkflowEngine(bus, { nodeRegistry: [moduleWithVersion(current) as never] });
     const workflow = makeWorkflow({
-      nodes: [{ id: 'n1', defId: 'vnode', x: 0, y: 0, config: {}, ...(pinned ? { defVersion: pinned } : {}) }],
+      nodes: [
+        {
+          id: 'n1',
+          defId: 'vnode',
+          x: 0,
+          y: 0,
+          config: {},
+          ...(pinned ? { defVersion: pinned } : {}),
+        },
+      ],
     });
     return engine.run({ workflow, triggerInput: {} });
   }
@@ -552,7 +641,15 @@ describe('WorkflowEngine — run() input handling', () => {
       return Promise.resolve({ output: { ok: true }, chosenBranch: undefined });
     });
     const customModule = {
-      def: { id: 'depth_capturer', label: 'D', kind: 'action' as const, category: 't', inputs: [], outputs: [], configSchema: {} as never },
+      def: {
+        id: 'depth_capturer',
+        label: 'D',
+        kind: 'action' as const,
+        category: 't',
+        inputs: [],
+        outputs: [],
+        configSchema: {} as never,
+      },
       executor: customExecutor,
     };
     const engine = new WorkflowEngine(bus, { nodeRegistry: [customModule as never] });
@@ -576,8 +673,9 @@ describe('WorkflowEngine — run() input handling', () => {
     });
     const ac = new AbortController();
     ac.abort();
-    await expect(engine.run({ workflow, cancelSignal: ac.signal }))
-      .rejects.toThrow(/cancelled by user/);
+    await expect(engine.run({ workflow, cancelSignal: ac.signal })).rejects.toThrow(
+      /cancelled by user/,
+    );
   });
 });
 
@@ -659,12 +757,26 @@ describe('WorkflowEngine — resume() snapshot', () => {
       outputsById: new Map([['a', { x: 1 }]]),
       visited: new Set(['a']),
       pendingQueue: [{ nodeId: 'b', carriedInput: { x: 1 } }],
-      stepsSoFar: [{ nodeId: 'a', nodeLabel: 'Manual', status: 'success', output: '', input: '', startedAt: Date.now() - 1000, endedAt: Date.now() - 999, durationMs: 1, nodeConfig: {} }],
+      stepsSoFar: [
+        {
+          nodeId: 'a',
+          nodeLabel: 'Manual',
+          status: 'success',
+          output: '',
+          input: '',
+          startedAt: Date.now() - 1000,
+          endedAt: Date.now() - 999,
+          durationMs: 1,
+          nodeConfig: {},
+        },
+      ],
       errorCount: 0,
       startedAt: Date.now() - 5000,
     };
     const events: string[] = [];
-    bus.subscribe((e) => { events.push(e.name); });
+    bus.subscribe((e) => {
+      events.push(e.name);
+    });
     const result = await engine.resume(snapshot, workflow);
     expect(events).toContain('run.resumed');
     expect(result.runId).toBe('resumed-run-1');
@@ -688,11 +800,17 @@ describe('WorkflowEngine — wait_signal pause', () => {
     const workflow = makeWorkflow({
       nodes: [
         { id: 'trig', defId: 'trigger_manual', x: 0, y: 0, config: {} },
-        { id: 'wait', defId: 'logic_wait_signal', x: 100, y: 0, config: {
-          signalName: 'order_approved',
-          timeoutSeconds: 3600,
-          defaultPayload: '{"approved": false}',
-        } as unknown as Record<string, string> },
+        {
+          id: 'wait',
+          defId: 'logic_wait_signal',
+          x: 100,
+          y: 0,
+          config: {
+            signalName: 'order_approved',
+            timeoutSeconds: 3600,
+            defaultPayload: '{"approved": false}',
+          } as unknown as Record<string, string>,
+        },
       ],
       edges: [{ from: 'trig', to: 'wait' }],
     });
@@ -708,7 +826,10 @@ describe('WorkflowEngine — wait_signal pause', () => {
     const bus = new InMemoryEventBus();
     let captured: PauseArgs | undefined;
     const pauseHandler: IPauseHandler = {
-      pause: (a) => { captured = a; return 'pid'; },
+      pause: (a) => {
+        captured = a;
+        return 'pid';
+      },
     };
     const engine = new WorkflowEngine(bus, { pauseHandler });
     const workflow = makeWorkflow({
@@ -716,12 +837,18 @@ describe('WorkflowEngine — wait_signal pause', () => {
         { id: 'trig', defId: 'trigger_manual', x: 0, y: 0, config: {} },
         // matchValue è una expression GREZZA (no `{{}}`) — evaluateExpression
         // la passa a new Function() direttamente.
-        { id: 'wait', defId: 'logic_wait_signal', x: 100, y: 0, config: {
-          signalName: 'approval',
-          matchKey: 'orderId',
-          matchValue: 'vars.trig.orderId',
-          timeoutSeconds: 60,
-        } as unknown as Record<string, string> },
+        {
+          id: 'wait',
+          defId: 'logic_wait_signal',
+          x: 100,
+          y: 0,
+          config: {
+            signalName: 'approval',
+            matchKey: 'orderId',
+            matchValue: 'vars.trig.orderId',
+            timeoutSeconds: 60,
+          } as unknown as Record<string, string>,
+        },
       ],
       edges: [{ from: 'trig', to: 'wait' }],
     });
@@ -734,18 +861,27 @@ describe('WorkflowEngine — wait_signal pause', () => {
     const bus = new InMemoryEventBus();
     let captured: PauseArgs | undefined;
     const pauseHandler: IPauseHandler = {
-      pause: (a) => { captured = a; return 'pid'; },
+      pause: (a) => {
+        captured = a;
+        return 'pid';
+      },
     };
     const engine = new WorkflowEngine(bus, { pauseHandler });
     const workflow = makeWorkflow({
       nodes: [
         { id: 'trig', defId: 'trigger_manual', x: 0, y: 0, config: {} },
-        { id: 'wait', defId: 'logic_wait_signal', x: 100, y: 0, config: {
-          signalName: 'sig',
-          matchKey: 'k',
-          matchValue: '{{undefined.broken.path}}', // throws InterpreterError
-          timeoutSeconds: 10,
-        } as unknown as Record<string, string> },
+        {
+          id: 'wait',
+          defId: 'logic_wait_signal',
+          x: 100,
+          y: 0,
+          config: {
+            signalName: 'sig',
+            matchKey: 'k',
+            matchValue: '{{undefined.broken.path}}', // throws InterpreterError
+            timeoutSeconds: 10,
+          } as unknown as Record<string, string>,
+        },
       ],
       edges: [{ from: 'trig', to: 'wait' }],
     });
@@ -758,16 +894,25 @@ describe('WorkflowEngine — wait_signal pause', () => {
     const bus = new InMemoryEventBus();
     let captured: PauseArgs | undefined;
     const pauseHandler: IPauseHandler = {
-      pause: (a) => { captured = a; return 'pid'; },
+      pause: (a) => {
+        captured = a;
+        return 'pid';
+      },
     };
     const engine = new WorkflowEngine(bus, { pauseHandler });
     const workflow = makeWorkflow({
       nodes: [
-        { id: 'wait', defId: 'logic_wait_signal', x: 0, y: 0, config: {
-          signalName: 'sig',
-          defaultPayload: '{INVALID-JSON-NOT-PARSABLE',
-          timeoutSeconds: 1,
-        } as unknown as Record<string, string> },
+        {
+          id: 'wait',
+          defId: 'logic_wait_signal',
+          x: 0,
+          y: 0,
+          config: {
+            signalName: 'sig',
+            defaultPayload: '{INVALID-JSON-NOT-PARSABLE',
+            timeoutSeconds: 1,
+          } as unknown as Record<string, string>,
+        },
       ],
     });
     await engine.run({ workflow });
@@ -778,15 +923,24 @@ describe('WorkflowEngine — wait_signal pause', () => {
     const bus = new InMemoryEventBus();
     let captured: PauseArgs | undefined;
     const pauseHandler: IPauseHandler = {
-      pause: (a) => { captured = a; return 'pid'; },
+      pause: (a) => {
+        captured = a;
+        return 'pid';
+      },
     };
     const engine = new WorkflowEngine(bus, { pauseHandler });
     const workflow = makeWorkflow({
       nodes: [
-        { id: 'wait', defId: 'logic_wait_signal', x: 0, y: 0, config: {
-          signalName: 'sig',
-          timeoutSeconds: -100,
-        } as unknown as Record<string, string> },
+        {
+          id: 'wait',
+          defId: 'logic_wait_signal',
+          x: 0,
+          y: 0,
+          config: {
+            signalName: 'sig',
+            timeoutSeconds: -100,
+          } as unknown as Record<string, string>,
+        },
       ],
     });
     await engine.run({ workflow });
@@ -805,19 +959,29 @@ describe('WorkflowEngine — periodic checkpoint', () => {
     const nodes: CN[] = [];
     const edges: E[] = [];
     for (let i = 0; i < 5; i++) {
-      nodes.push({ id: `n${i}`, defId: i === 0 ? 'trigger_manual' : 'logic_delay', x: i * 100, y: 0, config: { durationMs: '1' } });
+      nodes.push({
+        id: `n${i}`,
+        defId: i === 0 ? 'trigger_manual' : 'logic_delay',
+        x: i * 100,
+        y: 0,
+        config: { durationMs: '1' },
+      });
       if (i > 0) edges.push({ from: `n${i - 1}`, to: `n${i}` });
     }
     const workflow = makeWorkflow({ nodes, edges });
     await engine.run({ workflow });
     expect(cpHandler.save).toHaveBeenCalled();
-    expect((cpHandler.save as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect((cpHandler.save as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThanOrEqual(
+      2,
+    );
   });
 
   it('checkpoint save che throw → catch logger.warn, esecuzione continua', async () => {
     const bus = new InMemoryEventBus();
     const cpHandler: ICheckpointHandler = {
-      save: (_a: CheckpointArgs): void => { throw new Error('cp persist failed'); },
+      save: (_a: CheckpointArgs): void => {
+        throw new Error('cp persist failed');
+      },
     };
     const engine = new WorkflowEngine(bus, {
       checkpointHandler: cpHandler,
@@ -870,7 +1034,15 @@ describe('WorkflowEngine — safeStringify truncation', () => {
     const bus = new InMemoryEventBus();
     const huge = 'x'.repeat(40_000);
     const customModule = {
-      def: { id: 'huge_outputter', label: 'H', kind: 'action' as const, category: 't', inputs: [], outputs: [], configSchema: {} as never },
+      def: {
+        id: 'huge_outputter',
+        label: 'H',
+        kind: 'action' as const,
+        category: 't',
+        inputs: [],
+        outputs: [],
+        configSchema: {} as never,
+      },
       executor: () => Promise.resolve({ output: huge, chosenBranch: undefined }),
     };
     const engine = new WorkflowEngine(bus, { nodeRegistry: [customModule as never] });
@@ -929,10 +1101,16 @@ describe('WorkflowEngine — logic_loop success path (success branch + downstrea
     const workflow = makeWorkflow({
       nodes: [
         { id: 'trig', defId: 'trigger_manual', x: 0, y: 0, config: {} },
-        { id: 'loop', defId: 'logic_loop', x: 100, y: 0, config: {
-          itemsExpression: 'input.items',
-          strategy: 'naive',
-        } },
+        {
+          id: 'loop',
+          defId: 'logic_loop',
+          x: 100,
+          y: 0,
+          config: {
+            itemsExpression: 'input.items',
+            strategy: 'naive',
+          },
+        },
         // Body — chiamato in ogni iteration. Lo step viene loggato CON loop context
         // (iterationIndex/iterationTotal/loopId) → copre righe 418-421 + 463-466.
         { id: 'body', defId: 'logic_delay', x: 200, y: 0, config: { durationMs: '1' } },
@@ -968,11 +1146,17 @@ describe('WorkflowEngine — logic_loop error path', () => {
     const workflow = makeWorkflow({
       nodes: [
         { id: 'trig', defId: 'trigger_manual', x: 0, y: 0, config: {} },
-        { id: 'loop', defId: 'logic_loop', x: 100, y: 0, config: {
-          itemsExpression: 'input.items',
-          maxItems: 1,
-          strategy: 'naive',
-        } as unknown as Record<string, string> },
+        {
+          id: 'loop',
+          defId: 'logic_loop',
+          x: 100,
+          y: 0,
+          config: {
+            itemsExpression: 'input.items',
+            maxItems: 1,
+            strategy: 'naive',
+          } as unknown as Record<string, string>,
+        },
       ],
       edges: [{ from: 'trig', to: 'loop' }],
     });
@@ -989,11 +1173,22 @@ describe('WorkflowEngine — logic_loop error path', () => {
 describe('WorkflowEngine — resolveCommunityNodeModule (defensive placeholder)', () => {
   it('community node lookup → NodeModule con executor placeholder che throw se chiamato', async () => {
     // Override mock per simulare entry installata (default è undefined → fallback ok)
-    communityNodesMock.getInstalledByDefId.mockImplementationOnce(() => ({
-      def: { id: 'community_test', label: 'Comm', kind: 'action', category: 'community', inputs: [], outputs: [], configSchema: {} as never },
-      packagePath: '/fake/path',
-      version: '1.0.0',
-    } as never));
+    communityNodesMock.getInstalledByDefId.mockImplementationOnce(
+      () =>
+        ({
+          def: {
+            id: 'community_test',
+            label: 'Comm',
+            kind: 'action',
+            category: 'community',
+            inputs: [],
+            outputs: [],
+            configSchema: {} as never,
+          },
+          packagePath: '/fake/path',
+          version: '1.0.0',
+        }) as never,
+    );
     const bus = new InMemoryEventBus();
     const engine = new WorkflowEngine(bus);
     const mod = engine.resolveNodeModule('non_existent_defId_xyz_community');
@@ -1001,7 +1196,11 @@ describe('WorkflowEngine — resolveCommunityNodeModule (defensive placeholder)'
     // Il placeholder executor (righe 41-44) DEVE throw se chiamato direttamente.
     // Cast `as never` per bypassare la signature richiesta (executor accetta
     // contesto NodeExecutionContext, qui non ci interessa).
-    const exec = (mod!.executor as unknown as (input: unknown, ctx: unknown, runCtx?: unknown) => Promise<unknown>);
+    const exec = mod!.executor as unknown as (
+      input: unknown,
+      ctx: unknown,
+      runCtx?: unknown,
+    ) => Promise<unknown>;
     await expect(exec({}, {}, {})).rejects.toThrow(/Community node executor must be dispatched/);
   });
 });
@@ -1045,4 +1244,3 @@ describe('WorkflowEngine — branchable nodes vs schema-hint nodes', () => {
     expect(nodeIds).toContain('d2');
   });
 });
-

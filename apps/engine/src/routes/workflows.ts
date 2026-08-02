@@ -12,11 +12,25 @@ import { NotificationsService } from '@/services/notifications.service.js';
 import { EstimatorService } from '@/services/estimator.service.js';
 import { aiScaffold, AiScaffoldError } from '@/services/ai-scaffold.service.js';
 import { createJob, completeJob, failJob, getJob } from '@/services/ai-scaffold/scaffold-jobs.js';
-import { persistScaffoldResult, loadScaffoldResult } from '@/services/ai-scaffold/scaffold-result-persist.js';
-import { remapNodeDatabaseIds, provisionDeclaredTables } from '@/services/ai-scaffold/scaffold-table-provision.js';
+import {
+  persistScaffoldResult,
+  loadScaffoldResult,
+} from '@/services/ai-scaffold/scaffold-result-persist.js';
+import {
+  remapNodeDatabaseIds,
+  provisionDeclaredTables,
+} from '@/services/ai-scaffold/scaffold-table-provision.js';
 import { randomUUID } from 'node:crypto';
-import { autoLayout as computeAutoLayout, type LayoutNode, type LayoutEdge } from '@/services/auto-layout.service.js';
-import { tenantService, QuotaExceededError, TenantNotFoundError } from '@/services/tenant.service.js';
+import {
+  autoLayout as computeAutoLayout,
+  type LayoutNode,
+  type LayoutEdge,
+} from '@/services/auto-layout.service.js';
+import {
+  tenantService,
+  QuotaExceededError,
+  TenantNotFoundError,
+} from '@/services/tenant.service.js';
 import type { IEventBus } from '@/ports/event-bus.js';
 import { logger } from '@/lib/logger.js';
 import { getTenantId } from '@/lib/tenant.js';
@@ -27,18 +41,38 @@ const OnErrorSchema = z.object({
   emailTo: z.string().email().optional(),
 });
 
-const TableToCreateSchema = z.object({
-  databaseId: z.string().min(1).max(50).optional(),
-  name: z.string().regex(/^[a-z][a-z0-9_]{0,49}$/u),
-  description: z.string().max(200).optional(),
-  columns: z.array(z.object({
+const TableToCreateSchema = z
+  .object({
+    databaseId: z.string().min(1).max(50).optional(),
     name: z.string().regex(/^[a-z][a-z0-9_]{0,49}$/u),
-    type: z.enum(['bigint', 'boolean', 'text', 'varchar', 'integer', 'decimal', 'real', 'date', 'time', 'datetime', 'json', 'uuid']),
-    nullable: z.boolean().optional(),
-    unique: z.boolean().optional(),
-    primaryKey: z.boolean().optional(),
-  })).min(1).max(30),
-}).strict();
+    description: z.string().max(200).optional(),
+    columns: z
+      .array(
+        z.object({
+          name: z.string().regex(/^[a-z][a-z0-9_]{0,49}$/u),
+          type: z.enum([
+            'bigint',
+            'boolean',
+            'text',
+            'varchar',
+            'integer',
+            'decimal',
+            'real',
+            'date',
+            'time',
+            'datetime',
+            'json',
+            'uuid',
+          ]),
+          nullable: z.boolean().optional(),
+          unique: z.boolean().optional(),
+          primaryKey: z.boolean().optional(),
+        }),
+      )
+      .min(1)
+      .max(30),
+  })
+  .strict();
 
 const CreateWorkflowSchema = z.object({
   name: z.string().min(1).max(200),
@@ -89,7 +123,12 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
   // + tenant boundary (prevenire cross-tenant superadmin impersonate + zombie row).
   registerWorkflowLockRoutes(app, new WorkflowLockService(), service);
   // Commenti + @mentions con notifiche push (Tier 3, #7).
-  registerWorkflowCommentsRoutes(app, new WorkflowCommentsService(), new NotificationsService(), service);
+  registerWorkflowCommentsRoutes(
+    app,
+    new WorkflowCommentsService(),
+    new NotificationsService(),
+    service,
+  );
   // URL pubblico del webhook col token derivato CORRENTE (SSOT backend —
   // il frontend non ha il secret e non può calcolarlo; fix "no-token").
   registerWorkflowWebhookUrlRoutes(app, service);
@@ -163,7 +202,11 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
     const tenantId = getTenantId(c);
     const id = c.req.param('id');
     let payload: unknown;
-    try { payload = await c.req.json(); } catch { return c.json({ error: 'JSON non valido' }, 400); }
+    try {
+      payload = await c.req.json();
+    } catch {
+      return c.json({ error: 'JSON non valido' }, 400);
+    }
     const result = await service.saveDraft(id, payload, tenantId);
     if (!result) return c.json({ error: 'Not found' }, 404);
     return c.json(result);
@@ -190,29 +233,43 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
    * Validazioni: anti-self (id === errorWorkflowId rifiutato).
    * Risponde { errorWorkflowId: string | null }.
    */
-  app.patch('/:id/error-workflow', zValidator('json', z.object({
-    errorWorkflowId: z.string().min(1).max(64).nullable(),
-  })), async (c) => {
-    const tenantId = getTenantId(c);
-    const actorId = getActorId(c);
-    const id = c.req.param('id');
-    const body = c.req.valid('json');
-    const existing = await service.get(id, tenantId);
-    if (!existing) return c.json({ error: 'Not found' }, 404);
-    if (body.errorWorkflowId === id) {
-      return c.json({ error: 'Anti-self loop: errorWorkflowId non può coincidere con il workflow stesso' }, 400);
-    }
-    if (body.errorWorkflowId !== null) {
-      const target = await service.get(body.errorWorkflowId, tenantId);
-      if (!target) return c.json({ error: `Error workflow ${body.errorWorkflowId} non trovato nel tenant` }, 404);
-    }
-    const updateInput: { errorWorkflowId: string | null; actorId?: string } = {
-      errorWorkflowId: body.errorWorkflowId,
-    };
-    if (actorId !== null && actorId !== undefined) updateInput.actorId = actorId;
-    await service.update(id, updateInput, tenantId);
-    return c.json({ errorWorkflowId: body.errorWorkflowId });
-  });
+  app.patch(
+    '/:id/error-workflow',
+    zValidator(
+      'json',
+      z.object({
+        errorWorkflowId: z.string().min(1).max(64).nullable(),
+      }),
+    ),
+    async (c) => {
+      const tenantId = getTenantId(c);
+      const actorId = getActorId(c);
+      const id = c.req.param('id');
+      const body = c.req.valid('json');
+      const existing = await service.get(id, tenantId);
+      if (!existing) return c.json({ error: 'Not found' }, 404);
+      if (body.errorWorkflowId === id) {
+        return c.json(
+          { error: 'Anti-self loop: errorWorkflowId non può coincidere con il workflow stesso' },
+          400,
+        );
+      }
+      if (body.errorWorkflowId !== null) {
+        const target = await service.get(body.errorWorkflowId, tenantId);
+        if (!target)
+          return c.json(
+            { error: `Error workflow ${body.errorWorkflowId} non trovato nel tenant` },
+            404,
+          );
+      }
+      const updateInput: { errorWorkflowId: string | null; actorId?: string } = {
+        errorWorkflowId: body.errorWorkflowId,
+      };
+      if (actorId !== null && actorId !== undefined) updateInput.actorId = actorId;
+      await service.update(id, updateInput, tenantId);
+      return c.json({ errorWorkflowId: body.errorWorkflowId });
+    },
+  );
 
   /**
    * POST /:id/discard-draft — butta via il draft autosaved.
@@ -274,7 +331,11 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
     const tenantId = getTenantId(c);
     const actorId = getActorId(c) ?? undefined;
     let bundle: unknown;
-    try { bundle = await c.req.json(); } catch { return c.json({ error: 'Bundle JSON non valido' }, 400); }
+    try {
+      bundle = await c.req.json();
+    } catch {
+      return c.json({ error: 'Bundle JSON non valido' }, 400);
+    }
     try {
       const result = await service.importBundle(bundle, tenantId, actorId);
       return c.json(result, 201);
@@ -299,13 +360,16 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
         tenantService.checkQuota(tenantId, 'workflows');
       } catch (err) {
         if (err instanceof QuotaExceededError) {
-          return c.json({
-            error: err.message,
-            code: 'WORKFLOW_QUOTA_EXCEEDED',
-            quota: { kind: err.kind, limit: err.limit, current: err.current },
-            hint: 'Hai raggiunto il limite di workflow ATTIVI del tuo piano. Disattivane uno o passa a un piano superiore.',
-            upgradeUrl: '/account/billing?reason=quota',
-          }, 402);
+          return c.json(
+            {
+              error: err.message,
+              code: 'WORKFLOW_QUOTA_EXCEEDED',
+              quota: { kind: err.kind, limit: err.limit, current: err.current },
+              hint: 'Hai raggiunto il limite di workflow ATTIVI del tuo piano. Disattivane uno o passa a un piano superiore.',
+              upgradeUrl: '/account/billing?reason=quota',
+            },
+            402,
+          );
         }
         if (err instanceof TenantNotFoundError) {
           return c.json({ error: 'Tenant non trovato', code: 'TENANT_NOT_FOUND' }, 404);
@@ -324,7 +388,10 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
     if (body.tablesToCreate && body.tablesToCreate.length > 0) {
       const { DbStudioService } = await import('@/services/db-studio.service.js');
       const provision = await provisionDeclaredTables(
-        new DbStudioService(), tenantId, body.tablesToCreate, logger,
+        new DbStudioService(),
+        tenantId,
+        body.tablesToCreate,
+        logger,
       );
       tablesCreated = provision.tablesCreated;
       if (Array.isArray(body.nodes)) {
@@ -350,7 +417,10 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
       const created = await service.create(input);
       // Restituisci nel response anche l'esito create_table così la UI può
       // mostrare "✓ tabella X creata" o warning "⚠ tabella Y già esisteva"
-      return c.json({ workflow: created, ...(tablesCreated.length > 0 ? { tablesCreated } : {}) }, 201);
+      return c.json(
+        { workflow: created, ...(tablesCreated.length > 0 ? { tablesCreated } : {}) },
+        201,
+      );
     } catch (error) {
       logger.error({ err: error }, 'workflow.create failed');
       return c.json({ error: error instanceof Error ? error.message : 'create failed' }, 400);
@@ -374,13 +444,16 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
           tenantService.checkQuota(tenantId, 'workflows');
         } catch (err) {
           if (err instanceof QuotaExceededError) {
-            return c.json({
-              error: err.message,
-              code: 'WORKFLOW_QUOTA_EXCEEDED',
-              quota: { kind: err.kind, limit: err.limit, current: err.current },
-              hint: 'Hai raggiunto il limite di workflow ATTIVI. Disattivane un altro per liberare uno slot.',
-              upgradeUrl: '/account/billing?reason=quota',
-            }, 402);
+            return c.json(
+              {
+                error: err.message,
+                code: 'WORKFLOW_QUOTA_EXCEEDED',
+                quota: { kind: err.kind, limit: err.limit, current: err.current },
+                hint: 'Hai raggiunto il limite di workflow ATTIVI. Disattivane un altro per liberare uno slot.',
+                upgradeUrl: '/account/billing?reason=quota',
+              },
+              402,
+            );
           }
           if (err instanceof TenantNotFoundError) {
             return c.json({ error: 'Tenant non trovato', code: 'TENANT_NOT_FOUND' }, 404);
@@ -450,27 +523,39 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
   // ─────────────────────────────────────────────────────────────
   const ApplyAiPatchSchema = z.object({
     patch: z.object({
-      updateNodes: z.array(z.object({
-        id: z.string(),
-        patch: z.object({
-          config: z.record(z.string(), z.unknown()).optional(),
-          name: z.string().optional(),
-          notes: z.string().optional(),
-        }),
-      })).optional(),
-      addNodes: z.array(z.object({
-        id: z.string(),
-        defId: z.string(),
-        config: z.record(z.string(), z.unknown()).optional(),
-        x: z.number().optional(),
-        y: z.number().optional(),
-      })).optional(),
+      updateNodes: z
+        .array(
+          z.object({
+            id: z.string(),
+            patch: z.object({
+              config: z.record(z.string(), z.unknown()).optional(),
+              name: z.string().optional(),
+              notes: z.string().optional(),
+            }),
+          }),
+        )
+        .optional(),
+      addNodes: z
+        .array(
+          z.object({
+            id: z.string(),
+            defId: z.string(),
+            config: z.record(z.string(), z.unknown()).optional(),
+            x: z.number().optional(),
+            y: z.number().optional(),
+          }),
+        )
+        .optional(),
       removeNodeIds: z.array(z.string()).optional(),
-      addEdges: z.array(z.object({
-        from: z.string(),
-        to: z.string(),
-        fromPort: z.string().optional(),
-      })).optional(),
+      addEdges: z
+        .array(
+          z.object({
+            from: z.string(),
+            to: z.string(),
+            fromPort: z.string().optional(),
+          }),
+        )
+        .optional(),
       removeEdgeIds: z.array(z.string()).optional(),
     }),
     sourceRunId: z.string().optional(),
@@ -488,7 +573,11 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
     const nodes = [...existing.nodes];
     const edges = [...existing.edges];
 
-    let updateCount = 0, addCount = 0, removeNodeCount = 0, addEdgeCount = 0, removeEdgeCount = 0;
+    let updateCount = 0,
+      addCount = 0,
+      removeNodeCount = 0,
+      addEdgeCount = 0,
+      removeEdgeCount = 0;
     const issues: string[] = [];
 
     // 1. updateNodes: patch config + name + notes
@@ -559,9 +648,11 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
     for (const eid of body.patch.removeEdgeIds ?? []) {
       // formato "from|to" o "from|to|fromPort" — best-effort match
       const parts = eid.split('|');
-      const idx = edges.findIndex((e) =>
-        e.from === parts[0] && e.to === parts[1]
-        && (parts[2] === undefined || e.fromPort === parts[2]),
+      const idx = edges.findIndex(
+        (e) =>
+          e.from === parts[0] &&
+          e.to === parts[1] &&
+          (parts[2] === undefined || e.fromPort === parts[2]),
       );
       if (idx < 0) {
         issues.push(`removeEdgeIds: edge "${eid}" non trovato`);
@@ -636,7 +727,9 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
           if (parsed.data.marginy !== undefined) opts.marginy = parsed.data.marginy;
         }
       }
-    } catch { /* empty body → defaults */ }
+    } catch {
+      /* empty body → defaults */
+    }
 
     const existing = await service.get(id, tenantId);
     if (!existing) return c.json({ error: 'Workflow non trovato' }, 404);
@@ -684,7 +777,9 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
       const estimate = estimator.estimate({
         workflow,
         sampleInput: body.sampleInput,
-        ...(body.defaultIterationCount !== undefined ? { defaultIterationCount: body.defaultIterationCount } : {}),
+        ...(body.defaultIterationCount !== undefined
+          ? { defaultIterationCount: body.defaultIterationCount }
+          : {}),
       });
       return c.json({ estimate });
     } catch (err) {
@@ -715,7 +810,7 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
     const tenantId = getTenantId(c);
     let body: { goal?: string; databaseId?: string; apiKey?: string; provider?: string };
     try {
-      body = (await c.req.json());
+      body = await c.req.json();
     } catch {
       return c.json({ error: 'Body JSON non valido' }, 400);
     }
@@ -804,7 +899,13 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
 
         (async () => {
           try {
-            const input: { goal: string; tenantId: string; databaseId?: string; apiKey?: string; provider?: string } = {
+            const input: {
+              goal: string;
+              tenantId: string;
+              databaseId?: string;
+              apiKey?: string;
+              provider?: string;
+            } = {
               goal: body.goal!,
               tenantId,
             };
@@ -818,10 +919,13 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
               const evType = event.type as string;
               if (evType === 'done') {
                 const res = (event as { result?: unknown }).result;
-                completeJob(jobId, res);                 // in-memory (veloce)
-                persistScaffoldResult(jobId, res);       // SQLite (sopravvive al restart)
-              }
-              else if (evType === 'error') failJob(jobId, coerceString((event as { error?: unknown }).error ?? 'AI scaffold error'));
+                completeJob(jobId, res); // in-memory (veloce)
+                persistScaffoldResult(jobId, res); // SQLite (sopravvive al restart)
+              } else if (evType === 'error')
+                failJob(
+                  jobId,
+                  coerceString((event as { error?: unknown }).error ?? 'AI scaffold error'),
+                );
               send(event.type, event);
             });
             // FIX 2026-05-30 (bug "Stream chiuso senza un risultato" #2):
@@ -842,11 +946,17 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
               });
             }
           } catch (err) {
-            const message = err instanceof AiScaffoldError
-              ? err.message
-              : err instanceof Error ? err.message : 'AI scaffold failed';
+            const message =
+              err instanceof AiScaffoldError
+                ? err.message
+                : err instanceof Error
+                  ? err.message
+                  : 'AI scaffold failed';
             const httpStatus = err instanceof AiScaffoldError ? err.httpStatus : 500;
-            logger.warn({ tenantId, httpStatus, errMessage: message, goal: body.goal?.slice(0, 200) }, '[SSE] AI scaffold error');
+            logger.warn(
+              { tenantId, httpStatus, errMessage: message, goal: body.goal?.slice(0, 200) },
+              '[SSE] AI scaffold error',
+            );
             failJob(jobId, message, httpStatus);
             send('error', { error: message, httpStatus });
           } finally {
@@ -857,7 +967,11 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
             // possono droppare gli ultimi bytes accodati. 200ms e\` invisibile
             // all'UX MA copre il window di race buffer.
             await new Promise<void>((resolve) => setTimeout(resolve, 200));
-            try { controller.close(); } catch { /* gia\` chiuso */ }
+            try {
+              controller.close();
+            } catch {
+              /* gia\` chiuso */
+            }
           }
         })().catch(() => {
           clearInterval(heartbeatTimer);
@@ -882,7 +996,13 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
       return c.json({ status: 'unknown' }, 404);
     }
     if (job.status === 'running') return c.json({ status: 'running' }, 202);
-    if (job.status === 'error') return c.json({ status: 'error', error: job.error ?? 'error' }, (job.httpStatus && job.httpStatus >= 400 && job.httpStatus < 600 ? job.httpStatus : 500) as 500);
+    if (job.status === 'error')
+      return c.json(
+        { status: 'error', error: job.error ?? 'error' },
+        (job.httpStatus && job.httpStatus >= 400 && job.httpStatus < 600
+          ? job.httpStatus
+          : 500) as 500,
+      );
     return c.json({ status: 'done', result: job.result }, 200);
   });
 
@@ -895,7 +1015,7 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
     const tenantId = getTenantId(c);
     let body: { goal?: string; databaseId?: string; apiKey?: string; provider?: string };
     try {
-      body = (await c.req.json());
+      body = await c.req.json();
     } catch {
       return c.json({ error: 'Body JSON non valido' }, 400);
     }
@@ -903,7 +1023,13 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
       return c.json({ error: 'Missing "goal" string in body' }, 400);
     }
     try {
-      const input: { goal: string; tenantId: string; databaseId?: string; apiKey?: string; provider?: string } = {
+      const input: {
+        goal: string;
+        tenantId: string;
+        databaseId?: string;
+        apiKey?: string;
+        provider?: string;
+      } = {
         goal: body.goal,
         tenantId,
       };

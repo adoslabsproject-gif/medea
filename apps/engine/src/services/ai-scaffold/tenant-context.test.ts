@@ -9,20 +9,36 @@ import { describe, it, expect, vi } from 'vitest';
 // ── Mock delle dipendenze service di buildTenantContext (istanziate a import) ──
 const h = vi.hoisted(() => ({ dbList: [] as unknown[] }));
 vi.mock('@/services/db-studio.service.js', () => ({
-  DbStudioService: class { list(): unknown[] { return h.dbList; } },
+  DbStudioService: class {
+    list(): unknown[] {
+      return h.dbList;
+    }
+  },
 }));
 vi.mock('@/services/system-email-accounts.service.js', () => ({
-  SystemEmailAccountsService: class { picker(): unknown[] { return []; } },
+  SystemEmailAccountsService: class {
+    picker(): unknown[] {
+      return [];
+    }
+  },
 }));
 vi.mock('@/services/llm-providers.service.js', () => ({
-  LlmProvidersService: class { list(): unknown[] { return []; } },
+  LlmProvidersService: class {
+    list(): unknown[] {
+      return [];
+    }
+  },
 }));
 vi.mock('@/services/tenant-ai-preferences.service.js', () => ({
   tenantAiPreferences: { resolveDefaultProvider: (): string | null => null },
 }));
 vi.mock('@/lib/logger.js');
 
-import { buildTenantContext, formatTenantContextForPrompt, type TenantContextResources } from './tenant-context.js';
+import {
+  buildTenantContext,
+  formatTenantContextForPrompt,
+  type TenantContextResources,
+} from './tenant-context.js';
 
 /** Helper: empty context with the new (2026-06-07) fields zeroed. */
 function empty(overrides: Partial<TenantContextResources> = {}): TenantContextResources {
@@ -43,8 +59,22 @@ describe('formatTenantContextForPrompt', () => {
   it('solo databases → include section DB + regole', () => {
     const ctx = empty({
       databases: [
-        { id: 'QhktHRtIKHL5aniYhgRvz', name: 'Main', description: 'production logs', tables: ['users', 'orders'], columns: {}, writable: true },
-        { id: 'XYZ123ABC456DEF789GH', name: 'Analytics', description: null, tables: [], columns: {}, writable: true },
+        {
+          id: 'QhktHRtIKHL5aniYhgRvz',
+          name: 'Main',
+          description: 'production logs',
+          tables: ['users', 'orders'],
+          columns: {},
+          writable: true,
+        },
+        {
+          id: 'XYZ123ABC456DEF789GH',
+          name: 'Analytics',
+          description: null,
+          tables: [],
+          columns: {},
+          writable: true,
+        },
       ],
     });
     const s = formatTenantContextForPrompt(ctx);
@@ -74,7 +104,9 @@ describe('formatTenantContextForPrompt', () => {
 
   it('entrambi presenti → include entrambe section', () => {
     const ctx = empty({
-      databases: [{ id: 'db-1', name: 'X', description: null, tables: [], columns: {}, writable: true }],
+      databases: [
+        { id: 'db-1', name: 'X', description: null, tables: [], columns: {}, writable: true },
+      ],
       emailAccounts: [{ id: 'em-1', label: 'L', fromAddress: 'a@b.io', isDefault: true }],
     });
     const s = formatTenantContextForPrompt(ctx);
@@ -85,7 +117,9 @@ describe('formatTenantContextForPrompt', () => {
 
   it('regole ferree menzionano secrets + NON inventare', () => {
     const ctx = empty({
-      databases: [{ id: 'db', name: 'D', description: null, tables: [], columns: {}, writable: true }],
+      databases: [
+        { id: 'db', name: 'D', description: null, tables: [], columns: {}, writable: true },
+      ],
     });
     const s = formatTenantContextForPrompt(ctx);
     expect(s).toContain('{{secrets.');
@@ -111,7 +145,9 @@ describe('formatTenantContextForPrompt', () => {
     // No DB/email either, ma c'è una sezione provider con ABORT message.
     // Per coprire l'edge case dove ci sono DB ma non LLM:
     const ctxWithDb = empty({
-      databases: [{ id: 'd', name: 'D', description: null, tables: [], columns: {}, writable: true }],
+      databases: [
+        { id: 'd', name: 'D', description: null, tables: [], columns: {}, writable: true },
+      ],
       defaultLlmProvider: null,
       llmProviders: [],
     });
@@ -128,8 +164,22 @@ describe('formatTenantContextForPrompt', () => {
   it('🚨 DB locale writable + DB remoto read-only → sezioni SEPARATE, regole corrette', () => {
     const ctx = empty({
       databases: [
-        { id: 'local-1', name: 'WorkflowData', description: null, tables: ['rss_sources'], columns: {}, writable: true },
-        { id: 'nha-remote', name: 'NHA', description: 'crm esterno', tables: ['admin_url_secrets', 'clienti'], columns: {}, writable: false },
+        {
+          id: 'local-1',
+          name: 'WorkflowData',
+          description: null,
+          tables: ['rss_sources'],
+          columns: {},
+          writable: true,
+        },
+        {
+          id: 'nha-remote',
+          name: 'NHA',
+          description: 'crm esterno',
+          tables: ['admin_url_secrets', 'clienti'],
+          columns: {},
+          writable: false,
+        },
       ],
     });
     const s = formatTenantContextForPrompt(ctx);
@@ -147,7 +197,16 @@ describe('formatTenantContextForPrompt', () => {
 
   it('🚨 SOLO DB remoto read-only (caso senza1dio) → NIENTE DB scrivibili + istruzione a creare locale', () => {
     const ctx = empty({
-      databases: [{ id: 'nha', name: 'NHA', description: null, tables: ['admin_url_secrets'], columns: {}, writable: false }],
+      databases: [
+        {
+          id: 'nha',
+          name: 'NHA',
+          description: null,
+          tables: ['admin_url_secrets'],
+          columns: {},
+          writable: false,
+        },
+      ],
     });
     const s = formatTenantContextForPrompt(ctx);
     expect(s).toContain('DB LOCALI SCRIVIBILI:** NESSUNO');
@@ -176,25 +235,44 @@ describe('formatTenantContextForPrompt', () => {
 
 describe('buildTenantContext — estrazione colonne (per DB_COLUMN_NOT_IN_SCHEMA)', () => {
   it('estrae nomi-colonna da tables[].columns[].name', () => {
-    h.dbList = [{
-      id: 'QhktHRtIKHL5aniYhgRvz',
-      name: 'User DB',
-      description: 'tenant data',
-      tables: [
-        { name: 'price_monitoring', columns: [
-          { name: 'id', type: 'text' }, { name: 'url', type: 'text' },
-          { name: 'price', type: 'decimal' }, { name: 'median_price', type: 'decimal' },
-          { name: 'timestamp', type: 'text' },
-        ] },
-        { name: 'customers', columns: [{ name: 'id', type: 'uuid' }, { name: 'email', type: 'text' }] },
-      ],
-    }];
+    h.dbList = [
+      {
+        id: 'QhktHRtIKHL5aniYhgRvz',
+        name: 'User DB',
+        description: 'tenant data',
+        tables: [
+          {
+            name: 'price_monitoring',
+            columns: [
+              { name: 'id', type: 'text' },
+              { name: 'url', type: 'text' },
+              { name: 'price', type: 'decimal' },
+              { name: 'median_price', type: 'decimal' },
+              { name: 'timestamp', type: 'text' },
+            ],
+          },
+          {
+            name: 'customers',
+            columns: [
+              { name: 'id', type: 'uuid' },
+              { name: 'email', type: 'text' },
+            ],
+          },
+        ],
+      },
+    ];
     const ctx = buildTenantContext('default');
     expect(ctx.databases).toHaveLength(1);
     const db = ctx.databases[0]!;
     expect(db.tables).toEqual(['price_monitoring', 'customers']);
     // La mappa colonne deve riflettere esattamente lo schema reale.
-    expect(db.columns.price_monitoring).toEqual(['id', 'url', 'price', 'median_price', 'timestamp']);
+    expect(db.columns.price_monitoring).toEqual([
+      'id',
+      'url',
+      'price',
+      'median_price',
+      'timestamp',
+    ]);
     expect(db.columns.customers).toEqual(['id', 'email']);
     // Le colonne fittizie del bug NON ci sono (regression guard).
     expect(db.columns.price_monitoring).not.toContain('code');
@@ -202,14 +280,18 @@ describe('buildTenantContext — estrazione colonne (per DB_COLUMN_NOT_IN_SCHEMA
   });
 
   it('tabella SENZA colonne → presente in tables ma ASSENTE da columns (gate skippa)', () => {
-    h.dbList = [{
-      id: 'd1', name: 'X', description: null,
-      tables: [
-        { name: 'with_cols', columns: [{ name: 'a', type: 'text' }] },
-        { name: 'empty_table', columns: [] },
-        { name: 'no_cols_field' }, // columns undefined
-      ],
-    }];
+    h.dbList = [
+      {
+        id: 'd1',
+        name: 'X',
+        description: null,
+        tables: [
+          { name: 'with_cols', columns: [{ name: 'a', type: 'text' }] },
+          { name: 'empty_table', columns: [] },
+          { name: 'no_cols_field' }, // columns undefined
+        ],
+      },
+    ];
     const ctx = buildTenantContext('default');
     const db = ctx.databases[0]!;
     expect(db.tables).toEqual(['with_cols', 'empty_table', 'no_cols_field']);
@@ -219,13 +301,24 @@ describe('buildTenantContext — estrazione colonne (per DB_COLUMN_NOT_IN_SCHEMA
   });
 
   it('scarta nomi-colonna vuoti/whitespace e tabelle senza nome', () => {
-    h.dbList = [{
-      id: 'd1', name: 'X', description: null,
-      tables: [
-        { name: '  ', columns: [{ name: 'x', type: 'text' }] }, // tabella senza nome → scartata
-        { name: 'good', columns: [{ name: 'ok', type: 'text' }, { name: '  ', type: 'text' }, { name: '', type: 'text' }] },
-      ],
-    }];
+    h.dbList = [
+      {
+        id: 'd1',
+        name: 'X',
+        description: null,
+        tables: [
+          { name: '  ', columns: [{ name: 'x', type: 'text' }] }, // tabella senza nome → scartata
+          {
+            name: 'good',
+            columns: [
+              { name: 'ok', type: 'text' },
+              { name: '  ', type: 'text' },
+              { name: '', type: 'text' },
+            ],
+          },
+        ],
+      },
+    ];
     const ctx = buildTenantContext('default');
     const db = ctx.databases[0]!;
     expect(db.tables).toEqual(['good']);
@@ -250,7 +343,14 @@ describe('buildTenantContext — estrazione colonne (per DB_COLUMN_NOT_IN_SCHEMA
   });
 
   it('shape risultato compatibile con QualityGateInput.databases (id+tables+columns)', () => {
-    h.dbList = [{ id: 'd', name: 'N', description: null, tables: [{ name: 't', columns: [{ name: 'c', type: 'text' }] }] }];
+    h.dbList = [
+      {
+        id: 'd',
+        name: 'N',
+        description: null,
+        tables: [{ name: 't', columns: [{ name: 'c', type: 'text' }] }],
+      },
+    ];
     const db = buildTenantContext('default').databases[0]!;
     // I 3 campi che il gate consuma devono esserci e avere il tipo giusto.
     expect(typeof db.id).toBe('string');

@@ -37,7 +37,10 @@ export function registerWorkflowLockRoutes(
     const wf = await workflowService.get(id, auth.tenantId);
     if (!wf) return c.json({ error: 'Workflow not found' }, 404);
     const decision = lockService.acquire(id, auth.userId, auth.email);
-    return c.json({ acquired: decision.ok, decision, status: lockService.status(id, auth.userId) }, decision.ok ? 200 : 409);
+    return c.json(
+      { acquired: decision.ok, decision, status: lockService.status(id, auth.userId) },
+      decision.ok ? 200 : 409,
+    );
   });
 
   app.post('/:id/lock/heartbeat', async (c) => {

@@ -136,7 +136,9 @@ function parseJsonArray<T>(s: string | null): T[] {
   try {
     const parsed = JSON.parse(s) as unknown;
     return Array.isArray(parsed) ? (parsed as T[]) : [];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 /** Mappa una riga DB snake_case → dominio CustomNode camelCase. */
@@ -215,9 +217,12 @@ export function bumpSemver(current: string, bump: 'patch' | 'minor' | 'major'): 
   const minor = parseInt(match[2]!, 10);
   const patch = parseInt(match[3]!, 10);
   switch (bump) {
-    case 'patch': return `${major}.${minor}.${patch + 1}`;
-    case 'minor': return `${major}.${minor + 1}.0`;
-    case 'major': return `${major + 1}.0.0`;
+    case 'patch':
+      return `${major}.${minor}.${patch + 1}`;
+    case 'minor':
+      return `${major}.${minor + 1}.0`;
+    case 'major':
+      return `${major + 1}.0.0`;
   }
 }
 
@@ -241,61 +246,90 @@ export async function createCustomNode(opts: {
   const semver = '0.1.0';
 
   // Check slug unique per tenant (CHECK SQL fa fallback, ma error message friendly)
-  const existing = handle.sqlite.prepare(
-    `SELECT id FROM custom_nodes WHERE workspace_id = ? AND slug = ? AND status != 'archived' LIMIT 1`,
-  ).get(opts.workspaceId, input.slug) as { id: string } | undefined;
+  const existing = handle.sqlite
+    .prepare(
+      `SELECT id FROM custom_nodes WHERE workspace_id = ? AND slug = ? AND status != 'archived' LIMIT 1`,
+    )
+    .get(opts.workspaceId, input.slug) as { id: string } | undefined;
   if (existing) {
-    throw new CustomNodeConflictError(
-      `Slug "${input.slug}" already exists in this workspace`,
-      { slug: input.slug, existingId: existing.id },
-    );
+    throw new CustomNodeConflictError(`Slug "${input.slug}" already exists in this workspace`, {
+      slug: input.slug,
+      existingId: existing.id,
+    });
   }
 
   // Insert custom_nodes + custom_node_versions in transazione atomica
   const tx = handle.sqlite.transaction(() => {
-    handle.sqlite.prepare(
-      `INSERT INTO custom_nodes (
+    handle.sqlite
+      .prepare(
+        `INSERT INTO custom_nodes (
         id, workspace_id, owner_user_id, slug, display_name, description,
         icon_svg, category, semver, status,
         source_executor, source_definition, source_schema,
         created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?)`,
-    ).run(
-      id, opts.workspaceId, opts.ownerUserId, input.slug, input.displayName,
-      input.description ?? null, input.iconSvg ?? null, input.category ?? null,
-      semver,
-      input.sourceExecutor, input.sourceDefinition, input.sourceSchema,
-      at, at,
-    );
-    handle.sqlite.prepare(
-      `INSERT INTO custom_node_versions (
+      )
+      .run(
+        id,
+        opts.workspaceId,
+        opts.ownerUserId,
+        input.slug,
+        input.displayName,
+        input.description ?? null,
+        input.iconSvg ?? null,
+        input.category ?? null,
+        semver,
+        input.sourceExecutor,
+        input.sourceDefinition,
+        input.sourceSchema,
+        at,
+        at,
+      );
+    handle.sqlite
+      .prepare(
+        `INSERT INTO custom_node_versions (
         id, custom_node_id, semver, source_executor, source_definition, source_schema,
         changelog, created_by, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      versionId, id, semver,
-      input.sourceExecutor, input.sourceDefinition, input.sourceSchema,
-      'Initial draft', opts.ownerUserId, at,
-    );
+      )
+      .run(
+        versionId,
+        id,
+        semver,
+        input.sourceExecutor,
+        input.sourceDefinition,
+        input.sourceSchema,
+        'Initial draft',
+        opts.ownerUserId,
+        at,
+      );
   });
   tx();
 
   return (await getCustomNode({ workspaceId: opts.workspaceId, id }))!;
 }
 
-export function getCustomNode(opts: { workspaceId: string; id: string }): Promise<CustomNode | null> {
+export function getCustomNode(opts: {
+  workspaceId: string;
+  id: string;
+}): Promise<CustomNode | null> {
   const handle = getDatabase();
-  const row = handle.sqlite.prepare(
-    `SELECT * FROM custom_nodes WHERE id = ? AND workspace_id = ? LIMIT 1`,
-  ).get(opts.id, opts.workspaceId) as RawSqliteRow | undefined;
+  const row = handle.sqlite
+    .prepare(`SELECT * FROM custom_nodes WHERE id = ? AND workspace_id = ? LIMIT 1`)
+    .get(opts.id, opts.workspaceId) as RawSqliteRow | undefined;
   return Promise.resolve(row ? rowToDomain(row) : null);
 }
 
-export function getCustomNodeBySlug(opts: { workspaceId: string; slug: string }): Promise<CustomNode | null> {
+export function getCustomNodeBySlug(opts: {
+  workspaceId: string;
+  slug: string;
+}): Promise<CustomNode | null> {
   const handle = getDatabase();
-  const row = handle.sqlite.prepare(
-    `SELECT * FROM custom_nodes WHERE workspace_id = ? AND slug = ? AND status != 'archived' LIMIT 1`,
-  ).get(opts.workspaceId, opts.slug) as RawSqliteRow | undefined;
+  const row = handle.sqlite
+    .prepare(
+      `SELECT * FROM custom_nodes WHERE workspace_id = ? AND slug = ? AND status != 'archived' LIMIT 1`,
+    )
+    .get(opts.workspaceId, opts.slug) as RawSqliteRow | undefined;
   return Promise.resolve(row ? rowToDomain(row) : null);
 }
 
@@ -307,21 +341,33 @@ export function listCustomNodes(opts: {
   const handle = getDatabase();
   const where: string[] = ['workspace_id = ?'];
   const params: unknown[] = [opts.workspaceId];
-  if (filter.status) { where.push('status = ?'); params.push(filter.status); }
-  else where.push("status != 'archived'");
-  if (filter.category) { where.push('category = ?'); params.push(filter.category); }
-  if (filter.ownerUserId) { where.push('owner_user_id = ?'); params.push(filter.ownerUserId); }
+  if (filter.status) {
+    where.push('status = ?');
+    params.push(filter.status);
+  } else where.push("status != 'archived'");
+  if (filter.category) {
+    where.push('category = ?');
+    params.push(filter.category);
+  }
+  if (filter.ownerUserId) {
+    where.push('owner_user_id = ?');
+    params.push(filter.ownerUserId);
+  }
 
   const whereSql = where.join(' AND ');
-  const total = (handle.sqlite.prepare(
-    `SELECT COUNT(*) AS cnt FROM custom_nodes WHERE ${whereSql}`,
-  ).get(...params) as { cnt: number }).cnt;
+  const total = (
+    handle.sqlite
+      .prepare(`SELECT COUNT(*) AS cnt FROM custom_nodes WHERE ${whereSql}`)
+      .get(...params) as { cnt: number }
+  ).cnt;
 
-  const rows = handle.sqlite.prepare(
-    `SELECT * FROM custom_nodes WHERE ${whereSql}
+  const rows = handle.sqlite
+    .prepare(
+      `SELECT * FROM custom_nodes WHERE ${whereSql}
        ORDER BY updated_at DESC
        LIMIT ? OFFSET ?`,
-  ).all(...params, filter.limit, filter.offset) as RawSqliteRow[];
+    )
+    .all(...params, filter.limit, filter.offset) as RawSqliteRow[];
 
   return Promise.resolve({ items: rows.map(rowToSummary), total });
 }
@@ -340,7 +386,11 @@ export interface CustomNodeDefinitionEntry {
 }
 
 /** Status che abilitano l'esecuzione → mostrabili nel canvas/drawer dell'editor. */
-const CATALOG_RUNNABLE_STATUSES = ['published_priv', 'marketplace_published', 'marketplace_pending'] as const;
+const CATALOG_RUNNABLE_STATUSES = [
+  'published_priv',
+  'marketplace_published',
+  'marketplace_pending',
+] as const;
 
 /**
  * Definizioni dei custom node RUNNABLE del workspace per il catalogo editor.
@@ -354,14 +404,22 @@ const CATALOG_RUNNABLE_STATUSES = ['published_priv', 'marketplace_published', 'm
 export function listCustomNodeDefinitions(workspaceId: string): CustomNodeDefinitionEntry[] {
   const handle = getDatabase();
   const placeholders = CATALOG_RUNNABLE_STATUSES.map(() => '?').join(', ');
-  const rows = handle.sqlite.prepare(
-    `SELECT id, slug, display_name, description, icon_svg, semver, status, source_definition
+  const rows = handle.sqlite
+    .prepare(
+      `SELECT id, slug, display_name, description, icon_svg, semver, status, source_definition
        FROM custom_nodes
       WHERE workspace_id = ? AND status IN (${placeholders})
       ORDER BY updated_at DESC`,
-  ).all(workspaceId, ...CATALOG_RUNNABLE_STATUSES) as {
-    id: string; slug: string; display_name: string; description: string | null;
-    icon_svg: string | null; semver: string; status: string; source_definition: string;
+    )
+    .all(workspaceId, ...CATALOG_RUNNABLE_STATUSES) as {
+    id: string;
+    slug: string;
+    display_name: string;
+    description: string | null;
+    icon_svg: string | null;
+    semver: string;
+    status: string;
+    source_definition: string;
   }[];
   return rows.map((r) => ({
     id: r.id,
@@ -395,11 +453,10 @@ export async function updateCustomNode(opts: {
 
   const handle = getDatabase();
   // Source touched? Solo allora bump version + snapshot.
-  const sourceTouched = (
+  const sourceTouched =
     (input.sourceExecutor !== undefined && input.sourceExecutor !== current.sourceExecutor) ||
     (input.sourceDefinition !== undefined && input.sourceDefinition !== current.sourceDefinition) ||
-    (input.sourceSchema !== undefined && input.sourceSchema !== current.sourceSchema)
-  );
+    (input.sourceSchema !== undefined && input.sourceSchema !== current.sourceSchema);
 
   const newSemver = sourceTouched
     ? bumpSemver(current.semver, input.semverBump ?? 'patch')
@@ -416,12 +473,17 @@ export async function updateCustomNode(opts: {
   const newIconSvg = pickProvided(input.iconSvg, current.iconSvg);
   const newCategory = pickProvided(input.category, current.category);
   const newCompiledExecutor = sourceTouched ? null : current.compiledExecutor;
-  const newCompileWarnings = sourceTouched ? null : (current.compileWarnings.length > 0 ? JSON.stringify(current.compileWarnings) : null);
+  const newCompileWarnings = sourceTouched
+    ? null
+    : current.compileWarnings.length > 0
+      ? JSON.stringify(current.compileWarnings)
+      : null;
   const newCompileAt = sourceTouched ? null : current.compileAt;
 
   const tx = handle.sqlite.transaction(() => {
-    handle.sqlite.prepare(
-      `UPDATE custom_nodes SET
+    handle.sqlite
+      .prepare(
+        `UPDATE custom_nodes SET
         display_name = ?,
         description = ?,
         icon_svg = ?,
@@ -435,26 +497,44 @@ export async function updateCustomNode(opts: {
         compile_warnings = ?,
         compile_at = ?
        WHERE id = ? AND workspace_id = ?`,
-    ).run(
-      newDisplayName, newDescription, newIconSvg, newCategory,
-      newExecutor, newDefinition, newSchema,
-      newSemver, at,
-      newCompiledExecutor, newCompileWarnings, newCompileAt,
-      opts.id, opts.workspaceId,
-    );
+      )
+      .run(
+        newDisplayName,
+        newDescription,
+        newIconSvg,
+        newCategory,
+        newExecutor,
+        newDefinition,
+        newSchema,
+        newSemver,
+        at,
+        newCompiledExecutor,
+        newCompileWarnings,
+        newCompileAt,
+        opts.id,
+        opts.workspaceId,
+      );
 
     // Snapshot append-only solo se source toccato
     if (sourceTouched) {
-      handle.sqlite.prepare(
-        `INSERT INTO custom_node_versions (
+      handle.sqlite
+        .prepare(
+          `INSERT INTO custom_node_versions (
           id, custom_node_id, semver, source_executor, source_definition, source_schema,
           changelog, created_by, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(
-        randomUUID(), opts.id, newSemver,
-        newExecutor, newDefinition, newSchema,
-        input.changelog ?? null, opts.actorUserId, at,
-      );
+        )
+        .run(
+          randomUUID(),
+          opts.id,
+          newSemver,
+          newExecutor,
+          newDefinition,
+          newSchema,
+          input.changelog ?? null,
+          opts.actorUserId,
+          at,
+        );
     }
   });
   tx();
@@ -485,12 +565,14 @@ export async function listVersions(opts: {
   if (!node) throw new CustomNodeNotFoundError(opts.customNodeId);
   const handle = getDatabase();
   const limit = opts.limit ?? 50;
-  const rows = handle.sqlite.prepare(
-    `SELECT * FROM custom_node_versions
+  const rows = handle.sqlite
+    .prepare(
+      `SELECT * FROM custom_node_versions
       WHERE custom_node_id = ?
       ORDER BY created_at DESC
       LIMIT ?`,
-  ).all(opts.customNodeId, limit) as RawVersionRow[];
+    )
+    .all(opts.customNodeId, limit) as RawVersionRow[];
   return rows.map(versionRowToDomain);
 }
 
@@ -508,9 +590,9 @@ export async function rollbackToVersion(opts: {
   const node = await getCustomNode({ workspaceId: opts.workspaceId, id: opts.customNodeId });
   if (!node) throw new CustomNodeNotFoundError(opts.customNodeId);
   const handle = getDatabase();
-  const targetRow = handle.sqlite.prepare(
-    `SELECT * FROM custom_node_versions WHERE custom_node_id = ? AND semver = ? LIMIT 1`,
-  ).get(opts.customNodeId, opts.semverTarget) as RawVersionRow | undefined;
+  const targetRow = handle.sqlite
+    .prepare(`SELECT * FROM custom_node_versions WHERE custom_node_id = ? AND semver = ? LIMIT 1`)
+    .get(opts.customNodeId, opts.semverTarget) as RawVersionRow | undefined;
   const target = targetRow ? versionRowToDomain(targetRow) : undefined;
   if (!target) {
     throw new CustomNodeNotFoundError(`Version ${opts.semverTarget} of ${opts.customNodeId}`);
@@ -544,10 +626,12 @@ export async function archiveCustomNode(opts: {
   const node = await getCustomNode(opts);
   if (!node) throw new CustomNodeNotFoundError(opts.id);
   const handle = getDatabase();
-  const result = handle.sqlite.prepare(
-    `UPDATE custom_nodes SET status = 'archived', updated_at = ?
+  const result = handle.sqlite
+    .prepare(
+      `UPDATE custom_nodes SET status = 'archived', updated_at = ?
       WHERE id = ? AND workspace_id = ? AND status != 'archived'`,
-  ).run(nowIso(), opts.id, opts.workspaceId);
+    )
+    .run(nowIso(), opts.id, opts.workspaceId);
   if (result.changes === 0) {
     // gia\` archived → no-op idempotent
     return;
@@ -604,8 +688,9 @@ export async function persistCompileResult(opts: {
       )
     : null;
 
-  const result = handle.sqlite.prepare(
-    `UPDATE custom_nodes SET
+  const result = handle.sqlite
+    .prepare(
+      `UPDATE custom_nodes SET
        compiled_executor = ?,
        compile_warnings = ?,
        compile_at = ?,
@@ -615,17 +700,18 @@ export async function persistCompileResult(opts: {
        status = CASE WHEN status = 'draft' THEN 'candidate' ELSE status END,
        updated_at = ?
       WHERE id = ? AND workspace_id = ?`,
-  ).run(
-    opts.compiledExecutor,
-    JSON.stringify(opts.warnings),
-    nowIso(),
-    integrity?.digest ?? null,
-    integrity?.signature ?? null,
-    integrity?.algo ?? null,
-    nowIso(),
-    opts.id,
-    opts.workspaceId,
-  );
+    )
+    .run(
+      opts.compiledExecutor,
+      JSON.stringify(opts.warnings),
+      nowIso(),
+      integrity?.digest ?? null,
+      integrity?.signature ?? null,
+      integrity?.algo ?? null,
+      nowIso(),
+      opts.id,
+      opts.workspaceId,
+    );
   if (result.changes === 0) throw new CustomNodeNotFoundError(opts.id);
   // Cache invalidate: il nuovo compiledExecutor sostituisce quello in cache.
   // Pre-popoliamo l'entry per evitare cache-miss al primo run dopo compile.
@@ -672,10 +758,12 @@ export async function publishCustomNodePrivate(opts: {
     throw new Error('Cannot publish archived node — restore first');
   }
   const handle = getDatabase();
-  handle.sqlite.prepare(
-    `UPDATE custom_nodes SET status = 'published_priv', updated_at = ?
+  handle.sqlite
+    .prepare(
+      `UPDATE custom_nodes SET status = 'published_priv', updated_at = ?
       WHERE id = ? AND workspace_id = ?`,
-  ).run(nowIso(), opts.id, opts.workspaceId);
+    )
+    .run(nowIso(), opts.id, opts.workspaceId);
   const published = (await getCustomNode(opts))!;
   const defId = customNodeDefId(published.slug);
   setCustomNodeCache({
@@ -751,10 +839,12 @@ export async function submitCustomNodeToMarketplace(opts: {
   }
 
   const handle = getDatabase();
-  handle.sqlite.prepare(
-    `UPDATE custom_nodes SET status = 'marketplace_pending', updated_at = ?
+  handle.sqlite
+    .prepare(
+      `UPDATE custom_nodes SET status = 'marketplace_pending', updated_at = ?
       WHERE id = ? AND workspace_id = ?`,
-  ).run(nowIso(), opts.id, opts.workspaceId);
+    )
+    .run(nowIso(), opts.id, opts.workspaceId);
   const updated = (await getCustomNode(opts))!;
   await auditAction({
     workspaceId: opts.workspaceId,
@@ -782,10 +872,12 @@ export async function withdrawCustomNodeFromMarketplace(opts: {
   }
   // Torna a candidate (l'utente potra\` riproomuoverlo a published_priv via Publish Wizard)
   const handle = getDatabase();
-  handle.sqlite.prepare(
-    `UPDATE custom_nodes SET status = 'candidate', updated_at = ?
+  handle.sqlite
+    .prepare(
+      `UPDATE custom_nodes SET status = 'candidate', updated_at = ?
       WHERE id = ? AND workspace_id = ?`,
-  ).run(nowIso(), opts.id, opts.workspaceId);
+    )
+    .run(nowIso(), opts.id, opts.workspaceId);
   const updated = (await getCustomNode(opts))!;
   await auditAction({
     workspaceId: opts.workspaceId,
@@ -809,10 +901,12 @@ export async function unpublishCustomNode(opts: {
   const node = await getCustomNode(opts);
   if (!node) throw new CustomNodeNotFoundError(opts.id);
   const handle = getDatabase();
-  handle.sqlite.prepare(
-    `UPDATE custom_nodes SET status = 'draft', updated_at = ?
+  handle.sqlite
+    .prepare(
+      `UPDATE custom_nodes SET status = 'draft', updated_at = ?
       WHERE id = ? AND workspace_id = ?`,
-  ).run(nowIso(), opts.id, opts.workspaceId);
+    )
+    .run(nowIso(), opts.id, opts.workspaceId);
   const updated = (await getCustomNode(opts))!;
   const defId = customNodeDefId(updated.slug);
   invalidateCustomNode(opts.workspaceId, defId);
@@ -846,9 +940,11 @@ export async function appendTestRun(opts: {
   if (!node) throw new CustomNodeNotFoundError(opts.id);
   const next = [opts.record, ...node.testRuns].slice(0, TEST_RUNS_RING_SIZE);
   const handle = getDatabase();
-  handle.sqlite.prepare(
-    `UPDATE custom_nodes SET test_runs = ?, updated_at = ? WHERE id = ? AND workspace_id = ?`,
-  ).run(JSON.stringify(next), nowIso(), opts.id, opts.workspaceId);
+  handle.sqlite
+    .prepare(
+      `UPDATE custom_nodes SET test_runs = ?, updated_at = ? WHERE id = ? AND workspace_id = ?`,
+    )
+    .run(JSON.stringify(next), nowIso(), opts.id, opts.workspaceId);
 }
 
 /**
@@ -865,4 +961,9 @@ export async function listTestRuns(opts: {
 }
 
 // Suppress unused imports — they're re-exportable from drizzle namespace for future query needs.
-void customNodes; void customNodeVersions; void eq; void and; void desc; void ne;
+void customNodes;
+void customNodeVersions;
+void eq;
+void and;
+void desc;
+void ne;

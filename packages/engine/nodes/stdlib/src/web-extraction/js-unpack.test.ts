@@ -79,11 +79,11 @@ describe('unpackJs — anti-ReDoS (H2: backref rimossa)', () => {
     expect(r.unpacked).toContain('world');
   });
 
-  it('🚨 JS ostile (≤5MB) con quote non chiusa NON blocca l\'event-loop (lineare, < 1s)', () => {
+  it("🚨 JS ostile (≤5MB) con quote non chiusa NON blocca l'event-loop (lineare, < 1s)", () => {
     // Pattern catastrofico per il vecchio backref+lazy: prefisso valido poi quote aperta
     // mai chiusa + rumore. Col motore lineare (classi negate) la scansione è O(n).
     const hostile =
-      'eval(function(p,a,c,k,e,d){return p}(\'' + 'a'.repeat(200000) + '\n'.repeat(1000);
+      "eval(function(p,a,c,k,e,d){return p}('" + 'a'.repeat(200000) + '\n'.repeat(1000);
     const t0 = performance.now();
     const r = unpackJs(hostile);
     const elapsed = performance.now() - t0;
@@ -95,7 +95,8 @@ describe('unpackJs — anti-ReDoS (H2: backref rimossa)', () => {
 
 describe('unpackJs — SECURITY (no eval, no JS execution)', () => {
   it('CRITICAL: input contenente eval-payload malevolo → NON viene eseguito', () => {
-    const evilInput = "eval(function(p,a,c,k,e,d){throw new Error('PWNED IF EXECUTED')}('x',1,1,'y'.split('|'),0,{}))";
+    const evilInput =
+      "eval(function(p,a,c,k,e,d){throw new Error('PWNED IF EXECUTED')}('x',1,1,'y'.split('|'),0,{}))";
     expect(() => unpackJs(evilInput)).not.toThrow();
   });
 
@@ -105,7 +106,8 @@ describe('unpackJs — SECURITY (no eval, no JS execution)', () => {
     // warning atteso (passiamo metodo come reference, non binding).
     // eslint-disable-next-line @typescript-eslint/unbound-method -- security check intenzionale di prototype pollution
     const beforeProto = Object.prototype.toString;
-    const evilInput = "eval(function(p,a,c,k,e,d){Object.prototype.toString='hacked';return p}('x',1,1,'y'.split('|'),0,{}))";
+    const evilInput =
+      "eval(function(p,a,c,k,e,d){Object.prototype.toString='hacked';return p}('x',1,1,'y'.split('|'),0,{}))";
     unpackJs(evilInput);
     // eslint-disable-next-line @typescript-eslint/unbound-method -- security check intenzionale di prototype pollution
     expect(Object.prototype.toString).toBe(beforeProto);
@@ -147,15 +149,24 @@ describe('jsUnpackNode — node module integration', () => {
   it('executor con source=explicit + config.htmlOrScript → unpacked', async () => {
     const packed =
       "eval(function(p,a,c,k,e,d){while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+c.toString(a)+'\\\\b','g'),k[c]);return p}('0',2,1,'inline'.split('|'),0,{}))";
-    const result = await jsUnpackNode.executor!({ source: 'explicit', htmlOrScript: packed }, {}, {} as never);
+    const result = await jsUnpackNode.executor!(
+      { source: 'explicit', htmlOrScript: packed },
+      {},
+      {} as never,
+    );
     const out = result.output as { ok: boolean; unpacked: string };
     expect(out.ok).toBe(true);
     expect(out.unpacked).toBe('inline');
   });
 
   it('output include sizeRatio (unpacked/original)', async () => {
-    const packed = "eval(function(p,a,c,k,e,d){while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+c.toString(a)+'\\\\b','g'),k[c]);return p}('0',2,1,'x'.split('|'),0,{}))";
-    const result = await jsUnpackNode.executor!({ source: 'explicit', htmlOrScript: packed }, {}, {} as never);
+    const packed =
+      "eval(function(p,a,c,k,e,d){while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+c.toString(a)+'\\\\b','g'),k[c]);return p}('0',2,1,'x'.split('|'),0,{}))";
+    const result = await jsUnpackNode.executor!(
+      { source: 'explicit', htmlOrScript: packed },
+      {},
+      {} as never,
+    );
     const data = result.output as { sizeRatio: number };
     expect(typeof data.sizeRatio).toBe('number');
     expect(data.sizeRatio).toBeGreaterThan(0);

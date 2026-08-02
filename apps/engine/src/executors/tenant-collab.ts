@@ -47,7 +47,11 @@ const MAX_RETRIES_CAP = 5;
 /** Cap della risposta inclusa nell'output (waitForResponse) — anti memory-blow. */
 const MAX_RESPONSE_CHARS = 262_144;
 
-function collabError(code: string, message: string, extra?: { httpStatus?: number; retryable?: boolean; cause?: unknown }): IntegrationError {
+function collabError(
+  code: string,
+  message: string,
+  extra?: { httpStatus?: number; retryable?: boolean; cause?: unknown },
+): IntegrationError {
   return new IntegrationError({
     provider: 'unknown',
     code,
@@ -74,7 +78,8 @@ function explain4xx(status: number): string {
   if (status === 401 || status === 403) {
     return 'il destinatario ha RIFIUTATO la firma: token di connessione errato/ruotato (consenso revocato?) oppure invio duplicato (anti-replay)';
   }
-  if (status === 404) return 'workflow destinatario non trovato: l\'URL di collaborazione è cambiato o il workflow è stato eliminato';
+  if (status === 404)
+    return "workflow destinatario non trovato: l'URL di collaborazione è cambiato o il workflow è stato eliminato";
   if (status === 409) return 'workflow destinatario disabilitato o senza trigger Webhook';
   if (status === 429) return 'il destinatario sta limitando le richieste (rate limit)';
   return 'richiesta rifiutata dal destinatario';
@@ -88,7 +93,8 @@ export const tenantCollabExecutor: NodeExecutor = async (rawConfig, input, conte
   const rawUrl = coerceString(cfg.collaborationUrl ?? '').trim();
   if (!rawUrl) throw collabError('MISSING_URL', '"URL di collaborazione" è obbligatorio');
   const urlCheck = validateCollabUrl(rawUrl);
-  if (!urlCheck.ok) throw collabError('COLLAB_URL_NOT_ALLOWED', `URL rifiutato — ${urlCheck.reason}`);
+  if (!urlCheck.ok)
+    throw collabError('COLLAB_URL_NOT_ALLOWED', `URL rifiutato — ${urlCheck.reason}`);
   const targetUrl = urlCheck.url.toString();
   const redactedUrl = redactCollabUrl(targetUrl);
   const urlToken = urlCheck.url.pathname.split('/').pop() ?? '';
@@ -103,7 +109,7 @@ export const tenantCollabExecutor: NodeExecutor = async (rawConfig, input, conte
     throw collabError(
       'CONNECTION_TOKEN_INVALID',
       `con la firma attiva serve un token di connessione di almeno ${String(COLLAB_MIN_TOKEN_LENGTH)} caratteri ` +
-      '(concordalo col tenant destinatario — è la chiave HMAC e il suo consenso)',
+        '(concordalo col tenant destinatario — è la chiave HMAC e il suo consenso)',
     );
   }
   const secretsToScrub = [connectionToken, urlToken];
@@ -135,9 +141,13 @@ export const tenantCollabExecutor: NodeExecutor = async (rawConfig, input, conte
   // ── 4. Identità dell'invio (stabile sui retry) ───────────────────────
   const correlationId = randomUUID();
   const customIdemKey = typeof cfg.idempotencyKey === 'string' ? cfg.idempotencyKey.trim() : '';
-  const idempotencyKey = customIdemKey !== ''
-    ? customIdemKey.slice(0, 128)
-    : createHash('sha256').update(`collab:${context.tenantId}:${context.runId}:${context.nodeId}`).digest('hex').slice(0, 32);
+  const idempotencyKey =
+    customIdemKey !== ''
+      ? customIdemKey.slice(0, 128)
+      : createHash('sha256')
+          .update(`collab:${context.tenantId}:${context.runId}:${context.nodeId}`)
+          .digest('hex')
+          .slice(0, 32);
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json; charset=utf-8',
@@ -150,7 +160,11 @@ export const tenantCollabExecutor: NodeExecutor = async (rawConfig, input, conte
     // signature → un retry dopo risposta persa NON viene processato due volte.
     const timestampSec = Math.floor(Date.now() / 1000);
     headers[COLLAB_TIMESTAMP_HEADER] = String(timestampSec);
-    headers[COLLAB_SIGNATURE_HEADER] = signCollabPayload({ body, token: connectionToken, timestampSec });
+    headers[COLLAB_SIGNATURE_HEADER] = signCollabPayload({
+      body,
+      token: connectionToken,
+      timestampSec,
+    });
   }
 
   // ── 5. Invio con retry backoff sui soli transitori ───────────────────
@@ -187,50 +201,73 @@ export const tenantCollabExecutor: NodeExecutor = async (rawConfig, input, conte
 
   let res: Response;
   try {
-    res = await withRetry(async () => {
-      attempts += 1;
-      let response: Response;
-      try {
-        const fetchInit: Parameters<typeof safeOutboundFetch>[1] = {
-          method: 'POST',
-          headers,
-          body,
-          timeoutMs,
-          spanName: 'node.tenant_collab.send',
-        };
-        if (context.abortSignal) fetchInit.externalSignal = context.abortSignal;
-        response = await safeOutboundFetch(targetUrl, fetchInit);
-      } catch (err) {
-        // Timeout/rete = transitori (retry sicuro: firma stabile → at-most-once
-        // lato ricevente). Messaggio scrubbed: il layer fetch può citare l'URL.
-        const raw = err instanceof Error ? err.message : String(err);
-        const isTimeout = err instanceof Error && err.name === 'TimeoutError';
-        throw collabError(
-          isTimeout ? 'TIMEOUT' : 'NETWORK_ERROR',
-          `invio a ${redactedUrl} fallito — ${scrubCollabSecrets(raw, secretsToScrub)}`,
-          { retryable: true, cause: err },
-        );
-      }
-      if (response.status >= 500) {
-        try { await response.body?.cancel(); } catch { /* drain FD senza leggere il body */ }
-        throw collabError('RECIPIENT_5XX', `destinatario in errore (HTTP ${String(response.status)}) su ${redactedUrl}`, {
-          httpStatus: response.status, retryable: true,
-        });
-      }
-      if (!response.ok) {
-        try { await response.body?.cancel(); } catch { /* drain FD senza leggere il body */ }
-        throw collabError('RECIPIENT_REJECTED', `HTTP ${String(response.status)} — ${explain4xx(response.status)} (${redactedUrl})`, {
-          httpStatus: response.status, retryable: response.status === 429,
-        });
-      }
-      return response;
-    }, { retries: maxRetries, label: 'tenant_collab.send' });
+    res = await withRetry(
+      async () => {
+        attempts += 1;
+        let response: Response;
+        try {
+          const fetchInit: Parameters<typeof safeOutboundFetch>[1] = {
+            method: 'POST',
+            headers,
+            body,
+            timeoutMs,
+            spanName: 'node.tenant_collab.send',
+          };
+          if (context.abortSignal) fetchInit.externalSignal = context.abortSignal;
+          response = await safeOutboundFetch(targetUrl, fetchInit);
+        } catch (err) {
+          // Timeout/rete = transitori (retry sicuro: firma stabile → at-most-once
+          // lato ricevente). Messaggio scrubbed: il layer fetch può citare l'URL.
+          const raw = err instanceof Error ? err.message : String(err);
+          const isTimeout = err instanceof Error && err.name === 'TimeoutError';
+          throw collabError(
+            isTimeout ? 'TIMEOUT' : 'NETWORK_ERROR',
+            `invio a ${redactedUrl} fallito — ${scrubCollabSecrets(raw, secretsToScrub)}`,
+            { retryable: true, cause: err },
+          );
+        }
+        if (response.status >= 500) {
+          try {
+            await response.body?.cancel();
+          } catch {
+            /* drain FD senza leggere il body */
+          }
+          throw collabError(
+            'RECIPIENT_5XX',
+            `destinatario in errore (HTTP ${String(response.status)}) su ${redactedUrl}`,
+            {
+              httpStatus: response.status,
+              retryable: true,
+            },
+          );
+        }
+        if (!response.ok) {
+          try {
+            await response.body?.cancel();
+          } catch {
+            /* drain FD senza leggere il body */
+          }
+          throw collabError(
+            'RECIPIENT_REJECTED',
+            `HTTP ${String(response.status)} — ${explain4xx(response.status)} (${redactedUrl})`,
+            {
+              httpStatus: response.status,
+              retryable: response.status === 429,
+            },
+          );
+        }
+        return response;
+      },
+      { retries: maxRetries, label: 'tenant_collab.send' },
+    );
   } catch (err) {
     await appendAudit('collab.data_transfer.failed', {
       outcome: 'failed',
       attempts,
       errorCode: err instanceof IntegrationError ? err.code : 'UNKNOWN',
-      ...(err instanceof IntegrationError && err.httpStatus !== undefined ? { httpStatus: err.httpStatus } : {}),
+      ...(err instanceof IntegrationError && err.httpStatus !== undefined
+        ? { httpStatus: err.httpStatus }
+        : {}),
     });
     throw err;
   }
@@ -240,11 +277,21 @@ export const tenantCollabExecutor: NodeExecutor = async (rawConfig, input, conte
   try {
     const text = (await readTextTruncated(res, 4 * 1024 * 1024)).text.slice(0, MAX_RESPONSE_CHARS);
     if (waitForResponse && text !== '') {
-      try { responseBody = JSON.parse(text); } catch { responseBody = text; }
+      try {
+        responseBody = JSON.parse(text);
+      } catch {
+        responseBody = text;
+      }
     }
-  } catch { /* body non leggibile: la consegna (2xx) resta valida */ }
+  } catch {
+    /* body non leggibile: la consegna (2xx) resta valida */
+  }
 
-  await appendAudit('collab.data_transfer.sent', { outcome: 'sent', attempts, httpStatus: res.status });
+  await appendAudit('collab.data_transfer.sent', {
+    outcome: 'sent',
+    attempts,
+    httpStatus: res.status,
+  });
 
   return {
     output: {

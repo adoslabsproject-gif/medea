@@ -51,7 +51,11 @@ function registeredOrigins(): Set<string> {
   if (originsCache) return originsCache;
   const set = new Set<string>();
   for (const raw of Object.values(internalServiceUrls())) {
-    try { set.add(new URL(raw).origin); } catch { /* URL malformata in env → ignora */ }
+    try {
+      set.add(new URL(raw).origin);
+    } catch {
+      /* URL malformata in env → ignora */
+    }
   }
   originsCache = set;
   return set;
@@ -62,11 +66,19 @@ export type InternalServiceKey = keyof ReturnType<typeof internalServiceUrls>;
 
 /** True se `url` punta a uno dei NOSTRI servizi interni registrati. */
 export function isInternalServiceUrl(url: string): boolean {
-  try { return registeredOrigins().has(new URL(url).origin); } catch { return false; }
+  try {
+    return registeredOrigins().has(new URL(url).origin);
+  } catch {
+    return false;
+  }
 }
 
 function originOf(raw: string): string {
-  try { return new URL(raw).origin; } catch { return ''; }
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return '';
+  }
 }
 
 /**

@@ -32,7 +32,8 @@ const outFile = join(here, '..', 'src', 'executors', 'sdi', 'fatturapa-xsd.gener
 const FATTURAPA = 'Schema_del_file_xml_FatturaPA_v1.2.2.xsd';
 const XMLDSIG = 'xmldsig-core-schema.xsd';
 
-const W3C_IMPORT = 'schemaLocation="http://www.w3.org/TR/2002/REC-xmldsig-core-20020212/xmldsig-core-schema.xsd"';
+const W3C_IMPORT =
+  'schemaLocation="http://www.w3.org/TR/2002/REC-xmldsig-core-20020212/xmldsig-core-schema.xsd"';
 const LOCAL_IMPORT = `schemaLocation="${XMLDSIG}"`;
 
 let fatturapa = readFileSync(join(schemasDir, FATTURAPA), 'utf-8');
@@ -65,4 +66,6 @@ export const XMLDSIG_SCHEMA_FILENAME = ${JSON.stringify(XMLDSIG)};
 `;
 
 writeFileSync(outFile, body, 'utf-8');
-console.log(`[embed-fatturapa-xsd] scritto ${outFile} (fatturapa ${fatturapa.length}B, xmldsig ${xmldsig.length}B)`);
+console.log(
+  `[embed-fatturapa-xsd] scritto ${outFile} (fatturapa ${fatturapa.length}B, xmldsig ${xmldsig.length}B)`,
+);

@@ -21,7 +21,9 @@ describe('classifyDbConnectionError — errori REALI di connettività → 503', 
   });
 
   it('🚨 EHOSTUNREACH / ENETUNREACH → unreachable', () => {
-    expect(classifyDbConnectionError(new Error('connect EHOSTUNREACH 91.98.131.3:22')).unreachable).toBe(true);
+    expect(
+      classifyDbConnectionError(new Error('connect EHOSTUNREACH 91.98.131.3:22')).unreachable,
+    ).toBe(true);
     expect(classifyDbConnectionError(new Error('connect ENETUNREACH')).unreachable).toBe(true);
   });
 
@@ -38,18 +40,28 @@ describe('classifyDbConnectionError — errori REALI di connettività → 503', 
   });
 
   it('🚨 ECONNRESET / connection terminated → unreachable', () => {
-    expect(classifyDbConnectionError(new Error('Connection terminated unexpectedly')).unreachable).toBe(true);
+    expect(
+      classifyDbConnectionError(new Error('Connection terminated unexpectedly')).unreachable,
+    ).toBe(true);
     expect(classifyDbConnectionError(new Error('read ECONNRESET')).unreachable).toBe(true);
   });
 
   it('🔒 errore NON di connettività (es. SQL syntax) → unreachable:false (resta 400)', () => {
-    expect(classifyDbConnectionError(new Error('syntax error at or near "SELCT"')).unreachable).toBe(false);
-    expect(classifyDbConnectionError(new Error('relation "ghost" does not exist')).unreachable).toBe(false);
-    expect(classifyDbConnectionError(new Error('permission denied for table x')).unreachable).toBe(false);
+    expect(
+      classifyDbConnectionError(new Error('syntax error at or near "SELCT"')).unreachable,
+    ).toBe(false);
+    expect(
+      classifyDbConnectionError(new Error('relation "ghost" does not exist')).unreachable,
+    ).toBe(false);
+    expect(classifyDbConnectionError(new Error('permission denied for table x')).unreachable).toBe(
+      false,
+    );
   });
 
   it('🔒 input non-Error (stringa/undefined) → non lancia', () => {
-    expect(classifyDbConnectionError('Timed out while waiting for handshake').unreachable).toBe(true);
+    expect(classifyDbConnectionError('Timed out while waiting for handshake').unreachable).toBe(
+      true,
+    );
     expect(classifyDbConnectionError(undefined).unreachable).toBe(false);
     expect(classifyDbConnectionError(null).unreachable).toBe(false);
   });

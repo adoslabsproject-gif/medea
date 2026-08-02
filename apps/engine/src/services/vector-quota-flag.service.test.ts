@@ -38,13 +38,15 @@ describe('vector-quota-flag — persistenza + cache', () => {
     setVectorQuotaOverride({ maxVectors: 500, maxDiskMb: 50 });
     __resetVectorQuotaCacheForTest(); // simula restart: rilegge dal disco
     expect(getVectorQuotaOverride()).toEqual({ maxVectors: 500, maxDiskMb: 50 });
-    const row = sqlite.prepare('SELECT value FROM system_flags WHERE key = ?').get('vector_quota_override') as { value: string };
+    const row = sqlite
+      .prepare('SELECT value FROM system_flags WHERE key = ?')
+      .get('vector_quota_override') as { value: string };
     expect(JSON.parse(row.value)).toEqual({ maxVectors: 500, maxDiskMb: 50 });
   });
 
   it('upsert idempotente: secondo set sovrascrive (downgrade dopo upgrade)', () => {
     setVectorQuotaOverride({ maxVectors: 100000, maxDiskMb: null }); // upgrade
-    setVectorQuotaOverride({ maxVectors: 100, maxDiskMb: 10 });       // downgrade
+    setVectorQuotaOverride({ maxVectors: 100, maxDiskMb: 10 }); // downgrade
     __resetVectorQuotaCacheForTest();
     expect(getVectorQuotaOverride()).toEqual({ maxVectors: 100, maxDiskMb: 10 });
     expect(sqlite.prepare('SELECT COUNT(*) c FROM system_flags').get()).toEqual({ c: 1 });
@@ -67,7 +69,9 @@ describe('vector-quota-flag — persistenza + cache', () => {
 
 describe('vector-quota-flag — parse robusto (fail-open)', () => {
   it('JSON corrotto → null (fail-open, usa env), nessun throw, ma STRUMENTATO', () => {
-    sqlite.prepare("INSERT INTO system_flags (key, value) VALUES ('vector_quota_override', ?)").run('{not json');
+    sqlite
+      .prepare("INSERT INTO system_flags (key, value) VALUES ('vector_quota_override', ?)")
+      .run('{not json');
     __resetVectorQuotaCacheForTest();
     expect(getVectorQuotaOverride()).toBeNull();
     // Un flag corrotto è anomalo → deve essere visibile (metrica), non silenzioso.
@@ -84,7 +88,9 @@ describe('vector-quota-flag — parse robusto (fail-open)', () => {
   it('il fail-open su DB.prepare che LANCIA è strumentato', () => {
     __resetVectorQuotaCacheForTest();
     const realPrepare = sqlite.prepare.bind(sqlite);
-    const spy = vi.spyOn(sqlite, 'prepare').mockImplementationOnce(() => { throw new Error('db locked'); });
+    const spy = vi.spyOn(sqlite, 'prepare').mockImplementationOnce(() => {
+      throw new Error('db locked');
+    });
     expect(getVectorQuotaOverride()).toBeNull();
     expect(m.recordFailOpen).toHaveBeenCalledWith('vector_quota', expect.any(Error));
     spy.mockRestore();
@@ -92,14 +98,16 @@ describe('vector-quota-flag — parse robusto (fail-open)', () => {
   });
 
   it('valore negativo o non-numerico → normalizzato a null (illimitato), non propaga spazzatura', () => {
-    sqlite.prepare("INSERT INTO system_flags (key, value) VALUES ('vector_quota_override', ?)")
+    sqlite
+      .prepare("INSERT INTO system_flags (key, value) VALUES ('vector_quota_override', ?)")
       .run(JSON.stringify({ maxVectors: -5, maxDiskMb: 'abc' }));
     __resetVectorQuotaCacheForTest();
     expect(getVectorQuotaOverride()).toEqual({ maxVectors: null, maxDiskMb: null });
   });
 
-  it('chiave parziale (solo maxVectors) → l\'altra è null', () => {
-    sqlite.prepare("INSERT INTO system_flags (key, value) VALUES ('vector_quota_override', ?)")
+  it("chiave parziale (solo maxVectors) → l'altra è null", () => {
+    sqlite
+      .prepare("INSERT INTO system_flags (key, value) VALUES ('vector_quota_override', ?)")
       .run(JSON.stringify({ maxVectors: 42 }));
     __resetVectorQuotaCacheForTest();
     expect(getVectorQuotaOverride()).toEqual({ maxVectors: 42, maxDiskMb: null });

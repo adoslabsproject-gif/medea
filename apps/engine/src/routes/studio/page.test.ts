@@ -19,7 +19,12 @@ describe('STUDIO_PAGE_HTML — auto-formato file caricati (client = server)', ()
     // Ricostruisce la funzione esattamente come fa il browser (eval dello script).
     // eslint-disable-next-line @typescript-eslint/no-implied-eval -- ricostruisce ciò che il browser eseguirà dal sorgente iniettato
     const injected = new Function(`return (${fitToModel.toString()})`)() as typeof fitToModel;
-    for (const [w, h] of [[1920, 1080], [1080, 1920], [1000, 1000], [0, 0]]) {
+    for (const [w, h] of [
+      [1920, 1080],
+      [1080, 1920],
+      [1000, 1000],
+      [0, 0],
+    ]) {
       expect(injected(w!, h!)).toEqual(fitToModel(w!, h!));
     }
   });

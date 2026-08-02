@@ -61,7 +61,15 @@ export const communityGithubNode: NodeModule = {
         type: 'select',
         required: true,
         defaultValue: 'createIssue',
-        options: ['createIssue', 'listIssues', 'getIssue', 'closeIssue', 'addComment', 'createPullRequest', 'listCommits'],
+        options: [
+          'createIssue',
+          'listIssues',
+          'getIssue',
+          'closeIssue',
+          'addComment',
+          'createPullRequest',
+          'listCommits',
+        ],
         help: 'Tipo di azione GitHub da eseguire.',
       },
       {

@@ -23,40 +23,78 @@ function getPath(obj: unknown, path: string): unknown {
   let cur: unknown = obj;
   for (const p of path.split('.')) {
     if (cur === null || cur === undefined) return undefined;
-    cur = Array.isArray(cur) ? cur[Number(p)] : typeof cur === 'object' ? (cur as Record<string, unknown>)[p] : undefined;
+    cur = Array.isArray(cur)
+      ? cur[Number(p)]
+      : typeof cur === 'object'
+        ? (cur as Record<string, unknown>)[p]
+        : undefined;
   }
   return cur;
 }
-interface Rule { field: string; op: string; value?: unknown }
+interface Rule {
+  field: string;
+  op: string;
+  value?: unknown;
+}
 
 function evalRule(item: unknown, rule: Rule): boolean {
   const left = getPath(item, rule.field);
   const right = rule.value;
   const ls = str(left);
   switch (rule.op) {
-    case 'equals': return ls === str(right);
-    case 'not_equals': return ls !== str(right);
-    case 'contains': return ls.toLowerCase().includes(str(right).toLowerCase());
-    case 'not_contains': return !ls.toLowerCase().includes(str(right).toLowerCase());
-    case 'starts_with': return ls.toLowerCase().startsWith(str(right).toLowerCase());
-    case 'ends_with': return ls.toLowerCase().endsWith(str(right).toLowerCase());
-    case 'gt': return Number(left) > Number(right);
-    case 'gte': return Number(left) >= Number(right);
-    case 'lt': return Number(left) < Number(right);
-    case 'lte': return Number(left) <= Number(right);
-    case 'exists': return left !== undefined && left !== null;
-    case 'empty': return left === undefined || left === null || ls === '';
-    case 'not_empty': return left !== undefined && left !== null && ls !== '';
+    case 'equals':
+      return ls === str(right);
+    case 'not_equals':
+      return ls !== str(right);
+    case 'contains':
+      return ls.toLowerCase().includes(str(right).toLowerCase());
+    case 'not_contains':
+      return !ls.toLowerCase().includes(str(right).toLowerCase());
+    case 'starts_with':
+      return ls.toLowerCase().startsWith(str(right).toLowerCase());
+    case 'ends_with':
+      return ls.toLowerCase().endsWith(str(right).toLowerCase());
+    case 'gt':
+      return Number(left) > Number(right);
+    case 'gte':
+      return Number(left) >= Number(right);
+    case 'lt':
+      return Number(left) < Number(right);
+    case 'lte':
+      return Number(left) <= Number(right);
+    case 'exists':
+      return left !== undefined && left !== null;
+    case 'empty':
+      return left === undefined || left === null || ls === '';
+    case 'not_empty':
+      return left !== undefined && left !== null && ls !== '';
     // RE2 (safeUserRegex): il pattern è attacker-controlled (dati item) → anti-ReDoS.
-    case 'regex': { try { return safeUserRegex(str(right)).test(ls); } catch { return false; } }
-    case 'in': return str(right).split(',').map((s) => s.trim()).includes(ls);
-    default: return false;
+    case 'regex': {
+      try {
+        return safeUserRegex(str(right)).test(ls);
+      } catch {
+        return false;
+      }
+    }
+    case 'in':
+      return str(right)
+        .split(',')
+        .map((s) => s.trim())
+        .includes(ls);
+    default:
+      return false;
   }
 }
 
 function parseRules(raw: unknown): { combinator: string; rules: Rule[] } {
   let obj: unknown = raw;
-  if (typeof raw === 'string' && raw.trim() !== '') { try { obj = JSON.parse(raw); } catch { obj = null; } }
+  if (typeof raw === 'string' && raw.trim() !== '') {
+    try {
+      obj = JSON.parse(raw);
+    } catch {
+      obj = null;
+    }
+  }
   if (obj && typeof obj === 'object' && Array.isArray((obj as { rules?: unknown }).rules)) {
     const o = obj as { combinator?: string; rules: Rule[] };
     return { combinator: (o.combinator ?? 'AND').toUpperCase(), rules: o.rules };
@@ -70,12 +108,23 @@ const filterExecutor: NodeExecutor = async (config, input) => {
   const raw = config.items !== undefined && str(config.items) !== '' ? config.items : input;
   const items: unknown[] = Array.isArray(raw)
     ? raw
-    : typeof raw === 'string' ? (() => { try { const p: unknown = JSON.parse(raw); return Array.isArray(p) ? (p as unknown[]) : []; } catch { return []; } })() : [];
+    : typeof raw === 'string'
+      ? (() => {
+          try {
+            const p: unknown = JSON.parse(raw);
+            return Array.isArray(p) ? (p as unknown[]) : [];
+          } catch {
+            return [];
+          }
+        })()
+      : [];
   const { combinator, rules } = parseRules(config.conditions);
 
   const matches = (item: unknown): boolean => {
     if (rules.length === 0) return true;
-    return combinator === 'OR' ? rules.some((r) => evalRule(item, r)) : rules.every((r) => evalRule(item, r));
+    return combinator === 'OR'
+      ? rules.some((r) => evalRule(item, r))
+      : rules.every((r) => evalRule(item, r));
   };
 
   const kept: unknown[] = [];
@@ -83,8 +132,13 @@ const filterExecutor: NodeExecutor = async (config, input) => {
   const keptIdx: number[] = [];
   const removedIdx: number[] = [];
   items.forEach((it, i) => {
-    if (matches(it)) { kept.push(it); keptIdx.push(i); }
-    else { removed.push(it); removedIdx.push(i); }
+    if (matches(it)) {
+      kept.push(it);
+      keptIdx.push(i);
+    } else {
+      removed.push(it);
+      removedIdx.push(i);
+    }
   });
 
   const branch = kept.length > 0 ? 'kept' : 'removed';
@@ -114,7 +168,13 @@ const filterExecutor: NodeExecutor = async (config, input) => {
   }
 
   return {
-    output: { kept, removed, keptCount: kept.length, removedCount: removed.length, total: items.length },
+    output: {
+      kept,
+      removed,
+      keptCount: kept.length,
+      removedCount: removed.length,
+      total: items.length,
+    },
     branch,
     durationMs: Date.now() - startedAt,
     ...(declaredItems !== undefined ? { items: declaredItems } : {}),
@@ -144,11 +204,18 @@ export const filterNode: NodeModule = {
       'contatti di una regione (in: "Lazio,Lombardia").',
     configFields: [
       {
-        key: 'items', label: 'Array da filtrare', type: 'expression', required: false, defaultValue: 'input',
-        help: 'L\'array di elementi. Vuoto = usa l\'input del nodo.',
+        key: 'items',
+        label: 'Array da filtrare',
+        type: 'expression',
+        required: false,
+        defaultValue: 'input',
+        help: "L'array di elementi. Vuoto = usa l'input del nodo.",
       },
       {
-        key: 'conditions', label: 'Condizioni', type: 'condition-rules', required: true,
+        key: 'conditions',
+        label: 'Condizioni',
+        type: 'condition-rules',
+        required: true,
         help: 'Costruttore visuale: combina più regole "campo · operatore · valore" con AND/OR.',
       },
     ],

@@ -9,23 +9,44 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { makeOdooHttpTransport } from './odoo-transport.js';
 
-afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 /** fetch mock: risolve subito con la risposta data; opzionalmente registra le init. */
-function stubFetchOk(status: number, text: string, capture?: (url: string, init: RequestInit) => void): void {
-  vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit) => {
-    capture?.(url, init);
-    return new Response(text, { status });
-  }));
+function stubFetchOk(
+  status: number,
+  text: string,
+  capture?: (url: string, init: RequestInit) => void,
+): void {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, init: RequestInit) => {
+      capture?.(url, init);
+      return new Response(text, { status });
+    }),
+  );
 }
 
 /** fetch mock: NON risolve mai da solo; rigetta SOLO quando il suo signal aborta. */
 function stubFetchAbortable(): void {
-  vi.stubGlobal('fetch', vi.fn((_url: string, init: RequestInit) => new Promise<Response>((_resolve, reject) => {
-    const sig = init.signal;
-    if (sig?.aborted) { reject(new DOMException('aborted', 'AbortError')); return; }
-    sig?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')), { once: true });
-  })));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(
+      (_url: string, init: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          const sig = init.signal;
+          if (sig?.aborted) {
+            reject(new DOMException('aborted', 'AbortError'));
+            return;
+          }
+          sig?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')), {
+            once: true,
+          });
+        }),
+    ),
+  );
 }
 
 describe('makeOdooHttpTransport.post', () => {
@@ -35,24 +56,40 @@ describe('makeOdooHttpTransport.post', () => {
     let reads = 0;
     const cancelSpy = vi.fn(async () => undefined);
     const hugeRes = {
-      status: 200, headers: new Headers(),
-      body: { getReader: () => ({
-        read: async () => { reads += 1; return reads <= 1000 ? { done: false, value: chunk } : { done: true, value: undefined }; },
-        cancel: cancelSpy,
-      }) },
-      text: async () => { throw new Error('🚨 res.text() = body intero in RAM (OOM)'); },
+      status: 200,
+      headers: new Headers(),
+      body: {
+        getReader: () => ({
+          read: async () => {
+            reads += 1;
+            return reads <= 1000 ? { done: false, value: chunk } : { done: true, value: undefined };
+          },
+          cancel: cancelSpy,
+        }),
+      },
+      text: async () => {
+        throw new Error('🚨 res.text() = body intero in RAM (OOM)');
+      },
     } as unknown as Response;
-    vi.stubGlobal('fetch', vi.fn(async () => hugeRes));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => hugeRes),
+    );
     const t = makeOdooHttpTransport();
-    await expect(t.post({ url: 'https://odoo.test/x', body: '<x/>', headers: {}, timeoutMs: 5000 }))
-      .rejects.toThrow(/troppo grande/i);
+    await expect(
+      t.post({ url: 'https://odoo.test/x', body: '<x/>', headers: {}, timeoutMs: 5000 }),
+    ).rejects.toThrow(/troppo grande/i);
     expect(cancelSpy).toHaveBeenCalledTimes(1);
     expect(reads).toBeLessThanOrEqual(7); // ~25MB/5MB, NON 1000
   });
 
   it('passthrough method/headers/body + ritorna { status, text }', async () => {
-    let seenUrl = ''; let seenInit: RequestInit = {};
-    stubFetchOk(200, '<xml>ok</xml>', (u, i) => { seenUrl = u; seenInit = i; });
+    let seenUrl = '';
+    let seenInit: RequestInit = {};
+    stubFetchOk(200, '<xml>ok</xml>', (u, i) => {
+      seenUrl = u;
+      seenInit = i;
+    });
     const t = makeOdooHttpTransport();
     const res = await t.post({
       url: 'https://odoo.test/xmlrpc/2/object',
@@ -68,18 +105,30 @@ describe('makeOdooHttpTransport.post', () => {
     expect((seenInit.headers as Record<string, string>)['X-Trace']).toBe('a');
   });
 
-  it('🚨 headers è una COPIA (spread) — mutare l\'input dopo non altera la request', async () => {
+  it("🚨 headers è una COPIA (spread) — mutare l'input dopo non altera la request", async () => {
     let seenInit: RequestInit = {};
-    stubFetchOk(200, 'x', (_u, i) => { seenInit = i; });
+    stubFetchOk(200, 'x', (_u, i) => {
+      seenInit = i;
+    });
     const headers = { 'X-Token': 'secret' };
-    await makeOdooHttpTransport().post({ url: 'https://odoo.test', body: '', headers, timeoutMs: 5000 });
+    await makeOdooHttpTransport().post({
+      url: 'https://odoo.test',
+      body: '',
+      headers,
+      timeoutMs: 5000,
+    });
     expect((seenInit.headers as Record<string, string>)['X-Token']).toBe('secret');
     expect(seenInit.headers).not.toBe(headers); // copia, non riferimento
   });
 
   it('🚨 ritorna lo status non-2xx senza lanciare (il chiamante decide)', async () => {
     stubFetchOk(500, '<fault/>');
-    const res = await makeOdooHttpTransport().post({ url: 'https://odoo.test', body: '', headers: {}, timeoutMs: 5000 });
+    const res = await makeOdooHttpTransport().post({
+      url: 'https://odoo.test',
+      body: '',
+      headers: {},
+      timeoutMs: 5000,
+    });
     expect(res.status).toBe(500);
     expect(res.text).toBe('<fault/>');
   });
@@ -87,24 +136,36 @@ describe('makeOdooHttpTransport.post', () => {
   it('🚨 TIMEOUT: se il fetch non risolve entro timeoutMs → abort → post rigetta', async () => {
     stubFetchAbortable();
     await expect(
-      makeOdooHttpTransport().post({ url: 'https://odoo.test', body: '', headers: {}, timeoutMs: 10 }),
+      makeOdooHttpTransport().post({
+        url: 'https://odoo.test',
+        body: '',
+        headers: {},
+        timeoutMs: 10,
+      }),
     ).rejects.toMatchObject({ name: 'AbortError' });
   });
 
   it('🚨 SIGNAL esterno GIÀ abortato → fetch riceve un signal abortato → rigetta subito', async () => {
     stubFetchAbortable();
     const res = makeOdooHttpTransport().post({
-      url: 'https://odoo.test', body: '', headers: {}, timeoutMs: 5000,
+      url: 'https://odoo.test',
+      body: '',
+      headers: {},
+      timeoutMs: 5000,
       signal: AbortSignal.abort(),
     });
     await expect(res).rejects.toMatchObject({ name: 'AbortError' });
   });
 
-  it('🚨 SIGNAL esterno abortato DURANTE il volo → propaga l\'abort al fetch', async () => {
+  it("🚨 SIGNAL esterno abortato DURANTE il volo → propaga l'abort al fetch", async () => {
     stubFetchAbortable();
     const ext = new AbortController();
     const p = makeOdooHttpTransport().post({
-      url: 'https://odoo.test', body: '', headers: {}, timeoutMs: 5000, signal: ext.signal,
+      url: 'https://odoo.test',
+      body: '',
+      headers: {},
+      timeoutMs: 5000,
+      signal: ext.signal,
     });
     ext.abort(); // teardown del poller mentre la richiesta è in volo
     await expect(p).rejects.toMatchObject({ name: 'AbortError' });
@@ -114,7 +175,13 @@ describe('makeOdooHttpTransport.post', () => {
     stubFetchOk(200, 'ok');
     const ext = new AbortController();
     const remove = vi.spyOn(ext.signal, 'removeEventListener');
-    await makeOdooHttpTransport().post({ url: 'https://odoo.test', body: '', headers: {}, timeoutMs: 5000, signal: ext.signal });
+    await makeOdooHttpTransport().post({
+      url: 'https://odoo.test',
+      body: '',
+      headers: {},
+      timeoutMs: 5000,
+      signal: ext.signal,
+    });
     expect(remove).toHaveBeenCalledWith('abort', expect.any(Function));
     // e abortare DOPO il completamento non deve avere effetti (listener già rimosso)
     expect(() => ext.abort()).not.toThrow();

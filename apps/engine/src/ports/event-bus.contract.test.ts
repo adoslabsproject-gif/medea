@@ -35,9 +35,18 @@ function eventNames(): string[] {
 // coincidere con l'intera union — un evento nella union e non qui è un evento
 // che nessuno ha mai cablato.
 const CONSUMED = new Set<string>([
-  'run.started', 'run.step', 'run.step.log', 'run.completed', 'run.errored',
-  'run.deleted', 'run.paused', 'run.resumed', 'run.cancelled',
-  'workflow.created', 'workflow.updated', 'workflow.deleted',
+  'run.started',
+  'run.step',
+  'run.step.log',
+  'run.completed',
+  'run.errored',
+  'run.deleted',
+  'run.paused',
+  'run.resumed',
+  'run.cancelled',
+  'workflow.created',
+  'workflow.updated',
+  'workflow.deleted',
 ]);
 
 // Di quegli eventi, quelli che l'interfaccia di Medea ascolta davvero oggi.
@@ -47,7 +56,11 @@ const CONSUMED = new Set<string>([
 // è il conto esatto di quanto della superficie del motore l'app usa per ora.
 // Se un listener sparisce, il test qui sotto se ne accorge.
 const CONSUMED_BY_DESKTOP = new Set<string>([
-  'run.started', 'run.completed', 'run.errored', 'run.paused', 'run.cancelled',
+  'run.started',
+  'run.completed',
+  'run.errored',
+  'run.paused',
+  'run.cancelled',
 ]);
 
 describe('event-bus — ZERO eventi orfani (forma forte)', () => {
@@ -60,7 +73,10 @@ describe('event-bus — ZERO eventi orfani (forma forte)', () => {
 
   it('OGNI EventName è CONSUMED — nessun evento senza consumer (no allowlist)', () => {
     const orphan = names.filter((n) => !CONSUMED.has(n));
-    expect(orphan, `eventi senza consumer (cabla o rimuovi dalla union): ${orphan.join(', ')}`).toEqual([]);
+    expect(
+      orphan,
+      `eventi senza consumer (cabla o rimuovi dalla union): ${orphan.join(', ')}`,
+    ).toEqual([]);
   });
 
   it('nessun CONSUMED dichiarato che NON esiste più nella union (lista aggiornata)', () => {
@@ -77,7 +93,10 @@ describe('event-bus — ZERO eventi orfani (forma forte)', () => {
       read('../../../desktop/src/features/workflows/runtime/watcher.ts') +
       read('../../../desktop/src/features/workflows/runtime/run-mapping.ts');
     const missing = [...CONSUMED_BY_DESKTOP].filter((ev) => !consumers.includes(`'${ev}'`));
-    expect(missing, `dichiarati ascoltati ma nessun listener trovato: ${missing.join(', ')}`).toEqual([]);
+    expect(
+      missing,
+      `dichiarati ascoltati ma nessun listener trovato: ${missing.join(', ')}`,
+    ).toEqual([]);
   });
 
   it('gli eventi ascoltati dal desktop appartengono tutti alla union', () => {

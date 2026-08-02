@@ -25,7 +25,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
   return (
     <div className="w-full">
       {label !== undefined && (
-        <label htmlFor={selectId} className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-fg-muted">
+        <label
+          htmlFor={selectId}
+          className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-fg-muted"
+        >
           {label}
         </label>
       )}
@@ -43,9 +46,21 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
         >
           {children}
         </select>
-        <span aria-hidden className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-fg-muted">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="6 9 12 15 18 9"/>
+        <span
+          aria-hidden
+          className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-fg-muted"
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="6 9 12 15 18 9" />
           </svg>
         </span>
       </div>

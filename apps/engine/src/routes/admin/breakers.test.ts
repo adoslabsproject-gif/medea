@@ -35,7 +35,10 @@ vi.mock('@/services/audit.service.js', () => ({
 
 import { registerBreakersRoutes } from './breakers.js';
 
-interface AuthShape { userId: string; email: string }
+interface AuthShape {
+  userId: string;
+  email: string;
+}
 
 function makeApp(auth: AuthShape | null = { userId: 'u-admin', email: 'admin@acme.io' }): Hono {
   const app = new Hono();
@@ -66,7 +69,12 @@ describe('GET /admin/breakers', () => {
     const app = makeApp();
     const res = await app.request('/admin/breakers');
     expect(res.status).toBe(200);
-    const body = await res.json() as { breakers: unknown[]; total: number; open: number; halfOpen: number };
+    const body = (await res.json()) as {
+      breakers: unknown[];
+      total: number;
+      open: number;
+      halfOpen: number;
+    };
     expect(body.total).toBe(0);
     expect(body.open).toBe(0);
     expect(body.halfOpen).toBe(0);
@@ -81,11 +89,13 @@ describe('GET /admin/breakers', () => {
     c.forceState('half_open', 'test');
     const app = makeApp();
     const res = await app.request('/admin/breakers');
-    const body = await res.json() as { total: number; open: number; halfOpen: number };
+    const body = (await res.json()) as { total: number; open: number; halfOpen: number };
     expect(body.total).toBe(3);
     expect(body.open).toBe(1);
     expect(body.halfOpen).toBe(1);
-    a.destroy(); b.destroy(); c.destroy();
+    a.destroy();
+    b.destroy();
+    c.destroy();
   });
 });
 
@@ -96,17 +106,19 @@ describe('POST /admin/breakers/:name/reset', () => {
     const app = makeApp();
     const res = await app.request('/admin/breakers/smtp:test/reset', { method: 'POST' });
     expect(res.status).toBe(200);
-    const body = await res.json() as { ok: boolean; name: string; state: string };
+    const body = (await res.json()) as { ok: boolean; name: string; state: string };
     expect(body).toEqual({ ok: true, name: 'smtp:test', state: 'closed' });
     expect(b.getState()).toBe('closed');
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: 'system',
-      action: 'admin.breaker.reset',
-      resourceType: 'breaker',
-      resourceId: 'smtp:test',
-      actorId: 'u-admin',
-      metadata: expect.objectContaining({ state: 'closed', actorEmail: 'admin@acme.io' }),
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'system',
+        action: 'admin.breaker.reset',
+        resourceType: 'breaker',
+        resourceId: 'smtp:test',
+        actorId: 'u-admin',
+        metadata: expect.objectContaining({ state: 'closed', actorEmail: 'admin@acme.io' }),
+      }),
+    );
     b.destroy();
   });
 
@@ -114,7 +126,7 @@ describe('POST /admin/breakers/:name/reset', () => {
     const app = makeApp();
     const res = await app.request('/admin/breakers/inexistent/reset', { method: 'POST' });
     expect(res.status).toBe(404);
-    const body = await res.json() as { error: string };
+    const body = (await res.json()) as { error: string };
     expect(body.error).toContain('inexistent');
     expect(m.auditAppend).not.toHaveBeenCalled();
   });
@@ -123,10 +135,14 @@ describe('POST /admin/breakers/:name/reset', () => {
     const b = newBreaker('x');
     const app = makeApp(null);
     await app.request('/admin/breakers/x/reset', { method: 'POST' });
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      metadata: expect.objectContaining({ actorEmail: null }),
-    }));
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.not.objectContaining({ actorId: expect.anything() }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({ actorEmail: null }),
+      }),
+    );
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.not.objectContaining({ actorId: expect.anything() }),
+    );
     b.destroy();
   });
 });
@@ -137,7 +153,7 @@ describe('POST /admin/breakers/:name/trip', () => {
     const app = makeApp();
     const res = await app.request('/admin/breakers/llm:anthropic/trip', { method: 'POST' });
     expect(res.status).toBe(200);
-    const body = await res.json() as { ok: boolean; state: string };
+    const body = (await res.json()) as { ok: boolean; state: string };
     expect(body.state).toBe('open');
     expect(b.getState()).toBe('open');
     b.destroy();
@@ -162,30 +178,37 @@ describe('POST /admin/breakers/:name/trip', () => {
 
 describe('POST /admin/breakers/reset-all', () => {
   it('happy: 3 breaker open → reset-all → resetCount=3 + audit', async () => {
-    const a = newBreaker('a'); a.forceState('open', 't');
-    const b = newBreaker('b'); b.forceState('open', 't');
-    const c = newBreaker('c'); c.forceState('open', 't');
+    const a = newBreaker('a');
+    a.forceState('open', 't');
+    const b = newBreaker('b');
+    b.forceState('open', 't');
+    const c = newBreaker('c');
+    c.forceState('open', 't');
     const app = makeApp();
     const res = await app.request('/admin/breakers/reset-all', { method: 'POST' });
     expect(res.status).toBe(200);
-    const body = await res.json() as { ok: boolean; resetCount: number };
+    const body = (await res.json()) as { ok: boolean; resetCount: number };
     expect(body.resetCount).toBe(3);
     expect(a.getState()).toBe('closed');
     expect(b.getState()).toBe('closed');
     expect(c.getState()).toBe('closed');
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'admin.breaker.reset_all',
-      resourceType: 'breaker',
-      resourceId: '*',
-      metadata: expect.objectContaining({ resetCount: 3 }),
-    }));
-    a.destroy(); b.destroy(); c.destroy();
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.breaker.reset_all',
+        resourceType: 'breaker',
+        resourceId: '*',
+        metadata: expect.objectContaining({ resetCount: 3 }),
+      }),
+    );
+    a.destroy();
+    b.destroy();
+    c.destroy();
   });
 
   it('reset-all su registry vuoto → resetCount=0 ok', async () => {
     const app = makeApp();
     const res = await app.request('/admin/breakers/reset-all', { method: 'POST' });
-    const body = await res.json() as { resetCount: number };
+    const body = (await res.json()) as { resetCount: number };
     expect(body.resetCount).toBe(0);
   });
 });
@@ -194,16 +217,20 @@ describe('POST /admin/breakers/:name/simulate-failure', () => {
   it('🚨 inietta N failure → stateBefore/After + stats nel response', async () => {
     const b = newBreaker('test-simul'); // threshold=3
     const app = makeApp();
-    const res = await app.request('/admin/breakers/test-simul/simulate-failure?count=5', { method: 'POST' });
+    const res = await app.request('/admin/breakers/test-simul/simulate-failure?count=5', {
+      method: 'POST',
+    });
     expect(res.status).toBe(200);
-    const body = await res.json() as { stateBefore: string; stateAfter: string; count: number };
+    const body = (await res.json()) as { stateBefore: string; stateAfter: string; count: number };
     expect(body.stateBefore).toBe('closed');
     expect(body.stateAfter).toBe('open'); // 5 > threshold 3 → si apre
     expect(body.count).toBe(5);
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'admin.breaker.simulate_failure',
-      metadata: expect.objectContaining({ count: 5, stateBefore: 'closed', stateAfter: 'open' }),
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.breaker.simulate_failure',
+        metadata: expect.objectContaining({ count: 5, stateBefore: 'closed', stateAfter: 'open' }),
+      }),
+    );
     b.destroy();
   });
 
@@ -211,9 +238,11 @@ describe('POST /admin/breakers/:name/simulate-failure', () => {
     const b = newBreaker('x');
     const app = makeApp();
     await app.request('/admin/breakers/x/simulate-failure', { method: 'POST' });
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      metadata: expect.objectContaining({ count: 5 }),
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({ count: 5 }),
+      }),
+    );
     b.destroy();
   });
 
@@ -221,9 +250,11 @@ describe('POST /admin/breakers/:name/simulate-failure', () => {
     const b = newBreaker('x');
     const app = makeApp();
     await app.request('/admin/breakers/x/simulate-failure?count=9999', { method: 'POST' });
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      metadata: expect.objectContaining({ count: 50 }),
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({ count: 50 }),
+      }),
+    );
     b.destroy();
   });
 
@@ -231,9 +262,11 @@ describe('POST /admin/breakers/:name/simulate-failure', () => {
     const b = newBreaker('x');
     const app = makeApp();
     await app.request('/admin/breakers/x/simulate-failure?count=0', { method: 'POST' });
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      metadata: expect.objectContaining({ count: 1 }),
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({ count: 1 }),
+      }),
+    );
     b.destroy();
   });
 
@@ -241,15 +274,19 @@ describe('POST /admin/breakers/:name/simulate-failure', () => {
     const b = newBreaker('x');
     const app = makeApp();
     await app.request('/admin/breakers/x/simulate-failure?count=-10', { method: 'POST' });
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      metadata: expect.objectContaining({ count: 1 }),
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({ count: 1 }),
+      }),
+    );
     b.destroy();
   });
 
   it('🚨 simulate su breaker not found → 404', async () => {
     const app = makeApp();
-    const res = await app.request('/admin/breakers/ghost/simulate-failure?count=3', { method: 'POST' });
+    const res = await app.request('/admin/breakers/ghost/simulate-failure?count=3', {
+      method: 'POST',
+    });
     expect(res.status).toBe(404);
   });
 
@@ -257,7 +294,7 @@ describe('POST /admin/breakers/:name/simulate-failure', () => {
     const b = newBreaker('x');
     const app = makeApp();
     const res = await app.request('/admin/breakers/x/simulate-failure?count=2', { method: 'POST' });
-    const body = await res.json() as { stats: Record<string, unknown> };
+    const body = (await res.json()) as { stats: Record<string, unknown> };
     expect(body.stats).toBeDefined();
     expect(typeof body.stats).toBe('object');
     b.destroy();

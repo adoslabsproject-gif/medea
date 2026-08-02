@@ -19,13 +19,28 @@ import { schemaPlanTools } from './tools/schema-plan.js';
 import { rawReadTools } from './tools/raw-read.js';
 import { viewTools } from './tools/views.js';
 
-const ALL_TOOLS: DbAgentToolDef[] = [...readTools, ...writeSchemaTools, ...writeDataTools, ...schemaPlanTools, ...rawReadTools, ...viewTools];
+const ALL_TOOLS: DbAgentToolDef[] = [
+  ...readTools,
+  ...writeSchemaTools,
+  ...writeDataTools,
+  ...schemaPlanTools,
+  ...rawReadTools,
+  ...viewTools,
+];
 
 const TOOL_MAP: ReadonlyMap<string, DbAgentToolDef> = new Map(ALL_TOOLS.map((t) => [t.name, t]));
 
 /** Metadati tool per il tool-calling LLM (Anthropic/OpenAI). Ordine stabile. */
-export function listDbAgentTools(): { name: string; description: string; parameters: Record<string, unknown> }[] {
-  return ALL_TOOLS.map((t) => ({ name: t.name, description: t.description, parameters: t.parameters }));
+export function listDbAgentTools(): {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+}[] {
+  return ALL_TOOLS.map((t) => ({
+    name: t.name,
+    description: t.description,
+    parameters: t.parameters,
+  }));
 }
 
 /** True se il tool è distruttivo (l'UI deve chiedere conferma visiva). */
@@ -33,7 +48,9 @@ export function isDestructiveTool(name: string): boolean {
   return TOOL_MAP.get(name)?.destructive === true;
 }
 
-function formatZodIssues(error: { issues: { path: (string | number)[]; message: string }[] }): string {
+function formatZodIssues(error: {
+  issues: { path: (string | number)[]; message: string }[];
+}): string {
   return error.issues
     .map((i) => {
       const path = i.path.join('.');
@@ -57,7 +74,11 @@ export async function executeDbAgentTool(
   }
   const parsed = tool.schema.safeParse(rawArgs ?? {});
   if (!parsed.success) {
-    return { ok: false, code: 'TOOL_VALIDATION', error: `Argomenti non validi per ${toolName} — ${formatZodIssues(parsed.error)}` };
+    return {
+      ok: false,
+      code: 'TOOL_VALIDATION',
+      error: `Argomenti non validi per ${toolName} — ${formatZodIssues(parsed.error)}`,
+    };
   }
   // GATE SCRITTURE (human-in-the-loop, revisore 2026-06-14): un tool distruttivo
   // gira SOLO se l'utente ha autorizzato le scritture per questa richiesta

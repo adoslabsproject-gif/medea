@@ -57,7 +57,8 @@ export const llmCompleteNode: NodeModule = {
         type: 'textarea',
         required: false,
         placeholder: 'Sei un assistente che risponde sempre in italiano formale.',
-        help: 'Comportamento base del LLM. Vuoto = nessun system prompt (modello in "default mode"). ' +
+        help:
+          'Comportamento base del LLM. Vuoto = nessun system prompt (modello in "default mode"). ' +
           'Usato per impostare tono, lingua, formato output, vincoli ("rispondi solo con JSON" etc).',
       },
       {
@@ -66,7 +67,8 @@ export const llmCompleteNode: NodeModule = {
         type: 'textarea',
         required: true,
         placeholder: 'Riassumi questa email in 3 frasi:\n\n{{$node.ImapTrigger.json.body}}',
-        help: 'Il messaggio principale che il LLM riceve. Supporta {{espressioni}} per iniettare ' +
+        help:
+          'Il messaggio principale che il LLM riceve. Supporta {{espressioni}} per iniettare ' +
           'output di nodi precedenti, {{secrets.X}} per credenziali, {{vars.X}} per variabili.',
       },
       {
@@ -74,9 +76,21 @@ export const llmCompleteNode: NodeModule = {
         label: 'Provider LLM',
         type: 'select',
         required: false,
-        options: ['liara', 'anthropic', 'openai', 'gemini', 'mistral', 'groq', 'openrouter', 'deepseek', 'xai', 'perplexity'],
+        options: [
+          'liara',
+          'anthropic',
+          'openai',
+          'gemini',
+          'mistral',
+          'groq',
+          'openrouter',
+          'deepseek',
+          'xai',
+          'perplexity',
+        ],
         defaultValue: 'liara',
-        help: 'liara (default) = Qwen3 32B self-hosted ZeliAI, GRATIS sul tuo piano. ' +
+        help:
+          'liara (default) = Qwen3 32B self-hosted ZeliAI, GRATIS sul tuo piano. ' +
           'Gli altri richiedono BYOK API key configurata in Settings → AI Providers e sono a tuo carico.',
       },
       {
@@ -85,8 +99,9 @@ export const llmCompleteNode: NodeModule = {
         type: 'text',
         required: false,
         placeholder: 'claude-sonnet-4-6 / gpt-4o-mini / lascia vuoto per default provider',
-        help: 'Vuoto = usa il default del provider (Liara: qwen3-32b, Anthropic: claude-sonnet-4-6, ' +
-          'OpenAI: gpt-4o-mini). Per modelli specifici, inserisci l\\\'id esatto del provider.',
+        help:
+          'Vuoto = usa il default del provider (Liara: qwen3-32b, Anthropic: claude-sonnet-4-6, ' +
+          "OpenAI: gpt-4o-mini). Per modelli specifici, inserisci l\\'id esatto del provider.",
       },
       {
         key: 'temperature',
@@ -94,7 +109,8 @@ export const llmCompleteNode: NodeModule = {
         type: 'number',
         required: false,
         defaultValue: '0.7',
-        help: '0 = output deterministico (stesso input → stesso output, ideale per estrazione/classificazione). ' +
+        help:
+          '0 = output deterministico (stesso input → stesso output, ideale per estrazione/classificazione). ' +
           '0.7 = bilanciato (default, ok per riassunti). 1.5+ = molto creativo (brainstorming, riformulazione).',
       },
       {
@@ -103,8 +119,9 @@ export const llmCompleteNode: NodeModule = {
         type: 'number',
         required: false,
         defaultValue: '2048',
-        help: 'Lunghezza massima della risposta in token (~3-4 char per token IT/EN). 2048 = ~6000 char, ' +
-          'sufficiente per un\\\'email lunga o un\\\'estrazione JSON di 30 campi. Aumenta a 8192+ solo per ' +
+        help:
+          'Lunghezza massima della risposta in token (~3-4 char per token IT/EN). 2048 = ~6000 char, ' +
+          "sufficiente per un\\'email lunga o un\\'estrazione JSON di 30 campi. Aumenta a 8192+ solo per " +
           'output lunghi (report, analisi).',
       },
       {
@@ -114,7 +131,8 @@ export const llmCompleteNode: NodeModule = {
         required: false,
         options: ['text', 'json'],
         defaultValue: 'text',
-        help: 'text = stringa libera (default). json = forza il LLM a rispondere con JSON valido (parsato ' +
+        help:
+          'text = stringa libera (default). json = forza il LLM a rispondere con JSON valido (parsato ' +
           'in output.jsonParsed automaticamente). Per json, suggerisci la struttura nel prompt: ' +
           '"Rispondi SOLO con {key1, key2, ...}".',
       },
@@ -124,11 +142,21 @@ export const llmCompleteNode: NodeModule = {
         type: 'number',
         required: false,
         defaultValue: '60000',
-        help: 'Massimo tempo di attesa risposta. 60000 = 1 min (default). LLM lunghi (reasoning + output >2k token) ' +
+        help:
+          'Massimo tempo di attesa risposta. 60000 = 1 min (default). LLM lunghi (reasoning + output >2k token) ' +
           'possono richiedere 90-180s — aumenta se vedi timeout.',
       },
     ],
-    outputs: ['completion', 'model', 'provider', 'tokensUsed', 'responseFormat', 'jsonParsed', 'cost', 'finishReason'],
+    outputs: [
+      'completion',
+      'model',
+      'provider',
+      'tokensUsed',
+      'responseFormat',
+      'jsonParsed',
+      'cost',
+      'finishReason',
+    ],
     vendor: 'flowforge',
     version: '1.0.0',
     cost: {

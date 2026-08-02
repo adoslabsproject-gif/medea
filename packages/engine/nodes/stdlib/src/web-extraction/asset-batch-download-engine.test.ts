@@ -38,6 +38,8 @@ describe('deriveLocalPath — traversal rifiutato (usa lo stesso helper)', () =>
     expect(deriveLocalPath('https://ex.com/a%00b/c', '/data/t1', pathPosix)).toBeNull();
   });
   it('trailing slash → index.html dentro la base', () => {
-    expect(deriveLocalPath('https://ex.com/dir/', '/data/t1', pathPosix)).toBe('/data/t1/dir/index.html');
+    expect(deriveLocalPath('https://ex.com/dir/', '/data/t1', pathPosix)).toBe(
+      '/data/t1/dir/index.html',
+    );
   });
 });

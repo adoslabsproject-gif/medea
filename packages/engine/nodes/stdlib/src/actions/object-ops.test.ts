@@ -22,30 +22,41 @@ describe('action_set_fields', () => {
     ['__proto__', { '__proto__.polluted': 'yes' }],
     ['constructor.prototype', { 'constructor.prototype.polluted': 'yes' }],
     ['prototype', { 'prototype.polluted': 'yes' }],
-  ])('🚨 SECURITY: assignment via %s NON inquina Object.prototype (CWE-1321)', async (_l, assignments) => {
-    // MUTATION: senza il guard FORBIDDEN_PATH_KEYS, setPath naviga fino a
-    // Object.prototype e ({}).polluted diventerebbe 'yes' globalmente → rosso.
-    await out(setF, { assignments }, {});
-    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
-    // cleanup difensivo nel caso (improbabile) il guard fallisse durante lo sviluppo
-    delete (Object.prototype as Record<string, unknown>).polluted;
-  });
+  ])(
+    '🚨 SECURITY: assignment via %s NON inquina Object.prototype (CWE-1321)',
+    async (_l, assignments) => {
+      // MUTATION: senza il guard FORBIDDEN_PATH_KEYS, setPath naviga fino a
+      // Object.prototype e ({}).polluted diventerebbe 'yes' globalmente → rosso.
+      await out(setF, { assignments }, {});
+      expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+      // cleanup difensivo nel caso (improbabile) il guard fallisse durante lo sviluppo
+      delete (Object.prototype as Record<string, unknown>).polluted;
+    },
+  );
   it('🚨 SECURITY: removeFields con __proto__ è no-op safe (no pollution/crash)', async () => {
     const r = await out(setF, { removeFields: '__proto__.x,constructor.prototype.y' }, { keep: 1 });
     expect((r.result as { keep: number }).keep).toBe(1);
     expect(({} as Record<string, unknown>).x).toBeUndefined();
   });
-  it('🚨 NON muta l\'input (deep-clone difensivo)', async () => {
+  it("🚨 NON muta l'input (deep-clone difensivo)", async () => {
     const input = { a: { b: 1 } };
     await out(setF, { assignments: { 'a.b': 2 } }, input);
     expect(input.a.b).toBe(1);
   });
   it('keepOnly = whitelist (parte da oggetto vuoto)', async () => {
-    const r = await out(setF, { keepOnly: 'true', assignments: { nome: 'X' } }, { nome: 'X', segreto: 'Y' });
+    const r = await out(
+      setF,
+      { keepOnly: 'true', assignments: { nome: 'X' } },
+      { nome: 'X', segreto: 'Y' },
+    );
     expect(r.result).toEqual({ nome: 'X' });
   });
   it('rename + remove', async () => {
-    const r = await out(setF, { renameFields: { Email: 'email' }, removeFields: 'tmp' }, { Email: 'a@b.it', tmp: 1 });
+    const r = await out(
+      setF,
+      { renameFields: { Email: 'email' }, removeFields: 'tmp' },
+      { Email: 'a@b.it', tmp: 1 },
+    );
     expect(r.result).toEqual({ email: 'a@b.it' });
   });
   it('coerceTypes ON: "42"→42, "true"→true, JSON→obj', async () => {

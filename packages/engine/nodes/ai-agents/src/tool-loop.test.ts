@@ -44,7 +44,9 @@ describe('N20 — http_request tool wires safeFetchWithRedirects', () => {
     // safeFetchWithRedirects. La garanzia SSRF resta intatta E rafforzata dal
     // breaker. Verifico la catena COMPLETA, non un singolo livello.
     expect(httpRequestBlock).toMatch(/await gatewayFetch\(url/);
-    expect(toolLoopSource).toMatch(/async function gatewayFetch[\s\S]*?safeFetchWithRedirects\(url/);
+    expect(toolLoopSource).toMatch(
+      /async function gatewayFetch[\s\S]*?safeFetchWithRedirects\(url/,
+    );
   });
 
   it('SECURITY: error SsrfBlockedError ritorna tool-result strutturato (no throw)', () => {
@@ -118,7 +120,9 @@ describe('H6 — RAG frame-close preservato + cap maxIterations', () => {
   });
 
   it('frameRagSearchResponse: payload piccolo → invariato (anti-regressione)', () => {
-    const out = frameRagSearchResponse(JSON.stringify({ results: [{ title: 'a', content: 'short', url: 'u', score: 1 }], count: 1 }));
+    const out = frameRagSearchResponse(
+      JSON.stringify({ results: [{ title: 'a', content: 'short', url: 'u', score: 1 }], count: 1 }),
+    );
     expect(out).toContain(`<<<${RAG_CONTENT_MARKER}`);
     expect(out).toContain(`<<<END_${RAG_CONTENT_MARKER}>>>`);
   });
@@ -134,7 +138,15 @@ describe('H6 — RAG frame-close preservato + cap maxIterations', () => {
     expect(SAFE_PATH_ID.test('kb_prod-2026')).toBe(true);
     expect(SAFE_PATH_ID.test('wf-abc123')).toBe(true);
     // Rifiutati: ogni vettore di traversal / path / encoding.
-    for (const evil of ['../../internal/admin', 'a/b', '..', 'x%2f..', 'id with space', '../', 'a'.repeat(129)]) {
+    for (const evil of [
+      '../../internal/admin',
+      'a/b',
+      '..',
+      'x%2f..',
+      'id with space',
+      '../',
+      'a'.repeat(129),
+    ]) {
       expect(SAFE_PATH_ID.test(evil)).toBe(false);
     }
   });

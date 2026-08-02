@@ -77,7 +77,10 @@ export interface RewriteStats {
   skippedScheme: number;
 }
 
-export interface RewriteResult { html: string; stats: RewriteStats }
+export interface RewriteResult {
+  html: string;
+  stats: RewriteStats;
+}
 
 const SKIP_SCHEMES = /^(?:data:|mailto:|tel:|javascript:|blob:|sms:|chrome-extension:)/i;
 
@@ -87,7 +90,11 @@ function resolveAbs(href: string, pageUrl: string): string | null {
   if (!trimmed) return null;
   if (trimmed.startsWith('#')) return null; // fragment-only — keep verbatim
   if (SKIP_SCHEMES.test(trimmed)) return null;
-  try { return new URL(trimmed, pageUrl).toString(); } catch { return null; }
+  try {
+    return new URL(trimmed, pageUrl).toString();
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -103,7 +110,10 @@ function toLocalHref(absUrl: string, opts: RewriteOptions): string | null {
   const query = opts.stripQuery ? '' : u.search;
   const canonicalKey = `${u.origin}${u.pathname}${u.search}${u.hash}`;
   const lookupKey = `${u.origin}${u.pathname}${u.search}`;
-  const fsPath = opts.assetMap[canonicalKey] ?? opts.assetMap[lookupKey] ?? opts.assetMap[`${u.origin}${u.pathname}`];
+  const fsPath =
+    opts.assetMap[canonicalKey] ??
+    opts.assetMap[lookupKey] ??
+    opts.assetMap[`${u.origin}${u.pathname}`];
   if (!fsPath) return null;
   let rel = relativePosix(opts.htmlSaveDir, fsPath);
   if (!rel.startsWith('.') && !rel.startsWith('/')) rel = `./${rel}`;
@@ -113,17 +123,25 @@ function toLocalHref(absUrl: string, opts: RewriteOptions): string | null {
 /** Rewrite a `srcset` attribute (comma-separated url+descriptor pairs). */
 function rewriteSrcset(srcset: string, opts: RewriteOptions): { value: string; rewritten: number } {
   let rewritten = 0;
-  const parts = srcset.split(',').map((p) => p.trim()).filter(Boolean);
+  const parts = srcset
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean);
   const out: string[] = [];
   for (const part of parts) {
     const splitAt = part.search(/\s+/);
     const url = splitAt < 0 ? part : part.slice(0, splitAt);
     const descriptor = splitAt < 0 ? '' : part.slice(splitAt).trim();
     const abs = resolveAbs(url, opts.pageUrl);
-    if (!abs) { out.push(part); continue; }
+    if (!abs) {
+      out.push(part);
+      continue;
+    }
     const local = toLocalHref(abs, opts);
-    if (local) { rewritten++; out.push(descriptor ? `${local} ${descriptor}` : local); }
-    else out.push(part);
+    if (local) {
+      rewritten++;
+      out.push(descriptor ? `${local} ${descriptor}` : local);
+    } else out.push(part);
   }
   return { value: out.join(', '), rewritten };
 }
@@ -131,14 +149,17 @@ function rewriteSrcset(srcset: string, opts: RewriteOptions): { value: string; r
 /** Rewrite all `url(...)` occurrences inside a CSS chunk (style block or style attr). */
 function rewriteCssUrls(css: string, opts: RewriteOptions): { value: string; rewritten: number } {
   let rewritten = 0;
-  const out = css.replace(/url\(\s*(['"]?)([^)'"\s]+)\1\s*\)/gi, (whole, quote: string, url: string) => {
-    const abs = resolveAbs(url, opts.pageUrl);
-    if (!abs) return whole;
-    const local = toLocalHref(abs, opts);
-    if (!local) return whole;
-    rewritten++;
-    return `url(${quote}${local}${quote})`;
-  });
+  const out = css.replace(
+    /url\(\s*(['"]?)([^)'"\s]+)\1\s*\)/gi,
+    (whole, quote: string, url: string) => {
+      const abs = resolveAbs(url, opts.pageUrl);
+      if (!abs) return whole;
+      const local = toLocalHref(abs, opts);
+      if (!local) return whole;
+      rewritten++;
+      return `url(${quote}${local}${quote})`;
+    },
+  );
   return { value: out, rewritten };
 }
 
@@ -166,19 +187,32 @@ export function rewriteHtml(html: string, opts: RewriteOptions): RewriteResult {
 
   for (const { sel, attr } of SINGLE_ATTRS) {
     $(sel).each((_i, el) => {
-      const raw = $(el).attr(attr); if (!raw) return;
-      if (raw.startsWith('#')) { stats.unchanged++; return; }
-      if (SKIP_SCHEMES.test(raw.trim())) { stats.skippedScheme++; return; }
+      const raw = $(el).attr(attr);
+      if (!raw) return;
+      if (raw.startsWith('#')) {
+        stats.unchanged++;
+        return;
+      }
+      if (SKIP_SCHEMES.test(raw.trim())) {
+        stats.skippedScheme++;
+        return;
+      }
       const abs = resolveAbs(raw, opts.pageUrl);
-      if (!abs) { stats.unchanged++; return; }
+      if (!abs) {
+        stats.unchanged++;
+        return;
+      }
       const local = toLocalHref(abs, opts);
-      if (local) { $(el).attr(attr, local); stats.rewritten++; }
-      else stats.unchanged++;
+      if (local) {
+        $(el).attr(attr, local);
+        stats.rewritten++;
+      } else stats.unchanged++;
     });
   }
   for (const { sel, attr } of SRCSET_ATTRS) {
     $(sel).each((_i, el) => {
-      const raw = $(el).attr(attr); if (!raw) return;
+      const raw = $(el).attr(attr);
+      if (!raw) return;
       const r = rewriteSrcset(raw, opts);
       $(el).attr(attr, r.value);
       stats.rewritten += r.rewritten;
@@ -187,15 +221,23 @@ export function rewriteHtml(html: string, opts: RewriteOptions): RewriteResult {
   }
   // <style> blocks
   $('style').each((_i, el) => {
-    const css = $(el).html(); if (!css) return;
+    const css = $(el).html();
+    if (!css) return;
     const r = rewriteCssUrls(css, opts);
-    if (r.rewritten > 0) { $(el).html(r.value); stats.rewritten += r.rewritten; }
+    if (r.rewritten > 0) {
+      $(el).html(r.value);
+      stats.rewritten += r.rewritten;
+    }
   });
   // style="" attributes on any element
   $('[style]').each((_i, el) => {
-    const css = $(el).attr('style'); if (!css) return;
+    const css = $(el).attr('style');
+    if (!css) return;
     const r = rewriteCssUrls(css, opts);
-    if (r.rewritten > 0) { $(el).attr('style', r.value); stats.rewritten += r.rewritten; }
+    if (r.rewritten > 0) {
+      $(el).attr('style', r.value);
+      stats.rewritten += r.rewritten;
+    }
   });
 
   return { html: $.html(), stats };
@@ -222,7 +264,9 @@ function parseAssetMap(raw: unknown): Record<string, string> {
     try {
       const parsed: unknown = JSON.parse(raw);
       return parseAssetMap(parsed);
-    } catch { return {}; }
+    } catch {
+      return {};
+    }
   }
   return {};
 }
@@ -234,18 +278,26 @@ const executor: NodeExecutor = async (config) => {
   if (!pageUrl) throw new Error('pageUrl required (absolute URL of the source page)');
   if (!/^https?:\/\//i.test(pageUrl)) throw new Error('pageUrl must be http(s)://');
   const htmlSaveDir = String(config.htmlSaveDir ?? '').trim();
-  if (!htmlSaveDir) throw new Error('htmlSaveDir required (absolute filesystem path where rewritten HTML will live)');
+  if (!htmlSaveDir)
+    throw new Error(
+      'htmlSaveDir required (absolute filesystem path where rewritten HTML will live)',
+    );
   if (!htmlSaveDir.startsWith('/')) throw new Error('htmlSaveDir must be an absolute path');
 
   const assetMap = parseAssetMap(config.assetMap);
   const start = Date.now();
   const out = rewriteHtml(html, {
-    pageUrl, assetMap, htmlSaveDir,
+    pageUrl,
+    assetMap,
+    htmlSaveDir,
     stripQuery: asBool(config.stripQuery, true),
     stripFragment: asBool(config.stripFragment, false),
   });
 
-  return { output: { ...out, assetMapSize: Object.keys(assetMap).length }, durationMs: Date.now() - start };
+  return {
+    output: { ...out, assetMapSize: Object.keys(assetMap).length },
+    durationMs: Date.now() - start,
+  };
 };
 
 export const htmlMirrorRewriteNode: NodeModule = {
@@ -265,21 +317,54 @@ export const htmlMirrorRewriteNode: NodeModule = {
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [
-      { key: 'html', label: 'HTML sorgente', type: 'textarea', required: true,
+      {
+        key: 'html',
+        label: 'HTML sorgente',
+        type: 'textarea',
+        required: true,
         placeholder: '{{$node.spider.json.pages[0].html}}',
-        help: 'HTML completo della pagina. Tipicamente da action_recursive_spider o action_web_fetch_advanced.' },
-      { key: 'pageUrl', label: 'URL pagina sorgente', type: 'text', required: true,
+        help: 'HTML completo della pagina. Tipicamente da action_recursive_spider o action_web_fetch_advanced.',
+      },
+      {
+        key: 'pageUrl',
+        label: 'URL pagina sorgente',
+        type: 'text',
+        required: true,
         placeholder: 'https://example.com/blog/post-1/',
-        help: 'URL assoluto della pagina originale. Necessario per risolvere link relativi prima di mapparli.' },
-      { key: 'htmlSaveDir', label: 'Directory dove salverai l\'HTML', type: 'text', required: true,
+        help: 'URL assoluto della pagina originale. Necessario per risolvere link relativi prima di mapparli.',
+      },
+      {
+        key: 'htmlSaveDir',
+        label: "Directory dove salverai l'HTML",
+        type: 'text',
+        required: true,
         placeholder: '/opt/mirror/zelistore.it/blog/post-1',
-        help: 'Path assoluto della cartella in cui scriverai l\'HTML output. Tutti i link locali vengono calcolati relativi a QUESTA directory.' },
-      { key: 'assetMap', label: 'Asset map (url → local path)', type: 'json', required: false, defaultValue: '{}',
-        help: 'JSON object {url assoluto: percorso filesystem}. Tipicamente {{$node.asset_download.json.stats.assetMap}}. URL non in mappa restano assoluti.' },
-      { key: 'stripQuery', label: 'Rimuovi query string', type: 'boolean', required: false, defaultValue: 'true',
-        help: 'Se ON, i path locali NON includono "?foo=bar". Default ON perché le query non hanno senso su file:// locale.' },
-      { key: 'stripFragment', label: 'Rimuovi fragment (#anchor)', type: 'boolean', required: false, defaultValue: 'false',
-        help: 'Se OFF (default), i "#anchor" vengono preservati — VLC/browser li onorano anche su file://. ON solo per output puramente statico.' },
+        help: "Path assoluto della cartella in cui scriverai l'HTML output. Tutti i link locali vengono calcolati relativi a QUESTA directory.",
+      },
+      {
+        key: 'assetMap',
+        label: 'Asset map (url → local path)',
+        type: 'json',
+        required: false,
+        defaultValue: '{}',
+        help: 'JSON object {url assoluto: percorso filesystem}. Tipicamente {{$node.asset_download.json.stats.assetMap}}. URL non in mappa restano assoluti.',
+      },
+      {
+        key: 'stripQuery',
+        label: 'Rimuovi query string',
+        type: 'boolean',
+        required: false,
+        defaultValue: 'true',
+        help: 'Se ON, i path locali NON includono "?foo=bar". Default ON perché le query non hanno senso su file:// locale.',
+      },
+      {
+        key: 'stripFragment',
+        label: 'Rimuovi fragment (#anchor)',
+        type: 'boolean',
+        required: false,
+        defaultValue: 'false',
+        help: 'Se OFF (default), i "#anchor" vengono preservati — VLC/browser li onorano anche su file://. ON solo per output puramente statico.',
+      },
     ],
   },
 };

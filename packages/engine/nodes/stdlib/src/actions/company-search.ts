@@ -31,7 +31,7 @@ export const companySearchNode: NodeModule = {
       'lines vessel 20m"), pattern per coverage che pura keyword search miss; (2) multi-source search ' +
       'parallel su 4 search engine indipendenti (Exa.ai per semantic neural search optimized per discovery, ' +
       'Tavily AI per recente fresh content, Brave Search per anti-Google bias, DuckDuckGo per privacy + ' +
-      'independent results) — l\'unione dei result set dei 4 sources è più completa di qualsiasi singolo; ' +
+      "independent results) — l'unione dei result set dei 4 sources è più completa di qualsiasi singolo; " +
       '(3) anti-directory blocklist — filter post-processing che rimuove i top 200 directory/aggregator ' +
       'noti (yelp.com, yelp.it, paginegialle.it, europages.com, kompass.com, ecc.) che otherwise inquinano ' +
       'i result; (4) HEAD validation — quick HEAD request per ogni URL trovato per verificare che il sito ' +
@@ -58,7 +58,7 @@ export const companySearchNode: NodeModule = {
         required: true,
         placeholder: 'yacht builder Italia, cantieri navali produttori',
         help:
-          'Descrizione di cosa cercare. L\'LLM lo espanderà in N query DDG variate. ' +
+          "Descrizione di cosa cercare. L'LLM lo espanderà in N query DDG variate. " +
           'PIÙ SPECIFICO = MIGLIORI RISULTATI:\n' +
           '✓ "cantieri navali yacht Italia produttori barche da diporto"\n' +
           '✗ "barche" (troppo generico)\n' +
@@ -86,7 +86,7 @@ export const companySearchNode: NodeModule = {
         required: false,
         defaultValue: '5',
         help:
-          'Quante query variate l\'LLM deve generare DA PARTIRE dal seed.\n' +
+          "Quante query variate l'LLM deve generare DA PARTIRE dal seed.\n" +
           '• 0 = disabilita LLM (usa solo seed). Risparmia 1 token call ma minor copertura.\n' +
           '• 3 = stretto, focus stretto sul vertical\n' +
           '• 5 = default bilanciato (~50 risultati raw)\n' +
@@ -139,7 +139,7 @@ export const companySearchNode: NodeModule = {
         placeholder: 'yacht, marine, naval',
         help:
           'Se settato, dopo il search il nodo fetch-a la homepage di ogni candidate e verifica la presenza del keyword (case-insensitive) in <title>/<meta>/<h1>. ' +
-          'Se assente, l\'URL viene scartato.\n' +
+          "Se assente, l'URL viene scartato.\n" +
           'AGGRESSIVO: scarta ~30-50% candidate, ma garantisce focus stretto sul vertical. ' +
           'Use case: vuoi SOLO siti che parlano del tuo target (no false positivi da search engine).',
       },
@@ -152,7 +152,7 @@ export const companySearchNode: NodeModule = {
         required: false,
         defaultValue: 'false',
         help:
-          'Se ON, NON chiama LLM per espandere il seed. Usa SOLO la query così com\'è.\n' +
+          "Se ON, NON chiama LLM per espandere il seed. Usa SOLO la query così com'è.\n" +
           'Vantaggi: gratuito (0 token), più veloce (-2s), deterministico.\n' +
           'Svantaggi: minor copertura, no variazione linguistica (italiano vs inglese).\n' +
           'Use case: test rapidi, quando seedPrompt è già SuperOttimizzato.',
@@ -174,16 +174,16 @@ export const companySearchNode: NodeModule = {
       },
     ],
     outputs: [
-      'companies',                  // [{url, domain, title, snippet, source_provider, matched_query, boost_factors}]
-      'urls',                       // string[] (shortcut per JSONata downstream)
-      'queries_used',               // string[]
-      'queries_generated_by_llm',   // boolean
-      'llm_provider',               // 'liara' | 'anthropic' | ... | null
-      'total_raw_results',          // number
-      'filtered_directory',         // number
-      'filtered_validation',        // number
-      'took_ms',                    // number
-      'count',                      // number
+      'companies', // [{url, domain, title, snippet, source_provider, matched_query, boost_factors}]
+      'urls', // string[] (shortcut per JSONata downstream)
+      'queries_used', // string[]
+      'queries_generated_by_llm', // boolean
+      'llm_provider', // 'liara' | 'anthropic' | ... | null
+      'total_raw_results', // number
+      'filtered_directory', // number
+      'filtered_validation', // number
+      'took_ms', // number
+      'count', // number
     ],
     vendor: 'flowforge',
     version: '1.0.0',

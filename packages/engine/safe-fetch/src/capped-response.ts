@@ -28,7 +28,9 @@ function mb(bytes: number): string {
  *  Response vera ha sempre `headers`, ma i mock di test a volte no. */
 function declaredLength(res: Response): number {
   const headers = (res as { headers?: { get?: (k: string) => string | null } }).headers;
-  return Number(headers && typeof headers.get === 'function' ? headers.get('content-length') : null);
+  return Number(
+    headers && typeof headers.get === 'function' ? headers.get('content-length') : null,
+  );
 }
 
 /**
@@ -49,11 +51,20 @@ async function fallbackBodyText(res: Response): Promise<string> {
  * Legge il body come testo applicando un cap in byte. Lancia `RangeError` se il body
  * supera `capBytes` (prima via content-length, poi durante lo streaming).
  */
-export async function readTextCapped(res: Response, capBytes: number = DEFAULT_RESPONSE_CAP_BYTES): Promise<string> {
+export async function readTextCapped(
+  res: Response,
+  capBytes: number = DEFAULT_RESPONSE_CAP_BYTES,
+): Promise<string> {
   const declared = declaredLength(res);
   if (Number.isFinite(declared) && declared > capBytes) {
-    try { await res.body?.cancel(); } catch { /* best-effort: libera l'FD */ }
-    throw new RangeError(`risposta troppo grande: ${mb(declared)} MB oltre il limite di ${mb(capBytes)} MB`);
+    try {
+      await res.body?.cancel();
+    } catch {
+      /* best-effort: libera l'FD */
+    }
+    throw new RangeError(
+      `risposta troppo grande: ${mb(declared)} MB oltre il limite di ${mb(capBytes)} MB`,
+    );
   }
 
   const body = res.body;
@@ -69,8 +80,14 @@ export async function readTextCapped(res: Response, capBytes: number = DEFAULT_R
       if (value && value.byteLength > 0) {
         total += value.byteLength;
         if (total > capBytes) {
-          try { await reader.cancel(); } catch { /* best-effort */ }
-          throw new RangeError(`risposta troppo grande: superato il limite di ${mb(capBytes)} MB durante il download`);
+          try {
+            await reader.cancel();
+          } catch {
+            /* best-effort */
+          }
+          throw new RangeError(
+            `risposta troppo grande: superato il limite di ${mb(capBytes)} MB durante il download`,
+          );
         }
         chunks.push(Buffer.from(value));
       }
@@ -92,7 +109,10 @@ export async function readTextCapped(res: Response, capBytes: number = DEFAULT_R
  * SendGrid 202, molte API POST): `res.json()` lancerebbe "Unexpected end of JSON
  * input" → qui body vuoto restituisce `null` castato a `T`.
  */
-export async function readJsonCapped<T>(res: Response, capBytes: number = DEFAULT_RESPONSE_CAP_BYTES): Promise<T> {
+export async function readJsonCapped<T>(
+  res: Response,
+  capBytes: number = DEFAULT_RESPONSE_CAP_BYTES,
+): Promise<T> {
   const text = await readTextCapped(res, capBytes);
   if (!text.trim()) return null as T;
   return JSON.parse(text) as T;
@@ -107,7 +127,10 @@ export async function readJsonCapped<T>(res: Response, capBytes: number = DEFAUL
  * PRIMA tutto il body → OOM su risposte enormi. Qui il taglio avviene durante il
  * download. `truncated` segnala se la risposta era più lunga di `maxBytes`.
  */
-export async function readTextTruncated(res: Response, maxBytes: number): Promise<{ text: string; truncated: boolean }> {
+export async function readTextTruncated(
+  res: Response,
+  maxBytes: number,
+): Promise<{ text: string; truncated: boolean }> {
   const body = res.body;
   if (body && typeof body.getReader === 'function') {
     // `getReader()` non porta con sé il tipo dei blocchi letti: senza questa
@@ -125,7 +148,11 @@ export async function readTextTruncated(res: Response, maxBytes: number): Promis
           const remaining = maxBytes - total;
           if (remaining > 0) chunks.push(Buffer.from(value.subarray(0, remaining)));
           truncated = true;
-          try { await reader.cancel(); } catch { /* best-effort */ }
+          try {
+            await reader.cancel();
+          } catch {
+            /* best-effort */
+          }
           break;
         }
         total += value.byteLength;
@@ -148,11 +175,20 @@ export async function readTextTruncated(res: Response, maxBytes: number): Promis
  * il body supera `capBytes`. Per chi deve marshallare/servire bytes raw (es. il
  * proxy fetch del sandbox: text + base64 dello STESSO buffer).
  */
-export async function readBytesCapped(res: Response, capBytes: number = DEFAULT_RESPONSE_CAP_BYTES): Promise<Buffer> {
+export async function readBytesCapped(
+  res: Response,
+  capBytes: number = DEFAULT_RESPONSE_CAP_BYTES,
+): Promise<Buffer> {
   const declared = declaredLength(res);
   if (Number.isFinite(declared) && declared > capBytes) {
-    try { await res.body?.cancel(); } catch { /* best-effort */ }
-    throw new RangeError(`risposta troppo grande: ${mb(declared)} MB oltre il limite di ${mb(capBytes)} MB`);
+    try {
+      await res.body?.cancel();
+    } catch {
+      /* best-effort */
+    }
+    throw new RangeError(
+      `risposta troppo grande: ${mb(declared)} MB oltre il limite di ${mb(capBytes)} MB`,
+    );
   }
 
   const body = res.body;
@@ -168,8 +204,14 @@ export async function readBytesCapped(res: Response, capBytes: number = DEFAULT_
       if (value && value.byteLength > 0) {
         total += value.byteLength;
         if (total > capBytes) {
-          try { await reader.cancel(); } catch { /* best-effort */ }
-          throw new RangeError(`risposta troppo grande: superato il limite di ${mb(capBytes)} MB durante il download`);
+          try {
+            await reader.cancel();
+          } catch {
+            /* best-effort */
+          }
+          throw new RangeError(
+            `risposta troppo grande: superato il limite di ${mb(capBytes)} MB durante il download`,
+          );
         }
         chunks.push(Buffer.from(value));
       }
@@ -179,7 +221,8 @@ export async function readBytesCapped(res: Response, capBytes: number = DEFAULT_
 
   // Fallback senza body-stream (mock di test): arrayBuffer + post-check.
   const r = res as unknown as { arrayBuffer?: () => Promise<ArrayBuffer> };
-  const buf = typeof r.arrayBuffer === 'function' ? Buffer.from(await r.arrayBuffer()) : Buffer.alloc(0);
+  const buf =
+    typeof r.arrayBuffer === 'function' ? Buffer.from(await r.arrayBuffer()) : Buffer.alloc(0);
   if (buf.length > capBytes) {
     throw new RangeError(`risposta troppo grande: oltre il limite di ${mb(capBytes)} MB`);
   }

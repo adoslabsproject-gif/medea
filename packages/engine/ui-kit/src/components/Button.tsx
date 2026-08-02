@@ -42,7 +42,19 @@ const SIZE: Record<Size, string> = {
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = 'secondary', size = 'sm', loading, leftIcon, rightIcon, block, className, children, disabled, type = 'button', ...rest },
+  {
+    variant = 'secondary',
+    size = 'sm',
+    loading,
+    leftIcon,
+    rightIcon,
+    block,
+    className,
+    children,
+    disabled,
+    type = 'button',
+    ...rest
+  },
   ref,
 ) {
   return (
@@ -70,7 +82,12 @@ function Spinner(): React.ReactElement {
   return (
     <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
-      <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path
+        d="M22 12a10 10 0 0 0-10-10"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }

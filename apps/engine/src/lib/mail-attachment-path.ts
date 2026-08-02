@@ -39,7 +39,9 @@ export function safeAttachmentPath(raw: string): string {
   }
   const safe = validateUrlForFetch(v);
   if (!safe.ok) {
-    throw new AttachmentPathError(`attachment URL bloccato (SSRF guard): ${safe.reason ?? 'unsafe'}`);
+    throw new AttachmentPathError(
+      `attachment URL bloccato (SSRF guard): ${safe.reason ?? 'unsafe'}`,
+    );
   }
   return v;
 }

@@ -9,7 +9,10 @@
  * PURE → testabili in isolamento (la route fa il wiring con DbStudio).
  */
 
-export interface DbLike { id: string; connection?: { embedded?: boolean } }
+export interface DbLike {
+  id: string;
+  connection?: { embedded?: boolean };
+}
 
 /**
  * I DB LOCALI scrivibili del tenant (embedded). Le tabelle di un workflow
@@ -21,7 +24,10 @@ export interface DbLike { id: string; connection?: { embedded?: boolean } }
  * Bug reale (senza1dio, 2026-06-16): unico DB = NHA remoto read-only → il default
  * cadeva su NHA → CREATE TABLE falliva → `news_audit` mai creata.
  */
-export function localWritableDbs(dbs: readonly DbLike[]): { ids: Set<string>; defaultId: string | undefined } {
+export function localWritableDbs(dbs: readonly DbLike[]): {
+  ids: Set<string>;
+  defaultId: string | undefined;
+} {
   const local = dbs.filter((d) => d.connection?.embedded === true);
   return { ids: new Set(local.map((d) => d.id)), defaultId: local[0]?.id };
 }
@@ -100,9 +106,12 @@ export interface TableProvisionResult {
 export interface DbStudioLike {
   list(tenantId: string): DbLike[];
   create(input: {
-    tenantId: string; name: string; description: string;
+    tenantId: string;
+    name: string;
+    description: string;
     connection: { engine: 'sqlite'; embedded: boolean };
-    tables: never[]; relations: never[];
+    tables: never[];
+    relations: never[];
   }): DbLike;
   applyMigration(dbId: string, actions: unknown[], tenantId: string): unknown;
   insert(dbId: string, table: string, row: Record<string, unknown>, tenantId: string): unknown;
@@ -135,7 +144,9 @@ export async function provisionDeclaredTables(
     const local = localWritableDbs(dbStudio.list(tenantId));
     validIds = local.ids;
     defaultDbId = local.defaultId;
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   if (!defaultDbId) {
     try {
       const createdDb = dbStudio.create({
@@ -148,9 +159,15 @@ export async function provisionDeclaredTables(
       });
       defaultDbId = createdDb.id;
       validIds.add(createdDb.id);
-      log.info({ databaseId: createdDb.id, tenantId }, '[table-provision] nessun DB nel tenant → creato workflow_data on-demand');
+      log.info(
+        { databaseId: createdDb.id, tenantId },
+        '[table-provision] nessun DB nel tenant → creato workflow_data on-demand',
+      );
     } catch (e) {
-      log.warn({ err: e instanceof Error ? e.message : String(e), tenantId }, '[table-provision] create DB on-demand fallita');
+      log.warn(
+        { err: e instanceof Error ? e.message : String(e), tenantId },
+        '[table-provision] create DB on-demand fallita',
+      );
     }
   }
 
@@ -158,31 +175,44 @@ export async function provisionDeclaredTables(
     const requested = tbl.databaseId;
     const dbId = resolveDatabaseId(requested, validIds, defaultDbId);
     if (!dbId) {
-      result.tablesCreated.push({ name: tbl.name, ok: false, error: 'Nessun database disponibile e creazione on-demand fallita' });
+      result.tablesCreated.push({
+        name: tbl.name,
+        ok: false,
+        error: 'Nessun database disponibile e creazione on-demand fallita',
+      });
       continue;
     }
     if (requested && requested !== dbId) result.dbRemap.set(requested, dbId);
     try {
-      await dbStudio.applyMigration(dbId, [{
-        kind: 'create_table',
-        table: {
-          id: tbl.name,
-          name: tbl.name,
-          columns: tbl.columns.map((c) => ({
-            id: `${tbl.name}.${c.name}`,
-            name: c.name,
-            type: c.type as never,
-            constraints: {
-              nullable: c.nullable !== false,
-              unique: c.unique === true,
-              primaryKey: c.primaryKey === true,
+      await dbStudio.applyMigration(
+        dbId,
+        [
+          {
+            kind: 'create_table',
+            table: {
+              id: tbl.name,
+              name: tbl.name,
+              columns: tbl.columns.map((c) => ({
+                id: `${tbl.name}.${c.name}`,
+                name: c.name,
+                type: c.type as never,
+                constraints: {
+                  nullable: c.nullable !== false,
+                  unique: c.unique === true,
+                  primaryKey: c.primaryKey === true,
+                },
+              })),
+              indexes: [],
             },
-          })),
-          indexes: [],
-        },
-      }], tenantId);
+          },
+        ],
+        tenantId,
+      );
       result.tablesCreated.push({ name: tbl.name, ok: true });
-      log.info({ tableName: tbl.name, databaseId: dbId, columns: tbl.columns.length, tenantId }, '[table-provision] table pre-created');
+      log.info(
+        { tableName: tbl.name, databaseId: dbId, columns: tbl.columns.length, tenantId },
+        '[table-provision] table pre-created',
+      );
       // Seed demo SOLO su tabella appena creata: mai inserire in tabelle
       // pre-esistenti del tenant (potrebbero contenere dati veri).
       for (const row of tbl.seedRows ?? []) {
@@ -190,16 +220,26 @@ export async function provisionDeclaredTables(
           await dbStudio.insert(dbId, tbl.name, row, tenantId);
           result.seededRows += 1;
         } catch (e) {
-          log.warn({ err: e instanceof Error ? e.message : String(e), tableName: tbl.name, tenantId }, '[table-provision] seed row fallita');
+          log.warn(
+            { err: e instanceof Error ? e.message : String(e), tableName: tbl.name, tenantId },
+            '[table-provision] seed row fallita',
+          );
         }
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       // Tabella già esistente non è errore vero (idempotent semantic)
       const isDuplicate = /already exists|duplicate/i.test(msg);
-      result.tablesCreated.push({ name: tbl.name, ok: isDuplicate, ...(isDuplicate ? {} : { error: msg }) });
+      result.tablesCreated.push({
+        name: tbl.name,
+        ok: isDuplicate,
+        ...(isDuplicate ? {} : { error: msg }),
+      });
       if (!isDuplicate) {
-        log.warn({ err: msg, tableName: tbl.name, tenantId }, '[table-provision] table pre-create failed');
+        log.warn(
+          { err: msg, tableName: tbl.name, tenantId },
+          '[table-provision] table pre-create failed',
+        );
       }
     }
   }

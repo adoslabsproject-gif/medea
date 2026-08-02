@@ -17,14 +17,23 @@ vi.mock('@/lib/logger.js');
 
 import { LlmQueue, QueueBackpressureError } from './llm-queue.service.js';
 
-function deferred<T>(): { promise: Promise<T>; resolve: (v: T) => void; reject: (e: Error) => void } {
+function deferred<T>(): {
+  promise: Promise<T>;
+  resolve: (v: T) => void;
+  reject: (e: Error) => void;
+} {
   let resolve!: (v: T) => void;
   let reject!: (e: Error) => void;
-  const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
   return { promise, resolve, reject };
 }
 
-beforeEach(() => { /* fresh queue per test in each it() */ });
+beforeEach(() => {
+  /* fresh queue per test in each it() */
+});
 
 describe('LlmQueue basics', () => {
   it('enqueue → resolve con il risultato del runner', async () => {
@@ -40,7 +49,13 @@ describe('LlmQueue basics', () => {
   it('runner failure → reject propagato', async () => {
     const q = new LlmQueue();
     await expect(
-      q.enqueue({ userId: 'u-1', source: 'chat', runner: async () => { throw new Error('boom'); } }),
+      q.enqueue({
+        userId: 'u-1',
+        source: 'chat',
+        runner: async () => {
+          throw new Error('boom');
+        },
+      }),
     ).rejects.toThrow('boom');
   });
 
@@ -78,12 +93,20 @@ describe('LlmQueue priority ordering', () => {
     // Now enqueue: workflow first, then chat. Chat should run first when slot frees.
     const order: string[] = [];
     const workflowResult = q.enqueue({
-      userId: 'u-1', source: 'workflow',
-      runner: async () => { order.push('workflow'); return 'wf'; },
+      userId: 'u-1',
+      source: 'workflow',
+      runner: async () => {
+        order.push('workflow');
+        return 'wf';
+      },
     });
     const chatResult = q.enqueue({
-      userId: 'u-1', source: 'chat',
-      runner: async () => { order.push('chat'); return 'chat'; },
+      userId: 'u-1',
+      source: 'chat',
+      runner: async () => {
+        order.push('chat');
+        return 'chat';
+      },
     });
 
     // Free one slot to allow next dequeue.
@@ -107,9 +130,30 @@ describe('LlmQueue priority ordering', () => {
     await new Promise((r) => setTimeout(r, 5));
 
     const order: string[] = [];
-    const r1 = q.enqueue({ userId: 'u-1', source: 'chat', runner: async () => { order.push('a'); return 'a'; } });
-    const r2 = q.enqueue({ userId: 'u-1', source: 'chat', runner: async () => { order.push('b'); return 'b'; } });
-    const r3 = q.enqueue({ userId: 'u-1', source: 'chat', runner: async () => { order.push('c'); return 'c'; } });
+    const r1 = q.enqueue({
+      userId: 'u-1',
+      source: 'chat',
+      runner: async () => {
+        order.push('a');
+        return 'a';
+      },
+    });
+    const r2 = q.enqueue({
+      userId: 'u-1',
+      source: 'chat',
+      runner: async () => {
+        order.push('b');
+        return 'b';
+      },
+    });
+    const r3 = q.enqueue({
+      userId: 'u-1',
+      source: 'chat',
+      runner: async () => {
+        order.push('c');
+        return 'c';
+      },
+    });
 
     for (const b of fillerBlockers) b.resolve('x');
     await Promise.all([r1, r2, r3]);
@@ -126,8 +170,9 @@ describe('LlmQueue backpressure', () => {
       void q.enqueue({ userId: 'spammer', source: 'workflow', runner: () => b.promise });
     });
     await new Promise((r) => setTimeout(r, 5));
-    expect(() => q.enqueue({ userId: 'spammer', source: 'chat', runner: async () => 'x' }))
-      .toThrow(QueueBackpressureError);
+    expect(() => q.enqueue({ userId: 'spammer', source: 'chat', runner: async () => 'x' })).toThrow(
+      QueueBackpressureError,
+    );
     // Cleanup
     for (const b of blockers) b.resolve('x');
   });
@@ -180,12 +225,22 @@ describe('LlmQueue plan-weighted priority (paying customers privilege)', () => {
 
     const order: string[] = [];
     const freeJob = q.enqueue({
-      userId: 'u-free', source: 'workflow', planTier: 'free',
-      runner: async () => { order.push('free'); return 'f'; },
+      userId: 'u-free',
+      source: 'workflow',
+      planTier: 'free',
+      runner: async () => {
+        order.push('free');
+        return 'f';
+      },
     });
     const entJob = q.enqueue({
-      userId: 'u-ent', source: 'workflow', planTier: 'enterprise',
-      runner: async () => { order.push('enterprise'); return 'e'; },
+      userId: 'u-ent',
+      source: 'workflow',
+      planTier: 'enterprise',
+      runner: async () => {
+        order.push('enterprise');
+        return 'e';
+      },
     });
 
     // Free ALL slots together so dispatcher picks by priority, not by order resolved.
@@ -204,12 +259,22 @@ describe('LlmQueue plan-weighted priority (paying customers privilege)', () => {
 
     const order: string[] = [];
     const freeChat = q.enqueue({
-      userId: 'u-free', source: 'chat', planTier: 'free',
-      runner: async () => { order.push('free-chat'); return 'fc'; },
+      userId: 'u-free',
+      source: 'chat',
+      planTier: 'free',
+      runner: async () => {
+        order.push('free-chat');
+        return 'fc';
+      },
     });
     const entBg = q.enqueue({
-      userId: 'u-ent', source: 'background', planTier: 'enterprise',
-      runner: async () => { order.push('ent-bg'); return 'eb'; },
+      userId: 'u-ent',
+      source: 'background',
+      planTier: 'enterprise',
+      runner: async () => {
+        order.push('ent-bg');
+        return 'eb';
+      },
     });
 
     for (const b of fillers) b.resolve('x');
@@ -227,12 +292,21 @@ describe('LlmQueue plan-weighted priority (paying customers privilege)', () => {
 
     const order: string[] = [];
     const starterJob = q.enqueue({
-      userId: 'u-starter', source: 'chat', planTier: 'starter',
-      runner: async () => { order.push('starter'); return 's'; },
+      userId: 'u-starter',
+      source: 'chat',
+      planTier: 'starter',
+      runner: async () => {
+        order.push('starter');
+        return 's';
+      },
     });
     const proJob = q.enqueue({
-      userId: 'u-pro', source: 'chat', // no planTier → default 'pro'
-      runner: async () => { order.push('pro'); return 'p'; },
+      userId: 'u-pro',
+      source: 'chat', // no planTier → default 'pro'
+      runner: async () => {
+        order.push('pro');
+        return 'p';
+      },
     });
 
     for (const b of fillers) b.resolve('x');
@@ -245,16 +319,22 @@ describe('LlmQueue plan-weighted priority (paying customers privilege)', () => {
     const blockers = Array.from({ length: 8 }, () => deferred<string>());
     blockers.forEach((b) => {
       void q.enqueue({
-        userId: 'free-user', source: 'workflow', planTier: 'free',
+        userId: 'free-user',
+        source: 'workflow',
+        planTier: 'free',
         runner: () => b.promise,
       });
     });
     await new Promise((r) => setTimeout(r, 5));
 
-    expect(() => q.enqueue({
-      userId: 'free-user', source: 'workflow', planTier: 'free',
-      runner: async () => 'x',
-    })).toThrow(QueueBackpressureError);
+    expect(() =>
+      q.enqueue({
+        userId: 'free-user',
+        source: 'workflow',
+        planTier: 'free',
+        runner: async () => 'x',
+      }),
+    ).toThrow(QueueBackpressureError);
 
     for (const b of blockers) b.resolve('x');
   });
@@ -264,17 +344,23 @@ describe('LlmQueue plan-weighted priority (paying customers privilege)', () => {
     const blockers = Array.from({ length: 8 }, () => deferred<string>());
     blockers.forEach((b) => {
       void q.enqueue({
-        userId: 'ent-user', source: 'workflow', planTier: 'enterprise',
+        userId: 'ent-user',
+        source: 'workflow',
+        planTier: 'enterprise',
         runner: () => b.promise,
       });
     });
     await new Promise((r) => setTimeout(r, 5));
 
     // 9° per enterprise va ancora bene (quota 50, free sarebbe stato bloccato)
-    expect(() => q.enqueue({
-      userId: 'ent-user', source: 'workflow', planTier: 'enterprise',
-      runner: async () => 'x',
-    })).not.toThrow();
+    expect(() =>
+      q.enqueue({
+        userId: 'ent-user',
+        source: 'workflow',
+        planTier: 'enterprise',
+        runner: async () => 'x',
+      }),
+    ).not.toThrow();
 
     for (const b of blockers) b.resolve('x');
   });
@@ -284,16 +370,22 @@ describe('LlmQueue plan-weighted priority (paying customers privilege)', () => {
     const blockers = Array.from({ length: 35 }, () => deferred<string>());
     blockers.forEach((b) => {
       void q.enqueue({
-        userId: 'team-user', source: 'workflow', planTier: 'team',
+        userId: 'team-user',
+        source: 'workflow',
+        planTier: 'team',
         runner: () => b.promise,
       });
     });
     await new Promise((r) => setTimeout(r, 5));
 
-    expect(() => q.enqueue({
-      userId: 'team-user', source: 'workflow', planTier: 'team',
-      runner: async () => 'x',
-    })).toThrow(QueueBackpressureError);
+    expect(() =>
+      q.enqueue({
+        userId: 'team-user',
+        source: 'workflow',
+        planTier: 'team',
+        runner: async () => 'x',
+      }),
+    ).toThrow(QueueBackpressureError);
 
     for (const b of blockers) b.resolve('x');
   });
@@ -310,12 +402,20 @@ describe('LlmQueue plan-weighted priority (paying customers privilege)', () => {
     // No planTier passed → default 'pro' modifier 0 → effective = base
     // chat (0) deve battere workflow (1) come prima
     const wfJob = q.enqueue({
-      userId: 'u-1', source: 'workflow',
-      runner: async () => { order.push('wf'); return 'w'; },
+      userId: 'u-1',
+      source: 'workflow',
+      runner: async () => {
+        order.push('wf');
+        return 'w';
+      },
     });
     const chatJob = q.enqueue({
-      userId: 'u-1', source: 'chat',
-      runner: async () => { order.push('chat'); return 'c'; },
+      userId: 'u-1',
+      source: 'chat',
+      runner: async () => {
+        order.push('chat');
+        return 'c';
+      },
     });
 
     for (const b of fillers) b.resolve('x');

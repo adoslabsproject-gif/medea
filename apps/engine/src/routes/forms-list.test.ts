@@ -56,7 +56,8 @@ const dbChain = vi.hoisted(() => {
     });
   };
   return {
-    selectRows, aggRows,
+    selectRows,
+    aggRows,
     db: {
       select: vi.fn(() => ({
         from: vi.fn(() => ({
@@ -86,14 +87,22 @@ vi.mock('@/storage/db.js', () => ({
 
 vi.mock('@/storage/schema.js', () => ({
   runs: {
-    workflowId: 'workflowId', triggerType: 'triggerType', startedAt: 'startedAt',
-    id: 'id', status: 'status', endedAt: 'endedAt',
-    totalDurationMs: 'totalDurationMs', triggerPayloadJson: 'triggerPayloadJson',
+    workflowId: 'workflowId',
+    triggerType: 'triggerType',
+    startedAt: 'startedAt',
+    id: 'id',
+    status: 'status',
+    endedAt: 'endedAt',
+    totalDurationMs: 'totalDurationMs',
+    triggerPayloadJson: 'triggerPayloadJson',
   },
 }));
 
 vi.mock('drizzle-orm', () => ({
-  eq: () => ({}), and: () => ({}), sql: (s: TemplateStringsArray) => ({ _sql: s }), desc: () => ({}),
+  eq: () => ({}),
+  and: () => ({}),
+  sql: (s: TemplateStringsArray) => ({ _sql: s }),
+  desc: () => ({}),
 }));
 
 vi.mock('@/lib/tenant.js', () => ({
@@ -122,9 +131,12 @@ beforeEach(() => {
 describe('🚨 GET /forms-list', () => {
   it('🚨 nessun workflow con trigger_form → forms []', async () => {
     workflowsListMock.mockResolvedValue([
-      { id: 'wf-1', name: 'A', enabled: true, nodes: [
-        { id: 'n1', defId: 'action_http', config: {} },
-      ] },
+      {
+        id: 'wf-1',
+        name: 'A',
+        enabled: true,
+        nodes: [{ id: 'n1', defId: 'action_http', config: {} }],
+      },
     ]);
     const app = makeApp();
     const res = await app.request('/forms-list');
@@ -134,18 +146,23 @@ describe('🚨 GET /forms-list', () => {
   });
 
   it('🚨 workflow con trigger_form → summary con fieldsCount + formUrl', async () => {
-    workflowsListMock.mockResolvedValue([{
-      id: 'wf-2', name: 'Contact', enabled: true,
-      nodes: [{
-        id: 'form-x', defId: 'trigger_form',
-        config: {
-          title: 'Contact Us',
-          fieldsJson: JSON.stringify([
-            { key: 'name' }, { key: 'email' }, { key: 'msg' },
-          ]),
-        },
-      }],
-    }]);
+    workflowsListMock.mockResolvedValue([
+      {
+        id: 'wf-2',
+        name: 'Contact',
+        enabled: true,
+        nodes: [
+          {
+            id: 'form-x',
+            defId: 'trigger_form',
+            config: {
+              title: 'Contact Us',
+              fieldsJson: JSON.stringify([{ key: 'name' }, { key: 'email' }, { key: 'msg' }]),
+            },
+          },
+        ],
+      },
+    ]);
     dbChain.aggRows.push({ c: 5, last: '2026-06-01' });
     const app = makeApp();
     const res = await app.request('/forms-list', {
@@ -154,8 +171,11 @@ describe('🚨 GET /forms-list', () => {
     const body = await jsonBody<FormsListBody>(res);
     expect(body.forms).toHaveLength(1);
     expect(body.forms[0]).toMatchObject({
-      workflowId: 'wf-2', workflowName: 'Contact',
-      enabled: true, title: 'Contact Us', fieldsCount: 3,
+      workflowId: 'wf-2',
+      workflowName: 'Contact',
+      enabled: true,
+      title: 'Contact Us',
+      fieldsCount: 3,
       formUrl: 'https://x.app.zeli.com/forms/wf-2/form-x',
       submissionCount: 5,
       lastSubmissionAt: '2026-06-01',
@@ -163,13 +183,20 @@ describe('🚨 GET /forms-list', () => {
   });
 
   it('🚨 fieldsJson invalido → fieldsCount=0 (no crash)', async () => {
-    workflowsListMock.mockResolvedValue([{
-      id: 'wf-3', name: 'X', enabled: false,
-      nodes: [{
-        id: 'f', defId: 'trigger_form',
-        config: { fieldsJson: 'NOT-JSON{' },
-      }],
-    }]);
+    workflowsListMock.mockResolvedValue([
+      {
+        id: 'wf-3',
+        name: 'X',
+        enabled: false,
+        nodes: [
+          {
+            id: 'f',
+            defId: 'trigger_form',
+            config: { fieldsJson: 'NOT-JSON{' },
+          },
+        ],
+      },
+    ]);
     dbChain.aggRows.push({ c: 0, last: null });
     const app = makeApp();
     const res = await app.request('/forms-list');
@@ -178,13 +205,20 @@ describe('🚨 GET /forms-list', () => {
   });
 
   it('🚨 title mancante → fallback workflowName', async () => {
-    workflowsListMock.mockResolvedValue([{
-      id: 'wf-4', name: 'WF Name', enabled: true,
-      nodes: [{
-        id: 'f', defId: 'trigger_form',
-        config: { fieldsJson: '[]' },
-      }],
-    }]);
+    workflowsListMock.mockResolvedValue([
+      {
+        id: 'wf-4',
+        name: 'WF Name',
+        enabled: true,
+        nodes: [
+          {
+            id: 'f',
+            defId: 'trigger_form',
+            config: { fieldsJson: '[]' },
+          },
+        ],
+      },
+    ]);
     dbChain.aggRows.push({ c: 0, last: null });
     const app = makeApp();
     const res = await app.request('/forms-list');
@@ -198,49 +232,59 @@ describe('🚨 POST /forms-list/quick-create', () => {
     workflowsCreateMock.mockResolvedValue({ id: 'wf-new', name: 'Nuovo form' });
     const app = makeApp();
     const res = await app.request('/forms-list/quick-create', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({}),
     });
     expect(res.status).toBe(201);
-    expect(workflowsCreateMock).toHaveBeenCalledWith(expect.objectContaining({
-      name: 'Nuovo form',
-    }));
+    expect(workflowsCreateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Nuovo form',
+      }),
+    );
   });
 
   it('🚨 nome custom + title custom', async () => {
     workflowsCreateMock.mockResolvedValue({ id: 'wf-c', name: 'Survey' });
     const app = makeApp();
     await app.request('/forms-list/quick-create', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ name: 'Survey', title: 'Quick Survey' }),
     });
-    expect(workflowsCreateMock).toHaveBeenCalledWith(expect.objectContaining({
-      name: 'Survey',
-      nodes: expect.arrayContaining([
-        expect.objectContaining({
-          config: expect.objectContaining({ title: 'Quick Survey' }),
-        }),
-      ]),
-    }));
+    expect(workflowsCreateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Survey',
+        nodes: expect.arrayContaining([
+          expect.objectContaining({
+            config: expect.objectContaining({ title: 'Quick Survey' }),
+          }),
+        ]),
+      }),
+    );
   });
 
   it('🚨 enabled=false by default (user customizza poi enabla)', async () => {
     workflowsCreateMock.mockResolvedValue({ id: 'wf-c' });
     const app = makeApp();
     await app.request('/forms-list/quick-create', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({}),
     });
-    expect(workflowsCreateMock).toHaveBeenCalledWith(expect.objectContaining({
-      enabled: false,
-    }));
+    expect(workflowsCreateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        enabled: false,
+      }),
+    );
   });
 
   it('🚨 default fields nome/email/messaggio', async () => {
     workflowsCreateMock.mockResolvedValue({ id: 'wf-c' });
     const app = makeApp();
     await app.request('/forms-list/quick-create', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({}),
     });
     const call = workflowsCreateMock.mock.calls[0]![0] as Record<string, unknown>;
@@ -254,7 +298,8 @@ describe('🚨 POST /forms-list/quick-create', () => {
     workflowsCreateMock.mockResolvedValue({ id: 'wf-c' });
     const app = makeApp();
     const res = await app.request('/forms-list/quick-create', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: 'NOT-JSON{',
     });
     expect(res.status).toBe(201);
@@ -272,8 +317,10 @@ describe('🚨 GET /forms-list/:id/submissions JSON', () => {
   it('🚨 ritorna submissions con input parsed da fields shape', async () => {
     workflowsGetMock.mockResolvedValue({ id: 'wf-1', name: 'WF' });
     dbChain.selectRows.push({
-      id: 'r-1', status: 'completed',
-      startedAt: '2026-01-01', endedAt: '2026-01-01T00:00:01',
+      id: 'r-1',
+      status: 'completed',
+      startedAt: '2026-01-01',
+      endedAt: '2026-01-01T00:00:01',
       totalDurationMs: 1000,
       triggerPayloadJson: JSON.stringify({ fields: { name: 'Mario', email: 'm@x.com' } }),
     });
@@ -287,8 +334,11 @@ describe('🚨 GET /forms-list/:id/submissions JSON', () => {
   it('🚨 payload senza fields → input = root', async () => {
     workflowsGetMock.mockResolvedValue({ id: 'wf-1', name: 'WF' });
     dbChain.selectRows.push({
-      id: 'r-2', status: 'completed',
-      startedAt: '2026-01-01', endedAt: null, totalDurationMs: 500,
+      id: 'r-2',
+      status: 'completed',
+      startedAt: '2026-01-01',
+      endedAt: null,
+      totalDurationMs: 500,
       triggerPayloadJson: JSON.stringify({ direct: 'value' }),
     });
     const app = makeApp();
@@ -300,8 +350,11 @@ describe('🚨 GET /forms-list/:id/submissions JSON', () => {
   it('🚨 payload JSON invalido → input {} (no crash)', async () => {
     workflowsGetMock.mockResolvedValue({ id: 'wf-1', name: 'WF' });
     dbChain.selectRows.push({
-      id: 'r-3', status: 'completed',
-      startedAt: '2026-01-01', endedAt: null, totalDurationMs: 500,
+      id: 'r-3',
+      status: 'completed',
+      startedAt: '2026-01-01',
+      endedAt: null,
+      totalDurationMs: 500,
       triggerPayloadJson: 'INVALID{',
     });
     const app = makeApp();
@@ -325,11 +378,15 @@ describe('🚨 GET /forms-list/:id/submissions.csv (RFC 4180)', () => {
 
   it('🚨 header CSV con run_id, started_at, status + field discovery', async () => {
     dbChain.selectRows.push({
-      id: 'r-1', status: 'completed', startedAt: '2026-01-01',
+      id: 'r-1',
+      status: 'completed',
+      startedAt: '2026-01-01',
       triggerPayloadJson: JSON.stringify({ fields: { name: 'A', email: 'a@x' } }),
     });
     dbChain.selectRows.push({
-      id: 'r-2', status: 'failed', startedAt: '2026-01-02',
+      id: 'r-2',
+      status: 'failed',
+      startedAt: '2026-01-02',
       triggerPayloadJson: JSON.stringify({ fields: { name: 'B', extra: 'X' } }),
     });
     const app = makeApp();
@@ -343,7 +400,9 @@ describe('🚨 GET /forms-list/:id/submissions.csv (RFC 4180)', () => {
 
   it('🚨 RFC 4180: comma nel valore → wrapping in quotes', async () => {
     dbChain.selectRows.push({
-      id: 'r-1', status: 'ok', startedAt: '2026-01-01',
+      id: 'r-1',
+      status: 'ok',
+      startedAt: '2026-01-01',
       triggerPayloadJson: JSON.stringify({ fields: { name: 'Rossi, Mario' } }),
     });
     const app = makeApp();
@@ -354,7 +413,9 @@ describe('🚨 GET /forms-list/:id/submissions.csv (RFC 4180)', () => {
 
   it('🚨 RFC 4180: quote nel valore → doppia quote', async () => {
     dbChain.selectRows.push({
-      id: 'r-1', status: 'ok', startedAt: '2026-01-01',
+      id: 'r-1',
+      status: 'ok',
+      startedAt: '2026-01-01',
       triggerPayloadJson: JSON.stringify({ fields: { name: 'Say "hi"' } }),
     });
     const app = makeApp();

@@ -119,7 +119,9 @@ export const noopCheckpointHandler: ICheckpointHandler = {
  * tests possible with a no-op provider map.
  */
 export interface ILlmProviderRegistry {
-  getAll(tenantId: string): Record<string, { apiKey: string; defaultModel?: string; baseUrl?: string }>;
+  getAll(
+    tenantId: string,
+  ): Record<string, { apiKey: string; defaultModel?: string; baseUrl?: string }>;
 }
 
 export const noopLlmProviderRegistry: ILlmProviderRegistry = {

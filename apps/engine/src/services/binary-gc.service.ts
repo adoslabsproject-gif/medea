@@ -90,7 +90,9 @@ export async function collectLiveBinaryRefs(db?: StorageHandle): Promise<Set<str
         // FAIL-CLOSED: un cursore non avanzabile = raccolta PARZIALE dei ref
         // vivi → la GC cancellerebbe blob vivi. Meglio saltare l'intero ciclo
         // (il cron logga warn e riprova all'ora dopo) che cancellare per errore.
-        throw new Error(`binary-gc: cursore keyset non avanzabile (id=${String(nextCursor)}) — ciclo abortito`);
+        throw new Error(
+          `binary-gc: cursore keyset non avanzabile (id=${String(nextCursor)}) — ciclo abortito`,
+        );
       }
       cursor = nextCursor;
     }

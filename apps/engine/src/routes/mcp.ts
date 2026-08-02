@@ -43,7 +43,10 @@ const PROTOCOL_VERSION = '2025-03-26';
 const SERVER_INFO = { name: 'flowforge-mcp', version: '0.1.0' };
 
 function slug(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/gu, '_').replace(/^_+|_+$/gu, '');
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gu, '_')
+    .replace(/^_+|_+$/gu, '');
 }
 
 export function createMcpRoutes(eventBus: IEventBus): Hono {
@@ -114,9 +117,7 @@ export function createMcpRoutes(eventBus: IEventBus): Hono {
         // dell'esecuzione (defense-in-depth contro race in cui il workflow
         // è stato disabilitato tra list e call).
         const list = await workflows.listMcpExposed(tenantId);
-        const match = list.find(
-          (w) => `wf_${slug(w.name)}_${w.id.slice(0, 8)}` === name,
-        );
+        const match = list.find((w) => `wf_${slug(w.name)}_${w.id.slice(0, 8)}` === name);
         if (!match) {
           reply.error = { code: -32601, message: `Tool not found: ${name}` };
           return c.json(reply);
@@ -136,19 +137,24 @@ export function createMcpRoutes(eventBus: IEventBus): Hono {
         });
 
         if (result.status !== 'success') {
-          const failed = (result.steps as { nodeId: string; status: string; error?: string | null }[]).find(
-            (s) => s.status === 'error',
-          );
+          const failed = (
+            result.steps as { nodeId: string; status: string; error?: string | null }[]
+          ).find((s) => s.status === 'error');
           reply.result = {
             isError: true,
             content: [
-              { type: 'text', text: `Workflow failed at ${failed?.nodeId ?? 'unknown'}: ${failed?.error ?? 'unknown error'}` },
+              {
+                type: 'text',
+                text: `Workflow failed at ${failed?.nodeId ?? 'unknown'}: ${failed?.error ?? 'unknown error'}`,
+              },
             ],
           };
           return c.json(reply);
         }
 
-        const successSteps = (result.steps as { status: string; output: string }[]).filter((s) => s.status === 'success');
+        const successSteps = (result.steps as { status: string; output: string }[]).filter(
+          (s) => s.status === 'success',
+        );
         const last = successSteps[successSteps.length - 1];
         const parsed = safeParseJson(last?.output);
 

@@ -43,14 +43,18 @@ export interface ComplexityEstimate {
 
 // Regex sono case-insensitive + match parole intere via \b boundary.
 // Lista non esaustiva, ma copre i pattern frequenti nei prompt utente IT+EN.
-const ACTION_VERBS_RE = /\b(?:classifica|classify|categoriz|valid[ai]|valida|estrai|extract|ocr|vision|analizz|analyz|notific|notify|archivi|archive|invi(?:are|a)|send|aggiung|insert|aggiorn|update|filtra|filter|trasform|transform|calcol|comput|gener|inoltr|forward|push|sincronizz|sync|routing|route|process|elabor|persist|salva|store|fetch|recuper|enrich|arricchisc|create|crea|delete|cancell|summary|summariz|riassum)\w*\b/gi;
+const ACTION_VERBS_RE =
+  /\b(?:classifica|classify|categoriz|valid[ai]|valida|estrai|extract|ocr|vision|analizz|analyz|notific|notify|archivi|archive|invi(?:are|a)|send|aggiung|insert|aggiorn|update|filtra|filter|trasform|transform|calcol|comput|gener|inoltr|forward|push|sincronizz|sync|routing|route|process|elabor|persist|salva|store|fetch|recuper|enrich|arricchisc|create|crea|delete|cancell|summary|summariz|riassum)\w*\b/gi;
 
-const INTEGRATIONS_RE = /\b(?:slack|telegram|discord|gmail|email|imap|smtp|webhook|s3|aws|drive|stripe|paypal|github|notion|linear|salesforce|hubspot|erp|crm|sigla|pec|api|database|db|sqlite|postgres|mysql|http|rest|graphql|kafka|rabbitmq|sentry|datadog|elasticsearch)\b/gi;
+const INTEGRATIONS_RE =
+  /\b(?:slack|telegram|discord|gmail|email|imap|smtp|webhook|s3|aws|drive|stripe|paypal|github|notion|linear|salesforce|hubspot|erp|crm|sigla|pec|api|database|db|sqlite|postgres|mysql|http|rest|graphql|kafka|rabbitmq|sentry|datadog|elasticsearch)\b/gi;
 
-const BRANCHES_RE = /\b(?:se\b|if\b|else|altrimenti|switch|branch|caso|case|when|quando|hot\b|warm\b|cold\b|low confidence|alta priorit|bassa priorit|priorit[aà]|tipo|type|categoria|threshold|soglia|condition|condizione|in caso di|in case of)\b/gi;
+const BRANCHES_RE =
+  /\b(?:se\b|if\b|else|altrimenti|switch|branch|caso|case|when|quando|hot\b|warm\b|cold\b|low confidence|alta priorit|bassa priorit|priorit[aà]|tipo|type|categoria|threshold|soglia|condition|condizione|in caso di|in case of)\b/gi;
 
 // Tipi documento elencati (lista IT/EN frequente): contratto, fattura, ecc.
-const DOCUMENT_TYPES_RE = /\b(?:contratt|fattur|preventiv|ddt|ordine|order|invoice|contract|quote|proposal|receipt|ricevuta|nota credito|credit note|estratto conto|bank statement)\w*\b/gi;
+const DOCUMENT_TYPES_RE =
+  /\b(?:contratt|fattur|preventiv|ddt|ordine|order|invoice|contract|quote|proposal|receipt|ricevuta|nota credito|credit note|estratto conto|bank statement)\w*\b/gi;
 
 /** Estrae distinct matches (case-insensitive) come Set. */
 function distinctMatches(text: string, re: RegExp): Set<string> {
@@ -71,7 +75,11 @@ export function estimateComplexity(goal: string): ComplexityEstimate {
     25,
     Math.max(
       3,
-      1 + Math.ceil(actionVerbsSet.size * 0.8) + integrationsSet.size + branchesSet.size * 2 + documentTypesSet.size,
+      1 +
+        Math.ceil(actionVerbsSet.size * 0.8) +
+        integrationsSet.size +
+        branchesSet.size * 2 +
+        documentTypesSet.size,
     ),
   );
 

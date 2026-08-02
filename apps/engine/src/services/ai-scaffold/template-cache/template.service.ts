@@ -73,8 +73,8 @@ export interface TemplateRow {
   sharedWithCommunity: boolean;
 }
 
-const SCORE_USE_DIRECT = 0.90;
-const SCORE_INJECT_FEWSHOT = 0.70;
+const SCORE_USE_DIRECT = 0.9;
+const SCORE_INJECT_FEWSHOT = 0.7;
 const MAX_CANDIDATES = 20; // prima del scoring fine (limita SELECT)
 
 function nowIso(): string {
@@ -133,13 +133,16 @@ export class TemplateCacheService {
     // Idempotency: se esiste gia\` template con stessa signature, bump
     // imported_count + last_used_at + override workflow_json (potrebbe
     // essere migliorato). Altrimenti insert nuovo.
-    const existing = sqlite.prepare(
-      `SELECT id, imported_count FROM ai_workflow_templates WHERE graph_signature = ? LIMIT 1`,
-    ).get(signature) as { id: string; imported_count: number } | undefined;
+    const existing = sqlite
+      .prepare(
+        `SELECT id, imported_count FROM ai_workflow_templates WHERE graph_signature = ? LIMIT 1`,
+      )
+      .get(signature) as { id: string; imported_count: number } | undefined;
 
     if (existing) {
-      sqlite.prepare(
-        `UPDATE ai_workflow_templates SET
+      sqlite
+        .prepare(
+          `UPDATE ai_workflow_templates SET
            prompt_text = ?,
            prompt_tokens_json = ?,
            workflow_json = ?,
@@ -150,50 +153,58 @@ export class TemplateCacheService {
            imported_count = imported_count + 1,
            last_used_at = ?
          WHERE id = ?`,
-      ).run(
+        )
+        .run(
+          input.promptText,
+          JSON.stringify(tokens),
+          input.workflowJson,
+          input.workflow.name,
+          language,
+          embeddingBuf,
+          embeddedAt,
+          now,
+          existing.id,
+        );
+      logger.info(
+        { id: existing.id, signature, importedCount: existing.imported_count + 1 },
+        '[template-cache] upserted',
+      );
+      return this.getById(existing.id)!;
+    }
+
+    const id = randomUUID();
+    sqlite
+      .prepare(
+        `INSERT INTO ai_workflow_templates (
+        id, prompt_text, prompt_tokens_json, graph_signature, graph_def_ids_json,
+        workflow_json, name, language, prompt_embedding, embedded_at,
+        imported_count, success_count, fail_count, last_used_at, created_at,
+        shared_with_community
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 0, ?, ?, 0)`,
+      )
+      .run(
+        id,
         input.promptText,
         JSON.stringify(tokens),
+        signature,
+        JSON.stringify(defIds),
         input.workflowJson,
         input.workflow.name,
         language,
         embeddingBuf,
         embeddedAt,
         now,
-        existing.id,
+        now,
       );
-      logger.info({ id: existing.id, signature, importedCount: existing.imported_count + 1 }, '[template-cache] upserted');
-      return this.getById(existing.id)!;
-    }
-
-    const id = randomUUID();
-    sqlite.prepare(
-      `INSERT INTO ai_workflow_templates (
-        id, prompt_text, prompt_tokens_json, graph_signature, graph_def_ids_json,
-        workflow_json, name, language, prompt_embedding, embedded_at,
-        imported_count, success_count, fail_count, last_used_at, created_at,
-        shared_with_community
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 0, ?, ?, 0)`,
-    ).run(
-      id,
-      input.promptText,
-      JSON.stringify(tokens),
-      signature,
-      JSON.stringify(defIds),
-      input.workflowJson,
-      input.workflow.name,
-      language,
-      embeddingBuf,
-      embeddedAt,
-      now,
-      now,
-    );
     logger.info({ id, signature, nodes: defIds.length }, '[template-cache] saved new');
     return this.getById(id)!;
   }
 
   getById(id: string): TemplateRow | null {
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare(`SELECT * FROM ai_workflow_templates WHERE id = ?`).get(id) as Record<string, unknown> | undefined;
+    const row = sqlite.prepare(`SELECT * FROM ai_workflow_templates WHERE id = ?`).get(id) as
+      | Record<string, unknown>
+      | undefined;
     return row ? rowToTemplate(row) : null;
   }
 
@@ -214,12 +225,14 @@ export class TemplateCacheService {
     const { sqlite } = getDatabase();
     const tokens = tokenizePrompt(opts.promptText);
     const language = opts.language ?? 'it';
-    const candidates = sqlite.prepare(
-      `SELECT * FROM ai_workflow_templates
+    const candidates = sqlite
+      .prepare(
+        `SELECT * FROM ai_workflow_templates
        WHERE language = ?
        ORDER BY last_used_at DESC
        LIMIT ?`,
-    ).all(language, MAX_CANDIDATES) as Record<string, unknown>[];
+      )
+      .all(language, MAX_CANDIDATES) as Record<string, unknown>[];
 
     if (candidates.length === 0) return null;
 
@@ -227,29 +240,32 @@ export class TemplateCacheService {
     for (const row of candidates) {
       const tmpl = rowToTemplate(row);
       const totalRuns = tmpl.successCount + tmpl.failCount;
-      const successRate = totalRuns >= 3
-        ? tmpl.successCount / totalRuns
-        : 0.5; // neutral fino a 3+ runs
-      const graphOverlap = defIdOverlap(extractDefIds(parseDefIdsFromTokens(tmpl.promptTokens)), tmpl.graphDefIds);
+      const successRate = totalRuns >= 3 ? tmpl.successCount / totalRuns : 0.5; // neutral fino a 3+ runs
+      const graphOverlap = defIdOverlap(
+        extractDefIds(parseDefIdsFromTokens(tmpl.promptTokens)),
+        tmpl.graphDefIds,
+      );
       // Override graphOverlap: usare il vero overlap su defId del template
       // (non sui token del prompt, che NON sono defId). Calcolato meglio
       // sotto, qui per ora 0 — il prompt jaccard fa il lavoro.
       // FIX: per L1 con prompt-only (no graph from query), usa solo jaccard
       // sui token del query vs token del template prompt.
       const promptJaccard = jaccardSimilarity(tokens, tmpl.promptTokens);
-      const cosine = opts.queryEmbedding && tmpl.embedding
-        ? Math.max(0, cosineSimilarity(opts.queryEmbedding, tmpl.embedding))
-        : 0;
+      const cosine =
+        opts.queryEmbedding && tmpl.embedding
+          ? Math.max(0, cosineSimilarity(opts.queryEmbedding, tmpl.embedding))
+          : 0;
       // graphOverlap qui = 0 perche\` non abbiamo defId del query.
       // Sara\` ricalcolato dopo singleshot generation (POST validation)
       // se serve. Per ora il signal e\` 0.
       const score = computeRetrievalScore({ graphOverlap: 0, promptJaccard, successRate, cosine });
       if (best === null || score > best.score) {
-        const action: RetrieveResult['action'] = score >= SCORE_USE_DIRECT
-          ? 'use_direct'
-          : score >= SCORE_INJECT_FEWSHOT
-            ? 'inject_fewshot'
-            : 'fallback';
+        const action: RetrieveResult['action'] =
+          score >= SCORE_USE_DIRECT
+            ? 'use_direct'
+            : score >= SCORE_INJECT_FEWSHOT
+              ? 'inject_fewshot'
+              : 'fallback';
         best = {
           template: tmpl,
           score,
@@ -271,9 +287,9 @@ export class TemplateCacheService {
   findIdBySignature(graphSignature: string): string | null {
     try {
       const { sqlite } = getDatabase();
-      const row = sqlite.prepare(
-        `SELECT id FROM ai_workflow_templates WHERE graph_signature = ? LIMIT 1`,
-      ).get(graphSignature) as { id: string } | undefined;
+      const row = sqlite
+        .prepare(`SELECT id FROM ai_workflow_templates WHERE graph_signature = ? LIMIT 1`)
+        .get(graphSignature) as { id: string } | undefined;
       return row?.id ?? null;
     } catch {
       return null; // fail-soft: il feedback è best-effort, mai rompe un run
@@ -287,9 +303,11 @@ export class TemplateCacheService {
   recordOutcome(templateId: string, ok: boolean): void {
     const { sqlite } = getDatabase();
     const col = ok ? 'success_count' : 'fail_count';
-    sqlite.prepare(
-      `UPDATE ai_workflow_templates SET ${col} = ${col} + 1, last_used_at = ? WHERE id = ?`,
-    ).run(nowIso(), templateId);
+    sqlite
+      .prepare(
+        `UPDATE ai_workflow_templates SET ${col} = ${col} + 1, last_used_at = ? WHERE id = ?`,
+      )
+      .run(nowIso(), templateId);
   }
 
   /**
@@ -299,9 +317,11 @@ export class TemplateCacheService {
   list(opts?: { limit?: number }): TemplateRow[] {
     const { sqlite } = getDatabase();
     const limit = opts?.limit ?? 50;
-    const rows = sqlite.prepare(
-      `SELECT * FROM ai_workflow_templates ORDER BY imported_count DESC, last_used_at DESC LIMIT ?`,
-    ).all(limit) as Record<string, unknown>[];
+    const rows = sqlite
+      .prepare(
+        `SELECT * FROM ai_workflow_templates ORDER BY imported_count DESC, last_used_at DESC LIMIT ?`,
+      )
+      .all(limit) as Record<string, unknown>[];
     return rows.map(rowToTemplate);
   }
 
@@ -311,7 +331,7 @@ export class TemplateCacheService {
   delete(id: string): boolean {
     const { sqlite } = getDatabase();
     const r = sqlite.prepare(`DELETE FROM ai_workflow_templates WHERE id = ?`).run(id);
-    return (r.changes) > 0;
+    return r.changes > 0;
   }
 
   /**
@@ -333,25 +353,35 @@ export class TemplateCacheService {
     embeddedCount: number;
   } {
     const { sqlite } = getDatabase();
-    const agg = sqlite.prepare(
-      `SELECT
+    const agg = sqlite
+      .prepare(
+        `SELECT
         COUNT(*) AS cnt,
         COALESCE(SUM(imported_count), 0) AS total_imports,
         COALESCE(SUM(CASE WHEN embedded_at IS NOT NULL THEN 1 ELSE 0 END), 0) AS embedded
       FROM ai_workflow_templates`,
-    ).get() as { cnt: number; total_imports: number; embedded: number };
+      )
+      .get() as { cnt: number; total_imports: number; embedded: number };
     const templatesCount = agg.cnt;
     const totalImports = agg.total_imports;
     const cacheMisses = templatesCount;
     const cacheHits = Math.max(0, totalImports - cacheMisses);
     const cacheHitRate = totalImports > 0 ? cacheHits / totalImports : 0;
     const gpuSecondsSaved = cacheHits * 60;
-    const topRows = sqlite.prepare(
-      `SELECT id, name, imported_count, success_count, fail_count
+    const topRows = sqlite
+      .prepare(
+        `SELECT id, name, imported_count, success_count, fail_count
        FROM ai_workflow_templates
        ORDER BY imported_count DESC, success_count DESC
        LIMIT 10`,
-    ).all() as { id: string; name: string; imported_count: number; success_count: number; fail_count: number }[];
+      )
+      .all() as {
+      id: string;
+      name: string;
+      imported_count: number;
+      success_count: number;
+      fail_count: number;
+    }[];
     const topTemplates = topRows.map((r) => {
       const total = r.success_count + r.fail_count;
       return {
@@ -380,7 +410,9 @@ export class TemplateCacheService {
  * Mantenuto come placeholder per la future "second pass" retrieval.
  */
 function parseDefIdsFromTokens(tokens: readonly string[]): { defId: string }[] {
-  return tokens.filter((t) => /^(trigger|action|agent|community|logic|db)_/.test(t)).map((defId) => ({ defId }));
+  return tokens
+    .filter((t) => /^(trigger|action|agent|community|logic|db)_/.test(t))
+    .map((defId) => ({ defId }));
 }
 
 export const templateCache = new TemplateCacheService();

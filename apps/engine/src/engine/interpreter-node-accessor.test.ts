@@ -8,19 +8,36 @@
  * il nodo mancante, e che il security scan NON rompa la sintassi `$(...)`.
  */
 import { describe, it, expect } from 'vitest';
-import { makeNodeAccessor, evaluateExpression, type InterpreterScope, type LineageContext } from './interpreter.js';
+import {
+  makeNodeAccessor,
+  evaluateExpression,
+  type InterpreterScope,
+  type LineageContext,
+} from './interpreter.js';
 import { lineage, type RunItemGraph, type ExecutionItem } from './item-model.js';
 
 describe('makeNodeAccessor — funzione pura', () => {
   const vars = {
-    Http: [{ id: 1, name: 'a' }, { id: 2, name: 'b' }, { id: 3, name: 'c' }], // array → 3 item
-    Single: { ok: true },                                                      // oggetto → 1 item
-    Scalar: 42,                                                                 // scalare → wrap
+    Http: [
+      { id: 1, name: 'a' },
+      { id: 2, name: 'b' },
+      { id: 3, name: 'c' },
+    ], // array → 3 item
+    Single: { ok: true }, // oggetto → 1 item
+    Scalar: 42, // scalare → wrap
   };
   const $ = makeNodeAccessor(vars);
 
   it('all() ritorna tutti gli item normalizzati', () => {
-    expect($('Http').all().map((i) => i.json)).toEqual([{ id: 1, name: 'a' }, { id: 2, name: 'b' }, { id: 3, name: 'c' }]);
+    expect(
+      $('Http')
+        .all()
+        .map((i) => i.json),
+    ).toEqual([
+      { id: 1, name: 'a' },
+      { id: 2, name: 'b' },
+      { id: 3, name: 'c' },
+    ]);
   });
   it('first()/last() ritornano il primo/ultimo item', () => {
     expect($('Http').first().json).toEqual({ id: 1, name: 'a' });
@@ -40,7 +57,11 @@ describe('makeNodeAccessor — funzione pura', () => {
     expect($('Http').itemMatching(0)).toBeUndefined();
   });
   it('oggetto singolo → 1 item', () => {
-    expect($('Single').all().map((i) => i.json)).toEqual([{ ok: true }]);
+    expect(
+      $('Single')
+        .all()
+        .map((i) => i.json),
+    ).toEqual([{ ok: true }]);
     expect($('Single').first().json).toEqual({ ok: true });
   });
   it('scalare → wrappato in { value }', () => {
@@ -53,7 +74,7 @@ describe('makeNodeAccessor — funzione pura', () => {
   });
 });
 
-describe('$(\'Node\') end-to-end in evaluateExpression', () => {
+describe("$('Node') end-to-end in evaluateExpression", () => {
   const scope: InterpreterScope = {
     vars: {
       Http: [{ price: 10 }, { price: 20 }, { price: 30 }],
@@ -61,50 +82,59 @@ describe('$(\'Node\') end-to-end in evaluateExpression', () => {
     },
   };
 
-  it('🚨 $(\'Http\').first().json.price → 10 (non bloccato dal security scan)', () => {
+  it("🚨 $('Http').first().json.price → 10 (non bloccato dal security scan)", () => {
     expect(evaluateExpression("$('Http').first().json.price", scope)).toBe(10);
   });
-  it('$(\'Http\').last().json.price → 30', () => {
+  it("$('Http').last().json.price → 30", () => {
     expect(evaluateExpression("$('Http').last().json.price", scope)).toBe(30);
   });
-  it('$(\'Http\').all().length → 3', () => {
+  it("$('Http').all().length → 3", () => {
     expect(evaluateExpression("$('Http').all().length", scope)).toBe(3);
   });
-  it('$(\'Http\').itemAt(1).json.price → 20 (posizionale)', () => {
+  it("$('Http').itemAt(1).json.price → 20 (posizionale)", () => {
     expect(evaluateExpression("$('Http').itemAt(1).json.price", scope)).toBe(20);
   });
-  it('$(\'User\').first().json.email → a@b.it', () => {
+  it("$('User').first().json.email → a@b.it", () => {
     expect(evaluateExpression("$('User').first().json.email", scope)).toBe('a@b.it');
   });
-  it('somma cross-item: $(\'Http\').all().reduce((s,i)=>s+i.json.price,0) → 60', () => {
-    expect(evaluateExpression("$('Http').all().reduce((s, i) => s + i.json.price, 0)", scope)).toBe(60);
+  it("somma cross-item: $('Http').all().reduce((s,i)=>s+i.json.price,0) → 60", () => {
+    expect(evaluateExpression("$('Http').all().reduce((s, i) => s + i.json.price, 0)", scope)).toBe(
+      60,
+    );
   });
   it('🚨 nodo inesistente in expression → item vuoto, undefined field (no throw)', () => {
     expect(evaluateExpression("$('Nope').first().json.x", scope)).toBeUndefined();
   });
 });
 
-describe('$(\'Node\').item / itemMatching — semantica PAIRED via lineage', () => {
+describe("$('Node').item / itemMatching — semantica PAIRED via lineage", () => {
   // Topologia: A → (filter B tiene a1,a3) → C(map 1:1). Da C l'item corrente
   // deve risolvere l'item ACCOPPIATO di A, non quello posizionale.
   const graph: RunItemGraph = new Map<string, ExecutionItem[]>([
     ['A', [{ json: { n: 0 } }, { json: { n: 1 } }, { json: { n: 2 } }, { json: { n: 3 } }]],
-    ['B', [
-      { json: { n: 1 }, pairedItem: lineage.from(1) },
-      { json: { n: 3 }, pairedItem: lineage.from(3) },
-    ]],
-    ['C', [
-      { json: { n: 1, x: true }, pairedItem: lineage.oneToOne(0) },
-      { json: { n: 3, x: true }, pairedItem: lineage.oneToOne(1) },
-    ]],
+    [
+      'B',
+      [
+        { json: { n: 1 }, pairedItem: lineage.from(1) },
+        { json: { n: 3 }, pairedItem: lineage.from(3) },
+      ],
+    ],
+    [
+      'C',
+      [
+        { json: { n: 1, x: true }, pairedItem: lineage.oneToOne(0) },
+        { json: { n: 3, x: true }, pairedItem: lineage.oneToOne(1) },
+      ],
+    ],
   ]);
-  const predecessorOf = (n: string): string | undefined => ({ C: 'B', B: 'A' } as Record<string, string>)[n];
+  const predecessorOf = (n: string): string | undefined =>
+    (({ C: 'B', B: 'A' }) as Record<string, string>)[n];
 
   function ctxAt(itemIndex: number): LineageContext {
     return { graph, nodeId: 'C', itemIndex, predecessorOf };
   }
 
-  it('🚨 .item dall\'item C[0] risolve A[1] (paired, NON posizionale A[0])', () => {
+  it("🚨 .item dall'item C[0] risolve A[1] (paired, NON posizionale A[0])", () => {
     // vars contiene l'output di A (per itemAt) + lineage ctx (per .item).
     const $ = makeNodeAccessor({ A: graph.get('A')!.map((i) => i.json) }, ctxAt(0));
     expect($('A').item?.json).toEqual({ n: 1 });
@@ -112,7 +142,7 @@ describe('$(\'Node\').item / itemMatching — semantica PAIRED via lineage', () 
     expect($('A').itemAt(0)?.json).toEqual({ n: 0 });
   });
 
-  it('🚨 .item dall\'item C[1] risolve A[3]', () => {
+  it("🚨 .item dall'item C[1] risolve A[3]", () => {
     const $ = makeNodeAccessor({}, ctxAt(1));
     expect($('A').item?.json).toEqual({ n: 3 });
   });
@@ -124,7 +154,7 @@ describe('$(\'Node\').item / itemMatching — semantica PAIRED via lineage', () 
     expect($('B').itemMatching(0)?.json).toEqual({ n: 1 });
   });
 
-  it('🚨 end-to-end in evaluateExpression: $(\'A\').item.json.n → 3', () => {
+  it("🚨 end-to-end in evaluateExpression: $('A').item.json.n → 3", () => {
     const scope: InterpreterScope = { vars: {}, lineage: ctxAt(1) };
     expect(evaluateExpression("$('A').item.json.n", scope)).toBe(3);
   });

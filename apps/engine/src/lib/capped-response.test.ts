@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { readTextCapped, readJsonCapped, readTextTruncated, readBytesCapped, DEFAULT_RESPONSE_CAP_BYTES } from './capped-response.js';
+import {
+  readTextCapped,
+  readJsonCapped,
+  readTextTruncated,
+  readBytesCapped,
+  DEFAULT_RESPONSE_CAP_BYTES,
+} from './capped-response.js';
 
 /** ReadableStream che emette i chunk dati e poi chiude. */
 function streamOf(...chunks: string[]): ReadableStream<Uint8Array> {
@@ -45,10 +51,18 @@ describe('readTextCapped', () => {
   });
 
   it('fallback senza body-stream (mock): sotto cap ok, sopra cap throw', async () => {
-    const small = { headers: new Headers(), body: null, text: async () => 'piccolo' } as unknown as Response;
+    const small = {
+      headers: new Headers(),
+      body: null,
+      text: async () => 'piccolo',
+    } as unknown as Response;
     await expect(readTextCapped(small, 1024)).resolves.toBe('piccolo');
 
-    const big = { headers: new Headers(), body: null, text: async () => 'x'.repeat(50) } as unknown as Response;
+    const big = {
+      headers: new Headers(),
+      body: null,
+      text: async () => 'x'.repeat(50),
+    } as unknown as Response;
     await expect(readTextCapped(big, 10)).rejects.toThrow(/oltre il limite/u);
   });
 
@@ -63,7 +77,11 @@ describe('readTextCapped', () => {
   });
 
   it('robustezza: Response-like json()-only (mock) → ri-serializza e cappa', async () => {
-    const res = { headers: new Headers(), body: null, json: async () => ({ a: 1 }) } as unknown as Response;
+    const res = {
+      headers: new Headers(),
+      body: null,
+      json: async () => ({ a: 1 }),
+    } as unknown as Response;
     await expect(readTextCapped(res, 1024)).resolves.toBe('{"a":1}');
     await expect(readJsonCapped<{ a: number }>(res)).resolves.toEqual({ a: 1 });
   });
@@ -72,7 +90,10 @@ describe('readTextCapped', () => {
 describe('readJsonCapped', () => {
   it('json valido → parsato', async () => {
     const res = streamRes({}, JSON.stringify({ ok: true, n: 7 }));
-    await expect(readJsonCapped<{ ok: boolean; n: number }>(res)).resolves.toEqual({ ok: true, n: 7 });
+    await expect(readJsonCapped<{ ok: boolean; n: number }>(res)).resolves.toEqual({
+      ok: true,
+      n: 7,
+    });
   });
 
   it('body vuoto (2xx senza payload) → null, NON lancia su JSON.parse', async () => {
@@ -95,7 +116,10 @@ describe('readJsonCapped', () => {
 describe('readTextTruncated', () => {
   it('body sotto il limite → testo intero, truncated=false', async () => {
     const res = streamRes({}, 'ciao ', 'mondo');
-    await expect(readTextTruncated(res, 1024)).resolves.toEqual({ text: 'ciao mondo', truncated: false });
+    await expect(readTextTruncated(res, 1024)).resolves.toEqual({
+      text: 'ciao mondo',
+      truncated: false,
+    });
   });
 
   it('body oltre il limite → tagliato a maxBytes, truncated=true, NON lancia', async () => {
@@ -110,7 +134,7 @@ describe('readTextTruncated', () => {
     await expect(readTextTruncated(res, 5)).resolves.toEqual({ text: '12345', truncated: false });
   });
 
-  it('fit esatto MA c\'è altro dopo → truncated=true', async () => {
+  it("fit esatto MA c'è altro dopo → truncated=true", async () => {
     const res = streamRes({}, '12345', 'X'); // 5 + 1
     const out = await readTextTruncated(res, 5);
     expect(out.text).toBe('12345');
@@ -118,7 +142,11 @@ describe('readTextTruncated', () => {
   });
 
   it('fallback senza body-stream (mock) → tronca a posteriori', async () => {
-    const res = { headers: new Headers(), body: null, text: async () => 'abcdefghij' } as unknown as Response;
+    const res = {
+      headers: new Headers(),
+      body: null,
+      text: async () => 'abcdefghij',
+    } as unknown as Response;
     await expect(readTextTruncated(res, 4)).resolves.toEqual({ text: 'abcd', truncated: true });
   });
 });
@@ -126,7 +154,14 @@ describe('readTextTruncated', () => {
 describe('readBytesCapped', () => {
   it('sotto cap → Buffer coi byte ESATTI (fedeltà binaria, non utf8-mangled)', async () => {
     const raw = new Uint8Array([0x00, 0xff, 0x10, 0x80, 0xfe]); // byte non-UTF8-validi
-    const res = new Response(new ReadableStream<Uint8Array>({ start(c) { c.enqueue(raw); c.close(); } }));
+    const res = new Response(
+      new ReadableStream<Uint8Array>({
+        start(c) {
+          c.enqueue(raw);
+          c.close();
+        },
+      }),
+    );
     const buf = await readBytesCapped(res, 1024);
     expect(Buffer.from(raw).equals(buf)).toBe(true);
   });
@@ -143,9 +178,14 @@ describe('readBytesCapped', () => {
 
   it('🚨 ATTACCO: stream oltre cap → throw DURANTE il download (no arrayBuffer integrale)', async () => {
     let pulled = 0;
-    const res = new Response(new ReadableStream<Uint8Array>({
-      pull(c) { pulled += 64 * 1024; c.enqueue(new Uint8Array(64 * 1024)); }, // infinito
-    }));
+    const res = new Response(
+      new ReadableStream<Uint8Array>({
+        pull(c) {
+          pulled += 64 * 1024;
+          c.enqueue(new Uint8Array(64 * 1024));
+        }, // infinito
+      }),
+    );
     await expect(readBytesCapped(res, 256 * 1024)).rejects.toThrow(/durante il download/u);
     expect(pulled).toBeLessThan(1024 * 1024); // si è fermato presto, NON ha tirato tutto
   });

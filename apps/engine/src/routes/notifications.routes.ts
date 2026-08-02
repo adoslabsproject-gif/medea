@@ -26,18 +26,30 @@ export function createNotificationsRoutes(): Hono {
       // 16KB di padding: Cloudflare bufferizza ~8KB su HTTP/2 prima del primo
       // flush → senza questo il client vedrebbe lo stream "idle".
       await stream.writeComment(' '.repeat(16_384));
-      await stream.writeSSE({ event: 'hello', data: JSON.stringify({ ts: new Date().toISOString() }) });
+      await stream.writeSSE({
+        event: 'hello',
+        data: JSON.stringify({ ts: new Date().toISOString() }),
+      });
 
       const unsubscribe = notificationsBus.subscribe(userId, (notif) => {
-        void stream.writeSSE({ event: 'notification', data: JSON.stringify(notif) }).catch(() => { /* client gone */ });
+        void stream.writeSSE({ event: 'notification', data: JSON.stringify(notif) }).catch(() => {
+          /* client gone */
+        });
       });
       const heartbeat = setInterval(() => {
-        void stream.writeSSE({ event: 'ping', data: String(Date.now()) }).catch(() => { /* client gone */ });
+        void stream.writeSSE({ event: 'ping', data: String(Date.now()) }).catch(() => {
+          /* client gone */
+        });
       }, 15_000);
 
-      stream.onAbort(() => { clearInterval(heartbeat); unsubscribe(); });
+      stream.onAbort(() => {
+        clearInterval(heartbeat);
+        unsubscribe();
+      });
       // Tiene lo stream aperto finché il client non si disconnette.
-      await new Promise<void>(() => { /* never resolves; aborted via onAbort */ });
+      await new Promise<void>(() => {
+        /* never resolves; aborted via onAbort */
+      });
     });
   });
 
@@ -45,7 +57,10 @@ export function createNotificationsRoutes(): Hono {
     const auth = c.get('auth');
     if (!auth) return c.json({ error: 'Unauthorized' }, 401);
     const unreadOnly = c.req.query('unread') === '1';
-    return c.json({ notifications: svc.list(auth.userId, { unreadOnly }), unread: svc.unreadCount(auth.userId) });
+    return c.json({
+      notifications: svc.list(auth.userId, { unreadOnly }),
+      unread: svc.unreadCount(auth.userId),
+    });
   });
 
   app.post('/read-all', (c) => {

@@ -23,8 +23,12 @@ import {
 } from './missing-node-orchestrator.js';
 
 const KNOWN = new Set([
-  'action_http', 'action_send_email', 'agent_summarizer',
-  'logic_loop', 'flow_merge', 'db_query',
+  'action_http',
+  'action_send_email',
+  'agent_summarizer',
+  'logic_loop',
+  'flow_merge',
+  'db_query',
 ]);
 const KNOWN_CUSTOM = new Set(['custom_legacy-scraper']);
 
@@ -32,16 +36,19 @@ describe('detectMissingDefIds', () => {
   it('rileva defId fuori dal catalog escludendo stdlib e custom esistenti', () => {
     const wf: Workflow = {
       nodes: [
-        { id: 'n1', defId: 'action_http', config: {} },                 // known stdlib
-        { id: 'n2', defId: 'custom_legacy-scraper', config: {} },       // known custom
+        { id: 'n1', defId: 'action_http', config: {} }, // known stdlib
+        { id: 'n2', defId: 'custom_legacy-scraper', config: {} }, // known custom
         { id: 'n3', defId: 'action_amazon_search', config: { query: 'x' } }, // MISSING
         { id: 'n4', defId: 'action_amazon_search', config: { query: 'y' } }, // dup, raises count
-        { id: 'n5', defId: 'integration_shopify_orders', config: {} },  // MISSING
+        { id: 'n5', defId: 'integration_shopify_orders', config: {} }, // MISSING
       ],
       edges: [],
     };
     const missing = detectMissingDefIds(wf, KNOWN, KNOWN_CUSTOM);
-    expect(missing.map((m) => m.defId)).toEqual(['action_amazon_search', 'integration_shopify_orders']);
+    expect(missing.map((m) => m.defId)).toEqual([
+      'action_amazon_search',
+      'integration_shopify_orders',
+    ]);
     expect(missing[0]!.usageCount).toBe(2);
     expect(missing[0]!.nodeIds).toEqual(['n3', 'n4']);
     expect(missing[0]!.observedConfigs).toHaveLength(2);
@@ -61,9 +68,7 @@ describe('detectMissingDefIds', () => {
   it('escludi defId che findBaseDefId risolve (auto-fix-defid lo gestisce dopo)', () => {
     // "action_http_clearbit" → strip suffix → "action_http" exists.
     const wf: Workflow = {
-      nodes: [
-        { id: 'n1', defId: 'action_http_clearbit', config: {} },
-      ],
+      nodes: [{ id: 'n1', defId: 'action_http_clearbit', config: {} }],
       edges: [],
     };
     expect(detectMissingDefIds(wf, KNOWN, KNOWN_CUSTOM)).toEqual([]);
@@ -118,13 +123,20 @@ describe('planSynthesis', () => {
 describe('executeSynthesisPlan', () => {
   it('invoca deps con success → mapping popolato', async () => {
     const plan: SynthesisPlan = {
-      items: [{
-        missing: { defId: 'action_amazon_search', usageCount: 1, nodeIds: ['n1'], observedConfigs: [{}] },
-        proposedSlug: 'amazon-search',
-        targetDefId: 'custom_amazon-search',
-        proposedDisplayName: 'Amazon Search',
-        llmPrompt: 'fake prompt',
-      }],
+      items: [
+        {
+          missing: {
+            defId: 'action_amazon_search',
+            usageCount: 1,
+            nodeIds: ['n1'],
+            observedConfigs: [{}],
+          },
+          proposedSlug: 'amazon-search',
+          targetDefId: 'custom_amazon-search',
+          proposedDisplayName: 'Amazon Search',
+          llmPrompt: 'fake prompt',
+        },
+      ],
       skipped: [],
     };
     const findExisting = vi.fn().mockResolvedValue(null);
@@ -143,7 +155,10 @@ describe('executeSynthesisPlan', () => {
       generateNodeBlueprint: generate,
       persistAndPublish: persist,
     };
-    const result = await executeSynthesisPlan(plan, deps, { workspaceId: 'ws1', ownerUserId: 'u1' });
+    const result = await executeSynthesisPlan(plan, deps, {
+      workspaceId: 'ws1',
+      ownerUserId: 'u1',
+    });
 
     expect(result.succeeded).toHaveLength(1);
     expect(result.succeeded[0]!.reused).toBe(false);
@@ -154,23 +169,34 @@ describe('executeSynthesisPlan', () => {
 
   it('idempotenza: slug già esistente → riuso (zero LLM/persist calls)', async () => {
     const plan: SynthesisPlan = {
-      items: [{
-        missing: { defId: 'action_amazon_search', usageCount: 1, nodeIds: ['n1'], observedConfigs: [{}] },
-        proposedSlug: 'amazon-search',
-        targetDefId: 'custom_amazon-search',
-        proposedDisplayName: 'Amazon Search',
-        llmPrompt: 'fake',
-      }],
+      items: [
+        {
+          missing: {
+            defId: 'action_amazon_search',
+            usageCount: 1,
+            nodeIds: ['n1'],
+            observedConfigs: [{}],
+          },
+          proposedSlug: 'amazon-search',
+          targetDefId: 'custom_amazon-search',
+          proposedDisplayName: 'Amazon Search',
+          llmPrompt: 'fake',
+        },
+      ],
       skipped: [],
     };
     const findExisting = vi.fn().mockResolvedValue('custom_amazon-search');
     const generate = vi.fn();
     const persist = vi.fn();
-    const result = await executeSynthesisPlan(plan, {
-      findExistingCustomDefId: findExisting,
-      generateNodeBlueprint: generate,
-      persistAndPublish: persist,
-    }, { workspaceId: 'ws1', ownerUserId: 'u1' });
+    const result = await executeSynthesisPlan(
+      plan,
+      {
+        findExistingCustomDefId: findExisting,
+        generateNodeBlueprint: generate,
+        persistAndPublish: persist,
+      },
+      { workspaceId: 'ws1', ownerUserId: 'u1' },
+    );
 
     expect(result.succeeded[0]!.reused).toBe(true);
     expect(result.mapping.get('action_amazon_search')).toBe('custom_amazon-search');
@@ -183,11 +209,17 @@ describe('executeSynthesisPlan', () => {
       items: [
         {
           missing: { defId: 'action_alpha', usageCount: 1, nodeIds: ['n1'], observedConfigs: [{}] },
-          proposedSlug: 'alpha', targetDefId: 'custom_alpha', proposedDisplayName: 'Alpha', llmPrompt: '',
+          proposedSlug: 'alpha',
+          targetDefId: 'custom_alpha',
+          proposedDisplayName: 'Alpha',
+          llmPrompt: '',
         },
         {
           missing: { defId: 'action_beta', usageCount: 1, nodeIds: ['n2'], observedConfigs: [{}] },
-          proposedSlug: 'beta', targetDefId: 'custom_beta', proposedDisplayName: 'Beta', llmPrompt: '',
+          proposedSlug: 'beta',
+          targetDefId: 'custom_beta',
+          proposedDisplayName: 'Beta',
+          llmPrompt: '',
         },
       ],
       skipped: [],
@@ -198,13 +230,19 @@ describe('executeSynthesisPlan', () => {
       if (call === 1) throw new Error('LLM 503 backend overloaded');
       return { sourceExecutor: 'x', sourceDefinition: 'y', sourceSchema: 'z' };
     });
-    const persist = vi.fn().mockResolvedValue({ defId: 'custom_beta', customNodeId: 'cn-2', semver: '0.1.0' });
+    const persist = vi
+      .fn()
+      .mockResolvedValue({ defId: 'custom_beta', customNodeId: 'cn-2', semver: '0.1.0' });
 
-    const result = await executeSynthesisPlan(plan, {
-      findExistingCustomDefId: vi.fn().mockResolvedValue(null),
-      generateNodeBlueprint: generate,
-      persistAndPublish: persist,
-    }, { workspaceId: 'ws1', ownerUserId: 'u1' });
+    const result = await executeSynthesisPlan(
+      plan,
+      {
+        findExistingCustomDefId: vi.fn().mockResolvedValue(null),
+        generateNodeBlueprint: generate,
+        persistAndPublish: persist,
+      },
+      { workspaceId: 'ws1', ownerUserId: 'u1' },
+    );
 
     expect(result.succeeded).toHaveLength(1);
     expect(result.succeeded[0]!.oldDefId).toBe('action_beta');

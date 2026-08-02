@@ -100,17 +100,18 @@ describe('sendText — happy path', () => {
 
   it('rejects an empty body', async () => {
     const { transport } = makeTransport();
-    await expect(sendText(AUTH, { recipient: '393331234567', body: '' }, transport, { timeoutMs: 1000 }))
-      .rejects.toThrow(/body required/);
+    await expect(
+      sendText(AUTH, { recipient: '393331234567', body: '' }, transport, { timeoutMs: 1000 }),
+    ).rejects.toThrow(/body required/);
   });
 
   it('rejects body > 4096 chars', async () => {
     const { transport } = makeTransport();
-    await expect(sendText(
-      AUTH,
-      { recipient: '393331234567', body: 'x'.repeat(4097) },
-      transport, { timeoutMs: 1000 },
-    )).rejects.toThrow(/4096/);
+    await expect(
+      sendText(AUTH, { recipient: '393331234567', body: 'x'.repeat(4097) }, transport, {
+        timeoutMs: 1000,
+      }),
+    ).rejects.toThrow(/4096/);
   });
 });
 
@@ -121,18 +122,29 @@ describe('sendText — happy path', () => {
 describe('sendTemplate — happy path', () => {
   it('emits the canonical template payload with components', async () => {
     const { transport, calls, queue } = makeTransport();
-    queue.push({ status: 200, text: JSON.stringify({ messaging_product: 'whatsapp', messages: [{ id: 't.1' }] }) });
-    await sendTemplate(AUTH, {
-      recipient: '393331234567',
-      templateName: 'pec_ricevuta_consegna',
-      languageCode: 'it',
-      components: [
-        { type: 'body', parameters: [
-          { type: 'text', text: 'Mario Rossi' },
-          { type: 'text', text: '2026-06-04' },
-        ] },
-      ],
-    }, transport, { timeoutMs: 10_000 });
+    queue.push({
+      status: 200,
+      text: JSON.stringify({ messaging_product: 'whatsapp', messages: [{ id: 't.1' }] }),
+    });
+    await sendTemplate(
+      AUTH,
+      {
+        recipient: '393331234567',
+        templateName: 'pec_ricevuta_consegna',
+        languageCode: 'it',
+        components: [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: 'Mario Rossi' },
+              { type: 'text', text: '2026-06-04' },
+            ],
+          },
+        ],
+      },
+      transport,
+      { timeoutMs: 10_000 },
+    );
     const payload = JSON.parse(calls[0]!.body) as Record<string, unknown>;
     expect(payload.type).toBe('template');
     const tpl = payload.template as Record<string, unknown>;
@@ -146,27 +158,42 @@ describe('sendTemplate — happy path', () => {
 
   it('accepts the long locale form (en_US, it_IT, ...)', async () => {
     const { transport, queue } = makeTransport();
-    queue.push({ status: 200, text: JSON.stringify({ messaging_product: 'whatsapp', messages: [{ id: 'x' }] }) });
-    await expect(sendTemplate(
-      AUTH, { recipient: '393331234567', templateName: 'tpl', languageCode: 'en_US' },
-      transport, { timeoutMs: 1000 },
-    )).resolves.toBeDefined();
+    queue.push({
+      status: 200,
+      text: JSON.stringify({ messaging_product: 'whatsapp', messages: [{ id: 'x' }] }),
+    });
+    await expect(
+      sendTemplate(
+        AUTH,
+        { recipient: '393331234567', templateName: 'tpl', languageCode: 'en_US' },
+        transport,
+        { timeoutMs: 1000 },
+      ),
+    ).resolves.toBeDefined();
   });
 
   it('rejects an invalid language code', async () => {
     const { transport } = makeTransport();
-    await expect(sendTemplate(
-      AUTH, { recipient: '393331234567', templateName: 'tpl', languageCode: 'italian' },
-      transport, { timeoutMs: 1000 },
-    )).rejects.toThrow(/languageCode/);
+    await expect(
+      sendTemplate(
+        AUTH,
+        { recipient: '393331234567', templateName: 'tpl', languageCode: 'italian' },
+        transport,
+        { timeoutMs: 1000 },
+      ),
+    ).rejects.toThrow(/languageCode/);
   });
 
   it('rejects missing templateName', async () => {
     const { transport } = makeTransport();
-    await expect(sendTemplate(
-      AUTH, { recipient: '393331234567', templateName: '', languageCode: 'it' },
-      transport, { timeoutMs: 1000 },
-    )).rejects.toThrow(/templateName/);
+    await expect(
+      sendTemplate(
+        AUTH,
+        { recipient: '393331234567', templateName: '', languageCode: 'it' },
+        transport,
+        { timeoutMs: 1000 },
+      ),
+    ).rejects.toThrow(/templateName/);
   });
 });
 
@@ -177,20 +204,26 @@ describe('sendTemplate — happy path', () => {
 describe('auth guards', () => {
   it('rejects non-numeric phoneNumberId (common mistake: passing the phone)', async () => {
     const { transport } = makeTransport();
-    await expect(sendText(
-      { phoneNumberId: '+39333123456', accessToken: AUTH.accessToken },
-      { recipient: '393331234567', body: 'x' },
-      transport, { timeoutMs: 1000 },
-    )).rejects.toThrow(/digits-only/);
+    await expect(
+      sendText(
+        { phoneNumberId: '+39333123456', accessToken: AUTH.accessToken },
+        { recipient: '393331234567', body: 'x' },
+        transport,
+        { timeoutMs: 1000 },
+      ),
+    ).rejects.toThrow(/digits-only/);
   });
 
   it('rejects an absurdly short access token', async () => {
     const { transport } = makeTransport();
-    await expect(sendText(
-      { phoneNumberId: '1', accessToken: 'short' },
-      { recipient: '393331234567', body: 'x' },
-      transport, { timeoutMs: 1000 },
-    )).rejects.toThrow(/accessToken/);
+    await expect(
+      sendText(
+        { phoneNumberId: '1', accessToken: 'short' },
+        { recipient: '393331234567', body: 'x' },
+        transport,
+        { timeoutMs: 1000 },
+      ),
+    ).rejects.toThrow(/accessToken/);
   });
 });
 
@@ -204,11 +237,18 @@ describe('error mapping', () => {
     queue.push({
       status: 400,
       text: JSON.stringify({
-        error: { code: 131047, message: 'Re-engagement message outside 24-hour window', type: 'OAuthException', fbtrace_id: 'X' },
+        error: {
+          code: 131047,
+          message: 'Re-engagement message outside 24-hour window',
+          type: 'OAuthException',
+          fbtrace_id: 'X',
+        },
       }),
     });
     try {
-      await sendText(AUTH, { recipient: '393331234567', body: 'x' }, transport, { timeoutMs: 1000 });
+      await sendText(AUTH, { recipient: '393331234567', body: 'x' }, transport, {
+        timeoutMs: 1000,
+      });
       throw new Error('should have thrown');
     } catch (err) {
       expect(err).toBeInstanceOf(WhatsAppApiError);
@@ -220,14 +260,16 @@ describe('error mapping', () => {
   it('throws WhatsAppTransportError on HTTP 500 with no Meta JSON', async () => {
     const { transport, queue } = makeTransport();
     queue.push({ status: 500, text: '<html>boom</html>' });
-    await expect(sendText(AUTH, { recipient: '393331234567', body: 'x' }, transport, { timeoutMs: 1000 }))
-      .rejects.toBeInstanceOf(WhatsAppTransportError);
+    await expect(
+      sendText(AUTH, { recipient: '393331234567', body: 'x' }, transport, { timeoutMs: 1000 }),
+    ).rejects.toBeInstanceOf(WhatsAppTransportError);
   });
 
   it('throws WhatsAppTransportError when the body is not JSON', async () => {
     const { transport, queue } = makeTransport();
     queue.push({ status: 200, text: 'NOT JSON' });
-    await expect(sendText(AUTH, { recipient: '393331234567', body: 'x' }, transport, { timeoutMs: 1000 }))
-      .rejects.toBeInstanceOf(WhatsAppTransportError);
+    await expect(
+      sendText(AUTH, { recipient: '393331234567', body: 'x' }, transport, { timeoutMs: 1000 }),
+    ).rejects.toBeInstanceOf(WhatsAppTransportError);
   });
 });

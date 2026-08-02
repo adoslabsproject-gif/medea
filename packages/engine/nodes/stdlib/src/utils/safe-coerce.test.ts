@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { safeString, safeNumber, asBool, parseKvJson, splitCsv, parseCsvInts, pick } from './safe-coerce.js';
+import {
+  safeString,
+  safeNumber,
+  asBool,
+  parseKvJson,
+  splitCsv,
+  parseCsvInts,
+  pick,
+} from './safe-coerce.js';
 
 describe('safeString', () => {
   it('null/undefined → ""', () => {

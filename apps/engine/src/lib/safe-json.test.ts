@@ -185,7 +185,10 @@ describe('🚨 safeJsonParseOr — fallback variant', () => {
   });
 
   it('🚨 generic type-safe', () => {
-    interface Cfg { mode: 'a' | 'b'; n: number }
+    interface Cfg {
+      mode: 'a' | 'b';
+      n: number;
+    }
     const r = safeJsonParseOr<Cfg>('{"mode":"a","n":5}', { mode: 'b', n: 0 });
     expect(r.mode).toBe('a');
     expect(r.n).toBe(5);

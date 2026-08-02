@@ -199,7 +199,11 @@ describe('🚨 cache behavior (LRU 5min × 5000)', () => {
 
 describe('🚨 DNS timeout', () => {
   it('🚨 resolveMx hang > timeout → cade su A fallback', async () => {
-    resolveMxMock.mockReturnValueOnce(new Promise(() => { /* noop */ })); // never resolves
+    resolveMxMock.mockReturnValueOnce(
+      new Promise(() => {
+        /* noop */
+      }),
+    ); // never resolves
     resolve4Mock.mockResolvedValueOnce(['1.2.3.4']);
     const { validateEmailMx } = await loadFresh();
     const r = await validateEmailMx('a@slow.com', 50); // 50ms timeout
@@ -209,9 +213,21 @@ describe('🚨 DNS timeout', () => {
   });
 
   it('🚨 tutti DNS timeout → undeliverable', async () => {
-    resolveMxMock.mockReturnValueOnce(new Promise(() => { /* noop */ }));
-    resolve4Mock.mockReturnValueOnce(new Promise(() => { /* noop */ }));
-    resolve6Mock.mockReturnValueOnce(new Promise(() => { /* noop */ }));
+    resolveMxMock.mockReturnValueOnce(
+      new Promise(() => {
+        /* noop */
+      }),
+    );
+    resolve4Mock.mockReturnValueOnce(
+      new Promise(() => {
+        /* noop */
+      }),
+    );
+    resolve6Mock.mockReturnValueOnce(
+      new Promise(() => {
+        /* noop */
+      }),
+    );
     const { validateEmailMx } = await loadFresh();
     const r = await validateEmailMx('a@allslow.com', 30);
     expect(r.mx_valid).toBe(false);
@@ -236,12 +252,7 @@ describe('🚨 result shape consistency', () => {
   });
 
   it('🚨 confidence è sempre 0-100', async () => {
-    const fixtures = [
-      'invalid',
-      'user@mailinator.com',
-      'info@example.com',
-      'mario@example.com',
-    ];
+    const fixtures = ['invalid', 'user@mailinator.com', 'info@example.com', 'mario@example.com'];
     resolveMxMock.mockResolvedValue([{ priority: 10, exchange: 'mx' }]);
     const { validateEmailMx } = await loadFresh();
     for (const email of fixtures) {

@@ -1,9 +1,20 @@
 import { describe, it, expect, vi } from 'vitest';
-import { BinaryDataSchema, isBinaryData, makeBinaryInline, makeBinaryRef, getBinaryData, readBinaryBytes, resolveBinaryValue } from './binary.js';
+import {
+  BinaryDataSchema,
+  isBinaryData,
+  makeBinaryInline,
+  makeBinaryRef,
+  getBinaryData,
+  readBinaryBytes,
+  resolveBinaryValue,
+} from './binary.js';
 
 describe('readBinaryBytes (runtime resolver del ref)', () => {
   it('encoding=base64 → decodifica inline senza reader', async () => {
-    const b = makeBinaryInline({ mimeType: 'text/plain', data: Buffer.from('ciao').toString('base64') });
+    const b = makeBinaryInline({
+      mimeType: 'text/plain',
+      data: Buffer.from('ciao').toString('base64'),
+    });
     const bytes = await readBinaryBytes(b);
     expect(bytes.toString('utf8')).toBe('ciao');
   });
@@ -24,7 +35,11 @@ describe('readBinaryBytes (runtime resolver del ref)', () => {
 
 describe('BinaryData', () => {
   it('makeBinaryInline: deriva size dai byte base64 + brand', () => {
-    const b = makeBinaryInline({ mimeType: 'text/plain', data: Buffer.from('hello').toString('base64'), fileName: 'h.txt' });
+    const b = makeBinaryInline({
+      mimeType: 'text/plain',
+      data: Buffer.from('hello').toString('base64'),
+      fileName: 'h.txt',
+    });
     expect(b.__ffBinary).toBe(true);
     expect(b.encoding).toBe('base64');
     expect(b.size).toBe(5);
@@ -76,14 +91,20 @@ describe('🚨 resolveBinaryValue (resolver universale consumatore — capstone 
   });
 
   it('🚨 BinaryData inline → byte senza reader (fallback)', async () => {
-    const b = makeBinaryInline({ mimeType: 'text/plain', data: Buffer.from('inline-bytes').toString('base64') });
+    const b = makeBinaryInline({
+      mimeType: 'text/plain',
+      data: Buffer.from('inline-bytes').toString('base64'),
+    });
     const bytes = await resolveBinaryValue(b, undefined);
     expect(bytes?.toString('utf8')).toBe('inline-bytes');
   });
 
   it('🚨 oggetto che CONTIENE un BinaryData (es. { binary }) → risolto', async () => {
     const reader = vi.fn(async () => Buffer.from('from-field'));
-    const wrapped = { filename: 'x.pdf', binary: makeBinaryRef({ mimeType: 'application/pdf', ref: 'r', size: 1 }) };
+    const wrapped = {
+      filename: 'x.pdf',
+      binary: makeBinaryRef({ mimeType: 'application/pdf', ref: 'r', size: 1 }),
+    };
     const bytes = await resolveBinaryValue(wrapped, reader);
     expect(bytes?.toString('utf8')).toBe('from-field');
   });
@@ -95,7 +116,7 @@ describe('🚨 resolveBinaryValue (resolver universale consumatore — capstone 
     expect(await resolveBinaryValue(42)).toBeNull();
   });
 
-  it('🚨 BinaryData ref SENZA reader → propaga l\'errore esplicito (no byte silenziosamente vuoti)', async () => {
+  it("🚨 BinaryData ref SENZA reader → propaga l'errore esplicito (no byte silenziosamente vuoti)", async () => {
     const b = makeBinaryRef({ mimeType: 'application/pdf', ref: 'r', size: 1 });
     await expect(resolveBinaryValue(b, undefined)).rejects.toThrow(/refReader richiesto/u);
   });

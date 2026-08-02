@@ -26,7 +26,9 @@ export class LogicDelayStrategy implements INodeDispatchStrategy {
   async execute(ctx: DispatchContext): Promise<DispatchResult> {
     const requested = Number(ctx.interpolatedConfig.durationMs ?? 0);
     const ms = Math.max(0, Math.min(requested, MAX_DELAY_MS));
-    await new Promise<void>((resolve) => { setTimeout(resolve, ms); });
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, ms);
+    });
     return {
       output: { delayedMs: ms },
       chosenBranch: undefined,

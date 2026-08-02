@@ -64,7 +64,9 @@ describe('scriptStringLiteral — contesto JS dentro <script>', () => {
   });
 
   it('escapa i separatori di riga U+2028 / U+2029 (illegali in JS string literal)', () => {
-    const lit = scriptStringLiteral(`a${String.fromCodePoint(0x2028)}b${String.fromCodePoint(0x2029)}c`);
+    const lit = scriptStringLiteral(
+      `a${String.fromCodePoint(0x2028)}b${String.fromCodePoint(0x2029)}c`,
+    );
     expect(lit).toContain('\\u2028');
     expect(lit).toContain('\\u2029');
     // Non devono restare i codepoint grezzi nel literal.

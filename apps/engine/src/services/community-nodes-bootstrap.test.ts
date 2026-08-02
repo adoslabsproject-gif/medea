@@ -37,8 +37,15 @@ afterEach(() => {
 
 describe('seedCommunityDefaults — happy path', () => {
   it('seed 7 community defaults da source → 7 dir + 4 file ciascuno in data', async () => {
-    const vendors = ['community_telegram', 'community_slack', 'community_github',
-      'community_notion', 'community_stripe', 'community_linear', 'community_discord'];
+    const vendors = [
+      'community_telegram',
+      'community_slack',
+      'community_github',
+      'community_notion',
+      'community_stripe',
+      'community_linear',
+      'community_discord',
+    ];
     for (const v of vendors) makePackage(sourceDir, 'flowforge-community', v, '2.0.0');
 
     const r = await seedCommunityDefaults();
@@ -63,10 +70,18 @@ describe('seedCommunityDefaults — happy path', () => {
     await seedCommunityDefaults();
 
     const srcManifest = readFileSync(
-      join(sourceDir, 'community_telegram', 'manifest.json'), 'utf8',
+      join(sourceDir, 'community_telegram', 'manifest.json'),
+      'utf8',
     );
     const dstManifest = readFileSync(
-      join(dataDir, 'installed-nodes', 'flowforge-community', 'community_telegram', 'v2.0.0', 'manifest.json'),
+      join(
+        dataDir,
+        'installed-nodes',
+        'flowforge-community',
+        'community_telegram',
+        'v2.0.0',
+        'manifest.json',
+      ),
       'utf8',
     );
     expect(dstManifest).toBe(srcManifest);
@@ -89,7 +104,14 @@ describe('seedCommunityDefaults — idempotenza', () => {
     makePackage(sourceDir, 'flowforge-community', 'community_telegram', '2.0.0');
     await seedCommunityDefaults();
 
-    const target = join(dataDir, 'installed-nodes', 'flowforge-community', 'community_telegram', 'v2.0.0', 'manifest.json');
+    const target = join(
+      dataDir,
+      'installed-nodes',
+      'flowforge-community',
+      'community_telegram',
+      'v2.0.0',
+      'manifest.json',
+    );
     writeFileSync(target, '{"USER_MODIFIED":true}');
 
     await seedCommunityDefaults();
@@ -123,7 +145,10 @@ describe('seedCommunityDefaults — error handling', () => {
   it('manifest con vendor non-string → errore (validation guard)', async () => {
     const d = join(sourceDir, 'community_evil');
     mkdirSync(d, { recursive: true });
-    writeFileSync(join(d, 'manifest.json'), JSON.stringify({ vendor: 42, id: 'x', version: '1.0' }));
+    writeFileSync(
+      join(d, 'manifest.json'),
+      JSON.stringify({ vendor: 42, id: 'x', version: '1.0' }),
+    );
 
     const r = await seedCommunityDefaults();
     expect(r.errors).toHaveLength(1);
@@ -142,11 +167,15 @@ describe('seedCommunityDefaults — versione management', () => {
     const r = await seedCommunityDefaults();
     expect(r.seeded).toContain('flowforge-community/community_telegram@3.0.0');
     // Vecchia versione resta installata
-    expect(existsSync(
-      join(dataDir, 'installed-nodes', 'flowforge-community', 'community_telegram', 'v2.0.0'),
-    )).toBe(true);
-    expect(existsSync(
-      join(dataDir, 'installed-nodes', 'flowforge-community', 'community_telegram', 'v3.0.0'),
-    )).toBe(true);
+    expect(
+      existsSync(
+        join(dataDir, 'installed-nodes', 'flowforge-community', 'community_telegram', 'v2.0.0'),
+      ),
+    ).toBe(true);
+    expect(
+      existsSync(
+        join(dataDir, 'installed-nodes', 'flowforge-community', 'community_telegram', 'v3.0.0'),
+      ),
+    ).toBe(true);
   });
 });

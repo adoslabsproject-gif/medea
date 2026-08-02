@@ -79,7 +79,11 @@ export interface LeadScoreResult {
 // Weight 1-30 per granularità. Total positivo max ~80, country bonus +20.
 // ─────────────────────────────────────────────────────────────────────────
 
-const PROFILE_MARINE_POSITIVE: { keyword: string; weight: number; category: LeadScoreResult['category'] }[] = [
+const PROFILE_MARINE_POSITIVE: {
+  keyword: string;
+  weight: number;
+  category: LeadScoreResult['category'];
+}[] = [
   // CATEGORIA: shipyard / cantieri
   { keyword: 'bow thruster', weight: 30, category: 'shipyard' },
   { keyword: 'stern thruster', weight: 25, category: 'shipyard' },
@@ -94,10 +98,10 @@ const PROFILE_MARINE_POSITIVE: { keyword: string; weight: number; category: Lead
   { keyword: 'chantier naval', weight: 25, category: 'shipyard' },
   { keyword: 'astillero', weight: 25, category: 'shipyard' },
   { keyword: 'werft', weight: 25, category: 'shipyard' },
-  { keyword: 'varv', weight: 20, category: 'shipyard' },         // svedese
-  { keyword: 'verft', weight: 20, category: 'shipyard' },        // norvegese
-  { keyword: 'værft', weight: 20, category: 'shipyard' },        // danese
-  { keyword: 'telakka', weight: 20, category: 'shipyard' },      // finlandese
+  { keyword: 'varv', weight: 20, category: 'shipyard' }, // svedese
+  { keyword: 'verft', weight: 20, category: 'shipyard' }, // norvegese
+  { keyword: 'værft', weight: 20, category: 'shipyard' }, // danese
+  { keyword: 'telakka', weight: 20, category: 'shipyard' }, // finlandese
   { keyword: 'skipasmíðastöð', weight: 20, category: 'shipyard' }, // islandese
   // CATEGORIA: distributor
   { keyword: 'marine hydraulic', weight: 25, category: 'distributor' },
@@ -148,7 +152,7 @@ const PROFILE_MARINE_NEGATIVE: { keyword: string; weight: number }[] = [
   { keyword: 'agriturismo', weight: 30 },
   { keyword: 'real estate', weight: 30 },
   { keyword: 'immobiliare', weight: 30 },
-  { keyword: 'parrucchier', weight: 40 },     // parrucchiere/parrucchiera
+  { keyword: 'parrucchier', weight: 40 }, // parrucchiere/parrucchiera
   { keyword: 'beauty salon', weight: 40 },
   { keyword: 'centro estetico', weight: 40 },
   { keyword: 'pet shop', weight: 35 },
@@ -169,8 +173,28 @@ const PROFILE_MARINE_NEGATIVE: { keyword: string; weight: number }[] = [
 ];
 
 const DEFAULT_HIGH_PRIORITY_COUNTRIES = [
-  'IT', 'FR', 'DE', 'ES', 'NL', 'BE', 'PT', 'GR', 'HR', 'SI', 'AT', 'CH',
-  'SE', 'NO', 'DK', 'FI', 'IS', 'UK', 'GB', 'IE', 'MT', 'CY',
+  'IT',
+  'FR',
+  'DE',
+  'ES',
+  'NL',
+  'BE',
+  'PT',
+  'GR',
+  'HR',
+  'SI',
+  'AT',
+  'CH',
+  'SE',
+  'NO',
+  'DK',
+  'FI',
+  'IS',
+  'UK',
+  'GB',
+  'IE',
+  'MT',
+  'CY',
 ];
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -183,12 +207,15 @@ export function scoreLeadFromContent(
   config: LeadScoreConfig = {},
 ): LeadScoreResult {
   const profile = config.profile ?? 'marine-thrusters';
-  const positiveKw = profile === 'marine-thrusters'
-    ? PROFILE_MARINE_POSITIVE
-    : (config.customPositive ?? []).map((p) => ({ ...p, category: (p.category as LeadScoreResult['category']) ?? 'unknown' }));
-  const negativeKw = profile === 'marine-thrusters'
-    ? PROFILE_MARINE_NEGATIVE
-    : (config.customNegative ?? []);
+  const positiveKw =
+    profile === 'marine-thrusters'
+      ? PROFILE_MARINE_POSITIVE
+      : (config.customPositive ?? []).map((p) => ({
+          ...p,
+          category: (p.category as LeadScoreResult['category']) ?? 'unknown',
+        }));
+  const negativeKw =
+    profile === 'marine-thrusters' ? PROFILE_MARINE_NEGATIVE : (config.customNegative ?? []);
   const highPriority = config.highPriorityCountries ?? DEFAULT_HIGH_PRIORITY_COUNTRIES;
   const threshold = config.threshold ?? 50;
 
@@ -199,7 +226,10 @@ export function scoreLeadFromContent(
   const categoryHits: Record<string, number> = {};
   let positiveScore = 0;
   for (const k of positiveKw) {
-    const re = new RegExp(`\\b${k.keyword.toLowerCase().replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'g');
+    const re = new RegExp(
+      `\\b${k.keyword.toLowerCase().replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`,
+      'g',
+    );
     const matches = lower.match(re);
     if (matches && matches.length > 0) {
       const count = matches.length;
@@ -215,12 +245,15 @@ export function scoreLeadFromContent(
   const matched_negative: LeadScoreResult['matched_negative'] = [];
   let negativeScore = 0;
   for (const k of negativeKw) {
-    const re = new RegExp(`\\b${k.keyword.toLowerCase().replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'g');
+    const re = new RegExp(
+      `\\b${k.keyword.toLowerCase().replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`,
+      'g',
+    );
     const matches = lower.match(re);
     if (matches && matches.length > 0) {
       const count = matches.length;
       matched_negative.push({ keyword: k.keyword, weight: k.weight, count });
-      negativeScore += k.weight * Math.min(count, 3);  // cap 3× per evitare false alarm su pagina con 50× "pizzeria"
+      negativeScore += k.weight * Math.min(count, 3); // cap 3× per evitare false alarm su pagina con 50× "pizzeria"
     }
   }
 
@@ -239,7 +272,13 @@ export function scoreLeadFromContent(
   if (Object.keys(categoryHits).length > 0) {
     const sorted = Object.entries(categoryHits).sort((a, b) => b[1] - a[1]);
     const top = sorted[0];
-    if (top && (top[0] === 'shipyard' || top[0] === 'distributor' || top[0] === 'marina' || top[0] === 'service')) {
+    if (
+      top &&
+      (top[0] === 'shipyard' ||
+        top[0] === 'distributor' ||
+        top[0] === 'marina' ||
+        top[0] === 'service')
+    ) {
       category = top[0];
     }
   }
@@ -247,12 +286,19 @@ export function scoreLeadFromContent(
   // === Reason ===
   let reason = '';
   if (negativeScore > 30) {
-    reason = `Squalificato: keyword off-topic rilevati (${matched_negative.slice(0, 2).map((m) => m.keyword).join(', ')})`;
+    reason = `Squalificato: keyword off-topic rilevati (${matched_negative
+      .slice(0, 2)
+      .map((m) => m.keyword)
+      .join(', ')})`;
   } else if (positiveScore === 0) {
-    reason = 'Nessuna keyword nautica rilevata nel contenuto — probabilmente NON è un target valido';
+    reason =
+      'Nessuna keyword nautica rilevata nel contenuto — probabilmente NON è un target valido';
   } else {
-    reason = `${matched_positive.length} keyword positivi (top: ${matched_positive.slice(0, 3).map((m) => m.keyword).join(', ')})` +
-             (country_bonus > 0 ? ` + country tier ${cc} (+${country_bonus})` : '');
+    reason =
+      `${matched_positive.length} keyword positivi (top: ${matched_positive
+        .slice(0, 3)
+        .map((m) => m.keyword)
+        .join(', ')})` + (country_bonus > 0 ? ` + country tier ${cc} (+${country_bonus})` : '');
   }
 
   return {

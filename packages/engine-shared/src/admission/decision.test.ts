@@ -18,8 +18,12 @@ const BASE: Omit<AdmissionInput, 'requestId' | 'tenantId'> = {
   maxQueueDepth: 10,
   maxPerTenantQueue: 5,
 };
-const inp = (over: Partial<AdmissionInput> & { requestId: string; tenantId?: string }): AdmissionInput => ({
-  ...BASE, tenantId: over.tenantId ?? 't1', ...over,
+const inp = (
+  over: Partial<AdmissionInput> & { requestId: string; tenantId?: string },
+): AdmissionInput => ({
+  ...BASE,
+  tenantId: over.tenantId ?? 't1',
+  ...over,
 });
 const empty = (): PoolState => ({ active: [], queue: [] });
 
@@ -36,9 +40,13 @@ describe('fast-path: slot libero + coda vuota → AMMESSO', () => {
 
 describe('cap di concorrenza', () => {
   it('pool pieno (active=maxConcurrent) + coda vuota → ACCODA (no over-admit)', () => {
-    const state: PoolState = { active: [
-      { id: 'a', expiresAtMs: 2_000_000 }, { id: 'b', expiresAtMs: 2_000_000 },
-    ], queue: [] };
+    const state: PoolState = {
+      active: [
+        { id: 'a', expiresAtMs: 2_000_000 },
+        { id: 'b', expiresAtMs: 2_000_000 },
+      ],
+      queue: [],
+    };
     const d = decideAdmission(state, inp({ requestId: 'r', maxConcurrent: 2 }));
     expect(d.outcome).toBe('queued');
     expect(d.position).toBe(1);
@@ -77,8 +85,12 @@ describe('multi-admit — più waiter in testa ammessi se ci sono più slot', ()
     ],
   };
   it('rank < freeSlots → AMMESSO (A rank0 e B rank1 con 2 slot)', () => {
-    expect(decideAdmission(state, inp({ requestId: 'A', maxConcurrent: 2 })).outcome).toBe('admitted');
-    expect(decideAdmission(state, inp({ requestId: 'B', maxConcurrent: 2 })).outcome).toBe('admitted');
+    expect(decideAdmission(state, inp({ requestId: 'A', maxConcurrent: 2 })).outcome).toBe(
+      'admitted',
+    );
+    expect(decideAdmission(state, inp({ requestId: 'B', maxConcurrent: 2 })).outcome).toBe(
+      'admitted',
+    );
   });
   it('rank >= freeSlots → resta QUEUED con la sua posizione reale (C rank2 con 2 slot)', () => {
     const d = decideAdmission(state, inp({ requestId: 'C', maxConcurrent: 2 }));
@@ -110,9 +122,13 @@ describe('reclaim lease scaduti (anti-zombie su crash)', () => {
 
 describe('heartbeat / re-entry idempotente', () => {
   it('requestId GIÀ attivo → admitted + lease RINNOVATO (no nuovo slot)', () => {
-    const state: PoolState = { active: [
-      { id: 'r', expiresAtMs: BASE.nowMs + 1 }, { id: 'other', expiresAtMs: 2_000_000 },
-    ], queue: [{ id: 'w', enqueuedAtMs: 1, tenantId: 't1' }] };
+    const state: PoolState = {
+      active: [
+        { id: 'r', expiresAtMs: BASE.nowMs + 1 },
+        { id: 'other', expiresAtMs: 2_000_000 },
+      ],
+      queue: [{ id: 'w', enqueuedAtMs: 1, tenantId: 't1' }],
+    };
     const d = decideAdmission(state, inp({ requestId: 'r' }));
     expect(d.outcome).toBe('admitted');
     expect(d.state.active).toContainEqual({ id: 'r', expiresAtMs: BASE.nowMs + BASE.leaseMs }); // rinnovato
@@ -124,8 +140,18 @@ describe('heartbeat / re-entry idempotente', () => {
 
 describe('backpressure', () => {
   it('coda piena (length = maxQueueDepth) → REJECTED queue_full, coda invariata', () => {
-    const queue = Array.from({ length: 3 }, (_, i) => ({ id: `q${i}`, enqueuedAtMs: i, tenantId: 't1' }));
-    const state: PoolState = { active: [{ id: 'a', expiresAtMs: 2_000_000 }, { id: 'b', expiresAtMs: 2_000_000 }], queue };
+    const queue = Array.from({ length: 3 }, (_, i) => ({
+      id: `q${i}`,
+      enqueuedAtMs: i,
+      tenantId: 't1',
+    }));
+    const state: PoolState = {
+      active: [
+        { id: 'a', expiresAtMs: 2_000_000 },
+        { id: 'b', expiresAtMs: 2_000_000 },
+      ],
+      queue,
+    };
     const d = decideAdmission(state, inp({ requestId: 'r', maxQueueDepth: 3 }));
     expect(d.outcome).toBe('rejected');
     expect(d.rejectReason).toBe('queue_full');
@@ -140,7 +166,13 @@ describe('anti-flood per-tenant', () => {
       { id: 'q2', enqueuedAtMs: 2, tenantId: 'T' },
       { id: 'q3', enqueuedAtMs: 3, tenantId: 'OTHER' },
     ];
-    const state: PoolState = { active: [{ id: 'a', expiresAtMs: 2e6 }, { id: 'b', expiresAtMs: 2e6 }], queue };
+    const state: PoolState = {
+      active: [
+        { id: 'a', expiresAtMs: 2e6 },
+        { id: 'b', expiresAtMs: 2e6 },
+      ],
+      queue,
+    };
     const d = decideAdmission(state, inp({ requestId: 'r', tenantId: 'T', maxPerTenantQueue: 2 }));
     expect(d.outcome).toBe('rejected');
     expect(d.rejectReason).toBe('tenant_flood');
@@ -150,15 +182,24 @@ describe('anti-flood per-tenant', () => {
       { id: 'q1', enqueuedAtMs: 1, tenantId: 'T' },
       { id: 'q2', enqueuedAtMs: 2, tenantId: 'T' },
     ];
-    const state: PoolState = { active: [{ id: 'a', expiresAtMs: 2e6 }, { id: 'b', expiresAtMs: 2e6 }], queue };
-    const d = decideAdmission(state, inp({ requestId: 'r', tenantId: 'FRESH', maxPerTenantQueue: 2 }));
+    const state: PoolState = {
+      active: [
+        { id: 'a', expiresAtMs: 2e6 },
+        { id: 'b', expiresAtMs: 2e6 },
+      ],
+      queue,
+    };
+    const d = decideAdmission(
+      state,
+      inp({ requestId: 'r', tenantId: 'FRESH', maxPerTenantQueue: 2 }),
+    );
     expect(d.outcome).toBe('queued');
     expect(d.state.queue.map((w) => w.id)).toEqual(['q1', 'q2', 'r']);
   });
 });
 
 describe('purezza — input non mutati', () => {
-  it('lo stato di input resta identico (no side-effect sull\'oggetto passato)', () => {
+  it("lo stato di input resta identico (no side-effect sull'oggetto passato)", () => {
     const state: PoolState = { active: [], queue: [{ id: 'x', enqueuedAtMs: 1, tenantId: 't1' }] };
     const snapshot = JSON.stringify(state);
     decideAdmission(state, inp({ requestId: 'r' }));

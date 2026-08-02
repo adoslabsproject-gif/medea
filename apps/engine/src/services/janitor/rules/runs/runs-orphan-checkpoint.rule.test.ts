@@ -15,7 +15,9 @@ const baseCtx = {
   params: {},
 };
 
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('🚨 metadata', () => {
   it('🚨 id stabile + warning severity', () => {
@@ -60,10 +62,19 @@ describe('🚨 detect', () => {
   });
 
   it('🚨 happy: orfano → reason include run_id', async () => {
-    executeRawMock.mockResolvedValueOnce({ rows: [{
-      id: 42, run_id: 'orphan-run-id', workflow_id: 'wf', tenant_id: 't-1',
-      at_node_id: 'n-mid', step_count: 5, created_at: '2026-06-07',
-    }] });
+    executeRawMock.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 42,
+          run_id: 'orphan-run-id',
+          workflow_id: 'wf',
+          tenant_id: 't-1',
+          at_node_id: 'n-mid',
+          step_count: 5,
+          created_at: '2026-06-07',
+        },
+      ],
+    });
     const r = await runsOrphanCheckpointRule.detect!(baseCtx as any);
     expect(r.length).toBe(1);
     const row = first(r, 'orphan-rows');
@@ -73,9 +84,19 @@ describe('🚨 detect', () => {
   });
 
   it('🚨 id INT → coerced to string in result', async () => {
-    executeRawMock.mockResolvedValueOnce({ rows: [{
-      id: 99, run_id: 'x', workflow_id: 'w', tenant_id: null, at_node_id: 'n', step_count: 0, created_at: '',
-    }] });
+    executeRawMock.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 99,
+          run_id: 'x',
+          workflow_id: 'w',
+          tenant_id: null,
+          at_node_id: 'n',
+          step_count: 0,
+          created_at: '',
+        },
+      ],
+    });
     const r = await runsOrphanCheckpointRule.detect!(baseCtx as any);
     const row = first(r, 'orphan-rows');
     expect(typeof row.id).toBe('string');

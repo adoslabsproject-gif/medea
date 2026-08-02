@@ -80,8 +80,11 @@ function makeSqliteCompat(conn: ReturnType<typeof SqliteDatabase>): SqliteCompat
         all: (...params) => stmt.all(...params),
       };
     },
-    exec: (sql: string) => { conn.exec(sql); },
-    transaction: <T extends unknown[], R>(fn: (...args: T) => R) => conn.transaction(fn) as unknown as (...args: T) => R,
+    exec: (sql: string) => {
+      conn.exec(sql);
+    },
+    transaction: <T extends unknown[], R>(fn: (...args: T) => R) =>
+      conn.transaction(fn) as unknown as (...args: T) => R,
   };
 }
 
@@ -134,7 +137,7 @@ function createSqliteHandle(): DatabaseHandle {
 
   // In-place migration for columns added after first deploy.
   const existingCols = new Set(
-    (conn.prepare("PRAGMA table_info(workflows)").all() as { name: string }[]).map((r) => r.name),
+    (conn.prepare('PRAGMA table_info(workflows)').all() as { name: string }[]).map((r) => r.name),
   );
   const addColumn = (name: string, type: string): void => {
     if (existingCols.has(name)) return;
@@ -166,7 +169,10 @@ function createSqliteHandle(): DatabaseHandle {
     db,
     store: new SqliteHandle(conn),
     sqlite: makeSqliteCompat(conn),
-    close: () => { conn.close(); return Promise.resolve(); },
+    close: () => {
+      conn.close();
+      return Promise.resolve();
+    },
   };
 }
 
@@ -177,7 +183,9 @@ function createPostgresHandle(): DatabaseHandle {
   }
   const sql = postgres(url, {
     max: 10,
-    onnotice: () => { /* suppress NOTICE */ },
+    onnotice: () => {
+      /* suppress NOTICE */
+    },
   });
   const db = drizzlePg(sql, { schema }) as unknown as DrizzleDb;
   const handle = new PostgresHandle(sql);
@@ -186,13 +194,19 @@ function createPostgresHandle(): DatabaseHandle {
   // if a legacy call site is reached. Use async `store.*` instead.
   const compat: SqliteCompatProxy = {
     prepare: () => {
-      throw new Error('Synchronous sqlite proxy not available under Postgres backend. Migrate the call site to `await store.prepare(...).run/get/all(...)`.');
+      throw new Error(
+        'Synchronous sqlite proxy not available under Postgres backend. Migrate the call site to `await store.prepare(...).run/get/all(...)`.',
+      );
     },
     exec: () => {
-      throw new Error('Synchronous sqlite.exec() not available under Postgres backend. Use `await store.exec(...)`.');
+      throw new Error(
+        'Synchronous sqlite.exec() not available under Postgres backend. Use `await store.exec(...)`.',
+      );
     },
     transaction: () => {
-      throw new Error('SQLite transaction() not available under Postgres backend. Use `db.transaction(async (tx) => ...)` via Drizzle instead.');
+      throw new Error(
+        'SQLite transaction() not available under Postgres backend. Use `db.transaction(async (tx) => ...)` via Drizzle instead.',
+      );
     },
   };
 

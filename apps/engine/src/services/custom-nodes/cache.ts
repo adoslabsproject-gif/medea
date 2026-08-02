@@ -241,11 +241,11 @@ export function customNodeCacheStats(): Readonly<CacheStats> {
 const emitter = new EventEmitter();
 emitter.setMaxListeners(64);
 
-export function onCustomNodeUpdate(
-  listener: (ev: CustomNodeUpdateEvent) => void,
-): () => void {
+export function onCustomNodeUpdate(listener: (ev: CustomNodeUpdateEvent) => void): () => void {
   emitter.on('updated', listener);
-  return () => { emitter.off('updated', listener); };
+  return () => {
+    emitter.off('updated', listener);
+  };
 }
 
 export function emitCustomNodeUpdate(ev: CustomNodeUpdateEvent): void {

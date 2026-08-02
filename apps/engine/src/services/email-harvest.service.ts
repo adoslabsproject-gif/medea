@@ -69,19 +69,41 @@ export interface HarvestResult {
 // ─────────────────────────────────────────────────────────────────────────
 
 const NOISE_LOCAL_PARTS = new Set([
-  'noreply', 'no-reply', 'donotreply', 'do-not-reply',
-  'mailer-daemon', 'postmaster', 'abuse',
-  'test', 'tests', 'testing',
-  'example', 'sample', 'demo', 'your-email', 'you', 'name',
-  'user', 'username', 'admin@admin',
-  'email', 'youremail',
+  'noreply',
+  'no-reply',
+  'donotreply',
+  'do-not-reply',
+  'mailer-daemon',
+  'postmaster',
+  'abuse',
+  'test',
+  'tests',
+  'testing',
+  'example',
+  'sample',
+  'demo',
+  'your-email',
+  'you',
+  'name',
+  'user',
+  'username',
+  'admin@admin',
+  'email',
+  'youremail',
 ]);
 
 const NOISE_DOMAINS = new Set([
-  'example.com', 'example.org', 'example.net',
-  'sample.com', 'test.com', 'mydomain.com', 'domain.com',
-  'your-domain.com', 'yourdomain.com',
-  'localhost.com', 'localhost.localdomain',
+  'example.com',
+  'example.org',
+  'example.net',
+  'sample.com',
+  'test.com',
+  'mydomain.com',
+  'domain.com',
+  'your-domain.com',
+  'yourdomain.com',
+  'localhost.com',
+  'localhost.localdomain',
 ]);
 
 const NOISE_TLD_SUFFIXES = ['.example', '.test', '.invalid', '.localhost', '.local'];
@@ -92,19 +114,40 @@ const NOISE_TLD_SUFFIXES = ['.example', '.test', '.invalid', '.localhost', '.loc
 
 const COMMERCIAL_LOCAL_PARTS = [
   // Massima priorità: commerciale diretto
-  'commerciale', 'sales', 'vendite', 'ventas', 'verkauf', 'forsaljning',
+  'commerciale',
+  'sales',
+  'vendite',
+  'ventas',
+  'verkauf',
+  'forsaljning',
   // Alta: punto entrata business
-  'info', 'commercial', 'business',
+  'info',
+  'commercial',
+  'business',
   // Media: contatto generico
-  'contact', 'contatti', 'contacto', 'kontakt', 'contattaci',
+  'contact',
+  'contatti',
+  'contacto',
+  'kontakt',
+  'contattaci',
   // Bassa: dipartimenti tecnici/admin
-  'support', 'help', 'assistenza', 'service',
-  'admin', 'office', 'team', 'staff', 'hello', 'hi',
+  'support',
+  'help',
+  'assistenza',
+  'service',
+  'admin',
+  'office',
+  'team',
+  'staff',
+  'hello',
+  'hi',
 ];
 
 function priorityOf(localPart: string): number {
   const lower = localPart.toLowerCase();
-  const idx = COMMERCIAL_LOCAL_PARTS.findIndex((p) => lower === p || lower.startsWith(`${p}.`) || lower.startsWith(`${p}-`));
+  const idx = COMMERCIAL_LOCAL_PARTS.findIndex(
+    (p) => lower === p || lower.startsWith(`${p}.`) || lower.startsWith(`${p}-`),
+  );
   if (idx < 0) return COMMERCIAL_LOCAL_PARTS.length + 1; // unknown, lowest priority
   return idx;
 }
@@ -114,7 +157,8 @@ function priorityOf(localPart: string): number {
 // ─────────────────────────────────────────────────────────────────────────
 
 // Regex RFC-5322-lite. NO Punycode IDN (rare in cold outreach), NO quoted local-part.
-const EMAIL_REGEX = /\b([a-zA-Z0-9][a-zA-Z0-9._%+-]{0,63})@([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+)\b/g;
+const EMAIL_REGEX =
+  /\b([a-zA-Z0-9][a-zA-Z0-9._%+-]{0,63})@([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+)\b/g;
 
 function isNoise(email: string): boolean {
   const lower = email.toLowerCase();
@@ -149,7 +193,10 @@ function decodeCloudflareEmail(hexStr: string): string | null {
     }
     if (bytes.length < 2) return null;
     const key = bytes[0] ?? 0;
-    const decoded = bytes.slice(1).map((b) => String.fromCharCode(b ^ key)).join('');
+    const decoded = bytes
+      .slice(1)
+      .map((b) => String.fromCharCode(b ^ key))
+      .join('');
     // Validazione: deve contenere @
     if (!/^[^@]+@[^@]+\.[a-zA-Z]{2,}$/.test(decoded)) return null;
     return decoded;
@@ -192,7 +239,14 @@ export function harvestEmails(html: string): HarvestResult {
   const result: HarvestResult = {
     primary_email: null,
     all_emails: [],
-    counts: { mailto: 0, cloudflare: 0, html_entity: 0, plain_text: 0, obfuscated: 0, filtered_noise: 0 },
+    counts: {
+      mailto: 0,
+      cloudflare: 0,
+      html_entity: 0,
+      plain_text: 0,
+      obfuscated: 0,
+      filtered_noise: 0,
+    },
   };
 
   // Map dedup per email (lowercase) → highest confidence sighting
@@ -223,7 +277,10 @@ export function harvestEmails(html: string): HarvestResult {
   // === Strategy 1: mailto: links (confidence 100) ===
   $('a[href^="mailto:"]').each((_, el) => {
     const href = $(el).attr('href') ?? '';
-    const email = href.replace(/^mailto:/i, '').split('?')[0]?.trim();
+    const email = href
+      .replace(/^mailto:/i, '')
+      .split('?')[0]
+      ?.trim();
     if (email) {
       add(email, 100, 'mailto');
       result.counts.mailto++;
@@ -283,12 +340,14 @@ export function harvestEmails(html: string): HarvestResult {
 
   // === Selection rule: primary_email basato su priority commerciale ===
   if (result.all_emails.length > 0) {
-    const scored = result.all_emails.map((e) => {
-      const local = e.email.split('@')[0] ?? '';
-      // Score finale: confidence con bonus per priority commerciale (inverso del index)
-      const prioBonus = Math.max(0, COMMERCIAL_LOCAL_PARTS.length - priorityOf(local));
-      return { ...e, _selectionScore: e.confidence + prioBonus };
-    }).sort((a, b) => b._selectionScore - a._selectionScore);
+    const scored = result.all_emails
+      .map((e) => {
+        const local = e.email.split('@')[0] ?? '';
+        // Score finale: confidence con bonus per priority commerciale (inverso del index)
+        const prioBonus = Math.max(0, COMMERCIAL_LOCAL_PARTS.length - priorityOf(local));
+        return { ...e, _selectionScore: e.confidence + prioBonus };
+      })
+      .sort((a, b) => b._selectionScore - a._selectionScore);
     result.primary_email = scored[0]?.email ?? null;
   }
 

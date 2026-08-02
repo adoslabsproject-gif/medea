@@ -67,10 +67,28 @@ export const SINGLESHOT_OUTPUT_SCHEMA = {
             items: {
               type: 'object',
               properties: {
-                name: { type: 'string', pattern: '^[a-z][a-z0-9_]{0,49}$', minLength: 1, maxLength: 50 },
+                name: {
+                  type: 'string',
+                  pattern: '^[a-z][a-z0-9_]{0,49}$',
+                  minLength: 1,
+                  maxLength: 50,
+                },
                 type: {
                   type: 'string',
-                  enum: ['bigint', 'boolean', 'text', 'varchar', 'integer', 'decimal', 'real', 'date', 'time', 'datetime', 'json', 'uuid'],
+                  enum: [
+                    'bigint',
+                    'boolean',
+                    'text',
+                    'varchar',
+                    'integer',
+                    'decimal',
+                    'real',
+                    'date',
+                    'time',
+                    'datetime',
+                    'json',
+                    'uuid',
+                  ],
                 },
                 nullable: { type: 'boolean' },
                 unique: { type: 'boolean' },
@@ -94,29 +112,61 @@ export const ZodOutputShape = z.object({
   name: z.string().min(3).max(100),
   description: z.string().max(500).optional(),
   reasoning: z.string().min(60).max(1500),
-  nodes: z.array(z.object({
-    id: z.string().regex(/^[a-z][a-z0-9_]*$/i),
-    defId: z.string().min(1),
-    label: z.string().optional(),
-    x: z.number().optional(),
-    y: z.number().optional(),
-    config: z.record(z.string(), z.unknown()),
-  })).min(3).max(30),
-  edges: z.array(z.object({
-    from: z.string(),
-    to: z.string(),
-    fromPort: z.string().optional(),
-  })).max(60),
-  tablesToCreate: z.array(z.object({
-    databaseId: z.string().max(50).optional(),
-    name: z.string().regex(/^[a-z][a-z0-9_]{0,49}$/),
-    description: z.string().max(200).optional(),
-    columns: z.array(z.object({
-      name: z.string().regex(/^[a-z][a-z0-9_]{0,49}$/),
-      type: z.enum(['bigint', 'boolean', 'text', 'varchar', 'integer', 'decimal', 'real', 'date', 'time', 'datetime', 'json', 'uuid']),
-      nullable: z.boolean().optional(),
-      unique: z.boolean().optional(),
-      primaryKey: z.boolean().optional(),
-    })).min(1).max(30),
-  })).max(5).optional(),
+  nodes: z
+    .array(
+      z.object({
+        id: z.string().regex(/^[a-z][a-z0-9_]*$/i),
+        defId: z.string().min(1),
+        label: z.string().optional(),
+        x: z.number().optional(),
+        y: z.number().optional(),
+        config: z.record(z.string(), z.unknown()),
+      }),
+    )
+    .min(3)
+    .max(30),
+  edges: z
+    .array(
+      z.object({
+        from: z.string(),
+        to: z.string(),
+        fromPort: z.string().optional(),
+      }),
+    )
+    .max(60),
+  tablesToCreate: z
+    .array(
+      z.object({
+        databaseId: z.string().max(50).optional(),
+        name: z.string().regex(/^[a-z][a-z0-9_]{0,49}$/),
+        description: z.string().max(200).optional(),
+        columns: z
+          .array(
+            z.object({
+              name: z.string().regex(/^[a-z][a-z0-9_]{0,49}$/),
+              type: z.enum([
+                'bigint',
+                'boolean',
+                'text',
+                'varchar',
+                'integer',
+                'decimal',
+                'real',
+                'date',
+                'time',
+                'datetime',
+                'json',
+                'uuid',
+              ]),
+              nullable: z.boolean().optional(),
+              unique: z.boolean().optional(),
+              primaryKey: z.boolean().optional(),
+            }),
+          )
+          .min(1)
+          .max(30),
+      }),
+    )
+    .max(5)
+    .optional(),
 });

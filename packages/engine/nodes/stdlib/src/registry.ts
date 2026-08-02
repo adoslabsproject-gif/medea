@@ -39,7 +39,12 @@ import { subworkflowNode } from './logic/subworkflow.js';
 import { convertNode, waitNode, transformNode, paginateNode } from './logic/transform.js';
 import { groupByNode, aggregateNode, distinctNode, windowNode } from './logic/aggregation.js';
 import { waitSignalNode } from './logic/wait-signal.js';
-import { formTriggerNode, fileWatchTriggerNode, imapTriggerNode, dbChangeTriggerNode } from './triggers/form.js';
+import {
+  formTriggerNode,
+  fileWatchTriggerNode,
+  imapTriggerNode,
+  dbChangeTriggerNode,
+} from './triggers/form.js';
 import { emailBounceTriggerNode } from './triggers/email-bounce.js';
 import { sendEmailNode } from './actions/email.js';
 import { textTemplateNode, jsonExtractNode, dateFormatNode } from './actions/utility.js';
@@ -125,11 +130,20 @@ import { securityAuditNode } from './actions/security-audit.js';
 import { videoSummarizerNode } from './actions/video-summarizer.js';
 import { legalComplianceNode } from './actions/legal-compliance.js';
 import {
-  communityGoogleSheetsNode, communityDiscordNode, communityAirtableNode,
-  communityTrelloNode, communityCalendlyNode, communityTypeformNode,
-  communityShopifyNode, communityMailchimpNode, communityTwilioNode,
-  communitySendgridNode, communityAsanaNode, communityDropboxNode,
-  communityBoxNode, communityGcsNode,
+  communityGoogleSheetsNode,
+  communityDiscordNode,
+  communityAirtableNode,
+  communityTrelloNode,
+  communityCalendlyNode,
+  communityTypeformNode,
+  communityShopifyNode,
+  communityMailchimpNode,
+  communityTwilioNode,
+  communitySendgridNode,
+  communityAsanaNode,
+  communityDropboxNode,
+  communityBoxNode,
+  communityGcsNode,
 } from './actions/community-saas-batch.js';
 import { debugRunFailureNode } from './actions/debug-run.js';
 

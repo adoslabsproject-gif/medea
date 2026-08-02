@@ -11,7 +11,15 @@ import type {
   Table,
 } from '@medea/engine-db-studio-core';
 import { renderCreateViewSql, renderDropViewSql } from '@medea/engine-db-studio-core';
-import type { IDatabaseAdapter, QueryResult, ExecuteResult, RawQueryResult, RawQueryOptions, BatchOp, BatchResult } from './adapter.js';
+import type {
+  IDatabaseAdapter,
+  QueryResult,
+  ExecuteResult,
+  RawQueryResult,
+  RawQueryOptions,
+  BatchOp,
+  BatchResult,
+} from './adapter.js';
 import { classifyStatement, splitStatements, assertSafeRawStatement } from './adapter.js';
 import { recreateTableStatements } from './alter-column-recreate.js';
 
@@ -19,7 +27,13 @@ import { recreateTableStatements } from './alter-column-recreate.js';
 const sqliteQuote = (id: string): string => `"${id.replace(/"/gu, '""')}"`;
 
 /** Riga di PRAGMA table_info. */
-interface PragmaCol { name: string; type: string; notnull: number; dflt_value: string | null; pk: number }
+interface PragmaCol {
+  name: string;
+  type: string;
+  notnull: number;
+  dflt_value: string | null;
+  pk: number;
+}
 
 /** DDL di una colonna esistente, preservandone tipo/constraint (table-recreate). */
 function pragmaColDdl(c: PragmaCol): string {
@@ -37,12 +51,12 @@ function patchedColDdl(
   patch: { type?: Column['type'] | undefined; constraints?: Column['constraints'] | undefined },
   newName: string,
 ): string {
-  const type = patch.type ? TYPE_TO_SQLITE[patch.type] : (c.type || 'TEXT');
+  const type = patch.type ? TYPE_TO_SQLITE[patch.type] : c.type || 'TEXT';
   const cons = patch.constraints;
-  const nullable = cons?.nullable ?? (c.notnull === 0);
-  const pk = cons?.primaryKey ?? (c.pk > 0);
+  const nullable = cons?.nullable ?? c.notnull === 0;
+  const pk = cons?.primaryKey ?? c.pk > 0;
   const unique = cons?.unique ?? false;
-  const def = cons?.default ?? (c.dflt_value ?? undefined);
+  const def = cons?.default ?? c.dflt_value ?? undefined;
   const parts = [sqliteQuote(newName), type];
   if (pk) parts.push('PRIMARY KEY');
   else if (!nullable) parts.push('NOT NULL');
@@ -55,11 +69,16 @@ function patchedColDdl(
 /** Mappa il valore PRAGMA on_delete (uppercase) all'enum core. */
 function mapSqliteOnDelete(raw: string): RelationOnDelete {
   switch ((raw || '').toUpperCase()) {
-    case 'CASCADE': return 'cascade';
-    case 'RESTRICT': return 'restrict';
-    case 'SET NULL': return 'set null';
-    case 'SET DEFAULT': return 'set default';
-    default: return 'no action';
+    case 'CASCADE':
+      return 'cascade';
+    case 'RESTRICT':
+      return 'restrict';
+    case 'SET NULL':
+      return 'set null';
+    case 'SET DEFAULT':
+      return 'set default';
+    default:
+      return 'no action';
   }
 }
 
@@ -96,7 +115,10 @@ function renderCreateTable(table: Table): string {
   return `CREATE TABLE IF NOT EXISTS "${table.name}" (\n  ${cols}\n);`;
 }
 
-function renderCreateIndex(tableName: string, idx: { name: string; columns: string[]; unique: boolean }): string {
+function renderCreateIndex(
+  tableName: string,
+  idx: { name: string; columns: string[]; unique: boolean },
+): string {
   const unique = idx.unique ? 'UNIQUE ' : '';
   const cols = idx.columns.map((c) => `"${c}"`).join(', ');
   return `CREATE ${unique}INDEX IF NOT EXISTS "${idx.name}" ON "${tableName}" (${cols});`;
@@ -104,15 +126,24 @@ function renderCreateIndex(tableName: string, idx: { name: string; columns: stri
 
 function renderFilter(filter: QueryFilter): { clause: string; params: unknown[] } {
   switch (filter.op) {
-    case 'eq':       return { clause: `"${filter.column}" = ?`,  params: [filter.value] };
-    case 'neq':      return { clause: `"${filter.column}" != ?`, params: [filter.value] };
-    case 'gt':       return { clause: `"${filter.column}" > ?`,  params: [filter.value] };
-    case 'gte':      return { clause: `"${filter.column}" >= ?`, params: [filter.value] };
-    case 'lt':       return { clause: `"${filter.column}" < ?`,  params: [filter.value] };
-    case 'lte':      return { clause: `"${filter.column}" <= ?`, params: [filter.value] };
-    case 'like':     return { clause: `"${filter.column}" LIKE ?`, params: [filter.value] };
-    case 'isNull':   return { clause: `"${filter.column}" IS NULL`, params: [] };
-    case 'notNull':  return { clause: `"${filter.column}" IS NOT NULL`, params: [] };
+    case 'eq':
+      return { clause: `"${filter.column}" = ?`, params: [filter.value] };
+    case 'neq':
+      return { clause: `"${filter.column}" != ?`, params: [filter.value] };
+    case 'gt':
+      return { clause: `"${filter.column}" > ?`, params: [filter.value] };
+    case 'gte':
+      return { clause: `"${filter.column}" >= ?`, params: [filter.value] };
+    case 'lt':
+      return { clause: `"${filter.column}" < ?`, params: [filter.value] };
+    case 'lte':
+      return { clause: `"${filter.column}" <= ?`, params: [filter.value] };
+    case 'like':
+      return { clause: `"${filter.column}" LIKE ?`, params: [filter.value] };
+    case 'isNull':
+      return { clause: `"${filter.column}" IS NULL`, params: [] };
+    case 'notNull':
+      return { clause: `"${filter.column}" IS NOT NULL`, params: [] };
     case 'in': {
       const values = Array.isArray(filter.value) ? filter.value : [filter.value];
       const placeholders = values.map(() => '?').join(', ');
@@ -188,15 +219,24 @@ export class SqliteAdapter implements IDatabaseAdapter {
   // è SINCRONO, ma marcando async i throw della transazione diventano una rejected
   // promise (non un throw sincrono), così il contratto è coerente per i chiamanti.
   // eslint-disable-next-line @typescript-eslint/require-await
-  async applyMigration(actions: readonly MigrationAction[]): Promise<{ sql: string; affectedTables: string[] }> {
+  async applyMigration(
+    actions: readonly MigrationAction[],
+  ): Promise<{ sql: string; affectedTables: string[] }> {
     const conn = this.requireConn();
     const affectedTables = new Set<string>();
     for (const action of actions) {
       if (action.kind === 'create_table') affectedTables.add(action.table.name);
       else if (action.kind === 'drop_table') affectedTables.add(action.tableName);
       else if (action.kind === 'rename_table') affectedTables.add(action.to);
-      else if (action.kind === 'add_column' || action.kind === 'drop_column' || action.kind === 'alter_column' || action.kind === 'rename_column') affectedTables.add(action.tableName);
-      else if (action.kind === 'add_index' || action.kind === 'drop_index') affectedTables.add(action.tableName);
+      else if (
+        action.kind === 'add_column' ||
+        action.kind === 'drop_column' ||
+        action.kind === 'alter_column' ||
+        action.kind === 'rename_column'
+      )
+        affectedTables.add(action.tableName);
+      else if (action.kind === 'add_index' || action.kind === 'drop_index')
+        affectedTables.add(action.tableName);
     }
 
     const executedSql: string[] = [];
@@ -205,20 +245,40 @@ export class SqliteAdapter implements IDatabaseAdapter {
         if (action.kind === 'alter_column') {
           // SQLite non ha ALTER COLUMN in-place → table-recreate REALE (preserva
           // dati). Prima era un no-op (commento saltato dal filtro).
-          const info = conn.prepare(`PRAGMA table_info(${sqliteQuote(action.tableName)})`).all() as PragmaCol[];
-          if (info.length === 0) throw new Error(`alter_column: tabella "${action.tableName}" non trovata`);
+          const info = conn
+            .prepare(`PRAGMA table_info(${sqliteQuote(action.tableName)})`)
+            .all() as PragmaCol[];
+          if (info.length === 0)
+            throw new Error(`alter_column: tabella "${action.tableName}" non trovata`);
           if (!info.some((c) => c.name === action.columnName)) {
-            throw new Error(`alter_column: colonna "${action.columnName}" non esiste in "${action.tableName}"`);
+            throw new Error(
+              `alter_column: colonna "${action.columnName}" non esiste in "${action.tableName}"`,
+            );
           }
           const newName = action.patch.name ?? action.columnName;
-          const columnsDdl = info.map((c) => (c.name === action.columnName ? patchedColDdl(c, action.patch, newName) : pragmaColDdl(c)));
-          const copyColumns = info.map((c) => ({ from: c.name, to: c.name === action.columnName ? newName : c.name }));
-          const stmts = recreateTableStatements({ tableName: action.tableName, columnsDdl, copyColumns, quote: sqliteQuote });
+          const columnsDdl = info.map((c) =>
+            c.name === action.columnName
+              ? patchedColDdl(c, action.patch, newName)
+              : pragmaColDdl(c),
+          );
+          const copyColumns = info.map((c) => ({
+            from: c.name,
+            to: c.name === action.columnName ? newName : c.name,
+          }));
+          const stmts = recreateTableStatements({
+            tableName: action.tableName,
+            columnsDdl,
+            copyColumns,
+            quote: sqliteQuote,
+          });
           for (const s of stmts) conn.exec(s + ';');
           executedSql.push(stmts.join(';\n') + ';');
         } else {
           const rendered = renderMigrationAction(action);
-          for (const stmt of rendered.split(/;\s*\n/).map((s) => s.trim()).filter((s) => s && !s.startsWith('--'))) {
+          for (const stmt of rendered
+            .split(/;\s*\n/)
+            .map((s) => s.trim())
+            .filter((s) => s && !s.startsWith('--'))) {
             conn.exec(stmt + ';');
           }
           executedSql.push(rendered);
@@ -234,7 +294,8 @@ export class SqliteAdapter implements IDatabaseAdapter {
     const start = Date.now();
     const filters = spec.filters ?? [];
     const orderBy = spec.orderBy ?? [];
-    const selectClause = spec.select && spec.select.length > 0 ? spec.select.map((c) => `"${c}"`).join(', ') : '*';
+    const selectClause =
+      spec.select && spec.select.length > 0 ? spec.select.map((c) => `"${c}"`).join(', ') : '*';
     const where = filters.map(renderFilter);
     const whereClause = where.length ? `WHERE ${where.map((w) => w.clause).join(' AND ')}` : '';
     const orderClause = orderBy.length
@@ -242,7 +303,8 @@ export class SqliteAdapter implements IDatabaseAdapter {
       : '';
     const limitClause = spec.limit !== undefined ? `LIMIT ${spec.limit.toString()}` : '';
     const offsetClause = spec.offset !== undefined ? `OFFSET ${spec.offset.toString()}` : '';
-    const sql = `SELECT ${selectClause} FROM "${spec.table}" ${whereClause} ${orderClause} ${limitClause} ${offsetClause}`.trim();
+    const sql =
+      `SELECT ${selectClause} FROM "${spec.table}" ${whereClause} ${orderClause} ${limitClause} ${offsetClause}`.trim();
     const params = where.flatMap((w) => w.params);
     const rows = conn.prepare(sql).all(...params) as T[];
     return Promise.resolve({ rows, rowCount: rows.length, durationMs: Date.now() - start });
@@ -261,7 +323,11 @@ export class SqliteAdapter implements IDatabaseAdapter {
     });
   }
 
-  update(tableName: string, where: Record<string, unknown>, patch: Record<string, unknown>): Promise<ExecuteResult> {
+  update(
+    tableName: string,
+    where: Record<string, unknown>,
+    patch: Record<string, unknown>,
+  ): Promise<ExecuteResult> {
     const conn = this.requireConn();
     const start = Date.now();
     const setCols = Object.keys(patch);
@@ -296,16 +362,18 @@ export class SqliteAdapter implements IDatabaseAdapter {
       ops.forEach((op, index) => {
         if (op.kind === 'insert') {
           const cols = Object.keys(op.row);
-          if (cols.length === 0) throw new Error(`transaction[${index.toString()}]: insert row has no columns`);
+          if (cols.length === 0)
+            throw new Error(`transaction[${index.toString()}]: insert row has no columns`);
           const sql = `INSERT INTO "${op.table}" (${cols.map((c) => `"${c}"`).join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`;
           const info = conn.prepare(sql).run(...Object.values(op.row));
           // If the row provided an explicit `id` (typical for TEXT PKs like
           // UUIDs in production schemas), bind THAT — not the internal rowid.
           // Only fall back to lastInsertRowid for auto-increment INTEGER PKs.
           const explicitId = op.row.id;
-          const insertedId: string | number = (typeof explicitId === 'string' || typeof explicitId === 'number')
-            ? explicitId
-            : (info.lastInsertRowid as number);
+          const insertedId: string | number =
+            typeof explicitId === 'string' || typeof explicitId === 'number'
+              ? explicitId
+              : (info.lastInsertRowid as number);
           if (op.as) bindings[op.as] = insertedId;
           steps.push({ index, kind: 'insert', affectedRows: info.changes, insertedId });
         } else if (op.kind === 'insertMany') {
@@ -318,13 +386,16 @@ export class SqliteAdapter implements IDatabaseAdapter {
           if (op.refColumn && op.refFrom) {
             const bound = bindings[op.refFrom];
             if (bound === undefined) {
-              throw new Error(`transaction[${index.toString()}]: refFrom "${op.refFrom}" is not bound by any earlier step`);
+              throw new Error(
+                `transaction[${index.toString()}]: refFrom "${op.refFrom}" is not bound by any earlier step`,
+              );
             }
             refValue = bound;
           }
           // All rows MUST share the same column set; we use the first row's keys.
           const baseCols = Object.keys(op.rows[0] ?? {});
-          if (baseCols.length === 0) throw new Error(`transaction[${index.toString()}]: insertMany rows have no columns`);
+          if (baseCols.length === 0)
+            throw new Error(`transaction[${index.toString()}]: insertMany rows have no columns`);
           const finalCols = op.refColumn ? [...baseCols, op.refColumn] : baseCols;
           const sql = `INSERT INTO "${op.table}" (${finalCols.map((c) => `"${c}"`).join(', ')}) VALUES (${finalCols.map(() => '?').join(', ')})`;
           const stmt = conn.prepare(sql);
@@ -349,9 +420,11 @@ export class SqliteAdapter implements IDatabaseAdapter {
 
   introspect(): Promise<Table[]> {
     const conn = this.requireConn();
-    const tables = conn.prepare(
-      `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`,
-    ).all() as { name: string }[];
+    const tables = conn
+      .prepare(
+        `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`,
+      )
+      .all() as { name: string }[];
     const result: Table[] = [];
     for (const t of tables) {
       const cols = conn.prepare(`PRAGMA table_info("${t.name}")`).all() as {
@@ -388,13 +461,20 @@ export class SqliteAdapter implements IDatabaseAdapter {
    */
   introspectRelations(): Promise<Relation[]> {
     const conn = this.requireConn();
-    const tables = conn.prepare(
-      `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`,
-    ).all() as { name: string }[];
+    const tables = conn
+      .prepare(
+        `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`,
+      )
+      .all() as { name: string }[];
     const relations: Relation[] = [];
     for (const t of tables) {
       const fks = conn.prepare(`PRAGMA foreign_key_list("${t.name}")`).all() as {
-        id: number; seq: number; table: string; from: string; to: string; on_delete: string;
+        id: number;
+        seq: number;
+        table: string;
+        from: string;
+        to: string;
+        on_delete: string;
       }[];
       for (const fk of fks) {
         relations.push({
@@ -421,7 +501,9 @@ export class SqliteAdapter implements IDatabaseAdapter {
     const start = Date.now();
 
     /** Execute a single statement, returning the row data + classification. */
-    const execOne = (stmt: string): {
+    const execOne = (
+      stmt: string,
+    ): {
       kind: RawQueryResult['statementKind'];
       rows: Record<string, unknown>[];
       columns: RawQueryColumnLike[];
@@ -432,7 +514,9 @@ export class SqliteAdapter implements IDatabaseAdapter {
       const isSelect = kind === 'select' || kind === 'explain';
       if (isSelect) {
         const prepared = conn.prepare(stmt);
-        const columns = prepared.columns().map((c) => ({ name: c.name, ...(c.type ? { type: c.type } : {}) }));
+        const columns = prepared
+          .columns()
+          .map((c) => ({ name: c.name, ...(c.type ? { type: c.type } : {}) }));
         let rows = prepared.all() as Record<string, unknown>[];
         if (opts.rowLimit !== undefined && rows.length > opts.rowLimit) {
           rows = rows.slice(0, opts.rowLimit);
@@ -484,7 +568,11 @@ export class SqliteAdapter implements IDatabaseAdapter {
         if (wrapInTx && opts.dryRun) conn.exec('ROLLBACK');
       } catch (err) {
         if (wrapInTx) {
-          try { conn.exec('ROLLBACK'); } catch { /* ignore secondary failure */ }
+          try {
+            conn.exec('ROLLBACK');
+          } catch {
+            /* ignore secondary failure */
+          }
         }
         throw err;
       }
@@ -505,4 +593,7 @@ export class SqliteAdapter implements IDatabaseAdapter {
   }
 }
 
-interface RawQueryColumnLike { name: string; type?: string }
+interface RawQueryColumnLike {
+  name: string;
+  type?: string;
+}

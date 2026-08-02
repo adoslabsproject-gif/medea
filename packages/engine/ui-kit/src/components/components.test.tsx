@@ -32,9 +32,9 @@ describe('ui-kit smoke', () => {
         <Button variant="danger">Delete</Button>
       </>,
     );
-    expect(html).toContain('bg-accent');     // primary
-    expect(html).toContain('bg-surface');    // secondary or its hover variant
-    expect(html).toContain('bg-danger');     // danger
+    expect(html).toContain('bg-accent'); // primary
+    expect(html).toContain('bg-surface'); // secondary or its hover variant
+    expect(html).toContain('bg-danger'); // danger
     expect(html).not.toMatch(/bg-(neutral|zinc|blue|red|gray|slate)-\d+/); // no hardcoded shades
   });
 
@@ -72,7 +72,10 @@ describe('ui-kit smoke', () => {
 
   it('Select renders options', () => {
     const html = renderToStaticMarkup(
-      <Select label="Country"><option>IT</option><option>FR</option></Select>,
+      <Select label="Country">
+        <option>IT</option>
+        <option>FR</option>
+      </Select>,
     );
     expect(html).toContain('Country');
     expect(html).toContain('<option>IT</option>');
@@ -87,7 +90,9 @@ describe('ui-kit smoke', () => {
   it('Badge variants use semantic token classes', () => {
     const html = renderToStaticMarkup(
       <>
-        <Badge variant="success" dot>OK</Badge>
+        <Badge variant="success" dot>
+          OK
+        </Badge>
         <Badge variant="danger">Failed</Badge>
       </>,
     );
@@ -98,7 +103,13 @@ describe('ui-kit smoke', () => {
   it('Alert renders title + body with dismiss button', () => {
     let dismissed = false;
     const html = renderToStaticMarkup(
-      <Alert variant="warning" title="Watch out" onDismiss={() => { dismissed = true; }}>
+      <Alert
+        variant="warning"
+        title="Watch out"
+        onDismiss={() => {
+          dismissed = true;
+        }}
+      >
         Something happened
       </Alert>,
     );
@@ -109,7 +120,11 @@ describe('ui-kit smoke', () => {
   });
 
   it('Modal returns null when not open', () => {
-    const html = renderToStaticMarkup(<Modal open={false} onClose={() => undefined}>hi</Modal>);
+    const html = renderToStaticMarkup(
+      <Modal open={false} onClose={() => undefined}>
+        hi
+      </Modal>,
+    );
     expect(html).toBe('');
   });
 
@@ -134,7 +149,9 @@ describe('ui-kit smoke', () => {
 
   it('Tooltip passes through children when disabled', () => {
     const html = renderToStaticMarkup(
-      <Tooltip content="hint" disabled><strong>Hover me</strong></Tooltip>,
+      <Tooltip content="hint" disabled>
+        <strong>Hover me</strong>
+      </Tooltip>,
     );
     expect(html).toContain('Hover me');
     expect(html).not.toContain('hint');

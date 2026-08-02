@@ -35,7 +35,8 @@ function parse(raw: string): VectorQuotaOverride | null {
   const o = JSON.parse(raw) as unknown;
   if (o === null || typeof o !== 'object') return null;
   const rec = o as Record<string, unknown>;
-  const norm = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : null);
+  const norm = (v: unknown): number | null =>
+    typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : null;
   // Distinzione esplicita: chiave assente → null; presente numerica → numero; null → illimitato.
   return {
     maxVectors: 'maxVectors' in rec ? norm(rec.maxVectors) : null,
@@ -48,7 +49,9 @@ export function getVectorQuotaOverride(): VectorQuotaOverride | null {
   if (cached !== undefined) return cached;
   try {
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare('SELECT value FROM system_flags WHERE key = ?').get(FLAG_KEY) as { value: string } | undefined;
+    const row = sqlite.prepare('SELECT value FROM system_flags WHERE key = ?').get(FLAG_KEY) as
+      | { value: string }
+      | undefined;
     cached = row?.value ? parse(row.value) : null;
   } catch (err) {
     // Fail-open deliberato: senza override si usa l'env + backstop ENOSPC. Ma un
@@ -70,7 +73,10 @@ export function setVectorQuotaOverride(override: VectorQuotaOverride): void {
     )
     .run(FLAG_KEY, value);
   cached = { maxVectors: override.maxVectors, maxDiskMb: override.maxDiskMb };
-  logger.info({ maxVectors: override.maxVectors, maxDiskMb: override.maxDiskMb }, 'vector quota override updated');
+  logger.info(
+    { maxVectors: override.maxVectors, maxDiskMb: override.maxDiskMb },
+    'vector quota override updated',
+  );
 }
 
 /** Per i test: resetta la cache in-memory. */

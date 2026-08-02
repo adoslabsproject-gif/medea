@@ -19,7 +19,11 @@ describe('parseFatturaPa — estrazione completa', () => {
     const [f] = parseFatturaPa(XML);
     expect(f).toBeDefined();
     expect(f!.formato).toBe('FPR12');
-    expect(f!.cedente).toEqual({ denominazione: 'Fornitore Test SRL', partitaIva: 'IT01234567890', codiceFiscale: null });
+    expect(f!.cedente).toEqual({
+      denominazione: 'Fornitore Test SRL',
+      partitaIva: 'IT01234567890',
+      codiceFiscale: null,
+    });
     expect(f!.cessionario.denominazione).toBe('Zeli SRL');
     expect(f!.tipoDocumento).toBe('TD01');
     expect(f!.numero).toBe('142/A');
@@ -32,8 +36,12 @@ describe('parseFatturaPa — estrazione completa', () => {
     const [f] = parseFatturaPa(XML);
     expect(f!.righe).toHaveLength(2);
     expect(f!.righe[0]).toEqual({
-      numeroLinea: 1, descrizione: 'Servizio hosting annuale',
-      quantita: 1, prezzoUnitario: 1000, prezzoTotale: 1000, aliquotaIva: 22,
+      numeroLinea: 1,
+      descrizione: 'Servizio hosting annuale',
+      quantita: 1,
+      prezzoUnitario: 1000,
+      prezzoTotale: 1000,
+      aliquotaIva: 22,
     });
     expect(f!.righe[1]!.prezzoTotale).toBe(500);
   });
@@ -41,7 +49,9 @@ describe('parseFatturaPa — estrazione completa', () => {
   it('riepilogo IVA + scadenze di pagamento', () => {
     const [f] = parseFatturaPa(XML);
     expect(f!.riepilogoIva).toEqual([{ aliquota: 22, imponibile: 1500, imposta: 330 }]);
-    expect(f!.scadenze).toEqual([{ modalitaPagamento: 'MP05', dataScadenza: '2026-08-31', importo: 1830 }]);
+    expect(f!.scadenze).toEqual([
+      { modalitaPagamento: 'MP05', dataScadenza: '2026-08-31', importo: 1830 },
+    ]);
   });
 
   it('ditta individuale: Nome+Cognome al posto della Denominazione', () => {
@@ -54,8 +64,14 @@ describe('parseFatturaPa — estrazione completa', () => {
   });
 
   it('lotto: 2 FatturaElettronicaBody → 2 elementi con testata condivisa', () => {
-    const body = XML.slice(XML.indexOf('<FatturaElettronicaBody>'), XML.indexOf('</p:FatturaElettronica>'));
-    const doppio = XML.replace('</p:FatturaElettronica>', body.replace('142/A', '143/A') + '</p:FatturaElettronica>');
+    const body = XML.slice(
+      XML.indexOf('<FatturaElettronicaBody>'),
+      XML.indexOf('</p:FatturaElettronica>'),
+    );
+    const doppio = XML.replace(
+      '</p:FatturaElettronica>',
+      body.replace('142/A', '143/A') + '</p:FatturaElettronica>',
+    );
     const fatture = parseFatturaPa(doppio);
     expect(fatture).toHaveLength(2);
     expect(fatture[0]!.numero).toBe('142/A');
@@ -64,19 +80,25 @@ describe('parseFatturaPa — estrazione completa', () => {
   });
 
   it('🚨 campi assenti → null, MAI stringhe inventate', () => {
-    const xml = XML.replace('<ImportoTotaleDocumento>1830.00</ImportoTotaleDocumento>', '')
-      .replace('<DatiPagamento><CondizioniPagamento>TP02</CondizioniPagamento><DettaglioPagamento><ModalitaPagamento>MP05</ModalitaPagamento><DataScadenzaPagamento>2026-08-31</DataScadenzaPagamento><ImportoPagamento>1830.00</ImportoPagamento></DettaglioPagamento></DatiPagamento>', '');
+    const xml = XML.replace('<ImportoTotaleDocumento>1830.00</ImportoTotaleDocumento>', '').replace(
+      '<DatiPagamento><CondizioniPagamento>TP02</CondizioniPagamento><DettaglioPagamento><ModalitaPagamento>MP05</ModalitaPagamento><DataScadenzaPagamento>2026-08-31</DataScadenzaPagamento><ImportoPagamento>1830.00</ImportoPagamento></DettaglioPagamento></DatiPagamento>',
+      '',
+    );
     const [f] = parseFatturaPa(xml);
     expect(f!.importoTotaleDocumento).toBeNull();
     expect(f!.scadenze).toEqual([]);
   });
 
   it('🚨 XML rotto → errore actionable', () => {
-    expect(() => parseFatturaPa('<p:FatturaElettronica><senza-chiusura')).toThrow(/XML non parsabile/u);
+    expect(() => parseFatturaPa('<p:FatturaElettronica><senza-chiusura')).toThrow(
+      /XML non parsabile/u,
+    );
   });
 
   it('🚨 radice diversa → errore che la nomina (no output vuoto silenzioso)', () => {
-    expect(() => parseFatturaPa('<?xml version="1.0"?><Ordine><x/></Ordine>')).toThrow(/non è una FatturaElettronica/u);
+    expect(() => parseFatturaPa('<?xml version="1.0"?><Ordine><x/></Ordine>')).toThrow(
+      /non è una FatturaElettronica/u,
+    );
   });
 });
 
@@ -101,6 +123,8 @@ describe('fatturapaParseExecutor', () => {
   });
 
   it('🚨 nessun XML → errore che spiega la chain', async () => {
-    await expect(fatturapaParseExecutor({}, null, ctx)).rejects.toThrow(/concatena italia_p7m_extract|campo "xml"/u);
+    await expect(fatturapaParseExecutor({}, null, ctx)).rejects.toThrow(
+      /concatena italia_p7m_extract|campo "xml"/u,
+    );
   });
 });

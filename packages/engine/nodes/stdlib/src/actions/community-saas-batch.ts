@@ -39,12 +39,12 @@ export const communityGoogleSheetsNode: NodeModule = {
       'sheet auto-detecting la prima riga libera — pattern naturale per logging incrementale di eventi), ' +
       'batchGet (multi-range in singola request per ridurre roundtrip su sheet con multipli area da leggere ' +
       'contemporaneamente). ' +
-      'Auth via OAuth2 portal-centric pattern di FlowForge: l\'utente fa OAuth consent flow una sola volta da ' +
+      "Auth via OAuth2 portal-centric pattern di FlowForge: l'utente fa OAuth consent flow una sola volta da " +
       'Settings → Integrations → Google Sheets, e il portal centrale (NON il container tenant) gestisce il ' +
       'refresh token + emette access token short-lived (3600s default Google OAuth) al runtime via JWE handoff ' +
       '5min — questo pattern enterprise (vedi memory project_oauth_multi_tenant_portal_centric) evita di ' +
-      'richiedere consent ad ogni run e centralizza il vault credenziali. Auto-refresh dell\'access_token su ' +
-      '401 con 1 retry trasparente — l\'utente non vede mai expire né deve fare manual re-auth. ' +
+      "richiedere consent ad ogni run e centralizza il vault credenziali. Auto-refresh dell'access_token su " +
+      "401 con 1 retry trasparente — l'utente non vede mai expire né deve fare manual re-auth. " +
       'Schema cell types: il nodo preserva i tipi nativi Google Sheets — numeri restano numeric (non ' +
       'stringificati), date in formato Excel serial number convertite a Date object JavaScript, formule (es. ' +
       '"=SUM(A1:A10)") preservate come formule durante updateValues (la cella resta formula, non valore ' +
@@ -123,7 +123,7 @@ export const communityDiscordNode: NodeModule = {
       'standard de-facto per community tech, open-source maintainer team, developer relations, web3/crypto ' +
       'project, e DevOps stack alternative a Slack (oltre 150M MAU, 19M server attivi). Due modalità operative: ' +
       '(1) Webhook mode — il modo SEMPLICE per inviare messaggi senza creare un bot; un webhook URL ' +
-      'identifica univocamente il canale destinazione (l\'admin Discord lo genera in Server Settings → ' +
+      "identifica univocamente il canale destinazione (l'admin Discord lo genera in Server Settings → " +
       'Integrations → Create Webhook, scegliendo il channel target + icona + nome custom del sender), nessuna ' +
       'autenticazione OAuth/Bot Token richiesta, rate-limit 5 msg/sec per webhook che il nodo gestisce con ' +
       'backoff exponential automatico su 429; (2) Bot API mode — il modo AVANZATO con Bot Token (formato ' +
@@ -143,7 +143,7 @@ export const communityDiscordNode: NodeModule = {
       'OK" e changelog inline; community announcement automatico nel canale #news post-pubblicazione blog post ' +
       'sul sito (sync MDX + webhook Discord); monitoraggio uptime con embed color-coded (rosso > 5xx, giallo ' +
       'p95 > 3s, verde sano) per il dashboard SRE; thread reply per discussion gruppo support: il bot apre un ' +
-      'thread per ogni ticket nuovo Zendesk e linka nel thread l\'update di status, evitando di intasare il ' +
+      "thread per ogni ticket nuovo Zendesk e linka nel thread l'update di status, evitando di intasare il " +
       'canale principale con messaggi sparsi; gaming community che lancia eventi automatic con countdown ' +
       'timer e role mentions per @evento-mensile.',
     configFields: [
@@ -213,7 +213,7 @@ export const communityAirtableNode: NodeModule = {
       'createRecord (insert con typecast option che permette ad Airtable di coercere "Closed" string al ' +
       'select_field option corretto evitando errori), updateRecord (patch atomic dei field specificati, gli ' +
       'altri restano invariati — diverso da PUT che resetterebbe i field non-specificati), deleteRecord. ' +
-      'Auto-pagination per listRecords: l\'API Airtable cap a 100 record/page e usa offset opaque cursor — il ' +
+      "Auto-pagination per listRecords: l'API Airtable cap a 100 record/page e usa offset opaque cursor — il " +
       'nodo automaticamente itera fino a recuperare TUTTI i record corrispondenti al filtro (con safety cap ' +
       'default 10000 totali per evitare runaway su table giganti), unificando in un singolo array di output ' +
       'pronto per loop downstream. ' +
@@ -279,8 +279,8 @@ export const communityAirtableNode: NodeModule = {
         label: 'Filter formula (listRecords)',
         type: 'expression',
         required: false,
-        placeholder: 'AND({Status}=\'Open\',{Priority}>1)',
-        help: 'Airtable formula syntax. Es: AND({Status}=\'Done\',IS_AFTER({CreatedAt}, \'2026-01-01\')).',
+        placeholder: "AND({Status}='Open',{Priority}>1)",
+        help: "Airtable formula syntax. Es: AND({Status}='Done',IS_AFTER({CreatedAt}, '2026-01-01')).",
       },
       {
         key: 'maxRecords',
@@ -316,7 +316,7 @@ export const communityTrelloNode: NodeModule = {
       'tutta la board, utile per dashboard interne), getBoardLists (introspezione dello schema della board ' +
       'per discovery dinamico delle list disponibili — pattern auto-config per workflow che lavorano su board ' +
       'mutevoli). ' +
-      'Auth via doppio token: API Key (formato 32 char hex public-safe, ottenuto dall\'admin Trello in ' +
+      "Auth via doppio token: API Key (formato 32 char hex public-safe, ottenuto dall'admin Trello in " +
       'https://trello.com/app-key e referenziato come integration label nel vault FlowForge) + Token OAuth1 ' +
       '(generato dall\'API Key con click su "Generate a Token" che apre l\'OAuth flow di authorization e ' +
       'ritorna il bearer token user-specific). Stessa coppia (key, token) usata in tutte le request come query ' +
@@ -417,15 +417,15 @@ export const communityCalendlyNode: NodeModule = {
       'sales team B2B, consulenti, coach, recruiter, customer success (10M+ utenti, 100k+ paying customer ' +
       'business) che permette di pubblicare un pubblico booking link "trova uno slot libero con me" eliminando ' +
       'le 5-6 email back-and-forth di scheduling — via REST API v2 ufficiale. Cinque operazioni atomiche ' +
-      'gestiscono l\'intero lifecycle del booking: listScheduledEvents (recupera elenco di appuntamenti ' +
+      "gestiscono l'intero lifecycle del booking: listScheduledEvents (recupera elenco di appuntamenti " +
       'scheduled con filtri compound by user URI/organization URI/status active|cancelled/range di date ' +
       'min_start_time-max_start_time per dashboard analytics e sync incrementale), getEvent (fetch puntuale di ' +
       'un singolo event by URI univoco con metadata complete come location/duration/calendar_event_provider/' +
-      'invitee_questions_and_answers), listInvitees (gli invitee dell\'evento — solitamente 1 per 1-to-1 ' +
+      "invitee_questions_and_answers), listInvitees (gli invitee dell'evento — solitamente 1 per 1-to-1 " +
       'meeting ma può essere N per group events), getInvitee (dettagli singolo invitee con email + nome + ' +
       'phone + answers ai prompt custom configurati dal Calendly admin nel form di booking), cancelEvent ' +
       '(cancellazione lato server con motivazione opzionale che notifica entrambe le parti via Calendly nativ). ' +
-      'Auth via Personal Access Token formato eyJxxx (JWT generato da Calendly nell\'admin dashboard Settings ' +
+      "Auth via Personal Access Token formato eyJxxx (JWT generato da Calendly nell'admin dashboard Settings " +
       '→ Integrations → API & Webhooks → Personal Access Token, scope organization-wide o user-only), stored ' +
       'nel vault integration FlowForge accessibile via integrationLabel. Multi-account supportato per agenzie ' +
       'che gestiscono Calendly di N consulenti. ' +
@@ -524,13 +524,13 @@ export const communityTypeformNode: NodeModule = {
       'CRM/marketing automation tool, librerie di template ricchissime per ogni vertical (NPS survey, lead ' +
       'capture, job application, customer feedback, evento registration) — via Responses API + Forms API ' +
       'ufficiali. Cinque operazioni atomiche coprono il ciclo completo: listForms (elenco di tutti i form ' +
-      'dell\'account/workspace con metadata e analytics aggregate), getForm (definition completa di un form ' +
+      "dell'account/workspace con metadata e analytics aggregate), getForm (definition completa di un form " +
       'specifico con tutti i field, branching logic, ending screens — utile per pre-validation o introspection ' +
       'dello schema), listResponses (filter compound by completion status partial/completed, range di date ' +
       'submitted_at, hidden fields query), getResponse (fetch puntuale di una singola response by response_id ' +
       'con tutte le answers e metadata calculated), deleteResponses (operazione di cancellazione GDPR-aware ' +
       'con audit trail). ' +
-      'Auth via Personal Access Token (formato tfp_xxxxx generato dall\'admin Typeform in Settings → Personal ' +
+      "Auth via Personal Access Token (formato tfp_xxxxx generato dall'admin Typeform in Settings → Personal " +
       'tokens → Generate token con scope responses:read|write + forms:read) stored nel vault integration ' +
       'FlowForge. ' +
       'Auto-pagination per listResponses: usa cursor "after" + page_size 1000 max — il nodo automaticamente ' +
@@ -627,12 +627,12 @@ export const communityShopifyNode: NodeModule = {
       '(recupera ordine specifico by orderId con tutti i line_items + customer + shipping_address + ' +
       'payment_status + fulfillment_status — pattern essenziale per ingest ordini downstream verso ERP/' +
       'gestionale italiano); createOrder (crea ordine manualmente o conferma un draft order precedentemente ' +
-      'preparato — utile per use case omnichannel B2B dove l\'ordine arriva via email o telefono e va inserito ' +
+      "preparato — utile per use case omnichannel B2B dove l'ordine arriva via email o telefono e va inserito " +
       'in Shopify after-the-fact per consistency del data warehouse); listProducts (catalogo paginated fino ' +
       'a 250 item/request con cursor-based pagination per merchant con migliaia di SKU); createProduct ' +
       '(pubblica nuovo prodotto con multiple variants size/color, immagini galleria, metadata SEO, pricing ' +
       'tier-based per region o customer type, inventory tracking). ' +
-      'Auth via Custom App Access Token (formato shpat_xxxxxxxx generato dall\'admin Shopify in Apps → ' +
+      "Auth via Custom App Access Token (formato shpat_xxxxxxxx generato dall'admin Shopify in Apps → " +
       'Develop apps → Configure Admin API scopes — granular permission read_orders, write_orders, ' +
       'read_products, write_products per least-privilege) usato come header X-Shopify-Access-Token stored ' +
       'nel vault integration FlowForge. Multi-shop supportato (agency che gestisce 10 store Shopify diversi ' +
@@ -652,7 +652,7 @@ export const communityShopifyNode: NodeModule = {
       'sale.order); crea automatic prodotti da feed XML fornitore (RSS o sftp drop → parse → loop → ' +
       'createProduct con immagini); notifica team su nuovo ordine via Slack/email con order summary ' +
       '+ link al admin Shopify; popola CRM HubSpot/Salesforce con customer al checkout per nurturing ' +
-      'post-acquisto; genera fattura elettronica italiana SDI all\'evasione dell\'ordine (collega con il ' +
+      "post-acquisto; genera fattura elettronica italiana SDI all'evasione dell'ordine (collega con il " +
       'modulo SDI/PEC del workflow stack); dashboard vendite real-time con metriche aggregate (cron orario ' +
       '+ listProducts + per-product analytics + push su Google Sheets management).',
     configFields: [
@@ -717,7 +717,7 @@ export const communityMailchimpNode: NodeModule = {
       'rich per campagne ricorrenti, automation workflow, audience segmentation, analytics dettagliata, A/B ' +
       'testing — via Marketing API v3.0 ufficiale. Tre operazioni atomiche coprono il pattern di sync ' +
       'principale tra workflow business e Mailchimp audience: addMember (upsert idempotent del subscriber ' +
-      'nella audience target — Mailchimp API richiede di passare il MD5 hash lowercase dell\'email come ' +
+      "nella audience target — Mailchimp API richiede di passare il MD5 hash lowercase dell'email come " +
       'identifier per le operazioni member-level, il nodo computa automatic questo hash e lo usa per accesso ' +
       'PUT che è naturally idempotent — pattern critico per evitare duplicati su re-run del workflow), ' +
       'getMember (fetch dello stato iscrizione di un subscriber: subscribed, unsubscribed, pending, cleaned, ' +
@@ -725,7 +725,7 @@ export const communityMailchimpNode: NodeModule = {
       '(applicazione di tag al subscriber per segmentation downstream nelle campagne — i tag sono il modo ' +
       'principale di Mailchimp di categorizzare audience oltre alle group/list-level fields). ' +
       'Auth via API Key formato unique 32-hex con suffix -us17 / -us12 / -eu1 / etc. che identifica il ' +
-      'datacenter geografico del account Mailchimp (il nodo parse il suffix e construct correttamente l\'URL ' +
+      "datacenter geografico del account Mailchimp (il nodo parse il suffix e construct correttamente l'URL " +
       'base API tipo https://us17.api.mailchimp.com/3.0/ — pattern Mailchimp che molti developer sbagliano), ' +
       'usato come HTTP Basic Auth username "anystring" + password=apiKey. Stored nel vault integration ' +
       'FlowForge. Multi-account supportato (un tenant FlowForge che gestisce 10 audience Mailchimp di N ' +
@@ -734,7 +734,7 @@ export const communityMailchimpNode: NodeModule = {
       'multi-datacenter — un outage su us17 NON deve bloccare workflow di altro account su eu1), retry ' +
       'exponential backoff su 5xx + 429. Rate limit Mailchimp: 10 concurrent connection per API key + soft ' +
       'limit per minute (varies per account tier — Pro/Premium hanno cap più alti). ' +
-      'Output: { memberId? (MD5 hash dell\'email, sempre presente perché derivable), status? (subscription ' +
+      "Output: { memberId? (MD5 hash dell'email, sempre presente perché derivable), status? (subscription " +
       'state), member? (object completo per getMember), tagged? (boolean per addTag), email, datacenterUsed }. ' +
       'Use case: aggiungi lead da form/scraping alla newsletter aziendale (trigger_form submit → ' +
       'community_mailchimp addMember nella audience "Newsletter generale" con FNAME/LNAME merge fields ' +
@@ -908,7 +908,7 @@ export const communitySendgridNode: NodeModule = {
       '(usa Dynamic Template SendGrid creato nella web UI con Handlebars syntax + passa dynamic_template_data ' +
       'JSON per substitution dei placeholder server-side — pattern recommended enterprise per separare logic ' +
       'invio dal template design che è managed dal marketing team senza dover deploy codice). ' +
-      'Auth via API Key Bearer (formato SG.xxxxx generato dall\'admin SendGrid in Settings → API Keys con ' +
+      "Auth via API Key Bearer (formato SG.xxxxx generato dall'admin SendGrid in Settings → API Keys con " +
       'scope mail.send.full o granular permission slug) stored nel vault integration FlowForge. Multi-key ' +
       'supportato per separazione production vs dev environment o per agency con N customer subaccount. ' +
       'Validation pre-send enterprise: email destinatario validato sintatticamente con regex RFC 5322 ' +
@@ -917,7 +917,7 @@ export const communitySendgridNode: NodeModule = {
       'nome mittente custom ("Acme Customer Service <no-reply@acme.com>" → friendly UI display per ricevente). ' +
       'Pipeline anti-vulnerability: tutte le request transitano via il SSRF-safe gateway HTTP del runtime ' +
       '(safeFetchWithRedirects) per evitare di chiamare endpoint interni privati 192.168.* per misconfig; ' +
-      'circuit-breaker dedicato per SendGrid evita di hammer l\'API durante upstream outage (stato open dopo 8 ' +
+      "circuit-breaker dedicato per SendGrid evita di hammer l'API durante upstream outage (stato open dopo 8 " +
       'fail in 60s → cooldown 30s → half-open probe); retry exponential backoff su 5xx e 429 transitori. ' +
       'Gestione semantica robusta della response 202: SendGrid ritorna HTTP 202 Accepted SENZA body (Mail ' +
       'Send è asincrono server-side, il delivery vero avviene minuti dopo) — il nodo NON tenta di parsare ' +
@@ -1038,7 +1038,7 @@ export const communityAsanaNode: NodeModule = {
       'con tutti i field completi incluso stories timeline + memberships per multi-project task + custom_fields), ' +
       'addComment (story sul task — Asana chiama "stories" tutti i log events del task: comments, status ' +
       'updates, assignment changes, completion ticks — ognuna è una story con author + timestamp + content). ' +
-      'Auth via Personal Access Token (formato 1/xxxxxxxx generato dall\'admin Asana in Settings → Apps → ' +
+      "Auth via Personal Access Token (formato 1/xxxxxxxx generato dall'admin Asana in Settings → Apps → " +
       'Manage Developer Apps → + New Access Token) stored nel vault integration FlowForge. Multi-workspace ' +
       'supportato (un tenant FlowForge che gestisce N workspace Asana diversi per agency che serve N customer). ' +
       'Validation enterprise pre-API call: due_on scadenza validata formato YYYY-MM-DD strict (anti-errore di ' +
@@ -1161,7 +1161,7 @@ export const communityDropboxNode: NodeModule = {
       'integrity check), createSharedLink (genera URL di condivisione pubblico con visibilità ' +
       'configurable + scadenza opzionale per delivery temporanea), deletePath (cancella file o cartella con ' +
       'soft-delete in Trash 30gg per recovery accidentale). ' +
-      'Auth via OAuth2 Access Token Bearer (long-lived token generato dall\'admin Dropbox via OAuth2 ' +
+      "Auth via OAuth2 Access Token Bearer (long-lived token generato dall'admin Dropbox via OAuth2 " +
       'authorization code flow, oppure short-lived con refresh-token per security più stringente) stored ' +
       'nel vault integration FlowForge accessibile via integrationLabel — pattern portal-centric multi-tenant ' +
       'enterprise FlowForge per condividere refresh-token tra workflow del stesso tenant. Multi-account ' +
@@ -1351,7 +1351,7 @@ export const communityGcsNode: NodeModule = {
     color: '#4285f4',
     description:
       'Connettore enterprise per Google Cloud Storage (GCS) — il blob storage service di Google Cloud ' +
-      'Platform che è la base dell\'object storage per Google itself + 6M+ paying GCP customer (alternativa ' +
+      "Platform che è la base dell'object storage per Google itself + 6M+ paying GCP customer (alternativa " +
       'a AWS S3 e Azure Blob Storage, particolarmente strong su prezzo per cold archive Coldline/Archive ' +
       'storage class, integrazione native con BigQuery per data lake analytics, e dual-region/multi-region ' +
       'per GDPR-compliant EU residency) via JSON API v1 ufficiale. Tre operazioni atomiche coprono i pattern ' +
@@ -1359,7 +1359,7 @@ export const communityGcsNode: NodeModule = {
       'opzionale "logs/2026-" per scoping, paginazione cursor-based per bucket con milioni di object, ' +
       'pattern di discovery batch processing), getObjectMetadata (info dettagliata di un object specifico ' +
       'compreso content-type, size, md5Hash + crc32cHash per integrity check, generationNumber per versioning, ' +
-      'mediaLink che è l\'URL signed da usare per il download del payload binary), deleteObject (cancellazione ' +
+      "mediaLink che è l'URL signed da usare per il download del payload binary), deleteObject (cancellazione " +
       'con soft-delete configurabile se versioning enabled sul bucket — recovery 7gg default). ' +
       'Auth via OAuth2 access token con scope devstorage.read_write (oppure devstorage.read_only per use case ' +
       'lista-only), stored nel vault integration FlowForge tramite portal-centric OAuth2 multi-tenant pattern ' +

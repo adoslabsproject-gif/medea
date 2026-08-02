@@ -1,7 +1,10 @@
 import { Hono } from 'hono';
 import { WORKFLOW_TEMPLATES, findTemplate } from '@medea/engine-templates';
 import { WorkflowService } from '@/services/workflow.service.js';
-import { provisionDeclaredTables, remapNodeDatabaseIds } from '@/services/ai-scaffold/scaffold-table-provision.js';
+import {
+  provisionDeclaredTables,
+  remapNodeDatabaseIds,
+} from '@/services/ai-scaffold/scaffold-table-provision.js';
 import type { IEventBus } from '@/ports/event-bus.js';
 import { getTenantId } from '@/lib/tenant.js';
 import { getActorId } from '@/lib/actor.js';
@@ -48,7 +51,10 @@ export function createTemplateRoutes(eventBus: IEventBus): Hono {
     if (template.tablesToCreate && template.tablesToCreate.length > 0) {
       const { DbStudioService } = await import('@/services/db-studio.service.js');
       const provision = await provisionDeclaredTables(
-        new DbStudioService(), tenantId, template.tablesToCreate, logger,
+        new DbStudioService(),
+        tenantId,
+        template.tablesToCreate,
+        logger,
       );
       tablesCreated = provision.tablesCreated;
       remapNodeDatabaseIds(nodes, provision.dbRemap);
@@ -66,11 +72,14 @@ export function createTemplateRoutes(eventBus: IEventBus): Hono {
     };
     if (actorId !== undefined) input.createdBy = actorId;
     const created = await workflows.create(input);
-    return c.json({
-      workflow: created,
-      templateId: template.id,
-      ...(tablesCreated.length > 0 ? { tablesCreated } : {}),
-    }, 201);
+    return c.json(
+      {
+        workflow: created,
+        templateId: template.id,
+        ...(tablesCreated.length > 0 ? { tablesCreated } : {}),
+      },
+      201,
+    );
   });
 
   return app;

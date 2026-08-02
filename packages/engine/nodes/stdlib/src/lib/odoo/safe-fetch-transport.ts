@@ -33,8 +33,14 @@ async function readOdooTextCapped(res: Response): Promise<string> {
   const overMsg = `Risposta Odoo troppo grande (oltre ${(ODOO_MAX_RESPONSE_BYTES / 1048576).toString()} MB). Restringi la query (domain/limit/fields).`;
   const declaredLen = Number(res.headers.get('content-length'));
   if (Number.isFinite(declaredLen) && declaredLen > ODOO_MAX_RESPONSE_BYTES) {
-    try { await res.body?.cancel(); } catch { /* best-effort */ }
-    throw new Error(`Risposta Odoo troppo grande: ${(declaredLen / 1048576).toFixed(1)} MB oltre il limite di ${(ODOO_MAX_RESPONSE_BYTES / 1048576).toString()} MB. Restringi la query (domain/limit/fields).`);
+    try {
+      await res.body?.cancel();
+    } catch {
+      /* best-effort */
+    }
+    throw new Error(
+      `Risposta Odoo troppo grande: ${(declaredLen / 1048576).toFixed(1)} MB oltre il limite di ${(ODOO_MAX_RESPONSE_BYTES / 1048576).toString()} MB. Restringi la query (domain/limit/fields).`,
+    );
   }
   const body = res.body;
   if (body && typeof body.getReader === 'function') {
@@ -50,7 +56,11 @@ async function readOdooTextCapped(res: Response): Promise<string> {
       if (value.byteLength > 0) {
         total += value.byteLength;
         if (total > ODOO_MAX_RESPONSE_BYTES) {
-          try { await reader.cancel(); } catch { /* best-effort */ }
+          try {
+            await reader.cancel();
+          } catch {
+            /* best-effort */
+          }
           throw new Error(overMsg);
         }
         out += decoder.decode(value, { stream: true });
@@ -75,14 +85,34 @@ export function makeSafeFetchOdooTransport(followRedirects: boolean): OdooHttpTr
   return {
     async post({ url, body, headers, timeoutMs, signal }) {
       const timeoutCtrl = new AbortController();
-      const t = setTimeout(() => { timeoutCtrl.abort(); }, timeoutMs);
+      const t = setTimeout(() => {
+        timeoutCtrl.abort();
+      }, timeoutMs);
       try {
         const aborter = new Promise<never>((_, reject) => {
-          if (timeoutCtrl.signal.aborted) { reject(new Error('per_probe_timeout')); return; }
-          timeoutCtrl.signal.addEventListener('abort', () => { reject(new Error('per_probe_timeout')); }, { once: true });
+          if (timeoutCtrl.signal.aborted) {
+            reject(new Error('per_probe_timeout'));
+            return;
+          }
+          timeoutCtrl.signal.addEventListener(
+            'abort',
+            () => {
+              reject(new Error('per_probe_timeout'));
+            },
+            { once: true },
+          );
           if (signal) {
-            if (signal.aborted) { reject(new Error('run_aborted')); return; }
-            signal.addEventListener('abort', () => { reject(new Error('run_aborted')); }, { once: true });
+            if (signal.aborted) {
+              reject(new Error('run_aborted'));
+              return;
+            }
+            signal.addEventListener(
+              'abort',
+              () => {
+                reject(new Error('run_aborted'));
+              },
+              { once: true },
+            );
           }
         });
 
@@ -96,7 +126,13 @@ export function makeSafeFetchOdooTransport(followRedirects: boolean): OdooHttpTr
         } else {
           assertUrlSafe(url);
           res = await Promise.race([
-            fetch(url, { method: 'POST', headers: reqHeaders, body, redirect: 'manual', signal: timeoutCtrl.signal }),
+            fetch(url, {
+              method: 'POST',
+              headers: reqHeaders,
+              body,
+              redirect: 'manual',
+              signal: timeoutCtrl.signal,
+            }),
             aborter,
           ]);
         }

@@ -29,8 +29,10 @@ import { createHash } from 'node:crypto';
 import { logger } from '@/lib/logger.js';
 
 function registryDir(): string {
-  return process.env.MEDEA_REGISTRY_DIR?.trim()
-    || join(process.env.MEDEA_DATA_DIR?.trim() || process.cwd(), 'registry');
+  return (
+    process.env.MEDEA_REGISTRY_DIR?.trim() ||
+    join(process.env.MEDEA_DATA_DIR?.trim() || process.cwd(), 'registry')
+  );
 }
 
 export function createRegistryServerRoutes(): Hono {
@@ -101,12 +103,14 @@ export function createRegistryServerRoutes(): Hono {
     if (!existsSync(dir)) return c.json({ files: [] });
     try {
       const items = await readdir(dir);
-      const out = await Promise.all(items
-        .filter((f) => f.endsWith('.ffnode'))
-        .map(async (f) => {
-          const st = await stat(join(dir, f));
-          return { name: f, size: st.size, mtime: st.mtime.toISOString() };
-        }));
+      const out = await Promise.all(
+        items
+          .filter((f) => f.endsWith('.ffnode'))
+          .map(async (f) => {
+            const st = await stat(join(dir, f));
+            return { name: f, size: st.size, mtime: st.mtime.toISOString() };
+          }),
+      );
       return c.json({ files: out });
     } catch (err) {
       return c.json({ error: err instanceof Error ? err.message : String(err) }, 500);

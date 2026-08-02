@@ -36,7 +36,9 @@ describe('readonly-flag — persistenza + cache', () => {
     setWorkspaceReadOnly(true);
     __resetReadOnlyCacheForTest(); // forza rilettura dal disco
     expect(isWorkspaceReadOnly()).toBe(true);
-    const row = sqlite.prepare('SELECT value FROM system_flags WHERE key = ?').get('read_only') as { value: string };
+    const row = sqlite.prepare('SELECT value FROM system_flags WHERE key = ?').get('read_only') as {
+      value: string;
+    };
     expect(row.value).toBe('true');
   });
 
@@ -64,7 +66,7 @@ describe('readonly-flag — persistenza + cache', () => {
   it('cache hot-path: dopo set non rilegge sqlite finché non resettata', () => {
     setWorkspaceReadOnly(true);
     sqlite.exec("UPDATE system_flags SET value = 'false' WHERE key = 'read_only'");
-    expect(isWorkspaceReadOnly()).toBe(true);  // serve dalla cache
+    expect(isWorkspaceReadOnly()).toBe(true); // serve dalla cache
     __resetReadOnlyCacheForTest();
     expect(isWorkspaceReadOnly()).toBe(false); // dopo reset rilegge il vero valore
   });

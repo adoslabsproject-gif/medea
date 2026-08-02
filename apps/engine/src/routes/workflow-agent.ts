@@ -34,18 +34,22 @@ import { liaraBaseUrl } from '@/config.js';
 import { makeOpenAiLlmTurn } from '@/services/db-agent/chat/openai-tool-adapter.js';
 import type { LlmTurn } from '@/services/db-agent/chat/types.js';
 
-const BuildBodySchema = z.object({
-  goal: z.string().min(5).max(4000),
-  extraContext: z.string().max(20_000).optional(),
-  maxIterations: z.number().int().min(1).max(24).optional(),
-}).strict();
+const BuildBodySchema = z
+  .object({
+    goal: z.string().min(5).max(4000),
+    extraContext: z.string().max(20_000).optional(),
+    maxIterations: z.number().int().min(1).max(24).optional(),
+  })
+  .strict();
 
-const ModifyBodySchema = z.object({
-  workflowId: z.string().min(1).max(200),
-  request: z.string().min(3).max(4000),
-  extraContext: z.string().max(20_000).optional(),
-  maxIterations: z.number().int().min(1).max(24).optional(),
-}).strict();
+const ModifyBodySchema = z
+  .object({
+    workflowId: z.string().min(1).max(200),
+    request: z.string().min(3).max(4000),
+    extraContext: z.string().max(20_000).optional(),
+    maxIterations: z.number().int().min(1).max(24).optional(),
+  })
+  .strict();
 
 export interface WorkflowAgentRouteOptions {
   /** Iniezione test: LlmTurn stubbato (niente LLM reale). */
@@ -58,7 +62,9 @@ export interface WorkflowAgentRouteOptions {
   configuredSecretsFor?: (tenantId: string) => ReadonlySet<string>;
 }
 
-type TurnResolution = { ok: true; llmTurn: LlmTurn } | { ok: false; status: 400 | 401 | 402 | 403; error: string };
+type TurnResolution =
+  | { ok: true; llmTurn: LlmTurn }
+  | { ok: false; status: 400 | 401 | 402 | 403; error: string };
 
 /** Risolve l'LlmTurn per il tenant (DRY tra /build e /modify). Mai lancia su
  *  NoLlmProviderError → lo converte in errore strutturato. */
@@ -73,7 +79,8 @@ function resolveTurn(tenantId: string, opts: WorkflowAgentRouteOptions): TurnRes
     const target = resolveToolEndpoint(r.provider, r.model, baseUrl);
     if (!target) {
       return {
-        ok: false, status: 400,
+        ok: false,
+        status: 400,
         error: `Il provider "${r.provider}" non supporta il tool-calling richiesto dall'agente. Usa OpenAI, Gemini, Grok, DeepSeek, OpenRouter, Groq, Mistral, Liara o Ollama.`,
       };
     }
@@ -90,30 +97,43 @@ function resolveTurn(tenantId: string, opts: WorkflowAgentRouteOptions): TurnRes
       }),
     };
   } catch (err) {
-    if (err instanceof NoLlmProviderError) return { ok: false, status: err.httpStatus, error: err.message };
+    if (err instanceof NoLlmProviderError)
+      return { ok: false, status: err.httpStatus, error: err.message };
     throw err;
   }
 }
 
 /** Catalog reale (lazy: tira il registry runtime). Iniettabile nei test. */
 async function resolveCatalog(opts: WorkflowAgentRouteOptions): Promise<NodeCatalogEntry[]> {
-  return opts.catalog ?? (await import('@/services/ai-scaffold/node-catalog.js')).buildNodeCatalog();
+  return (
+    opts.catalog ?? (await import('@/services/ai-scaffold/node-catalog.js')).buildNodeCatalog()
+  );
 }
 
 /** Carica il workflow esistente dal DB tenant come snapshot per il seed.
  *  Import dinamico: workflow-control tira getDatabase (DB del container). */
-async function loadSnapshot(opts: WorkflowAgentRouteOptions, workflowId: string): Promise<WorkflowSnapshot | null> {
+async function loadSnapshot(
+  opts: WorkflowAgentRouteOptions,
+  workflowId: string,
+): Promise<WorkflowSnapshot | null> {
   if (opts.loadWorkflowSnapshot) return opts.loadWorkflowSnapshot(workflowId);
   const { getWorkflow } = await import('@/services/workflow-control-tools.service.js');
   const wf = getWorkflow(workflowId);
   if (!wf) return null;
   return {
     nodes: wf.nodes.map((n) => ({ id: n.id, defId: n.defId, config: n.config })),
-    edges: wf.edges.map((e) => ({ from: e.from, to: e.to, ...(e.fromPort ? { fromPort: e.fromPort } : {}) })),
+    edges: wf.edges.map((e) => ({
+      from: e.from,
+      to: e.to,
+      ...(e.fromPort ? { fromPort: e.fromPort } : {}),
+    })),
   };
 }
 
-async function loadConfiguredSecrets(opts: WorkflowAgentRouteOptions, tenantId: string): Promise<ReadonlySet<string>> {
+async function loadConfiguredSecrets(
+  opts: WorkflowAgentRouteOptions,
+  tenantId: string,
+): Promise<ReadonlySet<string>> {
   if (opts.configuredSecretsFor) return opts.configuredSecretsFor(tenantId);
   const { GlobalVariablesService } = await import('@/services/global-variables.service.js');
   return new Set<string>(new GlobalVariablesService().list(tenantId).map((v) => v.name));
@@ -140,10 +160,15 @@ export function createWorkflowAgentRoutes(opts: WorkflowAgentRouteOptions = {}):
       try {
         const result = await runWorkflowAgent({
           catalog,
-          prompt: { goal: body.goal, ...(body.extraContext ? { extraContext: body.extraContext } : {}) },
+          prompt: {
+            goal: body.goal,
+            ...(body.extraContext ? { extraContext: body.extraContext } : {}),
+          },
           llmTurn: turn.llmTurn,
           ...(body.maxIterations ? { maxIterations: body.maxIterations } : {}),
-          onStep: (step) => { void stream.writeSSE({ event: 'step', data: JSON.stringify(step) }); },
+          onStep: (step) => {
+            void stream.writeSSE({ event: 'step', data: JSON.stringify(step) });
+          },
         });
         // Assembla il Workflow canonico dallo snapshot (default x/y, schema-validato)
         // → il frontend lo importa con la STESSA logica del wizard singleshot.
@@ -152,16 +177,29 @@ export function createWorkflowAgentRoutes(opts: WorkflowAgentRouteOptions = {}):
         try {
           workflow = assembleWorkflow({
             name: body.goal.slice(0, 80),
-            nodes: result.snapshot.nodes.map((n) => ({ id: n.id, defId: n.defId, config: n.config })),
+            nodes: result.snapshot.nodes.map((n) => ({
+              id: n.id,
+              defId: n.defId,
+              config: n.config,
+            })),
             edges: result.snapshot.edges,
           });
         } catch (asmErr) {
-          logger.warn({ err: asmErr instanceof Error ? asmErr.message : String(asmErr), tenantId }, '[workflow-agent] assemble-workflow failed (snapshot resta disponibile)');
+          logger.warn(
+            { err: asmErr instanceof Error ? asmErr.message : String(asmErr), tenantId },
+            '[workflow-agent] assemble-workflow failed (snapshot resta disponibile)',
+          );
         }
         await stream.writeSSE({ event: 'done', data: JSON.stringify({ ...result, workflow }) });
       } catch (err) {
-        logger.error({ err: err instanceof Error ? err.message : String(err), tenantId }, '[workflow-agent] build failed');
-        await stream.writeSSE({ event: 'error', data: JSON.stringify({ error: 'Generazione interrotta da un errore interno.' }) });
+        logger.error(
+          { err: err instanceof Error ? err.message : String(err), tenantId },
+          '[workflow-agent] build failed',
+        );
+        await stream.writeSSE({
+          event: 'error',
+          data: JSON.stringify({ error: 'Generazione interrotta da un errore interno.' }),
+        });
       }
     });
   });
@@ -189,12 +227,20 @@ export function createWorkflowAgentRoutes(opts: WorkflowAgentRouteOptions = {}):
           configuredSecrets,
           ...(body.extraContext ? { extraContext: body.extraContext } : {}),
           ...(body.maxIterations ? { maxIterations: body.maxIterations } : {}),
-          onStep: (step) => { void stream.writeSSE({ event: 'step', data: JSON.stringify(step) }); },
+          onStep: (step) => {
+            void stream.writeSSE({ event: 'step', data: JSON.stringify(step) });
+          },
         });
         await stream.writeSSE({ event: 'done', data: JSON.stringify(result) });
       } catch (err) {
-        logger.error({ err: err instanceof Error ? err.message : String(err), tenantId }, '[workflow-agent] modify failed');
-        await stream.writeSSE({ event: 'error', data: JSON.stringify({ error: 'Modifica interrotta da un errore interno.' }) });
+        logger.error(
+          { err: err instanceof Error ? err.message : String(err), tenantId },
+          '[workflow-agent] modify failed',
+        );
+        await stream.writeSSE({
+          event: 'error',
+          data: JSON.stringify({ error: 'Modifica interrotta da un errore interno.' }),
+        });
       }
     });
   });

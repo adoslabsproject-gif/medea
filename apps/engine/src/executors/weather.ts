@@ -21,13 +21,41 @@ const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const CACHE_MAX = 500;
 
-interface CacheEntry { value: WeatherOutput; expiresAt: number }
+interface CacheEntry {
+  value: WeatherOutput;
+  expiresAt: number;
+}
 const cache = new Map<string, CacheEntry>();
 
-interface Location { name: string; lat: number; lon: number; country: string; timezone: string }
-interface Current { tempC: number; feelsLikeC: number; humidity: number; windKmh: number; windDir: number; condition: string; icon: string }
-interface ForecastDay { date: string; minC: number; maxC: number; condition: string; precipitationMm: number; icon: string }
-interface WeatherOutput { location: Location; current: Current; forecast: ForecastDay[] }
+interface Location {
+  name: string;
+  lat: number;
+  lon: number;
+  country: string;
+  timezone: string;
+}
+interface Current {
+  tempC: number;
+  feelsLikeC: number;
+  humidity: number;
+  windKmh: number;
+  windDir: number;
+  condition: string;
+  icon: string;
+}
+interface ForecastDay {
+  date: string;
+  minC: number;
+  maxC: number;
+  condition: string;
+  precipitationMm: number;
+  icon: string;
+}
+interface WeatherOutput {
+  location: Location;
+  current: Current;
+  forecast: ForecastDay[];
+}
 
 const CONDITION_MAP: Record<number, { it: string; en: string; icon: string }> = {
   0: { it: 'sereno', en: 'clear', icon: '☀️' },
@@ -59,7 +87,9 @@ function mapCondition(code: number, lang: 'it' | 'en'): { condition: string; ico
   return { condition: m[lang], icon: m.icon };
 }
 
-function parseLocation(raw: string): { mode: 'coords'; lat: number; lon: number } | { mode: 'city'; name: string } {
+function parseLocation(
+  raw: string,
+): { mode: 'coords'; lat: number; lon: number } | { mode: 'city'; name: string } {
   const trimmed = raw.trim();
   const coordsMatch = /^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/.exec(trimmed);
   if (coordsMatch) {
@@ -72,8 +102,14 @@ function parseLocation(raw: string): { mode: 'coords'; lat: number; lon: number 
   return { mode: 'city', name: trimmed };
 }
 
-interface GeoApiHit { name: string; latitude: number; longitude: number; country: string; timezone: string }
-async function geocodeCity(name: string, signal?: AbortSignal  ): Promise<Location> {
+interface GeoApiHit {
+  name: string;
+  latitude: number;
+  longitude: number;
+  country: string;
+  timezone: string;
+}
+async function geocodeCity(name: string, signal?: AbortSignal): Promise<Location> {
   const url = `${GEOCODE_URL}?name=${encodeURIComponent(name)}&count=1&language=it&format=json`;
   // safeOutboundFetch: SSRF guard + per-host circuit breaker + telemetry span.
   // Coerenza standard "breaker everywhere" del codebase (consulente top-2026).
@@ -85,7 +121,10 @@ async function geocodeCity(name: string, signal?: AbortSignal  ): Promise<Locati
   if (!res.ok) throw new Error(`weather_node: geocoding fallito (HTTP ${String(res.status)})`);
   const data = await readJsonCapped<{ results?: GeoApiHit[] }>(res);
   const hit = data.results?.[0];
-  if (!hit) throw new Error(`weather_node: località "${name}" non trovata. Prova con coordinate "lat,lon".`);
+  if (!hit)
+    throw new Error(
+      `weather_node: località "${name}" non trovata. Prova con coordinate "lat,lon".`,
+    );
   return {
     name: hit.name,
     lat: hit.latitude,
@@ -114,10 +153,18 @@ interface ForecastApiResponse {
   timezone?: string;
 }
 
-function fToC(f: number): number { return (f - 32) * 5 / 9; }
-function cToF(c: number): number { return c * 9 / 5 + 32; }
-function kmhToMph(k: number): number { return k * 0.621371; }
-function mmToInch(m: number): number { return m / 25.4; }
+function fToC(f: number): number {
+  return ((f - 32) * 5) / 9;
+}
+function cToF(c: number): number {
+  return (c * 9) / 5 + 32;
+}
+function kmhToMph(k: number): number {
+  return k * 0.621371;
+}
+function mmToInch(m: number): number {
+  return m / 25.4;
+}
 
 export const weatherExecutor: NodeExecutor = async (rawConfig, _input, context) => {
   const start = Date.now();
@@ -136,7 +183,13 @@ export const weatherExecutor: NodeExecutor = async (rawConfig, _input, context) 
   if (parsed.mode === 'city') {
     location = await geocodeCity(parsed.name, context.abortSignal);
   } else {
-    location = { name: `${parsed.lat.toString()},${parsed.lon.toString()}`, lat: parsed.lat, lon: parsed.lon, country: '', timezone: 'auto' };
+    location = {
+      name: `${parsed.lat.toString()},${parsed.lon.toString()}`,
+      lat: parsed.lat,
+      lon: parsed.lon,
+      country: '',
+      timezone: 'auto',
+    };
   }
 
   // Cache key — grid 2 decimali (≈1km), incluso days/units/lang per evitare miss-cache
@@ -149,10 +202,16 @@ export const weatherExecutor: NodeExecutor = async (rawConfig, _input, context) 
   const fcUrl = new URL(FORECAST_URL);
   fcUrl.searchParams.set('latitude', location.lat.toString());
   fcUrl.searchParams.set('longitude', location.lon.toString());
-  fcUrl.searchParams.set('current', 'temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code');
+  fcUrl.searchParams.set(
+    'current',
+    'temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code',
+  );
   fcUrl.searchParams.set('timezone', 'auto');
   if (forecastDays > 0) {
-    fcUrl.searchParams.set('daily', 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum');
+    fcUrl.searchParams.set(
+      'daily',
+      'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum',
+    );
     fcUrl.searchParams.set('forecast_days', forecastDays.toString());
   }
   const fcRes = await safeOutboundFetch(fcUrl.toString(), {
@@ -160,7 +219,8 @@ export const weatherExecutor: NodeExecutor = async (rawConfig, _input, context) 
     spanName: 'http.outbound.openmeteo.forecast',
     ...(context.abortSignal ? { externalSignal: context.abortSignal } : {}),
   });
-  if (!fcRes.ok) throw new Error(`weather_node: forecast API fallita (HTTP ${String(fcRes.status)})`);
+  if (!fcRes.ok)
+    throw new Error(`weather_node: forecast API fallita (HTTP ${String(fcRes.status)})`);
   const data = await readJsonCapped<ForecastApiResponse>(fcRes);
   if (!data.current) throw new Error('weather_node: risposta API senza campo `current`');
 
@@ -186,7 +246,8 @@ export const weatherExecutor: NodeExecutor = async (rawConfig, _input, context) 
         minC: units === 'metric' ? d.temperature_2m_min[i]! : cToF(d.temperature_2m_min[i]!),
         maxC: units === 'metric' ? d.temperature_2m_max[i]! : cToF(d.temperature_2m_max[i]!),
         condition: cond.condition,
-        precipitationMm: units === 'metric' ? d.precipitation_sum[i]! : mmToInch(d.precipitation_sum[i]!),
+        precipitationMm:
+          units === 'metric' ? d.precipitation_sum[i]! : mmToInch(d.precipitation_sum[i]!),
         icon: cond.icon,
       });
     }
@@ -207,4 +268,12 @@ export const weatherExecutor: NodeExecutor = async (rawConfig, _input, context) 
 };
 
 // Helpers esposti per test
-export const __test__ = { parseLocation, mapCondition, fToC, cToF, kmhToMph, mmToInch, clearCache: (): void => cache.clear() };
+export const __test__ = {
+  parseLocation,
+  mapCondition,
+  fToC,
+  cToF,
+  kmhToMph,
+  mmToInch,
+  clearCache: (): void => cache.clear(),
+};

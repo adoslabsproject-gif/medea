@@ -13,7 +13,14 @@ vi.mock('@medea/engine-safe-fetch', () => ({
 const { safeFetchWithRedirects } = await import('@medea/engine-safe-fetch');
 const mockedFetch = vi.mocked(safeFetchWithRedirects);
 
-const ctx = { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {}, llmProviders: {} } as const;
+const ctx = {
+  tenantId: 't',
+  workflowId: 'w',
+  runId: 'r',
+  nodeId: 'n',
+  secrets: {},
+  llmProviders: {},
+} as const;
 
 beforeEach(() => {
   mockedFetch.mockReset();
@@ -62,7 +69,9 @@ describe('buildCrawlerRequest', () => {
 
   it('maxPages clamp [1, 100k]', () => {
     expect(buildCrawlerRequest({ seeds: 'https://a.com', maxPages: 0 }).maxPages).toBe(1);
-    expect(buildCrawlerRequest({ seeds: 'https://a.com', maxPages: 999_999 }).maxPages).toBe(100_000);
+    expect(buildCrawlerRequest({ seeds: 'https://a.com', maxPages: 999_999 }).maxPages).toBe(
+      100_000,
+    );
   });
 
   it('parallelism clamp [1, 50]', () => {
@@ -71,8 +80,13 @@ describe('buildCrawlerRequest', () => {
   });
 
   it('rateLimitPerHostQps clamp [0.1, 50]', () => {
-    expect(buildCrawlerRequest({ seeds: 'https://a.com', rateLimitPerHostQps: 0 }).rateLimitPerHostQps).toBe(0.1);
-    expect(buildCrawlerRequest({ seeds: 'https://a.com', rateLimitPerHostQps: 1000 }).rateLimitPerHostQps).toBe(50);
+    expect(
+      buildCrawlerRequest({ seeds: 'https://a.com', rateLimitPerHostQps: 0 }).rateLimitPerHostQps,
+    ).toBe(0.1);
+    expect(
+      buildCrawlerRequest({ seeds: 'https://a.com', rateLimitPerHostQps: 1000 })
+        .rateLimitPerHostQps,
+    ).toBe(50);
   });
 
   it('bloom filter capacity + fpr clamps', () => {
@@ -86,17 +100,27 @@ describe('buildCrawlerRequest', () => {
   });
 
   it('respectRobots false explicit', () => {
-    expect(buildCrawlerRequest({ seeds: 'https://a.com', respectRobots: false }).respectRobots).toBe(false);
-    expect(buildCrawlerRequest({ seeds: 'https://a.com', respectRobots: 'false' }).respectRobots).toBe(false);
+    expect(
+      buildCrawlerRequest({ seeds: 'https://a.com', respectRobots: false }).respectRobots,
+    ).toBe(false);
+    expect(
+      buildCrawlerRequest({ seeds: 'https://a.com', respectRobots: 'false' }).respectRobots,
+    ).toBe(false);
   });
 
   it('callbackBatchSize clamp [1, 1000]', () => {
-    expect(buildCrawlerRequest({ seeds: 'https://a.com', callbackBatchSize: 0 }).callbackBatchSize).toBe(1);
-    expect(buildCrawlerRequest({ seeds: 'https://a.com', callbackBatchSize: 9999 }).callbackBatchSize).toBe(1000);
+    expect(
+      buildCrawlerRequest({ seeds: 'https://a.com', callbackBatchSize: 0 }).callbackBatchSize,
+    ).toBe(1);
+    expect(
+      buildCrawlerRequest({ seeds: 'https://a.com', callbackBatchSize: 9999 }).callbackBatchSize,
+    ).toBe(1000);
   });
 
   it('userAgent default identifica FlowForge', () => {
-    expect(buildCrawlerRequest({ seeds: 'https://a.com' }).userAgent).toContain('FlowForge-Crawler');
+    expect(buildCrawlerRequest({ seeds: 'https://a.com' }).userAgent).toContain(
+      'FlowForge-Crawler',
+    );
   });
 });
 
@@ -110,7 +134,12 @@ describe('distributedCrawlerNode.def', () => {
 
   it('action field ha 4 options (start, status, stop, results)', () => {
     const f = distributedCrawlerNode.def.configFields?.find((x) => x.key === 'action');
-    expect(f && 'options' in f ? [...(f.options ?? [])].sort() : []).toEqual(['results', 'start', 'status', 'stop']);
+    expect(f && 'options' in f ? [...(f.options ?? [])].sort() : []).toEqual([
+      'results',
+      'start',
+      'status',
+      'stop',
+    ]);
   });
 });
 
@@ -125,18 +154,24 @@ describe('distributedCrawlerNode.executor', () => {
   it('action=start → POST /crawl/start con body, ritorna jobId', async () => {
     process.env.MEDEA_CRAWLER_ENDPOINT = 'https://crawler.x.com';
     mockedFetch.mockResolvedValue({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({ jobId: 'crawl_abc', status: 'queued', queueDepth: 5 }),
     } as unknown as Response);
 
     if (!distributedCrawlerNode.executor) throw new Error('executor mancante');
     const res = await distributedCrawlerNode.executor(
-      { action: 'start', seeds: 'https://target.com', maxDepth: 2 }, null, ctx,
+      { action: 'start', seeds: 'https://target.com', maxDepth: 2 },
+      null,
+      ctx,
     );
     const [url, opts] = mockedFetch.mock.calls[0]!;
     expect(url).toBe('https://crawler.x.com/crawl/start');
     expect((opts as { method: string }).method).toBe('POST');
-    const body = JSON.parse((opts as { body: string }).body) as { seeds: string[]; maxDepth: number };
+    const body = JSON.parse((opts as { body: string }).body) as {
+      seeds: string[];
+      maxDepth: number;
+    };
     expect(body.seeds).toEqual(['https://target.com']);
     expect(body.maxDepth).toBe(2);
     const out = res.output as { jobId: string; status: string; queueDepth: number };
@@ -148,20 +183,25 @@ describe('distributedCrawlerNode.executor', () => {
   it('action=status senza jobId → throw', async () => {
     process.env.MEDEA_CRAWLER_ENDPOINT = 'https://x.com';
     if (!distributedCrawlerNode.executor) throw new Error('executor mancante');
-    await expect(
-      distributedCrawlerNode.executor({ action: 'status' }, null, ctx),
-    ).rejects.toThrow(/jobId required for action=status/);
+    await expect(distributedCrawlerNode.executor({ action: 'status' }, null, ctx)).rejects.toThrow(
+      /jobId required for action=status/,
+    );
   });
 
   it('action=status con jobId → GET /crawl/{id}/status', async () => {
     process.env.MEDEA_CRAWLER_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({ pagesCrawled: 42, queueDepth: 13, status: 'running' }),
     } as unknown as Response);
 
     if (!distributedCrawlerNode.executor) throw new Error('executor mancante');
-    const res = await distributedCrawlerNode.executor({ action: 'status', jobId: 'job_xyz' }, null, ctx);
+    const res = await distributedCrawlerNode.executor(
+      { action: 'status', jobId: 'job_xyz' },
+      null,
+      ctx,
+    );
     expect(mockedFetch.mock.calls[0]![0]).toBe('https://x.com/crawl/job_xyz/status');
     expect((mockedFetch.mock.calls[0]![1] as { method: string }).method).toBe('GET');
     expect((res.output as { pagesCrawled: number }).pagesCrawled).toBe(42);
@@ -169,7 +209,11 @@ describe('distributedCrawlerNode.executor', () => {
 
   it('action=stop → POST /crawl/{id}/stop', async () => {
     process.env.MEDEA_CRAWLER_ENDPOINT = 'https://x.com';
-    mockedFetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) } as unknown as Response);
+    mockedFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    } as unknown as Response);
 
     if (!distributedCrawlerNode.executor) throw new Error('executor mancante');
     const res = await distributedCrawlerNode.executor({ action: 'stop', jobId: 'jx' }, null, ctx);
@@ -180,12 +224,17 @@ describe('distributedCrawlerNode.executor', () => {
   it('action=results con cursor → GET con query string', async () => {
     process.env.MEDEA_CRAWLER_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({ items: [{ url: 'a' }, { url: 'b' }], nextCursor: 'cur_2' }),
     } as unknown as Response);
 
     if (!distributedCrawlerNode.executor) throw new Error('executor mancante');
-    const res = await distributedCrawlerNode.executor({ action: 'results', jobId: 'jx', cursor: 'cur_1' }, null, ctx);
+    const res = await distributedCrawlerNode.executor(
+      { action: 'results', jobId: 'jx', cursor: 'cur_1' },
+      null,
+      ctx,
+    );
     expect(mockedFetch.mock.calls[0]![0]).toBe('https://x.com/crawl/jx/results?cursor=cur_1');
     const out = res.output as { items: unknown[]; count: number; nextCursor: string };
     expect(out.count).toBe(2);
@@ -195,7 +244,9 @@ describe('distributedCrawlerNode.executor', () => {
   it('action=results senza cursor → no query string', async () => {
     process.env.MEDEA_CRAWLER_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({
-      ok: true, status: 200, json: async () => ({ items: [] }),
+      ok: true,
+      status: 200,
+      json: async () => ({ items: [] }),
     } as unknown as Response);
 
     if (!distributedCrawlerNode.executor) throw new Error('executor mancante');
@@ -206,15 +257,17 @@ describe('distributedCrawlerNode.executor', () => {
   it('action unknown → throw lista azioni valide', async () => {
     process.env.MEDEA_CRAWLER_ENDPOINT = 'https://x.com';
     if (!distributedCrawlerNode.executor) throw new Error('executor mancante');
-    await expect(
-      distributedCrawlerNode.executor({ action: 'wat' }, null, ctx),
-    ).rejects.toThrow(/unknown action "wat".*start.*status.*stop.*results/);
+    await expect(distributedCrawlerNode.executor({ action: 'wat' }, null, ctx)).rejects.toThrow(
+      /unknown action "wat".*start.*status.*stop.*results/,
+    );
   });
 
   it('endpoint non-ok su start → throw con status', async () => {
     process.env.MEDEA_CRAWLER_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({
-      ok: false, status: 503, text: async () => 'queue full',
+      ok: false,
+      status: 503,
+      text: async () => 'queue full',
     } as unknown as Response);
 
     if (!distributedCrawlerNode.executor) throw new Error('executor mancante');

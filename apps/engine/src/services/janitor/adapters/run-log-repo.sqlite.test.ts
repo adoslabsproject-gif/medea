@@ -58,7 +58,12 @@ beforeEach(() => {
     );
   `);
   db = drizzle(sqlite, { schema: { janitorRunLog } });
-  getDatabaseMock.mockReturnValue({ db, conn: sqlite, kind: 'sqlite', close: () => Promise.resolve() });
+  getDatabaseMock.mockReturnValue({
+    db,
+    conn: sqlite,
+    kind: 'sqlite',
+    close: () => Promise.resolve(),
+  });
   repo = new SqliteRunLogRepository();
 });
 
@@ -126,32 +131,40 @@ describe('🚨 appendRule + listRuleReports', () => {
 
 describe('🚨 listRuleReports — filtri', () => {
   beforeEach(async () => {
-    await repo.appendRule(mkReport({ ruleId: 'rule.a', tenantId: 't1', success: true, dryRun: false }));
-    await repo.appendRule(mkReport({ ruleId: 'rule.a', tenantId: 't1', success: false, dryRun: false }));
-    await repo.appendRule(mkReport({ ruleId: 'rule.b', tenantId: 't1', success: true, dryRun: true }));
-    await repo.appendRule(mkReport({ ruleId: 'rule.a', tenantId: 't2', success: true, dryRun: false }));
+    await repo.appendRule(
+      mkReport({ ruleId: 'rule.a', tenantId: 't1', success: true, dryRun: false }),
+    );
+    await repo.appendRule(
+      mkReport({ ruleId: 'rule.a', tenantId: 't1', success: false, dryRun: false }),
+    );
+    await repo.appendRule(
+      mkReport({ ruleId: 'rule.b', tenantId: 't1', success: true, dryRun: true }),
+    );
+    await repo.appendRule(
+      mkReport({ ruleId: 'rule.a', tenantId: 't2', success: true, dryRun: false }),
+    );
   });
 
   it('🚨 SECURITY: filter tenantId → no cross-tenant leak', async () => {
     const out = await repo.listRuleReports({ tenantId: 't1' });
     expect(out).toHaveLength(3);
-    expect(out.every(r => r.tenantId === 't1')).toBe(true);
+    expect(out.every((r) => r.tenantId === 't1')).toBe(true);
   });
 
   it('🚨 filter ruleId', async () => {
     const out = await repo.listRuleReports({ ruleId: 'rule.a' });
     expect(out).toHaveLength(3);
-    expect(out.every(r => r.ruleId === 'rule.a')).toBe(true);
+    expect(out.every((r) => r.ruleId === 'rule.a')).toBe(true);
   });
 
   it('🚨 successOnly=true → solo success', async () => {
     const out = await repo.listRuleReports({ successOnly: true });
-    expect(out.every(r => r.success === true)).toBe(true);
+    expect(out.every((r) => r.success === true)).toBe(true);
   });
 
   it('🚨 dryRunOnly=true → solo dry runs', async () => {
     const out = await repo.listRuleReports({ dryRunOnly: true });
-    expect(out.every(r => r.dryRun === true)).toBe(true);
+    expect(out.every((r) => r.dryRun === true)).toBe(true);
   });
 
   it('🚨 combined filter tenantId+ruleId', async () => {
@@ -203,11 +216,20 @@ describe('🚨 listRuleReports — limit cap', () => {
 
 describe('🚨 appendCycle — no-op simmetrico', () => {
   it('🚨 appendCycle non lancia errori (no-op interno)', async () => {
-    await expect(repo.appendCycle({
-      cycleId: 'c1', startedAt: '2026-06-08T12:00:00Z', endedAt: '2026-06-08T12:01:00Z',
-      durationMs: 60_000, triggeredBy: 'scheduler', dryRun: false, rules: [],
-      rulesExecuted: 0, rulesSkippedLock: 0, rulesSkippedDisabled: 0,
-    })).resolves.not.toThrow();
+    await expect(
+      repo.appendCycle({
+        cycleId: 'c1',
+        startedAt: '2026-06-08T12:00:00Z',
+        endedAt: '2026-06-08T12:01:00Z',
+        durationMs: 60_000,
+        triggeredBy: 'scheduler',
+        dryRun: false,
+        rules: [],
+        rulesExecuted: 0,
+        rulesSkippedLock: 0,
+        rulesSkippedDisabled: 0,
+      }),
+    ).resolves.not.toThrow();
   });
 });
 
@@ -221,24 +243,42 @@ describe('🚨 trendBuckets — daily aggregate', () => {
   const today = new Date().toISOString().slice(0, 10);
   beforeEach(async () => {
     // Stesso giorno (oggi), due rule diverse, due record per rule.a
-    await repo.appendRule(mkReport({
-      ruleId: 'rule.a', tenantId: 't1', startedAt: `${today}T10:00:00Z`,
-      rowsQuarantined: 5, rowsRepaired: 2, success: true,
-    }));
-    await repo.appendRule(mkReport({
-      ruleId: 'rule.a', tenantId: 't1', startedAt: `${today}T11:00:00Z`,
-      rowsQuarantined: 3, rowsRepaired: 1, success: false,
-    }));
-    await repo.appendRule(mkReport({
-      ruleId: 'rule.b', tenantId: 't1', startedAt: `${today}T12:00:00Z`,
-      rowsQuarantined: 1, rowsRepaired: 0, success: true,
-    }));
+    await repo.appendRule(
+      mkReport({
+        ruleId: 'rule.a',
+        tenantId: 't1',
+        startedAt: `${today}T10:00:00Z`,
+        rowsQuarantined: 5,
+        rowsRepaired: 2,
+        success: true,
+      }),
+    );
+    await repo.appendRule(
+      mkReport({
+        ruleId: 'rule.a',
+        tenantId: 't1',
+        startedAt: `${today}T11:00:00Z`,
+        rowsQuarantined: 3,
+        rowsRepaired: 1,
+        success: false,
+      }),
+    );
+    await repo.appendRule(
+      mkReport({
+        ruleId: 'rule.b',
+        tenantId: 't1',
+        startedAt: `${today}T12:00:00Z`,
+        rowsQuarantined: 1,
+        rowsRepaired: 0,
+        success: true,
+      }),
+    );
   });
 
   it('🚨 GROUP BY date + rule → bucket aggregati', async () => {
     const out = await repo.trendBuckets({ daysBack: 30 });
     expect(out).toHaveLength(2); // rule.a + rule.b stesso giorno
-    const a = out.find(b => b.ruleId === 'rule.a');
+    const a = out.find((b) => b.ruleId === 'rule.a');
     expect(a).toBeDefined();
     expect(a!.rowsQuarantined).toBe(8); // 5+3 SUM
     expect(a!.rowsRepaired).toBe(3); // 2+1 SUM
@@ -246,25 +286,31 @@ describe('🚨 trendBuckets — daily aggregate', () => {
   });
 
   it('🚨 SECURITY: tenant filter applicato', async () => {
-    await repo.appendRule(mkReport({
-      ruleId: 'rule.c', tenantId: 't2', startedAt: '2026-06-08T10:00:00Z',
-      rowsQuarantined: 999,
-    }));
+    await repo.appendRule(
+      mkReport({
+        ruleId: 'rule.c',
+        tenantId: 't2',
+        startedAt: '2026-06-08T10:00:00Z',
+        rowsQuarantined: 999,
+      }),
+    );
     const out = await repo.trendBuckets({ tenantId: 't1', daysBack: 30 });
     // rule.c di t2 NON deve apparire
-    expect(out.find(b => b.ruleId === 'rule.c')).toBeUndefined();
+    expect(out.find((b) => b.ruleId === 'rule.c')).toBeUndefined();
   });
 
-  it('🚨 daysBack=0 → finestra stretta: i record più vecchi dell\'istante attuale sono esclusi', async () => {
+  it("🚨 daysBack=0 → finestra stretta: i record più vecchi dell'istante attuale sono esclusi", async () => {
     // Fix flaky-per-ora (2026-07-10): il vecchio assert `toHaveLength(0)` assumeva
     // i record a giugno-08 e "oggi"=giugno-09; dopo il fix data-relativa del
     // beforeEach (record a OGGI-T10:00) l'esito dipendeva dall'ora del giorno
     // (fromIso = Date.now()-0: se il test gira prima delle 10:00 UTC i record
     // "futuri" venivano inclusi → rosso). Ora l'asserzione è DETERMINISTICA:
     // un record del passato remoto NON cade mai nella finestra "ultime 0 giornate".
-    await repo.appendRule(mkReport({ ruleId: 'rule.ancient', tenantId: 't1', startedAt: '2000-01-01T00:00:00Z' }));
+    await repo.appendRule(
+      mkReport({ ruleId: 'rule.ancient', tenantId: 't1', startedAt: '2000-01-01T00:00:00Z' }),
+    );
     const out = await repo.trendBuckets({ tenantId: 't1', daysBack: 0 });
-    expect(out.find(b => b.ruleId === 'rule.ancient')).toBeUndefined();
+    expect(out.find((b) => b.ruleId === 'rule.ancient')).toBeUndefined();
   });
 });
 

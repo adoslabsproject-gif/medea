@@ -15,7 +15,9 @@ vi.mock('@/lib/safe-outbound-fetch.js', () => ({
 
 const { embedText, embedBatch, dimensionsForModel } = await import('./embeddings.service.js');
 
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('🚨 dimensionsForModel', () => {
   it.each([
@@ -38,22 +40,33 @@ describe('🚨 dimensionsForModel', () => {
 
 describe('🚨 embedText — empty text fast path', () => {
   it('🚨 empty string → zero vector, no fetch', async () => {
-    const r = await embedText({ provider: 'openai', apiKey: 'k', model: 'text-embedding-3-small', text: '' });
+    const r = await embedText({
+      provider: 'openai',
+      apiKey: 'k',
+      model: 'text-embedding-3-small',
+      text: '',
+    });
     expect(r.length).toBe(1536);
     expect(r.every((v) => v === 0)).toBe(true);
     expect(safeFetchMock).not.toHaveBeenCalled();
   });
 
   it('🚨 whitespace only → zero vector', async () => {
-    const r = await embedText({ provider: 'openai', apiKey: 'k', model: 'text-embedding-3-large', text: '   \n  ' });
+    const r = await embedText({
+      provider: 'openai',
+      apiKey: 'k',
+      model: 'text-embedding-3-large',
+      text: '   \n  ',
+    });
     expect(r.length).toBe(3072);
   });
 });
 
 describe('🚨 OpenAI provider', () => {
   it('🚨 no apiKey → throw', async () => {
-    await expect(embedText({ provider: 'openai', model: 'm', text: 'hi' }))
-      .rejects.toThrow(/OpenAI embeddings require an API key/u);
+    await expect(embedText({ provider: 'openai', model: 'm', text: 'hi' })).rejects.toThrow(
+      /OpenAI embeddings require an API key/u,
+    );
   });
 
   it('🚨 happy: POST con Authorization Bearer', async () => {
@@ -61,7 +74,12 @@ describe('🚨 OpenAI provider', () => {
       ok: true,
       json: () => Promise.resolve({ data: [{ embedding: [0.1, 0.2, 0.3] }] }),
     });
-    const r = await embedText({ provider: 'openai', apiKey: 'sk-xxx', model: 'text-embedding-3-small', text: 'hello' });
+    const r = await embedText({
+      provider: 'openai',
+      apiKey: 'sk-xxx',
+      model: 'text-embedding-3-small',
+      text: 'hello',
+    });
     expect(r).toEqual([0.1, 0.2, 0.3]);
     const [url, opts] = at(safeFetchMock.mock.calls, 0, 'fetch-calls');
     expect(url).toBe('https://api.openai.com/v1/embeddings');
@@ -71,23 +89,30 @@ describe('🚨 OpenAI provider', () => {
 
   it('🚨 model vuoto → default text-embedding-3-small', async () => {
     safeFetchMock.mockResolvedValueOnce({
-      ok: true, json: () => Promise.resolve({ data: [{ embedding: [] }] }),
+      ok: true,
+      json: () => Promise.resolve({ data: [{ embedding: [] }] }),
     });
     await embedText({ provider: 'openai', apiKey: 'k', model: '', text: 'x' });
-    expect(JSON.parse(at(safeFetchMock.mock.calls, 0, 'fetch-calls')[1].body as string).model).toBe('text-embedding-3-small');
+    expect(JSON.parse(at(safeFetchMock.mock.calls, 0, 'fetch-calls')[1].body as string).model).toBe(
+      'text-embedding-3-small',
+    );
   });
 
   it('🚨 fetch !ok → throw con status + body slice 300', async () => {
     safeFetchMock.mockResolvedValueOnce({
-      ok: false, status: 429, text: () => Promise.resolve('rate-limited'.repeat(100)),
+      ok: false,
+      status: 429,
+      text: () => Promise.resolve('rate-limited'.repeat(100)),
     });
-    await expect(embedText({ provider: 'openai', apiKey: 'k', model: 'm', text: 't' }))
-      .rejects.toThrow(/OpenAI embed 429/u);
+    await expect(
+      embedText({ provider: 'openai', apiKey: 'k', model: 'm', text: 't' }),
+    ).rejects.toThrow(/OpenAI embed 429/u);
   });
 
   it('🚨 response data vuoto → return []', async () => {
     safeFetchMock.mockResolvedValueOnce({
-      ok: true, json: () => Promise.resolve({ data: [] }),
+      ok: true,
+      json: () => Promise.resolve({ data: [] }),
     });
     const r = await embedText({ provider: 'openai', apiKey: 'k', model: 'm', text: 't' });
     expect(r).toEqual([]);
@@ -96,8 +121,9 @@ describe('🚨 OpenAI provider', () => {
 
 describe('🚨 Voyage provider', () => {
   it('🚨 no apiKey → throw', async () => {
-    await expect(embedText({ provider: 'voyage', model: 'voyage-3', text: 'hi' }))
-      .rejects.toThrow(/Voyage embeddings require/u);
+    await expect(embedText({ provider: 'voyage', model: 'voyage-3', text: 'hi' })).rejects.toThrow(
+      /Voyage embeddings require/u,
+    );
   });
 
   it('🚨 happy: POST voyageai.com/v1/embeddings', async () => {
@@ -106,47 +132,67 @@ describe('🚨 Voyage provider', () => {
       json: () => Promise.resolve({ data: [{ embedding: [0.5] }] }),
     });
     await embedText({ provider: 'voyage', apiKey: 'pa-xxx', model: 'voyage-3', text: 'x' });
-    expect(at(safeFetchMock.mock.calls, 0, 'fetch-calls')[0]).toBe('https://api.voyageai.com/v1/embeddings');
+    expect(at(safeFetchMock.mock.calls, 0, 'fetch-calls')[0]).toBe(
+      'https://api.voyageai.com/v1/embeddings',
+    );
   });
 
   it('🚨 model vuoto → default voyage-3', async () => {
     safeFetchMock.mockResolvedValueOnce({
-      ok: true, json: () => Promise.resolve({ data: [{ embedding: [] }] }),
+      ok: true,
+      json: () => Promise.resolve({ data: [{ embedding: [] }] }),
     });
     await embedText({ provider: 'voyage', apiKey: 'k', model: '', text: 't' });
-    expect(JSON.parse(at(safeFetchMock.mock.calls, 0, 'fetch-calls')[1].body as string).model).toBe('voyage-3');
+    expect(JSON.parse(at(safeFetchMock.mock.calls, 0, 'fetch-calls')[1].body as string).model).toBe(
+      'voyage-3',
+    );
   });
 });
 
 describe('🚨 Ollama provider', () => {
   it('🚨 baseUrl default localhost:11434', async () => {
     safeFetchMock.mockResolvedValueOnce({
-      ok: true, json: () => Promise.resolve({ embedding: [1, 2] }),
+      ok: true,
+      json: () => Promise.resolve({ embedding: [1, 2] }),
     });
     await embedText({ provider: 'ollama', model: 'nomic-embed-text', text: 'x' });
-    expect(at(safeFetchMock.mock.calls, 0, 'fetch-calls')[0]).toBe('http://localhost:11434/api/embeddings');
+    expect(at(safeFetchMock.mock.calls, 0, 'fetch-calls')[0]).toBe(
+      'http://localhost:11434/api/embeddings',
+    );
   });
 
   it('🚨 baseUrl custom + allowPrivateHost true (SSRF guard relax)', async () => {
     safeFetchMock.mockResolvedValueOnce({
-      ok: true, json: () => Promise.resolve({ embedding: [1] }),
+      ok: true,
+      json: () => Promise.resolve({ embedding: [1] }),
     });
-    await embedText({ provider: 'ollama', baseUrl: 'http://192.168.1.5:8080', model: 'm', text: 'x' });
-    expect(at(safeFetchMock.mock.calls, 0, 'fetch-calls')[0]).toBe('http://192.168.1.5:8080/api/embeddings');
+    await embedText({
+      provider: 'ollama',
+      baseUrl: 'http://192.168.1.5:8080',
+      model: 'm',
+      text: 'x',
+    });
+    expect(at(safeFetchMock.mock.calls, 0, 'fetch-calls')[0]).toBe(
+      'http://192.168.1.5:8080/api/embeddings',
+    );
     expect((at(safeFetchMock.mock.calls, 0, 'fetch-calls')[1] as any).allowPrivateHost).toBe(true);
   });
 
   it('🚨 model vuoto → default nomic-embed-text', async () => {
     safeFetchMock.mockResolvedValueOnce({
-      ok: true, json: () => Promise.resolve({ embedding: [] }),
+      ok: true,
+      json: () => Promise.resolve({ embedding: [] }),
     });
     await embedText({ provider: 'ollama', model: '', text: 't' });
-    expect(JSON.parse(at(safeFetchMock.mock.calls, 0, 'fetch-calls')[1].body as string).model).toBe('nomic-embed-text');
+    expect(JSON.parse(at(safeFetchMock.mock.calls, 0, 'fetch-calls')[1].body as string).model).toBe(
+      'nomic-embed-text',
+    );
   });
 
   it('🚨 NO apiKey richiesta (self-hosted)', async () => {
     safeFetchMock.mockResolvedValueOnce({
-      ok: true, json: () => Promise.resolve({ embedding: [0.99] }),
+      ok: true,
+      json: () => Promise.resolve({ embedding: [0.99] }),
     });
     const r = await embedText({ provider: 'ollama', model: 'm', text: 't' });
     expect(r).toEqual([0.99]);
@@ -155,35 +201,45 @@ describe('🚨 Ollama provider', () => {
 
 describe('🚨 unknown provider', () => {
   it('🚨 provider non in switch → throw', async () => {
-    await expect(embedText({ provider: 'bogus' as any, model: 'm', text: 't' }))
-      .rejects.toThrow(/Unknown embedding provider: bogus/u);
+    await expect(embedText({ provider: 'bogus' as any, model: 'm', text: 't' })).rejects.toThrow(
+      /Unknown embedding provider: bogus/u,
+    );
   });
 });
 
 describe('🚨 embedBatch — serial (rate-limit friendly)', () => {
   it('🚨 batch [a,b,c] → 3 chiamate sequenziali', async () => {
     safeFetchMock
-      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ data: [{ embedding: [1] }] }) })
-      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ data: [{ embedding: [2] }] }) })
-      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ data: [{ embedding: [3] }] }) });
-    const out = await embedBatch(
-      { provider: 'openai', apiKey: 'k', model: 'm' },
-      ['a', 'b', 'c'],
-    );
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ data: [{ embedding: [1] }] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ data: [{ embedding: [2] }] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ data: [{ embedding: [3] }] }),
+      });
+    const out = await embedBatch({ provider: 'openai', apiKey: 'k', model: 'm' }, ['a', 'b', 'c']);
     expect(out).toEqual([[1], [2], [3]]);
     expect(safeFetchMock).toHaveBeenCalledTimes(3);
   });
 
   it('🚨 onProgress callback emette done/total per ogni step', async () => {
-    safeFetchMock
-      .mockResolvedValue({ ok: true, json: () => Promise.resolve({ data: [{ embedding: [0] }] }) });
+    safeFetchMock.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: [{ embedding: [0] }] }),
+    });
     const progress: [number, number][] = [];
-    await embedBatch(
-      { provider: 'openai', apiKey: 'k', model: 'm' },
-      ['a', 'b'],
-      (done, total) => progress.push([done, total]),
+    await embedBatch({ provider: 'openai', apiKey: 'k', model: 'm' }, ['a', 'b'], (done, total) =>
+      progress.push([done, total]),
     );
-    expect(progress).toEqual([[1, 2], [2, 2]]);
+    expect(progress).toEqual([
+      [1, 2],
+      [2, 2],
+    ]);
   });
 
   it('🚨 empty array → []', async () => {

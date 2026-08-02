@@ -38,9 +38,17 @@ const DOW_MAX = 7;
 export function parseCron(expression: string): CronExpression {
   const fields = expression.trim().split(/\s+/);
   if (fields.length !== 5) {
-    throw new Error(`Cron expression "${expression}" deve avere 5 campi (m h d M w), trovati ${fields.length.toString()}`);
+    throw new Error(
+      `Cron expression "${expression}" deve avere 5 campi (m h d M w), trovati ${fields.length.toString()}`,
+    );
   }
-  const [minRaw, hourRaw, dayRaw, monthRaw, dowRaw] = fields as [string, string, string, string, string];
+  const [minRaw, hourRaw, dayRaw, monthRaw, dowRaw] = fields as [
+    string,
+    string,
+    string,
+    string,
+    string,
+  ];
   return Object.freeze({
     raw: expression.trim(),
     minute: Object.freeze(parseField(minRaw, 0, MINUTES_MAX - 1, 'minute')),
@@ -70,7 +78,13 @@ function parseField(
   return out;
 }
 
-function addSegment(seg: string, min: number, max: number, fieldName: string, out: Set<number>): void {
+function addSegment(
+  seg: string,
+  min: number,
+  max: number,
+  fieldName: string,
+  out: Set<number>,
+): void {
   // Step form `*/N` or `A-B/N`
   let stepStr: string | null = null;
   let rangePart = seg;
@@ -82,7 +96,9 @@ function addSegment(seg: string, min: number, max: number, fieldName: string, ou
   }
   const step = stepStr === null ? 1 : Number.parseInt(stepStr, 10);
   if (!Number.isInteger(step) || step <= 0) {
-    throw new Error(`Cron ${fieldName}: step deve essere intero positivo, "${stepStr ?? ''}" ricevuto`);
+    throw new Error(
+      `Cron ${fieldName}: step deve essere intero positivo, "${stepStr ?? ''}" ricevuto`,
+    );
   }
   let from: number;
   let to: number;
@@ -103,7 +119,9 @@ function addSegment(seg: string, min: number, max: number, fieldName: string, ou
     }
   }
   if (from < min || to > max) {
-    throw new Error(`Cron ${fieldName}: out-of-range ${from.toString()}-${to.toString()} (atteso ${min.toString()}-${max.toString()})`);
+    throw new Error(
+      `Cron ${fieldName}: out-of-range ${from.toString()}-${to.toString()} (atteso ${min.toString()}-${max.toString()})`,
+    );
   }
   for (let i = from; i <= to; i += step) out.add(i);
 }

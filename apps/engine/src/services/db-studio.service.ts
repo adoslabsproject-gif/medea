@@ -1,13 +1,21 @@
 import { mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { SqliteAdapter, type IDatabaseAdapter, type BatchOp, type BatchResult } from '@medea/engine-db-studio-engine';
+import {
+  SqliteAdapter,
+  type IDatabaseAdapter,
+  type BatchOp,
+  type BatchResult,
+} from '@medea/engine-db-studio-engine';
 import { PostgresAdapter } from '@medea/engine-db-studio-postgres';
 import { MysqlAdapter } from '@medea/engine-db-studio-mysql';
 import { MongoDbAdapter } from '@medea/engine-db-studio-mongodb';
 import { RedisAdapter } from '@medea/engine-db-studio-redis';
 import { MssqlAdapter } from '@medea/engine-db-studio-mssql';
 import { DuckDbAdapter } from '@medea/engine-db-studio-duckdb';
-import { sealConnectionSecrets, unsealConnectionSecrets } from '@/services/db-studio/connection-secrets.js';
+import {
+  sealConnectionSecrets,
+  unsealConnectionSecrets,
+} from '@/services/db-studio/connection-secrets.js';
 import { paginatePages } from '@/services/db-studio/db-export.js';
 import {
   type Database,
@@ -172,9 +180,9 @@ export class DbStudioService {
    */
   getAnyTenant(id: string): Database | null {
     const { sqlite } = getDatabase();
-    const row = sqlite
-      .prepare('SELECT * FROM db_studio_databases WHERE id = ?')
-      .get(id) as DatabaseRow | undefined;
+    const row = sqlite.prepare('SELECT * FROM db_studio_databases WHERE id = ?').get(id) as
+      | DatabaseRow
+      | undefined;
     if (!row) return null;
     const spec = JSON.parse(row.spec_json) as Record<string, unknown>;
     spec.tenantId = row.tenant_id;
@@ -189,7 +197,10 @@ export class DbStudioService {
 
     // Encryption-at-rest: il secret letterale viene cifrato PRIMA di toccare il
     // disco (lo spec_json non contiene mai password in chiaro).
-    const stored = { ...validated, connection: sealConnectionSecrets(validated.connection, validated.tenantId) };
+    const stored = {
+      ...validated,
+      connection: sealConnectionSecrets(validated.connection, validated.tenantId),
+    };
 
     const { sqlite } = getDatabase();
     sqlite
@@ -224,12 +235,22 @@ export class DbStudioService {
       const pwIn = (patch.connection as Record<string, unknown>).passwordSecretRef;
       const keepExisting = pwIn === undefined || pwIn === '' || pwIn === REDACTED_SECRET;
       const mergedConn = keepExisting
-        ? { ...patch.connection, passwordSecretRef: (existing.connection as Record<string, unknown>).passwordSecretRef as string | undefined }
+        ? {
+            ...patch.connection,
+            passwordSecretRef: (existing.connection as Record<string, unknown>)
+              .passwordSecretRef as string | undefined,
+          }
         : patch.connection;
       patchToApply = { ...patch, connection: sealConnectionSecrets(mergedConn, tenantId) };
     }
 
-    const next = DatabaseSchema.parse({ ...existing, ...patchToApply, id, tenantId, updatedAt: new Date().toISOString() });
+    const next = DatabaseSchema.parse({
+      ...existing,
+      ...patchToApply,
+      id,
+      tenantId,
+      updatedAt: new Date().toISOString(),
+    });
     const { sqlite } = getDatabase();
     sqlite
       .prepare(
@@ -256,7 +277,10 @@ export class DbStudioService {
     // Encryption-at-rest: decifra il secret (enc:) JUST-IN-TIME su una COPIA
     // prima di costruire la connessione reale. Lo spec a riposo resta cifrato;
     // gli adapter ricevono il plaintext. No-op per literal/vault:/managed.
-    database = { ...database, connection: unsealConnectionSecrets(database.connection, database.tenantId) };
+    database = {
+      ...database,
+      connection: unsealConnectionSecrets(database.connection, database.tenantId),
+    };
 
     // Anti-SSRF: una connessione ESTERNA non può puntare a un IP privato/riservato
     // (pivot rete interna). managed/embedded sono esenti (host interno/file locale).
@@ -273,7 +297,7 @@ export class DbStudioService {
         if (!existsSync(dbDir)) mkdirSync(dbDir, { recursive: true });
         const dbPath = database.connection.embedded
           ? join(dbDir, `${database.id}.sqlite`)
-          : database.connection.url ?? join(dbDir, `${database.id}.sqlite`);
+          : (database.connection.url ?? join(dbDir, `${database.id}.sqlite`));
         databaseForConnect = {
           ...database,
           connection: { ...database.connection, url: dbPath },
@@ -303,9 +327,10 @@ export class DbStudioService {
         const config = loadConfig();
         const dbDir = join(config.MEDEA_DATA_DIR, 'user-databases');
         if (!existsSync(dbDir)) mkdirSync(dbDir, { recursive: true });
-        const duckPath = database.connection.database && database.connection.database.trim() !== ''
-          ? database.connection.database
-          : join(dbDir, `${database.id}.duckdb`);
+        const duckPath =
+          database.connection.database && database.connection.database.trim() !== ''
+            ? database.connection.database
+            : join(dbDir, `${database.id}.duckdb`);
         databaseForConnect = {
           ...database,
           connection: { ...database.connection, database: duckPath },
@@ -313,7 +338,9 @@ export class DbStudioService {
         break;
       }
       default:
-        throw new Error(`Adapter for engine "${database.connection.engine}" not bundled in this runtime build.`);
+        throw new Error(
+          `Adapter for engine "${database.connection.engine}" not bundled in this runtime build.`,
+        );
     }
 
     // SSH TUNNEL (stile DBeaver): il DB è dietro un bastion. Apriamo il tunnel
@@ -325,7 +352,12 @@ export class DbStudioService {
       this.tunnels.set(database.id, tunnel);
       databaseForConnect = {
         ...databaseForConnect,
-        connection: { ...databaseForConnect.connection, hostname: '127.0.0.1', port: tunnel.localPort, sshTunnel: undefined },
+        connection: {
+          ...databaseForConnect.connection,
+          hostname: '127.0.0.1',
+          port: tunnel.localPort,
+          sshTunnel: undefined,
+        },
       };
     }
 
@@ -345,17 +377,29 @@ export class DbStudioService {
     const t = this.tunnels.get(databaseId);
     if (!t) return;
     this.tunnels.delete(databaseId);
-    try { await t.close(); } catch { /* best-effort */ }
+    try {
+      await t.close();
+    } catch {
+      /* best-effort */
+    }
   }
 
-  async previewMigration(id: string, actions: MigrationAction[], tenantId = 'default'): Promise<string> {
+  async previewMigration(
+    id: string,
+    actions: MigrationAction[],
+    tenantId = 'default',
+  ): Promise<string> {
     const database = this.get(id, tenantId);
     if (!database) throw new Error(`Database ${id} not found`);
     const adapter = await this.getAdapter(database);
     return adapter.previewMigration(actions);
   }
 
-  async applyMigration(id: string, actions: MigrationAction[], tenantId = 'default'): Promise<{ sql: string; affectedTables: string[] }> {
+  async applyMigration(
+    id: string,
+    actions: MigrationAction[],
+    tenantId = 'default',
+  ): Promise<{ sql: string; affectedTables: string[] }> {
     const database = this.get(id, tenantId);
     if (!database) throw new Error(`Database ${id} not found`);
     const adapter = await this.getAdapter(database);
@@ -370,10 +414,15 @@ export class DbStudioService {
       const { sqlite } = getDatabase();
       const updated = { ...database, tables: liveTables, updatedAt: new Date().toISOString() };
       sqlite
-        .prepare('UPDATE db_studio_databases SET spec_json = ?, updated_at = ? WHERE id = ? AND tenant_id = ?')
+        .prepare(
+          'UPDATE db_studio_databases SET spec_json = ?, updated_at = ? WHERE id = ? AND tenant_id = ?',
+        )
         .run(JSON.stringify(updated), updated.updatedAt, id, tenantId);
     } catch (err) {
-      logger.warn({ err, databaseId: id }, 'Manifest sync after migration failed (data is OK, UI may need refresh)');
+      logger.warn(
+        { err, databaseId: id },
+        'Manifest sync after migration failed (data is OK, UI may need refresh)',
+      );
     }
 
     return result;
@@ -437,7 +486,12 @@ export class DbStudioService {
     const database = this.get(id, tenantId);
     if (!database) throw new Error(`Database ${id} not found`);
     const quoted = quoteTableForEngine(database.connection.engine, table);
-    const result = await this.executeRaw(id, `SELECT COUNT(*) AS c FROM ${quoted}`, { rowLimit: 1 }, tenantId) as {
+    const result = (await this.executeRaw(
+      id,
+      `SELECT COUNT(*) AS c FROM ${quoted}`,
+      { rowLimit: 1 },
+      tenantId,
+    )) as {
       rows?: Record<string, unknown>[];
       statementResults?: { rows?: Record<string, unknown>[] }[];
     };
@@ -448,7 +502,12 @@ export class DbStudioService {
     return Number.isFinite(n) ? n : 0;
   }
 
-  async executeRaw(id: string, sql: string, opts: { dryRun?: boolean; rowLimit?: number }, tenantId = 'default'): Promise<unknown> {
+  async executeRaw(
+    id: string,
+    sql: string,
+    opts: { dryRun?: boolean; rowLimit?: number },
+    tenantId = 'default',
+  ): Promise<unknown> {
     const database = this.get(id, tenantId);
     if (!database) throw new Error(`Database ${id} not found`);
     const adapter = await this.getAdapter(database);
@@ -471,28 +530,40 @@ export class DbStudioService {
       statementKind?: string;
       statementResults?: { kind: string }[];
     };
-    const wroteSomething = !r.rolledBack && (
-      r.statementResults
+    const wroteSomething =
+      !r.rolledBack &&
+      (r.statementResults
         ? r.statementResults.some((s) => s.kind !== 'select' && s.kind !== 'explain')
-        : (r.statementKind !== 'select' && r.statementKind !== 'explain' && r.statementKind !== undefined)
-    );
+        : r.statementKind !== 'select' &&
+          r.statementKind !== 'explain' &&
+          r.statementKind !== undefined);
     if (wroteSomething) {
       try {
         const liveTables = await adapter.introspect();
         const { sqlite } = getDatabase();
         const updated = { ...database, tables: liveTables, updatedAt: new Date().toISOString() };
         sqlite
-          .prepare('UPDATE db_studio_databases SET spec_json = ?, updated_at = ? WHERE id = ? AND tenant_id = ?')
+          .prepare(
+            'UPDATE db_studio_databases SET spec_json = ?, updated_at = ? WHERE id = ? AND tenant_id = ?',
+          )
           .run(JSON.stringify(updated), updated.updatedAt, id, tenantId);
       } catch (err) {
-        logger.warn({ err, databaseId: id }, 'Manifest sync after executeRaw failed (data is OK, UI may need refresh)');
+        logger.warn(
+          { err, databaseId: id },
+          'Manifest sync after executeRaw failed (data is OK, UI may need refresh)',
+        );
       }
     }
 
     return result;
   }
 
-  async insert(id: string, table: string, row: Record<string, unknown>, tenantId = 'default'): Promise<unknown> {
+  async insert(
+    id: string,
+    table: string,
+    row: Record<string, unknown>,
+    tenantId = 'default',
+  ): Promise<unknown> {
     const database = this.get(id, tenantId);
     if (!database) throw new Error(`Database ${id} not found`);
     const adapter = await this.getAdapter(database);
@@ -511,19 +582,32 @@ export class DbStudioService {
     if (!database) throw new Error(`Database ${id} not found`);
     const adapter = await this.getAdapter(database);
     if (typeof adapter.transaction !== 'function') {
-      throw Object.assign(new Error(`Engine "${adapter.engine}" does not support atomic batch transactions yet.`), { code: 'BATCH_UNSUPPORTED' });
+      throw Object.assign(
+        new Error(`Engine "${adapter.engine}" does not support atomic batch transactions yet.`),
+        { code: 'BATCH_UNSUPPORTED' },
+      );
     }
     const result = await adapter.transaction(ops);
     // One change-log entry per op so the changes-since feed surfaces them.
     for (const step of result.steps) {
       const op = ops[step.index];
       if (!op) continue;
-      appendChangeLog(tenantId, id, op.table, 'insert', { batchIndex: step.index, kind: op.kind, affectedRows: step.affectedRows });
+      appendChangeLog(tenantId, id, op.table, 'insert', {
+        batchIndex: step.index,
+        kind: op.kind,
+        affectedRows: step.affectedRows,
+      });
     }
     return result;
   }
 
-  async updateRow(id: string, table: string, where: Record<string, unknown>, patch: Record<string, unknown>, tenantId = 'default'): Promise<unknown> {
+  async updateRow(
+    id: string,
+    table: string,
+    where: Record<string, unknown>,
+    patch: Record<string, unknown>,
+    tenantId = 'default',
+  ): Promise<unknown> {
     const database = this.get(id, tenantId);
     if (!database) throw new Error(`Database ${id} not found`);
     const adapter = await this.getAdapter(database);
@@ -532,7 +616,12 @@ export class DbStudioService {
     return result;
   }
 
-  async deleteRow(id: string, table: string, where: Record<string, unknown>, tenantId = 'default'): Promise<unknown> {
+  async deleteRow(
+    id: string,
+    table: string,
+    where: Record<string, unknown>,
+    tenantId = 'default',
+  ): Promise<unknown> {
     const database = this.get(id, tenantId);
     if (!database) throw new Error(`Database ${id} not found`);
     const adapter = await this.getAdapter(database);
@@ -554,11 +643,11 @@ export class DbStudioService {
         'SELECT id, op, payload_json, created_at FROM db_change_log WHERE tenant_id = ? AND database_id = ? AND table_name = ? AND id > ? ORDER BY id ASC LIMIT ?',
       )
       .all(tenantId, databaseId, tableName, sinceId, limit) as {
-        id: number;
-        op: string;
-        payload_json: string;
-        created_at: string;
-      }[];
+      id: number;
+      op: string;
+      payload_json: string;
+      created_at: string;
+    }[];
     return rows.map((r) => ({
       id: r.id,
       op: r.op,
@@ -579,10 +668,15 @@ export class DbStudioService {
       const { sqlite } = getDatabase();
       const updated = { ...database, tables, updatedAt: new Date().toISOString() };
       sqlite
-        .prepare('UPDATE db_studio_databases SET spec_json = ?, updated_at = ? WHERE id = ? AND tenant_id = ?')
+        .prepare(
+          'UPDATE db_studio_databases SET spec_json = ?, updated_at = ? WHERE id = ? AND tenant_id = ?',
+        )
         .run(JSON.stringify(updated), updated.updatedAt, id, tenantId);
     } catch (err) {
-      logger.warn({ err, databaseId: id }, 'Persist introspected tables failed (UI may show stale table count)');
+      logger.warn(
+        { err, databaseId: id },
+        'Persist introspected tables failed (UI may show stale table count)',
+      );
     }
     return tables;
   }
@@ -614,27 +708,54 @@ export class DbStudioService {
    * Engine senza FK relazionali (Mongo/Redis/Vector) o senza raw SQL → liste
    * vuote + rowCount best-effort 0, senza lanciare.
    */
-  async truncatePreview(id: string, tableName: string, tenantId = 'default'): Promise<{
+  async truncatePreview(
+    id: string,
+    tableName: string,
+    tenantId = 'default',
+  ): Promise<{
     table: string;
     rowCount: number;
     references: { targetTable: string; column: string; targetColumn: string; onDelete: string }[];
-    referencedBy: { sourceTable: string; sourceColumn: string; targetColumn: string; onDelete: string }[];
+    referencedBy: {
+      sourceTable: string;
+      sourceColumn: string;
+      targetColumn: string;
+      onDelete: string;
+    }[];
   }> {
     const database = this.get(id, tenantId);
     if (!database) throw new Error(`Database ${id} not found`);
 
     let rowCount = 0;
-    try { rowCount = await this.countRows(id, tableName, tenantId); } catch { rowCount = 0; }
+    try {
+      rowCount = await this.countRows(id, tableName, tenantId);
+    } catch {
+      rowCount = 0;
+    }
 
     const rels = (await this.introspectRelations(id, tenantId)) as {
-      fromTable: string; fromColumn: string; toTable: string; toColumn: string; onDelete?: string;
+      fromTable: string;
+      fromColumn: string;
+      toTable: string;
+      toColumn: string;
+      onDelete?: string;
     }[];
     const references = rels
       .filter((r) => r.fromTable === tableName)
-      .map((r) => ({ targetTable: r.toTable, column: r.fromColumn, targetColumn: r.toColumn, onDelete: r.onDelete ?? 'NO ACTION' }));
+      .map((r) => ({
+        targetTable: r.toTable,
+        column: r.fromColumn,
+        targetColumn: r.toColumn,
+        onDelete: r.onDelete ?? 'NO ACTION',
+      }));
     const referencedBy = rels
       .filter((r) => r.toTable === tableName)
-      .map((r) => ({ sourceTable: r.fromTable, sourceColumn: r.fromColumn, targetColumn: r.toColumn, onDelete: r.onDelete ?? 'NO ACTION' }));
+      .map((r) => ({
+        sourceTable: r.fromTable,
+        sourceColumn: r.fromColumn,
+        targetColumn: r.toColumn,
+        onDelete: r.onDelete ?? 'NO ACTION',
+      }));
 
     return { table: tableName, rowCount, references, referencedBy };
   }
@@ -645,11 +766,20 @@ export class DbStudioService {
    * connettersi + introspect leggero, poi disconnette. Non persiste nulla.
    * Ritorna { ok } o { ok:false, error } — non lancia.
    */
-  async testConnection(connection: Database['connection'], tenantId = 'default'): Promise<{ ok: boolean; error?: string }> {
+  async testConnection(
+    connection: Database['connection'],
+    tenantId = 'default',
+  ): Promise<{ ok: boolean; error?: string }> {
     const now = new Date().toISOString();
     const temp: Database = {
-      id: `__test__${nanoid()}`, tenantId, name: '__test__', connection,
-      tables: [], relations: [], createdAt: now, updatedAt: now,
+      id: `__test__${nanoid()}`,
+      tenantId,
+      name: '__test__',
+      connection,
+      tables: [],
+      relations: [],
+      createdAt: now,
+      updatedAt: now,
     };
     try {
       const adapter = await this.getAdapter(temp);
@@ -659,7 +789,13 @@ export class DbStudioService {
       return { ok: false, error: e instanceof Error ? e.message : String(e) };
     } finally {
       const a = this.adapters.get(temp.id);
-      if (a) { try { await a.disconnect(); } catch { /* best-effort */ } }
+      if (a) {
+        try {
+          await a.disconnect();
+        } catch {
+          /* best-effort */
+        }
+      }
       this.adapters.delete(temp.id);
       await this.closeTunnel(temp.id); // chiude il tunnel SSH effimero del test
     }

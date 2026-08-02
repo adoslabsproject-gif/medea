@@ -8,7 +8,7 @@
 
 export const SEVERITIES = ['critical', 'warning'] as const;
 
-export type CorruptionSeverity = typeof SEVERITIES[number];
+export type CorruptionSeverity = (typeof SEVERITIES)[number];
 
 const SEVERITY_RANK: Readonly<Record<CorruptionSeverity, number>> = Object.freeze({
   critical: 2,
@@ -22,7 +22,7 @@ const SEVERITY_LABEL_IT: Readonly<Record<CorruptionSeverity, string>> = Object.f
 
 const SEVERITY_HEX: Readonly<Record<CorruptionSeverity, string>> = Object.freeze({
   critical: '#dc2626', // red-600 (Tailwind danger)
-  warning: '#d97706',  // amber-600 (Tailwind warning)
+  warning: '#d97706', // amber-600 (Tailwind warning)
 });
 
 export function isSeverity(value: unknown): value is CorruptionSeverity {
@@ -37,7 +37,10 @@ export function compareSeverity(a: CorruptionSeverity, b: CorruptionSeverity): n
 /** Massima severity tra un insieme — utile per "header status" di un report. */
 export function maxSeverity(severities: readonly CorruptionSeverity[]): CorruptionSeverity | null {
   if (severities.length === 0) return null;
-  return severities.reduce<CorruptionSeverity>((acc, s) => (compareSeverity(s, acc) > 0 ? s : acc), severities[0]!);
+  return severities.reduce<CorruptionSeverity>(
+    (acc, s) => (compareSeverity(s, acc) > 0 ? s : acc),
+    severities[0]!,
+  );
 }
 
 export function severityLabel(s: CorruptionSeverity): string {

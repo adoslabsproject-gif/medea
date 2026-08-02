@@ -40,12 +40,22 @@ vi.mock('node:timers/promises', () => ({
 const { hubspotExecutor } = await import('./hubspot.js');
 const { IntegrationError } = await import('./common.js');
 
-const ctx = () => ({
-  runId: 'r', workflowId: 'w', nodeId: 'n', tenantId: 't1',
-  defId: 'community_hubspot', llmProviders: [], nodeOutputs: {}, secrets: {},
-} as never);
+const ctx = () =>
+  ({
+    runId: 'r',
+    workflowId: 'w',
+    nodeId: 'n',
+    tenantId: 't1',
+    defId: 'community_hubspot',
+    llmProviders: [],
+    nodeOutputs: {},
+    secrets: {},
+  }) as never;
 
-function mockRes(body: unknown, opts: { status?: number; ok?: boolean; statusText?: string } = {}): Response {
+function mockRes(
+  body: unknown,
+  opts: { status?: number; ok?: boolean; statusText?: string } = {},
+): Response {
   const status = opts.status ?? 200;
   const json = async () => body;
   return {
@@ -62,16 +72,18 @@ beforeEach(() => {
   vi.clearAllMocks();
   // Default integration: pat- token valido
   getIntegrationMock.mockReturnValue({
-    id: 'int-1', provider: 'hubspot', label: null,
+    id: 'int-1',
+    provider: 'hubspot',
+    label: null,
     credentials: { accessToken: 'pat-VALID-xxx' },
   });
 });
 
 describe('🚨 operation validation', () => {
   it('🚨 operation missing → throw INVALID_PAYLOAD', async () => {
-    await expect(
-      hubspotExecutor({ operation: '' } as never, null, ctx()),
-    ).rejects.toThrow(/operation.+obbligatorio/u);
+    await expect(hubspotExecutor({ operation: '' } as never, null, ctx())).rejects.toThrow(
+      /operation.+obbligatorio/u,
+    );
   });
 
   it('🚨 operation sconosciuta → INVALID_PAYLOAD con name', async () => {
@@ -91,7 +103,9 @@ describe('🚨 operation validation', () => {
 describe('🚨 PAT token validation', () => {
   it('🚨 accessToken NON inizia con "pat-" → INVALID_CREDENTIALS', async () => {
     getIntegrationMock.mockReturnValue({
-      id: 'int-1', provider: 'hubspot', label: null,
+      id: 'int-1',
+      provider: 'hubspot',
+      label: null,
       credentials: { accessToken: 'sk-wrong-prefix' },
     });
     await expect(
@@ -102,7 +116,9 @@ describe('🚨 PAT token validation', () => {
 
   it('🚨 accessToken vuoto → INVALID_CREDENTIALS', async () => {
     getIntegrationMock.mockReturnValue({
-      id: 'int-1', provider: 'hubspot', label: null,
+      id: 'int-1',
+      provider: 'hubspot',
+      label: null,
       credentials: { accessToken: '' },
     });
     await expect(
@@ -121,10 +137,14 @@ describe('🚨 PAT token validation', () => {
 describe('🚨 createContact', () => {
   it('🚨 happy: POST /crm/v3/objects/contacts con properties', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'c-42', properties: { email: 'a@b.com' } }));
-    const r = await hubspotExecutor({
-      operation: 'createContact',
-      propertiesJson: '{"email":"a@b.com","firstname":"Alice"}',
-    } as never, null, ctx());
+    const r = await hubspotExecutor(
+      {
+        operation: 'createContact',
+        propertiesJson: '{"email":"a@b.com","firstname":"Alice"}',
+      } as never,
+      null,
+      ctx(),
+    );
     const out = r.output as { objectId: string; data: { id: string } };
     expect(out.objectId).toBe('c-42');
     expect(out.data.id).toBe('c-42');
@@ -139,24 +159,36 @@ describe('🚨 createContact', () => {
 
   it('🚨 email param injected nelle properties se non già presente', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'c-1', properties: {} }));
-    await hubspotExecutor({
-      operation: 'createContact',
-      email: 'b@c.com',
-      propertiesJson: '{"firstname":"Bob"}',
-    } as never, null, ctx());
-    const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as { properties: Record<string, string> };
+    await hubspotExecutor(
+      {
+        operation: 'createContact',
+        email: 'b@c.com',
+        propertiesJson: '{"firstname":"Bob"}',
+      } as never,
+      null,
+      ctx(),
+    );
+    const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as {
+      properties: Record<string, string>;
+    };
     expect(body.properties.email).toBe('b@c.com');
     expect(body.properties.firstname).toBe('Bob');
   });
 
   it('🚨 email NON sovrascrive properties.email se già presente', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'c-1', properties: {} }));
-    await hubspotExecutor({
-      operation: 'createContact',
-      email: 'param@x.com',
-      propertiesJson: '{"email":"prop@y.com"}',
-    } as never, null, ctx());
-    const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as { properties: Record<string, string> };
+    await hubspotExecutor(
+      {
+        operation: 'createContact',
+        email: 'param@x.com',
+        propertiesJson: '{"email":"prop@y.com"}',
+      } as never,
+      null,
+      ctx(),
+    );
+    const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as {
+      properties: Record<string, string>;
+    };
     expect(body.properties.email).toBe('prop@y.com');
   });
 
@@ -173,10 +205,15 @@ describe('🚨 createContact', () => {
 describe('🚨 updateContact con email lookup', () => {
   it('🚨 objectId esplicito → PATCH diretto', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'c-99', properties: {} }));
-    const r = await hubspotExecutor({
-      operation: 'updateContact', objectId: 'c-99',
-      propertiesJson: '{"firstname":"Updated"}',
-    } as never, null, ctx());
+    const r = await hubspotExecutor(
+      {
+        operation: 'updateContact',
+        objectId: 'c-99',
+        propertiesJson: '{"firstname":"Updated"}',
+      } as never,
+      null,
+      ctx(),
+    );
     expect(safeFetchMock).toHaveBeenCalledTimes(1);
     const url = safeFetchMock.mock.calls[0]![0] as string;
     expect(url).toContain('/crm/v3/objects/contacts/c-99');
@@ -188,10 +225,15 @@ describe('🚨 updateContact con email lookup', () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'c-lookup-99' }));
     // PATCH
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'c-lookup-99', properties: {} }));
-    const r = await hubspotExecutor({
-      operation: 'updateContact', email: 'find@me.com',
-      propertiesJson: '{}',
-    } as never, null, ctx());
+    const r = await hubspotExecutor(
+      {
+        operation: 'updateContact',
+        email: 'find@me.com',
+        propertiesJson: '{}',
+      } as never,
+      null,
+      ctx(),
+    );
     expect(safeFetchMock).toHaveBeenCalledTimes(2);
     // First call: lookup with idProperty=email
     expect(safeFetchMock.mock.calls[0]![0]).toContain('idProperty=email');
@@ -212,10 +254,15 @@ describe('🚨 updateContact con email lookup', () => {
   it('🚨 SECURITY: email con char speciali → URL encoded', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'c-1' }));
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'c-1', properties: {} }));
-    await hubspotExecutor({
-      operation: 'updateContact', email: 'user+test@x.com',
-      propertiesJson: '{}',
-    } as never, null, ctx());
+    await hubspotExecutor(
+      {
+        operation: 'updateContact',
+        email: 'user+test@x.com',
+        propertiesJson: '{}',
+      } as never,
+      null,
+      ctx(),
+    );
     // %2B per "+", %40 per "@"
     expect(safeFetchMock.mock.calls[0]![0]).toContain('user%2Btest%40x.com');
   });
@@ -224,9 +271,14 @@ describe('🚨 updateContact con email lookup', () => {
 describe('🚨 getContact', () => {
   it('🚨 objectId → GET diretto NO idProperty', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'c-1', properties: {} }));
-    await hubspotExecutor({
-      operation: 'getContact', objectId: 'c-1',
-    } as never, null, ctx());
+    await hubspotExecutor(
+      {
+        operation: 'getContact',
+        objectId: 'c-1',
+      } as never,
+      null,
+      ctx(),
+    );
     const url = safeFetchMock.mock.calls[0]![0] as string;
     expect(url).toBe('https://api.hubapi.com/crm/v3/objects/contacts/c-1');
     expect(url).not.toContain('idProperty');
@@ -234,9 +286,14 @@ describe('🚨 getContact', () => {
 
   it('🚨 email → GET con idProperty=email + encode', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'c-1', properties: {} }));
-    await hubspotExecutor({
-      operation: 'getContact', email: 'a@b.com',
-    } as never, null, ctx());
+    await hubspotExecutor(
+      {
+        operation: 'getContact',
+        email: 'a@b.com',
+      } as never,
+      null,
+      ctx(),
+    );
     const url = safeFetchMock.mock.calls[0]![0] as string;
     expect(url).toContain('?idProperty=email');
     expect(url).toContain('a%40b.com');
@@ -270,7 +327,9 @@ describe('🚨 listContacts CLAMP', () => {
   });
 
   it('🚨 count = results.length', async () => {
-    safeFetchMock.mockResolvedValueOnce(mockRes({ results: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] }));
+    safeFetchMock.mockResolvedValueOnce(
+      mockRes({ results: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] }),
+    );
     const r = await hubspotExecutor({ operation: 'listContacts' } as never, null, ctx());
     expect((r.output as { count: number }).count).toBe(3);
   });
@@ -279,10 +338,14 @@ describe('🚨 listContacts CLAMP', () => {
 describe('🚨 createDeal / updateDeal / createCompany', () => {
   it('🚨 createDeal: POST /crm/v3/objects/deals', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'd-1', properties: {} }));
-    await hubspotExecutor({
-      operation: 'createDeal',
-      propertiesJson: '{"dealname":"Big Deal","amount":"5000"}',
-    } as never, null, ctx());
+    await hubspotExecutor(
+      {
+        operation: 'createDeal',
+        propertiesJson: '{"dealname":"Big Deal","amount":"5000"}',
+      } as never,
+      null,
+      ctx(),
+    );
     expect(safeFetchMock.mock.calls[0]![0]).toContain('/crm/v3/objects/deals');
     expect((safeFetchMock.mock.calls[0]![1] as RequestInit).method).toBe('POST');
   });
@@ -295,10 +358,15 @@ describe('🚨 createDeal / updateDeal / createCompany', () => {
 
   it('🚨 updateDeal happy: PATCH', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'd-2', properties: {} }));
-    await hubspotExecutor({
-      operation: 'updateDeal', objectId: 'd-2',
-      propertiesJson: '{"dealstage":"closedwon"}',
-    } as never, null, ctx());
+    await hubspotExecutor(
+      {
+        operation: 'updateDeal',
+        objectId: 'd-2',
+        propertiesJson: '{"dealstage":"closedwon"}',
+      } as never,
+      null,
+      ctx(),
+    );
     const init = safeFetchMock.mock.calls[0]![1] as RequestInit;
     expect(init.method).toBe('PATCH');
     expect(safeFetchMock.mock.calls[0]![0]).toContain('/deals/d-2');
@@ -306,10 +374,14 @@ describe('🚨 createDeal / updateDeal / createCompany', () => {
 
   it('🚨 createCompany: POST /crm/v3/objects/companies', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'co-1', properties: {} }));
-    await hubspotExecutor({
-      operation: 'createCompany',
-      propertiesJson: '{"name":"Acme"}',
-    } as never, null, ctx());
+    await hubspotExecutor(
+      {
+        operation: 'createCompany',
+        propertiesJson: '{"name":"Acme"}',
+      } as never,
+      null,
+      ctx(),
+    );
     expect(safeFetchMock.mock.calls[0]![0]).toContain('/crm/v3/objects/companies');
   });
 });
@@ -317,58 +389,87 @@ describe('🚨 createDeal / updateDeal / createCompany', () => {
 describe('🚨 parseProperties — JSON safety', () => {
   it('🚨 propertiesJson string valida → parsed', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'c-1' }));
-    await hubspotExecutor({
-      operation: 'createContact',
-      propertiesJson: '{"a":1,"b":"x"}',
-    } as never, null, ctx());
-    const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as { properties: { a: number; b: string } };
+    await hubspotExecutor(
+      {
+        operation: 'createContact',
+        propertiesJson: '{"a":1,"b":"x"}',
+      } as never,
+      null,
+      ctx(),
+    );
+    const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as {
+      properties: { a: number; b: string };
+    };
     expect(body.properties).toEqual({ a: 1, b: 'x' });
   });
 
   it('🚨 propertiesJson object → as-is', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'c-1' }));
-    await hubspotExecutor({
-      operation: 'createContact',
-      propertiesJson: { direct: 'object' },
-    } as never, null, ctx());
-    const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as { properties: Record<string, string> };
+    await hubspotExecutor(
+      {
+        operation: 'createContact',
+        propertiesJson: { direct: 'object' },
+      } as never,
+      null,
+      ctx(),
+    );
+    const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as {
+      properties: Record<string, string>;
+    };
     expect(body.properties.direct).toBe('object');
   });
 
   it('🚨 propertiesJson vuoto/null/undefined → {}', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'c-1' }));
-    await hubspotExecutor({
-      operation: 'createContact', propertiesJson: '',
-    } as never, null, ctx());
-    const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as { properties: Record<string, unknown> };
+    await hubspotExecutor(
+      {
+        operation: 'createContact',
+        propertiesJson: '',
+      } as never,
+      null,
+      ctx(),
+    );
+    const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as {
+      properties: Record<string, unknown>;
+    };
     expect(body.properties).toEqual({});
   });
 
   it('🚨 SECURITY: propertiesJson ARRAY → throw INVALID_PAYLOAD', async () => {
     await expect(
-      hubspotExecutor({
-        operation: 'createContact',
-        propertiesJson: '[1,2,3]',
-      } as never, null, ctx()),
+      hubspotExecutor(
+        {
+          operation: 'createContact',
+          propertiesJson: '[1,2,3]',
+        } as never,
+        null,
+        ctx(),
+      ),
     ).rejects.toThrow(/parse error|must be a JSON object/u);
   });
 
   it('🚨 propertiesJson malformato → throw INVALID_PAYLOAD', async () => {
     await expect(
-      hubspotExecutor({
-        operation: 'createContact',
-        propertiesJson: '{not-json',
-      } as never, null, ctx()),
+      hubspotExecutor(
+        {
+          operation: 'createContact',
+          propertiesJson: '{not-json',
+        } as never,
+        null,
+        ctx(),
+      ),
     ).rejects.toThrow(/parse error/u);
   });
 });
 
 describe('🚨 hsFetch — error handling', () => {
   it('🚨 401 → IntegrationError httpStatus 401 retryable=false', async () => {
-    safeFetchMock.mockResolvedValueOnce(mockRes(
-      { message: 'Unauthorized', category: 'INVALID_AUTHENTICATION' },
-      { status: 401, ok: false, statusText: 'Unauthorized' },
-    ));
+    safeFetchMock.mockResolvedValueOnce(
+      mockRes(
+        { message: 'Unauthorized', category: 'INVALID_AUTHENTICATION' },
+        { status: 401, ok: false, statusText: 'Unauthorized' },
+      ),
+    );
     try {
       await hubspotExecutor({ operation: 'createContact' } as never, null, ctx());
       expect.fail('should throw');
@@ -384,10 +485,9 @@ describe('🚨 hsFetch — error handling', () => {
   });
 
   it('🚨 500 → retryable=true (server side)', async () => {
-    safeFetchMock.mockResolvedValue(mockRes(
-      'Internal Server Error',
-      { status: 500, ok: false, statusText: 'Internal' },
-    ));
+    safeFetchMock.mockResolvedValue(
+      mockRes('Internal Server Error', { status: 500, ok: false, statusText: 'Internal' }),
+    );
     try {
       await hubspotExecutor({ operation: 'createContact' } as never, null, ctx());
       expect.fail('should throw');
@@ -398,9 +498,7 @@ describe('🚨 hsFetch — error handling', () => {
   });
 
   it('🚨 429 → retryable=true (rate limit)', async () => {
-    safeFetchMock.mockResolvedValue(mockRes(
-      'Too Many Requests', { status: 429, ok: false },
-    ));
+    safeFetchMock.mockResolvedValue(mockRes('Too Many Requests', { status: 429, ok: false }));
     try {
       await hubspotExecutor({ operation: 'createContact' } as never, null, ctx());
       expect.fail('should throw');
@@ -423,9 +521,9 @@ describe('🚨 hsFetch — error handling', () => {
   it('🚨 error body NON JSON → fallback al messaggio plain', async () => {
     // 502 è retryable → withRetry fa 4 attempts. mockResolvedValue (no Once)
     // così tutte le chiamate rispondono 502 → IntegrationError finale.
-    safeFetchMock.mockResolvedValue(mockRes(
-      'HTML error page', { status: 502, ok: false, statusText: 'Bad Gateway' },
-    ));
+    safeFetchMock.mockResolvedValue(
+      mockRes('HTML error page', { status: 502, ok: false, statusText: 'Bad Gateway' }),
+    );
     try {
       await hubspotExecutor({ operation: 'createContact' } as never, null, ctx());
       expect.fail('should throw');
@@ -459,21 +557,35 @@ describe('🚨 output shape contract', () => {
 describe('🚨 integrationLabel scoping', () => {
   it('🚨 label string → forwardato a getIntegration', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'c-1' }));
-    await hubspotExecutor({
-      operation: 'createContact', integrationLabel: 'work-account',
-    } as never, null, ctx());
+    await hubspotExecutor(
+      {
+        operation: 'createContact',
+        integrationLabel: 'work-account',
+      } as never,
+      null,
+      ctx(),
+    );
     expect(getIntegrationMock).toHaveBeenCalledWith({
-      provider: 'hubspot', tenantId: 't1', label: 'work-account',
+      provider: 'hubspot',
+      tenantId: 't1',
+      label: 'work-account',
     });
   });
 
   it('🚨 label vuoto → null (default scoping)', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 'c-1' }));
-    await hubspotExecutor({
-      operation: 'createContact', integrationLabel: '',
-    } as never, null, ctx());
+    await hubspotExecutor(
+      {
+        operation: 'createContact',
+        integrationLabel: '',
+      } as never,
+      null,
+      ctx(),
+    );
     expect(getIntegrationMock).toHaveBeenCalledWith({
-      provider: 'hubspot', tenantId: 't1', label: null,
+      provider: 'hubspot',
+      tenantId: 't1',
+      label: null,
     });
   });
 });

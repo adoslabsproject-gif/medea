@@ -155,9 +155,14 @@ export class LlmQueue {
     if (waitMs > 1000) {
       logger.warn({ jobId: job.id, source: job.source, waitMs }, '[llm-queue] long wait');
     }
-    void job.runner()
-      .then((result) => { job.resolve(result); })
-      .catch((err: unknown) => { job.reject(err instanceof Error ? err : new Error(String(err))); })
+    void job
+      .runner()
+      .then((result) => {
+        job.resolve(result);
+      })
+      .catch((err: unknown) => {
+        job.reject(err instanceof Error ? err : new Error(String(err)));
+      })
       .finally(() => {
         this.active.delete(job.id);
         const cnt = this.depthPerUser.get(job.userId) ?? 1;
@@ -179,7 +184,8 @@ export class LlmQueue {
     byPriority: Record<string, number>;
   } {
     const byPriority: Record<string, number> = { '0': 0, '1': 0, '2': 0 };
-    for (const j of this.queue) byPriority[j.priority.toString()] = (byPriority[j.priority.toString()] ?? 0) + 1;
+    for (const j of this.queue)
+      byPriority[j.priority.toString()] = (byPriority[j.priority.toString()] ?? 0) + 1;
     return {
       queued: this.queue.length,
       active: this.active.size,

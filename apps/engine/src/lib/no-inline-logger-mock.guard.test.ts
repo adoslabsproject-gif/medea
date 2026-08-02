@@ -62,7 +62,10 @@ describe('🚨 guard — niente mock inline di @/lib/logger.js', () => {
 
   it('🚨 NESSUN file fuori dal burndown usa un mock inline (regressione)', () => {
     const offenders = inline.filter((f) => !BURNDOWN.has(f));
-    expect(offenders, `usare vi.mock('@/lib/logger.js') (manual mock). Offenders:\n${offenders.join('\n')}`).toEqual([]);
+    expect(
+      offenders,
+      `usare vi.mock('@/lib/logger.js') (manual mock). Offenders:\n${offenders.join('\n')}`,
+    ).toEqual([]);
   });
 
   it('🚨 il burndown non ha entry STALE (file migrato → rimuovilo da BURNDOWN)', () => {

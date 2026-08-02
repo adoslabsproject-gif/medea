@@ -8,7 +8,14 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, chmodSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { createVaultSalt, deriveKek, encryptSecret, decryptSecret, type EncryptedSecret, type VaultMaster } from '@medea/engine-secrets';
+import {
+  createVaultSalt,
+  deriveKek,
+  encryptSecret,
+  decryptSecret,
+  type EncryptedSecret,
+  type VaultMaster,
+} from '@medea/engine-secrets';
 import { getDatabase } from '@/storage/db.js';
 import { loadConfig } from '@/config.js';
 import { logger } from '@/lib/logger.js';
@@ -76,12 +83,18 @@ export function loadMaster(): VaultMaster {
   } else {
     salt = createVaultSalt();
     writeFileSync(keyPath, salt);
-    try { chmodSync(keyPath, 0o600); } catch { /* not POSIX */ }
+    try {
+      chmodSync(keyPath, 0o600);
+    } catch {
+      /* not POSIX */
+    }
     logger.info({ path: keyPath }, 'Generated new vault master salt');
   }
 
   if (source === 'dev-sentinel') {
-    logger.warn('master password from dev sentinel — set MEDEA_MASTER_PASSWORD_FILE or env in production.');
+    logger.warn(
+      'master password from dev sentinel — set MEDEA_MASTER_PASSWORD_FILE or env in production.',
+    );
   }
 
   cachedMaster = { kek: deriveKek(password, salt), salt };
@@ -93,11 +106,18 @@ export class CredentialsService {
     ensureCredentialsTable();
   }
 
-  list(tenantId = 'default'): { id: string; name: string; provider: string; createdAt: string; updatedAt: string }[] {
+  list(
+    tenantId = 'default',
+  ): { id: string; name: string; provider: string; createdAt: string; updatedAt: string }[] {
     const { sqlite } = getDatabase();
     const rows = sqlite
-      .prepare('SELECT id, name, provider, created_at, updated_at FROM user_credentials WHERE tenant_id = ? ORDER BY updated_at DESC')
-      .all(tenantId) as Pick<CredentialRow, 'id' | 'name' | 'provider' | 'created_at' | 'updated_at'>[];
+      .prepare(
+        'SELECT id, name, provider, created_at, updated_at FROM user_credentials WHERE tenant_id = ? ORDER BY updated_at DESC',
+      )
+      .all(tenantId) as Pick<
+      CredentialRow,
+      'id' | 'name' | 'provider' | 'created_at' | 'updated_at'
+    >[];
     return rows.map((r) => ({
       id: r.id,
       name: r.name,
@@ -107,28 +127,54 @@ export class CredentialsService {
     }));
   }
 
-  async create(input: { name: string; provider: string; plaintext: string; metadata?: Record<string, string>; tenantId?: string; actorId?: string }): Promise<{ id: string }> {
+  async create(input: {
+    name: string;
+    provider: string;
+    plaintext: string;
+    metadata?: Record<string, string>;
+    tenantId?: string;
+    actorId?: string;
+  }): Promise<{ id: string }> {
     const tenantId = input.tenantId ?? 'default';
     const id = nanoid();
     const master = loadMaster();
     const enc = encryptSecret(
       input.metadata
-        ? { id, tenantId, name: input.name, provider: input.provider, plaintext: input.plaintext, metadata: input.metadata }
+        ? {
+            id,
+            tenantId,
+            name: input.name,
+            provider: input.provider,
+            plaintext: input.plaintext,
+            metadata: input.metadata,
+          }
         : { id, tenantId, name: input.name, provider: input.provider, plaintext: input.plaintext },
       master,
     );
 
     const { sqlite } = getDatabase();
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO user_credentials (id, tenant_id, name, provider, ciphertext, nonce, auth_tag, dek_ciphertext, dek_nonce, dek_auth_tag, metadata_json, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id, tenantId, input.name, input.provider,
-      enc.ciphertext, enc.nonce, enc.authTag,
-      enc.dekCiphertext, enc.dekNonce, enc.dekAuthTag,
-      enc.metadata ? JSON.stringify(enc.metadata) : null,
-      enc.createdAt, enc.updatedAt,
-    );
+    `,
+      )
+      .run(
+        id,
+        tenantId,
+        input.name,
+        input.provider,
+        enc.ciphertext,
+        enc.nonce,
+        enc.authTag,
+        enc.dekCiphertext,
+        enc.dekNonce,
+        enc.dekAuthTag,
+        enc.metadata ? JSON.stringify(enc.metadata) : null,
+        enc.createdAt,
+        enc.updatedAt,
+      );
 
     await audit.append({
       tenantId,
@@ -168,17 +214,27 @@ export class CredentialsService {
     if (!row) return null;
     const master = loadMaster();
     const enc: EncryptedSecret = {
-      id: row.id, tenantId: row.tenant_id, name: row.name, provider: row.provider,
-      ciphertext: row.ciphertext, nonce: row.nonce, authTag: row.auth_tag,
-      dekCiphertext: row.dek_ciphertext, dekNonce: row.dek_nonce, dekAuthTag: row.dek_auth_tag,
-      createdAt: row.created_at, updatedAt: row.updated_at,
+      id: row.id,
+      tenantId: row.tenant_id,
+      name: row.name,
+      provider: row.provider,
+      ciphertext: row.ciphertext,
+      nonce: row.nonce,
+      authTag: row.auth_tag,
+      dekCiphertext: row.dek_ciphertext,
+      dekNonce: row.dek_nonce,
+      dekAuthTag: row.dek_auth_tag,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
     };
     return decryptSecret(enc, master);
   }
 
   async delete(id: string, tenantId = 'default', actorId?: string): Promise<boolean> {
     const { sqlite } = getDatabase();
-    const info = sqlite.prepare('DELETE FROM user_credentials WHERE id = ? AND tenant_id = ?').run(id, tenantId);
+    const info = sqlite
+      .prepare('DELETE FROM user_credentials WHERE id = ? AND tenant_id = ?')
+      .run(id, tenantId);
     if (info.changes === 0) return false;
     await audit.append({
       tenantId,

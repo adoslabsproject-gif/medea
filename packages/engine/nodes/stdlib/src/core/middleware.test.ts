@@ -30,12 +30,15 @@ const dummyExec: NodeExecutor = async () => ({ output: 'inner', durationMs: 1 })
 describe('compose / wrap', () => {
   it('runs middlewares in onion order: A-before → B-before → B-after → A-after', async () => {
     const order: string[] = [];
-    const mw = (label: string): Middleware => (next) => async (...args) => {
-      order.push(`${label}-before`);
-      const r = await next(...args);
-      order.push(`${label}-after`);
-      return r;
-    };
+    const mw =
+      (label: string): Middleware =>
+      (next) =>
+      async (...args) => {
+        order.push(`${label}-before`);
+        const r = await next(...args);
+        order.push(`${label}-after`);
+        return r;
+      };
     await compose([mw('A'), mw('B')])(dummyExec)({}, null, makeCtx());
     expect(order).toEqual(['A-before', 'B-before', 'B-after', 'A-after']);
   });
@@ -47,10 +50,12 @@ describe('compose / wrap', () => {
 
   it('wrap is alias for compose+invoke', async () => {
     const order: string[] = [];
-    const mw: Middleware = (next) => async (...args) => {
-      order.push('wrapped');
-      return next(...args);
-    };
+    const mw: Middleware =
+      (next) =>
+      async (...args) => {
+        order.push('wrapped');
+        return next(...args);
+      };
     const wrapped = wrap(dummyExec, [mw]);
     await wrapped({}, null, makeCtx());
     expect(order).toEqual(['wrapped']);
@@ -58,7 +63,9 @@ describe('compose / wrap', () => {
 });
 
 describe('withTelemetry', () => {
-  afterEach(() => { unregisterTracer(); });
+  afterEach(() => {
+    unregisterTracer();
+  });
 
   it('passes through when no tracer is registered', async () => {
     const exec = wrap(dummyExec, [withTelemetry({ spanName: 'x' })]);
@@ -80,7 +87,7 @@ describe('withTelemetry', () => {
       'flowforge.run_id': 'r1',
       'flowforge.node_id': 'n1',
       'flowforge.def_id': 'd1',
-      'vendor': 'x',
+      vendor: 'x',
     });
   });
 
@@ -88,10 +95,12 @@ describe('withTelemetry', () => {
     const mockSpan = mkMockSpan();
     const tracer = { startActiveSpan: vi.fn((_n, fn) => fn(mockSpan)) };
     registerTracer(tracer);
-    const exec = wrap(dummyExec, [withTelemetry({
-      spanName: 'x',
-      dynamicAttrs: (cfg) => ({ 'cfg.url': String(cfg.url) }),
-    })]);
+    const exec = wrap(dummyExec, [
+      withTelemetry({
+        spanName: 'x',
+        dynamicAttrs: (cfg) => ({ 'cfg.url': String(cfg.url) }),
+      }),
+    ]);
     await exec({ url: 'https://x.com' }, null, makeCtx());
     expect(mockSpan.setAttributes.mock.calls[0]?.[0]['cfg.url']).toBe('https://x.com');
   });
@@ -99,7 +108,9 @@ describe('withTelemetry', () => {
 
 describe('withIdempotency', () => {
   let store: InMemoryIdempotencyStore;
-  beforeEach(() => { store = new InMemoryIdempotencyStore(); });
+  beforeEach(() => {
+    store = new InMemoryIdempotencyStore();
+  });
 
   it('first call executes, second call returns cached', async () => {
     let runCount = 0;
@@ -119,7 +130,10 @@ describe('withIdempotency', () => {
 
   it('different runId allows re-execution', async () => {
     let runCount = 0;
-    const exec: NodeExecutor = async () => { runCount += 1; return { output: 'x', durationMs: 1 }; };
+    const exec: NodeExecutor = async () => {
+      runCount += 1;
+      return { output: 'x', durationMs: 1 };
+    };
     const wrapped = wrap(exec, [withIdempotency({ store })]);
     await wrapped({}, null, makeCtx({ runId: 'r1' }));
     await wrapped({}, null, makeCtx({ runId: 'r2' }));
@@ -142,7 +156,10 @@ describe('withIdempotency', () => {
 
   it('subKey distinguishes item-level idempotency', async () => {
     let runCount = 0;
-    const exec: NodeExecutor = async () => { runCount += 1; return { output: 'x', durationMs: 1 }; };
+    const exec: NodeExecutor = async () => {
+      runCount += 1;
+      return { output: 'x', durationMs: 1 };
+    };
     const wrapped = wrap(exec, [withIdempotency({ store, subKey: (_c, input) => String(input) })]);
     await wrapped({}, 'item-a', makeCtx());
     await wrapped({}, 'item-b', makeCtx());
@@ -152,7 +169,9 @@ describe('withIdempotency', () => {
 });
 
 describe('withHostBreaker', () => {
-  beforeEach(() => { clearBreakerRegistry(); });
+  beforeEach(() => {
+    clearBreakerRegistry();
+  });
 
   it('passes through when urlFrom returns undefined (no host bucket)', async () => {
     const exec: NodeExecutor = async () => ({ output: 'no-url', durationMs: 1 });
@@ -162,7 +181,9 @@ describe('withHostBreaker', () => {
   });
 
   it('after 5 failures throws CircuitOpenError', async () => {
-    const exec: NodeExecutor = async () => { throw new Error('upstream-fail'); };
+    const exec: NodeExecutor = async () => {
+      throw new Error('upstream-fail');
+    };
     const wrapped = wrap(exec, [withHostBreaker({ urlFrom: () => 'https://flaky.example/x' })]);
     for (let i = 0; i < 5; i += 1) {
       await expect(wrapped({}, null, makeCtx())).rejects.toThrow();
@@ -178,7 +199,9 @@ describe('withHostBreaker', () => {
     };
     const wrapped = wrap(exec, [withHostBreaker({ urlFrom: (c) => String(c.url) })]);
     for (let i = 0; i < 5; i += 1) {
-      await expect(wrapped({ url: 'https://bad.com/x', ok: false }, null, makeCtx())).rejects.toThrow();
+      await expect(
+        wrapped({ url: 'https://bad.com/x', ok: false }, null, makeCtx()),
+      ).rejects.toThrow();
     }
     const r = await wrapped({ url: 'https://good.com/x', ok: true }, null, makeCtx());
     expect(r.output).toBe('ok');
@@ -187,7 +210,9 @@ describe('withHostBreaker', () => {
 
 describe('withErrorMapping', () => {
   it('converts generic Error to NodeError on throw', async () => {
-    const exec: NodeExecutor = async () => { throw new Error('boom'); };
+    const exec: NodeExecutor = async () => {
+      throw new Error('boom');
+    };
     const wrapped = wrap(exec, [withErrorMapping()]);
     try {
       await wrapped({}, null, makeCtx());
@@ -199,7 +224,9 @@ describe('withErrorMapping', () => {
 
   it('passes through existing NodeError unchanged', async () => {
     const orig = new ValidationError('bad');
-    const exec: NodeExecutor = async () => { throw orig; };
+    const exec: NodeExecutor = async () => {
+      throw orig;
+    };
     const wrapped = wrap(exec, [withErrorMapping()]);
     try {
       await wrapped({}, null, makeCtx());
@@ -212,12 +239,16 @@ describe('withErrorMapping', () => {
 describe('withAbortGuard', () => {
   it('short-circuits if abortSignal already aborted', async () => {
     let called = false;
-    const exec: NodeExecutor = async () => { called = true; return { output: 'x', durationMs: 1 }; };
+    const exec: NodeExecutor = async () => {
+      called = true;
+      return { output: 'x', durationMs: 1 };
+    };
     const ctrl = new AbortController();
     ctrl.abort();
     const wrapped = wrap(exec, [withAbortGuard()]);
-    await expect(wrapped({}, null, makeCtx({ abortSignal: ctrl.signal })))
-      .rejects.toBeInstanceOf(AbortedError);
+    await expect(wrapped({}, null, makeCtx({ abortSignal: ctrl.signal }))).rejects.toBeInstanceOf(
+      AbortedError,
+    );
     expect(called).toBe(false);
   });
 
@@ -231,7 +262,10 @@ describe('withAbortGuard', () => {
 });
 
 describe('httpMiddlewarePreset', () => {
-  beforeEach(() => { clearBreakerRegistry(); unregisterTracer(); });
+  beforeEach(() => {
+    clearBreakerRegistry();
+    unregisterTracer();
+  });
 
   it('composes telemetry + breaker + error-mapping + abort guard', async () => {
     const exec: NodeExecutor = async () => ({ output: { status: 200 }, durationMs: 5 });
@@ -248,21 +282,30 @@ describe('httpMiddlewarePreset', () => {
   });
 
   it('preset still triggers breaker on repeated failures', async () => {
-    const exec: NodeExecutor = async () => { throw new Error('5xx'); };
+    const exec: NodeExecutor = async () => {
+      throw new Error('5xx');
+    };
     const wrapped = wrap(exec, [
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion -- String() esplicito mantenuto per chiarezza tipo: input puo` essere stringificato da Zod ma TS ha widening
       httpMiddlewarePreset({ urlFrom: (c) => String((c as { url: string }).url) }),
     ]);
     for (let i = 0; i < 5; i += 1) {
-      await expect(wrapped({ url: 'https://preset-flaky.com/x' }, null, makeCtx())).rejects.toBeInstanceOf(NodeError);
+      await expect(
+        wrapped({ url: 'https://preset-flaky.com/x' }, null, makeCtx()),
+      ).rejects.toBeInstanceOf(NodeError);
     }
     // Breaker open by now — fast-fail
-    await expect(wrapped({ url: 'https://preset-flaky.com/x' }, null, makeCtx())).rejects.toBeInstanceOf(CircuitOpenError);
+    await expect(
+      wrapped({ url: 'https://preset-flaky.com/x' }, null, makeCtx()),
+    ).rejects.toBeInstanceOf(CircuitOpenError);
   });
 
   it('preset applica idempotency su POST (replay → cached)', async () => {
     let runs = 0;
-    const exec: NodeExecutor = async () => { runs += 1; return { output: { id: runs }, durationMs: 1 }; };
+    const exec: NodeExecutor = async () => {
+      runs += 1;
+      return { output: { id: runs }, durationMs: 1 };
+    };
     const wrapped = wrap(exec, [
       httpMiddlewarePreset({
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion -- String() esplicito mantenuto per chiarezza tipo: input puo` essere stringificato da Zod ma TS ha widening
@@ -278,7 +321,10 @@ describe('httpMiddlewarePreset', () => {
 
   it('preset NON applica idempotency su GET (safe-to-retry)', async () => {
     let runs = 0;
-    const exec: NodeExecutor = async () => { runs += 1; return { output: { id: runs }, durationMs: 1 }; };
+    const exec: NodeExecutor = async () => {
+      runs += 1;
+      return { output: { id: runs }, durationMs: 1 };
+    };
     const wrapped = wrap(exec, [
       httpMiddlewarePreset({
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion -- String() esplicito mantenuto per chiarezza tipo: input puo` essere stringificato da Zod ma TS ha widening
@@ -295,7 +341,9 @@ describe('httpMiddlewarePreset', () => {
 
 describe('withIdempotency resilience (fail-open vs fail-closed)', () => {
   const failingStore = {
-    acquire: async () => { throw new Error('redis: connection refused'); },
+    acquire: async () => {
+      throw new Error('redis: connection refused');
+    },
     complete: async () => {},
     release: async () => {},
     size: async () => 0,
@@ -303,7 +351,10 @@ describe('withIdempotency resilience (fail-open vs fail-closed)', () => {
 
   it('fail-open default: store down NON blocca, esegue next() comunque', async () => {
     let runs = 0;
-    const exec: NodeExecutor = async () => { runs += 1; return { output: 'ok', durationMs: 1 }; };
+    const exec: NodeExecutor = async () => {
+      runs += 1;
+      return { output: 'ok', durationMs: 1 };
+    };
     const { withIdempotency } = await import('./middleware.js');
     const wrapped = wrap(exec, [withIdempotency({ store: failingStore })]);
     const r = await wrapped({}, null, makeCtx());
@@ -311,21 +362,28 @@ describe('withIdempotency resilience (fail-open vs fail-closed)', () => {
     expect(runs).toBe(1);
   });
 
-  it('fail-closed: store down PROPAGA l\'errore (no fallback unsafe)', async () => {
+  it("fail-closed: store down PROPAGA l'errore (no fallback unsafe)", async () => {
     const exec: NodeExecutor = async () => ({ output: 'never', durationMs: 1 });
     const { withIdempotency } = await import('./middleware.js');
-    const wrapped = wrap(exec, [withIdempotency({ store: failingStore, resilience: 'fail-closed' })]);
+    const wrapped = wrap(exec, [
+      withIdempotency({ store: failingStore, resilience: 'fail-closed' }),
+    ]);
     await expect(wrapped({}, null, makeCtx())).rejects.toThrow(/redis/);
   });
 
   it('store.complete fail post-exec NON propaga (risultato OK ritornato comunque)', async () => {
     const partialStore = {
       acquire: async () => ({ acquired: true }),
-      complete: async () => { throw new Error('redis: connection lost mid-write'); },
+      complete: async () => {
+        throw new Error('redis: connection lost mid-write');
+      },
       release: async () => {},
       size: async () => 0,
     };
-    const exec: NodeExecutor = async () => ({ output: { result: 'success-payload' }, durationMs: 1 });
+    const exec: NodeExecutor = async () => ({
+      output: { result: 'success-payload' },
+      durationMs: 1,
+    });
     const { withIdempotency } = await import('./middleware.js');
     const wrapped = wrap(exec, [withIdempotency({ store: partialStore })]);
     const r = await wrapped({}, null, makeCtx());
@@ -336,10 +394,15 @@ describe('withIdempotency resilience (fail-open vs fail-closed)', () => {
 describe('withConditionalIdempotency', () => {
   it('skip per metodi safe (GET/HEAD/OPTIONS)', async () => {
     let runs = 0;
-    const exec: NodeExecutor = async () => { runs += 1; return { output: runs, durationMs: 1 }; };
+    const exec: NodeExecutor = async () => {
+      runs += 1;
+      return { output: runs, durationMs: 1 };
+    };
     const { withConditionalIdempotency } = await import('./middleware.js');
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion -- String() esplicito mantenuto per chiarezza tipo: input puo` essere stringificato da Zod ma TS ha widening
-    const wrapped = wrap(exec, [withConditionalIdempotency({ methodFrom: (c) => String((c as { m: string }).m) })]);
+    const wrapped = wrap(exec, [
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion -- String() esplicito mantenuto per chiarezza tipo: input puo` essere stringificato da Zod ma TS ha widening
+      withConditionalIdempotency({ methodFrom: (c) => String((c as { m: string }).m) }),
+    ]);
     for (const method of ['GET', 'HEAD', 'OPTIONS']) {
       runs = 0;
       await wrapped({ m: method }, null, makeCtx({ runId: `r-${method}` }));
@@ -352,9 +415,14 @@ describe('withConditionalIdempotency', () => {
     const { withConditionalIdempotency } = await import('./middleware.js');
     for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
       let runs = 0;
-      const exec: NodeExecutor = async () => { runs += 1; return { output: runs, durationMs: 1 }; };
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion -- String() esplicito mantenuto per chiarezza tipo: input puo` essere stringificato da Zod ma TS ha widening
-      const wrapped = wrap(exec, [withConditionalIdempotency({ methodFrom: (c) => String((c as { m: string }).m) })]);
+      const exec: NodeExecutor = async () => {
+        runs += 1;
+        return { output: runs, durationMs: 1 };
+      };
+      const wrapped = wrap(exec, [
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion -- String() esplicito mantenuto per chiarezza tipo: input puo` essere stringificato da Zod ma TS ha widening
+        withConditionalIdempotency({ methodFrom: (c) => String((c as { m: string }).m) }),
+      ]);
       const ctx = makeCtx({ runId: `r-${method}` });
       await wrapped({ m: method }, null, ctx);
       await wrapped({ m: method }, null, ctx);
@@ -373,4 +441,3 @@ function mkMockSpan() {
     end: vi.fn(),
   };
 }
-

@@ -50,11 +50,73 @@ export interface CatalogRecord {
 
 /** Stopword IT+EN: parole troppo comuni per discriminare un nodo. */
 const STOPWORDS = new Set([
-  'il', 'lo', 'la', 'i', 'gli', 'le', 'un', 'uno', 'una', 'di', 'a', 'da', 'in', 'con', 'su',
-  'per', 'tra', 'fra', 'e', 'o', 'ma', 'che', 'come', 'del', 'della', 'dei', 'delle', 'al',
-  'allo', 'alla', 'ai', 'agli', 'alle', 'è', 'sono', 'non', 'si', 'se', 'più', 'ogni', 'dal',
-  'the', 'a', 'an', 'of', 'to', 'in', 'on', 'for', 'and', 'or', 'with', 'from', 'by', 'as',
-  'is', 'are', 'be', 'this', 'that', 'it', 'its', 'into', 'via', 'per', 'node', 'nodo',
+  'il',
+  'lo',
+  'la',
+  'i',
+  'gli',
+  'le',
+  'un',
+  'uno',
+  'una',
+  'di',
+  'a',
+  'da',
+  'in',
+  'con',
+  'su',
+  'per',
+  'tra',
+  'fra',
+  'e',
+  'o',
+  'ma',
+  'che',
+  'come',
+  'del',
+  'della',
+  'dei',
+  'delle',
+  'al',
+  'allo',
+  'alla',
+  'ai',
+  'agli',
+  'alle',
+  'è',
+  'sono',
+  'non',
+  'si',
+  'se',
+  'più',
+  'ogni',
+  'dal',
+  'the',
+  'a',
+  'an',
+  'of',
+  'to',
+  'in',
+  'on',
+  'for',
+  'and',
+  'or',
+  'with',
+  'from',
+  'by',
+  'as',
+  'is',
+  'are',
+  'be',
+  'this',
+  'that',
+  'it',
+  'its',
+  'into',
+  'via',
+  'per',
+  'node',
+  'nodo',
 ]);
 
 /**
@@ -87,15 +149,25 @@ export function firstSentence(text: string, max = 140): string {
 const SYNONYM_CANON: Record<string, string> = {
   codice: 'code',
   funzione: 'function',
-  invia: 'send', inviare: 'send', manda: 'send', mandare: 'send', spedisci: 'send',
-  filtro: 'filter', filtra: 'filter',
+  invia: 'send',
+  inviare: 'send',
+  manda: 'send',
+  mandare: 'send',
+  spedisci: 'send',
+  filtro: 'filter',
+  filtra: 'filter',
   unisci: 'merge',
-  ciclo: 'loop', cicla: 'loop',
-  pianifica: 'schedule', pianificato: 'schedule',
+  ciclo: 'loop',
+  cicla: 'loop',
+  pianifica: 'schedule',
+  pianificato: 'schedule',
   programma: 'schedule',
-  ordina: 'sort', ordinare: 'sort',
-  aspetta: 'wait', attendi: 'wait',
-  raggruppa: 'group', raggruppare: 'group',
+  ordina: 'sort',
+  ordinare: 'sort',
+  aspetta: 'wait',
+  attendi: 'wait',
+  raggruppa: 'group',
+  raggruppare: 'group',
   traduci: 'translate',
   riassumi: 'summary',
 };
@@ -109,7 +181,8 @@ const SYNONYM_CANON: Record<string, string> = {
 export function tokenize(text: string): string[] {
   return text
     .toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/gu, '') // strip accenti (combining marks)
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/gu, '') // strip accenti (combining marks)
     .split(/[^a-z0-9]+/u)
     .filter((t) => t.length >= 2 && !STOPWORDS.has(t))
     .map((t) => SYNONYM_CANON[t] ?? t);
@@ -141,20 +214,33 @@ export function toRecord(entry: NodeCatalogEntry): CatalogRecord {
     shortDesc,
     // Alias nel searchText: alimentano anche l'embedding semantico.
     aliases.join(' '),
-  ].filter(Boolean).join(' — ');
+  ]
+    .filter(Boolean)
+    .join(' — ');
   // keyword set unico = id-words + label-words + categoria + termini desc + alias.
   // Gli alias passano da tokenize: la canonizzazione sinonimi deve valere
   // anche per loro, o un alias italiano non matcherebbe la query canonizzata.
-  const keywords = Array.from(new Set([
-    ...words,
-    ...tokenize(entry.label),
-    category,
-    ...tokenize(shortDesc),
-    ...aliases.flatMap((a) => tokenize(a)),
-  ]));
+  const keywords = Array.from(
+    new Set([
+      ...words,
+      ...tokenize(entry.label),
+      category,
+      ...tokenize(shortDesc),
+      ...aliases.flatMap((a) => tokenize(a)),
+    ]),
+  );
   const useCase = useCaseSection(entry.description || '');
   const embedText = useCase ? `${searchText} — Use case: ${useCase}` : searchText;
-  const record: CatalogRecord = { defId: entry.defId, type: entry.type, label: entry.label, category, shortDesc, keywords, searchText, embedText };
+  const record: CatalogRecord = {
+    defId: entry.defId,
+    type: entry.type,
+    label: entry.label,
+    category,
+    shortDesc,
+    keywords,
+    searchText,
+    embedText,
+  };
   if (entry.outputContract) record.outputContract = entry.outputContract;
   return record;
 }
@@ -172,7 +258,9 @@ export function buildCatalogIndex(entries: readonly NodeCatalogEntry[]): Catalog
 }
 
 /** Raggruppa i record per categoria, ordine categoria stabile. */
-export function groupByCategory(records: readonly CatalogRecord[]): Map<CatalogCategory, CatalogRecord[]> {
+export function groupByCategory(
+  records: readonly CatalogRecord[],
+): Map<CatalogCategory, CatalogRecord[]> {
   const out = new Map<CatalogCategory, CatalogRecord[]>();
   for (const r of records) {
     const list = out.get(r.category) ?? [];

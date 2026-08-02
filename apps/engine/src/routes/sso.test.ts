@@ -154,11 +154,15 @@ describe('SSO POST /sso — token extraction', () => {
     const app = buildApp();
     const res = await postForm(app, { token: 'jwe-token-here' });
     expect(res.status).toBe(302);
-    expect(m.jwtDecrypt).toHaveBeenCalledWith('jwe-token-here', expect.any(Uint8Array), expect.objectContaining({
-      issuer: 'portal.flowforge',
-      audience: 'tenant-acme',
-      clockTolerance: 30,
-    }));
+    expect(m.jwtDecrypt).toHaveBeenCalledWith(
+      'jwe-token-here',
+      expect.any(Uint8Array),
+      expect.objectContaining({
+        issuer: 'portal.flowforge',
+        audience: 'tenant-acme',
+        clockTolerance: 30,
+      }),
+    );
   });
 
   it('estrae token da application/json (CLI clients)', async () => {
@@ -166,7 +170,11 @@ describe('SSO POST /sso — token extraction', () => {
     const app = buildApp();
     const res = await postJson(app, { token: 'jwe-token-json' });
     expect(res.status).toBe(302);
-    expect(m.jwtDecrypt).toHaveBeenCalledWith('jwe-token-json', expect.any(Uint8Array), expect.any(Object));
+    expect(m.jwtDecrypt).toHaveBeenCalledWith(
+      'jwe-token-json',
+      expect.any(Uint8Array),
+      expect.any(Object),
+    );
   });
 
   it('POST senza content-type → 400 (estrazione fallisce)', async () => {
@@ -437,7 +445,9 @@ describe('🚨 SSO — claim role "admin" normalizzato a owner nella sessione', 
     m.sqliteStmt.get.mockReturnValue(undefined);
     const app = buildApp();
     await postForm(app, { token: 'x' });
-    expect(m.issueSessionToken).toHaveBeenCalledWith(expect.objectContaining({ role: 'superadmin' }));
+    expect(m.issueSessionToken).toHaveBeenCalledWith(
+      expect.objectContaining({ role: 'superadmin' }),
+    );
   });
 
   it('🚨 payload role=garbage → sessione con role=viewer (fail-closed)', async () => {
@@ -508,7 +518,9 @@ describe('SSO — ensureTenant upsert', () => {
     const app = buildApp();
     await postForm(app, { token: 'x' });
     const preparedSqls = (m.prepare.mock.calls as unknown[][]).map((c) => coerceString(c[0] ?? ''));
-    expect(preparedSqls.some((s) => s.includes('INSERT INTO tenants') && s.includes('ON CONFLICT'))).toBe(true);
+    expect(
+      preparedSqls.some((s) => s.includes('INSERT INTO tenants') && s.includes('ON CONFLICT')),
+    ).toBe(true);
   });
 
   it('ensureTenant invocato PRIMA di upsertSSOUser', async () => {
@@ -516,7 +528,9 @@ describe('SSO — ensureTenant upsert', () => {
     const app = buildApp();
     await postForm(app, { token: 'x' });
     const calls = (m.prepare.mock.calls as unknown[][]).map((c) => coerceString(c[0] ?? ''));
-    const tenantIdx = calls.findIndex((s) => s.includes('INSERT INTO tenants') && s.includes('ON CONFLICT'));
+    const tenantIdx = calls.findIndex(
+      (s) => s.includes('INSERT INTO tenants') && s.includes('ON CONFLICT'),
+    );
     const userInsertIdx = calls.findIndex((s) => s.includes('INSERT INTO users'));
     expect(tenantIdx).toBeGreaterThanOrEqual(0);
     expect(tenantIdx).toBeLessThan(userInsertIdx);
@@ -531,12 +545,14 @@ describe('SSO — success path cookie + session', () => {
     m.sqliteStmt.get.mockReturnValue(undefined);
     const app = buildApp();
     await postForm(app, { token: 'x' });
-    expect(m.issueSessionToken).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: 'tenant-acme',
-      role: 'owner',
-      email: 'admin@acme.com',
-      privateKeyPem: 'PRIVATE-KEY-PEM',
-    }));
+    expect(m.issueSessionToken).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant-acme',
+        role: 'owner',
+        email: 'admin@acme.com',
+        privateKeyPem: 'PRIVATE-KEY-PEM',
+      }),
+    );
   });
 
   it('sessionCookieName usato (dual-name __Host- / legacy)', async () => {
@@ -577,9 +593,9 @@ describe('SSO — PII redaction in logs', () => {
     m.sqliteStmt.get.mockReturnValue(undefined);
     const app = buildApp();
     await postForm(app, { token: 'x' });
-    const sessionCreatedCall = vi.mocked(logger).info.mock.calls.find((c) =>
-      typeof c[1] === 'string' && c[1].includes('session created'),
-    );
+    const sessionCreatedCall = vi
+      .mocked(logger)
+      .info.mock.calls.find((c) => typeof c[1] === 'string' && c[1].includes('session created'));
     expect(sessionCreatedCall).toBeDefined();
     const ctx = sessionCreatedCall?.[0] as Record<string, unknown>;
     expect(ctx).not.toHaveProperty('email');
@@ -592,9 +608,9 @@ describe('SSO — PII redaction in logs', () => {
     m.sqliteStmt.get.mockReturnValue(undefined);
     const app = buildApp();
     await postForm(app, { token: 'x' });
-    const provisionLog = vi.mocked(logger).info.mock.calls.find((c) =>
-      typeof c[1] === 'string' && c[1].includes('provisioned'),
-    );
+    const provisionLog = vi
+      .mocked(logger)
+      .info.mock.calls.find((c) => typeof c[1] === 'string' && c[1].includes('provisioned'));
     if (provisionLog) {
       const ctx = provisionLog[0] as { email: string };
       // maskEmail mock: "a***@acme.com"
@@ -665,7 +681,11 @@ describe('SSO — branch coverage 100%', () => {
       body,
     });
     expect(res.status).toBe(302);
-    expect(m.jwtDecrypt).toHaveBeenCalledWith('multipart-token', expect.any(Uint8Array), expect.any(Object));
+    expect(m.jwtDecrypt).toHaveBeenCalledWith(
+      'multipart-token',
+      expect.any(Uint8Array),
+      expect.any(Object),
+    );
   });
 
   it('POST json con token non-string → null → 400', async () => {
@@ -713,7 +733,12 @@ describe('SSO — branch coverage 100%', () => {
 
   it('ensureTenant: displayName fallback a tenantId se tenantName vuoto', async () => {
     m.jwtDecrypt.mockResolvedValueOnce({
-      payload: { ...VALID_PAYLOAD, tenantName: undefined, tenantSlug: undefined, jti: 'jti-no-name-' + Date.now() },
+      payload: {
+        ...VALID_PAYLOAD,
+        tenantName: undefined,
+        tenantSlug: undefined,
+        jti: 'jti-no-name-' + Date.now(),
+      },
       protectedHeader: { alg: 'dir', enc: 'A256GCM' },
     });
     m.sqliteStmt.get.mockReturnValue(undefined);
@@ -742,7 +767,11 @@ describe('SSO — branch coverage 100%', () => {
     // tra test era flaky con altri test della suite branch-100. Reset esplicito.
     m.jwtDecrypt.mockReset();
     m.jwtDecrypt.mockResolvedValue({
-      payload: { ...VALID_PAYLOAD, name: undefined, jti: 'jti-no-name-' + Date.now() + Math.random() },
+      payload: {
+        ...VALID_PAYLOAD,
+        name: undefined,
+        jti: 'jti-no-name-' + Date.now() + Math.random(),
+      },
       protectedHeader: { alg: 'dir', enc: 'A256GCM' },
     });
     m.sqliteStmt.get.mockReturnValue(undefined);
@@ -804,7 +833,12 @@ describe('SSO — branch coverage 100%', () => {
 
   it('ensureTenant displayName VUOTO → fallback ad args.tenantId', async () => {
     m.jwtDecrypt.mockResolvedValueOnce({
-      payload: { ...VALID_PAYLOAD, tenantName: '', tenantSlug: '', jti: 'jti-empty-name-' + Date.now() },
+      payload: {
+        ...VALID_PAYLOAD,
+        tenantName: '',
+        tenantSlug: '',
+        jti: 'jti-empty-name-' + Date.now(),
+      },
       protectedHeader: { alg: 'dir', enc: 'A256GCM' },
     });
     m.sqliteStmt.get.mockReturnValue(undefined);
@@ -813,8 +847,8 @@ describe('SSO — branch coverage 100%', () => {
     expect(res.status).toBe(302);
     // ensureTenant UPSERT (A2): run(tenantId, displayName, status, trialEndsAt).
     // displayName fallback al tenantId quando tenantName/tenantSlug vuoti.
-    const tenantInsertCall = m.sqliteStmt.run.mock.calls.find((args) =>
-      args[0] === 'tenant-acme' && args[1] === 'tenant-acme',
+    const tenantInsertCall = m.sqliteStmt.run.mock.calls.find(
+      (args) => args[0] === 'tenant-acme' && args[1] === 'tenant-acme',
     );
     expect(tenantInsertCall).toBeDefined();
     // status default 'active' (claim senza tenantStatus) + trialEndsAt null.

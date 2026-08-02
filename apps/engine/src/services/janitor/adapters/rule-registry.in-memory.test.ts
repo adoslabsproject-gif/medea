@@ -197,7 +197,7 @@ describe('🚨 listForTenant — isolation + global', () => {
     reg.registerDslRule(mkDsl('dsl_bbbbb2', 't2'));
     const for1 = reg.listForTenant('t1');
     expect(for1).toHaveLength(2); // code + own dsl
-    const ids = for1.map(r => r.id).sort();
+    const ids = for1.map((r) => r.id).sort();
     expect(ids).toEqual(['a.b.c', 'dsl_aaaaa1']);
   });
 });

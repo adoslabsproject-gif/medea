@@ -29,11 +29,9 @@ function makeFakeContext(): {
   const headers: FakeCtxHeaders = {};
   const abortController = new AbortController();
   let resolveBody!: (v: { stream: ReadableStream<Uint8Array>; status: number }) => void;
-  const capturedBody = new Promise<{ stream: ReadableStream<Uint8Array>; status: number }>(
-    (r) => {
-      resolveBody = r;
-    },
-  );
+  const capturedBody = new Promise<{ stream: ReadableStream<Uint8Array>; status: number }>((r) => {
+    resolveBody = r;
+  });
 
   const ctx = {
     header(name: string, value: string): void {
@@ -108,21 +106,27 @@ describe('streamSSENoTransform — headers CDN-safe', () => {
 
   it('setta Content-Encoding: identity (anti CF Brotli)', async () => {
     const { ctx, headers, capturedBody } = makeFakeContext();
-    streamSSENoTransform(ctx, async () => { /* noop */ });
+    streamSSENoTransform(ctx, async () => {
+      /* noop */
+    });
     await capturedBody;
     expect(headers['content-encoding']).toBe('identity');
   });
 
   it('setta Content-Type: text/event-stream', async () => {
     const { ctx, headers, capturedBody } = makeFakeContext();
-    streamSSENoTransform(ctx, async () => { /* noop */ });
+    streamSSENoTransform(ctx, async () => {
+      /* noop */
+    });
     await capturedBody;
     expect(headers['content-type']).toBe('text/event-stream');
   });
 
   it('setta Connection: keep-alive + Transfer-Encoding: chunked + X-Accel-Buffering: no', async () => {
     const { ctx, headers, capturedBody } = makeFakeContext();
-    streamSSENoTransform(ctx, async () => { /* noop */ });
+    streamSSENoTransform(ctx, async () => {
+      /* noop */
+    });
     await capturedBody;
     expect(headers.connection).toBe('keep-alive');
     expect(headers['transfer-encoding']).toBe('chunked');
@@ -131,7 +135,9 @@ describe('streamSSENoTransform — headers CDN-safe', () => {
 
   it('Response ritornata ha status 200', async () => {
     const { ctx, capturedBody } = makeFakeContext();
-    streamSSENoTransform(ctx, async () => { /* noop */ });
+    streamSSENoTransform(ctx, async () => {
+      /* noop */
+    });
     const { status } = await capturedBody;
     expect(status).toBe(200);
   });
@@ -320,7 +326,9 @@ describe('streamSSENoTransform — abort signal + cleanup', () => {
     streamSSENoTransform(ctx, async (s) => {
       s.onAbort(boom);
       s.onAbort(ok);
-      await new Promise<void>(() => { /* noop */ });
+      await new Promise<void>(() => {
+        /* noop */
+      });
     });
     await capturedBody;
 
@@ -337,7 +345,9 @@ describe('streamSSENoTransform — abort signal + cleanup', () => {
 
     streamSSENoTransform(ctx, async (s) => {
       sseRef = s;
-      await new Promise<void>(() => { /* noop */ });
+      await new Promise<void>(() => {
+        /* noop */
+      });
     });
     await capturedBody;
 
@@ -434,7 +444,9 @@ describe('streamSSENoTransform — cleanup post-cb', () => {
 
     streamSSENoTransform(ctx, async (s) => {
       s.onAbort(cleanup);
-      await new Promise<void>(() => { /* noop */ }); // mai resolve
+      await new Promise<void>(() => {
+        /* noop */
+      }); // mai resolve
     });
     const { stream } = await capturedBody;
 

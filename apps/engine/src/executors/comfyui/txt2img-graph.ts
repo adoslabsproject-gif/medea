@@ -37,7 +37,10 @@ export interface Txt2ImgParams {
   hires?: boolean | undefined;
 }
 
-interface GraphNode { class_type: string; inputs: Record<string, unknown> }
+interface GraphNode {
+  class_type: string;
+  inputs: Record<string, unknown>;
+}
 export type ComfyGraph = Record<string, GraphNode>;
 
 type Link = [string, number];
@@ -63,7 +66,10 @@ export function buildTxt2ImgGraph(p: Txt2ImgParams): ComfyGraph {
     latentSrc = ['encode', 0];
     denoise = Math.min(1, Math.max(0, p.denoise ?? 0.6)); // img2img: <1 mantiene la foto
   } else {
-    graph['5'] = { class_type: 'EmptyLatentImage', inputs: { width: p.width, height: p.height, batch_size: p.batchSize } };
+    graph['5'] = {
+      class_type: 'EmptyLatentImage',
+      inputs: { width: p.width, height: p.height, batch_size: p.batchSize },
+    };
     latentSrc = ['5', 0];
   }
 
@@ -90,7 +96,10 @@ export function buildTxt2ImgGraph(p: Txt2ImgParams): ComfyGraph {
   });
 
   if (p.samplingMode === 'v_prediction') {
-    graph['10'] = { class_type: 'ModelSamplingDiscrete', inputs: { model: modelSrc, sampling: 'v_prediction', zsnr: false } };
+    graph['10'] = {
+      class_type: 'ModelSamplingDiscrete',
+      inputs: { model: modelSrc, sampling: 'v_prediction', zsnr: false },
+    };
     modelSrc = ['10', 0];
   }
 
@@ -114,18 +123,32 @@ export function buildTxt2ImgGraph(p: Txt2ImgParams): ComfyGraph {
   // Hires-fix (solo txt2img): upscale latente ×1.5 + 2° pass a basso denoise → più nitidezza.
   let sampleSrc: Link = ['3', 0];
   if (p.hires && !initImage) {
-    graph.up = { class_type: 'LatentUpscaleBy', inputs: { samples: ['3', 0], upscale_method: 'bislerp', scale_by: 1.5 } };
+    graph.up = {
+      class_type: 'LatentUpscaleBy',
+      inputs: { samples: ['3', 0], upscale_method: 'bislerp', scale_by: 1.5 },
+    };
     graph['3b'] = {
       class_type: 'KSampler',
       inputs: {
-        seed: p.seed, steps: p.steps, cfg: p.cfg, sampler_name: p.sampler, scheduler: p.scheduler,
-        denoise: 0.45, model: modelSrc, positive: ['6', 0], negative: ['7', 0], latent_image: ['up', 0],
+        seed: p.seed,
+        steps: p.steps,
+        cfg: p.cfg,
+        sampler_name: p.sampler,
+        scheduler: p.scheduler,
+        denoise: 0.45,
+        model: modelSrc,
+        positive: ['6', 0],
+        negative: ['7', 0],
+        latent_image: ['up', 0],
       },
     };
     sampleSrc = ['3b', 0];
   }
 
   graph['8'] = { class_type: 'VAEDecode', inputs: { samples: sampleSrc, vae: ['4', 2] } };
-  graph['9'] = { class_type: 'SaveImage', inputs: { filename_prefix: 'genstudio', images: ['8', 0] } };
+  graph['9'] = {
+    class_type: 'SaveImage',
+    inputs: { filename_prefix: 'genstudio', images: ['8', 0] },
+  };
   return graph;
 }

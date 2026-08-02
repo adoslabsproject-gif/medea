@@ -72,14 +72,22 @@ describe('captureRejectedScaffold — opt-out + fail-soft', () => {
   });
 
   it('🚨 insert lancia → NON propaga (fail-soft, la richiesta è già un 502)', () => {
-    svc.insert.mockImplementation(() => { throw new Error('db down'); });
-    expect(() => { captureRejectedScaffold(baseArgs()); }).not.toThrow();
+    svc.insert.mockImplementation(() => {
+      throw new Error('db down');
+    });
+    expect(() => {
+      captureRejectedScaffold(baseArgs());
+    }).not.toThrow();
   });
 
   it('🚨 updateOutcome lancia → NON propaga', () => {
     svc.insert.mockReturnValue('int-1');
-    svc.updateOutcome.mockImplementation(() => { throw new Error('boom'); });
-    expect(() => { captureRejectedScaffold(baseArgs()); }).not.toThrow();
+    svc.updateOutcome.mockImplementation(() => {
+      throw new Error('boom');
+    });
+    expect(() => {
+      captureRejectedScaffold(baseArgs());
+    }).not.toThrow();
   });
 
   it('model vuoto → fallback "unknown"', () => {
@@ -90,7 +98,10 @@ describe('captureRejectedScaffold — opt-out + fail-soft', () => {
 
   it('cap a 10 issue nel message (no payload gigante)', () => {
     svc.insert.mockReturnValue('int-1');
-    const many = Array.from({ length: 25 }, (_, i) => ({ code: `C${String(i)}`, message: `m${String(i)}` }));
+    const many = Array.from({ length: 25 }, (_, i) => ({
+      code: `C${String(i)}`,
+      message: `m${String(i)}`,
+    }));
     captureRejectedScaffold({ ...baseArgs(), criticalIssues: many });
     const msg = svc.insert.mock.calls[0]![0].response.message as string;
     expect(msg).toContain('C0');

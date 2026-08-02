@@ -129,7 +129,9 @@ function serveFile(c: Context, absPath: string): Response {
 export function attachStaticUi(app: Hono): void {
   const uiDir = resolveUiDir();
   if (!uiDir) {
-    logger.warn('Static UI directory not found — runtime will only serve the API. Set MEDEA_UI_DIR or place dist/ next to the binary.');
+    logger.warn(
+      'Static UI directory not found — runtime will only serve the API. Set MEDEA_UI_DIR or place dist/ next to the binary.',
+    );
     return;
   }
   logger.info({ uiDir }, 'Serving bundled UI');
@@ -162,8 +164,8 @@ export function attachStaticUi(app: Hono): void {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
+        Pragma: 'no-cache',
+        Expires: '0',
       },
     });
   }

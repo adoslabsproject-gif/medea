@@ -93,7 +93,12 @@ export function createAiInteractionsRoutes(): Hono {
     const tenantId = getTenantId(c);
     const body = c.req.valid('json');
     // L'utente che abilita È il consenso registrato (accountability art.7 GDPR).
-    service.setCapturePreference(tenantId, body.captureEnabled, body.retentionDays ?? 90, getActorId(c));
+    service.setCapturePreference(
+      tenantId,
+      body.captureEnabled,
+      body.retentionDays ?? 90,
+      getActorId(c),
+    );
     return c.json({ ok: true, ...service.getCaptureSettings(tenantId) });
   });
 
@@ -106,23 +111,34 @@ export function createAiInteractionsRoutes(): Hono {
   });
   // N3: export massivo del dataset → costoso (serializza tutte le righe). Rate-limit
   // per evitare dump ripetuti (DoS + scraping). 5/min/user, 10/min/tenant.
-  const exportRateLimit = rateLimit({ windowMs: 60_000, perUser: 5, perTenant: 10, label: 'ai-interactions-export' });
-  app.get('/export.jsonl', requireRole('owner'), exportRateLimit, zValidator('query', ExportQuerySchema), (c) => {
-    const tenantId = getTenantId(c);
-    const q = c.req.valid('query');
-    const args: Parameters<typeof service.exportJsonl>[0] = { tenantId };
-    const split = q.split;
-    if (split) args.trainingSplit = split;
-    if (q.minQuality !== undefined) args.minQuality = q.minQuality;
-    const jsonl = service.exportJsonl(args);
-    return new Response(jsonl, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/x-ndjson',
-        'Content-Disposition': `attachment; filename="ai-training-${tenantId}-${split ?? 'all'}.jsonl"`,
-      },
-    });
+  const exportRateLimit = rateLimit({
+    windowMs: 60_000,
+    perUser: 5,
+    perTenant: 10,
+    label: 'ai-interactions-export',
   });
+  app.get(
+    '/export.jsonl',
+    requireRole('owner'),
+    exportRateLimit,
+    zValidator('query', ExportQuerySchema),
+    (c) => {
+      const tenantId = getTenantId(c);
+      const q = c.req.valid('query');
+      const args: Parameters<typeof service.exportJsonl>[0] = { tenantId };
+      const split = q.split;
+      if (split) args.trainingSplit = split;
+      if (q.minQuality !== undefined) args.minQuality = q.minQuality;
+      const jsonl = service.exportJsonl(args);
+      return new Response(jsonl, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/x-ndjson',
+          'Content-Disposition': `attachment; filename="ai-training-${tenantId}-${split ?? 'all'}.jsonl"`,
+        },
+      });
+    },
+  );
 
   app.get('/:id', requireRole('editor'), (c) => {
     const tenantId = getTenantId(c);

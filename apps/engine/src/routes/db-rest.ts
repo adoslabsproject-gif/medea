@@ -54,11 +54,14 @@ export function createDbRestRoutes(): Hono {
     const filters = parseFilters(c.req.query('filter'));
     const limit = c.req.query('limit');
     const offset = c.req.query('offset');
-    const orderBy = c.req.query('order')?.split(',').map((p) => {
-      const [col, dir] = p.split(':');
-      const direction: 'asc' | 'desc' = dir === 'desc' ? 'desc' : 'asc';
-      return { column: col ?? '', direction };
-    });
+    const orderBy = c.req
+      .query('order')
+      ?.split(',')
+      .map((p) => {
+        const [col, dir] = p.split(':');
+        const direction: 'asc' | 'desc' = dir === 'desc' ? 'desc' : 'asc';
+        return { column: col ?? '', direction };
+      });
 
     const spec: QuerySpec = {
       table,
@@ -123,7 +126,10 @@ export function createDbRestRoutes(): Hono {
     const { dbId, table } = c.req.param();
     const raw = (await c.req.json()) as unknown;
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-      return c.json({ error: { code: 'INVALID_BODY', message: 'Body must be a JSON object' } }, 400);
+      return c.json(
+        { error: { code: 'INVALID_BODY', message: 'Body must be a JSON object' } },
+        400,
+      );
     }
     const row = raw as Record<string, unknown>;
     try {
@@ -146,10 +152,19 @@ export function createDbRestRoutes(): Hono {
     const pkColumn = validateSqlIdentifier(c.req.query('pk') ?? 'id');
     const raw = (await c.req.json()) as unknown;
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-      return c.json({ error: { code: 'INVALID_BODY', message: 'Body must be a JSON object (patch)' } }, 400);
+      return c.json(
+        { error: { code: 'INVALID_BODY', message: 'Body must be a JSON object (patch)' } },
+        400,
+      );
     }
     try {
-      const result = await service.updateRow(dbId, table, { [pkColumn]: rowId }, raw as Record<string, unknown>, tenantId);
+      const result = await service.updateRow(
+        dbId,
+        table,
+        { [pkColumn]: rowId },
+        raw as Record<string, unknown>,
+        tenantId,
+      );
       return c.json(result);
     } catch (error) {
       return sanitizedErrorResponse(c, error, {

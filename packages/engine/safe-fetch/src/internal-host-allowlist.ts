@@ -41,7 +41,10 @@ export function parseInternalHostAllowlist(raw: string | undefined | null): Set<
  * gateway (vision-extract, scrape-smart/extract-llm) — stdlib non può dipendere
  * da ai-agents (dipendenza circolare). ai-agents la re-esporta.
  */
-export function internalGatewayTrustedHost(url: string, internalGateway: string | undefined): string | undefined {
+export function internalGatewayTrustedHost(
+  url: string,
+  internalGateway: string | undefined,
+): string | undefined {
   if (!internalGateway) return undefined;
   try {
     const u = new URL(url);

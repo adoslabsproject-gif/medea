@@ -74,8 +74,9 @@ describe('buildWebhookPathFromRef — token dal secret CORRENTE', () => {
 
   it('custom path: il token deriva dal workflowId PROPRIETARIO, il path resta custom', () => {
     const token = deriveDefaultWebhookToken(WF);
-    expect(buildWebhookPathFromRef({ workflowId: WF, customPath: 'streammy/search' }))
-      .toBe(`/webhooks/c/streammy/search/${token}`);
+    expect(buildWebhookPathFromRef({ workflowId: WF, customPath: 'streammy/search' })).toBe(
+      `/webhooks/c/streammy/search/${token}`,
+    );
   });
 
   it('fail-visible: senza secret → null (mai un token fasullo)', () => {
@@ -90,7 +91,9 @@ describe('resolveWebhookRefs — CONTRACT rotazione (il fix Streammy)', () => {
     const before = resolveWebhookRefs(ref);
     process.env.MEDEA_SSO_SECRET = SECRET_B; // rotazione secret
     const after = resolveWebhookRefs(ref);
-    expect(before).toBe(`/webhooks/c/streammy/search/${deriveWebhookTokenFromSecret(SECRET_A, WF)}`);
+    expect(before).toBe(
+      `/webhooks/c/streammy/search/${deriveWebhookTokenFromSecret(SECRET_A, WF)}`,
+    );
     expect(after).toBe(`/webhooks/c/streammy/search/${deriveWebhookTokenFromSecret(SECRET_B, WF)}`);
     expect(after).not.toBe(before); // il token cablato `before` sarebbe MORTO: il ref no
   });
@@ -100,7 +103,9 @@ describe('resolveWebhookRefs — CONTRACT rotazione (il fix Streammy)', () => {
     const html = `<a href="${ref}?titleId={id}&slug={slug}">Apri</a>`;
     const out = resolveWebhookRefs(html);
     const token = deriveDefaultWebhookToken(WF);
-    expect(out).toBe(`<a href="/webhooks/c/streammy/title/${token}?titleId={id}&slug={slug}">Apri</a>`);
+    expect(out).toBe(
+      `<a href="/webhooks/c/streammy/title/${token}?titleId={id}&slug={slug}">Apri</a>`,
+    );
   });
 
   it('più ref di workflow DIVERSI nello stesso testo: ognuno col SUO token', () => {
@@ -152,7 +157,7 @@ describe('interpolateConfig — choke-point contract (engine)', () => {
     expect(out.other).toBe(42);
   });
 
-  it('risolve anche i ref PRODOTTI da un\'espressione {{…}} (ordine: prima interpolazione, poi resolver)', () => {
+  it("risolve anche i ref PRODOTTI da un'espressione {{…}} (ordine: prima interpolazione, poi resolver)", () => {
     const out = interpolateConfig({ url: `ref://wf/{{vars.wfId}}/webhook` }, scope);
     expect(out.url).toBe(`/webhooks/${WF}/${deriveDefaultWebhookToken(WF)}`);
   });

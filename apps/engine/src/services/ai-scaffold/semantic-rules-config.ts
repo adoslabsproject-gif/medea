@@ -11,7 +11,12 @@
  * @module services/ai-scaffold/semantic-rules-config
  */
 import type { QualityGateInput, QualityIssue } from '@/services/ai-scaffold/quality-gate.js';
-import { asStr, buildGraph, reachesForward, type SemNode } from '@/services/ai-scaffold/semantic-rules-shared.js';
+import {
+  asStr,
+  buildGraph,
+  reachesForward,
+  type SemNode,
+} from '@/services/ai-scaffold/semantic-rules-shared.js';
 
 const SIDE_EFFECT_RE = /^(action_|db_|community_|agent_|flow_)/;
 
@@ -19,13 +24,15 @@ export function checkTriggerWithoutAction(input: QualityGateInput): QualityIssue
   const hasTrigger = input.nodes.some((n) => n.defId.startsWith('trigger_'));
   if (!hasTrigger) return []; // senza trigger è un altro problema (orphan)
   if (input.nodes.some((n) => SIDE_EFFECT_RE.test(n.defId))) return [];
-  return [{
-    severity: 'medium',
-    code: 'TRIGGER_WITHOUT_ACTION',
-    message:
-      'Il workflow ha un trigger ma NESSUNA azione utile (action/db/community/agent): non produce alcun effetto. ' +
-      'Aggiungi almeno un nodo che faccia qualcosa (invio, scrittura DB, chiamata HTTP, elaborazione AI).',
-  }];
+  return [
+    {
+      severity: 'medium',
+      code: 'TRIGGER_WITHOUT_ACTION',
+      message:
+        'Il workflow ha un trigger ma NESSUNA azione utile (action/db/community/agent): non produce alcun effetto. ' +
+        'Aggiungi almeno un nodo che faccia qualcosa (invio, scrittura DB, chiamata HTTP, elaborazione AI).',
+    },
+  ];
 }
 
 function isAuditNode(node: SemNode): boolean {
@@ -62,8 +69,11 @@ export function checkAuditNotTerminal(input: QualityGateInput): QualityIssue[] {
  *  *Name/*Header/*Mode/*Type/*Url/*Id. */
 function isSecretValueKey(key: string): boolean {
   const k = key.toLowerCase().replace(/[^a-z]/g, '');
-  if (/(name|header|algo|mode|type|url|id|expiry|expires|ttl|method|scope|label|field)/.test(k)) return false;
-  return /(password|passwd|secret|token|apikey|accesskey|privatekey|clientsecret|bearer|dkim)/.test(k);
+  if (/(name|header|algo|mode|type|url|id|expiry|expires|ttl|method|scope|label|field)/.test(k))
+    return false;
+  return /(password|passwd|secret|token|apikey|accesskey|privatekey|clientsecret|bearer|dkim)/.test(
+    k,
+  );
 }
 
 function isExpressionOrSentinel(v: string): boolean {
@@ -74,7 +84,13 @@ export function checkSensitiveHardcoded(input: QualityGateInput): QualityIssue[]
   const issues: QualityIssue[] = [];
   for (const node of input.nodes) {
     for (const [key, raw] of Object.entries(node.config)) {
-      if (typeof raw !== 'string' || !isSecretValueKey(key) || isExpressionOrSentinel(raw) || raw.length < 8) continue;
+      if (
+        typeof raw !== 'string' ||
+        !isSecretValueKey(key) ||
+        isExpressionOrSentinel(raw) ||
+        raw.length < 8
+      )
+        continue;
       issues.push({
         severity: 'medium',
         code: 'SENSITIVE_HARDCODED',

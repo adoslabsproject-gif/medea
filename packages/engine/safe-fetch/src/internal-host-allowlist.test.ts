@@ -4,7 +4,11 @@
  * case/trailing-dot, env vuota = feature off.
  */
 import { describe, it, expect } from 'vitest';
-import { parseInternalHostAllowlist, isHostAllowlisted, internalGatewayTrustedHost } from './internal-host-allowlist.js';
+import {
+  parseInternalHostAllowlist,
+  isHostAllowlisted,
+  internalGatewayTrustedHost,
+} from './internal-host-allowlist.js';
 
 describe('parseInternalHostAllowlist', () => {
   it('CSV → Set normalizzato (lowercase, trim, no vuoti)', () => {
@@ -61,10 +65,14 @@ describe('isHostAllowlisted', () => {
 describe('internalGatewayTrustedHost', () => {
   const GW = 'http://172.20.0.1:3006/api/v1/llm';
   it('stesso origin del gateway (path qualsiasi) → host:porta esente', () => {
-    expect(internalGatewayTrustedHost('http://172.20.0.1:3006/api/v1/llm/chat/completions', GW)).toBe('172.20.0.1:3006');
+    expect(
+      internalGatewayTrustedHost('http://172.20.0.1:3006/api/v1/llm/chat/completions', GW),
+    ).toBe('172.20.0.1:3006');
   });
   it('🚨 origin DIVERSO (BYOK utente / porta diversa) → undefined (guard pieno)', () => {
-    expect(internalGatewayTrustedHost('https://api.openai.com/v1/chat/completions', GW)).toBeUndefined();
+    expect(
+      internalGatewayTrustedHost('https://api.openai.com/v1/chat/completions', GW),
+    ).toBeUndefined();
     expect(internalGatewayTrustedHost('http://172.20.0.1:9999/x', GW)).toBeUndefined();
   });
   it('gateway assente o URL malformata → undefined', () => {

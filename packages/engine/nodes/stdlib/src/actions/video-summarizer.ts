@@ -25,8 +25,8 @@ export const videoSummarizerNode: NodeModule = {
     icon: 'video',
     color: '#a855f7',
     description:
-      'Pipeline multimodale enterprise video-to-summary strutturato — l\'AI-powered processor che trasforma ' +
-      'un video raw (caricato dall\'utente, fetched da URL pubblico YouTube/Vimeo/CDN, output di un meeting ' +
+      "Pipeline multimodale enterprise video-to-summary strutturato — l'AI-powered processor che trasforma " +
+      "un video raw (caricato dall'utente, fetched da URL pubblico YouTube/Vimeo/CDN, output di un meeting " +
       'Zoom recording) in un riassunto strutturato gerarchico pronto per consumo umano (TL;DR esecutivo) + ' +
       'consumo machine (chapter timestamped per navigazione + transcript completo per search). Architettura ' +
       'multi-stage che combina 3 modelli AI specializzati orchestrati: ' +
@@ -34,7 +34,7 @@ export const videoSummarizerNode: NodeModule = {
       'PCM raw (formato di input ottimale per ASR), frames JPEG sampling 1fps (un frame per secondo per ' +
       'analysis vision senza saturare context window dei vision model); ' +
       '(2) Whisper ASR transcript — il modello speech-to-text OpenAI open-source self-hosted on-premise EU ' +
-      '(Hetzner Falkenstein GEX131 RTX PRO 6000 Blackwell 96GB) elabora l\'audio producendo transcript ' +
+      "(Hetzner Falkenstein GEX131 RTX PRO 6000 Blackwell 96GB) elabora l'audio producendo transcript " +
       'parola-per-parola con timestamp millisecond-level di ogni token + speaker diarization (chi parla — ' +
       'speaker_0, speaker_1 fino a 8 partecipanti distinguibili per voce timbre), language auto-detection con ' +
       'supporto a 99 lingue compreso italiano alta accuracy; ' +
@@ -44,7 +44,7 @@ export const videoSummarizerNode: NodeModule = {
       'descrive ogni scena identificata con caption rich (es. "Slide 3 mostra grafico fatturato Q4 con bar ' +
       'chart e label "+23% YoY""); ' +
       '(4) Liara LLM fusion stage — il LLM principale fonde i 2 stream (transcript Whisper + scenes Vision) ' +
-      'producendo l\'output finale gerarchico TL;DR + bullets + chapters timestamped, pattern che cattura sia ' +
+      "producendo l'output finale gerarchico TL;DR + bullets + chapters timestamped, pattern che cattura sia " +
       'il content auditive (parole spoken) sia visual (slide, demo screen, persone identificate dal volto). ' +
       'Backend interamente self-hosted Hetzner (no costi per-token sui pipeline component AI, no transferimento ' +
       'dati extra-UE GDPR-compliant — pattern enterprise critical per casi tipo studio medico che processa ' +
@@ -84,7 +84,7 @@ export const videoSummarizerNode: NodeModule = {
         type: 'boolean',
         required: false,
         defaultValue: 'false',
-        help: 'Se on, chiama il servizio Whisper per trascrivere l\'audio. Default OFF: il nodo lavora solo con descrizione Vision delle scene (Whisper non è stand-alone su tutte le installation).',
+        help: "Se on, chiama il servizio Whisper per trascrivere l'audio. Default OFF: il nodo lavora solo con descrizione Vision delle scene (Whisper non è stand-alone su tutte le installation).",
       },
       {
         key: 'whisperEndpoint',

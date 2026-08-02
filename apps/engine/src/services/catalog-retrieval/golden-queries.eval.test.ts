@@ -23,7 +23,10 @@ import { CatalogRetriever } from './retriever.js';
 const nullEmbedder = async (): Promise<number[] | null> => null;
 const K = 10;
 
-interface GoldenQuery { query: string; expectAnyOf: string[] }
+interface GoldenQuery {
+  query: string;
+  expectAnyOf: string[];
+}
 
 const GOLDEN: GoldenQuery[] = [
   // ── Code / n8n-speak (la classe del bug 2026-06-12) ──
@@ -37,13 +40,25 @@ const GOLDEN: GoldenQuery[] = [
   { query: 'manda una mail al cliente', expectAnyOf: ['action_send_email'] },
   { query: 'invia una email con allegato', expectAnyOf: ['action_send_email'] },
   { query: 'quando arriva una email', expectAnyOf: ['trigger_imap'] },
-  { query: 'valida che la email esista davvero', expectAnyOf: ['action_email_validate_mx', 'action_validate'] },
+  {
+    query: 'valida che la email esista davvero',
+    expectAnyOf: ['action_email_validate_mx', 'action_validate'],
+  },
   // ── HTTP / web ──
   { query: 'chiama una api rest', expectAnyOf: ['action_http'] },
   { query: 'fai una richiesta http', expectAnyOf: ['action_http'] },
-  { query: 'scarica una pagina web', expectAnyOf: ['action_fetch_url', 'action_web_fetch_advanced', 'action_http'] },
-  { query: 'estrai dati da una pagina html', expectAnyOf: ['action_html_extract', 'agent_html_extractor', 'action_html_select'] },
-  { query: 'fai web scraping del sito', expectAnyOf: ['action_scrape_smart', 'action_recursive_spider', 'action_sitemap_crawler'] },
+  {
+    query: 'scarica una pagina web',
+    expectAnyOf: ['action_fetch_url', 'action_web_fetch_advanced', 'action_http'],
+  },
+  {
+    query: 'estrai dati da una pagina html',
+    expectAnyOf: ['action_html_extract', 'agent_html_extractor', 'action_html_select'],
+  },
+  {
+    query: 'fai web scraping del sito',
+    expectAnyOf: ['action_scrape_smart', 'action_recursive_spider', 'action_sitemap_crawler'],
+  },
   { query: 'cerca su internet', expectAnyOf: ['action_web_search'] },
   // ── Database ──
   { query: 'salva una riga nel database', expectAnyOf: ['db_insert', 'db_insert_batch'] },
@@ -55,7 +70,10 @@ const GOLDEN: GoldenQuery[] = [
   { query: 'quando arriva una richiesta webhook', expectAnyOf: ['trigger_webhook'] },
   { query: 'quando un form viene compilato', expectAnyOf: ['trigger_form'] },
   { query: 'leggi un feed rss', expectAnyOf: ['trigger_rss_feed'] },
-  { query: 'quando cambia una tabella del database', expectAnyOf: ['trigger_db_change', 'db_subscribe'] },
+  {
+    query: 'quando cambia una tabella del database',
+    expectAnyOf: ['trigger_db_change', 'db_subscribe'],
+  },
   // ── Logic / flow ──
   { query: 'aggiungi una condizione if', expectAnyOf: ['logic_if'] },
   { query: 'switch su più casi', expectAnyOf: ['logic_switch'] },
@@ -77,13 +95,25 @@ const GOLDEN: GoldenQuery[] = [
   // ── Agent / AI ──
   { query: 'riassumi il testo', expectAnyOf: ['agent_summarizer'] },
   { query: 'traduci in inglese', expectAnyOf: ['agent_translator'] },
-  { query: 'classifica i messaggi in categorie', expectAnyOf: ['agent_classifier', 'agent_intent_router'] },
+  {
+    query: 'classifica i messaggi in categorie',
+    expectAnyOf: ['agent_classifier', 'agent_intent_router'],
+  },
   { query: 'estrai i campi strutturati dal testo', expectAnyOf: ['agent_extractor'] },
-  { query: 'chiama un llm con un prompt', expectAnyOf: ['action_llm_complete', 'ai_agent_tool_loop'] },
+  {
+    query: 'chiama un llm con un prompt',
+    expectAnyOf: ['action_llm_complete', 'ai_agent_tool_loop'],
+  },
   { query: 'cerca nella knowledge base', expectAnyOf: ['rag_search', 'ai_rag_search'] },
   // ── Integrazioni ──
-  { query: 'invia un messaggio su slack', expectAnyOf: ['community_slack', 'integration_slack_post'] },
-  { query: 'notifica su telegram', expectAnyOf: ['community_telegram', 'integration_telegram_send'] },
+  {
+    query: 'invia un messaggio su slack',
+    expectAnyOf: ['community_slack', 'integration_slack_post'],
+  },
+  {
+    query: 'notifica su telegram',
+    expectAnyOf: ['community_telegram', 'integration_telegram_send'],
+  },
   { query: 'crea un issue su github', expectAnyOf: ['community_github'] },
   { query: 'aggiungi una riga su google sheets', expectAnyOf: ['community_google_sheets'] },
   { query: 'crea una pagina su notion', expectAnyOf: ['community_notion'] },
@@ -106,10 +136,15 @@ describe('🏆 GOLDEN EVAL — recall@10 del retriever lessicale', () => {
       const top = await r.retrieve(g.query, { lexicalOnly: true, k: K });
       const ids = top.map((n) => n.defId);
       if (!g.expectAnyOf.some((id) => ids.includes(id))) {
-        misses.push(`"${g.query}" → atteso uno di [${g.expectAnyOf.join(', ')}], top-${String(K)}: [${ids.join(', ')}]`);
+        misses.push(
+          `"${g.query}" → atteso uno di [${g.expectAnyOf.join(', ')}], top-${String(K)}: [${ids.join(', ')}]`,
+        );
       }
     }
     const recall = (GOLDEN.length - misses.length) / GOLDEN.length;
-    expect(misses, `recall@${String(K)} = ${(recall * 100).toFixed(1)}% — query fallite:\n${misses.join('\n')}`).toEqual([]);
+    expect(
+      misses,
+      `recall@${String(K)} = ${(recall * 100).toFixed(1)}% — query fallite:\n${misses.join('\n')}`,
+    ).toEqual([]);
   });
 });

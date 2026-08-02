@@ -55,9 +55,7 @@ import { getMasterPasswordOrThrow } from '@/lib/secrets-crypto.js';
 // non è un'integrazione "connettibile" e la UI non lo espone. Lasciarlo qui
 // permetteva di creare record-fantasma via API, invisibili in UI. Il tipo store
 // e il CHECK DB lo conservano per eventuali record storici.
-const PROVIDER_ENUM = z.enum([
-  'gmail', 'whatsapp', 'stripe', 'google_drive', 'ocr_vision',
-]);
+const PROVIDER_ENUM = z.enum(['gmail', 'whatsapp', 'stripe', 'google_drive', 'ocr_vision']);
 
 const CreateIntegrationSchema = z.object({
   provider: PROVIDER_ENUM,
@@ -215,7 +213,10 @@ export function createIntegrationsRoutes(): Hono {
       return c.json({ integration: saved }, 201);
     } catch (err) {
       logger.error({ err, provider: body.provider, tenantId }, 'saveIntegration failed');
-      return c.json({ error: err instanceof Error ? err.message : 'Failed to save integration' }, 500);
+      return c.json(
+        { error: err instanceof Error ? err.message : 'Failed to save integration' },
+        500,
+      );
     }
   });
 
@@ -259,8 +260,8 @@ export function createIntegrationsRoutes(): Hono {
       return c.json({ error: err instanceof Error ? err.message : 'OAuth not configured' }, 500);
     }
     const url = new URL(c.req.url);
-    const redirectUri = client.defaultRedirectUri
-      ?? `${url.origin}/api/v1/integrations/oauth/google/callback`;
+    const redirectUri =
+      client.defaultRedirectUri ?? `${url.origin}/api/v1/integrations/oauth/google/callback`;
 
     const statePayload: StatePayload = {
       tenantId,
@@ -273,17 +274,22 @@ export function createIntegrationsRoutes(): Hono {
     const state = signState(statePayload);
 
     // Scope set depends on `scope` selection — minimum-privilege by default.
-    const scopes = parsed.data.scope === 'gmail'
-      ? ['openid', 'email', 'profile',
-         'https://www.googleapis.com/auth/gmail.readonly',
-         'https://www.googleapis.com/auth/gmail.send']
-      : parsed.data.scope === 'drive'
-      ? ['openid', 'email', 'profile',
-         'https://www.googleapis.com/auth/drive.file']
-      : undefined; // 'both' → default
-    const authorizeUrl = scopes !== undefined
-      ? generateAuthorizeUrl({ client, redirectUri, state, scopes })
-      : generateAuthorizeUrl({ client, redirectUri, state });
+    const scopes =
+      parsed.data.scope === 'gmail'
+        ? [
+            'openid',
+            'email',
+            'profile',
+            'https://www.googleapis.com/auth/gmail.readonly',
+            'https://www.googleapis.com/auth/gmail.send',
+          ]
+        : parsed.data.scope === 'drive'
+          ? ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/drive.file']
+          : undefined; // 'both' → default
+    const authorizeUrl =
+      scopes !== undefined
+        ? generateAuthorizeUrl({ client, redirectUri, state, scopes })
+        : generateAuthorizeUrl({ client, redirectUri, state });
 
     return c.json({ authorizeUrl });
   });
@@ -296,7 +302,9 @@ export function createIntegrationsRoutes(): Hono {
     const error = c.req.query('error');
     if (error) {
       // `error` arriva dalla query string del browser: escape anti-XSS.
-      return c.html(`<h1>Connessione annullata</h1><p>${escapeHtml(error)}</p><script>setTimeout(()=>window.close(),3000);</script>`);
+      return c.html(
+        `<h1>Connessione annullata</h1><p>${escapeHtml(error)}</p><script>setTimeout(()=>window.close(),3000);</script>`,
+      );
     }
     if (!code || !stateToken) {
       return c.html('<h1>Parametri mancanti (code/state)</h1>', 400);
@@ -306,7 +314,10 @@ export function createIntegrationsRoutes(): Hono {
       state = verifyState(stateToken);
     } catch (err) {
       logger.warn({ err }, 'OAuth callback: state verify failed');
-      return c.html(`<h1>State token non valido</h1><p>${escapeHtml(err instanceof Error ? err.message : String(err))}</p>`, 400);
+      return c.html(
+        `<h1>State token non valido</h1><p>${escapeHtml(err instanceof Error ? err.message : String(err))}</p>`,
+        400,
+      );
     }
 
     let client;
@@ -317,8 +328,8 @@ export function createIntegrationsRoutes(): Hono {
       return c.html('<h1>OAuth non configurato</h1>', 500);
     }
     const url = new URL(c.req.url);
-    const redirectUri = client.defaultRedirectUri
-      ?? `${url.origin}/api/v1/integrations/oauth/google/callback`;
+    const redirectUri =
+      client.defaultRedirectUri ?? `${url.origin}/api/v1/integrations/oauth/google/callback`;
 
     try {
       const { credentials, expiresAt } = await exchangeCodeForTokens({ client, code, redirectUri });
@@ -326,9 +337,12 @@ export function createIntegrationsRoutes(): Hono {
       // Persist under the requested scope(s). For "both" we save under gmail
       // AND google_drive — same accessToken+refreshToken used by both, but
       // an admin can revoke one provider without revoking the other.
-      const providers: IntegrationProvider[] = state.scope === 'gmail' ? ['gmail']
-        : state.scope === 'drive' ? ['google_drive']
-        : ['gmail', 'google_drive'];
+      const providers: IntegrationProvider[] =
+        state.scope === 'gmail'
+          ? ['gmail']
+          : state.scope === 'drive'
+            ? ['google_drive']
+            : ['gmail', 'google_drive'];
 
       for (const provider of providers) {
         await saveIntegration({
@@ -354,7 +368,10 @@ export function createIntegrationsRoutes(): Hono {
 </script>`);
     } catch (err) {
       logger.error({ err, tenantId: state.tenantId }, 'OAuth callback failed');
-      return c.html(`<h1>Connessione fallita</h1><p>${escapeHtml(err instanceof Error ? err.message : String(err))}</p>`, 500);
+      return c.html(
+        `<h1>Connessione fallita</h1><p>${escapeHtml(err instanceof Error ? err.message : String(err))}</p>`,
+        500,
+      );
     }
   });
 

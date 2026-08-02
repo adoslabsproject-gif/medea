@@ -47,7 +47,12 @@ vi.mock('@/engine/workflow-engine.js', () => ({
   ],
 }));
 
-import { buildNodeCatalog, normalizeColumnType, normalizeConstraints, ALLOWED_COLUMN_TYPES } from './node-catalog.js';
+import {
+  buildNodeCatalog,
+  normalizeColumnType,
+  normalizeConstraints,
+  ALLOWED_COLUMN_TYPES,
+} from './node-catalog.js';
 
 beforeEach(() => {
   listInstalledMock.mockReset();
@@ -69,7 +74,10 @@ describe('buildNodeCatalog — bundled only', () => {
     expect(email).toBeDefined();
     expect(email?.fields).toHaveLength(2);
     expect(email?.fields[0]).toEqual({
-      key: 'to', label: 'Destinatario', type: 'expression', required: true,
+      key: 'to',
+      label: 'Destinatario',
+      type: 'expression',
+      required: true,
     });
   });
 });
@@ -83,11 +91,11 @@ describe('buildNodeCatalog — community runtime-loaded (FIX 2026-05-30)', () =>
           type: 'action',
           label: 'Telegram',
           description: 'Telegram Bot API 75 actions',
-          configFields: [
-            { key: 'botToken', label: 'Bot Token', type: 'secret', required: true },
-          ],
+          configFields: [{ key: 'botToken', label: 'Bot Token', type: 'secret', required: true }],
           actions: [
-            { id: 'send_message', label: 'Send Message',
+            {
+              id: 'send_message',
+              label: 'Send Message',
               configFields: [
                 { key: 'chatId', label: 'Chat ID', type: 'expression', required: true },
                 { key: 'text', label: 'Testo', type: 'textarea', required: true },
@@ -115,8 +123,14 @@ describe('buildNodeCatalog — community runtime-loaded (FIX 2026-05-30)', () =>
           description: 'Slack 57 actions',
           configFields: [{ key: 'token', label: 'OAuth Token', type: 'secret', required: true }],
           actions: [
-            { id: 'send_message', label: 'Send Message', category: 'Messages',
-              configFields: [{ key: 'channel', label: 'Channel', type: 'expression', required: true }] },
+            {
+              id: 'send_message',
+              label: 'Send Message',
+              category: 'Messages',
+              configFields: [
+                { key: 'channel', label: 'Channel', type: 'expression', required: true },
+              ],
+            },
             { id: 'upload_file', label: 'Upload File', category: 'Files', configFields: [] },
           ],
         },
@@ -133,7 +147,10 @@ describe('buildNodeCatalog — community runtime-loaded (FIX 2026-05-30)', () =>
   it('fusione bundled + community: 2 bundled + 7 community = 9 entries', () => {
     const mkCommunity = (id: string) => ({
       def: {
-        id, type: 'action', label: id, description: '',
+        id,
+        type: 'action',
+        label: id,
+        description: '',
         configFields: [{ key: 'apiKey', label: 'API Key', type: 'secret', required: true }],
       },
     });
@@ -148,11 +165,19 @@ describe('buildNodeCatalog — community runtime-loaded (FIX 2026-05-30)', () =>
     ]);
     const cat = buildNodeCatalog();
     expect(cat).toHaveLength(9);
-    expect(cat.map((c) => c.defId)).toEqual(expect.arrayContaining([
-      'action_send_email', 'trigger_imap',
-      'community_telegram', 'community_slack', 'community_github',
-      'community_notion', 'community_stripe', 'community_linear', 'community_discord',
-    ]));
+    expect(cat.map((c) => c.defId)).toEqual(
+      expect.arrayContaining([
+        'action_send_email',
+        'trigger_imap',
+        'community_telegram',
+        'community_slack',
+        'community_github',
+        'community_notion',
+        'community_stripe',
+        'community_linear',
+        'community_discord',
+      ]),
+    );
   });
 
   it('de-dup: defId community vince su bundled stesso id (defensive)', () => {
@@ -177,7 +202,10 @@ describe('buildNodeCatalog — community runtime-loaded (FIX 2026-05-30)', () =>
     listInstalledMock.mockReturnValue([
       {
         def: {
-          id: 'community_simple', type: 'action', label: 'Simple', description: '',
+          id: 'community_simple',
+          type: 'action',
+          label: 'Simple',
+          description: '',
           configFields: [{ key: 'url', label: 'URL', type: 'text', required: true }],
         },
       },
@@ -218,19 +246,31 @@ describe('normalizeConstraints', () => {
 
   it('nullable=false esplicito', () => {
     expect(normalizeConstraints({ nullable: false })).toEqual({
-      nullable: false, unique: false, primaryKey: false,
+      nullable: false,
+      unique: false,
+      primaryKey: false,
     });
   });
 
   it('unique + primaryKey true', () => {
     expect(normalizeConstraints({ unique: true, primaryKey: true })).toEqual({
-      nullable: true, unique: true, primaryKey: true,
+      nullable: true,
+      unique: true,
+      primaryKey: true,
     });
   });
 
   it('input non-object → all defaults', () => {
-    expect(normalizeConstraints(null)).toEqual({ nullable: true, unique: false, primaryKey: false });
-    expect(normalizeConstraints('foo')).toEqual({ nullable: true, unique: false, primaryKey: false });
+    expect(normalizeConstraints(null)).toEqual({
+      nullable: true,
+      unique: false,
+      primaryKey: false,
+    });
+    expect(normalizeConstraints('foo')).toEqual({
+      nullable: true,
+      unique: false,
+      primaryKey: false,
+    });
   });
 });
 

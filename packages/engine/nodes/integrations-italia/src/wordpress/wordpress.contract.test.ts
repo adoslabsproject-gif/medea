@@ -23,9 +23,14 @@ describe('italia_wordpress — contract (anti-drift)', () => {
   });
 
   it('🚨 le action citate ⊆ enum reale', () => {
-    expect([...options('action')].sort()).toEqual(
-      ['create', 'delete', 'get', 'list', 'update', 'upload_media'],
-    );
+    expect([...options('action')].sort()).toEqual([
+      'create',
+      'delete',
+      'get',
+      'list',
+      'update',
+      'upload_media',
+    ]);
   });
 
   it('Application Password documentata (auth reale), non OAuth/JWT', () => {

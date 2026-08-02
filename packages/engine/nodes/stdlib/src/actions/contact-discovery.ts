@@ -118,9 +118,9 @@ export const contactDiscoveryNode: NodeModule = {
         required: false,
         defaultValue: 'true',
         help:
-          'Se ON, quando il crawling del sito non trova email, esegue una search DDG '
-          + '`site:dominio.it contatti email` come ultimo tentativo. '
-          + 'Aggiunge ~3s ma aumenta significativamente l\'hit rate (+15-20% in test).',
+          'Se ON, quando il crawling del sito non trova email, esegue una search DDG ' +
+          '`site:dominio.it contatti email` come ultimo tentativo. ' +
+          "Aggiunge ~3s ma aumenta significativamente l'hit rate (+15-20% in test).",
       },
       {
         key: 'followSitemap',
@@ -129,8 +129,8 @@ export const contactDiscoveryNode: NodeModule = {
         required: false,
         defaultValue: 'true',
         help:
-          'Se ON, cerca /sitemap.xml e /sitemap_index.xml. Estrae URL che contengono keyword contatti (contatti, contact, kontakt, ecc.) e li visita. '
-          + 'Molti siti enterprise hanno la pagina contatti SOLO via sitemap (non linkata in homepage).',
+          'Se ON, cerca /sitemap.xml e /sitemap_index.xml. Estrae URL che contengono keyword contatti (contatti, contact, kontakt, ecc.) e li visita. ' +
+          'Molti siti enterprise hanno la pagina contatti SOLO via sitemap (non linkata in homepage).',
       },
 
       // ─── Caching ───────────────────────────────────────────────────

@@ -42,7 +42,9 @@ afterEach(async () => {
   process.env = { ...ORIG_ENV };
   try {
     rmSync(TMP_DIR, { recursive: true, force: true });
-  } catch { /* best-effort */ }
+  } catch {
+    /* best-effort */
+  }
 });
 
 describe('🚨 createDatabase — backend dispatch', () => {
@@ -157,7 +159,9 @@ describe('🚨 SQLite PRAGMA tuning (2026-06-06 perf optimization)', () => {
   it('🚨 wal_autocheckpoint = 10000 pages (~40MB cap)', async () => {
     const { createDatabase } = await import('./db.js');
     const h = createDatabase();
-    const wac = h.sqlite.prepare('PRAGMA wal_autocheckpoint').get() as { wal_autocheckpoint: number };
+    const wac = h.sqlite.prepare('PRAGMA wal_autocheckpoint').get() as {
+      wal_autocheckpoint: number;
+    };
     expect(wac.wal_autocheckpoint).toBe(10000);
     await h.close();
   });
@@ -186,7 +190,8 @@ describe('🚨 ALTER TABLE in-place migration (back-compat)', () => {
         updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
       );
     `);
-    conn.prepare(`INSERT INTO workflows (id, name, tenant_id, graph_json) VALUES (?, ?, ?, ?)`)
+    conn
+      .prepare(`INSERT INTO workflows (id, name, tenant_id, graph_json) VALUES (?, ?, ?, ?)`)
       .run('wf-1', 'Test WF', 't1', '{}');
     conn.close();
 
@@ -194,7 +199,7 @@ describe('🚨 ALTER TABLE in-place migration (back-compat)', () => {
     const { createDatabase } = await import('./db.js');
     const h = createDatabase();
     const cols = h.sqlite.prepare(`PRAGMA table_info(workflows)`).all() as { name: string }[];
-    const colNames = cols.map(c => c.name);
+    const colNames = cols.map((c) => c.name);
     // 🚨 Tutte e 5 le colonne aggiunte 2026-06-07 devono essere presenti
     expect(colNames).toContain('folder_id');
     expect(colNames).toContain('on_error_json');
@@ -203,25 +208,30 @@ describe('🚨 ALTER TABLE in-place migration (back-compat)', () => {
     expect(colNames).toContain('run_verbosity');
 
     // 🚨 SAFETY: dato preesistente intatto
-    const row = h.sqlite.prepare(`SELECT id, name FROM workflows WHERE id = ?`).get('wf-1') as { id: string; name: string };
+    const row = h.sqlite.prepare(`SELECT id, name FROM workflows WHERE id = ?`).get('wf-1') as {
+      id: string;
+      name: string;
+    };
     expect(row.id).toBe('wf-1');
     expect(row.name).toBe('Test WF');
     await h.close();
   });
 
-  it('🚨 workflows VUOTO (mai inizializzato) → NO ALTER, schema verra\' creato da Drizzle migrate', async () => {
+  it("🚨 workflows VUOTO (mai inizializzato) → NO ALTER, schema verra' creato da Drizzle migrate", async () => {
     // Senza tabella workflows pre-esistente, addColumn skip (existingCols.size === 0)
     const { createDatabase } = await import('./db.js');
     const h = createDatabase();
     // Verifica che nessun ALTER abbia fallito e che possiamo creare la tabella ex-novo
-    expect(() => h.sqlite.exec(`
+    expect(() =>
+      h.sqlite.exec(`
       CREATE TABLE workflows (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         tenant_id TEXT NOT NULL,
         graph_json TEXT NOT NULL
       );
-    `)).not.toThrow();
+    `),
+    ).not.toThrow();
     await h.close();
   });
 
@@ -239,7 +249,7 @@ describe('🚨 ALTER TABLE in-place migration (back-compat)', () => {
     await h1.close();
     const h2 = createDatabase();
     const cols = h2.sqlite.prepare(`PRAGMA table_info(workflows)`).all() as { name: string }[];
-    const folderIdCount = cols.filter(c => c.name === 'folder_id').length;
+    const folderIdCount = cols.filter((c) => c.name === 'folder_id').length;
     expect(folderIdCount).toBe(1); // no duplicate
     await h2.close();
   });
@@ -269,7 +279,11 @@ describe('🚨 SQLite compat proxy (back-compat layer)', () => {
     const tx = h.sqlite.transaction((items: [number, string][]) => {
       for (const [id, v] of items) insert.run(id, v);
     });
-    tx([[1, 'a'], [2, 'b'], [3, 'c']]);
+    tx([
+      [1, 'a'],
+      [2, 'b'],
+      [3, 'c'],
+    ]);
     const count = (h.sqlite.prepare(`SELECT COUNT(*) AS c FROM tx_probe`).get() as { c: number }).c;
     expect(count).toBe(3);
     await h.close();

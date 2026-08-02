@@ -31,15 +31,33 @@ describe('HONEYPOT_PATTERNS', () => {
     // Expansion 2026-06-02: 25 categorie (11 originali + 14 nuove)
     const expected: HoneypotCategory[] = [
       // Originali (v1)
-      'env_leak', 'wordpress_scan', 'shell_probe', 'vcs_leak',
-      'admin_panel_probe', 'devops_tool_probe', 'auth_bypass_try',
-      'llm_proxy_abuse', 'path_traversal', 'cve_probe', 'info_disclosure',
+      'env_leak',
+      'wordpress_scan',
+      'shell_probe',
+      'vcs_leak',
+      'admin_panel_probe',
+      'devops_tool_probe',
+      'auth_bypass_try',
+      'llm_proxy_abuse',
+      'path_traversal',
+      'cve_probe',
+      'info_disclosure',
       // Nuove (v2 — espansione 2026-06-02)
-      'cloud_metadata', 'ssrf_probe', 'command_injection',
-      'sql_injection', 'nosql_injection', 'cms_scan',
-      'webshell_upload', 'java_servlet_probe', 'iot_default_panel',
-      'cicd_leak', 'k8s_secret_probe', 'next_internal_probe',
-      'aspnet_legacy', 'cryptominer_inject', 'router_cve',
+      'cloud_metadata',
+      'ssrf_probe',
+      'command_injection',
+      'sql_injection',
+      'nosql_injection',
+      'cms_scan',
+      'webshell_upload',
+      'java_servlet_probe',
+      'iot_default_panel',
+      'cicd_leak',
+      'k8s_secret_probe',
+      'next_internal_probe',
+      'aspnet_legacy',
+      'cryptominer_inject',
+      'router_cve',
     ];
     for (const cat of expected) {
       expect(found.has(cat)).toBe(true);
@@ -221,16 +239,13 @@ describe('classifyHoneypotPath — CVE_PROBE detection', () => {
 });
 
 describe('classifyHoneypotPath — INFO_DISCLOSURE detection', () => {
-  it.each([
-    '/server-status',
-    '/server-info',
-    '/phpinfo.php',
-    '/info.php',
-    '/status.php',
-  ])('classifica %s come info_disclosure o shell_probe', (path) => {
-    const m = classifyHoneypotPath(path);
-    expect(['info_disclosure', 'shell_probe']).toContain(m?.category);
-  });
+  it.each(['/server-status', '/server-info', '/phpinfo.php', '/info.php', '/status.php'])(
+    'classifica %s come info_disclosure o shell_probe',
+    (path) => {
+      const m = classifyHoneypotPath(path);
+      expect(['info_disclosure', 'shell_probe']).toContain(m?.category);
+    },
+  );
 });
 
 describe('classifyHoneypotPath — ZERO FALSI POSITIVI su path legittimi', () => {
@@ -327,18 +342,26 @@ describe('classifyHoneypotPath — idempotency', () => {
 // ─── EXPANSION 2026-06-02 — coverage 14 nuove categorie + regression no-false-positive ──
 describe('HONEYPOT_PATTERNS v2 — cloud_metadata', () => {
   it('AWS IMDS classico', () => {
-    expect(classifyHoneypotPath('/latest/meta-data/iam/security-credentials/')?.category).toBe('cloud_metadata');
+    expect(classifyHoneypotPath('/latest/meta-data/iam/security-credentials/')?.category).toBe(
+      'cloud_metadata',
+    );
   });
   it('GCP computeMetadata', () => {
-    expect(classifyHoneypotPath('/computeMetadata/v1/instance/service-accounts/default/token')?.category).toBe('cloud_metadata');
+    expect(
+      classifyHoneypotPath('/computeMetadata/v1/instance/service-accounts/default/token')?.category,
+    ).toBe('cloud_metadata');
   });
   it('IPv4 IMDS literal 169.254.169.254', () => {
-    expect(classifyHoneypotPath('/169.254.169.254/latest/user-data')?.category).toBe('cloud_metadata');
+    expect(classifyHoneypotPath('/169.254.169.254/latest/user-data')?.category).toBe(
+      'cloud_metadata',
+    );
   });
   it('Azure / Oracle / Alibaba metadata', () => {
     expect(classifyHoneypotPath('/opc/v1/instance/')?.category).toBe('cloud_metadata');
     expect(classifyHoneypotPath('/metadata.google.internal/')?.category).toBe('cloud_metadata');
-    expect(classifyHoneypotPath('/100.100.100.200/latest/meta-data')?.category).toBe('cloud_metadata');
+    expect(classifyHoneypotPath('/100.100.100.200/latest/meta-data')?.category).toBe(
+      'cloud_metadata',
+    );
   });
 });
 
@@ -347,10 +370,14 @@ describe('HONEYPOT_PATTERNS v2 — ssrf_probe', () => {
     expect(classifyHoneypotPath('/proxy?url=http://evil.com/secrets')?.category).toBe('ssrf_probe');
   });
   it('?redirect=gopher:// scheme', () => {
-    expect(classifyHoneypotPath('/api/redirect?redirect=gopher://internal:6379/_INFO')?.category).toBe('ssrf_probe');
+    expect(
+      classifyHoneypotPath('/api/redirect?redirect=gopher://internal:6379/_INFO')?.category,
+    ).toBe('ssrf_probe');
   });
   it('open proxy endpoint /fetch.php?url=', () => {
-    expect(classifyHoneypotPath('/fetch.php?url=http://localhost:8080')?.category).toBe('ssrf_probe');
+    expect(classifyHoneypotPath('/fetch.php?url=http://localhost:8080')?.category).toBe(
+      'ssrf_probe',
+    );
   });
 });
 
@@ -367,11 +394,13 @@ describe('HONEYPOT_PATTERNS v2 — command_injection', () => {
 });
 
 describe('HONEYPOT_PATTERNS v2 — sql_injection', () => {
-  it("UNION SELECT signature", () => {
-    expect(classifyHoneypotPath("/api/users?id=1' UNION SELECT password FROM users--")?.category).toBe('sql_injection');
+  it('UNION SELECT signature', () => {
+    expect(
+      classifyHoneypotPath("/api/users?id=1' UNION SELECT password FROM users--")?.category,
+    ).toBe('sql_injection');
   });
   it("' OR encoded SLEEP", () => {
-    expect(classifyHoneypotPath("/login?id=1%27 OR SLEEP(5)--")?.category).toBe('sql_injection');
+    expect(classifyHoneypotPath('/login?id=1%27 OR SLEEP(5)--')?.category).toBe('sql_injection');
   });
 });
 
@@ -494,17 +523,28 @@ describe('HONEYPOT_PATTERNS v2 — extended env_leak', () => {
 
 describe('HONEYPOT_PATTERNS — CRITICAL: zero false positive su path legit FlowForge', () => {
   const legitPaths = [
-    '/login', '/signup', '/logout', '/verify-email', '/forgot-password',
-    '/reset-password', '/onboard/2fa',
-    '/api/v1/auth/login', '/api/v1/auth/signup', '/api/v1/auth/2fa/onboard/setup',
-    '/api/v1/workspaces', '/api/v1/workspaces/abc-123/change-plan',
-    '/api/v1/account/billing', '/api/v1/account/billing/invoices',
+    '/login',
+    '/signup',
+    '/logout',
+    '/verify-email',
+    '/forgot-password',
+    '/reset-password',
+    '/onboard/2fa',
+    '/api/v1/auth/login',
+    '/api/v1/auth/signup',
+    '/api/v1/auth/2fa/onboard/setup',
+    '/api/v1/workspaces',
+    '/api/v1/workspaces/abc-123/change-plan',
+    '/api/v1/account/billing',
+    '/api/v1/account/billing/invoices',
     '/api/v1/account/billing/invoices/uuid/download',
     '/api/v1/account/billing/invoices/credit-notes/uuid/download',
-    '/api/v1/admin/users', '/api/v1/admin/payments',
+    '/api/v1/admin/users',
+    '/api/v1/admin/payments',
     '/api/v1/admin/payments/uuid/refund',
     '/api/v1/admin/workspaces/uuid/change-plan',
-    '/api/v1/gdpr/erasure-request', '/api/v1/billing/cancel',
+    '/api/v1/gdpr/erasure-request',
+    '/api/v1/billing/cancel',
     '/api/v1/internal/sentinel/threat',
     '/api/v1/internal/workspaces/list',
     '/api/v1/webhooks/paypal',
@@ -512,25 +552,57 @@ describe('HONEYPOT_PATTERNS — CRITICAL: zero false positive su path legit Flow
     '/api/v1/llm/chat',
     '/api/v1/byok/openai/key',
     '/api/v1/email-tracking/uuid',
-    '/api/v1/i18n/it', '/api/v1/openapi.json', '/api/v1/docs',
-    '/account/billing', '/account/billing-details', '/account/team',
-    '/account/security', '/account/api-keys', '/account/profile',
-    '/admin/users', '/admin/users/uuid', '/admin/workspaces',
+    '/api/v1/i18n/it',
+    '/api/v1/openapi.json',
+    '/api/v1/docs',
+    '/account/billing',
+    '/account/billing-details',
+    '/account/team',
+    '/account/security',
+    '/account/api-keys',
+    '/account/profile',
+    '/admin/users',
+    '/admin/users/uuid',
+    '/admin/workspaces',
     '/admin/workspaces/uuid/custom-domains',
-    '/admin/payments', '/admin/email-templates', '/admin/docker-prune',
-    '/admin/observability', '/admin/cron', '/admin/database',
-    '/assets/main.css', '/assets/main.css?v=123', '/assets/account.js',
-    '/assets/logozeli.png', '/favicon.ico', '/favicon-32x32.png',
-    '/manifest.json', '/robots.txt', '/sitemap.xml', '/llms.txt',
+    '/admin/payments',
+    '/admin/email-templates',
+    '/admin/docker-prune',
+    '/admin/observability',
+    '/admin/cron',
+    '/admin/database',
+    '/assets/main.css',
+    '/assets/main.css?v=123',
+    '/assets/account.js',
+    '/assets/logozeli.png',
+    '/favicon.ico',
+    '/favicon-32x32.png',
+    '/manifest.json',
+    '/robots.txt',
+    '/sitemap.xml',
+    '/llms.txt',
     '/integrazioni',
     '/integrazioni/ai_openai',
-    '/integrazioni/action_xlsx_parse', '/integrazioni/db_sql_query',
+    '/integrazioni/action_xlsx_parse',
+    '/integrazioni/db_sql_query',
     '/integrazioni/italia_sdi_send_invoice',
-    '/sicurezza', '/pricing', '/docs',
-    '/sso', '/auth/bootstrap', '/auth/status', '/auth/me',
-    '/dashboard', '/workflows', '/workflows/uuid/edit',
-    '/.well-known/security.txt', '/.well-known/change-password',
-    '/about', '/privacy', '/terms', '/cookie', '/cookie-policy',
+    '/sicurezza',
+    '/pricing',
+    '/docs',
+    '/sso',
+    '/auth/bootstrap',
+    '/auth/status',
+    '/auth/me',
+    '/dashboard',
+    '/workflows',
+    '/workflows/uuid/edit',
+    '/.well-known/security.txt',
+    '/.well-known/change-password',
+    '/about',
+    '/privacy',
+    '/terms',
+    '/cookie',
+    '/cookie-policy',
   ];
 
   for (const path of legitPaths) {

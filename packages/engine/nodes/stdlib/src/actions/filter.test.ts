@@ -16,13 +16,25 @@ const filter = filterNode.executor!;
 const ctx = {} as never;
 
 const people = [{ name: 'a1' }, { name: 'a2' }, { name: 'a3' }];
-const dropA2 = JSON.stringify({ combinator: 'AND', rules: [{ field: 'name', op: 'not_equals', value: 'a2' }] });
-const keepNone = JSON.stringify({ combinator: 'AND', rules: [{ field: 'name', op: 'equals', value: 'zzz' }] });
+const dropA2 = JSON.stringify({
+  combinator: 'AND',
+  rules: [{ field: 'name', op: 'not_equals', value: 'a2' }],
+});
+const keepNone = JSON.stringify({
+  combinator: 'AND',
+  rules: [{ field: 'name', op: 'equals', value: 'zzz' }],
+});
 
-describe('action_filter — contratto storico dell\'output (invariato)', () => {
+describe("action_filter — contratto storico dell'output (invariato)", () => {
   it('separa kept/removed con conteggi e branch', async () => {
     const r = await filter({ conditions: dropA2 }, people, ctx);
-    const o = r.output as { kept: unknown[]; removed: unknown[]; keptCount: number; removedCount: number; total: number };
+    const o = r.output as {
+      kept: unknown[];
+      removed: unknown[];
+      keptCount: number;
+      removedCount: number;
+      total: number;
+    };
     expect(o.kept).toEqual([{ name: 'a1' }, { name: 'a3' }]);
     expect(o.removed).toEqual([{ name: 'a2' }]);
     expect(o.keptCount).toBe(2);
@@ -59,7 +71,7 @@ describe('🚨 action_filter — dichiarazione lineage (GAP #2)', () => {
     ]);
   });
 
-  it('🚨 input già ExecutionItem[] con pairedItem TRASCINATO → SOVRASCRITTO con l\'indice del filtro (review 4.2)', async () => {
+  it("🚨 input già ExecutionItem[] con pairedItem TRASCINATO → SOVRASCRITTO con l'indice del filtro (review 4.2)", async () => {
     // Il pairedItem sugli item di input riferisce l'input della SORGENTE
     // (un hop più su): se il filtro lo preservasse, l'engine lo
     // reinterpreterebbe contro la sorgente sbagliata. Il filtro è
@@ -69,7 +81,10 @@ describe('🚨 action_filter — dichiarazione lineage (GAP #2)', () => {
       { json: { name: 'a2' }, pairedItem: { item: 888 } },
       { json: { name: 'a3' }, pairedItem: { item: 777 } },
     ];
-    const dropA2Nested = JSON.stringify({ combinator: 'AND', rules: [{ field: 'json.name', op: 'not_equals', value: 'a2' }] });
+    const dropA2Nested = JSON.stringify({
+      combinator: 'AND',
+      rules: [{ field: 'json.name', op: 'not_equals', value: 'a2' }],
+    });
     const r = await filter({ conditions: dropA2Nested }, itemsIn, ctx);
     const items = r.items!;
     expect(items.map((it) => it.pairedItem)).toEqual([{ item: 0 }, { item: 2 }]);
@@ -93,7 +108,10 @@ describe('action_filter — anti-ReDoS (H2)', () => {
   // L'op `regex` confronta il pattern (config) contro i dati item (attacker-controlled).
   // Pre-fix: `new RegExp` di V8 → ReDoS. Post-fix: safeUserRegex (RE2 lineare).
   it('🚨 un pattern regex evil su item lungo NON blocca (< 1s)', async () => {
-    const rules = JSON.stringify({ combinator: 'AND', rules: [{ field: '', op: 'regex', value: '(a+)+$' }] });
+    const rules = JSON.stringify({
+      combinator: 'AND',
+      rules: [{ field: '', op: 'regex', value: '(a+)+$' }],
+    });
     const items = ['a'.repeat(70) + '!']; // forza il backtracking massimo su V8
     const t0 = performance.now();
     const r = await filter({ conditions: rules }, items, ctx);
@@ -103,8 +121,11 @@ describe('action_filter — anti-ReDoS (H2)', () => {
     expect(elapsed).toBeLessThan(1000); // RE2 ~ms; col vecchio new RegExp >3000ms
   });
 
-  it('anti-regressione: l\'op regex valido continua a filtrare correttamente', async () => {
-    const rules = JSON.stringify({ combinator: 'AND', rules: [{ field: '', op: 'regex', value: '^a[0-9]$' }] });
+  it("anti-regressione: l'op regex valido continua a filtrare correttamente", async () => {
+    const rules = JSON.stringify({
+      combinator: 'AND',
+      rules: [{ field: '', op: 'regex', value: '^a[0-9]$' }],
+    });
     const r = await filter({ conditions: rules }, ['a1', 'b2', 'a3'], ctx);
     const o = r.output as { keptCount: number };
     expect(o.keptCount).toBe(2); // a1, a3

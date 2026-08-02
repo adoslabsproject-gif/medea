@@ -33,8 +33,14 @@ const OUT_FILE = join(__dirname, '..', 'src', 'bot-ipranges-generated.ts');
 
 const SOURCES = [
   { vendor: 'Googlebot', url: 'https://developers.google.com/search/apis/ipranges/googlebot.json' },
-  { vendor: 'Google-Special-Crawlers', url: 'https://developers.google.com/search/apis/ipranges/special-crawlers.json' },
-  { vendor: 'Google-User-Triggered', url: 'https://developers.google.com/search/apis/ipranges/user-triggered-fetchers.json' },
+  {
+    vendor: 'Google-Special-Crawlers',
+    url: 'https://developers.google.com/search/apis/ipranges/special-crawlers.json',
+  },
+  {
+    vendor: 'Google-User-Triggered',
+    url: 'https://developers.google.com/search/apis/ipranges/user-triggered-fetchers.json',
+  },
   { vendor: 'Bingbot', url: 'https://www.bing.com/toolbox/bingbot.json' },
   { vendor: 'Applebot', url: 'https://search.developer.apple.com/applebot.json' },
 ];
@@ -50,19 +56,16 @@ async function sendTelegramAlert(text) {
     return false;
   }
   try {
-    const res = await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT,
-          text,
-          parse_mode: 'HTML',
-          disable_web_page_preview: true,
-        }),
-      },
-    );
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT,
+        text,
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
+      }),
+    });
     if (!res.ok) {
       console.error(`[telegram] HTTP ${res.status}: ${await res.text()}`);
       return false;
@@ -140,7 +143,7 @@ async function main() {
   const totalCidrs = succeeded.reduce((sum, r) => sum + r.cidrs.length, 0);
   const prevTotal = loadPrevious();
   if (prevTotal !== null && prevTotal > 0) {
-    const diffPct = Math.abs(totalCidrs - prevTotal) * 100 / prevTotal;
+    const diffPct = (Math.abs(totalCidrs - prevTotal) * 100) / prevTotal;
     if (diffPct > DIFF_THRESHOLD_PCT) {
       await sendTelegramAlert(
         `⚠ <b>Bot IP-ranges diff anomalo</b>\n\n` +
@@ -200,7 +203,9 @@ export function findVendorByIp(ip: string): string | null {
 }
 `;
   writeFileSync(OUT_FILE, ts, 'utf-8');
-  console.log(`[sync] wrote ${OUT_FILE}: ${totalCidrs} CIDRs from ${succeeded.length}/${SOURCES.length} vendors`);
+  console.log(
+    `[sync] wrote ${OUT_FILE}: ${totalCidrs} CIDRs from ${succeeded.length}/${SOURCES.length} vendors`,
+  );
 }
 
 main().catch(async (err) => {

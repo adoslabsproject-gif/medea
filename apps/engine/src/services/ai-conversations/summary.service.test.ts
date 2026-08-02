@@ -30,7 +30,8 @@ vi.mock('@/services/llm-chat.service.js', () => ({
 vi.mock('@/lib/logger.js');
 const loggerMock = vi.mocked(logger);
 
-const { trySummarize, selectFoldablePrefix, summaryTargetTokens, estimateMsgTokens } = await import('./summary.service.js');
+const { trySummarize, selectFoldablePrefix, summaryTargetTokens, estimateMsgTokens } =
+  await import('./summary.service.js');
 
 type FoldMsg = Parameters<typeof selectFoldablePrefix>[0][number];
 /** Helper: messaggio minimale per i test del fold (solo i campi usati). */
@@ -84,7 +85,12 @@ describe('🚨 guards', () => {
     needsCompactionMock.mockReturnValueOnce(true);
     // 15 messaggi piccoli → entrano tutti in keepBudget (default 4000) → nessun fold.
     getRecentMessagesMock.mockReturnValueOnce(
-      Array.from({ length: 15 }, (_, i) => ({ role: 'user', content: `m${i}`, tokens: 5, createdAt: 'x' })),
+      Array.from({ length: 15 }, (_, i) => ({
+        role: 'user',
+        content: `m${i}`,
+        tokens: 5,
+        createdAt: 'x',
+      })),
     );
     const r = await trySummarize('cv', 'liara', '', '');
     expect(r.reason).toBe('not_enough_to_fold');
@@ -99,7 +105,7 @@ describe('🧮 funzioni pure del fold', () => {
     expect(folded.map((m) => m.content)).toEqual(['m0', 'm1', 'm2']);
   });
 
-  it('selectFoldablePrefix: tiene SEMPRE almeno l\'ultimo, anche se da solo supera il budget', () => {
+  it("selectFoldablePrefix: tiene SEMPRE almeno l'ultimo, anche se da solo supera il budget", () => {
     const msgs = [msg('vecchio', 10, 't0'), msg('gigante', 100000, 't1')];
     const folded = selectFoldablePrefix(msgs, 50);
     expect(folded.map((m) => m.content)).toEqual(['vecchio']); // folda il vecchio, tiene il gigante
@@ -122,8 +128,8 @@ describe('🧮 funzioni pure del fold', () => {
 
   it('summaryTargetTokens: scala con la finestra, clampato [500, 2000]', () => {
     expect(summaryTargetTokens(30720)).toBe(2000); // 30720*0.08=2457 → cap 2000
-    expect(summaryTargetTokens(10000)).toBe(800);  // 10000*0.08=800
-    expect(summaryTargetTokens(1000)).toBe(500);   // 1000*0.08=80 → floor 500
+    expect(summaryTargetTokens(10000)).toBe(800); // 10000*0.08=800
+    expect(summaryTargetTokens(1000)).toBe(500); // 1000*0.08=80 → floor 500
     expect(summaryTargetTokens(undefined)).toBe(2000); // fallback 30720
   });
 });
@@ -136,7 +142,9 @@ describe('🚨 happy fold', () => {
     // folda i primi 28 (token-based, non più "ultimi 20" a conteggio).
     getRecentMessagesMock.mockReturnValue(
       Array.from({ length: 30 }, (_, i) => ({
-        role: i % 2 === 0 ? 'user' : 'assistant', content: `msg-${i}`, tokens: 2000,
+        role: i % 2 === 0 ? 'user' : 'assistant',
+        content: `msg-${i}`,
+        tokens: 2000,
         createdAt: `2026-06-${(i + 1).toString().padStart(2, '0')}`,
       })),
     );
@@ -146,7 +154,11 @@ describe('🚨 happy fold', () => {
     dispatchLLMChatMock.mockResolvedValueOnce('Dense summary of folded turns.');
     const r = await trySummarize('cv', 'liara', 'key', 'model');
     expect(r.summarized).toBe(true);
-    expect(applySummaryMock).toHaveBeenCalledWith('cv', 'Dense summary of folded turns.', expect.any(String));
+    expect(applySummaryMock).toHaveBeenCalledWith(
+      'cv',
+      'Dense summary of folded turns.',
+      expect.any(String),
+    );
     expect(loggerMock.info).toHaveBeenCalledWith(
       expect.objectContaining({ foldedTurns: 28, keptTurns: 2 }),
       '[ai-conv.summary] applied',
@@ -166,7 +178,7 @@ describe('🚨 happy fold', () => {
     dispatchLLMChatMock.mockResolvedValueOnce('long enough summary content blah');
     await trySummarize('cv', 'liara', 'k', 'm', undefined, { maxContextTokens: 30720 });
     const systemPrompt = at(dispatchLLMChatMock.mock.calls, 0, 'dispatch-calls')[3] as string;
-    expect(systemPrompt).toContain('Obiettivo dell\'utente');
+    expect(systemPrompt).toContain("Obiettivo dell'utente");
     expect(systemPrompt).toContain('Stato del workflow');
     expect(systemPrompt).toContain('Problemi e fix');
     expect(systemPrompt).toContain('2000 token'); // target dinamico per finestra 30720
@@ -194,7 +206,11 @@ describe('🚨 happy fold', () => {
   it('🚨 trim risposta LLM', async () => {
     dispatchLLMChatMock.mockResolvedValueOnce('  \n  long enough summary text here  \n ');
     await trySummarize('cv', 'liara', 'k', 'm');
-    expect(applySummaryMock).toHaveBeenCalledWith('cv', 'long enough summary text here', expect.any(String));
+    expect(applySummaryMock).toHaveBeenCalledWith(
+      'cv',
+      'long enough summary text here',
+      expect.any(String),
+    );
   });
 
   it('🚨 cut timestamp = createdAt ULTIMO messaggio folded', async () => {
@@ -214,7 +230,12 @@ describe('🚨 cooldown over 30s', () => {
     });
     needsCompactionMock.mockReturnValueOnce(true);
     getRecentMessagesMock.mockReturnValueOnce(
-      Array.from({ length: 25 }, (_, i) => ({ role: 'user', content: `m${i}`, tokens: 2000, createdAt: `2026-06-${(i + 1).toString().padStart(2, '0')}` })),
+      Array.from({ length: 25 }, (_, i) => ({
+        role: 'user',
+        content: `m${i}`,
+        tokens: 2000,
+        createdAt: `2026-06-${(i + 1).toString().padStart(2, '0')}`,
+      })),
     );
     dispatchLLMChatMock.mockResolvedValueOnce('long summary text valid 16+ chars');
     const r = await trySummarize('cv', 'liara', 'k', 'm');

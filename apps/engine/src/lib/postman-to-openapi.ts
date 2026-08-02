@@ -36,7 +36,9 @@ export class PostmanParseError extends Error {
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete', 'head', 'options']);
 
 function asRecord(v: unknown): Record<string, unknown> | undefined {
-  return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : undefined;
+  return v && typeof v === 'object' && !Array.isArray(v)
+    ? (v as Record<string, unknown>)
+    : undefined;
 }
 function str(v: unknown): string | undefined {
   return typeof v === 'string' && v.length > 0 ? v : undefined;
@@ -62,7 +64,11 @@ function normalizePathParams(path: string): string {
 }
 
 /** Estrae i segmenti path da un url Postman (string o object). */
-function extractPath(url: unknown): { path: string; query: { name: string; description?: string }[]; host?: string } {
+function extractPath(url: unknown): {
+  path: string;
+  query: { name: string; description?: string }[];
+  host?: string;
+} {
   // url può essere stringa "https://api.x.com/v1/charges?limit=2" o oggetto.
   if (typeof url === 'string') {
     return parseRawUrl(url);
@@ -75,7 +81,7 @@ function extractPath(url: unknown): { path: string; query: { name: string; descr
     if (parsed.path !== '/') return parsed;
   }
   const segs = arr(u.path)
-    .map((s) => (typeof s === 'string' ? s : str(asRecord(s)?.value) ?? ''))
+    .map((s) => (typeof s === 'string' ? s : (str(asRecord(s)?.value) ?? '')))
     .filter((s) => s.length > 0);
   const path = '/' + segs.join('/');
   const query = arr(u.query)
@@ -85,7 +91,9 @@ function extractPath(url: unknown): { path: string; query: { name: string; descr
       const desc = str(q.description);
       return desc ? { name: str(q.key)!, description: desc } : { name: str(q.key)! };
     });
-  const hostArr = arr(u.host).map((h) => (typeof h === 'string' ? h : '')).filter(Boolean);
+  const hostArr = arr(u.host)
+    .map((h) => (typeof h === 'string' ? h : ''))
+    .filter(Boolean);
   const host = hostArr.length > 0 ? hostArr.join('.') : str(u.host);
   const result: { path: string; query: { name: string; description?: string }[]; host?: string } = {
     path: path === '/' ? '/' : path,
@@ -95,13 +103,17 @@ function extractPath(url: unknown): { path: string; query: { name: string; descr
   return result;
 }
 
-function parseRawUrl(raw: string): { path: string; query: { name: string; description?: string }[]; host?: string } {
+function parseRawUrl(raw: string): {
+  path: string;
+  query: { name: string; description?: string }[];
+  host?: string;
+} {
   // Non usa new URL() perché i raw Postman contengono {{var}} non validi come URL.
   // Strip dello schema+host se presente, isola path e query string.
   const noProto = raw.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//u, '');
   const slash = noProto.indexOf('/');
-  const host = slash > 0 ? noProto.slice(0, slash) : (raw.includes('://') ? noProto : undefined);
-  const rest = slash >= 0 ? noProto.slice(slash) : (host ? '/' : noProto);
+  const host = slash > 0 ? noProto.slice(0, slash) : raw.includes('://') ? noProto : undefined;
+  const rest = slash >= 0 ? noProto.slice(slash) : host ? '/' : noProto;
   const [pathPart, queryPart] = rest.split('?', 2);
   const query = (queryPart ?? '')
     .split('&')
@@ -117,7 +129,12 @@ function parseRawUrl(raw: string): { path: string; query: { name: string; descri
 }
 
 /** Visita ricorsivamente item/folder; accumula le operazioni con il tag (folder). */
-function walkItems(items: unknown[], parentTag: string | undefined, out: PlannedOp[], warnings: string[]): void {
+function walkItems(
+  items: unknown[],
+  parentTag: string | undefined,
+  out: PlannedOp[],
+  warnings: string[],
+): void {
   for (const raw of items) {
     const item = asRecord(raw);
     if (!item) continue;
@@ -161,7 +178,9 @@ function walkItems(items: unknown[], parentTag: string | undefined, out: Planned
     // (formdata/urlencoded/file) non sono mappati: warning.
     const mode = str(body?.mode);
     if (body && mode && mode !== 'raw') {
-      warnings.push(`Request "${name}": body mode "${mode}" non mappato (solo raw/JSON) — riconfigura a mano.`);
+      warnings.push(
+        `Request "${name}": body mode "${mode}" non mappato (solo raw/JSON) — riconfigura a mano.`,
+      );
     }
 
     out.push({
@@ -186,7 +205,9 @@ function extractAuth(collection: Record<string, unknown>): Record<string, unknow
   if (type === 'basic') return { basicAuth: { type: 'http', scheme: 'basic' } };
   if (type === 'apikey') {
     // Postman apikey: array di {key,value} con key='key'|'in'|'value'.
-    const fields = arr(auth.apikey).map((f) => asRecord(f)).filter((f): f is Record<string, unknown> => !!f);
+    const fields = arr(auth.apikey)
+      .map((f) => asRecord(f))
+      .filter((f): f is Record<string, unknown> => !!f);
     const nameField = fields.find((f) => str(f.key) === 'key');
     const inField = fields.find((f) => str(f.key) === 'in');
     const name = str(nameField?.value) ?? 'X-API-Key';
@@ -202,7 +223,8 @@ function extractAuth(collection: Record<string, unknown>): Record<string, unknow
  */
 export function postmanToOpenApi(collectionRaw: unknown): PostmanConvertResult {
   const collection = asRecord(collectionRaw);
-  if (!collection) throw new PostmanParseError('La collection Postman deve essere un oggetto JSON.');
+  if (!collection)
+    throw new PostmanParseError('La collection Postman deve essere un oggetto JSON.');
   const info = asRecord(collection.info);
   if (!info || !str(info.name)) {
     throw new PostmanParseError('Collection Postman non valida: manca info.name.');
@@ -226,9 +248,15 @@ export function postmanToOpenApi(collectionRaw: unknown): PostmanConvertResult {
   let baseUrl: string | undefined;
   let best = 0;
   for (const [host, n] of [...hostCounts.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
-    if (n > best) { best = n; baseUrl = `https://${host}`; }
+    if (n > best) {
+      best = n;
+      baseUrl = `https://${host}`;
+    }
   }
-  if (!baseUrl) warnings.push('Nessun host costante nelle request (probabili variabili {{baseUrl}}): compila "baseUrl" nel nodo.');
+  if (!baseUrl)
+    warnings.push(
+      'Nessun host costante nelle request (probabili variabili {{baseUrl}}): compila "baseUrl" nel nodo.',
+    );
 
   // paths OpenAPI: raggruppa per path, poi per metodo. operationId dal nome request.
   const paths: Record<string, Record<string, unknown>> = {};
@@ -237,12 +265,26 @@ export function postmanToOpenApi(collectionRaw: unknown): PostmanConvertResult {
     const pathItem = paths[op.path] ?? (paths[op.path] = {});
     let opId = op.name;
     let n = 2;
-    while (usedOpIds.has(opId)) { opId = `${op.name}_${n}`; n += 1; }
+    while (usedOpIds.has(opId)) {
+      opId = `${op.name}_${n}`;
+      n += 1;
+    }
     usedOpIds.add(opId);
 
     const parameters = [
-      ...op.query.map((q) => ({ name: q.name, in: 'query', required: false, schema: { type: 'string' }, ...(q.description ? { description: q.description } : {}) })),
-      ...op.headers.map((h) => ({ name: h, in: 'header', required: false, schema: { type: 'string' } })),
+      ...op.query.map((q) => ({
+        name: q.name,
+        in: 'query',
+        required: false,
+        schema: { type: 'string' },
+        ...(q.description ? { description: q.description } : {}),
+      })),
+      ...op.headers.map((h) => ({
+        name: h,
+        in: 'header',
+        required: false,
+        schema: { type: 'string' },
+      })),
       ...extractPathParams(op.path),
     ];
     const operation: Record<string, unknown> = {
@@ -250,7 +292,9 @@ export function postmanToOpenApi(collectionRaw: unknown): PostmanConvertResult {
       summary: op.name,
       ...(op.tag ? { tags: [op.tag] } : {}),
       ...(parameters.length > 0 ? { parameters } : {}),
-      ...(op.hasJsonBody ? { requestBody: { content: { 'application/json': { schema: { type: 'object' } } } } } : {}),
+      ...(op.hasJsonBody
+        ? { requestBody: { content: { 'application/json': { schema: { type: 'object' } } } } }
+        : {}),
     };
     // OpenAPI: (path, method) è unico. Due request Postman con lo stesso metodo
     // e path (es. due GET /charges in folder diverse) collidono: la seconda
@@ -269,7 +313,11 @@ export function postmanToOpenApi(collectionRaw: unknown): PostmanConvertResult {
   const securitySchemes = extractAuth(collection);
   const spec: Record<string, unknown> = {
     openapi: '3.0.3',
-    info: { title: str(info.name)!, version: '1.0.0', ...(str(info.description) ? { description: str(info.description) } : {}) },
+    info: {
+      title: str(info.name)!,
+      version: '1.0.0',
+      ...(str(info.description) ? { description: str(info.description) } : {}),
+    },
     ...(baseUrl ? { servers: [{ url: baseUrl }] } : {}),
     ...(securitySchemes ? { components: { securitySchemes } } : {}),
     paths,

@@ -17,7 +17,11 @@ const SIZE_PX: Record<Size, number> = {
 };
 
 /** Inline loading spinner. Use inside buttons or as standalone indicator. */
-export function Spinner({ size = 'sm', className, label = 'Loading…' }: SpinnerProps): React.ReactElement {
+export function Spinner({
+  size = 'sm',
+  className,
+  label = 'Loading…',
+}: SpinnerProps): React.ReactElement {
   const px = SIZE_PX[size];
   return (
     <svg
@@ -30,7 +34,12 @@ export function Spinner({ size = 'sm', className, label = 'Loading…' }: Spinne
       aria-label={label}
     >
       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
-      <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path
+        d="M22 12a10 10 0 0 0-10-10"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -45,11 +54,7 @@ export interface SkeletonProps {
 export function Skeleton({ className, animated = true }: SkeletonProps): React.ReactElement {
   return (
     <div
-      className={clsx(
-        'rounded-md bg-surface-subtle',
-        animated && 'animate-pulse',
-        className,
-      )}
+      className={clsx('rounded-md bg-surface-subtle', animated && 'animate-pulse', className)}
       aria-hidden
     />
   );

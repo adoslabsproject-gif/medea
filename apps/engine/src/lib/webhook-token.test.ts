@@ -37,18 +37,27 @@ afterEach(() => {
 
 describe('deriveWebhookTokenFromSecret', () => {
   it('combacia byte-per-byte col verificatore storico (HMAC-SHA256 hex[:32])', () => {
-    const expected = createHmac('sha256', SECRET_A).update(`webhook:${WF}`).digest('hex').slice(0, 32);
+    const expected = createHmac('sha256', SECRET_A)
+      .update(`webhook:${WF}`)
+      .digest('hex')
+      .slice(0, 32);
     expect(deriveWebhookTokenFromSecret(SECRET_A, WF)).toBe(expected);
     expect(expected).toMatch(/^[a-f0-9]{32}$/u);
   });
 
   it('è deterministico e isolato per workflowId', () => {
-    expect(deriveWebhookTokenFromSecret(SECRET_A, WF)).toBe(deriveWebhookTokenFromSecret(SECRET_A, WF));
-    expect(deriveWebhookTokenFromSecret(SECRET_A, 'altro-wf')).not.toBe(deriveWebhookTokenFromSecret(SECRET_A, WF));
+    expect(deriveWebhookTokenFromSecret(SECRET_A, WF)).toBe(
+      deriveWebhookTokenFromSecret(SECRET_A, WF),
+    );
+    expect(deriveWebhookTokenFromSecret(SECRET_A, 'altro-wf')).not.toBe(
+      deriveWebhookTokenFromSecret(SECRET_A, WF),
+    );
   });
 
   it('CONTRACT rotazione: secret diverso → token diverso (il perché dei link rotti)', () => {
-    expect(deriveWebhookTokenFromSecret(SECRET_B, WF)).not.toBe(deriveWebhookTokenFromSecret(SECRET_A, WF));
+    expect(deriveWebhookTokenFromSecret(SECRET_B, WF)).not.toBe(
+      deriveWebhookTokenFromSecret(SECRET_A, WF),
+    );
   });
 
   it('fail-closed: secret vuoto o corto → stringa vuota', () => {
@@ -92,8 +101,10 @@ describe('verifyDefaultWebhookToken', () => {
     process.env.MEDEA_WEBHOOK_GRACE_SECRETS = SECRET_A;
     expect(verifyDefaultWebhookToken(WF, oldToken)).toEqual({ valid: true, viaGraceSecret: true });
     // Il token CORRENTE resta accettato senza flag grace.
-    expect(verifyDefaultWebhookToken(WF, deriveWebhookTokenFromSecret(SECRET_B, WF)))
-      .toEqual({ valid: true, viaGraceSecret: false });
+    expect(verifyDefaultWebhookToken(WF, deriveWebhookTokenFromSecret(SECRET_B, WF))).toEqual({
+      valid: true,
+      viaGraceSecret: false,
+    });
   });
 
   it('GRACE: lista comma-separated, entry corte scartate, spazi tollerati', () => {
@@ -102,7 +113,9 @@ describe('verifyDefaultWebhookToken', () => {
     process.env.MEDEA_WEBHOOK_GRACE_SECRETS = `corto, ${SECRET_A} ,altro-corto`;
     expect(verifyDefaultWebhookToken(WF, oldToken)).toEqual({ valid: true, viaGraceSecret: true });
     // Un token derivato da un'entry SCARTATA (corta) non deve mai passare.
-    expect(verifyDefaultWebhookToken(WF, deriveWebhookTokenFromSecret('corto'.repeat(7), WF)).valid).toBe(false);
+    expect(
+      verifyDefaultWebhookToken(WF, deriveWebhookTokenFromSecret('corto'.repeat(7), WF)).valid,
+    ).toBe(false);
   });
 
   it('fail-closed totale: né secret né grace → nulla è valido', () => {

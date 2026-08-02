@@ -11,7 +11,12 @@
 import { load as cheerioLoad, type CheerioAPI } from 'cheerio';
 import type { NodeModule, NodeExecutor } from '../types.js';
 
-interface SeoIssue { severity: 'critical' | 'warning' | 'info'; code: string; message: string; evidence?: string }
+interface SeoIssue {
+  severity: 'critical' | 'warning' | 'info';
+  code: string;
+  message: string;
+  evidence?: string;
+}
 
 const MAX_IMAGES = 1000;
 const MAX_LINKS = 5000;
@@ -41,13 +46,21 @@ interface SeoAuditResult {
   issues: SeoIssue[];
 }
 
-function getHtml(config: Record<string, unknown>, input: unknown): { html: string; url: string | null } {
+function getHtml(
+  config: Record<string, unknown>,
+  input: unknown,
+): { html: string; url: string | null } {
   const source = String(config.htmlSource ?? 'input');
   if (source === 'explicit') return { html: String(config.htmlExplicit ?? ''), url: null };
   if (typeof input === 'string') return { html: input, url: null };
   if (input && typeof input === 'object') {
     const obj = input as Record<string, unknown>;
-    const url = typeof obj.url === 'string' ? obj.url : typeof obj.finalUrl === 'string' ? obj.finalUrl : null;
+    const url =
+      typeof obj.url === 'string'
+        ? obj.url
+        : typeof obj.finalUrl === 'string'
+          ? obj.finalUrl
+          : null;
     if (typeof obj.body === 'string') return { html: obj.body, url };
     if (typeof obj.html === 'string') return { html: obj.html, url };
   }
@@ -58,10 +71,17 @@ function buildBaseUrl(declaredUrl: string | null, $: CheerioAPI): URL | null {
   const baseHref = $('base[href]').attr('href');
   const candidate = baseHref ?? declaredUrl;
   if (!candidate) return null;
-  try { return new URL(candidate); } catch { return null; }
+  try {
+    return new URL(candidate);
+  } catch {
+    return null;
+  }
 }
 
-function classifyLink(href: string, base: URL | null): 'internal' | 'external' | 'anchor' | 'mailto' | 'tel' | 'unknown' {
+function classifyLink(
+  href: string,
+  base: URL | null,
+): 'internal' | 'external' | 'anchor' | 'mailto' | 'tel' | 'unknown' {
   const trimmed = href.trim();
   if (!trimmed) return 'unknown';
   if (trimmed.startsWith('#')) return 'anchor';
@@ -71,7 +91,9 @@ function classifyLink(href: string, base: URL | null): 'internal' | 'external' |
     const resolved = new URL(trimmed, base ?? 'https://example.invalid');
     if (!base) return 'unknown';
     return resolved.host === base.host ? 'internal' : 'external';
-  } catch { return 'unknown'; }
+  } catch {
+    return 'unknown';
+  }
 }
 
 function scoreToGrade(score: number): SeoAuditResult['grade'] {
@@ -82,11 +104,15 @@ function scoreToGrade(score: number): SeoAuditResult['grade'] {
   return 'F';
 }
 
-const executor: NodeExecutor = async (config, input, _context) => {   
+const executor: NodeExecutor = async (config, input, _context) => {
   const start = Date.now();
   const { html, url } = getHtml(config, input);
   if (!html.trim()) {
-    return { output: { matched: false, warnings: ['Empty HTML input'] }, durationMs: Date.now() - start, warnings: ['Empty HTML input'] };
+    return {
+      output: { matched: false, warnings: ['Empty HTML input'] },
+      durationMs: Date.now() - start,
+      warnings: ['Empty HTML input'],
+    };
   }
 
   const $ = cheerioLoad(html);
@@ -97,54 +123,110 @@ const executor: NodeExecutor = async (config, input, _context) => {
   const titleVal = $('head title').first().text().trim() || null;
   const titleLen = titleVal?.length ?? 0;
   const titleOk = titleLen >= 20 && titleLen <= 60;
-  if (!titleVal) issues.push({ severity: 'critical', code: 'NO_TITLE', message: 'Missing <title>' });
-  else if (titleLen > 60) issues.push({ severity: 'warning', code: 'TITLE_TOO_LONG', message: `Title ${titleLen} chars (max 60)` });
-  else if (titleLen < 20) issues.push({ severity: 'warning', code: 'TITLE_TOO_SHORT', message: `Title ${titleLen} chars (min 20)` });
+  if (!titleVal)
+    issues.push({ severity: 'critical', code: 'NO_TITLE', message: 'Missing <title>' });
+  else if (titleLen > 60)
+    issues.push({
+      severity: 'warning',
+      code: 'TITLE_TOO_LONG',
+      message: `Title ${titleLen} chars (max 60)`,
+    });
+  else if (titleLen < 20)
+    issues.push({
+      severity: 'warning',
+      code: 'TITLE_TOO_SHORT',
+      message: `Title ${titleLen} chars (min 20)`,
+    });
 
   // Description
-   
+
   const descVal = $('meta[name="description"]').attr('content')?.trim() || null;
   const descLen = descVal?.length ?? 0;
   const descOk = descLen >= 50 && descLen <= 160;
-  if (!descVal) issues.push({ severity: 'critical', code: 'NO_DESCRIPTION', message: 'Missing meta description' });
-  else if (descLen > 160) issues.push({ severity: 'warning', code: 'DESC_TOO_LONG', message: `Description ${descLen} chars (max 160)` });
-  else if (descLen < 50) issues.push({ severity: 'warning', code: 'DESC_TOO_SHORT', message: `Description ${descLen} chars (min 50)` });
+  if (!descVal)
+    issues.push({
+      severity: 'critical',
+      code: 'NO_DESCRIPTION',
+      message: 'Missing meta description',
+    });
+  else if (descLen > 160)
+    issues.push({
+      severity: 'warning',
+      code: 'DESC_TOO_LONG',
+      message: `Description ${descLen} chars (max 160)`,
+    });
+  else if (descLen < 50)
+    issues.push({
+      severity: 'warning',
+      code: 'DESC_TOO_SHORT',
+      message: `Description ${descLen} chars (min 50)`,
+    });
 
   // Canonical
-   
+
   const canonical = $('link[rel="canonical"]').attr('href')?.trim() || null;
-  if (!canonical) issues.push({ severity: 'warning', code: 'NO_CANONICAL', message: 'Missing <link rel="canonical">' });
+  if (!canonical)
+    issues.push({
+      severity: 'warning',
+      code: 'NO_CANONICAL',
+      message: 'Missing <link rel="canonical">',
+    });
 
   // lang
   const lang = $('html').attr('lang')?.trim() ?? null;
-  if (!lang) issues.push({ severity: 'warning', code: 'NO_LANG', message: 'Missing <html lang="…">' });
+  if (!lang)
+    issues.push({ severity: 'warning', code: 'NO_LANG', message: 'Missing <html lang="…">' });
 
   // robots
   const robots = $('meta[name="robots"]').attr('content')?.trim() ?? null;
   const isNoindex = robots ? /noindex/iu.test(robots) : false;
-  if (isNoindex) issues.push({ severity: 'critical', code: 'NOINDEX', message: 'Page has robots="noindex" — not crawlable' });
+  if (isNoindex)
+    issues.push({
+      severity: 'critical',
+      code: 'NOINDEX',
+      message: 'Page has robots="noindex" — not crawlable',
+    });
 
   // viewport (mobile-friendliness), theme-color, favicon
   const viewport = $('meta[name="viewport"]').attr('content')?.trim() ?? null;
-  if (!viewport) issues.push({ severity: 'info', code: 'NO_VIEWPORT', message: 'Missing <meta name="viewport"> (mobile-friendliness)' });
+  if (!viewport)
+    issues.push({
+      severity: 'info',
+      code: 'NO_VIEWPORT',
+      message: 'Missing <meta name="viewport"> (mobile-friendliness)',
+    });
   const themeColor = $('meta[name="theme-color"]').attr('content')?.trim() ?? null;
-  const favicon = $('link[rel~="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]').first().attr('href')?.trim() ?? null;
+  const favicon =
+    $('link[rel~="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]')
+      .first()
+      .attr('href')
+      ?.trim() ?? null;
 
   // H1
   const h1Texts: string[] = [];
-  $('h1').each((_, el) => { h1Texts.push($(el).text().trim()); });
+  $('h1').each((_, el) => {
+    h1Texts.push($(el).text().trim());
+  });
   const h1Count = h1Texts.length;
   const h1Ok = h1Count === 1;
-  if (h1Count === 0) issues.push({ severity: 'critical', code: 'NO_H1', message: 'No <h1> on page' });
-  else if (h1Count > 1) issues.push({ severity: 'warning', code: 'MULTIPLE_H1', message: `${h1Count} <h1> tags (recommended 1)` });
+  if (h1Count === 0)
+    issues.push({ severity: 'critical', code: 'NO_H1', message: 'No <h1> on page' });
+  else if (h1Count > 1)
+    issues.push({
+      severity: 'warning',
+      code: 'MULTIPLE_H1',
+      message: `${h1Count} <h1> tags (recommended 1)`,
+    });
 
   // Heading outline (limited to first 50 to bound size)
   const headingOutline: { level: number; text: string }[] = [];
-  $('h1, h2, h3, h4, h5, h6').slice(0, 50).each((_, el) => {
-    const tagName = (el as { tagName?: string }).tagName ?? 'h1';
-    const level = Number(tagName.replace(/^h/iu, '')) || 1;
-    headingOutline.push({ level, text: $(el).text().trim().slice(0, 200) });
-  });
+  $('h1, h2, h3, h4, h5, h6')
+    .slice(0, 50)
+    .each((_, el) => {
+      const tagName = (el as { tagName?: string }).tagName ?? 'h1';
+      const level = Number(tagName.replace(/^h/iu, '')) || 1;
+      headingOutline.push({ level, text: $(el).text().trim().slice(0, 200) });
+    });
   // Heading hierarchy: un livello che SALTA il predecessore (es. h1→h3) è un difetto
   // di accessibilità/SEO. Confronto solo le discese (un h3→h1 di risalita è lecito).
   const headingSkips: { from: number; to: number }[] = [];
@@ -155,47 +237,83 @@ const executor: NodeExecutor = async (config, input, _context) => {
   }
   if (headingSkips.length > 0) {
     const first = headingSkips[0]!;
-    issues.push({ severity: 'warning', code: 'HEADING_SKIP', message: `${headingSkips.length} heading level skip(s) (e.g. h${String(first.from)} → h${String(first.to)})`, evidence: `h${String(first.from)} → h${String(first.to)}` });
+    issues.push({
+      severity: 'warning',
+      code: 'HEADING_SKIP',
+      message: `${headingSkips.length} heading level skip(s) (e.g. h${String(first.from)} → h${String(first.to)})`,
+      evidence: `h${String(first.from)} → h${String(first.to)}`,
+    });
   }
 
   // Images alt audit (cap difensivo 1000 elementi)
   let imgTotal = 0;
   let imgMissingAlt = 0;
   let imgEmptyAlt = 0;
-  $('img').slice(0, MAX_IMAGES).each((_, el) => {
-    imgTotal += 1;
-    const alt = $(el).attr('alt');
-    if (alt === undefined) imgMissingAlt += 1;
-    else if (alt.trim() === '') imgEmptyAlt += 1;
-  });
-  if (imgMissingAlt > 0) issues.push({ severity: 'warning', code: 'IMG_MISSING_ALT', message: `${imgMissingAlt}/${imgTotal} images missing alt attribute`, evidence: `${imgMissingAlt} senza alt` });
+  $('img')
+    .slice(0, MAX_IMAGES)
+    .each((_, el) => {
+      imgTotal += 1;
+      const alt = $(el).attr('alt');
+      if (alt === undefined) imgMissingAlt += 1;
+      else if (alt.trim() === '') imgEmptyAlt += 1;
+    });
+  if (imgMissingAlt > 0)
+    issues.push({
+      severity: 'warning',
+      code: 'IMG_MISSING_ALT',
+      message: `${imgMissingAlt}/${imgTotal} images missing alt attribute`,
+      evidence: `${imgMissingAlt} senza alt`,
+    });
 
   // Links count (cap difensivo 5000 elementi)
-  let internal = 0, external = 0, nofollow = 0, totalLinks = 0;
-  $('a[href]').slice(0, MAX_LINKS).each((_, el) => {
-    totalLinks += 1;
-    const href = $(el).attr('href') ?? '';
-    const rel = ($(el).attr('rel') ?? '').toLowerCase();
-    if (rel.includes('nofollow')) nofollow += 1;
-    const kind = classifyLink(href, base);
-    if (kind === 'internal') internal += 1;
-    else if (kind === 'external') external += 1;
-  });
+  let internal = 0,
+    external = 0,
+    nofollow = 0,
+    totalLinks = 0;
+  $('a[href]')
+    .slice(0, MAX_LINKS)
+    .each((_, el) => {
+      totalLinks += 1;
+      const href = $(el).attr('href') ?? '';
+      const rel = ($(el).attr('rel') ?? '').toLowerCase();
+      if (rel.includes('nofollow')) nofollow += 1;
+      const kind = classifyLink(href, base);
+      if (kind === 'internal') internal += 1;
+      else if (kind === 'external') external += 1;
+    });
 
   // Word count (rough: body text /\s+/)
   const bodyText = $('body').text().replace(/\s+/gu, ' ').trim();
   const wordCount = bodyText ? bodyText.split(' ').length : 0;
-  if (wordCount < 300) issues.push({ severity: 'info', code: 'LOW_WORD_COUNT', message: `${wordCount} words (thin content threshold 300)` });
+  if (wordCount < 300)
+    issues.push({
+      severity: 'info',
+      code: 'LOW_WORD_COUNT',
+      message: `${wordCount} words (thin content threshold 300)`,
+    });
 
   // Open Graph
   const ogTitle = Boolean($('meta[property="og:title"]').attr('content'));
   const ogDesc = Boolean($('meta[property="og:description"]').attr('content'));
   const ogImage = Boolean($('meta[property="og:image"]').attr('content'));
-  if (!ogTitle) issues.push({ severity: 'info', code: 'NO_OG_TITLE', message: 'Missing og:title (social sharing degraded)' });
-  if (!ogImage) issues.push({ severity: 'info', code: 'NO_OG_IMAGE', message: 'Missing og:image (social cards no preview)' });
+  if (!ogTitle)
+    issues.push({
+      severity: 'info',
+      code: 'NO_OG_TITLE',
+      message: 'Missing og:title (social sharing degraded)',
+    });
+  if (!ogImage)
+    issues.push({
+      severity: 'info',
+      code: 'NO_OG_IMAGE',
+      message: 'Missing og:image (social cards no preview)',
+    });
 
   // Twitter Card
-  const twCard = $('meta[name="twitter:card"]').attr('content') ?? $('meta[property="twitter:card"]').attr('content') ?? null;
+  const twCard =
+    $('meta[name="twitter:card"]').attr('content') ??
+    $('meta[property="twitter:card"]').attr('content') ??
+    null;
 
   // Schema.org JSON-LD
   const schemaTypes = new Set<string>();
@@ -209,12 +327,17 @@ const executor: NodeExecutor = async (config, input, _context) => {
         else if (v && typeof v === 'object') {
           const obj = v as Record<string, unknown>;
           if (typeof obj['@type'] === 'string') schemaTypes.add(obj['@type']);
-          else if (Array.isArray(obj['@type'])) obj['@type'].forEach((t) => { if (typeof t === 'string') schemaTypes.add(t); });
+          else if (Array.isArray(obj['@type']))
+            obj['@type'].forEach((t) => {
+              if (typeof t === 'string') schemaTypes.add(t);
+            });
           Object.values(obj).forEach(visit);
         }
       };
       visit(parsed);
-    } catch { /* malformed JSON-LD ignored */ }
+    } catch {
+      /* malformed JSON-LD ignored */
+    }
   });
 
   // Hreflang
@@ -257,7 +380,13 @@ const executor: NodeExecutor = async (config, input, _context) => {
   return {
     output: result,
     durationMs: Date.now() - start,
-    ...(issues.filter((i) => i.severity === 'critical').length > 0 ? { warnings: issues.filter((i) => i.severity === 'critical').map((i) => `${i.code}: ${i.message}`) } : {}),
+    ...(issues.filter((i) => i.severity === 'critical').length > 0
+      ? {
+          warnings: issues
+            .filter((i) => i.severity === 'critical')
+            .map((i) => `${i.code}: ${i.message}`),
+        }
+      : {}),
   };
 };
 
@@ -331,12 +460,27 @@ export const seoAuditNode: NodeModule = {
       },
     ],
     outputs: [
-      'url', 'score', 'grade',
-      'title', 'description', 'canonical', 'lang', 'robots',
-      'viewport', 'themeColor', 'favicon',
-      'h1', 'headingOutline', 'headingSkips',
-      'images', 'links', 'wordCount',
-      'openGraph', 'twitterCard', 'schemaTypes', 'hreflangCount',
+      'url',
+      'score',
+      'grade',
+      'title',
+      'description',
+      'canonical',
+      'lang',
+      'robots',
+      'viewport',
+      'themeColor',
+      'favicon',
+      'h1',
+      'headingOutline',
+      'headingSkips',
+      'images',
+      'links',
+      'wordCount',
+      'openGraph',
+      'twitterCard',
+      'schemaTypes',
+      'hreflangCount',
       'issues',
     ],
   },

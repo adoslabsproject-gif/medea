@@ -231,8 +231,16 @@ describe('🚨 engineSupportsRawSql — exhaustive switch', () => {
 
   it('🚨 typecheck-only: tutti i 10 engine coperti (no fall-through)', () => {
     const engines: DatabaseEngineId[] = [
-      'sqlite', 'postgres', 'mysql', 'mssql', 'duckdb',
-      'mongodb', 'redis', 'vector-embedded', 'qdrant', 'pgvector',
+      'sqlite',
+      'postgres',
+      'mysql',
+      'mssql',
+      'duckdb',
+      'mongodb',
+      'redis',
+      'vector-embedded',
+      'qdrant',
+      'pgvector',
     ];
     // No throw on any
     for (const e of engines) {

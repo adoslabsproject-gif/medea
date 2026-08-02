@@ -26,7 +26,7 @@ export const communityHubspotNode: NodeModule = {
       'stesso workflow), crea se assente, aggiorna se presente — evita duplicati che intasano il database CRM e ' +
       'confondono i sales rep ("perché Mario compare 3 volte?"). ' +
       'Auth via Private App Access Token (formato pat-eu1-xxxxxxxx oppure pat-na1-xxxxxxxx in base alla regione ' +
-      'hosting HubSpot del customer) generato dall\'admin nella sezione Settings → Integrations → Private Apps, ' +
+      "hosting HubSpot del customer) generato dall'admin nella sezione Settings → Integrations → Private Apps, " +
       'con scopes minimum: crm.objects.contacts.read/write, crm.objects.deals.read/write, ' +
       'crm.objects.companies.read/write. Il token è stored nel vault integration FlowForge e referenziato via ' +
       'integrationLabel — multi-account HubSpot supportato (un tenant FlowForge che gestisce 5 portali HubSpot ' +
@@ -35,7 +35,7 @@ export const communityHubspotNode: NodeModule = {
       'unlimited per Enterprise — il nodo gestisce 429 con Retry-After exponential backoff + jitter, fallback su ' +
       '5xx gateway error con 3 retry distribuiti. ' +
       'Custom properties: il nodo supporta automaticamente le proprietà custom del tenant HubSpot (fino a 1000 ' +
-      'properties/object), validation tipo (string, number, datetime, enumeration, bool, date) prima dell\'invio ' +
+      "properties/object), validation tipo (string, number, datetime, enumeration, bool, date) prima dell'invio " +
       'per evitare 400 BadRequest. ' +
       'API docs: developers.hubspot.com/docs/api/crm — versione API v3 (2023+), v1 legacy deprecato. ' +
       'Use case: lead capture da Typeform → contact con properties {{first_name}}, {{company}}, {{interest_area}} + ' +
@@ -56,7 +56,15 @@ export const communityHubspotNode: NodeModule = {
         type: 'select',
         required: true,
         defaultValue: 'createContact',
-        options: ['createContact', 'updateContact', 'getContact', 'listContacts', 'createDeal', 'updateDeal', 'createCompany'],
+        options: [
+          'createContact',
+          'updateContact',
+          'getContact',
+          'listContacts',
+          'createDeal',
+          'updateDeal',
+          'createCompany',
+        ],
         help: 'Tipo di azione HubSpot da eseguire.',
       },
       {
@@ -80,7 +88,8 @@ export const communityHubspotNode: NodeModule = {
         language: 'json',
         required: false,
         placeholder: '{ "firstname": "Mario", "lastname": "Rossi", "company": "Acme" }',
-        help: 'Required per create/update. Object con properties HubSpot (firstname, lastname, email, company, ' +
+        help:
+          'Required per create/update. Object con properties HubSpot (firstname, lastname, email, company, ' +
           'phone, jobtitle, deal_stage, amount, ecc — vedi schema HubSpot CRM per properties valide).',
       },
       {

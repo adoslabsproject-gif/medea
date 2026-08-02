@@ -24,15 +24,29 @@ vi.mock('@/lib/safe-outbound-fetch.js', () => ({
 
 const { paginateExecutor } = await import('./paginate.js');
 
-const ctx = { runId: 'r', workflowId: 'w', nodeId: 'n', tenantId: 't1', defId: 'logic_paginate', llmProviders: [], secrets: {}, nodeOutputs: {} } as never;
+const ctx = {
+  runId: 'r',
+  workflowId: 'w',
+  nodeId: 'n',
+  tenantId: 't1',
+  defId: 'logic_paginate',
+  llmProviders: [],
+  secrets: {},
+  nodeOutputs: {},
+} as never;
 
-function mockRes(body: unknown, opts: { ok?: boolean; status?: number; linkHeader?: string } = {}): Response {
+function mockRes(
+  body: unknown,
+  opts: { ok?: boolean; status?: number; linkHeader?: string } = {},
+): Response {
   return {
     ok: opts.ok ?? true,
     status: opts.status ?? 200,
     json: async () => body,
     text: async () => JSON.stringify(body),
-    headers: { get: (h: string) => h === 'link' ? (opts.linkHeader ?? null) : null } as unknown as Headers,
+    headers: {
+      get: (h: string) => (h === 'link' ? (opts.linkHeader ?? null) : null),
+    } as unknown as Headers,
   } as Response;
 }
 
@@ -42,24 +56,30 @@ beforeEach(() => {
 
 describe('🚨 validation', () => {
   it('🚨 urlTemplate missing → THROW', async () => {
-    await expect(paginateExecutor({} as never, {} as never, ctx))
-      .rejects.toThrow(/missing urlTemplate/);
+    await expect(paginateExecutor({} as never, {} as never, ctx)).rejects.toThrow(
+      /missing urlTemplate/,
+    );
   });
 
   it('🚨 headersJson invalid → THROW (no silent fallback)', async () => {
-    await expect(paginateExecutor(
-      { urlTemplate: 'https://api/x', headersJson: 'NOT-JSON{' } as never,
-      {} as never, ctx,
-    )).rejects.toThrow(/headersJson invalid/);
+    await expect(
+      paginateExecutor(
+        { urlTemplate: 'https://api/x', headersJson: 'NOT-JSON{' } as never,
+        {} as never,
+        ctx,
+      ),
+    ).rejects.toThrow(/headersJson invalid/);
   });
 
   it('🚨 res !ok → THROW con status + body preview', async () => {
-    safeOutboundFetchMock.mockResolvedValueOnce(
-      { ...mockRes('error body'), ok: false, status: 500 } as Response,
-    );
-    await expect(paginateExecutor(
-      { urlTemplate: 'https://api/x' } as never, {} as never, ctx,
-    )).rejects.toThrow(/paginate 500/);
+    safeOutboundFetchMock.mockResolvedValueOnce({
+      ...mockRes('error body'),
+      ok: false,
+      status: 500,
+    } as Response);
+    await expect(
+      paginateExecutor({ urlTemplate: 'https://api/x' } as never, {} as never, ctx),
+    ).rejects.toThrow(/paginate 500/);
   });
 });
 
@@ -71,18 +91,18 @@ describe('🚨 strategy=page-number (default)', () => {
       .mockResolvedValueOnce(mockRes([])); // stop
     const r = await paginateExecutor(
       { urlTemplate: 'https://api/x?page={{page}}' } as never,
-      {} as never, ctx,
+      {} as never,
+      ctx,
     );
     expect(r.output).toMatchObject({ items: [1, 2, 3, 4, 5], totalCount: 5 });
   });
 
   it('🚨 {{page}} sostituito 1, 2, 3...', async () => {
-    safeOutboundFetchMock
-      .mockResolvedValueOnce(mockRes([1]))
-      .mockResolvedValueOnce(mockRes([]));
+    safeOutboundFetchMock.mockResolvedValueOnce(mockRes([1])).mockResolvedValueOnce(mockRes([]));
     await paginateExecutor(
       { urlTemplate: 'https://api/x?page={{page}}' } as never,
-      {} as never, ctx,
+      {} as never,
+      ctx,
     );
     expect(safeOutboundFetchMock.mock.calls[0]![0]).toBe('https://api/x?page=1');
   });
@@ -93,7 +113,8 @@ describe('🚨 strategy=page-number (default)', () => {
       .mockResolvedValueOnce(mockRes({ response: { data: [] } }));
     const r = await paginateExecutor(
       { urlTemplate: 'https://api/x?p={{page}}', dataPath: 'response.data' } as never,
-      {} as never, ctx,
+      {} as never,
+      ctx,
     );
     expect((r.output as { items: number[] }).items).toEqual([1, 2]);
   });
@@ -102,7 +123,8 @@ describe('🚨 strategy=page-number (default)', () => {
     safeOutboundFetchMock.mockResolvedValue(mockRes([1])); // sempre non-vuoto
     const r = await paginateExecutor(
       { urlTemplate: 'https://api/x?p={{page}}', maxPages: 3 } as never,
-      {} as never, ctx,
+      {} as never,
+      ctx,
     );
     expect(safeOutboundFetchMock).toHaveBeenCalledTimes(3);
     expect((r.output as { items: number[] }).items).toEqual([1, 1, 1]);
@@ -110,10 +132,7 @@ describe('🚨 strategy=page-number (default)', () => {
 
   it('🚨 default maxPages=100 (cap di sicurezza)', async () => {
     safeOutboundFetchMock.mockResolvedValue(mockRes([1]));
-    await paginateExecutor(
-      { urlTemplate: 'https://api/x?p={{page}}' } as never,
-      {} as never, ctx,
-    );
+    await paginateExecutor({ urlTemplate: 'https://api/x?p={{page}}' } as never, {} as never, ctx);
     expect(safeOutboundFetchMock).toHaveBeenCalledTimes(100);
   });
 });
@@ -131,7 +150,8 @@ describe('🚨 strategy=cursor', () => {
         dataPath: 'items',
         cursorPath: 'next',
       } as never,
-      {} as never, ctx,
+      {} as never,
+      ctx,
     );
     expect((r.output as { items: number[] }).items).toEqual([1, 2, 3, 4, 5]);
   });
@@ -143,9 +163,12 @@ describe('🚨 strategy=cursor', () => {
     await paginateExecutor(
       {
         urlTemplate: 'https://api/x?c={{cursor}}',
-        pageStrategy: 'cursor', dataPath: 'items', cursorPath: 'next',
+        pageStrategy: 'cursor',
+        dataPath: 'items',
+        cursorPath: 'next',
       } as never,
-      {} as never, ctx,
+      {} as never,
+      ctx,
     );
     // Seconda call con cursor encoded
     const secondUrl = safeOutboundFetchMock.mock.calls[1]![0] as string;
@@ -157,9 +180,12 @@ describe('🚨 strategy=cursor', () => {
     const r = await paginateExecutor(
       {
         urlTemplate: 'https://api/x?c={{cursor}}',
-        pageStrategy: 'cursor', dataPath: 'items', cursorPath: 'next',
+        pageStrategy: 'cursor',
+        dataPath: 'items',
+        cursorPath: 'next',
       } as never,
-      {} as never, ctx,
+      {} as never,
+      ctx,
     );
     expect(safeOutboundFetchMock).toHaveBeenCalledTimes(1);
     expect((r.output as { items: number[] }).items).toEqual([1]);
@@ -170,9 +196,12 @@ describe('🚨 strategy=cursor', () => {
     const r = await paginateExecutor(
       {
         urlTemplate: 'https://api/x?c={{cursor}}',
-        pageStrategy: 'cursor', dataPath: 'items', cursorPath: 'next',
+        pageStrategy: 'cursor',
+        dataPath: 'items',
+        cursorPath: 'next',
       } as never,
-      {} as never, ctx,
+      {} as never,
+      ctx,
     );
     expect(safeOutboundFetchMock).toHaveBeenCalledTimes(1);
     expect((r.output as { items: number[] }).items).toEqual([1]);
@@ -187,7 +216,8 @@ describe('🚨 strategy=link-header (GitHub style)', () => {
       .mockResolvedValueOnce(mockRes([5])); // no link → stop
     const r = await paginateExecutor(
       { urlTemplate: 'https://api/x?p=1', pageStrategy: 'link-header' } as never,
-      {} as never, ctx,
+      {} as never,
+      ctx,
     );
     expect((r.output as { items: number[] }).items).toEqual([1, 2, 3, 4, 5]);
     expect(safeOutboundFetchMock).toHaveBeenCalledTimes(3);
@@ -201,7 +231,8 @@ describe('🚨 strategy=link-header (GitHub style)', () => {
     );
     const r = await paginateExecutor(
       { urlTemplate: 'https://api/x?p=1', pageStrategy: 'link-header' } as never,
-      {} as never, ctx,
+      {} as never,
+      ctx,
     );
     expect(safeOutboundFetchMock).toHaveBeenCalledTimes(1);
     expect((r.output as { items: number[] }).items).toEqual([1, 2]);
@@ -209,13 +240,16 @@ describe('🚨 strategy=link-header (GitHub style)', () => {
 
   it('🚨 link header con rel multipli → estrae solo "next"', async () => {
     safeOutboundFetchMock
-      .mockResolvedValueOnce(mockRes([1], {
-        linkHeader: '<https://api/x?p=2>; rel="next", <https://api/x?last>; rel="last"',
-      }))
+      .mockResolvedValueOnce(
+        mockRes([1], {
+          linkHeader: '<https://api/x?p=2>; rel="next", <https://api/x?last>; rel="last"',
+        }),
+      )
       .mockResolvedValueOnce(mockRes([])); // 2a call con [] termina
     await paginateExecutor(
       { urlTemplate: 'https://api/x?p=1', pageStrategy: 'link-header' } as never,
-      {} as never, ctx,
+      {} as never,
+      ctx,
     );
     expect(safeOutboundFetchMock.mock.calls[1]![0]).toBe('https://api/x?p=2');
   });
@@ -224,9 +258,7 @@ describe('🚨 strategy=link-header (GitHub style)', () => {
 describe('🚨 method + headers passati a safeOutboundFetch', () => {
   it('🚨 method default GET', async () => {
     safeOutboundFetchMock.mockResolvedValueOnce(mockRes([]));
-    await paginateExecutor(
-      { urlTemplate: 'https://api/x?p={{page}}' } as never, {} as never, ctx,
-    );
+    await paginateExecutor({ urlTemplate: 'https://api/x?p={{page}}' } as never, {} as never, ctx);
     expect(safeOutboundFetchMock.mock.calls[0]![1]).toMatchObject({ method: 'GET' });
   });
 
@@ -234,7 +266,8 @@ describe('🚨 method + headers passati a safeOutboundFetch', () => {
     safeOutboundFetchMock.mockResolvedValueOnce(mockRes([]));
     await paginateExecutor(
       { urlTemplate: 'https://api/x?p={{page}}', method: 'post' } as never,
-      {} as never, ctx,
+      {} as never,
+      ctx,
     );
     expect(safeOutboundFetchMock.mock.calls[0]![1]).toMatchObject({ method: 'POST' });
   });
@@ -242,11 +275,15 @@ describe('🚨 method + headers passati a safeOutboundFetch', () => {
   it('🚨 headersJson valido → header propagati', async () => {
     safeOutboundFetchMock.mockResolvedValueOnce(mockRes([]));
     await paginateExecutor(
-      { urlTemplate: 'https://api/x?p={{page}}', headersJson: '{"Authorization":"Bearer X","X-Custom":42}' } as never,
-      {} as never, ctx,
+      {
+        urlTemplate: 'https://api/x?p={{page}}',
+        headersJson: '{"Authorization":"Bearer X","X-Custom":42}',
+      } as never,
+      {} as never,
+      ctx,
     );
     expect(safeOutboundFetchMock.mock.calls[0]![1]).toMatchObject({
-      headers: { 'Authorization': 'Bearer X', 'X-Custom': '42' }, // 42 stringified
+      headers: { Authorization: 'Bearer X', 'X-Custom': '42' }, // 42 stringified
     });
   });
 
@@ -254,7 +291,8 @@ describe('🚨 method + headers passati a safeOutboundFetch', () => {
     safeOutboundFetchMock.mockResolvedValueOnce(mockRes([]));
     await paginateExecutor(
       { urlTemplate: 'https://api/x?p={{page}}', headersJson: '   ' } as never,
-      {} as never, ctx,
+      {} as never,
+      ctx,
     );
     expect(safeOutboundFetchMock.mock.calls[0]![1]).toMatchObject({ headers: {} });
   });
@@ -263,7 +301,8 @@ describe('🚨 method + headers passati a safeOutboundFetch', () => {
     safeOutboundFetchMock.mockResolvedValueOnce(mockRes([]));
     await paginateExecutor(
       { urlTemplate: 'https://api/x', headersJson: '[1,2,3]' } as never,
-      {} as never, ctx,
+      {} as never,
+      ctx,
     );
     expect(safeOutboundFetchMock.mock.calls[0]![1]).toMatchObject({ headers: {} });
   });
@@ -271,11 +310,11 @@ describe('🚨 method + headers passati a safeOutboundFetch', () => {
 
 describe('🚨 output shape', () => {
   it('🚨 ritorna { items, pages, totalCount }', async () => {
-    safeOutboundFetchMock
-      .mockResolvedValueOnce(mockRes([1, 2]))
-      .mockResolvedValueOnce(mockRes([]));
+    safeOutboundFetchMock.mockResolvedValueOnce(mockRes([1, 2])).mockResolvedValueOnce(mockRes([]));
     const r = await paginateExecutor(
-      { urlTemplate: 'https://api/x?p={{page}}' } as never, {} as never, ctx,
+      { urlTemplate: 'https://api/x?p={{page}}' } as never,
+      {} as never,
+      ctx,
     );
     expect(r.output).toMatchObject({ items: [1, 2], totalCount: 2 });
     expect((r.output as { pages: number }).pages).toBeGreaterThanOrEqual(1);
@@ -287,7 +326,10 @@ describe('🚨 output shape', () => {
 // Ondata 8d — gap costruiti: offset-limit, cap items/durata, 429, output esteso
 // ─────────────────────────────────────────────────────────────────────────────
 
-function mockResH(body: unknown, opts: { ok?: boolean; status?: number; headers?: Record<string, string> } = {}): Response {
+function mockResH(
+  body: unknown,
+  opts: { ok?: boolean; status?: number; headers?: Record<string, string> } = {},
+): Response {
   const h = opts.headers ?? {};
   return {
     ok: opts.ok ?? true,
@@ -304,8 +346,13 @@ describe('🚨 strategy=offset-limit', () => {
       .mockResolvedValueOnce(mockRes([1, 2]))
       .mockResolvedValueOnce(mockRes([3])); // < limit → stop
     const r = await paginateExecutor(
-      { urlTemplate: 'https://api/x?offset={{offset}}&limit={{limit}}', pageStrategy: 'offset-limit', limit: 2 } as never,
-      {} as never, ctx,
+      {
+        urlTemplate: 'https://api/x?offset={{offset}}&limit={{limit}}',
+        pageStrategy: 'offset-limit',
+        limit: 2,
+      } as never,
+      {} as never,
+      ctx,
     );
     expect((r.output as { items: number[] }).items).toEqual([1, 2, 3]);
     expect(safeOutboundFetchMock.mock.calls[0]![0]).toBe('https://api/x?offset=0&limit=2');
@@ -317,7 +364,9 @@ describe('🚨 cap di sicurezza', () => {
   it('🚨 maxItems → tronca + truncated=true', async () => {
     safeOutboundFetchMock.mockResolvedValue(mockRes([1, 2, 3]));
     const r = await paginateExecutor(
-      { urlTemplate: 'https://api/x?p={{page}}', maxItems: 2 } as never, {} as never, ctx,
+      { urlTemplate: 'https://api/x?p={{page}}', maxItems: 2 } as never,
+      {} as never,
+      ctx,
     );
     const out = r.output as { items: number[]; truncated: boolean };
     expect(out.items).toEqual([1, 2]);
@@ -327,7 +376,9 @@ describe('🚨 cap di sicurezza', () => {
   it('🚨 maxPages superato → truncated=true', async () => {
     safeOutboundFetchMock.mockResolvedValue(mockRes([1]));
     const r = await paginateExecutor(
-      { urlTemplate: 'https://api/x?p={{page}}', maxPages: 2 } as never, {} as never, ctx,
+      { urlTemplate: 'https://api/x?p={{page}}', maxPages: 2 } as never,
+      {} as never,
+      ctx,
     );
     expect((r.output as { truncated: boolean }).truncated).toBe(true);
   });
@@ -337,7 +388,9 @@ describe('🚨 output esteso (requestsCount / finalCursor)', () => {
   it('requestsCount conta le fetch; finalCursor null senza cursor', async () => {
     safeOutboundFetchMock.mockResolvedValueOnce(mockRes([1])).mockResolvedValueOnce(mockRes([]));
     const r = await paginateExecutor(
-      { urlTemplate: 'https://api/x?p={{page}}' } as never, {} as never, ctx,
+      { urlTemplate: 'https://api/x?p={{page}}' } as never,
+      {} as never,
+      ctx,
     );
     const out = r.output as { requestsCount: number; finalCursor: string | null };
     expect(out.requestsCount).toBe(2);
@@ -349,22 +402,32 @@ describe('🚨 output esteso (requestsCount / finalCursor)', () => {
       .mockResolvedValueOnce(mockRes({ items: [1], next: 'c1' }))
       .mockResolvedValueOnce(mockRes({ items: [2], next: null }));
     const r = await paginateExecutor(
-      { urlTemplate: 'https://api/x?c={{cursor}}', pageStrategy: 'cursor', dataPath: 'items', cursorPath: 'next' } as never,
-      {} as never, ctx,
+      {
+        urlTemplate: 'https://api/x?c={{cursor}}',
+        pageStrategy: 'cursor',
+        dataPath: 'items',
+        cursorPath: 'next',
+      } as never,
+      {} as never,
+      ctx,
     );
     expect((r.output as { finalCursor: string | null }).finalCursor).toBe('c1');
   });
 });
 
 describe('🚨 429 Retry-After', () => {
-  beforeEach(() => { vi.useFakeTimers(); });
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
   it('🚨 su 429 rispetta Retry-After e ritenta la stessa pagina', async () => {
     safeOutboundFetchMock
       .mockResolvedValueOnce(mockResH([], { status: 429, headers: { 'retry-after': '0' } }))
       .mockResolvedValueOnce(mockRes([1]))
       .mockResolvedValueOnce(mockRes([]));
     const promise = paginateExecutor(
-      { urlTemplate: 'https://api/x?p={{page}}' } as never, {} as never, ctx,
+      { urlTemplate: 'https://api/x?p={{page}}' } as never,
+      {} as never,
+      ctx,
     );
     await vi.runAllTimersAsync();
     const r = await promise;
@@ -373,5 +436,7 @@ describe('🚨 429 Retry-After', () => {
     expect(out.items).toEqual([1]);
     expect(out.requestsCount).toBe(3); // 429 + retry-ok + stop-vuota
   });
-  afterEach(() => { vi.useRealTimers(); });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 });

@@ -8,14 +8,30 @@
 import { describe, it, expect } from 'vitest';
 import { leadScoreExecutor } from './lead-score.js';
 
-const ctx = () => ({
-  workflowId: 'wf', runId: 'r', nodeId: 'n', tenantId: 't', userId: 'u',
-  defId: 'action_lead_score', secrets: {}, llmProviders: [], nodeOutputs: {},
-}) as unknown as Parameters<typeof leadScoreExecutor>[2];
+const ctx = () =>
+  ({
+    workflowId: 'wf',
+    runId: 'r',
+    nodeId: 'n',
+    tenantId: 't',
+    userId: 'u',
+    defId: 'action_lead_score',
+    secrets: {},
+    llmProviders: [],
+    nodeOutputs: {},
+  }) as unknown as Parameters<typeof leadScoreExecutor>[2];
 
-const run = (config: Record<string, unknown>) => leadScoreExecutor(config as never, null as never, ctx());
-interface Out { score: number; category: string; country_bonus: number; send_recommended: boolean; matched_positive: unknown[] }
-const out = async (config: Record<string, unknown>): Promise<Out> => ((await run(config)).output as Out);
+const run = (config: Record<string, unknown>) =>
+  leadScoreExecutor(config as never, null as never, ctx());
+interface Out {
+  score: number;
+  category: string;
+  country_bonus: number;
+  send_recommended: boolean;
+  matched_positive: unknown[];
+}
+const out = async (config: Record<string, unknown>): Promise<Out> =>
+  (await run(config)).output as Out;
 
 describe('lead-score — validazione (l executor lancia SINCRONO prima del Promise)', () => {
   it('content mancante → throw', () => {
@@ -23,8 +39,9 @@ describe('lead-score — validazione (l executor lancia SINCRONO prima del Promi
   });
 
   it('profile=custom con JSON rotto → throw esplicito (non scoring silenzioso)', () => {
-    expect(() => run({ content: 'x', profile: 'custom', customPositiveJson: '{rotto' }))
-      .toThrow(/non parse-able/);
+    expect(() => run({ content: 'x', profile: 'custom', customPositiveJson: '{rotto' })).toThrow(
+      /non parse-able/,
+    );
   });
 });
 
@@ -46,7 +63,11 @@ describe('lead-score — scoring deterministico (service reale)', () => {
   });
 
   it('send_recommended = score >= threshold (gate booleano)', async () => {
-    const high = await out({ content: 'bow thruster stern thruster elica di prua', country: 'IT', threshold: 50 });
+    const high = await out({
+      content: 'bow thruster stern thruster elica di prua',
+      country: 'IT',
+      threshold: 50,
+    });
     expect(high.send_recommended).toBe(high.score >= 50);
     const blocked = await out({ content: 'bow thruster', country: 'IT', threshold: 99 });
     expect(blocked.send_recommended).toBe(false);
@@ -67,8 +88,11 @@ describe('lead-score — scoring deterministico (service reale)', () => {
   it('profile=custom con keyword positive custom → applica i pesi forniti', async () => {
     const r = await out({
       content: 'super-widget super-widget',
-      profile: 'custom', threshold: 0,
-      customPositiveJson: JSON.stringify([{ keyword: 'super-widget', weight: 40, category: 'distributor' }]),
+      profile: 'custom',
+      threshold: 0,
+      customPositiveJson: JSON.stringify([
+        { keyword: 'super-widget', weight: 40, category: 'distributor' },
+      ]),
     });
     expect(r.score).toBeGreaterThan(0);
   });

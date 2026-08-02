@@ -35,13 +35,13 @@ export const tenantCollabNode: NodeModule = {
       'processa mai due volte lo stesso invio (at-most-once). Affidabilità: retry automatici con backoff ' +
       'esponenziale sui soli errori transitori (5xx/rete, mai sui 4xx), timeout configurabile, Idempotency-Key ' +
       'e correlation-id propagati negli header per la deduplica lato ricevente. Compliance: OGNI invio è un ' +
-      'data-transfer cross-tenant registrato nell\'audit log immutabile (hash-chain) con destinatario, ' +
+      "data-transfer cross-tenant registrato nell'audit log immutabile (hash-chain) con destinatario, " +
       'correlation-id e impronta sha256 del payload — MAI il contenuto (data minimization art. 5 GDPR). ' +
       'Output: { delivered, status, response, correlationId, idempotencyKey, attempts, signed, targetHost, ' +
       'durationMs }. Use case: il fornitore notifica al cliente la spedizione (ordine → webhook del cliente ' +
       'che aggiorna il suo gestionale); una capofila raccoglie i KPI giornalieri dalle controllate; uno studio ' +
       'commercialista riceve le fatture dai clienti; due partner si scambiano lead qualificati; supply-chain: ' +
-      'l\'esaurimento scorte del rivenditore avvia il riordino sul workflow del produttore.',
+      "l'esaurimento scorte del rivenditore avvia il riordino sul workflow del produttore.",
     configFields: [
       {
         key: 'collaborationUrl',
@@ -53,7 +53,7 @@ export const tenantCollabNode: NodeModule = {
         patternMessage:
           'Deve essere un URL webhook FlowForge: https://<slug>.app.automazionezeli.com/api/v1/webhooks/…',
         help:
-          'L\'URL del trigger Webhook del tenant destinatario (te lo fornisce lui, dal suo editor → nodo ' +
+          "L'URL del trigger Webhook del tenant destinatario (te lo fornisce lui, dal suo editor → nodo " +
           'Webhook → "URL webhook"). Sono ammessi SOLO webhook FlowForge — altri host vengono rifiutati.',
       },
       {
@@ -73,7 +73,7 @@ export const tenantCollabNode: NodeModule = {
         required: false,
         placeholder: '{{$node.db_query_1.json}}',
         help:
-          'Il JSON da inviare al tenant destinatario. Vuoto = inoltra l\'input del nodo. Supporta ' +
+          "Il JSON da inviare al tenant destinatario. Vuoto = inoltra l'input del nodo. Supporta " +
           '{{espressioni}}. Massimo 1 MB — per i file usa un link, non il contenuto.',
       },
       {
@@ -93,7 +93,7 @@ export const tenantCollabNode: NodeModule = {
         required: false,
         defaultValue: 'true',
         help:
-          'Attivo: l\'output include la risposta del destinatario (utile se il suo workflow risponde con ' +
+          "Attivo: l'output include la risposta del destinatario (utile se il suo workflow risponde con " +
           'Webhook: Respond). Disattivo: fire-and-forget — conta solo la consegna (status 2xx).',
       },
       {
@@ -121,7 +121,7 @@ export const tenantCollabNode: NodeModule = {
         required: false,
         placeholder: '{{$node.trigger.json.orderId}}',
         help:
-          'Chiave di deduplica propagata nell\'header Idempotency-Key. Vuota = generata automaticamente ' +
+          "Chiave di deduplica propagata nell'header Idempotency-Key. Vuota = generata automaticamente " +
           'da run + nodo (stabile sui retry). Usa un ID di business (es. numero ordine) se il destinatario ' +
           'deve dedupare tra run diverse.',
       },

@@ -42,9 +42,11 @@ interface SamlProviderRow {
 
 function findProvider(provider: string, tenantId: string): SamlProviderRow | null {
   const { sqlite } = getDatabase();
-  return (sqlite
-    .prepare('SELECT * FROM saml_providers WHERE tenant_id = ? AND provider = ?')
-    .get(tenantId, provider) as SamlProviderRow | undefined) ?? null;
+  return (
+    (sqlite
+      .prepare('SELECT * FROM saml_providers WHERE tenant_id = ? AND provider = ?')
+      .get(tenantId, provider) as SamlProviderRow | undefined) ?? null
+  );
 }
 
 function buildSamlConfig(row: SamlProviderRow): SamlConfig {
@@ -79,7 +81,9 @@ export function createSamlRoutes(): Hono {
     const tenantId = getContainerTenantId();
     const { sqlite } = getDatabase();
     const rows = sqlite
-      .prepare('SELECT id, provider, entry_point, issuer, callback_url, created_at FROM saml_providers WHERE tenant_id = ?')
+      .prepare(
+        'SELECT id, provider, entry_point, issuer, callback_url, created_at FROM saml_providers WHERE tenant_id = ?',
+      )
       .all(tenantId) as Omit<SamlProviderRow, 'cert' | 'tenant_id'>[];
     return c.json({ providers: rows });
   });
@@ -188,11 +192,13 @@ export function createSamlRoutes(): Hono {
       const profile = await saml.validatePostResponseAsync({ SAMLResponse: samlResponse });
       const p = profile.profile as Record<string, unknown> | null;
       if (!p) return c.json({ error: 'Empty SAML profile' }, 400);
-      const email = typeof p.email === 'string'
-        ? p.email
-        : typeof p['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] === 'string'
-          ? p['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress']
-          : '';
+      const email =
+        typeof p.email === 'string'
+          ? p.email
+          : typeof p['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ===
+              'string'
+            ? p['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress']
+            : '';
       if (!email) return c.json({ error: 'No email claim in SAML profile' }, 400);
       const displayName = typeof p.displayName === 'string' ? p.displayName : email;
 
@@ -207,11 +213,15 @@ export function createSamlRoutes(): Hono {
       if (existing) {
         userId = existing.id;
         role = existing.role as typeof role;
-        sqlite.prepare('UPDATE users SET last_login_at = ?, oauth_provider = ? WHERE id = ?').run(now, `saml:${provider}`, userId);
+        sqlite
+          .prepare('UPDATE users SET last_login_at = ?, oauth_provider = ? WHERE id = ?')
+          .run(now, `saml:${provider}`, userId);
       } else {
-        const ownerCount = (sqlite
-          .prepare("SELECT COUNT(*) as c FROM users WHERE tenant_id = ? AND role = 'owner'")
-          .get(tenantId) as { c: number }).c;
+        const ownerCount = (
+          sqlite
+            .prepare("SELECT COUNT(*) as c FROM users WHERE tenant_id = ? AND role = 'owner'")
+            .get(tenantId) as { c: number }
+        ).c;
         userId = nanoid();
         role = ownerCount === 0 ? 'owner' : 'viewer';
         sqlite

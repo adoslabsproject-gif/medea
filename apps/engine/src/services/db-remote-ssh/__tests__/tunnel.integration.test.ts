@@ -16,7 +16,14 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import net from 'node:net';
 import { generateKeyPairSync } from 'node:crypto';
-import { Server, utils, type Connection, type ServerChannel, type TcpipRequestInfo, type AcceptConnection } from 'ssh2';
+import {
+  Server,
+  utils,
+  type Connection,
+  type ServerChannel,
+  type TcpipRequestInfo,
+  type AcceptConnection,
+} from 'ssh2';
 import { openSshTunnel, hostKeyFingerprintOf, type SshTunnel } from '../tunnel.js';
 
 function listen(server: net.Server | Server): Promise<number> {
@@ -30,7 +37,9 @@ function listen(server: net.Server | Server): Promise<number> {
 
 /** Echo-server TCP: rimanda indietro ogni byte (il "DB remoto" del test). */
 function startEchoServer(): net.Server {
-  return net.createServer((sock) => { sock.pipe(sock); });
+  return net.createServer((sock) => {
+    sock.pipe(sock);
+  });
 }
 
 /** Server SSH in-process che accetta qualsiasi auth e inoltra il direct-tcpip al target richiesto. */
@@ -39,20 +48,33 @@ function startSshServer(hostKeyPem: string): Server {
     // Il client del test col fingerprint errato aborta durante il key-exchange:
     // è ATTESO. Catturiamo l'error lato server per non trasformarlo in
     // un'uncaught exception (che falserebbe il runner).
-    client.on('error', () => { /* abort atteso / disconnect */ });
-    client.on('authentication', (ctx) => { ctx.accept(); });
+    client.on('error', () => {
+      /* abort atteso / disconnect */
+    });
+    client.on('authentication', (ctx) => {
+      ctx.accept();
+    });
     client.on('ready', () => {
-      client.on('tcpip', (accept: AcceptConnection<ServerChannel>, _reject, info: TcpipRequestInfo) => {
-        const channel = accept();
-        const upstream = net.connect(info.destPort, info.destIP, () => {
-          channel.pipe(upstream).pipe(channel);
-        });
-        upstream.on('error', () => { channel.end(); });
-        channel.on('error', () => { upstream.destroy(); });
-      });
+      client.on(
+        'tcpip',
+        (accept: AcceptConnection<ServerChannel>, _reject, info: TcpipRequestInfo) => {
+          const channel = accept();
+          const upstream = net.connect(info.destPort, info.destIP, () => {
+            channel.pipe(upstream).pipe(channel);
+          });
+          upstream.on('error', () => {
+            channel.end();
+          });
+          channel.on('error', () => {
+            upstream.destroy();
+          });
+        },
+      );
     });
   });
-  server.on('error', () => { /* errori di accept/handshake del test: ignora */ });
+  server.on('error', () => {
+    /* errori di accept/handshake del test: ignora */
+  });
   return server;
 }
 
@@ -61,9 +83,18 @@ let sshServer: Server | null = null;
 let echoServer: net.Server | null = null;
 
 afterEach(async () => {
-  if (tunnel) { await tunnel.close(); tunnel = null; }
-  if (sshServer) { sshServer.close(); sshServer = null; }
-  if (echoServer) { echoServer.close(); echoServer = null; }
+  if (tunnel) {
+    await tunnel.close();
+    tunnel = null;
+  }
+  if (sshServer) {
+    sshServer.close();
+    sshServer = null;
+  }
+  if (echoServer) {
+    echoServer.close();
+    echoServer = null;
+  }
 });
 
 function makeHostKey(): { pem: string; fingerprint: string } {
@@ -87,21 +118,34 @@ describe('openSshTunnel — integrazione SSH reale (in-process)', () => {
     const sshPort = await listen(sshServer);
 
     tunnel = await openSshTunnel({
-      ssh: { host: '127.0.0.1', port: sshPort, username: 'tester', hostKeyFingerprint: hostKey.fingerprint, auth: { type: 'password', password: 'whatever' } },
+      ssh: {
+        host: '127.0.0.1',
+        port: sshPort,
+        username: 'tester',
+        hostKeyFingerprint: hostKey.fingerprint,
+        auth: { type: 'password', password: 'whatever' },
+      },
       target: { host: '127.0.0.1', port: echoPort },
       readyTimeoutMs: 10_000,
     });
     expect(tunnel.localPort).toBeGreaterThan(0);
 
     const echoed = await new Promise<string>((resolve, reject) => {
-      const c = net.connect(tunnel!.localPort, '127.0.0.1', () => { c.write('ping-attraverso-il-tunnel'); });
+      const c = net.connect(tunnel!.localPort, '127.0.0.1', () => {
+        c.write('ping-attraverso-il-tunnel');
+      });
       let buf = '';
       c.on('data', (d) => {
         buf += d.toString('utf8');
-        if (buf.length >= 'ping-attraverso-il-tunnel'.length) { c.end(); resolve(buf); }
+        if (buf.length >= 'ping-attraverso-il-tunnel'.length) {
+          c.end();
+          resolve(buf);
+        }
       });
       c.on('error', reject);
-      setTimeout(() => { reject(new Error('timeout dati tunnel')); }, 8000);
+      setTimeout(() => {
+        reject(new Error('timeout dati tunnel'));
+      }, 8000);
     });
     expect(echoed).toBe('ping-attraverso-il-tunnel');
   }, 20_000);
@@ -113,23 +157,35 @@ describe('openSshTunnel — integrazione SSH reale (in-process)', () => {
     sshServer = startSshServer(hostKey.pem);
     const sshPort = await listen(sshServer);
 
-    await expect(openSshTunnel({
-      ssh: {
-        host: '127.0.0.1', port: sshPort, username: 'tester',
-        hostKeyFingerprint: 'SHA256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', // pin errato
-        auth: { type: 'password', password: 'whatever' },
-      },
-      target: { host: '127.0.0.1', port: echoPort },
-      readyTimeoutMs: 10_000,
-    })).rejects.toThrow();
+    await expect(
+      openSshTunnel({
+        ssh: {
+          host: '127.0.0.1',
+          port: sshPort,
+          username: 'tester',
+          hostKeyFingerprint: 'SHA256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', // pin errato
+          auth: { type: 'password', password: 'whatever' },
+        },
+        target: { host: '127.0.0.1', port: echoPort },
+        readyTimeoutMs: 10_000,
+      }),
+    ).rejects.toThrow();
   }, 20_000);
 
   it('🚨 host SSH irraggiungibile → rigetta entro il readyTimeout (no hang)', async () => {
     // Porta chiusa: connect fallisce subito (ECONNREFUSED) → reject pulito.
-    await expect(openSshTunnel({
-      ssh: { host: '127.0.0.1', port: 1, username: 'x', hostKeyFingerprint: 'SHA256:x'.padEnd(20, 'y'), auth: { type: 'password', password: 'x' } },
-      target: { host: '127.0.0.1', port: 9 },
-      readyTimeoutMs: 3000,
-    })).rejects.toThrow();
+    await expect(
+      openSshTunnel({
+        ssh: {
+          host: '127.0.0.1',
+          port: 1,
+          username: 'x',
+          hostKeyFingerprint: 'SHA256:x'.padEnd(20, 'y'),
+          auth: { type: 'password', password: 'x' },
+        },
+        target: { host: '127.0.0.1', port: 9 },
+        readyTimeoutMs: 3000,
+      }),
+    ).rejects.toThrow();
   }, 10_000);
 });

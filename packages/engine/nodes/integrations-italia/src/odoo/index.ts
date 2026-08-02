@@ -41,12 +41,7 @@
  */
 
 import type { NodeModule } from '@medea/engine-nodes-stdlib';
-import {
-  odooAuthenticate,
-  executeKw,
-  OdooError,
-  type OdooConnection,
-} from './client.js';
+import { odooAuthenticate, executeKw, OdooError, type OdooConnection } from './client.js';
 
 // Memoize uid per-connection (key = host+db+user). Odoo authenticate è cheap
 // ma ripetuto ogni request è waste. TTL 30min — la session resta valida
@@ -69,7 +64,9 @@ function parseJsonArg(raw: unknown, name: string, fallback: unknown): unknown {
   try {
     return JSON.parse(raw);
   } catch (e) {
-    throw new OdooError(`Campo "${name}" deve essere JSON valido: ${e instanceof Error ? e.message : String(e)}`);
+    throw new OdooError(
+      `Campo "${name}" deve essere JSON valido: ${e instanceof Error ? e.message : String(e)}`,
+    );
   }
 }
 
@@ -80,7 +77,8 @@ export const odooNode: NodeModule = {
     label: 'Odoo ERP',
     icon: 'building-2',
     color: '#714b67', // Odoo brand purple
-    description: 'CRUD universale su qualsiasi modello Odoo (res.partner, sale.order, account.move, ...) + esecuzione metodi custom del modulo proprietario. JSON-RPC su /jsonrpc (Odoo 12+). Domain syntax polish notation. Authenticate cached 30min per connection. UI con progressive disclosure: vedi solo i campi che servono per l\'action scelta.',
+    description:
+      "CRUD universale su qualsiasi modello Odoo (res.partner, sale.order, account.move, ...) + esecuzione metodi custom del modulo proprietario. JSON-RPC su /jsonrpc (Odoo 12+). Domain syntax polish notation. Authenticate cached 30min per connection. UI con progressive disclosure: vedi solo i campi che servono per l'action scelta.",
     configFields: [
       // ── Connection (sempre visibili) ────────────────────────────────
       {
@@ -146,7 +144,20 @@ export const odooNode: NodeModule = {
         required: false,
         placeholder: 'res.partner',
         help: 'Es: res.partner, sale.order, account.move, product.product, oppure <modulo_custom>.<model> per modello del modulo proprietario. Vai in Impostazioni → Tecnico → Modelli per la lista completa. Non richiesto per check_connection.',
-        showIf: { field: 'action', in: ['search_read', 'search', 'read', 'create', 'write', 'unlink', 'execute_method', 'name_search', 'fields_get'] },
+        showIf: {
+          field: 'action',
+          in: [
+            'search_read',
+            'search',
+            'read',
+            'create',
+            'write',
+            'unlink',
+            'execute_method',
+            'name_search',
+            'fields_get',
+          ],
+        },
       },
 
       // ── Domain (search_read, search, name_search) ────────────────────
@@ -178,7 +189,7 @@ export const odooNode: NodeModule = {
         type: 'expression',
         required: false,
         placeholder: '{"name":"Cliente Test","email":"x@y.it","is_company":true,"country_id":110}',
-        help: 'Object JSON field→value. Per many2one passa l\'ID intero (es. country_id: 110). Per one2many/many2many usa il formato special Odoo: [[0,0,{...}]] crea child, [[1,id,{...}]] aggiorna, [[2,id]] elimina, [[3,id]] dissocia (no delete), [[4,id]] associa, [[6,0,[id1,id2]]] replace all.',
+        help: "Object JSON field→value. Per many2one passa l'ID intero (es. country_id: 110). Per one2many/many2many usa il formato special Odoo: [[0,0,{...}]] crea child, [[1,id,{...}]] aggiorna, [[2,id]] elimina, [[3,id]] dissocia (no delete), [[4,id]] associa, [[6,0,[id1,id2]]] replace all.",
         showIf: { field: 'action', in: ['create', 'write'] },
       },
 
@@ -209,7 +220,7 @@ export const odooNode: NodeModule = {
         type: 'expression',
         required: false,
         placeholder: '[[42]]',
-        help: 'Array positional di argomenti del metodo Python. Convenzione Odoo: il PRIMO arg è SEMPRE l\'array di IDs (es. [[42]] = metodo applicato a record id 42). Per metodi class-level (no IDs): []. Se vuoto, viene auto-popolato con [ids] dal campo IDs sopra.',
+        help: "Array positional di argomenti del metodo Python. Convenzione Odoo: il PRIMO arg è SEMPRE l'array di IDs (es. [[42]] = metodo applicato a record id 42). Per metodi class-level (no IDs): []. Se vuoto, viene auto-popolato con [ids] dal campo IDs sopra.",
         showIf: { field: 'action', equals: 'execute_method' },
       },
       {
@@ -289,7 +300,8 @@ export const odooNode: NodeModule = {
     }
 
     const model = cfg.model ?? '';
-    if (!model) throw new Error('italia_odoo: model obbligatorio per ogni action eccetto check_connection.');
+    if (!model)
+      throw new Error('italia_odoo: model obbligatorio per ogni action eccetto check_connection.');
 
     const uid = await getAuthenticatedUid(conn);
 
@@ -321,7 +333,8 @@ export const odooNode: NodeModule = {
         break;
       }
       case 'read': {
-        if (ids.length === 0) throw new Error('italia_odoo read: ids array obbligatorio (es. [42]).');
+        if (ids.length === 0)
+          throw new Error('italia_odoo read: ids array obbligatorio (es. [42]).');
         const kwargs: Record<string, unknown> = {};
         if (fields.length > 0) kwargs.fields = fields;
         result = await executeKw(conn, uid, model, 'read', [ids], kwargs);
@@ -329,14 +342,16 @@ export const odooNode: NodeModule = {
         break;
       }
       case 'create': {
-        if (!values || Object.keys(values).length === 0) throw new Error('italia_odoo create: values object obbligatorio.');
+        if (!values || Object.keys(values).length === 0)
+          throw new Error('italia_odoo create: values object obbligatorio.');
         result = await executeKw(conn, uid, model, 'create', [values]);
         count = 1;
         break;
       }
       case 'write': {
         if (ids.length === 0) throw new Error('italia_odoo write: ids array obbligatorio.');
-        if (!values || Object.keys(values).length === 0) throw new Error('italia_odoo write: values object obbligatorio.');
+        if (!values || Object.keys(values).length === 0)
+          throw new Error('italia_odoo write: values object obbligatorio.');
         result = await executeKw(conn, uid, model, 'write', [ids, values]);
         count = ids.length;
         break;

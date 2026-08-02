@@ -20,20 +20,31 @@ vi.mock('@medea/engine-core-schema', async () => {
 
 import { NodeGeneratorService, type GeneratedNode } from './node-generator.service.js';
 
-interface FakeLlm { complete: ReturnType<typeof vi.fn> }
+interface FakeLlm {
+  complete: ReturnType<typeof vi.fn>;
+}
 /** LLM che ritorna le risposte in sequenza (l'ultima si ripete). */
 function seqLlm(responses: string[]): FakeLlm {
   let i = 0;
-  return { complete: vi.fn(() => Promise.resolve({ text: responses[Math.min(i++, responses.length - 1)] })) };
+  return {
+    complete: vi.fn(() =>
+      Promise.resolve({ text: responses[Math.min(i++, responses.length - 1)] }),
+    ),
+  };
 }
 const fence = (o: unknown): string => '```json\n' + JSON.stringify(o) + '\n```';
 const def = { id: 'n', type: 'action', label: 'N' };
-const GOOD_EXEC = 'async function execute(config, input, context) { return { output: 1, durationMs: 0 }; }';
+const GOOD_EXEC =
+  'async function execute(config, input, context) { return { output: 1, durationMs: 0 }; }';
 
 describe('generate — loop di repair', () => {
   it('🚨 1° output con no_return → repair → 2° valido → ritorna il nodo riparato', async () => {
     const llm = seqLlm([
-      fence({ def, executorSource: 'async function execute(config, input, context) { const x = 1; }', rationale: 'r' }),
+      fence({
+        def,
+        executorSource: 'async function execute(config, input, context) { const x = 1; }',
+        rationale: 'r',
+      }),
       fence({ def, executorSource: GOOD_EXEC, rationale: 'r2' }),
     ]);
     const svc = new NodeGeneratorService(llm as never);
@@ -41,13 +52,18 @@ describe('generate — loop di repair', () => {
     expect(node.rationale).toBe('r2');
     expect(llm.complete).toHaveBeenCalledTimes(2); // 1 gen + 1 repair
     // il prompt di repair menziona il problema specifico
-    const repairMsg = (llm.complete.mock.calls[1]![0] as { messages: { content: string }[] }).messages[1]!.content;
+    const repairMsg = (llm.complete.mock.calls[1]![0] as { messages: { content: string }[] })
+      .messages[1]!.content;
     expect(repairMsg).toMatch(/return/u);
   });
 
   it('🚨 SICUREZZA riparabile: 1° process.env → repair → 2° pulito → ritorna', async () => {
     const llm = seqLlm([
-      fence({ def, executorSource: 'async function execute(c,i,x){ return process.env.X; }', rationale: 'r' }),
+      fence({
+        def,
+        executorSource: 'async function execute(c,i,x){ return process.env.X; }',
+        rationale: 'r',
+      }),
       fence({ def, executorSource: GOOD_EXEC, rationale: 'ok' }),
     ]);
     const svc = new NodeGeneratorService(llm as never);
@@ -56,17 +72,33 @@ describe('generate — loop di repair', () => {
   });
 
   it('🚨 qualità MAI risolta → throw "validation" (mai emette nodo rotto)', async () => {
-    const llm = seqLlm([fence({ def, executorSource: 'async function execute(config, input, context) { const x = 1; }', rationale: 'r' })]);
+    const llm = seqLlm([
+      fence({
+        def,
+        executorSource: 'async function execute(config, input, context) { const x = 1; }',
+        rationale: 'r',
+      }),
+    ]);
     const svc = new NodeGeneratorService(llm as never);
-    await expect(svc.generate({ description: 'a long enough description' })).rejects.toThrow(/validation/u);
+    await expect(svc.generate({ description: 'a long enough description' })).rejects.toThrow(
+      /validation/u,
+    );
     // 1 gen + MAX_REPAIR_ATTEMPTS (2) = 3 chiamate
     expect(llm.complete).toHaveBeenCalledTimes(3);
   });
 
   it('🚨 SICUREZZA mai risolta → throw "forbidden" (→ route 422), mai emessa', async () => {
-    const llm = seqLlm([fence({ def, executorSource: 'async function execute(c,i,x){ return process.env.X; }', rationale: 'r' })]);
+    const llm = seqLlm([
+      fence({
+        def,
+        executorSource: 'async function execute(c,i,x){ return process.env.X; }',
+        rationale: 'r',
+      }),
+    ]);
     const svc = new NodeGeneratorService(llm as never);
-    await expect(svc.generate({ description: 'a long enough description' })).rejects.toThrow(/forbidden/u);
+    await expect(svc.generate({ description: 'a long enough description' })).rejects.toThrow(
+      /forbidden/u,
+    );
   });
 
   it('🚨 nodo già valido → nessun repair (1 sola chiamata)', async () => {
@@ -87,7 +119,12 @@ describe('generate — loop di repair', () => {
 
   it('🚨 coerenza ERROR (config key non dichiarata) → innesca repair', async () => {
     const llm = seqLlm([
-      fence({ def, executorSource: 'async function execute(config, input, context) { return { v: config.missing }; }', rationale: 'r' }),
+      fence({
+        def,
+        executorSource:
+          'async function execute(config, input, context) { return { v: config.missing }; }',
+        rationale: 'r',
+      }),
       fence({ def, executorSource: GOOD_EXEC, rationale: 'fixed' }),
     ]);
     const svc = new NodeGeneratorService(llm as never);
@@ -101,8 +138,14 @@ describe('validateQuality (metodo pubblico)', () => {
   it('separa executor vs coherence; sicurezza esclusa (gestita dal parse)', () => {
     const svc = new NodeGeneratorService({ complete: vi.fn() } as never);
     const node: GeneratedNode = {
-      def: { id: 'n', type: 'action', label: 'N', configFields: [{ key: 'url', type: 'text' }] } as never,
-      executorSource: 'async function execute(config, input, context) { return { v: config.other }; }',
+      def: {
+        id: 'n',
+        type: 'action',
+        label: 'N',
+        configFields: [{ key: 'url', type: 'text' }],
+      } as never,
+      executorSource:
+        'async function execute(config, input, context) { return { v: config.other }; }',
       rationale: 'r',
     };
     const q = svc.validateQuality(node);

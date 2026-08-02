@@ -8,11 +8,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
 
 const verMock = vi.hoisted(() => ({
-  snapshot: vi.fn(), list: vi.fn(), get: vi.fn(), rollback: vi.fn(), diff: vi.fn(),
+  snapshot: vi.fn(),
+  list: vi.fn(),
+  get: vi.fn(),
+  rollback: vi.fn(),
+  diff: vi.fn(),
 }));
 const wfMock = vi.hoisted(() => ({ get: vi.fn() }));
 
-vi.mock('@/services/workflow-versions.service.js', () => ({ WorkflowVersionsService: vi.fn(() => verMock) }));
+vi.mock('@/services/workflow-versions.service.js', () => ({
+  WorkflowVersionsService: vi.fn(() => verMock),
+}));
 vi.mock('@/services/workflow.service.js', () => ({ WorkflowService: vi.fn(() => wfMock) }));
 vi.mock('@/lib/tenant.js', () => ({ getTenantId: () => 'tenant-1' }));
 vi.mock('@/lib/actor.js', () => ({ getActorId: () => 'actor-1' }));

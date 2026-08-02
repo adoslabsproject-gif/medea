@@ -3,8 +3,9 @@ import { SecretScrubbingSpanProcessor, scrubUrl } from './otel-scrubber.js';
 
 describe('scrubUrl', () => {
   it('strip query string da URL assoluto', () => {
-    expect(scrubUrl('https://api.stripe.com/v1/charges?api_key=sk_live_X&customer=cus_1'))
-      .toBe('https://api.stripe.com/v1/charges');
+    expect(scrubUrl('https://api.stripe.com/v1/charges?api_key=sk_live_X&customer=cus_1')).toBe(
+      'https://api.stripe.com/v1/charges',
+    );
   });
 
   it('strip userInfo (user:pass@)', () => {
@@ -12,8 +13,9 @@ describe('scrubUrl', () => {
   });
 
   it('strip combinato — userInfo + query + fragment', () => {
-    expect(scrubUrl('https://u:p@api.x.com:8443/v1/data?token=SECRET&debug=1#section'))
-      .toBe('https://api.x.com:8443/v1/data');
+    expect(scrubUrl('https://u:p@api.x.com:8443/v1/data?token=SECRET&debug=1#section')).toBe(
+      'https://api.x.com:8443/v1/data',
+    );
   });
 
   it('strip query da PATH relativo (non-URL absoluto)', () => {
@@ -144,7 +146,8 @@ describe('SecretScrubbingSpanProcessor', () => {
     const next = makeNextProcessor();
     const proc = new SecretScrubbingSpanProcessor(next as never);
     const span = makeMockSpan({
-      'url.full': 'https://oauth2.googleapis.com/token?client_secret=GOCSPX-mysecret&grant_type=refresh_token&refresh_token=1//ABCdef',
+      'url.full':
+        'https://oauth2.googleapis.com/token?client_secret=GOCSPX-mysecret&grant_type=refresh_token&refresh_token=1//ABCdef',
     });
     proc.onEnd(span as never);
     const cleaned = String(span.attributes['url.full']);

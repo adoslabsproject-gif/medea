@@ -19,12 +19,15 @@ vi.mock('@/lib/logger.js');
 
 function makeSession(opts: { tenantId?: string; createImpl?: (input: unknown) => unknown } = {}) {
   const tenantId = opts.tenantId ?? 'tenant-test';
-  const createFn = vi.fn(opts.createImpl ?? ((input: unknown) => ({
-    id: 'db_abc123',
-    createdAt: '2026-05-29T00:00:00Z',
-    updatedAt: '2026-05-29T00:00:00Z',
-    ...(input as object),
-  })));
+  const createFn = vi.fn(
+    opts.createImpl ??
+      ((input: unknown) => ({
+        id: 'db_abc123',
+        createdAt: '2026-05-29T00:00:00Z',
+        updatedAt: '2026-05-29T00:00:00Z',
+        ...(input as object),
+      })),
+  );
   return {
     tenantId,
     dbStudio: { create: createFn },
@@ -37,11 +40,13 @@ describe('createDatabaseHandler — happy path', () => {
     const s = makeSession();
     const r = await createDatabaseHandler(s, { name: 'workflow_data' });
     expect(r.ok).toBe(true);
-    expect(s.createCalls).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: 'tenant-test',
-      name: 'workflow_data',
-      connection: expect.objectContaining({ engine: 'sqlite', embedded: true }),
-    }));
+    expect(s.createCalls).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant-test',
+        name: 'workflow_data',
+        connection: expect.objectContaining({ engine: 'sqlite', embedded: true }),
+      }),
+    );
     if (r.ok) {
       const data = r.data as { databaseId: string; name: string };
       expect(data.databaseId).toBe('db_abc123');
@@ -52,17 +57,21 @@ describe('createDatabaseHandler — happy path', () => {
   it('description default se omessa', async () => {
     const s = makeSession();
     await createDatabaseHandler(s, { name: 'mydb' });
-    expect(s.createCalls).toHaveBeenCalledWith(expect.objectContaining({
-      description: 'Database creato da AI scaffold',
-    }));
+    expect(s.createCalls).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: 'Database creato da AI scaffold',
+      }),
+    );
   });
 
   it('description custom rispettata', async () => {
     const s = makeSession();
     await createDatabaseHandler(s, { name: 'mydb', description: 'Custom note' });
-    expect(s.createCalls).toHaveBeenCalledWith(expect.objectContaining({
-      description: 'Custom note',
-    }));
+    expect(s.createCalls).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: 'Custom note',
+      }),
+    );
   });
 
   it('SQLite embedded — no host/credentials necessari', async () => {
@@ -139,7 +148,9 @@ describe('createDatabaseHandler — validation', () => {
 describe('createDatabaseHandler — error propagation', () => {
   it('dbStudio.create throws → ToolResult ok=false con msg utile', async () => {
     const s = makeSession({
-      createImpl: () => { throw new Error('SQLite: database already exists'); },
+      createImpl: () => {
+        throw new Error('SQLite: database already exists');
+      },
     });
     const r = await createDatabaseHandler(s, { name: 'workflow_data' });
     expect(r.ok).toBe(false);
@@ -151,7 +162,9 @@ describe('createDatabaseHandler — error propagation', () => {
 
   it('non-Error throw → string fallback', async () => {
     const s = makeSession({
-      createImpl: () => { throw 'string error'; },
+      createImpl: () => {
+        throw 'string error';
+      },
     });
     const r = await createDatabaseHandler(s, { name: 'mydb' });
     expect(r.ok).toBe(false);

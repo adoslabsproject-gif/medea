@@ -32,8 +32,11 @@ function wrap(db: Database.Database): SqliteCompatProxy {
         all: (...p: unknown[]) => s.all(...(p as Parameters<typeof s.all>)),
       };
     },
-    exec: (sql: string) => { db.exec(sql); },
-    transaction: <T extends unknown[], R>(fn: (...a: T) => R) => db.transaction(fn) as (...a: T) => R,
+    exec: (sql: string) => {
+      db.exec(sql);
+    },
+    transaction: <T extends unknown[], R>(fn: (...a: T) => R) =>
+      db.transaction(fn) as (...a: T) => R,
   };
 }
 
@@ -70,8 +73,12 @@ describe('enqueueErrorEvent — dedup per-canale (#6) + indipendenza canali (#5)
 
   it('🚨 stesso (run_id, channel) due volte → secondo no-op (false), una sola riga', () => {
     expect(enqueueErrorEvent(sqlite, ins({ id: 'a', runId: 'r1', channel: 'webhook' }))).toBe(true);
-    expect(enqueueErrorEvent(sqlite, ins({ id: 'b', runId: 'r1', channel: 'webhook' }))).toBe(false);
-    const cnt = (raw.prepare("SELECT COUNT(*) c FROM error_outbox WHERE run_id='r1'").get() as { c: number }).c;
+    expect(enqueueErrorEvent(sqlite, ins({ id: 'b', runId: 'r1', channel: 'webhook' }))).toBe(
+      false,
+    );
+    const cnt = (
+      raw.prepare("SELECT COUNT(*) c FROM error_outbox WHERE run_id='r1'").get() as { c: number }
+    ).c;
     expect(cnt).toBe(1);
   });
 
@@ -79,21 +86,34 @@ describe('enqueueErrorEvent — dedup per-canale (#6) + indipendenza canali (#5)
     expect(enqueueErrorEvent(sqlite, ins({ id: 'a', runId: 'r1', channel: 'fanout' }))).toBe(true);
     expect(enqueueErrorEvent(sqlite, ins({ id: 'b', runId: 'r1', channel: 'webhook' }))).toBe(true);
     expect(enqueueErrorEvent(sqlite, ins({ id: 'c', runId: 'r1', channel: 'email' }))).toBe(true);
-    const cnt = (raw.prepare("SELECT COUNT(*) c FROM error_outbox WHERE run_id='r1'").get() as { c: number }).c;
+    const cnt = (
+      raw.prepare("SELECT COUNT(*) c FROM error_outbox WHERE run_id='r1'").get() as { c: number }
+    ).c;
     expect(cnt).toBe(3);
   });
 
   it('error_message cappato a MAX_ERROR_MESSAGE', () => {
-    enqueueErrorEvent(sqlite, ins({ id: 'a', runId: 'r1', errorMessage: 'x'.repeat(MAX_ERROR_MESSAGE + 5000) }));
-    const m = (raw.prepare("SELECT error_message m FROM error_outbox WHERE id='a'").get() as { m: string }).m;
+    enqueueErrorEvent(
+      sqlite,
+      ins({ id: 'a', runId: 'r1', errorMessage: 'x'.repeat(MAX_ERROR_MESSAGE + 5000) }),
+    );
+    const m = (
+      raw.prepare("SELECT error_message m FROM error_outbox WHERE id='a'").get() as { m: string }
+    ).m;
     expect(m.length).toBe(MAX_ERROR_MESSAGE);
   });
 });
 
 describe('claimDueErrorEvents — solo pending "dovuti", FIFO', () => {
   it('🚨 esclude i futuri (next_attempt_at > now)', () => {
-    enqueueErrorEvent(sqlite, ins({ id: 'due', runId: 'r1', nextAttemptAt: '2026-06-19T09:00:00.000Z' }));
-    enqueueErrorEvent(sqlite, ins({ id: 'future', runId: 'r2', nextAttemptAt: '2026-06-19T23:00:00.000Z' }));
+    enqueueErrorEvent(
+      sqlite,
+      ins({ id: 'due', runId: 'r1', nextAttemptAt: '2026-06-19T09:00:00.000Z' }),
+    );
+    enqueueErrorEvent(
+      sqlite,
+      ins({ id: 'future', runId: 'r2', nextAttemptAt: '2026-06-19T23:00:00.000Z' }),
+    );
     const got = claimDueErrorEvents(sqlite, '2026-06-19T10:00:00.000Z', 100);
     expect(got.map((r) => r.id)).toEqual(['due']);
   });
@@ -112,9 +132,9 @@ describe('claimDueErrorEvents — solo pending "dovuti", FIFO', () => {
     enqueueErrorEvent(sqlite, ins({ id: 'a', runId: 'r1' }));
     enqueueErrorEvent(sqlite, ins({ id: 'b', runId: 'r2' }));
     enqueueErrorEvent(sqlite, ins({ id: 'c', runId: 'r3' }));
-    raw.prepare("UPDATE error_outbox SET created_at=? WHERE id=?").run('2026-06-19T10:00:01Z', 'a');
-    raw.prepare("UPDATE error_outbox SET created_at=? WHERE id=?").run('2026-06-19T10:00:02Z', 'b');
-    raw.prepare("UPDATE error_outbox SET created_at=? WHERE id=?").run('2026-06-19T10:00:03Z', 'c');
+    raw.prepare('UPDATE error_outbox SET created_at=? WHERE id=?').run('2026-06-19T10:00:01Z', 'a');
+    raw.prepare('UPDATE error_outbox SET created_at=? WHERE id=?').run('2026-06-19T10:00:02Z', 'b');
+    raw.prepare('UPDATE error_outbox SET created_at=? WHERE id=?').run('2026-06-19T10:00:03Z', 'c');
     const got = claimDueErrorEvents(sqlite, '2026-06-19T23:00:00.000Z', 2);
     expect(got.map((r) => r.id)).toEqual(['a', 'b']); // oldest-first, limit 2
   });
@@ -122,20 +142,32 @@ describe('claimDueErrorEvents — solo pending "dovuti", FIFO', () => {
 
 describe('retry / dead-letter (#2)', () => {
   it('🚨 markRetry → attempts+1, schedula futuro → NON più dovuto finché non scade', () => {
-    enqueueErrorEvent(sqlite, ins({ id: 'a', runId: 'r1', nextAttemptAt: '2026-06-19T09:00:00.000Z' }));
+    enqueueErrorEvent(
+      sqlite,
+      ins({ id: 'a', runId: 'r1', nextAttemptAt: '2026-06-19T09:00:00.000Z' }),
+    );
     markErrorEventRetry(sqlite, 'a', '2026-06-19T12:00:00.000Z', 'transient 503');
-    const row = raw.prepare("SELECT attempts, next_attempt_at, last_error, status FROM error_outbox WHERE id='a'").get() as { attempts: number; next_attempt_at: string; last_error: string; status: string };
+    const row = raw
+      .prepare(
+        "SELECT attempts, next_attempt_at, last_error, status FROM error_outbox WHERE id='a'",
+      )
+      .get() as { attempts: number; next_attempt_at: string; last_error: string; status: string };
     expect(row.attempts).toBe(1);
     expect(row.status).toBe('pending');
     expect(row.last_error).toContain('503');
     expect(claimDueErrorEvents(sqlite, '2026-06-19T11:00:00.000Z', 10)).toHaveLength(0); // non ancora dovuto
-    expect(claimDueErrorEvents(sqlite, '2026-06-19T12:30:00.000Z', 10).map((r) => r.id)).toEqual(['a']); // dovuto
+    expect(claimDueErrorEvents(sqlite, '2026-06-19T12:30:00.000Z', 10).map((r) => r.id)).toEqual([
+      'a',
+    ]); // dovuto
   });
 
   it('🚨 markDead → poison: status=dead, MAI più claimato (coda non bloccata)', () => {
     enqueueErrorEvent(sqlite, ins({ id: 'a', runId: 'r1' }));
     markErrorEventDead(sqlite, 'a', 'permanent 550');
-    const row = raw.prepare("SELECT status, attempts FROM error_outbox WHERE id='a'").get() as { status: string; attempts: number };
+    const row = raw.prepare("SELECT status, attempts FROM error_outbox WHERE id='a'").get() as {
+      status: string;
+      attempts: number;
+    };
     expect(row.status).toBe('dead');
     expect(row.attempts).toBe(1);
     expect(claimDueErrorEvents(sqlite, '2026-12-31T23:59:00.000Z', 10)).toHaveLength(0);
@@ -150,10 +182,16 @@ describe('gcErrorOutbox — retention (#6)', () => {
     markErrorEventDone(sqlite, 'old-done');
     markErrorEventDead(sqlite, 'old-dead', 'x');
     // invecchia i due terminali
-    raw.prepare("UPDATE error_outbox SET updated_at='2026-06-01T00:00:00Z' WHERE id IN ('old-done','old-dead')").run();
+    raw
+      .prepare(
+        "UPDATE error_outbox SET updated_at='2026-06-01T00:00:00Z' WHERE id IN ('old-done','old-dead')",
+      )
+      .run();
     const removed = gcErrorOutbox(sqlite, '2026-06-10T00:00:00Z');
     expect(removed).toBe(2);
-    const remaining = (raw.prepare('SELECT id FROM error_outbox ORDER BY id').all() as { id: string }[]).map((r) => r.id);
+    const remaining = (
+      raw.prepare('SELECT id FROM error_outbox ORDER BY id').all() as { id: string }[]
+    ).map((r) => r.id);
     expect(remaining).toEqual(['pending']); // pending mai toccato dalla GC
   });
 

@@ -128,7 +128,8 @@ export async function archivePec(
   const rawBuf = typeof input.raw === 'string' ? Buffer.from(input.raw, 'utf8') : input.raw;
   const fullHash = (await nodeCrypto()).createHash(hashAlg).update(rawBuf).digest('hex');
   // receiptId = SHA-256(messageId+receivedAt) → deterministic for idempotency.
-  const receiptId = (await nodeCrypto()).createHash('sha256')
+  const receiptId = (await nodeCrypto())
+    .createHash('sha256')
     .update(`${input.messageId}|${input.receivedAt}`)
     .digest('hex')
     .slice(0, 16);
@@ -143,7 +144,9 @@ export async function archivePec(
   let sidecarPath: string | null = null;
   if (opts.writeSidecar !== false) {
     sidecarPath = `${archivePath}.${hashAlg}`;
-    await (await nodeFs()).writeFile(sidecarPath, `${fullHash}  ${receiptId}.eml\n`, { mode: 0o600, flag: 'w' });
+    await (
+      await nodeFs()
+    ).writeFile(sidecarPath, `${fullHash}  ${receiptId}.eml\n`, { mode: 0o600, flag: 'w' });
   }
 
   const archivedAt = now.toISOString();
@@ -167,18 +170,19 @@ export async function archivePec(
   // the caller (an early crash would otherwise risk a phantom "archived"
   // event without manifest entry).
   const manifestPath = (await nodePath()).join(archiveDir, 'manifest.jsonl');
-  const line = JSON.stringify({
-    ts: archivedAt,
-    op: 'archive',
-    archiveId: receiptId,
-    messageId: input.messageId,
-    pecType: input.pecType ?? null,
-    byteLength: rawBuf.length,
-    hashAlgorithm: hashAlg,
-    hashHex: fullHash,
-    archivePath,
-    conservationUntil,
-  }) + '\n';
+  const line =
+    JSON.stringify({
+      ts: archivedAt,
+      op: 'archive',
+      archiveId: receiptId,
+      messageId: input.messageId,
+      pecType: input.pecType ?? null,
+      byteLength: rawBuf.length,
+      hashAlgorithm: hashAlg,
+      hashHex: fullHash,
+      archivePath,
+      conservationUntil,
+    }) + '\n';
   const fh = await (await nodeFs()).open(manifestPath, 'a');
   try {
     await fh.appendFile(line, { encoding: 'utf8' });

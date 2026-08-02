@@ -26,9 +26,21 @@
  */
 import type { BuildEdge, BuildNode, WorkflowSnapshot } from '@/services/workflow-agent/state.js';
 
-export interface PatchAddNode { id: string; defId: string; config: Record<string, unknown> }
-export interface PatchAddEdge { id: string; from: string; to: string; fromPort?: string }
-export interface PatchUpdateNode { id: string; patch: { config: Record<string, unknown> } }
+export interface PatchAddNode {
+  id: string;
+  defId: string;
+  config: Record<string, unknown>;
+}
+export interface PatchAddEdge {
+  id: string;
+  from: string;
+  to: string;
+  fromPort?: string;
+}
+export interface PatchUpdateNode {
+  id: string;
+  patch: { config: Record<string, unknown> };
+}
 
 export interface WorkflowPatch {
   addNodes?: PatchAddNode[];
@@ -111,7 +123,12 @@ export function diffSnapshots(before: WorkflowSnapshot, after: WorkflowSnapshot)
   const removeEdgeIds: string[] = [];
   for (const e of after.edges) {
     if (!beforeEdgeIds.has(edgeId(e))) {
-      addEdges.push({ id: edgeId(e), from: e.from, to: e.to, ...(e.fromPort ? { fromPort: e.fromPort } : {}) });
+      addEdges.push({
+        id: edgeId(e),
+        from: e.from,
+        to: e.to,
+        ...(e.fromPort ? { fromPort: e.fromPort } : {}),
+      });
     }
   }
   for (const e of before.edges) {
@@ -122,7 +139,8 @@ export function diffSnapshots(before: WorkflowSnapshot, after: WorkflowSnapshot)
   const patch: WorkflowPatch = {};
   if (addNodes.length > 0) patch.addNodes = addNodes.sort((a, b) => a.id.localeCompare(b.id));
   if (removeNodeIds.length > 0) patch.removeNodeIds = [...new Set(removeNodeIds)].sort();
-  if (updateNodes.length > 0) patch.updateNodes = updateNodes.sort((a, b) => a.id.localeCompare(b.id));
+  if (updateNodes.length > 0)
+    patch.updateNodes = updateNodes.sort((a, b) => a.id.localeCompare(b.id));
   if (addEdges.length > 0) patch.addEdges = addEdges.sort((a, b) => a.id.localeCompare(b.id));
   if (removeEdgeIds.length > 0) patch.removeEdgeIds = removeEdgeIds.sort();
   return patch;

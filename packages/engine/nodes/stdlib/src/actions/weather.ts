@@ -33,19 +33,19 @@ export const weatherNode: NodeModule = {
     color: '#0ea5e9',
     description:
       'Nodo meteo enterprise che recupera condizioni atmosferiche correnti e forecast 7 giorni per qualsiasi ' +
-      'località del mondo, usando l\'API pubblica Open-Meteo (servizio europeo gratuito senza API key, basato ' +
+      "località del mondo, usando l'API pubblica Open-Meteo (servizio europeo gratuito senza API key, basato " +
       'su modelli ECMWF + DWD + GFS + ICON e altri 8 modelli meteorologici nazionali, dati licenziati CC-BY ' +
       '4.0 per uso commerciale libero) — alternativa a OpenWeatherMap (richiede API key con quota), WeatherAPI ' +
       '(paid tier oltre il free 1M req/month), AccuWeather (API molto costoso) o Tomorrow.io. Il sourcing ' +
       'europeo è particolarmente accurato per Italia + Europa con risoluzione 1-3 km grid + update 6× al giorno. ' +
-      'Reverse-geocoding incluso nativo: l\'utente passa il nome città in linguaggio naturale italiano (es. ' +
+      "Reverse-geocoding incluso nativo: l'utente passa il nome città in linguaggio naturale italiano (es. " +
       '"Roma", "Milano", "Bari Vecchia", "Termoli", "San Giovanni Rotondo") e il nodo risolve automatic le ' +
       'coordinate lat/lon via Open-Meteo geocoding API che ha copertura di città + paesi + frazioni con ' +
       'matching fuzzy + disambiguation su omonimi (es. "Cesena" vs "Cesenatico"); supporta anche lat/lon ' +
       'diretti per power user che già hanno le coordinate da GPS o altri sistemi. ' +
       'Cache in-memory smart: TTL 1h per chiave (lat, lon rounded a 0.1° per merge di richieste vicine) — ' +
       'workflow batch che colpiscono la stessa città N volte (es. cron orario di 50 negozi di Roma) NON ' +
-      'spammano l\'API Open-Meteo che è generously rate-limited ma comunque non infinita. ' +
+      "spammano l'API Open-Meteo che è generously rate-limited ma comunque non infinita. " +
       'Output structured consumabile direttamente da dashboard SSR/email digest/IoT automation: { current: ' +
       '{ temperature, humidity, wind_speed, wind_direction, weather_code, is_day, time }, forecast: [{ date, ' +
       'temp_max, temp_min, precipitation_sum, precipitation_probability, weather_code, uv_index_max }], ' +
@@ -67,7 +67,8 @@ export const weatherNode: NodeModule = {
         type: 'expression',
         required: true,
         placeholder: 'Roma   oppure   45.4642,9.1900',
-        help: 'Nome città (es. "Milano", "Roma, IT") oppure coordinate "lat,lon" (es. "45.4642,9.1900"). ' +
+        help:
+          'Nome città (es. "Milano", "Roma, IT") oppure coordinate "lat,lon" (es. "45.4642,9.1900"). ' +
           'Il reverse-geocoding usa Open-Meteo geocoding API.',
       },
       {

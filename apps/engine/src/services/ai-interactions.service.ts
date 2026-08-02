@@ -26,7 +26,11 @@ import { piiRedactor } from './pii-redactor.service.js';
 import { logger } from '@/lib/logger.js';
 import { AISignalsService } from './ai-signals.service.js';
 
-export type InteractionType = 'editor_chat' | 'run_explain' | 'node_generate' | 'workflow_from_text';
+export type InteractionType =
+  | 'editor_chat'
+  | 'run_explain'
+  | 'node_generate'
+  | 'workflow_from_text';
 export type Outcome = 'pending' | 'accepted' | 'rejected' | 'edited' | 'ignored' | 'failed';
 export type TrainingSplit = 'train' | 'val' | 'test' | 'excluded';
 
@@ -76,7 +80,7 @@ export interface OutcomeUpdateArgs {
 export interface ReviewUpdateArgs {
   interactionId: string;
   tenantId: string;
-  qualityScore: number;             // 0-5
+  qualityScore: number; // 0-5
   reviewerUserId: string;
   reviewerNotes?: string;
   trainingSplit?: TrainingSplit;
@@ -152,7 +156,9 @@ function rowToInteraction(r: RawRow): InteractionRow {
     createdAt: r.created_at,
     prompt: r.prompt,
     workflowSnapshot: r.workflow_snapshot_json ? JSON.parse(r.workflow_snapshot_json) : null,
-    conversationHistory: r.conversation_history_json ? JSON.parse(r.conversation_history_json) as { role: string; content: string }[] : [],
+    conversationHistory: r.conversation_history_json
+      ? (JSON.parse(r.conversation_history_json) as { role: string; content: string }[])
+      : [],
     responseMessage: r.response_message,
     responsePatch: r.response_patch_json ? JSON.parse(r.response_patch_json) : null,
     responseModel: r.response_model,
@@ -161,14 +167,16 @@ function rowToInteraction(r: RawRow): InteractionRow {
     responseTokensOut: r.response_tokens_out,
     outcome: r.outcome as Outcome,
     outcomeAt: r.outcome_at,
-    outcomePatchApplied: r.outcome_patch_applied_json ? JSON.parse(r.outcome_patch_applied_json) : null,
+    outcomePatchApplied: r.outcome_patch_applied_json
+      ? JSON.parse(r.outcome_patch_applied_json)
+      : null,
     outcomeFollowupRunId: r.outcome_followup_run_id,
     outcomeFollowupRunStatus: r.outcome_followup_run_status,
     qualityScore: r.quality_score,
     reviewerUserId: r.reviewer_user_id,
     reviewerNotes: r.reviewer_notes,
     piiRedacted: r.pii_redacted === 1,
-    piiClasses: r.pii_classes_json ? JSON.parse(r.pii_classes_json) as string[] : [],
+    piiClasses: r.pii_classes_json ? (JSON.parse(r.pii_classes_json) as string[]) : [],
     retentionUntil: r.retention_until,
     trainingSplit: r.training_split as TrainingSplit | null,
   };
@@ -209,7 +217,8 @@ export class AIInteractionsService {
     const consentAt = captureEnabled ? new Date().toISOString() : null;
     const consentBy = captureEnabled ? (consentByUserId ?? null) : null;
     sqlite
-      .prepare(`
+      .prepare(
+        `
         INSERT INTO ai_training_settings (tenant_id, capture_enabled, retention_days, consent_at, consent_by_user_id, updated_at)
         VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
         ON CONFLICT(tenant_id) DO UPDATE SET
@@ -218,7 +227,8 @@ export class AIInteractionsService {
           consent_at = excluded.consent_at,
           consent_by_user_id = excluded.consent_by_user_id,
           updated_at = excluded.updated_at
-      `)
+      `,
+      )
       .run(tenantId, captureEnabled ? 1 : 0, retentionDays, consentAt, consentBy);
   }
 
@@ -233,11 +243,25 @@ export class AIInteractionsService {
   } {
     const { sqlite } = getDatabase();
     const row = sqlite
-      .prepare('SELECT capture_enabled, retention_days, consent_at, consent_by_user_id FROM ai_training_settings WHERE tenant_id = ?')
+      .prepare(
+        'SELECT capture_enabled, retention_days, consent_at, consent_by_user_id FROM ai_training_settings WHERE tenant_id = ?',
+      )
       .get(tenantId) as
-        | { capture_enabled: number; retention_days: number; consent_at: string | null; consent_by_user_id: string | null }
-        | undefined;
-    if (!row) return { captureEnabled: false, retentionDays: 90, consentAt: null, consentByUserId: null, decided: false };
+      | {
+          capture_enabled: number;
+          retention_days: number;
+          consent_at: string | null;
+          consent_by_user_id: string | null;
+        }
+      | undefined;
+    if (!row)
+      return {
+        captureEnabled: false,
+        retentionDays: 90,
+        consentAt: null,
+        consentByUserId: null,
+        decided: false,
+      };
     return {
       captureEnabled: row.capture_enabled === 1,
       retentionDays: row.retention_days,
@@ -301,7 +325,8 @@ export class AIInteractionsService {
 
     try {
       sqlite
-        .prepare(`
+        .prepare(
+          `
           INSERT INTO ai_interactions (
             id, tenant_id, user_id, workflow_id, interaction_type,
             prompt, workflow_snapshot_json, conversation_history_json,
@@ -309,7 +334,8 @@ export class AIInteractionsService {
             response_latency_ms, response_tokens_in, response_tokens_out,
             pii_redacted, pii_classes_json, retention_until
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `)
+        `,
+        )
         .run(
           id,
           context.tenantId,
@@ -332,7 +358,10 @@ export class AIInteractionsService {
       return id;
     } catch (err) {
       // We MUST NOT fail the AI request if capture insert fails — log and continue.
-      logger.error({ err, tenantId: context.tenantId, interactionType }, 'ai_interactions insert failed');
+      logger.error(
+        { err, tenantId: context.tenantId, interactionType },
+        'ai_interactions insert failed',
+      );
       return null;
     }
   }
@@ -340,9 +369,12 @@ export class AIInteractionsService {
   /** Update outcome (called when user accepts/rejects/edits a proposal). */
   updateOutcome(args: OutcomeUpdateArgs): boolean {
     const { sqlite } = getDatabase();
-    const patchR = args.patchApplied ? piiRedactor.redactJson(args.patchApplied) : { redacted: null };
+    const patchR = args.patchApplied
+      ? piiRedactor.redactJson(args.patchApplied)
+      : { redacted: null };
     const res = sqlite
-      .prepare(`
+      .prepare(
+        `
         UPDATE ai_interactions
         SET outcome = ?,
             outcome_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
@@ -350,7 +382,8 @@ export class AIInteractionsService {
             outcome_followup_run_id = ?,
             outcome_followup_run_status = ?
         WHERE id = ? AND tenant_id = ?
-      `)
+      `,
+      )
       .run(
         args.outcome,
         patchR.redacted !== null ? JSON.stringify(patchR.redacted) : null,
@@ -371,14 +404,16 @@ export class AIInteractionsService {
     }
     const { sqlite } = getDatabase();
     const res = sqlite
-      .prepare(`
+      .prepare(
+        `
         UPDATE ai_interactions
         SET quality_score = ?,
             reviewer_user_id = ?,
             reviewer_notes = ?,
             training_split = ?
         WHERE id = ? AND tenant_id = ?
-      `)
+      `,
+      )
       .run(
         args.qualityScore,
         args.reviewerUserId,
@@ -414,18 +449,34 @@ export class AIInteractionsService {
     const { sqlite } = getDatabase();
     const where: string[] = ['tenant_id = ?'];
     const params: unknown[] = [args.tenantId];
-    if (args.interactionType) { where.push('interaction_type = ?'); params.push(args.interactionType); }
-    if (args.outcome) { where.push('outcome = ?'); params.push(args.outcome); }
-    if (args.trainingSplit) { where.push('training_split = ?'); params.push(args.trainingSplit); }
-    if (args.minQuality !== undefined) { where.push('quality_score >= ?'); params.push(args.minQuality); }
+    if (args.interactionType) {
+      where.push('interaction_type = ?');
+      params.push(args.interactionType);
+    }
+    if (args.outcome) {
+      where.push('outcome = ?');
+      params.push(args.outcome);
+    }
+    if (args.trainingSplit) {
+      where.push('training_split = ?');
+      params.push(args.trainingSplit);
+    }
+    if (args.minQuality !== undefined) {
+      where.push('quality_score >= ?');
+      params.push(args.minQuality);
+    }
     const whereSql = where.join(' AND ');
 
-    const total = (sqlite
-      .prepare(`SELECT COUNT(*) AS c FROM ai_interactions WHERE ${whereSql}`)
-      .get(...params) as { c: number }).c;
+    const total = (
+      sqlite
+        .prepare(`SELECT COUNT(*) AS c FROM ai_interactions WHERE ${whereSql}`)
+        .get(...params) as { c: number }
+    ).c;
 
     const rows = sqlite
-      .prepare(`SELECT * FROM ai_interactions WHERE ${whereSql} ORDER BY created_at DESC LIMIT ? OFFSET ?`)
+      .prepare(
+        `SELECT * FROM ai_interactions WHERE ${whereSql} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      )
       .all(...params, args.limit ?? 50, args.offset ?? 0) as RawRow[];
     return { rows: rows.map(rowToInteraction), total };
   }
@@ -447,7 +498,12 @@ export class AIInteractionsService {
     minQuality?: number;
   }): string {
     const minQuality = args.minQuality ?? 3;
-    const where = ['tenant_id = ?', 'training_split IS NOT NULL', 'quality_score >= ?', "outcome IN ('accepted', 'edited')"];
+    const where = [
+      'tenant_id = ?',
+      'training_split IS NOT NULL',
+      'quality_score >= ?',
+      "outcome IN ('accepted', 'edited')",
+    ];
     const params: unknown[] = [args.tenantId, minQuality];
     if (args.trainingSplit) {
       where.push('training_split = ?');
@@ -473,7 +529,12 @@ export class AIInteractionsService {
         ? JSON.stringify({ message: r.responseMessage, patch: r.responsePatch })
         : r.responseMessage;
       messages.push({ role: 'assistant', content: assistantContent });
-      lines.push(JSON.stringify({ messages, metadata: { id: r.id, model: r.responseModel, quality: r.qualityScore } }));
+      lines.push(
+        JSON.stringify({
+          messages,
+          metadata: { id: r.id, model: r.responseModel, quality: r.qualityScore },
+        }),
+      );
     }
     return lines.join('\n');
   }
@@ -482,7 +543,9 @@ export class AIInteractionsService {
   sweep(): { deleted: number } {
     const { sqlite } = getDatabase();
     const res = sqlite
-      .prepare("DELETE FROM ai_interactions WHERE retention_until < strftime('%Y-%m-%dT%H:%M:%fZ', 'now')")
+      .prepare(
+        "DELETE FROM ai_interactions WHERE retention_until < strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+      )
       .run();
     if (res.changes > 0) {
       logger.info({ deleted: res.changes }, 'ai_interactions sweep');
@@ -499,31 +562,43 @@ export class AIInteractionsService {
     piiDetections: number;
   } {
     const { sqlite } = getDatabase();
-    const total = (sqlite
-      .prepare('SELECT COUNT(*) AS c FROM ai_interactions WHERE tenant_id = ?')
-      .get(tenantId) as { c: number }).c;
+    const total = (
+      sqlite
+        .prepare('SELECT COUNT(*) AS c FROM ai_interactions WHERE tenant_id = ?')
+        .get(tenantId) as { c: number }
+    ).c;
 
     const byOutcomeRows = sqlite
-      .prepare('SELECT outcome, COUNT(*) AS c FROM ai_interactions WHERE tenant_id = ? GROUP BY outcome')
+      .prepare(
+        'SELECT outcome, COUNT(*) AS c FROM ai_interactions WHERE tenant_id = ? GROUP BY outcome',
+      )
       .all(tenantId) as { outcome: string; c: number }[];
     const byOutcome: Record<string, number> = {};
     for (const r of byOutcomeRows) byOutcome[r.outcome] = r.c;
 
     const byTypeRows = sqlite
-      .prepare('SELECT interaction_type, COUNT(*) AS c FROM ai_interactions WHERE tenant_id = ? GROUP BY interaction_type')
+      .prepare(
+        'SELECT interaction_type, COUNT(*) AS c FROM ai_interactions WHERE tenant_id = ? GROUP BY interaction_type',
+      )
       .all(tenantId) as { interaction_type: string; c: number }[];
     const byInteractionType: Record<string, number> = {};
     for (const r of byTypeRows) byInteractionType[r.interaction_type] = r.c;
 
     const bySplitRows = sqlite
-      .prepare("SELECT COALESCE(training_split, 'unassigned') AS s, COUNT(*) AS c FROM ai_interactions WHERE tenant_id = ? GROUP BY training_split")
+      .prepare(
+        "SELECT COALESCE(training_split, 'unassigned') AS s, COUNT(*) AS c FROM ai_interactions WHERE tenant_id = ? GROUP BY training_split",
+      )
       .all(tenantId) as { s: string; c: number }[];
     const bySplit: Record<string, number> = {};
     for (const r of bySplitRows) bySplit[r.s] = r.c;
 
-    const piiDetections = (sqlite
-      .prepare("SELECT COUNT(*) AS c FROM ai_interactions WHERE tenant_id = ? AND pii_classes_json != '[]'")
-      .get(tenantId) as { c: number }).c;
+    const piiDetections = (
+      sqlite
+        .prepare(
+          "SELECT COUNT(*) AS c FROM ai_interactions WHERE tenant_id = ? AND pii_classes_json != '[]'",
+        )
+        .get(tenantId) as { c: number }
+    ).c;
 
     return { total, byOutcome, byInteractionType, bySplit, piiDetections };
   }

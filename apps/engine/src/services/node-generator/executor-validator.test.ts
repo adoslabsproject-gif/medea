@@ -7,7 +7,8 @@ import { describe, it, expect } from 'vitest';
 import { analyzeExecutor } from './executor-ast.js';
 import { validateExecutor, hasSecurityViolation } from './executor-validator.js';
 
-const GOOD = 'async function execute(config, input, context) { const r = await fetch(config.url); return { output: await r.text(), durationMs: 1 }; }';
+const GOOD =
+  'async function execute(config, input, context) { const r = await fetch(config.url); return { output: await r.text(), durationMs: 1 }; }';
 
 describe('analyzeExecutor — fatti AST', () => {
   it('executor valido → trova execute async, 3 param, return, niente vietati', () => {
@@ -21,7 +22,9 @@ describe('analyzeExecutor — fatti AST', () => {
   });
 
   it('arrow function assegnata a execute è riconosciuta', () => {
-    const f = analyzeExecutor('const execute = async (config, input, context) => { return { ok: true }; };');
+    const f = analyzeExecutor(
+      'const execute = async (config, input, context) => { return { ok: true }; };',
+    );
     expect(f.execute.found).toBe(true);
     expect(f.execute.isAsync).toBe(true);
   });
@@ -32,7 +35,9 @@ describe('analyzeExecutor — fatti AST', () => {
   });
 
   it('🚨 context.secrets["TOKEN"] riconosciuto come secret usato', () => {
-    const f = analyzeExecutor('async function execute(c, i, ctx) { return { v: ctx.secrets["TOKEN"] }; }');
+    const f = analyzeExecutor(
+      'async function execute(c, i, ctx) { return { v: ctx.secrets["TOKEN"] }; }',
+    );
     expect(f.secretsUsed).toEqual(['TOKEN']);
   });
 });
@@ -52,27 +57,43 @@ describe('validateExecutor — violazioni di sicurezza (AST, non regex)', () => 
 
   // ── I BYPASS che la regex /\b(require|process\.env|...)\b/ NON catturava ──
   it('🚨 BYPASS bracket-access globalThis["process"] → comunque bloccato (flag su globalThis)', () => {
-    const v = validateExecutor('async function execute(c,i,x){ const p = globalThis["process"]; return {}; }');
+    const v = validateExecutor(
+      'async function execute(c,i,x){ const p = globalThis["process"]; return {}; }',
+    );
     expect(hasSecurityViolation(v)).toBe(true);
   });
 
   it('🚨 BYPASS process["env"] (regex cercava "process.env" col punto) → bloccato', () => {
-    const v = validateExecutor('async function execute(c,i,x){ return { s: process["env"]["SECRET"] }; }');
+    const v = validateExecutor(
+      'async function execute(c,i,x){ return { s: process["env"]["SECRET"] }; }',
+    );
     expect(hasSecurityViolation(v)).toBe(true);
   });
 
   it('🚨 BYPASS spazio: require ("fs") con spazio prima della paren → bloccato', () => {
-    const v = validateExecutor('async function execute(c,i,x){ const fs = require ("fs"); return {}; }');
+    const v = validateExecutor(
+      'async function execute(c,i,x){ const fs = require ("fs"); return {}; }',
+    );
     expect(hasSecurityViolation(v)).toBe(true);
   });
 
   it('🚨 import statico + import() dinamico → forbidden_import', () => {
-    expect(validateExecutor('import fs from "fs"; async function execute(c,i,x){ return {}; }').some((v) => v.kind === 'forbidden_import')).toBe(true);
-    expect(validateExecutor('async function execute(c,i,x){ const m = await import("fs"); return {}; }').some((v) => v.kind === 'forbidden_import')).toBe(true);
+    expect(
+      validateExecutor('import fs from "fs"; async function execute(c,i,x){ return {}; }').some(
+        (v) => v.kind === 'forbidden_import',
+      ),
+    ).toBe(true);
+    expect(
+      validateExecutor(
+        'async function execute(c,i,x){ const m = await import("fs"); return {}; }',
+      ).some((v) => v.kind === 'forbidden_import'),
+    ).toBe(true);
   });
 
   it('🚨 NON è un falso positivo: una PROPRIETÀ chiamata `process` su un oggetto utente è ammessa', () => {
-    const v = validateExecutor('async function execute(c,i,x){ const o = { process: 1 }; return { v: o.process }; }');
+    const v = validateExecutor(
+      'async function execute(c,i,x){ const o = { process: 1 }; return { v: o.process }; }',
+    );
     expect(hasSecurityViolation(v)).toBe(false); // mut: se flaggassimo i property-name, fallirebbe
   });
 });

@@ -34,14 +34,24 @@ function timeboxExpression(expr: JsonataExpr, timeoutMs: number, maxDepth: numbe
   const time = Date.now();
   const checkRunaway = (): void => {
     if (depth > maxDepth) {
-      throw new Error(`JSONata: profondità massima superata (${maxDepth}) — possibile ricorsione non-terminante`);
+      throw new Error(
+        `JSONata: profondità massima superata (${maxDepth}) — possibile ricorsione non-terminante`,
+      );
     }
     if (Date.now() - time > timeoutMs) {
-      throw new Error(`JSONata: timeout di valutazione (${timeoutMs}ms) — possibile loop infinito o espressione troppo costosa`);
+      throw new Error(
+        `JSONata: timeout di valutazione (${timeoutMs}ms) — possibile loop infinito o espressione troppo costosa`,
+      );
     }
   };
-  assignSymbolCallback(expr, Symbol.for('jsonata.__evaluate_entry'), () => { depth++; checkRunaway(); });
-  assignSymbolCallback(expr, Symbol.for('jsonata.__evaluate_exit'), () => { depth--; checkRunaway(); });
+  assignSymbolCallback(expr, Symbol.for('jsonata.__evaluate_entry'), () => {
+    depth++;
+    checkRunaway();
+  });
+  assignSymbolCallback(expr, Symbol.for('jsonata.__evaluate_exit'), () => {
+    depth--;
+    checkRunaway();
+  });
 }
 
 export const jsonataExecutor: NodeExecutor = async (config, input, context) => {

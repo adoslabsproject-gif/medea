@@ -76,9 +76,9 @@ export function createRunHistoryRoutes(eventBus?: IEventBus): Hono {
 
     const whereSql = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     // COUNT totale (su params SENZA limit/offset)
-    const totalCount = (sqlite
-      .prepare(`SELECT COUNT(*) AS c FROM runs ${whereSql}`)
-      .get(...params) as { c: number }).c;
+    const totalCount = (
+      sqlite.prepare(`SELECT COUNT(*) AS c FROM runs ${whereSql}`).get(...params) as { c: number }
+    ).c;
 
     const rowsParams = [...params, limit, offset];
     const rows = sqlite
@@ -132,22 +132,37 @@ export function createRunHistoryRoutes(eventBus?: IEventBus): Hono {
     const isCrossTenant = auth?.role === 'superadmin' && !impersonateHeader;
 
     let body: { ids?: unknown };
-    try { body = await c.req.json(); } catch { return c.json({ error: 'Bad JSON body' }, 400); }
-    const ids = Array.isArray(body.ids) ? body.ids.filter((x): x is string => typeof x === 'string' && x.length > 0) : [];
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: 'Bad JSON body' }, 400);
+    }
+    const ids = Array.isArray(body.ids)
+      ? body.ids.filter((x): x is string => typeof x === 'string' && x.length > 0)
+      : [];
     if (ids.length === 0) return c.json({ error: 'Lista "ids" vuota o mancante' }, 400);
     if (ids.length > 1000) return c.json({ error: 'Massimo 1000 run per call' }, 400);
 
     const { sqlite } = getDatabase();
     const placeholders = ids.map(() => '?').join(',');
     // Recupera prima i workflow_id + tenant_id per emit eventi mirati
-    const foundRows = (isCrossTenant
-      ? sqlite.prepare(`SELECT id, workflow_id, tenant_id FROM runs WHERE id IN (${placeholders})`).all(...ids)
-      : sqlite.prepare(`SELECT id, workflow_id, tenant_id FROM runs WHERE tenant_id = ? AND id IN (${placeholders})`).all(tenantId, ...ids)
+    const foundRows = (
+      isCrossTenant
+        ? sqlite
+            .prepare(`SELECT id, workflow_id, tenant_id FROM runs WHERE id IN (${placeholders})`)
+            .all(...ids)
+        : sqlite
+            .prepare(
+              `SELECT id, workflow_id, tenant_id FROM runs WHERE tenant_id = ? AND id IN (${placeholders})`,
+            )
+            .all(tenantId, ...ids)
     ) as { id: string; workflow_id: string; tenant_id: string }[];
 
     const result = isCrossTenant
       ? sqlite.prepare(`DELETE FROM runs WHERE id IN (${placeholders})`).run(...ids)
-      : sqlite.prepare(`DELETE FROM runs WHERE tenant_id = ? AND id IN (${placeholders})`).run(tenantId, ...ids);
+      : sqlite
+          .prepare(`DELETE FROM runs WHERE tenant_id = ? AND id IN (${placeholders})`)
+          .run(tenantId, ...ids);
     const deleted = Number(result.changes);
     const skipped = ids.length - deleted;
 
@@ -164,7 +179,10 @@ export function createRunHistoryRoutes(eventBus?: IEventBus): Hono {
         });
       }
     }
-    logger.info({ tenantId, actor: auth?.role, deleted, skipped, requested: ids.length }, 'Bulk run delete');
+    logger.info(
+      { tenantId, actor: auth?.role, deleted, skipped, requested: ids.length },
+      'Bulk run delete',
+    );
     return c.json({ deleted, skipped, requested: ids.length });
   });
 
@@ -179,9 +197,12 @@ export function createRunHistoryRoutes(eventBus?: IEventBus): Hono {
     const impersonateHeader = c.req.header('x-tenant-id');
     const isCrossTenant = auth?.role === 'superadmin' && !impersonateHeader;
     const { sqlite } = getDatabase();
-    const found = (isCrossTenant
-      ? sqlite.prepare('SELECT workflow_id, tenant_id FROM runs WHERE id = ?').get(runId)
-      : sqlite.prepare('SELECT workflow_id, tenant_id FROM runs WHERE tenant_id = ? AND id = ?').get(tenantId, runId)
+    const found = (
+      isCrossTenant
+        ? sqlite.prepare('SELECT workflow_id, tenant_id FROM runs WHERE id = ?').get(runId)
+        : sqlite
+            .prepare('SELECT workflow_id, tenant_id FROM runs WHERE tenant_id = ? AND id = ?')
+            .get(tenantId, runId)
     ) as { workflow_id: string; tenant_id: string } | undefined;
     const r = isCrossTenant
       ? sqlite.prepare('DELETE FROM runs WHERE id = ?').run(runId)
@@ -216,14 +237,21 @@ export function createRunHistoryRoutes(eventBus?: IEventBus): Hono {
     const nodeId = c.req.query('nodeId') ?? null;
     if (!runId) return c.json({ error: 'Bad request' }, 400);
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare('SELECT steps_json FROM runs WHERE tenant_id = ? AND id = ?').get(tenantId, runId) as { steps_json: string } | undefined;
+    const row = sqlite
+      .prepare('SELECT steps_json FROM runs WHERE tenant_id = ? AND id = ?')
+      .get(tenantId, runId) as { steps_json: string } | undefined;
     if (!row) return c.json({ error: 'Not found' }, 404);
 
-    interface StepWithLogs { nodeId?: string; logs?: { source?: string }[]; logsTotal?: number; [k: string]: unknown }
+    interface StepWithLogs {
+      nodeId?: string;
+      logs?: { source?: string }[];
+      logsTotal?: number;
+      [k: string]: unknown;
+    }
     let steps: StepWithLogs[];
     try {
       const parsed: unknown = JSON.parse(row.steps_json);
-      steps = Array.isArray(parsed) ? parsed as StepWithLogs[] : [];
+      steps = Array.isArray(parsed) ? (parsed as StepWithLogs[]) : [];
     } catch {
       return c.json({ error: 'run record corrotto (steps_json non parseabile)' }, 500);
     }
@@ -249,7 +277,8 @@ export function createRunHistoryRoutes(eventBus?: IEventBus): Hono {
     }
     if (removed === 0) return c.json({ ok: true, removed: 0 });
 
-    sqlite.prepare('UPDATE runs SET steps_json = ? WHERE tenant_id = ? AND id = ?')
+    sqlite
+      .prepare('UPDATE runs SET steps_json = ? WHERE tenant_id = ? AND id = ?')
       .run(JSON.stringify(steps), tenantId, runId);
     logger.info({ runId, nodeId, removed, tenantId }, 'AI logs deleted from run record');
     return c.json({ ok: true, removed, ...(nodeId !== null ? { nodeId } : {}) });
@@ -267,10 +296,11 @@ export function createRunHistoryRoutes(eventBus?: IEventBus): Hono {
     const isCrossTenant = auth?.role === 'superadmin' && !impersonateHeader;
 
     const { sqlite } = getDatabase();
-    const row = (isCrossTenant
-      ? sqlite.prepare('SELECT * FROM runs WHERE id = ?').get(runId)
-      : sqlite.prepare('SELECT * FROM runs WHERE tenant_id = ? AND id = ?').get(tenantId, runId)
-    ) as RunRow & { steps_json: string } | undefined;
+    const row = (
+      isCrossTenant
+        ? sqlite.prepare('SELECT * FROM runs WHERE id = ?').get(runId)
+        : sqlite.prepare('SELECT * FROM runs WHERE tenant_id = ? AND id = ?').get(tenantId, runId)
+    ) as (RunRow & { steps_json: string }) | undefined;
     if (!row) return c.json({ error: 'Not found' }, 404);
 
     let steps: unknown = [];
@@ -313,7 +343,8 @@ export function createRunHistoryRoutes(eventBus?: IEventBus): Hono {
       return c.json(result);
     } catch (err) {
       if (err instanceof RunNotFoundError) return c.json({ error: err.message }, 404);
-      if (err instanceof RunSucceededError || err instanceof NoFailedStepError) return c.json({ error: err.message }, 400);
+      if (err instanceof RunSucceededError || err instanceof NoFailedStepError)
+        return c.json({ error: err.message }, 400);
       if (err instanceof NoLlmProviderError) return c.json({ error: err.message }, err.httpStatus);
       if (err instanceof LlmResponseError) return c.json({ error: err.message, raw: err.raw }, 502);
       logger.error({ err, runId, tenantId }, 'AI explain failed');

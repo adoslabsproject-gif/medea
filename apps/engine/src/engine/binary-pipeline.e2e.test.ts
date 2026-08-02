@@ -54,9 +54,15 @@ afterEach(async () => {
 
 function makeWorkflow(partial: Partial<Workflow>): Workflow {
   return {
-    schemaVersion: '1.0.0', id: 'wf-binpipe', name: 'BinPipe', enabled: true,
-    nodes: [], edges: [], nodeDefs: [],
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    schemaVersion: '1.0.0',
+    id: 'wf-binpipe',
+    name: 'BinPipe',
+    enabled: true,
+    nodes: [],
+    edges: [],
+    nodeDefs: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     ...partial,
   };
 }
@@ -68,7 +74,10 @@ function makeEngine(): WorkflowEngine {
 }
 
 /** Output (string JSON in RunStep) parsato del nodo `nodeId`. Throw se assente. */
-function stepOutput(steps: { nodeId: string; output: string }[], nodeId: string): Record<string, unknown> {
+function stepOutput(
+  steps: { nodeId: string; output: string }[],
+  nodeId: string,
+): Record<string, unknown> {
   const step = steps.find((s) => s.nodeId === nodeId);
   if (!step) throw new Error(`step ${nodeId} non trovato`);
   return JSON.parse(step.output) as Record<string, unknown>;
@@ -80,7 +89,13 @@ describe('🚨 E2E REALE — file_read(binary) → file_write (round-trip byte n
 
     const workflow = makeWorkflow({
       nodes: [
-        { id: 'leggi', defId: 'action_file_read', x: 0, y: 0, config: { path: 'in.bin', encoding: 'binary' } },
+        {
+          id: 'leggi',
+          defId: 'action_file_read',
+          x: 0,
+          y: 0,
+          config: { path: 'in.bin', encoding: 'binary' },
+        },
         { id: 'scrivi', defId: 'action_file_write', x: 1, y: 0, config: { path: 'out.bin' } },
       ],
       edges: [{ from: 'leggi', to: 'scrivi' }],
@@ -112,7 +127,15 @@ describe('🚨 E2E REALE — file_read(binary) → file_write (round-trip byte n
   it('negativo anti-overreach: encoding utf8 resta `content` stringa, NESSUN handle', async () => {
     await writeFile(join(tenantFiles, 'note.txt'), 'testo semplice', 'utf8');
     const workflow = makeWorkflow({
-      nodes: [{ id: 'leggi', defId: 'action_file_read', x: 0, y: 0, config: { path: 'note.txt', encoding: 'utf8' } }],
+      nodes: [
+        {
+          id: 'leggi',
+          defId: 'action_file_read',
+          x: 0,
+          y: 0,
+          config: { path: 'note.txt', encoding: 'utf8' },
+        },
+      ],
     });
     const result = await makeEngine().run({ workflow, triggerInput: {} });
     expect(result.status).toBe('success');
@@ -160,11 +183,14 @@ describe('🚨 E2E REALE — xlsx_build → xlsx_parse (round-trip dati struttur
 });
 
 describe('🚨 E2E REALE — pdf_generate → file_write (il PDF arriva su disco via handle)', () => {
-  it('🚨 il file scritto È un PDF (%PDF-) e l\'output intermedio è un ref', async () => {
+  it("🚨 il file scritto È un PDF (%PDF-) e l'output intermedio è un ref", async () => {
     const workflow = makeWorkflow({
       nodes: [
         {
-          id: 'genera', defId: 'action_pdf_generate', x: 0, y: 0,
+          id: 'genera',
+          defId: 'action_pdf_generate',
+          x: 0,
+          y: 0,
           config: {
             title: 'Report E2E',
             sectionsJson: '[{"heading":"Sezione","body":"Contenuto di prova"}]',

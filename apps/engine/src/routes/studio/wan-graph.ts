@@ -31,17 +31,32 @@ export interface LoraPair {
  */
 const WAN_LORAS: Record<string, Partial<Record<WanMode | 'both', LoraPair>>> = {
   animeStyle: {
-    i2v: { high: 'wan_animeStyle-I2V_HIGH__v2.safetensors', low: 'wan_animeStyle-I2V_LOW__wan2.2_i2v_animestyle_v2_low.safetensors' },
-    t2v: { high: 'wan_animeStyle-T2V_HIGH__v2.safetensors', low: 'wan_animeStyle-T2V_LOW__wan2.2_t2v_animestyle_v2_low.safetensors' },
+    i2v: {
+      high: 'wan_animeStyle-I2V_HIGH__v2.safetensors',
+      low: 'wan_animeStyle-I2V_LOW__wan2.2_i2v_animestyle_v2_low.safetensors',
+    },
+    t2v: {
+      high: 'wan_animeStyle-T2V_HIGH__v2.safetensors',
+      low: 'wan_animeStyle-T2V_LOW__wan2.2_t2v_animestyle_v2_low.safetensors',
+    },
   },
   switchToAnime: {
-    i2v: { high: 'wan_switchToAnime-I2V_HIGH__wan2.2_i2v_animestyletransition_high.safetensors', low: 'wan_switchToAnime-I2V_LOW__wan2.2_i2v_animestyletransition_low.safetensors' },
+    i2v: {
+      high: 'wan_switchToAnime-I2V_HIGH__wan2.2_i2v_animestyletransition_high.safetensors',
+      low: 'wan_switchToAnime-I2V_LOW__wan2.2_i2v_animestyletransition_low.safetensors',
+    },
   },
   retro90s: {
-    both: { high: 'wan_retro90sAnime_HIGH__goldenboylora-22-HIGH-e01.safetensors', low: 'wan_retro90sAnime_LOW__goldenboylora-22-LOW-V2-e106.safetensors' },
+    both: {
+      high: 'wan_retro90sAnime_HIGH__goldenboylora-22-HIGH-e01.safetensors',
+      low: 'wan_retro90sAnime_LOW__goldenboylora-22-LOW-V2-e106.safetensors',
+    },
   },
   generalNSFW: {
-    both: { high: 'wan_generalNSFW__NSFW-22-H-e8.safetensors', low: 'wan_generalNSFW_LOW__NSFW-22-L-e8.safetensors' },
+    both: {
+      high: 'wan_generalNSFW__NSFW-22-H-e8.safetensors',
+      low: 'wan_generalNSFW_LOW__NSFW-22-L-e8.safetensors',
+    },
   },
 };
 
@@ -53,7 +68,10 @@ const WAN_LIGHTNING: LoraPair = {
 
 /** I nomi friendly selezionabili in UI (esposti per popolare il selettore). */
 export function listWanLoras(mode: WanMode): { name: string; available: boolean }[] {
-  return Object.keys(WAN_LORAS).map((name) => ({ name, available: resolveWanLora(name, mode) !== null }));
+  return Object.keys(WAN_LORAS).map((name) => ({
+    name,
+    available: resolveWanLora(name, mode) !== null,
+  }));
 }
 
 /** Risolve un nome friendly → coppia high/low per la modalità, o null se non applicabile. */
@@ -99,7 +117,10 @@ export interface WanVideoSpec {
   slowmo?: number;
 }
 
-interface GraphNode { class_type: string; inputs: Record<string, unknown> }
+interface GraphNode {
+  class_type: string;
+  inputs: Record<string, unknown>;
+}
 type Graph = Record<string, GraphNode>;
 
 // ⚠️ ACCOPPIAMENTO COI FILE SU DISCO: questi nomi devono esistere in ComfyUI
@@ -117,7 +138,8 @@ const RIFE_MODEL = 'rife_v4.26_heavy.safetensors';
 // Limite multiplier del nodo FrameInterpolate (max 16); cap pratico a 4 (=0.25x).
 const RIFE_MAX_MULTIPLIER = 4;
 
-const clampInt = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, Math.round(v)));
+const clampInt = (v: number, lo: number, hi: number): number =>
+  Math.min(hi, Math.max(lo, Math.round(v)));
 const clampNum = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
 
 /**
@@ -150,16 +172,30 @@ function appendLoraChain(
  * `framesRef` invariato. CreateVideo userà poi lo STESSO fps → durata ×N (movimento
  * a 1/N), ma fluido. UNA sola implementazione → generate ed extend non divergono.
  */
-function appendSlowmo(graph: Graph, framesRef: [string, number], slowmoRaw: number | undefined): [string, number] {
+function appendSlowmo(
+  graph: Graph,
+  framesRef: [string, number],
+  slowmoRaw: number | undefined,
+): [string, number] {
   const slowmo = clampInt(slowmoRaw ?? 1, 1, RIFE_MAX_MULTIPLIER);
   if (slowmo <= 1) return framesRef;
-  graph.interpModel = { class_type: 'FrameInterpolationModelLoader', inputs: { model_name: RIFE_MODEL } };
-  graph.interp = { class_type: 'FrameInterpolate', inputs: { interp_model: ['interpModel', 0], images: framesRef, multiplier: slowmo } };
+  graph.interpModel = {
+    class_type: 'FrameInterpolationModelLoader',
+    inputs: { model_name: RIFE_MODEL },
+  };
+  graph.interp = {
+    class_type: 'FrameInterpolate',
+    inputs: { interp_model: ['interpModel', 0], images: framesRef, multiplier: slowmo },
+  };
   return ['interp', 0];
 }
 
 /** Risolve i LoRA scelti (+ lightning se turbo) in liste high/low pesate per i 2 stadi. */
-function resolvePairs(loras: WanLoraSelection[], mode: WanMode, turbo: boolean): {
+function resolvePairs(
+  loras: WanLoraSelection[],
+  mode: WanMode,
+  turbo: boolean,
+): {
   high: { file: string; weight: number }[];
   low: { file: string; weight: number }[];
 } {
@@ -178,9 +214,18 @@ function resolvePairs(loras: WanLoraSelection[], mode: WanMode, turbo: boolean):
 /** Nodi base condivisi (unet high/low + clip + vae + positive/negative). */
 function baseNodes(prompt: string, negative: string, isI2V: boolean): Graph {
   return {
-    unet_h: { class_type: 'UNETLoader', inputs: { unet_name: isI2V ? I2V_HIGH : T2V_HIGH, weight_dtype: 'default' } },
-    unet_l: { class_type: 'UNETLoader', inputs: { unet_name: isI2V ? I2V_LOW : T2V_LOW, weight_dtype: 'default' } },
-    clip: { class_type: 'CLIPLoader', inputs: { clip_name: 'umt5_xxl_fp8_e4m3fn_scaled.safetensors', type: 'wan' } },
+    unet_h: {
+      class_type: 'UNETLoader',
+      inputs: { unet_name: isI2V ? I2V_HIGH : T2V_HIGH, weight_dtype: 'default' },
+    },
+    unet_l: {
+      class_type: 'UNETLoader',
+      inputs: { unet_name: isI2V ? I2V_LOW : T2V_LOW, weight_dtype: 'default' },
+    },
+    clip: {
+      class_type: 'CLIPLoader',
+      inputs: { clip_name: 'umt5_xxl_fp8_e4m3fn_scaled.safetensors', type: 'wan' },
+    },
     vae: { class_type: 'VAELoader', inputs: { vae_name: 'wan_2.1_vae.safetensors' } },
     pos: { class_type: 'CLIPTextEncode', inputs: { text: prompt, clip: ['clip', 0] } },
     neg: { class_type: 'CLIPTextEncode', inputs: { text: negative, clip: ['clip', 0] } },
@@ -192,8 +237,13 @@ interface SamplerCoreOpts {
   startImageRef: [string, number] | null;
   high: { file: string; weight: number }[];
   low: { file: string; weight: number }[];
-  seed: number; steps: number; cfg: number; half: number;
-  width: number; height: number; length: number;
+  seed: number;
+  steps: number;
+  cfg: number;
+  half: number;
+  width: number;
+  height: number;
+  length: number;
 }
 
 /**
@@ -209,31 +259,87 @@ function attachSamplerCore(graph: Graph, o: SamplerCoreOpts): [string, number] {
   graph.msh = { class_type: 'ModelSamplingSD3', inputs: { model: highModel, shift: 8.0 } };
   graph.msl = { class_type: 'ModelSamplingSD3', inputs: { model: lowModel, shift: 8.0 } };
 
-  let ksPos: [string, number]; let ksNeg: [string, number]; let latentSrc: [string, number];
+  let ksPos: [string, number];
+  let ksNeg: [string, number];
+  let latentSrc: [string, number];
   if (o.startImageRef) {
     graph.i2v = {
       class_type: 'WanImageToVideo',
-      inputs: { positive: ['pos', 0], negative: ['neg', 0], vae: ['vae', 0], width: o.width, height: o.height, length: o.length, batch_size: 1, start_image: o.startImageRef },
+      inputs: {
+        positive: ['pos', 0],
+        negative: ['neg', 0],
+        vae: ['vae', 0],
+        width: o.width,
+        height: o.height,
+        length: o.length,
+        batch_size: 1,
+        start_image: o.startImageRef,
+      },
     };
-    ksPos = ['i2v', 0]; ksNeg = ['i2v', 1]; latentSrc = ['i2v', 2];
+    ksPos = ['i2v', 0];
+    ksNeg = ['i2v', 1];
+    latentSrc = ['i2v', 2];
   } else {
-    graph.latent = { class_type: 'Wan22ImageToVideoLatent', inputs: { vae: ['vae', 0], width: o.width, height: o.height, length: o.length, batch_size: 1 } };
-    ksPos = ['pos', 0]; ksNeg = ['neg', 0]; latentSrc = ['latent', 0];
+    graph.latent = {
+      class_type: 'Wan22ImageToVideoLatent',
+      inputs: {
+        vae: ['vae', 0],
+        width: o.width,
+        height: o.height,
+        length: o.length,
+        batch_size: 1,
+      },
+    };
+    ksPos = ['pos', 0];
+    ksNeg = ['neg', 0];
+    latentSrc = ['latent', 0];
   }
   graph.ks1 = {
     class_type: 'KSamplerAdvanced',
-    inputs: { model: ['msh', 0], add_noise: 'enable', noise_seed: o.seed, steps: o.steps, cfg: o.cfg, sampler_name: 'euler', scheduler: 'simple', positive: ksPos, negative: ksNeg, latent_image: latentSrc, start_at_step: 0, end_at_step: o.half, return_with_leftover_noise: 'enable' },
+    inputs: {
+      model: ['msh', 0],
+      add_noise: 'enable',
+      noise_seed: o.seed,
+      steps: o.steps,
+      cfg: o.cfg,
+      sampler_name: 'euler',
+      scheduler: 'simple',
+      positive: ksPos,
+      negative: ksNeg,
+      latent_image: latentSrc,
+      start_at_step: 0,
+      end_at_step: o.half,
+      return_with_leftover_noise: 'enable',
+    },
   };
   graph.ks2 = {
     class_type: 'KSamplerAdvanced',
-    inputs: { model: ['msl', 0], add_noise: 'disable', noise_seed: o.seed, steps: o.steps, cfg: o.cfg, sampler_name: 'euler', scheduler: 'simple', positive: ksPos, negative: ksNeg, latent_image: ['ks1', 0], start_at_step: o.half, end_at_step: 10000, return_with_leftover_noise: 'disable' },
+    inputs: {
+      model: ['msl', 0],
+      add_noise: 'disable',
+      noise_seed: o.seed,
+      steps: o.steps,
+      cfg: o.cfg,
+      sampler_name: 'euler',
+      scheduler: 'simple',
+      positive: ksPos,
+      negative: ksNeg,
+      latent_image: ['ks1', 0],
+      start_at_step: o.half,
+      end_at_step: 10000,
+      return_with_leftover_noise: 'disable',
+    },
   };
   graph.decode = { class_type: 'VAEDecode', inputs: { samples: ['ks2', 0], vae: ['vae', 0] } };
   return ['decode', 0];
 }
 
 /** Step/cfg/split effettivi (turbo forza 4 step / cfg 1 / split 2+2). */
-function samplerParams(turbo: boolean, steps: number, cfg: number): { steps: number; cfg: number; half: number } {
+function samplerParams(
+  turbo: boolean,
+  steps: number,
+  cfg: number,
+): { steps: number; cfg: number; half: number } {
   if (turbo) return { steps: 4, cfg: 1, half: 2 };
   const s = clampInt(steps, 1, 80);
   return { steps: s, cfg: clampNum(cfg, 1, 30), half: Math.max(1, Math.floor(s / 2)) };
@@ -261,14 +367,28 @@ export function buildWanVideoGraph(spec: WanVideoSpec): Graph {
     graph.img = { class_type: 'LoadImage', inputs: { image: spec.startImage ?? '' } };
     startImageRef = ['img', 0];
   }
-  attachSamplerCore(graph, { startImageRef, high, low, seed: spec.seed, steps, cfg, half, width, height, length });
+  attachSamplerCore(graph, {
+    startImageRef,
+    high,
+    low,
+    seed: spec.seed,
+    steps,
+    cfg,
+    half,
+    width,
+    height,
+    length,
+  });
 
   // Slow-motion fluido: interpola i frame con RIFE (multiplier ×N) e assembla
   // allo STESSO fps → durata ×N, movimento 1/N ma fluido (no judder). multiplier
   // 1 = off → CreateVideo legge direttamente dal decode (grafo invariato).
   const framesRef = appendSlowmo(graph, ['decode', 0], spec.slowmo);
   graph.vid = { class_type: 'CreateVideo', inputs: { images: framesRef, fps } };
-  graph.save = { class_type: 'SaveVideo', inputs: { video: ['vid', 0], filename_prefix: 'genstudio', format: 'mp4', codec: 'h264' } };
+  graph.save = {
+    class_type: 'SaveVideo',
+    inputs: { video: ['vid', 0], filename_prefix: 'genstudio', format: 'mp4', codec: 'h264' },
+  };
   return graph;
 }
 
@@ -325,7 +445,10 @@ export function buildWanExtendGraph(spec: WanExtendSpec): Graph {
   const width = clampInt(spec.width, 256, 1280);
   const height = clampInt(spec.height, 256, 1280);
   const length = clampInt(spec.length, 1, 121);
-  const lastIdx = Math.min(COMFY_MAX_BATCH_INDEX, Math.max(0, clampInt(spec.sourceFrames, 1, 1_000_000) - 1));
+  const lastIdx = Math.min(
+    COMFY_MAX_BATCH_INDEX,
+    Math.max(0, clampInt(spec.sourceFrames, 1, 1_000_000) - 1),
+  );
   const { high, low } = resolvePairs(spec.loras, 'i2v', spec.turbo);
 
   const graph = baseNodes(spec.prompt, spec.negative, true);
@@ -341,13 +464,33 @@ export function buildWanExtendGraph(spec: WanExtendSpec): Graph {
     };
     frameSource = ['scaled', 0];
   }
-  graph.last = { class_type: 'ImageFromBatch', inputs: { image: frameSource, batch_index: lastIdx, length: 1 } };
-  attachSamplerCore(graph, { startImageRef: ['last', 0], high, low, seed: spec.seed, steps, cfg, half, width, height, length });
+  graph.last = {
+    class_type: 'ImageFromBatch',
+    inputs: { image: frameSource, batch_index: lastIdx, length: 1 },
+  };
+  attachSamplerCore(graph, {
+    startImageRef: ['last', 0],
+    high,
+    low,
+    seed: spec.seed,
+    steps,
+    cfg,
+    half,
+    width,
+    height,
+    length,
+  });
   // Concatena frame sorgente + continuazione → un solo video; fps del sorgente.
-  graph.combined = { class_type: 'ImageBatch', inputs: { image1: frameSource, image2: ['decode', 0] } };
+  graph.combined = {
+    class_type: 'ImageBatch',
+    inputs: { image1: frameSource, image2: ['decode', 0] },
+  };
   // Slow-motion (opzionale): interpola l'INTERO video concatenato allo stesso fps.
   const framesRef = appendSlowmo(graph, ['combined', 0], spec.slowmo);
   graph.vid = { class_type: 'CreateVideo', inputs: { images: framesRef, fps: ['gvc', 2] } };
-  graph.save = { class_type: 'SaveVideo', inputs: { video: ['vid', 0], filename_prefix: 'genstudio', format: 'mp4', codec: 'h264' } };
+  graph.save = {
+    class_type: 'SaveVideo',
+    inputs: { video: ['vid', 0], filename_prefix: 'genstudio', format: 'mp4', codec: 'h264' },
+  };
   return graph;
 }

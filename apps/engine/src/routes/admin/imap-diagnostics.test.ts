@@ -34,7 +34,7 @@ beforeEach(() => {
 });
 
 describe('GET /admin/imap/diagnose/:accountId', () => {
-  it('404 se l\'account non è risolvibile dal tenant', async () => {
+  it("404 se l'account non è risolvibile dal tenant", async () => {
     svcMock.resolveForExecutor.mockReturnValue(null);
     const res = await app().request('/admin/imap/diagnose/acc-1?tenant=t1');
     expect(res.status).toBe(404);
@@ -47,7 +47,7 @@ describe('GET /admin/imap/diagnose/:accountId', () => {
     expect(svcMock.resolveForExecutor).toHaveBeenCalledWith('default', 'acc-1');
   });
 
-  it('400 se l\'account non ha configurazione IMAP', async () => {
+  it("400 se l'account non ha configurazione IMAP", async () => {
     svcMock.resolveForExecutor.mockReturnValue({ imap: null });
     const res = await app().request('/admin/imap/diagnose/acc-1');
     expect(res.status).toBe(400);
@@ -74,7 +74,9 @@ describe('GET /admin/imap/diagnose/:accountId', () => {
     imapClient.connect.mockRejectedValue(new Error('refused'));
     imapClient.logout.mockResolvedValue(undefined);
     await app().request('/admin/imap/diagnose/acc-1');
-    expect(ImapFlowMock).toHaveBeenCalledWith(expect.objectContaining({ port: 143, secure: false }));
+    expect(ImapFlowMock).toHaveBeenCalledWith(
+      expect.objectContaining({ port: 143, secure: false }),
+    );
   });
 
   it('un errore di connessione non rompe la response: 200 con report.fatal', async () => {

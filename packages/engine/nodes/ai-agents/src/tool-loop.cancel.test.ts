@@ -7,7 +7,9 @@ import { describe, it, expect, vi } from 'vitest';
 
 // La fetch LLM passa per safeFetchWithRedirects (via gatewayFetch). La spiamo per
 // provare che con signal abortito NON viene MAI chiamata (cancel cooperativo reale).
-const safeFetch = vi.fn(async () => { throw new Error('NON deve essere chiamata: cancel mancato'); });
+const safeFetch = vi.fn(async () => {
+  throw new Error('NON deve essere chiamata: cancel mancato');
+});
 vi.mock('@medea/engine-safe-fetch', async (importOriginal) => ({
   // helper di lettura body REALI (puri); mockiamo solo la fetch (spiata).
   ...(await importOriginal<typeof import('@medea/engine-safe-fetch')>()),
@@ -20,10 +22,16 @@ vi.mock('@medea/engine-nodes-stdlib', async (orig) => {
 
 const { agentToolLoopNode } = await import('./tool-loop.js');
 
-const baseCtx = { tenantId: 't1', runId: 'r1', nodeId: 'n1', workflowId: 'w1', logger: { info() {}, warn() {}, error() {} } };
+const baseCtx = {
+  tenantId: 't1',
+  runId: 'r1',
+  nodeId: 'n1',
+  workflowId: 'w1',
+  logger: { info() {}, warn() {}, error() {} },
+};
 
 describe('🚨 agent tool-loop — cancel cooperativo', () => {
-  it('🚨 abortSignal GIÀ abortito → ritorna cancelled SENZA chiamare l\'LLM', async () => {
+  it("🚨 abortSignal GIÀ abortito → ritorna cancelled SENZA chiamare l'LLM", async () => {
     const ac = new AbortController();
     ac.abort();
     const r = await agentToolLoopNode.executor!(
@@ -31,7 +39,8 @@ describe('🚨 agent tool-loop — cancel cooperativo', () => {
       undefined,
       { ...baseCtx, abortSignal: ac.signal } as never,
     );
-    const out = (r as { output: { cancelled?: boolean; error?: string; iterations?: number } }).output;
+    const out = (r as { output: { cancelled?: boolean; error?: string; iterations?: number } })
+      .output;
     expect(out.cancelled).toBe(true);
     expect(out.error).toMatch(/annullato|cancellato/i);
     expect(out.iterations).toBe(0);
@@ -53,13 +62,20 @@ describe('🚨 agent tool-loop — cancel cooperativo', () => {
 
   it('🔒 Settings→anthropic con key VUOTA → errore apiKey chiaro (guard difensiva intatta)', async () => {
     const ctxWithEmptyAnthropicKey = { ...baseCtx, llmProviders: { anthropic: { apiKey: '' } } };
-    const r = await agentToolLoopNode.executor!({ provider: 'anthropic', goal: 'x' }, undefined, ctxWithEmptyAnthropicKey as never);
+    const r = await agentToolLoopNode.executor!(
+      { provider: 'anthropic', goal: 'x' },
+      undefined,
+      ctxWithEmptyAnthropicKey as never,
+    );
     expect((r as { output: { error?: string } }).output.error).toMatch(/apiKey/i);
   });
 
   const okReply = (body: unknown) => ({
-    ok: true, status: 200, headers: new Headers(),
-    json: async () => body, text: async () => JSON.stringify(body),
+    ok: true,
+    status: 200,
+    headers: new Headers(),
+    json: async () => body,
+    text: async () => JSON.stringify(body),
   });
 
   it('🚨 il segnale di cancel È PASSATO al fetch LLM (abort in volo, non attende il timeout)', async () => {
@@ -81,7 +97,8 @@ describe('🚨 agent tool-loop — cancel cooperativo', () => {
     const ac = new AbortController();
     safeFetch.mockImplementationOnce(async () => {
       ac.abort();
-      const e = new Error('The operation was aborted'); e.name = 'AbortError';
+      const e = new Error('The operation was aborted');
+      e.name = 'AbortError';
       throw e;
     });
     const r = await agentToolLoopNode.executor!(
@@ -96,13 +113,16 @@ describe('🚨 agent tool-loop — cancel cooperativo', () => {
   // Guard input-rotto (review 2026-06-20): maxIterations='' → Number('')=0 → l'agente
   // non eseguiva NESSUN round e tornava "exceeded maxIterations=0". Ora → default 10.
   it('🚨 maxIterations vuoto (Number("")=0) → fallback 10, l\'agente ESEGUE (no "exceeded 0")', async () => {
-    safeFetch.mockResolvedValueOnce(okReply({ content: [{ type: 'text', text: 'fatto' }], stop_reason: 'end_turn' }));
+    safeFetch.mockResolvedValueOnce(
+      okReply({ content: [{ type: 'text', text: 'fatto' }], stop_reason: 'end_turn' }),
+    );
     const r = await agentToolLoopNode.executor!(
       { apiKey: 'sk-test', goal: 'x', maxIterations: '' },
       undefined,
       baseCtx as never,
     );
-    const out = (r as { output: { finalAnswer?: string; error?: string; iterations?: number } }).output;
+    const out = (r as { output: { finalAnswer?: string; error?: string; iterations?: number } })
+      .output;
     // finalAnswer='fatto' (dalla risposta mockata) + iterations:1 provano che il
     // loop ha eseguito UN round produttivo (col bug avrebbe ritornato error e 0).
     expect(out.finalAnswer).toBe('fatto');

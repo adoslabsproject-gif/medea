@@ -46,7 +46,7 @@ export interface PecParsedMessage {
  *    posta-certificata) = busta di trasporto   → received (la PEC vera e propria)
  */
 const RICEVUTA_MAP: Readonly<Record<string, PecType>> = {
-  'accettazione': 'acceptance',
+  accettazione: 'acceptance',
   'avvenuta-consegna': 'delivery',
   'non-accettazione': 'reject',
   'errore-consegna': 'reject',

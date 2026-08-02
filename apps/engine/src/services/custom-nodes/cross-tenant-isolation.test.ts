@@ -42,8 +42,11 @@ vi.mock('@/storage/db.js', () => ({
             all: (...p: unknown[]) => stmt.all(...p),
           };
         },
-        exec: (sql: string) => { conn.exec(sql); },
-        transaction: <T extends unknown[], R>(fn: (...args: T) => R) => conn.transaction(fn) as unknown as (...args: T) => R,
+        exec: (sql: string) => {
+          conn.exec(sql);
+        },
+        transaction: <T extends unknown[], R>(fn: (...args: T) => R) =>
+          conn.transaction(fn) as unknown as (...args: T) => R,
       },
     };
   },
@@ -68,7 +71,10 @@ vi.mock('@/lib/logger.js');
 
 vi.mock('./compile.service.js', () => ({
   compileCustomNodeSources: vi.fn().mockResolvedValue({
-    ok: true, compiledExecutor: 'CMP', warnings: [], compiledAt: new Date(),
+    ok: true,
+    compiledExecutor: 'CMP',
+    warnings: [],
+    compiledAt: new Date(),
   }),
 }));
 
@@ -111,7 +117,8 @@ beforeEach(async () => {
     workspaceId: WORKSPACE_A,
     ownerUserId: USER_A,
     input: {
-      slug: SHARED_SLUG, displayName: 'Node A (workspace A)',
+      slug: SHARED_SLUG,
+      displayName: 'Node A (workspace A)',
       description: 'segreto di A',
       sourceExecutor: 'export default async function() { return {} }',
       sourceDefinition: 'export const definition = {}',
@@ -123,7 +130,8 @@ beforeEach(async () => {
     workspaceId: WORKSPACE_B,
     ownerUserId: USER_B,
     input: {
-      slug: SHARED_SLUG, displayName: 'Node B (workspace B)',
+      slug: SHARED_SLUG,
+      displayName: 'Node B (workspace B)',
       description: 'segreto di B',
       sourceExecutor: 'export default async function() { return {} }',
       sourceDefinition: 'export const definition = {}',
@@ -180,8 +188,8 @@ describe('🔒 cross-tenant isolation — WRITE', () => {
   it('🔒 updateCustomNode di A da workspace B → NotFound throw', async () => {
     await expect(
       updateCustomNode({
-        workspaceId: WORKSPACE_B,  // wrong workspace!
-        id: nodeA_id,               // ma id di A
+        workspaceId: WORKSPACE_B, // wrong workspace!
+        id: nodeA_id, // ma id di A
         actorUserId: USER_B,
         input: { displayName: 'pwned' },
       }),
@@ -216,12 +224,14 @@ describe('🔒 cross-tenant isolation — WRITE', () => {
   it('🔒 rollbackToVersion di A da workspace B → throw (no privilege escalation)', async () => {
     // Prima crea una v2 di A (per avere snapshot rollbackable)
     await updateCustomNode({
-      workspaceId: WORKSPACE_A, id: nodeA_id, actorUserId: USER_A,
+      workspaceId: WORKSPACE_A,
+      id: nodeA_id,
+      actorUserId: USER_A,
       input: { sourceExecutor: 'export default async function() { return { v2: true } }' },
     });
     await expect(
       rollbackToVersion({
-        workspaceId: WORKSPACE_B,  // wrong
+        workspaceId: WORKSPACE_B, // wrong
         customNodeId: nodeA_id,
         actorUserId: USER_B,
         semverTarget: '0.1.0',
@@ -232,8 +242,10 @@ describe('🔒 cross-tenant isolation — WRITE', () => {
   it('🔒 publishCustomNodePrivate di A da workspace B → throw', async () => {
     // Prima compila A (per avere candidate status)
     await persistCompileResult({
-      workspaceId: WORKSPACE_A, id: nodeA_id,
-      compiledExecutor: 'CMP', warnings: [],
+      workspaceId: WORKSPACE_A,
+      id: nodeA_id,
+      compiledExecutor: 'CMP',
+      warnings: [],
     });
     await expect(
       publishCustomNodePrivate({ workspaceId: WORKSPACE_B, id: nodeA_id, actorUserId: USER_B }),
@@ -243,8 +255,10 @@ describe('🔒 cross-tenant isolation — WRITE', () => {
   it('🔒 persistCompileResult di A da workspace B → throw (no compile injection)', async () => {
     await expect(
       persistCompileResult({
-        workspaceId: WORKSPACE_B, id: nodeA_id,
-        compiledExecutor: 'INJECTED', warnings: [],
+        workspaceId: WORKSPACE_B,
+        id: nodeA_id,
+        compiledExecutor: 'INJECTED',
+        warnings: [],
       }),
     ).rejects.toThrow();
     // Verifica che A non sia stato toccato

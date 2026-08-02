@@ -14,8 +14,11 @@ import type { Middleware } from './compose.js';
 
 export function withErrorMapping(): Middleware {
   return (next: NodeExecutor) => async (config, input, ctx) => {
-    try { return await next(config, input, ctx); }
-    catch (err) { throw asNodeError(err); }
+    try {
+      return await next(config, input, ctx);
+    } catch (err) {
+      throw asNodeError(err);
+    }
   };
 }
 

@@ -25,9 +25,13 @@ afterEach(() => {
 describe('generateEmbedding — success path', () => {
   it('fetch ok 200 → ritorna array 1024 numeri', async () => {
     const fake = new Array(1024).fill(0).map((_, i) => i / 1024);
-    global.fetch = vi.fn(async () => new Response(JSON.stringify({ embedding: fake, dimensions: 1024 }), {
-      status: 200, headers: { 'content-type': 'application/json' },
-    })) as unknown as typeof global.fetch;
+    global.fetch = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ embedding: fake, dimensions: 1024 }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+    ) as unknown as typeof global.fetch;
     const { generateEmbedding } = await import('./embedding-client.js');
     const result = await generateEmbedding('test prompt');
     expect(result).not.toBeNull();
@@ -48,7 +52,10 @@ describe('generateEmbedding — success path', () => {
     let capturedBody = '';
     global.fetch = vi.fn(async (_url, opts: RequestInit | undefined) => {
       capturedBody = (opts?.body ?? '') as string;
-      return new Response(JSON.stringify({ embedding: new Array(1024).fill(0.5), dimensions: 1024 }), { status: 200 });
+      return new Response(
+        JSON.stringify({ embedding: new Array(1024).fill(0.5), dimensions: 1024 }),
+        { status: 200 },
+      );
     }) as unknown as typeof global.fetch;
     const { generateEmbedding } = await import('./embedding-client.js');
     await generateEmbedding('x'.repeat(20000));
@@ -68,19 +75,28 @@ describe('generateEmbedding — error paths (graceful)', () => {
   });
 
   it('fetch ritorna 500 → null', async () => {
-    global.fetch = vi.fn(async () => new Response('upstream error', { status: 500 })) as unknown as typeof global.fetch;
+    global.fetch = vi.fn(
+      async () => new Response('upstream error', { status: 500 }),
+    ) as unknown as typeof global.fetch;
     const { generateEmbedding } = await import('./embedding-client.js');
     expect(await generateEmbedding('test')).toBeNull();
   });
 
   it('fetch throw (network down) → null', async () => {
-    global.fetch = vi.fn(async () => { throw new Error('ECONNREFUSED'); }) as unknown as typeof global.fetch;
+    global.fetch = vi.fn(async () => {
+      throw new Error('ECONNREFUSED');
+    }) as unknown as typeof global.fetch;
     const { generateEmbedding } = await import('./embedding-client.js');
     expect(await generateEmbedding('test')).toBeNull();
   });
 
   it('embedding shape wrong (len 512 invece 1024) → null', async () => {
-    global.fetch = vi.fn(async () => new Response(JSON.stringify({ embedding: new Array(512).fill(0.5), dimensions: 512 }), { status: 200 })) as unknown as typeof global.fetch;
+    global.fetch = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ embedding: new Array(512).fill(0.5), dimensions: 512 }), {
+          status: 200,
+        }),
+    ) as unknown as typeof global.fetch;
     const { generateEmbedding } = await import('./embedding-client.js');
     expect(await generateEmbedding('test')).toBeNull();
   });
@@ -91,7 +107,10 @@ describe('generateEmbedding — auth header', () => {
     let capturedHeaders: Record<string, string> = {};
     global.fetch = vi.fn(async (_url, opts: RequestInit | undefined) => {
       capturedHeaders = (opts?.headers ?? {}) as Record<string, string>;
-      return new Response(JSON.stringify({ embedding: new Array(1024).fill(0), dimensions: 1024 }), { status: 200 });
+      return new Response(
+        JSON.stringify({ embedding: new Array(1024).fill(0), dimensions: 1024 }),
+        { status: 200 },
+      );
     }) as unknown as typeof global.fetch;
     const { generateEmbedding } = await import('./embedding-client.js');
     await generateEmbedding('test');

@@ -14,14 +14,21 @@
 import type { ChatTurn, LlmToolCall, LlmTurn, LlmTurnInput, LlmTurnResult } from './types.js';
 import { readJsonCapped } from '@/lib/capped-response.js';
 
-interface OaFunctionCall { id: string; type: 'function'; function: { name: string; arguments: string } }
+interface OaFunctionCall {
+  id: string;
+  type: 'function';
+  function: { name: string; arguments: string };
+}
 interface OaMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string | null;
   tool_call_id?: string;
   tool_calls?: OaFunctionCall[];
 }
-interface OaTool { type: 'function'; function: { name: string; description: string; parameters: Record<string, unknown> } }
+interface OaTool {
+  type: 'function';
+  function: { name: string; description: string; parameters: Record<string, unknown> };
+}
 export interface OaChatRequest {
   messages: OaMessage[];
   tools: OaTool[];
@@ -44,20 +51,33 @@ export function buildChatCompletionsRequest(input: LlmTurnInput, model?: string)
 
 function toOaMessage(t: ChatTurn): OaMessage {
   if (t.role === 'tool') {
-    return { role: 'tool', content: t.content, ...(t.toolCallId ? { tool_call_id: t.toolCallId } : {}) };
+    return {
+      role: 'tool',
+      content: t.content,
+      ...(t.toolCallId ? { tool_call_id: t.toolCallId } : {}),
+    };
   }
   if (t.role === 'assistant' && t.toolCalls && t.toolCalls.length > 0) {
     return {
       role: 'assistant',
       content: t.content.length > 0 ? t.content : null,
-      tool_calls: t.toolCalls.map((c) => ({ id: c.id, type: 'function', function: { name: c.name, arguments: JSON.stringify(c.args ?? {}) } })),
+      tool_calls: t.toolCalls.map((c) => ({
+        id: c.id,
+        type: 'function',
+        function: { name: c.name, arguments: JSON.stringify(c.args ?? {}) },
+      })),
     };
   }
   return { role: t.role, content: t.content };
 }
 
-interface OaChoiceMessage { content?: string | null; tool_calls?: { id?: string; function?: { name?: string; arguments?: string } }[] }
-interface OaResponse { choices?: { message?: OaChoiceMessage }[] }
+interface OaChoiceMessage {
+  content?: string | null;
+  tool_calls?: { id?: string; function?: { name?: string; arguments?: string } }[];
+}
+interface OaResponse {
+  choices?: { message?: OaChoiceMessage }[];
+}
 
 /** Risposta OpenAI-compat → LlmTurnResult. tool_calls presenti ⇒ kind 'tools'. */
 export function parseChatCompletionsResponse(data: unknown): LlmTurnResult {
@@ -78,7 +98,11 @@ export function parseChatCompletionsResponse(data: unknown): LlmTurnResult {
 /** function.arguments è una STRINGA JSON; fail-soft a {} se malformata. */
 function safeParseArgs(raw: string | undefined): unknown {
   if (!raw) return {};
-  try { return JSON.parse(raw); } catch { return {}; }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
 }
 
 export interface OpenAiLlmTurnOptions {

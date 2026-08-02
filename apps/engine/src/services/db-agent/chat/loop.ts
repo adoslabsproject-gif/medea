@@ -34,7 +34,10 @@ export async function runDbAgentChat(opts: RunDbAgentChatOptions): Promise<DbAge
   const maxIterations = opts.maxIterations ?? DEFAULT_MAX_ITERATIONS;
   const system = buildDbAgentSystemPrompt(opts.prompt);
   const tools = listDbAgentTools();
-  const messages: ChatTurn[] = [...(opts.history ?? []), { role: 'user', content: opts.userMessage }];
+  const messages: ChatTurn[] = [
+    ...(opts.history ?? []),
+    { role: 'user', content: opts.userMessage },
+  ];
   const steps: DbAgentChatStep[] = [];
 
   for (let iteration = 1; iteration <= maxIterations; iteration++) {
@@ -68,7 +71,8 @@ export async function runDbAgentChat(opts: RunDbAgentChatOptions): Promise<DbAge
 
   // Esauriti i giri senza risposta finale: stop netto (niente loop infinito).
   return {
-    message: 'Ho raggiunto il numero massimo di passi senza completare. Riformula la richiesta o procedi a step più piccoli.',
+    message:
+      'Ho raggiunto il numero massimo di passi senza completare. Riformula la richiesta o procedi a step più piccoli.',
     steps,
     iterations: maxIterations,
     stoppedReason: 'max_iterations',

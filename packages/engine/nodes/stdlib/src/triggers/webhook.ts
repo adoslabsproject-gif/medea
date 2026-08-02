@@ -86,7 +86,7 @@ export const webhookTriggerNode: NodeModule = {
         type: 'text',
         required: false,
         placeholder: 'es. webhook-client',
-        help: 'Username dell\'header Authorization: Basic. Il client costruisce base64(user:pass).',
+        help: "Username dell'header Authorization: Basic. Il client costruisce base64(user:pass).",
         showIf: { field: 'authMode', equals: 'basic-auth' },
       },
       {
@@ -179,7 +179,7 @@ export const webhookTriggerNode: NodeModule = {
         defaultValue: 'false',
         help:
           'Se on: respinge richieste con User-Agent contenente "bot", "crawler", "spider", "scrape" ' +
-          '(non è una difesa di sicurezza — è un filtro contro indicizzatori che vedono l\'URL nei log).',
+          "(non è una difesa di sicurezza — è un filtro contro indicizzatori che vedono l'URL nei log).",
       },
 
       // ────────── CORS ──────────
@@ -211,7 +211,7 @@ export const webhookTriggerNode: NodeModule = {
         required: false,
         defaultValue: 'false',
         help:
-          'Se on: il body grezzo (stringa esatta dei bytes ricevuti) viene incluso nell\'output del trigger ' +
+          "Se on: il body grezzo (stringa esatta dei bytes ricevuti) viene incluso nell'output del trigger " +
           'come campo "rawBody". OBBLIGATORIO se vuoi rifare la validazione HMAC fuori da FlowForge — Stripe ' +
           'e GitHub firmano i bytes esatti, non il JSON dopo parse/serialize.',
       },
@@ -232,14 +232,14 @@ export const webhookTriggerNode: NodeModule = {
       },
       {
         key: 'responseShape',
-        label: 'Shape dell\'output (modalità wait-for-workflow)',
+        label: "Shape dell'output (modalità wait-for-workflow)",
         type: 'select',
         required: false,
         options: ['envelope', 'last-step-output', 'all-steps-output'],
         defaultValue: 'envelope',
         help:
           'envelope = {runId, status} (default). ' +
-          'last-step-output = ritorna solo l\'output dell\'ultimo nodo come JSON. ' +
+          "last-step-output = ritorna solo l'output dell'ultimo nodo come JSON. " +
           'all-steps-output = array completo di tutti gli step. ' +
           'Ignorato se responseMode=immediate o use-respond-node.',
         showIf: { field: 'responseMode', equals: 'wait-for-workflow' },

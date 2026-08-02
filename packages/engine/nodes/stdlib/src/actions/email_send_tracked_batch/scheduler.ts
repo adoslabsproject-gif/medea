@@ -94,7 +94,9 @@ export type AttemptResult =
 
 const realSleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
-export async function runBatch(opts: SchedulerOptions): Promise<{ stats: BatchStats; results: BatchResult[] }> {
+export async function runBatch(
+  opts: SchedulerOptions,
+): Promise<{ stats: BatchStats; results: BatchResult[] }> {
   const sleep = opts.sleep ?? realSleep;
   const now = opts.now ?? Date.now;
   const random = opts.random ?? Math.random;
@@ -119,19 +121,38 @@ export async function runBatch(opts: SchedulerOptions): Promise<{ stats: BatchSt
     if (opts.signal?.aborted) {
       // Remaining items + this one are requeued.
       for (let k = i; k < opts.items.length; k++) {
-        results.push({ index: opts.items[k]!.index, ok: false, requeued: true, attempts: 0, error: 'aborted' });
+        results.push({
+          index: opts.items[k]!.index,
+          ok: false,
+          requeued: true,
+          attempts: 0,
+          error: 'aborted',
+        });
       }
       break;
     }
     if (now() - startTs > budgetMs) {
       for (let k = i; k < opts.items.length; k++) {
-        results.push({ index: opts.items[k]!.index, ok: false, requeued: true, attempts: 0, error: 'budget-exceeded' });
+        results.push({
+          index: opts.items[k]!.index,
+          ok: false,
+          requeued: true,
+          attempts: 0,
+          error: 'budget-exceeded',
+        });
       }
       break;
     }
 
     const item = opts.items[i]!;
-    const r = await attemptWithRetries(item, opts.attempt, maxAttempts, backoffBaseMs, sleep, opts.signal);
+    const r = await attemptWithRetries(
+      item,
+      opts.attempt,
+      maxAttempts,
+      backoffBaseMs,
+      sleep,
+      opts.signal,
+    );
     results.push(r);
     if (r.ok) sent += 1;
     else failed += 1;
@@ -145,9 +166,7 @@ export async function runBatch(opts: SchedulerOptions): Promise<{ stats: BatchSt
   }
 
   const totalMs = now() - startTs;
-  const effectiveRatePerHour = totalMs > 0
-    ? Math.round((sent / totalMs) * 3_600_000)
-    : 0;
+  const effectiveRatePerHour = totalMs > 0 ? Math.round((sent / totalMs) * 3_600_000) : 0;
 
   return {
     stats: { sent, failed, retried, totalMs, effectiveRatePerHour },
@@ -165,7 +184,8 @@ async function attemptWithRetries(
 ): Promise<BatchResult> {
   let lastError = '';
   for (let a = 1; a <= maxAttempts; a++) {
-    if (signal?.aborted) return { index: item.index, ok: false, attempts: a - 1, requeued: true, error: 'aborted' };
+    if (signal?.aborted)
+      return { index: item.index, ok: false, attempts: a - 1, requeued: true, error: 'aborted' };
     let res: AttemptResult;
     try {
       res = await attempt(item, a);
@@ -173,14 +193,20 @@ async function attemptWithRetries(
       res = { ok: false, retry: true, error: err instanceof Error ? err.message : String(err) };
     }
     if (res.ok) {
-      return { index: item.index, ok: true, messageId: res.messageId, sendId: res.sendId, attempts: a };
+      return {
+        index: item.index,
+        ok: true,
+        messageId: res.messageId,
+        sendId: res.sendId,
+        attempts: a,
+      };
     }
     lastError = res.error;
     if (!res.retry || a === maxAttempts) {
       return { index: item.index, ok: false, attempts: a, error: lastError };
     }
     // Exponential backoff capped at 60s.
-    const back = Math.min(60_000, backoffBaseMs * (2 ** (a - 1)));
+    const back = Math.min(60_000, backoffBaseMs * 2 ** (a - 1));
     await sleep(back);
   }
   return { index: item.index, ok: false, attempts: maxAttempts, error: lastError };
@@ -188,7 +214,7 @@ async function attemptWithRetries(
 
 function applyJitter(baseMs: number, jitter: number, rnd: () => number): number {
   if (jitter <= 0) return baseMs;
-  const span = baseMs * jitter;     // ± span
+  const span = baseMs * jitter; // ± span
   const delta = (rnd() * 2 - 1) * span;
   return Math.max(0, Math.floor(baseMs + delta));
 }

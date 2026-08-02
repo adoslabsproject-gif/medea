@@ -9,7 +9,12 @@
  */
 
 import SqliteDatabase, { type Database as BetterSqlite3Db } from 'better-sqlite3';
-import type { IVectorAdapter, VectorRecord, SimilaritySearchQuery, SimilaritySearchResult } from './types.js';
+import type {
+  IVectorAdapter,
+  VectorRecord,
+  SimilaritySearchQuery,
+  SimilaritySearchResult,
+} from './types.js';
 
 interface CollectionRow {
   name: string;
@@ -89,26 +94,40 @@ export class EmbeddedVectorAdapter implements IVectorAdapter {
     this.db = null;
   }
 
-  ensureCollection(name: string, dimensions: number, distance: 'cosine' | 'euclidean' | 'dot'): Promise<void> {
-    this.conn.prepare(
-      'INSERT INTO vector_collections (name, dimensions, distance) VALUES (?, ?, ?) ON CONFLICT (name) DO NOTHING',
-    ).run(name, dimensions, distance);
+  ensureCollection(
+    name: string,
+    dimensions: number,
+    distance: 'cosine' | 'euclidean' | 'dot',
+  ): Promise<void> {
+    this.conn
+      .prepare(
+        'INSERT INTO vector_collections (name, dimensions, distance) VALUES (?, ?, ?) ON CONFLICT (name) DO NOTHING',
+      )
+      .run(name, dimensions, distance);
     return Promise.resolve();
   }
 
   upsert(collection: string, records: readonly VectorRecord[]): Promise<{ count: number }> {
-    const meta = this.conn.prepare('SELECT * FROM vector_collections WHERE name = ?').get(collection) as CollectionRow | undefined;
+    const meta = this.conn
+      .prepare('SELECT * FROM vector_collections WHERE name = ?')
+      .get(collection) as CollectionRow | undefined;
     if (!meta) {
-      return Promise.reject(new Error(`Vector collection "${collection}" does not exist. Call ensureCollection() first.`));
+      return Promise.reject(
+        new Error(
+          `Vector collection "${collection}" does not exist. Call ensureCollection() first.`,
+        ),
+      );
     }
     // Validate ALL vectors before opening the transaction so we surface the
     // first dimension mismatch as a proper rejected promise (better-sqlite3's
     // transaction wraps sync throws into the caller's exception chain).
     for (const row of records) {
       if (row.vector.length !== meta.dimensions) {
-        return Promise.reject(new Error(
-          `Vector dimensions mismatch: collection ${collection} expects ${meta.dimensions.toString()}, got ${row.vector.length.toString()}`,
-        ));
+        return Promise.reject(
+          new Error(
+            `Vector dimensions mismatch: collection ${collection} expects ${meta.dimensions.toString()}, got ${row.vector.length.toString()}`,
+          ),
+        );
       }
     }
 
@@ -118,7 +137,12 @@ export class EmbeddedVectorAdapter implements IVectorAdapter {
     );
     const txn = this.conn.transaction((rows: readonly VectorRecord[]) => {
       for (const row of rows) {
-        stmt.run(row.id, collection, JSON.stringify(row.vector), row.payload ? JSON.stringify(row.payload) : null);
+        stmt.run(
+          row.id,
+          collection,
+          JSON.stringify(row.vector),
+          row.payload ? JSON.stringify(row.payload) : null,
+        );
       }
     });
     txn(records);
@@ -126,14 +150,21 @@ export class EmbeddedVectorAdapter implements IVectorAdapter {
   }
 
   search(collection: string, query: SimilaritySearchQuery): Promise<SimilaritySearchResult[]> {
-    const meta = this.conn.prepare('SELECT * FROM vector_collections WHERE name = ?').get(collection) as CollectionRow | undefined;
+    const meta = this.conn
+      .prepare('SELECT * FROM vector_collections WHERE name = ?')
+      .get(collection) as CollectionRow | undefined;
     if (!meta) throw new Error(`Vector collection "${collection}" not found`);
     if (query.vector.length !== meta.dimensions) {
-      throw new Error(`Query vector dimensions mismatch: expected ${meta.dimensions.toString()}, got ${query.vector.length.toString()}`);
+      throw new Error(
+        `Query vector dimensions mismatch: expected ${meta.dimensions.toString()}, got ${query.vector.length.toString()}`,
+      );
     }
-    const rows = this.conn.prepare('SELECT id, vector_json, payload_json FROM vector_records WHERE collection = ?').all(collection) as { id: string; vector_json: string; payload_json: string | null }[];
+    const rows = this.conn
+      .prepare('SELECT id, vector_json, payload_json FROM vector_records WHERE collection = ?')
+      .all(collection) as { id: string; vector_json: string; payload_json: string | null }[];
 
-    const scorer = meta.distance === 'cosine' ? cosine : meta.distance === 'euclidean' ? euclideanDist : dot;
+    const scorer =
+      meta.distance === 'cosine' ? cosine : meta.distance === 'euclidean' ? euclideanDist : dot;
     const scored: SimilaritySearchResult[] = rows.map((r) => {
       const v = JSON.parse(r.vector_json) as number[];
       let score = scorer(query.vector, v);
@@ -178,7 +209,9 @@ export class EmbeddedVectorAdapter implements IVectorAdapter {
   }
 
   countCollection(name: string): Promise<number> {
-    const row = this.conn.prepare('SELECT COUNT(*) as c FROM vector_records WHERE collection = ?').get(name) as { c: number };
+    const row = this.conn
+      .prepare('SELECT COUNT(*) as c FROM vector_records WHERE collection = ?')
+      .get(name) as { c: number };
     return Promise.resolve(row.c);
   }
 
@@ -189,7 +222,9 @@ export class EmbeddedVectorAdapter implements IVectorAdapter {
     return Promise.resolve(row !== undefined);
   }
 
-  listCollections(): Promise<{ name: string; dimensions: number; distance: 'cosine' | 'euclidean' | 'dot'; count: number }[]> {
+  listCollections(): Promise<
+    { name: string; dimensions: number; distance: 'cosine' | 'euclidean' | 'dot'; count: number }[]
+  > {
     const rows = this.conn
       .prepare('SELECT name, dimensions, distance FROM vector_collections ORDER BY name')
       .all() as { name: string; dimensions: number; distance: 'cosine' | 'euclidean' | 'dot' }[];
@@ -198,7 +233,12 @@ export class EmbeddedVectorAdapter implements IVectorAdapter {
       .all() as { collection: string; c: number }[];
     const countMap = new Map(counts.map((r) => [r.collection, r.c]));
     return Promise.resolve(
-      rows.map((r) => ({ name: r.name, dimensions: r.dimensions, distance: r.distance, count: countMap.get(r.name) ?? 0 })),
+      rows.map((r) => ({
+        name: r.name,
+        dimensions: r.dimensions,
+        distance: r.distance,
+        count: countMap.get(r.name) ?? 0,
+      })),
     );
   }
 

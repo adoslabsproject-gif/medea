@@ -85,7 +85,10 @@ export function buildTenantContext(tenantId: string): TenantContextResources {
           if (!tName) continue;
           tableNames.push(tName);
           const colNames = Array.isArray(t.columns)
-            ? t.columns.map((c) => String(c.name ?? '').trim()).filter(Boolean).slice(0, 100)
+            ? t.columns
+                .map((c) => String(c.name ?? '').trim())
+                .filter(Boolean)
+                .slice(0, 100)
             : [];
           // Solo tabelle con colonne note entrano nella mappa (il gate skippa
           // il check colonna sulle tabelle assenti, evitando falsi positivi).
@@ -102,21 +105,31 @@ export function buildTenantContext(tenantId: string): TenantContextResources {
       };
     });
   } catch (e) {
-    logger.debug({ err: e instanceof Error ? e.message : String(e), tenantId }, '[tenant-context] db list failed (graceful)');
+    logger.debug(
+      { err: e instanceof Error ? e.message : String(e), tenantId },
+      '[tenant-context] db list failed (graceful)',
+    );
   }
   try {
     out.emailAccounts = emailAccounts.picker(tenantId).slice(0, 10);
   } catch (e) {
-    logger.debug({ err: e instanceof Error ? e.message : String(e), tenantId }, '[tenant-context] email accounts list failed (graceful)');
+    logger.debug(
+      { err: e instanceof Error ? e.message : String(e), tenantId },
+      '[tenant-context] email accounts list failed (graceful)',
+    );
   }
   try {
-    const configured = llmProviders.list(tenantId)
+    const configured = llmProviders
+      .list(tenantId)
       .filter((p) => p.hasKey)
       .map((p) => ({ provider: p.provider, hasKey: true }));
     out.llmProviders = configured;
     out.defaultLlmProvider = tenantAiPreferences.resolveDefaultProvider(tenantId, configured);
   } catch (e) {
-    logger.debug({ err: e instanceof Error ? e.message : String(e), tenantId }, '[tenant-context] llm providers list failed (graceful)');
+    logger.debug(
+      { err: e instanceof Error ? e.message : String(e), tenantId },
+      '[tenant-context] llm providers list failed (graceful)',
+    );
   }
   return out;
 }
@@ -128,10 +141,10 @@ export function buildTenantContext(tenantId: string): TenantContextResources {
  */
 export function formatTenantContextForPrompt(ctx: TenantContextResources): string {
   if (
-    ctx.databases.length === 0
-    && ctx.emailAccounts.length === 0
-    && ctx.defaultLlmProvider === null
-    && ctx.llmProviders.length === 0
+    ctx.databases.length === 0 &&
+    ctx.emailAccounts.length === 0 &&
+    ctx.defaultLlmProvider === null &&
+    ctx.llmProviders.length === 0
   ) {
     return ''; // niente injection se tenant non ha risorse configurate
   }
@@ -160,9 +173,10 @@ export function formatTenantContextForPrompt(ctx: TenantContextResources): strin
     lines.push('', '**DB LOCALI SCRIVIBILI (qui — e SOLO qui — si CREANO/scrivono le tabelle):**');
     for (const db of writableDbs) {
       const desc = db.description ? ` — ${db.description.slice(0, 60)}` : '';
-      const tablesLine = db.tables.length > 0
-        ? `\n    tabelle esistenti: [${db.tables.map((t) => `"${t}"`).join(', ')}]`
-        : '\n    (nessuna tabella ancora — creane di nuove con nomi sensati al dominio, es. "rss_sources")';
+      const tablesLine =
+        db.tables.length > 0
+          ? `\n    tabelle esistenti: [${db.tables.map((t) => `"${t}"`).join(', ')}]`
+          : '\n    (nessuna tabella ancora — creane di nuove con nomi sensati al dominio, es. "rss_sources")';
       lines.push(`- id="${db.id}" name="${db.name}"${desc}${tablesLine}`);
     }
   } else if (readonlyDbs.length > 0) {
@@ -176,19 +190,25 @@ export function formatTenantContextForPrompt(ctx: TenantContextResources): strin
     );
   }
   if (readonlyDbs.length > 0) {
-    lines.push('', '**DB ESTERNI — SOLO LETTURA (NON creare/scrivere tabelle qui, mai db_insert/db_update):**');
+    lines.push(
+      '',
+      '**DB ESTERNI — SOLO LETTURA (NON creare/scrivere tabelle qui, mai db_insert/db_update):**',
+    );
     for (const db of readonlyDbs) {
       const desc = db.description ? ` — ${db.description.slice(0, 60)}` : '';
-      const tablesLine = db.tables.length > 0
-        ? `\n    tabelle (solo per db_query in lettura): [${db.tables.map((t) => `"${t}"`).join(', ')}]`
-        : '';
+      const tablesLine =
+        db.tables.length > 0
+          ? `\n    tabelle (solo per db_query in lettura): [${db.tables.map((t) => `"${t}"`).join(', ')}]`
+          : '';
       lines.push(`- id="${db.id}" name="${db.name}" [READ-ONLY]${desc}${tablesLine}`);
     }
   }
   if (ctx.emailAccounts.length > 0) {
     lines.push('', '**Email accounts disponibili (per campi `systemAccountId`):**');
     for (const acc of ctx.emailAccounts) {
-      lines.push(`- id="${acc.id}" label="${acc.label}" from="${acc.fromAddress}"${acc.isDefault ? ' [DEFAULT]' : ''}`);
+      lines.push(
+        `- id="${acc.id}" label="${acc.label}" from="${acc.fromAddress}"${acc.isDefault ? ' [DEFAULT]' : ''}`,
+      );
     }
   }
   lines.push(
@@ -199,7 +219,7 @@ export function formatTenantContextForPrompt(ctx: TenantContextResources): strin
     '3. Per le tabelle che il workflow popola, se non esiste già una tabella locale adatta, DICHIARALA da creare con un nome aderente al dominio del task (es. "rss_sources", non una tabella a caso vista altrove).',
     '4. db_query in LETTURA può usare le tabelle dei DB [READ-ONLY] elencate.',
     '5. Per `systemAccountId` USA SOLO un id dalla lista sopra (NON inventare "email-account-1" etc)',
-    '6. Se NESSUNA risorsa appropriata è disponibile per il caso d\'uso, usa `{{secrets.NOME_DESCRITTIVO}}` (l\'utente la configurerà)',
+    "6. Se NESSUNA risorsa appropriata è disponibile per il caso d'uso, usa `{{secrets.NOME_DESCRITTIVO}}` (l'utente la configurerà)",
     '7. Per URL/host/email/dominio che NON CONOSCI usa SEMPRE `{{secrets.X}}` MAI placeholder come "company.com", "bucket-name", "miosito.com", "tuosito.it", "noreply@..."',
   );
   return lines.join('\n');

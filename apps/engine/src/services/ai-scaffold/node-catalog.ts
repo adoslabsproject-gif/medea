@@ -69,7 +69,9 @@ interface NodeDefLike {
   }[];
 }
 
-function mapField(f: NonNullable<NodeDefLike['configFields']>[number]): NodeCatalogEntry['fields'][number] {
+function mapField(
+  f: NonNullable<NodeDefLike['configFields']>[number],
+): NodeCatalogEntry['fields'][number] {
   const out: NodeCatalogEntry['fields'][number] = {
     key: f.key,
     label: f.label,
@@ -154,19 +156,39 @@ export function buildPrePromptedAgentDefIds(): Set<string> {
 }
 
 export const ALLOWED_COLUMN_TYPES = [
-  'bigint', 'boolean', 'text', 'varchar', 'integer', 'decimal', 'real',
-  'date', 'time', 'datetime', 'json', 'uuid', 'bytea', 'enum',
+  'bigint',
+  'boolean',
+  'text',
+  'varchar',
+  'integer',
+  'decimal',
+  'real',
+  'date',
+  'time',
+  'datetime',
+  'json',
+  'uuid',
+  'bytea',
+  'enum',
 ] as const;
 
-export type ColumnType = typeof ALLOWED_COLUMN_TYPES[number];
+export type ColumnType = (typeof ALLOWED_COLUMN_TYPES)[number];
 
 export function normalizeColumnType(raw: unknown): ColumnType {
   const s = typeof raw === 'string' ? raw.toLowerCase().trim() : 'text';
   return (ALLOWED_COLUMN_TYPES as readonly string[]).includes(s) ? (s as ColumnType) : 'text';
 }
 
-export function normalizeConstraints(raw: unknown): { nullable: boolean; unique: boolean; primaryKey: boolean } {
-  const c = (raw && typeof raw === 'object' ? raw : {}) as { nullable?: unknown; unique?: unknown; primaryKey?: unknown };
+export function normalizeConstraints(raw: unknown): {
+  nullable: boolean;
+  unique: boolean;
+  primaryKey: boolean;
+} {
+  const c = (raw && typeof raw === 'object' ? raw : {}) as {
+    nullable?: unknown;
+    unique?: unknown;
+    primaryKey?: unknown;
+  };
   return {
     nullable: c.nullable === false ? false : true,
     unique: c.unique === true,

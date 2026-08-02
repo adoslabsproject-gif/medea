@@ -70,7 +70,12 @@ export function startDbChangePoller(
   const databaseId = typeof node.config.databaseId === 'string' ? node.config.databaseId : '';
   const tableName = typeof node.config.tableName === 'string' ? node.config.tableName : '';
   const opsFilter = typeof node.config.ops === 'string' ? node.config.ops : 'all';
-  const intervalSec = clampNumber(node.config.pollIntervalSec, DB_CHANGE_MIN_INTERVAL_SEC, 86_400, 5);
+  const intervalSec = clampNumber(
+    node.config.pollIntervalSec,
+    DB_CHANGE_MIN_INTERVAL_SEC,
+    86_400,
+    5,
+  );
   if (!databaseId || !tableName) return null;
 
   const tenantId = wf.tenantId ?? 'default';
@@ -82,7 +87,13 @@ export function startDbChangePoller(
   let lastIdSeen: number | null = null;
   // Seed lastIdSeen at the current max so we only fire on FUTURE changes
   const seedCursor = (): void => {
-    const seed = deps.getChangesSince(tenantId, databaseId, tableName, 0, DB_CHANGE_SEED_SCAN_LIMIT);
+    const seed = deps.getChangesSince(
+      tenantId,
+      databaseId,
+      tableName,
+      0,
+      DB_CHANGE_SEED_SCAN_LIMIT,
+    );
     lastIdSeen = seed.length > 0 ? (seed[seed.length - 1]?.id ?? 0) : 0;
   };
   try {

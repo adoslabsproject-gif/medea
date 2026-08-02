@@ -82,7 +82,7 @@ export function validateParams(
   schema: readonly RuleParamSchema[],
   raw: unknown,
 ): Result<Readonly<Record<string, unknown>>, readonly ValidationError[]> {
-  const input = (typeof raw === 'object' && raw !== null) ? raw as Record<string, unknown> : {};
+  const input = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {};
   const errors: ValidationError[] = [];
   const out: Record<string, unknown> = {};
 
@@ -101,11 +101,16 @@ export function validateParams(
 
 function validateSingle(p: RuleParamSchema, value: unknown): Result<unknown, string> {
   switch (p.type) {
-    case 'number': return validateNumber(p, value);
-    case 'string': return validateString(p, value);
-    case 'boolean': return validateBoolean(p, value);
-    case 'duration_ms': return validateDurationMs(p, value);
-    case 'enum': return validateEnum(p, value);
+    case 'number':
+      return validateNumber(p, value);
+    case 'string':
+      return validateString(p, value);
+    case 'boolean':
+      return validateBoolean(p, value);
+    case 'duration_ms':
+      return validateDurationMs(p, value);
+    case 'enum':
+      return validateEnum(p, value);
   }
 }
 
@@ -127,7 +132,9 @@ function validateString(p: RuleParamString, value: unknown): Result<string, stri
     try {
       const re = new RegExp(p.pattern);
       if (!re.test(value)) return Err(`Non rispetta il pattern ${p.pattern}`);
-    } catch { /* pattern malformato — ignora, è bug della regola */ }
+    } catch {
+      /* pattern malformato — ignora, è bug della regola */
+    }
   }
   return Ok(value);
 }

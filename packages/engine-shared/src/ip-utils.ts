@@ -118,7 +118,7 @@ export function ipv6ToNumber(ip: string): bigint | null {
     const right = doubleColonParts[1] === '' ? [] : doubleColonParts[1]!.split(':');
 
     // Check for empty groups from triple colons (:::)
-    if (left.some(g => g === '') || right.some(g => g === '')) return null;
+    if (left.some((g) => g === '') || right.some((g) => g === '')) return null;
 
     const fillerCount = 8 - left.length - right.length;
     if (fillerCount < 0) return null;
@@ -211,7 +211,10 @@ export function isIpInCidr(ip: string, cidr: string): boolean {
  * Check if IP is within any of the given pre-computed ranges.
  * IP MUST already be normalized with normalizeIp().
  */
-export function isIpInRanges(ip: string, ranges: readonly { start: bigint; end: bigint }[]): boolean {
+export function isIpInRanges(
+  ip: string,
+  ranges: readonly { start: bigint; end: bigint }[],
+): boolean {
   const isV6 = ip.includes(':');
   const ipNum = isV6 ? ipv6ToNumber(ip) : ipv4ToNumber(ip);
   if (ipNum === null) return false;
@@ -252,27 +255,27 @@ export function precomputeRanges(cidrs: readonly string[]): {
 // ─── Private/Reserved ranges ─────────────────────────────────────────────────
 
 const PRIVATE_RESERVED_V4 = [
-  '10.0.0.0/8',           // RFC 1918
-  '172.16.0.0/12',        // RFC 1918
-  '192.168.0.0/16',       // RFC 1918
-  '127.0.0.0/8',          // Loopback
-  '169.254.0.0/16',       // Link-local
-  '100.64.0.0/10',        // CGNAT (RFC 6598)
-  '0.0.0.0/8',            // This network
-  '224.0.0.0/4',          // Multicast
-  '240.0.0.0/4',          // Reserved
-  '192.0.2.0/24',         // TEST-NET-1 (RFC 5737)
-  '198.51.100.0/24',      // TEST-NET-2 (RFC 5737)
-  '203.0.113.0/24',       // TEST-NET-3 (RFC 5737)
+  '10.0.0.0/8', // RFC 1918
+  '172.16.0.0/12', // RFC 1918
+  '192.168.0.0/16', // RFC 1918
+  '127.0.0.0/8', // Loopback
+  '169.254.0.0/16', // Link-local
+  '100.64.0.0/10', // CGNAT (RFC 6598)
+  '0.0.0.0/8', // This network
+  '224.0.0.0/4', // Multicast
+  '240.0.0.0/4', // Reserved
+  '192.0.2.0/24', // TEST-NET-1 (RFC 5737)
+  '198.51.100.0/24', // TEST-NET-2 (RFC 5737)
+  '203.0.113.0/24', // TEST-NET-3 (RFC 5737)
 ];
 
 const PRIVATE_RESERVED_V6 = [
-  'fc00::/7',             // ULA (RFC 4193)
-  'fe80::/10',            // Link-local
-  '::1/128',              // Loopback
-  '::/128',               // Unspecified
-  'ff00::/8',             // Multicast
-  '2001:db8::/32',        // Documentation (RFC 3849)
+  'fc00::/7', // ULA (RFC 4193)
+  'fe80::/10', // Link-local
+  '::1/128', // Loopback
+  '::/128', // Unspecified
+  'ff00::/8', // Multicast
+  '2001:db8::/32', // Documentation (RFC 3849)
 ];
 
 const _privateRangesV4 = precomputeRanges(PRIVATE_RESERVED_V4);

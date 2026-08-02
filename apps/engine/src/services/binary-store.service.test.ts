@@ -12,11 +12,7 @@ import { join } from 'node:path';
 import { mkdtemp, rm, writeFile, readFile, utimes, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
-import {
-  BinaryStore,
-  InvalidBinaryRefError,
-  BinaryNotFoundError,
-} from './binary-store.service.js';
+import { BinaryStore, InvalidBinaryRefError, BinaryNotFoundError } from './binary-store.service.js';
 import { makeBinaryRef, readBinaryBytes } from '@medea/engine-core-schema';
 
 let root = '';
@@ -240,7 +236,11 @@ describe('🚨 integrazione con il contratto BinaryData (readBinaryBytes)', () =
 
 describe('🚨 review fix #1 — niente temp/staging orfani', () => {
   it('🚨 writeStream che fallisce a metà → rifiuta E nessuno staging orfano', async () => {
-    const boom = new Readable({ read() { this.destroy(new Error('boom mid-stream')); } });
+    const boom = new Readable({
+      read() {
+        this.destroy(new Error('boom mid-stream'));
+      },
+    });
     await expect(store.writeStream(boom)).rejects.toThrow(/boom/u);
     const entries = await readFileSafe(join(root, 'blobs'));
     expect(entries.filter((e) => e.startsWith('.staging-'))).toEqual([]);
@@ -285,9 +285,18 @@ describe('🚨 review fix #1 — niente temp/staging orfani', () => {
 /** Lista i nomi in una dir, [] se assente. */
 async function readFileSafe(dir: string): Promise<string[]> {
   const { readdir } = await import('node:fs/promises');
-  try { return await readdir(dir); } catch { return []; }
+  try {
+    return await readdir(dir);
+  } catch {
+    return [];
+  }
 }
 
 async function fileExists(p: string): Promise<boolean> {
-  try { await stat(p); return true; } catch { return false; }
+  try {
+    await stat(p);
+    return true;
+  } catch {
+    return false;
+  }
 }

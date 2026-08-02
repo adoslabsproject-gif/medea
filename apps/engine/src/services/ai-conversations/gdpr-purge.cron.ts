@@ -50,7 +50,10 @@ async function saveLastRunMs(now: number): Promise<void> {
   try {
     await writeFile(MARKER_FILE, String(now), 'utf8');
   } catch (err) {
-    logger.warn({ err: err instanceof Error ? err.message : err }, '[ai-conv.gdpr] failed to persist last_run marker');
+    logger.warn(
+      { err: err instanceof Error ? err.message : err },
+      '[ai-conv.gdpr] failed to persist last_run marker',
+    );
   }
 }
 
@@ -63,13 +66,19 @@ export function startGdprPurgeCron(): void {
     const elapsed = now - lastRunMs;
     if (lastRunMs === 0 || elapsed >= RUN_INTERVAL_MS) {
       // catch-up immediato post-restart
-      setTimeout(() => { void runAndPersist(); }, 60_000);
+      setTimeout(() => {
+        void runAndPersist();
+      }, 60_000);
     } else {
       // schedule al prossimo gap
-      setTimeout(() => { void runAndPersist(); }, RUN_INTERVAL_MS - elapsed);
+      setTimeout(() => {
+        void runAndPersist();
+      }, RUN_INTERVAL_MS - elapsed);
     }
   });
-  timer = setInterval(() => { void runAndPersist(); }, RUN_INTERVAL_MS);
+  timer = setInterval(() => {
+    void runAndPersist();
+  }, RUN_INTERVAL_MS);
   logger.info(
     { retentionDays: RETENTION_DAYS, intervalHours: 24, markerFile: MARKER_FILE },
     '[ai-conv.gdpr] cron started (BYOK-14 fix: persistent last_run marker)',

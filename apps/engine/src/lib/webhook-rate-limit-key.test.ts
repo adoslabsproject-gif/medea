@@ -9,18 +9,21 @@ describe('🔒 publicWebhookRateLimitKey — rate-limit per (webhook, IP)', () =
   });
 
   it('stesso IP su webhook DIVERSI → chiavi DIVERSE (budget indipendente, no cap globale per-IP)', () => {
-    expect(publicWebhookRateLimitKey('/webhooks/wf-a/t', '1.1.1.1'))
-      .not.toBe(publicWebhookRateLimitKey('/webhooks/wf-b/t', '1.1.1.1'));
+    expect(publicWebhookRateLimitKey('/webhooks/wf-a/t', '1.1.1.1')).not.toBe(
+      publicWebhookRateLimitKey('/webhooks/wf-b/t', '1.1.1.1'),
+    );
   });
 
   it('stesso webhook da IP DIVERSI → chiavi DIVERSE (provider legit indipendenti)', () => {
-    expect(publicWebhookRateLimitKey('/webhooks/wf-a/t', '1.1.1.1'))
-      .not.toBe(publicWebhookRateLimitKey('/webhooks/wf-a/t', '2.2.2.2'));
+    expect(publicWebhookRateLimitKey('/webhooks/wf-a/t', '1.1.1.1')).not.toBe(
+      publicWebhookRateLimitKey('/webhooks/wf-a/t', '2.2.2.2'),
+    );
   });
 
   it('stesso (webhook, IP) → chiave STABILE (così il bucket accumula)', () => {
-    expect(publicWebhookRateLimitKey('/webhooks/wf-a/t1', '1.1.1.1'))
-      .toBe(publicWebhookRateLimitKey('/webhooks/wf-a/t1', '1.1.1.1'));
+    expect(publicWebhookRateLimitKey('/webhooks/wf-a/t1', '1.1.1.1')).toBe(
+      publicWebhookRateLimitKey('/webhooks/wf-a/t1', '1.1.1.1'),
+    );
   });
 
   it('path senza segmento → "unknown" (mai chiave vuota che collassa tutto su un bucket)', () => {

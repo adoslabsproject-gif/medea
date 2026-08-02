@@ -21,7 +21,12 @@ import {
 } from '../../lib/pec/receipt-parser.js';
 import { PecClassifyConfigSchema } from './schema.js';
 
-const BRANCH_BY_TYPE: Readonly<Record<PecMessageType, 'received_message' | 'acceptance_receipt' | 'delivery_receipt' | 'rejection'>> = {
+const BRANCH_BY_TYPE: Readonly<
+  Record<
+    PecMessageType,
+    'received_message' | 'acceptance_receipt' | 'delivery_receipt' | 'rejection'
+  >
+> = {
   pec_received_message: 'received_message',
   pec_acceptance_receipt: 'acceptance_receipt',
   pec_delivery_receipt: 'delivery_receipt',
@@ -87,7 +92,7 @@ function extractHeaders(input: unknown, path: string): PecInputHeaders {
   if (cur === null || cur === undefined || typeof cur !== 'object' || Array.isArray(cur)) {
     throw new ValidationError(
       `PEC_CLASSIFY_NO_HEADERS: nothing at input.${path} — pass the IMAP message ` +
-      `output (with .headers map) or override the headersPath config`,
+        `output (with .headers map) or override the headersPath config`,
     );
   }
   return cur as PecInputHeaders;

@@ -14,7 +14,7 @@ export const odooCreateLeadActionNode: NodeModule = {
   executor: wrap(odooCreateLeadExecutor, [
     httpMiddlewarePreset({
       urlFrom: (c) => {
-        const u = (c).baseUrl;
+        const u = c.baseUrl;
         return typeof u === 'string' && u.length > 0 ? u : undefined;
       },
       methodFrom: () => 'POST',
@@ -23,7 +23,4 @@ export const odooCreateLeadActionNode: NodeModule = {
 };
 
 export { odooCreateLeadExecutor, odooCreateLeadNodeDef };
-export {
-  OdooCreateLeadConfigSchema,
-  type OdooCreateLeadConfig,
-} from './schema.js';
+export { OdooCreateLeadConfigSchema, type OdooCreateLeadConfig } from './schema.js';

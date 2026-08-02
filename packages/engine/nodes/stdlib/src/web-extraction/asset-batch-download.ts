@@ -42,7 +42,9 @@ function parseItems(raw: unknown): AssetItem[] {
       if (entry !== null && typeof entry === 'object') {
         const e = entry as Record<string, unknown>;
         if (typeof e.url === 'string' && /^https?:\/\//i.test(e.url)) {
-          return [{ url: e.url, ...(typeof e.savePath === 'string' ? { savePath: e.savePath } : {}) }];
+          return [
+            { url: e.url, ...(typeof e.savePath === 'string' ? { savePath: e.savePath } : {}) },
+          ];
         }
       }
       return [];
@@ -54,20 +56,30 @@ function parseItems(raw: unknown): AssetItem[] {
       try {
         const parsed: unknown = JSON.parse(tryJson);
         return parseItems(parsed);
-      } catch { /* fall through to newline/comma split */ }
+      } catch {
+        /* fall through to newline/comma split */
+      }
     }
-    return raw.split(/[,\n]/).map((s) => s.trim()).filter((s) => /^https?:\/\//i.test(s)).map((url) => ({ url }));
+    return raw
+      .split(/[,\n]/)
+      .map((s) => s.trim())
+      .filter((s) => /^https?:\/\//i.test(s))
+      .map((url) => ({ url }));
   }
   return [];
 }
 
 const executor: NodeExecutor = async (config) => {
   const items = parseItems(config.items);
-  if (items.length === 0) throw new Error('items required (newline/comma-separated URLs OR JSON array of {url, savePath?})');
+  if (items.length === 0)
+    throw new Error(
+      'items required (newline/comma-separated URLs OR JSON array of {url, savePath?})',
+    );
 
   const basePathRaw = String(config.basePath ?? '').trim();
   if (!basePathRaw) throw new Error('basePath required (absolute filesystem path)');
-  if (!basePathRaw.startsWith('/')) throw new Error('basePath must be an absolute path (start with "/")');
+  if (!basePathRaw.startsWith('/'))
+    throw new Error('basePath must be an absolute path (start with "/")');
 
   const start = Date.now();
   // Lazy: l'engine (node:fs/crypto/path) entra nel grafo SOLO a runtime server.
@@ -81,8 +93,18 @@ const executor: NodeExecutor = async (config) => {
     perHostMinDelayMs: clampInt(config.perHostMinDelayMs, 0, 60_000, 100),
     timeoutMs: clampInt(config.timeoutMs, 1_000, 300_000, 30_000),
     maxAssets: clampInt(config.maxAssets, 1, 50_000, 1_000),
-    maxTotalBytes: clampInt(config.maxTotalBytes, 1_024, 50 * 1024 * 1024 * 1024, 1024 * 1024 * 1024),
-    maxPerAssetBytes: clampInt(config.maxPerAssetBytes, 1_024, 1024 * 1024 * 1024, 50 * 1024 * 1024),
+    maxTotalBytes: clampInt(
+      config.maxTotalBytes,
+      1_024,
+      50 * 1024 * 1024 * 1024,
+      1024 * 1024 * 1024,
+    ),
+    maxPerAssetBytes: clampInt(
+      config.maxPerAssetBytes,
+      1_024,
+      1024 * 1024 * 1024,
+      50 * 1024 * 1024,
+    ),
     resumeOnSha256Match: asBool(config.resumeOnSha256Match, true),
   });
 
@@ -106,31 +128,95 @@ export const assetBatchDownloadNode: NodeModule = {
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [
-      { key: 'items', label: 'URL da scaricare', type: 'text', required: true,
-        placeholder: 'https://x.com/img/a.png\nhttps://x.com/img/b.jpg\n— OR — JSON [{"url":"...","savePath":"img/a.png"}]',
-        help: 'Uno per riga o virgola-separati. In alternativa JSON array di {url, savePath?}. savePath è relativo a basePath; se omesso, derivato da URL.pathname.' },
-      { key: 'basePath', label: 'Directory base (assoluta)', type: 'text', required: true,
+      {
+        key: 'items',
+        label: 'URL da scaricare',
+        type: 'text',
+        required: true,
+        placeholder:
+          'https://x.com/img/a.png\nhttps://x.com/img/b.jpg\n— OR — JSON [{"url":"...","savePath":"img/a.png"}]',
+        help: 'Uno per riga o virgola-separati. In alternativa JSON array di {url, savePath?}. savePath è relativo a basePath; se omesso, derivato da URL.pathname.',
+      },
+      {
+        key: 'basePath',
+        label: 'Directory base (assoluta)',
+        type: 'text',
+        required: true,
         placeholder: '/opt/zeliai/shared/mirror/zelistore.it',
-        help: 'Directory dove salvare. DEVE essere assoluta. Verrà creata se non esiste. Tutti i file finiscono dentro questa cartella (traversal-safe).' },
-      { key: 'concurrency', label: 'Concorrenza download', type: 'number', required: false, defaultValue: '4',
-        help: 'Numero di download paralleli. Default 4. Max 16. Più alto = più veloce ma più aggressivo sul server.' },
-      { key: 'perHostMinDelayMs', label: 'Delay minimo per host (ms)', type: 'number', required: false, defaultValue: '100',
-        help: 'Pausa minima tra request allo stesso host. Asset = file statici servibili da CDN, default 100ms basso.' },
-      { key: 'timeoutMs', label: 'Timeout per asset (ms)', type: 'number', required: false, defaultValue: '30000',
-        help: 'Timeout sulla singola download. Default 30s. Aumenta per video grandi.' },
-      { key: 'maxAssets', label: 'Max asset per run', type: 'number', required: false, defaultValue: '1000',
-        help: 'Hard cap sul numero di asset scaricati. Default 1000, max 50000.' },
-      { key: 'maxTotalBytes', label: 'Max bytes totali', type: 'number', required: false, defaultValue: '1073741824',
-        help: 'Hard cap sui bytes totali scaricati nella run. Default 1 GiB. Quando raggiunto, gli asset rimanenti vengono marcati "skipped-cap".' },
-      { key: 'maxPerAssetBytes', label: 'Max bytes per asset', type: 'number', required: false, defaultValue: '52428800',
-        help: 'Hard cap sulla singola download. Default 50 MiB. Asset più grandi vengono marcati "skipped-cap".' },
-      { key: 'resumeOnSha256Match', label: 'Resume su SHA256 esistente', type: 'boolean', required: false, defaultValue: 'true',
-        help: 'Se ON e il file esiste già su disco, calcola SHA-256 locale e skippa la fetch (risparmia banda). Spegnere per forzare re-download.' },
-      { key: 'referer', label: 'Referer (esplicito)', type: 'text', required: false,
+        help: 'Directory dove salvare. DEVE essere assoluta. Verrà creata se non esiste. Tutti i file finiscono dentro questa cartella (traversal-safe).',
+      },
+      {
+        key: 'concurrency',
+        label: 'Concorrenza download',
+        type: 'number',
+        required: false,
+        defaultValue: '4',
+        help: 'Numero di download paralleli. Default 4. Max 16. Più alto = più veloce ma più aggressivo sul server.',
+      },
+      {
+        key: 'perHostMinDelayMs',
+        label: 'Delay minimo per host (ms)',
+        type: 'number',
+        required: false,
+        defaultValue: '100',
+        help: 'Pausa minima tra request allo stesso host. Asset = file statici servibili da CDN, default 100ms basso.',
+      },
+      {
+        key: 'timeoutMs',
+        label: 'Timeout per asset (ms)',
+        type: 'number',
+        required: false,
+        defaultValue: '30000',
+        help: 'Timeout sulla singola download. Default 30s. Aumenta per video grandi.',
+      },
+      {
+        key: 'maxAssets',
+        label: 'Max asset per run',
+        type: 'number',
+        required: false,
+        defaultValue: '1000',
+        help: 'Hard cap sul numero di asset scaricati. Default 1000, max 50000.',
+      },
+      {
+        key: 'maxTotalBytes',
+        label: 'Max bytes totali',
+        type: 'number',
+        required: false,
+        defaultValue: '1073741824',
+        help: 'Hard cap sui bytes totali scaricati nella run. Default 1 GiB. Quando raggiunto, gli asset rimanenti vengono marcati "skipped-cap".',
+      },
+      {
+        key: 'maxPerAssetBytes',
+        label: 'Max bytes per asset',
+        type: 'number',
+        required: false,
+        defaultValue: '52428800',
+        help: 'Hard cap sulla singola download. Default 50 MiB. Asset più grandi vengono marcati "skipped-cap".',
+      },
+      {
+        key: 'resumeOnSha256Match',
+        label: 'Resume su SHA256 esistente',
+        type: 'boolean',
+        required: false,
+        defaultValue: 'true',
+        help: 'Se ON e il file esiste già su disco, calcola SHA-256 locale e skippa la fetch (risparmia banda). Spegnere per forzare re-download.',
+      },
+      {
+        key: 'referer',
+        label: 'Referer (esplicito)',
+        type: 'text',
+        required: false,
         placeholder: 'https://x.com/',
-        help: 'Header Referer da inviare. Alcuni CDN bloccano hotlink senza Referer corretto.' },
-      { key: 'userAgent', label: 'User-Agent', type: 'text', required: false, defaultValue: 'FlowForge-AssetFetch/1.0',
-        help: 'User-Agent dichiarato. Default RFC-compliant.' },
+        help: 'Header Referer da inviare. Alcuni CDN bloccano hotlink senza Referer corretto.',
+      },
+      {
+        key: 'userAgent',
+        label: 'User-Agent',
+        type: 'text',
+        required: false,
+        defaultValue: 'FlowForge-AssetFetch/1.0',
+        help: 'User-Agent dichiarato. Default RFC-compliant.',
+      },
     ],
   },
 };

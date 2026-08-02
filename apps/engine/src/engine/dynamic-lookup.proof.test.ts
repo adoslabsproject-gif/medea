@@ -26,17 +26,20 @@ const scope = {
 
 describe('PROOF: lookup dinamico label→operatore (zero modifiche nodo)', () => {
   it('🚨 $get(map, runtimeKey, fallback) risolve la key DINAMICA (output del classifier)', () => {
-    expect(evaluateExpression('$get($json.operators, $json.label, "x@x.it")', scope)).toBe('sales@studio.it');
+    expect(evaluateExpression('$get($json.operators, $json.label, "x@x.it")', scope)).toBe(
+      'sales@studio.it',
+    );
   });
 
   it('🚨 funziona DENTRO un config field ({{ }} → interpolateString, motore pieno)', () => {
-    expect(
-      interpolateString('{{ $get($json.operators, $json.label, "x@x.it") }}', scope),
-    ).toBe('sales@studio.it');
+    expect(interpolateString('{{ $get($json.operators, $json.label, "x@x.it") }}', scope)).toBe(
+      'sales@studio.it',
+    );
   });
 
   it('🚨 $if = ternary: gate di confidence (sotto soglia → operatore umano)', () => {
-    const expr = '{{ $if($number($json.confidence) >= 0.8, $get($json.operators, $json.label, "human@studio.it"), "human@studio.it") }}';
+    const expr =
+      '{{ $if($number($json.confidence) >= 0.8, $get($json.operators, $json.label, "human@studio.it"), "human@studio.it") }}';
     expect(interpolateString(expr, scope)).toBe('sales@studio.it');
     const lowConf = { input: { ...scope.input, confidence: 0.3 } };
     expect(interpolateString(expr, lowConf)).toBe('human@studio.it');
@@ -44,6 +47,8 @@ describe('PROOF: lookup dinamico label→operatore (zero modifiche nodo)', () =>
 
   it('🚨 key non mappata → fallback (no crash, no valore sbagliato)', () => {
     const unknown = { input: { label: 'boh', operators: { lead: 'sales@studio.it' } } };
-    expect(interpolateString('{{ $get($json.operators, $json.label, "fallback@studio.it") }}', unknown)).toBe('fallback@studio.it');
+    expect(
+      interpolateString('{{ $get($json.operators, $json.label, "fallback@studio.it") }}', unknown),
+    ).toBe('fallback@studio.it');
   });
 });

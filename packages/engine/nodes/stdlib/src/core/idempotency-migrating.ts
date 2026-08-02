@@ -30,7 +30,12 @@ export interface MigratingIdempotencyStoreOptions {
    * Logger opzionale per warning su write asimmetriche (previous ha errato
    * ma next OK, o viceversa). Permette di monitorare la migration.
    */
-  readonly onAsymmetry?: (op: 'acquire' | 'complete' | 'release', key: string, err: unknown, side: 'previous' | 'next') => void;
+  readonly onAsymmetry?: (
+    op: 'acquire' | 'complete' | 'release',
+    key: string,
+    err: unknown,
+    side: 'previous' | 'next',
+  ) => void;
 }
 
 export class MigratingIdempotencyStore implements IdempotencyStore {
@@ -78,17 +83,18 @@ export class MigratingIdempotencyStore implements IdempotencyStore {
       this.next.complete(key, output),
       this.previous.complete(key, output),
     ]);
-    if (results[0].status === 'rejected') this.onAsymmetry?.('complete', key, results[0].reason, 'next');
-    if (results[1].status === 'rejected') this.onAsymmetry?.('complete', key, results[1].reason, 'previous');
+    if (results[0].status === 'rejected')
+      this.onAsymmetry?.('complete', key, results[0].reason, 'next');
+    if (results[1].status === 'rejected')
+      this.onAsymmetry?.('complete', key, results[1].reason, 'previous');
   }
 
   async release(key: string): Promise<void> {
-    const results = await Promise.allSettled([
-      this.next.release(key),
-      this.previous.release(key),
-    ]);
-    if (results[0].status === 'rejected') this.onAsymmetry?.('release', key, results[0].reason, 'next');
-    if (results[1].status === 'rejected') this.onAsymmetry?.('release', key, results[1].reason, 'previous');
+    const results = await Promise.allSettled([this.next.release(key), this.previous.release(key)]);
+    if (results[0].status === 'rejected')
+      this.onAsymmetry?.('release', key, results[0].reason, 'next');
+    if (results[1].status === 'rejected')
+      this.onAsymmetry?.('release', key, results[1].reason, 'previous');
   }
 
   async size(): Promise<number> {

@@ -66,7 +66,7 @@ describe('workflow lock routes', () => {
   it('POST acquire libero → 200 acquired + status mine', async () => {
     const res = await makeApp(marco).request('/wf1/lock', { method: 'POST' });
     expect(res.status).toBe(200);
-    const body = await res.json() as { acquired: boolean; status: { mine: boolean } };
+    const body = (await res.json()) as { acquired: boolean; status: { mine: boolean } };
     expect(body.acquired).toBe(true);
     expect(body.status.mine).toBe(true);
   });
@@ -75,7 +75,10 @@ describe('workflow lock routes', () => {
     await makeApp(marco).request('/wf1/lock', { method: 'POST' });
     const res = await makeApp(ada).request('/wf1/lock', { method: 'POST' });
     expect(res.status).toBe(409);
-    const body = await res.json() as { acquired: boolean; decision: { by?: { userName: string } } };
+    const body = (await res.json()) as {
+      acquired: boolean;
+      decision: { by?: { userName: string } };
+    };
     expect(body.acquired).toBe(false);
     expect(body.decision.by?.userName).toBe('marco@x.it');
   });
@@ -83,7 +86,7 @@ describe('workflow lock routes', () => {
   it('GET status riflette il lock', async () => {
     await makeApp(marco).request('/wf1/lock', { method: 'POST' });
     const res = await makeApp(ada).request('/wf1/lock');
-    const body = await res.json() as { locked: boolean; mine: boolean };
+    const body = (await res.json()) as { locked: boolean; mine: boolean };
     expect(body.locked).toBe(true);
     expect(body.mine).toBe(false);
   });
@@ -92,7 +95,7 @@ describe('workflow lock routes', () => {
     await makeApp(marco).request('/wf1/lock', { method: 'POST' });
     const ok = await makeApp(marco).request('/wf1/lock/heartbeat', { method: 'POST' });
     expect(ok.status).toBe(200);
-    expect((await ok.json() as { renewed: boolean }).renewed).toBe(true);
+    expect(((await ok.json()) as { renewed: boolean }).renewed).toBe(true);
     const ko = await makeApp(ada).request('/wf1/lock/heartbeat', { method: 'POST' });
     expect(ko.status).toBe(409);
   });
@@ -102,7 +105,7 @@ describe('workflow lock routes', () => {
     const del = await makeApp(marco).request('/wf1/lock', { method: 'DELETE' });
     expect(del.status).toBe(200);
     const st = await makeApp(ada).request('/wf1/lock');
-    expect((await st.json() as { locked: boolean }).locked).toBe(false);
+    expect(((await st.json()) as { locked: boolean }).locked).toBe(false);
   });
 
   /**
@@ -128,7 +131,10 @@ describe('workflow lock routes', () => {
 
   it('🚨 [REGRESSION H3] cross-tenant via impersonate → 404 (tenantId diverso = workflow non visibile)', async () => {
     // Tenant nel test = 't1'. Workflow esiste in 't1'. Impersonate user con tenant 't2' → service.get(wf1, t2) → null → 404.
-    const app = makeApp({ ...marco, tenantId: 't2' }, { existsIds: new Set(['wf1']), tenantId: 't1' });
+    const app = makeApp(
+      { ...marco, tenantId: 't2' },
+      { existsIds: new Set(['wf1']), tenantId: 't1' },
+    );
     expect((await app.request('/wf1/lock', { method: 'POST' })).status).toBe(404);
   });
 
@@ -142,7 +148,7 @@ describe('workflow lock routes', () => {
     await makeApp(marco).request('/wf1/lock', { method: 'POST' });
     const rel = await makeApp(marco).request('/wf1/lock/release', { method: 'POST' });
     expect(rel.status).toBe(200);
-    expect((await rel.json() as { released: boolean }).released).toBe(true);
+    expect(((await rel.json()) as { released: boolean }).released).toBe(true);
     // Ada può ora prendere il lock
     const ada2 = await makeApp(ada).request('/wf1/lock', { method: 'POST' });
     expect(ada2.status).toBe(200);

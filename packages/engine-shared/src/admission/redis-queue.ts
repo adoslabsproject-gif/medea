@@ -119,14 +119,25 @@ return {'queued', newRank + 1, newRank}
 `;
 
 /** Ammissione ATOMICA via Lua. Ritorna la decisione (admitted/queued/rejected). */
-export async function tryAdmit(redis: RedisLike, pool: string, input: AdmissionInput): Promise<AdmissionResult> {
+export async function tryAdmit(
+  redis: RedisLike,
+  pool: string,
+  input: AdmissionInput,
+): Promise<AdmissionResult> {
   const k = keysFor(pool);
   const raw = await redis.eval(
-    ADMISSION_LUA, 3,
-    k.inflight, k.queue, k.qmeta,
-    input.requestId, input.tenantId,
-    String(input.nowMs), String(input.leaseMs),
-    String(input.maxConcurrent), String(input.maxQueueDepth), String(input.maxPerTenantQueue),
+    ADMISSION_LUA,
+    3,
+    k.inflight,
+    k.queue,
+    k.qmeta,
+    input.requestId,
+    input.tenantId,
+    String(input.nowMs),
+    String(input.leaseMs),
+    String(input.maxConcurrent),
+    String(input.maxQueueDepth),
+    String(input.maxPerTenantQueue),
   );
   const arr = raw as [string, (string | number)?, (string | number)?];
   const outcome = arr[0] as AdmissionOutcome;
@@ -147,7 +158,12 @@ export async function release(redis: RedisLike, pool: string, requestId: string)
 }
 
 /** Rinnova il lease di uno slot ATTIVO (no-op se non più attivo: flag XX). */
-export async function heartbeat(redis: RedisLike, pool: string, requestId: string, expiresAtMs: number): Promise<void> {
+export async function heartbeat(
+  redis: RedisLike,
+  pool: string,
+  requestId: string,
+  expiresAtMs: number,
+): Promise<void> {
   const k = keysFor(pool);
   await redis.zadd(k.inflight, 'XX', expiresAtMs, requestId);
 }

@@ -160,7 +160,7 @@ export const jsUnpackNode: NodeModule = {
     description:
       'Deoffuscazione JavaScript packed Dean Edwards (`eval(function(p,a,c,k,e,d){...}...)`)— pattern usato da player video legacy, ' +
       'obfuscator JS commerciali e alcuni anti-tampering. Estrai il codice originale senza eseguire nulla (no eval, no VM).\n\n' +
-      'Use case: pagina che embed `<script>eval(function(p,a,c,k,e,d){return p}(...))</script>` con dentro l\'URL m3u8 cifrato → unpack → estrai con `action_script_var_extract`.\n\n' +
+      "Use case: pagina che embed `<script>eval(function(p,a,c,k,e,d){return p}(...))</script>` con dentro l'URL m3u8 cifrato → unpack → estrai con `action_script_var_extract`.\n\n" +
       'Loop multi-pack: max 5 iterazioni (default). Confidence high se ≥2 round, medium se 1, low se nessun pattern matched.\n\n' +
       'SAFE: solo parsing testuale, no eval/Function/VM. Input max 5MB per anti-DoS.',
     version: '1.0.0',
@@ -192,7 +192,16 @@ export const jsUnpackNode: NodeModule = {
         help: 'Anti-DoS: limita loop su nesting multipli. Range 1-10. Default 5 = sufficiente per >99% casi reali.',
       },
     ],
-    outputs: ['unpacked', 'iterations', 'variantsFound', 'confidence', 'sizeRatio', 'originalLength', 'unpackedLength', 'ok'],
+    outputs: [
+      'unpacked',
+      'iterations',
+      'variantsFound',
+      'confidence',
+      'sizeRatio',
+      'originalLength',
+      'unpackedLength',
+      'ok',
+    ],
   },
   executor: jsUnpackExecute,
 };

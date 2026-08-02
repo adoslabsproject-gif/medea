@@ -19,7 +19,7 @@ export const sdiSendInvoice: NodeModule = {
     color: '#1e40af',
     description:
       'Trasmette una fattura elettronica FatturaPA (XML standard SDI v1.2.2) al Sistema di Interscambio Agenzia delle Entrate. ' +
-      'Channel via PEC accreditato o SDIcoop/ADEL (canale diretto SOAP autenticato). Validazione XSD pre-invio contro lo schema UFFICIALE FatturaPA v1.2.2 dell\'Agenzia delle Entrate (validateXsd, default ON, offline via libxml2): una fattura non conforme viene RIFIUTATA subito con gli errori XSD, prima di firmare e di consumare una chiamata al SdI (che la scarterebbe con notifica di scarto). Firma XAdES-BES enveloped opzionale (SHA-256 + RSA, cert+key PEM). ' +
+      "Channel via PEC accreditato o SDIcoop/ADEL (canale diretto SOAP autenticato). Validazione XSD pre-invio contro lo schema UFFICIALE FatturaPA v1.2.2 dell'Agenzia delle Entrate (validateXsd, default ON, offline via libxml2): una fattura non conforme viene RIFIUTATA subito con gli errori XSD, prima di firmare e di consumare una chiamata al SdI (che la scarterebbe con notifica di scarto). Firma XAdES-BES enveloped opzionale (SHA-256 + RSA, cert+key PEM). " +
       'Output: { sdiId, status (sent/accepted/rejected), notificationFile, deliveryTimestamp }. ' +
       'Use case: invio automatico fatture B2B/B2G post-emissione Fatture in Cloud, ' +
       'invio massivo fine ciclo fatturazione, integrazione con ERP legacy via canale FlowForge.',
@@ -30,7 +30,8 @@ export const sdiSendInvoice: NodeModule = {
         type: 'code',
         language: 'json',
         required: true,
-        placeholder: '<?xml version="1.0" encoding="UTF-8"?>\n<p:FatturaElettronica ...>...</p:FatturaElettronica>',
+        placeholder:
+          '<?xml version="1.0" encoding="UTF-8"?>\n<p:FatturaElettronica ...>...</p:FatturaElettronica>',
         help: 'XML completo formato P_IT_PA (PA), P_IT_B2B (aziende), P_IT_B2C (consumatori). Tipicamente generato a monte dal nodo "Fatture in Cloud: Create Invoice" o da uno script personalizzato.',
       },
       {
@@ -39,7 +40,7 @@ export const sdiSendInvoice: NodeModule = {
         type: 'text',
         required: true,
         placeholder: 'username accreditato',
-        help: 'Account dichiarato all\'Agenzia delle Entrate sul canale SDICoop SOAP. Richiede accreditamento (procedura su fatturapa.gov.it).',
+        help: "Account dichiarato all'Agenzia delle Entrate sul canale SDICoop SOAP. Richiede accreditamento (procedura su fatturapa.gov.it).",
       },
       {
         key: 'sdiPassword',
@@ -65,7 +66,7 @@ export const sdiSendInvoice: NodeModule = {
         type: 'boolean',
         required: false,
         defaultValue: 'true',
-        help: 'On (default) = valida la fattura contro lo schema XSD ufficiale dell\'Agenzia PRIMA di inviarla: se non conforme, il nodo fallisce subito con gli errori, evitando lo scarto del SdI. Off = invia senza validare (solo se sai che l\'XML è già conforme).',
+        help: "On (default) = valida la fattura contro lo schema XSD ufficiale dell'Agenzia PRIMA di inviarla: se non conforme, il nodo fallisce subito con gli errori, evitando lo scarto del SdI. Off = invia senza validare (solo se sai che l'XML è già conforme).",
       },
       {
         key: 'skipSigning',
@@ -73,7 +74,7 @@ export const sdiSendInvoice: NodeModule = {
         type: 'boolean',
         required: false,
         defaultValue: 'false',
-        help: 'Se on, FlowForge NON firma l\'XML (usa quello che gli passi as-is). Utile quando hai un software del commercialista che firma e tu inoltri solo. Se off, FlowForge firma con cert+key qui sotto.',
+        help: "Se on, FlowForge NON firma l'XML (usa quello che gli passi as-is). Utile quando hai un software del commercialista che firma e tu inoltri solo. Se off, FlowForge firma con cert+key qui sotto.",
       },
       {
         key: 'certPem',
@@ -128,7 +129,8 @@ export const sdiCheckStatus: NodeModule = {
     label: 'SDI: Check Invoice Status',
     icon: 'search',
     color: '#1e40af',
-    description: 'Recupera lo stato di una fattura inviata al SDI (RC = ricevuta committente, NS = notifica scarto, MC = mancata consegna, NE = notifica esito, DT = decorrenza termini).',
+    description:
+      'Recupera lo stato di una fattura inviata al SDI (RC = ricevuta committente, NS = notifica scarto, MC = mancata consegna, NE = notifica esito, DT = decorrenza termini).',
     configFields: [
       {
         key: 'fileName',
@@ -136,7 +138,7 @@ export const sdiCheckStatus: NodeModule = {
         type: 'text',
         required: true,
         placeholder: 'es. IT12345678901_0001.xml.p7m',
-        help: 'Stesso nome usato all\'invio (ITxxxxxxxxxxx_NNNNN.xml o .xml.p7m).',
+        help: "Stesso nome usato all'invio (ITxxxxxxxxxxx_NNNNN.xml o .xml.p7m).",
       },
       {
         key: 'sdiUsername',

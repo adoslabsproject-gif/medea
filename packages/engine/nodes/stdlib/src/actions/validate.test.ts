@@ -16,7 +16,10 @@ const run = async (type: string, value: unknown) => {
 
 describe('action_validate — checksum reali', () => {
   it('email valida/invalida + normalizza lowercase', async () => {
-    expect((await run('email', 'Mario@Example.IT')).out).toMatchObject({ valid: true, normalized: 'mario@example.it' });
+    expect((await run('email', 'Mario@Example.IT')).out).toMatchObject({
+      valid: true,
+      normalized: 'mario@example.it',
+    });
     expect((await run('email', 'non-una-email')).out.valid).toBe(false);
   });
 
@@ -35,7 +38,10 @@ describe('action_validate — checksum reali', () => {
   it('🚨 Codice Fiscale: carattere di controllo ufficiale (Q corretto, A errato)', async () => {
     expect((await run('codice_fiscale', 'RSSMRA85M01H501Q')).out.valid).toBe(true);
     expect((await run('codice_fiscale', 'RSSMRA85M01H501A')).out.valid).toBe(false); // ctrl rotto
-    expect((await run('codice_fiscale', 'rssmra85m01h501q')).out).toMatchObject({ valid: true, normalized: 'RSSMRA85M01H501Q' });
+    expect((await run('codice_fiscale', 'rssmra85m01h501q')).out).toMatchObject({
+      valid: true,
+      normalized: 'RSSMRA85M01H501Q',
+    });
     expect((await run('codice_fiscale', 'TROPPOCORTO')).out.valid).toBe(false);
   });
 
@@ -46,7 +52,10 @@ describe('action_validate — checksum reali', () => {
   });
 
   it('phone_it → E.164 (mobile/fisso/00/+), garbage invalido', async () => {
-    expect((await run('phone_it', '340 123 4567')).out).toMatchObject({ valid: true, normalized: '+393401234567' });
+    expect((await run('phone_it', '340 123 4567')).out).toMatchObject({
+      valid: true,
+      normalized: '+393401234567',
+    });
     expect((await run('phone_it', '06 1234567')).out.normalized).toBe('+39061234567');
     expect((await run('phone_it', '0039 340 1234567')).out.normalized).toBe('+393401234567');
     expect((await run('phone_it', 'abc')).out.valid).toBe(false);

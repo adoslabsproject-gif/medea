@@ -32,7 +32,7 @@ describe('NodeDef contract', () => {
   it('all configFields have help text', () => {
     for (const f of emailTriageB2BSalesNodeDef.configFields ?? []) {
       expect(typeof f.help).toBe('string');
-      expect((f.help!).length).toBeGreaterThan(10);
+      expect(f.help!.length).toBeGreaterThan(10);
     }
   });
 });
@@ -64,11 +64,15 @@ describe('schema', () => {
 
 describe('executor — happy paths', () => {
   it('classifies an Italian "listino" reply as interested_info', async () => {
-    const res = await emailTriageB2BSalesExecutor({}, {
-      subject: 'Re: Redivivo',
-      body: 'Buongiorno, mi mandate il listino e il catalogo aggiornati? Grazie',
-      from: 'mario@enoteca.it',
-    }, ctx);
+    const res = await emailTriageB2BSalesExecutor(
+      {},
+      {
+        subject: 'Re: Redivivo',
+        body: 'Buongiorno, mi mandate il listino e il catalogo aggiornati? Grazie',
+        from: 'mario@enoteca.it',
+      },
+      ctx,
+    );
     const out = res.output as { label: string; suggestedAction: string; language: string };
     expect(out.label).toBe('interested_info');
     expect(out.suggestedAction).toBe('send_catalog');
@@ -76,21 +80,29 @@ describe('executor — happy paths', () => {
   });
 
   it('classifies an English "tasting" reply', async () => {
-    const res = await emailTriageB2BSalesExecutor({ lang: 'en' }, {
-      subject: 'Re: Sample',
-      body: 'Could we get a tasting sample? Thanks the and to for',
-      from: 'jane@bar.uk',
-    }, ctx);
+    const res = await emailTriageB2BSalesExecutor(
+      { lang: 'en' },
+      {
+        subject: 'Re: Sample',
+        body: 'Could we get a tasting sample? Thanks the and to for',
+        from: 'jane@bar.uk',
+      },
+      ctx,
+    );
     const out = res.output as { label: string };
     expect(out.label).toBe('interested_tasting');
   });
 
   it('routes unknown content to needs_human_review with confidence < threshold', async () => {
-    const res = await emailTriageB2BSalesExecutor({}, {
-      subject: '',
-      body: 'Hi.',
-      from: 'someone@x.it',
-    }, ctx);
+    const res = await emailTriageB2BSalesExecutor(
+      {},
+      {
+        subject: '',
+        body: 'Hi.',
+        from: 'someone@x.it',
+      },
+      ctx,
+    );
     const out = res.output as { label: string; suggestedAction: string };
     expect(out.label).toBe('needs_human_review');
     expect(out.suggestedAction).toBe('forward_to_human');
@@ -99,11 +111,15 @@ describe('executor — happy paths', () => {
   it('strict minConfidence downgrades a borderline match', async () => {
     // A body with a single weak match → confidence likely around 0.5-0.7.
     // With minConfidence=0.99 the result is downgraded.
-    const res = await emailTriageB2BSalesExecutor({ minConfidence: 0.99 }, {
-      subject: 'Re',
-      body: 'sample',
-      from: 'x@y.it',
-    }, ctx);
+    const res = await emailTriageB2BSalesExecutor(
+      { minConfidence: 0.99 },
+      {
+        subject: 'Re',
+        body: 'sample',
+        from: 'x@y.it',
+      },
+      ctx,
+    );
     const out = res.output as { label: string };
     expect(out.label).toBe('needs_human_review');
   });
@@ -125,24 +141,32 @@ describe('executor — input shape', () => {
   });
 
   it('unwraps an upstream `output: {...}` envelope when present', async () => {
-    const res = await emailTriageB2BSalesExecutor({}, {
-      output: {
-        subject: 'Re: Listino',
-        body: 'listino aggiornato per favore',
-        from: 'x@y.it',
+    const res = await emailTriageB2BSalesExecutor(
+      {},
+      {
+        output: {
+          subject: 'Re: Listino',
+          body: 'listino aggiornato per favore',
+          from: 'x@y.it',
+        },
       },
-    }, ctx);
+      ctx,
+    );
     const out = res.output as { label: string };
     expect(out.label).toBe('interested_info');
   });
 
   it('keeps the original input fields in the output (extension shape)', async () => {
-    const res = await emailTriageB2BSalesExecutor({}, {
-      subject: 'Re: x',
-      body: 'mandatemi il listino e catalogo',
-      from: 'x@y.it',
-      messageId: 'mid-123',
-    }, ctx);
+    const res = await emailTriageB2BSalesExecutor(
+      {},
+      {
+        subject: 'Re: x',
+        body: 'mandatemi il listino e catalogo',
+        from: 'x@y.it',
+        messageId: 'mid-123',
+      },
+      ctx,
+    );
     const out = res.output as Record<string, unknown>;
     expect(out.messageId).toBe('mid-123');
     expect(out.label).toBe('interested_info');

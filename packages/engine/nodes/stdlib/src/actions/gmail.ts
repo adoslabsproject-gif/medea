@@ -26,10 +26,10 @@ export const gmailNode: NodeModule = {
     color: '#ea4335',
     description:
       'Nodo Gmail dedicato via API Google (OAuth). Distinto dal nodo Email IMAP generico: usa la connessione ' +
-      'Google del tenant (Impostazioni → Integrazioni), con refresh automatico e trasparente dell\'access token ' +
+      "Google del tenant (Impostazioni → Integrazioni), con refresh automatico e trasparente dell'access token " +
       '— nessun re-login ad ogni esecuzione. Tre operazioni:\n' +
-      '  • send — manda un\'email: destinatari to/cc/bcc, oggetto, corpo in testo e/o HTML, allegati opzionali. ' +
-      'Il messaggio parte dall\'indirizzo Google connesso.\n' +
+      "  • send — manda un'email: destinatari to/cc/bcc, oggetto, corpo in testo e/o HTML, allegati opzionali. " +
+      "Il messaggio parte dall'indirizzo Google connesso.\n" +
       '  • list — cerca messaggi con la sintassi di ricerca Gmail (es. "from:cliente@x.it is:unread newer_than:7d") ' +
       'e restituisce mittente, oggetto, data e anteprima dei risultati.\n' +
       '  • get — legge un messaggio per id: intestazioni, corpo (testo + HTML) ed elenco allegati.\n' +
@@ -55,26 +55,82 @@ export const gmailNode: NodeModule = {
         label: 'Account Google (opzionale)',
         type: 'text',
         required: false,
-        help: 'Se hai connesso più account Google, indica la label dell\'integrazione da usare. Vuoto = quella predefinita.',
+        help: "Se hai connesso più account Google, indica la label dell'integrazione da usare. Vuoto = quella predefinita.",
       },
       // ── send ──────────────────────────────────────────────────────────
-      { key: 'to', label: 'A (To)', type: 'text', required: false, showIf: IF_SEND, placeholder: 'mario@esempio.it, lucia@esempio.it', help: 'Uno o più destinatari separati da virgola. Obbligatorio per send.' },
+      {
+        key: 'to',
+        label: 'A (To)',
+        type: 'text',
+        required: false,
+        showIf: IF_SEND,
+        placeholder: 'mario@esempio.it, lucia@esempio.it',
+        help: 'Uno o più destinatari separati da virgola. Obbligatorio per send.',
+      },
       { key: 'cc', label: 'Cc', type: 'text', required: false, showIf: IF_SEND },
       { key: 'bcc', label: 'Ccn (Bcc)', type: 'text', required: false, showIf: IF_SEND },
-      { key: 'replyTo', label: 'Rispondi a (Reply-To)', type: 'text', required: false, showIf: IF_SEND },
-      { key: 'subject', label: 'Oggetto', type: 'text', required: false, showIf: IF_SEND },
-      { key: 'bodyText', label: 'Corpo (testo)', type: 'textarea', required: false, showIf: IF_SEND, help: 'Versione testo semplice. Puoi usare solo testo, solo HTML, o entrambi (multipart/alternative).' },
-      { key: 'bodyHtml', label: 'Corpo (HTML)', type: 'rich-text', required: false, showIf: IF_SEND, help: 'Versione HTML formattata. Se compili sia testo sia HTML, i client mostrano l\'HTML.' },
       {
-        key: 'attachmentsJson', label: 'Allegati (JSON)', type: 'json', required: false, showIf: IF_SEND,
-        placeholder: '[{ "filename": "report.pdf", "content": "<base64>", "mimeType": "application/pdf" }]',
-        help: 'Array di allegati { filename, content (base64), mimeType }. Tipicamente collegato all\'output di un nodo precedente (es. PDF: Genera → base64). Accetta anche il formato { name, base64, contentType }.',
+        key: 'replyTo',
+        label: 'Rispondi a (Reply-To)',
+        type: 'text',
+        required: false,
+        showIf: IF_SEND,
+      },
+      { key: 'subject', label: 'Oggetto', type: 'text', required: false, showIf: IF_SEND },
+      {
+        key: 'bodyText',
+        label: 'Corpo (testo)',
+        type: 'textarea',
+        required: false,
+        showIf: IF_SEND,
+        help: 'Versione testo semplice. Puoi usare solo testo, solo HTML, o entrambi (multipart/alternative).',
+      },
+      {
+        key: 'bodyHtml',
+        label: 'Corpo (HTML)',
+        type: 'rich-text',
+        required: false,
+        showIf: IF_SEND,
+        help: "Versione HTML formattata. Se compili sia testo sia HTML, i client mostrano l'HTML.",
+      },
+      {
+        key: 'attachmentsJson',
+        label: 'Allegati (JSON)',
+        type: 'json',
+        required: false,
+        showIf: IF_SEND,
+        placeholder:
+          '[{ "filename": "report.pdf", "content": "<base64>", "mimeType": "application/pdf" }]',
+        help: "Array di allegati { filename, content (base64), mimeType }. Tipicamente collegato all'output di un nodo precedente (es. PDF: Genera → base64). Accetta anche il formato { name, base64, contentType }.",
       },
       // ── list ──────────────────────────────────────────────────────────
-      { key: 'query', label: 'Ricerca Gmail (q)', type: 'text', required: false, showIf: IF_LIST, placeholder: 'is:unread from:cliente@x.it newer_than:7d', help: 'Sintassi di ricerca Gmail. Vuoto = messaggi più recenti.' },
-      { key: 'maxResults', label: 'Numero massimo', type: 'number', required: false, defaultValue: '10', showIf: IF_LIST, help: 'Quanti messaggi restituire (1–25). Per ognuno vengono recuperati mittente/oggetto/data/anteprima.' },
+      {
+        key: 'query',
+        label: 'Ricerca Gmail (q)',
+        type: 'text',
+        required: false,
+        showIf: IF_LIST,
+        placeholder: 'is:unread from:cliente@x.it newer_than:7d',
+        help: 'Sintassi di ricerca Gmail. Vuoto = messaggi più recenti.',
+      },
+      {
+        key: 'maxResults',
+        label: 'Numero massimo',
+        type: 'number',
+        required: false,
+        defaultValue: '10',
+        showIf: IF_LIST,
+        help: 'Quanti messaggi restituire (1–25). Per ognuno vengono recuperati mittente/oggetto/data/anteprima.',
+      },
       // ── get ───────────────────────────────────────────────────────────
-      { key: 'messageId', label: 'ID messaggio', type: 'text', required: false, showIf: IF_GET, help: 'L\'id del messaggio (dal risultato di list o da un trigger). Obbligatorio per get.' },
+      {
+        key: 'messageId',
+        label: 'ID messaggio',
+        type: 'text',
+        required: false,
+        showIf: IF_GET,
+        help: "L'id del messaggio (dal risultato di list o da un trigger). Obbligatorio per get.",
+      },
     ],
     searchAliases: ['gmail', 'google mail', 'posta google', 'mail google', 'email google'],
     vendor: 'flowforge',

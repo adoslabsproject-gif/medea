@@ -39,20 +39,30 @@ function guardCustomBaseUrl(baseUrl: string | undefined): void {
   // legittimo e autenticato (licenza), non un target SSRF attacker-controlled.
   try {
     if (new URL(baseUrl).origin === new URL(liaraBaseUrl()).origin) return;
-  } catch { /* baseUrl malformato → lo rifiuta assertUrlSafe qui sotto */ }
+  } catch {
+    /* baseUrl malformato → lo rifiuta assertUrlSafe qui sotto */
+  }
   assertUrlSafe(baseUrl);
 }
 
-interface ChatMessage { role: 'user' | 'assistant'; content: string }
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 /**
  * Immagine allegata da passare DIRETTAMENTE al modello multimodale (Liara
  * Qwen3-VL legge i pixel nativamente — niente più pre-descrizione in testo).
  */
-export interface ChatImage { base64: string; mimeType: string }
+export interface ChatImage {
+  base64: string;
+  mimeType: string;
+}
 
 /** Content di un messaggio: testo semplice o array multimodale OpenAI-compat. */
-type LlmContentPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } };
+type LlmContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } };
 type LlmMessageContent = string | LlmContentPart[];
 
 /** Costruisce il content dell'ultimo messaggio utente: multimodale se ci sono immagini. */
@@ -97,8 +107,8 @@ export class LlmContextOverflowError extends Error {
   constructor(estimatedTokens: number, contextWindow: number) {
     super(
       `La conversazione è troppo lunga per il modello (${estimatedTokens.toLocaleString('it-IT')} token stimati ` +
-      `su un massimo di ${contextWindow.toLocaleString('it-IT')}). Inizia una nuova chat oppure semplifica il ` +
-      `workflow: spesso un singolo nodo con un testo/codice molto lungo gonfia il contesto.`,
+        `su un massimo di ${contextWindow.toLocaleString('it-IT')}). Inizia una nuova chat oppure semplifica il ` +
+        `workflow: spesso un singolo nodo con un testo/codice molto lungo gonfia il contesto.`,
     );
     this.name = 'LlmContextOverflowError';
     this.estimatedTokens = estimatedTokens;
@@ -123,8 +133,8 @@ export class LlmProviderUnavailableError extends Error {
     super(
       `${label} non è al momento raggiungibile${detail ? ` (${detail})` : ''}. ` +
         (provider === 'liara'
-          ? 'Liara potrebbe essere offline (manutenzione o GPU occupata). Riprova tra poco, '
-            + 'oppure seleziona un altro provider in Settings → AI Providers.'
+          ? 'Liara potrebbe essere offline (manutenzione o GPU occupata). Riprova tra poco, ' +
+            'oppure seleziona un altro provider in Settings → AI Providers.'
           : 'Riprova tra poco, oppure seleziona un altro provider in Settings → AI Providers.'),
     );
     this.name = 'LlmProviderUnavailableError';
@@ -156,13 +166,19 @@ export class LlmQuotaExceededError extends Error {
     planCode?: string | null;
     periodEndIso?: string | null;
   }) {
-    const kindTxt = opts.kind === 'token' ? 'token'
-      : opts.kind === 'calls' ? 'chiamate LLM mensili' : 'chiamate giornaliere';
+    const kindTxt =
+      opts.kind === 'token'
+        ? 'token'
+        : opts.kind === 'calls'
+          ? 'chiamate LLM mensili'
+          : 'chiamate giornaliere';
     const usage = opts.used != null && opts.limit != null ? ` (${opts.used}/${opts.limit})` : '';
-    const reset = opts.periodEndIso ? ` Si rinnova il ${formatQuotaResetDate(opts.periodEndIso)}.` : '';
+    const reset = opts.periodEndIso
+      ? ` Si rinnova il ${formatQuotaResetDate(opts.periodEndIso)}.`
+      : '';
     super(
-      `Quota ${kindTxt}${opts.planCode ? ` del piano ${opts.planCode}` : ''} esaurita${usage}.${reset} `
-      + 'Passa a un piano superiore o configura una tua chiave LLM (BYOK) per continuare.',
+      `Quota ${kindTxt}${opts.planCode ? ` del piano ${opts.planCode}` : ''} esaurita${usage}.${reset} ` +
+        'Passa a un piano superiore o configura una tua chiave LLM (BYOK) per continuare.',
     );
     this.name = 'LlmQuotaExceededError';
     this.provider = opts.provider;
@@ -178,7 +194,10 @@ function formatQuotaResetDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00Z`);
   if (Number.isNaN(d.getTime())) return iso;
   return new Intl.DateTimeFormat('it-IT', {
-    day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
   }).format(d);
 }
 
@@ -201,16 +220,18 @@ export function parseQuotaError(body: string, provider: string): LlmQuotaExceede
   } catch {
     return null;
   }
-  const err = (parsed as {
-    error?: {
-      code?: string;
-      tokensUsed?: number;
-      callsUsed?: number;
-      monthlyLimit?: number | null;
-      planCode?: string;
-      periodEndIso?: string;
-    };
-  }).error;
+  const err = (
+    parsed as {
+      error?: {
+        code?: string;
+        tokensUsed?: number;
+        callsUsed?: number;
+        monthlyLimit?: number | null;
+        planCode?: string;
+        periodEndIso?: string;
+      };
+    }
+  ).error;
   if (!err?.code) return null;
   const kind = QUOTA_CODE_KIND[err.code];
   if (!kind) return null;
@@ -226,8 +247,12 @@ export function parseQuotaError(body: string, provider: string): LlmQuotaExceede
 
 /** Errore di fetch da rete (connessione rifiutata / DNS / reset) — non un AbortError. */
 function isNetworkError(err: unknown): boolean {
-  return err instanceof Error && err.name !== 'AbortError'
-    && (err.name === 'TypeError' || /fetch failed|ECONNREFUSED|ENOTFOUND|ECONNRESET|network/i.test(err.message));
+  return (
+    err instanceof Error &&
+    err.name !== 'AbortError' &&
+    (err.name === 'TypeError' ||
+      /fetch failed|ECONNREFUSED|ENOTFOUND|ECONNRESET|network/i.test(err.message))
+  );
 }
 
 /** One breaker per LLM provider — singletons keyed on provider name. */
@@ -236,9 +261,9 @@ function getBreaker(provider: string): CircuitBreaker<string> {
   const existing = CircuitBreakerRegistry.getInstance().get(name);
   if (existing) return existing;
   return new CircuitBreaker<string>(name, {
-    failureThreshold: 5,       // 5 fail in 30s → open
+    failureThreshold: 5, // 5 fail in 30s → open
     windowMs: 30_000,
-    cooldownMs: 60_000,        // 60s before half-open probe
+    cooldownMs: 60_000, // 60s before half-open probe
     // No fallback — callers should catch CircuitBreakerOpenError and
     // either retry later (queued workflow) or surface "AI temporarily
     // unavailable" to the user.
@@ -284,206 +309,262 @@ export async function dispatchLLMChat(
   const msgs = [...history, { role: 'user' as const, content: userMessage }];
 
   return getBreaker(provider).execute(async () => {
-  // ── Ramo generico: provider OpenAI-compat a endpoint fisso ──────────────────
-  // (openai, mistral, groq, grok, deepseek, openrouter). Url/model/header = SSOT
-  // provider-registry. Un solo ramo al posto di 6 case duplicati.
-  if (isFixedOpenAiCompat(provider)) {
-    const target = fixedOpenAiCompatTarget(provider, model);
-    if (provider === 'openrouter' && !target.model) {
-      throw new Error('OpenRouter: model required (es. "openai/gpt-4o", "google/gemini-pro", "x-ai/grok-2")');
-    }
-    const res = await fetch(target.url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(target.extraHeaders ?? {}), Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: target.model, messages: [{ role: 'system', content: system }, ...msgs], temperature: opts?.temperature ?? 0.1 }),
-      signal: AbortSignal.timeout(60_000),
-    });
-    if (!res.ok) throw new Error(`${chatProviderLabel(provider)} ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`);
-    const data = await readJsonCapped<{ choices?: { message: { content: string } }[] }>(res);
-    return data.choices?.[0]?.message.content ?? '';
-  }
-  switch (provider) {
-    case 'liara': {
-      if (!isLiaraEnabled()) {
-        throw new Error('Liara è disabilitata su questa istanza (MEDEA_DISABLE_LIARA=true).');
+    // ── Ramo generico: provider OpenAI-compat a endpoint fisso ──────────────────
+    // (openai, mistral, groq, grok, deepseek, openrouter). Url/model/header = SSOT
+    // provider-registry. Un solo ramo al posto di 6 case duplicati.
+    if (isFixedOpenAiCompat(provider)) {
+      const target = fixedOpenAiCompatTarget(provider, model);
+      if (provider === 'openrouter' && !target.model) {
+        throw new Error(
+          'OpenRouter: model required (es. "openai/gpt-4o", "google/gemini-pro", "x-ai/grok-2")',
+        );
       }
-      // Route to portal gateway (path is the OpenAI-compatible endpoint
-      // exposed by the zeliai portal which forwards to the internal Liara
-      // service after Sentinel + license + quota checks).
-      const url = `${baseUrl ?? liaraBaseUrl()}/chat/completions`;
-      const licenseKey = process.env.MEDEA_LICENSE_KEY ?? '';
-
-      // Liara = Qwen3 32B FP8 self-hosted on Hetzner GPU. Pieno potere:
-      //  - Thinking mode ON (Qwen3 ragiona via <think>...</think> prima di emettere)
-      //  - max_tokens DINAMICO (FIX 2026-05-30 user-segnalato Liara 400 "too large"):
-      //    Qwen3 32B context window = 40960 tokens. Pre-fix: 24000 hardcoded →
-      //    quando input scaffold scala (~17K con SYSTEM_PROMPT esempi ADV + catalog
-      //    multi-action), input+max_tokens > 40960 → vLLM rifiuta. Ora calcoliamo
-      //    output cap come (context_window - input_tokens - safety_margin).
-      //  - model omesso: Liara backend usa il suo MODEL_NAME (qwen3-32b) di default.
-      const thinkingDisabled = process.env.MEDEA_LIARA_THINKING === 'false';
-      const systemPrefix = thinkingDisabled ? '/no_think\n' : '';
-      const fullSystem = `${systemPrefix}${system}`;
-      // Token estimation: ~3.5 char/token medio per testo IT/EN misto + JSON.
-      // Conservativo (overestimate) per evitare overrun. Pattern industriale
-      // (Anthropic SDK usa ~4 char/token, OpenAI tiktoken precisa ma overhead).
-      const CHARS_PER_TOKEN = 3.5;
-      const estimateTokens = (s: string): number => Math.ceil(s.length / CHARS_PER_TOKEN);
-      const inputTokensEstimated =
-        estimateTokens(fullSystem) +
-        msgs.reduce((acc, m) => acc + estimateTokens(m.content), 0) +
-        msgs.length * 4; // overhead role markers per message
-      const contextWindow = getLiaraContextWindow();
-      const safetyMargin = 512;
-      // Guard input-overflow: se l'input da solo non lascia spazio nemmeno per
-      // una risposta minima, NON mandare la richiesta (il modello la rifiuta
-      // con un 400 criptico → 500). Falliamo PRESTO con un errore chiaro.
-      const MIN_OUTPUT_TOKENS = 512;
-      if (inputTokensEstimated > contextWindow - MIN_OUTPUT_TOKENS - safetyMargin) {
-        throw new LlmContextOverflowError(inputTokensEstimated, contextWindow);
-      }
-      const rawCeiling = opts?.maxTokens ?? Number(process.env.MEDEA_LIARA_MAX_TOKENS ?? '24000');
-      const maxTokensCeiling = Number.isFinite(rawCeiling) && rawCeiling > 0 ? rawCeiling : 24000;
-      const dynamicMax = Math.max(
-        1024,
-        Math.min(maxTokensCeiling, contextWindow - inputTokensEstimated - safetyMargin),
-      );
-      const body: Record<string, unknown> = {
-        messages: [{ role: 'system', content: fullSystem }, ...msgs],
-        temperature: opts?.temperature ?? 0.2,
-        max_tokens: dynamicMax,
-        chat_template_kwargs: { enable_thinking: !thinkingDisabled },
-      };
-      // Permetti override del model SOLO se esplicito (BYOK enterprise).
-      // Default = lasciar decidere a Liara backend (MODEL_NAME env).
-      if (model && model.trim().length > 0) body.model = model;
-
-      // FIX 2026-05-31 (rev 2): timeout 240s per call. Qwen3 thinking + propose_plan
-      // Enterprise (22 nodi) supera 60s e a volte 90s. Portal gateway ha
-      // LIARA_TIMEOUT_MS_SYNC=240s, e il client (qui) deve essere >= per non
-      // tagliare prima di lui. Oltre 240s consideriamo hang vero.
-      const liaraTimeoutMs = opts?.timeoutMs ?? Number(process.env.MEDEA_LIARA_TIMEOUT_MS ?? '240000');
-      const liaraCtrl = new AbortController();
-      const liaraTimeoutId = setTimeout(() => liaraCtrl.abort(), liaraTimeoutMs);
-      let res: Response;
-      try {
-        res = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            // License key carried as Bearer so portal can validate + apply
-            // quota/tier. Absent header → portal will 401.
-            ...(licenseKey ? { Authorization: `Bearer ${licenseKey}` } : {}),
-            // Correlazione coda LLM → canale-posizione (l'editor apre
-            // /ai-assistant/queue-status?rid=<requestId> in parallelo).
-            ...(requestId ? { 'X-FF-Request-Id': requestId } : {}),
-          },
-          body: JSON.stringify(body),
-          signal: liaraCtrl.signal,
-        });
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          throw new Error(`Liara timeout dopo ${liaraTimeoutMs.toString()}ms — modello in stallo. Riprova o aumenta MEDEA_LIARA_TIMEOUT_MS.`);
-        }
-        // Connessione rifiutata/reset → Liara giù (es. GPU in gen-mode): errore chiaro.
-        if (isNetworkError(err)) throw new LlmProviderUnavailableError('liara', 'connessione fallita');
-        throw err;
-      } finally {
-        clearTimeout(liaraTimeoutId);
-      }
-      if (!res.ok) {
-        const errBody = (await readTextTruncated(res, 65_536)).text.slice(0, 300);
-        // Difesa in profondità: se la stima locale ha sbagliato e il modello
-        // rifiuta per context length, traduci nel nostro errore chiaro (413)
-        // invece del 400 grezzo che diventerebbe 500 'Errore interno'.
-        if (res.status === 400 && /context length|maximum context|input.?tokens/i.test(errBody)) {
-          throw new LlmContextOverflowError(inputTokensEstimated, contextWindow);
-        }
-        // 429 di QUOTA (token/chiamate/giorno) → errore TIPIZZATO così l'engine
-        // può degradare con grazia (fallback BYOK / pausa / errore chiaro) invece
-        // di un fallimento opaco. Altri 429 (rate-limit upstream) restano generici.
-        if (res.status === 429) {
-          const quotaErr = parseQuotaError(errBody, 'liara');
-          if (quotaErr) throw quotaErr;
-        }
-        // 5xx dal gateway = Liara/backend non disponibile a monte → errore chiaro (503).
-        if (res.status >= 500) throw new LlmProviderUnavailableError('liara', `gateway ${res.status.toString()}`);
-        throw new Error(`Liara ${res.status.toString()}: ${errBody.slice(0, 200)}`);
-      }
-      const data = await readJsonCapped<{
-        choices?: { message: { content: string } }[];
-        usage?: { prompt_tokens?: number; completion_tokens?: number };
-      }>(res);
-      const content = (data.choices?.[0]?.message.content ?? '').replace(/<think>[\s\S]*?<\/think>\s*/g, '').trim();
-      // Liara (Qwen3) backend espone usage in formato OpenAI-compat.
-      if (tokenUsageListener) {
-        const apiInput = data.usage?.prompt_tokens;
-        const apiOutput = data.usage?.completion_tokens;
-        if (typeof apiInput === 'number' && typeof apiOutput === 'number') {
-          tokenUsageListener({ input: apiInput, output: apiOutput, fromApi: true });
-        } else {
-          tokenUsageListener({ input: inputTokensEstimated, output: estimateTokens(content), fromApi: false });
-        }
-      }
-      return content;
-    }
-    case 'gemini': {
-      const m = model || 'gemini-2.0-flash';
-      const contents = msgs.map((x) => ({ role: x.role === 'assistant' ? 'model' : 'user', parts: [{ text: x.content }] }));
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents }),
-      signal: AbortSignal.timeout(60_000),
-      });
-      if (!res.ok) throw new Error(`Gemini ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`);
-      const data = await readJsonCapped<{ candidates?: { content?: { parts?: { text?: string }[] } }[] }>(res);
-      return data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
-    }
-    case 'anthropic': {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch(target.url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
+          ...(target.extraHeaders ?? {}),
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: model || 'claude-sonnet-4-5-20250929',
-          system,
-          messages: msgs,
-          max_tokens: 8000,
-          temperature: 0.1,
+          model: target.model,
+          messages: [{ role: 'system', content: system }, ...msgs],
+          temperature: opts?.temperature ?? 0.1,
         }),
-      signal: AbortSignal.timeout(60_000),
+        signal: AbortSignal.timeout(60_000),
       });
-      if (!res.ok) throw new Error(`Anthropic ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`);
-      const data = await readJsonCapped<{ content?: { type: string; text?: string }[] }>(res);
-      return (data.content ?? []).filter((b) => b.type === 'text').map((b) => b.text ?? '').join('');
+      if (!res.ok)
+        throw new Error(
+          `${chatProviderLabel(provider)} ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`,
+        );
+      const data = await readJsonCapped<{ choices?: { message: { content: string } }[] }>(res);
+      return data.choices?.[0]?.message.content ?? '';
     }
-    case 'ollama': {
-      const url = `${baseUrl ?? 'http://localhost:11434'}/api/chat`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: model || 'llama3.2', stream: false, messages: [{ role: 'system', content: system }, ...msgs] }),
-      signal: AbortSignal.timeout(60_000),
-      });
-      if (!res.ok) throw new Error(`Ollama ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`);
-      const data = await readJsonCapped<{ message?: { content?: string } }>(res);
-      return data.message?.content ?? '';
+    switch (provider) {
+      case 'liara': {
+        if (!isLiaraEnabled()) {
+          throw new Error('Liara è disabilitata su questa istanza (MEDEA_DISABLE_LIARA=true).');
+        }
+        // Route to portal gateway (path is the OpenAI-compatible endpoint
+        // exposed by the zeliai portal which forwards to the internal Liara
+        // service after Sentinel + license + quota checks).
+        const url = `${baseUrl ?? liaraBaseUrl()}/chat/completions`;
+        const licenseKey = process.env.MEDEA_LICENSE_KEY ?? '';
+
+        // Liara = Qwen3 32B FP8 self-hosted on Hetzner GPU. Pieno potere:
+        //  - Thinking mode ON (Qwen3 ragiona via <think>...</think> prima di emettere)
+        //  - max_tokens DINAMICO (FIX 2026-05-30 user-segnalato Liara 400 "too large"):
+        //    Qwen3 32B context window = 40960 tokens. Pre-fix: 24000 hardcoded →
+        //    quando input scaffold scala (~17K con SYSTEM_PROMPT esempi ADV + catalog
+        //    multi-action), input+max_tokens > 40960 → vLLM rifiuta. Ora calcoliamo
+        //    output cap come (context_window - input_tokens - safety_margin).
+        //  - model omesso: Liara backend usa il suo MODEL_NAME (qwen3-32b) di default.
+        const thinkingDisabled = process.env.MEDEA_LIARA_THINKING === 'false';
+        const systemPrefix = thinkingDisabled ? '/no_think\n' : '';
+        const fullSystem = `${systemPrefix}${system}`;
+        // Token estimation: ~3.5 char/token medio per testo IT/EN misto + JSON.
+        // Conservativo (overestimate) per evitare overrun. Pattern industriale
+        // (Anthropic SDK usa ~4 char/token, OpenAI tiktoken precisa ma overhead).
+        const CHARS_PER_TOKEN = 3.5;
+        const estimateTokens = (s: string): number => Math.ceil(s.length / CHARS_PER_TOKEN);
+        const inputTokensEstimated =
+          estimateTokens(fullSystem) +
+          msgs.reduce((acc, m) => acc + estimateTokens(m.content), 0) +
+          msgs.length * 4; // overhead role markers per message
+        const contextWindow = getLiaraContextWindow();
+        const safetyMargin = 512;
+        // Guard input-overflow: se l'input da solo non lascia spazio nemmeno per
+        // una risposta minima, NON mandare la richiesta (il modello la rifiuta
+        // con un 400 criptico → 500). Falliamo PRESTO con un errore chiaro.
+        const MIN_OUTPUT_TOKENS = 512;
+        if (inputTokensEstimated > contextWindow - MIN_OUTPUT_TOKENS - safetyMargin) {
+          throw new LlmContextOverflowError(inputTokensEstimated, contextWindow);
+        }
+        const rawCeiling = opts?.maxTokens ?? Number(process.env.MEDEA_LIARA_MAX_TOKENS ?? '24000');
+        const maxTokensCeiling = Number.isFinite(rawCeiling) && rawCeiling > 0 ? rawCeiling : 24000;
+        const dynamicMax = Math.max(
+          1024,
+          Math.min(maxTokensCeiling, contextWindow - inputTokensEstimated - safetyMargin),
+        );
+        const body: Record<string, unknown> = {
+          messages: [{ role: 'system', content: fullSystem }, ...msgs],
+          temperature: opts?.temperature ?? 0.2,
+          max_tokens: dynamicMax,
+          chat_template_kwargs: { enable_thinking: !thinkingDisabled },
+        };
+        // Permetti override del model SOLO se esplicito (BYOK enterprise).
+        // Default = lasciar decidere a Liara backend (MODEL_NAME env).
+        if (model && model.trim().length > 0) body.model = model;
+
+        // FIX 2026-05-31 (rev 2): timeout 240s per call. Qwen3 thinking + propose_plan
+        // Enterprise (22 nodi) supera 60s e a volte 90s. Portal gateway ha
+        // LIARA_TIMEOUT_MS_SYNC=240s, e il client (qui) deve essere >= per non
+        // tagliare prima di lui. Oltre 240s consideriamo hang vero.
+        const liaraTimeoutMs =
+          opts?.timeoutMs ?? Number(process.env.MEDEA_LIARA_TIMEOUT_MS ?? '240000');
+        const liaraCtrl = new AbortController();
+        const liaraTimeoutId = setTimeout(() => liaraCtrl.abort(), liaraTimeoutMs);
+        let res: Response;
+        try {
+          res = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              // License key carried as Bearer so portal can validate + apply
+              // quota/tier. Absent header → portal will 401.
+              ...(licenseKey ? { Authorization: `Bearer ${licenseKey}` } : {}),
+              // Correlazione coda LLM → canale-posizione (l'editor apre
+              // /ai-assistant/queue-status?rid=<requestId> in parallelo).
+              ...(requestId ? { 'X-FF-Request-Id': requestId } : {}),
+            },
+            body: JSON.stringify(body),
+            signal: liaraCtrl.signal,
+          });
+        } catch (err) {
+          if (err instanceof Error && err.name === 'AbortError') {
+            throw new Error(
+              `Liara timeout dopo ${liaraTimeoutMs.toString()}ms — modello in stallo. Riprova o aumenta MEDEA_LIARA_TIMEOUT_MS.`,
+            );
+          }
+          // Connessione rifiutata/reset → Liara giù (es. GPU in gen-mode): errore chiaro.
+          if (isNetworkError(err))
+            throw new LlmProviderUnavailableError('liara', 'connessione fallita');
+          throw err;
+        } finally {
+          clearTimeout(liaraTimeoutId);
+        }
+        if (!res.ok) {
+          const errBody = (await readTextTruncated(res, 65_536)).text.slice(0, 300);
+          // Difesa in profondità: se la stima locale ha sbagliato e il modello
+          // rifiuta per context length, traduci nel nostro errore chiaro (413)
+          // invece del 400 grezzo che diventerebbe 500 'Errore interno'.
+          if (res.status === 400 && /context length|maximum context|input.?tokens/i.test(errBody)) {
+            throw new LlmContextOverflowError(inputTokensEstimated, contextWindow);
+          }
+          // 429 di QUOTA (token/chiamate/giorno) → errore TIPIZZATO così l'engine
+          // può degradare con grazia (fallback BYOK / pausa / errore chiaro) invece
+          // di un fallimento opaco. Altri 429 (rate-limit upstream) restano generici.
+          if (res.status === 429) {
+            const quotaErr = parseQuotaError(errBody, 'liara');
+            if (quotaErr) throw quotaErr;
+          }
+          // 5xx dal gateway = Liara/backend non disponibile a monte → errore chiaro (503).
+          if (res.status >= 500)
+            throw new LlmProviderUnavailableError('liara', `gateway ${res.status.toString()}`);
+          throw new Error(`Liara ${res.status.toString()}: ${errBody.slice(0, 200)}`);
+        }
+        const data = await readJsonCapped<{
+          choices?: { message: { content: string } }[];
+          usage?: { prompt_tokens?: number; completion_tokens?: number };
+        }>(res);
+        const content = (data.choices?.[0]?.message.content ?? '')
+          .replace(/<think>[\s\S]*?<\/think>\s*/g, '')
+          .trim();
+        // Liara (Qwen3) backend espone usage in formato OpenAI-compat.
+        if (tokenUsageListener) {
+          const apiInput = data.usage?.prompt_tokens;
+          const apiOutput = data.usage?.completion_tokens;
+          if (typeof apiInput === 'number' && typeof apiOutput === 'number') {
+            tokenUsageListener({ input: apiInput, output: apiOutput, fromApi: true });
+          } else {
+            tokenUsageListener({
+              input: inputTokensEstimated,
+              output: estimateTokens(content),
+              fromApi: false,
+            });
+          }
+        }
+        return content;
+      }
+      case 'gemini': {
+        const m = model || 'gemini-2.0-flash';
+        const contents = msgs.map((x) => ({
+          role: x.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: x.content }],
+        }));
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents }),
+            signal: AbortSignal.timeout(60_000),
+          },
+        );
+        if (!res.ok)
+          throw new Error(
+            `Gemini ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`,
+          );
+        const data = await readJsonCapped<{
+          candidates?: { content?: { parts?: { text?: string }[] } }[];
+        }>(res);
+        return data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
+      }
+      case 'anthropic': {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: model || 'claude-sonnet-4-5-20250929',
+            system,
+            messages: msgs,
+            max_tokens: 8000,
+            temperature: 0.1,
+          }),
+          signal: AbortSignal.timeout(60_000),
+        });
+        if (!res.ok)
+          throw new Error(
+            `Anthropic ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`,
+          );
+        const data = await readJsonCapped<{ content?: { type: string; text?: string }[] }>(res);
+        return (data.content ?? [])
+          .filter((b) => b.type === 'text')
+          .map((b) => b.text ?? '')
+          .join('');
+      }
+      case 'ollama': {
+        const url = `${baseUrl ?? 'http://localhost:11434'}/api/chat`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: model || 'llama3.2',
+            stream: false,
+            messages: [{ role: 'system', content: system }, ...msgs],
+          }),
+          signal: AbortSignal.timeout(60_000),
+        });
+        if (!res.ok)
+          throw new Error(
+            `Ollama ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`,
+          );
+        const data = await readJsonCapped<{ message?: { content?: string } }>(res);
+        return data.message?.content ?? '';
+      }
+      default:
+        throw new Error(`Unknown provider for chat: ${provider}`);
     }
-    default:
-      throw new Error(`Unknown provider for chat: ${provider}`);
-  }
   });
 }
 
 /** Etichetta leggibile per i messaggi d'errore del ramo OpenAI-compat generico. */
 function chatProviderLabel(p: string): string {
   const map: Record<string, string> = {
-    liara: 'Liara', anthropic: 'Anthropic', gemini: 'Gemini', ollama: 'Ollama',
-    openai: 'OpenAI', mistral: 'Mistral', groq: 'Groq', grok: 'Grok', deepseek: 'DeepSeek', openrouter: 'OpenRouter',
+    liara: 'Liara',
+    anthropic: 'Anthropic',
+    gemini: 'Gemini',
+    ollama: 'Ollama',
+    openai: 'OpenAI',
+    mistral: 'Mistral',
+    groq: 'Groq',
+    grok: 'Grok',
+    deepseek: 'DeepSeek',
+    openrouter: 'OpenRouter',
   };
   return map[p] ?? p;
 }
@@ -523,7 +604,17 @@ export async function dispatchLLMChatStructured(
     // Per BYOK non-Liara, usiamo response_format json_object (loose) +
     // schema embed nel system prompt. Funziona con OpenAI, Anthropic recente.
     const systemWithSchema = `${system}\n\nOUTPUT JSON SCHEMA (rispetta esattamente):\n${JSON.stringify(jsonSchema)}\n\nRispondi SOLO con JSON valido secondo lo schema sopra.`;
-    return dispatchLLMChat(provider, apiKey, model, systemWithSchema, userMessage, baseUrl, history, tokenUsageListener, requestId);
+    return dispatchLLMChat(
+      provider,
+      apiKey,
+      model,
+      systemWithSchema,
+      userMessage,
+      baseUrl,
+      history,
+      tokenUsageListener,
+      requestId,
+    );
   }
 
   if (!isLiaraEnabled()) {
@@ -606,21 +697,28 @@ export async function dispatchLLMChatStructured(
   if (!res.ok) {
     const errBody = (await readTextTruncated(res, 65_536)).text.slice(0, 300);
     // 5xx dal gateway = Liara/backend non disponibile a monte → errore chiaro (503).
-    if (res.status >= 500) throw new LlmProviderUnavailableError('liara', `gateway ${res.status.toString()}`);
+    if (res.status >= 500)
+      throw new LlmProviderUnavailableError('liara', `gateway ${res.status.toString()}`);
     throw new Error(`Liara structured ${res.status.toString()}: ${errBody}`);
   }
   const data = await readJsonCapped<{
     choices?: { message: { content: string } }[];
     usage?: { prompt_tokens?: number; completion_tokens?: number };
   }>(res);
-  const content = (data.choices?.[0]?.message.content ?? '').replace(/<think>[\s\S]*?<\/think>\s*/g, '').trim();
+  const content = (data.choices?.[0]?.message.content ?? '')
+    .replace(/<think>[\s\S]*?<\/think>\s*/g, '')
+    .trim();
   if (tokenUsageListener) {
     const apiInput = data.usage?.prompt_tokens;
     const apiOutput = data.usage?.completion_tokens;
     if (typeof apiInput === 'number' && typeof apiOutput === 'number') {
       tokenUsageListener({ input: apiInput, output: apiOutput, fromApi: true });
     } else {
-      tokenUsageListener({ input: inputTokensEstimated, output: estimateTokens(content), fromApi: false });
+      tokenUsageListener({
+        input: inputTokensEstimated,
+        output: estimateTokens(content),
+        fromApi: false,
+      });
     }
   }
   return content;
@@ -662,11 +760,17 @@ async function consumeOpenAiSseStream(
         };
         const delta = parsed.choices?.[0]?.delta?.content;
         if (typeof delta === 'string' && delta.length > 0) {
-          try { onDelta(delta); } catch { /* never fail stream on cb error */ }
+          try {
+            onDelta(delta);
+          } catch {
+            /* never fail stream on cb error */
+          }
         }
         if (parsed.usage) {
-          if (typeof parsed.usage.prompt_tokens === 'number') promptTokens = parsed.usage.prompt_tokens;
-          if (typeof parsed.usage.completion_tokens === 'number') completionTokens = parsed.usage.completion_tokens;
+          if (typeof parsed.usage.prompt_tokens === 'number')
+            promptTokens = parsed.usage.prompt_tokens;
+          if (typeof parsed.usage.completion_tokens === 'number')
+            completionTokens = parsed.usage.completion_tokens;
         }
       } catch {
         // skip malformed SSE line
@@ -756,7 +860,9 @@ async function streamLiaraChat(opts: {
   }
   if (!res.ok) {
     clearTimeout(liaraTimeoutId);
-    throw new Error(`Liara streaming ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 300)}`);
+    throw new Error(
+      `Liara streaming ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 300)}`,
+    );
   }
   if (!res.body) {
     clearTimeout(liaraTimeoutId);
@@ -778,9 +884,17 @@ async function streamLiaraChat(opts: {
   const cleaned = accumulated.replace(/<think>[\s\S]*?<\/think>\s*/g, '').trim();
   if (tokenUsageListener) {
     if (typeof usage.promptTokens === 'number' && typeof usage.completionTokens === 'number') {
-      tokenUsageListener({ input: usage.promptTokens, output: usage.completionTokens, fromApi: true });
+      tokenUsageListener({
+        input: usage.promptTokens,
+        output: usage.completionTokens,
+        fromApi: true,
+      });
     } else {
-      tokenUsageListener({ input: inputTokensEstimated, output: estimateTokens(cleaned), fromApi: false });
+      tokenUsageListener({
+        input: inputTokensEstimated,
+        output: estimateTokens(cleaned),
+        fromApi: false,
+      });
     }
   }
   return cleaned;
@@ -812,7 +926,15 @@ export async function dispatchLLMChatStructuredStreaming(
   // Fallback non-streaming per non-Liara
   if (provider !== 'liara') {
     const full = await dispatchLLMChatStructured(
-      provider, apiKey, model, system, userMessage, baseUrl, history, jsonSchema, tokenUsageListener,
+      provider,
+      apiKey,
+      model,
+      system,
+      userMessage,
+      baseUrl,
+      history,
+      jsonSchema,
+      tokenUsageListener,
     );
     // Emit pseudo-chunks per coerenza UX (no streaming reale ma UI same flow)
     onChunk(full);
@@ -821,7 +943,12 @@ export async function dispatchLLMChatStructuredStreaming(
 
   const msgs = [...history, { role: 'user' as const, content: userMessage }];
   return streamLiaraChat({
-    model, system, msgs, baseUrl, jsonSchema, onChunk,
+    model,
+    system,
+    msgs,
+    baseUrl,
+    jsonSchema,
+    onChunk,
     ...(tokenUsageListener ? { tokenUsageListener } : {}),
   });
 }
@@ -849,7 +976,14 @@ export async function dispatchLLMChatStreaming(
 ): Promise<string> {
   if (provider !== 'liara') {
     const full = await dispatchLLMChat(
-      provider, apiKey, model, system, userMessage, baseUrl, history, tokenUsageListener,
+      provider,
+      apiKey,
+      model,
+      system,
+      userMessage,
+      baseUrl,
+      history,
+      tokenUsageListener,
     );
     onChunk(full);
     return full;
@@ -857,7 +991,11 @@ export async function dispatchLLMChatStreaming(
 
   const msgs = [...history, { role: 'user' as const, content: userMessage }];
   return streamLiaraChat({
-    model, system, msgs, baseUrl, onChunk,
+    model,
+    system,
+    msgs,
+    baseUrl,
+    onChunk,
     ...(tokenUsageListener ? { tokenUsageListener } : {}),
   });
 }

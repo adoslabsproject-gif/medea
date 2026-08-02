@@ -38,7 +38,10 @@ const SCHEMA_FILES = new Map<string, Uint8Array>([
   [XMLDSIG_SCHEMA_FILENAME, new TextEncoder().encode(XMLDSIG_CORE_XSD)],
 ]);
 
-interface OpenFd { data: Uint8Array; pos: number }
+interface OpenFd {
+  data: Uint8Array;
+  pos: number;
+}
 const openFds = new Map<number, OpenFd>();
 let nextFd = 1;
 let providerRegistered = false;
@@ -84,7 +87,9 @@ function getValidator(): XsdValidator {
       xmlRegisterInputProvider(inMemoryProvider);
       providerRegistered = true;
     }
-    const xsdDoc = XmlDocument.fromString(FATTURAPA_XSD_V122, { url: 'mem://schemas/fatturapa-v1.2.2.xsd' });
+    const xsdDoc = XmlDocument.fromString(FATTURAPA_XSD_V122, {
+      url: 'mem://schemas/fatturapa-v1.2.2.xsd',
+    });
     cachedValidator = XsdValidator.fromDoc(xsdDoc);
   }
   return cachedValidator;
@@ -105,14 +110,20 @@ export function validateFatturaPaXsd(xml: string): XsdValidationResult {
     doc = XmlDocument.fromString(xml);
   } catch (err) {
     // XML non parsabile = struttura non conforme (il SdI lo scarterebbe comunque).
-    return { valid: false, errors: [`XML non valido: ${err instanceof Error ? err.message : String(err)}`] };
+    return {
+      valid: false,
+      errors: [`XML non valido: ${err instanceof Error ? err.message : String(err)}`],
+    };
   }
   try {
     getValidator().validate(doc);
     return { valid: true, errors: [] };
   } catch (err) {
     if (err instanceof XmlValidateError) {
-      const errors = err.message.split('\n').map((l) => l.trim()).filter((l) => l !== '');
+      const errors = err.message
+        .split('\n')
+        .map((l) => l.trim())
+        .filter((l) => l !== '');
       return { valid: false, errors: errors.length > 0 ? errors : [err.message] };
     }
     throw err;

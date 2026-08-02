@@ -33,19 +33,28 @@ describe('EmbeddedVectorAdapter', () => {
       { id: '1', vector: [1, 0], payload: { lang: 'it' } },
       { id: '2', vector: [1, 0], payload: { lang: 'en' } },
     ]);
-    const results = await adapter.search('docs', { vector: [1, 0], filter: { lang: 'it' }, topK: 10 });
+    const results = await adapter.search('docs', {
+      vector: [1, 0],
+      filter: { lang: 'it' },
+      topK: 10,
+    });
     expect(results).toHaveLength(1);
     expect(results[0]?.id).toBe('1');
   });
 
   it('rejects vectors with wrong dimensions', async () => {
     await adapter.ensureCollection('docs', 3, 'cosine');
-    await expect(adapter.upsert('docs', [{ id: 'x', vector: [1, 0] }])).rejects.toThrow(/dimensions/);
+    await expect(adapter.upsert('docs', [{ id: 'x', vector: [1, 0] }])).rejects.toThrow(
+      /dimensions/,
+    );
   });
 
   it('deleteByIds removes rows', async () => {
     await adapter.ensureCollection('docs', 2, 'cosine');
-    await adapter.upsert('docs', [{ id: '1', vector: [1, 0] }, { id: '2', vector: [0, 1] }]);
+    await adapter.upsert('docs', [
+      { id: '1', vector: [1, 0] },
+      { id: '2', vector: [0, 1] },
+    ]);
     expect(await adapter.countCollection('docs')).toBe(2);
     await adapter.deleteByIds('docs', ['1']);
     expect(await adapter.countCollection('docs')).toBe(1);

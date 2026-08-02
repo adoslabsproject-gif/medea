@@ -40,9 +40,9 @@ describe('Load smoke — Sandbox concurrent evaluations', () => {
       vars: { multiplier: 7 },
     }));
     const results = await Promise.all(
-      scopes.map((scope) => Promise.resolve(
-        evaluateInSandbox('input.id * vars.multiplier + 1', scope),
-      )),
+      scopes.map((scope) =>
+        Promise.resolve(evaluateInSandbox('input.id * vars.multiplier + 1', scope)),
+      ),
     );
     // Verifica deterministic — ogni i ritorna i*7+1, niente race
     results.forEach((r, i) => {
@@ -51,20 +51,26 @@ describe('Load smoke — Sandbox concurrent evaluations', () => {
   }, 60_000);
 
   it('mix happy + timeout: 50 happy + 5 timeout in parallelo → no crash', async () => {
-    const happy = Array.from({ length: 50 }, () => Promise.resolve(
-      evaluateInSandbox('input.value * 2', {
-        input: { value: 10 },
-        output: undefined,
-        ctx: { tenantId: 't', runId: 'r', workflowId: 'w', nodeId: 'n' },
-      }),
-    ));
-    const timeoutResults = Array.from({ length: 5 }, () => {
-      try {
-        evaluateInSandbox('while(true){}', {
-          input: undefined,
+    const happy = Array.from({ length: 50 }, () =>
+      Promise.resolve(
+        evaluateInSandbox('input.value * 2', {
+          input: { value: 10 },
           output: undefined,
           ctx: { tenantId: 't', runId: 'r', workflowId: 'w', nodeId: 'n' },
-        }, { timeoutMs: 30 });
+        }),
+      ),
+    );
+    const timeoutResults = Array.from({ length: 5 }, () => {
+      try {
+        evaluateInSandbox(
+          'while(true){}',
+          {
+            input: undefined,
+            output: undefined,
+            ctx: { tenantId: 't', runId: 'r', workflowId: 'w', nodeId: 'n' },
+          },
+          { timeoutMs: 30 },
+        );
         return 'no-timeout';
       } catch (err) {
         return err instanceof Error ? err.message : 'unknown';
@@ -82,13 +88,15 @@ describe('Load smoke — Sandbox concurrent evaluations', () => {
     // Test attacco: provo a leggere "ctx" di un altro scope dentro l'eval.
     const N = 100;
     const results = await Promise.all(
-      Array.from({ length: N }, (_, i) => Promise.resolve(
-        evaluateInSandbox('ctx.tenantId', {
-          input: undefined,
-          output: undefined,
-          ctx: { tenantId: `tenant-${i}`, runId: `r-${i}`, workflowId: 'w', nodeId: 'n' },
-        }),
-      )),
+      Array.from({ length: N }, (_, i) =>
+        Promise.resolve(
+          evaluateInSandbox('ctx.tenantId', {
+            input: undefined,
+            output: undefined,
+            ctx: { tenantId: `tenant-${i}`, runId: `r-${i}`, workflowId: 'w', nodeId: 'n' },
+          }),
+        ),
+      ),
     );
     results.forEach((r, i) => {
       expect(r).toBe(`tenant-${i}`);
@@ -133,7 +141,7 @@ describe('Load smoke — Pause/Resume snapshot integrity', () => {
     );
 
     // Validazione: ogni run ha runId univoco (no race condition genId)
-    const runIds = results.map((r) => 'runId' in r ? r.runId : null).filter(Boolean);
+    const runIds = results.map((r) => ('runId' in r ? r.runId : null)).filter(Boolean);
     const uniqueRunIds = new Set(runIds);
     expect(uniqueRunIds.size).toBe(runIds.length);
     // Almeno la maggioranza dei run sono completati (no mass-fail = process ok)
@@ -145,9 +153,9 @@ describe('Load smoke — concurrent registries (LLM provider lookup)', () => {
   it('1000 lookup paralleli sul noopLlmProviderRegistry → no race / no throw', async () => {
     const { noopLlmProviderRegistry } = await import('../engine/ports.js');
     const results = await Promise.all(
-      Array.from({ length: 1000 }, (_, i) => Promise.resolve(
-        noopLlmProviderRegistry.getAll(`tenant-${i}`),
-      )),
+      Array.from({ length: 1000 }, (_, i) =>
+        Promise.resolve(noopLlmProviderRegistry.getAll(`tenant-${i}`)),
+      ),
     );
     expect(results).toHaveLength(1000);
     // Noop returns {} for tutti — l'invariante è "nessuna throw" + ogni risultato è un object pulito

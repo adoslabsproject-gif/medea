@@ -21,11 +21,7 @@
 
 import { getDatabase } from '@/storage/db.js';
 import { logger } from '@/lib/logger.js';
-import {
-  getCustomNodeCache,
-  setCustomNodeCache,
-  type CompiledCustomNodeEntry,
-} from './cache.js';
+import { getCustomNodeCache, setCustomNodeCache, type CompiledCustomNodeEntry } from './cache.js';
 import { verifyPackageIntegrity, INTEGRITY_ENFORCED_FLAG } from '@/lib/custom-node-integrity.js';
 import { registrySecret } from '@/lib/registry-secret.js';
 
@@ -81,18 +77,23 @@ export function loadCustomNodeForRun(
   if (!slug) return null;
 
   const handle = getDatabase();
-  const row = handle.sqlite.prepare(
-    `SELECT semver, status, source_executor, source_definition, source_schema, compiled_executor, slug,
+  const row = handle.sqlite
+    .prepare(
+      `SELECT semver, status, source_executor, source_definition, source_schema, compiled_executor, slug,
             integrity_digest, integrity_signature, integrity_algo
        FROM custom_nodes
       WHERE workspace_id = ? AND slug = ?
       LIMIT 1`,
-  ).get(workspaceId, slug) as DbRow | undefined;
+    )
+    .get(workspaceId, slug) as DbRow | undefined;
 
   if (!row) return null;
   if (!RUNNABLE_STATUSES.has(row.status)) return null;
   if (!row.compiled_executor) {
-    logger.warn({ workspaceId, defId, status: row.status }, '[custom-node] runnable but no compiled_executor — re-compile required');
+    logger.warn(
+      { workspaceId, defId, status: row.status },
+      '[custom-node] runnable but no compiled_executor — re-compile required',
+    );
     return null;
   }
 
@@ -112,7 +113,7 @@ export function loadCustomNodeForRun(
     if (!secret) {
       logger.error(
         { workspaceId, defId, semver: row.semver },
-        '[custom-node] SECURITY: record di integrità presente ma nessun registry secret nell\'env — impossibile verificare, esecuzione bloccata (fail-closed)',
+        "[custom-node] SECURITY: record di integrità presente ma nessun registry secret nell'env — impossibile verificare, esecuzione bloccata (fail-closed)",
       );
       return null;
     }
@@ -125,7 +126,11 @@ export function loadCustomNodeForRun(
         sourceSchema: row.source_schema,
         compiledExecutor: row.compiled_executor,
       },
-      { algo: row.integrity_algo as never, digest: row.integrity_digest, signature: row.integrity_signature ?? '' },
+      {
+        algo: row.integrity_algo as never,
+        digest: row.integrity_digest,
+        signature: row.integrity_signature ?? '',
+      },
       secret,
     );
     if (!verdict.valid) {
@@ -144,9 +149,9 @@ export function loadCustomNodeForRun(
       return null;
     }
   } else if (secret) {
-    const enforced = handle.sqlite.prepare(
-      'SELECT value FROM system_flags WHERE key = ?',
-    ).get(INTEGRITY_ENFORCED_FLAG) as { value: string } | undefined;
+    const enforced = handle.sqlite
+      .prepare('SELECT value FROM system_flags WHERE key = ?')
+      .get(INTEGRITY_ENFORCED_FLAG) as { value: string } | undefined;
     if (enforced) {
       logger.error(
         { workspaceId, defId, semver: row.semver, enforcedAt: enforced.value },

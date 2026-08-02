@@ -84,7 +84,9 @@ describe('callInlineCompletion', () => {
     process.env.MEDEA_LICENSE_KEY = 'ZFL-TEST';
     globalThis.fetch = mockFetch as unknown as typeof fetch;
   });
-  afterEach(() => { globalThis.fetch = origFetch; });
+  afterEach(() => {
+    globalThis.fetch = origFetch;
+  });
 
   const baseReq = {
     workspaceId: 'ws_test',
@@ -115,7 +117,10 @@ describe('callInlineCompletion', () => {
   it('routing GATEWAY: URL /chat/completions + Bearer license + model OMESSO (gateway inietta)', async () => {
     mockOk('done');
     await callInlineCompletion(baseReq);
-    const [url, init] = mockFetch.mock.calls[0]! as [string, { headers: Record<string, string>; body: string }];
+    const [url, init] = mockFetch.mock.calls[0]! as [
+      string,
+      { headers: Record<string, string>; body: string },
+    ];
     expect(url).toBe('http://gw/api/v1/llm/chat/completions');
     expect(init.headers.Authorization).toBe('Bearer ZFL-TEST');
     const body = JSON.parse(init.body);
@@ -158,7 +163,7 @@ describe('callInlineCompletion', () => {
     expect(out.tokensOut).toBe(0);
   });
 
-  it('gateway unreachable (throw) → fallback empty (no throw all\'esterno)', async () => {
+  it("gateway unreachable (throw) → fallback empty (no throw all'esterno)", async () => {
     mockFetch.mockRejectedValue(new Error('ECONNREFUSED'));
     const out = await callInlineCompletion(baseReq);
     expect(out.completion).toBe('');
@@ -179,7 +184,8 @@ describe('callInlineCompletion', () => {
 
   it('usage assente → tokens 0/0', async () => {
     mockFetch.mockResolvedValue({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({ choices: [{ message: { content: 'foo' } }] }),
     } as unknown as Response);
     const out = await callInlineCompletion(baseReq);

@@ -49,7 +49,9 @@ vi.mock('@/lib/logger.js');
 
 vi.mock('@/services/audit.service.js', () => ({
   AuditLogService: class {
-    async append() { /* noop */ }
+    async append() {
+      /* noop */
+    }
   },
 }));
 
@@ -70,7 +72,14 @@ beforeEach(() => {
   delete process.env.MEDEA_ALLOW_SIGNUP;
 });
 
-async function buildApp(opts?: { authCtx?: { userId: string; role: 'owner' | 'superadmin' | 'editor' | 'operator' | 'viewer'; email: string; tenantId: string } }) {
+async function buildApp(opts?: {
+  authCtx?: {
+    userId: string;
+    role: 'owner' | 'superadmin' | 'editor' | 'operator' | 'viewer';
+    email: string;
+    tenantId: string;
+  };
+}) {
   const { createAuthRoutes } = await import('./auth.js');
   const app = new Hono();
   // Simula auth middleware globale. Role typed enum per match AuthContext schema.
@@ -102,12 +111,12 @@ describe('#203 P0-4: /auth/bootstrap NO echo token nel body', () => {
     const app = await buildApp({
       authCtx: { userId: 'user-1', role: 'owner', email: 'u@x.it', tenantId: 'tenant-default' },
     });
-    const res = await app.request('/api/v1/auth/bootstrap');   // no cookie header
+    const res = await app.request('/api/v1/auth/bootstrap'); // no cookie header
     expect(res.status).toBe(401);
   });
 
   it('401 senza auth context', async () => {
-    const app = await buildApp();   // no authCtx
+    const app = await buildApp(); // no authCtx
     const res = await app.request('/api/v1/auth/bootstrap', {
       headers: { cookie: 'ff_session=valid' },
     });
@@ -220,7 +229,11 @@ describe('/auth/status — public no-auth endpoint', () => {
     const app = await buildApp();
     const res = await app.request('/api/v1/auth/status');
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { userCount: number; needsSetup: boolean; signupAllowed: boolean };
+    const body = (await res.json()) as {
+      userCount: number;
+      needsSetup: boolean;
+      signupAllowed: boolean;
+    };
     expect(body.userCount).toBe(5);
     expect(body.needsSetup).toBe(false);
     expect(typeof body.signupAllowed).toBe('boolean');
@@ -243,16 +256,23 @@ describe('/auth/me — gated', () => {
     });
     const res = await app.request('/api/v1/auth/me');
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { user: { role: string; displayName: string | null; email: string } };
+    const body = (await res.json()) as {
+      user: { role: string; displayName: string | null; email: string };
+    };
     expect(body.user.role).toBe('owner');
     expect(body.user.displayName).toBe('Mario Rossi');
     expect(body.user.email).toBe('u@x.it');
   });
 
-  it('200 con displayName=null se l\'utente non è ancora nel users table (es. super_admin SSO fresh)', async () => {
+  it("200 con displayName=null se l'utente non è ancora nel users table (es. super_admin SSO fresh)", async () => {
     m.sqliteGet.mockReturnValueOnce(undefined);
     const app = await buildApp({
-      authCtx: { userId: 'admin-x', role: 'owner', email: 'admin@portal.it', tenantId: 'tenant-default' },
+      authCtx: {
+        userId: 'admin-x',
+        role: 'owner',
+        email: 'admin@portal.it',
+        tenantId: 'tenant-default',
+      },
     });
     const res = await app.request('/api/v1/auth/me');
     expect(res.status).toBe(200);
@@ -273,9 +293,9 @@ describe('BUG FIX 2026-06-07: /auth/logout cancella ff_session (anti back-after-
     const res = await app.request('/api/v1/auth/logout', { method: 'POST' });
     expect(res.status).toBe(200);
     const setCookie = res.headers.get('set-cookie') ?? '';
-    expect(setCookie).toMatch(/ff_session=/);            // cancella il cookie sessione
+    expect(setCookie).toMatch(/ff_session=/); // cancella il cookie sessione
     expect(setCookie.toLowerCase()).toMatch(/max-age=0|expires=/); // → scaduto subito
-    expect(res.headers.get('cache-control')).toMatch(/no-store/);  // anti-bfcache
+    expect(res.headers.get('cache-control')).toMatch(/no-store/); // anti-bfcache
     expect(res.headers.get('clear-site-data')).toMatch(/cookies/); // pulizia storage SPA
   });
   it('GET con Accept text/html → 302 redirect /', async () => {

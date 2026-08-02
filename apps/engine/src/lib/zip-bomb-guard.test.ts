@@ -4,7 +4,12 @@
  */
 import { describe, it, expect } from 'vitest';
 import { deflateRawSync } from 'node:zlib';
-import { assertNotZipBomb, assertNoZipBombDeep, sumDeclaredUncompressedBytes, ZipBombError } from './zip-bomb-guard.js';
+import {
+  assertNotZipBomb,
+  assertNoZipBombDeep,
+  sumDeclaredUncompressedBytes,
+  ZipBombError,
+} from './zip-bomb-guard.js';
 
 /**
  * ZIP con 1 entry DEFLATE (method 8): `payload` è il contenuto reale; `declaredUncompressed`
@@ -18,7 +23,7 @@ function makeDeflateZip(name: string, payload: Buffer, declaredUncompressed: num
   local.writeUInt32LE(0x04034b50, 0);
   local.writeUInt16LE(20, 4);
   local.writeUInt16LE(8, 8); // DEFLATE
-  local.writeUInt32LE(data.length, 18);          // compressed
+  local.writeUInt32LE(data.length, 18); // compressed
   local.writeUInt32LE(declaredUncompressed, 22); // uncompressed DICHIARATO (può mentire)
   local.writeUInt16LE(nameBuf.length, 26);
   nameBuf.copy(local, 30);
@@ -28,7 +33,7 @@ function makeDeflateZip(name: string, payload: Buffer, declaredUncompressed: num
   central.writeUInt32LE(0x02014b50, 0);
   central.writeUInt16LE(20, 6);
   central.writeUInt16LE(8, 10); // DEFLATE
-  central.writeUInt32LE(data.length, 20);          // compressed
+  central.writeUInt32LE(data.length, 20); // compressed
   central.writeUInt32LE(declaredUncompressed, 24); // uncompressed DICHIARATO
   central.writeUInt16LE(nameBuf.length, 28);
   central.writeUInt32LE(0, 42); // offset local header
@@ -59,7 +64,7 @@ function makeZip(name: string, declaredUncompressed: number): Buffer {
   local.writeUInt16LE(0, 6);
   local.writeUInt16LE(0, 8); // STORED
   local.writeUInt32LE(crc, 14);
-  local.writeUInt32LE(data.length, 18);          // compressed
+  local.writeUInt32LE(data.length, 18); // compressed
   local.writeUInt32LE(declaredUncompressed, 22); // uncompressed DICHIARATO
   local.writeUInt16LE(nameBuf.length, 26);
   nameBuf.copy(local, 30);
@@ -70,7 +75,7 @@ function makeZip(name: string, declaredUncompressed: number): Buffer {
   central.writeUInt16LE(20, 6);
   central.writeUInt16LE(0, 10); // STORED
   central.writeUInt32LE(crc, 16);
-  central.writeUInt32LE(data.length, 20);          // compressed
+  central.writeUInt32LE(data.length, 20); // compressed
   central.writeUInt32LE(declaredUncompressed, 24); // uncompressed DICHIARATO
   central.writeUInt16LE(nameBuf.length, 28);
   central.writeUInt32LE(0, 42); // offset local header
@@ -78,10 +83,10 @@ function makeZip(name: string, declaredUncompressed: number): Buffer {
 
   const eocd = Buffer.alloc(22);
   eocd.writeUInt32LE(0x06054b50, 0);
-  eocd.writeUInt16LE(1, 8);  // entries this disk
+  eocd.writeUInt16LE(1, 8); // entries this disk
   eocd.writeUInt16LE(1, 10); // total entries
   eocd.writeUInt32LE(central.length, 12); // size central dir
-  eocd.writeUInt32LE(local.length, 16);   // offset central dir
+  eocd.writeUInt32LE(local.length, 16); // offset central dir
 
   return Buffer.concat([local, central, eocd]);
 }
@@ -92,7 +97,9 @@ describe('zip-bomb-guard', () => {
   });
 
   it('✅ ZIP onesto (sotto soglia) → passa', () => {
-    expect(() => assertNotZipBomb(makeZip('a.xml', 10 * 1024 * 1024), 250 * 1024 * 1024)).not.toThrow();
+    expect(() =>
+      assertNotZipBomb(makeZip('a.xml', 10 * 1024 * 1024), 250 * 1024 * 1024),
+    ).not.toThrow();
   });
 
   it('🚨🚨 zip-bomb: dichiara 1GB non compresso ma è 1 byte → ZipBombError (no decompressione)', () => {
@@ -102,7 +109,7 @@ describe('zip-bomb-guard', () => {
   });
 
   it('🚨 buffer non-ZIP → null/no-op (lascia decidere al parser a valle)', () => {
-    const notZip = Buffer.from('questo non e\' uno zip', 'utf8');
+    const notZip = Buffer.from("questo non e' uno zip", 'utf8');
     expect(sumDeclaredUncompressedBytes(notZip)).toBeNull();
     expect(() => assertNotZipBomb(notZip)).not.toThrow();
   });

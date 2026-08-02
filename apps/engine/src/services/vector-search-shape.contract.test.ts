@@ -58,10 +58,15 @@ describe('CONTRATTO: VectorService.search ⇄ rag.ts (adapter sqlite reale)', ()
   it('search ritorna { results: Array, count } — NON un array nudo', async () => {
     const svc = new VectorService();
     await svc.ensureCollection(DB_ID, COLLECTION, 3, 'cosine', 't1');
-    await svc.upsert(DB_ID, COLLECTION, [
-      { id: 'a', vector: [1, 0, 0], payload: { content: 'alpha' } },
-      { id: 'b', vector: [0, 1, 0], payload: { content: 'beta' } },
-    ], 't1');
+    await svc.upsert(
+      DB_ID,
+      COLLECTION,
+      [
+        { id: 'a', vector: [1, 0, 0], payload: { content: 'alpha' } },
+        { id: 'b', vector: [0, 1, 0], payload: { content: 'beta' } },
+      ],
+      't1',
+    );
 
     const searchRes = await svc.search(DB_ID, COLLECTION, { vector: [1, 0, 0], topK: 5 }, 't1');
 
@@ -76,14 +81,22 @@ describe('CONTRATTO: VectorService.search ⇄ rag.ts (adapter sqlite reale)', ()
   it('rag.ts può fare .results.map() sul risultato reale (consumo che usa lo shipped executor)', async () => {
     const svc = new VectorService();
     await svc.ensureCollection(DB_ID, COLLECTION, 3, 'cosine', 't1');
-    await svc.upsert(DB_ID, COLLECTION, [
-      { id: 'a', vector: [1, 0, 0], payload: { content: 'documento alpha' } },
-    ], 't1');
+    await svc.upsert(
+      DB_ID,
+      COLLECTION,
+      [{ id: 'a', vector: [1, 0, 0], payload: { content: 'documento alpha' } }],
+      't1',
+    );
 
     // Replica ESATTA del consumo in rag.ts (ragSearchExecutor): cast a
     // { results, count } e .results.map(...). Se la forma divergesse, qui
     // esploderebbe come in produzione.
-    const searchRes = (await svc.search(DB_ID, COLLECTION, { vector: [1, 0, 0], topK: 5 }, 't1')) as {
+    const searchRes = (await svc.search(
+      DB_ID,
+      COLLECTION,
+      { vector: [1, 0, 0], topK: 5 },
+      't1',
+    )) as {
       results: { id: string; score: number; payload?: Record<string, unknown> }[];
       count: number;
     };
@@ -93,17 +106,28 @@ describe('CONTRATTO: VectorService.search ⇄ rag.ts (adapter sqlite reale)', ()
     expect(mapped).toEqual([{ id: 'a', content: 'documento alpha' }]);
   });
 
-  it('topK reale dell\'adapter è onorato dentro il wrapper { results, count }', async () => {
+  it("topK reale dell'adapter è onorato dentro il wrapper { results, count }", async () => {
     const svc = new VectorService();
     await svc.ensureCollection(DB_ID, COLLECTION, 3, 'cosine', 't1');
-    await svc.upsert(DB_ID, COLLECTION, [
-      { id: 'a', vector: [1, 0, 0], payload: { content: 'a' } },
-      { id: 'b', vector: [0.9, 0.1, 0], payload: { content: 'b' } },
-      { id: 'c', vector: [0.8, 0.2, 0], payload: { content: 'c' } },
-    ], 't1');
+    await svc.upsert(
+      DB_ID,
+      COLLECTION,
+      [
+        { id: 'a', vector: [1, 0, 0], payload: { content: 'a' } },
+        { id: 'b', vector: [0.9, 0.1, 0], payload: { content: 'b' } },
+        { id: 'c', vector: [0.8, 0.2, 0], payload: { content: 'c' } },
+      ],
+      't1',
+    );
 
-    const searchRes = (await svc.search(DB_ID, COLLECTION, { vector: [1, 0, 0], topK: 2 }, 't1')) as {
-      results: unknown[]; count: number;
+    const searchRes = (await svc.search(
+      DB_ID,
+      COLLECTION,
+      { vector: [1, 0, 0], topK: 2 },
+      't1',
+    )) as {
+      results: unknown[];
+      count: number;
     };
     expect(searchRes.results).toHaveLength(2);
     expect(searchRes.count).toBe(2);

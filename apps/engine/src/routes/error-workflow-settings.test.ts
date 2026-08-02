@@ -45,18 +45,27 @@ async function put(role: 'owner' | 'viewer', body: unknown): Promise<Response> {
 beforeAll(async () => {
   runMigrations();
   const handler = await workflows.create({
-    name: 'settings-handler', enabled: true, tenantId: 'default',
-    nodes: [{ id: 't', defId: 'trigger_error', x: 0, y: 0, config: {} }], edges: [],
+    name: 'settings-handler',
+    enabled: true,
+    tenantId: 'default',
+    nodes: [{ id: 't', defId: 'trigger_error', x: 0, y: 0, config: {} }],
+    edges: [],
   });
   handlerId = handler.id;
   const noTrigger = await workflows.create({
-    name: 'settings-no-trigger', enabled: true, tenantId: 'default',
-    nodes: [{ id: 'a', defId: 'trigger_manual', x: 0, y: 0, config: {} }], edges: [],
+    name: 'settings-no-trigger',
+    enabled: true,
+    tenantId: 'default',
+    nodes: [{ id: 'a', defId: 'trigger_manual', x: 0, y: 0, config: {} }],
+    edges: [],
   });
   noTriggerId = noTrigger.id;
 }, 30_000);
 
-afterEach(() => { setTenantErrorWorkflowId(null); resetErrorWorkflowFlagForTests(); });
+afterEach(() => {
+  setTenantErrorWorkflowId(null);
+  resetErrorWorkflowFlagForTests();
+});
 
 describe('🚨 PUT — validazioni che evitano il catch-all rotto-in-silenzio', () => {
   it('🚨 workflow valido con trigger_error → 200, flag settato, audit row scritta', async () => {
@@ -65,9 +74,11 @@ describe('🚨 PUT — validazioni che evitano il catch-all rotto-in-silenzio', 
     resetErrorWorkflowFlagForTests();
     expect(getTenantErrorWorkflowId()).toBe(handlerId);
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare(
-      "SELECT metadata_json FROM audit_log WHERE action = 'settings.error_workflow.updated' ORDER BY id DESC LIMIT 1",
-    ).get() as { metadata_json: string } | undefined;
+    const row = sqlite
+      .prepare(
+        "SELECT metadata_json FROM audit_log WHERE action = 'settings.error_workflow.updated' ORDER BY id DESC LIMIT 1",
+      )
+      .get() as { metadata_json: string } | undefined;
     expect(row).toBeDefined();
     expect(JSON.parse(row!.metadata_json)).toMatchObject({ next: handlerId });
   });
@@ -81,7 +92,7 @@ describe('🚨 PUT — validazioni che evitano il catch-all rotto-in-silenzio', 
   it('🚨 workflow SENZA trigger_error → 400 con messaggio chiaro (quasi certamente una svista)', async () => {
     const res = await put('owner', { errorWorkflowId: noTriggerId });
     expect(res.status).toBe(400);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toMatch(/trigger_error/u);
     expect(getTenantErrorWorkflowId()).toBeNull();
   });
@@ -125,7 +136,10 @@ describe('🚨 GET', () => {
 
   it('🔴 GET ruolo ignoto → 403 (fail-closed, non pass-through)', async () => {
     const app = new Hono();
-    app.use('*', async (c, next) => { c.set('auth' as never, { tenantId: 'default', userId: 'x', role: 'alien' } as never); await next(); });
+    app.use('*', async (c, next) => {
+      c.set('auth' as never, { tenantId: 'default', userId: 'x', role: 'alien' } as never);
+      await next();
+    });
     app.route('/api/v1', createErrorWorkflowSettingsRoutes(bus));
     const res = await app.request('/api/v1/settings/error-workflow');
     expect(res.status).toBe(403);
@@ -136,7 +150,10 @@ describe('🚨 wiring — la route è MONTATA nel server reale', () => {
   it('🚨 server.ts importa e monta createErrorWorkflowSettingsRoutes', async () => {
     const { readFileSync } = await import('node:fs');
     const { fileURLToPath } = await import('node:url');
-    const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'server.ts'), 'utf8');
+    const src = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'server.ts'),
+      'utf8',
+    );
     expect(src).toContain("from './routes/error-workflow-settings.js'");
     expect(src).toContain('createErrorWorkflowSettingsRoutes(deps.eventBus)');
   });

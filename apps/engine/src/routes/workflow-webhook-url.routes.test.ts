@@ -21,7 +21,11 @@ import type { WorkflowService } from '@/services/workflow.service.js';
 const SECRET_A = 'route-secret-A-abcdefghijklmnopqrstuvwx';
 const SECRET_B = 'route-secret-B-abcdefghijklmnopqrstuvwx';
 
-interface StubNode { id: string; defId: string; config: Record<string, unknown> }
+interface StubNode {
+  id: string;
+  defId: string;
+  config: Record<string, unknown>;
+}
 
 function makeWorkflow(id: string, tenantId: string, nodes: StubNode[]): Record<string, unknown> {
   return { id, tenantId, name: 'wf', enabled: true, nodes, edges: [] };
@@ -31,10 +35,12 @@ function webhookNode(config: Record<string, unknown> = {}): StubNode {
   return { id: 'n1', defId: 'trigger_webhook', config: { authMode: 'none', ...config } };
 }
 
-function makeApp(opts: {
-  auth?: { tenantId: string; role?: string } | null;
-  workflows?: Record<string, Record<string, unknown>>; // id → workflow (tenant check nel finto get)
-} = {}): Hono {
+function makeApp(
+  opts: {
+    auth?: { tenantId: string; role?: string } | null;
+    workflows?: Record<string, Record<string, unknown>>; // id → workflow (tenant check nel finto get)
+  } = {},
+): Hono {
   const auth = opts.auth === undefined ? { tenantId: 't1' } : opts.auth;
   const store = opts.workflows ?? {};
   const service = {
@@ -73,7 +79,14 @@ afterEach(() => {
 
 interface Payload {
   ok: true;
-  webhook: { path: string; url: string | null; token: string; authMode: string; customPath: string | null; ref: string | null };
+  webhook: {
+    path: string;
+    url: string | null;
+    token: string;
+    authMode: string;
+    customPath: string | null;
+    ref: string | null;
+  };
 }
 
 describe('GET /:id/webhook-url — gates', () => {
@@ -83,14 +96,18 @@ describe('GET /:id/webhook-url — gates', () => {
   });
 
   it('404 per id sconosciuto E per workflow di ALTRO tenant (isolation)', async () => {
-    const app = makeApp({ workflows: { wfX: makeWorkflow('wfX', 'altro-tenant', [webhookNode()]) } });
+    const app = makeApp({
+      workflows: { wfX: makeWorkflow('wfX', 'altro-tenant', [webhookNode()]) },
+    });
     expect((await app.request('/sconosciuto/webhook-url')).status).toBe(404);
     expect((await app.request('/wfX/webhook-url')).status).toBe(404);
   });
 
   it('409 se il workflow non ha trigger_webhook', async () => {
     const app = makeApp({
-      workflows: { wf1: makeWorkflow('wf1', 't1', [{ id: 'n1', defId: 'trigger_cron', config: {} }]) },
+      workflows: {
+        wf1: makeWorkflow('wf1', 't1', [{ id: 'n1', defId: 'trigger_cron', config: {} }]),
+      },
     });
     expect((await app.request('/wf1/webhook-url')).status).toBe(409);
   });
@@ -109,7 +126,7 @@ describe('GET /:id/webhook-url — authMode none (il fix "no-token")', () => {
     const app = makeApp({ workflows: { wf1: makeWorkflow('wf1', 't1', [webhookNode()]) } });
     const res = await app.request('/wf1/webhook-url');
     expect(res.status).toBe(200);
-    const body = await res.json() as Payload;
+    const body = (await res.json()) as Payload;
     const expected = deriveDefaultWebhookToken('wf1');
     expect(body.webhook.token).toBe(expected);
     expect(body.webhook.path).toBe(`/webhooks/wf1/${expected}`);
@@ -117,20 +134,23 @@ describe('GET /:id/webhook-url — authMode none (il fix "no-token")', () => {
     expect(body.webhook.ref).toBe('ref://wf/wf1/webhook');
   });
 
-  it('ANTI-REGRESSIONE rotazione: dopo il cambio secret l\'endpoint dà il token NUOVO', async () => {
+  it("ANTI-REGRESSIONE rotazione: dopo il cambio secret l'endpoint dà il token NUOVO", async () => {
     const app = makeApp({ workflows: { wf1: makeWorkflow('wf1', 't1', [webhookNode()]) } });
-    const before = (await (await app.request('/wf1/webhook-url')).json() as Payload).webhook.token;
+    const before = ((await (await app.request('/wf1/webhook-url')).json()) as Payload).webhook
+      .token;
     process.env.MEDEA_SSO_SECRET = SECRET_B;
-    const after = (await (await app.request('/wf1/webhook-url')).json() as Payload).webhook.token;
+    const after = ((await (await app.request('/wf1/webhook-url')).json()) as Payload).webhook.token;
     expect(after).not.toBe(before);
     expect(after).toBe(deriveDefaultWebhookToken('wf1'));
   });
 
   it('customPath: path /webhooks/c/… + ref col path custom + slash esterni normalizzati', async () => {
     const app = makeApp({
-      workflows: { wf1: makeWorkflow('wf1', 't1', [webhookNode({ customPath: '/streammy/search/' })]) },
+      workflows: {
+        wf1: makeWorkflow('wf1', 't1', [webhookNode({ customPath: '/streammy/search/' })]),
+      },
     });
-    const body = await (await app.request('/wf1/webhook-url')).json() as Payload;
+    const body = (await (await app.request('/wf1/webhook-url')).json()) as Payload;
     const token = deriveDefaultWebhookToken('wf1');
     expect(body.webhook.path).toBe(`/webhooks/c/streammy/search/${token}`);
     expect(body.webhook.customPath).toBe('streammy/search');
@@ -139,9 +159,11 @@ describe('GET /:id/webhook-url — authMode none (il fix "no-token")', () => {
 
   it('customPath fuori charset ref: path costruito, ref null (indirection non disponibile)', async () => {
     const app = makeApp({
-      workflows: { wf1: makeWorkflow('wf1', 't1', [webhookNode({ customPath: 'spazio non valido' })]) },
+      workflows: {
+        wf1: makeWorkflow('wf1', 't1', [webhookNode({ customPath: 'spazio non valido' })]),
+      },
     });
-    const body = await (await app.request('/wf1/webhook-url')).json() as Payload;
+    const body = (await (await app.request('/wf1/webhook-url')).json()) as Payload;
     expect(body.webhook.ref).toBeNull();
     expect(body.webhook.path).toContain('/webhooks/c/spazio non valido/');
   });
@@ -154,11 +176,15 @@ describe('GET /:id/webhook-url — authMode none (il fix "no-token")', () => {
 
   it('url assoluto quando MEDEA_PUBLIC_BASE_URL è configurata, null altrimenti', async () => {
     const app = makeApp({ workflows: { wf1: makeWorkflow('wf1', 't1', [webhookNode()]) } });
-    expect((await (await app.request('/wf1/webhook-url')).json() as Payload).webhook.url).toBeNull();
+    expect(
+      ((await (await app.request('/wf1/webhook-url')).json()) as Payload).webhook.url,
+    ).toBeNull();
     process.env.MEDEA_PUBLIC_BASE_URL = 'https://cucurachi.app.automazionezeli.com/';
     resetConfigForTests();
-    const body = await (await app.request('/wf1/webhook-url')).json() as Payload;
-    expect(body.webhook.url).toBe(`https://cucurachi.app.automazionezeli.com/webhooks/wf1/${deriveDefaultWebhookToken('wf1')}`);
+    const body = (await (await app.request('/wf1/webhook-url')).json()) as Payload;
+    expect(body.webhook.url).toBe(
+      `https://cucurachi.app.automazionezeli.com/webhooks/wf1/${deriveDefaultWebhookToken('wf1')}`,
+    );
   });
 });
 
@@ -166,11 +192,13 @@ describe('GET /:id/webhook-url — altri authMode (semantica allineata ad author
   it('header-token: segmento = authSecret; senza secret → 503', async () => {
     const app = makeApp({
       workflows: {
-        wf1: makeWorkflow('wf1', 't1', [webhookNode({ authMode: 'header-token', authSecret: 'tok-segreto' })]),
+        wf1: makeWorkflow('wf1', 't1', [
+          webhookNode({ authMode: 'header-token', authSecret: 'tok-segreto' }),
+        ]),
         wf2: makeWorkflow('wf2', 't1', [webhookNode({ authMode: 'header-token' })]),
       },
     });
-    const body = await (await app.request('/wf1/webhook-url')).json() as Payload;
+    const body = (await (await app.request('/wf1/webhook-url')).json()) as Payload;
     expect(body.webhook.token).toBe('tok-segreto');
     expect(body.webhook.ref).toBeNull(); // indirection solo per token derivati
     expect((await app.request('/wf2/webhook-url')).status).toBe(503);
@@ -179,11 +207,19 @@ describe('GET /:id/webhook-url — altri authMode (semantica allineata ad author
   it('hmac-signature → "placeholder", basic-auth → "no-token" (slug cosmetici, auth via header)', async () => {
     const app = makeApp({
       workflows: {
-        wf1: makeWorkflow('wf1', 't1', [webhookNode({ authMode: 'hmac-signature', hmacSecret: 's' })]),
-        wf2: makeWorkflow('wf2', 't1', [webhookNode({ authMode: 'basic-auth', authSecret: 'u:p' })]),
+        wf1: makeWorkflow('wf1', 't1', [
+          webhookNode({ authMode: 'hmac-signature', hmacSecret: 's' }),
+        ]),
+        wf2: makeWorkflow('wf2', 't1', [
+          webhookNode({ authMode: 'basic-auth', authSecret: 'u:p' }),
+        ]),
       },
     });
-    expect((await (await app.request('/wf1/webhook-url')).json() as Payload).webhook.token).toBe('placeholder');
-    expect((await (await app.request('/wf2/webhook-url')).json() as Payload).webhook.token).toBe('no-token');
+    expect(((await (await app.request('/wf1/webhook-url')).json()) as Payload).webhook.token).toBe(
+      'placeholder',
+    );
+    expect(((await (await app.request('/wf2/webhook-url')).json()) as Payload).webhook.token).toBe(
+      'no-token',
+    );
   });
 });

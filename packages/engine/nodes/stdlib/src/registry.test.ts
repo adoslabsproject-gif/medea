@@ -35,7 +35,8 @@ describe('stdlibNodes', () => {
   // anche con locale=it selezionato. Guard contro nuovi nodi che dimenticano
   // la traduzione. Le descrizioni stdlib sono single-source-of-truth in IT.
   it('REGRESSION: nessuna description inizia con verbo inglese hardcoded', () => {
-    const englishVerbs = /^(Run|Send|Trigger|Execute|Read|Write|Get|Update|Delete|Create|Fetch|Query|Pause|Reshape|Call|Catch|Invoke|Push|Pull|Poll|Auto|Watch|Make|Build|Sleep|Wait|Receive|Calculate|Connect)\b/;
+    const englishVerbs =
+      /^(Run|Send|Trigger|Execute|Read|Write|Get|Update|Delete|Create|Fetch|Query|Pause|Reshape|Call|Catch|Invoke|Push|Pull|Poll|Auto|Watch|Make|Build|Sleep|Wait|Receive|Calculate|Connect)\b/;
     const offenders: string[] = [];
     for (const node of stdlibNodes) {
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime — TS narrow ottimistico
@@ -45,7 +46,9 @@ describe('stdlibNodes', () => {
       }
     }
     if (offenders.length > 0) {
-      throw new Error(`Descrizioni in inglese trovate (devono essere IT):\n${offenders.join('\n')}`);
+      throw new Error(
+        `Descrizioni in inglese trovate (devono essere IT):\n${offenders.join('\n')}`,
+      );
     }
     expect(offenders).toHaveLength(0);
   });
@@ -114,7 +117,8 @@ describe('stdlibNodes', () => {
     });
 
     it('every studio-commercialista node has Italian description (regression)', () => {
-      const englishVerbs = /^(Run|Send|Trigger|Execute|Read|Write|Get|Update|Delete|Create|Fetch|Query|Pause|Reshape|Call|Catch|Invoke|Push|Pull|Poll|Auto|Watch|Make|Build|Sleep|Wait|Receive|Calculate|Connect)\b/;
+      const englishVerbs =
+        /^(Run|Send|Trigger|Execute|Read|Write|Get|Update|Delete|Create|Fetch|Query|Pause|Reshape|Call|Catch|Invoke|Push|Pull|Poll|Auto|Watch|Make|Build|Sleep|Wait|Receive|Calculate|Connect)\b/;
       for (const id of STUDIO_IDS) {
         const node = findStdlibNode(id)!;
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime — TS narrow ottimistico
@@ -127,13 +131,19 @@ describe('stdlibNodes', () => {
     it('pec_classify declares 4 named output branches', () => {
       const node = findStdlibNode('action_pec_classify')!;
       expect(node.def.outputs).toEqual([
-        'received_message', 'acceptance_receipt', 'delivery_receipt', 'rejection',
+        'received_message',
+        'acceptance_receipt',
+        'delivery_receipt',
+        'rejection',
       ]);
     });
 
     it('action nodes have an executor; trigger does not', () => {
       const actions = [
-        'action_odoo_rpc', 'action_whatsapp_send', 'action_pec_classify', 'action_email_triage',
+        'action_odoo_rpc',
+        'action_whatsapp_send',
+        'action_pec_classify',
+        'action_email_triage',
       ];
       for (const id of actions) {
         expect(typeof findStdlibNode(id)?.executor).toBe('function');
@@ -181,7 +191,8 @@ describe('stdlibNodes', () => {
     ] as const;
 
     it('every A3.3 stabilized node has description ≥150 char + ≥25 distinct words + IT + Use case (anti-gaming)', () => {
-      const englishVerbs = /^(Run|Send|Trigger|Execute|Read|Write|Get|Update|Delete|Create|Fetch|Query|Pause|Reshape|Call|Catch|Invoke|Push|Pull|Poll|Auto|Watch|Make|Build|Sleep|Wait|Receive|Calculate|Connect|Insert|Iterate|Iterates|Schedule|Subscribe|Classify|Extract|Translate|Faithful|Produce|Generate)\b/;
+      const englishVerbs =
+        /^(Run|Send|Trigger|Execute|Read|Write|Get|Update|Delete|Create|Fetch|Query|Pause|Reshape|Call|Catch|Invoke|Push|Pull|Poll|Auto|Watch|Make|Build|Sleep|Wait|Receive|Calculate|Connect|Insert|Iterate|Iterates|Schedule|Subscribe|Classify|Extract|Translate|Faithful|Produce|Generate)\b/;
       const offenders: string[] = [];
       for (const id of A33_STABILIZED_IDS) {
         const node = findStdlibNode(id);
@@ -200,7 +211,9 @@ describe('stdlibNodes', () => {
         // Anti-gaming: distinct word count (no whitespace/ripetizione stuffing)
         const distinctWords = new Set(desc.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? []);
         if (distinctWords.size < 25) {
-          offenders.push(`${id}: only ${String(distinctWords.size)} distinct words (<25 = gameable)`);
+          offenders.push(
+            `${id}: only ${String(distinctWords.size)} distinct words (<25 = gameable)`,
+          );
         }
         // Mandatory enumeration delle use case (consulente flag 2026-06-05)
         if (!/use case/i.test(desc)) {

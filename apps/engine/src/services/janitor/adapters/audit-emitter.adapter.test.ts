@@ -23,12 +23,16 @@ beforeEach(() => {
 describe('🚨 emit — delegation + conditional spread', () => {
   it('🚨 minimo (solo tenantId+action+resourceType) → append con solo questi', async () => {
     await adapter.emit({
-      tenantId: 't1', action: 'janitor.test', resourceType: 'janitor_rule_config',
+      tenantId: 't1',
+      action: 'janitor.test',
+      resourceType: 'janitor_rule_config',
     });
     expect(appendMock).toHaveBeenCalledTimes(1);
     const payload = appendMock.mock.calls[0]![0] as Record<string, unknown>;
     expect(payload).toEqual({
-      tenantId: 't1', action: 'janitor.test', resourceType: 'janitor_rule_config',
+      tenantId: 't1',
+      action: 'janitor.test',
+      resourceType: 'janitor_rule_config',
     });
     expect('resourceId' in payload).toBe(false);
     expect('actorId' in payload).toBe(false);
@@ -37,7 +41,10 @@ describe('🚨 emit — delegation + conditional spread', () => {
 
   it('🚨 resourceId presente → propagato', async () => {
     await adapter.emit({
-      tenantId: 't1', action: 'a', resourceType: 'r', resourceId: 'res-1',
+      tenantId: 't1',
+      action: 'a',
+      resourceType: 'r',
+      resourceId: 'res-1',
     });
     const payload = appendMock.mock.calls[0]![0] as Record<string, unknown>;
     expect(payload.resourceId).toBe('res-1');
@@ -45,7 +52,10 @@ describe('🚨 emit — delegation + conditional spread', () => {
 
   it('🚨 actorId presente → propagato', async () => {
     await adapter.emit({
-      tenantId: 't1', action: 'a', resourceType: 'r', actorId: 'user-1',
+      tenantId: 't1',
+      action: 'a',
+      resourceType: 'r',
+      actorId: 'user-1',
     });
     const payload = appendMock.mock.calls[0]![0] as Record<string, unknown>;
     expect(payload.actorId).toBe('user-1');
@@ -53,7 +63,9 @@ describe('🚨 emit — delegation + conditional spread', () => {
 
   it('🚨 metadata Record presente → propagato', async () => {
     await adapter.emit({
-      tenantId: 't1', action: 'a', resourceType: 'r',
+      tenantId: 't1',
+      action: 'a',
+      resourceType: 'r',
       metadata: { changedFields: ['enabled'], oldValue: true },
     });
     const payload = appendMock.mock.calls[0]![0] as Record<string, unknown>;
@@ -62,20 +74,29 @@ describe('🚨 emit — delegation + conditional spread', () => {
 
   it('🚨 tutti i campi → tutti propagati', async () => {
     await adapter.emit({
-      tenantId: 't1', action: 'janitor.rule.patched',
-      resourceType: 'janitor_rule_config', resourceId: 'rule.a',
-      actorId: 'admin-alice', metadata: { fields: ['enabled'] },
+      tenantId: 't1',
+      action: 'janitor.rule.patched',
+      resourceType: 'janitor_rule_config',
+      resourceId: 'rule.a',
+      actorId: 'admin-alice',
+      metadata: { fields: ['enabled'] },
     });
     expect(appendMock).toHaveBeenCalledWith({
-      tenantId: 't1', action: 'janitor.rule.patched',
-      resourceType: 'janitor_rule_config', resourceId: 'rule.a',
-      actorId: 'admin-alice', metadata: { fields: ['enabled'] },
+      tenantId: 't1',
+      action: 'janitor.rule.patched',
+      resourceType: 'janitor_rule_config',
+      resourceId: 'rule.a',
+      actorId: 'admin-alice',
+      metadata: { fields: ['enabled'] },
     });
   });
 
   it('🚨 metadata empty object {} → propagato (esplicito)', async () => {
     await adapter.emit({
-      tenantId: 't1', action: 'a', resourceType: 'r', metadata: {},
+      tenantId: 't1',
+      action: 'a',
+      resourceType: 'r',
+      metadata: {},
     });
     const payload = appendMock.mock.calls[0]![0] as Record<string, unknown>;
     expect(payload.metadata).toEqual({});
@@ -83,8 +104,12 @@ describe('🚨 emit — delegation + conditional spread', () => {
 
   it('🚨 RESILIENCE: AuditService throw → propaga error (no swallow)', async () => {
     appendMock.mockRejectedValueOnce(new Error('audit chain broken'));
-    await expect(adapter.emit({
-      tenantId: 't1', action: 'a', resourceType: 'r',
-    })).rejects.toThrow(/audit chain broken/);
+    await expect(
+      adapter.emit({
+        tenantId: 't1',
+        action: 'a',
+        resourceType: 'r',
+      }),
+    ).rejects.toThrow(/audit chain broken/);
   });
 });

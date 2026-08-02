@@ -41,7 +41,12 @@ export { sitemapCrawlerNode } from './sitemap-crawler.js';
 // #4 scrape smart (orchestratore AI 4-stage adaptive + LLM extract + pagination)
 export { stealthBrowserNode, resolveFingerprint } from './stealth-browser.js';
 export { distributedCrawlerNode, buildCrawlerRequest } from './distributed-crawler.js';
-export { visionExtractNode, extractJsonFromResponse, buildVisionMessages, VisionExtractOutputSchema } from './vision-extract.js';
+export {
+  visionExtractNode,
+  extractJsonFromResponse,
+  buildVisionMessages,
+  VisionExtractOutputSchema,
+} from './vision-extract.js';
 export { scrapeSmartNode } from './scrape-smart.js';
 
 // Batch 5 — Streammy port (2026-06-01)

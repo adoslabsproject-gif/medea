@@ -25,7 +25,8 @@ vi.mock('@/storage/db.js', () => ({
 vi.mock('@/lib/logger.js');
 const loggerMock = vi.mocked(logger);
 
-const { recordOpen, recordClick, TRANSPARENT_GIF_BYTES } = await import('./email-tracking.service.js');
+const { recordOpen, recordClick, TRANSPARENT_GIF_BYTES } =
+  await import('./email-tracking.service.js');
 
 const validPayload = { w: 'ws-1', l: 'lead-42', c: 'campaign-X', s: 'send-7', i: 0 };
 
@@ -50,7 +51,10 @@ describe('🚨 recordOpen', () => {
   it('🚨 happy: token valido + UA umana → insert + ok recorded', async () => {
     verifyTrackingTokenMock.mockResolvedValueOnce({ ok: true, payload: validPayload });
     const r = await recordOpen({
-      token: 'valid-token', userAgent: 'Mozilla/5.0', ip: '1.2.3.4', secret: 's',
+      token: 'valid-token',
+      userAgent: 'Mozilla/5.0',
+      ip: '1.2.3.4',
+      secret: 's',
     });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -74,22 +78,34 @@ describe('🚨 recordOpen', () => {
     expect(r.ok).toBe(false);
     if (r.ok) return;
     expect(r.reason).toBe('bad-signature');
-    expect(sqliteInst.prepare('SELECT COUNT(*) as n FROM b2b_interactions').get()).toEqual({ n: 0 });
+    expect(sqliteInst.prepare('SELECT COUNT(*) as n FROM b2b_interactions').get()).toEqual({
+      n: 0,
+    });
   });
 
   it('🚨 bot UA → recorded=false MA ok=true (per response GIF)', async () => {
     verifyTrackingTokenMock.mockResolvedValueOnce({ ok: true, payload: validPayload });
     isTrackingBotMock.mockReturnValueOnce(true);
-    const r = await recordOpen({ token: 't', userAgent: 'GmailImageProxy', ip: '1.1.1.1', secret: 's' });
+    const r = await recordOpen({
+      token: 't',
+      userAgent: 'GmailImageProxy',
+      ip: '1.1.1.1',
+      secret: 's',
+    });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.recorded).toBe(false);
     expect(r.bot).toBe(true);
     // No row inserted
-    expect(sqliteInst.prepare('SELECT COUNT(*) as n FROM b2b_interactions').get()).toEqual({ n: 0 });
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.objectContaining({
-      kind: 'open', reason: 'bot-skipped',
-    }));
+    expect(sqliteInst.prepare('SELECT COUNT(*) as n FROM b2b_interactions').get()).toEqual({
+      n: 0,
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'open',
+        reason: 'bot-skipped',
+      }),
+    );
   });
 
   it('🚨 IP undefined → ip_hash null (no fake hash)', async () => {
@@ -114,7 +130,8 @@ describe('🚨 recordOpen', () => {
     // Endpoint MUST never throw — still return ok response shape
     expect(r.ok).toBe(true);
     expect(loggerMock.error).toHaveBeenCalledWith(
-      expect.any(Object), 'INSERT b2b_interactions failed',
+      expect.any(Object),
+      'INSERT b2b_interactions failed',
     );
   });
 });
@@ -126,7 +143,11 @@ describe('🚨 recordClick — destination URL validation', () => {
 
   it('🚨 happy: http URL → insert + ok', async () => {
     const r = await recordClick({
-      token: 't', destinationUrl: 'http://example.com/page', userAgent: 'M', ip: '1.1.1.1', secret: 's',
+      token: 't',
+      destinationUrl: 'http://example.com/page',
+      userAgent: 'M',
+      ip: '1.1.1.1',
+      secret: 's',
     });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -137,7 +158,11 @@ describe('🚨 recordClick — destination URL validation', () => {
 
   it('🚨 happy: https URL → ok', async () => {
     const r = await recordClick({
-      token: 't', destinationUrl: 'https://example.com', userAgent: 'M', ip: '1.1.1.1', secret: 's',
+      token: 't',
+      destinationUrl: 'https://example.com',
+      userAgent: 'M',
+      ip: '1.1.1.1',
+      secret: 's',
     });
     expect(r.ok).toBe(true);
   });
@@ -150,17 +175,27 @@ describe('🚨 recordClick — destination URL validation', () => {
     'gopher://x',
   ])('🚨 SECURITY: blocca schema "%s" (open-redirect to script exec)', async (url) => {
     const r = await recordClick({
-      token: 't', destinationUrl: url, userAgent: 'M', ip: '1.1.1.1', secret: 's',
+      token: 't',
+      destinationUrl: url,
+      userAgent: 'M',
+      ip: '1.1.1.1',
+      secret: 's',
     });
     expect(r.ok).toBe(false);
     if (r.ok) return;
     expect(r.reason).toBe('bad-destination');
-    expect(sqliteInst.prepare('SELECT COUNT(*) as n FROM b2b_interactions').get()).toEqual({ n: 0 });
+    expect(sqliteInst.prepare('SELECT COUNT(*) as n FROM b2b_interactions').get()).toEqual({
+      n: 0,
+    });
   });
 
   it('🚨 URL malformato → bad-destination', async () => {
     const r = await recordClick({
-      token: 't', destinationUrl: 'not a url at all', userAgent: 'M', ip: '1.1.1.1', secret: 's',
+      token: 't',
+      destinationUrl: 'not a url at all',
+      userAgent: 'M',
+      ip: '1.1.1.1',
+      secret: 's',
     });
     expect(r.ok).toBe(false);
   });
@@ -168,7 +203,11 @@ describe('🚨 recordClick — destination URL validation', () => {
   it('🚨 verify fail → reason propagato (no destination check)', async () => {
     verifyTrackingTokenMock.mockResolvedValueOnce({ ok: false, reason: 'expired' });
     const r = await recordClick({
-      token: 't', destinationUrl: 'https://ok.com', userAgent: 'M', ip: '1.1.1.1', secret: 's',
+      token: 't',
+      destinationUrl: 'https://ok.com',
+      userAgent: 'M',
+      ip: '1.1.1.1',
+      secret: 's',
     });
     expect(r.ok).toBe(false);
     if (r.ok) return;
@@ -178,7 +217,11 @@ describe('🚨 recordClick — destination URL validation', () => {
   it('🚨 bot UA → recorded=false MA ok=true (per 302 redirect ancora valido)', async () => {
     isTrackingBotMock.mockReturnValueOnce(true);
     const r = await recordClick({
-      token: 't', destinationUrl: 'https://ok.com', userAgent: 'OfficeOutlook-SafeLinks', ip: '1.1', secret: 's',
+      token: 't',
+      destinationUrl: 'https://ok.com',
+      userAgent: 'OfficeOutlook-SafeLinks',
+      ip: '1.1',
+      secret: 's',
     });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -189,7 +232,11 @@ describe('🚨 recordClick — destination URL validation', () => {
   it('🚨 payload include i (link index) per multi-link emails', async () => {
     verifyTrackingTokenMock.mockResolvedValueOnce({ ok: true, payload: { ...validPayload, i: 3 } });
     await recordClick({
-      token: 't', destinationUrl: 'https://ok.com', userAgent: 'M', ip: '1.1', secret: 's',
+      token: 't',
+      destinationUrl: 'https://ok.com',
+      userAgent: 'M',
+      ip: '1.1',
+      secret: 's',
     });
     const row = sqliteInst.prepare('SELECT payload_json FROM b2b_interactions').get() as any;
     expect(JSON.parse(row.payload_json).i).toBe(3);

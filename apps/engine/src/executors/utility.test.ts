@@ -40,7 +40,9 @@ describe('renderTemplate — Mustache-like template', () => {
   });
 
   it('nested path: {{user.address.city}}', () => {
-    expect(renderTemplate('{{user.address.city}}', { user: { address: { city: 'Modena' } } })).toBe('Modena');
+    expect(renderTemplate('{{user.address.city}}', { user: { address: { city: 'Modena' } } })).toBe(
+      'Modena',
+    );
   });
 
   it('multiple vars in single template', () => {
@@ -120,11 +122,7 @@ describe('textTemplateExecutor', () => {
   });
 
   it('trim=true: collassa whitespace', async () => {
-    const r = await textTemplateExecutor(
-      { template: '   a   b   c   ', trim: 'true' },
-      {},
-      ctx,
-    );
+    const r = await textTemplateExecutor({ template: '   a   b   c   ', trim: 'true' }, {}, ctx);
     expect((r.output as { text: string }).text).toBe('a b c');
   });
 
@@ -163,7 +161,9 @@ describe('jsonPath — JSONPath subset', () => {
 
   it('$.array[*] wildcard → tutti gli elementi', () => {
     expect(jsonPath(data, '$.items[*]')).toEqual([
-      { id: 1, qty: 5 }, { id: 2, qty: 10 }, { id: 3, qty: 15 },
+      { id: 1, qty: 5 },
+      { id: 2, qty: 10 },
+      { id: 3, qty: 15 },
     ]);
   });
 
@@ -247,20 +247,12 @@ describe('jsonExtractExecutor', () => {
   });
 
   it('JSON string source auto-parse', async () => {
-    const r = await jsonExtractExecutor(
-      { path: '$.x', sourceExpression: '{"x": 42}' },
-      {},
-      ctx,
-    );
+    const r = await jsonExtractExecutor({ path: '$.x', sourceExpression: '{"x": 42}' }, {}, ctx);
     expect((r.output as { value: number }).value).toBe(42);
   });
 
   it('array JSON string source auto-parse', async () => {
-    const r = await jsonExtractExecutor(
-      { path: '$[0]', sourceExpression: '[1, 2, 3]' },
-      {},
-      ctx,
-    );
+    const r = await jsonExtractExecutor({ path: '$[0]', sourceExpression: '[1, 2, 3]' }, {}, ctx);
     expect((r.output as { value: number }).value).toBe(1);
   });
 });
@@ -375,7 +367,15 @@ describe('formatDate — preset + custom tokens', () => {
   it('custom EEEE (giorno full italiano)', () => {
     const r = formatDate(d, 'custom', 'EEEE', 'Europe/Rome');
     // 2026-06-07 12:00 Europe/Rome = domenica
-    expect(['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato']).toContain(r);
+    expect([
+      'domenica',
+      'lunedì',
+      'martedì',
+      'mercoledì',
+      'giovedì',
+      'venerdì',
+      'sabato',
+    ]).toContain(r);
   });
 
   it('custom yy → 2 digit', () => {
@@ -407,7 +407,9 @@ describe('dateFormatExecutor', () => {
   });
 
   it('🚨 input non parsabile → throw', async () => {
-    await expect(dateFormatExecutor({ input: 'garbage' }, undefined, ctx)).rejects.toThrow(/non parsabile/u);
+    await expect(dateFormatExecutor({ input: 'garbage' }, undefined, ctx)).rejects.toThrow(
+      /non parsabile/u,
+    );
   });
 
   it('preset default = it_long', async () => {
@@ -424,9 +426,15 @@ describe('dateFormatExecutor', () => {
   });
 
   it('custom timezone applicato', async () => {
-    const r = await dateFormatExecutor({
-      input: '2026-06-07T10:00:00Z', preset: 'iso8601', timezone: 'America/New_York',
-    }, undefined, ctx);
+    const r = await dateFormatExecutor(
+      {
+        input: '2026-06-07T10:00:00Z',
+        preset: 'iso8601',
+        timezone: 'America/New_York',
+      },
+      undefined,
+      ctx,
+    );
     const out = r.output as { hour: number };
     // Anche se preset iso8601 → output.hour viene da Intl con America/New_York TZ
     expect(out.hour).toBe(6); // 10:00 UTC = 06:00 EDT
@@ -434,7 +442,14 @@ describe('dateFormatExecutor', () => {
 
   it('output include components: year/month/day/weekday/hour/minute', async () => {
     const r = await dateFormatExecutor({ input: '2026-06-07T10:00:00Z' }, undefined, ctx);
-    const out = r.output as { year: number; month: number; day: number; weekday: string; hour: number; minute: number };
+    const out = r.output as {
+      year: number;
+      month: number;
+      day: number;
+      weekday: string;
+      hour: number;
+      minute: number;
+    };
     expect(out.year).toBe(2026);
     expect(out.month).toBe(6);
     expect(out.day).toBe(7);
@@ -444,7 +459,11 @@ describe('dateFormatExecutor', () => {
   });
 
   it('preset unix output coerente con unix field', async () => {
-    const r = await dateFormatExecutor({ input: '2026-06-07T10:00:00Z', preset: 'unix' }, undefined, ctx);
+    const r = await dateFormatExecutor(
+      { input: '2026-06-07T10:00:00Z', preset: 'unix' },
+      undefined,
+      ctx,
+    );
     const out = r.output as { formatted: string; unix: number };
     expect(Number(out.formatted)).toBe(out.unix);
   });
@@ -458,7 +477,11 @@ describe('dateFormatExecutor', () => {
 describe('safety budget (anti-DoS) — guard IMPLEMENTATI, non aspirazionali', () => {
   it('textTemplateExecutor: tronca output oltre il cap e segnala truncated', async () => {
     const huge = 'x'.repeat(MAX_TEMPLATE_OUTPUT_CHARS + 50_000);
-    const r = await textTemplateExecutor({ template: '{{big}}', dataExpression: { big: huge } }, undefined, ctx);
+    const r = await textTemplateExecutor(
+      { template: '{{big}}', dataExpression: { big: huge } },
+      undefined,
+      ctx,
+    );
     const out = r.output as { text: string; length: number; truncated: boolean };
     // MUTATION: senza il cap → length === huge.length, truncated === false → rosso.
     expect(out.length).toBe(MAX_TEMPLATE_OUTPUT_CHARS);
@@ -466,7 +489,11 @@ describe('safety budget (anti-DoS) — guard IMPLEMENTATI, non aspirazionali', (
   });
 
   it('textTemplateExecutor: output sotto il cap NON è troncato', async () => {
-    const r = await textTemplateExecutor({ template: 'ciao {{n}}', dataExpression: { n: 'mondo' } }, undefined, ctx);
+    const r = await textTemplateExecutor(
+      { template: 'ciao {{n}}', dataExpression: { n: 'mondo' } },
+      undefined,
+      ctx,
+    );
     const out = r.output as { text: string; truncated: boolean };
     expect(out.text).toBe('ciao mondo');
     expect(out.truncated).toBe(false);

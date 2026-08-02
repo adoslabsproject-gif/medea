@@ -15,25 +15,33 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  classifyB2BSalesReply,
-  detectLang,
-  type B2BSalesLabel,
-} from './triage-b2b-sales.js';
+import { classifyB2BSalesReply, detectLang, type B2BSalesLabel } from './triage-b2b-sales.js';
 
 // ─── Language detection ─────────────────────────────────────────────
 describe('detectLang', () => {
   it('IT', () => {
-    expect(detectLang('Buongiorno, vorrei sapere il prezzo del catalogo. Grazie e cordiali saluti')).toBe('it');
+    expect(
+      detectLang('Buongiorno, vorrei sapere il prezzo del catalogo. Grazie e cordiali saluti'),
+    ).toBe('it');
   });
   it('EN', () => {
-    expect(detectLang('Hello, I would like to know the price of the catalog. Thank you and best regards')).toBe('en');
+    expect(
+      detectLang(
+        'Hello, I would like to know the price of the catalog. Thank you and best regards',
+      ),
+    ).toBe('en');
   });
   it('DE', () => {
-    expect(detectLang('Guten Tag, ich möchte den Preis des Katalogs wissen. Vielen Dank und freundliche Grüße herr')).toBe('de');
+    expect(
+      detectLang(
+        'Guten Tag, ich möchte den Preis des Katalogs wissen. Vielen Dank und freundliche Grüße herr',
+      ),
+    ).toBe('de');
   });
   it('FR', () => {
-    expect(detectLang('Bonjour, je voudrais connaître le prix du catalogue. Merci et cordialement les')).toBe('fr');
+    expect(
+      detectLang('Bonjour, je voudrais connaître le prix du catalogue. Merci et cordialement les'),
+    ).toBe('fr');
   });
   it('falls back to IT on empty/ambiguous', () => {
     expect(detectLang('')).toBe('it');
@@ -196,7 +204,7 @@ describe('FR — smoke', () => {
   it('interested_info via "tarifs"', () => {
     const r = classifyB2BSalesReply({
       subject: 'Tarifs',
-      body: 'Bonjour, pourriez-vous m\'envoyer les tarifs et le catalogue ? Merci d\'avance. Cordialement les pour avec',
+      body: "Bonjour, pourriez-vous m'envoyer les tarifs et le catalogue ? Merci d'avance. Cordialement les pour avec",
     });
     expect(r.label).toBe('interested_info');
     expect(r.language).toBe('fr');
@@ -216,7 +224,7 @@ describe('edge cases', () => {
   it('ambiguous text → low confidence → needs_human_review', () => {
     const r = classifyB2BSalesReply({
       subject: '',
-      body: 'Hi.',          // nothing matches a pattern
+      body: 'Hi.', // nothing matches a pattern
     });
     expect(r.label).toBe('needs_human_review');
   });
@@ -224,7 +232,7 @@ describe('edge cases', () => {
   it('from=noreply@... overrides to out_of_office', () => {
     const r = classifyB2BSalesReply({
       subject: 'Re: Hello',
-      body: 'Vorrei un assaggio del vostro gin.',       // would classify as interested_tasting
+      body: 'Vorrei un assaggio del vostro gin.', // would classify as interested_tasting
       from: 'noreply@enoteca.it',
     });
     expect(r.label).toBe('out_of_office');

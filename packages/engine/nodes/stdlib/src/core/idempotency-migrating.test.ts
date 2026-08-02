@@ -60,7 +60,9 @@ describe('MigratingIdempotencyStore', () => {
       const onAsymmetry = vi.fn();
       const failingPrev: typeof previous = {
         acquire: async () => ({ acquired: true }),
-        complete: async () => { throw new Error('previous down'); },
+        complete: async () => {
+          throw new Error('previous down');
+        },
         release: async () => {},
         size: async () => 0,
       } as never;
@@ -98,7 +100,9 @@ describe('MigratingIdempotencyStore', () => {
         acquire: async () => ({ acquired: true }),
         complete: async () => {},
         release: async () => {},
-        size: async () => { throw new Error('boom'); },
+        size: async () => {
+          throw new Error('boom');
+        },
       } as never;
       const m = new MigratingIdempotencyStore({ previous: failingPrev, next });
       await next.acquire('k1', 60_000);

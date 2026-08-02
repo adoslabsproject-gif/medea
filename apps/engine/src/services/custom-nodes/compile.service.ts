@@ -39,12 +39,18 @@ const FORBIDDEN_PATTERNS: { regex: RegExp; reason: string }[] = [
   { regex: /new\s+Function\s*\(/, reason: 'Function() constructor is forbidden (security)' },
   { regex: /\bchild_process\b/, reason: 'child_process is forbidden (sandbox)' },
   { regex: /\b__proto__\b/, reason: '__proto__ access is forbidden (prototype pollution)' },
-  { regex: /\bprocess\s*\.\s*env\b/, reason: 'process.env access is forbidden (use config injection)' },
+  {
+    regex: /\bprocess\s*\.\s*env\b/,
+    reason: 'process.env access is forbidden (use config injection)',
+  },
   { regex: /\bprocess\s*\.\s*exit\b/, reason: 'process.exit() is forbidden' },
   { regex: /\bnode\s*:\s*fs\b/, reason: 'node:fs is forbidden (sandbox)' },
   { regex: /\bnode\s*:\s*net\b/, reason: 'node:net is forbidden (use safeOutboundFetch)' },
   { regex: /\bnode\s*:\s*os\b/, reason: 'node:os is forbidden (info leak)' },
-  { regex: /\bnode\s*:\s*worker_threads\b/, reason: 'worker_threads is forbidden (sandbox escape)' },
+  {
+    regex: /\bnode\s*:\s*worker_threads\b/,
+    reason: 'worker_threads is forbidden (sandbox escape)',
+  },
   { regex: /\bnode\s*:\s*vm\b/, reason: 'node:vm is forbidden (nested sandbox)' },
   { regex: /\bimport\s*\(\s*["'`]/, reason: 'Dynamic import() is forbidden (only static imports)' },
 ];
@@ -54,7 +60,9 @@ const FORBIDDEN_PATTERNS: { regex: RegExp; reason: string }[] = [
  * (mai throw — il caller decide se fare hard fail o solo warn).
  */
 export function securityScan(sources: {
-  executor: string; definition: string; schema: string;
+  executor: string;
+  definition: string;
+  schema: string;
 }): CompileDiagnostic[] {
   const violations: CompileDiagnostic[] = [];
   const files: { name: 'executor' | 'definition' | 'schema'; code: string }[] = [
@@ -95,7 +103,9 @@ export function securityScan(sources: {
  * Return: { compiledExecutor, warnings } o throws CompileError con diagnostics.
  */
 export async function compileCustomNodeSources(sources: {
-  executor: string; definition: string; schema: string;
+  executor: string;
+  definition: string;
+  schema: string;
 }): Promise<{ compiledExecutor: string; warnings: CompileDiagnostic[] }> {
   // Layer 1: security scan. DUE reti complementari:
   //  - securityScan (regex): messaggistica veloce riga-per-riga.
@@ -109,13 +119,15 @@ export async function compileCustomNodeSources(sources: {
     // l'utente non sapeva COSA togliere. Ora: messaggio con la causa reale +
     // tutte le violazioni nei diagnostics (file:line + motivo, visibili nel pannello).
     const first = securityErrors[0]!;
-    const message = securityErrors.length === 1
-      ? `${first.file}:${first.line} — ${first.message}`
-      : `${securityErrors.length} violazioni di sicurezza: ${securityErrors.map((v) => `${v.file}:${v.line} ${v.message}`).join(' · ')}`;
-    throw new CustomNodeSecurityViolationError(
-      message,
-      { file: first.file, line: first.line, diagnostics: securityErrors },
-    );
+    const message =
+      securityErrors.length === 1
+        ? `${first.file}:${first.line} — ${first.message}`
+        : `${securityErrors.length} violazioni di sicurezza: ${securityErrors.map((v) => `${v.file}:${v.line} ${v.message}`).join(' · ')}`;
+    throw new CustomNodeSecurityViolationError(message, {
+      file: first.file,
+      line: first.line,
+      diagnostics: securityErrors,
+    });
   }
 
   // Layer 2: esbuild transform
@@ -147,56 +159,67 @@ export async function compileCustomNodeSources(sources: {
       //   • @medea/engine-safe-fetch        → modulo virtuale che mappa sulla
       //     fetch del sandbox (l'SSRF guard vive HOST-side nel fetch bridge)
       //   • @medea/engine-community-node-sdk → stub vuoto (solo tipi: erased)
-      plugins: [{
-        name: 'virtual-loader',
-        setup(build) {
-          build.onResolve({ filter: /^virtual:/ }, (args) => ({
-            path: args.path, namespace: 'virtual',
-          }));
-          // DX (2026-06-13): import FRATELLI tra i 3 file del nodo. Naturale
-          // scrivere `import { schema } from './schema.js'` nell'executor per
-          // riusare il proprio schema/definition. Mappa ./schema|./definition|
-          // ./executor (con/senza estensione) ai virtual sibling. Gli import
-          // RELATIVI ad ALTRI path (../../core/…) restano errore: il custom node
-          // è auto-contenuto in 3 file (niente filesystem nel sandbox).
-          // NB: filtro esbuild = regex Go (RE2), NIENTE flag 'u' (lo rifiuta).
-          build.onResolve({ filter: /^\.\/(executor|definition|schema)(\.[jt]s)?$/ }, (args) => {
-            const name = /\/(executor|definition|schema)/u.exec(args.path)![1]!;
-            return { path: `virtual:${name}`, namespace: 'virtual' };
-          });
-          build.onResolve({ filter: /^@medea\/engine-(community-node-sdk|safe-fetch)$/ }, (args) => ({
-            path: args.path, namespace: 'sdk-shim',
-          }));
-          build.onLoad({ filter: /.*/, namespace: 'sdk-shim' }, (args) => {
-            if (args.path === '@medea/engine-safe-fetch') {
-              // timeoutMs è gestito dal fetch bridge host-side (che ha già
-              // timeout + SSRF guard): qui va solo rimosso dall'init.
-              return {
-                contents: `export async function safeFetch(url, init) {
+      plugins: [
+        {
+          name: 'virtual-loader',
+          setup(build) {
+            build.onResolve({ filter: /^virtual:/ }, (args) => ({
+              path: args.path,
+              namespace: 'virtual',
+            }));
+            // DX (2026-06-13): import FRATELLI tra i 3 file del nodo. Naturale
+            // scrivere `import { schema } from './schema.js'` nell'executor per
+            // riusare il proprio schema/definition. Mappa ./schema|./definition|
+            // ./executor (con/senza estensione) ai virtual sibling. Gli import
+            // RELATIVI ad ALTRI path (../../core/…) restano errore: il custom node
+            // è auto-contenuto in 3 file (niente filesystem nel sandbox).
+            // NB: filtro esbuild = regex Go (RE2), NIENTE flag 'u' (lo rifiuta).
+            build.onResolve({ filter: /^\.\/(executor|definition|schema)(\.[jt]s)?$/ }, (args) => {
+              const name = /\/(executor|definition|schema)/u.exec(args.path)![1]!;
+              return { path: `virtual:${name}`, namespace: 'virtual' };
+            });
+            build.onResolve(
+              { filter: /^@medea\/engine-(community-node-sdk|safe-fetch)$/ },
+              (args) => ({
+                path: args.path,
+                namespace: 'sdk-shim',
+              }),
+            );
+            build.onLoad({ filter: /.*/, namespace: 'sdk-shim' }, (args) => {
+              if (args.path === '@medea/engine-safe-fetch') {
+                // timeoutMs è gestito dal fetch bridge host-side (che ha già
+                // timeout + SSRF guard): qui va solo rimosso dall'init.
+                return {
+                  contents: `export async function safeFetch(url, init) {
                   const { timeoutMs, ...rest } = init ?? {};
                   return fetch(url, rest);
                 }
                 export default { safeFetch };`,
-                loader: 'js',
-              };
-            }
-            // community-node-sdk: superficie runtime vuota (import type erased).
-            return { contents: 'export default {};', loader: 'js' };
-          });
-          build.onLoad({ filter: /.*/, namespace: 'virtual' }, (args) => {
-            switch (args.path) {
-              case 'virtual:executor':
-                return { contents: sources.executor, loader: 'ts', resolveDir: NODE_RESOLVE_DIR };
-              case 'virtual:definition':
-                return { contents: sources.definition, loader: 'ts', resolveDir: NODE_RESOLVE_DIR };
-              case 'virtual:schema':
-                return { contents: sources.schema, loader: 'ts', resolveDir: NODE_RESOLVE_DIR };
-              default:
-                return { errors: [{ text: `Unknown virtual: ${args.path}` }] };
-            }
-          });
+                  loader: 'js',
+                };
+              }
+              // community-node-sdk: superficie runtime vuota (import type erased).
+              return { contents: 'export default {};', loader: 'js' };
+            });
+            build.onLoad({ filter: /.*/, namespace: 'virtual' }, (args) => {
+              switch (args.path) {
+                case 'virtual:executor':
+                  return { contents: sources.executor, loader: 'ts', resolveDir: NODE_RESOLVE_DIR };
+                case 'virtual:definition':
+                  return {
+                    contents: sources.definition,
+                    loader: 'ts',
+                    resolveDir: NODE_RESOLVE_DIR,
+                  };
+                case 'virtual:schema':
+                  return { contents: sources.schema, loader: 'ts', resolveDir: NODE_RESOLVE_DIR };
+                default:
+                  return { errors: [{ text: `Unknown virtual: ${args.path}` }] };
+              }
+            });
+          },
         },
-      }],
+      ],
     });
   } catch (err) {
     const { message, diagnostics } = compileFailureFromError(err);
@@ -247,14 +270,19 @@ export async function compileAndPersist(opts: {
  *
  * Esportato per test diretto (esbuild.build è un export ESM non-spiabile).
  */
-export function compileFailureFromError(err: unknown): { message: string; diagnostics: CompileDiagnostic[] } {
+export function compileFailureFromError(err: unknown): {
+  message: string;
+  diagnostics: CompileDiagnostic[];
+} {
   const e = err as { errors?: esbuild.Message[] } | null | undefined;
   const diagnostics = (e?.errors ?? []).map(esbuildMsgToDiagnostic);
   if (diagnostics.length === 0) {
     const realMsg = err instanceof Error && err.message ? err.message : String(err);
     return {
       message: `esbuild compile failed: ${realMsg}`,
-      diagnostics: [{ severity: 'error', line: 0, col: 0, message: realMsg, code: 'ESBUILD', file: 'executor' }],
+      diagnostics: [
+        { severity: 'error', line: 0, col: 0, message: realMsg, code: 'ESBUILD', file: 'executor' },
+      ],
     };
   }
   return {
@@ -291,8 +319,10 @@ export function actionableMessage(text: string): string {
   const spec = m[1]!;
   const sibling = /^\.\/(executor|definition|schema)(\.[jt]s)?$/u.test(spec);
   if (sibling) return text; // i fratelli si risolvono (non dovrebbe capitare)
-  return `${text} — i custom node sono AUTO-CONTENUTI (solo executor/definition/schema). `
-    + `"${spec}" è fuori dal nodo: inlinea quel codice qui dentro, oppure usa solo `
-    + `gli import consentiti (zod, @medea/engine-safe-fetch) e le Web API (fetch, crypto). `
-    + `Tip: chiedi alla chat Liara "rendi l'executor auto-contenuto, inlinea gli import esterni".`;
+  return (
+    `${text} — i custom node sono AUTO-CONTENUTI (solo executor/definition/schema). ` +
+    `"${spec}" è fuori dal nodo: inlinea quel codice qui dentro, oppure usa solo ` +
+    `gli import consentiti (zod, @medea/engine-safe-fetch) e le Web API (fetch, crypto). ` +
+    `Tip: chiedi alla chat Liara "rendi l'executor auto-contenuto, inlinea gli import esterni".`
+  );
 }

@@ -107,16 +107,21 @@ describe('classifyStatement — N19 audit (modifying CTE — Postgres feature)',
   });
 
   it('REGRESSION CRITICAL: WITH d AS (DELETE FROM users RETURNING *) SELECT count(*) FROM d → delete (was "select")', () => {
-    const payload = 'WITH del AS (DELETE FROM flowforge.users RETURNING *) SELECT count(*) FROM del';
+    const payload =
+      'WITH del AS (DELETE FROM flowforge.users RETURNING *) SELECT count(*) FROM del';
     expect(classifyStatement(payload)).toBe('delete');
   });
 
   it('REGRESSION: WITH u AS (UPDATE t SET x=1 RETURNING *) SELECT * FROM u → update', () => {
-    expect(classifyStatement('WITH u AS (UPDATE t SET x=1 RETURNING *) SELECT * FROM u')).toBe('update');
+    expect(classifyStatement('WITH u AS (UPDATE t SET x=1 RETURNING *) SELECT * FROM u')).toBe(
+      'update',
+    );
   });
 
   it('REGRESSION: WITH i AS (INSERT INTO logs VALUES (1) RETURNING id) SELECT * FROM i → insert', () => {
-    expect(classifyStatement('WITH i AS (INSERT INTO logs VALUES (1) RETURNING id) SELECT * FROM i')).toBe('insert');
+    expect(
+      classifyStatement('WITH i AS (INSERT INTO logs VALUES (1) RETURNING id) SELECT * FROM i'),
+    ).toBe('insert');
   });
 
   it('REGRESSION: WITH d AS (DELETE FROM t) SELECT 1 → delete', () => {
@@ -139,7 +144,9 @@ describe('classifyStatement — BYPASS DML primario dopo CTE (revisore 2026-06-1
   // muta i dati; pre-fix classifyStatement tornava 'select' → run_sql e il
   // nodo SSH "sola lettura" lo eseguivano. Tutti i casi DEVONO essere ≠ select.
   it('WITH benigno + DELETE primario → delete', () => {
-    expect(classifyStatement('WITH cte AS (SELECT 1) DELETE FROM users WHERE id > 0')).toBe('delete');
+    expect(classifyStatement('WITH cte AS (SELECT 1) DELETE FROM users WHERE id > 0')).toBe(
+      'delete',
+    );
   });
 
   it('WITH benigno + UPDATE primario → update', () => {
@@ -147,11 +154,17 @@ describe('classifyStatement — BYPASS DML primario dopo CTE (revisore 2026-06-1
   });
 
   it('WITH benigno + INSERT primario → insert', () => {
-    expect(classifyStatement('WITH cte AS (SELECT 1) INSERT INTO logs SELECT * FROM cte')).toBe('insert');
+    expect(classifyStatement('WITH cte AS (SELECT 1) INSERT INTO logs SELECT * FROM cte')).toBe(
+      'insert',
+    );
   });
 
   it('CTE multipli + DELETE primario → delete', () => {
-    expect(classifyStatement('WITH a AS (SELECT 1), b AS (SELECT 2) DELETE FROM t WHERE id IN (SELECT id FROM b)')).toBe('delete');
+    expect(
+      classifyStatement(
+        'WITH a AS (SELECT 1), b AS (SELECT 2) DELETE FROM t WHERE id IN (SELECT id FROM b)',
+      ),
+    ).toBe('delete');
   });
 
   it('WITH RECURSIVE + DELETE primario → delete', () => {
@@ -159,21 +172,33 @@ describe('classifyStatement — BYPASS DML primario dopo CTE (revisore 2026-06-1
   });
 
   it('case-insensitive + multilinea → delete', () => {
-    expect(classifyStatement('with cte as (\n  select 1\n)\nDELETE\n  from users\n  where id = 1')).toBe('delete');
+    expect(
+      classifyStatement('with cte as (\n  select 1\n)\nDELETE\n  from users\n  where id = 1'),
+    ).toBe('delete');
   });
 
   it('WITH benigno + MERGE primario → NON select (mutazione bloccata)', () => {
-    expect(classifyStatement('WITH cte AS (SELECT 1) MERGE INTO t USING cte ON t.id=cte.id WHEN MATCHED THEN DELETE')).not.toBe('select');
+    expect(
+      classifyStatement(
+        'WITH cte AS (SELECT 1) MERGE INTO t USING cte ON t.id=cte.id WHEN MATCHED THEN DELETE',
+      ),
+    ).not.toBe('select');
   });
 
   it('worst-kind: CTE modificante (DELETE) + UPDATE primario → delete (peggiore)', () => {
-    expect(classifyStatement('WITH d AS (DELETE FROM a RETURNING id) UPDATE b SET x=1 WHERE id IN (SELECT id FROM d)')).toBe('delete');
+    expect(
+      classifyStatement(
+        'WITH d AS (DELETE FROM a RETURNING id) UPDATE b SET x=1 WHERE id IN (SELECT id FROM d)',
+      ),
+    ).toBe('delete');
   });
 
   // ── Anti-falso-positivo: un WITH puramente in lettura resta 'select' anche
   //    se i verbi DML compaiono in STRINGHE / COMMENTI / nomi di colonna. ──
   it('WITH + SELECT con stringa "delete from" → select', () => {
-    expect(classifyStatement(`WITH x AS (SELECT 1) SELECT 'delete from cache' AS note FROM x`)).toBe('select');
+    expect(
+      classifyStatement(`WITH x AS (SELECT 1) SELECT 'delete from cache' AS note FROM x`),
+    ).toBe('select');
   });
 
   it('WITH + SELECT con identificatore quotato "delete_log" → select', () => {
@@ -181,15 +206,21 @@ describe('classifyStatement — BYPASS DML primario dopo CTE (revisore 2026-06-1
   });
 
   it('WITH + SELECT con colonne update_flag/asset (substring) → select', () => {
-    expect(classifyStatement('WITH x AS (SELECT 1) SELECT update_flag, asset, count(*) FROM t')).toBe('select');
+    expect(
+      classifyStatement('WITH x AS (SELECT 1) SELECT update_flag, asset, count(*) FROM t'),
+    ).toBe('select');
   });
 
   it('WITH + SELECT con commento "/* delete from t */" → select', () => {
-    expect(classifyStatement('WITH x AS (SELECT 1) SELECT 1 /* delete from t */ FROM x')).toBe('select');
+    expect(classifyStatement('WITH x AS (SELECT 1) SELECT 1 /* delete from t */ FROM x')).toBe(
+      'select',
+    );
   });
 
   it('WITH puramente in lettura → select (nessun falso positivo)', () => {
-    expect(classifyStatement('WITH a AS (SELECT 1), b AS (SELECT 2) SELECT * FROM a JOIN b ON true')).toBe('select');
+    expect(
+      classifyStatement('WITH a AS (SELECT 1), b AS (SELECT 2) SELECT * FROM a JOIN b ON true'),
+    ).toBe('select');
   });
 });
 
@@ -239,9 +270,9 @@ describe('🔒 assertSafeRawStatement — filesystem escape guard (SQLite)', () 
     "ATTACH DATABASE '/etc/passwd' AS x",
     "attach '/tmp/evil.db' as e",
     "  ATTACH '../../host.db' AS h",
-    "/* comment */ ATTACH 'x' AS y",   // commento iniziale non bypassa
+    "/* comment */ ATTACH 'x' AS y", // commento iniziale non bypassa
     "-- note\nATTACH 'x' AS y",
-    "DETACH DATABASE x",
+    'DETACH DATABASE x',
     "VACUUM INTO '/tmp/exfil.db'",
     "VACUUM main INTO '/tmp/x.db'",
     "SELECT load_extension('/tmp/evil.so')",
@@ -257,8 +288,8 @@ describe('🔒 assertSafeRawStatement — filesystem escape guard (SQLite)', () 
     'UPDATE t SET note = "detach the form"',
     "SELECT 'vacuum into the void' AS poem",
     'CREATE TABLE t (id INTEGER PRIMARY KEY)',
-    'VACUUM',                 // VACUUM senza INTO è ok
-    "DELETE FROM t WHERE id = 1",
+    'VACUUM', // VACUUM senza INTO è ok
+    'DELETE FROM t WHERE id = 1',
   ];
   it.each(allowed)('consente: %s', (sql) => {
     expect(() => assertSafeRawStatement(sql)).not.toThrow();

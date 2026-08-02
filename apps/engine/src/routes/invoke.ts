@@ -37,7 +37,13 @@ export function createInvokeRoutes(eventBus: IEventBus): Hono {
       const text = await c.req.text();
       triggerInput = text ? JSON.parse(text) : null;
     } catch (err) {
-      return c.json({ error: 'Body must be valid JSON', detail: err instanceof Error ? err.message : String(err) }, 400);
+      return c.json(
+        {
+          error: 'Body must be valid JSON',
+          detail: err instanceof Error ? err.message : String(err),
+        },
+        400,
+      );
     }
 
     const workflow = await workflows.get(workflowId, tenantId);
@@ -54,10 +60,13 @@ export function createInvokeRoutes(eventBus: IEventBus): Hono {
     // Post-fix: 409 esplicito con error code, payload diagnostico.
     if (!workflow.enabled) {
       logger.warn({ workflowId, tenantId }, '[WE-16] invoke rejected: workflow disabled');
-      return c.json({
-        error: 'WORKFLOW_DISABLED',
-        message: 'Workflow is disabled; enable it before invoking.',
-      }, 409);
+      return c.json(
+        {
+          error: 'WORKFLOW_DISABLED',
+          message: 'Workflow is disabled; enable it before invoking.',
+        },
+        409,
+      );
     }
 
     try {
@@ -72,9 +81,9 @@ export function createInvokeRoutes(eventBus: IEventBus): Hono {
       const result = await runs.execute(input);
 
       if (result.status !== 'success') {
-        const failed = (result.steps as { nodeId: string; status: string; error?: string | null }[]).find(
-          (s) => s.status === 'error',
-        );
+        const failed = (
+          result.steps as { nodeId: string; status: string; error?: string | null }[]
+        ).find((s) => s.status === 'error');
         return c.json(
           {
             status: result.status,
@@ -86,7 +95,9 @@ export function createInvokeRoutes(eventBus: IEventBus): Hono {
         );
       }
 
-      const successSteps = (result.steps as { status: string; output: string }[]).filter((s) => s.status === 'success');
+      const successSteps = (result.steps as { status: string; output: string }[]).filter(
+        (s) => s.status === 'success',
+      );
       const last = successSteps[successSteps.length - 1];
       return c.json({
         status: 'success',

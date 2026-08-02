@@ -48,19 +48,21 @@ const ERR_PREFIX = '[pec-parser]';
 // ────────────────────────────────────────────────────────────────────────────
 
 export type PecMessageType =
-  | 'pec_received_message'     // normal message (no X-Ricevuta header)
-  | 'pec_acceptance_receipt'   // accettazione, presa-in-carico
-  | 'pec_delivery_receipt'     // avvenuta-consegna
-  | 'pec_rejection';           // non-accettazione, errore-consegna,
-                                // preavviso-errore-consegna, rilevazione-virus
+  | 'pec_received_message' // normal message (no X-Ricevuta header)
+  | 'pec_acceptance_receipt' // accettazione, presa-in-carico
+  | 'pec_delivery_receipt' // avvenuta-consegna
+  | 'pec_rejection'; // non-accettazione, errore-consegna,
+// preavviso-errore-consegna, rilevazione-virus
 
 /** The raw X-Ricevuta header values that map to each category. */
 export const PEC_RECEIPT_VALUES = Object.freeze({
   acceptance: ['accettazione', 'presa-in-carico'] as const,
   delivery: ['avvenuta-consegna'] as const,
   rejection: [
-    'non-accettazione', 'errore-consegna',
-    'preavviso-errore-consegna', 'rilevazione-virus',
+    'non-accettazione',
+    'errore-consegna',
+    'preavviso-errore-consegna',
+    'rilevazione-virus',
   ] as const,
 });
 
@@ -106,7 +108,6 @@ export function classifyPecMessage(headers: PecInputHeaders): PecClassification 
   const receiptStyle = readHeader(headers, 'X-TipoRicevuta')?.trim().toLowerCase() ?? null;
   const trasporto = readHeader(headers, 'X-Trasporto')?.trim().toLowerCase() ?? null;
 
-   
   const isPec = Boolean(trasporto || ricevutaRaw || refMessageId);
 
   let type: PecMessageType;

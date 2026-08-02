@@ -80,7 +80,9 @@ export async function runInIsolate(args: IsolatedRunArgs): Promise<IsolatedRunRe
     try {
       script = isolate.compileScriptSync(wrapped);
     } catch (e) {
-      throw new Error(`${args.nodeLabel}: errore sintassi — ${e instanceof Error ? e.message : String(e)}`);
+      throw new Error(
+        `${args.nodeLabel}: errore sintassi — ${e instanceof Error ? e.message : String(e)}`,
+      );
     }
 
     let result: unknown;
@@ -89,7 +91,9 @@ export async function runInIsolate(args: IsolatedRunArgs): Promise<IsolatedRunRe
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (/timeout|timed out/i.test(msg)) {
-        throw new Error(`${args.nodeLabel}: timeout — script ha superato ${String(args.timeoutMs)}ms`);
+        throw new Error(
+          `${args.nodeLabel}: timeout — script ha superato ${String(args.timeoutMs)}ms`,
+        );
       }
       if (/hit memory limit|memory/i.test(msg)) {
         throw new Error(`${args.nodeLabel}: memory limit ${String(args.memoryLimitMb)}MB superato`);

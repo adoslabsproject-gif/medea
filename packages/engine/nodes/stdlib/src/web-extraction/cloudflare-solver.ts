@@ -44,7 +44,9 @@ const executor: NodeExecutor = async (config, _input, _context) => {
 
   const endpoint = String(config.endpoint ?? process.env.MEDEA_FLARESOLVERR_ENDPOINT ?? '').trim();
   if (!endpoint) {
-    throw new Error('FlareSolverr endpoint not configured. Set MEDEA_FLARESOLVERR_ENDPOINT env or fill "endpoint" config. Self-host: docker run -d -p 8191:8191 ghcr.io/flaresolverr/flaresolverr:latest');
+    throw new Error(
+      'FlareSolverr endpoint not configured. Set MEDEA_FLARESOLVERR_ENDPOINT env or fill "endpoint" config. Self-host: docker run -d -p 8191:8191 ghcr.io/flaresolverr/flaresolverr:latest',
+    );
   }
 
   const sessionId = String(config.sessionId ?? '').trim();
@@ -68,15 +70,13 @@ const executor: NodeExecutor = async (config, _input, _context) => {
     const errText = await res.text().catch(() => '');
     throw new Error(`FlareSolverr ${res.status.toString()}: ${errText.slice(0, 300)}`);
   }
-  const data = await res.json() as FlareSolverrResponse;
+  const data = (await res.json()) as FlareSolverrResponse;
   if (data.status !== 'ok' || !data.solution) {
     throw new Error(`FlareSolverr failed: ${data.message ?? 'unknown error'}`);
   }
 
   // Build cookie header string (cookie=value; cookie2=value2)
-  const cookieStr = (data.solution.cookies ?? [])
-    .map((c) => `${c.name}=${c.value}`)
-    .join('; ');
+  const cookieStr = (data.solution.cookies ?? []).map((c) => `${c.name}=${c.value}`).join('; ');
   const cfClearance = (data.solution.cookies ?? []).find((c) => c.name === 'cf_clearance');
 
   return {
@@ -102,7 +102,7 @@ export const cloudflareSolverNode: NodeModule = {
     color: '#f97316',
     description:
       'Risolve Cloudflare/DDoS-Guard JavaScript challenge via FlareSolverr (https://github.com/FlareSolverr/FlareSolverr). Ritorna il cookie `cf_clearance` + User-Agent da usare nei fetch successivi al sito Cloudflare-protected.\n\n' +
-      'Setup: il tenant self-hosta FlareSolverr (1 docker container leggero) e configura qui l\'endpoint. Bring Your Own — Zeli non gestisce solver pubblici per evitare abusi.\n\n' +
+      "Setup: il tenant self-hosta FlareSolverr (1 docker container leggero) e configura qui l'endpoint. Bring Your Own — Zeli non gestisce solver pubblici per evitare abusi.\n\n" +
       'USA SOLO per: accesso a PROPRI siti protetti da CF, monitoraggio uptime, integrazione partner B2B. NON usare per: evasione paywall/protezione siti di terzi (TOS violation, potenziale liability legale del tenant).\n\n' +
       'Workflow tipico: 1) cloudflare_solver(url) → cookies+UA, 2) web_fetch_advanced(url, cookies=output.cookieHeader, UA=output.userAgent) → HTML reale.\n\n' +
       'Use case: (1) monitoraggio uptime di propria pagina dietro CF, (2) audit periodico content proprio sito Cloudflare-protected, (3) integrazione partner B2B che usa CF managed challenge, (4) scraping pricing pages proprie multi-region.',
@@ -140,7 +140,7 @@ export const cloudflareSolverNode: NodeModule = {
         type: 'text',
         required: false,
         placeholder: 'my-tenant-session-1',
-        help: 'Riusa una session FlareSolverr esistente. Crea prima con cmd=sessions.create, poi riusa l\'ID per skipare il solve ad ogni request. Auto-expire dopo idle.',
+        help: "Riusa una session FlareSolverr esistente. Crea prima con cmd=sessions.create, poi riusa l'ID per skipare il solve ad ogni request. Auto-expire dopo idle.",
       },
       {
         key: 'maxTimeoutMs',
@@ -151,7 +151,15 @@ export const cloudflareSolverNode: NodeModule = {
         help: 'Tempo max che FlareSolverr ha per risolvere. Default 60s. Min 10s, max 180s.',
       },
     ],
-    outputs: ['cookies', 'cookieHeader', 'cfClearance', 'userAgent', 'html', 'finalUrl', 'sessionId'],
+    outputs: [
+      'cookies',
+      'cookieHeader',
+      'cfClearance',
+      'userAgent',
+      'html',
+      'finalUrl',
+      'sessionId',
+    ],
   },
   executor,
 };

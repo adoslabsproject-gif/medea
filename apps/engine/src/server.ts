@@ -56,7 +56,10 @@ import { createLlmProvidersRoutes } from './routes/llm-providers.js';
 import { createAdminRoutes } from './routes/admin.js';
 import { createDashboardRoutes } from './routes/dashboard.js';
 import { createViewerShareRoutes, createPublicShareRoutes } from './routes/viewer-share.js';
-import { createClientPortalAdminRoutes, createClientPortalPublicRoutes } from './routes/client-portal.js';
+import {
+  createClientPortalAdminRoutes,
+  createClientPortalPublicRoutes,
+} from './routes/client-portal.js';
 import { createVectorRoutes } from './routes/vector.js';
 import { createOauthRoutes } from './routes/oauth.js';
 import { createSamlRoutes } from './routes/saml.js';
@@ -109,7 +112,9 @@ export interface ServerDependencies {
   janitor?: JanitorRuntime;
 }
 
-export async function createServer(deps: ServerDependencies = { eventBus: new InMemoryEventBus() }): Promise<Hono> {
+export async function createServer(
+  deps: ServerDependencies = { eventBus: new InMemoryEventBus() },
+): Promise<Hono> {
   const config = loadConfig();
   const app = new Hono();
   const keys = await getAuthKeys();
@@ -150,10 +155,17 @@ export async function createServer(deps: ServerDependencies = { eventBus: new In
   // (~5MB typical) + margine. Routes specifiche (es. file upload streaming)
   // possono override con cap proprio.
   const { bodyLimit } = await import('hono/body-limit');
-  app.use('*', bodyLimit({
-    maxSize: 10 * 1024 * 1024, // 10MB
-    onError: (c) => c.json({ error: { code: 'BODY_TOO_LARGE', message: 'Request body exceeds 10MB cap.' } }, 413),
-  }));
+  app.use(
+    '*',
+    bodyLimit({
+      maxSize: 10 * 1024 * 1024, // 10MB
+      onError: (c) =>
+        c.json(
+          { error: { code: 'BODY_TOO_LARGE', message: 'Request body exceeds 10MB cap.' } },
+          413,
+        ),
+    }),
+  );
 
   app.use(
     '*',
@@ -187,23 +199,29 @@ export async function createServer(deps: ServerDependencies = { eventBus: new In
   // quindi cookie cross-subdomain potrebbe essere abusato. Origin check
   // rifiuta mutating cross-origin requests.
   const { originCsrf } = await import('./middleware/origin-csrf.js');
-  app.use('/api/v1/*', originCsrf({
-    allowedOrigins: ['https://flowforge.automazionezeli.com'],
-    allowedOriginPatterns: [/^https:\/\/[a-z0-9-]+\.app\.automazionezeli\.com$/],
-    // Internal S2S endpoints + public share + portal token-gated → skip
-    // perche\` autenticati via X-Internal-Token o magic-link token in path.
-    skipPaths: [
-      /^\/api\/v1\/internal\//,
-      /^\/api\/v1\/share\//,
-      /^\/api\/v1\/portal\//,
-      /^\/api\/v1\/webhooks\//,
-      /^\/api\/v1\/oauth-connect\//,
-    ],
-  }));
+  app.use(
+    '/api/v1/*',
+    originCsrf({
+      allowedOrigins: ['https://flowforge.automazionezeli.com'],
+      allowedOriginPatterns: [/^https:\/\/[a-z0-9-]+\.app\.automazionezeli\.com$/],
+      // Internal S2S endpoints + public share + portal token-gated → skip
+      // perche\` autenticati via X-Internal-Token o magic-link token in path.
+      skipPaths: [
+        /^\/api\/v1\/internal\//,
+        /^\/api\/v1\/share\//,
+        /^\/api\/v1\/portal\//,
+        /^\/api\/v1\/webhooks\//,
+        /^\/api\/v1\/oauth-connect\//,
+      ],
+    }),
+  );
 
-  app.use('*', honoLogger((message) => {
-    logger.info({ hono: true }, message);
-  }));
+  app.use(
+    '*',
+    honoLogger((message) => {
+      logger.info({ hono: true }, message);
+    }),
+  );
 
   app.use(
     '/api/v1/*',
@@ -333,9 +351,11 @@ export async function createServer(deps: ServerDependencies = { eventBus: new In
   // Janitor — Data Quality Self-Healing. Esposto sotto /api/v1/janitor/*.
   // Se non iniettato dal main (test isolato), ne creiamo uno "headless"
   // — funziona per le route ma non viene start-ato qui (lo fa main.ts).
-  const janitorRuntime: JanitorRuntime = deps.janitor ?? createJanitorRuntime({
-    dbStudio: new DbStudioService(),
-  });
+  const janitorRuntime: JanitorRuntime =
+    deps.janitor ??
+    createJanitorRuntime({
+      dbStudio: new DbStudioService(),
+    });
   app.route('/api/v1/janitor', createJanitorRoutes(janitorRuntime));
   app.route('/api/v1', createPinRoutes());
   app.route('/api/v1', createFolderRoutes());
@@ -359,7 +379,8 @@ export async function createServer(deps: ServerDependencies = { eventBus: new In
   // 2 sec). Il bucket 60/60s rate-limita VLC al primo playback → "Invalid
   // data found" sul primo TS segment. Il proxy ha gia\` HMAC firma URL +
   // TTL 2h come anti-enumerazione/anti-replay — il rate-limit add nothing.
-  const STREAM_PROXY_PATH = /^\/webhooks\/c\/stream\/proxy\.(m3u8|m3u|ts|vtt|key|mp4|m4s|aac|webvtt)\b/u;
+  const STREAM_PROXY_PATH =
+    /^\/webhooks\/c\/stream\/proxy\.(m3u8|m3u|ts|vtt|key|mp4|m4s|aac|webvtt)\b/u;
   app.use('/webhooks/c/*', async (c, next) => {
     if (STREAM_PROXY_PATH.test(c.req.path)) {
       // Skip rate-limit: HLS streaming legit traffic.
@@ -369,7 +390,8 @@ export async function createServer(deps: ServerDependencies = { eventBus: new In
       label: 'webhook_c',
       windowMs: 60_000,
       perTenant: 60,
-      tenantFrom: (cc) => cc.req.header('cf-connecting-ip') ?? cc.req.header('x-forwarded-for') ?? 'unknown',
+      tenantFrom: (cc) =>
+        cc.req.header('cf-connecting-ip') ?? cc.req.header('x-forwarded-for') ?? 'unknown',
     })(c as Context, next);
   });
 
@@ -433,9 +455,26 @@ export async function createServer(deps: ServerDependencies = { eventBus: new In
     // generici. Pre-fix: un workflow invalido (edge orfani) dava 500 "Errore
     // interno" — fuorviante (colpa dell'input, non del server).
     const typed = err as { httpStatus?: unknown; expose?: unknown; code?: unknown };
-    if (typeof typed.httpStatus === 'number' && typed.httpStatus >= 400 && typed.httpStatus < 500 && typed.expose === true) {
-      logger.warn({ reqId, path: c.req.path, method: c.req.method, code: typed.code, msg: err.message }, 'Client error');
-      return c.json({ error: { code: typeof typed.code === 'string' ? typed.code : 'BAD_REQUEST', message: err.message, reqId } }, typed.httpStatus as 400);
+    if (
+      typeof typed.httpStatus === 'number' &&
+      typed.httpStatus >= 400 &&
+      typed.httpStatus < 500 &&
+      typed.expose === true
+    ) {
+      logger.warn(
+        { reqId, path: c.req.path, method: c.req.method, code: typed.code, msg: err.message },
+        'Client error',
+      );
+      return c.json(
+        {
+          error: {
+            code: typeof typed.code === 'string' ? typed.code : 'BAD_REQUEST',
+            message: err.message,
+            reqId,
+          },
+        },
+        typed.httpStatus as 400,
+      );
     }
     logger.error({ err, reqId, path: c.req.path, method: c.req.method }, 'Unhandled error');
     // In prod NON ritorniamo err.message (leak schema/file path/SQL). Solo

@@ -5,7 +5,11 @@
  * Mutation-verify esplicito sui campi nuovi (seoImpact/crossDomainCount/metaRefresh).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { safeFetchWithRedirects, readTextTruncated, SsrfBlockedError } from '@medea/engine-safe-fetch';
+import {
+  safeFetchWithRedirects,
+  readTextTruncated,
+  SsrfBlockedError,
+} from '@medea/engine-safe-fetch';
 import { redirectChainNode } from './redirect-chain.js';
 
 vi.mock('@medea/engine-safe-fetch', () => {
@@ -18,11 +22,20 @@ const mockFetch = vi.mocked(safeFetchWithRedirects);
 const mockRead = vi.mocked(readTextTruncated);
 const exec = redirectChainNode.executor!;
 
-interface Route { status: number; location?: string; contentType?: string; server?: string; html?: string; ssrf?: boolean }
+interface Route {
+  status: number;
+  location?: string;
+  contentType?: string;
+  server?: string;
+  html?: string;
+  ssrf?: boolean;
+}
 
 function fakeRes(r: Route): Response {
   const headers: Record<string, string | undefined> = {
-    location: r.location, 'content-type': r.contentType, server: r.server,
+    location: r.location,
+    'content-type': r.contentType,
+    server: r.server,
   };
   return {
     status: r.status,
@@ -40,17 +53,27 @@ function routeTable(routes: Record<string, Route>): void {
     if (r.ssrf) return Promise.reject(new SsrfBlockedError('blocked'));
     return Promise.resolve(fakeRes(r));
   });
-   
-  mockRead.mockImplementation((res: any) => Promise.resolve({ text: String(res.__html ?? ''), truncated: false, bytes: 0 }));
+
+  mockRead.mockImplementation((res: any) =>
+    Promise.resolve({ text: String(res.__html ?? ''), truncated: false, bytes: 0 }),
+  );
 }
 
-beforeEach(() => { mockFetch.mockReset(); mockRead.mockReset(); });
+beforeEach(() => {
+  mockFetch.mockReset();
+  mockRead.mockReset();
+});
 
 describe('redirect_chain — catena base', () => {
   it('301 → 200: 2 hop, ok, seoImpact good, server/contentType raccolti', async () => {
     routeTable({
       'https://a.com/old': { status: 301, location: 'https://a.com/new', server: 'nginx' },
-      'https://a.com/new': { status: 200, contentType: 'text/html', server: 'nginx', html: '<html></html>' },
+      'https://a.com/new': {
+        status: 200,
+        contentType: 'text/html',
+        server: 'nginx',
+        html: '<html></html>',
+      },
     });
     const r = await exec({ url: 'https://a.com/old' }, null, CTX);
     const out = r.output as Record<string, unknown>;
@@ -105,7 +128,11 @@ describe('redirect_chain — catena base', () => {
 describe('redirect_chain — analisi pagina finale', () => {
   it('🚨 meta-refresh estratto come weak redirect', async () => {
     routeTable({
-      'https://a.com/': { status: 200, contentType: 'text/html', html: '<html><head><meta http-equiv="refresh" content="0; url=https://a.com/next"></head></html>' },
+      'https://a.com/': {
+        status: 200,
+        contentType: 'text/html',
+        html: '<html><head><meta http-equiv="refresh" content="0; url=https://a.com/next"></head></html>',
+      },
     });
     const r = await exec({ url: 'https://a.com/' }, null, CTX);
     const out = r.output as { metaRefresh: string | null; warnings?: string[] };
@@ -114,7 +141,11 @@ describe('redirect_chain — analisi pagina finale', () => {
 
   it('🚨 canonical mismatch quando il canonical punta altrove', async () => {
     routeTable({
-      'https://a.com/page': { status: 200, contentType: 'text/html', html: '<html><head><link rel="canonical" href="https://a.com/canonical-altro"></head></html>' },
+      'https://a.com/page': {
+        status: 200,
+        contentType: 'text/html',
+        html: '<html><head><link rel="canonical" href="https://a.com/canonical-altro"></head></html>',
+      },
     });
     const r = await exec({ url: 'https://a.com/page' }, null, CTX);
     const out = r.output as { canonicalMismatch: boolean | null; canonicalUrl: string | null };
@@ -124,7 +155,11 @@ describe('redirect_chain — analisi pagina finale', () => {
 
   it('canonical che combacia (ignora trailing slash) → mismatch false', async () => {
     routeTable({
-      'https://a.com/page': { status: 200, contentType: 'text/html', html: '<html><head><link rel="canonical" href="https://a.com/page/"></head></html>' },
+      'https://a.com/page': {
+        status: 200,
+        contentType: 'text/html',
+        html: '<html><head><link rel="canonical" href="https://a.com/page/"></head></html>',
+      },
     });
     const r = await exec({ url: 'https://a.com/page' }, null, CTX);
     expect((r.output as { canonicalMismatch: boolean | null }).canonicalMismatch).toBe(false);
@@ -139,7 +174,13 @@ describe('redirect_chain — analisi pagina finale', () => {
   });
 
   it('analyzeFinalPage=false → nessun GET extra (solo la catena)', async () => {
-    routeTable({ 'https://a.com/': { status: 200, contentType: 'text/html', html: '<meta http-equiv="refresh" content="0;url=https://x">' } });
+    routeTable({
+      'https://a.com/': {
+        status: 200,
+        contentType: 'text/html',
+        html: '<meta http-equiv="refresh" content="0;url=https://x">',
+      },
+    });
     const r = await exec({ url: 'https://a.com/', analyzeFinalPage: false }, null, CTX);
     expect((r.output as { metaRefresh: string | null }).metaRefresh).toBeNull();
   });

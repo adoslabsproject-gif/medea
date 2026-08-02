@@ -7,7 +7,14 @@
  */
 
 import { MongoClient, type Db, type Collection, ObjectId } from 'mongodb';
-import type { Column, Database, MigrationAction, QueryFilter, QuerySpec, Table } from '@medea/engine-db-studio-core';
+import type {
+  Column,
+  Database,
+  MigrationAction,
+  QueryFilter,
+  QuerySpec,
+  Table,
+} from '@medea/engine-db-studio-core';
 import type { IDatabaseAdapter, QueryResult, ExecuteResult } from '@medea/engine-db-studio-engine';
 
 const TYPE_TO_BSON: Record<Column['type'], string> = {
@@ -37,16 +44,36 @@ function filterToMongoQuery(filters: readonly QueryFilter[]): Record<string, unk
   const out: Record<string, unknown> = {};
   for (const f of filters) {
     switch (f.op) {
-      case 'eq': out[f.column] = f.value; break;
-      case 'neq': out[f.column] = { $ne: f.value }; break;
-      case 'gt': out[f.column] = { $gt: f.value }; break;
-      case 'gte': out[f.column] = { $gte: f.value }; break;
-      case 'lt': out[f.column] = { $lt: f.value }; break;
-      case 'lte': out[f.column] = { $lte: f.value }; break;
-      case 'like': out[f.column] = { $regex: String(f.value), $options: 'i' }; break;
-      case 'isNull': out[f.column] = null; break;
-      case 'notNull': out[f.column] = { $ne: null }; break;
-      case 'in': out[f.column] = { $in: Array.isArray(f.value) ? f.value : [f.value] }; break;
+      case 'eq':
+        out[f.column] = f.value;
+        break;
+      case 'neq':
+        out[f.column] = { $ne: f.value };
+        break;
+      case 'gt':
+        out[f.column] = { $gt: f.value };
+        break;
+      case 'gte':
+        out[f.column] = { $gte: f.value };
+        break;
+      case 'lt':
+        out[f.column] = { $lt: f.value };
+        break;
+      case 'lte':
+        out[f.column] = { $lte: f.value };
+        break;
+      case 'like':
+        out[f.column] = { $regex: String(f.value), $options: 'i' };
+        break;
+      case 'isNull':
+        out[f.column] = null;
+        break;
+      case 'notNull':
+        out[f.column] = { $ne: null };
+        break;
+      case 'in':
+        out[f.column] = { $in: Array.isArray(f.value) ? f.value : [f.value] };
+        break;
     }
   }
   return out;
@@ -59,7 +86,9 @@ export class MongoDbAdapter implements IDatabaseAdapter {
 
   async connect(database: Database): Promise<void> {
     const conn = database.connection;
-    const url = conn.url ?? `mongodb://${conn.username ?? ''}:${conn.passwordSecretRef ?? ''}@${conn.hostname ?? 'localhost'}:${(conn.port ?? 27017).toString()}/${conn.database ?? ''}`;
+    const url =
+      conn.url ??
+      `mongodb://${conn.username ?? ''}:${conn.passwordSecretRef ?? ''}@${conn.hostname ?? 'localhost'}:${(conn.port ?? 27017).toString()}/${conn.database ?? ''}`;
     this.client = new MongoClient(url);
     await this.client.connect();
     this.db = this.client.db(conn.database);
@@ -83,15 +112,21 @@ export class MongoDbAdapter implements IDatabaseAdapter {
         const schema = {
           $jsonSchema: {
             bsonType: 'object',
-            properties: Object.fromEntries(a.table.columns.map((c) => [c.name, columnToJsonSchema(c)])),
+            properties: Object.fromEntries(
+              a.table.columns.map((c) => [c.name, columnToJsonSchema(c)]),
+            ),
             required: a.table.columns.filter((c) => !c.constraints.nullable).map((c) => c.name),
           },
         };
-        lines.push(`// createCollection("${a.table.name}", { validator: ${JSON.stringify(schema, null, 2)} })`);
+        lines.push(
+          `// createCollection("${a.table.name}", { validator: ${JSON.stringify(schema, null, 2)} })`,
+        );
       } else if (a.kind === 'drop_table') {
         lines.push(`// db.${a.tableName}.drop()`);
       } else if (a.kind === 'add_index') {
-        lines.push(`// db.${a.tableName}.createIndex({ ${a.index.columns.map((c) => `"${c}": 1`).join(', ')} }, { unique: ${String(a.index.unique)} })`);
+        lines.push(
+          `// db.${a.tableName}.createIndex({ ${a.index.columns.map((c) => `"${c}": 1`).join(', ')} }, { unique: ${String(a.index.unique)} })`,
+        );
       } else {
         lines.push(`// no-op on Mongo: ${a.kind}`);
       }
@@ -99,7 +134,9 @@ export class MongoDbAdapter implements IDatabaseAdapter {
     return Promise.resolve(lines.join('\n'));
   }
 
-  async applyMigration(actions: readonly MigrationAction[]): Promise<{ sql: string; affectedTables: string[] }> {
+  async applyMigration(
+    actions: readonly MigrationAction[],
+  ): Promise<{ sql: string; affectedTables: string[] }> {
     const db = this.requireDb();
     const affected = new Set<string>();
     for (const a of actions) {
@@ -107,7 +144,9 @@ export class MongoDbAdapter implements IDatabaseAdapter {
         const schema = {
           $jsonSchema: {
             bsonType: 'object',
-            properties: Object.fromEntries(a.table.columns.map((c) => [c.name, columnToJsonSchema(c)])),
+            properties: Object.fromEntries(
+              a.table.columns.map((c) => [c.name, columnToJsonSchema(c)]),
+            ),
             required: a.table.columns.filter((c) => !c.constraints.nullable).map((c) => c.name),
           },
         };
@@ -117,15 +156,23 @@ export class MongoDbAdapter implements IDatabaseAdapter {
         }
         affected.add(a.table.name);
       } else if (a.kind === 'drop_table') {
-        await db.collection(a.tableName).drop().catch(() => undefined);
+        await db
+          .collection(a.tableName)
+          .drop()
+          .catch(() => undefined);
         affected.add(a.tableName);
       } else if (a.kind === 'add_index') {
         const spec: Record<string, 1> = {};
         for (const c of a.index.columns) spec[c] = 1;
-        await db.collection(a.tableName).createIndex(spec, { unique: a.index.unique, name: a.index.name });
+        await db
+          .collection(a.tableName)
+          .createIndex(spec, { unique: a.index.unique, name: a.index.name });
         affected.add(a.tableName);
       } else if (a.kind === 'drop_index') {
-        await db.collection(a.tableName).dropIndex(a.indexName).catch(() => undefined);
+        await db
+          .collection(a.tableName)
+          .dropIndex(a.indexName)
+          .catch(() => undefined);
         affected.add(a.tableName);
       }
     }
@@ -152,13 +199,24 @@ export class MongoDbAdapter implements IDatabaseAdapter {
     const db = this.requireDb();
     const start = Date.now();
     const result = await db.collection(tableName).insertOne(row);
-    return { affectedRows: 1, insertedId: result.insertedId.toString(), durationMs: Date.now() - start };
+    return {
+      affectedRows: 1,
+      insertedId: result.insertedId.toString(),
+      durationMs: Date.now() - start,
+    };
   }
 
-  async update(tableName: string, where: Record<string, unknown>, patch: Record<string, unknown>): Promise<ExecuteResult> {
+  async update(
+    tableName: string,
+    where: Record<string, unknown>,
+    patch: Record<string, unknown>,
+  ): Promise<ExecuteResult> {
     const db = this.requireDb();
     const start = Date.now();
-    const filter = where._id && typeof where._id === 'string' ? { ...where, _id: new ObjectId(where._id) } : where;
+    const filter =
+      where._id && typeof where._id === 'string'
+        ? { ...where, _id: new ObjectId(where._id) }
+        : where;
     const result = await db.collection(tableName).updateMany(filter, { $set: patch });
     return { affectedRows: result.modifiedCount, durationMs: Date.now() - start };
   }
@@ -166,7 +224,10 @@ export class MongoDbAdapter implements IDatabaseAdapter {
   async delete(tableName: string, where: Record<string, unknown>): Promise<ExecuteResult> {
     const db = this.requireDb();
     const start = Date.now();
-    const filter = where._id && typeof where._id === 'string' ? { ...where, _id: new ObjectId(where._id) } : where;
+    const filter =
+      where._id && typeof where._id === 'string'
+        ? { ...where, _id: new ObjectId(where._id) }
+        : where;
     const result = await db.collection(tableName).deleteMany(filter);
     return { affectedRows: result.deletedCount, durationMs: Date.now() - start };
   }
@@ -177,7 +238,14 @@ export class MongoDbAdapter implements IDatabaseAdapter {
     return collections.map((c) => ({
       id: c.name,
       name: c.name,
-      columns: [{ id: '_id', name: '_id', type: 'text' as const, constraints: { primaryKey: true, nullable: false, unique: true } }],
+      columns: [
+        {
+          id: '_id',
+          name: '_id',
+          type: 'text' as const,
+          constraints: { primaryKey: true, nullable: false, unique: true },
+        },
+      ],
       indexes: [],
     }));
   }

@@ -49,7 +49,10 @@ export async function embedText(req: EmbeddingRequest): Promise<number[]> {
         body: JSON.stringify({ model: model || 'text-embedding-3-small', input: text }),
         spanName: 'embed.openai',
       });
-      if (!res.ok) throw new Error(`OpenAI embed ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 300)}`);
+      if (!res.ok)
+        throw new Error(
+          `OpenAI embed ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 300)}`,
+        );
       const data = await readJsonCapped<{ data: { embedding: number[] }[] }>(res);
       return data.data[0]?.embedding ?? [];
     }
@@ -61,7 +64,10 @@ export async function embedText(req: EmbeddingRequest): Promise<number[]> {
         body: JSON.stringify({ model: model || 'voyage-3', input: text }),
         spanName: 'embed.voyage',
       });
-      if (!res.ok) throw new Error(`Voyage embed ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 300)}`);
+      if (!res.ok)
+        throw new Error(
+          `Voyage embed ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 300)}`,
+        );
       const data = await readJsonCapped<{ data: { embedding: number[] }[] }>(res);
       return data.data[0]?.embedding ?? [];
     }
@@ -76,7 +82,10 @@ export async function embedText(req: EmbeddingRequest): Promise<number[]> {
         allowPrivateHost: true,
         spanName: 'embed.ollama',
       });
-      if (!res.ok) throw new Error(`Ollama embed ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 300)}`);
+      if (!res.ok)
+        throw new Error(
+          `Ollama embed ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 300)}`,
+        );
       const data = await readJsonCapped<{ embedding: number[] }>(res);
       return data.embedding;
     }

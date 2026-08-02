@@ -39,7 +39,10 @@ export function createMetricsRoutes(): Hono {
     // Se la env è vuota, endpoint chiuso (403) — fail-closed by design.
     const expected = process.env.MEDEA_METRICS_TOKEN ?? '';
     if (!expected) {
-      return c.text('Metrics endpoint disabled: set MEDEA_METRICS_TOKEN env var to enable scraping.', 403);
+      return c.text(
+        'Metrics endpoint disabled: set MEDEA_METRICS_TOKEN env var to enable scraping.',
+        403,
+      );
     }
     const header = c.req.header('authorization') ?? '';
     const provided = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : '';
@@ -49,9 +52,15 @@ export function createMetricsRoutes(): Hono {
     const { db } = getDatabase();
 
     const [workflowsCount] = await db.select({ c: sql<number>`count(*)` }).from(workflows);
-    const [enabledCount] = await db.select({ c: sql<number>`count(*)` }).from(workflows).where(eq(workflows.enabled, true));
+    const [enabledCount] = await db
+      .select({ c: sql<number>`count(*)` })
+      .from(workflows)
+      .where(eq(workflows.enabled, true));
     const [runsTotal] = await db.select({ c: sql<number>`count(*)` }).from(runs);
-    const [runsError] = await db.select({ c: sql<number>`count(*)` }).from(runs).where(eq(runs.status, 'error'));
+    const [runsError] = await db
+      .select({ c: sql<number>`count(*)` })
+      .from(runs)
+      .where(eq(runs.status, 'error'));
     const [runs24h] = await db
       .select({ c: sql<number>`count(*)` })
       .from(runs)

@@ -27,7 +27,11 @@ export interface OpenApiOperation {
 
 const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'] as const;
 
-interface RawParam { name?: unknown; in?: unknown; required?: unknown }
+interface RawParam {
+  name?: unknown;
+  in?: unknown;
+  required?: unknown;
+}
 
 function parseParams(raw: unknown): OpenApiParameter[] {
   if (!Array.isArray(raw)) return [];
@@ -61,7 +65,10 @@ export function parseOpenApiOperations(spec: unknown): OpenApiOperation[] {
       const merged = new Map<string, OpenApiParameter>();
       for (const p of [...sharedParams, ...opParams]) merged.set(`${p.in}:${p.name}`, p);
       ops.push({
-        operationId: typeof op.operationId === 'string' && op.operationId ? op.operationId : `${method.toUpperCase()} ${path}`,
+        operationId:
+          typeof op.operationId === 'string' && op.operationId
+            ? op.operationId
+            : `${method.toUpperCase()} ${path}`,
         method: method.toUpperCase() as OpenApiOperation['method'],
         path,
         ...(typeof op.summary === 'string' ? { summary: op.summary } : {}),
@@ -107,7 +114,8 @@ export function buildOpenApiRequest(
     const v = values[p.name];
     if (p.in === 'path') {
       if (v === undefined || v === '') {
-        if (p.required) throw new Error(`OpenAPI: path param "${p.name}" mancante per ${op.operationId}`);
+        if (p.required)
+          throw new Error(`OpenAPI: path param "${p.name}" mancante per ${op.operationId}`);
         continue;
       }
       path = path.replace(`{${p.name}}`, encodeURIComponent(v));

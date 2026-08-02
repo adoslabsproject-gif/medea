@@ -14,7 +14,11 @@
  *   7. edges riferiscono nodi esistenti, grafo connesso dal trigger
  */
 import { describe, it, expect } from 'vitest';
-import { GOLDEN_EXAMPLES, pickGoldenExample, formatGoldenExampleForPrompt } from './golden-examples.js';
+import {
+  GOLDEN_EXAMPLES,
+  pickGoldenExample,
+  formatGoldenExampleForPrompt,
+} from './golden-examples.js';
 import { buildNodeCatalog } from './node-catalog.js';
 import { validateArchitecture } from './validate-architecture.js';
 import { runQualityGate } from './quality-gate.js';
@@ -31,7 +35,10 @@ describe('🚨🚨 GOLDEN EXAMPLES — contract anti-drift col catalogo reale', 
 
       it('tutti i defId esistono nel catalogo', () => {
         for (const n of nodes) {
-          expect(catalog.some((c) => c.defId === n.defId), `defId "${n.defId}" (nodo ${n.id}) non nel catalogo`).toBe(true);
+          expect(
+            catalog.some((c) => c.defId === n.defId),
+            `defId "${n.defId}" (nodo ${n.id}) non nel catalogo`,
+          ).toBe(true);
         }
       });
 
@@ -43,11 +50,22 @@ describe('🚨🚨 GOLDEN EXAMPLES — contract anti-drift col catalogo reale', 
             const v = n.config[field.key];
             if (field.required) {
               const filled = v !== undefined && v !== '';
-              const pickerOk = v === '__USE_PICKER__' && isPickerResolvableField(field.key, field.type);
+              const pickerOk =
+                v === '__USE_PICKER__' && isPickerResolvableField(field.key, field.type);
               expect(filled || pickerOk, `${n.id}.${field.key} REQUIRED mancante`).toBe(true);
             }
-            if (v !== undefined && v !== '' && v !== '__USE_PICKER__' && field.type === 'select' && field.options && field.options.length > 0) {
-              expect(field.options, `${n.id}.${field.key}="${v}" non è tra le option [${field.options.join(',')}]`).toContain(v);
+            if (
+              v !== undefined &&
+              v !== '' &&
+              v !== '__USE_PICKER__' &&
+              field.type === 'select' &&
+              field.options &&
+              field.options.length > 0
+            ) {
+              expect(
+                field.options,
+                `${n.id}.${field.key}="${v}" non è tra le option [${field.options.join(',')}]`,
+              ).toContain(v);
             }
           }
         }
@@ -67,24 +85,42 @@ describe('🚨🚨 GOLDEN EXAMPLES — contract anti-drift col catalogo reale', 
         while (grew) {
           grew = false;
           for (const e of edges) {
-            if (reachable.has(e.from) && !reachable.has(e.to)) { reachable.add(e.to); grew = true; }
+            if (reachable.has(e.from) && !reachable.has(e.to)) {
+              reachable.add(e.to);
+              grew = true;
+            }
           }
         }
-        expect([...ids].filter((id) => !reachable.has(id)), 'nodi non raggiungibili dal trigger').toEqual([]);
+        expect(
+          [...ids].filter((id) => !reachable.has(id)),
+          'nodi non raggiungibili dal trigger',
+        ).toEqual([]);
       });
 
       it('validateArchitecture: zero issue', () => {
         const issues = validateArchitecture(
-          nodes.map((n) => ({ id: n.id, defId: n.defId, config: n.config as Record<string, unknown> })),
-          edges.map((e) => ({ from: e.from, to: e.to, ...(e.fromPort ? { fromPort: e.fromPort } : {}) })),
+          nodes.map((n) => ({
+            id: n.id,
+            defId: n.defId,
+            config: n.config as Record<string, unknown>,
+          })),
+          edges.map((e) => ({
+            from: e.from,
+            to: e.to,
+            ...(e.fromPort ? { fromPort: e.fromPort } : {}),
+          })),
           catalog,
         );
         expect(issues).toEqual([]);
       });
 
-      it('quality gate: zero critical (l\'esempio predica ciò che il gate esige)', () => {
+      it("quality gate: zero critical (l'esempio predica ciò che il gate esige)", () => {
         const result = runQualityGate({
-          nodes: nodes.map((n) => ({ id: n.id, defId: n.defId, config: n.config as Record<string, unknown> })),
+          nodes: nodes.map((n) => ({
+            id: n.id,
+            defId: n.defId,
+            config: n.config as Record<string, unknown>,
+          })),
           edges: edges.map((e) => ({ from: e.from, to: e.to })),
           databases: [],
         });
@@ -94,7 +130,11 @@ describe('🚨🚨 GOLDEN EXAMPLES — contract anti-drift col catalogo reale', 
 
       it('dataflow: ogni $node.X referenzia un nodo A MONTE (zero fail)', () => {
         const fails = validateDataflow(
-          nodes.map((n) => ({ id: n.id, defId: n.defId, config: n.config as Record<string, unknown> })),
+          nodes.map((n) => ({
+            id: n.id,
+            defId: n.defId,
+            config: n.config as Record<string, unknown>,
+          })),
           edges.map((e) => ({ from: e.from, to: e.to })),
         ).filter((i) => i.status === 'fail');
         expect(fails, fails.map((f) => `${f.nodeId}: ${f.reason}`).join('\n')).toEqual([]);
@@ -107,7 +147,9 @@ describe('pickGoldenExample — selezione per goal reale', () => {
   it('goal email/triage → gold email-triage; goal form → form-to-db; goal report cron → daily-report', () => {
     expect(pickGoldenExample('smista le email in arrivo per categoria')?.id).toBe('email-triage');
     expect(pickGoldenExample('un form di contatto che salva i lead')?.id).toBe('form-to-db');
-    expect(pickGoldenExample('ogni giorno alle 8 manda un report via mail')?.id).toBe('daily-report');
+    expect(pickGoldenExample('ogni giorno alle 8 manda un report via mail')?.id).toBe(
+      'daily-report',
+    );
   });
 
   it('goal senza pattern affine → null (meglio nessun esempio che uno fuorviante)', () => {

@@ -56,7 +56,12 @@ beforeEach(() => {
     );
   `);
   db = drizzle(sqlite, { schema: { janitorDslRules } });
-  getDatabaseMock.mockReturnValue({ db, conn: sqlite, kind: 'sqlite', close: () => Promise.resolve() });
+  getDatabaseMock.mockReturnValue({
+    db,
+    conn: sqlite,
+    kind: 'sqlite',
+    close: () => Promise.resolve(),
+  });
   repo = new DslRuleRepository();
 });
 
@@ -147,7 +152,7 @@ describe('🚨 listAll + listForTenant', () => {
   it('🚨 SECURITY: listForTenant t1 NON include t2', async () => {
     const t1 = await repo.listForTenant('t1');
     expect(t1).toHaveLength(2);
-    expect(t1.every(r => r.tenantId === 't1')).toBe(true);
+    expect(t1.every((r) => r.tenantId === 't1')).toBe(true);
   });
 
   it('🚨 SECURITY: listForTenant tenant inesistente → []', async () => {
@@ -186,27 +191,35 @@ describe('🚨 placeholders JSON — resilient parse', () => {
   });
 
   it('🚨 RESILIENCE: JSON corrotto in DB → fallback {} (no crash)', async () => {
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO janitor_dsl_rules (id, tenant_id, title, data_source_ref,
         target_table, target_pk_column, detect_sql, placeholders_json, tags_json,
         default_severity, default_schedule, default_max_rows_per_run,
         created_at, updated_at)
       VALUES ('dsl_x', 't1', 'X', 'system', 'runs', 'id', 'SELECT', ?, '[]',
         'critical', '0 * * * *', 100, '2026', '2026')
-    `).run('NOT-JSON{garbage');
+    `,
+      )
+      .run('NOT-JSON{garbage');
     const out = await repo.get('dsl_x');
     expect(out!.placeholders).toEqual({});
   });
 
   it('🚨 RESILIENCE: JSON null → fallback {}', async () => {
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO janitor_dsl_rules (id, tenant_id, title, data_source_ref,
         target_table, target_pk_column, detect_sql, placeholders_json, tags_json,
         default_severity, default_schedule, default_max_rows_per_run,
         created_at, updated_at)
       VALUES ('dsl_y', 't1', 'Y', 'system', 'runs', 'id', 'SELECT', 'null', '[]',
         'critical', '0 * * * *', 100, '2026', '2026')
-    `).run();
+    `,
+      )
+      .run();
     const out = await repo.get('dsl_y');
     expect(out!.placeholders).toEqual({});
   });
@@ -220,40 +233,52 @@ describe('🚨 tags JSON — array filter', () => {
   });
 
   it('🚨 SECURITY: tags con elementi non-string → filtrati out', async () => {
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO janitor_dsl_rules (id, tenant_id, title, data_source_ref,
         target_table, target_pk_column, detect_sql, placeholders_json, tags_json,
         default_severity, default_schedule, default_max_rows_per_run,
         created_at, updated_at)
       VALUES ('dsl_z', 't1', 'Z', 'system', 'runs', 'id', 'SELECT', '{}', ?,
         'critical', '0 * * * *', 100, '2026', '2026')
-    `).run('["valid", 42, null, {"obj":1}, "valid2"]');
+    `,
+      )
+      .run('["valid", 42, null, {"obj":1}, "valid2"]');
     const out = await repo.get('dsl_z');
     expect(out!.tags).toEqual(['valid', 'valid2']);
   });
 
   it('🚨 RESILIENCE: tags JSON non-array (object) → fallback []', async () => {
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO janitor_dsl_rules (id, tenant_id, title, data_source_ref,
         target_table, target_pk_column, detect_sql, placeholders_json, tags_json,
         default_severity, default_schedule, default_max_rows_per_run,
         created_at, updated_at)
       VALUES ('dsl_w', 't1', 'W', 'system', 'runs', 'id', 'SELECT', '{}', ?,
         'critical', '0 * * * *', 100, '2026', '2026')
-    `).run('{"not":"array"}');
+    `,
+      )
+      .run('{"not":"array"}');
     const out = await repo.get('dsl_w');
     expect(out!.tags).toEqual([]);
   });
 
   it('🚨 RESILIENCE: tags JSON malformato → fallback []', async () => {
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO janitor_dsl_rules (id, tenant_id, title, data_source_ref,
         target_table, target_pk_column, detect_sql, placeholders_json, tags_json,
         default_severity, default_schedule, default_max_rows_per_run,
         created_at, updated_at)
       VALUES ('dsl_v', 't1', 'V', 'system', 'runs', 'id', 'SELECT', '{}', ?,
         'critical', '0 * * * *', 100, '2026', '2026')
-    `).run('BROKEN[');
+    `,
+      )
+      .run('BROKEN[');
     const out = await repo.get('dsl_v');
     expect(out!.tags).toEqual([]);
   });

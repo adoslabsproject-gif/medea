@@ -32,7 +32,7 @@ export const waitSignalNode: NodeModule = {
     icon: 'hourglass',
     color: '#a855f7',
     description:
-      'Operatore di pausa event-driven enterprise che sospende l\'esecuzione del workflow fino all\'arrivo di un ' +
+      "Operatore di pausa event-driven enterprise che sospende l'esecuzione del workflow fino all'arrivo di un " +
       'segnale esterno via HTTP — il pattern signal-and-wait classico di Temporal/Cadence Workflows e workflow ' +
       'orchestration enterprise, fondamento di tutti i processi long-running con interazione umana o coordinamento ' +
       'asincrono con sistemi esterni dove il tempo di attesa è ore-giorni-settimane (non secondi come logic_delay). ' +
@@ -61,7 +61,7 @@ export const waitSignalNode: NodeModule = {
       'workspace + access provisioning), pausa media 1-3 giorni; processo legale con SLA giorni-settimane di ' +
       'attesa controfirme contratto da multiple parti via DocuSign webhook signal; pipeline ETL che attende ' +
       'batch downstream completed da sistema legacy mainframe che invia signal HTTP al termine; ' +
-      'human-in-the-loop ML review dove il modello AI è incerto (confidence < soglia) e l\'operatore deve ' +
+      "human-in-the-loop ML review dove il modello AI è incerto (confidence < soglia) e l'operatore deve " +
       'validare prima della propagazione downstream alla produzione.',
     configFields: [
       {

@@ -15,24 +15,48 @@ const m = vi.hoisted(() => {
   const mockFns = {
     db: null as Database.Database | null,
     configValue: { MEDEA_DATA_DIR: '/tmp/ff-db-agent-route-test' },
-    connect: vi.fn(), applyMigration: vi.fn(), query: vi.fn(), insert: vi.fn(), introspect: vi.fn(),
+    connect: vi.fn(),
+    applyMigration: vi.fn(),
+    query: vi.fn(),
+    insert: vi.fn(),
+    introspect: vi.fn(),
   };
   class FakeAdapter {
     engine = 'sqlite';
-    async connect(d: unknown) { return mockFns.connect(d); }
-    async applyMigration(a: unknown) { return mockFns.applyMigration(a); }
-    async previewMigration() { return ''; }
-    async query(s: unknown) { return mockFns.query(s); }
-    async insert(t: string, r: unknown) { return mockFns.insert(t, r); }
-    async update() { return {}; }
-    async delete() { return {}; }
-    async introspect() { return mockFns.introspect(); }
+    async connect(d: unknown) {
+      return mockFns.connect(d);
+    }
+    async applyMigration(a: unknown) {
+      return mockFns.applyMigration(a);
+    }
+    async previewMigration() {
+      return '';
+    }
+    async query(s: unknown) {
+      return mockFns.query(s);
+    }
+    async insert(t: string, r: unknown) {
+      return mockFns.insert(t, r);
+    }
+    async update() {
+      return {};
+    }
+    async delete() {
+      return {};
+    }
+    async introspect() {
+      return mockFns.introspect();
+    }
   }
   return { ...mockFns, FakeAdapter };
 });
 vi.mock('@/storage/db.js', () => ({ getDatabase: () => ({ sqlite: m.db! }) }));
 vi.mock('@/lib/logger.js');
-vi.mock('@/config.js', () => ({ loadConfig: () => m.configValue, liaraBaseUrl: () => 'http://liara.local', isLiaraEnabled: () => true }));
+vi.mock('@/config.js', () => ({
+  loadConfig: () => m.configValue,
+  liaraBaseUrl: () => 'http://liara.local',
+  isLiaraEnabled: () => true,
+}));
 vi.mock('@medea/engine-db-studio-engine', () => ({ SqliteAdapter: m.FakeAdapter }));
 vi.mock('@medea/engine-db-studio-postgres', () => ({ PostgresAdapter: m.FakeAdapter }));
 vi.mock('@medea/engine-db-studio-mysql', () => ({ MysqlAdapter: m.FakeAdapter }));
@@ -59,14 +83,36 @@ const TENANT_A = 'tenant-a';
 const TENANT_B = 'tenant-b';
 
 function seedTable(name = 'orders'): Table {
-  return { id: name, name, columns: [{ id: `${name}.id`, name: 'id', type: 'integer', constraints: { primaryKey: true, nullable: false, unique: true } }], indexes: [] };
+  return {
+    id: name,
+    name,
+    columns: [
+      {
+        id: `${name}.id`,
+        name: 'id',
+        type: 'integer',
+        constraints: { primaryKey: true, nullable: false, unique: true },
+      },
+    ],
+    indexes: [],
+  };
 }
 function makeDb(tenantId: string, name: string): string {
-  return new DbStudioService().create({ tenantId, name, description: 's', connection: { engine: 'sqlite', embedded: true }, tables: [seedTable()], relations: [] }).id;
+  return new DbStudioService().create({
+    tenantId,
+    name,
+    description: 's',
+    connection: { engine: 'sqlite', embedded: true },
+    tables: [seedTable()],
+    relations: [],
+  }).id;
 }
 
 /** App con auth iniettata + llmTurn scriptato. */
-function buildApp(authCtx: { userId?: string; tenantId: string; role: string }, script: LlmTurnResult[]): Hono {
+function buildApp(
+  authCtx: { userId?: string; tenantId: string; role: string },
+  script: LlmTurnResult[],
+): Hono {
   const queue = [...script];
   const llmTurn: LlmTurn = () => {
     const next = queue.shift();
@@ -74,18 +120,27 @@ function buildApp(authCtx: { userId?: string; tenantId: string; role: string }, 
     return Promise.resolve(next);
   };
   const app = new Hono();
-  app.use('*', async (c, next) => { c.set('auth', authCtx as never); await next(); });
+  app.use('*', async (c, next) => {
+    c.set('auth', authCtx as never);
+    await next();
+  });
   app.route('/db-agent', createDbAgentChatRoutes({ llmTurnFor: () => llmTurn }));
   return app;
 }
 
 async function post(app: Hono, body: unknown): Promise<Response> {
-  return app.request('/db-agent/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  return app.request('/db-agent/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 }
 
 beforeEach(() => {
   m.db = new Database(':memory:');
-  for (const v of Object.values(m)) { if (typeof v === 'function' && 'mockReset' in v) (v as { mockReset: () => void }).mockReset(); }
+  for (const v of Object.values(m)) {
+    if (typeof v === 'function' && 'mockReset' in v) (v as { mockReset: () => void }).mockReset();
+  }
   m.connect.mockResolvedValue(undefined);
   m.introspect.mockResolvedValue([seedTable()]);
   m.query.mockResolvedValue([{ id: 1 }]);
@@ -118,8 +173,19 @@ describe('POST /db-agent/chat', () => {
     const dbB = makeDb(TENANT_B, 'secret');
     let llmCalled = false;
     const app = new Hono();
-    app.use('*', async (c, next) => { c.set('auth', { userId: 'u1', tenantId: TENANT_A, role: 'editor' } as never); await next(); });
-    app.route('/db-agent', createDbAgentChatRoutes({ llmTurnFor: () => () => { llmCalled = true; return Promise.resolve({ kind: 'final', text: 'x' }); } }));
+    app.use('*', async (c, next) => {
+      c.set('auth', { userId: 'u1', tenantId: TENANT_A, role: 'editor' } as never);
+      await next();
+    });
+    app.route(
+      '/db-agent',
+      createDbAgentChatRoutes({
+        llmTurnFor: () => () => {
+          llmCalled = true;
+          return Promise.resolve({ kind: 'final', text: 'x' });
+        },
+      }),
+    );
     const res = await post(app, { databaseId: dbB, userMessage: 'leggi il db altrui' });
     expect(res.status).toBe(404);
     expect(llmCalled).toBe(false);
@@ -127,7 +193,9 @@ describe('POST /db-agent/chat', () => {
 
   it('validazione: userMessage vuoto → 400', async () => {
     const dbA = makeDb(TENANT_A, 'app');
-    const app = buildApp({ userId: 'u1', tenantId: TENANT_A, role: 'editor' }, [{ kind: 'final', text: 'x' }]);
+    const app = buildApp({ userId: 'u1', tenantId: TENANT_A, role: 'editor' }, [
+      { kind: 'final', text: 'x' },
+    ]);
     const res = await post(app, { databaseId: dbA, userMessage: '' });
     expect(res.status).toBe(400);
   });
@@ -148,7 +216,10 @@ describe('POST /db-agent/chat', () => {
 
   it('🌐 modalità GLOBALE a workspace VUOTO → funziona (Liara crea il primo DB)', async () => {
     const app = buildApp({ userId: 'u1', tenantId: 'tenant-empty', role: 'editor' }, [
-      { kind: 'tools', toolCalls: [{ id: 'c1', name: 'create_database', args: { name: 'nuovo' } }] },
+      {
+        kind: 'tools',
+        toolCalls: [{ id: 'c1', name: 'create_database', args: { name: 'nuovo' } }],
+      },
       { kind: 'final', text: 'Database "nuovo" creato.' },
     ]);
     const res = await post(app, { userMessage: 'creami un database chiamato nuovo' });
@@ -159,7 +230,9 @@ describe('POST /db-agent/chat', () => {
   });
 
   it('🚨 modalità DATABASE: databaseId presente ma inesistente → 404 (anti-enum invariato)', async () => {
-    const app = buildApp({ userId: 'u1', tenantId: TENANT_A, role: 'editor' }, [{ kind: 'final', text: 'x' }]);
+    const app = buildApp({ userId: 'u1', tenantId: TENANT_A, role: 'editor' }, [
+      { kind: 'final', text: 'x' },
+    ]);
     const res = await post(app, { databaseId: 'does-not-exist', userMessage: 'ciao' });
     expect(res.status).toBe(404);
   });
@@ -168,7 +241,10 @@ describe('POST /db-agent/chat', () => {
     const dbA = makeDb(TENANT_A, 'app');
     const dbB = makeDb(TENANT_B, 'secret');
     const app = buildApp({ userId: 'u1', tenantId: TENANT_A, role: 'editor' }, [
-      { kind: 'tools', toolCalls: [{ id: 'c1', name: 'read_db_schema', args: { databaseId: dbB } }] },
+      {
+        kind: 'tools',
+        toolCalls: [{ id: 'c1', name: 'read_db_schema', args: { databaseId: dbB } }],
+      },
       { kind: 'final', text: 'Non accessibile.' },
     ]);
     const res = await post(app, { databaseId: dbA, userMessage: 'leggi B' });
@@ -191,21 +267,37 @@ describe('POST /db-agent/chat — routing provider (provider-registry SSOT)', ()
   /** App che usa il ramo resolver reale (nessun llmTurnFor). */
   function liveApp(): Hono {
     const app = new Hono();
-    app.use('*', async (c, next) => { c.set('auth', { userId: 'u1', tenantId: TENANT_A, role: 'editor' } as never); await next(); });
+    app.use('*', async (c, next) => {
+      c.set('auth', { userId: 'u1', tenantId: TENANT_A, role: 'editor' } as never);
+      await next();
+    });
     app.route('/db-agent', createDbAgentChatRoutes());
     return app;
   }
   /** Risposta LLM "final" (nessun tool) → il loop termina dopo 1 fetch. */
   function finalOnce(): void {
-    fetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ choices: [{ message: { content: 'fatto' } }] }) });
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ choices: [{ message: { content: 'fatto' } }] }),
+    });
   }
   function firstCall(): { url: string; headers: Record<string, string>; body: { model?: string } } {
     const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
-    return { url, headers: opts.headers as Record<string, string>, body: JSON.parse(opts.body as string) as { model?: string } };
+    return {
+      url,
+      headers: opts.headers as Record<string, string>,
+      body: JSON.parse(opts.body as string) as { model?: string },
+    };
   }
 
-  beforeEach(() => { globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch; fetchMock.mockReset(); resolveMock.mockReset(); });
-  afterAll(() => { globalThis.fetch = realFetch; });
+  beforeEach(() => {
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+    fetchMock.mockReset();
+    resolveMock.mockReset();
+  });
+  afterAll(() => {
+    globalThis.fetch = realFetch;
+  });
 
   it('grok → POST https://api.x.ai/... + model default grok-2-latest + Bearer key', async () => {
     const dbA = makeDb(TENANT_A, 'app');
@@ -235,14 +327,20 @@ describe('POST /db-agent/chat — routing provider (provider-registry SSOT)', ()
     finalOnce();
     await post(liveApp(), { databaseId: dbA, userMessage: 'ciao' });
     const call = firstCall();
-    expect(call.url).toBe('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
+    expect(call.url).toBe(
+      'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+    );
     expect(call.url).not.toContain('generateContent');
     expect(call.headers.Authorization).toBe('Bearer AIza-x');
   });
 
   it('openrouter → attribution headers X-Title/HTTP-Referer + model esplicito passato', async () => {
     const dbA = makeDb(TENANT_A, 'app');
-    resolveMock.mockReturnValue({ provider: 'openrouter', apiKey: 'or-key', model: 'openai/gpt-4o' });
+    resolveMock.mockReturnValue({
+      provider: 'openrouter',
+      apiKey: 'or-key',
+      model: 'openai/gpt-4o',
+    });
     finalOnce();
     await post(liveApp(), { databaseId: dbA, userMessage: 'ciao' });
     const call = firstCall();
@@ -263,7 +361,8 @@ describe('POST /db-agent/chat — routing provider (provider-registry SSOT)', ()
       expect(call.url).toBe('http://liara.local/chat/completions');
       expect(call.headers.Authorization).toBe('Bearer LIC-xyz'); // non più assente: era il bug del 400
     } finally {
-      if (prev === undefined) delete process.env.MEDEA_LICENSE_KEY; else process.env.MEDEA_LICENSE_KEY = prev;
+      if (prev === undefined) delete process.env.MEDEA_LICENSE_KEY;
+      else process.env.MEDEA_LICENSE_KEY = prev;
     }
   });
 

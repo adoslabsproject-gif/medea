@@ -44,26 +44,34 @@ function getNested(obj: unknown, path: string): unknown {
 
 export function renderTemplate(template: string, data: unknown): string {
   // Pattern {{var}} o {{var|default fallback}} — non greedy, no nested braces.
-  return template.replace(/\{\{\s*([^{}|]+?)(?:\s*\|\s*default\s+([^{}]*?))?\s*\}\}/g, (_match, rawPath: string, fallback: string | undefined) => {
-    const path = rawPath.trim();
-    const val = getNested(data, path);
-    if (val === undefined || val === null || val === '') {
-      return fallback?.trim() ?? '';
-    }
-    if (typeof val === 'object') return JSON.stringify(val);
-    return coerceString(val);
-  });
+  return template.replace(
+    /\{\{\s*([^{}|]+?)(?:\s*\|\s*default\s+([^{}]*?))?\s*\}\}/g,
+    (_match, rawPath: string, fallback: string | undefined) => {
+      const path = rawPath.trim();
+      const val = getNested(data, path);
+      if (val === undefined || val === null || val === '') {
+        return fallback?.trim() ?? '';
+      }
+      if (typeof val === 'object') return JSON.stringify(val);
+      return coerceString(val);
+    },
+  );
 }
 
 export const textTemplateExecutor: NodeExecutor = (config, input) => {
   const start = Date.now();
   const template = asString(config.template);
-  if (!template) return Promise.reject(new Error('action_text_template: "template" è obbligatorio'));
+  if (!template)
+    return Promise.reject(new Error('action_text_template: "template" è obbligatorio'));
 
   let data: unknown = config.dataExpression ?? input;
   // Se è una stringa che assomiglia a JSON, prova a parsarla.
   if (typeof data === 'string' && data.trim().startsWith('{')) {
-    try { data = JSON.parse(data) as unknown; } catch { /* leave as-is */ }
+    try {
+      data = JSON.parse(data) as unknown;
+    } catch {
+      /* leave as-is */
+    }
   }
 
   let rendered = renderTemplate(template, data);
@@ -187,8 +195,15 @@ export const jsonExtractExecutor: NodeExecutor = (config, input) => {
   if (!path) return Promise.reject(new Error('action_json_extract: "path" è obbligatorio'));
 
   let source: unknown = config.sourceExpression ?? input;
-  if (typeof source === 'string' && (source.trim().startsWith('{') || source.trim().startsWith('['))) {
-    try { source = JSON.parse(source) as unknown; } catch { /* leave as-is */ }
+  if (
+    typeof source === 'string' &&
+    (source.trim().startsWith('{') || source.trim().startsWith('['))
+  ) {
+    try {
+      source = JSON.parse(source) as unknown;
+    } catch {
+      /* leave as-is */
+    }
   }
 
   const matches = jsonPath(source, path);
@@ -214,9 +229,43 @@ export const jsonExtractExecutor: NodeExecutor = (config, input) => {
 // 3. DATE FORMAT — Intl-based, locale-aware
 // ─────────────────────────────────────────────────────────────────────
 
-const IT_MONTHS_LONG = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
-const IT_MONTHS_SHORT = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
-const IT_WEEKDAYS_LONG = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
+const IT_MONTHS_LONG = [
+  'gennaio',
+  'febbraio',
+  'marzo',
+  'aprile',
+  'maggio',
+  'giugno',
+  'luglio',
+  'agosto',
+  'settembre',
+  'ottobre',
+  'novembre',
+  'dicembre',
+];
+const IT_MONTHS_SHORT = [
+  'gen',
+  'feb',
+  'mar',
+  'apr',
+  'mag',
+  'giu',
+  'lug',
+  'ago',
+  'set',
+  'ott',
+  'nov',
+  'dic',
+];
+const IT_WEEKDAYS_LONG = [
+  'domenica',
+  'lunedì',
+  'martedì',
+  'mercoledì',
+  'giovedì',
+  'venerdì',
+  'sabato',
+];
 
 /**
  * Parse input in multiple formats — Date object, ISO, dd/mm/yyyy, dd-mm-yyyy,
@@ -260,8 +309,14 @@ function pad2(n: number): string {
 export function formatDate(date: Date, preset: string, customFormat: string, tz: string): string {
   // Per ottenere componenti nel TZ corretto usiamo Intl.DateTimeFormat.
   const fmt = new Intl.DateTimeFormat('it-IT', {
-    timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
     weekday: 'long',
   });
   const parts = Object.fromEntries(fmt.formatToParts(date).map((p) => [p.type, p.value]));
@@ -271,17 +326,31 @@ export function formatDate(date: Date, preset: string, customFormat: string, tz:
   const h = Number(parts.hour);
   const mi = Number(parts.minute);
   const s = Number(parts.second);
-  const wIdx = ['lunedì','martedì','mercoledì','giovedì','venerdì','sabato','domenica'].indexOf((parts.weekday ?? '').toLowerCase());
+  const wIdx = [
+    'lunedì',
+    'martedì',
+    'mercoledì',
+    'giovedì',
+    'venerdì',
+    'sabato',
+    'domenica',
+  ].indexOf((parts.weekday ?? '').toLowerCase());
   // Note: Intl returns "lunedì" but our weekday array is sunday-first. Map back.
   const weekday0to6 = wIdx === -1 ? 0 : (wIdx + 1) % 7; // Sunday = 0
 
   switch (preset) {
-    case 'it_long':  return `${IT_WEEKDAYS_LONG[weekday0to6] ?? ''} ${d.toString()} ${IT_MONTHS_LONG[m - 1] ?? ''} ${y.toString()}`;
-    case 'it_short': return `${pad2(d)}/${pad2(m)}/${y.toString()}`;
-    case 'it_iso':   return `${pad2(d)}-${pad2(m)}-${y.toString()}`;
-    case 'us_short': return `${m.toString()}/${d.toString()}/${y.toString()}`;
-    case 'iso8601':  return date.toISOString();
-    case 'unix':     return Math.floor(date.getTime() / 1000).toString();
+    case 'it_long':
+      return `${IT_WEEKDAYS_LONG[weekday0to6] ?? ''} ${d.toString()} ${IT_MONTHS_LONG[m - 1] ?? ''} ${y.toString()}`;
+    case 'it_short':
+      return `${pad2(d)}/${pad2(m)}/${y.toString()}`;
+    case 'it_iso':
+      return `${pad2(d)}-${pad2(m)}-${y.toString()}`;
+    case 'us_short':
+      return `${m.toString()}/${d.toString()}/${y.toString()}`;
+    case 'iso8601':
+      return date.toISOString();
+    case 'unix':
+      return Math.floor(date.getTime() / 1000).toString();
     case 'custom': {
       return customFormat
         .replace(/yyyy/g, y.toString())
@@ -296,7 +365,8 @@ export function formatDate(date: Date, preset: string, customFormat: string, tz:
         .replace(/mm/g, pad2(mi))
         .replace(/ss/g, pad2(s));
     }
-    default: return date.toISOString();
+    default:
+      return date.toISOString();
   }
 }
 
@@ -304,7 +374,12 @@ export const dateFormatExecutor: NodeExecutor = (config) => {
   const start = Date.now();
   const inputRaw = config.input;
   const date = parseDateInput(inputRaw);
-  if (!date) return Promise.reject(new Error(`action_date_format: input non parsabile (${typeof inputRaw === 'string' ? inputRaw : JSON.stringify(inputRaw)})`));
+  if (!date)
+    return Promise.reject(
+      new Error(
+        `action_date_format: input non parsabile (${typeof inputRaw === 'string' ? inputRaw : JSON.stringify(inputRaw)})`,
+      ),
+    );
   const preset = asString(config.preset) || 'it_long';
   const customFormat = asString(config.customFormat) || 'yyyy-MM-dd HH:mm:ss';
   const timezone = asString(config.timezone) || 'Europe/Rome';
@@ -312,8 +387,14 @@ export const dateFormatExecutor: NodeExecutor = (config) => {
 
   // Componenti separati per uso downstream (es. routing per giorno settimana).
   const tzFmt = new Intl.DateTimeFormat('it-IT', {
-    timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', weekday: 'long', hour12: false,
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    weekday: 'long',
+    hour12: false,
   });
   const parts = Object.fromEntries(tzFmt.formatToParts(date).map((p) => [p.type, p.value]));
 

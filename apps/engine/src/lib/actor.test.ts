@@ -24,7 +24,12 @@ function makeApp(authValue: unknown) {
 
 describe('getActorId', () => {
   it('ritorna auth.userId quando autenticato regular', async () => {
-    const app = makeApp({ userId: 'user-real-uuid', tenantId: 't1', role: 'editor', email: 'u@x.it' });
+    const app = makeApp({
+      userId: 'user-real-uuid',
+      tenantId: 't1',
+      role: 'editor',
+      email: 'u@x.it',
+    });
     const res = await app.request('/probe', {
       headers: { 'x-actor-id': 'SPOOFED-USER-ID' },
     });
@@ -44,7 +49,12 @@ describe('getActorId', () => {
   });
 
   it('S2S internal: accetta x-actor-id come actor delegato', async () => {
-    const app = makeApp({ userId: 'internal', tenantId: 't1', role: 'owner', email: 'internal@flowforge' });
+    const app = makeApp({
+      userId: 'internal',
+      tenantId: 't1',
+      role: 'owner',
+      email: 'internal@flowforge',
+    });
     const res = await app.request('/probe', {
       headers: { 'x-actor-id': 'delegated-by-cron-uuid' },
     });
@@ -53,14 +63,24 @@ describe('getActorId', () => {
   });
 
   it('S2S internal senza header → "internal" come actor', async () => {
-    const app = makeApp({ userId: 'internal', tenantId: 't1', role: 'owner', email: 'internal@flowforge' });
+    const app = makeApp({
+      userId: 'internal',
+      tenantId: 't1',
+      role: 'owner',
+      email: 'internal@flowforge',
+    });
     const res = await app.request('/probe');
     const body = (await res.json()) as { actorId: string };
     expect(body.actorId).toBe('internal');
   });
 
   it('S2S internal con x-actor-id vuoto/whitespace → "internal" fallback', async () => {
-    const app = makeApp({ userId: 'internal', tenantId: 't1', role: 'owner', email: 'internal@flowforge' });
+    const app = makeApp({
+      userId: 'internal',
+      tenantId: 't1',
+      role: 'owner',
+      email: 'internal@flowforge',
+    });
     const res = await app.request('/probe', { headers: { 'x-actor-id': '   ' } });
     const body = (await res.json()) as { actorId: string };
     expect(body.actorId).toBe('internal');

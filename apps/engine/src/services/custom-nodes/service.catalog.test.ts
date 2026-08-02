@@ -28,7 +28,9 @@ vi.mock('@/storage/db.js', () => ({
             all: (...p: unknown[]) => stmt.all(...p),
           };
         },
-        exec: (sql: string) => { conn.exec(sql); },
+        exec: (sql: string) => {
+          conn.exec(sql);
+        },
       },
     };
   },
@@ -49,25 +51,45 @@ afterEach(() => {
 });
 
 function insertNode(opts: {
-  id: string; ws: string; slug: string; status: string;
-  definition?: string; executor?: string;
+  id: string;
+  ws: string;
+  slug: string;
+  status: string;
+  definition?: string;
+  executor?: string;
 }): void {
   const at = new Date().toISOString();
-  conn.prepare(`
+  conn
+    .prepare(
+      `
     INSERT INTO custom_nodes (
       id, workspace_id, owner_user_id, slug, display_name, status, semver,
       source_executor, source_definition, source_schema, created_at, updated_at
     ) VALUES (?, ?, 'owner', ?, ?, ?, '1.0.0', ?, ?, 'schema', ?, ?)
-  `).run(
-    opts.id, opts.ws, opts.slug, `Node ${opts.slug}`, opts.status,
-    opts.executor ?? 'SECRET_EXECUTOR_CODE', opts.definition ?? 'export const d = {};',
-    at, at,
-  );
+  `,
+    )
+    .run(
+      opts.id,
+      opts.ws,
+      opts.slug,
+      `Node ${opts.slug}`,
+      opts.status,
+      opts.executor ?? 'SECRET_EXECUTOR_CODE',
+      opts.definition ?? 'export const d = {};',
+      at,
+      at,
+    );
 }
 
 describe('🚨 listCustomNodeDefinitions', () => {
   it('ritorna i RUNNABLE col sourceDefinition; esclude draft/candidate/archived', () => {
-    insertNode({ id: '1', ws: 'ws-A', slug: 'pub', status: 'published_priv', definition: 'export const d = { configFields: [] };' });
+    insertNode({
+      id: '1',
+      ws: 'ws-A',
+      slug: 'pub',
+      status: 'published_priv',
+      definition: 'export const d = { configFields: [] };',
+    });
     insertNode({ id: '2', ws: 'ws-A', slug: 'mkt', status: 'marketplace_published' });
     insertNode({ id: '3', ws: 'ws-A', slug: 'pending', status: 'marketplace_pending' });
     insertNode({ id: '4', ws: 'ws-A', slug: 'draft', status: 'draft' });
@@ -87,8 +109,14 @@ describe('🚨 listCustomNodeDefinitions', () => {
     expect(out.map((d) => d.slug)).toEqual(['mine']);
   });
 
-  it('🔒 NON trapela l\'executor (nessun campo sourceExecutor/sourceSchema nella entry)', () => {
-    insertNode({ id: '1', ws: 'ws-A', slug: 'pub', status: 'published_priv', executor: 'STEAL_SECRETS()' });
+  it("🔒 NON trapela l'executor (nessun campo sourceExecutor/sourceSchema nella entry)", () => {
+    insertNode({
+      id: '1',
+      ws: 'ws-A',
+      slug: 'pub',
+      status: 'published_priv',
+      executor: 'STEAL_SECRETS()',
+    });
     const out = listCustomNodeDefinitions('ws-A');
     const entry = out[0]!;
     expect(entry).not.toHaveProperty('sourceExecutor');

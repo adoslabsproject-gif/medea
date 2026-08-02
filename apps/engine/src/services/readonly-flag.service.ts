@@ -25,7 +25,9 @@ export class WorkspaceReadOnlyError extends Error {
   readonly code = 'WORKSPACE_READ_ONLY';
   readonly httpStatus = 423;
   constructor() {
-    super('Workspace in sola lettura (spazio disco oltre il limite): esecuzione bloccata. Riduci i dati o riattiva un piano.');
+    super(
+      'Workspace in sola lettura (spazio disco oltre il limite): esecuzione bloccata. Riduci i dati o riattiva un piano.',
+    );
     this.name = 'WorkspaceReadOnlyError';
   }
 }
@@ -37,7 +39,9 @@ export function isWorkspaceReadOnly(): boolean {
   if (cached !== undefined) return cached;
   try {
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare('SELECT value FROM system_flags WHERE key = ?').get(FLAG_KEY) as { value: string } | undefined;
+    const row = sqlite.prepare('SELECT value FROM system_flags WHERE key = ?').get(FLAG_KEY) as
+      | { value: string }
+      | undefined;
     cached = row?.value === 'true';
   } catch (err) {
     logger.warn({ err: String(err) }, 'readonly-flag: read failed, fail-open (no block)');

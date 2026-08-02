@@ -3,7 +3,9 @@ import { readJsonCapped, readTextTruncated } from '@medea/engine-safe-fetch';
 
 // Isomorfico: importato anche dal bundle browser dell'editor (dead-code lì, ma
 // il top-level gira a load). `process` esiste solo sul runtime server → guard.
-const RUNTIME_BASE = (typeof process !== 'undefined' ? process.env.MEDEA_RUNTIME_URL : undefined) ?? 'http://127.0.0.1:3100';
+const RUNTIME_BASE =
+  (typeof process !== 'undefined' ? process.env.MEDEA_RUNTIME_URL : undefined) ??
+  'http://127.0.0.1:3100';
 
 /**
  * N17 audit (2026-05-29): anti-recursion-bomb cap.
@@ -17,7 +19,9 @@ const RUNTIME_BASE = (typeof process !== 'undefined' ? process.env.MEDEA_RUNTIME
  * 10 is a comfortable cap: real workflows nest 2-3 deep at most. If
  * legitimately needed deeper, raise via env override (operator decision).
  */
-const MAX_SUBWORKFLOW_DEPTH = Number((typeof process !== 'undefined' ? process.env.MEDEA_MAX_SUBWORKFLOW_DEPTH : undefined) ?? 10);
+const MAX_SUBWORKFLOW_DEPTH = Number(
+  (typeof process !== 'undefined' ? process.env.MEDEA_MAX_SUBWORKFLOW_DEPTH : undefined) ?? 10,
+);
 
 /**
  * Fix 2026-08-01: `wait` non aspettava.
@@ -41,7 +45,10 @@ const MAX_SUBWORKFLOW_DEPTH = Number((typeof process !== 'undefined' ? process.e
 function waitTimeoutMs(): number {
   // Letto a ogni chiamata e non una volta sola all'avvio: un operatore che
   // alza il tetto vuole che valga, non che valga al prossimo riavvio.
-  return Number((typeof process !== 'undefined' ? process.env.MEDEA_SUBWORKFLOW_WAIT_TIMEOUT_MS : undefined) ?? 600_000);
+  return Number(
+    (typeof process !== 'undefined' ? process.env.MEDEA_SUBWORKFLOW_WAIT_TIMEOUT_MS : undefined) ??
+      600_000,
+  );
 }
 
 /** Gli stati in cui una run ha finito di muoversi. */
@@ -92,17 +99,24 @@ const subworkflowExecutor: NodeExecutor = async (config, input, context) => {
   };
   const internalToken = process.env.MEDEA_INTERNAL_TOKEN;
   if (internalToken) headers['X-Internal-Token'] = internalToken;
-  const res = await fetch(`${RUNTIME_BASE}/api/v1/workflows/${encodeURIComponent(workflowId)}/run`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ triggerInput: input, triggerType: 'subworkflow' }),
-  });
+  const res = await fetch(
+    `${RUNTIME_BASE}/api/v1/workflows/${encodeURIComponent(workflowId)}/run`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ triggerInput: input, triggerType: 'subworkflow' }),
+    },
+  );
   if (!res.ok) {
-    throw new Error(`subworkflow ${String(res.status)}: ${(await readTextTruncated(res, 8192)).text.slice(0, 400)}`);
+    throw new Error(
+      `subworkflow ${String(res.status)}: ${(await readTextTruncated(res, 8192)).text.slice(0, 400)}`,
+    );
   }
   // anti-OOM: fetch raw verso il runtime interno → cap esplicito (un run con
   // output enorme non deve bufferizzare senza limite nel container).
-  const body = await readJsonCapped<{ run: { runId: string; status: string; steps: unknown[]; totalDurationMs: number } }>(res);
+  const body = await readJsonCapped<{
+    run: { runId: string; status: string; steps: unknown[]; totalDurationMs: number };
+  }>(res);
 
   if (!wait) {
     return { output: { runId: body.run.runId, started: true }, durationMs: Date.now() - start };
@@ -118,14 +132,26 @@ const subworkflowExecutor: NodeExecutor = async (config, input, context) => {
     await new Promise((r) => setTimeout(r, attesa));
     attesa = Math.min(attesa * 2, POLL_MAX_MS);
 
-    const check = await fetch(`${RUNTIME_BASE}/api/v1/runs/${encodeURIComponent(runId)}`, { headers });
+    const check = await fetch(`${RUNTIME_BASE}/api/v1/runs/${encodeURIComponent(runId)}`, {
+      headers,
+    });
     if (!check.ok) {
-      throw new Error(`subworkflow: non riesco a seguire la run ${runId} (${String(check.status)})`);
+      throw new Error(
+        `subworkflow: non riesco a seguire la run ${runId} (${String(check.status)})`,
+      );
     }
     // Attenzione al nome: il dispatch risponde `runId`, la lettura di una run
     // la chiama `id`. Leggere il campo sbagliato non fallisce — restituisce
     // `undefined`, e il parent riceve un risultato senza identificativo.
-    const stato = await readJsonCapped<{ run: { id?: string; runId?: string; status: string; steps: unknown[]; totalDurationMs: number } }>(check);
+    const stato = await readJsonCapped<{
+      run: {
+        id?: string;
+        runId?: string;
+        status: string;
+        steps: unknown[];
+        totalDurationMs: number;
+      };
+    }>(check);
     if (!TERMINAL.has(stato.run.status)) continue;
 
     return {
@@ -157,9 +183,9 @@ export const subworkflowNode: NodeModule = {
     description:
       'Operatore enterprise di composizione workflow-as-function — il pattern fondamentale di modularizzazione ' +
       'che permette di chiamare un altro workflow del tenant come fosse uno step del workflow corrente, ' +
-      'l\'equivalente di una funzione nella programmazione classica. Invoca un sub-workflow target (identificato ' +
-      'via workflowId selezionato dal picker della UI editor) passando l\'output dello step upstream come input ' +
-      'al sub, ed il return value del sub-workflow diventa l\'output del nodo logic_subworkflow nel parent — ' +
+      "l'equivalente di una funzione nella programmazione classica. Invoca un sub-workflow target (identificato " +
+      "via workflowId selezionato dal picker della UI editor) passando l'output dello step upstream come input " +
+      "al sub, ed il return value del sub-workflow diventa l'output del nodo logic_subworkflow nel parent — " +
       'pattern transparent che permette di astrarre logica condivisa in un mini-workflow riusabile in N posti. ' +
       'Esecuzione sincrona di default (await fino al completamento del sub) — il workflow parent blocca su ' +
       'questo step finché il sub non ritorna (anche se gira per ore per task long-running come ETL nightly). ' +
@@ -171,7 +197,7 @@ export const subworkflowNode: NodeModule = {
       'immediato con errore semantico esplicito "self-recursion detected"), depth-cap configurable via env ' +
       'MEDEA_MAX_SUBWORKFLOW_DEPTH (default 10 — il valore comfortable per il pattern enterprise di ' +
       'nesting ragionevole; oltre serve override esplicito operatore per evitare resource exhaustion); ' +
-      'propagation della depth via X-Subworkflow-Depth header tra parent→child HTTP run dispatch — l\'engine ' +
+      "propagation della depth via X-Subworkflow-Depth header tra parent→child HTTP run dispatch — l'engine " +
       'incrementa di +1 ad ogni nested call e block se cap raggiunto, prevenendo recursion-bomb attack o ' +
       'workflow malformati con cycle indiretto. ' +
       'Tenant isolation: il sub-workflow DEVE appartenere allo stesso tenant del parent (non possiamo chiamare ' +
@@ -193,7 +219,7 @@ export const subworkflowNode: NodeModule = {
         label: 'Sub-workflow da invocare',
         type: 'workflow-picker',
         required: true,
-        help: 'Workflow del tenant (esclusi il corrente). L\'output del nodo precedente diventa l\'input del sub-workflow.',
+        help: "Workflow del tenant (esclusi il corrente). L'output del nodo precedente diventa l'input del sub-workflow.",
       },
       {
         key: 'wait',
@@ -202,7 +228,7 @@ export const subworkflowNode: NodeModule = {
         options: ['true', 'false'],
         defaultValue: 'true',
         required: false,
-        help: 'true = aspetta la fine e ricevi l\'output. false = fire-and-forget, ritorna subito con runId del sub-workflow.',
+        help: "true = aspetta la fine e ricevi l'output. false = fire-and-forget, ritorna subito con runId del sub-workflow.",
       },
     ],
     vendor: 'flowforge',

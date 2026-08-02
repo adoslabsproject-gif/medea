@@ -12,7 +12,12 @@
  *     la spec → stesse chiavi/enum) + fallback (catalog vuoto / over-cap).
  */
 import { describe, it, expect, afterEach } from 'vitest';
-import { buildConstrainedOutputSchema, selectScaffoldSchema, isConstrainedSchemaEnabled, pickGrammarCatalog } from './constrained-schema.js';
+import {
+  buildConstrainedOutputSchema,
+  selectScaffoldSchema,
+  isConstrainedSchemaEnabled,
+  pickGrammarCatalog,
+} from './constrained-schema.js';
 import { SINGLESHOT_OUTPUT_SCHEMA } from './schema.js';
 import type { NodeCatalogEntry } from './node-catalog.js';
 
@@ -20,7 +25,7 @@ import type { NodeCatalogEntry } from './node-catalog.js';
 type JS = Record<string, unknown>;
 function evalSchema(schema: JS, value: unknown): boolean {
   if ('const' in schema) return value === schema.const;
-  if (Array.isArray(schema.enum)) return (schema.enum).includes(value);
+  if (Array.isArray(schema.enum)) return schema.enum.includes(value);
   if (Array.isArray(schema.anyOf)) return (schema.anyOf as JS[]).some((s) => evalSchema(s, value));
   const type = schema.type as string | undefined;
   if (type === undefined) return true; // {} = any
@@ -38,8 +43,9 @@ function evalSchema(schema: JS, value: unknown): boolean {
     const addl = schema.additionalProperties;
     const obj = value as Record<string, unknown>;
     for (const k of Object.keys(obj)) {
-      if (k in props) { if (!evalSchema(props[k]!, obj[k])) return false; }
-      else if (addl === false) return false; // chiave non dichiarata vietata
+      if (k in props) {
+        if (!evalSchema(props[k]!, obj[k])) return false;
+      } else if (addl === false) return false; // chiave non dichiarata vietata
     }
     for (const req of (schema.required as string[] | undefined) ?? []) {
       if (!(req in obj)) return false;
@@ -59,7 +65,11 @@ describe('🔬 self-test del mini-evaluator (non un oracolo cieco)', () => {
     expect(evalSchema({ enum: ['a', 'b'] }, 'c')).toBe(false);
   });
   it('object additionalProperties:false vieta chiavi extra', () => {
-    const s = { type: 'object', properties: { a: { type: 'string' } }, additionalProperties: false };
+    const s = {
+      type: 'object',
+      properties: { a: { type: 'string' } },
+      additionalProperties: false,
+    };
     expect(evalSchema(s, { a: 'ok' })).toBe(true);
     expect(evalSchema(s, { a: 'ok', extra: 1 })).toBe(false);
   });
@@ -82,10 +92,17 @@ describe('🔬 self-test del mini-evaluator (non un oracolo cieco)', () => {
 // ─────────────────────────── catalog di prova ───────────────────────────
 const CATALOG: NodeCatalogEntry[] = [
   {
-    defId: 'trigger_manual', type: 'trigger', label: 'Manual', description: '', fields: [],
+    defId: 'trigger_manual',
+    type: 'trigger',
+    label: 'Manual',
+    description: '',
+    fields: [],
   },
   {
-    defId: 'action_http_request', type: 'action', label: 'HTTP', description: '',
+    defId: 'action_http_request',
+    type: 'action',
+    label: 'HTTP',
+    description: '',
     fields: [
       { key: 'url', label: 'URL', type: 'text', required: true },
       { key: 'method', label: 'Method', type: 'select', required: true, options: ['GET', 'POST'] },
@@ -94,23 +111,38 @@ const CATALOG: NodeCatalogEntry[] = [
     ],
   },
   {
-    defId: 'community_telegram', type: 'action', label: 'TG', description: '',
+    defId: 'community_telegram',
+    type: 'action',
+    label: 'TG',
+    description: '',
     fields: [{ key: 'botToken', label: 'Token', type: 'secret', required: true }],
-    actions: [{ id: 'send_message', label: 'Send', fields: [{ key: 'chatId', label: 'C', type: 'text', required: true }] }],
+    actions: [
+      {
+        id: 'send_message',
+        label: 'Send',
+        fields: [{ key: 'chatId', label: 'C', type: 'text', required: true }],
+      },
+    ],
   },
 ];
 
 /** Estrae lo schema dei singoli nodi (anyOf dei rami) dalla grammatica compilata. */
 function itemsSchema(): JS {
   const schema = buildConstrainedOutputSchema(CATALOG)!;
-  return ((schema.properties as Record<string, JS>).nodes!).items as JS;
+  return (schema.properties as Record<string, JS>).nodes!.items as JS;
 }
 
 describe('🚨 la grammatica VINCOLA davvero (via oracolo auto-testato)', () => {
   const items = itemsSchema();
 
   it('✅ nodo valido (defId reale, config con chiavi/enum validi) → ACCETTATO', () => {
-    expect(evalSchema(items, { id: 'n1', defId: 'action_http_request', config: { url: 'https://x', method: 'GET', timeout: 30 } })).toBe(true);
+    expect(
+      evalSchema(items, {
+        id: 'n1',
+        defId: 'action_http_request',
+        config: { url: 'https://x', method: 'GET', timeout: 30 },
+      }),
+    ).toBe(true);
   });
 
   it('🚨 defId INESISTENTE → RIFIUTATO (unione chiusa, niente catch-all)', () => {
@@ -118,30 +150,70 @@ describe('🚨 la grammatica VINCOLA davvero (via oracolo auto-testato)', () => 
   });
 
   it('🚨 chiave di config INVENTATA → RIFIUTATA (additionalProperties:false)', () => {
-    expect(evalSchema(items, { id: 'n1', defId: 'action_http_request', config: { url: 'https://x', method: 'GET', bogus: 1 } })).toBe(false);
+    expect(
+      evalSchema(items, {
+        id: 'n1',
+        defId: 'action_http_request',
+        config: { url: 'https://x', method: 'GET', bogus: 1 },
+      }),
+    ).toBe(false);
   });
 
   it('🚨 valore enum FUORI LISTA → RIFIUTATO', () => {
-    expect(evalSchema(items, { id: 'n1', defId: 'action_http_request', config: { url: 'https://x', method: 'PATCH' } })).toBe(false);
+    expect(
+      evalSchema(items, {
+        id: 'n1',
+        defId: 'action_http_request',
+        config: { url: 'https://x', method: 'PATCH' },
+      }),
+    ).toBe(false);
   });
 
   it('✅ enum valido tra le options → ACCETTATO', () => {
-    expect(evalSchema(items, { id: 'n1', defId: 'action_http_request', config: { url: 'https://x', method: 'POST' } })).toBe(true);
+    expect(
+      evalSchema(items, {
+        id: 'n1',
+        defId: 'action_http_request',
+        config: { url: 'https://x', method: 'POST' },
+      }),
+    ).toBe(true);
   });
 
   it('✅ valore numerico permissivo: number letterale O espressione {{ }} → ENTRAMBI accettati', () => {
-    expect(evalSchema(items, { id: 'n1', defId: 'action_http_request', config: { url: 'https://x', method: 'GET', timeout: 30 } })).toBe(true);
-    expect(evalSchema(items, { id: 'n1', defId: 'action_http_request', config: { url: 'https://x', method: 'GET', timeout: '{{ vars.t }}' } })).toBe(true);
+    expect(
+      evalSchema(items, {
+        id: 'n1',
+        defId: 'action_http_request',
+        config: { url: 'https://x', method: 'GET', timeout: 30 },
+      }),
+    ).toBe(true);
+    expect(
+      evalSchema(items, {
+        id: 'n1',
+        defId: 'action_http_request',
+        config: { url: 'https://x', method: 'GET', timeout: '{{ vars.t }}' },
+      }),
+    ).toBe(true);
   });
 
   it('✅ multi-azione: __action valido accettato, 🚨 __action inventato rifiutato', () => {
-    expect(evalSchema(items, { id: 'n1', defId: 'community_telegram', config: { __action: 'send_message', chatId: '1' } })).toBe(true);
-    expect(evalSchema(items, { id: 'n1', defId: 'community_telegram', config: { __action: 'fly' } })).toBe(false);
+    expect(
+      evalSchema(items, {
+        id: 'n1',
+        defId: 'community_telegram',
+        config: { __action: 'send_message', chatId: '1' },
+      }),
+    ).toBe(true);
+    expect(
+      evalSchema(items, { id: 'n1', defId: 'community_telegram', config: { __action: 'fly' } }),
+    ).toBe(false);
   });
 
   it('✅ nodo senza campi (trigger_manual) → config DEVE essere {} (no chiavi extra)', () => {
     expect(evalSchema(items, { id: 'n1', defId: 'trigger_manual', config: {} })).toBe(true);
-    expect(evalSchema(items, { id: 'n1', defId: 'trigger_manual', config: { foo: 1 } })).toBe(false);
+    expect(evalSchema(items, { id: 'n1', defId: 'trigger_manual', config: { foo: 1 } })).toBe(
+      false,
+    );
   });
 });
 
@@ -149,12 +221,14 @@ describe('struttura & inviluppo', () => {
   it('un ramo per defId, con defId come const', () => {
     const items = itemsSchema();
     const branches = items.anyOf as JS[];
-    const consts = branches.map((b) => ((b.properties as Record<string, JS>).defId!).const);
-    expect(consts.sort()).toEqual(['action_http_request', 'community_telegram', 'trigger_manual'].sort());
+    const consts = branches.map((b) => (b.properties as Record<string, JS>).defId!.const);
+    expect(consts.sort()).toEqual(
+      ['action_http_request', 'community_telegram', 'trigger_manual'].sort(),
+    );
   });
 
   it('config additionalProperties:false su ogni ramo', () => {
-    const branches = (itemsSchema().anyOf as JS[]);
+    const branches = itemsSchema().anyOf as JS[];
     for (const b of branches) {
       const cfg = (b.properties as Record<string, JS>).config!;
       expect(cfg.additionalProperties).toBe(false);
@@ -203,10 +277,13 @@ describe('pickGrammarCatalog — grammatica sul subset RAG (anti full-catalog de
   it('subset dato → catalog ristretto a quei defId (grammatica piccola + steering)', () => {
     const sub = new Set(['action_http_request', 'community_telegram']);
     const picked = pickGrammarCatalog(CATALOG, sub);
-    expect(picked.map((c) => c.defId).sort()).toEqual(['action_http_request', 'community_telegram']);
+    expect(picked.map((c) => c.defId).sort()).toEqual([
+      'action_http_request',
+      'community_telegram',
+    ]);
     // e la grammatica costruita ha SOLO quei rami
     const grammar = buildConstrainedOutputSchema(picked)!;
-    const branches = (((grammar.properties as Record<string, JS>).nodes!).items as JS).anyOf as JS[];
+    const branches = ((grammar.properties as Record<string, JS>).nodes!.items as JS).anyOf as JS[];
     expect(branches).toHaveLength(2);
   });
 
@@ -231,7 +308,9 @@ describe('pickGrammarCatalog — grammatica sul subset RAG (anti full-catalog de
 
 describe('selectScaffoldSchema — policy provider + flag + fallback', () => {
   const STATIC = { sentinel: 'static-schema' } as const;
-  afterEach(() => { delete process.env.MEDEA_SCAFFOLD_CONSTRAINED_SCHEMA; });
+  afterEach(() => {
+    delete process.env.MEDEA_SCAFFOLD_CONSTRAINED_SCHEMA;
+  });
 
   it('flag OFF (default) → statico anche per liara (constrained:false)', () => {
     expect(isConstrainedSchemaEnabled()).toBe(false);
@@ -269,8 +348,10 @@ describe('🔒 contract anti-drift: grammatica ⇄ validatore condividono la ste
     const spec = buildCatalogSpec(CATALOG);
     const branches = itemsSchema().anyOf as JS[];
     for (const b of branches) {
-      const defId = ((b.properties as Record<string, JS>).defId!).const as string;
-      const cfgProps = Object.keys(((b.properties as Record<string, JS>).config!).properties as Record<string, JS>);
+      const defId = (b.properties as Record<string, JS>).defId!.const as string;
+      const cfgProps = Object.keys(
+        (b.properties as Record<string, JS>).config!.properties as Record<string, JS>,
+      );
       const specKeys = [...spec.get(defId)!.keys.keys()];
       const meta = spec.get(defId)!.multiAction ? ['__action', '__resource'] : [];
       expect(cfgProps.sort()).toEqual([...specKeys, ...meta].sort());

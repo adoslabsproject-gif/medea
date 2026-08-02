@@ -42,13 +42,21 @@ beforeEach(() => {
   svc = new AISignalsService();
 });
 
-const base = { tenantId: 't1', interactionType: 'node_generate' as const, model: 'liara/nha-v1', latencyMs: 123 };
+const base = {
+  tenantId: 't1',
+  interactionType: 'node_generate' as const,
+  model: 'liara/nha-v1',
+  latencyMs: 123,
+};
 
 describe('AISignalsService.record', () => {
   it('inserisce i campi strutturali + ritorna id (uuid generato)', () => {
     const id = svc.record({ ...base, nodeDefId: 'action_http', tokensIn: 10, tokensOut: 20 });
     expect(id.length).toBeGreaterThan(10);
-    const row = m.sqlite!.prepare('SELECT * FROM ai_signals WHERE id = ?').get(id) as Record<string, unknown>;
+    const row = m.sqlite!.prepare('SELECT * FROM ai_signals WHERE id = ?').get(id) as Record<
+      string,
+      unknown
+    >;
     expect(row.tenant_id).toBe('t1');
     expect(row.interaction_type).toBe('node_generate');
     expect(row.node_def_id).toBe('action_http');
@@ -58,26 +66,34 @@ describe('AISignalsService.record', () => {
     expect(row.outcome).toBe('pending');
   });
 
-  it('usa l\'id esplicito quando passato (condivisione con ai_interactions)', () => {
+  it("usa l'id esplicito quando passato (condivisione con ai_interactions)", () => {
     const id = svc.record({ ...base, id: 'shared-id-42' });
     expect(id).toBe('shared-id-42');
-    expect(m.sqlite!.prepare('SELECT COUNT(*) AS c FROM ai_signals WHERE id = ?').get('shared-id-42')).toEqual({ c: 1 });
+    expect(
+      m.sqlite!.prepare('SELECT COUNT(*) AS c FROM ai_signals WHERE id = ?').get('shared-id-42'),
+    ).toEqual({ c: 1 });
   });
 
-  it('🚨 idempotente sull\'id: secondo record stesso id → nessun duplicato, nessun throw', () => {
+  it("🚨 idempotente sull'id: secondo record stesso id → nessun duplicato, nessun throw", () => {
     svc.record({ ...base, id: 'dup' });
     expect(() => svc.record({ ...base, id: 'dup', model: 'altro' })).not.toThrow();
-    const cnt = m.sqlite!.prepare('SELECT COUNT(*) AS c FROM ai_signals WHERE id = ?').get('dup') as { c: number };
+    const cnt = m
+      .sqlite!.prepare('SELECT COUNT(*) AS c FROM ai_signals WHERE id = ?')
+      .get('dup') as { c: number };
     expect(cnt.c).toBe(1);
     // ON CONFLICT DO NOTHING: il primo vince (nessun overwrite).
-    const row = m.sqlite!.prepare('SELECT response_model FROM ai_signals WHERE id = ?').get('dup') as { response_model: string };
+    const row = m
+      .sqlite!.prepare('SELECT response_model FROM ai_signals WHERE id = ?')
+      .get('dup') as { response_model: string };
     expect(row.response_model).toBe('liara/nha-v1');
   });
 
-  it('🚨 FAIL-SOFT: DB rotto → ritorna comunque l\'id, NESSUN throw (non rompe la richiesta AI)', () => {
+  it("🚨 FAIL-SOFT: DB rotto → ritorna comunque l'id, NESSUN throw (non rompe la richiesta AI)", () => {
     m.sqlite!.close(); // simula DB non disponibile
     let id = '';
-    expect(() => { id = svc.record({ ...base, id: 'x' }); }).not.toThrow();
+    expect(() => {
+      id = svc.record({ ...base, id: 'x' });
+    }).not.toThrow();
     expect(id).toBe('x');
   });
 });
@@ -86,7 +102,9 @@ describe('🚨 AISignalsService.updateOutcome / updateQuality — tenant scope',
   it('updateOutcome aggiorna outcome + outcome_at', () => {
     const id = svc.record(base);
     expect(svc.updateOutcome(id, 't1', 'accepted')).toBe(true);
-    const row = m.sqlite!.prepare('SELECT outcome, outcome_at FROM ai_signals WHERE id = ?').get(id) as { outcome: string; outcome_at: string };
+    const row = m
+      .sqlite!.prepare('SELECT outcome, outcome_at FROM ai_signals WHERE id = ?')
+      .get(id) as { outcome: string; outcome_at: string };
     expect(row.outcome).toBe('accepted');
     expect(row.outcome_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
@@ -94,7 +112,9 @@ describe('🚨 AISignalsService.updateOutcome / updateQuality — tenant scope',
   it('🚨 updateOutcome di un ALTRO tenant → no-op (no cross-tenant)', () => {
     const id = svc.record(base);
     expect(svc.updateOutcome(id, 't2', 'rejected')).toBe(false);
-    const row = m.sqlite!.prepare('SELECT outcome FROM ai_signals WHERE id = ?').get(id) as { outcome: string };
+    const row = m.sqlite!.prepare('SELECT outcome FROM ai_signals WHERE id = ?').get(id) as {
+      outcome: string;
+    };
     expect(row.outcome).toBe('pending');
   });
 
@@ -102,14 +122,18 @@ describe('🚨 AISignalsService.updateOutcome / updateQuality — tenant scope',
     const id = svc.record(base);
     expect(svc.updateQuality(id, 't1', 5)).toBe(true);
     expect(svc.updateQuality(id, 't2', 0)).toBe(false);
-    const row = m.sqlite!.prepare('SELECT quality_score FROM ai_signals WHERE id = ?').get(id) as { quality_score: number };
+    const row = m.sqlite!.prepare('SELECT quality_score FROM ai_signals WHERE id = ?').get(id) as {
+      quality_score: number;
+    };
     expect(row.quality_score).toBe(5);
   });
 
   it('FAIL-SOFT su update: DB rotto → false, nessun throw', () => {
     const id = svc.record(base);
     m.sqlite!.close();
-    expect(() => { expect(svc.updateOutcome(id, 't1', 'accepted')).toBe(false); }).not.toThrow();
+    expect(() => {
+      expect(svc.updateOutcome(id, 't1', 'accepted')).toBe(false);
+    }).not.toThrow();
   });
 });
 

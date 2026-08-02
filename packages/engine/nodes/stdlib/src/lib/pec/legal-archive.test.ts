@@ -29,7 +29,11 @@ afterEach(async () => {
 describe('archivePec', () => {
   it('writes eml + sidecar SHA-256 + manifest JSONL', async () => {
     const r = await archivePec(
-      { raw: 'From: a\r\nSubject: x\r\n\r\nhello', messageId: '<m1@x>', receivedAt: '2026-06-04T10:00:00Z' },
+      {
+        raw: 'From: a\r\nSubject: x\r\n\r\nhello',
+        messageId: '<m1@x>',
+        receivedAt: '2026-06-04T10:00:00Z',
+      },
       { archiveDir: dir, now: () => new Date('2026-06-04T10:00:00Z') },
     );
 
@@ -74,10 +78,15 @@ describe('archivePec', () => {
   });
 
   it('rejects missing messageId / receivedAt / raw', async () => {
-    await expect(archivePec({ raw: 'x', messageId: '', receivedAt: '2026-06-04T10:00:00Z' }, { archiveDir: dir }))
-      .rejects.toThrow();
-    await expect(archivePec({ raw: 'x', messageId: '<m>', receivedAt: '' }, { archiveDir: dir }))
-      .rejects.toThrow();
+    await expect(
+      archivePec(
+        { raw: 'x', messageId: '', receivedAt: '2026-06-04T10:00:00Z' },
+        { archiveDir: dir },
+      ),
+    ).rejects.toThrow();
+    await expect(
+      archivePec({ raw: 'x', messageId: '<m>', receivedAt: '' }, { archiveDir: dir }),
+    ).rejects.toThrow();
   });
 
   it('clamps conservationDays to ≥365', async () => {
@@ -85,7 +94,9 @@ describe('archivePec', () => {
       { raw: 'x', messageId: '<m>', receivedAt: '2026-06-04T10:00:00Z' },
       { archiveDir: dir, conservationDays: 1, now: () => new Date('2026-06-04T10:00:00Z') },
     );
-    const days = Math.round((new Date(r.conservationUntil).getTime() - new Date(r.archivedAt).getTime()) / 86_400_000);
+    const days = Math.round(
+      (new Date(r.conservationUntil).getTime() - new Date(r.archivedAt).getTime()) / 86_400_000,
+    );
     expect(days).toBe(365);
   });
 

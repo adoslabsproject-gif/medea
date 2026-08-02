@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { parseOpenApiOperations, openApiBaseUrl, buildOpenApiRequest, type OpenApiOperation } from './parser.js';
+import {
+  parseOpenApiOperations,
+  openApiBaseUrl,
+  buildOpenApiRequest,
+  type OpenApiOperation,
+} from './parser.js';
 
 const spec = {
   openapi: '3.0.0',
@@ -7,7 +12,11 @@ const spec = {
   paths: {
     '/users/{id}': {
       parameters: [{ name: 'id', in: 'path', required: true }],
-      get: { operationId: 'getUser', summary: 'Get a user', parameters: [{ name: 'fields', in: 'query', required: false }] },
+      get: {
+        operationId: 'getUser',
+        summary: 'Get a user',
+        parameters: [{ name: 'fields', in: 'query', required: false }],
+      },
       delete: { operationId: 'deleteUser' },
     },
     '/users': {
@@ -58,7 +67,10 @@ describe('openApiBaseUrl', () => {
 
 describe('buildOpenApiRequest', () => {
   const getUser: OpenApiOperation = {
-    operationId: 'getUser', method: 'GET', path: '/users/{id}', hasBody: false,
+    operationId: 'getUser',
+    method: 'GET',
+    path: '/users/{id}',
+    hasBody: false,
     parameters: [
       { name: 'id', in: 'path', required: true },
       { name: 'fields', in: 'query', required: false },
@@ -67,7 +79,11 @@ describe('buildOpenApiRequest', () => {
   };
 
   it('sostituisce path param + raccoglie query/header', () => {
-    const req = buildOpenApiRequest(getUser, 'https://api.example.com/v1/', { id: '42', fields: 'name,email', 'X-Trace': 'abc' });
+    const req = buildOpenApiRequest(getUser, 'https://api.example.com/v1/', {
+      id: '42',
+      fields: 'name,email',
+      'X-Trace': 'abc',
+    });
     expect(req.url).toBe('https://api.example.com/v1/users/42');
     expect(req.method).toBe('GET');
     expect(req.query).toEqual({ fields: 'name,email' });
@@ -80,7 +96,9 @@ describe('buildOpenApiRequest', () => {
   });
 
   it('path param required mancante → errore esplicito', () => {
-    expect(() => buildOpenApiRequest(getUser, 'https://x.com', {})).toThrow(/path param "id" mancante/u);
+    expect(() => buildOpenApiRequest(getUser, 'https://x.com', {})).toThrow(
+      /path param "id" mancante/u,
+    );
   });
 
   it('query/header vuoti omessi', () => {

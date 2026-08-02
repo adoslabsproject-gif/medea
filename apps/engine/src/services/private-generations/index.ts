@@ -41,7 +41,12 @@ export class PrivateGenerationsService {
       createEmbeddedDb: this.deps.createEmbeddedDb,
       tenantId: this.deps.tenantId,
     });
-    return { dbStudio: this.deps.dbStudio, blobStore: this.deps.blobStore, tenantId: this.deps.tenantId, dbId };
+    return {
+      dbStudio: this.deps.dbStudio,
+      blobStore: this.deps.blobStore,
+      tenantId: this.deps.tenantId,
+      dbId,
+    };
   }
 
   async save(input: SaveGenerationInput): Promise<SaveGenerationResult> {
@@ -69,7 +74,13 @@ export class PrivateGenerationsService {
   }
 
   /** Sorgente per l'estensione video: metadati + BYTE del media (dal blob store). */
-  async getForExtend(id: string): Promise<{ prompt: string; mime: string; kind: string; params: Record<string, unknown>; bytes: Buffer } | null> {
+  async getForExtend(id: string): Promise<{
+    prompt: string;
+    mime: string;
+    kind: string;
+    params: Record<string, unknown>;
+    bytes: Buffer;
+  } | null> {
     const deps = await this.repoDeps();
     const row = await getGeneration(deps, id);
     if (!row) return null;
@@ -88,7 +99,13 @@ export function createPrivateGenerationsService(): PrivateGenerationsService {
     blobStore: getBinaryStore(),
     tenantId,
     createEmbeddedDb: async (name) => {
-      const db = await createTenantDatabase({ tenantId, name, engine: 'sqlite', managed: false, dbStudio });
+      const db = await createTenantDatabase({
+        tenantId,
+        name,
+        engine: 'sqlite',
+        managed: false,
+        dbStudio,
+      });
       return { id: db.id, name: db.name };
     },
   });

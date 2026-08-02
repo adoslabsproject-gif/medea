@@ -32,14 +32,14 @@ export const emailBounceTriggerNode: NodeModule = {
       'transitorio, ritenta più tardi).\n\n' +
       'Output del nodo (triggerInput.bounce): failedRecipients[], bounceType (hard|soft|' +
       'unknown), status (es. "5.1.1"), action, diagnosticCode, originalMessageId (per ' +
-      'correlare al run d\'invio), reportingMta. Più i campi email standard (subject, from, ' +
+      "correlare al run d'invio), reportingMta. Più i campi email standard (subject, from, " +
       'date, headers).\n\n' +
       'Infrastruttura riusata da trigger_imap: cursore UID persistente, dedup per Message-ID ' +
       '(exactly-once), markSeen on-success, circuit breaker per host. Credenziali dal vault ' +
       'per-tenant (Settings → Email Accounts) o inline.\n\n' +
       'Use case: (1) cold outreach — rimuovi dalla lista i contatti con hard bounce per ' +
       'proteggere la reputation del dominio, (2) notifica al mittente quando una fattura PEC ' +
-      'rimbalza, (3) aggiorna il CRM marcando l\'indirizzo come non valido.',
+      "rimbalza, (3) aggiorna il CRM marcando l'indirizzo come non valido.",
     configFields: [
       {
         key: 'systemAccountId',
@@ -48,12 +48,52 @@ export const emailBounceTriggerNode: NodeModule = {
         required: false,
         help: 'Account IMAP dal vault per-tenant. Se selezionato, host/port/credenziali vengono da lì.',
       },
-      { key: 'host', label: 'IMAP host', type: 'text', required: false, placeholder: 'imap.example.com', showIf: { field: 'systemAccountId', equals: '' } },
-      { key: 'port', label: 'Port', type: 'number', required: false, defaultValue: '993', showIf: { field: 'systemAccountId', equals: '' } },
-      { key: 'username', label: 'Username', type: 'text', required: false, showIf: { field: 'systemAccountId', equals: '' } },
-      { key: 'password', label: 'Password', type: 'secret', required: false, showIf: { field: 'systemAccountId', equals: '' } },
-      { key: 'mailbox', label: 'Cartella IMAP', type: 'text', required: false, defaultValue: 'INBOX', help: 'Dove arrivano i bounce. Di norma INBOX (i DSN tornano al mittente). Se hai una regola che li smista, indica quella cartella.' },
-      { key: 'pollIntervalSec', label: 'Intervallo polling (secondi)', type: 'number', required: false, defaultValue: '120', help: 'Frequenza di controllo. I bounce non sono urgenti → 120s di default.' },
+      {
+        key: 'host',
+        label: 'IMAP host',
+        type: 'text',
+        required: false,
+        placeholder: 'imap.example.com',
+        showIf: { field: 'systemAccountId', equals: '' },
+      },
+      {
+        key: 'port',
+        label: 'Port',
+        type: 'number',
+        required: false,
+        defaultValue: '993',
+        showIf: { field: 'systemAccountId', equals: '' },
+      },
+      {
+        key: 'username',
+        label: 'Username',
+        type: 'text',
+        required: false,
+        showIf: { field: 'systemAccountId', equals: '' },
+      },
+      {
+        key: 'password',
+        label: 'Password',
+        type: 'secret',
+        required: false,
+        showIf: { field: 'systemAccountId', equals: '' },
+      },
+      {
+        key: 'mailbox',
+        label: 'Cartella IMAP',
+        type: 'text',
+        required: false,
+        defaultValue: 'INBOX',
+        help: 'Dove arrivano i bounce. Di norma INBOX (i DSN tornano al mittente). Se hai una regola che li smista, indica quella cartella.',
+      },
+      {
+        key: 'pollIntervalSec',
+        label: 'Intervallo polling (secondi)',
+        type: 'number',
+        required: false,
+        defaultValue: '120',
+        help: 'Frequenza di controllo. I bounce non sono urgenti → 120s di default.',
+      },
       {
         key: 'onlyUnseen',
         label: 'Solo email NON LETTE',
@@ -71,7 +111,15 @@ export const emailBounceTriggerNode: NodeModule = {
         defaultValue: 'on-success',
         help: 'on-success (raccomandato) = marca letta solo se il workflow completa. always = sempre. never = mai.',
       },
-      { key: 'tlsMode', label: 'Cifratura', type: 'select', options: ['tls', 'starttls', 'plain'], required: false, defaultValue: 'tls', help: 'tls = porta 993 (raccomandato). starttls = 143. plain = nessuna cifratura.' },
+      {
+        key: 'tlsMode',
+        label: 'Cifratura',
+        type: 'select',
+        options: ['tls', 'starttls', 'plain'],
+        required: false,
+        defaultValue: 'tls',
+        help: 'tls = porta 993 (raccomandato). starttls = 143. plain = nessuna cifratura.',
+      },
     ],
     vendor: 'flowforge',
     version: '1.0.0',

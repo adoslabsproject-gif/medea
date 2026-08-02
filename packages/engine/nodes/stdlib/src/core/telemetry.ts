@@ -117,10 +117,18 @@ export async function withSpan<T>(
  * SCRUBBARE auth params (vedi spec `http.url`):
  *   https://github.com/open-telemetry/semantic-conventions/blob/main/docs/http/http-spans.md
  */
-export function httpSpanAttrs(method: string, url: string, opts?: { status?: number; userAgent?: string }): SpanAttributes {
+export function httpSpanAttrs(
+  method: string,
+  url: string,
+  opts?: { status?: number; userAgent?: string },
+): SpanAttributes {
   let host = 'unknown';
   const scrubbedUrl = scrubUrl(url);
-  try { host = new URL(url).host; } catch { /* keep unknown */ }
+  try {
+    host = new URL(url).host;
+  } catch {
+    /* keep unknown */
+  }
   return {
     'http.method': method.toUpperCase(),
     'http.url': scrubbedUrl,

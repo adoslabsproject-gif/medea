@@ -122,7 +122,9 @@ gcTimer.unref();
  *
  * Returns 429 Too Many Requests with a structured JSON body when exceeded.
  */
-export function rateLimit(opts: RateLimitOptions): (c: Context, next: Next) => Promise<Response | void> {
+export function rateLimit(
+  opts: RateLimitOptions,
+): (c: Context, next: Next) => Promise<Response | void> {
   const windowMs = opts.windowMs;
   const perTenant = opts.perTenant;
   const perUser = opts.perUser;
@@ -137,14 +139,18 @@ export function rateLimit(opts: RateLimitOptions): (c: Context, next: Next) => P
   // middleware di authn DOPO verifica JWE/cookie). Solo se l'opts dichiara
   // esplicitamente `userFrom`/`tenantFrom` (override esplicito controllato)
   // accettiamo. Niente fallback su header.
-  const tenantFrom = opts.tenantFrom ?? ((c: Context) => {
-    const auth = c.get('auth') as { tenantId?: string } | undefined;
-    return auth?.tenantId ?? 'default';
-  });
-  const userFrom = opts.userFrom ?? ((c: Context) => {
-    const auth = c.get('auth') as { userId?: string; sub?: string } | undefined;
-    return auth?.userId ?? auth?.sub ?? 'anon';
-  });
+  const tenantFrom =
+    opts.tenantFrom ??
+    ((c: Context) => {
+      const auth = c.get('auth') as { tenantId?: string } | undefined;
+      return auth?.tenantId ?? 'default';
+    });
+  const userFrom =
+    opts.userFrom ??
+    ((c: Context) => {
+      const auth = c.get('auth') as { userId?: string; sub?: string } | undefined;
+      return auth?.userId ?? auth?.sub ?? 'anon';
+    });
 
   return async (c, next) => {
     const tenant = tenantFrom(c);
@@ -160,12 +166,15 @@ export function rateLimit(opts: RateLimitOptions): (c: Context, next: Next) => P
           help: 'Rate limit exceeded events by label + scope',
           tags: { label: opts.label, scope: 'tenant' },
         });
-        return c.json({
-          error: 'rate_limit_exceeded',
-          scope: 'tenant',
-          message: `Troppe richieste per il tenant. Limite ${perTenant.toString()}/${(windowMs / 1000).toFixed(0)}s. Riprova tra poco.`,
-          retryAfterSeconds: Math.ceil(windowMs / 1000),
-        }, 429);
+        return c.json(
+          {
+            error: 'rate_limit_exceeded',
+            scope: 'tenant',
+            message: `Troppe richieste per il tenant. Limite ${perTenant.toString()}/${(windowMs / 1000).toFixed(0)}s. Riprova tra poco.`,
+            retryAfterSeconds: Math.ceil(windowMs / 1000),
+          },
+          429,
+        );
       }
     }
 
@@ -178,12 +187,15 @@ export function rateLimit(opts: RateLimitOptions): (c: Context, next: Next) => P
           help: 'Rate limit exceeded events by label + scope',
           tags: { label: opts.label, scope: 'user' },
         });
-        return c.json({
-          error: 'rate_limit_exceeded',
-          scope: 'user',
-          message: `Troppe richieste per il tuo account. Limite ${perUser.toString()}/${(windowMs / 1000).toFixed(0)}s. Riprova tra poco.`,
-          retryAfterSeconds: Math.ceil(windowMs / 1000),
-        }, 429);
+        return c.json(
+          {
+            error: 'rate_limit_exceeded',
+            scope: 'user',
+            message: `Troppe richieste per il tuo account. Limite ${perUser.toString()}/${(windowMs / 1000).toFixed(0)}s. Riprova tra poco.`,
+            retryAfterSeconds: Math.ceil(windowMs / 1000),
+          },
+          429,
+        );
       }
     }
 

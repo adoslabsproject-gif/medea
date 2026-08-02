@@ -7,11 +7,17 @@
 import type { NodeExecutor, NodeExecutionResult } from '../../types.js';
 import { parseConfig } from '../../core/config-parser.js';
 import {
-  HttpError, NetworkError, TimeoutError, AbortedError, ValidationError,
+  HttpError,
+  NetworkError,
+  TimeoutError,
+  AbortedError,
+  ValidationError,
 } from '../../core/node-error.js';
 import {
-  sendText, sendTemplate,
-  WhatsAppApiError, WhatsAppTransportError,
+  sendText,
+  sendTemplate,
+  WhatsAppApiError,
+  WhatsAppTransportError,
   type WhatsAppHttpTransport,
 } from '../../lib/whatsapp/cloud-api-client.js';
 import { WhatsAppSendConfigSchema } from './schema.js';
@@ -37,18 +43,29 @@ export const whatsAppSendExecutor: NodeExecutor = async (rawConfig, _input, cont
 
   try {
     const sendStartedAt = Date.now();
-    const result = cfg.mode === 'text'
-      ? await sendText(auth, {
-          recipient: cfg.recipient,
-          body: cfg.body!,
-          previewUrl: cfg.previewUrl,
-        }, transport, fetchOpts)
-      : await sendTemplate(auth, {
-          recipient: cfg.recipient,
-          templateName: cfg.templateName!,
-          languageCode: cfg.languageCode!,
-          components: (cfg.componentsJson ?? []) as never,
-        }, transport, fetchOpts);
+    const result =
+      cfg.mode === 'text'
+        ? await sendText(
+            auth,
+            {
+              recipient: cfg.recipient,
+              body: cfg.body!,
+              previewUrl: cfg.previewUrl,
+            },
+            transport,
+            fetchOpts,
+          )
+        : await sendTemplate(
+            auth,
+            {
+              recipient: cfg.recipient,
+              templateName: cfg.templateName!,
+              languageCode: cfg.languageCode!,
+              components: (cfg.componentsJson ?? []) as never,
+            },
+            transport,
+            fetchOpts,
+          );
 
     const messageId = result.messages?.[0]?.id ?? null;
     const output: Record<string, unknown> = {
@@ -64,7 +81,12 @@ export const whatsAppSendExecutor: NodeExecutor = async (rawConfig, _input, cont
           startedAt: sendStartedAt,
           durationMs: Date.now() - sendStartedAt,
           ok: true,
-          evidence: { messageId, ...(cfg.mode === 'template' ? { templateName: cfg.templateName, languageCode: cfg.languageCode } : {}) },
+          evidence: {
+            messageId,
+            ...(cfg.mode === 'template'
+              ? { templateName: cfg.templateName, languageCode: cfg.languageCode }
+              : {}),
+          },
         },
       ];
     }
@@ -74,18 +96,28 @@ export const whatsAppSendExecutor: NodeExecutor = async (rawConfig, _input, cont
     if (err instanceof WhatsAppApiError) {
       // Meta-side error — bubble up with a typed shape the workflow author
       // can branch on (e.g. logic_if checking meta code == 131047).
-      throw new ValidationError(
-        `WHATSAPP_META_ERROR: code=${err.metaCode} ${err.metaMessage}`,
-        { metaCode: err.metaCode, metaMessage: err.metaMessage, httpStatus: err.status },
-      );
+      throw new ValidationError(`WHATSAPP_META_ERROR: code=${err.metaCode} ${err.metaMessage}`, {
+        metaCode: err.metaCode,
+        metaMessage: err.metaMessage,
+        httpStatus: err.status,
+      });
     }
     if (err instanceof WhatsAppTransportError) {
       if (typeof err.status === 'number') {
-        throw new HttpError({ status: err.status, statusText: err.message, url: 'https://graph.facebook.com' });
+        throw new HttpError({
+          status: err.status,
+          statusText: err.message,
+          url: 'https://graph.facebook.com',
+        });
       }
       throw new NetworkError(err.message, { cause: err });
     }
-    if (err instanceof TimeoutError || err instanceof AbortedError || err instanceof HttpError || err instanceof NetworkError) {
+    if (
+      err instanceof TimeoutError ||
+      err instanceof AbortedError ||
+      err instanceof HttpError ||
+      err instanceof NetworkError
+    ) {
       throw err;
     }
     const msg = err instanceof Error ? err.message : String(err);
@@ -101,15 +133,35 @@ function makeSafeFetchTransport(): WhatsAppHttpTransport {
   return {
     async post({ url, body, headers, timeoutMs, signal }) {
       const timeoutCtrl = new AbortController();
-      const t = setTimeout(() => { timeoutCtrl.abort(); }, timeoutMs);
+      const t = setTimeout(() => {
+        timeoutCtrl.abort();
+      }, timeoutMs);
 
       try {
         const aborter = new Promise<never>((_, reject) => {
-          if (timeoutCtrl.signal.aborted) { reject(new Error('per_call_timeout')); return; }
-          timeoutCtrl.signal.addEventListener('abort', () => { reject(new Error('per_call_timeout')); }, { once: true });
+          if (timeoutCtrl.signal.aborted) {
+            reject(new Error('per_call_timeout'));
+            return;
+          }
+          timeoutCtrl.signal.addEventListener(
+            'abort',
+            () => {
+              reject(new Error('per_call_timeout'));
+            },
+            { once: true },
+          );
           if (signal) {
-            if (signal.aborted) { reject(new Error('run_aborted')); return; }
-            signal.addEventListener('abort', () => { reject(new Error('run_aborted')); }, { once: true });
+            if (signal.aborted) {
+              reject(new Error('run_aborted'));
+              return;
+            }
+            signal.addEventListener(
+              'abort',
+              () => {
+                reject(new Error('run_aborted'));
+              },
+              { once: true },
+            );
           }
         });
 

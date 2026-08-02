@@ -44,15 +44,25 @@ export function listDatabasesHandler(session: ScaffoldSession): ToolResult {
       })),
     };
   } catch (e) {
-    return { ok: false, error: `list_databases fallito: ${e instanceof Error ? e.message : String(e)}` };
+    return {
+      ok: false,
+      error: `list_databases fallito: ${e instanceof Error ? e.message : String(e)}`,
+    };
   }
 }
 
-export function readDbSchemaHandler(session: ScaffoldSession, args: Record<string, unknown>): ToolResult {
+export function readDbSchemaHandler(
+  session: ScaffoldSession,
+  args: Record<string, unknown>,
+): ToolResult {
   const databaseId = coerceString(args.databaseId ?? '');
   const dbs = session.dbStudio.list(session.tenantId);
   const db = dbs.find((d) => d.id === databaseId);
-  if (!db) return { ok: false, error: `Database "${databaseId}" non trovato nel tenant. DB disponibili: ${dbs.map((d) => d.id).join(', ') || '(nessuno)'}` };
+  if (!db)
+    return {
+      ok: false,
+      error: `Database "${databaseId}" non trovato nel tenant. DB disponibili: ${dbs.map((d) => d.id).join(', ') || '(nessuno)'}`,
+    };
   return {
     ok: true,
     data: {
@@ -60,7 +70,12 @@ export function readDbSchemaHandler(session: ScaffoldSession, args: Record<strin
       name: db.name,
       tables: (db.tables ?? []).map((t) => ({
         name: t.name,
-        columns: t.columns.map((c) => ({ name: c.name, type: c.type, primaryKey: c.constraints?.primaryKey ?? false, nullable: c.constraints?.nullable !== false })),
+        columns: t.columns.map((c) => ({
+          name: c.name,
+          type: c.type,
+          primaryKey: c.constraints?.primaryKey ?? false,
+          nullable: c.constraints?.nullable !== false,
+        })),
       })),
     },
   };
@@ -82,17 +97,24 @@ export async function listWorkflowsHandler(session: ScaffoldSession): Promise<To
       })),
     };
   } catch (e) {
-    return { ok: false, error: `list_workflows fallito: ${e instanceof Error ? e.message : String(e)}` };
+    return {
+      ok: false,
+      error: `list_workflows fallito: ${e instanceof Error ? e.message : String(e)}`,
+    };
   }
 }
 
-export async function readWorkflowHandler(session: ScaffoldSession, args: Record<string, unknown>): Promise<ToolResult> {
+export async function readWorkflowHandler(
+  session: ScaffoldSession,
+  args: Record<string, unknown>,
+): Promise<ToolResult> {
   const id = coerceString(args.workflowId ?? args.id ?? '');
   if (!id) return { ok: false, error: 'read_workflow richiede workflowId.' };
   try {
     const svc = new WorkflowService(noopBus);
     const wf = await svc.get(id, session.tenantId);
-    if (!wf) return { ok: false, error: `Workflow "${id}" non trovato (o non appartiene al tenant).` };
+    if (!wf)
+      return { ok: false, error: `Workflow "${id}" non trovato (o non appartiene al tenant).` };
     return {
       ok: true,
       data: {
@@ -105,11 +127,17 @@ export async function readWorkflowHandler(session: ScaffoldSession, args: Record
       },
     };
   } catch (e) {
-    return { ok: false, error: `read_workflow fallito: ${e instanceof Error ? e.message : String(e)}` };
+    return {
+      ok: false,
+      error: `read_workflow fallito: ${e instanceof Error ? e.message : String(e)}`,
+    };
   }
 }
 
-export function listNodeCatalogHandler(_session: ScaffoldSession, args: Record<string, unknown>): ToolResult {
+export function listNodeCatalogHandler(
+  _session: ScaffoldSession,
+  args: Record<string, unknown>,
+): ToolResult {
   const catalog = buildNodeCatalog();
   const wantedDef = typeof args.defId === 'string' ? args.defId : '';
   if (wantedDef) {
@@ -121,7 +149,13 @@ export function listNodeCatalogHandler(_session: ScaffoldSession, args: Record<s
   const result = filter ? catalog.filter((c) => c.type === filter) : catalog;
   return {
     ok: true,
-    data: result.map((c) => ({ defId: c.defId, type: c.type, label: c.label, description: c.description, fieldCount: c.fields.length })),
+    data: result.map((c) => ({
+      defId: c.defId,
+      type: c.type,
+      label: c.label,
+      description: c.description,
+      fieldCount: c.fields.length,
+    })),
   };
 }
 
@@ -141,7 +175,10 @@ export function listEmailAccountsHandler(session: ScaffoldSession): ToolResult {
       })),
     };
   } catch (e) {
-    return { ok: false, error: `list_email_accounts fallito: ${e instanceof Error ? e.message : String(e)}` };
+    return {
+      ok: false,
+      error: `list_email_accounts fallito: ${e instanceof Error ? e.message : String(e)}`,
+    };
   }
 }
 
@@ -154,11 +191,15 @@ export function listSecretsHandler(session: ScaffoldSession): ToolResult {
       ok: true,
       data: {
         secretNames: list.map((c) => c.name),
-        usage: 'Referenzia un secret nei config con {{ secrets.NOME }} — i valori non sono mai esposti all\'agente.',
+        usage:
+          "Referenzia un secret nei config con {{ secrets.NOME }} — i valori non sono mai esposti all'agente.",
       },
     };
   } catch (e) {
-    return { ok: false, error: `list_secrets fallito: ${e instanceof Error ? e.message : String(e)}` };
+    return {
+      ok: false,
+      error: `list_secrets fallito: ${e instanceof Error ? e.message : String(e)}`,
+    };
   }
 }
 
@@ -190,7 +231,10 @@ export function listLlmProvidersHandler(session: ScaffoldSession): ToolResult {
       },
     };
   } catch (e) {
-    return { ok: false, error: `list_llm_providers fallito: ${e instanceof Error ? e.message : String(e)}` };
+    return {
+      ok: false,
+      error: `list_llm_providers fallito: ${e instanceof Error ? e.message : String(e)}`,
+    };
   }
 }
 

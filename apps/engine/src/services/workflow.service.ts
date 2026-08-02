@@ -67,9 +67,10 @@ function webhookTargetFromWorkflow(wf: Workflow | null): WebhookLinkTarget | nul
   if (!wf) return null;
   const trigger = wf.nodes.find((n) => n.defId === 'trigger_webhook');
   if (!trigger) return null;
-  const authMode = typeof trigger.config.authMode === 'string' && trigger.config.authMode !== ''
-    ? trigger.config.authMode
-    : 'none';
+  const authMode =
+    typeof trigger.config.authMode === 'string' && trigger.config.authMode !== ''
+      ? trigger.config.authMode
+      : 'none';
   return { id: wf.id, authMode };
 }
 
@@ -81,7 +82,8 @@ function webhookTargetFromWorkflow(wf: Workflow | null): WebhookLinkTarget | nul
  */
 export function makeWebhookOwnerLookup(service: WorkflowService): WebhookOwnerLookup {
   return {
-    byId: async (workflowId: string) => webhookTargetFromWorkflow(await service.getByIdAnyTenant(workflowId)),
+    byId: async (workflowId: string) =>
+      webhookTargetFromWorkflow(await service.getByIdAnyTenant(workflowId)),
     byCustomPath: async (customPath: string) => {
       const matches = await service.listByCustomWebhookPathAnyTenant(customPath);
       return matches.length === 1 ? webhookTargetFromWorkflow(matches[0]!) : null;
@@ -151,15 +153,16 @@ function rowToCandidatePayload(row: WorkflowRow): unknown {
     nodes: safeParseJson(row.nodesJson),
     edges: safeParseJson(row.edgesJson),
     nodeDefs: safeParseJson(row.nodeDefsJson),
-    breakpoints: row.breakpointsJson ? (safeParseJson(row.breakpointsJson)) : undefined,
-    tags: row.tagsJson ? (safeParseJson(row.tagsJson)) : undefined,
+    breakpoints: row.breakpointsJson ? safeParseJson(row.breakpointsJson) : undefined,
+    tags: row.tagsJson ? safeParseJson(row.tagsJson) : undefined,
     folderId: row.folderId ?? undefined,
-    onError: row.onErrorJson ? (safeParseJson(row.onErrorJson)) : undefined,
+    onError: row.onErrorJson ? safeParseJson(row.onErrorJson) : undefined,
     concurrencyLimit: row.concurrencyLimit ?? undefined,
     ephemeralRuns: row.ephemeralRuns === true ? true : undefined,
-    runVerbosity: row.runVerbosity === 'silent' || row.runVerbosity === 'summary' || row.runVerbosity === 'full'
-      ? row.runVerbosity
-      : undefined,
+    runVerbosity:
+      row.runVerbosity === 'silent' || row.runVerbosity === 'summary' || row.runVerbosity === 'full'
+        ? row.runVerbosity
+        : undefined,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     createdBy: row.createdBy ?? undefined,
@@ -173,7 +176,10 @@ function rowToCandidatePayload(row: WorkflowRow): unknown {
  * per esporre quali workflow per quale tenant hanno schema drift, in modo
  * che superadmin/owner possano correggere via DB Studio o re-import.
  */
-export function diagnoseWorkflowRow(row: WorkflowRow): { ok: boolean; issues?: { path: string; code: string; message: string }[] } {
+export function diagnoseWorkflowRow(row: WorkflowRow): {
+  ok: boolean;
+  issues?: { path: string; code: string; message: string }[];
+} {
   const parsed = WorkflowSchema.safeParse(rowToCandidatePayload(row));
   if (parsed.success) return { ok: true };
   return {
@@ -274,13 +280,19 @@ export class WorkflowService {
    * MCP non ha bisogno del workflow.nodes (e tutto il resto del schema
    * Zod), solo del name e descrizione per il tool registry.
    */
-  listMcpExposed(tenantId = 'default'): Promise<{ id: string; name: string; description: string | null }[]> {
+  listMcpExposed(
+    tenantId = 'default',
+  ): Promise<{ id: string; name: string; description: string | null }[]> {
     const { sqlite } = getDatabase();
-    const rows = sqlite.prepare(`
+    const rows = sqlite
+      .prepare(
+        `
       SELECT id, name, description FROM workflows
       WHERE tenant_id = ? AND enabled = 1 AND mcp_exposed = 1
       ORDER BY updated_at DESC
-    `).all(tenantId) as { id: string; name: string; description: string | null }[];
+    `,
+      )
+      .all(tenantId) as { id: string; name: string; description: string | null }[];
     return Promise.resolve(rows);
   }
 
@@ -290,10 +302,14 @@ export class WorkflowService {
    */
   isMcpExposed(workflowId: string, tenantId = 'default'): Promise<boolean> {
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare(`
+    const row = sqlite
+      .prepare(
+        `
       SELECT 1 FROM workflows
       WHERE id = ? AND tenant_id = ? AND enabled = 1 AND mcp_exposed = 1
-    `).get(workflowId, tenantId);
+    `,
+      )
+      .get(workflowId, tenantId);
     return Promise.resolve(row !== undefined);
   }
 
@@ -332,11 +348,7 @@ export class WorkflowService {
    */
   async getByIdAnyTenant(id: string): Promise<Workflow | null> {
     const { db } = getDatabase();
-    const [row] = await db
-      .select()
-      .from(workflows)
-      .where(eq(workflows.id, id))
-      .limit(1);
+    const [row] = await db.select().from(workflows).where(eq(workflows.id, id)).limit(1);
     return row ? rowToWorkflow(row) : null;
   }
 
@@ -443,15 +455,23 @@ export class WorkflowService {
    * secret non rompe più nulla. Conversioni e skip sono sempre loggati.
    */
   private async normalizeWebhookLinks(nodes: unknown[]): Promise<unknown[]> {
-    const { nodes: out, converted, skipped } = await normalizeNodesWebhookLinks(
-      nodes,
-      makeWebhookOwnerLookup(this),
-      { sameHosts: defaultSameHosts() },
-    );
+    const {
+      nodes: out,
+      converted,
+      skipped,
+    } = await normalizeNodesWebhookLinks(nodes, makeWebhookOwnerLookup(this), {
+      sameHosts: defaultSameHosts(),
+    });
     if (converted > 0) {
-      logger.info({ converted, skipped }, 'Link webhook cablati convertiti in ref:// al salvataggio (indirection)');
+      logger.info(
+        { converted, skipped },
+        'Link webhook cablati convertiti in ref:// al salvataggio (indirection)',
+      );
     } else if (skipped.length > 0) {
-      logger.warn({ skipped }, 'Link webhook cablati trovati ma NON convertibili al salvataggio — restano com\'erano');
+      logger.warn(
+        { skipped },
+        "Link webhook cablati trovati ma NON convertibili al salvataggio — restano com'erano",
+      );
     }
     return out;
   }
@@ -475,7 +495,9 @@ export class WorkflowService {
     // accessibile a chiunque conosca il workflowId (vedi forms.ts auth).
     // Poi: CONTRACT indirection — un workflow salvato non contiene MAI un
     // token webhook cablato (convertito in ref://, vedi normalizzatore).
-    const normalizedNodes = await this.normalizeWebhookLinks(ensureFormTriggerTokens(input.nodes ?? []));
+    const normalizedNodes = await this.normalizeWebhookLinks(
+      ensureFormTriggerTokens(input.nodes ?? []),
+    );
 
     const insertValues: NewWorkflowRow = {
       id,
@@ -491,15 +513,18 @@ export class WorkflowService {
     };
     if (input.description !== undefined) insertValues.description = input.description;
     if (input.tags !== undefined) insertValues.tagsJson = JSON.stringify(input.tags);
-    if (input.folderId !== undefined && input.folderId !== null) insertValues.folderId = input.folderId;
+    if (input.folderId !== undefined && input.folderId !== null)
+      insertValues.folderId = input.folderId;
     if (input.onError !== undefined) insertValues.onErrorJson = JSON.stringify(input.onError);
     if (input.errorWorkflowId !== undefined) insertValues.errorWorkflowId = input.errorWorkflowId;
-    if (input.concurrencyLimit !== undefined) insertValues.concurrencyLimit = input.concurrencyLimit;
+    if (input.concurrencyLimit !== undefined)
+      insertValues.concurrencyLimit = input.concurrencyLimit;
     if (input.ephemeralRuns !== undefined) insertValues.ephemeralRuns = input.ephemeralRuns;
     if (input.runVerbosity !== undefined) {
       // F2 tier gating: Free tenant non può abilitare persistenza runs.
       // Forziamo a 'silent' indipendentemente da quello che il client invia.
-      const { canPersistRunTrace: canPersist } = await import('@/services/storage-quota.service.js');
+      const { canPersistRunTrace: canPersist } =
+        await import('@/services/storage-quota.service.js');
       const { loadConfig } = await import('@/config.js');
       insertValues.runVerbosity = canPersist(loadConfig().MEDEA_PLAN_CODE)
         ? input.runVerbosity
@@ -531,7 +556,11 @@ export class WorkflowService {
     return created;
   }
 
-  async update(id: string, input: UpdateWorkflowInput, tenantId = 'default'): Promise<Workflow | null> {
+  async update(
+    id: string,
+    input: UpdateWorkflowInput,
+    tenantId = 'default',
+  ): Promise<Workflow | null> {
     const { db } = getDatabase();
     const existing = await this.get(id, tenantId);
     if (!existing) return null;
@@ -544,15 +573,20 @@ export class WorkflowService {
     const finalNodes = Array.isArray(input.nodes) ? input.nodes : existing.nodes;
     const finalEdges = Array.isArray(input.edges) ? input.edges : existing.edges;
     const nodeIds = new Set(
-      (finalNodes as { id?: string }[]).map((n) => n.id).filter((s): s is string => typeof s === 'string'),
+      (finalNodes as { id?: string }[])
+        .map((n) => n.id)
+        .filter((s): s is string => typeof s === 'string'),
     );
     const orphanEdges: string[] = [];
     for (const e of finalEdges as { from?: string; to?: string }[]) {
-      if (e.from && !nodeIds.has(e.from)) orphanEdges.push(`edge.from="${e.from}" (nodo inesistente)`);
+      if (e.from && !nodeIds.has(e.from))
+        orphanEdges.push(`edge.from="${e.from}" (nodo inesistente)`);
       if (e.to && !nodeIds.has(e.to)) orphanEdges.push(`edge.to="${e.to}" (nodo inesistente)`);
     }
     if (orphanEdges.length > 0) {
-      throw new WorkflowValidationError(`Workflow non valido: ${orphanEdges.length} edge orfani — ${orphanEdges.slice(0, 3).join('; ')}${orphanEdges.length > 3 ? ` … (+${orphanEdges.length - 3} altri)` : ''}`);
+      throw new WorkflowValidationError(
+        `Workflow non valido: ${orphanEdges.length} edge orfani — ${orphanEdges.slice(0, 3).join('; ')}${orphanEdges.length > 3 ? ` … (+${orphanEdges.length - 3} altri)` : ''}`,
+      );
     }
 
     const now = new Date().toISOString();
@@ -561,24 +595,27 @@ export class WorkflowService {
     if (input.description !== undefined) patch.description = input.description;
     if (input.enabled !== undefined) patch.enabled = input.enabled;
     // CONTRACT indirection: come in create(), mai un token webhook cablato su disco.
-    if (input.nodes !== undefined) patch.nodesJson = JSON.stringify(await this.normalizeWebhookLinks(ensureFormTriggerTokens(input.nodes)));
+    if (input.nodes !== undefined)
+      patch.nodesJson = JSON.stringify(
+        await this.normalizeWebhookLinks(ensureFormTriggerTokens(input.nodes)),
+      );
     if (input.edges !== undefined) patch.edgesJson = JSON.stringify(input.edges);
     if (input.nodeDefs !== undefined) patch.nodeDefsJson = JSON.stringify(input.nodeDefs);
     if (input.breakpoints !== undefined) patch.breakpointsJson = JSON.stringify(input.breakpoints);
     if (input.tags !== undefined) patch.tagsJson = JSON.stringify(input.tags);
     if (input.folderId !== undefined) patch.folderId = input.folderId;
-    if (input.onError !== undefined) patch.onErrorJson = input.onError === null ? null : JSON.stringify(input.onError);
+    if (input.onError !== undefined)
+      patch.onErrorJson = input.onError === null ? null : JSON.stringify(input.onError);
     if (input.errorWorkflowId !== undefined) patch.errorWorkflowId = input.errorWorkflowId;
     if (input.concurrencyLimit !== undefined) patch.concurrencyLimit = input.concurrencyLimit;
     if (input.ephemeralRuns !== undefined) patch.ephemeralRuns = input.ephemeralRuns;
     if (input.runVerbosity !== undefined) {
       // F2 tier gating: Free non può uscire da silent.
-      const { canPersistRunTrace: canPersist } = await import('@/services/storage-quota.service.js');
+      const { canPersistRunTrace: canPersist } =
+        await import('@/services/storage-quota.service.js');
       const { loadConfig } = await import('@/config.js');
       const requested = input.runVerbosity;
-      patch.runVerbosity = canPersist(loadConfig().MEDEA_PLAN_CODE)
-        ? requested
-        : 'silent';
+      patch.runVerbosity = canPersist(loadConfig().MEDEA_PLAN_CODE) ? requested : 'silent';
     }
 
     // ── Quota enforcement single-source-of-truth (2026-06-06) ─────────
@@ -686,7 +723,10 @@ export class WorkflowService {
    * its `savedAt` timestamp. Used by GET /:id to return draft alongside
    * the committed workflow definition. NEVER used by the engine.
    */
-  async getDraft(id: string, tenantId = 'default'): Promise<{ payload: unknown; savedAt: string } | null> {
+  async getDraft(
+    id: string,
+    tenantId = 'default',
+  ): Promise<{ payload: unknown; savedAt: string } | null> {
     const { db } = getDatabase();
     const [row] = await db
       .select({ draftJson: workflows.draftJson, draftUpdatedAt: workflows.draftUpdatedAt })
@@ -701,7 +741,12 @@ export class WorkflowService {
     return { payload, savedAt: row.draftUpdatedAt };
   }
 
-  async delete(id: string, tenantId = 'default', actorId?: string, opts: { dropTables?: boolean } = {}): Promise<boolean> {
+  async delete(
+    id: string,
+    tenantId = 'default',
+    actorId?: string,
+    opts: { dropTables?: boolean } = {},
+  ): Promise<boolean> {
     const { db } = getDatabase();
     const existing = await this.get(id, tenantId);
     if (!existing) return false;
@@ -719,15 +764,25 @@ export class WorkflowService {
           const dbStudio = new DbStudioService();
           for (const ref of toDrop) {
             try {
-              await dbStudio.applyMigration(ref.databaseId, [{ kind: 'drop_table', tableName: ref.table }], tenantId);
+              await dbStudio.applyMigration(
+                ref.databaseId,
+                [{ kind: 'drop_table', tableName: ref.table }],
+                tenantId,
+              );
               droppedTables.push(ref.table);
             } catch (e) {
-              logger.warn({ err: e instanceof Error ? e.message : String(e), table: ref.table, tenantId }, '[workflow.delete] drop tabella dedicata fallito (non-fatale)');
+              logger.warn(
+                { err: e instanceof Error ? e.message : String(e), table: ref.table, tenantId },
+                '[workflow.delete] drop tabella dedicata fallito (non-fatale)',
+              );
             }
           }
         }
       } catch (e) {
-        logger.warn({ err: e instanceof Error ? e.message : String(e), tenantId }, '[workflow.delete] cascade tabelle fallita (non-fatale)');
+        logger.warn(
+          { err: e instanceof Error ? e.message : String(e), tenantId },
+          '[workflow.delete] cascade tabelle fallita (non-fatale)',
+        );
       }
     }
 
@@ -767,7 +822,10 @@ export class WorkflowService {
    *
    * Forward-compat: schemaVersion permette future migration.
    */
-  async exportBundle(workflowId: string, tenantId: string): Promise<{
+  async exportBundle(
+    workflowId: string,
+    tenantId: string,
+  ): Promise<{
     schemaVersion: '1.0.0';
     exportedAt: string;
     exportedBy: { tenantId: string };
@@ -796,14 +854,22 @@ export class WorkflowService {
       if (!node.config) return n;
       const config: Record<string, unknown> = { ...node.config };
       for (const [key, val] of Object.entries(config)) {
-        if (key.toLowerCase().includes('credential') && typeof val === 'string' && val.length >= 16) {
+        if (
+          key.toLowerCase().includes('credential') &&
+          typeof val === 'string' &&
+          val.length >= 16
+        ) {
           placeholders.push({ nodeId: node.id, configPath: key, type: node.defId ?? 'unknown' });
-          config[key] = '';  // azzero: l'importatore vede campo vuoto e riconfigura
+          config[key] = ''; // azzero: l'importatore vede campo vuoto e riconfigura
         }
         // Password, secret token e API key vengono rimossi anche se non
         // referenziati come credential lookup (es. trigger_imap.password
         // hardcoded). Mai esportare valori segreti in chiaro.
-        if ((/password|secret|apikey|api_key|token|bearer/i).test(key) && typeof val === 'string' && val.length > 0) {
+        if (
+          /password|secret|apikey|api_key|token|bearer/i.test(key) &&
+          typeof val === 'string' &&
+          val.length > 0
+        ) {
           // Eccezione: publicToken di trigger_form va RIGENERATO in import,
           // non esportato (così i link pubblici del WF originale restano
           // invalidi se il bundle finisce in mani sbagliate)
@@ -814,7 +880,9 @@ export class WorkflowService {
           }
           placeholders.push({ nodeId: node.id, configPath: key, type: node.defId ?? 'secret' });
           config[key] = '';
-          notes.push(`Node "${node.id}": campo "${key}" azzerato (segreto) — riconfigurare in import.`);
+          notes.push(
+            `Node "${node.id}": campo "${key}" azzerato (segreto) — riconfigurare in import.`,
+          );
         }
       }
       return { ...node, config };
@@ -855,7 +923,9 @@ export class WorkflowService {
     // Calcola checksum SHA256 sul payload (con checksum vuoto), così
     // l'importatore può verificare integrity.
     const { createHash } = await import('node:crypto');
-    bundle.checksum = createHash('sha256').update(JSON.stringify({ ...bundle, checksum: '' })).digest('hex');
+    bundle.checksum = createHash('sha256')
+      .update(JSON.stringify({ ...bundle, checksum: '' }))
+      .digest('hex');
 
     await audit.append({
       tenantId,
@@ -881,7 +951,11 @@ export class WorkflowService {
    *   5. Auto-gen publicToken per trigger_form (già in ensureFormTriggerTokens)
    *   6. Restituisce {workflow, warnings, credentialPlaceholders}
    */
-  async importBundle(rawBundle: unknown, tenantId: string, actorId?: string): Promise<{
+  async importBundle(
+    rawBundle: unknown,
+    tenantId: string,
+    actorId?: string,
+  ): Promise<{
     workflow: Workflow;
     warnings: string[];
     credentialPlaceholders: { configPath: string; nodeId: string; type: string }[];
@@ -891,13 +965,22 @@ export class WorkflowService {
     }
     const bundle = rawBundle as {
       schemaVersion?: string;
-      workflow?: { name?: string; description?: string; nodes?: unknown[]; edges?: unknown[]; nodeDefs?: unknown[]; tags?: unknown[] };
+      workflow?: {
+        name?: string;
+        description?: string;
+        nodes?: unknown[];
+        edges?: unknown[];
+        nodeDefs?: unknown[];
+        tags?: unknown[];
+      };
       credentialPlaceholders?: { configPath: string; nodeId: string; type: string }[];
       checksum?: string;
     };
 
     if (bundle.schemaVersion !== '1.0.0') {
-      throw new Error(`Bundle schemaVersion "${bundle.schemaVersion ?? 'mancante'}" non supportato. Atteso "1.0.0".`);
+      throw new Error(
+        `Bundle schemaVersion "${bundle.schemaVersion ?? 'mancante'}" non supportato. Atteso "1.0.0".`,
+      );
     }
     if (!bundle.workflow || typeof bundle.workflow.name !== 'string') {
       throw new Error('Bundle non valido: campo "workflow.name" mancante.');
@@ -908,9 +991,13 @@ export class WorkflowService {
     // Verifica checksum (best-effort)
     if (bundle.checksum && typeof bundle.checksum === 'string') {
       const { createHash } = await import('node:crypto');
-      const expected = createHash('sha256').update(JSON.stringify({ ...bundle, checksum: '' })).digest('hex');
+      const expected = createHash('sha256')
+        .update(JSON.stringify({ ...bundle, checksum: '' }))
+        .digest('hex');
       if (expected !== bundle.checksum) {
-        warnings.push('Checksum del bundle non corrisponde — il file potrebbe essere stato modificato. Verifica integrità.');
+        warnings.push(
+          'Checksum del bundle non corrisponde — il file potrebbe essere stato modificato. Verifica integrità.',
+        );
       }
     } else {
       warnings.push('Nessun checksum nel bundle — impossibile verificare integrity.');

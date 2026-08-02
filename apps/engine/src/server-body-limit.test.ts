@@ -22,10 +22,12 @@ const serverSource = readFileSync(join(__dirname, 'server.ts'), 'utf-8');
 
 describe('🚨 [REGRESSION WE-10] server.ts bodyLimit middleware globale', () => {
   it('🚨 importa hono/body-limit', () => {
-    expect(serverSource).toMatch(/import.*from\s*['"]hono\/body-limit['"]|await import\(['"]hono\/body-limit['"]\)/);
+    expect(serverSource).toMatch(
+      /import.*from\s*['"]hono\/body-limit['"]|await import\(['"]hono\/body-limit['"]\)/,
+    );
   });
 
-  it('🚨 applica bodyLimit globale (`app.use(\'*\', bodyLimit(...))`)', () => {
+  it("🚨 applica bodyLimit globale (`app.use('*', bodyLimit(...))`)", () => {
     expect(serverSource).toMatch(/app\.use\(\s*['"]\*['"]\s*,\s*bodyLimit\(/);
   });
 
@@ -46,6 +48,8 @@ describe('🚨 [REGRESSION WE-10] server.ts bodyLimit middleware globale', () =>
     const firstRouteIdx = serverSource.search(/app\.route\(/);
     expect(bodyLimitIdx).toBeGreaterThan(-1);
     expect(firstRouteIdx).toBeGreaterThan(-1);
-    expect(bodyLimitIdx, 'bodyLimit deve essere DICHIARATO prima di app.route()').toBeLessThan(firstRouteIdx);
+    expect(bodyLimitIdx, 'bodyLimit deve essere DICHIARATO prima di app.route()').toBeLessThan(
+      firstRouteIdx,
+    );
   });
 });

@@ -16,17 +16,24 @@ export function createClientErrorsRoutes(): Hono {
     // could forge log entries attributed to another tenant.
     const tenantId = getContainerTenantId();
     let body: unknown = null;
-    try { body = await c.req.json(); } catch { /* ignore */ }
+    try {
+      body = await c.req.json();
+    } catch {
+      /* ignore */
+    }
     const b = (body as Record<string, unknown>) ?? {};
-    logger.warn({
-      tenantId,
-      clientError: true,
-      message: typeof b.message === 'string' ? b.message : null,
-      source: typeof b.source === 'string' ? b.source : null,
-      stack: typeof b.stack === 'string' ? (b.stack).slice(0, 1000) : null,
-      url: typeof b.url === 'string' ? b.url : null,
-      userAgent: typeof b.userAgent === 'string' ? b.userAgent : null,
-    }, 'Client-side error reported');
+    logger.warn(
+      {
+        tenantId,
+        clientError: true,
+        message: typeof b.message === 'string' ? b.message : null,
+        source: typeof b.source === 'string' ? b.source : null,
+        stack: typeof b.stack === 'string' ? b.stack.slice(0, 1000) : null,
+        url: typeof b.url === 'string' ? b.url : null,
+        userAgent: typeof b.userAgent === 'string' ? b.userAgent : null,
+      },
+      'Client-side error reported',
+    );
     return c.json({ logged: true });
   });
 

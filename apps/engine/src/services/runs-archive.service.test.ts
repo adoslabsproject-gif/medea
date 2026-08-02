@@ -65,7 +65,8 @@ afterEach(async () => {
   await rm(tmpDir, { recursive: true, force: true });
 });
 
-const { archiveOldRuns, listArchives, archivePathSafe, archiveAllWorkflows } = await import('./runs-archive.service.js');
+const { archiveOldRuns, listArchives, archivePathSafe, archiveAllWorkflows } =
+  await import('./runs-archive.service.js');
 
 describe('🚨 archiveOldRuns — guards', () => {
   it('🚨 olderThanDays <= 0 → null (no-op)', async () => {
@@ -79,7 +80,9 @@ describe('🚨 archiveOldRuns — guards', () => {
 
   it('🚨 runs recenti (più giovani della cutoff) NON archiviati', async () => {
     const recent = new Date(Date.now() - 1 * 24 * 3600_000).toISOString(); // 1 giorno fa
-    sqliteInstance.prepare('INSERT INTO runs (id, workflow_id, started_at, status) VALUES (?,?,?,?)').run('r1', 'wf-x', recent, 'ok');
+    sqliteInstance
+      .prepare('INSERT INTO runs (id, workflow_id, started_at, status) VALUES (?,?,?,?)')
+      .run('r1', 'wf-x', recent, 'ok');
     expect(await archiveOldRuns('wf-x', 30)).toBeNull();
     // Row ancora presente
     expect(sqliteInstance.prepare('SELECT COUNT(*) as n FROM runs').get()).toEqual({ n: 1 });
@@ -90,8 +93,12 @@ describe('🚨 archiveOldRuns — happy path', () => {
   beforeEach(() => {
     const old1 = new Date(Date.now() - 60 * 24 * 3600_000).toISOString(); // 60gg fa
     const old2 = new Date(Date.now() - 45 * 24 * 3600_000).toISOString();
-    sqliteInstance.prepare('INSERT INTO runs (id, workflow_id, started_at, status, payload) VALUES (?,?,?,?,?)').run('r1', 'wf-A', old1, 'ok', '{"data":"v1"}');
-    sqliteInstance.prepare('INSERT INTO runs (id, workflow_id, started_at, status, payload) VALUES (?,?,?,?,?)').run('r2', 'wf-A', old2, 'ok', '{"data":"v2"}');
+    sqliteInstance
+      .prepare('INSERT INTO runs (id, workflow_id, started_at, status, payload) VALUES (?,?,?,?,?)')
+      .run('r1', 'wf-A', old1, 'ok', '{"data":"v1"}');
+    sqliteInstance
+      .prepare('INSERT INTO runs (id, workflow_id, started_at, status, payload) VALUES (?,?,?,?,?)')
+      .run('r2', 'wf-A', old2, 'ok', '{"data":"v2"}');
   });
 
   it('🚨 archivia + file gz su disco con extension corretta', async () => {
@@ -133,8 +140,16 @@ describe('🚨 archiveOldRuns — happy path', () => {
     const TS2 = '2026-02-01T00:00:00.000Z';
     const seed = (): void => {
       sqliteInstance.exec(`DELETE FROM runs WHERE workflow_id='wf-A'`);
-      sqliteInstance.prepare('INSERT INTO runs (id, workflow_id, started_at, status, payload) VALUES (?,?,?,?,?)').run('r1', 'wf-A', TS1, 'ok', '{"data":"v1"}');
-      sqliteInstance.prepare('INSERT INTO runs (id, workflow_id, started_at, status, payload) VALUES (?,?,?,?,?)').run('r2', 'wf-A', TS2, 'ok', '{"data":"v2"}');
+      sqliteInstance
+        .prepare(
+          'INSERT INTO runs (id, workflow_id, started_at, status, payload) VALUES (?,?,?,?,?)',
+        )
+        .run('r1', 'wf-A', TS1, 'ok', '{"data":"v1"}');
+      sqliteInstance
+        .prepare(
+          'INSERT INTO runs (id, workflow_id, started_at, status, payload) VALUES (?,?,?,?,?)',
+        )
+        .run('r2', 'wf-A', TS2, 'ok', '{"data":"v2"}');
     };
     seed();
     const res1 = await archiveOldRuns('wf-A', 30);
@@ -156,7 +171,9 @@ describe('🚨 archiveHmacKey — fail-fast (mai firma con chiave nota)', () => 
   const OLD_ENV = process.env.NODE_ENV;
   const seedOld = (wf: string): void => {
     const old = new Date(Date.now() - 60 * 24 * 3600_000).toISOString();
-    sqliteInstance.prepare('INSERT INTO runs (id, workflow_id, started_at, status, payload) VALUES (?,?,?,?,?)').run('s1', wf, old, 'ok', '{"x":1}');
+    sqliteInstance
+      .prepare('INSERT INTO runs (id, workflow_id, started_at, status, payload) VALUES (?,?,?,?,?)')
+      .run('s1', wf, old, 'ok', '{"x":1}');
   };
   afterEach(() => {
     process.env.NODE_ENV = OLD_ENV;
@@ -167,7 +184,9 @@ describe('🚨 archiveHmacKey — fail-fast (mai firma con chiave nota)', () => 
     process.env.NODE_ENV = 'production';
     ssoSecret = undefined;
     seedOld('wf-nosecret');
-    await expect(archiveOldRuns('wf-nosecret', 30)).rejects.toThrow(/MEDEA_SSO_SECRET OBBLIGATORIO/);
+    await expect(archiveOldRuns('wf-nosecret', 30)).rejects.toThrow(
+      /MEDEA_SSO_SECRET OBBLIGATORIO/,
+    );
     // Nessun archivio scritto: il throw avviene PRIMA del write
     expect(listArchives('wf-nosecret')).toEqual([]);
   });
@@ -192,7 +211,11 @@ describe('🚨 archiveHmacKey — fail-fast (mai firma con chiave nota)', () => 
     const TS = '2026-01-01T00:00:00.000Z';
     const seedFixed = (): void => {
       sqliteInstance.exec(`DELETE FROM runs WHERE workflow_id='wf-key'`);
-      sqliteInstance.prepare('INSERT INTO runs (id, workflow_id, started_at, status, payload) VALUES (?,?,?,?,?)').run('k1', 'wf-key', TS, 'ok', '{"x":1}');
+      sqliteInstance
+        .prepare(
+          'INSERT INTO runs (id, workflow_id, started_at, status, payload) VALUES (?,?,?,?,?)',
+        )
+        .run('k1', 'wf-key', TS, 'ok', '{"x":1}');
     };
     ssoSecret = 'key-alpha-padded-to-thirty-two-chars-aaaa';
     seedFixed();
@@ -211,7 +234,9 @@ describe('🚨 listArchives', () => {
 
   it('🚨 archivi esistenti → list ordinata desc per createdAt', async () => {
     const old = new Date(Date.now() - 60 * 24 * 3600_000).toISOString();
-    sqliteInstance.prepare('INSERT INTO runs (id, workflow_id, started_at, status) VALUES (?,?,?,?)').run('x', 'wf-A', old, 'ok');
+    sqliteInstance
+      .prepare('INSERT INTO runs (id, workflow_id, started_at, status) VALUES (?,?,?,?)')
+      .run('x', 'wf-A', old, 'ok');
     await archiveOldRuns('wf-A', 30);
     const list = listArchives('wf-A');
     expect(list).toHaveLength(1);
@@ -267,7 +292,9 @@ describe('🚨 archiveAllWorkflows', () => {
     sqliteInstance.exec(`INSERT INTO workflows VALUES ('wf-2', 'verbose')`);
     sqliteInstance.exec(`INSERT INTO workflows VALUES ('wf-silent', 'silent')`);
     const old = new Date(Date.now() - 60 * 24 * 3600_000).toISOString();
-    sqliteInstance.prepare('INSERT INTO runs (id, workflow_id, started_at, status) VALUES (?,?,?,?)').run('r1', 'wf-1', old, 'ok');
+    sqliteInstance
+      .prepare('INSERT INTO runs (id, workflow_id, started_at, status) VALUES (?,?,?,?)')
+      .run('r1', 'wf-1', old, 'ok');
     const summary = await archiveAllWorkflows(30);
     expect(summary.workflowsScanned).toBe(2); // wf-silent escluso
     expect(summary.workflowsArchived).toBeGreaterThanOrEqual(1);
@@ -278,8 +305,12 @@ describe('🚨 archiveAllWorkflows', () => {
     sqliteInstance.exec(`INSERT INTO workflows VALUES ('wf-good', NULL)`);
     sqliteInstance.exec(`INSERT INTO workflows VALUES ('wf-bad', NULL)`);
     const old = new Date(Date.now() - 60 * 24 * 3600_000).toISOString();
-    sqliteInstance.prepare('INSERT INTO runs (id, workflow_id, started_at, status) VALUES (?,?,?,?)').run('r1', 'wf-good', old, 'ok');
-    sqliteInstance.prepare('INSERT INTO runs (id, workflow_id, started_at, status) VALUES (?,?,?,?)').run('r2', 'wf-bad', old, 'ok');
+    sqliteInstance
+      .prepare('INSERT INTO runs (id, workflow_id, started_at, status) VALUES (?,?,?,?)')
+      .run('r1', 'wf-good', old, 'ok');
+    sqliteInstance
+      .prepare('INSERT INTO runs (id, workflow_id, started_at, status) VALUES (?,?,?,?)')
+      .run('r2', 'wf-bad', old, 'ok');
     // Simula failure su wf-bad facendo throw mid-process via getDatabase
     let callCount = 0;
     drizzleDelete.mockImplementation(() => {

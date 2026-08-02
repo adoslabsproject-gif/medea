@@ -10,28 +10,46 @@ vi.mock('@/lib/internal-token.js', () => ({ getOutboundPortalToken: () => 'tok-1
 vi.mock('@/config.js', () => ({ loadConfig: () => ({ MEDEA_PORTAL_URL: 'http://portal:3006' }) }));
 vi.mock('@/lib/logger.js');
 
-const { searchMarketplace, formatPrice, formatMarketplaceSuggestions } = await import('./marketplace-discovery.js');
+const { searchMarketplace, formatPrice, formatMarketplaceSuggestions } =
+  await import('./marketplace-discovery.js');
 
 const sample = {
-  defId: 'community_acme_pdf', displayName: 'Acme PDF Splitter',
-  description: 'Divide un PDF in pagine. Veloce.', category: 'files',
-  pricingModel: 'free', priceCents: 0, currency: 'EUR', installCount: 42, ratingAvg: 4.5,
+  defId: 'community_acme_pdf',
+  displayName: 'Acme PDF Splitter',
+  description: 'Divide un PDF in pagine. Veloce.',
+  category: 'files',
+  pricingModel: 'free',
+  priceCents: 0,
+  currency: 'EUR',
+  installCount: 42,
+  ratingAvg: 4.5,
 };
 
 const origFetch = globalThis.fetch;
-afterEach(() => { globalThis.fetch = origFetch; vi.restoreAllMocks(); });
-beforeEach(() => { /* breaker state may persist across tests in same module — ok */ });
+afterEach(() => {
+  globalThis.fetch = origFetch;
+  vi.restoreAllMocks();
+});
+beforeEach(() => {
+  /* breaker state may persist across tests in same module — ok */
+});
 
 describe('searchMarketplace — fail-soft', () => {
   it('200 con results → ritorna i suggerimenti', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, results: [sample] }), { status: 200 }));
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ ok: true, results: [sample] }), { status: 200 }),
+      );
     const r = await searchMarketplace('dividi pdf');
     expect(r).toHaveLength(1);
     expect(r[0]!.defId).toBe('community_acme_pdf');
   });
 
   it('manda x-internal-token + query nel body', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ results: [] }), { status: 200 }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ results: [] }), { status: 200 }));
     globalThis.fetch = fetchMock;
     await searchMarketplace('cerca qualcosa');
     const init = fetchMock.mock.calls[0]![1] as { headers: Record<string, string>; body: string };
@@ -63,10 +81,14 @@ describe('formatPrice — free vs paid', () => {
     expect(formatPrice({ ...sample, pricingModel: 'one_time', priceCents: 0 })).toBe('gratis');
   });
   it('one_time → importo una tantum', () => {
-    expect(formatPrice({ ...sample, pricingModel: 'one_time', priceCents: 499 })).toMatch(/4,99 EUR una tantum/);
+    expect(formatPrice({ ...sample, pricingModel: 'one_time', priceCents: 499 })).toMatch(
+      /4,99 EUR una tantum/,
+    );
   });
   it('subscription → /mese', () => {
-    expect(formatPrice({ ...sample, pricingModel: 'subscription', priceCents: 900 })).toMatch(/9,00 EUR\/mese/);
+    expect(formatPrice({ ...sample, pricingModel: 'subscription', priceCents: 900 })).toMatch(
+      /9,00 EUR\/mese/,
+    );
   });
 });
 
@@ -77,7 +99,13 @@ describe('formatMarketplaceSuggestions', () => {
   it('marca "NON installati" + propone install/acquisto, mostra prezzo', () => {
     const out = formatMarketplaceSuggestions([
       { ...sample, pricingModel: 'free', priceCents: 0 },
-      { ...sample, defId: 'community_x_paid', displayName: 'Paid X', pricingModel: 'one_time', priceCents: 1500 },
+      {
+        ...sample,
+        defId: 'community_x_paid',
+        displayName: 'Paid X',
+        pricingModel: 'one_time',
+        priceCents: 1500,
+      },
     ]);
     expect(out).toContain('NON installati');
     expect(out).toContain('community_acme_pdf');

@@ -26,12 +26,20 @@ interface SwitchCase {
 }
 
 function parseCases(raw: unknown): SwitchCase[] {
-  if (Array.isArray(raw)) return raw.filter((c): c is SwitchCase => Boolean(c) && typeof c === 'object' && 'branch' in (c as object));
+  if (Array.isArray(raw))
+    return raw.filter(
+      (c): c is SwitchCase => Boolean(c) && typeof c === 'object' && 'branch' in (c as object),
+    );
   if (typeof raw === 'string' && raw.trim() !== '') {
     try {
       const parsed: unknown = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed.filter((c): c is SwitchCase => Boolean(c) && typeof c === 'object' && 'branch' in (c as object));
-    } catch { /* fall through */ }
+      if (Array.isArray(parsed))
+        return parsed.filter(
+          (c): c is SwitchCase => Boolean(c) && typeof c === 'object' && 'branch' in (c as object),
+        );
+    } catch {
+      /* fall through */
+    }
   }
   return [];
 }
@@ -47,16 +55,16 @@ export class LogicSwitchStrategy implements INodeDispatchStrategy {
     return ctx.module.def.id === 'logic_switch';
   }
 
-   
   execute(ctx: DispatchContext): Promise<DispatchResult> {
     const exprRaw = ctx.interpolatedConfig.expression;
     const expr = typeof exprRaw === 'string' ? exprRaw : '';
     const subject = expr ? evaluateExpression(expr, ctx.scope) : undefined;
 
     const cases = parseCases(ctx.interpolatedConfig.cases);
-    const caseSensitive = ctx.interpolatedConfig.caseSensitive === undefined
-      ? true
-      : asBool(ctx.interpolatedConfig.caseSensitive);
+    const caseSensitive =
+      ctx.interpolatedConfig.caseSensitive === undefined
+        ? true
+        : asBool(ctx.interpolatedConfig.caseSensitive);
 
     const normalize = (v: unknown): string => {
       const s = v === null || v === undefined ? '' : typeof v === 'string' ? v : JSON.stringify(v);
@@ -71,9 +79,10 @@ export class LogicSwitchStrategy implements INodeDispatchStrategy {
       // Un case può avere un ruleset condition-rules (AND/OR) che SOSTITUISCE il
       // literal match: utile per "case se amount>1000 AND country in [...]".
       const ruleset = c.rules !== undefined ? parseRuleset(c.rules) : null;
-      const isMatch = ruleset && ruleset.rules.length > 0
-        ? evaluateRuleset(ruleset, ctx.scope)
-        : normalize(c.match) === subjectNorm;
+      const isMatch =
+        ruleset && ruleset.rules.length > 0
+          ? evaluateRuleset(ruleset, ctx.scope)
+          : normalize(c.match) === subjectNorm;
       if (isMatch) {
         chosenBranch = c.branch;
         matchedCase = c;
@@ -85,10 +94,15 @@ export class LogicSwitchStrategy implements INodeDispatchStrategy {
       // (workflow critici) invece dell'instradamento silenzioso al default. Rejected
       // promise (non throw sincrono): execute() ritorna Promise, l'engine fa await.
       if (strictMode) {
-        return Promise.reject(new Error(`logic_switch: nessun case corrisponde al valore "${subjectNorm}" e strictMode è attivo`));
+        return Promise.reject(
+          new Error(
+            `logic_switch: nessun case corrisponde al valore "${subjectNorm}" e strictMode è attivo`,
+          ),
+        );
       }
       const fallback = ctx.interpolatedConfig.fallbackBranch;
-      chosenBranch = typeof fallback === 'string' && fallback.trim() !== '' ? fallback.trim() : 'default';
+      chosenBranch =
+        typeof fallback === 'string' && fallback.trim() !== '' ? fallback.trim() : 'default';
     }
     return Promise.resolve({
       output: {

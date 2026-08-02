@@ -23,11 +23,28 @@ export interface Notification {
 }
 
 interface NotifRow {
-  id: string; user_id: string; type: string; workflow_id: string | null; node_id: string | null;
-  actor_name: string; preview: string; read: number; created_at: string;
+  id: string;
+  user_id: string;
+  type: string;
+  workflow_id: string | null;
+  node_id: string | null;
+  actor_name: string;
+  preview: string;
+  read: number;
+  created_at: string;
 }
 function rowToNotif(r: NotifRow): Notification {
-  return { id: r.id, userId: r.user_id, type: r.type, workflowId: r.workflow_id, nodeId: r.node_id, actorName: r.actor_name, preview: r.preview, read: r.read === 1, createdAt: r.created_at };
+  return {
+    id: r.id,
+    userId: r.user_id,
+    type: r.type,
+    workflowId: r.workflow_id,
+    nodeId: r.node_id,
+    actorName: r.actor_name,
+    preview: r.preview,
+    read: r.read === 1,
+    createdAt: r.created_at,
+  };
 }
 
 export class NotificationsService {
@@ -43,8 +60,10 @@ export class NotificationsService {
    * tenant in cui il commento è stato fatto.
    */
   resolveMentionUserId(handle: string, tenantId: string): string | null {
-    const row = getDatabase().sqlite
-      .prepare("SELECT id FROM users WHERE tenant_id = ? AND lower(email) LIKE lower(?) || '@%' AND enabled = 1 LIMIT 1")
+    const row = getDatabase()
+      .sqlite.prepare(
+        "SELECT id FROM users WHERE tenant_id = ? AND lower(email) LIKE lower(?) || '@%' AND enabled = 1 LIMIT 1",
+      )
       .get(tenantId, handle) as { id: string } | undefined;
     return row?.id ?? null;
   }
@@ -60,27 +79,56 @@ export class NotificationsService {
    * SaaS vede le detection sui workspace su cui sta operando.
    */
   tenantAdminUserIds(tenantId: string): string[] {
-    const rows = getDatabase().sqlite
-      .prepare("SELECT id FROM users WHERE tenant_id = ? AND enabled = 1 AND role IN ('owner', 'superadmin')")
+    const rows = getDatabase()
+      .sqlite.prepare(
+        "SELECT id FROM users WHERE tenant_id = ? AND enabled = 1 AND role IN ('owner', 'superadmin')",
+      )
       .all(tenantId) as { id: string }[];
     return rows.map((r) => r.id);
   }
 
-  create(input: { userId: string; type: string; workflowId?: string | null; nodeId?: string | null; actorName: string; preview: string }): void {
+  create(input: {
+    userId: string;
+    type: string;
+    workflowId?: string | null;
+    nodeId?: string | null;
+    actorName: string;
+    preview: string;
+  }): void {
     const id = nanoid();
     const createdAt = new Date().toISOString();
     const preview = input.preview.slice(0, 200);
     const workflowId = input.workflowId ?? null;
     const nodeId = input.nodeId ?? null;
-    getDatabase().sqlite.prepare(`
+    getDatabase()
+      .sqlite.prepare(
+        `
       INSERT INTO notifications (id, user_id, type, workflow_id, node_id, actor_name, preview, read, created_at)
       VALUES (@id, @uid, @type, @wf, @node, @actor, @preview, 0, @createdAt)
-    `).run({ id, uid: input.userId, type: input.type, wf: workflowId, node: nodeId, actor: input.actorName, preview, createdAt });
+    `,
+      )
+      .run({
+        id,
+        uid: input.userId,
+        type: input.type,
+        wf: workflowId,
+        node: nodeId,
+        actor: input.actorName,
+        preview,
+        createdAt,
+      });
     // Push real-time: lo stream SSE dell'utente (stesso container) riceve
     // all'istante. Nessuna latenza da polling. Vedi notifications-bus.ts.
     notificationsBus.emitToUser(input.userId, {
-      id, userId: input.userId, type: input.type, workflowId, nodeId,
-      actorName: input.actorName, preview, read: false, createdAt,
+      id,
+      userId: input.userId,
+      type: input.type,
+      workflowId,
+      nodeId,
+      actorName: input.actorName,
+      preview,
+      read: false,
+      createdAt,
     });
   }
 
@@ -89,12 +137,27 @@ export class NotificationsService {
    * handle (TENANT-SCOPED — vedi M6), salta l'autore e gli handle non risolti.
    * Ritorna quanti notificati.
    */
-  notifyForComment(input: { mentions: readonly string[]; authorUserId: string; actorName: string; workflowId: string; nodeId: string | null; body: string; tenantId: string }): number {
+  notifyForComment(input: {
+    mentions: readonly string[];
+    authorUserId: string;
+    actorName: string;
+    workflowId: string;
+    nodeId: string | null;
+    body: string;
+    tenantId: string;
+  }): number {
     let n = 0;
     for (const handle of input.mentions) {
       const userId = this.resolveMentionUserId(handle, input.tenantId);
       if (!userId || userId === input.authorUserId) continue;
-      this.create({ userId, type: 'mention', workflowId: input.workflowId, nodeId: input.nodeId, actorName: input.actorName, preview: input.body });
+      this.create({
+        userId,
+        type: 'mention',
+        workflowId: input.workflowId,
+        nodeId: input.nodeId,
+        actorName: input.actorName,
+        preview: input.body,
+      });
       n += 1;
     }
     return n;
@@ -109,12 +172,16 @@ export class NotificationsService {
   }
 
   unreadCount(userId: string): number {
-    const row = getDatabase().sqlite.prepare('SELECT COUNT(*) AS n FROM notifications WHERE user_id = ? AND read = 0').get(userId) as { n: number };
+    const row = getDatabase()
+      .sqlite.prepare('SELECT COUNT(*) AS n FROM notifications WHERE user_id = ? AND read = 0')
+      .get(userId) as { n: number };
     return row.n;
   }
 
   markRead(id: string, userId: string): void {
-    getDatabase().sqlite.prepare('UPDATE notifications SET read = 1 WHERE id = ? AND user_id = ?').run(id, userId);
+    getDatabase()
+      .sqlite.prepare('UPDATE notifications SET read = 1 WHERE id = ? AND user_id = ?')
+      .run(id, userId);
   }
 
   markAllRead(userId: string): void {

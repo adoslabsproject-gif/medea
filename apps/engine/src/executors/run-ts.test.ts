@@ -10,7 +10,11 @@ const baseContext = {
 
 describe('run-ts executor', () => {
   it('esegue TypeScript semplice e ritorna risultato', async () => {
-    const r = await runTsExecutor({ code: 'const x: number = 1 + 1; return x;' }, null, baseContext);
+    const r = await runTsExecutor(
+      { code: 'const x: number = 1 + 1; return x;' },
+      null,
+      baseContext,
+    );
     expect((r.output as { result: unknown }).result).toBe(2);
   });
 
@@ -52,19 +56,21 @@ describe('run-ts executor', () => {
   });
 
   it('rejecta code vuoto', async () => {
-    await expect(runTsExecutor({ code: '   ' }, null, baseContext)).rejects.toThrow(/campo "code" obbligatorio/);
+    await expect(runTsExecutor({ code: '   ' }, null, baseContext)).rejects.toThrow(
+      /campo "code" obbligatorio/,
+    );
   });
 
   it('rejecta code > 50KB', async () => {
-    await expect(
-      runTsExecutor({ code: 'a'.repeat(50_001) }, null, baseContext),
-    ).rejects.toThrow(/troppo lungo/);
+    await expect(runTsExecutor({ code: 'a'.repeat(50_001) }, null, baseContext)).rejects.toThrow(
+      /troppo lungo/,
+    );
   });
 
   it('🚨 rejecta TypeScript sintatticamente rotto con messaggio TS chiaro', async () => {
-    await expect(
-      runTsExecutor({ code: 'const x: number = ;' }, null, baseContext),
-    ).rejects.toThrow(/action_run_ts: errore sintassi TypeScript/);
+    await expect(runTsExecutor({ code: 'const x: number = ;' }, null, baseContext)).rejects.toThrow(
+      /action_run_ts: errore sintassi TypeScript/,
+    );
   });
 
   it('🚨 blocca host API (require/process/fetch assenti) — stessa sandbox di run_js', async () => {
@@ -85,7 +91,11 @@ describe('run-ts executor', () => {
   it('clamp memoryLimitMb a min 16 e max 512', async () => {
     const lo = await runTsExecutor({ code: 'return "ok";', memoryLimitMb: 1 }, null, baseContext);
     expect((lo.output as { result: unknown }).result).toBe('ok');
-    const hi = await runTsExecutor({ code: 'return "ok";', memoryLimitMb: 99999 }, null, baseContext);
+    const hi = await runTsExecutor(
+      { code: 'return "ok";', memoryLimitMb: 99999 },
+      null,
+      baseContext,
+    );
     expect((hi.output as { result: unknown }).result).toBe('ok');
   });
 

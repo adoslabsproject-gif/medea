@@ -41,14 +41,21 @@ const executor: NodeExecutor = async (config, _input, context) => {
 
   const schemaJson = String(config.schemaJson ?? '').trim() || undefined;
   if (schemaJson) {
-    try { JSON.parse(schemaJson); }
-    catch { throw new Error('schemaJson invalid JSON'); }
+    try {
+      JSON.parse(schemaJson);
+    } catch {
+      throw new Error('schemaJson invalid JSON');
+    }
   }
 
   const userAgent = String(config.userAgent ?? 'FlowForge-SmartScrape/1.0').trim();
-  const browserEndpoint = String(config.browserEndpoint ?? process.env.MEDEA_BROWSER_ENDPOINT ?? '').trim();
+  const browserEndpoint = String(
+    config.browserEndpoint ?? process.env.MEDEA_BROWSER_ENDPOINT ?? '',
+  ).trim();
   const browserApiKey = String(config.browserApiKey ?? '').trim();
-  const stealthEndpoint = String(config.stealthEndpoint ?? process.env.MEDEA_STEALTH_ENDPOINT ?? '').trim();
+  const stealthEndpoint = String(
+    config.stealthEndpoint ?? process.env.MEDEA_STEALTH_ENDPOINT ?? '',
+  ).trim();
   const stealthApiKey = String(config.stealthApiKey ?? '').trim();
   const liaraEndpoint = String(config.liaraEndpoint ?? '').trim() || undefined;
   const liaraApiKey = String(config.liaraApiKey ?? '').trim() || undefined;
@@ -56,8 +63,13 @@ const executor: NodeExecutor = async (config, _input, context) => {
 
   const forceStageRaw = String(config.forceStage ?? 'auto').trim();
   const forceStage: PipelineStage | undefined =
-    forceStageRaw === 'auto' ? undefined :
-    (['fetch_simple', 'browser_render', 'browser_stealth', 'vision_extract'].includes(forceStageRaw) ? forceStageRaw as PipelineStage : undefined);
+    forceStageRaw === 'auto'
+      ? undefined
+      : ['fetch_simple', 'browser_render', 'browser_stealth', 'vision_extract'].includes(
+            forceStageRaw,
+          )
+        ? (forceStageRaw as PipelineStage)
+        : undefined;
 
   const timeoutMs = Math.max(5000, Math.min(Number(config.timeoutMs ?? 30_000), 120_000));
   const maxPages = Math.max(1, Math.min(Number(config.maxPages ?? 1), 50));
@@ -67,8 +79,12 @@ const executor: NodeExecutor = async (config, _input, context) => {
   let currentUrl = url;
 
   // Fase 2 (#14): usage cumulativo su TUTTE le pagine → un solo `_llm` per nodo.
-  let totIn = 0; let totOut = 0; let allFromApi = true; let llmCalls = 0;
-  let llmModel = ''; let llmProvider = '';
+  let totIn = 0;
+  let totOut = 0;
+  let allFromApi = true;
+  let llmCalls = 0;
+  let llmModel = '';
+  let llmProvider = '';
 
   for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
     const pipelineRes = await runPipeline({
@@ -97,9 +113,12 @@ const executor: NodeExecutor = async (config, _input, context) => {
         });
         extracted = llmRes.extracted;
         parseError = llmRes.parseError;
-        totIn += llmRes.usage.input; totOut += llmRes.usage.output;
-        allFromApi = allFromApi && llmRes.usage.fromApi; llmCalls += 1;
-        llmModel = llmRes.modelUsed; llmProvider = llmRes.provider;
+        totIn += llmRes.usage.input;
+        totOut += llmRes.usage.output;
+        allFromApi = allFromApi && llmRes.usage.fromApi;
+        llmCalls += 1;
+        llmModel = llmRes.modelUsed;
+        llmProvider = llmRes.provider;
         // Fase 3 (#15): prompt (HTML sanitizzato incluso, cappato dal logger)
         // + risposta → StepLog 'llm', una entry-serie per pagina.
         logLlmExchange(context, {
@@ -149,15 +168,17 @@ const executor: NodeExecutor = async (config, _input, context) => {
       finalStages: pages.map((p) => p.finalStage),
       extracted: pages.length === 1 ? pages[0]?.extracted : pages.map((p) => p.extracted),
       // Fase 2 (#14): usage standard cross-nodo, cumulativo sulle pagine.
-      ...(llmCalls > 0 ? {
-        _llm: {
-          inputTokens: totIn,
-          outputTokens: totOut,
-          model: llmModel,
-          provider: llmProvider,
-          fromApi: allFromApi,
-        },
-      } : {}),
+      ...(llmCalls > 0
+        ? {
+            _llm: {
+              inputTokens: totIn,
+              outputTokens: totOut,
+              model: llmModel,
+              provider: llmProvider,
+              fromApi: allFromApi,
+            },
+          }
+        : {}),
     },
     durationMs: Date.now() - start,
   };
@@ -185,23 +206,132 @@ export const scrapeSmartNode: NodeModule = {
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [
-      { key: 'url', label: 'URL iniziale', type: 'text', required: true, placeholder: 'https://target.com/products', help: 'URL da scrappare.' },
-      { key: 'prompt', label: 'Cosa estrarre (italiano)', type: 'textarea', required: true, placeholder: 'Estrai dal listing: per ogni prodotto titolo, prezzo, link, immagine principale, disponibilita\\` stock.', help: 'Descrivi i dati in linguaggio naturale.' },
-      { key: 'schemaJson', label: 'Schema JSON target (opzionale)', type: 'textarea', required: false, placeholder: '{"products": [{"title": "string", "price": "number", "link": "string"}]}', help: 'Shape attesa. Vuoto = oggetto libero.' },
-      { key: 'forceStage', label: 'Forza stage', type: 'select', required: false, defaultValue: 'auto', options: ['auto', 'fetch_simple', 'browser_render', 'browser_stealth', 'vision_extract'], help: 'auto = pipeline upgrade adaptive (RACCOMANDATO). fetch_simple = solo HTTP GET. browser_render = headless per SPA. browser_stealth = anti-bot enterprise. vision_extract = canvas/PDF visually-only.' },
-      { key: 'maxPages', label: 'Max pages (pagination)', type: 'number', required: false, defaultValue: '1', help: 'Pagine totali da seguire via pagination auto-detect. Default 1 (no pagination).' },
-      { key: 'pageDelayMs', label: 'Delay tra pagine (ms)', type: 'number', required: false, defaultValue: '1000', help: 'Pausa human-like tra page fetch. Default 1s.' },
-      { key: 'timeoutMs', label: 'Timeout per stage (ms)', type: 'number', required: false, defaultValue: '30000', help: 'Max per ogni stage. Default 30s. Max 120s.' },
-      { key: 'userAgent', label: 'User-Agent (fetch_simple)', type: 'text', required: false, defaultValue: 'FlowForge-SmartScrape/1.0', help: 'UA per fetch HTTP plain. Browser usano fingerprint propri.' },
-      { key: 'browserEndpoint', label: 'Browser endpoint (BYO)', type: 'text', required: false, placeholder: 'env MEDEA_BROWSER_ENDPOINT', help: 'Server Playwright. Vuoto = no upgrade a stage 2.' },
-      { key: 'browserApiKey', label: 'Browser API key', type: 'secret', required: false, help: 'Bearer browser endpoint.' },
-      { key: 'stealthEndpoint', label: 'Stealth endpoint (BYO)', type: 'text', required: false, placeholder: 'env MEDEA_STEALTH_ENDPOINT', help: 'Server stealth (puppeteer-extra). Vuoto = no upgrade a stage 3.' },
-      { key: 'stealthApiKey', label: 'Stealth API key', type: 'secret', required: false, help: 'Bearer stealth endpoint.' },
-      { key: 'liaraEndpoint', label: 'LLM endpoint (OpenAI-compat, override)', type: 'text', required: false, help: 'Vuoto = Liara via gateway FlowForge (default, metered sulla quota). Compila SOLO per un provider OpenAI-compatibile tuo (OpenAI, Groq, OpenRouter, vLLM, Ollama…).' },
-      { key: 'liaraApiKey', label: 'LLM API key (Bearer, override)', type: 'secret', required: false, help: 'Bearer token dell\'endpoint custom. Vuoto = license del workspace (gateway Liara).' },
-      { key: 'liaraModel', label: 'LLM model (override)', type: 'text', required: false, help: 'Vuoto = modello di default del gateway Liara. Per provider custom usa il loro model ID (es. gpt-4o-mini, llama-3.1-70b).' },
+      {
+        key: 'url',
+        label: 'URL iniziale',
+        type: 'text',
+        required: true,
+        placeholder: 'https://target.com/products',
+        help: 'URL da scrappare.',
+      },
+      {
+        key: 'prompt',
+        label: 'Cosa estrarre (italiano)',
+        type: 'textarea',
+        required: true,
+        placeholder:
+          'Estrai dal listing: per ogni prodotto titolo, prezzo, link, immagine principale, disponibilita\\` stock.',
+        help: 'Descrivi i dati in linguaggio naturale.',
+      },
+      {
+        key: 'schemaJson',
+        label: 'Schema JSON target (opzionale)',
+        type: 'textarea',
+        required: false,
+        placeholder: '{"products": [{"title": "string", "price": "number", "link": "string"}]}',
+        help: 'Shape attesa. Vuoto = oggetto libero.',
+      },
+      {
+        key: 'forceStage',
+        label: 'Forza stage',
+        type: 'select',
+        required: false,
+        defaultValue: 'auto',
+        options: ['auto', 'fetch_simple', 'browser_render', 'browser_stealth', 'vision_extract'],
+        help: 'auto = pipeline upgrade adaptive (RACCOMANDATO). fetch_simple = solo HTTP GET. browser_render = headless per SPA. browser_stealth = anti-bot enterprise. vision_extract = canvas/PDF visually-only.',
+      },
+      {
+        key: 'maxPages',
+        label: 'Max pages (pagination)',
+        type: 'number',
+        required: false,
+        defaultValue: '1',
+        help: 'Pagine totali da seguire via pagination auto-detect. Default 1 (no pagination).',
+      },
+      {
+        key: 'pageDelayMs',
+        label: 'Delay tra pagine (ms)',
+        type: 'number',
+        required: false,
+        defaultValue: '1000',
+        help: 'Pausa human-like tra page fetch. Default 1s.',
+      },
+      {
+        key: 'timeoutMs',
+        label: 'Timeout per stage (ms)',
+        type: 'number',
+        required: false,
+        defaultValue: '30000',
+        help: 'Max per ogni stage. Default 30s. Max 120s.',
+      },
+      {
+        key: 'userAgent',
+        label: 'User-Agent (fetch_simple)',
+        type: 'text',
+        required: false,
+        defaultValue: 'FlowForge-SmartScrape/1.0',
+        help: 'UA per fetch HTTP plain. Browser usano fingerprint propri.',
+      },
+      {
+        key: 'browserEndpoint',
+        label: 'Browser endpoint (BYO)',
+        type: 'text',
+        required: false,
+        placeholder: 'env MEDEA_BROWSER_ENDPOINT',
+        help: 'Server Playwright. Vuoto = no upgrade a stage 2.',
+      },
+      {
+        key: 'browserApiKey',
+        label: 'Browser API key',
+        type: 'secret',
+        required: false,
+        help: 'Bearer browser endpoint.',
+      },
+      {
+        key: 'stealthEndpoint',
+        label: 'Stealth endpoint (BYO)',
+        type: 'text',
+        required: false,
+        placeholder: 'env MEDEA_STEALTH_ENDPOINT',
+        help: 'Server stealth (puppeteer-extra). Vuoto = no upgrade a stage 3.',
+      },
+      {
+        key: 'stealthApiKey',
+        label: 'Stealth API key',
+        type: 'secret',
+        required: false,
+        help: 'Bearer stealth endpoint.',
+      },
+      {
+        key: 'liaraEndpoint',
+        label: 'LLM endpoint (OpenAI-compat, override)',
+        type: 'text',
+        required: false,
+        help: 'Vuoto = Liara via gateway FlowForge (default, metered sulla quota). Compila SOLO per un provider OpenAI-compatibile tuo (OpenAI, Groq, OpenRouter, vLLM, Ollama…).',
+      },
+      {
+        key: 'liaraApiKey',
+        label: 'LLM API key (Bearer, override)',
+        type: 'secret',
+        required: false,
+        help: "Bearer token dell'endpoint custom. Vuoto = license del workspace (gateway Liara).",
+      },
+      {
+        key: 'liaraModel',
+        label: 'LLM model (override)',
+        type: 'text',
+        required: false,
+        help: 'Vuoto = modello di default del gateway Liara. Per provider custom usa il loro model ID (es. gpt-4o-mini, llama-3.1-70b).',
+      },
     ],
-    outputs: ['extracted', 'pages', 'pagesScraped', 'pagesSuccessful', 'paginationDetected', 'finalStages'],
+    outputs: [
+      'extracted',
+      'pages',
+      'pagesScraped',
+      'pagesSuccessful',
+      'paginationDetected',
+      'finalStages',
+    ],
   },
   executor,
 };

@@ -36,7 +36,11 @@ export function createRunsArchiveRoutes(eventBus: IEventBus): Hono {
     if (!wf) return c.json({ error: 'Not found' }, 404);
     const path = archivePathSafe(id, filename);
     if (!path) return c.json({ error: 'Invalid filename' }, 400);
-    try { statSync(path); } catch { return c.json({ error: 'Archive not found' }, 404); }
+    try {
+      statSync(path);
+    } catch {
+      return c.json({ error: 'Archive not found' }, 404);
+    }
     // Lettura sincrona — dimensione tipica < 50MB (gzip rate ~70%). Per
     // archivi più grandi un futuro PR può migrare a stream-based response.
     const body = readFileSync(path);

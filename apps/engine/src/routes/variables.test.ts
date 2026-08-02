@@ -24,13 +24,18 @@ const asUser = (tenantId: string): void => {
 };
 
 let app: Hono;
-interface SqliteLike { prepare: (s: string) => { run: (...p: unknown[]) => unknown } }
+interface SqliteLike {
+  prepare: (s: string) => { run: (...p: unknown[]) => unknown };
+}
 const db = (): SqliteLike => getDatabase().sqlite as unknown as SqliteLike;
 
 beforeAll(() => {
   runMigrations();
   app = new Hono();
-  app.use('*', async (c, next) => { c.set('auth', authCtx); await next(); });
+  app.use('*', async (c, next) => {
+    c.set('auth', authCtx);
+    await next();
+  });
   app.route('/api/v1', createVariableRoutes());
 });
 
@@ -41,11 +46,13 @@ afterAll(() => {
 });
 
 const req = (method: string, path: string, body?: unknown): Promise<Response> =>
-  Promise.resolve(app.request(`/api/v1${path}`, {
-    method,
-    headers: { 'content-type': 'application/json' },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  }));
+  Promise.resolve(
+    app.request(`/api/v1${path}`, {
+      method,
+      headers: { 'content-type': 'application/json' },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    }),
+  );
 
 describe('variables per-workflow (storage reale)', () => {
   it('senza auth → mai 200', async () => {
@@ -65,7 +72,9 @@ describe('variables per-workflow (storage reale)', () => {
     ];
     for (const [name, value] of cases) {
       expect((await req('PUT', `/workflows/wf1/variables/${name}`, { value })).status).toBe(200);
-      const got = await (await req('GET', `/workflows/wf1/variables/${name}`)).json() as { value: unknown };
+      const got = (await (await req('GET', `/workflows/wf1/variables/${name}`)).json()) as {
+        value: unknown;
+      };
       expect(got.value, `round-trip ${name}`).toEqual(value);
     }
   });
@@ -101,11 +110,15 @@ describe('variables tenant-global (env-like)', () => {
   it('PUT/GET list/DELETE round-trip + isolamento tenant', async () => {
     asUser(T_A);
     expect((await req('PUT', '/variables/API_BASE', { value: 'https://a.test' })).status).toBe(200);
-    const listA = await (await req('GET', '/variables')).json() as { variables: Record<string, unknown> };
+    const listA = (await (await req('GET', '/variables')).json()) as {
+      variables: Record<string, unknown>;
+    };
     expect(JSON.stringify(listA.variables)).toContain('https://a.test');
 
     asUser(T_B);
-    const listB = await (await req('GET', '/variables')).json() as { variables: Record<string, unknown> };
+    const listB = (await (await req('GET', '/variables')).json()) as {
+      variables: Record<string, unknown>;
+    };
     expect(JSON.stringify(listB.variables)).not.toContain('https://a.test');
 
     asUser(T_A);

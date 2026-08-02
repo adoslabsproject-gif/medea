@@ -13,15 +13,15 @@
  */
 
 export interface CsvParseOptions {
-  delimiter?: string;     // default ','
-  hasHeader?: boolean;    // default true
-  trimFields?: boolean;   // default false
+  delimiter?: string; // default ','
+  hasHeader?: boolean; // default true
+  trimFields?: boolean; // default false
 }
 
 export interface CsvStringifyOptions {
-  delimiter?: string;     // default ','
-  newline?: string;       // default '\n'
-  header?: string[];      // explicit header (override key order)
+  delimiter?: string; // default ','
+  newline?: string; // default '\n'
+  header?: string[]; // explicit header (override key order)
   /** Quote anche fields semplici (default false: quote solo se contengono delim/quote/newline). */
   quoteAll?: boolean;
 }
@@ -47,7 +47,7 @@ export function parseCsv(
 
   // Strip BOM
   let src = input;
-  if (src.length > 0 && src.charCodeAt(0) === 0xFEFF) src = src.slice(1);
+  if (src.length > 0 && src.charCodeAt(0) === 0xfeff) src = src.slice(1);
 
   const rows: string[][] = [];
   let row: string[] = [];
@@ -111,7 +111,11 @@ export function parseCsv(
   }
 
   // Drop trailing empty rows (CSV con \n finale)
-  while (rows.length > 0 && rows[rows.length - 1]!.length === 1 && rows[rows.length - 1]![0] === '') {
+  while (
+    rows.length > 0 &&
+    rows[rows.length - 1]!.length === 1 &&
+    rows[rows.length - 1]![0] === ''
+  ) {
     rows.pop();
   }
 
@@ -148,15 +152,16 @@ export function stringifyCsv(
   if (records.length === 0) return '';
 
   const escapeField = (raw: unknown): string => {
-    const s = raw == null ? ''
-      : typeof raw === 'string' ? raw
-      : typeof raw === 'number' || typeof raw === 'boolean' || typeof raw === 'bigint' ? String(raw)
-      : (JSON.stringify(raw) ?? '');
-    const needsQuote = quoteAll
-      || s.includes(delimiter)
-      || s.includes('"')
-      || s.includes('\n')
-      || s.includes('\r');
+    const s =
+      raw == null
+        ? ''
+        : typeof raw === 'string'
+          ? raw
+          : typeof raw === 'number' || typeof raw === 'boolean' || typeof raw === 'bigint'
+            ? String(raw)
+            : (JSON.stringify(raw) ?? '');
+    const needsQuote =
+      quoteAll || s.includes(delimiter) || s.includes('"') || s.includes('\n') || s.includes('\r');
     if (!needsQuote) return s;
     return `"${s.replace(/"/g, '""')}"`;
   };

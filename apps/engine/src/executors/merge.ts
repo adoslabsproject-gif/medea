@@ -36,10 +36,16 @@ interface BranchOutput {
   output: unknown;
 }
 
-function gatherBranches(config: Record<string, unknown>, nodeOutputs: Record<string, unknown>): BranchOutput[] {
+function gatherBranches(
+  config: Record<string, unknown>,
+  nodeOutputs: Record<string, unknown>,
+): BranchOutput[] {
   const sourcesRaw = coerceString(config.sourceNodeIds ?? '').trim();
   const sourceIds = sourcesRaw
-    ? sourcesRaw.split(',').map((s) => s.trim()).filter(Boolean)
+    ? sourcesRaw
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
     : Object.keys(nodeOutputs);
   return sourceIds
     .map((nodeId) => {
@@ -55,7 +61,7 @@ function gatherBranches(config: Record<string, unknown>, nodeOutputs: Record<str
 export const logicMergeExecutor: NodeExecutor = (config, _input, context) => {
   const start = Date.now();
   const strategy = coerceString(config.strategy ?? 'all').toLowerCase();
-  const nodeOutputs = (context.nodeOutputs ?? {});
+  const nodeOutputs = context.nodeOutputs ?? {};
   const branches = gatherBranches(config, nodeOutputs);
 
   let output: unknown;

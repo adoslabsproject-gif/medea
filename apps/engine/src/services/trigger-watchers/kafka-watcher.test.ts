@@ -42,13 +42,26 @@ function makeFakeClient(opts: { connectThrows?: boolean } = {}): FakeClient {
   let each: ((p: EachMessagePayload) => Promise<void>) | null = null;
   const listeners: Record<string, (evt?: unknown) => void> = {};
   const consumer: FakeConsumer = {
-    connect: vi.fn(async () => { if (opts.connectThrows) throw new Error('ECONNREFUSED broker'); }),
+    connect: vi.fn(async () => {
+      if (opts.connectThrows) throw new Error('ECONNREFUSED broker');
+    }),
     subscribe: vi.fn(async () => undefined),
-    run: vi.fn(async ({ eachMessage }: { eachMessage: (p: EachMessagePayload) => Promise<void> }) => { each = eachMessage; }),
+    run: vi.fn(
+      async ({ eachMessage }: { eachMessage: (p: EachMessagePayload) => Promise<void> }) => {
+        each = eachMessage;
+      },
+    ),
     disconnect: vi.fn(async () => undefined),
-    on: vi.fn((event: string, l: (evt?: unknown) => void) => { listeners[event] = l; }),
-    __deliver: (p) => { if (!each) throw new Error('run() non ancora chiamato'); return each(p); },
-    __crash: () => { listeners['consumer.crash']?.(); },
+    on: vi.fn((event: string, l: (evt?: unknown) => void) => {
+      listeners[event] = l;
+    }),
+    __deliver: (p) => {
+      if (!each) throw new Error('run() non ancora chiamato');
+      return each(p);
+    },
+    __crash: () => {
+      listeners['consumer.crash']?.();
+    },
   };
   const client: FakeClient = {
     consumer: vi.fn(() => consumer),
@@ -58,33 +71,60 @@ function makeFakeClient(opts: { connectThrows?: boolean } = {}): FakeClient {
 }
 
 function wf(): Workflow {
-  return { id: 'wf-k', tenantId: 'ten-1', name: 'k', enabled: true, nodes: [], edges: [] } as unknown as Workflow;
+  return {
+    id: 'wf-k',
+    tenantId: 'ten-1',
+    name: 'k',
+    enabled: true,
+    nodes: [],
+    edges: [],
+  } as unknown as Workflow;
 }
 function node(config: Record<string, unknown> = {}): CanvasNode {
-  return { id: 'n1', defId: 'trigger_kafka', x: 0, y: 0,
-    config: { brokers: 'kafka1.example.com:9092,kafka2.example.com:9092', topic: 'orders', ...config } } as unknown as CanvasNode;
+  return {
+    id: 'n1',
+    defId: 'trigger_kafka',
+    x: 0,
+    y: 0,
+    config: {
+      brokers: 'kafka1.example.com:9092,kafka2.example.com:9092',
+      topic: 'orders',
+      ...config,
+    },
+  } as unknown as CanvasNode;
 }
 const payload = (s: string | null, over: Partial<EachMessagePayload> = {}): EachMessagePayload => ({
-  topic: 'orders', partition: 0, message: { value: s === null ? null : Buffer.from(s, 'utf8') }, ...over,
+  topic: 'orders',
+  partition: 0,
+  message: { value: s === null ? null : Buffer.from(s, 'utf8') },
+  ...over,
 });
 
 let dispatchRun: ReturnType<typeof vi.fn>;
 let client: FakeClient;
-const flush = async (): Promise<void> => { for (let i = 0; i < 5; i += 1) await Promise.resolve(); };
+const flush = async (): Promise<void> => {
+  for (let i = 0; i < 5; i += 1) await Promise.resolve();
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
   dispatchRun = vi.fn(async () => ({ runId: 'run-1', status: 'completed', steps: [] }));
   client = makeFakeClient();
 });
-afterEach(() => { vi.useRealTimers(); });
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('startKafkaWatcher — guard', () => {
   it('brokers mancanti → null', () => {
-    expect(startKafkaWatcher(wf(), node({ brokers: '' }), { dispatchRun, createClient: () => client })).toBeNull();
+    expect(
+      startKafkaWatcher(wf(), node({ brokers: '' }), { dispatchRun, createClient: () => client }),
+    ).toBeNull();
   });
   it('topic mancante → null', () => {
-    expect(startKafkaWatcher(wf(), node({ topic: '' }), { dispatchRun, createClient: () => client })).toBeNull();
+    expect(
+      startKafkaWatcher(wf(), node({ topic: '' }), { dispatchRun, createClient: () => client }),
+    ).toBeNull();
   });
   it('groupId default = flowforge-<wfId> se non specificato', async () => {
     const job = startKafkaWatcher(wf(), node(), { dispatchRun, createClient: () => client })!;
@@ -96,10 +136,16 @@ describe('startKafkaWatcher — guard', () => {
 
 describe('startKafkaWatcher — consumo + connessione', () => {
   it('connect → subscribe(topic, fromBeginning) → run', async () => {
-    const job = startKafkaWatcher(wf(), node({ fromBeginning: 'true' }), { dispatchRun, createClient: () => client })!;
+    const job = startKafkaWatcher(wf(), node({ fromBeginning: 'true' }), {
+      dispatchRun,
+      createClient: () => client,
+    })!;
     await flush();
     expect(client.consumerInstance.connect).toHaveBeenCalledTimes(1);
-    expect(client.consumerInstance.subscribe).toHaveBeenCalledWith({ topic: 'orders', fromBeginning: true });
+    expect(client.consumerInstance.subscribe).toHaveBeenCalledWith({
+      topic: 'orders',
+      fromBeginning: true,
+    });
     expect(client.consumerInstance.run).toHaveBeenCalledTimes(1);
     teardownKafkaWatcher(job);
   });
@@ -109,7 +155,10 @@ describe('startKafkaWatcher — consumo + connessione', () => {
     await flush();
     await client.consumerInstance.__deliver(payload('{"id":9}', { partition: 3 }));
     expect(dispatchRun).toHaveBeenCalledTimes(1);
-    const arg = dispatchRun.mock.calls[0]![0] as { triggerType: string; triggerInput: { data: unknown; topic: string; partition: number } };
+    const arg = dispatchRun.mock.calls[0]![0] as {
+      triggerType: string;
+      triggerInput: { data: unknown; topic: string; partition: number };
+    };
     expect(arg.triggerType).toBe('kafka');
     expect(arg.triggerInput.data).toEqual({ id: 9 });
     expect(arg.triggerInput.topic).toBe('orders');
@@ -130,7 +179,9 @@ describe('startKafkaWatcher — AT-LEAST-ONCE via offset', () => {
     dispatchRun.mockRejectedValue(new Error('engine down'));
     const job = startKafkaWatcher(wf(), node(), { dispatchRun, createClient: () => client })!;
     await flush();
-    await expect(client.consumerInstance.__deliver(payload('{"x":1}'))).rejects.toThrow(/kafka run failed/);
+    await expect(client.consumerInstance.__deliver(payload('{"x":1}'))).rejects.toThrow(
+      /kafka run failed/,
+    );
     teardownKafkaWatcher(job);
   });
 
@@ -145,24 +196,40 @@ describe('startKafkaWatcher — AT-LEAST-ONCE via offset', () => {
 
 describe('startKafkaWatcher — filtro + parsing', () => {
   it('pointer no-match → RITORNA (commit) senza dispatch né throw', async () => {
-    const job = startKafkaWatcher(wf(), node({ messagePointer: '/type' }), { dispatchRun, createClient: () => client })!;
+    const job = startKafkaWatcher(wf(), node({ messagePointer: '/type' }), {
+      dispatchRun,
+      createClient: () => client,
+    })!;
     await flush();
-    await expect(client.consumerInstance.__deliver(payload('{"other":1}'))).resolves.toBeUndefined();
+    await expect(
+      client.consumerInstance.__deliver(payload('{"other":1}')),
+    ).resolves.toBeUndefined();
     expect(dispatchRun).not.toHaveBeenCalled();
     teardownKafkaWatcher(job);
   });
   it('pointer match → dispatch con "matched"', async () => {
-    const job = startKafkaWatcher(wf(), node({ messagePointer: '/type' }), { dispatchRun, createClient: () => client })!;
+    const job = startKafkaWatcher(wf(), node({ messagePointer: '/type' }), {
+      dispatchRun,
+      createClient: () => client,
+    })!;
     await flush();
     await client.consumerInstance.__deliver(payload('{"type":"created"}'));
-    expect((dispatchRun.mock.calls[0]![0] as { triggerInput: { matched: unknown } }).triggerInput.matched).toBe('created');
+    expect(
+      (dispatchRun.mock.calls[0]![0] as { triggerInput: { matched: unknown } }).triggerInput
+        .matched,
+    ).toBe('created');
     teardownKafkaWatcher(job);
   });
   it('jsonParse=false → data resta stringa grezza', async () => {
-    const job = startKafkaWatcher(wf(), node({ jsonParse: 'false' }), { dispatchRun, createClient: () => client })!;
+    const job = startKafkaWatcher(wf(), node({ jsonParse: 'false' }), {
+      dispatchRun,
+      createClient: () => client,
+    })!;
     await flush();
     await client.consumerInstance.__deliver(payload('{"a":1}'));
-    expect((dispatchRun.mock.calls[0]![0] as { triggerInput: { data: unknown } }).triggerInput.data).toBe('{"a":1}');
+    expect(
+      (dispatchRun.mock.calls[0]![0] as { triggerInput: { data: unknown } }).triggerInput.data,
+    ).toBe('{"a":1}');
     teardownKafkaWatcher(job);
   });
 });
@@ -170,7 +237,11 @@ describe('startKafkaWatcher — filtro + parsing', () => {
 describe('startKafkaWatcher — anti-flood', () => {
   it('oltre budget → RITORNA (commit) + niente dispatch; il budget si libera dopo 1s', async () => {
     let t = 1_000_000;
-    const job = startKafkaWatcher(wf(), node({ maxMessagesPerSec: 2 }), { dispatchRun, createClient: () => client, now: () => t })!;
+    const job = startKafkaWatcher(wf(), node({ maxMessagesPerSec: 2 }), {
+      dispatchRun,
+      createClient: () => client,
+      now: () => t,
+    })!;
     await flush();
     await client.consumerInstance.__deliver(payload('{"i":1}'));
     await client.consumerInstance.__deliver(payload('{"i":2}'));
@@ -186,17 +257,26 @@ describe('startKafkaWatcher — anti-flood', () => {
 describe('startKafkaWatcher — SASL/TLS', () => {
   it('SASL passato al client SOLO se mechanism+username presenti', async () => {
     const factory = vi.fn(() => client);
-    const job = startKafkaWatcher(wf(), node({ ssl: 'true', saslMechanism: 'scram-sha-256', saslUsername: 'u', saslPassword: 'p' }),
-      { dispatchRun, createClient: factory })!;
+    const job = startKafkaWatcher(
+      wf(),
+      node({ ssl: 'true', saslMechanism: 'scram-sha-256', saslUsername: 'u', saslPassword: 'p' }),
+      { dispatchRun, createClient: factory },
+    )!;
     await flush();
-    expect(factory).toHaveBeenCalledWith(expect.objectContaining({
-      ssl: true, sasl: { mechanism: 'scram-sha-256', username: 'u', password: 'p' },
-    }));
+    expect(factory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ssl: true,
+        sasl: { mechanism: 'scram-sha-256', username: 'u', password: 'p' },
+      }),
+    );
     teardownKafkaWatcher(job);
   });
   it('SASL mechanism=none o username vuoto → nessun sasl nel config', async () => {
     const factory = vi.fn((_config: KafkaClientConfig) => client);
-    const job = startKafkaWatcher(wf(), node({ saslMechanism: 'none' }), { dispatchRun, createClient: factory })!;
+    const job = startKafkaWatcher(wf(), node({ saslMechanism: 'none' }), {
+      dispatchRun,
+      createClient: factory,
+    })!;
     await flush();
     expect(factory.mock.calls[0]![0].sasl).toBeUndefined();
     teardownKafkaWatcher(job);
@@ -253,7 +333,10 @@ describe('startKafkaWatcher — resilienza (crash/backoff/teardown)', () => {
   it('reconnect=false → dopo crash NON riconnette', async () => {
     vi.useFakeTimers();
     const factory = vi.fn(() => client);
-    const job = startKafkaWatcher(wf(), node({ reconnect: 'false' }), { dispatchRun, createClient: factory })!;
+    const job = startKafkaWatcher(wf(), node({ reconnect: 'false' }), {
+      dispatchRun,
+      createClient: factory,
+    })!;
     await vi.advanceTimersByTimeAsync(0);
     client.consumerInstance.__crash();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -265,6 +348,9 @@ describe('startKafkaWatcher — resilienza (crash/backoff/teardown)', () => {
   it('doppio teardown non lancia', async () => {
     const job = startKafkaWatcher(wf(), node(), { dispatchRun, createClient: () => client })!;
     await flush();
-    expect(() => { teardownKafkaWatcher(job); teardownKafkaWatcher(job); }).not.toThrow();
+    expect(() => {
+      teardownKafkaWatcher(job);
+      teardownKafkaWatcher(job);
+    }).not.toThrow();
   });
 });

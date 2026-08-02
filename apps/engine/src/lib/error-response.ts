@@ -44,7 +44,12 @@ export function classifyDbConflictError(err: unknown): { conflict: boolean } {
   // Firme specifiche UNIQUE/PK (sqlite, better-sqlite3, postgres, mysql). NIENTE
   // match sul generico SQLITE_CONSTRAINT: matcherebbe anche NOT NULL/CHECK, che
   // NON sono conflitti-duplicato e devono restare 400.
-  return { conflict: /UNIQUE constraint|PRIMARY KEY|duplicate key|already exists|SQLITE_CONSTRAINT_UNIQUE|SQLITE_CONSTRAINT_PRIMARYKEY/i.test(msg) };
+  return {
+    conflict:
+      /UNIQUE constraint|PRIMARY KEY|duplicate key|already exists|SQLITE_CONSTRAINT_UNIQUE|SQLITE_CONSTRAINT_PRIMARYKEY/i.test(
+        msg,
+      ),
+  };
 }
 
 export function sanitizedErrorResponse(
@@ -52,7 +57,10 @@ export function sanitizedErrorResponse(
   err: unknown,
   opts: SanitizedErrorOptions,
 ): Response {
-  const reqId = c.req.header('x-request-id') ?? (c.get('requestId' as never) as string | undefined) ?? 'unknown';
+  const reqId =
+    c.req.header('x-request-id') ??
+    (c.get('requestId' as never) as string | undefined) ??
+    'unknown';
 
   // Un fallimento di CONNETTIVITÀ (tunnel SSH/host irraggiungibile/timeout) è un
   // errore INFRA a monte: va comunicato come 503 + messaggio chiaro, MAI come 400
@@ -93,11 +101,14 @@ export function sanitizedErrorResponse(
         ? (opts.userMessage ?? 'Operazione fallita')
         : `[DEV] ${err instanceof Error ? err.message : String(err)}`;
 
-  return c.json({
-    error: {
-      code,
-      message: clientMessage,
-      reqId,
+  return c.json(
+    {
+      error: {
+        code,
+        message: clientMessage,
+        reqId,
+      },
     },
-  }, status);
+    status,
+  );
 }

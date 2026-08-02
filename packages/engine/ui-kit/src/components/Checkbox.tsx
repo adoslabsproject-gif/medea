@@ -1,7 +1,10 @@
 import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react';
 import clsx from 'clsx';
 
-export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'size'> {
+export interface CheckboxProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'size'
+> {
   label?: ReactNode;
   description?: ReactNode;
 }
@@ -38,11 +41,20 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
         viewBox="0 0 16 16"
         className="pointer-events-none -ml-[18px] mt-0.5 h-3.5 w-3.5 opacity-0 peer-checked:opacity-100"
       >
-        <path d="M3.5 8L7 11.5L12.5 5.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <path
+          d="M3.5 8L7 11.5L12.5 5.5"
+          stroke="white"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        />
       </svg>
       <span className="ml-1.5 flex-1">
         {label !== undefined && <span className="text-xs text-fg">{label}</span>}
-        {description !== undefined && <span className="mt-0.5 block text-[10px] text-fg-muted">{description}</span>}
+        {description !== undefined && (
+          <span className="mt-0.5 block text-[10px] text-fg-muted">{description}</span>
+        )}
       </span>
     </label>
   );

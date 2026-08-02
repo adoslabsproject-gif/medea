@@ -40,8 +40,15 @@ import { z } from 'zod';
 // ───── Public types ─────
 
 export type ConfigFieldType =
-  | 'text' | 'textarea' | 'select' | 'number' | 'boolean'
-  | 'secret' | 'json' | 'code' | 'expression';
+  | 'text'
+  | 'textarea'
+  | 'select'
+  | 'number'
+  | 'boolean'
+  | 'secret'
+  | 'json'
+  | 'code'
+  | 'expression';
 
 export interface ConfigField {
   key: string;
@@ -122,7 +129,11 @@ export interface TriggerSpec {
   /** Solo mode='polling': intervallo tra i poll (default 60s). */
   pollIntervalSec?: number;
   poll?: (config: Record<string, unknown>, ctx: TriggerContext, emit: TriggerEmit) => Promise<void>;
-  connect?: (config: Record<string, unknown>, ctx: TriggerContext, emit: TriggerEmit) => Promise<() => void>;
+  connect?: (
+    config: Record<string, unknown>,
+    ctx: TriggerContext,
+    emit: TriggerEmit,
+  ) => Promise<() => void>;
 }
 
 export interface CommunityNodeDefinition {
@@ -167,32 +178,38 @@ export interface CommunityNodeDefinition {
 
 // ───── Schemas (runtime validation for the CLI) ─────
 
-const ConfigFieldSchema = z.object({
-  key: z.string().regex(/^[a-zA-Z0-9_]+$/u),
-  label: z.string().min(1),
-  type: z.string().optional(),
-  required: z.boolean().optional(),
-  placeholder: z.string().optional(),
-  help: z.string().optional(),
-  defaultValue: z.string().optional(),
-  options: z.array(z.string()).optional(),
-  showIf: z.object({
-    field: z.string(),
-    equals: z.union([z.string(), z.number(), z.boolean()]).optional(),
-    in: z.array(z.union([z.string(), z.number(), z.boolean()])).optional(),
-    truthy: z.boolean().optional(),
-  }).optional(),
-}).passthrough();
+const ConfigFieldSchema = z
+  .object({
+    key: z.string().regex(/^[a-zA-Z0-9_]+$/u),
+    label: z.string().min(1),
+    type: z.string().optional(),
+    required: z.boolean().optional(),
+    placeholder: z.string().optional(),
+    help: z.string().optional(),
+    defaultValue: z.string().optional(),
+    options: z.array(z.string()).optional(),
+    showIf: z
+      .object({
+        field: z.string(),
+        equals: z.union([z.string(), z.number(), z.boolean()]).optional(),
+        in: z.array(z.union([z.string(), z.number(), z.boolean()])).optional(),
+        truthy: z.boolean().optional(),
+      })
+      .optional(),
+  })
+  .passthrough();
 
-const ActionSchema = z.object({
-  id: z.string().regex(/^[a-z0-9_-]+$/iu),
-  label: z.string().min(1),
-  description: z.string().optional(),
-  category: z.string().optional(),
-  aiAction: z.boolean().optional(),
-  configFields: z.array(ConfigFieldSchema).optional(),
-  execute: z.function(),
-}).passthrough();
+const ActionSchema = z
+  .object({
+    id: z.string().regex(/^[a-z0-9_-]+$/iu),
+    label: z.string().min(1),
+    description: z.string().optional(),
+    category: z.string().optional(),
+    aiAction: z.boolean().optional(),
+    configFields: z.array(ConfigFieldSchema).optional(),
+    execute: z.function(),
+  })
+  .passthrough();
 
 const CommunityNodeDefinitionSchema = z.object({
   manifest: z.object({
@@ -236,10 +253,14 @@ export function trigger<T extends TriggerSpec>(spec: T): T {
  * richiede poll(), stream richiede connect()). Throw con messaggio preciso.
  */
 export function validateTriggerSpec(t: TriggerSpec): void {
-  if (!/^[a-z0-9_-]+$/iu.test(t.id)) throw new Error(`Trigger id "${t.id}" non valido (solo alfanumerici, - e _)`);
-  if (typeof t.label !== 'string' || t.label.length === 0) throw new Error(`Trigger "${t.id}": label obbligatoria`);
-  if (t.mode === 'polling' && typeof t.poll !== 'function') throw new Error(`Trigger "${t.id}": mode='polling' richiede una funzione poll()`);
-  if (t.mode === 'stream' && typeof t.connect !== 'function') throw new Error(`Trigger "${t.id}": mode='stream' richiede una funzione connect()`);
+  if (!/^[a-z0-9_-]+$/iu.test(t.id))
+    throw new Error(`Trigger id "${t.id}" non valido (solo alfanumerici, - e _)`);
+  if (typeof t.label !== 'string' || t.label.length === 0)
+    throw new Error(`Trigger "${t.id}": label obbligatoria`);
+  if (t.mode === 'polling' && typeof t.poll !== 'function')
+    throw new Error(`Trigger "${t.id}": mode='polling' richiede una funzione poll()`);
+  if (t.mode === 'stream' && typeof t.connect !== 'function')
+    throw new Error(`Trigger "${t.id}": mode='stream' richiede una funzione connect()`);
 }
 
 /**
@@ -326,11 +347,13 @@ export function compile(spec: CommunityNodeDefinition): {
   if (streamTriggers.length > 0) {
     throw new Error(
       'compile(): i trigger `mode="stream"` non sono supportati dal runtime ' +
-      'community — il sandbox isolated-vm espone solo `fetch` e non può tenere ' +
-      'connessioni persistenti. Trigger interessati: ' + streamTriggers.map((t) => t.id).join(', ') + '. ' +
-      'Usa `mode="polling"` (il poll viene eseguito nel sandbox ogni pollIntervalSec) ' +
-      'oppure il trigger built-in `trigger_websocket` per lo streaming. ' +
-      'La Action API e i trigger polling sono pienamente supportati.',
+        'community — il sandbox isolated-vm espone solo `fetch` e non può tenere ' +
+        'connessioni persistenti. Trigger interessati: ' +
+        streamTriggers.map((t) => t.id).join(', ') +
+        '. ' +
+        'Usa `mode="polling"` (il poll viene eseguito nel sandbox ogni pollIntervalSec) ' +
+        'oppure il trigger built-in `trigger_websocket` per lo streaming. ' +
+        'La Action API e i trigger polling sono pienamente supportati.',
     );
   }
   const pollingTriggers = (spec.triggers ?? []).filter((t) => t.mode === 'polling');
@@ -371,7 +394,9 @@ export function compile(spec: CommunityNodeDefinition): {
   if (pollingTriggers.length > 0) {
     nodedef.triggers = pollingTriggers.map((t) => {
       const out: NonNullable<CompiledNodeDef['triggers']>[number] = {
-        id: t.id, label: t.label, mode: 'polling',
+        id: t.id,
+        label: t.label,
+        mode: 'polling',
       };
       if (t.description) out.description = t.description;
       if (t.pollIntervalSec) out.pollIntervalSec = t.pollIntervalSec;
@@ -441,7 +466,14 @@ function generateExecutorSource(
 ): string {
   const lines: string[] = [];
   lines.push('// Generated by @medea/engine-community-node-sdk — do not edit by hand.');
-  lines.push('// Vendor: ' + spec.manifest.vendor + ' · Package: ' + spec.manifest.id + ' v' + spec.manifest.version);
+  lines.push(
+    '// Vendor: ' +
+      spec.manifest.vendor +
+      ' · Package: ' +
+      spec.manifest.id +
+      ' v' +
+      spec.manifest.version,
+  );
   lines.push('');
   if (spec.helpers) {
     lines.push('// ───── Helpers ─────');
@@ -466,7 +498,11 @@ function generateExecutorSource(
   }
   const dn = JSON.stringify(spec.manifest.displayName);
   lines.push('module.exports = async function execute(config, input, context) {');
-  lines.push('  var __action = config.__action || context.action || ' + JSON.stringify(spec.actions[0]!.id) + ';');
+  lines.push(
+    '  var __action = config.__action || context.action || ' +
+      JSON.stringify(spec.actions[0]!.id) +
+      ';',
+  );
   lines.push('  try {');
   if (pollingTriggers.length > 0) {
     // FEAT community-trigger runtime: poll bridge. Il runtime trigger-watchers
@@ -477,14 +513,26 @@ function generateExecutorSource(
     lines.push('    if (config && config.__ff_trigger_poll) {');
     lines.push('      var __tid = String(config.__ff_trigger_poll);');
     lines.push('      var __events = [];');
-    lines.push('      var __tstate = (input && input.state && typeof input.state === "object" && input.state !== null) ? input.state : {};');
-    lines.push('      var __tctx = { tenantId: context.tenantId, workflowId: context.workflowId, nodeId: context.nodeId, state: __tstate };');
+    lines.push(
+      '      var __tstate = (input && input.state && typeof input.state === "object" && input.state !== null) ? input.state : {};',
+    );
+    lines.push(
+      '      var __tctx = { tenantId: context.tenantId, workflowId: context.workflowId, nodeId: context.nodeId, state: __tstate };',
+    );
     lines.push('      var __emit = function (payload) { __events.push(payload); };');
     lines.push('      switch (__tid) {');
     for (const t of pollingTriggers) {
-      lines.push('        case ' + JSON.stringify(t.id) + ': await __ff_trigger_' + t.id + '(config, __tctx, __emit); break;');
+      lines.push(
+        '        case ' +
+          JSON.stringify(t.id) +
+          ': await __ff_trigger_' +
+          t.id +
+          '(config, __tctx, __emit); break;',
+      );
     }
-    lines.push('        default: throw new Error(' + dn + ' + ": trigger sconosciuto \\"" + __tid + "\\"");');
+    lines.push(
+      '        default: throw new Error(' + dn + ' + ": trigger sconosciuto \\"" + __tid + "\\"");',
+    );
     lines.push('      }');
     lines.push('      return { events: __events, state: __tctx.state };');
     lines.push('    }');
@@ -494,9 +542,17 @@ function generateExecutorSource(
     // `await`: necessario perché un ReferenceError che scatta DENTRO una
     // execute() async rigetta la promise — senza await il catch sottostante
     // non lo intercetterebbe (AUDIT FIX SDK-3).
-    lines.push('      case ' + JSON.stringify(a.id) + ': return await __action_' + a.id + '(config, input, context);');
+    lines.push(
+      '      case ' +
+        JSON.stringify(a.id) +
+        ': return await __action_' +
+        a.id +
+        '(config, input, context);',
+    );
   }
-  lines.push('      default: throw new Error(' + dn + ' + ": action sconosciuta \\"" + __action + "\\"");');
+  lines.push(
+    '      default: throw new Error(' + dn + ' + ": action sconosciuta \\"" + __action + "\\"");',
+  );
   lines.push('    }');
   lines.push('  } catch (__err) {');
   // AUDIT FIX SDK-3 (2026-06-09): self-diagnosi della perdita di closure.
@@ -506,12 +562,24 @@ function generateExecutorSource(
   // ATTRIBUITO + AZIONABILE che nomina l'identificatore e indica la soluzione
   // (`helpers`). Gli altri errori passano invariati.
   lines.push('    if (__err instanceof ReferenceError) {');
-  lines.push('      var __miss = String((__err && __err.message) || "").replace(/ is not defined[\\s\\S]*$/, "");');
+  lines.push(
+    '      var __miss = String((__err && __err.message) || "").replace(/ is not defined[\\s\\S]*$/, "");',
+  );
   lines.push('      throw new Error(');
-  lines.push('        ' + dn + ' + " [" + __action + "]: l\'identificatore \'" + __miss + "\' non e\' disponibile nel sandbox. " +');
-  lines.push('        "Causa tipica: la tua execute() referenzia un import o una const dichiarata a livello di MODULO, " +');
-  lines.push('        "che viene persa quando la funzione e\' serializzata (.toString()). Soluzione: sposta quel valore o " +');
-  lines.push('        "helper nel campo \\"helpers\\" del nodo (viene inlinato a livello modulo), oppure inlinea il valore " +');
+  lines.push(
+    '        ' +
+      dn +
+      ' + " [" + __action + "]: l\'identificatore \'" + __miss + "\' non e\' disponibile nel sandbox. " +',
+  );
+  lines.push(
+    '        "Causa tipica: la tua execute() referenzia un import o una const dichiarata a livello di MODULO, " +',
+  );
+  lines.push(
+    '        "che viene persa quando la funzione e\' serializzata (.toString()). Soluzione: sposta quel valore o " +',
+  );
+  lines.push(
+    '        "helper nel campo \\"helpers\\" del nodo (viene inlinato a livello modulo), oppure inlinea il valore " +',
+  );
   lines.push('        "direttamente dentro execute(). [@medea/engine-community-node-sdk SDK-3]"');
   lines.push('      );');
   lines.push('    }');

@@ -17,8 +17,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
 
 const m = vi.hoisted(() => {
-  class TenantNotFoundError extends Error { override name = 'TenantNotFoundError'; }
-  class TenantSlugConflictError extends Error { override name = 'TenantSlugConflictError'; }
+  class TenantNotFoundError extends Error {
+    override name = 'TenantNotFoundError';
+  }
+  class TenantSlugConflictError extends Error {
+    override name = 'TenantSlugConflictError';
+  }
   return {
     instance: vi.fn(),
     tenants: vi.fn(),
@@ -47,9 +51,15 @@ const { TenantNotFoundError, TenantSlugConflictError } = m;
 
 vi.mock('@/services/admin-stats.service.js', () => ({
   AdminStatsService: class {
-    instance() { return m.instance(); }
-    tenants() { return m.tenants(); }
-    tenantDashboard(id: string) { return m.tenantDashboard(id); }
+    instance() {
+      return m.instance();
+    }
+    tenants() {
+      return m.tenants();
+    }
+    tenantDashboard(id: string) {
+      return m.tenantDashboard(id);
+    }
   },
 }));
 
@@ -61,10 +71,13 @@ vi.mock('@/services/tenant.service.js', () => ({
     get: (id: string) => m.get(id),
     create: (input: unknown, actor: string | undefined) => m.create(input, actor),
     update: (id: string, patch: unknown, actor: string | undefined) => m.update(id, patch, actor),
-    suspend: (id: string, reason: string, actor: string | undefined) => m.suspend(id, reason, actor),
+    suspend: (id: string, reason: string, actor: string | undefined) =>
+      m.suspend(id, reason, actor),
     activate: (id: string, actor: string | undefined) => m.activate(id, actor),
-    archive: (id: string, reason: string, actor: string | undefined) => m.archive(id, reason, actor),
-    softDelete: (id: string, reason: string, actor: string | undefined) => m.softDelete(id, reason, actor),
+    archive: (id: string, reason: string, actor: string | undefined) =>
+      m.archive(id, reason, actor),
+    softDelete: (id: string, reason: string, actor: string | undefined) =>
+      m.softDelete(id, reason, actor),
   },
 }));
 
@@ -82,7 +95,9 @@ vi.mock('@/storage/db.js', () => ({
 
 vi.mock('@/services/audit.service.js', () => ({
   AuditLogService: class {
-    append(args: unknown) { return m.auditAppend(args); }
+    append(args: unknown) {
+      return m.auditAppend(args);
+    }
   },
 }));
 
@@ -100,19 +115,30 @@ import { registerTenantsRoutes } from './tenants.js';
 
 import type { AuthContext } from '@/middleware/auth.js';
 
-function buildApp(auth: AuthContext | null = {
-  userId: 'admin-1', email: 'admin@x', role: 'superadmin', tenantId: 'platform',
-} as AuthContext): Hono {
+function buildApp(
+  auth: AuthContext | null = {
+    userId: 'admin-1',
+    email: 'admin@x',
+    role: 'superadmin',
+    tenantId: 'platform',
+  } as AuthContext,
+): Hono {
   const app = new Hono();
   if (auth) {
-    app.use('*', async (c, next) => { c.set('auth', auth); await next(); });
+    app.use('*', async (c, next) => {
+      c.set('auth', auth);
+      await next();
+    });
   }
   registerTenantsRoutes(app);
   return app;
 }
 
 beforeEach(() => {
-  Object.values(m).forEach((fn) => { if (typeof fn === 'function' && 'mockReset' in fn) (fn as { mockReset: () => void }).mockReset(); });
+  Object.values(m).forEach((fn) => {
+    if (typeof fn === 'function' && 'mockReset' in fn)
+      (fn as { mockReset: () => void }).mockReset();
+  });
   m.hashPassword.mockResolvedValue('HASHED-PW');
   m.nanoid.mockReturnValue('user-new-id');
   m.auditAppend.mockResolvedValue(undefined);
@@ -169,12 +195,25 @@ describe('GET /admin/tenants', () => {
   });
 
   it('include=stats → merge stats per tenantId', async () => {
-    m.list.mockReturnValue({ tenants: [{ id: 't1', plan: 'pro' }, { id: 't2', plan: 'free' }], total: 2 });
+    m.list.mockReturnValue({
+      tenants: [
+        { id: 't1', plan: 'pro' },
+        { id: 't2', plan: 'free' },
+      ],
+      total: 2,
+    });
     m.tenants.mockReturnValue([
-      { tenantId: 't1', userCount: 5, workflowCount: 3, activeWorkflows: 2, runsLast24h: 10, errorsLast24h: 0 },
+      {
+        tenantId: 't1',
+        userCount: 5,
+        workflowCount: 3,
+        activeWorkflows: 2,
+        runsLast24h: 10,
+        errorsLast24h: 0,
+      },
     ]);
     const res = await buildApp().request('/admin/tenants?include=stats');
-    const body = await res.json() as { tenants: { id: string; stats: unknown }[] };
+    const body = (await res.json()) as { tenants: { id: string; stats: unknown }[] };
     expect(body.tenants[0]!.stats).toMatchObject({ userCount: 5, runsLast24h: 10 });
     expect(body.tenants[1]!.stats).toBeNull(); // tenant senza stats
   });
@@ -189,14 +228,18 @@ describe('GET /admin/tenants/:tenantId', () => {
   });
 
   it('TenantNotFoundError → 404 con error message', async () => {
-    m.get.mockImplementation(() => { throw new TenantNotFoundError('Tenant non trovato: "missing"'); });
+    m.get.mockImplementation(() => {
+      throw new TenantNotFoundError('Tenant non trovato: "missing"');
+    });
     const res = await buildApp().request('/admin/tenants/missing');
     expect(res.status).toBe(404);
-    expect((await res.json() as { error: string }).error).toContain('non trovato');
+    expect(((await res.json()) as { error: string }).error).toContain('non trovato');
   });
 
   it('errore inatteso rilanciato (NON 404)', async () => {
-    m.get.mockImplementation(() => { throw new Error('db down'); });
+    m.get.mockImplementation(() => {
+      throw new Error('db down');
+    });
     const res = await buildApp().request('/admin/tenants/t1');
     expect(res.status).toBe(500);
   });
@@ -207,14 +250,16 @@ describe('GET /admin/tenants/:tenantId/dashboard', () => {
     m.get.mockReturnValue({ id: 't1' });
     m.tenantDashboard.mockReturnValue({ workflows: 5, runsLast24h: 0 });
     const res = await buildApp().request('/admin/tenants/t1/dashboard');
-    const body = await res.json() as Record<string, unknown>;
+    const body = (await res.json()) as Record<string, unknown>;
     expect(body.tenantId).toBe('t1');
     expect(body.tenant).toEqual({ id: 't1' });
     expect(body.workflows).toBe(5);
   });
 
   it('404 se tenant non esiste', async () => {
-    m.get.mockImplementation(() => { throw new TenantNotFoundError('nope'); });
+    m.get.mockImplementation(() => {
+      throw new TenantNotFoundError('nope');
+    });
     const res = await buildApp().request('/admin/tenants/nope/dashboard');
     expect(res.status).toBe(404);
   });
@@ -236,7 +281,11 @@ describe('POST /admin/tenants — provision atomic + audit', () => {
       body: JSON.stringify(validBody),
     });
     expect(res.status).toBe(201);
-    const body = await res.json() as { ok: boolean; tenant: { plan: string }; owner: { email: string; displayName: string } };
+    const body = (await res.json()) as {
+      ok: boolean;
+      tenant: { plan: string };
+      owner: { email: string; displayName: string };
+    };
     expect(body.ok).toBe(true);
     expect(body.tenant.plan).toBe('enterprise');
     expect(body.owner.email).toBe('owner@acme.com');
@@ -304,20 +353,24 @@ describe('POST /admin/tenants — provision atomic + audit', () => {
   });
 
   it('TenantSlugConflictError → 409', async () => {
-    m.create.mockImplementation(() => { throw new TenantSlugConflictError('Slug "acme-corp" già in uso'); });
+    m.create.mockImplementation(() => {
+      throw new TenantSlugConflictError('Slug "acme-corp" già in uso');
+    });
     const res = await buildApp().request('/admin/tenants', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(validBody),
     });
     expect(res.status).toBe(409);
-    expect((await res.json() as { error: string }).error).toContain('già in uso');
+    expect(((await res.json()) as { error: string }).error).toContain('già in uso');
     // 🚨 audit NON emesso (transazione fallita)
     expect(m.auditAppend).not.toHaveBeenCalled();
   });
 
   it('errore generico in txn → 500 + NO audit (rollback)', async () => {
-    m.create.mockImplementation(() => { throw new Error('db error'); });
+    m.create.mockImplementation(() => {
+      throw new Error('db error');
+    });
     const res = await buildApp().request('/admin/tenants', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -344,7 +397,9 @@ describe('POST /admin/tenants — provision atomic + audit', () => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ ...validBody, displayName: 'ACME Corp Ltd' }),
     });
-    expect((m.create.mock.calls[0]![0] as { displayName: string }).displayName).toBe('ACME Corp Ltd');
+    expect((m.create.mock.calls[0]![0] as { displayName: string }).displayName).toBe(
+      'ACME Corp Ltd',
+    );
   });
 
   it('campi opzionali undefined NON inviati (spread condizionale)', async () => {
@@ -411,7 +466,9 @@ describe('PATCH /admin/tenants/:tenantId', () => {
   });
 
   it('404 TenantNotFoundError', async () => {
-    m.update.mockImplementation(() => { throw new TenantNotFoundError('Tenant non trovato'); });
+    m.update.mockImplementation(() => {
+      throw new TenantNotFoundError('Tenant non trovato');
+    });
     const res = await buildApp().request('/admin/tenants/missing', {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
@@ -462,7 +519,9 @@ describe('POST /admin/tenants/:tenantId/suspend', () => {
   });
 
   it('404 quando tenant non esiste', async () => {
-    m.suspend.mockImplementation(() => { throw new TenantNotFoundError('nope'); });
+    m.suspend.mockImplementation(() => {
+      throw new TenantNotFoundError('nope');
+    });
     const res = await buildApp().request('/admin/tenants/nope/suspend', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -481,7 +540,9 @@ describe('POST /admin/tenants/:tenantId/activate', () => {
   });
 
   it('404 TenantNotFoundError', async () => {
-    m.activate.mockImplementation(() => { throw new TenantNotFoundError('nope'); });
+    m.activate.mockImplementation(() => {
+      throw new TenantNotFoundError('nope');
+    });
     const res = await buildApp().request('/admin/tenants/nope/activate', { method: 'POST' });
     expect(res.status).toBe(404);
   });
@@ -503,7 +564,9 @@ describe('POST /admin/tenants/:tenantId/archive', () => {
 
   it('🚨 reason mancante → 400 (obbligatorio) e service NON chiamato', async () => {
     const res = await buildApp().request('/admin/tenants/t1/archive', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({}),
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({}),
     });
     expect(res.status).toBe(400);
     expect(m.archive).not.toHaveBeenCalled();
@@ -516,7 +579,9 @@ describe('POST /admin/tenants/:tenantId/archive', () => {
   });
 
   it('404', async () => {
-    m.archive.mockImplementation(() => { throw new TenantNotFoundError('x'); });
+    m.archive.mockImplementation(() => {
+      throw new TenantNotFoundError('x');
+    });
     const res = await buildApp().request('/admin/tenants/x/archive', withReason());
     expect(res.status).toBe(404);
   });
@@ -539,7 +604,9 @@ describe('DELETE /admin/tenants/:tenantId — soft delete + protezione "default"
 
   it('🚨 reason mancante → 400 e service NON chiamato', async () => {
     const res = await buildApp().request('/admin/tenants/t1', {
-      method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({}),
+      method: 'DELETE',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({}),
     });
     expect(res.status).toBe(400);
     expect(m.softDelete).not.toHaveBeenCalled();
@@ -548,18 +615,22 @@ describe('DELETE /admin/tenants/:tenantId — soft delete + protezione "default"
   it('🚨 tenant "default" → 400 non eliminabile (sistema) — anche con reason valida', async () => {
     const res = await buildApp().request('/admin/tenants/default', withReason());
     expect(res.status).toBe(400);
-    expect((await res.json() as { error: string }).error).toContain('sistema');
+    expect(((await res.json()) as { error: string }).error).toContain('sistema');
     expect(m.softDelete).not.toHaveBeenCalled();
   });
 
   it('404 TenantNotFoundError', async () => {
-    m.softDelete.mockImplementation(() => { throw new TenantNotFoundError('nope'); });
+    m.softDelete.mockImplementation(() => {
+      throw new TenantNotFoundError('nope');
+    });
     const res = await buildApp().request('/admin/tenants/nope', withReason());
     expect(res.status).toBe(404);
   });
 
   it('errore generico rilanciato', async () => {
-    m.softDelete.mockImplementation(() => { throw new Error('db lock'); });
+    m.softDelete.mockImplementation(() => {
+      throw new Error('db lock');
+    });
     const res = await buildApp().request('/admin/tenants/t1', withReason());
     expect(res.status).toBe(500);
   });

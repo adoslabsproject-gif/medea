@@ -14,20 +14,19 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import SqliteDatabase from 'better-sqlite3';
-import {
-  SqliteHandle,
-  rewritePlaceholders,
-  translateDdl,
-} from './handle.js';
+import { SqliteHandle, rewritePlaceholders, translateDdl } from './handle.js';
 
 describe('🚨 rewritePlaceholders — ? → $N per Postgres', () => {
   it('🚨 single placeholder → $1', () => {
-    expect(rewritePlaceholders('SELECT * FROM t WHERE id = ?')).toBe('SELECT * FROM t WHERE id = $1');
+    expect(rewritePlaceholders('SELECT * FROM t WHERE id = ?')).toBe(
+      'SELECT * FROM t WHERE id = $1',
+    );
   });
 
   it('🚨 multiple placeholders → $1, $2, $3 in ordine', () => {
-    expect(rewritePlaceholders('INSERT INTO t (a, b, c) VALUES (?, ?, ?)'))
-      .toBe('INSERT INTO t (a, b, c) VALUES ($1, $2, $3)');
+    expect(rewritePlaceholders('INSERT INTO t (a, b, c) VALUES (?, ?, ?)')).toBe(
+      'INSERT INTO t (a, b, c) VALUES ($1, $2, $3)',
+    );
   });
 
   it('🚨 NO placeholder → SQL invariato', () => {
@@ -36,29 +35,34 @@ describe('🚨 rewritePlaceholders — ? → $N per Postgres', () => {
   });
 
   it('🚨 SECURITY: ? dentro stringa singola → NON rewritten', () => {
-    expect(rewritePlaceholders("SELECT * FROM t WHERE name = 'what?' AND id = ?"))
-      .toBe("SELECT * FROM t WHERE name = 'what?' AND id = $1");
+    expect(rewritePlaceholders("SELECT * FROM t WHERE name = 'what?' AND id = ?")).toBe(
+      "SELECT * FROM t WHERE name = 'what?' AND id = $1",
+    );
   });
 
   it('🚨 SECURITY: ? dentro stringa doppia → NON rewritten', () => {
-    expect(rewritePlaceholders('SELECT * FROM t WHERE col = "what?" AND id = ?'))
-      .toBe('SELECT * FROM t WHERE col = "what?" AND id = $1');
+    expect(rewritePlaceholders('SELECT * FROM t WHERE col = "what?" AND id = ?')).toBe(
+      'SELECT * FROM t WHERE col = "what?" AND id = $1',
+    );
   });
 
   it('🚨 SECURITY: ? dentro stringa multipla → tutti skip', () => {
-    expect(rewritePlaceholders("SELECT '?' AS x, '?' AS y, ? AS z"))
-      .toBe("SELECT '?' AS x, '?' AS y, $1 AS z");
+    expect(rewritePlaceholders("SELECT '?' AS x, '?' AS y, ? AS z")).toBe(
+      "SELECT '?' AS x, '?' AS y, $1 AS z",
+    );
   });
 
-  it('🚨 quote misti: \'a"b\' → la doppia non chiude (siamo in singola)', () => {
-    expect(rewritePlaceholders("SELECT 'foo\"bar?' AS x WHERE id = ?"))
-      .toBe("SELECT 'foo\"bar?' AS x WHERE id = $1");
+  it("🚨 quote misti: 'a\"b' → la doppia non chiude (siamo in singola)", () => {
+    expect(rewritePlaceholders("SELECT 'foo\"bar?' AS x WHERE id = ?")).toBe(
+      "SELECT 'foo\"bar?' AS x WHERE id = $1",
+    );
   });
 
   it('🚨 string non chiusa → tutto resto dentro (no rewrite)', () => {
     // SQL malformato ma il rewriter non deve crashare
-    expect(rewritePlaceholders("SELECT 'unclosed... ? still in string"))
-      .toBe("SELECT 'unclosed... ? still in string");
+    expect(rewritePlaceholders("SELECT 'unclosed... ? still in string")).toBe(
+      "SELECT 'unclosed... ? still in string",
+    );
   });
 
   it('🚨 numero alto placeholders ($10, $11, ...)', () => {
@@ -76,13 +80,11 @@ describe('🚨 rewritePlaceholders — ? → $N per Postgres', () => {
 
 describe('🚨 translateDdl — SQLite → Postgres', () => {
   it('🚨 INTEGER PRIMARY KEY AUTOINCREMENT → BIGSERIAL PRIMARY KEY', () => {
-    expect(translateDdl('id INTEGER PRIMARY KEY AUTOINCREMENT'))
-      .toBe('id BIGSERIAL PRIMARY KEY');
+    expect(translateDdl('id INTEGER PRIMARY KEY AUTOINCREMENT')).toBe('id BIGSERIAL PRIMARY KEY');
   });
 
   it('🚨 case-insensitive AUTOINCREMENT', () => {
-    expect(translateDdl('id integer primary key autoincrement'))
-      .toBe('id BIGSERIAL PRIMARY KEY');
+    expect(translateDdl('id integer primary key autoincrement')).toBe('id BIGSERIAL PRIMARY KEY');
   });
 
   it('🚨 BLOB → BYTEA (word boundary)', () => {
@@ -154,7 +156,7 @@ describe('🚨 SqliteHandle — async wrapper API', () => {
 
   it('🚨 exec → Promise<void>', async () => {
     await expect(handle.exec('CREATE TABLE x (id INTEGER)')).resolves.toBeUndefined();
-    const cols = conn.prepare("PRAGMA table_info(x)").all() as { name: string }[];
+    const cols = conn.prepare('PRAGMA table_info(x)').all() as { name: string }[];
     expect(cols).toHaveLength(1);
   });
 
@@ -181,7 +183,7 @@ describe('🚨 SqliteHandle — async wrapper API', () => {
     await handle.prepare('INSERT INTO t (v) VALUES (?)').run('c');
     const rows = await handle.prepare<{ v: string }>('SELECT v FROM t ORDER BY id').all();
     expect(rows).toHaveLength(3);
-    expect(rows.map(r => r.v)).toEqual(['a', 'b', 'c']);
+    expect(rows.map((r) => r.v)).toEqual(['a', 'b', 'c']);
   });
 
   it('🚨 prepare riusabile (multiple .run on same statement)', async () => {

@@ -34,10 +34,14 @@ describe('loadAdmissionConfig — flag enabled', () => {
 describe('loadAdmissionConfig — override validi', () => {
   it('valori interi positivi sovrascrivono i default', () => {
     const c = loadAdmissionConfig({
-      LIARA_ADMISSION_MAX_VLLM: '8', LIARA_ADMISSION_MAX_EXTERNAL: '40',
-      LIARA_ADMISSION_LEASE_MS: '60000', LIARA_ADMISSION_POLL_MS: '500',
-      LIARA_ADMISSION_MAX_QUEUE: '100', LIARA_ADMISSION_MAX_PER_TENANT: '3',
-      LIARA_ADMISSION_MAX_WAIT_MS: '30000', LIARA_ADMISSION_HEARTBEAT_MS: '15000',
+      LIARA_ADMISSION_MAX_VLLM: '8',
+      LIARA_ADMISSION_MAX_EXTERNAL: '40',
+      LIARA_ADMISSION_LEASE_MS: '60000',
+      LIARA_ADMISSION_POLL_MS: '500',
+      LIARA_ADMISSION_MAX_QUEUE: '100',
+      LIARA_ADMISSION_MAX_PER_TENANT: '3',
+      LIARA_ADMISSION_MAX_WAIT_MS: '30000',
+      LIARA_ADMISSION_HEARTBEAT_MS: '15000',
     });
     expect(c.maxConcurrent).toEqual({ vllm: 8, external: 40 });
     expect(c.leaseMs).toBe(60_000);

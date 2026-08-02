@@ -62,7 +62,10 @@ export async function generateEmbedding(text: string): Promise<number[] | null> 
       return data.embedding;
     });
   } catch (err) {
-    logger.debug({ err: err instanceof Error ? err.message : String(err) }, '[template-cache embedding] failed (graceful)');
+    logger.debug(
+      { err: err instanceof Error ? err.message : String(err) },
+      '[template-cache embedding] failed (graceful)',
+    );
     return null;
   }
 }

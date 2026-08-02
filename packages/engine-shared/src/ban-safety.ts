@@ -28,12 +28,7 @@
  * Fonte: https://www.cloudflare.com/ips-v4 + /ips-v6
  */
 
-import {
-  normalizeIp,
-  ipToNumber,
-  isPrivateOrReserved,
-  precomputeRanges,
-} from './ip-utils.js';
+import { normalizeIp, ipToNumber, isPrivateOrReserved, precomputeRanges } from './ip-utils.js';
 
 /** Cloudflare IPv4 published ranges (cloudflare.com/ips-v4). */
 export const CLOUDFLARE_V4: readonly string[] = Object.freeze([
@@ -76,11 +71,7 @@ export const ZELI_INFRA_CIDRS: readonly string[] = Object.freeze([
 ]);
 
 /** Motivo per cui un IP NON è bannabile. `null` = bannabile (client reale). */
-export type BanUnsafeReason =
-  | 'unparseable'
-  | 'private_reserved'
-  | 'cloudflare'
-  | 'infrastructure';
+export type BanUnsafeReason = 'unparseable' | 'private_reserved' | 'cloudflare' | 'infrastructure';
 
 export interface BanSafetyResult {
   /** true ⇒ è un client esterno reale, si può bannare. */
@@ -97,7 +88,10 @@ const _zeliInfra = precomputeRanges(ZELI_INFRA_CIDRS);
 
 function inRanges(
   ip: string,
-  ranges: { rangesV4: readonly { start: bigint; end: bigint }[]; rangesV6: readonly { start: bigint; end: bigint }[] },
+  ranges: {
+    rangesV4: readonly { start: bigint; end: bigint }[];
+    rangesV6: readonly { start: bigint; end: bigint }[];
+  },
 ): boolean {
   const ipNum = ipToNumber(ip);
   if (ipNum === null) return false;
@@ -151,9 +145,6 @@ export function classifyBanSafety(
 /**
  * Shortcut booleano: true ⇒ si può bannare (client esterno reale).
  */
-export function isBanSafe(
-  rawIp: string,
-  extraProtectedCidrs: readonly string[] = [],
-): boolean {
+export function isBanSafe(rawIp: string, extraProtectedCidrs: readonly string[] = []): boolean {
   return classifyBanSafety(rawIp, extraProtectedCidrs).safe;
 }

@@ -126,7 +126,9 @@ describe('generateAuthorizeUrl — URL contruction', () => {
 
   it('scopes custom override default', () => {
     const url = generateAuthorizeUrl({
-      client, redirectUri: 'cb', state: 's',
+      client,
+      redirectUri: 'cb',
+      state: 's',
       scopes: ['openid', 'email'],
     });
     expect(new URL(url).searchParams.get('scope')).toBe('openid email');
@@ -134,7 +136,10 @@ describe('generateAuthorizeUrl — URL contruction', () => {
 
   it('loginHint presente → param login_hint settato', () => {
     const url = generateAuthorizeUrl({
-      client, redirectUri: 'cb', state: 's', loginHint: 'user@example.com',
+      client,
+      redirectUri: 'cb',
+      state: 's',
+      loginHint: 'user@example.com',
     });
     expect(new URL(url).searchParams.get('login_hint')).toBe('user@example.com');
   });
@@ -147,18 +152,22 @@ describe('generateAuthorizeUrl — URL contruction', () => {
 
 describe('exchangeCodeForTokens — success path', () => {
   const client: GoogleOAuthClient = {
-    clientId: 'cid', clientSecret: 'sec', defaultRedirectUri: undefined,
+    clientId: 'cid',
+    clientSecret: 'sec',
+    defaultRedirectUri: undefined,
   };
 
   it('success: ritorna credentials con userEmail + expiresAt corretto', async () => {
     safeFetchMock
-      .mockResolvedValueOnce(jsonRes({
-        access_token: 'AT-123',
-        refresh_token: 'RT-456',
-        expires_in: 3600,
-        scope: 'openid email',
-        token_type: 'Bearer',
-      }))
+      .mockResolvedValueOnce(
+        jsonRes({
+          access_token: 'AT-123',
+          refresh_token: 'RT-456',
+          expires_in: 3600,
+          scope: 'openid email',
+          token_type: 'Bearer',
+        }),
+      )
       .mockResolvedValueOnce(jsonRes({ email: 'alice@example.com' }));
 
     const before = Date.now();
@@ -179,9 +188,15 @@ describe('exchangeCodeForTokens — success path', () => {
 
   it('token endpoint chiamato con form body corretto', async () => {
     safeFetchMock
-      .mockResolvedValueOnce(jsonRes({
-        access_token: 'AT', refresh_token: 'RT', expires_in: 60, scope: '', token_type: 'Bearer',
-      }))
+      .mockResolvedValueOnce(
+        jsonRes({
+          access_token: 'AT',
+          refresh_token: 'RT',
+          expires_in: 60,
+          scope: '',
+          token_type: 'Bearer',
+        }),
+      )
       .mockResolvedValueOnce(jsonRes({}));
 
     await exchangeCodeForTokens({ client, code: 'CODE-X', redirectUri: 'http://cb' });
@@ -196,15 +211,21 @@ describe('exchangeCodeForTokens — success path', () => {
   });
 
   it('refresh_token assente nel response → IntegrationError OAUTH_NO_REFRESH_TOKEN', async () => {
-    safeFetchMock.mockResolvedValueOnce(jsonRes({
-      access_token: 'AT', expires_in: 60, scope: '', token_type: 'Bearer',
-      // NO refresh_token
-    }));
-    await expect(exchangeCodeForTokens({ client, code: 'C', redirectUri: 'cb' }))
-      .rejects.toMatchObject({
-        code: 'OAUTH_NO_REFRESH_TOKEN',
-        provider: 'gmail',
-      });
+    safeFetchMock.mockResolvedValueOnce(
+      jsonRes({
+        access_token: 'AT',
+        expires_in: 60,
+        scope: '',
+        token_type: 'Bearer',
+        // NO refresh_token
+      }),
+    );
+    await expect(
+      exchangeCodeForTokens({ client, code: 'C', redirectUri: 'cb' }),
+    ).rejects.toMatchObject({
+      code: 'OAUTH_NO_REFRESH_TOKEN',
+      provider: 'gmail',
+    });
   });
 
   it('HTTP 400 da token endpoint → IntegrationError con status preservato', async () => {
@@ -213,18 +234,25 @@ describe('exchangeCodeForTokens — success path', () => {
       status: 400,
       text: async () => '{"error":"invalid_grant"}',
     });
-    await expect(exchangeCodeForTokens({ client, code: 'BAD', redirectUri: 'cb' }))
-      .rejects.toMatchObject({
-        code: 'OAUTH_EXCHANGE_FAILED',
-        httpStatus: 400,
-      });
+    await expect(
+      exchangeCodeForTokens({ client, code: 'BAD', redirectUri: 'cb' }),
+    ).rejects.toMatchObject({
+      code: 'OAUTH_EXCHANGE_FAILED',
+      httpStatus: 400,
+    });
   });
 
   it('userinfo fetch fail → userEmail stringa vuota (graceful)', async () => {
     safeFetchMock
-      .mockResolvedValueOnce(jsonRes({
-        access_token: 'AT', refresh_token: 'RT', expires_in: 60, scope: '', token_type: 'Bearer',
-      }))
+      .mockResolvedValueOnce(
+        jsonRes({
+          access_token: 'AT',
+          refresh_token: 'RT',
+          expires_in: 60,
+          scope: '',
+          token_type: 'Bearer',
+        }),
+      )
       .mockResolvedValueOnce({ ok: false, status: 500 } as unknown as Response);
 
     const { credentials } = await exchangeCodeForTokens({ client, code: 'C', redirectUri: 'cb' });
@@ -234,7 +262,9 @@ describe('exchangeCodeForTokens — success path', () => {
 
 describe('ensureFreshGoogleAccessToken — refresh logic', () => {
   const oauth: GoogleOAuthClient = {
-    clientId: 'cid', clientSecret: 'sec', defaultRedirectUri: undefined,
+    clientId: 'cid',
+    clientSecret: 'sec',
+    defaultRedirectUri: undefined,
   };
   const baseCreds: GoogleOAuthCredentials = {
     accessToken: 'OLD-AT',
@@ -247,7 +277,8 @@ describe('ensureFreshGoogleAccessToken — refresh logic', () => {
   it('expiresAt > REFRESH_MARGIN_MS dal now → ritorna accessToken cached, NO fetch', async () => {
     const futureExpiry = Date.now() + 10 * 60 * 1000; // 10min nel futuro
     const token = await ensureFreshGoogleAccessToken({
-      integrationId: 'int-1', tenantId: 't-1',
+      integrationId: 'int-1',
+      tenantId: 't-1',
       creds: baseCreds,
       expiresAt: futureExpiry,
       oauth,
@@ -258,46 +289,65 @@ describe('ensureFreshGoogleAccessToken — refresh logic', () => {
   });
 
   it('expiresAt scaduto → refresh + persist nuovo access_token', async () => {
-    safeFetchMock.mockResolvedValueOnce(jsonRes({
-      access_token: 'NEW-AT',
-      expires_in: 3600,
-      scope: 'openid email',
-      token_type: 'Bearer',
-    }));
+    safeFetchMock.mockResolvedValueOnce(
+      jsonRes({
+        access_token: 'NEW-AT',
+        expires_in: 3600,
+        scope: 'openid email',
+        token_type: 'Bearer',
+      }),
+    );
     const expiredAt = Date.now() - 1000;
     const token = await ensureFreshGoogleAccessToken({
-      integrationId: 'int-2', tenantId: 't-2',
-      creds: baseCreds, expiresAt: expiredAt, oauth,
+      integrationId: 'int-2',
+      tenantId: 't-2',
+      creds: baseCreds,
+      expiresAt: expiredAt,
+      oauth,
     });
     expect(token).toBe('NEW-AT');
     expect(updateIntegrationCredentialsMock).toHaveBeenCalledTimes(1);
-    const persistArg = updateIntegrationCredentialsMock.mock.calls[0]![0] as { credentials: GoogleOAuthCredentials };
+    const persistArg = updateIntegrationCredentialsMock.mock.calls[0]![0] as {
+      credentials: GoogleOAuthCredentials;
+    };
     expect(persistArg.credentials.accessToken).toBe('NEW-AT');
     expect(persistArg.credentials.refreshToken).toBe('RT-stable'); // refresh non rotato
   });
 
   it('expiresAt nullo → refresh sempre', async () => {
-    safeFetchMock.mockResolvedValueOnce(jsonRes({ access_token: 'AT', expires_in: 60, scope: '', token_type: 'Bearer' }));
+    safeFetchMock.mockResolvedValueOnce(
+      jsonRes({ access_token: 'AT', expires_in: 60, scope: '', token_type: 'Bearer' }),
+    );
     await ensureFreshGoogleAccessToken({
-      integrationId: 'int-null', tenantId: 't',
-      creds: baseCreds, expiresAt: null, oauth,
+      integrationId: 'int-null',
+      tenantId: 't',
+      creds: baseCreds,
+      expiresAt: null,
+      oauth,
     });
     expect(safeFetchMock).toHaveBeenCalled();
   });
 
   it('refresh_token rotato dal server → persist nuovo refresh_token', async () => {
-    safeFetchMock.mockResolvedValueOnce(jsonRes({
-      access_token: 'NEW-AT',
-      refresh_token: 'NEW-RT', // rotated
-      expires_in: 3600,
-      scope: '',
-      token_type: 'Bearer',
-    }));
+    safeFetchMock.mockResolvedValueOnce(
+      jsonRes({
+        access_token: 'NEW-AT',
+        refresh_token: 'NEW-RT', // rotated
+        expires_in: 3600,
+        scope: '',
+        token_type: 'Bearer',
+      }),
+    );
     await ensureFreshGoogleAccessToken({
-      integrationId: 'int-rot', tenantId: 't',
-      creds: baseCreds, expiresAt: 0, oauth,
+      integrationId: 'int-rot',
+      tenantId: 't',
+      creds: baseCreds,
+      expiresAt: 0,
+      oauth,
     });
-    const persistArg = updateIntegrationCredentialsMock.mock.calls[0]![0] as { credentials: GoogleOAuthCredentials };
+    const persistArg = updateIntegrationCredentialsMock.mock.calls[0]![0] as {
+      credentials: GoogleOAuthCredentials;
+    };
     expect(persistArg.credentials.refreshToken).toBe('NEW-RT');
   });
 
@@ -307,10 +357,15 @@ describe('ensureFreshGoogleAccessToken — refresh logic', () => {
       status: 401,
       text: async () => 'invalid_grant',
     });
-    await expect(ensureFreshGoogleAccessToken({
-      integrationId: 'int-rev', tenantId: 't',
-      creds: baseCreds, expiresAt: 0, oauth,
-    })).rejects.toMatchObject({
+    await expect(
+      ensureFreshGoogleAccessToken({
+        integrationId: 'int-rev',
+        tenantId: 't',
+        creds: baseCreds,
+        expiresAt: 0,
+        oauth,
+      }),
+    ).rejects.toMatchObject({
       code: 'OAUTH_REFRESH_FAILED',
       httpStatus: 401,
     });
@@ -319,18 +374,26 @@ describe('ensureFreshGoogleAccessToken — refresh logic', () => {
 
   it('🚨 concurrent refresh: 2 chiamate parallele → 1 sola fetch (mutex)', async () => {
     let resolveTokenCall: ((res: unknown) => void) | null = null;
-    safeFetchMock.mockReturnValueOnce(new Promise((r) => {
-      resolveTokenCall = r;
-    }));
+    safeFetchMock.mockReturnValueOnce(
+      new Promise((r) => {
+        resolveTokenCall = r;
+      }),
+    );
 
     // Start 2 refresh parallels — devono condividere lo stesso Promise
     const p1 = ensureFreshGoogleAccessToken({
-      integrationId: 'int-mtx', tenantId: 't-mtx',
-      creds: baseCreds, expiresAt: 0, oauth,
+      integrationId: 'int-mtx',
+      tenantId: 't-mtx',
+      creds: baseCreds,
+      expiresAt: 0,
+      oauth,
     });
     const p2 = ensureFreshGoogleAccessToken({
-      integrationId: 'int-mtx', tenantId: 't-mtx',
-      creds: baseCreds, expiresAt: 0, oauth,
+      integrationId: 'int-mtx',
+      tenantId: 't-mtx',
+      creds: baseCreds,
+      expiresAt: 0,
+      oauth,
     });
 
     // Allow microtask flushing — il secondo chiamante deve ricevere il lock esistente
@@ -338,7 +401,9 @@ describe('ensureFreshGoogleAccessToken — refresh logic', () => {
 
     expect(safeFetchMock).toHaveBeenCalledTimes(1); // mutex efficacie
 
-    resolveTokenCall!(jsonRes({ access_token: 'AT-shared', expires_in: 60, scope: '', token_type: 'Bearer' }));
+    resolveTokenCall!(
+      jsonRes({ access_token: 'AT-shared', expires_in: 60, scope: '', token_type: 'Bearer' }),
+    );
 
     const [t1, t2] = await Promise.all([p1, p2]);
     expect(t1).toBe('AT-shared');
@@ -347,33 +412,77 @@ describe('ensureFreshGoogleAccessToken — refresh logic', () => {
   });
 
   it('refresh per integration DIVERSE (lockKey diverso) → 2 fetch parallele', async () => {
-    safeFetchMock.mockResolvedValue(jsonRes({ access_token: 'AT-x', expires_in: 60, scope: '', token_type: 'Bearer' }));
+    safeFetchMock.mockResolvedValue(
+      jsonRes({ access_token: 'AT-x', expires_in: 60, scope: '', token_type: 'Bearer' }),
+    );
     await Promise.all([
-      ensureFreshGoogleAccessToken({ integrationId: 'A', tenantId: 't', creds: baseCreds, expiresAt: 0, oauth }),
-      ensureFreshGoogleAccessToken({ integrationId: 'B', tenantId: 't', creds: baseCreds, expiresAt: 0, oauth }),
+      ensureFreshGoogleAccessToken({
+        integrationId: 'A',
+        tenantId: 't',
+        creds: baseCreds,
+        expiresAt: 0,
+        oauth,
+      }),
+      ensureFreshGoogleAccessToken({
+        integrationId: 'B',
+        tenantId: 't',
+        creds: baseCreds,
+        expiresAt: 0,
+        oauth,
+      }),
     ]);
     expect(safeFetchMock).toHaveBeenCalledTimes(2); // lock keys diversi
   });
 
   it('lock rilasciato dopo successo: refresh successivo → nuovo fetch', async () => {
-    safeFetchMock.mockResolvedValue(jsonRes({ access_token: 'AT', expires_in: 60, scope: '', token_type: 'Bearer' }));
-    await ensureFreshGoogleAccessToken({ integrationId: 'X', tenantId: 't', creds: baseCreds, expiresAt: 0, oauth });
-    await ensureFreshGoogleAccessToken({ integrationId: 'X', tenantId: 't', creds: baseCreds, expiresAt: 0, oauth });
+    safeFetchMock.mockResolvedValue(
+      jsonRes({ access_token: 'AT', expires_in: 60, scope: '', token_type: 'Bearer' }),
+    );
+    await ensureFreshGoogleAccessToken({
+      integrationId: 'X',
+      tenantId: 't',
+      creds: baseCreds,
+      expiresAt: 0,
+      oauth,
+    });
+    await ensureFreshGoogleAccessToken({
+      integrationId: 'X',
+      tenantId: 't',
+      creds: baseCreds,
+      expiresAt: 0,
+      oauth,
+    });
     expect(safeFetchMock).toHaveBeenCalledTimes(2); // primo + secondo dopo lock release
   });
 
   it('lock rilasciato anche dopo errore (try/finally) → retry possibile', async () => {
     safeFetchMock
-      .mockResolvedValueOnce({ ok: false, status: 500, text: async (): Promise<string> => 'err' } as unknown as Response)
-      .mockResolvedValueOnce(jsonRes({ access_token: 'AT-retry', expires_in: 60, scope: '', token_type: 'Bearer' }));
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async (): Promise<string> => 'err',
+      } as unknown as Response)
+      .mockResolvedValueOnce(
+        jsonRes({ access_token: 'AT-retry', expires_in: 60, scope: '', token_type: 'Bearer' }),
+      );
 
-    await expect(ensureFreshGoogleAccessToken({
-      integrationId: 'Y', tenantId: 't', creds: baseCreds, expiresAt: 0, oauth,
-    })).rejects.toThrow();
+    await expect(
+      ensureFreshGoogleAccessToken({
+        integrationId: 'Y',
+        tenantId: 't',
+        creds: baseCreds,
+        expiresAt: 0,
+        oauth,
+      }),
+    ).rejects.toThrow();
 
     // Lock deve essere rilasciato → retry funziona
     const token = await ensureFreshGoogleAccessToken({
-      integrationId: 'Y', tenantId: 't', creds: baseCreds, expiresAt: 0, oauth,
+      integrationId: 'Y',
+      tenantId: 't',
+      creds: baseCreds,
+      expiresAt: 0,
+      oauth,
     });
     expect(token).toBe('AT-retry');
   });

@@ -18,9 +18,15 @@ import type { IPauseHandler, PauseArgs } from '@/engine/ports.js';
 
 function makeWorkflow(partial: Partial<Workflow>): Workflow {
   return {
-    schemaVersion: '1.0.0', id: 'wf-test', name: 'Test', enabled: true,
-    nodes: [], edges: [], nodeDefs: [],
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    schemaVersion: '1.0.0',
+    id: 'wf-test',
+    name: 'Test',
+    enabled: true,
+    nodes: [],
+    edges: [],
+    nodeDefs: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     ...partial,
   };
 }
@@ -28,10 +34,20 @@ function makeWorkflow(partial: Partial<Workflow>): Workflow {
 /** Nodo che lancia LlmQuotaExceededError (forma reale: name + periodEndIso). */
 function quotaNode(periodEndIso: string | null): unknown {
   const err = Object.assign(new Error('Quota token esaurita'), {
-    name: 'LlmQuotaExceededError', periodEndIso, kind: 'token',
+    name: 'LlmQuotaExceededError',
+    periodEndIso,
+    kind: 'token',
   });
   return {
-    def: { id: 'quotanode', label: 'LLM', kind: 'action' as const, category: 'ai', inputs: [], outputs: [], configSchema: {} as never },
+    def: {
+      id: 'quotanode',
+      label: 'LLM',
+      kind: 'action' as const,
+      category: 'ai',
+      inputs: [],
+      outputs: [],
+      configSchema: {} as never,
+    },
     executor: vi.fn().mockRejectedValue(err),
   };
 }
@@ -39,14 +55,30 @@ function quotaNode(periodEndIso: string | null): unknown {
 /** Nodo che lancia un errore NON-quota (per il caso di controllo). */
 function boomNode(): unknown {
   return {
-    def: { id: 'quotanode', label: 'X', kind: 'action' as const, category: 'ai', inputs: [], outputs: [], configSchema: {} as never },
+    def: {
+      id: 'quotanode',
+      label: 'X',
+      kind: 'action' as const,
+      category: 'ai',
+      inputs: [],
+      outputs: [],
+      configSchema: {} as never,
+    },
     executor: vi.fn().mockRejectedValue(new Error('boom generico')),
   };
 }
 
 function capture(): { handler: IPauseHandler; calls: PauseArgs[] } {
   const calls: PauseArgs[] = [];
-  return { handler: { pause: (a: PauseArgs) => { calls.push(a); return 'paused-id-1'; } }, calls };
+  return {
+    handler: {
+      pause: (a: PauseArgs) => {
+        calls.push(a);
+        return 'paused-id-1';
+      },
+    },
+    calls,
+  };
 }
 
 function wf(): Workflow {
@@ -67,7 +99,8 @@ describe('WorkflowEngine — pausa-su-quota (#2)', () => {
   it('quota esaurita (no BYOK) → run SOSPESO, nodo de-visitato + ri-accodato', async () => {
     const { handler, calls } = capture();
     const engine = new WorkflowEngine(new InMemoryEventBus(), {
-      nodeRegistry: [quotaNode('2026-07-15') as never], pauseHandler: handler,
+      nodeRegistry: [quotaNode('2026-07-15') as never],
+      pauseHandler: handler,
     });
     const r = await engine.run({ workflow: wf(), triggerInput: {} });
 
@@ -88,7 +121,8 @@ describe('WorkflowEngine — pausa-su-quota (#2)', () => {
   it('il downstream NON viene eseguito (run sospeso prima) + step "paused" sul nodo LLM', async () => {
     const { handler } = capture();
     const engine = new WorkflowEngine(new InMemoryEventBus(), {
-      nodeRegistry: [quotaNode('2026-07-15') as never], pauseHandler: handler,
+      nodeRegistry: [quotaNode('2026-07-15') as never],
+      pauseHandler: handler,
     });
     const r = await engine.run({ workflow: wf(), triggerInput: {} });
     expect(r.steps.some((s) => s.nodeId === 'after')).toBe(false);
@@ -99,7 +133,8 @@ describe('WorkflowEngine — pausa-su-quota (#2)', () => {
   it('CONTROLLO: errore NON-quota → run in ERRORE (nessuna pausa)', async () => {
     const { handler, calls } = capture();
     const engine = new WorkflowEngine(new InMemoryEventBus(), {
-      nodeRegistry: [boomNode() as never], pauseHandler: handler,
+      nodeRegistry: [boomNode() as never],
+      pauseHandler: handler,
     });
     const r = await engine.run({ workflow: wf(), triggerInput: {} });
     expect(r.status).not.toBe('paused');
@@ -110,7 +145,8 @@ describe('WorkflowEngine — pausa-su-quota (#2)', () => {
   it('periodEndIso null → pausa con timeout di fallback (>0, ≤24h)', async () => {
     const { handler, calls } = capture();
     const engine = new WorkflowEngine(new InMemoryEventBus(), {
-      nodeRegistry: [quotaNode(null) as never], pauseHandler: handler,
+      nodeRegistry: [quotaNode(null) as never],
+      pauseHandler: handler,
     });
     const r = await engine.run({ workflow: wf(), triggerInput: {} });
     expect(r.status).toBe('paused');

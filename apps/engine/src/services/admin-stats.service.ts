@@ -32,14 +32,37 @@ export class AdminStatsService {
     const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    const tenants = (sqlite.prepare('SELECT COUNT(DISTINCT tenant_id) AS c FROM users').get() as { c: number }).c;
-    const users = (sqlite.prepare('SELECT COUNT(*) AS c FROM users WHERE enabled = 1').get() as { c: number }).c;
-    const workflows = (sqlite.prepare('SELECT COUNT(*) AS c FROM workflows').get() as { c: number }).c;
-    const activeWorkflows = (sqlite.prepare('SELECT COUNT(*) AS c FROM workflows WHERE enabled = 1').get() as { c: number }).c;
-    const runsLast24h = (sqlite.prepare('SELECT COUNT(*) AS c FROM runs WHERE started_at >= ?').get(dayAgo) as { c: number }).c;
-    const runsLast7d = (sqlite.prepare('SELECT COUNT(*) AS c FROM runs WHERE started_at >= ?').get(weekAgo) as { c: number }).c;
-    const errorsLast24h = (sqlite.prepare("SELECT COUNT(*) AS c FROM runs WHERE started_at >= ? AND status = 'error'").get(dayAgo) as { c: number }).c;
-    const successLast7d = (sqlite.prepare("SELECT COUNT(*) AS c FROM runs WHERE started_at >= ? AND status = 'success'").get(weekAgo) as { c: number }).c;
+    const tenants = (
+      sqlite.prepare('SELECT COUNT(DISTINCT tenant_id) AS c FROM users').get() as { c: number }
+    ).c;
+    const users = (
+      sqlite.prepare('SELECT COUNT(*) AS c FROM users WHERE enabled = 1').get() as { c: number }
+    ).c;
+    const workflows = (sqlite.prepare('SELECT COUNT(*) AS c FROM workflows').get() as { c: number })
+      .c;
+    const activeWorkflows = (
+      sqlite.prepare('SELECT COUNT(*) AS c FROM workflows WHERE enabled = 1').get() as { c: number }
+    ).c;
+    const runsLast24h = (
+      sqlite.prepare('SELECT COUNT(*) AS c FROM runs WHERE started_at >= ?').get(dayAgo) as {
+        c: number;
+      }
+    ).c;
+    const runsLast7d = (
+      sqlite.prepare('SELECT COUNT(*) AS c FROM runs WHERE started_at >= ?').get(weekAgo) as {
+        c: number;
+      }
+    ).c;
+    const errorsLast24h = (
+      sqlite
+        .prepare("SELECT COUNT(*) AS c FROM runs WHERE started_at >= ? AND status = 'error'")
+        .get(dayAgo) as { c: number }
+    ).c;
+    const successLast7d = (
+      sqlite
+        .prepare("SELECT COUNT(*) AS c FROM runs WHERE started_at >= ? AND status = 'success'")
+        .get(weekAgo) as { c: number }
+    ).c;
     const successRate7d = runsLast7d > 0 ? (successLast7d / runsLast7d) * 100 : 100;
 
     return {
@@ -57,7 +80,9 @@ export class AdminStatsService {
   tenants(): TenantSummary[] {
     const { sqlite } = getDatabase();
     const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const rows = sqlite.prepare(`
+    const rows = sqlite
+      .prepare(
+        `
       SELECT
         u.tenant_id AS tenantId,
         COUNT(DISTINCT u.id) AS userCount,
@@ -69,7 +94,9 @@ export class AdminStatsService {
       FROM users u
       GROUP BY u.tenant_id
       ORDER BY runsLast24h DESC
-    `).all(dayAgo, dayAgo) as TenantSummary[];
+    `,
+      )
+      .all(dayAgo, dayAgo) as TenantSummary[];
     return rows;
   }
 
@@ -86,40 +113,94 @@ export class AdminStatsService {
     errorsLast7d: number;
     successRate7d: number;
     avgDurationMs7d: number;
-    recentRuns: { id: string; workflowName: string; status: string; startedAt: string; durationMs: number; errorCount: number }[];
+    recentRuns: {
+      id: string;
+      workflowName: string;
+      status: string;
+      startedAt: string;
+      durationMs: number;
+      errorCount: number;
+    }[];
     currentlyRunning: { id: string; workflowName: string; startedAt: string }[];
   } {
     const { sqlite } = getDatabase();
     const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    const workflows = (sqlite.prepare('SELECT COUNT(*) AS c FROM workflows WHERE tenant_id = ?').get(tenantId) as { c: number }).c;
-    const activeWorkflows = (sqlite.prepare('SELECT COUNT(*) AS c FROM workflows WHERE tenant_id = ? AND enabled = 1').get(tenantId) as { c: number }).c;
-    const runsLast24h = (sqlite.prepare('SELECT COUNT(*) AS c FROM runs WHERE tenant_id = ? AND started_at >= ?').get(tenantId, dayAgo) as { c: number }).c;
-    const runsLast7d = (sqlite.prepare('SELECT COUNT(*) AS c FROM runs WHERE tenant_id = ? AND started_at >= ?').get(tenantId, weekAgo) as { c: number }).c;
-    const successLast7d = (sqlite.prepare("SELECT COUNT(*) AS c FROM runs WHERE tenant_id = ? AND started_at >= ? AND status = 'success'").get(tenantId, weekAgo) as { c: number }).c;
-    const errorsLast7d = (sqlite.prepare("SELECT COUNT(*) AS c FROM runs WHERE tenant_id = ? AND started_at >= ? AND status = 'error'").get(tenantId, weekAgo) as { c: number }).c;
+    const workflows = (
+      sqlite.prepare('SELECT COUNT(*) AS c FROM workflows WHERE tenant_id = ?').get(tenantId) as {
+        c: number;
+      }
+    ).c;
+    const activeWorkflows = (
+      sqlite
+        .prepare('SELECT COUNT(*) AS c FROM workflows WHERE tenant_id = ? AND enabled = 1')
+        .get(tenantId) as { c: number }
+    ).c;
+    const runsLast24h = (
+      sqlite
+        .prepare('SELECT COUNT(*) AS c FROM runs WHERE tenant_id = ? AND started_at >= ?')
+        .get(tenantId, dayAgo) as { c: number }
+    ).c;
+    const runsLast7d = (
+      sqlite
+        .prepare('SELECT COUNT(*) AS c FROM runs WHERE tenant_id = ? AND started_at >= ?')
+        .get(tenantId, weekAgo) as { c: number }
+    ).c;
+    const successLast7d = (
+      sqlite
+        .prepare(
+          "SELECT COUNT(*) AS c FROM runs WHERE tenant_id = ? AND started_at >= ? AND status = 'success'",
+        )
+        .get(tenantId, weekAgo) as { c: number }
+    ).c;
+    const errorsLast7d = (
+      sqlite
+        .prepare(
+          "SELECT COUNT(*) AS c FROM runs WHERE tenant_id = ? AND started_at >= ? AND status = 'error'",
+        )
+        .get(tenantId, weekAgo) as { c: number }
+    ).c;
     const successRate7d = runsLast7d > 0 ? (successLast7d / runsLast7d) * 100 : 100;
-    const avgDur = sqlite.prepare("SELECT AVG(total_duration_ms) AS a FROM runs WHERE tenant_id = ? AND started_at >= ? AND status = 'success'").get(tenantId, weekAgo) as { a: number | null };
+    const avgDur = sqlite
+      .prepare(
+        "SELECT AVG(total_duration_ms) AS a FROM runs WHERE tenant_id = ? AND started_at >= ? AND status = 'success'",
+      )
+      .get(tenantId, weekAgo) as { a: number | null };
     const avgDurationMs7d = Math.round(avgDur.a ?? 0);
 
-    const recentRuns = sqlite.prepare(`
+    const recentRuns = sqlite
+      .prepare(
+        `
       SELECT r.id, w.name AS workflowName, r.status, r.started_at AS startedAt, r.total_duration_ms AS durationMs, r.error_count AS errorCount
       FROM runs r
       LEFT JOIN workflows w ON w.id = r.workflow_id
       WHERE r.tenant_id = ?
       ORDER BY r.started_at DESC
       LIMIT 20
-    `).all(tenantId) as { id: string; workflowName: string; status: string; startedAt: string; durationMs: number; errorCount: number }[];
+    `,
+      )
+      .all(tenantId) as {
+      id: string;
+      workflowName: string;
+      status: string;
+      startedAt: string;
+      durationMs: number;
+      errorCount: number;
+    }[];
 
-    const currentlyRunning = sqlite.prepare(`
+    const currentlyRunning = sqlite
+      .prepare(
+        `
       SELECT r.id, w.name AS workflowName, r.started_at AS startedAt
       FROM runs r
       LEFT JOIN workflows w ON w.id = r.workflow_id
       WHERE r.tenant_id = ? AND r.ended_at IS NULL
       ORDER BY r.started_at DESC
       LIMIT 10
-    `).all(tenantId) as { id: string; workflowName: string; startedAt: string }[];
+    `,
+      )
+      .all(tenantId) as { id: string; workflowName: string; startedAt: string }[];
 
     return {
       workflows,

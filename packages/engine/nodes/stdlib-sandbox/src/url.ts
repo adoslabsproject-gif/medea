@@ -26,9 +26,12 @@ export function buildQuery(params: Record<string, unknown>): string {
         if (item !== undefined && item !== null) parts.push(`${enc(k)}=${enc(String(item))}`);
       }
     } else {
-      const vs = typeof v === 'string' ? v
-        : typeof v === 'number' || typeof v === 'boolean' || typeof v === 'bigint' ? String(v)
-        : (JSON.stringify(v) ?? '');
+      const vs =
+        typeof v === 'string'
+          ? v
+          : typeof v === 'number' || typeof v === 'boolean' || typeof v === 'bigint'
+            ? String(v)
+            : (JSON.stringify(v) ?? '');
       parts.push(`${enc(k)}=${enc(vs)}`);
     }
   }
@@ -73,7 +76,10 @@ export function parseUrl(url: string): {
   hash: string;
 } {
   // Regex RFC 3986-ish: scheme://[user:pass@]host[:port]/path?query#hash
-  const m = /^([a-z][a-z0-9+\-.]*:)\/\/(?:[^@/]*@)?([^:/?#]+)(?::(\d+))?([^?#]*)(?:\?([^#]*))?(?:#(.*))?$/i.exec(url);
+  const m =
+    /^([a-z][a-z0-9+\-.]*:)\/\/(?:[^@/]*@)?([^:/?#]+)(?::(\d+))?([^?#]*)(?:\?([^#]*))?(?:#(.*))?$/i.exec(
+      url,
+    );
   if (!m) throw new Error(`Invalid URL: ${url}`);
   const portPart = m[3] ?? '';
   return {

@@ -41,7 +41,10 @@ export interface SshTunnel {
 
 /** Normalizza un fingerprint: toglie prefisso "SHA256:" e padding base64. */
 export function normalizeFingerprint(fp: string): string {
-  return fp.replace(/^sha256:/i, '').replace(/=+$/u, '').trim();
+  return fp
+    .replace(/^sha256:/i, '')
+    .replace(/=+$/u, '')
+    .trim();
 }
 
 /** Fingerprint SHA256 (base64, no padding) della chiave host in wire-format. */
@@ -64,27 +67,61 @@ export function openSshTunnel(opts: SshTunnelTransportOptions): Promise<SshTunne
   return new Promise<SshTunnel>((resolve, reject) => {
     const conn = new Client();
     let settled = false;
-    const finish = (fn: () => void): void => { if (!settled) { settled = true; fn(); } };
+    const finish = (fn: () => void): void => {
+      if (!settled) {
+        settled = true;
+        fn();
+      }
+    };
 
-    conn.on('error', (err) => { finish(() => { conn.end(); reject(err); }); });
+    conn.on('error', (err) => {
+      finish(() => {
+        conn.end();
+        reject(err);
+      });
+    });
 
     conn.on('ready', () => {
       const server = net.createServer((sock) => {
-        conn.forwardOut('127.0.0.1', sock.remotePort ?? 0, opts.target.host, opts.target.port, (err, stream) => {
-          if (err) { sock.destroy(); return; }
-          sock.pipe(stream).pipe(sock);
-          sock.on('error', () => { stream.destroy(); });
-          stream.on('error', () => { sock.destroy(); });
+        conn.forwardOut(
+          '127.0.0.1',
+          sock.remotePort ?? 0,
+          opts.target.host,
+          opts.target.port,
+          (err, stream) => {
+            if (err) {
+              sock.destroy();
+              return;
+            }
+            sock.pipe(stream).pipe(sock);
+            sock.on('error', () => {
+              stream.destroy();
+            });
+            stream.on('error', () => {
+              sock.destroy();
+            });
+          },
+        );
+      });
+      server.on('error', (err) => {
+        finish(() => {
+          conn.end();
+          reject(err);
         });
       });
-      server.on('error', (err) => { finish(() => { conn.end(); reject(err); }); });
       server.listen(0, '127.0.0.1', () => {
         const addr = server.address();
         const localPort = typeof addr === 'object' && addr !== null ? addr.port : 0;
         finish(() => {
           resolve({
             localPort,
-            close: () => new Promise<void>((res) => { server.close(() => { conn.end(); res(); }); }),
+            close: () =>
+              new Promise<void>((res) => {
+                server.close(() => {
+                  conn.end();
+                  res();
+                });
+              }),
           });
         });
       });
@@ -99,7 +136,10 @@ export function openSshTunnel(opts: SshTunnelTransportOptions): Promise<SshTunne
       // VERIFICA HOST-KEY (anti-MITM): confronto col fingerprint pinned.
       hostVerifier: (key: Buffer) => fingerprintMatches(hostKeyFingerprintOf(key), expected),
       ...(opts.ssh.auth.type === 'key'
-        ? { privateKey: opts.ssh.auth.privateKey, ...(opts.ssh.auth.passphrase ? { passphrase: opts.ssh.auth.passphrase } : {}) }
+        ? {
+            privateKey: opts.ssh.auth.privateKey,
+            ...(opts.ssh.auth.passphrase ? { passphrase: opts.ssh.auth.passphrase } : {}),
+          }
         : { password: opts.ssh.auth.password }),
     });
   });

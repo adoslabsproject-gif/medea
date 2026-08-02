@@ -26,7 +26,11 @@ interface SelectorSpec {
 
 function parseSelectorsMap(raw: unknown): Record<string, SelectorSpec> {
   if (typeof raw === 'string') {
-    try { return parseSelectorsMap(JSON.parse(raw)); } catch { return {}; }
+    try {
+      return parseSelectorsMap(JSON.parse(raw));
+    } catch {
+      return {};
+    }
   }
   if (!raw || typeof raw !== 'object') return {};
   const out: Record<string, SelectorSpec> = {};
@@ -75,7 +79,7 @@ function extractOne($: CheerioAPI, spec: SelectorSpec): unknown {
   }
 }
 
-const executor: NodeExecutor = async (config, input, _context) => {   
+const executor: NodeExecutor = async (config, input, _context) => {
   const start = Date.now();
   const htmlSource = String(config.htmlSource ?? 'input');
   let html = '';
@@ -92,11 +96,17 @@ const executor: NodeExecutor = async (config, input, _context) => {
     html = String(config.htmlExplicit ?? '');
   }
   if (!html.trim()) {
-    return { output: { matched: false, fields: {} }, durationMs: Date.now() - start, warnings: ['Empty HTML input'] };
+    return {
+      output: { matched: false, fields: {} },
+      durationMs: Date.now() - start,
+      warnings: ['Empty HTML input'],
+    };
   }
 
   const selectorsRaw = config.selectorsJson;
-  const selectors = parseSelectorsMap(typeof selectorsRaw === 'string' ? selectorsRaw : selectorsRaw);
+  const selectors = parseSelectorsMap(
+    typeof selectorsRaw === 'string' ? selectorsRaw : selectorsRaw,
+  );
   if (Object.keys(selectors).length === 0) {
     throw new Error('selectorsJson required (map of fieldName → {selector, attr?, extract?})');
   }
@@ -140,7 +150,7 @@ export const htmlSelectNode: NodeModule = {
       'content, #checkout-form), class selector (.product-card, .price-tag), attribute selector ([data-sku], ' +
       '[href*="amazon"], [type="email"]), pseudo-class selector (:nth-child(2n), :first-child, :last-child, ' +
       ':not(.disabled), :has(.discount)), combinator complessi (descendant " ", child >, adjacent sibling +, ' +
-      'general sibling ~) — l\'utente può copy-paste qualsiasi selettore dal DevTools del browser e funziona. ' +
+      "general sibling ~) — l'utente può copy-paste qualsiasi selettore dal DevTools del browser e funziona. " +
       'Per ogni campo configurabile la strategia di extraction del valore: ' +
       '(1) "text" default — extract solo il textContent visibile (HTML stripped, gli spazi normalizzati), ' +
       'pattern per estrarre testo human-readable; ' +
@@ -150,7 +160,7 @@ export const htmlSelectNode: NodeModule = {
       'per link URL, attr=src per immagini, attr=data-sku per identifier nascosti in data-attribute, attr=' +
       'value per form input default value); ' +
       '(4) "list" — extract un array con il valore (testo o attr) di TUTTI i match del selector invece di solo ' +
-      'il primo, pattern per liste enumerabili tipo tutti i titoli di un\'archivio blog o tutti i prezzi in ' +
+      "il primo, pattern per liste enumerabili tipo tutti i titoli di un'archivio blog o tutti i prezzi in " +
       'una pagina di confronto product. ' +
       'Sicurezza enterprise: NO JavaScript execution sul HTML (il parser è pure HTML — no DOM-level events, ' +
       'no fetch, no XHR), completely safe per processing di HTML untrusted da source web arbitrari senza ' +
@@ -161,7 +171,7 @@ export const htmlSelectNode: NodeModule = {
       'fetch del catalog page + html_select per scraping di SKU+name+price+stock+image_url → xlsx_build → ' +
       'send_email al merchandising team); estrazione di titolo/prezzo/disponibilità da pagine prodotto ' +
       'competitor monitorate per pricing intelligence; raccolta sistematica di righe da tabella HTML di ' +
-      'report istituzionale (es. ISTAT, AGENAS, Banca d\'Italia che pubblicano stats in tabelle senza ' +
+      "report istituzionale (es. ISTAT, AGENAS, Banca d'Italia che pubblicano stats in tabelle senza " +
       'open data CSV equivalent); ingest content blog per RAG/embedding pipeline partendo dalla homepage ' +
       'del blog (extract title+author+date+content_html di ogni post per indicizzazione knowledge base AI); ' +
       'parsing di SERP page (Google/Bing search result) per analisi SEO competitive intelligence.',

@@ -13,34 +13,54 @@
  * 🚨 humanMs: range coverage ms/s/m/h/g boundary
  */
 import { describe, it, expect } from 'vitest';
-import {
-  validateParams,
-  humanMs,
-  type RuleParamSchema,
-} from './rule-params-schema.js';
+import { validateParams, humanMs, type RuleParamSchema } from './rule-params-schema.js';
 
 const sNumber: RuleParamSchema = {
-  name: 'threshold', type: 'number', label: 'Soglia', required: true,
-  default: 10, min: 1, max: 100,
+  name: 'threshold',
+  type: 'number',
+  label: 'Soglia',
+  required: true,
+  default: 10,
+  min: 1,
+  max: 100,
 };
 const sString: RuleParamSchema = {
-  name: 'label', type: 'string', label: 'Etichetta', required: false,
+  name: 'label',
+  type: 'string',
+  label: 'Etichetta',
+  required: false,
   default: 'default',
 };
 const sStringWithPattern: RuleParamSchema = {
-  name: 'code', type: 'string', label: 'Codice', required: false,
-  default: 'AB123', maxLength: 10, pattern: '^[A-Z]{2}\\d{3}$',
+  name: 'code',
+  type: 'string',
+  label: 'Codice',
+  required: false,
+  default: 'AB123',
+  maxLength: 10,
+  pattern: '^[A-Z]{2}\\d{3}$',
 };
 const sBool: RuleParamSchema = {
-  name: 'enabled', type: 'boolean', label: 'Abilitato', required: false,
+  name: 'enabled',
+  type: 'boolean',
+  label: 'Abilitato',
+  required: false,
   default: true,
 };
 const sDur: RuleParamSchema = {
-  name: 'ttl', type: 'duration_ms', label: 'TTL', required: false,
-  default: 60000, minMs: 1000, maxMs: 86_400_000,
+  name: 'ttl',
+  type: 'duration_ms',
+  label: 'TTL',
+  required: false,
+  default: 60000,
+  minMs: 1000,
+  maxMs: 86_400_000,
 };
 const sEnum: RuleParamSchema = {
-  name: 'mode', type: 'enum', label: 'Modo', required: false,
+  name: 'mode',
+  type: 'enum',
+  label: 'Modo',
+  required: false,
   default: 'fast',
   values: [
     { value: 'fast', label: 'Veloce' },
@@ -143,7 +163,11 @@ describe('🚨 validateParams — number', () => {
 
   it('🚨 number senza min/max → no range check', () => {
     const free: RuleParamSchema = {
-      name: 'x', type: 'number', label: 'X', required: false, default: 0,
+      name: 'x',
+      type: 'number',
+      label: 'X',
+      required: false,
+      default: 0,
     };
     const r = validateParams([free], { x: -999999 });
     expect(r.ok).toBe(true);
@@ -164,8 +188,12 @@ describe('🚨 validateParams — string', () => {
 
   it('🚨 maxLength sforato → error', () => {
     const short: RuleParamSchema = {
-      name: 'x', type: 'string', label: 'X', required: false,
-      default: '', maxLength: 5,
+      name: 'x',
+      type: 'string',
+      label: 'X',
+      required: false,
+      default: '',
+      maxLength: 5,
     };
     const r = validateParams([short], { x: 'too_long_string' });
     expect(r.ok).toBe(false);
@@ -185,8 +213,12 @@ describe('🚨 validateParams — string', () => {
 
   it('🚨 pattern malformato (regex invalida) → tollera (no throw, accept value)', () => {
     const bad: RuleParamSchema = {
-      name: 'x', type: 'string', label: 'X', required: false,
-      default: '', pattern: '[unclosed',
+      name: 'x',
+      type: 'string',
+      label: 'X',
+      required: false,
+      default: '',
+      pattern: '[unclosed',
     };
     // Pattern bug → ignorato (commento del codice)
     const r = validateParams([bad], { x: 'whatever' });
@@ -196,8 +228,12 @@ describe('🚨 validateParams — string', () => {
   it('🚨 SECURITY: ReDoS attempt pattern (catastrophic) → trattato come regex valida ma OK', () => {
     // Garante non blocca pattern arbitrari ma la validazione è O(input)
     const safe: RuleParamSchema = {
-      name: 'x', type: 'string', label: 'X', required: false,
-      default: '', pattern: '^a+$',
+      name: 'x',
+      type: 'string',
+      label: 'X',
+      required: false,
+      default: '',
+      pattern: '^a+$',
     };
     const r = validateParams([safe], { x: 'aaaa' });
     expect(r.ok).toBe(true);
@@ -238,7 +274,11 @@ describe('🚨 validateParams — duration_ms', () => {
 
   it('🚨 zero → ok (boundary)', () => {
     const free: RuleParamSchema = {
-      name: 'd', type: 'duration_ms', label: 'D', required: false, default: 0,
+      name: 'd',
+      type: 'duration_ms',
+      label: 'D',
+      required: false,
+      default: 0,
     };
     const r = validateParams([free], { d: 0 });
     expect(r.ok).toBe(true);
@@ -303,7 +343,9 @@ describe('🚨 validateParams — enum', () => {
 describe('🚨 validateParams — multi-param', () => {
   it('🚨 tutti validi → ok con tutti i valori', () => {
     const r = validateParams([sNumber, sString, sBool], {
-      threshold: 5, label: 'x', enabled: false,
+      threshold: 5,
+      label: 'x',
+      enabled: false,
     });
     expect(r.ok).toBe(true);
     if (r.ok) {
@@ -313,18 +355,21 @@ describe('🚨 validateParams — multi-param', () => {
 
   it('🚨 multipli errori → tutti raccolti (no fail-fast)', () => {
     const r = validateParams([sNumber, sString, sBool], {
-      threshold: 'bad', label: 999, enabled: 'no',
+      threshold: 'bad',
+      label: 999,
+      enabled: 'no',
     });
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.error).toHaveLength(3);
-      expect(r.error.map(e => e.param).sort()).toEqual(['enabled', 'label', 'threshold']);
+      expect(r.error.map((e) => e.param).sort()).toEqual(['enabled', 'label', 'threshold']);
     }
   });
 
   it('🚨 mix: alcuni validi + un errore → Err (no partial OK)', () => {
     const r = validateParams([sNumber, sString], {
-      threshold: 50, label: 999,
+      threshold: 50,
+      label: 999,
     });
     expect(r.ok).toBe(false);
     if (!r.ok) {

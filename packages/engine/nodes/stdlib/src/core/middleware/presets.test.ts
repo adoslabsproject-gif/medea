@@ -79,7 +79,10 @@ describe('🚨 httpMiddlewarePreset — pipeline order', () => {
     httpMiddlewarePreset({
       urlFrom: () => 'https://api.example.com/v1',
     });
-    const telemetryOpts = withTelemetryMock.mock.calls[0]![0] as { spanName: string; dynamicAttrs: (cfg: Record<string, unknown>) => Record<string, unknown> };
+    const telemetryOpts = withTelemetryMock.mock.calls[0]![0] as {
+      spanName: string;
+      dynamicAttrs: (cfg: Record<string, unknown>) => Record<string, unknown>;
+    };
     expect(telemetryOpts.spanName).toBe('node.http.request');
     expect(typeof telemetryOpts.dynamicAttrs).toBe('function');
   });
@@ -91,7 +94,9 @@ describe('🚨 httpMiddlewarePreset — pipeline order', () => {
     });
     expect(preset).toBeDefined();
     // Estrai dynamicAttrs e invoca manualmente
-    const telemetryOpts = withTelemetryMock.mock.calls[0]![0] as { dynamicAttrs: (cfg: Record<string, unknown>) => Record<string, unknown> };
+    const telemetryOpts = withTelemetryMock.mock.calls[0]![0] as {
+      dynamicAttrs: (cfg: Record<string, unknown>) => Record<string, unknown>;
+    };
     const attrs = telemetryOpts.dynamicAttrs({});
     expect(httpSpanAttrsMock).toHaveBeenCalledWith('POST', 'https://api.x.com/users');
     expect(attrs).toEqual({ 'http.method': 'POST', 'http.url': 'https://api.x.com/users' });
@@ -101,7 +106,9 @@ describe('🚨 httpMiddlewarePreset — pipeline order', () => {
     httpMiddlewarePreset({
       urlFrom: () => undefined,
     });
-    const telemetryOpts = withTelemetryMock.mock.calls[0]![0] as { dynamicAttrs: (cfg: Record<string, unknown>) => Record<string, unknown> };
+    const telemetryOpts = withTelemetryMock.mock.calls[0]![0] as {
+      dynamicAttrs: (cfg: Record<string, unknown>) => Record<string, unknown>;
+    };
     const attrs = telemetryOpts.dynamicAttrs({});
     expect(attrs).toEqual({});
     expect(httpSpanAttrsMock).not.toHaveBeenCalled();
@@ -113,7 +120,9 @@ describe('🚨 methodFrom default = GET (RFC 7231 safe)', () => {
     httpMiddlewarePreset({
       urlFrom: () => 'https://x.com',
     });
-    const idempotencyOpts = withConditionalIdempotencyMock.mock.calls[0]![0] as { methodFrom: (cfg: Record<string, unknown>) => string };
+    const idempotencyOpts = withConditionalIdempotencyMock.mock.calls[0]![0] as {
+      methodFrom: (cfg: Record<string, unknown>) => string;
+    };
     expect(idempotencyOpts.methodFrom({})).toBe('GET');
   });
 
@@ -122,7 +131,9 @@ describe('🚨 methodFrom default = GET (RFC 7231 safe)', () => {
       urlFrom: () => 'https://x.com',
       methodFrom: (cfg) => (cfg as { httpMethod?: string }).httpMethod ?? 'POST',
     });
-    const idempotencyOpts = withConditionalIdempotencyMock.mock.calls[0]![0] as { methodFrom: (cfg: Record<string, unknown>) => string };
+    const idempotencyOpts = withConditionalIdempotencyMock.mock.calls[0]![0] as {
+      methodFrom: (cfg: Record<string, unknown>) => string;
+    };
     expect(idempotencyOpts.methodFrom({ httpMethod: 'DELETE' })).toBe('DELETE');
     expect(idempotencyOpts.methodFrom({})).toBe('POST');
   });
@@ -176,7 +187,9 @@ describe('🚨 OPTIONAL options spread (conditional)', () => {
   it('🚨 urlFrom propagato a withHostBreaker (per-host bucketing)', () => {
     const urlFromFn = (cfg: Record<string, unknown>): string => (cfg as { url: string }).url;
     httpMiddlewarePreset({ urlFrom: urlFromFn });
-    const breakerOpts = withHostBreakerMock.mock.calls[0]![0] as { urlFrom: (cfg: Record<string, unknown>) => string };
+    const breakerOpts = withHostBreakerMock.mock.calls[0]![0] as {
+      urlFrom: (cfg: Record<string, unknown>) => string;
+    };
     expect(breakerOpts.urlFrom).toBe(urlFromFn);
   });
 });

@@ -22,15 +22,26 @@ afterEach(async () => {
 });
 
 function ctx(): NodeExecutionContext {
-  return { workflowId: 'wf', runId: 'r', nodeId: 'n', tenantId: 't', userId: 'u',
-    logger: { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} } };
+  return {
+    workflowId: 'wf',
+    runId: 'r',
+    nodeId: 'n',
+    tenantId: 't',
+    userId: 'u',
+    logger: { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} },
+  };
 }
 
 describe('pecLegalArchiveExecutor', () => {
   it('archives an eml with default fields + writes manifest', async () => {
     const r = await pecLegalArchiveActionNode.executor(
       { archiveDir: dir },
-      { raw: 'From: a\r\n\r\nhello', messageId: '<m1@x>', receivedAt: '2026-06-04T10:00:00Z', subject: 'X' },
+      {
+        raw: 'From: a\r\n\r\nhello',
+        messageId: '<m1@x>',
+        receivedAt: '2026-06-04T10:00:00Z',
+        subject: 'X',
+      },
       ctx(),
     );
     const o = r.output as Record<string, unknown>;
@@ -38,18 +49,20 @@ describe('pecLegalArchiveExecutor', () => {
     expect(receipt.archiveId).toBeTruthy();
     expect(receipt.hashAlgorithm).toBe('sha256');
     expect(receipt.byteLength).toBeGreaterThan(0);
-    expect(o.subject).toBe('X');   // pass-through preserved
+    expect(o.subject).toBe('X'); // pass-through preserved
     // manifest exists
     const manifest = await fs.readFile(join(dir, 'manifest.jsonl'), 'utf8');
     expect(manifest.split('\n').filter(Boolean).length).toBe(1);
   });
 
   it('throws ValidationError when raw missing', async () => {
-    await expect(pecLegalArchiveActionNode.executor(
-      { archiveDir: dir },
-      { messageId: '<m>', receivedAt: '2026-06-04T10:00:00Z' },
-      ctx(),
-    )).rejects.toThrow(ValidationError);
+    await expect(
+      pecLegalArchiveActionNode.executor(
+        { archiveDir: dir },
+        { messageId: '<m>', receivedAt: '2026-06-04T10:00:00Z' },
+        ctx(),
+      ),
+    ).rejects.toThrow(ValidationError);
   });
 
   it('honours custom field names', async () => {
@@ -72,11 +85,13 @@ describe('pecLegalArchiveExecutor', () => {
   });
 
   it('clamps conservationDays to ≥365 via schema', async () => {
-    const r = await pecLegalArchiveActionNode.executor(
-      { archiveDir: dir, conservationDays: 100 },  // schema min=365 → rejected
-      { raw: 'x', messageId: '<m>', receivedAt: '2026-06-04T10:00:00Z' },
-      ctx(),
-    ).catch((e: unknown) => e);
+    const r = await pecLegalArchiveActionNode
+      .executor(
+        { archiveDir: dir, conservationDays: 100 }, // schema min=365 → rejected
+        { raw: 'x', messageId: '<m>', receivedAt: '2026-06-04T10:00:00Z' },
+        ctx(),
+      )
+      .catch((e: unknown) => e);
     expect(r).toBeInstanceOf(ValidationError);
   });
 
@@ -97,11 +112,13 @@ describe('pecLegalArchiveExecutor', () => {
   });
 
   it('rejects bad archiveDir (relative path)', async () => {
-    const r = await pecLegalArchiveActionNode.executor(
-      { archiveDir: 'relative/path' },
-      { raw: 'x', messageId: '<m>', receivedAt: '2026-06-04T10:00:00Z' },
-      ctx(),
-    ).catch((e: unknown) => e);
+    const r = await pecLegalArchiveActionNode
+      .executor(
+        { archiveDir: 'relative/path' },
+        { raw: 'x', messageId: '<m>', receivedAt: '2026-06-04T10:00:00Z' },
+        ctx(),
+      )
+      .catch((e: unknown) => e);
     expect(r).toBeInstanceOf(ValidationError);
   });
 });

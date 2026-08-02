@@ -26,7 +26,9 @@ describe('safeFetchWithRedirects — SSRF pre-flight', () => {
     // @ts-expect-error test mock
     globalThis.fetch = spy;
   });
-  afterEach(() => { globalThis.fetch = origFetch; });
+  afterEach(() => {
+    globalThis.fetch = origFetch;
+  });
 
   it('SECURITY: pre-flight blocca loopback senza fare fetch', async () => {
     await expect(safeFetchWithRedirects('http://127.0.0.1')).rejects.toThrow(/SSRF blocked/);
@@ -46,7 +48,9 @@ describe('safeFetchWithRedirects — SSRF pre-flight', () => {
   });
 
   it('SECURITY: pre-flight blocca metadata.google.internal', async () => {
-    await expect(safeFetchWithRedirects('http://metadata.google.internal/')).rejects.toThrow(/SSRF blocked/);
+    await expect(safeFetchWithRedirects('http://metadata.google.internal/')).rejects.toThrow(
+      /SSRF blocked/,
+    );
     expect(spy).not.toHaveBeenCalled();
   });
 
@@ -64,7 +68,9 @@ describe('safeFetchWithRedirects — manual redirect + SSRF re-validate', () => 
     // @ts-expect-error mock
     globalThis.fetch = spy;
   });
-  afterEach(() => { globalThis.fetch = origFetch; });
+  afterEach(() => {
+    globalThis.fetch = origFetch;
+  });
 
   it('302 → Location pubblica → 2 fetch + final 200', async () => {
     spy
@@ -76,20 +82,28 @@ describe('safeFetchWithRedirects — manual redirect + SSRF re-validate', () => 
   });
 
   it('SECURITY: 302 → Location http://169.254.169.254/ (IMDS) → throw senza 2° fetch', async () => {
-    spy.mockResolvedValueOnce(mockResponse(302, { location: 'http://169.254.169.254/latest/meta-data/' }));
-    await expect(safeFetchWithRedirects('https://example-blog.com/')).rejects.toThrow(/redirect bloccato/);
+    spy.mockResolvedValueOnce(
+      mockResponse(302, { location: 'http://169.254.169.254/latest/meta-data/' }),
+    );
+    await expect(safeFetchWithRedirects('https://example-blog.com/')).rejects.toThrow(
+      /redirect bloccato/,
+    );
     expect(spy).toHaveBeenCalledOnce();
   });
 
   it('SECURITY: 302 → Location http://127.0.0.1/internal-api → throw', async () => {
     spy.mockResolvedValueOnce(mockResponse(302, { location: 'http://127.0.0.1/api/secret' }));
-    await expect(safeFetchWithRedirects('https://example.com/')).rejects.toThrow(/redirect bloccato/);
+    await expect(safeFetchWithRedirects('https://example.com/')).rejects.toThrow(
+      /redirect bloccato/,
+    );
     expect(spy).toHaveBeenCalledOnce();
   });
 
   it('SECURITY: 302 → Location file:/// → throw', async () => {
     spy.mockResolvedValueOnce(mockResponse(302, { location: 'file:///etc/passwd' }));
-    await expect(safeFetchWithRedirects('https://example.com/')).rejects.toThrow(/redirect bloccato/);
+    await expect(safeFetchWithRedirects('https://example.com/')).rejects.toThrow(
+      /redirect bloccato/,
+    );
   });
 
   it('REGRESSION: 3xx senza Location header → restituita verbatim (no follow)', async () => {
@@ -111,14 +125,20 @@ describe('safeFetchWithRedirects — manual redirect + SSRF re-validate', () => 
 
   it('SECURITY: max 5 redirect → 6 hops → throw', async () => {
     for (let i = 0; i < 6; i += 1) {
-      spy.mockResolvedValueOnce(mockResponse(302, { location: `https://hop-${String(i + 1)}.example.com/` }));
+      spy.mockResolvedValueOnce(
+        mockResponse(302, { location: `https://hop-${String(i + 1)}.example.com/` }),
+      );
     }
-    await expect(safeFetchWithRedirects('https://example.com/')).rejects.toThrow(/too many redirects/);
+    await expect(safeFetchWithRedirects('https://example.com/')).rejects.toThrow(
+      /too many redirects/,
+    );
   });
 
   it('maxRedirects override 0 → no follow even su 302', async () => {
     spy.mockResolvedValueOnce(mockResponse(302, { location: 'https://other.com/' }));
-    await expect(safeFetchWithRedirects('https://example.com/', { maxRedirects: 0 })).rejects.toThrow(/too many redirects/);
+    await expect(
+      safeFetchWithRedirects('https://example.com/', { maxRedirects: 0 }),
+    ).rejects.toThrow(/too many redirects/);
     expect(spy).toHaveBeenCalledOnce();
   });
 });
@@ -130,7 +150,9 @@ describe('safeFetchWithRedirects — cross-host auth strip (anti-Bearer-leak)', 
     // @ts-expect-error mock
     globalThis.fetch = spy;
   });
-  afterEach(() => { globalThis.fetch = origFetch; });
+  afterEach(() => {
+    globalThis.fetch = origFetch;
+  });
 
   it('SECURITY: cross-host redirect → Authorization rimosso al 2° fetch', async () => {
     spy
@@ -197,7 +219,9 @@ describe('safeFetchWithRedirects — request shape', () => {
     // @ts-expect-error mock
     globalThis.fetch = spy;
   });
-  afterEach(() => { globalThis.fetch = origFetch; });
+  afterEach(() => {
+    globalThis.fetch = origFetch;
+  });
 
   it('passa method, headers, body al fetch underlying', async () => {
     await safeFetchWithRedirects('https://example.com/', {

@@ -73,21 +73,26 @@ describe('🚨 happy path — POST con HMAC', () => {
     await reportSecurityEvent({ eventType: 'failed_login_burst', severity: 'low' });
     const opts = at(fetchMock.mock.calls, 0, 'fetch-calls')[1] as RequestInit;
     const sentBody = opts.body as string;
-    const expected = createHmac('sha256', 'webhook-secret-key').update(sentBody, 'utf8').digest('hex');
+    const expected = createHmac('sha256', 'webhook-secret-key')
+      .update(sentBody, 'utf8')
+      .digest('hex');
     expect((opts.headers as Record<string, string>)['X-FF-Signature']).toBe(expected);
   });
 
   it('🚨 X-FF-Tenant header propagato', async () => {
     fetchMock.mockResolvedValueOnce({ ok: true });
     await reportSecurityEvent({ eventType: 'workflow_anomaly', severity: 'low' });
-    const headers = (at(fetchMock.mock.calls, 0, 'fetch-calls')[1] as RequestInit).headers as Record<string, string>;
+    const headers = (at(fetchMock.mock.calls, 0, 'fetch-calls')[1] as RequestInit)
+      .headers as Record<string, string>;
     expect(headers['X-FF-Tenant']).toBe('t-1');
   });
 
   it('🚨 details default {} se non passato', async () => {
     fetchMock.mockResolvedValueOnce({ ok: true });
     await reportSecurityEvent({ eventType: 'unauthorized_access', severity: 'high' });
-    const body = JSON.parse((at(fetchMock.mock.calls, 0, 'fetch-calls')[1] as RequestInit).body as string);
+    const body = JSON.parse(
+      (at(fetchMock.mock.calls, 0, 'fetch-calls')[1] as RequestInit).body as string,
+    );
     expect(body.details).toEqual({});
   });
 
@@ -95,7 +100,9 @@ describe('🚨 happy path — POST con HMAC', () => {
     configMock.MEDEA_PORTAL_URL = 'https://portal.example.com/';
     fetchMock.mockResolvedValueOnce({ ok: true });
     await reportSecurityEvent({ eventType: 'failed_login_burst', severity: 'low' });
-    expect(at(fetchMock.mock.calls, 0, 'fetch-calls')[0]).toBe('https://portal.example.com/api/v1/webhooks/flowforge');
+    expect(at(fetchMock.mock.calls, 0, 'fetch-calls')[0]).toBe(
+      'https://portal.example.com/api/v1/webhooks/flowforge',
+    );
   });
 
   it('🚨 log info on success', async () => {
@@ -111,9 +118,12 @@ describe('🚨 happy path — POST con HMAC', () => {
 describe('🚨 fail-open behavior', () => {
   it('🚨 portal 500 → warn log MA NO throw', async () => {
     fetchMock.mockResolvedValueOnce({ ok: false, status: 503 });
-    await expect(reportSecurityEvent({
-      eventType: 'failed_login_burst', severity: 'critical',
-    })).resolves.toBeUndefined();
+    await expect(
+      reportSecurityEvent({
+        eventType: 'failed_login_burst',
+        severity: 'critical',
+      }),
+    ).resolves.toBeUndefined();
     expect(loggerMock.warn).toHaveBeenCalledWith(
       expect.objectContaining({ status: 503 }),
       '[SENTINEL] portal returned non-2xx',
@@ -122,9 +132,12 @@ describe('🚨 fail-open behavior', () => {
 
   it('🚨 fetch throw (network down) → warn + no rethrow', async () => {
     fetchMock.mockRejectedValueOnce(new Error('ECONNREFUSED'));
-    await expect(reportSecurityEvent({
-      eventType: 'workflow_anomaly', severity: 'medium',
-    })).resolves.toBeUndefined();
+    await expect(
+      reportSecurityEvent({
+        eventType: 'workflow_anomaly',
+        severity: 'medium',
+      }),
+    ).resolves.toBeUndefined();
     expect(loggerMock.warn).toHaveBeenCalledWith(
       expect.objectContaining({ err: 'ECONNREFUSED' }),
       '[SENTINEL] report failed (fail-open)',
@@ -150,19 +163,26 @@ describe('🚨 fail-open behavior', () => {
 
 describe('🚨 SecurityEvent types coverage', () => {
   it.each([
-    'failed_login_burst', 'workflow_anomaly', 'credentials_decrypt_fail',
-    'rate_limit_breach', 'unauthorized_access',
+    'failed_login_burst',
+    'workflow_anomaly',
+    'credentials_decrypt_fail',
+    'rate_limit_breach',
+    'unauthorized_access',
   ])('🚨 eventType "%s" supportato', async (eventType) => {
     fetchMock.mockResolvedValueOnce({ ok: true });
     await reportSecurityEvent({ eventType: eventType as any, severity: 'low' });
-    const body = JSON.parse((at(fetchMock.mock.calls, 0, 'fetch-calls')[1] as RequestInit).body as string);
+    const body = JSON.parse(
+      (at(fetchMock.mock.calls, 0, 'fetch-calls')[1] as RequestInit).body as string,
+    );
     expect(body.eventType).toBe(eventType);
   });
 
   it.each(['low', 'medium', 'high', 'critical'])('🚨 severity "%s"', async (sev) => {
     fetchMock.mockResolvedValueOnce({ ok: true });
     await reportSecurityEvent({ eventType: 'failed_login_burst', severity: sev as any });
-    const body = JSON.parse((at(fetchMock.mock.calls, 0, 'fetch-calls')[1] as RequestInit).body as string);
+    const body = JSON.parse(
+      (at(fetchMock.mock.calls, 0, 'fetch-calls')[1] as RequestInit).body as string,
+    );
     expect(body.severity).toBe(sev);
   });
 });

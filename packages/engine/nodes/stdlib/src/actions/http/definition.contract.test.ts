@@ -19,8 +19,8 @@ const authModes = HttpAuthModeSchema.removeDefault().options; // enum = unica fo
 
 describe('action_http — contract description ⊆ schema (anti-drift)', () => {
   it('🚨 OAuth2 client_credentials È supportato (∈ enum + documentato); OAuth1/3-legged NO', () => {
-    expect(authModes).toContain('oauth2');           // implementato
-    expect(authModes).not.toContain('oauth1');        // non implementato
+    expect(authModes).toContain('oauth2'); // implementato
+    expect(authModes).not.toContain('oauth1'); // non implementato
     expect(description).toMatch(/OAuth2\s+client_credentials/i);
     // I vecchi claim fantasma NON devono tornare.
     expect(description).not.toMatch(/OAuth1\s*\(RFC/i);

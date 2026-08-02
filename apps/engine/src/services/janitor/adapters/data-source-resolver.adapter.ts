@@ -17,8 +17,12 @@ import type { DbStudioService } from '@/services/db-studio.service.js';
 import { loadConfig } from '@/config.js';
 import { logger } from '@/lib/logger.js';
 import {
-  type DataSourceRef, type DataSourceInfo,
-  parseDataSourceRef, systemRef, tenantRef, engineSupportsRawSql,
+  type DataSourceRef,
+  type DataSourceInfo,
+  parseDataSourceRef,
+  systemRef,
+  tenantRef,
+  engineSupportsRawSql,
 } from '@/services/janitor/domain/index.js';
 import type { IDataSourceResolver } from '@/services/janitor/ports/index.js';
 
@@ -38,13 +42,15 @@ export class DataSourceResolverAdapter implements IDataSourceResolver {
   }
 
   list(tenantId?: string): Promise<readonly DataSourceInfo[]> {
-    const out: DataSourceInfo[] = [{
-      ref: systemRef(),
-      displayName: 'FlowForge System (runs · checkpoints · audit)',
-      engine: 'sqlite',
-      scope: 'system',
-      supportsRawSql: true,
-    }];
+    const out: DataSourceInfo[] = [
+      {
+        ref: systemRef(),
+        displayName: 'FlowForge System (runs · checkpoints · audit)',
+        engine: 'sqlite',
+        scope: 'system',
+        supportsRawSql: true,
+      },
+    ];
 
     const dbs = this.dbStudio.list(tenantId ?? 'default');
     for (const db of dbs) {

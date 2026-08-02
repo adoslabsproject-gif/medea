@@ -28,20 +28,31 @@ export function createAnalyticsRoutes(): Hono {
           COALESCE(AVG(total_duration_ms), 0) as avg_duration_ms
         FROM runs WHERE tenant_id = ? AND started_at >= ?`,
       )
-      .get(tenantId, since24) as { total: number; success_count: number; error_count: number; avg_duration_ms: number };
+      .get(tenantId, since24) as {
+      total: number;
+      success_count: number;
+      error_count: number;
+      avg_duration_ms: number;
+    };
 
     const durations = sqlite
-      .prepare(`SELECT total_duration_ms FROM runs WHERE tenant_id = ? AND started_at >= ? AND total_duration_ms IS NOT NULL ORDER BY total_duration_ms`)
+      .prepare(
+        `SELECT total_duration_ms FROM runs WHERE tenant_id = ? AND started_at >= ? AND total_duration_ms IS NOT NULL ORDER BY total_duration_ms`,
+      )
       .all(tenantId, since24) as { total_duration_ms: number }[];
     const p95Index = Math.floor(durations.length * 0.95);
     const p95 = durations[p95Index]?.total_duration_ms ?? 0;
 
-    const workflowsCount = (sqlite
-      .prepare('SELECT COUNT(*) as c FROM workflows WHERE tenant_id = ?')
-      .get(tenantId) as { c: number }).c;
-    const enabledCount = (sqlite
-      .prepare('SELECT COUNT(*) as c FROM workflows WHERE tenant_id = ? AND enabled = 1')
-      .get(tenantId) as { c: number }).c;
+    const workflowsCount = (
+      sqlite.prepare('SELECT COUNT(*) as c FROM workflows WHERE tenant_id = ?').get(tenantId) as {
+        c: number;
+      }
+    ).c;
+    const enabledCount = (
+      sqlite
+        .prepare('SELECT COUNT(*) as c FROM workflows WHERE tenant_id = ? AND enabled = 1')
+        .get(tenantId) as { c: number }
+    ).c;
 
     // Defensive Number(): la riga SQLite arriva via better-sqlite3 con tipi a
     // volte sorprendenti (BigInt | string per certi driver), e i vecchi container
@@ -108,7 +119,9 @@ export function createAnalyticsRoutes(): Hono {
     const buckets = [10, 50, 100, 500, 1000, 5000, 30_000, Infinity];
     const counts: number[] = new Array(buckets.length).fill(0) as number[];
     const rows = sqlite
-      .prepare(`SELECT total_duration_ms FROM runs WHERE tenant_id = ? AND started_at >= ? AND total_duration_ms IS NOT NULL`)
+      .prepare(
+        `SELECT total_duration_ms FROM runs WHERE tenant_id = ? AND started_at >= ? AND total_duration_ms IS NOT NULL`,
+      )
       .all(tenantId, since) as { total_duration_ms: number }[];
     for (const r of rows) {
       for (let i = 0; i < buckets.length; i += 1) {

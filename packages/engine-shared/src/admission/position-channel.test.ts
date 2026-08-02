@@ -7,18 +7,38 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-  publishQueued, publishAdmitted, readPosition, clearPosition, type PositionRedis,
+  publishQueued,
+  publishAdmitted,
+  readPosition,
+  clearPosition,
+  type PositionRedis,
 } from './position-channel';
 
-function makeRedis(): PositionRedis & { store: Map<string, string>; setCalls: [string, string, string, number][]; delCalls: string[] } {
+function makeRedis(): PositionRedis & {
+  store: Map<string, string>;
+  setCalls: [string, string, string, number][];
+  delCalls: string[];
+} {
   const store = new Map<string, string>();
   const setCalls: [string, string, string, number][] = [];
   const delCalls: string[] = [];
   return {
-    store, setCalls, delCalls,
-    async get(key) { return store.get(key) ?? null; },
-    async set(key, value, mode, ttl) { setCalls.push([key, value, mode, ttl]); store.set(key, value); return 'OK'; },
-    async del(key) { delCalls.push(key); store.delete(key); return 1; },
+    store,
+    setCalls,
+    delCalls,
+    async get(key) {
+      return store.get(key) ?? null;
+    },
+    async set(key, value, mode, ttl) {
+      setCalls.push([key, value, mode, ttl]);
+      store.set(key, value);
+      return 'OK';
+    },
+    async del(key) {
+      delCalls.push(key);
+      store.delete(key);
+      return 1;
+    },
   };
 }
 

@@ -45,12 +45,15 @@ export const customNodeExecutor: NodeExecutor = async (config, input, context) =
     };
   }
 
-  logger.debug({
-    workspaceId,
-    defId,
-    semver: entry.semver,
-    status: entry.status,
-  }, '[custom-node] dispatching');
+  logger.debug(
+    {
+      workspaceId,
+      defId,
+      semver: entry.semver,
+      status: entry.status,
+    },
+    '[custom-node] dispatching',
+  );
 
   const sbCtx: SandboxInput['context'] = {
     tenantId: context.tenantId,
@@ -73,8 +76,9 @@ export const customNodeExecutor: NodeExecutor = async (config, input, context) =
   // presente (LogCollector istanziato a livello strategy), altrimenti ne
   // crea uno locale al fly (back-compat per chiamanti che non lo passano).
   type CtxWithCollector = typeof context & { __logCollector?: LogCollector };
-  const collector = (context as CtxWithCollector).__logCollector
-    ?? new LogCollector({
+  const collector =
+    (context as CtxWithCollector).__logCollector ??
+    new LogCollector({
       runId: context.runId,
       stepNodeId: context.nodeId,
       workspaceId: context.tenantId,
@@ -82,21 +86,39 @@ export const customNodeExecutor: NodeExecutor = async (config, input, context) =
     });
 
   collector.debug(`[custom-node] dispatching ${defId} (v${entry.semver})`, {
-    defId, semver: entry.semver, status: entry.status,
+    defId,
+    semver: entry.semver,
+    status: entry.status,
   });
 
   // #226 Passa un trace per attivare la capture lato worker → al ritorno il
   // sandbox forwarda console.log+network al collector via forwardSandboxLogsToCollector.
   // Senza trace, captureTrace=false → worker NON ritorna trace.logs/network.
-  const sbTrace = { logs: [] as string[], network: [] as { url: string; method: string; status: number; durationMs: number; bytesIn: number; ok: boolean; startedAt: number }[], durationMs: 0 };
+  const sbTrace = {
+    logs: [] as string[],
+    network: [] as {
+      url: string;
+      method: string;
+      status: number;
+      durationMs: number;
+      bytesIn: number;
+      ok: boolean;
+      startedAt: number;
+    }[],
+    durationMs: 0,
+  };
 
   try {
-    const result = await runInSandbox(adapted, {
-      config,
-      input,
-      context: sbCtx,
-      collector,
-    }, sbTrace);
+    const result = await runInSandbox(
+      adapted,
+      {
+        config,
+        input,
+        context: sbCtx,
+        collector,
+      },
+      sbTrace,
+    );
     // ROOT CAUSE #6 fix (2026-06-09): smart unwrap del result vendor.
     // Caso A: vendor ritorna NodeExecutionResult-shape `{ output, durationMs, ... }`
     //         (pattern stdlib-style: rotator, catalog, ecc compilati da
@@ -109,12 +131,18 @@ export const customNodeExecutor: NodeExecutor = async (config, input, context) =
     // Senza questo unwrap il template `$node.X.json.liveHost` accede a
     // `vars[X].liveHost` che è undefined (vero campo è `vars[X].output.liveHost`).
     // Conseguenza: downstream node riceve config interpolata vuota → CONFIG_INVALID.
-    const isNodeResult = result !== null
-      && typeof result === 'object'
-      && 'output' in (result as Record<string, unknown>)
-      && 'durationMs' in (result as Record<string, unknown>);
+    const isNodeResult =
+      result !== null &&
+      typeof result === 'object' &&
+      'output' in (result as Record<string, unknown>) &&
+      'durationMs' in (result as Record<string, unknown>);
     if (isNodeResult) {
-      const r = result as { output: unknown; durationMs: number; warnings?: string[]; branch?: string };
+      const r = result as {
+        output: unknown;
+        durationMs: number;
+        warnings?: string[];
+        branch?: string;
+      };
       return {
         output: r.output,
         durationMs: r.durationMs,
@@ -131,7 +159,8 @@ export const customNodeExecutor: NodeExecutor = async (config, input, context) =
     // throw dal bundle senza arrivare al postMessage success). Le entries
     // capturate prima del throw vengono comunque persistite nel collector.
     collector.error(`[custom-node] ${defId} failed: ${(err as Error).message}`, {
-      defId, semver: entry.semver,
+      defId,
+      semver: entry.semver,
       sandboxLogCount: sbTrace.logs.length,
       sandboxNetCount: sbTrace.network.length,
     });

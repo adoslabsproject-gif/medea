@@ -16,7 +16,14 @@ import { AiScaffoldError } from '@/services/ai-scaffold/types.js';
 export interface ParsedForAssembly {
   name: string;
   description?: string | undefined;
-  nodes: { id: string; defId: string; label?: string | undefined; x?: number | undefined; y?: number | undefined; config: Record<string, unknown> }[];
+  nodes: {
+    id: string;
+    defId: string;
+    label?: string | undefined;
+    x?: number | undefined;
+    y?: number | undefined;
+    config: Record<string, unknown>;
+  }[];
   edges: { from: string; to: string; fromPort?: string | undefined }[];
 }
 
@@ -36,7 +43,10 @@ export function assembleWorkflow(parsed: ParsedForAssembly): Workflow {
         x: n.x ?? idx * 220,
         y: n.y ?? 200,
         config: Object.fromEntries(
-          Object.entries(n.config).map(([k, v]) => [k, typeof v === 'string' ? v : JSON.stringify(v)]),
+          Object.entries(n.config).map(([k, v]) => [
+            k,
+            typeof v === 'string' ? v : JSON.stringify(v),
+          ]),
         ),
       };
       if (n.label) out.name = n.label;

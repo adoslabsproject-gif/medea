@@ -60,7 +60,9 @@ export function createUsersRoutes(): Hono {
     // owner manages. Without this filter, owners see them reappear after
     // every deploy because the runtime re-provisions them on boot.
     const rows = sqlite
-      .prepare("SELECT id, tenant_id, email, display_name, role, enabled, created_at, updated_at, last_login_at, oauth_provider FROM users WHERE tenant_id = ? AND COALESCE(is_system, 0) = 0 ORDER BY created_at DESC")
+      .prepare(
+        'SELECT id, tenant_id, email, display_name, role, enabled, created_at, updated_at, last_login_at, oauth_provider FROM users WHERE tenant_id = ? AND COALESCE(is_system, 0) = 0 ORDER BY created_at DESC',
+      )
       .all(tenantId) as UserRow[];
     return c.json({
       users: rows.map((r) => ({
@@ -116,9 +118,18 @@ export function createUsersRoutes(): Hono {
 
     const updates: string[] = [];
     const params: unknown[] = [];
-    if (body.displayName !== undefined) { updates.push('display_name = ?'); params.push(body.displayName); }
-    if (body.role !== undefined) { updates.push('role = ?'); params.push(body.role); }
-    if (body.enabled !== undefined) { updates.push('enabled = ?'); params.push(body.enabled ? 1 : 0); }
+    if (body.displayName !== undefined) {
+      updates.push('display_name = ?');
+      params.push(body.displayName);
+    }
+    if (body.role !== undefined) {
+      updates.push('role = ?');
+      params.push(body.role);
+    }
+    if (body.enabled !== undefined) {
+      updates.push('enabled = ?');
+      params.push(body.enabled ? 1 : 0);
+    }
     if (body.password !== undefined) {
       const hash = await hashPassword(body.password);
       updates.push('password_hash = ?');
@@ -143,7 +154,11 @@ export function createUsersRoutes(): Hono {
     const auth = c.get('auth');
     const tenantId = getTenantId(c);
     const id = c.req.param('id');
-    if (auth?.userId === id) return c.json({ error: 'Non puoi eliminare te stesso (logout e cancellati da un altro owner)' }, 400);
+    if (auth?.userId === id)
+      return c.json(
+        { error: 'Non puoi eliminare te stesso (logout e cancellati da un altro owner)' },
+        400,
+      );
     const { sqlite } = getDatabase();
     const existing = sqlite
       .prepare('SELECT is_system FROM users WHERE tenant_id = ? AND id = ?')
@@ -157,7 +172,13 @@ export function createUsersRoutes(): Hono {
       // System accounts (CI / smoke test users) are protected so owners
       // who try to clean their user list don't see them reappear after
       // every deploy. To remove permanently, disable MEDEA_E2E_AUTO_PROVISION.
-      return c.json({ error: 'Utente di sistema non eliminabile via UI. Disattiva MEDEA_E2E_AUTO_PROVISION nel server env per rimuoverlo.' }, 403);
+      return c.json(
+        {
+          error:
+            'Utente di sistema non eliminabile via UI. Disattiva MEDEA_E2E_AUTO_PROVISION nel server env per rimuoverlo.',
+        },
+        403,
+      );
     }
     const info = sqlite
       .prepare('DELETE FROM users WHERE tenant_id = ? AND id = ?')
@@ -174,7 +195,9 @@ export function createUsersRoutes(): Hono {
     const tenantId = getTenantId(c);
     const id = c.req.param('id');
     const { sqlite } = getDatabase();
-    const exists = sqlite.prepare('SELECT 1 AS x FROM users WHERE tenant_id = ? AND id = ?').get(tenantId, id);
+    const exists = sqlite
+      .prepare('SELECT 1 AS x FROM users WHERE tenant_id = ? AND id = ?')
+      .get(tenantId, id);
     if (!exists) return c.json({ error: 'Utente non trovato nel tuo tenant' }, 404);
     revokeAllUserSessions(id);
     return c.json({ ok: true, userId: id, revoked: 'all-sessions' });

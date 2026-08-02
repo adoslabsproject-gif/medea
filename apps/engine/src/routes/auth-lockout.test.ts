@@ -105,7 +105,9 @@ describe('🚨 [REGRESSION AUTH-2] runtime /auth/login lockout', () => {
     const elapsed = Date.now() - t0;
     expect(res.status).toBe(401);
     expect(elapsed).toBeGreaterThanOrEqual(95); // ~100ms anti-enumeration delay
-    expect(m.trackFailedLogin).toHaveBeenCalledWith(expect.objectContaining({ email: 'ghost@x.it' }));
+    expect(m.trackFailedLogin).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'ghost@x.it' }),
+    );
   });
 
   it('🚨 password sbagliata + counter < 5 → 401, counter++, no lockout', async () => {
@@ -119,7 +121,9 @@ describe('🚨 [REGRESSION AUTH-2] runtime /auth/login lockout', () => {
     });
     expect(res.status).toBe(401);
     // UPDATE called con failed_login_count=3 (2+1), locked_until=NULL
-    const updateCall = m.sqliteRun.mock.calls.find((c) => String(c[0]).includes('UPDATE users SET failed_login_count'));
+    const updateCall = m.sqliteRun.mock.calls.find((c) =>
+      String(c[0]).includes('UPDATE users SET failed_login_count'),
+    );
     expect(updateCall).toBeTruthy();
     expect(updateCall![1]).toBe(3); // new failed_count
     expect(updateCall![2]).toBeNull(); // locked_until still NULL
@@ -137,7 +141,9 @@ describe('🚨 [REGRESSION AUTH-2] runtime /auth/login lockout', () => {
       body: JSON.stringify({ email: 'mario@test.it', password: 'wrong' }),
     });
     expect(res.status).toBe(401);
-    const updateCall = m.sqliteRun.mock.calls.find((c) => String(c[0]).includes('UPDATE users SET failed_login_count'));
+    const updateCall = m.sqliteRun.mock.calls.find((c) =>
+      String(c[0]).includes('UPDATE users SET failed_login_count'),
+    );
     expect(updateCall).toBeTruthy();
     expect(updateCall![1]).toBe(5); // counter=5
     expect(updateCall![2]).toBeTypeOf('string'); // locked_until ISO string set
@@ -160,7 +166,9 @@ describe('🚨 [REGRESSION AUTH-2] runtime /auth/login lockout', () => {
       body: JSON.stringify({ email: 'mario@test.it', password: 'wrong' }),
     });
     expect(res.status).toBe(401);
-    const updateCall = m.sqliteRun.mock.calls.find((c) => String(c[0]).includes('UPDATE users SET failed_login_count'));
+    const updateCall = m.sqliteRun.mock.calls.find((c) =>
+      String(c[0]).includes('UPDATE users SET failed_login_count'),
+    );
     expect(updateCall![3]).toBe(2); // lockout_level=2
     const lockedUntilMs = new Date(updateCall![2] as string).getTime();
     const deltaMs = lockedUntilMs - t0;
@@ -179,7 +187,9 @@ describe('🚨 [REGRESSION AUTH-2] runtime /auth/login lockout', () => {
       body: JSON.stringify({ email: 'mario@test.it', password: 'wrong' }),
     });
     expect(res.status).toBe(401);
-    const updateCall = m.sqliteRun.mock.calls.find((c) => String(c[0]).includes('UPDATE users SET failed_login_count'));
+    const updateCall = m.sqliteRun.mock.calls.find((c) =>
+      String(c[0]).includes('UPDATE users SET failed_login_count'),
+    );
     expect(updateCall![3]).toBe(3); // capped a 3
     const lockedUntilMs = new Date(updateCall![2] as string).getTime();
     const deltaMs = lockedUntilMs - t0;
@@ -197,7 +207,7 @@ describe('🚨 [REGRESSION AUTH-2] runtime /auth/login lockout', () => {
       body: JSON.stringify({ email: 'mario@test.it', password: 'whatever' }),
     });
     expect(res.status).toBe(423);
-    const body = await res.json() as { code: string; retryAfter: string };
+    const body = (await res.json()) as { code: string; retryAfter: string };
     expect(body.code).toBe('ACCOUNT_LOCKED');
     expect(body.retryAfter).toBe(futureIso);
     // CRITICO: verifyPassword NON deve essere chiamato (no CPU spend per attacker)
@@ -214,18 +224,22 @@ describe('🚨 [REGRESSION AUTH-2] runtime /auth/login lockout', () => {
       body: JSON.stringify({ email: 'mario@test.it', password: 'correct' }),
     });
     expect(res.status).toBe(200);
-    const body = await res.json() as { token: string };
+    const body = (await res.json()) as { token: string };
     expect(body.token).toBe('mock-jwt');
     // UPDATE reset chiamato
-    const resetCall = m.sqliteRun.mock.calls.find((c) =>
-      String(c[0]).includes('failed_login_count = 0') && String(c[0]).includes('locked_until = NULL'),
+    const resetCall = m.sqliteRun.mock.calls.find(
+      (c) =>
+        String(c[0]).includes('failed_login_count = 0') &&
+        String(c[0]).includes('locked_until = NULL'),
     );
     expect(resetCall, 'success deve reset failed_login_count + locked_until').toBeTruthy();
   });
 
   it('🚨 lockout expired (past) → next fail riparte counter da pre-existing+1', async () => {
     const pastIso = new Date(Date.now() - 60_000).toISOString();
-    m.sqliteGet.mockReturnValue(makeUserRow({ failed_login_count: 5, lockout_level: 1, locked_until: pastIso }));
+    m.sqliteGet.mockReturnValue(
+      makeUserRow({ failed_login_count: 5, lockout_level: 1, locked_until: pastIso }),
+    );
     m.verifyPassword.mockResolvedValue(false);
     const app = await buildApp();
     const res = await app.request('/api/v1/auth/login', {
@@ -234,7 +248,9 @@ describe('🚨 [REGRESSION AUTH-2] runtime /auth/login lockout', () => {
       body: JSON.stringify({ email: 'mario@test.it', password: 'wrong' }),
     });
     expect(res.status).toBe(401); // NOT 423, lockout scaduto
-    const updateCall = m.sqliteRun.mock.calls.find((c) => String(c[0]).includes('UPDATE users SET failed_login_count'));
+    const updateCall = m.sqliteRun.mock.calls.find((c) =>
+      String(c[0]).includes('UPDATE users SET failed_login_count'),
+    );
     expect(updateCall![1]).toBe(6); // counter incrementato
   });
 });

@@ -31,24 +31,47 @@ function normOp(op: unknown): string {
 
 /** n8n operation → op FlowForge (vocabolario reale di condition-rules.ts). */
 const OP_MAP: Readonly<Record<string, string>> = {
-  equals: 'equals', equal: 'equals', eq: 'equals',
-  notequals: 'not-equals', notequal: 'not-equals', ne: 'not-equals',
-  contains: 'contains', notcontains: 'not-contains',
-  startswith: 'starts-with', endswith: 'ends-with',
-  regex: 'matches-regex', matchesregex: 'matches-regex',
-  gt: 'gt', larger: 'gt',
-  gte: 'gte', largerequal: 'gte',
-  lt: 'lt', smaller: 'lt',
-  lte: 'lte', smallerequal: 'lte',
-  after: 'after', before: 'before',
-  exists: 'exists', notexists: 'not-exists',
-  empty: 'is-empty', isempty: 'is-empty',
-  notempty: 'is-not-empty', isnotempty: 'is-not-empty',
-  true: 'is-true', false: 'is-false',
+  equals: 'equals',
+  equal: 'equals',
+  eq: 'equals',
+  notequals: 'not-equals',
+  notequal: 'not-equals',
+  ne: 'not-equals',
+  contains: 'contains',
+  notcontains: 'not-contains',
+  startswith: 'starts-with',
+  endswith: 'ends-with',
+  regex: 'matches-regex',
+  matchesregex: 'matches-regex',
+  gt: 'gt',
+  larger: 'gt',
+  gte: 'gte',
+  largerequal: 'gte',
+  lt: 'lt',
+  smaller: 'lt',
+  lte: 'lte',
+  smallerequal: 'lte',
+  after: 'after',
+  before: 'before',
+  exists: 'exists',
+  notexists: 'not-exists',
+  empty: 'is-empty',
+  isempty: 'is-empty',
+  notempty: 'is-not-empty',
+  isnotempty: 'is-not-empty',
+  true: 'is-true',
+  false: 'is-false',
 };
 
 /** Op unari (non hanno `right`). */
-const UNARY_OPS = new Set(['exists', 'not-exists', 'is-empty', 'is-not-empty', 'is-true', 'is-false']);
+const UNARY_OPS = new Set([
+  'exists',
+  'not-exists',
+  'is-empty',
+  'is-not-empty',
+  'is-true',
+  'is-false',
+]);
 
 function mapType(t: unknown): 'string' | 'number' | 'date' | 'boolean' | 'any' {
   const s = typeof t === 'string' ? t.toLowerCase() : '';
@@ -65,7 +88,8 @@ function mapType(t: unknown): 'string' | 'number' | 'date' | 'boolean' | 'any' {
  */
 function operand(v: unknown): { value: string; warning?: string } {
   if (typeof v === 'number' || typeof v === 'boolean') return { value: String(v) };
-  if (typeof v !== 'string') return { value: v === null || v === undefined ? '' : JSON.stringify(v) };
+  if (typeof v !== 'string')
+    return { value: v === null || v === undefined ? '' : JSON.stringify(v) };
 
   const s = v.startsWith('=') ? v.slice(1) : v;
   const m = /^\s*\{\{\s*([\s\S]*?)\s*\}\}\s*$/u.exec(s);
@@ -74,13 +98,25 @@ function operand(v: unknown): { value: string; warning?: string } {
   let e = (m[1] ?? '').trim();
   e = e.replace(/\[\s*['"`]([a-zA-Z_$][\w$]*)['"`]\s*\]/gu, '.$1'); // ["k"] → .k
   if (/^\$json\b/u.test(e)) return { value: e.replace(/^\$json/u, 'input') };
-  if (/^\$node\b/u.test(e)) return { value: e, warning: `condizione: riferimento "${e}" ad altro nodo — verifica il path` };
+  if (/^\$node\b/u.test(e))
+    return { value: e, warning: `condizione: riferimento "${e}" ad altro nodo — verifica il path` };
   return { value: e, warning: `condizione: espressione "${e}" — verifica a mano` };
 }
 
-interface OutRule { left: string; op: string; right?: string; type: string }
+interface OutRule {
+  left: string;
+  op: string;
+  right?: string;
+  type: string;
+}
 
-function buildRule(rawLeft: unknown, rawOp: unknown, rawRight: unknown, type: string, warnings: string[]): OutRule | null {
+function buildRule(
+  rawLeft: unknown,
+  rawOp: unknown,
+  rawRight: unknown,
+  type: string,
+  warnings: string[],
+): OutRule | null {
   const op = OP_MAP[normOp(rawOp)];
   if (!op) {
     warnings.push(`operatore IF "${String(rawOp)}" non mappato — rivedi la condizione`);
@@ -110,8 +146,18 @@ export function mapN8nIfConditions(p: Raw): ConditionMapResult {
       // v2
       combinator = coerceString(c.combinator ?? 'and').toUpperCase() === 'OR' ? 'OR' : 'AND';
       for (const condU of c.conditions) {
-        const cond = condU as { leftValue?: unknown; rightValue?: unknown; operator?: { type?: unknown; operation?: unknown } };
-        const r = buildRule(cond.leftValue, cond.operator?.operation, cond.rightValue, mapType(cond.operator?.type), warnings);
+        const cond = condU as {
+          leftValue?: unknown;
+          rightValue?: unknown;
+          operator?: { type?: unknown; operation?: unknown };
+        };
+        const r = buildRule(
+          cond.leftValue,
+          cond.operator?.operation,
+          cond.rightValue,
+          mapType(cond.operator?.type),
+          warnings,
+        );
         if (r) rules.push(r);
       }
     } else {
@@ -130,7 +176,8 @@ export function mapN8nIfConditions(p: Raw): ConditionMapResult {
   if (rules.length === 0) {
     // Preserva i warning accumulati (es. "operatore non mappato"); aggiungi la nota
     // generica solo se non c'è già un motivo specifico.
-    if (warnings.length === 0) warnings.push('IF: condizioni n8n non riconosciute — imposta la condizione a mano nel nodo');
+    if (warnings.length === 0)
+      warnings.push('IF: condizioni n8n non riconosciute — imposta la condizione a mano nel nodo');
     return { config: {}, warnings };
   }
   return { config: { conditionRules: JSON.stringify({ combinator, rules }) }, warnings };

@@ -25,15 +25,20 @@ afterEach(() => {
 describe('TypeScriptLsp — diagnostics', () => {
   it('source ben formato → diagnostics presenti ma niente syntax error', () => {
     lsp = new TypeScriptLsp();
-    lsp.update('executor', `
+    lsp.update(
+      'executor',
+      `
       type NodeExecutor = (cfg: any, input: any) => Promise<any>;
       export const executor: NodeExecutor = async (cfg, input) => ({ ok: true });
-    `);
+    `,
+    );
     const diags = lsp.getDiagnostics('executor');
     // Possono esserci errori di "module not found" se le lib.d.ts virtual
     // mancano nel runtime di test. Il vero check e\` che NIENTE diagnostic
     // riporti syntax errors (codici TS1xxx) — quelli sono inaccettabili.
-    const syntaxErrors = diags.filter((d) => typeof d.code === 'number' && d.code >= 1000 && d.code < 2000);
+    const syntaxErrors = diags.filter(
+      (d) => typeof d.code === 'number' && d.code >= 1000 && d.code < 2000,
+    );
     expect(syntaxErrors).toHaveLength(0);
   });
 
@@ -49,7 +54,11 @@ describe('TypeScriptLsp — diagnostics', () => {
     lsp = new TypeScriptLsp();
     lsp.update('executor', `const x: number = "stringa";`);
     const diags = lsp.getDiagnostics('executor');
-    expect(diags.some((d) => d.severity === 'error' && /string.*number|number.*string/iu.test(d.message))).toBe(true);
+    expect(
+      diags.some(
+        (d) => d.severity === 'error' && /string.*number|number.*string/iu.test(d.message),
+      ),
+    ).toBe(true);
   });
 
   it('i 3 file sono isolati: errore in executor non sporca definition', () => {
@@ -106,7 +115,9 @@ describe('TypeScriptLsp — lifecycle', () => {
   it('dispose() pulisce senza throw', () => {
     lsp = new TypeScriptLsp();
     lsp.update('executor', `const x = 1;`);
-    expect(() => { lsp!.dispose(); }).not.toThrow();
+    expect(() => {
+      lsp!.dispose();
+    }).not.toThrow();
     lsp = null;
   });
 });

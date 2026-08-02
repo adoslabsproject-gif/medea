@@ -24,8 +24,13 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
-  LogCollector, genTraceId, genSpanId, safeSerializeFields, truncateLogs,
-  MAX_MSG_CHARS, MAX_ENTRIES_PER_STEP,
+  LogCollector,
+  genTraceId,
+  genSpanId,
+  safeSerializeFields,
+  truncateLogs,
+  MAX_MSG_CHARS,
+  MAX_ENTRIES_PER_STEP,
 } from './log-collector.js';
 import type { StepLog } from '@medea/engine-core-schema';
 import { StepLogSchema } from '@medea/engine-core-schema';
@@ -128,11 +133,11 @@ describe('truncateLogs', () => {
     for (let i = 0; i < total; i++) {
       entries.push(mkLog(i, i % 50 === 0 ? 'error' : 'debug'));
     }
-    const errorsCount = entries.filter(e => e.level === 'error').length;
+    const errorsCount = entries.filter((e) => e.level === 'error').length;
     const r = truncateLogs(entries);
     expect(r.truncated).toBe(true);
     expect(r.kept.length).toBeLessThanOrEqual(MAX_ENTRIES_PER_STEP);
-    const keptErrors = r.kept.filter(e => e.level === 'error').length;
+    const keptErrors = r.kept.filter((e) => e.level === 'error').length;
     expect(keptErrors).toBe(errorsCount); // TUTTI gli error preservati
   });
 
@@ -151,15 +156,17 @@ describe('truncateLogs', () => {
     entries.push(mkLog(501, 'error'));
     entries.push(mkLog(502, 'fatal'));
     const r = truncateLogs(entries);
-    expect(r.kept.some(e => e.level === 'warn')).toBe(true);
-    expect(r.kept.some(e => e.level === 'error')).toBe(true);
-    expect(r.kept.some(e => e.level === 'fatal')).toBe(true);
+    expect(r.kept.some((e) => e.level === 'warn')).toBe(true);
+    expect(r.kept.some((e) => e.level === 'error')).toBe(true);
+    expect(r.kept.some((e) => e.level === 'fatal')).toBe(true);
   });
 });
 
 describe('LogCollector', () => {
   let c: LogCollector;
-  beforeEach(() => { c = new LogCollector(baseOpts); });
+  beforeEach(() => {
+    c = new LogCollector(baseOpts);
+  });
 
   it('auto-genera traceId + spanId', () => {
     expect(c.traceId).toMatch(/^[0-9a-f]{32}$/);
@@ -190,7 +197,9 @@ describe('LogCollector', () => {
   });
 
   it('seq monotonic +1 per ogni log', () => {
-    c.info('a'); c.info('b'); c.warn('c');
+    c.info('a');
+    c.info('b');
+    c.warn('c');
     const { logs } = c.collect();
     expect(logs[0]?.seq).toBe(0);
     expect(logs[1]?.seq).toBe(1);
@@ -214,9 +223,14 @@ describe('LogCollector', () => {
   });
 
   it('helpers debug/info/warn/error/fatal', () => {
-    c.trace('t'); c.debug('d'); c.info('i'); c.warn('w'); c.error('e'); c.fatal('f');
+    c.trace('t');
+    c.debug('d');
+    c.info('i');
+    c.warn('w');
+    c.error('e');
+    c.fatal('f');
     const { logs } = c.collect();
-    expect(logs.map(l => l.level)).toEqual(['trace', 'debug', 'info', 'warn', 'error', 'fatal']);
+    expect(logs.map((l) => l.level)).toEqual(['trace', 'debug', 'info', 'warn', 'error', 'fatal']);
   });
 
   it('source default engine, override possibile', () => {
@@ -238,10 +252,14 @@ describe('LogCollector', () => {
   it('overflow oltre 2x cap → droppa soft, keep hard', () => {
     // Genera 600 debug + 5 error
     for (let i = 0; i < 600; i++) c.debug(`d${String(i)}`);
-    c.error('boom-1'); c.error('boom-2'); c.error('boom-3'); c.error('boom-4'); c.error('boom-5');
+    c.error('boom-1');
+    c.error('boom-2');
+    c.error('boom-3');
+    c.error('boom-4');
+    c.error('boom-5');
     const collected = c.collect();
     expect(collected.truncated).toBe(true);
-    const errs = collected.logs.filter(l => l.level === 'error');
+    const errs = collected.logs.filter((l) => l.level === 'error');
     expect(errs.length).toBe(5);
     expect(collected.total).toBeGreaterThanOrEqual(605);
   });
@@ -249,7 +267,8 @@ describe('LogCollector', () => {
   it('live emit via on()', () => {
     const seen: StepLog[] = [];
     const dispose = c.on((e) => seen.push(e));
-    c.info('a'); c.warn('b');
+    c.info('a');
+    c.warn('b');
     dispose();
     c.info('c'); // dopo dispose: NO ricevuto
     expect(seen).toHaveLength(2);
@@ -277,7 +296,8 @@ describe('LogCollector', () => {
   });
 
   it('reset() svuota entries e seq counter', () => {
-    c.info('a'); c.info('b');
+    c.info('a');
+    c.info('b');
     c.reset();
     c.info('c');
     const out = c.collect();

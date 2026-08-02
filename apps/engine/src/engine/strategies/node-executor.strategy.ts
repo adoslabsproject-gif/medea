@@ -24,7 +24,12 @@ import { resolveServerExecutor } from '@/executors/registry.js';
 import { makeBinaryRef, engineRetriesNode, type BinaryData } from '@medea/engine-core-schema';
 import { resolveOutboundDispatcher } from '@/lib/egress-policy.js';
 import type { Readable } from 'node:stream';
-import type { INodeDispatchStrategy, DispatchContext, DispatchResult, NodeExecutionContext } from './types.js';
+import type {
+  INodeDispatchStrategy,
+  DispatchContext,
+  DispatchResult,
+  NodeExecutionContext,
+} from './types.js';
 import {
   type NodeModule,
   wrap,
@@ -56,7 +61,7 @@ export function computeRetryDelay(
   rand: () => number = Math.random,
 ): number {
   if (retryAfterMs !== null && retryAfterMs >= 0) return Math.min(maxBackoff, retryAfterMs);
-  const exp = Math.min(maxBackoff, baseDelay * (2 ** (attempt - 1)));
+  const exp = Math.min(maxBackoff, baseDelay * 2 ** (attempt - 1));
   return Math.floor(exp / 2 + rand() * (exp / 2));
 }
 const DEFAULT_BASE_DELAY_MS = 1000;
@@ -98,7 +103,7 @@ export class NodeExecutorStrategy implements INodeDispatchStrategy {
     // (db_insert_batch.childRowsExpression, etc.) can read `$node.<alias>.json`.
     // scope.vars already holds the same map used by interpolateConfig, keyed
     // by both nodeId and alias. We pass it through verbatim.
-    const nodeOutputs = (ctx.scope?.vars ?? {});
+    const nodeOutputs = ctx.scope?.vars ?? {};
     const execCtx: NodeExecutionContext = {
       tenantId: ctx.tenantId,
       workflowId: ctx.workflowId,
@@ -124,7 +129,10 @@ export class NodeExecutorStrategy implements INodeDispatchStrategy {
       // la interroga per-hop. Default (allowlist vuota) → allowlisted:false ovunque.
       resolveOutboundDispatcher,
       readBinary: (ref: string): Promise<Buffer> => ctx.binaryStore.read(ref),
-      writeBinary: async (data: Buffer, meta: { mimeType: string; fileName?: string }): Promise<BinaryData> => {
+      writeBinary: async (
+        data: Buffer,
+        meta: { mimeType: string; fileName?: string },
+      ): Promise<BinaryData> => {
         const r = await ctx.binaryStore.writeBuffer(data);
         return makeBinaryRef({
           mimeType: meta.mimeType,
@@ -136,7 +144,10 @@ export class NodeExecutorStrategy implements INodeDispatchStrategy {
       },
       // Streaming reale: i byte non passano mai tutti in RAM (writeStream del
       // BinaryStore, hash in transito). Per webhook upload 50MB / download grandi.
-      writeBinaryStream: async (stream: Readable, meta: { mimeType: string; fileName?: string }): Promise<BinaryData> => {
+      writeBinaryStream: async (
+        stream: Readable,
+        meta: { mimeType: string; fileName?: string },
+      ): Promise<BinaryData> => {
         const r = await ctx.binaryStore.writeStream(stream);
         return makeBinaryRef({
           mimeType: meta.mimeType,
@@ -154,7 +165,9 @@ export class NodeExecutorStrategy implements INodeDispatchStrategy {
     // che lo supportano. L'helper `log` su NodeExecutionContext espone l'API
     // pubblica per i nodi stdlib senza accoppiarli al runtime concreto.
     if (ctx.logCollector) {
-      (execCtx as NodeExecutionContext & { __logCollector?: typeof ctx.logCollector }).__logCollector = ctx.logCollector;
+      (
+        execCtx as NodeExecutionContext & { __logCollector?: typeof ctx.logCollector }
+      ).__logCollector = ctx.logCollector;
       execCtx.log = {
         trace: (m, f) => ctx.logCollector!.trace(m, f),
         debug: (m, f) => ctx.logCollector!.debug(m, f),
@@ -225,11 +238,17 @@ async function runWithRetry(
   // UN SOLO livello di retry (review nodi): se il nodo è self-managed (es. action_http
   // ritenta internamente con retryOnStatus + Retry-After) l'engine NON ri-ritenta →
   // niente doppione annidato engine×nodo. L'utente può forzare via retryStrategy.
-  const engineOwnsRetry = engineRetriesNode(ctx.node.config.retryStrategy, ctx.module.def.selfManagedRetry === true);
+  const engineOwnsRetry = engineRetriesNode(
+    ctx.node.config.retryStrategy,
+    ctx.module.def.selfManagedRetry === true,
+  );
   const maxRetries = engineOwnsRetry
     ? Math.max(0, Math.min(MAX_RETRY_COUNT, Number(ctx.node.config.retryCount ?? 0)))
     : 0;
-  const baseDelay = Math.max(0, Math.min(MAX_BACKOFF_MS, Number(ctx.node.config.retryDelayMs ?? DEFAULT_BASE_DELAY_MS)));
+  const baseDelay = Math.max(
+    0,
+    Math.min(MAX_BACKOFF_MS, Number(ctx.node.config.retryDelayMs ?? DEFAULT_BASE_DELAY_MS)),
+  );
 
   let attempt = 0;
   let lastError: unknown = null;
@@ -290,10 +309,19 @@ async function runWithRetry(
       if (attempt > maxRetries) break;
       const delay = computeRetryDelay(baseDelay, attempt, MAX_BACKOFF_MS, retryAfterMsOf(err));
       logger.warn(
-        { nodeId: ctx.node.id, defId: ctx.node.defId, attempt, delay, retryAfter: retryAfterMsOf(err), err },
+        {
+          nodeId: ctx.node.id,
+          defId: ctx.node.defId,
+          attempt,
+          delay,
+          retryAfter: retryAfterMsOf(err),
+          err,
+        },
         'Node failed, retrying',
       );
-      await new Promise<void>((r) => { setTimeout(r, delay); });
+      await new Promise<void>((r) => {
+        setTimeout(r, delay);
+      });
     }
   }
   throw lastError instanceof Error ? lastError : new Error(String(lastError));

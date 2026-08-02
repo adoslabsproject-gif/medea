@@ -21,7 +21,12 @@
  */
 
 import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
-import { isBinaryData, readBinaryBytes, makeBinaryInline, type BinaryRefReader } from '@medea/engine-core-schema';
+import {
+  isBinaryData,
+  readBinaryBytes,
+  makeBinaryInline,
+  type BinaryRefReader,
+} from '@medea/engine-core-schema';
 import { getInstalledByDefId } from '@/services/community-nodes.service.js';
 import { runInSandbox, type SandboxInput } from './community-node-sandbox.js';
 import { logger } from '@/lib/logger.js';
@@ -35,19 +40,24 @@ import { logger } from '@/lib/logger.js';
  * file-read / http download / imap) riceve i byte e li decodifica con atob.
  * I base64 INTERNI al sandbox (fetch proxy, crypto) restano transport — corretti.
  */
-export async function inlineBinaryRefs(value: unknown, readBinary?: BinaryRefReader): Promise<unknown> {
+export async function inlineBinaryRefs(
+  value: unknown,
+  readBinary?: BinaryRefReader,
+): Promise<unknown> {
   if (isBinaryData(value)) {
     if (value.encoding !== 'ref') return value; // già inline
     const bytes = await readBinaryBytes(value, readBinary);
     return makeBinaryInline({
-      mimeType: value.mimeType, data: bytes.toString('base64'),
+      mimeType: value.mimeType,
+      data: bytes.toString('base64'),
       ...(value.fileName !== undefined ? { fileName: value.fileName } : {}),
     });
   }
   if (Array.isArray(value)) return Promise.all(value.map((v) => inlineBinaryRefs(v, readBinary)));
   if (value !== null && typeof value === 'object') {
     const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) out[k] = await inlineBinaryRefs(v, readBinary);
+    for (const [k, v] of Object.entries(value as Record<string, unknown>))
+      out[k] = await inlineBinaryRefs(v, readBinary);
     return out;
   }
   return value;
@@ -58,16 +68,21 @@ export const communityNodeExecutor: NodeExecutor = async (config, input, context
   const defId = context.defId ?? '';
   const installed = getInstalledByDefId(defId);
   if (!installed) {
-    throw new Error(`Community node "${defId}" non trovato — disinstallato? Reinstalla dal Marketplace.`);
+    throw new Error(
+      `Community node "${defId}" non trovato — disinstallato? Reinstalla dal Marketplace.`,
+    );
   }
 
   const action = typeof config.__action === 'string' ? config.__action : undefined;
-  logger.debug({
-    vendor: installed.manifest.vendor,
-    id: installed.manifest.id,
-    version: installed.manifest.version,
-    action,
-  }, 'Executing community node');
+  logger.debug(
+    {
+      vendor: installed.manifest.vendor,
+      id: installed.manifest.id,
+      version: installed.manifest.version,
+      action,
+    },
+    'Executing community node',
+  );
 
   const sbCtx: SandboxInput['context'] = {
     tenantId: context.tenantId,
@@ -89,4 +104,3 @@ export const communityNodeExecutor: NodeExecutor = async (config, input, context
     durationMs: Date.now() - startedAt,
   };
 };
-

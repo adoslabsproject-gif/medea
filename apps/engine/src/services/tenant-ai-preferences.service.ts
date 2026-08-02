@@ -34,14 +34,17 @@ export class TenantAiPreferencesService {
   get(tenantId: string): TenantAiPreferences {
     const { sqlite } = getDatabase();
     const row = sqlite
-      .prepare('SELECT allow_liara, default_llm_provider FROM tenant_ai_preferences WHERE tenant_id = ?')
+      .prepare(
+        'SELECT allow_liara, default_llm_provider FROM tenant_ai_preferences WHERE tenant_id = ?',
+      )
       .get(tenantId) as { allow_liara: number; default_llm_provider: string | null } | undefined;
     if (!row) return { allowLiara: true, defaultLlmProvider: null };
     return {
       allowLiara: row.allow_liara === 1,
-      defaultLlmProvider: row.default_llm_provider && row.default_llm_provider.trim().length > 0
-        ? row.default_llm_provider
-        : null,
+      defaultLlmProvider:
+        row.default_llm_provider && row.default_llm_provider.trim().length > 0
+          ? row.default_llm_provider
+          : null,
     };
   }
 
@@ -50,20 +53,23 @@ export class TenantAiPreferencesService {
     const current = this.get(tenantId);
     const next: TenantAiPreferences = {
       allowLiara: prefs.allowLiara ?? current.allowLiara,
-      defaultLlmProvider: prefs.defaultLlmProvider !== undefined
-        ? prefs.defaultLlmProvider
-        : current.defaultLlmProvider,
+      defaultLlmProvider:
+        prefs.defaultLlmProvider !== undefined
+          ? prefs.defaultLlmProvider
+          : current.defaultLlmProvider,
     };
     const { sqlite } = getDatabase();
     sqlite
-      .prepare(`
+      .prepare(
+        `
         INSERT INTO tenant_ai_preferences (tenant_id, allow_liara, default_llm_provider, updated_at)
         VALUES (?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
         ON CONFLICT(tenant_id) DO UPDATE SET
           allow_liara = excluded.allow_liara,
           default_llm_provider = excluded.default_llm_provider,
           updated_at = excluded.updated_at
-      `)
+      `,
+      )
       .run(tenantId, next.allowLiara ? 1 : 0, next.defaultLlmProvider);
   }
 

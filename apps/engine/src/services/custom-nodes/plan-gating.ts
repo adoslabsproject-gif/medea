@@ -93,10 +93,12 @@ export function resolveTenantPlan(): PlanCode {
  */
 export async function countActiveCustomNodes(workspaceId: string): Promise<number> {
   const handle = getDatabase();
-  const result = await handle.sqlite.prepare(
-    `SELECT COUNT(*) AS cnt FROM custom_nodes
+  const result = (await handle.sqlite
+    .prepare(
+      `SELECT COUNT(*) AS cnt FROM custom_nodes
       WHERE workspace_id = ? AND status != 'archived'`,
-  ).get(workspaceId) as { cnt: number } | undefined;
+    )
+    .get(workspaceId)) as { cnt: number } | undefined;
   return result?.cnt ?? 0;
 }
 
@@ -129,7 +131,7 @@ export function assertCanPublishMarketplace(): void {
   if (!cap.canPublishMarketplace) {
     throw new CustomNodeForbiddenError(
       `Marketplace publish requires plan Pro or higher (current: "${plan}"). ` +
-      `Suggested upgrade: "${suggestUpgrade(plan)}".`,
+        `Suggested upgrade: "${suggestUpgrade(plan)}".`,
     );
   }
 }
@@ -143,4 +145,8 @@ function suggestUpgrade(current: PlanCode): string | undefined {
 }
 
 // Suppress unused: imports tenuti per export-readiness future query Drizzle
-void customNodes; void and; void eq; void ne; void sql;
+void customNodes;
+void and;
+void eq;
+void ne;
+void sql;

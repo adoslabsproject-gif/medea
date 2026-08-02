@@ -18,13 +18,16 @@ const exec = linkAuditNode.executor!;
 
 function fakeRes(status: number): Response {
   return {
-    status, ok: status >= 200 && status < 300,
+    status,
+    ok: status >= 200 && status < 300,
     headers: { get: () => null },
     body: { cancel: () => undefined },
   } as unknown as Response;
 }
 
-beforeEach(() => { mockFetch.mockReset(); });
+beforeEach(() => {
+  mockFetch.mockReset();
+});
 
 describe('link_audit — classificazione (no probe)', () => {
   const html = `<html><body>
@@ -38,7 +41,10 @@ describe('link_audit — classificazione (no probe)', () => {
 
   it('scope: internal/external/anchor/mailto/tel/data classificati', async () => {
     const r = await exec({ checkBroken: false }, { body: html, url: 'https://mio.com/' }, CTX);
-    const out = r.output as { byScope: Record<string, number>; summary: { internal: number; external: number } };
+    const out = r.output as {
+      byScope: Record<string, number>;
+      summary: { internal: number; external: number };
+    };
     expect(out.byScope.internal).toBe(1);
     expect(out.byScope.external).toBe(1);
     expect(out.byScope.anchor).toBe(1);
@@ -69,7 +75,10 @@ describe('link_audit — rel + target (SEO/security)', () => {
       <a href="https://x.com/safe2" target="_blank" rel="noreferrer">safe2</a>
     </body></html>`;
     const r = await exec({ checkBroken: false }, { body: html, url: 'https://mio.com/' }, CTX);
-    const out = r.output as { tabnabbingRisks: { href: string }[]; summary: { tabnabbingRisks: number } };
+    const out = r.output as {
+      tabnabbingRisks: { href: string }[];
+      summary: { tabnabbingRisks: number };
+    };
     // MUTATION: senza il flag tabnabbingRisk la lista sarebbe vuota.
     expect(out.summary.tabnabbingRisks).toBe(1);
     expect(out.tabnabbingRisks[0]?.href).toBe('https://x.com/unsafe');
@@ -92,8 +101,12 @@ describe('link_audit — probe + severity', () => {
       return Promise.resolve(fakeRes(200));
     });
     const r = await exec({ checkBroken: true }, { body: html, url: 'https://mio.com/' }, CTX);
-    const out = r.output as { links: { href: string; severity?: string; status?: number }[]; broken: unknown[] };
-    const byHref = (h: string): { severity?: string } | undefined => out.links.find((l) => l.href === h);
+    const out = r.output as {
+      links: { href: string; severity?: string; status?: number }[];
+      broken: unknown[];
+    };
+    const byHref = (h: string): { severity?: string } | undefined =>
+      out.links.find((l) => l.href === h);
     expect(byHref('https://x.com/404')?.severity).toBe('critical');
     expect(byHref('https://x.com/500')?.severity).toBe('warning');
     // 301 con redirect:follow nel mock ritorna 301 → ok=false → severity info

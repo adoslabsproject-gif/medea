@@ -45,7 +45,13 @@ interface SubmissionRow {
 const DEFAULT_FORM_FIELDS = [
   { key: 'nome', label: 'Nome', type: 'text', required: true, placeholder: 'Mario Rossi' },
   { key: 'email', label: 'Email', type: 'email', required: true, placeholder: 'mario@example.com' },
-  { key: 'messaggio', label: 'Messaggio', type: 'textarea', required: true, placeholder: 'Scrivi qui...' },
+  {
+    key: 'messaggio',
+    label: 'Messaggio',
+    type: 'textarea',
+    required: true,
+    placeholder: 'Scrivi qui...',
+  },
 ];
 
 export function createFormsListRoutes(): Hono {
@@ -95,9 +101,9 @@ export function createFormsListRoutes(): Hono {
   // ───── QUICK-CREATE ─────
   app.post('/forms-list/quick-create', async (c) => {
     const tenantId = getTenantId(c);
-    const body = await c.req.json().catch(() => ({})) as { name?: string; title?: string };
-    const name = (body.name?.trim()) || 'Nuovo form';
-    const title = (body.title?.trim()) || name;
+    const body = (await c.req.json().catch(() => ({}))) as { name?: string; title?: string };
+    const name = body.name?.trim() || 'Nuovo form';
+    const title = body.title?.trim() || name;
 
     const triggerNodeId = `form-${nanoid(8)}`;
     const wf = await workflowService.create({
@@ -146,14 +152,19 @@ export function createFormsListRoutes(): Hono {
     const submissions: SubmissionRow[] = rows.map((r) => {
       let input: Record<string, unknown> = {};
       try {
-        const parsed = r.triggerPayloadJson ? JSON.parse(r.triggerPayloadJson) as unknown : null;
+        const parsed = r.triggerPayloadJson ? (JSON.parse(r.triggerPayloadJson) as unknown) : null;
         if (parsed && typeof parsed === 'object') {
           // Form trigger stores { fields: {...} } as triggerPayloadJson;
           // fall back to whole input if the shape isn't there.
           const p = parsed as Record<string, unknown>;
-          input = (p.fields && typeof p.fields === 'object' ? p.fields : p) as Record<string, unknown>;
+          input = (p.fields && typeof p.fields === 'object' ? p.fields : p) as Record<
+            string,
+            unknown
+          >;
         }
-      } catch { /* keep empty */ }
+      } catch {
+        /* keep empty */
+      }
       return {
         runId: r.id,
         status: r.status,
@@ -184,15 +195,27 @@ export function createFormsListRoutes(): Hono {
 
     // Discover all field names across all submissions for a stable header.
     const fieldSet = new Set<string>();
-    const parsed: { startedAt: string; status: string; runId: string; input: Record<string, unknown> }[] = [];
+    const parsed: {
+      startedAt: string;
+      status: string;
+      runId: string;
+      input: Record<string, unknown>;
+    }[] = [];
     for (const r of rows) {
       let input: Record<string, unknown> = {};
       try {
-        const p = r.triggerPayloadJson ? JSON.parse(r.triggerPayloadJson) as Record<string, unknown> : {};
+        const p = r.triggerPayloadJson
+          ? (JSON.parse(r.triggerPayloadJson) as Record<string, unknown>)
+          : {};
         if (p && typeof p === 'object') {
-          input = (p.fields && typeof p.fields === 'object' ? p.fields : p) as Record<string, unknown>;
+          input = (p.fields && typeof p.fields === 'object' ? p.fields : p) as Record<
+            string,
+            unknown
+          >;
         }
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
       for (const k of Object.keys(input)) fieldSet.add(k);
       parsed.push({ startedAt: r.startedAt, status: r.status, runId: r.id, input });
     }
@@ -209,7 +232,11 @@ export function createFormsListRoutes(): Hono {
     const lines: string[] = [];
     lines.push(['run_id', 'started_at', 'status', ...fields].map(esc).join(','));
     for (const row of parsed) {
-      lines.push([row.runId, row.startedAt, row.status, ...fields.map((f) => row.input[f])].map(esc).join(','));
+      lines.push(
+        [row.runId, row.startedAt, row.status, ...fields.map((f) => row.input[f])]
+          .map(esc)
+          .join(','),
+      );
     }
 
     const filename = `${wf.name.replace(/[^a-z0-9-_]+/giu, '_').slice(0, 60) || 'form'}-submissions.csv`;

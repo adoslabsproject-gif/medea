@@ -11,7 +11,9 @@ vi.mock('@/storage/db.js', () => ({
 }));
 
 const auditAppendMock = vi.fn();
-class AuditLogServiceMock { append = auditAppendMock; }
+class AuditLogServiceMock {
+  append = auditAppendMock;
+}
 vi.mock('./audit.service.js', () => ({ AuditLogService: AuditLogServiceMock }));
 
 const { VariablesService } = await import('./variables.service.js');
@@ -26,11 +28,13 @@ describe('🚨 set + get + list', () => {
     const svc = new VariablesService();
     await svc.set('wf-1', 'count', 42, 'default', 'u-1');
     expect(svc.get('wf-1', 'count')).toBe(42);
-    expect(auditAppendMock).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'variable.set',
-      resourceId: 'wf-1.count',
-      actorId: 'u-1',
-    }));
+    expect(auditAppendMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'variable.set',
+        resourceId: 'wf-1.count',
+        actorId: 'u-1',
+      }),
+    );
   });
 
   it('🚨 set object → JSON serialized + deserialized in get', async () => {
@@ -84,10 +88,12 @@ describe('🚨 delete', () => {
     const ok = await svc.delete('wf-1', 'k', 'default', 'u-2');
     expect(ok).toBe(true);
     expect(svc.get('wf-1', 'k')).toBeUndefined();
-    expect(auditAppendMock).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'variable.delete',
-      actorId: 'u-2',
-    }));
+    expect(auditAppendMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'variable.delete',
+        actorId: 'u-2',
+      }),
+    );
   });
 
   it('🚨 delete inesistente → false + NO audit', async () => {
@@ -108,7 +114,9 @@ describe('🚨 delete', () => {
 describe('🚨 ensureVariablesTable', () => {
   it('🚨 tabella creata con PK composta tenant+wf+name', () => {
     new VariablesService();
-    const t = sqliteInst.prepare("SELECT sql FROM sqlite_master WHERE name='workflow_variables'").get() as any;
+    const t = sqliteInst
+      .prepare("SELECT sql FROM sqlite_master WHERE name='workflow_variables'")
+      .get() as any;
     expect(t.sql).toContain('PRIMARY KEY (tenant_id, workflow_id, name)');
   });
 });

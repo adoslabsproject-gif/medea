@@ -23,7 +23,9 @@ import { Hono } from 'hono';
 import Database from 'better-sqlite3';
 
 const m = vi.hoisted(() => {
-  class NoLlmProviderError extends Error { override name = 'NoLlmProviderError'; }
+  class NoLlmProviderError extends Error {
+    override name = 'NoLlmProviderError';
+  }
   return {
     db: null as Database.Database | null,
     NoLlmProviderError,
@@ -47,12 +49,13 @@ vi.mock('@/services/catalog-retrieval/index.js', () => ({
   formatCatalogForPrompt: (
     retriever: { categoryMap: () => { category: string; label: string; count: number }[] },
     retrieved: readonly { defId: string; type: string; category: string; shortDesc: string }[],
-  ) => [
-    'FAMIGLIE DI NODI DISPONIBILI:',
-    ...retriever.categoryMap().map((c) => `  • ${c.category} (${String(c.count)})`),
-    'NODI PIÙ PERTINENTI ALLA RICHIESTA:',
-    ...retrieved.map((n) => `- ${n.defId} (${n.type})`),
-  ].join('\n'),
+  ) =>
+    [
+      'FAMIGLIE DI NODI DISPONIBILI:',
+      ...retriever.categoryMap().map((c) => `  • ${c.category} (${String(c.count)})`),
+      'NODI PIÙ PERTINENTI ALLA RICHIESTA:',
+      ...retrieved.map((n) => `- ${n.defId} (${n.type})`),
+    ].join('\n'),
 }));
 
 vi.mock('@/storage/db.js', () => ({
@@ -62,7 +65,9 @@ vi.mock('@/storage/db.js', () => ({
 vi.mock('@/lib/logger.js');
 
 vi.mock('@/middleware/rate-limit.js', () => ({
-  llmRateLimit: () => async (_c: unknown, next: () => Promise<void>) => { await next(); },
+  llmRateLimit: () => async (_c: unknown, next: () => Promise<void>) => {
+    await next();
+  },
 }));
 
 vi.mock('@/services/llm-resolver.service.js', () => ({
@@ -110,9 +115,15 @@ function setupSchema(): void {
 
 function insertSession(over: Partial<Record<string, unknown>> = {}): string {
   const id = (over.id as string) ?? `s-${Math.random().toString(36).slice(2, 8)}`;
-  m.db!.prepare('INSERT INTO ai_chat_sessions (id, tenant_id, user_id, surface, title, workflow_id) VALUES (?,?,?,?,?,?)').run(
-    id, over.tenant_id ?? 't1', over.user_id ?? 'u1', over.surface ?? 'generic',
-    over.title ?? null, over.workflow_id ?? null,
+  m.db!.prepare(
+    'INSERT INTO ai_chat_sessions (id, tenant_id, user_id, surface, title, workflow_id) VALUES (?,?,?,?,?,?)',
+  ).run(
+    id,
+    over.tenant_id ?? 't1',
+    over.user_id ?? 'u1',
+    over.surface ?? 'generic',
+    over.title ?? null,
+    over.workflow_id ?? null,
   );
   return id;
 }
@@ -121,7 +132,13 @@ function buildApp(auth: Partial<AuthContext> | null): Hono {
   const app = new Hono();
   app.use('*', async (c, next) => {
     if (auth) {
-      const full: AuthContext = { userId: 'u1', email: 'e@x', tenantId: 't1', role: 'owner', ...auth } as AuthContext;
+      const full: AuthContext = {
+        userId: 'u1',
+        email: 'e@x',
+        tenantId: 't1',
+        role: 'owner',
+        ...auth,
+      } as AuthContext;
       c.set('auth', full);
     }
     await next();
@@ -141,10 +158,17 @@ beforeEach(() => {
   m.buildCatalog.mockReset();
   m.fetchUrl.mockReset();
   m.webSearch.mockReset();
-  m.resolve.mockReturnValue({ provider: 'anthropic', apiKey: 'sk-test', model: 'claude-sonnet-4-6', baseUrl: undefined });
+  m.resolve.mockReturnValue({
+    provider: 'anthropic',
+    apiKey: 'sk-test',
+    model: 'claude-sonnet-4-6',
+    baseUrl: undefined,
+  });
   m.dispatchLLM.mockResolvedValue('reply text');
   m.detectIntents.mockReturnValue([]);
-  m.buildCatalog.mockReturnValue([{ defId: 'http_request', type: 'action', label: 'HTTP Request' }]);
+  m.buildCatalog.mockReturnValue([
+    { defId: 'http_request', type: 'action', label: 'HTTP Request' },
+  ]);
   // Default: retriever GIÙ → i test storici esercitano il fallback compatto.
   m.getRetriever.mockRejectedValue(new Error('retriever down (test default)'));
 });
@@ -152,27 +176,34 @@ beforeEach(() => {
 describe('POST /sessions — create', () => {
   it('401 senza auth', async () => {
     const res = await buildApp(null).request('/sessions', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({}),
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({}),
     });
     expect(res.status).toBe(401);
   });
 
   it('happy path: surface default generic, ritorna 201', async () => {
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/sessions', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({}),
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({}),
     });
     expect(res.status).toBe(201);
-    const body = await res.json() as { session: { surface: string; userId: string } };
+    const body = (await res.json()) as { session: { surface: string; userId: string } };
     expect(body.session.surface).toBe('generic');
     expect(body.session.userId).toBe('u1');
   });
 
   it('surface + title + workflowId propagati', async () => {
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/sessions', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ surface: 'help', title: 'Q1', workflowId: 'wf-1' }),
     });
-    const body = await res.json() as { session: { surface: string; title: string; workflowId: string } };
+    const body = (await res.json()) as {
+      session: { surface: string; title: string; workflowId: string };
+    };
     expect(body.session.surface).toBe('help');
     expect(body.session.title).toBe('Q1');
     expect(body.session.workflowId).toBe('wf-1');
@@ -189,7 +220,7 @@ describe('GET /sessions — list user-scoped', () => {
     insertSession({ tenant_id: 't1', user_id: 'u1', surface: 'help' });
     insertSession({ tenant_id: 't1', user_id: 'u2', surface: 'help' }); // altro user
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/sessions');
-    const body = await res.json() as { sessions: unknown[] };
+    const body = (await res.json()) as { sessions: unknown[] };
     expect(body.sessions).toHaveLength(1);
   });
 
@@ -197,7 +228,7 @@ describe('GET /sessions — list user-scoped', () => {
     insertSession({ tenant_id: 't1', user_id: 'u1', surface: 'help' });
     insertSession({ tenant_id: 't1', user_id: 'u1', surface: 'scaffold' });
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/sessions?surface=help');
-    const body = await res.json() as { sessions: { surface: string }[] };
+    const body = (await res.json()) as { sessions: { surface: string }[] };
     expect(body.sessions).toHaveLength(1);
     expect(body.sessions[0]!.surface).toBe('help');
   });
@@ -205,7 +236,7 @@ describe('GET /sessions — list user-scoped', () => {
   it('🚨 tenant isolation: tA non vede sessioni tB', async () => {
     insertSession({ tenant_id: 'tB', user_id: 'u1' });
     const res = await buildApp({ userId: 'u1', tenantId: 'tA' }).request('/sessions');
-    const body = await res.json() as { sessions: unknown[] };
+    const body = (await res.json()) as { sessions: unknown[] };
     expect(body.sessions).toHaveLength(0);
   });
 });
@@ -218,15 +249,21 @@ describe('GET /sessions/:id/messages', () => {
 
   it('🚨 404 se session di altro user (no leak)', async () => {
     const sid = insertSession({ user_id: 'u-other' });
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`);
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      `/sessions/${sid}/messages`,
+    );
     expect(res.status).toBe(404);
   });
 
   it('happy path: session + messages ordinati id ASC', async () => {
     const sid = insertSession();
-    m.db!.prepare(`INSERT INTO ai_chat_messages (session_id, role, content) VALUES (?, 'user', 'hi'), (?, 'assistant', 'hello')`).run(sid, sid);
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`);
-    const body = await res.json() as { messages: { role: string; content: string }[] };
+    m.db!.prepare(
+      `INSERT INTO ai_chat_messages (session_id, role, content) VALUES (?, 'user', 'hi'), (?, 'assistant', 'hello')`,
+    ).run(sid, sid);
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      `/sessions/${sid}/messages`,
+    );
+    const body = (await res.json()) as { messages: { role: string; content: string }[] };
     expect(body.messages).toHaveLength(2);
     expect(body.messages[0]!.role).toBe('user');
     expect(body.messages[1]!.role).toBe('assistant');
@@ -236,51 +273,77 @@ describe('GET /sessions/:id/messages', () => {
 describe('POST /sessions/:id/messages — dispatch', () => {
   it('🚨 NoLlmProviderError → 503', async () => {
     const sid = insertSession();
-    m.resolve.mockImplementation(() => { throw new m.NoLlmProviderError('no provider'); });
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ content: 'hello' }),
+    m.resolve.mockImplementation(() => {
+      throw new m.NoLlmProviderError('no provider');
     });
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      `/sessions/${sid}/messages`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ content: 'hello' }),
+      },
+    );
     expect(res.status).toBe(503);
-    expect((await res.json() as { error: string }).error).toBe('no_provider');
+    expect(((await res.json()) as { error: string }).error).toBe('no_provider');
   });
 
   it('🚨 errore generico resolve → THROW (boundary)', async () => {
     const sid = insertSession();
-    m.resolve.mockImplementation(() => { throw new Error('boom'); });
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ content: 'x' }),
+    m.resolve.mockImplementation(() => {
+      throw new Error('boom');
     });
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      `/sessions/${sid}/messages`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ content: 'x' }),
+      },
+    );
     expect(res.status).toBe(500);
   });
 
   it('dispatchLLM throw → 502 dispatch_failed', async () => {
     const sid = insertSession();
     m.dispatchLLM.mockRejectedValue(new Error('rate limit'));
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ content: 'hi' }),
-    });
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      `/sessions/${sid}/messages`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ content: 'hi' }),
+      },
+    );
     expect(res.status).toBe(502);
-    const body = await res.json() as { error: string };
+    const body = (await res.json()) as { error: string };
     expect(body.error).toBe('dispatch_failed');
   });
 
   it('happy path: salva user+assistant + auto-title', async () => {
     const sid = insertSession({ title: null });
     m.dispatchLLM.mockResolvedValue('Ciao!');
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ content: 'Domanda test breve' }),
-    });
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      `/sessions/${sid}/messages`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ content: 'Domanda test breve' }),
+      },
+    );
     expect(res.status).toBe(200);
-    const msgs = m.db!.prepare('SELECT role, content FROM ai_chat_messages WHERE session_id = ? ORDER BY id ASC').all(sid) as { role: string; content: string }[];
+    const msgs = m
+      .db!.prepare(
+        'SELECT role, content FROM ai_chat_messages WHERE session_id = ? ORDER BY id ASC',
+      )
+      .all(sid) as { role: string; content: string }[];
     expect(msgs).toHaveLength(2);
     expect(msgs[0]!.role).toBe('user');
     expect(msgs[1]!.role).toBe('assistant');
     expect(msgs[1]!.content).toBe('Ciao!');
-    const session = m.db!.prepare('SELECT title FROM ai_chat_sessions WHERE id = ?').get(sid) as { title: string };
+    const session = m.db!.prepare('SELECT title FROM ai_chat_sessions WHERE id = ?').get(sid) as {
+      title: string;
+    };
     expect(session.title).toBe('Domanda test breve');
   });
 
@@ -288,20 +351,26 @@ describe('POST /sessions/:id/messages — dispatch', () => {
     const sid = insertSession({ title: null });
     const longMsg = 'A'.repeat(100);
     await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ content: longMsg }),
     });
-    const session = m.db!.prepare('SELECT title FROM ai_chat_sessions WHERE id = ?').get(sid) as { title: string };
+    const session = m.db!.prepare('SELECT title FROM ai_chat_sessions WHERE id = ?').get(sid) as {
+      title: string;
+    };
     expect(session.title).toMatch(/^A{60}…$/u);
   });
 
   it('title pre-esistente NON sovrascritto da auto-title', async () => {
     const sid = insertSession({ title: 'existing' });
     await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ content: 'new question' }),
     });
-    const session = m.db!.prepare('SELECT title FROM ai_chat_sessions WHERE id = ?').get(sid) as { title: string };
+    const session = m.db!.prepare('SELECT title FROM ai_chat_sessions WHERE id = ?').get(sid) as {
+      title: string;
+    };
     expect(session.title).toBe('existing');
   });
 
@@ -311,7 +380,8 @@ describe('POST /sessions/:id/messages — dispatch', () => {
     m.executeIntents.mockResolvedValue([{ ok: true, result: 'res' }]);
     m.formatToolResults.mockReturnValue('CTX result');
     await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ content: 'cerca foo' }),
     });
     expect(m.detectIntents).toHaveBeenCalledWith('cerca foo');
@@ -321,7 +391,8 @@ describe('POST /sessions/:id/messages — dispatch', () => {
   it('enableTools=false → intent detection NON eseguita', async () => {
     const sid = insertSession();
     await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ content: 'cerca foo', enableTools: false }),
     });
     expect(m.detectIntents).not.toHaveBeenCalled();
@@ -329,9 +400,15 @@ describe('POST /sessions/:id/messages — dispatch', () => {
 
   it('attachment url: fetchUrl + extracted text iniettato', async () => {
     const sid = insertSession();
-    m.fetchUrl.mockResolvedValue({ finalUrl: 'https://x.com', title: 'X', description: 'X site', content: 'page content' });
+    m.fetchUrl.mockResolvedValue({
+      finalUrl: 'https://x.com',
+      title: 'X',
+      description: 'X site',
+      content: 'page content',
+    });
     await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         content: 'analizza',
         attachments: [{ kind: 'url', name: 'site', url: 'https://x.com' }],
@@ -347,9 +424,11 @@ describe('POST /sessions/:id/messages — dispatch', () => {
     const sid = insertSession();
     m.fetchUrl.mockRejectedValue(new Error('DNS resolution failed'));
     await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        content: 'check', attachments: [{ kind: 'url', name: 'fail', url: 'https://broken.com' }],
+        content: 'check',
+        attachments: [{ kind: 'url', name: 'fail', url: 'https://broken.com' }],
       }),
     });
     const dispatchArgs = m.dispatchLLM.mock.calls[0]!;
@@ -360,7 +439,8 @@ describe('POST /sessions/:id/messages — dispatch', () => {
     const sid = insertSession();
     const docContent = Buffer.from('contenuto documento esteso').toString('base64');
     await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         content: 'analizza doc',
         attachments: [{ kind: 'document', name: 'spec.txt', dataBase64: docContent }],
@@ -372,32 +452,46 @@ describe('POST /sessions/:id/messages — dispatch', () => {
 
   it('zod 400 content > 50000 char', async () => {
     const sid = insertSession();
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ content: 'a'.repeat(50001) }),
-    });
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      `/sessions/${sid}/messages`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ content: 'a'.repeat(50001) }),
+      },
+    );
     expect(res.status).toBe(400);
   });
 
   it('zod 400 attachments > 10', async () => {
     const sid = insertSession();
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        content: 'x',
-        attachments: Array.from({ length: 11 }, (_, i) => ({ kind: 'image', name: `a-${i}` })),
-      }),
-    });
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      `/sessions/${sid}/messages`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          content: 'x',
+          attachments: Array.from({ length: 11 }, (_, i) => ({ kind: 'image', name: `a-${i}` })),
+        }),
+      },
+    );
     expect(res.status).toBe(400);
   });
 
   it('catalog build throw → graceful (chat continua)', async () => {
     const sid = insertSession();
-    m.buildCatalog.mockImplementation(() => { throw new Error('catalog broken'); });
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ content: 'x' }),
+    m.buildCatalog.mockImplementation(() => {
+      throw new Error('catalog broken');
     });
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      `/sessions/${sid}/messages`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ content: 'x' }),
+      },
+    );
     expect(res.status).toBe(200);
   });
 
@@ -416,16 +510,26 @@ describe('POST /sessions/:id/messages — dispatch', () => {
   it('🚨 retriever OK → systemPrompt = famiglie + top-k del MESSAGGIO + alias (niente catalogo intero)', async () => {
     const sid = insertSession();
     const retrieve = vi.fn().mockResolvedValue([
-      { defId: 'action_run_js', type: 'action', category: 'utility', shortDesc: 'Esegue JS', score: 1 },
+      {
+        defId: 'action_run_js',
+        type: 'action',
+        category: 'utility',
+        shortDesc: 'Esegue JS',
+        score: 1,
+      },
     ]);
     m.getRetriever.mockResolvedValue({
       retrieve,
       categoryMap: () => [{ category: 'utility', label: 'Utility', count: 12 }],
     });
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ content: 'creami un nodo code' }),
-    });
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      `/sessions/${sid}/messages`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ content: 'creami un nodo code' }),
+      },
+    );
     expect(res.status).toBe(200);
     // Il retriever è interrogato col MESSAGGIO dell'utente (tenant giusto).
     expect(m.getRetriever).toHaveBeenCalledWith('t1');
@@ -444,10 +548,14 @@ describe('POST /sessions/:id/messages — dispatch', () => {
       { defId: 'action_run_js', type: 'action', label: 'Run JavaScript' },
       { defId: 'agent_code_reviewer', type: 'agent', label: 'Code Reviewer' },
     ]);
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ content: 'creami un nodo code' }),
-    });
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      `/sessions/${sid}/messages`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ content: 'creami un nodo code' }),
+      },
+    );
     expect(res.status).toBe(200);
     const systemPrompt = m.dispatchLLM.mock.calls[0]?.[3] as string;
     // La label è nel catalogo iniettato (senza, "Run JavaScript" è invisibile).
@@ -460,7 +568,8 @@ describe('POST /sessions/:id/messages — dispatch', () => {
 describe('PATCH /sessions/:id — rename', () => {
   it('401 con body valido (zod passa, fallisce su auth check)', async () => {
     const res = await buildApp(null).request('/sessions/x', {
-      method: 'PATCH', headers: { 'content-type': 'application/json' },
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ title: 'valid' }),
     });
     expect(res.status).toBe(401);
@@ -469,7 +578,8 @@ describe('PATCH /sessions/:id — rename', () => {
   it('zod 400 title vuoto', async () => {
     const sid = insertSession();
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}`, {
-      method: 'PATCH', headers: { 'content-type': 'application/json' },
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ title: '' }),
     });
     expect(res.status).toBe(400);
@@ -478,18 +588,22 @@ describe('PATCH /sessions/:id — rename', () => {
   it('happy path: title update', async () => {
     const sid = insertSession({ title: 'old' });
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}`, {
-      method: 'PATCH', headers: { 'content-type': 'application/json' },
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ title: 'new' }),
     });
     expect(res.status).toBe(200);
-    const t = (m.db!.prepare('SELECT title FROM ai_chat_sessions WHERE id = ?').get(sid) as { title: string }).title;
+    const t = (
+      m.db!.prepare('SELECT title FROM ai_chat_sessions WHERE id = ?').get(sid) as { title: string }
+    ).title;
     expect(t).toBe('new');
   });
 
   it('🚨 404 cross-user', async () => {
     const sid = insertSession({ user_id: 'u-other' });
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}`, {
-      method: 'PATCH', headers: { 'content-type': 'application/json' },
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ title: 'x' }),
     });
     expect(res.status).toBe(404);
@@ -504,15 +618,23 @@ describe('DELETE /sessions/:id — GDPR delete', () => {
 
   it('happy path → row sparita', async () => {
     const sid = insertSession();
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}`, { method: 'DELETE' });
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}`, {
+      method: 'DELETE',
+    });
     expect(res.status).toBe(200);
-    const count = (m.db!.prepare('SELECT COUNT(*) AS c FROM ai_chat_sessions WHERE id = ?').get(sid) as { c: number }).c;
+    const count = (
+      m.db!.prepare('SELECT COUNT(*) AS c FROM ai_chat_sessions WHERE id = ?').get(sid) as {
+        c: number;
+      }
+    ).c;
     expect(count).toBe(0);
   });
 
   it('🚨 404 cross-user (no leak)', async () => {
     const sid = insertSession({ user_id: 'u-other' });
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}`, { method: 'DELETE' });
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(`/sessions/${sid}`, {
+      method: 'DELETE',
+    });
     expect(res.status).toBe(404);
   });
 });

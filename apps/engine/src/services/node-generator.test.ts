@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { NodeGeneratorService } from './node-generator.service.js';
-import type { ILLMProvider, LLMCompletionRequest, LLMCompletionResponse, LLMStreamChunk } from '@/ports/llm-provider.js';
+import type {
+  ILLMProvider,
+  LLMCompletionRequest,
+  LLMCompletionResponse,
+  LLMStreamChunk,
+} from '@/ports/llm-provider.js';
 
 class StubLLMProvider implements ILLMProvider {
   readonly name = 'stub';
@@ -8,7 +13,7 @@ class StubLLMProvider implements ILLMProvider {
   complete(_req: LLMCompletionRequest): Promise<LLMCompletionResponse> {
     return Promise.resolve({ text: this.response, finishReason: 'stop' });
   }
-   
+
   async *stream(_req: LLMCompletionRequest): AsyncIterable<LLMStreamChunk> {
     yield { delta: this.response, done: true, finishReason: 'stop' };
   }
@@ -94,13 +99,24 @@ describe('NodeGeneratorService', () => {
       complete(_req: LLMCompletionRequest): Promise<LLMCompletionResponse> {
         return Promise.resolve({ text: this.chunks.join(''), finishReason: 'stop' });
       }
-       
+
       async *stream(_req: LLMCompletionRequest): AsyncIterable<LLMStreamChunk> {
         for (const c of this.chunks) yield { delta: c, done: false };
         yield { delta: '', done: true, finishReason: 'stop' };
       }
     }
-    const pieces = ['```json\n{"def":', JSON.stringify({ id: 'action_x', type: 'action', label: 'X', icon: 'i', color: '#ffffff', description: 'd' }), ',"executorSource":"async function execute(c,i,x){return {output:1,durationMs:0};}","rationale":"r"}\n```'];
+    const pieces = [
+      '```json\n{"def":',
+      JSON.stringify({
+        id: 'action_x',
+        type: 'action',
+        label: 'X',
+        icon: 'i',
+        color: '#ffffff',
+        description: 'd',
+      }),
+      ',"executorSource":"async function execute(c,i,x){return {output:1,durationMs:0};}","rationale":"r"}\n```',
+    ];
     const service = new NodeGeneratorService(new MultiChunkLLM(pieces));
     const events: string[] = [];
     let nodeId = '';
@@ -115,14 +131,24 @@ describe('NodeGeneratorService', () => {
   it('generateStream: errore di validazione si propaga (no done)', async () => {
     class BrokenLLM implements ILLMProvider {
       readonly name = 'broken';
-      complete(): Promise<LLMCompletionResponse> { return Promise.resolve({ text: 'nope', finishReason: 'stop' }); }
-       
-      async *stream(): AsyncIterable<LLMStreamChunk> { yield { delta: 'not json at all', done: true }; }
+      complete(): Promise<LLMCompletionResponse> {
+        return Promise.resolve({ text: 'nope', finishReason: 'stop' });
+      }
+
+      async *stream(): AsyncIterable<LLMStreamChunk> {
+        yield { delta: 'not json at all', done: true };
+      }
     }
     const service = new NodeGeneratorService(new BrokenLLM());
-    await expect((async () => {
-      for await (const _ev of service.generateStream({ description: 'a long enough description' })) { /* drain */ }
-    })()).rejects.toThrow(/not valid JSON/u);
+    await expect(
+      (async () => {
+        for await (const _ev of service.generateStream({
+          description: 'a long enough description',
+        })) {
+          /* drain */
+        }
+      })(),
+    ).rejects.toThrow(/not valid JSON/u);
   });
 
   it('parses JSON outside fenced block too', () => {
@@ -135,7 +161,8 @@ describe('NodeGeneratorService', () => {
         color: '#ffffff',
         description: 'x',
       },
-      executorSource: 'async function execute(config,input,context){return {output:null,durationMs:0};}',
+      executorSource:
+        'async function execute(config,input,context){return {output:null,durationMs:0};}',
       rationale: 'x',
     });
     const service = new NodeGeneratorService(new StubLLMProvider(noFence));

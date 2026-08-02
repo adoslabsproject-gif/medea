@@ -21,7 +21,7 @@ export const odooUpdateActivityNodeDef: NodeDef = {
     'SLA escalation. Il campo activity_type_id richiede di sapere a memoria gli ID numerici delle activity types ' +
     'configurate nel tenant Odoo (4=To Do, 1=Email, 2=Call, 3=Meeting, ...) — informazione opaca per un utente ' +
     'non-tecnico. Questo nodo sblocca il lookup BY NAME: si passa "Da Fare", "Telefonata", "Verifica documenti" ' +
-    'e il nodo risolve l\'ID tramite ricerca exact-match su mail.activity.type (caching del risultato per ' +
+    "e il nodo risolve l'ID tramite ricerca exact-match su mail.activity.type (caching del risultato per " +
     'workflow successivi nello stesso run). Date_deadline accetta sia ISO 8601 (2026-06-15) sia espressioni ' +
     'relative ("+3d", "+1w", "+2M") parsate localmente prima dell\'invocazione RPC. User_id supporta sia ID che ' +
     'email per assegnazione a commerciale in vacanza con backup automatico al supervisor (lookup user_id con ' +
@@ -37,42 +37,98 @@ export const odooUpdateActivityNodeDef: NodeDef = {
     'scadenza → activity tipo "Email" su sale.order parent "Invio offerta rinnovo".',
 
   configFields: [
-    { key: 'baseUrl', label: 'URL Odoo', type: 'text', required: true,
-      placeholder: 'https://miostudio.odoo.com' },
+    {
+      key: 'baseUrl',
+      label: 'URL Odoo',
+      type: 'text',
+      required: true,
+      placeholder: 'https://miostudio.odoo.com',
+    },
     { key: 'database', label: 'Database', type: 'text', required: true },
     { key: 'login', label: 'Login', type: 'text', required: true },
     { key: 'password', label: 'Password / API Key', type: 'secret', required: true },
 
-    { key: 'resModel', label: 'Model target', type: 'text', required: true,
+    {
+      key: 'resModel',
+      label: 'Model target',
+      type: 'text',
+      required: true,
       placeholder: 'crm.lead',
-      help: 'Model Odoo del record (es. res.partner, crm.lead, sale.order). ' +
-        'Lowercase + dots, regex enforced.' },
-    { key: 'resId', label: 'ID record target', type: 'number', required: true,
-      help: 'Id del record sul quale agganciare l\'attività.' },
+      help:
+        'Model Odoo del record (es. res.partner, crm.lead, sale.order). ' +
+        'Lowercase + dots, regex enforced.',
+    },
+    {
+      key: 'resId',
+      label: 'ID record target',
+      type: 'number',
+      required: true,
+      help: "Id del record sul quale agganciare l'attività.",
+    },
 
-    { key: 'activityTypeId', label: 'activity_type_id (numerico)', type: 'number',
+    {
+      key: 'activityTypeId',
+      label: 'activity_type_id (numerico)',
+      type: 'number',
       required: false,
-      help: 'Id da mail.activity.type. Più veloce dell\'opzione name (1 chiamata in meno).' },
-    { key: 'activityTypeName', label: 'Activity type per nome', type: 'text',
-      required: false, placeholder: 'To Do',
-      help: 'Risolto via search_read su mail.activity.type. Usabile se ' +
-        'non conosci l\'id (es. multi-installazione).' },
+      help: "Id da mail.activity.type. Più veloce dell'opzione name (1 chiamata in meno).",
+    },
+    {
+      key: 'activityTypeName',
+      label: 'Activity type per nome',
+      type: 'text',
+      required: false,
+      placeholder: 'To Do',
+      help:
+        'Risolto via search_read su mail.activity.type. Usabile se ' +
+        "non conosci l'id (es. multi-installazione).",
+    },
 
-    { key: 'summary', label: 'Summary', type: 'text', required: true,
+    {
+      key: 'summary',
+      label: 'Summary',
+      type: 'text',
+      required: true,
       placeholder: 'Verifica manuale email cliente',
-      help: 'Testo breve mostrato sulla card attività.' },
-    { key: 'noteHtml', label: 'Nota (HTML)', type: 'textarea', required: false,
-      help: 'Corpo HTML dell\'attività. Accetta basic HTML (p, br, ul, b).' },
-    { key: 'dateDeadline', label: 'Deadline (YYYY-MM-DD)', type: 'text', required: false,
+      help: 'Testo breve mostrato sulla card attività.',
+    },
+    {
+      key: 'noteHtml',
+      label: 'Nota (HTML)',
+      type: 'textarea',
+      required: false,
+      help: "Corpo HTML dell'attività. Accetta basic HTML (p, br, ul, b).",
+    },
+    {
+      key: 'dateDeadline',
+      label: 'Deadline (YYYY-MM-DD)',
+      type: 'text',
+      required: false,
       placeholder: '2026-06-10',
-      help: 'Formato ISO. Default = oggi (server time).' },
-    { key: 'userId', label: 'Assegna a user_id', type: 'number', required: false,
-      help: 'Default = utente autenticato della call.' },
+      help: 'Formato ISO. Default = oggi (server time).',
+    },
+    {
+      key: 'userId',
+      label: 'Assegna a user_id',
+      type: 'number',
+      required: false,
+      help: 'Default = utente autenticato della call.',
+    },
 
-    { key: 'timeoutMs', label: 'Timeout (ms)', type: 'number', required: false,
-      defaultValue: '60000' },
-    { key: 'followRedirects', label: 'Segui redirect', type: 'boolean',
-      required: false, defaultValue: 'true' },
+    {
+      key: 'timeoutMs',
+      label: 'Timeout (ms)',
+      type: 'number',
+      required: false,
+      defaultValue: '60000',
+    },
+    {
+      key: 'followRedirects',
+      label: 'Segui redirect',
+      type: 'boolean',
+      required: false,
+      defaultValue: 'true',
+    },
   ],
 
   vendor: 'flowforge',

@@ -73,12 +73,18 @@ async function portalFetch<T>(path: string, body: unknown): Promise<T | null> {
     });
     if (!res.ok) {
       const text = (await readTextTruncated(res, 65_536).catch(() => ({ text: '' }))).text;
-      logger.warn({ status: res.status, path, body: text.slice(0, 300) }, '[templates-portal] non-2xx');
+      logger.warn(
+        { status: res.status, path, body: text.slice(0, 300) },
+        '[templates-portal] non-2xx',
+      );
       return null;
     }
     return await readJsonCapped<T>(res);
   } catch (err) {
-    logger.warn({ err: err instanceof Error ? err.message : String(err), path }, '[templates-portal] fetch failed (graceful degrade)');
+    logger.warn(
+      { err: err instanceof Error ? err.message : String(err), path },
+      '[templates-portal] fetch failed (graceful degrade)',
+    );
     return null;
   }
 }

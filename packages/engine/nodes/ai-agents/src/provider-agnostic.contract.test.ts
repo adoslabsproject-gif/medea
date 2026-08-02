@@ -19,7 +19,16 @@ import { describe, it, expect } from 'vitest';
 import { aiAgentNodes, AI_AGENT_DEFINITIONS } from './index.js';
 
 // Provider che l'executor (dispatchLLM) sa gestire — fonte di verità della capability.
-const SUPPORTED = ['anthropic', 'openai', 'gemini', 'mistral', 'groq', 'openrouter', 'ollama', 'liara'] as const;
+const SUPPORTED = [
+  'anthropic',
+  'openai',
+  'gemini',
+  'mistral',
+  'groq',
+  'openrouter',
+  'ollama',
+  'liara',
+] as const;
 
 const genericIds = new Set(AI_AGENT_DEFINITIONS.map((a) => a.id));
 const genericNodes = aiAgentNodes.filter((n) => genericIds.has(n.def.id));
@@ -53,7 +62,10 @@ describe('agent generici — provider-agnostici (contract)', () => {
     for (const node of genericNodes) {
       const d = node.def.description;
       for (const re of RESTRICTIVE) {
-        expect(re.test(d), `${node.def.id}: description restringe i provider (${re}) ma il nodo è provider-agnostico`).toBe(false);
+        expect(
+          re.test(d),
+          `${node.def.id}: description restringe i provider (${re}) ma il nodo è provider-agnostico`,
+        ).toBe(false);
       }
     }
   });

@@ -5,7 +5,9 @@ import { CursorStrategy } from './cursor.js';
 import { LinkHeaderStrategy } from './link-header.js';
 
 const okResponse = (body: unknown, headers: Record<string, string> = {}) => ({
-  body, headers, status: 200,
+  body,
+  headers,
+  status: 200,
 });
 
 describe('paginationWalker', () => {
@@ -76,9 +78,8 @@ describe('paginationWalker', () => {
     let call = 0;
     const fetchPage = vi.fn(async () => {
       call += 1;
-      const headers: Record<string, string> = call < 3
-        ? { link: `<https://x.com/p${String(call + 1)}>; rel="next"` }
-        : {};
+      const headers: Record<string, string> =
+        call < 3 ? { link: `<https://x.com/p${String(call + 1)}>; rel="next"` } : {};
       return okResponse([call], headers);
     });
     const r = await paginationWalker({
@@ -112,14 +113,15 @@ describe('paginationWalker', () => {
     const fetchPage = vi.fn(async () =>
       okResponse([1], { link: '<http://169.254.169.254/imds>; rel="next"' }),
     );
-    await expect(paginationWalker({
-      strategy: new LinkHeaderStrategy(),
-      ctx: { baseUrl: 'https://x.com/p1', maxPages: 10, pageSize: 50 },
-      fetchPage,
-      validateUrl: (url) => url.includes('169.254')
-        ? { ok: false, reason: 'CLOUD_METADATA' }
-        : { ok: true },
-    })).rejects.toThrow(/CLOUD_METADATA/);
+    await expect(
+      paginationWalker({
+        strategy: new LinkHeaderStrategy(),
+        ctx: { baseUrl: 'https://x.com/p1', maxPages: 10, pageSize: 50 },
+        fetchPage,
+        validateUrl: (url) =>
+          url.includes('169.254') ? { ok: false, reason: 'CLOUD_METADATA' } : { ok: true },
+      }),
+    ).rejects.toThrow(/CLOUD_METADATA/);
   });
 
   it('abort signal interrupts walker', async () => {
@@ -128,12 +130,14 @@ describe('paginationWalker', () => {
       ctrl.abort();
       return okResponse({ data: new Array(50).fill(0) });
     });
-    await expect(paginationWalker({
-      strategy: new PageNumberStrategy(),
-      ctx: { baseUrl: 'https://x.com/u', maxPages: 10, pageSize: 50 },
-      itemsField: 'data',
-      fetchPage,
-      signal: ctrl.signal,
-    })).rejects.toThrow(/Aborted/);
+    await expect(
+      paginationWalker({
+        strategy: new PageNumberStrategy(),
+        ctx: { baseUrl: 'https://x.com/u', maxPages: 10, pageSize: 50 },
+        itemsField: 'data',
+        fetchPage,
+        signal: ctrl.signal,
+      }),
+    ).rejects.toThrow(/Aborted/);
   });
 });

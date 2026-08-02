@@ -12,11 +12,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const evalMock = vi.hoisted(() => vi.fn());
 vi.mock('@/engine/interpreter.js', () => ({ evaluateExpression: evalMock }));
 
-beforeEach(() => { evalMock.mockReset(); });
+beforeEach(() => {
+  evalMock.mockReset();
+});
 
 const { LogicIfStrategy } = await import('./logic-if.strategy.js');
 
-function mkCtx(config: Record<string, unknown>, scope: Record<string, unknown> = { vars: {}, secrets: {} }) {
+function mkCtx(
+  config: Record<string, unknown>,
+  scope: Record<string, unknown> = { vars: {}, secrets: {} },
+) {
   return {
     module: { def: { id: 'logic_if' } },
     interpolatedConfig: config,
@@ -75,7 +80,9 @@ describe('priorità 1 — conditionRules visual builder (evaluateRuleset REALE)'
       combinator: 'AND',
       rules: [{ left: '{{age}}', op: 'greater_than', right: '18' }],
     });
-    const res = await strat.execute(mkCtx({ conditionRules: rules, condition: 'x' }, { vars: { age: 25 }, secrets: {} }));
+    const res = await strat.execute(
+      mkCtx({ conditionRules: rules, condition: 'x' }, { vars: { age: 25 }, secrets: {} }),
+    );
     // Il branch dipende dal ruleset reale, NON dal mock legacy.
     expect(['true', 'false']).toContain(res.chosenBranch);
     expect(evalMock).not.toHaveBeenCalled(); // priorità 1 ha la precedenza
@@ -85,7 +92,9 @@ describe('priorità 1 — conditionRules visual builder (evaluateRuleset REALE)'
   it('ruleset VUOTO (0 regole) → fallback all expression legacy', async () => {
     evalMock.mockReturnValue(true);
     const emptyRuleset = JSON.stringify({ combinator: 'and', rules: [] });
-    const res = await strat.execute(mkCtx({ conditionRules: emptyRuleset, condition: 'fallback_expr' }));
+    const res = await strat.execute(
+      mkCtx({ conditionRules: emptyRuleset, condition: 'fallback_expr' }),
+    );
     expect(evalMock).toHaveBeenCalledWith('fallback_expr', expect.anything()); // fallback usato
     expect(res.chosenBranch).toBe('true');
   });

@@ -45,9 +45,10 @@ export function createRunRoutes(eventBus: IEventBus): Hono {
     const depthParsed = depthHeader !== undefined ? Number(depthHeader) : NaN;
     // Accept il depth header SOLO se chiamata interna. Per caller esterni
     // → depth ignorato (= undefined) → trattato come depth 0 = run user-triggered.
-    const subworkflowDepth = isInternalCaller && Number.isFinite(depthParsed)
-      ? Math.max(0, Math.min(1_000_000, Math.floor(depthParsed)))
-      : undefined;
+    const subworkflowDepth =
+      isInternalCaller && Number.isFinite(depthParsed)
+        ? Math.max(0, Math.min(1_000_000, Math.floor(depthParsed)))
+        : undefined;
 
     // Log esplicito quando un caller esterno tenta di iniettare depth (potenziale
     // exploit attempt → security signal per Sentinel). Nessun reject (silent
@@ -80,13 +81,17 @@ export function createRunRoutes(eventBus: IEventBus): Hono {
             tenantService.checkQuota(tenantId, 'workflows', 1);
           } catch (err) {
             if (err instanceof QuotaExceededError) {
-              return c.json({
-                error: `Hai raggiunto il limite di ${String(err.limit)} workflow attivi del tuo piano. ` +
-                       `Disattiva un workflow attivo per poter testare questo, oppure passa a un piano superiore.`,
-                code: 'QUOTA_TEST_BLOCKED',
-                limit: err.limit,
-                current: err.current,
-              }, 402);
+              return c.json(
+                {
+                  error:
+                    `Hai raggiunto il limite di ${String(err.limit)} workflow attivi del tuo piano. ` +
+                    `Disattiva un workflow attivo per poter testare questo, oppure passa a un piano superiore.`,
+                  code: 'QUOTA_TEST_BLOCKED',
+                  limit: err.limit,
+                  current: err.current,
+                },
+                402,
+              );
             }
             throw err;
           }
@@ -135,40 +140,44 @@ export function createRunRoutes(eventBus: IEventBus): Hono {
   // is purely compute (no LLM spend, no Liara queue) — 20/min/user gives
   // headroom for legitimate iterative debugging while still capping abuse.
   // ─────────────────────────────────────────────────────────────────
-  app.post('/runs/:id/replay', rateLimit({
-    windowMs: 60_000,
-    perTenant: 60,
-    perUser: 20,
-    label: 'run-replay',
-  }), async (c) => {
-    const tenantId = getTenantId(c);
-    const runId = c.req.param('id') ?? '';
-    if (runId === '') {
-      return c.json({ error: 'missing run id' }, 400);
-    }
-    const fromStepRaw = c.req.query('fromStep');
-    const fromStep = fromStepRaw !== undefined ? Number(fromStepRaw) : undefined;
-    // D2 (2026-06-06): replay UX-friendly per nodeId. Risolto a fromStep
-    // dal service. Permette al canvas editor di "Re-esegui da questo nodo"
-    // senza dover sapere l'indice numerico nello steps array (instabile dopo refactor).
-    // Accetta sia `fromNodeId` (canonico) sia `fromNode` (alias compat editor SPA).
-    const fromNodeId = c.req.query('fromNodeId') ?? c.req.query('fromNode');
-    try {
-      const opts: { fromStep?: number; fromNodeId?: string; tenantId?: string } = { tenantId };
-      if (fromStep !== undefined && Number.isFinite(fromStep) && fromStep >= 0) {
-        opts.fromStep = fromStep;
+  app.post(
+    '/runs/:id/replay',
+    rateLimit({
+      windowMs: 60_000,
+      perTenant: 60,
+      perUser: 20,
+      label: 'run-replay',
+    }),
+    async (c) => {
+      const tenantId = getTenantId(c);
+      const runId = c.req.param('id') ?? '';
+      if (runId === '') {
+        return c.json({ error: 'missing run id' }, 400);
       }
-      if (fromNodeId && fromNodeId.length > 0 && fromNodeId.length <= 128) {
-        opts.fromNodeId = fromNodeId;
+      const fromStepRaw = c.req.query('fromStep');
+      const fromStep = fromStepRaw !== undefined ? Number(fromStepRaw) : undefined;
+      // D2 (2026-06-06): replay UX-friendly per nodeId. Risolto a fromStep
+      // dal service. Permette al canvas editor di "Re-esegui da questo nodo"
+      // senza dover sapere l'indice numerico nello steps array (instabile dopo refactor).
+      // Accetta sia `fromNodeId` (canonico) sia `fromNode` (alias compat editor SPA).
+      const fromNodeId = c.req.query('fromNodeId') ?? c.req.query('fromNode');
+      try {
+        const opts: { fromStep?: number; fromNodeId?: string; tenantId?: string } = { tenantId };
+        if (fromStep !== undefined && Number.isFinite(fromStep) && fromStep >= 0) {
+          opts.fromStep = fromStep;
+        }
+        if (fromNodeId && fromNodeId.length > 0 && fromNodeId.length <= 128) {
+          opts.fromNodeId = fromNodeId;
+        }
+        const result = await service.replay(runId, opts);
+        return c.json({ run: result }, 200);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'replay failed';
+        const status = message.includes('not found') ? 404 : 500;
+        return c.json({ error: message }, status);
       }
-      const result = await service.replay(runId, opts);
-      return c.json({ run: result }, 200);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'replay failed';
-      const status = message.includes('not found') ? 404 : 500;
-      return c.json({ error: message }, status);
-    }
-  });
+    },
+  );
 
   // ─────────────────────────────────────────────────────────────────
   // POST /runs/:id/cancel — cooperative cancel of an in-flight run.
@@ -197,43 +206,47 @@ export function createRunRoutes(eventBus: IEventBus): Hono {
   // Rate limit STRETTO: chiama Liara (5-15s + token spend). 5/min/user +
   // 20/min/tenant impediscono LLM spam su click-frenzy del frontend.
   // ─────────────────────────────────────────────────────────────────
-  app.post('/runs/:id/ai-debug', rateLimit({
-    windowMs: 60_000,
-    perTenant: 20,
-    perUser: 5,
-    label: 'run-ai-debug',
-  }), async (c) => {
-    const tenantId = getTenantId(c);
-    const runId = c.req.param('id') ?? '';
-    if (runId === '') {
-      return c.json({ error: 'missing run id' }, 400);
-    }
-    const failedNodeId = c.req.query('failedNodeId');
-    try {
-      const result = await debugRunFailureExecutor(
-        {
-          runId,
-          ...(failedNodeId !== undefined && failedNodeId !== '' ? { failedNodeId } : {}),
-          includeTests: true,
-          maxFixes: 3,
-          autoReplay: false,
-        },
-        null,
-        {
-          tenantId,
-          workflowId: '',
-          runId: `ai-debug-${runId}`,
-          nodeId: 'ai-debug-button',
-          secrets: {},
-        },
-      );
-      return c.json({ debug: result.output, durationMs: result.durationMs }, 200);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'ai-debug failed';
-      const status = message.toLowerCase().includes('non trovato') ? 404 : 500;
-      return c.json({ error: message }, status);
-    }
-  });
+  app.post(
+    '/runs/:id/ai-debug',
+    rateLimit({
+      windowMs: 60_000,
+      perTenant: 20,
+      perUser: 5,
+      label: 'run-ai-debug',
+    }),
+    async (c) => {
+      const tenantId = getTenantId(c);
+      const runId = c.req.param('id') ?? '';
+      if (runId === '') {
+        return c.json({ error: 'missing run id' }, 400);
+      }
+      const failedNodeId = c.req.query('failedNodeId');
+      try {
+        const result = await debugRunFailureExecutor(
+          {
+            runId,
+            ...(failedNodeId !== undefined && failedNodeId !== '' ? { failedNodeId } : {}),
+            includeTests: true,
+            maxFixes: 3,
+            autoReplay: false,
+          },
+          null,
+          {
+            tenantId,
+            workflowId: '',
+            runId: `ai-debug-${runId}`,
+            nodeId: 'ai-debug-button',
+            secrets: {},
+          },
+        );
+        return c.json({ debug: result.output, durationMs: result.durationMs }, 200);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'ai-debug failed';
+        const status = message.toLowerCase().includes('non trovato') ? 404 : 500;
+        return c.json({ error: message }, status);
+      }
+    },
+  );
 
   app.post('/runs/:id/cancel', async (c) => {
     const tenantId = getTenantId(c);

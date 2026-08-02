@@ -35,7 +35,11 @@ interface FieldSpec {
 
 function parseFieldsMap(raw: unknown): Record<string, FieldSpec> {
   if (typeof raw === 'string' && raw.trim()) {
-    try { return parseFieldsMap(JSON.parse(raw)); } catch { return {}; }
+    try {
+      return parseFieldsMap(JSON.parse(raw));
+    } catch {
+      return {};
+    }
   }
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
   const out: Record<string, FieldSpec> = {};
@@ -48,7 +52,9 @@ function parseFieldsMap(raw: unknown): Record<string, FieldSpec> {
       const patternsRaw = obj.patterns;
       const patterns: PatternSpec[] = Array.isArray(patternsRaw)
         ? (patternsRaw as PatternSpec[])
-        : (typeof obj.pattern === 'string' ? [{ pattern: obj.pattern }] : []);
+        : typeof obj.pattern === 'string'
+          ? [{ pattern: obj.pattern }]
+          : [];
       const fieldSpec: FieldSpec = { patterns };
       const dv = obj.defaultValue;
       if (typeof dv === 'string' || dv === null) fieldSpec.defaultValue = dv;
@@ -60,18 +66,27 @@ function parseFieldsMap(raw: unknown): Record<string, FieldSpec> {
 
 function applyTransform(value: string, t: PatternSpec['transform']): unknown {
   switch (t) {
-    case 'trim': return value.trim();
-    case 'lowercase': return value.toLowerCase();
-    case 'uppercase': return value.toUpperCase();
+    case 'trim':
+      return value.trim();
+    case 'lowercase':
+      return value.toLowerCase();
+    case 'uppercase':
+      return value.toUpperCase();
     case 'number': {
       const n = Number(value.replace(/[^0-9.-]/g, ''));
       return Number.isFinite(n) ? n : null;
     }
     case 'json': {
-      try { return JSON.parse(value); } catch { return value; }
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
     }
-    case 'none': return value;
-    default: return value.trim();
+    case 'none':
+      return value;
+    default:
+      return value.trim();
   }
 }
 
@@ -89,12 +104,18 @@ const executor: NodeExecutor = async (config, input, _context) => {
     text = String(config.textExplicit ?? '');
   }
   if (!text) {
-    return { output: { fields: {}, matched: false }, durationMs: Date.now() - start, warnings: ['Empty text input'] };
+    return {
+      output: { fields: {}, matched: false },
+      durationMs: Date.now() - start,
+      warnings: ['Empty text input'],
+    };
   }
 
   const fields = parseFieldsMap(config.fieldsJson);
   if (Object.keys(fields).length === 0) {
-    throw new Error('fieldsJson required (map fieldName → {patterns:[{pattern, flags?, group?, transform?}], defaultValue?})');
+    throw new Error(
+      'fieldsJson required (map fieldName → {patterns:[{pattern, flags?, group?, transform?}], defaultValue?})',
+    );
   }
 
   const out: Record<string, unknown> = {};
@@ -163,7 +184,7 @@ export const regexMultiNode: NodeModule = {
       'lowercase/uppercase (normalize case per matching downstream), number (cast a numeric con parsing ' +
       'localized "1.234,56" italiano + "1,234.56" inglese), json (parse del valore come JSON nested object), ' +
       'none (raw passthrough senza modifica). ' +
-      'Multi-field in singola invocation: l\'utente definisce un dictionary di N field → ognuno con la sua ' +
+      "Multi-field in singola invocation: l'utente definisce un dictionary di N field → ognuno con la sua " +
       'fallback chain di regex, e il nodo li estrae tutti in singolo pass del testo (pattern efficiente vs ' +
       'invocare N nodi separati per N field). Cap di sicurezza: max 50 field per invocation, max 10 pattern ' +
       'per field, max 100KB di testo input per evitare regex catastrophic backtracking su input maligno. ' +
@@ -186,7 +207,7 @@ export const regexMultiNode: NodeModule = {
         required: false,
         options: ['input', 'explicit'],
         defaultValue: 'input',
-        help: 'input = stringa dal nodo precedente (legge .body, .text, .html, o tutto l\'oggetto). explicit = testo qui sotto.',
+        help: "input = stringa dal nodo precedente (legge .body, .text, .html, o tutto l'oggetto). explicit = testo qui sotto.",
       },
       {
         key: 'textExplicit',

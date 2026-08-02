@@ -6,7 +6,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // + installato come dispatcher globale. Qui mockiamo `fetch` → il dispatcher non
 // viene invocato → niente DNS reale, test veloci/deterministici.
 import { safeOutboundFetch, safeOutboundFetchOk } from './safe-outbound-fetch.js';
-import { clearBreakerRegistry, NetworkError, HttpError, TimeoutError, CircuitOpenError } from '@medea/engine-nodes-stdlib';
+import {
+  clearBreakerRegistry,
+  NetworkError,
+  HttpError,
+  TimeoutError,
+  CircuitOpenError,
+} from '@medea/engine-nodes-stdlib';
 
 function mockFetch(handler: (url: string, init?: RequestInit) => Response | Promise<Response>) {
   const calls: { url: string; init: RequestInit | undefined }[] = [];
@@ -14,7 +20,12 @@ function mockFetch(handler: (url: string, init?: RequestInit) => Response | Prom
   // la danno i tipi di @types/node. Si prende da lì invece di nominarne uno
   // che in questo ambiente non esiste.
   const spy = vi.fn(async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input as Request).url;
+    const url =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : (input as Request).url;
     calls.push({ url, init });
     return await handler(url, init);
   });
@@ -39,14 +50,17 @@ describe('safeOutboundFetch', () => {
 
   it('SSRF block: 127.0.0.1 throwa NetworkError prima di fetch', async () => {
     const { calls } = mockFetch(() => new Response('should not run'));
-    await expect(safeOutboundFetch('http://127.0.0.1:6379/leak')).rejects.toBeInstanceOf(NetworkError);
+    await expect(safeOutboundFetch('http://127.0.0.1:6379/leak')).rejects.toBeInstanceOf(
+      NetworkError,
+    );
     expect(calls).toHaveLength(0); // SSRF guard pre-fetch
   });
 
   it('SSRF block: cloud metadata IMDS 169.254.169.254 bloccato', async () => {
     const { calls } = mockFetch(() => new Response('iam-creds'));
-    await expect(safeOutboundFetch('http://169.254.169.254/latest/meta-data/'))
-      .rejects.toBeInstanceOf(NetworkError);
+    await expect(
+      safeOutboundFetch('http://169.254.169.254/latest/meta-data/'),
+    ).rejects.toBeInstanceOf(NetworkError);
     expect(calls).toHaveLength(0);
   });
 
@@ -59,19 +73,26 @@ describe('safeOutboundFetch', () => {
 
   it('allowPrivateHost NON disabilita breaker/timeout (resta protetto)', async () => {
     // host interno down → comunque NetworkError tipizzato (breaker attivo), non hang
-    mockFetch(() => { throw new Error('ECONNREFUSED'); });
-    await expect(safeOutboundFetch('http://127.0.0.1:5004/analyze', { allowPrivateHost: true }))
-      .rejects.toBeInstanceOf(NetworkError);
+    mockFetch(() => {
+      throw new Error('ECONNREFUSED');
+    });
+    await expect(
+      safeOutboundFetch('http://127.0.0.1:5004/analyze', { allowPrivateHost: true }),
+    ).rejects.toBeInstanceOf(NetworkError);
   });
 
   it('allowPrivateHost assente → host privato resta BLOCCATO (default sicuro)', async () => {
     const { calls } = mockFetch(() => new Response('nope'));
-    await expect(safeOutboundFetch('http://127.0.0.1:5001/embed')).rejects.toBeInstanceOf(NetworkError);
+    await expect(safeOutboundFetch('http://127.0.0.1:5001/embed')).rejects.toBeInstanceOf(
+      NetworkError,
+    );
     expect(calls).toHaveLength(0);
   });
 
   it('breaker per-host: 5 failures → CircuitOpenError sulla 6a', async () => {
-    mockFetch(() => { throw new Error('network down'); });
+    mockFetch(() => {
+      throw new Error('network down');
+    });
     for (let i = 0; i < 5; i += 1) {
       await expect(safeOutboundFetch('https://flaky.com/x')).rejects.toBeInstanceOf(NetworkError);
     }
@@ -93,12 +114,18 @@ describe('safeOutboundFetch', () => {
   });
 
   it('timeout: abort dopo timeoutMs → TimeoutError', async () => {
-    mockFetch((_, init) => new Promise((_, reject) => {
-      init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
-      // Non risolve mai — solo abort lo termina
-    }));
-    await expect(safeOutboundFetch('https://slow.example.com/x', { timeoutMs: 30 }))
-      .rejects.toBeInstanceOf(TimeoutError);
+    mockFetch(
+      (_, init) =>
+        new Promise((_, reject) => {
+          init?.signal?.addEventListener('abort', () =>
+            reject(new DOMException('aborted', 'AbortError')),
+          );
+          // Non risolve mai — solo abort lo termina
+        }),
+    );
+    await expect(
+      safeOutboundFetch('https://slow.example.com/x', { timeoutMs: 30 }),
+    ).rejects.toBeInstanceOf(TimeoutError);
   });
 
   it('timeout 0 = nessun timeout (signal solo da external)', async () => {
@@ -108,19 +135,31 @@ describe('safeOutboundFetch', () => {
   });
 
   it('rispetta externalSignal abort esterno', async () => {
-    mockFetch((_, init) => new Promise((_, reject) => {
-      init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
-    }));
+    mockFetch(
+      (_, init) =>
+        new Promise((_, reject) => {
+          init?.signal?.addEventListener('abort', () =>
+            reject(new DOMException('aborted', 'AbortError')),
+          );
+        }),
+    );
     const ext = new AbortController();
     setTimeout(() => ext.abort(), 20);
-    await expect(safeOutboundFetch('https://api.example.com/u', { timeoutMs: 5000, externalSignal: ext.signal }))
-      .rejects.toBeInstanceOf(TimeoutError);
+    await expect(
+      safeOutboundFetch('https://api.example.com/u', {
+        timeoutMs: 5000,
+        externalSignal: ext.signal,
+      }),
+    ).rejects.toBeInstanceOf(TimeoutError);
   });
 
   it('SSRF-via-redirect: 302 → 127.0.0.1 BLOCCATO (re-validate per hop)', async () => {
     const { calls } = mockFetch((url) => {
       if (url === 'https://evil.com/start') {
-        return new Response(null, { status: 302, headers: { location: 'http://127.0.0.1:5000/v1/chat' } });
+        return new Response(null, {
+          status: 302,
+          headers: { location: 'http://127.0.0.1:5000/v1/chat' },
+        });
       }
       return new Response('leaked-internal', { status: 200 });
     });
@@ -133,7 +172,10 @@ describe('safeOutboundFetch', () => {
   it('SSRF-via-redirect: 302 → metadata 169.254.169.254 BLOCCATO', async () => {
     mockFetch((url) =>
       url.includes('evil.com')
-        ? new Response(null, { status: 301, headers: { location: 'http://169.254.169.254/latest/meta-data/' } })
+        ? new Response(null, {
+            status: 301,
+            headers: { location: 'http://169.254.169.254/latest/meta-data/' },
+          })
         : new Response('iam-creds', { status: 200 }),
     );
     await expect(safeOutboundFetch('https://evil.com/x')).rejects.toBeInstanceOf(NetworkError);
@@ -168,8 +210,8 @@ describe('safeOutboundFetch', () => {
   });
 
   it('redirect:manual esplicito → passthrough invariato (caller possiede gli hop)', async () => {
-    const { calls } = mockFetch(() =>
-      new Response(null, { status: 302, headers: { location: 'http://127.0.0.1/x' } }),
+    const { calls } = mockFetch(
+      () => new Response(null, { status: 302, headers: { location: 'http://127.0.0.1/x' } }),
     );
     const res = await safeOutboundFetch('https://api.example.com/u', { redirect: 'manual' });
     expect(res.status).toBe(302); // 3xx restituito al caller, non seguito
@@ -177,8 +219,12 @@ describe('safeOutboundFetch', () => {
   });
 
   it('redirect-loop oltre max hop → NetworkError', async () => {
-    mockFetch(() =>
-      new Response(null, { status: 302, headers: { location: `https://loop.com/${Math.random().toString(36).slice(2)}` } }),
+    mockFetch(
+      () =>
+        new Response(null, {
+          status: 302,
+          headers: { location: `https://loop.com/${Math.random().toString(36).slice(2)}` },
+        }),
     );
     await expect(safeOutboundFetch('https://loop.com/start')).rejects.toBeInstanceOf(NetworkError);
   });
@@ -236,8 +282,9 @@ describe('safeOutboundFetchOk', () => {
 
   it('429 → HttpError + retryable=true (rate-limit)', async () => {
     mockFetch(() => new Response('slow down', { status: 429 }));
-    try { await safeOutboundFetchOk('https://api.example.com/u'); }
-    catch (err) {
+    try {
+      await safeOutboundFetchOk('https://api.example.com/u');
+    } catch (err) {
       if (err instanceof HttpError) expect(err.retryable).toBe(true);
     }
   });
@@ -245,8 +292,9 @@ describe('safeOutboundFetchOk', () => {
   it('bodyExcerpt truncato a 500 char (anti-leak credenziali grandi)', async () => {
     const big = 'x'.repeat(2000);
     mockFetch(() => new Response(big, { status: 500 }));
-    try { await safeOutboundFetchOk('https://api.example.com/u'); }
-    catch (err) {
+    try {
+      await safeOutboundFetchOk('https://api.example.com/u');
+    } catch (err) {
       if (err instanceof HttpError) expect((err.context.bodyExcerpt as string).length).toBe(500);
     }
   });
@@ -258,13 +306,22 @@ describe('safeOutboundFetchOk', () => {
     let reads = 0;
     const cancelSpy = vi.fn(async () => undefined);
     const fakeRes = {
-      status: 500, statusText: 'Server Error', ok: false,
+      status: 500,
+      statusText: 'Server Error',
+      ok: false,
       headers: new Headers(),
-      body: { getReader: () => ({
-        read: async () => { reads += 1; return reads <= 200 ? { done: false, value: chunk } : { done: true, value: undefined }; },
-        cancel: cancelSpy,
-      }) } as unknown as ReadableStream,
-      text: async () => { throw new Error('🚨 body d-errore letto in RAM senza cap (OOM)'); },
+      body: {
+        getReader: () => ({
+          read: async () => {
+            reads += 1;
+            return reads <= 200 ? { done: false, value: chunk } : { done: true, value: undefined };
+          },
+          cancel: cancelSpy,
+        }),
+      } as unknown as ReadableStream,
+      text: async () => {
+        throw new Error('🚨 body d-errore letto in RAM senza cap (OOM)');
+      },
     } as unknown as Response;
     mockFetch(() => fakeRes);
     try {
@@ -273,8 +330,8 @@ describe('safeOutboundFetchOk', () => {
     } catch (err) {
       expect(err).toBeInstanceOf(HttpError);
     }
-    expect(cancelSpy).toHaveBeenCalledTimes(1);  // stream cancellato al cap
-    expect(reads).toBeLessThanOrEqual(2);          // ~8KB → max 1 chunk da 10KB, NON 200
+    expect(cancelSpy).toHaveBeenCalledTimes(1); // stream cancellato al cap
+    expect(reads).toBeLessThanOrEqual(2); // ~8KB → max 1 chunk da 10KB, NON 200
   });
 });
 

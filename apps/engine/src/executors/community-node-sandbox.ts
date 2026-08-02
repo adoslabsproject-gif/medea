@@ -52,7 +52,11 @@ import { dirname, join } from 'node:path';
 import { logger } from '@/lib/logger.js';
 import { safeOutboundFetch } from '@/lib/safe-outbound-fetch.js';
 import { readBytesCapped } from '@/lib/capped-response.js';
-import { STDLIB_BUNDLE, STDLIB_BUNDLE_BYTES, STDLIB_BUNDLE_GLOBAL_NAME } from '@medea/engine-nodes-stdlib-sandbox/bundle-source';
+import {
+  STDLIB_BUNDLE,
+  STDLIB_BUNDLE_BYTES,
+  STDLIB_BUNDLE_GLOBAL_NAME,
+} from '@medea/engine-nodes-stdlib-sandbox/bundle-source';
 
 /**
  * Path al worker entry-point. Risolto al boot del modulo.
@@ -78,9 +82,11 @@ const WORKER_SCRIPT_PATH = (() => {
 
 /** Runtime check (NOT top-level const) — permette test override post-boot. */
 function workerDisabled(): boolean {
-  return process.env.MEDEA_SANDBOX_DISABLE_WORKER === 'true'
-    || process.env.NODE_ENV === 'test'
-    || process.env.VITEST === 'true';
+  return (
+    process.env.MEDEA_SANDBOX_DISABLE_WORKER === 'true' ||
+    process.env.NODE_ENV === 'test' ||
+    process.env.VITEST === 'true'
+  );
 }
 
 export interface SandboxInput {
@@ -231,7 +237,7 @@ interface FetchProxyResponse {
  *   • 5xx/429 → throw per attivare breaker count (4xx caller-error NON count).
  */
 export async function hostFetch(url: string, initJson?: string): Promise<FetchProxyResponse> {
-  const init = initJson ? JSON.parse(initJson) as RequestInit : undefined;
+  const init = initJson ? (JSON.parse(initJson) as RequestInit) : undefined;
   // #223 fix: rimuove init.signal (è il MIO AbortSignal shim, non nativo
   // node — fetch rigetta con TypeError "signal must be an AbortSignal").
   // Stesso per timeoutMs (campo proprietario, no-op in fetch standard).
@@ -258,7 +264,10 @@ export async function hostFetch(url: string, initJson?: string): Promise<FetchPr
         spanName: 'node.community.fetch',
       });
     } catch (e) {
-      logger.warn({ url: currentUrl, err: (e as Error).message }, '[community-fetch] safeOutboundFetch threw');
+      logger.warn(
+        { url: currentUrl, err: (e as Error).message },
+        '[community-fetch] safeOutboundFetch threw',
+      );
       throw e;
     }
     if (res.status < 300 || res.status >= 400) break; // risposta finale (non redirect)
@@ -269,7 +278,9 @@ export async function hostFetch(url: string, initJson?: string): Promise<FetchPr
     const { validateUrlForFetch } = await import('@medea/engine-safe-fetch');
     const ssrf = validateUrlForFetch(next);
     if (!ssrf.ok) {
-      throw new Error(`SSRF blocked: redirect verso host non permesso (${ssrf.reason ?? 'invalid'})`);
+      throw new Error(
+        `SSRF blocked: redirect verso host non permesso (${ssrf.reason ?? 'invalid'})`,
+      );
     }
     // Semantica HTTP: dopo un redirect un POST/PUT diventa GET senza body.
     if (reqInit.method && reqInit.method !== 'GET' && reqInit.method !== 'HEAD') {
@@ -278,14 +289,19 @@ export async function hostFetch(url: string, initJson?: string): Promise<FetchPr
     }
     currentUrl = next;
   }
-  logger.debug({ url: currentUrl, status: res.status, ok: res.ok, hops }, '[community-fetch] response');
+  logger.debug(
+    { url: currentUrl, status: res.status, ok: res.ok, hops },
+    '[community-fetch] response',
+  );
   // Read once CAPPATO (anti-OOM): prima `res.arrayBuffer()` leggeva l'INTERO body e
   // poi lo marshallava come text+base64 (memoria ×3) verso l'isolate → un endpoint
   // ostile poteva far esplodere la RAM dell'host per OGNI community/openapi node.
   // 20MB è generoso per una risposta API; oltre → errore esplicito al nodo.
   const buf = await readBytesCapped(res, SANDBOX_FETCH_MAX_BYTES);
   const headers: Record<string, string> = {};
-  res.headers.forEach((v, k) => { headers[k] = v; });
+  res.headers.forEach((v, k) => {
+    headers[k] = v;
+  });
   const response: FetchProxyResponse = {
     status: res.status,
     ok: res.ok,
@@ -336,12 +352,18 @@ function forwardSandboxLogsToCollector(
     if (m) {
       const tag = m[1] ?? 'info';
       msg = m[2] ?? '';
-      level = tag === 'log' ? 'info'
-        : tag === 'trace' ? 'trace'
-        : tag === 'debug' ? 'debug'
-        : tag === 'info' ? 'info'
-        : tag === 'warn' ? 'warn'
-        : 'error';
+      level =
+        tag === 'log'
+          ? 'info'
+          : tag === 'trace'
+            ? 'trace'
+            : tag === 'debug'
+              ? 'debug'
+              : tag === 'info'
+                ? 'info'
+                : tag === 'warn'
+                  ? 'warn'
+                  : 'error';
     }
     collector.log(level, msg, undefined, 'user');
   }
@@ -431,57 +453,67 @@ export async function runInSandbox(
       reject(new Error('Sandbox execution exceeded safety timeout (20s)'));
     }, 20_000);
 
-    worker.once('message', (msg: {
-      ok: boolean;
-      value?: unknown;
-      error?: string;
-      errorName?: string;
-      errorCode?: string;
-      errorMeta?: Record<string, unknown>;
-      errorContext?: Record<string, unknown>;
-      errorCause?: { message?: string; name?: string; probes?: unknown[]; outcomes?: unknown[] };
-      errorStackHead?: string;
-      trace?: { logs: string[]; network: SandboxNetworkEvent[]; durationMs: number };
-    }) => {
-      clearTimeout(safetyKill);
-      if (msg.trace && trace) {
-        trace.logs = msg.trace.logs;
-        trace.network = msg.trace.network;
-        trace.durationMs = msg.trace.durationMs;
-      }
-      // #226 forward logs + network events al collector (source='user' /
-      // source='network'). Logs sandbox arrivano formato "[level] msg" —
-      // parse il livello e forwarda strutturato.
-      if (msg.trace && input.collector) {
-        forwardSandboxLogsToCollector(msg.trace, input.collector);
-      }
-      // Cappella Sistina+: in caso di error, forwarda al collector i probes
-      // (rotator) o le outcomes (per altri nodi che hanno err.cause con array
-      // di tentativi). Questo trasforma "NO_LIVE_HOST: tried 6" in 6 entry
-      // dettagliate per ogni candidate fallito.
-      if (!msg.ok && input.collector && msg.errorCause) {
-        const probes = Array.isArray(msg.errorCause.probes) ? msg.errorCause.probes
-                     : Array.isArray(msg.errorCause.outcomes) ? msg.errorCause.outcomes
-                     : null;
-        if (probes && probes.length > 0) {
-          input.collector.error(`[sandbox-error] cause.probes (${String(probes.length)} candidates):`, {
-            probes,
-            ...(msg.errorName ? { errorName: msg.errorName } : {}),
-            ...(msg.errorCode ? { errorCode: msg.errorCode } : {}),
-            ...(msg.errorMeta ? { errorMeta: msg.errorMeta } : {}),
-            ...(msg.errorCause.message ? { causeMessage: msg.errorCause.message } : {}),
-          });
-        } else if (msg.errorStackHead) {
-          input.collector.error(`[sandbox-error] ${msg.error ?? 'unknown'}`, { stackHead: msg.errorStackHead });
+    worker.once(
+      'message',
+      (msg: {
+        ok: boolean;
+        value?: unknown;
+        error?: string;
+        errorName?: string;
+        errorCode?: string;
+        errorMeta?: Record<string, unknown>;
+        errorContext?: Record<string, unknown>;
+        errorCause?: { message?: string; name?: string; probes?: unknown[]; outcomes?: unknown[] };
+        errorStackHead?: string;
+        trace?: { logs: string[]; network: SandboxNetworkEvent[]; durationMs: number };
+      }) => {
+        clearTimeout(safetyKill);
+        if (msg.trace && trace) {
+          trace.logs = msg.trace.logs;
+          trace.network = msg.trace.network;
+          trace.durationMs = msg.trace.durationMs;
         }
-      }
-      void worker.terminate();
-      if (msg.ok) {
-        resolve(msg.value);
-      } else {
-        reject(new Error(msg.error ?? 'Sandbox worker returned ok:false without error message'));
-      }
-    });
+        // #226 forward logs + network events al collector (source='user' /
+        // source='network'). Logs sandbox arrivano formato "[level] msg" —
+        // parse il livello e forwarda strutturato.
+        if (msg.trace && input.collector) {
+          forwardSandboxLogsToCollector(msg.trace, input.collector);
+        }
+        // Cappella Sistina+: in caso di error, forwarda al collector i probes
+        // (rotator) o le outcomes (per altri nodi che hanno err.cause con array
+        // di tentativi). Questo trasforma "NO_LIVE_HOST: tried 6" in 6 entry
+        // dettagliate per ogni candidate fallito.
+        if (!msg.ok && input.collector && msg.errorCause) {
+          const probes = Array.isArray(msg.errorCause.probes)
+            ? msg.errorCause.probes
+            : Array.isArray(msg.errorCause.outcomes)
+              ? msg.errorCause.outcomes
+              : null;
+          if (probes && probes.length > 0) {
+            input.collector.error(
+              `[sandbox-error] cause.probes (${String(probes.length)} candidates):`,
+              {
+                probes,
+                ...(msg.errorName ? { errorName: msg.errorName } : {}),
+                ...(msg.errorCode ? { errorCode: msg.errorCode } : {}),
+                ...(msg.errorMeta ? { errorMeta: msg.errorMeta } : {}),
+                ...(msg.errorCause.message ? { causeMessage: msg.errorCause.message } : {}),
+              },
+            );
+          } else if (msg.errorStackHead) {
+            input.collector.error(`[sandbox-error] ${msg.error ?? 'unknown'}`, {
+              stackHead: msg.errorStackHead,
+            });
+          }
+        }
+        void worker.terminate();
+        if (msg.ok) {
+          resolve(msg.value);
+        } else {
+          reject(new Error(msg.error ?? 'Sandbox worker returned ok:false without error message'));
+        }
+      },
+    );
 
     worker.once('error', (err) => {
       clearTimeout(safetyKill);
@@ -529,26 +561,33 @@ async function runInSandboxInline(
     // ───── Inject vendor inputs (deep-copied across the boundary) ─────
     await jail.set('__config', new ivm.ExternalCopy(input.config).copyInto());
     await jail.set('__input', new ivm.ExternalCopy(input.input).copyInto());
-    await jail.set('__context', new ivm.ExternalCopy({
-      tenantId: input.context.tenantId,
-      runId: input.context.runId,
-      workflowId: input.context.workflowId,
-      nodeId: input.context.nodeId,
-      action: input.context.action,
-    }).copyInto());
+    await jail.set(
+      '__context',
+      new ivm.ExternalCopy({
+        tenantId: input.context.tenantId,
+        runId: input.context.runId,
+        workflowId: input.context.workflowId,
+        nodeId: input.context.nodeId,
+        action: input.context.action,
+      }).copyInto(),
+    );
 
     // ───── Console capture (capped) ─────
     let logsDropped = 0;
-    await jail.set('__log', new ivm.Callback((level: string, msg: string) => {
-      if (logCapture.length >= TRACE_MAX_LOG_ENTRIES) {
-        logsDropped++;
-        return;
-      }
-      const truncated = msg.length > TRACE_MAX_LOG_CHARS
-        ? `${msg.slice(0, TRACE_MAX_LOG_CHARS)}… [${String(msg.length - TRACE_MAX_LOG_CHARS)} chars truncated]`
-        : msg;
-      logCapture.push(`[${level}] ${truncated}`);
-    }));
+    await jail.set(
+      '__log',
+      new ivm.Callback((level: string, msg: string) => {
+        if (logCapture.length >= TRACE_MAX_LOG_ENTRIES) {
+          logsDropped++;
+          return;
+        }
+        const truncated =
+          msg.length > TRACE_MAX_LOG_CHARS
+            ? `${msg.slice(0, TRACE_MAX_LOG_CHARS)}… [${String(msg.length - TRACE_MAX_LOG_CHARS)} chars truncated]`
+            : msg;
+        logCapture.push(`[${level}] ${truncated}`);
+      }),
+    );
     // ROOT CAUSE #3 (2026-06-09): `const` ha block-scope nello script eval —
     // NON è visibile al successivo `script.run(ctx)` del vendor bundle.
     // Assegnare a globalThis perché diventi proprietà del global object
@@ -577,35 +616,38 @@ async function runInSandboxInline(
       }
       trace.network.push(ev);
     };
-    await jail.set('__fetch', new ivm.Reference(async (url: string, initJson?: string) => {
-      const t0 = Date.now();
-      const init = initJson ? (JSON.parse(initJson) as { method?: string }) : undefined;
-      let res: FetchProxyResponse;
-      try {
-        res = await hostFetch(url, initJson);
-      } catch (err) {
+    await jail.set(
+      '__fetch',
+      new ivm.Reference(async (url: string, initJson?: string) => {
+        const t0 = Date.now();
+        const init = initJson ? (JSON.parse(initJson) as { method?: string }) : undefined;
+        let res: FetchProxyResponse;
+        try {
+          res = await hostFetch(url, initJson);
+        } catch (err) {
+          pushNetworkEvent({
+            url,
+            method: init?.method ?? 'GET',
+            status: 0,
+            durationMs: Date.now() - t0,
+            bytesIn: 0,
+            ok: false,
+            startedAt: t0,
+          });
+          throw err;
+        }
         pushNetworkEvent({
           url,
           method: init?.method ?? 'GET',
-          status: 0,
+          status: res.status,
           durationMs: Date.now() - t0,
-          bytesIn: 0,
-          ok: false,
+          bytesIn: res.bodyLength,
+          ok: res.ok,
           startedAt: t0,
         });
-        throw err;
-      }
-      pushNetworkEvent({
-        url,
-        method: init?.method ?? 'GET',
-        status: res.status,
-        durationMs: Date.now() - t0,
-        bytesIn: res.bodyLength,
-        ok: res.ok,
-        startedAt: t0,
-      });
-      return new ivm.ExternalCopy(res).copyInto();
-    }));
+        return new ivm.ExternalCopy(res).copyInto();
+      }),
+    );
     await ctx.eval(`
       globalThis.fetch = async (url, init) => {
         const res = await __fetch.apply(undefined, [String(url), init ? JSON.stringify(init) : undefined], { arguments: { copy: true }, result: { promise: true, copy: true } });
@@ -641,55 +683,100 @@ async function runInSandboxInline(
     // ───── ROOT CAUSE #5 fix: URL bridge host-side (vedi worker.ts) ─────
     // isolated-vm V8 context vuoto → URL non esiste → rotator normaliseHost
     // catcha + ritorna "invalid URL" → tutti i probes falliscono pre-fetch.
-    await jail.set('__urlParse', new ivm.Reference((raw: string, base?: string) => {
-      try {
-        const u = base ? new URL(raw, base) : new URL(raw);
-        return new ivm.ExternalCopy({
-          ok: true, protocol: u.protocol, host: u.host, hostname: u.hostname,
-          port: u.port, pathname: u.pathname, search: u.search, hash: u.hash,
-          origin: u.origin, href: u.href, username: u.username, password: u.password,
-        }).copyInto();
-      } catch (err) {
-        return new ivm.ExternalCopy({ ok: false, error: err instanceof Error ? err.message : String(err) }).copyInto();
-      }
-    }));
+    await jail.set(
+      '__urlParse',
+      new ivm.Reference((raw: string, base?: string) => {
+        try {
+          const u = base ? new URL(raw, base) : new URL(raw);
+          return new ivm.ExternalCopy({
+            ok: true,
+            protocol: u.protocol,
+            host: u.host,
+            hostname: u.hostname,
+            port: u.port,
+            pathname: u.pathname,
+            search: u.search,
+            hash: u.hash,
+            origin: u.origin,
+            href: u.href,
+            username: u.username,
+            password: u.password,
+          }).copyInto();
+        } catch (err) {
+          return new ivm.ExternalCopy({
+            ok: false,
+            error: err instanceof Error ? err.message : String(err),
+          }).copyInto();
+        }
+      }),
+    );
 
     // ───── Buffer shim (2-method only — full Buffer would expose
     // ArrayBuffer with backing-store views the vendor could abuse). ─────
-    await jail.set('__bufferFrom', new ivm.Reference((data: string, encoding: string) => {
-      const buf = Buffer.from(data, encoding as BufferEncoding);
-      return new ivm.ExternalCopy({ bytes: buf.toString('base64'), length: buf.length }).copyInto();
-    }));
-    await jail.set('__bufferToString', new ivm.Reference((base64: string, encoding: string) => {
-      return Buffer.from(base64, 'base64').toString(encoding as BufferEncoding);
-    }));
+    await jail.set(
+      '__bufferFrom',
+      new ivm.Reference((data: string, encoding: string) => {
+        const buf = Buffer.from(data, encoding as BufferEncoding);
+        return new ivm.ExternalCopy({
+          bytes: buf.toString('base64'),
+          length: buf.length,
+        }).copyInto();
+      }),
+    );
+    await jail.set(
+      '__bufferToString',
+      new ivm.Reference((base64: string, encoding: string) => {
+        return Buffer.from(base64, 'base64').toString(encoding as BufferEncoding);
+      }),
+    );
     // ROOT CAUSE #8: Buffer.byteLength (catalog_page calcola Content-Length).
-    await jail.set('__bufferByteLength', new ivm.Reference((data: string, encoding: string) => {
-      return Buffer.byteLength(data, encoding as BufferEncoding);
-    }));
+    await jail.set(
+      '__bufferByteLength',
+      new ivm.Reference((data: string, encoding: string) => {
+        return Buffer.byteLength(data, encoding as BufferEncoding);
+      }),
+    );
 
     // ROOT CAUSE #10: node:crypto bridge (createHmac/createHash/randomBytes/
     // randomUUID/timingSafeEqual). Sistemico per ogni custom node che firma
     // HMAC/hash payload (rotator, stream_proxy, OAuth state, JWT, ecc).
-    await jail.set('__cryptoHmac', new ivm.Reference((algo: string, secret: string, data: string, outEncoding: string) => {
-      return createHmac(algo, secret).update(data, 'utf8').digest(outEncoding as 'hex' | 'base64' | 'binary');
-    }));
-    await jail.set('__cryptoHash', new ivm.Reference((algo: string, data: string, outEncoding: string) => {
-      return createHash(algo).update(data, 'utf8').digest(outEncoding as 'hex' | 'base64' | 'binary');
-    }));
-    await jail.set('__cryptoRandomBytes', new ivm.Reference((size: number, outEncoding: string) => {
-      // Guardia anti-OOM host: `size` è controllato dal vendor e l'allocazione
-      // avviene sull'host, fuori dal memoryLimit dell'isolate (vedi sandbox-crypto-guard).
-      const buf = guardedRandomBytes(size);
-      return outEncoding === 'buffer' ? buf.toString('base64') : buf.toString(outEncoding as 'hex' | 'base64' | 'binary');
-    }));
+    await jail.set(
+      '__cryptoHmac',
+      new ivm.Reference((algo: string, secret: string, data: string, outEncoding: string) => {
+        return createHmac(algo, secret)
+          .update(data, 'utf8')
+          .digest(outEncoding as 'hex' | 'base64' | 'binary');
+      }),
+    );
+    await jail.set(
+      '__cryptoHash',
+      new ivm.Reference((algo: string, data: string, outEncoding: string) => {
+        return createHash(algo)
+          .update(data, 'utf8')
+          .digest(outEncoding as 'hex' | 'base64' | 'binary');
+      }),
+    );
+    await jail.set(
+      '__cryptoRandomBytes',
+      new ivm.Reference((size: number, outEncoding: string) => {
+        // Guardia anti-OOM host: `size` è controllato dal vendor e l'allocazione
+        // avviene sull'host, fuori dal memoryLimit dell'isolate (vedi sandbox-crypto-guard).
+        const buf = guardedRandomBytes(size);
+        return outEncoding === 'buffer'
+          ? buf.toString('base64')
+          : buf.toString(outEncoding as 'hex' | 'base64' | 'binary');
+      }),
+    );
     await jail.set('__cryptoRandomUUID', new ivm.Reference(() => randomUUID()));
-    await jail.set('__cryptoTimingSafeEqual', new ivm.Reference((a: string, b: string, encoding: string) => {
-      const ba = Buffer.from(a, encoding as BufferEncoding);
-      const bb = Buffer.from(b, encoding as BufferEncoding);
-      if (ba.length !== bb.length) return false;
-      return timingSafeEqual(ba, bb);
-    }));
+    await jail.set(
+      '__cryptoTimingSafeEqual',
+      new ivm.Reference((a: string, b: string, encoding: string) => {
+        const ba = Buffer.from(a, encoding as BufferEncoding);
+        const bb = Buffer.from(b, encoding as BufferEncoding);
+        if (ba.length !== bb.length) return false;
+        return timingSafeEqual(ba, bb);
+      }),
+    );
     await ctx.eval(`
       // ROOT CAUSE #11: Buffer.from(ArrayBuffer/Uint8Array/Array) — stream_proxy
       // fa Buffer.from(await res.arrayBuffer()). Pre-fix: String(ab)=
@@ -759,42 +846,81 @@ async function runInSandboxInline(
     // ivm.Reference non dereferenziati → host vede `undefined` → setTimeout
     // scatta a 0ms. Fix: cb registry isolate-side + ID numerico passato
     // come copy al host.
-    await jail.set('__hostSetTimeout', new ivm.Reference((delayMs: number, cbId: number) => {
-      if (inlineHostTimers.size >= MAX_HOST_TIMERS) {
-        throw new Error(`Limite timer sandbox superato (${String(MAX_HOST_TIMERS)}): troppi setTimeout/setInterval attivi.`);
-      }
-      const id = inlineNextTimerId++;
-      const handle = setTimeout(() => {
-        inlineHostTimers.delete(id);
-        try {
-          ctx.evalSync(`globalThis.__cbRegistry && globalThis.__cbRegistry[${String(cbId)}] && globalThis.__cbRegistry[${String(cbId)}](); delete globalThis.__cbRegistry[${String(cbId)}];`, { timeout: 1_000 });
-        } catch { /* swallow */ }
-      }, Math.max(0, Math.floor(delayMs)));
-      inlineHostTimers.set(id, handle);
-      return id;
-    }));
-    await jail.set('__hostClearTimeout', new ivm.Reference((id: number) => {
-      const h = inlineHostTimers.get(id);
-      if (h) { clearTimeout(h); inlineHostTimers.delete(id); }
-    }));
-    await jail.set('__hostSetInterval', new ivm.Reference((delayMs: number, cbId: number) => {
-      if (inlineHostTimers.size >= MAX_HOST_TIMERS) {
-        throw new Error(`Limite timer sandbox superato (${String(MAX_HOST_TIMERS)}): troppi setTimeout/setInterval attivi.`);
-      }
-      const id = inlineNextTimerId++;
-      const handle = setInterval(() => {
-        try {
-          ctx.evalSync(`globalThis.__cbRegistry && globalThis.__cbRegistry[${String(cbId)}] && globalThis.__cbRegistry[${String(cbId)}]();`, { timeout: 1_000 });
-        } catch { /* swallow */ }
-      }, Math.max(1, Math.floor(delayMs)));
-      inlineHostTimers.set(id, handle);
-      return id;
-    }));
-    await jail.set('__hostClearInterval', new ivm.Reference((id: number) => {
-      const h = inlineHostTimers.get(id);
-      if (h) { clearInterval(h); inlineHostTimers.delete(id); }
-    }));
-    await ctx.eval(`
+    await jail.set(
+      '__hostSetTimeout',
+      new ivm.Reference((delayMs: number, cbId: number) => {
+        if (inlineHostTimers.size >= MAX_HOST_TIMERS) {
+          throw new Error(
+            `Limite timer sandbox superato (${String(MAX_HOST_TIMERS)}): troppi setTimeout/setInterval attivi.`,
+          );
+        }
+        const id = inlineNextTimerId++;
+        const handle = setTimeout(
+          () => {
+            inlineHostTimers.delete(id);
+            try {
+              ctx.evalSync(
+                `globalThis.__cbRegistry && globalThis.__cbRegistry[${String(cbId)}] && globalThis.__cbRegistry[${String(cbId)}](); delete globalThis.__cbRegistry[${String(cbId)}];`,
+                { timeout: 1_000 },
+              );
+            } catch {
+              /* swallow */
+            }
+          },
+          Math.max(0, Math.floor(delayMs)),
+        );
+        inlineHostTimers.set(id, handle);
+        return id;
+      }),
+    );
+    await jail.set(
+      '__hostClearTimeout',
+      new ivm.Reference((id: number) => {
+        const h = inlineHostTimers.get(id);
+        if (h) {
+          clearTimeout(h);
+          inlineHostTimers.delete(id);
+        }
+      }),
+    );
+    await jail.set(
+      '__hostSetInterval',
+      new ivm.Reference((delayMs: number, cbId: number) => {
+        if (inlineHostTimers.size >= MAX_HOST_TIMERS) {
+          throw new Error(
+            `Limite timer sandbox superato (${String(MAX_HOST_TIMERS)}): troppi setTimeout/setInterval attivi.`,
+          );
+        }
+        const id = inlineNextTimerId++;
+        const handle = setInterval(
+          () => {
+            try {
+              ctx.evalSync(
+                `globalThis.__cbRegistry && globalThis.__cbRegistry[${String(cbId)}] && globalThis.__cbRegistry[${String(cbId)}]();`,
+                { timeout: 1_000 },
+              );
+            } catch {
+              /* swallow */
+            }
+          },
+          Math.max(1, Math.floor(delayMs)),
+        );
+        inlineHostTimers.set(id, handle);
+        return id;
+      }),
+    );
+    await jail.set(
+      '__hostClearInterval',
+      new ivm.Reference((id: number) => {
+        const h = inlineHostTimers.get(id);
+        if (h) {
+          clearInterval(h);
+          inlineHostTimers.delete(id);
+        }
+      }),
+    );
+    await ctx.eval(
+      `
       globalThis.__cbRegistry = Object.create(null);
       globalThis.__cbNext = 1;
       function __registerCb(cb) {
@@ -822,12 +948,15 @@ async function runInSandboxInline(
       globalThis.clearInterval = function(id) {
         try { __hostClearInterval.applySync(undefined, [Number(id) || 0], { arguments: { copy: true } }); } catch (e) {}
       };
-    `, { timeout: 1_000 });
+    `,
+      { timeout: 1_000 },
+    );
 
     // ───── Web globals shim (AbortController + AbortSignal) ─────
     // isolated-vm V8 puro non espone le web API moderne. Vendor che usano
     // AbortController per timeout/cancellation fail con "is not defined".
-    await ctx.eval(`
+    await ctx.eval(
+      `
       if (typeof AbortController === 'undefined') {
         function ASig() { this.aborted = false; this.reason = undefined; this._l = []; }
         ASig.prototype.addEventListener = function(t, cb) { if (t === 'abort') this._l.push(cb); };
@@ -1010,7 +1139,9 @@ async function runInSandboxInline(
           return out;
         };
       }
-    `, { timeout: 1_000 });
+    `,
+      { timeout: 1_000 },
+    );
 
     // ───── STDLIB INJECTION (Pipedream pattern dollar) ─────
     // Bundle ESM browser-safe (~12KB) iniettato prima del vendor source.
@@ -1033,34 +1164,57 @@ async function runInSandboxInline(
       script.run(ctx, { timeout: cpuTimeoutMs, promise: true }) as Promise<string>,
       new Promise<never>((_, reject) => {
         hostKill = setTimeout(() => {
-          if (!isolate.isDisposed) { try { isolate.dispose(); } catch { /* race con finally */ } }
-          reject(new Error(`Community node: timeout host ${String(HOST_WALL_TIMEOUT_MS)}ms — await non risolto o hang async (l'isolate non consumava CPU).`));
+          if (!isolate.isDisposed) {
+            try {
+              isolate.dispose();
+            } catch {
+              /* race con finally */
+            }
+          }
+          reject(
+            new Error(
+              `Community node: timeout host ${String(HOST_WALL_TIMEOUT_MS)}ms — await non risolto o hang async (l'isolate non consumava CPU).`,
+            ),
+          );
         }, HOST_WALL_TIMEOUT_MS);
         if (typeof hostKill.unref === 'function') hostKill.unref();
       }),
-    ]).finally(() => { if (hostKill) clearTimeout(hostKill); });
+    ]).finally(() => {
+      if (hostKill) clearTimeout(hostKill);
+    });
 
     if (logCapture.length > 0) {
-      logger.info({
-        logs: logCapture.slice(0, 20),
-        truncated: logCapture.length > 20,
-        nodeId: input.context.nodeId,
-      }, 'Community node sandbox logs');
+      logger.info(
+        {
+          logs: logCapture.slice(0, 20),
+          truncated: logCapture.length > 20,
+          nodeId: input.context.nodeId,
+        },
+        'Community node sandbox logs',
+      );
     }
     if (trace) {
       trace.logs = logCapture.slice();
       trace.durationMs = Date.now() - startMs;
       if (logsDropped > 0) {
-        trace.logs.push(`[meta] ${String(logsDropped)} log entries droppati (cap ${String(TRACE_MAX_LOG_ENTRIES)})`);
+        trace.logs.push(
+          `[meta] ${String(logsDropped)} log entries droppati (cap ${String(TRACE_MAX_LOG_ENTRIES)})`,
+        );
       }
       if (netEventsDropped > 0) {
-        trace.logs.push(`[meta] ${String(netEventsDropped)} network event droppati (cap ${String(TRACE_MAX_NETWORK_EVENTS)})`);
+        trace.logs.push(
+          `[meta] ${String(netEventsDropped)} network event droppati (cap ${String(TRACE_MAX_NETWORK_EVENTS)})`,
+        );
       }
     }
     // #226 forward al collector — anche per inline path
     if (input.collector) {
       forwardSandboxLogsToCollector(
-        { logs: logCapture.slice(), network: trace?.network ? trace.network.slice() : [], durationMs: Date.now() - startMs },
+        {
+          logs: logCapture.slice(),
+          network: trace?.network ? trace.network.slice() : [],
+          durationMs: Date.now() - startMs,
+        },
         input.collector,
       );
     }
@@ -1079,7 +1233,12 @@ async function runInSandboxInline(
     // #223: clear pending host-bridged timers BEFORE isolate dispose
     // (altrimenti il setTimeout host callback chiama un Reference morto)
     for (const h of inlineHostTimers.values()) {
-      try { clearTimeout(h); clearInterval(h); } catch { /* swallow */ }
+      try {
+        clearTimeout(h);
+        clearInterval(h);
+      } catch {
+        /* swallow */
+      }
     }
     inlineHostTimers.clear();
     // Dispose synchronously to release native memory immediately. Idempotente: il

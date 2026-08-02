@@ -79,8 +79,16 @@ export function scopeOf(ref: DataSourceRef): DataSourceScope {
  * aggiornare il Janitor.
  */
 export type DatabaseEngineId =
-  | 'sqlite' | 'postgres' | 'mysql' | 'mssql' | 'duckdb'
-  | 'mongodb' | 'redis' | 'vector-embedded' | 'qdrant' | 'pgvector';
+  | 'sqlite'
+  | 'postgres'
+  | 'mysql'
+  | 'mssql'
+  | 'duckdb'
+  | 'mongodb'
+  | 'redis'
+  | 'vector-embedded'
+  | 'qdrant'
+  | 'pgvector';
 
 export interface DataSourceInfo {
   readonly ref: DataSourceRef;

@@ -56,7 +56,7 @@ const log = logger;
 // atomico (INSERT ... ON CONFLICT FAIL), supporta scale-out multi-istanza
 // se in futuro il runtime viene scalato (purche` SQLite condiviso o sostituito
 // con backend distribuito). In-memory Map era split-brain unsafe.
-const JTI_TTL_MS = 6 * 60 * 1000;          // 5min token + 1min buffer
+const JTI_TTL_MS = 6 * 60 * 1000; // 5min token + 1min buffer
 
 // F2 (2026-06-10): `sso_jti_used` consolidata in migrate.schema.ts → SCHEMA_SQL,
 // applicata da runMigrations al boot. Niente DDL inline / lazy-init flag.
@@ -111,14 +111,22 @@ export type RuntimeRole = 'owner' | 'editor' | 'operator' | 'viewer' | 'superadm
  */
 export function normalizeSsoRole(claimRole: string): RuntimeRole {
   switch (claimRole) {
-    case 'owner': return 'owner';
-    case 'admin': return 'owner';
-    case 'editor': return 'editor';
-    case 'operator': return 'operator';
-    case 'viewer': return 'viewer';
-    case 'superadmin': return 'superadmin';
-    case 'super_admin': return 'superadmin';
-    default: return 'viewer';
+    case 'owner':
+      return 'owner';
+    case 'admin':
+      return 'owner';
+    case 'editor':
+      return 'editor';
+    case 'operator':
+      return 'operator';
+    case 'viewer':
+      return 'viewer';
+    case 'superadmin':
+      return 'superadmin';
+    case 'super_admin':
+      return 'superadmin';
+    default:
+      return 'viewer';
   }
 }
 
@@ -136,7 +144,9 @@ function upsertSSOUser(claims: {
 }): SSOUserRow {
   const { sqlite } = getDatabase();
   const existing = sqlite
-    .prepare('SELECT id, tenant_id, email, display_name, role, enabled FROM users WHERE tenant_id = ? AND email = ?')
+    .prepare(
+      'SELECT id, tenant_id, email, display_name, role, enabled FROM users WHERE tenant_id = ? AND email = ?',
+    )
     .get(claims.tenantId, claims.email) as SSOUserRow | undefined;
 
   if (existing) {
@@ -145,7 +155,13 @@ function upsertSSOUser(claims: {
       .prepare(
         'UPDATE users SET display_name = ?, role = ?, last_login_at = ?, updated_at = ? WHERE id = ?',
       )
-      .run(claims.name, claims.role, new Date().toISOString(), new Date().toISOString(), existing.id);
+      .run(
+        claims.name,
+        claims.role,
+        new Date().toISOString(),
+        new Date().toISOString(),
+        existing.id,
+      );
     return { ...existing, display_name: claims.name, role: claims.role };
   }
 
@@ -167,7 +183,10 @@ function upsertSSOUser(claims: {
       now,
       now,
     );
-  log.info?.({ userId: id, email: maskEmail(claims.email), tenantId: claims.tenantId }, '[SSO] new user provisioned via SSO');
+  log.info?.(
+    { userId: id, email: maskEmail(claims.email), tenantId: claims.tenantId },
+    '[SSO] new user provisioned via SSO',
+  );
   return {
     id,
     tenant_id: claims.tenantId,
@@ -193,7 +212,6 @@ function upsertSSOUser(claims: {
  * locale — il portal è source-of-truth per quota).
  */
 
-
 /**
  * Estrae il token dal request — POST-only (K5 hardening: token MAI in URL).
  *
@@ -214,16 +232,13 @@ async function extractSsoToken(c: Context): Promise<string | null> {
     return typeof t === 'string' ? t : null;
   }
   if (ct.includes('application/json')) {
-    const j = await c.req.json().catch(() => null) as { token?: unknown } | null;
+    const j = (await c.req.json().catch(() => null)) as { token?: unknown } | null;
     return j && typeof j.token === 'string' ? j.token : null;
   }
   return null;
 }
 
-async function verifyAndIssueSession(
-  c: Context,
-  token: string,
-): Promise<Response> {
+async function verifyAndIssueSession(c: Context, token: string): Promise<Response> {
   const config = loadConfig();
   const secret = config.MEDEA_SSO_SECRET;
   const tenantId = config.MEDEA_TENANT_ID;
@@ -258,7 +273,9 @@ async function verifyAndIssueSession(
   const name = typeof payload.name === 'string' ? payload.name : email;
   // Normalizzazione vocabolario portal → runtime ('admin'→'owner',
   // 'super_admin'→'superadmin', sconosciuto→'viewer'). Vedi normalizeSsoRole.
-  const role: RuntimeRole = normalizeSsoRole(typeof payload.role === 'string' ? payload.role : 'viewer');
+  const role: RuntimeRole = normalizeSsoRole(
+    typeof payload.role === 'string' ? payload.role : 'viewer',
+  );
 
   // H5 fix (2026-06-01) — Enforce strict tenant claim match.
   // Defense-in-depth: oltre alla `audience` validation di jose (linea 225),
@@ -268,16 +285,20 @@ async function verifyAndIssueSession(
   // e mismatch, REJECT SE missing (no fallback).
   const tenantClaimRaw = typeof payload.tenantId === 'string' ? payload.tenantId : '';
   if (!tenantClaimRaw || tenantClaimRaw !== tenantId) {
-    log.warn?.({
-      expectedTenant: tenantId,
-      receivedTenant: tenantClaimRaw || '<missing>',
-      jti,
-    }, '[SSO][SECURITY] tenant claim mismatch — rejected');
+    log.warn?.(
+      {
+        expectedTenant: tenantId,
+        receivedTenant: tenantClaimRaw || '<missing>',
+        jti,
+      },
+      '[SSO][SECURITY] tenant claim mismatch — rejected',
+    );
     return c.text('SSO token tenant mismatch', 401);
   }
   const tenantClaim = tenantClaimRaw;
   const tenantSlugClaim = typeof payload.tenantSlug === 'string' ? payload.tenantSlug : tenantClaim;
-  const tenantNameClaim = typeof payload.tenantName === 'string' ? payload.tenantName : tenantSlugClaim;
+  const tenantNameClaim =
+    typeof payload.tenantName === 'string' ? payload.tenantName : tenantSlugClaim;
   if (!sub || !email) return c.text('SSO token missing claims', 401);
 
   // ── ensureTenant: prima del user upsert, garantisce che tenants(tenantId)
@@ -351,7 +372,9 @@ export function createSSORoutes(): Hono {
    * link "Riprova" che ri-genera JWE dal portal.
    */
   app.get('/sso', (c) => {
-    return Promise.resolve(c.html(`<!doctype html>
+    return Promise.resolve(
+      c.html(
+        `<!doctype html>
 <html lang="it"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
@@ -377,7 +400,10 @@ export function createSSORoutes(): Hono {
   <a class="btn" href="https://flowforge.automazionezeli.com/sso/launch">Apri FlowForge</a>
   <p class="small">Se il problema persiste, contatta <a href="mailto:info@zeli.it" style="color:#0ea5e9">info@zeli.it</a></p>
 </div>
-</body></html>`, 200));
+</body></html>`,
+        200,
+      ),
+    );
   });
 
   return app;

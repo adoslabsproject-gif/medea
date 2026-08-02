@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  LlmQuotaExceededError,
-  parseQuotaError,
-} from './llm-chat.service.js';
+import { LlmQuotaExceededError, parseQuotaError } from './llm-chat.service.js';
 
 describe('parseQuotaError — riconosce i 429 di quota del gateway', () => {
   it('MONTHLY_TOKEN_QUOTA_EXCEEDED → kind token + campi propagati', () => {
@@ -27,9 +24,18 @@ describe('parseQuotaError — riconosce i 429 di quota del gateway', () => {
   });
 
   it('MONTHLY_CALLS_QUOTA_EXCEEDED → kind calls (usa callsUsed)', () => {
-    const e = parseQuotaError(JSON.stringify({
-      error: { code: 'MONTHLY_CALLS_QUOTA_EXCEEDED', callsUsed: 101, monthlyLimit: 100, planCode: 'free', periodEndIso: '2026-07-01' },
-    }), 'liara');
+    const e = parseQuotaError(
+      JSON.stringify({
+        error: {
+          code: 'MONTHLY_CALLS_QUOTA_EXCEEDED',
+          callsUsed: 101,
+          monthlyLimit: 100,
+          planCode: 'free',
+          periodEndIso: '2026-07-01',
+        },
+      }),
+      'liara',
+    );
     expect(e?.kind).toBe('calls');
     expect(e?.used).toBe(101);
     expect(e?.limit).toBe(100);
@@ -43,7 +49,9 @@ describe('parseQuotaError — riconosce i 429 di quota del gateway', () => {
   });
 
   it('codice NON-quota (es. UPSTREAM_ERROR) → null (ricade su errore generico)', () => {
-    expect(parseQuotaError(JSON.stringify({ error: { code: 'UPSTREAM_ERROR' } }), 'liara')).toBeNull();
+    expect(
+      parseQuotaError(JSON.stringify({ error: { code: 'UPSTREAM_ERROR' } }), 'liara'),
+    ).toBeNull();
   });
 
   it('body non-JSON → null', () => {
@@ -59,8 +67,12 @@ describe('parseQuotaError — riconosce i 429 di quota del gateway', () => {
 describe('LlmQuotaExceededError — messaggio CHIARO e azionabile', () => {
   it('include uso/limite, data di reset formattata IT e suggerimento BYOK/upgrade', () => {
     const e = new LlmQuotaExceededError({
-      provider: 'liara', kind: 'token', used: 510_000, limit: 500_000,
-      planCode: 'starter', periodEndIso: '2026-07-15',
+      provider: 'liara',
+      kind: 'token',
+      used: 510_000,
+      limit: 500_000,
+      planCode: 'starter',
+      periodEndIso: '2026-07-15',
     });
     expect(e.message).toContain('510000/500000');
     expect(e.message).toContain('15 luglio 2026'); // reset formattato UTC
@@ -75,7 +87,11 @@ describe('LlmQuotaExceededError — messaggio CHIARO e azionabile', () => {
   });
 
   it('data di reset malformata → non crasha (usa ISO grezzo)', () => {
-    const e = new LlmQuotaExceededError({ provider: 'liara', kind: 'token', periodEndIso: 'not-a-date' });
+    const e = new LlmQuotaExceededError({
+      provider: 'liara',
+      kind: 'token',
+      periodEndIso: 'not-a-date',
+    });
     expect(e.message).toContain('not-a-date');
   });
 });

@@ -35,7 +35,9 @@ let app: Hono;
 let workflows: WorkflowService;
 let wfA: Workflow;
 const created: string[] = [];
-interface SqliteLike { prepare: (s: string) => { run: (...p: unknown[]) => unknown } }
+interface SqliteLike {
+  prepare: (s: string) => { run: (...p: unknown[]) => unknown };
+}
 const db = (): SqliteLike => getDatabase().sqlite as unknown as SqliteLike;
 
 beforeAll(async () => {
@@ -43,28 +45,48 @@ beforeAll(async () => {
   const bus = new InMemoryEventBus();
   workflows = new WorkflowService(bus);
   app = new Hono();
-  app.use('*', async (c, next) => { c.set('auth', authCtx); await next(); });
+  app.use('*', async (c, next) => {
+    c.set('auth', authCtx);
+    await next();
+  });
   app.route('/api/v1', createRunsArchiveRoutes(bus));
   app.route('/api/v1', createWebhookTestRoutes());
   wfA = await workflows.create({
-    name: 'archiviabile', description: 'd', enabled: false,
+    name: 'archiviabile',
+    description: 'd',
+    enabled: false,
     nodes: [{ id: 'n1', defId: 'trigger_manual', x: 0, y: 0, config: {} }],
-    edges: [], nodeDefs: [], tags: [], tenantId: T_A,
+    edges: [],
+    nodeDefs: [],
+    tags: [],
+    tenantId: T_A,
   } as never);
   created.push(wfA.id);
 });
 
 afterAll(async () => {
-  for (const id of created) { try { await workflows.delete(id, T_A); } catch { /* best effort */ } }
-  try { db().prepare("DELETE FROM workflows WHERE tenant_id LIKE 'test-raw-%'").run(); } catch { /* opzionale */ }
+  for (const id of created) {
+    try {
+      await workflows.delete(id, T_A);
+    } catch {
+      /* best effort */
+    }
+  }
+  try {
+    db().prepare("DELETE FROM workflows WHERE tenant_id LIKE 'test-raw-%'").run();
+  } catch {
+    /* opzionale */
+  }
 });
 
 const req = (method: string, path: string, body?: unknown): Promise<Response> =>
-  Promise.resolve(app.request(`/api/v1${path}`, {
-    method,
-    headers: { 'content-type': 'application/json' },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  }));
+  Promise.resolve(
+    app.request(`/api/v1${path}`, {
+      method,
+      headers: { 'content-type': 'application/json' },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    }),
+  );
 
 describe('runs-archive — sicurezza path-traversal + tenant guard', () => {
   it('senza auth → mai 200', async () => {
@@ -76,7 +98,7 @@ describe('runs-archive — sicurezza path-traversal + tenant guard', () => {
     asUser(T_A);
     const res = await req('GET', `/workflows/${wfA.id}/runs/archive`);
     expect(res.status).toBe(200);
-    expect(Array.isArray((await res.json() as { archives: unknown[] }).archives)).toBe(true);
+    expect(Array.isArray(((await res.json()) as { archives: unknown[] }).archives)).toBe(true);
     expect((await req('GET', '/workflows/non-esiste/runs/archive')).status).toBe(404);
   });
 
@@ -87,16 +109,26 @@ describe('runs-archive — sicurezza path-traversal + tenant guard', () => {
 
   it('PATH-TRAVERSAL: filename ostili → 400 (mai toccano il FS fuori dalla dir archivi)', async () => {
     asUser(T_A);
-    for (const evil of ['..%2F..%2Fetc%2Fpasswd', 'runs-..-x.jsonl.gz', 'arbitrary.txt', 'runs-2026-06-wf.jsonl']) {
+    for (const evil of [
+      '..%2F..%2Fetc%2Fpasswd',
+      'runs-..-x.jsonl.gz',
+      'arbitrary.txt',
+      'runs-2026-06-wf.jsonl',
+    ]) {
       const res = await req('GET', `/workflows/${wfA.id}/runs/archive/${evil}`);
-      expect([400, 404].includes(res.status), `filename "${evil}" → ${String(res.status)}`).toBe(true);
+      expect([400, 404].includes(res.status), `filename "${evil}" → ${String(res.status)}`).toBe(
+        true,
+      );
       expect(res.status).not.toBe(200);
     }
   });
 
   it('filename FORMALMENTE valido ma file inesistente → 404 (non 200, non 500)', async () => {
     asUser(T_A);
-    const res = await req('GET', `/workflows/${wfA.id}/runs/archive/runs-2026-06-${wfA.id}.jsonl.gz`);
+    const res = await req(
+      'GET',
+      `/workflows/${wfA.id}/runs/archive/runs-2026-06-${wfA.id}.jsonl.gz`,
+    );
     expect(res.status).toBe(404);
   });
 });
@@ -111,19 +143,28 @@ describe('webhook-test — lifecycle listener concorrente (in-memory reale)', ()
 
   it('status: false prima di sottoscrivere, true mentre il listener è attivo', async () => {
     asUser(T_A);
-    const before = await (await req('GET', `/workflows/${wfA.id}/webhook-test/status`)).json() as { listening: boolean };
+    const before = (await (
+      await req('GET', `/workflows/${wfA.id}/webhook-test/status`)
+    ).json()) as { listening: boolean };
     expect(before.listening).toBe(false);
 
     const pending = req('POST', `/workflows/${wfA.id}/webhook-test`); // blocca
     await new Promise((r) => setTimeout(r, 30));
-    const during = await (await req('GET', `/workflows/${wfA.id}/webhook-test/status`)).json() as { listening: boolean };
+    const during = (await (
+      await req('GET', `/workflows/${wfA.id}/webhook-test/status`)
+    ).json()) as { listening: boolean };
     expect(during.listening).toBe(true);
 
     // Risveglio il listener con un evento → la POST risolve con il payload.
-    publishTestEvent(T_A, wfA.id, { headers: { 'x-test': '1' }, body: { hello: 'world' }, query: {}, method: 'POST' });
+    publishTestEvent(T_A, wfA.id, {
+      headers: { 'x-test': '1' },
+      body: { hello: 'world' },
+      query: {},
+      method: 'POST',
+    });
     const res = await pending;
     expect(res.status).toBe(200);
-    const data = await res.json() as { event: { body: { hello: string }; method: string } };
+    const data = (await res.json()) as { event: { body: { hello: string }; method: string } };
     expect(data.event.body.hello).toBe('world');
     expect(data.event.method).toBe('POST');
   });
@@ -133,9 +174,11 @@ describe('webhook-test — lifecycle listener concorrente (in-memory reale)', ()
     const pending = req('POST', `/workflows/${wfA.id}/webhook-test`);
     await new Promise((r) => setTimeout(r, 30));
     const cancel = await req('DELETE', `/workflows/${wfA.id}/webhook-test`);
-    expect((await cancel.json() as { cancelled: boolean }).cancelled).toBe(true);
+    expect(((await cancel.json()) as { cancelled: boolean }).cancelled).toBe(true);
     expect((await pending).status).toBe(410);
-    const status = await (await req('GET', `/workflows/${wfA.id}/webhook-test/status`)).json() as { listening: boolean };
+    const status = (await (
+      await req('GET', `/workflows/${wfA.id}/webhook-test/status`)
+    ).json()) as { listening: boolean };
     expect(status.listening).toBe(false);
   });
 
@@ -154,6 +197,6 @@ describe('webhook-test — lifecycle listener concorrente (in-memory reale)', ()
   it('cancel senza listener attivo → cancelled false', async () => {
     asUser(T_A);
     const res = await req('DELETE', `/workflows/${wfA.id}/webhook-test`);
-    expect((await res.json() as { cancelled: boolean }).cancelled).toBe(false);
+    expect(((await res.json()) as { cancelled: boolean }).cancelled).toBe(false);
   });
 });

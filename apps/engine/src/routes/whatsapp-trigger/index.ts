@@ -37,7 +37,11 @@ import { logger } from '@/lib/logger.js';
 import { publishTestEvent } from '@/services/test-event-bus.service.js';
 import { webhookIdempotencySeen, bodyHash } from '@/routes/webhook-guards.js';
 import { verifyMetaSignature, evaluateHandshake } from './verify.js';
-import { extractWhatsAppEvents, type NormalizedWhatsAppMessage, type NormalizedWhatsAppStatus } from './normalize.js';
+import {
+  extractWhatsAppEvents,
+  type NormalizedWhatsAppMessage,
+  type NormalizedWhatsAppStatus,
+} from './normalize.js';
 import type { Workflow, CanvasNode } from '@medea/engine-core-schema';
 
 export const WHATSAPP_TRIGGER_DEF_ID = 'trigger_whatsapp';
@@ -60,7 +64,9 @@ export function createWhatsAppTriggerRoutes(eventBus: IEventBus): Hono {
    * Risolve workflow + nodo trigger. Route PUBBLICA (come /webhooks): lookup
    * cross-tenant, l'auth vera è handshake/firma sul nodo stesso.
    */
-  async function resolve(workflowId: string): Promise<{ workflow: Workflow; node: CanvasNode } | null> {
+  async function resolve(
+    workflowId: string,
+  ): Promise<{ workflow: Workflow; node: CanvasNode } | null> {
     if (!workflowId) return null;
     const workflow = await workflows.getByIdAnyTenant(workflowId);
     if (!workflow) return null;
@@ -82,7 +88,10 @@ export function createWhatsAppTriggerRoutes(eventBus: IEventBus): Hono {
       nodeSecret(resolved.node, 'verifyToken'),
     );
     if (challenge === null) {
-      logger.warn({ workflowId: resolved.workflow.id }, 'WhatsApp handshake rejected (verify token mismatch or bad mode)');
+      logger.warn(
+        { workflowId: resolved.workflow.id },
+        'WhatsApp handshake rejected (verify token mismatch or bad mode)',
+      );
       return c.json({ error: 'Forbidden' }, 403);
     }
     logger.info({ workflowId: resolved.workflow.id }, 'WhatsApp handshake OK');
@@ -99,7 +108,10 @@ export function createWhatsAppTriggerRoutes(eventBus: IEventBus): Hono {
     const rawBody = await c.req.text();
     const signature = c.req.header('x-hub-signature-256') ?? '';
     if (!verifyMetaSignature(rawBody, signature, nodeSecret(node, 'appSecret'))) {
-      logger.warn({ workflowId: workflow.id, bodyHash: bodyHash(rawBody) }, 'WhatsApp signature verification failed');
+      logger.warn(
+        { workflowId: workflow.id, bodyHash: bodyHash(rawBody) },
+        'WhatsApp signature verification failed',
+      );
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
@@ -123,7 +135,10 @@ export function createWhatsAppTriggerRoutes(eventBus: IEventBus): Hono {
       if (phoneFilter !== '' && msg.phoneNumberId !== phoneFilter) continue;
       // Dedup re-delivery Meta: stesso wamid entro 24h = già processato.
       if (webhookIdempotencySeen(node.id, `wa:${msg.messageId}`)) {
-        logger.info({ workflowId: workflow.id, messageId: msg.messageId }, 'WhatsApp duplicate message — skip run');
+        logger.info(
+          { workflowId: workflow.id, messageId: msg.messageId },
+          'WhatsApp duplicate message — skip run',
+        );
         continue;
       }
       toRun.push(msg);
@@ -142,7 +157,10 @@ export function createWhatsAppTriggerRoutes(eventBus: IEventBus): Hono {
       // la subscription dell'app → si perderebbe il webhook per TUTTI i
       // workflow. Il drop è loggato per diagnosi.
       if (toRun.length > 0) {
-        logger.warn({ workflowId: workflow.id, dropped: toRun.length }, 'WhatsApp events dropped: workflow disabled');
+        logger.warn(
+          { workflowId: workflow.id, dropped: toRun.length },
+          'WhatsApp events dropped: workflow disabled',
+        );
       }
       return c.json({ ok: true, received: 0, dropped: toRun.length }, 200);
     }
@@ -150,18 +168,34 @@ export function createWhatsAppTriggerRoutes(eventBus: IEventBus): Hono {
     for (const event of toRun) {
       // Envelope webhook-shaped per il pannello "listen" dell'editor: il
       // payload normalizzato viaggia come body (headers/query non pertinenti).
-      publishTestEvent(tenantId, workflow.id, { method: 'POST', headers: {}, query: {}, body: event });
-      void runs.execute({
-        workflowId: workflow.id,
-        triggerType: 'whatsapp',
-        triggerInput: event,
-        tenantId,
-      })
-        .then((r) => { logger.info({ runId: r.runId, status: r.status, workflowId: workflow.id }, 'WhatsApp-triggered run completed'); })
-        .catch((err: unknown) => { logger.error({ err, workflowId: workflow.id }, 'WhatsApp-triggered run failed'); });
+      publishTestEvent(tenantId, workflow.id, {
+        method: 'POST',
+        headers: {},
+        query: {},
+        body: event,
+      });
+      void runs
+        .execute({
+          workflowId: workflow.id,
+          triggerType: 'whatsapp',
+          triggerInput: event,
+          tenantId,
+        })
+        .then((r) => {
+          logger.info(
+            { runId: r.runId, status: r.status, workflowId: workflow.id },
+            'WhatsApp-triggered run completed',
+          );
+        })
+        .catch((err: unknown) => {
+          logger.error({ err, workflowId: workflow.id }, 'WhatsApp-triggered run failed');
+        });
     }
 
-    logger.info({ workflowId: workflow.id, received: toRun.length, bodyHash: bodyHash(rawBody) }, 'WhatsApp webhook hit');
+    logger.info(
+      { workflowId: workflow.id, received: toRun.length, bodyHash: bodyHash(rawBody) },
+      'WhatsApp webhook hit',
+    );
     return c.json({ ok: true, received: toRun.length }, 200);
   });
 

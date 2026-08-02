@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { createVaultSalt, deriveKek, encryptSecret, decryptSecret, rotateMaster, verifyMaster } from './index.js';
+import {
+  createVaultSalt,
+  deriveKek,
+  encryptSecret,
+  decryptSecret,
+  rotateMaster,
+  verifyMaster,
+} from './index.js';
 
 describe('secrets vault (AES-256-GCM envelope)', () => {
   it('roundtrips a secret', () => {
@@ -8,7 +15,13 @@ describe('secrets vault (AES-256-GCM envelope)', () => {
     const master = { kek, salt };
 
     const enc = encryptSecret(
-      { id: 's1', tenantId: 'default', name: 'STRIPE_KEY', provider: 'stripe', plaintext: 'sk_live_abc' },
+      {
+        id: 's1',
+        tenantId: 'default',
+        name: 'STRIPE_KEY',
+        provider: 'stripe',
+        plaintext: 'sk_live_abc',
+      },
       master,
     );
     expect(enc.ciphertext).not.toBe('sk_live_abc');
@@ -30,7 +43,13 @@ describe('secrets vault (AES-256-GCM envelope)', () => {
     const m2 = { kek: deriveKek('second-password-strong', salt2), salt: salt2 };
 
     const enc = encryptSecret(
-      { id: 's2', tenantId: 'default', name: 'PEC_PASS', provider: 'pec-aruba', plaintext: 'segretissimo' },
+      {
+        id: 's2',
+        tenantId: 'default',
+        name: 'PEC_PASS',
+        provider: 'pec-aruba',
+        plaintext: 'segretissimo',
+      },
       m1,
     );
     const dataCipherBefore = enc.ciphertext;

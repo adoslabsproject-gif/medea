@@ -40,7 +40,8 @@ interface ProxyConfig {
  * Match HLS-related extensions only. Altri webhook customPath continuano al
  * route legacy customPathHandler.
  */
-const STREAM_PROXY_RE = /^\/webhooks\/c\/stream\/proxy\.(m3u8|m3u|ts|vtt|key|mp4|m4s|aac|webvtt)\/([^/?#]+)$/u;
+const STREAM_PROXY_RE =
+  /^\/webhooks\/c\/stream\/proxy\.(m3u8|m3u|ts|vtt|key|mp4|m4s|aac|webvtt)\/([^/?#]+)$/u;
 
 function base64UrlDecode(s: string): string | null {
   try {
@@ -53,8 +54,11 @@ function base64UrlDecode(s: string): string | null {
 }
 
 function base64UrlEncode(s: string): string {
-  return Buffer.from(s, 'utf8').toString('base64')
-    .replace(/=+$/u, '').replace(/\+/g, '-').replace(/\//g, '_');
+  return Buffer.from(s, 'utf8')
+    .toString('base64')
+    .replace(/=+$/u, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
 }
 
 function computeSig(secret: string, u: string, e: number): string {
@@ -70,9 +74,20 @@ function safeStringEqual(a: string, b: string): boolean {
   }
 }
 
-interface VerifyOk { ok: true; url: string }
-interface VerifyFail { ok: false; reason: string }
-export function verifyProxySignature(u: string, e: string, sig: string, secret: string): VerifyOk | VerifyFail {
+interface VerifyOk {
+  ok: true;
+  url: string;
+}
+interface VerifyFail {
+  ok: false;
+  reason: string;
+}
+export function verifyProxySignature(
+  u: string,
+  e: string,
+  sig: string,
+  secret: string,
+): VerifyOk | VerifyFail {
   const expNum = parseInt(e, 10);
   if (!Number.isFinite(expNum) || expNum <= 0) return { ok: false, reason: 'bad-exp' };
   if (expNum < Math.floor(Date.now() / 1000)) return { ok: false, reason: 'expired' };
@@ -84,7 +99,12 @@ export function verifyProxySignature(u: string, e: string, sig: string, secret: 
 }
 
 /** Sign una URL nuova con TTL ridotto (1h sufficient per VLC playback) */
-function signProxyUrl(upstreamUrl: string, proxyBase: string, secret: string, ttlSec: number): string {
+function signProxyUrl(
+  upstreamUrl: string,
+  proxyBase: string,
+  secret: string,
+  ttlSec: number,
+): string {
   const e = Math.floor(Date.now() / 1000) + ttlSec;
   const u = base64UrlEncode(upstreamUrl);
   const sig = computeSig(secret, u, e);
@@ -97,7 +117,10 @@ function signProxyUrl(upstreamUrl: string, proxyBase: string, secret: string, tt
  * Pattern minimo: regex su URL http(s):// in linee non-comment + URI="..." in
  * EXT-X-MEDIA. Stesso behavior del bundle ma scritto inline (no import).
  */
-function rewriteM3u(body: string, opts: { baseUrl: string; proxyBase: string; secret: string; ttlSec: number }): string {
+function rewriteM3u(
+  body: string,
+  opts: { baseUrl: string; proxyBase: string; secret: string; ttlSec: number },
+): string {
   const lines = body.split(/\r?\n/u);
   const out: string[] = [];
   for (const line of lines) {
@@ -140,7 +163,10 @@ function looksLikeM3u8(asText: string, contentType: string): boolean {
  * per back-compat. `findProxyConfig` interno: usa nodes array. Per test
  * con string JSON è esposta `findProxyConfigJson` su __testExports.
  */
-interface ProxyNodeShape { defId?: string; config?: Record<string, unknown> }
+interface ProxyNodeShape {
+  defId?: string;
+  config?: Record<string, unknown>;
+}
 function findProxyConfig(nodes: ProxyNodeShape[]): ProxyConfig | null {
   const proxyNode = nodes.find((n) => n.defId === 'custom_action_stream_proxy');
   if (!proxyNode?.config) return null;
@@ -196,10 +222,17 @@ export function createStreamProxyNativeMiddleware(deps: ProxyDeps) {
     // del runWebhook. Per HLS hint il token può essere ${realToken}.<ext>.
     // Qui non c'è hint (ext è già nel path before slash), quindi token == raw.
     const nodes = wf.nodes as ProxyNodeShape[];
-    const triggerNode = nodes.find((n) => n.defId === 'trigger_webhook' && typeof n.config?.customPath === 'string' && n.config.customPath === customPath);
+    const triggerNode = nodes.find(
+      (n) =>
+        n.defId === 'trigger_webhook' &&
+        typeof n.config?.customPath === 'string' &&
+        n.config.customPath === customPath,
+    );
     if (!triggerNode) return c.json({ error: 'No matching webhook trigger' }, 404);
-    const expectedToken = typeof triggerNode.config?.token === 'string' ? triggerNode.config.token : '';
-    if (expectedToken && !safeStringEqual(expectedToken, token)) return c.json({ error: 'Token mismatch' }, 403);
+    const expectedToken =
+      typeof triggerNode.config?.token === 'string' ? triggerNode.config.token : '';
+    if (expectedToken && !safeStringEqual(expectedToken, token))
+      return c.json({ error: 'Token mismatch' }, 403);
 
     // Read proxy config
     const proxyConfig = findProxyConfig(nodes);
@@ -208,7 +241,10 @@ export function createStreamProxyNativeMiddleware(deps: ProxyDeps) {
     // Verify HMAC signature
     const verified = verifyProxySignature(u, e, sig, proxyConfig.signSecret);
     if (!verified.ok) {
-      logger.warn({ reason: verified.reason, path: c.req.path }, '[stream-proxy-native] verify failed');
+      logger.warn(
+        { reason: verified.reason, path: c.req.path },
+        '[stream-proxy-native] verify failed',
+      );
       return c.json({ error: `STREAM_PROXY_VERIFY_FAILED: ${verified.reason}` }, 403);
     }
 
@@ -239,10 +275,10 @@ export function createStreamProxyNativeMiddleware(deps: ProxyDeps) {
 
     // M3U8 path: read text, rewrite URLs to proxy, return new playlist.
     // M3U8 è piccolo (~5-50KB) → buffer OK + necessario rewrite.
-    if (upstream.status === 200 && (
-      /\.(?:m3u8|m3u)$/u.test(verified.url) ||
-      /mpegurl|m3u8/iu.test(upstreamCT)
-    )) {
+    if (
+      upstream.status === 200 &&
+      (/\.(?:m3u8|m3u)$/u.test(verified.url) || /mpegurl|m3u8/iu.test(upstreamCT))
+    ) {
       const text = (await readTextTruncated(upstream, 10 * 1024 * 1024)).text; // M3U8 cap anti-OOM
       if (looksLikeM3u8(text, upstreamCT)) {
         // proxyBase preserva path + scheme + host del request entrante

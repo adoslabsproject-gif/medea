@@ -14,14 +14,21 @@ import { InMemoryEventBus } from '@/adapters/event-bus-memory.js';
 import type { Workflow, Edge } from '@medea/engine-core-schema';
 import type { NodeExecutionContext } from '@medea/engine-nodes-stdlib';
 
-interface Call { input: unknown }
+interface Call {
+  input: unknown;
+}
 let calls: Map<string, Call[]>;
 let failOn: Map<string, (input: unknown) => boolean>;
 
 function defOf(id: string, branching = false) {
   return {
-    id, label: id, kind: 'action' as const, category: 'test',
-    inputs: [], outputs: branching ? ['yes', 'no'] : [], configSchema: {} as never,
+    id,
+    label: id,
+    kind: 'action' as const,
+    category: 'test',
+    inputs: [],
+    outputs: branching ? ['yes', 'no'] : [],
+    configSchema: {} as never,
     ...(branching ? { branching: true } : {}),
   };
 }
@@ -39,12 +46,27 @@ function mod(defId: string, branching = false) {
   };
 }
 
-function makeWorkflow(nodes: { id: string; defId: string; continueOnFail?: boolean }[], edges: Edge[]): Workflow {
+function makeWorkflow(
+  nodes: { id: string; defId: string; continueOnFail?: boolean }[],
+  edges: Edge[],
+): Workflow {
   return {
-    schemaVersion: '1.0.0', id: 'wf-map', name: 'Map', enabled: true,
-    nodes: nodes.map((n, i) => ({ id: n.id, defId: n.defId, x: i, y: 0, config: {}, ...(n.continueOnFail !== undefined ? { continueOnFail: n.continueOnFail } : {}) })),
-    edges, nodeDefs: [],
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    schemaVersion: '1.0.0',
+    id: 'wf-map',
+    name: 'Map',
+    enabled: true,
+    nodes: nodes.map((n, i) => ({
+      id: n.id,
+      defId: n.defId,
+      x: i,
+      y: 0,
+      config: {},
+      ...(n.continueOnFail !== undefined ? { continueOnFail: n.continueOnFail } : {}),
+    })),
+    edges,
+    nodeDefs: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 }
 
@@ -53,7 +75,11 @@ function makeEngine(...mods: object[]): WorkflowEngine {
 }
 
 const savedMax = process.env.MEDEA_ENGINE_MAX_MAP_ITEMS;
-beforeEach(() => { calls = new Map(); failOn = new Map(); delete process.env.MEDEA_ENGINE_MAX_MAP_ITEMS; });
+beforeEach(() => {
+  calls = new Map();
+  failOn = new Map();
+  delete process.env.MEDEA_ENGINE_MAX_MAP_ITEMS;
+});
 afterEach(() => {
   if (savedMax === undefined) delete process.env.MEDEA_ENGINE_MAX_MAP_ITEMS;
   else process.env.MEDEA_ENGINE_MAX_MAP_ITEMS = savedMax;
@@ -62,7 +88,11 @@ afterEach(() => {
 /** src (emette l'array passato come triggerInput) → [mapMode] → dst → sink */
 function chain(mapMode: Edge['mapMode'], dstOpts: { continueOnFail?: boolean } = {}): Workflow {
   return makeWorkflow(
-    [{ id: 'src', defId: 'src' }, { id: 'dst', defId: 'dst', ...dstOpts }, { id: 'sink', defId: 'sink' }],
+    [
+      { id: 'src', defId: 'src' },
+      { id: 'dst', defId: 'dst', ...dstOpts },
+      { id: 'sink', defId: 'sink' },
+    ],
     [
       { from: 'src', to: 'dst', ...(mapMode !== undefined ? { mapMode } : {}) },
       { from: 'dst', to: 'sink' },
@@ -74,25 +104,30 @@ function chain(mapMode: Edge['mapMode'], dstOpts: { continueOnFail?: boolean } =
 function passthroughSrc() {
   return {
     def: defOf('src'),
-    executor: async (_c: unknown, input: unknown, _ctx: NodeExecutionContext) => ({ output: input, chosenBranch: undefined }),
+    executor: async (_c: unknown, input: unknown, _ctx: NodeExecutionContext) => ({
+      output: input,
+      chosenBranch: undefined,
+    }),
   };
 }
 
 describe('🚨 mapMode=auto — fan-out per-item su array', () => {
-  it('🚨 3 item → executor dst gira 3 VOLTE coi singoli item; risultati ALLINEATI per indice; sink riceve l\'array', async () => {
+  it("🚨 3 item → executor dst gira 3 VOLTE coi singoli item; risultati ALLINEATI per indice; sink riceve l'array", async () => {
     const engine = makeEngine(passthroughSrc(), mod('dst'), mod('sink'));
     const result = await engine.run({ workflow: chain('auto'), triggerInput: ['a', 'b', 'c'] });
     expect(result.status).toBe('success');
 
     const dstCalls = calls.get('dst') ?? [];
-    expect(dstCalls.map((c) => c.input)).toEqual(['a', 'b', 'c']);   // un item per chiamata
+    expect(dstCalls.map((c) => c.input)).toEqual(['a', 'b', 'c']); // un item per chiamata
     // ($index/$item per le espressioni passano via interpreter scope; l'indice
     // OSSERVABILE del contratto è step.iterationIndex, asserito più sotto.)
 
     // sink riceve l'ARRAY aggregato allineato: results[i] = f(items[i])
     const sinkCalls = calls.get('sink') ?? [];
     expect(sinkCalls[0]?.input).toEqual([
-      { processed: 'a' }, { processed: 'b' }, { processed: 'c' },
+      { processed: 'a' },
+      { processed: 'b' },
+      { processed: 'c' },
     ]);
 
     // osservabilità: uno step per item con iterationIndex/total + loopId map:<nodeId>
@@ -114,7 +149,7 @@ describe('🚨 mapMode=auto — fan-out per-item su array', () => {
 });
 
 describe('🚨 back-compat — mapMode assente/off NON cambia NULLA', () => {
-  it('🚨 senza mapMode l\'array arriva INTERO (1 esecuzione) — semantica storica', async () => {
+  it("🚨 senza mapMode l'array arriva INTERO (1 esecuzione) — semantica storica", async () => {
     const engine = makeEngine(passthroughSrc(), mod('dst'), mod('sink'));
     const result = await engine.run({ workflow: chain(undefined), triggerInput: ['a', 'b', 'c'] });
     expect(result.status).toBe('success');
@@ -135,8 +170,8 @@ describe('🚨 mapMode=each — contratto rigido', () => {
     const engine = makeEngine(passthroughSrc(), mod('dst'), mod('sink'));
     const result = await engine.run({ workflow: chain('each'), triggerInput: { single: true } });
     expect(result.errorCount).toBe(1);
-    expect(calls.get('dst')).toBeUndefined();   // mai eseguito
-    expect(calls.get('sink')).toBeUndefined();  // ramo morto
+    expect(calls.get('dst')).toBeUndefined(); // mai eseguito
+    expect(calls.get('sink')).toBeUndefined(); // ramo morto
     const errStep = result.steps.find((s) => s.nodeId === 'dst');
     expect(errStep?.status).toBe('error');
     expect(errStep?.error).toMatch(/richiede un input ARRAY/u);
@@ -155,15 +190,16 @@ describe('🚨 LINEAGE anti-footgun — allineamento per indice con errori per-i
     failOn.set('dst', (input) => input === 'b');
     const engine = makeEngine(passthroughSrc(), mod('dst'), mod('sink'));
     const result = await engine.run({
-      workflow: chain('auto', { continueOnFail: true }), triggerInput: ['a', 'b', 'c'],
+      workflow: chain('auto', { continueOnFail: true }),
+      triggerInput: ['a', 'b', 'c'],
     });
     expect(result.status).toBe('success'); // soft-fail non è fatale
     const sinkInput = (calls.get('sink') ?? [])[0]?.input as unknown[];
-    expect(sinkInput).toHaveLength(3);                       // NESSUN buco
+    expect(sinkInput).toHaveLength(3); // NESSUN buco
     expect(sinkInput[0]).toEqual({ processed: 'a' });
     expect(sinkInput[2]).toEqual({ processed: 'c' });
     const errItem = sinkInput[1] as { error: { index: number; nodeId: string } };
-    expect(errItem.error.index).toBe(1);                     // lineage esplicito
+    expect(errItem.error.index).toBe(1); // lineage esplicito
     expect(errItem.error.nodeId).toBe('dst');
     // lo step dell'item fallito è osservabile come "continued" (giallo, non rosso)
     const stepB = result.steps.find((s) => s.nodeId === 'dst' && s.iterationIndex === 1);
@@ -175,8 +211,8 @@ describe('🚨 LINEAGE anti-footgun — allineamento per indice con errori per-i
     const engine = makeEngine(passthroughSrc(), mod('dst'), mod('sink'));
     const result = await engine.run({ workflow: chain('auto'), triggerInput: ['a', 'b', 'c'] });
     expect(result.errorCount).toBe(1);
-    expect(calls.get('dst')).toHaveLength(2);   // 'a' ok, 'b' boom, 'c' MAI
-    expect(calls.get('sink')).toBeUndefined();  // Stop-and-Error
+    expect(calls.get('dst')).toHaveLength(2); // 'a' ok, 'b' boom, 'c' MAI
+    expect(calls.get('sink')).toBeUndefined(); // Stop-and-Error
   });
 });
 
@@ -203,7 +239,11 @@ describe('🚨 guardrail', () => {
   it('🚨 PIN GLOBALE vince sul fan-out: nodo pinnato → output pinnato, executor mai chiamato', async () => {
     const engine = makeEngine(passthroughSrc(), mod('dst'), mod('sink'));
     const pins = new Map<string, unknown>([['dst', { pinned: true }]]);
-    const result = await engine.run({ workflow: chain('auto'), triggerInput: ['a', 'b'], pinnedOutputs: pins });
+    const result = await engine.run({
+      workflow: chain('auto'),
+      triggerInput: ['a', 'b'],
+      pinnedOutputs: pins,
+    });
     expect(result.status).toBe('success');
     expect(calls.get('dst')).toBeUndefined();
     expect((calls.get('sink') ?? [])[0]?.input).toEqual({ pinned: true });
@@ -212,10 +252,12 @@ describe('🚨 guardrail', () => {
   it('🚨 interop GAP 4: stopAfterNodeId sul nodo mappato → fan-out completo ma sink scartato', async () => {
     const engine = makeEngine(passthroughSrc(), mod('dst'), mod('sink'));
     const result = await engine.run({
-      workflow: chain('auto'), triggerInput: ['a', 'b'], stopAfterNodeId: 'dst',
+      workflow: chain('auto'),
+      triggerInput: ['a', 'b'],
+      stopAfterNodeId: 'dst',
     });
     expect(result.status).toBe('success');
-    expect(calls.get('dst')).toHaveLength(2);  // il fan-out completa
+    expect(calls.get('dst')).toHaveLength(2); // il fan-out completa
     expect(calls.get('sink')).toBeUndefined(); // la valle no
   });
 });

@@ -95,8 +95,9 @@ const FETCH_TIMEOUT_MS = 10_000;
  * Per fetch identificabili (sites che vogliono whitelistare il bot), si può
  * usare un secondo UA tramite l'env MEDEA_BOT_UA (override custom).
  */
-const USER_AGENT = process.env.MEDEA_BOT_UA
-  ?? 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36';
+const USER_AGENT =
+  process.env.MEDEA_BOT_UA ??
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36';
 
 /**
  * Errore: il fetch ha colpito la pagina di WAKE del tenant ("Avvio del
@@ -109,7 +110,7 @@ export class WorkspaceWakingError extends Error {
   constructor(public readonly targetUrl: string) {
     super(
       `Il sito "${targetUrl}" era in pausa o in riavvio (workspace FlowForge in wake): ` +
-      'riprova tra qualche secondo, quando l\'ambiente sarà ripartito.',
+        "riprova tra qualche secondo, quando l'ambiente sarà ripartito.",
     );
     this.name = 'WorkspaceWakingError';
   }
@@ -139,8 +140,11 @@ function assertNotWakePage(result: FetchUrlResult): FetchUrlResult {
 
 export async function fetchUrl(rawUrl: string): Promise<FetchUrlResult> {
   let url: URL;
-  try { url = new URL(rawUrl); }
-  catch { throw new Error(`URL non valido: ${rawUrl}`); }
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw new Error(`URL non valido: ${rawUrl}`);
+  }
   if (!['http:', 'https:'].includes(url.protocol)) {
     throw new Error(`Solo http/https supportati (ricevuto: ${url.protocol})`);
   }
@@ -185,31 +189,35 @@ export async function fetchUrl(rawUrl: string): Promise<FetchUrlResult> {
   // ri-validando ogni Location con ssrf-guard (max 5 hop). Senza, un
   // attaccante pubblica `https://evil.com/r` che 302 a `http://127.0.0.1:6379`.
   const ctrl = new AbortController();
-  const to = setTimeout(() => { ctrl.abort(); }, FETCH_TIMEOUT_MS);
+  const to = setTimeout(() => {
+    ctrl.abort();
+  }, FETCH_TIMEOUT_MS);
   let res: Response;
   let currentUrl = url.toString();
   let hops = 0;
   const MAX_REDIRECTS = 5;
   try {
-     
     while (true) {
       res = await safeOutboundFetch(currentUrl, {
-        externalSignal: ctrl.signal, timeoutMs: 0,
+        externalSignal: ctrl.signal,
+        timeoutMs: 0,
         redirect: 'manual',
         headers: {
           'User-Agent': USER_AGENT,
-          'Accept': 'text/html,application/xhtml+xml,application/json,text/plain;q=0.9,*/*;q=0.5',
+          Accept: 'text/html,application/xhtml+xml,application/json,text/plain;q=0.9,*/*;q=0.5',
           'Accept-Language': 'it,en;q=0.8',
         },
       });
-      if (res.status < 300 || res.status >= 400) break;          // non e` un redirect
+      if (res.status < 300 || res.status >= 400) break; // non e` un redirect
       const loc = res.headers.get('location');
       if (!loc) break;
       if (++hops > MAX_REDIRECTS) throw new Error(`Troppi redirect (>${MAX_REDIRECTS})`);
       const next = new URL(loc, currentUrl).toString();
       const nextSsrf = validateUrlForFetch(next);
       if (!nextSsrf.ok) {
-        throw new Error(`SSRF guard redirect: ${nextSsrf.reason} (${nextSsrf.detail ?? 'invalid'})`);
+        throw new Error(
+          `SSRF guard redirect: ${nextSsrf.reason} (${nextSsrf.detail ?? 'invalid'})`,
+        );
       }
       currentUrl = next;
     }
@@ -220,8 +228,14 @@ export async function fetchUrl(rawUrl: string): Promise<FetchUrlResult> {
   clearTimeout(to);
 
   const contentType = (res.headers.get('content-type') ?? 'text/plain').toLowerCase();
-  if (/^(application\/pdf|image\/|video\/|audio\/|application\/zip|application\/octet-stream)/.test(contentType)) {
-    throw new Error(`Content-type "${contentType}" non testuale. Per immagini usa attachments della chat.`);
+  if (
+    /^(application\/pdf|image\/|video\/|audio\/|application\/zip|application\/octet-stream)/.test(
+      contentType,
+    )
+  ) {
+    throw new Error(
+      `Content-type "${contentType}" non testuale. Per immagini usa attachments della chat.`,
+    );
   }
 
   // Lettura TRONCATA in streaming (anti-OOM): prima `await res.text()` bufferizzava
@@ -231,21 +245,37 @@ export async function fetchUrl(rawUrl: string): Promise<FetchUrlResult> {
 
   if (contentType.includes('json')) {
     let content = limited;
-    try { content = JSON.stringify(JSON.parse(limited), null, 2); } catch { /* keep raw */ }
+    try {
+      content = JSON.stringify(JSON.parse(limited), null, 2);
+    } catch {
+      /* keep raw */
+    }
     return {
-      url: rawUrl, finalUrl: res.url, status: res.status, contentType,
-      extractor: 'cheerio', content, truncated,
+      url: rawUrl,
+      finalUrl: res.url,
+      status: res.status,
+      contentType,
+      extractor: 'cheerio',
+      content,
+      truncated,
     };
   }
 
   if (contentType.includes('html')) {
     // CASCADE 2: Cheerio raw (strip nav/footer/script, prefer main/article)
-    return assertNotWakePage(cheerioExtract(rawUrl, res.url, res.status, contentType, limited, truncated));
+    return assertNotWakePage(
+      cheerioExtract(rawUrl, res.url, res.status, contentType, limited, truncated),
+    );
   }
 
   return assertNotWakePage({
-    url: rawUrl, finalUrl: res.url, status: res.status, contentType,
-    extractor: 'cheerio', content: limited, truncated,
+    url: rawUrl,
+    finalUrl: res.url,
+    status: res.status,
+    contentType,
+    extractor: 'cheerio',
+    content: limited,
+    truncated,
   });
 }
 
@@ -259,14 +289,17 @@ export async function fetchUrl(rawUrl: string): Promise<FetchUrlResult> {
  */
 async function firecrawlFetch(rawUrl: string, apiKey: string): Promise<FetchUrlResult | null> {
   const ctrl = new AbortController();
-  const to = setTimeout(() => { ctrl.abort(); }, 20_000); // FireCrawl JS render può essere lento
+  const to = setTimeout(() => {
+    ctrl.abort();
+  }, 20_000); // FireCrawl JS render può essere lento
   try {
     const res = await safeOutboundFetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',
-      externalSignal: ctrl.signal, timeoutMs: 0,
+      externalSignal: ctrl.signal,
+      timeoutMs: 0,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         url: rawUrl,
@@ -282,7 +315,12 @@ async function firecrawlFetch(rawUrl: string, apiKey: string): Promise<FetchUrlR
       data?: {
         markdown?: string;
         html?: string;
-        metadata?: { title?: string; description?: string; sourceURL?: string; statusCode?: number };
+        metadata?: {
+          title?: string;
+          description?: string;
+          sourceURL?: string;
+          statusCode?: number;
+        };
       };
     }>(res);
     if (!json.success || !json.data?.markdown) return null;
@@ -311,16 +349,21 @@ async function firecrawlFetch(rawUrl: string, apiKey: string): Promise<FetchUrlR
 async function jinaReaderFetch(rawUrl: string): Promise<FetchUrlResult | null> {
   const jinaUrl = `https://r.jina.ai/${rawUrl}`;
   const ctrl = new AbortController();
-  const to = setTimeout(() => { ctrl.abort(); }, FETCH_TIMEOUT_MS);
+  const to = setTimeout(() => {
+    ctrl.abort();
+  }, FETCH_TIMEOUT_MS);
   try {
     const res = await safeOutboundFetch(jinaUrl, {
-      externalSignal: ctrl.signal, timeoutMs: 0,
+      externalSignal: ctrl.signal,
+      timeoutMs: 0,
       headers: {
         'User-Agent': USER_AGENT,
-        'Accept': 'text/markdown',
+        Accept: 'text/markdown',
         // Header opzionale per autenticazione se JINA_READER_KEY è settato
         // (rate-limit più alti). Senza key funziona comunque per traffico modesto.
-        ...(process.env.JINA_READER_KEY ? { 'Authorization': `Bearer ${process.env.JINA_READER_KEY}` } : {}),
+        ...(process.env.JINA_READER_KEY
+          ? { Authorization: `Bearer ${process.env.JINA_READER_KEY}` }
+          : {}),
       },
     });
     if (!res.ok) return null;
@@ -349,19 +392,27 @@ async function jinaReaderFetch(rawUrl: string): Promise<FetchUrlResult | null> {
 
 /** Cheerio fallback — strip nav/footer/script, prefer <main>/<article>. */
 function cheerioExtract(
-  rawUrl: string, finalUrl: string, status: number, contentType: string,
-  html: string, truncated: boolean,
+  rawUrl: string,
+  finalUrl: string,
+  status: number,
+  contentType: string,
+  html: string,
+  truncated: boolean,
 ): FetchUrlResult {
   const $ = cheerio.load(html);
   const title = $('title').first().text().trim();
-  const description = ($('meta[name="description"]').attr('content')?.trim()
-                  ?? $('meta[property="og:description"]').attr('content')?.trim()
-                  ?? '');
+  const description =
+    $('meta[name="description"]').attr('content')?.trim() ??
+    $('meta[property="og:description"]').attr('content')?.trim() ??
+    '';
   $('script, style, noscript, iframe, nav, footer, header, aside, [aria-hidden="true"]').remove();
   const main = $('main').first().text() || $('article').first().text() || $('body').text();
   const content = main.replace(/\s+/g, ' ').trim();
   return {
-    url: rawUrl, finalUrl, status, contentType,
+    url: rawUrl,
+    finalUrl,
+    status,
+    contentType,
     extractor: 'cheerio',
     ...(title ? { title } : {}),
     ...(description ? { description } : {}),
@@ -395,7 +446,10 @@ const SEARCH_CACHE_MAX = 100;
 function cacheGet(key: string): SearchResponse | null {
   const e = searchCache.get(key);
   if (!e) return null;
-  if (Date.now() - e.ts > SEARCH_CACHE_TTL_MS) { searchCache.delete(key); return null; }
+  if (Date.now() - e.ts > SEARCH_CACHE_TTL_MS) {
+    searchCache.delete(key);
+    return null;
+  }
   return e.data;
 }
 function cacheSet(key: string, data: SearchResponse): void {
@@ -423,40 +477,63 @@ export async function webSearch(query: string, limit = 10): Promise<SearchRespon
   // perché ritorna risultati semanticamente simili senza match keyword esatto:
   // killer per cold outreach "siti simili a X" / "competitor di Y".
   if (exaKey) {
-    try { response = await exaSearch(q, limit, exaKey); }
-    catch (e) { logger.warn({ err: e, query: q }, 'Exa fallita, fallback Tavily/Brave/Serper/DDG'); }
+    try {
+      response = await exaSearch(q, limit, exaKey);
+    } catch (e) {
+      logger.warn({ err: e, query: q }, 'Exa fallita, fallback Tavily/Brave/Serper/DDG');
+    }
   }
   if (!response && tavilyKey) {
-    try { response = await tavilySearch(q, limit, tavilyKey); }
-    catch (e) { logger.warn({ err: e, query: q }, 'Tavily fallita, fallback Brave/Serper/DDG'); }
+    try {
+      response = await tavilySearch(q, limit, tavilyKey);
+    } catch (e) {
+      logger.warn({ err: e, query: q }, 'Tavily fallita, fallback Brave/Serper/DDG');
+    }
   }
   if (!response && braveKey) {
-    try { response = await braveSearch(q, limit, braveKey); }
-    catch (e) { logger.warn({ err: e, query: q }, 'Brave fallita, fallback Serper/DDG'); }
+    try {
+      response = await braveSearch(q, limit, braveKey);
+    } catch (e) {
+      logger.warn({ err: e, query: q }, 'Brave fallita, fallback Serper/DDG');
+    }
   }
   if (!response && serperKey) {
-    try { response = await serperSearch(q, limit, serperKey); }
-    catch (e) { logger.warn({ err: e, query: q }, 'Serper fallita, fallback Jina/DDG'); }
+    try {
+      response = await serperSearch(q, limit, serperKey);
+    } catch (e) {
+      logger.warn({ err: e, query: q }, 'Serper fallita, fallback Jina/DDG');
+    }
   }
   // Jina Search — opt-in via JINA_READER_KEY. Quando configurato, è il
   // provider più affidabile per cold outreach (semantic + cloud-IP friendly).
   if (!response && process.env.JINA_READER_KEY) {
-    try { response = await jinaSearch(q, limit); }
-    catch (e) { logger.warn({ err: e, query: q }, 'Jina Search fallita, fallback Searx'); }
+    try {
+      response = await jinaSearch(q, limit);
+    } catch (e) {
+      logger.warn({ err: e, query: q }, 'Jina Search fallita, fallback Searx');
+    }
   }
   // Searx (federated public instances) — NO API key, cloud-IP friendly.
   // Inserito PRIMA di DDG perché su IP cloud (Hetzner/AWS/GCP/Vercel) DDG
   // blocca silenziosamente con 202+CAPTCHA. Incident 24 mag 2026 confermato:
   // DDG ha ritornato 0 risultati per 9 query Liara consecutive su Hetzner IP.
   if (!response) {
-    try { response = await searxSearch(q, limit); }
-    catch (e) { logger.warn({ err: e, query: q }, 'Searx fallita (tutte istanze pubbliche unreachable), fallback DDG'); }
+    try {
+      response = await searxSearch(q, limit);
+    } catch (e) {
+      logger.warn(
+        { err: e, query: q },
+        'Searx fallita (tutte istanze pubbliche unreachable), fallback DDG',
+      );
+    }
   }
   if (!response || response.results.length === 0) {
     try {
       const ddg = await duckDuckGoSearch(q, limit);
       if (ddg.results.length > 0) response = ddg;
-    } catch (e) { logger.warn({ err: e, query: q }, 'DDG fallita, fallback Wikipedia'); }
+    } catch (e) {
+      logger.warn({ err: e, query: q }, 'DDG fallita, fallback Wikipedia');
+    }
   }
   // Se DDG ha ritornato 0 (es. blocco bot), prova Wikipedia (sempre disponibile,
   // perfetta per query enciclopediche / brand / siti noti)
@@ -486,7 +563,7 @@ async function wikipediaSearch(query: string, limit: number): Promise<SearchResp
   const tryLang = async (lang: 'it' | 'en'): Promise<SearchResponse | null> => {
     const url = `https://${lang}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=${limit.toString()}&namespace=0&format=json&origin=*`;
     const res = await safeOutboundFetch(url, {
-      headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json' },
+      headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
       timeoutMs: 8000,
     });
     if (!res.ok) return null;
@@ -506,18 +583,24 @@ async function wikipediaSearch(query: string, limit: number): Promise<SearchResp
     const firstTitle = titles[0];
     if (firstTitle) {
       try {
-        const sumRes = await safeOutboundFetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(firstTitle)}`, {
-          headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json' },
-          timeoutMs: 5000,
-        });
+        const sumRes = await safeOutboundFetch(
+          `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(firstTitle)}`,
+          {
+            headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
+            timeoutMs: 5000,
+          },
+        );
         if (sumRes.ok) {
           const sumJson = await readJsonCapped<{ extract?: string }>(sumRes);
           answer = sumJson.extract ?? undefined;
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     return {
-      query, provider: 'wikipedia',
+      query,
+      provider: 'wikipedia',
       ...(answer ? { answer } : {}),
       results,
     };
@@ -550,7 +633,10 @@ async function exaSearch(query: string, limit: number, apiKey: string): Promise<
     }),
     timeoutMs: 15_000,
   });
-  if (!res.ok) throw new Error(`Exa ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`);
+  if (!res.ok)
+    throw new Error(
+      `Exa ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`,
+    );
   const json = await readJsonCapped<{
     autopromptString?: string;
     results?: { title?: string; url?: string; text?: string; snippet?: string }[];
@@ -580,9 +666,12 @@ async function tavilySearch(query: string, limit: number, apiKey: string): Promi
       search_depth: 'advanced',
       include_raw_content: false,
     }),
-    timeoutMs: 15_000,  // Tavily advanced può essere più lento
+    timeoutMs: 15_000, // Tavily advanced può essere più lento
   });
-  if (!res.ok) throw new Error(`Tavily ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`);
+  if (!res.ok)
+    throw new Error(
+      `Tavily ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`,
+    );
   const json = await readJsonCapped<{
     answer?: string;
     results?: { title?: string; url?: string; content?: string }[];
@@ -602,15 +691,23 @@ async function tavilySearch(query: string, limit: number, apiKey: string): Promi
 async function braveSearch(query: string, limit: number, apiKey: string): Promise<SearchResponse> {
   const url = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=${limit.toString()}&search_lang=it&country=IT`;
   const res = await safeOutboundFetch(url, {
-    headers: { 'X-Subscription-Token': apiKey, 'Accept': 'application/json' },
+    headers: { 'X-Subscription-Token': apiKey, Accept: 'application/json' },
     timeoutMs: 8000,
   });
-  if (!res.ok) throw new Error(`Brave ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`);
-  const json = await readJsonCapped<{ web?: { results?: { title?: string; url?: string; description?: string }[] } }>(res);
+  if (!res.ok)
+    throw new Error(
+      `Brave ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`,
+    );
+  const json = await readJsonCapped<{
+    web?: { results?: { title?: string; url?: string; description?: string }[] };
+  }>(res);
   return {
-    query, provider: 'brave',
+    query,
+    provider: 'brave',
     results: (json.web?.results ?? []).slice(0, limit).map((r) => ({
-      title: r.title ?? '(no title)', url: r.url ?? '', snippet: r.description ?? '',
+      title: r.title ?? '(no title)',
+      url: r.url ?? '',
+      snippet: r.description ?? '',
     })),
   };
 }
@@ -623,17 +720,23 @@ async function serperSearch(query: string, limit: number, apiKey: string): Promi
     body: JSON.stringify({ q: query, num: limit, gl: 'it', hl: 'it' }),
     timeoutMs: 8000,
   });
-  if (!res.ok) throw new Error(`Serper ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`);
+  if (!res.ok)
+    throw new Error(
+      `Serper ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`,
+    );
   const json = await readJsonCapped<{
     organic?: { title?: string; link?: string; snippet?: string }[];
     answerBox?: { answer?: string; snippet?: string };
   }>(res);
   const answer = json.answerBox?.answer ?? json.answerBox?.snippet;
   return {
-    query, provider: 'serper',
+    query,
+    provider: 'serper',
     ...(answer ? { answer } : {}),
     results: (json.organic ?? []).slice(0, limit).map((r) => ({
-      title: r.title ?? '(no title)', url: r.link ?? '', snippet: r.snippet ?? '',
+      title: r.title ?? '(no title)',
+      url: r.link ?? '',
+      snippet: r.snippet ?? '',
     })),
   };
 }
@@ -657,28 +760,36 @@ async function jinaSearch(query: string, limit: number): Promise<SearchResponse>
   if (!process.env.JINA_READER_KEY) throw new Error('JINA_READER_KEY not configured');
   const url = `https://s.jina.ai/${encodeURIComponent(query)}`;
   const ctrl = new AbortController();
-  const to = setTimeout(() => { ctrl.abort(); }, 12_000);
+  const to = setTimeout(() => {
+    ctrl.abort();
+  }, 12_000);
   try {
     const res = await safeOutboundFetch(url, {
-      externalSignal: ctrl.signal, timeoutMs: 0,
+      externalSignal: ctrl.signal,
+      timeoutMs: 0,
       headers: {
-        'Accept': 'application/json',
+        Accept: 'application/json',
         'User-Agent': USER_AGENT,
         'X-Respond-With': 'no-content',
-        'Authorization': `Bearer ${process.env.JINA_READER_KEY}`,
+        Authorization: `Bearer ${process.env.JINA_READER_KEY}`,
       },
     });
     if (!res.ok) throw new Error(`Jina Search ${res.status.toString()}`);
-    const json = await readJsonCapped<{ data?: { title?: string; url?: string; description?: string; content?: string }[] }>(res);
+    const json = await readJsonCapped<{
+      data?: { title?: string; url?: string; description?: string; content?: string }[];
+    }>(res);
     return {
-      query, provider: 'jina',
+      query,
+      provider: 'jina',
       results: (json.data ?? []).slice(0, limit).map((r) => ({
         title: r.title ?? '(no title)',
         url: r.url ?? '',
         snippet: r.description ?? r.content?.slice(0, 300) ?? '',
       })),
     };
-  } finally { clearTimeout(to); }
+  } finally {
+    clearTimeout(to);
+  }
 }
 
 /**
@@ -722,16 +833,21 @@ async function searxSearch(query: string, limit: number): Promise<SearchResponse
     const url = `${instance}/search?q=${encodeURIComponent(query)}&format=json&language=it&safesearch=0`;
     const isInternal = INTERNAL_SEARX !== '' && instance === INTERNAL_SEARX;
     const ctrl = new AbortController();
-    const to = setTimeout(() => { ctrl.abort(); }, 10_000);
+    const to = setTimeout(() => {
+      ctrl.abort();
+    }, 10_000);
     try {
       const res = await safeOutboundFetch(url, {
-        externalSignal: ctrl.signal, timeoutMs: 0,
+        externalSignal: ctrl.signal,
+        timeoutMs: 0,
         ...(isInternal ? { allowPrivateHost: true } : {}),
-        headers: { 'Accept': 'application/json', 'User-Agent': USER_AGENT },
+        headers: { Accept: 'application/json', 'User-Agent': USER_AGENT },
       });
       clearTimeout(to);
       if (!res.ok) continue;
-      const json = await readJsonCapped<{ results?: { title?: string; url?: string; content?: string }[] }>(res);
+      const json = await readJsonCapped<{
+        results?: { title?: string; url?: string; content?: string }[];
+      }>(res);
       const results = (json.results ?? []).slice(0, limit).map((r) => ({
         title: r.title ?? '(no title)',
         url: r.url ?? '',
@@ -751,7 +867,7 @@ async function duckDuckGoSearch(query: string, limit: number): Promise<SearchRes
   try {
     const liteUrl = `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}&kl=it-it`;
     const res = await safeOutboundFetch(liteUrl, {
-      headers: { 'User-Agent': USER_AGENT, 'Accept': 'text/html' },
+      headers: { 'User-Agent': USER_AGENT, Accept: 'text/html' },
       timeoutMs: 8000,
     });
     if (res.ok) {
@@ -771,9 +887,9 @@ async function duckDuckGoSearch(query: string, limit: number): Promise<SearchRes
     method: 'POST',
     headers: {
       'User-Agent': USER_AGENT,
-      'Accept': 'text/html',
+      Accept: 'text/html',
       'Content-Type': 'application/x-www-form-urlencoded',
-      'Referer': 'https://html.duckduckgo.com/',
+      Referer: 'https://html.duckduckgo.com/',
     },
     body: formBody,
     timeoutMs: 8000,
@@ -786,7 +902,8 @@ async function duckDuckGoSearch(query: string, limit: number): Promise<SearchRes
     if (results.length >= limit) return false;
     const $el = $(el);
     const title = $el.find('.result__title').text().trim();
-    const href = $el.find('.result__url').attr('href') ?? $el.find('.result__title a').attr('href') ?? '';
+    const href =
+      $el.find('.result__url').attr('href') ?? $el.find('.result__title a').attr('href') ?? '';
     const snippet = $el.find('.result__snippet').text().trim();
     if (!title || !href) return;
     let cleanUrl = href;
@@ -794,7 +911,9 @@ async function duckDuckGoSearch(query: string, limit: number): Promise<SearchRes
       const u = new URL(href, 'https://duckduckgo.com');
       const uddg = u.searchParams.get('uddg');
       cleanUrl = uddg ? decodeURIComponent(uddg) : u.toString();
-    } catch { /* keep raw */ }
+    } catch {
+      /* keep raw */
+    }
     results.push({ title, url: cleanUrl, snippet });
     return undefined;
   });
@@ -819,12 +938,15 @@ function parseLiteDuckDuckGoHtml(html: string, limit: number): SearchResult[] {
       const u = new URL(href, 'https://lite.duckduckgo.com');
       const uddg = u.searchParams.get('uddg');
       href = uddg ? decodeURIComponent(uddg) : u.toString();
-    } catch { /* keep raw */ }
+    } catch {
+      /* keep raw */
+    }
     // Snippet è nella cella successiva nella stessa <tr> dello snippet
     const $tr = $a.closest('tr');
     const $snippetTr = $tr.next('tr');
-    const snippet = $snippetTr.find('td.result-snippet').text().trim()
-                ?? $snippetTr.find('td').last().text().trim();
+    const snippet =
+      $snippetTr.find('td.result-snippet').text().trim() ??
+      $snippetTr.find('td').last().text().trim();
     if (!title || !href) return;
     results.push({ title, url: href, snippet });
     return undefined;

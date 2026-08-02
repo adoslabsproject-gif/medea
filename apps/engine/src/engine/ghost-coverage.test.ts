@@ -99,10 +99,7 @@ const ENGINE_STRATEGY_DEF_IDS: ReadonlySet<string> = new Set([
  *   workflow-engine.ts:597  → `if (module.def.id === 'logic_loop')`
  *                              → iterationCoordinator.execute(...)
  */
-const ENGINE_NATIVE_DEF_IDS: ReadonlySet<string> = new Set([
-  'logic_loop',
-  'logic_wait_signal',
-]);
+const ENGINE_NATIVE_DEF_IDS: ReadonlySet<string> = new Set(['logic_loop', 'logic_wait_signal']);
 
 /**
  * KNOWN ghosts — defIds in the catalog with NO reachable execution path.
@@ -257,16 +254,18 @@ describe('ghost-coverage — runtime dispatch reachability', () => {
 
     const total = ALL_NODE_MODULES.length;
     const reachable =
-      counts['engine-strategy'] + counts['engine-native'] + counts.trigger +
-      counts['server-override'] + counts['module-bundled'];
+      counts['engine-strategy'] +
+      counts['engine-native'] +
+      counts.trigger +
+      counts['server-override'] +
+      counts['module-bundled'];
 
-     
     console.log(
       `[ghost-coverage] total=${total} ` +
-      `engineStrategy=${counts['engine-strategy']} engineNative=${counts['engine-native']} ` +
-      `trigger=${counts.trigger} serverOverride=${counts['server-override']} ` +
-      `moduleBundled=${counts['module-bundled']} ` +
-      `knownGhost=${counts['KNOWN-GHOST']} newGhost=${counts.GHOST}`,
+        `engineStrategy=${counts['engine-strategy']} engineNative=${counts['engine-native']} ` +
+        `trigger=${counts.trigger} serverOverride=${counts['server-override']} ` +
+        `moduleBundled=${counts['module-bundled']} ` +
+        `knownGhost=${counts['KNOWN-GHOST']} newGhost=${counts.GHOST}`,
     );
 
     expect(reachable + counts['KNOWN-GHOST'] + counts.GHOST).toBe(total);
@@ -310,7 +309,9 @@ describe('ghost-coverage — runtime dispatch reachability', () => {
     }
     const duplicates = [...seen.entries()].filter(([, n]) => n > 1).map(([id, n]) => `${id}×${n}`);
 
-    expect(duplicates, `Duplicate defIds in ALL_NODE_MODULES: ${duplicates.join(', ')}`).toEqual([]);
+    expect(duplicates, `Duplicate defIds in ALL_NODE_MODULES: ${duplicates.join(', ')}`).toEqual(
+      [],
+    );
   });
 
   it('TODO inventory — visible heartbeat + cap MAX 50 ghost+orphan (regression gate)', () => {
@@ -319,24 +320,22 @@ describe('ghost-coverage — runtime dispatch reachability', () => {
     // fixare. Bug = nuovi nodi rotti aggiunti alla allowlist senza fix.
     const total = KNOWN_GHOST_PENDING_IMPL.size + KNOWN_ORPHAN_SERVER_EXECUTORS.size;
     if (total === 0) {
-       
       console.log('[ghost-coverage] TODO inventory: clean. Zero known issues.');
     } else {
-       
       console.log(
         `[ghost-coverage] TODO inventory — ${KNOWN_GHOST_PENDING_IMPL.size} ghost(s) + ` +
-        `${KNOWN_ORPHAN_SERVER_EXECUTORS.size} orphan(s) pending:`,
+          `${KNOWN_ORPHAN_SERVER_EXECUTORS.size} orphan(s) pending:`,
       );
       for (const [id, why] of KNOWN_GHOST_PENDING_IMPL) {
-         
         console.log(`  GHOST: ${id} — ${why}`);
       }
       for (const [id, why] of KNOWN_ORPHAN_SERVER_EXECUTORS) {
-         
         console.log(`  ORPHAN: ${id} — ${why}`);
       }
     }
     // Hard cap: oltre 50 known-TODO = anti-pattern, refactor obbligatorio
-    expect(total, `Known TODO inventory exceeded soft cap of 50 (${total} entries)`).toBeLessThan(50);
+    expect(total, `Known TODO inventory exceeded soft cap of 50 (${total} entries)`).toBeLessThan(
+      50,
+    );
   });
 });

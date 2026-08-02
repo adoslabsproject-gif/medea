@@ -20,7 +20,9 @@ import type { BinaryStore } from '../binary-store.service.js';
  * `MEDEA_IMAP_MAX_ATTACHMENT_BYTES`. Col blob-store NON c'è cap (i byte
  * vivono su disco content-addressed).
  */
-export const MAX_ATTACHMENT_BYTES = Number(process.env.MEDEA_IMAP_MAX_ATTACHMENT_BYTES ?? 25 * 1024 * 1024);
+export const MAX_ATTACHMENT_BYTES = Number(
+  process.env.MEDEA_IMAP_MAX_ATTACHMENT_BYTES ?? 25 * 1024 * 1024,
+);
 
 export interface ImapAttachment {
   filename: string;
@@ -52,14 +54,30 @@ export async function buildImapAttachment(
   if (store) {
     const r = await store.writeBuffer(att.content);
     return {
-      filename, contentType: att.contentType, size, truncated: false,
-      binary: makeBinaryRef({ mimeType: att.contentType, ref: r.ref, size: r.size, sha256: r.sha256, fileName: filename }),
+      filename,
+      contentType: att.contentType,
+      size,
+      truncated: false,
+      binary: makeBinaryRef({
+        mimeType: att.contentType,
+        ref: r.ref,
+        size: r.size,
+        sha256: r.sha256,
+        fileName: filename,
+      }),
     };
   }
   const truncated = size > maxBytes;
   const buf = truncated ? att.content.subarray(0, maxBytes) : att.content;
   return {
-    filename, contentType: att.contentType, size, truncated,
-    binary: makeBinaryInline({ mimeType: att.contentType, data: buf.toString('base64'), fileName: filename }),
+    filename,
+    contentType: att.contentType,
+    size,
+    truncated,
+    binary: makeBinaryInline({
+      mimeType: att.contentType,
+      data: buf.toString('base64'),
+      fileName: filename,
+    }),
   };
 }

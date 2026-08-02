@@ -105,15 +105,24 @@ export function cleanEmailBody(rawBody: string, opts: EmailCleanOptions = {}): E
 
   if (cfg.stripQuotedReply) {
     const next = stripQuotedReply(body);
-    if (next !== body) { removedQuotedReply = true; body = next; }
+    if (next !== body) {
+      removedQuotedReply = true;
+      body = next;
+    }
   }
   if (cfg.stripSignatures) {
     const next = stripSignature(body);
-    if (next !== body) { removedSignature = true; body = next; }
+    if (next !== body) {
+      removedSignature = true;
+      body = next;
+    }
   }
   if (cfg.stripDisclaimers) {
     const next = stripDisclaimers(body);
-    if (next !== body) { removedDisclaimer = true; body = next; }
+    if (next !== body) {
+      removedDisclaimer = true;
+      body = next;
+    }
   }
   if (cfg.stripTrackingUrls) {
     const r = stripTrackingUrls(body);
@@ -163,7 +172,10 @@ export function stripQuotedReply(body: string): string {
   for (let i = 0; i < lines.length; i += 1) {
     const l = lines[i]!.trim();
     if (l.length === 0) continue;
-    if (matchesReplyDivider(l)) { cutAt = i; break; }
+    if (matchesReplyDivider(l)) {
+      cutAt = i;
+      break;
+    }
   }
 
   // Look ahead for a contiguous block of ">"-prefixed lines (4 or more).
@@ -178,7 +190,10 @@ export function stripQuotedReply(body: string): string {
       if (/^>\s?/.test(l)) {
         if (run === 0) runStart = i;
         run += 1;
-        if (run >= 4) { cutAt = runStart; break; }
+        if (run >= 4) {
+          cutAt = runStart;
+          break;
+        }
       } else {
         run = 0;
         runStart = -1;
@@ -213,9 +228,9 @@ function matchesReplyDivider(line: string): boolean {
     // variabile sovrapposto → nessun backtracking esponenziale/quadratico).
     /^on [^\n]{4,140}\bwrote:?\s*$/i.test(line) ||
     /^il giorno [^\n]{4,140}\b(ha\s+scritto|hai\s+scritto):?\s*$/i.test(line) ||
-    /^le\s+\d/.test(line) && /\bha\s+scritto:?\s*$/i.test(line) ||
+    (/^le\s+\d/.test(line) && /\bha\s+scritto:?\s*$/i.test(line)) ||
     /^da:\s/i.test(line) ||
-    /^from:\s/i.test(line) && lineLooksLikeOutlookHeader(line)
+    (/^from:\s/i.test(line) && lineLooksLikeOutlookHeader(line))
   );
 }
 function lineLooksLikeOutlookHeader(line: string): boolean {
@@ -246,7 +261,9 @@ export function stripSignature(body: string): string {
 
   // 2) Mobile auto-signature
   const mobileIdx = lines.findIndex((l) =>
-    /^(inviato\s+(da|dal\s+mio)|sent\s+from\s+my)\s+(iphone|ipad|samsung|android|huawei|smartphone|mio\s+(iphone|ipad|samsung|android|smartphone))/i.test(l.trim()),
+    /^(inviato\s+(da|dal\s+mio)|sent\s+from\s+my)\s+(iphone|ipad|samsung|android|huawei|smartphone|mio\s+(iphone|ipad|samsung|android|smartphone))/i.test(
+      l.trim(),
+    ),
   );
   if (mobileIdx > 0 && mobileIdx >= lines.length - 4) {
     return lines.slice(0, mobileIdx).join('\n').trimEnd();
@@ -256,7 +273,9 @@ export function stripSignature(body: string): string {
   //    a name/company line + contact info (P.IVA, Tel:, Cell:, Mobile:, email).
   for (let i = Math.max(0, lines.length - 8); i < lines.length; i += 1) {
     const l = lines[i]!;
-    if (/^(p\.?\s*iva|p\.iva|tel\.?|cell\.?|mobile|email|fax|sede legale|via\s+\w)/i.test(l.trim())) {
+    if (
+      /^(p\.?\s*iva|p\.iva|tel\.?|cell\.?|mobile|email|fax|sede legale|via\s+\w)/i.test(l.trim())
+    ) {
       // Walk backwards to find the start of the signature block (last blank).
       let start = i;
       while (start > 0 && lines[start - 1]!.trim() !== '') start -= 1;
@@ -293,7 +312,10 @@ export function stripDisclaimers(body: string): string {
   for (const p of paragraphs) {
     let matched = false;
     for (const re of DISCLAIMER_PATTERNS) {
-      if (re.test(p)) { matched = true; break; }
+      if (re.test(p)) {
+        matched = true;
+        break;
+      }
     }
     if (!matched) kept.push(p);
   }

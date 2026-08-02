@@ -50,14 +50,24 @@ import { promises as dns } from 'node:dns';
 //   • Postmark    → may use date-based selectors like "20240101._domainkey"
 // For those the report relies on the provider profile guidance instead.
 const DKIM_SELECTORS_TO_PROBE = [
-  's1', 's2',
-  's1-ionos', 's2-ionos',
-  'default', 'selector1', 'selector2',
-  'mail', 'dkim', 'k1',
-  'google', 'sendgrid',
-  'mg', 'mailo',
-  'pm', 'resend',
-  'aruba', 'zoho',
+  's1',
+  's2',
+  's1-ionos',
+  's2-ionos',
+  'default',
+  'selector1',
+  'selector2',
+  'mail',
+  'dkim',
+  'k1',
+  'google',
+  'sendgrid',
+  'mg',
+  'mailo',
+  'pm',
+  'resend',
+  'aruba',
+  'zoho',
 ];
 
 /**
@@ -80,7 +90,8 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
     // IONOS pubblica DKIM via CNAME (non TXT) e il selector standard è
     // "s1-ionos" (non "s1"). Se usi i name server IONOS è già attivo per
     // default; se vedi DKIM mancante qualcuno ha cancellato i CNAME.
-    dkimSteps: 'my.ionos.it → Domini & SSL → seleziona il dominio → "DNS" → Aggiungi record CNAME. Servono TRE record: (1) host "s1-ionos._domainkey" → "s1.dkim.ionos.com"  (2) host "s2-ionos._domainkey" → "s2.dkim.ionos.com"  (3) host "s<numero-account>._domainkey" → "s<numero-account>.dkim.ionos.com" (il numero specifico del tuo account lo vedi nel pannello). TTL 1 ora. Aspetta 15-30 min e ritesta. NOTA: se usi i name server IONOS, DKIM è attivo di default — controlla se hai eliminato per errore i CNAME esistenti.',
+    dkimSteps:
+      'my.ionos.it → Domini & SSL → seleziona il dominio → "DNS" → Aggiungi record CNAME. Servono TRE record: (1) host "s1-ionos._domainkey" → "s1.dkim.ionos.com"  (2) host "s2-ionos._domainkey" → "s2.dkim.ionos.com"  (3) host "s<numero-account>._domainkey" → "s<numero-account>.dkim.ionos.com" (il numero specifico del tuo account lo vedi nel pannello). TTL 1 ora. Aspetta 15-30 min e ritesta. NOTA: se usi i name server IONOS, DKIM è attivo di default — controlla se hai eliminato per errore i CNAME esistenti.',
     docsUrl: 'https://www.ionos.it/assistenza/email/configurazione-account-email/firma-dkim/',
   },
   {
@@ -91,15 +102,18 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
     // selectors, same as many providers). Selectors s1/s2 are in our probe
     // array, so we DO detect Aruba DKIM when configured.
     spfInclude: 'include:_spf.aruba.it',
-    dkimSteps: 'admin.aruba.it → Email & PEC → seleziona il dominio → impostazioni "Antispam & Autenticazione" (il nome può variare per piano). Aruba abilita DKIM lato server e pubblica i record (selector standard "s1._domainkey" e "s2._domainkey"). Se il DNS è su Aruba i record sono automatici; se è altrove (Cloudflare, IONOS), copia host + valore dal pannello Aruba al tuo DNS provider.',
+    dkimSteps:
+      'admin.aruba.it → Email & PEC → seleziona il dominio → impostazioni "Antispam & Autenticazione" (il nome può variare per piano). Aruba abilita DKIM lato server e pubblica i record (selector standard "s1._domainkey" e "s2._domainkey"). Se il DNS è su Aruba i record sono automatici; se è altrove (Cloudflare, IONOS), copia host + valore dal pannello Aruba al tuo DNS provider.',
     docsUrl: 'https://www.aruba.it/assistenza',
   },
   {
     match: /sendgrid/i,
     label: 'SendGrid',
     spfInclude: 'include:sendgrid.net',
-    dkimSteps: 'app.sendgrid.com → Settings → "Sender Authentication" → "Authenticate Your Domain" → wizard. SendGrid genera 3 CNAME: 2 con selector "s1._domainkey" e "s2._domainkey" (DKIM), uno per il return-path (SPF). Aggiungili al tuo DNS.',
-    docsUrl: 'https://docs.sendgrid.com/ui/account-and-settings/how-to-set-up-domain-authentication',
+    dkimSteps:
+      'app.sendgrid.com → Settings → "Sender Authentication" → "Authenticate Your Domain" → wizard. SendGrid genera 3 CNAME: 2 con selector "s1._domainkey" e "s2._domainkey" (DKIM), uno per il return-path (SPF). Aggiungili al tuo DNS.',
+    docsUrl:
+      'https://docs.sendgrid.com/ui/account-and-settings/how-to-set-up-domain-authentication',
   },
   {
     match: /mailgun/i,
@@ -108,7 +122,8 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
     // on mg._domainkey (CNAME → dkim.mailgun.net) AND k1._domainkey (direct
     // RSA TXT). Both selectors are in our probe array.
     spfInclude: 'include:mailgun.org',
-    dkimSteps: 'app.mailgun.com → Sending → domini → click sul dominio → "DNS records". Mailgun ti dà i record da copiare: 1 MX, 1 SPF (TXT), 1 DKIM (TXT con selector standard "k1._domainkey" o CNAME su "mg._domainkey" → dkim.mailgun.net), 1 CNAME tracking. Copiali tutti nel tuo DNS provider.',
+    dkimSteps:
+      'app.mailgun.com → Sending → domini → click sul dominio → "DNS records". Mailgun ti dà i record da copiare: 1 MX, 1 SPF (TXT), 1 DKIM (TXT con selector standard "k1._domainkey" o CNAME su "mg._domainkey" → dkim.mailgun.net), 1 CNAME tracking. Copiali tutti nel tuo DNS provider.',
     docsUrl: 'https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/',
   },
   {
@@ -118,7 +133,8 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
     // the real RSA key on pm._domainkey (other selectors return CNAME
     // wildcards). Selector "pm" is in our probe array.
     spfInclude: 'include:spf.mtasv.net',
-    dkimSteps: 'postmarkapp.com → Sender Signatures → seleziona il dominio → tab "DKIM" → "Verify DKIM". Postmark mostra il record TXT da aggiungere al DNS: il selector standard è "pm._domainkey" + valore (chiave pubblica RSA fornita da Postmark).',
+    dkimSteps:
+      'postmarkapp.com → Sender Signatures → seleziona il dominio → tab "DKIM" → "Verify DKIM". Postmark mostra il record TXT da aggiungere al DNS: il selector standard è "pm._domainkey" + valore (chiave pubblica RSA fornita da Postmark).',
     docsUrl: 'https://postmarkapp.com/manual',
   },
   {
@@ -127,28 +143,33 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
     // Verified via direct DNS probe (2026-05-20): resend.com itself publishes
     // DKIM on resend._domainkey (single fixed selector). Our probe covers it.
     spfInclude: 'include:_spf.resend.com',
-    dkimSteps: 'resend.com/domains → "Add Domain" → seleziona la region (eu-west-1 per UE). Resend genera 4 record: MX, SPF (TXT), DKIM (TXT con selector standard "resend._domainkey") e DMARC (TXT su "_dmarc"). Copia-incolla i valori esatti dal dashboard nel tuo DNS provider.',
+    dkimSteps:
+      'resend.com/domains → "Add Domain" → seleziona la region (eu-west-1 per UE). Resend genera 4 record: MX, SPF (TXT), DKIM (TXT con selector standard "resend._domainkey") e DMARC (TXT su "_dmarc"). Copia-incolla i valori esatti dal dashboard nel tuo DNS provider.',
     docsUrl: 'https://resend.com/docs/dashboard/domains/introduction',
   },
   {
     match: /amazonses|email-smtp.*\.amazonaws/i,
     label: 'Amazon SES',
     spfInclude: 'include:amazonses.com',
-    dkimSteps: 'console.aws.amazon.com → SES → "Verified identities" → seleziona dominio → tab "Authentication" → "Generate DKIM". AWS dà 3 CNAME (selector1/2/3._domainkey).',
+    dkimSteps:
+      'console.aws.amazon.com → SES → "Verified identities" → seleziona dominio → tab "Authentication" → "Generate DKIM". AWS dà 3 CNAME (selector1/2/3._domainkey).',
     docsUrl: 'https://docs.aws.amazon.com/ses/latest/dg/send-email-authentication-dkim.html',
   },
   {
     match: /office365|outlook|protection\.outlook/i,
     label: 'Microsoft 365',
     spfInclude: 'include:spf.protection.outlook.com',
-    dkimSteps: 'security.microsoft.com → Policies → Threat policies → "Email Authentication" → tab "DKIM" → seleziona dominio → "Enable". Microsoft genera 2 CNAME (selector1/2).',
-    docsUrl: 'https://learn.microsoft.com/en-us/defender-office-365/email-authentication-dkim-configure',
+    dkimSteps:
+      'security.microsoft.com → Policies → Threat policies → "Email Authentication" → tab "DKIM" → seleziona dominio → "Enable". Microsoft genera 2 CNAME (selector1/2).',
+    docsUrl:
+      'https://learn.microsoft.com/en-us/defender-office-365/email-authentication-dkim-configure',
   },
   {
     match: /gmail|google\.com/i,
     label: 'Google Workspace',
     spfInclude: 'include:_spf.google.com',
-    dkimSteps: 'admin.google.com → Apps → Google Workspace → Gmail → "Authenticate email" → seleziona dominio → "Generate new record" → copia il TXT (selector google._domainkey).',
+    dkimSteps:
+      'admin.google.com → Apps → Google Workspace → Gmail → "Authenticate email" → seleziona dominio → "Generate new record" → copia il TXT (selector google._domainkey).',
     docsUrl: 'https://support.google.com/a/answer/180504',
   },
   {
@@ -157,7 +178,8 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
     spfInclude: 'include:zoho.com',
     // Verified on Zoho's official DKIM docs: the customer chooses the
     // selector name and Zoho recommends "zoho" as the default value.
-    dkimSteps: 'mailadmin.zoho.com → Domains → seleziona il dominio → "Email Configuration" → "DKIM" → "Add" → scegli un selector (Zoho consiglia "zoho"). Zoho genera la chiave pubblica: aggiungi un TXT al DNS con host "<selector>._domainkey" e valore = chiave pubblica fornita.',
+    dkimSteps:
+      'mailadmin.zoho.com → Domains → seleziona il dominio → "Email Configuration" → "DKIM" → "Add" → scegli un selector (Zoho consiglia "zoho"). Zoho genera la chiave pubblica: aggiungi un TXT al DNS con host "<selector>._domainkey" e valore = chiave pubblica fornita.',
     docsUrl: 'https://www.zoho.com/mail/help/adminconsole/dkim-configuration.html',
   },
 ];
@@ -194,7 +216,11 @@ async function resolveTxtSafe(name: string, timeoutMs = 4000): Promise<string[] 
   try {
     const records = await Promise.race([
       dns.resolveTxt(name),
-      new Promise<never>((_, reject) => setTimeout(() => { reject(new Error('dns timeout')); }, timeoutMs)),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => {
+          reject(new Error('dns timeout'));
+        }, timeoutMs),
+      ),
     ]);
     // Each TXT record is string[]; flatten by joining the chunks.
     return records.map((chunks) => chunks.join(''));
@@ -236,10 +262,12 @@ export class EmailDeliverabilityService {
     const [spfRecords, dmarcRecords, dkimResults] = await Promise.all([
       resolveTxtSafe(domain),
       resolveTxtSafe(`_dmarc.${domain}`),
-      Promise.all(DKIM_SELECTORS_TO_PROBE.map(async (sel) => ({
-        selector: sel,
-        records: await resolveTxtSafe(`${sel}._domainkey.${domain}`),
-      }))),
+      Promise.all(
+        DKIM_SELECTORS_TO_PROBE.map(async (sel) => ({
+          selector: sel,
+          records: await resolveTxtSafe(`${sel}._domainkey.${domain}`),
+        })),
+      ),
     ]);
 
     // SPF — look for the v=spf1 record among all TXT records on the apex.
@@ -283,9 +311,12 @@ export class EmailDeliverabilityService {
     const okCount = [spf.ok, dkim.ok, dmarc.ok].filter(Boolean).length;
     const ok = okCount === 3;
     let summary: string;
-    if (ok) summary = `Eccellente — tutti i 3 record DNS sono presenti su ${domain}. Le tue email avranno deliverability ottimale.`;
-    else if (okCount === 0) summary = `Nessun record (SPF/DKIM/DMARC) configurato per ${domain}. Le email finiranno in spam su Gmail/Outlook. Configura i 3 record qui sotto.`;
-    else summary = `${okCount.toString()}/3 record presenti. Aggiungi quelli mancanti per migliorare la deliverability.`;
+    if (ok)
+      summary = `Eccellente — tutti i 3 record DNS sono presenti su ${domain}. Le tue email avranno deliverability ottimale.`;
+    else if (okCount === 0)
+      summary = `Nessun record (SPF/DKIM/DMARC) configurato per ${domain}. Le email finiranno in spam su Gmail/Outlook. Configura i 3 record qui sotto.`;
+    else
+      summary = `${okCount.toString()}/3 record presenti. Aggiungi quelli mancanti per migliorare la deliverability.`;
 
     return { domain, provider: providerPayload, spf, dkim, dmarc, ok, summary };
   }

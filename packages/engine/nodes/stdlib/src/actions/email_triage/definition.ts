@@ -18,11 +18,11 @@ export const emailTriageNodeDef: NodeDef = {
     'Estrae mittente normalizzato (lowercase, validazione RFC 5321), dominio del sender per matching domain ' +
     'allowlist/blocklist enterprise, soggetto pulito da prefissi noise tipo "Re:", "Fwd:", "AW:", "Tr:", "R:", ' +
     '"Risp:" (multilingua) e suffix marketing "[Newsletter]". Tronca il body a una soglia configurabile (default ' +
-    '4000 char) preservando la prima parte del messaggio dove l\'umano ha più probabilmente messo la richiesta ' +
+    "4000 char) preservando la prima parte del messaggio dove l'umano ha più probabilmente messo la richiesta " +
     'chiave. Riassume gli allegati raggruppandoli per MIME type (3 PDF, 1 XLSX, 2 immagini) invece di passare ' +
     'metadati granulari. Indovina la lingua via euristica fast (it/en/es/fr/de) sulla porzione di testo. ' +
     'Calcola signals euristici: urgenza (parole come "urgente", "scadenza", "ASAP", presenza di "!!" multiple), ' +
-    'PEC (dominio nell\'allowlist provider certificati + header X-Riferimento), newsletter (List-Unsubscribe ' +
+    "PEC (dominio nell'allowlist provider certificati + header X-Riferimento), newsletter (List-Unsubscribe " +
     'header, mittente noreply@, footer "se non vuoi più ricevere"). ' +
     'Output: { senderEmail, senderDomain, subjectClean, bodyTextShort, attachments, languageGuess, ' +
     'urgencySignals, isPec, isNewsletter, messageId, headers }. ' +
@@ -35,12 +35,13 @@ export const emailTriageNodeDef: NodeDef = {
   configFields: [
     {
       key: 'inputPath',
-      label: 'Path all\'email nell\'input',
+      label: "Path all'email nell'input",
       type: 'text',
       required: false,
       defaultValue: '',
       placeholder: 'output    oppure    mail    (vuoto = input diretto)',
-      help: 'Percorso dotted dentro l\'input. Vuoto = l\'input stesso e` l\'oggetto email ' +
+      help:
+        "Percorso dotted dentro l'input. Vuoto = l'input stesso e` l'oggetto email " +
         '(formato RawEmail). Per pipeline annidate puo` servire output o mail.',
     },
     {
@@ -49,12 +50,13 @@ export const emailTriageNodeDef: NodeDef = {
       type: 'number',
       required: false,
       defaultValue: '2000',
-      help: 'Lunghezza max di bodyTextShort. Range 200-20000. Default 2000 — buon compromesso ' +
+      help:
+        'Lunghezza max di bodyTextShort. Range 200-20000. Default 2000 — buon compromesso ' +
         'tra contesto LLM e cost. Per email lunghissime (allegato annotazione) alza a 5000.',
     },
     {
       key: 'includePipelineLog',
-      label: 'Includi log nell\'output',
+      label: "Includi log nell'output",
       type: 'boolean',
       required: false,
       defaultValue: 'true',

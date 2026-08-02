@@ -5,8 +5,19 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-  pick, omit, groupBy, sortBy, uniqBy, chunk, deepClone,
-  flatten, sum, avg, minBy, maxBy, range,
+  pick,
+  omit,
+  groupBy,
+  sortBy,
+  uniqBy,
+  chunk,
+  deepClone,
+  flatten,
+  sum,
+  avg,
+  minBy,
+  maxBy,
+  range,
 } from '../transform.js';
 
 describe('pick', () => {
@@ -100,14 +111,21 @@ describe('uniqBy', () => {
   });
 
   it('🚨 preserva primo occorrenza, scarta successivi', () => {
-    const items = [{ id: 1, name: 'first' }, { id: 1, name: 'second' }];
+    const items = [
+      { id: 1, name: 'first' },
+      { id: 1, name: 'second' },
+    ];
     expect(uniqBy(items, (i) => i.id)[0]?.name).toBe('first');
   });
 });
 
 describe('chunk', () => {
   it('happy path: 6 items chunked by 2', () => {
-    expect(chunk([1, 2, 3, 4, 5, 6], 2)).toEqual([[1, 2], [3, 4], [5, 6]]);
+    expect(chunk([1, 2, 3, 4, 5, 6], 2)).toEqual([
+      [1, 2],
+      [3, 4],
+      [5, 6],
+    ]);
   });
 
   it('last chunk parziale', () => {
@@ -154,10 +172,18 @@ describe('flatten', () => {
 });
 
 describe('sum / avg', () => {
-  it('sum [1,2,3] = 6', () => { expect(sum([1, 2, 3])).toBe(6); });
-  it('sum [] = 0', () => { expect(sum([])).toBe(0); });
-  it('avg [2,4,6] = 4', () => { expect(avg([2, 4, 6])).toBe(4); });
-  it('🚨 avg [] = NaN (no DIV0 bug)', () => { expect(avg([])).toBeNaN(); });
+  it('sum [1,2,3] = 6', () => {
+    expect(sum([1, 2, 3])).toBe(6);
+  });
+  it('sum [] = 0', () => {
+    expect(sum([])).toBe(0);
+  });
+  it('avg [2,4,6] = 4', () => {
+    expect(avg([2, 4, 6])).toBe(4);
+  });
+  it('🚨 avg [] = NaN (no DIV0 bug)', () => {
+    expect(avg([])).toBeNaN();
+  });
 });
 
 describe('minBy / maxBy', () => {
@@ -176,10 +202,18 @@ describe('minBy / maxBy', () => {
 });
 
 describe('range', () => {
-  it('range(5) = [0..4]', () => { expect(range(5)).toEqual([0, 1, 2, 3, 4]); });
-  it('range(2,5) = [2,3,4]', () => { expect(range(2, 5)).toEqual([2, 3, 4]); });
-  it('range(0,10,2) = [0,2,4,6,8]', () => { expect(range(0, 10, 2)).toEqual([0, 2, 4, 6, 8]); });
-  it('🚨 range step=0 → throw', () => { expect(() => range(0, 5, 0)).toThrow(); });
+  it('range(5) = [0..4]', () => {
+    expect(range(5)).toEqual([0, 1, 2, 3, 4]);
+  });
+  it('range(2,5) = [2,3,4]', () => {
+    expect(range(2, 5)).toEqual([2, 3, 4]);
+  });
+  it('range(0,10,2) = [0,2,4,6,8]', () => {
+    expect(range(0, 10, 2)).toEqual([0, 2, 4, 6, 8]);
+  });
+  it('🚨 range step=0 → throw', () => {
+    expect(() => range(0, 5, 0)).toThrow();
+  });
   it('🚨 reverse: range(5,0,-1) = [5,4,3,2,1]', () => {
     expect(range(5, 0, -1)).toEqual([5, 4, 3, 2, 1]);
   });

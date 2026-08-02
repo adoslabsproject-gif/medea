@@ -29,7 +29,9 @@ const executor: NodeExecutor = async (config, _input, _context) => {
   const url = String(config.url ?? '');
   if (!url) throw new Error('url required (RSS or Atom feed URL)');
 
-  const userAgent = String(config.userAgent ?? 'FlowForge/1.0 (+https://flowforge.automazionezeli.com)');
+  const userAgent = String(
+    config.userAgent ?? 'FlowForge/1.0 (+https://flowforge.automazionezeli.com)',
+  );
   const sinceIso = String(config.sinceIso ?? '').trim();
   const maxItems = Math.max(1, Math.min(Number(config.maxItems ?? 50), 500));
 
@@ -37,7 +39,7 @@ const executor: NodeExecutor = async (config, _input, _context) => {
     method: 'GET',
     headers: {
       'User-Agent': userAgent,
-      'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
+      Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
     },
     timeoutMs: 15_000,
   });
@@ -67,11 +69,17 @@ const executor: NodeExecutor = async (config, _input, _context) => {
       const pub = $i.find('pubDate').first().text().trim();
       const author = $i.find('author, dc\\:creator').first().text().trim();
       const cats: string[] = [];
-      $i.find('category').each((__, c) => { cats.push($(c).text().trim()); });
+      $i.find('category').each((__, c) => {
+        cats.push($(c).text().trim());
+      });
       const item: FeedItem = { guid, title, link };
       if (desc) item.description = desc;
       if (pub) {
-        try { item.publishedAt = new Date(pub).toISOString(); } catch { item.publishedAt = pub; }
+        try {
+          item.publishedAt = new Date(pub).toISOString();
+        } catch {
+          item.publishedAt = pub;
+        }
       }
       if (author) item.author = author;
       if (cats.length > 0) item.categories = cats;
@@ -143,7 +151,7 @@ export const rssFeedTriggerNode: NodeModule = {
     description:
       'Innesco enterprise di polling per feed RSS/Atom che esegue il workflow ad ogni nuovo item rilevato — ' +
       'il pattern monitoraggio continuativo "push-style" della pubblicazione di contenuti dei publisher che ' +
-      'espongono feed standard. Auto-detect intelligente del formato (RSS 2.0 vs Atom 1.0) leggendo l\'XML ' +
+      "espongono feed standard. Auto-detect intelligente del formato (RSS 2.0 vs Atom 1.0) leggendo l'XML " +
       'root namespace — pattern necessario perché i due standard sono mutualmente incompatibili a livello di ' +
       'schema ma semanticamente equivalenti per il use case workflow, e il publisher può cambiare format ' +
       'sotto le scarpe senza avvisare. ' +
@@ -154,7 +162,7 @@ export const rssFeedTriggerNode: NodeModule = {
       'spec RFC 4287 lo richiede) + persisted di un cursor lastSeenGuid nel state store del trigger per ' +
       'guarantee exactly-once delivery anche su restart container o crash recovery — pattern cruciale per ' +
       'evitare il classico bug "ogni mattina ricevo 50 email di alert duplicate sui post di ieri" ' +
-      'all\'restart del workflow. ' +
+      "all'restart del workflow. " +
       'Schedulazione complementare: il polling può essere config su questo trigger directly (pattern preferito ' +
       'per workflow dedicato a singolo feed) oppure combinare con trigger_cron che chiama questo nodo come ' +
       'action (es. cron 15min globale che processa 10 feed in singolo workflow batch — più efficient di 10 ' +
@@ -180,7 +188,7 @@ export const rssFeedTriggerNode: NodeModule = {
         type: 'text',
         required: true,
         placeholder: 'https://miosito.com/feed.xml / https://news.google.com/rss',
-        help: 'URL completo del feed XML. Auto-detect tra RSS 2.0 e Atom 1.0 leggendo il root element. Supporta i 2 standard più diffusi (RSS 2.0 di Userland 2003 + Atom 1.0 IETF RFC 4287). Per OPML aggregator usa un nodo upstream che esplode l\'OPML in URL singole.',
+        help: "URL completo del feed XML. Auto-detect tra RSS 2.0 e Atom 1.0 leggendo il root element. Supporta i 2 standard più diffusi (RSS 2.0 di Userland 2003 + Atom 1.0 IETF RFC 4287). Per OPML aggregator usa un nodo upstream che esplode l'OPML in URL singole.",
       },
       {
         key: 'maxItems',
@@ -196,7 +204,7 @@ export const rssFeedTriggerNode: NodeModule = {
         type: 'text',
         required: false,
         placeholder: '2026-05-30T00:00:00Z / {{$node.db_query.json.lastSeen}}',
-        help: 'Pattern DEDUPLICATION: ritorna SOLO items con `publishedAt > sinceIso`. Use case tipico: salvi in DB il `maxPublishedAt` dell\'ultimo run riuscito e lo passi qui al prossimo polling. Senza questo filtro rischi di mandare lo stesso articolo 2+ volte (cron ogni 15 min processa sempre tutti gli ultimi 50 items).',
+        help: "Pattern DEDUPLICATION: ritorna SOLO items con `publishedAt > sinceIso`. Use case tipico: salvi in DB il `maxPublishedAt` dell'ultimo run riuscito e lo passi qui al prossimo polling. Senza questo filtro rischi di mandare lo stesso articolo 2+ volte (cron ogni 15 min processa sempre tutti gli ultimi 50 items).",
       },
       {
         key: 'userAgent',

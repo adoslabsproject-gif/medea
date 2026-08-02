@@ -25,8 +25,15 @@ describe('quotaResumeSignal / isQuotaResumeSignal', () => {
 
 describe('asQuotaPauseError — type-guard strutturale (no import da services)', () => {
   it('riconosce LlmQuotaExceededError per forma + estrae periodEndIso', () => {
-    const err = Object.assign(new Error('quota'), { name: 'LlmQuotaExceededError', periodEndIso: '2026-07-15', kind: 'token' });
-    expect(asQuotaPauseError(err)).toEqual({ name: 'LlmQuotaExceededError', periodEndIso: '2026-07-15' });
+    const err = Object.assign(new Error('quota'), {
+      name: 'LlmQuotaExceededError',
+      periodEndIso: '2026-07-15',
+      kind: 'token',
+    });
+    expect(asQuotaPauseError(err)).toEqual({
+      name: 'LlmQuotaExceededError',
+      periodEndIso: '2026-07-15',
+    });
   });
   it('periodEndIso assente/non-stringa → null', () => {
     const err = Object.assign(new Error('quota'), { name: 'LlmQuotaExceededError' });
@@ -34,13 +41,25 @@ describe('asQuotaPauseError — type-guard strutturale (no import da services)',
   });
   it('WRAPPATO: NodeError(INTERNAL_ERROR) con .cause = LlmQuotaExceededError → riconosciuto', () => {
     // withErrorMapping della stdlib avvolge ogni throw → NodeError preservando cause.
-    const original = Object.assign(new Error('quota'), { name: 'LlmQuotaExceededError', periodEndIso: '2026-07-15' });
-    const wrapped = Object.assign(new Error('Internal'), { name: 'NodeError', code: 'INTERNAL_ERROR', cause: original });
-    expect(asQuotaPauseError(wrapped)).toEqual({ name: 'LlmQuotaExceededError', periodEndIso: '2026-07-15' });
+    const original = Object.assign(new Error('quota'), {
+      name: 'LlmQuotaExceededError',
+      periodEndIso: '2026-07-15',
+    });
+    const wrapped = Object.assign(new Error('Internal'), {
+      name: 'NodeError',
+      code: 'INTERNAL_ERROR',
+      cause: original,
+    });
+    expect(asQuotaPauseError(wrapped)).toEqual({
+      name: 'LlmQuotaExceededError',
+      periodEndIso: '2026-07-15',
+    });
   });
   it('altro errore (name diverso, cause non-quota) → null', () => {
     expect(asQuotaPauseError(new Error('boom'))).toBeNull();
-    expect(asQuotaPauseError(Object.assign(new Error(), { name: 'NodeError', cause: new Error('db') }))).toBeNull();
+    expect(
+      asQuotaPauseError(Object.assign(new Error(), { name: 'NodeError', cause: new Error('db') })),
+    ).toBeNull();
   });
   it('input non-oggetto → null (no crash)', () => {
     expect(asQuotaPauseError(null)).toBeNull();

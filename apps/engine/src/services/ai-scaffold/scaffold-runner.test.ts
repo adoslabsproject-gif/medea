@@ -27,7 +27,8 @@ function sanitizeThinking(raw: string): string {
 
 describe('scaffold-runner — defensive <think> sanitization', () => {
   it('strippa think CHIUSO (caso standard Qwen3)', () => {
-    const raw = '<think>Okay, the user wants me to build a workflow.</think>\n{"tool":"list_node_types","args":{}}';
+    const raw =
+      '<think>Okay, the user wants me to build a workflow.</think>\n{"tool":"list_node_types","args":{}}';
     expect(sanitizeThinking(raw)).toBe('{"tool":"list_node_types","args":{}}');
   });
 
@@ -79,7 +80,9 @@ describe('scaffold-runner — defensive <think> sanitization', () => {
     // Edge case sanity: la sostituzione lavora solo sul tag XML, non sulla
     // stringa "think" come parola.
     const raw = '{"tool":"think_step","args":{"description":"think harder"}}';
-    expect(sanitizeThinking(raw)).toBe('{"tool":"think_step","args":{"description":"think harder"}}');
+    expect(sanitizeThinking(raw)).toBe(
+      '{"tool":"think_step","args":{"description":"think harder"}}',
+    );
   });
 });
 
@@ -97,9 +100,7 @@ describe('scaffold-runner — finalize wfPlain must satisfy WorkflowSchema', () 
       name: opts.name,
       description: undefined,
       enabled: false,
-      nodes: opts.node
-        ? [{ id: 'n1', defId: 'noop', x: 0, y: 0, config: {} }]
-        : [],
+      nodes: opts.node ? [{ id: 'n1', defId: 'noop', x: 0, y: 0, config: {} }] : [],
       edges: [],
       nodeDefs: [],
       createdAt: nowIso,
@@ -149,7 +150,9 @@ describe('scaffold-runner — truncation heuristic invariants', () => {
   // Trigger: raw.length > 100 && trailingChar !== '}' && trailingChar !== ']'
   function looksTruncated(raw: string): boolean {
     const trailingChar = raw.trim().slice(-1);
-    return raw.length > 100 && trailingChar !== '}' && trailingChar !== ']' && !raw.trim().endsWith('}');
+    return (
+      raw.length > 100 && trailingChar !== '}' && trailingChar !== ']' && !raw.trim().endsWith('}')
+    );
   }
 
   it('breve (< 100 char) NON considerata truncated (anche se non termina con })', () => {

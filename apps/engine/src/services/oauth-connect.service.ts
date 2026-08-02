@@ -44,7 +44,8 @@ export const OAUTH_PROVIDERS: Record<string, ProviderSpec> = {
     label: 'Google',
     authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
     tokenUrl: 'https://oauth2.googleapis.com/token',
-    defaultScopes: 'openid email profile https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.send',
+    defaultScopes:
+      'openid email profile https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.send',
     usesPkce: true,
     tokenResponseType: 'json',
   },
@@ -130,7 +131,10 @@ export class OAuthConnectService {
     const spec = OAUTH_PROVIDERS[args.provider];
     if (!spec) throw new Error(`Provider OAuth sconosciuto: ${args.provider}`);
     const creds = this.getClientCreds(spec.id);
-    if (!creds) throw new Error(`Provider ${spec.id} non configurato (mancano MEDEA_${spec.id.toUpperCase()}_OAUTH_CLIENT_ID/_SECRET)`);
+    if (!creds)
+      throw new Error(
+        `Provider ${spec.id} non configurato (mancano MEDEA_${spec.id.toUpperCase()}_OAUTH_CLIENT_ID/_SECRET)`,
+      );
 
     const state = crypto.randomBytes(24).toString('base64url');
     const codeVerifier = spec.usesPkce ? crypto.randomBytes(32).toString('base64url') : undefined;
@@ -139,13 +143,23 @@ export class OAuthConnectService {
       : undefined;
 
     const { sqlite } = getDatabase();
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO oauth_connect_state (state, provider, tenant_id, user_id, credential_name, redirect_uri, code_verifier, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      state, spec.id, args.tenantId, args.userId, args.credentialName, args.redirectUri,
-      codeVerifier ?? null, new Date().toISOString(),
-    );
+    `,
+      )
+      .run(
+        state,
+        spec.id,
+        args.tenantId,
+        args.userId,
+        args.credentialName,
+        args.redirectUri,
+        codeVerifier ?? null,
+        new Date().toISOString(),
+      );
 
     const params = new URLSearchParams({
       response_type: 'code',
@@ -167,7 +181,10 @@ export class OAuthConnectService {
    * Exchange the authorization code for an access token and save it as a
    * credential. Returns { credentialId, providerLabel }.
    */
-  async complete(code: string, state: string): Promise<{ credentialId: string; providerLabel: string }> {
+  async complete(
+    code: string,
+    state: string,
+  ): Promise<{ credentialId: string; providerLabel: string }> {
     const { sqlite } = getDatabase();
     // SQLite snake_case row → mappato manualmente. Bug pre-2026-06-07: lettura
     // `row.codeVerifier` invece di `row.code_verifier` rompeva SEMPRE PKCE +
@@ -182,7 +199,9 @@ export class OAuthConnectService {
       code_verifier: string | null;
       created_at: string;
     }
-    const raw = sqlite.prepare(`SELECT * FROM oauth_connect_state WHERE state = ?`).get(state) as StateRow | undefined;
+    const raw = sqlite.prepare(`SELECT * FROM oauth_connect_state WHERE state = ?`).get(state) as
+      | StateRow
+      | undefined;
     if (!raw) throw new Error('State sconosciuto o scaduto');
     sqlite.prepare(`DELETE FROM oauth_connect_state WHERE state = ?`).run(state);
 
@@ -215,14 +234,16 @@ export class OAuthConnectService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
       body: body.toString(),
       spanName: 'oauth.token-exchange',
     });
     if (!tokenRes.ok) {
       const text = (await readTextTruncated(tokenRes, 65_536)).text;
-      throw new Error(`Token exchange fallito (${tokenRes.status.toString()}): ${text.slice(0, 200)}`);
+      throw new Error(
+        `Token exchange fallito (${tokenRes.status.toString()}): ${text.slice(0, 200)}`,
+      );
     }
     const tokenData = await readJsonCapped<{
       access_token?: string;
@@ -243,7 +264,9 @@ export class OAuthConnectService {
       refresh_token: tokenData.refresh_token ?? '',
       token_type: tokenData.token_type ?? 'Bearer',
       scope: tokenData.scope ?? spec.defaultScopes,
-      expires_at: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString() : null,
+      expires_at: tokenData.expires_in
+        ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+        : null,
     });
     const createdInput: Parameters<CredentialsService['create']>[0] = {
       tenantId: row.tenantId,

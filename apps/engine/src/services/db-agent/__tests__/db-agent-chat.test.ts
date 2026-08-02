@@ -27,14 +27,30 @@ const m = vi.hoisted(() => {
   };
   class FakeAdapter {
     engine = 'sqlite';
-    async connect(d: unknown) { return mockFns.connect(d); }
-    async applyMigration(a: unknown) { return mockFns.applyMigration(a); }
-    async previewMigration(a: unknown) { return mockFns.previewMigration(a); }
-    async query(s: unknown) { return mockFns.query(s); }
-    async insert(t: string, r: unknown) { return mockFns.insert(t, r); }
-    async update() { return { changes: 0 }; }
-    async delete() { return { changes: 0 }; }
-    async introspect() { return mockFns.introspect(); }
+    async connect(d: unknown) {
+      return mockFns.connect(d);
+    }
+    async applyMigration(a: unknown) {
+      return mockFns.applyMigration(a);
+    }
+    async previewMigration(a: unknown) {
+      return mockFns.previewMigration(a);
+    }
+    async query(s: unknown) {
+      return mockFns.query(s);
+    }
+    async insert(t: string, r: unknown) {
+      return mockFns.insert(t, r);
+    }
+    async update() {
+      return { changes: 0 };
+    }
+    async delete() {
+      return { changes: 0 };
+    }
+    async introspect() {
+      return mockFns.introspect();
+    }
   }
   return { ...mockFns, FakeAdapter };
 });
@@ -61,10 +77,34 @@ const TENANT_A = 'tenant-a';
 const TENANT_B = 'tenant-b';
 
 function seedTable(name = 'orders'): Table {
-  return { id: name, name, columns: [{ id: `${name}.id`, name: 'id', type: 'integer', constraints: { primaryKey: true, nullable: false, unique: true } }], indexes: [] };
+  return {
+    id: name,
+    name,
+    columns: [
+      {
+        id: `${name}.id`,
+        name: 'id',
+        type: 'integer',
+        constraints: { primaryKey: true, nullable: false, unique: true },
+      },
+    ],
+    indexes: [],
+  };
 }
-function makeDb(svc: DbStudioService, tenantId: string, name: string, tables: Table[] = []): string {
-  return svc.create({ tenantId, name, description: 'seed', connection: { engine: 'sqlite', embedded: true }, tables, relations: [] }).id;
+function makeDb(
+  svc: DbStudioService,
+  tenantId: string,
+  name: string,
+  tables: Table[] = [],
+): string {
+  return svc.create({
+    tenantId,
+    name,
+    description: 'seed',
+    connection: { engine: 'sqlite', embedded: true },
+    tables,
+    relations: [],
+  }).id;
 }
 
 /** LLM scriptato: consuma una coda di LlmTurnResult; registra gli input ricevuti. */
@@ -74,7 +114,8 @@ function scriptedLlm(script: LlmTurnResult[]): { llmTurn: LlmTurn; inputs: LlmTu
   const llmTurn: LlmTurn = (input) => {
     inputs.push(input);
     const next = queue.shift();
-    if (!next) throw new Error('script LLM esaurito (il loop ha chiesto un turno in più del previsto)');
+    if (!next)
+      throw new Error('script LLM esaurito (il loop ha chiesto un turno in più del previsto)');
     return Promise.resolve(next);
   };
   return { llmTurn, inputs };
@@ -102,9 +143,15 @@ beforeEach(() => {
 
 describe('runDbAgentChat — orchestrazione base', () => {
   it('risposta finale immediata (nessun tool) → message, 1 iterazione, 0 step', async () => {
-    const { llmTurn, inputs } = scriptedLlm([{ kind: 'final', text: 'Ciao! Come posso aiutarti col DB?' }]);
+    const { llmTurn, inputs } = scriptedLlm([
+      { kind: 'final', text: 'Ciao! Come posso aiutarti col DB?' },
+    ]);
     const r = await runDbAgentChat({ ctx: ctxA, userMessage: 'ciao', prompt, llmTurn });
-    expect(r).toMatchObject({ message: 'Ciao! Come posso aiutarti col DB?', iterations: 1, stoppedReason: 'final' });
+    expect(r).toMatchObject({
+      message: 'Ciao! Come posso aiutarti col DB?',
+      iterations: 1,
+      stoppedReason: 'final',
+    });
     expect(r.steps).toHaveLength(0);
     // il system prompt contiene lo schema + i tool sono passati
     expect(inputs[0]!.system).toContain('orders(id)');
@@ -113,7 +160,20 @@ describe('runDbAgentChat — orchestrazione base', () => {
 
   it('un tool poi finale: esegue il tool (REALE) e ri-alimenta il risultato al modello', async () => {
     const { llmTurn, inputs } = scriptedLlm([
-      { kind: 'tools', toolCalls: [{ id: 'c1', name: 'create_table', args: { databaseId: dbA, name: 'customers', columns: [{ name: 'id', type: 'integer' }] } }] },
+      {
+        kind: 'tools',
+        toolCalls: [
+          {
+            id: 'c1',
+            name: 'create_table',
+            args: {
+              databaseId: dbA,
+              name: 'customers',
+              columns: [{ name: 'id', type: 'integer' }],
+            },
+          },
+        ],
+      },
       { kind: 'final', text: 'Tabella customers creata.' },
     ]);
     const r = await runDbAgentChat({ ctx: ctxA, userMessage: 'crea customers', prompt, llmTurn });
@@ -129,10 +189,13 @@ describe('runDbAgentChat — orchestrazione base', () => {
 
   it('più tool nello stesso turno → eseguiti in ordine, step registrati in ordine', async () => {
     const { llmTurn } = scriptedLlm([
-      { kind: 'tools', toolCalls: [
-        { id: 'a', name: 'read_db_schema', args: { databaseId: dbA } },
-        { id: 'b', name: 'run_select', args: { databaseId: dbA, table: 'orders' } },
-      ] },
+      {
+        kind: 'tools',
+        toolCalls: [
+          { id: 'a', name: 'read_db_schema', args: { databaseId: dbA } },
+          { id: 'b', name: 'run_select', args: { databaseId: dbA, table: 'orders' } },
+        ],
+      },
       { kind: 'final', text: 'fatto' },
     ]);
     const r = await runDbAgentChat({ ctx: ctxA, userMessage: 'leggi', prompt, llmTurn });
@@ -145,22 +208,46 @@ describe('🚨 sicurezza & robustezza del loop', () => {
   it('tool su DB di altro tenant → step ok:false code TENANT_SCOPE, risultato ri-alimentato (loop non crasha)', async () => {
     const dbB = makeDb(svc, TENANT_B, 'secret', [seedTable()]);
     const { llmTurn, inputs } = scriptedLlm([
-      { kind: 'tools', toolCalls: [{ id: 'x', name: 'read_db_schema', args: { databaseId: dbB } }] },
+      {
+        kind: 'tools',
+        toolCalls: [{ id: 'x', name: 'read_db_schema', args: { databaseId: dbB } }],
+      },
       { kind: 'final', text: 'Non riesco ad accedere a quel database.' },
     ]);
-    const r = await runDbAgentChat({ ctx: ctxA, userMessage: 'leggi il db altrui', prompt, llmTurn });
-    expect(r.steps).toEqual([{ tool: 'read_db_schema', ok: false, code: 'TENANT_SCOPE', destructive: false }]);
+    const r = await runDbAgentChat({
+      ctx: ctxA,
+      userMessage: 'leggi il db altrui',
+      prompt,
+      llmTurn,
+    });
+    expect(r.steps).toEqual([
+      { tool: 'read_db_schema', ok: false, code: 'TENANT_SCOPE', destructive: false },
+    ]);
     const toolMsg = inputs[1]!.messages.find((mm) => mm.role === 'tool');
     expect(toolMsg?.content).toContain('TENANT_SCOPE');
   });
 
   it('tool distruttivo senza conferma → step ok:false CONFIRMATION_REQUIRED + destructive:true', async () => {
     const { llmTurn } = scriptedLlm([
-      { kind: 'tools', toolCalls: [{ id: 'd', name: 'drop_table', args: { databaseId: dbA, tableName: 'orders', confirmTableName: 'nope' } }] },
+      {
+        kind: 'tools',
+        toolCalls: [
+          {
+            id: 'd',
+            name: 'drop_table',
+            args: { databaseId: dbA, tableName: 'orders', confirmTableName: 'nope' },
+          },
+        ],
+      },
       { kind: 'final', text: 'Serve conferma.' },
     ]);
     const r = await runDbAgentChat({ ctx: ctxA, userMessage: 'cancella orders', prompt, llmTurn });
-    expect(r.steps[0]).toEqual({ tool: 'drop_table', ok: false, code: 'CONFIRMATION_REQUIRED', destructive: true });
+    expect(r.steps[0]).toEqual({
+      tool: 'drop_table',
+      ok: false,
+      code: 'CONFIRMATION_REQUIRED',
+      destructive: true,
+    });
     expect(m.applyMigration).not.toHaveBeenCalled();
   });
 
@@ -175,8 +262,18 @@ describe('🚨 sicurezza & robustezza del loop', () => {
 
   it('🔁 anti-loop: un modello che non finalizza MAI si ferma a maxIterations (no loop infinito)', async () => {
     // Coda infinita di richieste tool: ogni turno chiede ancora un tool.
-    const llmTurn: LlmTurn = () => Promise.resolve({ kind: 'tools', toolCalls: [{ id: 'i', name: 'list_databases', args: {} }] } as LlmTurnResult);
-    const r = await runDbAgentChat({ ctx: ctxA, userMessage: 'gira a vuoto', prompt, llmTurn, maxIterations: 4 });
+    const llmTurn: LlmTurn = () =>
+      Promise.resolve({
+        kind: 'tools',
+        toolCalls: [{ id: 'i', name: 'list_databases', args: {} }],
+      } as LlmTurnResult);
+    const r = await runDbAgentChat({
+      ctx: ctxA,
+      userMessage: 'gira a vuoto',
+      prompt,
+      llmTurn,
+      maxIterations: 4,
+    });
     expect(r.stoppedReason).toBe('max_iterations');
     expect(r.iterations).toBe(4);
     expect(r.steps).toHaveLength(4); // un tool per iterazione, esattamente maxIterations
@@ -184,14 +281,22 @@ describe('🚨 sicurezza & robustezza del loop', () => {
 
   it('eccezione del MODELLO (llmTurn throw) è propagata (guasto infra, non esito tool)', async () => {
     const llmTurn: LlmTurn = () => Promise.reject(new Error('LLM provider 503'));
-    await expect(runDbAgentChat({ ctx: ctxA, userMessage: 'x', prompt, llmTurn })).rejects.toThrow('LLM provider 503');
+    await expect(runDbAgentChat({ ctx: ctxA, userMessage: 'x', prompt, llmTurn })).rejects.toThrow(
+      'LLM provider 503',
+    );
   });
 
   it('history precedente è inclusa prima del nuovo messaggio utente', async () => {
     const { llmTurn, inputs } = scriptedLlm([{ kind: 'final', text: 'ok' }]);
     await runDbAgentChat({
-      ctx: ctxA, userMessage: 'e adesso?', prompt, llmTurn,
-      history: [{ role: 'user', content: 'prima domanda' }, { role: 'assistant', content: 'prima risposta' }],
+      ctx: ctxA,
+      userMessage: 'e adesso?',
+      prompt,
+      llmTurn,
+      history: [
+        { role: 'user', content: 'prima domanda' },
+        { role: 'assistant', content: 'prima risposta' },
+      ],
     });
     const roles = inputs[0]!.messages.map((mm) => `${mm.role}:${mm.content}`);
     expect(roles).toEqual(['user:prima domanda', 'assistant:prima risposta', 'user:e adesso?']);

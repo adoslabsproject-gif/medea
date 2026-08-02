@@ -18,17 +18,26 @@ import { logger } from '@/lib/logger.js';
 import { Hono } from 'hono';
 
 vi.mock('@/middleware/rbac.js', () => ({
-  requireRole: (role: string) => async (c: { get: (k: string) => { role?: string } | undefined }, next: () => Promise<void>) => {
-    const auth = c.get('auth');
-    if (!auth) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-    const roleHierarchy = ['viewer', 'editor', 'admin', 'owner', 'superadmin'];
-    const userLevel = roleHierarchy.indexOf(auth.role ?? 'viewer');
-    const requiredLevel = roleHierarchy.indexOf(role);
-    if (userLevel < requiredLevel) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
-    }
-    return next();
-  },
+  requireRole:
+    (role: string) =>
+    async (c: { get: (k: string) => { role?: string } | undefined }, next: () => Promise<void>) => {
+      const auth = c.get('auth');
+      if (!auth)
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      const roleHierarchy = ['viewer', 'editor', 'admin', 'owner', 'superadmin'];
+      const userLevel = roleHierarchy.indexOf(auth.role ?? 'viewer');
+      const requiredLevel = roleHierarchy.indexOf(role);
+      if (userLevel < requiredLevel) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return next();
+    },
 }));
 
 const installFromBufferMock = vi.fn();
@@ -112,37 +121,53 @@ describe('🚨 SECURITY: owner-only RBAC global', () => {
 describe('🚨 GET /installed', () => {
   it('🚨 vuoto → []', async () => {
     const res = await makeApp().request('/cn/installed');
-    const json = await res.json() as { nodes: unknown[]; total: number };
+    const json = (await res.json()) as { nodes: unknown[]; total: number };
     expect(json.nodes).toEqual([]);
     expect(json.total).toBe(0);
   });
 
   it('🚨 mapping completo: manifest fields + actionsCount + verified', async () => {
-    listInstalledMock.mockReturnValue([{
-      manifest: {
-        vendor: 'acme', id: 'foo', version: '1.0.0',
-        displayName: 'Foo Node', description: 'desc',
-        license: 'MIT', homepage: 'https://x.com', category: 'data',
+    listInstalledMock.mockReturnValue([
+      {
+        manifest: {
+          vendor: 'acme',
+          id: 'foo',
+          version: '1.0.0',
+          displayName: 'Foo Node',
+          description: 'desc',
+          license: 'MIT',
+          homepage: 'https://x.com',
+          category: 'data',
+        },
+        installedAt: '2026-06-08T10:00:00Z',
+        verified: true,
+        def: { actions: [{ id: 'a1' }, { id: 'a2' }, { id: 'a3' }] },
       },
-      installedAt: '2026-06-08T10:00:00Z',
-      verified: true,
-      def: { actions: [{ id: 'a1' }, { id: 'a2' }, { id: 'a3' }] },
-    }]);
+    ]);
     const res = await makeApp().request('/cn/installed');
-    const json = await res.json() as { nodes: { vendor: string; actionsCount: number; verified: boolean }[] };
+    const json = (await res.json()) as {
+      nodes: { vendor: string; actionsCount: number; verified: boolean }[];
+    };
     expect(json.nodes[0]).toMatchObject({
-      vendor: 'acme', id: 'foo', version: '1.0.0',
-      verified: true, actionsCount: 3,
+      vendor: 'acme',
+      id: 'foo',
+      version: '1.0.0',
+      verified: true,
+      actionsCount: 3,
     });
   });
 
   it('🚨 actionsCount default 0 se def.actions undefined', async () => {
-    listInstalledMock.mockReturnValue([{
-      manifest: { vendor: 'a', id: 'b', version: '1' },
-      def: {}, installedAt: '', verified: false,
-    }]);
+    listInstalledMock.mockReturnValue([
+      {
+        manifest: { vendor: 'a', id: 'b', version: '1' },
+        def: {},
+        installedAt: '',
+        verified: false,
+      },
+    ]);
     const res = await makeApp().request('/cn/installed');
-    const json = await res.json() as { nodes: { actionsCount: number }[] };
+    const json = (await res.json()) as { nodes: { actionsCount: number }[] };
     expect(json.nodes[0]!.actionsCount).toBe(0);
   });
 });
@@ -164,7 +189,7 @@ describe('🚨 GET /:vendor/:id — detail', () => {
       installedAt: '2026-06-08T10:00:00Z',
     });
     const res = await makeApp().request('/cn/acme/foo');
-    const json = await res.json() as { readme: string; iconSvg: string; verified: boolean };
+    const json = (await res.json()) as { readme: string; iconSvg: string; verified: boolean };
     expect(json.readme).toBe('# README');
     expect(json.iconSvg).toBe('<svg/>');
     expect(json.verified).toBe(true);
@@ -172,11 +197,13 @@ describe('🚨 GET /:vendor/:id — detail', () => {
 
   it('🚨 readme/iconSvg undefined → null (NO undefined leak in JSON)', async () => {
     getInstalledMock.mockReturnValue({
-      manifest: { vendor: 'a', id: 'b' }, def: {},
-      verified: false, installedAt: '',
+      manifest: { vendor: 'a', id: 'b' },
+      def: {},
+      verified: false,
+      installedAt: '',
     });
     const res = await makeApp().request('/cn/a/b');
-    const json = await res.json() as { readme: null; iconSvg: null };
+    const json = (await res.json()) as { readme: null; iconSvg: null };
     expect(json.readme).toBeNull();
     expect(json.iconSvg).toBeNull();
   });
@@ -256,7 +283,7 @@ describe('🚨 POST /install — Zod union validation', () => {
       body: JSON.stringify({ registryId: 'ghost', vendor: 'acme' }),
     });
     expect(res.status).toBe(404);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toMatch(/"acme\/ghost".*non trovato/u);
   });
 
@@ -268,7 +295,7 @@ describe('🚨 POST /install — Zod union validation', () => {
       body: JSON.stringify({ url: 'https://x.com/bad.ffnode' }),
     });
     expect(res.status).toBe(400);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toBe('signature verification failed');
     expect(emitCommunityNodesChangedMock).not.toHaveBeenCalled();
     expect(loggerMock.warn).toHaveBeenCalled();
@@ -281,7 +308,7 @@ describe('🚨 POST /install — Zod union validation', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: 'https://x.com/p.ffnode' }),
     });
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toBe('raw-string-err');
   });
 
@@ -306,9 +333,14 @@ describe('🚨 POST /install — Zod union validation', () => {
 
 describe('🚨 GET /registry', () => {
   it('🚨 enrich entries con installed:true|false', async () => {
-    listInstalledMock.mockReturnValue([{
-      manifest: { vendor: 'acme', id: 'foo' }, def: {}, installedAt: '', verified: true,
-    }]);
+    listInstalledMock.mockReturnValue([
+      {
+        manifest: { vendor: 'acme', id: 'foo' },
+        def: {},
+        installedAt: '',
+        verified: true,
+      },
+    ]);
     fetchRegistryMock.mockResolvedValue({
       updatedAt: '2026-06-08',
       nodes: [
@@ -317,7 +349,7 @@ describe('🚨 GET /registry', () => {
       ],
     });
     const res = await makeApp().request('/cn/registry');
-    const json = await res.json() as { nodes: { vendor: string; installed: boolean }[] };
+    const json = (await res.json()) as { nodes: { vendor: string; installed: boolean }[] };
     expect(json.nodes[0]!.installed).toBe(true);
     expect(json.nodes[1]!.installed).toBe(false);
   });
@@ -326,7 +358,7 @@ describe('🚨 GET /registry', () => {
     fetchRegistryMock.mockRejectedValue(new Error('ECONNREFUSED'));
     const res = await makeApp().request('/cn/registry');
     expect(res.status).toBe(502);
-    const json = await res.json() as { error: string; details: string };
+    const json = (await res.json()) as { error: string; details: string };
     expect(json.error).toMatch(/Registry non raggiungibile/u);
     expect(json.details).toBe('ECONNREFUSED');
   });
@@ -339,7 +371,7 @@ describe('🚨 POST /registry/refresh', () => {
     expect(res.status).toBe(200);
     expect(clearRegistryCacheMock).toHaveBeenCalled();
     expect(fetchRegistryMock).toHaveBeenCalledWith(true);
-    const json = await res.json() as { total: number };
+    const json = (await res.json()) as { total: number };
     expect(json.total).toBe(1);
   });
 
@@ -355,7 +387,7 @@ describe('🚨 DELETE /:vendor/:id — uninstall', () => {
     uninstallMock.mockResolvedValue(undefined);
     const res = await makeApp().request('/cn/acme/foo', { method: 'DELETE' });
     expect(res.status).toBe(200);
-    const json = await res.json() as { ok: boolean };
+    const json = (await res.json()) as { ok: boolean };
     expect(json.ok).toBe(true);
     expect(uninstallMock).toHaveBeenCalledWith('acme', 'foo');
     expect(emitCommunityNodesChangedMock).toHaveBeenCalled();
@@ -365,7 +397,7 @@ describe('🚨 DELETE /:vendor/:id — uninstall', () => {
     uninstallMock.mockRejectedValue(new Error('package not found'));
     const res = await makeApp().request('/cn/ghost/x', { method: 'DELETE' });
     expect(res.status).toBe(404);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toBe('package not found');
     expect(emitCommunityNodesChangedMock).not.toHaveBeenCalled();
   });

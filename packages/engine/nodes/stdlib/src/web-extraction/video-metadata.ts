@@ -24,7 +24,9 @@ const executor: NodeExecutor = async (config, input, _context) => {
   const start = Date.now();
   const endpoint = String(config.endpoint ?? process.env.MEDEA_FFPROBE_ENDPOINT ?? '').trim();
   if (!endpoint) {
-    throw new Error('ffprobe endpoint not configured. Set MEDEA_FFPROBE_ENDPOINT env or fill "endpoint" config. Setup: deploy ffprobe server (es. https://github.com/jrottenberg/ffmpeg + node wrapper).');
+    throw new Error(
+      'ffprobe endpoint not configured. Set MEDEA_FFPROBE_ENDPOINT env or fill "endpoint" config. Setup: deploy ffprobe server (es. https://github.com/jrottenberg/ffmpeg + node wrapper).',
+    );
   }
 
   const inputType = String(config.inputType ?? 'url');
@@ -63,7 +65,7 @@ const executor: NodeExecutor = async (config, input, _context) => {
     const t = await res.text().catch(() => '');
     throw new Error(`ffprobe ${res.status.toString()}: ${t.slice(0, 300)}`);
   }
-  const data = await res.json() as Record<string, unknown>;
+  const data = (await res.json()) as Record<string, unknown>;
 
   // Extract common fields for convenience
   const streams = (data.streams ?? []) as Record<string, unknown>[];
@@ -110,10 +112,10 @@ export const videoMetadataNode: NodeModule = {
     color: '#0d9488',
     description:
       'Estrattore enterprise di metadata da file video — basato su ffprobe (il tool companion di ffmpeg, ' +
-      'l\'industry standard de-facto per video processing usato da YouTube, Netflix, Twitch, broadcaster TV ' +
+      "l'industry standard de-facto per video processing usato da YouTube, Netflix, Twitch, broadcaster TV " +
       'mondiali per probe del media payload). Analizza qualsiasi file video supportato dal vasto codec library ' +
       'di ffmpeg (300+ formati incluso MP4, MKV, MOV, AVI, FLV, WMV, MTS, M2TS, MXF per broadcast professional, ' +
-      'WebM per web modern) e ne estrae l\'inventario completo dei metadata tecnici essenziali per QA pre-' +
+      "WebM per web modern) e ne estrae l'inventario completo dei metadata tecnici essenziali per QA pre-" +
       'publish, indicizzazione media library, compliance broadcast: ' +
       'codec video (H.264/AVC più diffuso, HEVC/H.265 per high-efficiency, VP9 per WebM YouTube, AV1 royalty-' +
       'free per next-gen streaming, ProRes per editing professional), bitrate avg/max in Mbps, fps frame ' +
@@ -129,8 +131,8 @@ export const videoMetadataNode: NodeModule = {
       'libav1) pesano ~50-100MB totale → NON viene bundlato nel container runtime FlowForge per evitare bloat ' +
       'inutile alla maggior parte dei tenant che non usano video. Pattern microservice: il tenant deploya ' +
       'un wrapper HTTP separato (immagine docker pre-pronta `jrottenberg/ffmpeg` + Express HTTP, oppure ' +
-      'Cloud Run/Lambda con custom container, oppure self-hosted dedicated server) e configura l\'endpoint ' +
-      'qui o via env MEDEA_FFPROBE_ENDPOINT condivisa. Pattern SSRF-safe sempre: quando l\'URL del video ' +
+      "Cloud Run/Lambda con custom container, oppure self-hosted dedicated server) e configura l'endpoint " +
+      "qui o via env MEDEA_FFPROBE_ENDPOINT condivisa. Pattern SSRF-safe sempre: quando l'URL del video " +
       'da analizzare proviene da config user-driven o input esterno, il request passa per @medea/engine-safe-' +
       'fetch che blocca URL privati 192.168/127.* per security. ' +
       'Use case: indicizzazione media library di una piattaforma streaming/VOD con catalogazione automatic ' +
@@ -165,7 +167,7 @@ export const videoMetadataNode: NodeModule = {
         required: false,
         options: ['url', 'input', 'base64'],
         defaultValue: 'url',
-        help: 'url = URL HTTP pubblico che il wrapper scaricherà. input = legge `url` o `dataBase64` dall\'output del nodo precedente (es. download da S3, file_read). base64 = dati video inline (max 10MB consigliato, oltre usa URL).',
+        help: "url = URL HTTP pubblico che il wrapper scaricherà. input = legge `url` o `dataBase64` dall'output del nodo precedente (es. download da S3, file_read). base64 = dati video inline (max 10MB consigliato, oltre usa URL).",
       },
       {
         key: 'url',
@@ -186,7 +188,22 @@ export const videoMetadataNode: NodeModule = {
         help: 'Contenuto video encoded base64 SENZA il prefisso "data:video/mp4;base64,". Limite raccomandato 10MB (oltre ffprobe HTTP timeout). Per file più grandi preferire `url` o `input`.',
       },
     ],
-    outputs: ['duration', 'bitRate', 'formatName', 'size', 'videoCodec', 'videoWidth', 'videoHeight', 'videoFps', 'audioTracks', 'audioCodecs', 'audioLanguages', 'subtitleTracks', 'subtitleLanguages', 'raw'],
+    outputs: [
+      'duration',
+      'bitRate',
+      'formatName',
+      'size',
+      'videoCodec',
+      'videoWidth',
+      'videoHeight',
+      'videoFps',
+      'audioTracks',
+      'audioCodecs',
+      'audioLanguages',
+      'subtitleTracks',
+      'subtitleLanguages',
+      'raw',
+    ],
   },
   executor,
 };

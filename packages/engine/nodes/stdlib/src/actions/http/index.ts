@@ -22,11 +22,11 @@ export const httpActionNode: NodeModule = {
   executor: wrap(httpExecutor, [
     httpMiddlewarePreset({
       urlFrom: (c) => {
-        const u = (c).url;
+        const u = c.url;
         return typeof u === 'string' && u.length > 0 ? u : undefined;
       },
       methodFrom: (c) => {
-        const m = (c).method;
+        const m = c.method;
         return typeof m === 'string' ? m.toUpperCase() : 'GET';
       },
     }),

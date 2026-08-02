@@ -53,7 +53,16 @@ export const pdfParseNode: NodeModule = {
         help: 'auto = prova pdf-parse, fa fallback LLM-vision se la qualità è bassa (raccomandato). pdf-parse-only = solo libreria gratis, niente API LLM (costo zero, ma fallisce su PDF scannerizzati). llm-only = salta pdf-parse e va diretto su Claude Sonnet (massima qualità, max costo per call).',
       },
     ],
-    outputs: ['text', 'confidence', 'mode', 'pages', 'sizeBytes', 'usedLlmFallback', 'llmModel', 'cheapAttempt'],
+    outputs: [
+      'text',
+      'confidence',
+      'mode',
+      'pages',
+      'sizeBytes',
+      'usedLlmFallback',
+      'llmModel',
+      'cheapAttempt',
+    ],
     vendor: 'flowforge',
     version: '1.0.0',
     cost: {
@@ -101,7 +110,7 @@ export const pdfGenerateNode: NodeModule = {
       'team interno, archivio compliance. Built su libreria pdfkit Node.js (battle-tested 12M+ downloads/anno, ' +
       'genera PDF 1.7 valid e compatibile con qualsiasi reader: Adobe Acrobat, Preview macOS, Foxit, browser ' +
       'embedded viewer, mobile reader). ' +
-      'Componenti del documento configurabili dall\'editor visuale: titolo principale (heading 24pt, ' +
+      "Componenti del documento configurabili dall'editor visuale: titolo principale (heading 24pt, " +
       'centrato di default, customizable font + size + color), sezioni testuali multi-paragrafo con ' +
       'support a markdown subset (bold, italic, underline, link cliccabili), tabella optional con colonne ' +
       'configurate da header array + righe da array di array (column auto-width oppure fixed width esplicito ' +
@@ -125,7 +134,7 @@ export const pdfGenerateNode: NodeModule = {
       'post-checkout PayPal/Stripe con i dettagli ordine + dati fiscali + footer con condizioni di vendita; ' +
       'report mensile metriche business allegato a riunione management con chart embedded (generati da ' +
       'generateChart upstream + embed come immagine PNG nel PDF); ricevuta automatic dopo registrazione ' +
-      'form/evento (Calendly, Typeform, trigger_form) con QR code embed per check-in scanning all\'evento; ' +
+      "form/evento (Calendly, Typeform, trigger_form) con QR code embed per check-in scanning all'evento; " +
       'contratto pre-compilato con dati cliente per onboarding nuovi clienti SaaS (pdf prepared, customer ' +
       'firma con DocuSign downstream); certificato di partecipazione corso formazione con nome + data + firma ' +
       'CEO embedded per training programs aziendali.',
@@ -151,8 +160,10 @@ export const pdfGenerateNode: NodeModule = {
         label: 'Sezioni di testo (JSON array)',
         type: 'expression',
         required: false,
-        placeholder: '[{"heading":"Descrizione","body":"Testo lungo..."},{"heading":"Termini","body":"..."}]',
-        help: 'Array JSON di oggetti `{heading, body}`. heading = titolo sezione (bold), body = paragrafo. ' +
+        placeholder:
+          '[{"heading":"Descrizione","body":"Testo lungo..."},{"heading":"Termini","body":"..."}]',
+        help:
+          'Array JSON di oggetti `{heading, body}`. heading = titolo sezione (bold), body = paragrafo. ' +
           'Le sezioni vengono renderizzate in ordine. Lascia vuoto per saltare. Tipico: si compone con `{{$node.X.json}}` o `{{vars.descrizione}}`.',
       },
       {
@@ -161,7 +172,8 @@ export const pdfGenerateNode: NodeModule = {
         type: 'expression',
         required: false,
         placeholder: '[{"Prodotto":"Olio","Prezzo":"12.00"},{"Prodotto":"Pasta","Prezzo":"3.50"}]',
-        help: 'Array JSON di oggetti. Le chiavi del primo oggetto diventano intestazioni della tabella. ' +
+        help:
+          'Array JSON di oggetti. Le chiavi del primo oggetto diventano intestazioni della tabella. ' +
           'Tutte le righe devono avere le stesse chiavi (le mancanti rendono cella vuota). Numeri sono formattati ' +
           'a destra, testo a sinistra. Per cataloghi/listini, ideale insieme a `action_xlsx_parse` upstream che ' +
           'ti dà il JSON da un .xlsx.',
@@ -172,7 +184,8 @@ export const pdfGenerateNode: NodeModule = {
         type: 'text',
         required: false,
         placeholder: '© 2026 La tua Azienda — Pagina {page} di {total}',
-        help: 'Riga in fondo a ogni pagina. Placeholder `{page}` e `{total}` vengono sostituiti automaticamente. ' +
+        help:
+          'Riga in fondo a ogni pagina. Placeholder `{page}` e `{total}` vengono sostituiti automaticamente. ' +
           'Vuoto = nessun footer.',
       },
       {
@@ -199,7 +212,8 @@ export const pdfGenerateNode: NodeModule = {
         type: 'text',
         required: false,
         placeholder: 'catalogo-{{$today}}.pdf',
-        help: 'Nome file restituito in output (per allegato email o salvataggio). Default: "document.pdf". ' +
+        help:
+          'Nome file restituito in output (per allegato email o salvataggio). Default: "document.pdf". ' +
           'Estensione .pdf aggiunta se manca.',
       },
     ],
@@ -209,7 +223,7 @@ export const pdfGenerateNode: NodeModule = {
     vendor: 'flowforge',
     version: '1.0.0',
     cost: {
-      costPerCall: 0,    // pdfkit locale, no API esterna
+      costPerCall: 0, // pdfkit locale, no API esterna
       typicalLatencyMs: 150, // ~50ms small, ~500ms 50-row table
     },
   },

@@ -37,19 +37,31 @@ const executor: NodeExecutor = async (config) => {
   const seedsRaw = String(config.seeds ?? '').trim();
   if (!seedsRaw) throw new Error('seeds required (URLs comma/newline separated)');
   const seeds = seedsRaw
-    .split(/[,\n]/).map((s) => s.trim())
+    .split(/[,\n]/)
+    .map((s) => s.trim())
     .filter((s) => /^https?:\/\//i.test(s));
-  if (seeds.length === 0) throw new Error('no valid seed URL (must start with http:// or https://)');
+  if (seeds.length === 0)
+    throw new Error('no valid seed URL (must start with http:// or https://)');
 
   const allowRaw = String(config.allowDomains ?? '').trim();
   const allowDomains = allowRaw
-    ? allowRaw.split(/[,\s]+/).map((s) => s.trim()).filter(Boolean)
+    ? allowRaw
+        .split(/[,\s]+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
     : [];
 
   const denyRaw = String(config.denyPatterns ?? '').trim();
   const denyPatterns: RegExp[] = [];
-  for (const p of denyRaw.split(/[,\n]/).map((s) => s.trim()).filter(Boolean)) {
-    try { denyPatterns.push(safeUserRegex(p)); } catch { /* skip invalid o feature non-RE2 → ignora pattern */ }
+  for (const p of denyRaw
+    .split(/[,\n]/)
+    .map((s) => s.trim())
+    .filter(Boolean)) {
+    try {
+      denyPatterns.push(safeUserRegex(p));
+    } catch {
+      /* skip invalid o feature non-RE2 → ignora pattern */
+    }
   }
 
   const start = Date.now();
@@ -60,7 +72,9 @@ const executor: NodeExecutor = async (config) => {
     sameOriginOnly: asBool(config.sameOriginOnly, true),
     allowDomains,
     denyPatterns,
-    userAgent: String(config.userAgent ?? 'FlowForge-Spider/1.0 (+https://flowforge.automazionezeli.com)').trim(),
+    userAgent: String(
+      config.userAgent ?? 'FlowForge-Spider/1.0 (+https://flowforge.automazionezeli.com)',
+    ).trim(),
     perHostMinDelayMs: clampInt(config.perHostMinDelayMs, 0, 60_000, 500),
     concurrency: clampInt(config.concurrency, 1, 16, 4),
     respectRobots: asBool(config.respectRobots, true),
@@ -87,32 +101,94 @@ export const recursiveSpiderNode: NodeModule = {
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [
-      { key: 'seeds', label: 'Seed URLs', type: 'text', required: true,
+      {
+        key: 'seeds',
+        label: 'Seed URLs',
+        type: 'text',
+        required: true,
         placeholder: 'https://example.com/, https://example.com/blog',
-        help: 'Lista URL di partenza separati da virgola o newline. Devono essere http(s)://. Lo spider farà BFS partendo da questi.' },
-      { key: 'maxDepth', label: 'Profondità massima', type: 'number', required: false, defaultValue: '3',
-        help: 'Quanti livelli di link seguire dai seed. 0 = solo i seed. 3 = seed → click → click → click. Max 50.' },
-      { key: 'maxPages', label: 'Pagine massime (hard cap)', type: 'number', required: false, defaultValue: '100',
-        help: 'Stop al raggiungimento. Le pagine non visitate restano in `frontier` (output) per resume futuro. Max 5000.' },
-      { key: 'sameOriginOnly', label: 'Solo same-origin', type: 'boolean', required: false, defaultValue: 'true',
-        help: 'Se ON, i link verso altri host vengono ignorati. Combinare con allowDomains per multi-host controllato.' },
-      { key: 'allowDomains', label: 'Domini consentiti (whitelist)', type: 'text', required: false,
+        help: 'Lista URL di partenza separati da virgola o newline. Devono essere http(s)://. Lo spider farà BFS partendo da questi.',
+      },
+      {
+        key: 'maxDepth',
+        label: 'Profondità massima',
+        type: 'number',
+        required: false,
+        defaultValue: '3',
+        help: 'Quanti livelli di link seguire dai seed. 0 = solo i seed. 3 = seed → click → click → click. Max 50.',
+      },
+      {
+        key: 'maxPages',
+        label: 'Pagine massime (hard cap)',
+        type: 'number',
+        required: false,
+        defaultValue: '100',
+        help: 'Stop al raggiungimento. Le pagine non visitate restano in `frontier` (output) per resume futuro. Max 5000.',
+      },
+      {
+        key: 'sameOriginOnly',
+        label: 'Solo same-origin',
+        type: 'boolean',
+        required: false,
+        defaultValue: 'true',
+        help: 'Se ON, i link verso altri host vengono ignorati. Combinare con allowDomains per multi-host controllato.',
+      },
+      {
+        key: 'allowDomains',
+        label: 'Domini consentiti (whitelist)',
+        type: 'text',
+        required: false,
         placeholder: 'example.com, sub.example.com',
-        help: 'Override di sameOriginOnly: se valorizzato, accetta link verso questi host (anche sotto-domini). Vuoto = solo origin del seed.' },
-      { key: 'denyPatterns', label: 'Pattern URL da escludere (regex)', type: 'text', required: false,
+        help: 'Override di sameOriginOnly: se valorizzato, accetta link verso questi host (anche sotto-domini). Vuoto = solo origin del seed.',
+      },
+      {
+        key: 'denyPatterns',
+        label: 'Pattern URL da escludere (regex)',
+        type: 'text',
+        required: false,
         placeholder: '/login, \\.pdf$, /admin/',
-        help: 'Regex valutate sull\'URL assoluto. Separati da virgola o newline. Es. "/admin/, /api/, \\.pdf$".' },
-      { key: 'concurrency', label: 'Concorrenza (fetch in parallelo)', type: 'number', required: false, defaultValue: '4',
-        help: 'Worker simultanei. 1=seriale, 4=default sano per single tenant, max 16. Più alto = più veloce ma più aggressivo sul server target.' },
-      { key: 'perHostMinDelayMs', label: 'Delay minimo per host (ms)', type: 'number', required: false, defaultValue: '500',
-        help: 'Token bucket per-host: garantisce >= N ms fra due request allo stesso host. 0 = nessun rate limit. Default 500ms = ~2 req/sec.' },
-      { key: 'respectRobots', label: 'Rispetta robots.txt', type: 'boolean', required: false, defaultValue: 'true',
-        help: 'Fetch /robots.txt una volta per host, applica Disallow + Crawl-Delay. Spegnere SOLO se hai diritti sul target.' },
-      { key: 'timeoutMs', label: 'Timeout per pagina (ms)', type: 'number', required: false, defaultValue: '20000',
-        help: 'Hard timeout sulla singola fetch. Pagine timeout vanno nei result con error="timeout..." e link=[].' },
-      { key: 'userAgent', label: 'User-Agent', type: 'text', required: false,
+        help: 'Regex valutate sull\'URL assoluto. Separati da virgola o newline. Es. "/admin/, /api/, \\.pdf$".',
+      },
+      {
+        key: 'concurrency',
+        label: 'Concorrenza (fetch in parallelo)',
+        type: 'number',
+        required: false,
+        defaultValue: '4',
+        help: 'Worker simultanei. 1=seriale, 4=default sano per single tenant, max 16. Più alto = più veloce ma più aggressivo sul server target.',
+      },
+      {
+        key: 'perHostMinDelayMs',
+        label: 'Delay minimo per host (ms)',
+        type: 'number',
+        required: false,
+        defaultValue: '500',
+        help: 'Token bucket per-host: garantisce >= N ms fra due request allo stesso host. 0 = nessun rate limit. Default 500ms = ~2 req/sec.',
+      },
+      {
+        key: 'respectRobots',
+        label: 'Rispetta robots.txt',
+        type: 'boolean',
+        required: false,
+        defaultValue: 'true',
+        help: 'Fetch /robots.txt una volta per host, applica Disallow + Crawl-Delay. Spegnere SOLO se hai diritti sul target.',
+      },
+      {
+        key: 'timeoutMs',
+        label: 'Timeout per pagina (ms)',
+        type: 'number',
+        required: false,
+        defaultValue: '20000',
+        help: 'Hard timeout sulla singola fetch. Pagine timeout vanno nei result con error="timeout..." e link=[].',
+      },
+      {
+        key: 'userAgent',
+        label: 'User-Agent',
+        type: 'text',
+        required: false,
         placeholder: 'FlowForge-Spider/1.0 (+https://flowforge.automazionezeli.com)',
-        help: 'User-Agent dichiarato. Default RFC-compliant. Override SOLO per propri siti che bloccano UA generici.' },
+        help: 'User-Agent dichiarato. Default RFC-compliant. Override SOLO per propri siti che bloccano UA generici.',
+      },
     ],
   },
 };

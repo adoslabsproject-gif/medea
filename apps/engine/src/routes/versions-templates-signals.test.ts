@@ -29,7 +29,9 @@ const asUser = (tenantId: string): void => {
 let app: Hono;
 let workflows: WorkflowService;
 const created: string[] = [];
-interface SqliteLike { prepare: (s: string) => { run: (...p: unknown[]) => unknown } }
+interface SqliteLike {
+  prepare: (s: string) => { run: (...p: unknown[]) => unknown };
+}
 const db = (): SqliteLike => getDatabase().sqlite as unknown as SqliteLike;
 
 beforeAll(() => {
@@ -37,31 +39,51 @@ beforeAll(() => {
   const bus = new InMemoryEventBus();
   workflows = new WorkflowService(bus);
   app = new Hono();
-  app.use('*', async (c, next) => { c.set('auth', authCtx); await next(); });
+  app.use('*', async (c, next) => {
+    c.set('auth', authCtx);
+    await next();
+  });
   app.route('/api/v1', createVersionRoutes(bus));
   app.route('/api/v1/templates', createTemplateRoutes(bus));
   app.route('/api/v1/signals', createSignalRoutes(new RunService(bus)));
 });
 
 afterAll(async () => {
-  for (const id of created) { try { await workflows.delete(id, T_A); } catch { /* best effort */ } }
+  for (const id of created) {
+    try {
+      await workflows.delete(id, T_A);
+    } catch {
+      /* best effort */
+    }
+  }
   for (const t of ['workflow_versions', 'workflows', 'paused_workflows']) {
-    try { db().prepare(`DELETE FROM ${t} WHERE tenant_id LIKE 'test-vts-%'`).run(); } catch { /* opzionale */ }
+    try {
+      db().prepare(`DELETE FROM ${t} WHERE tenant_id LIKE 'test-vts-%'`).run();
+    } catch {
+      /* opzionale */
+    }
   }
 });
 
 const req = (method: string, path: string, body?: unknown): Promise<Response> =>
-  Promise.resolve(app.request(`/api/v1${path}`, {
-    method,
-    headers: { 'content-type': 'application/json' },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  }));
+  Promise.resolve(
+    app.request(`/api/v1${path}`, {
+      method,
+      headers: { 'content-type': 'application/json' },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    }),
+  );
 
 async function makeWorkflow(name: string): Promise<Workflow> {
   const wf = await workflows.create({
-    name, description: 'd', enabled: false,
+    name,
+    description: 'd',
+    enabled: false,
     nodes: [{ id: 'n1', defId: 'trigger_manual', x: 0, y: 0, config: {} }],
-    edges: [], nodeDefs: [], tags: [], tenantId: T_A,
+    edges: [],
+    nodeDefs: [],
+    tags: [],
+    tenantId: T_A,
   } as never);
   created.push(wf.id);
   return wf;
@@ -78,7 +100,7 @@ describe('versions — snapshot/list/get/rollback/diff (workflow reale)', () => 
     const wf = await makeWorkflow('Versionato');
     const snap = await req('POST', `/workflows/${wf.id}/versions?comment=primo`, {});
     expect(snap.status).toBe(201);
-    const data = await snap.json() as { versionId: string; versionNumber: number };
+    const data = (await snap.json()) as { versionId: string; versionNumber: number };
     expect(data.versionId).toBeTruthy();
     expect(data.versionNumber).toBeGreaterThanOrEqual(1);
     expect((await req('POST', '/workflows/non-esiste/versions', {})).status).toBe(404);
@@ -89,13 +111,16 @@ describe('versions — snapshot/list/get/rollback/diff (workflow reale)', () => 
     const wf = await makeWorkflow('Multi-versione');
     await req('POST', `/workflows/${wf.id}/versions?comment=v1`, {});
     await req('POST', `/workflows/${wf.id}/versions?comment=v2`, {});
-    const list = await (await req('GET', `/workflows/${wf.id}/versions`)).json() as { versions: { id: string }[]; total: number };
+    const list = (await (await req('GET', `/workflows/${wf.id}/versions`)).json()) as {
+      versions: { id: string }[];
+      total: number;
+    };
     expect(list.total).toBeGreaterThanOrEqual(2);
 
     const vId = list.versions[0]!.id;
     const got = await req('GET', `/workflows/${wf.id}/versions/${vId}`);
     expect(got.status).toBe(200);
-    expect((await got.json() as { workflow: { id: string } }).workflow.id).toBe(wf.id);
+    expect(((await got.json()) as { workflow: { id: string } }).workflow.id).toBe(wf.id);
 
     const rollback = await req('POST', `/workflows/${wf.id}/versions/${vId}/rollback`, {});
     expect(rollback.status).toBe(200);
@@ -119,7 +144,9 @@ describe('versions — snapshot/list/get/rollback/diff (workflow reale)', () => 
     const wf = await makeWorkflow('Isolato-versioni');
     await req('POST', `/workflows/${wf.id}/versions`, {});
     asUser(T_B);
-    const list = await (await req('GET', `/workflows/${wf.id}/versions`)).json() as { total: number };
+    const list = (await (await req('GET', `/workflows/${wf.id}/versions`)).json()) as {
+      total: number;
+    };
     expect(list.total).toBe(0);
   });
 });
@@ -127,15 +154,20 @@ describe('versions — snapshot/list/get/rollback/diff (workflow reale)', () => 
 describe('templates — catalogo e instantiate (template REALI)', () => {
   it('GET / → catalogo non vuoto; filtro category/language applicato', async () => {
     asUser(T_A);
-    const all = await (await req('GET', '/templates')).json() as { templates: { id: string; language: string }[]; total: number };
+    const all = (await (await req('GET', '/templates')).json()) as {
+      templates: { id: string; language: string }[];
+      total: number;
+    };
     expect(all.total).toBeGreaterThan(0);
-    const it = await (await req('GET', '/templates?language=it')).json() as { templates: { language: string }[] };
+    const it = (await (await req('GET', '/templates?language=it')).json()) as {
+      templates: { language: string }[];
+    };
     expect(it.templates.every((t) => t.language === 'it')).toBe(true);
   });
 
   it('GET /:id esistente → template; inesistente → 404', async () => {
     asUser(T_A);
-    const all = await (await req('GET', '/templates')).json() as { templates: { id: string }[] };
+    const all = (await (await req('GET', '/templates')).json()) as { templates: { id: string }[] };
     const someId = all.templates[0]!.id;
     expect((await req('GET', `/templates/${someId}`)).status).toBe(200);
     expect((await req('GET', '/templates/non-esiste')).status).toBe(404);
@@ -143,11 +175,14 @@ describe('templates — catalogo e instantiate (template REALI)', () => {
 
   it('POST /:id/instantiate → crea un workflow REALE (enabled=false, tag from-template) nel tenant', async () => {
     asUser(T_A);
-    const all = await (await req('GET', '/templates')).json() as { templates: { id: string }[] };
+    const all = (await (await req('GET', '/templates')).json()) as { templates: { id: string }[] };
     const tid = all.templates[0]!.id;
     const res = await req('POST', `/templates/${tid}/instantiate`, {});
     expect(res.status).toBe(201);
-    const data = await res.json() as { workflow: { id: string; enabled: boolean; tags: string[] }; templateId: string };
+    const data = (await res.json()) as {
+      workflow: { id: string; enabled: boolean; tags: string[] };
+      templateId: string;
+    };
     created.push(data.workflow.id);
     expect(data.templateId).toBe(tid);
     expect(data.workflow.enabled).toBe(false);
@@ -173,24 +208,33 @@ describe('signals — risveglio workflow in pausa', () => {
     asUser(T_A);
     const res = await req('POST', '/signals/contract_signed', { orderId: 'abc' });
     expect(res.status).toBe(200);
-    const data = await res.json() as { resumed: number; signal: string };
+    const data = (await res.json()) as { resumed: number; signal: string };
     expect(data.resumed).toBe(0);
     expect(data.signal).toBe('contract_signed');
   });
 
   it('POST signal con body NON-JSON → non crasha (body opzionale), resumed 0', async () => {
     asUser(T_A);
-    const res = await Promise.resolve(app.request('/api/v1/signals/x', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: 'non-json{{',
-    }));
+    const res = await Promise.resolve(
+      app.request('/api/v1/signals/x', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: 'non-json{{',
+      }),
+    );
     expect(res.status).toBe(200);
   });
 
   it('GET / → lista paginata vuota sul tenant vergine; DELETE /:id inesistente → cancelled false', async () => {
     asUser(T_A);
-    const list = await (await req('GET', '/signals')).json() as { paused: unknown[]; total: number };
+    const list = (await (await req('GET', '/signals')).json()) as {
+      paused: unknown[];
+      total: number;
+    };
     expect(list.total).toBe(0);
-    const del = await (await req('DELETE', '/signals/non-esiste')).json() as { cancelled: boolean };
+    const del = (await (await req('DELETE', '/signals/non-esiste')).json()) as {
+      cancelled: boolean;
+    };
     expect(del.cancelled).toBe(false);
   });
 });

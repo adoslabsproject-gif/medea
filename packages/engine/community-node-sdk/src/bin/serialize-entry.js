@@ -31,10 +31,12 @@ async function main() {
 
   // Functions don't survive JSON.stringify by default. We stash them
   // as strings under a sibling field that compile() will pick up.
-  const serializable = JSON.parse(JSON.stringify(spec, (_k, v) => {
-    if (typeof v === 'function') return { __fn: v.toString() };
-    return v;
-  }));
+  const serializable = JSON.parse(
+    JSON.stringify(spec, (_k, v) => {
+      if (typeof v === 'function') return { __fn: v.toString() };
+      return v;
+    }),
+  );
 
   // Rehydrate function strings back into the structure expected by compile().
   // The SDK's compile() calls .toString() on each action.execute, so we wrap

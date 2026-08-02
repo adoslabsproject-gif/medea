@@ -38,7 +38,7 @@ export function buildRepairPrompt(input: RepairPromptInput): string {
       'Problemi da correggere:',
       issuesList,
       '',
-      'Vincoli: l\'executor è `async function execute(config, input, context)`, restituisce',
+      "Vincoli: l'executor è `async function execute(config, input, context)`, restituisce",
       'un oggetto, usa SOLO il `fetch` globale e i campi dichiarati in configFields; i secret',
       'vanno letti da context.secrets[...] e dichiarati come configField di type "secret".',
       'VIETATI require/import/eval/Function/process/globalThis/fs/child_process.',

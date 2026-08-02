@@ -34,8 +34,15 @@
  */
 
 export type CommercialistaLabel =
-  | 'fiscale' | 'iva' | 'f24' | 'forfettario'
-  | 'sollecito' | 'pec_legal' | 'payment' | 'bilancio' | 'altro';
+  | 'fiscale'
+  | 'iva'
+  | 'f24'
+  | 'forfettario'
+  | 'sollecito'
+  | 'pec_legal'
+  | 'payment'
+  | 'bilancio'
+  | 'altro';
 
 export interface RuleSet {
   label: CommercialistaLabel;
@@ -63,12 +70,26 @@ export interface TriageReply {
 export const DEFAULT_RULES: readonly RuleSet[] = Object.freeze([
   {
     label: 'sollecito',
-    keywords: ['sollecito', 'mancato pagamento', 'scaduta', 'scadenza superata', 'in mora', 'recupero crediti'],
+    keywords: [
+      'sollecito',
+      'mancato pagamento',
+      'scaduta',
+      'scadenza superata',
+      'in mora',
+      'recupero crediti',
+    ],
     highConfidenceOnSingleMatch: true,
   },
   {
     label: 'pec_legal',
-    keywords: ['ricevuta di accettazione', 'ricevuta di consegna', 'avviso non accettazione', 'busta di trasporto', 'avviso di mancata consegna', 'pec'],
+    keywords: [
+      'ricevuta di accettazione',
+      'ricevuta di consegna',
+      'avviso non accettazione',
+      'busta di trasporto',
+      'avviso di mancata consegna',
+      'pec',
+    ],
   },
   {
     label: 'f24',
@@ -76,23 +97,59 @@ export const DEFAULT_RULES: readonly RuleSet[] = Object.freeze([
   },
   {
     label: 'iva',
-    keywords: ['iva', 'intra', 'esterometro', 'lipe', 'liquidazione periodica iva', 'partita iva', 'reverse charge'],
+    keywords: [
+      'iva',
+      'intra',
+      'esterometro',
+      'lipe',
+      'liquidazione periodica iva',
+      'partita iva',
+      'reverse charge',
+    ],
   },
   {
     label: 'fiscale',
-    keywords: ['730', '770', 'unico', 'dichiarazione dei redditi', 'redditi', 'agenzia delle entrate', 'cu', 'certificazione unica'],
+    keywords: [
+      '730',
+      '770',
+      'unico',
+      'dichiarazione dei redditi',
+      'redditi',
+      'agenzia delle entrate',
+      'cu',
+      'certificazione unica',
+    ],
   },
   {
     label: 'forfettario',
-    keywords: ['regime forfettario', 'forfettario', 'flat tax', 'flat-tax', 'coefficiente di redditivita`'],
+    keywords: [
+      'regime forfettario',
+      'forfettario',
+      'flat tax',
+      'flat-tax',
+      'coefficiente di redditivita`',
+    ],
   },
   {
     label: 'bilancio',
-    keywords: ['bilancio', 'nota integrativa', 'deposito bilancio', 'cciaa', 'verbale assemblea', 'deposito atti'],
+    keywords: [
+      'bilancio',
+      'nota integrativa',
+      'deposito bilancio',
+      'cciaa',
+      'verbale assemblea',
+      'deposito atti',
+    ],
   },
   {
     label: 'payment',
-    keywords: ['bonifico effettuato', 'pagamento ricevuto', 'fattura pagata', 'accredito', 'pagamento avvenuto'],
+    keywords: [
+      'bonifico effettuato',
+      'pagamento ricevuto',
+      'fattura pagata',
+      'accredito',
+      'pagamento avvenuto',
+    ],
   },
 ]);
 
@@ -111,29 +168,36 @@ export const DEFAULT_OPERATORS: Record<CommercialistaLabel, string> = Object.fre
 
 /** Reply skeletons (IT polite). */
 export const DEFAULT_REPLY_TEMPLATES: Record<CommercialistaLabel, string> = Object.freeze({
-  fiscale: 'Buongiorno, abbiamo ricevuto la sua richiesta in ambito fiscale. La presa in carico avverra` a breve dall\'operatore competente. Cordiali saluti.',
+  fiscale:
+    "Buongiorno, abbiamo ricevuto la sua richiesta in ambito fiscale. La presa in carico avverra` a breve dall'operatore competente. Cordiali saluti.",
   iva: 'Buongiorno, abbiamo ricevuto la sua richiesta IVA. La presa in carico avverra` a breve. Cordiali saluti.',
   f24: 'Buongiorno, abbiamo ricevuto la richiesta relativa al pagamento F24. Riceverà conferma a breve. Cordiali saluti.',
-  forfettario: 'Buongiorno, abbiamo ricevuto la richiesta in tema di regime forfettario. La presa in carico avverra` a breve. Cordiali saluti.',
-  sollecito: 'Buongiorno, abbiamo ricevuto il suo sollecito. Verifichiamo immediatamente la posizione e la ricontatteremo entro 24h. Cordiali saluti.',
+  forfettario:
+    'Buongiorno, abbiamo ricevuto la richiesta in tema di regime forfettario. La presa in carico avverra` a breve. Cordiali saluti.',
+  sollecito:
+    'Buongiorno, abbiamo ricevuto il suo sollecito. Verifichiamo immediatamente la posizione e la ricontatteremo entro 24h. Cordiali saluti.',
   pec_legal: 'PEC ricevuta. Conservazione a norma effettuata. Cordiali saluti.',
-  payment: 'Buongiorno, confermiamo la ricezione del pagamento. Sara` registrato nei nostri sistemi entro 24h. Cordiali saluti.',
-  bilancio: 'Buongiorno, abbiamo ricevuto la sua richiesta in tema di bilancio. La presa in carico avverra` a breve. Cordiali saluti.',
-  altro: 'Buongiorno, abbiamo ricevuto la sua email. Verra` indirizzata al referente competente. Cordiali saluti.',
+  payment:
+    'Buongiorno, confermiamo la ricezione del pagamento. Sara` registrato nei nostri sistemi entro 24h. Cordiali saluti.',
+  bilancio:
+    'Buongiorno, abbiamo ricevuto la sua richiesta in tema di bilancio. La presa in carico avverra` a breve. Cordiali saluti.',
+  altro:
+    'Buongiorno, abbiamo ricevuto la sua email. Verra` indirizzata al referente competente. Cordiali saluti.',
 });
 
 /** Urgency tier mapping — adjustable from config. */
-export const DEFAULT_URGENCY: Record<CommercialistaLabel, 'high' | 'normal' | 'low'> = Object.freeze({
-  sollecito: 'high',
-  pec_legal: 'high',
-  f24: 'high',
-  iva: 'normal',
-  fiscale: 'normal',
-  forfettario: 'normal',
-  bilancio: 'normal',
-  payment: 'low',
-  altro: 'low',
-});
+export const DEFAULT_URGENCY: Record<CommercialistaLabel, 'high' | 'normal' | 'low'> =
+  Object.freeze({
+    sollecito: 'high',
+    pec_legal: 'high',
+    f24: 'high',
+    iva: 'normal',
+    fiscale: 'normal',
+    forfettario: 'normal',
+    bilancio: 'normal',
+    payment: 'low',
+    altro: 'low',
+  });
 
 export interface ClassifyOptions {
   rules?: readonly RuleSet[];

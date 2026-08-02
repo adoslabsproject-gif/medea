@@ -19,7 +19,7 @@ export interface DbConnClassification {
 const PATTERNS: { re: RegExp; msg: string }[] = [
   {
     re: /timed out while waiting for handshake/i, // ssh2: tunnel SSH
-    msg: 'Il tunnel SSH non risponde (handshake in timeout): il server remoto è irraggiungibile o sta bloccando la connessione (es. fail2ban che ha bannato l\'IP). Verifica che sia attivo e raggiungibile, poi riprova.',
+    msg: "Il tunnel SSH non risponde (handshake in timeout): il server remoto è irraggiungibile o sta bloccando la connessione (es. fail2ban che ha bannato l'IP). Verifica che sia attivo e raggiungibile, poi riprova.",
   },
   {
     re: /all configured authentication methods failed|authentication.*failed|auth.*method/i, // ssh auth

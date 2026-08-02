@@ -115,7 +115,10 @@ export function parseDumpTables(introspected: unknown): DumpTable[] {
           if (typeof cn !== 'string' || cn.length === 0) return [];
           const ct = (c as { type?: unknown }).type;
           const constraints = (c as { constraints?: unknown }).constraints;
-          const cons = constraints && typeof constraints === 'object' ? (constraints as Record<string, unknown>) : {};
+          const cons =
+            constraints && typeof constraints === 'object'
+              ? (constraints as Record<string, unknown>)
+              : {};
           const col: DumpColumn = { name: cn, type: typeof ct === 'string' ? ct : 'text' };
           if (typeof cons.nullable === 'boolean') col.nullable = cons.nullable;
           if (cons.primaryKey === true) col.primaryKey = true;

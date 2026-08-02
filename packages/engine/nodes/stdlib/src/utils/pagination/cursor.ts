@@ -8,7 +8,7 @@ import type { PaginationStrategy, PaginationContext, PaginationState } from './s
 import { pickByPath } from './strategy.js';
 
 export interface CursorOptions {
-  cursorParam?: string;       // default 'cursor'
+  cursorParam?: string; // default 'cursor'
   cursorResponseField?: string; // default 'next_cursor'
 }
 

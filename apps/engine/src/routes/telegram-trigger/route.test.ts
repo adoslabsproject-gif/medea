@@ -16,14 +16,23 @@ import { __resetWebhookIdempotency } from '@/routes/webhook-guards.js';
 const eventBus: IEventBus = { emit: vi.fn(), on: vi.fn() } as unknown as IEventBus;
 const SECRET = 'tg-secret-demo';
 
-function makeWorkflow(configOver: Record<string, unknown> = {}, over: Record<string, unknown> = {}) {
+function makeWorkflow(
+  configOver: Record<string, unknown> = {},
+  over: Record<string, unknown> = {},
+) {
   return {
     id: 'wf-tg',
     tenantId: 'tenant-1',
     name: 'Pizzeria bot TG',
     enabled: true,
     nodes: [
-      { id: 'tg-node-1', defId: 'trigger_telegram', config: { secretToken: SECRET, ...configOver }, x: 0, y: 0 },
+      {
+        id: 'tg-node-1',
+        defId: 'trigger_telegram',
+        config: { secretToken: SECRET, ...configOver },
+        x: 0,
+        y: 0,
+      },
     ],
     edges: [],
     createdAt: new Date().toISOString(),
@@ -36,13 +45,20 @@ function update(updateId: number, text = 'una margherita', chatId = 42): string 
   return JSON.stringify({
     update_id: updateId,
     message: {
-      message_id: 5, from: { id: 777, username: 'nicola84', first_name: 'Nicola' },
-      chat: { id: chatId, type: 'private' }, date: 1751810400, text,
+      message_id: 5,
+      from: { id: 777, username: 'nicola84', first_name: 'Nicola' },
+      chat: { id: chatId, type: 'private' },
+      date: 1751810400,
+      text,
     },
   });
 }
 
-async function post(app: ReturnType<typeof createTelegramTriggerRoutes>, body: string, secret: string | null = SECRET) {
+async function post(
+  app: ReturnType<typeof createTelegramTriggerRoutes>,
+  body: string,
+  secret: string | null = SECRET,
+) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (secret !== null) headers['X-Telegram-Bot-Api-Secret-Token'] = secret;
   return app.request('/telegram/wf-tg', { method: 'POST', headers, body });
@@ -55,7 +71,9 @@ beforeEach(() => {
   __resetWebhookIdempotency();
   workflowGetAnyTenant = vi.fn(async (id: string) => (id === 'wf-tg' ? makeWorkflow() : null));
   runExecute = vi.fn(async () => ({ runId: 'r-1', status: 'completed', steps: [] }));
-  vi.spyOn(WorkflowService.prototype, 'getByIdAnyTenant').mockImplementation(workflowGetAnyTenant as never);
+  vi.spyOn(WorkflowService.prototype, 'getByIdAnyTenant').mockImplementation(
+    workflowGetAnyTenant as never,
+  );
   vi.spyOn(RunService.prototype, 'execute').mockImplementation(runExecute as never);
 });
 
@@ -71,7 +89,11 @@ describe('POST /telegram/:workflowId', () => {
     expect(arg.triggerType).toBe('telegram');
     expect(arg.tenantId).toBe('tenant-1');
     expect(arg.triggerInput).toMatchObject({
-      kind: 'message', updateId: 1, chatId: 42, userId: 777, text: 'una margherita',
+      kind: 'message',
+      updateId: 1,
+      chatId: 42,
+      userId: 777,
+      text: 'una margherita',
     });
   });
 
@@ -105,7 +127,13 @@ describe('POST /telegram/:workflowId', () => {
   it('edited_message IGNORATO di default; incluso con includeEdited=true', async () => {
     const edited = JSON.stringify({
       update_id: 6,
-      edited_message: { message_id: 5, from: { id: 777 }, chat: { id: 42, type: 'private' }, date: 1751810400, text: 'edit' },
+      edited_message: {
+        message_id: 5,
+        from: { id: 777 },
+        chat: { id: 42, type: 'private' },
+        date: 1751810400,
+        text: 'edit',
+      },
     });
     const app = makeApp();
     await post(app, edited);
@@ -113,10 +141,12 @@ describe('POST /telegram/:workflowId', () => {
     workflowGetAnyTenant.mockResolvedValue(makeWorkflow({ includeEdited: 'true' }));
     await post(makeApp(), JSON.stringify({ ...JSON.parse(edited), update_id: 7 }));
     expect(runExecute).toHaveBeenCalledTimes(1);
-    expect((runExecute.mock.calls[0]![0] as { triggerInput: { kind: string } }).triggerInput.kind).toBe('edited');
+    expect(
+      (runExecute.mock.calls[0]![0] as { triggerInput: { kind: string } }).triggerInput.kind,
+    ).toBe('edited');
   });
 
-  it('chatIdFilter: update di un\'ALTRA chat → scartato', async () => {
+  it("chatIdFilter: update di un'ALTRA chat → scartato", async () => {
     workflowGetAnyTenant.mockResolvedValue(makeWorkflow({ chatIdFilter: '42' }));
     const res = await post(makeApp(), update(8, 'x', 999));
     expect(await res.json()).toMatchObject({ received: 0 });
@@ -141,10 +171,14 @@ describe('POST /telegram/:workflowId', () => {
 
   it('workflow inesistente o senza nodo trigger_telegram → 404', async () => {
     const res = await makeApp().request('/telegram/wf-nope', {
-      method: 'POST', headers: { 'X-Telegram-Bot-Api-Secret-Token': SECRET }, body: update(11),
+      method: 'POST',
+      headers: { 'X-Telegram-Bot-Api-Secret-Token': SECRET },
+      body: update(11),
     });
     expect(res.status).toBe(404);
-    workflowGetAnyTenant.mockResolvedValue(makeWorkflow({}, { nodes: [{ id: 'n', defId: 'trigger_webhook', config: {}, x: 0, y: 0 }] }));
+    workflowGetAnyTenant.mockResolvedValue(
+      makeWorkflow({}, { nodes: [{ id: 'n', defId: 'trigger_webhook', config: {}, x: 0, y: 0 }] }),
+    );
     const res2 = await post(makeApp(), update(12));
     expect(res2.status).toBe(404);
   });

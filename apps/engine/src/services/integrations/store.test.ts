@@ -34,7 +34,9 @@ vi.mock('@/storage/db.js', () => ({
 
 vi.mock('@/services/audit.service.js', () => ({
   AuditLogService: class {
-    append(args: unknown) { return m.auditAppend(args); }
+    append(args: unknown) {
+      return m.auditAppend(args);
+    }
   },
 }));
 
@@ -128,20 +130,26 @@ describe('saveIntegration — insert + audit', () => {
 
   it('label vuoto/whitespace → normalizzato a null', async () => {
     const r = await store.saveIntegration({ ...baseSave(), label: '   ' });
-    const row = m.db!.prepare('SELECT label FROM tenant_integrations WHERE id = ?').get(r.id) as { label: string | null };
+    const row = m.db!.prepare('SELECT label FROM tenant_integrations WHERE id = ?').get(r.id) as {
+      label: string | null;
+    };
     expect(row.label).toBeNull();
   });
 
   it('label trim: "  Live  " → "Live"', async () => {
     const r = await store.saveIntegration({ ...baseSave(), label: '  Live  ' });
-    const row = m.db!.prepare('SELECT label FROM tenant_integrations WHERE id = ?').get(r.id) as { label: string };
+    const row = m.db!.prepare('SELECT label FROM tenant_integrations WHERE id = ?').get(r.id) as {
+      label: string;
+    };
     expect(row.label).toBe('Live');
   });
 
   it('expiresAt unix epoch passato a DB', async () => {
     const exp = Date.now() + 3600_000;
     const r = await store.saveIntegration({ ...baseSave(), expiresAt: exp });
-    const row = m.db!.prepare('SELECT expires_at FROM tenant_integrations WHERE id = ?').get(r.id) as { expires_at: number };
+    const row = m
+      .db!.prepare('SELECT expires_at FROM tenant_integrations WHERE id = ?')
+      .get(r.id) as { expires_at: number };
     expect(row.expires_at).toBe(exp);
   });
 });
@@ -162,12 +170,20 @@ describe('saveIntegration — rotation (idempotent upsert)', () => {
 
   it('cipher cambia dopo rotate (re-encrypted, no leak vecchio cipher)', async () => {
     const a = await store.saveIntegration(baseSave());
-    const cipherA = (m.db!.prepare('SELECT credentials_encrypted FROM tenant_integrations WHERE id = ?').get(a.id) as { credentials_encrypted: Buffer }).credentials_encrypted;
+    const cipherA = (
+      m
+        .db!.prepare('SELECT credentials_encrypted FROM tenant_integrations WHERE id = ?')
+        .get(a.id) as { credentials_encrypted: Buffer }
+    ).credentials_encrypted;
     await store.saveIntegration({
       ...baseSave(),
       credentials: { secret_key: 'totally-different-key' },
     });
-    const cipherB = (m.db!.prepare('SELECT credentials_encrypted FROM tenant_integrations WHERE id = ?').get(a.id) as { credentials_encrypted: Buffer }).credentials_encrypted;
+    const cipherB = (
+      m
+        .db!.prepare('SELECT credentials_encrypted FROM tenant_integrations WHERE id = ?')
+        .get(a.id) as { credentials_encrypted: Buffer }
+    ).credentials_encrypted;
     expect(cipherA.equals(cipherB)).toBe(false);
   });
 
@@ -180,29 +196,45 @@ describe('saveIntegration — rotation (idempotent upsert)', () => {
 
   it('rotation aggiorna updated_at', async () => {
     const a = await store.saveIntegration(baseSave());
-    const tBefore = (m.db!.prepare('SELECT updated_at FROM tenant_integrations WHERE id = ?').get(a.id) as { updated_at: string }).updated_at;
+    const tBefore = (
+      m.db!.prepare('SELECT updated_at FROM tenant_integrations WHERE id = ?').get(a.id) as {
+        updated_at: string;
+      }
+    ).updated_at;
     await new Promise((r) => setTimeout(r, 10));
     await store.saveIntegration(baseSave());
-    const tAfter = (m.db!.prepare('SELECT updated_at FROM tenant_integrations WHERE id = ?').get(a.id) as { updated_at: string }).updated_at;
+    const tAfter = (
+      m.db!.prepare('SELECT updated_at FROM tenant_integrations WHERE id = ?').get(a.id) as {
+        updated_at: string;
+      }
+    ).updated_at;
     expect(tAfter >= tBefore).toBe(true);
   });
 });
 
 describe('saveIntegration — validation', () => {
   it('tenantId missing → throw', async () => {
-    await expect(store.saveIntegration({ ...baseSave(), tenantId: '' })).rejects.toThrow(/tenantId/u);
+    await expect(store.saveIntegration({ ...baseSave(), tenantId: '' })).rejects.toThrow(
+      /tenantId/u,
+    );
   });
 
   it('provider missing → throw', async () => {
-    await expect(store.saveIntegration({ ...baseSave(), provider: undefined as never })).rejects.toThrow(/provider/u);
+    await expect(
+      store.saveIntegration({ ...baseSave(), provider: undefined as never }),
+    ).rejects.toThrow(/provider/u);
   });
 
   it('credentials non-object → throw', async () => {
-    await expect(store.saveIntegration({ ...baseSave(), credentials: 'string' as never })).rejects.toThrow(/credentials/u);
+    await expect(
+      store.saveIntegration({ ...baseSave(), credentials: 'string' as never }),
+    ).rejects.toThrow(/credentials/u);
   });
 
   it('credentials null → throw', async () => {
-    await expect(store.saveIntegration({ ...baseSave(), credentials: null as never })).rejects.toThrow();
+    await expect(
+      store.saveIntegration({ ...baseSave(), credentials: null as never }),
+    ).rejects.toThrow();
   });
 });
 
@@ -220,9 +252,19 @@ describe('getIntegration — decrypt + last_used_at touch', () => {
 
   it('last_used_at viene aggiornato post-get', async () => {
     await store.saveIntegration(baseSave());
-    expect((m.db!.prepare('SELECT last_used_at FROM tenant_integrations').get() as { last_used_at: string | null }).last_used_at).toBeNull();
+    expect(
+      (
+        m.db!.prepare('SELECT last_used_at FROM tenant_integrations').get() as {
+          last_used_at: string | null;
+        }
+      ).last_used_at,
+    ).toBeNull();
     store.getIntegration({ provider: 'stripe', tenantId: 'tA', label: 'Live' });
-    const after = (m.db!.prepare('SELECT last_used_at FROM tenant_integrations').get() as { last_used_at: string | null }).last_used_at;
+    const after = (
+      m.db!.prepare('SELECT last_used_at FROM tenant_integrations').get() as {
+        last_used_at: string | null;
+      }
+    ).last_used_at;
     expect(after).not.toBeNull();
   });
 
@@ -244,7 +286,9 @@ describe('getIntegration — decrypt + last_used_at touch', () => {
     const { label: _omitLabel, ...withoutLabel } = baseSave();
     void _omitLabel;
     await store.saveIntegration(withoutLabel);
-    expect(store.getIntegration({ provider: 'stripe', tenantId: 'tA', label: null })).not.toBeNull();
+    expect(
+      store.getIntegration({ provider: 'stripe', tenantId: 'tA', label: null }),
+    ).not.toBeNull();
     expect(store.getIntegration({ provider: 'stripe', tenantId: 'tA', label: '' })).not.toBeNull();
   });
 });
@@ -253,14 +297,23 @@ describe('updateIntegrationCredentials — OAuth refresh path', () => {
   it('happy path: cipher rotato, no audit row (debug log only)', async () => {
     const a = await store.saveIntegration(baseSave());
     m.auditAppend.mockReset();
-    const cipherBefore = (m.db!.prepare('SELECT credentials_encrypted FROM tenant_integrations WHERE id = ?').get(a.id) as { credentials_encrypted: Buffer }).credentials_encrypted;
+    const cipherBefore = (
+      m
+        .db!.prepare('SELECT credentials_encrypted FROM tenant_integrations WHERE id = ?')
+        .get(a.id) as { credentials_encrypted: Buffer }
+    ).credentials_encrypted;
     const ok = await store.updateIntegrationCredentials({
-      id: a.id, tenantId: 'tA',
+      id: a.id,
+      tenantId: 'tA',
       credentials: { access_token: 'NEW-ACCESS', refresh_token: 'RT' },
       expiresAt: 99999,
     });
     expect(ok).toBe(true);
-    const cipherAfter = (m.db!.prepare('SELECT credentials_encrypted FROM tenant_integrations WHERE id = ?').get(a.id) as { credentials_encrypted: Buffer }).credentials_encrypted;
+    const cipherAfter = (
+      m
+        .db!.prepare('SELECT credentials_encrypted FROM tenant_integrations WHERE id = ?')
+        .get(a.id) as { credentials_encrypted: Buffer }
+    ).credentials_encrypted;
     expect(cipherAfter.equals(cipherBefore)).toBe(false);
     // get conferma decrypt nuove creds
     const got = store.getIntegration({ provider: 'stripe', tenantId: 'tA', label: 'Live' });
@@ -273,7 +326,8 @@ describe('updateIntegrationCredentials — OAuth refresh path', () => {
   it('🚨 cross-tenant: tenant B → 0 changes (false)', async () => {
     const a = await store.saveIntegration({ ...baseSave(), tenantId: 'tA' });
     const ok = await store.updateIntegrationCredentials({
-      id: a.id, tenantId: 'tB',
+      id: a.id,
+      tenantId: 'tB',
       credentials: { stolen: true },
     });
     expect(ok).toBe(false);
@@ -281,15 +335,21 @@ describe('updateIntegrationCredentials — OAuth refresh path', () => {
 
   it('id inesistente → false', async () => {
     const ok = await store.updateIntegrationCredentials({
-      id: 'fake', tenantId: 'tA', credentials: {},
+      id: 'fake',
+      tenantId: 'tA',
+      credentials: {},
     });
     expect(ok).toBe(false);
   });
 
   it('id missing → throw', async () => {
-    await expect(store.updateIntegrationCredentials({
-      id: '', tenantId: 'tA', credentials: {},
-    })).rejects.toThrow(/id/u);
+    await expect(
+      store.updateIntegrationCredentials({
+        id: '',
+        tenantId: 'tA',
+        credentials: {},
+      }),
+    ).rejects.toThrow(/id/u);
   });
 });
 

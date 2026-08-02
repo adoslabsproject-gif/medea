@@ -16,10 +16,15 @@ import { analyzeExecutor } from '@/services/node-generator/executor-ast.js';
 
 export interface CoherenceDefView {
   // `| undefined` espliciti: compatibile con NodeDef sotto exactOptionalPropertyTypes.
-  configFields?: readonly { key: string; type?: string | undefined; options?: readonly string[] | undefined }[] | undefined;
+  configFields?:
+    | readonly { key: string; type?: string | undefined; options?: readonly string[] | undefined }[]
+    | undefined;
 }
 
-export type CoherenceViolationKind = 'unknown_config_key' | 'undeclared_secret' | 'select_without_options';
+export type CoherenceViolationKind =
+  | 'unknown_config_key'
+  | 'undeclared_secret'
+  | 'select_without_options';
 
 export interface CoherenceViolation {
   kind: CoherenceViolationKind;
@@ -27,7 +32,10 @@ export interface CoherenceViolation {
   message: string;
 }
 
-export function validateCoherence(def: CoherenceDefView, executorSource: string): CoherenceViolation[] {
+export function validateCoherence(
+  def: CoherenceDefView,
+  executorSource: string,
+): CoherenceViolation[] {
   const facts = analyzeExecutor(executorSource);
   const fields = def.configFields ?? [];
   const fieldKeys = new Set(fields.map((f) => f.key));
@@ -38,7 +46,8 @@ export function validateCoherence(def: CoherenceDefView, executorSource: string)
   for (const key of facts.configKeysUsed) {
     if (!fieldKeys.has(key)) {
       out.push({
-        kind: 'unknown_config_key', severity: 'error',
+        kind: 'unknown_config_key',
+        severity: 'error',
         message: `L'executor legge \`config.${key}\` ma "${key}" non è tra i configFields del nodo: aggiungilo o correggi il riferimento.`,
       });
     }
@@ -47,7 +56,8 @@ export function validateCoherence(def: CoherenceDefView, executorSource: string)
   for (const name of facts.secretsUsed) {
     if (!secretKeys.has(name)) {
       out.push({
-        kind: 'undeclared_secret', severity: 'error',
+        kind: 'undeclared_secret',
+        severity: 'error',
         message: `L'executor usa il secret "${name}" ma non esiste un configField "${name}" di type "secret": dichiaralo.`,
       });
     }
@@ -56,7 +66,8 @@ export function validateCoherence(def: CoherenceDefView, executorSource: string)
   for (const f of fields) {
     if (f.type === 'select' && (!f.options || f.options.length === 0)) {
       out.push({
-        kind: 'select_without_options', severity: 'warning',
+        kind: 'select_without_options',
+        severity: 'warning',
         message: `Il configField "${f.key}" è di type "select" ma non ha "options".`,
       });
     }

@@ -14,7 +14,9 @@ vi.mock('./logger.js', () => ({ loggerFor: loggerForSpy }));
 
 import { auditCrossTenantAccess } from './audit-log.js';
 
-beforeEach(() => { warnSpy.mockReset(); });
+beforeEach(() => {
+  warnSpy.mockReset();
+});
 
 describe('auditCrossTenantAccess', () => {
   it('instrada sul canale audit (loggerFor con prefisso "audit.")', () => {
@@ -22,12 +24,22 @@ describe('auditCrossTenantAccess', () => {
   });
 
   it('emette payload completo + messaggio leggibile', () => {
-    auditCrossTenantAccess({ userId: 'u-1', email: 'admin@x.it', action: 'dashboard.stream', scope: 'all-tenants', ip: '1.2.3.4' });
+    auditCrossTenantAccess({
+      userId: 'u-1',
+      email: 'admin@x.it',
+      action: 'dashboard.stream',
+      scope: 'all-tenants',
+      ip: '1.2.3.4',
+    });
     expect(warnSpy).toHaveBeenCalledTimes(1);
     const [payload, msg] = warnSpy.mock.calls[0]!;
     expect(payload).toMatchObject({
-      event: 'cross_tenant_access', userId: 'u-1', email: 'admin@x.it',
-      action: 'dashboard.stream', scope: 'all-tenants', ip: '1.2.3.4',
+      event: 'cross_tenant_access',
+      userId: 'u-1',
+      email: 'admin@x.it',
+      action: 'dashboard.stream',
+      scope: 'all-tenants',
+      ip: '1.2.3.4',
     });
     expect(String(msg)).toContain('dashboard.stream');
     expect(String(msg)).toContain('all-tenants');
@@ -36,6 +48,10 @@ describe('auditCrossTenantAccess', () => {
   it('campi opzionali assenti → payload senza email/ip (no undefined spurio)', () => {
     auditCrossTenantAccess({ userId: 'u-2', action: 'dashboard.workflows', scope: 'all-tenants' });
     const [payload] = warnSpy.mock.calls[0]!;
-    expect(payload).toMatchObject({ event: 'cross_tenant_access', userId: 'u-2', action: 'dashboard.workflows' });
+    expect(payload).toMatchObject({
+      event: 'cross_tenant_access',
+      userId: 'u-2',
+      action: 'dashboard.workflows',
+    });
   });
 });

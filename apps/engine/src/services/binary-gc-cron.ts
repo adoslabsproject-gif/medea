@@ -37,9 +37,13 @@ export function startBinaryGcCron(): void {
   // Jitter ±5 min sul primo run per anti-convergence multi-tenant.
   const jitterMs = Math.floor((Math.random() - 0.5) * 10 * 60 * 1000);
   const firstFire = 15 * 60 * 1000 + jitterMs; // 15min nominal ± 5min
-  firstFireTimer = setTimeout(() => { void runOnce(); }, firstFire);
+  firstFireTimer = setTimeout(() => {
+    void runOnce();
+  }, firstFire);
   firstFireTimer.unref?.();
-  timer = setInterval(() => { void runOnce(); }, HOUR_MS);
+  timer = setInterval(() => {
+    void runOnce();
+  }, HOUR_MS);
   timer.unref?.();
   logger.info?.({ firstFireMs: firstFire }, 'binary-gc-cron started');
 }

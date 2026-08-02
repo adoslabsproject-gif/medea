@@ -18,9 +18,9 @@
 
 /** Tipi di auto-fix che indicano un grafo LLM strutturalmente incompleto/errato. */
 export const STRUCTURAL_FIX_TYPES: ReadonlySet<string> = new Set([
-  'orphan_edge_healed',     // edge verso un nodo merge mai emesso
-  'fan_in_merge_inserted',  // N branch convergenti senza aggregator
-  'merge_duplicate_nodes',  // nodi identici duplicati dalla LLM
+  'orphan_edge_healed', // edge verso un nodo merge mai emesso
+  'fan_in_merge_inserted', // N branch convergenti senza aggregator
+  'merge_duplicate_nodes', // nodi identici duplicati dalla LLM
 ]);
 
 /** True se uno dei fix applicati è STRUTTURALE. */
@@ -32,7 +32,10 @@ export function hasStructuralFix(appliedFixTypes: readonly string[]): boolean {
  * Un workflow è cache-worthy SOLO se non ha richiesto heal strutturali E non ha
  * warning del quality-gate. I fix triviali sono tollerati.
  */
-export function isWorkflowCacheWorthy(appliedFixTypes: readonly string[], qualityWarningsCount: number): boolean {
+export function isWorkflowCacheWorthy(
+  appliedFixTypes: readonly string[],
+  qualityWarningsCount: number,
+): boolean {
   return !hasStructuralFix(appliedFixTypes) && qualityWarningsCount === 0;
 }
 

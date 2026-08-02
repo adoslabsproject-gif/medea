@@ -114,10 +114,12 @@ describe('create() — validation paths', () => {
     expect(r.ok).toBe(true);
     expect(m.repoUpsert).toHaveBeenCalled();
     expect(m.registryRegister).toHaveBeenCalled();
-    expect(m.auditEmit).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'janitor.dsl_rule.created',
-      actorId: 'admin-1',
-    }));
+    expect(m.auditEmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'janitor.dsl_rule.created',
+        actorId: 'admin-1',
+      }),
+    );
   });
 
   it('rule id pattern: dsl_<nanoid10>', async () => {
@@ -157,40 +159,50 @@ describe('create() — validation paths', () => {
   });
 
   it('🚨 detectSql NON è SELECT → Err', async () => {
-    const r = await makeUseCase().create(baseInput({
-      detectSql: 'DELETE FROM users WHERE id = 1',
-    }));
+    const r = await makeUseCase().create(
+      baseInput({
+        detectSql: 'DELETE FROM users WHERE id = 1',
+      }),
+    );
     expect(r.ok).toBe(false);
     expect((r as { error: string }).error).toContain('detectSql deve essere SELECT');
   });
 
   it('🚨 detectSql con WITH → ok (CTE allowed)', async () => {
-    const r = await makeUseCase().create(baseInput({
-      detectSql: 'WITH t AS (SELECT id FROM users) SELECT id FROM t',
-    }));
+    const r = await makeUseCase().create(
+      baseInput({
+        detectSql: 'WITH t AS (SELECT id FROM users) SELECT id FROM t',
+      }),
+    );
     expect(r.ok).toBe(true);
   });
 
   it('🚨 repairSql NON è UPDATE → Err', async () => {
-    const r = await makeUseCase().create(baseInput({
-      repairSql: 'DELETE FROM users WHERE id = ?',
-    }));
+    const r = await makeUseCase().create(
+      baseInput({
+        repairSql: 'DELETE FROM users WHERE id = ?',
+      }),
+    );
     expect(r.ok).toBe(false);
     expect((r as { error: string }).error).toContain('repairSql deve essere UPDATE');
   });
 
   it('🚨 repairSql INSERT → Err', async () => {
-    const r = await makeUseCase().create(baseInput({
-      repairSql: 'INSERT INTO users(id) VALUES (1)',
-    }));
+    const r = await makeUseCase().create(
+      baseInput({
+        repairSql: 'INSERT INTO users(id) VALUES (1)',
+      }),
+    );
     expect(r.ok).toBe(false);
   });
 
   it('🚨 detectSql NON menziona PK column → Err', async () => {
-    const r = await makeUseCase().create(baseInput({
-      targetPkColumn: 'id',
-      detectSql: 'SELECT name FROM users WHERE state = ?', // no `id`
-    }));
+    const r = await makeUseCase().create(
+      baseInput({
+        targetPkColumn: 'id',
+        detectSql: 'SELECT name FROM users WHERE state = ?', // no `id`
+      }),
+    );
     expect(r.ok).toBe(false);
     expect((r as { error: string }).error).toContain('detectSql deve selezionare la colonna PK');
   });
@@ -236,7 +248,9 @@ describe('create() — validation paths', () => {
   it('default severity/schedule/maxRows applicati', async () => {
     await makeUseCase().create(baseInput());
     const rule = m.repoUpsert.mock.calls[0]?.[0] as {
-      defaultSeverity: string; defaultSchedule: string; defaultMaxRowsPerRun: number;
+      defaultSeverity: string;
+      defaultSchedule: string;
+      defaultMaxRowsPerRun: number;
     };
     expect(rule.defaultSeverity).toBe('warning');
     expect(rule.defaultSchedule).toBe('*/30 * * * *');
@@ -274,15 +288,20 @@ describe('update()', () => {
   it('🚨 happy: partial update → upsert + re-register + audit', async () => {
     m.repoGet.mockResolvedValue(existing);
     const r = await makeUseCase().update({
-      id: 'dsl_existing', tenantId: 't1', title: 'new title', updatedBy: 'admin-2',
+      id: 'dsl_existing',
+      tenantId: 't1',
+      title: 'new title',
+      updatedBy: 'admin-2',
     });
     expect(r.ok).toBe(true);
     expect(m.registryUnregister).toHaveBeenCalledWith('dsl_existing');
     expect(m.registryRegister).toHaveBeenCalled();
-    expect(m.auditEmit).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'janitor.dsl_rule.updated',
-      actorId: 'admin-2',
-    }));
+    expect(m.auditEmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'janitor.dsl_rule.updated',
+        actorId: 'admin-2',
+      }),
+    );
   });
 
   it('🚨 rule not found → Err "non trovata"', async () => {
@@ -302,7 +321,9 @@ describe('update()', () => {
   it('🚨 repairSql=null → rimuove repairSql dalla rule', async () => {
     m.repoGet.mockResolvedValue({ ...existing, repairSql: 'UPDATE users SET x = ?' });
     const r = await makeUseCase().update({
-      id: 'dsl_existing', tenantId: 't1', repairSql: null,
+      id: 'dsl_existing',
+      tenantId: 't1',
+      repairSql: null,
     });
     expect(r.ok).toBe(true);
     const merged = m.repoUpsert.mock.calls[0]?.[0] as { repairSql?: string };
@@ -312,7 +333,9 @@ describe('update()', () => {
   it('repairSql=undefined → mantieni existing', async () => {
     m.repoGet.mockResolvedValue({ ...existing, repairSql: 'UPDATE users SET x = ?' });
     const r = await makeUseCase().update({
-      id: 'dsl_existing', tenantId: 't1', title: 'new title',
+      id: 'dsl_existing',
+      tenantId: 't1',
+      title: 'new title',
     });
     expect(r.ok).toBe(true);
     const merged = m.repoUpsert.mock.calls[0]?.[0] as { repairSql?: string };
@@ -322,7 +345,9 @@ describe('update()', () => {
   it('🚨 repairSql nuovo string → validato + applied', async () => {
     m.repoGet.mockResolvedValue(existing);
     const r = await makeUseCase().update({
-      id: 'dsl_existing', tenantId: 't1', repairSql: 'UPDATE users SET state = 0',
+      id: 'dsl_existing',
+      tenantId: 't1',
+      repairSql: 'UPDATE users SET state = 0',
     });
     expect(r.ok).toBe(true);
     const merged = m.repoUpsert.mock.calls[0]?.[0] as { repairSql: string };
@@ -332,7 +357,8 @@ describe('update()', () => {
   it('🚨 nuovo detectSql validato → se NON SELECT → Err + no upsert', async () => {
     m.repoGet.mockResolvedValue(existing);
     const r = await makeUseCase().update({
-      id: 'dsl_existing', tenantId: 't1',
+      id: 'dsl_existing',
+      tenantId: 't1',
       detectSql: 'DELETE FROM users WHERE id = ?',
     });
     expect(r.ok).toBe(false);
@@ -347,10 +373,12 @@ describe('delete()', () => {
     expect(r.ok).toBe(true);
     expect(m.repoDelete).toHaveBeenCalledWith('dsl_x', 't1');
     expect(m.registryUnregister).toHaveBeenCalledWith('dsl_x');
-    expect(m.auditEmit).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'janitor.dsl_rule.deleted',
-      actorId: 'admin-3',
-    }));
+    expect(m.auditEmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'janitor.dsl_rule.deleted',
+        actorId: 'admin-3',
+      }),
+    );
   });
 
   it('🚨 rule not found → Err + no delete', async () => {

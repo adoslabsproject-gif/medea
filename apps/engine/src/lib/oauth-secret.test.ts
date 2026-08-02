@@ -35,15 +35,17 @@ describe('oauth-secret — envelope AES-256-GCM del client_secret', () => {
 
   it('resolveClientSecret: record CIFRATO → decifra', () => {
     const c = encryptClientSecret('sekret-value');
-    expect(resolveClientSecret({
-      client_secret: '',
-      client_secret_ciphertext: c.ciphertext,
-      client_secret_nonce: c.nonce,
-      client_secret_auth_tag: c.authTag,
-      client_secret_dek_ciphertext: c.dekCiphertext,
-      client_secret_dek_nonce: c.dekNonce,
-      client_secret_dek_auth_tag: c.dekAuthTag,
-    })).toBe('sekret-value');
+    expect(
+      resolveClientSecret({
+        client_secret: '',
+        client_secret_ciphertext: c.ciphertext,
+        client_secret_nonce: c.nonce,
+        client_secret_auth_tag: c.authTag,
+        client_secret_dek_ciphertext: c.dekCiphertext,
+        client_secret_dek_nonce: c.dekNonce,
+        client_secret_dek_auth_tag: c.dekAuthTag,
+      }),
+    ).toBe('sekret-value');
   });
 
   it('resolveClientSecret: record LEGACY (solo plaintext) → as-is (backward-compat)', () => {
@@ -53,14 +55,16 @@ describe('oauth-secret — envelope AES-256-GCM del client_secret', () => {
   it('resolveClientSecret: cipher PARZIALE (manca un campo) → legacy fallback, non decifra a metà', () => {
     const c = encryptClientSecret('y');
     // manca dek_auth_tag → non sono presenti tutti i 6 → fallback al plaintext.
-    expect(resolveClientSecret({
-      client_secret: 'fallback',
-      client_secret_ciphertext: c.ciphertext,
-      client_secret_nonce: c.nonce,
-      client_secret_auth_tag: c.authTag,
-      client_secret_dek_ciphertext: c.dekCiphertext,
-      client_secret_dek_nonce: c.dekNonce,
-      client_secret_dek_auth_tag: null,
-    })).toBe('fallback');
+    expect(
+      resolveClientSecret({
+        client_secret: 'fallback',
+        client_secret_ciphertext: c.ciphertext,
+        client_secret_nonce: c.nonce,
+        client_secret_auth_tag: c.authTag,
+        client_secret_dek_ciphertext: c.dekCiphertext,
+        client_secret_dek_nonce: c.dekNonce,
+        client_secret_dek_auth_tag: null,
+      }),
+    ).toBe('fallback');
   });
 });

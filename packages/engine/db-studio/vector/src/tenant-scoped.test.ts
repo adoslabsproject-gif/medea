@@ -68,7 +68,9 @@ describe('TenantScopedVectorStore — anti-forgiatura del namespace', () => {
 
   it('un nome collection con "::" è RIFIUTATO (no escape verso altri tenant)', async () => {
     const a = new TenantScopedVectorStore(backend, 'tenant-aaa');
-    await expect(a.ensureCollection('tenant-bbb::docs', DIM, 'cosine')).rejects.toThrow(TenantIsolationError);
+    await expect(a.ensureCollection('tenant-bbb::docs', DIM, 'cosine')).rejects.toThrow(
+      TenantIsolationError,
+    );
     await expect(a.search('tenant-bbb::docs', { vector: vec(1) })).rejects.toThrow(/non valido/);
     await expect(a.countCollection('x::y')).rejects.toThrow(TenantIsolationError);
   });
@@ -81,9 +83,15 @@ describe('TenantScopedVectorStore — anti-forgiatura del namespace', () => {
   });
 
   it('tenantId non valido al costruttore è RIFIUTATO', () => {
-    expect(() => new TenantScopedVectorStore(backend as IVectorAdapter, 'evil::tenant')).toThrow(TenantIsolationError);
-    expect(() => new TenantScopedVectorStore(backend as IVectorAdapter, '')).toThrow(TenantIsolationError);
-    expect(() => new TenantScopedVectorStore(backend as IVectorAdapter, 'a/b')).toThrow(TenantIsolationError);
+    expect(() => new TenantScopedVectorStore(backend as IVectorAdapter, 'evil::tenant')).toThrow(
+      TenantIsolationError,
+    );
+    expect(() => new TenantScopedVectorStore(backend as IVectorAdapter, '')).toThrow(
+      TenantIsolationError,
+    );
+    expect(() => new TenantScopedVectorStore(backend as IVectorAdapter, 'a/b')).toThrow(
+      TenantIsolationError,
+    );
   });
 
   it('engine del wrapper riflette il backend (drop-in trasparente)', () => {

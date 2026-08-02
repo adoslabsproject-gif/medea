@@ -82,20 +82,22 @@ disk usage.
     `;
     const res = await ctx.adapter.executeRaw(sql);
     const rows = res.rows as unknown as OrphanCheckpointRow[];
-    return rows.map((r) => buildDetectedRow({
-      id: String(r.id),
-      reason: `Checkpoint per run_id="${r.run_id}" che non esiste più (cancellato dall'utente o FK non enforced)`,
-      severity: 'warning',
-      raw: {
-        id: r.id,
-        run_id: r.run_id,
-        workflow_id: r.workflow_id,
-        tenant_id: r.tenant_id,
-        at_node_id: r.at_node_id,
-        step_count: r.step_count,
-        created_at: r.created_at,
-      },
-      ...(r.tenant_id ? { tenantId: r.tenant_id } : {}),
-    }));
+    return rows.map((r) =>
+      buildDetectedRow({
+        id: String(r.id),
+        reason: `Checkpoint per run_id="${r.run_id}" che non esiste più (cancellato dall'utente o FK non enforced)`,
+        severity: 'warning',
+        raw: {
+          id: r.id,
+          run_id: r.run_id,
+          workflow_id: r.workflow_id,
+          tenant_id: r.tenant_id,
+          at_node_id: r.at_node_id,
+          step_count: r.step_count,
+          created_at: r.created_at,
+        },
+        ...(r.tenant_id ? { tenantId: r.tenant_id } : {}),
+      }),
+    );
   },
 };

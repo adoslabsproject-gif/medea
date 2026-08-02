@@ -12,7 +12,13 @@ describe('postgres schema', () => {
   });
 
   it('every tenanted table has a tenant_id column', () => {
-    const tenanted = [schema.users, schema.workflows, schema.runs, schema.credentials, schema.auditLog];
+    const tenanted = [
+      schema.users,
+      schema.workflows,
+      schema.runs,
+      schema.credentials,
+      schema.auditLog,
+    ];
     for (const table of tenanted) {
       const cols = Object.keys(table);
       expect(cols).toContain('tenantId');

@@ -7,7 +7,10 @@
 import { describe, it, expect } from 'vitest';
 import { readCookie, extractWsSessionToken } from './ws-auth.js';
 
-function req(cookie?: string, url = '/api/v1/custom-nodes/lsp'): { headers: { cookie?: string }; url: string } {
+function req(
+  cookie?: string,
+  url = '/api/v1/custom-nodes/lsp',
+): { headers: { cookie?: string }; url: string } {
   return { headers: cookie === undefined ? {} : { cookie }, url };
 }
 
@@ -38,10 +41,14 @@ describe('extractWsSessionToken', () => {
     expect(extractWsSessionToken(req('ff_session=legacy; __Host-ff_session=host'))).toBe('host');
   });
   it('COOKIE ha priorità su ?token= (no leak in URL)', () => {
-    expect(extractWsSessionToken(req('ff_session=cook', '/api/v1/custom-nodes/lsp?token=urltok'))).toBe('cook');
+    expect(
+      extractWsSessionToken(req('ff_session=cook', '/api/v1/custom-nodes/lsp?token=urltok')),
+    ).toBe('cook');
   });
   it('fallback a ?token= se nessun cookie (dev/non-browser)', () => {
-    expect(extractWsSessionToken(req(undefined, '/api/v1/custom-nodes/lsp?token=urltok'))).toBe('urltok');
+    expect(extractWsSessionToken(req(undefined, '/api/v1/custom-nodes/lsp?token=urltok'))).toBe(
+      'urltok',
+    );
   });
   it('null se né cookie né token', () => {
     expect(extractWsSessionToken(req(undefined, '/api/v1/custom-nodes/lsp'))).toBeNull();

@@ -43,9 +43,9 @@ beforeEach(() => {
 
 describe('legal-compliance executor — validation', () => {
   it('rejecta documentText vuoto', async () => {
-    await expect(
-      legalComplianceExecutor({ documentText: '' }, null, baseContext),
-    ).rejects.toThrow(/obbligatorio/i);
+    await expect(legalComplianceExecutor({ documentText: '' }, null, baseContext)).rejects.toThrow(
+      /obbligatorio/i,
+    );
   });
 
   it('rejecta documentText troppo corto (<200 char)', async () => {
@@ -63,20 +63,33 @@ describe('legal-compliance executor — validation', () => {
 
 describe('legal-compliance executor — analysis', () => {
   it('chunk singolo → 1 chiamata LLM, system con framework + compendio', async () => {
-    m.dispatch.mockResolvedValue(llmText({
-      findings: [
-        { severity: 'high', framework: 'gdpr', article: 'GDPR art.13', title: 'Informativa mancante lingua italiana', excerpt: '...', remediation: 'Aggiungi informativa IT' },
-      ],
-      recommendations: [],
-      summary: 'Documento incompleto.',
-      detectedType: 'privacy_policy',
-    }));
+    m.dispatch.mockResolvedValue(
+      llmText({
+        findings: [
+          {
+            severity: 'high',
+            framework: 'gdpr',
+            article: 'GDPR art.13',
+            title: 'Informativa mancante lingua italiana',
+            excerpt: '...',
+            remediation: 'Aggiungi informativa IT',
+          },
+        ],
+        recommendations: [],
+        summary: 'Documento incompleto.',
+        detectedType: 'privacy_policy',
+      }),
+    );
     const r = await legalComplianceExecutor(
       { documentText: SHORT_PRIVACY, frameworks: 'gdpr', documentType: 'auto' },
       null,
       baseContext,
     );
-    const out = r.output as { findings: { framework: string }[]; chunksProcessed: number; detectedType: string };
+    const out = r.output as {
+      findings: { framework: string }[];
+      chunksProcessed: number;
+      detectedType: string;
+    };
     expect(m.dispatch).toHaveBeenCalledOnce();
     expect(out.chunksProcessed).toBe(1);
     expect(out.findings).toHaveLength(1);
@@ -106,7 +119,19 @@ describe('legal-compliance executor — analysis', () => {
     m.dispatch.mockImplementation(async () => {
       call++;
       if (call === 1) throw new Error('gateway timeout');
-      return llmText({ findings: [{ severity: 'low', framework: 'gdpr', article: 'art.7', title: 'minor', excerpt: '', remediation: '' }], summary: '' });
+      return llmText({
+        findings: [
+          {
+            severity: 'low',
+            framework: 'gdpr',
+            article: 'art.7',
+            title: 'minor',
+            excerpt: '',
+            remediation: '',
+          },
+        ],
+        summary: '',
+      });
     });
     const longDoc = 'a'.repeat(8000);
     const r = await legalComplianceExecutor(
@@ -132,7 +157,9 @@ describe('legal-compliance executor — analysis', () => {
   });
 
   it('🚨 nessun provider LLM (resolver throw) → warning, NESSUNA chiamata, no throw', async () => {
-    m.resolve.mockImplementation(() => { throw new Error('nessun provider configurato'); });
+    m.resolve.mockImplementation(() => {
+      throw new Error('nessun provider configurato');
+    });
     m.dispatch.mockResolvedValue(llmText({ findings: [], summary: '' }));
     const r = await legalComplianceExecutor(
       { documentText: SHORT_PRIVACY, frameworks: 'gdpr' },
@@ -148,12 +175,21 @@ describe('legal-compliance executor — analysis', () => {
 
 describe('legal-compliance executor — dedup + sort + severity floor', () => {
   it('findings duplicati cross-chunk → deduplicati', async () => {
-    m.dispatch.mockResolvedValue(llmText({
-      findings: [
-        { severity: 'high', framework: 'gdpr', article: 'GDPR art.13', title: 'Stesso titolo', excerpt: 'a', remediation: 'fix' },
-      ],
-      summary: '',
-    }));
+    m.dispatch.mockResolvedValue(
+      llmText({
+        findings: [
+          {
+            severity: 'high',
+            framework: 'gdpr',
+            article: 'GDPR art.13',
+            title: 'Stesso titolo',
+            excerpt: 'a',
+            remediation: 'fix',
+          },
+        ],
+        summary: '',
+      }),
+    );
     const longDoc = 'b'.repeat(10_000); // multi-chunk, ogni chunk produce stesso finding
     const r = await legalComplianceExecutor(
       { documentText: longDoc, frameworks: 'gdpr' },
@@ -166,15 +202,45 @@ describe('legal-compliance executor — dedup + sort + severity floor', () => {
   });
 
   it('findings ordinati per severity desc (critical → high → medium → low)', async () => {
-    m.dispatch.mockResolvedValue(llmText({
-      findings: [
-        { severity: 'low', framework: 'gdpr', article: 'a1', title: 'low one', excerpt: '', remediation: '' },
-        { severity: 'critical', framework: 'gdpr', article: 'a2', title: 'crit', excerpt: '', remediation: '' },
-        { severity: 'medium', framework: 'gdpr', article: 'a3', title: 'med', excerpt: '', remediation: '' },
-        { severity: 'high', framework: 'gdpr', article: 'a4', title: 'high', excerpt: '', remediation: '' },
-      ],
-      summary: '',
-    }));
+    m.dispatch.mockResolvedValue(
+      llmText({
+        findings: [
+          {
+            severity: 'low',
+            framework: 'gdpr',
+            article: 'a1',
+            title: 'low one',
+            excerpt: '',
+            remediation: '',
+          },
+          {
+            severity: 'critical',
+            framework: 'gdpr',
+            article: 'a2',
+            title: 'crit',
+            excerpt: '',
+            remediation: '',
+          },
+          {
+            severity: 'medium',
+            framework: 'gdpr',
+            article: 'a3',
+            title: 'med',
+            excerpt: '',
+            remediation: '',
+          },
+          {
+            severity: 'high',
+            framework: 'gdpr',
+            article: 'a4',
+            title: 'high',
+            excerpt: '',
+            remediation: '',
+          },
+        ],
+        summary: '',
+      }),
+    );
     const r = await legalComplianceExecutor(
       { documentText: SHORT_PRIVACY, frameworks: 'gdpr', severityFloor: 'low' },
       null,
@@ -185,15 +251,45 @@ describe('legal-compliance executor — dedup + sort + severity floor', () => {
   });
 
   it('severityFloor=high → filtra low e medium', async () => {
-    m.dispatch.mockResolvedValue(llmText({
-      findings: [
-        { severity: 'low', framework: 'gdpr', article: 'a1', title: 'low', excerpt: '', remediation: '' },
-        { severity: 'medium', framework: 'gdpr', article: 'a2', title: 'med', excerpt: '', remediation: '' },
-        { severity: 'high', framework: 'gdpr', article: 'a3', title: 'high', excerpt: '', remediation: '' },
-        { severity: 'critical', framework: 'gdpr', article: 'a4', title: 'crit', excerpt: '', remediation: '' },
-      ],
-      summary: '',
-    }));
+    m.dispatch.mockResolvedValue(
+      llmText({
+        findings: [
+          {
+            severity: 'low',
+            framework: 'gdpr',
+            article: 'a1',
+            title: 'low',
+            excerpt: '',
+            remediation: '',
+          },
+          {
+            severity: 'medium',
+            framework: 'gdpr',
+            article: 'a2',
+            title: 'med',
+            excerpt: '',
+            remediation: '',
+          },
+          {
+            severity: 'high',
+            framework: 'gdpr',
+            article: 'a3',
+            title: 'high',
+            excerpt: '',
+            remediation: '',
+          },
+          {
+            severity: 'critical',
+            framework: 'gdpr',
+            article: 'a4',
+            title: 'crit',
+            excerpt: '',
+            remediation: '',
+          },
+        ],
+        summary: '',
+      }),
+    );
     const r = await legalComplianceExecutor(
       { documentText: SHORT_PRIVACY, frameworks: 'gdpr', severityFloor: 'high' },
       null,
@@ -216,9 +312,20 @@ describe('legal-compliance executor — score', () => {
   });
 
   it('1 critical → score 75', async () => {
-    m.dispatch.mockResolvedValue(llmText({
-      findings: [{ severity: 'critical', framework: 'gdpr', article: 'a', title: 't', excerpt: '', remediation: '' }],
-    }));
+    m.dispatch.mockResolvedValue(
+      llmText({
+        findings: [
+          {
+            severity: 'critical',
+            framework: 'gdpr',
+            article: 'a',
+            title: 't',
+            excerpt: '',
+            remediation: '',
+          },
+        ],
+      }),
+    );
     const r = await legalComplianceExecutor(
       { documentText: SHORT_PRIVACY, frameworks: 'gdpr', severityFloor: 'low' },
       null,
@@ -228,11 +335,18 @@ describe('legal-compliance executor — score', () => {
   });
 
   it('molti findings critical → score floor 0', async () => {
-    m.dispatch.mockResolvedValue(llmText({
-      findings: Array.from({ length: 10 }, (_, i) => ({
-        severity: 'critical', framework: 'gdpr', article: `a${String(i)}`, title: `t${String(i)}`, excerpt: '', remediation: '',
-      })),
-    }));
+    m.dispatch.mockResolvedValue(
+      llmText({
+        findings: Array.from({ length: 10 }, (_, i) => ({
+          severity: 'critical',
+          framework: 'gdpr',
+          article: `a${String(i)}`,
+          title: `t${String(i)}`,
+          excerpt: '',
+          remediation: '',
+        })),
+      }),
+    );
     const r = await legalComplianceExecutor(
       { documentText: SHORT_PRIVACY, frameworks: 'gdpr' },
       null,
@@ -280,7 +394,9 @@ describe('legal-compliance executor — knowledge mode', () => {
 describe('legal-compliance executor — _llm usage (Fase 2 #14)', () => {
   it('usage CUMULATIVO sui chunk: N chiamate → somma in output._llm', async () => {
     m.dispatch.mockImplementation(async (...args: unknown[]) => {
-      const listener = args[7] as ((u: { input: number; output: number; fromApi: boolean }) => void) | undefined;
+      const listener = args[7] as
+        | ((u: { input: number; output: number; fromApi: boolean }) => void)
+        | undefined;
       listener?.({ input: 100, output: 30, fromApi: true });
       return llmText({ findings: [], summary: '' });
     });
@@ -290,7 +406,16 @@ describe('legal-compliance executor — _llm usage (Fase 2 #14)', () => {
       null,
       baseContext,
     );
-    const out = r.output as { _llm: { inputTokens: number; outputTokens: number; provider: string; model: string; fromApi: boolean }; chunksProcessed: number };
+    const out = r.output as {
+      _llm: {
+        inputTokens: number;
+        outputTokens: number;
+        provider: string;
+        model: string;
+        fromApi: boolean;
+      };
+      chunksProcessed: number;
+    };
     expect(out.chunksProcessed).toBeGreaterThanOrEqual(2);
     expect(out._llm.inputTokens).toBe(100 * out.chunksProcessed);
     expect(out._llm.outputTokens).toBe(30 * out.chunksProcessed);
@@ -301,7 +426,9 @@ describe('legal-compliance executor — _llm usage (Fase 2 #14)', () => {
     let call = 0;
     m.dispatch.mockImplementation(async (...args: unknown[]) => {
       call++;
-      const listener = args[7] as ((u: { input: number; output: number; fromApi: boolean }) => void) | undefined;
+      const listener = args[7] as
+        | ((u: { input: number; output: number; fromApi: boolean }) => void)
+        | undefined;
       listener?.({ input: 10, output: 5, fromApi: call !== 2 });
       return llmText({ findings: [], summary: '' });
     });
@@ -314,7 +441,9 @@ describe('legal-compliance executor — _llm usage (Fase 2 #14)', () => {
   });
 
   it('nessuna chiamata riuscita a fare usage (provider assente) → output SENZA _llm', async () => {
-    m.resolve.mockImplementation(() => { throw new Error('no provider'); });
+    m.resolve.mockImplementation(() => {
+      throw new Error('no provider');
+    });
     const r = await legalComplianceExecutor(
       { documentText: SHORT_PRIVACY, frameworks: 'gdpr' },
       null,

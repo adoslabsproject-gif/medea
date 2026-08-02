@@ -5,8 +5,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { checkTwilioSendRateLimit, __testHooks__ } from './twilio-guards.js';
 
 describe('checkTwilioSendRateLimit', () => {
-  beforeEach(() => { __testHooks__.sendBuckets.clear(); });
-  afterEach(() => { delete process.env.MEDEA_TWILIO_MAX_SENDS_PER_MIN; });
+  beforeEach(() => {
+    __testHooks__.sendBuckets.clear();
+  });
+  afterEach(() => {
+    delete process.env.MEDEA_TWILIO_MAX_SENDS_PER_MIN;
+  });
 
   it('consente fino al cap, poi blocca', () => {
     process.env.MEDEA_TWILIO_MAX_SENDS_PER_MIN = '3';
@@ -16,7 +20,7 @@ describe('checkTwilioSendRateLimit', () => {
     expect(checkTwilioSendRateLimit('t1').allowed).toBe(false); // 4° oltre cap
   });
 
-  it('🚨 isolamento PER-TENANT: il budget di un tenant non intacca l\'altro', () => {
+  it("🚨 isolamento PER-TENANT: il budget di un tenant non intacca l'altro", () => {
     process.env.MEDEA_TWILIO_MAX_SENDS_PER_MIN = '1';
     expect(checkTwilioSendRateLimit('a').allowed).toBe(true);
     expect(checkTwilioSendRateLimit('a').allowed).toBe(false);

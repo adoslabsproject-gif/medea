@@ -67,21 +67,30 @@ export interface PersonalizeResult {
 // ─────────────────────────────────────────────────────────────────────────
 // Cache LRU by content_hash + language + company_name
 // ─────────────────────────────────────────────────────────────────────────
-interface CacheEntry { result: PersonalizeResult; expires: number }
+interface CacheEntry {
+  result: PersonalizeResult;
+  expires: number;
+}
 const cache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 60 * 60_000; // 1h
 const CACHE_MAX = 1000;
 
 function cacheKey(input: PersonalizeInput): string {
   const contentHash = createHash('sha256')
-    .update(`${input.content.slice(0, 4000)}|${input.language}|${input.company_name}|${input.tone ?? 'formal'}`)
-    .digest('hex').slice(0, 16);
+    .update(
+      `${input.content.slice(0, 4000)}|${input.language}|${input.company_name}|${input.tone ?? 'formal'}`,
+    )
+    .digest('hex')
+    .slice(0, 16);
   return contentHash;
 }
 function cacheGet(key: string): PersonalizeResult | null {
   const e = cache.get(key);
   if (!e) return null;
-  if (Date.now() > e.expires) { cache.delete(key); return null; }
+  if (Date.now() > e.expires) {
+    cache.delete(key);
+    return null;
+  }
   return e.result;
 }
 function cacheSet(key: string, result: PersonalizeResult): void {
@@ -117,15 +126,28 @@ function isForbidden(snippet: string): { forbidden: boolean; reason: string } {
 // ─────────────────────────────────────────────────────────────────────────
 
 const LANGUAGE_NAMES: Record<string, string> = {
-  it: 'italiano', en: 'English', de: 'Deutsch', fr: 'français', es: 'español',
-  pt: 'português', nl: 'Nederlands', el: 'ελληνικά', hr: 'hrvatski',
-  sv: 'svenska', no: 'norsk', da: 'dansk', fi: 'suomi', is: 'íslenska',
+  it: 'italiano',
+  en: 'English',
+  de: 'Deutsch',
+  fr: 'français',
+  es: 'español',
+  pt: 'português',
+  nl: 'Nederlands',
+  el: 'ελληνικά',
+  hr: 'hrvatski',
+  sv: 'svenska',
+  no: 'norsk',
+  da: 'dansk',
+  fi: 'suomi',
+  is: 'íslenska',
 };
 
 function buildPrompt(input: PersonalizeInput): { system: string; user: string } {
   const langName = LANGUAGE_NAMES[input.language] ?? 'English';
   const tone = input.tone ?? 'formal';
-  const senderCtx = input.senderProductContext ?? 'producono motori idraulici e eliche di manovra per la nautica (bow thrusters, stern thrusters, unità di propulsione)';
+  const senderCtx =
+    input.senderProductContext ??
+    'producono motori idraulici e eliche di manovra per la nautica (bow thrusters, stern thrusters, unità di propulsione)';
 
   const system = `Sei un assistente che genera frasi di personalizzazione per email B2B cold outreach.
 
@@ -167,19 +189,28 @@ export async function personalizeEmail(input: PersonalizeInput): Promise<Persona
   // Validation input
   if (!input.content || input.content.length < 100) {
     return {
-      snippet: '', evidence_quote: '', confidence: 0, success: false,
+      snippet: '',
+      evidence_quote: '',
+      confidence: 0,
+      success: false,
       reason: 'Content troppo corto (<100 char) — impossibile estrarre signal personalization',
     };
   }
   if (!input.company_name) {
     return {
-      snippet: '', evidence_quote: '', confidence: 0, success: false,
+      snippet: '',
+      evidence_quote: '',
+      confidence: 0,
+      success: false,
       reason: 'company_name vuoto — skip personalization',
     };
   }
   if (!LANGUAGE_NAMES[input.language]) {
     return {
-      snippet: '', evidence_quote: '', confidence: 0, success: false,
+      snippet: '',
+      evidence_quote: '',
+      confidence: 0,
+      success: false,
       reason: `Lingua "${input.language}" non supportata (whitelist: ${Object.keys(LANGUAGE_NAMES).join(', ')})`,
     };
   }
@@ -196,7 +227,10 @@ export async function personalizeEmail(input: PersonalizeInput): Promise<Persona
   } catch (err) {
     if (err instanceof NoLlmProviderError) {
       const result: PersonalizeResult = {
-        snippet: '', evidence_quote: '', confidence: 0, success: false,
+        snippet: '',
+        evidence_quote: '',
+        confidence: 0,
+        success: false,
         reason: `Nessun LLM provider configurato per il tenant ${input.tenantId}: ${err.message}`,
       };
       cacheSet(key, result);
@@ -220,17 +254,31 @@ export async function personalizeEmail(input: PersonalizeInput): Promise<Persona
   let raw: string;
   try {
     raw = await dispatchLLMChat(
-      resolved.provider, resolved.apiKey, resolved.model,
-      system, user, resolved.baseUrl, [],
-      (u) => { llmUsage = { input: u.input, output: u.output, fromApi: u.fromApi }; },
+      resolved.provider,
+      resolved.apiKey,
+      resolved.model,
+      system,
+      user,
+      resolved.baseUrl,
+      [],
+      (u) => {
+        llmUsage = { input: u.input, output: u.output, fromApi: u.fromApi };
+      },
     );
     llmExchange = { system, user, response: raw };
   } catch (err) {
-    logger.warn({ err, tenantId: input.tenantId, provider: resolved.provider }, 'LLM personalize call failed');
+    logger.warn(
+      { err, tenantId: input.tenantId, provider: resolved.provider },
+      'LLM personalize call failed',
+    );
     const result: PersonalizeResult = {
-      snippet: '', evidence_quote: '', confidence: 0, success: false,
+      snippet: '',
+      evidence_quote: '',
+      confidence: 0,
+      success: false,
       reason: `LLM call failed: ${err instanceof Error ? err.message : String(err)}`,
-      llm_provider: resolved.provider, llm_model: resolved.model,
+      llm_provider: resolved.provider,
+      llm_model: resolved.model,
     };
     cacheSet(key, result);
     return withUsage(result);
@@ -239,7 +287,11 @@ export async function personalizeEmail(input: PersonalizeInput): Promise<Persona
   // Parse JSON (handle markdown fence se LLM disobbedisce)
   let parsed: { snippet?: string; evidence_quote?: string };
   try {
-    const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    const cleaned = raw
+      .trim()
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```\s*$/i, '')
+      .trim();
     // Find JSON object boundaries (LLM sometimes adds preamble despite instructions)
     const start = cleaned.indexOf('{');
     const end = cleaned.lastIndexOf('}');
@@ -247,9 +299,13 @@ export async function personalizeEmail(input: PersonalizeInput): Promise<Persona
     parsed = JSON.parse(cleaned.slice(start, end + 1)) as typeof parsed;
   } catch (err) {
     const result: PersonalizeResult = {
-      snippet: '', evidence_quote: '', confidence: 0, success: false,
+      snippet: '',
+      evidence_quote: '',
+      confidence: 0,
+      success: false,
       reason: `LLM output non parse-able JSON: ${err instanceof Error ? err.message : String(err)}. Raw: ${raw.slice(0, 200)}`,
-      llm_provider: resolved.provider, llm_model: resolved.model,
+      llm_provider: resolved.provider,
+      llm_model: resolved.model,
     };
     cacheSet(key, result);
     return withUsage(result);
@@ -261,18 +317,26 @@ export async function personalizeEmail(input: PersonalizeInput): Promise<Persona
   // === Validation post-LLM ===
   if (!snippet || snippet.length < 20) {
     const result: PersonalizeResult = {
-      snippet: '', evidence_quote, confidence: 0, success: false,
+      snippet: '',
+      evidence_quote,
+      confidence: 0,
+      success: false,
       reason: `Snippet vuoto o troppo corto (${snippet.length} char)`,
-      llm_provider: resolved.provider, llm_model: resolved.model,
+      llm_provider: resolved.provider,
+      llm_model: resolved.model,
     };
     cacheSet(key, result);
     return withUsage(result);
   }
   if (snippet.length > 600) {
     const result: PersonalizeResult = {
-      snippet: '', evidence_quote, confidence: 0, success: false,
+      snippet: '',
+      evidence_quote,
+      confidence: 0,
+      success: false,
       reason: `Snippet troppo lungo (${snippet.length} > 600 char) — LLM non ha rispettato il limit 60 parole`,
-      llm_provider: resolved.provider, llm_model: resolved.model,
+      llm_provider: resolved.provider,
+      llm_model: resolved.model,
     };
     cacheSet(key, result);
     return withUsage(result);
@@ -282,9 +346,13 @@ export async function personalizeEmail(input: PersonalizeInput): Promise<Persona
   const forbidden = isForbidden(snippet);
   if (forbidden.forbidden) {
     const result: PersonalizeResult = {
-      snippet: '', evidence_quote, confidence: 0, success: false,
+      snippet: '',
+      evidence_quote,
+      confidence: 0,
+      success: false,
       reason: forbidden.reason,
-      llm_provider: resolved.provider, llm_model: resolved.model,
+      llm_provider: resolved.provider,
+      llm_model: resolved.model,
     };
     cacheSet(key, result);
     return withUsage(result);
@@ -306,7 +374,7 @@ export async function personalizeEmail(input: PersonalizeInput): Promise<Persona
     }
   }
   if (!evidence_ok) {
-    confidence = 60;  // snippet potrebbe esserevoid ok ma evidence non verificabile → confidence ridotta
+    confidence = 60; // snippet potrebbe esserevoid ok ma evidence non verificabile → confidence ridotta
   }
 
   const result: PersonalizeResult = {

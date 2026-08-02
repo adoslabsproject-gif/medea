@@ -31,7 +31,7 @@ describe('credentials route — /reveal role gate', () => {
     );
   });
 
-  it('NON c\'è un /reveal senza requireRole gate (anti-regression)', () => {
+  it("NON c'è un /reveal senza requireRole gate (anti-regression)", () => {
     // Cerca tutti i `/:id/reveal` references e verifica che ognuno abbia requireRole vicino
     const revealOccurrences = credentialsSource.match(/['"]\/:id\/reveal['"]/g) ?? [];
     expect(revealOccurrences.length).toBeGreaterThan(0);
@@ -46,9 +46,7 @@ describe('credentials route — /reveal role gate', () => {
 
   it('GET / (list) NON ha requireRole (visibile a tutti)', () => {
     // Pattern: app.get('/', (c) => { ... }) — no middleware
-    expect(credentialsSource).toMatch(
-      /app\.get\(\s*['"]\/['"]\s*,\s*\(c\)/,
-    );
+    expect(credentialsSource).toMatch(/app\.get\(\s*['"]\/['"]\s*,\s*\(c\)/);
   });
 });
 
@@ -80,13 +78,22 @@ const asUser = (tenantId: string, role: AuthContext['role']): void => {
 };
 
 let app: Hono;
-interface SqliteLike { prepare: (s: string) => { get: (...p: unknown[]) => unknown; all: (...p: unknown[]) => unknown[]; run: (...p: unknown[]) => unknown } }
+interface SqliteLike {
+  prepare: (s: string) => {
+    get: (...p: unknown[]) => unknown;
+    all: (...p: unknown[]) => unknown[];
+    run: (...p: unknown[]) => unknown;
+  };
+}
 const db = (): SqliteLike => getDatabase().sqlite as unknown as SqliteLike;
 
 beforeAll(() => {
   runMigrations();
   app = new Hono();
-  app.use('*', async (c, next) => { c.set('auth', authCtx); await next(); });
+  app.use('*', async (c, next) => {
+    c.set('auth', authCtx);
+    await next();
+  });
   app.route('/api/v1/credentials', createCredentialsRoutes());
 });
 
@@ -95,11 +102,13 @@ afterAll(() => {
 });
 
 const req = (method: string, path: string, body?: unknown): Promise<Response> =>
-  Promise.resolve(app.request(`/api/v1/credentials${path}`, {
-    method,
-    headers: { 'content-type': 'application/json' },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  }));
+  Promise.resolve(
+    app.request(`/api/v1/credentials${path}`, {
+      method,
+      headers: { 'content-type': 'application/json' },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    }),
+  );
 
 describe('credentials — superficie segreti (full request path, crypto REALE)', () => {
   let credId = '';
@@ -107,12 +116,19 @@ describe('credentials — superficie segreti (full request path, crypto REALE)',
   it('senza auth → MAI 200', async () => {
     authCtx = null;
     expect((await req('GET', '')).status).not.toBe(200);
-    expect((await req('POST', '', { name: 'x', provider: 'p', plaintext: 's' })).status).not.toBe(200);
+    expect((await req('POST', '', { name: 'x', provider: 'p', plaintext: 's' })).status).not.toBe(
+      200,
+    );
   });
 
   it('POST create → 201 e il plaintext NON è nella response', async () => {
     asUser(T_A, 'owner');
-    const res = await req('POST', '', { name: 'OpenAI key', provider: 'openai', plaintext: SECRET, metadata: { env: 'prod' } });
+    const res = await req('POST', '', {
+      name: 'OpenAI key',
+      provider: 'openai',
+      plaintext: SECRET,
+      metadata: { env: 'prod' },
+    });
     expect(res.status).toBe(201);
     const text = await res.text();
     expect(text).not.toContain(SECRET);
@@ -121,7 +137,10 @@ describe('credentials — superficie segreti (full request path, crypto REALE)',
   });
 
   it('AT-REST: la riga user_credentials NON contiene il plaintext in NESSUNA colonna (cifratura vera, non base64 di facciata)', () => {
-    const row = db().prepare('SELECT * FROM user_credentials WHERE id = ?').get(credId) as Record<string, unknown>;
+    const row = db().prepare('SELECT * FROM user_credentials WHERE id = ?').get(credId) as Record<
+      string,
+      unknown
+    >;
     expect(row).toBeDefined();
     for (const [col, val] of Object.entries(row)) {
       const s = Buffer.isBuffer(val)
@@ -158,7 +177,7 @@ describe('credentials — superficie segreti (full request path, crypto REALE)',
     asUser(T_A, 'owner');
     const res = await req('GET', `/${credId}/reveal`);
     expect(res.status).toBe(200);
-    expect((await res.json() as { plaintext: string }).plaintext).toBe(SECRET);
+    expect(((await res.json()) as { plaintext: string }).plaintext).toBe(SECRET);
   });
 
   it('reveal superadmin → 200 (bypass by-design del ruolo piattaforma)', async () => {
@@ -176,13 +195,15 @@ describe('credentials — superficie segreti (full request path, crypto REALE)',
   it('validazione: plaintext vuoto → 400, name oltre 200 → 400', async () => {
     asUser(T_A, 'owner');
     expect((await req('POST', '', { name: 'x', provider: 'p', plaintext: '' })).status).toBe(400);
-    expect((await req('POST', '', { name: 'x'.repeat(201), provider: 'p', plaintext: 's' })).status).toBe(400);
+    expect(
+      (await req('POST', '', { name: 'x'.repeat(201), provider: 'p', plaintext: 's' })).status,
+    ).toBe(400);
   });
 
   it('DELETE owner → 204, sparita dalla list, re-delete → 404', async () => {
     asUser(T_A, 'owner');
     expect((await req('DELETE', `/${credId}`)).status).toBe(204);
-    const list = await (await req('GET', '')).json() as { credentials: { id: string }[] };
+    const list = (await (await req('GET', '')).json()) as { credentials: { id: string }[] };
     expect(list.credentials.some((cr) => cr.id === credId)).toBe(false);
     expect((await req('DELETE', `/${credId}`)).status).toBe(404);
   });

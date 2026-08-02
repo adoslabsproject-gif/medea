@@ -73,9 +73,17 @@ export function isPathWithinBase(target: string, baseAbs: string, sep: string): 
   return target === baseAbs || target.startsWith(baseAbs + sep);
 }
 
-export function deriveLocalPath(rawUrl: string, basePath: string, pathMod: PathModule): string | null {
+export function deriveLocalPath(
+  rawUrl: string,
+  basePath: string,
+  pathMod: PathModule,
+): string | null {
   let parsed: URL;
-  try { parsed = new URL(rawUrl); } catch { return null; }
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return null;
+  }
   const pathname = decodeURIComponent(parsed.pathname || '/');
   if (pathname.includes('\0')) return null;
   const segments = pathname.split('/').filter((s) => s !== '');
@@ -94,7 +102,10 @@ export function deriveLocalPath(rawUrl: string, basePath: string, pathMod: PathM
 
 // ─── Engine ─────────────────────────────────────────────────────────────────
 
-export interface AssetItem { url: string; savePath?: string }
+export interface AssetItem {
+  url: string;
+  savePath?: string;
+}
 
 export interface AssetDownloadOptions {
   items: readonly AssetItem[];
@@ -136,11 +147,17 @@ interface BatchResult {
   };
 }
 
-async function existingSha256(filepath: string, fsMod: FsModule, cryptoMod: CryptoModule): Promise<string | null> {
+async function existingSha256(
+  filepath: string,
+  fsMod: FsModule,
+  cryptoMod: CryptoModule,
+): Promise<string | null> {
   try {
     const buf = await fsMod.readFile(filepath);
     return cryptoMod.createHash('sha256').update(buf).digest('hex');
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 export async function runAssetBatchDownload(opts: AssetDownloadOptions): Promise<BatchResult> {
@@ -148,11 +165,16 @@ export async function runAssetBatchDownload(opts: AssetDownloadOptions): Promise
   const results: AssetResult[] = [];
   const hostNextSlot = new Map<string, number>();
   let totalBytes = 0;
-  let downloaded = 0, skippedExisting = 0, skippedCap = 0, errors = 0;
+  let downloaded = 0,
+    skippedExisting = 0,
+    skippedCap = 0,
+    errors = 0;
 
   // node:* caricati UNA volta qui (async) e usati nelle closure sotto.
   const [pathMod, fsMod, cryptoMod] = await Promise.all([
-    import('node:path'), import('node:fs/promises'), import('node:crypto'),
+    import('node:path'),
+    import('node:fs/promises'),
+    import('node:crypto'),
   ]);
 
   await fsMod.mkdir(opts.basePath, { recursive: true });
@@ -171,19 +193,35 @@ export async function runAssetBatchDownload(opts: AssetDownloadOptions): Promise
     // `/data/t1`) → un `item.savePath` ostile (`../t1-evil/x`) scriverebbe FUORI dalla dir.
     if (!derived || !isPathWithinBase(derived, baseAbs, pathMod.sep)) {
       results.push({
-        url: item.url, savePath: '', contentType: '', bytes: 0, sha256: '',
-        status: 'error', error: 'unsafe path (traversal or non-absolute base)',
-        fetchedAt: new Date().toISOString(), durationMs: Date.now() - t0,
-      }); errors++; return;
+        url: item.url,
+        savePath: '',
+        contentType: '',
+        bytes: 0,
+        sha256: '',
+        status: 'error',
+        error: 'unsafe path (traversal or non-absolute base)',
+        fetchedAt: new Date().toISOString(),
+        durationMs: Date.now() - t0,
+      });
+      errors++;
+      return;
     }
 
     // Pre-budget check — must run BEFORE the network call.
     if (totalBytes >= opts.maxTotalBytes) {
       results.push({
-        url: item.url, savePath: derived, contentType: '', bytes: 0, sha256: '',
-        status: 'skipped-cap', error: null, fetchedAt: new Date().toISOString(),
+        url: item.url,
+        savePath: derived,
+        contentType: '',
+        bytes: 0,
+        sha256: '',
+        status: 'skipped-cap',
+        error: null,
+        fetchedAt: new Date().toISOString(),
         durationMs: Date.now() - t0,
-      }); skippedCap++; return;
+      });
+      skippedCap++;
+      return;
     }
 
     // Resume: skip if file already exists and `resumeOnSha256Match` is on.
@@ -192,17 +230,28 @@ export async function runAssetBatchDownload(opts: AssetDownloadOptions): Promise
       if (existingHash) {
         const stat = await fsMod.stat(derived).catch(() => null);
         results.push({
-          url: item.url, savePath: derived, contentType: '',
-          bytes: stat?.size ?? 0, sha256: existingHash,
-          status: 'skipped-existing', error: null,
-          fetchedAt: new Date().toISOString(), durationMs: Date.now() - t0,
-        }); skippedExisting++; return;
+          url: item.url,
+          savePath: derived,
+          contentType: '',
+          bytes: stat?.size ?? 0,
+          sha256: existingHash,
+          status: 'skipped-existing',
+          error: null,
+          fetchedAt: new Date().toISOString(),
+          durationMs: Date.now() - t0,
+        });
+        skippedExisting++;
+        return;
       }
     }
 
     // Per-host rate limit.
     let host = '';
-    try { host = new URL(item.url).host; } catch {/* ignore */}
+    try {
+      host = new URL(item.url).host;
+    } catch {
+      /* ignore */
+    }
     const now = Date.now();
     const nextSlot = hostNextSlot.get(host) ?? 0;
     if (nextSlot > now) await new Promise<void>((r) => setTimeout(r, nextSlot - now));
@@ -215,7 +264,10 @@ export async function runAssetBatchDownload(opts: AssetDownloadOptions): Promise
       // maxPerAssetBytes DALLA Response stessa (streaming, RangeError oltre) →
       // un asset enorme non viene mai bufferizzato per intero (anti-OOM).
       const res = await safeFetchWithRedirects(item.url, {
-        method: 'GET', headers, timeoutMs: opts.timeoutMs, maxResponseBytes: opts.maxPerAssetBytes,
+        method: 'GET',
+        headers,
+        timeoutMs: opts.timeoutMs,
+        maxResponseBytes: opts.maxPerAssetBytes,
       });
       if (!res.ok) throw new Error(`HTTP ${String(res.status)}`);
       let buf: Buffer;
@@ -224,11 +276,18 @@ export async function runAssetBatchDownload(opts: AssetDownloadOptions): Promise
       } catch (capErr) {
         if (capErr instanceof RangeError) {
           results.push({
-            url: item.url, savePath: derived, contentType: res.headers.get('content-type') ?? '',
-            bytes: opts.maxPerAssetBytes, sha256: '',
-            status: 'skipped-cap', error: `asset oltre maxPerAssetBytes (${String(opts.maxPerAssetBytes)})`,
-            fetchedAt: new Date().toISOString(), durationMs: Date.now() - t0,
-          }); skippedCap++; return;
+            url: item.url,
+            savePath: derived,
+            contentType: res.headers.get('content-type') ?? '',
+            bytes: opts.maxPerAssetBytes,
+            sha256: '',
+            status: 'skipped-cap',
+            error: `asset oltre maxPerAssetBytes (${String(opts.maxPerAssetBytes)})`,
+            fetchedAt: new Date().toISOString(),
+            durationMs: Date.now() - t0,
+          });
+          skippedCap++;
+          return;
         }
         throw capErr;
       }
@@ -236,40 +295,64 @@ export async function runAssetBatchDownload(opts: AssetDownloadOptions): Promise
       // cap più alto): scarta gli asset oltre il budget per-asset.
       if (buf.byteLength > opts.maxPerAssetBytes) {
         results.push({
-          url: item.url, savePath: derived, contentType: res.headers.get('content-type') ?? '',
-          bytes: buf.byteLength, sha256: '',
-          status: 'skipped-cap', error: `bytes ${String(buf.byteLength)} > maxPerAssetBytes`,
-          fetchedAt: new Date().toISOString(), durationMs: Date.now() - t0,
-        }); skippedCap++; return;
+          url: item.url,
+          savePath: derived,
+          contentType: res.headers.get('content-type') ?? '',
+          bytes: buf.byteLength,
+          sha256: '',
+          status: 'skipped-cap',
+          error: `bytes ${String(buf.byteLength)} > maxPerAssetBytes`,
+          fetchedAt: new Date().toISOString(),
+          durationMs: Date.now() - t0,
+        });
+        skippedCap++;
+        return;
       }
       const sha = cryptoMod.createHash('sha256').update(buf).digest('hex');
       await fsMod.mkdir(pathMod.dirname(derived), { recursive: true });
       const tmp = `${derived}.tmp-${cryptoMod.randomBytes(4).toString('hex')}`;
       await fsMod.writeFile(tmp, buf);
       await fsMod.rename(tmp, derived);
-      totalBytes += buf.byteLength; downloaded++;
+      totalBytes += buf.byteLength;
+      downloaded++;
       results.push({
-        url: item.url, savePath: derived,
+        url: item.url,
+        savePath: derived,
         contentType: res.headers.get('content-type') ?? '',
-        bytes: buf.byteLength, sha256: sha,
-        status: 'downloaded', error: null,
-        fetchedAt: new Date().toISOString(), durationMs: Date.now() - t0,
+        bytes: buf.byteLength,
+        sha256: sha,
+        status: 'downloaded',
+        error: null,
+        fetchedAt: new Date().toISOString(),
+        durationMs: Date.now() - t0,
       });
     } catch (e) {
       errors++;
       results.push({
-        url: item.url, savePath: derived, contentType: '', bytes: 0, sha256: '',
-        status: 'error', error: e instanceof Error ? e.message : String(e),
-        fetchedAt: new Date().toISOString(), durationMs: Date.now() - t0,
+        url: item.url,
+        savePath: derived,
+        contentType: '',
+        bytes: 0,
+        sha256: '',
+        status: 'error',
+        error: e instanceof Error ? e.message : String(e),
+        fetchedAt: new Date().toISOString(),
+        durationMs: Date.now() - t0,
       });
     }
   }
 
   const inflight = new Set<Promise<void>>();
   while (queueIdx.i < queue.length || inflight.size > 0) {
-    while (inflight.size < opts.concurrency && queueIdx.i < queue.length && totalBytes < opts.maxTotalBytes) {
+    while (
+      inflight.size < opts.concurrency &&
+      queueIdx.i < queue.length &&
+      totalBytes < opts.maxTotalBytes
+    ) {
       const item = queue[queueIdx.i++]!;
-      const task = downloadOne(item).finally(() => { inflight.delete(task); });
+      const task = downloadOne(item).finally(() => {
+        inflight.delete(task);
+      });
       inflight.add(task);
     }
     if (inflight.size === 0) break;
@@ -286,6 +369,14 @@ export async function runAssetBatchDownload(opts: AssetDownloadOptions): Promise
 
   return {
     results,
-    stats: { downloaded, skippedExisting, skippedCap, errors, totalBytes, durationMsTotal: Date.now() - start, assetMap },
+    stats: {
+      downloaded,
+      skippedExisting,
+      skippedCap,
+      errors,
+      totalBytes,
+      durationMsTotal: Date.now() - start,
+      assetMap,
+    },
   };
 }

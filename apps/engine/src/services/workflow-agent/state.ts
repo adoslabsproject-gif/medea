@@ -17,13 +17,26 @@
  */
 import { buildCatalogSpec, type NodeConfigSpec } from '@/services/ai-scaffold/catalog-spec.js';
 import {
-  validateNodesAgainstCatalog, describeViolation, type CatalogViolation,
+  validateNodesAgainstCatalog,
+  describeViolation,
+  type CatalogViolation,
 } from '@/services/ai-scaffold/catalog-validator.js';
 import type { NodeCatalogEntry } from '@/services/ai-scaffold/node-catalog.js';
 
-export interface BuildNode { id: string; defId: string; config: Record<string, unknown> }
-export interface BuildEdge { from: string; to: string; fromPort?: string }
-export interface WorkflowSnapshot { nodes: BuildNode[]; edges: BuildEdge[] }
+export interface BuildNode {
+  id: string;
+  defId: string;
+  config: Record<string, unknown>;
+}
+export interface BuildEdge {
+  from: string;
+  to: string;
+  fromPort?: string;
+}
+export interface WorkflowSnapshot {
+  nodes: BuildNode[];
+  edges: BuildEdge[];
+}
 
 export interface OpResult {
   ok: boolean;
@@ -39,7 +52,10 @@ function deriveId(defId: string, taken: Set<string>): string {
   const base = defId.replace(/^(action|trigger|logic|ai|agent|flow|db|community)_/u, '') || defId;
   let candidate = base;
   let i = 1;
-  while (taken.has(candidate)) { i++; candidate = `${base}_${i.toString()}`; }
+  while (taken.has(candidate)) {
+    i++;
+    candidate = `${base}_${i.toString()}`;
+  }
   return candidate;
 }
 
@@ -65,14 +81,25 @@ export class WorkflowBuilder {
     return validateNodesAgainstCatalog([node], this.spec).map(describeViolation);
   }
 
-  hasNode(id: string): boolean { return this.nodes.has(id); }
-  knownDefId(defId: string): boolean { return this.spec.has(defId); }
+  hasNode(id: string): boolean {
+    return this.nodes.has(id);
+  }
+  knownDefId(defId: string): boolean {
+    return this.spec.has(defId);
+  }
 
   /** Aggiunge un nodo. defId DEVE esistere nel catalog. id auto-generato se
    *  assente; collisione di id → errore (il modello scelga un altro id). */
-  addNode(defId: string, requestedId: string | undefined, config: Record<string, unknown>): OpResult {
+  addNode(
+    defId: string,
+    requestedId: string | undefined,
+    config: Record<string, unknown>,
+  ): OpResult {
     if (!this.spec.has(defId)) {
-      return { ok: false, message: `defId "${defId}" non esiste nel catalogo. Usa search_nodes per trovare il nodo giusto.` };
+      return {
+        ok: false,
+        message: `defId "${defId}" non esiste nel catalogo. Usa search_nodes per trovare il nodo giusto.`,
+      };
     }
     let id = requestedId?.trim();
     if (id && this.nodes.has(id)) {
@@ -102,7 +129,8 @@ export class WorkflowBuilder {
       if (!this.spec.has(n.defId)) this.seededCustomDefIds.add(n.defId);
     }
     for (const e of snapshot.edges) {
-      if (this.edges.some((x) => x.from === e.from && x.to === e.to && x.fromPort === e.fromPort)) continue;
+      if (this.edges.some((x) => x.from === e.from && x.to === e.to && x.fromPort === e.fromPort))
+        continue;
       this.edges.push({ from: e.from, to: e.to, ...(e.fromPort ? { fromPort: e.fromPort } : {}) });
     }
   }
@@ -123,7 +151,8 @@ export class WorkflowBuilder {
    * niente edge orfani. Riporta quanti edge sono caduti così il modello lo sa.
    */
   deleteNode(id: string): OpResult {
-    if (!this.nodes.has(id)) return { ok: false, message: `Nodo "${id}" inesistente: niente da rimuovere.` };
+    if (!this.nodes.has(id))
+      return { ok: false, message: `Nodo "${id}" inesistente: niente da rimuovere.` };
     this.nodes.delete(id);
     const before = this.edges.length;
     for (let i = this.edges.length - 1; i >= 0; i--) {
@@ -131,13 +160,22 @@ export class WorkflowBuilder {
       if (e.from === id || e.to === id) this.edges.splice(i, 1);
     }
     const dropped = before - this.edges.length;
-    return { ok: true, message: `Nodo "${id}" rimosso${dropped > 0 ? ` (e ${dropped.toString()} collegamento/i)` : ''}.` };
+    return {
+      ok: true,
+      message: `Nodo "${id}" rimosso${dropped > 0 ? ` (e ${dropped.toString()} collegamento/i)` : ''}.`,
+    };
   }
 
   /** Rimuove un collegamento esistente (from → to, eventualmente su fromPort). */
   disconnect(from: string, to: string, fromPort?: string): OpResult {
-    const idx = this.edges.findIndex((e) => e.from === from && e.to === to && e.fromPort === fromPort);
-    if (idx < 0) return { ok: false, message: `Collegamento ${from}→${to} inesistente: niente da scollegare.` };
+    const idx = this.edges.findIndex(
+      (e) => e.from === from && e.to === to && e.fromPort === fromPort,
+    );
+    if (idx < 0)
+      return {
+        ok: false,
+        message: `Collegamento ${from}→${to} inesistente: niente da scollegare.`,
+      };
     this.edges.splice(idx, 1);
     return { ok: true, message: `Scollegato ${from} → ${to}.` };
   }
@@ -174,10 +212,16 @@ export class WorkflowBuilder {
 
   snapshot(): WorkflowSnapshot {
     return {
-      nodes: [...this.nodes.values()].map((n) => ({ id: n.id, defId: n.defId, config: { ...n.config } })),
+      nodes: [...this.nodes.values()].map((n) => ({
+        id: n.id,
+        defId: n.defId,
+        config: { ...n.config },
+      })),
       edges: this.edges.map((e) => ({ ...e })),
     };
   }
 
-  get nodeCount(): number { return this.nodes.size; }
+  get nodeCount(): number {
+    return this.nodes.size;
+  }
 }

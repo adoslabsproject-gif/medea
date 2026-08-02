@@ -43,8 +43,11 @@ import { BUILTIN_CODE_RULES } from '@/services/janitor/rules/index.js';
 
 // Domain / Ports (per re-export)
 import type {
-  IRuleRegistry, IRuleConfigRepository, IDataSourceResolver,
-  IQuarantineGateway, IRunLogRepository,
+  IRuleRegistry,
+  IRuleConfigRepository,
+  IDataSourceResolver,
+  IQuarantineGateway,
+  IRunLogRepository,
 } from '@/services/janitor/ports/index.js';
 
 export interface JanitorRuntime {
@@ -87,7 +90,15 @@ export function createJanitorRuntime(opts: JanitorFactoryOptions): JanitorRuntim
 
   // ─── Use cases ───
   const executeRule = new ExecuteRuleUseCase(
-    clock, locks, resolver, quarantine, runLog, audit, notifications, configRepo, logger,
+    clock,
+    locks,
+    resolver,
+    quarantine,
+    runLog,
+    audit,
+    notifications,
+    configRepo,
+    logger,
   );
   const executeCycle = new ExecuteCycleUseCase(clock, registry, configRepo, executeRule, logger);
   const manageRuleConfig = new ManageRuleConfigUseCase(registry, configRepo, audit);
@@ -109,10 +120,13 @@ export function createJanitorRuntime(opts: JanitorFactoryOptions): JanitorRuntim
     // 3. Avvia scheduler
     scheduler.start();
 
-    logger.info({
-      codeRules: BUILTIN_CODE_RULES.length,
-      dslRules: dsl.length,
-    }, 'Janitor runtime avviato');
+    logger.info(
+      {
+        codeRules: BUILTIN_CODE_RULES.length,
+        dslRules: dsl.length,
+      },
+      'Janitor runtime avviato',
+    );
   }
 
   async function stop(): Promise<void> {

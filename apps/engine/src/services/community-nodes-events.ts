@@ -14,11 +14,17 @@ const listeners = new Set<Listener>();
 
 export function emitCommunityNodesChanged(): void {
   for (const l of listeners) {
-    try { l(); } catch { /* swallow — never let a misbehaving listener kill the publish */ }
+    try {
+      l();
+    } catch {
+      /* swallow — never let a misbehaving listener kill the publish */
+    }
   }
 }
 
 export function onCommunityNodesChanged(l: Listener): () => void {
   listeners.add(l);
-  return () => { listeners.delete(l); };
+  return () => {
+    listeners.delete(l);
+  };
 }

@@ -34,12 +34,16 @@ export function redactSensitive(value: unknown, depth = 0): unknown {
   if (value === null || value === undefined) return value;
   if (typeof value === 'string') {
     if (value.length > 500 && /^[A-Za-z0-9+/=_-]+$/.test(value.slice(0, 200))) {
-      return value.slice(0, 80) + `… [+${(value.length - 80).toString()} chars redacted (base64-like)]`;
+      return (
+        value.slice(0, 80) + `… [+${(value.length - 80).toString()} chars redacted (base64-like)]`
+      );
     }
-    if (value.length > 2000) return value.slice(0, 2000) + `… [+${(value.length - 2000).toString()} chars redacted]`;
+    if (value.length > 2000)
+      return value.slice(0, 2000) + `… [+${(value.length - 2000).toString()} chars redacted]`;
     // Strip absolute paths that leak server FS layout.
-    return value.replace(/\/var\/lib\/flowforge\/[^\s]*/g, '/var/lib/flowforge/[redacted]')
-                .replace(/\/opt\/flowforge\/[^\s]*/g, '/opt/flowforge/[redacted]');
+    return value
+      .replace(/\/var\/lib\/flowforge\/[^\s]*/g, '/var/lib/flowforge/[redacted]')
+      .replace(/\/opt\/flowforge\/[^\s]*/g, '/opt/flowforge/[redacted]');
   }
   if (Array.isArray(value)) {
     return value.slice(0, 50).map((v) => redactSensitive(v, depth + 1));

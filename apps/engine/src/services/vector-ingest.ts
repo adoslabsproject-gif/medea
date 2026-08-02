@@ -12,7 +12,11 @@
  * VectorService e embedText sono iniettabili (default = reali) per test mirati.
  */
 import { VectorService } from './vector.service.js';
-import { embedText as defaultEmbedText, dimensionsForModel, type EmbeddingProvider } from './embeddings.service.js';
+import {
+  embedText as defaultEmbedText,
+  dimensionsForModel,
+  type EmbeddingProvider,
+} from './embeddings.service.js';
 import { checkVectorQuota, estimateVectorDiskMb, type VectorPlanLimits } from './vector-quota.js';
 import { scanForInjection } from '@/executors/rag-guard.js';
 import { loadConfig } from '@/config.js';
@@ -67,7 +71,10 @@ export interface IngestDeps {
  * Indicizza un singolo contenuto testuale applicando scan + quota + embed + upsert.
  * Lancia se: contenuto vuoto, prompt-injection rilevata, quota superata.
  */
-export async function ingestText(input: IngestTextInput, deps: IngestDeps = {}): Promise<IngestTextResult> {
+export async function ingestText(
+  input: IngestTextInput,
+  deps: IngestDeps = {},
+): Promise<IngestTextResult> {
   const vs = deps.vectors ?? new VectorService();
   const embed = deps.embed ?? defaultEmbedText;
 
@@ -78,7 +85,9 @@ export async function ingestText(input: IngestTextInput, deps: IngestDeps = {}):
   // prompt-injection ad alta confidenza IT/EN. Lo scan normalizza unicode + base64.
   const scan = scanForInjection(content);
   if (!scan.safe) {
-    throw new Error(`ingest: contenuto bloccato (possibile prompt-injection: ${scan.reasons.join(', ')})`);
+    throw new Error(
+      `ingest: contenuto bloccato (possibile prompt-injection: ${scan.reasons.join(', ')})`,
+    );
   }
 
   const id = input.id && input.id.trim() !== '' ? input.id : `c_${simpleHash(content)}`;
@@ -94,7 +103,8 @@ export async function ingestText(input: IngestTextInput, deps: IngestDeps = {}):
     const addDiskMb = estimateVectorDiskMb(netAdd, dimensionsForModel(model));
     const usage = await vs.tenantVectorUsage(input.tenantId);
     const decision = checkVectorQuota(usage, netAdd, addDiskMb, input.planLimits);
-    if (!decision.allowed) throw new Error(`ingest: ${decision.reason ?? 'quota vettoriale superata'}`);
+    if (!decision.allowed)
+      throw new Error(`ingest: ${decision.reason ?? 'quota vettoriale superata'}`);
   }
 
   const vector = await embed({
@@ -104,8 +114,19 @@ export async function ingestText(input: IngestTextInput, deps: IngestDeps = {}):
     ...(input.apiKey ? { apiKey: input.apiKey } : {}),
     ...(input.baseUrl ? { baseUrl: input.baseUrl } : {}),
   });
-  await vs.ensureCollection(input.databaseId, input.collection, dimensionsForModel(model), distance, input.tenantId);
-  const res = await vs.upsert(input.databaseId, input.collection, [{ id, vector, payload: { ...payload, content } }], input.tenantId);
+  await vs.ensureCollection(
+    input.databaseId,
+    input.collection,
+    dimensionsForModel(model),
+    distance,
+    input.tenantId,
+  );
+  const res = await vs.upsert(
+    input.databaseId,
+    input.collection,
+    [{ id, vector, payload: { ...payload, content } }],
+    input.tenantId,
+  );
 
   return { id, upserted: res.count };
 }
@@ -134,7 +155,9 @@ export async function assertBulkQuota(
   const usage = await vs.tenantVectorUsage(tenantId);
   const decision = checkVectorQuota(usage, itemCount, addDiskMb, planLimits);
   if (!decision.allowed) {
-    throw new Error(`auto-embed: ${decision.reason ?? 'quota vettoriale superata'} (richiesti ${itemCount.toString()} vettori)`);
+    throw new Error(
+      `auto-embed: ${decision.reason ?? 'quota vettoriale superata'} (richiesti ${itemCount.toString()} vettori)`,
+    );
   }
 }
 

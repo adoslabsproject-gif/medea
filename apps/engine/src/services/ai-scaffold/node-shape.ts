@@ -110,10 +110,10 @@ const AGGREGATORS: ReadonlySet<string> = new Set([
   'agent_data_analyst',
   'agent_summarizer',
   'action_aggregate',
-  'flow_merge',      // alias vocabolario scaffold (→ logic_merge a runtime)
-  'logic_merge',     // defId merge REALE (executor registrato)
+  'flow_merge', // alias vocabolario scaffold (→ logic_merge a runtime)
+  'logic_merge', // defId merge REALE (executor registrato)
   'logic_join',
-  'action_iptv_m3u',           // packager of many streams into one m3u
+  'action_iptv_m3u', // packager of many streams into one m3u
   'action_vlc_playlist',
   'action_catalog_page',
 ]);

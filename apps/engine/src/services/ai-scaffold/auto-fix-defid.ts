@@ -78,7 +78,10 @@ export function findBaseDefId(defId: string, knownDefIds: Set<string>): string |
  * Rimappa nodes con defId inventato a base catalog noto.
  * Modifica i nodi in-place sulla copia ritornata.
  */
-export function autoFixInventedDefIds(input: DefIdFixInput, knownDefIds: Set<string>): DefIdFixResult {
+export function autoFixInventedDefIds(
+  input: DefIdFixInput,
+  knownDefIds: Set<string>,
+): DefIdFixResult {
   const result: DefIdFixResult = {
     nodes: input.nodes.map((n) => ({ ...n, config: { ...n.config } })),
     appliedFixes: [],

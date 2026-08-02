@@ -38,7 +38,10 @@ vi.mock('nanoid', () => ({
   },
 }));
 
-import { WorkerCoordinationService, type WorkerControlAction } from './worker-coordination.service.js';
+import {
+  WorkerCoordinationService,
+  type WorkerControlAction,
+} from './worker-coordination.service.js';
 
 function setupSchema(db: ReturnType<typeof Database>): void {
   // Base schema (da migrate.schema.ts) + ensureColumn additions (da migrate.ts)
@@ -107,11 +110,17 @@ describe('heartbeat() — update last_heartbeat_at', () => {
   it('🚨 happy: UPDATE last_heartbeat_at = NOW', async () => {
     const svc = new WorkerCoordinationService();
     svc.register();
-    const before = m.sqlite.prepare(`SELECT last_heartbeat_at FROM workers WHERE id = ?`).get(svc.getId()) as { last_heartbeat_at: string };
+    const before = m.sqlite
+      .prepare(`SELECT last_heartbeat_at FROM workers WHERE id = ?`)
+      .get(svc.getId()) as { last_heartbeat_at: string };
     await new Promise((r) => setTimeout(r, 10));
     svc.heartbeat();
-    const after = m.sqlite.prepare(`SELECT last_heartbeat_at FROM workers WHERE id = ?`).get(svc.getId()) as { last_heartbeat_at: string };
-    expect(new Date(after.last_heartbeat_at).getTime()).toBeGreaterThan(new Date(before.last_heartbeat_at).getTime());
+    const after = m.sqlite
+      .prepare(`SELECT last_heartbeat_at FROM workers WHERE id = ?`)
+      .get(svc.getId()) as { last_heartbeat_at: string };
+    expect(new Date(after.last_heartbeat_at).getTime()).toBeGreaterThan(
+      new Date(before.last_heartbeat_at).getTime(),
+    );
   });
 
   it('🚨 DB error → catch + log (no throw)', () => {
@@ -128,10 +137,13 @@ describe('🚨 janitor() — mark stale workers as dead', () => {
     svc.register();
     // Forza heartbeat vecchio (oltre 60s ago)
     const oldTs = new Date(Date.now() - 120_000).toISOString();
-    m.sqlite.prepare(`UPDATE workers SET last_heartbeat_at = ?, current_run_id = 'run-99' WHERE id = ?`)
+    m.sqlite
+      .prepare(`UPDATE workers SET last_heartbeat_at = ?, current_run_id = 'run-99' WHERE id = ?`)
       .run(oldTs, svc.getId());
     svc.janitor();
-    const row = m.sqlite.prepare(`SELECT status, current_run_id FROM workers WHERE id = ?`).get(svc.getId()) as { status: string; current_run_id: string | null };
+    const row = m.sqlite
+      .prepare(`SELECT status, current_run_id FROM workers WHERE id = ?`)
+      .get(svc.getId()) as { status: string; current_run_id: string | null };
     expect(row.status).toBe('dead');
     expect(row.current_run_id).toBeNull();
   });
@@ -140,17 +152,22 @@ describe('🚨 janitor() — mark stale workers as dead', () => {
     const svc = new WorkerCoordinationService();
     svc.register();
     svc.janitor();
-    const row = m.sqlite.prepare(`SELECT status FROM workers WHERE id = ?`).get(svc.getId()) as { status: string };
+    const row = m.sqlite.prepare(`SELECT status FROM workers WHERE id = ?`).get(svc.getId()) as {
+      status: string;
+    };
     expect(row.status).toBe('idle'); // unchanged
   });
 
   it('🚨 worker già "dead" → janitor lo IGNORA (no double-write)', () => {
     const svc = new WorkerCoordinationService();
     svc.register();
-    m.sqlite.prepare(`UPDATE workers SET status = 'dead', last_heartbeat_at = ? WHERE id = ?`)
+    m.sqlite
+      .prepare(`UPDATE workers SET status = 'dead', last_heartbeat_at = ? WHERE id = ?`)
       .run(new Date(Date.now() - 120_000).toISOString(), svc.getId());
     svc.janitor();
-    const row = m.sqlite.prepare(`SELECT status FROM workers WHERE id = ?`).get(svc.getId()) as { status: string };
+    const row = m.sqlite.prepare(`SELECT status FROM workers WHERE id = ?`).get(svc.getId()) as {
+      status: string;
+    };
     expect(row.status).toBe('dead');
   });
 
@@ -171,7 +188,10 @@ describe('markBusy / markIdle — status transitions + counter', () => {
     const svc = new WorkerCoordinationService();
     svc.register();
     svc.markBusy('run-1');
-    const row = m.sqlite.prepare(`SELECT * FROM workers WHERE id = ?`).get(svc.getId()) as Record<string, unknown>;
+    const row = m.sqlite.prepare(`SELECT * FROM workers WHERE id = ?`).get(svc.getId()) as Record<
+      string,
+      unknown
+    >;
     expect(row.status).toBe('busy');
     expect(row.current_run_id).toBe('run-1');
   });
@@ -181,7 +201,10 @@ describe('markBusy / markIdle — status transitions + counter', () => {
     svc.register();
     svc.markBusy('run-1');
     svc.markIdle();
-    const row = m.sqlite.prepare(`SELECT * FROM workers WHERE id = ?`).get(svc.getId()) as Record<string, unknown>;
+    const row = m.sqlite.prepare(`SELECT * FROM workers WHERE id = ?`).get(svc.getId()) as Record<
+      string,
+      unknown
+    >;
     expect(row.status).toBe('idle');
     expect(row.current_run_id).toBeNull();
     expect(row.runs_executed).toBe(1);
@@ -193,7 +216,9 @@ describe('markBusy / markIdle — status transitions + counter', () => {
     svc.markIdle();
     svc.markIdle();
     svc.markIdle();
-    const row = m.sqlite.prepare(`SELECT runs_executed FROM workers WHERE id = ?`).get(svc.getId()) as { runs_executed: number };
+    const row = m.sqlite
+      .prepare(`SELECT runs_executed FROM workers WHERE id = ?`)
+      .get(svc.getId()) as { runs_executed: number };
     expect(row.runs_executed).toBe(3);
   });
 });
@@ -235,16 +260,22 @@ describe('listActive() — fleet view', () => {
 });
 
 describe('🚨 requestAction() — queue admin intent', () => {
-  it.each<WorkerControlAction>(['restart', 'drain', 'resume'])('action "%s" → queued in DB', (action) => {
-    const svc = new WorkerCoordinationService();
-    svc.register();
-    const ok = svc.requestAction(svc.getId(), action, 'admin@x.com');
-    expect(ok).toBe(true);
-    const row = m.sqlite.prepare(`SELECT * FROM workers WHERE id = ?`).get(svc.getId()) as Record<string, unknown>;
-    expect(row.requested_action).toBe(action);
-    expect(row.requested_action_by).toBe('admin@x.com');
-    expect(row.requested_action_at).toBeTruthy();
-  });
+  it.each<WorkerControlAction>(['restart', 'drain', 'resume'])(
+    'action "%s" → queued in DB',
+    (action) => {
+      const svc = new WorkerCoordinationService();
+      svc.register();
+      const ok = svc.requestAction(svc.getId(), action, 'admin@x.com');
+      expect(ok).toBe(true);
+      const row = m.sqlite.prepare(`SELECT * FROM workers WHERE id = ?`).get(svc.getId()) as Record<
+        string,
+        unknown
+      >;
+      expect(row.requested_action).toBe(action);
+      expect(row.requested_action_by).toBe('admin@x.com');
+      expect(row.requested_action_at).toBeTruthy();
+    },
+  );
 
   it('🚨 worker not found → returns false (no error)', () => {
     const svc = new WorkerCoordinationService();
@@ -259,32 +290,30 @@ describe('🚨 requestConcurrency() — Zod-like guard 1-64', () => {
     svc.register();
     const ok = svc.requestConcurrency(svc.getId(), 8, 'admin@x.com');
     expect(ok).toBe(true);
-    const row = m.sqlite.prepare(`SELECT requested_concurrency FROM workers WHERE id = ?`).get(svc.getId()) as { requested_concurrency: number };
+    const row = m.sqlite
+      .prepare(`SELECT requested_concurrency FROM workers WHERE id = ?`)
+      .get(svc.getId()) as { requested_concurrency: number };
     expect(row.requested_concurrency).toBe(8);
   });
 
   it('🚨 concurrency 0 → throw "1 and 64"', () => {
     const svc = new WorkerCoordinationService();
-    expect(() => svc.requestConcurrency(svc.getId(), 0, 'admin@x.com'))
-      .toThrow(/1 and 64/u);
+    expect(() => svc.requestConcurrency(svc.getId(), 0, 'admin@x.com')).toThrow(/1 and 64/u);
   });
 
   it('🚨 concurrency 65 → throw (anti-DoS)', () => {
     const svc = new WorkerCoordinationService();
-    expect(() => svc.requestConcurrency(svc.getId(), 65, 'admin@x.com'))
-      .toThrow(/1 and 64/u);
+    expect(() => svc.requestConcurrency(svc.getId(), 65, 'admin@x.com')).toThrow(/1 and 64/u);
   });
 
   it('🚨 concurrency negative → throw', () => {
     const svc = new WorkerCoordinationService();
-    expect(() => svc.requestConcurrency(svc.getId(), -5, 'admin@x.com'))
-      .toThrow(/1 and 64/u);
+    expect(() => svc.requestConcurrency(svc.getId(), -5, 'admin@x.com')).toThrow(/1 and 64/u);
   });
 
   it('🚨 concurrency non-integer → throw', () => {
     const svc = new WorkerCoordinationService();
-    expect(() => svc.requestConcurrency(svc.getId(), 3.5, 'admin@x.com'))
-      .toThrow(/1 and 64/u);
+    expect(() => svc.requestConcurrency(svc.getId(), 3.5, 'admin@x.com')).toThrow(/1 and 64/u);
   });
 
   it('worker not found → false', () => {
@@ -345,7 +374,9 @@ describe('setDraining / setIdle / setConcurrency', () => {
     const svc = new WorkerCoordinationService();
     svc.register();
     svc.setDraining();
-    const row = m.sqlite.prepare(`SELECT status FROM workers WHERE id = ?`).get(svc.getId()) as { status: string };
+    const row = m.sqlite.prepare(`SELECT status FROM workers WHERE id = ?`).get(svc.getId()) as {
+      status: string;
+    };
     expect(row.status).toBe('draining');
   });
 
@@ -354,7 +385,9 @@ describe('setDraining / setIdle / setConcurrency', () => {
     svc.register();
     m.sqlite.prepare(`UPDATE workers SET status = 'dead' WHERE id = ?`).run(svc.getId());
     svc.setDraining();
-    const row = m.sqlite.prepare(`SELECT status FROM workers WHERE id = ?`).get(svc.getId()) as { status: string };
+    const row = m.sqlite.prepare(`SELECT status FROM workers WHERE id = ?`).get(svc.getId()) as {
+      status: string;
+    };
     expect(row.status).toBe('dead');
   });
 
@@ -363,7 +396,9 @@ describe('setDraining / setIdle / setConcurrency', () => {
     svc.register();
     svc.markBusy('run-1'); // status=busy
     svc.setIdle();
-    const row = m.sqlite.prepare(`SELECT status FROM workers WHERE id = ?`).get(svc.getId()) as { status: string };
+    const row = m.sqlite.prepare(`SELECT status FROM workers WHERE id = ?`).get(svc.getId()) as {
+      status: string;
+    };
     expect(row.status).toBe('busy'); // NON cambiato da busy a idle
   });
 
@@ -372,7 +407,9 @@ describe('setDraining / setIdle / setConcurrency', () => {
     svc.register();
     svc.setDraining();
     svc.setIdle();
-    const row = m.sqlite.prepare(`SELECT status FROM workers WHERE id = ?`).get(svc.getId()) as { status: string };
+    const row = m.sqlite.prepare(`SELECT status FROM workers WHERE id = ?`).get(svc.getId()) as {
+      status: string;
+    };
     expect(row.status).toBe('idle');
   });
 
@@ -380,7 +417,9 @@ describe('setDraining / setIdle / setConcurrency', () => {
     const svc = new WorkerCoordinationService();
     svc.register();
     svc.setConcurrency(16);
-    const row = m.sqlite.prepare(`SELECT concurrency FROM workers WHERE id = ?`).get(svc.getId()) as { concurrency: number };
+    const row = m.sqlite
+      .prepare(`SELECT concurrency FROM workers WHERE id = ?`)
+      .get(svc.getId()) as { concurrency: number };
     expect(row.concurrency).toBe(16);
   });
 });

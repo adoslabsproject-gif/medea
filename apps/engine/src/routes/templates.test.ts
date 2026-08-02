@@ -23,10 +23,18 @@ const dbCalls = vi.hoisted(() => ({
 }));
 vi.mock('@/services/db-studio.service.js', () => ({
   DbStudioService: class {
-    list() { return [{ id: 'db-real-1', connection: { embedded: true } }]; }
-    create() { throw new Error('non deve creare DB: ne esiste uno'); }
-    applyMigration(dbId: string) { dbCalls.migrations.push({ dbId }); }
-    insert(dbId: string, table: string) { dbCalls.inserts.push({ dbId, table }); }
+    list() {
+      return [{ id: 'db-real-1', connection: { embedded: true } }];
+    }
+    create() {
+      throw new Error('non deve creare DB: ne esiste uno');
+    }
+    applyMigration(dbId: string) {
+      dbCalls.migrations.push({ dbId });
+    }
+    insert(dbId: string, table: string) {
+      dbCalls.inserts.push({ dbId, table });
+    }
   },
 }));
 
@@ -46,7 +54,10 @@ async function instantiate(id: string) {
   const app = new Hono();
   // Contesto auth come lo monta authMiddleware in server.ts (tenant-scoped).
   app.use('*', async (c, next) => {
-    c.set('auth' as never, { userId: 'u1', tenantId: 'tenant-test', email: 'o@x.it', role: 'owner' } as never);
+    c.set(
+      'auth' as never,
+      { userId: 'u1', tenantId: 'tenant-test', email: 'o@x.it', role: 'owner' } as never,
+    );
     await next();
   });
   app.route('/', createTemplateRoutes(eventBus));

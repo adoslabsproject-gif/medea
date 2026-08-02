@@ -56,7 +56,9 @@ beforeEach(async () => {
   delete process.env.MEDEA_E2E_PASSWORD_FILE;
 });
 
-async function load() { return import('./test-account.service.js'); }
+async function load() {
+  return import('./test-account.service.js');
+}
 
 describe('🚨 gate MEDEA_E2E_AUTO_PROVISION', () => {
   it('🚨 env != "1" → return early no insert', async () => {

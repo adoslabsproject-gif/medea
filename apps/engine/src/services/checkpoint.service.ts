@@ -59,39 +59,51 @@ export class CheckpointService implements ICheckpointHandler {
     const { sqlite } = getDatabase();
     const now = new Date().toISOString();
     // INSERT then DELETE older rows for this run — keep only the latest.
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO workflow_checkpoints (
         run_id, workflow_id, tenant_id, at_node_id,
         outputs_by_id_json, visited_json, pending_queue_json,
         item_graph_json, step_count, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      input.runId,
-      input.workflowId,
-      input.tenantId,
-      input.atNodeId,
-      JSON.stringify(Object.fromEntries(input.outputsById)),
-      JSON.stringify([...input.visited]),
-      JSON.stringify(input.pendingQueue),
-      JSON.stringify(Object.fromEntries(input.itemGraph)),
-      input.stepCount,
-      now,
-    );
-    sqlite.prepare(`
+    `,
+      )
+      .run(
+        input.runId,
+        input.workflowId,
+        input.tenantId,
+        input.atNodeId,
+        JSON.stringify(Object.fromEntries(input.outputsById)),
+        JSON.stringify([...input.visited]),
+        JSON.stringify(input.pendingQueue),
+        JSON.stringify(Object.fromEntries(input.itemGraph)),
+        input.stepCount,
+        now,
+      );
+    sqlite
+      .prepare(
+        `
       DELETE FROM workflow_checkpoints
       WHERE run_id = ? AND id NOT IN (
         SELECT id FROM workflow_checkpoints WHERE run_id = ? ORDER BY id DESC LIMIT 1
       )
-    `).run(input.runId, input.runId);
+    `,
+      )
+      .run(input.runId, input.runId);
   }
 
   /** Latest checkpoint for a run, or null. Used by the recovery service. */
   latest(runId: string): CheckpointRow | null {
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare(`
+    const row = sqlite
+      .prepare(
+        `
       SELECT * FROM workflow_checkpoints WHERE run_id = ?
       ORDER BY id DESC LIMIT 1
-    `).get(runId) as DbRow | undefined;
+    `,
+      )
+      .get(runId) as DbRow | undefined;
     return row ? this.mapRow(row) : null;
   }
 
@@ -131,14 +143,18 @@ export class CheckpointService implements ICheckpointHandler {
       // Step 1: identifica i candidate (runs.id eligible). Necessario un
       // SELECT preliminare perché UPDATE ... RETURNING richiede il filtro
       // sul JOIN con workflow_checkpoints — SQLite UPDATE non supporta JOIN.
-      const candidateRuns = sqlite.prepare(`
+      const candidateRuns = sqlite
+        .prepare(
+          `
         SELECT DISTINCT r.id AS run_id FROM runs r
         INNER JOIN (
           SELECT run_id, MAX(id) AS max_id, MAX(created_at) AS max_created
           FROM workflow_checkpoints GROUP BY run_id
         ) cp ON cp.run_id = r.id
         WHERE r.status = 'running' AND r.ended_at IS NULL AND cp.max_created < ?
-      `).all(threshold) as { run_id: string }[];
+      `,
+        )
+        .all(threshold) as { run_id: string }[];
 
       if (candidateRuns.length === 0) return [];
 
@@ -147,26 +163,31 @@ export class CheckpointService implements ICheckpointHandler {
       // righe effettivamente claimate da QUESTA transazione. Un'altra process
       // che è arrivata prima vedrà 0 rows. Garantisce "at-most-once resume".
       const placeholders = candidateRuns.map(() => '?').join(',');
-      const claimedIds = sqlite.prepare(`
+      const claimedIds = sqlite
+        .prepare(
+          `
         UPDATE runs SET status = 'recovering', updated_at = ?
         WHERE id IN (${placeholders}) AND status = 'running' AND ended_at IS NULL
         RETURNING id
-      `).all(
-        new Date().toISOString(),
-        ...candidateRuns.map((r) => r.run_id),
-      ) as { id: string }[];
+      `,
+        )
+        .all(new Date().toISOString(), ...candidateRuns.map((r) => r.run_id)) as { id: string }[];
 
       if (claimedIds.length === 0) return [];
 
       // Step 3: fetch the latest checkpoint per ognuno dei runs claimati.
       const claimedPh = claimedIds.map(() => '?').join(',');
-      const rows = sqlite.prepare(`
+      const rows = sqlite
+        .prepare(
+          `
         SELECT c.* FROM workflow_checkpoints c
         INNER JOIN (
           SELECT run_id, MAX(id) AS max_id FROM workflow_checkpoints GROUP BY run_id
         ) latest ON c.id = latest.max_id
         WHERE c.run_id IN (${claimedPh})
-      `).all(...claimedIds.map((r) => r.id)) as DbRow[];
+      `,
+        )
+        .all(...claimedIds.map((r) => r.id)) as DbRow[];
 
       return rows.map((r) => this.mapRow(r));
     });
@@ -185,9 +206,10 @@ export class CheckpointService implements ICheckpointHandler {
       visited: JSON.parse(row.visited_json) as string[],
       pendingQueue: JSON.parse(row.pending_queue_json) as QueueItem[],
       // Righe pre-4.2: colonna NULL → grafo vuoto (lineage assente, mai sbagliato).
-      itemGraph: row.item_graph_json !== null
-        ? JSON.parse(row.item_graph_json) as Record<string, ExecutionItem[]>
-        : {},
+      itemGraph:
+        row.item_graph_json !== null
+          ? (JSON.parse(row.item_graph_json) as Record<string, ExecutionItem[]>)
+          : {},
       stepCount: row.step_count,
       createdAt: row.created_at,
     };

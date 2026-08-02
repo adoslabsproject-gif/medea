@@ -34,42 +34,60 @@ beforeAll(() => {
 
 describe('🚨 workflows table', () => {
   it('🚨 PK id UNIQUE: INSERT 2x stesso id → throw', () => {
-    db.prepare(`
+    db.prepare(
+      `
       INSERT INTO workflows (id, name, created_at, updated_at)
       VALUES ('wf1', 'Test', '2026-06-07', '2026-06-07')
-    `).run();
+    `,
+    ).run();
     expect(() =>
-      db.prepare(`
+      db
+        .prepare(
+          `
         INSERT INTO workflows (id, name, created_at, updated_at)
         VALUES ('wf1', 'OtherName', '2026-06-07', '2026-06-07')
-      `).run(),
+      `,
+        )
+        .run(),
     ).toThrow(/UNIQUE|PRIMARY KEY/iu);
   });
 
   it('🚨 default tenant_id = "default"', () => {
-    db.prepare(`
+    db.prepare(
+      `
       INSERT INTO workflows (id, name, created_at, updated_at)
       VALUES ('wf-default', 'X', '2026-06-07', '2026-06-07')
-    `).run();
-    const r = db.prepare(`SELECT tenant_id FROM workflows WHERE id = 'wf-default'`).get() as { tenant_id: string };
+    `,
+    ).run();
+    const r = db.prepare(`SELECT tenant_id FROM workflows WHERE id = 'wf-default'`).get() as {
+      tenant_id: string;
+    };
     expect(r.tenant_id).toBe('default');
   });
 
   it('🚨 default enabled = 0 (false)', () => {
-    db.prepare(`
+    db.prepare(
+      `
       INSERT INTO workflows (id, name, created_at, updated_at)
       VALUES ('wf-enabled', 'X', '2026-06-07', '2026-06-07')
-    `).run();
-    const r = db.prepare(`SELECT enabled FROM workflows WHERE id = 'wf-enabled'`).get() as { enabled: number };
+    `,
+    ).run();
+    const r = db.prepare(`SELECT enabled FROM workflows WHERE id = 'wf-enabled'`).get() as {
+      enabled: number;
+    };
     expect(r.enabled).toBe(0);
   });
 
   it('🚨 nodes_json default = "[]"', () => {
-    db.prepare(`
+    db.prepare(
+      `
       INSERT INTO workflows (id, name, created_at, updated_at)
       VALUES ('wf-nodes', 'X', '2026-06-07', '2026-06-07')
-    `).run();
-    const r = db.prepare(`SELECT nodes_json, edges_json, node_defs_json FROM workflows WHERE id = 'wf-nodes'`).get() as { nodes_json: string; edges_json: string; node_defs_json: string };
+    `,
+    ).run();
+    const r = db
+      .prepare(`SELECT nodes_json, edges_json, node_defs_json FROM workflows WHERE id = 'wf-nodes'`)
+      .get() as { nodes_json: string; edges_json: string; node_defs_json: string };
     expect(r.nodes_json).toBe('[]');
     expect(r.edges_json).toBe('[]');
     expect(r.node_defs_json).toBe('[]');
@@ -77,37 +95,51 @@ describe('🚨 workflows table', () => {
 
   it('🚨 NOT NULL name → throw', () => {
     expect(() =>
-      db.prepare(`
+      db
+        .prepare(
+          `
         INSERT INTO workflows (id, created_at, updated_at)
         VALUES ('wf-noname', '2026-06-07', '2026-06-07')
-      `).run(),
+      `,
+        )
+        .run(),
     ).toThrow(/NOT NULL constraint|name/iu);
   });
 });
 
 describe('🚨 runs table — FK CASCADE + default status', () => {
   beforeAll(() => {
-    db.prepare(`
+    db.prepare(
+      `
       INSERT INTO workflows (id, name, created_at, updated_at)
       VALUES ('wf-runs', 'WithRuns', '2026-06-07', '2026-06-07')
-    `).run();
+    `,
+    ).run();
   });
 
   it('🚨 FK workflow_id → workflows(id): inesistente → throw', () => {
     expect(() =>
-      db.prepare(`
+      db
+        .prepare(
+          `
         INSERT INTO runs (id, workflow_id, started_at)
         VALUES ('r-bad', 'phantom-wf', '2026-06-07')
-      `).run(),
+      `,
+        )
+        .run(),
     ).toThrow(/FOREIGN KEY constraint/iu);
   });
 
   it('🚨 happy + default status="pending"', () => {
-    db.prepare(`
+    db.prepare(
+      `
       INSERT INTO runs (id, workflow_id, started_at)
       VALUES ('r-ok', 'wf-runs', '2026-06-07')
-    `).run();
-    const r = db.prepare(`SELECT status, input, steps_json, error_count FROM runs WHERE id = 'r-ok'`).get() as { status: string; input: string; steps_json: string; error_count: number };
+    `,
+    ).run();
+    const r = db
+      .prepare(`SELECT status, input, steps_json, error_count FROM runs WHERE id = 'r-ok'`)
+      .get() as { status: string; input: string; steps_json: string; error_count: number };
     expect(r.status).toBe('pending');
     expect(r.input).toBe('');
     expect(r.steps_json).toBe('[]');
@@ -115,12 +147,18 @@ describe('🚨 runs table — FK CASCADE + default status', () => {
   });
 
   it('🚨 FK ON DELETE CASCADE: drop workflow → runs cancellate', () => {
-    db.prepare(`
+    db.prepare(
+      `
       INSERT INTO workflows (id, name, created_at, updated_at)
       VALUES ('wf-cascade', 'Cas', '2026-06-07', '2026-06-07')
-    `).run();
-    db.prepare(`INSERT INTO runs (id, workflow_id, started_at) VALUES ('r-cas1', 'wf-cascade', '2026-06-07')`).run();
-    db.prepare(`INSERT INTO runs (id, workflow_id, started_at) VALUES ('r-cas2', 'wf-cascade', '2026-06-07')`).run();
+    `,
+    ).run();
+    db.prepare(
+      `INSERT INTO runs (id, workflow_id, started_at) VALUES ('r-cas1', 'wf-cascade', '2026-06-07')`,
+    ).run();
+    db.prepare(
+      `INSERT INTO runs (id, workflow_id, started_at) VALUES ('r-cas2', 'wf-cascade', '2026-06-07')`,
+    ).run();
 
     db.prepare(`DELETE FROM workflows WHERE id = 'wf-cascade'`).run();
 
@@ -132,10 +170,14 @@ describe('🚨 runs table — FK CASCADE + default status', () => {
 describe('🚨 credentials table', () => {
   it('🚨 NOT NULL ciphertext BLOB + nonce BLOB → INSERT senza → throw', () => {
     expect(() =>
-      db.prepare(`
+      db
+        .prepare(
+          `
         INSERT INTO credentials (id, name, provider, created_at, updated_at)
         VALUES ('c1', 'apikey', 'openai', '2026-06-07', '2026-06-07')
-      `).run(),
+      `,
+        )
+        .run(),
     ).toThrow(/NOT NULL constraint|ciphertext|nonce/iu);
   });
 
@@ -144,68 +186,102 @@ describe('🚨 credentials table', () => {
       INSERT INTO credentials (id, name, provider, ciphertext, nonce, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
-    insert.run('c-ok', 'k1', 'openai', Buffer.from([1, 2, 3]), Buffer.from([9, 9]), '2026-06-07', '2026-06-07');
-    const r = db.prepare(`SELECT length(ciphertext) AS clen, length(nonce) AS nlen FROM credentials WHERE id = 'c-ok'`).get() as { clen: number; nlen: number };
+    insert.run(
+      'c-ok',
+      'k1',
+      'openai',
+      Buffer.from([1, 2, 3]),
+      Buffer.from([9, 9]),
+      '2026-06-07',
+      '2026-06-07',
+    );
+    const r = db
+      .prepare(
+        `SELECT length(ciphertext) AS clen, length(nonce) AS nlen FROM credentials WHERE id = 'c-ok'`,
+      )
+      .get() as { clen: number; nlen: number };
     expect(r.clen).toBe(3);
     expect(r.nlen).toBe(2);
   });
 
   it('🚨 default tenant_id = "default"', () => {
-    db.prepare(`
+    db.prepare(
+      `
       INSERT INTO credentials (id, name, provider, ciphertext, nonce, created_at, updated_at)
       VALUES ('c-def', 'k2', 'anthropic', x'01', x'02', '2026-06-07', '2026-06-07')
-    `).run();
-    const r = db.prepare(`SELECT tenant_id FROM credentials WHERE id = 'c-def'`).get() as { tenant_id: string };
+    `,
+    ).run();
+    const r = db.prepare(`SELECT tenant_id FROM credentials WHERE id = 'c-def'`).get() as {
+      tenant_id: string;
+    };
     expect(r.tenant_id).toBe('default');
   });
 });
 
 describe('🚨 audit_log table — hash chain (NOT NULL hash + AUTOINCREMENT)', () => {
   it('🚨 PK AUTOINCREMENT: 2 INSERT con hash → id auto incrementati', () => {
-    db.prepare(`
+    db.prepare(
+      `
       INSERT INTO audit_log (action, resource_type, hash, created_at)
       VALUES ('login', 'session', 'h1', '2026-06-07')
-    `).run();
-    db.prepare(`
+    `,
+    ).run();
+    db.prepare(
+      `
       INSERT INTO audit_log (action, resource_type, hash, created_at)
       VALUES ('logout', 'session', 'h2', '2026-06-07')
-    `).run();
+    `,
+    ).run();
     const r = db.prepare(`SELECT COUNT(*) AS c FROM audit_log`).get() as { c: number };
     expect(r.c).toBeGreaterThanOrEqual(2);
   });
 
   it('🚨 NOT NULL action', () => {
     expect(() =>
-      db.prepare(`
+      db
+        .prepare(
+          `
         INSERT INTO audit_log (resource_type, hash, created_at)
         VALUES ('session', 'h', '2026-06-07')
-      `).run(),
+      `,
+        )
+        .run(),
     ).toThrow(/NOT NULL constraint|action/iu);
   });
 
   it('🚨 NOT NULL hash (hash chain integrity)', () => {
     expect(() =>
-      db.prepare(`
+      db
+        .prepare(
+          `
         INSERT INTO audit_log (action, resource_type, created_at)
         VALUES ('login', 'session', '2026-06-07')
-      `).run(),
+      `,
+        )
+        .run(),
     ).toThrow(/NOT NULL constraint|hash/iu);
   });
 
   it('🚨 NOT NULL created_at', () => {
     expect(() =>
-      db.prepare(`
+      db
+        .prepare(
+          `
         INSERT INTO audit_log (action, resource_type, hash)
         VALUES ('login', 'session', 'h')
-      `).run(),
+      `,
+        )
+        .run(),
     ).toThrow(/NOT NULL constraint|created_at/iu);
   });
 
   it('🚨 prev_hash nullable (genesis row ok)', () => {
-    db.prepare(`
+    db.prepare(
+      `
       INSERT INTO audit_log (action, resource_type, hash, prev_hash, created_at)
       VALUES ('genesis', 'sys', 'g-hash', NULL, '2026-06-07')
-    `).run();
+    `,
+    ).run();
   });
 });
 
@@ -272,7 +348,9 @@ describe('🚨 indici critici esistono', () => {
     'credentials_provider_idx',
     'credentials_tenant_name_idx',
   ])('indice "%s" esiste', (indexName) => {
-    const r = db.prepare(`SELECT name FROM sqlite_master WHERE type='index' AND name=?`).get(indexName);
+    const r = db
+      .prepare(`SELECT name FROM sqlite_master WHERE type='index' AND name=?`)
+      .get(indexName);
     expect(r).toBeDefined();
   });
 });
@@ -286,7 +364,11 @@ describe('🚨 PRAGMA foreign_keys: deve essere ENABLED', () => {
 
 describe('🚨 invariant: SCHEMA_SQL inserisce 14 tabelle base + evolutive', () => {
   it('🚨 almeno 14 tabelle create da SCHEMA_SQL (sanity)', () => {
-    const r = db.prepare(`SELECT COUNT(*) AS c FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`).get() as { c: number };
+    const r = db
+      .prepare(
+        `SELECT COUNT(*) AS c FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`,
+      )
+      .get() as { c: number };
     expect(r.c).toBeGreaterThanOrEqual(14);
   });
 });

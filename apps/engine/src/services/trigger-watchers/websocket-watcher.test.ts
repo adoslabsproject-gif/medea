@@ -35,9 +35,16 @@ afterEach(() => {
 
 function makeWf(over: Partial<Workflow> = {}): Workflow {
   return {
-    id: 'wf-ws', tenantId: 'tenant-a', name: 'WS', enabled: true,
-    schemaVersion: '1.0.0', nodes: [], edges: [], nodeDefs: [],
-    createdAt: '2026-06-12', updatedAt: '2026-06-12',
+    id: 'wf-ws',
+    tenantId: 'tenant-a',
+    name: 'WS',
+    enabled: true,
+    schemaVersion: '1.0.0',
+    nodes: [],
+    edges: [],
+    nodeDefs: [],
+    createdAt: '2026-06-12',
+    updatedAt: '2026-06-12',
     ...over,
   } as Workflow;
 }
@@ -60,14 +67,22 @@ class FakeSocket implements WatcherSocket {
     this.listeners.set(event, arr);
     return this;
   }
-  send(data: string): void { this.sent.push(data); }
-  ping(): void { this.pings += 1; }
-  close(): void { this.closeCalls += 1; }
+  send(data: string): void {
+    this.sent.push(data);
+  }
+  ping(): void {
+    this.pings += 1;
+  }
+  close(): void {
+    this.closeCalls += 1;
+  }
   emit(event: string, ...args: unknown[]): void {
     for (const cb of this.listeners.get(event) ?? []) (cb as (...a: unknown[]) => void)(...args);
   }
   /** Simula un messaggio in arrivo come Buffer (= RawData reale di `ws`). */
-  message(text: string): void { this.emit('message', Buffer.from(text, 'utf8')); }
+  message(text: string): void {
+    this.emit('message', Buffer.from(text, 'utf8'));
+  }
 }
 
 function makeDeps(over: Partial<WebSocketWatcherDeps> = {}): {
@@ -112,7 +127,11 @@ describe('startWebSocketWatcher — config gate', () => {
 
   it('wss:// case-insensitive + trim → accettata, socket creato con la URL trimmata', () => {
     const { deps, createSocket } = makeDeps();
-    const job = startWebSocketWatcher(makeWf(), makeNode({ ...VALID, url: '  WSS://secure.test  ' }), deps);
+    const job = startWebSocketWatcher(
+      makeWf(),
+      makeNode({ ...VALID, url: '  WSS://secure.test  ' }),
+      deps,
+    );
     expect(job).not.toBeNull();
     expect(createSocket).toHaveBeenCalledWith('WSS://secure.test', null);
   });
@@ -124,7 +143,9 @@ describe('startWebSocketWatcher — config gate', () => {
       makeNode({ ...VALID, headersJson: '{"Authorization":"Bearer x","n":1}' }),
       deps,
     );
-    expect(createSocket).toHaveBeenCalledWith('ws://example.test/feed', { Authorization: 'Bearer x' });
+    expect(createSocket).toHaveBeenCalledWith('ws://example.test/feed', {
+      Authorization: 'Bearer x',
+    });
   });
 
   // H5 — validare lo SCHEMA non basta: senza check dell'HOST un ws:// verso un IP
@@ -132,7 +153,11 @@ describe('startWebSocketWatcher — config gate', () => {
   it('🚨 H5 SSRF: ws:// verso IMDS 169.254.169.254 → null, NESSUN socket creato', () => {
     const { deps, createSocket } = makeDeps();
     expect(
-      startWebSocketWatcher(makeWf(), makeNode({ ...VALID, url: 'ws://169.254.169.254/latest/meta-data' }), deps),
+      startWebSocketWatcher(
+        makeWf(),
+        makeNode({ ...VALID, url: 'ws://169.254.169.254/latest/meta-data' }),
+        deps,
+      ),
     ).toBeNull();
     expect(createSocket).not.toHaveBeenCalled();
   });
@@ -194,7 +219,9 @@ describe('messaggi → run dispatch', () => {
     const { logger } = await import('@/lib/logger.js');
     const errSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger);
     const { sockets, ...rest } = makeDeps({
-      dispatchRun: async () => { throw new Error('run boom'); },
+      dispatchRun: async () => {
+        throw new Error('run boom');
+      },
     });
     startWebSocketWatcher(makeWf(), makeNode(VALID), rest.deps);
     sockets[0]!.message('{"a":1}');
@@ -226,7 +253,11 @@ describe('anti-flood sliding window (clock iniettato)', () => {
 
   it('FIX bug fail-open: maxMessagesPerSec non numerico → default 20 ATTIVO (non anti-flood spento)', () => {
     const { deps, sockets, dispatched } = makeDeps({ now: () => 0 });
-    startWebSocketWatcher(makeWf(), makeNode({ url: 'ws://x.test', pingIntervalSec: '0', maxMessagesPerSec: 'abc' }), deps);
+    startWebSocketWatcher(
+      makeWf(),
+      makeNode({ url: 'ws://x.test', pingIntervalSec: '0', maxMessagesPerSec: 'abc' }),
+      deps,
+    );
     for (let i = 0; i < 25; i += 1) sockets[0]!.message(`{"i":${String(i)}}`);
     expect(dispatched).toHaveLength(20); // default 20, non illimitato
   });
@@ -234,7 +265,11 @@ describe('anti-flood sliding window (clock iniettato)', () => {
   it('FIX bug NaN: pingIntervalSec non numerico → default 30s di keepalive (non ping spento)', () => {
     vi.useFakeTimers();
     const { deps, sockets } = makeDeps();
-    startWebSocketWatcher(makeWf(), makeNode({ url: 'ws://x.test', pingIntervalSec: 'abc', maxMessagesPerSec: '0' }), deps);
+    startWebSocketWatcher(
+      makeWf(),
+      makeNode({ url: 'ws://x.test', pingIntervalSec: 'abc', maxMessagesPerSec: '0' }),
+      deps,
+    );
     sockets[0]!.emit('open');
     vi.advanceTimersByTime(30_000);
     expect(sockets[0]!.pings).toBe(1);
@@ -254,7 +289,12 @@ describe('open: subscribe + keepalive ping', () => {
     const { deps, sockets } = makeDeps();
     startWebSocketWatcher(
       makeWf(),
-      makeNode({ url: 'ws://example.test', subscribeMessage: ' {"op":"subscribe"} ', pingIntervalSec: '5', maxMessagesPerSec: '0' }),
+      makeNode({
+        url: 'ws://example.test',
+        subscribeMessage: ' {"op":"subscribe"} ',
+        pingIntervalSec: '5',
+        maxMessagesPerSec: '0',
+      }),
       deps,
     );
     const s = sockets[0]!;
@@ -284,7 +324,9 @@ describe('open: subscribe + keepalive ping', () => {
     const { deps, sockets, dispatched } = makeDeps();
     startWebSocketWatcher(makeWf(), makeNode({ ...VALID, subscribeMessage: '{"op":"sub"}' }), deps);
     const s = sockets[0]!;
-    s.send = () => { throw new Error('send boom'); };
+    s.send = () => {
+      throw new Error('send boom');
+    };
     s.emit('open');
     expect(warnSpy).toHaveBeenCalledWith(
       expect.objectContaining({ workflowId: 'wf-ws' }),
@@ -379,14 +421,20 @@ describe('teardownWebSocketWatcher', () => {
     const { deps } = makeDeps();
     const job = startWebSocketWatcher(makeWf(), makeNode(VALID), deps)!;
     teardownWebSocketWatcher(job);
-    expect(() => { teardownWebSocketWatcher(job); }).not.toThrow();
+    expect(() => {
+      teardownWebSocketWatcher(job);
+    }).not.toThrow();
   });
 
   it('socket.close() che lancia → swallowed (teardown best-effort)', () => {
     const { deps, sockets } = makeDeps();
     const job = startWebSocketWatcher(makeWf(), makeNode(VALID), deps)!;
-    sockets[0]!.close = () => { throw new Error('already closed'); };
-    expect(() => { teardownWebSocketWatcher(job); }).not.toThrow();
+    sockets[0]!.close = () => {
+      throw new Error('already closed');
+    };
+    expect(() => {
+      teardownWebSocketWatcher(job);
+    }).not.toThrow();
     expect(job.socket).toBeNull();
   });
 });
@@ -414,7 +462,9 @@ describe('parseWsHeaders (pura)', () => {
   });
 
   it('tiene SOLO i valori stringa, scarta il resto', () => {
-    expect(parseWsHeaders('wf-x', '{"Authorization":"Bearer t","X-N":7,"X-Ok":"si"}'))
-      .toEqual({ Authorization: 'Bearer t', 'X-Ok': 'si' });
+    expect(parseWsHeaders('wf-x', '{"Authorization":"Bearer t","X-N":7,"X-Ok":"si"}')).toEqual({
+      Authorization: 'Bearer t',
+      'X-Ok': 'si',
+    });
   });
 });
