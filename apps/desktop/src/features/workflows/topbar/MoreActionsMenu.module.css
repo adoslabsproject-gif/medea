@@ -33,6 +33,21 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
+
+    /* Sette gruppi di voci: su una finestra bassa il menu supera il fondo
+       dello schermo e le ultime voci diventano irraggiungibili — non
+       tagliate a metà, proprio non raggiungibili, perché senza scorrimento
+       non c'è modo di arrivarci. L'altezza si ferma al viewport e il
+       contenuto scorre.
+
+       `dvh` e non `vh`: su finestre con barre che compaiono e scompaiono
+       `vh` resta al valore massimo e il fondo del menu finirebbe comunque
+       fuori. */
+    max-block-size: calc(100dvh - 5rem);
+    overflow-y: auto;
+    /* Arrivati in fondo alla lista, il gesto non deve proseguire sul canvas
+       sotto: si scorre il menu, non il workflow. */
+    overscroll-behavior: contain;
   }
 
   .group {
