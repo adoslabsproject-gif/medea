@@ -13,7 +13,7 @@ import { NODE_GROUPS, nodesByGroup, searchNodes, useCommunityNodes } from '../ca
 import type { NodeDef } from '../types';
 
 import { brandIconFor } from './brand-icons';
-import { setDraggedNode } from './drag-node';
+import { endDraggedNode, setDraggedNode } from './drag-node';
 import { iconNameFor, resolveLucideIcon } from './icon-registry';
 import styles from './NodePalette.module.css';
 
@@ -142,6 +142,9 @@ function NodeItem({ def, onAdd }: { def: NodeDef; onAdd: (d: NodeDef) => void })
         onDragStart={(event) => {
           setDraggedNode(event.dataTransfer, def.defId);
         }}
+        /* Comunque sia andata — lasciato sul disegno, lasciato fuori,
+           annullato con Esc — il nodo non è più in mano. */
+        onDragEnd={endDraggedNode}
         onClick={() => {
           onAdd(def);
         }}
