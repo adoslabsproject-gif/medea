@@ -6,6 +6,7 @@ pub mod background_cmd;
 pub mod claude_cli_cmd;
 pub mod db_cmd;
 pub mod imap_cmd;
+pub mod relay_cmd;
 pub mod runtime_cmd;
 pub mod secrets_cmd;
 pub mod smtp_cmd;

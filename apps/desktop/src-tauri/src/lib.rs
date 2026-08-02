@@ -4,11 +4,12 @@ pub mod ai_tools;
 mod background;
 mod commands;
 pub mod db;
+pub mod relay;
 pub mod runtime;
 mod security;
 
 use commands::{
-    ai_cmd, ai_tools_cmd, background_cmd, claude_cli_cmd, db_cmd, imap_cmd, runtime_cmd,
+    ai_cmd, ai_tools_cmd, background_cmd, claude_cli_cmd, db_cmd, imap_cmd, relay_cmd, runtime_cmd,
     secrets_cmd, smtp_cmd, sync_cmd, template_cmd, workflow_cmd,
 };
 use tauri::Manager;
@@ -173,6 +174,10 @@ pub fn run() {
             background_cmd::background_status,
             background_cmd::background_set_stay_alive,
             background_cmd::background_set_autostart,
+            // Il canale verso l'esterno
+            relay_cmd::relay_start,
+            relay_cmd::relay_stop,
+            relay_cmd::relay_status,
         ])
         .on_window_event(|window, event| {
             background::handle_window_event(window, event);

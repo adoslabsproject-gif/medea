@@ -94,10 +94,15 @@ export function RelayDialog({ onClose }: Props) {
           <label className={styles.label} htmlFor="relay-url">
             Indirizzo del relay
           </label>
+          <p className={styles.hint}>
+            Può essere <strong>il tuo</strong>: un server che hai già, un dominio o un indirizzo IP
+            con la porta. Medea non è legata a nessun relay in particolare — quello qui sotto è solo
+            un esempio.
+          </p>
           <input
             id="relay-url"
             className={styles.input}
-            placeholder="https://automazionezeli.com/relay"
+            placeholder="https://relay.iltuodominio.it  ·  http://192.168.1.50:8080/relay"
             value={url}
             disabled={enabled}
             onChange={(e) => {
