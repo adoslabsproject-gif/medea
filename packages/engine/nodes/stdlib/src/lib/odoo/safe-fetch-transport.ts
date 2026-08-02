@@ -1,5 +1,5 @@
 /**
- * `OdooHttpTransport` adapter backed by `@flowforge/safe-fetch`.
+ * `OdooHttpTransport` adapter backed by `@medea/engine-safe-fetch`.
  *
  * Shared by `action_odoo_rpc` + every wrapper node (lookup_partner /
  * create_lead / update_activity / …). Lifting it here avoids drift
@@ -15,7 +15,7 @@
 
 import type { OdooHttpTransport } from './xml-rpc-client.js';
 import { AbortedError, TimeoutError } from '../../core/node-error.js';
-import { safeFetchWithRedirects, assertUrlSafe } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects, assertUrlSafe } from '@medea/engine-safe-fetch';
 
 /** Cap anti-OOM sulla risposta Odoo RPC (25 MB — generoso per query, blocca runaway). */
 const ODOO_MAX_RESPONSE_BYTES = 25 * 1024 * 1024;
@@ -38,7 +38,9 @@ async function readOdooTextCapped(res: Response): Promise<string> {
   }
   const body = res.body;
   if (body && typeof body.getReader === 'function') {
-    const reader = body.getReader();
+    // `getReader()` non porta con sé il tipo dei blocchi letti: senza
+    // annotazione ogni `value` sarebbe `any`, e con lui tutto ciò che tocca.
+    const reader: ReadableStreamDefaultReader<Uint8Array> = body.getReader();
     const decoder = new TextDecoder('utf-8');
     let out = '';
     let total = 0;

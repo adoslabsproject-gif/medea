@@ -58,7 +58,9 @@ export async function readTextCapped(res: Response, capBytes: number = DEFAULT_R
 
   const body = res.body;
   if (body && typeof body.getReader === 'function') {
-    const reader = body.getReader();
+    // `getReader()` non porta con sé il tipo dei blocchi letti: senza questa
+    // annotazione ogni `value` sarebbe `any`, e con lui tutto ciò che tocca.
+    const reader: ReadableStreamDefaultReader<Uint8Array> = body.getReader();
     const chunks: Buffer[] = [];
     let total = 0;
     for (;;) {
@@ -108,7 +110,9 @@ export async function readJsonCapped<T>(res: Response, capBytes: number = DEFAUL
 export async function readTextTruncated(res: Response, maxBytes: number): Promise<{ text: string; truncated: boolean }> {
   const body = res.body;
   if (body && typeof body.getReader === 'function') {
-    const reader = body.getReader();
+    // `getReader()` non porta con sé il tipo dei blocchi letti: senza questa
+    // annotazione ogni `value` sarebbe `any`, e con lui tutto ciò che tocca.
+    const reader: ReadableStreamDefaultReader<Uint8Array> = body.getReader();
     const chunks: Buffer[] = [];
     let total = 0;
     let truncated = false;
@@ -153,7 +157,9 @@ export async function readBytesCapped(res: Response, capBytes: number = DEFAULT_
 
   const body = res.body;
   if (body && typeof body.getReader === 'function') {
-    const reader = body.getReader();
+    // `getReader()` non porta con sé il tipo dei blocchi letti: senza questa
+    // annotazione ogni `value` sarebbe `any`, e con lui tutto ciò che tocca.
+    const reader: ReadableStreamDefaultReader<Uint8Array> = body.getReader();
     const chunks: Buffer[] = [];
     let total = 0;
     for (;;) {

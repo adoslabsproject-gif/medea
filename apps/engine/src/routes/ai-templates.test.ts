@@ -1,7 +1,7 @@
 /**
  * Test 2026-grade — ai-templates routes.
  *
- * 🚨 ENVAR DEPENDENCY: FLOWFORGE_TENANT_ID env REQUIRED per share/unshare;
+ * 🚨 ENVAR DEPENDENCY: MEDEA_TENANT_ID env REQUIRED per share/unshare;
  *    se missing → 500 con messaggio chiaro (no silent failure).
  *
  * 🚨 GRACEFUL DEGRADATION: portal community client throw → 502, embedding
@@ -16,6 +16,7 @@
 import { Hono } from 'hono';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { _resetRateLimitState } from '@/middleware/rate-limit.js';
+import { jsonBody } from '@/lib/test-json-body.js';
 
 const templateCacheMock = vi.hoisted(() => ({
   list: vi.fn(),
@@ -49,10 +50,25 @@ vi.mock('@/services/ai-scaffold/template-cache/embedding-client.js', () => ({
 
 vi.mock('@/lib/logger.js');
 
-const ORIGINAL_TENANT = process.env.FLOWFORGE_TENANT_ID;
-process.env.FLOWFORGE_TENANT_ID = 'tenant-test';
+const ORIGINAL_TENANT = process.env.MEDEA_TENANT_ID;
+process.env.MEDEA_TENANT_ID = 'tenant-test';
 
 const { createAiTemplatesRoutes } = await import('./ai-templates.js');
+
+/** Il corpo delle rotte di elenco: la lista dei template del catalogo. */
+interface TemplateListBody {
+  ok: boolean;
+  count: number;
+  templates: Record<string, unknown>[];
+}
+
+/** Il corpo di `/search`: i risultati, dal punteggio più alto in giù. */
+interface TemplateSearchBody {
+  ok: boolean;
+  count: number;
+  embedded: boolean;
+  results: { score: number; source: string; template: Record<string, unknown> }[];
+}
 
 // Inietta un `auth` col ruolo dato (come authMiddleware in prod). Default owner
 // così i test funzionali superano il gate; role=null = nessun auth (→ 401).
@@ -89,7 +105,7 @@ describe('🚨 GET /list', () => {
     templateCacheMock.list.mockReturnValue([sampleTemplate()]);
     const app = makeApp();
     const res = await app.request('/');
-    const body = await res.json();
+    const body = await jsonBody<TemplateListBody>(res);
     expect(body.ok).toBe(true);
     expect(body.count).toBe(1);
     expect(body.templates[0]).toMatchObject({ id: 't-1', name: 'Template A' });
@@ -112,7 +128,7 @@ describe('🚨 GET /list', () => {
     templateCacheMock.list.mockReturnValue([sampleTemplate()]);
     const app = makeApp();
     const res = await app.request('/');
-    const body = await res.json();
+    const body = await jsonBody<TemplateListBody>(res);
     expect(body.templates[0]).not.toHaveProperty('workflowJson');
   });
 });
@@ -124,7 +140,7 @@ describe('🚨 GET /community', () => {
     });
     const app = makeApp();
     const res = await app.request('/community?language=en&limit=10');
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body.ok).toBe(true);
     expect(body.count).toBe(1);
     expect(portalClientMock.retrieveFromCommunity).toHaveBeenCalledWith({
@@ -136,7 +152,7 @@ describe('🚨 GET /community', () => {
     portalClientMock.retrieveFromCommunity.mockResolvedValue(null);
     const app = makeApp();
     const res = await app.request('/community');
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body.ok).toBe(false);
     expect(body.templates).toEqual([]);
   });
@@ -204,7 +220,7 @@ describe('🚨 POST /:id/share', () => {
       body: JSON.stringify({ description: 'My desc', language: 'it' }),
     });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body).toMatchObject({ ok: true, sharedTemplateId: 'shared-uuid', isNew: true });
   });
 
@@ -252,7 +268,7 @@ describe('🚨 POST /:id/unshare', () => {
       }),
     });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body.ok).toBe(true);
   });
 });
@@ -269,7 +285,7 @@ describe('🚨 DELETE /:id', () => {
     templateCacheMock.delete.mockReturnValue(true);
     const app = makeApp();
     const res = await app.request('/t-1', { method: 'DELETE' });
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body.ok).toBe(true);
   });
 });
@@ -315,7 +331,7 @@ describe('🚨 GET /metrics', () => {
     });
     const app = makeApp();
     const res = await app.request('/metrics');
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body.cacheHitRatePct).toBe(23.4);
     expect(body.gpuMinutesSaved).toBe(4); // 250 / 60 rounded
   });
@@ -341,7 +357,7 @@ describe('🚨 GET /search', () => {
     const app = makeApp();
     const res = await app.request('/search?query=ab');
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body.error).toContain('min 3 chars');
   });
 
@@ -353,7 +369,7 @@ describe('🚨 GET /search', () => {
     });
     const app = makeApp();
     const res = await app.request('/search?query=workflow+example');
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body.ok).toBe(true);
     expect(body.embedded).toBe(false);
     expect(body.results).toHaveLength(1);
@@ -377,9 +393,9 @@ describe('🚨 GET /search', () => {
     });
     const app = makeApp();
     const res = await app.request('/search?query=workflow+example&includeCommunity=true');
-    const body = await res.json();
+    const body = await jsonBody<TemplateSearchBody>(res);
     for (let i = 1; i < body.results.length; i++) {
-      expect(body.results[i].score).toBeLessThanOrEqual(body.results[i - 1].score);
+      expect(body.results[i]!.score).toBeLessThanOrEqual(body.results[i - 1]!.score);
     }
   });
 
@@ -391,9 +407,9 @@ describe('🚨 GET /search', () => {
     portalClientMock.retrieveFromCommunity.mockRejectedValue(new Error('502'));
     const app = makeApp();
     const res = await app.request('/search?query=test+query&includeCommunity=true');
-    const body = await res.json();
+    const body = await jsonBody<TemplateSearchBody>(res);
     expect(body.ok).toBe(true);
-    expect(body.results.every((r: { source: string }) => r.source === 'local')).toBe(true);
+    expect(body.results.every((r) => r.source === 'local')).toBe(true);
   });
 
   it('🚨 limit cap [1, 10]', async () => {
@@ -406,7 +422,7 @@ describe('🚨 GET /search', () => {
     templateCacheMock.retrieve.mockReturnValue(null);
     const app = makeApp();
     const res = await app.request('/search?query=no+match+query');
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body.results).toEqual([]);
     expect(body.count).toBe(0);
   });
@@ -419,17 +435,17 @@ describe('🚨 GET /search', () => {
     });
     const app = makeApp();
     const res = await app.request('/search?query=test+query');
-    const body = await res.json();
-    expect(body.results[0].template.workflowJson).toBeNull();
+    const body = await jsonBody<TemplateSearchBody>(res);
+    expect(body.results[0]!.template.workflowJson).toBeNull();
   });
 });
 
 // Restore original
 afterAll(() => {
   if (ORIGINAL_TENANT === undefined) {
-    delete process.env.FLOWFORGE_TENANT_ID;
+    delete process.env.MEDEA_TENANT_ID;
   } else {
-    process.env.FLOWFORGE_TENANT_ID = ORIGINAL_TENANT;
+    process.env.MEDEA_TENANT_ID = ORIGINAL_TENANT;
   }
 });
 

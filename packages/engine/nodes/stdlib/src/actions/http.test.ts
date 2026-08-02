@@ -25,13 +25,15 @@ interface FetchCall { url: string; init: FetchInit }
 
 function mockFetch(handler: (req: FetchCall) => Response | Promise<Response>) {
   const calls: FetchCall[] = [];
-  const spy = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+  // `RequestInfo` è un tipo del DOM: qui gira Node, dove la firma di `fetch`
+  // la danno i tipi di @types/node. Si prende da lì invece di nominarne uno
+  // che in questo ambiente non esiste.
+  const spy = vi.fn(async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input).url;
     const call: FetchCall = { url, init: init ?? {} };
     calls.push(call);
     return await handler(call);
   });
-  // @ts-expect-error global override
   globalThis.fetch = spy;
   return { calls, spy };
 }

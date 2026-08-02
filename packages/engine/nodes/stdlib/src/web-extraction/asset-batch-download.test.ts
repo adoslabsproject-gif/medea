@@ -13,16 +13,15 @@ import * as crypto from 'node:crypto';
 import { deriveLocalPath, runAssetBatchDownload } from './asset-batch-download-engine.js';
 import { assetBatchDownloadNode } from './asset-batch-download.js';
 
-vi.mock('@flowforge/safe-fetch', () => ({
+vi.mock('@medea/engine-safe-fetch', () => ({
   safeFetchWithRedirects: vi.fn(),
   SsrfBlockedError: class extends Error {},
 }));
-const { safeFetchWithRedirects } = await import('@flowforge/safe-fetch');
+const { safeFetchWithRedirects } = await import('@medea/engine-safe-fetch');
 const mockedFetch = safeFetchWithRedirects as unknown as ReturnType<typeof vi.fn>;
 
 function bin(buf: Buffer, contentType = 'application/octet-stream'): Response {
-   
-  return new Response(buf as unknown as any, { status: 200, headers: { 'content-type': contentType } });
+  return new Response(buf, { status: 200, headers: { 'content-type': contentType } });
 }
 
 let tmpBase = '';

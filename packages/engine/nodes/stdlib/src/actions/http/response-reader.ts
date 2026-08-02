@@ -54,7 +54,9 @@ export async function readBodyWithCap(res: Response, capBytes: number, prefer: '
   }
   const body = res.body;
   if (body && typeof body.getReader === 'function') {
-    const reader = body.getReader();
+    // `getReader()` non porta con sé il tipo dei blocchi letti: senza
+    // annotazione ogni `value` sarebbe `any`, e con lui tutto ciò che tocca.
+    const reader: ReadableStreamDefaultReader<Uint8Array> = body.getReader();
     const chunks: Buffer[] = [];
     let total = 0;
     for (;;) {
@@ -100,7 +102,7 @@ export async function readResponse(
     if (writeBinary) {
       return await writeBinary(buf, { mimeType, ...(fileName !== undefined ? { fileName } : {}) });
     }
-    const { makeBinaryInline } = await import('@flowforge/core-schema');
+    const { makeBinaryInline } = await import('@medea/engine-core-schema');
     return makeBinaryInline({ mimeType, data: buf.toString('base64'), ...(fileName !== undefined ? { fileName } : {}) });
   }
   const text = (await readBodyWithCap(res, capBytes, 'text')).toString('utf-8');
