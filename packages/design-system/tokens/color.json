@@ -14,18 +14,19 @@
       "900": "oklch(0.26 0.095 270)",
       "950": "oklch(0.18 0.060 270)"
     },
+    "$comment-slate": "Rivista il 2026-08-03. I due estremi erano quasi bianco puro e quasi nero puro: è da lì che veniva la durezza. Adesso il fondo chiaro è appena spento e quello scuro è un grigio profondo invece di un nero, con un filo di croma in più su tutta la scala — un neutro completamente desaturato a schermo sembra spento, non sobrio. La tinta resta la stessa: non è un cambio di identità.",
     "slate": {
-      "50": "oklch(0.98 0.005 250)",
-      "100": "oklch(0.95 0.008 250)",
-      "200": "oklch(0.90 0.010 250)",
-      "300": "oklch(0.82 0.012 250)",
-      "400": "oklch(0.70 0.014 250)",
-      "500": "oklch(0.55 0.018 250)",
-      "600": "oklch(0.42 0.020 250)",
-      "700": "oklch(0.32 0.022 250)",
-      "800": "oklch(0.22 0.018 250)",
-      "900": "oklch(0.14 0.014 250)",
-      "950": "oklch(0.09 0.010 250)"
+      "50": "oklch(0.975 0.006 250)",
+      "100": "oklch(0.945 0.010 250)",
+      "200": "oklch(0.895 0.013 250)",
+      "300": "oklch(0.815 0.015 250)",
+      "400": "oklch(0.695 0.017 250)",
+      "500": "oklch(0.55 0.020 250)",
+      "600": "oklch(0.43 0.023 250)",
+      "700": "oklch(0.34 0.025 250)",
+      "800": "oklch(0.26 0.023 250)",
+      "900": "oklch(0.19 0.019 250)",
+      "950": "oklch(0.145 0.015 250)"
     },
     "amber": {
       "400": "oklch(0.82 0.155 80)",
@@ -66,10 +67,11 @@
       "muted": { "light": "{primitives.slate.500}", "dark": "{primitives.slate.400}" },
       "inverted": { "light": "{primitives.slate.50}", "dark": "{primitives.slate.950}" }
     },
+    "$comment-accent": "Nel tema chiaro l'accento scende di un gradino (era indigo.500): il bianco sopra indigo.500 dava 3.52:1, sotto la soglia di 4.5:1 per il testo normale — cioè le scritte dei pulsanti primari erano al limite della leggibilità. Non era una conseguenza della palette più morbida del 2026-08-03: c'era da prima, e si è visto solo quando il contrasto ha smesso di essere giudicato a occhio.",
     "accent": {
       "subtle": { "light": "{primitives.indigo.100}", "dark": "{primitives.indigo.900}" },
-      "default": { "light": "{primitives.indigo.500}", "dark": "{primitives.indigo.400}" },
-      "emphasis": { "light": "{primitives.indigo.600}", "dark": "{primitives.indigo.300}" },
+      "default": { "light": "{primitives.indigo.600}", "dark": "{primitives.indigo.400}" },
+      "emphasis": { "light": "{primitives.indigo.700}", "dark": "{primitives.indigo.300}" },
       "on": { "light": "{primitives.slate.50}", "dark": "{primitives.slate.950}" }
     },
     "feedback": {
