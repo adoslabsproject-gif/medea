@@ -41,7 +41,9 @@ async function readTextCapped(res: Response): Promise<string> {
   }
   const body = res.body;
   if (body && typeof body.getReader === 'function') {
-    const reader = body.getReader();
+    // `getReader()` non porta con sé il tipo dei blocchi letti: senza
+    // annotazione ogni `value` sarebbe `any`, e con lui tutto ciò che tocca.
+    const reader: ReadableStreamDefaultReader<Uint8Array> = body.getReader();
     const chunks: Buffer[] = [];
     let total = 0;
     for (;;) {
@@ -75,7 +77,9 @@ async function readTextCapped(res: Response): Promise<string> {
 async function readErrorSnippet(res: Response, maxBytes = 8192): Promise<string> {
   const body = res.body;
   if (body && typeof body.getReader === 'function') {
-    const reader = body.getReader();
+    // `getReader()` non porta con sé il tipo dei blocchi letti: senza
+    // annotazione ogni `value` sarebbe `any`, e con lui tutto ciò che tocca.
+    const reader: ReadableStreamDefaultReader<Uint8Array> = body.getReader();
     const chunks: Buffer[] = [];
     let total = 0;
     try {

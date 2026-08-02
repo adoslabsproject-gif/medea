@@ -174,7 +174,11 @@ describe('INTEGRAZIONE: Agent undici reale + fetch globale + server localhost', 
       : [{ address: '93.184.216.34', family: 4 }];
     const dispatcher = getSecureDispatcher();
     await expect(
-      fetch(`http://rebind.test:${port}/`, { dispatcher } as RequestInit & { dispatcher: unknown }),
+      // `Agent` viene da undici; il `Dispatcher` che i tipi di Node dichiarano
+      // dentro RequestInit viene da un'altra copia di undici-types. A runtime è
+      // lo stesso oggetto, per il compilatore no — e con
+      // `exactOptionalPropertyTypes` le due dichiarazioni non combaciano.
+      fetch(`http://rebind.test:${port}/`, { dispatcher } as unknown as RequestInit),
     ).rejects.toThrow();
     // Il server NON deve aver ricevuto NULLA.
     expect(hits).toBe(0);

@@ -14,6 +14,24 @@
  */
 import { Hono } from 'hono';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { jsonBody } from '@/lib/test-json-body.js';
+
+/** Il corpo di `/forms-list`: i workflow che espongono un form. */
+interface FormsListBody {
+  forms: {
+    workflowId: string;
+    workflowName: string;
+    enabled: boolean;
+    title: string;
+    fieldsCount: number;
+  }[];
+}
+
+/** Il corpo di `/forms-list/:id/submissions`: gli invii ricevuti dal form. */
+interface SubmissionsBody {
+  workflowName: string;
+  submissions: { input: Record<string, unknown> }[];
+}
 
 const workflowsListMock = vi.hoisted(() => vi.fn());
 const workflowsGetMock = vi.hoisted(() => vi.fn());
@@ -110,7 +128,7 @@ describe('🚨 GET /forms-list', () => {
     ]);
     const app = makeApp();
     const res = await app.request('/forms-list');
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body.forms).toEqual([]);
     expect(body.total).toBe(0);
   });
@@ -133,7 +151,7 @@ describe('🚨 GET /forms-list', () => {
     const res = await app.request('/forms-list', {
       headers: { origin: 'https://x.app.zeli.com' },
     });
-    const body = await res.json();
+    const body = await jsonBody<FormsListBody>(res);
     expect(body.forms).toHaveLength(1);
     expect(body.forms[0]).toMatchObject({
       workflowId: 'wf-2', workflowName: 'Contact',
@@ -155,8 +173,8 @@ describe('🚨 GET /forms-list', () => {
     dbChain.aggRows.push({ c: 0, last: null });
     const app = makeApp();
     const res = await app.request('/forms-list');
-    const body = await res.json();
-    expect(body.forms[0].fieldsCount).toBe(0);
+    const body = await jsonBody<FormsListBody>(res);
+    expect(body.forms[0]!.fieldsCount).toBe(0);
   });
 
   it('🚨 title mancante → fallback workflowName', async () => {
@@ -170,8 +188,8 @@ describe('🚨 GET /forms-list', () => {
     dbChain.aggRows.push({ c: 0, last: null });
     const app = makeApp();
     const res = await app.request('/forms-list');
-    const body = await res.json();
-    expect(body.forms[0].title).toBe('WF Name');
+    const body = await jsonBody<FormsListBody>(res);
+    expect(body.forms[0]!.title).toBe('WF Name');
   });
 });
 
@@ -261,8 +279,8 @@ describe('🚨 GET /forms-list/:id/submissions JSON', () => {
     });
     const app = makeApp();
     const res = await app.request('/forms-list/wf-1/submissions');
-    const body = await res.json();
-    expect(body.submissions[0].input).toEqual({ name: 'Mario', email: 'm@x.com' });
+    const body = await jsonBody<SubmissionsBody>(res);
+    expect(body.submissions[0]!.input).toEqual({ name: 'Mario', email: 'm@x.com' });
     expect(body.workflowName).toBe('WF');
   });
 
@@ -275,8 +293,8 @@ describe('🚨 GET /forms-list/:id/submissions JSON', () => {
     });
     const app = makeApp();
     const res = await app.request('/forms-list/wf-1/submissions');
-    const body = await res.json();
-    expect(body.submissions[0].input).toEqual({ direct: 'value' });
+    const body = await jsonBody<SubmissionsBody>(res);
+    expect(body.submissions[0]!.input).toEqual({ direct: 'value' });
   });
 
   it('🚨 payload JSON invalido → input {} (no crash)', async () => {
@@ -288,8 +306,8 @@ describe('🚨 GET /forms-list/:id/submissions JSON', () => {
     });
     const app = makeApp();
     const res = await app.request('/forms-list/wf-1/submissions');
-    const body = await res.json();
-    expect(body.submissions[0].input).toEqual({});
+    const body = await jsonBody<SubmissionsBody>(res);
+    expect(body.submissions[0]!.input).toEqual({});
   });
 });
 

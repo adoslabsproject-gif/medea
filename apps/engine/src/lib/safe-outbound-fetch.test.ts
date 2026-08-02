@@ -6,11 +6,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // + installato come dispatcher globale. Qui mockiamo `fetch` → il dispatcher non
 // viene invocato → niente DNS reale, test veloci/deterministici.
 import { safeOutboundFetch, safeOutboundFetchOk } from './safe-outbound-fetch.js';
-import { clearBreakerRegistry, NetworkError, HttpError, TimeoutError, CircuitOpenError } from '@flowforge/nodes-stdlib';
+import { clearBreakerRegistry, NetworkError, HttpError, TimeoutError, CircuitOpenError } from '@medea/engine-nodes-stdlib';
 
 function mockFetch(handler: (url: string, init?: RequestInit) => Response | Promise<Response>) {
   const calls: { url: string; init: RequestInit | undefined }[] = [];
-  const spy = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+  // `RequestInfo` è un tipo del DOM: qui gira Node, dove la firma di `fetch`
+  // la danno i tipi di @types/node. Si prende da lì invece di nominarne uno
+  // che in questo ambiente non esiste.
+  const spy = vi.fn(async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input as Request).url;
     calls.push({ url, init });
     return await handler(url, init);

@@ -51,12 +51,12 @@ describe('validazione generate (prima di ComfyUI)', () => {
   it('sdxl senza prompt → 400', async () => {
     const r = await req('/studio/generate', { method: 'POST', cookie: true, body: JSON.stringify({ mode: 'sdxl', checkpoint: 'm' }) });
     expect(r.status).toBe(400);
-    expect((await r.json()).error).toMatch(/prompt/);
+    expect((await r.json() as { error: string }).error).toMatch(/prompt/);
   });
   it('sdxl senza checkpoint → 400', async () => {
     const r = await req('/studio/generate', { method: 'POST', cookie: true, body: JSON.stringify({ mode: 'sdxl', prompt: 'cat' }) });
     expect(r.status).toBe(400);
-    expect((await r.json()).error).toMatch(/checkpoint/);
+    expect((await r.json() as { error: string }).error).toMatch(/checkpoint/);
   });
   it('custom con grafo JSON invalido → 400', async () => {
     const r = await req('/studio/generate', { method: 'POST', cookie: true, body: JSON.stringify({ mode: 'custom', graphJson: '{bad' }) });
@@ -156,7 +156,7 @@ describe('cancel (tasto Stop)', () => {
     vi.stubGlobal('fetch', fetchSpy);
     const r = await req('/studio/cancel/job-123', { method: 'POST', cookie: true });
     expect(r.status).toBe(200);
-    expect((await r.json()).ok).toBe(true);
+    expect((await r.json() as { ok: boolean }).ok).toBe(true);
     const urls = fetchSpy.mock.calls.map((c) => String(c[0]));
     expect(urls.some((u) => u.endsWith('/queue'))).toBe(true);
     expect(urls.some((u) => u.endsWith('/interrupt'))).toBe(true);

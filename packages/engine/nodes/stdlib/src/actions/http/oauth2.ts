@@ -16,7 +16,7 @@
  *    token endpoint (mai l'header Authorization).
  *
  * Modulo PURO (fetch + clock iniettabili) → testabile senza rete. Le letture del body
- * sono cappate inline (anti-OOM, R5) senza dipendere da @flowforge/safe-fetch, così la
+ * sono cappate inline (anti-OOM, R5) senza dipendere da @medea/engine-safe-fetch, così la
  * purezza resta. La risposta è validata con Zod (boundary esterno, R9), la cache fa
  * eviction LRU reale (R2) e la chiave NON contiene il secret in chiaro (hash, R4).
  */
@@ -104,7 +104,9 @@ function evictForRoom(now: number): void {
 async function readCappedText(res: Response, capBytes: number): Promise<string> {
   const body = res.body;
   if (body && typeof body.getReader === 'function') {
-    const reader = body.getReader();
+    // `getReader()` non porta con sé il tipo dei blocchi letti: senza
+    // annotazione ogni `value` sarebbe `any`, e con lui tutto ciò che tocca.
+    const reader: ReadableStreamDefaultReader<Uint8Array> = body.getReader();
     const chunks: Uint8Array[] = [];
     let total = 0;
     for (;;) {

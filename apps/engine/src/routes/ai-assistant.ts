@@ -547,7 +547,7 @@ export function createAiAssistantRoutes(): Hono {
     const rid = (c.req.query('rid') ?? '').trim();
     if (!rid) return c.json({ error: 'rid query param required' }, 400);
 
-    const licenseKey = process.env.FLOWFORGE_LICENSE_KEY ?? '';
+    const licenseKey = process.env.MEDEA_LICENSE_KEY ?? '';
     const url = `${liaraBaseUrl()}/queue-status?rid=${encodeURIComponent(rid)}`;
 
     return streamSSE(c, async (stream) => {
@@ -570,7 +570,9 @@ export function createAiAssistantRoutes(): Hono {
         return;
       }
       // Pass-through dei frame SSE del portal (queued/admitted/gone), raw.
-      const reader = upstream.body.getReader();
+      // `getReader()` non porta con sé il tipo dei blocchi letti: senza
+      // annotazione ogni `value` sarebbe `any`, e con lui tutto ciò che tocca.
+      const reader: ReadableStreamDefaultReader<Uint8Array> = upstream.body.getReader();
       const decoder = new TextDecoder();
       try {
         for (;;) {

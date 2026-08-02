@@ -9,7 +9,7 @@
  */
 
 import { Hono } from 'hono';
-import { stdlibNodeDefs } from '@flowforge/nodes-stdlib';
+import { stdlibNodeDefs } from '@medea/engine-nodes-stdlib';
 import { readJsonCapped } from '@/lib/capped-response.js';
 import { getTenantId } from '@/lib/tenant.js';
 import { safeOutboundFetch } from '@/lib/safe-outbound-fetch.js';
@@ -143,7 +143,7 @@ export function createMarketplaceRoutes(): Hono {
     // SSRF guard (#194 C1): valida URL contro IP privati, loopback,
     // link-local (cloud metadata 169.254.169.254), scheme non-http(s),
     // hostname riservati (localhost, metadata.google.internal, ecc).
-    const { validateUrlForFetch } = await import('@flowforge/safe-fetch');
+    const { validateUrlForFetch } = await import('@medea/engine-safe-fetch');
     const ssrf = validateUrlForFetch(body.url);
     if (!ssrf.ok) {
       return c.json({ error: { code: 'URL_BLOCKED', message: 'URL not allowed', reason: ssrf.reason } }, 400);
@@ -188,7 +188,7 @@ export function createMarketplaceRoutes(): Hono {
       // Delegate to the workflow service — this lives at /api/v1/workflows (POST)
       // We can't call it directly without circular import, so we use the runtime's
       // own HTTP API from here. Tenant header propagated.
-      const baseUrl = (process.env.FLOWFORGE_BASE_URL ?? 'http://127.0.0.1:3500/api/v1');
+      const baseUrl = (process.env.MEDEA_BASE_URL ?? 'http://127.0.0.1:3500/api/v1');
       const auth = c.req.header('authorization') ?? '';
       const created = await fetch(`${baseUrl}/workflows`, {
         method: 'POST',
@@ -227,7 +227,9 @@ export function createMarketplaceRoutes(): Hono {
  */
 export async function readWithCap(res: Response, maxBytes: number): Promise<string> {
   if (!res.body) return '';
-  const reader = res.body.getReader();
+  // `getReader()` non porta con sé il tipo dei blocchi letti: senza
+  // annotazione ogni `value` sarebbe `any`, e con lui tutto ciò che tocca.
+  const reader: ReadableStreamDefaultReader<Uint8Array> = res.body.getReader();
   let received = 0;
   const chunks: Uint8Array[] = [];
   while (true) {
