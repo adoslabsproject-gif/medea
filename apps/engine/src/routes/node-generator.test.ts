@@ -19,6 +19,7 @@
  */
 import { Hono } from 'hono';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { jsonBody } from '@/lib/test-json-body.js';
 
 const resolveMock = vi.hoisted(() => vi.fn());
 const dispatchMock = vi.hoisted(() => vi.fn());
@@ -204,7 +205,7 @@ describe('🚨 generate happy path', () => {
       }),
     });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body.node).toBeDefined();
     expect(body.interactionId).toBe('interaction-1');
   });

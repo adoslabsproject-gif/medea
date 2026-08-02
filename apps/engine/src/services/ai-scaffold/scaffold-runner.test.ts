@@ -117,13 +117,13 @@ describe('scaffold-runner — finalize wfPlain must satisfy WorkflowSchema', () 
   });
 
   it('WorkflowSchema.parse PASSA con createdAt/updatedAt popolati (no ZodError)', async () => {
-    const { WorkflowSchema } = await import('@flowforge/core-schema');
+    const { WorkflowSchema } = await import('@medea/engine-core-schema');
     const wf = buildWfPlain({ id: 'wf-1', name: 'AI Scaffold draft' });
     expect(() => WorkflowSchema.parse(wf)).not.toThrow();
   });
 
   it('WorkflowSchema.parse FALLISCE se createdAt assente (negative regression)', async () => {
-    const { WorkflowSchema } = await import('@flowforge/core-schema');
+    const { WorkflowSchema } = await import('@medea/engine-core-schema');
     const wf = buildWfPlain({ id: 'wf-1', name: 'x' });
     const broken: Record<string, unknown> = { ...wf };
     delete broken.createdAt;
@@ -131,7 +131,7 @@ describe('scaffold-runner — finalize wfPlain must satisfy WorkflowSchema', () 
   });
 
   it('WorkflowSchema.parse FALLISCE se updatedAt assente (negative regression)', async () => {
-    const { WorkflowSchema } = await import('@flowforge/core-schema');
+    const { WorkflowSchema } = await import('@medea/engine-core-schema');
     const wf = buildWfPlain({ id: 'wf-1', name: 'x' });
     const broken: Record<string, unknown> = { ...wf };
     delete broken.updatedAt;

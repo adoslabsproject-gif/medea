@@ -20,7 +20,7 @@ import type * as QueueServiceNS from './queue.service.js';
 import { describe, it, expect, afterAll, beforeAll } from 'vitest';
 import IORedis from 'ioredis';
 
-const REDIS_URL = process.env.FLOWFORGE_TEST_REDIS_URL ?? 'redis://localhost:6379/15';
+const REDIS_URL = process.env.MEDEA_TEST_REDIS_URL ?? 'redis://localhost:6379/15';
 
 async function redisReachable(): Promise<boolean> {
   const probe = new IORedis(REDIS_URL, {
@@ -48,8 +48,8 @@ describe.skipIf(!REDIS_OK)('🚨 BullMQ queue — roundtrip REALE su Redis', () 
   let mod: QueueModule;
 
   beforeAll(async () => {
-    process.env.FLOWFORGE_QUEUE_MODE = 'redis';
-    process.env.FLOWFORGE_REDIS_URL = REDIS_URL;
+    process.env.MEDEA_QUEUE_MODE = 'redis';
+    process.env.MEDEA_REDIS_URL = REDIS_URL;
     mod = await import('./queue.service.js');
     // Pulisci eventuali residui di run precedenti nel DB di test.
     await mod.getRunQueue().obliterate({ force: true });
@@ -60,8 +60,8 @@ describe.skipIf(!REDIS_OK)('🚨 BullMQ queue — roundtrip REALE su Redis', () 
       await mod.getRunQueue().obliterate({ force: true }).catch(() => undefined);
       await mod.shutdownQueue().catch(() => undefined);
     }
-    delete process.env.FLOWFORGE_QUEUE_MODE;
-    delete process.env.FLOWFORGE_REDIS_URL;
+    delete process.env.MEDEA_QUEUE_MODE;
+    delete process.env.MEDEA_REDIS_URL;
   });
 
   it('🚨 enqueueRun → startWorker: il job arriva al handler con i dati esatti', async () => {

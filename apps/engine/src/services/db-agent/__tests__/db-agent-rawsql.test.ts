@@ -8,15 +8,15 @@
  *
  * @module services/db-agent/__tests__/db-agent-rawsql
  */
-import type * as DbStudioEngineNS from '@flowforge/db-studio-engine';
+import type * as DbStudioEngineNS from '@medea/engine-db-studio-engine';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import Database from 'better-sqlite3';
-import type { Table } from '@flowforge/db-studio-core';
+import type { Table } from '@medea/engine-db-studio-core';
 
 const m = vi.hoisted(() => {
   const mockFns = {
     db: null as Database.Database | null,
-    configValue: { FLOWFORGE_DATA_DIR: '/tmp/ff-db-agent-rawsql-test' },
+    configValue: { MEDEA_DATA_DIR: '/tmp/ff-db-agent-rawsql-test' },
     connect: vi.fn(),
     executeRaw: vi.fn(),
     introspect: vi.fn(),
@@ -39,18 +39,18 @@ const m = vi.hoisted(() => {
 vi.mock('@/storage/db.js', () => ({ getDatabase: () => ({ sqlite: m.db! }) }));
 vi.mock('@/lib/logger.js');
 vi.mock('@/config.js', () => ({ loadConfig: () => m.configValue }));
-vi.mock('@flowforge/db-studio-engine', async (importOriginal) => {
+vi.mock('@medea/engine-db-studio-engine', async (importOriginal) => {
   // IMPORTANTE: NON mockare classifyStatement/assertSafeRawStatement — sono la
   // guardia sotto test. Mockiamo SOLO l'adapter (per non aprire file reali).
   const real = await importOriginal<typeof DbStudioEngineNS>();
   return { ...real, SqliteAdapter: m.FakeAdapter };
 });
-vi.mock('@flowforge/db-studio-postgres', () => ({ PostgresAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-mysql', () => ({ MysqlAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-mongodb', () => ({ MongoDbAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-redis', () => ({ RedisAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-mssql', () => ({ MssqlAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-duckdb', () => ({ DuckDbAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-postgres', () => ({ PostgresAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-mysql', () => ({ MysqlAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-mongodb', () => ({ MongoDbAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-redis', () => ({ RedisAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-mssql', () => ({ MssqlAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-duckdb', () => ({ DuckDbAdapter: m.FakeAdapter }));
 
 import { DbStudioService } from '@/services/db-studio.service.js';
 import { createDbAgentContext, executeDbAgentTool } from '../index.js';

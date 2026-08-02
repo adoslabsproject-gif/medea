@@ -16,7 +16,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.resetModules();
   vi.useFakeTimers();
-  delete process.env.FLOWFORGE_RUNS_ARCHIVE_DAYS;
+  delete process.env.MEDEA_RUNS_ARCHIVE_DAYS;
   archiveAllMock.mockResolvedValue({ workflowsScanned: 0, workflowsArchived: 0, totalRows: 0, totalBytes: 0 });
 });
 
@@ -52,7 +52,7 @@ describe('🚨 lifecycle', () => {
 
 describe('🚨 retentionDays env override', () => {
   it('🚨 env "60" → 60gg', async () => {
-    process.env.FLOWFORGE_RUNS_ARCHIVE_DAYS = '60';
+    process.env.MEDEA_RUNS_ARCHIVE_DAYS = '60';
     const m = await load();
     m.startRunsArchiveCron();
     expect(loggerMock.info).toHaveBeenCalledWith(
@@ -63,7 +63,7 @@ describe('🚨 retentionDays env override', () => {
   });
 
   it('🚨 env invalido → default 30', async () => {
-    process.env.FLOWFORGE_RUNS_ARCHIVE_DAYS = 'not-number';
+    process.env.MEDEA_RUNS_ARCHIVE_DAYS = 'not-number';
     const m = await load();
     m.startRunsArchiveCron();
     expect(loggerMock.info).toHaveBeenCalledWith(
@@ -74,7 +74,7 @@ describe('🚨 retentionDays env override', () => {
   });
 
   it('🚨 env negativo → default 30', async () => {
-    process.env.FLOWFORGE_RUNS_ARCHIVE_DAYS = '-7';
+    process.env.MEDEA_RUNS_ARCHIVE_DAYS = '-7';
     const m = await load();
     m.startRunsArchiveCron();
     expect(loggerMock.info).toHaveBeenCalledWith(

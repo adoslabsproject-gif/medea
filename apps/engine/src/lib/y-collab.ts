@@ -14,7 +14,7 @@ import * as awarenessProtocol from 'y-protocols/awareness';
 import * as encoding from 'lib0/encoding';
 import * as decoding from 'lib0/decoding';
 import type { Server as HttpServer } from 'node:http';
-import { verifySessionToken } from '@flowforge/auth-local';
+import { verifySessionToken } from '@medea/engine-auth-local';
 import { getDatabase } from '@/storage/db.js';
 import { logger } from './logger.js';
 import { parseSessionFromCookieHeader } from './session-cookie.js';
@@ -158,7 +158,7 @@ export function getYjsSoftErrorCount(): number {
  * use case enterprise con workflow > 1MB.
  */
 export const MAX_YJS_MESSAGE_BYTES = Number(
-  process.env.FLOWFORGE_YJS_MAX_MESSAGE_BYTES ?? 1024 * 1024,
+  process.env.MEDEA_YJS_MAX_MESSAGE_BYTES ?? 1024 * 1024,
 );
 
 function ensureCollabTable(): void {

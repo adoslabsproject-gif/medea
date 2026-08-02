@@ -12,8 +12,8 @@ import { userAgentRotateNode } from './user-agent-rotate.js';
 const CTX = { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {} } as never;
 
 afterEach(() => {
-  delete process.env.FLOWFORGE_BROWSER_ENDPOINT;
-  delete process.env.FLOWFORGE_FLARESOLVERR_ENDPOINT;
+  delete process.env.MEDEA_BROWSER_ENDPOINT;
+  delete process.env.MEDEA_FLARESOLVERR_ENDPOINT;
 });
 
 describe('action_browser_render', () => {

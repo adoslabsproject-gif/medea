@@ -1,5 +1,5 @@
 {
-  "name": "@flowforge/storage-postgres",
+  "name": "@medea/engine-storage-postgres",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -23,13 +23,13 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@flowforge/core-schema": "workspace:*",
+    "@medea/engine-core-schema": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "postgres": "^3.4.5"
   },
   "devDependencies": {
-    "@flowforge/eslint-config": "workspace:*",
-    "@flowforge/tsconfig": "workspace:*",
+    "@medea/engine-eslint-config": "workspace:*",
+    "@medea/engine-tsconfig": "workspace:*",
     "@vitest/coverage-v8": "^3.0.0",
     "eslint": "^9.39.0",
     "typescript": "^5.7.0",

@@ -3,7 +3,7 @@
  *
  * Strategia mock:
  *  - global.fetch mockato per ogni scenario
- *  - @flowforge/safe-fetch.validateUrlForFetch mockato hoisted (default ok)
+ *  - @medea/engine-safe-fetch.validateUrlForFetch mockato hoisted (default ok)
  *  - process.env modificata per simulare presenza/assenza API keys
  *  - AbortSignal.timeout funziona nativamente
  */
@@ -13,12 +13,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const safeFetchMock = vi.hoisted(() => ({
   validateUrlForFetch: vi.fn((_url: string) => ({ ok: true })),
 }));
-vi.mock('@flowforge/safe-fetch', async (importOriginal) => ({ ...(await importOriginal<typeof import('@flowforge/safe-fetch')>()), ...safeFetchMock }));
+vi.mock('@medea/engine-safe-fetch', async (importOriginal) => ({ ...(await importOriginal<typeof import('@medea/engine-safe-fetch')>()), ...safeFetchMock }));
 
 vi.mock('@/lib/logger.js');
 
 import { fetchUrl, webSearch, buildSearxInstances } from './web-tools.service.js';
-import { clearBreakerRegistry } from '@flowforge/nodes-stdlib';
+import { clearBreakerRegistry } from '@medea/engine-nodes-stdlib';
 
 // ───────────────────────────────────────────────────────────────
 // fetch mock helpers

@@ -39,7 +39,7 @@
  */
 import { randomBytes } from 'node:crypto';
 import { EventEmitter } from 'node:events';
-import type { LogLevel, LogSource, StepLog } from '@flowforge/core-schema';
+import type { LogLevel, LogSource, StepLog } from '@medea/engine-core-schema';
 import { logger as runsLogger } from '@/lib/logger.js';
 
 export const LOG_LEVEL_RANK: Record<LogLevel, number> = {

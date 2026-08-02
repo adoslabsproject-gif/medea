@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { assertExternalHostAllowed, extractConnectionHost, ExternalHostBlockedError } from './external-host-guard.js';
-import type { Database } from '@flowforge/db-studio-core';
+import type { Database } from '@medea/engine-db-studio-core';
 
 const conn = (o: Partial<Database['connection']>): Database['connection'] => ({ engine: 'postgres', embedded: false, ...o });
 const resolveTo = (...ips: string[]) => vi.fn().mockResolvedValue(ips);

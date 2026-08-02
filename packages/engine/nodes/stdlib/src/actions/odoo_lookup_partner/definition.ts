@@ -4,7 +4,7 @@
  * @module actions/odoo_lookup_partner/definition
  */
 
-import type { NodeDef } from '@flowforge/core-schema';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 export const odooLookupPartnerNodeDef: NodeDef = {
   id: 'action_odoo_lookup_partner',

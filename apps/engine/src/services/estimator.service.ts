@@ -16,7 +16,7 @@
  * Output is consumed by the editor's pre-run confirmation modal.
  */
 
-import type { Workflow, NodeDef } from '@flowforge/core-schema';
+import type { Workflow, NodeDef } from '@medea/engine-core-schema';
 import { ALL_NODE_MODULES } from '@/engine/workflow-engine.js';
 import { evaluateExpression } from '@/engine/interpreter.js';
 import { logger } from '@/lib/logger.js';

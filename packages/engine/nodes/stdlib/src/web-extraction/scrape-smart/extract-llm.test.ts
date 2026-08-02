@@ -5,12 +5,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { extractWithLlm, sanitizeHtmlForLlm, extractJsonLoose } from './extract-llm.js';
 
-vi.mock('@flowforge/safe-fetch', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@flowforge/safe-fetch')>()),
+vi.mock('@medea/engine-safe-fetch', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@medea/engine-safe-fetch')>()),
   safeFetchWithRedirects: vi.fn(),
 }));
 
-const { safeFetchWithRedirects } = await import('@flowforge/safe-fetch');
+const { safeFetchWithRedirects } = await import('@medea/engine-safe-fetch');
 const mockedFetch = vi.mocked(safeFetchWithRedirects);
 
 beforeEach(() => {
@@ -157,10 +157,10 @@ describe('extractWithLlm — gateway metered (Fase 2 #14)', () => {
   } as unknown as Response);
 
   beforeEach(() => {
-    vi.stubEnv('FLOWFORGE_LIARA_BASE_URL', GW);
-    vi.stubEnv('FLOWFORGE_LICENSE_KEY', 'lic-123');
-    vi.stubEnv('FLOWFORGE_LIARA_ENDPOINT', '');
-    vi.stubEnv('FLOWFORGE_LIARA_API_KEY', '');
+    vi.stubEnv('MEDEA_LIARA_BASE_URL', GW);
+    vi.stubEnv('MEDEA_LICENSE_KEY', 'lic-123');
+    vi.stubEnv('MEDEA_LIARA_ENDPOINT', '');
+    vi.stubEnv('MEDEA_LIARA_API_KEY', '');
   });
   afterEach(() => { vi.unstubAllEnvs(); });
 

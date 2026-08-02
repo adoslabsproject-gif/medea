@@ -25,7 +25,7 @@ import {
   type DbChangeRecord,
 } from './db-change-poller.js';
 import type { TriggerRunInput, TriggerRunResult } from './run-dispatcher.js';
-import type { CanvasNode, Workflow } from '@flowforge/core-schema';
+import type { CanvasNode, Workflow } from '@medea/engine-core-schema';
 
 afterEach(() => {
   vi.restoreAllMocks();

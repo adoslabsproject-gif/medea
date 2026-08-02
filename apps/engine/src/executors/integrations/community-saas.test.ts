@@ -204,13 +204,13 @@ describe('ui_open_history (executor smoke)', async () => {
   });
 
   it('senza baseUrl + senza env → throw', async () => {
-    const origEnv = process.env.FLOWFORGE_PUBLIC_BASE_URL;
-    delete process.env.FLOWFORGE_PUBLIC_BASE_URL;
+    const origEnv = process.env.MEDEA_PUBLIC_BASE_URL;
+    delete process.env.MEDEA_PUBLIC_BASE_URL;
     try {
       await expect(exec({ statusFilter: 'all' }, null, fakeCtx))
         .rejects.toThrow(/nessun baseUrl disponibile/);
     } finally {
-      if (origEnv) process.env.FLOWFORGE_PUBLIC_BASE_URL = origEnv;
+      if (origEnv) process.env.MEDEA_PUBLIC_BASE_URL = origEnv;
     }
   });
 

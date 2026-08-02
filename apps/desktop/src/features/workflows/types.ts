@@ -1,5 +1,5 @@
 /**
- * Schema del workflow — port di `packages/flowforge/core/schema` di FlowForge.
+ * Schema del workflow — port di `packages/engine/core/schema` di FlowForge.
  *
  * Vincolo: un workflow generato qui deve poter essere importato sul server e
  * viceversa. Ogni deviazione da questa forma rompe la compatibilità.

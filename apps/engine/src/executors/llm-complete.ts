@@ -23,9 +23,9 @@
  */
 
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
-import { logLlmExchange } from '@flowforge/nodes-stdlib';
-import type { AgentLlmUsage } from '@flowforge/nodes-ai-agents';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { logLlmExchange } from '@medea/engine-nodes-stdlib';
+import type { AgentLlmUsage } from '@medea/engine-nodes-ai-agents';
 import { dispatchLLMChat, LlmQuotaExceededError, type LlmTokenUsage } from '@/services/llm-chat.service.js';
 import { llmResolver, NoLlmProviderError } from '@/services/llm-resolver.service.js';
 
@@ -125,7 +125,7 @@ export const llmCompleteExecutor: NodeExecutor = async (config, _input, context)
     : systemPrompt;
 
   // Override PER-CHIAMATA di timeout/maxTokens passati ESPLICITAMENTE a dispatchLLMChat.
-  // ⛔ PRIMA: si mutava process.env.FLOWFORGE_LIARA_{TIMEOUT_MS,MAX_TOKENS} attorno
+  // ⛔ PRIMA: si mutava process.env.MEDEA_LIARA_{TIMEOUT_MS,MAX_TOKENS} attorno
   // all'await → race tra run/nodi concorrenti nello STESSO container (A scrive, B
   // sovrascrive, A legge il valore di B; il restore nel finally si incrociava). L'env
   // è globale al processo: mai mutarlo per config per-chiamata.

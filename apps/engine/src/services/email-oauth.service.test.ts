@@ -7,7 +7,7 @@
  *   • HMAC signature in the request body matches expected
  *   • Response parsing (access_token + expires_at + optional refresh_token)
  *   • Error propagation on non-2xx
- *   • Throws when FLOWFORGE_SSO_SECRET is missing (config error)
+ *   • Throws when MEDEA_SSO_SECRET is missing (config error)
  *   • needsRefresh static helper
  *
  * @vitest-environment node
@@ -24,8 +24,8 @@ const PORTAL_URL = 'http://portal.test:3006';
 
 vi.mock('@/config.js', () => ({
   loadConfig: () => ({
-    FLOWFORGE_PORTAL_URL: PORTAL_URL,
-    FLOWFORGE_SSO_SECRET: SHARED_SECRET,
+    MEDEA_PORTAL_URL: PORTAL_URL,
+    MEDEA_SSO_SECRET: SHARED_SECRET,
   }),
 }));
 

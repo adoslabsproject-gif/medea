@@ -1,7 +1,7 @@
 /**
  * Lettura CAPPATA del body di una `Response` — anti-OOM.
  *
- * ⚠️ Il primitivo REALE ora vive in `@flowforge/safe-fetch` (sorgente UNICA),
+ * ⚠️ Il primitivo REALE ora vive in `@medea/engine-safe-fetch` (sorgente UNICA),
  * così che ANCHE i package dei nodi (llm, ai-agents, integrations-italia, db…)
  * — che non possono importare da `apps/` — usino lo stesso cap. Prima stava qui
  * (app-only) e quei nodi restavano scoperti → OOM. Questo modulo è un semplice
@@ -15,4 +15,4 @@ export {
   readJsonCapped,
   readTextTruncated,
   readBytesCapped,
-} from '@flowforge/safe-fetch';
+} from '@medea/engine-safe-fetch';

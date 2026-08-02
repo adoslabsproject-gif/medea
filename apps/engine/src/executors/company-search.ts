@@ -2,8 +2,8 @@
  * Server-side executor per `action_company_search`.
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
-import { logLlmExchange } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { logLlmExchange } from '@medea/engine-nodes-stdlib';
 import { companySearch } from '@/services/company-search.service.js';
 
 export const companySearchExecutor: NodeExecutor = async (config, _input, context) => {

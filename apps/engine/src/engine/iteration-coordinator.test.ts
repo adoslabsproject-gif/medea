@@ -16,8 +16,8 @@ import {
   type ExecuteLoopArgs,
   type INodeExecutor,
 } from './iteration-coordinator.js';
-import type { CanvasNode, Edge, Workflow, RunStep } from '@flowforge/core-schema';
-import type { NodeModule } from '@flowforge/nodes-stdlib';
+import type { CanvasNode, Edge, Workflow, RunStep } from '@medea/engine-core-schema';
+import type { NodeModule } from '@medea/engine-nodes-stdlib';
 
 // ───────────────────────────────────────────────────────────────
 // Fixtures

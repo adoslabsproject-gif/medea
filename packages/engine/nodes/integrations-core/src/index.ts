@@ -1,5 +1,5 @@
 /**
- * @flowforge/nodes-integrations-core — REAL executors for the most-used SaaS APIs.
+ * @medea/engine-nodes-integrations-core — REAL executors for the most-used SaaS APIs.
  *
  * 2026-05-30 — Cleanup: i 7 nodi legacy (slack_post_message, github_create_issue,
  * notion_create_page, stripe_charge, linear_create_issue, discord_webhook_post,
@@ -22,7 +22,7 @@
  *  - Nessun rename necessario perche\` i vecchi id non esistono piu\` nel codebase
  */
 
-import type { NodeModule } from '@flowforge/nodes-stdlib';
+import type { NodeModule } from '@medea/engine-nodes-stdlib';
 
 /**
  * Empty array — i nodi vendor-specific sono ora delegati ai community packages

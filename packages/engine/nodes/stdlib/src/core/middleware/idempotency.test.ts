@@ -282,7 +282,7 @@ describe('🚨 withIdempotency — TTL run-aware', () => {
     expect(calledTtl).toBeGreaterThanOrEqual(60_000);
   });
 
-  it('🚨 FLOWFORGE_IDEMPOTENCY_TTL_MS env → override default 24h', async () => {
+  it('🚨 MEDEA_IDEMPOTENCY_TTL_MS env → override default 24h', async () => {
     // Modulo importato → ttl di base e\` "snapshot" all'import. Test che opt.ttlMs override.
     const store = makeStore();
     const wrapped = withIdempotency({ store, ttlMs: 7200_000 })(makeInner());

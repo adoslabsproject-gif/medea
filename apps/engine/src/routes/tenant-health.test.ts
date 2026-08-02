@@ -7,11 +7,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
 
 const cfg = vi.hoisted(() => ({
-  FLOWFORGE_TENANT_ID: 't-abc',
-  FLOWFORGE_PLAN_CODE: 'pro',
-  FLOWFORGE_PLAN_DISK_GB: 20,
-  FLOWFORGE_PLAN_VECTOR_MAX_VECTORS: 100000,
-  FLOWFORGE_PLAN_VECTOR_MAX_DISK_MB: 512,
+  MEDEA_TENANT_ID: 't-abc',
+  MEDEA_PLAN_CODE: 'pro',
+  MEDEA_PLAN_DISK_GB: 20,
+  MEDEA_PLAN_VECTOR_MAX_VECTORS: 100000,
+  MEDEA_PLAN_VECTOR_MAX_DISK_MB: 512,
 }));
 const sqliteMock = vi.hoisted(() => ({ prepare: vi.fn() }));
 const binaryMock = vi.hoisted(() => ({ usage: vi.fn() }));

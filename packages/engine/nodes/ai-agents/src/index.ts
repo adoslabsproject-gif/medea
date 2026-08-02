@@ -1,5 +1,5 @@
 /**
- * @flowforge/nodes-ai-agents — curated AI specialist agents as workflow nodes.
+ * @medea/engine-nodes-ai-agents — curated AI specialist agents as workflow nodes.
  *
  * Each agent is an LLM call with a carefully crafted system prompt that
  * specializes it for one job. Compared to a generic AI node, an agent:
@@ -11,15 +11,15 @@
  * dispatches to the matching LLM SDK call.
  */
 
-import type { NodeModule, NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeModule, NodeExecutor } from '@medea/engine-nodes-stdlib';
 // Fase 3 (#15): prompt COMPLETO (system incluso) + risposta → StepLog 'llm'.
-import { logLlmExchange } from '@flowforge/nodes-stdlib';
+import { logLlmExchange } from '@medea/engine-nodes-stdlib';
 
 // 2026-06-04 audit gap closure: 8 fetch a provider LLM erano nudi (no
 // timeout, no breaker). Un provider down = workflow appeso forever.
 // Pattern unificato: safeFetchWithRedirects + executeWithHostBreaker.
-import { executeWithHostBreaker } from '@flowforge/nodes-stdlib';
-import { safeFetchWithRedirects, readJsonCapped, readTextTruncated, internalGatewayTrustedHost } from '@flowforge/safe-fetch';
+import { executeWithHostBreaker } from '@medea/engine-nodes-stdlib';
+import { safeFetchWithRedirects, readJsonCapped, readTextTruncated, internalGatewayTrustedHost } from '@medea/engine-safe-fetch';
 
 // Fase 1a (#12): ogni agent_* espone `output._llm` (token in/out, modello,
 // provider, fromApi). Helper in modulo separato (llm-usage.ts, no-monoliti).
@@ -55,10 +55,10 @@ async function gatewayFetch(
 }
 
 // Fase 2 (#14): internalGatewayTrustedHost è diventata SSOT condivisa in
-// @flowforge/safe-fetch (serve anche ai nodi stdlib che parlano col gateway).
+// @medea/engine-safe-fetch (serve anche ai nodi stdlib che parlano col gateway).
 // Re-export per back-compat: era nata qui (fix SSRF nLA_liara) e i test/import
 // esistenti la referenziano da questo package.
-export { internalGatewayTrustedHost } from '@flowforge/safe-fetch';
+export { internalGatewayTrustedHost } from '@medea/engine-safe-fetch';
 
 interface AgentDefinition {
   id: string;
@@ -239,17 +239,17 @@ async function dispatchLLM(provider: string, apiKey: string, model: string, syst
       // We read env directly here because this package is browser-safe and
       // can't import from apps/runtime/src/config.ts. The runtime callers
       // who want to override should pass `baseUrl` via context.llmProviders.
-      const internalGateway = typeof process !== 'undefined' && process.env.FLOWFORGE_LIARA_BASE_URL
-        ? process.env.FLOWFORGE_LIARA_BASE_URL.replace(/\/$/, '')
+      const internalGateway = typeof process !== 'undefined' && process.env.MEDEA_LIARA_BASE_URL
+        ? process.env.MEDEA_LIARA_BASE_URL.replace(/\/$/, '')
         : undefined;
       const liaraDefault = internalGateway ?? 'https://liara.nothumanallowed.com';
       const base = baseUrl ?? liaraDefault;
-      // Path = `/chat/completions` SENZA `/v1`: il gateway Liara (FLOWFORGE_LIARA_BASE_URL
+      // Path = `/chat/completions` SENZA `/v1`: il gateway Liara (MEDEA_LIARA_BASE_URL
       // include già `/api/v1/llm`) instrada lì. Con `/v1/chat/completions` usciva un path
       // doppio `…/api/v1/llm/v1/chat/completions` → 404 (verificato empiricamente dal
       // container: /v1→404, /chat/completions→200). Identico alla chat (llm-chat.service).
       const url = `${base}/chat/completions`;
-      // SSRF: il GATEWAY INTERNO di sistema (FLOWFORGE_LIARA_BASE_URL, es. 172.20.0.1:3006
+      // SSRF: il GATEWAY INTERNO di sistema (MEDEA_LIARA_BASE_URL, es. 172.20.0.1:3006
       // sulla bridge docker) è traffico container→gateway fidato → IP privato by-design.
       // Esente dal guard per host:porta ESATTO, deciso per CONFRONTO DI ORIGIN con il
       // gateway: copre sia il default sia il caso (reale) in cui il runtime passa il
@@ -259,7 +259,7 @@ async function dispatchLLM(provider: string, apiKey: string, model: string, syst
       const trustedHost = internalGatewayTrustedHost(base, internalGateway);
       // AUTH: il gateway Liara ESIGE la license come Bearer (senza → 400 "license required").
       // Letta dall'env del container (come la chat, llm-chat.service). BYOK (apiKey) → fallback.
-      const licenseKey = typeof process !== 'undefined' ? (process.env.FLOWFORGE_LICENSE_KEY ?? '') : '';
+      const licenseKey = typeof process !== 'undefined' ? (process.env.MEDEA_LICENSE_KEY ?? '') : '';
       const authBearer = licenseKey || apiKey;
       const systemNoThink = `/no_think\n${system}`;
       const effectiveModel = model || 'nha-v1';

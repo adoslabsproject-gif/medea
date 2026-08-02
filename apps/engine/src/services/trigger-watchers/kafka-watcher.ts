@@ -25,7 +25,7 @@
 import { logger } from '@/lib/logger.js';
 import { resolveJsonPointer, clampNumber } from './parsing.js';
 import type { DispatchTriggerRun } from './run-dispatcher.js';
-import type { CanvasNode, Workflow } from '@flowforge/core-schema';
+import type { CanvasNode, Workflow } from '@medea/engine-core-schema';
 
 export const KAFKA_BACKOFF_INITIAL_MS = 1_000;
 export const KAFKA_BACKOFF_CAP_MS = 30_000;

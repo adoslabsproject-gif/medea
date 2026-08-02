@@ -15,10 +15,10 @@ import type {
   QuerySpec,
   Table,
   Relation,
-} from '@flowforge/db-studio-core';
-import { renderCreateViewSql, renderDropViewSql, fkRowsToRelations } from '@flowforge/db-studio-core';
-import type { IDatabaseAdapter, QueryResult, ExecuteResult, RawQueryResult, RawQueryOptions, BatchOp, BatchResult } from '@flowforge/db-studio-engine';
-import { classifyStatement, splitStatements } from '@flowforge/db-studio-engine';
+} from '@medea/engine-db-studio-core';
+import { renderCreateViewSql, renderDropViewSql, fkRowsToRelations } from '@medea/engine-db-studio-core';
+import type { IDatabaseAdapter, QueryResult, ExecuteResult, RawQueryResult, RawQueryOptions, BatchOp, BatchResult } from '@medea/engine-db-studio-engine';
+import { classifyStatement, splitStatements } from '@medea/engine-db-studio-engine';
 
 /**
  * Costruisce l'URL di connessione Postgres da `connection`. PURO → testabile.

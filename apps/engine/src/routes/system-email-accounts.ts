@@ -22,7 +22,7 @@ import { logger } from '@/lib/logger.js';
 import { getTenantId } from '@/lib/tenant.js';
 import { getActorId } from '@/lib/actor.js';
 import { AuditLogService } from '@/services/audit.service.js';
-import { validateUrlForFetch, assertUrlSafe } from '@flowforge/safe-fetch';
+import { validateUrlForFetch, assertUrlSafe } from '@medea/engine-safe-fetch';
 import { rateLimit } from '@/middleware/rate-limit.js';
 
 const audit = new AuditLogService();

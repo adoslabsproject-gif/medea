@@ -18,7 +18,7 @@
 import { coerceString } from '@/lib/coerce.js';
 import { readTextTruncated } from '@/lib/capped-response.js';
 import { createHash, randomUUID } from 'node:crypto';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { IntegrationError, withRetry } from './integrations/common.js';
 import { safeOutboundFetch } from '@/lib/safe-outbound-fetch.js';
 import { AuditLogService } from '@/services/audit.service.js';

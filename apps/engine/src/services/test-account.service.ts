@@ -1,12 +1,12 @@
 /**
  * TestAccountService — auto-provisions a fixed test account at boot when
- * FLOWFORGE_E2E_AUTO_PROVISION=1 is set. Used by the Playwright smoke
+ * MEDEA_E2E_AUTO_PROVISION=1 is set. Used by the Playwright smoke
  * suite so deploys are gated by a real end-to-end test against a real
  * editor instance, not just by `tsc` compilation success.
  *
  * Account:
- *   email:     FLOWFORGE_E2E_EMAIL    (default: e2e@flowforge.local)
- *   password:  FLOWFORGE_E2E_PASSWORD (default: a 32-char random secret
+ *   email:     MEDEA_E2E_EMAIL    (default: e2e@flowforge.local)
+ *   password:  MEDEA_E2E_PASSWORD (default: a 32-char random secret
  *              generated at first boot and written to a file the operator
  *              can read with `cat /var/lib/flowforge/.e2e-password`)
  *   role:      'owner' on its own tenant 'e2e' — isolated from production
@@ -15,7 +15,7 @@
  * Idempotent: subsequent boots reuse the same account; password is left
  * untouched if it already exists.
  *
- * Disable: do NOT set FLOWFORGE_E2E_AUTO_PROVISION (or set =0). The smoke
+ * Disable: do NOT set MEDEA_E2E_AUTO_PROVISION (or set =0). The smoke
  * tests will skip when the env vars are absent.
  */
 
@@ -24,7 +24,7 @@ import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { nanoid } from 'nanoid';
-import { hashPassword } from '@flowforge/auth-local';
+import { hashPassword } from '@medea/engine-auth-local';
 import { getDatabase } from '@/storage/db.js';
 import { logger } from '@/lib/logger.js';
 
@@ -33,15 +33,15 @@ const DEFAULT_EMAIL = 'e2e@flowforge.local';
 // flow works without modification. The account is role=editor — sufficient
 // to create workflows + nodes for smoke tests, but cannot manage users.
 const DEFAULT_TENANT = 'default';
-const PASSWORD_FILE = process.env.FLOWFORGE_E2E_PASSWORD_FILE ?? '/var/lib/flowforge/.e2e-password';
+const PASSWORD_FILE = process.env.MEDEA_E2E_PASSWORD_FILE ?? '/var/lib/flowforge/.e2e-password';
 
 export async function provisionTestAccount(): Promise<void> {
-  if (process.env.FLOWFORGE_E2E_AUTO_PROVISION !== '1') return;
-  const email = process.env.FLOWFORGE_E2E_EMAIL ?? DEFAULT_EMAIL;
-  const tenantId = process.env.FLOWFORGE_E2E_TENANT ?? DEFAULT_TENANT;
+  if (process.env.MEDEA_E2E_AUTO_PROVISION !== '1') return;
+  const email = process.env.MEDEA_E2E_EMAIL ?? DEFAULT_EMAIL;
+  const tenantId = process.env.MEDEA_E2E_TENANT ?? DEFAULT_TENANT;
 
   // Resolve / generate the password
-  let password = process.env.FLOWFORGE_E2E_PASSWORD;
+  let password = process.env.MEDEA_E2E_PASSWORD;
   if (!password) {
     if (existsSync(PASSWORD_FILE)) {
       password = readFileSync(PASSWORD_FILE, 'utf8').trim();
@@ -51,7 +51,7 @@ export async function provisionTestAccount(): Promise<void> {
         mkdirSync(dirname(PASSWORD_FILE), { recursive: true });
         writeFileSync(PASSWORD_FILE, password, { mode: 0o600 });
       } catch (err) {
-        logger.warn({ err, PASSWORD_FILE }, 'Cannot persist e2e password file — set FLOWFORGE_E2E_PASSWORD env');
+        logger.warn({ err, PASSWORD_FILE }, 'Cannot persist e2e password file — set MEDEA_E2E_PASSWORD env');
       }
     }
   }

@@ -1,7 +1,7 @@
 /**
  * Test 2026-grade — Queue service (BullMQ + Redis distributed mode).
  *
- * MODE TOGGLE: FLOWFORGE_QUEUE_MODE='redis' attiva BullMQ; default inline.
+ * MODE TOGGLE: MEDEA_QUEUE_MODE='redis' attiva BullMQ; default inline.
  * RETRY: jobs attempts=1 (no auto-retry; engine gestisce retry interno).
  * RETENTION: completed 1000 / 24h, failed 5000 / 7g.
  */
@@ -45,9 +45,9 @@ const loggerMock = vi.mocked(logger);
 beforeEach(async () => {
   vi.clearAllMocks();
   vi.resetModules();
-  delete process.env.FLOWFORGE_QUEUE_MODE;
-  delete process.env.FLOWFORGE_REDIS_URL;
-  delete process.env.FLOWFORGE_QUEUE_CONCURRENCY;
+  delete process.env.MEDEA_QUEUE_MODE;
+  delete process.env.MEDEA_REDIS_URL;
+  delete process.env.MEDEA_QUEUE_CONCURRENCY;
 });
 
 async function loadFresh() {
@@ -56,13 +56,13 @@ async function loadFresh() {
 
 describe('🚨 isQueueModeEnabled', () => {
   it('🚨 env=redis → true', async () => {
-    process.env.FLOWFORGE_QUEUE_MODE = 'redis';
+    process.env.MEDEA_QUEUE_MODE = 'redis';
     const m = await loadFresh();
     expect(m.isQueueModeEnabled()).toBe(true);
   });
 
   it('🚨 env=REDIS (case-insensitive) → true', async () => {
-    process.env.FLOWFORGE_QUEUE_MODE = 'REDIS';
+    process.env.MEDEA_QUEUE_MODE = 'REDIS';
     const m = await loadFresh();
     expect(m.isQueueModeEnabled()).toBe(true);
   });
@@ -73,7 +73,7 @@ describe('🚨 isQueueModeEnabled', () => {
   });
 
   it('🚨 env="memory" → false', async () => {
-    process.env.FLOWFORGE_QUEUE_MODE = 'memory';
+    process.env.MEDEA_QUEUE_MODE = 'memory';
     const m = await loadFresh();
     expect(m.isQueueModeEnabled()).toBe(false);
   });
@@ -87,7 +87,7 @@ describe('🚨 getQueueConnection', () => {
   });
 
   it('🚨 env URL override', async () => {
-    process.env.FLOWFORGE_REDIS_URL = 'redis://my-redis:6380/2';
+    process.env.MEDEA_REDIS_URL = 'redis://my-redis:6380/2';
     const m = await loadFresh();
     m.getQueueConnection();
     expect(IORedisCtorMock).toHaveBeenCalledWith('redis://my-redis:6380/2', expect.any(Object));
@@ -164,7 +164,7 @@ describe('🚨 startWorker', () => {
   });
 
   it('🚨 env override concurrency', async () => {
-    process.env.FLOWFORGE_QUEUE_CONCURRENCY = '20';
+    process.env.MEDEA_QUEUE_CONCURRENCY = '20';
     const m = await loadFresh();
     const w = m.startWorker(async () => undefined);
     expect((w as any).opts.concurrency).toBe(20);

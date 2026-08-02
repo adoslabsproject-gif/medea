@@ -40,7 +40,7 @@
  *   args='[[42]]'  → conferma ordine ID 42 chiamando metodo Python custom
  */
 
-import type { NodeModule } from '@flowforge/nodes-stdlib';
+import type { NodeModule } from '@medea/engine-nodes-stdlib';
 import {
   odooAuthenticate,
   executeKw,

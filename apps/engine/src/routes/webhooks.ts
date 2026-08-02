@@ -25,7 +25,7 @@ import { publishTestEvent } from '@/services/test-event-bus.service.js';
 import { WEBHOOK_RESPONSE_KEY, type WebhookResponsePayload } from '@/executors/webhook-respond.js';
 import { checkWebhookRateLimit, webhookIdempotencySeen, bodyHash } from '@/routes/webhook-guards.js';
 import { verifyDefaultWebhookToken } from '@/lib/webhook-token.js';
-import type { Workflow, CanvasNode } from '@flowforge/core-schema';
+import type { Workflow, CanvasNode } from '@medea/engine-core-schema';
 
 /**
  * Substring match (not word-boundary) — most bot UAs include "bot" as part
@@ -269,14 +269,14 @@ export function authorize(node: CanvasNode, headers: Record<string, string>, bod
   if (mode === 'none') {
     // FIX HIGH security audit 2026-05-31: prima accettava chiunque conoscesse
     // il workflowId UUID. Adesso verifico che il path `:token` matchi il token
-    // deterministico derivato da HMAC(workflowId, FLOWFORGE_SSO_SECRET).
+    // deterministico derivato da HMAC(workflowId, MEDEA_SSO_SECRET).
     // Grace window (rotazione secret): accetta anche token da
-    // FLOWFORGE_WEBHOOK_GRACE_SECRETS — loggato SEMPRE, finestra temporanea.
+    // MEDEA_WEBHOOK_GRACE_SECRETS — loggato SEMPRE, finestra temporanea.
     const verdict = verifyDefaultWebhookToken(workflowId, providedToken);
     if (verdict.viaGraceSecret) {
       logger.warn(
         { workflowId },
-        '[SECURITY] webhook token accettato via GRACE secret (rotazione in corso) — rigenera i link col token corrente e rimuovi FLOWFORGE_WEBHOOK_GRACE_SECRETS a migrazione finita',
+        '[SECURITY] webhook token accettato via GRACE secret (rotazione in corso) — rigenera i link col token corrente e rimuovi MEDEA_WEBHOOK_GRACE_SECRETS a migrazione finita',
       );
     }
     return verdict.valid;

@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const assertUrlSafe = vi.fn();
 const safeFetchWithRedirects = vi.fn();
-vi.mock('@flowforge/safe-fetch', () => ({
+vi.mock('@medea/engine-safe-fetch', () => ({
   assertUrlSafe: (...a: unknown[]) => assertUrlSafe(...a),
   safeFetchWithRedirects: (...a: unknown[]) => safeFetchWithRedirects(...a),
 }));
@@ -30,7 +30,7 @@ beforeEach(() => {
     if (/169\.254|localhost|127\.0\.0\.1|10\.|192\.168/.test(url)) throw new Error('SSRF blocked');
   });
   safeFetchWithRedirects.mockResolvedValue(okResponse({ extracted: { totale: '42' }, finalUrl: 'https://x.it/done', stepsRun: 2 }));
-  process.env.FLOWFORGE_BROWSER_ENDPOINT = 'https://browser.zeli.it';
+  process.env.MEDEA_BROWSER_ENDPOINT = 'https://browser.zeli.it';
 });
 
 const STEPS = JSON.stringify([
@@ -40,7 +40,7 @@ const STEPS = JSON.stringify([
 
 describe('action_browser_automate — guard di configurazione', () => {
   it('endpoint mancante → throw', async () => {
-    delete process.env.FLOWFORGE_BROWSER_ENDPOINT;
+    delete process.env.MEDEA_BROWSER_ENDPOINT;
     await expect(run({ startUrl: 'https://x.it', steps: STEPS }, undefined, ctx)).rejects.toThrow(/endpoint non configurato/);
   });
   it('startUrl mancante → throw', async () => {

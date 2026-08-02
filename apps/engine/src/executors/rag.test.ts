@@ -38,7 +38,7 @@ vi.mock('@/services/vector-quota-flag.service.js', () => ({ getVectorQuotaOverri
 // vector-quota NON mockato: l'engine puro (checkVectorQuota/estimateVectorDiskMb) gira davvero.
 
 import { ragSearchExecutor, ragIngestExecutor } from './rag.js';
-import type { NodeExecutionContext } from '@flowforge/nodes-stdlib';
+import type { NodeExecutionContext } from '@medea/engine-nodes-stdlib';
 
 const ctx = (tenantId?: string): NodeExecutionContext =>
   ({ tenantId, workflowId: 'wf', runId: 'r', nodeId: 'n', secrets: {} }) as unknown as NodeExecutionContext;
@@ -178,7 +178,7 @@ describe('SICUREZZA RAG — anti prompt-injection (wiring)', () => {
 
 describe('QUOTA RAG per piano (Inc.6 enforcement)', () => {
   it('over-quota AGGREGATA → rag_ingest BLOCCA (no embed/upsert)', async () => {
-    h.loadConfig.mockReturnValue({ FLOWFORGE_PLAN_VECTOR_MAX_VECTORS: 100 });
+    h.loadConfig.mockReturnValue({ MEDEA_PLAN_VECTOR_MAX_VECTORS: 100 });
     h.tenantVectorUsage.mockResolvedValue({ totalVectors: 100, diskMb: 0 }); // già al limite
     await expect(
       ragIngestExecutor({ databaseId: 'db', collection: 'c', content: 'nuovo doc', apiKey: 'k' }, null, ctx('t')),
@@ -189,7 +189,7 @@ describe('QUOTA RAG per piano (Inc.6 enforcement)', () => {
   });
 
   it('sotto-quota → ingest consentito', async () => {
-    h.loadConfig.mockReturnValue({ FLOWFORGE_PLAN_VECTOR_MAX_VECTORS: 100 });
+    h.loadConfig.mockReturnValue({ MEDEA_PLAN_VECTOR_MAX_VECTORS: 100 });
     h.tenantVectorUsage.mockResolvedValue({ totalVectors: 50, diskMb: 0 });
     await ragIngestExecutor({ databaseId: 'db', collection: 'c', content: 'doc', apiKey: 'k' }, null, ctx('t'));
     expect(h.upsert).toHaveBeenCalledTimes(1);
@@ -203,7 +203,7 @@ describe('QUOTA RAG per piano (Inc.6 enforcement)', () => {
   });
 
   it('quota disco superata → blocca', async () => {
-    h.loadConfig.mockReturnValue({ FLOWFORGE_PLAN_VECTOR_MAX_DISK_MB: 50 });
+    h.loadConfig.mockReturnValue({ MEDEA_PLAN_VECTOR_MAX_DISK_MB: 50 });
     h.tenantVectorUsage.mockResolvedValue({ totalVectors: 0, diskMb: 60 });
     await expect(
       ragIngestExecutor({ databaseId: 'db', collection: 'c', content: 'doc', apiKey: 'k' }, null, ctx('t')),
@@ -211,7 +211,7 @@ describe('QUOTA RAG per piano (Inc.6 enforcement)', () => {
   });
 
   it('FIX reviewer: re-ingest idempotente AL limite (id esiste → net-add 0) → CONSENTITO', async () => {
-    h.loadConfig.mockReturnValue({ FLOWFORGE_PLAN_VECTOR_MAX_VECTORS: 100 });
+    h.loadConfig.mockReturnValue({ MEDEA_PLAN_VECTOR_MAX_VECTORS: 100 });
     h.tenantVectorUsage.mockResolvedValue({ totalVectors: 100, diskMb: 0 }); // esattamente al limite
     h.recordExists.mockResolvedValue(true); // id già presente → upsert UPDATE, 0 vettori netti
     await ragIngestExecutor({ databaseId: 'db', collection: 'c', content: 'gia indicizzato', apiKey: 'k' }, null, ctx('t'));
@@ -219,7 +219,7 @@ describe('QUOTA RAG per piano (Inc.6 enforcement)', () => {
   });
 
   it('recordExists interrogato con la collection+id corretti (net-add)', async () => {
-    h.loadConfig.mockReturnValue({ FLOWFORGE_PLAN_VECTOR_MAX_VECTORS: 100 });
+    h.loadConfig.mockReturnValue({ MEDEA_PLAN_VECTOR_MAX_VECTORS: 100 });
     await ragIngestExecutor({ databaseId: 'db', collection: 'docs', content: 'x', id: 'fixed-id', apiKey: 'k' }, null, ctx('t9'));
     expect(h.recordExists).toHaveBeenCalledWith('db', 'docs', 'fixed-id', 't9');
   });

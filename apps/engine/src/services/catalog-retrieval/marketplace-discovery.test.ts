@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('@/lib/internal-token.js', () => ({ getOutboundPortalToken: () => 'tok-123' }));
-vi.mock('@/config.js', () => ({ loadConfig: () => ({ FLOWFORGE_PORTAL_URL: 'http://portal:3006' }) }));
+vi.mock('@/config.js', () => ({ loadConfig: () => ({ MEDEA_PORTAL_URL: 'http://portal:3006' }) }));
 vi.mock('@/lib/logger.js');
 
 const { searchMarketplace, formatPrice, formatMarketplaceSuggestions } = await import('./marketplace-discovery.js');

@@ -15,8 +15,8 @@ const ConfigSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(3100),
   HOST: z.string().default('127.0.0.1'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
-  FLOWFORGE_DB_PATH: z.string().default('./data/flowforge.sqlite'),
-  FLOWFORGE_DATA_DIR: z.string().default('./data'),
+  MEDEA_DB_PATH: z.string().default('./data/flowforge.sqlite'),
+  MEDEA_DATA_DIR: z.string().default('./data'),
   CORS_ORIGINS: z.string().default('http://localhost:5173'),
 
   /**
@@ -25,7 +25,7 @@ const ConfigSchema = z.object({
    *
    * Default: false (Liara available as the primary LLM via portal gateway).
    */
-  FLOWFORGE_DISABLE_LIARA: truthyString,
+  MEDEA_DISABLE_LIARA: truthyString,
 
   /**
    * Base URL of the Liara LLM gateway. In the zeliai cloud-hosted model,
@@ -38,48 +38,48 @@ const ConfigSchema = z.object({
    * Default points at the Docker bridge gateway (172.17.0.1) which is the
    * host from inside any container. In dev, set to http://127.0.0.1:3006.
    */
-  FLOWFORGE_LIARA_BASE_URL: z.string().url().default('http://172.17.0.1:3006/api/v1/llm'),
+  MEDEA_LIARA_BASE_URL: z.string().url().default('http://172.17.0.1:3006/api/v1/llm'),
 
   /**
    * URL portal zeliai (per webhook sender + heartbeat license).
    * Da dentro al container: http://172.17.0.1:3006 (Docker bridge gateway).
    * In dev locale: http://127.0.0.1:3006.
    */
-  FLOWFORGE_PORTAL_URL: z.string().url().default('http://172.17.0.1:3006'),
+  MEDEA_PORTAL_URL: z.string().url().default('http://172.17.0.1:3006'),
 
   /**
    * Workspace UUID — iniettato dal portal a provision-time.
    * Identifica univocamente questo container come tenant del portal.
    */
-  FLOWFORGE_TENANT_ID: z.string().uuid().optional(),
+  MEDEA_TENANT_ID: z.string().uuid().optional(),
 
   /**
    * License key emessa dal portal (formato ZFL-XXXX-XXXX-XXXX-XXXX).
    * Usata per heartbeat + LLM gateway auth.
    */
-  FLOWFORGE_LICENSE_KEY: z.string().optional(),
+  MEDEA_LICENSE_KEY: z.string().optional(),
 
   /**
    * Shared secret HS256 con portal per SSO bridge.
-   * Stesso valore di config.FLOWFORGE_SSO_SECRET nel portal.
+   * Stesso valore di config.MEDEA_SSO_SECRET nel portal.
    * Min 32 char. Setting obbligatorio in produzione.
    */
-  FLOWFORGE_SSO_SECRET: z.string().min(32).optional(),
+  MEDEA_SSO_SECRET: z.string().min(32).optional(),
 
   /**
    * Shared secret HMAC SHA-256 con portal per webhook events.
    * Stesso valore di SENTINEL_INTERNAL_SECRET nel portal.
    */
-  FLOWFORGE_WEBHOOK_SECRET: z.string().min(32).optional(),
+  MEDEA_WEBHOOK_SECRET: z.string().min(32).optional(),
 
   /**
    * GRACE WINDOW rotazione secret (vedi lib/webhook-token.ts): secret
    * PRECEDENTI (comma-separated, ognuno ≥32 char) i cui token webhook
-   * derivati restano accettati durante una rotazione di FLOWFORGE_SSO_SECRET.
+   * derivati restano accettati durante una rotazione di MEDEA_SSO_SECRET.
    * Ogni accettazione via grace è loggata [SECURITY]. Da RIMUOVERE a
    * migrazione finita — non è un secondo canale permanente.
    */
-  FLOWFORGE_WEBHOOK_GRACE_SECRETS: z.string().optional(),
+  MEDEA_WEBHOOK_GRACE_SECRETS: z.string().optional(),
 
   /**
    * Public origin of this runtime, used by nodes that need to inject
@@ -90,7 +90,7 @@ const ConfigSchema = z.object({
    * `https://<slug>.app.automazionezeli.com`. May be left empty in
    * dev — nodes that REQUIRE it will fail with a clear message.
    */
-  FLOWFORGE_PUBLIC_BASE_URL: z.string().url().optional(),
+  MEDEA_PUBLIC_BASE_URL: z.string().url().optional(),
 
   /**
    * 2026-06-07 sera (tier-aware logging F2). Plan code del workspace settato
@@ -99,20 +99,20 @@ const ConfigSchema = z.object({
    *   - tier paid → free choice silent/summary/full
    * Default 'free' come fallback safe per ambiente dev senza portal.
    */
-  FLOWFORGE_PLAN_CODE: z.string().default('free'),
+  MEDEA_PLAN_CODE: z.string().default('free'),
   /**
    * Disk quota totale del piano (GB) settato dal portal. Usato dal
    * `storage-quota.service` per calcolare la split 70/30 tra workflow data
    * e log retention.
    */
-  FLOWFORGE_PLAN_DISK_GB: z.coerce.number().int().positive().default(1),
+  MEDEA_PLAN_DISK_GB: z.coerce.number().int().positive().default(1),
   /**
    * Quota RAG vettoriale del piano (Increment 6) settata dal portal via buildEnv.
    * ASSENTE = illimitato (Enterprise/BYOK). Limite AGGREGATO su tutti i vector DB
    * del tenant — enforced al rag_ingest via vector-quota.checkVectorQuota.
    */
-  FLOWFORGE_PLAN_VECTOR_MAX_VECTORS: z.coerce.number().int().nonnegative().optional(),
-  FLOWFORGE_PLAN_VECTOR_MAX_DISK_MB: z.coerce.number().int().nonnegative().optional(),
+  MEDEA_PLAN_VECTOR_MAX_VECTORS: z.coerce.number().int().nonnegative().optional(),
+  MEDEA_PLAN_VECTOR_MAX_DISK_MB: z.coerce.number().int().nonnegative().optional(),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -139,21 +139,21 @@ export function resetConfigForTests(): void {
  *
  * Reads from the cached `loadConfig()` so the env var is parsed ONCE at boot.
  * Tests that need to flip the value mid-run should call `resetConfigForTests()`
- * AFTER mutating `process.env.FLOWFORGE_DISABLE_LIARA`.
+ * AFTER mutating `process.env.MEDEA_DISABLE_LIARA`.
  *
  * This is the global gate. Per-tenant override lives in
  * `TenantAiPreferencesService.allowLiara` — combined check via
  * `isLiaraAllowedForTenant(tenantId)`.
  */
 export function isLiaraEnabled(): boolean {
-  return !loadConfig().FLOWFORGE_DISABLE_LIARA;
+  return !loadConfig().MEDEA_DISABLE_LIARA;
 }
 
 /**
  * Resolved Liara base URL (without trailing slash) — supports on-prem
- * self-hosted Qwen3+LoRA via `FLOWFORGE_LIARA_BASE_URL` env. Default points
+ * self-hosted Qwen3+LoRA via `MEDEA_LIARA_BASE_URL` env. Default points
  * to the NHA-hosted service.
  */
 export function liaraBaseUrl(): string {
-  return loadConfig().FLOWFORGE_LIARA_BASE_URL.replace(/\/$/, '');
+  return loadConfig().MEDEA_LIARA_BASE_URL.replace(/\/$/, '');
 }

@@ -4,7 +4,7 @@
  * @module actions/whatsapp_send/definition
  */
 
-import type { NodeDef } from '@flowforge/core-schema';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 export const whatsAppSendNodeDef: NodeDef = {
   id: 'action_whatsapp_send',

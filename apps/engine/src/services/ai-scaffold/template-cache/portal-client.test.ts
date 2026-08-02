@@ -1,7 +1,7 @@
 /**
  * Test 2026-grade — Portal Client per Shared Workflow Templates.
  *
- * AUTH: x-internal-token + PORTAL_CALLBACK_TOKEN > FLOWFORGE_INTERNAL_TOKEN.
+ * AUTH: x-internal-token + PORTAL_CALLBACK_TOKEN > MEDEA_INTERNAL_TOKEN.
  * GRACEFUL: tutti i metodi catch + return null/false (graceful degrade).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -17,9 +17,9 @@ globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 beforeEach(() => {
   vi.clearAllMocks();
   vi.resetModules();
-  delete process.env.FLOWFORGE_PORTAL_URL;
+  delete process.env.MEDEA_PORTAL_URL;
   delete process.env.PORTAL_CALLBACK_TOKEN;
-  delete process.env.FLOWFORGE_INTERNAL_TOKEN;
+  delete process.env.MEDEA_INTERNAL_TOKEN;
 });
 
 async function load() {
@@ -31,7 +31,7 @@ describe('🚨 no token configured → warn + return null', () => {
     const m = await load();
     const r = await m.promoteToCommunity({} as any);
     expect(r).toBeNull();
-    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('FLOWFORGE_INTERNAL_TOKEN not set'));
+    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('MEDEA_INTERNAL_TOKEN not set'));
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
@@ -39,7 +39,7 @@ describe('🚨 no token configured → warn + return null', () => {
 describe('🚨 token resolution', () => {
   it('🚨 PORTAL_CALLBACK_TOKEN precedence', async () => {
     process.env.PORTAL_CALLBACK_TOKEN = 'shared-token';
-    process.env.FLOWFORGE_INTERNAL_TOKEN = 'per-tenant-token';
+    process.env.MEDEA_INTERNAL_TOKEN = 'per-tenant-token';
     fetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ ok: true }) });
     const m = await load();
     await m.recordCommunityImport('tpl-1');
@@ -47,8 +47,8 @@ describe('🚨 token resolution', () => {
     expect(headers['x-internal-token']).toBe('shared-token');
   });
 
-  it('🚨 FLOWFORGE_INTERNAL_TOKEN fallback', async () => {
-    process.env.FLOWFORGE_INTERNAL_TOKEN = 'per-tenant';
+  it('🚨 MEDEA_INTERNAL_TOKEN fallback', async () => {
+    process.env.MEDEA_INTERNAL_TOKEN = 'per-tenant';
     fetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ ok: true }) });
     const m = await load();
     await m.recordCommunityImport('tpl-1');
@@ -58,7 +58,7 @@ describe('🚨 token resolution', () => {
 });
 
 describe('🚨 promoteToCommunity', () => {
-  beforeEach(() => { process.env.FLOWFORGE_INTERNAL_TOKEN = 'token'; });
+  beforeEach(() => { process.env.MEDEA_INTERNAL_TOKEN = 'token'; });
 
   it('🚨 POST /api/v1/internal/templates/promote con body', async () => {
     fetchMock.mockResolvedValueOnce({
@@ -97,7 +97,7 @@ describe('🚨 promoteToCommunity', () => {
 });
 
 describe('🚨 retrieveFromCommunity', () => {
-  beforeEach(() => { process.env.FLOWFORGE_INTERNAL_TOKEN = 'token'; });
+  beforeEach(() => { process.env.MEDEA_INTERNAL_TOKEN = 'token'; });
 
   it('🚨 happy: templates parsed', async () => {
     fetchMock.mockResolvedValueOnce({
@@ -111,7 +111,7 @@ describe('🚨 retrieveFromCommunity', () => {
 });
 
 describe('🚨 recordCommunityImport + unshareFromCommunity', () => {
-  beforeEach(() => { process.env.FLOWFORGE_INTERNAL_TOKEN = 'token'; });
+  beforeEach(() => { process.env.MEDEA_INTERNAL_TOKEN = 'token'; });
 
   it('🚨 import ok=true → return true', async () => {
     fetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ ok: true }) });
@@ -142,7 +142,7 @@ describe('🚨 recordCommunityImport + unshareFromCommunity', () => {
 
 describe('🚨 timeout', () => {
   it('🚨 AbortSignal.timeout(5000) usato', async () => {
-    process.env.FLOWFORGE_INTERNAL_TOKEN = 'token';
+    process.env.MEDEA_INTERNAL_TOKEN = 'token';
     fetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ ok: true }) });
     const m = await load();
     await m.recordCommunityImport('tpl');

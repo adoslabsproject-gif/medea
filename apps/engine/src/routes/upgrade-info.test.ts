@@ -7,10 +7,10 @@
  * 🚨 CACHE TTL 5min: 2x request stesso workspaceId → 1 sola fetch.
  *    Cache invalidata su workspaceId diverso.
  *
- * 🚨 AUTH: PORTAL_CALLBACK_TOKEN priorità su FLOWFORGE_INTERNAL_TOKEN (legacy).
+ * 🚨 AUTH: PORTAL_CALLBACK_TOKEN priorità su MEDEA_INTERNAL_TOKEN (legacy).
  *    Nessuno dei due → fetchFromPortal throw → soft-fail response.
  *
- * 🚨 TENANT REQUIRED: FLOWFORGE_TENANT_ID env mancante → 503 (no fallback).
+ * 🚨 TENANT REQUIRED: MEDEA_TENANT_ID env mancante → 503 (no fallback).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
@@ -32,14 +32,14 @@ async function makeRequest(path: string): Promise<Response> {
 beforeEach(() => {
   vi.clearAllMocks();
   _clearCache();
-  delete process.env.FLOWFORGE_TENANT_ID;
+  delete process.env.MEDEA_TENANT_ID;
   delete process.env.PORTAL_CALLBACK_TOKEN;
-  delete process.env.FLOWFORGE_INTERNAL_TOKEN;
-  delete process.env.FLOWFORGE_PORTAL_URL;
+  delete process.env.MEDEA_INTERNAL_TOKEN;
+  delete process.env.MEDEA_PORTAL_URL;
 });
 
 describe('🚨 GET /upgrade-info — guard tenant id', () => {
-  it('🚨 FLOWFORGE_TENANT_ID mancante → 503 + ok:false', async () => {
+  it('🚨 MEDEA_TENANT_ID mancante → 503 + ok:false', async () => {
     const res = await makeRequest('/api/v1/upgrade-info');
     expect(res.status).toBe(503);
     const json = await res.json() as { ok: boolean; error: string };
@@ -47,8 +47,8 @@ describe('🚨 GET /upgrade-info — guard tenant id', () => {
     expect(json.error).toMatch(/tenant id not configured/u);
   });
 
-  it('🚨 FLOWFORGE_TENANT_ID = empty string → 503', async () => {
-    process.env.FLOWFORGE_TENANT_ID = '';
+  it('🚨 MEDEA_TENANT_ID = empty string → 503', async () => {
+    process.env.MEDEA_TENANT_ID = '';
     const res = await makeRequest('/api/v1/upgrade-info');
     expect(res.status).toBe(503);
   });
@@ -56,13 +56,13 @@ describe('🚨 GET /upgrade-info — guard tenant id', () => {
 
 describe('🚨 GET /upgrade-info — token configuration', () => {
   beforeEach(() => {
-    process.env.FLOWFORGE_TENANT_ID = 'ws-123';
-    process.env.FLOWFORGE_PORTAL_URL = 'http://portal:3006';
+    process.env.MEDEA_TENANT_ID = 'ws-123';
+    process.env.MEDEA_PORTAL_URL = 'http://portal:3006';
   });
 
-  it('🚨 PRIORITY: PORTAL_CALLBACK_TOKEN over FLOWFORGE_INTERNAL_TOKEN', async () => {
+  it('🚨 PRIORITY: PORTAL_CALLBACK_TOKEN over MEDEA_INTERNAL_TOKEN', async () => {
     process.env.PORTAL_CALLBACK_TOKEN = 'NEW-TOKEN';
-    process.env.FLOWFORGE_INTERNAL_TOKEN = 'LEGACY-TOKEN';
+    process.env.MEDEA_INTERNAL_TOKEN = 'LEGACY-TOKEN';
     fetchMock.mockResolvedValueOnce({
       ok: true,
       status: 200,
@@ -75,8 +75,8 @@ describe('🚨 GET /upgrade-info — token configuration', () => {
     expect(headers['X-Internal-Token']).toBe('NEW-TOKEN');
   });
 
-  it('🚨 fallback FLOWFORGE_INTERNAL_TOKEN se PORTAL_CALLBACK_TOKEN assente', async () => {
-    process.env.FLOWFORGE_INTERNAL_TOKEN = 'LEGACY-TOK';
+  it('🚨 fallback MEDEA_INTERNAL_TOKEN se PORTAL_CALLBACK_TOKEN assente', async () => {
+    process.env.MEDEA_INTERNAL_TOKEN = 'LEGACY-TOK';
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ ok: true, workspaceId: 'ws-123', currentVersion: null, pendingUpgrade: null }),
@@ -93,15 +93,15 @@ describe('🚨 GET /upgrade-info — token configuration', () => {
     expect(json.ok).toBe(true);
     expect(json.upgradeAvailable).toBe(false);
     expect(json.pendingUpgrade).toBeNull();
-    expect(json.error).toMatch(/PORTAL_CALLBACK_TOKEN nor FLOWFORGE_INTERNAL_TOKEN/u);
+    expect(json.error).toMatch(/PORTAL_CALLBACK_TOKEN nor MEDEA_INTERNAL_TOKEN/u);
   });
 });
 
 describe('🚨 GET /upgrade-info — fetch portal success', () => {
   beforeEach(() => {
-    process.env.FLOWFORGE_TENANT_ID = 'ws-prod';
+    process.env.MEDEA_TENANT_ID = 'ws-prod';
     process.env.PORTAL_CALLBACK_TOKEN = 'tok-X';
-    process.env.FLOWFORGE_PORTAL_URL = 'http://portal:3006';
+    process.env.MEDEA_PORTAL_URL = 'http://portal:3006';
   });
 
   it('🚨 happy: pendingUpgrade non-null → upgradeAvailable=true', async () => {
@@ -187,7 +187,7 @@ describe('🚨 GET /upgrade-info — fetch portal success', () => {
   });
 
   it('🚨 trailing slash portal URL → normalizzato', async () => {
-    process.env.FLOWFORGE_PORTAL_URL = 'http://portal:3006/';
+    process.env.MEDEA_PORTAL_URL = 'http://portal:3006/';
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({
@@ -214,7 +214,7 @@ describe('🚨 GET /upgrade-info — fetch portal success', () => {
 
 describe('🚨 GET /upgrade-info — SOFT-FAIL response shape', () => {
   beforeEach(() => {
-    process.env.FLOWFORGE_TENANT_ID = 'ws-fail';
+    process.env.MEDEA_TENANT_ID = 'ws-fail';
     process.env.PORTAL_CALLBACK_TOKEN = 'tok';
   });
 
@@ -252,7 +252,7 @@ describe('🚨 GET /upgrade-info — SOFT-FAIL response shape', () => {
 
 describe('🚨 cache TTL 5 min — anti-hammer portal', () => {
   beforeEach(() => {
-    process.env.FLOWFORGE_TENANT_ID = 'ws-cache';
+    process.env.MEDEA_TENANT_ID = 'ws-cache';
     process.env.PORTAL_CALLBACK_TOKEN = 'tok';
   });
 
@@ -289,7 +289,7 @@ describe('🚨 cache TTL 5 min — anti-hammer portal', () => {
       }),
     });
     await makeRequest('/api/v1/upgrade-info');
-    process.env.FLOWFORGE_TENANT_ID = 'ws-DIFFERENT';
+    process.env.MEDEA_TENANT_ID = 'ws-DIFFERENT';
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({

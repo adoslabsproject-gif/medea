@@ -26,7 +26,7 @@ import { writeFileSync, mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { NodeExecutionContext } from '@flowforge/nodes-stdlib';
+import type { NodeExecutionContext } from '@medea/engine-nodes-stdlib';
 
 // Dir di questo test → per leggere le fixture SDI (fattura ufficiale valida).
 const __sdiDir = join(dirname(fileURLToPath(import.meta.url)), 'sdi');
@@ -47,8 +47,8 @@ const m = vi.hoisted(() => ({
 vi.mock('@/lib/safe-outbound-fetch.js', () => ({
   safeOutboundFetch: (...a: unknown[]) => m.safeFetch(...a),
 }));
-vi.mock('@flowforge/safe-fetch', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@flowforge/safe-fetch')>()),
+vi.mock('@medea/engine-safe-fetch', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@medea/engine-safe-fetch')>()),
   validateUrlForFetch: (...a: unknown[]) => m.validateUrl(...a),
 }));
 vi.mock('nodemailer', () => ({
@@ -484,7 +484,7 @@ describe('🚨 sdiSendInvoiceExecutor', () => {
       invoiceXml: baseInvoiceXml, validateXsd: false,
       sdiUsername: 'u', sdiPassword: 'p',
       skipSigning: false, // no cert/key/env path
-    }, null, ctx)).rejects.toThrow(/Missing FLOWFORGE_SDI/u);
+    }, null, ctx)).rejects.toThrow(/Missing MEDEA_SDI/u);
   });
 
   it('signing via cert/key da disk path (tmp dir)', async () => {

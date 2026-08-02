@@ -67,7 +67,7 @@ const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 giorni
 const CACHE_MAX_ENTRIES = 5000;
 const RATE_LIMIT_PER_HOST_MS = 500; // 2 req/sec per host
 
-const USER_AGENT = process.env.FLOWFORGE_BOT_UA
+const USER_AGENT = process.env.MEDEA_BOT_UA
   ?? 'FlowForgeContactDiscovery/1.0 (+https://flowforge.io/bot; respectful crawler)';
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -211,7 +211,7 @@ async function fetchRobots(origin: string): Promise<RobotsRules> {
     // #202 P0-3: SSRF guard anche per robots.txt — `origin` viene dai
     // risultati DDG search (user-controllable). Senza guard, attaccante
     // mette URL malicious in serp → bypass guard via robots.txt fetch.
-    const { validateUrlForFetch } = await import('@flowforge/safe-fetch');
+    const { validateUrlForFetch } = await import('@medea/engine-safe-fetch');
     const guard = validateUrlForFetch(url);
     if (!guard.ok) {
       logger.warn({ url, reason: guard.reason }, 'contact-discovery: SSRF block robots');
@@ -284,7 +284,7 @@ async function fetchRaw(url: string, signal?: AbortSignal): Promise<RawFetchResu
     // #202 P0-3: SSRF guard — la URL può venire da DDG search → contenuto
     // user-controllable. Senza guard, attaccante mette in serp un link a
     // http://169.254.169.254/ (IMDS) → leak cred IAM.
-    const { validateUrlForFetch } = await import('@flowforge/safe-fetch');
+    const { validateUrlForFetch } = await import('@medea/engine-safe-fetch');
     const guard = validateUrlForFetch(url);
     if (!guard.ok) {
       logger.warn({ url, reason: guard.reason }, 'contact-discovery: SSRF block');

@@ -9,7 +9,7 @@
  *   DELETE /api/v1/ai-templates/:id              — delete locale (GDPR)
  *
  * Auth: cookie session FF (auth middleware comune). Tenant inferred dal
- * container env (FLOWFORGE_TENANT_ID).
+ * container env (MEDEA_TENANT_ID).
  */
 
 import { Hono } from 'hono';
@@ -25,7 +25,7 @@ import { logger } from '@/lib/logger.js';
 import { requireRole } from '@/middleware/rbac.js';
 import { rateLimit } from '@/middleware/rate-limit.js';
 
-const TENANT_ID = process.env.FLOWFORGE_TENANT_ID ?? '';
+const TENANT_ID = process.env.MEDEA_TENANT_ID ?? '';
 
 export function createAiTemplatesRoutes(): Hono {
   const app = new Hono();

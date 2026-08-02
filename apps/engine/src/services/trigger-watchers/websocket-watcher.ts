@@ -17,11 +17,11 @@
  */
 
 import { WebSocket, type RawData } from 'ws';
-import { validateUrlForFetch, parseInternalHostAllowlist, isHostAllowlisted } from '@flowforge/safe-fetch';
+import { validateUrlForFetch, parseInternalHostAllowlist, isHostAllowlisted } from '@medea/engine-safe-fetch';
 import { logger } from '@/lib/logger.js';
 import { resolveJsonPointer, clampNumber } from './parsing.js';
 import type { DispatchTriggerRun } from './run-dispatcher.js';
-import type { CanvasNode, Workflow } from '@flowforge/core-schema';
+import type { CanvasNode, Workflow } from '@medea/engine-core-schema';
 
 /** Backoff iniziale dopo un drop di connessione (ms). */
 export const WS_BACKOFF_INITIAL_MS = 1_000;
@@ -104,12 +104,12 @@ export function startWebSocketWatcher(
   // (IMDS), ws://<redis-interno>, o un host cross-tenant su flowforge-net sarebbe raggiunto.
   // `validateUrlForFetch` vuole http(s) (è l'host che conta) → trasformo ws→http, wss→https.
   // Coerenza con i nodi HTTP: un host nell'ALLOWLIST interna dell'operatore
-  // (FLOWFORGE_INTERNAL_HOST_ALLOWLIST) può scavalcare il guard (WS verso servizi
+  // (MEDEA_INTERNAL_HOST_ALLOWLIST) può scavalcare il guard (WS verso servizi
   // interni legittimi). Solo gli host NON allowlisted passano per il SSRF guard.
   const httpUrl = url.replace(/^ws/i, 'http');
   let host = '';
   try { host = new URL(httpUrl).hostname; } catch { /* URL malformata → la becca il guard sotto */ }
-  const internalAllowlist = parseInternalHostAllowlist(process.env.FLOWFORGE_INTERNAL_HOST_ALLOWLIST);
+  const internalAllowlist = parseInternalHostAllowlist(process.env.MEDEA_INTERNAL_HOST_ALLOWLIST);
   if (!(host && isHostAllowlisted(host, internalAllowlist))) {
     const ssrf = validateUrlForFetch(httpUrl);
     if (!ssrf.ok) {

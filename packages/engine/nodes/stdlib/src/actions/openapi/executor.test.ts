@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('@flowforge/safe-fetch', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@flowforge/safe-fetch')>()), assertUrlSafe: vi.fn(async () => { /* allow */ }) }));
+vi.mock('@medea/engine-safe-fetch', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@medea/engine-safe-fetch')>()), assertUrlSafe: vi.fn(async () => { /* allow */ }) }));
 
 import { openapiExecutor } from './executor.js';
 

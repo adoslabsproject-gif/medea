@@ -19,9 +19,9 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createHash } from 'node:crypto';
-import { makeBinaryRef, isBinaryData, type BinaryData } from '@flowforge/core-schema';
+import { makeBinaryRef, isBinaryData, type BinaryData } from '@medea/engine-core-schema';
 
-vi.mock('@flowforge/safe-fetch', () => ({
+vi.mock('@medea/engine-safe-fetch', () => ({
   assertUrlSafe: vi.fn(),
   validateUrlForFetch: vi.fn(() => ({ ok: true })),
   // H1: il loop di redirect dell'executor importa la lista di strip cross-host (single
@@ -30,7 +30,7 @@ vi.mock('@flowforge/safe-fetch', () => ({
 }));
 
 const { httpExecutor } = await import('./executor.js');
-const safeFetch = await import('@flowforge/safe-fetch');
+const safeFetch = await import('@medea/engine-safe-fetch');
 const { clearOAuth2TokenCache } = await import('./oauth2.js');
 
 const baseCfg = {

@@ -8,7 +8,7 @@
  * Output: packages/shared/src/known-crawlers-generated.ts (auto-generated,
  * NOT to edit by hand — re-run sync per aggiornare).
  *
- * Run: pnpm --filter @zeliai/shared sync:bot-list
+ * Run: pnpm --filter @medea/engine-shared sync:bot-list
  *
  * CI: integrare in workflow GitHub Actions weekly per mantenere lista
  * fresca (i bot nuovi vengono aggiunti upstream regolarmente).
@@ -66,7 +66,7 @@ async function main() {
  * known-crawlers-generated.ts — AUTO-GENERATED, do not edit by hand.
  *
  * Synced from monperrus/crawler-user-agents (GitHub, MIT) on ${new Date().toISOString()}.
- * Re-run sync: \`pnpm --filter @zeliai/shared sync:bot-list\`
+ * Re-run sync: \`pnpm --filter @medea/engine-shared sync:bot-list\`
  *
  * Purpose: long-tail bot allowlist (oltre i ~70 curati in bot-allowlist.ts).
  * Pattern usati come substring case-insensitive — NO reverse-DNS verify

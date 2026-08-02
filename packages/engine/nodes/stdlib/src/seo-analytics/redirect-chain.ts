@@ -9,7 +9,7 @@
  */
 
 import { load as cheerioLoad } from 'cheerio';
-import { safeFetchWithRedirects, SsrfBlockedError, readTextTruncated } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects, SsrfBlockedError, readTextTruncated } from '@medea/engine-safe-fetch';
 import type { NodeModule, NodeExecutor } from '../types.js';
 
 interface Hop { url: string; status: number; location: string | null; durationMs: number; server: string | null; contentType: string | null }
@@ -253,7 +253,7 @@ export const redirectChainNode: NodeModule = {
       'in 1 hop? O passa per 3 redirect? Google CMM penalizza chain > 3; (4) **debug ' +
       'cookie-redirect login flow** — per debug SSO flow custom, tracci ogni 302 ' +
       'con il cookie state passato.\n\n' +
-      'Safety budget: SSRF guard via @flowforge/safe-fetch (no fetch a 127/10/192/ ' +
+      'Safety budget: SSRF guard via @medea/engine-safe-fetch (no fetch a 127/10/192/ ' +
       'link-local), timeout 8s per hop, max 20 hop totali (oltre → loop break), ' +
       'audit log con startUrl + finalUrl + hopCount per SEO traceability.',
     vendor: 'flowforge',

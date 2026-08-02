@@ -19,12 +19,12 @@
  *  - mimeType application/pdf + filename .pdf forced
  */
 import type { BinaryStore } from '../services/binary-store.service';
-import type { BinaryData } from '@flowforge/core-schema';
+import type { BinaryData } from '@medea/engine-core-schema';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
-import type { NodeExecutionContext } from '@flowforge/nodes-stdlib';
+import type { NodeExecutionContext } from '@medea/engine-nodes-stdlib';
 
 const m = vi.hoisted(() => ({
   llmGet: vi.fn(),
@@ -57,7 +57,7 @@ const ctx: NodeExecutionContext = {
 let tenantDir: string;
 beforeEach(() => {
   tenantDir = mkdtempSync(join(tmpdir(), 'ff-pdf-'));
-  process.env.FLOWFORGE_DATA_DIR = tenantDir;
+  process.env.MEDEA_DATA_DIR = tenantDir;
   m.llmGet.mockReset();
   m.isLiaraAllowed.mockReset();
   m.safeFetch.mockReset();
@@ -447,7 +447,7 @@ describe('output shape pdfParse', () => {
 describe('🚨 GAP2 FLIP — pdfGenerateExecutor emette SEMPRE un handle BinaryData (ref-primario)', () => {
   async function ctxStore(): Promise<{ c: NodeExecutionContext; store: BinaryStore }> {
     const { BinaryStore } = await import('../services/binary-store.service');
-    const { makeBinaryRef } = await import('@flowforge/core-schema');
+    const { makeBinaryRef } = await import('@medea/engine-core-schema');
     const store = new BinaryStore(join(tenantDir, 'blobs'));
     const writeBinary = async (data: Buffer, meta: { mimeType: string; fileName?: string }): Promise<BinaryData> => {
       const r = await store.writeBuffer(data);
@@ -457,7 +457,7 @@ describe('🚨 GAP2 FLIP — pdfGenerateExecutor emette SEMPRE un handle BinaryD
   }
 
   it('🚨 DEFAULT con store → handle ref content-addressed, MAI base64 nel JSON', async () => {
-    const { isBinaryData } = await import('@flowforge/core-schema');
+    const { isBinaryData } = await import('@medea/engine-core-schema');
     const { createHash } = await import('node:crypto');
     const { c, store } = await ctxStore();
     const res = await pdfGenerateExecutor({ title: 'Catalogo' }, null, c); // niente flag: ref è il default
@@ -492,7 +492,7 @@ describe('🚨 GAP2 FLIP — pdfGenerateExecutor emette SEMPRE un handle BinaryD
   });
 
   it('🚨 DEFAULT senza store → fallback BinaryData INLINE base64 (fail-soft anti-crash, non legacy)', async () => {
-    const { isBinaryData } = await import('@flowforge/core-schema');
+    const { isBinaryData } = await import('@medea/engine-core-schema');
     const res = await pdfGenerateExecutor({ title: 'NoStore' }, null, ctx); // ctx senza writeBinary
     const out = res.output as Record<string, unknown>;
     expect(isBinaryData(out.binary)).toBe(true);

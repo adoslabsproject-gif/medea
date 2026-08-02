@@ -31,8 +31,8 @@
 
 // SECURITY FIX 2026-05-31 (audit Phase 2 HIGH #2): safeFetchWithRedirects
 // blocca SSRF via baseUrl puntato a 169.254.169.254 (IMDS AWS/GCP) o RFC1918.
-import { safeFetchWithRedirects, readJsonCapped } from '@flowforge/safe-fetch';
-import { executeWithHostBreaker } from '@flowforge/nodes-stdlib';
+import { safeFetchWithRedirects, readJsonCapped } from '@medea/engine-safe-fetch';
+import { executeWithHostBreaker } from '@medea/engine-nodes-stdlib';
 
 export interface OdooConnection {
   /** Base URL, es. https://erp.mio-cliente.com (no trailing slash). */

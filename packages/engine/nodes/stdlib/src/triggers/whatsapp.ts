@@ -12,7 +12,7 @@ import type { NodeModule } from '../types.js';
  *   POST = eventi firmati X-Hub-Signature-256 (HMAC-SHA256 dell'App Secret
  *          sui byte esatti del body) → normalizzazione + run
  *
- * L'endpoint runtime vive in apps/flowforge-runtime/src/routes/whatsapp-trigger/
+ * L'endpoint runtime vive in apps/engine/src/routes/whatsapp-trigger/
  * (verify.ts firma+handshake, normalize.ts payload→messaggi, index.ts route).
  */
 export const whatsappTriggerNode: NodeModule = {

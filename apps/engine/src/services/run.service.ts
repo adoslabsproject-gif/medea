@@ -176,11 +176,11 @@ export class RunService {
     assertTenantCanExecute(tenantId);
     const runIdEarly = nanoid();
 
-    // QUEUE MODE (FLOWFORGE_QUEUE_MODE=redis): invece di eseguire in-process,
+    // QUEUE MODE (MEDEA_QUEUE_MODE=redis): invece di eseguire in-process,
     // delega a un worker BullMQ. Il check env è inline per NON trascinare
     // queue.service (e quindi bullmq/ioredis) nel module graph del path
     // inline-default — l'import è dinamico solo dentro il branch.
-    if ((process.env.FLOWFORGE_QUEUE_MODE ?? '').toLowerCase() === 'redis') {
+    if ((process.env.MEDEA_QUEUE_MODE ?? '').toLowerCase() === 'redis') {
       return this.dispatchToQueue(runIdEarly, input, tenantId);
     }
 
@@ -212,7 +212,7 @@ export class RunService {
   }
 
   /**
-   * Queue-mode dispatch (FLOWFORGE_QUEUE_MODE=redis). Eseguito nel MAIN process:
+   * Queue-mode dispatch (MEDEA_QUEUE_MODE=redis). Eseguito nel MAIN process:
    *   1. Valida che il workflow esista → 404 sincrono invece di un fallimento
    *      silenzioso nel worker.
    *   2. Inserisce una row `pending` (rispettando la verbosity: i run `silent`

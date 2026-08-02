@@ -23,7 +23,7 @@ const WINDOW_MS = 60_000;
 
 /** Tetto invii/minuto per tenant (default 30). Override via env per piani enterprise. */
 function maxSendsPerMin(): number {
-  const raw = Number(process.env.FLOWFORGE_TWILIO_MAX_SENDS_PER_MIN ?? '30');
+  const raw = Number(process.env.MEDEA_TWILIO_MAX_SENDS_PER_MIN ?? '30');
   return Number.isFinite(raw) && raw > 0 ? raw : 30;
 }
 

@@ -3,12 +3,12 @@
  *
  * Flow:
  *   1. Portal emette JWE A256GCM con chiave derivata HKDF-SHA256 da
- *      FLOWFORGE_SSO_SECRET (shared con questo container).
+ *      MEDEA_SSO_SECRET (shared con questo container).
  *   2. Browser autosubmit POST → https://{slug}.app.automazionezeli.com/sso
  *      con `token` in body (mai in URL).
  *   3. Container decritta JWE (AEAD = signature implicita + auth tag +
  *      iat/exp + jti replay protection).
- *   4. Crea sessione locale FlowForge via @flowforge/auth-local.
+ *   4. Crea sessione locale FlowForge via @medea/engine-auth-local.
  *   5. Set cookie ff_session HttpOnly + redirect / (editor).
  *
  * Sicurezza:
@@ -19,7 +19,7 @@
  *   - TTL 5min vita (clock skew tolerance 30s).
  *   - jti single-use via SQLite locale UNIQUE constraint (atomic, persistente
  *     attraverso restart container, scale-out friendly).
- *   - audience check vs FLOWFORGE_TENANT_ID.
+ *   - audience check vs MEDEA_TENANT_ID.
  *   - Issuer fisso "portal.flowforge".
  */
 
@@ -28,8 +28,8 @@ import { Hono } from 'hono';
 import { setCookie } from 'hono/cookie';
 import { jwtDecrypt } from 'jose';
 import { hkdfSync } from 'node:crypto';
-import { issueSessionToken } from '@flowforge/auth-local';
-import { maskEmail } from '@zeliai/shared';
+import { issueSessionToken } from '@medea/engine-auth-local';
+import { maskEmail } from '@medea/engine-shared';
 import { loadConfig } from '@/config.js';
 import { logger } from '@/lib/logger.js';
 import { getAuthKeys } from '@/lib/auth-keys.js';
@@ -41,7 +41,7 @@ import { nanoid } from 'nanoid';
 // HKDF info label — DEVE matchare apps/portal/src/services/sso.service.ts
 const HKDF_INFO = 'flowforge-sso-jwe-v1';
 
-/** Deriva la chiave A256GCM (32 byte) da FLOWFORGE_SSO_SECRET via HKDF-SHA256. */
+/** Deriva la chiave A256GCM (32 byte) da MEDEA_SSO_SECRET via HKDF-SHA256. */
 function deriveJweKey(secret: string): Uint8Array {
   const ikm = Buffer.from(secret, 'utf8');
   const salt = Buffer.alloc(0);
@@ -225,10 +225,10 @@ async function verifyAndIssueSession(
   token: string,
 ): Promise<Response> {
   const config = loadConfig();
-  const secret = config.FLOWFORGE_SSO_SECRET;
-  const tenantId = config.FLOWFORGE_TENANT_ID;
+  const secret = config.MEDEA_SSO_SECRET;
+  const tenantId = config.MEDEA_TENANT_ID;
   if (!secret || !tenantId) {
-    log.error?.('SSO not configured (FLOWFORGE_SSO_SECRET or FLOWFORGE_TENANT_ID missing)');
+    log.error?.('SSO not configured (MEDEA_SSO_SECRET or MEDEA_TENANT_ID missing)');
     return c.text('SSO not configured', 500);
   }
 
@@ -262,7 +262,7 @@ async function verifyAndIssueSession(
 
   // H5 fix (2026-06-01) — Enforce strict tenant claim match.
   // Defense-in-depth: oltre alla `audience` validation di jose (linea 225),
-  // verifica esplicita del custom field `payload.tenantId === env.FLOWFORGE_TENANT_ID`.
+  // verifica esplicita del custom field `payload.tenantId === env.MEDEA_TENANT_ID`.
   // Pre-fix: fallback `|| tenantId` consentiva accept se field missing →
   // safe ma asimmetrico col portal che lo emette sempre. Reject SE present
   // e mismatch, REJECT SE missing (no fallback).

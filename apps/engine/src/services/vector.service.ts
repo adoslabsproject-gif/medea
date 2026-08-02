@@ -6,8 +6,8 @@
 
 import { join } from 'node:path';
 import { existsSync, mkdirSync } from 'node:fs';
-import { EmbeddedVectorAdapter, QdrantVectorAdapter, PgVectorAdapter, TenantScopedVectorStore, type IVectorAdapter, type SimilaritySearchQuery, type VectorRecord, type QdrantConfig } from '@flowforge/db-studio-vector';
-import type { Database } from '@flowforge/db-studio-core';
+import { EmbeddedVectorAdapter, QdrantVectorAdapter, PgVectorAdapter, TenantScopedVectorStore, type IVectorAdapter, type SimilaritySearchQuery, type VectorRecord, type QdrantConfig } from '@medea/engine-db-studio-vector';
+import type { Database } from '@medea/engine-db-studio-core';
 import postgres from 'postgres';
 import { DbStudioService } from './db-studio.service.js';
 import { estimateVectorDiskMb } from './vector-quota.js';
@@ -32,7 +32,7 @@ export class VectorService {
     if (engine === 'vector-embedded') {
       // Embedded SQLite nel container del tenant → isolamento FISICO per-file.
       const config = loadConfig();
-      const dir = join(config.FLOWFORGE_DATA_DIR, 'vector-stores');
+      const dir = join(config.MEDEA_DATA_DIR, 'vector-stores');
       if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
       const path = join(dir, `${databaseId}.sqlite`);
       const a = new EmbeddedVectorAdapter(path);

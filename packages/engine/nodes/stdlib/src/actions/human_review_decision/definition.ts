@@ -4,7 +4,7 @@
  * @module actions/human_review_decision/definition
  */
 
-import type { NodeDef } from '@flowforge/core-schema';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 export const humanReviewDecisionNodeDef: NodeDef = {
   id: 'flow_human_review_decision',

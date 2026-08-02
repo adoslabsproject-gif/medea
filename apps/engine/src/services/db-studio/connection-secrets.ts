@@ -24,7 +24,7 @@
  * @module services/db-studio/connection-secrets
  */
 import { encrypt, decrypt, getMasterPasswordOrThrow } from '@/lib/secrets-crypto.js';
-import type { Database } from '@flowforge/db-studio-core';
+import type { Database } from '@medea/engine-db-studio-core';
 
 /** Prefisso dello schema di sealing. Versionato per future rotazioni di formato. */
 export const ENC_PREFIX = 'enc:1:';

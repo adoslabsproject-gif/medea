@@ -1,5 +1,5 @@
 /**
- * @zeliai/shared
+ * @medea/engine-shared
  *
  * Shared utilities for ZeliAI enterprise infrastructure.
  *

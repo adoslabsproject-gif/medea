@@ -1,7 +1,7 @@
 /**
  * External Secrets backend — HashiCorp Vault KV v2.
  *
- * When env FLOWFORGE_VAULT_ADDR is set, credentials whose name has prefix
+ * When env MEDEA_VAULT_ADDR is set, credentials whose name has prefix
  * "vault:" are resolved at read time from Vault instead of the local
  * AES-GCM-encrypted store. The local store stays as the default; Vault is
  * additive, not a replacement (some users want Vault for shared secrets +
@@ -53,10 +53,10 @@ export class VaultSecretsService {
   private readonly cacheTtlMs: number;
 
   constructor() {
-    this.addr = process.env.FLOWFORGE_VAULT_ADDR ?? '';
-    this.token = process.env.FLOWFORGE_VAULT_TOKEN ?? '';
-    this.namespace = process.env.FLOWFORGE_VAULT_NAMESPACE;
-    this.cacheTtlMs = Number(process.env.FLOWFORGE_VAULT_CACHE_TTL_MS ?? '30000');
+    this.addr = process.env.MEDEA_VAULT_ADDR ?? '';
+    this.token = process.env.MEDEA_VAULT_TOKEN ?? '';
+    this.namespace = process.env.MEDEA_VAULT_NAMESPACE;
+    this.cacheTtlMs = Number(process.env.MEDEA_VAULT_CACHE_TTL_MS ?? '30000');
   }
 
   isConfigured(): boolean {
@@ -74,7 +74,7 @@ export class VaultSecretsService {
     if (!this.isConfigured()) {
       logger.warn(
         { credentialName },
-        'Credential references Vault but FLOWFORGE_VAULT_ADDR/TOKEN are unset',
+        'Credential references Vault but MEDEA_VAULT_ADDR/TOKEN are unset',
       );
       return null;
     }

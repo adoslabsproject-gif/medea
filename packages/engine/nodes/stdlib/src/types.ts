@@ -1,4 +1,4 @@
-import type { NodeDef, BinaryData, ExecutionItem } from '@flowforge/core-schema';
+import type { NodeDef, BinaryData, ExecutionItem } from '@medea/engine-core-schema';
 
 // node:stream solo come TIPO (mai valore) → forma `import('node:stream')` inline
 // per non emettere un import statico node:* (rompe il bundle Vite editor). Stessa

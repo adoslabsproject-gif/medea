@@ -6,7 +6,7 @@
  * ecc.) perché siamo in ambiente Linux uniforme dal Dockerfile.
  *
  * Strategia minimal:
- *   - noExternal [/^@flowforge\//]: bundla le workspace deps interne
+ *   - noExternal [/^@medea\/engine-/]: bundla le workspace deps interne
  *   - Tutte le altre npm restano external → installate da pnpm install
  *     nell'immagine Docker (linux x64 native bindings build OK)
  */
@@ -37,17 +37,22 @@ export default defineConfig({
   // `require('buffer')` runtime). Senza, Dynamic require throw error.
   banner: {
     js:
-      "import { createRequire as __ff_createRequire } from 'node:module';\n" +
-      "const require = __ff_createRequire(import.meta.url);",
+      "import { createRequire as __medea_createRequire } from 'node:module';\n" +
+      "const require = __medea_createRequire(import.meta.url);",
   },
-  // Bundla workspace deps interne — sia @flowforge/* sia @zeliai/* (utility
-  // condivise come @zeliai/shared = maskEmail, circuit-breaker, ecc.).
-  // Senza @zeliai inclusi, il bundle ESM fa `import '@zeliai/shared'` a runtime
-  // ma il package non è in node_modules dell'image runtime stage → MODULE_NOT_FOUND.
+  // Bundla le dipendenze interne del workspace, cioè tutto `@medea/engine-*`
+  // (per esempio @medea/engine-shared = maskEmail, circuit-breaker, ecc.).
+  // Se restassero fuori, il bundle ESM farebbe `import '@medea/engine-shared'`
+  // a runtime, ma quel pacchetto non sta in node_modules dell'immagine finale
+  // → MODULE_NOT_FOUND all'avvio del motore.
+  //
+  // Il pattern deve restare allineato ai nomi veri dei pacchetti: fino al
+  // 2026-08-02 diceva `@flowforge/` e `@zeliai/`, e dopo la rinomina non
+  // avrebbe più corrisposto a niente — silenziosamente, senza errori di build.
   //
   // OTel: bundlato per coerenza versione (sdk-node 0.217 + resources 2.x richiedono
   // allineamento inter-package che pnpm prod install nell'image potrebbe non garantire).
-  noExternal: [/^@flowforge\//, /^@zeliai\//, /^@opentelemetry\//],
+  noExternal: [/^@medea\/engine-/, /^@opentelemetry\//],
   external: [
     // ⚠️ esbuild: MAI bundlare (FIX 2026-06-13 "esbuild compile failed:
     // __filename is not defined"). esbuild usa __filename internamente per

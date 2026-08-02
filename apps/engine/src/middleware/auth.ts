@@ -1,5 +1,5 @@
 import { createMiddleware } from 'hono/factory';
-import { verifySessionToken, type SessionTokenPayload } from '@flowforge/auth-local';
+import { verifySessionToken, type SessionTokenPayload } from '@medea/engine-auth-local';
 import { logger } from '@/lib/logger.js';
 import { isPayloadRevoked } from '@/services/security/session-revocation.js';
 import { verifyInternalToken } from '@/lib/internal-token.js';
@@ -58,9 +58,9 @@ export function authMiddleware(options: AuthMiddlewareOptions) {
   // invoke, etc.) inject this header. It's generated at boot, lives only
   // in process env, and is NEVER served by the API. Match → auth bypass
   // with a synthetic "internal" auth context.
-  // Tenant ID source-of-truth: env var FLOWFORGE_TENANT_ID. Single-tenant
+  // Tenant ID source-of-truth: env var MEDEA_TENANT_ID. Single-tenant
   // container (CLAUDE.md REGOLA 1) → NO trust su header.
-  const config = { FLOWFORGE_TENANT_ID: process.env.FLOWFORGE_TENANT_ID ?? '' };
+  const config = { MEDEA_TENANT_ID: process.env.MEDEA_TENANT_ID ?? '' };
 
   return createMiddleware(async (c, next) => {
     if (
@@ -79,13 +79,13 @@ export function authMiddleware(options: AuthMiddlewareOptions) {
     // invoke) within the same host, NOT for bypassing RBAC.
     //
     // FIX HIGH-2 security audit 2026-05-31: tenantId è SEMPRE preso da
-    // config.FLOWFORGE_TENANT_ID (source of truth per single-tenant
+    // config.MEDEA_TENANT_ID (source of truth per single-tenant
     // container, vedi CLAUDE.md REGOLA 1). L'header x-tenant-id era
     // trust-on-input → se internal-token leakava, attaccante poteva
     // forge tenantId via header e accedere a dati cross-tenant.
     const xInternal = c.req.header('x-internal-token') ?? '';
     if (verifyInternalToken(xInternal)) {
-      const tenantId = config.FLOWFORGE_TENANT_ID || 'default';
+      const tenantId = config.MEDEA_TENANT_ID || 'default';
       c.set('auth', {
         userId: 'internal',
         tenantId,
@@ -181,15 +181,15 @@ export function authMiddleware(options: AuthMiddlewareOptions) {
     // del workspace B. Vale anche per superadmin: il suo accesso legittimo a
     // un workspace passa SEMPRE da un SSO fresh con tenantId=quel workspace.
     //
-    // Enforce SOLO se FLOWFORGE_TENANT_ID è configurato: in dev / disaster
+    // Enforce SOLO se MEDEA_TENANT_ID è configurato: in dev / disaster
     // recovery (single-tenant non impostato → '') non blocchiamo, coerente con
     // il fallback 'default' del path internal-token.
     if (
-      config.FLOWFORGE_TENANT_ID !== '' &&
-      payload.tenantId !== config.FLOWFORGE_TENANT_ID
+      config.MEDEA_TENANT_ID !== '' &&
+      payload.tenantId !== config.MEDEA_TENANT_ID
     ) {
       logger.warn(
-        { path: c.req.path, sub: payload.sub, tokenTenant: payload.tenantId, containerTenant: config.FLOWFORGE_TENANT_ID },
+        { path: c.req.path, sub: payload.sub, tokenTenant: payload.tenantId, containerTenant: config.MEDEA_TENANT_ID },
         '[SECURITY] cross-tenant session token rejected (tenantId mismatch)',
       );
       if (required) return c.json({ error: 'Unauthorized: tenant scope mismatch' }, 401);

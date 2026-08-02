@@ -25,12 +25,12 @@
  *   - `respectRobots` (default true): fetched `/robots.txt` is cached for the
  *     whole run; failure to fetch → allow-all (intentional: we don't punish a
  *     site that returns 404 on robots).
- *   - SSRF: every outbound HTTP call goes through `@flowforge/safe-fetch`.
+ *   - SSRF: every outbound HTTP call goes through `@medea/engine-safe-fetch`.
  *
  * @module web-extraction/recursive-spider-engine
  */
 
-import { safeFetchWithRedirects } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects } from '@medea/engine-safe-fetch';
 import { load as cheerioLoad } from 'cheerio';
 
 // ─── Robots.txt minimal parser (RFC-friendly) ──────────────────────────────

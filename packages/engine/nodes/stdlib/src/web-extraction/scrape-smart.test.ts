@@ -6,20 +6,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { scrapeSmartNode } from './scrape-smart.js';
 
-vi.mock('@flowforge/safe-fetch', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@flowforge/safe-fetch')>()),
+vi.mock('@medea/engine-safe-fetch', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@medea/engine-safe-fetch')>()),
   safeFetchWithRedirects: vi.fn(),
 }));
 
-const { safeFetchWithRedirects } = await import('@flowforge/safe-fetch');
+const { safeFetchWithRedirects } = await import('@medea/engine-safe-fetch');
 const mockedFetch = vi.mocked(safeFetchWithRedirects);
 
 const ctx = { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {}, llmProviders: {} } as const;
 
 beforeEach(() => {
   mockedFetch.mockReset();
-  delete process.env.FLOWFORGE_BROWSER_ENDPOINT;
-  delete process.env.FLOWFORGE_STEALTH_ENDPOINT;
+  delete process.env.MEDEA_BROWSER_ENDPOINT;
+  delete process.env.MEDEA_STEALTH_ENDPOINT;
 });
 
 describe('scrapeSmartNode.def', () => {

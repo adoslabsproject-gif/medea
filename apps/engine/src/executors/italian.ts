@@ -4,7 +4,7 @@
  *  - Zucchetti HR Go: REST with bearer token, tenant base URL per customer
  *  - SDI: full XAdES-BES envelope signing + SDICoop upload. Requires a
  *    qualified certificate (X.509 with private key) supplied by the
- *    customer via FLOWFORGE_SDI_CERT_PATH + FLOWFORGE_SDI_KEY_PATH or
+ *    customer via MEDEA_SDI_CERT_PATH + MEDEA_SDI_KEY_PATH or
  *    inline in node config.
  */
 
@@ -13,8 +13,8 @@ import { readFileSync, existsSync } from 'node:fs';
 import { createTransport, type SendMailOptions } from 'nodemailer';
 import { safeAttachmentPath } from '@/lib/mail-attachment-path.js';
 import { assertConnectHostAllowed } from '@/lib/connect-host-guard.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
-import { resolveBinaryValue, type BinaryData } from '@flowforge/core-schema';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { resolveBinaryValue, type BinaryData } from '@medea/engine-core-schema';
 import { safeOutboundFetch } from '@/lib/safe-outbound-fetch.js';
 import { readJsonCapped, readTextTruncated } from '@/lib/capped-response.js';
 import { validateFatturaPaXsd } from '@/executors/sdi/xsd-validator.js';
@@ -402,8 +402,8 @@ export const sdiSendInvoiceExecutor: NodeExecutor = async (config, _input, _cont
     signedXml = xmlContent;
   } else {
     // Mode B: sign here with the qualified cert.
-    const certPem = loadPem('FLOWFORGE_SDI_CERT_PATH', certPath, inlineCert);
-    const keyPem = loadPem('FLOWFORGE_SDI_KEY_PATH', keyPath, inlineKey);
+    const certPem = loadPem('MEDEA_SDI_CERT_PATH', certPath, inlineCert);
+    const keyPem = loadPem('MEDEA_SDI_KEY_PATH', keyPath, inlineKey);
     const certB64 = pemBodyToBase64(certPem);
     const { issuer, serial } = parseCertMetadata(certPem);
     const signatureId = `SIG-${randomBytes(6).toString('hex')}`;

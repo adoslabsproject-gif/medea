@@ -7,7 +7,7 @@
  * Pattern enterprise: client riceve `{ code, message, reqId }` generico,
  * dettagli completi vanno SOLO al logger (correlation via reqId).
  *
- * Stesso pattern di apps/flowforge-runtime/src/server.ts:239-249 (C3 fix).
+ * Stesso pattern di apps/engine/src/server.ts:239-249 (C3 fix).
  * Centralizzato qui per evitare drift tra route differenti.
  */
 
@@ -32,7 +32,7 @@ export interface SanitizedErrorOptions {
 /**
  * Violazione di vincolo UNIQUE / PRIMARY KEY (riga duplicata). Va distinta dal
  * generico "insert fallita": è il CONTRATTO su cui si appoggia `onConflict:
- * 'ignore'` di db_insert (executor packages/flowforge/nodes/db — regex
+ * 'ignore'` di db_insert (executor packages/engine/nodes/db — regex
  * /UNIQUE|duplicate|PRIMARY KEY|already exists/i sul messaggio). La
  * sanitizzazione #194 H5 mascherava il dettaglio → l'idempotenza dichiarata
  * nel def era rotta su TUTTO il path API (bug trovato E2E 2026-07-06 sul

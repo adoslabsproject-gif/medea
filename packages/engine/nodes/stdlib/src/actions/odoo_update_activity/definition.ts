@@ -4,7 +4,7 @@
  * @module actions/odoo_update_activity/definition
  */
 
-import type { NodeDef } from '@flowforge/core-schema';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 export const odooUpdateActivityNodeDef: NodeDef = {
   id: 'action_odoo_update_activity',

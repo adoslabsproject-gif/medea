@@ -13,8 +13,8 @@
  *
  * @module services/db-studio/external-host-guard
  */
-import { validateIpForFetch, isIP } from '@flowforge/safe-fetch';
-import type { Database } from '@flowforge/db-studio-core';
+import { validateIpForFetch, isIP } from '@medea/engine-safe-fetch';
+import type { Database } from '@medea/engine-db-studio-core';
 
 export class ExternalHostBlockedError extends Error {
   constructor(message: string) { super(message); this.name = 'ExternalHostBlockedError'; }

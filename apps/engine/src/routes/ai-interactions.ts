@@ -10,7 +10,7 @@
  *   POST   /:id/review             — human reviewer assigns quality + split
  *   GET    /export.jsonl           — export training-ready JSONL
  *
- * Tenant scope: `getTenantId(c)` (env del container FLOWFORGE_TENANT_ID / JWT,
+ * Tenant scope: `getTenantId(c)` (env del container MEDEA_TENANT_ID / JWT,
  * NON header — gli header mentono). RBAC: la LETTURA del dataset (list/:id) e la
  * REVIEW sono `editor`+; il toggle del CONSENSO e l'EXPORT massivo sono `owner`
  * (operazioni di compliance/data-portability, non per ruoli operativi).

@@ -1,7 +1,7 @@
 /**
  * Test llm-gateway — routing condiviso verso il GATEWAY PORTAL (no liara:3003).
  *
- * Bug-bounty: base resolution (FLOWFORGE_LIARA_BASE_URL > LLM_API_BASE > fallback),
+ * Bug-bounty: base resolution (MEDEA_LIARA_BASE_URL > LLM_API_BASE > fallback),
  * URL /chat/completions, Bearer license, X-FF-Workspace/Feature, stop, model
  * OMESSO di default (gateway inietta) vs override, parse content+usage, non-2xx →
  * {ok:false} (NO throw), errore di rete → throw.
@@ -16,8 +16,8 @@ const mockFetch = vi.fn();
 
 beforeEach(() => {
   mockFetch.mockReset();
-  process.env.FLOWFORGE_LIARA_BASE_URL = 'http://gw/api/v1/llm';
-  process.env.FLOWFORGE_LICENSE_KEY = 'ZFL-X';
+  process.env.MEDEA_LIARA_BASE_URL = 'http://gw/api/v1/llm';
+  process.env.MEDEA_LICENSE_KEY = 'ZFL-X';
   delete process.env.LLM_API_BASE;
   globalThis.fetch = mockFetch as unknown as typeof fetch;
 });
@@ -29,8 +29,8 @@ function ok(content: string, usage = { prompt_tokens: 7, completion_tokens: 3 })
 const req = (over = {}) => ({ messages: [{ role: 'user', content: 'hi' }], temperature: 0.2, maxTokens: 100, timeoutMs: 5000, workspaceId: 'ws', ...over });
 
 describe('gatewayBaseUrl', () => {
-  it('precedenza: FLOWFORGE_LIARA_BASE_URL > LLM_API_BASE > fallback', () => {
-    expect(gatewayBaseUrl({ FLOWFORGE_LIARA_BASE_URL: 'http://a', LLM_API_BASE: 'http://b' } as NodeJS.ProcessEnv)).toBe('http://a');
+  it('precedenza: MEDEA_LIARA_BASE_URL > LLM_API_BASE > fallback', () => {
+    expect(gatewayBaseUrl({ MEDEA_LIARA_BASE_URL: 'http://a', LLM_API_BASE: 'http://b' } as NodeJS.ProcessEnv)).toBe('http://a');
     expect(gatewayBaseUrl({ LLM_API_BASE: 'http://b' } as NodeJS.ProcessEnv)).toBe('http://b');
     expect(gatewayBaseUrl({} as NodeJS.ProcessEnv)).toBe('http://liara:3003');
   });

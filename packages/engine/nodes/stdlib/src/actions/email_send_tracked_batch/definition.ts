@@ -9,7 +9,7 @@
  * @module actions/email_send_tracked_batch/definition
  */
 
-import type { NodeDef } from '@flowforge/core-schema';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 export const emailSendTrackedBatchNodeDef: NodeDef = {
   id: 'action_email_send_tracked_batch',
@@ -123,7 +123,7 @@ export const emailSendTrackedBatchNodeDef: NodeDef = {
     },
     {
       key: 'trackingBaseUrl', label: 'URL base tracking', type: 'text', required: false,
-      help: 'URL del runtime FlowForge. Vuoto = eredita FLOWFORGE_PUBLIC_BASE_URL.',
+      help: 'URL del runtime FlowForge. Vuoto = eredita MEDEA_PUBLIC_BASE_URL.',
     },
     {
       key: 'clickWhitelist', label: 'Domini permessi nei link', type: 'chip-list', required: false,

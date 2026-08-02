@@ -6,17 +6,17 @@
  * a quell'host — gli altri vendor restano operativi. Senza per-host bucketing,
  * un Single Vendor Down causerebbe trip globale + collateral damage.
  *
- * Implementation: wrappa `CircuitBreaker` di `@zeliai/shared` (canonical, gia\`
+ * Implementation: wrappa `CircuitBreaker` di `@medea/engine-shared` (canonical, gia\`
  * usato in 4 apps). Singleton in-memory registry per host. La policy default
  * (5 failures → open per 30s, 2 success in half-open → close) e\` conservativa
  * per scenari API esterne; override via opts per host che necessitano tuning.
  *
- * NOTE: in apps/flowforge-runtime/src/lib/circuit-breaker.ts c'e\` una seconda
+ * NOTE: in apps/engine/src/lib/circuit-breaker.ts c'e\` una seconda
  * implementazione (sliding window + fallback). Pattern usage: nodemailer.ts
  * e community-node-sandbox.ts. Task #262 traccia il consolidamento.
  */
 
-import { CircuitBreaker, CircuitOpenError as SharedCircuitOpenError, type CircuitBreakerOptions } from '@zeliai/shared';
+import { CircuitBreaker, CircuitOpenError as SharedCircuitOpenError, type CircuitBreakerOptions } from '@medea/engine-shared';
 import { CircuitOpenError as NodeCircuitOpenError } from './node-error.js';
 
 const breakers = new Map<string, CircuitBreaker>();

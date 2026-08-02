@@ -2,7 +2,7 @@
  * Tests `http_request` tool — N20 audit (LLM-driven SSRF).
  *
  * Strategia: source inspection — verifico che il tool-loop usi
- * `safeFetchWithRedirects` di `@flowforge/safe-fetch` invece di `fetch()`
+ * `safeFetchWithRedirects` di `@medea/engine-safe-fetch` invece di `fetch()`
  * raw, e che gli error SSRF tornino come tool-result strutturato.
  *
  * I behavioural test del safe-fetch helper (61 case) coprono già la
@@ -15,15 +15,15 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { frameRagSearchResponse } from './tool-loop.js';
-import { RAG_CONTENT_MARKER } from '@flowforge/rag-guard';
+import { RAG_CONTENT_MARKER } from '@medea/engine-rag-guard';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const toolLoopSource = readFileSync(join(__dirname, 'tool-loop.ts'), 'utf-8');
 
 describe('N20 — http_request tool wires safeFetchWithRedirects', () => {
-  it('importa safeFetchWithRedirects da @flowforge/safe-fetch', () => {
+  it('importa safeFetchWithRedirects da @medea/engine-safe-fetch', () => {
     expect(toolLoopSource).toMatch(
-      /import\s*\{[^}]*safeFetchWithRedirects[^}]*\}\s*from\s*['"]@flowforge\/safe-fetch['"]/,
+      /import\s*\{[^}]*safeFetchWithRedirects[^}]*\}\s*from\s*['"]@medea\/engine-safe-fetch['"]/,
     );
   });
 

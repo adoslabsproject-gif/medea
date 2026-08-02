@@ -25,8 +25,8 @@ function makePackage(parent: string, vendor: string, id: string, version: string
 beforeEach(() => {
   sourceDir = mkdtempSync(join(tmpdir(), 'ff-cnb-src-'));
   dataDir = mkdtempSync(join(tmpdir(), 'ff-cnb-data-'));
-  process.env.FLOWFORGE_COMMUNITY_DEFAULTS_DIR = sourceDir;
-  process.env.FLOWFORGE_DATA_DIR = dataDir;
+  process.env.MEDEA_COMMUNITY_DEFAULTS_DIR = sourceDir;
+  process.env.MEDEA_DATA_DIR = dataDir;
 });
 
 afterEach(() => {
@@ -100,7 +100,7 @@ describe('seedCommunityDefaults — idempotenza', () => {
 
 describe('seedCommunityDefaults — error handling', () => {
   it('source dir inesistente → ritorna report vuoto (no throw)', async () => {
-    process.env.FLOWFORGE_COMMUNITY_DEFAULTS_DIR = '/nonexistent/path/__xyz';
+    process.env.MEDEA_COMMUNITY_DEFAULTS_DIR = '/nonexistent/path/__xyz';
     const r = await seedCommunityDefaults();
     expect(r.seeded).toHaveLength(0);
     expect(r.errors).toHaveLength(0);

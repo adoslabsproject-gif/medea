@@ -17,7 +17,7 @@ import {
   InvalidBinaryRefError,
   BinaryNotFoundError,
 } from './binary-store.service.js';
-import { makeBinaryRef, readBinaryBytes } from '@flowforge/core-schema';
+import { makeBinaryRef, readBinaryBytes } from '@medea/engine-core-schema';
 
 let root = '';
 let store: BinaryStore;

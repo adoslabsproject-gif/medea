@@ -125,7 +125,7 @@ export function runMigrations(): void {
   // senza record. Vedi backfillCustomNodeIntegrity.
   backfillCustomNodeIntegrity(sqlite);
   // RESIGN ONE-TIME (incidente owner 2026-06-12): i nodi firmati col vecchio
-  // registry secret (FLOWFORGE_INTERNAL_TOKEN effimero, cambiato a un recreate)
+  // registry secret (MEDEA_INTERNAL_TOKEN effimero, cambiato a un recreate)
   // hanno signature_mismatch e venivano bloccati ("Unknown node def"). Ora il
   // secret è STABILE (da SSO_SECRET) → ri-firmiamo UNA VOLTA col secret corrente
   // i nodi con sorgenti integri (digest valido). Vedi resignCustomNodesWithStableSecret.
@@ -452,7 +452,7 @@ export function runMigrations(): void {
   // additions (preferred_default_provider, disabled_providers list, etc).
   //
   // Liara on/off is bi-level:
-  //   • Global env FLOWFORGE_DISABLE_LIARA=true   → off for ALL tenants on this instance
+  //   • Global env MEDEA_DISABLE_LIARA=true   → off for ALL tenants on this instance
   //   • Per-tenant allow_liara=0                  → off for this tenant only
   //   • Effective state = global_enabled AND tenant_allowed
   // This lets a SaaS multi-tenant operator keep Liara as default but allow
@@ -664,14 +664,14 @@ export function runMigrations(): void {
   insertTenant.run('default', 'Default Tenant');
 
   // FIX 2026-05-31 (enforcement piani v2): sync tenant quota da env Docker.
-  // Il portal inietta FLOWFORGE_TENANT_ID + FLOWFORGE_PLAN_CODE + FLOWFORGE_MAX_WORKFLOWS
+  // Il portal inietta MEDEA_TENANT_ID + MEDEA_PLAN_CODE + MEDEA_MAX_WORKFLOWS
   // via buildEnv() su provision/onboard. Qui aggiorna il record tenants locale per
   // garantire che `tenantService.checkQuota` legga limiti veri del piano corrente.
   // NULL/'' = unlimited (Enterprise) → max_workflows = 999999 magic finche\` lo
   // schema runtime non supporta NULL nativamente.
-  const tenantIdEnv = process.env.FLOWFORGE_TENANT_ID;
-  const planCodeEnv = process.env.FLOWFORGE_PLAN_CODE;
-  const maxWfRaw = process.env.FLOWFORGE_MAX_WORKFLOWS;
+  const tenantIdEnv = process.env.MEDEA_TENANT_ID;
+  const planCodeEnv = process.env.MEDEA_PLAN_CODE;
+  const maxWfRaw = process.env.MEDEA_MAX_WORKFLOWS;
   if (tenantIdEnv) {
     const maxWf = (maxWfRaw === undefined || maxWfRaw === '') ? 999999 : parseInt(maxWfRaw, 10);
     if (!isNaN(maxWf) && maxWf > 0) {
@@ -1007,7 +1007,7 @@ const INTEGRITY_RESIGNED_FLAG = 'custom_nodes_resigned_stable_secret_v1';
  * RESIGN ONE-TIME col registry secret STABILE.
  *
  * Incidente owner 2026-06-12: il registry secret derivava da
- * FLOWFORGE_INTERNAL_TOKEN (randomBytes per-container, cambiato a ogni recreate)
+ * MEDEA_INTERNAL_TOKEN (randomBytes per-container, cambiato a ogni recreate)
  * → le firme dei custom node diventavano `signature_mismatch` a ogni recreate →
  * nodi legittimi bloccati ("Unknown node def"). Reso stabile (registry-secret.ts,
  * da SSO_SECRET) → qui ri-firmiamo UNA VOLTA i nodi col secret corrente.

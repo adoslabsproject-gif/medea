@@ -107,7 +107,7 @@ export function getTenantIdOrNull(c: Context): string | null {
  * per-tenant container: SAML SSO callbacks (the IdP POST carries no JWT and no
  * custom header), the client-error sink, public form webhooks, etc.
  *
- * Source of truth = `FLOWFORGE_TENANT_ID`, the workspace UUID the portal injects
+ * Source of truth = `MEDEA_TENANT_ID`, the workspace UUID the portal injects
  * into the container at provision time (see `config.ts`). It is the container's
  * own identity — NOT a client-controllable value.
  *
@@ -133,5 +133,5 @@ export function getTenantIdOrNull(c: Context): string | null {
  * @returns the container's tenant slug (UUID in prod, `'default'` in dev)
  */
 export function getContainerTenantId(): string {
-  return loadConfig().FLOWFORGE_TENANT_ID ?? 'default';
+  return loadConfig().MEDEA_TENANT_ID ?? 'default';
 }

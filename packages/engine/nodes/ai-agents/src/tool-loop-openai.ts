@@ -10,8 +10,8 @@
  * trace, cancel cooperativo, cap iterazioni. File separato: no-monoliti.
  */
 
-import { internalGatewayTrustedHost } from '@flowforge/safe-fetch';
-import { logLlmExchange } from '@flowforge/nodes-stdlib';
+import { internalGatewayTrustedHost } from '@medea/engine-safe-fetch';
+import { logLlmExchange } from '@medea/engine-nodes-stdlib';
 import { buildAgentUsage, sumAgentUsage, type AgentLlmUsage } from './llm-usage.js';
 
 interface OpenAiToolCall {
@@ -43,11 +43,11 @@ export function openAiLoopEndpoint(provider: string, apiKey: string, model: stri
 } {
   switch (provider) {
     case 'liara': {
-      const internalGateway = typeof process !== 'undefined' && process.env.FLOWFORGE_LIARA_BASE_URL
-        ? process.env.FLOWFORGE_LIARA_BASE_URL.replace(/\/$/, '')
+      const internalGateway = typeof process !== 'undefined' && process.env.MEDEA_LIARA_BASE_URL
+        ? process.env.MEDEA_LIARA_BASE_URL.replace(/\/$/, '')
         : undefined;
       const base = baseUrl ?? internalGateway ?? 'https://liara.nothumanallowed.com';
-      const licenseKey = typeof process !== 'undefined' ? (process.env.FLOWFORGE_LICENSE_KEY ?? '').trim() : '';
+      const licenseKey = typeof process !== 'undefined' ? (process.env.MEDEA_LICENSE_KEY ?? '').trim() : '';
       const bearer = licenseKey || apiKey;
       // Model: i default legacy Claude salvati nelle config (il nodo era
       // Anthropic-only) e 'nha-v1' senza tool-training NON hanno senso qui →
@@ -124,7 +124,7 @@ export function openAiLoopEndpoint(provider: string, apiKey: string, model: stri
       // config/env di sistema (non payload utente) → esenzione SSRF per il suo
       // host esatto (default loopback: allowDockerNet non basterebbe).
       const base = (baseUrl
-        ?? (typeof process !== 'undefined' ? process.env.FLOWFORGE_OLLAMA_URL : undefined)
+        ?? (typeof process !== 'undefined' ? process.env.MEDEA_OLLAMA_URL : undefined)
         ?? 'http://localhost:11434').replace(/\/$/, '');
       return {
         url: `${base}/v1/chat/completions`,

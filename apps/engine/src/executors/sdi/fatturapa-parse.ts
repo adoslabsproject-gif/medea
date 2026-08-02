@@ -14,7 +14,7 @@
  */
 
 import { XmlDocument, type XmlNode } from 'libxml2-wasm';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { validateFatturaPaXsd } from './xsd-validator.js';
 
 function text(el: XmlNode | null, path: string): string | null {

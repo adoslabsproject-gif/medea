@@ -8,7 +8,7 @@
  * guard lega la description ai campi REALMENTE esposti dal modulo (PecParsedMessage)
  * e ai valori pecType reali → un claim che torna a divergere = rosso.
  *
- * NB: il modulo runtime (pec-message) vive in apps/flowforge-runtime; qui asseriamo
+ * NB: il modulo runtime (pec-message) vive in apps/engine; qui asseriamo
  * la COERENZA della description del nodo con il contratto documentato, senza
  * importare il runtime (package boundary). I valori sono pinnati esplicitamente.
  */

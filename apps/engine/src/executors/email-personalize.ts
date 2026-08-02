@@ -3,8 +3,8 @@
  * Wrap su email-personalize.service.ts.
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
-import { logLlmExchange } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { logLlmExchange } from '@medea/engine-nodes-stdlib';
 import { personalizeEmail } from '@/services/email-personalize.service.js';
 
 export const emailPersonalizeExecutor: NodeExecutor = async (config, _input, context) => {

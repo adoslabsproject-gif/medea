@@ -7,7 +7,7 @@
  *     `consentVerified: true` in input
  *   - consent gate: passes when requireConsent=false even with empty input
  *   - missing tracking base URL → throw with actionable message
- *   - missing FLOWFORGE_SSO_SECRET → throw
+ *   - missing MEDEA_SSO_SECRET → throw
  *   - body is injected before delegation (pixel + click rewrite present)
  *   - on success → b2b_interactions row of type 'email_sent' inserted
  *   - sendId auto-generated when omitted
@@ -46,8 +46,8 @@ vi.mock('@/storage/db.js', () => ({
 }));
 vi.mock('@/config.js', () => ({
   loadConfig: () => ({
-    FLOWFORGE_SSO_SECRET: 'd'.repeat(64),
-    FLOWFORGE_PUBLIC_BASE_URL: 'https://fabio-musicco.app.automazionezeli.com',
+    MEDEA_SSO_SECRET: 'd'.repeat(64),
+    MEDEA_PUBLIC_BASE_URL: 'https://fabio-musicco.app.automazionezeli.com',
   }),
 }));
 vi.mock('@/lib/logger.js');
@@ -129,24 +129,24 @@ describe('body injection', () => {
 describe('infra failures', () => {
   it('throws when trackingBaseUrl absent (env + config both empty)', async () => {
     vi.doMock('@/config.js', () => ({
-      loadConfig: () => ({ FLOWFORGE_SSO_SECRET: 'd'.repeat(64) }),
+      loadConfig: () => ({ MEDEA_SSO_SECRET: 'd'.repeat(64) }),
     }));
     vi.resetModules();
     const { sendEmailTrackedExecutor: freshFn } = await import('./nodemailer-tracked.js');
     await expect(freshFn(baseCfg, { consentVerified: true }, ctx))
-      .rejects.toThrow(/trackingBaseUrl|FLOWFORGE_PUBLIC_BASE_URL/);
+      .rejects.toThrow(/trackingBaseUrl|MEDEA_PUBLIC_BASE_URL/);
     vi.doUnmock('@/config.js');
   });
 
-  it('throws when FLOWFORGE_SSO_SECRET absent or too short', async () => {
+  it('throws when MEDEA_SSO_SECRET absent or too short', async () => {
     vi.resetModules();
     vi.doMock('@/config.js', () => ({
-      loadConfig: () => ({ FLOWFORGE_PUBLIC_BASE_URL: 'https://x.app/' }),
+      loadConfig: () => ({ MEDEA_PUBLIC_BASE_URL: 'https://x.app/' }),
     }));
-    delete process.env.FLOWFORGE_SSO_SECRET;
+    delete process.env.MEDEA_SSO_SECRET;
     const { sendEmailTrackedExecutor: freshFn } = await import('./nodemailer-tracked.js');
     await expect(freshFn(baseCfg, { consentVerified: true }, ctx))
-      .rejects.toThrow(/FLOWFORGE_SSO_SECRET/);
+      .rejects.toThrow(/MEDEA_SSO_SECRET/);
     vi.doUnmock('@/config.js');
   });
 });

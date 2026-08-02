@@ -18,13 +18,13 @@ import * as oidc from 'openid-client';
 import { getDatabase } from '@/storage/db.js';
 import { logger } from '@/lib/logger.js';
 import { getAuthKeys } from '@/lib/auth-keys.js';
-import { issueSessionToken } from '@flowforge/auth-local';
+import { issueSessionToken } from '@medea/engine-auth-local';
 import { getContainerTenantId } from './../lib/tenant.js';
 import { requireRole } from '@/middleware/rbac.js';
 import { getActorId } from '@/lib/actor.js';
 import { AuditLogService } from '@/services/audit.service.js';
 import { encryptClientSecret, resolveClientSecret } from '@/lib/oauth-secret.js';
-import { validateUrlForFetch, assertUrlSafe } from '@flowforge/safe-fetch';
+import { validateUrlForFetch, assertUrlSafe } from '@medea/engine-safe-fetch';
 import { nanoid } from 'nanoid';
 
 const audit = new AuditLogService();
@@ -66,7 +66,7 @@ function pkceChallenge(verifier: string): string {
 export function createOauthRoutes(): Hono {
   const app = new Hono();
 
-  // F1-B (2026-06-10): tenant SEMPRE da getContainerTenantId() = FLOWFORGE_TENANT_ID.
+  // F1-B (2026-06-10): tenant SEMPRE da getContainerTenantId() = MEDEA_TENANT_ID.
   // Provider + oauth_state nascono sotto il tenant del container; il callback
   // (che usa stateRow.tenant_id) li ritrova per costruzione. Niente override
   // impersonation superadmin (insensato in un container single-tenant). Auth resta
@@ -279,7 +279,7 @@ export function createOauthRoutes(): Hono {
         path: '/',
         maxAge: 7 * 86_400,
       });
-      const editorOrigin = process.env.FLOWFORGE_EDITOR_URL ?? '';
+      const editorOrigin = process.env.MEDEA_EDITOR_URL ?? '';
       return c.redirect(editorOrigin === '' ? '/' : editorOrigin, 302);
     } catch (err) {
       logger.error({ err, provider }, 'OAuth callback failed');

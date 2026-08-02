@@ -12,12 +12,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const safeFetch = vi.fn<(...a: unknown[]) => Promise<unknown>>();
-vi.mock('@flowforge/safe-fetch', async (orig) => ({
-  ...(await orig<typeof import('@flowforge/safe-fetch')>()),
+vi.mock('@medea/engine-safe-fetch', async (orig) => ({
+  ...(await orig<typeof import('@medea/engine-safe-fetch')>()),
   safeFetchWithRedirects: (...a: unknown[]) => safeFetch(...a),
 }));
-vi.mock('@flowforge/nodes-stdlib', async (orig) => {
-  const actual = await orig<typeof import('@flowforge/nodes-stdlib')>();
+vi.mock('@medea/engine-nodes-stdlib', async (orig) => {
+  const actual = await orig<typeof import('@medea/engine-nodes-stdlib')>();
   return { ...actual, executeWithHostBreaker: (_u: string, fn: () => unknown) => fn() };
 });
 

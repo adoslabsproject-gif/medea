@@ -101,7 +101,7 @@ vi.mock('@/services/ai-scaffold/node-catalog.js', () => ({
     {
       defId: 'db_insert', type: 'action', label: 'DB Insert', description: '',
       fields: [
-        // Tipi REALI del def (packages/flowforge/nodes/db): db-picker e
+        // Tipi REALI del def (packages/engine/nodes/db): db-picker e
         // db-table-picker — servono al test del heal pre-validation (campo
         // required omesso → __USE_PICKER__ via type-match).
         { key: 'databaseId', type: 'db-picker', required: true },
@@ -764,7 +764,7 @@ describe('runSingleshotScaffold — code-node language heal end-to-end (bug user
             // Apici singoli + nessuna graffa: codice inequivocabilmente Python
             // (import/os.environ/print/len) senza sequenze che incespicano il
             // parser di stream (è un dettaglio del mock, non del SUT).
-            code: "import os\ndata = os.environ.get('FLOWFORGE_INPUT')\nprint('count', len(data))",
+            code: "import os\ndata = os.environ.get('MEDEA_INPUT')\nprint('count', len(data))",
             timeoutMs: '30000', parseStdoutJson: 'true', allowNetwork: 'false',
           },
         },

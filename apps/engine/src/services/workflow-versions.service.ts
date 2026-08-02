@@ -15,7 +15,7 @@ import { getDatabase } from '@/storage/db.js';
 import { WorkflowService } from './workflow.service.js';
 import { AuditLogService } from './audit.service.js';
 import type { IEventBus } from '@/ports/event-bus.js';
-import type { Workflow } from '@flowforge/core-schema';
+import type { Workflow } from '@medea/engine-core-schema';
 import { nanoid } from 'nanoid';
 import { logger } from '@/lib/logger.js';
 

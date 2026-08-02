@@ -10,7 +10,7 @@
  * @module services/db-agent/tools/write-schema
  */
 import { z } from 'zod';
-import type { MigrationAction, Table } from '@flowforge/db-studio-core';
+import type { MigrationAction, Table } from '@medea/engine-db-studio-core';
 import type { DbAgentToolDef } from '../tool-types.js';
 import { loadOwnedDatabase } from '../guard.js';
 import { ConfirmationRequiredError, ToolValidationError } from '../errors.js';

@@ -896,7 +896,7 @@ describe('Quality gate — OBSOLETE_MODEL (rule 2026-06-07)', () => {
 });
 
 describe('QualityGate — CODE_NODE_LANG_MISMATCH (bug user 2026-06-09)', () => {
-  const PYTHON_CODE = 'import json, os\ndata = json.loads(os.environ.get("FLOWFORGE_INPUT", "{}"))\nprint(data)';
+  const PYTHON_CODE = 'import json, os\ndata = json.loads(os.environ.get("MEDEA_INPUT", "{}"))\nprint(data)';
   const JS_CODE = 'const x = input.items || [];\nreturn { n: x.length };';
 
   it('codice Python in action_run_js → critical + shouldReject', () => {
@@ -1125,7 +1125,7 @@ describe('QualityGate — integrazione: workflow ROTTO REALE "Crea Node Code" (2
           id: 'action_1',
           defId: 'action_run_js',
           config: {
-            code: 'import json, os\ndata = json.loads(os.environ.get("FLOWFORGE_INPUT", "{}"))\nprint({"received_keys": list(data.keys()), "count": len(data)})',
+            code: 'import json, os\ndata = json.loads(os.environ.get("MEDEA_INPUT", "{}"))\nprint({"received_keys": list(data.keys()), "count": len(data)})',
             timeoutMs: '30000', parseStdoutJson: 'true', allowNetwork: 'false',
           },
         },

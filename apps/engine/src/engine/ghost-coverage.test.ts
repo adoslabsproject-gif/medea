@@ -78,7 +78,7 @@
 import { describe, it, expect } from 'vitest';
 import { ALL_NODE_MODULES } from './workflow-engine.js';
 import { resolveServerExecutor, serverExecutors } from '../executors/registry.js';
-import type { NodeModule } from '@flowforge/nodes-stdlib';
+import type { NodeModule } from '@medea/engine-nodes-stdlib';
 
 /**
  * DefIds the engine handles without an executor — strategies in
@@ -115,7 +115,7 @@ const ENGINE_NATIVE_DEF_IDS: ReadonlySet<string> = new Set([
  *
  * Cleaned 2026-06-06: `logic_error_handler` removed from stdlibNodes entirely
  * (was declared + advertised by AI scaffold but never implemented). See
- * `packages/flowforge/nodes/stdlib/src/logic/loop.ts:232` history comment.
+ * `packages/engine/nodes/stdlib/src/logic/loop.ts:232` history comment.
  */
 const KNOWN_GHOST_PENDING_IMPL: ReadonlyMap<string, string> = new Map([]);
 

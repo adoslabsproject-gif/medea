@@ -9,8 +9,8 @@
  *  5. Auto-replay opzionale via runService.replay({fromNodeId: failedNodeId})
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
-import { logLlmExchange } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { logLlmExchange } from '@medea/engine-nodes-stdlib';
 import { eq } from 'drizzle-orm';
 import { getDatabase } from '@/storage/db.js';
 import { runs } from '@/storage/schema.js';

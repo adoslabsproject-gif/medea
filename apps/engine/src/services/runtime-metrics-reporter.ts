@@ -13,8 +13,8 @@
  * super attivi (50k punti → percentile preciso al 0.002%, oltre serve solo
  * a inflate stats senza valore informativo).
  *
- * Auth: X-Internal-Token shared (FLOWFORGE_INTERNAL_TOKEN).
- * Tenant: workspaceId da config.FLOWFORGE_TENANT_ID.
+ * Auth: X-Internal-Token shared (MEDEA_INTERNAL_TOKEN).
+ * Tenant: workspaceId da config.MEDEA_TENANT_ID.
  */
 
 import { loadConfig } from '@/config.js';
@@ -121,9 +121,9 @@ function getAggregated(): AggregatedMetrics {
 
 export async function reportOnce(): Promise<void> {
   const cfg = loadConfig();
-  const tenantId = cfg.FLOWFORGE_TENANT_ID;
+  const tenantId = cfg.MEDEA_TENANT_ID;
   // 2026-06-06 fix portal-callback-token: il portal valida i webhook interni
-  // con il SUO global secret (FLOWFORGE_INTERNAL_TOKEN del portal env), NON
+  // con il SUO global secret (MEDEA_INTERNAL_TOKEN del portal env), NON
   // con il per-tenant token random generato in onboarding. Pattern shared via
   // env var PORTAL_CALLBACK_TOKEN (vedi memory/project_portal_callback_token_fix.md).
   // Fallback per-tenant solo per dev / unit test.
@@ -138,7 +138,7 @@ export async function reportOnce(): Promise<void> {
   }
 
   const agg = getAggregated();
-  const url = `${cfg.FLOWFORGE_PORTAL_URL.replace(/\/$/, '')}/api/v1/internal/runtime-metrics`;
+  const url = `${cfg.MEDEA_PORTAL_URL.replace(/\/$/, '')}/api/v1/internal/runtime-metrics`;
 
   try {
     const res = await fetch(url, {

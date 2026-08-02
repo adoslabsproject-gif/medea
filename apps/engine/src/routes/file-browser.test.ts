@@ -4,7 +4,7 @@
  * 🚨 ATTACK SURFACE: input `path` arbitrario dell'utente, ritorna contenuto
  *    filesystem. Path traversal = file leak (/etc/passwd, /var/log, ecc.).
  *
- * 🚨 ALLOWLIST: tenant root + FLOWFORGE_FILE_ALLOWLIST env (colon-sep paths).
+ * 🚨 ALLOWLIST: tenant root + MEDEA_FILE_ALLOWLIST env (colon-sep paths).
  *    Tutto fuori → 403.
  *
  * 🚨 TENANT ISOLATION: tenantId via regex sanitization, prefix di path.
@@ -45,9 +45,9 @@ beforeEach(async () => {
   // Fresh tmp base per test
   testBase = join(tmpdir(), `ff-test-${randomBytes(6).toString('hex')}`);
   await mkdir(testBase, { recursive: true });
-  process.env.FLOWFORGE_DATA_DIR = testBase;
+  process.env.MEDEA_DATA_DIR = testBase;
   tenantRoot = join(testBase, 'tenants', 'tenant-A', 'files');
-  delete process.env.FLOWFORGE_FILE_ALLOWLIST;
+  delete process.env.MEDEA_FILE_ALLOWLIST;
 });
 
 afterEach(async () => {
@@ -131,12 +131,12 @@ describe('🚨 SECURITY path traversal', () => {
   });
 });
 
-describe('🚨 FLOWFORGE_FILE_ALLOWLIST (global roots)', () => {
+describe('🚨 MEDEA_FILE_ALLOWLIST (global roots)', () => {
   it('🚨 path in allowlist → 200 OK', async () => {
     const sharedDir = join(testBase, 'shared');
     await mkdir(sharedDir, { recursive: true });
     await writeFile(join(sharedDir, 'shared.txt'), 'public');
-    process.env.FLOWFORGE_FILE_ALLOWLIST = sharedDir;
+    process.env.MEDEA_FILE_ALLOWLIST = sharedDir;
     const app = makeApp();
     const res = await app.request(`/api/v1/file-browser?path=${encodeURIComponent(sharedDir)}`);
     expect(res.status).toBe(200);
@@ -149,7 +149,7 @@ describe('🚨 FLOWFORGE_FILE_ALLOWLIST (global roots)', () => {
     const dir2 = join(testBase, 'd2');
     await mkdir(dir1, { recursive: true });
     await mkdir(dir2, { recursive: true });
-    process.env.FLOWFORGE_FILE_ALLOWLIST = `${dir1}:${dir2}`;
+    process.env.MEDEA_FILE_ALLOWLIST = `${dir1}:${dir2}`;
     const app = makeApp();
     const res1 = await app.request(`/api/v1/file-browser?path=${encodeURIComponent(dir1)}`);
     const res2 = await app.request(`/api/v1/file-browser?path=${encodeURIComponent(dir2)}`);
@@ -160,7 +160,7 @@ describe('🚨 FLOWFORGE_FILE_ALLOWLIST (global roots)', () => {
   it('🚨 allowlist con whitespace ignorato (trim)', async () => {
     const sharedDir = join(testBase, 'spaced');
     await mkdir(sharedDir, { recursive: true });
-    process.env.FLOWFORGE_FILE_ALLOWLIST = `  ${sharedDir}  :  `;
+    process.env.MEDEA_FILE_ALLOWLIST = `  ${sharedDir}  :  `;
     const app = makeApp();
     const res = await app.request(`/api/v1/file-browser?path=${encodeURIComponent(sharedDir)}`);
     expect(res.status).toBe(200);
@@ -171,7 +171,7 @@ describe('🚨 FLOWFORGE_FILE_ALLOWLIST (global roots)', () => {
     const sneaky = join(testBase, 'NOT-allowed');
     await mkdir(shared, { recursive: true });
     await mkdir(sneaky, { recursive: true });
-    process.env.FLOWFORGE_FILE_ALLOWLIST = shared;
+    process.env.MEDEA_FILE_ALLOWLIST = shared;
     const app = makeApp();
     const res = await app.request(`/api/v1/file-browser?path=${encodeURIComponent(sneaky)}`);
     expect(res.status).toBe(403);
@@ -248,7 +248,7 @@ describe('🚨 parent navigation', () => {
     // Allowlist solo /shared/X, NOT /shared. Visito /shared/X → parent /shared, NOT allowed → null
     const allowed = join(testBase, 'shared', 'sub');
     await mkdir(allowed, { recursive: true });
-    process.env.FLOWFORGE_FILE_ALLOWLIST = allowed;
+    process.env.MEDEA_FILE_ALLOWLIST = allowed;
     const app = makeApp();
     const res = await app.request(`/api/v1/file-browser?path=${encodeURIComponent(allowed)}`);
     const json = await res.json() as { parent: string | null };
@@ -275,7 +275,7 @@ describe('🚨 roots response', () => {
     const g2 = join(testBase, 'global-2');
     await mkdir(g1, { recursive: true });
     await mkdir(g2, { recursive: true });
-    process.env.FLOWFORGE_FILE_ALLOWLIST = `${g1}:${g2}`;
+    process.env.MEDEA_FILE_ALLOWLIST = `${g1}:${g2}`;
     const app = makeApp();
     const res = await app.request('/api/v1/file-browser');
     const json = await res.json() as { roots: { label: string; path: string }[] };

@@ -1,4 +1,4 @@
-# @flowforge/observability
+# @medea/engine-observability
 
 Observability primitives per FlowForge: logger, metrics, audit log, OpenTelemetry.
 
@@ -17,10 +17,10 @@ Le implementazioni operative vivono attualmente in `apps/runtime/src/`:
 
 | Concern | Path corrente | Estrazione futura |
 |---------|---------------|-------------------|
-| Pino logger | `apps/runtime/src/lib/logger.ts` | → `@flowforge/observability/logger` |
-| Prometheus | `apps/runtime/src/lib/metrics-store.ts` + `routes/metrics.ts` | → `@flowforge/observability/metrics` |
-| Audit log | `apps/runtime/src/services/audit.service.ts` | → `@flowforge/observability/audit-log` |
-| OTel | (non ancora) | → `@flowforge/observability/otel` |
+| Pino logger | `apps/runtime/src/lib/logger.ts` | → `@medea/engine-observability/logger` |
+| Prometheus | `apps/runtime/src/lib/metrics-store.ts` + `routes/metrics.ts` | → `@medea/engine-observability/metrics` |
+| Audit log | `apps/runtime/src/services/audit.service.ts` | → `@medea/engine-observability/audit-log` |
+| OTel | (non ancora) | → `@medea/engine-observability/otel` |
 
 ## Perché non estratto ancora
 
@@ -39,9 +39,9 @@ allora l'estrazione diventerà naturale e l'API surface sarà guidata da
 ## Migration plan (quando arriverà il momento)
 
 1. Copia `apps/runtime/src/lib/logger.ts` → `packages/observability/logger/src/index.ts`
-2. Aggiungi `package.json` con `"name": "@flowforge/observability-logger"`
+2. Aggiungi `package.json` con `"name": "@medea/engine-observability-logger"`
 3. Importa `pino` come peer dep (consumer sceglie versione)
-4. In `apps/runtime/src/lib/logger.ts` re-exporta da `@flowforge/observability-logger`
+4. In `apps/runtime/src/lib/logger.ts` re-exporta da `@medea/engine-observability-logger`
 5. Iterativo per metrics, audit-log, otel
 
 Vedi `packages/secrets/` come esempio di estrazione già completata (logger di

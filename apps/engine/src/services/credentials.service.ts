@@ -3,12 +3,12 @@
  * Credentials are encrypted at rest with envelope encryption (AES-256-GCM).
  * The master KEK is derived from the master password (file or env, vedi
  * `lib/master-password.ts`) + a vault salt generated and persisted to
- * FLOWFORGE_DATA_DIR/master.key on first boot.
+ * MEDEA_DATA_DIR/master.key on first boot.
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, chmodSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { createVaultSalt, deriveKek, encryptSecret, decryptSecret, type EncryptedSecret, type VaultMaster } from '@flowforge/secrets';
+import { createVaultSalt, deriveKek, encryptSecret, decryptSecret, type EncryptedSecret, type VaultMaster } from '@medea/engine-secrets';
 import { getDatabase } from '@/storage/db.js';
 import { loadConfig } from '@/config.js';
 import { logger } from '@/lib/logger.js';
@@ -67,7 +67,7 @@ export function loadMaster(): VaultMaster {
   // Single source of truth: file (Docker secrets) → env → dev sentinel.
   // Vedi `lib/master-password.ts` per la precedenza.
   const { password, source } = loadMasterPassword();
-  const keyPath = join(config.FLOWFORGE_DATA_DIR, 'master.key');
+  const keyPath = join(config.MEDEA_DATA_DIR, 'master.key');
   if (!existsSync(dirname(keyPath))) mkdirSync(dirname(keyPath), { recursive: true });
 
   let salt: Buffer;
@@ -81,7 +81,7 @@ export function loadMaster(): VaultMaster {
   }
 
   if (source === 'dev-sentinel') {
-    logger.warn('master password from dev sentinel — set FLOWFORGE_MASTER_PASSWORD_FILE or env in production.');
+    logger.warn('master password from dev sentinel — set MEDEA_MASTER_PASSWORD_FILE or env in production.');
   }
 
   cachedMaster = { kek: deriveKek(password, salt), salt };

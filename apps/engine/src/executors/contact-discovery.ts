@@ -5,7 +5,7 @@
  * stato disegnato per essere LLM-agnostic e enterprise-grade 2026.
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { discoverContacts } from '@/services/contact-discovery.service.js';
 
 export const contactDiscoveryExecutor: NodeExecutor = async (config, _input, _context) => {

@@ -25,7 +25,7 @@ import { logger } from '@/lib/logger.js';
 import { runCommunityTriggerPoll, clampPollIntervalSec } from '../community-trigger-runner.js';
 import type { InstalledNode } from '../community-nodes.service.js';
 import type { DispatchTriggerRun } from './run-dispatcher.js';
-import type { CanvasNode, NodeTrigger, Workflow } from '@flowforge/core-schema';
+import type { CanvasNode, NodeTrigger, Workflow } from '@medea/engine-core-schema';
 
 export interface CommunityTriggerJob {
   workflowId: string;

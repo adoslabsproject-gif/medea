@@ -11,7 +11,7 @@
  *  - Headers browser-like preset (un click per "Chrome desktop"/"Mobile Safari")
  *  - Retry exponential + retry su status code lista
  *  - Body extraction options (html-only, json, text, base64)
- *  - SSRF safe via @flowforge/safe-fetch
+ *  - SSRF safe via @medea/engine-safe-fetch
  *
  * Borderline configurato:
  *  - Block-list domini noti pirateria (centralizzato)
@@ -19,7 +19,7 @@
  *  - User-Agent obbligatorio identifica FlowForge a meno di opt-in TOS
  */
 
-import { safeFetchWithRedirects, SsrfBlockedError } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects, SsrfBlockedError } from '@medea/engine-safe-fetch';
 import type { NodeModule, NodeExecutor } from '../types.js';
 
 const UA_PRESETS: Record<string, string> = {

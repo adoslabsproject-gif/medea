@@ -10,7 +10,7 @@
  * Il resto del result (trace/note/timing) resta nell'orchestratore: è result-assembly
  * con input larghi (usage/timing), inerente al flow.
  */
-import { WorkflowSchema, type Workflow } from '@flowforge/core-schema';
+import { WorkflowSchema, type Workflow } from '@medea/engine-core-schema';
 import { AiScaffoldError } from '@/services/ai-scaffold/types.js';
 
 export interface ParsedForAssembly {

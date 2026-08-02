@@ -6,18 +6,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { distributedCrawlerNode, buildCrawlerRequest } from './distributed-crawler.js';
 
-vi.mock('@flowforge/safe-fetch', () => ({
+vi.mock('@medea/engine-safe-fetch', () => ({
   safeFetchWithRedirects: vi.fn(),
 }));
 
-const { safeFetchWithRedirects } = await import('@flowforge/safe-fetch');
+const { safeFetchWithRedirects } = await import('@medea/engine-safe-fetch');
 const mockedFetch = vi.mocked(safeFetchWithRedirects);
 
 const ctx = { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {}, llmProviders: {} } as const;
 
 beforeEach(() => {
   mockedFetch.mockReset();
-  delete process.env.FLOWFORGE_CRAWLER_ENDPOINT;
+  delete process.env.MEDEA_CRAWLER_ENDPOINT;
 });
 
 describe('buildCrawlerRequest', () => {
@@ -123,7 +123,7 @@ describe('distributedCrawlerNode.executor', () => {
   });
 
   it('action=start → POST /crawl/start con body, ritorna jobId', async () => {
-    process.env.FLOWFORGE_CRAWLER_ENDPOINT = 'https://crawler.x.com';
+    process.env.MEDEA_CRAWLER_ENDPOINT = 'https://crawler.x.com';
     mockedFetch.mockResolvedValue({
       ok: true, status: 200,
       json: async () => ({ jobId: 'crawl_abc', status: 'queued', queueDepth: 5 }),
@@ -146,7 +146,7 @@ describe('distributedCrawlerNode.executor', () => {
   });
 
   it('action=status senza jobId → throw', async () => {
-    process.env.FLOWFORGE_CRAWLER_ENDPOINT = 'https://x.com';
+    process.env.MEDEA_CRAWLER_ENDPOINT = 'https://x.com';
     if (!distributedCrawlerNode.executor) throw new Error('executor mancante');
     await expect(
       distributedCrawlerNode.executor({ action: 'status' }, null, ctx),
@@ -154,7 +154,7 @@ describe('distributedCrawlerNode.executor', () => {
   });
 
   it('action=status con jobId → GET /crawl/{id}/status', async () => {
-    process.env.FLOWFORGE_CRAWLER_ENDPOINT = 'https://x.com';
+    process.env.MEDEA_CRAWLER_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({
       ok: true, status: 200,
       json: async () => ({ pagesCrawled: 42, queueDepth: 13, status: 'running' }),
@@ -168,7 +168,7 @@ describe('distributedCrawlerNode.executor', () => {
   });
 
   it('action=stop → POST /crawl/{id}/stop', async () => {
-    process.env.FLOWFORGE_CRAWLER_ENDPOINT = 'https://x.com';
+    process.env.MEDEA_CRAWLER_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) } as unknown as Response);
 
     if (!distributedCrawlerNode.executor) throw new Error('executor mancante');
@@ -178,7 +178,7 @@ describe('distributedCrawlerNode.executor', () => {
   });
 
   it('action=results con cursor → GET con query string', async () => {
-    process.env.FLOWFORGE_CRAWLER_ENDPOINT = 'https://x.com';
+    process.env.MEDEA_CRAWLER_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({
       ok: true, status: 200,
       json: async () => ({ items: [{ url: 'a' }, { url: 'b' }], nextCursor: 'cur_2' }),
@@ -193,7 +193,7 @@ describe('distributedCrawlerNode.executor', () => {
   });
 
   it('action=results senza cursor → no query string', async () => {
-    process.env.FLOWFORGE_CRAWLER_ENDPOINT = 'https://x.com';
+    process.env.MEDEA_CRAWLER_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({
       ok: true, status: 200, json: async () => ({ items: [] }),
     } as unknown as Response);
@@ -204,7 +204,7 @@ describe('distributedCrawlerNode.executor', () => {
   });
 
   it('action unknown → throw lista azioni valide', async () => {
-    process.env.FLOWFORGE_CRAWLER_ENDPOINT = 'https://x.com';
+    process.env.MEDEA_CRAWLER_ENDPOINT = 'https://x.com';
     if (!distributedCrawlerNode.executor) throw new Error('executor mancante');
     await expect(
       distributedCrawlerNode.executor({ action: 'wat' }, null, ctx),
@@ -212,7 +212,7 @@ describe('distributedCrawlerNode.executor', () => {
   });
 
   it('endpoint non-ok su start → throw con status', async () => {
-    process.env.FLOWFORGE_CRAWLER_ENDPOINT = 'https://x.com';
+    process.env.MEDEA_CRAWLER_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({
       ok: false, status: 503, text: async () => 'queue full',
     } as unknown as Response);

@@ -97,7 +97,7 @@ describe('#223 timer shim — sandbox', () => {
     // `await new Promise(()=>{})` lascia l'isolate IDLE → il timeout CPU di isolated-vm
     // NON scatta. Senza la Promise.race host-side il main thread resterebbe appeso.
     // Riduco il timeout CPU via env → wall-clock = 300+3000ms.
-    process.env.FLOWFORGE_SANDBOX_EXEC_TIMEOUT_MS = '300';
+    process.env.MEDEA_SANDBOX_EXEC_TIMEOUT_MS = '300';
     try {
       const source = `
         module.exports = async function(config, input, context) {
@@ -107,7 +107,7 @@ describe('#223 timer shim — sandbox', () => {
       `;
       await expect(runInSandbox(source, baseInput)).rejects.toThrow(/timeout host|hang async|await non risolto/u);
     } finally {
-      delete process.env.FLOWFORGE_SANDBOX_EXEC_TIMEOUT_MS;
+      delete process.env.MEDEA_SANDBOX_EXEC_TIMEOUT_MS;
     }
   }, 12_000);
 

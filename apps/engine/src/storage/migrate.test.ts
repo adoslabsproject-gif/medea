@@ -26,9 +26,9 @@ let _dbPath = '';
 
 vi.mock('@/config.js', () => ({
   loadConfig: () => ({
-    FLOWFORGE_STORAGE: 'sqlite',
-    FLOWFORGE_DB_PATH: _dbPath,
-    FLOWFORGE_DATA_DIR: tmpdir(),
+    MEDEA_STORAGE: 'sqlite',
+    MEDEA_DB_PATH: _dbPath,
+    MEDEA_DATA_DIR: tmpdir(),
     NODE_ENV: 'test',
     LOG_LEVEL: 'silent',
   }),

@@ -47,7 +47,7 @@ function dirSizeBytes(path: string): number {
 }
 
 function measureLogUsage(): number {
-  const dir = loadConfig().FLOWFORGE_DATA_DIR;
+  const dir = loadConfig().MEDEA_DATA_DIR;
   // Stima conservativa: WAL+SQLite+archives. Per F4 misuriamo solo gli
   // archives (i runs attivi sono dentro flowforge.sqlite la cui dimensione
   // è già contata sotto workflowData).
@@ -55,10 +55,10 @@ function measureLogUsage(): number {
 }
 
 function buildSmtpTransport(): nodemailer.Transporter | null {
-  const host = process.env.FLOWFORGE_SMTP_HOST;
-  const port = process.env.FLOWFORGE_SMTP_PORT;
-  const user = process.env.FLOWFORGE_SMTP_USER;
-  const pass = process.env.FLOWFORGE_SMTP_PASS;
+  const host = process.env.MEDEA_SMTP_HOST;
+  const port = process.env.MEDEA_SMTP_PORT;
+  const user = process.env.MEDEA_SMTP_USER;
+  const pass = process.env.MEDEA_SMTP_PASS;
   if (!host || !port) return null;
   const portNum = Number(port);
   return nodemailer.createTransport({
@@ -68,11 +68,11 @@ function buildSmtpTransport(): nodemailer.Transporter | null {
 }
 
 function ownerEmail(): string | undefined {
-  return process.env.FLOWFORGE_TENANT_OWNER_EMAIL;
+  return process.env.MEDEA_TENANT_OWNER_EMAIL;
 }
 
 function publicBaseUrl(): string {
-  return loadConfig().FLOWFORGE_PUBLIC_BASE_URL ?? 'https://flowforge.automazionezeli.com';
+  return loadConfig().MEDEA_PUBLIC_BASE_URL ?? 'https://flowforge.automazionezeli.com';
 }
 
 function logoUrl(): string {
@@ -149,7 +149,7 @@ function emailFull100(usedBytes: number, quotaBytes: number): EmailTpl {
 async function sendEmail(tpl: EmailTpl): Promise<void> {
   const to = ownerEmail();
   if (!to) {
-    logger.warn?.('[log-quota-watcher] FLOWFORGE_TENANT_OWNER_EMAIL not set, skipping email');
+    logger.warn?.('[log-quota-watcher] MEDEA_TENANT_OWNER_EMAIL not set, skipping email');
     return;
   }
   const transport = buildSmtpTransport();
@@ -157,7 +157,7 @@ async function sendEmail(tpl: EmailTpl): Promise<void> {
     logger.warn?.('[log-quota-watcher] SMTP env not configured, skipping email');
     return;
   }
-  const from = process.env.FLOWFORGE_SMTP_FROM ?? 'info@zeli.it';
+  const from = process.env.MEDEA_SMTP_FROM ?? 'info@zeli.it';
   await transport.sendMail({ from, to, subject: tpl.subject, html: tpl.html, text: tpl.text });
   logger.info?.({ to, subject: tpl.subject }, '[log-quota-watcher] email sent');
 }

@@ -30,7 +30,7 @@ export { emailBounceTriggerNode } from './triggers/email-bounce.js';
 export { sendEmailNode } from './actions/email.js';
 // Browser-safe exports for the B2B tracking suite: the NodeDef + Zod
 // schema + pure types. Anything that touches `node:crypto` is in the
-// server-only entry `@flowforge/nodes-stdlib/server` (see `./server.ts`).
+// server-only entry `@medea/engine-nodes-stdlib/server` (see `./server.ts`).
 export { emailSendTrackedNode, emailSendTrackedNodeDef, EmailSendTrackedConfigSchema, EmailSendTrackedInputSchema, type EmailSendTrackedConfig } from './actions/email_send_tracked/index.js';
 export {
   emailSendTrackedBatchNode, emailSendTrackedBatchNodeDef,

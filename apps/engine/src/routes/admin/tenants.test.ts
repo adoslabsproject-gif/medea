@@ -86,7 +86,7 @@ vi.mock('@/services/audit.service.js', () => ({
   },
 }));
 
-vi.mock('@flowforge/auth-local', () => ({
+vi.mock('@medea/engine-auth-local', () => ({
   hashPassword: (pw: string) => m.hashPassword(pw),
 }));
 

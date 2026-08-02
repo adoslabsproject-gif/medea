@@ -17,9 +17,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createHmac } from 'node:crypto';
 
 // FIX HIGH-1 security audit 2026-05-31: authMode='none' ora richiede
-// :token URL = HMAC-SHA256(workflowId, FLOWFORGE_SSO_SECRET). I test che
+// :token URL = HMAC-SHA256(workflowId, MEDEA_SSO_SECRET). I test che
 // usavano `/wf-1/${TOK}` devono usare il token derivato.
-process.env.FLOWFORGE_SSO_SECRET = process.env.FLOWFORGE_SSO_SECRET ?? 'test-sso-secret-32-chars-long-min!!';
+process.env.MEDEA_SSO_SECRET = process.env.MEDEA_SSO_SECRET ?? 'test-sso-secret-32-chars-long-min!!';
 
 import { createWebhookRoutes, extractWebhookResponse, deriveDefaultWebhookToken } from './webhooks.js';
 
@@ -91,30 +91,30 @@ describe('webhook router — grace window rotazione secret (authMode none)', () 
   let graceBackup: string | undefined;
 
   beforeEach(() => {
-    ssoBackup = process.env.FLOWFORGE_SSO_SECRET;
-    graceBackup = process.env.FLOWFORGE_WEBHOOK_GRACE_SECRETS;
-    delete process.env.FLOWFORGE_WEBHOOK_GRACE_SECRETS;
+    ssoBackup = process.env.MEDEA_SSO_SECRET;
+    graceBackup = process.env.MEDEA_WEBHOOK_GRACE_SECRETS;
+    delete process.env.MEDEA_WEBHOOK_GRACE_SECRETS;
   });
 
   afterEach(() => {
-    if (ssoBackup === undefined) delete process.env.FLOWFORGE_SSO_SECRET;
-    else process.env.FLOWFORGE_SSO_SECRET = ssoBackup;
-    if (graceBackup === undefined) delete process.env.FLOWFORGE_WEBHOOK_GRACE_SECRETS;
-    else process.env.FLOWFORGE_WEBHOOK_GRACE_SECRETS = graceBackup;
+    if (ssoBackup === undefined) delete process.env.MEDEA_SSO_SECRET;
+    else process.env.MEDEA_SSO_SECRET = ssoBackup;
+    if (graceBackup === undefined) delete process.env.MEDEA_WEBHOOK_GRACE_SECRETS;
+    else process.env.MEDEA_WEBHOOK_GRACE_SECRETS = graceBackup;
   });
 
   const oldToken = () => createHmac('sha256', OLD_SECRET).update('webhook:wf-1').digest('hex').slice(0, 32);
   const newToken = () => createHmac('sha256', NEW_SECRET).update('webhook:wf-1').digest('hex').slice(0, 32);
 
   it('ANTI-REGRESSIONE (il bug Streammy): dopo rotazione, il token cablato vecchio dà 401 senza grace', async () => {
-    process.env.FLOWFORGE_SSO_SECRET = NEW_SECRET;
+    process.env.MEDEA_SSO_SECRET = NEW_SECRET;
     const res = await makeApp().request(`/wf-1/${oldToken()}`, { method: 'POST', body: '{}' });
     expect(res.status).toBe(401);
   });
 
-  it('GRACE: con FLOWFORGE_WEBHOOK_GRACE_SECRETS il token del secret precedente passa', async () => {
-    process.env.FLOWFORGE_SSO_SECRET = NEW_SECRET;
-    process.env.FLOWFORGE_WEBHOOK_GRACE_SECRETS = OLD_SECRET;
+  it('GRACE: con MEDEA_WEBHOOK_GRACE_SECRETS il token del secret precedente passa', async () => {
+    process.env.MEDEA_SSO_SECRET = NEW_SECRET;
+    process.env.MEDEA_WEBHOOK_GRACE_SECRETS = OLD_SECRET;
     const res = await makeApp().request(`/wf-1/${oldToken()}`, { method: 'POST', body: '{}' });
     expect(res.status).toBe(202);
     // Il token CORRENTE resta il canale principale.
@@ -123,8 +123,8 @@ describe('webhook router — grace window rotazione secret (authMode none)', () 
   });
 
   it('la grace NON apre un buco: token inventato resta 401 anche con grace attiva', async () => {
-    process.env.FLOWFORGE_SSO_SECRET = NEW_SECRET;
-    process.env.FLOWFORGE_WEBHOOK_GRACE_SECRETS = OLD_SECRET;
+    process.env.MEDEA_SSO_SECRET = NEW_SECRET;
+    process.env.MEDEA_WEBHOOK_GRACE_SECRETS = OLD_SECRET;
     const res = await makeApp().request(`/wf-1/${'f'.repeat(32)}`, { method: 'POST', body: '{}' });
     expect(res.status).toBe(401);
   });

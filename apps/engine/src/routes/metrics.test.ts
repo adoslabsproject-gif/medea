@@ -2,7 +2,7 @@
  * Test 2026-grade — metrics route (Prometheus scrape endpoint).
  *
  * 🚨 SECURITY-CRITICAL (hardening 2026-05-23):
- *  - FAIL-CLOSED: env FLOWFORGE_METRICS_TOKEN vuoto → 403
+ *  - FAIL-CLOSED: env MEDEA_METRICS_TOKEN vuoto → 403
  *  - Bearer token con TIMING-SAFE compare (anti timing-attack)
  *  - Senza Auth header → 403
  *  - Wrong token → 403 stesso response (no length leak)
@@ -71,7 +71,7 @@ function makeApp() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  delete process.env.FLOWFORGE_METRICS_TOKEN;
+  delete process.env.MEDEA_METRICS_TOKEN;
   mockDb._callIndex = 0;
   mockDb._values = { workflows: 0, enabled: 0, runsTotal: 0, runsError: 0, runs24h: 0, audit: 0 };
   // Reset chainable mock state
@@ -81,24 +81,24 @@ beforeEach(() => {
 });
 
 describe('🚨 /metrics — auth gate (SECURITY)', () => {
-  it('🚨 FLOWFORGE_METRICS_TOKEN env mancante → 403 disabled (fail-closed)', async () => {
+  it('🚨 MEDEA_METRICS_TOKEN env mancante → 403 disabled (fail-closed)', async () => {
     const app = makeApp();
     const res = await app.request('/metrics');
     expect(res.status).toBe(403);
     const text = await res.text();
     expect(text).toMatch(/Metrics endpoint disabled/u);
-    expect(text).toMatch(/FLOWFORGE_METRICS_TOKEN/u);
+    expect(text).toMatch(/MEDEA_METRICS_TOKEN/u);
   });
 
-  it('🚨 FLOWFORGE_METRICS_TOKEN env vuoto → 403 (uguale a missing)', async () => {
-    process.env.FLOWFORGE_METRICS_TOKEN = '';
+  it('🚨 MEDEA_METRICS_TOKEN env vuoto → 403 (uguale a missing)', async () => {
+    process.env.MEDEA_METRICS_TOKEN = '';
     const app = makeApp();
     const res = await app.request('/metrics');
     expect(res.status).toBe(403);
   });
 
   it('🚨 token settato, NO Auth header → 403 Forbidden', async () => {
-    process.env.FLOWFORGE_METRICS_TOKEN = 'secret-token-32-chars-min-aaaaaaa';
+    process.env.MEDEA_METRICS_TOKEN = 'secret-token-32-chars-min-aaaaaaa';
     const app = makeApp();
     const res = await app.request('/metrics');
     expect(res.status).toBe(403);
@@ -106,7 +106,7 @@ describe('🚨 /metrics — auth gate (SECURITY)', () => {
   });
 
   it('🚨 Auth header senza "Bearer " prefix → 403', async () => {
-    process.env.FLOWFORGE_METRICS_TOKEN = 'secret-token-32-chars-min-aaaaaaa';
+    process.env.MEDEA_METRICS_TOKEN = 'secret-token-32-chars-min-aaaaaaa';
     const app = makeApp();
     const res = await app.request('/metrics', {
       headers: { authorization: 'Basic dXNlcjpwYXNz' },
@@ -115,7 +115,7 @@ describe('🚨 /metrics — auth gate (SECURITY)', () => {
   });
 
   it('🚨 Bearer token wrong → 403', async () => {
-    process.env.FLOWFORGE_METRICS_TOKEN = 'right-token-aaaaaaaaaaaaaaaaaaaaaa';
+    process.env.MEDEA_METRICS_TOKEN = 'right-token-aaaaaaaaaaaaaaaaaaaaaa';
     const app = makeApp();
     const res = await app.request('/metrics', {
       headers: { authorization: 'Bearer wrong-token-aaaaaaaaaaaaaaaaaaaa' },
@@ -124,7 +124,7 @@ describe('🚨 /metrics — auth gate (SECURITY)', () => {
   });
 
   it('🚨 SECURITY: token length mismatch → 403 senza timing leak', async () => {
-    process.env.FLOWFORGE_METRICS_TOKEN = 'short-token';
+    process.env.MEDEA_METRICS_TOKEN = 'short-token';
     const app = makeApp();
     // length diversa: timingSafeEqual throw → catched by length check first
     const res = await app.request('/metrics', {
@@ -134,7 +134,7 @@ describe('🚨 /metrics — auth gate (SECURITY)', () => {
   });
 
   it('🚨 Bearer token correct → 200 + Content-Type Prometheus', async () => {
-    process.env.FLOWFORGE_METRICS_TOKEN = 'secret-correct-token-aaaaaaaaaaaa';
+    process.env.MEDEA_METRICS_TOKEN = 'secret-correct-token-aaaaaaaaaaaa';
     const app = makeApp();
     const res = await app.request('/metrics', {
       headers: { authorization: 'Bearer secret-correct-token-aaaaaaaaaaaa' },
@@ -146,7 +146,7 @@ describe('🚨 /metrics — auth gate (SECURITY)', () => {
 
 describe('🚨 /metrics — output Prometheus format', () => {
   beforeEach(() => {
-    process.env.FLOWFORGE_METRICS_TOKEN = 'tok-correct-aaaaaaaaaaaaaaaaaaaa';
+    process.env.MEDEA_METRICS_TOKEN = 'tok-correct-aaaaaaaaaaaaaaaaaaaa';
     mockDb._values = {
       workflows: 42,
       enabled: 37,
@@ -231,7 +231,7 @@ describe('🚨 /metrics — output Prometheus format', () => {
 describe('🚨 /metrics — timing-safe token comparison', () => {
   it('🚨 timingSafeEqual usato (length check protegge da throw)', async () => {
     // Verifica indiretta: token corretto passa, token length diversa NON crasha
-    process.env.FLOWFORGE_METRICS_TOKEN = 'short';
+    process.env.MEDEA_METRICS_TOKEN = 'short';
     const app = makeApp();
     const resShort = await app.request('/metrics', {
       headers: { authorization: 'Bearer short' },

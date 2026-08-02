@@ -18,7 +18,7 @@
  */
 
 import type { Logger } from 'pino';
-import type { IDatabaseAdapter } from '@flowforge/db-studio-engine';
+import type { IDatabaseAdapter } from '@medea/engine-db-studio-engine';
 import type { DataSourceRef } from './data-source-ref.js';
 import type { CorruptionSeverity } from './severity.js';
 import type { RuleParamSchema } from './rule-params-schema.js';

@@ -5,7 +5,7 @@
  * @module services/db-agent/tools/read
  */
 import { z } from 'zod';
-import type { QuerySpec } from '@flowforge/db-studio-core';
+import type { QuerySpec } from '@medea/engine-db-studio-core';
 import type { DbAgentToolDef } from '../tool-types.js';
 import { loadOwnedDatabase, assertTableExists } from '../guard.js';
 

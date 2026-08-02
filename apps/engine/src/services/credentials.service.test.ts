@@ -25,7 +25,7 @@ const getDatabaseMock = vi.fn(() => ({ sqlite }));
 vi.mock('@/storage/db.js', () => ({ getDatabase: getDatabaseMock }));
 
 vi.mock('@/config.js', () => ({
-  loadConfig: () => ({ FLOWFORGE_DATA_DIR: '/tmp/ff-creds-test-dir' }),
+  loadConfig: () => ({ MEDEA_DATA_DIR: '/tmp/ff-creds-test-dir' }),
 }));
 
 vi.mock('@/lib/logger.js');
@@ -60,9 +60,9 @@ vi.mock('node:fs', async () => {
   };
 });
 
-// Mock @flowforge/secrets — fornisce KEK + encryptSecret/decryptSecret reali
+// Mock @medea/engine-secrets — fornisce KEK + encryptSecret/decryptSecret reali
 // ma riproducibili (no randomness implicita per testing).
-vi.mock('@flowforge/secrets', () => {
+vi.mock('@medea/engine-secrets', () => {
   const createVaultSalt = () => Buffer.alloc(32, 0x42);
   const deriveKek = (pwd: string, salt: Buffer) => {
     const k = Buffer.concat([Buffer.from(pwd), salt]).slice(0, 32);

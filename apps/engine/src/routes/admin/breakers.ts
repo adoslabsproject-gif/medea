@@ -11,12 +11,12 @@
  * Registry process-local; in distribuito ogni runtime ha i suoi breaker.
  * Per vista aggregata serve Redis pub/sub (out of scope v1).
  *
- * 2026-06-03: migrato a `@zeliai/shared` (consolidamento task #262 — la
+ * 2026-06-03: migrato a `@medea/engine-shared` (consolidamento task #262 — la
  * versione runtime/lib/circuit-breaker.ts e\` stata rimossa).
  */
 
 import type { Hono } from 'hono';
-import { CircuitBreakerRegistry } from '@zeliai/shared';
+import { CircuitBreakerRegistry } from '@medea/engine-shared';
 import { AuditLogService } from '@/services/audit.service.js';
 
 const audit = new AuditLogService();

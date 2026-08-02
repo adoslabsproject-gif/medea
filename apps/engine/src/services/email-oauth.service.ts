@@ -27,7 +27,7 @@
  *
  * Auth between runtime and portal: HMAC-SHA256 over
  * `${timestamp}.${refresh_token_sha256}` with the shared
- * `FLOWFORGE_SSO_SECRET`. Timestamp ±60s tolerated, replays bounded by
+ * `MEDEA_SSO_SECRET`. Timestamp ±60s tolerated, replays bounded by
  * the short window — we explicitly accept the residual replay surface
  * because the only thing replay buys an attacker is "ask for an access
  * token I already proved I had access to."
@@ -72,10 +72,10 @@ export class EmailOAuthService {
     refreshToken?: string;
   }> {
     const cfg = loadConfig();
-    const portalUrl = cfg.FLOWFORGE_PORTAL_URL.replace(/\/$/, '');
-    const sharedSecret = cfg.FLOWFORGE_SSO_SECRET ?? process.env.FLOWFORGE_SSO_SECRET;
+    const portalUrl = cfg.MEDEA_PORTAL_URL.replace(/\/$/, '');
+    const sharedSecret = cfg.MEDEA_SSO_SECRET ?? process.env.MEDEA_SSO_SECRET;
     if (!sharedSecret) {
-      throw new Error('FLOWFORGE_SSO_SECRET missing — cannot sign portal refresh call');
+      throw new Error('MEDEA_SSO_SECRET missing — cannot sign portal refresh call');
     }
 
     const ts = Math.floor(Date.now() / 1000);

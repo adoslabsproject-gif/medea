@@ -16,7 +16,7 @@
  * @module services/db-agent/tools/raw-read
  */
 import { z } from 'zod';
-import { classifyStatement, assertSafeRawStatement } from '@flowforge/db-studio-engine';
+import { classifyStatement, assertSafeRawStatement } from '@medea/engine-db-studio-engine';
 import type { DbAgentToolDef } from '../tool-types.js';
 import { loadOwnedDatabase } from '../guard.js';
 import { ToolValidationError } from '../errors.js';

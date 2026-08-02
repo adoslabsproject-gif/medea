@@ -7,7 +7,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { SqliteAdapter } from './sqlite-adapter.js';
-import type { Database, Table } from '@flowforge/db-studio-core';
+import type { Database, Table } from '@medea/engine-db-studio-core';
 
 const sampleDb: Database = {
   id: 'db', tenantId: 'default', name: 'T',

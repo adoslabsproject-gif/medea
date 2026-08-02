@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import Database from 'better-sqlite3';
-import type { SessionTokenPayload } from '@flowforge/auth-local';
+import type { SessionTokenPayload } from '@medea/engine-auth-local';
 
 const m = vi.hoisted(() => ({ recordFailOpen: vi.fn() }));
 

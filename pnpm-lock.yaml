@@ -171,84 +171,87 @@ importers:
       '@duckdb/node-api':
         specifier: 1.5.3-r.1
         version: 1.5.3-r.1
-      '@flowforge/auth-local':
-        specifier: workspace:*
-        version: link:../../packages/engine/auth/local
-      '@flowforge/core-schema':
-        specifier: workspace:*
-        version: link:../../packages/engine/core/schema
-      '@flowforge/db-studio-core':
-        specifier: workspace:*
-        version: link:../../packages/engine/db-studio/core
-      '@flowforge/db-studio-duckdb':
-        specifier: workspace:*
-        version: link:../../packages/engine/db-studio/adapters-duckdb
-      '@flowforge/db-studio-engine':
-        specifier: workspace:*
-        version: link:../../packages/engine/db-studio/engine
-      '@flowforge/db-studio-mongodb':
-        specifier: workspace:*
-        version: link:../../packages/engine/db-studio/adapters-mongodb
-      '@flowforge/db-studio-mssql':
-        specifier: workspace:*
-        version: link:../../packages/engine/db-studio/adapters-mssql
-      '@flowforge/db-studio-mysql':
-        specifier: workspace:*
-        version: link:../../packages/engine/db-studio/adapters-mysql
-      '@flowforge/db-studio-postgres':
-        specifier: workspace:*
-        version: link:../../packages/engine/db-studio/adapters-postgres
-      '@flowforge/db-studio-redis':
-        specifier: workspace:*
-        version: link:../../packages/engine/db-studio/adapters-redis
-      '@flowforge/db-studio-vector':
-        specifier: workspace:*
-        version: link:../../packages/engine/db-studio/vector
-      '@flowforge/license':
-        specifier: workspace:*
-        version: link:../../packages/engine/license
-      '@flowforge/nodes-ai-agents':
-        specifier: workspace:*
-        version: link:../../packages/engine/nodes/ai-agents
-      '@flowforge/nodes-db':
-        specifier: workspace:*
-        version: link:../../packages/engine/nodes/db
-      '@flowforge/nodes-integrations-core':
-        specifier: workspace:*
-        version: link:../../packages/engine/nodes/integrations-core
-      '@flowforge/nodes-integrations-italia':
-        specifier: workspace:*
-        version: link:../../packages/engine/nodes/integrations-italia
-      '@flowforge/nodes-llm':
-        specifier: workspace:*
-        version: link:../../packages/engine/nodes/llm
-      '@flowforge/nodes-stdlib':
-        specifier: workspace:*
-        version: link:../../packages/engine/nodes/stdlib
-      '@flowforge/nodes-stdlib-sandbox':
-        specifier: workspace:*
-        version: link:../../packages/engine/nodes/stdlib-sandbox
-      '@flowforge/observability-logger':
-        specifier: workspace:^
-        version: link:../../packages/engine/observability/logger
-      '@flowforge/rag-guard':
-        specifier: workspace:*
-        version: link:../../packages/engine/rag-guard
-      '@flowforge/safe-fetch':
-        specifier: workspace:*
-        version: link:../../packages/engine/safe-fetch
-      '@flowforge/secrets':
-        specifier: workspace:*
-        version: link:../../packages/engine/secrets
-      '@flowforge/templates':
-        specifier: workspace:*
-        version: link:../../packages/engine/core/templates
       '@hono/node-server':
         specifier: ^1.19.14
         version: 1.19.17(hono@4.12.33)
       '@hono/zod-validator':
         specifier: ^0.4.3
         version: 0.4.3(hono@4.12.33)(zod@3.25.76)
+      '@medea/engine-auth-local':
+        specifier: workspace:*
+        version: link:../../packages/engine/auth/local
+      '@medea/engine-core-schema':
+        specifier: workspace:*
+        version: link:../../packages/engine/core/schema
+      '@medea/engine-db-studio-core':
+        specifier: workspace:*
+        version: link:../../packages/engine/db-studio/core
+      '@medea/engine-db-studio-duckdb':
+        specifier: workspace:*
+        version: link:../../packages/engine/db-studio/adapters-duckdb
+      '@medea/engine-db-studio-engine':
+        specifier: workspace:*
+        version: link:../../packages/engine/db-studio/engine
+      '@medea/engine-db-studio-mongodb':
+        specifier: workspace:*
+        version: link:../../packages/engine/db-studio/adapters-mongodb
+      '@medea/engine-db-studio-mssql':
+        specifier: workspace:*
+        version: link:../../packages/engine/db-studio/adapters-mssql
+      '@medea/engine-db-studio-mysql':
+        specifier: workspace:*
+        version: link:../../packages/engine/db-studio/adapters-mysql
+      '@medea/engine-db-studio-postgres':
+        specifier: workspace:*
+        version: link:../../packages/engine/db-studio/adapters-postgres
+      '@medea/engine-db-studio-redis':
+        specifier: workspace:*
+        version: link:../../packages/engine/db-studio/adapters-redis
+      '@medea/engine-db-studio-vector':
+        specifier: workspace:*
+        version: link:../../packages/engine/db-studio/vector
+      '@medea/engine-license':
+        specifier: workspace:*
+        version: link:../../packages/engine/license
+      '@medea/engine-nodes-ai-agents':
+        specifier: workspace:*
+        version: link:../../packages/engine/nodes/ai-agents
+      '@medea/engine-nodes-db':
+        specifier: workspace:*
+        version: link:../../packages/engine/nodes/db
+      '@medea/engine-nodes-integrations-core':
+        specifier: workspace:*
+        version: link:../../packages/engine/nodes/integrations-core
+      '@medea/engine-nodes-integrations-italia':
+        specifier: workspace:*
+        version: link:../../packages/engine/nodes/integrations-italia
+      '@medea/engine-nodes-llm':
+        specifier: workspace:*
+        version: link:../../packages/engine/nodes/llm
+      '@medea/engine-nodes-stdlib':
+        specifier: workspace:*
+        version: link:../../packages/engine/nodes/stdlib
+      '@medea/engine-nodes-stdlib-sandbox':
+        specifier: workspace:*
+        version: link:../../packages/engine/nodes/stdlib-sandbox
+      '@medea/engine-observability-logger':
+        specifier: workspace:^
+        version: link:../../packages/engine/observability/logger
+      '@medea/engine-rag-guard':
+        specifier: workspace:*
+        version: link:../../packages/engine/rag-guard
+      '@medea/engine-safe-fetch':
+        specifier: workspace:*
+        version: link:../../packages/engine/safe-fetch
+      '@medea/engine-secrets':
+        specifier: workspace:*
+        version: link:../../packages/engine/secrets
+      '@medea/engine-shared':
+        specifier: workspace:*
+        version: link:../../packages/engine-shared
+      '@medea/engine-templates':
+        specifier: workspace:*
+        version: link:../../packages/engine/core/templates
       '@node-saml/node-saml':
         specifier: ^5.1.0
         version: 5.1.0
@@ -279,9 +282,6 @@ importers:
       '@types/pdf-parse':
         specifier: ^1.1.5
         version: 1.1.5
-      '@zeliai/shared':
-        specifier: workspace:*
-        version: link:../../packages/engine-shared
       acorn:
         specifier: ^8.16.0
         version: 8.16.0
@@ -409,10 +409,10 @@ importers:
       '@eslint/js':
         specifier: ^9.16.0
         version: 9.39.4
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../packages/engine/eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../packages/engine/tsconfig
       '@types/adm-zip':
@@ -499,9 +499,12 @@ importers:
 
   packages/engine-shared:
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../engine/eslint-config
+      '@medea/engine-tsconfig':
+        specifier: workspace:*
+        version: link:../engine/tsconfig
       '@types/node':
         specifier: ^22.10.0
         version: 22.19.19
@@ -526,7 +529,7 @@ importers:
 
   packages/engine/auth/local:
     dependencies:
-      '@flowforge/core-schema':
+      '@medea/engine-core-schema':
         specifier: workspace:*
         version: link:../../core/schema
       argon2:
@@ -542,10 +545,10 @@ importers:
         specifier: ^3.24.0
         version: 3.25.76
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@vitest/coverage-v8':
@@ -570,10 +573,10 @@ importers:
         specifier: ^3.23.0
         version: 3.25.76
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/adm-zip':
@@ -601,10 +604,10 @@ importers:
         specifier: ^3.24.0
         version: 3.25.76
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@vitest/coverage-v8':
@@ -622,17 +625,17 @@ importers:
 
   packages/engine/core/templates:
     dependencies:
-      '@flowforge/core-schema':
+      '@medea/engine-core-schema':
         specifier: workspace:*
         version: link:../schema
       zod:
         specifier: ^3.24.0
         version: 3.25.76
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@vitest/coverage-v8':
@@ -653,17 +656,17 @@ importers:
       '@duckdb/node-api':
         specifier: 1.5.3-r.1
         version: 1.5.3-r.1
-      '@flowforge/db-studio-core':
+      '@medea/engine-db-studio-core':
         specifier: workspace:*
         version: link:../core
-      '@flowforge/db-studio-engine':
+      '@medea/engine-db-studio-engine':
         specifier: workspace:*
         version: link:../engine
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@vitest/coverage-v8':
@@ -681,20 +684,20 @@ importers:
 
   packages/engine/db-studio/adapters-mongodb:
     dependencies:
-      '@flowforge/db-studio-core':
+      '@medea/engine-db-studio-core':
         specifier: workspace:*
         version: link:../core
-      '@flowforge/db-studio-engine':
+      '@medea/engine-db-studio-engine':
         specifier: workspace:*
         version: link:../engine
       mongodb:
         specifier: ^6.10.0
         version: 6.21.0(socks@2.8.9)
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@vitest/coverage-v8':
@@ -712,20 +715,20 @@ importers:
 
   packages/engine/db-studio/adapters-mssql:
     dependencies:
-      '@flowforge/db-studio-core':
+      '@medea/engine-db-studio-core':
         specifier: workspace:*
         version: link:../core
-      '@flowforge/db-studio-engine':
+      '@medea/engine-db-studio-engine':
         specifier: workspace:*
         version: link:../engine
       mssql:
         specifier: ^11.0.0
         version: 11.0.1
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@types/mssql':
@@ -746,20 +749,20 @@ importers:
 
   packages/engine/db-studio/adapters-mysql:
     dependencies:
-      '@flowforge/db-studio-core':
+      '@medea/engine-db-studio-core':
         specifier: workspace:*
         version: link:../core
-      '@flowforge/db-studio-engine':
+      '@medea/engine-db-studio-engine':
         specifier: workspace:*
         version: link:../engine
       mysql2:
         specifier: ^3.11.0
         version: 3.23.2(@types/node@22.19.19)
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@vitest/coverage-v8':
@@ -777,20 +780,20 @@ importers:
 
   packages/engine/db-studio/adapters-postgres:
     dependencies:
-      '@flowforge/db-studio-core':
+      '@medea/engine-db-studio-core':
         specifier: workspace:*
         version: link:../core
-      '@flowforge/db-studio-engine':
+      '@medea/engine-db-studio-engine':
         specifier: workspace:*
         version: link:../engine
       postgres:
         specifier: ^3.4.5
         version: 3.4.9
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@vitest/coverage-v8':
@@ -808,20 +811,20 @@ importers:
 
   packages/engine/db-studio/adapters-redis:
     dependencies:
-      '@flowforge/db-studio-core':
+      '@medea/engine-db-studio-core':
         specifier: workspace:*
         version: link:../core
-      '@flowforge/db-studio-engine':
+      '@medea/engine-db-studio-engine':
         specifier: workspace:*
         version: link:../engine
       ioredis:
         specifier: ^5.4.0
         version: 5.11.1
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@vitest/coverage-v8':
@@ -843,10 +846,10 @@ importers:
         specifier: ^3.24.0
         version: 3.25.76
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@vitest/coverage-v8':
@@ -864,7 +867,7 @@ importers:
 
   packages/engine/db-studio/engine:
     dependencies:
-      '@flowforge/db-studio-core':
+      '@medea/engine-db-studio-core':
         specifier: workspace:*
         version: link:../core
       better-sqlite3:
@@ -874,10 +877,10 @@ importers:
         specifier: ^3.24.0
         version: 3.25.76
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@types/better-sqlite3':
@@ -898,7 +901,7 @@ importers:
 
   packages/engine/db-studio/vector:
     dependencies:
-      '@flowforge/db-studio-core':
+      '@medea/engine-db-studio-core':
         specifier: workspace:*
         version: link:../core
       better-sqlite3:
@@ -908,10 +911,10 @@ importers:
         specifier: ^3.24.0
         version: 3.25.76
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@types/better-sqlite3':
@@ -954,10 +957,10 @@ importers:
         specifier: ^3.24.0
         version: 3.25.76
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@vitest/coverage-v8':
@@ -975,23 +978,23 @@ importers:
 
   packages/engine/nodes/ai-agents:
     dependencies:
-      '@flowforge/core-schema':
+      '@medea/engine-core-schema':
         specifier: workspace:*
         version: link:../../core/schema
-      '@flowforge/nodes-stdlib':
+      '@medea/engine-nodes-stdlib':
         specifier: workspace:*
         version: link:../stdlib
-      '@flowforge/rag-guard':
+      '@medea/engine-rag-guard':
         specifier: workspace:*
         version: link:../../rag-guard
-      '@flowforge/safe-fetch':
+      '@medea/engine-safe-fetch':
         specifier: workspace:*
         version: link:../../safe-fetch
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@vitest/coverage-v8':
@@ -1009,23 +1012,23 @@ importers:
 
   packages/engine/nodes/db:
     dependencies:
-      '@flowforge/core-schema':
+      '@medea/engine-core-schema':
         specifier: workspace:*
         version: link:../../core/schema
-      '@flowforge/db-studio-core':
+      '@medea/engine-db-studio-core':
         specifier: workspace:*
         version: link:../../db-studio/core
-      '@flowforge/nodes-stdlib':
+      '@medea/engine-nodes-stdlib':
         specifier: workspace:*
         version: link:../stdlib
-      '@flowforge/safe-fetch':
+      '@medea/engine-safe-fetch':
         specifier: workspace:*
         version: link:../../safe-fetch
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@vitest/coverage-v8':
@@ -1043,17 +1046,17 @@ importers:
 
   packages/engine/nodes/integrations-core:
     dependencies:
-      '@flowforge/core-schema':
+      '@medea/engine-core-schema':
         specifier: workspace:*
         version: link:../../core/schema
-      '@flowforge/nodes-stdlib':
+      '@medea/engine-nodes-stdlib':
         specifier: workspace:*
         version: link:../stdlib
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@vitest/coverage-v8':
@@ -1071,20 +1074,20 @@ importers:
 
   packages/engine/nodes/integrations-italia:
     dependencies:
-      '@flowforge/core-schema':
+      '@medea/engine-core-schema':
         specifier: workspace:*
         version: link:../../core/schema
-      '@flowforge/nodes-stdlib':
+      '@medea/engine-nodes-stdlib':
         specifier: workspace:*
         version: link:../stdlib
-      '@flowforge/safe-fetch':
+      '@medea/engine-safe-fetch':
         specifier: workspace:*
         version: link:../../safe-fetch
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@vitest/coverage-v8':
@@ -1102,20 +1105,20 @@ importers:
 
   packages/engine/nodes/llm:
     dependencies:
-      '@flowforge/core-schema':
+      '@medea/engine-core-schema':
         specifier: workspace:*
         version: link:../../core/schema
-      '@flowforge/nodes-stdlib':
+      '@medea/engine-nodes-stdlib':
         specifier: workspace:*
         version: link:../stdlib
-      '@flowforge/safe-fetch':
+      '@medea/engine-safe-fetch':
         specifier: workspace:*
         version: link:../../safe-fetch
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@vitest/coverage-v8':
@@ -1133,20 +1136,20 @@ importers:
 
   packages/engine/nodes/sdk:
     dependencies:
-      '@flowforge/core-schema':
+      '@medea/engine-core-schema':
         specifier: workspace:*
         version: link:../../core/schema
-      '@flowforge/nodes-stdlib':
+      '@medea/engine-nodes-stdlib':
         specifier: workspace:*
         version: link:../stdlib
       zod:
         specifier: ^3.24.0
         version: 3.25.76
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@vitest/coverage-v8':
@@ -1164,13 +1167,13 @@ importers:
 
   packages/engine/nodes/stdlib:
     dependencies:
-      '@flowforge/core-schema':
+      '@medea/engine-core-schema':
         specifier: workspace:*
         version: link:../../core/schema
-      '@flowforge/safe-fetch':
+      '@medea/engine-safe-fetch':
         specifier: workspace:*
         version: link:../../safe-fetch
-      '@zeliai/shared':
+      '@medea/engine-shared':
         specifier: workspace:*
         version: link:../../../engine-shared
       cheerio:
@@ -1183,10 +1186,10 @@ importers:
         specifier: ^3.24.0
         version: 3.25.76
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@vitest/coverage-v8':
@@ -1207,7 +1210,7 @@ importers:
 
   packages/engine/nodes/stdlib-sandbox:
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
       esbuild:
@@ -1229,7 +1232,7 @@ importers:
         specifier: ^9.0.0
         version: 9.14.0
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
       eslint:
@@ -1238,10 +1241,10 @@ importers:
 
   packages/engine/rag-guard:
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@vitest/coverage-v8':
@@ -1259,10 +1262,10 @@ importers:
 
   packages/engine/safe-fetch:
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@vitest/coverage-v8':
@@ -1284,10 +1287,10 @@ importers:
         specifier: ^3.24.0
         version: 3.25.76
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -1308,7 +1311,7 @@ importers:
 
   packages/engine/storage/postgres:
     dependencies:
-      '@flowforge/core-schema':
+      '@medea/engine-core-schema':
         specifier: workspace:*
         version: link:../../core/schema
       drizzle-orm:
@@ -1318,10 +1321,10 @@ importers:
         specifier: ^3.4.5
         version: 3.4.9
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../../tsconfig
       '@vitest/coverage-v8':
@@ -1345,10 +1348,10 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
     devDependencies:
-      '@flowforge/eslint-config':
+      '@medea/engine-eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
-      '@flowforge/tsconfig':
+      '@medea/engine-tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/react':

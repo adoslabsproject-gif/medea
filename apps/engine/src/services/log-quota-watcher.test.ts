@@ -41,8 +41,8 @@ vi.mock('@/services/storage-quota.service.js', () => ({
 
 vi.mock('@/config.js', () => ({
   loadConfig: () => ({
-    FLOWFORGE_DATA_DIR: '/tmp/ff-watcher-test',
-    FLOWFORGE_PUBLIC_BASE_URL: 'https://test.example.com',
+    MEDEA_DATA_DIR: '/tmp/ff-watcher-test',
+    MEDEA_PUBLIC_BASE_URL: 'https://test.example.com',
   }),
 }));
 
@@ -66,10 +66,10 @@ beforeEach(() => {
   vi.resetModules();
   sqliteInst = new Database(':memory:');
   sqliteInst.exec(`CREATE TABLE workflows (id TEXT PRIMARY KEY, run_verbosity TEXT);`);
-  delete process.env.FLOWFORGE_SMTP_HOST;
-  delete process.env.FLOWFORGE_SMTP_PORT;
-  delete process.env.FLOWFORGE_TENANT_OWNER_EMAIL;
-  delete process.env.FLOWFORGE_SMTP_FROM;
+  delete process.env.MEDEA_SMTP_HOST;
+  delete process.env.MEDEA_SMTP_PORT;
+  delete process.env.MEDEA_TENANT_OWNER_EMAIL;
+  delete process.env.MEDEA_SMTP_FROM;
   mockDirSize = 0;
 });
 
@@ -106,9 +106,9 @@ describe('🚨 startLogQuotaWatcher — lifecycle', () => {
 
 describe('🚨 tick — free tier early return', () => {
   beforeEach(() => {
-    process.env.FLOWFORGE_SMTP_HOST = 'smtp.test';
-    process.env.FLOWFORGE_SMTP_PORT = '587';
-    process.env.FLOWFORGE_TENANT_OWNER_EMAIL = 'owner@example.com';
+    process.env.MEDEA_SMTP_HOST = 'smtp.test';
+    process.env.MEDEA_SMTP_PORT = '587';
+    process.env.MEDEA_TENANT_OWNER_EMAIL = 'owner@example.com';
   });
 
   it('🚨 freeTier true → skip + no email', async () => {
@@ -134,9 +134,9 @@ describe('🚨 tick — free tier early return', () => {
 
 describe('🚨 anti-spam DAY_MS gap', () => {
   beforeEach(() => {
-    process.env.FLOWFORGE_SMTP_HOST = 'smtp.test';
-    process.env.FLOWFORGE_SMTP_PORT = '587';
-    process.env.FLOWFORGE_TENANT_OWNER_EMAIL = 'owner@example.com';
+    process.env.MEDEA_SMTP_HOST = 'smtp.test';
+    process.env.MEDEA_SMTP_PORT = '587';
+    process.env.MEDEA_TENANT_OWNER_EMAIL = 'owner@example.com';
   });
 
   it('🚨 warn email NON re-inviata in <24h', async () => {
@@ -163,8 +163,8 @@ describe('🚨 anti-spam DAY_MS gap', () => {
 
 describe('🚨 SMTP env mancante', () => {
   it('🚨 no SMTP host → warn log NO send', async () => {
-    process.env.FLOWFORGE_TENANT_OWNER_EMAIL = 'owner@x.com';
-    delete process.env.FLOWFORGE_SMTP_HOST;
+    process.env.MEDEA_TENANT_OWNER_EMAIL = 'owner@x.com';
+    delete process.env.MEDEA_SMTP_HOST;
     getCurrentQuotasMock.mockReturnValue({ freeTier: false, logRetentionBytes: 1000 });
     const fsm = await import('node:fs');
     (fsm.readdirSync as any).mockReturnValue([{ name: 'a.gz', isDirectory: () => false, isFile: () => true }]);
@@ -181,9 +181,9 @@ describe('🚨 SMTP env mancante', () => {
   });
 
   it('🚨 no OWNER_EMAIL → warn log NO send', async () => {
-    process.env.FLOWFORGE_SMTP_HOST = 'smtp.test';
-    process.env.FLOWFORGE_SMTP_PORT = '587';
-    delete process.env.FLOWFORGE_TENANT_OWNER_EMAIL;
+    process.env.MEDEA_SMTP_HOST = 'smtp.test';
+    process.env.MEDEA_SMTP_PORT = '587';
+    delete process.env.MEDEA_TENANT_OWNER_EMAIL;
     getCurrentQuotasMock.mockReturnValue({ freeTier: false, logRetentionBytes: 1000 });
     const fsm = await import('node:fs');
     (fsm.readdirSync as any).mockReturnValue([{ name: 'a.gz', isDirectory: () => false, isFile: () => true }]);
@@ -194,7 +194,7 @@ describe('🚨 SMTP env mancante', () => {
     await Promise.resolve(); await Promise.resolve();
     expect(sendMailMock).not.toHaveBeenCalled();
     expect(loggerMock.warn).toHaveBeenCalledWith(
-      expect.stringContaining('FLOWFORGE_TENANT_OWNER_EMAIL not set'),
+      expect.stringContaining('MEDEA_TENANT_OWNER_EMAIL not set'),
     );
     m.stopLogQuotaWatcher();
   });
@@ -202,9 +202,9 @@ describe('🚨 SMTP env mancante', () => {
 
 describe('🚨 quota threshold + auto-switch ephemeral', () => {
   beforeEach(() => {
-    process.env.FLOWFORGE_SMTP_HOST = 'smtp.test';
-    process.env.FLOWFORGE_SMTP_PORT = '587';
-    process.env.FLOWFORGE_TENANT_OWNER_EMAIL = 'owner@example.com';
+    process.env.MEDEA_SMTP_HOST = 'smtp.test';
+    process.env.MEDEA_SMTP_PORT = '587';
+    process.env.MEDEA_TENANT_OWNER_EMAIL = 'owner@example.com';
     sendMailMock.mockResolvedValue({});
   });
 
@@ -273,9 +273,9 @@ describe('🚨 tick error resilience', () => {
 
 describe('🚨 SMTP secure port handling', () => {
   it('🚨 port 465 → secure=true (SMTPS)', async () => {
-    process.env.FLOWFORGE_SMTP_HOST = 'smtp.test';
-    process.env.FLOWFORGE_SMTP_PORT = '465';
-    process.env.FLOWFORGE_TENANT_OWNER_EMAIL = 'x@y.com';
+    process.env.MEDEA_SMTP_HOST = 'smtp.test';
+    process.env.MEDEA_SMTP_PORT = '465';
+    process.env.MEDEA_TENANT_OWNER_EMAIL = 'x@y.com';
     getCurrentQuotasMock.mockReturnValue({ freeTier: false, logRetentionBytes: 1000 });
     const fsm = await import('node:fs');
     (fsm.readdirSync as any).mockReturnValue([{ name: 'a.gz', isDirectory: () => false, isFile: () => true }]);

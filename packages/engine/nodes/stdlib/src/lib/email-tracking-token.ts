@@ -17,9 +17,9 @@
  *   <b64url(payload-json)>.<b64url(hmac-sha256(secret, payload-json))>
  *
  * Both sides recompute the HMAC over the payload and compare with
- * `timingSafeEqual`. The secret is `FLOWFORGE_SSO_SECRET` (shared
+ * `timingSafeEqual`. The secret is `MEDEA_SSO_SECRET` (shared
  * across portal + runtime, already provisioned in every container —
- * see `apps/flowforge-runtime/src/config.ts`).
+ * see `apps/engine/src/config.ts`).
  *
  * Why HMAC + JSON, not JWT
  * ────────────────────────
@@ -106,7 +106,7 @@ export async function signTrackingToken(
   secret: string,
 ): Promise<SignedToken> {
   if (!secret || secret.length < 32) {
-    throw new Error('email-tracking secret too short (need >=32 chars; pass FLOWFORGE_SSO_SECRET)');
+    throw new Error('email-tracking secret too short (need >=32 chars; pass MEDEA_SSO_SECRET)');
   }
   const full: EmailTrackingPayload = {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion -- String() esplicito mantenuto per chiarezza tipo: input puo` essere stringificato da Zod ma TS ha widening

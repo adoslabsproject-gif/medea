@@ -21,7 +21,7 @@ vi.mock('@/lib/logger.js');
 // (il name è AAD ma qui è irrilevante — decrypt ritorna il plaintext registrato).
 vi.mock('./audit.service.js', () => ({ AuditLogService: class { append = vi.fn().mockResolvedValue(undefined); } }));
 const store = new Map<string, string>();
-vi.mock('@flowforge/secrets', () => ({
+vi.mock('@medea/engine-secrets', () => ({
   encryptSecret: (s: { id: string; plaintext: string }) => {
     store.set(s.id, s.plaintext);
     return { ciphertext: s.id, nonce: 'n', authTag: 't', dekCiphertext: 'dc', dekNonce: 'dn', dekAuthTag: 'dt' };

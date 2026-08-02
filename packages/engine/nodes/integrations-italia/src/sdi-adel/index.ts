@@ -1,4 +1,4 @@
-import type { NodeModule } from '@flowforge/nodes-stdlib';
+import type { NodeModule } from '@medea/engine-nodes-stdlib';
 
 /**
  * Sistema di Interscambio (SDI) / Agenzia delle Entrate — fattura elettronica.
@@ -80,7 +80,7 @@ export const sdiSendInvoice: NodeModule = {
         label: 'Certificato firma (PEM inline)',
         type: 'secret',
         required: false,
-        help: 'Certificato qualificato CADES-BES in formato PEM (-----BEGIN CERTIFICATE-----). Necessario se skipSigning=off. In alternativa imposta FLOWFORGE_SDI_CERT_PATH sul server e lascia vuoto qui.',
+        help: 'Certificato qualificato CADES-BES in formato PEM (-----BEGIN CERTIFICATE-----). Necessario se skipSigning=off. In alternativa imposta MEDEA_SDI_CERT_PATH sul server e lascia vuoto qui.',
         showIf: { field: 'skipSigning', truthy: false },
       },
       {
@@ -88,7 +88,7 @@ export const sdiSendInvoice: NodeModule = {
         label: 'Chiave privata firma (PEM inline)',
         type: 'secret',
         required: false,
-        help: 'Chiave privata del certificato in formato PEM (-----BEGIN PRIVATE KEY-----). NON condividere. In alternativa imposta FLOWFORGE_SDI_KEY_PATH sul server.',
+        help: 'Chiave privata del certificato in formato PEM (-----BEGIN PRIVATE KEY-----). NON condividere. In alternativa imposta MEDEA_SDI_KEY_PATH sul server.',
         showIf: { field: 'skipSigning', truthy: false },
       },
       {
@@ -96,7 +96,7 @@ export const sdiSendInvoice: NodeModule = {
         label: 'Path certificato su disco (alternativa a PEM inline)',
         type: 'file-picker',
         required: false,
-        help: 'Path file .pem del certificato dentro la sandbox del tenant. Usato solo se certPem (sopra) è vuoto. Per server-managed certs usa la env FLOWFORGE_SDI_CERT_PATH invece.',
+        help: 'Path file .pem del certificato dentro la sandbox del tenant. Usato solo se certPem (sopra) è vuoto. Per server-managed certs usa la env MEDEA_SDI_CERT_PATH invece.',
         showIf: { field: 'skipSigning', truthy: false },
       },
       {

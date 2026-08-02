@@ -2,7 +2,7 @@ import type { NodeModule } from '../types.js';
 
 /**
  * NodeDef per `action_generate_chart`. SOLO metadata UI — il rendering vive
- * nell'executor server-only `chartGenerateExecutor` (apps/flowforge-runtime/src/
+ * nell'executor server-only `chartGenerateExecutor` (apps/engine/src/
  * executors/chart.ts), che NON viene incluso nel bundle browser dell'editor.
  *
  * NOMI CAMPI: devono matchare ESATTAMENTE i `config.X` letti dall'executor.

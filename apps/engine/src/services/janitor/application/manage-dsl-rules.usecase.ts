@@ -10,7 +10,7 @@
  */
 
 import { nanoid } from 'nanoid';
-import { classifyStatement } from '@flowforge/db-studio-engine';
+import { classifyStatement } from '@medea/engine-db-studio-engine';
 import type {
   DslRule, DataSourceRef, CorruptionSeverity,
 } from '@/services/janitor/domain/index.js';

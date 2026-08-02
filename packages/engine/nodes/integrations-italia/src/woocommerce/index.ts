@@ -21,9 +21,9 @@
  * 30% market share. Customer base massiccio. NO REASON not to have it.
  */
 
-import type { NodeModule } from '@flowforge/nodes-stdlib';
-import { executeWithHostBreaker } from '@flowforge/nodes-stdlib';
-import { safeFetchWithRedirects, readJsonCapped, readTextTruncated } from '@flowforge/safe-fetch';
+import type { NodeModule } from '@medea/engine-nodes-stdlib';
+import { executeWithHostBreaker } from '@medea/engine-nodes-stdlib';
+import { safeFetchWithRedirects, readJsonCapped, readTextTruncated } from '@medea/engine-safe-fetch';
 
 interface WcConnection {
   baseUrl: string;

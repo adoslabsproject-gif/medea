@@ -1,5 +1,5 @@
 /**
- * @flowforge/observability-logger — structured logger condiviso.
+ * @medea/engine-observability-logger — structured logger condiviso.
  *
  * Wrapper attorno a Pino con configurazione FlowForge-grade:
  *   • Output JSON in produzione (compatibile con journald/Loki/Elasticsearch)
@@ -20,7 +20,7 @@
  *   • apps/runtime-edge (future Cloudflare Workers)
  *
  * Uso:
- *   import { createLogger, dedupedWarn } from '@flowforge/observability-logger';
+ *   import { createLogger, dedupedWarn } from '@medea/engine-observability-logger';
  *   const logger = createLogger({ service: 'flowforge-runtime', env: 'production' });
  *   logger.info({ tenantId: 'x', userId: 'y' }, 'request handled');
  *   dedupedWarn(logger, `cnload:${vendor}:${id}`, { err, vendor, id }, 'Failed to load');

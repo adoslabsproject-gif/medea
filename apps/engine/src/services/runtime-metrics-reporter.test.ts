@@ -5,9 +5,9 @@
  *
  * reportOnce: cron task che chiama POST /api/v1/internal/runtime-metrics col
  *   payload aggregato. Test coprono:
- *   - skip se manca FLOWFORGE_TENANT_ID O internal token
- *   - PORTAL_CALLBACK_TOKEN preferito su FLOWFORGE_INTERNAL_TOKEN
- *   - URL costruita correttamente (FLOWFORGE_PORTAL_URL + /api/v1/internal/runtime-metrics)
+ *   - skip se manca MEDEA_TENANT_ID O internal token
+ *   - PORTAL_CALLBACK_TOKEN preferito su MEDEA_INTERNAL_TOKEN
+ *   - URL costruita correttamente (MEDEA_PORTAL_URL + /api/v1/internal/runtime-metrics)
  *   - body JSON contiene workspaceId + tutti i campi percentile + lastRunAt ISO
  *   - AbortSignal.timeout 10s wired
  *   - 401/4xx/5xx response → log warn + NO throw
@@ -84,13 +84,13 @@ beforeEach(() => {
   vi.resetAllMocks();
   // Reset env
   delete process.env.PORTAL_CALLBACK_TOKEN;
-  delete process.env.FLOWFORGE_INTERNAL_TOKEN;
+  delete process.env.MEDEA_INTERNAL_TOKEN;
   delete process.env.npm_package_version;
 
   // Default config (override per test)
   m.loadConfig.mockReturnValue({
-    FLOWFORGE_TENANT_ID: 'ws-abc-1',
-    FLOWFORGE_PORTAL_URL: 'http://portal.local:3006',
+    MEDEA_TENANT_ID: 'ws-abc-1',
+    MEDEA_PORTAL_URL: 'http://portal.local:3006',
   });
 
   // Default DB con 0 runs (empty workspace)
@@ -114,10 +114,10 @@ afterEach(() => {
 });
 
 describe('reportOnce — skip path', () => {
-  it('senza FLOWFORGE_TENANT_ID → skip + NO fetch', async () => {
+  it('senza MEDEA_TENANT_ID → skip + NO fetch', async () => {
     m.loadConfig.mockReturnValue({
-      FLOWFORGE_TENANT_ID: '',
-      FLOWFORGE_PORTAL_URL: 'http://portal.local:3006',
+      MEDEA_TENANT_ID: '',
+      MEDEA_PORTAL_URL: 'http://portal.local:3006',
     });
     process.env.PORTAL_CALLBACK_TOKEN = 'token-ok';
     const stubFetch = vi.fn();
@@ -133,7 +133,7 @@ describe('reportOnce — skip path', () => {
     );
   });
 
-  it('senza token (no PORTAL_CALLBACK_TOKEN, no FLOWFORGE_INTERNAL_TOKEN) → skip', async () => {
+  it('senza token (no PORTAL_CALLBACK_TOKEN, no MEDEA_INTERNAL_TOKEN) → skip', async () => {
     // tenantId presente ma token assenti
     const stubFetch = vi.fn();
     vi.stubGlobal('fetch', stubFetch);
@@ -150,9 +150,9 @@ describe('reportOnce — skip path', () => {
 });
 
 describe('reportOnce — token precedence', () => {
-  it('PORTAL_CALLBACK_TOKEN preferito a FLOWFORGE_INTERNAL_TOKEN', async () => {
+  it('PORTAL_CALLBACK_TOKEN preferito a MEDEA_INTERNAL_TOKEN', async () => {
     process.env.PORTAL_CALLBACK_TOKEN = 'PREFERRED-shared';
-    process.env.FLOWFORGE_INTERNAL_TOKEN = 'fallback-per-tenant';
+    process.env.MEDEA_INTERNAL_TOKEN = 'fallback-per-tenant';
 
     const stubFetch = vi.fn().mockResolvedValue({
       ok: true, status: 200, text: () => Promise.resolve(''),
@@ -168,8 +168,8 @@ describe('reportOnce — token precedence', () => {
     expect(headers['x-internal-token']).toBe('PREFERRED-shared');
   });
 
-  it('Fallback a FLOWFORGE_INTERNAL_TOKEN se PORTAL_CALLBACK_TOKEN assente', async () => {
-    process.env.FLOWFORGE_INTERNAL_TOKEN = 'fallback-per-tenant';
+  it('Fallback a MEDEA_INTERNAL_TOKEN se PORTAL_CALLBACK_TOKEN assente', async () => {
+    process.env.MEDEA_INTERNAL_TOKEN = 'fallback-per-tenant';
 
     const stubFetch = vi.fn().mockResolvedValue({
       ok: true, status: 200, text: () => Promise.resolve(''),
@@ -188,8 +188,8 @@ describe('reportOnce — token precedence', () => {
 describe('reportOnce — happy path body + URL', () => {
   it('URL = portalUrl + /api/v1/internal/runtime-metrics (trailing slash strip)', async () => {
     m.loadConfig.mockReturnValue({
-      FLOWFORGE_TENANT_ID: 'ws-abc-1',
-      FLOWFORGE_PORTAL_URL: 'https://flowforge.automazionezeli.com/', // trailing slash
+      MEDEA_TENANT_ID: 'ws-abc-1',
+      MEDEA_PORTAL_URL: 'https://flowforge.automazionezeli.com/', // trailing slash
     });
     process.env.PORTAL_CALLBACK_TOKEN = 'tok';
     const stubFetch = vi.fn().mockResolvedValue({

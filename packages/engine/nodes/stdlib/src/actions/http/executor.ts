@@ -26,8 +26,8 @@ import { buildRequestHeaders } from '../../core/http-headers.js';
 // safe-fetch e\` server-only ma altri 25+ moduli stdlib lo importano statico —
 // dynamic qui non code-splittava nulla (warning Vite "dynamic + static").
 // Allineamento: static import in TUTTI gli executor (server-only by design).
-import { assertUrlSafe, validateUrlForFetch, CROSS_HOST_STRIP_HEADERS } from '@flowforge/safe-fetch';
-import { nodeRetriesInternally } from '@flowforge/core-schema';
+import { assertUrlSafe, validateUrlForFetch, CROSS_HOST_STRIP_HEADERS } from '@medea/engine-safe-fetch';
+import { nodeRetriesInternally } from '@medea/engine-core-schema';
 
 const MAX_REDIRECTS = 5;
 
@@ -93,7 +93,7 @@ export const httpExecutor: NodeExecutor = async (rawConfig, input, context) => {
   // BinaryData in INPUT (da file-read / http download / pdf / imap). Il content-type
   // viene dal mimeType dell'handle (override-abile da rawBinaryContentType).
   if (cfg.bodyType === 'binary') {
-    const cs = await import('@flowforge/core-schema');
+    const cs = await import('@medea/engine-core-schema');
     const bin = cs.getBinaryData(input);
     if (bin !== null) {
       body = await cs.readBinaryBytes(bin, context.readBinary);

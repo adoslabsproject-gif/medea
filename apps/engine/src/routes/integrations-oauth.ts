@@ -22,7 +22,7 @@
  * The OAuth `state` parameter is an HMAC-signed JSON blob (`tenantId`,
  * `userId`, `csrf`, `label`, `provider`, `iat`). Lifetime 10min, single-use
  * (we keep an in-memory replay set for the 10min TTL). HMAC key is derived
- * from `FLOWFORGE_MASTER_PASSWORD` so admins don't need a separate env var.
+ * from `MEDEA_MASTER_PASSWORD` so admins don't need a separate env var.
  */
 
 import { Hono } from 'hono';

@@ -16,9 +16,9 @@
  * + e-commerce). NO REASON per non averlo.
  */
 
-import type { NodeModule } from '@flowforge/nodes-stdlib';
-import { executeWithHostBreaker } from '@flowforge/nodes-stdlib';
-import { safeFetchWithRedirects, readJsonCapped, readTextTruncated } from '@flowforge/safe-fetch';
+import type { NodeModule } from '@medea/engine-nodes-stdlib';
+import { executeWithHostBreaker } from '@medea/engine-nodes-stdlib';
+import { safeFetchWithRedirects, readJsonCapped, readTextTruncated } from '@medea/engine-safe-fetch';
 
 interface WpConnection {
   baseUrl: string;

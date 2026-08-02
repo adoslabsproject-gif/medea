@@ -2,7 +2,7 @@
  * Email tracking sink — open pixel + click redirect.
  *
  * The `action_email_send_tracked` node stamps every outgoing email with
- * an HMAC-signed token (see `@flowforge/nodes-stdlib/lib/email-tracking-token`).
+ * an HMAC-signed token (see `@medea/engine-nodes-stdlib/lib/email-tracking-token`).
  * When the recipient opens the email or clicks a link, their browser
  * (or mail client) hits one of two endpoints on this runtime:
  *
@@ -29,8 +29,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { getDatabase, type SqliteCompatProxy } from '@/storage/db.js';
 import { logger } from '@/lib/logger.js';
-import { verifyTrackingToken, isTrackingBot } from '@flowforge/nodes-stdlib/server';
-import type { EmailTrackingPayload, VerifyFailReason } from '@flowforge/nodes-stdlib';
+import { verifyTrackingToken, isTrackingBot } from '@medea/engine-nodes-stdlib/server';
+import type { EmailTrackingPayload, VerifyFailReason } from '@medea/engine-nodes-stdlib';
 
 const log = (extra: Record<string, unknown>): void => {
   logger.info({ component: 'email-tracking', ...extra });

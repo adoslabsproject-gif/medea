@@ -4,7 +4,7 @@
  * @module actions/odoo_create_lead/definition
  */
 
-import type { NodeDef } from '@flowforge/core-schema';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 export const odooCreateLeadNodeDef: NodeDef = {
   id: 'action_odoo_create_lead',

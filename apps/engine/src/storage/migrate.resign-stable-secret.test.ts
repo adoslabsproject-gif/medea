@@ -3,7 +3,7 @@
  * registry secret SENZA aprire un buco).
  *
  * Incidente owner 2026-06-12 (Streammy): il registry secret derivava da
- * FLOWFORGE_INTERNAL_TOKEN, rigenerato a ogni recreate del container → tutte le
+ * MEDEA_INTERNAL_TOKEN, rigenerato a ogni recreate del container → tutte le
  * firme dei custom node diventavano `signature_mismatch` → il loader bloccava
  * nodi legittimi ("Unknown node def"). Fix in due parti: (1) secret reso STABILE
  * (registry-secret.ts, da SSO_SECRET); (2) QUESTA ri-firma one-time al boot.
@@ -53,19 +53,19 @@ let savedTok: string | undefined;
 beforeEach(() => {
   conn = new SqliteDatabase(':memory:');
   conn.exec(SCHEMA_SQL);
-  savedReg = process.env.FLOWFORGE_REGISTRY_SECRET;
-  savedTok = process.env.FLOWFORGE_INTERNAL_TOKEN;
+  savedReg = process.env.MEDEA_REGISTRY_SECRET;
+  savedTok = process.env.MEDEA_INTERNAL_TOKEN;
   // Il secret CORRENTE (stabile) lo forziamo via override esplicito: registrySecret()
-  // ritorna FLOWFORGE_REGISTRY_SECRET se presente.
-  process.env.FLOWFORGE_REGISTRY_SECRET = NEW_SECRET;
+  // ritorna MEDEA_REGISTRY_SECRET se presente.
+  process.env.MEDEA_REGISTRY_SECRET = NEW_SECRET;
 });
 
 afterEach(() => {
   conn.close();
-  if (savedReg !== undefined) process.env.FLOWFORGE_REGISTRY_SECRET = savedReg;
-  else delete process.env.FLOWFORGE_REGISTRY_SECRET;
-  if (savedTok !== undefined) process.env.FLOWFORGE_INTERNAL_TOKEN = savedTok;
-  else delete process.env.FLOWFORGE_INTERNAL_TOKEN;
+  if (savedReg !== undefined) process.env.MEDEA_REGISTRY_SECRET = savedReg;
+  else delete process.env.MEDEA_REGISTRY_SECRET;
+  if (savedTok !== undefined) process.env.MEDEA_INTERNAL_TOKEN = savedTok;
+  else delete process.env.MEDEA_INTERNAL_TOKEN;
 });
 
 /** Pacchetto reale ricostruito dai campi del nodo (stesso shape del loader). */
@@ -246,8 +246,8 @@ describe('🚨 resignCustomNodesWithStableSecret — rotazione sicura del regist
   });
 
   it('senza secret nell\'env → no-op totale, NESSUN flag (back-compat dev/test)', () => {
-    delete process.env.FLOWFORGE_REGISTRY_SECRET;
-    delete process.env.FLOWFORGE_INTERNAL_TOKEN;
+    delete process.env.MEDEA_REGISTRY_SECRET;
+    delete process.env.MEDEA_INTERNAL_TOKEN;
     insertSignedNode('n1', OLD_SECRET);
     const before = readIntegrity('n1');
     resignCustomNodesWithStableSecret(asSqliteDb(conn));

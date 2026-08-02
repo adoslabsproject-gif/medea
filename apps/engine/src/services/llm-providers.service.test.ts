@@ -49,7 +49,7 @@ vi.mock('@/storage/db.js', () => ({
   }),
 }));
 
-vi.mock('@flowforge/secrets', () => ({
+vi.mock('@medea/engine-secrets', () => ({
   encryptSecret: m.encryptSecret,
   decryptSecret: m.decryptSecret,
 }));

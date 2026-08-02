@@ -1,4 +1,4 @@
-import baseConfig from '@flowforge/eslint-config';
+import baseConfig from '@medea/engine-eslint-config';
 
 const ROOT = import.meta.dirname;
 

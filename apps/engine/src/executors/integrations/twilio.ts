@@ -8,7 +8,7 @@
  * Numeri validati E.164. Errori tipizzati IntegrationError.
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { IntegrationError, requireIntegration, withRetry } from './common.js';
 import { jsonFetch, getIntegrationLabel } from './saas-shared.js';
 import { checkTwilioSendRateLimit } from './twilio-guards.js';
@@ -50,7 +50,7 @@ export const twilioExecutor: NodeExecutor = async (rawConfig, _input, context) =
     if (!rl.allowed) {
       throw new IntegrationError({
         provider: 'twilio', code: 'RATE_LIMITED',
-        message: `Limite invii Twilio superato (${rl.max}/min per tenant): protezione anti toll-fraud. Riprova tra poco o aumenta FLOWFORGE_TWILIO_MAX_SENDS_PER_MIN.`,
+        message: `Limite invii Twilio superato (${rl.max}/min per tenant): protezione anti toll-fraud. Riprova tra poco o aumenta MEDEA_TWILIO_MAX_SENDS_PER_MIN.`,
         retryable: false,
       });
     }

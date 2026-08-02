@@ -35,8 +35,8 @@ describe('N17 — subworkflow source inspection (anti-recursion-bomb guards)', (
     expect(subworkflowSource).toMatch(/MAX_SUBWORKFLOW_DEPTH/);
   });
 
-  it('env override FLOWFORGE_MAX_SUBWORKFLOW_DEPTH presente', () => {
-    expect(subworkflowSource).toMatch(/FLOWFORGE_MAX_SUBWORKFLOW_DEPTH/);
+  it('env override MEDEA_MAX_SUBWORKFLOW_DEPTH presente', () => {
+    expect(subworkflowSource).toMatch(/MEDEA_MAX_SUBWORKFLOW_DEPTH/);
   });
 
   it('default cap = 10', () => {
@@ -45,7 +45,7 @@ describe('N17 — subworkflow source inspection (anti-recursion-bomb guards)', (
     // ISOMORFICA `(typeof process … ? process.env.X : undefined) ?? 10` (guard
     // anti "process is not defined" nel bundle browser dell'editor). In tutte
     // il default resta 10.
-    expect(subworkflowSource).toMatch(/FLOWFORGE_MAX_SUBWORKFLOW_DEPTH(?:'])?(?:\s*:\s*undefined\s*\))?\s*\?\?\s*10/);
+    expect(subworkflowSource).toMatch(/MEDEA_MAX_SUBWORKFLOW_DEPTH(?:'])?(?:\s*:\s*undefined\s*\))?\s*\?\?\s*10/);
   });
 
   it('self-recursion guard PRECEDE qualsiasi fetch', () => {
@@ -106,7 +106,7 @@ describe('N17 — subworkflowExecutor behavioural', () => {
 
   afterEach(() => {
     globalThis.fetch = origFetch;
-    delete process.env.FLOWFORGE_MAX_SUBWORKFLOW_DEPTH;
+    delete process.env.MEDEA_MAX_SUBWORKFLOW_DEPTH;
   });
 
   it('missing workflowId → throw "missing workflowId"', async () => {
@@ -252,7 +252,7 @@ describe('subworkflow — attesa del completamento', () => {
   const origFetch = globalThis.fetch;
   afterEach(() => {
     globalThis.fetch = origFetch;
-    delete process.env.FLOWFORGE_SUBWORKFLOW_WAIT_TIMEOUT_MS;
+    delete process.env.MEDEA_SUBWORKFLOW_WAIT_TIMEOUT_MS;
   });
 
   /** Un finto che risponde al dispatch e poi agli stati che gli si danno. */
@@ -331,7 +331,7 @@ describe('subworkflow — attesa del completamento', () => {
   it('se il sub non finisce entro il tetto, fallisce dicendolo', async () => {
     // Restituire un risultato che non c'è sarebbe peggio: chi vuole
     // proseguire lo stesso ha `continueOnFail`.
-    process.env.FLOWFORGE_SUBWORKFLOW_WAIT_TIMEOUT_MS = '300';
+    process.env.MEDEA_SUBWORKFLOW_WAIT_TIMEOUT_MS = '300';
     const spy = fintoRuntime(['running']);
     // @ts-expect-error vitest mock
     globalThis.fetch = spy;

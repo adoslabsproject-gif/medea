@@ -7,7 +7,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { parseFatturaPa, fatturapaParseExecutor } from './fatturapa-parse.js';
-import type { NodeExecutionContext } from '@flowforge/nodes-stdlib';
+import type { NodeExecutionContext } from '@medea/engine-nodes-stdlib';
 
 const ctx = { tenantId: 't1', runId: 'r1', nodeId: 'n1' } as unknown as NodeExecutionContext;
 

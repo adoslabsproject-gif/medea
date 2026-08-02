@@ -456,7 +456,7 @@ export class TenantService {
 
   /**
    * Uso disco reale del volume del tenant, in MB. Il runtime gira DENTRO il
-   * container: `FLOWFORGE_DATA_DIR` è il mount ext4 (loop device) del tenant,
+   * container: `MEDEA_DATA_DIR` è il mount ext4 (loop device) del tenant,
    * quindi `statfs` misura ESATTAMENTE lo spazio occupato dal tenant — DB
    * SQLite, embeddings RAG, run log, file caricati: tutto vive su quel volume.
    * Stessa primitiva (statfs, no shell/sudo) di `portal getMountUsageBytes`, ma
@@ -472,7 +472,7 @@ export class TenantService {
   getStorageUsageMb(): number {
     try {
       const config = loadConfig();
-      const st = statfsSync(config.FLOWFORGE_DATA_DIR);
+      const st = statfsSync(config.MEDEA_DATA_DIR);
       const usedBytes = Math.max(0, (Number(st.blocks) - Number(st.bfree)) * Number(st.bsize));
       return Math.floor(usedBytes / (1024 * 1024));
     } catch (err) {

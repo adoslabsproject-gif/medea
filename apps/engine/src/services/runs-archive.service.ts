@@ -5,7 +5,7 @@
  *   1. Selectiona runs più vecchi di `olderThanDays` (default 30).
  *   2. Esporta tutte le row come JSONL (1 row per riga) → gzip in
  *      `<dataDir>/archives/<workflowId>/runs-<YYYY-MM>-<archiveId>.jsonl.gz`.
- *   3. Calcola HMAC-SHA256 del file (chiave: FLOWFORGE_SSO_SECRET) → file
+ *   3. Calcola HMAC-SHA256 del file (chiave: MEDEA_SSO_SECRET) → file
  *      `.sha256` adiacente con il digest. Permette al download endpoint di
  *      certificare l'integrità all'utente.
  *   4. DELETE dai runs source (rimosse dalla cronologia online — restano
@@ -50,7 +50,7 @@ function ensureDirSync(p: string): void {
 }
 
 function archivesDir(workflowId: string): string {
-  const base = loadConfig().FLOWFORGE_DATA_DIR;
+  const base = loadConfig().MEDEA_DATA_DIR;
   return join(base, 'archives', workflowId);
 }
 
@@ -65,11 +65,11 @@ function readableFromString(s: string): Readable {
  * fail-closed del GDPR export HMAC (services/account/export.ts).
  */
 function archiveHmacKey(): string {
-  const secret = loadConfig().FLOWFORGE_SSO_SECRET;
+  const secret = loadConfig().MEDEA_SSO_SECRET;
   if (secret && secret.length >= 32) return secret;
   if (process.env.NODE_ENV === 'production') {
     throw new Error(
-      '[runs-archive] FLOWFORGE_SSO_SECRET OBBLIGATORIO in production (>=32 char) ' +
+      '[runs-archive] MEDEA_SSO_SECRET OBBLIGATORIO in production (>=32 char) ' +
       'per firmare gli archivi run. Nessun fallback hard-coded. Vedi docs/SECRETS-RECOVERY.md.',
     );
   }

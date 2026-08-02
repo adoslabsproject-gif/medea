@@ -40,12 +40,12 @@ import { buildImapAttachment, type ImapAttachment } from './imap-attachment.js';
 import { markSeenWithFreshConnection } from './imap-mark-seen.js';
 import { resolveTriggerBreaker, type TriggerBreaker } from './breaker.js';
 import type { DispatchTriggerRun } from './run-dispatcher.js';
-import type { CanvasNode, Workflow } from '@flowforge/core-schema';
+import type { CanvasNode, Workflow } from '@medea/engine-core-schema';
 
 /** Trim of body text we keep in the payload — defends against ingesting a 10MB
  *  marketing email that bloats run logs. Body still goes into the workflow
  *  but capped to this length. */
-export const MAX_BODY_CHARS = Number(process.env.FLOWFORGE_IMAP_MAX_BODY_CHARS ?? 200_000);
+export const MAX_BODY_CHARS = Number(process.env.MEDEA_IMAP_MAX_BODY_CHARS ?? 200_000);
 
 export interface ImapPollerJob {
   workflowId: string;

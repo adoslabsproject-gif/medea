@@ -73,7 +73,7 @@ export function scopeOf(ref: DataSourceRef): DataSourceScope {
 // ────────────────────────────────────────────────────────────────────
 
 /**
- * Engine ID — allineato 1:1 con `DatabaseEngine` di `@flowforge/db-studio-core`.
+ * Engine ID — allineato 1:1 con `DatabaseEngine` di `@medea/engine-db-studio-core`.
  * Niente narrowing rispetto al tipo di provenienza: se db-studio aggiunge
  * un nuovo engine in futuro, qui esplode il typecheck e ricordi di
  * aggiornare il Janitor.

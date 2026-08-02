@@ -1,5 +1,5 @@
 {
-  "name": "@flowforge/observability-logger",
+  "name": "@medea/engine-observability-logger",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "lint": "eslint src"
   },
   "devDependencies": {
-    "@flowforge/eslint-config": "workspace:*",
+    "@medea/engine-eslint-config": "workspace:*",
     "eslint": "^9.39.0"
   }
 }

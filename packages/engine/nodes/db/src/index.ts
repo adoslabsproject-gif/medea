@@ -1,10 +1,10 @@
-import type { NodeModule, NodeExecutor } from '@flowforge/nodes-stdlib';
-import { readJsonCapped, readTextTruncated } from '@flowforge/safe-fetch';
+import type { NodeModule, NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { readJsonCapped, readTextTruncated } from '@medea/engine-safe-fetch';
 import { assertSelectOnly } from './select-only-guard.js';
 
 // Isomorfico: importato anche dal bundle browser dell'editor (dead-code lì, ma
 // il top-level gira a load). `process` esiste solo sul runtime server → guard.
-const RUNTIME_BASE = (typeof process !== 'undefined' ? process.env.FLOWFORGE_RUNTIME_URL : undefined) ?? 'http://127.0.0.1:3100';
+const RUNTIME_BASE = (typeof process !== 'undefined' ? process.env.MEDEA_RUNTIME_URL : undefined) ?? 'http://127.0.0.1:3100';
 
 function reqString(value: unknown, name: string): string {
   if (typeof value !== 'string' || value.trim() === '') {
@@ -43,10 +43,10 @@ function jsonParse<T>(value: unknown, fallback: T): T {
 // ─────────────────────────────────────────────────────────────────────
 // SANDBOX GUARD — N2 audit (2026-05-29).
 //
-// Identici a apps/flowforge-runtime/src/engine/interpreter.ts. Manteniamo
+// Identici a apps/engine/src/engine/interpreter.ts. Manteniamo
 // in-file (no shared package) per evitare cross-package coupling in un
 // nodo che gia\` parla solo via HTTP REST. Quando un terzo posto avra\`
-// bisogno della stessa guard, promuovere a `@flowforge/expression-guard`.
+// bisogno della stessa guard, promuovere a `@medea/engine-expression-guard`.
 //
 // Bypass coperti: Unicode escape `eval`, hex `\x65val`, bracket
 // string lookup `["constructor"]`, concatenation `["co"+"de"]`, plus
@@ -127,7 +127,7 @@ async function callDbApi<T>(path: string, body: unknown, tenantId: string, timeo
     'Content-Type': 'application/json',
     'X-Tenant-Id': tenantId,
   };
-  const internalToken = process.env.FLOWFORGE_INTERNAL_TOKEN;
+  const internalToken = process.env.MEDEA_INTERNAL_TOKEN;
   if (internalToken) headers['X-Internal-Token'] = internalToken;
 
   // AbortSignal.timeout fa abort della fetch al cap → niente run hang.

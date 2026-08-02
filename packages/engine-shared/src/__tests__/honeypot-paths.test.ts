@@ -76,7 +76,7 @@ describe('classifyHoneypotPath — VITE_DEV_PROBE detection (#194 audit)', () =>
   });
 
   it('NON classifica path legittimi che contengono @ (scoped npm)', () => {
-    expect(classifyHoneypotPath('/api/v1/templates/@flowforge/core')).toBeNull();
+    expect(classifyHoneypotPath('/api/v1/templates/@medea/engine-core')).toBeNull();
     expect(classifyHoneypotPath('/@anthropic-ai/sdk')).toBeNull();
   });
 });

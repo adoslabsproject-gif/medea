@@ -68,13 +68,13 @@ beforeEach(() => {
   conn.pragma('foreign_keys = ON');
   conn.exec(SCHEMA_SQL);
   dbConnections.push(conn);
-  process.env.FLOWFORGE_PLAN_CODE = 'pro';
+  process.env.MEDEA_PLAN_CODE = 'pro';
 });
 
 afterEach(() => {
   const conn = dbConnections.pop();
   if (conn) conn.close();
-  delete process.env.FLOWFORGE_PLAN_CODE;
+  delete process.env.MEDEA_PLAN_CODE;
 });
 
 describe('🚨 securityScan (defense layer 1)', () => {

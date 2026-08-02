@@ -40,7 +40,7 @@ export function internalServiceUrls(): Record<string, string> {
     codeRunner: process.env.CODE_RUNNER_URL ?? 'http://host.docker.internal:5003',
     whisper: process.env.WHISPER_URL ?? 'http://host.docker.internal:5005',
     vision: process.env.VISION_URL ?? 'http://host.docker.internal:5004',
-    runtime: process.env.FLOWFORGE_RUNTIME_URL ?? 'http://127.0.0.1:3100',
+    runtime: process.env.MEDEA_RUNTIME_URL ?? 'http://127.0.0.1:3100',
   };
 }
 

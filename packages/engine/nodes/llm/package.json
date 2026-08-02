@@ -1,5 +1,5 @@
 {
-  "name": "@flowforge/nodes-llm",
+  "name": "@medea/engine-nodes-llm",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -22,13 +22,13 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@flowforge/core-schema": "workspace:*",
-    "@flowforge/nodes-stdlib": "workspace:*",
-    "@flowforge/safe-fetch": "workspace:*"
+    "@medea/engine-core-schema": "workspace:*",
+    "@medea/engine-nodes-stdlib": "workspace:*",
+    "@medea/engine-safe-fetch": "workspace:*"
   },
   "devDependencies": {
-    "@flowforge/eslint-config": "workspace:*",
-    "@flowforge/tsconfig": "workspace:*",
+    "@medea/engine-eslint-config": "workspace:*",
+    "@medea/engine-tsconfig": "workspace:*",
     "eslint": "^9.39.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0",

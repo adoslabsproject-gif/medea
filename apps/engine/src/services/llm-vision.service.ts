@@ -30,8 +30,8 @@ export interface VisionDispatchResult {
   error?: string;
 }
 
-const TIMEOUT_MS = Number(process.env.FLOWFORGE_VISION_TIMEOUT_MS ?? '120000');
-const MAX_TOKENS = Number(process.env.FLOWFORGE_VISION_MAX_TOKENS ?? '4096');
+const TIMEOUT_MS = Number(process.env.MEDEA_VISION_TIMEOUT_MS ?? '120000');
+const MAX_TOKENS = Number(process.env.MEDEA_VISION_MAX_TOKENS ?? '4096');
 
 function openAiCompatContent(prompt: string, images: VisionImage[]): unknown[] {
   return [
@@ -77,7 +77,7 @@ export async function dispatchLLMVision(
     switch (provider) {
       case 'liara': {
         if (!isLiaraEnabled()) return { ok: false, text: '', error: 'Liara è disabilitata su questa istanza' };
-        const licenseKey = process.env.FLOWFORGE_LICENSE_KEY ?? '';
+        const licenseKey = process.env.MEDEA_LICENSE_KEY ?? '';
         const res = await fetch(`${baseUrl ?? liaraBaseUrl()}/chat/completions`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...(licenseKey ? { Authorization: `Bearer ${licenseKey}` } : {}) },

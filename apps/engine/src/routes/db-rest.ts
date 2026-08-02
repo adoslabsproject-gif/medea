@@ -16,7 +16,7 @@ import { Hono } from 'hono';
 import { DbStudioService } from '@/services/db-studio.service.js';
 import { sanitizedErrorResponse } from '@/lib/error-response.js';
 import { getTenantId } from '@/lib/tenant.js';
-import type { QueryFilter, QuerySpec } from '@flowforge/db-studio-core';
+import type { QueryFilter, QuerySpec } from '@medea/engine-db-studio-core';
 
 /**
  * Valida identifier SQL ricevuti via query/path: anti-injection guard

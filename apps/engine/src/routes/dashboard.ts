@@ -117,7 +117,7 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
    *
    * Source of truth:
    *  - max_workflows / max_users / plan_code → env Docker iniettato dal portal
-   *    (FLOWFORGE_MAX_WORKFLOWS, FLOWFORGE_PLAN_CODE) + tabella `tenants`
+   *    (MEDEA_MAX_WORKFLOWS, MEDEA_PLAN_CODE) + tabella `tenants`
    *  - current workflows count → SELECT FROM workflows local SQLite
    *  - disk usage / disk_total → statfs sul mount /data (loop device size)
    *  - liara tokens del periodo → letti S2S dal portal (tabella llm_quotas,
@@ -133,9 +133,9 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
     const auth = c.get('auth') as { tenantId: string } | null;
     if (!auth) return c.json({ error: 'Unauthorized' }, 401);
     const tenantId = getTenantId(c);
-    const planCode = process.env.FLOWFORGE_PLAN_CODE ?? 'free';
-    const maxWfRaw = process.env.FLOWFORGE_MAX_WORKFLOWS;
-    const maxTokenRaw = process.env.FLOWFORGE_MAX_LIARA_TOKENS_MONTHLY;
+    const planCode = process.env.MEDEA_PLAN_CODE ?? 'free';
+    const maxWfRaw = process.env.MEDEA_MAX_WORKFLOWS;
+    const maxTokenRaw = process.env.MEDEA_MAX_LIARA_TOKENS_MONTHLY;
     const maxWorkflows = (!maxWfRaw || maxWfRaw === '') ? null : parseInt(maxWfRaw, 10);
     const maxLiaraTokensMonthly = (!maxTokenRaw || maxTokenRaw === '') ? null : parseInt(maxTokenRaw, 10);
 
@@ -146,7 +146,7 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
     const sqlite = getDatabase().sqlite as unknown as SqliteCounter;
     const workflowsUsed = countActiveWorkflows(sqlite, tenantId);
 
-    // 2026-06-04: disk.total = limite SOFT del piano (FLOWFORGE_PLAN_DISK_GB),
+    // 2026-06-04: disk.total = limite SOFT del piano (MEDEA_PLAN_DISK_GB),
     // NON lo statfs del loop device che può essere più grande del piano se il
     // tenant è stato downgraded (il loop NON viene shrinkato per evitare
     // data-loss su online resize). Pattern: widget mostra il limite business
@@ -154,7 +154,7 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
     // disco via statfs (progress bar accurato).
     let diskUsedBytes = 0;
     let diskTotalBytes = 0;
-    const planDiskGbRaw = process.env.FLOWFORGE_PLAN_DISK_GB;
+    const planDiskGbRaw = process.env.MEDEA_PLAN_DISK_GB;
     if (planDiskGbRaw && planDiskGbRaw !== '') {
       diskTotalBytes = parseInt(planDiskGbRaw, 10) * 1024 * 1024 * 1024;
     }
@@ -167,7 +167,7 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
     } catch { /* not available, leave 0 */ }
 
     // Binary blob usage (gap #13): sottoinsieme del disk usage (i blob vivono
-    // in FLOWFORGE_DATA_DIR/blobs, già contati nello statfs). Esposto per dare
+    // in MEDEA_DATA_DIR/blobs, già contati nello statfs). Esposto per dare
     // visibilità "di cui allegati binari" nel widget. Fail-soft.
     let diskBinaryBytes = 0;
     try {
@@ -209,7 +209,7 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
       },
       liara: {
         // tokensLimit dal PORTAL (DB-backed = source of truth). Bug 2026-06-26:
-        // prima usava FLOWFORGE_MAX_LIARA_TOKENS_MONTHLY (env del container,
+        // prima usava MEDEA_MAX_LIARA_TOKENS_MONTHLY (env del container,
         // "set-and-forget" all'onboarding) → dopo un upgrade quota nel DB l'env
         // restava STALE e il banner mostrava il vecchio limite (es. Starter
         // 500K invece dei nuovi 30M) segnalando "quota esaurita" mentre
@@ -398,7 +398,7 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
     // Cache-Control. Usiamo `streamSSENoTransform` (wrapper custom) che
     // setta `no-cache, no-transform` + `Content-Encoding: identity` —
     // previene Cloudflare Brotli su HTTP/2 SSE (ERR_HTTP2_PROTOCOL_ERROR
-    // su Chrome). Vedi apps/flowforge-runtime/src/lib/sse-no-transform.ts.
+    // su Chrome). Vedi apps/engine/src/lib/sse-no-transform.ts.
     // EventSource non può mandare header custom (x-tenant-id). Per
     // permettere al superadmin di vedere lo stream di un tenant
     // impersonato, accettiamo un parametro `?tenant=` opzionale, MA

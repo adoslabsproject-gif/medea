@@ -28,7 +28,7 @@ vi.mock('@/storage/db.js', () => ({
 const { resolveOutboundDispatcher, setEgressAllowlist, __resetEgressAllowlistForTest } = await import('./egress-policy.js');
 const { getInsecureTlsDispatcher, getPermissiveDispatcher, __resetSecureDispatcherForTest } = await import('./secure-dispatcher.js');
 
-const ENV = 'FLOWFORGE_INTERNAL_HOST_ALLOWLIST';
+const ENV = 'MEDEA_INTERNAL_HOST_ALLOWLIST';
 let prevEnv: string | undefined;
 
 beforeEach(() => {

@@ -28,7 +28,7 @@ export interface ApiTokenCounts {
   output?: number | undefined;
 }
 
-// Allineata a apps/flowforge-runtime/src/services/llm-chat.service.ts:
+// Allineata a apps/engine/src/services/llm-chat.service.ts:
 // ~3.5 char/token medio per testo IT/EN misto + JSON.
 const CHARS_PER_TOKEN = 3.5;
 

@@ -11,12 +11,12 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { readFileSync } from 'node:fs';
 
-beforeAll(() => { process.env.FLOWFORGE_SANDBOX_DISABLE_WORKER = 'true'; });
+beforeAll(() => { process.env.MEDEA_SANDBOX_DISABLE_WORKER = 'true'; });
 
 const m = vi.hoisted(() => ({ safeFetch: vi.fn(), validate: vi.fn() }));
 vi.mock('@/lib/safe-outbound-fetch.js', () => ({ safeOutboundFetch: (...a: unknown[]) => m.safeFetch(...a) }));
-vi.mock('@flowforge/safe-fetch', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@flowforge/safe-fetch')>()), validateUrlForFetch: (...a: unknown[]) => m.validate(...a) }));
+vi.mock('@medea/engine-safe-fetch', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@medea/engine-safe-fetch')>()), validateUrlForFetch: (...a: unknown[]) => m.validate(...a) }));
 vi.mock('@/lib/logger.js');
 
 const { hostFetch } = await import('./community-node-sandbox.js');

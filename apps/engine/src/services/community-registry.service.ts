@@ -2,7 +2,7 @@
  * Registry client — fetches the community marketplace index from a remote URL.
  *
  * The registry is a STATIC JSON document (typically GitHub-hosted) whose URL
- * lives in FLOWFORGE_REGISTRY_URL (defaults to the canonical one). Static
+ * lives in MEDEA_REGISTRY_URL (defaults to the canonical one). Static
  * means: zero ops cost, free hosting, content-addressable signatures, easily
  * mirrored by self-hosters.
  *
@@ -93,7 +93,7 @@ interface CacheEntry {
 let cache: CacheEntry | null = null;
 
 function getUrl(): string {
-  return process.env.FLOWFORGE_REGISTRY_URL?.trim() || DEFAULT_REGISTRY_URL;
+  return process.env.MEDEA_REGISTRY_URL?.trim() || DEFAULT_REGISTRY_URL;
 }
 
 /**

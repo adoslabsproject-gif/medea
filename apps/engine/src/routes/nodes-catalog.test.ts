@@ -55,8 +55,8 @@ const stdlibMods = [
   },
 ];
 
-vi.mock('@flowforge/nodes-stdlib', () => ({ stdlibNodes: stdlibMods }));
-vi.mock('@flowforge/nodes-db', () => ({
+vi.mock('@medea/engine-nodes-stdlib', () => ({ stdlibNodes: stdlibMods }));
+vi.mock('@medea/engine-nodes-db', () => ({
   dbNodes: [{
     def: {
       id: 'db_query', type: 'action', label: 'DB Query', icon: '💾',
@@ -64,10 +64,10 @@ vi.mock('@flowforge/nodes-db', () => ({
     },
   }],
 }));
-vi.mock('@flowforge/nodes-integrations-core', () => ({
+vi.mock('@medea/engine-nodes-integrations-core', () => ({
   coreIntegrationNodes: [],
 }));
-vi.mock('@flowforge/nodes-integrations-italia', () => ({
+vi.mock('@medea/engine-nodes-integrations-italia', () => ({
   italianConnectors: [{
     def: {
       id: 'sigla_invoice', type: 'action', label: 'Sigla Invoice', icon: '🇮🇹',
@@ -75,7 +75,7 @@ vi.mock('@flowforge/nodes-integrations-italia', () => ({
     },
   }],
 }));
-vi.mock('@flowforge/nodes-ai-agents', () => ({
+vi.mock('@medea/engine-nodes-ai-agents', () => ({
   aiAgentNodes: [{
     def: {
       id: 'agent_classify', type: 'ai', label: 'Classify', icon: '🤖',
@@ -96,7 +96,7 @@ vi.mock('@flowforge/nodes-ai-agents', () => ({
     },
   }],
 }));
-vi.mock('@flowforge/nodes-llm', () => ({ llmNodes: [] }));
+vi.mock('@medea/engine-nodes-llm', () => ({ llmNodes: [] }));
 
 const listInstalledMock = vi.fn(() => [] as { def: unknown; verified?: boolean }[]);
 vi.mock('@/services/community-nodes.service.js', () => ({

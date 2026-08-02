@@ -21,14 +21,14 @@
 
 import { coerceString } from '@/lib/coerce.js';
 import { nanoid } from 'nanoid';
-import type { CanvasNode, Edge, Workflow, RunStep } from '@flowforge/core-schema';
-import { classifyNodeVersionCompat, nodeVersionDrift, isBreakingNodeVersionDrift } from '@flowforge/core-schema';
-import { stdlibNodes, findStdlibNode, NodeError, categoryOf, type NodeErrorCategory, type NodeModule } from '@flowforge/nodes-stdlib';
+import type { CanvasNode, Edge, Workflow, RunStep } from '@medea/engine-core-schema';
+import { classifyNodeVersionCompat, nodeVersionDrift, isBreakingNodeVersionDrift } from '@medea/engine-core-schema';
+import { stdlibNodes, findStdlibNode, NodeError, categoryOf, type NodeErrorCategory, type NodeModule } from '@medea/engine-nodes-stdlib';
 import { getInstalledByDefId } from '@/services/community-nodes.service.js';
 import { loadCustomNodeForRun } from '@/services/custom-nodes/runtime-loader.js';
 import { loadConfig } from '@/config.js';
 
-const RUNTIME_TENANT_ID = loadConfig().FLOWFORGE_TENANT_ID;
+const RUNTIME_TENANT_ID = loadConfig().MEDEA_TENANT_ID;
 
 /**
  * Hot-resolvable community node lookup. Returns a NodeModule shaped from
@@ -83,11 +83,11 @@ function resolveCommunityNodeModule(defId: string): NodeModule | undefined {
     },
   };
 }
-import { dbNodes } from '@flowforge/nodes-db';
-import { coreIntegrationNodes } from '@flowforge/nodes-integrations-core';
-import { italianConnectors } from '@flowforge/nodes-integrations-italia';
-import { aiAgentNodes } from '@flowforge/nodes-ai-agents';
-import { llmNodes } from '@flowforge/nodes-llm';
+import { dbNodes } from '@medea/engine-nodes-db';
+import { coreIntegrationNodes } from '@medea/engine-nodes-integrations-core';
+import { italianConnectors } from '@medea/engine-nodes-integrations-italia';
+import { aiAgentNodes } from '@medea/engine-nodes-ai-agents';
+import { llmNodes } from '@medea/engine-nodes-llm';
 import type { IEventBus } from '@/ports/event-bus.js';
 import { logger } from '@/lib/logger.js';
 import {
@@ -447,7 +447,7 @@ export class WorkflowEngine implements INodeExecutor {
     this.globalVariables = options.globalVariables ?? noopGlobalVariableRegistry;
     this.binaryStore = options.binaryStore ?? noopBinaryStore;
     this.checkpointEveryNodes = options.checkpointEveryNodes
-      ?? Number(process.env.FLOWFORGE_CHECKPOINT_EVERY_NODES ?? 5);
+      ?? Number(process.env.MEDEA_CHECKPOINT_EVERY_NODES ?? 5);
     this.dispatchStrategies = options.dispatchStrategies ?? DEFAULT_DISPATCH_STRATEGIES;
     // IterationCoordinator delegates node execution back to this engine
     // via the INodeExecutor interface — we are both client and provider
@@ -595,7 +595,7 @@ export class WorkflowEngine implements INodeExecutor {
       runId,
       stepNodeId: node.id,
       workspaceId: tenantId,
-      minLevel: (process.env.FLOWFORGE_LOG_MIN_LEVEL as 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | undefined) ?? 'debug',
+      minLevel: (process.env.MEDEA_LOG_MIN_LEVEL as 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | undefined) ?? 'debug',
     });
     step.spanId = collector.spanId;
     step.traceId = collector.traceId;
@@ -747,7 +747,7 @@ export class WorkflowEngine implements INodeExecutor {
    *    loopId `map:<nodeId>` → fan-out osservabile in UI (badge ×N) e nei log.
    *  - Item error FATALE (no continue-on-fail) → fan-out troncato, semantica
    *    Stop-and-Error standard (il chiamante segue solo gli error-edge).
-   *  - Cap anti-runaway dedicato (FLOWFORGE_ENGINE_MAX_MAP_ITEMS, default 1000)
+   *  - Cap anti-runaway dedicato (MEDEA_ENGINE_MAX_MAP_ITEMS, default 1000)
    *    → violazione = errore ESPLICITO, mai esecuzione parziale silenziosa.
    */
   private async executeFanOut(fanArgs: {
@@ -772,12 +772,12 @@ export class WorkflowEngine implements INodeExecutor {
     lineage?: NodeLineageArgs;
   }): Promise<{ results: unknown[]; fatal: boolean; fatalErrors: number }> {
     const { node, module, items, steps, tenantId, runId } = fanArgs;
-    const maxItems = Number(process.env.FLOWFORGE_ENGINE_MAX_MAP_ITEMS ?? '1000');
+    const maxItems = Number(process.env.MEDEA_ENGINE_MAX_MAP_ITEMS ?? '1000');
     const emitStep = (step: RunStep): void => {
       this.eventBus.emit({ name: 'run.step', tenantId, data: { runId, step }, ts: new Date().toISOString() });
     };
     if (items.length > maxItems) {
-      const message = `Edge map: ${String(items.length)} item superano il cap ${String(maxItems)} (FLOWFORGE_ENGINE_MAX_MAP_ITEMS). Filtra a monte o usa logic_loop con strategy batch.`;
+      const message = `Edge map: ${String(items.length)} item superano il cap ${String(maxItems)} (MEDEA_ENGINE_MAX_MAP_ITEMS). Filtra a monte o usa logic_loop con strategy batch.`;
       const errStep: RunStep = {
         nodeId: node.id, nodeLabel: module.def.label, status: 'error', output: '',
         startedAt: Date.now(), endedAt: Date.now(), durationMs: 0,
@@ -895,9 +895,9 @@ export class WorkflowEngine implements INodeExecutor {
     //   - MAX_QUEUE_SIZE: 5000 entries (fan-out 5000 edges = bug, NON business)
     // Su threshold → throw RunQuotaExceededError, run marcato 'error' con
     // motivazione esplicita. Audit log include il cap hit per ops visibility.
-    const MAX_STEP_COUNT = Number(process.env.FLOWFORGE_ENGINE_MAX_STEPS ?? '10000');
-    const MAX_RUN_DURATION_MS = Number(process.env.FLOWFORGE_ENGINE_MAX_RUN_DURATION_MS ?? String(30 * 60_000));
-    const MAX_QUEUE_SIZE = Number(process.env.FLOWFORGE_ENGINE_MAX_QUEUE_SIZE ?? '5000');
+    const MAX_STEP_COUNT = Number(process.env.MEDEA_ENGINE_MAX_STEPS ?? '10000');
+    const MAX_RUN_DURATION_MS = Number(process.env.MEDEA_ENGINE_MAX_RUN_DURATION_MS ?? String(30 * 60_000));
+    const MAX_QUEUE_SIZE = Number(process.env.MEDEA_ENGINE_MAX_QUEUE_SIZE ?? '5000');
     let totalStepsExecuted = 0;
 
     while (queue.length > 0) {

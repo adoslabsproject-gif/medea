@@ -79,7 +79,7 @@ function resolveTurn(tenantId: string, opts: WorkflowAgentRouteOptions): TurnRes
     }
     // AUTH: Liara (gateway portal) ESIGE la LICENSE KEY come Bearer; i BYOK usano
     // la loro apiKey; Ollama locale nessuna. (Identico a db-agent-chat.)
-    const authKey = r.provider === 'liara' ? (process.env.FLOWFORGE_LICENSE_KEY ?? '') : r.apiKey;
+    const authKey = r.provider === 'liara' ? (process.env.MEDEA_LICENSE_KEY ?? '') : r.apiKey;
     return {
       ok: true,
       llmTurn: makeOpenAiLlmTurn({

@@ -4,7 +4,7 @@
  * @module actions/email_clean/definition
  */
 
-import type { NodeDef } from '@flowforge/core-schema';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 export const emailCleanNodeDef: NodeDef = {
   id: 'action_email_clean',

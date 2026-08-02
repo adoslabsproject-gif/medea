@@ -24,8 +24,8 @@
  * @module services/db-remote-ssh/policy
  */
 import { z } from 'zod';
-import { validateIpForFetch, isIP } from '@flowforge/safe-fetch';
-import { classifyStatement, assertSafeRawStatement } from '@flowforge/db-studio-engine';
+import { validateIpForFetch, isIP } from '@medea/engine-safe-fetch';
+import { classifyStatement, assertSafeRawStatement } from '@medea/engine-db-studio-engine';
 
 export class SshPolicyError extends Error {
   constructor(readonly code: 'HOST_KEY' | 'SSH_HOST_BLOCKED' | 'READ_ONLY' | 'CONFIG', message: string) {

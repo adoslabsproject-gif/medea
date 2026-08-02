@@ -5,8 +5,8 @@
  * @module executors/comfyui/shared
  */
 import { randomUUID, randomInt } from 'node:crypto';
-import type { BinaryData } from '@flowforge/core-schema';
-import type { NodeExecutionContext } from '@flowforge/nodes-stdlib';
+import type { BinaryData } from '@medea/engine-core-schema';
+import type { NodeExecutionContext } from '@medea/engine-nodes-stdlib';
 import type { ComfyFetchedMedia } from './client.js';
 
 export function toStr(v: unknown): string {

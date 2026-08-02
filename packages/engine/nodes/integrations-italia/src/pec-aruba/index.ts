@@ -1,4 +1,4 @@
-import type { NodeModule } from '@flowforge/nodes-stdlib';
+import type { NodeModule } from '@medea/engine-nodes-stdlib';
 
 /**
  * Aruba PEC connector.

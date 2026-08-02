@@ -2,7 +2,7 @@
  * vector-quota-flag — override LIVE della quota vettoriale del piano.
  *
  * I limiti quota (max vettori / max disco MB) arrivano di default dall'env del
- * container (`FLOWFORGE_PLAN_VECTOR_MAX_*`, settato a provision/redeploy dal portal).
+ * container (`MEDEA_PLAN_VECTOR_MAX_*`, settato a provision/redeploy dal portal).
  * Ma un cambio piano (up/downgrade) deve diventare effettivo SUBITO e in modo
  * resiliente, senza dipendere dal buon esito del recreate del container: il portal
  * SPINGE i nuovi limiti qui (POST /internal/workspace/vector-quota), come fa per il

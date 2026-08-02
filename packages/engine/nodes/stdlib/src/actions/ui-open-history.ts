@@ -37,7 +37,7 @@ export const uiOpenHistoryNode: NodeModule = {
       'oppure espressioni relative tipo "today", "-7d", "last_month"), query search (full-text su input/output ' +
       'JSON content), triggerType (manual, webhook, cron, subworkflow), errorContains (filtro su error_message). ' +
       'URL generato è relativo al baseUrl pubblico del tenant FlowForge (deriva dalla env ' +
-      'FLOWFORGE_PUBLIC_BASE_URL del container, tipicamente https://<slug>.app.automazionezeli.com) oppure ' +
+      'MEDEA_PUBLIC_BASE_URL del container, tipicamente https://<slug>.app.automazionezeli.com) oppure ' +
       'assoluto se baseUrl override è impostato — il second\'use case è quando si vuole forzare il link verso ' +
       'la dashboard portal centrale (https://flowforge.automazionezeli.com) invece del subdomain tenant per ' +
       'casi di multi-tenancy reporting. ' +
@@ -97,7 +97,7 @@ export const uiOpenHistoryNode: NodeModule = {
         type: 'text',
         required: false,
         placeholder: 'https://mio-tenant.app.automazionezeli.com',
-        help: 'Default: usa FLOWFORGE_PUBLIC_BASE_URL del container tenant. Override per email che vanno fuori dominio.',
+        help: 'Default: usa MEDEA_PUBLIC_BASE_URL del container tenant. Override per email che vanno fuori dominio.',
       },
     ],
     outputs: ['url', 'workflowId', 'filters'],

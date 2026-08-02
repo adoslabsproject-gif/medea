@@ -38,12 +38,12 @@ function makeApp(): Hono {
 beforeEach(async () => {
   regDir = join(tmpdir(), `ff-reg-${randomBytes(6).toString('hex')}`);
   await mkdir(join(regDir, 'packages'), { recursive: true });
-  process.env.FLOWFORGE_REGISTRY_DIR = regDir;
+  process.env.MEDEA_REGISTRY_DIR = regDir;
 });
 
 afterEach(async () => {
   await rm(regDir, { recursive: true, force: true });
-  delete process.env.FLOWFORGE_REGISTRY_DIR;
+  delete process.env.MEDEA_REGISTRY_DIR;
 });
 
 describe('🚨 CORS pubblico (self-hosters)', () => {
@@ -222,18 +222,18 @@ describe('🚨 GET /_files (admin debug)', () => {
   });
 });
 
-describe('🚨 FLOWFORGE_REGISTRY_DIR priority', () => {
-  it('🚨 FLOWFORGE_REGISTRY_DIR override prevale su FLOWFORGE_DATA_DIR', async () => {
-    process.env.FLOWFORGE_DATA_DIR = '/should-NOT-be-used';
-    // FLOWFORGE_REGISTRY_DIR già settato in beforeEach → prevale
+describe('🚨 MEDEA_REGISTRY_DIR priority', () => {
+  it('🚨 MEDEA_REGISTRY_DIR override prevale su MEDEA_DATA_DIR', async () => {
+    process.env.MEDEA_DATA_DIR = '/should-NOT-be-used';
+    // MEDEA_REGISTRY_DIR già settato in beforeEach → prevale
     await writeFile(join(regDir, 'nodes.json'), '{"test":"reg"}');
     const res = await makeApp().request('/registry/nodes.json');
     expect(res.status).toBe(200);
-    delete process.env.FLOWFORGE_DATA_DIR;
+    delete process.env.MEDEA_DATA_DIR;
   });
 
-  it('🚨 FLOWFORGE_REGISTRY_DIR con whitespace → trimmed', async () => {
-    process.env.FLOWFORGE_REGISTRY_DIR = `  ${regDir}  `;
+  it('🚨 MEDEA_REGISTRY_DIR con whitespace → trimmed', async () => {
+    process.env.MEDEA_REGISTRY_DIR = `  ${regDir}  `;
     await writeFile(join(regDir, 'nodes.json'), '{}');
     const res = await makeApp().request('/registry/nodes.json');
     expect(res.status).toBe(200);

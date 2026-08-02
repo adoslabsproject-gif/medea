@@ -13,14 +13,14 @@
  * Resource/Operation), perché lì vivono molti campi.
  */
 import { describe, it, expect } from 'vitest';
-import { stdlibNodes } from '@flowforge/nodes-stdlib';
-import { dbNodes } from '@flowforge/nodes-db';
-import { coreIntegrationNodes } from '@flowforge/nodes-integrations-core';
-import { italianConnectors } from '@flowforge/nodes-integrations-italia';
-import { aiAgentNodes } from '@flowforge/nodes-ai-agents';
-import { llmNodes } from '@flowforge/nodes-llm';
-import type { NodeModule } from '@flowforge/nodes-stdlib';
-import type { NodeDef } from '@flowforge/core-schema';
+import { stdlibNodes } from '@medea/engine-nodes-stdlib';
+import { dbNodes } from '@medea/engine-nodes-db';
+import { coreIntegrationNodes } from '@medea/engine-nodes-integrations-core';
+import { italianConnectors } from '@medea/engine-nodes-integrations-italia';
+import { aiAgentNodes } from '@medea/engine-nodes-ai-agents';
+import { llmNodes } from '@medea/engine-nodes-llm';
+import type { NodeModule } from '@medea/engine-nodes-stdlib';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 const ALL_NODES: NodeModule[] = [
   ...stdlibNodes, ...dbNodes, ...coreIntegrationNodes,

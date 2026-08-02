@@ -39,7 +39,7 @@ function dirSizeBytes(path: string): number {
 export function registerAccountStorageRoute(app: Hono): void {
   app.get('/api/v1/account/storage', async (c) => {
     const quotas = getCurrentQuotas();
-    const dataDir = loadConfig().FLOWFORGE_DATA_DIR;
+    const dataDir = loadConfig().MEDEA_DATA_DIR;
     let workflowDataUsedBytes = 0;
     let logUsedBytes = 0;
     try {
@@ -85,7 +85,7 @@ export function registerAccountStorageRoute(app: Hono): void {
         usedPercent: quotas.logRetentionBytes === 0 ? 0
           : Math.min(100, Math.round((logUsedBytes / quotas.logRetentionBytes) * 100)),
       },
-      // Sottoinsieme del workflowData (i blob sono sotto FLOWFORGE_DATA_DIR/blobs):
+      // Sottoinsieme del workflowData (i blob sono sotto MEDEA_DATA_DIR/blobs):
       // informativo, non una quota separata.
       binary: {
         usedBytes: binaryUsedBytes,

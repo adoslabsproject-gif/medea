@@ -4,7 +4,7 @@
  * Parità con i secret BYOK (llm) e le password email: il client_secret OAuth NON
  * deve stare in chiaro nel SQLite del container (esfiltrazione del volume /data =
  * secret leggibili). Riusa lo stesso envelope AES-256-GCM (KEK→DEK) di
- * `@flowforge/secrets` e la stessa master key (`loadMaster`).
+ * `@medea/engine-secrets` e la stessa master key (`loadMaster`).
  *
  * Backward-compat: i record storici hanno solo `client_secret` (plaintext) e
  * nessun ciphertext → `resolveClientSecret` li ritorna as-is finché non vengono
@@ -13,7 +13,7 @@
  *
  * @module lib/oauth-secret
  */
-import { encryptSecret, decryptSecret } from '@flowforge/secrets';
+import { encryptSecret, decryptSecret } from '@medea/engine-secrets';
 import { loadMaster } from '@/services/credentials.service.js';
 
 /** I 6 campi base64 dell'envelope persistiti accanto alla riga oauth_providers. */

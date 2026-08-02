@@ -15,7 +15,7 @@ import {
   type WhatsAppHttpTransport,
 } from '../../lib/whatsapp/cloud-api-client.js';
 import { WhatsAppSendConfigSchema } from './schema.js';
-import { safeFetchWithRedirects } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects } from '@medea/engine-safe-fetch';
 
 export const whatsAppSendExecutor: NodeExecutor = async (rawConfig, _input, context) => {
   const startedAt = Date.now();

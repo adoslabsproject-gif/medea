@@ -4,11 +4,11 @@
  * No LLM. No flaky output. Tutto verificabile da terzi (dig/openssl/curl).
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { resolveTxt, resolve4 } from 'node:dns/promises';
 import { connect as tlsConnect, type TLSSocket, type PeerCertificate } from 'node:tls';
 import { safeOutboundFetch } from '@/lib/safe-outbound-fetch.js';
-import { isPrivateOrReserved } from '@zeliai/shared';
+import { isPrivateOrReserved } from '@medea/engine-shared';
 
 interface Finding {
   severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
@@ -45,7 +45,7 @@ function domainIsValid(d: string): boolean {
  *
  * NB: copre IPv4 reserved (10/8, 172.16/12, 192.168/16, 127/8, 169.254/16,
  * 100.64/10, 0.0.0.0, link-local, multicast). IPv6 ULA fc00::/7 e link-local
- * fe80::/10 sono coperti da isPrivateOrReserved via @zeliai/shared.
+ * fe80::/10 sono coperti da isPrivateOrReserved via @medea/engine-shared.
  *
  * Hostname blocklist hardcoded (defense-in-depth, anche se risolutore restituisce pubblico):
  * localhost / *.local / *.internal / *.lan / Docker host-gateway / loopback names.

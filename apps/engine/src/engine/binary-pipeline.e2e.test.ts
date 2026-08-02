@@ -24,7 +24,7 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from 'node:fs/promises';
 import { WorkflowEngine } from './workflow-engine.js';
 import { BinaryStore } from '@/services/binary-store.service.js';
 import { InMemoryEventBus } from '@/adapters/event-bus-memory.js';
-import { isBinaryData, type BinaryData, type Workflow } from '@flowforge/core-schema';
+import { isBinaryData, type BinaryData, type Workflow } from '@medea/engine-core-schema';
 
 // NUL + high bytes — round-trip fedele provabile solo con byte non-utf8.
 const PAYLOAD = Buffer.from([0x25, 0x42, 0x49, 0x4e, 0x00, 0x01, 0xfe, 0xff, 0x7f, 0x80]);
@@ -38,18 +38,18 @@ let tenantFiles = '';
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'binpipe-'));
   store = new BinaryStore(join(root, 'blobs'));
-  savedDataDir = process.env.FLOWFORGE_DATA_DIR;
-  // Gli executor file/xlsx risolvono la sandbox tenant da FLOWFORGE_DATA_DIR:
+  savedDataDir = process.env.MEDEA_DATA_DIR;
+  // Gli executor file/xlsx risolvono la sandbox tenant da MEDEA_DATA_DIR:
   // <dataDir>/tenants/default/files — la creiamo nel tmpdir isolato del test.
-  process.env.FLOWFORGE_DATA_DIR = root;
+  process.env.MEDEA_DATA_DIR = root;
   tenantFiles = join(root, 'tenants', 'default', 'files');
   await mkdir(tenantFiles, { recursive: true });
 });
 
 afterEach(async () => {
   await rm(root, { recursive: true, force: true });
-  if (savedDataDir === undefined) delete process.env.FLOWFORGE_DATA_DIR;
-  else process.env.FLOWFORGE_DATA_DIR = savedDataDir;
+  if (savedDataDir === undefined) delete process.env.MEDEA_DATA_DIR;
+  else process.env.MEDEA_DATA_DIR = savedDataDir;
 });
 
 function makeWorkflow(partial: Partial<Workflow>): Workflow {

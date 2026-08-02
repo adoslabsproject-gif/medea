@@ -19,7 +19,7 @@
  * @module executors/custom-node
  */
 
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { logger } from '@/lib/logger.js';
 import { runInSandbox, type SandboxInput } from './community-node-sandbox.js';
 import { loadCustomNodeForRun } from '@/services/custom-nodes/runtime-loader.js';

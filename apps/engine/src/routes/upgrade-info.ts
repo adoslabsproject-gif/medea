@@ -43,12 +43,12 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 let cache: UpgradeInfoCacheEntry | null = null;
 
 async function fetchFromPortal(workspaceId: string): Promise<UpgradeInfoResponse> {
-  const portalUrl = (process.env.FLOWFORGE_PORTAL_URL ?? 'http://172.17.0.1:3006').replace(/\/$/, '');
+  const portalUrl = (process.env.MEDEA_PORTAL_URL ?? 'http://172.17.0.1:3006').replace(/\/$/, '');
   // 2026-06-06: tenant→portal usa shared PORTAL_CALLBACK_TOKEN (= portal global
   // secret), fallback al per-tenant token per back-compat container vecchi.
   const internalToken = getOutboundPortalToken();
   if (!internalToken) {
-    throw new Error('Neither PORTAL_CALLBACK_TOKEN nor FLOWFORGE_INTERNAL_TOKEN set in container env');
+    throw new Error('Neither PORTAL_CALLBACK_TOKEN nor MEDEA_INTERNAL_TOKEN set in container env');
   }
 
   // Il portal route owner-only richiede cookie session. Per server-to-server
@@ -90,7 +90,7 @@ export function createUpgradeInfoRoute(): Hono {
   const app = new Hono();
 
   app.get('/upgrade-info', async (c: Context) => {
-    const workspaceId = process.env.FLOWFORGE_TENANT_ID ?? '';
+    const workspaceId = process.env.MEDEA_TENANT_ID ?? '';
     if (!workspaceId) {
       return c.json({ ok: false, error: 'tenant id not configured' }, 503);
     }

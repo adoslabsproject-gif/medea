@@ -16,8 +16,8 @@
  * `__webhookResponse` key which `routes/webhooks.ts` picks up after the run.
  */
 
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
-import { resolveBinaryValue } from '@flowforge/core-schema';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { resolveBinaryValue } from '@medea/engine-core-schema';
 
 /**
  * Reserved key the webhook HTTP handler looks for. Documented here AND in

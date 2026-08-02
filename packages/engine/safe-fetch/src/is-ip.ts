@@ -2,7 +2,7 @@
  * isomorphic `isIP` — pure-JS implementation of `node:net#isIP`.
  *
  * Pre-fix: `ssrf-guard.ts` importava `node:net` direttamente. Quando il
- * pacchetto `@flowforge/safe-fetch` viene incluso nel bundle browser
+ * pacchetto `@medea/engine-safe-fetch` viene incluso nel bundle browser
  * (cascade workspace: editor SPA → nodes-stdlib → safe-fetch), Vite
  * non risolve `node:net` → build fail "isIP not exported by
  * __vite-browser-external".

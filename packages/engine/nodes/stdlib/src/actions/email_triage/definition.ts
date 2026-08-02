@@ -4,7 +4,7 @@
  * @module actions/email_triage/definition
  */
 
-import type { NodeDef } from '@flowforge/core-schema';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 export const emailTriageNodeDef: NodeDef = {
   id: 'action_email_triage',

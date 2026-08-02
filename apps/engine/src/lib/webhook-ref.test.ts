@@ -28,13 +28,13 @@ const WF = 'streammy_search_wf1';
 let ssoBackup: string | undefined;
 
 beforeEach(() => {
-  ssoBackup = process.env.FLOWFORGE_SSO_SECRET;
-  process.env.FLOWFORGE_SSO_SECRET = SECRET_A;
+  ssoBackup = process.env.MEDEA_SSO_SECRET;
+  process.env.MEDEA_SSO_SECRET = SECRET_A;
 });
 
 afterEach(() => {
-  if (ssoBackup === undefined) delete process.env.FLOWFORGE_SSO_SECRET;
-  else process.env.FLOWFORGE_SSO_SECRET = ssoBackup;
+  if (ssoBackup === undefined) delete process.env.MEDEA_SSO_SECRET;
+  else process.env.MEDEA_SSO_SECRET = ssoBackup;
 });
 
 describe('buildWebhookRef / parseWebhookRef — roundtrip', () => {
@@ -79,7 +79,7 @@ describe('buildWebhookPathFromRef — token dal secret CORRENTE', () => {
   });
 
   it('fail-visible: senza secret → null (mai un token fasullo)', () => {
-    delete process.env.FLOWFORGE_SSO_SECRET;
+    delete process.env.MEDEA_SSO_SECRET;
     expect(buildWebhookPathFromRef({ workflowId: WF })).toBeNull();
   });
 });
@@ -88,7 +88,7 @@ describe('resolveWebhookRefs — CONTRACT rotazione (il fix Streammy)', () => {
   it('lo stesso ref risolve a token DIVERSI prima e dopo la rotazione — il link non si rompe mai', () => {
     const ref = buildWebhookRef({ workflowId: WF, customPath: 'streammy/search' });
     const before = resolveWebhookRefs(ref);
-    process.env.FLOWFORGE_SSO_SECRET = SECRET_B; // rotazione secret
+    process.env.MEDEA_SSO_SECRET = SECRET_B; // rotazione secret
     const after = resolveWebhookRefs(ref);
     expect(before).toBe(`/webhooks/c/streammy/search/${deriveWebhookTokenFromSecret(SECRET_A, WF)}`);
     expect(after).toBe(`/webhooks/c/streammy/search/${deriveWebhookTokenFromSecret(SECRET_B, WF)}`);
@@ -135,7 +135,7 @@ describe('resolveWebhookRefs — CONTRACT rotazione (il fix Streammy)', () => {
   });
 
   it('fail-visible: senza secret il ref resta simbolico nel testo (mai token inventato)', () => {
-    delete process.env.FLOWFORGE_SSO_SECRET;
+    delete process.env.MEDEA_SSO_SECRET;
     const ref = buildWebhookRef({ workflowId: WF });
     expect(resolveWebhookRefs(`link: ${ref}`)).toBe(`link: ${ref}`);
   });

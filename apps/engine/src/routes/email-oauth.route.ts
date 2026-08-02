@@ -30,7 +30,7 @@
  *      ▼
  *   GET <tenant>/api/v1/email-accounts/oauth/google/import?handoff=<jwe>
  *      │  PUBLIC — but JWE is bound to this workspaceId via audience.
- *      │  → decrypt JWE with same FLOWFORGE_SSO_SECRET key.
+ *      │  → decrypt JWE with same MEDEA_SSO_SECRET key.
  *      │  → upsertOAuthAccount + audit log.
  *      │  → 302 to /#/settings?tab=email-accounts&oauthSuccess=1
  *
@@ -73,14 +73,14 @@ interface HandoffClaims {
  * Derive the JWE key with the SAME HKDF schedule the portal uses to issue
  * the handoff. Keep this string in lock-step with
  * `apps/portal/src/services/sso.service.ts`. Both ends MUST share the
- * `FLOWFORGE_SSO_SECRET` env value — that's the only secret material;
+ * `MEDEA_SSO_SECRET` env value — that's the only secret material;
  * the salt + info pair below is public.
  */
 function deriveJweKey(): Uint8Array {
   const cfg = loadConfig();
-  const secret = cfg.FLOWFORGE_SSO_SECRET ?? process.env.FLOWFORGE_SSO_SECRET;
+  const secret = cfg.MEDEA_SSO_SECRET ?? process.env.MEDEA_SSO_SECRET;
   if (!secret || secret.length < 32) {
-    throw new Error('FLOWFORGE_SSO_SECRET missing or too short (need >= 32 bytes)');
+    throw new Error('MEDEA_SSO_SECRET missing or too short (need >= 32 bytes)');
   }
   // node:crypto.hkdfSync — same RFC-5869 derivation. Salt + info MUST be
   // byte-identical to the portal's `getSsoJweKey()` (see
@@ -101,7 +101,7 @@ function deriveJweKey(): Uint8Array {
  * user to localhost.
  */
 function portalBase(): string {
-  return process.env.FLOWFORGE_PORTAL_BASE_URL || 'https://flowforge.automazionezeli.com';
+  return process.env.MEDEA_PORTAL_BASE_URL || 'https://flowforge.automazionezeli.com';
 }
 
 /**
@@ -112,7 +112,7 @@ function portalBase(): string {
  * subdomain in the redirect, so that fallback is best-effort only.
  */
 function tenantSlug(c: Context): string {
-  const fromEnv = process.env.FLOWFORGE_TENANT_SLUG;
+  const fromEnv = process.env.MEDEA_TENANT_SLUG;
   if (fromEnv) return fromEnv;
   const host = c.req.header('host') ?? '';
   // Subdomain extraction: `<slug>.app.automazionezeli.com` → `slug`.
@@ -142,7 +142,7 @@ export function createEmailOauthRoutes(): Hono {
     if (!slug) {
       return c.json({
         error: 'tenant_slug_unknown',
-        message: 'Runtime non sa il proprio tenant slug. Imposta FLOWFORGE_TENANT_SLUG nell\'env del container.',
+        message: 'Runtime non sa il proprio tenant slug. Imposta MEDEA_TENANT_SLUG nell\'env del container.',
       }, 500);
     }
 
@@ -233,9 +233,9 @@ export function createEmailOauthRoutes(): Hono {
     // import the tokens into tenant B (still requires tenant B login but
     // would let an A-employee plant Gmail tokens in B). Block at audience.
     const cfg = loadConfig();
-    const expectedAud = cfg.FLOWFORGE_TENANT_ID ?? process.env.FLOWFORGE_TENANT_ID;
+    const expectedAud = cfg.MEDEA_TENANT_ID ?? process.env.MEDEA_TENANT_ID;
     if (!expectedAud) {
-      logger.error('FLOWFORGE_TENANT_ID not set — cannot verify handoff audience');
+      logger.error('MEDEA_TENANT_ID not set — cannot verify handoff audience');
       return redirectToSettings({ oauthError: 'tenant_id_unset' });
     }
     if (aud !== expectedAud) {

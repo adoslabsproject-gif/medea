@@ -69,7 +69,7 @@ beforeEach(() => {
   dbState.sqliteCount = 0;
   dbState.rows = [];
   h.fetchUsage.mockReset();
-  for (const k of ['FLOWFORGE_PLAN_CODE', 'FLOWFORGE_MAX_WORKFLOWS', 'FLOWFORGE_MAX_LIARA_TOKENS_MONTHLY', 'FLOWFORGE_PLAN_DISK_GB']) {
+  for (const k of ['MEDEA_PLAN_CODE', 'MEDEA_MAX_WORKFLOWS', 'MEDEA_MAX_LIARA_TOKENS_MONTHLY', 'MEDEA_PLAN_DISK_GB']) {
     delete process.env[k];
   }
 });
@@ -99,8 +99,8 @@ describe('GET /plan-usage', () => {
     expect(data.workflows.limit).toBeNull(); // env assente = illimitato
     expect(data.liara.tokensLimit).toBeNull();
 
-    process.env.FLOWFORGE_MAX_WORKFLOWS = '10';
-    process.env.FLOWFORGE_PLAN_CODE = 'pro';
+    process.env.MEDEA_MAX_WORKFLOWS = '10';
+    process.env.MEDEA_PLAN_CODE = 'pro';
     res = await buildApp({ tenantId: 't1' }).request('/dash/plan-usage');
     const data2 = await res.json() as { plan: { code: string }; workflows: { limit: number | null } };
     expect(data2.plan.code).toBe('pro');
@@ -116,11 +116,11 @@ describe('GET /plan-usage', () => {
 
   // ── Token usage REALE dal portal (no più stub null) ────────────────────
   it('🚨 tokensLimit viene dal PORTAL (DB-backed), NON dall’env stale (bug Michela 2026-06-26)', async () => {
-    // L'env FLOWFORGE_MAX_LIARA_TOKENS_MONTHLY è "set-and-forget" all'onboarding:
+    // L'env MEDEA_MAX_LIARA_TOKENS_MONTHLY è "set-and-forget" all'onboarding:
     // dopo un upgrade quota nel DB restava al VECCHIO limite (500K) e il banner
     // mostrava "quota esaurita" mentre l'enforcement reale (DB) la lasciava
     // lavorare. Il display DEVE seguire il portal (30M), non l'env stale.
-    process.env.FLOWFORGE_MAX_LIARA_TOKENS_MONTHLY = '500000'; // env STALE
+    process.env.MEDEA_MAX_LIARA_TOKENS_MONTHLY = '500000'; // env STALE
     h.fetchUsage.mockResolvedValue({
       tokensUsed: 1234, tokensLimit: 30000000, // portal = DB aggiornato
       periodStartIso: '2026-06-15', periodEndIso: '2026-07-15', maxUsers: 10,
@@ -134,7 +134,7 @@ describe('GET /plan-usage', () => {
   });
 
   it('interroga il portal SEMPRE — anche con token illimitati (serve maxUsers)', async () => {
-    // niente FLOWFORGE_MAX_LIARA_TOKENS_MONTHLY → token unlimited, MA il portal va
+    // niente MEDEA_MAX_LIARA_TOKENS_MONTHLY → token unlimited, MA il portal va
     // comunque interrogato per il limite sub-users.
     h.fetchUsage.mockResolvedValue({
       tokensUsed: 0, tokensLimit: null,
@@ -158,7 +158,7 @@ describe('GET /plan-usage', () => {
   });
 
   it('portal giù (fetch→null) → usato/periodo null, ma tokensLimit fallback all’env (degradazione)', async () => {
-    process.env.FLOWFORGE_MAX_LIARA_TOKENS_MONTHLY = '500000';
+    process.env.MEDEA_MAX_LIARA_TOKENS_MONTHLY = '500000';
     h.fetchUsage.mockResolvedValue(null);
     const res = await buildApp({ tenantId: 't1' }).request('/dash/plan-usage');
     expect(res.status).toBe(200);

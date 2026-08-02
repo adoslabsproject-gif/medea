@@ -27,7 +27,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 beforeAll(() => {
   delete process.env.VITEST;
   delete process.env.NODE_ENV;
-  process.env.FLOWFORGE_SANDBOX_DISABLE_WORKER = 'false';
+  process.env.MEDEA_SANDBOX_DISABLE_WORKER = 'false';
 });
 
 const WORKER_BUNDLE = join(__dirname, 'community-node-sandbox.worker.js');

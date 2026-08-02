@@ -78,7 +78,7 @@ async function main(): Promise<void> {
   if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
     try {
       const { trace } = await import('@opentelemetry/api');
-      const { registerTracer } = await import('@flowforge/nodes-stdlib');
+      const { registerTracer } = await import('@medea/engine-nodes-stdlib');
       const otelTracer = trace.getTracer('flowforge-nodes');
       // Bridge da @opentelemetry/api Tracer a stdlib MinimalTracer interface.
       registerTracer({
@@ -95,9 +95,9 @@ async function main(): Promise<void> {
   runMigrations();
 
   // Wire idempotency store distribuito — 3-tier resolution:
-  //   1. FLOWFORGE_IDEMPOTENCY_REDIS_URL (dedicated, isolation completa)
-  //   2. FLOWFORGE_QUEUE_MODE=redis + FLOWFORGE_REDIS_URL (riusa pool BullMQ)
-  //   3. FLOWFORGE_REDIS_URL standalone (single-pod + Redis esterno)
+  //   1. MEDEA_IDEMPOTENCY_REDIS_URL (dedicated, isolation completa)
+  //   2. MEDEA_QUEUE_MODE=redis + MEDEA_REDIS_URL (riusa pool BullMQ)
+  //   3. MEDEA_REDIS_URL standalone (single-pod + Redis esterno)
   //   altrimenti: InMemoryIdempotencyStore (zero-config dev/test)
   // Senza Redis, multi-pod retry causerebbero duplicate POST cross-pod.
   const { createRedisIdempotencyStoreIfEnabled, closeManagedRedisConnection } = await import('./lib/idempotency-redis.js');
@@ -110,7 +110,7 @@ async function main(): Promise<void> {
     //   - Senza CB: ~50s cumulativi (5s × 10)
     //   - Con CB: ~25s (5s × 5 trip, poi fast-fail × 5)
     const { CircuitBreakerIdempotencyStore } = await import('./lib/idempotency-circuit-breaker.js');
-    const { setDefaultIdempotencyStore } = await import('@flowforge/nodes-stdlib');
+    const { setDefaultIdempotencyStore } = await import('@medea/engine-nodes-stdlib');
     const wrapped = new CircuitBreakerIdempotencyStore(resolution.store, {
       failureThreshold: 5,
       resetTimeout: 30_000,
@@ -122,7 +122,7 @@ async function main(): Promise<void> {
       'Idempotency backend: Redis (multi-pod safe) + circuit breaker (fail-fast outage)',
     );
   } else {
-    logger.info('Idempotency backend: in-memory (single-pod fallback — set FLOWFORGE_REDIS_URL per multi-pod safety)');
+    logger.info('Idempotency backend: in-memory (single-pod fallback — set MEDEA_REDIS_URL per multi-pod safety)');
   }
   // Graceful shutdown hook — chiude la connection Redis dedicata (no-op se
   // riusata da BullMQ). Senza, restart fast leakerebbe socket.
@@ -153,8 +153,8 @@ async function main(): Promise<void> {
 
   // ─── D1 telemetry emitter — battle-testing badge stable/beta ───
   // Subscribe a run.step → flush batch al portal ogni 30s o 100 eventi.
-  // FLOWFORGE_TENANT_ID è source-of-truth (env settato da onboarding.ts).
-  const tenantIdForTelemetry = process.env.FLOWFORGE_TENANT_ID ?? '';
+  // MEDEA_TENANT_ID è source-of-truth (env settato da onboarding.ts).
+  const tenantIdForTelemetry = process.env.MEDEA_TENANT_ID ?? '';
   if (tenantIdForTelemetry) {
     const { telemetryEmitter } = await import('./lib/telemetry-emitter.js');
     telemetryEmitter.start(eventBus, tenantIdForTelemetry);

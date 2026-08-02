@@ -16,7 +16,7 @@ import { createVersionRoutes } from './versions.js';
 import { createTemplateRoutes } from './templates.js';
 import { createSignalRoutes } from './signals.js';
 import type { AuthContext } from '@/middleware/auth.js';
-import type { Workflow } from '@flowforge/core-schema';
+import type { Workflow } from '@medea/engine-core-schema';
 
 const T_A = `test-vts-${Date.now().toString(36)}-a`;
 const T_B = `test-vts-${Date.now().toString(36)}-b`;

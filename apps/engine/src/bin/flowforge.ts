@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// IMPORTANT: env-bridge MUST be the first import — it remaps FLOWFORGE_PORT/HOST
+// IMPORTANT: env-bridge MUST be the first import — it remaps MEDEA_PORT/HOST
 // to PORT/HOST before logger.ts (a transitive dep) calls loadConfig() and caches.
 import './env-bridge.js';
 /**
@@ -8,17 +8,17 @@ import './env-bridge.js';
  * Modes:
  *   flowforge [serve]              — start the server, serve UI, open browser
  *   flowforge serve --no-open      — start the server without opening a browser (server install)
- *   flowforge worker               — start a BullMQ worker (FLOWFORGE_QUEUE_MODE=redis required)
+ *   flowforge worker               — start a BullMQ worker (MEDEA_QUEUE_MODE=redis required)
  *   flowforge --help               — print usage
  *
  * Environment:
- *   FLOWFORGE_PORT           (default 3100)
- *   FLOWFORGE_HOST           (default 0.0.0.0)
- *   FLOWFORGE_DATA_DIR       (default ~/.flowforge)
- *   FLOWFORGE_DB_PATH        (default $DATA_DIR/flowforge.db)
- *   FLOWFORGE_MASTER_PASSWORD  REQUIRED in production for credential encryption
- *   FLOWFORGE_UI_DIR         (default: ./ui next to the binary or bundled)
- *   FLOWFORGE_BASE_URL       (default http://localhost:$PORT — used by AI Agent self-callbacks)
+ *   MEDEA_PORT           (default 3100)
+ *   MEDEA_HOST           (default 0.0.0.0)
+ *   MEDEA_DATA_DIR       (default ~/.flowforge)
+ *   MEDEA_DB_PATH        (default $DATA_DIR/flowforge.db)
+ *   MEDEA_MASTER_PASSWORD  REQUIRED in production for credential encryption
+ *   MEDEA_UI_DIR         (default: ./ui next to the binary or bundled)
+ *   MEDEA_BASE_URL       (default http://localhost:$PORT — used by AI Agent self-callbacks)
  *
  * Exit codes:
  *   0  clean shutdown
@@ -105,15 +105,15 @@ function printBanner(host: string, port: number): void {
 
 async function runServe(args: string[]): Promise<void> {
   const config = loadConfig();
-  const noOpen = args.includes('--no-open') || process.env.FLOWFORGE_NO_OPEN === '1';
+  const noOpen = args.includes('--no-open') || process.env.MEDEA_NO_OPEN === '1';
 
   // Service-to-service internal token — used by executors that call the
   // runtime's own HTTP API (db_query, db_insert, rag_search, subworkflow,
   // invoke, etc.) to bypass session auth. Generated once per process boot,
   // injected into process.env so child code (node modules) sees it. It is
   // NEVER persisted, NEVER served, NEVER logged.
-  if (!process.env.FLOWFORGE_INTERNAL_TOKEN) {
-    process.env.FLOWFORGE_INTERNAL_TOKEN = crypto.randomBytes(32).toString('hex');
+  if (!process.env.MEDEA_INTERNAL_TOKEN) {
+    process.env.MEDEA_INTERNAL_TOKEN = crypto.randomBytes(32).toString('hex');
   }
 
   logger.info({ env: config.NODE_ENV, port: config.PORT, host: config.HOST }, 'Starting FlowForge runtime');
@@ -180,7 +180,7 @@ async function runServe(args: string[]): Promise<void> {
   // AUDIT FIX H8 (2026-06-09): telemetry emitter — parità con main.ts. Senza,
   // i tenant CLI non popolano battle-testing badge stable/beta nel registry
   // del portal (D1 telemetry).
-  const tenantIdForTelemetry = process.env.FLOWFORGE_TENANT_ID ?? '';
+  const tenantIdForTelemetry = process.env.MEDEA_TENANT_ID ?? '';
   if (tenantIdForTelemetry) {
     try {
       const { telemetryEmitter } = await import('../lib/telemetry-emitter.js');
@@ -322,7 +322,7 @@ async function runServe(args: string[]): Promise<void> {
 function runWorker(): void {
   if (!isQueueModeEnabled()) {
      
-    console.error('FLOWFORGE_QUEUE_MODE is not "redis". Worker will not start.');
+    console.error('MEDEA_QUEUE_MODE is not "redis". Worker will not start.');
     process.exit(2);
   }
   const eventBus = new InMemoryEventBus();
@@ -359,9 +359,9 @@ function printHelp(): void {
   console.log('  flowforge worker             Start a BullMQ queue worker');
   console.log('  flowforge --help             Print this help');
   console.log('\nKey env vars:');
-  console.log('  FLOWFORGE_PORT, FLOWFORGE_HOST, FLOWFORGE_DATA_DIR, FLOWFORGE_DB_PATH');
-  console.log('  FLOWFORGE_MASTER_PASSWORD (required in production)');
-  console.log('  FLOWFORGE_QUEUE_MODE=redis + FLOWFORGE_REDIS_URL (queue mode)');
+  console.log('  MEDEA_PORT, MEDEA_HOST, MEDEA_DATA_DIR, MEDEA_DB_PATH');
+  console.log('  MEDEA_MASTER_PASSWORD (required in production)');
+  console.log('  MEDEA_QUEUE_MODE=redis + MEDEA_REDIS_URL (queue mode)');
   console.log('\nDocs: https://flowforge.dev/docs');
    
 }

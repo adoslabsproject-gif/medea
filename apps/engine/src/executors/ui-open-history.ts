@@ -8,7 +8,7 @@
  */
 
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { loadConfig } from '@/config.js';
 
 export const uiOpenHistoryExecutor: NodeExecutor = (rawConfig, _input, context) => {
@@ -22,11 +22,11 @@ export const uiOpenHistoryExecutor: NodeExecutor = (rawConfig, _input, context) 
 
   const runtime = loadConfig();
   const baseUrl = coerceString(cfg.baseUrl ?? '').trim()
-    || runtime.FLOWFORGE_PUBLIC_BASE_URL
+    || runtime.MEDEA_PUBLIC_BASE_URL
     || '';
 
   if (!baseUrl) {
-    return Promise.reject(new Error('ui_open_history: nessun baseUrl disponibile. Imposta cfg.baseUrl o FLOWFORGE_PUBLIC_BASE_URL env.'));
+    return Promise.reject(new Error('ui_open_history: nessun baseUrl disponibile. Imposta cfg.baseUrl o MEDEA_PUBLIC_BASE_URL env.'));
   }
 
   const url = new URL(`${baseUrl.replace(/\/$/, '')}/`);

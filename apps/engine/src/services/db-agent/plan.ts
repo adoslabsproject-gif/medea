@@ -11,7 +11,7 @@
  * @module services/db-agent/plan
  */
 import { z } from 'zod';
-import type { MigrationAction, Relation } from '@flowforge/db-studio-core';
+import type { MigrationAction, Relation } from '@medea/engine-db-studio-core';
 import { ColumnInputSchema, buildColumn } from './columns.js';
 
 const NAME = /^[a-z_][a-z0-9_]*$/;

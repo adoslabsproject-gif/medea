@@ -28,7 +28,7 @@ const PIXEL_CACHE_HEADERS: Record<string, string> = {
 
 function trackingSecret(): string {
   const cfg = loadConfig();
-  const secret = cfg.FLOWFORGE_SSO_SECRET ?? process.env.FLOWFORGE_SSO_SECRET ?? '';
+  const secret = cfg.MEDEA_SSO_SECRET ?? process.env.MEDEA_SSO_SECRET ?? '';
   return secret;
 }
 
@@ -54,7 +54,7 @@ export function createEmailTrackingRoutes(): Hono {
     const token = c.req.param('token');
     const secret = trackingSecret();
     if (!secret) {
-      logger.error('email-tracking: FLOWFORGE_SSO_SECRET unset — cannot verify tokens');
+      logger.error('email-tracking: MEDEA_SSO_SECRET unset — cannot verify tokens');
     } else {
       const res = await recordOpen({
         token,

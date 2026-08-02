@@ -1,7 +1,7 @@
 /**
  * Master password loader — Docker secrets file FIRST, env var fallback.
  *
- * Storia: pre-2026-05-30 leggevamo `process.env['FLOWFORGE_MASTER_PASSWORD']`
+ * Storia: pre-2026-05-30 leggevamo `process.env['MEDEA_MASTER_PASSWORD']`
  * dappertutto. Problema: la variabile era visibile via `docker inspect <ctr>`,
  * `/proc/<pid>/environ` (chiunque nello stesso PID namespace), e a rischio
  * di leak in crash dump o logger non filtrati.
@@ -14,9 +14,9 @@
  *   - Kubernetes Secret mounted as volume (`subPath`)
  *
  * Ordine di precedenza (high → low):
- *   1. File path da `FLOWFORGE_MASTER_PASSWORD_FILE` (override esplicito)
+ *   1. File path da `MEDEA_MASTER_PASSWORD_FILE` (override esplicito)
  *   2. File default `/run/secrets/flowforge_master_password`
- *   3. Env var `FLOWFORGE_MASTER_PASSWORD` (backward-compat container creati
+ *   3. Env var `MEDEA_MASTER_PASSWORD` (backward-compat container creati
  *      pre-migrazione 2026-05-30 — bootstrap zero-downtime).
  *   4. Dev sentinel (NODE_ENV=development o test) — mai in produzione.
  *
@@ -57,7 +57,7 @@ export function loadMasterPassword(): MasterPasswordResult {
   if (cached) return cached;
 
   // Priority 1: explicit file path override
-  const explicitPath = process.env.FLOWFORGE_MASTER_PASSWORD_FILE;
+  const explicitPath = process.env.MEDEA_MASTER_PASSWORD_FILE;
   if (explicitPath && explicitPath.length > 0) {
     const content = readSecretFile(explicitPath);
     if (content) {
@@ -74,7 +74,7 @@ export function loadMasterPassword(): MasterPasswordResult {
   }
 
   // Priority 3: env var (legacy / backward-compat)
-  const envValue = process.env.FLOWFORGE_MASTER_PASSWORD;
+  const envValue = process.env.MEDEA_MASTER_PASSWORD;
   if (envValue && envValue.length > 0) {
     cached = { password: envValue, source: 'env' };
     return cached;
@@ -83,7 +83,7 @@ export function loadMasterPassword(): MasterPasswordResult {
   // Priority 4: dev sentinel (non in produzione)
   if (process.env.NODE_ENV === 'production') {
     throw new Error(
-      'FLOWFORGE_MASTER_PASSWORD not found: neither file (/run/secrets/flowforge_master_password) nor env var set. Required in production.',
+      'MEDEA_MASTER_PASSWORD not found: neither file (/run/secrets/flowforge_master_password) nor env var set. Required in production.',
     );
   }
   cached = { password: DEV_SENTINEL, source: 'dev-sentinel' };

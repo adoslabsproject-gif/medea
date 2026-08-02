@@ -6,7 +6,7 @@
  * dispatcher INIETTATI pinniamo qui:
  *   - gate: directory vuota → null, NESSUNA risorsa creata;
  *   - namespace tenant per path relativi + sanitizzazione anti-traversal del
- *     tenantId + override FLOWFORGE_DATA_DIR letto a runtime;
+ *     tenantId + override MEDEA_DATA_DIR letto a runtime;
  *   - path assoluto pass-through; glob appeso al target ma mkdir sulla DIR;
  *   - opzioni chokidar esatte (persistent, ignoreInitial, debounce clamp 50);
  *   - mkdir best-effort: il fallimento NON blocca la registrazione;
@@ -22,9 +22,9 @@ import {
   type WatchHandle,
 } from './file-watcher.js';
 import type { TriggerRunInput, TriggerRunResult } from './run-dispatcher.js';
-import type { CanvasNode, Workflow } from '@flowforge/core-schema';
+import type { CanvasNode, Workflow } from '@medea/engine-core-schema';
 
-const ENV_KEY = 'FLOWFORGE_DATA_DIR';
+const ENV_KEY = 'MEDEA_DATA_DIR';
 const envBackup = process.env[ENV_KEY];
 
 afterEach(() => {
@@ -90,7 +90,7 @@ describe('startFileWatcher — gate e risoluzione path', () => {
     expect(makeDir).not.toHaveBeenCalled();
   });
 
-  it('path relativo → namespace tenant sotto FLOWFORGE_DATA_DIR (letto a runtime)', async () => {
+  it('path relativo → namespace tenant sotto MEDEA_DATA_DIR (letto a runtime)', async () => {
     process.env[ENV_KEY] = '/custom/data';
     const { deps, watch, makeDir } = makeDeps();
     await startFileWatcher(makeWf(), makeNode({ directory: 'inbox' }), deps);

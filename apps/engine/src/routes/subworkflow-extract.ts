@@ -40,7 +40,7 @@ import { getDatabase } from '@/storage/db.js';
 import { getTenantId } from '@/lib/tenant.js';
 import { AuditLogService } from '@/services/audit.service.js';
 import type { IEventBus } from '@/ports/event-bus.js';
-import type { Workflow, CanvasNode, Edge } from '@flowforge/core-schema';
+import type { Workflow, CanvasNode, Edge } from '@medea/engine-core-schema';
 
 const audit = new AuditLogService();
 

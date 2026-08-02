@@ -22,11 +22,11 @@
  * che non usano questo trigger.
  */
 
-import { validateUrlForFetch, parseInternalHostAllowlist, isHostAllowlisted } from '@flowforge/safe-fetch';
+import { validateUrlForFetch, parseInternalHostAllowlist, isHostAllowlisted } from '@medea/engine-safe-fetch';
 import { logger } from '@/lib/logger.js';
 import { resolveJsonPointer, clampNumber } from './parsing.js';
 import type { DispatchTriggerRun } from './run-dispatcher.js';
-import type { CanvasNode, Workflow } from '@flowforge/core-schema';
+import type { CanvasNode, Workflow } from '@medea/engine-core-schema';
 
 export const RABBIT_BACKOFF_INITIAL_MS = 1_000;
 export const RABBIT_BACKOFF_CAP_MS = 30_000;
@@ -98,7 +98,7 @@ function amqpHostAllowed(wfId: string, url: string): boolean {
   const httpUrl = url.replace(/^amqps:\/\//i, 'https://').replace(/^amqp:\/\//i, 'http://');
   let host = '';
   try { host = new URL(httpUrl).hostname; } catch { /* malformata → la becca il guard */ }
-  const allowlist = parseInternalHostAllowlist(process.env.FLOWFORGE_INTERNAL_HOST_ALLOWLIST);
+  const allowlist = parseInternalHostAllowlist(process.env.MEDEA_INTERNAL_HOST_ALLOWLIST);
   if (host && isHostAllowlisted(host, allowlist)) return true;
   const ssrf = validateUrlForFetch(httpUrl);
   if (!ssrf.ok) {

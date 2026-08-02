@@ -28,7 +28,7 @@ vi.mock('@/executors/webhook-respond.js', () => ({
 }));
 
 import { authorize, __resetWebhookSignatureCache, webhookSignatureSeen } from './webhooks.js';
-import type { CanvasNode } from '@flowforge/core-schema';
+import type { CanvasNode } from '@medea/engine-core-schema';
 
 const SECRET = 'shared-secret-min-32-char-aaaaaaaaaa';
 

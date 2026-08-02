@@ -8,7 +8,7 @@
  * response_format: json_object.
  */
 
-import { safeFetchWithRedirects, internalGatewayTrustedHost } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects, internalGatewayTrustedHost } from '@medea/engine-safe-fetch';
 
 /**
  * Default LEGACY pre-Fase 2 (#14): puntavano al loopback DEL CONTAINER dove non
@@ -24,21 +24,21 @@ const MAX_HTML_CHARS = 60_000;
 
 /** Base del gateway metered (portal), iniettata nell'env di ogni container tenant. */
 function gatewayBase(): string | undefined {
-  const raw = typeof process !== 'undefined' ? process.env.FLOWFORGE_LIARA_BASE_URL : undefined;
+  const raw = typeof process !== 'undefined' ? process.env.MEDEA_LIARA_BASE_URL : undefined;
   return raw ? raw.replace(/\/$/, '') : undefined;
 }
 
 /**
  * Risoluzione endpoint (Fase 2 #14 — Liara-da-gateway di DEFAULT):
  *   1. endpoint esplicito ≠ sentinella legacy → BYOK OpenAI-compat (guard SSRF pieno)
- *   2. env FLOWFORGE_LIARA_ENDPOINT (override operatore)
- *   3. gateway metered `${FLOWFORGE_LIARA_BASE_URL}/chat/completions`
+ *   2. env MEDEA_LIARA_ENDPOINT (override operatore)
+ *   3. gateway metered `${MEDEA_LIARA_BASE_URL}/chat/completions`
  *   4. fallback dev locale (fuori container, es. test/CLI)
  */
 export function resolveLlmEndpoint(explicit: string | undefined): string {
   const cleaned = (explicit ?? '').trim();
   if (cleaned && cleaned !== LEGACY_ENDPOINT_DEFAULT) return cleaned;
-  const envOverride = typeof process !== 'undefined' ? (process.env.FLOWFORGE_LIARA_ENDPOINT ?? '').trim() : '';
+  const envOverride = typeof process !== 'undefined' ? (process.env.MEDEA_LIARA_ENDPOINT ?? '').trim() : '';
   if (envOverride) return envOverride;
   const base = gatewayBase();
   if (base) return `${base}/chat/completions`;
@@ -106,8 +106,8 @@ export async function extractWithLlm(args: ExtractWithLlmArgs): Promise<ExtractW
   // gateway metered ESIGE il Bearer license, come la chat e gli agent_*).
   // Catena su `||`, NON `??`: un campo secret VUOTO salvato in config (o una
   // env vuota) deve cadere sulla license, non silenziare l'auth → 401.
-  const licenseKey = typeof process !== 'undefined' ? (process.env.FLOWFORGE_LICENSE_KEY ?? '').trim() : '';
-  const envKey = typeof process !== 'undefined' ? (process.env.FLOWFORGE_LIARA_API_KEY ?? '').trim() : '';
+  const licenseKey = typeof process !== 'undefined' ? (process.env.MEDEA_LICENSE_KEY ?? '').trim() : '';
+  const envKey = typeof process !== 'undefined' ? (process.env.MEDEA_LIARA_API_KEY ?? '').trim() : '';
   const apiKey = (args.apiKey ?? '').trim() || envKey || licenseKey;
   // Model: la sentinella legacy 'liara-distilled' (mai servita da vLLM) conta
   // come "non impostato" → campo omesso → il gateway inietta il suo default.

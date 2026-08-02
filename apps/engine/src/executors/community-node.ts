@@ -20,8 +20,8 @@
  * per il codice di terzi — non degradare a esecuzione in-process.
  */
 
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
-import { isBinaryData, readBinaryBytes, makeBinaryInline, type BinaryRefReader } from '@flowforge/core-schema';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { isBinaryData, readBinaryBytes, makeBinaryInline, type BinaryRefReader } from '@medea/engine-core-schema';
 import { getInstalledByDefId } from '@/services/community-nodes.service.js';
 import { runInSandbox, type SandboxInput } from './community-node-sandbox.js';
 import { logger } from '@/lib/logger.js';

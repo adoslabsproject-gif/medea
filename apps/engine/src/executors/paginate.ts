@@ -1,4 +1,4 @@
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { safeOutboundFetch } from '@/lib/safe-outbound-fetch.js';
 import { readJsonCapped, readTextTruncated } from '@/lib/capped-response.js';
 

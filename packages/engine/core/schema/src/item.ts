@@ -5,8 +5,8 @@
  * porta il proprio lineage (`pairedItem`) verso l'item di input da cui deriva.
  *
  * Vive in core-schema (non nell'app runtime) perché è il CONTRATTO condiviso tra
- * il motore (apps/flowforge-runtime) e gli executor dei nodi
- * (@flowforge/nodes-*): port&adapter — gli executor non possono dipendere
+ * il motore (apps/engine) e gli executor dei nodi
+ * (@medea/engine-nodes-*): port&adapter — gli executor non possono dipendere
  * dall'app, ma entrambi dipendono da questo schema.
  *
  * Il lineage (`pairedItem`) è ciò che rende possibile `$('NodoA').item`: sapere,

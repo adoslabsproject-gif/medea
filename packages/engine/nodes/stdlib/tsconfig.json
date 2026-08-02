@@ -1,5 +1,5 @@
 {
-  "extends": "@flowforge/tsconfig/library.json",
+  "extends": "@medea/engine-tsconfig/library.json",
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",

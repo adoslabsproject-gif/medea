@@ -8,7 +8,7 @@
  *  - Compliance check (audio tracks, lang attributes)
  */
 
-import { safeFetchWithRedirects } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects } from '@medea/engine-safe-fetch';
 import { load as cheerioLoad } from 'cheerio';
 import type { NodeModule, NodeExecutor } from '../types.js';
 

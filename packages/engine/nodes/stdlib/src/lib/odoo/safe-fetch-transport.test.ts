@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-vi.mock('@flowforge/safe-fetch', () => ({
+vi.mock('@medea/engine-safe-fetch', () => ({
   assertUrlSafe: vi.fn(),
   safeFetchWithRedirects: vi.fn(),
 }));

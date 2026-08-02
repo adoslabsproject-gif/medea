@@ -1,18 +1,18 @@
-# @flowforge/community-node-sdk
+# @medea/engine-community-node-sdk
 
 Type-safe builder + CLI per pacchetti FlowForge community-node (.ffnode).
 
 ## Installazione
 
 ```bash
-npm install --save-dev @flowforge/community-node-sdk tsx
+npm install --save-dev @medea/engine-community-node-sdk tsx
 ```
 
 ## Esempio
 
 ```ts
 // src/index.ts
-import { defineCommunityNode, action } from '@flowforge/community-node-sdk';
+import { defineCommunityNode, action } from '@medea/engine-community-node-sdk';
 
 export default defineCommunityNode({
   manifest: {
@@ -93,7 +93,7 @@ echo ".signing-key.pem" >> .gitignore
 
 Oppure passa la chiave via env:
 ```bash
-FLOWFORGE_NODE_SIGNING_KEY="$(cat private.pem)" npx ffnode-build src/index.ts
+MEDEA_NODE_SIGNING_KEY="$(cat private.pem)" npx ffnode-build src/index.ts
 ```
 
 Senza chiave persistente, il CLI genera una chiave dev ephemera e marca `verified: false` nel registry-entry.

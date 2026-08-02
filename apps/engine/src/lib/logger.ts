@@ -1,8 +1,8 @@
 /**
- * Logger del runtime — facade su @flowforge/observability-logger.
+ * Logger del runtime — facade su @medea/engine-observability-logger.
  *
  * Phase 2 refactor: la logica logger (pino + redact + base context) è stata
- * estratta in `@flowforge/observability-logger` come libreria condivisa.
+ * estratta in `@medea/engine-observability-logger` come libreria condivisa.
  * Questo file resta come adapter app-specifico che injecta:
  *   • service: "flowforge-runtime"
  *   • env: dal config FlowForge
@@ -20,7 +20,7 @@ import {
   dedupedError as _dedupedError,
   errorFingerprint as _errorFingerprint,
   type Logger,
-} from '@flowforge/observability-logger';
+} from '@medea/engine-observability-logger';
 import { loadConfig } from '@/config.js';
 
 const config = loadConfig();

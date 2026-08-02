@@ -20,7 +20,7 @@ import { getDatabase } from '@/storage/db.js';
 import { logger } from '@/lib/logger.js';
 import type { IPauseHandler, PauseArgs } from '@/engine/ports.js';
 import type { QueueItem } from '@/engine/workflow-engine.js';
-import type { ExecutionItem } from '@flowforge/core-schema';
+import type { ExecutionItem } from '@medea/engine-core-schema';
 
 export interface PausedRow {
   id: string;

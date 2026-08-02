@@ -1,7 +1,7 @@
 /**
  * withHostBreaker — per-host circuit breaker wrapper.
  *
- * Estrae l'URL via `urlFrom(config)` → bucket per-host via @zeliai/shared CB.
+ * Estrae l'URL via `urlFrom(config)` → bucket per-host via @medea/engine-shared CB.
  * Se l'URL non e\` derivabile (URL dinamico runtime-only), passa attraverso.
  */
 

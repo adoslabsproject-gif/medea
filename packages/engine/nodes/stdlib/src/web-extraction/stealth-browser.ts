@@ -22,7 +22,7 @@
  *   { html, cookies, finalUrl, screenshotBase64?, harBase64?, metrics }
  */
 
-import { safeFetchWithRedirects, assertUrlSafe } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects, assertUrlSafe } from '@medea/engine-safe-fetch';
 import type { NodeModule, NodeExecutor } from '../types.js';
 
 // Preset fingerprint pools — randomizzazione pre-call lato runtime.
@@ -59,9 +59,9 @@ const executor: NodeExecutor = async (config, _input, _context) => {
   // browser-automate) — IP privato/interno via il servizio stealth altrimenti.
   assertUrlSafe(url);
 
-  const endpoint = String(config.endpoint ?? process.env.FLOWFORGE_STEALTH_ENDPOINT ?? process.env.FLOWFORGE_BROWSER_ENDPOINT ?? '').trim();
+  const endpoint = String(config.endpoint ?? process.env.MEDEA_STEALTH_ENDPOINT ?? process.env.MEDEA_BROWSER_ENDPOINT ?? '').trim();
   if (!endpoint) {
-    throw new Error('Stealth browser endpoint not configured. Set FLOWFORGE_STEALTH_ENDPOINT env or fill "endpoint" config field. BYO: deploy browserless/chrome + puppeteer-extra-plugin-stealth or use managed Zeli endpoint.');
+    throw new Error('Stealth browser endpoint not configured. Set MEDEA_STEALTH_ENDPOINT env or fill "endpoint" config field. BYO: deploy browserless/chrome + puppeteer-extra-plugin-stealth or use managed Zeli endpoint.');
   }
 
   const apiKey = String(config.apiKey ?? '').trim();
@@ -170,7 +170,7 @@ export const stealthBrowserNode: NodeModule = {
     version: '1.0.0',
     configFields: [
       { key: 'url', label: 'URL', type: 'text', required: true, placeholder: 'https://target-site.com', help: 'URL della pagina da scrappare con stealth.' },
-      { key: 'endpoint', label: 'Stealth endpoint', type: 'text', required: false, placeholder: 'https://stealth.miosito.com (vuoto = env FLOWFORGE_STEALTH_ENDPOINT)', help: 'Browserless con plugin stealth o managed Zeli.' },
+      { key: 'endpoint', label: 'Stealth endpoint', type: 'text', required: false, placeholder: 'https://stealth.miosito.com (vuoto = env MEDEA_STEALTH_ENDPOINT)', help: 'Browserless con plugin stealth o managed Zeli.' },
       { key: 'apiKey', label: 'API Key', type: 'secret', required: false, help: 'Bearer token endpoint stealth.' },
       { key: 'fingerprintPreset', label: 'Fingerprint preset', type: 'select', required: false, defaultValue: 'random', options: ['random', 'desktop-chrome-it', 'desktop-chrome-en', 'desktop-firefox-it', 'mobile-safari-it', 'mobile-chrome-android'], help: 'Preset UA + viewport + locale + timezone. random = pesca diversa ogni call (raccomandato per evasione). desktop-chrome-it (Windows 1920x1080), desktop-chrome-en (macOS 1440x900), desktop-firefox-it (Linux 1680x1050), mobile-safari-it (iPhone 390x844), mobile-chrome-android (Pixel 412x915).' },
       { key: 'waitFor', label: 'Aspetta selettore CSS', type: 'text', required: false, placeholder: '.product, [data-loaded]', help: 'Selector CSS da aspettare. Vuoto = domcontentloaded.' },

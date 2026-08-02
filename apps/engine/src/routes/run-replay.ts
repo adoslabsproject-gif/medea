@@ -27,7 +27,7 @@ import { runs } from '@/storage/schema.js';
 import { RunService } from '@/services/run.service.js';
 import { WorkflowService } from '@/services/workflow.service.js';
 import type { IEventBus } from '@/ports/event-bus.js';
-import type { RunStep } from '@flowforge/core-schema';
+import type { RunStep } from '@medea/engine-core-schema';
 import { getTenantId } from '@/lib/tenant.js';
 import { getActorId } from '@/lib/actor.js';
 

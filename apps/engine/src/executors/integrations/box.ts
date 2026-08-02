@@ -8,7 +8,7 @@
  * Errori tipizzati IntegrationError.
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { IntegrationError, requireIntegration, withRetry } from './common.js';
 import { jsonFetch, getIntegrationLabel } from './saas-shared.js';
 

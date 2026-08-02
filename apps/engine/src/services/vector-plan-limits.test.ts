@@ -18,7 +18,7 @@ sqlite.exec(
      updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')));`,
 );
 
-const cfg = { FLOWFORGE_PLAN_VECTOR_MAX_VECTORS: 1000 as number | undefined, FLOWFORGE_PLAN_VECTOR_MAX_DISK_MB: 100 as number | undefined };
+const cfg = { MEDEA_PLAN_VECTOR_MAX_VECTORS: 1000 as number | undefined, MEDEA_PLAN_VECTOR_MAX_DISK_MB: 100 as number | undefined };
 
 vi.mock('@/storage/db.js', () => ({ getDatabase: () => ({ sqlite }) }));
 vi.mock('@/lib/logger.js');
@@ -35,8 +35,8 @@ import { setVectorQuotaOverride, __resetVectorQuotaCacheForTest } from './vector
 beforeEach(() => {
   sqlite.exec('DELETE FROM system_flags');
   __resetVectorQuotaCacheForTest();
-  cfg.FLOWFORGE_PLAN_VECTOR_MAX_VECTORS = 1000;
-  cfg.FLOWFORGE_PLAN_VECTOR_MAX_DISK_MB = 100;
+  cfg.MEDEA_PLAN_VECTOR_MAX_VECTORS = 1000;
+  cfg.MEDEA_PLAN_VECTOR_MAX_DISK_MB = 100;
 });
 
 describe('vectorPlanLimitsFromConfig — precedenza override > env', () => {
@@ -45,8 +45,8 @@ describe('vectorPlanLimitsFromConfig — precedenza override > env', () => {
   });
 
   it('env assente (Enterprise/BYOK) → illimitato', () => {
-    cfg.FLOWFORGE_PLAN_VECTOR_MAX_VECTORS = undefined;
-    cfg.FLOWFORGE_PLAN_VECTOR_MAX_DISK_MB = undefined;
+    cfg.MEDEA_PLAN_VECTOR_MAX_VECTORS = undefined;
+    cfg.MEDEA_PLAN_VECTOR_MAX_DISK_MB = undefined;
     expect(vectorPlanLimitsFromConfig()).toEqual({ maxVectors: null, maxDiskMb: null });
   });
 

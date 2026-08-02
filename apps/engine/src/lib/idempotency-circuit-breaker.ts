@@ -15,12 +15,12 @@
  * primi 5, poi breaker open + fail-fast) vs ~50s pre-fix.
  *
  * Pattern: standard resilience engineering (Resilience4j, Hystrix legacy,
- * Polly .NET). Riusa il CircuitBreaker enterprise di @zeliai/shared
+ * Polly .NET). Riusa il CircuitBreaker enterprise di @medea/engine-shared
  * (commit fc7d72e — sliding window + HALF_OPEN atomic probe + jitter).
  */
 
-import { CircuitBreaker, CircuitOpenError } from '@zeliai/shared';
-import type { IdempotencyStore, AcquireResult } from '@flowforge/nodes-stdlib';
+import { CircuitBreaker, CircuitOpenError } from '@medea/engine-shared';
+import type { IdempotencyStore, AcquireResult } from '@medea/engine-nodes-stdlib';
 
 export interface CircuitBreakerStoreOptions {
   /** N° acquire/complete falliti consecutivi prima di OPEN. Default 5. */

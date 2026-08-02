@@ -209,7 +209,7 @@ export type NodeResource = z.infer<typeof NodeResourceSchema>;
  * del vendor nel sandbox isolated-vm ogni `pollIntervalSec` e avvia un run per
  * ogni evento emesso). I trigger `mode='stream'` sono dichiarabili ma il sandbox
  * non può tenere connessioni persistenti → il compiler dell'SDK li rifiuta
- * esplicitamente (vedi @flowforge/community-node-sdk). Per lo streaming reale si
+ * esplicitamente (vedi @medea/engine-community-node-sdk). Per lo streaming reale si
  * usano i trigger built-in (trigger_websocket).
  *
  * Campo additivo+opzionale → zero impatto sui NodeDef esistenti.

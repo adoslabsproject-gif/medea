@@ -85,7 +85,7 @@ export const pdfParseNode: NodeModule = {
  *   - `pageCount` (number): n pagine generate
  *
  * NOMI CAMPI: devono matchare ESATTAMENTE i `config.X` letti dall'executor
- * `pdfGenerateExecutor` in `apps/flowforge-runtime/src/executors/pdf.ts`.
+ * `pdfGenerateExecutor` in `apps/engine/src/executors/pdf.ts`.
  */
 export const pdfGenerateNode: NodeModule = {
   def: {

@@ -38,7 +38,7 @@ import {
   NetworkError,
   TimeoutError,
   NodeError,
-} from '@flowforge/nodes-stdlib';
+} from '@medea/engine-nodes-stdlib';
 
 function makeCtx(retryCount = 5): DispatchContext {
   return {

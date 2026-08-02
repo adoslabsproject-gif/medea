@@ -1,7 +1,7 @@
 /**
  * GUARD anti-regressione — confine browser/server del catalogo nodi.
  *
- * L'editor importa l'INTERO catalogo nodi (@flowforge/nodes-stdlib) per i
+ * L'editor importa l'INTERO catalogo nodi (@medea/engine-nodes-stdlib) per i
  * metadata (NodeDef): se anche UN nodo importa `node:fs`/`node:crypto`/… a
  * livello value top-level, Vite lo trascina nel bundle browser → warning
  * "externalized for browser" e peso inutile (incident 2026-06-09).

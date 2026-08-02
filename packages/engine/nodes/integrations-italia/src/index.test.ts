@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { NodeDefSchema } from '@flowforge/core-schema';
+import { NodeDefSchema } from '@medea/engine-core-schema';
 import { italianConnectors } from './index.js';
 
 describe('italianConnectors', () => {

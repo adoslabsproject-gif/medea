@@ -5,7 +5,7 @@
  * (preferredDefaultProvider, disabledProviders[], rateLimit per provider).
  *
  * Two-tier enforcement (intentional):
- *   1. Global env `FLOWFORGE_DISABLE_LIARA=true` — set by sysops, applies
+ *   1. Global env `MEDEA_DISABLE_LIARA=true` — set by sysops, applies
  *      to the entire instance. Cannot be overridden from UI.
  *   2. Per-tenant `allow_liara=0` — set by tenant admin in Settings UI.
  *      Only narrows further; cannot re-enable Liara when the global is off.

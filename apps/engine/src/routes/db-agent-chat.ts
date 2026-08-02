@@ -98,7 +98,7 @@ export function createDbAgentChatRoutes(opts: DbAgentChatRouteOptions = {}): Hon
         // AUTH: il gateway Liara (portal) ESIGE la LICENSE KEY come Bearer (non una
         // API key del tenant). I provider BYOK usano la loro apiKey. Ollama locale
         // non richiede auth. (Identico a llm-chat.service per la chat non-tool.)
-        const authKey = r.provider === 'liara' ? (process.env.FLOWFORGE_LICENSE_KEY ?? '') : r.apiKey;
+        const authKey = r.provider === 'liara' ? (process.env.MEDEA_LICENSE_KEY ?? '') : r.apiKey;
         llmTurn = makeOpenAiLlmTurn({
           endpoint: target.url,
           apiKey: authKey,

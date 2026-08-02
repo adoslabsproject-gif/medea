@@ -189,7 +189,7 @@ describe('y-collab — N9 audit: size cap (DoS guard)', () => {
   it('MAX_YJS_MESSAGE_BYTES, default 1MB, env-configurabile', () => {
     expect(yCollabSource).toMatch(/MAX_YJS_MESSAGE_BYTES/);
     expect(yCollabSource).toMatch(/1024\s*\*\s*1024|1048576/);
-    expect(yCollabSource).toMatch(/FLOWFORGE_YJS_MAX_MESSAGE_BYTES/);
+    expect(yCollabSource).toMatch(/MEDEA_YJS_MAX_MESSAGE_BYTES/);
   });
   it('drop con log.warn + return su oversize (no disconnect)', () => {
     expect(yCollabSource).toMatch(/buf\.length\s*>\s*MAX_YJS_MESSAGE_BYTES[\s\S]+?logger\.warn[\s\S]+?return/);

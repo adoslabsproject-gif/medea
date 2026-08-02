@@ -15,7 +15,7 @@
  */
 
 import type { Hono } from 'hono';
-import type { Workflow, CanvasNode } from '@flowforge/core-schema';
+import type { Workflow, CanvasNode } from '@medea/engine-core-schema';
 import type { WorkflowService } from '@/services/workflow.service.js';
 import { getTenantId } from '@/lib/tenant.js';
 import { loadConfig } from '@/config.js';
@@ -26,7 +26,7 @@ import { buildWebhookRef, WebhookRefSchema } from '@/lib/webhook-ref.js';
 export interface WebhookUrlPayload {
   /** Path relativo pronto: /webhooks/<id>/<segment> o /webhooks/c/<path>/<segment>. */
   path: string;
-  /** URL assoluto quando FLOWFORGE_PUBLIC_BASE_URL è configurata, altrimenti null. */
+  /** URL assoluto quando MEDEA_PUBLIC_BASE_URL è configurata, altrimenti null. */
   url: string | null;
   /** Segmento token del path (derivato per `none`, secret per `header-token`, cosmetico altrove). */
   token: string;
@@ -94,7 +94,7 @@ export function registerWorkflowWebhookUrlRoutes(app: Hono, service: WorkflowSer
       ? `/webhooks/c/${customPath}/${segment}`
       : `/webhooks/${workflow.id}/${segment}`;
 
-    const base = loadConfig().FLOWFORGE_PUBLIC_BASE_URL;
+    const base = loadConfig().MEDEA_PUBLIC_BASE_URL;
     const url = base ? `${base.replace(/\/+$/u, '')}${path}` : null;
 
     // Il ref esiste solo dove il token è derivato (indirection possibile) e

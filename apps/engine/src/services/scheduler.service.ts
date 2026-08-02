@@ -10,7 +10,7 @@ import { logger } from '@/lib/logger.js';
 import { WorkflowService } from './workflow.service.js';
 import { RunService } from './run.service.js';
 import type { IEventBus } from '@/ports/event-bus.js';
-import type { Workflow } from '@flowforge/core-schema';
+import type { Workflow } from '@medea/engine-core-schema';
 
 interface ScheduledJob {
   workflowId: string;

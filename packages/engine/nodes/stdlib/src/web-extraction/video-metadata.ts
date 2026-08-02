@@ -17,14 +17,14 @@
  * Response: JSON ffprobe standard (streams[], format{}, chapters[]).
  */
 
-import { safeFetchWithRedirects } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects } from '@medea/engine-safe-fetch';
 import type { NodeModule, NodeExecutor } from '../types.js';
 
 const executor: NodeExecutor = async (config, input, _context) => {
   const start = Date.now();
-  const endpoint = String(config.endpoint ?? process.env.FLOWFORGE_FFPROBE_ENDPOINT ?? '').trim();
+  const endpoint = String(config.endpoint ?? process.env.MEDEA_FFPROBE_ENDPOINT ?? '').trim();
   if (!endpoint) {
-    throw new Error('ffprobe endpoint not configured. Set FLOWFORGE_FFPROBE_ENDPOINT env or fill "endpoint" config. Setup: deploy ffprobe server (es. https://github.com/jrottenberg/ffmpeg + node wrapper).');
+    throw new Error('ffprobe endpoint not configured. Set MEDEA_FFPROBE_ENDPOINT env or fill "endpoint" config. Setup: deploy ffprobe server (es. https://github.com/jrottenberg/ffmpeg + node wrapper).');
   }
 
   const inputType = String(config.inputType ?? 'url');
@@ -130,8 +130,8 @@ export const videoMetadataNode: NodeModule = {
       'inutile alla maggior parte dei tenant che non usano video. Pattern microservice: il tenant deploya ' +
       'un wrapper HTTP separato (immagine docker pre-pronta `jrottenberg/ffmpeg` + Express HTTP, oppure ' +
       'Cloud Run/Lambda con custom container, oppure self-hosted dedicated server) e configura l\'endpoint ' +
-      'qui o via env FLOWFORGE_FFPROBE_ENDPOINT condivisa. Pattern SSRF-safe sempre: quando l\'URL del video ' +
-      'da analizzare proviene da config user-driven o input esterno, il request passa per @flowforge/safe-' +
+      'qui o via env MEDEA_FFPROBE_ENDPOINT condivisa. Pattern SSRF-safe sempre: quando l\'URL del video ' +
+      'da analizzare proviene da config user-driven o input esterno, il request passa per @medea/engine-safe-' +
       'fetch che blocca URL privati 192.168/127.* per security. ' +
       'Use case: indicizzazione media library di una piattaforma streaming/VOD con catalogazione automatic ' +
       'di tutti i file caricati dal content team in metadata schema searchable; QA pre-publish per verifica ' +
@@ -148,7 +148,7 @@ export const videoMetadataNode: NodeModule = {
         type: 'text',
         required: false,
         placeholder: 'http://ffprobe.internal:8080',
-        help: 'URL del wrapper ffprobe HTTP. Lascia VUOTO per usare la env `FLOWFORGE_FFPROBE_ENDPOINT` (consigliato in produzione: 1 wrapper condiviso). Esempio container locale: `docker run -d -p 8080:8080 jrottenberg/ffmpeg-http`. Deve esporre `POST /probe` con body `{ url|data }` e ritornare JSON ffprobe standard.',
+        help: 'URL del wrapper ffprobe HTTP. Lascia VUOTO per usare la env `MEDEA_FFPROBE_ENDPOINT` (consigliato in produzione: 1 wrapper condiviso). Esempio container locale: `docker run -d -p 8080:8080 jrottenberg/ffmpeg-http`. Deve esporre `POST /probe` con body `{ url|data }` e ritornare JSON ffprobe standard.',
       },
       {
         key: 'apiKey',

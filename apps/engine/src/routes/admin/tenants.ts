@@ -18,7 +18,7 @@ import type { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
-import { hashPassword } from '@flowforge/auth-local';
+import { hashPassword } from '@medea/engine-auth-local';
 import { AdminStatsService } from '@/services/admin-stats.service.js';
 import { getDatabase } from '@/storage/db.js';
 import { AuditLogService } from '@/services/audit.service.js';

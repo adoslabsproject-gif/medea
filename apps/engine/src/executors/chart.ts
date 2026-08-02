@@ -7,10 +7,10 @@
  * sensati → a prova di idiota.
  *
  * NOMI CAMPI: matchano ESATTAMENTE `config.X` del NodeDef `chartGenerateNode`
- * in packages/flowforge/nodes/stdlib/src/actions/chart.ts.
+ * in packages/engine/nodes/stdlib/src/actions/chart.ts.
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { renderChartSvg, svgToDataUri, escapeXml, PALETTES, type ChartType } from './chart-render.js';
 
 const CHART_TYPES: ReadonlySet<string> = new Set(['line', 'bar', 'pie', 'area']);

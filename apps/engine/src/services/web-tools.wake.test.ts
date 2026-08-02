@@ -16,11 +16,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const safeFetchMock = vi.hoisted(() => ({
   validateUrlForFetch: vi.fn((_url: string) => ({ ok: true })),
 }));
-vi.mock('@flowforge/safe-fetch', async (importOriginal) => ({ ...(await importOriginal<typeof import('@flowforge/safe-fetch')>()), ...safeFetchMock }));
+vi.mock('@medea/engine-safe-fetch', async (importOriginal) => ({ ...(await importOriginal<typeof import('@medea/engine-safe-fetch')>()), ...safeFetchMock }));
 vi.mock('@/lib/logger.js');
 
 import { fetchUrl, isWorkspaceWakePage, WorkspaceWakingError } from './web-tools.service.js';
-import { clearBreakerRegistry } from '@flowforge/nodes-stdlib';
+import { clearBreakerRegistry } from '@medea/engine-nodes-stdlib';
 
 /** La pagina di wake REALE servita da nginx @waking (copiata 1:1 dall'incidente). */
 const WAKE_HTML = `<!doctype html> <html lang="it"><head> <meta charset="utf-8"> <meta http-equiv="refresh" content="1"> <meta name="viewport" content="width=device-width, initial-scale=1"> <meta name="robots" content="noindex, nofollow"> <title>Avvio del workspace…</title> <style> html,body{margin:0;height:100%;background:#0b0b0d;color:#f4f4f5} </style></head> <body><div class="wrap"> <div class="spinner" aria-hidden="true"></div> <p>Avvio del workspace in corso…</p> <p class="sub">Il tuo ambiente si era messo in pausa. Riparte in pochi secondi — questa pagina si aggiorna da sola.</p> </div></body></html>`;

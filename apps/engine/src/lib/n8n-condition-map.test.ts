@@ -2,12 +2,12 @@
  * Bug-bounty + CONTRACT test — mapping condizioni IF n8n → FlowForge.
  *
  * Il pezzo forte: il conditionRules generato viene parsato e VALUTATO dal motore
- * REALE di FlowForge (parseRuleset + evaluateRuleset di @flowforge/nodes-stdlib) su
+ * REALE di FlowForge (parseRuleset + evaluateRuleset di @medea/engine-nodes-stdlib) su
  * input campione → prova che l'IF importato FUNZIONA, non solo "sembra giusto".
  */
 import { describe, it, expect } from 'vitest';
 import { mapN8nIfConditions } from './n8n-condition-map.js';
-import { parseRuleset, evaluateRuleset } from '@flowforge/nodes-stdlib';
+import { parseRuleset, evaluateRuleset } from '@medea/engine-nodes-stdlib';
 
 function rules(config: Record<string, string>): { combinator: string; rules: { left: string; op: string; right?: string; type: string }[] } {
   return JSON.parse(config.conditionRules ?? '{}') as never;

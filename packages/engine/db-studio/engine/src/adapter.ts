@@ -1,4 +1,4 @@
-import type { Database, MigrationAction, QuerySpec, Relation, Table } from '@flowforge/db-studio-core';
+import type { Database, MigrationAction, QuerySpec, Relation, Table } from '@medea/engine-db-studio-core';
 
 export interface QueryResult<T = Record<string, unknown>> {
   rows: T[];

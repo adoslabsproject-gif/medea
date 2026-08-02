@@ -26,7 +26,7 @@ import { publishTestEvent } from '@/services/test-event-bus.service.js';
 import { webhookIdempotencySeen, bodyHash } from '@/routes/webhook-guards.js';
 import { verifyTelegramSecret } from './verify.js';
 import { normalizeTelegramUpdate } from './normalize.js';
-import type { Workflow, CanvasNode } from '@flowforge/core-schema';
+import type { Workflow, CanvasNode } from '@medea/engine-core-schema';
 
 export const TELEGRAM_TRIGGER_DEF_ID = 'trigger_telegram';
 

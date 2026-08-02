@@ -93,9 +93,9 @@ const FETCH_TIMEOUT_MS = 10_000;
  * block-listano gli UA contenenti "bot/spider/agent/+http..." come anomaly.
  * Bloccarci con un UA marker-based ci impedisce qualsiasi search gratuito.
  * Per fetch identificabili (sites che vogliono whitelistare il bot), si può
- * usare un secondo UA tramite l'env FLOWFORGE_BOT_UA (override custom).
+ * usare un secondo UA tramite l'env MEDEA_BOT_UA (override custom).
  */
-const USER_AGENT = process.env.FLOWFORGE_BOT_UA
+const USER_AGENT = process.env.MEDEA_BOT_UA
   ?? 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36';
 
 /**
@@ -150,7 +150,7 @@ export async function fetchUrl(rawUrl: string): Promise<FetchUrlResult> {
   // Secondo livello (#194 M2): bloccare IP privati/cloud metadata anche se
   // hostname legit; protegge da DNS rebind verso CNAME malevoli risolti
   // a 169.254.169.254.
-  const { validateUrlForFetch } = await import('@flowforge/safe-fetch');
+  const { validateUrlForFetch } = await import('@medea/engine-safe-fetch');
   const ssrf = validateUrlForFetch(url.toString());
   if (!ssrf.ok) {
     throw new Error(`SSRF guard: ${ssrf.reason} (${ssrf.detail ?? 'invalid'})`);

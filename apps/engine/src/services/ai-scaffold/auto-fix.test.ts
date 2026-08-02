@@ -592,7 +592,7 @@ describe('autoFixWorkflow — obsolete model auto-clear (2026-06-07)', () => {
     const PYTHON_CODE = [
       'import json, os',
       '',
-      'data = json.loads(os.environ.get("FLOWFORGE_INPUT", "{}"))',
+      'data = json.loads(os.environ.get("MEDEA_INPUT", "{}"))',
       'print({"received_keys": list(data.keys()), "count": len(data)})',
     ].join('\n');
     const JS_CODE = [

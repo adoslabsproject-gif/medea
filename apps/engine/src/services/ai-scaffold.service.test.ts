@@ -10,8 +10,8 @@
  *  - execute(): delega a toolRegistry + push trace con step/elapsedMs
  *  - tool* methods: one-liner delegator (verifica chiamata handler)
  *  - AiScaffoldService.scaffold() routing:
- *    * FLOWFORGE_SCAFFOLD_MODE=singleshot (default) → runSingleshotScaffold
- *    * FLOWFORGE_SCAFFOLD_MODE=iter → runScaffold
+ *    * MEDEA_SCAFFOLD_MODE=singleshot (default) → runSingleshotScaffold
+ *    * MEDEA_SCAFFOLD_MODE=iter → runScaffold
  *  - SSE adapter singleshot: phase mapping + closePhase pattern
  *  - tool_call → tool_result chain (1 row per phase)
  */
@@ -129,7 +129,7 @@ beforeEach(() => {
       (mock as ReturnType<typeof vi.fn>).mockReset();
     }
   });
-  delete process.env.FLOWFORGE_SCAFFOLD_MODE;
+  delete process.env.MEDEA_SCAFFOLD_MODE;
 });
 
 describe('ScaffoldSession constructor + state', () => {
@@ -245,8 +245,8 @@ describe('🚨 AiScaffoldService.scaffold() — mode routing', () => {
     expect(m.runScaffold).not.toHaveBeenCalled();
   });
 
-  it('🚨 FLOWFORGE_SCAFFOLD_MODE=iter → runScaffold called', async () => {
-    process.env.FLOWFORGE_SCAFFOLD_MODE = 'iter';
+  it('🚨 MEDEA_SCAFFOLD_MODE=iter → runScaffold called', async () => {
+    process.env.MEDEA_SCAFFOLD_MODE = 'iter';
     m.runScaffold.mockResolvedValue({ workflowId: 'wf-1' });
     const svc = new AiScaffoldService();
     await svc.scaffold({ goal: 'test', tenantId: 't1' } as never);
@@ -254,8 +254,8 @@ describe('🚨 AiScaffoldService.scaffold() — mode routing', () => {
     expect(m.runSingleshotScaffold).not.toHaveBeenCalled();
   });
 
-  it('🚨 FLOWFORGE_SCAFFOLD_MODE=singleshot esplicito → runSingleshotScaffold', async () => {
-    process.env.FLOWFORGE_SCAFFOLD_MODE = 'singleshot';
+  it('🚨 MEDEA_SCAFFOLD_MODE=singleshot esplicito → runSingleshotScaffold', async () => {
+    process.env.MEDEA_SCAFFOLD_MODE = 'singleshot';
     m.runSingleshotScaffold.mockResolvedValue({ workflowId: 'wf-1' });
     const svc = new AiScaffoldService();
     await svc.scaffold({ goal: 'test', tenantId: 't1' } as never);
@@ -263,7 +263,7 @@ describe('🚨 AiScaffoldService.scaffold() — mode routing', () => {
   });
 
   it('mode sconosciuto (es. "broken") → fallback a runScaffold (legacy)', async () => {
-    process.env.FLOWFORGE_SCAFFOLD_MODE = 'broken-mode';
+    process.env.MEDEA_SCAFFOLD_MODE = 'broken-mode';
     m.runScaffold.mockResolvedValue({ workflowId: 'wf-1' });
     const svc = new AiScaffoldService();
     await svc.scaffold({ goal: 'test', tenantId: 't1' } as never);

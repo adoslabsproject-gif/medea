@@ -100,7 +100,7 @@ export function resolveWebhookRefs(text: string): string {
       dedupedWarn(
         `webhook-ref-unresolved:${workflowId}`,
         { workflowId },
-        'webhook ref non risolvibile: FLOWFORGE_SSO_SECRET assente — il link resta simbolico',
+        'webhook ref non risolvibile: MEDEA_SSO_SECRET assente — il link resta simbolico',
       );
       return whole;
     }

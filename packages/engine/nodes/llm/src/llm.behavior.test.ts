@@ -9,11 +9,11 @@
  *     description citava tokensUsed / matches / queryEmbedding / k inesistenti).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { NodeExecutionContext } from '@flowforge/nodes-stdlib';
+import type { NodeExecutionContext } from '@medea/engine-nodes-stdlib';
 
 const m = vi.hoisted(() => ({ fetch: vi.fn<(...a: unknown[]) => Promise<Response>>() }));
-vi.mock('@flowforge/safe-fetch', async (orig) => ({
-  ...(await orig<typeof import('@flowforge/safe-fetch')>()),
+vi.mock('@medea/engine-safe-fetch', async (orig) => ({
+  ...(await orig<typeof import('@medea/engine-safe-fetch')>()),
   safeFetchWithRedirects: (...a: unknown[]) => m.fetch(...a),
 }));
 

@@ -11,7 +11,7 @@
  *
  * @module services/db-studio/ssh-tunnel-bridge
  */
-import type { Database } from '@flowforge/db-studio-core';
+import type { Database } from '@medea/engine-db-studio-core';
 import { parseSshDbConfig } from '@/services/db-remote-ssh/policy.js';
 import { connectRemoteDbOverSsh, type SecretResolver } from '@/services/db-remote-ssh/connect.js';
 import { VaultSecretsService } from '@/services/vault-secrets.service.js';

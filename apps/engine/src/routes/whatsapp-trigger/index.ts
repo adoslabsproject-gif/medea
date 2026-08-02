@@ -38,7 +38,7 @@ import { publishTestEvent } from '@/services/test-event-bus.service.js';
 import { webhookIdempotencySeen, bodyHash } from '@/routes/webhook-guards.js';
 import { verifyMetaSignature, evaluateHandshake } from './verify.js';
 import { extractWhatsAppEvents, type NormalizedWhatsAppMessage, type NormalizedWhatsAppStatus } from './normalize.js';
-import type { Workflow, CanvasNode } from '@flowforge/core-schema';
+import type { Workflow, CanvasNode } from '@medea/engine-core-schema';
 
 export const WHATSAPP_TRIGGER_DEF_ID = 'trigger_whatsapp';
 

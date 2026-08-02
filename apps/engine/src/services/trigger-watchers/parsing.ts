@@ -16,7 +16,7 @@
  */
 
 import type { AddressObject } from 'mailparser';
-import { safeUserRegex } from '@flowforge/nodes-stdlib';
+import { safeUserRegex } from '@medea/engine-nodes-stdlib';
 import { logger } from '@/lib/logger.js';
 
 /**

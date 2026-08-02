@@ -7,7 +7,7 @@
  *   DBSSH_LIVE_SSH_KEY_PATH, DBSSH_LIVE_SSH_FP   (fingerprint SHA256 pinned)
  *   DBSSH_LIVE_DB_HOST, DBSSH_LIVE_DB_PORT, DBSSH_LIVE_DB_NAME,
  *   DBSSH_LIVE_DB_USER, DBSSH_LIVE_DB_PASS
- * e lancia: pnpm --filter @flowforge/runtime exec vitest run tunnel.live
+ * e lancia: pnpm --filter @medea/engine-runtime exec vitest run tunnel.live
  *
  * Prova la catena reale: openSshTunnel → Postgres su 127.0.0.1:localPort →
  * query di lettura. Conferma anche che l'utente è read-only (write rifiutata).

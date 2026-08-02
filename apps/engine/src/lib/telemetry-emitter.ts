@@ -20,7 +20,7 @@ interface TelemetryEvent {
 }
 
 const PORTAL_URL = process.env.PORTAL_INTERNAL_URL ?? 'http://host.docker.internal:3006';
-// 2026-06-06 fix: il portal valida con il SUO global secret (FLOWFORGE_INTERNAL_TOKEN
+// 2026-06-06 fix: il portal valida con il SUO global secret (MEDEA_INTERNAL_TOKEN
 // del portal env), non con il per-tenant token. Usiamo PORTAL_CALLBACK_TOKEN che
 // onboarding/provision propaga dal portal stesso. Fallback al per-tenant token solo
 // per legacy compat (container creati prima del fix → 401 silente come prima).
@@ -42,7 +42,7 @@ class TelemetryEmitter {
   start(bus: IEventBus, tenantId: string): void {
     if (this.timer) return;
     if (!INTERNAL_TOKEN) {
-      logger.warn({}, '[TELEMETRY] FLOWFORGE_INTERNAL_TOKEN missing — telemetry disabled');
+      logger.warn({}, '[TELEMETRY] MEDEA_INTERNAL_TOKEN missing — telemetry disabled');
       return;
     }
     this.unsubscribe = bus.subscribeTo('run.step', (event) => {

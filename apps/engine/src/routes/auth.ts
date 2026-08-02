@@ -4,7 +4,7 @@ import { deleteCookie } from 'hono/cookie';
 import { sessionCookieName } from '@/lib/session-cookie.js';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { hashPassword, verifyPassword, issueSessionToken, verifySessionToken } from '@flowforge/auth-local';
+import { hashPassword, verifyPassword, issueSessionToken, verifySessionToken } from '@medea/engine-auth-local';
 import { parseSessionFromCookieHeader } from '@/lib/session-cookie.js';
 import { revokeSession } from '@/services/security/session-revocation.js';
 import { logger } from '@/lib/logger.js';
@@ -52,7 +52,7 @@ export function createAuthRoutes(): Hono {
    *     owner). Questo è il caso "fresh install" — la finestra di rischio
    *     è zero perché chi installa controlla la VM.
    *   • Per ambienti SaaS multi-tenant con signup pubblico, settare
-   *     `FLOWFORGE_ALLOW_SIGNUP=1` (sblocca anche /auth/signup).
+   *     `MEDEA_ALLOW_SIGNUP=1` (sblocca anche /auth/signup).
    *
    * Senza questa hardening, chiunque poteva fare POST con un nuovo
    * `x-tenant-id` e diventare owner di un tenant inesistente, oppure
@@ -65,13 +65,13 @@ export function createAuthRoutes(): Hono {
 
     // #204 P0-5: Container-per-tenant mode — /register è DISABILITATO.
     // Quando il runtime gira come container tenant isolato (provisioned dal
-    // portal), `FLOWFORGE_TENANT_ID` è set → l'unico modo di creare utenti
+    // portal), `MEDEA_TENANT_ID` è set → l'unico modo di creare utenti
     // è via SSO JWE dal portal (admin/users CRUD). Esporre /register qui
     // permetterebbe a chiunque conoscesse il subdomain del tenant di creare
     // un account viewer e bypassare il portal billing/team management.
-    // Pre-fix: FLOWFORGE_ALLOW_SIGNUP=1 poteva sbloccare anche in container
+    // Pre-fix: MEDEA_ALLOW_SIGNUP=1 poteva sbloccare anche in container
     // mode — adesso il container-mode VINCE su signup-allowed.
-    const containerMode = (process.env.FLOWFORGE_TENANT_ID ?? '').trim() !== '';
+    const containerMode = (process.env.MEDEA_TENANT_ID ?? '').trim() !== '';
     if (containerMode) {
       logger.warn(
         { tenantId, email, ip: c.req.header('x-forwarded-for') ?? 'n/a' },
@@ -90,11 +90,11 @@ export function createAuthRoutes(): Hono {
     //     `x-tenant-id` qualsiasi e fare bootstrap come owner (la condizione
     //     vecchia era `WHERE tenant_id = ?` → userCount sempre 0 per
     //     tenant inesistenti).
-    //   • In tutti gli altri casi serve FLOWFORGE_ALLOW_SIGNUP=1.
+    //   • In tutti gli altri casi serve MEDEA_ALLOW_SIGNUP=1.
     //   • Inoltre il tenant_id richiesto deve PRE-ESISTERE (almeno un user
     //     deve già esserci per quel tenant) — un nuovo tenant si crea SOLO
     //     via /auth/signup, che ha la propria env-gate.
-    const signupAllowed = process.env.FLOWFORGE_ALLOW_SIGNUP === '1';
+    const signupAllowed = process.env.MEDEA_ALLOW_SIGNUP === '1';
     const totalUsers = (sqlite
       .prepare('SELECT COUNT(*) as c FROM users')
       .get() as { c: number }).c;
@@ -107,7 +107,7 @@ export function createAuthRoutes(): Hono {
     if (!signupAllowed && !isFreshInstall) {
       logger.warn({ tenantId, email, ip: c.req.header('x-forwarded-for') ?? 'n/a' }, 'register: blocked (signup disabled, not fresh install)');
       return c.json({
-        error: 'Registrazione disabilitata. Chiedi a un admin di crearti l\'account dal pannello Users, oppure imposta FLOWFORGE_ALLOW_SIGNUP=1 sul runtime per consentire il signup pubblico.',
+        error: 'Registrazione disabilitata. Chiedi a un admin di crearti l\'account dal pannello Users, oppure imposta MEDEA_ALLOW_SIGNUP=1 sul runtime per consentire il signup pubblico.',
         code: 'SIGNUP_DISABLED',
       }, 403);
     }
@@ -298,7 +298,7 @@ export function createAuthRoutes(): Hono {
   // can route to first-run-setup vs login. Returns no PII.
   //
   // Container-per-tenant: il runtime CONOSCE il proprio tenant via env
-  // FLOWFORGE_TENANT_ID. Questa e\` la SOURCE OF TRUTH (sistema principale).
+  // MEDEA_TENANT_ID. Questa e\` la SOURCE OF TRUTH (sistema principale).
   //
   // L'header `x-tenant-id` resta supportato come FALLBACK per scenari
   // legacy single-runtime/multi-tenant (deprecato — pre container-per-tenant
@@ -307,19 +307,19 @@ export function createAuthRoutes(): Hono {
   // senza env settato) — non dovrebbe mai matcharare in produzione.
   app.get('/auth/status', (c) => {
     const config = loadConfig();
-    // HIGH (2026-05-29): se FLOWFORGE_TENANT_ID e\` settato (deploy
+    // HIGH (2026-05-29): se MEDEA_TENANT_ID e\` settato (deploy
     // container-per-tenant normale), e\` SEMPRE la source of truth — NIENTE
     // fallback header. Solo se l'env e\` esplicitamente non settato (dev
     // single-runtime), accettiamo `x-tenant-id` per test locali.
     const headerTenant = c.req.header('x-tenant-id');
-    const envTenant = config.FLOWFORGE_TENANT_ID;
+    const envTenant = config.MEDEA_TENANT_ID;
     let tenantId: string;
     if (envTenant) {
       tenantId = envTenant;
       if (headerTenant && headerTenant !== envTenant) {
         logger.warn(
           { envTenant, headerTenant },
-          '[SECURITY] x-tenant-id header non corrisponde a env FLOWFORGE_TENANT_ID — IGNORATO',
+          '[SECURITY] x-tenant-id header non corrisponde a env MEDEA_TENANT_ID — IGNORATO',
         );
       }
     } else {
@@ -331,13 +331,13 @@ export function createAuthRoutes(): Hono {
       .prepare("SELECT COUNT(*) as c FROM users WHERE tenant_id = ?")
       .get(tenantId) as { c: number } | undefined;
     const userCount = row?.c ?? 0;
-    const signupAllowed = process.env.FLOWFORGE_ALLOW_SIGNUP === '1';
+    const signupAllowed = process.env.MEDEA_ALLOW_SIGNUP === '1';
     return c.json({ userCount, needsSetup: userCount === 0, signupAllowed });
   });
 
   /**
    * Self-service tenant signup. Disabled by default — set
-   * FLOWFORGE_ALLOW_SIGNUP=1 to enable (typically for SaaS scenarios).
+   * MEDEA_ALLOW_SIGNUP=1 to enable (typically for SaaS scenarios).
    *
    * Creates a NEW tenant + first-owner user atomically. The tenant slug
    * must be unique (we check via the existing users table — no tenant table
@@ -345,17 +345,17 @@ export function createAuthRoutes(): Hono {
    */
   app.post('/auth/signup', async (c) => {
     // #204 P0-5: container-per-tenant mode → /signup permanentemente disabilitato.
-    // Il container tenant è single-tenant per definizione (FLOWFORGE_TENANT_ID
+    // Il container tenant è single-tenant per definizione (MEDEA_TENANT_ID
     // env set dal portal al provision). Self-service multi-tenant signup non
     // ha senso qui — il provisioning di nuovi tenant avviene SOLO dal portal.
-    if ((process.env.FLOWFORGE_TENANT_ID ?? '').trim() !== '') {
+    if ((process.env.MEDEA_TENANT_ID ?? '').trim() !== '') {
       return c.json({
         error: 'Signup non disponibile in container mode. Usa il portal automazionezeli.com.',
         code: 'CONTAINER_MODE_NO_SIGNUP',
       }, 403);
     }
-    if (process.env.FLOWFORGE_ALLOW_SIGNUP !== '1') {
-      return c.json({ error: 'Self-service signup non abilitato. Imposta FLOWFORGE_ALLOW_SIGNUP=1 sul runtime.' }, 403);
+    if (process.env.MEDEA_ALLOW_SIGNUP !== '1') {
+      return c.json({ error: 'Self-service signup non abilitato. Imposta MEDEA_ALLOW_SIGNUP=1 sul runtime.' }, 403);
     }
     const raw = (await c.req.json()) as unknown;
     if (!raw || typeof raw !== 'object') return c.json({ error: 'Body required' }, 400);

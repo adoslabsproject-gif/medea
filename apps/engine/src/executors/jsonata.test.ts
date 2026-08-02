@@ -87,12 +87,12 @@ describe('🚨🚨 jsonata — timeboxing (anti-DoS CPU)', () => {
     // funzione che richiama se stessa all'infinito: il timebox la ferma.
     // Timeout abbassato a 500ms via env → test veloce e deterministico (il default
     // di prod è 5s e coinciderebbe col testTimeout di vitest sotto carico).
-    process.env.FLOWFORGE_JSONATA_TIMEOUT_MS = '500';
+    process.env.MEDEA_JSONATA_TIMEOUT_MS = '500';
     try {
       const expr = '( $f := function($x){ $f($x) }; $f(1) )';
       await expect(run({ expression: expr }, {})).rejects.toThrow(/profondità massima|timeout|eval error/u);
     } finally {
-      delete process.env.FLOWFORGE_JSONATA_TIMEOUT_MS;
+      delete process.env.MEDEA_JSONATA_TIMEOUT_MS;
     }
   });
 

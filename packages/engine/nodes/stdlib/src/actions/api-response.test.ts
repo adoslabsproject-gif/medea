@@ -11,7 +11,7 @@ import { apiResponseNode } from './api-response.js';
 const api = apiResponseNode.executor!;
 const ctx = {} as never;
 
-/** Replica la validazione del runtime (apps/flowforge-runtime/src/routes/webhooks.ts). */
+/** Replica la validazione del runtime (apps/engine/src/routes/webhooks.ts). */
 function asSentinel(output: unknown): { status: number; contentType: string; body: string; headers: Record<string, string> } {
   const o = output as Record<string, unknown>;
   const p = o.__webhookResponse as Record<string, unknown>;

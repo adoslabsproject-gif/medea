@@ -46,9 +46,9 @@ const executor: NodeExecutor = async (config, _input, context) => {
   }
 
   const userAgent = String(config.userAgent ?? 'FlowForge-SmartScrape/1.0').trim();
-  const browserEndpoint = String(config.browserEndpoint ?? process.env.FLOWFORGE_BROWSER_ENDPOINT ?? '').trim();
+  const browserEndpoint = String(config.browserEndpoint ?? process.env.MEDEA_BROWSER_ENDPOINT ?? '').trim();
   const browserApiKey = String(config.browserApiKey ?? '').trim();
-  const stealthEndpoint = String(config.stealthEndpoint ?? process.env.FLOWFORGE_STEALTH_ENDPOINT ?? '').trim();
+  const stealthEndpoint = String(config.stealthEndpoint ?? process.env.MEDEA_STEALTH_ENDPOINT ?? '').trim();
   const stealthApiKey = String(config.stealthApiKey ?? '').trim();
   const liaraEndpoint = String(config.liaraEndpoint ?? '').trim() || undefined;
   const liaraApiKey = String(config.liaraApiKey ?? '').trim() || undefined;
@@ -180,7 +180,7 @@ export const scrapeSmartNode: NodeModule = {
       'Estrazione: un LLM OpenAI-compatibile (default Liara locale, ma puoi puntarlo a QUALSIASI endpoint /v1/chat/completions via i campi sotto) riceve HTML + prompt naturale ("estrai prezzo, titolo, immagine") + schema JSON target → ritorna oggetto strutturato. No CSS selectors.\n\n' +
       'Pagination: auto-detect rel="next", aria-label "Next", text "Successivo/Avanti/›", URL pattern page=N → page=N+1. Follow fino a maxPages.\n\n' +
       'Observability: ogni request espone pipelineSteps con stage usato + duration + evidence + errore.\n\n' +
-      'Setup BYO: configura FLOWFORGE_BROWSER_ENDPOINT + FLOWFORGE_STEALTH_ENDPOINT (browserless self-host o managed Zeli). LLM = qualsiasi endpoint OpenAI-compatibile (default Liara locale :3003); override endpoint/key/model nei campi.\n\n' +
+      'Setup BYO: configura MEDEA_BROWSER_ENDPOINT + MEDEA_STEALTH_ENDPOINT (browserless self-host o managed Zeli). LLM = qualsiasi endpoint OpenAI-compatibile (default Liara locale :3003); override endpoint/key/model nei campi.\n\n' +
       'Use case: (1) scraping listing prodotti e-commerce con pagination + extract JSON strutturato, (2) ingest dati pubblici (registri/anagrafiche) con fallback adaptive, (3) monitoring concorrenti con AI extract di prezzi e stock, (4) onboarding cliente B2B che chiede "scarica i miei dati da X" senza scrivere CSS selectors.',
     vendor: 'flowforge',
     version: '1.0.0',
@@ -193,9 +193,9 @@ export const scrapeSmartNode: NodeModule = {
       { key: 'pageDelayMs', label: 'Delay tra pagine (ms)', type: 'number', required: false, defaultValue: '1000', help: 'Pausa human-like tra page fetch. Default 1s.' },
       { key: 'timeoutMs', label: 'Timeout per stage (ms)', type: 'number', required: false, defaultValue: '30000', help: 'Max per ogni stage. Default 30s. Max 120s.' },
       { key: 'userAgent', label: 'User-Agent (fetch_simple)', type: 'text', required: false, defaultValue: 'FlowForge-SmartScrape/1.0', help: 'UA per fetch HTTP plain. Browser usano fingerprint propri.' },
-      { key: 'browserEndpoint', label: 'Browser endpoint (BYO)', type: 'text', required: false, placeholder: 'env FLOWFORGE_BROWSER_ENDPOINT', help: 'Server Playwright. Vuoto = no upgrade a stage 2.' },
+      { key: 'browserEndpoint', label: 'Browser endpoint (BYO)', type: 'text', required: false, placeholder: 'env MEDEA_BROWSER_ENDPOINT', help: 'Server Playwright. Vuoto = no upgrade a stage 2.' },
       { key: 'browserApiKey', label: 'Browser API key', type: 'secret', required: false, help: 'Bearer browser endpoint.' },
-      { key: 'stealthEndpoint', label: 'Stealth endpoint (BYO)', type: 'text', required: false, placeholder: 'env FLOWFORGE_STEALTH_ENDPOINT', help: 'Server stealth (puppeteer-extra). Vuoto = no upgrade a stage 3.' },
+      { key: 'stealthEndpoint', label: 'Stealth endpoint (BYO)', type: 'text', required: false, placeholder: 'env MEDEA_STEALTH_ENDPOINT', help: 'Server stealth (puppeteer-extra). Vuoto = no upgrade a stage 3.' },
       { key: 'stealthApiKey', label: 'Stealth API key', type: 'secret', required: false, help: 'Bearer stealth endpoint.' },
       { key: 'liaraEndpoint', label: 'LLM endpoint (OpenAI-compat, override)', type: 'text', required: false, help: 'Vuoto = Liara via gateway FlowForge (default, metered sulla quota). Compila SOLO per un provider OpenAI-compatibile tuo (OpenAI, Groq, OpenRouter, vLLM, Ollama…).' },
       { key: 'liaraApiKey', label: 'LLM API key (Bearer, override)', type: 'secret', required: false, help: 'Bearer token dell\'endpoint custom. Vuoto = license del workspace (gateway Liara).' },

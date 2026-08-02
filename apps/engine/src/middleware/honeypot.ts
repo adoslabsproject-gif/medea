@@ -13,14 +13,14 @@
  * Risoluzione: 404 esplicito + fire-and-forget POST a Sentinel `/honeypot/hit`
  * (auto-ban dopo HONEYPOT_BAN_THRESHOLD hit per IP in 24h).
  *
- * Wire-up: apps/flowforge-runtime/src/server.ts SUBITO dopo `requestId` /
+ * Wire-up: apps/engine/src/server.ts SUBITO dopo `requestId` /
  * `honoLogger`, PRIMA di qualsiasi mount route — così intercetta anche path
  * che altrimenti finirebbero nello SPA fallback (`attachStaticUi` last).
  */
 
 import type { MiddlewareHandler, Context } from 'hono';
 import { readJsonCapped } from '@/lib/capped-response.js';
-import { classifyHoneypotPath } from '@zeliai/shared';
+import { classifyHoneypotPath } from '@medea/engine-shared';
 import { loggerFor } from '@/lib/logger.js';
 
 // PSR-3 channel: honeypot hits sono security events — finiscono nel canale

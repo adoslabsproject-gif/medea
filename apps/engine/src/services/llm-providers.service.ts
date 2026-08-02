@@ -21,7 +21,7 @@
  */
 
 import { nanoid } from 'nanoid';
-import { encryptSecret, decryptSecret, type EncryptedSecret } from '@flowforge/secrets';
+import { encryptSecret, decryptSecret, type EncryptedSecret } from '@medea/engine-secrets';
 import { getDatabase } from '@/storage/db.js';
 import { logger } from '@/lib/logger.js';
 import { AuditLogService } from './audit.service.js';
@@ -141,7 +141,7 @@ export class LlmProvidersService {
       byProvider.set(r.provider, { metadata: meta, updatedAt: r.updated_at });
     }
 
-    // On-prem builds (FLOWFORGE_DISABLE_LIARA=true) hide liara from the list
+    // On-prem builds (MEDEA_DISABLE_LIARA=true) hide liara from the list
     // entirely — the admin must configure a different provider.
     const liaraOk = isLiaraEnabled();
     const visibleProviders = liaraOk ? SUPPORTED_PROVIDERS : SUPPORTED_PROVIDERS.filter((p) => p !== 'liara');

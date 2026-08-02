@@ -4,8 +4,8 @@
  * Coverage:
  *  - P0-4: /auth/bootstrap NON ritorna `token` nel body (solo `user`)
  *  - P0-4: /auth/bootstrap senza cookie ff_session → 401
- *  - P0-5: container-mode (FLOWFORGE_TENANT_ID set) → /auth/register 403
- *  - P0-5: container-mode → /auth/signup 403 anche con FLOWFORGE_ALLOW_SIGNUP=1
+ *  - P0-5: container-mode (MEDEA_TENANT_ID set) → /auth/register 403
+ *  - P0-5: container-mode → /auth/signup 403 anche con MEDEA_ALLOW_SIGNUP=1
  *  - non-container-mode: /auth/register passa il container gate (resta blocked
  *    da altri gate, ma il CONTAINER_MODE_NO_REGISTER NON appare)
  *  - /auth/me con auth → ritorna user
@@ -36,7 +36,7 @@ vi.mock('@/storage/db.js', () => ({
   }),
 }));
 
-vi.mock('@flowforge/auth-local', () => ({
+vi.mock('@medea/engine-auth-local', () => ({
   hashPassword: (...a: unknown[]) => m.hashPassword(...a),
   verifyPassword: (...a: unknown[]) => m.verifyPassword(...a),
 }));
@@ -66,8 +66,8 @@ vi.mock('jsonwebtoken', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
-  delete process.env.FLOWFORGE_TENANT_ID;
-  delete process.env.FLOWFORGE_ALLOW_SIGNUP;
+  delete process.env.MEDEA_TENANT_ID;
+  delete process.env.MEDEA_ALLOW_SIGNUP;
 });
 
 async function buildApp(opts?: { authCtx?: { userId: string; role: 'owner' | 'superadmin' | 'editor' | 'operator' | 'viewer'; email: string; tenantId: string } }) {
@@ -116,8 +116,8 @@ describe('#203 P0-4: /auth/bootstrap NO echo token nel body', () => {
 });
 
 describe('#204 P0-5: /auth/register block in container-per-tenant mode', () => {
-  it('FLOWFORGE_TENANT_ID set → register 403 CONTAINER_MODE_NO_REGISTER', async () => {
-    process.env.FLOWFORGE_TENANT_ID = 'tenant-customer-abc';
+  it('MEDEA_TENANT_ID set → register 403 CONTAINER_MODE_NO_REGISTER', async () => {
+    process.env.MEDEA_TENANT_ID = 'tenant-customer-abc';
     const app = await buildApp();
     const res = await app.request('/api/v1/auth/register', {
       method: 'POST',
@@ -135,10 +135,10 @@ describe('#204 P0-5: /auth/register block in container-per-tenant mode', () => {
     expect(m.sqliteRun).not.toHaveBeenCalled();
   });
 
-  it('FLOWFORGE_TENANT_ID set → register 403 anche con FLOWFORGE_ALLOW_SIGNUP=1', async () => {
+  it('MEDEA_TENANT_ID set → register 403 anche con MEDEA_ALLOW_SIGNUP=1', async () => {
     // Container-mode VINCE su signup-allowed (defense-in-depth).
-    process.env.FLOWFORGE_TENANT_ID = 'tenant-customer-abc';
-    process.env.FLOWFORGE_ALLOW_SIGNUP = '1';
+    process.env.MEDEA_TENANT_ID = 'tenant-customer-abc';
+    process.env.MEDEA_ALLOW_SIGNUP = '1';
     const app = await buildApp();
     const res = await app.request('/api/v1/auth/register', {
       method: 'POST',
@@ -154,9 +154,9 @@ describe('#204 P0-5: /auth/register block in container-per-tenant mode', () => {
     expect(body.code).toBe('CONTAINER_MODE_NO_REGISTER');
   });
 
-  it('FLOWFORGE_TENANT_ID set → signup 403 CONTAINER_MODE_NO_SIGNUP', async () => {
-    process.env.FLOWFORGE_TENANT_ID = 'tenant-customer-abc';
-    process.env.FLOWFORGE_ALLOW_SIGNUP = '1';
+  it('MEDEA_TENANT_ID set → signup 403 CONTAINER_MODE_NO_SIGNUP', async () => {
+    process.env.MEDEA_TENANT_ID = 'tenant-customer-abc';
+    process.env.MEDEA_ALLOW_SIGNUP = '1';
     const app = await buildApp();
     const res = await app.request('/api/v1/auth/signup', {
       method: 'POST',
@@ -173,11 +173,11 @@ describe('#204 P0-5: /auth/register block in container-per-tenant mode', () => {
     expect(body.code).toBe('CONTAINER_MODE_NO_SIGNUP');
   });
 
-  it('NO container-mode (FLOWFORGE_TENANT_ID unset/empty) → register NON ritorna CONTAINER_MODE_NO_REGISTER', async () => {
-    // No FLOWFORGE_TENANT_ID env → register passa il gate container.
+  it('NO container-mode (MEDEA_TENANT_ID unset/empty) → register NON ritorna CONTAINER_MODE_NO_REGISTER', async () => {
+    // No MEDEA_TENANT_ID env → register passa il gate container.
     // Stop su altro gate (SIGNUP_DISABLED se no fresh install), ma il
     // codice "CONTAINER_MODE_*" NON deve apparire.
-    delete process.env.FLOWFORGE_TENANT_ID;
+    delete process.env.MEDEA_TENANT_ID;
     // Simula utenti già presenti per evitare il fresh-install path.
     m.sqliteGet.mockReturnValueOnce({ c: 1 }).mockReturnValueOnce({ c: 1 });
     const app = await buildApp();
@@ -194,10 +194,10 @@ describe('#204 P0-5: /auth/register block in container-per-tenant mode', () => {
     expect(body.code).not.toBe('CONTAINER_MODE_NO_REGISTER');
   });
 
-  it('FLOWFORGE_TENANT_ID = "" (stringa vuota) NON è considerata container-mode', async () => {
+  it('MEDEA_TENANT_ID = "" (stringa vuota) NON è considerata container-mode', async () => {
     // Edge case: env settata ma vuota (.env malformed) → NON container-mode,
     // tornano i gate signup standard.
-    process.env.FLOWFORGE_TENANT_ID = '';
+    process.env.MEDEA_TENANT_ID = '';
     m.sqliteGet.mockReturnValueOnce({ c: 1 }).mockReturnValueOnce({ c: 1 });
     const app = await buildApp();
     const res = await app.request('/api/v1/auth/register', {

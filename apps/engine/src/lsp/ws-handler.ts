@@ -32,7 +32,7 @@
 import type { Server } from 'node:http';
 import { WebSocketServer } from 'ws';
 import { logger } from '@/lib/logger.js';
-import { verifySessionToken } from '@flowforge/auth-local';
+import { verifySessionToken } from '@medea/engine-auth-local';
 import { extractWsSessionToken } from '@/lib/ws-auth.js';
 import { TypeScriptLsp, type VirtualFile } from './typescript-lsp.js';
 

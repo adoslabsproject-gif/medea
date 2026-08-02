@@ -21,7 +21,7 @@
  *  - un `node` accanto al resto, così l'app non dipende da quello di sistema.
  *
  * Uso:
- *   FLOWFORGE_RUNTIME_SRC=/percorso/a/apps/flowforge-runtime \
+ *   FLOWFORGE_RUNTIME_SRC=/percorso/a/apps/engine \
  *     node scripts/package-runtime.mjs
  *
  * Il risultato finisce in `apps/desktop/src-tauri/resources/runtime/` e
@@ -49,7 +49,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TARGET = join(ROOT, 'apps/desktop/src-tauri/resources/runtime');
 
 /** Il nome del pacchetto nel workspace di FlowForge. */
-const PACKAGE = '@flowforge/runtime';
+const PACKAGE = '@medea/engine-runtime';
 
 function fail(message) {
   console.error(`\n✗ ${message}\n`);

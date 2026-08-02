@@ -15,18 +15,18 @@ describe('constantTimeEquals', () => {
 });
 
 describe('verifyInternalToken — fail-closed', () => {
-  afterEach(() => { delete process.env.FLOWFORGE_INTERNAL_TOKEN; });
+  afterEach(() => { delete process.env.MEDEA_INTERNAL_TOKEN; });
 
   it('secret non configurato → sempre false (anche con input non vuoto)', () => {
-    delete process.env.FLOWFORGE_INTERNAL_TOKEN;
+    delete process.env.MEDEA_INTERNAL_TOKEN;
     expect(verifyInternalToken(SECRET)).toBe(false);
   });
   it('input vuoto → false anche con secret configurato', () => {
-    process.env.FLOWFORGE_INTERNAL_TOKEN = SECRET;
+    process.env.MEDEA_INTERNAL_TOKEN = SECRET;
     expect(verifyInternalToken('')).toBe(false);
   });
   it('match esatto → true; mismatch → false', () => {
-    process.env.FLOWFORGE_INTERNAL_TOKEN = SECRET;
+    process.env.MEDEA_INTERNAL_TOKEN = SECRET;
     expect(verifyInternalToken(SECRET)).toBe(true);
     expect(verifyInternalToken('b'.repeat(40))).toBe(false);
   });
@@ -39,24 +39,24 @@ describe('requireInternalToken — middleware', () => {
     app.get('/x', (c) => c.json({ ok: true }));
     return app;
   };
-  afterEach(() => { delete process.env.FLOWFORGE_INTERNAL_TOKEN; });
+  afterEach(() => { delete process.env.MEDEA_INTERNAL_TOKEN; });
 
   it('secret non configurato → 401', async () => {
-    delete process.env.FLOWFORGE_INTERNAL_TOKEN;
+    delete process.env.MEDEA_INTERNAL_TOKEN;
     const res = await build().request('/x', { headers: { 'x-internal-token': SECRET } });
     expect(res.status).toBe(401);
   });
   it('header mancante → 401', async () => {
-    process.env.FLOWFORGE_INTERNAL_TOKEN = SECRET;
+    process.env.MEDEA_INTERNAL_TOKEN = SECRET;
     expect((await build().request('/x')).status).toBe(401);
   });
   it('token errato → 401', async () => {
-    process.env.FLOWFORGE_INTERNAL_TOKEN = SECRET;
+    process.env.MEDEA_INTERNAL_TOKEN = SECRET;
     const res = await build().request('/x', { headers: { 'x-internal-token': 'b'.repeat(40) } });
     expect(res.status).toBe(401);
   });
   it('token valido → 200 + passa al next', async () => {
-    process.env.FLOWFORGE_INTERNAL_TOKEN = SECRET;
+    process.env.MEDEA_INTERNAL_TOKEN = SECRET;
     const res = await build().request('/x', { headers: { 'x-internal-token': SECRET } });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
@@ -64,16 +64,16 @@ describe('requireInternalToken — middleware', () => {
 });
 
 describe('getOutboundPortalToken', () => {
-  beforeEach(() => { delete process.env.PORTAL_CALLBACK_TOKEN; delete process.env.FLOWFORGE_INTERNAL_TOKEN; });
-  afterEach(() => { delete process.env.PORTAL_CALLBACK_TOKEN; delete process.env.FLOWFORGE_INTERNAL_TOKEN; });
+  beforeEach(() => { delete process.env.PORTAL_CALLBACK_TOKEN; delete process.env.MEDEA_INTERNAL_TOKEN; });
+  afterEach(() => { delete process.env.PORTAL_CALLBACK_TOKEN; delete process.env.MEDEA_INTERNAL_TOKEN; });
 
   it('preferisce PORTAL_CALLBACK_TOKEN', () => {
     process.env.PORTAL_CALLBACK_TOKEN = 'portal';
-    process.env.FLOWFORGE_INTERNAL_TOKEN = 'internal';
+    process.env.MEDEA_INTERNAL_TOKEN = 'internal';
     expect(getOutboundPortalToken()).toBe('portal');
   });
-  it('fallback a FLOWFORGE_INTERNAL_TOKEN', () => {
-    process.env.FLOWFORGE_INTERNAL_TOKEN = 'internal';
+  it('fallback a MEDEA_INTERNAL_TOKEN', () => {
+    process.env.MEDEA_INTERNAL_TOKEN = 'internal';
     expect(getOutboundPortalToken()).toBe('internal');
   });
   it('nessuno dei due → stringa vuota (mai undefined)', () => {
@@ -82,32 +82,32 @@ describe('getOutboundPortalToken', () => {
 });
 
 describe('getLoopbackInternalToken — loopback runtime→se stesso (gap #7)', () => {
-  beforeEach(() => { delete process.env.PORTAL_CALLBACK_TOKEN; delete process.env.FLOWFORGE_INTERNAL_TOKEN; });
-  afterEach(() => { delete process.env.PORTAL_CALLBACK_TOKEN; delete process.env.FLOWFORGE_INTERNAL_TOKEN; });
+  beforeEach(() => { delete process.env.PORTAL_CALLBACK_TOKEN; delete process.env.MEDEA_INTERNAL_TOKEN; });
+  afterEach(() => { delete process.env.PORTAL_CALLBACK_TOKEN; delete process.env.MEDEA_INTERNAL_TOKEN; });
 
-  it('ritorna FLOWFORGE_INTERNAL_TOKEN', () => {
-    process.env.FLOWFORGE_INTERNAL_TOKEN = 'internal';
+  it('ritorna MEDEA_INTERNAL_TOKEN', () => {
+    process.env.MEDEA_INTERNAL_TOKEN = 'internal';
     expect(getLoopbackInternalToken()).toBe('internal');
   });
 
-  it('🚨 IGNORA PORTAL_CALLBACK_TOKEN — il proprio auth valida solo FLOWFORGE_INTERNAL_TOKEN', () => {
+  it('🚨 IGNORA PORTAL_CALLBACK_TOKEN — il proprio auth valida solo MEDEA_INTERNAL_TOKEN', () => {
     // Se questo helper preferisse PORTAL_CALLBACK_TOKEN (come getOutboundPortalToken),
     // il loopback al proprio /api/v1 darebbe 401 (verifyInternalToken confronta
-    // SOLO con FLOWFORGE_INTERNAL_TOKEN). Deve restare l'altro secret.
+    // SOLO con MEDEA_INTERNAL_TOKEN). Deve restare l'altro secret.
     process.env.PORTAL_CALLBACK_TOKEN = 'portal';
-    process.env.FLOWFORGE_INTERNAL_TOKEN = 'internal';
+    process.env.MEDEA_INTERNAL_TOKEN = 'internal';
     expect(getLoopbackInternalToken()).toBe('internal');
   });
 
   it('il token del loopback è ACCETTATO dal proprio verifyInternalToken (contract round-trip)', () => {
-    process.env.FLOWFORGE_INTERNAL_TOKEN = 'secret-xyz';
+    process.env.MEDEA_INTERNAL_TOKEN = 'secret-xyz';
     // ciò che l'outbound loopback presenta DEVE passare l'inbound dello stesso processo
     expect(verifyInternalToken(getLoopbackInternalToken())).toBe(true);
   });
 
   it('🚨 il token del PORTAL invece NON passa il proprio verifyInternalToken (prova che sono direzioni diverse)', () => {
     process.env.PORTAL_CALLBACK_TOKEN = 'portal-only';
-    process.env.FLOWFORGE_INTERNAL_TOKEN = 'internal-only';
+    process.env.MEDEA_INTERNAL_TOKEN = 'internal-only';
     expect(verifyInternalToken(getOutboundPortalToken())).toBe(false);
     expect(verifyInternalToken(getLoopbackInternalToken())).toBe(true);
   });

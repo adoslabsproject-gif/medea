@@ -2,8 +2,8 @@
  * File read/write executors with directory allowlist + path safety.
  *
  * Security: only allows operations within an allowlisted set of directories.
- * Default allowlist: /tmp, /var/data/flowforge, and any path under FLOWFORGE_DATA_DIR.
- * Admins can extend via env `FLOWFORGE_FILE_ALLOWLIST` (colon-separated absolute paths).
+ * Default allowlist: /tmp, /var/data/flowforge, and any path under MEDEA_DATA_DIR.
+ * Admins can extend via env `MEDEA_FILE_ALLOWLIST` (colon-separated absolute paths).
  *
  * Path traversal prevention: every path is resolved (via path.resolve) and
  * checked to be a STRICT child of an allowlist root. Symlinks are followed
@@ -12,8 +12,8 @@
 
 import { readFile, writeFile, appendFile, mkdir, stat, realpath } from 'node:fs/promises';
 import { resolve, dirname, basename, sep } from 'node:path';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
-import { makeBinaryInline, getBinaryData, readBinaryBytes } from '@flowforge/core-schema';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { makeBinaryInline, getBinaryData, readBinaryBytes } from '@medea/engine-core-schema';
 
 /** Mappa minima estensione→MIME per il binary output. Fallback octet-stream. */
 const MIME_BY_EXT: Record<string, string> = {
@@ -46,12 +46,12 @@ function guessMimeType(fileName: string): string {
 function getTenantRoot(tenantId: string): string {
   // Sanitize tenantId — only allow [a-z0-9-_], strip everything else
   const safeTenant = (tenantId || 'default').replace(/[^a-z0-9_-]/gi, '_');
-  const baseDir = process.env.FLOWFORGE_DATA_DIR ?? '/var/data/flowforge';
+  const baseDir = process.env.MEDEA_DATA_DIR ?? '/var/data/flowforge';
   return resolve(baseDir, 'tenants', safeTenant, 'files');
 }
 
 function getGlobalAllowlist(): string[] {
-  const envList = process.env.FLOWFORGE_FILE_ALLOWLIST ?? '';
+  const envList = process.env.MEDEA_FILE_ALLOWLIST ?? '';
   return envList.split(':').map((p) => p.trim()).filter(Boolean).map((p) => resolve(p));
 }
 

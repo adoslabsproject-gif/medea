@@ -24,7 +24,7 @@ import {
   __resetInternalServiceCacheForTest,
 } from './internal-service-fetch.js';
 
-const ENV_KEYS = ['PORTAL_INTERNAL_URL', 'LIARA_URL', 'CODE_RUNNER_URL', 'WHISPER_URL', 'VISION_URL', 'FLOWFORGE_RUNTIME_URL'];
+const ENV_KEYS = ['PORTAL_INTERNAL_URL', 'LIARA_URL', 'CODE_RUNNER_URL', 'WHISPER_URL', 'VISION_URL', 'MEDEA_RUNTIME_URL'];
 let savedEnv: Record<string, string | undefined>;
 
 beforeEach(() => {

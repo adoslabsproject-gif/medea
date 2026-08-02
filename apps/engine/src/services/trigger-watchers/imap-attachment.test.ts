@@ -11,7 +11,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { isBinaryData } from '@flowforge/core-schema';
+import { isBinaryData } from '@medea/engine-core-schema';
 import { buildImapAttachment, MAX_ATTACHMENT_BYTES } from './imap-attachment.js';
 import { BinaryStore } from '../binary-store.service.js';
 

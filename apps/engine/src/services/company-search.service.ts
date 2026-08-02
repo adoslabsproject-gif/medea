@@ -338,7 +338,7 @@ function registrableDomain(url: string): string | null {
 
 async function headValidate(url: string, timeoutMs: number): Promise<boolean> {
   // #202 P0-3: SSRF guard — url viene da WHOIS / search results (untrusted).
-  const { validateUrlForFetch } = await import('@flowforge/safe-fetch');
+  const { validateUrlForFetch } = await import('@medea/engine-safe-fetch');
   const guard = validateUrlForFetch(url);
   if (!guard.ok) return false;
 

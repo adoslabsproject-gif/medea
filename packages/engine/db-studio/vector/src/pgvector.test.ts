@@ -11,8 +11,8 @@ import { randomBytes } from 'node:crypto';
 import { PgVectorAdapter } from './pgvector.js';
 
 const USER = process.env.USER ?? 'postgres';
-const adminCfg = () => (process.env.FLOWFORGE_TEST_PG_URL
-  ? { connectionString: process.env.FLOWFORGE_TEST_PG_URL }
+const adminCfg = () => (process.env.MEDEA_TEST_PG_URL
+  ? { connectionString: process.env.MEDEA_TEST_PG_URL }
   : { host: '/tmp', database: 'postgres', user: USER });
 
 let dbName: string;

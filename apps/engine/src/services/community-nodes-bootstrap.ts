@@ -37,7 +37,7 @@ import { logger } from '@/lib/logger.js';
  * a module-load time che imprigionano il default.
  */
 function sourceDefaultsDir(): string {
-  return process.env.FLOWFORGE_COMMUNITY_DEFAULTS_DIR ?? '/app/community-defaults';
+  return process.env.MEDEA_COMMUNITY_DEFAULTS_DIR ?? '/app/community-defaults';
 }
 
 const FILES_TO_COPY = ['manifest.json', 'nodedef.json', 'executor.js', 'icon.svg'];
@@ -49,7 +49,7 @@ interface ManifestMinimal {
 }
 
 function dataDir(): string {
-  const base = process.env.FLOWFORGE_DATA_DIR ?? process.cwd();
+  const base = process.env.MEDEA_DATA_DIR ?? process.cwd();
   return join(base, 'installed-nodes');
 }
 

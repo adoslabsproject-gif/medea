@@ -74,7 +74,7 @@ jobs:
         run: pnpm -r --filter "./packages/engine/**" --filter "./packages/engine-shared" build
 
       - name: Costruisci il motore
-        run: pnpm --filter @flowforge/runtime build
+        run: pnpm --filter @medea/engine-runtime build
 
       - name: Impacchetta il motore dentro l'app
         run: node scripts/package-runtime.mjs

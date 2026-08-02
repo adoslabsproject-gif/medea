@@ -10,7 +10,7 @@ const communityNodesMock = vi.hoisted(() => ({
 vi.mock('@/services/community-nodes.service.js', () => communityNodesMock);
 
 import { WorkflowEngine, resolveContinueOnFail, shouldSoftFail } from './workflow-engine.js';
-import { HttpError, AuthError } from '@flowforge/nodes-stdlib';
+import { HttpError, AuthError } from '@medea/engine-nodes-stdlib';
 
 describe('shouldSoftFail (continue-on-fail per categoria)', () => {
   it('continueOnFail OFF → mai soft', () => {
@@ -33,7 +33,7 @@ describe('shouldSoftFail (continue-on-fail per categoria)', () => {
   });
 });
 import { InMemoryEventBus } from '@/adapters/event-bus-memory.js';
-import type { Workflow } from '@flowforge/core-schema';
+import type { Workflow } from '@medea/engine-core-schema';
 
 function makeWorkflow(partial: Partial<Workflow>): Workflow {
   return {
@@ -314,7 +314,7 @@ describe('WorkflowEngine', () => {
 // Extended coverage — copre i gap rimasti per arrivare al 100% lines/funcs.
 // Aggiunti 2026-05-30 per portare workflow-engine.ts da 59.81% → 100%.
 // ═══════════════════════════════════════════════════════════════════════
-import type { Workflow as WF, CanvasNode as CN, Edge as E } from '@flowforge/core-schema';
+import type { Workflow as WF, CanvasNode as CN, Edge as E } from '@medea/engine-core-schema';
 import type {
   IPauseHandler, ICheckpointHandler, PauseArgs, CheckpointArgs,
 } from './ports.js';
@@ -343,18 +343,18 @@ describe('WorkflowEngine — constructor options', () => {
     expect((cpHandler.save as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('FLOWFORGE_CHECKPOINT_EVERY_NODES env var fallback', async () => {
+  it('MEDEA_CHECKPOINT_EVERY_NODES env var fallback', async () => {
     const bus = new InMemoryEventBus();
-    const oldEnv = process.env.FLOWFORGE_CHECKPOINT_EVERY_NODES;
-    process.env.FLOWFORGE_CHECKPOINT_EVERY_NODES = '3';
+    const oldEnv = process.env.MEDEA_CHECKPOINT_EVERY_NODES;
+    process.env.MEDEA_CHECKPOINT_EVERY_NODES = '3';
     try {
       const engine = new WorkflowEngine(bus);
       // Verifica che il valore env sia letto — uso reflection via property access
       // non disponibile, ma se istanzia senza throw il path è coperto.
       expect(engine).toBeInstanceOf(WorkflowEngine);
     } finally {
-      if (oldEnv === undefined) delete process.env.FLOWFORGE_CHECKPOINT_EVERY_NODES;
-      else process.env.FLOWFORGE_CHECKPOINT_EVERY_NODES = oldEnv;
+      if (oldEnv === undefined) delete process.env.MEDEA_CHECKPOINT_EVERY_NODES;
+      else process.env.MEDEA_CHECKPOINT_EVERY_NODES = oldEnv;
     }
   });
 

@@ -216,17 +216,17 @@ describe('newsDisplayExecutor end-to-end', () => {
 
 describe('NodeDef contract', () => {
   it('newsDisplayNode esportato in stdlib', async () => {
-    const mod = await import('@flowforge/nodes-stdlib');
+    const mod = await import('@medea/engine-nodes-stdlib');
     expect(mod.newsDisplayNode.def.id).toBe('news_display');
   });
 
   it('description ≥150 char', async () => {
-    const mod = await import('@flowforge/nodes-stdlib');
+    const mod = await import('@medea/engine-nodes-stdlib');
     expect((mod.newsDisplayNode.def.description ?? '').length).toBeGreaterThanOrEqual(150);
   });
 
   it('configFields contiene feedUrl/limit/renderFormat/sinceHours/timeoutMs', async () => {
-    const mod = await import('@flowforge/nodes-stdlib');
+    const mod = await import('@medea/engine-nodes-stdlib');
     const keys = (mod.newsDisplayNode.def.configFields ?? []).map(f => f.key);
     expect(keys).toEqual(['feedUrl', 'limit', 'renderFormat', 'sinceHours', 'timeoutMs']);
   });

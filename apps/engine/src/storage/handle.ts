@@ -7,8 +7,8 @@
  * Drizzle ORM keeps its own typed handle for the schema layer (workflows,
  * runs, audit_log).
  *
- * Backend selection: FLOWFORGE_STORAGE = 'sqlite' (default) | 'postgres'
- * Postgres URL: FLOWFORGE_PG_URL
+ * Backend selection: MEDEA_STORAGE = 'sqlite' (default) | 'postgres'
+ * Postgres URL: MEDEA_PG_URL
  */
 
 import type { Database as BetterSqlite3Connection } from 'better-sqlite3';

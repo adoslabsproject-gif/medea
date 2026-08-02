@@ -2,10 +2,10 @@
  * Collaudo del subworkflow: un workflow può chiamarne un altro?
  *
  * L'esecutore c'è da sempre nel motore, completo di tetto alla profondità e
- * guardia contro l'auto-chiamata. Ma chiama `FLOWFORGE_RUNTIME_URL`, che in
+ * guardia contro l'auto-chiamata. Ma chiama `MEDEA_RUNTIME_URL`, che in
  * mancanza vale `127.0.0.1:3100` — la porta di FlowForge sul server, dove sul
  * computer di casa non c'è niente — e si autentica con
- * `FLOWFORGE_INTERNAL_TOKEN`, che senza sarebbe una richiesta rifiutata.
+ * `MEDEA_INTERNAL_TOKEN`, che senza sarebbe una richiesta rifiutata.
  *
  * Questo collaudo verifica che le due variabili siano quelle giuste, e che le
  * protezioni continuino a proteggere:

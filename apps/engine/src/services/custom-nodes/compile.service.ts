@@ -144,9 +144,9 @@ export async function compileCustomNodeSources(sources: {
       // injection (Fase 2c)" MAI implementato, e il test-run di QUALUNQUE
       // nodo che usava zod falliva (scovato dall'E2E catena, 2026-06-12).
       //   • zod                          → bundlato DENTRO (puro JS, sandbox-safe)
-      //   • @flowforge/safe-fetch        → modulo virtuale che mappa sulla
+      //   • @medea/engine-safe-fetch        → modulo virtuale che mappa sulla
       //     fetch del sandbox (l'SSRF guard vive HOST-side nel fetch bridge)
-      //   • @flowforge/community-node-sdk → stub vuoto (solo tipi: erased)
+      //   • @medea/engine-community-node-sdk → stub vuoto (solo tipi: erased)
       plugins: [{
         name: 'virtual-loader',
         setup(build) {
@@ -164,11 +164,11 @@ export async function compileCustomNodeSources(sources: {
             const name = /\/(executor|definition|schema)/u.exec(args.path)![1]!;
             return { path: `virtual:${name}`, namespace: 'virtual' };
           });
-          build.onResolve({ filter: /^@flowforge\/(community-node-sdk|safe-fetch)$/ }, (args) => ({
+          build.onResolve({ filter: /^@medea\/engine-(community-node-sdk|safe-fetch)$/ }, (args) => ({
             path: args.path, namespace: 'sdk-shim',
           }));
           build.onLoad({ filter: /.*/, namespace: 'sdk-shim' }, (args) => {
-            if (args.path === '@flowforge/safe-fetch') {
+            if (args.path === '@medea/engine-safe-fetch') {
               // timeoutMs è gestito dal fetch bridge host-side (che ha già
               // timeout + SSRF guard): qui va solo rimosso dall'init.
               return {
@@ -293,6 +293,6 @@ export function actionableMessage(text: string): string {
   if (sibling) return text; // i fratelli si risolvono (non dovrebbe capitare)
   return `${text} — i custom node sono AUTO-CONTENUTI (solo executor/definition/schema). `
     + `"${spec}" è fuori dal nodo: inlinea quel codice qui dentro, oppure usa solo `
-    + `gli import consentiti (zod, @flowforge/safe-fetch) e le Web API (fetch, crypto). `
+    + `gli import consentiti (zod, @medea/engine-safe-fetch) e le Web API (fetch, crypto). `
     + `Tip: chiedi alla chat Liara "rendi l'executor auto-contenuto, inlinea gli import esterni".`;
 }

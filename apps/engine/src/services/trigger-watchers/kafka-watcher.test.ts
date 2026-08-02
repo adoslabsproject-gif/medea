@@ -20,7 +20,7 @@ import {
   type KafkaConsumerLike,
   type EachMessagePayload,
 } from './kafka-watcher.js';
-import type { CanvasNode, Workflow } from '@flowforge/core-schema';
+import type { CanvasNode, Workflow } from '@medea/engine-core-schema';
 
 vi.mock('@/lib/logger.js');
 

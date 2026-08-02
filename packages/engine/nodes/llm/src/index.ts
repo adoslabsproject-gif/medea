@@ -1,5 +1,5 @@
 /**
- * @flowforge/nodes-llm — AI provider nodes for workflows.
+ * @medea/engine-nodes-llm — AI provider nodes for workflows.
  *
  * Each node is BYO API key (X-LLM-API-Key header or `apiKey` config field).
  * FlowForge never proxies LLM credentials.
@@ -12,9 +12,9 @@
  *   - Ollama (local-only, baseUrl-configured)
  */
 
-import type { NodeModule, NodeExecutor } from '@flowforge/nodes-stdlib';
-import { executeWithHostBreaker } from '@flowforge/nodes-stdlib';
-import { safeFetchWithRedirects, readJsonCapped, readTextTruncated } from '@flowforge/safe-fetch';
+import type { NodeModule, NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { executeWithHostBreaker } from '@medea/engine-nodes-stdlib';
+import { safeFetchWithRedirects, readJsonCapped, readTextTruncated } from '@medea/engine-safe-fetch';
 
 const PROVIDER_TIMEOUT_MS = 60_000; // LLM call può richiedere ~30-50s (long context)
 

@@ -13,7 +13,7 @@
  */
 
 import { evaluateExpression } from '@/engine/interpreter.js';
-import { parseRuleset, evaluateRuleset } from '@flowforge/nodes-stdlib';
+import { parseRuleset, evaluateRuleset } from '@medea/engine-nodes-stdlib';
 import type { INodeDispatchStrategy, DispatchContext, DispatchResult } from './types.js';
 
 export class LogicIfStrategy implements INodeDispatchStrategy {

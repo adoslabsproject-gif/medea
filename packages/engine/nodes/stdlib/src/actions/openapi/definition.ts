@@ -1,4 +1,4 @@
-import type { NodeDef } from '@flowforge/core-schema';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 export const openapiNodeDef: NodeDef = {
   id: 'action_openapi',

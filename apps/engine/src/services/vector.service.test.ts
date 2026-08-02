@@ -23,7 +23,7 @@ const adapterMock = {
 const EmbeddedAdapterMock = vi.fn(() => adapterMock);
 const QdrantAdapterMock = vi.fn(() => adapterMock);
 
-vi.mock('@flowforge/db-studio-vector', () => ({
+vi.mock('@medea/engine-db-studio-vector', () => ({
   EmbeddedVectorAdapter: EmbeddedAdapterMock,
   QdrantVectorAdapter: QdrantAdapterMock,
 }));
@@ -37,7 +37,7 @@ vi.mock('./db-studio.service.js', () => ({
 }));
 
 vi.mock('@/config.js', () => ({
-  loadConfig: () => ({ FLOWFORGE_DATA_DIR: '/tmp/ff-vector-test' }),
+  loadConfig: () => ({ MEDEA_DATA_DIR: '/tmp/ff-vector-test' }),
 }));
 
 vi.mock('node:fs', async () => {

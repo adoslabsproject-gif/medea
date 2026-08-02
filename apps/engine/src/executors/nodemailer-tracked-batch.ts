@@ -18,13 +18,13 @@
  * @module executors/nodemailer-tracked-batch
  */
 
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import {
   EmailSendTrackedBatchConfigSchema,
   runBatch,
   type BatchItem,
   type AttemptResult,
-} from '@flowforge/nodes-stdlib';
+} from '@medea/engine-nodes-stdlib';
 import { sendEmailTrackedExecutor } from './nodemailer-tracked.js';
 import { logger } from '@/lib/logger.js';
 

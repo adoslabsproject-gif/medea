@@ -19,8 +19,8 @@ import { assertNoZipBombDeep } from '@/lib/zip-bomb-guard.js';
 import { readFile, writeFile, stat, mkdir } from 'node:fs/promises';
 import { resolve, sep, dirname, basename } from 'node:path';
 import ExcelJS from 'exceljs';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
-import { resolveBinaryValue, makeBinaryInline } from '@flowforge/core-schema';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { resolveBinaryValue, makeBinaryInline } from '@medea/engine-core-schema';
 
 function asString(v: unknown): string {
   return typeof v === 'string' ? v : '';
@@ -53,12 +53,12 @@ function escapeFormulaInjection(v: unknown): unknown {
 
 function getTenantRoot(tenantId: string): string {
   const safeTenant = (tenantId || 'default').replace(/[^a-z0-9_-]/gi, '_');
-  const baseDir = process.env.FLOWFORGE_DATA_DIR ?? '/var/data/flowforge';
+  const baseDir = process.env.MEDEA_DATA_DIR ?? '/var/data/flowforge';
   return resolve(baseDir, 'tenants', safeTenant, 'files');
 }
 
 function getGlobalAllowlist(): string[] {
-  const envList = process.env.FLOWFORGE_FILE_ALLOWLIST ?? '';
+  const envList = process.env.MEDEA_FILE_ALLOWLIST ?? '';
   return envList.split(':').map((p) => p.trim()).filter(Boolean).map((p) => resolve(p));
 }
 

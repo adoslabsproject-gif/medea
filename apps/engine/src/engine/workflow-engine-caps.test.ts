@@ -24,17 +24,17 @@ const engineSource = readFileSync(join(__dirname, 'workflow-engine.ts'), 'utf-8'
 
 describe('🚨 [REGRESSION WE-6] workflow-engine hard caps', () => {
   it('🚨 MAX_STEP_COUNT definito con default 10_000', () => {
-    expect(engineSource).toMatch(/MAX_STEP_COUNT\s*=\s*Number\(.*?FLOWFORGE_ENGINE_MAX_STEPS.*?'10000'\)/);
+    expect(engineSource).toMatch(/MAX_STEP_COUNT\s*=\s*Number\(.*?MEDEA_ENGINE_MAX_STEPS.*?'10000'\)/);
   });
 
   it('🚨 MAX_RUN_DURATION_MS definito con default 30min (1_800_000ms)', () => {
-    expect(engineSource).toMatch(/MAX_RUN_DURATION_MS\s*=\s*Number\(.*?FLOWFORGE_ENGINE_MAX_RUN_DURATION_MS/);
+    expect(engineSource).toMatch(/MAX_RUN_DURATION_MS\s*=\s*Number\(.*?MEDEA_ENGINE_MAX_RUN_DURATION_MS/);
     // 30 * 60_000 = 1_800_000ms default
     expect(engineSource).toMatch(/30\s*\*\s*60_000/);
   });
 
   it('🚨 MAX_QUEUE_SIZE definito con default 5000', () => {
-    expect(engineSource).toMatch(/MAX_QUEUE_SIZE\s*=\s*Number\(.*?FLOWFORGE_ENGINE_MAX_QUEUE_SIZE.*?'5000'\)/);
+    expect(engineSource).toMatch(/MAX_QUEUE_SIZE\s*=\s*Number\(.*?MEDEA_ENGINE_MAX_QUEUE_SIZE.*?'5000'\)/);
   });
 
   it('🚨 check totalStepsExecuted >= MAX_STEP_COUNT → throw', () => {

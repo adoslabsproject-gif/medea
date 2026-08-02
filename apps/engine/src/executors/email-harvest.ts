@@ -4,7 +4,7 @@
  * sta nel service (testabile in isolamento), l'executor fa solo input adapting.
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { harvestEmails } from '@/services/email-harvest.service.js';
 
 export const emailHarvestExecutor: NodeExecutor = (config, _input, _context) => {

@@ -8,7 +8,7 @@
  *   • Missing jti → 401 (no replay protection senza jti)
  *   • Replay detection: stesso jti due volte → 401 + log SECURITY
  *   • Missing sub/email → 401
- *   • SSO not configured (FLOWFORGE_SSO_SECRET o FLOWFORGE_TENANT_ID missing) → 500
+ *   • SSO not configured (MEDEA_SSO_SECRET o MEDEA_TENANT_ID missing) → 500
  *   • Success: upsertSSOUser + ensureTenant idempotent + cookie set + redirect 302
  *   • Cookie config: httpOnly + secure (prod) + sameSite=Lax + path=/ + maxAge 7gg
  *   • PII redaction: log NON contiene email plaintext
@@ -65,7 +65,7 @@ vi.mock('jose', () => ({
   jwtDecrypt: (token: unknown, key: unknown, opts: unknown) => m.jwtDecrypt(token, key, opts),
 }));
 
-vi.mock('@flowforge/auth-local', () => ({
+vi.mock('@medea/engine-auth-local', () => ({
   issueSessionToken: (i: unknown) => m.issueSessionToken(i),
 }));
 
@@ -87,7 +87,7 @@ vi.mock('@/lib/session-cookie.js', () => ({
 
 vi.mock('@/lib/logger.js');
 
-vi.mock('@zeliai/shared', () => ({
+vi.mock('@medea/engine-shared', () => ({
   maskEmail: (e: string) => e.replace(/(.).+(@.+)/, '$1***$2'),
 }));
 
@@ -96,8 +96,8 @@ vi.mock('nanoid', () => ({ nanoid: () => 'fixed-nanoid-id' }));
 import { createSSORoutes, normalizeSsoRole } from './sso.js';
 
 const FAKE_CONFIG = {
-  FLOWFORGE_SSO_SECRET: 'a'.repeat(32),
-  FLOWFORGE_TENANT_ID: 'tenant-acme',
+  MEDEA_SSO_SECRET: 'a'.repeat(32),
+  MEDEA_TENANT_ID: 'tenant-acme',
   NODE_ENV: 'production' as const,
 };
 
@@ -198,16 +198,16 @@ describe('SSO POST /sso — token extraction', () => {
 // Config validation
 // ════════════════════════════════════════════════════════════════════
 describe('SSO — config validation', () => {
-  it('FLOWFORGE_SSO_SECRET mancante → 500', async () => {
-    m.loadConfig.mockReturnValue({ ...FAKE_CONFIG, FLOWFORGE_SSO_SECRET: '' });
+  it('MEDEA_SSO_SECRET mancante → 500', async () => {
+    m.loadConfig.mockReturnValue({ ...FAKE_CONFIG, MEDEA_SSO_SECRET: '' });
     const app = buildApp();
     const res = await postForm(app, { token: 'x' });
     expect(res.status).toBe(500);
     expect(vi.mocked(logger).error).toHaveBeenCalled();
   });
 
-  it('FLOWFORGE_TENANT_ID mancante → 500', async () => {
-    m.loadConfig.mockReturnValue({ ...FAKE_CONFIG, FLOWFORGE_TENANT_ID: '' });
+  it('MEDEA_TENANT_ID mancante → 500', async () => {
+    m.loadConfig.mockReturnValue({ ...FAKE_CONFIG, MEDEA_TENANT_ID: '' });
     const app = buildApp();
     const res = await postForm(app, { token: 'x' });
     expect(res.status).toBe(500);
@@ -268,7 +268,7 @@ describe('SSO — JWE decrypt failures', () => {
     expect(opts.issuer).toBe('portal.flowforge');
   });
 
-  it('jwtDecrypt chiamato con audience = FLOWFORGE_TENANT_ID', async () => {
+  it('jwtDecrypt chiamato con audience = MEDEA_TENANT_ID', async () => {
     m.sqliteStmt.get.mockReturnValue(undefined);
     const app = buildApp();
     await postForm(app, { token: 'x' });

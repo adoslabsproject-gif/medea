@@ -10,17 +10,17 @@
  *   - SENZA store (test/engine) → fail-soft inline base64 con cap anti-OOM.
  */
 
-import { makeBinaryRef, makeBinaryInline, type BinaryData } from '@flowforge/core-schema';
+import { makeBinaryRef, makeBinaryInline, type BinaryData } from '@medea/engine-core-schema';
 import type { BinaryStore } from '../binary-store.service.js';
 
 /**
  * Cap dell'allegato tenuto INLINE nel payload (bytes) — si applica SOLO al
  * percorso fail-soft senza store. Oltre, viene troncato con `truncated: true`
  * per non far esplodere la RAM del runtime. Tunable via
- * `FLOWFORGE_IMAP_MAX_ATTACHMENT_BYTES`. Col blob-store NON c'è cap (i byte
+ * `MEDEA_IMAP_MAX_ATTACHMENT_BYTES`. Col blob-store NON c'è cap (i byte
  * vivono su disco content-addressed).
  */
-export const MAX_ATTACHMENT_BYTES = Number(process.env.FLOWFORGE_IMAP_MAX_ATTACHMENT_BYTES ?? 25 * 1024 * 1024);
+export const MAX_ATTACHMENT_BYTES = Number(process.env.MEDEA_IMAP_MAX_ATTACHMENT_BYTES ?? 25 * 1024 * 1024);
 
 export interface ImapAttachment {
   filename: string;

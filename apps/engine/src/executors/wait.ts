@@ -13,7 +13,7 @@
  */
 
 import { randomBytes } from 'node:crypto';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { getDatabase } from '@/storage/db.js';
 
 function ensureWaitTable(): void {

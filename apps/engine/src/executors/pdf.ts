@@ -36,13 +36,13 @@
 import { coerceString } from '@/lib/coerce.js';
 import { readFile, stat } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 // SOLO type (erased a runtime): la forma BinaryData si risolve a mano (vedi
 // resolveBinaryInline), così questo modulo non tira dentro le helper di runtime di
 // core-schema. Storicamente era OBBLIGATORIO perché core-schema corrompeva il vecchio
 // pdfjs di pdf-parse@1.1.1 ("bad XRef entry") nello stesso processo; con `unpdf`
 // (pdfjs moderno) il vincolo è caduto, ma teniamo l'approccio dependency-light.
-import type { BinaryData } from '@flowforge/core-schema';
+import type { BinaryData } from '@medea/engine-core-schema';
 import { isLiaraAllowedForTenant } from '@/services/tenant-ai-preferences.service.js';
 import { LlmProvidersService } from '@/services/llm-providers.service.js';
 import { safeOutboundFetch } from '@/lib/safe-outbound-fetch.js';
@@ -109,7 +109,7 @@ function asString(v: unknown): string {
 
 function getTenantRoot(tenantId: string): string {
   const safeTenant = (tenantId || 'default').replace(/[^a-z0-9_-]/gi, '_');
-  const baseDir = process.env.FLOWFORGE_DATA_DIR ?? '/var/data/flowforge';
+  const baseDir = process.env.MEDEA_DATA_DIR ?? '/var/data/flowforge';
   return resolve(baseDir, 'tenants', safeTenant, 'files');
 }
 
@@ -117,7 +117,7 @@ function assertPathAllowed(filePath: string, tenantId: string): string {
   const tenantRoot = getTenantRoot(tenantId);
   const abs = filePath.startsWith('/') ? resolve(filePath) : resolve(tenantRoot, filePath);
   if (abs === tenantRoot || abs.startsWith(tenantRoot + sep)) return abs;
-  const envList = process.env.FLOWFORGE_FILE_ALLOWLIST ?? '';
+  const envList = process.env.MEDEA_FILE_ALLOWLIST ?? '';
   const globalAllow = envList.split(':').map((p) => p.trim()).filter(Boolean).map((p) => resolve(p));
   if (globalAllow.some((root) => abs === root || abs.startsWith(root + sep))) return abs;
   throw new Error(`Path "${abs}" outside tenant namespace.`);
@@ -238,7 +238,7 @@ const CONFIDENCE_FALLBACK_THRESHOLD = 0.5;
  * Estrae+risolve un BinaryData dall'input INLINE, senza chiamare le helper di
  * runtime di core-schema (resolveBinaryValue/readBinaryBytes).
  *
- * Storia: con `pdf-parse@1.1.1` caricare @flowforge/core-schema nello stesso
+ * Storia: con `pdf-parse@1.1.1` caricare @medea/engine-core-schema nello stesso
  * processo corrompeva lo stato globale del suo pdfjs antico → ogni parse successivo
  * falliva "bad XRef entry" (riprodotto a runtime, non solo nei test). Con `unpdf`
  * (pdfjs moderno) quel vincolo è caduto, ma teniamo la risoluzione a mano: la forma

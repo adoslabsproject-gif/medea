@@ -13,8 +13,8 @@
  *   • Self-check field forces model to verify its own patch before outputting
  */
 
-import { stdlibNodeDefs } from '@flowforge/nodes-stdlib';
-import type { NodeDef } from '@flowforge/core-schema';
+import { stdlibNodeDefs } from '@medea/engine-nodes-stdlib';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 /**
  * Riga di catalogo COMPATTA per un NodeDef.

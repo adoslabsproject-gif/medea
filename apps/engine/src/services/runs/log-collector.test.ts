@@ -27,8 +27,8 @@ import {
   LogCollector, genTraceId, genSpanId, safeSerializeFields, truncateLogs,
   MAX_MSG_CHARS, MAX_ENTRIES_PER_STEP,
 } from './log-collector.js';
-import type { StepLog } from '@flowforge/core-schema';
-import { StepLogSchema } from '@flowforge/core-schema';
+import type { StepLog } from '@medea/engine-core-schema';
+import { StepLogSchema } from '@medea/engine-core-schema';
 
 vi.mock('@/lib/logger.js');
 

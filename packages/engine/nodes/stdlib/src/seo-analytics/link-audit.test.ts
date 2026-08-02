@@ -4,10 +4,10 @@
  * target=_blank → tabnabbing, severity dei broken, summary, dedup, SSRF.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { safeFetchWithRedirects, SsrfBlockedError } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects, SsrfBlockedError } from '@medea/engine-safe-fetch';
 import { linkAuditNode } from './link-audit.js';
 
-vi.mock('@flowforge/safe-fetch', () => {
+vi.mock('@medea/engine-safe-fetch', () => {
   class SsrfBlockedError extends Error {}
   return { SsrfBlockedError, safeFetchWithRedirects: vi.fn() };
 });

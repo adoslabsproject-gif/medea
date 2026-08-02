@@ -9,7 +9,7 @@
  *     senza clone, il remap del tenant A avvelenerebbe l'instantiate del tenant B
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { WORKFLOW_TEMPLATES } from '@flowforge/templates';
+import { WORKFLOW_TEMPLATES } from '@medea/engine-templates';
 import { createTemplateRoutes } from './templates.js';
 import { WorkflowService } from '@/services/workflow.service.js';
 import type { IEventBus } from '@/ports/event-bus.js';

@@ -85,14 +85,14 @@ beforeEach(() => {
   conn.pragma('foreign_keys = ON');
   conn.exec(SCHEMA_SQL);
   dbConnections.push(conn);
-  process.env.FLOWFORGE_PLAN_CODE = 'pro';
-  process.env.FLOWFORGE_TENANT_ID = 'ws-test';
+  process.env.MEDEA_PLAN_CODE = 'pro';
+  process.env.MEDEA_TENANT_ID = 'ws-test';
 });
 afterEach(() => {
   const conn = dbConnections.pop();
   if (conn) conn.close();
-  delete process.env.FLOWFORGE_PLAN_CODE;
-  delete process.env.FLOWFORGE_TENANT_ID;
+  delete process.env.MEDEA_PLAN_CODE;
+  delete process.env.MEDEA_TENANT_ID;
 });
 
 describe('🚨 GET /quota', () => {
@@ -107,7 +107,7 @@ describe('🚨 GET /quota', () => {
   });
 
   it('🚨 owner free plan → limit 0', async () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'free';
+    process.env.MEDEA_PLAN_CODE = 'free';
     const res = await buildApp(OWNER).request('/api/v1/custom-nodes/quota');
     expect(res.status).toBe(200);
     const body = await res.json() as Record<string, unknown>;
@@ -155,7 +155,7 @@ describe('🚨 POST / (create)', () => {
   });
 
   it('🚨 plan free quota=0 → 402 Payment Required', async () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'free';
+    process.env.MEDEA_PLAN_CODE = 'free';
     const res = await postJson(buildApp(OWNER), '/api/v1/custom-nodes', validBody);
     expect(res.status).toBe(402);
     const body = await res.json() as { error: { code: string; meta: { planCode: string } } };

@@ -4,7 +4,7 @@
  * @module actions/pec_legal_archive/definition
  */
 
-import type { NodeDef } from '@flowforge/core-schema';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 export const pecLegalArchiveNodeDef: NodeDef = {
   id: 'action_pec_legal_archive',

@@ -1,7 +1,7 @@
 /**
  * Test 2026-grade — TestAccountService (E2E auto-provision).
  *
- * GATE: solo se FLOWFORGE_E2E_AUTO_PROVISION='1'.
+ * GATE: solo se MEDEA_E2E_AUTO_PROVISION='1'.
  * IDEMPOTENT: re-boot non duplica user.
  * SECRET: password file 0o600 OR env override.
  */
@@ -14,7 +14,7 @@ let sqliteInst: Database.Database;
 vi.mock('@/storage/db.js', () => ({ getDatabase: () => ({ sqlite: sqliteInst }) }));
 
 const hashPasswordMock = vi.fn(async (p: string) => `hashed:${p}`);
-vi.mock('@flowforge/auth-local', () => ({ hashPassword: hashPasswordMock }));
+vi.mock('@medea/engine-auth-local', () => ({ hashPassword: hashPasswordMock }));
 
 vi.mock('@/lib/logger.js');
 const loggerMock = vi.mocked(logger);
@@ -49,16 +49,16 @@ beforeEach(async () => {
     );
   `);
   fsState.passwordFile = null;
-  delete process.env.FLOWFORGE_E2E_AUTO_PROVISION;
-  delete process.env.FLOWFORGE_E2E_EMAIL;
-  delete process.env.FLOWFORGE_E2E_PASSWORD;
-  delete process.env.FLOWFORGE_E2E_TENANT;
-  delete process.env.FLOWFORGE_E2E_PASSWORD_FILE;
+  delete process.env.MEDEA_E2E_AUTO_PROVISION;
+  delete process.env.MEDEA_E2E_EMAIL;
+  delete process.env.MEDEA_E2E_PASSWORD;
+  delete process.env.MEDEA_E2E_TENANT;
+  delete process.env.MEDEA_E2E_PASSWORD_FILE;
 });
 
 async function load() { return import('./test-account.service.js'); }
 
-describe('🚨 gate FLOWFORGE_E2E_AUTO_PROVISION', () => {
+describe('🚨 gate MEDEA_E2E_AUTO_PROVISION', () => {
   it('🚨 env != "1" → return early no insert', async () => {
     const { provisionTestAccount } = await load();
     await provisionTestAccount();
@@ -66,7 +66,7 @@ describe('🚨 gate FLOWFORGE_E2E_AUTO_PROVISION', () => {
   });
 
   it('🚨 env "0" → no provision', async () => {
-    process.env.FLOWFORGE_E2E_AUTO_PROVISION = '0';
+    process.env.MEDEA_E2E_AUTO_PROVISION = '0';
     const { provisionTestAccount } = await load();
     await provisionTestAccount();
     expect(sqliteInst.prepare('SELECT COUNT(*) as n FROM users').get()).toEqual({ n: 0 });
@@ -75,8 +75,8 @@ describe('🚨 gate FLOWFORGE_E2E_AUTO_PROVISION', () => {
 
 describe('🚨 provision happy', () => {
   beforeEach(() => {
-    process.env.FLOWFORGE_E2E_AUTO_PROVISION = '1';
-    process.env.FLOWFORGE_E2E_PASSWORD = 'fixed-password-for-test';
+    process.env.MEDEA_E2E_AUTO_PROVISION = '1';
+    process.env.MEDEA_E2E_PASSWORD = 'fixed-password-for-test';
   });
 
   it('🚨 insert user con email default + is_system=1', async () => {
@@ -92,7 +92,7 @@ describe('🚨 provision happy', () => {
   });
 
   it('🚨 email env override', async () => {
-    process.env.FLOWFORGE_E2E_EMAIL = 'custom@x.it';
+    process.env.MEDEA_E2E_EMAIL = 'custom@x.it';
     const { provisionTestAccount } = await load();
     await provisionTestAccount();
     const row = sqliteInst.prepare('SELECT email FROM users').get() as any;
@@ -100,7 +100,7 @@ describe('🚨 provision happy', () => {
   });
 
   it('🚨 tenantId env override', async () => {
-    process.env.FLOWFORGE_E2E_TENANT = 'custom-tenant';
+    process.env.MEDEA_E2E_TENANT = 'custom-tenant';
     const { provisionTestAccount } = await load();
     await provisionTestAccount();
     const row = sqliteInst.prepare('SELECT tenant_id FROM users').get() as any;
@@ -116,8 +116,8 @@ describe('🚨 provision happy', () => {
 
 describe('🚨 idempotent', () => {
   beforeEach(() => {
-    process.env.FLOWFORGE_E2E_AUTO_PROVISION = '1';
-    process.env.FLOWFORGE_E2E_PASSWORD = 'pw';
+    process.env.MEDEA_E2E_AUTO_PROVISION = '1';
+    process.env.MEDEA_E2E_PASSWORD = 'pw';
   });
 
   it('🚨 user esistente → log info + skip insert', async () => {
@@ -135,7 +135,7 @@ describe('🚨 idempotent', () => {
 
 describe('🚨 password file handling', () => {
   it('🚨 password file exists → reuse', async () => {
-    process.env.FLOWFORGE_E2E_AUTO_PROVISION = '1';
+    process.env.MEDEA_E2E_AUTO_PROVISION = '1';
     fsState.passwordFile = 'existing-password-from-file';
     const { provisionTestAccount } = await load();
     await provisionTestAccount();
@@ -143,7 +143,7 @@ describe('🚨 password file handling', () => {
   });
 
   it('🚨 no env + no file → genera + scrive 0o600', async () => {
-    process.env.FLOWFORGE_E2E_AUTO_PROVISION = '1';
+    process.env.MEDEA_E2E_AUTO_PROVISION = '1';
     const { provisionTestAccount } = await load();
     await provisionTestAccount();
     expect(fsState.passwordFile).toBeTruthy();

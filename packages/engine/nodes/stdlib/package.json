@@ -1,5 +1,5 @@
 {
-  "name": "@flowforge/nodes-stdlib",
+  "name": "@medea/engine-nodes-stdlib",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -28,16 +28,16 @@
     "lint": "eslint src --max-warnings 0"
   },
   "dependencies": {
-    "@flowforge/core-schema": "workspace:*",
-    "@flowforge/safe-fetch": "workspace:*",
-    "@zeliai/shared": "workspace:*",
+    "@medea/engine-core-schema": "workspace:*",
+    "@medea/engine-safe-fetch": "workspace:*",
+    "@medea/engine-shared": "workspace:*",
     "cheerio": "^1.2.0",
     "re2": "^1.25.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@flowforge/eslint-config": "workspace:*",
-    "@flowforge/tsconfig": "workspace:*",
+    "@medea/engine-eslint-config": "workspace:*",
+    "@medea/engine-tsconfig": "workspace:*",
     "eslint": "^9.39.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.0.0",

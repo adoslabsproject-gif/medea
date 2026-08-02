@@ -8,12 +8,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const safeFetch = vi.fn<(...a: unknown[]) => Promise<unknown>>();
-vi.mock('@flowforge/safe-fetch', async (orig) => ({
-  ...(await orig<typeof import('@flowforge/safe-fetch')>()),
+vi.mock('@medea/engine-safe-fetch', async (orig) => ({
+  ...(await orig<typeof import('@medea/engine-safe-fetch')>()),
   safeFetchWithRedirects: (...a: unknown[]) => safeFetch(...a),
 }));
-vi.mock('@flowforge/nodes-stdlib', async (orig) => {
-  const actual = await orig<typeof import('@flowforge/nodes-stdlib')>();
+vi.mock('@medea/engine-nodes-stdlib', async (orig) => {
+  const actual = await orig<typeof import('@medea/engine-nodes-stdlib')>();
   return { ...actual, executeWithHostBreaker: (_u: string, fn: () => unknown) => fn() };
 });
 
@@ -50,8 +50,8 @@ function sentBody(i = 0): Record<string, unknown> {
 
 beforeEach(() => {
   safeFetch.mockReset();
-  vi.stubEnv('FLOWFORGE_LIARA_BASE_URL', GW);
-  vi.stubEnv('FLOWFORGE_LICENSE_KEY', 'lic-abc');
+  vi.stubEnv('MEDEA_LIARA_BASE_URL', GW);
+  vi.stubEnv('MEDEA_LICENSE_KEY', 'lic-abc');
 });
 afterEach(() => { vi.unstubAllEnvs(); });
 

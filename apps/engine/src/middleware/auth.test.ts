@@ -19,7 +19,7 @@ import Database from 'better-sqlite3';
 vi.mock('@/lib/logger.js');
 
 const verifyMock = vi.fn();
-vi.mock('@flowforge/auth-local', () => ({
+vi.mock('@medea/engine-auth-local', () => ({
   verifySessionToken: (token: string, key: string) => verifyMock(token, key),
 }));
 
@@ -32,8 +32,8 @@ vi.mock('@/storage/db.js', () => ({ getDatabase: () => ({ sqlite: db }) }));
 beforeEach(() => {
   verifyMock.mockReset();
   db = new Database(':memory:');
-  process.env.FLOWFORGE_INTERNAL_TOKEN = 'super-secret-internal-token-32chars';
-  process.env.FLOWFORGE_TENANT_ID = 'tenant-default';
+  process.env.MEDEA_INTERNAL_TOKEN = 'super-secret-internal-token-32chars';
+  process.env.MEDEA_TENANT_ID = 'tenant-default';
 });
 
 const FAKE_PUBLIC_KEY = '-----BEGIN PUBLIC KEY-----\nFAKE\n-----END PUBLIC KEY-----';
@@ -60,9 +60,9 @@ async function buildApp(opts: { required?: boolean; publicPrefixes?: string[]; p
 describe('authMiddleware — internal token (H1 timing-safe)', () => {
   it('200 con x-internal-token matching exact, tenantId da env (NON header)', async () => {
     // FIX HIGH-2 security audit 2026-05-31: x-tenant-id header IGNORATO.
-    // tenantId è SEMPRE config.FLOWFORGE_TENANT_ID (env var). Verifico che
+    // tenantId è SEMPRE config.MEDEA_TENANT_ID (env var). Verifico che
     // il valore atteso sia quello env, non quello header.
-    const expectedTenant = process.env.FLOWFORGE_TENANT_ID || 'default';
+    const expectedTenant = process.env.MEDEA_TENANT_ID || 'default';
     const app = await buildApp();
     const res = await app.request('/api/v1/me', {
       headers: {
@@ -97,7 +97,7 @@ describe('authMiddleware — internal token (H1 timing-safe)', () => {
   });
 
   it('NON matcha quando internalToken env e` vuoto (string vuota = no internal auth)', async () => {
-    process.env.FLOWFORGE_INTERNAL_TOKEN = '';
+    process.env.MEDEA_INTERNAL_TOKEN = '';
     const app = await buildApp();
     const res = await app.request('/api/v1/me', {
       headers: { 'x-internal-token': '' },
@@ -131,7 +131,7 @@ describe('authMiddleware — internal token (H1 timing-safe)', () => {
     });
     expect(res.status).toBe(200);
     const body = (await res.json()) as { auth: { tenantId: string } };
-    expect(body.auth.tenantId).toBe(process.env.FLOWFORGE_TENANT_ID);
+    expect(body.auth.tenantId).toBe(process.env.MEDEA_TENANT_ID);
     expect(body.auth.tenantId).not.toContain('passwd');
     expect(body.auth.tenantId).not.toContain('..');
   });
@@ -148,7 +148,7 @@ describe('authMiddleware — internal token (H1 timing-safe)', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { auth: { tenantId: string } };
     expect(body.auth.tenantId).not.toBe(evilTenant);
-    expect(body.auth.tenantId).toBe(process.env.FLOWFORGE_TENANT_ID);
+    expect(body.auth.tenantId).toBe(process.env.MEDEA_TENANT_ID);
   });
 });
 
@@ -339,7 +339,7 @@ describe('authMiddleware — blocklist di revoca (DB tenant reale, NON fail-open
 });
 
 describe('authMiddleware — cross-tenant scope assertion (defense-in-depth 2026-06-09)', () => {
-  it('SECURITY: token con tenantId ≠ FLOWFORGE_TENANT_ID → 401 (cross-tenant rifiutato)', async () => {
+  it('SECURITY: token con tenantId ≠ MEDEA_TENANT_ID → 401 (cross-tenant rifiutato)', async () => {
     // env = 'tenant-default' (beforeEach). Token forgiato/leakato di un ALTRO
     // workspace → DEVE essere rifiutato anche se la firma fosse valida.
     verifyMock.mockResolvedValue({
@@ -362,7 +362,7 @@ describe('authMiddleware — cross-tenant scope assertion (defense-in-depth 2026
     expect(res.status).toBe(401);
   });
 
-  it('token con tenantId === FLOWFORGE_TENANT_ID → 200 (baseline)', async () => {
+  it('token con tenantId === MEDEA_TENANT_ID → 200 (baseline)', async () => {
     verifyMock.mockResolvedValue({
       sub: 'user-ok', email: 'u@x.it', role: 'editor', tenantId: 'tenant-default',
     });
@@ -373,8 +373,8 @@ describe('authMiddleware — cross-tenant scope assertion (defense-in-depth 2026
     expect(body.auth.tenantId).toBe('tenant-default');
   });
 
-  it('FLOWFORGE_TENANT_ID vuoto (dev / disaster recovery) → assertion NON enforced', async () => {
-    process.env.FLOWFORGE_TENANT_ID = '';
+  it('MEDEA_TENANT_ID vuoto (dev / disaster recovery) → assertion NON enforced', async () => {
+    process.env.MEDEA_TENANT_ID = '';
     verifyMock.mockResolvedValue({
       sub: 'user-dev', email: 'd@x.it', role: 'owner', tenantId: 'qualsiasi-tenant',
     });

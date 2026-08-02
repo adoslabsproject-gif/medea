@@ -18,12 +18,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const loggerMock = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
 vi.mock('./logger.js', () => ({ logger: loggerMock }));
 
-// getContainerTenantId() reads FLOWFORGE_TENANT_ID via loadConfig(). We mock the
+// getContainerTenantId() reads MEDEA_TENANT_ID via loadConfig(). We mock the
 // config module so each test controls the env-injected tenant deterministically
 // (no reliance on real process.env, no full-schema parse).
 const configMock = vi.hoisted(() => ({ tenantId: undefined as string | undefined }));
 vi.mock('@/config.js', () => ({
-  loadConfig: () => ({ FLOWFORGE_TENANT_ID: configMock.tenantId }),
+  loadConfig: () => ({ MEDEA_TENANT_ID: configMock.tenantId }),
 }));
 
 const { getTenantId, getTenantIdOrNull, getContainerTenantId } = await import('./tenant.js');
@@ -193,7 +193,7 @@ describe('🚨 getTenantIdOrNull — graceful for hybrid routes', () => {
 });
 
 describe('🚨 getContainerTenantId — env source-of-truth for PUBLIC routes', () => {
-  it('🚨 ritorna FLOWFORGE_TENANT_ID quando settato (container mode)', () => {
+  it('🚨 ritorna MEDEA_TENANT_ID quando settato (container mode)', () => {
     configMock.tenantId = '11111111-2222-3333-4444-555555555555';
     expect(getContainerTenantId()).toBe('11111111-2222-3333-4444-555555555555');
   });

@@ -7,7 +7,7 @@
  * integrazione siti aziendali).
  *
  * Borderline configurato:
- *  - SSRF block via @flowforge/safe-fetch
+ *  - SSRF block via @medea/engine-safe-fetch
  *  - User-Agent "FlowForge/X" di default identifica il bot
  *  - Block-list domini noti pirateria (refresh weekly)
  *  - Rate-limit per nodo (vedi rate-limit middleware)

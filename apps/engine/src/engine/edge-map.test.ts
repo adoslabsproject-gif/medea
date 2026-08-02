@@ -11,8 +11,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { WorkflowEngine } from './workflow-engine.js';
 import { InMemoryEventBus } from '@/adapters/event-bus-memory.js';
-import type { Workflow, Edge } from '@flowforge/core-schema';
-import type { NodeExecutionContext } from '@flowforge/nodes-stdlib';
+import type { Workflow, Edge } from '@medea/engine-core-schema';
+import type { NodeExecutionContext } from '@medea/engine-nodes-stdlib';
 
 interface Call { input: unknown }
 let calls: Map<string, Call[]>;
@@ -52,11 +52,11 @@ function makeEngine(...mods: object[]): WorkflowEngine {
   return new WorkflowEngine(new InMemoryEventBus(), { nodeRegistry: mods as never[] });
 }
 
-const savedMax = process.env.FLOWFORGE_ENGINE_MAX_MAP_ITEMS;
-beforeEach(() => { calls = new Map(); failOn = new Map(); delete process.env.FLOWFORGE_ENGINE_MAX_MAP_ITEMS; });
+const savedMax = process.env.MEDEA_ENGINE_MAX_MAP_ITEMS;
+beforeEach(() => { calls = new Map(); failOn = new Map(); delete process.env.MEDEA_ENGINE_MAX_MAP_ITEMS; });
 afterEach(() => {
-  if (savedMax === undefined) delete process.env.FLOWFORGE_ENGINE_MAX_MAP_ITEMS;
-  else process.env.FLOWFORGE_ENGINE_MAX_MAP_ITEMS = savedMax;
+  if (savedMax === undefined) delete process.env.MEDEA_ENGINE_MAX_MAP_ITEMS;
+  else process.env.MEDEA_ENGINE_MAX_MAP_ITEMS = savedMax;
 });
 
 /** src (emette l'array passato come triggerInput) → [mapMode] → dst → sink */
@@ -190,8 +190,8 @@ describe('🚨 guardrail', () => {
     expect(errStep?.error).toMatch(/non mappabile/u);
   });
 
-  it('🚨 cap FLOWFORGE_ENGINE_MAX_MAP_ITEMS: oltre il limite → errore esplicito, ZERO esecuzioni parziali', async () => {
-    process.env.FLOWFORGE_ENGINE_MAX_MAP_ITEMS = '3';
+  it('🚨 cap MEDEA_ENGINE_MAX_MAP_ITEMS: oltre il limite → errore esplicito, ZERO esecuzioni parziali', async () => {
+    process.env.MEDEA_ENGINE_MAX_MAP_ITEMS = '3';
     const engine = makeEngine(passthroughSrc(), mod('dst'), mod('sink'));
     const result = await engine.run({ workflow: chain('auto'), triggerInput: [1, 2, 3, 4] });
     expect(result.errorCount).toBe(1);

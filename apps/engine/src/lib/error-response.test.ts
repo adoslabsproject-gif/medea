@@ -168,7 +168,7 @@ describe('sanitizedErrorResponse', () => {
  * API. Questi test fissano il contratto in entrambe le direzioni.
  */
 describe('sanitizedErrorResponse — conflitto UNIQUE/PK → 409 DB_CONFLICT_UNIQUE', () => {
-  /** STESSA regex dell'executor db_insert (packages/flowforge/nodes/db/src/index.ts,
+  /** STESSA regex dell'executor db_insert (packages/engine/nodes/db/src/index.ts,
    *  ramo onConflict==='ignore'). Se una delle due parti cambia, questo test
    *  inchioda il drift. */
   const EXECUTOR_ONCONFLICT_REGEX = /UNIQUE|duplicate|PRIMARY KEY|already exists/i;

@@ -327,10 +327,10 @@ describe('SYSTEM_PROMPT_LORA — variante compatta per Liara con LoRA caricato (
   // User: "sto facendo un LoRA, quindi dovremmo poi fare un prompt system
   // ridotto solo per liara, perché molte cose del system prompt le metterò
   // nel lora". LoRA non è pronto ora → branch logic INATTIVA di default.
-  // Quando arriverà, setta FLOWFORGE_LIARA_LORA_LOADED=true sul container.
+  // Quando arriverà, setta MEDEA_LIARA_LORA_LOADED=true sul container.
 
   afterEach(() => {
-    delete process.env.FLOWFORGE_LIARA_LORA_LOADED;
+    delete process.env.MEDEA_LIARA_LORA_LOADED;
   });
 
   it('SYSTEM_PROMPT_LORA esportato + significativamente più corto del full (~4KB vs ~12KB)', () => {
@@ -362,7 +362,7 @@ describe('SYSTEM_PROMPT_LORA — variante compatta per Liara con LoRA caricato (
   });
 
   it('pickScaffoldPrompt: provider !== "liara" → SEMPRE SYSTEM_PROMPT full (no LoRA per OpenAI/Anthropic/Gemini)', () => {
-    process.env.FLOWFORGE_LIARA_LORA_LOADED = 'true';
+    process.env.MEDEA_LIARA_LORA_LOADED = 'true';
     expect(pickScaffoldPrompt('openai')).toBe(SYSTEM_PROMPT);
     expect(pickScaffoldPrompt('anthropic')).toBe(SYSTEM_PROMPT);
     expect(pickScaffoldPrompt('gemini')).toBe(SYSTEM_PROMPT);
@@ -371,23 +371,23 @@ describe('SYSTEM_PROMPT_LORA — variante compatta per Liara con LoRA caricato (
   });
 
   it('DEFAULT (env non settato) — provider="liara" usa FULL prompt (LoRA non ancora deployato)', () => {
-    delete process.env.FLOWFORGE_LIARA_LORA_LOADED;
+    delete process.env.MEDEA_LIARA_LORA_LOADED;
     expect(pickScaffoldPrompt('liara')).toBe(SYSTEM_PROMPT);
   });
 
-  it('OPT-IN env FLOWFORGE_LIARA_LORA_LOADED=true + provider="liara" → SYSTEM_PROMPT_LORA compact', () => {
-    process.env.FLOWFORGE_LIARA_LORA_LOADED = 'true';
+  it('OPT-IN env MEDEA_LIARA_LORA_LOADED=true + provider="liara" → SYSTEM_PROMPT_LORA compact', () => {
+    process.env.MEDEA_LIARA_LORA_LOADED = 'true';
     expect(pickScaffoldPrompt('liara')).toBe(SYSTEM_PROMPT_LORA);
   });
 
-  it('REGRESSION: env FLOWFORGE_LIARA_LORA_LOADED="false" (string) → FULL (no falsy parsing bug)', () => {
-    process.env.FLOWFORGE_LIARA_LORA_LOADED = 'false';
+  it('REGRESSION: env MEDEA_LIARA_LORA_LOADED="false" (string) → FULL (no falsy parsing bug)', () => {
+    process.env.MEDEA_LIARA_LORA_LOADED = 'false';
     expect(pickScaffoldPrompt('liara')).toBe(SYSTEM_PROMPT);
   });
 
-  it('REGRESSION: env FLOWFORGE_LIARA_LORA_LOADED="1" → FULL (solo "true" exact match opt-in)', () => {
+  it('REGRESSION: env MEDEA_LIARA_LORA_LOADED="1" → FULL (solo "true" exact match opt-in)', () => {
     // Pattern enterprise: opt-in con string EXACT "true", no truthy coercion.
-    process.env.FLOWFORGE_LIARA_LORA_LOADED = '1';
+    process.env.MEDEA_LIARA_LORA_LOADED = '1';
     expect(pickScaffoldPrompt('liara')).toBe(SYSTEM_PROMPT);
   });
 });

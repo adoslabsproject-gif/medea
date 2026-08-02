@@ -14,9 +14,9 @@
  *   • ensureFreshGoogleAccessToken()               — used by executors
  *
  * Env vars (server-side, NEVER exposed to the client):
- *   FLOWFORGE_GOOGLE_CLIENT_ID
- *   FLOWFORGE_GOOGLE_CLIENT_SECRET
- *   FLOWFORGE_GOOGLE_REDIRECT_URI (optional — defaults to request origin)
+ *   MEDEA_GOOGLE_CLIENT_ID
+ *   MEDEA_GOOGLE_CLIENT_SECRET
+ *   MEDEA_GOOGLE_REDIRECT_URI (optional — defaults to request origin)
  */
 
 import { IntegrationError } from './common.js';
@@ -68,21 +68,21 @@ export interface GoogleOAuthCredentials {
 }
 
 export function buildOAuthClient(): Promise<GoogleOAuthClient> {
-  const clientId = process.env.FLOWFORGE_GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.FLOWFORGE_GOOGLE_CLIENT_SECRET;
+  const clientId = process.env.MEDEA_GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.MEDEA_GOOGLE_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
     return Promise.reject(new IntegrationError({
       provider: 'gmail',
       code: 'OAUTH_NOT_CONFIGURED',
       message:
         'Google OAuth is not configured for this FlowForge instance. ' +
-        'Set FLOWFORGE_GOOGLE_CLIENT_ID and FLOWFORGE_GOOGLE_CLIENT_SECRET in the runtime env.',
+        'Set MEDEA_GOOGLE_CLIENT_ID and MEDEA_GOOGLE_CLIENT_SECRET in the runtime env.',
     }));
   }
   return Promise.resolve({
     clientId,
     clientSecret,
-    defaultRedirectUri: process.env.FLOWFORGE_GOOGLE_REDIRECT_URI,
+    defaultRedirectUri: process.env.MEDEA_GOOGLE_REDIRECT_URI,
   });
 }
 

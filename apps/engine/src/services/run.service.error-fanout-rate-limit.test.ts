@@ -41,7 +41,7 @@ describe('🚨 [REGRESSION WE-14] error-workflow fan-out rate-limit (relocato in
     expect(runServiceSource).not.toMatch(/function checkErrorFanoutRateLimit/);
     const rlSource = readFileSync(join(__dirname, 'error-outbox', 'fanout-rate-limit.ts'), 'utf-8');
     expect(rlSource).toMatch(/function checkErrorFanoutRateLimit\(sourceWorkflowId: string\): boolean/);
-    expect(rlSource).toMatch(/FLOWFORGE_ERROR_FANOUT_MAX_PER_MIN/);
+    expect(rlSource).toMatch(/MEDEA_ERROR_FANOUT_MAX_PER_MIN/);
   });
 
   it('🚨 behavioral: bucket consente fino a max (60), blocca al 61°', async () => {
@@ -74,11 +74,11 @@ describe('🚨 [REGRESSION WE-14] error-workflow fan-out rate-limit (relocato in
     expect(__testHooks__.checkErrorFanoutRateLimit('wf-B')).toBe(true);
   });
 
-  it('🚨 behavioral: env override FLOWFORGE_ERROR_FANOUT_MAX_PER_MIN abbassa il cap', async () => {
+  it('🚨 behavioral: env override MEDEA_ERROR_FANOUT_MAX_PER_MIN abbassa il cap', async () => {
     const { __testHooks__ } = await import('./error-outbox/fanout-rate-limit.js');
     __testHooks__.errorFanoutBuckets.clear();
-    const oldEnv = process.env.FLOWFORGE_ERROR_FANOUT_MAX_PER_MIN;
-    process.env.FLOWFORGE_ERROR_FANOUT_MAX_PER_MIN = '3';
+    const oldEnv = process.env.MEDEA_ERROR_FANOUT_MAX_PER_MIN;
+    process.env.MEDEA_ERROR_FANOUT_MAX_PER_MIN = '3';
     try {
       const wfId = 'wf-test-env-cap';
       expect(__testHooks__.checkErrorFanoutRateLimit(wfId)).toBe(true);
@@ -86,8 +86,8 @@ describe('🚨 [REGRESSION WE-14] error-workflow fan-out rate-limit (relocato in
       expect(__testHooks__.checkErrorFanoutRateLimit(wfId)).toBe(true);
       expect(__testHooks__.checkErrorFanoutRateLimit(wfId)).toBe(false);
     } finally {
-      if (oldEnv === undefined) delete process.env.FLOWFORGE_ERROR_FANOUT_MAX_PER_MIN;
-      else process.env.FLOWFORGE_ERROR_FANOUT_MAX_PER_MIN = oldEnv;
+      if (oldEnv === undefined) delete process.env.MEDEA_ERROR_FANOUT_MAX_PER_MIN;
+      else process.env.MEDEA_ERROR_FANOUT_MAX_PER_MIN = oldEnv;
     }
   });
 });

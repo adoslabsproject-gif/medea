@@ -60,8 +60,8 @@ beforeAll(async () => {
   // (lazy-create del bootstrap server). Stesso ensure della produzione.
   ensureCredentialsTable();
   root = await mkdtemp(join(tmpdir(), 'ffreplay-e2e-'));
-  savedDataDir = process.env.FLOWFORGE_DATA_DIR;
-  process.env.FLOWFORGE_DATA_DIR = root;
+  savedDataDir = process.env.MEDEA_DATA_DIR;
+  process.env.MEDEA_DATA_DIR = root;
   tenantFiles = join(root, 'tenants', 'default', 'files');
 
   // App HTTP con auth context reale-minimale (come lo monta il middleware JWT).
@@ -97,8 +97,8 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await rm(root, { recursive: true, force: true });
-  if (savedDataDir === undefined) delete process.env.FLOWFORGE_DATA_DIR;
-  else process.env.FLOWFORGE_DATA_DIR = savedDataDir;
+  if (savedDataDir === undefined) delete process.env.MEDEA_DATA_DIR;
+  else process.env.MEDEA_DATA_DIR = savedDataDir;
 });
 
 describe('🚨🚨 E2E full-request-path — replay parziale attraverso TUTTO lo stack reale', () => {

@@ -33,7 +33,7 @@ vi.mock('./db-studio.service.js', () => ({
 }));
 
 vi.mock('@/config.js', () => ({
-  loadConfig: () => ({ FLOWFORGE_DATA_DIR: tempDir }),
+  loadConfig: () => ({ MEDEA_DATA_DIR: tempDir }),
 }));
 
 const { VectorService } = await import('./vector.service.js');

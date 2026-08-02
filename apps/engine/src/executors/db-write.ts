@@ -1,9 +1,9 @@
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { internalAwareFetch } from '@/lib/internal-service-fetch.js';
 import { getLoopbackInternalToken } from '@/lib/internal-token.js';
 import { readJsonCapped, readTextTruncated } from '@/lib/capped-response.js';
 
-const RUNTIME_BASE = process.env.FLOWFORGE_RUNTIME_URL ?? 'http://127.0.0.1:3100';
+const RUNTIME_BASE = process.env.MEDEA_RUNTIME_URL ?? 'http://127.0.0.1:3100';
 
 /**
  * Vincola il databaseId prima di metterlo nel PATH verso l'API interna (loopback con

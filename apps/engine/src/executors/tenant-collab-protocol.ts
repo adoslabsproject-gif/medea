@@ -36,12 +36,12 @@ const DEFAULT_ALLOWED_HOST_SUFFIXES = ['.app.automazionezeli.com'];
 
 /**
  * Suffissi host ammessi per l'URL di collaborazione. Override via env
- * FLOWFORGE_COLLAB_ALLOWED_HOST_SUFFIXES (CSV) per staging/dev — MAI per
+ * MEDEA_COLLAB_ALLOWED_HOST_SUFFIXES (CSV) per staging/dev — MAI per
  * aprire il nodo a host arbitrari: il valore di sicurezza del nodo è
  * proprio il perimetro chiuso FlowForge→FlowForge.
  */
 export function allowedCollabHostSuffixes(): string[] {
-  const raw = process.env.FLOWFORGE_COLLAB_ALLOWED_HOST_SUFFIXES ?? '';
+  const raw = process.env.MEDEA_COLLAB_ALLOWED_HOST_SUFFIXES ?? '';
   const parsed = raw
     .split(',')
     .map((s) => s.trim().toLowerCase())

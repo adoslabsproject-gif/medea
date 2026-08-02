@@ -13,7 +13,7 @@ vi.mock('@/services/community-nodes.service.js', () => ({ getInstalledByDefId: (
 
 import { WorkflowEngine } from './workflow-engine.js';
 import { InMemoryEventBus } from '@/adapters/event-bus-memory.js';
-import type { Workflow } from '@flowforge/core-schema';
+import type { Workflow } from '@medea/engine-core-schema';
 import type { IPauseHandler, PauseArgs } from '@/engine/ports.js';
 
 function makeWorkflow(partial: Partial<Workflow>): Workflow {

@@ -14,7 +14,7 @@
  *
  * @module services/db-studio/create-database
  */
-import type { Database, DatabaseEngine } from '@flowforge/db-studio-core';
+import type { Database, DatabaseEngine } from '@medea/engine-db-studio-core';
 import type { DbStudioService } from '@/services/db-studio.service.js';
 import { provisionManagedDb, isManagedEngine } from './managed-db-client.js';
 

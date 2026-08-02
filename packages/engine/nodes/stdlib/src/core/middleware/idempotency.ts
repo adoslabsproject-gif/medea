@@ -37,7 +37,7 @@ const DEFAULT_IDEMPOTENCY_TTL_MS = (() => {
   // Isomorfico: nel bundle browser dell'editor questo modulo è dead-code (mai
   // eseguito) ma viene comunque *importato* → il top-level gira a load. `process`
   // non esiste lì → guard. Sul runtime server `process` c'è: valore identico.
-  const env = Number(typeof process !== 'undefined' ? process.env.FLOWFORGE_IDEMPOTENCY_TTL_MS : undefined);
+  const env = Number(typeof process !== 'undefined' ? process.env.MEDEA_IDEMPOTENCY_TTL_MS : undefined);
   return Number.isFinite(env) && env > 0 ? env : 24 * 60 * 60 * 1000; // 24h
 })();
 

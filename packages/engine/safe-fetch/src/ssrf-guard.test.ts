@@ -1,5 +1,5 @@
 /**
- * Tests SSRF guard — `@flowforge/safe-fetch` shared (#202 P0-3 + N20 structural).
+ * Tests SSRF guard — `@medea/engine-safe-fetch` shared (#202 P0-3 + N20 structural).
  *
  * Coverage:
  *   - scheme allowed (http, https) vs blocked (file:, javascript:, gopher:, data:)

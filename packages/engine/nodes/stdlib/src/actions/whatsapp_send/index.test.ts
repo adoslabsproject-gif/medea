@@ -14,12 +14,12 @@ import { whatsAppSendExecutor } from './executor.js';
 import { WhatsAppSendConfigSchema } from './schema.js';
 import { HttpError, ValidationError, AbortedError } from '../../core/node-error.js';
 
-vi.mock('@flowforge/safe-fetch', () => ({
+vi.mock('@medea/engine-safe-fetch', () => ({
   safeFetchWithRedirects: vi.fn(),
   assertUrlSafe: vi.fn(),
 }));
 
-const { safeFetchWithRedirects } = await import('@flowforge/safe-fetch');
+const { safeFetchWithRedirects } = await import('@medea/engine-safe-fetch');
 const mockedFetch = vi.mocked(safeFetchWithRedirects);
 
 const ctx = { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {} };

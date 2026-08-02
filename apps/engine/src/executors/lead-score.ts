@@ -3,7 +3,7 @@
  * Wrap su lead-score.service.ts — service deterministic, no async/external.
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { scoreLeadFromContent, type LeadScoreConfig } from '@/services/lead-score.service.js';
 
 export const leadScoreExecutor: NodeExecutor = (config, _input, _context) => {

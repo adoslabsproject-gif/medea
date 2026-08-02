@@ -32,8 +32,8 @@ let timer: ReturnType<typeof setInterval> | null = null;
  */
 import { readFile, writeFile } from 'node:fs/promises';
 
-const MARKER_FILE = process.env.FLOWFORGE_DATA_DIR
-  ? `${process.env.FLOWFORGE_DATA_DIR}/.gdpr-purge-last-run`
+const MARKER_FILE = process.env.MEDEA_DATA_DIR
+  ? `${process.env.MEDEA_DATA_DIR}/.gdpr-purge-last-run`
   : '/data/.gdpr-purge-last-run';
 
 async function loadLastRunMs(): Promise<number> {

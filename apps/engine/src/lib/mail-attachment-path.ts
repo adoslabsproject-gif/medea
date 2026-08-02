@@ -5,7 +5,7 @@
  * http(s) → lo *fetcha*; altrimenti → lo legge come FILE su disco. In un container
  * multi-tenant l'autore del workflow non ha accesso al filesystem del container: un
  * `path` su disco (`/app/.env`, `/proc/self/environ`, `../../etc/passwd`) sarebbe una
- * LFI → l'allegato esfiltrerebbe il FLOWFORGE_SSO_SECRET / LICENSE_HMAC / internal token
+ * LFI → l'allegato esfiltrerebbe il MEDEA_SSO_SECRET / LICENSE_HMAC / internal token
  * via email. Le fonti LEGITTIME di un allegato sono: handle BinaryData (blob del tenant),
  * base64 inline, oppure un URL http(s) (passato per il guard SSRF).
  *
@@ -14,7 +14,7 @@
  *
  * @module lib/mail-attachment-path
  */
-import { validateUrlForFetch } from '@flowforge/safe-fetch';
+import { validateUrlForFetch } from '@medea/engine-safe-fetch';
 
 /** Sollevata quando un `path`/`url` di allegato non è ammesso (filesystem o SSRF). */
 export class AttachmentPathError extends Error {

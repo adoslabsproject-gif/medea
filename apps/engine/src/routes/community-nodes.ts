@@ -122,7 +122,7 @@ export function createCommunityNodesRoutes(): Hono {
       return c.json({ updatedAt: reg.updatedAt, nodes, total: nodes.length });
     } catch (err) {
       return c.json({
-        error: 'Registry non raggiungibile. Riprova tra qualche minuto o configura FLOWFORGE_REGISTRY_URL.',
+        error: 'Registry non raggiungibile. Riprova tra qualche minuto o configura MEDEA_REGISTRY_URL.',
         details: err instanceof Error ? err.message : String(err),
       }, 502);
     }

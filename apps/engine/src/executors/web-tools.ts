@@ -11,7 +11,7 @@
  * fetch streaming, SSRF guard).
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { fetchUrl, webSearch } from '@/services/web-tools.service.js';
 
 export const fetchUrlExecutor: NodeExecutor = async (config, _input, _context) => {

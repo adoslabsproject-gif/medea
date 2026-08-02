@@ -415,7 +415,7 @@ describe('twilioExecutor', () => {
   });
 
   it('🚨🚨 TOLL-FRAUD: oltre il cap invii/min → RATE_LIMITED, nessun nuovo POST a Twilio', async () => {
-    process.env.FLOWFORGE_TWILIO_MAX_SENDS_PER_MIN = '3';
+    process.env.MEDEA_TWILIO_MAX_SENDS_PER_MIN = '3';
     twilioGuards.__testHooks__.sendBuckets.clear();
     mockFetch.mockImplementation(() => Promise.resolve(jsonResp({ sid: 'SM', status: 'queued' }))); // Response fresca per call
     // i primi 3 passano
@@ -428,11 +428,11 @@ describe('twilioExecutor', () => {
       twilioExecutor({ operation: 'sendSms', to: '+393331234567', body: 'over' }, null, ctx),
     ).rejects.toThrow(/toll-fraud|Limite invii|RATE_LIMITED/u);
     expect(mockFetch.mock.calls.length).toBe(callsAfter3); // nessun POST aggiuntivo
-    delete process.env.FLOWFORGE_TWILIO_MAX_SENDS_PER_MIN;
+    delete process.env.MEDEA_TWILIO_MAX_SENDS_PER_MIN;
   });
 
   it('🚨 getMessage NON consuma il budget anti toll-fraud (sola lettura)', async () => {
-    process.env.FLOWFORGE_TWILIO_MAX_SENDS_PER_MIN = '1';
+    process.env.MEDEA_TWILIO_MAX_SENDS_PER_MIN = '1';
     twilioGuards.__testHooks__.sendBuckets.clear();
     mockFetch.mockImplementation(() => Promise.resolve(jsonResp({ sid: 'SM1', status: 'delivered' })));
     // molte letture non devono mai triggerare il rate-limit
@@ -443,7 +443,7 @@ describe('twilioExecutor', () => {
     await expect(
       twilioExecutor({ operation: 'sendSms', to: '+393331234567', body: 'x' }, null, ctx),
     ).resolves.toBeDefined();
-    delete process.env.FLOWFORGE_TWILIO_MAX_SENDS_PER_MIN;
+    delete process.env.MEDEA_TWILIO_MAX_SENDS_PER_MIN;
   });
 });
 

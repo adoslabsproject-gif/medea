@@ -1,5 +1,5 @@
 /**
- * @flowforge/ui-kit — design system entry point.
+ * @medea/engine-ui-kit — design system entry point.
  *
  * Re-exports:
  *   - Design tokens (TypeScript-typed names + helper functions)
@@ -7,10 +7,10 @@
  *     Checkbox, Badge, Alert, Modal, Dropdown, Tooltip, Spinner, Skeleton
  *
  * Usage:
- *   import { Button, Card, Input } from '@flowforge/ui-kit';
+ *   import { Button, Card, Input } from '@medea/engine-ui-kit';
  *
  * Tokens:
- *   import { SURFACE_LEVELS, type ButtonVariant } from '@flowforge/ui-kit';
+ *   import { SURFACE_LEVELS, type ButtonVariant } from '@medea/engine-ui-kit';
  */
 
 export * from './tokens.js';

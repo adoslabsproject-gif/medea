@@ -5,7 +5,7 @@ Il motore — il runtime di FlowForge, con il suo Node e le sue dipendenze —
 pesa circa 595 MB e si rigenera:
 
 ```bash
-FLOWFORGE_RUNTIME_SRC=/percorso/a/apps/flowforge-runtime pnpm runtime:package
+FLOWFORGE_RUNTIME_SRC=/percorso/a/apps/engine pnpm runtime:package
 ```
 
 Il perché di quei 595 MB, e le tre riduzioni provate e scartate, stanno in

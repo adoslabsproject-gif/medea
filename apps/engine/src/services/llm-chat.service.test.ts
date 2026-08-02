@@ -9,9 +9,9 @@
  *  - Liara: model esplicito override (BYOK enterprise)
  *  - Liara: temperature 0.2
  *  - Liara: <think>...</think> stripped dal response
- *  - Liara: FLOWFORGE_LIARA_THINKING=false → /no_think prefix + enable_thinking=false
- *  - Liara: FLOWFORGE_LIARA_MAX_TOKENS=8192 → applicato
- *  - Liara: disabled (FLOWFORGE_DISABLE_LIARA=true) → throws
+ *  - Liara: MEDEA_LIARA_THINKING=false → /no_think prefix + enable_thinking=false
+ *  - Liara: MEDEA_LIARA_MAX_TOKENS=8192 → applicato
+ *  - Liara: disabled (MEDEA_DISABLE_LIARA=true) → throws
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -48,8 +48,8 @@ beforeEach(() => {
       json: async () => mockResponse.body,
     } as Response;
   }) as unknown as typeof fetch;
-  delete process.env.FLOWFORGE_LIARA_THINKING;
-  delete process.env.FLOWFORGE_LIARA_MAX_TOKENS;
+  delete process.env.MEDEA_LIARA_THINKING;
+  delete process.env.MEDEA_LIARA_MAX_TOKENS;
 });
 
 afterEach(() => {
@@ -99,8 +99,8 @@ describe('dispatchLLMChat — Liara branch', () => {
     expect(captured[0]!.body.model).toBe('qwen3-32b-special');
   });
 
-  it('FLOWFORGE_LIARA_THINKING=false → /no_think + enable_thinking=false', async () => {
-    process.env.FLOWFORGE_LIARA_THINKING = 'false';
+  it('MEDEA_LIARA_THINKING=false → /no_think + enable_thinking=false', async () => {
+    process.env.MEDEA_LIARA_THINKING = 'false';
     const { dispatchLLMChat } = await import('./llm-chat.service');
     await dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []);
     const body = captured[0]!.body;
@@ -109,15 +109,15 @@ describe('dispatchLLMChat — Liara branch', () => {
     expect(messages[0]?.content).toBe('/no_think\nsys');
   });
 
-  it('FLOWFORGE_LIARA_MAX_TOKENS=8192 → applicato', async () => {
-    process.env.FLOWFORGE_LIARA_MAX_TOKENS = '8192';
+  it('MEDEA_LIARA_MAX_TOKENS=8192 → applicato', async () => {
+    process.env.MEDEA_LIARA_MAX_TOKENS = '8192';
     const { dispatchLLMChat } = await import('./llm-chat.service');
     await dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []);
     expect(captured[0]!.body.max_tokens).toBe(8192);
   });
 
-  it('FLOWFORGE_LIARA_MAX_TOKENS invalid/zero → fallback 24000', async () => {
-    process.env.FLOWFORGE_LIARA_MAX_TOKENS = 'abc';
+  it('MEDEA_LIARA_MAX_TOKENS invalid/zero → fallback 24000', async () => {
+    process.env.MEDEA_LIARA_MAX_TOKENS = 'abc';
     const { dispatchLLMChat } = await import('./llm-chat.service');
     await dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []);
     expect(captured[0]!.body.max_tokens).toBe(24000);
@@ -149,14 +149,14 @@ describe('dispatchLLMChat — Liara branch', () => {
     expect(max + 17500).toBeLessThan(40960);
   });
 
-  it('FIX 2026-05-30 — FLOWFORGE_LIARA_CONTEXT_WINDOW override (es. Qwen3 future 64K)', async () => {
-    process.env.FLOWFORGE_LIARA_CONTEXT_WINDOW = '65536';
+  it('FIX 2026-05-30 — MEDEA_LIARA_CONTEXT_WINDOW override (es. Qwen3 future 64K)', async () => {
+    process.env.MEDEA_LIARA_CONTEXT_WINDOW = '65536';
     const heavySys = 'a'.repeat(60000); // ~17142 token
     const { dispatchLLMChat } = await import('./llm-chat.service');
     await dispatchLLMChat('liara', '', '', heavySys, 'goal', undefined, []);
     // Con context 65536: cap = MIN(24000, 65536-17142-512) = MIN(24000, 47882) = 24000
     expect(captured[0]!.body.max_tokens).toBe(24000);
-    delete process.env.FLOWFORGE_LIARA_CONTEXT_WINDOW;
+    delete process.env.MEDEA_LIARA_CONTEXT_WINDOW;
   });
 
   // BUG owner 2026-06-12: input > context → PRIMA mandava comunque (floor 1024) e
@@ -197,12 +197,12 @@ describe('dispatchLLMChat — Liara branch', () => {
     expect(out).toBe('final answer');
   });
 
-  it('Authorization Bearer with FLOWFORGE_LICENSE_KEY', async () => {
-    process.env.FLOWFORGE_LICENSE_KEY = 'test-license-abc';
+  it('Authorization Bearer with MEDEA_LICENSE_KEY', async () => {
+    process.env.MEDEA_LICENSE_KEY = 'test-license-abc';
     const { dispatchLLMChat } = await import('./llm-chat.service');
     await dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []);
     expect(captured[0]!.headers).toMatchObject({ Authorization: 'Bearer test-license-abc' });
-    delete process.env.FLOWFORGE_LICENSE_KEY;
+    delete process.env.MEDEA_LICENSE_KEY;
   });
 
   it('preserves prior history messages', async () => {
@@ -345,7 +345,7 @@ describe('dispatchLLMChat — Liara branch · disabled mode', () => {
     vi.doUnmock('@/lib/circuit-breaker.js');
   });
 
-  it('throws when isLiaraEnabled()=false (FLOWFORGE_DISABLE_LIARA)', async () => {
+  it('throws when isLiaraEnabled()=false (MEDEA_DISABLE_LIARA)', async () => {
     const { dispatchLLMChat } = await import('./llm-chat.service');
     await expect(dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []))
       .rejects.toThrow(/disabilitata/);

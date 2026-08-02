@@ -64,7 +64,7 @@ beforeEach(() => {
 afterEach(() => {
   const conn = dbConnections.pop();
   if (conn) conn.close();
-  delete process.env.FLOWFORGE_PLAN_CODE;
+  delete process.env.MEDEA_PLAN_CODE;
 });
 
 const validInput = (slug: string) => ({
@@ -119,32 +119,32 @@ describe('🚨 PLAN_CAPABILITIES (table integrity)', () => {
 
 describe('🚨 resolveTenantPlan (env)', () => {
   it('🚨 env mancante → fallback "free"', () => {
-    delete process.env.FLOWFORGE_PLAN_CODE;
+    delete process.env.MEDEA_PLAN_CODE;
     expect(resolveTenantPlan()).toBe('free');
   });
 
   it('🚨 env "pro" → pro', () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'pro';
+    process.env.MEDEA_PLAN_CODE = 'pro';
     expect(resolveTenantPlan()).toBe('pro');
   });
 
   it('🚨 case-insensitive: "PRO" → pro', () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'PRO';
+    process.env.MEDEA_PLAN_CODE = 'PRO';
     expect(resolveTenantPlan()).toBe('pro');
   });
 
   it('🚨 trim whitespace: " pro " → pro', () => {
-    process.env.FLOWFORGE_PLAN_CODE = ' pro ';
+    process.env.MEDEA_PLAN_CODE = ' pro ';
     expect(resolveTenantPlan()).toBe('pro');
   });
 
   it('🚨 env malformato (unknown) → fallback safe "free"', () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'unknown_plan_xyz';
+    process.env.MEDEA_PLAN_CODE = 'unknown_plan_xyz';
     expect(resolveTenantPlan()).toBe('free');
   });
 
   it('🚨 enterprise riconosciuto', () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'enterprise';
+    process.env.MEDEA_PLAN_CODE = 'enterprise';
     expect(resolveTenantPlan()).toBe('enterprise');
   });
 });
@@ -156,14 +156,14 @@ describe('🚨 countActiveCustomNodes', () => {
   });
 
   it('🚨 N nodi creati → N', async () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'pro';
+    process.env.MEDEA_PLAN_CODE = 'pro';
     await createCustomNode({ workspaceId: WS, ownerUserId: 'u-1', input: validInput('one') });
     await createCustomNode({ workspaceId: WS, ownerUserId: 'u-1', input: validInput('two') });
     expect(await countActiveCustomNodes(WS)).toBe(2);
   });
 
   it('🚨 archived nodes esclusi dal count', async () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'pro';
+    process.env.MEDEA_PLAN_CODE = 'pro';
     const a = await createCustomNode({ workspaceId: WS, ownerUserId: 'u-1', input: validInput('aaa') });
     await createCustomNode({ workspaceId: WS, ownerUserId: 'u-1', input: validInput('bbb') });
     await archiveCustomNode({ workspaceId: WS, id: a.id });
@@ -171,7 +171,7 @@ describe('🚨 countActiveCustomNodes', () => {
   });
 
   it('🚨 cross-tenant: count di WS-A non include WS-B', async () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'pro';
+    process.env.MEDEA_PLAN_CODE = 'pro';
     await createCustomNode({ workspaceId: 'ws-A', ownerUserId: 'u-1', input: validInput('aa') });
     await createCustomNode({ workspaceId: 'ws-B', ownerUserId: 'u-1', input: validInput('bb') });
     expect(await countActiveCustomNodes('ws-A')).toBe(1);
@@ -181,12 +181,12 @@ describe('🚨 countActiveCustomNodes', () => {
 
 describe('🚨 assertCanCreateMoreCustomNodes (quota enforcement)', () => {
   it('🚨 free plan → throws sempre al primo create (quota 0)', async () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'free';
+    process.env.MEDEA_PLAN_CODE = 'free';
     await expect(assertCanCreateMoreCustomNodes(WS)).rejects.toThrow(CustomNodeQuotaExceededError);
   });
 
   it('🚨 starter quota 3: 2 nodi → 3° asserzione OK, 4° throws', async () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'starter';
+    process.env.MEDEA_PLAN_CODE = 'starter';
     await createCustomNode({ workspaceId: WS, ownerUserId: 'u-1', input: validInput('a1') });
     await createCustomNode({ workspaceId: WS, ownerUserId: 'u-1', input: validInput('a2') });
     // 3° create: OK
@@ -197,7 +197,7 @@ describe('🚨 assertCanCreateMoreCustomNodes (quota enforcement)', () => {
   });
 
   it('🚨 enterprise quota null → mai throw, 500 create OK', async () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'enterprise';
+    process.env.MEDEA_PLAN_CODE = 'enterprise';
     await expect(assertCanCreateMoreCustomNodes(WS)).resolves.toBeUndefined();
     // simula 5 inserimenti diretti per skip create overhead
     for (let i = 0; i < 5; i++) {
@@ -207,7 +207,7 @@ describe('🚨 assertCanCreateMoreCustomNodes (quota enforcement)', () => {
   });
 
   it('🚨 error meta include current+limit+planCode+suggestedPlan', async () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'starter';
+    process.env.MEDEA_PLAN_CODE = 'starter';
     for (let i = 0; i < 3; i++) {
       await createCustomNode({ workspaceId: WS, ownerUserId: 'u-1', input: validInput(`m${i.toString()}`) });
     }
@@ -226,7 +226,7 @@ describe('🚨 assertCanCreateMoreCustomNodes (quota enforcement)', () => {
   });
 
   it('🚨 enterprise: NO suggestedPlan (top tier)', async () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'enterprise';
+    process.env.MEDEA_PLAN_CODE = 'enterprise';
     // Non c'è violation (unlimited), ma test diretto suggestUpgrade implicito.
     // Forziamo violation con mock counter? Skip: test capability ai-token quota gia\` copre top tier.
     const cap = PLAN_CAPABILITIES.enterprise;
@@ -236,37 +236,37 @@ describe('🚨 assertCanCreateMoreCustomNodes (quota enforcement)', () => {
 
 describe('🚨 assertCanPublishMarketplace (gating)', () => {
   it('🚨 free → ForbiddenError', () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'free';
+    process.env.MEDEA_PLAN_CODE = 'free';
     expect(() => assertCanPublishMarketplace()).toThrow(CustomNodeForbiddenError);
   });
 
   it('🚨 starter → ForbiddenError', () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'starter';
+    process.env.MEDEA_PLAN_CODE = 'starter';
     expect(() => assertCanPublishMarketplace()).toThrow(CustomNodeForbiddenError);
   });
 
   it('🚨 pro → OK', () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'pro';
+    process.env.MEDEA_PLAN_CODE = 'pro';
     expect(() => assertCanPublishMarketplace()).not.toThrow();
   });
 
   it('🚨 business → OK', () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'business';
+    process.env.MEDEA_PLAN_CODE = 'business';
     expect(() => assertCanPublishMarketplace()).not.toThrow();
   });
 
   it('🚨 team → OK', () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'team';
+    process.env.MEDEA_PLAN_CODE = 'team';
     expect(() => assertCanPublishMarketplace()).not.toThrow();
   });
 
   it('🚨 enterprise → OK', () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'enterprise';
+    process.env.MEDEA_PLAN_CODE = 'enterprise';
     expect(() => assertCanPublishMarketplace()).not.toThrow();
   });
 
   it('🚨 error message include current plan + suggested upgrade', () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'starter';
+    process.env.MEDEA_PLAN_CODE = 'starter';
     try {
       assertCanPublishMarketplace();
       throw new Error('should have thrown');

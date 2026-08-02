@@ -27,7 +27,7 @@ let DATA_ROOT = '';
 
 beforeEach(async () => {
   DATA_ROOT = await fs.mkdtemp(join(tmpdir(), 'ff-nodes-'));
-  process.env.FLOWFORGE_DATA_DIR = DATA_ROOT;
+  process.env.MEDEA_DATA_DIR = DATA_ROOT;
   vi.resetModules();
 });
 
@@ -276,7 +276,7 @@ describe('🚨 installFromUrl — verify-at-install (registry pubblico fail-clos
     const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, arrayBuffer: async () => ab }));
   }
-  afterEach(() => { delete process.env.FLOWFORGE_ALLOW_UNSIGNED_REMOTE_NODES; });
+  afterEach(() => { delete process.env.MEDEA_ALLOW_UNSIGNED_REMOTE_NODES; });
 
   it('🚨 pacchetto remoto NON firmato → RIFIUTATO di default (no fail-open)', async () => {
     stubFetchWith(buildFfnodeZip()); // unsigned
@@ -298,8 +298,8 @@ describe('🚨 installFromUrl — verify-at-install (registry pubblico fail-clos
     expect(installed.verified).toBe(true);
   });
 
-  it('override env FLOWFORGE_ALLOW_UNSIGNED_REMOTE_NODES=1 → unsigned remoto ammesso (verified=false)', async () => {
-    process.env.FLOWFORGE_ALLOW_UNSIGNED_REMOTE_NODES = '1';
+  it('override env MEDEA_ALLOW_UNSIGNED_REMOTE_NODES=1 → unsigned remoto ammesso (verified=false)', async () => {
+    process.env.MEDEA_ALLOW_UNSIGNED_REMOTE_NODES = '1';
     stubFetchWith(buildFfnodeZip()); // unsigned
     const svc = await import('./community-nodes.service.js');
     const installed = await svc.installFromUrl('https://registry.example/pkg.ffnode');

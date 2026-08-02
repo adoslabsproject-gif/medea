@@ -10,10 +10,10 @@
  */
 
 import { isLiaraEnabled, liaraBaseUrl } from '@/config.js';
-import { CircuitBreaker, CircuitBreakerRegistry } from '@zeliai/shared';
+import { CircuitBreaker, CircuitBreakerRegistry } from '@medea/engine-shared';
 import { isFixedOpenAiCompat, fixedOpenAiCompatTarget } from './llm/provider-registry.js';
 import { readJsonCapped, readTextTruncated } from '@/lib/capped-response.js';
-import { assertUrlSafe } from '@flowforge/safe-fetch';
+import { assertUrlSafe } from '@medea/engine-safe-fetch';
 
 /**
  * Difesa-in-profondità SSRF. Il `baseUrl` CUSTOM (BYOK Ollama / proxy
@@ -21,7 +21,7 @@ import { assertUrlSafe } from '@flowforge/safe-fetch';
  * (host pubblico) PRIMA di usarlo.
  *
  * ⚠️ ECCEZIONE OBBLIGATORIA — il GATEWAY INTERNO di default (`liaraBaseUrl()` =
- * FLOWFORGE_LIARA_BASE_URL) è un IP PRIVATO PER DESIGN (docker bridge verso il
+ * MEDEA_LIARA_BASE_URL) è un IP PRIVATO PER DESIGN (docker bridge verso il
  * portal-gateway con licenza, es. 172.20.0.1:3006). Il resolver Liara lo passa
  * SEMPRE come `baseUrl` (provider-registry: "il chiamante lo passa"), quindi NON è
  * `undefined` come assumeva il commento precedente: senza questa esenzione
@@ -81,7 +81,7 @@ const TOKENS_PER_IMAGE_ESTIMATE = 800;
  * 200k, GPT 128k) resta conservativo, mai overrun.
  */
 export function getLiaraContextWindow(): number {
-  const v = Number(process.env.FLOWFORGE_LIARA_CONTEXT_WINDOW ?? '40960');
+  const v = Number(process.env.MEDEA_LIARA_CONTEXT_WINDOW ?? '40960');
   return Number.isFinite(v) && v > 0 ? v : 40960;
 }
 
@@ -305,13 +305,13 @@ export async function dispatchLLMChat(
   switch (provider) {
     case 'liara': {
       if (!isLiaraEnabled()) {
-        throw new Error('Liara è disabilitata su questa istanza (FLOWFORGE_DISABLE_LIARA=true).');
+        throw new Error('Liara è disabilitata su questa istanza (MEDEA_DISABLE_LIARA=true).');
       }
       // Route to portal gateway (path is the OpenAI-compatible endpoint
       // exposed by the zeliai portal which forwards to the internal Liara
       // service after Sentinel + license + quota checks).
       const url = `${baseUrl ?? liaraBaseUrl()}/chat/completions`;
-      const licenseKey = process.env.FLOWFORGE_LICENSE_KEY ?? '';
+      const licenseKey = process.env.MEDEA_LICENSE_KEY ?? '';
 
       // Liara = Qwen3 32B FP8 self-hosted on Hetzner GPU. Pieno potere:
       //  - Thinking mode ON (Qwen3 ragiona via <think>...</think> prima di emettere)
@@ -321,7 +321,7 @@ export async function dispatchLLMChat(
       //    multi-action), input+max_tokens > 40960 → vLLM rifiuta. Ora calcoliamo
       //    output cap come (context_window - input_tokens - safety_margin).
       //  - model omesso: Liara backend usa il suo MODEL_NAME (qwen3-32b) di default.
-      const thinkingDisabled = process.env.FLOWFORGE_LIARA_THINKING === 'false';
+      const thinkingDisabled = process.env.MEDEA_LIARA_THINKING === 'false';
       const systemPrefix = thinkingDisabled ? '/no_think\n' : '';
       const fullSystem = `${systemPrefix}${system}`;
       // Token estimation: ~3.5 char/token medio per testo IT/EN misto + JSON.
@@ -342,7 +342,7 @@ export async function dispatchLLMChat(
       if (inputTokensEstimated > contextWindow - MIN_OUTPUT_TOKENS - safetyMargin) {
         throw new LlmContextOverflowError(inputTokensEstimated, contextWindow);
       }
-      const rawCeiling = opts?.maxTokens ?? Number(process.env.FLOWFORGE_LIARA_MAX_TOKENS ?? '24000');
+      const rawCeiling = opts?.maxTokens ?? Number(process.env.MEDEA_LIARA_MAX_TOKENS ?? '24000');
       const maxTokensCeiling = Number.isFinite(rawCeiling) && rawCeiling > 0 ? rawCeiling : 24000;
       const dynamicMax = Math.max(
         1024,
@@ -362,7 +362,7 @@ export async function dispatchLLMChat(
       // Enterprise (22 nodi) supera 60s e a volte 90s. Portal gateway ha
       // LIARA_TIMEOUT_MS_SYNC=240s, e il client (qui) deve essere >= per non
       // tagliare prima di lui. Oltre 240s consideriamo hang vero.
-      const liaraTimeoutMs = opts?.timeoutMs ?? Number(process.env.FLOWFORGE_LIARA_TIMEOUT_MS ?? '240000');
+      const liaraTimeoutMs = opts?.timeoutMs ?? Number(process.env.MEDEA_LIARA_TIMEOUT_MS ?? '240000');
       const liaraCtrl = new AbortController();
       const liaraTimeoutId = setTimeout(() => liaraCtrl.abort(), liaraTimeoutMs);
       let res: Response;
@@ -383,7 +383,7 @@ export async function dispatchLLMChat(
         });
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') {
-          throw new Error(`Liara timeout dopo ${liaraTimeoutMs.toString()}ms — modello in stallo. Riprova o aumenta FLOWFORGE_LIARA_TIMEOUT_MS.`);
+          throw new Error(`Liara timeout dopo ${liaraTimeoutMs.toString()}ms — modello in stallo. Riprova o aumenta MEDEA_LIARA_TIMEOUT_MS.`);
         }
         // Connessione rifiutata/reset → Liara giù (es. GPU in gen-mode): errore chiaro.
         if (isNetworkError(err)) throw new LlmProviderUnavailableError('liara', 'connessione fallita');
@@ -527,7 +527,7 @@ export async function dispatchLLMChatStructured(
   }
 
   if (!isLiaraEnabled()) {
-    throw new Error('Liara è disabilitata su questa istanza (FLOWFORGE_DISABLE_LIARA=true).');
+    throw new Error('Liara è disabilitata su questa istanza (MEDEA_DISABLE_LIARA=true).');
   }
 
   const msgs: { role: 'user' | 'assistant'; content: LlmMessageContent }[] = [
@@ -535,7 +535,7 @@ export async function dispatchLLMChatStructured(
     { role: 'user' as const, content: buildUserContent(userMessage, images) },
   ];
   const url = `${baseUrl ?? liaraBaseUrl()}/chat/completions`;
-  const licenseKey = process.env.FLOWFORGE_LICENSE_KEY ?? '';
+  const licenseKey = process.env.MEDEA_LICENSE_KEY ?? '';
 
   // SINGLE-SHOT: niente thinking mode (guided_json fa il lavoro strutturale).
   // Risparmia 30-60% del tempo elaborazione.
@@ -551,7 +551,7 @@ export async function dispatchLLMChatStructured(
     (images?.length ?? 0) * TOKENS_PER_IMAGE_ESTIMATE;
   const contextWindow = getLiaraContextWindow();
   const safetyMargin = 1024;
-  const rawCeiling = Number(process.env.FLOWFORGE_LIARA_SINGLESHOT_MAX_TOKENS ?? '16000');
+  const rawCeiling = Number(process.env.MEDEA_LIARA_SINGLESHOT_MAX_TOKENS ?? '16000');
   const maxTokensCeiling = Number.isFinite(rawCeiling) && rawCeiling > 0 ? rawCeiling : 16000;
   const dynamicMax = Math.max(
     2048,
@@ -576,7 +576,7 @@ export async function dispatchLLMChatStructured(
   };
   if (model && model.trim().length > 0) body.model = model;
 
-  const liaraTimeoutMs = Number(process.env.FLOWFORGE_LIARA_TIMEOUT_MS ?? '240000');
+  const liaraTimeoutMs = Number(process.env.MEDEA_LIARA_TIMEOUT_MS ?? '240000');
   const liaraCtrl = new AbortController();
   const liaraTimeoutId = setTimeout(() => liaraCtrl.abort(), liaraTimeoutMs);
   let res: Response;
@@ -695,11 +695,11 @@ async function streamLiaraChat(opts: {
   tokenUsageListener?: TokenUsageListener;
 }): Promise<string> {
   if (!isLiaraEnabled()) {
-    throw new Error('Liara è disabilitata su questa istanza (FLOWFORGE_DISABLE_LIARA=true).');
+    throw new Error('Liara è disabilitata su questa istanza (MEDEA_DISABLE_LIARA=true).');
   }
   const { model, msgs, baseUrl, jsonSchema, onChunk, tokenUsageListener } = opts;
   const url = `${baseUrl ?? liaraBaseUrl()}/chat/completions`;
-  const licenseKey = process.env.FLOWFORGE_LICENSE_KEY ?? '';
+  const licenseKey = process.env.MEDEA_LICENSE_KEY ?? '';
   const fullSystem = `/no_think\n${opts.system}`;
   const CHARS_PER_TOKEN = 3.5;
   const estimateTokens = (s: string): number => Math.ceil(s.length / CHARS_PER_TOKEN);
@@ -709,7 +709,7 @@ async function streamLiaraChat(opts: {
     msgs.length * 4;
   const contextWindow = getLiaraContextWindow();
   const safetyMargin = 1024;
-  const rawCeiling = Number(process.env.FLOWFORGE_LIARA_SINGLESHOT_MAX_TOKENS ?? '16000');
+  const rawCeiling = Number(process.env.MEDEA_LIARA_SINGLESHOT_MAX_TOKENS ?? '16000');
   const maxTokensCeiling = Number.isFinite(rawCeiling) && rawCeiling > 0 ? rawCeiling : 16000;
   const dynamicMax = Math.max(
     2048,
@@ -732,7 +732,7 @@ async function streamLiaraChat(opts: {
   }
   if (model && model.trim().length > 0) body.model = model;
 
-  const liaraTimeoutMs = Number(process.env.FLOWFORGE_LIARA_TIMEOUT_MS ?? '240000');
+  const liaraTimeoutMs = Number(process.env.MEDEA_LIARA_TIMEOUT_MS ?? '240000');
   const liaraCtrl = new AbortController();
   const liaraTimeoutId = setTimeout(() => liaraCtrl.abort(), liaraTimeoutMs);
 
