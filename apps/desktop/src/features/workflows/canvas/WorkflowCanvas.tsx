@@ -196,7 +196,14 @@ export function WorkflowCanvas({ workflow, onChange, runByNode, runtimeReady = f
       if (!def) return;
 
       const point = flow.current?.screenToFlowPosition({ x: event.clientX, y: event.clientY });
-      if (!point) return;
+      if (!point) {
+        // Senza le coordinate del disegno il nodo non può andare esattamente
+        // dove è stato lasciato — ma deve comparire lo stesso, dove c'è
+        // posto. Un trascinamento che finisce nel nulla lascia l'utente a
+        // riprovare senza capire cosa stia sbagliando.
+        addFromPalette(def);
+        return;
+      }
       // Il puntatore sta al centro di quello che si trascina: il nodo va
       // spostato di mezza carta, o risulta sempre in basso a destra.
       addFromPalette(def, { x: point.x - 70, y: point.y - 60 });

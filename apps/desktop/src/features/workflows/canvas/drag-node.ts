@@ -25,6 +25,20 @@ const TIPO = 'application/medea-node';
 /** Il prefisso su `text/plain`, che invece arriva ovunque. */
 const PREFISSO = 'medea-node:';
 
+/**
+ * Che nodo si sta trascinando, tenuto da parte qui.
+ *
+ * Il trasporto del browser resta la via principale — è l'unica che funziona
+ * quando il trascinamento arriva da fuori. Ma su WebKit capita che il
+ * `dataTransfer` arrivi al rilascio senza più niente dentro: il trascinamento
+ * parte, il canvas mostra il segno di aggiunta, si lascia il nodo e non
+ * succede niente, perché `getData` risponde stringa vuota.
+ *
+ * Per un trascinamento che nasce e muore dentro Medea non serve il trasporto
+ * del browser: basta ricordarsi cosa si è preso in mano.
+ */
+let inMano: string | null = null;
+
 /** Prepara il trasporto di un nodo. */
 export function setDraggedNode(dataTransfer: DataTransfer, defId: string): void {
   // L'ordine non conta, ma scriverli entrambi sì: nessuno dei due da solo
@@ -32,6 +46,19 @@ export function setDraggedNode(dataTransfer: DataTransfer, defId: string): void 
   dataTransfer.setData(TIPO, defId);
   dataTransfer.setData('text/plain', `${PREFISSO}${defId}`);
   dataTransfer.effectAllowed = 'copy';
+  inMano = defId;
+}
+
+/**
+ * Il trascinamento è finito, comunque sia finito.
+ *
+ * Va chiamato sempre — anche quando si lascia il nodo fuori dal disegno o si
+ * annulla con Esc. Senza, il nodo resterebbe «in mano» e il trascinamento
+ * successivo di tutt'altro (una parola da un'altra finestra, un file dal
+ * Finder) lo farebbe comparire dal nulla.
+ */
+export function endDraggedNode(): void {
+  inMano = null;
 }
 
 /**
@@ -45,5 +72,15 @@ export function draggedNode(dataTransfer: DataTransfer): string | null {
   if (proprio) return proprio;
 
   const testo = dataTransfer.getData('text/plain');
-  return testo.startsWith(PREFISSO) ? testo.slice(PREFISSO.length) : null;
+  if (testo.startsWith(PREFISSO)) return testo.slice(PREFISSO.length);
+
+  // Il trasporto non ha consegnato niente. Se però un nodo è ancora in mano,
+  // il trascinamento è partito da qui e sappiamo comunque quale sia: è il
+  // caso di WebKit, dove il `dataTransfer` arriva vuoto al rilascio.
+  //
+  // Quando invece arriva davvero da fuori — testo, un file — `inMano` è nullo
+  // e non si crea niente, che è il comportamento giusto.
+  if (inMano) return inMano;
+
+  return null;
 }

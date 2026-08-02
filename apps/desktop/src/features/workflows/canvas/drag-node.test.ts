@@ -7,9 +7,9 @@
  * il nodo e non succedeva niente.
  */
 
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
-import { draggedNode, setDraggedNode } from './drag-node';
+import { draggedNode, endDraggedNode, setDraggedNode } from './drag-node';
 
 /**
  * Un `DataTransfer` finto, con una manopola per riprodurre WebKit.
@@ -33,6 +33,10 @@ function trasporto(ignora: readonly string[] = []): DataTransfer {
 }
 
 describe('trascinare un nodo', () => {
+  // Fra un trascinamento e l'altro non resta niente in mano: senza questo,
+  // il nodo di un test comparirebbe nel successivo.
+  beforeEach(endDraggedNode);
+
   it('arriva dall’altra parte', () => {
     const dt = trasporto();
     setDraggedNode(dt, 'action_http');
@@ -72,5 +76,39 @@ describe('trascinare un nodo', () => {
     const dt = trasporto(['application/medea-node']);
     setDraggedNode(dt, 'community:mio_nodo');
     expect(draggedNode(dt)).toBe('community:mio_nodo');
+  });
+});
+
+describe('quando il trasporto arriva vuoto', () => {
+  beforeEach(endDraggedNode);
+
+  /** Un trasporto che accetta tutto e non consegna niente: è WebKit al
+   *  momento del rilascio, ed è il motivo per cui i nodi non arrivavano. */
+  function trasportoSmemorato(): DataTransfer {
+    return {
+      effectAllowed: 'none',
+      // Accetta tutto e non conserva niente: è il punto.
+      setData: () => undefined,
+      getData: () => '',
+    } as unknown as DataTransfer;
+  }
+
+  it('🚨 il nodo arriva lo stesso: è partito da qui e sappiamo quale', () => {
+    const dt = trasportoSmemorato();
+    setDraggedNode(dt, 'action_http');
+    expect(draggedNode(dt)).toBe('action_http');
+  });
+
+  it('🚨 ma finito il trascinamento non resta in mano niente', () => {
+    const dt = trasportoSmemorato();
+    setDraggedNode(dt, 'action_http');
+    endDraggedNode();
+    // Trascinare del testo da un'altra finestra dopo aver mosso un nodo non
+    // deve far comparire quel nodo dal nulla.
+    expect(draggedNode(dt)).toBeNull();
+  });
+
+  it('un trascinamento che non è mai partito da qui non produce nodi', () => {
+    expect(draggedNode(trasportoSmemorato())).toBeNull();
   });
 });
