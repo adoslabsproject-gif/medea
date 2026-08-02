@@ -21,7 +21,7 @@ import { publishTestEvent } from '@/services/test-event-bus.service.js';
 import { createRunsArchiveRoutes } from './runs-archive.js';
 import { createWebhookTestRoutes } from './webhook-test.js';
 import type { AuthContext } from '@/middleware/auth.js';
-import type { Workflow } from '@flowforge/core-schema';
+import type { Workflow } from '@medea/engine-core-schema';
 
 const T_A = `test-raw-${Date.now().toString(36)}-a`;
 const T_B = `test-raw-${Date.now().toString(36)}-b`;

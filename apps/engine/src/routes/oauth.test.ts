@@ -43,7 +43,7 @@ vi.mock('@/lib/auth-keys.js', () => ({
 }));
 
 const issueSessionTokenMock = vi.hoisted(() => vi.fn());
-vi.mock('@flowforge/auth-local', () => ({
+vi.mock('@medea/engine-auth-local', () => ({
   issueSessionToken: (args: unknown) => issueSessionTokenMock(args),
 }));
 
@@ -420,7 +420,7 @@ describe('GET /oauth/:provider/callback', () => {
     oidcMock.authorizationCodeGrant.mockResolvedValueOnce({
       claims: () => ({ email: 'first@example.com', name: 'First User', sub: 'sub-first' }),
     });
-    process.env.FLOWFORGE_EDITOR_URL = 'https://editor.example.com';
+    process.env.MEDEA_EDITOR_URL = 'https://editor.example.com';
     const res = await app.request('/oauth/google/callback?state=s3&code=c');
     expect(res.status).toBe(302);
     expect(res.headers.get('location')).toBe('https://editor.example.com');
@@ -495,7 +495,7 @@ describe('GET /oauth/:provider/callback', () => {
     oidcMock.authorizationCodeGrant.mockResolvedValueOnce({
       claims: () => ({ email: 'user@example.com', name: 'User', sub: 'sub-u' }),
     });
-    process.env.FLOWFORGE_EDITOR_URL = 'https://editor.example.com';
+    process.env.MEDEA_EDITOR_URL = 'https://editor.example.com';
     const res = await app.request('/oauth/google/callback?state=s6&code=c');
     expect(res.status).toBe(302);
     expect(res.headers.get('location')).toBe('https://editor.example.com');
@@ -528,8 +528,8 @@ describe('GET /oauth/:provider/callback', () => {
     expect((await res.json() as { error: string }).error).toContain('invalid code');
   });
 
-  it('FLOWFORGE_EDITOR_URL non settato → redirect "/"', async () => {
-    delete process.env.FLOWFORGE_EDITOR_URL;
+  it('MEDEA_EDITOR_URL non settato → redirect "/"', async () => {
+    delete process.env.MEDEA_EDITOR_URL;
     const app = appAs('owner');
     seedProvider('tenant-A', 'google');
     seedState('s9', 'tenant-A', 'google');
@@ -542,7 +542,7 @@ describe('GET /oauth/:provider/callback', () => {
 });
 
 describe('🚨🚨 F1-B — admin/start usano il tenant del container, header impersonation IGNORATO', () => {
-  // In container-mode il tenant è SEMPRE FLOWFORGE_TENANT_ID. Un header
+  // In container-mode il tenant è SEMPRE MEDEA_TENANT_ID. Un header
   // x-tenant-id (override impersonation superadmin) NON deve poter creare/leggere
   // provider sotto un tenant diverso → altrimenti tornerebbe il footgun "provider
   // creato sotto X, callback cerca sotto container → 404".

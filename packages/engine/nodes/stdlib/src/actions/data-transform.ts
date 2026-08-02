@@ -9,7 +9,7 @@
  *   - action_array : operazioni su array (unique/sort/group/chunk/flatten/pick/slice)
  *   - action_json  : manipolazione oggetti via dot-path (get/set/pick/omit/merge/flatten)
  */
-import { toExecutionItem, lineage, type ExecutionItem } from '@flowforge/core-schema';
+import { toExecutionItem, lineage, type ExecutionItem } from '@medea/engine-core-schema';
 import { neutralizeCsvFormula } from '../lib/csv-formula-guard.js';
 import type { NodeModule, NodeExecutor } from '../types.js';
 

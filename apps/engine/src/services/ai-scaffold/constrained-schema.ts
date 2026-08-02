@@ -152,10 +152,10 @@ export function pickGrammarCatalog(
 /**
  * Flag d'attivazione della grammatica vincolata. Default OFF: cambia il path di
  * generazione del PRODOTTO DI PUNTA → si abilita esplicitamente dopo lo smoke
- * live contro vLLM/xgrammar (set `FLOWFORGE_SCAFFOLD_CONSTRAINED_SCHEMA=true`).
+ * live contro vLLM/xgrammar (set `MEDEA_SCAFFOLD_CONSTRAINED_SCHEMA=true`).
  */
 export function isConstrainedSchemaEnabled(): boolean {
-  return process.env.FLOWFORGE_SCAFFOLD_CONSTRAINED_SCHEMA === 'true';
+  return process.env.MEDEA_SCAFFOLD_CONSTRAINED_SCHEMA === 'true';
 }
 
 export interface ScaffoldSchemaChoice {

@@ -1,5 +1,5 @@
 /**
- * @flowforge/nodes-integrations-italia
+ * @medea/engine-nodes-integrations-italia
  *
  * Italian-market connectors. These are the moat: n8n doesn't ship them
  * and won't, because the IT market is too small for them to prioritise.
@@ -16,7 +16,7 @@
  * Documentation links in each connector point to the vendor's official API docs.
  */
 
-import type { NodeModule } from '@flowforge/nodes-stdlib';
+import type { NodeModule } from '@medea/engine-nodes-stdlib';
 import { pecArubaSend, pecArubaReceive } from './pec-aruba/index.js';
 import { fattureInCloudInvoice, fattureInCloudClient } from './fatture-in-cloud/index.js';
 import { sdiSendInvoice, sdiCheckStatus } from './sdi-adel/index.js';

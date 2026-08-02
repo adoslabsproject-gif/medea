@@ -7,7 +7,7 @@
  * @module services/db-agent/columns
  */
 import { z } from 'zod';
-import { ColumnTypeSchema, type Column, type ColumnType } from '@flowforge/db-studio-core';
+import { ColumnTypeSchema, type Column, type ColumnType } from '@medea/engine-db-studio-core';
 
 /** Tipi colonna ammessi (single source: il core). */
 export const ALLOWED_COLUMN_TYPES: readonly ColumnType[] = ColumnTypeSchema.options;

@@ -12,7 +12,7 @@ import Database from 'better-sqlite3';
 
 const verifyTrackingTokenMock = vi.fn();
 const isTrackingBotMock = vi.fn();
-vi.mock('@flowforge/nodes-stdlib/server', () => ({
+vi.mock('@medea/engine-nodes-stdlib/server', () => ({
   verifyTrackingToken: verifyTrackingTokenMock,
   isTrackingBot: isTrackingBotMock,
 }));

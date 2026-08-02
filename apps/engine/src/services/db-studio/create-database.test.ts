@@ -6,7 +6,7 @@
  * @module services/db-studio/create-database.test
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Database } from '@flowforge/db-studio-core';
+import type { Database } from '@medea/engine-db-studio-core';
 
 const provisionMock = vi.fn<(...a: unknown[]) => Promise<unknown>>();
 class ManagedDbError extends Error {

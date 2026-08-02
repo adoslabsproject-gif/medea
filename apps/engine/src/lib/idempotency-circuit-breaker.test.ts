@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CircuitBreakerIdempotencyStore } from './idempotency-circuit-breaker.js';
-import type { IdempotencyStore } from '@flowforge/nodes-stdlib';
+import type { IdempotencyStore } from '@medea/engine-nodes-stdlib';
 
 function makeFlakeyStore(failuresFirst: number) {
   let calls = 0;

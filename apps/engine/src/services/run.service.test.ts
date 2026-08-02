@@ -172,10 +172,10 @@ vi.mock('./readonly-flag.service.js', async (orig) => {
 beforeEach(() => {
   roState.readOnly = false;
   // Ermeticità cross-file: un altro file di test (queue.service.integration)
-  // può aver lasciato FLOWFORGE_QUEUE_MODE='redis' nel process.env condiviso.
+  // può aver lasciato MEDEA_QUEUE_MODE='redis' nel process.env condiviso.
   // Puliamo SEMPRE qui; il describe queue-mode lo re-setta nel proprio beforeEach
   // (che gira DOPO questo globale).
-  delete process.env.FLOWFORGE_QUEUE_MODE;
+  delete process.env.MEDEA_QUEUE_MODE;
   vi.clearAllMocks();
   m.auditAppend.mockResolvedValue(undefined);
   m.select.mockReset();
@@ -871,12 +871,12 @@ describe('RunService.startAsync', () => {
 // ════════════════════════════════════════════════════════════════════
 // startAsync — QUEUE MODE (#4): pre-insert pending + enqueue, no inline run
 // ════════════════════════════════════════════════════════════════════
-describe('RunService.startAsync — queue mode (FLOWFORGE_QUEUE_MODE=redis)', () => {
-  const savedMode = process.env.FLOWFORGE_QUEUE_MODE;
-  beforeEach(() => { process.env.FLOWFORGE_QUEUE_MODE = 'redis'; });
+describe('RunService.startAsync — queue mode (MEDEA_QUEUE_MODE=redis)', () => {
+  const savedMode = process.env.MEDEA_QUEUE_MODE;
+  beforeEach(() => { process.env.MEDEA_QUEUE_MODE = 'redis'; });
   afterAll(() => {
-    if (savedMode === undefined) delete process.env.FLOWFORGE_QUEUE_MODE;
-    else process.env.FLOWFORGE_QUEUE_MODE = savedMode;
+    if (savedMode === undefined) delete process.env.MEDEA_QUEUE_MODE;
+    else process.env.MEDEA_QUEUE_MODE = savedMode;
   });
 
   function makeSvc(RunService: new (bus: unknown) => { startAsync: (i: unknown) => Promise<{ runId: string; status: string }> }) {

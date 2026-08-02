@@ -1,10 +1,10 @@
-import type { NodeModule, NodeExecutor } from '@flowforge/nodes-stdlib';
-import { executeWithHostBreaker } from '@flowforge/nodes-stdlib';
-import { safeFetchWithRedirects, readJsonCapped, readTextTruncated } from '@flowforge/safe-fetch';
+import type { NodeModule, NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { executeWithHostBreaker } from '@medea/engine-nodes-stdlib';
+import { safeFetchWithRedirects, readJsonCapped, readTextTruncated } from '@medea/engine-safe-fetch';
 
 // Isomorfico: importato anche dal bundle browser dell'editor (dead-code lì, ma
 // il top-level gira a load). `process` esiste solo sul runtime server → guard.
-const RUNTIME_BASE = (typeof process !== 'undefined' ? process.env.FLOWFORGE_RUNTIME_URL : undefined) ?? 'http://127.0.0.1:3100';
+const RUNTIME_BASE = (typeof process !== 'undefined' ? process.env.MEDEA_RUNTIME_URL : undefined) ?? 'http://127.0.0.1:3100';
 /** host:porta del runtime interno (loopback) per l'esenzione SSRF mirata. */
 const RUNTIME_HOST = ((): string => {
   try { return new URL(RUNTIME_BASE).host.toLowerCase(); } catch { return ''; }
@@ -86,7 +86,7 @@ async function callEmbed(provider: string, apiKey: string, model: string, text: 
       return { vector: data.data[0]?.embedding ?? [], tokensUsed: pickTokens(data) };
     }
     case 'ollama': {
-      const baseUrl = process.env.FLOWFORGE_OLLAMA_URL ?? 'http://localhost:11434';
+      const baseUrl = process.env.MEDEA_OLLAMA_URL ?? 'http://localhost:11434';
       // Ollama spesso loopback → allowDockerNet non basta; esenta l'host esatto (env sistema).
       const ollamaHost = ((): string => { try { return new URL(baseUrl).host.toLowerCase(); } catch { return ''; } })();
       const { data } = await gatewayJsonPost<{ embedding?: number[] }>(
@@ -140,7 +140,7 @@ const ragSearchExecutor: NodeExecutor = async (config, input, context) => {
   if (minScore !== undefined && !Number.isNaN(minScore)) body.minScore = minScore;
 
   const headers: Record<string, string> = { 'X-Tenant-Id': context.tenantId };
-  const internalToken = process.env.FLOWFORGE_INTERNAL_TOKEN;
+  const internalToken = process.env.MEDEA_INTERNAL_TOKEN;
   if (internalToken) headers['X-Internal-Token'] = internalToken;
   const { data } = await gatewayJsonPost<unknown>(
     `${RUNTIME_BASE}/api/v1/vector/${databaseId}/search`,

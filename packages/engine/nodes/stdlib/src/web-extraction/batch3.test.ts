@@ -13,7 +13,7 @@ const originalFetch = global.fetch;
 
 afterEach(() => {
   global.fetch = originalFetch;
-  delete process.env.FLOWFORGE_FFPROBE_ENDPOINT;
+  delete process.env.MEDEA_FFPROBE_ENDPOINT;
 });
 
 describe('action_hls_probe', () => {
@@ -100,7 +100,7 @@ describe('action_video_metadata', () => {
   });
 
   it('throw se url+dataBase64 entrambi vuoti', async () => {
-    process.env.FLOWFORGE_FFPROBE_ENDPOINT = 'http://ffp.local:8080';
+    process.env.MEDEA_FFPROBE_ENDPOINT = 'http://ffp.local:8080';
     await expect(videoMetadataNode.executor!({}, null, CTX))
       .rejects.toThrow(/url or dataBase64 required/);
   });

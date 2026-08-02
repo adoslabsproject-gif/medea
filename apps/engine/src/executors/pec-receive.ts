@@ -9,7 +9,7 @@
 
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
-import { type NodeExecutor, safeUserRegex } from '@flowforge/nodes-stdlib';
+import { type NodeExecutor, safeUserRegex } from '@medea/engine-nodes-stdlib';
 import { buildPecMessage, type PecParsedMessage } from './pec/pec-message.js';
 import { assertConnectHostAllowed } from '@/lib/connect-host-guard.js';
 

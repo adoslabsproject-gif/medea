@@ -10,11 +10,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { parseRobotsTxt, isPathAllowed, normalizeUrl, sameOrigin, runSpider } from './recursive-spider-engine.js';
 import { recursiveSpiderNode } from './recursive-spider.js';
 
-vi.mock('@flowforge/safe-fetch', () => ({
+vi.mock('@medea/engine-safe-fetch', () => ({
   safeFetchWithRedirects: vi.fn(),
   SsrfBlockedError: class extends Error {},
 }));
-const { safeFetchWithRedirects } = await import('@flowforge/safe-fetch');
+const { safeFetchWithRedirects } = await import('@medea/engine-safe-fetch');
 const mockedFetch = safeFetchWithRedirects as unknown as ReturnType<typeof vi.fn>;
 
 function htmlResponse(body: string, url = 'https://example.com/'): Response {

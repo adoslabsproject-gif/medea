@@ -1,12 +1,12 @@
 import { mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { SqliteAdapter, type IDatabaseAdapter, type BatchOp, type BatchResult } from '@flowforge/db-studio-engine';
-import { PostgresAdapter } from '@flowforge/db-studio-postgres';
-import { MysqlAdapter } from '@flowforge/db-studio-mysql';
-import { MongoDbAdapter } from '@flowforge/db-studio-mongodb';
-import { RedisAdapter } from '@flowforge/db-studio-redis';
-import { MssqlAdapter } from '@flowforge/db-studio-mssql';
-import { DuckDbAdapter } from '@flowforge/db-studio-duckdb';
+import { SqliteAdapter, type IDatabaseAdapter, type BatchOp, type BatchResult } from '@medea/engine-db-studio-engine';
+import { PostgresAdapter } from '@medea/engine-db-studio-postgres';
+import { MysqlAdapter } from '@medea/engine-db-studio-mysql';
+import { MongoDbAdapter } from '@medea/engine-db-studio-mongodb';
+import { RedisAdapter } from '@medea/engine-db-studio-redis';
+import { MssqlAdapter } from '@medea/engine-db-studio-mssql';
+import { DuckDbAdapter } from '@medea/engine-db-studio-duckdb';
 import { sealConnectionSecrets, unsealConnectionSecrets } from '@/services/db-studio/connection-secrets.js';
 import { paginatePages } from '@/services/db-studio/db-export.js';
 import {
@@ -14,7 +14,7 @@ import {
   type MigrationAction,
   type QuerySpec,
   DatabaseSchema,
-} from '@flowforge/db-studio-core';
+} from '@medea/engine-db-studio-core';
 import { getDatabase } from '@/storage/db.js';
 import { logger } from '@/lib/logger.js';
 import { loadConfig } from '@/config.js';
@@ -269,7 +269,7 @@ export class DbStudioService {
       case 'sqlite': {
         adapter = new SqliteAdapter();
         const config = loadConfig();
-        const dbDir = join(config.FLOWFORGE_DATA_DIR, 'user-databases');
+        const dbDir = join(config.MEDEA_DATA_DIR, 'user-databases');
         if (!existsSync(dbDir)) mkdirSync(dbDir, { recursive: true });
         const dbPath = database.connection.embedded
           ? join(dbDir, `${database.id}.sqlite`)
@@ -301,7 +301,7 @@ export class DbStudioService {
         // :memory: e i dati SPARISCONO al riavvio. Path = data/user-databases/<id>.duckdb.
         adapter = new DuckDbAdapter();
         const config = loadConfig();
-        const dbDir = join(config.FLOWFORGE_DATA_DIR, 'user-databases');
+        const dbDir = join(config.MEDEA_DATA_DIR, 'user-databases');
         if (!existsSync(dbDir)) mkdirSync(dbDir, { recursive: true });
         const duckPath = database.connection.database && database.connection.database.trim() !== ''
           ? database.connection.database

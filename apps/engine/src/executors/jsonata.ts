@@ -1,10 +1,10 @@
 import jsonata from 'jsonata';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 
 /** Tetto di esecuzione (wall-clock) di un'espressione JSONata (override via env nei test). */
 const JSONATA_TIMEOUT_MS_DEFAULT = 5_000;
 function jsonataTimeoutMs(): number {
-  const raw = Number(process.env.FLOWFORGE_JSONATA_TIMEOUT_MS);
+  const raw = Number(process.env.MEDEA_JSONATA_TIMEOUT_MS);
   return Number.isFinite(raw) && raw > 0 ? raw : JSONATA_TIMEOUT_MS_DEFAULT;
 }
 /** Profondità massima di valutazione (anti ricorsione non-terminante / stack overflow). */

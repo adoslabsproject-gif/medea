@@ -17,11 +17,11 @@
  *   other node-local settings).
  */
 
-import type { NodeErrorCode } from '@flowforge/nodes-stdlib';
+import type { NodeErrorCode } from '@medea/engine-nodes-stdlib';
 import { coerceString } from '@/lib/coerce.js';
 import { logger } from '@/lib/logger.js';
 import { resolveServerExecutor } from '@/executors/registry.js';
-import { makeBinaryRef, engineRetriesNode, type BinaryData } from '@flowforge/core-schema';
+import { makeBinaryRef, engineRetriesNode, type BinaryData } from '@medea/engine-core-schema';
 import { resolveOutboundDispatcher } from '@/lib/egress-policy.js';
 import type { Readable } from 'node:stream';
 import type { INodeDispatchStrategy, DispatchContext, DispatchResult, NodeExecutionContext } from './types.js';
@@ -35,7 +35,7 @@ import {
   NodeError,
   categoryOf,
   isTransientCategory,
-} from '@flowforge/nodes-stdlib';
+} from '@medea/engine-nodes-stdlib';
 
 const MAX_RETRY_COUNT = 10;
 const MAX_BACKOFF_MS = 30_000;
@@ -164,11 +164,11 @@ export class NodeExecutorStrategy implements INodeDispatchStrategy {
         fatal: (m, f) => ctx.logCollector!.fatal(m, f),
       };
     }
-    // TTL run-aware: se l'env FLOWFORGE_RUN_MAX_DURATION_MS e\` settato dal
+    // TTL run-aware: se l'env MEDEA_RUN_MAX_DURATION_MS e\` settato dal
     // plan settings, calcola la deadline assoluta e passala al ctx — i
     // middleware sensibili (withIdempotency, withTimeout) la usano per
     // computare TTL adattivi che non scadono PRIMA della fine del run.
-    const runMaxMs = Number(process.env.FLOWFORGE_RUN_MAX_DURATION_MS);
+    const runMaxMs = Number(process.env.MEDEA_RUN_MAX_DURATION_MS);
     if (Number.isFinite(runMaxMs) && runMaxMs > 0) {
       execCtx.runDeadline = Date.now() + runMaxMs;
     }

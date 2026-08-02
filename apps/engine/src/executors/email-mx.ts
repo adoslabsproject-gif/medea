@@ -3,7 +3,7 @@
  * Wrap su email-mx.service.ts — service contiene cache LRU + DNS multi-fallback.
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { validateEmailMx } from '@/services/email-mx.service.js';
 
 export const emailMxExecutor: NodeExecutor = async (config, _input, _context) => {

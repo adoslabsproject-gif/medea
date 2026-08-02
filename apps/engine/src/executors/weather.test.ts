@@ -176,20 +176,20 @@ describe('weatherExecutor end-to-end', () => {
 
 describe('NodeDef contract', () => {
   it('weatherNode esportato in stdlib', async () => {
-    const mod = await import('@flowforge/nodes-stdlib');
+    const mod = await import('@medea/engine-nodes-stdlib');
     expect(mod.weatherNode).toBeDefined();
     expect(mod.weatherNode.def.id).toBe('weather_node');
     expect(mod.weatherNode.def.type).toBe('action');
   });
 
   it('configFields contiene location/forecastDays/units/language', async () => {
-    const mod = await import('@flowforge/nodes-stdlib');
+    const mod = await import('@medea/engine-nodes-stdlib');
     const keys = (mod.weatherNode.def.configFields ?? []).map(f => f.key);
     expect(keys).toEqual(['location', 'forecastDays', 'units', 'language']);
   });
 
   it('description ≥150 char (criterio STABLE)', async () => {
-    const mod = await import('@flowforge/nodes-stdlib');
+    const mod = await import('@medea/engine-nodes-stdlib');
     expect((mod.weatherNode.def.description ?? '').length).toBeGreaterThanOrEqual(150);
   });
 });

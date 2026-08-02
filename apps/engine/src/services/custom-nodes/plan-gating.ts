@@ -9,7 +9,7 @@
  *   team       → 100 custom nodes + same as business
  *   enterprise → unlimited + private dedicated registry
  *
- * Plan code source: env `FLOWFORGE_PLAN_CODE` settata da onboarding.ts buildEnv
+ * Plan code source: env `MEDEA_PLAN_CODE` settata da onboarding.ts buildEnv
  * del portal quando crea/aggiorna il container tenant (cambio piano = recreate).
  *
  * Per il quota check: leggiamo il counter attuale da `custom_nodes` WHERE
@@ -80,7 +80,7 @@ export const PLAN_CAPABILITIES: Record<PlanCode, PlanCapability> = {
  * Default 'free' se mancante.
  */
 export function resolveTenantPlan(): PlanCode {
-  const raw = process.env.FLOWFORGE_PLAN_CODE?.trim().toLowerCase() ?? 'free';
+  const raw = process.env.MEDEA_PLAN_CODE?.trim().toLowerCase() ?? 'free';
   if (raw in PLAN_CAPABILITIES) return raw as PlanCode;
   // Fallback safe se env malformato — log per debug
   return 'free';

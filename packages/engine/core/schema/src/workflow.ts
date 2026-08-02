@@ -142,7 +142,7 @@ export const CanvasNodeSchema = z.object({
    * ma fermati su validation/auth/business". Vuoto/assente con continueOnFail
    * attivo = continua su QUALSIASI errore (comportamento booleano storico).
    *
-   * I valori sono le NodeErrorCategory di @flowforge/nodes-stdlib (duplicate qui
+   * I valori sono le NodeErrorCategory di @medea/engine-nodes-stdlib (duplicate qui
    * per non invertire la dipendenza core-schema → stdlib).
    */
   continueOnFailOn: z.array(z.enum(['validation', 'auth', 'network', 'rate_limit', 'business', 'aborted', 'internal'])).optional(),

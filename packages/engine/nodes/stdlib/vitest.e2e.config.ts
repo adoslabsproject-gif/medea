@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config';
 
 /**
- * On-demand Vitest suite for E2E integration tests in `@flowforge/nodes-stdlib`.
+ * On-demand Vitest suite for E2E integration tests in `@medea/engine-nodes-stdlib`.
  *
  * Pattern: any `*.e2e.test.ts`. The tests inside are individually `skipIf`-
  * gated by environment vars (e.g. `ODOO_E2E=1` + connection creds), so calling
@@ -10,7 +10,7 @@ import { defineConfig } from 'vitest/config';
  * Invoke:
  *
  *   ODOO_E2E=1 ODOO_BASE_URL=… ODOO_DB=… ODOO_LOGIN=… ODOO_PASSWORD=… \
- *     pnpm --filter @flowforge/nodes-stdlib run test:e2e
+ *     pnpm --filter @medea/engine-nodes-stdlib run test:e2e
  */
 export default defineConfig({
   test: {

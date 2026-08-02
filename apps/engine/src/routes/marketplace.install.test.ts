@@ -18,13 +18,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
 
 vi.mock('@/lib/safe-outbound-fetch.js', () => ({ safeOutboundFetch: vi.fn() }));
-vi.mock('@flowforge/safe-fetch', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@flowforge/safe-fetch')>()), validateUrlForFetch: vi.fn() }));
+vi.mock('@medea/engine-safe-fetch', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@medea/engine-safe-fetch')>()), validateUrlForFetch: vi.fn() }));
 vi.mock('@/lib/tenant.js', () => ({ getTenantId: () => 'ws-test' }));
-vi.mock('@flowforge/nodes-stdlib', () => ({ stdlibNodeDefs: () => [] }));
+vi.mock('@medea/engine-nodes-stdlib', () => ({ stdlibNodeDefs: () => [] }));
 
 const { safeOutboundFetch } = await import('@/lib/safe-outbound-fetch.js');
-const { validateUrlForFetch } = await import('@flowforge/safe-fetch');
+const { validateUrlForFetch } = await import('@medea/engine-safe-fetch');
 const safeOutboundFetchMock = vi.mocked(safeOutboundFetch);
 const validateUrlForFetchMock = vi.mocked(validateUrlForFetch);
 

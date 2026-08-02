@@ -6,15 +6,15 @@
  * --network=none, --memory=512m, --cpus=1.0, --read-only, --pids-limit=50,
  * --security-opt=no-new-privileges, non-root user.
  *
- * The previous node's output is injected as JSON in env var FLOWFORGE_INPUT
- * (Python: `json.loads(os.environ["FLOWFORGE_INPUT"])`).
+ * The previous node's output is injected as JSON in env var MEDEA_INPUT
+ * (Python: `json.loads(os.environ["MEDEA_INPUT"])`).
  *
  * Stdout is optionally parsed as JSON for typed downstream chaining;
  * stderr + exit_code + duration + output files (base64) are always returned.
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
-import { makeBinaryInline } from '@flowforge/core-schema';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { makeBinaryInline } from '@medea/engine-core-schema';
 import { internalAwareFetch } from '@/lib/internal-service-fetch.js';
 import { readJsonCapped, readTextTruncated } from '@/lib/capped-response.js';
 
@@ -87,13 +87,13 @@ export const runPythonExecutor: NodeExecutor = async (rawConfig, input, context)
   try { injectedInput = JSON.stringify(input ?? {}); }
   catch { /* circular / not serializable → keep {} */ }
 
-  // Prelude minimale: legge input.json e popola FLOWFORGE_INPUT come dict +
+  // Prelude minimale: legge input.json e popola MEDEA_INPUT come dict +
   // come env var (back-compat con esempi vecchi). Il codice utente arriva intatto.
   const PRELUDE =
     `import json as _json, os as _os\n` +
     `with open('/home/sandbox/work/input.json', 'r', encoding='utf-8') as _fh:\n` +
-    `    FLOWFORGE_INPUT = _json.load(_fh)\n` +
-    `_os.environ['FLOWFORGE_INPUT'] = _json.dumps(FLOWFORGE_INPUT)\n` +
+    `    MEDEA_INPUT = _json.load(_fh)\n` +
+    `_os.environ['MEDEA_INPUT'] = _json.dumps(MEDEA_INPUT)\n` +
     `del _fh, _json, _os\n\n`;
 
   const userId = `tenant-${context.tenantId}`;

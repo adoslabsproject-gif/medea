@@ -2,9 +2,9 @@
  * Prometheus-format metrics endpoint at GET /metrics.
  *
  * SECURITY (hardening 2026-05-23):
- *   • Protetto da bearer token via `FLOWFORGE_METRICS_TOKEN` env var.
+ *   • Protetto da bearer token via `MEDEA_METRICS_TOKEN` env var.
  *   • Se la env è VUOTA, l'endpoint è chiuso (403). Per scrapare, settare:
- *       FLOWFORGE_METRICS_TOKEN=<random-32+chars>
+ *       MEDEA_METRICS_TOKEN=<random-32+chars>
  *     in /etc/flowforge.env e configurare il Prometheus job con
  *       authorization: { type: Bearer, credentials: <token> }
  *   • Anche con token corretto, raccomandato comunque restringere via
@@ -35,11 +35,11 @@ export function createMetricsRoutes(): Hono {
   const startedAt = Date.now();
 
   app.get('/metrics', async (c) => {
-    // Auth gate: bearer token deve combaciare con FLOWFORGE_METRICS_TOKEN.
+    // Auth gate: bearer token deve combaciare con MEDEA_METRICS_TOKEN.
     // Se la env è vuota, endpoint chiuso (403) — fail-closed by design.
-    const expected = process.env.FLOWFORGE_METRICS_TOKEN ?? '';
+    const expected = process.env.MEDEA_METRICS_TOKEN ?? '';
     if (!expected) {
-      return c.text('Metrics endpoint disabled: set FLOWFORGE_METRICS_TOKEN env var to enable scraping.', 403);
+      return c.text('Metrics endpoint disabled: set MEDEA_METRICS_TOKEN env var to enable scraping.', 403);
     }
     const header = c.req.header('authorization') ?? '';
     const provided = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : '';

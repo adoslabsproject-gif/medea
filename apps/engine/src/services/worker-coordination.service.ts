@@ -12,7 +12,7 @@
  *   • The admin Workers Dashboard queries `listActive()` to render the
  *     fleet status in real time.
  *
- * Opt-in: enables full distributed mode when FLOWFORGE_REDIS_URL is set.
+ * Opt-in: enables full distributed mode when MEDEA_REDIS_URL is set.
  * Otherwise the heartbeat table is still maintained (so the admin UI
  * shows "1 worker, this node") but no queue/lock coordination happens.
  */
@@ -70,7 +70,7 @@ export class WorkerCoordinationService {
   private janitorTimer?: ReturnType<typeof setInterval>;
 
   constructor() {
-    this.id = process.env.FLOWFORGE_WORKER_ID ?? `wkr_${nanoid(10)}`;
+    this.id = process.env.MEDEA_WORKER_ID ?? `wkr_${nanoid(10)}`;
   }
 
   getId(): string {

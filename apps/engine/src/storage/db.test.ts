@@ -22,7 +22,7 @@ let TMP_DB: string;
 
 vi.mock('@/lib/logger.js');
 
-const configMock = vi.hoisted(() => ({ FLOWFORGE_DB_PATH: '', FLOWFORGE_DATA_DIR: '' }));
+const configMock = vi.hoisted(() => ({ MEDEA_DB_PATH: '', MEDEA_DATA_DIR: '' }));
 vi.mock('@/config.js', () => ({
   loadConfig: () => configMock,
 }));
@@ -30,10 +30,10 @@ vi.mock('@/config.js', () => ({
 beforeEach(() => {
   TMP_DIR = mkdtempSync(join(tmpdir(), 'ff-db-test-'));
   TMP_DB = join(TMP_DIR, 'flowforge.sqlite');
-  configMock.FLOWFORGE_DB_PATH = TMP_DB;
-  configMock.FLOWFORGE_DATA_DIR = TMP_DIR;
-  delete process.env.FLOWFORGE_STORAGE;
-  delete process.env.FLOWFORGE_PG_URL;
+  configMock.MEDEA_DB_PATH = TMP_DB;
+  configMock.MEDEA_DATA_DIR = TMP_DIR;
+  delete process.env.MEDEA_STORAGE;
+  delete process.env.MEDEA_PG_URL;
 });
 
 afterEach(async () => {
@@ -57,37 +57,37 @@ describe('🚨 createDatabase — backend dispatch', () => {
     await handle.close();
   });
 
-  it('🚨 FLOWFORGE_STORAGE=sqlite → SQLite', async () => {
-    process.env.FLOWFORGE_STORAGE = 'sqlite';
+  it('🚨 MEDEA_STORAGE=sqlite → SQLite', async () => {
+    process.env.MEDEA_STORAGE = 'sqlite';
     const { createDatabase } = await import('./db.js');
     const h = createDatabase();
     expect(h.db).toBeDefined();
     await h.close();
   });
 
-  it('🚨 SECURITY: FLOWFORGE_STORAGE=postgres SENZA URL → throw fail-fast', async () => {
-    process.env.FLOWFORGE_STORAGE = 'postgres';
-    delete process.env.FLOWFORGE_PG_URL;
+  it('🚨 SECURITY: MEDEA_STORAGE=postgres SENZA URL → throw fail-fast', async () => {
+    process.env.MEDEA_STORAGE = 'postgres';
+    delete process.env.MEDEA_PG_URL;
     const { createDatabase } = await import('./db.js');
-    expect(() => createDatabase()).toThrow(/FLOWFORGE_PG_URL/);
+    expect(() => createDatabase()).toThrow(/MEDEA_PG_URL/);
   });
 
-  it('🚨 FLOWFORGE_STORAGE=pg (alias) → routes to Postgres branch (URL check still applies)', async () => {
-    process.env.FLOWFORGE_STORAGE = 'pg';
-    delete process.env.FLOWFORGE_PG_URL;
+  it('🚨 MEDEA_STORAGE=pg (alias) → routes to Postgres branch (URL check still applies)', async () => {
+    process.env.MEDEA_STORAGE = 'pg';
+    delete process.env.MEDEA_PG_URL;
     const { createDatabase } = await import('./db.js');
-    expect(() => createDatabase()).toThrow(/FLOWFORGE_PG_URL/);
+    expect(() => createDatabase()).toThrow(/MEDEA_PG_URL/);
   });
 
-  it('🚨 case-insensitive: FLOWFORGE_STORAGE=POSTGRES → routes a PG', async () => {
-    process.env.FLOWFORGE_STORAGE = 'POSTGRES';
-    delete process.env.FLOWFORGE_PG_URL;
+  it('🚨 case-insensitive: MEDEA_STORAGE=POSTGRES → routes a PG', async () => {
+    process.env.MEDEA_STORAGE = 'POSTGRES';
+    delete process.env.MEDEA_PG_URL;
     const { createDatabase } = await import('./db.js');
-    expect(() => createDatabase()).toThrow(/FLOWFORGE_PG_URL/);
+    expect(() => createDatabase()).toThrow(/MEDEA_PG_URL/);
   });
 
-  it('🚨 case-insensitive: FLOWFORGE_STORAGE="SQLITE" → SQLite', async () => {
-    process.env.FLOWFORGE_STORAGE = 'SQLITE';
+  it('🚨 case-insensitive: MEDEA_STORAGE="SQLITE" → SQLite', async () => {
+    process.env.MEDEA_STORAGE = 'SQLITE';
     const { createDatabase } = await import('./db.js');
     const h = createDatabase();
     expect(h.db).toBeDefined();
@@ -95,7 +95,7 @@ describe('🚨 createDatabase — backend dispatch', () => {
   });
 
   it('🚨 valore sconosciuto → fallback SQLite (default)', async () => {
-    process.env.FLOWFORGE_STORAGE = 'mysql'; // non supportato
+    process.env.MEDEA_STORAGE = 'mysql'; // non supportato
     const { createDatabase } = await import('./db.js');
     // No throw: fallback al ramo SQLite
     const h = createDatabase();
@@ -303,7 +303,7 @@ describe('🚨 getDatabase — singleton + closeDatabase', () => {
 describe('🚨 ensureDataDir — directory creation', () => {
   it('🚨 path con dir mancante → createDirectory ricorsivo', async () => {
     const nestedDb = join(TMP_DIR, 'nested', 'deep', 'flowforge.sqlite');
-    configMock.FLOWFORGE_DB_PATH = nestedDb;
+    configMock.MEDEA_DB_PATH = nestedDb;
     const { createDatabase } = await import('./db.js');
     const h = createDatabase();
     // Verifica che il file db sia stato creato (dir parent creata)

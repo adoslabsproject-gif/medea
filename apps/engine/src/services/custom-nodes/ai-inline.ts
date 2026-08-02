@@ -45,7 +45,7 @@ const SYSTEM_PROMPT = [
   '  3. Generate 1 to 3 lines max. Stop at the first complete statement.',
   '  4. Prefer completing the current line over starting a new one.',
   '  5. Match indentation of the line containing the cursor.',
-  '  6. Use APIs from @flowforge/community-node-sdk, zod, @flowforge/safe-fetch only.',
+  '  6. Use APIs from @medea/engine-community-node-sdk, zod, @medea/engine-safe-fetch only.',
   '  7. If you cannot suggest meaningfully, output EMPTY string.',
   '  8. No await/async/return etc. that doesn\'t make sense given the surrounding code.',
   '  9. Never insert imports — the editor handles those separately.',

@@ -26,7 +26,7 @@
 
 import type { CodeRule, JanitorContext, DetectedRow } from '@/services/janitor/domain/index.js';
 import { buildDetectedRow, systemRef } from '@/services/janitor/domain/index.js';
-import type { RawQueryResult } from '@flowforge/db-studio-engine';
+import type { RawQueryResult } from '@medea/engine-db-studio-engine';
 
 interface ZombieRow {
   id: string;

@@ -1,9 +1,9 @@
 import type { NodeModule, NodeExecutor } from '../types.js';
-import { readJsonCapped, readTextTruncated } from '@flowforge/safe-fetch';
+import { readJsonCapped, readTextTruncated } from '@medea/engine-safe-fetch';
 
 // Isomorfico: importato anche dal bundle browser dell'editor (dead-code lì, ma
 // il top-level gira a load). `process` esiste solo sul runtime server → guard.
-const RUNTIME_BASE = (typeof process !== 'undefined' ? process.env.FLOWFORGE_RUNTIME_URL : undefined) ?? 'http://127.0.0.1:3100';
+const RUNTIME_BASE = (typeof process !== 'undefined' ? process.env.MEDEA_RUNTIME_URL : undefined) ?? 'http://127.0.0.1:3100';
 
 /**
  * N17 audit (2026-05-29): anti-recursion-bomb cap.
@@ -17,7 +17,7 @@ const RUNTIME_BASE = (typeof process !== 'undefined' ? process.env.FLOWFORGE_RUN
  * 10 is a comfortable cap: real workflows nest 2-3 deep at most. If
  * legitimately needed deeper, raise via env override (operator decision).
  */
-const MAX_SUBWORKFLOW_DEPTH = Number((typeof process !== 'undefined' ? process.env.FLOWFORGE_MAX_SUBWORKFLOW_DEPTH : undefined) ?? 10);
+const MAX_SUBWORKFLOW_DEPTH = Number((typeof process !== 'undefined' ? process.env.MEDEA_MAX_SUBWORKFLOW_DEPTH : undefined) ?? 10);
 
 /**
  * Fix 2026-08-01: `wait` non aspettava.
@@ -41,7 +41,7 @@ const MAX_SUBWORKFLOW_DEPTH = Number((typeof process !== 'undefined' ? process.e
 function waitTimeoutMs(): number {
   // Letto a ogni chiamata e non una volta sola all'avvio: un operatore che
   // alza il tetto vuole che valga, non che valga al prossimo riavvio.
-  return Number((typeof process !== 'undefined' ? process.env.FLOWFORGE_SUBWORKFLOW_WAIT_TIMEOUT_MS : undefined) ?? 600_000);
+  return Number((typeof process !== 'undefined' ? process.env.MEDEA_SUBWORKFLOW_WAIT_TIMEOUT_MS : undefined) ?? 600_000);
 }
 
 /** Gli stati in cui una run ha finito di muoversi. */
@@ -90,7 +90,7 @@ const subworkflowExecutor: NodeExecutor = async (config, input, context) => {
     // this header in routes/runs.ts and seeds the nested NodeExecutionContext.
     'X-Subworkflow-Depth': String(depth + 1),
   };
-  const internalToken = process.env.FLOWFORGE_INTERNAL_TOKEN;
+  const internalToken = process.env.MEDEA_INTERNAL_TOKEN;
   if (internalToken) headers['X-Internal-Token'] = internalToken;
   const res = await fetch(`${RUNTIME_BASE}/api/v1/workflows/${encodeURIComponent(workflowId)}/run`, {
     method: 'POST',
@@ -169,7 +169,7 @@ export const subworkflowNode: NodeModule = {
       'step dopo che tutti hanno emit signal completed). ' +
       'Anti-loop guard enterprise multi-livello: self-recursion detection (workflow A che chiama A → block ' +
       'immediato con errore semantico esplicito "self-recursion detected"), depth-cap configurable via env ' +
-      'FLOWFORGE_MAX_SUBWORKFLOW_DEPTH (default 10 — il valore comfortable per il pattern enterprise di ' +
+      'MEDEA_MAX_SUBWORKFLOW_DEPTH (default 10 — il valore comfortable per il pattern enterprise di ' +
       'nesting ragionevole; oltre serve override esplicito operatore per evitare resource exhaustion); ' +
       'propagation della depth via X-Subworkflow-Depth header tra parent→child HTTP run dispatch — l\'engine ' +
       'incrementa di +1 ad ogni nested call e block se cap raggiunto, prevenendo recursion-bomb attack o ' +

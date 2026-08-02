@@ -9,7 +9,7 @@
 
 import { Hono } from 'hono';
 import { timingSafeEqual } from 'node:crypto';
-import type { CanvasNode, Workflow } from '@flowforge/core-schema';
+import type { CanvasNode, Workflow } from '@medea/engine-core-schema';
 import { WorkflowService } from '@/services/workflow.service.js';
 import { RunService } from '@/services/run.service.js';
 import type { IEventBus } from '@/ports/event-bus.js';

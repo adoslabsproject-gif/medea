@@ -2,7 +2,7 @@
  * AIInteractionsService — integration tests against an in-memory SQLite DB.
  *
  * Strategy:
- *   • beforeEach: point FLOWFORGE_DB_PATH at a fresh temp file (':memory:'
+ *   • beforeEach: point MEDEA_DB_PATH at a fresh temp file (':memory:'
  *     doesn't quite work with WAL mode that the production handle uses),
  *     reset the cached config + closed any prior DB connection, then run
  *     migrations to create the schema from scratch.
@@ -34,9 +34,9 @@ let originalDbPath: string | undefined;
 beforeEach(async () => {
   // Each test gets a fresh sqlite file in a temp dir so they're fully isolated.
   tmpDir = mkdtempSync(join(tmpdir(), 'ff-aiint-'));
-  originalDbPath = process.env.FLOWFORGE_DB_PATH;
-  process.env.FLOWFORGE_DB_PATH = join(tmpDir, 'test.sqlite');
-  process.env.FLOWFORGE_DATA_DIR = tmpDir;
+  originalDbPath = process.env.MEDEA_DB_PATH;
+  process.env.MEDEA_DB_PATH = join(tmpDir, 'test.sqlite');
+  process.env.MEDEA_DATA_DIR = tmpDir;
   resetConfigForTests();
   await closeDatabase();
   runMigrations();
@@ -49,8 +49,8 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await closeDatabase();
-  if (originalDbPath !== undefined) process.env.FLOWFORGE_DB_PATH = originalDbPath;
-  else delete process.env.FLOWFORGE_DB_PATH;
+  if (originalDbPath !== undefined) process.env.MEDEA_DB_PATH = originalDbPath;
+  else delete process.env.MEDEA_DB_PATH;
   resetConfigForTests();
   rmSync(tmpDir, { recursive: true, force: true });
 });

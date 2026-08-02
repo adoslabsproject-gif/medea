@@ -60,19 +60,19 @@ function buildApp(): Hono {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  process.env.FLOWFORGE_INTERNAL_TOKEN = TOKEN;
+  process.env.MEDEA_INTERNAL_TOKEN = TOKEN;
   m.getActiveRunCount.mockReturnValue(0);
   m.getActiveCronScheduleCount.mockReturnValue(0);
   m.countEnabled.mockResolvedValue(0);
 });
 
 afterEach(() => {
-  delete process.env.FLOWFORGE_INTERNAL_TOKEN;
+  delete process.env.MEDEA_INTERNAL_TOKEN;
 });
 
 describe('GET /api/v1/internal/runs-active', () => {
   it('token env non configurato → 401 fail-closed (no crash)', async () => {
-    delete process.env.FLOWFORGE_INTERNAL_TOKEN;
+    delete process.env.MEDEA_INTERNAL_TOKEN;
     const res = await buildApp().request('/api/v1/internal/runs-active', {
       headers: { 'x-internal-token': TOKEN },
     });
@@ -142,7 +142,7 @@ describe('GET /api/v1/internal/cron-schedules-count', () => {
   });
 
   it('env token non configurato → 401', async () => {
-    delete process.env.FLOWFORGE_INTERNAL_TOKEN;
+    delete process.env.MEDEA_INTERNAL_TOKEN;
     const res = await buildApp().request('/api/v1/internal/cron-schedules-count', {
       headers: { 'x-internal-token': TOKEN },
     });
@@ -175,7 +175,7 @@ describe('GET /api/v1/internal/workflows-enabled-count', () => {
   });
 
   it('env token non configurato → 401', async () => {
-    delete process.env.FLOWFORGE_INTERNAL_TOKEN;
+    delete process.env.MEDEA_INTERNAL_TOKEN;
     const res = await buildApp().request('/api/v1/internal/workflows-enabled-count', {
       headers: { 'x-internal-token': TOKEN },
     });
@@ -234,7 +234,7 @@ describe('🔒 POST /api/v1/internal/workspace/read-only — security + validazi
   });
 
   it('token env non configurato → 401 (fail-safe, no crash)', async () => {
-    delete process.env.FLOWFORGE_INTERNAL_TOKEN;
+    delete process.env.MEDEA_INTERNAL_TOKEN;
     const res = await postReadOnly({ 'x-internal-token': TOKEN }, JSON.stringify({ readOnly: true }));
     expect(res.status).toBe(401);
     expect(m.setReadOnly).not.toHaveBeenCalled();
@@ -293,7 +293,7 @@ describe('🔒 POST /api/v1/internal/workspace/vector-quota — security + valid
   });
 
   it('token env non configurato → 401 (fail-safe)', async () => {
-    delete process.env.FLOWFORGE_INTERNAL_TOKEN;
+    delete process.env.MEDEA_INTERNAL_TOKEN;
     const res = await postQuota({ 'x-internal-token': TOKEN }, JSON.stringify({ maxVectors: 100, maxDiskMb: 10 }));
     expect(res.status).toBe(401);
     expect(m.setVectorQuota).not.toHaveBeenCalled();

@@ -44,7 +44,7 @@ const result = await build({
     'process.env.NODE_ENV': '"production"',
   },
   banner: {
-    js: '/* @flowforge/nodes-stdlib-sandbox bundle — DO NOT EDIT (autogen) */',
+    js: '/* @medea/engine-nodes-stdlib-sandbox bundle — DO NOT EDIT (autogen) */',
   },
   // Footer: bind `ff` come global. ffExports.ff e\` esposto dall'IIFE.
   footer: {
@@ -59,7 +59,7 @@ console.log(`✓ wrote ${bundlePath} (${bundledJs.length} bytes)`);
 
 // Source-exporter: TS file che esporta il bundle come stringa per consumer Node
 const sourceModule = `/**
- * @flowforge/nodes-stdlib-sandbox/bundle-source — string export del bundle.
+ * @medea/engine-nodes-stdlib-sandbox/bundle-source — string export del bundle.
  *
  * Usa STDLIB_BUNDLE nel runtime sandbox:
  *   await ctx.eval(STDLIB_BUNDLE);

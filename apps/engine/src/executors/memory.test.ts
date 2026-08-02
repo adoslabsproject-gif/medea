@@ -185,17 +185,17 @@ describe('memory_note — validation errors', () => {
 
 describe('memory_note — NodeDef contract', () => {
   it('memoryNoteNode esportato in stdlib', async () => {
-    const mod = await import('@flowforge/nodes-stdlib');
+    const mod = await import('@medea/engine-nodes-stdlib');
     expect(mod.memoryNoteNode.def.id).toBe('memory_note');
   });
 
   it('description ≥150 char', async () => {
-    const mod = await import('@flowforge/nodes-stdlib');
+    const mod = await import('@medea/engine-nodes-stdlib');
     expect((mod.memoryNoteNode.def.description ?? '').length).toBeGreaterThanOrEqual(150);
   });
 
   it('operations contiene get/set/append/delete/list', async () => {
-    const mod = await import('@flowforge/nodes-stdlib');
+    const mod = await import('@medea/engine-nodes-stdlib');
     const opField = (mod.memoryNoteNode.def.configFields ?? []).find((f) => f.key === 'operation');
     expect(opField?.options).toEqual(['get', 'set', 'append', 'delete', 'list']);
   });

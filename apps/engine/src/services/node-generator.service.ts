@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { NodeDefSchema, type NodeDef } from '@flowforge/core-schema';
+import { NodeDefSchema, type NodeDef } from '@medea/engine-core-schema';
 import type { ILLMProvider, LLMCompletionRequest } from '@/ports/llm-provider.js';
 import { validateExecutor, hasSecurityViolation, type ExecutorViolation } from '@/services/node-generator/executor-validator.js';
 import { validateCoherence, type CoherenceViolation } from '@/services/node-generator/coherence-validator.js';

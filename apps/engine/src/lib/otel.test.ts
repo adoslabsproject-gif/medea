@@ -60,7 +60,7 @@ beforeEach(() => {
   vi.resetModules();
   delete process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
   delete process.env.OTEL_SERVICE_NAME;
-  delete process.env.FLOWFORGE_TENANT_ID;
+  delete process.env.MEDEA_TENANT_ID;
   delete process.env.npm_package_version;
 });
 
@@ -134,8 +134,8 @@ describe('🚨 initOtel — happy path', () => {
     expect(sdkOpts.spanProcessors[0]).toBe(scrubbingInstance);
   });
 
-  it('🚨 Resource attributes: tenant.id da FLOWFORGE_TENANT_ID env', async () => {
-    process.env.FLOWFORGE_TENANT_ID = 'tenant-prod-abc';
+  it('🚨 Resource attributes: tenant.id da MEDEA_TENANT_ID env', async () => {
+    process.env.MEDEA_TENANT_ID = 'tenant-prod-abc';
     const { initOtel } = await loadFresh();
     initOtel();
     expect(resourceFromAttributesMock).toHaveBeenCalledWith(
@@ -145,7 +145,7 @@ describe('🚨 initOtel — happy path', () => {
     );
   });
 
-  it('🚨 Resource: tenant.id="unknown" se FLOWFORGE_TENANT_ID assente', async () => {
+  it('🚨 Resource: tenant.id="unknown" se MEDEA_TENANT_ID assente', async () => {
     const { initOtel } = await loadFresh();
     initOtel();
     expect(resourceFromAttributesMock).toHaveBeenCalledWith(

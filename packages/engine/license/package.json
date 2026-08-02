@@ -1,5 +1,5 @@
 {
-  "name": "@flowforge/license",
+  "name": "@medea/engine-license",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -26,8 +26,8 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@flowforge/eslint-config": "workspace:*",
-    "@flowforge/tsconfig": "workspace:*",
+    "@medea/engine-eslint-config": "workspace:*",
+    "@medea/engine-tsconfig": "workspace:*",
     "@vitest/coverage-v8": "^3.0.0",
     "eslint": "^9.39.0",
     "typescript": "^5.7.0",

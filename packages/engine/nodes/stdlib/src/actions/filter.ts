@@ -11,7 +11,7 @@
  * l'indice ORIGINALE nell'array di input — è ciò che rende
  * `$('NodoAMonte').item` corretto a valle del filtro (paired, non posizionale).
  */
-import { toExecutionItem, lineage, type ExecutionItem } from '@flowforge/core-schema';
+import { toExecutionItem, lineage, type ExecutionItem } from '@medea/engine-core-schema';
 import { safeUserRegex } from '../lib/safe-user-regex.js';
 import type { NodeModule, NodeExecutor } from '../types.js';
 

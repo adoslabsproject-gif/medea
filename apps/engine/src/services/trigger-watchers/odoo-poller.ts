@@ -29,14 +29,14 @@
  * ciclo DLQ testabile solo per source-inspection. Default = produzione reale.
  */
 
-import type * as NodesStdlibNS from '@flowforge/nodes-stdlib';
+import type * as NodesStdlibNS from '@medea/engine-nodes-stdlib';
 import { logger } from '@/lib/logger.js';
 import { getDatabase } from '@/storage/db.js';
 import { makeOdooHttpTransport } from './odoo-transport.js';
 import { clampNumber } from './parsing.js';
 import { resolveTriggerBreaker, type TriggerBreaker } from './breaker.js';
 import type { DispatchTriggerRun } from './run-dispatcher.js';
-import type { CanvasNode, Workflow } from '@flowforge/core-schema';
+import type { CanvasNode, Workflow } from '@medea/engine-core-schema';
 
 /** Tentativi prima che un record finisca in DLQ e il cursore avanzi (WE-15). */
 export const ODOO_DLQ_MAX_RETRY = 5;
@@ -69,7 +69,7 @@ export interface OdooPollerDeps {
   dispatchRun: DispatchTriggerRun;
   /** Store per odoo_state/odoo_dlq. Default: `getDatabase().sqlite`. */
   sqlite?: OdooSqlite;
-  /** Loader del client XML-RPC. Default: import lazy di `@flowforge/nodes-stdlib`. */
+  /** Loader del client XML-RPC. Default: import lazy di `@medea/engine-nodes-stdlib`. */
   loadClient?: () => Promise<OdooClientModule>;
   /** Factory del transport HTTP per-chiamata. Default: `makeOdooHttpTransport`. */
   createTransport?: typeof makeOdooHttpTransport;
@@ -80,7 +80,7 @@ export interface OdooPollerDeps {
 const defaultLoadClient = async (): Promise<OdooClientModule> => {
   // Lazy import the published stdlib client (it's re-exported from
   // the package barrel via `export * from lib/odoo/index.js`).
-  const stdlibMod = await import('@flowforge/nodes-stdlib');
+  const stdlibMod = await import('@medea/engine-nodes-stdlib');
   return stdlibMod;
 };
 

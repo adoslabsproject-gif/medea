@@ -231,7 +231,7 @@ describe('pickGrammarCatalog — grammatica sul subset RAG (anti full-catalog de
 
 describe('selectScaffoldSchema — policy provider + flag + fallback', () => {
   const STATIC = { sentinel: 'static-schema' } as const;
-  afterEach(() => { delete process.env.FLOWFORGE_SCAFFOLD_CONSTRAINED_SCHEMA; });
+  afterEach(() => { delete process.env.MEDEA_SCAFFOLD_CONSTRAINED_SCHEMA; });
 
   it('flag OFF (default) → statico anche per liara (constrained:false)', () => {
     expect(isConstrainedSchemaEnabled()).toBe(false);
@@ -241,7 +241,7 @@ describe('selectScaffoldSchema — policy provider + flag + fallback', () => {
   });
 
   it('flag ON + liara → grammatica vincolata (constrained:true, ha nodes.items.anyOf)', () => {
-    process.env.FLOWFORGE_SCAFFOLD_CONSTRAINED_SCHEMA = 'true';
+    process.env.MEDEA_SCAFFOLD_CONSTRAINED_SCHEMA = 'true';
     const r = selectScaffoldSchema(CATALOG, 'liara', STATIC);
     expect(r.constrained).toBe(true);
     const nodes = ((r.schema as JS).properties as Record<string, JS>).nodes!;
@@ -249,14 +249,14 @@ describe('selectScaffoldSchema — policy provider + flag + fallback', () => {
   });
 
   it('🚨 flag ON + provider BYOK (openai) → STATICO (no grammar embeddata nel prompt)', () => {
-    process.env.FLOWFORGE_SCAFFOLD_CONSTRAINED_SCHEMA = 'true';
+    process.env.MEDEA_SCAFFOLD_CONSTRAINED_SCHEMA = 'true';
     const r = selectScaffoldSchema(CATALOG, 'openai', STATIC);
     expect(r.constrained).toBe(false);
     expect(r.schema).toBe(STATIC);
   });
 
   it('flag ON + liara + catalog VUOTO → fallback statico (compiler null)', () => {
-    process.env.FLOWFORGE_SCAFFOLD_CONSTRAINED_SCHEMA = 'true';
+    process.env.MEDEA_SCAFFOLD_CONSTRAINED_SCHEMA = 'true';
     const r = selectScaffoldSchema([], 'liara', STATIC);
     expect(r.constrained).toBe(false);
     expect(r.schema).toBe(STATIC);

@@ -12,7 +12,7 @@ import Database from 'better-sqlite3';
 import { writeFileSync } from 'node:fs';
 
 const validateLicenseMock = vi.fn();
-vi.mock('@flowforge/license', () => ({
+vi.mock('@medea/engine-license', () => ({
   validateLicense: validateLicenseMock,
 }));
 
@@ -28,8 +28,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.resetModules();
   sqlite = new Database(':memory:');
-  delete process.env.FLOWFORGE_LICENSE_PUBLIC_KEY;
-  delete process.env.FLOWFORGE_LICENSE_PUBLIC_KEY_PATH;
+  delete process.env.MEDEA_LICENSE_PUBLIC_KEY;
+  delete process.env.MEDEA_LICENSE_PUBLIC_KEY_PATH;
   delete process.env.NODE_ENV;
 });
 
@@ -73,7 +73,7 @@ describe('🚨 getStatus — no license installed', () => {
 
   it('🚨 configured riflette presenza public key', async () => {
     process.env.NODE_ENV = 'production';
-    process.env.FLOWFORGE_LICENSE_PUBLIC_KEY = 'ed25519-pubkey';
+    process.env.MEDEA_LICENSE_PUBLIC_KEY = 'ed25519-pubkey';
     const { LicenseService } = await loadFresh();
     const status = await new LicenseService().getStatus();
     expect(status.configured).toBe(true);
@@ -84,7 +84,7 @@ describe('🚨 getStatus — no license installed', () => {
 describe('🚨 getStatus — license installato', () => {
   it('🚨 production + license valid + tier business', async () => {
     process.env.NODE_ENV = 'production';
-    process.env.FLOWFORGE_LICENSE_PUBLIC_KEY = 'pubkey';
+    process.env.MEDEA_LICENSE_PUBLIC_KEY = 'pubkey';
     validateLicenseMock.mockResolvedValue({
       valid: true,
       payload: { tier: 'business', features: ['sso', 'audit'], seats: 50 },
@@ -100,7 +100,7 @@ describe('🚨 getStatus — license installato', () => {
 
   it('🚨 production + license EXPIRED → valid=false + reason', async () => {
     process.env.NODE_ENV = 'production';
-    process.env.FLOWFORGE_LICENSE_PUBLIC_KEY = 'pubkey';
+    process.env.MEDEA_LICENSE_PUBLIC_KEY = 'pubkey';
     validateLicenseMock.mockResolvedValue({
       valid: false,
       reason: 'License expired 30 days ago',
@@ -115,7 +115,7 @@ describe('🚨 getStatus — license installato', () => {
 
   it('🚨 license invalido MA dev mode → valid=true (override)', async () => {
     process.env.NODE_ENV = 'development';
-    process.env.FLOWFORGE_LICENSE_PUBLIC_KEY = 'pubkey';
+    process.env.MEDEA_LICENSE_PUBLIC_KEY = 'pubkey';
     validateLicenseMock.mockResolvedValue({ valid: false, reason: 'bad signature' });
     const { LicenseService } = await loadFresh();
     const svc = new LicenseService();
@@ -136,7 +136,7 @@ describe('🚨 getStatus — license installato', () => {
 
   it('🚨 multi-tenant: getStatus(A) vs getStatus(B) → row separati', async () => {
     process.env.NODE_ENV = 'production';
-    process.env.FLOWFORGE_LICENSE_PUBLIC_KEY = 'k';
+    process.env.MEDEA_LICENSE_PUBLIC_KEY = 'k';
     validateLicenseMock.mockImplementation(async (t: string) => ({
       valid: true,
       payload: { tier: t.includes('biz') ? 'business' : 'starter', features: [] },
@@ -159,7 +159,7 @@ describe('🚨 install — verify + upsert', () => {
 
   it('🚨 token verification failed → throw con reason', async () => {
     process.env.NODE_ENV = 'production';
-    process.env.FLOWFORGE_LICENSE_PUBLIC_KEY = 'k';
+    process.env.MEDEA_LICENSE_PUBLIC_KEY = 'k';
     validateLicenseMock.mockResolvedValueOnce({ valid: false, reason: 'tampered signature' });
     const { LicenseService } = await loadFresh();
     await expect(new LicenseService().install('default', 'fake-token')).rejects.toThrow(/Licenza non valida.*tampered/u);
@@ -167,7 +167,7 @@ describe('🚨 install — verify + upsert', () => {
 
   it('🚨 happy: insert + ritorna getStatus', async () => {
     process.env.NODE_ENV = 'production';
-    process.env.FLOWFORGE_LICENSE_PUBLIC_KEY = 'k';
+    process.env.MEDEA_LICENSE_PUBLIC_KEY = 'k';
     validateLicenseMock.mockResolvedValue({
       valid: true,
       payload: { tier: 'starter', features: ['basic'], seats: 5 },
@@ -183,7 +183,7 @@ describe('🚨 install — verify + upsert', () => {
 
   it('🚨 ON CONFLICT → overwrite token (rinnovo)', async () => {
     process.env.NODE_ENV = 'production';
-    process.env.FLOWFORGE_LICENSE_PUBLIC_KEY = 'k';
+    process.env.MEDEA_LICENSE_PUBLIC_KEY = 'k';
     validateLicenseMock.mockResolvedValue({
       valid: true,
       payload: { tier: 'business', features: [] },
@@ -199,7 +199,7 @@ describe('🚨 install — verify + upsert', () => {
 
   it('🚨 log info su successo', async () => {
     process.env.NODE_ENV = 'production';
-    process.env.FLOWFORGE_LICENSE_PUBLIC_KEY = 'k';
+    process.env.MEDEA_LICENSE_PUBLIC_KEY = 'k';
     validateLicenseMock.mockResolvedValue({
       valid: true,
       payload: { tier: 'enterprise', features: [] },
@@ -237,14 +237,14 @@ describe('🚨 hasFeature — gating', () => {
 
   it('🚨 prod + no license → false', async () => {
     process.env.NODE_ENV = 'production';
-    process.env.FLOWFORGE_LICENSE_PUBLIC_KEY = 'k';
+    process.env.MEDEA_LICENSE_PUBLIC_KEY = 'k';
     const { LicenseService } = await loadFresh();
     expect(await new LicenseService().hasFeature('default', 'sso')).toBe(false);
   });
 
   it('🚨 prod + license + feature presente → true', async () => {
     process.env.NODE_ENV = 'production';
-    process.env.FLOWFORGE_LICENSE_PUBLIC_KEY = 'k';
+    process.env.MEDEA_LICENSE_PUBLIC_KEY = 'k';
     validateLicenseMock.mockResolvedValue({
       valid: true,
       payload: { tier: 'business', features: ['sso', 'audit'] },
@@ -258,7 +258,7 @@ describe('🚨 hasFeature — gating', () => {
 
   it('🚨 prod + license MA feature mancante → false (no by-pass tier)', async () => {
     process.env.NODE_ENV = 'production';
-    process.env.FLOWFORGE_LICENSE_PUBLIC_KEY = 'k';
+    process.env.MEDEA_LICENSE_PUBLIC_KEY = 'k';
     validateLicenseMock.mockResolvedValue({
       valid: true,
       payload: { tier: 'starter', features: ['basic'] },
@@ -271,7 +271,7 @@ describe('🚨 hasFeature — gating', () => {
 
   it('🚨 prod + license EXPIRED → false anche se feature dichiarata', async () => {
     process.env.NODE_ENV = 'production';
-    process.env.FLOWFORGE_LICENSE_PUBLIC_KEY = 'k';
+    process.env.MEDEA_LICENSE_PUBLIC_KEY = 'k';
     validateLicenseMock.mockResolvedValue({
       valid: false,
       reason: 'expired',
@@ -287,7 +287,7 @@ describe('🚨 hasFeature — gating', () => {
 describe('🚨 loadPublicKey — precedence env > path > bundled', () => {
   it('🚨 env var precedence', async () => {
     process.env.NODE_ENV = 'production';
-    process.env.FLOWFORGE_LICENSE_PUBLIC_KEY = 'env-priority-key';
+    process.env.MEDEA_LICENSE_PUBLIC_KEY = 'env-priority-key';
     const { LicenseService } = await loadFresh();
     const status = await new LicenseService().getStatus();
     expect(status.publicKeyConfigured).toBe(true);
@@ -298,7 +298,7 @@ describe('🚨 loadPublicKey — precedence env > path > bundled', () => {
     // Crea un file temp
     const tmpPath = '/tmp/ff-license-key-test.txt';
     writeFileSync(tmpPath, 'file-pubkey-content');
-    process.env.FLOWFORGE_LICENSE_PUBLIC_KEY_PATH = tmpPath;
+    process.env.MEDEA_LICENSE_PUBLIC_KEY_PATH = tmpPath;
     const { LicenseService } = await loadFresh();
     const status = await new LicenseService().getStatus();
     expect(status.publicKeyConfigured).toBe(true);
@@ -306,7 +306,7 @@ describe('🚨 loadPublicKey — precedence env > path > bundled', () => {
 
   it('🚨 path non esistente → null fallback', async () => {
     process.env.NODE_ENV = 'production';
-    process.env.FLOWFORGE_LICENSE_PUBLIC_KEY_PATH = '/nonexistent/path/key.pem';
+    process.env.MEDEA_LICENSE_PUBLIC_KEY_PATH = '/nonexistent/path/key.pem';
     const { LicenseService } = await loadFresh();
     const status = await new LicenseService().getStatus();
     expect(status.publicKeyConfigured).toBe(false);

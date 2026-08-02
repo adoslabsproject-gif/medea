@@ -59,7 +59,7 @@ const OPENAI_PATH = '/chat/completions';
 const SPECS: Readonly<Record<LlmProvider, ProviderSpec>> = {
   liara: {
     format: 'openai', auth: 'none', chatModel: '', pingModel: 'nha-v1', openAiToolCompat: true,
-    // baseUrl runtime = gateway portal (FLOWFORGE_LIARA_BASE_URL); il chiamante lo passa.
+    // baseUrl runtime = gateway portal (MEDEA_LIARA_BASE_URL); il chiamante lo passa.
     endpoint: { kind: 'self-host', defaultBaseUrl: 'https://liara.nothumanallowed.com', chatPath: OPENAI_PATH, toolPath: OPENAI_PATH },
   },
   openai: {

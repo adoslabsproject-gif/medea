@@ -2,8 +2,8 @@
  * License management service.
  *
  * Stores license tokens in the DB (one active per tenant). Verifies them
- * offline with the bundled Ed25519 public key from `FLOWFORGE_LICENSE_PUBLIC_KEY`
- * or `FLOWFORGE_LICENSE_PUBLIC_KEY_PATH`. If no key is configured, the runtime
+ * offline with the bundled Ed25519 public key from `MEDEA_LICENSE_PUBLIC_KEY`
+ * or `MEDEA_LICENSE_PUBLIC_KEY_PATH`. If no key is configured, the runtime
  * is unlocked in *dev* mode and locked-to-trial in production.
  *
  * Public API:
@@ -17,7 +17,7 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
-import { validateLicense, type LicensePayload } from '@flowforge/license';
+import { validateLicense, type LicensePayload } from '@medea/engine-license';
 import { getDatabase } from '@/storage/db.js';
 import { logger } from '@/lib/logger.js';
 
@@ -52,19 +52,19 @@ function ensureLicenseTable(): void {
 // esbuild --define replaces this at build time with the bundled public key.
 // At source time (typechecking), it's a regular global the runtime resolves
 // to undefined → falls back to env vars (dev mode).
-declare const __FLOWFORGE_BUNDLED_LICENSE_PUBKEY__: string | undefined;
+declare const __MEDEA_BUNDLED_LICENSE_PUBKEY__: string | undefined;
 
 function loadPublicKey(): string | null {
-  if (process.env.FLOWFORGE_LICENSE_PUBLIC_KEY) {
-    return process.env.FLOWFORGE_LICENSE_PUBLIC_KEY;
+  if (process.env.MEDEA_LICENSE_PUBLIC_KEY) {
+    return process.env.MEDEA_LICENSE_PUBLIC_KEY;
   }
-  const path = process.env.FLOWFORGE_LICENSE_PUBLIC_KEY_PATH;
+  const path = process.env.MEDEA_LICENSE_PUBLIC_KEY_PATH;
   if (path && existsSync(path)) {
     return readFileSync(path, 'utf8');
   }
   // Build-time embedded public key (set by esbuild --define).
   try {
-    const bundled = typeof __FLOWFORGE_BUNDLED_LICENSE_PUBKEY__ !== 'undefined' ? __FLOWFORGE_BUNDLED_LICENSE_PUBKEY__ : '';
+    const bundled = typeof __MEDEA_BUNDLED_LICENSE_PUBKEY__ !== 'undefined' ? __MEDEA_BUNDLED_LICENSE_PUBKEY__ : '';
     if (bundled && bundled.length > 0) return bundled;
   } catch {
     /* not defined */
@@ -129,7 +129,7 @@ export class LicenseService {
   async install(tenantId: string, token: string): Promise<LicenseStatus> {
     const publicKey = cachedPublicKey;
     if (!publicKey) {
-      throw new Error('FLOWFORGE_LICENSE_PUBLIC_KEY non configurato sul runtime — impossibile verificare la licenza.');
+      throw new Error('MEDEA_LICENSE_PUBLIC_KEY non configurato sul runtime — impossibile verificare la licenza.');
     }
     const verification = await validateLicense(token, publicKey);
     if (!verification.valid) {

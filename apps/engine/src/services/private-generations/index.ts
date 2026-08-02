@@ -4,7 +4,7 @@
  *
  * Facade che lega ensure-db + repository, più una factory che cabla i servizi
  * reali (DbStudioService, BinaryStore, createTenantDatabase) per il tenant del
- * container (config.FLOWFORGE_TENANT_ID). Le funzioni pure stanno nei moduli
+ * container (config.MEDEA_TENANT_ID). Le funzioni pure stanno nei moduli
  * fratelli e sono testate in isolamento.
  *
  * @module services/private-generations
@@ -82,7 +82,7 @@ export class PrivateGenerationsService {
 export function createPrivateGenerationsService(): PrivateGenerationsService {
   const dbStudio = new DbStudioService();
   // Tenant del container = source of truth (come middleware/auth.ts). No header esterni.
-  const tenantId = process.env.FLOWFORGE_TENANT_ID || 'default';
+  const tenantId = process.env.MEDEA_TENANT_ID || 'default';
   return new PrivateGenerationsService({
     dbStudio,
     blobStore: getBinaryStore(),

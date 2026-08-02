@@ -5,10 +5,10 @@
  * Mutation-verify esplicito sui campi nuovi (seoImpact/crossDomainCount/metaRefresh).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { safeFetchWithRedirects, readTextTruncated, SsrfBlockedError } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects, readTextTruncated, SsrfBlockedError } from '@medea/engine-safe-fetch';
 import { redirectChainNode } from './redirect-chain.js';
 
-vi.mock('@flowforge/safe-fetch', () => {
+vi.mock('@medea/engine-safe-fetch', () => {
   class SsrfBlockedError extends Error {}
   return { SsrfBlockedError, safeFetchWithRedirects: vi.fn(), readTextTruncated: vi.fn() };
 });

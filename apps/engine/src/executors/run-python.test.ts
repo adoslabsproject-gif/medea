@@ -74,7 +74,7 @@ describe('run-python executor — input passing (inject_files pattern)', () => {
       if (u.includes('/health')) return healthOk();
       return jsonResp({ success: true, stdout: '', stderr: '', exit_code: 0, duration_ms: 5, files: [] });
     });
-    const USER_CODE = 'result = sum([x["amount"] for x in FLOWFORGE_INPUT["items"]])\nprint(result)';
+    const USER_CODE = 'result = sum([x["amount"] for x in MEDEA_INPUT["items"]])\nprint(result)';
     await runPythonExecutor({ code: USER_CODE }, { items: [{ amount: 10 }] }, baseContext);
 
     const execCall = mockFetch.mock.calls[1];
@@ -83,9 +83,9 @@ describe('run-python executor — input passing (inject_files pattern)', () => {
     expect(body.code).toContain(USER_CODE);
     // Prelude legge input.json
     expect(body.code).toContain("'/home/sandbox/work/input.json'");
-    // Espone sia variabile Python FLOWFORGE_INPUT sia env var (back-compat)
-    expect(body.code).toContain('FLOWFORGE_INPUT');
-    expect(body.code).toContain("_os.environ['FLOWFORGE_INPUT']");
+    // Espone sia variabile Python MEDEA_INPUT sia env var (back-compat)
+    expect(body.code).toContain('MEDEA_INPUT');
+    expect(body.code).toContain("_os.environ['MEDEA_INPUT']");
   });
 
   it('input non-JSON-serializable (circular) → fallback {}', async () => {

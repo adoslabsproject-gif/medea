@@ -31,7 +31,7 @@ import {
 } from './community-nodes.service.js';
 import { runInSandbox } from '@/executors/community-node-sandbox.js';
 
-const ORIGINAL_DATA_DIR = process.env.FLOWFORGE_DATA_DIR;
+const ORIGINAL_DATA_DIR = process.env.MEDEA_DATA_DIR;
 let tmpDataDir: string;
 
 function canonicalize(obj: unknown): string {
@@ -96,12 +96,12 @@ function buildFfnode(opts: {
 
 beforeEach(() => {
   tmpDataDir = mkdtempSync(join(tmpdir(), 'ffnode-test-'));
-  process.env.FLOWFORGE_DATA_DIR = tmpDataDir;
+  process.env.MEDEA_DATA_DIR = tmpDataDir;
 });
 
 afterAll(() => {
-  if (ORIGINAL_DATA_DIR === undefined) delete process.env.FLOWFORGE_DATA_DIR;
-  else process.env.FLOWFORGE_DATA_DIR = ORIGINAL_DATA_DIR;
+  if (ORIGINAL_DATA_DIR === undefined) delete process.env.MEDEA_DATA_DIR;
+  else process.env.MEDEA_DATA_DIR = ORIGINAL_DATA_DIR;
 });
 
 describe('parsePackage', () => {

@@ -92,13 +92,13 @@ describe('register() — idempotent INSERT/REPLACE', () => {
     expect(row.version).toBe('2.0.0');
   });
 
-  it('🚨 FLOWFORGE_WORKER_ID env override → usa quello (no nanoid)', () => {
-    process.env.FLOWFORGE_WORKER_ID = 'fixed-wkr-id';
+  it('🚨 MEDEA_WORKER_ID env override → usa quello (no nanoid)', () => {
+    process.env.MEDEA_WORKER_ID = 'fixed-wkr-id';
     try {
       const svc = new WorkerCoordinationService();
       expect(svc.getId()).toBe('fixed-wkr-id');
     } finally {
-      delete process.env.FLOWFORGE_WORKER_ID;
+      delete process.env.MEDEA_WORKER_ID;
     }
   });
 });

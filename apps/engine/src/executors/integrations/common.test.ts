@@ -300,10 +300,10 @@ describe('🚨 lazyRequire — graceful module load', () => {
   });
 
   it('🚨 module MANCANTE → IntegrationError MODULE_NOT_INSTALLED', async () => {
-    await expect(lazyRequire('@flowforge/non-existent-package-xyz', 'fake-package', 'slack' as never))
+    await expect(lazyRequire('@medea/engine-non-existent-package-xyz', 'fake-package', 'slack' as never))
       .rejects.toThrow(IntegrationError);
     try {
-      await lazyRequire('@flowforge/non-existent-package-xyz', 'fake-package', 'slack' as never);
+      await lazyRequire('@medea/engine-non-existent-package-xyz', 'fake-package', 'slack' as never);
     } catch (e) {
       const err = e as InstanceType<typeof IntegrationError>;
       expect(err.code).toBe('MODULE_NOT_INSTALLED');

@@ -17,7 +17,7 @@
  *
  * @module services/db-remote-ssh/connect
  */
-import { validateIpForFetch } from '@flowforge/safe-fetch';
+import { validateIpForFetch } from '@medea/engine-safe-fetch';
 import { SshPolicyError, assertSshHostAllowed, type SshDbConnectionConfig } from './policy.js';
 import { openSshTunnel, type SshTunnel, type SshTunnelTransportOptions } from './tunnel.js';
 

@@ -24,8 +24,8 @@
  */
 
 import type { LogCollector } from '@/services/runs/log-collector.js';
-import type { CanvasNode, ExecutionItem } from '@flowforge/core-schema';
-import type { NodeModule, NodeExecutionContext } from '@flowforge/nodes-stdlib';
+import type { CanvasNode, ExecutionItem } from '@medea/engine-core-schema';
+import type { NodeModule, NodeExecutionContext } from '@medea/engine-nodes-stdlib';
 import type { InterpreterScope } from '@/engine/interpreter.js';
 import type { ILlmProviderRegistry, IBinaryStore } from '@/engine/ports.js';
 

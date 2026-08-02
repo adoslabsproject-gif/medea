@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { chartGenerateExecutor, coerceChartData } from './chart.js';
-import { chartGenerateNode } from '@flowforge/nodes-stdlib';
+import { chartGenerateNode } from '@medea/engine-nodes-stdlib';
 
 const ctx = {} as never;
 

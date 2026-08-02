@@ -71,13 +71,13 @@ beforeEach(() => {
       json: async () => nonStreamJson,
     } as unknown as Response;
   }) as unknown as typeof fetch;
-  process.env.FLOWFORGE_LICENSE_KEY = 'lic-key-123';
-  delete process.env.FLOWFORGE_LIARA_SINGLESHOT_MAX_TOKENS;
+  process.env.MEDEA_LICENSE_KEY = 'lic-key-123';
+  delete process.env.MEDEA_LIARA_SINGLESHOT_MAX_TOKENS;
 });
 
 afterEach(() => {
   vi.resetModules();
-  delete process.env.FLOWFORGE_LICENSE_KEY;
+  delete process.env.MEDEA_LICENSE_KEY;
 });
 
 const SCHEMA = { type: 'object', properties: { x: { type: 'string' } } };

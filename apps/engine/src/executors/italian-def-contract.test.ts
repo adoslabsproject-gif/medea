@@ -1,7 +1,7 @@
 /**
  * CONTRACT cross-app — i nodi italia "def nel package / executor nel runtime"
  * (SDI, PEC, Zucchetti) leggono `config.X` da italian.ts, ma le configField
- * sono dichiarate in `@flowforge/nodes-integrations-italia`. Il commento in
+ * sono dichiarate in `@medea/engine-nodes-integrations-italia`. Il commento in
  * sdi-adel/index.ts AVVERTE: "se rinomini un campo qui, rinomina anche
  * nell'executor o il nodo si rompe SILENZIOSAMENTE". Nessun test copriva quel
  * match (i contract test del package coprono description↔configFields, non
@@ -16,8 +16,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import type { NodeModule } from '@flowforge/nodes-stdlib';
-import { sdiSendInvoice, sdiCheckStatus, pecArubaSend, pecArubaReceive, zucchettiPayroll } from '@flowforge/nodes-integrations-italia';
+import type { NodeModule } from '@medea/engine-nodes-stdlib';
+import { sdiSendInvoice, sdiCheckStatus, pecArubaSend, pecArubaReceive, zucchettiPayroll } from '@medea/engine-nodes-integrations-italia';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const srcCache = new Map<string, string>();

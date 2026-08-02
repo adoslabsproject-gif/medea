@@ -24,7 +24,7 @@ export const runPythonNode: NodeModule = {
       'Esegue codice Python in sandbox Docker isolata (memoria 512MB, CPU 1 core, no privileges, read-only FS). ' +
       'Libreria stdlib disponibile: matplotlib/numpy/pandas/scipy/plotly/pillow/sympy/openpyxl/tabulate + requests/httpx (quando allowNetwork=true). ' +
       'Output: { stdout, stderr, exitCode, durationMs, files[] (grafici/CSV salvati in output/ ritornati base64) }. ' +
-      'Timeout configurabile (max 120s). Input/ctx esposti come dict Python via env var FLOWFORGE_INPUT.\n\n' +
+      'Timeout configurabile (max 120s). Input/ctx esposti come dict Python via env var MEDEA_INPUT.\n\n' +
       'Network policy:\n' +
       '  • allowNetwork=false (default, raccomandato) → ZERO egress, sicurezza massima. Per chiamate HTTP, usa action_http_request come step separato (più ergonomico + audit nativo).\n' +
       '  • allowNetwork=true (opt-in) → egress Internet abilitato MA con SSRF block: ' +
@@ -42,10 +42,10 @@ export const runPythonNode: NodeModule = {
         defaultValue:
           'import json, os\n' +
           '\n' +
-          'data = json.loads(os.environ.get("FLOWFORGE_INPUT", "{}"))\n' +
+          'data = json.loads(os.environ.get("MEDEA_INPUT", "{}"))\n' +
           'print({"received_keys": list(data.keys()), "count": len(data)})\n',
         help:
-          'Codice Python. Input del nodo precedente disponibile in env var FLOWFORGE_INPUT (JSON string). ' +
+          'Codice Python. Input del nodo precedente disponibile in env var MEDEA_INPUT (JSON string). ' +
           'Output stdout viene catturato e parsato come JSON se possibile, altrimenti tornato come stringa. ' +
           'Per output file (grafici/CSV) salva in cartella output/. Esempio: plt.savefig("output/chart.png"). ' +
           'Con allowNetwork=true: import requests; r=requests.get("https://api.esempio.it/x", timeout=10); print(r.json()).',

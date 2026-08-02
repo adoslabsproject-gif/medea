@@ -1,9 +1,9 @@
-import baseConfig from '@flowforge/eslint-config';
+import baseConfig from '@medea/engine-eslint-config';
 
 const ROOT = import.meta.dirname;
 
 /**
- * Gate eslint per @flowforge/secrets (prima ASSENTE — wirato per la regola "GATE VERDE,
+ * Gate eslint per @medea/engine-secrets (prima ASSENTE — wirato per la regola "GATE VERDE,
  * ZERO DEBITO": ogni package deve avere lint+tsc+test a zero). Type-aware via
  * tsconfig.eslint.json (standalone: RE-include i *.test.ts che il build-tsconfig
  * esclude, ed evita il TS5012 da extends a catena del tsconfig base).

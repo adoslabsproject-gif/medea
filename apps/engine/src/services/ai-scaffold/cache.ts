@@ -7,7 +7,7 @@
  *
  * Dipende dai moduli puri sottostanti (auto-fix, dataflow-validator, cache-quality).
  */
-import { WorkflowSchema, type Workflow } from '@flowforge/core-schema';
+import { WorkflowSchema, type Workflow } from '@medea/engine-core-schema';
 import { autoFixWorkflow } from '@/services/ai-scaffold/auto-fix.js';
 import { validateDataflow } from '@/services/ai-scaffold/dataflow-validator.js';
 import { shouldEvictCachedEntry } from '@/services/ai-scaffold/cache-quality.js';

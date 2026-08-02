@@ -13,7 +13,7 @@
 
 import { coerceString } from '@/lib/coerce.js';
 import { createHash } from 'node:crypto';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { IntegrationError, requireIntegration, withRetry } from './common.js';
 import { safeOutboundFetch } from '@/lib/safe-outbound-fetch.js';
 import { readJsonCapped } from '@/lib/capped-response.js';

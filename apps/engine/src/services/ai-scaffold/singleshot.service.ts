@@ -330,7 +330,7 @@ Rigenera ORA applicando i fix.`;
     // Plan tier dal env container (settato a provision dal portal — vedi
     // onboarding.ts buildEnv "zeliai.plan label"). Free → priorita\` bassa,
     // Enterprise → priorita\` alta. Privilegia paying customers.
-    const planTierRaw = (process.env.FLOWFORGE_PLAN_CODE ?? 'pro').toLowerCase();
+    const planTierRaw = (process.env.MEDEA_PLAN_CODE ?? 'pro').toLowerCase();
     const validTiers = ['free', 'starter', 'pro', 'team', 'enterprise'] as const;
     type Tier = typeof validTiers[number];
     const planTier: Tier = (validTiers as readonly string[]).includes(planTierRaw)
@@ -483,7 +483,7 @@ Rigenera ORA applicando i fix.`;
   // default, es. `url`) viene riparato con una chiamata LLM MIRATA ai soli nodi
   // rotti, coi messaggi precisi del validatore. Bounded (1 round). Fail-soft: se
   // il repair non risolve, la validazione sotto darà il 502 con i dettagli.
-  if (process.env.FLOWFORGE_SCAFFOLD_SEMANTIC_REPAIR === 'true') {
+  if (process.env.MEDEA_SCAFFOLD_SEMANTIC_REPAIR === 'true') {
     const repairFn = makeLlmRepairFn({
       goal,
       dispatch: ({ system, user, schema }) => dispatchLLMChatStructured(

@@ -27,7 +27,7 @@
  *  - Reverse-engineer form fields da screenshot UI
  */
 
-import { safeFetchWithRedirects, internalGatewayTrustedHost } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects, internalGatewayTrustedHost } from '@medea/engine-safe-fetch';
 import { z } from 'zod';
 import type { NodeModule, NodeExecutor } from '../types.js';
 import { logLlmExchange } from '../llm-exchange-log.js';
@@ -48,21 +48,21 @@ const RETRY_BASE_MS = 1000;
 
 /** Base del gateway metered (portal), iniettata nell'env di ogni container tenant. */
 function gatewayBase(): string | undefined {
-  const raw = typeof process !== 'undefined' ? process.env.FLOWFORGE_LIARA_BASE_URL : undefined;
+  const raw = typeof process !== 'undefined' ? process.env.MEDEA_LIARA_BASE_URL : undefined;
   return raw ? raw.replace(/\/$/, '') : undefined;
 }
 
 /**
  * Risoluzione endpoint vision (Fase 2 #14):
  *   1. endpoint esplicito ≠ sentinella legacy → vision LLM BYOK (guard SSRF pieno)
- *   2. env FLOWFORGE_VISION_ENDPOINT (override operatore)
- *   3. gateway metered `${FLOWFORGE_LIARA_BASE_URL}/chat/completions` (Qwen3-VL)
+ *   2. env MEDEA_VISION_ENDPOINT (override operatore)
+ *   3. gateway metered `${MEDEA_LIARA_BASE_URL}/chat/completions` (Qwen3-VL)
  *   4. fallback dev locale (fuori container)
  */
 export function resolveVisionEndpoint(explicit: string | undefined): string {
   const cleaned = (explicit ?? '').trim();
   if (cleaned && cleaned !== LEGACY_VISION_ENDPOINT) return cleaned;
-  const envOverride = typeof process !== 'undefined' ? (process.env.FLOWFORGE_VISION_ENDPOINT ?? '').trim() : '';
+  const envOverride = typeof process !== 'undefined' ? (process.env.MEDEA_VISION_ENDPOINT ?? '').trim() : '';
   if (envOverride) return envOverride;
   const base = gatewayBase();
   if (base) return `${base}/chat/completions`;
@@ -204,8 +204,8 @@ const executor: NodeExecutor = async (config, _input, context) => {
   // gateway metered ESIGE il Bearer license, come la chat e gli agent_*).
   // Catena su `||`, NON `??`: un campo secret VUOTO salvato in config (o una
   // env vuota) deve cadere sulla license, non silenziare l'auth → 401.
-  const licenseKey = typeof process !== 'undefined' ? (process.env.FLOWFORGE_LICENSE_KEY ?? '').trim() : '';
-  const envVisionKey = typeof process !== 'undefined' ? (process.env.FLOWFORGE_VISION_API_KEY ?? '').trim() : '';
+  const licenseKey = typeof process !== 'undefined' ? (process.env.MEDEA_LICENSE_KEY ?? '').trim() : '';
+  const envVisionKey = typeof process !== 'undefined' ? (process.env.MEDEA_VISION_API_KEY ?? '').trim() : '';
   const apiKey = String(config.apiKey ?? '').trim() || envVisionKey || licenseKey;
   // Model: la sentinella legacy Qwen2.5-VL (servizio dismesso) = "non impostato".
   const modelRaw = String(config.model ?? '').trim();

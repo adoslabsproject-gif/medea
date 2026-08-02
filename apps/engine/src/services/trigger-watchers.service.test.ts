@@ -13,7 +13,7 @@
  *   • DB-change poller: seed lastIdSeen → fires solo su future changes
  *   • DB-change poller: opsFilter "all" vs specific op
  *   • Pollers usano setInterval (clearable in stop())
- *   • Env override: FLOWFORGE_IMAP_MAX_ATTACHMENT_BYTES + MAX_BODY_CHARS
+ *   • Env override: MEDEA_IMAP_MAX_ATTACHMENT_BYTES + MAX_BODY_CHARS
  *
  * Mock strategy: chokidar.watch, ImapFlow, sub-services workflow/run/dbStudio.
  * Eventi sintetici tramite eventBus.subscribeTo callback registry.
@@ -124,7 +124,7 @@ const odooLib = vi.hoisted(() => ({
   authenticate: vi.fn().mockResolvedValue(7),
   executeKw: vi.fn().mockResolvedValue([]),
 }));
-vi.mock('@flowforge/nodes-stdlib', () => ({
+vi.mock('@medea/engine-nodes-stdlib', () => ({
   authenticate: (...a: unknown[]) => odooLib.authenticate(...a),
   executeKw: (...a: unknown[]) => odooLib.executeKw(...a),
   // parsing.ts (filtri IMAP) usa safeUserRegex (RE2): il mock va fornito o l'import
@@ -1007,7 +1007,7 @@ describe('TriggerWatchersService — IMAP markSeen/cursore/dedup (caratterizzazi
 // Environment overrides
 // ════════════════════════════════════════════════════════════════════
 describe('TriggerWatchersService — env overrides', () => {
-  it('FLOWFORGE_IMAP_MAX_ATTACHMENT_BYTES letto al module-import time', async () => {
+  it('MEDEA_IMAP_MAX_ATTACHMENT_BYTES letto al module-import time', async () => {
     // L'export const usa process.env al require — vediamo che il module
     // si carica senza throw e che il valore default (25MB) è applicato se
     // env vuoto. Verifichiamo solo che lo svc istanzi senza errori.
@@ -1015,8 +1015,8 @@ describe('TriggerWatchersService — env overrides', () => {
     expect(svc).toBeDefined();
   });
 
-  it('FLOWFORGE_DATA_DIR override il base path tenant files', async () => {
-    process.env.FLOWFORGE_DATA_DIR = '/custom/data';
+  it('MEDEA_DATA_DIR override il base path tenant files', async () => {
+    process.env.MEDEA_DATA_DIR = '/custom/data';
     m.workflowsList.mockResolvedValue([makeWf({
       tenantId: 't-a',
       nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: 'inbox' } }],
@@ -1026,7 +1026,7 @@ describe('TriggerWatchersService — env overrides', () => {
     const firstCall = m.chokidarWatch.mock.calls[0] as unknown[] | undefined;
     const target = firstCall?.[0];
     expect(target).toMatch(/^\/custom\/data\/tenants\/t-a\/files\/inbox$/);
-    delete process.env.FLOWFORGE_DATA_DIR;
+    delete process.env.MEDEA_DATA_DIR;
     await svc.stop();
   });
 });
@@ -2583,8 +2583,8 @@ describe('TriggerWatchersService — WebSocket trigger (socket reale)', () => {
   // I test usano un WebSocketServer reale su 127.0.0.1 (loopback): il guard SSRF
   // lo bloccherebbe (correttamente, in prod). Lo allowlistiamo come farebbe
   // l'operatore per un servizio WS interno legittimo → i test real-socket girano.
-  beforeEach(() => { process.env.FLOWFORGE_INTERNAL_HOST_ALLOWLIST = '127.0.0.1'; });
-  afterEach(() => { delete process.env.FLOWFORGE_INTERNAL_HOST_ALLOWLIST; });
+  beforeEach(() => { process.env.MEDEA_INTERNAL_HOST_ALLOWLIST = '127.0.0.1'; });
+  afterEach(() => { delete process.env.MEDEA_INTERNAL_HOST_ALLOWLIST; });
 
   it('connette + riceve messaggio → run.execute(triggerType=websocket, data JSON parsata)', async () => {
     const server = await startWss((ws) => { ws.send(JSON.stringify({ type: 'trade', price: 42 })); });

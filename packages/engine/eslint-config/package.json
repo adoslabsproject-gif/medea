@@ -1,5 +1,5 @@
 {
-  "name": "@flowforge/eslint-config",
+  "name": "@medea/engine-eslint-config",
   "version": "0.0.0",
   "private": true,
   "type": "module",

@@ -1,5 +1,5 @@
 {
-  "name": "@flowforge/db-studio-vector",
+  "name": "@medea/engine-db-studio-vector",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -22,13 +22,13 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@flowforge/db-studio-core": "workspace:*",
+    "@medea/engine-db-studio-core": "workspace:*",
     "better-sqlite3": "^11.6.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@flowforge/eslint-config": "workspace:*",
-    "@flowforge/tsconfig": "workspace:*",
+    "@medea/engine-eslint-config": "workspace:*",
+    "@medea/engine-tsconfig": "workspace:*",
     "@types/better-sqlite3": "^7.6.12",
     "@types/pg": "^8.11.0",
     "@vitest/coverage-v8": "^3.0.0",

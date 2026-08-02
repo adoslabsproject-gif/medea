@@ -11,10 +11,10 @@
  *   • notion   — Pages, databases
  *
  * Configuration (env vars, all optional — provider is hidden if missing):
- *   FLOWFORGE_GOOGLE_OAUTH_CLIENT_ID / _SECRET
- *   FLOWFORGE_GITHUB_OAUTH_CLIENT_ID / _SECRET
- *   FLOWFORGE_SLACK_OAUTH_CLIENT_ID / _SECRET
- *   FLOWFORGE_NOTION_OAUTH_CLIENT_ID / _SECRET
+ *   MEDEA_GOOGLE_OAUTH_CLIENT_ID / _SECRET
+ *   MEDEA_GITHUB_OAUTH_CLIENT_ID / _SECRET
+ *   MEDEA_SLACK_OAUTH_CLIENT_ID / _SECRET
+ *   MEDEA_NOTION_OAUTH_CLIENT_ID / _SECRET
  *
  * Token storage: the access token + (optional) refresh token are saved
  * via CredentialsService as a single credential of provider=`oauth:<name>`.
@@ -130,7 +130,7 @@ export class OAuthConnectService {
     const spec = OAUTH_PROVIDERS[args.provider];
     if (!spec) throw new Error(`Provider OAuth sconosciuto: ${args.provider}`);
     const creds = this.getClientCreds(spec.id);
-    if (!creds) throw new Error(`Provider ${spec.id} non configurato (mancano FLOWFORGE_${spec.id.toUpperCase()}_OAUTH_CLIENT_ID/_SECRET)`);
+    if (!creds) throw new Error(`Provider ${spec.id} non configurato (mancano MEDEA_${spec.id.toUpperCase()}_OAUTH_CLIENT_ID/_SECRET)`);
 
     const state = crypto.randomBytes(24).toString('base64url');
     const codeVerifier = spec.usesPkce ? crypto.randomBytes(32).toString('base64url') : undefined;
@@ -257,8 +257,8 @@ export class OAuthConnectService {
   }
 
   private getClientCreds(providerId: string): { clientId: string; clientSecret: string } | null {
-    const idEnv = `FLOWFORGE_${providerId.toUpperCase()}_OAUTH_CLIENT_ID`;
-    const secretEnv = `FLOWFORGE_${providerId.toUpperCase()}_OAUTH_CLIENT_SECRET`;
+    const idEnv = `MEDEA_${providerId.toUpperCase()}_OAUTH_CLIENT_ID`;
+    const secretEnv = `MEDEA_${providerId.toUpperCase()}_OAUTH_CLIENT_SECRET`;
     const clientId = process.env[idEnv];
     const clientSecret = process.env[secretEnv];
     if (!clientId || !clientSecret) return null;

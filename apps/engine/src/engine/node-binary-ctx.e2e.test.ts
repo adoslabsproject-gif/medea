@@ -24,9 +24,9 @@ import { Readable } from 'node:stream';
 import { WorkflowEngine } from './workflow-engine.js';
 import { BinaryStore } from '@/services/binary-store.service.js';
 import { InMemoryEventBus } from '@/adapters/event-bus-memory.js';
-import { isBinaryData, type BinaryData } from '@flowforge/core-schema';
-import type { Workflow } from '@flowforge/core-schema';
-import type { NodeExecutionContext } from '@flowforge/nodes-stdlib';
+import { isBinaryData, type BinaryData } from '@medea/engine-core-schema';
+import type { Workflow } from '@medea/engine-core-schema';
+import type { NodeExecutionContext } from '@medea/engine-nodes-stdlib';
 
 // NUL 0x00 + high bytes 0xfe/0xff, costruito programmaticamente (sorgente ASCII).
 const PAYLOAD = Buffer.from([0x70, 0x61, 0x79, 0x00, 0x01, 0x02, 0xfe, 0xff]);

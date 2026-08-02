@@ -9,32 +9,32 @@
  *  - assertPathAllowed accept paths sotto tenant root
  *  - assertPathAllowed reject paths fuori namespace
  *  - assertPathAllowed sanitizes tenantId (no path traversal via tenant)
- *  - global allowlist FLOWFORGE_FILE_ALLOWLIST funziona
+ *  - global allowlist MEDEA_FILE_ALLOWLIST funziona
  */
 import type { BinaryStore } from '../services/binary-store.service';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { tmpdir } from 'node:os';
 import { mkdtempSync, writeFileSync, readFileSync, symlinkSync, mkdirSync, rmSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
-import type { BinaryData } from '@flowforge/core-schema';
+import type { BinaryData } from '@medea/engine-core-schema';
 
-const origAllow = process.env.FLOWFORGE_FILE_ALLOWLIST;
-const origDataDir = process.env.FLOWFORGE_DATA_DIR;
+const origAllow = process.env.MEDEA_FILE_ALLOWLIST;
+const origDataDir = process.env.MEDEA_DATA_DIR;
 
 let tmpRoot: string;
 
 beforeEach(() => {
   tmpRoot = mkdtempSync(join(tmpdir(), 'ff-file-test-'));
-  process.env.FLOWFORGE_DATA_DIR = tmpRoot;
-  delete process.env.FLOWFORGE_FILE_ALLOWLIST;
+  process.env.MEDEA_DATA_DIR = tmpRoot;
+  delete process.env.MEDEA_FILE_ALLOWLIST;
 });
 
 afterEach(() => {
   try { rmSync(tmpRoot, { recursive: true, force: true }); } catch { /* ok */ }
-  if (origAllow === undefined) delete process.env.FLOWFORGE_FILE_ALLOWLIST;
-  else process.env.FLOWFORGE_FILE_ALLOWLIST = origAllow;
-  if (origDataDir === undefined) delete process.env.FLOWFORGE_DATA_DIR;
-  else process.env.FLOWFORGE_DATA_DIR = origDataDir;
+  if (origAllow === undefined) delete process.env.MEDEA_FILE_ALLOWLIST;
+  else process.env.MEDEA_FILE_ALLOWLIST = origAllow;
+  if (origDataDir === undefined) delete process.env.MEDEA_DATA_DIR;
+  else process.env.MEDEA_DATA_DIR = origDataDir;
 });
 
 describe('fileWriteExecutor + fileReadExecutor — namespace isolation', () => {
@@ -81,7 +81,7 @@ describe('fileWriteExecutor + fileReadExecutor — namespace isolation', () => {
 
   it('global allowlist permette path globalmente shared', async () => {
     const sharedDir = mkdtempSync(join(tmpdir(), 'ff-shared-'));
-    process.env.FLOWFORGE_FILE_ALLOWLIST = sharedDir;
+    process.env.MEDEA_FILE_ALLOWLIST = sharedDir;
     const { fileWriteExecutor } = await import('./file');
     const ctx = { tenantId: 'tenant-a' } as { tenantId: string };
     const target = join(sharedDir, 'shared.txt');
@@ -121,7 +121,7 @@ describe('fileWriteExecutor + fileReadExecutor — namespace isolation', () => {
 describe('🚨 GAP2 FLIP — fileReadExecutor: encoding binario → handle BinaryData (ref-primario)', () => {
   async function ctxWithStore(): Promise<{ ctx: { tenantId: string; writeBinary: unknown }; store: BinaryStore }> {
     const { BinaryStore } = await import('../services/binary-store.service');
-    const { makeBinaryRef } = await import('@flowforge/core-schema');
+    const { makeBinaryRef } = await import('@medea/engine-core-schema');
     const store = new BinaryStore(join(tmpRoot, 'blobs'));
     // stessa logica della NodeExecutorStrategy (writeBuffer + makeBinaryRef)
     const writeBinary = async (data: Buffer, meta: { mimeType: string; fileName?: string }): Promise<BinaryData> => {
@@ -133,7 +133,7 @@ describe('🚨 GAP2 FLIP — fileReadExecutor: encoding binario → handle Binar
 
   it('🚨 encoding=binary CON store → handle ref, mimeType da estensione, niente content', async () => {
     const { fileWriteExecutor, fileReadExecutor } = await import('./file');
-    const { isBinaryData } = await import('@flowforge/core-schema');
+    const { isBinaryData } = await import('@medea/engine-core-schema');
     const { ctx, store } = await ctxWithStore();
     await fileWriteExecutor({ path: 'doc.pdf', content: '%PDF-1.4 fake bytes' }, undefined, ctx as never);
 
@@ -152,7 +152,7 @@ describe('🚨 GAP2 FLIP — fileReadExecutor: encoding binario → handle Binar
 
   it('🚨 encoding=base64 → ANCHE handle (non più stringa base64 — il flip)', async () => {
     const { fileWriteExecutor, fileReadExecutor } = await import('./file');
-    const { isBinaryData } = await import('@flowforge/core-schema');
+    const { isBinaryData } = await import('@medea/engine-core-schema');
     const { ctx } = await ctxWithStore();
     await fileWriteExecutor({ path: 'photo.jpg', content: 'JPEGDATA' }, undefined, ctx as never);
 
@@ -165,7 +165,7 @@ describe('🚨 GAP2 FLIP — fileReadExecutor: encoding binario → handle Binar
 
   it('🚨 encoding=binary SENZA store → fallback BinaryData inline base64 (fail-soft, non legacy)', async () => {
     const { fileWriteExecutor, fileReadExecutor } = await import('./file');
-    const { isBinaryData } = await import('@flowforge/core-schema');
+    const { isBinaryData } = await import('@medea/engine-core-schema');
     const ctx = { tenantId: 'tenant-a' }; // niente writeBinary
     await fileWriteExecutor({ path: 'img.png', content: 'PNGDATA' }, undefined, ctx as never);
 
@@ -199,7 +199,7 @@ describe('🚨 GAP2 step3b — fileWriteExecutor consumer di BinaryData (byte fe
 
   it('🚨 input BinaryData ref → scrive i BYTE reali risolti via readBinary (incl. NUL/high)', async () => {
     const { fileWriteExecutor } = await import('./file');
-    const { makeBinaryRef } = await import('@flowforge/core-schema');
+    const { makeBinaryRef } = await import('@medea/engine-core-schema');
     const { ctx, store } = await ctxStore();
     const bytes = Buffer.from([0x00, 0x01, 0xfe, 0xff, 0x42, 0x00]);
     const r = await store.writeBuffer(bytes);
@@ -214,7 +214,7 @@ describe('🚨 GAP2 step3b — fileWriteExecutor consumer di BinaryData (byte fe
 
   it('🚨 input BinaryData inline base64 → scrive i byte (nessuno store necessario)', async () => {
     const { fileWriteExecutor } = await import('./file');
-    const { makeBinaryInline } = await import('@flowforge/core-schema');
+    const { makeBinaryInline } = await import('@medea/engine-core-schema');
     const bytes = Buffer.from([0x10, 0x20, 0x00, 0xaa]);
     const bin = makeBinaryInline({ mimeType: 'application/octet-stream', data: bytes.toString('base64') });
     const ctx = { tenantId: 'tenant-a' }; // niente readBinary: inline non ne ha bisogno
@@ -227,7 +227,7 @@ describe('🚨 GAP2 step3b — fileWriteExecutor consumer di BinaryData (byte fe
 
   it('🚨 PRECEDENZA: content esplicito vince sul binary input (back-compat totale)', async () => {
     const { fileWriteExecutor } = await import('./file');
-    const { makeBinaryInline } = await import('@flowforge/core-schema');
+    const { makeBinaryInline } = await import('@medea/engine-core-schema');
     const bin = makeBinaryInline({ mimeType: 'text/plain', data: Buffer.from('BINARY').toString('base64') });
     const ctx = { tenantId: 'tenant-a' };
     // content esplicito presente E binary input presente → content vince
@@ -249,7 +249,7 @@ describe('🚨 GAP2 step3b — fileWriteExecutor consumer di BinaryData (byte fe
 
   it('🚨 ROUND-TRIP read(encoding=binary)→write(consumer): file byte-identico, mai base64 via stringa', async () => {
     const { fileReadExecutor, fileWriteExecutor } = await import('./file');
-    const { makeBinaryInline, makeBinaryRef } = await import('@flowforge/core-schema');
+    const { makeBinaryInline, makeBinaryRef } = await import('@medea/engine-core-schema');
     const { BinaryStore } = await import('../services/binary-store.service');
     const store = new BinaryStore(join(tmpRoot, 'blobs'));
     const ctx = {

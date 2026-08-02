@@ -12,7 +12,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { WorkflowSchema, type Workflow } from '@flowforge/core-schema';
+import { WorkflowSchema, type Workflow } from '@medea/engine-core-schema';
 import { llmResolver, NoLlmProviderError } from '@/services/llm-resolver.service.js';
 import { dispatchLLMChat } from '@/services/llm-chat.service.js';
 import { logger } from '@/lib/logger.js';
@@ -29,7 +29,7 @@ import { AiScaffoldError, type AiScaffoldInput, type AiScaffoldTrace } from './t
 // l'agente finalizzava al 3° nodo o lasciava workflow incompleti. Bump a 30
 // permette pattern complessi (branching + error handler + multi-step) di
 // completare end-to-end. Il system prompt vieta finalize prematuro.
-const MAX_ITERATIONS = Number(process.env.FLOWFORGE_SCAFFOLD_MAX_ITER ?? '60');
+const MAX_ITERATIONS = Number(process.env.MEDEA_SCAFFOLD_MAX_ITER ?? '60');
 const MAX_GOAL_LEN = 4000;
 
 export interface AiScaffoldTableToCreate {

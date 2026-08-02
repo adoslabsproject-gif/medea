@@ -31,12 +31,12 @@ export function registerTenantHealthRoute(app: Hono): void {
   app.get('/api/v1/tenant/health', async (c) => {
     const cfg = loadConfig();
     const health = await collectTenantHealth({
-      tenantId: cfg.FLOWFORGE_TENANT_ID ?? null,
+      tenantId: cfg.MEDEA_TENANT_ID ?? null,
       plan: {
-        code: cfg.FLOWFORGE_PLAN_CODE,
-        diskGb: cfg.FLOWFORGE_PLAN_DISK_GB,
-        vectorMaxVectors: cfg.FLOWFORGE_PLAN_VECTOR_MAX_VECTORS ?? null,
-        vectorMaxDiskMb: cfg.FLOWFORGE_PLAN_VECTOR_MAX_DISK_MB ?? null,
+        code: cfg.MEDEA_PLAN_CODE,
+        diskGb: cfg.MEDEA_PLAN_DISK_GB,
+        vectorMaxVectors: cfg.MEDEA_PLAN_VECTOR_MAX_VECTORS ?? null,
+        vectorMaxDiskMb: cfg.MEDEA_PLAN_VECTOR_MAX_DISK_MB ?? null,
       },
       uptimeSeconds: process.uptime(),
       countWorkflows: () => countRows('workflows'),
@@ -44,7 +44,7 @@ export function registerTenantHealthRoute(app: Hono): void {
       // usedBytes = blob binari del tenant (probe leggera già usata da
       // /account/storage). total = quota disco del piano.
       storageUsedBytes: () => getBinaryStore().usage(),
-      storageTotalBytes: cfg.FLOWFORGE_PLAN_DISK_GB * BYTES_PER_GB,
+      storageTotalBytes: cfg.MEDEA_PLAN_DISK_GB * BYTES_PER_GB,
     });
     return c.json({ ok: true, health });
   });

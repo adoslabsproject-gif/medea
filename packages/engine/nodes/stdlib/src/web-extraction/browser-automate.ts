@@ -3,7 +3,7 @@
  * endpoint Playwright BYO (Bring Your Own Browser), nello stesso pattern di
  * browser-render/stealth-browser: NESSUN Chromium nel container (zero +300MB),
  * il nodo chiama un endpoint esterno configurabile (browserless self-host o
- * managed Zeli) via FLOWFORGE_BROWSER_ENDPOINT.
+ * managed Zeli) via MEDEA_BROWSER_ENDPOINT.
  *
  * Differenza vs gli altri nodi browser (render/scrape one-shot): qui esegui una
  * SEQUENZA di passi in UNA sessione — goto → wait → click → type → extract →
@@ -12,11 +12,11 @@
  * (Playwright LOCALE, orfano + mai installato) con l'architettura corretta.
  *
  * SSRF: ogni URL navigato (startUrl + ogni `goto`) è validato con assertUrlSafe
- * (@flowforge/safe-fetch) → blocca IP privati/loopback/link-local (cloud
+ * (@medea/engine-safe-fetch) → blocca IP privati/loopback/link-local (cloud
  * metadata 169.254.169.254) — stesse difese degli altri nodi web. La chiamata
  * all'endpoint BYO passa per safeFetchWithRedirects.
  */
-import { assertUrlSafe, safeFetchWithRedirects } from '@flowforge/safe-fetch';
+import { assertUrlSafe, safeFetchWithRedirects } from '@medea/engine-safe-fetch';
 import type { NodeModule, NodeExecutor } from '../types.js';
 
 const MAX_STEPS = 50;
@@ -49,9 +49,9 @@ function parseSteps(raw: unknown): AutomateStep[] {
 const browserAutomateExecutor: NodeExecutor = async (config, _input, _ctx) => {
   const startedAt = Date.now();
 
-  const endpoint = String(config.endpoint ?? process.env.FLOWFORGE_BROWSER_ENDPOINT ?? '').trim();
+  const endpoint = String(config.endpoint ?? process.env.MEDEA_BROWSER_ENDPOINT ?? '').trim();
   if (!endpoint) {
-    throw new Error('action_browser_automate: endpoint non configurato. Imposta FLOWFORGE_BROWSER_ENDPOINT o il campo "endpoint" (BYO: browserless self-host o endpoint Zeli managed).');
+    throw new Error('action_browser_automate: endpoint non configurato. Imposta MEDEA_BROWSER_ENDPOINT o il campo "endpoint" (BYO: browserless self-host o endpoint Zeli managed).');
   }
   const startUrl = String(config.startUrl ?? '').trim();
   if (!startUrl) throw new Error('action_browser_automate: startUrl richiesto');
@@ -113,7 +113,7 @@ export const browserAutomateNode: NodeModule = {
       'click (clicca un elemento), type (digita in un input), extract (estrae testo da un selettore, salvato col ' +
       'nome che scegli), screenshot (cattura la viewport). Architettura identica agli altri nodi browser: NESSUN ' +
       'Chromium nel container (zero +300MB) — il nodo chiama un endpoint esterno configurabile ' +
-      '(FLOWFORGE_BROWSER_ENDPOINT: browserless self-host o endpoint Zeli managed). Difese SSRF integrate: ogni ' +
+      '(MEDEA_BROWSER_ENDPOINT: browserless self-host o endpoint Zeli managed). Difese SSRF integrate: ogni ' +
       'URL navigato (iniziale + ogni goto) è validato (blocco di IP privati, loopback, link-local/metadata cloud) ' +
       'con le stesse protezioni degli altri nodi web; la chiamata all\'endpoint passa per safe-fetch. Cap di ' +
       'sicurezza: max 50 passi, timeout 2-120s. ' +
@@ -134,7 +134,7 @@ export const browserAutomateNode: NodeModule = {
       },
       {
         key: 'endpoint', label: 'Endpoint browser (BYO)', type: 'text', required: false,
-        placeholder: 'vuoto = env FLOWFORGE_BROWSER_ENDPOINT',
+        placeholder: 'vuoto = env MEDEA_BROWSER_ENDPOINT',
         help: 'Server Playwright esterno (browserless self-host o endpoint Zeli managed). Vuoto = usa env.',
       },
       {

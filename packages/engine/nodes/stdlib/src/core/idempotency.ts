@@ -120,7 +120,7 @@ export class InMemoryIdempotencyStore implements IdempotencyStore {
  *
  * Per multi-pod scaling il runtime sostituisce questo singleton con
  * `RedisIdempotencyStore` via `setDefaultIdempotencyStore()` al bootstrap
- * (vedi apps/flowforge-runtime/src/main.ts).
+ * (vedi apps/engine/src/main.ts).
  */
 let _defaultStore: IdempotencyStore = new InMemoryIdempotencyStore();
 
@@ -134,7 +134,7 @@ export const defaultIdempotencyStore = new Proxy({} as IdempotencyStore, {
 /**
  * Sostituisce il backend store del singleton `defaultIdempotencyStore`.
  *
- * Bootstrap pattern: il runtime, dopo aver rilevato `FLOWFORGE_QUEUE_MODE=redis`,
+ * Bootstrap pattern: il runtime, dopo aver rilevato `MEDEA_QUEUE_MODE=redis`,
  * chiama `setDefaultIdempotencyStore(new RedisIdempotencyStore({redis}))` PRIMA
  * di registrare le route — cosi\` tutti i middleware `withIdempotency` ereditano
  * il backend distribuito senza modifiche al call-site.

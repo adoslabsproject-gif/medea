@@ -339,7 +339,7 @@ export const transformNode: NodeModule = {
       'atteso dal nodo downstream, evitando di scrivere logic_run_js custom che sarebbe più verbose + meno ' +
       'auditable. ' +
       'Sandboxed enterprise execution: l\'engine JSONata è isolato via timeout di valutazione 5s (override env ' +
-      'FLOWFORGE_JSONATA_TIMEOUT_MS) + cap di profondità 500 (timeboxing ufficiale JSONata via callback ' +
+      'MEDEA_JSONATA_TIMEOUT_MS) + cap di profondità 500 (timeboxing ufficiale JSONata via callback ' +
       '__evaluate_entry/exit → kill di ricorsioni/loop non-terminanti = anti-DoS sulla CPU del container), ' +
       'pure function semantics (no side effect: JSONata non ha accesso a fetch/fs/process), output sempre ' +
       'JSON-serializable. ' +

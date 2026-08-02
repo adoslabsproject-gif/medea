@@ -17,7 +17,7 @@
  */
 
 import type { NodeCatalogEntry } from '@/services/ai-scaffold/node-catalog.js';
-import type { OutputContract } from '@flowforge/core-schema';
+import type { OutputContract } from '@medea/engine-core-schema';
 import { inferCategory, type CatalogCategory } from './category.js';
 
 export interface CatalogRecord {

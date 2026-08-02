@@ -21,7 +21,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
-import { CircuitBreaker, CircuitBreakerRegistry } from '@zeliai/shared';
+import { CircuitBreaker, CircuitBreakerRegistry } from '@medea/engine-shared';
 
 const m = vi.hoisted(() => ({
   auditAppend: vi.fn(),

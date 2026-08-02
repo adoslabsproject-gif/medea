@@ -8,7 +8,7 @@
  * campi assenti/malformati: un payload rotto produce zero eventi, mai throw.
  *
  * Il contratto dei campi è dichiarato (e testato anti-drift) nel NodeDef
- * `trigger_whatsapp` (packages/flowforge/nodes/stdlib/src/triggers/whatsapp.ts).
+ * `trigger_whatsapp` (packages/engine/nodes/stdlib/src/triggers/whatsapp.ts).
  *
  * @module routes/whatsapp-trigger/normalize
  */

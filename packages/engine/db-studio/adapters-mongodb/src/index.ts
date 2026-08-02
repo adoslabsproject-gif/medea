@@ -7,8 +7,8 @@
  */
 
 import { MongoClient, type Db, type Collection, ObjectId } from 'mongodb';
-import type { Column, Database, MigrationAction, QueryFilter, QuerySpec, Table } from '@flowforge/db-studio-core';
-import type { IDatabaseAdapter, QueryResult, ExecuteResult } from '@flowforge/db-studio-engine';
+import type { Column, Database, MigrationAction, QueryFilter, QuerySpec, Table } from '@medea/engine-db-studio-core';
+import type { IDatabaseAdapter, QueryResult, ExecuteResult } from '@medea/engine-db-studio-engine';
 
 const TYPE_TO_BSON: Record<Column['type'], string> = {
   text: 'string',

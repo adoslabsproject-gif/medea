@@ -6,7 +6,7 @@
  * tenant DBs e tiene un singolo adapter dedicato per `system`.
  */
 
-import type { IDatabaseAdapter } from '@flowforge/db-studio-engine';
+import type { IDatabaseAdapter } from '@medea/engine-db-studio-engine';
 import type { DataSourceRef, DataSourceInfo } from '@/services/janitor/domain/index.js';
 
 export interface IDataSourceResolver {

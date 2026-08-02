@@ -1,5 +1,5 @@
 /**
- * `@flowforge/nodes-stdlib-sandbox` — runtime helpers iniettati nell'isolate.
+ * `@medea/engine-nodes-stdlib-sandbox` — runtime helpers iniettati nell'isolate.
  *
  * Pattern Pipedream `
 

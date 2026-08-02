@@ -13,7 +13,7 @@
  *
  * 🚨 JSON PARSE CLEANING: strip ```json``` fence wrapper.
  *
- * 🚨 ENV RESTORE: FLOWFORGE_LIARA_* save/restore (no leak inter-test).
+ * 🚨 ENV RESTORE: MEDEA_LIARA_* save/restore (no leak inter-test).
  *
  * 🚨 finishReason: heuristic 'length' se output >=95% maxTokens senza puntegg.
  */
@@ -47,7 +47,7 @@ vi.mock('@/services/llm-resolver.service.js', () => ({
 }));
 
 const { llmCompleteExecutor, ALLOWED_PROVIDERS } = await import('./llm-complete.js');
-const { llmCompleteNode } = await import('@flowforge/nodes-stdlib');
+const { llmCompleteNode } = await import('@medea/engine-nodes-stdlib');
 
 const ctx = () => ({
   runId: 'r', workflowId: 'w', nodeId: 'n', tenantId: 't1',
@@ -65,8 +65,8 @@ beforeEach(() => {
     listener({ input: 100, output: 50, fromApi: true });
     return 'Test completion output.';
   });
-  delete process.env.FLOWFORGE_LIARA_TIMEOUT_MS;
-  delete process.env.FLOWFORGE_LIARA_MAX_TOKENS;
+  delete process.env.MEDEA_LIARA_TIMEOUT_MS;
+  delete process.env.MEDEA_LIARA_MAX_TOKENS;
 });
 
 describe('🚨 prompt validation', () => {
@@ -238,15 +238,15 @@ describe('🚨🚨 timeout/maxTokens via opts ESPLICITO — niente mutazione pro
     dispatchMock.mock.calls[callIdx]?.[9] as { maxTokens?: number; timeoutMs?: number } | undefined;
 
   it('🚨 NON muta MAI process.env (né durante né dopo, neppure su throw)', async () => {
-    process.env.FLOWFORGE_LIARA_TIMEOUT_MS = 'PRE-EXISTING';
-    process.env.FLOWFORGE_LIARA_MAX_TOKENS = 'PRE-MAX';
+    process.env.MEDEA_LIARA_TIMEOUT_MS = 'PRE-EXISTING';
+    process.env.MEDEA_LIARA_MAX_TOKENS = 'PRE-MAX';
     await llmCompleteExecutor({ prompt: 'x', timeoutMs: 30_000, maxTokens: 1024 } as never, {} as never, ctx());
-    expect(process.env.FLOWFORGE_LIARA_TIMEOUT_MS).toBe('PRE-EXISTING');
-    expect(process.env.FLOWFORGE_LIARA_MAX_TOKENS).toBe('PRE-MAX');
+    expect(process.env.MEDEA_LIARA_TIMEOUT_MS).toBe('PRE-EXISTING');
+    expect(process.env.MEDEA_LIARA_MAX_TOKENS).toBe('PRE-MAX');
     dispatchMock.mockRejectedValueOnce(new Error('LLM down'));
     await expect(llmCompleteExecutor({ prompt: 'x' } as never, {} as never, ctx())).rejects.toThrow('LLM down');
-    expect(process.env.FLOWFORGE_LIARA_TIMEOUT_MS).toBe('PRE-EXISTING');
-    expect(process.env.FLOWFORGE_LIARA_MAX_TOKENS).toBe('PRE-MAX');
+    expect(process.env.MEDEA_LIARA_TIMEOUT_MS).toBe('PRE-EXISTING');
+    expect(process.env.MEDEA_LIARA_MAX_TOKENS).toBe('PRE-MAX');
   });
 
   it('🚨 timeout/maxTokens/temperature clampati passati in opts a dispatchLLMChat', async () => {

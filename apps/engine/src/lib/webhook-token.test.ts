@@ -22,10 +22,10 @@ const WF = 'streammy_search_wf1';
 const envBackup: Record<string, string | undefined> = {};
 
 beforeEach(() => {
-  envBackup.FLOWFORGE_SSO_SECRET = process.env.FLOWFORGE_SSO_SECRET;
-  envBackup.FLOWFORGE_WEBHOOK_GRACE_SECRETS = process.env.FLOWFORGE_WEBHOOK_GRACE_SECRETS;
-  process.env.FLOWFORGE_SSO_SECRET = SECRET_A;
-  delete process.env.FLOWFORGE_WEBHOOK_GRACE_SECRETS;
+  envBackup.MEDEA_SSO_SECRET = process.env.MEDEA_SSO_SECRET;
+  envBackup.MEDEA_WEBHOOK_GRACE_SECRETS = process.env.MEDEA_WEBHOOK_GRACE_SECRETS;
+  process.env.MEDEA_SSO_SECRET = SECRET_A;
+  delete process.env.MEDEA_WEBHOOK_GRACE_SECRETS;
 });
 
 afterEach(() => {
@@ -60,7 +60,7 @@ describe('deriveWebhookTokenFromSecret', () => {
 describe('deriveDefaultWebhookToken', () => {
   it('legge il secret corrente da env a OGNI chiamata (non snapshot)', () => {
     const before = deriveDefaultWebhookToken(WF);
-    process.env.FLOWFORGE_SSO_SECRET = SECRET_B;
+    process.env.MEDEA_SSO_SECRET = SECRET_B;
     const after = deriveDefaultWebhookToken(WF);
     expect(before).toBe(deriveWebhookTokenFromSecret(SECRET_A, WF));
     expect(after).toBe(deriveWebhookTokenFromSecret(SECRET_B, WF));
@@ -68,7 +68,7 @@ describe('deriveDefaultWebhookToken', () => {
   });
 
   it('fail-closed senza env', () => {
-    delete process.env.FLOWFORGE_SSO_SECRET;
+    delete process.env.MEDEA_SSO_SECRET;
     expect(deriveDefaultWebhookToken(WF)).toBe('');
   });
 });
@@ -87,9 +87,9 @@ describe('verifyDefaultWebhookToken', () => {
 
   it('GRACE: accetta il token del secret precedente e lo SEGNALA', () => {
     const oldToken = deriveWebhookTokenFromSecret(SECRET_A, WF);
-    process.env.FLOWFORGE_SSO_SECRET = SECRET_B; // rotazione
+    process.env.MEDEA_SSO_SECRET = SECRET_B; // rotazione
     expect(verifyDefaultWebhookToken(WF, oldToken).valid).toBe(false); // senza grace → rotto
-    process.env.FLOWFORGE_WEBHOOK_GRACE_SECRETS = SECRET_A;
+    process.env.MEDEA_WEBHOOK_GRACE_SECRETS = SECRET_A;
     expect(verifyDefaultWebhookToken(WF, oldToken)).toEqual({ valid: true, viaGraceSecret: true });
     // Il token CORRENTE resta accettato senza flag grace.
     expect(verifyDefaultWebhookToken(WF, deriveWebhookTokenFromSecret(SECRET_B, WF)))
@@ -98,15 +98,15 @@ describe('verifyDefaultWebhookToken', () => {
 
   it('GRACE: lista comma-separated, entry corte scartate, spazi tollerati', () => {
     const oldToken = deriveWebhookTokenFromSecret(SECRET_A, WF);
-    process.env.FLOWFORGE_SSO_SECRET = SECRET_B;
-    process.env.FLOWFORGE_WEBHOOK_GRACE_SECRETS = `corto, ${SECRET_A} ,altro-corto`;
+    process.env.MEDEA_SSO_SECRET = SECRET_B;
+    process.env.MEDEA_WEBHOOK_GRACE_SECRETS = `corto, ${SECRET_A} ,altro-corto`;
     expect(verifyDefaultWebhookToken(WF, oldToken)).toEqual({ valid: true, viaGraceSecret: true });
     // Un token derivato da un'entry SCARTATA (corta) non deve mai passare.
     expect(verifyDefaultWebhookToken(WF, deriveWebhookTokenFromSecret('corto'.repeat(7), WF)).valid).toBe(false);
   });
 
   it('fail-closed totale: né secret né grace → nulla è valido', () => {
-    delete process.env.FLOWFORGE_SSO_SECRET;
+    delete process.env.MEDEA_SSO_SECRET;
     expect(verifyDefaultWebhookToken(WF, '').valid).toBe(false);
     expect(verifyDefaultWebhookToken(WF, 'x'.repeat(32)).valid).toBe(false);
   });

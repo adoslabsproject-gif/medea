@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import { eq, and, desc } from 'drizzle-orm';
-import { WorkflowSchema, type Workflow } from '@flowforge/core-schema';
+import { WorkflowSchema, type Workflow } from '@medea/engine-core-schema';
 import { getDatabase } from '@/storage/db.js';
 import { workflows, type WorkflowRow, type NewWorkflowRow } from '@/storage/schema.js';
 import { AuditLogService } from './audit.service.js';
@@ -501,7 +501,7 @@ export class WorkflowService {
       // Forziamo a 'silent' indipendentemente da quello che il client invia.
       const { canPersistRunTrace: canPersist } = await import('@/services/storage-quota.service.js');
       const { loadConfig } = await import('@/config.js');
-      insertValues.runVerbosity = canPersist(loadConfig().FLOWFORGE_PLAN_CODE)
+      insertValues.runVerbosity = canPersist(loadConfig().MEDEA_PLAN_CODE)
         ? input.runVerbosity
         : 'silent';
     }
@@ -576,7 +576,7 @@ export class WorkflowService {
       const { canPersistRunTrace: canPersist } = await import('@/services/storage-quota.service.js');
       const { loadConfig } = await import('@/config.js');
       const requested = input.runVerbosity;
-      patch.runVerbosity = canPersist(loadConfig().FLOWFORGE_PLAN_CODE)
+      patch.runVerbosity = canPersist(loadConfig().MEDEA_PLAN_CODE)
         ? requested
         : 'silent';
     }

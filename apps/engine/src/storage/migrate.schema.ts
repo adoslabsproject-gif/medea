@@ -418,7 +418,7 @@ CREATE INDEX IF NOT EXISTS ai_workflow_templates_shared_idx ON ai_workflow_templ
 
 CREATE TABLE IF NOT EXISTS custom_nodes (
   id TEXT PRIMARY KEY,                            -- UUID v4
-  workspace_id TEXT NOT NULL,                     -- FLOWFORGE_TENANT_ID (denormalized for analytics)
+  workspace_id TEXT NOT NULL,                     -- MEDEA_TENANT_ID (denormalized for analytics)
   owner_user_id TEXT NOT NULL,                    -- chi ha creato
   slug TEXT NOT NULL,                             -- es. "my-stripe-webhook" (unique per tenant)
   display_name TEXT NOT NULL,                     -- es. "My Stripe Webhook"

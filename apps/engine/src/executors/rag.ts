@@ -8,7 +8,7 @@
  * rag_search: embed query → KNN sullo store del tenant → top-k chunk al modello.
  * rag_ingest: embed contenuto → upsert nello store del tenant.
  */
-import type { NodeExecutor, NodeExecutionResult } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor, NodeExecutionResult } from '@medea/engine-nodes-stdlib';
 import { VectorService } from '@/services/vector.service.js';
 import { embedText, type EmbeddingProvider } from '@/services/embeddings.service.js';
 import { ingestText, vectorPlanLimitsFromConfig, type VectorDistance } from '@/services/vector-ingest.js';

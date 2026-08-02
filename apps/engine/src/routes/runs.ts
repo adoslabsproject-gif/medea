@@ -36,7 +36,7 @@ export function createRunRoutes(eventBus: IEventBus): Hono {
     // disabilitati senza pagare la quota slot).
     //
     // Il middleware auth (middleware/auth.ts:101) setta auth.userId='internal'
-    // ESCLUSIVAMENTE dopo timing-safe match del FLOWFORGE_INTERNAL_TOKEN. Quindi
+    // ESCLUSIVAMENTE dopo timing-safe match del MEDEA_INTERNAL_TOKEN. Quindi
     // questo è il segnale fidato sicuro per accettare il depth header.
     const auth = c.get('auth') as { userId?: string; role?: string } | null;
     const isInternalCaller = auth?.userId === 'internal';

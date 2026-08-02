@@ -19,7 +19,7 @@
  * @module services/db-agent/tools/views
  */
 import { z } from 'zod';
-import { classifyStatement, assertSafeRawStatement, assertSingleStatement } from '@flowforge/db-studio-engine';
+import { classifyStatement, assertSafeRawStatement, assertSingleStatement } from '@medea/engine-db-studio-engine';
 import type { DbAgentToolDef } from '../tool-types.js';
 import { loadOwnedDatabase } from '../guard.js';
 import { ConfirmationRequiredError, ToolValidationError } from '../errors.js';

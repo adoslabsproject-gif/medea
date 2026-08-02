@@ -8,13 +8,13 @@
 import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 import Database from 'better-sqlite3';
 import { Hono } from 'hono';
-import type { Table } from '@flowforge/db-studio-core';
+import type { Table } from '@medea/engine-db-studio-core';
 import type { LlmTurn, LlmTurnResult } from '@/services/db-agent/index.js';
 
 const m = vi.hoisted(() => {
   const mockFns = {
     db: null as Database.Database | null,
-    configValue: { FLOWFORGE_DATA_DIR: '/tmp/ff-db-agent-route-test' },
+    configValue: { MEDEA_DATA_DIR: '/tmp/ff-db-agent-route-test' },
     connect: vi.fn(), applyMigration: vi.fn(), query: vi.fn(), insert: vi.fn(), introspect: vi.fn(),
   };
   class FakeAdapter {
@@ -33,13 +33,13 @@ const m = vi.hoisted(() => {
 vi.mock('@/storage/db.js', () => ({ getDatabase: () => ({ sqlite: m.db! }) }));
 vi.mock('@/lib/logger.js');
 vi.mock('@/config.js', () => ({ loadConfig: () => m.configValue, liaraBaseUrl: () => 'http://liara.local', isLiaraEnabled: () => true }));
-vi.mock('@flowforge/db-studio-engine', () => ({ SqliteAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-postgres', () => ({ PostgresAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-mysql', () => ({ MysqlAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-mongodb', () => ({ MongoDbAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-redis', () => ({ RedisAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-mssql', () => ({ MssqlAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-duckdb', () => ({ DuckDbAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-engine', () => ({ SqliteAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-postgres', () => ({ PostgresAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-mysql', () => ({ MysqlAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-mongodb', () => ({ MongoDbAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-redis', () => ({ RedisAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-mssql', () => ({ MssqlAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-duckdb', () => ({ DuckDbAdapter: m.FakeAdapter }));
 
 // Resolver mockato: ci permette di pilotare il provider risolto per il tenant e
 // verificare il ROUTING reale (resolver → provider-registry → adapter → fetch),
@@ -253,8 +253,8 @@ describe('POST /db-agent/chat — routing provider (provider-registry SSOT)', ()
 
   it('🚨 liara → gateway portal + LICENSE KEY come Bearer (il gateway la ESIGE; apiKey tenant vuota)', async () => {
     const dbA = makeDb(TENANT_A, 'app');
-    const prev = process.env.FLOWFORGE_LICENSE_KEY;
-    process.env.FLOWFORGE_LICENSE_KEY = 'LIC-xyz';
+    const prev = process.env.MEDEA_LICENSE_KEY;
+    process.env.MEDEA_LICENSE_KEY = 'LIC-xyz';
     try {
       resolveMock.mockReturnValue({ provider: 'liara', apiKey: '', model: '' });
       finalOnce();
@@ -263,7 +263,7 @@ describe('POST /db-agent/chat — routing provider (provider-registry SSOT)', ()
       expect(call.url).toBe('http://liara.local/chat/completions');
       expect(call.headers.Authorization).toBe('Bearer LIC-xyz'); // non più assente: era il bug del 400
     } finally {
-      if (prev === undefined) delete process.env.FLOWFORGE_LICENSE_KEY; else process.env.FLOWFORGE_LICENSE_KEY = prev;
+      if (prev === undefined) delete process.env.MEDEA_LICENSE_KEY; else process.env.MEDEA_LICENSE_KEY = prev;
     }
   });
 

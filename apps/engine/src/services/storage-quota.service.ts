@@ -77,7 +77,7 @@ export function computeQuotas(planCode: string, diskGb: number): PlanQuotas {
  */
 export function getCurrentQuotas(): PlanQuotas {
   const cfg = loadConfig();
-  return computeQuotas(cfg.FLOWFORGE_PLAN_CODE, cfg.FLOWFORGE_PLAN_DISK_GB);
+  return computeQuotas(cfg.MEDEA_PLAN_CODE, cfg.MEDEA_PLAN_DISK_GB);
 }
 
 /**

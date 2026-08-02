@@ -3,10 +3,10 @@
  * sdi-adel/index.ts (che copre l'invio): estrazione dalla busta firmata
  * `.p7m` e parsing FatturaPA → JSON strutturato.
  *
- * Executor server-side in apps/flowforge-runtime/src/executors/sdi/
+ * Executor server-side in apps/engine/src/executors/sdi/
  * (p7m-extract.ts, fatturapa-parse.ts) — registrati nel registry runtime.
  */
-import type { NodeModule } from '@flowforge/nodes-stdlib';
+import type { NodeModule } from '@medea/engine-nodes-stdlib';
 
 export const p7mExtract: NodeModule = {
   def: {

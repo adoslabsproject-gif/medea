@@ -8,8 +8,8 @@ import {
   RelationSchema,
   MigrationActionSchema,
   QuerySpecSchema,
-} from '@flowforge/db-studio-core';
-import { classifyStatement } from '@flowforge/db-studio-engine';
+} from '@medea/engine-db-studio-core';
+import { classifyStatement } from '@medea/engine-db-studio-engine';
 import { DbStudioService, redactConnectionSecrets } from '@/services/db-studio.service.js';
 import { VectorService } from '@/services/vector.service.js';
 import { embedText, dimensionsForModel } from '@/services/embeddings.service.js';

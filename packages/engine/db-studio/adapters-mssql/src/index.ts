@@ -1,8 +1,8 @@
 import sql, { type ConnectionPool, type IResult } from 'mssql';
-import type { Column, Database, MigrationAction, QueryFilter, QuerySpec, Table, Relation } from '@flowforge/db-studio-core';
-import { renderCreateViewSql, renderDropViewSql, fkRowsToRelations } from '@flowforge/db-studio-core';
-import type { IDatabaseAdapter, QueryResult, ExecuteResult, RawQueryOptions, RawQueryResult, BatchOp, BatchResult } from '@flowforge/db-studio-engine';
-import { classifyStatement, splitStatements } from '@flowforge/db-studio-engine';
+import type { Column, Database, MigrationAction, QueryFilter, QuerySpec, Table, Relation } from '@medea/engine-db-studio-core';
+import { renderCreateViewSql, renderDropViewSql, fkRowsToRelations } from '@medea/engine-db-studio-core';
+import type { IDatabaseAdapter, QueryResult, ExecuteResult, RawQueryOptions, RawQueryResult, BatchOp, BatchResult } from '@medea/engine-db-studio-engine';
+import { classifyStatement, splitStatements } from '@medea/engine-db-studio-engine';
 
 const TYPE_TO_TSQL: Record<Column['type'], string> = {
   text: 'NVARCHAR(MAX)',

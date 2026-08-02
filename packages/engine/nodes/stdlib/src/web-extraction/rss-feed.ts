@@ -10,7 +10,7 @@
  * Parse pure XML (RSS 2.0 + Atom 1.0) senza dipendenze pesanti.
  */
 
-import { safeFetchWithRedirects } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects } from '@medea/engine-safe-fetch';
 import { load as cheerioLoad } from 'cheerio';
 import type { NodeModule, NodeExecutor } from '../types.js';
 

@@ -29,7 +29,7 @@
  *   (cui ovviamente sono solo i branch parallel completed prima del merge).
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 
 interface BranchOutput {
   nodeId: string;

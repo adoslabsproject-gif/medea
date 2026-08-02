@@ -11,7 +11,7 @@
  * stage che produce HTML estraibile.
  */
 
-import { safeFetchWithRedirects } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects } from '@medea/engine-safe-fetch';
 import { detectThinHtml, detectAntiBot, detectVisuallyOnly } from './heuristics.js';
 
 export type PipelineStage = 'fetch_simple' | 'browser_render' | 'browser_stealth' | 'vision_extract';

@@ -26,8 +26,8 @@
  */
 
 import { coerceString } from '@/lib/coerce.js';
-import type { CanvasNode, Edge, Workflow, RunStep } from '@flowforge/core-schema';
-import type { NodeModule } from '@flowforge/nodes-stdlib';
+import type { CanvasNode, Edge, Workflow, RunStep } from '@medea/engine-core-schema';
+import type { NodeModule } from '@medea/engine-nodes-stdlib';
 import { evaluateExpression, interpolateConfig, InterpreterError, type LoopContext } from './interpreter.js';
 import type { NodeLineageArgs } from './item-model.js';
 import { logger } from '@/lib/logger.js';

@@ -3,7 +3,7 @@
  * (authMode `none`), UNICA fonte di verità.
  *
  * Il token NON è persistito da nessuna parte: è DERIVATO dal secret corrente
- * del container via HMAC-SHA256(FLOWFORGE_SSO_SECRET, "webhook:<workflowId>").
+ * del container via HMAC-SHA256(MEDEA_SSO_SECRET, "webhook:<workflowId>").
  * Questo è il motivo per cui un link che CABLA il token si rompe quando il
  * secret ruota (migrazione legacy→derived, rotazione master del portal,
  * disaster recovery): il fix sistemico è l'indirection `ref://` (vedi
@@ -11,7 +11,7 @@
  * token, e il resolver lo ricalcola a ogni run dal secret CORRENTE.
  *
  * GRACE PERIOD (rotazione senza downtime): durante una rotazione del secret,
- * l'operatore può settare `FLOWFORGE_WEBHOOK_GRACE_SECRETS` (comma-separated,
+ * l'operatore può settare `MEDEA_WEBHOOK_GRACE_SECRETS` (comma-separated,
  * ognuno ≥32 char) con i secret PRECEDENTI. `verifyDefaultWebhookToken`
  * accetta anche i token derivati da questi secret e segnala `viaGraceSecret`
  * al chiamante, che DEVE loggarlo: la finestra è temporanea e osservabile,
@@ -24,7 +24,7 @@
 
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-/** Lunghezza minima accettata per un secret (allineata a config.FLOWFORGE_SSO_SECRET). */
+/** Lunghezza minima accettata per un secret (allineata a config.MEDEA_SSO_SECRET). */
 const MIN_SECRET_LENGTH = 32;
 
 /** Confronto constant-time (primitiva nativa; length pubblica per token/HMAC). */
@@ -47,11 +47,11 @@ export function deriveWebhookTokenFromSecret(secret: string, workflowId: string)
 
 /**
  * Deriva il token webhook di default dal secret CORRENTE del container.
- * Senza FLOWFORGE_SSO_SECRET (caso impossibile in prod), torna stringa
+ * Senza MEDEA_SSO_SECRET (caso impossibile in prod), torna stringa
  * vuota → authorize fail.
  */
 export function deriveDefaultWebhookToken(workflowId: string): string {
-  return deriveWebhookTokenFromSecret(process.env.FLOWFORGE_SSO_SECRET ?? '', workflowId);
+  return deriveWebhookTokenFromSecret(process.env.MEDEA_SSO_SECRET ?? '', workflowId);
 }
 
 /**
@@ -60,7 +60,7 @@ export function deriveDefaultWebhookToken(workflowId: string): string {
  * MIN_SECRET_LENGTH sono scartate: un secret corto non è mai stato valido.
  */
 function graceSecrets(): string[] {
-  const raw = process.env.FLOWFORGE_WEBHOOK_GRACE_SECRETS ?? '';
+  const raw = process.env.MEDEA_WEBHOOK_GRACE_SECRETS ?? '';
   return raw
     .split(',')
     .map((s) => s.trim())

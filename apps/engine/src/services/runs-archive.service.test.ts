@@ -34,8 +34,8 @@ let tmpDir: string;
 let ssoSecret: string | undefined = 'hmac-test-secret-key-at-least-32-characters-long';
 vi.mock('@/config.js', () => ({
   loadConfig: () => ({
-    FLOWFORGE_DATA_DIR: tmpDir,
-    FLOWFORGE_SSO_SECRET: ssoSecret,
+    MEDEA_DATA_DIR: tmpDir,
+    MEDEA_SSO_SECRET: ssoSecret,
   }),
 }));
 
@@ -163,11 +163,11 @@ describe('🚨 archiveHmacKey — fail-fast (mai firma con chiave nota)', () => 
     ssoSecret = 'hmac-test-secret-key-at-least-32-characters-long';
   });
 
-  it('🚨 production + FLOWFORGE_SSO_SECRET assente → THROW (no fallback hard-coded)', async () => {
+  it('🚨 production + MEDEA_SSO_SECRET assente → THROW (no fallback hard-coded)', async () => {
     process.env.NODE_ENV = 'production';
     ssoSecret = undefined;
     seedOld('wf-nosecret');
-    await expect(archiveOldRuns('wf-nosecret', 30)).rejects.toThrow(/FLOWFORGE_SSO_SECRET OBBLIGATORIO/);
+    await expect(archiveOldRuns('wf-nosecret', 30)).rejects.toThrow(/MEDEA_SSO_SECRET OBBLIGATORIO/);
     // Nessun archivio scritto: il throw avviene PRIMA del write
     expect(listArchives('wf-nosecret')).toEqual([]);
   });

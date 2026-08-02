@@ -234,8 +234,8 @@ describe('loadCustomNodeForRun', () => {
 });
 
 describe('🚨 loadCustomNodeForRun — verifica integrità registry (cold-load)', () => {
-  beforeEach(() => { process.env.FLOWFORGE_REGISTRY_SECRET = REGISTRY_SECRET; });
-  afterEach(() => { delete process.env.FLOWFORGE_REGISTRY_SECRET; });
+  beforeEach(() => { process.env.MEDEA_REGISTRY_SECRET = REGISTRY_SECRET; });
+  afterEach(() => { delete process.env.MEDEA_REGISTRY_SECRET; });
 
   it('integrità valida → nodo caricato', () => {
     insertNodeWithIntegrity({
@@ -307,14 +307,14 @@ describe('🚨 loadCustomNodeForRun — verifica integrità registry (cold-load)
       definition: 'export const definition = {};',
       schema: 'export const schema = {};',
     });
-    const savedInternal = process.env.FLOWFORGE_INTERNAL_TOKEN;
-    delete process.env.FLOWFORGE_REGISTRY_SECRET;
-    delete process.env.FLOWFORGE_INTERNAL_TOKEN;
+    const savedInternal = process.env.MEDEA_INTERNAL_TOKEN;
+    delete process.env.MEDEA_REGISTRY_SECRET;
+    delete process.env.MEDEA_INTERNAL_TOKEN;
     try {
       expect(loadCustomNodeForRun('custom_nosecret', 'ws-A')).toBeNull();
     } finally {
-      process.env.FLOWFORGE_REGISTRY_SECRET = REGISTRY_SECRET;
-      if (savedInternal !== undefined) process.env.FLOWFORGE_INTERNAL_TOKEN = savedInternal;
+      process.env.MEDEA_REGISTRY_SECRET = REGISTRY_SECRET;
+      if (savedInternal !== undefined) process.env.MEDEA_INTERNAL_TOKEN = savedInternal;
     }
   });
 });

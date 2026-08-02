@@ -22,7 +22,7 @@
  * Output: packages/shared/src/bot-ipranges-generated.ts (auto-generated)
  *
  * Schedule: systemd timer 1x/24h alle 03:00 UTC (zeliai-bot-ipranges.timer).
- * Manual run: pnpm --filter @zeliai/shared sync:bot-ipranges
+ * Manual run: pnpm --filter @medea/engine-shared sync:bot-ipranges
  */
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -159,7 +159,7 @@ async function main() {
  * Sources:
 ${SOURCES.map((s) => ` *   - ${s.vendor}: ${s.url}`).join('\n')}
  *
- * Re-run: \`pnpm --filter @zeliai/shared sync:bot-ipranges\`
+ * Re-run: \`pnpm --filter @medea/engine-shared sync:bot-ipranges\`
  * Auto schedule: systemd timer zeliai-bot-ipranges.timer (3:00 UTC daily).
  *
  * Telegram alert su sync failure: TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID env.

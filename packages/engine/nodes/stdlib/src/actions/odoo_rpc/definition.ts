@@ -4,7 +4,7 @@
  * @module actions/odoo_rpc/definition
  */
 
-import type { NodeDef } from '@flowforge/core-schema';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 export const odooRpcNodeDef: NodeDef = {
   id: 'action_odoo_rpc',

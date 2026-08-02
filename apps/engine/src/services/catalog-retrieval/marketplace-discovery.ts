@@ -2,7 +2,7 @@
  * Client DISCOVERY marketplace — il runtime chiede al portal i nodi del
  * marketplace pertinenti a una richiesta, per farli SUGGERIRE da Liara.
  *
- * S2S verso il portal (FLOWFORGE_PORTAL_URL + x-internal-token, stesso
+ * S2S verso il portal (MEDEA_PORTAL_URL + x-internal-token, stesso
  * meccanismo di runtime-metrics/template-cache). Fail-soft TOTALE: timeout,
  * circuit breaker, qualunque errore → [] (la chat non deve MAI rompersi per
  * colpa del discovery; un marketplace giù non blocca Liara). Liara propone, non
@@ -11,7 +11,7 @@
  * @module services/catalog-retrieval/marketplace-discovery
  */
 
-import { CircuitBreaker } from '@zeliai/shared';
+import { CircuitBreaker } from '@medea/engine-shared';
 import { readJsonCapped } from '@/lib/capped-response.js';
 import { loadConfig } from '@/config.js';
 import { getOutboundPortalToken } from '@/lib/internal-token.js';
@@ -46,7 +46,7 @@ const breaker = new CircuitBreaker<MarketplaceSuggestion[]>('marketplace-discove
 export async function searchMarketplace(query: string, limit = 6): Promise<MarketplaceSuggestion[]> {
   const token = getOutboundPortalToken();
   if (!token || query.trim().length < 2) return [];
-  const url = `${loadConfig().FLOWFORGE_PORTAL_URL.replace(/\/$/, '')}/api/v1/internal/marketplace/search`;
+  const url = `${loadConfig().MEDEA_PORTAL_URL.replace(/\/$/, '')}/api/v1/internal/marketplace/search`;
   try {
     return await breaker.execute(async () => {
       const res = await fetch(url, {

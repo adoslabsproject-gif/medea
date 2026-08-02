@@ -1,7 +1,7 @@
 /**
  * BullMQ-backed queue mode for distributed execution.
  *
- * Activated by env FLOWFORGE_QUEUE_MODE=redis. When inactive, the
+ * Activated by env MEDEA_QUEUE_MODE=redis. When inactive, the
  * RunService executes inline (default single-process mode).
  *
  * Architecture (WIRED end-to-end):
@@ -16,7 +16,7 @@
  * scope HTTP. La queue mode riguarda il path async `POST /workflows/:id/run`.
  *
  * Both processes share the same SQLite DB (or Postgres if configured).
- * Concurrency = env FLOWFORGE_QUEUE_CONCURRENCY (default 5).
+ * Concurrency = env MEDEA_QUEUE_CONCURRENCY (default 5).
  */
 
 import { Queue, Worker, type ConnectionOptions } from 'bullmq';
@@ -52,12 +52,12 @@ let connection: IORedis | null = null;
 let queue: Queue | null = null;
 
 export function isQueueModeEnabled(): boolean {
-  return (process.env.FLOWFORGE_QUEUE_MODE ?? '').toLowerCase() === 'redis';
+  return (process.env.MEDEA_QUEUE_MODE ?? '').toLowerCase() === 'redis';
 }
 
 export function getQueueConnection(): IORedis {
   if (connection) return connection;
-  const url = process.env.FLOWFORGE_REDIS_URL ?? 'redis://localhost:6379';
+  const url = process.env.MEDEA_REDIS_URL ?? 'redis://localhost:6379';
   connection = new IORedis(url, {
     maxRetriesPerRequest: null,
   });
@@ -88,7 +88,7 @@ export async function enqueueRun(data: RunJobData): Promise<string> {
 }
 
 export function startWorker(handler: (data: RunJobData) => Promise<unknown>): Worker {
-  const concurrency = Number(process.env.FLOWFORGE_QUEUE_CONCURRENCY ?? '5');
+  const concurrency = Number(process.env.MEDEA_QUEUE_CONCURRENCY ?? '5');
   const worker = new Worker(
     QUEUE_NAME,
     async (job) => {

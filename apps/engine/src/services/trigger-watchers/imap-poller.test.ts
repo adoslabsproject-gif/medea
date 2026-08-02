@@ -30,7 +30,7 @@ import {
 } from './imap-poller.js';
 import type { simpleParser } from 'mailparser';
 import type { TriggerRunInput, TriggerRunResult } from './run-dispatcher.js';
-import type { CanvasNode, Workflow } from '@flowforge/core-schema';
+import type { CanvasNode, Workflow } from '@medea/engine-core-schema';
 
 afterEach(() => { vi.restoreAllMocks(); });
 

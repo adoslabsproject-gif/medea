@@ -14,7 +14,7 @@
  */
 
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor, NodeExecutionResult } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor, NodeExecutionResult } from '@medea/engine-nodes-stdlib';
 import { getDatabase, type SqliteCompatProxy } from '@/storage/db.js';
 
 let _schemaReady = false;

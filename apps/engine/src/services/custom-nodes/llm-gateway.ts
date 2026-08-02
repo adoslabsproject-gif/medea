@@ -2,7 +2,7 @@
  * LLM gateway helper — UNICO punto di routing verso il gateway portal per i
  * servizi custom-node (ai-assist, ai-inline).
  *
- * ⛔ I container tenant raggiungono SOLO il gateway portal (FLOWFORGE_LIARA_BASE_URL
+ * ⛔ I container tenant raggiungono SOLO il gateway portal (MEDEA_LIARA_BASE_URL
  * = http://<bridge>:3006/api/v1/llm), MAI `liara:3003` (liara è PM2 sull'host,
  * fuori dalla rete Docker del tenant). Fetch RAW (NON safeOutboundFetch: il
  * gateway è un IP privato trusted da env → niente SSRF; safeOutboundFetch lo
@@ -42,7 +42,7 @@ export interface GatewayChatResult {
 
 /** Risolve la base del gateway portal (mai liara:3003 in prod). */
 export function gatewayBaseUrl(env: NodeJS.ProcessEnv = process.env): string {
-  return env.FLOWFORGE_LIARA_BASE_URL ?? env.LLM_API_BASE ?? 'http://liara:3003';
+  return env.MEDEA_LIARA_BASE_URL ?? env.LLM_API_BASE ?? 'http://liara:3003';
 }
 
 /**
@@ -52,7 +52,7 @@ export function gatewayBaseUrl(env: NodeJS.ProcessEnv = process.env): string {
  */
 export async function gatewayChatCompletions(req: GatewayChatRequest): Promise<GatewayChatResult> {
   const base = gatewayBaseUrl();
-  const licenseKey = process.env.FLOWFORGE_LICENSE_KEY ?? process.env.LLM_API_KEY ?? '';
+  const licenseKey = process.env.MEDEA_LICENSE_KEY ?? process.env.LLM_API_KEY ?? '';
 
   const body: Record<string, unknown> = {
     messages: req.messages,

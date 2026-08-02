@@ -1,9 +1,9 @@
 /**
  * Wiring test — il barrel runtime `./rag-guard.js` deve esporre l'implementazione
- * REALE del pacchetto condiviso @flowforge/rag-guard (non un mock, non un re-export
+ * REALE del pacchetto condiviso @medea/engine-rag-guard (non un mock, non un re-export
  * rotto). La suite bug-bounty completa (pattern IT/EN, anti-evasione, anti-breakout,
  * frameRagResults, anti-drift rinforzo) vive in
- * `packages/flowforge/rag-guard/src/guard.test.ts`. Qui verifichiamo solo che il
+ * `packages/engine/rag-guard/src/guard.test.ts`. Qui verifichiamo solo che il
  * runtime risolva il guard giusto, così un import rotto/regredito si becca subito.
  */
 import { describe, it, expect } from 'vitest';

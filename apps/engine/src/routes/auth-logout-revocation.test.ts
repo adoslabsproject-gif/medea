@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
 import Database from 'better-sqlite3';
-import { generateSessionKeyPair, issueSessionToken, verifySessionToken, type KeyMaterial } from '@flowforge/auth-local';
+import { generateSessionKeyPair, issueSessionToken, verifySessionToken, type KeyMaterial } from '@medea/engine-auth-local';
 
 let db: Database.Database;
 let keys: KeyMaterial;

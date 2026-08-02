@@ -1,13 +1,13 @@
 import { z } from 'zod';
-import { NodeDefSchema, type NodeDef } from '@flowforge/core-schema';
-import type { NodeModule, NodeExecutor } from '@flowforge/nodes-stdlib';
+import { NodeDefSchema, type NodeDef } from '@medea/engine-core-schema';
+import type { NodeModule, NodeExecutor } from '@medea/engine-nodes-stdlib';
 
 /**
- * @flowforge/nodes-sdk — public SDK for building community connectors.
+ * @medea/engine-nodes-sdk — public SDK for building community connectors.
  *
  * Typical usage (in a community connector package):
  *
- *   import { defineNode } from '@flowforge/nodes-sdk';
+ *   import { defineNode } from '@medea/engine-nodes-sdk';
  *
  *   export default defineNode({
  *     id: 'action_my_custom',

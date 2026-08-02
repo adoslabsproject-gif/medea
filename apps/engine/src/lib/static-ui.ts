@@ -6,7 +6,7 @@
  * for any non-API path so the same port hosts both the API and the UI.
  *
  * Asset resolution priority:
- *   1. FLOWFORGE_UI_DIR env var (absolute path)
+ *   1. MEDEA_UI_DIR env var (absolute path)
  *   2. ../../editor/dist relative to the running script
  *   3. ./ui relative to the binary executable
  *
@@ -43,13 +43,13 @@ const MIME: Record<string, string> = {
 };
 
 function resolveUiDir(): string | null {
-  if (process.env.FLOWFORGE_UI_DIR && existsSync(process.env.FLOWFORGE_UI_DIR)) {
-    return process.env.FLOWFORGE_UI_DIR;
+  if (process.env.MEDEA_UI_DIR && existsSync(process.env.MEDEA_UI_DIR)) {
+    return process.env.MEDEA_UI_DIR;
   }
   const candidates: string[] = [];
   try {
     const here = dirname(fileURLToPath(import.meta.url));
-    // Monorepo layout: dist di runtime e` `apps/flowforge-runtime/dist`,
+    // Monorepo layout: dist di runtime e` `apps/engine/dist`,
     // editor e` `apps/flowforge-editor/dist`. Risolviamo entrambi i naming.
     candidates.push(resolve(here, '../../../flowforge-editor/dist'));
     candidates.push(resolve(here, '../../../editor/dist'));
@@ -129,7 +129,7 @@ function serveFile(c: Context, absPath: string): Response {
 export function attachStaticUi(app: Hono): void {
   const uiDir = resolveUiDir();
   if (!uiDir) {
-    logger.warn('Static UI directory not found — runtime will only serve the API. Set FLOWFORGE_UI_DIR or place dist/ next to the binary.');
+    logger.warn('Static UI directory not found — runtime will only serve the API. Set MEDEA_UI_DIR or place dist/ next to the binary.');
     return;
   }
   logger.info({ uiDir }, 'Serving bundled UI');
@@ -150,7 +150,7 @@ export function attachStaticUi(app: Hono): void {
    * Serve index.html SENZA inline script — necessario per una CSP strict
    * `script-src 'self'` (no 'unsafe-inline', no hash dinamici).
    *
-   * Prima injecttavamo `<script>window.__FLOWFORGE_API_URL__ = location.origin + '/api/v1'</script>`
+   * Prima injecttavamo `<script>window.__MEDEA_API_URL__ = location.origin + '/api/v1'</script>`
    * ma il client (apps/editor/src/lib/api.ts) ha già il fallback equivalente
    * `${window.location.origin}/api/v1` come ultima priorità — l'inject era
    * ridondante. Rimuovendolo, l'HTML servito è 100% statico → CSP strict

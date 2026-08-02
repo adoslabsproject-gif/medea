@@ -25,7 +25,7 @@ import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 // Test in INLINE mode (no worker spawn) per determinismo + accesso ai mock
 // di safeFetch. Il worker_thread carica un VM separato che NON vede i mock vi.
 beforeAll(() => {
-  process.env.FLOWFORGE_SANDBOX_DISABLE_WORKER = 'true';
+  process.env.MEDEA_SANDBOX_DISABLE_WORKER = 'true';
 });
 
 const m = vi.hoisted(() => ({

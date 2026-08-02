@@ -10,8 +10,8 @@
  * principale → reader/writer multipli sicuri sullo stesso file.
  */
 
-import { SqliteAdapter, type IDatabaseAdapter } from '@flowforge/db-studio-engine';
-import type { Database } from '@flowforge/db-studio-core';
+import { SqliteAdapter, type IDatabaseAdapter } from '@medea/engine-db-studio-engine';
+import type { Database } from '@medea/engine-db-studio-core';
 import { join } from 'node:path';
 import type { DbStudioService } from '@/services/db-studio.service.js';
 import { loadConfig } from '@/config.js';
@@ -82,7 +82,7 @@ export class DataSourceResolverAdapter implements IDataSourceResolver {
   private async resolveSystem(): Promise<IDatabaseAdapter> {
     if (this.systemAdapter) return this.systemAdapter;
     const config = loadConfig();
-    const dbPath = join(config.FLOWFORGE_DATA_DIR, 'flowforge.db');
+    const dbPath = join(config.MEDEA_DATA_DIR, 'flowforge.db');
     const adapter = new SqliteAdapter();
     const systemDb: Database = {
       id: 'flowforge_system',

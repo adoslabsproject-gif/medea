@@ -13,7 +13,7 @@
  * token → cleanup lazy: una volta che il token sarebbe comunque scaduto, la
  * riga non serve più e viene rimossa (la tabella resta piccola e auto-potante).
  */
-import type { SessionTokenPayload } from '@flowforge/auth-local';
+import type { SessionTokenPayload } from '@medea/engine-auth-local';
 import { getDatabase } from '@/storage/db.js';
 import { recordFailOpen } from '@/lib/fail-open-metrics.js';
 

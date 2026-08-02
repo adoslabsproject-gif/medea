@@ -12,7 +12,7 @@
  *   ODOO_E2E=1 \
  *   ODOO_BASE_URL=https://odoo.example.com \
  *   ODOO_DB=mydb ODOO_LOGIN=admin ODOO_PASSWORD=*** \
- *   pnpm --filter @flowforge/nodes-stdlib test -- odoo_create_lead/e2e
+ *   pnpm --filter @medea/engine-nodes-stdlib test -- odoo_create_lead/e2e
  *
  * Senza le env l'INTERO blocco è SKIPPATO (`describe.skipIf`) — la CI base
  * non richiede alcun Odoo. Nessun green fittizio: se le env mancano, i test

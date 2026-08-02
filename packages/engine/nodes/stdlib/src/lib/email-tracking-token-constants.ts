@@ -2,7 +2,7 @@
  * Constants browser-safe per la suite tracking — separati dal lib token
  * principale, che importa `node:crypto` top-level (server-only).
  *
- * Esposti dal barrel root (`@flowforge/nodes-stdlib`) cosi\` l'editor SPA
+ * Esposti dal barrel root (`@medea/engine-nodes-stdlib`) cosi\` l'editor SPA
  * puo\` usarli senza pullare il modulo crypto.
  *
  * @module lib/email-tracking-token-constants

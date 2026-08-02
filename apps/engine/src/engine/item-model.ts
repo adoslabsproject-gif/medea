@@ -1,7 +1,7 @@
 /**
  * Paired-item lineage resolver — parte ENGINE-INTERNA del data-model
  * array-of-items (GAP #2). I TIPI canonici (`ExecutionItem`, `PairedItemRef`) e
- * gli helper puri (`normalizeToItems`, `lineage`) vivono in `@flowforge/core-schema`
+ * gli helper puri (`normalizeToItems`, `lineage`) vivono in `@medea/engine-core-schema`
  * perché sono il contratto condiviso engine↔executor (port&adapter). Qui sta solo
  * ciò che richiede la conoscenza dell'INTERA run: il grafo degli output per nodo e
  * l'algoritmo di risoluzione che cammina a ritroso la catena dei pairedItem.
@@ -18,10 +18,10 @@ import {
   toExecutionItem,
   type ExecutionItem,
   type PairedItemRef,
-} from '@flowforge/core-schema';
+} from '@medea/engine-core-schema';
 
-export type { ExecutionItem, PairedItemRef } from '@flowforge/core-schema';
-export { normalizeToItems, lineage } from '@flowforge/core-schema';
+export type { ExecutionItem, PairedItemRef } from '@medea/engine-core-schema';
+export { normalizeToItems, lineage } from '@medea/engine-core-schema';
 
 /** Output items per nodo della run corrente: `nodeId → ExecutionItem[]`. */
 export type RunItemGraph = Map<string, ExecutionItem[]>;

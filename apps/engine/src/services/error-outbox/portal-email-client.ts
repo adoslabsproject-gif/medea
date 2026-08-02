@@ -9,7 +9,7 @@
  * Trust boundary: usa `internalAwareFetch` scope:'portal' (il portal è su host privato
  * host.docker.internal → il SSRF guard lo bloccherebbe; lo scope concede il bypass SOLO
  * verso l'origin del portal) + `getOutboundPortalToken` (il portal valida col SUO
- * FLOWFORGE_INTERNAL_TOKEN; usiamo PORTAL_CALLBACK_TOKEN propagato in onboarding).
+ * MEDEA_INTERNAL_TOKEN; usiamo PORTAL_CALLBACK_TOKEN propagato in onboarding).
  */
 
 import { internalAwareFetch } from '@/lib/internal-service-fetch.js';

@@ -7,7 +7,7 @@
  * Il prefisso `/api/v1/internal/` è in PUBLIC_PREFIXES (bypassa authMiddleware),
  * quindi il gate interno è l'UNICA barriera → fail-closed.
  *
- * Tutto è tenant-scoped sul tenant del container (config.FLOWFORGE_TENANT_ID,
+ * Tutto è tenant-scoped sul tenant del container (config.MEDEA_TENANT_ID,
  * dentro il service) — nessun parametro tenant accettato dall'esterno.
  *
  * @module routes/private-generations

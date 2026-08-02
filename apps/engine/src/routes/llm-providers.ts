@@ -19,7 +19,7 @@ import { TenantAiPreferencesService } from '@/services/tenant-ai-preferences.ser
 import { requireRole } from '@/middleware/rbac.js';
 import { logger } from '@/lib/logger.js';
 import { isLiaraEnabled } from '@/config.js';
-import { validateUrlForFetch } from '@flowforge/safe-fetch';
+import { validateUrlForFetch } from '@medea/engine-safe-fetch';
 
 const UpsertSchema = z.object({
   apiKey: z.string().max(2000).optional().default(''),

@@ -5,7 +5,7 @@ export default defineConfig({
   schema: './src/storage/schema.ts',
   out: './drizzle',
   dbCredentials: {
-    url: process.env.FLOWFORGE_DB_PATH ?? './data/flowforge.sqlite',
+    url: process.env.MEDEA_DB_PATH ?? './data/flowforge.sqlite',
   },
   verbose: true,
   strict: true,

@@ -74,8 +74,8 @@ Un custom node consiste in 3 file TypeScript:
 
 SDK disponibili (import statici):
 - 'zod' → z.object({...}), z.string(), z.number(), z.enum([...])
-- '@flowforge/safe-fetch' → safeFetch(url, { timeoutMs, ... }) — HTTP SSRF-safe
-- '@flowforge/community-node-sdk' → tipi NodeDefinition, NodeExecutor
+- '@medea/engine-safe-fetch' → safeFetch(url, { timeoutMs, ... }) — HTTP SSRF-safe
+- '@medea/engine-community-node-sdk' → tipi NodeDefinition, NodeExecutor
 
 Regole inviolabili:
 - VIETATO: require(), eval(), new Function(), child_process, process.env, node:fs/net/os/vm
@@ -227,7 +227,7 @@ export async function callAiAssist(req: AiAssistRequest): Promise<AiAssistRespon
     messages,
     temperature: 0.2,
     maxTokens: 2048,
-    timeoutMs: Number(process.env.FLOWFORGE_LIARA_TIMEOUT_MS ?? '240000'),
+    timeoutMs: Number(process.env.MEDEA_LIARA_TIMEOUT_MS ?? '240000'),
     workspaceId: req.workspaceId,
     ...(process.env.LLM_AI_ASSIST_MODEL ? { modelOverride: process.env.LLM_AI_ASSIST_MODEL } : {}),
   });

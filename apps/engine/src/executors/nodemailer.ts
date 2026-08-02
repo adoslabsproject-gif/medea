@@ -6,9 +6,9 @@ import {
   sanitizeEmailList,
   sanitizeEmailWithDisplayName,
 } from '@/lib/email-sanitize.js';
-import { CircuitBreaker, CircuitBreakerRegistry } from '@zeliai/shared';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
-import { resolveBinaryValue, type BinaryData } from '@flowforge/core-schema';
+import { CircuitBreaker, CircuitBreakerRegistry } from '@medea/engine-shared';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { resolveBinaryValue, type BinaryData } from '@medea/engine-core-schema';
 import { SystemEmailAccountsService } from '@/services/system-email-accounts.service.js';
 import { EmailDeliverabilityService, type DeliverabilityReport } from '@/services/email-deliverability.service.js';
 import { logger } from '@/lib/logger.js';

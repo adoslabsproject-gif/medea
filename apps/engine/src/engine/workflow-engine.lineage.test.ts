@@ -14,9 +14,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { WorkflowEngine, type EngineSnapshot } from './workflow-engine.js';
 import type { PauseArgs } from './ports.js';
 import { InMemoryEventBus } from '@/adapters/event-bus-memory.js';
-import type { Workflow, Edge } from '@flowforge/core-schema';
-import type { ExecutionItem } from '@flowforge/core-schema';
-import { findStdlibNode, type NodeExecutionContext } from '@flowforge/nodes-stdlib';
+import type { Workflow, Edge } from '@medea/engine-core-schema';
+import type { ExecutionItem } from '@medea/engine-core-schema';
+import { findStdlibNode, type NodeExecutionContext } from '@medea/engine-nodes-stdlib';
 
 let seen: Map<string, unknown[]>; // defId → valori config.probe interpolati, in ordine di esecuzione
 

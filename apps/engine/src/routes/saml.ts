@@ -16,7 +16,7 @@ import { SAML, type SamlConfig } from '@node-saml/node-saml';
 import { getDatabase } from '@/storage/db.js';
 import { logger } from '@/lib/logger.js';
 import { getAuthKeys } from '@/lib/auth-keys.js';
-import { issueSessionToken } from '@flowforge/auth-local';
+import { issueSessionToken } from '@medea/engine-auth-local';
 import { nanoid } from 'nanoid';
 import { getContainerTenantId } from '@/lib/tenant.js';
 import { requireRole } from '@/middleware/rbac.js';
@@ -67,7 +67,7 @@ export function createSamlRoutes(): Hono {
   const app = new Hono();
 
   // F1-B (2026-06-10): TUTTE le route (admin CRUD + flusso pubblico) risolvono
-  // il tenant da getContainerTenantId() = FLOWFORGE_TENANT_ID. In un container
+  // il tenant da getContainerTenantId() = MEDEA_TENANT_ID. In un container
   // single-tenant il tenant è SEMPRE quello dell'env: così "tenant di creazione
   // del provider == tenant del callback" è garanzia STRUTTURALE, non un invariante
   // che dipende dall'enforcement H5 in sso.ts, e l'override impersonation
@@ -241,7 +241,7 @@ export function createSamlRoutes(): Hono {
         path: '/',
         maxAge: 7 * 86_400,
       });
-      const editorOrigin = process.env.FLOWFORGE_EDITOR_URL ?? '';
+      const editorOrigin = process.env.MEDEA_EDITOR_URL ?? '';
       return c.redirect(editorOrigin === '' ? '/' : editorOrigin, 302);
     } catch (err) {
       logger.error({ err }, 'SAML callback failed');

@@ -3,7 +3,7 @@
  * TENANT, accesso via TOKEN nell'URL (come i webhook hosted di FlowForge): NIENTE
  * login. Apri `https://<tenant>/studio/<token>` (anche da mobile) e usi.
  *
- * Il token è un segreto persistente per-container (`<FLOWFORGE_DATA_DIR>/.studio-token`,
+ * Il token è un segreto persistente per-container (`<MEDEA_DATA_DIR>/.studio-token`,
  * generato random alla prima richiesta, 0600). URL/token errato → 404 (stealth).
  * GET /studio/<token> valida + setta cookie HttpOnly → le API /studio/* usano il cookie.
  *
@@ -77,7 +77,7 @@ async function uploadVideoToComfy(bytes: Buffer, name: string): Promise<string> 
 }
 
 function tokenFile(): string {
-  return `${process.env.FLOWFORGE_DATA_DIR || './data'}/.studio-token`;
+  return `${process.env.MEDEA_DATA_DIR || './data'}/.studio-token`;
 }
 
 /** Coercizione sicura di una lista LoRA salvata nei params (unknown) → {name,weight}[]. */

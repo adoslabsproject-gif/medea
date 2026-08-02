@@ -25,7 +25,7 @@
  */
 
 import type IORedis from 'ioredis';
-import type { IdempotencyStore, AcquireResult } from '@flowforge/nodes-stdlib';
+import type { IdempotencyStore, AcquireResult } from '@medea/engine-nodes-stdlib';
 
 export interface RedisIdempotencyStoreOptions {
   /** Connection ioredis condivisa (riusa pool BullMQ se possibile). */
@@ -108,15 +108,15 @@ export class RedisIdempotencyStore implements IdempotencyStore {
  *
  * Priorita\` source connection:
  *
- *   1. FLOWFORGE_IDEMPOTENCY_REDIS_URL — connection DEDICATA per idempotency
+ *   1. MEDEA_IDEMPOTENCY_REDIS_URL — connection DEDICATA per idempotency
  *      (preferito enterprise: isolation completa da BullMQ — diverso pool,
  *      diverso DB index, no contention sui comandi atomic). Use case:
  *      Redis Cluster per BullMQ + Redis Sentinel singolo per idempotency.
  *
- *   2. FLOWFORGE_QUEUE_MODE=redis + FLOWFORGE_REDIS_URL — riusa la connection
+ *   2. MEDEA_QUEUE_MODE=redis + MEDEA_REDIS_URL — riusa la connection
  *      di BullMQ (default ergonomico: zero env extra, single Redis instance).
  *
- *   3. FLOWFORGE_REDIS_URL standalone — crea client dedicato anche senza
+ *   3. MEDEA_REDIS_URL standalone — crea client dedicato anche senza
  *      queue mode (use case: single-pod runtime senza BullMQ ma con Redis
  *      esterno per persistenza idempotency cross-restart).
  *
@@ -137,14 +137,14 @@ export interface RedisStoreResolution {
 }
 
 export async function createRedisIdempotencyStoreIfEnabled(): Promise<RedisStoreResolution | null> {
-  const dedicatedUrl = process.env.FLOWFORGE_IDEMPOTENCY_REDIS_URL;
+  const dedicatedUrl = process.env.MEDEA_IDEMPOTENCY_REDIS_URL;
   if (dedicatedUrl) {
     const conn = await createManagedConnection(dedicatedUrl);
     return { store: new RedisIdempotencyStore({ redis: conn }), source: 'dedicated', redisUrl: dedicatedUrl };
   }
 
-  const isQueueMode = (process.env.FLOWFORGE_QUEUE_MODE ?? '').toLowerCase() === 'redis';
-  const sharedUrl = process.env.FLOWFORGE_REDIS_URL;
+  const isQueueMode = (process.env.MEDEA_QUEUE_MODE ?? '').toLowerCase() === 'redis';
+  const sharedUrl = process.env.MEDEA_REDIS_URL;
 
   if (isQueueMode && sharedUrl) {
     // Riusa la connection BullMQ — import lazy per evitare dipendenza ciclica.

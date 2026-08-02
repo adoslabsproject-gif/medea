@@ -1,5 +1,5 @@
 {
-  "name": "@flowforge/nodes-db",
+  "name": "@medea/engine-nodes-db",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -22,14 +22,14 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@flowforge/core-schema": "workspace:*",
-    "@flowforge/nodes-stdlib": "workspace:*",
-    "@flowforge/db-studio-core": "workspace:*",
-    "@flowforge/safe-fetch": "workspace:*"
+    "@medea/engine-core-schema": "workspace:*",
+    "@medea/engine-nodes-stdlib": "workspace:*",
+    "@medea/engine-db-studio-core": "workspace:*",
+    "@medea/engine-safe-fetch": "workspace:*"
   },
   "devDependencies": {
-    "@flowforge/eslint-config": "workspace:*",
-    "@flowforge/tsconfig": "workspace:*",
+    "@medea/engine-eslint-config": "workspace:*",
+    "@medea/engine-tsconfig": "workspace:*",
     "@vitest/coverage-v8": "^3.0.0",
     "eslint": "^9.39.0",
     "typescript": "^5.7.0",

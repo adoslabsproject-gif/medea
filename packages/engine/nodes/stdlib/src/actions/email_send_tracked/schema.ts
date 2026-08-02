@@ -104,7 +104,7 @@ export const EmailSendTrackedConfigSchema = z.object({
    * Required because the email may be opened months from now on a device
    * that has no way to discover the runtime URL on its own.
    *
-   * Falls back to `process.env.FLOWFORGE_PUBLIC_BASE_URL` at runtime
+   * Falls back to `process.env.MEDEA_PUBLIC_BASE_URL` at runtime
    * (set by the container provisioner) when this field is blank.
    */
   trackingBaseUrl: trimmed.url().optional()

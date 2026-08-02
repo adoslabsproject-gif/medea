@@ -6,7 +6,7 @@
  *   OTEL_SERVICE_NAME            — default 'zeliai-flowforge-runtime'
  *   OTEL_RESOURCE_ATTRIBUTES     — KV opzionali (es. tenant.id=<wsId>)
  *
- * Resource attributes includono FLOWFORGE_TENANT_ID per filtrare span per tenant.
+ * Resource attributes includono MEDEA_TENANT_ID per filtrare span per tenant.
  *
  * Se OTEL_EXPORTER_OTLP_ENDPOINT non configurato → SDK non parte (no-op safe).
  */
@@ -30,7 +30,7 @@ export function initOtel(): void {
     return;
   }
 
-  const tenantId = process.env.FLOWFORGE_TENANT_ID ?? 'unknown';
+  const tenantId = process.env.MEDEA_TENANT_ID ?? 'unknown';
 
   try {
     // Defense-in-depth contro secret leak: TUTTI gli span passano per

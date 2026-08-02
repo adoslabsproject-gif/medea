@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { CanvasNode, Edge } from '@flowforge/core-schema';
+import type { CanvasNode, Edge } from '@medea/engine-core-schema';
 
 export const TemplateCategorySchema = z.enum([
   'general',

@@ -2,11 +2,11 @@
 /**
  * Standalone BullMQ worker for FlowForge queue mode.
  *
- * Run with FLOWFORGE_QUEUE_MODE=redis. The main process enqueues jobs,
+ * Run with MEDEA_QUEUE_MODE=redis. The main process enqueues jobs,
  * this binary consumes them and writes results to the shared DB.
  *
  * Usage:
- *   FLOWFORGE_QUEUE_MODE=redis FLOWFORGE_REDIS_URL=redis://… \
+ *   MEDEA_QUEUE_MODE=redis MEDEA_REDIS_URL=redis://… \
  *     node dist/bin/worker.js
  */
 
@@ -17,7 +17,7 @@ import { logger } from '@/lib/logger.js';
 
 function main(): void {
   if (!isQueueModeEnabled()) {
-    logger.error('FLOWFORGE_QUEUE_MODE is not "redis". Worker will not start.');
+    logger.error('MEDEA_QUEUE_MODE is not "redis". Worker will not start.');
     process.exit(2);
   }
 

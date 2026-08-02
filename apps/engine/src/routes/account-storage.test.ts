@@ -18,7 +18,7 @@ vi.mock('@/services/storage-quota.service.js', () => ({
     workflowDataBytes: 10 * 1024 ** 3, logRetentionBytes: 1 * 1024 ** 3,
   }),
 }));
-vi.mock('@/config.js', () => ({ loadConfig: () => ({ FLOWFORGE_DATA_DIR: '/tmp/ff-nonexistent-xyz' }) }));
+vi.mock('@/config.js', () => ({ loadConfig: () => ({ MEDEA_DATA_DIR: '/tmp/ff-nonexistent-xyz' }) }));
 vi.mock('@/lib/logger.js');
 
 import { registerAccountStorageRoute } from './account-storage.js';

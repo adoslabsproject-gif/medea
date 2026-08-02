@@ -1,9 +1,9 @@
 /**
  * SSRF guard — validazione URL per `fetch()` su input utente non-trusted.
  *
- * Modulo SHARED (`@flowforge/safe-fetch`). Pre-N20 c'erano DUE copie:
- *   - apps/flowforge-runtime/src/lib/ssrf-guard.ts (canonical)
- *   - packages/flowforge/nodes/stdlib/src/lib/ssrf-guard.ts (mirror)
+ * Modulo SHARED (`@medea/engine-safe-fetch`). Pre-N20 c'erano DUE copie:
+ *   - apps/engine/src/lib/ssrf-guard.ts (canonical)
+ *   - packages/engine/nodes/stdlib/src/lib/ssrf-guard.ts (mirror)
  *
  * Diverged silentemente: nuove regole aggiunte alla canonical non
  * propagate al mirror → drift. N20 audit (2026-05-29) ha unificato
@@ -266,7 +266,7 @@ export function validateUrlForFetch(
   }
 
   // Esenzione ESPLICITA per host:porta fidati (es. il gateway LLM interno di sistema,
-  // FLOWFORGE_LIARA_BASE_URL=172.20.0.1:3006, raggiunto via la bridge docker). È
+  // MEDEA_LIARA_BASE_URL=172.20.0.1:3006, raggiunto via la bridge docker). È
   // traffico di SISTEMA, non URL controllata dall'utente → l'IP privato è by-design.
   // Match ESATTO host+porta: NON apre la rete privata, solo l'endpoint enumerato. Lo
   // passano SOLO i call-site interni (mai il tool http_request dell'agent). Coerente

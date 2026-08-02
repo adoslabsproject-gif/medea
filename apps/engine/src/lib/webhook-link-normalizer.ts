@@ -163,7 +163,7 @@ export async function normalizeNodesWebhookLinks(
 
 /**
  * Host di QUESTO tenant, derivati dall'env di provisioning: il subdomain
- * pubblico (FLOWFORGE_PUBLIC_BASE_URL) + le CORS origins iniettate da
+ * pubblico (MEDEA_PUBLIC_BASE_URL) + le CORS origins iniettate da
  * onboarding.ts. Un link assoluto verso uno di questi host è "nostro" e può
  * diventare ref relativo.
  */
@@ -176,7 +176,7 @@ export function defaultSameHosts(): string[] {
       /* origin malformata: ignora, il link resterà skippato (conservativo) */
     }
   };
-  const base = process.env.FLOWFORGE_PUBLIC_BASE_URL ?? '';
+  const base = process.env.MEDEA_PUBLIC_BASE_URL ?? '';
   if (base) push(base);
   for (const origin of (process.env.CORS_ORIGINS ?? '').split(',')) {
     const trimmed = origin.trim();

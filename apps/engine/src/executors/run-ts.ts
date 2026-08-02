@@ -19,7 +19,7 @@
  * Lo script DEVE `return <value>` JSON-serializable.
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { runInIsolate, clampNumber } from '@/lib/isolated-run.js';
 
 const MIN_TIMEOUT_MS = 100;

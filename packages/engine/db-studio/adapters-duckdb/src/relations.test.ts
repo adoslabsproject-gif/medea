@@ -5,7 +5,7 @@
  * @module relations.test
  */
 import { describe, it, expect, afterEach } from 'vitest';
-import type { Database } from '@flowforge/db-studio-core';
+import type { Database } from '@medea/engine-db-studio-core';
 import { DuckDbAdapter } from './index.js';
 
 function makeDb(): Database {

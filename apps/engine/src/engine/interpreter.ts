@@ -41,7 +41,7 @@ const EXPRESSION_TIMEOUT_MS = 250;
 // esiste il path a isolamento forte `engine/sandbox.ts` (isolated-vm).
 // Questa denylist resta come difesa-in-profondità + guardia anti-errore.
 import { buildExpressionHelpers } from './expression-helpers.js';
-import { normalizeToItems, type ExecutionItem } from '@flowforge/core-schema';
+import { normalizeToItems, type ExecutionItem } from '@medea/engine-core-schema';
 import { resolvePairedItem, type RunItemGraph } from './item-model.js';
 import { resolveWebhookRefs } from '@/lib/webhook-ref.js';
 

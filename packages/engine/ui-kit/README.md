@@ -1,4 +1,4 @@
-# @flowforge/ui-kit
+# @medea/engine-ui-kit
 
 FlowForge design system — TypeScript-typed primitives backed by a single source of truth (CSS variables).
 
@@ -12,7 +12,7 @@ FlowForge design system — TypeScript-typed primitives backed by a single sourc
 ## Tokens
 
 ```ts
-import { SURFACE_LEVELS, type ButtonVariant, surfaceBg, fgText } from '@flowforge/ui-kit';
+import { SURFACE_LEVELS, type ButtonVariant, surfaceBg, fgText } from '@medea/engine-ui-kit';
 
 SURFACE_LEVELS;          // ['base', 'raised', 'subtle', 'hover', 'overlay']
 surfaceBg('raised');     // 'bg-surface-raised'
@@ -33,7 +33,7 @@ fgText('muted');         // 'text-fg-muted'
 ## Components
 
 ```tsx
-import { Button, Card, Input, Badge, Alert, Modal, Dropdown, Tooltip, Spinner } from '@flowforge/ui-kit';
+import { Button, Card, Input, Badge, Alert, Modal, Dropdown, Tooltip, Spinner } from '@medea/engine-ui-kit';
 
 <Card title="My panel" actions={<Button variant="primary">Save</Button>}>
   <Input label="Email" help="we'll never share" />
@@ -78,7 +78,7 @@ Full inventory:
 2. Add the entry to `DESIGN_TOKENS_CSS_VARS` in `tokens.ts`.
 3. Add the Tailwind alias in `apps/editor/tailwind.config.js` `colors.{namespace}`.
 4. Document the new token here in the README.
-5. Run `pnpm -F @flowforge/ui-kit test` — the contract test will catch any sync mistake.
+5. Run `pnpm -F @medea/engine-ui-kit test` — the contract test will catch any sync mistake.
 
 ## Adding a new component
 

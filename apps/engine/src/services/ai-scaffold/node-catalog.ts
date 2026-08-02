@@ -9,9 +9,9 @@
  * - `normalizeConstraints`: parsing safe di {nullable, unique, primaryKey}.
  */
 import { ALL_NODE_MODULES } from '@/engine/workflow-engine.js';
-import { AI_AGENT_DEFINITIONS } from '@flowforge/nodes-ai-agents';
+import { AI_AGENT_DEFINITIONS } from '@medea/engine-nodes-ai-agents';
 import { listInstalled } from '@/services/community-nodes.service.js';
-import type { OutputContract } from '@flowforge/core-schema';
+import type { OutputContract } from '@medea/engine-core-schema';
 
 export interface NodeCatalogActionSummary {
   id: string;

@@ -20,7 +20,7 @@
  */
 import type * as CommonNS from './common.js';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { NodeExecutionContext } from '@flowforge/nodes-stdlib';
+import type { NodeExecutionContext } from '@medea/engine-nodes-stdlib';
 
 const m = vi.hoisted(() => ({
   safeFetch: vi.fn(),

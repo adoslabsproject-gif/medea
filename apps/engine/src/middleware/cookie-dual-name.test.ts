@@ -24,8 +24,8 @@ vi.mock('@/services/auth-local.js', () => ({
   validateSession: vi.fn().mockResolvedValue({ userId: 'u-1', email: 'a@b.it', role: 'owner' }),
 }));
 vi.mock('@/config.js', () => ({
-  loadConfig: () => ({ FLOWFORGE_INTERNAL_TOKEN: 'internal-secret' }),
-  config: { FLOWFORGE_INTERNAL_TOKEN: 'internal-secret', FLOWFORGE_TENANT_ID: 'tenant-1' },
+  loadConfig: () => ({ MEDEA_INTERNAL_TOKEN: 'internal-secret' }),
+  config: { MEDEA_INTERNAL_TOKEN: 'internal-secret', MEDEA_TENANT_ID: 'tenant-1' },
 }));
 vi.mock('@/logger.js', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },

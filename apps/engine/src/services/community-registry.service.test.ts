@@ -23,7 +23,7 @@ const validIndex = { version: 1, updatedAt: '2026-06-07', nodes: [validEntry] };
 beforeEach(() => {
   vi.clearAllMocks();
   clearRegistryCache();
-  delete process.env.FLOWFORGE_REGISTRY_URL;
+  delete process.env.MEDEA_REGISTRY_URL;
 });
 
 describe('🚨 RegistryEntrySchema', () => {
@@ -105,15 +105,15 @@ describe('🚨 fetchRegistry — fail-soft con stale cache', () => {
 });
 
 describe('🚨 URL config', () => {
-  it('🚨 env FLOWFORGE_REGISTRY_URL override', async () => {
-    process.env.FLOWFORGE_REGISTRY_URL = 'https://custom.example.com/r.json';
+  it('🚨 env MEDEA_REGISTRY_URL override', async () => {
+    process.env.MEDEA_REGISTRY_URL = 'https://custom.example.com/r.json';
     safeFetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(validIndex) });
     await fetchRegistry();
     expect(safeFetchMock).toHaveBeenCalledWith('https://custom.example.com/r.json', expect.any(Object));
   });
 
   it('🚨 env vuoto/whitespace → default URL', async () => {
-    process.env.FLOWFORGE_REGISTRY_URL = '   ';
+    process.env.MEDEA_REGISTRY_URL = '   ';
     safeFetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(validIndex) });
     await fetchRegistry();
     expect(at(safeFetchMock.mock.calls, 0, 'fetch-calls')[0]).toContain('flowforge.nothumanallowed.com');

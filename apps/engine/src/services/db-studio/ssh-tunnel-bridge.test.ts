@@ -6,7 +6,7 @@
  */
 import type * as ConnectNS from '@/services/db-remote-ssh/connect.js';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Database } from '@flowforge/db-studio-core';
+import type { Database } from '@medea/engine-db-studio-core';
 
 const connectMock = vi.hoisted(() => vi.fn());
 vi.mock('@/services/db-remote-ssh/connect.js', async (orig) => ({

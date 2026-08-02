@@ -36,11 +36,11 @@ let originalDbPath: string | undefined;
 
 beforeEach(async () => {
   tmpDir = mkdtempSync(join(tmpdir(), 'ff-aiexp-'));
-  originalDbPath = process.env.FLOWFORGE_DB_PATH;
-  process.env.FLOWFORGE_DB_PATH = join(tmpDir, 'test.sqlite');
-  process.env.FLOWFORGE_DATA_DIR = tmpDir;
+  originalDbPath = process.env.MEDEA_DB_PATH;
+  process.env.MEDEA_DB_PATH = join(tmpDir, 'test.sqlite');
+  process.env.MEDEA_DATA_DIR = tmpDir;
   // Setup an Anthropic key so the resolver doesn't fall back to Liara/error
-  process.env.FLOWFORGE_MASTER_PASSWORD = 'test-master-password-32-chars-min';
+  process.env.MEDEA_MASTER_PASSWORD = 'test-master-password-32-chars-min';
   resetConfigForTests();
   await closeDatabase();
   runMigrations();
@@ -55,8 +55,8 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await closeDatabase();
-  if (originalDbPath !== undefined) process.env.FLOWFORGE_DB_PATH = originalDbPath;
-  else delete process.env.FLOWFORGE_DB_PATH;
+  if (originalDbPath !== undefined) process.env.MEDEA_DB_PATH = originalDbPath;
+  else delete process.env.MEDEA_DB_PATH;
   resetConfigForTests();
   rmSync(tmpDir, { recursive: true, force: true });
 });

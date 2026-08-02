@@ -32,7 +32,7 @@ const m = vi.hoisted(() => ({
   auditEmit: vi.fn(),
 }));
 
-vi.mock('@flowforge/db-studio-engine', () => ({
+vi.mock('@medea/engine-db-studio-engine', () => ({
   classifyStatement: (...a: unknown[]) => m.classifyStatement(...a),
 }));
 

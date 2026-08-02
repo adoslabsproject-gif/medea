@@ -9,7 +9,7 @@
  * @module actions/email_send_tracked/definition
  */
 
-import type { NodeDef } from '@flowforge/core-schema';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 export const emailSendTrackedNodeDef: NodeDef = {
   id: 'action_email_send_tracked',
@@ -179,7 +179,7 @@ export const emailSendTrackedNodeDef: NodeDef = {
       placeholder: 'https://mio-tenant.app.automazionezeli.com',
       help: 'Dominio del tuo runtime FlowForge. Il pixel diventa <baseUrl>/api/track/open/<token> e ' +
         'i click <baseUrl>/api/track/click/<token>?u=<dest>. Se vuoto, eredita da ' +
-        'FLOWFORGE_PUBLIC_BASE_URL nel container (preimpostato al provision).',
+        'MEDEA_PUBLIC_BASE_URL nel container (preimpostato al provision).',
     },
     {
       key: 'clickWhitelist', label: 'Domini permessi nei link', type: 'chip-list', required: false,

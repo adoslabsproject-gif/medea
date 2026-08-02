@@ -9,8 +9,8 @@ import type {
   Relation,
   RelationOnDelete,
   Table,
-} from '@flowforge/db-studio-core';
-import { renderCreateViewSql, renderDropViewSql } from '@flowforge/db-studio-core';
+} from '@medea/engine-db-studio-core';
+import { renderCreateViewSql, renderDropViewSql } from '@medea/engine-db-studio-core';
 import type { IDatabaseAdapter, QueryResult, ExecuteResult, RawQueryResult, RawQueryOptions, BatchOp, BatchResult } from './adapter.js';
 import { classifyStatement, splitStatements, assertSafeRawStatement } from './adapter.js';
 import { recreateTableStatements } from './alter-column-recreate.js';

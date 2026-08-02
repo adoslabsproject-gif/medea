@@ -14,7 +14,7 @@
  *   • Janitor singleton non inizializzato → throw (system bug, non workflow bug)
  */
 
-import type { NodeExecutor, NodeExecutionResult } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor, NodeExecutionResult } from '@medea/engine-nodes-stdlib';
 import { getJanitor } from '@/services/janitor/janitor.singleton.js';
 import { logger } from '@/lib/logger.js';
 

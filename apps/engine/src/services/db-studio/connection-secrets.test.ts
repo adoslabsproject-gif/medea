@@ -5,7 +5,7 @@
  * Usa la crypto REALE (master password dev-sentinel in test) — niente mock.
  */
 import { describe, it, expect } from 'vitest';
-import type { Database } from '@flowforge/db-studio-core';
+import type { Database } from '@medea/engine-db-studio-core';
 import {
   sealSecret, unsealSecret, sealConnectionSecrets, unsealConnectionSecrets, isSealed, ENC_PREFIX,
 } from './connection-secrets.js';

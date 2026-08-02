@@ -1,5 +1,5 @@
 {
-  "name": "@zeliai/shared",
+  "name": "@medea/engine-shared",
   "version": "0.1.0",
   "description": "Shared utilities for ZeliAI — circuit breakers, IP utils, common types",
   "type": "module",
@@ -31,7 +31,8 @@
     "sync:bot-ipranges": "node scripts/sync-bot-ipranges.mjs"
   },
   "devDependencies": {
-    "@flowforge/eslint-config": "workspace:*",
+    "@medea/engine-eslint-config": "workspace:*",
+    "@medea/engine-tsconfig": "workspace:*",
     "@types/node": "^22.10.0",
     "@vitest/coverage-v8": "^2.1.5",
     "eslint": "^9.39.0",

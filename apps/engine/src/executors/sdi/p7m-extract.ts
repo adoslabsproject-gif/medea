@@ -24,7 +24,7 @@
  * @module executors/sdi/p7m-extract
  */
 
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { resolveBinaryInline } from '@/executors/pdf.js';
 
 const OID_SIGNED_DATA = '1.2.840.113549.1.7.2';

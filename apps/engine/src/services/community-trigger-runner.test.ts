@@ -23,7 +23,7 @@ import type { InstalledNode } from './community-nodes.service.js';
 
 beforeEach(() => {
   // Forza il path inline del sandbox (no worker_threads) per test deterministici.
-  process.env.FLOWFORGE_SANDBOX_DISABLE_WORKER = 'true';
+  process.env.MEDEA_SANDBOX_DISABLE_WORKER = 'true';
 });
 
 describe('normalizePollResult — robustezza', () => {

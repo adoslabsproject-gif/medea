@@ -43,7 +43,7 @@ declare module 'zod' {
   export type ZodType<T = any> = any;
   export type ZodObject<T = any> = any;
 }
-declare module '@flowforge/community-node-sdk' {
+declare module '@medea/engine-community-node-sdk' {
   export interface NodeExecutionContext {
     input: unknown;
     config: Record<string, unknown>;
@@ -61,7 +61,7 @@ declare module '@flowforge/community-node-sdk' {
     config?: Array<Record<string, unknown>>;
   }
 }
-declare module '@flowforge/safe-fetch' {
+declare module '@medea/engine-safe-fetch' {
   export interface SafeFetchOptions extends RequestInit {
     timeoutMs?: number;
   }

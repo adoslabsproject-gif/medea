@@ -26,6 +26,13 @@ mod webhook;
 const STARTUP_TIMEOUT: Duration = Duration::from_secs(30);
 const POLL_INTERVAL: Duration = Duration::from_millis(200);
 
+/// Il file dove il motore tiene workflow, esecuzioni e credenziali.
+const DATABASE_FILE: &str = "medea.sqlite";
+
+/// Come si chiamava fino alla 0.3.0, quando il motore portava ancora il nome
+/// del progetto da cui deriva.
+const LEGACY_DATABASE_FILE: &str = "flowforge.sqlite";
+
 /// Lo stato del processo figlio, per la UI.
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -195,6 +202,11 @@ fn spawn(resource_dir: &Path, data_dir: &Path) -> Result<u16> {
     // e continuerebbe a eseguire i workflow di un'app che non c'è più.
     orphan::kill_stale(&runtime_data);
 
+    // Chi arriva da una versione precedente ha i workflow dentro un file che
+    // portava il nome del motore di provenienza: va portato al nome nuovo,
+    // altrimenti il motore ne creerebbe uno vuoto e la sua roba sparirebbe.
+    rename_legacy_database(&runtime_data);
+
     // Se il portachiavi non risponde si parte lo stesso: i webhook non
     // funzioneranno, tutto il resto sì. Un motore che non parte per colpa di
     // una funzione che l'utente magari non usa sarebbe sproporzionato.
@@ -211,27 +223,24 @@ fn spawn(resource_dir: &Path, data_dir: &Path) -> Result<u16> {
         .env("HOST", "127.0.0.1")
         .env("PORT", port.to_string())
         .env("LOG_LEVEL", "warn")
-        .env("FLOWFORGE_DATA_DIR", &runtime_data)
-        .env("FLOWFORGE_DB_PATH", runtime_data.join("flowforge.sqlite"))
+        .env("MEDEA_DATA_DIR", &runtime_data)
+        .env("MEDEA_DB_PATH", runtime_data.join(DATABASE_FILE))
         // Nessun portale, nessuna licenza: qui non c'è un tenant remoto a cui
         // rispondere.
         .env("CORS_ORIGINS", "http://localhost:1420,tauri://localhost")
         // Da qui il motore deriva i token dei webhook e compone gli indirizzi
         // da mostrare. Senza il segreto risponderebbe «token non derivabile»,
         // e senza l'indirizzo darebbe un percorso senza sapere dove attaccarlo.
-        .env("FLOWFORGE_SSO_SECRET", &webhook_secret)
+        .env("MEDEA_SSO_SECRET", &webhook_secret)
         // Un nodo «subworkflow» chiama il motore per far partire un altro
         // workflow, e senza queste due variabili chiamerebbe `127.0.0.1:3100`
         // — la porta di FlowForge sul server, dove qui non c'è niente — con
         // una richiesta che verrebbe comunque rifiutata perché non
         // autenticata. Il segreto è lo stesso dei webhook: è un canale interno
         // fra il motore e sé stesso, non esce dalla macchina.
-        .env("FLOWFORGE_RUNTIME_URL", format!("http://127.0.0.1:{port}"))
-        .env("FLOWFORGE_INTERNAL_TOKEN", &webhook_secret)
-        .env(
-            "FLOWFORGE_PUBLIC_BASE_URL",
-            format!("http://127.0.0.1:{port}"),
-        )
+        .env("MEDEA_RUNTIME_URL", format!("http://127.0.0.1:{port}"))
+        .env("MEDEA_INTERNAL_TOKEN", &webhook_secret)
+        .env("MEDEA_PUBLIC_BASE_URL", format!("http://127.0.0.1:{port}"))
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
@@ -279,6 +288,42 @@ pub fn stop() {
 pub fn restart(resource_dir: &Path, data_dir: &Path) -> RuntimeStatus {
     stop();
     start(resource_dir, data_dir)
+}
+
+/// Porta il database dal nome vecchio a quello nuovo, una volta sola.
+///
+/// SQLite non tiene i dati in un file solo: accanto al database vivono il
+/// journal (`-wal`) e la memoria condivisa (`-shm`). Spostare solo il primo
+/// lascerebbe indietro le scritture non ancora consolidate, cioè l'ultima
+/// sessione di lavoro dell'utente.
+///
+/// Se qualcosa non si lascia rinominare non si interrompe l'avvio: il motore
+/// partirà sul database vecchio, che è comunque il comportamento di prima.
+fn rename_legacy_database(runtime_data: &Path) {
+    let legacy = runtime_data.join(LEGACY_DATABASE_FILE);
+    let current = runtime_data.join(DATABASE_FILE);
+
+    // Niente da portare, oppure il nuovo c'è già: in entrambi i casi il file
+    // vecchio non va toccato — sovrascrivere sarebbe perdere dati.
+    if !legacy.exists() || current.exists() {
+        return;
+    }
+
+    for suffix in ["", "-wal", "-shm"] {
+        let from = runtime_data.join(format!("{LEGACY_DATABASE_FILE}{suffix}"));
+        if !from.exists() {
+            continue;
+        }
+        let to = runtime_data.join(format!("{DATABASE_FILE}{suffix}"));
+        if let Err(e) = std::fs::rename(&from, &to) {
+            tracing::warn!("Database: {} non rinominato: {e}", from.display());
+            return;
+        }
+    }
+
+    tracing::info!(
+        "Database portato da {LEGACY_DATABASE_FILE} a {DATABASE_FILE}: i workflow esistenti restano al loro posto"
+    );
 }
 
 pub fn status() -> RuntimeStatus {

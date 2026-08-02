@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { NodeDefSchema } from '@flowforge/core-schema';
+import { NodeDefSchema } from '@medea/engine-core-schema';
 import { dbNodes, dbQueryNode, dbInsertNode, dbInsertBatchNode, dbUpdateNode, dbDeleteNode, dbSubscribeNode } from './index.js';
 
 describe('db workflow nodes', () => {

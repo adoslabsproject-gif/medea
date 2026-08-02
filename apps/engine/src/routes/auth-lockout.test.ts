@@ -46,7 +46,7 @@ vi.mock('@/storage/db.js', () => ({
   }),
 }));
 
-vi.mock('@flowforge/auth-local', () => ({
+vi.mock('@medea/engine-auth-local', () => ({
   verifyPassword: (...a: unknown[]) => m.verifyPassword(...a),
   issueSessionToken: (...a: unknown[]) => m.issueSessionToken(...a),
 }));

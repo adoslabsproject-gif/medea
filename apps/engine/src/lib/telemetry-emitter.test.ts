@@ -60,7 +60,7 @@ beforeEach(() => {
   vi.resetModules();
   // Reset env entrambi così test isolano
   delete process.env.PORTAL_CALLBACK_TOKEN;
-  delete process.env.FLOWFORGE_INTERNAL_TOKEN;
+  delete process.env.MEDEA_INTERNAL_TOKEN;
 });
 
 afterEach(() => {
@@ -79,7 +79,7 @@ describe('🚨 start() — guard token mancante', () => {
     expect(subscriberCount()).toBe(0);
     expect(loggerMock.warn).toHaveBeenCalledWith(
       expect.anything(),
-      expect.stringMatching(/FLOWFORGE_INTERNAL_TOKEN missing|telemetry disabled/u),
+      expect.stringMatching(/MEDEA_INTERNAL_TOKEN missing|telemetry disabled/u),
     );
     telemetryEmitter.stop(); // safe to call
   });
@@ -97,8 +97,8 @@ describe('🚨 start() — guard token mancante', () => {
     telemetryEmitter.stop();
   });
 
-  it('🚨 fallback FLOWFORGE_INTERNAL_TOKEN se PORTAL_CALLBACK_TOKEN assente', async () => {
-    process.env.FLOWFORGE_INTERNAL_TOKEN = 'legacy-tok';
+  it('🚨 fallback MEDEA_INTERNAL_TOKEN se PORTAL_CALLBACK_TOKEN assente', async () => {
+    process.env.MEDEA_INTERNAL_TOKEN = 'legacy-tok';
     const { telemetryEmitter } = await loadFresh();
     const { bus, subscriberCount } = makeMockBus();
     telemetryEmitter.start(bus, 'tenant-x');
@@ -106,9 +106,9 @@ describe('🚨 start() — guard token mancante', () => {
     telemetryEmitter.stop();
   });
 
-  it('🚨 PORTAL_CALLBACK_TOKEN HA PRIORITÀ su FLOWFORGE_INTERNAL_TOKEN', async () => {
+  it('🚨 PORTAL_CALLBACK_TOKEN HA PRIORITÀ su MEDEA_INTERNAL_TOKEN', async () => {
     process.env.PORTAL_CALLBACK_TOKEN = 'PRIORITY';
-    process.env.FLOWFORGE_INTERNAL_TOKEN = 'fallback';
+    process.env.MEDEA_INTERNAL_TOKEN = 'fallback';
     safeOutboundFetchMock.mockResolvedValue({ ok: true, status: 200 });
     const { telemetryEmitter } = await loadFresh();
     const { bus, emit } = makeMockBus();

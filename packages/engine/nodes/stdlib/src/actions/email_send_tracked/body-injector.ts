@@ -3,7 +3,7 @@
  *
  * Why pure
  * ────────
- * The executor in `apps/flowforge-runtime` wires nodemailer + OAuth +
+ * The executor in `apps/engine` wires nodemailer + OAuth +
  * DB. The body transformation, however, must be testable in isolation:
  *
  *  - it touches HTML (regex / string ops error-prone),

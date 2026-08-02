@@ -41,7 +41,7 @@ import type {
   QuarantineListFilter, QuarantineStats, CorruptionSeverity,
 } from '@/services/janitor/domain/index.js';
 import type { IQuarantineGateway, QuarantineRequest, IDataSourceResolver } from '@/services/janitor/ports/index.js';
-import type { IDatabaseAdapter } from '@flowforge/db-studio-engine';
+import type { IDatabaseAdapter } from '@medea/engine-db-studio-engine';
 
 const QUARANTINE_TABLE = 'quarantined_rows';
 const IDENTIFIER_RE = /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/;

@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config';
 
 /**
- * Default Vitest suite for `@flowforge/nodes-stdlib`.
+ * Default Vitest suite for `@medea/engine-nodes-stdlib`.
  *
  * Scope: unit + in-process integration tests only — fast (< 10s), no external
  * deps, deterministic, CI-safe without secrets.

@@ -5,7 +5,7 @@
  *
  * Security: paths are resolved against the tenant's root
  * (/var/data/flowforge/tenants/<tenantId>/files) OR a globally-allowlisted dir
- * (FLOWFORGE_FILE_ALLOWLIST). Path traversal attempts (`../../etc/passwd`)
+ * (MEDEA_FILE_ALLOWLIST). Path traversal attempts (`../../etc/passwd`)
  * are rejected with 403.
  *
  * Used by the FilePicker / DirectoryPicker UI components in the editor so
@@ -38,12 +38,12 @@ interface BrowserResponse {
 
 function getTenantRoot(tenantId: string): string {
   const safeTenant = (tenantId || 'default').replace(/[^a-z0-9_-]/gi, '_');
-  const baseDir = process.env.FLOWFORGE_DATA_DIR ?? '/var/data/flowforge';
+  const baseDir = process.env.MEDEA_DATA_DIR ?? '/var/data/flowforge';
   return resolve(baseDir, 'tenants', safeTenant, 'files');
 }
 
 function getGlobalAllowlist(): string[] {
-  const envList = process.env.FLOWFORGE_FILE_ALLOWLIST ?? '';
+  const envList = process.env.MEDEA_FILE_ALLOWLIST ?? '';
   return envList.split(':').map((p) => p.trim()).filter(Boolean).map((p) => resolve(p));
 }
 

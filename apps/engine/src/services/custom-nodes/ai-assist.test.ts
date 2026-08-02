@@ -23,8 +23,8 @@ const origFetch = globalThis.fetch;
 
 beforeEach(() => {
   mockFetch.mockReset();
-  process.env.FLOWFORGE_LIARA_BASE_URL = 'http://gw/api/v1/llm';
-  process.env.FLOWFORGE_LICENSE_KEY = 'ZFL-TEST';
+  process.env.MEDEA_LIARA_BASE_URL = 'http://gw/api/v1/llm';
+  process.env.MEDEA_LICENSE_KEY = 'ZFL-TEST';
   globalThis.fetch = mockFetch as unknown as typeof fetch;
 });
 afterEach(() => { globalThis.fetch = origFetch; vi.clearAllMocks(); });

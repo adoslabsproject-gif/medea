@@ -1,7 +1,7 @@
 /**
  * Tenant-scoped secrets crypto helper — AES-256-GCM + HKDF-SHA256.
  *
- * Why this exists (vs. `@flowforge/secrets` envelope encryption)
+ * Why this exists (vs. `@medea/engine-secrets` envelope encryption)
  * --------------------------------------------------------------
  * The existing CredentialsService uses two-tier envelope encryption (KEK→DEK)
  * because user-provided credentials are PER-CREDENTIAL: each row gets its own
@@ -18,7 +18,7 @@
  *
  * Design
  * ------
- *   • Master input  = FLOWFORGE_MASTER_PASSWORD (same env var as the rest of
+ *   • Master input  = MEDEA_MASTER_PASSWORD (same env var as the rest of
  *                     the secrets stack — single source of trust).
  *   • Derivation    = HKDF-SHA256(master_pw, salt=tenantId, info="flowforge-
  *                     tenant-secrets-v1") → 32-byte AES-256-GCM key.
@@ -40,7 +40,7 @@
  *   • Tampering               → GCM auth tag detects any bit flip.
  *
  * NOT covered (out of scope, handled at other layers):
- *   • Master password leak    → use Vault/KMS (`@flowforge/secrets` `loadMaster`
+ *   • Master password leak    → use Vault/KMS (`@medea/engine-secrets` `loadMaster`
  *                               supports both env var and persistent salt).
  *   • Memory dump while live  → unavoidable for any encryption-at-rest scheme.
  */
@@ -103,7 +103,7 @@ function deriveTenantKey(masterPassword: string, tenantId: string): Buffer {
  */
 export function encrypt(plain: string, masterPassword: string, tenantId: string): EncryptedBlob {
   if (!plain) throw new Error('encrypt: empty plaintext');
-  if (!masterPassword) throw new Error('encrypt: FLOWFORGE_MASTER_PASSWORD is required');
+  if (!masterPassword) throw new Error('encrypt: MEDEA_MASTER_PASSWORD is required');
   if (!tenantId) throw new Error('encrypt: tenantId is required (HKDF salt)');
 
   const key = deriveTenantKey(masterPassword, tenantId);
@@ -128,7 +128,7 @@ export function decrypt(ciphertext: Buffer, nonce: Buffer, masterPassword: strin
   if (!Buffer.isBuffer(nonce) || nonce.length !== NONCE_LEN_BYTES) {
     throw new Error(`decrypt: nonce must be exactly ${NONCE_LEN_BYTES.toString()} bytes`);
   }
-  if (!masterPassword) throw new Error('decrypt: FLOWFORGE_MASTER_PASSWORD is required');
+  if (!masterPassword) throw new Error('decrypt: MEDEA_MASTER_PASSWORD is required');
   if (!tenantId) throw new Error('decrypt: tenantId is required (HKDF salt)');
 
   const key = deriveTenantKey(masterPassword, tenantId);
@@ -142,7 +142,7 @@ export function decrypt(ciphertext: Buffer, nonce: Buffer, masterPassword: strin
 }
 
 /**
- * Reads `FLOWFORGE_MASTER_PASSWORD` from env. Centralized here so executors
+ * Reads `MEDEA_MASTER_PASSWORD` from env. Centralized here so executors
  * and the store can stay decoupled from `node:process`.
  *
  * In production, this MUST be set (we throw). In development/test, we accept

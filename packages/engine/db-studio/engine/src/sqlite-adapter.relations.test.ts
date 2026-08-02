@@ -6,7 +6,7 @@
  * @module engine/sqlite-adapter.relations.test
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import type { Database } from '@flowforge/db-studio-core';
+import type { Database } from '@medea/engine-db-studio-core';
 import { SqliteAdapter } from './sqlite-adapter.js';
 
 const sampleDb: Database = {

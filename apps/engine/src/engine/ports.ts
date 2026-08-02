@@ -20,7 +20,7 @@
  * for each method explaining the contract.
  */
 
-import type { RunStep } from '@flowforge/core-schema';
+import type { RunStep } from '@medea/engine-core-schema';
 import type { Readable } from 'node:stream';
 import type { QueueItem } from './workflow-engine.js';
 import type { RunItemGraph } from './item-model.js';

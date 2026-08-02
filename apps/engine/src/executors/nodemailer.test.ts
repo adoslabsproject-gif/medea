@@ -7,8 +7,8 @@
  * Service in-memory + DeliverabilityService mock.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { NodeExecutionContext } from '@flowforge/nodes-stdlib';
-import { makeBinaryRef, makeBinaryInline } from '@flowforge/core-schema';
+import type { NodeExecutionContext } from '@medea/engine-nodes-stdlib';
+import { makeBinaryRef, makeBinaryInline } from '@medea/engine-core-schema';
 
 const m = vi.hoisted(() => ({
   sendMail: vi.fn(),
@@ -29,8 +29,8 @@ vi.mock('nodemailer', () => ({
   },
 }));
 
-vi.mock('@flowforge/safe-fetch', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@flowforge/safe-fetch')>()),
+vi.mock('@medea/engine-safe-fetch', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@medea/engine-safe-fetch')>()),
   validateUrlForFetch: (...a: unknown[]) => m.validateUrl(...a),
 }));
 
@@ -404,7 +404,7 @@ describe('🚨 attachments SSRF guard + parsing', () => {
 
   it('🚨🚨 LFI: attachment.path su filesystem (/app/.env) → throw, email NON inviata', async () => {
     // L'opzione `path` di nodemailer legge un FILE su disco: un path su filesystem
-    // allegherebbe i segreti del container (/app/.env = FLOWFORGE_SSO_SECRET). Bloccato
+    // allegherebbe i segreti del container (/app/.env = MEDEA_SSO_SECRET). Bloccato
     // by design: solo URL http(s) o handle binari/base64.
     for (const p of ['/app/.env', '../../etc/passwd', 'file:///etc/passwd', '/proc/self/environ']) {
       m.sendMail.mockClear();

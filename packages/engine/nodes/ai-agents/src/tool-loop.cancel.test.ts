@@ -8,13 +8,13 @@ import { describe, it, expect, vi } from 'vitest';
 // La fetch LLM passa per safeFetchWithRedirects (via gatewayFetch). La spiamo per
 // provare che con signal abortito NON viene MAI chiamata (cancel cooperativo reale).
 const safeFetch = vi.fn(async () => { throw new Error('NON deve essere chiamata: cancel mancato'); });
-vi.mock('@flowforge/safe-fetch', async (importOriginal) => ({
+vi.mock('@medea/engine-safe-fetch', async (importOriginal) => ({
   // helper di lettura body REALI (puri); mockiamo solo la fetch (spiata).
-  ...(await importOriginal<typeof import('@flowforge/safe-fetch')>()),
+  ...(await importOriginal<typeof import('@medea/engine-safe-fetch')>()),
   safeFetchWithRedirects: (...a: unknown[]) => safeFetch(...a),
 }));
-vi.mock('@flowforge/nodes-stdlib', async (orig) => {
-  const actual = await orig<typeof import('@flowforge/nodes-stdlib')>();
+vi.mock('@medea/engine-nodes-stdlib', async (orig) => {
+  const actual = await orig<typeof import('@medea/engine-nodes-stdlib')>();
   return { ...actual, executeWithHostBreaker: (_url: string, fn: () => unknown) => fn() };
 });
 

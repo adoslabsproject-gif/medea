@@ -8,7 +8,7 @@
  * (cfr. NODE-ARCHITECTURE-2026.md). Behavior preservato 1:1 con v2.0.0.
  */
 
-import type { NodeDef } from '@flowforge/core-schema';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 export const httpNodeDef: NodeDef = {
   id: 'action_http',

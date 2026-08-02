@@ -23,7 +23,7 @@
 
 import { lookup as dnsLookupCb, type LookupAddress, type LookupOptions } from 'node:dns';
 import { Agent, setGlobalDispatcher } from 'undici';
-import { validateIpForFetch } from '@flowforge/safe-fetch';
+import { validateIpForFetch } from '@medea/engine-safe-fetch';
 
 /** Opzioni passate da undici/Node a `lookup` (forma standard dns.LookupOptions). */
 type SecureLookupOptions = LookupOptions;

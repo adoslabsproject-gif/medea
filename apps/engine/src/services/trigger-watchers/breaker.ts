@@ -5,7 +5,7 @@
  * (5 failure in 30s → cooldown 60s).
  */
 
-import { CircuitBreaker, CircuitBreakerRegistry } from '@zeliai/shared';
+import { CircuitBreaker, CircuitBreakerRegistry } from '@medea/engine-shared';
 
 /** Superficie minima del circuit breaker usata dai poller — fake-abile nei test. */
 export interface TriggerBreaker {

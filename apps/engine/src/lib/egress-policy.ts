@@ -5,7 +5,7 @@
  * per-workspace) e spinta al container via S2S → `setEgressAllowlist`. NON è
  * configurabile dall'autore del workflow. Persistita in `system_flags` (sopravvive al
  * restart del container) + cache in-memory (la lettura è nel hot-path di OGNI fetch
- * http → niente query SQLite per-call). Env `FLOWFORGE_INTERNAL_HOST_ALLOWLIST` resta
+ * http → niente query SQLite per-call). Env `MEDEA_INTERNAL_HOST_ALLOWLIST` resta
  * come fallback di bootstrap/legacy se il flag DB non è ancora stato scritto.
  *
  * Verso un host in allowlist + allowSelfSigned → dispatcher insecure-TLS (raggiunge l'IP
@@ -18,7 +18,7 @@
  * SSRF/MITM spalancato). Allowlist vuota = feature OFF.
  */
 
-import { parseInternalHostAllowlist, isHostAllowlisted } from '@flowforge/safe-fetch';
+import { parseInternalHostAllowlist, isHostAllowlisted } from '@medea/engine-safe-fetch';
 import { getInsecureTlsDispatcher, getPermissiveDispatcher } from './secure-dispatcher.js';
 import { getDatabase } from '@/storage/db.js';
 import { logger } from '@/lib/logger.js';
@@ -32,7 +32,7 @@ function allowlist(): ReadonlySet<string> {
     const { sqlite } = getDatabase();
     const row = sqlite.prepare('SELECT value FROM system_flags WHERE key = ?').get(FLAG_KEY) as { value: string } | undefined;
     // Flag DB scritto dall'admin → fonte di verità. Altrimenti fallback env (bootstrap/legacy).
-    cached = parseInternalHostAllowlist(row?.value ?? process.env.FLOWFORGE_INTERNAL_HOST_ALLOWLIST);
+    cached = parseInternalHostAllowlist(row?.value ?? process.env.MEDEA_INTERNAL_HOST_ALLOWLIST);
   } catch (err) {
     // FAIL-CLOSED: errore DB → nessun host fidato → SSRF guard pieno + TLS verificato.
     logger.warn({ err: String(err) }, 'egress-policy: read allowlist failed → fail-closed (nessun bypass)');

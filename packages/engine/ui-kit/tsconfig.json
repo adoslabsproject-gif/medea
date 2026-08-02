@@ -1,5 +1,5 @@
 {
-  "extends": "@flowforge/tsconfig/react.json",
+  "extends": "@medea/engine-tsconfig/react.json",
   "compilerOptions": {
     "composite": true,
     "declaration": true,

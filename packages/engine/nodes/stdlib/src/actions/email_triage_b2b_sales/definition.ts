@@ -4,7 +4,7 @@
  * @module actions/email_triage_b2b_sales/definition
  */
 
-import type { NodeDef } from '@flowforge/core-schema';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 export const emailTriageB2BSalesNodeDef: NodeDef = {
   id: 'agent_email_triage_b2b_sales',

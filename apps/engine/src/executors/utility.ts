@@ -7,7 +7,7 @@
  * Tutte funzioni PURE — nessuna I/O — testabili a unit-test puri.
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 
 // ─── Safety budget (anti-DoS) — IMPLEMENTATI e ASSERITI da test, non aspirazionali ───
 /** Cap output template render: oltre → troncato + flag `truncated` (anti-OOM su variabile enorme). */

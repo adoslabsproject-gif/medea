@@ -20,8 +20,8 @@ const m = vi.hoisted(() => ({
 
 vi.stubGlobal('fetch', m.fetchMock);
 
-vi.mock('@flowforge/safe-fetch', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@flowforge/safe-fetch')>()),
+vi.mock('@medea/engine-safe-fetch', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@medea/engine-safe-fetch')>()),
   validateUrlForFetch: (url: string) => m.validateUrl(url),
 }));
 

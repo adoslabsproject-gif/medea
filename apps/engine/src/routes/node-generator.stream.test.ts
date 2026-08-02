@@ -7,7 +7,7 @@
  *   dispatchLLMChatStreaming (stubbato).
  * Così il ponte coda+wake-up (ordine dei delta, nessun chunk perso, propagazione
  * errori) è verificato davvero, non simulato. Lo schema NodeDef è quello REALE
- * (@flowforge/core-schema) → il parse/validazione/safety-gate gira sul serio.
+ * (@medea/engine-core-schema) → il parse/validazione/safety-gate gira sul serio.
  */
 import { Hono } from 'hono';
 import { describe, it, expect, vi, beforeEach } from 'vitest';

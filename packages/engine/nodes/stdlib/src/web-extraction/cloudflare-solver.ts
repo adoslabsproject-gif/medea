@@ -19,7 +19,7 @@
  * NON usare per: evadere CF di terzi senza autorizzazione (TOS violation).
  */
 
-import { safeFetchWithRedirects, assertUrlSafe } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects, assertUrlSafe } from '@medea/engine-safe-fetch';
 import type { NodeModule, NodeExecutor } from '../types.js';
 
 interface FlareSolverrResponse {
@@ -42,9 +42,9 @@ const executor: NodeExecutor = async (config, _input, _context) => {
   // browser-automate) — IP privato/interno via il servizio solver altrimenti.
   assertUrlSafe(url);
 
-  const endpoint = String(config.endpoint ?? process.env.FLOWFORGE_FLARESOLVERR_ENDPOINT ?? '').trim();
+  const endpoint = String(config.endpoint ?? process.env.MEDEA_FLARESOLVERR_ENDPOINT ?? '').trim();
   if (!endpoint) {
-    throw new Error('FlareSolverr endpoint not configured. Set FLOWFORGE_FLARESOLVERR_ENDPOINT env or fill "endpoint" config. Self-host: docker run -d -p 8191:8191 ghcr.io/flaresolverr/flaresolverr:latest');
+    throw new Error('FlareSolverr endpoint not configured. Set MEDEA_FLARESOLVERR_ENDPOINT env or fill "endpoint" config. Self-host: docker run -d -p 8191:8191 ghcr.io/flaresolverr/flaresolverr:latest');
   }
 
   const sessionId = String(config.sessionId ?? '').trim();
@@ -122,7 +122,7 @@ export const cloudflareSolverNode: NodeModule = {
         label: 'FlareSolverr endpoint',
         type: 'text',
         required: false,
-        placeholder: 'http://flaresolverr.local:8191 (vuoto = env FLOWFORGE_FLARESOLVERR_ENDPOINT)',
+        placeholder: 'http://flaresolverr.local:8191 (vuoto = env MEDEA_FLARESOLVERR_ENDPOINT)',
         help: 'URL del tuo FlareSolverr. Default container Docker: http://localhost:8191. Self-host: docker run -d -p 8191:8191 ghcr.io/flaresolverr/flaresolverr:latest',
       },
       {

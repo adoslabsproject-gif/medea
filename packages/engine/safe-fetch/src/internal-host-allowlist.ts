@@ -2,7 +2,7 @@
  * internal-host-allowlist — allowlist ESPLICITA di host interni per-tenant.
  *
  * Policy di sicurezza (NON config dell'autore del workflow): l'operatore dichiara, via
- * env `FLOWFORGE_INTERNAL_HOST_ALLOWLIST` del container tenant, gli host interni
+ * env `MEDEA_INTERNAL_HOST_ALLOWLIST` del container tenant, gli host interni
  * legittimi (es. un ERP on-prem con cert self-signed). SOLO verso questi host:
  *   - il SSRF guard può essere scavalcato (raggiungere l'IP privato), e
  *   - `allowSelfSigned` del nodo HTTP può disattivare la verifica TLS.
@@ -31,12 +31,12 @@ export function parseInternalHostAllowlist(raw: string | undefined | null): Set<
 
 /**
  * Host:porta da esentare dal guard SSRF quando l'URL LLM punta al GATEWAY INTERNO
- * di sistema (es. FLOWFORGE_LIARA_BASE_URL, IP privato della bridge Docker
+ * di sistema (es. MEDEA_LIARA_BASE_URL, IP privato della bridge Docker
  * by-design). Decide per CONFRONTO DI ORIGIN → copre sia il default sia un
  * baseUrl passato esplicitamente dal runtime. Un origin DIVERSO (endpoint BYOK
  * dell'utente) → `undefined` (guard pieno).
  *
- * SSOT condivisa (Fase 2 #14): nata in @flowforge/nodes-ai-agents (fix SSRF
+ * SSOT condivisa (Fase 2 #14): nata in @medea/engine-nodes-ai-agents (fix SSRF
  * nLA_liara), spostata qui perché serve anche ai nodi stdlib che parlano col
  * gateway (vision-extract, scrape-smart/extract-llm) — stdlib non può dipendere
  * da ai-agents (dipendenza circolare). ai-agents la re-esporta.

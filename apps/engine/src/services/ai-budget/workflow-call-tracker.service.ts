@@ -58,14 +58,14 @@ export interface BudgetDailyRow {
  * Post-fix: usa it-IT locale + tz Europe/Rome. Restituisce stringa
  * `YYYY-MM-DD` nella timezone del cliente target. Reset midnight Rome time.
  *
- * Env override `FLOWFORGE_BUDGET_TZ` per multi-region future (es. tenant US).
+ * Env override `MEDEA_BUDGET_TZ` per multi-region future (es. tenant US).
  */
-// NB: misnomer storico — ritorna la data nel fuso BUSINESS (FLOWFORGE_BUDGET_TZ,
+// NB: misnomer storico — ritorna la data nel fuso BUSINESS (MEDEA_BUDGET_TZ,
 // default Europe/Rome), NON UTC. Il budget giornaliero resetta a mezzanotte
 // business. Esportato come single-source-of-truth per i test (evita flakiness
 // timezone: il test non deve ricalcolare la data con UTC).
 export function todayUtc(): string {
-  const tz = process.env.FLOWFORGE_BUDGET_TZ ?? 'Europe/Rome';
+  const tz = process.env.MEDEA_BUDGET_TZ ?? 'Europe/Rome';
   const fmt = new Intl.DateTimeFormat('en-CA', {
     year: 'numeric', month: '2-digit', day: '2-digit', timeZone: tz,
   });

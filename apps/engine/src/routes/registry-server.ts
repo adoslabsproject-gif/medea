@@ -5,15 +5,15 @@
  * registry — vendors publish .ffnode packages here and this routes serves
  * them with the manifest index. Self-hosters can either point at this URL
  * (default) or stand up their own registry by setting
- * FLOWFORGE_REGISTRY_URL.
+ * MEDEA_REGISTRY_URL.
  *
  * Endpoints (no auth — registry is public read):
  *   GET /registry/nodes.json           — the registry index (RegistryIndex)
  *   GET /registry/packages/:filename   — download a .ffnode file
  *
  * Storage:
- *   $FLOWFORGE_DATA_DIR/registry/nodes.json
- *   $FLOWFORGE_DATA_DIR/registry/packages/*.ffnode
+ *   $MEDEA_DATA_DIR/registry/nodes.json
+ *   $MEDEA_DATA_DIR/registry/packages/*.ffnode
  *
  * Why "static file + serve" instead of a database-backed catalog: the
  * registry is read-mostly (~ 1000 reads per write). A static JSON +
@@ -29,8 +29,8 @@ import { createHash } from 'node:crypto';
 import { logger } from '@/lib/logger.js';
 
 function registryDir(): string {
-  return process.env.FLOWFORGE_REGISTRY_DIR?.trim()
-    || join(process.env.FLOWFORGE_DATA_DIR?.trim() || process.cwd(), 'registry');
+  return process.env.MEDEA_REGISTRY_DIR?.trim()
+    || join(process.env.MEDEA_DATA_DIR?.trim() || process.cwd(), 'registry');
 }
 
 export function createRegistryServerRoutes(): Hono {

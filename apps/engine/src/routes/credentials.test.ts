@@ -59,7 +59,7 @@ describe('credentials route — /reveal role gate', () => {
 //
 // Qui NIENTE mock: CredentialsService REALE con envelope encryption
 // AES-256-GCM vera (master password dev-sentinel in test, vault salt su
-// FLOWFORGE_DATA_DIR) + tabella user_credentials reale. È l'API dei SEGRETI
+// MEDEA_DATA_DIR) + tabella user_credentials reale. È l'API dei SEGRETI
 // dei tenant: le invarianti pinnate sono quelle che un pentester prova
 // per prime.
 // ════════════════════════════════════════════════════════════════════

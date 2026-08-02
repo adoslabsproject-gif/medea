@@ -26,7 +26,7 @@
  *   { jobId, event: 'page'|'batch'|'done'|'error', payload: {...} }
  */
 
-import { safeFetchWithRedirects } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects } from '@medea/engine-safe-fetch';
 import type { NodeModule, NodeExecutor } from '../types.js';
 
 export interface CrawlerStartRequest {
@@ -92,9 +92,9 @@ export function buildCrawlerRequest(config: Record<string, unknown>): CrawlerSta
 
 const executor: NodeExecutor = async (config, _input, _context) => {
   const start = Date.now();
-  const endpoint = String(config.endpoint ?? process.env.FLOWFORGE_CRAWLER_ENDPOINT ?? '').trim();
+  const endpoint = String(config.endpoint ?? process.env.MEDEA_CRAWLER_ENDPOINT ?? '').trim();
   if (!endpoint) {
-    throw new Error('Crawler endpoint not configured. Set FLOWFORGE_CRAWLER_ENDPOINT env or fill "endpoint" config field. BYO: deploy crawler service (Heritrix/Scrapy-cluster/custom) or managed Zeli endpoint.');
+    throw new Error('Crawler endpoint not configured. Set MEDEA_CRAWLER_ENDPOINT env or fill "endpoint" config field. BYO: deploy crawler service (Heritrix/Scrapy-cluster/custom) or managed Zeli endpoint.');
   }
 
   const apiKey = String(config.apiKey ?? '').trim();
@@ -198,7 +198,7 @@ export const distributedCrawlerNode: NodeModule = {
     version: '1.0.0',
     configFields: [
       { key: 'action', label: 'Azione', type: 'select', required: true, defaultValue: 'start', options: ['start', 'status', 'stop', 'results'], help: 'start = avvia nuovo job (ritorna jobId). status = metriche job (richiede jobId). stop = termina job. results = paginated batch (richiede jobId+cursor opzionale).' },
-      { key: 'endpoint', label: 'Crawler endpoint', type: 'text', required: false, placeholder: 'https://crawler.miosito.com (vuoto = env FLOWFORGE_CRAWLER_ENDPOINT)', help: 'Servizio crawler self-host o managed Zeli.' },
+      { key: 'endpoint', label: 'Crawler endpoint', type: 'text', required: false, placeholder: 'https://crawler.miosito.com (vuoto = env MEDEA_CRAWLER_ENDPOINT)', help: 'Servizio crawler self-host o managed Zeli.' },
       { key: 'apiKey', label: 'API Key', type: 'secret', required: false, help: 'Bearer token.' },
       { key: 'jobId', label: 'Job ID (status/stop/results)', type: 'text', required: false, placeholder: 'crawl_abc123', help: 'Required per status/stop/results. Per start, opzionale (auto-generato se vuoto) o per resume (con resume=true).' },
       { key: 'seeds', label: 'Seed URLs', type: 'textarea', required: false, placeholder: 'https://site.com\nhttps://site.com/blog', help: 'URLs iniziali (comma o newline). Required per action=start.' },

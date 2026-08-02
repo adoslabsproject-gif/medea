@@ -1,6 +1,6 @@
-import type { NodeModule, NodeExecutor } from '@flowforge/nodes-stdlib';
-import { executeWithHostBreaker } from '@flowforge/nodes-stdlib';
-import { safeFetchWithRedirects, readJsonCapped, readTextTruncated } from '@flowforge/safe-fetch';
+import type { NodeModule, NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { executeWithHostBreaker } from '@medea/engine-nodes-stdlib';
+import { safeFetchWithRedirects, readJsonCapped, readTextTruncated } from '@medea/engine-safe-fetch';
 
 const REGISTER_IT_API = 'https://api.register.it/v1';
 

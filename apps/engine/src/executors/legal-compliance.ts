@@ -12,8 +12,8 @@
  *  3. dedupFindings + applySeverityFloor + computeScore
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
-import { logLlmExchange } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { logLlmExchange } from '@medea/engine-nodes-stdlib';
 import { dispatchLLMChat, type LlmTokenUsage, type TokenUsageListener } from '@/services/llm-chat.service.js';
 import { llmResolver, type ResolvedLlm } from '@/services/llm-resolver.service.js';
 import {

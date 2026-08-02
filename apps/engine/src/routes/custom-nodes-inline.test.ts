@@ -49,6 +49,7 @@ vi.mock('@/services/custom-nodes/index.js', () => ({
 }));
 
 import { createCustomNodesRoutes } from './custom-nodes.js';
+import { jsonBody } from '@/lib/test-json-body.js';
 
 // Helper per mount + inject ctx
 function makeApp() {
@@ -79,7 +80,7 @@ describe('POST /:id/inline-completion', () => {
       body: JSON.stringify({ file: 'executor.ts', contextBefore: 'ctx', cursorLine: 5, cursorColumn: 10 }),
     });
     expect(res.status).toBe(200);
-    const json = await res.json();
+    const json = await jsonBody(res);
     expect(json.completion).toBe('return 1;');
     expect(callInlineCompletionMock).toHaveBeenCalledTimes(1);
     expect(callInlineCompletionMock.mock.calls[0]![0]).toMatchObject({
@@ -161,7 +162,7 @@ describe('POST /:id/inline-completion', () => {
       body: JSON.stringify({ file: 'f.ts', contextBefore: '', cursorLine: 1, cursorColumn: 1 }),
     });
     expect(res.status).toBe(200);
-    const json = await res.json();
+    const json = await jsonBody(res);
     expect(json.completion).toBe('');
     expect(json.tokensIn).toBe(0);
   });

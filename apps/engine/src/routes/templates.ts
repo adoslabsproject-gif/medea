@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { WORKFLOW_TEMPLATES, findTemplate } from '@flowforge/templates';
+import { WORKFLOW_TEMPLATES, findTemplate } from '@medea/engine-templates';
 import { WorkflowService } from '@/services/workflow.service.js';
 import { provisionDeclaredTables, remapNodeDatabaseIds } from '@/services/ai-scaffold/scaffold-table-provision.js';
 import type { IEventBus } from '@/ports/event-bus.js';

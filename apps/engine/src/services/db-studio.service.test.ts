@@ -23,7 +23,7 @@ import Database from 'better-sqlite3';
 const m = vi.hoisted(() => {
   const mockFns = {
     db: null as Database.Database | null,
-    configValue: { FLOWFORGE_DATA_DIR: '/tmp/ff-test' },
+    configValue: { MEDEA_DATA_DIR: '/tmp/ff-test' },
     connect: vi.fn(),
     applyMigration: vi.fn(),
     previewMigration: vi.fn(),
@@ -71,15 +71,15 @@ vi.mock('@/config.js', () => ({
   loadConfig: () => m.configValue,
 }));
 
-vi.mock('@flowforge/db-studio-engine', () => ({
+vi.mock('@medea/engine-db-studio-engine', () => ({
   SqliteAdapter: m.FakeAdapter,
 }));
-vi.mock('@flowforge/db-studio-postgres', () => ({ PostgresAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-mysql', () => ({ MysqlAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-mongodb', () => ({ MongoDbAdapter: m.FakeAdapterNoBatch }));
-vi.mock('@flowforge/db-studio-redis', () => ({ RedisAdapter: m.FakeAdapterNoRaw }));
-vi.mock('@flowforge/db-studio-mssql', () => ({ MssqlAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-duckdb', () => ({ DuckDbAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-postgres', () => ({ PostgresAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-mysql', () => ({ MysqlAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-mongodb', () => ({ MongoDbAdapter: m.FakeAdapterNoBatch }));
+vi.mock('@medea/engine-db-studio-redis', () => ({ RedisAdapter: m.FakeAdapterNoRaw }));
+vi.mock('@medea/engine-db-studio-mssql', () => ({ MssqlAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-duckdb', () => ({ DuckDbAdapter: m.FakeAdapter }));
 // La guardia SSRF è testata a parte (external-host-guard.test, con DI dnsResolve):
 // qui no-op così i test di routing/caching usano host fittizi senza DNS reale.
 vi.mock('@/services/db-studio/external-host-guard.js', () => ({ assertExternalHostAllowed: () => Promise.resolve() }));

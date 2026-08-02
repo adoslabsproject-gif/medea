@@ -5,7 +5,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { hashPassword } from '@flowforge/auth-local';
+import { hashPassword } from '@medea/engine-auth-local';
 import { nanoid } from 'nanoid';
 import { getDatabase } from '@/storage/db.js';
 import { requireRole } from '@/middleware/auth.js';
@@ -156,8 +156,8 @@ export function createUsersRoutes(): Hono {
     if (existing.is_system === 1) {
       // System accounts (CI / smoke test users) are protected so owners
       // who try to clean their user list don't see them reappear after
-      // every deploy. To remove permanently, disable FLOWFORGE_E2E_AUTO_PROVISION.
-      return c.json({ error: 'Utente di sistema non eliminabile via UI. Disattiva FLOWFORGE_E2E_AUTO_PROVISION nel server env per rimuoverlo.' }, 403);
+      // every deploy. To remove permanently, disable MEDEA_E2E_AUTO_PROVISION.
+      return c.json({ error: 'Utente di sistema non eliminabile via UI. Disattiva MEDEA_E2E_AUTO_PROVISION nel server env per rimuoverlo.' }, 403);
     }
     const info = sqlite
       .prepare('DELETE FROM users WHERE tenant_id = ? AND id = ?')

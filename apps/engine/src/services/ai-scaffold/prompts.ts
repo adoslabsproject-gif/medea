@@ -12,7 +12,7 @@
  *                           upfront come node-catalog da scaffold-runner).
  *
  * Selezione runtime: `pickScaffoldPrompt(provider)` legge env
- * `FLOWFORGE_LIARA_LORA_LOADED=true` per attivare la variante LoRA su provider
+ * `MEDEA_LIARA_LORA_LOADED=true` per attivare la variante LoRA su provider
  * 'liara'. Default 'false' (LoRA non ancora deployato).
  */
 
@@ -347,16 +347,16 @@ RISPOSTA ESEMPIO: {"tool":"list_databases","args":{}}`;
  *
  * Logica:
  *   • provider !== 'liara' → sempre SYSTEM_PROMPT full (provider esterni non hanno LoRA)
- *   • provider === 'liara' + env FLOWFORGE_LIARA_LORA_LOADED=true → SYSTEM_PROMPT_LORA compact
+ *   • provider === 'liara' + env MEDEA_LIARA_LORA_LOADED=true → SYSTEM_PROMPT_LORA compact
  *   • provider === 'liara' + env not set/false → SYSTEM_PROMPT full (LoRA non disponibile)
  *
- * Setta FLOWFORGE_LIARA_LORA_LOADED=true SOLO quando il LoRA scaffold-v<X> e\`
+ * Setta MEDEA_LIARA_LORA_LOADED=true SOLO quando il LoRA scaffold-v<X> e\`
  * deployato sul vLLM backend e include nel training tutto il knowledge base
  * del prompt full. In caso contrario il modello senza LoRA fallisce sui
  * pattern complessi (hallucinate id, abort indebiti, no error handling).
  */
 export function pickScaffoldPrompt(provider: string): string {
   if (provider !== 'liara') return SYSTEM_PROMPT;
-  const loraLoaded = process.env.FLOWFORGE_LIARA_LORA_LOADED === 'true';
+  const loraLoaded = process.env.MEDEA_LIARA_LORA_LOADED === 'true';
   return loraLoaded ? SYSTEM_PROMPT_LORA : SYSTEM_PROMPT;
 }

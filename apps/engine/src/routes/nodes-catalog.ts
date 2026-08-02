@@ -18,14 +18,14 @@
  */
 
 import { Hono } from 'hono';
-import { stdlibNodes } from '@flowforge/nodes-stdlib';
-import { dbNodes } from '@flowforge/nodes-db';
-import { coreIntegrationNodes } from '@flowforge/nodes-integrations-core';
-import { italianConnectors } from '@flowforge/nodes-integrations-italia';
-import { aiAgentNodes } from '@flowforge/nodes-ai-agents';
-import { llmNodes } from '@flowforge/nodes-llm';
+import { stdlibNodes } from '@medea/engine-nodes-stdlib';
+import { dbNodes } from '@medea/engine-nodes-db';
+import { coreIntegrationNodes } from '@medea/engine-nodes-integrations-core';
+import { italianConnectors } from '@medea/engine-nodes-integrations-italia';
+import { aiAgentNodes } from '@medea/engine-nodes-ai-agents';
+import { llmNodes } from '@medea/engine-nodes-llm';
 import { listInstalled } from '@/services/community-nodes.service.js';
-import type { NodeDef } from '@flowforge/core-schema';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 interface ConfigFieldDescriptor {
   key: string;

@@ -1,10 +1,10 @@
-import baseConfig from '@flowforge/eslint-config';
+import baseConfig from '@medea/engine-eslint-config';
 import path from 'node:path';
 
 const ROOT = import.meta.dirname;
 
 /**
- * stdlib è dual-target: importato da `apps/flowforge-runtime` (server Node) E
+ * stdlib è dual-target: importato da `apps/engine` (server Node) E
  * tree-shakeato dall'editor SPA Vite via barrel `src/index.ts`. Un singolo
  * `import 'node:crypto'` top-level in un file raggiungibile dal barrel rompe
  * il bundle Vite con "node:crypto is not externalized by the resolver"

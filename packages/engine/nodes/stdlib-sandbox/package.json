@@ -1,5 +1,5 @@
 {
-  "name": "@flowforge/nodes-stdlib-sandbox",
+  "name": "@medea/engine-nodes-stdlib-sandbox",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -31,7 +31,7 @@
     "test:fast": "vitest run -c vitest.config.ts"
   },
   "devDependencies": {
-    "@flowforge/eslint-config": "workspace:*",
+    "@medea/engine-eslint-config": "workspace:*",
     "esbuild": "^0.24.0",
     "eslint": "^9.39.0",
     "typescript": "^5.6.0",

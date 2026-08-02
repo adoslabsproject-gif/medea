@@ -9,7 +9,7 @@
  *   - Bingbot: https://www.bing.com/toolbox/bingbot.json
  *   - Applebot: https://search.developer.apple.com/applebot.json
  *
- * Re-run: `pnpm --filter @zeliai/shared sync:bot-ipranges`
+ * Re-run: `pnpm --filter @medea/engine-shared sync:bot-ipranges`
  * Auto schedule: systemd timer zeliai-bot-ipranges.timer (3:00 UTC daily).
  *
  * Telegram alert su sync failure: TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID env.

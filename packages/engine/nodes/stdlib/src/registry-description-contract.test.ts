@@ -20,7 +20,7 @@
  * loud, forcing either the author to enrich the description or document
  * the gap with intent.
  *
- * Same architectural pattern as `apps/flowforge-runtime/src/engine/ghost-
+ * Same architectural pattern as `apps/engine/src/engine/ghost-
  * coverage.test.ts`: whitelist + hard-fail on drift, breakdown report on
  * every CI run so the gap shrinks visibly over time.
  *

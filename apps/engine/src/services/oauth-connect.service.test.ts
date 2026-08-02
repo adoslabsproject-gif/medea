@@ -47,14 +47,14 @@ beforeEach(() => {
       created_at TEXT NOT NULL
     );
   `);
-  delete process.env.FLOWFORGE_GOOGLE_OAUTH_CLIENT_ID;
-  delete process.env.FLOWFORGE_GOOGLE_OAUTH_CLIENT_SECRET;
-  delete process.env.FLOWFORGE_GITHUB_OAUTH_CLIENT_ID;
-  delete process.env.FLOWFORGE_GITHUB_OAUTH_CLIENT_SECRET;
-  delete process.env.FLOWFORGE_SLACK_OAUTH_CLIENT_ID;
-  delete process.env.FLOWFORGE_SLACK_OAUTH_CLIENT_SECRET;
-  delete process.env.FLOWFORGE_NOTION_OAUTH_CLIENT_ID;
-  delete process.env.FLOWFORGE_NOTION_OAUTH_CLIENT_SECRET;
+  delete process.env.MEDEA_GOOGLE_OAUTH_CLIENT_ID;
+  delete process.env.MEDEA_GOOGLE_OAUTH_CLIENT_SECRET;
+  delete process.env.MEDEA_GITHUB_OAUTH_CLIENT_ID;
+  delete process.env.MEDEA_GITHUB_OAUTH_CLIENT_SECRET;
+  delete process.env.MEDEA_SLACK_OAUTH_CLIENT_ID;
+  delete process.env.MEDEA_SLACK_OAUTH_CLIENT_SECRET;
+  delete process.env.MEDEA_NOTION_OAUTH_CLIENT_ID;
+  delete process.env.MEDEA_NOTION_OAUTH_CLIENT_SECRET;
   credentialsCreateMock.mockResolvedValue({ id: 'cred-123' });
 });
 
@@ -64,35 +64,35 @@ describe('🚨 availableProviders — env discovery', () => {
   });
 
   it('🚨 GOOGLE env set → google in lista', () => {
-    process.env.FLOWFORGE_GOOGLE_OAUTH_CLIENT_ID = 'g-id';
-    process.env.FLOWFORGE_GOOGLE_OAUTH_CLIENT_SECRET = 'g-secret';
+    process.env.MEDEA_GOOGLE_OAUTH_CLIENT_ID = 'g-id';
+    process.env.MEDEA_GOOGLE_OAUTH_CLIENT_SECRET = 'g-secret';
     const p = new OAuthConnectService().availableProviders();
     expect(p).toEqual([{ id: 'google', label: 'Google' }]);
   });
 
   it('🚨 client_id senza secret → escluso (entrambi richiesti)', () => {
-    process.env.FLOWFORGE_GITHUB_OAUTH_CLIENT_ID = 'gh-id';
+    process.env.MEDEA_GITHUB_OAUTH_CLIENT_ID = 'gh-id';
     // missing secret
     expect(new OAuthConnectService().availableProviders()).toEqual([]);
   });
 
   it('🚨 tutti 4 provider env → 4 in lista', () => {
-    process.env.FLOWFORGE_GOOGLE_OAUTH_CLIENT_ID = 'x';
-    process.env.FLOWFORGE_GOOGLE_OAUTH_CLIENT_SECRET = 'y';
-    process.env.FLOWFORGE_GITHUB_OAUTH_CLIENT_ID = 'x';
-    process.env.FLOWFORGE_GITHUB_OAUTH_CLIENT_SECRET = 'y';
-    process.env.FLOWFORGE_SLACK_OAUTH_CLIENT_ID = 'x';
-    process.env.FLOWFORGE_SLACK_OAUTH_CLIENT_SECRET = 'y';
-    process.env.FLOWFORGE_NOTION_OAUTH_CLIENT_ID = 'x';
-    process.env.FLOWFORGE_NOTION_OAUTH_CLIENT_SECRET = 'y';
+    process.env.MEDEA_GOOGLE_OAUTH_CLIENT_ID = 'x';
+    process.env.MEDEA_GOOGLE_OAUTH_CLIENT_SECRET = 'y';
+    process.env.MEDEA_GITHUB_OAUTH_CLIENT_ID = 'x';
+    process.env.MEDEA_GITHUB_OAUTH_CLIENT_SECRET = 'y';
+    process.env.MEDEA_SLACK_OAUTH_CLIENT_ID = 'x';
+    process.env.MEDEA_SLACK_OAUTH_CLIENT_SECRET = 'y';
+    process.env.MEDEA_NOTION_OAUTH_CLIENT_ID = 'x';
+    process.env.MEDEA_NOTION_OAUTH_CLIENT_SECRET = 'y';
     expect(new OAuthConnectService().availableProviders()).toHaveLength(4);
   });
 });
 
 describe('🚨 start — authorize URL + state insert', () => {
   beforeEach(() => {
-    process.env.FLOWFORGE_GOOGLE_OAUTH_CLIENT_ID = 'g-client-id';
-    process.env.FLOWFORGE_GOOGLE_OAUTH_CLIENT_SECRET = 'g-client-secret';
+    process.env.MEDEA_GOOGLE_OAUTH_CLIENT_ID = 'g-client-id';
+    process.env.MEDEA_GOOGLE_OAUTH_CLIENT_SECRET = 'g-client-secret';
   });
 
   it('🚨 happy: URL contiene tutti i params required + PKCE', () => {
@@ -128,8 +128,8 @@ describe('🚨 start — authorize URL + state insert', () => {
   });
 
   it('🚨 GitHub: NO PKCE → code_verifier null', () => {
-    process.env.FLOWFORGE_GITHUB_OAUTH_CLIENT_ID = 'x';
-    process.env.FLOWFORGE_GITHUB_OAUTH_CLIENT_SECRET = 'y';
+    process.env.MEDEA_GITHUB_OAUTH_CLIENT_ID = 'x';
+    process.env.MEDEA_GITHUB_OAUTH_CLIENT_SECRET = 'y';
     new OAuthConnectService().start({
       provider: 'github', tenantId: 't', userId: 'u', credentialName: 'n', redirectUri: 'r',
     });
@@ -145,7 +145,7 @@ describe('🚨 start — authorize URL + state insert', () => {
   });
 
   it('🚨 provider non configurato (no env) → throw esplicito', () => {
-    delete process.env.FLOWFORGE_GOOGLE_OAUTH_CLIENT_ID;
+    delete process.env.MEDEA_GOOGLE_OAUTH_CLIENT_ID;
     expect(() => new OAuthConnectService().start({
       provider: 'google', tenantId: 't', userId: 'u', credentialName: 'n', redirectUri: 'r',
     })).toThrow(/non configurato/u);
@@ -166,8 +166,8 @@ describe('🚨 start — authorize URL + state insert', () => {
 
 describe('🚨 complete — token exchange + credential persist', () => {
   beforeEach(() => {
-    process.env.FLOWFORGE_GOOGLE_OAUTH_CLIENT_ID = 'g-cid';
-    process.env.FLOWFORGE_GOOGLE_OAUTH_CLIENT_SECRET = 'g-secret';
+    process.env.MEDEA_GOOGLE_OAUTH_CLIENT_ID = 'g-cid';
+    process.env.MEDEA_GOOGLE_OAUTH_CLIENT_SECRET = 'g-secret';
   });
 
   function seedState(extra: Partial<any> = {}): string {
@@ -257,8 +257,8 @@ describe('🚨 complete — token exchange + credential persist', () => {
   });
 
   it('🚨 Slack v2 authed_user.access_token (oddity) → estratto', async () => {
-    process.env.FLOWFORGE_SLACK_OAUTH_CLIENT_ID = 's';
-    process.env.FLOWFORGE_SLACK_OAUTH_CLIENT_SECRET = 's';
+    process.env.MEDEA_SLACK_OAUTH_CLIENT_ID = 's';
+    process.env.MEDEA_SLACK_OAUTH_CLIENT_SECRET = 's';
     const state = seedState({ provider: 'slack', code_verifier: null });
     safeFetchMock.mockResolvedValueOnce({
       ok: true,

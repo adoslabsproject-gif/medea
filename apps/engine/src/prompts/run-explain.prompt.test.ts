@@ -12,7 +12,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { buildRunExplainSystemPrompt, buildRunExplainUserContent } from './run-explain.prompt.js';
-import { stdlibNodeDefs } from '@flowforge/nodes-stdlib';
+import { stdlibNodeDefs } from '@medea/engine-nodes-stdlib';
 import { getLiaraContextWindow } from '@/services/llm-chat.service.js';
 
 const CHARS_PER_TOKEN = 3.5; // stessa stima del dispatcher (llm-chat.service)

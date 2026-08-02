@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { NodeDefSchema } from '@flowforge/core-schema';
+import { NodeDefSchema } from '@medea/engine-core-schema';
 import { aiAgentNodes, AI_AGENT_DEFINITIONS, internalGatewayTrustedHost } from './index.js';
 
 describe('aiAgentNodes', () => {

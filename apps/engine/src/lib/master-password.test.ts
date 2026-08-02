@@ -3,7 +3,7 @@
  *
  * Copertura:
  *  - file (default path /run/secrets/...) ha precedenza su env
- *  - FLOWFORGE_MASTER_PASSWORD_FILE custom override
+ *  - MEDEA_MASTER_PASSWORD_FILE custom override
  *  - trailing newline strippato (Docker secrets convention)
  *  - BOM strippato (paranoia editor windows)
  *  - empty file → fallback
@@ -32,8 +32,8 @@ beforeEach(() => {
   _resetMasterPasswordCacheForTest();
   tmpDir = mkdtempSync(join(tmpdir(), 'ff-mp-test-'));
   secretFile = join(tmpDir, 'master-password');
-  delete process.env.FLOWFORGE_MASTER_PASSWORD;
-  delete process.env.FLOWFORGE_MASTER_PASSWORD_FILE;
+  delete process.env.MEDEA_MASTER_PASSWORD;
+  delete process.env.MEDEA_MASTER_PASSWORD_FILE;
   delete process.env.NODE_ENV;
 });
 
@@ -45,8 +45,8 @@ afterEach(() => {
 describe('loadMasterPassword', () => {
   it('precedenza: file path esplicito vince su env var', () => {
     writeFileSync(secretFile, 'from-file-pw-32-chars-min-aaaaaa');
-    process.env.FLOWFORGE_MASTER_PASSWORD_FILE = secretFile;
-    process.env.FLOWFORGE_MASTER_PASSWORD = 'from-env-pw-should-be-ignored';
+    process.env.MEDEA_MASTER_PASSWORD_FILE = secretFile;
+    process.env.MEDEA_MASTER_PASSWORD = 'from-env-pw-should-be-ignored';
 
     const result = loadMasterPassword();
     expect(result.source).toBe('file');
@@ -55,8 +55,8 @@ describe('loadMasterPassword', () => {
   });
 
   it('precedenza: env var vince se file non esiste', () => {
-    process.env.FLOWFORGE_MASTER_PASSWORD_FILE = '/nonexistent/file/path';
-    process.env.FLOWFORGE_MASTER_PASSWORD = 'env-only-pw-fallback-aaaaaaaaaa';
+    process.env.MEDEA_MASTER_PASSWORD_FILE = '/nonexistent/file/path';
+    process.env.MEDEA_MASTER_PASSWORD = 'env-only-pw-fallback-aaaaaaaaaa';
 
     const result = loadMasterPassword();
     expect(result.source).toBe('env');
@@ -66,36 +66,36 @@ describe('loadMasterPassword', () => {
 
   it('trailing newline (\\n) strippato dal file', () => {
     writeFileSync(secretFile, 'pw-with-trailing-newline-aaaaaa\n');
-    process.env.FLOWFORGE_MASTER_PASSWORD_FILE = secretFile;
+    process.env.MEDEA_MASTER_PASSWORD_FILE = secretFile;
 
     expect(loadMasterPassword().password).toBe('pw-with-trailing-newline-aaaaaa');
   });
 
   it('trailing CRLF (\\r\\n) strippato dal file', () => {
     writeFileSync(secretFile, 'pw-with-trailing-crlf-aaaaaaaaaa\r\n');
-    process.env.FLOWFORGE_MASTER_PASSWORD_FILE = secretFile;
+    process.env.MEDEA_MASTER_PASSWORD_FILE = secretFile;
 
     expect(loadMasterPassword().password).toBe('pw-with-trailing-crlf-aaaaaaaaaa');
   });
 
   it('BOM UTF-8 leading strippato', () => {
     writeFileSync(secretFile, '﻿pw-with-bom-prefix-aaaaaaaaaaaa');
-    process.env.FLOWFORGE_MASTER_PASSWORD_FILE = secretFile;
+    process.env.MEDEA_MASTER_PASSWORD_FILE = secretFile;
 
     expect(loadMasterPassword().password).toBe('pw-with-bom-prefix-aaaaaaaaaaaa');
   });
 
   it('whitespace interno NON viene toccato (password con spazi legali)', () => {
     writeFileSync(secretFile, 'pw with internal spaces ok 123\n');
-    process.env.FLOWFORGE_MASTER_PASSWORD_FILE = secretFile;
+    process.env.MEDEA_MASTER_PASSWORD_FILE = secretFile;
 
     expect(loadMasterPassword().password).toBe('pw with internal spaces ok 123');
   });
 
   it('file vuoto → fallback env', () => {
     writeFileSync(secretFile, '');
-    process.env.FLOWFORGE_MASTER_PASSWORD_FILE = secretFile;
-    process.env.FLOWFORGE_MASTER_PASSWORD = 'env-fallback-when-empty-aaaaaaaa';
+    process.env.MEDEA_MASTER_PASSWORD_FILE = secretFile;
+    process.env.MEDEA_MASTER_PASSWORD = 'env-fallback-when-empty-aaaaaaaa';
 
     expect(loadMasterPassword().source).toBe('env');
   });
@@ -103,7 +103,7 @@ describe('loadMasterPassword', () => {
   it('produzione: niente file, niente env → throw', () => {
     process.env.NODE_ENV = 'production';
 
-    expect(() => loadMasterPassword()).toThrow(/FLOWFORGE_MASTER_PASSWORD not found/);
+    expect(() => loadMasterPassword()).toThrow(/MEDEA_MASTER_PASSWORD not found/);
   });
 
   it('dev: niente file, niente env → dev-sentinel', () => {
@@ -116,7 +116,7 @@ describe('loadMasterPassword', () => {
 
   it('cache: seconda chiamata NON rilegge il file', () => {
     writeFileSync(secretFile, 'first-value-cached-aaaaaaaaaaaaa');
-    process.env.FLOWFORGE_MASTER_PASSWORD_FILE = secretFile;
+    process.env.MEDEA_MASTER_PASSWORD_FILE = secretFile;
 
     expect(loadMasterPassword().password).toBe('first-value-cached-aaaaaaaaaaaaa');
 
@@ -131,26 +131,26 @@ describe('loadMasterPassword', () => {
 
   it('getMasterPasswordOrThrow torna stringa', () => {
     writeFileSync(secretFile, 'pw-via-getter-aaaaaaaaaaaaaaaaaa');
-    process.env.FLOWFORGE_MASTER_PASSWORD_FILE = secretFile;
+    process.env.MEDEA_MASTER_PASSWORD_FILE = secretFile;
 
     expect(getMasterPasswordOrThrow()).toBe('pw-via-getter-aaaaaaaaaaaaaaaaaa');
   });
 
   it('isFromSecretsFile = true solo per source file', () => {
     writeFileSync(secretFile, 'pw-from-file-test-aaaaaaaaaaaaaa');
-    process.env.FLOWFORGE_MASTER_PASSWORD_FILE = secretFile;
+    process.env.MEDEA_MASTER_PASSWORD_FILE = secretFile;
     expect(isFromSecretsFile()).toBe(true);
 
     _resetMasterPasswordCacheForTest();
-    delete process.env.FLOWFORGE_MASTER_PASSWORD_FILE;
+    delete process.env.MEDEA_MASTER_PASSWORD_FILE;
     unlinkSync(secretFile);
-    process.env.FLOWFORGE_MASTER_PASSWORD = 'env-not-file-aaaaaaaaaaaaaaaaaa';
+    process.env.MEDEA_MASTER_PASSWORD = 'env-not-file-aaaaaaaaaaaaaaaaaa';
     expect(isFromSecretsFile()).toBe(false);
   });
 
-  it('path inesistente in FLOWFORGE_MASTER_PASSWORD_FILE → fallback graceful', () => {
-    process.env.FLOWFORGE_MASTER_PASSWORD_FILE = '/tmp/definitely-does-not-exist-xyz-12345';
-    process.env.FLOWFORGE_MASTER_PASSWORD = 'env-fallback-when-file-missing-aaa';
+  it('path inesistente in MEDEA_MASTER_PASSWORD_FILE → fallback graceful', () => {
+    process.env.MEDEA_MASTER_PASSWORD_FILE = '/tmp/definitely-does-not-exist-xyz-12345';
+    process.env.MEDEA_MASTER_PASSWORD = 'env-fallback-when-file-missing-aaa';
 
     expect(loadMasterPassword().source).toBe('env');
   });

@@ -20,7 +20,7 @@ Conseguenze pratiche:
    conoscenza implicita nei pesi. Un modello generico deve poterlo eseguire
    leggendo solo il prompt.
 2. Lo schema del workflow prodotto è **byte-compatibile** con
-   `packages/flowforge/core/schema` (Zod): un JSON generato in Medea deve poter
+   `packages/engine/core/schema` (Zod): un JSON generato in Medea deve poter
    essere importato sul server e viceversa.
 3. La **validazione a 3 livelli** (defId + config · tool registry · edges,
    porte e id) gira in Medea prima di salvare, e in caso di errore il modello

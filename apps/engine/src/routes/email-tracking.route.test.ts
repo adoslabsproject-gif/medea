@@ -16,7 +16,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
 import Database from 'better-sqlite3';
-import { signTrackingToken } from '@flowforge/nodes-stdlib/server';
+import { signTrackingToken } from '@medea/engine-nodes-stdlib/server';
 import { TRANSPARENT_GIF_BYTES } from '@/services/email-tracking.service.js';
 
 const SECRET = 'c'.repeat(40);
@@ -40,7 +40,7 @@ vi.mock('@/storage/db.js', () => ({
 }));
 vi.mock('@/lib/logger.js');
 vi.mock('@/config.js', () => ({
-  loadConfig: () => ({ FLOWFORGE_SSO_SECRET: 'c'.repeat(40) }),
+  loadConfig: () => ({ MEDEA_SSO_SECRET: 'c'.repeat(40) }),
 }));
 
 beforeEach(() => {

@@ -171,16 +171,16 @@ export class ScaffoldSession {
 export class AiScaffoldService {
   /**
    * Scaffold entry point. Routing automatico:
-   *  - `FLOWFORGE_SCAFFOLD_MODE=singleshot` (default 2026-05-31) → guided_json
+   *  - `MEDEA_SCAFFOLD_MODE=singleshot` (default 2026-05-31) → guided_json
    *    1-shot vLLM (30-90s, 0 retry, 100% completo).
-   *  - `FLOWFORGE_SCAFFOLD_MODE=iter` → legacy loop iter (compat, debug).
+   *  - `MEDEA_SCAFFOLD_MODE=iter` → legacy loop iter (compat, debug).
    *  - Override per-call via input.mode (futuro BYOK Claude).
    */
   async scaffold(
     input: AiScaffoldInput,
     onProgress?: ScaffoldProgressEmitter,
   ): Promise<AiScaffoldResult> {
-    const mode = process.env.FLOWFORGE_SCAFFOLD_MODE ?? 'singleshot';
+    const mode = process.env.MEDEA_SCAFFOLD_MODE ?? 'singleshot';
     if (mode === 'singleshot') {
       const { runSingleshotScaffold } = await import('./ai-scaffold/singleshot.service.js');
       // Adapter SSE: ogni fase singleshot → 1 row trace separata con

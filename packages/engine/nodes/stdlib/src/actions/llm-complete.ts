@@ -8,7 +8,7 @@
  * Output: { completion, model, provider, tokensUsed:{prompt,completion,total},
  *           cost?, responseFormat, jsonParsed? }
  *
- * Implementazione executor in `apps/flowforge-runtime/src/executors/llm-complete.ts`.
+ * Implementazione executor in `apps/engine/src/executors/llm-complete.ts`.
  * NOMI CAMPI matchano ESATTAMENTE i `config.X` letti dall'executor.
  */
 

@@ -12,7 +12,7 @@
  *    handoff decrypt fail → oauthError=handoff_invalid,
  *    kind wrong → oauthError=handoff_wrong_kind,
  *    audience mismatch → oauthError=handoff_audience_mismatch,
- *    FLOWFORGE_TENANT_ID assente → oauthError=tenant_id_unset,
+ *    MEDEA_TENANT_ID assente → oauthError=tenant_id_unset,
  *    fields mancanti → oauthError=handoff_incomplete,
  *    upsert throw → oauthError=import_failed + detail truncato 200char,
  *    🚨 SECURITY: handoff per workspace A NON puo\` essere usato su workspace B
@@ -82,12 +82,12 @@ beforeEach(() => {
   loadConfigMock.mockReset();
   upsertAccountMock.mockReset();
   loadConfigMock.mockReturnValue({
-    FLOWFORGE_SSO_SECRET: SECRET,
-    FLOWFORGE_TENANT_ID: EXPECTED_TENANT,
+    MEDEA_SSO_SECRET: SECRET,
+    MEDEA_TENANT_ID: EXPECTED_TENANT,
   });
-  process.env.FLOWFORGE_SSO_SECRET = SECRET;
-  process.env.FLOWFORGE_TENANT_ID = EXPECTED_TENANT;
-  process.env.FLOWFORGE_TENANT_SLUG = 'acme';
+  process.env.MEDEA_SSO_SECRET = SECRET;
+  process.env.MEDEA_TENANT_ID = EXPECTED_TENANT;
+  process.env.MEDEA_TENANT_SLUG = 'acme';
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
     ok: true, json: async () => ({ enabled: true }),
   }));
@@ -116,8 +116,8 @@ describe('GET /email-accounts/oauth/google/start — auth gates', () => {
     expect(res.status).toBe(403);
   });
 
-  it('FLOWFORGE_TENANT_SLUG assente E host non match → 500 tenant_slug_unknown', async () => {
-    delete process.env.FLOWFORGE_TENANT_SLUG;
+  it('MEDEA_TENANT_SLUG assente E host non match → 500 tenant_slug_unknown', async () => {
+    delete process.env.MEDEA_TENANT_SLUG;
     const router = await import('hono').then(({ Hono }) => {
       const a = new Hono();
       a.use('*', async (c, next) => {
@@ -134,8 +134,8 @@ describe('GET /email-accounts/oauth/google/start — auth gates', () => {
     expect((await res.json() as { error: string }).error).toBe('tenant_slug_unknown');
   });
 
-  it('FLOWFORGE_TENANT_SLUG da env → 302 portal con tenant=<slug>', async () => {
-    process.env.FLOWFORGE_TENANT_SLUG = 'acme-corp';
+  it('MEDEA_TENANT_SLUG da env → 302 portal con tenant=<slug>', async () => {
+    process.env.MEDEA_TENANT_SLUG = 'acme-corp';
     const res = await appAuthRequest({ role: 'owner', tenantId: 'workspace-X' }, '/email-accounts/oauth/google/start');
     expect(res.status).toBe(302);
     const loc = res.headers.get('location') ?? '';
@@ -145,7 +145,7 @@ describe('GET /email-accounts/oauth/google/start — auth gates', () => {
   });
 
   it('slug derivato da host header se env assente', async () => {
-    delete process.env.FLOWFORGE_TENANT_SLUG;
+    delete process.env.MEDEA_TENANT_SLUG;
     const router = await import('hono').then(({ Hono }) => {
       const a = new Hono();
       a.use('*', async (c, next) => {
@@ -177,11 +177,11 @@ describe('GET /email-accounts/oauth/google/start — auth gates', () => {
     expect(loc).toContain('accountId=acc-1');
   });
 
-  it('FLOWFORGE_PORTAL_BASE_URL override default', async () => {
-    process.env.FLOWFORGE_PORTAL_BASE_URL = 'https://portal-staging.example.com';
+  it('MEDEA_PORTAL_BASE_URL override default', async () => {
+    process.env.MEDEA_PORTAL_BASE_URL = 'https://portal-staging.example.com';
     const res = await appAuthRequest({ role: 'owner', tenantId: 'w' }, '/email-accounts/oauth/google/start');
     expect(res.headers.get('location') ?? '').toContain('portal-staging.example.com');
-    delete process.env.FLOWFORGE_PORTAL_BASE_URL;
+    delete process.env.MEDEA_PORTAL_BASE_URL;
   });
 });
 
@@ -284,9 +284,9 @@ describe('GET /email-accounts/oauth/google/import — JWE handoff', () => {
     expect(upsertAccountMock).not.toHaveBeenCalled();
   });
 
-  it('FLOWFORGE_TENANT_ID assente → oauthError=tenant_id_unset (cannot verify audience)', async () => {
-    delete process.env.FLOWFORGE_TENANT_ID;
-    loadConfigMock.mockReturnValue({ FLOWFORGE_SSO_SECRET: SECRET });
+  it('MEDEA_TENANT_ID assente → oauthError=tenant_id_unset (cannot verify audience)', async () => {
+    delete process.env.MEDEA_TENANT_ID;
+    loadConfigMock.mockReturnValue({ MEDEA_SSO_SECRET: SECRET });
     const jwe = await buildHandoffJwe(validPayload);
     const res = await appAuthRequest(null, `/email-accounts/oauth/google/import?handoff=${jwe}`);
     expect(res.headers.get('location') ?? '').toContain('oauthError=tenant_id_unset');

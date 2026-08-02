@@ -16,6 +16,7 @@
  */
 import type { AuthContext } from '@/middleware/auth.js';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { jsonBody } from '@/lib/test-json-body.js';
 
 const sqliteMock = vi.hoisted(() => {
   const data: Record<string, unknown[]> = {
@@ -104,7 +105,7 @@ vi.mock('@/lib/auth-keys.js', () => ({
   getAuthKeys: async () => ({ privateKeyPem: 'PRIV-PEM' }),
 }));
 
-vi.mock('@flowforge/auth-local', () => ({
+vi.mock('@medea/engine-auth-local', () => ({
   issueSessionToken: vi.fn(async () => 'session-token-jwt'),
 }));
 
@@ -191,7 +192,7 @@ describe('🚨 POST /saml/providers validation', () => {
       body: JSON.stringify({ provider: 'okta' }),
     });
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body.error).toContain('required');
   });
 
@@ -221,7 +222,7 @@ describe('🚨 GET /saml/providers list — no cert leak', () => {
     });
     const app = appAs('owner');
     const res = await app.request('/saml/providers');
-    void (await res.json());
+    void (await jsonBody(res));
     // sqlite SELECT non include cert in colonne (vedi codice)
     // verifico che il mock prepare sia chiamato con SELECT che omette cert
     expect(sqliteMock.prepare).toHaveBeenCalledWith(
@@ -239,14 +240,14 @@ describe('🚨 DELETE /saml/providers/:provider', () => {
     });
     const app = appAs('owner');
     const res = await app.request('/saml/providers/okta', { method: 'DELETE' });
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body.removed).toBe(true);
   });
 
   it('🚨 removed=false se non esiste', async () => {
     const app = appAs('owner');
     const res = await app.request('/saml/providers/ghost', { method: 'DELETE' });
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body.removed).toBe(false);
   });
 });
@@ -322,7 +323,7 @@ describe('🚨 POST /saml/:provider/callback', () => {
     const fd = new FormData();
     const res = await app.request('/saml/okta/callback', { method: 'POST', body: fd });
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body.error).toContain('Missing SAMLResponse');
   });
 
@@ -344,7 +345,7 @@ describe('🚨 POST /saml/:provider/callback', () => {
       method: 'POST', body: formBody('B64'),
     });
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body.error).toContain('email');
   });
 
@@ -417,7 +418,7 @@ describe('🚨 POST /saml/:provider/callback', () => {
       method: 'POST', body: formBody('B64'),
     });
     expect(res.status).toBe(500);
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body.error).toContain('Invalid signature');
   });
 });

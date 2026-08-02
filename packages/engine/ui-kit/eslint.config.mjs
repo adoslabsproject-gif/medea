@@ -1,9 +1,9 @@
-import baseConfig from '@flowforge/eslint-config';
+import baseConfig from '@medea/engine-eslint-config';
 
 const ROOT = import.meta.dirname;
 
 /**
- * Gate eslint per @flowforge/ui-kit (libreria React — prima senza config: lint
+ * Gate eslint per @medea/engine-ui-kit (libreria React — prima senza config: lint
  * script presente ma rotto). Variante React: tsconfig.eslint.json standalone con
  * JSX (react-jsx) + lib DOM, e glob estesi a .tsx. Type-aware (RE-include i test).
  */

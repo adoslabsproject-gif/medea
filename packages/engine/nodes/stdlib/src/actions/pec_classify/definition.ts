@@ -4,7 +4,7 @@
  * @module actions/pec_classify/definition
  */
 
-import type { NodeDef } from '@flowforge/core-schema';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 export const pecClassifyNodeDef: NodeDef = {
   id: 'action_pec_classify',

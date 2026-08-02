@@ -2,7 +2,7 @@
  * Google Sheets executor — Sheets API v4 (OAuth2 access token in vault).
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { IntegrationError, requireIntegration, withRetry } from './common.js';
 import { jsonFetch, getIntegrationLabel, parseSheetValues } from './saas-shared.js';
 

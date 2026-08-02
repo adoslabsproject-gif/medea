@@ -116,7 +116,7 @@ export const fileWatchTriggerNode: NodeModule = {
         type: 'directory-picker',
         required: true,
         placeholder: 'es. ./watch o /tmp/watch',
-        help: 'Cartella nel sandbox del tenant. Path assoluti solo se in FLOWFORGE_FILE_ALLOWLIST.',
+        help: 'Cartella nel sandbox del tenant. Path assoluti solo se in MEDEA_FILE_ALLOWLIST.',
       },
       {
         key: 'glob',

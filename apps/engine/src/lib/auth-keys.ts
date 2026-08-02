@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { generateSessionKeyPair, type KeyMaterial } from '@flowforge/auth-local';
+import { generateSessionKeyPair, type KeyMaterial } from '@medea/engine-auth-local';
 import { loadConfig } from '@/config.js';
 import { logger } from './logger.js';
 
@@ -9,7 +9,7 @@ let cached: KeyMaterial | null = null;
 export async function getAuthKeys(): Promise<KeyMaterial> {
   if (cached) return cached;
   const config = loadConfig();
-  const dir = config.FLOWFORGE_DATA_DIR;
+  const dir = config.MEDEA_DATA_DIR;
   const privPath = join(dir, 'session-private.pem');
   const pubPath = join(dir, 'session-public.pem');
 

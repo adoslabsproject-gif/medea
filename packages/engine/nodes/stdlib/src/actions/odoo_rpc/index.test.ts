@@ -3,7 +3,7 @@
  *
  * Strategy
  * ────────
- * Mock `@flowforge/safe-fetch` to return canned `Response` objects carrying
+ * Mock `@medea/engine-safe-fetch` to return canned `Response` objects carrying
  * real XML-RPC envelopes. Two calls per run: authenticate + execute_kw,
  * each one returns a different envelope.
  *
@@ -26,12 +26,12 @@ import {
   __clearOdooAuthCacheForTests,
 } from '../../lib/odoo/xml-rpc-client.js';
 
-vi.mock('@flowforge/safe-fetch', () => ({
+vi.mock('@medea/engine-safe-fetch', () => ({
   safeFetchWithRedirects: vi.fn(),
   assertUrlSafe: vi.fn(),
 }));
 
-const { safeFetchWithRedirects } = await import('@flowforge/safe-fetch');
+const { safeFetchWithRedirects } = await import('@medea/engine-safe-fetch');
 const mockedFetch = vi.mocked(safeFetchWithRedirects);
 
 const ctx = { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {} };

@@ -49,16 +49,16 @@ function jsonRes(body: unknown, opts: { ok?: boolean; status?: number } = {}): R
 beforeEach(() => {
   safeFetchMock.mockReset();
   updateIntegrationCredentialsMock.mockReset();
-  delete process.env.FLOWFORGE_GOOGLE_CLIENT_ID;
-  delete process.env.FLOWFORGE_GOOGLE_CLIENT_SECRET;
-  delete process.env.FLOWFORGE_GOOGLE_REDIRECT_URI;
+  delete process.env.MEDEA_GOOGLE_CLIENT_ID;
+  delete process.env.MEDEA_GOOGLE_CLIENT_SECRET;
+  delete process.env.MEDEA_GOOGLE_REDIRECT_URI;
 });
 
 describe('buildOAuthClient — env var validation', () => {
   it('CLIENT_ID + SECRET presenti → ritorna client config', async () => {
-    process.env.FLOWFORGE_GOOGLE_CLIENT_ID = 'cid-123';
-    process.env.FLOWFORGE_GOOGLE_CLIENT_SECRET = 'sec-456';
-    process.env.FLOWFORGE_GOOGLE_REDIRECT_URI = 'https://app.example.com/callback';
+    process.env.MEDEA_GOOGLE_CLIENT_ID = 'cid-123';
+    process.env.MEDEA_GOOGLE_CLIENT_SECRET = 'sec-456';
+    process.env.MEDEA_GOOGLE_REDIRECT_URI = 'https://app.example.com/callback';
     const client = await buildOAuthClient();
     expect(client).toEqual({
       clientId: 'cid-123',
@@ -68,7 +68,7 @@ describe('buildOAuthClient — env var validation', () => {
   });
 
   it('CLIENT_ID assente → IntegrationError OAUTH_NOT_CONFIGURED', async () => {
-    process.env.FLOWFORGE_GOOGLE_CLIENT_SECRET = 'sec-456';
+    process.env.MEDEA_GOOGLE_CLIENT_SECRET = 'sec-456';
     await expect(buildOAuthClient()).rejects.toThrow(IntegrationError);
     await expect(buildOAuthClient()).rejects.toMatchObject({
       code: 'OAUTH_NOT_CONFIGURED',
@@ -77,15 +77,15 @@ describe('buildOAuthClient — env var validation', () => {
   });
 
   it('CLIENT_SECRET assente → IntegrationError', async () => {
-    process.env.FLOWFORGE_GOOGLE_CLIENT_ID = 'cid';
+    process.env.MEDEA_GOOGLE_CLIENT_ID = 'cid';
     await expect(buildOAuthClient()).rejects.toMatchObject({
       code: 'OAUTH_NOT_CONFIGURED',
     });
   });
 
   it('REDIRECT_URI optional → defaultRedirectUri undefined', async () => {
-    process.env.FLOWFORGE_GOOGLE_CLIENT_ID = 'a';
-    process.env.FLOWFORGE_GOOGLE_CLIENT_SECRET = 'b';
+    process.env.MEDEA_GOOGLE_CLIENT_ID = 'a';
+    process.env.MEDEA_GOOGLE_CLIENT_SECRET = 'b';
     const client = await buildOAuthClient();
     expect(client.defaultRedirectUri).toBeUndefined();
   });

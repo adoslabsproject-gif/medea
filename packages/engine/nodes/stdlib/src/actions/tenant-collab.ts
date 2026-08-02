@@ -3,7 +3,7 @@ import type { NodeModule } from '../types.js';
 /**
  * NodeDef per `action_tenant_collab` — collaborazione CROSS-TENANT via webhook
  * bridge HTTP. SOLO metadata UI: l'implementazione vive nell'executor
- * server-only `tenantCollabExecutor` (apps/flowforge-runtime/src/executors/
+ * server-only `tenantCollabExecutor` (apps/engine/src/executors/
  * tenant-collab.ts), che firma HMAC, applica l'allowlist SSRF e scrive
  * l'audit GDPR del data-transfer.
  *

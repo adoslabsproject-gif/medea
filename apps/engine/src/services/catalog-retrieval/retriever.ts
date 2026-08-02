@@ -28,7 +28,7 @@ import {
   type CatalogRecord,
 } from './index-builder.js';
 import { CATEGORY_LABELS, type CatalogCategory } from './category.js';
-import type { OutputContract } from '@flowforge/core-schema';
+import type { OutputContract } from '@medea/engine-core-schema';
 
 export interface RetrievedNode {
   defId: string;

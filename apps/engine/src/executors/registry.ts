@@ -1,7 +1,7 @@
 /**
  * Server-side executor registry.
  *
- * The browser-safe node packages (@flowforge/nodes-stdlib, nodes-llm, etc.)
+ * The browser-safe node packages (@medea/engine-nodes-stdlib, nodes-llm, etc.)
  * declare NodeDef metadata + optional executors. Some executors require Node-only
  * libraries (jsonata, nodemailer, chokidar, imapflow, isolated-vm) that can't be
  * bundled to the browser.
@@ -11,7 +11,7 @@
  * executor declared in the NodeModule.
  */
 
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { jsonataExecutor } from './jsonata.js';
 import { sendEmailExecutor } from './nodemailer.js';
 import { sendEmailTrackedExecutor } from './nodemailer-tracked.js';

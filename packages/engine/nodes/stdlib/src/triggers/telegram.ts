@@ -10,7 +10,7 @@ import type { NodeModule } from '../types.js';
  * (zero verifica aziendale, zero costi, nessuna finestra 24h) — canale
  * perfetto per demo immediate e come canale ordini secondario gratuito.
  *
- * L'endpoint runtime vive in apps/flowforge-runtime/src/routes/telegram-trigger/.
+ * L'endpoint runtime vive in apps/engine/src/routes/telegram-trigger/.
  */
 export const telegramTriggerNode: NodeModule = {
   def: {

@@ -33,7 +33,7 @@ const dbPath = join(tmpdir(), `flowforge-test-${String(process.pid)}.sqlite`);
 for (const suffix of ['', '-wal', '-shm']) {
   try { rmSync(`${dbPath}${suffix}`, { force: true }); } catch { /* assente → ok */ }
 }
-process.env.FLOWFORGE_DB_PATH = dbPath;
+process.env.MEDEA_DB_PATH = dbPath;
 
 const conn = new SqliteDatabase(dbPath);
 conn.exec(SCHEMA_SQL); // crea tutte le tabelle base (IF NOT EXISTS, idempotente)

@@ -11,7 +11,7 @@
  *
  * Pure function — testabile in isolamento. No I/O, no dipendenze esterne.
  */
-import { type NodeExecutor, safeUserRegex } from '@flowforge/nodes-stdlib';
+import { type NodeExecutor, safeUserRegex } from '@medea/engine-nodes-stdlib';
 
 function asString(v: unknown): string {
   return typeof v === 'string' ? v : '';

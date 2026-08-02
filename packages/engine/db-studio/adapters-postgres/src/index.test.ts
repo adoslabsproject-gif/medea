@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { PostgresAdapter, buildPostgresUrl } from './index.js';
-import type { Database } from '@flowforge/db-studio-core';
+import type { Database } from '@medea/engine-db-studio-core';
 
 const conn = (over: Partial<Database['connection']>): Database['connection'] =>
   ({ engine: 'postgres', embedded: false, ...over });

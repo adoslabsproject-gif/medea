@@ -107,9 +107,9 @@ export interface BinaryGcResult {
   tempFreedBytes: number;
 }
 
-/** Grace configurabile: `FLOWFORGE_BINARY_GC_GRACE_HOURS` (≥0, anche frazionario). */
+/** Grace configurabile: `MEDEA_BINARY_GC_GRACE_HOURS` (≥0, anche frazionario). */
 export function readGraceMs(): number {
-  const raw = process.env.FLOWFORGE_BINARY_GC_GRACE_HOURS;
+  const raw = process.env.MEDEA_BINARY_GC_GRACE_HOURS;
   if (!raw) return DEFAULT_GRACE_MS;
   const hours = Number.parseFloat(raw);
   return Number.isFinite(hours) && hours >= 0 ? hours * 60 * 60 * 1000 : DEFAULT_GRACE_MS;

@@ -24,9 +24,9 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
-import { EmailSendTrackedConfigSchema } from '@flowforge/nodes-stdlib';
-import { injectTracking } from '@flowforge/nodes-stdlib/server';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { EmailSendTrackedConfigSchema } from '@medea/engine-nodes-stdlib';
+import { injectTracking } from '@medea/engine-nodes-stdlib/server';
 import { sendEmailExecutor } from './nodemailer.js';
 import { getDatabase } from '@/storage/db.js';
 import { loadConfig } from '@/config.js';
@@ -63,16 +63,16 @@ export const sendEmailTrackedExecutor: NodeExecutor = async (rawConfig, input, c
 
   // ── Resolve tracking base URL + HMAC secret ──────────────────────
   const runtimeCfg = loadConfig();
-  const baseUrl = (cfg.trackingBaseUrl ?? runtimeCfg.FLOWFORGE_PUBLIC_BASE_URL ?? '').replace(/\/$/, '');
+  const baseUrl = (cfg.trackingBaseUrl ?? runtimeCfg.MEDEA_PUBLIC_BASE_URL ?? '').replace(/\/$/, '');
   if (!baseUrl) {
     throw new Error(
       'action_email_send_tracked: trackingBaseUrl non impostato. ' +
-      'Configura il campo "URL base tracking" nel nodo, oppure l\'env FLOWFORGE_PUBLIC_BASE_URL nel container.',
+      'Configura il campo "URL base tracking" nel nodo, oppure l\'env MEDEA_PUBLIC_BASE_URL nel container.',
     );
   }
-  const secret = runtimeCfg.FLOWFORGE_SSO_SECRET ?? process.env.FLOWFORGE_SSO_SECRET ?? '';
+  const secret = runtimeCfg.MEDEA_SSO_SECRET ?? process.env.MEDEA_SSO_SECRET ?? '';
   if (!secret || secret.length < 32) {
-    throw new Error('action_email_send_tracked: FLOWFORGE_SSO_SECRET mancante (≥32 char) — impossibile firmare i token tracking.');
+    throw new Error('action_email_send_tracked: MEDEA_SSO_SECRET mancante (≥32 char) — impossibile firmare i token tracking.');
   }
 
   const sendId = cfg.sendId ?? randomUUID();

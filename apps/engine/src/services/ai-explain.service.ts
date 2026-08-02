@@ -24,7 +24,7 @@ import {
   buildRunExplainSystemPrompt,
   buildRunExplainUserContent,
 } from '@/prompts/run-explain.prompt.js';
-import { stdlibNodeDefs as stdlibNodeDefsExport } from '@flowforge/nodes-stdlib';
+import { stdlibNodeDefs as stdlibNodeDefsExport } from '@medea/engine-nodes-stdlib';
 import { counterInc, histogramObserve } from '@/lib/metrics-store.js';
 
 /* ── Error types ─────────────────────────────────────────────────────── */

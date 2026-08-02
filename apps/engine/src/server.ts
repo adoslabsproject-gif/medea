@@ -167,8 +167,8 @@ export async function createServer(deps: ServerDependencies = { eventBus: new In
   // Security headers: in produzione li emette NGINX (single source of truth)
   // per evitare duplicati che penalizzano securityheaders.com da A+ a A.
   // Per dev/standalone senza nginx davanti, settare
-  // FLOWFORGE_STANDALONE=1 per riabilitare l'emissione lato app.
-  if (process.env.FLOWFORGE_STANDALONE === '1') {
+  // MEDEA_STANDALONE=1 per riabilitare l'emissione lato app.
+  if (process.env.MEDEA_STANDALONE === '1') {
     app.use('*', secureHeaders());
   }
 

@@ -786,18 +786,18 @@ describe('TenantService — actorUserId undefined branches', () => {
 // getStorageUsageMb — misura statfs REALE del volume del tenant (#7)
 // ════════════════════════════════════════════════════════════════════
 describe('TenantService.getStorageUsageMb — misura statfs reale', () => {
-  const savedDataDir = process.env.FLOWFORGE_DATA_DIR;
+  const savedDataDir = process.env.MEDEA_DATA_DIR;
 
   afterEach(() => {
-    if (savedDataDir === undefined) delete process.env.FLOWFORGE_DATA_DIR;
-    else process.env.FLOWFORGE_DATA_DIR = savedDataDir;
+    if (savedDataDir === undefined) delete process.env.MEDEA_DATA_DIR;
+    else process.env.MEDEA_DATA_DIR = savedDataDir;
     resetConfigForTests();
   });
 
   it('su una dir esistente ritorna un intero >= 0 (uso reale del filesystem)', () => {
     const dir = mkdtempSync(join(tmpdir(), 'ff-storage-'));
     try {
-      process.env.FLOWFORGE_DATA_DIR = dir;
+      process.env.MEDEA_DATA_DIR = dir;
       resetConfigForTests();
       const svc = new TenantService();
       const mb = svc.getStorageUsageMb();
@@ -811,7 +811,7 @@ describe('TenantService.getStorageUsageMb — misura statfs reale', () => {
   });
 
   it('🚨 fail-open: path inesistente (statfs ENOENT) → 0, NON crash', () => {
-    process.env.FLOWFORGE_DATA_DIR = '/nonexistent/ff-data-dir-xyz-' + Date.now().toString();
+    process.env.MEDEA_DATA_DIR = '/nonexistent/ff-data-dir-xyz-' + Date.now().toString();
     resetConfigForTests();
     const svc = new TenantService();
     expect(svc.getStorageUsageMb()).toBe(0);
@@ -822,7 +822,7 @@ describe('TenantService.getStorageUsageMb — misura statfs reale', () => {
     // sopra 1 MB → con max_storage_mb=1 la quota deve scattare.
     const dir = mkdtempSync(join(tmpdir(), 'ff-storage-'));
     try {
-      process.env.FLOWFORGE_DATA_DIR = dir;
+      process.env.MEDEA_DATA_DIR = dir;
       resetConfigForTests();
       m.sqliteStmt.get.mockReturnValueOnce(makeRow({ id: 'acme', max_storage_mb: 1 }));
       const svc = new TenantService();

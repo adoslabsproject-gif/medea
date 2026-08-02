@@ -4,7 +4,7 @@
  * checkpoint instead of restarting from scratch.
  *
  * Trade-off: writes to `workflow_checkpoints` add ~1ms per checkpoint.
- * Default cadence is every 5 nodes (env: FLOWFORGE_CHECKPOINT_EVERY_NODES).
+ * Default cadence is every 5 nodes (env: MEDEA_CHECKPOINT_EVERY_NODES).
  * For ETL workflows (~hundreds of nodes), 5 means at most 5 nodes of work
  * lost per crash — sweet spot between durability and overhead.
  *
@@ -17,7 +17,7 @@ import { getDatabase } from '@/storage/db.js';
 import { logger } from '@/lib/logger.js';
 import type { ICheckpointHandler, CheckpointArgs } from '@/engine/ports.js';
 import type { QueueItem } from '@/engine/workflow-engine.js';
-import type { ExecutionItem } from '@flowforge/core-schema';
+import type { ExecutionItem } from '@medea/engine-core-schema';
 
 export interface CheckpointRow {
   id: number;

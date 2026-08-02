@@ -10,8 +10,8 @@
  * con errore tracciato nei warnings.
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
-import { logLlmExchange } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { logLlmExchange } from '@medea/engine-nodes-stdlib';
 import { internalAwareFetch, type InternalServiceKey } from '@/lib/internal-service-fetch.js';
 import { readJsonCapped, readTextTruncated } from '@/lib/capped-response.js';
 import { dispatchLLMChat, type LlmTokenUsage } from '@/services/llm-chat.service.js';

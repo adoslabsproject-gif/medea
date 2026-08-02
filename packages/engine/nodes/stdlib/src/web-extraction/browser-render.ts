@@ -21,7 +21,7 @@
  *  - custom (qualsiasi endpoint compatibile)
  */
 
-import { safeFetchWithRedirects, assertUrlSafe } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects, assertUrlSafe } from '@medea/engine-safe-fetch';
 import type { NodeModule, NodeExecutor } from '../types.js';
 
 const executor: NodeExecutor = async (config, _input, _context) => {
@@ -34,9 +34,9 @@ const executor: NodeExecutor = async (config, _input, _context) => {
   // browser-automate, che valida ogni URL navigato.
   assertUrlSafe(url);
 
-  const endpoint = String(config.endpoint ?? process.env.FLOWFORGE_BROWSER_ENDPOINT ?? '').trim();
+  const endpoint = String(config.endpoint ?? process.env.MEDEA_BROWSER_ENDPOINT ?? '').trim();
   if (!endpoint) {
-    throw new Error('Browser render endpoint not configured. Set FLOWFORGE_BROWSER_ENDPOINT env or fill "endpoint" config field. BYO: deploy Playwright server (browserless.io or self-hosted) and point this here.');
+    throw new Error('Browser render endpoint not configured. Set MEDEA_BROWSER_ENDPOINT env or fill "endpoint" config field. BYO: deploy Playwright server (browserless.io or self-hosted) and point this here.');
   }
 
   const apiKey = String(config.apiKey ?? '').trim();
@@ -118,7 +118,7 @@ export const browserRenderNode: NodeModule = {
         label: 'Browser endpoint',
         type: 'text',
         required: false,
-        placeholder: 'https://browser.miosito.com (vuoto = usa env FLOWFORGE_BROWSER_ENDPOINT)',
+        placeholder: 'https://browser.miosito.com (vuoto = usa env MEDEA_BROWSER_ENDPOINT)',
         help: 'URL del Playwright server. Setup tipici: 1) browserless.io self-host (docker run browserless/chrome), 2) Playwright Server. Per la versione managed, contatta il supporto.',
       },
       {

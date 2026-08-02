@@ -21,30 +21,30 @@
  * agents that orchestrate workflows that contain other agents.
  */
 
-import type { NodeModule, NodeExecutor } from '@flowforge/nodes-stdlib';
-import { executeWithHostBreaker } from '@flowforge/nodes-stdlib';
+import type { NodeModule, NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { executeWithHostBreaker } from '@medea/engine-nodes-stdlib';
 // N20 audit (2026-05-29): http_request è LLM-callable e prompt-injectable.
 // Senza SSRF guard + manual redirect + auth strip, una prompt injection
 // può forzare la fetch verso 169.254.169.254 (IMDS), Redis loopback, o
 // container Docker cross-tenant. Pattern unificato in
-// `@flowforge/safe-fetch` per allinearsi al nodo HTTP stdlib (P0-3 fix).
+// `@medea/engine-safe-fetch` per allinearsi al nodo HTTP stdlib (P0-3 fix).
 //
 // 2026-06-04 audit gap closure: TUTTI i fetch (anche host hardcoded
 // trusted come OpenAI/Anthropic/Cohere/Voyage/Ollama/runtime-loopback)
 // passano per executeWithHostBreaker — un provider impallato non droga
 // il pool, fast-fail dopo 5 trip e probe HALF_OPEN per recovery.
-import { safeFetchWithRedirects, SsrfBlockedError, readJsonCapped, readTextTruncated } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects, SsrfBlockedError, readJsonCapped, readTextTruncated } from '@medea/engine-safe-fetch';
 // CONTRATTO #2 (RAG security): il contenuto recuperato via rag_search è DATO non
 // fidato (indirect prompt-injection). Stesso guard del runtime (executor
 // rag_search) → framing identico, zero drift. RAG_SYSTEM_REINFORCEMENT è il
 // rinforzo cintura+bretelle nel system prompt.
-import { frameRagResults, RAG_SYSTEM_REINFORCEMENT, RAG_CONTENT_MARKER, type RagSearchResult } from '@flowforge/rag-guard';
+import { frameRagResults, RAG_SYSTEM_REINFORCEMENT, RAG_CONTENT_MARKER, type RagSearchResult } from '@medea/engine-rag-guard';
 // Fase 2 (#14): il nodo non è più Anthropic-only. Provider da Settings → AI
 // Providers (Liara gateway di DEFAULT, tool_calls Qwen3-VL validati live);
 // il loop OpenAI-format vive in tool-loop-openai.ts (no-monoliti), il loop
 // Anthropic nativo resta qui. resolveLlmConfig è la stessa degli agent_*.
 import { resolveLlmConfig } from './llm-config.js';
-import { logLlmExchange } from '@flowforge/nodes-stdlib';
+import { logLlmExchange } from '@medea/engine-nodes-stdlib';
 import { runOpenAiToolLoop, TOOL_CAPABLE_OPENAI_PROVIDERS } from './tool-loop-openai.js';
 import { buildAgentUsage, sumAgentUsage, type AgentLlmUsage } from './llm-usage.js';
 
@@ -97,7 +97,7 @@ function runtimeAllowedHosts(base: string): string[] {
 }
 
 /** Adapter alla firma legacy usata nei call-site: delega al primitivo CONDIVISO
- *  `readTextTruncated` di @flowforge/safe-fetch (anti-OOM, single source of truth)
+ *  `readTextTruncated` di @medea/engine-safe-fetch (anti-OOM, single source of truth)
  *  e scarta il flag `truncated` (qui serve solo il testo cappato per display/errori). */
 async function readCappedText(res: Response, maxBytes = 4096): Promise<string> {
   return (await readTextTruncated(res, maxBytes)).text;
@@ -152,7 +152,7 @@ async function embedText(provider: string, apiKey: string, model: string, text: 
       return data.data[0]?.embedding ?? [];
     }
     case 'ollama': {
-      const baseUrl = process.env.FLOWFORGE_OLLAMA_URL ?? 'http://localhost:11434';
+      const baseUrl = process.env.MEDEA_OLLAMA_URL ?? 'http://localhost:11434';
       const res = await gatewayFetch(`${baseUrl}/api/embeddings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -430,7 +430,7 @@ const agentToolLoopExecutor: NodeExecutor = async (config, input, ctx) => {
       : JSON.stringify(input);
 
   const messages: AnthropicMessage[] = [{ role: 'user', content: userGoal }];
-  const runtimeBaseUrl = (typeof process !== 'undefined' && process.env.FLOWFORGE_BASE_URL) || 'http://localhost:3100/api/v1';
+  const runtimeBaseUrl = (typeof process !== 'undefined' && process.env.MEDEA_BASE_URL) || 'http://localhost:3100/api/v1';
   const embedProvider = typeof config.embedProvider === 'string' && config.embedProvider ? config.embedProvider : 'openai';
   const embedApiKey = typeof config.embedApiKey === 'string' ? config.embedApiKey : '';
   const embedModel = typeof config.embedModel === 'string' ? config.embedModel : '';

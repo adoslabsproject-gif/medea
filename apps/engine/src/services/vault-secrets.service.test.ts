@@ -18,10 +18,10 @@ globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 beforeEach(() => {
   vi.clearAllMocks();
   vi.resetModules();
-  delete process.env.FLOWFORGE_VAULT_ADDR;
-  delete process.env.FLOWFORGE_VAULT_TOKEN;
-  delete process.env.FLOWFORGE_VAULT_NAMESPACE;
-  delete process.env.FLOWFORGE_VAULT_CACHE_TTL_MS;
+  delete process.env.MEDEA_VAULT_ADDR;
+  delete process.env.MEDEA_VAULT_TOKEN;
+  delete process.env.MEDEA_VAULT_NAMESPACE;
+  delete process.env.MEDEA_VAULT_CACHE_TTL_MS;
 });
 
 async function loadFresh() {
@@ -30,20 +30,20 @@ async function loadFresh() {
 
 describe('🚨 isConfigured', () => {
   it('🚨 addr+token presenti → true', async () => {
-    process.env.FLOWFORGE_VAULT_ADDR = 'https://vault.example.com';
-    process.env.FLOWFORGE_VAULT_TOKEN = 'hvs.token-xxx';
+    process.env.MEDEA_VAULT_ADDR = 'https://vault.example.com';
+    process.env.MEDEA_VAULT_TOKEN = 'hvs.token-xxx';
     const { VaultSecretsService } = await loadFresh();
     expect(new VaultSecretsService().isConfigured()).toBe(true);
   });
 
   it('🚨 addr mancante → false', async () => {
-    process.env.FLOWFORGE_VAULT_TOKEN = 'hvs.token';
+    process.env.MEDEA_VAULT_TOKEN = 'hvs.token';
     const { VaultSecretsService } = await loadFresh();
     expect(new VaultSecretsService().isConfigured()).toBe(false);
   });
 
   it('🚨 token mancante → false', async () => {
-    process.env.FLOWFORGE_VAULT_ADDR = 'https://vault';
+    process.env.MEDEA_VAULT_ADDR = 'https://vault';
     const { VaultSecretsService } = await loadFresh();
     expect(new VaultSecretsService().isConfigured()).toBe(false);
   });
@@ -58,15 +58,15 @@ describe('🚨 resolve — parsing vault:* reference', () => {
   });
 
   it('🚨 vault:* senza #key → null (parse fail)', async () => {
-    process.env.FLOWFORGE_VAULT_ADDR = 'https://vault';
-    process.env.FLOWFORGE_VAULT_TOKEN = 'tok';
+    process.env.MEDEA_VAULT_ADDR = 'https://vault';
+    process.env.MEDEA_VAULT_TOKEN = 'tok';
     const { VaultSecretsService } = await loadFresh();
     expect(await new VaultSecretsService().resolve('vault:secret/myapp/db')).toBeUndefined();
   });
 
   it('🚨 vault:* mount only senza path → undefined (parse fail)', async () => {
-    process.env.FLOWFORGE_VAULT_ADDR = 'https://vault';
-    process.env.FLOWFORGE_VAULT_TOKEN = 'tok';
+    process.env.MEDEA_VAULT_ADDR = 'https://vault';
+    process.env.MEDEA_VAULT_TOKEN = 'tok';
     const { VaultSecretsService } = await loadFresh();
     expect(await new VaultSecretsService().resolve('vault:secret#key')).toBeUndefined();
   });
@@ -77,15 +77,15 @@ describe('🚨 resolve — parsing vault:* reference', () => {
     expect(out).toBeNull();
     expect(loggerMock.warn).toHaveBeenCalledWith(
       expect.objectContaining({ credentialName: 'vault:secret/data/myapp#password' }),
-      expect.stringContaining('FLOWFORGE_VAULT_ADDR/TOKEN'),
+      expect.stringContaining('MEDEA_VAULT_ADDR/TOKEN'),
     );
   });
 });
 
 describe('🚨 resolve — happy fetch', () => {
   beforeEach(() => {
-    process.env.FLOWFORGE_VAULT_ADDR = 'https://vault.example.com';
-    process.env.FLOWFORGE_VAULT_TOKEN = 'hvs.secret-token-AAA';
+    process.env.MEDEA_VAULT_ADDR = 'https://vault.example.com';
+    process.env.MEDEA_VAULT_TOKEN = 'hvs.secret-token-AAA';
   });
 
   it('🚨 happy path: KV v2 read → ritorna value', async () => {
@@ -118,7 +118,7 @@ describe('🚨 resolve — happy fetch', () => {
   });
 
   it('🚨 namespace propagato come header X-Vault-Namespace', async () => {
-    process.env.FLOWFORGE_VAULT_NAMESPACE = 'admin/team-alpha';
+    process.env.MEDEA_VAULT_NAMESPACE = 'admin/team-alpha';
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ data: { data: { x: 'y' } } }),
@@ -130,7 +130,7 @@ describe('🚨 resolve — happy fetch', () => {
   });
 
   it('🚨 trailing slash in addr → normalizzato', async () => {
-    process.env.FLOWFORGE_VAULT_ADDR = 'https://vault.example.com///';
+    process.env.MEDEA_VAULT_ADDR = 'https://vault.example.com///';
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ data: { data: { k: 'v' } } }),
@@ -143,8 +143,8 @@ describe('🚨 resolve — happy fetch', () => {
 
 describe('🚨 resolve — failure modes', () => {
   beforeEach(() => {
-    process.env.FLOWFORGE_VAULT_ADDR = 'https://vault.example.com';
-    process.env.FLOWFORGE_VAULT_TOKEN = 'tok';
+    process.env.MEDEA_VAULT_ADDR = 'https://vault.example.com';
+    process.env.MEDEA_VAULT_TOKEN = 'tok';
   });
 
   it('🚨 res non ok (403 token revoked) → null + error log', async () => {
@@ -196,8 +196,8 @@ describe('🚨 resolve — failure modes', () => {
 
 describe('🚨 cache TTL — anti-flood Vault server', () => {
   beforeEach(() => {
-    process.env.FLOWFORGE_VAULT_ADDR = 'https://vault';
-    process.env.FLOWFORGE_VAULT_TOKEN = 'tok';
+    process.env.MEDEA_VAULT_ADDR = 'https://vault';
+    process.env.MEDEA_VAULT_TOKEN = 'tok';
   });
 
   it('🚨 2x resolve stesso path → 1 fetch, cached', async () => {
@@ -214,7 +214,7 @@ describe('🚨 cache TTL — anti-flood Vault server', () => {
 
   it('🚨 TTL expired → re-fetch', async () => {
     vi.useFakeTimers();
-    process.env.FLOWFORGE_VAULT_CACHE_TTL_MS = '1000';
+    process.env.MEDEA_VAULT_CACHE_TTL_MS = '1000';
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ data: { data: { k: 'v1' } } }),

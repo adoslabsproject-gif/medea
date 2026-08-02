@@ -2,14 +2,14 @@
  * `news_display` — executor.
  *
  * Parser XML minimo per RSS 2.0 + Atom 1.0 (cheerio xml-mode).
- * Cache 5min per feedUrl. SSRF guard via @flowforge/safe-fetch.
+ * Cache 5min per feedUrl. SSRF guard via @medea/engine-safe-fetch.
  *
  * @module executors/news
  */
 
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor, NodeExecutionResult } from '@flowforge/nodes-stdlib';
-import { safeFetchWithRedirects } from '@flowforge/safe-fetch';
+import type { NodeExecutor, NodeExecutionResult } from '@medea/engine-nodes-stdlib';
+import { safeFetchWithRedirects } from '@medea/engine-safe-fetch';
 import { readTextTruncated } from '@/lib/capped-response.js';
 import { load as cheerioLoad } from 'cheerio';
 

@@ -30,9 +30,9 @@ import { parentPort, workerData } from 'node:worker_threads';
 import { createHmac, createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { guardedRandomBytes } from './sandbox-crypto-guard.js';
 import ivm from 'isolated-vm';
-import { STDLIB_BUNDLE } from '@flowforge/nodes-stdlib-sandbox/bundle-source';
+import { STDLIB_BUNDLE } from '@medea/engine-nodes-stdlib-sandbox/bundle-source';
 import { safeOutboundFetch } from '@/lib/safe-outbound-fetch.js';
-import { validateUrlForFetch } from '@flowforge/safe-fetch';
+import { validateUrlForFetch } from '@medea/engine-safe-fetch';
 import { readBytesCapped } from '@/lib/capped-response.js';
 
 /** Cap del body letto dal proxy fetch del sandbox (20MB) — marshallato text+base64. */

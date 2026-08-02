@@ -23,7 +23,7 @@ import {
 import type { runCommunityTriggerPoll } from '../community-trigger-runner.js';
 import type { InstalledNode } from '../community-nodes.service.js';
 import type { TriggerRunInput, TriggerRunResult } from './run-dispatcher.js';
-import type { CanvasNode, NodeTrigger, Workflow } from '@flowforge/core-schema';
+import type { CanvasNode, NodeTrigger, Workflow } from '@medea/engine-core-schema';
 
 afterEach(() => {
   vi.restoreAllMocks();

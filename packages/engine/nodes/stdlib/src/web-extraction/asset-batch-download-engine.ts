@@ -37,12 +37,12 @@
  *     binary blobs.
  *   - `basePath` MUST be an absolute path; never a relative one (we don't
  *     guess the cwd of the runtime container).
- *   - SSRF via `@flowforge/safe-fetch`.
+ *   - SSRF via `@medea/engine-safe-fetch`.
  *
  * @module web-extraction/asset-batch-download-engine
  */
 
-import { safeFetchWithRedirects } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects } from '@medea/engine-safe-fetch';
 
 // node:* LAZY (regola stdlib: import statico node:* rompe il bundle Vite editor).
 // Caricati una sola volta in runAssetBatchDownload (async) e iniettati dove servono

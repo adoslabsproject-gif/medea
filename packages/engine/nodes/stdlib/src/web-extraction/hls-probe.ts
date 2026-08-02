@@ -10,7 +10,7 @@
  * NO download dei segmenti, NO decryption — solo metadata.
  */
 
-import { safeFetchWithRedirects } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects } from '@medea/engine-safe-fetch';
 import type { NodeModule, NodeExecutor } from '../types.js';
 
 interface Variant {

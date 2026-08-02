@@ -56,14 +56,14 @@ beforeEach(async () => {
     );
   `);
   db = new SqliteHandle(conn);
-  savedGrace = process.env.FLOWFORGE_BINARY_GC_GRACE_HOURS;
-  delete process.env.FLOWFORGE_BINARY_GC_GRACE_HOURS;
+  savedGrace = process.env.MEDEA_BINARY_GC_GRACE_HOURS;
+  delete process.env.MEDEA_BINARY_GC_GRACE_HOURS;
 });
 
 afterEach(async () => {
   await rm(root, { recursive: true, force: true });
-  if (savedGrace === undefined) delete process.env.FLOWFORGE_BINARY_GC_GRACE_HOURS;
-  else process.env.FLOWFORGE_BINARY_GC_GRACE_HOURS = savedGrace;
+  if (savedGrace === undefined) delete process.env.MEDEA_BINARY_GC_GRACE_HOURS;
+  else process.env.MEDEA_BINARY_GC_GRACE_HOURS = savedGrace;
 });
 
 /** Scrive un blob e lo INVECCHIA oltre la grace (mtime −48h). Ritorna il ref. */
@@ -142,7 +142,7 @@ describe('🚨 grace — i blob giovani (run in corso) NON vengono toccati', () 
   });
 
   it('🚨 grace 0 via env → anche il giovane orfano viene cancellato', async () => {
-    process.env.FLOWFORGE_BINARY_GC_GRACE_HOURS = '0';
+    process.env.MEDEA_BINARY_GC_GRACE_HOURS = '0';
     const { ref } = await blobStore.writeBuffer(Buffer.from('giovane-ma-grace-zero'));
     const res = await runBinaryGcOnce({ blobStore, db });
     expect(res.deleted).toBe(1);
@@ -151,13 +151,13 @@ describe('🚨 grace — i blob giovani (run in corso) NON vengono toccati', () 
 
   it('readGraceMs: default 24h, frazionario, 0 esplicito, garbage/negativo → default', () => {
     expect(readGraceMs()).toBe(24 * 60 * 60 * 1000);
-    process.env.FLOWFORGE_BINARY_GC_GRACE_HOURS = '2.5';
+    process.env.MEDEA_BINARY_GC_GRACE_HOURS = '2.5';
     expect(readGraceMs()).toBe(2.5 * 60 * 60 * 1000);
-    process.env.FLOWFORGE_BINARY_GC_GRACE_HOURS = '0';
+    process.env.MEDEA_BINARY_GC_GRACE_HOURS = '0';
     expect(readGraceMs()).toBe(0);
-    process.env.FLOWFORGE_BINARY_GC_GRACE_HOURS = 'garbage';
+    process.env.MEDEA_BINARY_GC_GRACE_HOURS = 'garbage';
     expect(readGraceMs()).toBe(24 * 60 * 60 * 1000);
-    process.env.FLOWFORGE_BINARY_GC_GRACE_HOURS = '-1';
+    process.env.MEDEA_BINARY_GC_GRACE_HOURS = '-1';
     expect(readGraceMs()).toBe(24 * 60 * 60 * 1000);
   });
 });

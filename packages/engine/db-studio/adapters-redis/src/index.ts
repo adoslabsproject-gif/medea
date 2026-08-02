@@ -5,8 +5,8 @@
  */
 
 import { Redis } from 'ioredis';
-import type { Database, MigrationAction, QueryFilter, QuerySpec, Table } from '@flowforge/db-studio-core';
-import type { IDatabaseAdapter, QueryResult, ExecuteResult } from '@flowforge/db-studio-engine';
+import type { Database, MigrationAction, QueryFilter, QuerySpec, Table } from '@medea/engine-db-studio-core';
+import type { IDatabaseAdapter, QueryResult, ExecuteResult } from '@medea/engine-db-studio-engine';
 
 /** Coercizione sicura unknown→string per chiavi/sort (mai "[object Object]"). */
 function toStr(v: unknown): string {

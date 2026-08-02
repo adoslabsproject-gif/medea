@@ -20,7 +20,7 @@ import { getVectorQuotaOverride } from './vector-quota-flag.service.js';
 
 /**
  * Limiti quota vettoriale del piano. Precedenza: override LIVE (spinto dal portal su
- * cambio piano, Inc.6) > env del container (`FLOWFORGE_PLAN_VECTOR_MAX_*`, set a
+ * cambio piano, Inc.6) > env del container (`MEDEA_PLAN_VECTOR_MAX_*`, set a
  * provision/redeploy). L'override rende up/downgrade effettivo SUBITO, senza
  * dipendere dal recreate del container. null = illimitato.
  */
@@ -29,8 +29,8 @@ export function vectorPlanLimitsFromConfig(): VectorPlanLimits {
   if (override) return { maxVectors: override.maxVectors, maxDiskMb: override.maxDiskMb };
   const cfg = loadConfig();
   return {
-    maxVectors: cfg.FLOWFORGE_PLAN_VECTOR_MAX_VECTORS ?? null,
-    maxDiskMb: cfg.FLOWFORGE_PLAN_VECTOR_MAX_DISK_MB ?? null,
+    maxVectors: cfg.MEDEA_PLAN_VECTOR_MAX_VECTORS ?? null,
+    maxDiskMb: cfg.MEDEA_PLAN_VECTOR_MAX_DISK_MB ?? null,
   };
 }
 

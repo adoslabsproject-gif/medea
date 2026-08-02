@@ -664,7 +664,7 @@ describe('GET /ai-assistant/queue-status — proxy SSE canale-posizione', () => 
   });
 
   it('inoltra al portal con Bearer license + rid, e fa pass-through dei frame SSE', async () => {
-    process.env.FLOWFORGE_LICENSE_KEY = 'ZFL-TEST';
+    process.env.MEDEA_LICENSE_KEY = 'ZFL-TEST';
     const fetchMock = vi.fn(async (_url: string | URL, _init?: RequestInit) => new Response(sseBody('event: queued\ndata: {"position":2,"ahead":1}\n\n'), {
       status: 200, headers: { 'content-type': 'text/event-stream' },
     }));

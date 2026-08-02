@@ -10,9 +10,9 @@
  *   • Max redirect hop cap (default 5)
  *
  * Usato da:
- *   • `@flowforge/nodes-stdlib` HTTP action (lì il loop è inline, mantenuto
+ *   • `@medea/engine-nodes-stdlib` HTTP action (lì il loop è inline, mantenuto
  *     per backwards-compat con retry + pagination context)
- *   • `@flowforge/nodes-ai-agents` http_request tool (N20 audit 2026-05-29)
+ *   • `@medea/engine-nodes-ai-agents` http_request tool (N20 audit 2026-05-29)
  *   • Future nodes che fanno fetch su URL utente/LLM-controllati
  *
  * Note semantics:
@@ -26,7 +26,7 @@
  *   • DNS rebind: la `lookup` hook di undici è il punto vero. Qui blocchiamo
  *     solo la URL parsata + ogni redirect Location.
  *   • Body retry: l'helper NON è retry-aware. Per retry + backoff usare
- *     `@flowforge/nodes-stdlib` HTTP action che incapsula entrambi.
+ *     `@medea/engine-nodes-stdlib` HTTP action che incapsula entrambi.
  */
 
 import { assertUrlSafe, validateUrlForFetch } from './ssrf-guard.js';

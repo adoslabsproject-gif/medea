@@ -19,14 +19,14 @@
  *  - column format short codes: text/integer/number_2/number_4/eur_2/eur_4/percent_2/date_dmy/datetime
  *  - percent normalize: 67.61 → 0.6761 (auto detect > 1)
  */
-import type { BinaryData } from '@flowforge/core-schema';
+import type { BinaryData } from '@medea/engine-core-schema';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import ExcelJS from 'exceljs';
-import type { NodeExecutionContext } from '@flowforge/nodes-stdlib';
-import { makeBinaryRef, makeBinaryInline } from '@flowforge/core-schema';
+import type { NodeExecutionContext } from '@medea/engine-nodes-stdlib';
+import { makeBinaryRef, makeBinaryInline } from '@medea/engine-core-schema';
 
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
@@ -54,7 +54,7 @@ async function buildXlsx(sheetName: string, headers: string[], rows: unknown[][]
 let tenantDir: string;
 beforeEach(() => {
   tenantDir = mkdtempSync(join(tmpdir(), 'ff-excel-'));
-  process.env.FLOWFORGE_DATA_DIR = tenantDir;
+  process.env.MEDEA_DATA_DIR = tenantDir;
 });
 
 describe('inferFormatFromName — auto column format', () => {

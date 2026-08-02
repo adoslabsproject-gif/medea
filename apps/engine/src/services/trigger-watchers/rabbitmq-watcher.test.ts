@@ -22,7 +22,7 @@ import {
   type AmqpMessage,
   type RabbitWatcherDeps,
 } from './rabbitmq-watcher.js';
-import type { CanvasNode, Workflow } from '@flowforge/core-schema';
+import type { CanvasNode, Workflow } from '@medea/engine-core-schema';
 
 vi.mock('@/lib/logger.js');
 

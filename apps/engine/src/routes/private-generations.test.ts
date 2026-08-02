@@ -18,6 +18,7 @@ vi.mock('../services/binary-store.service.js', () => ({
 }));
 
 import { createPrivateGenerationsRoutes } from './private-generations.js';
+import { jsonBody } from '@/lib/test-json-body.js';
 
 const TOKEN = 'test-internal-token';
 const app = createPrivateGenerationsRoutes();
@@ -30,7 +31,7 @@ function req(path: string, init: RequestInit & { token?: string | null } = {}) {
 }
 
 beforeEach(() => {
-  process.env.FLOWFORGE_INTERNAL_TOKEN = TOKEN;
+  process.env.MEDEA_INTERNAL_TOKEN = TOKEN;
   stub.save.mockReset().mockResolvedValue({ id: 'g1', mediaRef: 'b'.repeat(64), size: 8 });
   stub.rate.mockReset().mockResolvedValue(undefined);
   stub.list.mockReset().mockResolvedValue([{ id: 'g1', rating: 'up' }]);
@@ -55,7 +56,7 @@ describe('POST save', () => {
   it('happy → 201 + decodifica i byte base64 e li passa al service', async () => {
     const res = await req('/internal/private-gen/save', { method: 'POST', body: validSave });
     expect(res.status).toBe(201);
-    const body = await res.json();
+    const body = await jsonBody(res);
     expect(body).toMatchObject({ ok: true, id: 'g1' });
     const arg = stub.save.mock.calls[0]![0] as { bytes: Buffer; kind: string };
     expect(arg.bytes.toString()).toBe('PNG-DATA');
@@ -85,7 +86,7 @@ describe('POST save', () => {
     stub.save.mockRejectedValueOnce(new Error('db down'));
     const res = await req('/internal/private-gen/save', { method: 'POST', body: validSave });
     expect(res.status).toBe(500);
-    expect((await res.json()).error).not.toContain('db down');
+    expect((await jsonBody(res)).error).not.toContain('db down');
   });
 });
 
@@ -111,7 +112,7 @@ describe('GET list / media', () => {
   it('list → 200 con items', async () => {
     const res = await req('/internal/private-gen/list?limit=10', { method: 'GET' });
     expect(res.status).toBe(200);
-    expect((await res.json()).items).toHaveLength(1);
+    expect((await jsonBody(res)).items).toHaveLength(1);
   });
   it('media ref valido → byte + content-type', async () => {
     binaryStub.read.mockResolvedValueOnce(Buffer.from('IMG'));

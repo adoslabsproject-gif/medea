@@ -9,16 +9,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 vi.mock('@/lib/logger.js');
 
 const originalFetch = global.fetch;
-const originalLicense = process.env.FLOWFORGE_LICENSE_KEY;
+const originalLicense = process.env.MEDEA_LICENSE_KEY;
 
 beforeEach(() => {
-  process.env.FLOWFORGE_LICENSE_KEY = 'test-license-key';
+  process.env.MEDEA_LICENSE_KEY = 'test-license-key';
 });
 
 afterEach(() => {
   global.fetch = originalFetch;
-  if (originalLicense === undefined) delete process.env.FLOWFORGE_LICENSE_KEY;
-  else process.env.FLOWFORGE_LICENSE_KEY = originalLicense;
+  if (originalLicense === undefined) delete process.env.MEDEA_LICENSE_KEY;
+  else process.env.MEDEA_LICENSE_KEY = originalLicense;
   vi.resetModules();
 });
 
@@ -59,7 +59,7 @@ describe('generateEmbedding — success path', () => {
 
 describe('generateEmbedding — error paths (graceful)', () => {
   it('LICENSE_KEY mancante → null (no fetch)', async () => {
-    delete process.env.FLOWFORGE_LICENSE_KEY;
+    delete process.env.MEDEA_LICENSE_KEY;
     const fetchSpy = vi.fn();
     global.fetch = fetchSpy as unknown as typeof global.fetch;
     const { generateEmbedding } = await import('./embedding-client.js');
@@ -87,7 +87,7 @@ describe('generateEmbedding — error paths (graceful)', () => {
 });
 
 describe('generateEmbedding — auth header', () => {
-  it('invia Authorization Bearer con FLOWFORGE_LICENSE_KEY', async () => {
+  it('invia Authorization Bearer con MEDEA_LICENSE_KEY', async () => {
     let capturedHeaders: Record<string, string> = {};
     global.fetch = vi.fn(async (_url, opts: RequestInit | undefined) => {
       capturedHeaders = (opts?.headers ?? {}) as Record<string, string>;

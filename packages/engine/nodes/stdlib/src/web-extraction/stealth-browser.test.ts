@@ -8,12 +8,12 @@ import { stealthBrowserNode, resolveFingerprint } from './stealth-browser.js';
 
 // Mocka SOLO safeFetchWithRedirects; tiene il VERO assertUrlSafe (#2 — deve validare
 // davvero la pagina navigata) via importOriginal.
-vi.mock('@flowforge/safe-fetch', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@flowforge/safe-fetch')>();
+vi.mock('@medea/engine-safe-fetch', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@medea/engine-safe-fetch')>();
   return { ...actual, safeFetchWithRedirects: vi.fn() };
 });
 
-const { safeFetchWithRedirects } = await import('@flowforge/safe-fetch');
+const { safeFetchWithRedirects } = await import('@medea/engine-safe-fetch');
 const mockedFetch = vi.mocked(safeFetchWithRedirects);
 
 const ctx = {
@@ -23,8 +23,8 @@ const ctx = {
 
 beforeEach(() => {
   mockedFetch.mockReset();
-  delete process.env.FLOWFORGE_STEALTH_ENDPOINT;
-  delete process.env.FLOWFORGE_BROWSER_ENDPOINT;
+  delete process.env.MEDEA_STEALTH_ENDPOINT;
+  delete process.env.MEDEA_BROWSER_ENDPOINT;
 });
 
 describe('resolveFingerprint', () => {
@@ -110,7 +110,7 @@ describe('stealthBrowserNode.executor', () => {
   // 🚨 #2 SSRF-by-proxy: la PAGINA navigata (config.url) deve essere validata, non solo
   // l'endpoint. Un IP privato/IMDS via il browser BYO = SSRF.
   it('🚨 SSRF: url=IMDS (169.254.169.254) → throw, NESSUNA fetch al browser', async () => {
-    process.env.FLOWFORGE_BROWSER_ENDPOINT = 'https://browser.example.com';
+    process.env.MEDEA_BROWSER_ENDPOINT = 'https://browser.example.com';
     if (!stealthBrowserNode.executor) throw new Error('executor mancante');
     await expect(
       stealthBrowserNode.executor({ url: 'http://169.254.169.254/latest/meta-data' }, null, ctx),
@@ -118,8 +118,8 @@ describe('stealthBrowserNode.executor', () => {
     expect(mockedFetch).not.toHaveBeenCalled();
   });
 
-  it('endpoint da env FLOWFORGE_BROWSER_ENDPOINT fallback funziona', async () => {
-    process.env.FLOWFORGE_BROWSER_ENDPOINT = 'https://fallback.example.com';
+  it('endpoint da env MEDEA_BROWSER_ENDPOINT fallback funziona', async () => {
+    process.env.MEDEA_BROWSER_ENDPOINT = 'https://fallback.example.com';
     mockedFetch.mockResolvedValue({
       ok: true,
       status: 200,
@@ -135,7 +135,7 @@ describe('stealthBrowserNode.executor', () => {
   });
 
   it('endpoint config ha priorita\\` su env', async () => {
-    process.env.FLOWFORGE_STEALTH_ENDPOINT = 'https://env-endpoint.com';
+    process.env.MEDEA_STEALTH_ENDPOINT = 'https://env-endpoint.com';
     mockedFetch.mockResolvedValue({
       ok: true,
       status: 200,
@@ -152,7 +152,7 @@ describe('stealthBrowserNode.executor', () => {
   });
 
   it('apiKey → Authorization header Bearer', async () => {
-    process.env.FLOWFORGE_STEALTH_ENDPOINT = 'https://x.com';
+    process.env.MEDEA_STEALTH_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) } as unknown as Response);
 
     if (!stealthBrowserNode.executor) throw new Error('executor mancante');
@@ -164,7 +164,7 @@ describe('stealthBrowserNode.executor', () => {
   });
 
   it('request body contiene fingerprint + stealthPlugins + URL', async () => {
-    process.env.FLOWFORGE_STEALTH_ENDPOINT = 'https://x.com';
+    process.env.MEDEA_STEALTH_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) } as unknown as Response);
 
     if (!stealthBrowserNode.executor) throw new Error('executor mancante');
@@ -183,7 +183,7 @@ describe('stealthBrowserNode.executor', () => {
   });
 
   it('scrollLazy + scrollSteps clampa a 30 max', async () => {
-    process.env.FLOWFORGE_STEALTH_ENDPOINT = 'https://x.com';
+    process.env.MEDEA_STEALTH_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) } as unknown as Response);
 
     if (!stealthBrowserNode.executor) throw new Error('executor mancante');
@@ -195,7 +195,7 @@ describe('stealthBrowserNode.executor', () => {
   });
 
   it('blockResources CSV → array trim/filter', async () => {
-    process.env.FLOWFORGE_STEALTH_ENDPOINT = 'https://x.com';
+    process.env.MEDEA_STEALTH_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) } as unknown as Response);
 
     if (!stealthBrowserNode.executor) throw new Error('executor mancante');
@@ -207,7 +207,7 @@ describe('stealthBrowserNode.executor', () => {
   });
 
   it('extraHeaders JSON string → parsed', async () => {
-    process.env.FLOWFORGE_STEALTH_ENDPOINT = 'https://x.com';
+    process.env.MEDEA_STEALTH_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) } as unknown as Response);
 
     if (!stealthBrowserNode.executor) throw new Error('executor mancante');
@@ -219,7 +219,7 @@ describe('stealthBrowserNode.executor', () => {
   });
 
   it('endpoint non-ok → throw con status + body slice', async () => {
-    process.env.FLOWFORGE_STEALTH_ENDPOINT = 'https://x.com';
+    process.env.MEDEA_STEALTH_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({
       ok: false, status: 502, text: async () => 'Bad Gateway internal',
     } as unknown as Response);
@@ -231,7 +231,7 @@ describe('stealthBrowserNode.executor', () => {
   });
 
   it('output ha tutti i campi attesi + fingerprintUsed esposto', async () => {
-    process.env.FLOWFORGE_STEALTH_ENDPOINT = 'https://x.com';
+    process.env.MEDEA_STEALTH_ENDPOINT = 'https://x.com';
     mockedFetch.mockResolvedValue({
       ok: true, status: 200,
       json: async () => ({

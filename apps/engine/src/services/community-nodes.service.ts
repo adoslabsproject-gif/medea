@@ -21,7 +21,7 @@
  *
  * ───── Storage layout on disk ─────
  *
- *   $FLOWFORGE_DATA_DIR/installed-nodes/<vendor>/<nodeId>/v<version>/
+ *   $MEDEA_DATA_DIR/installed-nodes/<vendor>/<nodeId>/v<version>/
  *     ├── manifest.json
  *     ├── nodedef.json
  *     ├── executor.js
@@ -56,7 +56,7 @@ import { join, resolve } from 'node:path';
 import { z } from 'zod';
 import * as unzipper from 'unzipper';
 import { Readable } from 'node:stream';
-import { NodeDefSchema, type NodeDef } from '@flowforge/core-schema';
+import { NodeDefSchema, type NodeDef } from '@medea/engine-core-schema';
 import { logger, dedupedWarn, errorFingerprint } from '@/lib/logger.js';
 
 export const ManifestSchema = z.object({
@@ -108,7 +108,7 @@ function packageKey(vendor: string, id: string): string {
 }
 
 function dataDir(): string {
-  const base = process.env.FLOWFORGE_DATA_DIR ?? join(process.cwd(), '.flowforge-data');
+  const base = process.env.MEDEA_DATA_DIR ?? join(process.cwd(), '.flowforge-data');
   return join(base, 'installed-nodes');
 }
 
@@ -274,7 +274,7 @@ export async function installFromBuffer(
  * Registry pubblico = codice remoto NON fidato → richiede firma valida del
  * publisher per DEFAULT (fail-closed): un pacchetto non firmato o con firma
  * invalida viene rifiutato. Override esplicito per registry interni/mirror
- * fidati via env `FLOWFORGE_ALLOW_UNSIGNED_REMOTE_NODES=1` o param.
+ * fidati via env `MEDEA_ALLOW_UNSIGNED_REMOTE_NODES=1` o param.
  */
 export async function installFromUrl(
   url: string,
@@ -294,7 +294,7 @@ export async function installFromUrl(
 
 /** Policy: i pacchetti remoti unsigned sono ammessi? Default NO (fail-closed). */
 function allowUnsignedRemoteNodes(): boolean {
-  const v = process.env.FLOWFORGE_ALLOW_UNSIGNED_REMOTE_NODES;
+  const v = process.env.MEDEA_ALLOW_UNSIGNED_REMOTE_NODES;
   return v === '1' || v === 'true';
 }
 

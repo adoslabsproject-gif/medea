@@ -11,7 +11,7 @@
  *
  * @module executors/remote-ssh-db-query
  */
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { parseSshDbConfig, assertReadOnlyQuery, SshPolicyError } from '@/services/db-remote-ssh/policy.js';
 import { connectRemoteDbOverSsh, type SecretResolver, type DnsResolver, type TunnelOpener } from '@/services/db-remote-ssh/connect.js';
 import { VaultSecretsService } from '@/services/vault-secrets.service.js';

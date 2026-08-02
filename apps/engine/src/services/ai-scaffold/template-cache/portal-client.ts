@@ -2,7 +2,7 @@
  * Portal Client per Shared Workflow Templates (Livello 2 community).
  *
  * Container tenant → Portal: promote + retrieve + import-record + unshare.
- * Auth: X-Internal-Token (FLOWFORGE_INTERNAL_TOKEN env).
+ * Auth: X-Internal-Token (MEDEA_INTERNAL_TOKEN env).
  *
  * Best-effort: tutte le funzioni catch + return null/false su errore.
  * Il template cache locale (Livello 1) continua a funzionare anche se
@@ -13,9 +13,9 @@ import { logger } from '@/lib/logger.js';
 import { readJsonCapped, readTextTruncated } from '@/lib/capped-response.js';
 import { getOutboundPortalToken } from '@/lib/internal-token.js';
 
-const PORTAL_URL = process.env.FLOWFORGE_PORTAL_URL ?? 'http://172.20.0.1:3006';
+const PORTAL_URL = process.env.MEDEA_PORTAL_URL ?? 'http://172.20.0.1:3006';
 // tenant→portal usa lo shared token outbound (PORTAL_CALLBACK_TOKEN, = portal
-// global secret; fallback FLOWFORGE_INTERNAL_TOKEN per container vecchi).
+// global secret; fallback MEDEA_INTERNAL_TOKEN per container vecchi).
 const INTERNAL_TOKEN = getOutboundPortalToken();
 const TIMEOUT_MS = 5_000;
 
@@ -58,7 +58,7 @@ export interface CommunityTemplate {
 
 async function portalFetch<T>(path: string, body: unknown): Promise<T | null> {
   if (!INTERNAL_TOKEN) {
-    logger.warn('[templates-portal] FLOWFORGE_INTERNAL_TOKEN not set — community templates disabled');
+    logger.warn('[templates-portal] MEDEA_INTERNAL_TOKEN not set — community templates disabled');
     return null;
   }
   try {

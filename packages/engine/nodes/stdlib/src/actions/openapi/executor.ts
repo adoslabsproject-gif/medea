@@ -8,7 +8,7 @@
 import type { NodeExecutor } from '../../types.js';
 import { ValidationError, HttpError, NetworkError, parseRetryAfter } from '../../core/node-error.js';
 import { parseOpenApiOperations, openApiBaseUrl, buildOpenApiRequest } from '../../lib/openapi/parser.js';
-import { assertUrlSafe, validateUrlForFetch, readTextCapped } from '@flowforge/safe-fetch';
+import { assertUrlSafe, validateUrlForFetch, readTextCapped } from '@medea/engine-safe-fetch';
 import { buildRequestHeaders } from '../../core/http-headers.js';
 
 /**

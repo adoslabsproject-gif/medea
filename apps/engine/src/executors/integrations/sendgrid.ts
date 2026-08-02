@@ -8,7 +8,7 @@
  * risponde 202 senza body → output deterministico { accepted: true }.
  */
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { IntegrationError, requireIntegration, withRetry } from './common.js';
 import { jsonFetch, getIntegrationLabel, parseJsonObj } from './saas-shared.js';
 

@@ -9,7 +9,7 @@
  * Defaults:
  *   entry = ./src/index.ts (the vendor's defineCommunityNode default export)
  *   out   = ./dist
- *   key   = $FLOWFORGE_NODE_SIGNING_KEY env var, OR ./.signing-key.pem
+ *   key   = $MEDEA_NODE_SIGNING_KEY env var, OR ./.signing-key.pem
  *
  * What it does:
  *   1. Spawn a child Node process that imports the entry and serialises
@@ -70,7 +70,7 @@ function canonicalize(obj: unknown): string {
 }
 
 function loadOrCreateKey(keyPath: string | null): { privateKey: ReturnType<typeof createPrivateKey>; ephemeral: boolean } {
-  const envKey = process.env.FLOWFORGE_NODE_SIGNING_KEY;
+  const envKey = process.env.MEDEA_NODE_SIGNING_KEY;
   if (envKey) {
     return { privateKey: createPrivateKey({ key: envKey, format: 'pem' }), ephemeral: false };
   }

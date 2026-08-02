@@ -7,12 +7,12 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import Database from 'better-sqlite3';
-import type { Database as DbType } from '@flowforge/db-studio-core';
+import type { Database as DbType } from '@medea/engine-db-studio-core';
 
 const m = vi.hoisted(() => {
   const mockFns = {
     db: null as Database.Database | null,
-    configValue: { FLOWFORGE_DATA_DIR: '/tmp/ff-testconn' },
+    configValue: { MEDEA_DATA_DIR: '/tmp/ff-testconn' },
     connect: vi.fn(), introspect: vi.fn(), disconnect: vi.fn(),
   };
   class FakeAdapter {
@@ -32,13 +32,13 @@ const m = vi.hoisted(() => {
 vi.mock('@/storage/db.js', () => ({ getDatabase: () => ({ sqlite: m.db! }) }));
 vi.mock('@/lib/logger.js');
 vi.mock('@/config.js', () => ({ loadConfig: () => m.configValue }));
-vi.mock('@flowforge/db-studio-engine', () => ({ SqliteAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-postgres', () => ({ PostgresAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-mysql', () => ({ MysqlAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-mongodb', () => ({ MongoDbAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-redis', () => ({ RedisAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-mssql', () => ({ MssqlAdapter: m.FakeAdapter }));
-vi.mock('@flowforge/db-studio-duckdb', () => ({ DuckDbAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-engine', () => ({ SqliteAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-postgres', () => ({ PostgresAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-mysql', () => ({ MysqlAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-mongodb', () => ({ MongoDbAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-redis', () => ({ RedisAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-mssql', () => ({ MssqlAdapter: m.FakeAdapter }));
+vi.mock('@medea/engine-db-studio-duckdb', () => ({ DuckDbAdapter: m.FakeAdapter }));
 // Guardia SSRF testata a parte (external-host-guard.test) → no-op qui per usare
 // host fittizi senza DNS reale.
 vi.mock('@/services/db-studio/external-host-guard.js', () => ({ assertExternalHostAllowed: () => Promise.resolve() }));

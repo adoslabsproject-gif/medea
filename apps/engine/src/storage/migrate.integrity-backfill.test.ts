@@ -42,17 +42,17 @@ let savedTok: string | undefined;
 beforeEach(() => {
   conn = new SqliteDatabase(':memory:');
   conn.exec(SCHEMA_SQL);
-  savedReg = process.env.FLOWFORGE_REGISTRY_SECRET;
-  savedTok = process.env.FLOWFORGE_INTERNAL_TOKEN;
-  process.env.FLOWFORGE_REGISTRY_SECRET = SECRET;
+  savedReg = process.env.MEDEA_REGISTRY_SECRET;
+  savedTok = process.env.MEDEA_INTERNAL_TOKEN;
+  process.env.MEDEA_REGISTRY_SECRET = SECRET;
 });
 
 afterEach(() => {
   conn.close();
-  if (savedReg !== undefined) process.env.FLOWFORGE_REGISTRY_SECRET = savedReg;
-  else delete process.env.FLOWFORGE_REGISTRY_SECRET;
-  if (savedTok !== undefined) process.env.FLOWFORGE_INTERNAL_TOKEN = savedTok;
-  else delete process.env.FLOWFORGE_INTERNAL_TOKEN;
+  if (savedReg !== undefined) process.env.MEDEA_REGISTRY_SECRET = savedReg;
+  else delete process.env.MEDEA_REGISTRY_SECRET;
+  if (savedTok !== undefined) process.env.MEDEA_INTERNAL_TOKEN = savedTok;
+  else delete process.env.MEDEA_INTERNAL_TOKEN;
 });
 
 function insertLegacyNode(id: string, opts: { compiled?: string | null; executor?: string } = {}): void {
@@ -131,8 +131,8 @@ describe('🚨 backfillCustomNodeIntegrity', () => {
   });
 
   it('senza secret → nessuna firma e NESSUN flag (back-compat dev/test)', () => {
-    delete process.env.FLOWFORGE_REGISTRY_SECRET;
-    delete process.env.FLOWFORGE_INTERNAL_TOKEN;
+    delete process.env.MEDEA_REGISTRY_SECRET;
+    delete process.env.MEDEA_INTERNAL_TOKEN;
     insertLegacyNode('n1');
     backfillCustomNodeIntegrity(asSqliteDb(conn));
     expect(readIntegrity('n1').digest).toBeNull();

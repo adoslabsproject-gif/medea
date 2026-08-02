@@ -4,7 +4,7 @@
  * @module actions/email_triage_commercialista/definition
  */
 
-import type { NodeDef } from '@flowforge/core-schema';
+import type { NodeDef } from '@medea/engine-core-schema';
 
 export const emailTriageCommercialistaNodeDef: NodeDef = {
   id: 'agent_email_triage_commercialista',

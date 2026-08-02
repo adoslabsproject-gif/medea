@@ -3,7 +3,7 @@
  *
  * Stdlib provides def + schema + pure scheduler. The executor that
  * iterates and calls `action_email_send_tracked` per recipient lives in
- * `apps/flowforge-runtime/src/executors/nodemailer-tracked-batch.ts`.
+ * `apps/engine/src/executors/nodemailer-tracked-batch.ts`.
  *
  * @module actions/email_send_tracked_batch
  */

@@ -1,5 +1,5 @@
 /**
- * @zeliai/shared/admission — motore di ammissione LLM (coda globale single-GPU).
+ * @medea/engine-shared/admission — motore di ammissione LLM (coda globale single-GPU).
  *
  * Engine condiviso da TUTTI i front-door verso vLLM (gateway Liara + gateway
  * portal) → una sola coda Redis (`liara:adm:*`) protegge la GPU unica a

@@ -66,7 +66,7 @@ vi.mock('@/prompts/run-explain.prompt.js', () => ({
   buildRunExplainUserContent: (args: unknown) => `user content: ${JSON.stringify(args).slice(0, 60)}`,
 }));
 
-vi.mock('@flowforge/nodes-stdlib', () => ({
+vi.mock('@medea/engine-nodes-stdlib', () => ({
   stdlibNodeDefs: (...a: unknown[]) => m.stdlibNodeDefs(...a),
 }));
 

@@ -8,7 +8,7 @@
  *  community_typeform — Forms API + Responses API (read responses, filter)
  *
  * Pattern: ogni nodo dichiara NodeDef qui + executor in
- * apps/flowforge-runtime/src/executors/integrations/<provider>.ts.
+ * apps/engine/src/executors/integrations/<provider>.ts.
  */
 import type { NodeModule } from '../types.js';
 

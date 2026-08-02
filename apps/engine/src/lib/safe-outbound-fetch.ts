@@ -5,9 +5,9 @@
  * google-drive, whatsapp, ocr, etc.) con un'unica chiamata che applica
  * trasversalmente (zero ripetizione per executor):
  *
- *   1. SSRF guard            — @flowforge/safe-fetch validateUrlForFetch
+ *   1. SSRF guard            — @medea/engine-safe-fetch validateUrlForFetch
  *                              (blocca IP privati, cloud metadata, link-local)
- *   2. Per-host circuit breaker — @zeliai/shared via executeWithHostBreaker
+ *   2. Per-host circuit breaker — @medea/engine-shared via executeWithHostBreaker
  *                              (5 failures → open 30s, recover half-open)
  *   3. OTel span             — withSpan(name, http.* attrs) — zero overhead
  *                              quando il tracer non e\` registrato
@@ -27,7 +27,7 @@
  * per-host attraverso le call, behavior corretto out-of-the-box.
  */
 
-import { executeWithHostBreaker, withSpan, httpSpanAttrs, HttpError, NetworkError, TimeoutError } from '@flowforge/nodes-stdlib';
+import { executeWithHostBreaker, withSpan, httpSpanAttrs, HttpError, NetworkError, TimeoutError } from '@medea/engine-nodes-stdlib';
 import { getSecureDispatcher, getPermissiveDispatcher } from './secure-dispatcher.js';
 import { readTextTruncated } from './capped-response.js';
 
@@ -82,7 +82,7 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_REDIRECT_HOPS = 5;
 /**
  * Header sensibili da rimuovere su redirect CROSS-HOST (anti Bearer/cookie
- * leak, OWASP A07:2021). Identico al set di @flowforge/safe-fetch.
+ * leak, OWASP A07:2021). Identico al set di @medea/engine-safe-fetch.
  */
 const CROSS_HOST_STRIP_HEADERS = ['authorization', 'cookie', 'proxy-authorization', 'x-csrf-token'];
 
@@ -105,7 +105,7 @@ function stripCrossHostHeaders(h: HeadersInitCompat | undefined): Headers {
 export async function safeOutboundFetch(url: string, opts: SafeFetchOptions = {}): Promise<Response> {
   // SSRF guard PRIMA di toccare la rete — saltato SOLO per host interni trusted
   // (allowPrivateHost, URL hard-coded server-side, mai user-controlled).
-  const { validateUrlForFetch } = await import('@flowforge/safe-fetch');
+  const { validateUrlForFetch } = await import('@medea/engine-safe-fetch');
   if (!opts.allowPrivateHost) {
     const safety = validateUrlForFetch(url);
     if (!safety.ok) {

@@ -17,7 +17,7 @@ vi.mock('@/executors/registry.js', () => ({ resolveServerExecutor: vi.fn() }));
 
 import { __forTestRunWithRetry } from './node-executor.strategy.js';
 import type { DispatchContext, NodeExecutionContext } from './types.js';
-import { NetworkError } from '@flowforge/nodes-stdlib';
+import { NetworkError } from '@medea/engine-nodes-stdlib';
 
 function makeCtx(opts: { selfManagedRetry?: boolean; retryStrategy?: string; retryCount?: number }): DispatchContext {
   return {

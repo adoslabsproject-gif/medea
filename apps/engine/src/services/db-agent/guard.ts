@@ -11,7 +11,7 @@
  *
  * @module services/db-agent/guard
  */
-import type { Database } from '@flowforge/db-studio-core';
+import type { Database } from '@medea/engine-db-studio-core';
 import type { DbAgentContext } from './context.js';
 import { TenantScopeError, ToolValidationError } from './errors.js';
 

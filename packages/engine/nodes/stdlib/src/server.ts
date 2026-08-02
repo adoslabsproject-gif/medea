@@ -3,14 +3,14 @@
  *
  * Consumers
  * ─────────
- * Imported by `apps/flowforge-runtime` (and any other Node-only consumer)
+ * Imported by `apps/engine` (and any other Node-only consumer)
  * via the package sub-path:
  *
- *   import { signTrackingToken, injectTracking } from '@flowforge/nodes-stdlib/server';
+ *   import { signTrackingToken, injectTracking } from '@medea/engine-nodes-stdlib/server';
  *
  * The browser editor SPA must NOT import this entry — it pulls in
  * `node:crypto` top-level (HMAC + timing-safe compare). The root
- * barrel `@flowforge/nodes-stdlib` keeps only the browser-safe pieces
+ * barrel `@medea/engine-nodes-stdlib` keeps only the browser-safe pieces
  * (NodeDef, Zod schema, pure scheduler, types).
  *
  * @module server

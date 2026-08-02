@@ -300,12 +300,12 @@ export class BinaryStore {
 let _store: BinaryStore | null = null;
 
 /**
- * Store singleton del container: baseDir = `<FLOWFORGE_DATA_DIR>/blobs`. Il
+ * Store singleton del container: baseDir = `<MEDEA_DATA_DIR>/blobs`. Il
  * runtime è per-tenant (un container = un tenant) → un solo store per processo
  * serve il disco del tenant. Iniettato come adapter del port IBinaryStore.
  */
 export function getBinaryStore(): BinaryStore {
-  _store ??= new BinaryStore(join(loadConfig().FLOWFORGE_DATA_DIR, 'blobs'));
+  _store ??= new BinaryStore(join(loadConfig().MEDEA_DATA_DIR, 'blobs'));
   return _store;
 }
 

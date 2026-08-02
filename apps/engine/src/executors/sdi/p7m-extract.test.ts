@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { extractP7mContent, p7mExtractExecutor } from './p7m-extract.js';
-import type { NodeExecutionContext } from '@flowforge/nodes-stdlib';
+import type { NodeExecutionContext } from '@medea/engine-nodes-stdlib';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const P7M_B64 = readFileSync(join(__dirname, '__fixtures__', 'fattura-test.p7m.b64'), 'utf8').trim();

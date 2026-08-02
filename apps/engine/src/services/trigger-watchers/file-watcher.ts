@@ -25,7 +25,7 @@ import chokidar from 'chokidar';
 import { logger } from '@/lib/logger.js';
 import { clampNumber } from './parsing.js';
 import type { DispatchTriggerRun } from './run-dispatcher.js';
-import type { CanvasNode, Workflow } from '@flowforge/core-schema';
+import type { CanvasNode, Workflow } from '@medea/engine-core-schema';
 
 /** Debounce minimo (ms) su awaitWriteFinish — sotto, chokidar spara a raffica. */
 export const FILE_WATCH_MIN_DEBOUNCE_MS = 50;
@@ -85,7 +85,7 @@ export async function startFileWatcher(
   // pass through (admin must have allowlisted them).
   const tenantId = wf.tenantId ?? 'default';
   const safeTenant = tenantId.replace(/[^a-z0-9_-]/gi, '_');
-  const baseDir = process.env.FLOWFORGE_DATA_DIR ?? '/var/data/flowforge';
+  const baseDir = process.env.MEDEA_DATA_DIR ?? '/var/data/flowforge';
   const tenantRoot = resolve(baseDir, 'tenants', safeTenant, 'files');
   const directory = directoryRaw.startsWith('/') ? directoryRaw : resolve(tenantRoot, directoryRaw);
   await (deps.makeDir ?? defaultMakeDir)(directory).catch(() => undefined);

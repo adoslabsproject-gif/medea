@@ -1,7 +1,7 @@
 /**
  * Embedding client — chiama BGE-M3 via portal gateway /api/v1/llm/embed.
  *
- * Auth: license key (FLOWFORGE_LICENSE_KEY env, gia\` usato da llm-chat).
+ * Auth: license key (MEDEA_LICENSE_KEY env, gia\` usato da llm-chat).
  * Circuit breaker: 5 fail consecutive → OPEN 15s → degradation graceful
  * (return null, cosine signal in template-cache resta 0 = solo
  * graph+jaccard scoring).
@@ -9,12 +9,12 @@
  * Pattern allineato a `apps/liara/src/lib/embedding.ts` per consistency.
  */
 
-import { CircuitBreaker } from '@zeliai/shared';
+import { CircuitBreaker } from '@medea/engine-shared';
 import { readJsonCapped } from '@/lib/capped-response.js';
 import { logger } from '@/lib/logger.js';
 
-const PORTAL_URL = process.env.FLOWFORGE_PORTAL_URL ?? 'http://172.20.0.1:3006';
-const LICENSE_KEY = process.env.FLOWFORGE_LICENSE_KEY ?? '';
+const PORTAL_URL = process.env.MEDEA_PORTAL_URL ?? 'http://172.20.0.1:3006';
+const LICENSE_KEY = process.env.MEDEA_LICENSE_KEY ?? '';
 const EMBED_URL = `${PORTAL_URL}/api/v1/llm/embed`;
 const TIMEOUT_MS = 3_000;
 export const EMBEDDING_DIMENSIONS = 1024;
@@ -36,7 +36,7 @@ const breaker = new CircuitBreaker('template-embedding', {
  */
 export async function generateEmbedding(text: string): Promise<number[] | null> {
   if (!LICENSE_KEY) {
-    logger.debug('[template-cache embedding] FLOWFORGE_LICENSE_KEY missing — skip');
+    logger.debug('[template-cache embedding] MEDEA_LICENSE_KEY missing — skip');
     return null;
   }
   const trimmed = text.trim();

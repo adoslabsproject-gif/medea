@@ -1,7 +1,7 @@
 /**
  * connect-host-guard — SSRF guard per i nodi che aprono una CONNESSIONE (non-HTTP)
  * verso un host fornito dall'autore del workflow: SMTP/IMAP (mail), e in futuro
- * FTP/DB/ecc. `action_http` ha già il suo guard via `@flowforge/safe-fetch`; questi
+ * FTP/DB/ecc. `action_http` ha già il suo guard via `@medea/engine-safe-fetch`; questi
  * nodi mail si connettevano a `config.host` SENZA controllo → un editor poteva
  * puntarli a 172.20.0.1:6379 (Redis), gateway, Postgres = port-scan/SSRF interno.
  *
@@ -13,7 +13,7 @@
  *
  * @module lib/connect-host-guard
  */
-import { validateUrlForFetch } from '@flowforge/safe-fetch';
+import { validateUrlForFetch } from '@medea/engine-safe-fetch';
 import { resolveOutboundDispatcher } from './egress-policy.js';
 
 /**

@@ -13,7 +13,7 @@
  */
 
 import { load as cheerioLoad } from 'cheerio';
-import { safeFetchWithRedirects, SsrfBlockedError } from '@flowforge/safe-fetch';
+import { safeFetchWithRedirects, SsrfBlockedError } from '@medea/engine-safe-fetch';
 import type { NodeModule, NodeExecutor } from '../types.js';
 
 type LinkSeverity = 'critical' | 'warning' | 'info';

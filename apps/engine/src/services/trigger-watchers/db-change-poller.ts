@@ -22,7 +22,7 @@
 import { logger } from '@/lib/logger.js';
 import { clampNumber } from './parsing.js';
 import type { DispatchTriggerRun } from './run-dispatcher.js';
-import type { CanvasNode, Workflow } from '@flowforge/core-schema';
+import type { CanvasNode, Workflow } from '@medea/engine-core-schema';
 
 /** Riga del change-log DB Studio (shape di `DbStudioService.getChangesSince`). */
 export interface DbChangeRecord {

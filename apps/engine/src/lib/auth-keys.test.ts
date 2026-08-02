@@ -21,7 +21,7 @@ const fsMock = {
 vi.mock('node:fs', () => fsMock);
 
 const generateSessionKeyPairMock = vi.fn();
-vi.mock('@flowforge/auth-local', () => ({
+vi.mock('@medea/engine-auth-local', () => ({
   generateSessionKeyPair: generateSessionKeyPairMock,
 }));
 
@@ -29,7 +29,7 @@ const loggerMock = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn(
 vi.mock('./logger.js', () => ({ logger: loggerMock }));
 
 vi.mock('@/config.js', () => ({
-  loadConfig: () => ({ FLOWFORGE_DATA_DIR: '/var/data/test' }),
+  loadConfig: () => ({ MEDEA_DATA_DIR: '/var/data/test' }),
 }));
 
 beforeEach(() => {
@@ -152,7 +152,7 @@ describe('🚨 cache singleton — perf + consistency', () => {
   });
 });
 
-describe('🚨 path construction — uses config.FLOWFORGE_DATA_DIR', () => {
+describe('🚨 path construction — uses config.MEDEA_DATA_DIR', () => {
   it('🚨 path priv = <DATA_DIR>/session-private.pem', async () => {
     fsMock.existsSync.mockReturnValue(false);
     generateSessionKeyPairMock.mockResolvedValue({

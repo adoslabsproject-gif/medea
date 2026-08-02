@@ -6,8 +6,8 @@
  *   - PostgreSQL (multi-tenant SaaS, HA scenarios)
  *
  * Switch via:
- *   FLOWFORGE_STORAGE = 'sqlite' (default) | 'postgres'
- *   FLOWFORGE_PG_URL  = postgresql://user:pass@host:port/db
+ *   MEDEA_STORAGE = 'sqlite' (default) | 'postgres'
+ *   MEDEA_PG_URL  = postgresql://user:pass@host:port/db
  *
  * Both backends expose:
  *   - `db`       : Drizzle ORM handle (typed) for the schema layer
@@ -87,9 +87,9 @@ function makeSqliteCompat(conn: ReturnType<typeof SqliteDatabase>): SqliteCompat
 
 function createSqliteHandle(): DatabaseHandle {
   const config = loadConfig();
-  ensureDataDir(config.FLOWFORGE_DB_PATH);
+  ensureDataDir(config.MEDEA_DB_PATH);
 
-  const conn = new SqliteDatabase(config.FLOWFORGE_DB_PATH);
+  const conn = new SqliteDatabase(config.MEDEA_DB_PATH);
   // ── Durability + concurrency primitives ────────────────────────────
   conn.pragma('journal_mode = WAL');
   conn.pragma('foreign_keys = ON');
@@ -160,7 +160,7 @@ function createSqliteHandle(): DatabaseHandle {
     addColumn('run_verbosity', 'TEXT');
   }
 
-  logger.info({ path: config.FLOWFORGE_DB_PATH, backend: 'sqlite' }, 'Storage connected');
+  logger.info({ path: config.MEDEA_DB_PATH, backend: 'sqlite' }, 'Storage connected');
 
   return {
     db,
@@ -171,9 +171,9 @@ function createSqliteHandle(): DatabaseHandle {
 }
 
 function createPostgresHandle(): DatabaseHandle {
-  const url = process.env.FLOWFORGE_PG_URL;
+  const url = process.env.MEDEA_PG_URL;
   if (!url) {
-    throw new Error('FLOWFORGE_STORAGE=postgres but FLOWFORGE_PG_URL is not set');
+    throw new Error('MEDEA_STORAGE=postgres but MEDEA_PG_URL is not set');
   }
   const sql = postgres(url, {
     max: 10,
@@ -207,7 +207,7 @@ function createPostgresHandle(): DatabaseHandle {
 }
 
 export function createDatabase(): DatabaseHandle {
-  const backend = (process.env.FLOWFORGE_STORAGE ?? 'sqlite').toLowerCase();
+  const backend = (process.env.MEDEA_STORAGE ?? 'sqlite').toLowerCase();
   if (backend === 'postgres' || backend === 'pg') {
     return createPostgresHandle();
   }

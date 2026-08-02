@@ -3,7 +3,7 @@
  *
  * Pattern matches `action_send_email`: stdlib provides ONLY the
  * `NodeDef` (UI + schema metadata). The actual executor lives in
- * `apps/flowforge-runtime/src/executors/nodemailer.ts` where nodemailer,
+ * `apps/engine/src/executors/nodemailer.ts` where nodemailer,
  * the OAuth refresh service, and the tenant DB pool already live.
  *
  * @module actions/email_send_tracked

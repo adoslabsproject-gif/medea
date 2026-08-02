@@ -27,13 +27,13 @@
  */
 
 import { nanoid } from 'nanoid';
-import { createVaultSalt, deriveKek, encryptSecret, decryptSecret, type VaultMaster } from '@flowforge/secrets';
+import { createVaultSalt, deriveKek, encryptSecret, decryptSecret, type VaultMaster } from '@medea/engine-secrets';
 import { getDatabase } from '@/storage/db.js';
 import { logger } from '@/lib/logger.js';
 import { loadMasterPassword } from '@/lib/master-password.js';
 
 /** Encrypted-blob mirror of `EncryptedSecret` — fields are base64-encoded
- *  strings (NOT Buffers) because that's how `@flowforge/secrets` returns
+ *  strings (NOT Buffers) because that's how `@medea/engine-secrets` returns
  *  them and how we persist them in SQLite TEXT columns. */
 export interface EncryptedBlob {
   ciphertext: string;

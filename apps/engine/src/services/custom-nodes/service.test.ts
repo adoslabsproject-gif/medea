@@ -16,7 +16,7 @@
  *  - Multi-tenant isolation: workspace_id WHERE blocca cross-tenant read/write
  *
  * Pattern: in-memory SQLite per test (riusato dal ConversationService pattern)
- * + env override per plan-gating (FLOWFORGE_PLAN_CODE = 'pro' default test).
+ * + env override per plan-gating (MEDEA_PLAN_CODE = 'pro' default test).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import SqliteDatabase from 'better-sqlite3';
@@ -89,13 +89,13 @@ beforeEach(() => {
   conn.exec(SCHEMA_SQL);
   dbConnections.push(conn);
   // Pro plan per default (quota 20, abbastanza per i test)
-  process.env.FLOWFORGE_PLAN_CODE = 'pro';
+  process.env.MEDEA_PLAN_CODE = 'pro';
 });
 
 afterEach(() => {
   const conn = dbConnections.pop();
   if (conn) conn.close();
-  delete process.env.FLOWFORGE_PLAN_CODE;
+  delete process.env.MEDEA_PLAN_CODE;
 });
 
 describe('🚨 createCustomNode', () => {
@@ -139,14 +139,14 @@ describe('🚨 createCustomNode', () => {
   });
 
   it('🚨 plan Free (quota=0) → QuotaExceededError al primo create', async () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'free';
+    process.env.MEDEA_PLAN_CODE = 'free';
     await expect(createCustomNode({
       workspaceId: WS_A, ownerUserId: USER_1, input: baseInput,
     })).rejects.toThrow(CustomNodeQuotaExceededError);
   });
 
   it('🚨 plan Starter (quota=3) → 4° create throws QuotaExceeded', async () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'starter';
+    process.env.MEDEA_PLAN_CODE = 'starter';
     for (let i = 1; i <= 3; i++) {
       await createCustomNode({
         workspaceId: WS_A, ownerUserId: USER_1,
@@ -160,7 +160,7 @@ describe('🚨 createCustomNode', () => {
   });
 
   it('🚨 plan Enterprise (unlimited) → 200° create OK', async () => {
-    process.env.FLOWFORGE_PLAN_CODE = 'enterprise';
+    process.env.MEDEA_PLAN_CODE = 'enterprise';
     for (let i = 1; i <= 5; i++) {
       const n = await createCustomNode({
         workspaceId: WS_A, ownerUserId: USER_1,
@@ -387,8 +387,8 @@ describe('🚨 persistCompileResult', () => {
     expect(after!.compileWarnings[0]!.file).toBe('executor');
   });
 
-  it('🚨 con FLOWFORGE_REGISTRY_SECRET → calcola e persiste digest+firma integrità', async () => {
-    process.env.FLOWFORGE_REGISTRY_SECRET = 'svc-test-registry-secret-32-bytes!!';
+  it('🚨 con MEDEA_REGISTRY_SECRET → calcola e persiste digest+firma integrità', async () => {
+    process.env.MEDEA_REGISTRY_SECRET = 'svc-test-registry-secret-32-bytes!!';
     try {
       const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
       await persistCompileResult({ workspaceId: WS_A, id: node.id, compiledExecutor: '(()=>{})()', warnings: [] });
@@ -399,14 +399,14 @@ describe('🚨 persistCompileResult', () => {
       expect(raw.integrity_signature).toMatch(/^[0-9a-f]{64}$/);
       expect(raw.integrity_algo).toBe('sha256+hmac-sha256');
     } finally {
-      delete process.env.FLOWFORGE_REGISTRY_SECRET;
+      delete process.env.MEDEA_REGISTRY_SECRET;
     }
   });
 
   it('🚨 CONTRACT persist↔verify: la firma copre il compiledExecutor (l\'artefatto eseguito)', async () => {
     // Anti-regressione del bypass "firma solo i sorgenti": il record persistito
     // deve verificare col bundle persistito e FALLIRE con un bundle diverso.
-    process.env.FLOWFORGE_REGISTRY_SECRET = 'svc-test-registry-secret-32-bytes!!';
+    process.env.MEDEA_REGISTRY_SECRET = 'svc-test-registry-secret-32-bytes!!';
     try {
       const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
       const compiled = '(()=>{ return { output: { n: 1 } }; })()';
@@ -430,15 +430,15 @@ describe('🚨 persistCompileResult', () => {
       const swapped = { ...pkg, compiledExecutor: '(()=>{ /* altro bundle */ })()' };
       expect(verifyPackageIntegrity(swapped, record, 'svc-test-registry-secret-32-bytes!!').valid).toBe(false);
     } finally {
-      delete process.env.FLOWFORGE_REGISTRY_SECRET;
+      delete process.env.MEDEA_REGISTRY_SECRET;
     }
   });
 
   it('🚨 senza secret → integrità NULL (back-compat, nessun blocco)', async () => {
-    const prevReg = process.env.FLOWFORGE_REGISTRY_SECRET;
-    const prevTok = process.env.FLOWFORGE_INTERNAL_TOKEN;
-    delete process.env.FLOWFORGE_REGISTRY_SECRET;
-    delete process.env.FLOWFORGE_INTERNAL_TOKEN;
+    const prevReg = process.env.MEDEA_REGISTRY_SECRET;
+    const prevTok = process.env.MEDEA_INTERNAL_TOKEN;
+    delete process.env.MEDEA_REGISTRY_SECRET;
+    delete process.env.MEDEA_INTERNAL_TOKEN;
     try {
       const node = await createCustomNode({ workspaceId: WS_A, ownerUserId: USER_1, input: baseInput });
       await persistCompileResult({ workspaceId: WS_A, id: node.id, compiledExecutor: 'x', warnings: [] });
@@ -447,8 +447,8 @@ describe('🚨 persistCompileResult', () => {
         .get(node.id) as { integrity_digest: string | null };
       expect(raw.integrity_digest).toBeNull();
     } finally {
-      if (prevReg !== undefined) process.env.FLOWFORGE_REGISTRY_SECRET = prevReg;
-      if (prevTok !== undefined) process.env.FLOWFORGE_INTERNAL_TOKEN = prevTok;
+      if (prevReg !== undefined) process.env.MEDEA_REGISTRY_SECRET = prevReg;
+      if (prevTok !== undefined) process.env.MEDEA_INTERNAL_TOKEN = prevTok;
     }
   });
 });

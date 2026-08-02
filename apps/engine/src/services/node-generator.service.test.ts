@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 
-vi.mock('@flowforge/core-schema', async () => {
+vi.mock('@medea/engine-core-schema', async () => {
   const { z } = await import('zod');
   return {
     NodeDefSchema: z.object({

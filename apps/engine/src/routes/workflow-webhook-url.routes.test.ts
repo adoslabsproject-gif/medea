@@ -56,10 +56,10 @@ function makeApp(opts: {
 const envBackup: Record<string, string | undefined> = {};
 
 beforeEach(() => {
-  envBackup.FLOWFORGE_SSO_SECRET = process.env.FLOWFORGE_SSO_SECRET;
-  envBackup.FLOWFORGE_PUBLIC_BASE_URL = process.env.FLOWFORGE_PUBLIC_BASE_URL;
-  process.env.FLOWFORGE_SSO_SECRET = SECRET_A;
-  delete process.env.FLOWFORGE_PUBLIC_BASE_URL;
+  envBackup.MEDEA_SSO_SECRET = process.env.MEDEA_SSO_SECRET;
+  envBackup.MEDEA_PUBLIC_BASE_URL = process.env.MEDEA_PUBLIC_BASE_URL;
+  process.env.MEDEA_SSO_SECRET = SECRET_A;
+  delete process.env.MEDEA_PUBLIC_BASE_URL;
   resetConfigForTests();
 });
 
@@ -120,7 +120,7 @@ describe('GET /:id/webhook-url — authMode none (il fix "no-token")', () => {
   it('ANTI-REGRESSIONE rotazione: dopo il cambio secret l\'endpoint dà il token NUOVO', async () => {
     const app = makeApp({ workflows: { wf1: makeWorkflow('wf1', 't1', [webhookNode()]) } });
     const before = (await (await app.request('/wf1/webhook-url')).json() as Payload).webhook.token;
-    process.env.FLOWFORGE_SSO_SECRET = SECRET_B;
+    process.env.MEDEA_SSO_SECRET = SECRET_B;
     const after = (await (await app.request('/wf1/webhook-url')).json() as Payload).webhook.token;
     expect(after).not.toBe(before);
     expect(after).toBe(deriveDefaultWebhookToken('wf1'));
@@ -147,15 +147,15 @@ describe('GET /:id/webhook-url — authMode none (il fix "no-token")', () => {
   });
 
   it('503 fail-visible senza secret container — MAI un URL fasullo', async () => {
-    delete process.env.FLOWFORGE_SSO_SECRET;
+    delete process.env.MEDEA_SSO_SECRET;
     const app = makeApp({ workflows: { wf1: makeWorkflow('wf1', 't1', [webhookNode()]) } });
     expect((await app.request('/wf1/webhook-url')).status).toBe(503);
   });
 
-  it('url assoluto quando FLOWFORGE_PUBLIC_BASE_URL è configurata, null altrimenti', async () => {
+  it('url assoluto quando MEDEA_PUBLIC_BASE_URL è configurata, null altrimenti', async () => {
     const app = makeApp({ workflows: { wf1: makeWorkflow('wf1', 't1', [webhookNode()]) } });
     expect((await (await app.request('/wf1/webhook-url')).json() as Payload).webhook.url).toBeNull();
-    process.env.FLOWFORGE_PUBLIC_BASE_URL = 'https://cucurachi.app.automazionezeli.com/';
+    process.env.MEDEA_PUBLIC_BASE_URL = 'https://cucurachi.app.automazionezeli.com/';
     resetConfigForTests();
     const body = await (await app.request('/wf1/webhook-url')).json() as Payload;
     expect(body.webhook.url).toBe(`https://cucurachi.app.automazionezeli.com/webhooks/wf1/${deriveDefaultWebhookToken('wf1')}`);

@@ -1,6 +1,6 @@
-import type { NodeModule, NodeExecutor } from '@flowforge/nodes-stdlib';
-import { executeWithHostBreaker } from '@flowforge/nodes-stdlib';
-import { safeFetchWithRedirects, readTextCapped, readJsonCapped, readTextTruncated } from '@flowforge/safe-fetch';
+import type { NodeModule, NodeExecutor } from '@medea/engine-nodes-stdlib';
+import { executeWithHostBreaker } from '@medea/engine-nodes-stdlib';
+import { safeFetchWithRedirects, readTextCapped, readJsonCapped, readTextTruncated } from '@medea/engine-safe-fetch';
 import { normalizeInvoiceOutput, normalizeClientOutput, buildPaymentsList } from './fic-mapping.js';
 
 const FIC_API = 'https://api-v2.fattureincloud.it';

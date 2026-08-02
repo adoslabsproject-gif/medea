@@ -64,7 +64,7 @@ const collect = (mod) => {
 
 for (const pkg of PACKAGES) {
   try {
-    collect(await import(`${SORGENTE}/packages/flowforge/nodes/${pkg}/dist/index.js`));
+    collect(await import(`${SORGENTE}/packages/engine/nodes/${pkg}/dist/index.js`));
   } catch (e) {
     console.warn(`salto ${pkg}: ${e.message.split('\n')[0]}`);
   }

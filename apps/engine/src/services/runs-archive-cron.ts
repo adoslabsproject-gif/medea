@@ -9,7 +9,7 @@
  * timer (pattern allineato a `runtime-metrics-reporter`).
  *
  * Threshold di default: 30 giorni. Configurabile via env
- * `FLOWFORGE_RUNS_ARCHIVE_DAYS` per ambienti di test.
+ * `MEDEA_RUNS_ARCHIVE_DAYS` per ambienti di test.
  */
 import { archiveAllWorkflows } from './runs-archive.service.js';
 import { logger } from '@/lib/logger.js';
@@ -18,7 +18,7 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const DEFAULT_RETENTION_DAYS = 30;
 
 function readRetentionDays(): number {
-  const raw = process.env.FLOWFORGE_RUNS_ARCHIVE_DAYS;
+  const raw = process.env.MEDEA_RUNS_ARCHIVE_DAYS;
   if (!raw) return DEFAULT_RETENTION_DAYS;
   const n = Number.parseInt(raw, 10);
   return Number.isFinite(n) && n > 0 ? n : DEFAULT_RETENTION_DAYS;

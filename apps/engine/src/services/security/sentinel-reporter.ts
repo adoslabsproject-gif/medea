@@ -38,9 +38,9 @@ function sign(body: string, secret: string): string {
 
 export async function reportSecurityEvent(ev: SecurityEvent): Promise<void> {
   const config = loadConfig();
-  const tenantId = config.FLOWFORGE_TENANT_ID;
-  const portalUrl = config.FLOWFORGE_PORTAL_URL;
-  const secret = config.FLOWFORGE_WEBHOOK_SECRET;
+  const tenantId = config.MEDEA_TENANT_ID;
+  const portalUrl = config.MEDEA_PORTAL_URL;
+  const secret = config.MEDEA_WEBHOOK_SECRET;
 
   // No tenant context o no secret = container in dev mode. Skip silently.
   if (!tenantId || !secret) {

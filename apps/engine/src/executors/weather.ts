@@ -12,7 +12,7 @@
  */
 
 import { coerceString } from '@/lib/coerce.js';
-import type { NodeExecutor, NodeExecutionResult } from '@flowforge/nodes-stdlib';
+import type { NodeExecutor, NodeExecutionResult } from '@medea/engine-nodes-stdlib';
 import { safeOutboundFetch } from '@/lib/safe-outbound-fetch.js';
 import { readJsonCapped } from '@/lib/capped-response.js';
 

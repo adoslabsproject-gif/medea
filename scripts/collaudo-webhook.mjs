@@ -12,8 +12,8 @@
  *
  * Perché funzioni il motore va avviato con due variabili, che è esattamente
  * quello che fa Medea:
- *   FLOWFORGE_SSO_SECRET       da cui si deriva il token nell'indirizzo
- *   FLOWFORGE_PUBLIC_BASE_URL  per comporre l'indirizzo completo
+ *   MEDEA_SSO_SECRET       da cui si deriva il token nell'indirizzo
+ *   MEDEA_PUBLIC_BASE_URL  per comporre l'indirizzo completo
  *
  * Senza la prima l'endpoint risponde «token non derivabile»; senza la
  * seconda restituisce un percorso senza sapere dove attaccarlo.
@@ -79,7 +79,7 @@ async function main() {
 
   const { webhook } = await call(`/workflows/${workflow.id}/webhook-url`);
   if (!webhook.url) {
-    console.log('\n✗ Nessun indirizzo: il motore non ha FLOWFORGE_PUBLIC_BASE_URL.');
+    console.log('\n✗ Nessun indirizzo: il motore non ha MEDEA_PUBLIC_BASE_URL.');
     process.exit(1);
   }
   console.log(`  Indirizzo: ${webhook.url}`);

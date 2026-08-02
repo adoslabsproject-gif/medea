@@ -41,12 +41,12 @@ function node(config: Record<string, unknown>): unknown {
 
 let ssoBackup: string | undefined;
 beforeEach(() => {
-  ssoBackup = process.env.FLOWFORGE_SSO_SECRET;
-  process.env.FLOWFORGE_SSO_SECRET = NEW_SECRET;
+  ssoBackup = process.env.MEDEA_SSO_SECRET;
+  process.env.MEDEA_SSO_SECRET = NEW_SECRET;
 });
 afterEach(() => {
-  if (ssoBackup === undefined) delete process.env.FLOWFORGE_SSO_SECRET;
-  else process.env.FLOWFORGE_SSO_SECRET = ssoBackup;
+  if (ssoBackup === undefined) delete process.env.MEDEA_SSO_SECRET;
+  else process.env.MEDEA_SSO_SECRET = ssoBackup;
 });
 
 describe('CONTRACT guarigione (il caso Streammy)', () => {
@@ -184,7 +184,7 @@ describe('bug-bounty — pattern ostili', () => {
 describe('defaultSameHosts — host del tenant dall\'env di provisioning', () => {
   const backup: Record<string, string | undefined> = {};
   beforeEach(() => {
-    backup.FLOWFORGE_PUBLIC_BASE_URL = process.env.FLOWFORGE_PUBLIC_BASE_URL;
+    backup.MEDEA_PUBLIC_BASE_URL = process.env.MEDEA_PUBLIC_BASE_URL;
     backup.CORS_ORIGINS = process.env.CORS_ORIGINS;
   });
   afterEach(() => {
@@ -195,7 +195,7 @@ describe('defaultSameHosts — host del tenant dall\'env di provisioning', () =>
   });
 
   it('unisce base URL + CORS origins, dedup, lowercase, ignora origin malformate', () => {
-    process.env.FLOWFORGE_PUBLIC_BASE_URL = 'https://Cucurachi.app.automazionezeli.com';
+    process.env.MEDEA_PUBLIC_BASE_URL = 'https://Cucurachi.app.automazionezeli.com';
     process.env.CORS_ORIGINS = 'https://cucurachi.app.automazionezeli.com, https://flowforge.automazionezeli.com, non-un-url,';
     const hosts = defaultSameHosts();
     expect(hosts).toContain('cucurachi.app.automazionezeli.com');
@@ -204,7 +204,7 @@ describe('defaultSameHosts — host del tenant dall\'env di provisioning', () =>
   });
 
   it('senza env: lista vuota (nessun assoluto convertibile — fail-safe)', () => {
-    delete process.env.FLOWFORGE_PUBLIC_BASE_URL;
+    delete process.env.MEDEA_PUBLIC_BASE_URL;
     delete process.env.CORS_ORIGINS;
     expect(defaultSameHosts()).toEqual([]);
   });

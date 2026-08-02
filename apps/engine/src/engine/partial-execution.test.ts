@@ -12,8 +12,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { WorkflowEngine } from './workflow-engine.js';
 import { InMemoryEventBus } from '@/adapters/event-bus-memory.js';
-import type { Workflow } from '@flowforge/core-schema';
-import type { NodeExecutionContext } from '@flowforge/nodes-stdlib';
+import type { Workflow } from '@medea/engine-core-schema';
+import type { NodeExecutionContext } from '@medea/engine-nodes-stdlib';
 
 function defOf(id: string): { id: string; label: string; kind: 'action'; category: string; inputs: string[]; outputs: string[]; configSchema: never } {
   return { id, label: id, kind: 'action', category: 'test', inputs: [], outputs: [], configSchema: {} as never };

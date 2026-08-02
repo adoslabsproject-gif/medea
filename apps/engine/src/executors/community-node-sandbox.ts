@@ -12,7 +12,7 @@
  *   • CPU timeout: 15s wall clock on every script.run({ timeout }) call.
  *   • Event-loop isolation: l'esecuzione gira in worker_thread Node dedicato
  *     (Cappella Sistina). Un custom node CPU-bound NON blocca il runtime
- *     principale — solo il worker. Override `FLOWFORGE_SANDBOX_DISABLE_WORKER`
+ *     principale — solo il worker. Override `MEDEA_SANDBOX_DISABLE_WORKER`
  *     o NODE_ENV=test / VITEST=true → fallback inline (per test deterministici).
  *   • Safety hard-kill: 20s post-spawn worker terminate() se isolated-vm
  *     non riesce a fermarsi entro il suo timeout interno.
@@ -52,7 +52,7 @@ import { dirname, join } from 'node:path';
 import { logger } from '@/lib/logger.js';
 import { safeOutboundFetch } from '@/lib/safe-outbound-fetch.js';
 import { readBytesCapped } from '@/lib/capped-response.js';
-import { STDLIB_BUNDLE, STDLIB_BUNDLE_BYTES, STDLIB_BUNDLE_GLOBAL_NAME } from '@flowforge/nodes-stdlib-sandbox/bundle-source';
+import { STDLIB_BUNDLE, STDLIB_BUNDLE_BYTES, STDLIB_BUNDLE_GLOBAL_NAME } from '@medea/engine-nodes-stdlib-sandbox/bundle-source';
 
 /**
  * Path al worker entry-point. Risolto al boot del modulo.
@@ -60,7 +60,7 @@ import { STDLIB_BUNDLE, STDLIB_BUNDLE_BYTES, STDLIB_BUNDLE_GLOBAL_NAME } from '@
  * Pattern: il worker file e\` distribuito accanto al main bundle
  * (./community-node-sandbox.worker.js dopo build esbuild/tsc).
  *
- * Override env `FLOWFORGE_SANDBOX_DISABLE_WORKER=true` forza l'esecuzione
+ * Override env `MEDEA_SANDBOX_DISABLE_WORKER=true` forza l'esecuzione
  * inline sul main thread (utile per test sync + smoke locale).
  */
 const __filename_self = fileURLToPath(import.meta.url);
@@ -78,7 +78,7 @@ const WORKER_SCRIPT_PATH = (() => {
 
 /** Runtime check (NOT top-level const) — permette test override post-boot. */
 function workerDisabled(): boolean {
-  return process.env.FLOWFORGE_SANDBOX_DISABLE_WORKER === 'true'
+  return process.env.MEDEA_SANDBOX_DISABLE_WORKER === 'true'
     || process.env.NODE_ENV === 'test'
     || process.env.VITEST === 'true';
 }
@@ -112,7 +112,7 @@ const EXEC_TIMEOUT_MS = 15_000;
 const SANDBOX_ASYNC_GRACE_MS = 3_000;
 /** Timeout CPU effettivo (override via env, usato anche nei test per non aspettare 15s). */
 function execTimeoutMs(): number {
-  const raw = Number(process.env.FLOWFORGE_SANDBOX_EXEC_TIMEOUT_MS);
+  const raw = Number(process.env.MEDEA_SANDBOX_EXEC_TIMEOUT_MS);
   return Number.isFinite(raw) && raw > 0 ? raw : EXEC_TIMEOUT_MS;
 }
 
@@ -266,7 +266,7 @@ export async function hostFetch(url: string, initJson?: string): Promise<FetchPr
     if (!loc) break; // 3xx senza Location → trattala come finale
     if (++hops > MAX_REDIRECTS) throw new Error(`SSRF guard: troppi redirect (>${MAX_REDIRECTS})`);
     const next = new URL(loc, currentUrl).toString();
-    const { validateUrlForFetch } = await import('@flowforge/safe-fetch');
+    const { validateUrlForFetch } = await import('@medea/engine-safe-fetch');
     const ssrf = validateUrlForFetch(next);
     if (!ssrf.ok) {
       throw new Error(`SSRF blocked: redirect verso host non permesso (${ssrf.reason ?? 'invalid'})`);
@@ -385,7 +385,7 @@ export const SANDBOX_STDLIB_INFO = {
  * marketplace nodes (eseguiti decine di volte al minuto cross-tenant) il
  * trade-off e\` largamente net-positive.
  *
- * Override `FLOWFORGE_SANDBOX_DISABLE_WORKER=true` → fallback inline (per
+ * Override `MEDEA_SANDBOX_DISABLE_WORKER=true` → fallback inline (per
  * test deterministici + smoke locale dove worker_threads non disponibili).
  */
 export async function runInSandbox(

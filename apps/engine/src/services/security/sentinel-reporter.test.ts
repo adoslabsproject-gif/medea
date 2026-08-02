@@ -11,9 +11,9 @@ import { createHmac } from 'node:crypto';
 import { at } from '@/__testkit__/assert.js';
 
 const configMock = {
-  FLOWFORGE_TENANT_ID: 't-1',
-  FLOWFORGE_PORTAL_URL: 'https://portal.example.com',
-  FLOWFORGE_WEBHOOK_SECRET: 'webhook-secret-key',
+  MEDEA_TENANT_ID: 't-1',
+  MEDEA_PORTAL_URL: 'https://portal.example.com',
+  MEDEA_WEBHOOK_SECRET: 'webhook-secret-key',
 };
 vi.mock('@/config.js', () => ({
   loadConfig: () => configMock,
@@ -29,21 +29,21 @@ const { reportSecurityEvent } = await import('./sentinel-reporter.js');
 
 beforeEach(() => {
   vi.clearAllMocks();
-  configMock.FLOWFORGE_TENANT_ID = 't-1';
-  configMock.FLOWFORGE_PORTAL_URL = 'https://portal.example.com';
-  configMock.FLOWFORGE_WEBHOOK_SECRET = 'webhook-secret-key';
+  configMock.MEDEA_TENANT_ID = 't-1';
+  configMock.MEDEA_PORTAL_URL = 'https://portal.example.com';
+  configMock.MEDEA_WEBHOOK_SECRET = 'webhook-secret-key';
 });
 
 describe('🚨 skip dev mode (no tenant/secret)', () => {
   it('🚨 no tenantId → return + debug log', async () => {
-    configMock.FLOWFORGE_TENANT_ID = '';
+    configMock.MEDEA_TENANT_ID = '';
     await reportSecurityEvent({ eventType: 'failed_login_burst', severity: 'medium' });
     expect(fetchMock).not.toHaveBeenCalled();
     expect(loggerMock.debug).toHaveBeenCalled();
   });
 
   it('🚨 no secret → skip', async () => {
-    configMock.FLOWFORGE_WEBHOOK_SECRET = '';
+    configMock.MEDEA_WEBHOOK_SECRET = '';
     await reportSecurityEvent({ eventType: 'workflow_anomaly', severity: 'high' });
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -92,7 +92,7 @@ describe('🚨 happy path — POST con HMAC', () => {
   });
 
   it('🚨 trailing slash URL portal normalizzato', async () => {
-    configMock.FLOWFORGE_PORTAL_URL = 'https://portal.example.com/';
+    configMock.MEDEA_PORTAL_URL = 'https://portal.example.com/';
     fetchMock.mockResolvedValueOnce({ ok: true });
     await reportSecurityEvent({ eventType: 'failed_login_burst', severity: 'low' });
     expect(at(fetchMock.mock.calls, 0, 'fetch-calls')[0]).toBe('https://portal.example.com/api/v1/webhooks/flowforge');
