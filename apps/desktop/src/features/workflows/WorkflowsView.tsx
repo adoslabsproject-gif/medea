@@ -10,7 +10,7 @@
  * si disegna e si collegano i pezzi.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { workflowApi } from './api';
 import { AssistantPanel } from './assistant';
@@ -20,6 +20,7 @@ import { exportPng } from './canvas/export-png';
 import { WorkflowCanvas } from './canvas/WorkflowCanvas';
 import { findNode } from './catalog';
 import { CommandPalette, type Comando } from './CommandPalette';
+import { messaggioEliminazione } from './elimina-workflow';
 import { FormsDialog } from './FormsDialog';
 import { missingSecrets } from './missing-secrets';
 import { NodesDialog } from './NodesDialog';
@@ -75,6 +76,23 @@ export function WorkflowsView() {
   useEffect(() => {
     localStorage.setItem(ASSISTANT_OPEN_KEY, String(assistantOpen));
   }, [assistantOpen]);
+
+  /**
+   * Elimina un workflow, ma solo dopo averlo chiesto.
+   *
+   * Non c'è cestino e non c'è annulla: quello che se ne va non torna. La
+   * domanda nomina il workflow — «questo» in una finestra che ha coperto
+   * l'elenco non dice quale — e se è attivo lo dichiara, perché eliminarlo
+   * significa anche spegnere un'automazione che sta girando.
+   */
+  const eliminaWorkflow = useCallback(
+    (id: number) => {
+      const bersaglio = editor.items.find((i) => i.id === id);
+      if (!window.confirm(messaggioEliminazione(bersaglio))) return;
+      void editor.remove(id);
+    },
+    [editor],
+  );
 
   const defsById = useMemo(() => {
     const map = new Map<string, NodeDef>();
@@ -262,7 +280,7 @@ export function WorkflowsView() {
             setWizardOpen(true);
           }}
           onDuplicate={(id) => void editor.duplicate(id)}
-          onDelete={(id) => void editor.remove(id)}
+          onDelete={eliminaWorkflow}
           onShowRuns={(id) => {
             const found = editor.items.find((i) => i.id === id);
             const name = found?.name ?? 'Workflow';
@@ -363,7 +381,7 @@ export function WorkflowsView() {
               if (activeId) void editor.duplicate(activeId);
             },
             onDelete: () => {
-              if (activeId) void editor.remove(activeId);
+              if (activeId) eliminaWorkflow(activeId);
             },
           }}
         />
