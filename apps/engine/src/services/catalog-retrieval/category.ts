@@ -1,12 +1,14 @@
 /**
  * Categoria TOPICA di un nodo (email, http, database, italia, …) — derivata
- * dall'id + type del NodeDef. È la STESSA euristica del portal
- * (apps/portal/scripts/sync-node-defs.mjs `inferCategory`), replicata qui
- * perché il runtime non importa lo script di build del portal.
+ * dall'id + type del NodeDef.
  *
- * ⚠️ Coerenza cross-app garantita dal test catalog-category-parity.test.ts:
- * se il portal cambia l'euristica e il runtime no (o viceversa), il test
- * rompe — niente drift silenzioso tra le due tassonomie.
+ * L'euristica nasce come replica di quella del portal web di provenienza. In
+ * Medea il portal non esiste: qui questa è la fonte unica, e il catalogo che
+ * legge il modello si costruisce da qui.
+ *
+ * ⚠️ Coerenza garantita da `category-parity.test.ts`: gli override espliciti
+ * devono essere davvero applicati da `inferCategory` e usare solo categorie
+ * dichiarate in `CATEGORY_LABELS`.
  *
  * @module services/catalog-retrieval/category
  */
@@ -51,7 +53,7 @@ export const CATEGORY_LABELS: Readonly<Record<CatalogCategory, string>> = {
   utility: 'Utility (crypto, uuid, jwt, primitive varie)',
 };
 
-/** Replica esatta di inferCategory(def) del portal sync script. */
+/** Categoria di un nodo a partire dal suo id e dal suo tipo. */
 export function inferCategory(id: string, type: string): CatalogCategory {
   const explicit = EXPLICIT_CATEGORY[id];
   if (explicit) return explicit as CatalogCategory;
