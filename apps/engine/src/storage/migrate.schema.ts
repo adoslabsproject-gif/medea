@@ -214,7 +214,7 @@ CREATE INDEX IF NOT EXISTS workers_status_idx ON workers(status);
 --
 -- Isolation by design: per-tenant SQLite DB. Zero cross-tenant leak
 -- possible at infrastructure level (each runtime container has its own
--- /data/flowforge.sqlite).
+-- /data/medea.sqlite).
 --
 -- Scope by (user_id, workspace_id, surface):
 --   - editor_chat:      sidebar AiAssistantPanel (workspace-scoped)

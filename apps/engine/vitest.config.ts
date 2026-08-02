@@ -31,7 +31,7 @@ export default defineConfig({
     globals: false,
     environment: 'node',
     // DB di test effimero + migrato (schema completo) per ogni worker.
-    // Vedi vitest.setup.ts — elimina il file stale ./data/flowforge.sqlite.
+    // Vedi vitest.setup.ts — elimina il file stale ./data/medea.sqlite.
     setupFiles: ['./vitest.setup.ts'],
     coverage: {
       provider: 'v8',

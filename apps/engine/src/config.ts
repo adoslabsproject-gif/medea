@@ -18,7 +18,7 @@ const ConfigSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(3100),
   HOST: z.string().default('127.0.0.1'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
-  MEDEA_DB_PATH: z.string().default('./data/flowforge.sqlite'),
+  MEDEA_DB_PATH: z.string().default('./data/medea.sqlite'),
   MEDEA_DATA_DIR: z.string().default('./data'),
   CORS_ORIGINS: z.string().default('http://localhost:5173'),
 
