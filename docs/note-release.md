@@ -52,11 +52,41 @@ fra versioni ed elenco dei form pubblici.
 Windows, contro i 9 della versione precedente. Quei 9 MB erano un editor che
 disegnava automazioni e non ne eseguiva nessuna.
 
+## Novità della 0.4.0
+
+**Le automazioni restano in vita.** Chiudere la finestra non spegne più il
+motore, se si vuole: resta un'icona nella barra di stato, e con l'avvio al
+login le automazioni ripartono da sole dopo un riavvio del computer. Entrambe
+le cose si accendono in _Credenziali → Automazioni attive_ e sono spente
+finché non le si accende.
+
+E le scadenze non si perdono più in silenzio: se un orario cade mentre Medea è
+chiusa o il portatile dorme, alla ripartenza viene recuperato — una volta
+sola, non una per ogni ora saltata.
+
+**Si torna a trascinare i nodi.** Sul Mac il trascinamento dalla palette al
+disegno non arrivava a destinazione: il nodo si prendeva, compariva il segno
+di aggiunta, e lasciandolo non succedeva niente.
+
+**Il menu delle azioni scorre.** Con la finestra bassa le ultime voci non si
+raggiungevano.
+
+**Cancellare un workflow chiede conferma**, dicendo quale e avvertendo se è
+attivo. Prima spariva al primo clic.
+
+Sotto il cofano il motore ha smesso di portare il nome del progetto da cui
+deriva e adesso si chiama come l'applicazione che lo ospita. Chi ha scritto
+nodi personalizzati che importano `@flowforge/safe-fetch` o
+`@flowforge/community-node-sdk` deve aggiornarli a `@medea/engine-*`.
+
 ## Cosa non c'è ancora, e va detto
 
-**Le automazioni girano mentre Medea è aperta.** Un orario notturno parte se il
-computer è acceso e l'app è in esecuzione. Il motore come servizio di sistema —
-che continui a lavorare a finestra chiusa — non c'è ancora.
+**Le automazioni hanno bisogno che Medea ci sia.** Si può chiederle di
+continuare a lavorare a finestra chiusa e di ripartire all'accensione del
+computer — sono due interruttori in _Credenziali → Automazioni attive_ — ma
+resta un'applicazione, non un servizio di sistema: se esci davvero, o se il
+computer è spento, non gira niente. Le scadenze passate a vuoto vengono
+recuperate alla ripartenza, una sola volta.
 
 **I webhook che arrivano da internet passano da un relay.** In locale
 l'indirizzo è `127.0.0.1`, raggiungibile solo da quel computer: va bene per uno

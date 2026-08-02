@@ -2,7 +2,7 @@
  * Vitest setup — DB di test effimero con schema COMPLETO.
  *
  * Prima di questo file, i test che usano il DB reale (getDatabase non-mockato)
- * leggevano `./data/flowforge.sqlite`: un file su disco PERSISTENTE e STALE —
+ * leggevano `./data/medea.sqlite`: un file su disco PERSISTENTE e STALE —
  * aveva le tabelle vecchie ma non quelle aggiunte di recente
  * (`ai_workflow_templates`, `ai_budget_daily`) perché `createSqliteHandle()` non
  * chiama `runMigrations()` (lo fa solo il bootstrap del server). Conseguenze:

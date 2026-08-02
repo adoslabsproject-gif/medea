@@ -89,11 +89,16 @@ Anagrafiche, articoli, listini e documenti quando servono.
 
 Una tab con un editor visuale di automazioni: si trascinano i nodi, si collegano,
 si configurano. **193 nodi** — trigger a orario, webhook, chiamate HTTP, database,
-email, agenti AI, integrazioni — presi dal catalogo di FlowForge, con le stesse
-icone e le stesse definizioni, più i pacchetti `.ffnode` che si installano da
-file. E si **eseguono**: il motore di FlowForge viaggia
-dentro l'app, con il suo Node e le sue dipendenze, e gira sul computer senza
-chiedere niente a nessun server.
+email, agenti AI, integrazioni — con le stesse icone e le stesse definizioni del
+catalogo da cui derivano, più i pacchetti `.ffnode` che si installano da file. E
+si **eseguono**: il motore viaggia dentro l'app, con il suo Node e le sue
+dipendenze, e gira sul computer senza chiedere niente a nessun server.
+
+Il motore **è di Medea**: vive in questo repository sotto `@medea/engine-*`, si
+compila da qui e si impacchetta negli installatori. Deriva da FlowForge — è da
+lì che arrivano i 193 nodi e la compatibilità del formato — ma non è un pezzo
+preso in prestito da un altro progetto. Vedi
+[ADR 0009](docs/architecture/adr/0009-il-motore-porta-il-nome-di-medea.md).
 
 <table>
 <tr><td width="50%" valign="top">
@@ -127,6 +132,13 @@ Un cron alle 8, una casella in ascolto: partono anche se la sezione Workflow
 non si apre mai, e l'esecuzione compare nello storico con scritto chi l'ha
 avviata. Se non c'è nessuna automazione attiva il motore non parte affatto —
 sono decine di MB e un processo in più per niente.
+
+Si può chiedere a Medea di **continuare a lavorare a finestra chiusa** (resta
+un'icona nella barra di stato) e di **ripartire all'accensione del computer**.
+Sono due interruttori distinti in _Credenziali → Automazioni attive_, spenti
+finché non li si accende. E se una scadenza cade mentre Medea è spenta o il
+portatile dorme, alla ripartenza viene **recuperata** — una sola volta, non
+una per ogni ora saltata.
 
 </td><td width="50%" valign="top">
 
@@ -274,9 +286,9 @@ flowchart TB
 Niente Electron, niente server: **una finestra nativa, un processo Rust, un file
 SQLite**. La WebView è quella del sistema operativo.
 
-L'unica eccezione è il motore dei workflow, che è il runtime di FlowForge e
-quindi gira su Node: viaggia dentro l'app come processo figlio, parte solo
-quando serve e muore col padre. Costa 595 MB nell'installer, ed è il prezzo per
+L'unica eccezione è il motore dei workflow, che gira su Node: viaggia dentro
+l'app come processo figlio, parte solo quando serve e — a meno che non gli si
+chieda di restare — muore col padre. Costa 595 MB nell'installer, ed è il prezzo per
 avere tutti e 193 i nodi e la sandbox `isolated-vm` invece di una manciata di
 nodi riscritti. Il conto, e le riduzioni provate e scartate, stanno in
 [ADR 0008](docs/architecture/adr/0008-motore-impacchettato.md).
@@ -361,6 +373,7 @@ e `cargo check` a ogni push.
 | 🟢  | Template email, promemoria con notifiche, DB Studio              |
 | 🟢  | Workflow: canvas, 193 nodi, generazione a parole, 21 controlli   |
 | 🟢  | Esecuzione locale: motore impacchettato, cron e trigger attivi   |
+| 🟢  | Autonomia: barra di stato, avvio al login, scadenze recuperate   |
 | 🟢  | Segreti nel portachiavi, account di posta consegnati ai nodi     |
 | 🟢  | Versioni, prova del singolo nodo, riesecuzione, export ripulito  |
 | 🟢  | Nodi aggiuntivi `.ffnode` installati da file                     |

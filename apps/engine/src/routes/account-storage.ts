@@ -48,20 +48,23 @@ export function registerAccountStorageRoute(app: Hono): void {
     let logUsedBytes = 0;
     try {
       // Workflow data = SQLite + user-databases + installed-nodes
-      const sqliteSize = (() => {
+      //
+      // Il percorso si legge dalla configurazione invece di ricostruirlo dal
+      // nome: scriverlo qui una seconda volta significa che il giorno in cui
+      // il file cambia nome questo conteggio torna zero senza dirlo a nessuno
+      // — ed è successo il 2026-08-02, quando il database è passato da
+      // `flowforge.sqlite` a `medea.sqlite`.
+      const dbPath = loadConfig().MEDEA_DB_PATH;
+      const sizeOf = (path: string): number => {
         try {
-          return statSync(join(dataDir, 'flowforge.sqlite')).size;
+          return statSync(path).size;
         } catch {
           return 0;
         }
-      })();
-      const walSize = (() => {
-        try {
-          return statSync(join(dataDir, 'flowforge.sqlite-wal')).size;
-        } catch {
-          return 0;
-        }
-      })();
+      };
+      const sqliteSize = sizeOf(dbPath);
+      // Il journal sta accanto al database, con lo stesso nome più il suffisso.
+      const walSize = sizeOf(`${dbPath}-wal`);
       const userDbs = dirSizeBytes(join(dataDir, 'user-databases'));
       workflowDataUsedBytes = sqliteSize + walSize + userDbs;
       // Log retention = archives dir (creato in F3)

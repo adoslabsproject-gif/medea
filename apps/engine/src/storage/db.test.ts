@@ -29,7 +29,7 @@ vi.mock('@/config.js', () => ({
 
 beforeEach(() => {
   TMP_DIR = mkdtempSync(join(tmpdir(), 'ff-db-test-'));
-  TMP_DB = join(TMP_DIR, 'flowforge.sqlite');
+  TMP_DB = join(TMP_DIR, 'medea.sqlite');
   configMock.MEDEA_DB_PATH = TMP_DB;
   configMock.MEDEA_DATA_DIR = TMP_DIR;
   delete process.env.MEDEA_STORAGE;
@@ -316,7 +316,7 @@ describe('🚨 getDatabase — singleton + closeDatabase', () => {
 
 describe('🚨 ensureDataDir — directory creation', () => {
   it('🚨 path con dir mancante → createDirectory ricorsivo', async () => {
-    const nestedDb = join(TMP_DIR, 'nested', 'deep', 'flowforge.sqlite');
+    const nestedDb = join(TMP_DIR, 'nested', 'deep', 'medea.sqlite');
     configMock.MEDEA_DB_PATH = nestedDb;
     const { createDatabase } = await import('./db.js');
     const h = createDatabase();

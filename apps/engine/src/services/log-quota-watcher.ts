@@ -53,7 +53,7 @@ function dirSizeBytes(path: string): number {
 function measureLogUsage(): number {
   const dir = loadConfig().MEDEA_DATA_DIR;
   // Stima conservativa: WAL+SQLite+archives. Per F4 misuriamo solo gli
-  // archives (i runs attivi sono dentro flowforge.sqlite la cui dimensione
+  // archives (i runs attivi sono dentro medea.sqlite la cui dimensione
   // è già contata sotto workflowData).
   return dirSizeBytes(join(dir, 'archives'));
 }
