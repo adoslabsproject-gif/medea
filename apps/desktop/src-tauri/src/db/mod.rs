@@ -16,6 +16,7 @@ pub mod notes;
 pub mod pricing;
 pub mod reminders;
 pub mod schema;
+pub mod settings;
 pub mod studio;
 pub mod templates;
 pub mod workflow_runs;

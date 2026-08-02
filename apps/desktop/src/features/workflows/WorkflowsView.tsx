@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { workflowApi } from './api';
 import { AssistantPanel } from './assistant';
+import { BackgroundDialog } from './BackgroundDialog';
 import { diagnose, globalIssues } from './canvas/diagnostics';
 import { exportPng } from './canvas/export-png';
 import { WorkflowCanvas } from './canvas/WorkflowCanvas';
@@ -61,6 +62,7 @@ export function WorkflowsView() {
   const [versionsOpen, setVersionsOpen] = useState(false);
   const [nodesOpen, setNodesOpen] = useState(false);
   const [relayOpen, setRelayOpen] = useState(false);
+  const [backgroundOpen, setBackgroundOpen] = useState(false);
   const [triggerInputOpen, setTriggerInputOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -301,6 +303,9 @@ export function WorkflowsView() {
             onRelay: () => {
               setRelayOpen(true);
             },
+            onBackground: () => {
+              setBackgroundOpen(true);
+            },
             onSettings: () => {
               setSettingsOpen(true);
             },
@@ -531,6 +536,14 @@ export function WorkflowsView() {
         <RelayDialog
           onClose={() => {
             setRelayOpen(false);
+          }}
+        />
+      )}
+
+      {backgroundOpen && (
+        <BackgroundDialog
+          onClose={() => {
+            setBackgroundOpen(false);
           }}
         />
       )}

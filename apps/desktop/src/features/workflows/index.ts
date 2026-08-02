@@ -16,6 +16,7 @@ export type { NodeGroupId } from './catalog';
 export { PENDING_SECRET, PICKER_PLACEHOLDER } from './constants';
 export { runsApi, RunsModal } from './runs';
 export { NodesDialog } from './NodesDialog';
+export { BackgroundDialog } from './BackgroundDialog';
 export { RelayDialog } from './RelayDialog';
 export { SecretsDialog } from './SecretsDialog';
 export { TriggerInputDialog } from './TriggerInputDialog';
