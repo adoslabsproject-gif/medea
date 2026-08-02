@@ -112,6 +112,16 @@
        mentre la si trascina. */
     font-size: var(--font-size-xs);
     user-select: none;
+    /* E questa terza riga è la conseguenza della seconda. In WebKit — la
+       WebView con cui Medea gira sul Mac — il trascinamento nativo parte
+       dalla selezione: `user-select: none` lo spegne, e l'attributo
+       `draggable` non basta a riaccenderlo. Il risultato è una voce che si
+       illumina al passaggio del mouse e poi non si lascia trascinare.
+       `-webkit-user-drag: element` dice esplicitamente che l'elemento intero
+       è trascinabile, indipendentemente dalla selezione.
+       Senza, il 2026-08-02: «il drag e drop non funziona, i nodi non
+       rimangono nella lavagna». */
+    -webkit-user-drag: element;
   }
   .item:hover {
     background: var(--color-surface-3);
