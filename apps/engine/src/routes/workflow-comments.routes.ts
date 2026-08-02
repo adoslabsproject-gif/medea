@@ -27,9 +27,10 @@ export function registerWorkflowCommentsRoutes(
     const auth = c.get('auth');
     if (!auth) return c.json({ error: 'Unauthorized' }, 401);
     const nodeId = c.req.query('nodeId');
-    const list = nodeId !== undefined
-      ? comments.list(c.req.param('id'), nodeId === '' ? null : nodeId)
-      : comments.list(c.req.param('id'));
+    const list =
+      nodeId !== undefined
+        ? comments.list(c.req.param('id'), nodeId === '' ? null : nodeId)
+        : comments.list(c.req.param('id'));
     return c.json({ comments: list });
   });
 
@@ -46,7 +47,10 @@ export function registerWorkflowCommentsRoutes(
     const workflowId = c.req.param('id');
     const wf = await workflowService.get(workflowId, auth.tenantId);
     if (!wf) return c.json({ error: 'Workflow not found' }, 404);
-    const body = await c.req.json().catch(() => ({})) as { nodeId?: string | null; body?: string };
+    const body = (await c.req.json().catch(() => ({}))) as {
+      nodeId?: string | null;
+      body?: string;
+    };
     const text = (body.body ?? '').trim();
     if (text === '') return c.json({ error: 'Empty comment' }, 400);
     const comment = comments.add({
@@ -61,8 +65,12 @@ export function registerWorkflowCommentsRoutes(
     // il commento è stato fatto (anti-leak cross-tenant via superadmin SSO upsert).
     if (comment.mentions.length > 0) {
       notifications.notifyForComment({
-        mentions: comment.mentions, authorUserId: auth.userId, actorName: auth.email,
-        workflowId: comment.workflowId, nodeId: comment.nodeId, body: comment.body,
+        mentions: comment.mentions,
+        authorUserId: auth.userId,
+        actorName: auth.email,
+        workflowId: comment.workflowId,
+        nodeId: comment.nodeId,
+        body: comment.body,
         tenantId: auth.tenantId,
       });
     }
@@ -76,7 +84,7 @@ export function registerWorkflowCommentsRoutes(
     // H3 tenant gate
     const wf = await workflowService.get(workflowId, auth.tenantId);
     if (!wf) return c.json({ error: 'Workflow not found' }, 404);
-    const body = await c.req.json().catch(() => ({})) as { resolved?: boolean };
+    const body = (await c.req.json().catch(() => ({}))) as { resolved?: boolean };
     // H2 ownership check: setResolved filtra anche per workflow_id.
     const ok = comments.setResolved(c.req.param('commentId'), body.resolved === true, workflowId);
     if (!ok) return c.json({ error: 'Comment not found in this workflow' }, 404);

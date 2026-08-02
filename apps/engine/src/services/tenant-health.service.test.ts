@@ -29,22 +29,28 @@ describe('collectTenantHealth', () => {
   });
 
   it('🚨 storage probe che lancia → fail-soft usedBytes=0 (pannello non si rompe)', async () => {
-    const h = await collectTenantHealth(deps({
-      storageUsedBytes: async () => { throw new Error('disk probe failed'); },
-    }));
+    const h = await collectTenantHealth(
+      deps({
+        storageUsedBytes: async () => {
+          throw new Error('disk probe failed');
+        },
+      }),
+    );
     expect(h.storage.usedBytes).toBe(0);
     // il resto resta valido
     expect(h.counts.runs).toBe(123);
   });
 
   it('normalizza i negativi a 0 (dati corrotti non producono valori assurdi)', async () => {
-    const h = await collectTenantHealth(deps({
-      uptimeSeconds: -5,
-      countWorkflows: () => -1,
-      countRuns: () => -10,
-      storageUsedBytes: async () => -100,
-      storageTotalBytes: -1,
-    }));
+    const h = await collectTenantHealth(
+      deps({
+        uptimeSeconds: -5,
+        countWorkflows: () => -1,
+        countRuns: () => -10,
+        storageUsedBytes: async () => -100,
+        storageTotalBytes: -1,
+      }),
+    );
     expect(h.uptimeSeconds).toBe(0);
     expect(h.counts).toEqual({ workflows: 0, runs: 0 });
     expect(h.storage).toEqual({ usedBytes: 0, totalBytes: 0 });

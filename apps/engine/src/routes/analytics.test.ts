@@ -93,7 +93,16 @@ describe('🚨 GET /analytics/summary', () => {
     insertWorkflow(mockDb.sqlite!, 'tenant-A', 'wf-1');
     const res = await makeRequest('/api/v1/analytics/summary');
     expect(res.status).toBe(200);
-    const json = await res.json() as { runs: { total: number; success: number; error: number; avgDurationMs: number; p95DurationMs: number; successRate: number } };
+    const json = (await res.json()) as {
+      runs: {
+        total: number;
+        success: number;
+        error: number;
+        avgDurationMs: number;
+        p95DurationMs: number;
+        successRate: number;
+      };
+    };
     expect(json.runs.total).toBe(0);
     expect(json.runs.success).toBe(0);
     expect(json.runs.error).toBe(0);
@@ -108,7 +117,15 @@ describe('🚨 GET /analytics/summary', () => {
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf-1', 'success', now, 300);
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf-1', 'error', now, 50);
     const res = await makeRequest('/api/v1/analytics/summary');
-    const json = await res.json() as { runs: { total: number; success: number; error: number; successRate: number; avgDurationMs: number } };
+    const json = (await res.json()) as {
+      runs: {
+        total: number;
+        success: number;
+        error: number;
+        successRate: number;
+        avgDurationMs: number;
+      };
+    };
     expect(json.runs.total).toBe(4);
     expect(json.runs.success).toBe(3);
     expect(json.runs.error).toBe(1);
@@ -122,7 +139,7 @@ describe('🚨 GET /analytics/summary', () => {
       insertRun(mockDb.sqlite!, 'tenant-A', 'wf-1', 'success', now, i * 10);
     }
     const res = await makeRequest('/api/v1/analytics/summary');
-    const json = await res.json() as { runs: { p95DurationMs: number } };
+    const json = (await res.json()) as { runs: { p95DurationMs: number } };
     // floor(100 * 0.95) = 95 → array[95] = 96th element value = 960
     expect(json.runs.p95DurationMs).toBe(960);
   });
@@ -133,10 +150,10 @@ describe('🚨 GET /analytics/summary', () => {
     insertRun(mockDb.sqlite!, 'tenant-B', 'wf', 'success', now, 999);
     insertRun(mockDb.sqlite!, 'tenant-B', 'wf', 'error', now, 1);
     const resA = await makeRequest('/api/v1/analytics/summary', 'tenant-A');
-    const jA = await resA.json() as { runs: { total: number } };
+    const jA = (await resA.json()) as { runs: { total: number } };
     expect(jA.runs.total).toBe(1);
     const resB = await makeRequest('/api/v1/analytics/summary', 'tenant-B');
-    const jB = await resB.json() as { runs: { total: number; error: number } };
+    const jB = (await resB.json()) as { runs: { total: number; error: number } };
     expect(jB.runs.total).toBe(2);
     expect(jB.runs.error).toBe(1);
   });
@@ -147,7 +164,7 @@ describe('🚨 GET /analytics/summary', () => {
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', now, 100);
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', oldTs, 9999);
     const res = await makeRequest('/api/v1/analytics/summary');
-    const json = await res.json() as { runs: { total: number } };
+    const json = (await res.json()) as { runs: { total: number } };
     expect(json.runs.total).toBe(1);
   });
 
@@ -156,7 +173,7 @@ describe('🚨 GET /analytics/summary', () => {
     insertWorkflow(mockDb.sqlite!, 'tenant-A', 'w2', 1);
     insertWorkflow(mockDb.sqlite!, 'tenant-A', 'w3', 0);
     const res = await makeRequest('/api/v1/analytics/summary');
-    const json = await res.json() as { workflows: { total: number; enabled: number } };
+    const json = (await res.json()) as { workflows: { total: number; enabled: number } };
     expect(json.workflows.total).toBe(3);
     expect(json.workflows.enabled).toBe(2);
   });
@@ -168,7 +185,7 @@ describe('🚨 GET /analytics/summary', () => {
     }
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'pending', now, null);
     const res = await makeRequest('/api/v1/analytics/summary');
-    const json = await res.json() as { runs: { p95DurationMs: number } };
+    const json = (await res.json()) as { runs: { p95DurationMs: number } };
     // 19 durations rows → floor(19*0.95)=18 → array[18] = 1900
     expect(json.runs.p95DurationMs).toBe(1900);
   });
@@ -180,7 +197,7 @@ describe('🚨 GET /analytics/runs-per-day', () => {
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', today, 100);
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'error', today, 100);
     const res = await makeRequest('/api/v1/analytics/runs-per-day');
-    const json = await res.json() as { days: { day: string; total: number; errors: number }[] };
+    const json = (await res.json()) as { days: { day: string; total: number; errors: number }[] };
     expect(json.days.length).toBe(1);
     expect(json.days[0]!.total).toBe(2);
     expect(json.days[0]!.errors).toBe(1);
@@ -191,7 +208,7 @@ describe('🚨 GET /analytics/runs-per-day', () => {
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', oldDay, 100);
     // days=200 → clamped a 90 → 100gg fa NON nel range
     const res = await makeRequest('/api/v1/analytics/runs-per-day?days=200');
-    const json = await res.json() as { days: unknown[] };
+    const json = (await res.json()) as { days: unknown[] };
     expect(json.days).toEqual([]);
   });
 
@@ -200,7 +217,7 @@ describe('🚨 GET /analytics/runs-per-day', () => {
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', yesterday, 100);
     // days=0 clamped a 1 → ieri probabilmente fuori
     const res = await makeRequest('/api/v1/analytics/runs-per-day?days=0');
-    const json = await res.json() as { days: unknown[] };
+    const json = (await res.json()) as { days: unknown[] };
     // 1 giorno = ultime 24h → yesterday potrebbe esserci o no per ms
     expect(Array.isArray(json.days)).toBe(true);
   });
@@ -223,7 +240,7 @@ describe('🚨 GET /analytics/runs-per-day', () => {
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', day2, 100);
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', day1, 100);
     const res = await makeRequest('/api/v1/analytics/runs-per-day');
-    const json = await res.json() as { days: { day: string }[] };
+    const json = (await res.json()) as { days: { day: string }[] };
     expect(json.days.length).toBe(2);
     expect(json.days[0]!.day < json.days[1]!.day).toBe(true);
   });
@@ -237,7 +254,9 @@ describe('🚨 GET /analytics/error-top', () => {
     for (let i = 0; i < 2; i++) insertRun(mockDb.sqlite!, 'tenant-A', 'wf-2', 'error', now, 100);
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf-3', 'error', now, 100);
     const res = await makeRequest('/api/v1/analytics/error-top');
-    const json = await res.json() as { topErrors: { workflow_id: string; error_count: number }[] };
+    const json = (await res.json()) as {
+      topErrors: { workflow_id: string; error_count: number }[];
+    };
     expect(json.topErrors[0]!.workflow_id).toBe('wf-1');
     expect(json.topErrors[0]!.error_count).toBe(5);
     expect(json.topErrors[1]!.workflow_id).toBe('wf-2');
@@ -250,7 +269,7 @@ describe('🚨 GET /analytics/error-top', () => {
       insertRun(mockDb.sqlite!, 'tenant-A', `wf-${i}`, 'error', now, 100);
     }
     const res = await makeRequest('/api/v1/analytics/error-top');
-    const json = await res.json() as { topErrors: unknown[] };
+    const json = (await res.json()) as { topErrors: unknown[] };
     expect(json.topErrors).toHaveLength(10);
   });
 
@@ -260,7 +279,7 @@ describe('🚨 GET /analytics/error-top', () => {
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf-old', 'error', old8, 100);
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf-new', 'error', fresh, 100);
     const res = await makeRequest('/api/v1/analytics/error-top');
-    const json = await res.json() as { topErrors: { workflow_id: string }[] };
+    const json = (await res.json()) as { topErrors: { workflow_id: string }[] };
     const ids = json.topErrors.map((r) => r.workflow_id);
     expect(ids).toContain('wf-new');
     expect(ids).not.toContain('wf-old');
@@ -270,16 +289,19 @@ describe('🚨 GET /analytics/error-top', () => {
 describe('🚨 GET /analytics/duration', () => {
   it('🚨 bucketing: runs distribuiti nei 8 bucket', async () => {
     const now = new Date().toISOString();
-    insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', now, 5);     // < 10
-    insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', now, 30);    // < 50
-    insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', now, 80);    // < 100
-    insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', now, 250);   // < 500
-    insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', now, 700);   // < 1000
-    insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', now, 2000);  // < 5000
+    insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', now, 5); // < 10
+    insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', now, 30); // < 50
+    insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', now, 80); // < 100
+    insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', now, 250); // < 500
+    insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', now, 700); // < 1000
+    insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', now, 2000); // < 5000
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', now, 15000); // < 30000
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', now, 60000); // Infinity bucket
     const res = await makeRequest('/api/v1/analytics/duration');
-    const json = await res.json() as { buckets: { ltMs: number | null; count: number }[]; total: number };
+    const json = (await res.json()) as {
+      buckets: { ltMs: number | null; count: number }[];
+      total: number;
+    };
     expect(json.total).toBe(8);
     expect(json.buckets.length).toBe(8);
     // Verifica uno per bucket
@@ -290,7 +312,7 @@ describe('🚨 GET /analytics/duration', () => {
 
   it('🚨 zero runs → tutti bucket count=0, total=0', async () => {
     const res = await makeRequest('/api/v1/analytics/duration');
-    const json = await res.json() as { buckets: { count: number }[]; total: number };
+    const json = (await res.json()) as { buckets: { count: number }[]; total: number };
     expect(json.total).toBe(0);
     for (const b of json.buckets) expect(b.count).toBe(0);
   });
@@ -299,7 +321,7 @@ describe('🚨 GET /analytics/duration', () => {
     const now = new Date().toISOString();
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', now, 10); // NON < 10 → cade in < 50
     const res = await makeRequest('/api/v1/analytics/duration');
-    const json = await res.json() as { buckets: { ltMs: number | null; count: number }[] };
+    const json = (await res.json()) as { buckets: { ltMs: number | null; count: number }[] };
     expect(json.buckets[0]!.count).toBe(0); // < 10
     expect(json.buckets[1]!.count).toBe(1); // < 50
   });
@@ -309,7 +331,7 @@ describe('🚨 GET /analytics/duration', () => {
     insertRun(mockDb.sqlite!, 'tenant-A', 'wf', 'success', now, 100);
     insertRun(mockDb.sqlite!, 'tenant-B', 'wf', 'success', now, 100);
     const res = await makeRequest('/api/v1/analytics/duration', 'tenant-A');
-    const json = await res.json() as { total: number };
+    const json = (await res.json()) as { total: number };
     expect(json.total).toBe(1);
   });
 });

@@ -34,9 +34,9 @@ describe('italia_odoo — behavior (validazione pre-rete)', () => {
   });
 
   it('🚨 model mancante per action ≠ check_connection → errore chiaro (no rete)', async () => {
-    await expect(
-      run({ ...creds, action: 'search_read' }, undefined, ctx()),
-    ).rejects.toThrow(/model obbligatorio/);
+    await expect(run({ ...creds, action: 'search_read' }, undefined, ctx())).rejects.toThrow(
+      /model obbligatorio/,
+    );
   });
 });
 

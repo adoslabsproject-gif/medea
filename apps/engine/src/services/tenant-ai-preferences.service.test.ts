@@ -51,15 +51,17 @@ describe('get — defaults', () => {
   });
 
   it('row present → riflette i valori persistiti', () => {
-    m.db!.prepare('INSERT INTO tenant_ai_preferences (tenant_id, allow_liara, default_llm_provider, updated_at) VALUES (?, ?, ?, ?)')
-      .run('t1', 0, 'anthropic', '2026-06-07T00:00:00.000Z');
+    m.db!.prepare(
+      'INSERT INTO tenant_ai_preferences (tenant_id, allow_liara, default_llm_provider, updated_at) VALUES (?, ?, ?, ?)',
+    ).run('t1', 0, 'anthropic', '2026-06-07T00:00:00.000Z');
     const svc = new TenantAiPreferencesService();
     expect(svc.get('t1')).toEqual({ allowLiara: false, defaultLlmProvider: 'anthropic' });
   });
 
   it('default_llm_provider whitespace → normalizzato a null (sanity)', () => {
-    m.db!.prepare('INSERT INTO tenant_ai_preferences (tenant_id, allow_liara, default_llm_provider, updated_at) VALUES (?, ?, ?, ?)')
-      .run('t1', 1, '   ', '2026-06-07T00:00:00.000Z');
+    m.db!.prepare(
+      'INSERT INTO tenant_ai_preferences (tenant_id, allow_liara, default_llm_provider, updated_at) VALUES (?, ?, ?, ?)',
+    ).run('t1', 1, '   ', '2026-06-07T00:00:00.000Z');
     const svc = new TenantAiPreferencesService();
     expect(svc.get('t1').defaultLlmProvider).toBeNull();
   });
@@ -178,11 +180,7 @@ describe('resolveDefaultProvider — priority chain', () => {
     m.liaraEnabled = false;
     const svc = new TenantAiPreferencesService();
     svc.set('t1', { defaultLlmProvider: 'liara' });
-    expect(
-      svc.resolveDefaultProvider('t1', [
-        { provider: 'openai', hasKey: true },
-      ]),
-    ).toBe('openai');
+    expect(svc.resolveDefaultProvider('t1', [{ provider: 'openai', hasKey: true }])).toBe('openai');
   });
 });
 

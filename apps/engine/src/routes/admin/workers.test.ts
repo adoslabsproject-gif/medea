@@ -64,7 +64,10 @@ vi.mock('./worker-logs.js', () => ({
 
 import { registerWorkersRoutes } from './workers.js';
 
-interface Auth { userId: string; email: string }
+interface Auth {
+  userId: string;
+  email: string;
+}
 
 function makeApp(auth: Auth | null = { userId: 'u-admin', email: 'admin@x.com' }): Hono {
   const app = new Hono();
@@ -93,7 +96,7 @@ describe('GET /admin/workers', () => {
     ]);
     const res = await makeApp().request('/admin/workers');
     expect(res.status).toBe(200);
-    const body = await res.json() as { workers: unknown[] };
+    const body = (await res.json()) as { workers: unknown[] };
     expect(body.workers).toHaveLength(2);
   });
 });
@@ -103,15 +106,17 @@ describe('POST /admin/workers/:id/restart', () => {
     const res = await makeApp().request('/admin/workers/w-1/restart', { method: 'POST' });
     expect(res.status).toBe(200);
     expect(m.requestAction).toHaveBeenCalledWith('w-1', 'restart', 'admin@x.com');
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: 'system',
-      action: 'admin.worker.restart',
-      resourceType: 'worker',
-      resourceId: 'w-1',
-      actorId: 'u-admin',
-      metadata: { action: 'restart', actorEmail: 'admin@x.com' },
-    }));
-    const body = await res.json() as { ok: boolean; action: string; appliedWithin: string };
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'system',
+        action: 'admin.worker.restart',
+        resourceType: 'worker',
+        resourceId: 'w-1',
+        actorId: 'u-admin',
+        metadata: { action: 'restart', actorEmail: 'admin@x.com' },
+      }),
+    );
+    const body = (await res.json()) as { ok: boolean; action: string; appliedWithin: string };
     expect(body).toEqual({ ok: true, action: 'restart', appliedWithin: '10s' });
   });
 
@@ -125,9 +130,11 @@ describe('POST /admin/workers/:id/restart', () => {
   it('senza auth → actor email fallback "admin" + actorId undefined', async () => {
     await makeApp(null).request('/admin/workers/w-1/restart', { method: 'POST' });
     expect(m.requestAction).toHaveBeenCalledWith('w-1', 'restart', 'admin');
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      metadata: expect.objectContaining({ actorEmail: null }),
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({ actorEmail: null }),
+      }),
+    );
   });
 });
 
@@ -136,9 +143,11 @@ describe('POST /admin/workers/:id/drain', () => {
     const res = await makeApp().request('/admin/workers/w-1/drain', { method: 'POST' });
     expect(res.status).toBe(200);
     expect(m.requestAction).toHaveBeenCalledWith('w-1', 'drain', 'admin@x.com');
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'admin.worker.drain',
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.worker.drain',
+      }),
+    );
   });
 
   it('worker not found → 404', async () => {
@@ -155,7 +164,11 @@ describe('POST /admin/workers/:id/resume', () => {
     expect(m.requestAction).toHaveBeenCalledWith('w-1', 'resume', 'admin@x.com');
     // Anti-regressione: resume NON deve più essere l'unica azione senza traccia.
     expect(m.auditAppend).toHaveBeenCalledTimes(1);
-    const a = m.auditAppend.mock.calls[0]![0] as { action: string; resourceId: string; actorId?: string };
+    const a = m.auditAppend.mock.calls[0]![0] as {
+      action: string;
+      resourceId: string;
+      actorId?: string;
+    };
     expect(a.action).toBe('admin.worker.resume');
     expect(a.resourceId).toBe('w-1');
   });
@@ -177,10 +190,12 @@ describe('PATCH /admin/workers/:id/concurrency', () => {
     });
     expect(res.status).toBe(200);
     expect(m.requestConcurrency).toHaveBeenCalledWith('w-1', 8, 'admin@x.com');
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'admin.worker.concurrency',
-      metadata: { concurrency: 8, actorEmail: 'admin@x.com' },
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.worker.concurrency',
+        metadata: { concurrency: 8, actorEmail: 'admin@x.com' },
+      }),
+    );
   });
 
   it('🚨 concurrency 0 → 400 (Zod min 1)', async () => {
@@ -230,14 +245,16 @@ describe('PATCH /admin/workers/:id/concurrency', () => {
   });
 
   it('🚨 service throws → 400 con error message', async () => {
-    m.requestConcurrency.mockImplementation(() => { throw new Error('Cannot set: worker is draining'); });
+    m.requestConcurrency.mockImplementation(() => {
+      throw new Error('Cannot set: worker is draining');
+    });
     const res = await makeApp().request('/admin/workers/w-1/concurrency', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ concurrency: 4 }),
     });
     expect(res.status).toBe(400);
-    const body = await res.json() as { error: string };
+    const body = (await res.json()) as { error: string };
     expect(body.error).toContain('draining');
   });
 });
@@ -249,8 +266,11 @@ describe('GET /admin/workers/:id/logs', () => {
     const res = await makeApp().request('/admin/workers/w-1/logs');
     expect(res.status).toBe(200);
     expect(m.readWorkerLogs).toHaveBeenCalledWith(1234, 200);
-    const body = await res.json() as {
-      workerId: string; pid: number; tail: number; lines: string[];
+    const body = (await res.json()) as {
+      workerId: string;
+      pid: number;
+      tail: number;
+      lines: string[];
     };
     expect(body.pid).toBe(1234);
     expect(body.lines).toEqual(['line1', 'line2', 'line3']);
@@ -279,10 +299,12 @@ describe('GET /admin/workers/:id/logs', () => {
 
   it('🚨 readWorkerLogs throws → 500 con detail', async () => {
     m.prepareGet.mockReturnValue({ pid: 1, hostname: 'h' });
-    m.readWorkerLogs.mockImplementation(() => { throw new Error('journalctl access denied'); });
+    m.readWorkerLogs.mockImplementation(() => {
+      throw new Error('journalctl access denied');
+    });
     const res = await makeApp().request('/admin/workers/w-1/logs');
     expect(res.status).toBe(500);
-    const body = await res.json() as { error: string; detail: string };
+    const body = (await res.json()) as { error: string; detail: string };
     expect(body.error).toBe('Log fetch failed');
     expect(body.detail).toContain('access denied');
   });

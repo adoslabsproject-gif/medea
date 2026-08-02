@@ -15,19 +15,17 @@ vi.mock('@/storage/db.js', () => ({ getDatabase: () => ({ sqlite: h.db }) }));
 import { ensureTenant, normalizeTenantStatusClaim } from './tenant-upsert.js';
 
 function getRow(id: string): { status: string; trial_ends_at: string | null } | undefined {
-  return h.db!
-    .prepare('SELECT status, trial_ends_at FROM tenants WHERE id = ?')
-    .get(id) as { status: string; trial_ends_at: string | null } | undefined;
+  return h.db!.prepare('SELECT status, trial_ends_at FROM tenants WHERE id = ?').get(id) as
+    | { status: string; trial_ends_at: string | null }
+    | undefined;
 }
 
 /** Pre-inserisce un tenant con uno status dato (simula stato pregresso). */
 function seed(id: string, status: string): void {
-  h.db!
-    .prepare(
-      `INSERT INTO tenants (id, display_name, status, plan, country, locale, timezone, max_workflows, max_runs_per_month, max_storage_mb, trial_ends_at)
+  h.db!.prepare(
+    `INSERT INTO tenants (id, display_name, status, plan, country, locale, timezone, max_workflows, max_runs_per_month, max_storage_mb, trial_ends_at)
        VALUES (?, ?, ?, 'enterprise', 'IT', 'it', 'Europe/Rome', 0, 0, 0, NULL)`,
-    )
-    .run(id, id, status);
+  ).run(id, id, status);
 }
 
 beforeEach(() => {
@@ -42,7 +40,12 @@ beforeEach(() => {
 
 describe('ensureTenant — INSERT (primo SSO)', () => {
   it('crea con status="trial" + trialEndsAt dal claim', () => {
-    ensureTenant({ tenantId: 't1', displayName: 'Acme', status: 'trial', trialEndsAt: '2026-07-01T00:00:00.000Z' });
+    ensureTenant({
+      tenantId: 't1',
+      displayName: 'Acme',
+      status: 'trial',
+      trialEndsAt: '2026-07-01T00:00:00.000Z',
+    });
     expect(getRow('t1')).toEqual({ status: 'trial', trial_ends_at: '2026-07-01T00:00:00.000Z' });
   });
 
@@ -60,8 +63,18 @@ describe('ensureTenant — ON CONFLICT (login successivi, sync billing→runtime
   });
 
   it('aggiorna trial_ends_at se cambia (es. trial esteso)', () => {
-    ensureTenant({ tenantId: 't4', displayName: 'A', status: 'trial', trialEndsAt: '2026-07-01T00:00:00.000Z' });
-    ensureTenant({ tenantId: 't4', displayName: 'A', status: 'trial', trialEndsAt: '2026-07-15T00:00:00.000Z' });
+    ensureTenant({
+      tenantId: 't4',
+      displayName: 'A',
+      status: 'trial',
+      trialEndsAt: '2026-07-01T00:00:00.000Z',
+    });
+    ensureTenant({
+      tenantId: 't4',
+      displayName: 'A',
+      status: 'trial',
+      trialEndsAt: '2026-07-15T00:00:00.000Z',
+    });
     expect(getRow('t4')?.trial_ends_at).toBe('2026-07-15T00:00:00.000Z');
   });
 

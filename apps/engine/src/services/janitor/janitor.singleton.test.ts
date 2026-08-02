@@ -10,7 +10,9 @@ import type { JanitorRuntime } from './infrastructure/janitor.factory.js';
 
 const fakeRuntime = (tag: string) => ({ __tag: tag }) as unknown as JanitorRuntime;
 
-beforeEach(() => { resetJanitorSingleton(); });
+beforeEach(() => {
+  resetJanitorSingleton();
+});
 
 describe('janitor singleton', () => {
   it('getJanitor PRIMA di setJanitor → throw con messaggio che indica boot mancante', () => {

@@ -10,7 +10,10 @@ import { parseNumberLocale } from '../lib/number-locale.js';
  */
 
 /** Opzioni di coercion delle celle CSV→JSON (opt-in: default = tutto stringa). */
-interface CoerceOptions { numbers: boolean; booleans: boolean }
+interface CoerceOptions {
+  numbers: boolean;
+  booleans: boolean;
+}
 
 /**
  * Tokenizer CSV RFC 4180: gestisce campi quotati con il delimitatore, newline e
@@ -34,20 +37,32 @@ function parseCsvRows(text: string, delimiter: CsvDelimiter): string[][] {
     const c = text[i];
     if (inQuotes) {
       if (c === '"') {
-        if (text[i + 1] === '"') { field += '"'; i += 1; } // "" → " escapata
+        if (text[i + 1] === '"') {
+          field += '"';
+          i += 1;
+        } // "" → " escapata
         else inQuotes = false;
       } else {
         field += c;
       }
       continue;
     }
-    if (c === '"') { inQuotes = true; quoted = true; }
-    else if (c === delimiter) pushField();
-    else if (c === '\r') { /* normalizza CRLF */ }
-    else if (c === '\n') { pushField(); rows.push(row); row = []; }
-    else field += c;
+    if (c === '"') {
+      inQuotes = true;
+      quoted = true;
+    } else if (c === delimiter) pushField();
+    else if (c === '\r') {
+      /* normalizza CRLF */
+    } else if (c === '\n') {
+      pushField();
+      rows.push(row);
+      row = [];
+    } else field += c;
   }
-  if (field !== '' || row.length > 0 || quoted) { pushField(); rows.push(row); }
+  if (field !== '' || row.length > 0 || quoted) {
+    pushField();
+    rows.push(row);
+  }
   return rows;
 }
 
@@ -70,7 +85,11 @@ function coerceCell(raw: string, opts: CoerceOptions): unknown {
   return raw;
 }
 
-function parseCsv(text: string, delimiter: CsvDelimiter, coerce: CoerceOptions): Record<string, unknown>[] {
+function parseCsv(
+  text: string,
+  delimiter: CsvDelimiter,
+  coerce: CoerceOptions,
+): Record<string, unknown>[] {
   // I campi sono già trimmati (se non-quotati) dal tokenizer → niente re-trim qui,
   // così gli header/valori quotati con spazi intenzionali restano intatti.
   const rows = parseCsvRows(text, delimiter).filter(
@@ -105,16 +124,20 @@ function toCsv(rows: Record<string, unknown>[], delimiter: CsvDelimiter): string
   // iniziare con un trigger di formula → neutralizzo anche le intestazioni (CWE-1236).
   const out = [header.map((h) => csvField(neutralizeCsvFormula(h), delimiter)).join(delimiter)];
   for (const row of rows) {
-    out.push(header.map((c) => {
-      const v = row[c];
-      if (v === null || v === undefined) return '';
-      // CWE-1236: una cella STRINGA che inizia con `= + - @`/TAB/CR è una formula
-      // eseguibile all'apertura in Excel → prefisso apice (SSOT csv-formula-guard).
-      // Solo le stringhe: i numeri/oggetti serializzati via JSON.stringify ("-5",
-      // "{...}") non sono celle-formula e restano intatti — coerente con action_csv.
-      const s = typeof v === 'string' ? neutralizeCsvFormula(v) : JSON.stringify(v);
-      return csvField(s, delimiter);
-    }).join(delimiter));
+    out.push(
+      header
+        .map((c) => {
+          const v = row[c];
+          if (v === null || v === undefined) return '';
+          // CWE-1236: una cella STRINGA che inizia con `= + - @`/TAB/CR è una formula
+          // eseguibile all'apertura in Excel → prefisso apice (SSOT csv-formula-guard).
+          // Solo le stringhe: i numeri/oggetti serializzati via JSON.stringify ("-5",
+          // "{...}") non sono celle-formula e restano intatti — coerente con action_csv.
+          const s = typeof v === 'string' ? neutralizeCsvFormula(v) : JSON.stringify(v);
+          return csvField(s, delimiter);
+        })
+        .join(delimiter),
+    );
   }
   return out.join('\n');
 }
@@ -135,24 +158,38 @@ const convertExecutor: NodeExecutor = async (config, input, _context) => {
 
   let parsed: unknown;
   switch (from) {
-    case 'json': parsed = typeof input === 'string' ? JSON.parse(input) : input; break;
+    case 'json':
+      parsed = typeof input === 'string' ? JSON.parse(input) : input;
+      break;
     case 'csv': {
       const csvText = typeof input === 'string' ? input : '';
       // 'auto' → rileva il delimitatore sul testo in ingresso (virgola/;/tab).
       parsed = parseCsv(csvText, resolveDelimiter(config.delimiter, csvText), coerce);
       break;
     }
-    case 'text': parsed = String(input ?? ''); break;
-    default: parsed = input;
+    case 'text':
+      parsed = String(input ?? '');
+      break;
+    default:
+      parsed = input;
   }
 
   let output: unknown;
   switch (to) {
-    case 'json': output = parsed; break;
+    case 'json':
+      output = parsed;
+      break;
     // Per l'output 'auto' non ha un campione → resolveDelimiter('',…) ricade su virgola.
-    case 'csv': output = Array.isArray(parsed) ? toCsv(parsed as Record<string, unknown>[], resolveDelimiter(config.delimiter, '')) : ''; break;
-    case 'text': output = typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2); break;
-    default: output = parsed;
+    case 'csv':
+      output = Array.isArray(parsed)
+        ? toCsv(parsed as Record<string, unknown>[], resolveDelimiter(config.delimiter, ''))
+        : '';
+      break;
+    case 'text':
+      output = typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2);
+      break;
+    default:
+      output = parsed;
   }
 
   return { output, durationMs: Date.now() - start };
@@ -168,7 +205,7 @@ export const convertNode: NodeModule = {
     description:
       'Convertitore universale enterprise tra i tre formati di interscambio dati più comuni nei workflow ' +
       'business: JSON (la lingua franca delle API REST moderne e dei database NoSQL), CSV (lo standard de-facto ' +
-      'per Excel/Google Sheets/SAP/SAGE/gestionali italiani e per l\'export verso commercialisti e analisti che ' +
+      "per Excel/Google Sheets/SAP/SAGE/gestionali italiani e per l'export verso commercialisti e analisti che " +
       'non programmano), plain text. Conversioni bidirezionali complete (6 paths: ' +
       'JSON→CSV, JSON→text, CSV→JSON, CSV→text, text→JSON, text→CSV). XML e YAML pianificati per v2 (richiedono ' +
       'parser xmldom + js-yaml). ' +
@@ -182,7 +219,7 @@ export const convertNode: NodeModule = {
       '1234.56; con "Converti booleani" le celle "true"/"false" diventano boolean. ' +
       'JSON→text usa pretty-print a 2 spazi. ' +
       'Output: il risultato della conversione (stringa CSV/text, oppure array/oggetto per JSON), ritornato come ' +
-      'valore diretto dell\'output del nodo. ' +
+      "valore diretto dell'output del nodo. " +
       'Use case: trasformare risposta paginata JSON da API REST in CSV scaricabile dal cliente nella dashboard ' +
       'tenant (export "tutti i miei ordini ultimi 90gg"); normalizzare upload CSV di anagrafica clienti da ' +
       'commercialista in JSON per ingest in res.partner Odoo via action_odoo_rpc; export logs strutturati ' +
@@ -253,13 +290,13 @@ export const waitNode: NodeModule = {
     color: '#f59e0b',
     description:
       'Operatore enterprise di sospensione del workflow flessibile che combina i pattern timer-based (delay ' +
-      'temporizzato) e signal-based (wait-for-webhook-callback) in un\'unica primitiva configurable. Sospende ' +
-      'l\'esecuzione fino a uno dei tre scenari: timer scaduto (mode=timer, configurazione durationMs ' +
+      "temporizzato) e signal-based (wait-for-webhook-callback) in un'unica primitiva configurable. Sospende " +
+      "l'esecuzione fino a uno dei tre scenari: timer scaduto (mode=timer, configurazione durationMs " +
       'identica a logic_delay), arrivo di una callback HTTP esterna (mode=webhook, configurazione signalName + ' +
       'authToken, identico semantically a logic_wait_signal), oppure la combinazione "either" early-exit ' +
       '(mode=either — riprende al PRIMO dei due eventi che accade, pattern hybrid timeout + signal critical ' +
       'per use case real-world dove "se l\'utente non conferma entro 24h prendiamo decisione automatica"). ' +
-      'Il workflow è completamente suspended durante l\'attesa: zero consumo CPU/RAM, lo state è persistito ' +
+      "Il workflow è completamente suspended durante l'attesa: zero consumo CPU/RAM, lo state è persistito " +
       'in checkpoint del SQLite runtime, sopravvive a restart container per deploy o crash, scheduler centrale ' +
       'del portal riprende il workflow quando il timer scade o il webhook arriva. Cap di sicurezza configurable ' +
       'maxTimeoutMs default 30 giorni — pattern di safety per evitare workflow zombie che restano paused per ' +
@@ -303,7 +340,7 @@ export const waitNode: NodeModule = {
         type: 'number',
         required: false,
         defaultValue: '3600000',
-        help: 'Timeout assoluto del webhook. Se nessuna callback arriva entro questo tempo il workflow riprende comunque (status=timeout). Default 1h. Protezione anti-leak: se l\'utente non clicca mai il link conferma, il workflow non resta sospeso per sempre.',
+        help: "Timeout assoluto del webhook. Se nessuna callback arriva entro questo tempo il workflow riprende comunque (status=timeout). Default 1h. Protezione anti-leak: se l'utente non clicca mai il link conferma, il workflow non resta sospeso per sempre.",
       },
     ],
     vendor: 'flowforge',
@@ -331,19 +368,19 @@ export const transformNode: NodeModule = {
       'transformation in singolo espressione one-liner che equivarrebbero a 30+ righe di JavaScript imperativo. ' +
       'JSONata combina selectors XPath-like ($.users[role=admin].email), funzioni higher-order built-in ' +
       '(map, filter, reduce, sort, groupBy, distinct, sum, count, count, avg), template literal con string ' +
-      'interpolation (\\\'Hello \\\\(name)\\\'), date arithmetic ($millis() - $toMillis(created_at)), conditional ' +
+      "interpolation (\\'Hello \\\\(name)\\'), date arithmetic ($millis() - $toMillis(created_at)), conditional " +
       'ternario potente (price > 100 ? "expensive" : "cheap"), object construction con projection ' +
       '({"name": full_name, "totalSpent": $sum(orders.total)}), nested traversal con preservation di context ' +
       '(parent.{child.{name, count(child.items)}}). ' +
-      'Pattern d\'uso enterprise tipico: ristrutturare il JSON di response di un\'API esterna nel formato ' +
+      "Pattern d'uso enterprise tipico: ristrutturare il JSON di response di un'API esterna nel formato " +
       'atteso dal nodo downstream, evitando di scrivere logic_run_js custom che sarebbe più verbose + meno ' +
       'auditable. ' +
-      'Sandboxed enterprise execution: l\'engine JSONata è isolato via timeout di valutazione 5s (override env ' +
+      "Sandboxed enterprise execution: l'engine JSONata è isolato via timeout di valutazione 5s (override env " +
       'MEDEA_JSONATA_TIMEOUT_MS) + cap di profondità 500 (timeboxing ufficiale JSONata via callback ' +
       '__evaluate_entry/exit → kill di ricorsioni/loop non-terminanti = anti-DoS sulla CPU del container), ' +
       'pure function semantics (no side effect: JSONata non ha accesso a fetch/fs/process), output sempre ' +
       'JSON-serializable. ' +
-      'Documentazione e playground ufficiale completi a https://jsonata.org dove l\'utente può sperimentare ' +
+      "Documentazione e playground ufficiale completi a https://jsonata.org dove l'utente può sperimentare " +
       'expression complesse con preview live prima di paste nel nodo FlowForge. Cheatsheet quick reference: ' +
       '$count(items) per conta, items[price>100].name per filter+select, $sum(orders.total) per aggregate ' +
       'sum, $reduce(nums, function($a,$b){$a+$b}) per custom reducer, $groupBy(orders, "customer_id") per ' +
@@ -362,8 +399,9 @@ export const transformNode: NodeModule = {
         type: 'code',
         language: 'jsonata',
         required: true,
-        placeholder: '{\n  "name": firstName & " " & lastName,\n  "ageNext": age + 1,\n  "topOrders": orders[total > 100].id\n}',
-        help: 'Espressione JSONata applicata all\'intero payload `input`. Le funzioni built-in più usate: `$count()`, `$sum()`, `$average()`, `$map()`, `$filter()`, `$reduce()`, `$keys()`, `$lookup()`, `$merge()`, `$string()`, `$number()`, `$boolean()`, `$now()`, `$millis()`, `$fromMillis()`. Per debug: usa il playground su jsonata.org incollando l\'input reale di un run precedente.',
+        placeholder:
+          '{\n  "name": firstName & " " & lastName,\n  "ageNext": age + 1,\n  "topOrders": orders[total > 100].id\n}',
+        help: "Espressione JSONata applicata all'intero payload `input`. Le funzioni built-in più usate: `$count()`, `$sum()`, `$average()`, `$map()`, `$filter()`, `$reduce()`, `$keys()`, `$lookup()`, `$merge()`, `$string()`, `$number()`, `$boolean()`, `$now()`, `$millis()`, `$fromMillis()`. Per debug: usa il playground su jsonata.org incollando l'input reale di un run precedente.",
       },
     ],
     vendor: 'flowforge',
@@ -394,21 +432,21 @@ export const paginateNode: NodeModule = {
       'inefficace su dataset grossi (offset 100k è O(N) sul server); (4) link-header — il pattern RFC 5988 ' +
       'usato da GitHub v3 REST e altri — la response header `Link: <url>; rel="next"` punta esplicitamente al ' +
       'next URL senza dover costruirlo manualmente. ' +
-      'La strategia è ESPLICITA (la scegli nel dropdown, non c\'è auto-detect): per la maggior parte delle API ' +
-      'sai già quale schema usano. Path JSON configurabile per estrarre l\'array dall\'envelope della response ' +
+      "La strategia è ESPLICITA (la scegli nel dropdown, non c'è auto-detect): per la maggior parte delle API " +
+      "sai già quale schema usano. Path JSON configurabile per estrarre l'array dall'envelope della response " +
       '(es. "data", "results.records" per API nested). ' +
       'Safety cap: max pagine (default 100), max elementi totali (default 50k — protezione memoria), max durata ' +
-      'totale (default 5 min — anti-stuck). Rate-limit aware: su HTTP 429 rispetta l\'header Retry-After (capped ' +
+      "totale (default 5 min — anti-stuck). Rate-limit aware: su HTTP 429 rispetta l'header Retry-After (capped " +
       'a 30s) e ritenta la stessa pagina fino a 3 volte. SSRF-safe (safe-outbound-fetch). ' +
       'Output: { items (array unificato), pages (pagine processate), totalCount (= items.length), requestsCount ' +
-      '(fetch totali, inclusi i retry 429), truncated (true se un cap ha fermato l\'iterazione → mancano dati), ' +
+      "(fetch totali, inclusi i retry 429), truncated (true se un cap ha fermato l'iterazione → mancano dati), " +
       'finalCursor (ultimo cursore visto, solo strategy=cursor) }. ' +
       'Use case: scarica TUTTI gli ordini Shopify delle ultime 24h via cursor-based pagination con filtro ' +
       'updated_at_min (3000+ ordini su un sabato sera black friday → 60 pagine × 50 record → 4-6 minuti); ' +
       'tutti i contatti HubSpot del workspace (offset 100k+ record di customer database B2B per esportazione ' +
       'mensile); tutta la lista commenti GitHub di un repository per analytics community engagement (link-header); ' +
       'bulk export CRM Pipedrive senza scrivere il loop manuale a mano col rischio di off-by-one o ' +
-      'cursor-stuck-in-loop; sync incremental Notion database dove vogliamo tutti i record cambiati dall\'ultimo ' +
+      "cursor-stuck-in-loop; sync incremental Notion database dove vogliamo tutti i record cambiati dall'ultimo " +
       'cursor salvato in memory_note.',
     configFields: [
       {
@@ -444,12 +482,54 @@ export const paginateNode: NodeModule = {
         defaultValue: 'page-number',
         help: 'page-number = ?page=N · cursor = ?after=<token> · offset-limit = ?offset=N&limit=M · link-header = legge Link header RFC 5988.',
       },
-      { key: 'dataPath', label: 'Percorso dati nella risposta', type: 'text', required: false, placeholder: 'data.items', help: 'Dot-notation per estrarre l\'array dalla risposta (es. data.items, results, payload.list).' },
-      { key: 'cursorPath', label: 'Percorso cursore', type: 'text', required: false, placeholder: 'meta.next_cursor', help: 'Solo per strategy=cursor. Dove leggere il prossimo cursore nella risposta.' },
-      { key: 'limit', label: 'Limit per pagina (offset-limit)', type: 'number', required: false, defaultValue: '50', help: 'Solo per strategy=offset-limit: dimensione pagina ({{limit}}). Lo stop scatta quando una pagina ritorna meno di "limit" elementi.' },
-      { key: 'maxPages', label: 'Max pagine (safety)', type: 'number', required: false, defaultValue: '100', help: 'Limite hard per non chiamare API all\'infinito.' },
-      { key: 'maxItems', label: 'Max elementi totali (safety)', type: 'number', required: false, defaultValue: '50000', help: 'Cap difensivo sulla memoria: oltre questo numero di elementi aggregati l\'iterazione si ferma (truncated=true).' },
-      { key: 'maxDurationMs', label: 'Durata massima (ms, safety)', type: 'number', required: false, defaultValue: '300000', help: 'Tempo massimo totale di paginazione. Oltre → stop (truncated=true). Default 5 minuti.' },
+      {
+        key: 'dataPath',
+        label: 'Percorso dati nella risposta',
+        type: 'text',
+        required: false,
+        placeholder: 'data.items',
+        help: "Dot-notation per estrarre l'array dalla risposta (es. data.items, results, payload.list).",
+      },
+      {
+        key: 'cursorPath',
+        label: 'Percorso cursore',
+        type: 'text',
+        required: false,
+        placeholder: 'meta.next_cursor',
+        help: 'Solo per strategy=cursor. Dove leggere il prossimo cursore nella risposta.',
+      },
+      {
+        key: 'limit',
+        label: 'Limit per pagina (offset-limit)',
+        type: 'number',
+        required: false,
+        defaultValue: '50',
+        help: 'Solo per strategy=offset-limit: dimensione pagina ({{limit}}). Lo stop scatta quando una pagina ritorna meno di "limit" elementi.',
+      },
+      {
+        key: 'maxPages',
+        label: 'Max pagine (safety)',
+        type: 'number',
+        required: false,
+        defaultValue: '100',
+        help: "Limite hard per non chiamare API all'infinito.",
+      },
+      {
+        key: 'maxItems',
+        label: 'Max elementi totali (safety)',
+        type: 'number',
+        required: false,
+        defaultValue: '50000',
+        help: "Cap difensivo sulla memoria: oltre questo numero di elementi aggregati l'iterazione si ferma (truncated=true).",
+      },
+      {
+        key: 'maxDurationMs',
+        label: 'Durata massima (ms, safety)',
+        type: 'number',
+        required: false,
+        defaultValue: '300000',
+        help: 'Tempo massimo totale di paginazione. Oltre → stop (truncated=true). Default 5 minuti.',
+      },
     ],
     vendor: 'flowforge',
     version: '1.1.0',

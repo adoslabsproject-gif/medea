@@ -59,10 +59,13 @@ describe('readWorkerLogs — no-shell + sanitizzazione', () => {
     expect(readWorkerLogs(9, 10)).toBe('(no logs found for pid 9)');
   });
 
-  it.each([[0], [-5], [NaN], [Infinity]])('pid invalido %j → "(invalid pid)" SENZA eseguire', (pid) => {
-    expect(readWorkerLogs(pid, 50)).toBe('(invalid pid)');
-    expect(m.exec).not.toHaveBeenCalled();
-  });
+  it.each([[0], [-5], [NaN], [Infinity]])(
+    'pid invalido %j → "(invalid pid)" SENZA eseguire',
+    (pid) => {
+      expect(readWorkerLogs(pid, 50)).toBe('(invalid pid)');
+      expect(m.exec).not.toHaveBeenCalled();
+    },
+  );
 
   it('pid float → floored a intero, argv cifre-only', () => {
     outcomes = [Buffer.from('x')];

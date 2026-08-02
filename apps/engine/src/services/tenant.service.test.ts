@@ -105,36 +105,31 @@ beforeEach(() => {
 describe('TenantService.create — slug validation', () => {
   it('rejects slug troppo corto (<3 char)', () => {
     const svc = new TenantService();
-    expect(() => svc.create({ slug: 'ab', displayName: 'X' }))
-      .toThrow(/Slug.*non valido/);
+    expect(() => svc.create({ slug: 'ab', displayName: 'X' })).toThrow(/Slug.*non valido/);
   });
 
   it('rejects slug con leading dash', () => {
     const svc = new TenantService();
-    expect(() => svc.create({ slug: '-acme', displayName: 'X' }))
-      .toThrow(/Slug.*non valido/);
+    expect(() => svc.create({ slug: '-acme', displayName: 'X' })).toThrow(/Slug.*non valido/);
   });
 
   it('rejects slug con trailing dash', () => {
     const svc = new TenantService();
-    expect(() => svc.create({ slug: 'acme-', displayName: 'X' }))
-      .toThrow(/Slug.*non valido/);
+    expect(() => svc.create({ slug: 'acme-', displayName: 'X' })).toThrow(/Slug.*non valido/);
   });
 
   it('rejects slug con caratteri speciali (!@#$ ecc.)', () => {
     const svc = new TenantService();
-    expect(() => svc.create({ slug: 'acme!srl', displayName: 'X' }))
-      .toThrow(/Slug.*non valido/);
-    expect(() => svc.create({ slug: 'acme srl', displayName: 'X' }))
-      .toThrow(/Slug.*non valido/);
-    expect(() => svc.create({ slug: 'ACME', displayName: 'X' }))
-      .not.toThrow(/Slug.*non valido/); // uppercase viene lowercased internamente
+    expect(() => svc.create({ slug: 'acme!srl', displayName: 'X' })).toThrow(/Slug.*non valido/);
+    expect(() => svc.create({ slug: 'acme srl', displayName: 'X' })).toThrow(/Slug.*non valido/);
+    expect(() => svc.create({ slug: 'ACME', displayName: 'X' })).not.toThrow(/Slug.*non valido/); // uppercase viene lowercased internamente
   });
 
   it('rejects slug troppo lungo (>64 char)', () => {
     const svc = new TenantService();
-    expect(() => svc.create({ slug: 'a'.repeat(65), displayName: 'X' }))
-      .toThrow(/Slug.*non valido/);
+    expect(() => svc.create({ slug: 'a'.repeat(65), displayName: 'X' })).toThrow(
+      /Slug.*non valido/,
+    );
   });
 
   it('accetta slug 3-64 alphanumerico + dash interno', () => {
@@ -157,9 +152,7 @@ describe('TenantService.create — slug validation', () => {
   });
 
   it('TRIMS slug whitespace', () => {
-    m.sqliteStmt.get
-      .mockReturnValueOnce(undefined)
-      .mockReturnValueOnce(makeRow({ id: 'acme' }));
+    m.sqliteStmt.get.mockReturnValueOnce(undefined).mockReturnValueOnce(makeRow({ id: 'acme' }));
     const svc = new TenantService();
     svc.create({ slug: '  acme  ', displayName: 'X' });
     const insertCall = m.sqliteStmt.run.mock.calls[0];
@@ -169,8 +162,7 @@ describe('TenantService.create — slug validation', () => {
   it('THROWS TenantSlugConflictError se slug attivo già esiste', () => {
     m.sqliteStmt.get.mockReturnValueOnce({ exists: 1 }); // conflict found
     const svc = new TenantService();
-    expect(() => svc.create({ slug: 'acme', displayName: 'X' }))
-      .toThrow(TenantSlugConflictError);
+    expect(() => svc.create({ slug: 'acme', displayName: 'X' })).toThrow(TenantSlugConflictError);
   });
 
   it('emette audit tenant.created con metadata', () => {
@@ -179,18 +171,18 @@ describe('TenantService.create — slug validation', () => {
       .mockReturnValueOnce(makeRow({ id: 'acme', display_name: 'ACME' }));
     const svc = new TenantService();
     svc.create({ slug: 'acme', displayName: 'ACME', plan: 'enterprise' }, 'user-admin-1');
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: 'acme',
-      actorId: 'user-admin-1',
-      action: 'tenant.created',
-      metadata: expect.objectContaining({ displayName: 'ACME', plan: 'enterprise' }),
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'acme',
+        actorId: 'user-admin-1',
+        action: 'tenant.created',
+        metadata: expect.objectContaining({ displayName: 'ACME', plan: 'enterprise' }),
+      }),
+    );
   });
 
   it('default values applied: country=IT, locale=it, timezone=Europe/Rome, plan=enterprise', () => {
-    m.sqliteStmt.get
-      .mockReturnValueOnce(undefined)
-      .mockReturnValueOnce(makeRow({ id: 'x' }));
+    m.sqliteStmt.get.mockReturnValueOnce(undefined).mockReturnValueOnce(makeRow({ id: 'x' }));
     const svc = new TenantService();
     svc.create({ slug: 'newtenant', displayName: 'New' });
     const insertCall = m.sqliteStmt.run.mock.calls[0];
@@ -234,19 +226,24 @@ describe('TenantService.get + find', () => {
   });
 
   it('parsing settings_json malformed → settings={} fallback', () => {
-    m.sqliteStmt.get.mockReturnValueOnce(makeRow({
-      id: 'acme', settings_json: '{this-is-not-json',
-    }));
+    m.sqliteStmt.get.mockReturnValueOnce(
+      makeRow({
+        id: 'acme',
+        settings_json: '{this-is-not-json',
+      }),
+    );
     const svc = new TenantService();
     const t = svc.find('acme');
     expect(t?.settings).toEqual({});
   });
 
   it('parsing settings_json OK preserva object', () => {
-    m.sqliteStmt.get.mockReturnValueOnce(makeRow({
-      id: 'acme',
-      settings_json: JSON.stringify({ feature_a: true, max_x: 42 }),
-    }));
+    m.sqliteStmt.get.mockReturnValueOnce(
+      makeRow({
+        id: 'acme',
+        settings_json: JSON.stringify({ feature_a: true, max_x: 42 }),
+      }),
+    );
     const svc = new TenantService();
     const t = svc.find('acme');
     expect(t?.settings).toEqual({ feature_a: true, max_x: 42 });
@@ -378,11 +375,13 @@ describe('TenantService.update', () => {
       .mockReturnValueOnce(makeRow({ id: 'acme' }));
     const svc = new TenantService();
     svc.update('acme', { displayName: 'NewName', maxRunsPerMonth: 5000 }, 'admin');
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'tenant.updated',
-      actorId: 'admin',
-      metadata: { changes: expect.arrayContaining(['displayName', 'maxRunsPerMonth']) },
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'tenant.updated',
+        actorId: 'admin',
+        metadata: { changes: expect.arrayContaining(['displayName', 'maxRunsPerMonth']) },
+      }),
+    );
   });
 
   it('null patch su nullable field → SET col = NULL', () => {
@@ -412,10 +411,12 @@ describe('TenantService — state machine', () => {
       .mockReturnValueOnce(makeRow({ id: 'acme', status: 'suspended' })); // post-get
     const svc = new TenantService();
     svc.suspend('acme', 'payment_failed', 'admin');
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'tenant.suspended',
-      metadata: { reason: 'payment_failed' },
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'tenant.suspended',
+        metadata: { reason: 'payment_failed' },
+      }),
+    );
   });
 
   it('activate: UPDATE rimuove suspended_at + reason', () => {
@@ -424,11 +425,17 @@ describe('TenantService — state machine', () => {
       .mockReturnValueOnce(makeRow({ id: 'acme', status: 'active' }));
     const svc = new TenantService();
     svc.activate('acme', 'admin');
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'tenant.activated',
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'tenant.activated',
+      }),
+    );
     // verify SQL contiene SET suspended_at = NULL
-    const updateSql = coerceString((m.prepare.mock.calls as unknown[][]).find((c) => coerceString(c[0] ?? '').includes('UPDATE tenants'))?.[0] ?? '');
+    const updateSql = coerceString(
+      (m.prepare.mock.calls as unknown[][]).find((c) =>
+        coerceString(c[0] ?? '').includes('UPDATE tenants'),
+      )?.[0] ?? '',
+    );
     expect(updateSql).toMatch(/suspended_at = NULL/);
     expect(updateSql).toMatch(/suspended_reason = NULL/);
   });
@@ -439,22 +446,26 @@ describe('TenantService — state machine', () => {
       .mockReturnValueOnce(makeRow({ id: 'acme', status: 'archived' }));
     const svc = new TenantService();
     svc.archive('acme', 'contract ended', 'admin');
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'tenant.archived',
-      actorId: 'admin',
-      metadata: { reason: 'contract ended' },
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'tenant.archived',
+        actorId: 'admin',
+        metadata: { reason: 'contract ended' },
+      }),
+    );
   });
 
   it('softDelete: deleted_at=NOW + audit con reason (audit #5) + actor', () => {
     m.sqliteStmt.get.mockReturnValueOnce(makeRow({ id: 'acme' }));
     const svc = new TenantService();
     svc.softDelete('acme', 'gdpr erasure request', 'admin');
-    expect(m.auditAppend).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'tenant.deleted',
-      actorId: 'admin',
-      metadata: { reason: 'gdpr erasure request' },
-    }));
+    expect(m.auditAppend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'tenant.deleted',
+        actorId: 'admin',
+        metadata: { reason: 'gdpr erasure request' },
+      }),
+    );
   });
 });
 
@@ -470,9 +481,13 @@ describe('TenantService.assertActive', () => {
 
   it('trial valido (trialEndsAt futuro) → ok', () => {
     const future = new Date(Date.now() + 86400_000).toISOString();
-    m.sqliteStmt.get.mockReturnValueOnce(makeRow({
-      id: 'acme', status: 'trial', trial_ends_at: future,
-    }));
+    m.sqliteStmt.get.mockReturnValueOnce(
+      makeRow({
+        id: 'acme',
+        status: 'trial',
+        trial_ends_at: future,
+      }),
+    );
     const svc = new TenantService();
     expect(() => svc.assertActive('acme')).not.toThrow();
   });
@@ -488,9 +503,13 @@ describe('TenantService.assertActive', () => {
   });
 
   it('suspended → throws TenantNotActiveError con reason in message', () => {
-    m.sqliteStmt.get.mockReturnValueOnce(makeRow({
-      id: 'acme', status: 'suspended', suspended_reason: 'fraud_detected',
-    }));
+    m.sqliteStmt.get.mockReturnValueOnce(
+      makeRow({
+        id: 'acme',
+        status: 'suspended',
+        suspended_reason: 'fraud_detected',
+      }),
+    );
     const svc = new TenantService();
     expect(() => svc.assertActive('acme')).toThrow(/fraud_detected/);
   });
@@ -513,9 +532,12 @@ describe('TenantService.checkQuota', () => {
   });
 
   it('limit=0 → unlimited, skip check (no COUNT query)', () => {
-    m.sqliteStmt.get.mockReturnValueOnce(makeRow({
-      id: 'acme', max_workflows: 0,
-    }));
+    m.sqliteStmt.get.mockReturnValueOnce(
+      makeRow({
+        id: 'acme',
+        max_workflows: 0,
+      }),
+    );
     const svc = new TenantService();
     expect(() => svc.checkQuota('acme', 'workflows', 999)).not.toThrow();
     // SOLO la query get() del tenant, NESSUNA COUNT
@@ -571,8 +593,11 @@ describe('TenantService.checkQuota', () => {
       .mockReturnValueOnce({ n: 3 });
     const svc = new TenantService();
     svc.checkQuota('acme', 'workflows', 1);
-    const sqlCall = coerceString((m.prepare.mock.calls as unknown[][])
-      .find((c) => coerceString(c[0] ?? '').includes('FROM workflows'))?.[0] ?? '');
+    const sqlCall = coerceString(
+      (m.prepare.mock.calls as unknown[][]).find((c) =>
+        coerceString(c[0] ?? '').includes('FROM workflows'),
+      )?.[0] ?? '',
+    );
     expect(sqlCall).toMatch(/enabled\s*=\s*1/);
   });
 
@@ -583,7 +608,11 @@ describe('TenantService.checkQuota', () => {
     const svc = new TenantService();
     svc.checkQuota('acme', 'runs_per_month', 1);
     // FIX 2026-06-06: la tabella è `runs` (non più `workflow_runs` fantasma).
-    const sqlCall = coerceString((m.prepare.mock.calls as unknown[][]).find((c) => /FROM runs\b/.test(coerceString(c[0] ?? '')))?.[0] ?? '');
+    const sqlCall = coerceString(
+      (m.prepare.mock.calls as unknown[][]).find((c) =>
+        /FROM runs\b/.test(coerceString(c[0] ?? '')),
+      )?.[0] ?? '',
+    );
     expect(sqlCall).toMatch(/FROM runs WHERE tenant_id = \? AND started_at >= \?/);
   });
 
@@ -633,9 +662,7 @@ describe('TenantService.checkQuota', () => {
 // ════════════════════════════════════════════════════════════════════
 describe('TenantService — actorUserId undefined branches', () => {
   it('create SENZA actorUserId → audit NO actorId field', () => {
-    m.sqliteStmt.get
-      .mockReturnValueOnce(undefined)
-      .mockReturnValueOnce(makeRow({ id: 'acme' }));
+    m.sqliteStmt.get.mockReturnValueOnce(undefined).mockReturnValueOnce(makeRow({ id: 'acme' }));
     const svc = new TenantService();
     svc.create({ slug: 'acme', displayName: 'ACME' }); // no actorUserId
     const auditCall = m.auditAppend.mock.calls[0]?.[0] as Record<string, unknown>;
@@ -746,7 +773,7 @@ describe('TenantService — actorUserId undefined branches', () => {
     expect(m.sqliteStmt.run).toHaveBeenCalled();
     const args = m.sqliteStmt.run.mock.calls[0] as unknown[];
     // Il primo param è il JSON-stringified settings
-    expect(args.some(a => a === '{}')).toBe(true);
+    expect(args.some((a) => a === '{}')).toBe(true);
   });
 
   it('update vatNumber null explicit (non-settings field with null fallback v ?? null)', () => {

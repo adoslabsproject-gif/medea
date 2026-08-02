@@ -32,9 +32,16 @@ afterEach(() => {
 
 function makeWf(): Workflow {
   return {
-    id: 'wf-ct', tenantId: 'tenant-a', name: 'CT', enabled: true,
-    schemaVersion: '1.0.0', nodes: [], edges: [], nodeDefs: [],
-    createdAt: '2026-06-12', updatedAt: '2026-06-12',
+    id: 'wf-ct',
+    tenantId: 'tenant-a',
+    name: 'CT',
+    enabled: true,
+    schemaVersion: '1.0.0',
+    nodes: [],
+    edges: [],
+    nodeDefs: [],
+    createdAt: '2026-06-12',
+    updatedAt: '2026-06-12',
   } as unknown as Workflow;
 }
 
@@ -43,16 +50,35 @@ function makeNode(config: Record<string, string>): CanvasNode {
 }
 
 const installed = {
-  manifest: { id: 'acme_poll', vendor: 'acme', version: '1.0.0', displayName: 'Acme', description: 'x', license: 'MIT' },
+  manifest: {
+    id: 'acme_poll',
+    vendor: 'acme',
+    version: '1.0.0',
+    displayName: 'Acme',
+    description: 'x',
+    license: 'MIT',
+  },
   def: {
-    id: 'acme_poll', type: 'trigger', label: 'Acme', icon: 'cube', color: '#3b82f6', description: 'x',
+    id: 'acme_poll',
+    type: 'trigger',
+    label: 'Acme',
+    icon: 'cube',
+    color: '#3b82f6',
+    description: 'x',
     triggers: [{ id: 'rows', label: 'Rows', mode: 'polling', pollIntervalSec: 25 }],
   },
   executorSource: 'module.exports = async () => ({});',
-  installedAt: '2026-06-09', verified: true, storagePath: '/tmp/acme',
+  installedAt: '2026-06-09',
+  verified: true,
+  storagePath: '/tmp/acme',
 } as unknown as InstalledNode;
 
-const trig = { id: 'rows', label: 'Rows', mode: 'polling', pollIntervalSec: 25 } as unknown as NodeTrigger;
+const trig = {
+  id: 'rows',
+  label: 'Rows',
+  mode: 'polling',
+  pollIntervalSec: 25,
+} as unknown as NodeTrigger;
 
 type PollRunner = typeof runCommunityTriggerPoll;
 type PollResult = Awaited<ReturnType<PollRunner>>;
@@ -63,8 +89,10 @@ function makeDeps(over: Partial<CommunityTriggerPollerDeps> = {}): {
   dispatched: TriggerRunInput[];
 } {
   const dispatched: TriggerRunInput[] = [];
-  const pollRunner = vi.fn(async (): Promise<PollResult> =>
-    ({ events: [], state: {}, truncated: false } as unknown as PollResult));
+  const pollRunner = vi.fn(
+    async (): Promise<PollResult> =>
+      ({ events: [], state: {}, truncated: false }) as unknown as PollResult,
+  );
   const deps: CommunityTriggerPollerDeps = {
     dispatchRun: async (input: TriggerRunInput): Promise<TriggerRunResult> => {
       dispatched.push(input);
@@ -77,13 +105,19 @@ function makeDeps(over: Partial<CommunityTriggerPollerDeps> = {}): {
 }
 
 const result = (events: unknown[], state: Record<string, unknown>): PollResult =>
-  ({ events, state, truncated: false } as unknown as PollResult);
+  ({ events, state, truncated: false }) as unknown as PollResult;
 
 describe('intervallo di poll (clamp reale [10,3600])', () => {
   it('config nodo ha priorità sul default del trigger', async () => {
     vi.useFakeTimers();
     const { deps, pollRunner } = makeDeps();
-    const job = startCommunityTriggerPoller(makeWf(), makeNode({ __ff_trigger: 'rows', pollIntervalSec: '15' }), installed, trig, deps);
+    const job = startCommunityTriggerPoller(
+      makeWf(),
+      makeNode({ __ff_trigger: 'rows', pollIntervalSec: '15' }),
+      installed,
+      trig,
+      deps,
+    );
     await vi.advanceTimersByTimeAsync(14_999);
     expect(pollRunner).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
@@ -94,7 +128,13 @@ describe('intervallo di poll (clamp reale [10,3600])', () => {
   it('senza override → usa pollIntervalSec del trigger (25s)', async () => {
     vi.useFakeTimers();
     const { deps, pollRunner } = makeDeps();
-    const job = startCommunityTriggerPoller(makeWf(), makeNode({ __ff_trigger: 'rows' }), installed, trig, deps);
+    const job = startCommunityTriggerPoller(
+      makeWf(),
+      makeNode({ __ff_trigger: 'rows' }),
+      installed,
+      trig,
+      deps,
+    );
     await vi.advanceTimersByTimeAsync(24_999);
     expect(pollRunner).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
@@ -105,7 +145,13 @@ describe('intervallo di poll (clamp reale [10,3600])', () => {
   it('config sotto il minimo → clampata a 10s (anti-DoS sul sandbox)', async () => {
     vi.useFakeTimers();
     const { deps, pollRunner } = makeDeps();
-    const job = startCommunityTriggerPoller(makeWf(), makeNode({ __ff_trigger: 'rows', pollIntervalSec: '1' }), installed, trig, deps);
+    const job = startCommunityTriggerPoller(
+      makeWf(),
+      makeNode({ __ff_trigger: 'rows', pollIntervalSec: '1' }),
+      installed,
+      trig,
+      deps,
+    );
     await vi.advanceTimersByTimeAsync(9_999);
     expect(pollRunner).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
@@ -118,22 +164,48 @@ describe('poll → dispatch', () => {
   it('un run per evento, triggerType community:<defId>:<triggerId>, context sandbox esatto', async () => {
     vi.useFakeTimers();
     const { deps, pollRunner, dispatched } = makeDeps();
-    const job = startCommunityTriggerPoller(makeWf(), makeNode({ __ff_trigger: 'rows', pollIntervalSec: '10' }), installed, trig, deps);
+    const job = startCommunityTriggerPoller(
+      makeWf(),
+      makeNode({ __ff_trigger: 'rows', pollIntervalSec: '10' }),
+      installed,
+      trig,
+      deps,
+    );
     pollRunner.mockResolvedValueOnce(result([{ id: 1 }, { id: 2 }], { lastId: 2 }));
     await vi.advanceTimersByTimeAsync(10_000);
     expect(dispatched).toEqual([
-      { workflowId: 'wf-ct', tenantId: 'tenant-a', triggerType: 'community:acme_poll:rows', triggerInput: { id: 1 } },
-      { workflowId: 'wf-ct', tenantId: 'tenant-a', triggerType: 'community:acme_poll:rows', triggerInput: { id: 2 } },
+      {
+        workflowId: 'wf-ct',
+        tenantId: 'tenant-a',
+        triggerType: 'community:acme_poll:rows',
+        triggerInput: { id: 1 },
+      },
+      {
+        workflowId: 'wf-ct',
+        tenantId: 'tenant-a',
+        triggerType: 'community:acme_poll:rows',
+        triggerInput: { id: 2 },
+      },
     ]);
     // Context passato al sandbox: tenant, workflow e NODO esatti.
-    expect(pollRunner.mock.calls[0]![4]).toEqual({ tenantId: 'tenant-a', workflowId: 'wf-ct', nodeId: 'n-7' });
+    expect(pollRunner.mock.calls[0]![4]).toEqual({
+      tenantId: 'tenant-a',
+      workflowId: 'wf-ct',
+      nodeId: 'n-7',
+    });
     if (job.timer) clearInterval(job.timer);
   });
 
   it('state round-trip: {} al primo poll, poi il cursore del vendor', async () => {
     vi.useFakeTimers();
     const { deps, pollRunner } = makeDeps();
-    const job = startCommunityTriggerPoller(makeWf(), makeNode({ __ff_trigger: 'rows', pollIntervalSec: '10' }), installed, trig, deps);
+    const job = startCommunityTriggerPoller(
+      makeWf(),
+      makeNode({ __ff_trigger: 'rows', pollIntervalSec: '10' }),
+      installed,
+      trig,
+      deps,
+    );
     pollRunner.mockResolvedValueOnce(result([], { cursor: 'abc' }));
     await vi.advanceTimersByTimeAsync(10_000);
     expect(pollRunner.mock.calls[0]![3]).toEqual({});
@@ -147,9 +219,17 @@ describe('poll → dispatch', () => {
     const errSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger);
     vi.useFakeTimers();
     const { pollRunner, deps } = makeDeps({
-      dispatchRun: async () => { throw new Error('run boom'); },
+      dispatchRun: async () => {
+        throw new Error('run boom');
+      },
     });
-    const job = startCommunityTriggerPoller(makeWf(), makeNode({ __ff_trigger: 'rows', pollIntervalSec: '10' }), installed, trig, deps);
+    const job = startCommunityTriggerPoller(
+      makeWf(),
+      makeNode({ __ff_trigger: 'rows', pollIntervalSec: '10' }),
+      installed,
+      trig,
+      deps,
+    );
     pollRunner.mockResolvedValueOnce(result([{ id: 1 }], { cursor: 9 }));
     await vi.advanceTimersByTimeAsync(10_000);
     expect(errSpy).toHaveBeenCalledWith(
@@ -178,8 +258,19 @@ describe('resilienza', () => {
     vi.useFakeTimers();
     const { deps, pollRunner } = makeDeps();
     let resolvePoll!: (v: PollResult) => void;
-    pollRunner.mockImplementationOnce(() => new Promise<PollResult>((r) => { resolvePoll = r; }));
-    const job = startCommunityTriggerPoller(makeWf(), makeNode({ __ff_trigger: 'rows', pollIntervalSec: '10' }), installed, trig, deps);
+    pollRunner.mockImplementationOnce(
+      () =>
+        new Promise<PollResult>((r) => {
+          resolvePoll = r;
+        }),
+    );
+    const job = startCommunityTriggerPoller(
+      makeWf(),
+      makeNode({ __ff_trigger: 'rows', pollIntervalSec: '10' }),
+      installed,
+      trig,
+      deps,
+    );
     await vi.advanceTimersByTimeAsync(10_000); // tick 1 — in volo
     expect(job.inFlight).toBe(true);
     await vi.advanceTimersByTimeAsync(10_000); // tick 2 — saltato
@@ -198,7 +289,13 @@ describe('resilienza', () => {
     vi.useFakeTimers();
     const { deps, pollRunner } = makeDeps();
     pollRunner.mockRejectedValueOnce(new Error('sandbox boom'));
-    const job = startCommunityTriggerPoller(makeWf(), makeNode({ __ff_trigger: 'rows', pollIntervalSec: '10' }), installed, trig, deps);
+    const job = startCommunityTriggerPoller(
+      makeWf(),
+      makeNode({ __ff_trigger: 'rows', pollIntervalSec: '10' }),
+      installed,
+      trig,
+      deps,
+    );
     await vi.advanceTimersByTimeAsync(10_000);
     expect(errSpy).toHaveBeenCalledWith(
       expect.objectContaining({ workflowId: 'wf-ct', defId: 'acme_poll', triggerId: 'rows' }),

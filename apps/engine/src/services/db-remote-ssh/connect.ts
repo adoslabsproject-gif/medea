@@ -57,7 +57,10 @@ async function resolveSafeSshIp(host: string, dnsResolve: DnsResolver): Promise<
   for (const ip of ips) {
     const res = validateIpForFetch(ip);
     if (!res.ok) {
-      throw new SshPolicyError('SSH_HOST_BLOCKED', `Host SSH "${host}" risolve a un IP privato/riservato (${ip}): bloccato (anti DNS-rebinding).`);
+      throw new SshPolicyError(
+        'SSH_HOST_BLOCKED',
+        `Host SSH "${host}" risolve a un IP privato/riservato (${ip}): bloccato (anti DNS-rebinding).`,
+      );
     }
   }
   const first = ips[0];
@@ -79,7 +82,10 @@ async function mustResolveSecret(resolve: SecretResolver, ref: string): Promise<
  * Apre il tunnel verso il DB remoto applicando tutta la policy di sicurezza.
  * La query resta da eseguire dal chiamante (nodo) usando assertReadOnlyQuery.
  */
-export async function connectRemoteDbOverSsh(config: SshDbConnectionConfig, deps: ConnectDeps): Promise<SshTunnel> {
+export async function connectRemoteDbOverSsh(
+  config: SshDbConnectionConfig,
+  deps: ConnectDeps,
+): Promise<SshTunnel> {
   const dnsResolve = deps.dnsResolve ?? defaultDnsResolve;
   const openTunnel = deps.openTunnel ?? openSshTunnel;
 
@@ -87,18 +93,27 @@ export async function connectRemoteDbOverSsh(config: SshDbConnectionConfig, deps
   const safeHostIp = await resolveSafeSshIp(config.ssh.host, dnsResolve);
 
   // 2. segreti dal vault (solo i *SecretRef dichiarati nel config).
-  const auth = config.ssh.auth.method === 'key'
-    ? {
-        type: 'key' as const,
-        privateKey: await mustResolveSecret(deps.resolveSecret, config.ssh.auth.privateKeySecretRef),
-        ...(config.ssh.auth.passphraseSecretRef
-          ? { passphrase: await mustResolveSecret(deps.resolveSecret, config.ssh.auth.passphraseSecretRef) }
-          : {}),
-      }
-    : {
-        type: 'password' as const,
-        password: await mustResolveSecret(deps.resolveSecret, config.ssh.auth.passwordSecretRef),
-      };
+  const auth =
+    config.ssh.auth.method === 'key'
+      ? {
+          type: 'key' as const,
+          privateKey: await mustResolveSecret(
+            deps.resolveSecret,
+            config.ssh.auth.privateKeySecretRef,
+          ),
+          ...(config.ssh.auth.passphraseSecretRef
+            ? {
+                passphrase: await mustResolveSecret(
+                  deps.resolveSecret,
+                  config.ssh.auth.passphraseSecretRef,
+                ),
+              }
+            : {}),
+        }
+      : {
+          type: 'password' as const,
+          password: await mustResolveSecret(deps.resolveSecret, config.ssh.auth.passwordSecretRef),
+        };
 
   // 3. apertura tunnel verso l'IP risolto (NON l'hostname → no rebinding).
   return openTunnel({

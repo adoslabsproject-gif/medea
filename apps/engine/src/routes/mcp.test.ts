@@ -40,8 +40,12 @@ beforeEach(() => {
   workflowIsMcpExposed = vi.fn(async (id: string) => id === 'abcd1234-uuid');
   runExecute = vi.fn();
   vi.spyOn(WorkflowService.prototype, 'list').mockImplementation(workflowList as never);
-  vi.spyOn(WorkflowService.prototype, 'listMcpExposed').mockImplementation(workflowListMcpExposed as never);
-  vi.spyOn(WorkflowService.prototype, 'isMcpExposed').mockImplementation(workflowIsMcpExposed as never);
+  vi.spyOn(WorkflowService.prototype, 'listMcpExposed').mockImplementation(
+    workflowListMcpExposed as never,
+  );
+  vi.spyOn(WorkflowService.prototype, 'isMcpExposed').mockImplementation(
+    workflowIsMcpExposed as never,
+  );
   vi.spyOn(RunService.prototype, 'execute').mockImplementation(runExecute as never);
 });
 
@@ -73,26 +77,28 @@ describe('MCP — JSON-RPC envelope', () => {
       headers: { 'Content-Type': 'application/json' },
       body: '"plain-string"',
     });
-    const body = await res.json() as { error: { code: number; message: string } };
+    const body = (await res.json()) as { error: { code: number; message: string } };
     expect(body.error.code).toBe(-32600);
   });
 
   it('initialize → protocolVersion + serverInfo + capabilities', async () => {
-    const r = await rpc('initialize') as { result: { protocolVersion: string; serverInfo: object; capabilities: object } };
+    const r = (await rpc('initialize')) as {
+      result: { protocolVersion: string; serverInfo: object; capabilities: object };
+    };
     expect(r.result.protocolVersion).toBe('2025-03-26');
     expect(r.result.serverInfo).toEqual({ name: 'flowforge-mcp', version: '0.1.0' });
     expect(r.result.capabilities).toEqual({ tools: { listChanged: false } });
   });
 
   it('method sconosciuto → error -32601', async () => {
-    const r = await rpc('totally/unknown') as { error: { code: number } };
+    const r = (await rpc('totally/unknown')) as { error: { code: number } };
     expect(r.error.code).toBe(-32601);
   });
 });
 
 describe('MCP — tools/list', () => {
   it('ritorna solo workflow enabled', async () => {
-    const r = await rpc('tools/list') as { result: { tools: { name: string }[] } };
+    const r = (await rpc('tools/list')) as { result: { tools: { name: string }[] } };
     expect(r.result.tools).toHaveLength(1);
     expect(r.result.tools[0]!.name).toBe('wf_my_tool_abcd1234');
   });
@@ -101,7 +107,7 @@ describe('MCP — tools/list', () => {
     workflowListMcpExposed.mockResolvedValue([
       { id: '11112222-uuid', name: 'Hello, World! 2026', description: null },
     ]);
-    const r = await rpc('tools/list') as { result: { tools: { name: string }[] } };
+    const r = (await rpc('tools/list')) as { result: { tools: { name: string }[] } };
     expect(r.result.tools[0]!.name).toBe('wf_hello_world_2026_11112222');
   });
 
@@ -116,7 +122,7 @@ describe('MCP — tools/list', () => {
   it('🚨 [REGRESSION WE-9] tools/list ritorna SOLO workflow con mcp_exposed (default 0)', async () => {
     // Workflow enabled MA non mcp_exposed → not in list
     workflowListMcpExposed.mockResolvedValue([]); // nessuno opt-in
-    const r = await rpc('tools/list') as { result: { tools: unknown[] } };
+    const r = (await rpc('tools/list')) as { result: { tools: unknown[] } };
     expect(r.result.tools).toHaveLength(0);
   });
 
@@ -129,12 +135,14 @@ describe('MCP — tools/list', () => {
 
 describe('MCP — tools/call', () => {
   it('missing name → error -32602', async () => {
-    const r = await rpc('tools/call', { arguments: {} }) as { error: { code: number } };
+    const r = (await rpc('tools/call', { arguments: {} })) as { error: { code: number } };
     expect(r.error.code).toBe(-32602);
   });
 
   it('tool name non trovato → error -32601 Tool not found', async () => {
-    const r = await rpc('tools/call', { name: 'wf_nope_xxx', arguments: {} }) as { error: { code: number; message: string } };
+    const r = (await rpc('tools/call', { name: 'wf_nope_xxx', arguments: {} })) as {
+      error: { code: number; message: string };
+    };
     expect(r.error.code).toBe(-32601);
     expect(r.error.message).toContain('Tool not found');
   });
@@ -147,10 +155,10 @@ describe('MCP — tools/call', () => {
    */
   it('🚨 [REGRESSION WE-9] workflow enabled MA non mcp_exposed → tools/call ritorna Tool not found', async () => {
     workflowListMcpExposed.mockResolvedValue([]); // nessuno opt-in MCP
-    const r = await rpc('tools/call', {
+    const r = (await rpc('tools/call', {
       name: 'wf_my_tool_abcd1234', // workflow esiste enabled, MA non mcp_exposed
       arguments: {},
-    }) as { error: { code: number; message: string } };
+    })) as { error: { code: number; message: string } };
     expect(r.error.code).toBe(-32601);
     expect(runExecute).not.toHaveBeenCalled();
   });
@@ -162,10 +170,10 @@ describe('MCP — tools/call', () => {
     ]);
     // Ma re-check isMcpExposed ritorna false (workflow disabilitato nel frattempo)
     workflowIsMcpExposed.mockResolvedValue(false);
-    const r = await rpc('tools/call', {
+    const r = (await rpc('tools/call', {
       name: 'wf_my_tool_abcd1234',
       arguments: {},
-    }) as { error: { code: number } };
+    })) as { error: { code: number } };
     expect(r.error.code).toBe(-32601);
     expect(runExecute).not.toHaveBeenCalled();
   });
@@ -179,10 +187,10 @@ describe('MCP — tools/call', () => {
         { nodeId: 'n2', status: 'error', error: 'db timeout' },
       ],
     });
-    const r = await rpc('tools/call', {
+    const r = (await rpc('tools/call', {
       name: 'wf_my_tool_abcd1234',
       arguments: {},
-    }) as { result: { isError: boolean; content: { text: string }[] } };
+    })) as { result: { isError: boolean; content: { text: string }[] } };
     expect(r.result.isError).toBe(true);
     expect(r.result.content[0]!.text).toContain('n2');
     expect(r.result.content[0]!.text).toContain('db timeout');
@@ -195,10 +203,10 @@ describe('MCP — tools/call', () => {
       status: 'success',
       steps: [{ status: 'success', output: JSON.stringify(finalOutput) }],
     });
-    const r = await rpc('tools/call', {
+    const r = (await rpc('tools/call', {
       name: 'wf_my_tool_abcd1234',
       arguments: { input: {} },
-    }) as { result: { content: { type: string; text: string }[] } };
+    })) as { result: { content: { type: string; text: string }[] } };
     expect(r.result.content[0]!.type).toBe('text');
     expect(JSON.parse(r.result.content[0]!.text)).toEqual(finalOutput);
     // Pretty-print verificato: contiene newlines
@@ -211,10 +219,10 @@ describe('MCP — tools/call', () => {
       status: 'success',
       steps: [{ status: 'success', output: 'plain answer string' }],
     });
-    const r = await rpc('tools/call', {
+    const r = (await rpc('tools/call', {
       name: 'wf_my_tool_abcd1234',
       arguments: {},
-    }) as { result: { content: { text: string }[] } };
+    })) as { result: { content: { text: string }[] } };
     expect(r.result.content[0]!.text).toBe('plain answer string');
   });
 
@@ -258,7 +266,7 @@ describe('MCP — error handling', () => {
   it('exception interna → error -32603 con message', async () => {
     // WE-9 fix: route ora chiama listMcpExposed (non list). Mock il method giusto.
     workflowListMcpExposed.mockRejectedValue(new Error('storage down'));
-    const r = await rpc('tools/list') as { error: { code: number; message: string } };
+    const r = (await rpc('tools/list')) as { error: { code: number; message: string } };
     expect(r.error.code).toBe(-32603);
     expect(r.error.message).toBe('storage down');
   });

@@ -64,7 +64,9 @@ export function revokeSession(payload: RevocablePayload): void {
   // Lazy GC: rimuove le revoche di token ormai scaduti per natura propria.
   sqlite.prepare('DELETE FROM revoked_sessions WHERE expires_at < ?').run(nowSec);
   sqlite
-    .prepare('INSERT OR IGNORE INTO revoked_sessions (token_id, revoked_at, expires_at) VALUES (?, ?, ?)')
+    .prepare(
+      'INSERT OR IGNORE INTO revoked_sessions (token_id, revoked_at, expires_at) VALUES (?, ?, ?)',
+    )
     .run(revocationId(payload), new Date().toISOString(), payload.exp);
 }
 
@@ -76,7 +78,9 @@ export function isSessionRevoked(tokenId: string): boolean {
   try {
     ensureTable();
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare('SELECT 1 AS hit FROM revoked_sessions WHERE token_id = ? LIMIT 1').get(tokenId);
+    const row = sqlite
+      .prepare('SELECT 1 AS hit FROM revoked_sessions WHERE token_id = ? LIMIT 1')
+      .get(tokenId);
     return row !== undefined && row !== null;
   } catch (err) {
     // FAIL-OPEN deliberato: la blocklist è un layer di hardening AGGIUNTIVO; il
@@ -100,9 +104,13 @@ export function revokeAllUserSessions(userId: string): void {
   const { sqlite } = getDatabase();
   const nowSec = Math.floor(Date.now() / 1000);
   // GC lazy dei cutoff ormai inutili (tutti i token pre-cutoff sono scaduti).
-  sqlite.prepare('DELETE FROM user_session_cutoff WHERE revoked_before < ?').run(nowSec - CUTOFF_GC_MARGIN_SEC);
   sqlite
-    .prepare('INSERT OR REPLACE INTO user_session_cutoff (user_id, revoked_before, updated_at) VALUES (?, ?, ?)')
+    .prepare('DELETE FROM user_session_cutoff WHERE revoked_before < ?')
+    .run(nowSec - CUTOFF_GC_MARGIN_SEC);
+  sqlite
+    .prepare(
+      'INSERT OR REPLACE INTO user_session_cutoff (user_id, revoked_before, updated_at) VALUES (?, ?, ?)',
+    )
     .run(userId, nowSec + 1, new Date().toISOString());
 }
 
@@ -111,7 +119,9 @@ export function revokeAllUserSessions(userId: string): void {
  * token (logout) e il CUTOFF per-utente (revoca-tutte admin). È quello che il
  * middleware auth deve usare. Fail-open su errore DB (no DoS).
  */
-export function isPayloadRevoked(payload: Pick<SessionTokenPayload, 'jti' | 'sub' | 'iat'>): boolean {
+export function isPayloadRevoked(
+  payload: Pick<SessionTokenPayload, 'jti' | 'sub' | 'iat'>,
+): boolean {
   // 1) revoca del singolo token (logout) — riusa isSessionRevoked (fail-open incluso).
   if (isSessionRevoked(revocationId(payload))) return true;
   // 2) revoca-tutte per utente: token emesso PRIMA del cutoff.
@@ -119,7 +129,9 @@ export function isPayloadRevoked(payload: Pick<SessionTokenPayload, 'jti' | 'sub
     ensureTable();
     const { sqlite } = getDatabase();
     const iat = typeof payload.iat === 'number' ? payload.iat : 0;
-    const cutoff = sqlite.prepare('SELECT revoked_before AS rb FROM user_session_cutoff WHERE user_id = ? LIMIT 1').get(payload.sub) as { rb: number } | undefined;
+    const cutoff = sqlite
+      .prepare('SELECT revoked_before AS rb FROM user_session_cutoff WHERE user_id = ? LIMIT 1')
+      .get(payload.sub) as { rb: number } | undefined;
     return cutoff !== undefined && iat < cutoff.rb;
   } catch (err) {
     // Stesso fail-open deliberato del cutoff per-utente (revoca-tutte admin):

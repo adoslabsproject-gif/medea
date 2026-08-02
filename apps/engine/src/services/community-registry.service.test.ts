@@ -11,11 +11,16 @@ vi.mock('@/lib/safe-outbound-fetch.js', () => ({ safeOutboundFetch: safeFetchMoc
 vi.mock('@/lib/logger.js');
 const loggerMock = vi.mocked(logger);
 
-const { fetchRegistry, findEntry, clearRegistryCache, RegistryEntrySchema } = await import('./community-registry.service.js');
+const { fetchRegistry, findEntry, clearRegistryCache, RegistryEntrySchema } =
+  await import('./community-registry.service.js');
 
 const validEntry = {
-  id: 'community_pdf_tools', vendor: 'vendor-x', version: '1.2.3',
-  displayName: 'PDF Tools', description: 'desc here', license: 'MIT',
+  id: 'community_pdf_tools',
+  vendor: 'vendor-x',
+  version: '1.2.3',
+  displayName: 'PDF Tools',
+  description: 'desc here',
+  license: 'MIT',
   downloadUrl: 'https://example.com/pkg.ffnode',
 };
 const validIndex = { version: 1, updatedAt: '2026-06-07', nodes: [validEntry] };
@@ -54,7 +59,10 @@ describe('🚨 fetchRegistry — cache TTL', () => {
     safeFetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(validIndex) });
     const r = await fetchRegistry();
     expect(r.nodes.length).toBe(1);
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.objectContaining({ entries: 1 }), 'Registry refreshed');
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      expect.objectContaining({ entries: 1 }),
+      'Registry refreshed',
+    );
   });
 
   it('🚨 2x fetch entro TTL → 1 sola call', async () => {
@@ -109,14 +117,19 @@ describe('🚨 URL config', () => {
     process.env.MEDEA_REGISTRY_URL = 'https://custom.example.com/r.json';
     safeFetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(validIndex) });
     await fetchRegistry();
-    expect(safeFetchMock).toHaveBeenCalledWith('https://custom.example.com/r.json', expect.any(Object));
+    expect(safeFetchMock).toHaveBeenCalledWith(
+      'https://custom.example.com/r.json',
+      expect.any(Object),
+    );
   });
 
   it('🚨 env vuoto/whitespace → default URL', async () => {
     process.env.MEDEA_REGISTRY_URL = '   ';
     safeFetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(validIndex) });
     await fetchRegistry();
-    expect(at(safeFetchMock.mock.calls, 0, 'fetch-calls')[0]).toContain('flowforge.nothumanallowed.com');
+    expect(at(safeFetchMock.mock.calls, 0, 'fetch-calls')[0]).toContain(
+      'flowforge.nothumanallowed.com',
+    );
   });
 });
 
@@ -124,13 +137,12 @@ describe('🚨 findEntry', () => {
   beforeEach(() => {
     safeFetchMock.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({
-        version: 1, updatedAt: 'x',
-        nodes: [
-          validEntry,
-          { ...validEntry, id: 'other-node', vendor: 'vendor-y' },
-        ],
-      }),
+      json: () =>
+        Promise.resolve({
+          version: 1,
+          updatedAt: 'x',
+          nodes: [validEntry, { ...validEntry, id: 'other-node', vendor: 'vendor-y' }],
+        }),
     });
   });
 

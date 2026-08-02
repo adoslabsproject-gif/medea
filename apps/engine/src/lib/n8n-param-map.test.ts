@@ -10,27 +10,46 @@ import { mapN8nParams } from './n8n-param-map.js';
 
 describe('mapN8nParams — HTTP Request → action_http', () => {
   it('method (uppercase) + url + jsonBody → body/bodyType', () => {
-    const r = mapN8nParams('action_http', { method: 'post', url: 'https://api.com', jsonBody: '{"a":1}' });
-    expect(r.config).toMatchObject({ method: 'POST', url: 'https://api.com', bodyType: 'json', body: '{"a":1}' });
+    const r = mapN8nParams('action_http', {
+      method: 'post',
+      url: 'https://api.com',
+      jsonBody: '{"a":1}',
+    });
+    expect(r.config).toMatchObject({
+      method: 'POST',
+      url: 'https://api.com',
+      bodyType: 'json',
+      body: '{"a":1}',
+    });
   });
 
   it('default method GET se assente; requestMethod (n8n vecchio) supportato', () => {
     expect(mapN8nParams('action_http', { url: 'x' }).config.method).toBe('GET');
-    expect(mapN8nParams('action_http', { requestMethod: 'delete', url: 'x' }).config.method).toBe('DELETE');
+    expect(mapN8nParams('action_http', { requestMethod: 'delete', url: 'x' }).config.method).toBe(
+      'DELETE',
+    );
   });
 
   it('param n8n non pertinente (timeout) NON finisce nel config', () => {
-    expect(mapN8nParams('action_http', { url: 'x', timeout: 30000 }).config.timeout).toBeUndefined();
+    expect(
+      mapN8nParams('action_http', { url: 'x', timeout: 30000 }).config.timeout,
+    ).toBeUndefined();
   });
 
   it('ONESTÀ: auth + header n8n → warning (non mappati)', () => {
-    const r = mapN8nParams('action_http', { url: 'x', authentication: 'genericCredentialType', sendHeaders: true });
+    const r = mapN8nParams('action_http', {
+      url: 'x',
+      authentication: 'genericCredentialType',
+      sendHeaders: true,
+    });
     expect(r.warnings.some((w) => w.includes('autenticazione'))).toBe(true);
     expect(r.warnings.some((w) => w.includes('header'))).toBe(true);
   });
 
   it('auth=none → nessun warning auth', () => {
-    expect(mapN8nParams('action_http', { url: 'x', authentication: 'none' }).warnings).toHaveLength(0);
+    expect(mapN8nParams('action_http', { url: 'x', authentication: 'none' }).warnings).toHaveLength(
+      0,
+    );
   });
 });
 
@@ -51,7 +70,9 @@ describe('mapN8nParams — Code → action_run_js / action_run_python', () => {
   });
 
   it('pythonCode → action_run_python.code', () => {
-    expect(mapN8nParams('action_run_python', { pythonCode: 'print(1)' }).config.code).toBe('print(1)');
+    expect(mapN8nParams('action_run_python', { pythonCode: 'print(1)' }).config.code).toBe(
+      'print(1)',
+    );
   });
 });
 
@@ -70,16 +91,22 @@ describe('mapN8nParams — Webhook → trigger_webhook', () => {
 
 describe('mapN8nParams — Cron/Schedule → trigger_cron', () => {
   it('cronExpression diretto → cronExpression', () => {
-    expect(mapN8nParams('trigger_cron', { cronExpression: '0 9 * * 1' }).config.cronExpression).toBe('0 9 * * 1');
+    expect(
+      mapN8nParams('trigger_cron', { cronExpression: '0 9 * * 1' }).config.cronExpression,
+    ).toBe('0 9 * * 1');
   });
 
   it('triggerTimes.item[].cronExpression estratto', () => {
-    const r = mapN8nParams('trigger_cron', { triggerTimes: { item: [{ mode: 'custom', cronExpression: '*/5 * * * *' }] } });
+    const r = mapN8nParams('trigger_cron', {
+      triggerTimes: { item: [{ mode: 'custom', cronExpression: '*/5 * * * *' }] },
+    });
     expect(r.config.cronExpression).toBe('*/5 * * * *');
   });
 
   it('ONESTÀ: schedule rule/interval (non-cron) → default ogni ora + warning', () => {
-    const r = mapN8nParams('trigger_cron', { rule: { interval: [{ field: 'hours', hoursInterval: 2 }] } });
+    const r = mapN8nParams('trigger_cron', {
+      rule: { interval: [{ field: 'hours', hoursInterval: 2 }] },
+    });
     expect(r.config.cronExpression).toBe('0 * * * *');
     expect(r.warnings.some((w) => w.includes('da rivedere'))).toBe(true);
   });
@@ -93,8 +120,12 @@ describe('mapN8nParams — tipi PASSTHROUGH (struttura n8n complessa)', () => {
   });
 
   it('IF/logic_if e Switch/logic_switch → warning di review', () => {
-    expect(mapN8nParams('logic_if', { conditions: {} }).warnings.some((w) => w.includes('IF'))).toBe(true);
-    expect(mapN8nParams('logic_switch', { rules: {} }).warnings.some((w) => w.includes('Switch'))).toBe(true);
+    expect(
+      mapN8nParams('logic_if', { conditions: {} }).warnings.some((w) => w.includes('IF')),
+    ).toBe(true);
+    expect(
+      mapN8nParams('logic_switch', { rules: {} }).warnings.some((w) => w.includes('Switch')),
+    ).toBe(true);
   });
 
   it('defId sconosciuto → passthrough raw, nessun warning', () => {

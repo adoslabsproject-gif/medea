@@ -82,9 +82,10 @@ function makeErrSerializer(maxBytes: number) {
     const out: Record<string, unknown> = {};
     if (e.name) out.type = e.name;
     if (e.message) {
-      out.message = e.message.length > maxBytes
-        ? `${e.message.slice(0, maxBytes)}…[+${(e.message.length - maxBytes).toString()}ch]`
-        : e.message;
+      out.message =
+        e.message.length > maxBytes
+          ? `${e.message.slice(0, maxBytes)}…[+${(e.message.length - maxBytes).toString()}ch]`
+          : e.message;
     }
     // ZodError-specific: estrai issues summary invece di dump completo
     if (Array.isArray(e.issues)) {
@@ -107,8 +108,15 @@ function makeErrSerializer(maxBytes: number) {
       let causeStr: string;
       if (typeof c === 'string') causeStr = c;
       else if (c instanceof Error) causeStr = c.message;
-      else if (typeof c === 'number' || typeof c === 'boolean' || typeof c === 'bigint') causeStr = String(c);
-      else { try { causeStr = JSON.stringify(c) ?? ''; } catch { causeStr = ''; } }
+      else if (typeof c === 'number' || typeof c === 'boolean' || typeof c === 'bigint')
+        causeStr = String(c);
+      else {
+        try {
+          causeStr = JSON.stringify(c) ?? '';
+        } catch {
+          causeStr = '';
+        }
+      }
       out.cause = causeStr.slice(0, 200);
     }
     return out;
@@ -184,12 +192,15 @@ function ensureFlushTimer(logger: Logger): void {
     for (const [key, entry] of dedupMap.entries()) {
       if (now - entry.firstSeen >= DEDUP_TTL_MS) {
         if (entry.count > 1) {
-          logger[entry.level]({
-            ...entry.lastPayload,
-            dedup_key: key,
-            dedup_count: entry.count,
-            dedup_window_ms: DEDUP_TTL_MS,
-          }, `${entry.lastMsg} [×${entry.count.toString()} in last ${(DEDUP_TTL_MS / 1000).toString()}s]`);
+          logger[entry.level](
+            {
+              ...entry.lastPayload,
+              dedup_key: key,
+              dedup_count: entry.count,
+              dedup_window_ms: DEDUP_TTL_MS,
+            },
+            `${entry.lastMsg} [×${entry.count.toString()} in last ${(DEDUP_TTL_MS / 1000).toString()}s]`,
+          );
         }
         dedupMap.delete(key);
       }

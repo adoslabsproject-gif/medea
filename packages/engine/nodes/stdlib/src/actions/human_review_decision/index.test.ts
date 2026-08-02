@@ -10,7 +10,11 @@ import { humanReviewDecisionNode } from './index.js';
 
 function ctx(): NodeExecutionContext {
   return {
-    workflowId: 'wf', runId: 'r', nodeId: 'n', tenantId: 't', userId: 'u',
+    workflowId: 'wf',
+    runId: 'r',
+    nodeId: 'n',
+    tenantId: 't',
+    userId: 'u',
     logger: { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} },
   };
 }
@@ -26,7 +30,7 @@ describe('humanReviewDecisionExecutor', () => {
     const o = r.output as Record<string, unknown>;
     expect(o.decision).toBe('auto');
     expect(o.reason).toBeNull();
-    expect(o.subject).toBe('X');  // pass-through
+    expect(o.subject).toBe('X'); // pass-through
   });
 
   it('routes low-confidence to "review" with reason=low_confidence', async () => {
@@ -70,7 +74,7 @@ describe('humanReviewDecisionExecutor', () => {
   it('fallback=true → review when confidence missing', async () => {
     const r = await humanReviewDecisionNode.executor(
       { confidenceThreshold: 0.5 },
-      { label: 'x' },  // no confidence
+      { label: 'x' }, // no confidence
       ctx(),
     );
     expect(r.branch).toBe('review');
@@ -107,7 +111,7 @@ describe('humanReviewDecisionExecutor', () => {
   it('rejects malformed label (regex guard) — treated as null', async () => {
     const r = await humanReviewDecisionNode.executor(
       { confidenceThreshold: 0.5, alwaysReviewLabels: 'fraud', labelField: 'cat' },
-      { confidence: 0.9, cat: 'fra ud!' },  // not a clean label
+      { confidence: 0.9, cat: 'fra ud!' }, // not a clean label
       ctx(),
     );
     expect(r.branch).toBe('auto');
@@ -128,7 +132,7 @@ describe('humanReviewDecisionExecutor', () => {
       { confidence: 0.9, label: 'x', payload: { from: 'a', body: 'b' } },
       ctx(),
     );
-    expect(((r.output as { payload: Record<string, string> }).payload).from).toBe('a');
+    expect((r.output as { payload: Record<string, string> }).payload.from).toBe('a');
   });
 });
 
@@ -151,7 +155,7 @@ describe('humanReviewDecisionNodeDef contract', () => {
       { confidence: 0.95, label: 'fiscale' },
       { confidence: 0.3, label: 'fiscale' },
       { confidence: null as unknown as number, label: 'fiscale' },
-      { confidence: 0.95, label: 'fraud' },  // forced
+      { confidence: 0.95, label: 'fraud' }, // forced
     ];
     for (const input of cases) {
       const r = await humanReviewDecisionNode.executor(

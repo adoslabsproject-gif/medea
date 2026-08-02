@@ -115,7 +115,10 @@ describe('🚨 country bonus', () => {
 describe('🚨 negative keywords (anti-spam)', () => {
   it('keyword negative → score decreased', () => {
     const positiveOnly = scoreLeadFromContent('bow thruster shipyard', 'IT');
-    const withNegative = scoreLeadFromContent('bow thruster shipyard pizzeria ristorante hotel blog', 'IT');
+    const withNegative = scoreLeadFromContent(
+      'bow thruster shipyard pizzeria ristorante hotel blog',
+      'IT',
+    );
     expect(withNegative.score).toBeLessThan(positiveOnly.score);
   });
 
@@ -139,7 +142,10 @@ describe('🚨 negative keywords (anti-spam)', () => {
 
 describe('🚨 score clamp 0-100', () => {
   it('score never < 0 even con tons of negative', () => {
-    const r = scoreLeadFromContent('pizzeria ristorante hotel blog wordpress.com wix.com squarespace.com', undefined);
+    const r = scoreLeadFromContent(
+      'pizzeria ristorante hotel blog wordpress.com wix.com squarespace.com',
+      undefined,
+    );
     expect(r.score).toBeGreaterThanOrEqual(0);
   });
 
@@ -249,6 +255,13 @@ describe('output shape', () => {
 
 // Lista keyword profile-marine per uso nei test
 const PROFILE_KEYWORDS = [
-  'bow thruster', 'stern thruster', 'cantiere navale', 'shipyard',
-  'yacht', 'marina', 'refit', 'hydraulic', 'propulsion',
+  'bow thruster',
+  'stern thruster',
+  'cantiere navale',
+  'shipyard',
+  'yacht',
+  'marina',
+  'refit',
+  'hydraulic',
+  'propulsion',
 ];

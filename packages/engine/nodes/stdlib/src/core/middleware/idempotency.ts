@@ -9,7 +9,12 @@
  */
 
 import type { NodeExecutor } from '../../types.js';
-import { defaultIdempotencyStore, makeIdempotencyKey, type AcquireResult, type IdempotencyStore } from '../idempotency.js';
+import {
+  defaultIdempotencyStore,
+  makeIdempotencyKey,
+  type AcquireResult,
+  type IdempotencyStore,
+} from '../idempotency.js';
 import type { Middleware } from './compose.js';
 
 /** Attesa massima in-flight di default (ms): oltre, l'esecuzione concorrente è
@@ -27,8 +32,13 @@ const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms
  * → replay, oppure il lock è scaduto → si esegue).
  */
 export class IdempotencyInFlightError extends Error {
-  constructor(public readonly key: string, public readonly waitedMs: number) {
-    super(`idempotency: esecuzione concorrente in corso per "${key}" (atteso ${String(waitedMs)}ms senza completamento)`);
+  constructor(
+    public readonly key: string,
+    public readonly waitedMs: number,
+  ) {
+    super(
+      `idempotency: esecuzione concorrente in corso per "${key}" (atteso ${String(waitedMs)}ms senza completamento)`,
+    );
     this.name = 'IdempotencyInFlightError';
   }
 }
@@ -37,7 +47,9 @@ const DEFAULT_IDEMPOTENCY_TTL_MS = (() => {
   // Isomorfico: nel bundle browser dell'editor questo modulo è dead-code (mai
   // eseguito) ma viene comunque *importato* → il top-level gira a load. `process`
   // non esiste lì → guard. Sul runtime server `process` c'è: valore identico.
-  const env = Number(typeof process !== 'undefined' ? process.env.MEDEA_IDEMPOTENCY_TTL_MS : undefined);
+  const env = Number(
+    typeof process !== 'undefined' ? process.env.MEDEA_IDEMPOTENCY_TTL_MS : undefined,
+  );
   return Number.isFinite(env) && env > 0 ? env : 24 * 60 * 60 * 1000; // 24h
 })();
 
@@ -81,12 +93,14 @@ export function withIdempotency(opts: IdempotencyMiddlewareOptions = {}): Middle
   const inFlightPollMs = opts.inFlightPollMs ?? DEFAULT_INFLIGHT_POLL_MS;
   return (next: NodeExecutor) => async (config, input, ctx) => {
     const sub = opts.subKey ? opts.subKey(config, input) : undefined;
-    const key = sub !== undefined
-      ? makeIdempotencyKey(ctx.tenantId, ctx.runId, ctx.nodeId, sub)
-      : makeIdempotencyKey(ctx.tenantId, ctx.runId, ctx.nodeId);
-    const ttlMs = ctx.runDeadline !== undefined
-      ? Math.min(baseTtlMs, Math.max(60_000, ctx.runDeadline - Date.now() + 60_000))
-      : baseTtlMs;
+    const key =
+      sub !== undefined
+        ? makeIdempotencyKey(ctx.tenantId, ctx.runId, ctx.nodeId, sub)
+        : makeIdempotencyKey(ctx.tenantId, ctx.runId, ctx.nodeId);
+    const ttlMs =
+      ctx.runDeadline !== undefined
+        ? Math.min(baseTtlMs, Math.max(60_000, ctx.runDeadline - Date.now() + 60_000))
+        : baseTtlMs;
 
     // Resilience-aware acquire: store down (Redis offline) NON deve bloccare
     // il workflow di default — il rischio doppio-POST e\` preferibile al
@@ -97,7 +111,9 @@ export function withIdempotency(opts: IdempotencyMiddlewareOptions = {}): Middle
         return await store.acquire(key, ttlMs);
       } catch (err) {
         if (resilience === 'fail-closed') throw err;
-        ctx.logger?.warn('idempotency:store-down — fail-open proseguo (no lock applicato)', { err: err instanceof Error ? err.message : String(err) });
+        ctx.logger?.warn('idempotency:store-down — fail-open proseguo (no lock applicato)', {
+          err: err instanceof Error ? err.message : String(err),
+        });
         return null;
       }
     };
@@ -131,13 +147,21 @@ export function withIdempotency(opts: IdempotencyMiddlewareOptions = {}): Middle
       const result = await next(config, input, ctx);
       // Store.complete fail = log warn, NON propagate — il risultato e\` gia\`
       // pronto, perdere il "save output for replay" non rompe il run corrente.
-      try { await store.complete(key, result.output); }
-      catch (e) { ctx.logger?.warn('idempotency:complete-failed (store down post-exec)', { err: e instanceof Error ? e.message : String(e) }); }
+      try {
+        await store.complete(key, result.output);
+      } catch (e) {
+        ctx.logger?.warn('idempotency:complete-failed (store down post-exec)', {
+          err: e instanceof Error ? e.message : String(e),
+        });
+      }
       return result;
     } catch (err) {
       // Store.release fail e\` benign (lock TTL decay) — log + propagate origin err.
-      try { await store.release(key); }
-      catch { /* swallow — origin error e\` quello importante */ }
+      try {
+        await store.release(key);
+      } catch {
+        /* swallow — origin error e\` quello importante */
+      }
       throw err;
     }
   };

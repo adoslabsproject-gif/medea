@@ -46,11 +46,18 @@ interface Rule {
 const RULES: Rule[] = [
   // ── PDF extract — missing input ──────────────────────────────────────
   {
-    match: /pdf.*serve.*config\.(path|base64)|missing required config "base64"|action_pdf_parse: provide/u,
+    match:
+      /pdf.*serve.*config\.(path|base64)|missing required config "base64"|action_pdf_parse: provide/u,
     translate: (_msg, _ctx) => ({
       title: 'Il PDF non è arrivato a questo nodo',
-      hint: 'Il nodo PDF Parse aspetta un PDF (base64 o path). Verifica che il nodo a monte (di solito Email IMAP o File Read) abbia prodotto un allegato. Se stai testando manualmente, pinna l\'output del trigger con un base64 di esempio.',
-      actions: [{ label: '↑ Apri trigger e configura Mock Data', kind: 'goto-node', target: 'first-trigger' }],
+      hint: "Il nodo PDF Parse aspetta un PDF (base64 o path). Verifica che il nodo a monte (di solito Email IMAP o File Read) abbia prodotto un allegato. Se stai testando manualmente, pinna l'output del trigger con un base64 di esempio.",
+      actions: [
+        {
+          label: '↑ Apri trigger e configura Mock Data',
+          kind: 'goto-node',
+          target: 'first-trigger',
+        },
+      ],
     }),
   },
 
@@ -59,7 +66,10 @@ const RULES: Rule[] = [
     match: /Cannot read propert(ies|y) ('?[\w_]+'?|of undefined|of null)/u,
     translate: (msg, ctx) => {
       // Cover both: "of undefined (reading 'X')", "of null (reading 'X')", e shortcut "'X'"
-      const field = /Cannot read propert(?:y|ies) (?:of (?:undefined|null) \(reading '([^']+)'\)|'([^']+)')/u.exec(msg);
+      const field =
+        /Cannot read propert(?:y|ies) (?:of (?:undefined|null) \(reading '([^']+)'\)|'([^']+)')/u.exec(
+          msg,
+        );
       const fieldName = field ? (field[1] ?? field[2] ?? '?') : '?';
       return {
         title: `Il nodo "${ctx.nodeLabel}" cerca di leggere il campo "${fieldName}" ma il dato non è arrivato`,
@@ -75,7 +85,9 @@ const RULES: Rule[] = [
     translate: (_msg, ctx) => ({
       title: 'Riferimento DB non valido (FOREIGN KEY)',
       hint: `Il nodo "${ctx.nodeLabel}" tenta di inserire un record che fa riferimento (FK) a una riga che NON esiste nella tabella collegata. Tipico: order_lines.order_id punta a un orders.id mai creato. Verifica l'ordine di esecuzione e che il record padre venga inserito PRIMA.`,
-      actions: [{ label: '↑ Controlla il nodo che inserisce il record padre', kind: 'open-drawer' }],
+      actions: [
+        { label: '↑ Controlla il nodo che inserisce il record padre', kind: 'open-drawer' },
+      ],
     }),
   },
 
@@ -120,9 +132,15 @@ const RULES: Rule[] = [
       const code = status ? Number(status[1]) : 0;
       let title = `HTTP ${status?.[1] ?? '?'} dal servizio chiamato da "${ctx.nodeLabel}"`;
       let hint = '';
-      if (code === 401 || code === 403) hint = 'Credenziali invalide o scadute. Verifica API key / token nel drawer del nodo. Se è un OAuth, ri-autorizza.';
-      else if (code === 404) hint = 'L\'URL o la risorsa chiamata non esiste. Verifica il path e gli ID dinamici nelle espressioni.';
-      else if (code >= 500) hint = 'Il servizio remoto ha problemi. Riprova fra qualche minuto. Se persiste, controlla lo status page del provider.';
+      if (code === 401 || code === 403)
+        hint =
+          'Credenziali invalide o scadute. Verifica API key / token nel drawer del nodo. Se è un OAuth, ri-autorizza.';
+      else if (code === 404)
+        hint =
+          "L'URL o la risorsa chiamata non esiste. Verifica il path e gli ID dinamici nelle espressioni.";
+      else if (code >= 500)
+        hint =
+          'Il servizio remoto ha problemi. Riprova fra qualche minuto. Se persiste, controlla lo status page del provider.';
       else hint = 'Verifica i parametri inviati al servizio.';
       title = title.slice(0, 100);
       return { title, hint };
@@ -144,7 +162,9 @@ const RULES: Rule[] = [
     translate: (_msg, ctx) => ({
       title: 'Servizio temporaneamente disabilitato (Circuit Breaker)',
       hint: `Il servizio chiamato da "${ctx.nodeLabel}" ha fallito troppe volte di seguito e il circuit breaker è scattato per proteggere il sistema. Riprova fra 1 minuto. Se persiste, controlla il pannello Admin → Circuit Breakers.`,
-      actions: [{ label: '⚡ Apri Circuit Breakers (admin)', kind: 'goto-node', target: 'admin-breakers' }],
+      actions: [
+        { label: '⚡ Apri Circuit Breakers (admin)', kind: 'goto-node', target: 'admin-breakers' },
+      ],
     }),
   },
 
@@ -189,8 +209,8 @@ const RULES: Rule[] = [
       }
       if (msg.includes('403')) {
         return {
-          title: 'Bot Telegram bloccato dall\'utente',
-          hint: 'L\'utente o il gruppo ha bloccato il bot, oppure il bot non è membro del gruppo. Aggiungi il bot al gruppo o sblocca dal client Telegram.',
+          title: "Bot Telegram bloccato dall'utente",
+          hint: "L'utente o il gruppo ha bloccato il bot, oppure il bot non è membro del gruppo. Aggiungi il bot al gruppo o sblocca dal client Telegram.",
         };
       }
       return {
@@ -223,7 +243,7 @@ const RULES: Rule[] = [
     match: /fetch failed|ECONNREFUSED|ETIMEDOUT|ENOTFOUND/u,
     translate: (_msg, ctx) => ({
       title: `Rete non raggiungibile dal nodo "${ctx.nodeLabel}"`,
-      hint: 'Il server FlowForge non riesce a raggiungere l\'endpoint esterno. Verifica connettività, firewall, e che l\'URL sia corretto e pubblicamente accessibile.',
+      hint: "Il server FlowForge non riesce a raggiungere l'endpoint esterno. Verifica connettività, firewall, e che l'URL sia corretto e pubblicamente accessibile.",
     }),
   },
 

@@ -41,7 +41,7 @@ export const linesEnrichNode: NodeModule = {
       'Output: stesse lines del input ma con product_description arricchita per export downstream + ' +
       'lines.removed[] che traccia le righe descrizione fuse + audit log delle merge applicate per debug. ' +
       'Use case business reali da clienti enterprise: arricchire righe ordine estratte da PDF fornitore prima ' +
-      'dell\'export ERP (es. Sage X3, TeamSystem Polyedro, Zucchetti Ad Hoc) per evitare cleanup manuale del ' +
+      "dell'export ERP (es. Sage X3, TeamSystem Polyedro, Zucchetti Ad Hoc) per evitare cleanup manuale del " +
       'controller); integrare codici prodotto specifici per vertical industriale (es. attuatori/valvole industriali: bobine, voltage spec, ' +
       'IP rating per impiantistica), automazione automotive (codici OEM), elettromedicale (CND+ATC code); ' +
       'normalizzare descrizioni multi-riga di fornitori legacy in singolo campo searchable per data warehouse ' +
@@ -56,7 +56,7 @@ export const linesEnrichNode: NodeModule = {
         type: 'expression',
         required: false,
         placeholder: '{{$node.extract_of.json.lines}}',
-        help: 'Espressione che ritorna l\'array lines[] da arricchire. Se vuoto, usa l\'input del nodo precedente. Ogni riga DEVE avere almeno product_code, product_description (gli altri campi sono passthrough).',
+        help: "Espressione che ritorna l'array lines[] da arricchire. Se vuoto, usa l'input del nodo precedente. Ogni riga DEVE avere almeno product_code, product_description (gli altri campi sono passthrough).",
       },
       {
         key: 'rawTextExpression',
@@ -79,7 +79,8 @@ export const linesEnrichNode: NodeModule = {
         label: 'Sotto-righe da IGNORARE (uno per riga)',
         type: 'text',
         required: false,
-        defaultValue: 'A saldo Vs. ordine\nIn acc. Vs. ordine\nVostro riferimento\nNostro riferimento',
+        defaultValue:
+          'A saldo Vs. ordine\nIn acc. Vs. ordine\nVostro riferimento\nNostro riferimento',
         help: 'Prefissi case-insensitive: se la sotto-riga inizia con uno di questi, viene IGNORATA (non aggiunta a product_description). Tipico: note amministrative, riferimenti commerciali, marker di pagamento.',
       },
       {

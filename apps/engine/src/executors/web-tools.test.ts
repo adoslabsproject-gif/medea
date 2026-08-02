@@ -15,23 +15,40 @@ vi.mock('@/services/web-tools.service.js', () => ({
 
 import { fetchUrlExecutor, webSearchExecutor } from './web-tools.js';
 
-const ctx = () => ({
-  workflowId: 'wf', runId: 'r', nodeId: 'n', tenantId: 't', userId: 'u',
-  defId: 'action_web', secrets: {}, llmProviders: [], nodeOutputs: {},
-}) as unknown as Parameters<typeof fetchUrlExecutor>[2];
+const ctx = () =>
+  ({
+    workflowId: 'wf',
+    runId: 'r',
+    nodeId: 'n',
+    tenantId: 't',
+    userId: 'u',
+    defId: 'action_web',
+    secrets: {},
+    llmProviders: [],
+    nodeOutputs: {},
+  }) as unknown as Parameters<typeof fetchUrlExecutor>[2];
 
-beforeEach(() => { fetchUrlMock.mockReset(); webSearchMock.mockReset(); });
+beforeEach(() => {
+  fetchUrlMock.mockReset();
+  webSearchMock.mockReset();
+});
 
 describe('fetch_url executor', () => {
   it('url mancante → throw, service mai chiamato', async () => {
-    await expect(fetchUrlExecutor({} as never, null as never, ctx())).rejects.toThrow(/url è obbligatorio/);
+    await expect(fetchUrlExecutor({} as never, null as never, ctx())).rejects.toThrow(
+      /url è obbligatorio/,
+    );
     expect(fetchUrlMock).not.toHaveBeenCalled();
   });
 
   it('mapping output completo + null-safe su title/description', async () => {
     fetchUrlMock.mockResolvedValue({
-      url: 'http://x.it', finalUrl: 'https://x.it', status: 200, content: 'body',
-      contentType: 'text/html', truncated: false, // title/description assenti
+      url: 'http://x.it',
+      finalUrl: 'https://x.it',
+      status: 200,
+      content: 'body',
+      contentType: 'text/html',
+      truncated: false, // title/description assenti
     });
     const res = await fetchUrlExecutor({ url: '  http://x.it  ' } as never, null as never, ctx());
     expect(fetchUrlMock).toHaveBeenCalledWith('http://x.it'); // trim
@@ -44,11 +61,17 @@ describe('fetch_url executor', () => {
 
 describe('web_search executor', () => {
   beforeEach(() => {
-    webSearchMock.mockResolvedValue({ query: 'q', provider: 'brave', results: [{ t: 1 }, { t: 2 }] });
+    webSearchMock.mockResolvedValue({
+      query: 'q',
+      provider: 'brave',
+      results: [{ t: 1 }, { t: 2 }],
+    });
   });
 
   it('query mancante → throw', async () => {
-    await expect(webSearchExecutor({} as never, null as never, ctx())).rejects.toThrow(/query è obbligatorio/);
+    await expect(webSearchExecutor({} as never, null as never, ctx())).rejects.toThrow(
+      /query è obbligatorio/,
+    );
   });
 
   it('limit clampato a [1,20]: 0→1, 999→20, NaN→default 10', async () => {

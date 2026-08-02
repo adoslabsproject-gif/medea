@@ -17,7 +17,10 @@ import { validateIpForFetch, isIP } from '@medea/engine-safe-fetch';
 import type { Database } from '@medea/engine-db-studio-core';
 
 export class ExternalHostBlockedError extends Error {
-  constructor(message: string) { super(message); this.name = 'ExternalHostBlockedError'; }
+  constructor(message: string) {
+    super(message);
+    this.name = 'ExternalHostBlockedError';
+  }
 }
 
 export type DnsResolver = (host: string) => Promise<string[]>;
@@ -32,7 +35,11 @@ async function defaultDnsResolve(host: string): Promise<string[]> {
 export function extractConnectionHost(conn: Database['connection']): string | null {
   if (conn.hostname && conn.hostname.trim() !== '') return conn.hostname.trim();
   if (conn.url && conn.url.trim() !== '') {
-    try { return new URL(conn.url).hostname || null; } catch { return null; }
+    try {
+      return new URL(conn.url).hostname || null;
+    } catch {
+      return null;
+    }
   }
   return null;
 }
@@ -55,14 +62,21 @@ export async function assertExternalHostAllowed(
 
   if (isIP(host) !== 0) {
     const r = validateIpForFetch(host);
-    if (!r.ok) throw new ExternalHostBlockedError(`Host "${host}" è un indirizzo privato/riservato (${r.reason ?? 'BLOCKED'}): bloccato per prevenire accessi alla rete interna.`);
+    if (!r.ok)
+      throw new ExternalHostBlockedError(
+        `Host "${host}" è un indirizzo privato/riservato (${r.reason ?? 'BLOCKED'}): bloccato per prevenire accessi alla rete interna.`,
+      );
     return;
   }
 
   const ips = await (deps.dnsResolve ?? defaultDnsResolve)(host);
-  if (ips.length === 0) throw new ExternalHostBlockedError(`Host "${host}" non risolve ad alcun IP.`);
+  if (ips.length === 0)
+    throw new ExternalHostBlockedError(`Host "${host}" non risolve ad alcun IP.`);
   for (const ip of ips) {
     const r = validateIpForFetch(ip);
-    if (!r.ok) throw new ExternalHostBlockedError(`Host "${host}" risolve a un IP privato/riservato (${ip}): bloccato (anti DNS-rebinding).`);
+    if (!r.ok)
+      throw new ExternalHostBlockedError(
+        `Host "${host}" risolve a un IP privato/riservato (${ip}): bloccato (anti DNS-rebinding).`,
+      );
   }
 }

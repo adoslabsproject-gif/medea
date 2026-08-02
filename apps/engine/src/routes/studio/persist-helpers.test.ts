@@ -3,11 +3,17 @@ import { dimsFromParams } from './persist-helpers.js';
 
 describe('dimsFromParams — promozione width/height da params alle colonne dedicate', () => {
   it('estrae width/height numerici (caso immagine)', () => {
-    expect(dimsFromParams({ mode: 'sdxl', width: 1024, height: 768 })).toEqual({ width: 1024, height: 768 });
+    expect(dimsFromParams({ mode: 'sdxl', width: 1024, height: 768 })).toEqual({
+      width: 1024,
+      height: 768,
+    });
   });
 
   it('estrae width/height numerici (caso video)', () => {
-    expect(dimsFromParams({ kind: 'i2v', width: 832, height: 480, length: 45 })).toEqual({ width: 832, height: 480 });
+    expect(dimsFromParams({ kind: 'i2v', width: 832, height: 480, length: 45 })).toEqual({
+      width: 832,
+      height: 480,
+    });
   });
 
   it('🚨 ANTI-REGRESSIONE del bug: params SENZA width/height → niente colonne (non NULL forzato a 0)', () => {
@@ -22,9 +28,12 @@ describe('dimsFromParams — promozione width/height da params alle colonne dedi
     ['NaN', { width: NaN, height: NaN }],
     ['Infinity', { width: Infinity, height: -Infinity }],
     ['null', { width: null, height: null }],
-  ])('bug-bounty: width/height non-numerici (%s) → scartati (no valori sporchi in colonna)', (_l, params) => {
-    expect(dimsFromParams(params as Record<string, unknown>)).toEqual({});
-  });
+  ])(
+    'bug-bounty: width/height non-numerici (%s) → scartati (no valori sporchi in colonna)',
+    (_l, params) => {
+      expect(dimsFromParams(params as Record<string, unknown>)).toEqual({});
+    },
+  );
 
   it('promuove solo il lato valido se uno dei due manca', () => {
     expect(dimsFromParams({ width: 512 })).toEqual({ width: 512 });

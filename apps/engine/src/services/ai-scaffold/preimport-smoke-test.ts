@@ -100,7 +100,9 @@ function checkPlaceholders(node: WorkflowNode, fields: string[]): SmokeNodeResul
     if (typeof v !== 'string') continue;
     if (PLACEHOLDER_RE.test(v)) {
       return {
-        nodeId: node.id, defId: node.defId, status: 'fail',
+        nodeId: node.id,
+        defId: node.defId,
+        status: 'fail',
         reason: `Campo "${f}" contiene placeholder "${v}" — sostituisci prima di runtime.`,
       };
     }
@@ -111,8 +113,12 @@ function checkPlaceholders(node: WorkflowNode, fields: string[]): SmokeNodeResul
 const HTTP_RUNNER: SmokeRunner = (node) => {
   const url = typeof node.config.url === 'string' ? node.config.url : '';
   if (!url) {
-    return { nodeId: node.id, defId: node.defId, status: 'fail',
-      reason: 'Campo "url" mancante o vuoto.' };
+    return {
+      nodeId: node.id,
+      defId: node.defId,
+      status: 'fail',
+      reason: 'Campo "url" mancante o vuoto.',
+    };
   }
   const ph = checkPlaceholders(node, ['url', 'apiKey', 'token']);
   if (ph) return ph;
@@ -121,25 +127,36 @@ const HTTP_RUNNER: SmokeRunner = (node) => {
   // positivo che bocciava lookup HubSpot/Twilio/FattureInCloud, owner 2026-06-17).
   const isTemplatedUrl = EXPRESSION_RE.test(url);
   if (!isTemplatedUrl && !URL_RE.test(url)) {
-    return { nodeId: node.id, defId: node.defId, status: 'fail',
-      reason: `Campo "url" non è un URL valido: "${url}".` };
+    return {
+      nodeId: node.id,
+      defId: node.defId,
+      status: 'fail',
+      reason: `Campo "url" non è un URL valido: "${url}".`,
+    };
   }
   const headers = node.config.headers;
-  const hasAuthHeader = typeof headers === 'object' && headers !== null
-    && Object.keys(headers).some((k) => /authorization|api[-_]?key|x-api-key/i.test(k));
+  const hasAuthHeader =
+    typeof headers === 'object' &&
+    headers !== null &&
+    Object.keys(headers).some((k) => /authorization|api[-_]?key|x-api-key/i.test(k));
   // authMode strutturato (bearer/basic/header-token/hmac/jwt) → l'header auth è
   // aggiunto a runtime: NON è un endpoint "senza auth". Pre-fix: falso positivo
   // su action_http con authMode:bearer + bearerToken (es. HubSpot).
   const authMode = typeof node.config.authMode === 'string' ? node.config.authMode.trim() : '';
   const hasStructuredAuth = authMode !== '' && authMode !== 'none';
   if (!hasAuthHeader && !hasStructuredAuth && url.includes('api.')) {
-    return { nodeId: node.id, defId: node.defId, status: 'warn',
+    return {
+      nodeId: node.id,
+      defId: node.defId,
+      status: 'warn',
       reason: 'URL contiene "api." ma nessun header Authorization/X-API-Key — endpoint protetto?',
       simulatedOutputShape: { status: 200, body: '{}' },
     };
   }
   return {
-    nodeId: node.id, defId: node.defId, status: 'pass',
+    nodeId: node.id,
+    defId: node.defId,
+    status: 'pass',
     reason: 'HTTP call: URL valido, header auth presente.',
     simulatedOutputShape: { status: 200, body: '{}', headers: {} },
   };
@@ -154,17 +171,26 @@ const EMAIL_RUNNER: SmokeRunner = (node) => {
   const ph = checkPlaceholders(node, ['to', 'subject', 'body']);
   if (ph) return ph;
   if (!to.includes('@') && !to.startsWith('{{')) {
-    return { nodeId: node.id, defId: node.defId, status: 'fail',
-      reason: `Campo "to" "${to}" non è un indirizzo email valido.` };
+    return {
+      nodeId: node.id,
+      defId: node.defId,
+      status: 'fail',
+      reason: `Campo "to" "${to}" non è un indirizzo email valido.`,
+    };
   }
   if (!subj) {
-    return { nodeId: node.id, defId: node.defId, status: 'warn',
+    return {
+      nodeId: node.id,
+      defId: node.defId,
+      status: 'warn',
       reason: 'Subject vuoto — il provider potrebbe flagare come spam.',
       simulatedOutputShape: { messageId: 'sim-msg-id', accepted: [to] },
     };
   }
   return {
-    nodeId: node.id, defId: node.defId, status: 'pass',
+    nodeId: node.id,
+    defId: node.defId,
+    status: 'pass',
     reason: 'Email: destinatario + subject + body presenti.',
     simulatedOutputShape: { messageId: 'sim-msg-id', accepted: [to] },
   };
@@ -176,18 +202,27 @@ const DB_QUERY_RUNNER: SmokeRunner = (node) => {
     return { nodeId: node.id, defId: node.defId, status: 'fail', reason: 'Campo "sql" mancante.' };
   }
   if (/DROP\s+TABLE|TRUNCATE/i.test(sql) && !sql.includes('--allow-destructive')) {
-    return { nodeId: node.id, defId: node.defId, status: 'fail',
-      reason: 'Query contiene DROP TABLE/TRUNCATE non marcato come safe.' };
+    return {
+      nodeId: node.id,
+      defId: node.defId,
+      status: 'fail',
+      reason: 'Query contiene DROP TABLE/TRUNCATE non marcato come safe.',
+    };
   }
   const usesParams = /\?|:\w+|\$\d+/.test(sql);
   if (!usesParams && /INSERT|UPDATE|DELETE/i.test(sql)) {
-    return { nodeId: node.id, defId: node.defId, status: 'warn',
+    return {
+      nodeId: node.id,
+      defId: node.defId,
+      status: 'warn',
       reason: 'Query write senza parametri — SQL injection risk se valori interpolati.',
       simulatedOutputShape: { rows: [], rowCount: 1 },
     };
   }
   return {
-    nodeId: node.id, defId: node.defId, status: 'pass',
+    nodeId: node.id,
+    defId: node.defId,
+    status: 'pass',
     reason: 'DB query: SQL presente, parametri usati.',
     simulatedOutputShape: { rows: [], rowCount: 0 },
   };
@@ -198,26 +233,48 @@ const DB_QUERY_RUNNER: SmokeRunner = (node) => {
 //   agent_intent_router→intents, agent_summarizer→prompt, ecc.
 // Pre-fix l'AGENT_RUNNER pretendeva "prompt" per tutti → falso positivo su
 // extractor/translator/classifier (workflow validi marcati rossi).
-const AGENT_INSTRUCTION_FIELDS = ['prompt', 'schema', 'targetLanguage', 'customTargetLanguage', 'labels', 'intents', 'instruction', 'query'];
+const AGENT_INSTRUCTION_FIELDS = [
+  'prompt',
+  'schema',
+  'targetLanguage',
+  'customTargetLanguage',
+  'labels',
+  'intents',
+  'instruction',
+  'query',
+];
 const AGENT_RUNNER: SmokeRunner = (node, ctx) => {
   // Agent pre-istruito (systemPrompt nel def): l'istruzione c'è SEMPRE, è nel
   // NodeDef, non nel config. Il campo-istruzione utente è opzionale per questi.
   const isPrePrompted = ctx.prePromptedDefIds.has(node.defId);
-  const hasInstruction = isPrePrompted || AGENT_INSTRUCTION_FIELDS.some((f) => {
-    const v = node.config[f];
-    return typeof v === 'string' && v.trim() !== '';
-  });
+  const hasInstruction =
+    isPrePrompted ||
+    AGENT_INSTRUCTION_FIELDS.some((f) => {
+      const v = node.config[f];
+      return typeof v === 'string' && v.trim() !== '';
+    });
   if (!hasInstruction) {
-    return { nodeId: node.id, defId: node.defId, status: 'fail',
-      reason: 'Agente senza istruzioni — manca uno tra prompt/schema/targetLanguage/labels/intents.' };
+    return {
+      nodeId: node.id,
+      defId: node.defId,
+      status: 'fail',
+      reason:
+        'Agente senza istruzioni — manca uno tra prompt/schema/targetLanguage/labels/intents.',
+    };
   }
   const apiKey = typeof node.config.apiKey === 'string' ? node.config.apiKey : '';
   if (apiKey && !SECRET_PLACEHOLDER_RE.test(apiKey) && !apiKey.startsWith('{{')) {
-    return { nodeId: node.id, defId: node.defId, status: 'fail',
-      reason: 'Campo "apiKey" è hard-coded — usa {{secrets.PROVIDER_API_KEY}}.' };
+    return {
+      nodeId: node.id,
+      defId: node.defId,
+      status: 'fail',
+      reason: 'Campo "apiKey" è hard-coded — usa {{secrets.PROVIDER_API_KEY}}.',
+    };
   }
   return {
-    nodeId: node.id, defId: node.defId, status: 'pass',
+    nodeId: node.id,
+    defId: node.defId,
+    status: 'pass',
     reason: 'Agent: istruzione presente, apiKey via secrets.',
     simulatedOutputShape: { text: '...', tokens: { input: 0, output: 0 } },
   };
@@ -231,10 +288,17 @@ const AGENT_RUNNER: SmokeRunner = (node, ctx) => {
 const DB_TABLE_RUNNER: SmokeRunner = (node) => {
   const table = typeof node.config.table === 'string' ? node.config.table.trim() : '';
   if (!table) {
-    return { nodeId: node.id, defId: node.defId, status: 'fail', reason: 'Campo "table" mancante.' };
+    return {
+      nodeId: node.id,
+      defId: node.defId,
+      status: 'fail',
+      reason: 'Campo "table" mancante.',
+    };
   }
   return {
-    nodeId: node.id, defId: node.defId, status: 'pass',
+    nodeId: node.id,
+    defId: node.defId,
+    status: 'pass',
     reason: 'DB (API strutturata): tabella presente.',
     simulatedOutputShape: { rows: [], rowCount: 1 },
   };
@@ -244,7 +308,7 @@ const RUNNERS: ReadonlyMap<string, SmokeRunner> = new Map<string, SmokeRunner>([
   ['action_http', HTTP_RUNNER],
   ['action_send_email', EMAIL_RUNNER],
   ['db_sql_query', DB_QUERY_RUNNER], // l'UNICO con sql grezzo
-  ['db_query', DB_TABLE_RUNNER],     // table + filtersJson/selectJson (NO sql)
+  ['db_query', DB_TABLE_RUNNER], // table + filtersJson/selectJson (NO sql)
   ['db_insert', DB_TABLE_RUNNER],
   ['db_insert_batch', DB_TABLE_RUNNER],
   ['db_update', DB_TABLE_RUNNER],
@@ -288,7 +352,12 @@ export function smokeTestWorkflow(workflow: Workflow, opts: SmokeOptions = {}): 
   // (reachability + catena json_extract). Becca "referenzi un nodo non a monte" e
   // il mismatch semantico tipo email→dominio che il check per-nodo non vede.
   for (const dfi of validateDataflow(workflow.nodes, workflow.edges)) {
-    results.push({ nodeId: dfi.nodeId, defId: 'data-flow', status: dfi.status, reason: dfi.reason });
+    results.push({
+      nodeId: dfi.nodeId,
+      defId: 'data-flow',
+      status: dfi.status,
+      reason: dfi.reason,
+    });
   }
 
   const counts = {

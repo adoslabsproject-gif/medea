@@ -19,18 +19,35 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ManageRuleConfigUseCase } from './manage-rule-config.usecase.js';
 import { SYSTEM_REF } from '@/services/janitor/domain/index.js';
 import type {
-  IRuleRegistry, IRuleConfigRepository, IAuditEmitter,
+  IRuleRegistry,
+  IRuleConfigRepository,
+  IAuditEmitter,
 } from '@/services/janitor/ports/index.js';
 import type { CodeRule, RuleConfig } from '@/services/janitor/domain/index.js';
 
 const mkCodeRule = (id: string): CodeRule => ({
-  kind: 'code', id, title: id, description: 'd',
-  defaultDataSource: SYSTEM_REF, targetTable: 'runs', targetPkColumn: 'id',
+  kind: 'code',
+  id,
+  title: id,
+  description: 'd',
+  defaultDataSource: SYSTEM_REF,
+  targetTable: 'runs',
+  targetPkColumn: 'id',
   tags: [],
   paramsSchema: [
-    { name: 'threshold', type: 'number', label: 'T', required: true, default: 30, min: 1, max: 100 },
+    {
+      name: 'threshold',
+      type: 'number',
+      label: 'T',
+      required: true,
+      default: 30,
+      min: 1,
+      max: 100,
+    },
   ],
-  defaultSeverity: 'critical', defaultSchedule: '0 * * * *', defaultMaxRowsPerRun: 100,
+  defaultSeverity: 'critical',
+  defaultSchedule: '0 * * * *',
+  defaultMaxRowsPerRun: 100,
   detect: async () => [],
 });
 
@@ -57,17 +74,27 @@ beforeEach(() => {
     get: vi.fn(),
     listAll: vi.fn(() => []),
     listForTenant: vi.fn(() => []),
-    registerCodeRule: vi.fn(), registerDslRule: vi.fn(), unregisterDslRule: vi.fn(),
+    registerCodeRule: vi.fn(),
+    registerDslRule: vi.fn(),
+    unregisterDslRule: vi.fn(),
   };
   configRepo = {
     list: vi.fn(async () => []),
     listAll: vi.fn(async () => []),
     get: vi.fn(async () => null),
-    upsert: vi.fn(async () => { /* noop */ }),
+    upsert: vi.fn(async () => {
+      /* noop */
+    }),
     patch: vi.fn(async (id, tid) => mkConfig({ ruleId: id, tenantId: tid })),
-    delete: vi.fn(async () => { /* noop */ }),
+    delete: vi.fn(async () => {
+      /* noop */
+    }),
   };
-  audit = { emit: vi.fn(async () => { /* noop */ }) };
+  audit = {
+    emit: vi.fn(async () => {
+      /* noop */
+    }),
+  };
   uc = new ManageRuleConfigUseCase(registry, configRepo, audit);
 });
 
@@ -94,14 +121,15 @@ describe('🚨 listForTenant — rules + effective config', () => {
 
   it('🚨 multiple rules mix persisted/default', async () => {
     (registry.listForTenant as ReturnType<typeof vi.fn>).mockReturnValue([
-      mkCodeRule('rule.a'), mkCodeRule('rule.b'),
+      mkCodeRule('rule.a'),
+      mkCodeRule('rule.b'),
     ]);
     (configRepo.list as ReturnType<typeof vi.fn>).mockResolvedValue([
       mkConfig({ ruleId: 'rule.a', enabled: false }),
     ]);
     const out = await uc.listForTenant('t1');
-    expect(out.find(o => o.rule.id === 'rule.a')!.isPersistedConfig).toBe(true);
-    expect(out.find(o => o.rule.id === 'rule.b')!.isPersistedConfig).toBe(false);
+    expect(out.find((o) => o.rule.id === 'rule.a')!.isPersistedConfig).toBe(true);
+    expect(out.find((o) => o.rule.id === 'rule.b')!.isPersistedConfig).toBe(false);
   });
 
   it('🚨 zero rules → []', async () => {
@@ -114,9 +142,7 @@ describe('🚨 listForTenant — rules + effective config', () => {
 describe('🚨 getEffective — singolo lookup', () => {
   it('🚨 rule esistente persistita → ritorna persisted', async () => {
     (registry.get as ReturnType<typeof vi.fn>).mockReturnValue(mkCodeRule('rule.a'));
-    (configRepo.get as ReturnType<typeof vi.fn>).mockResolvedValue(
-      mkConfig({ enabled: false }),
-    );
+    (configRepo.get as ReturnType<typeof vi.fn>).mockResolvedValue(mkConfig({ enabled: false }));
     const out = await uc.getEffective('rule.a', 't1');
     expect(out!.isPersistedConfig).toBe(true);
     expect(out!.config.enabled).toBe(false);
@@ -143,63 +169,103 @@ describe('🚨 patch — validation guards', () => {
 
   it('🚨 rule not in registry → THROW', async () => {
     (registry.get as ReturnType<typeof vi.fn>).mockReturnValue(null);
-    await expect(uc.patch({
-      ruleId: 'mai', tenantId: 't1', patch: { enabled: false },
-    })).rejects.toThrow(/non trovata/);
+    await expect(
+      uc.patch({
+        ruleId: 'mai',
+        tenantId: 't1',
+        patch: { enabled: false },
+      }),
+    ).rejects.toThrow(/non trovata/);
   });
 
   it('🚨 schedule cron invalido → THROW', async () => {
-    await expect(uc.patch({
-      ruleId: 'rule.a', tenantId: 't1', patch: { schedule: 'NOT A CRON' },
-    })).rejects.toThrow(/Schedule non valido/);
+    await expect(
+      uc.patch({
+        ruleId: 'rule.a',
+        tenantId: 't1',
+        patch: { schedule: 'NOT A CRON' },
+      }),
+    ).rejects.toThrow(/Schedule non valido/);
   });
 
   it('🚨 schedule cron valido → ok', async () => {
-    await expect(uc.patch({
-      ruleId: 'rule.a', tenantId: 't1', patch: { schedule: '0 * * * *' },
-    })).resolves.toBeDefined();
+    await expect(
+      uc.patch({
+        ruleId: 'rule.a',
+        tenantId: 't1',
+        patch: { schedule: '0 * * * *' },
+      }),
+    ).resolves.toBeDefined();
   });
 
   it('🚨 params VIOLATES schema (threshold>max) → THROW con messaggio specifico', async () => {
-    await expect(uc.patch({
-      ruleId: 'rule.a', tenantId: 't1', patch: { params: { threshold: 500 } },
-    })).rejects.toThrow(/Parametri invalidi/);
+    await expect(
+      uc.patch({
+        ruleId: 'rule.a',
+        tenantId: 't1',
+        patch: { params: { threshold: 500 } },
+      }),
+    ).rejects.toThrow(/Parametri invalidi/);
   });
 
   it('🚨 params nel range → ok', async () => {
-    await expect(uc.patch({
-      ruleId: 'rule.a', tenantId: 't1', patch: { params: { threshold: 50 } },
-    })).resolves.toBeDefined();
+    await expect(
+      uc.patch({
+        ruleId: 'rule.a',
+        tenantId: 't1',
+        patch: { params: { threshold: 50 } },
+      }),
+    ).resolves.toBeDefined();
   });
 
   it('🚨 maxRowsPerRun = 0 → THROW (< 1)', async () => {
-    await expect(uc.patch({
-      ruleId: 'rule.a', tenantId: 't1', patch: { maxRowsPerRun: 0 },
-    })).rejects.toThrow(/intero tra 1 e 100/);
+    await expect(
+      uc.patch({
+        ruleId: 'rule.a',
+        tenantId: 't1',
+        patch: { maxRowsPerRun: 0 },
+      }),
+    ).rejects.toThrow(/intero tra 1 e 100/);
   });
 
   it('🚨 SECURITY: maxRowsPerRun > 100_000 → THROW (DoS guard)', async () => {
-    await expect(uc.patch({
-      ruleId: 'rule.a', tenantId: 't1', patch: { maxRowsPerRun: 999_999 },
-    })).rejects.toThrow(/100/);
+    await expect(
+      uc.patch({
+        ruleId: 'rule.a',
+        tenantId: 't1',
+        patch: { maxRowsPerRun: 999_999 },
+      }),
+    ).rejects.toThrow(/100/);
   });
 
   it('🚨 maxRowsPerRun float (non integer) → THROW', async () => {
-    await expect(uc.patch({
-      ruleId: 'rule.a', tenantId: 't1', patch: { maxRowsPerRun: 50.5 },
-    })).rejects.toThrow(/intero/);
+    await expect(
+      uc.patch({
+        ruleId: 'rule.a',
+        tenantId: 't1',
+        patch: { maxRowsPerRun: 50.5 },
+      }),
+    ).rejects.toThrow(/intero/);
   });
 
   it('🚨 maxRowsPerRun boundary 1 ok', async () => {
-    await expect(uc.patch({
-      ruleId: 'rule.a', tenantId: 't1', patch: { maxRowsPerRun: 1 },
-    })).resolves.toBeDefined();
+    await expect(
+      uc.patch({
+        ruleId: 'rule.a',
+        tenantId: 't1',
+        patch: { maxRowsPerRun: 1 },
+      }),
+    ).resolves.toBeDefined();
   });
 
   it('🚨 maxRowsPerRun boundary 100000 ok', async () => {
-    await expect(uc.patch({
-      ruleId: 'rule.a', tenantId: 't1', patch: { maxRowsPerRun: 100_000 },
-    })).resolves.toBeDefined();
+    await expect(
+      uc.patch({
+        ruleId: 'rule.a',
+        tenantId: 't1',
+        patch: { maxRowsPerRun: 100_000 },
+      }),
+    ).resolves.toBeDefined();
   });
 });
 
@@ -215,7 +281,7 @@ describe('🚨 patch — auto-create default config', () => {
     expect(configRepo.patch).toHaveBeenCalled();
   });
 
-  it('🚨 config GIA\' esiste → patch diretto (no upsert default)', async () => {
+  it("🚨 config GIA' esiste → patch diretto (no upsert default)", async () => {
     (configRepo.get as ReturnType<typeof vi.fn>).mockResolvedValue(mkConfig());
     await uc.patch({ ruleId: 'rule.a', tenantId: 't1', patch: { enabled: false } });
     expect(configRepo.upsert).not.toHaveBeenCalled();
@@ -231,25 +297,33 @@ describe('🚨 patch — audit emission', () => {
 
   it('🚨 audit emesso con changedFields', async () => {
     await uc.patch({
-      ruleId: 'rule.a', tenantId: 't1',
+      ruleId: 'rule.a',
+      tenantId: 't1',
       patch: { enabled: false, severity: 'warning' },
       updatedBy: 'alice',
     });
-    expect(audit.emit).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'janitor.rule_config.patched',
-      resourceType: 'janitor_rule_config',
-      resourceId: 'rule.a',
-      tenantId: 't1',
-      actorId: 'alice',
-      metadata: { changedFields: ['enabled', 'severity'] },
-    }));
+    expect(audit.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'janitor.rule_config.patched',
+        resourceType: 'janitor_rule_config',
+        resourceId: 'rule.a',
+        tenantId: 't1',
+        actorId: 'alice',
+        metadata: { changedFields: ['enabled', 'severity'] },
+      }),
+    );
   });
 
   it('🚨 audit senza updatedBy → no actorId field', async () => {
     await uc.patch({
-      ruleId: 'rule.a', tenantId: 't1', patch: { enabled: false },
+      ruleId: 'rule.a',
+      tenantId: 't1',
+      patch: { enabled: false },
     });
-    const call = (audit.emit as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Record<string, unknown>;
+    const call = (audit.emit as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Record<
+      string,
+      unknown
+    >;
     expect('actorId' in call).toBe(false);
   });
 });
@@ -273,15 +347,20 @@ describe('🚨 resetToDefault', () => {
 
   it('🚨 audit emesso reset', async () => {
     await uc.resetToDefault('rule.a', 't1', 'bob');
-    expect(audit.emit).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'janitor.rule_config.reset',
-      actorId: 'bob',
-    }));
+    expect(audit.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'janitor.rule_config.reset',
+        actorId: 'bob',
+      }),
+    );
   });
 
   it('🚨 audit senza updatedBy → no actorId field', async () => {
     await uc.resetToDefault('rule.a', 't1');
-    const call = (audit.emit as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Record<string, unknown>;
+    const call = (audit.emit as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Record<
+      string,
+      unknown
+    >;
     expect('actorId' in call).toBe(false);
   });
 });

@@ -44,7 +44,10 @@ interface AggregatedMetrics {
  * @param sampleAsc durations in ms, sorted asc, no nulls. Vuoto = no runs.
  */
 export function computePercentiles(sampleAsc: number[]): {
-  p50: number | null; p95: number | null; p99: number | null; max: number | null;
+  p50: number | null;
+  p95: number | null;
+  p99: number | null;
+  max: number | null;
 } {
   if (sampleAsc.length === 0) {
     return { p50: null, p95: null, p99: null, max: null };
@@ -60,18 +63,24 @@ export function computePercentiles(sampleAsc: number[]): {
   };
 }
 
-interface CountRow { c: number }
-interface DurationRow { d: number }
-interface LastRunRow { last: string | null }
+interface CountRow {
+  c: number;
+}
+interface DurationRow {
+  d: number;
+}
+interface LastRunRow {
+  last: string | null;
+}
 
 function getAggregated(): AggregatedMetrics {
   const { sqlite } = getDatabase();
   const cutoff = new Date(Date.now() - WINDOW_DAYS * 86_400_000).toISOString();
 
   // Count totale runs (status diverso)
-  const totalRow = sqlite.prepare(
-    'SELECT COUNT(*) AS c FROM runs WHERE started_at >= ?',
-  ).get(cutoff) as CountRow | undefined;
+  const totalRow = sqlite
+    .prepare('SELECT COUNT(*) AS c FROM runs WHERE started_at >= ?')
+    .get(cutoff) as CountRow | undefined;
   const runsTotal = totalRow?.c ?? 0;
 
   if (runsTotal === 0) {
@@ -87,23 +96,25 @@ function getAggregated(): AggregatedMetrics {
     };
   }
 
-  const erroredRow = sqlite.prepare(
-    "SELECT COUNT(*) AS c FROM runs WHERE started_at >= ? AND status = 'error'",
-  ).get(cutoff) as CountRow | undefined;
-  const partialRow = sqlite.prepare(
-    "SELECT COUNT(*) AS c FROM runs WHERE started_at >= ? AND status = 'partial'",
-  ).get(cutoff) as CountRow | undefined;
-  const lastRow = sqlite.prepare(
-    'SELECT MAX(started_at) AS last FROM runs WHERE started_at >= ?',
-  ).get(cutoff) as LastRunRow | undefined;
+  const erroredRow = sqlite
+    .prepare("SELECT COUNT(*) AS c FROM runs WHERE started_at >= ? AND status = 'error'")
+    .get(cutoff) as CountRow | undefined;
+  const partialRow = sqlite
+    .prepare("SELECT COUNT(*) AS c FROM runs WHERE started_at >= ? AND status = 'partial'")
+    .get(cutoff) as CountRow | undefined;
+  const lastRow = sqlite
+    .prepare('SELECT MAX(started_at) AS last FROM runs WHERE started_at >= ?')
+    .get(cutoff) as LastRunRow | undefined;
 
   // Sample for percentile (cap 50k)
-  const sampleRows = sqlite.prepare(
-    `SELECT total_duration_ms AS d FROM runs
+  const sampleRows = sqlite
+    .prepare(
+      `SELECT total_duration_ms AS d FROM runs
      WHERE started_at >= ? AND total_duration_ms IS NOT NULL
      ORDER BY total_duration_ms ASC
      LIMIT ?`,
-  ).all(cutoff, SAMPLE_CAP) as DurationRow[];
+    )
+    .all(cutoff, SAMPLE_CAP) as DurationRow[];
   const sample = sampleRows.map((r) => r.d);
   const { p50, p95, p99, max } = computePercentiles(sample);
 
@@ -191,9 +202,13 @@ export function startRuntimeMetricsReporter(): void {
   if (timer) return;
 
   // First report after 60s (let other boot tasks finish first)
-  setTimeout(() => { void reportOnce(); }, 60_000).unref?.();
+  setTimeout(() => {
+    void reportOnce();
+  }, 60_000).unref?.();
 
-  timer = setInterval(() => { void reportOnce(); }, REPORT_INTERVAL_MS);
+  timer = setInterval(() => {
+    void reportOnce();
+  }, REPORT_INTERVAL_MS);
   timer.unref?.();
 
   logger.info?.(

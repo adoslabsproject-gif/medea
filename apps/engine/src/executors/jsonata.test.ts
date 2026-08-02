@@ -8,13 +8,24 @@
 import { describe, it, expect } from 'vitest';
 import { jsonataExecutor } from './jsonata.js';
 
-const ctx = (nodeOutputs: Record<string, unknown> = {}) => ({
-  workflowId: 'wf', runId: 'r', nodeId: 'n', tenantId: 't', userId: 'u',
-  defId: 'logic_transform', secrets: {}, llmProviders: [], nodeOutputs,
-}) as unknown as Parameters<typeof jsonataExecutor>[2];
+const ctx = (nodeOutputs: Record<string, unknown> = {}) =>
+  ({
+    workflowId: 'wf',
+    runId: 'r',
+    nodeId: 'n',
+    tenantId: 't',
+    userId: 'u',
+    defId: 'logic_transform',
+    secrets: {},
+    llmProviders: [],
+    nodeOutputs,
+  }) as unknown as Parameters<typeof jsonataExecutor>[2];
 
-const run = (config: Record<string, unknown>, input: unknown, nodeOutputs: Record<string, unknown> = {}) =>
-  jsonataExecutor(config as never, input as never, ctx(nodeOutputs));
+const run = (
+  config: Record<string, unknown>,
+  input: unknown,
+  nodeOutputs: Record<string, unknown> = {},
+) => jsonataExecutor(config as never, input as never, ctx(nodeOutputs));
 
 describe('jsonata — validazione e compile', () => {
   it('expression mancante → throw esplicito', async () => {
@@ -45,7 +56,13 @@ describe('jsonata — trasformazione', () => {
   it('trasformazione complessa: filtro + map su array (JSONata ritorna una sequence)', async () => {
     const res = await run(
       { expression: 'items[price > 10].name' },
-      { items: [{ name: 'a', price: 5 }, { name: 'b', price: 20 }, { name: 'c', price: 30 }] },
+      {
+        items: [
+          { name: 'a', price: 5 },
+          { name: 'b', price: 20 },
+          { name: 'c', price: 30 },
+        ],
+      },
     );
     // QUIRK jsonata: il risultato multi-valore è una "sequence" (array con
     // flag interno `sequence:true`) — i valori sono corretti, lo spread la
@@ -78,7 +95,9 @@ describe('jsonata — bindings $node (anti-regressione bug Esempio)', () => {
 describe('jsonata — eval error', () => {
   it('errore a runtime nell espressione → "JSONata eval error"', async () => {
     // $number su un oggetto non castabile → eval error
-    await expect(run({ expression: '$number($)' }, { not: 'a number' })).rejects.toThrow(/eval error/);
+    await expect(run({ expression: '$number($)' }, { not: 'a number' })).rejects.toThrow(
+      /eval error/,
+    );
   });
 });
 
@@ -90,13 +109,15 @@ describe('🚨🚨 jsonata — timeboxing (anti-DoS CPU)', () => {
     process.env.MEDEA_JSONATA_TIMEOUT_MS = '500';
     try {
       const expr = '( $f := function($x){ $f($x) }; $f(1) )';
-      await expect(run({ expression: expr }, {})).rejects.toThrow(/profondità massima|timeout|eval error/u);
+      await expect(run({ expression: expr }, {})).rejects.toThrow(
+        /profondità massima|timeout|eval error/u,
+      );
     } finally {
       delete process.env.MEDEA_JSONATA_TIMEOUT_MS;
     }
   });
 
-  it('espressione normale resta veloce e corretta (il guard non penalizza l\'happy path)', async () => {
+  it("espressione normale resta veloce e corretta (il guard non penalizza l'happy path)", async () => {
     const t0 = Date.now();
     const res = await run({ expression: '$sum([1,2,3,4,5])' }, {});
     expect(res.output).toBe(15);

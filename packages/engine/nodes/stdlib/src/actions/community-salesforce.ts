@@ -19,30 +19,30 @@ export const communitySalesforceNode: NodeModule = {
       'sales+service+marketing+industrie cloud) via REST API ufficiale. Sei operazioni atomiche coprono il ' +
       'ciclo completo CRUD + SOQL: query (esegue una stringa SOQL Salesforce Object Query Language — il ' +
       'dialetto SQL-like proprietario di Salesforce con relationship traversal nested "SELECT Name, Owner.Email, ' +
-      '(SELECT Subject FROM Tasks) FROM Account WHERE BillingCountry = \'Italy\'"), create (insert nuovo record ' +
+      "(SELECT Subject FROM Tasks) FROM Account WHERE BillingCountry = 'Italy'\"), create (insert nuovo record " +
       'con field validation server-side), update (modify esistente by Id), upsert (cruciale per integration ' +
       'idempotente — match per external_id field designato, crea se assente, aggiorna se presente in una sola ' +
       'chiamata atomica = pattern di sync da sistema esterno verso Salesforce), delete (logical/physical), ' +
       'get (retrieve puntuale by Id con field selection). ' +
       'Auth via OAuth2 con refresh-token flow — il pattern enterprise standard per integration server-side: ' +
-      'l\'admin Salesforce crea una Connected App nella sezione Setup → App Manager con scope api+refresh_token, ' +
-      'l\'utente FlowForge completa il consent flow una sola volta nell\'editor Settings → Integrations e il ' +
+      "l'admin Salesforce crea una Connected App nella sezione Setup → App Manager con scope api+refresh_token, " +
+      "l'utente FlowForge completa il consent flow una sola volta nell'editor Settings → Integrations e il " +
       'sistema salva il refresh_token nel vault del tenant. Il nodo ottiene access_token short-lived (15 min ' +
       'TTL Salesforce default) da cache local + refresh automatico sul 401/INVALID_SESSION_ID con 1 retry ' +
-      'trasparente — l\'utente non vede mai expire né deve fare manual re-auth. ' +
+      "trasparente — l'utente non vede mai expire né deve fare manual re-auth. " +
       'Multi-environment support: Salesforce ha sandbox (test environments isolati) e production (real ' +
-      'environment); l\'integration vault FlowForge supporta integrationLabel separati per pointing a ' +
+      "environment); l'integration vault FlowForge supporta integrationLabel separati per pointing a " +
       'instanceUrl diversi (sandbox: cs99.salesforce.com / production: ap25.salesforce.com / EU regional ' +
       'cluster: eu46.salesforce.com), prevenendo il classico incident "test contro production by mistake". ' +
       'Rate limit Salesforce: API limit aggregato per giorno è quota-based (15k req/giorno Developer Edition, ' +
       '5M req/giorno Enterprise Edition) — il nodo monitora consumption via Sforce-Limit-Info response header ' +
       'e logga warning quando > 80% usage per consentire forecast prima del hard cap. ' +
       'API docs ufficiali: developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest (REST API v62.0+ ' +
-      'Summer \'24 release). Bulk API v2 non gestita da questo nodo (richiede async polling pattern — usabile ' +
+      "Summer '24 release). Bulk API v2 non gestita da questo nodo (richiede async polling pattern — usabile " +
       'via action_http custom). ' +
       'Use case: lead from web form Typeform → upsert Lead in Salesforce by email (External_Id__c) con ' +
       'LeadSource=Web e Status=Open-Not Contacted per il sales team italiano; opportunity update post-pagamento ' +
-      'Stripe webhook → update Opportunity Stage=\'Closed Won\' Amount={{order.total}} CloseDate={{today}}; ' +
+      "Stripe webhook → update Opportunity Stage='Closed Won' Amount={{order.total}} CloseDate={{today}}; " +
       'contact sync bidirezionale da HubSpot CRM verso Salesforce per multi-CRM strategy (i marketing usano ' +
       'HubSpot, il sales team usa Salesforce — sync notturno via query → upsert); reporting SOQL custom per ' +
       'export forecast pipeline mensile in PDF tramite action_pdf_generate; integration con sistema gestionale ' +

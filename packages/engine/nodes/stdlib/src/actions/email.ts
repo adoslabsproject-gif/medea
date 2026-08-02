@@ -24,10 +24,10 @@ export const sendEmailNode: NodeModule = {
     icon: 'send',
     color: '#3b82f6',
     description:
-      'Invia un\'email transazionale via SMTP RFC 5321. Compatibile con qualunque server conforme: Gmail/Workspace (XOAUTH2 supportato via Gmail OAuth node), SendGrid, Mailgun, Postmark, IONOS, Aruba PEC, Office 365, Amazon SES, server self-hosted (Postfix/Exim).\n\n' +
+      "Invia un'email transazionale via SMTP RFC 5321. Compatibile con qualunque server conforme: Gmail/Workspace (XOAUTH2 supportato via Gmail OAuth node), SendGrid, Mailgun, Postmark, IONOS, Aruba PEC, Office 365, Amazon SES, server self-hosted (Postfix/Exim).\n\n" +
       'Differenza con i sibling: action_send_email = invio singolo con full feature set (CC/BCC, threading, allegati, inline images, DKIM). Per invio TRACKED (open/click) usa action_email_send_tracked; per BATCH mass-mailing usa action_email_send_tracked_batch (worker pool + rate limit). Per Gmail OAuth dedicato vedi pipeline Gmail OAuth XOAUTH2.\n\n' +
       'Feature complete: threading via In-Reply-To/References (reply email ricomincia il thread Gmail/Outlook), priorità X-Priority header, header custom, allegati base64/URL/path (max 25 MB combinati), immagini inline via Content-ID (CID), firma DKIM inline opzionale per dominio terzo (se SMTP non firma).\n\n' +
-      'Sicurezza + deliverability: credenziali cifrate via Settings → Email Accounts (vault per-tenant). Pre-flight check SPF/DKIM/DMARC selezionabile (deliverabilityCheck: off/warn/strict) — strict consigliato per cold outreach (senza autenticazione DNS ~60% finisce spam Gmail/Outlook), warn esegue il check e lo riporta ma invia comunque. Header X-FlowForge NON aggiunto (privacy-by-default, nessuna telemetria leak). Il messageId SMTP reale è nell\'output del nodo (per trace/correlazione).\n\n' +
+      "Sicurezza + deliverability: credenziali cifrate via Settings → Email Accounts (vault per-tenant). Pre-flight check SPF/DKIM/DMARC selezionabile (deliverabilityCheck: off/warn/strict) — strict consigliato per cold outreach (senza autenticazione DNS ~60% finisce spam Gmail/Outlook), warn esegue il check e lo riporta ma invia comunque. Header X-FlowForge NON aggiunto (privacy-by-default, nessuna telemetria leak). Il messageId SMTP reale è nell'output del nodo (per trace/correlazione).\n\n" +
       'Use case: (1) ricevuta acquisto post-checkout PayPal/Stripe con PDF fattura allegato, (2) notifica password reset con link signed expires-2h, (3) reply automatico su PEC ricevuta con threading In-Reply-To corretto, (4) digest settimanale management con dati DB embedded inline.\n\n' +
       'Safety budget: SSRF guard sugli allegati-da-URL (no fetch verso IP interni/metadata), subject sanitizzato (no CRLF injection, RFC 5322), credenziali dal vault per-tenant. Il retry è responsabilità del workflow/engine (un solo livello, niente retry interno nascosto che lo raddoppi).',
     configFields: [
@@ -64,7 +64,7 @@ export const sendEmailNode: NodeModule = {
         options: ['tls', 'starttls', 'plain'],
         required: false,
         defaultValue: 'tls',
-        help: 'tls = TLS immediato all\'handshake (port 465, default). starttls = upgrade da connessione plain via comando STARTTLS (port 587). plain = nessuna cifratura (port 25, INSICURO — solo per server locali in rete fidata).',
+        help: "tls = TLS immediato all'handshake (port 465, default). starttls = upgrade da connessione plain via comando STARTTLS (port 587). plain = nessuna cifratura (port 25, INSICURO — solo per server locali in rete fidata).",
         showIf: { field: 'systemAccountId', equals: '' },
       },
       {
@@ -93,7 +93,7 @@ export const sendEmailNode: NodeModule = {
         options: ['password', 'oauth2'],
         defaultValue: 'password',
         required: false,
-        help: 'password = SMTP user/pass (per Gmail: App Password). oauth2 = XOAUTH2 con refresh token (CONSIGLIATO Gmail/Workspace: niente App Password, token revocabile, scope minimale gmail.send). nodemailer ricava da solo l\'access token dal refresh token.',
+        help: "password = SMTP user/pass (per Gmail: App Password). oauth2 = XOAUTH2 con refresh token (CONSIGLIATO Gmail/Workspace: niente App Password, token revocabile, scope minimale gmail.send). nodemailer ricava da solo l'access token dal refresh token.",
         showIf: { field: 'systemAccountId', equals: '' },
       },
       {
@@ -110,7 +110,7 @@ export const sendEmailNode: NodeModule = {
         label: 'OAuth — Client ID',
         type: 'secret',
         required: false,
-        help: 'Client ID dell\'app OAuth (Google Cloud Console → Credentials). Usa {{secrets.GMAIL_OAUTH_CLIENT_ID}} — niente in chiaro.',
+        help: "Client ID dell'app OAuth (Google Cloud Console → Credentials). Usa {{secrets.GMAIL_OAUTH_CLIENT_ID}} — niente in chiaro.",
         showIf: { field: 'authMode', equals: 'oauth2' },
       },
       {
@@ -118,7 +118,7 @@ export const sendEmailNode: NodeModule = {
         label: 'OAuth — Client Secret',
         type: 'secret',
         required: false,
-        help: 'Client Secret dell\'app OAuth. Usa {{secrets.GMAIL_OAUTH_CLIENT_SECRET}}.',
+        help: "Client Secret dell'app OAuth. Usa {{secrets.GMAIL_OAUTH_CLIENT_SECRET}}.",
         showIf: { field: 'authMode', equals: 'oauth2' },
       },
       {
@@ -179,7 +179,7 @@ export const sendEmailNode: NodeModule = {
         type: 'text',
         required: false,
         placeholder: '<msgid-of-original@example.com>',
-        help: 'Per rispondere ad un\'email esistente. Mette il messaggio nello stesso thread per il destinatario (in Gmail compare nella stessa conversazione). MANTIENI le parentesi angolari < >. Esempio: <CABw7+UeXt9pXY9@mail.gmail.com>.',
+        help: "Per rispondere ad un'email esistente. Mette il messaggio nello stesso thread per il destinatario (in Gmail compare nella stessa conversazione). MANTIENI le parentesi angolari < >. Esempio: <CABw7+UeXt9pXY9@mail.gmail.com>.",
       },
       {
         key: 'references',
@@ -206,7 +206,7 @@ export const sendEmailNode: NodeModule = {
         options: ['text', 'html', 'markdown'],
         required: true,
         defaultValue: 'html',
-        help: 'text = plain text puro (massima deliverability, nessuna formattazione). html = formattato (link/grassetto/colori, default). markdown = scrivi in markdown, l\'engine converte in HTML server-side (per template AI-generated).',
+        help: "text = plain text puro (massima deliverability, nessuna formattazione). html = formattato (link/grassetto/colori, default). markdown = scrivi in markdown, l'engine converte in HTML server-side (per template AI-generated).",
       },
       {
         key: 'body',
@@ -257,7 +257,7 @@ export const sendEmailNode: NodeModule = {
         label: 'Allegati',
         type: 'attachments',
         required: false,
-        help: 'File allegati. 3 modalità: upload (base64 inline, max 10MB consigliato), URL pubblico (l\'engine scarica e allega), path filesystem server. File > 10MB → preferisci URL per evitare timeout SMTP.',
+        help: "File allegati. 3 modalità: upload (base64 inline, max 10MB consigliato), URL pubblico (l'engine scarica e allega), path filesystem server. File > 10MB → preferisci URL per evitare timeout SMTP.",
       },
       {
         key: 'inlineImagesJson',

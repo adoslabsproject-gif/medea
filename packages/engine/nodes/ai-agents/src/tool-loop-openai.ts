@@ -38,16 +38,27 @@ interface OpenAiToolReply {
 }
 
 /** Endpoint + auth per i provider OpenAI-format supportati dal loop. */
-export function openAiLoopEndpoint(provider: string, apiKey: string, model: string, baseUrl: string | undefined): {
-  url: string; headers: Record<string, string>; effectiveModel: string; trustedHost: string | undefined; label: string;
+export function openAiLoopEndpoint(
+  provider: string,
+  apiKey: string,
+  model: string,
+  baseUrl: string | undefined,
+): {
+  url: string;
+  headers: Record<string, string>;
+  effectiveModel: string;
+  trustedHost: string | undefined;
+  label: string;
 } {
   switch (provider) {
     case 'liara': {
-      const internalGateway = typeof process !== 'undefined' && process.env.MEDEA_LIARA_BASE_URL
-        ? process.env.MEDEA_LIARA_BASE_URL.replace(/\/$/, '')
-        : undefined;
+      const internalGateway =
+        typeof process !== 'undefined' && process.env.MEDEA_LIARA_BASE_URL
+          ? process.env.MEDEA_LIARA_BASE_URL.replace(/\/$/, '')
+          : undefined;
       const base = baseUrl ?? internalGateway ?? 'https://liara.nothumanallowed.com';
-      const licenseKey = typeof process !== 'undefined' ? (process.env.MEDEA_LICENSE_KEY ?? '').trim() : '';
+      const licenseKey =
+        typeof process !== 'undefined' ? (process.env.MEDEA_LICENSE_KEY ?? '').trim() : '';
       const bearer = licenseKey || apiKey;
       // Model: i default legacy Claude salvati nelle config (il nodo era
       // Anthropic-only) e 'nha-v1' senza tool-training NON hanno senso qui →
@@ -55,7 +66,10 @@ export function openAiLoopEndpoint(provider: string, apiKey: string, model: stri
       const effectiveModel = model.startsWith('claude-') || model === 'nha-v1' ? '' : model;
       return {
         url: `${base}/chat/completions`,
-        headers: { 'Content-Type': 'application/json', ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}) },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
+        },
         effectiveModel,
         trustedHost: internalGatewayTrustedHost(base, internalGateway),
         label: 'Liara',
@@ -72,7 +86,11 @@ export function openAiLoopEndpoint(provider: string, apiKey: string, model: stri
     case 'openrouter':
       return {
         url: 'https://openrouter.ai/api/v1/chat/completions',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}`, 'X-Title': 'FlowForge' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+          'X-Title': 'FlowForge',
+        },
         effectiveModel: model || 'anthropic/claude-sonnet-4.5',
         trustedHost: undefined,
         label: 'OpenRouter',
@@ -123,12 +141,17 @@ export function openAiLoopEndpoint(provider: string, apiKey: string, model: stri
       // Ollama ha /v1/chat/completions OpenAI-compat con tools. Endpoint da
       // config/env di sistema (non payload utente) → esenzione SSRF per il suo
       // host esatto (default loopback: allowDockerNet non basterebbe).
-      const base = (baseUrl
-        ?? (typeof process !== 'undefined' ? process.env.MEDEA_OLLAMA_URL : undefined)
-        ?? 'http://localhost:11434').replace(/\/$/, '');
+      const base = (
+        baseUrl ??
+        (typeof process !== 'undefined' ? process.env.MEDEA_OLLAMA_URL : undefined) ??
+        'http://localhost:11434'
+      ).replace(/\/$/, '');
       return {
         url: `${base}/v1/chat/completions`,
-        headers: { 'Content-Type': 'application/json', ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}) },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+        },
         effectiveModel: model || 'llama3.2',
         trustedHost: internalGatewayTrustedHost(base, base),
         label: 'Ollama',
@@ -137,7 +160,7 @@ export function openAiLoopEndpoint(provider: string, apiKey: string, model: stri
     default:
       throw new Error(
         `ai_agent_tool_loop: provider "${provider}" non supporta il tool-calling in questo nodo. ` +
-        'Supportati: liara (default, gratis), anthropic, openai, gemini, deepseek, xai, openrouter, groq, mistral, ollama.',
+          'Supportati: liara (default, gratis), anthropic, openai, gemini, deepseek, xai, openrouter, groq, mistral, ollama.',
       );
   }
 }
@@ -149,11 +172,21 @@ export function openAiLoopEndpoint(provider: string, apiKey: string, model: stri
  * di Settings → il dispatcher fa fallback DICHIARATO su Liara.
  */
 export const TOOL_CAPABLE_OPENAI_PROVIDERS: ReadonlySet<string> = new Set([
-  'liara', 'openai', 'gemini', 'deepseek', 'xai', 'openrouter', 'groq', 'mistral', 'ollama',
+  'liara',
+  'openai',
+  'gemini',
+  'deepseek',
+  'xai',
+  'openrouter',
+  'groq',
+  'mistral',
+  'ollama',
 ]);
 
 /** Converte il catalogo tool (schema Anthropic input_schema) in formato OpenAI-tools. */
-export function toOpenAiTools(tools: readonly { name: string; description: string; input_schema: unknown }[]): unknown[] {
+export function toOpenAiTools(
+  tools: readonly { name: string; description: string; input_schema: unknown }[],
+): unknown[] {
   return tools.map((t) => ({
     type: 'function',
     function: { name: t.name, description: t.description, parameters: t.input_schema },
@@ -170,7 +203,16 @@ export interface OpenAiLoopDeps {
   maxIterations: number;
   tools: readonly { name: string; description: string; input_schema: unknown }[];
   executeTool: (name: string, input: Record<string, unknown>) => Promise<string>;
-  fetchFn: (url: string, init: { method?: string; headers?: Record<string, string>; body?: string; allowedHosts?: readonly string[]; signal?: AbortSignal }) => Promise<Response>;
+  fetchFn: (
+    url: string,
+    init: {
+      method?: string;
+      headers?: Record<string, string>;
+      body?: string;
+      allowedHosts?: readonly string[];
+      signal?: AbortSignal;
+    },
+  ) => Promise<Response>;
   readJson: <T>(res: Response) => Promise<T>;
   readErrText: (res: Response) => Promise<string>;
   abortSignal?: AbortSignal | undefined;
@@ -189,7 +231,12 @@ export interface OpenAiLoopResult {
  * anche nei percorsi d'errore).
  */
 export async function runOpenAiToolLoop(deps: OpenAiLoopDeps): Promise<OpenAiLoopResult> {
-  const { url, headers, effectiveModel, trustedHost, label } = openAiLoopEndpoint(deps.provider, deps.apiKey, deps.model, deps.baseUrl);
+  const { url, headers, effectiveModel, trustedHost, label } = openAiLoopEndpoint(
+    deps.provider,
+    deps.apiKey,
+    deps.model,
+    deps.baseUrl,
+  );
   const openAiTools = toOpenAiTools(deps.tools);
 
   const messages: OpenAiMessage[] = [
@@ -216,7 +263,12 @@ export async function runOpenAiToolLoop(deps: OpenAiLoopDeps): Promise<OpenAiLoo
     usage !== null ? { ...out, _llm: usage } : out;
 
   const cancelledOutput = (iter: number): OpenAiLoopResult => ({
-    output: withUsage({ error: 'Agent annullato (run cancellato)', cancelled: true, trace, iterations: iter }),
+    output: withUsage({
+      error: 'Agent annullato (run cancellato)',
+      cancelled: true,
+      trace,
+      iterations: iter,
+    }),
     iterations: iter,
   });
 
@@ -246,7 +298,11 @@ export async function runOpenAiToolLoop(deps: OpenAiLoopDeps): Promise<OpenAiLoo
     if (!res.ok) {
       const errText = await deps.readErrText(res);
       return {
-        output: withUsage({ error: `${label} ${res.status.toString()}: ${errText}`, trace, iterations: iter }),
+        output: withUsage({
+          error: `${label} ${res.status.toString()}: ${errText}`,
+          trace,
+          iterations: iter,
+        }),
         iterations: iter,
       };
     }
@@ -260,16 +316,22 @@ export async function runOpenAiToolLoop(deps: OpenAiLoopDeps): Promise<OpenAiLoo
       provider: deps.provider,
       model: reply.model ?? (effectiveModel || 'gateway-default'),
       system: iter === 0 ? deps.systemPrompt : '',
-      user: iter === 0 ? deps.userGoal : '(tool results dell\'iterazione precedente — vedi trace)',
+      user: iter === 0 ? deps.userGoal : "(tool results dell'iterazione precedente — vedi trace)",
       response: content || JSON.stringify(msg?.tool_calls ?? []),
       phase: `iterazione ${String(iter + 1)}`,
     });
 
-    const toolCalls = (msg?.tool_calls ?? []).filter((tc) => tc.type === undefined || tc.type === 'function');
+    const toolCalls = (msg?.tool_calls ?? []).filter(
+      (tc) => tc.type === undefined || tc.type === 'function',
+    );
     if (msg) {
       // Il messaggio assistant va rimesso in history COMPLETO di tool_calls,
       // altrimenti il modello perde il filo delle proprie richieste.
-      messages.push({ role: 'assistant', content: msg.content ?? null, ...(msg.tool_calls ? { tool_calls: msg.tool_calls } : {}) });
+      messages.push({
+        role: 'assistant',
+        content: msg.content ?? null,
+        ...(msg.tool_calls ? { tool_calls: msg.tool_calls } : {}),
+      });
     }
 
     if (toolCalls.length > 0) {
@@ -291,9 +353,16 @@ export async function runOpenAiToolLoop(deps: OpenAiLoopDeps): Promise<OpenAiLoo
           parseFailed = true;
         }
         const result = parseFailed
-          ? JSON.stringify({ error: `invalid tool arguments (not a JSON object): ${(tc.function?.arguments ?? '').slice(0, 200)}` })
+          ? JSON.stringify({
+              error: `invalid tool arguments (not a JSON object): ${(tc.function?.arguments ?? '').slice(0, 200)}`,
+            })
           : await deps.executeTool(toolName, toolInput);
-        trace.push({ iteration: iter, tool: toolName, input: toolInput, output: result.slice(0, 500) });
+        trace.push({
+          iteration: iter,
+          tool: toolName,
+          input: toolInput,
+          output: result.slice(0, 500),
+        });
         messages.push({ role: 'tool', tool_call_id: tc.id ?? '', content: result });
       }
       continue;
@@ -306,7 +375,11 @@ export async function runOpenAiToolLoop(deps: OpenAiLoopDeps): Promise<OpenAiLoo
   }
 
   return {
-    output: withUsage({ error: `Agent exceeded maxIterations=${deps.maxIterations.toString()}`, trace, iterations: deps.maxIterations }),
+    output: withUsage({
+      error: `Agent exceeded maxIterations=${deps.maxIterations.toString()}`,
+      trace,
+      iterations: deps.maxIterations,
+    }),
     iterations: deps.maxIterations,
   };
 }

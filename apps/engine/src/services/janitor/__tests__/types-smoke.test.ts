@@ -49,7 +49,10 @@ describe('🚨 domain modules expose expected helpers', () => {
 describe('🚨 buildDetectedRow shape', () => {
   it('🚨 happy: returns object con id+severity+raw+reason', () => {
     const r = (detectedRow as any).buildDetectedRow({
-      id: 'x', reason: 'test', severity: 'warning', raw: { id: 'x' },
+      id: 'x',
+      reason: 'test',
+      severity: 'warning',
+      raw: { id: 'x' },
     });
     expect(r.id).toBe('x');
     expect(r.reason).toBe('test');
@@ -59,7 +62,11 @@ describe('🚨 buildDetectedRow shape', () => {
 
   it('🚨 tenantId opzionale propagato', () => {
     const r = (detectedRow as any).buildDetectedRow({
-      id: 'x', reason: 'r', severity: 'critical', raw: {}, tenantId: 't-1',
+      id: 'x',
+      reason: 'r',
+      severity: 'critical',
+      raw: {},
+      tenantId: 't-1',
     });
     expect(r.tenantId).toBe('t-1');
   });

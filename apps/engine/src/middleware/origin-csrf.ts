@@ -46,7 +46,8 @@ export function originCsrf(opts: OriginCsrfOpts) {
     // matchava SOLO `ff_session=` quindi i client con il nuovo cookie
     // `__Host-ff_session=` bypassavano il CSRF gate erroneamente (NO-op).
     const cookieHeader = c.req.header('cookie') ?? '';
-    const hasCookie = cookieHeader.includes('__Host-ff_session=') || cookieHeader.includes('ff_session=');
+    const hasCookie =
+      cookieHeader.includes('__Host-ff_session=') || cookieHeader.includes('ff_session=');
     if (!origin && !referer && !hasCookie) return next();
 
     const candidate = origin ?? (referer ? new URL(referer).origin : '');

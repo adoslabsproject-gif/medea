@@ -63,7 +63,9 @@ async function fetchFromPortal(workspaceId: string): Promise<UpgradeInfoResponse
   });
 
   if (!res.ok) {
-    throw new Error(`portal returned ${res.status.toString()}: ${(await readTextTruncated(res, 65_536).catch(() => ({ text: '' }))).text.slice(0, 200)}`);
+    throw new Error(
+      `portal returned ${res.status.toString()}: ${(await readTextTruncated(res, 65_536).catch(() => ({ text: '' }))).text.slice(0, 200)}`,
+    );
   }
 
   const portalData = await readJsonCapped<{
@@ -96,7 +98,11 @@ export function createUpgradeInfoRoute(): Hono {
     }
 
     // Cache hit
-    if (cache && (Date.now() - cache.fetchedAt) < CACHE_TTL_MS && cache.data.workspaceId === workspaceId) {
+    if (
+      cache &&
+      Date.now() - cache.fetchedAt < CACHE_TTL_MS &&
+      cache.data.workspaceId === workspaceId
+    ) {
       return c.json({ ok: true, ...cache.data, cached: true });
     }
 
@@ -126,4 +132,6 @@ export function createUpgradeInfoRoute(): Hono {
 }
 
 // Test helper
-export function _clearCache(): void { cache = null; }
+export function _clearCache(): void {
+  cache = null;
+}

@@ -175,12 +175,14 @@ import { WebSocketServer } from 'ws';
 import type { AddressInfo } from 'node:net';
 import { TriggerWatchersService } from './trigger-watchers.service.js';
 
-function makeWf(over: Partial<{
-  id: string;
-  tenantId: string;
-  enabled: boolean;
-  nodes: { id: string; defId: string; config: Record<string, unknown> }[];
-}> = {}) {
+function makeWf(
+  over: Partial<{
+    id: string;
+    tenantId: string;
+    enabled: boolean;
+    nodes: { id: string; defId: string; config: Record<string, unknown> }[];
+  }> = {},
+) {
   return {
     id: over.id ?? 'wf-1',
     tenantId: over.tenantId ?? 'tenant-a',
@@ -222,9 +224,11 @@ describe('TriggerWatchersService — lifecycle', () => {
   });
 
   it('stop() chiude tutti i watchers + clear pollers + cleanup unsubscribe', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/test' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/test' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     expect(m.chokidarWatch).toHaveBeenCalled();
@@ -300,18 +304,34 @@ describe('TriggerWatchersService — hot reload debouncing', () => {
 // ════════════════════════════════════════════════════════════════════
 describe('TriggerWatchersService — community triggers (polling)', () => {
   const installedAcme = {
-    manifest: { id: 'acme_poll', vendor: 'acme', version: '1.0.0', displayName: 'Acme', description: 'x', license: 'MIT' },
+    manifest: {
+      id: 'acme_poll',
+      vendor: 'acme',
+      version: '1.0.0',
+      displayName: 'Acme',
+      description: 'x',
+      license: 'MIT',
+    },
     def: {
-      id: 'acme_poll', type: 'trigger', label: 'Acme', icon: 'cube', color: '#3b82f6', description: 'x',
+      id: 'acme_poll',
+      type: 'trigger',
+      label: 'Acme',
+      icon: 'cube',
+      color: '#3b82f6',
+      description: 'x',
       triggers: [{ id: 'rows', label: 'Rows', mode: 'polling', pollIntervalSec: 10 }],
     },
     executorSource: 'module.exports = async () => ({});',
-    installedAt: '2026-06-09', verified: true, storagePath: '/tmp/acme',
+    installedAt: '2026-06-09',
+    verified: true,
+    storagePath: '/tmp/acme',
   };
 
   function communityWf(over: Record<string, unknown> = {}) {
     return makeWf({
-      nodes: [{ id: 'n1', defId: 'acme_poll', config: { __ff_trigger: 'rows', pollIntervalSec: '10' } }],
+      nodes: [
+        { id: 'n1', defId: 'acme_poll', config: { __ff_trigger: 'rows', pollIntervalSec: '10' } },
+      ],
       ...over,
     });
   }
@@ -329,20 +349,24 @@ describe('TriggerWatchersService — community triggers (polling)', () => {
     // Primo tick di poll (interval 10s)
     await vi.advanceTimersByTimeAsync(10_000);
     expect(m.communityPoll).toHaveBeenCalledTimes(1);
-    expect(m.communityPoll.mock.calls[0]![1]).toBe('rows');   // triggerId
-    expect(m.communityPoll.mock.calls[0]![3]).toEqual({});     // state iniziale vuoto
-    expect(m.runsExecute).toHaveBeenCalledWith(expect.objectContaining({
-      workflowId: 'wf-1',
-      tenantId: 'tenant-a',
-      triggerType: 'community:acme_poll:rows',
-      triggerInput: { id: 1 },
-    }));
+    expect(m.communityPoll.mock.calls[0]![1]).toBe('rows'); // triggerId
+    expect(m.communityPoll.mock.calls[0]![3]).toEqual({}); // state iniziale vuoto
+    expect(m.runsExecute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workflowId: 'wf-1',
+        tenantId: 'tenant-a',
+        triggerType: 'community:acme_poll:rows',
+        triggerInput: { id: 1 },
+      }),
+    );
 
     // Secondo tick → il poll riceve lo state del primo (cursore avanzato)
     await vi.advanceTimersByTimeAsync(10_000);
     expect(m.communityPoll).toHaveBeenCalledTimes(2);
     expect(m.communityPoll.mock.calls[1]![3]).toEqual({ lastId: 1 });
-    expect(m.runsExecute).toHaveBeenCalledWith(expect.objectContaining({ triggerInput: { id: 2 } }));
+    expect(m.runsExecute).toHaveBeenCalledWith(
+      expect.objectContaining({ triggerInput: { id: 2 } }),
+    );
 
     await svc.stop();
     vi.useRealTimers();
@@ -351,7 +375,11 @@ describe('TriggerWatchersService — community triggers (polling)', () => {
   it('più eventi in un poll → un run per ciascuno', async () => {
     vi.useFakeTimers();
     m.getInstalledByDefId.mockReturnValue(installedAcme);
-    m.communityPoll.mockResolvedValue({ events: [{ id: 1 }, { id: 2 }, { id: 3 }], state: {}, truncated: false });
+    m.communityPoll.mockResolvedValue({
+      events: [{ id: 1 }, { id: 2 }, { id: 3 }],
+      state: {},
+      truncated: false,
+    });
     m.workflowsList.mockResolvedValue([communityWf()]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
@@ -367,7 +395,9 @@ describe('TriggerWatchersService — community triggers (polling)', () => {
   it('SKIP se defId non è un community node installato', async () => {
     vi.useFakeTimers();
     m.getInstalledByDefId.mockReturnValue(undefined);
-    m.workflowsList.mockResolvedValue([makeWf({ nodes: [{ id: 'n1', defId: 'unknown_x', config: { __ff_trigger: 'rows' } }] })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({ nodes: [{ id: 'n1', defId: 'unknown_x', config: { __ff_trigger: 'rows' } }] }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -394,7 +424,9 @@ describe('TriggerWatchersService — community triggers (polling)', () => {
   it('SKIP se __ff_trigger non matcha un trigger dichiarato', async () => {
     vi.useFakeTimers();
     m.getInstalledByDefId.mockReturnValue(installedAcme);
-    m.workflowsList.mockResolvedValue([makeWf({ nodes: [{ id: 'n1', defId: 'acme_poll', config: { __ff_trigger: 'nonesiste' } }] })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({ nodes: [{ id: 'n1', defId: 'acme_poll', config: { __ff_trigger: 'nonesiste' } }] }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -449,7 +481,12 @@ describe('TriggerWatchersService — community triggers (polling)', () => {
     m.getInstalledByDefId.mockReturnValue(installedAcme);
     let resolvePoll!: (v: unknown) => void;
     m.communityPoll
-      .mockImplementationOnce(() => new Promise((r) => { resolvePoll = r; }))
+      .mockImplementationOnce(
+        () =>
+          new Promise((r) => {
+            resolvePoll = r;
+          }),
+      )
       .mockResolvedValue({ events: [], state: {}, truncated: false });
     m.workflowsList.mockResolvedValue([communityWf()]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
@@ -513,12 +550,16 @@ describe('TriggerWatchersService.reload — multi-tenant', () => {
 
   it('SKIP workflow disabled', async () => {
     m.workflowsList.mockResolvedValue([
-      makeWf({ id: 'wf-on', enabled: true, nodes: [
-        { id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/a' } },
-      ]}),
-      makeWf({ id: 'wf-off', enabled: false, nodes: [
-        { id: 'n2', defId: 'trigger_file_watch', config: { directory: '/tmp/b' } },
-      ]}),
+      makeWf({
+        id: 'wf-on',
+        enabled: true,
+        nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/a' } }],
+      }),
+      makeWf({
+        id: 'wf-off',
+        enabled: false,
+        nodes: [{ id: 'n2', defId: 'trigger_file_watch', config: { directory: '/tmp/b' } }],
+      }),
     ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
@@ -529,9 +570,11 @@ describe('TriggerWatchersService.reload — multi-tenant', () => {
 
   it('SKIP workflow senza trigger node (cron-only / manual)', async () => {
     m.workflowsList.mockResolvedValue([
-      makeWf({ id: 'wf-no-trigger', enabled: true, nodes: [
-        { id: 'n1', defId: 'action_http', config: {} },
-      ]}),
+      makeWf({
+        id: 'wf-no-trigger',
+        enabled: true,
+        nodes: [{ id: 'n1', defId: 'action_http', config: {} }],
+      }),
     ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
@@ -540,9 +583,11 @@ describe('TriggerWatchersService.reload — multi-tenant', () => {
   });
 
   it('reload IDEMPOTENT: 2 chiamate consecutive non duplicano watchers', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/x' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/x' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     expect(m.chokidarWatch).toHaveBeenCalledTimes(1);
@@ -553,34 +598,46 @@ describe('TriggerWatchersService.reload — multi-tenant', () => {
   });
 
   it('TEAR DOWN watcher se workflow non più enabled', async () => {
-    m.workflowsList.mockResolvedValueOnce([makeWf({
-      id: 'wf-1', enabled: true,
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/x' } }],
-    })]);
+    m.workflowsList.mockResolvedValueOnce([
+      makeWf({
+        id: 'wf-1',
+        enabled: true,
+        nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/x' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     expect(m.chokidarWatch).toHaveBeenCalledTimes(1);
     // ora wf-1 disabled
-    m.workflowsList.mockResolvedValueOnce([makeWf({
-      id: 'wf-1', enabled: false,
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/x' } }],
-    })]);
+    m.workflowsList.mockResolvedValueOnce([
+      makeWf({
+        id: 'wf-1',
+        enabled: false,
+        nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/x' } }],
+      }),
+    ]);
     await svc.reload();
     expect(m.chokidarWatcher.close).toHaveBeenCalled();
     await svc.stop();
   });
 
   it('TEAR DOWN watcher se trigger node rimosso (workflow ancora enabled)', async () => {
-    m.workflowsList.mockResolvedValueOnce([makeWf({
-      id: 'wf-2', enabled: true,
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/y' } }],
-    })]);
+    m.workflowsList.mockResolvedValueOnce([
+      makeWf({
+        id: 'wf-2',
+        enabled: true,
+        nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/y' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
-    m.workflowsList.mockResolvedValueOnce([makeWf({
-      id: 'wf-2', enabled: true,
-      nodes: [{ id: 'n1', defId: 'action_http', config: {} }], // trigger rimosso
-    })]);
+    m.workflowsList.mockResolvedValueOnce([
+      makeWf({
+        id: 'wf-2',
+        enabled: true,
+        nodes: [{ id: 'n1', defId: 'action_http', config: {} }], // trigger rimosso
+      }),
+    ]);
     await svc.reload();
     expect(m.chokidarWatcher.close).toHaveBeenCalled();
     await svc.stop();
@@ -592,10 +649,12 @@ describe('TriggerWatchersService.reload — multi-tenant', () => {
 // ════════════════════════════════════════════════════════════════════
 describe('TriggerWatchersService — file watcher tenant namespace', () => {
   it('relative path → resolved sotto /var/data/flowforge/tenants/<safeTenant>/files', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      tenantId: 'tenant-a',
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: 'inbox' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        tenantId: 'tenant-a',
+        nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: 'inbox' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     const firstCall = m.chokidarWatch.mock.calls[0] as unknown[] | undefined;
@@ -605,9 +664,13 @@ describe('TriggerWatchersService — file watcher tenant namespace', () => {
   });
 
   it('absolute path → pass-through (admin allowlist)', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/var/spool/scan' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_file_watch', config: { directory: '/var/spool/scan' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     const firstCall = m.chokidarWatch.mock.calls[0] as unknown[] | undefined;
@@ -617,10 +680,12 @@ describe('TriggerWatchersService — file watcher tenant namespace', () => {
   });
 
   it('tenantId con caratteri speciali → SANITIZED a [^a-z0-9_-]', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      tenantId: 'tenant/../etc/passwd', // path traversal attempt
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: 'inbox' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        tenantId: 'tenant/../etc/passwd', // path traversal attempt
+        nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: 'inbox' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     const firstCall = m.chokidarWatch.mock.calls[0] as unknown[] | undefined;
@@ -633,9 +698,13 @@ describe('TriggerWatchersService — file watcher tenant namespace', () => {
   });
 
   it('glob pattern appended a directory', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/a', glob: '*.csv' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/a', glob: '*.csv' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     const firstCall = m.chokidarWatch.mock.calls[0] as unknown[] | undefined;
@@ -645,9 +714,11 @@ describe('TriggerWatchersService — file watcher tenant namespace', () => {
   });
 
   it('SKIP se directory vuota (config invalido)', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     expect(m.chokidarWatch).not.toHaveBeenCalled();
@@ -655,26 +726,44 @@ describe('TriggerWatchersService — file watcher tenant namespace', () => {
   });
 
   it('chokidar awaitWriteFinish.stabilityThreshold = debounceMs config', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/x', debounceMs: 2000 } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_file_watch',
+            config: { directory: '/tmp/x', debounceMs: 2000 },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     const firstCall = m.chokidarWatch.mock.calls[0] as unknown[] | undefined;
     const opts = firstCall?.[1] as unknown;
-    expect((opts as { awaitWriteFinish: { stabilityThreshold: number } } | undefined)?.awaitWriteFinish.stabilityThreshold).toBe(2000);
+    expect(
+      (opts as { awaitWriteFinish: { stabilityThreshold: number } } | undefined)?.awaitWriteFinish
+        .stabilityThreshold,
+    ).toBe(2000);
     await svc.stop();
   });
 
   it('debounceMs MIN 50 (clamp lower bound)', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/x', debounceMs: 1 } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/x', debounceMs: 1 } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     const firstCall = m.chokidarWatch.mock.calls[0] as unknown[] | undefined;
     const opts = firstCall?.[1] as unknown;
-    expect((opts as { awaitWriteFinish: { stabilityThreshold: number } } | undefined)?.awaitWriteFinish.stabilityThreshold).toBe(50);
+    expect(
+      (opts as { awaitWriteFinish: { stabilityThreshold: number } } | undefined)?.awaitWriteFinish
+        .stabilityThreshold,
+    ).toBe(50);
     await svc.stop();
   });
 
@@ -687,14 +776,20 @@ describe('TriggerWatchersService — file watcher tenant namespace', () => {
   }
 
   it('CARATTERIZZAZIONE evento change → run con triggerType file_watch e payload {event, path, ts ISO}', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/in' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/in' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     fileEventHandler('change')!('/tmp/in/report.csv');
     expect(m.runsExecute).toHaveBeenCalledTimes(1);
-    const arg = m.runsExecute.mock.calls[0]![0] as { triggerType: string; tenantId: string; triggerInput: { event: string; path: string; ts: string } };
+    const arg = m.runsExecute.mock.calls[0]![0] as {
+      triggerType: string;
+      tenantId: string;
+      triggerInput: { event: string; path: string; ts: string };
+    };
     expect(arg.triggerType).toBe('file_watch');
     expect(arg.tenantId).toBe('tenant-a');
     expect(arg.triggerInput.event).toBe('change');
@@ -704,9 +799,17 @@ describe('TriggerWatchersService — file watcher tenant namespace', () => {
   });
 
   it('CARATTERIZZAZIONE filtro events="add": change/unlink NON sparano, add sì', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/in', events: 'add' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_file_watch',
+            config: { directory: '/tmp/in', events: 'add' },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     fileEventHandler('change')!('/tmp/in/x.csv');
@@ -718,9 +821,11 @@ describe('TriggerWatchersService — file watcher tenant namespace', () => {
   });
 
   it('CARATTERIZZAZIONE tutti e tre gli handler (add/change/unlink) sono registrati su chokidar', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/in' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/in' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     const registered = m.chokidarWatcher.on.mock.calls.map((c) => c[0]);
@@ -737,9 +842,17 @@ describe('TriggerWatchersService — db-change poller', () => {
     m.dbStudioChanges
       .mockReturnValueOnce([{ id: 100, op: 'insert', payload: {}, createdAt: '...' }]) // seed
       .mockReturnValue([]); // poll subsequent
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db-1', tableName: 'orders' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_db_change',
+            config: { databaseId: 'db-1', tableName: 'orders' },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     // Seed query chiamato con cursor=0 + limit alto
@@ -748,9 +861,13 @@ describe('TriggerWatchersService — db-change poller', () => {
   });
 
   it('SKIP se databaseId vuoto', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_db_change', config: { databaseId: '', tableName: 'orders' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_db_change', config: { databaseId: '', tableName: 'orders' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     expect(m.dbStudioChanges).not.toHaveBeenCalled();
@@ -758,9 +875,13 @@ describe('TriggerWatchersService — db-change poller', () => {
   });
 
   it('SKIP se tableName vuoto', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db-1', tableName: '' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db-1', tableName: '' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     expect(m.dbStudioChanges).not.toHaveBeenCalled();
@@ -769,9 +890,17 @@ describe('TriggerWatchersService — db-change poller', () => {
 
   it('intervalSec clamp MIN 2 (anti-DoS)', async () => {
     vi.useFakeTimers();
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db-1', tableName: 't1', pollIntervalSec: 0 } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_db_change',
+            config: { databaseId: 'db-1', tableName: 't1', pollIntervalSec: 0 },
+          },
+        ],
+      }),
+    ]);
     const spy = vi.spyOn(global, 'setInterval');
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
@@ -783,9 +912,17 @@ describe('TriggerWatchersService — db-change poller', () => {
   });
 
   it('idempotent: re-register stesso wf NON crea secondo timer', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db-1', tableName: 'orders' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_db_change',
+            config: { databaseId: 'db-1', tableName: 'orders' },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     const callsBefore = m.dbStudioChanges.mock.calls.length;
@@ -800,13 +937,21 @@ describe('TriggerWatchersService — db-change poller', () => {
 
   function dbWf(extra: Record<string, unknown> = {}) {
     return makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db-1', tableName: 'orders', pollIntervalSec: 5, ...extra } }],
+      nodes: [
+        {
+          id: 'n1',
+          defId: 'trigger_db_change',
+          config: { databaseId: 'db-1', tableName: 'orders', pollIntervalSec: 5, ...extra },
+        },
+      ],
     });
   }
 
   it('CARATTERIZZAZIONE tick: dispatch con payload completo, cursore che avanza tra i tick', async () => {
     vi.useFakeTimers();
-    m.dbStudioChanges.mockReturnValueOnce([{ id: 100, op: 'insert', payload: {}, createdAt: 'T0' }]); // seed → cursore 100
+    m.dbStudioChanges.mockReturnValueOnce([
+      { id: 100, op: 'insert', payload: {}, createdAt: 'T0' },
+    ]); // seed → cursore 100
     m.workflowsList.mockResolvedValue([dbWf()]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
@@ -822,7 +967,14 @@ describe('TriggerWatchersService — db-change poller', () => {
       workflowId: 'wf-1',
       tenantId: 'tenant-a',
       triggerType: 'db_change',
-      triggerInput: { changeId: 101, op: 'insert', databaseId: 'db-1', tableName: 'orders', payload: { total: 9 }, createdAt: 'T1' },
+      triggerInput: {
+        changeId: 101,
+        op: 'insert',
+        databaseId: 'db-1',
+        tableName: 'orders',
+        payload: { total: 9 },
+        createdAt: 'T1',
+      },
     });
 
     // Tick successivo: il cursore è avanzato all'ULTIMO id consegnato.
@@ -846,7 +998,10 @@ describe('TriggerWatchersService — db-change poller', () => {
     ]);
     vi.advanceTimersByTime(5_000);
     expect(m.runsExecute).toHaveBeenCalledTimes(1);
-    expect((m.runsExecute.mock.calls[0]![0] as { triggerInput: { changeId: number } }).triggerInput.changeId).toBe(2);
+    expect(
+      (m.runsExecute.mock.calls[0]![0] as { triggerInput: { changeId: number } }).triggerInput
+        .changeId,
+    ).toBe(2);
     // Il cursore è avanzato anche oltre i filtrati: prossimo poll da id=3.
     vi.advanceTimersByTime(5_000);
     expect(m.dbStudioChanges).toHaveBeenLastCalledWith('tenant-a', 'db-1', 'orders', 3);
@@ -861,7 +1016,9 @@ describe('TriggerWatchersService — db-change poller', () => {
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
 
-    m.dbStudioChanges.mockImplementationOnce(() => { throw new Error('db gone'); });
+    m.dbStudioChanges.mockImplementationOnce(() => {
+      throw new Error('db gone');
+    });
     vi.advanceTimersByTime(5_000);
     expect(m.runsExecute).not.toHaveBeenCalled();
 
@@ -876,7 +1033,9 @@ describe('TriggerWatchersService — db-change poller', () => {
     // Pre-fix (QUIRK storico): seed fallito → cursore 0 → il primo tick
     // rigiocava l'INTERO backlog (doppia esecuzione, non idempotente).
     vi.useFakeTimers();
-    m.dbStudioChanges.mockImplementationOnce(() => { throw new Error('seed boom'); });
+    m.dbStudioChanges.mockImplementationOnce(() => {
+      throw new Error('seed boom');
+    });
     m.workflowsList.mockResolvedValue([dbWf()]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
@@ -897,7 +1056,10 @@ describe('TriggerWatchersService — db-change poller', () => {
     m.dbStudioChanges.mockReturnValueOnce([{ id: 3, op: 'insert', payload: {}, createdAt: 'T3' }]);
     vi.advanceTimersByTime(5_000);
     expect(m.runsExecute).toHaveBeenCalledTimes(1);
-    expect((m.runsExecute.mock.calls[0]![0] as { triggerInput: { changeId: number } }).triggerInput.changeId).toBe(3);
+    expect(
+      (m.runsExecute.mock.calls[0]![0] as { triggerInput: { changeId: number } }).triggerInput
+        .changeId,
+    ).toBe(3);
     vi.useRealTimers();
     await svc.stop();
   });
@@ -926,15 +1088,25 @@ describe('TriggerWatchersService — IMAP markSeen/cursore/dedup (caratterizzazi
   }
   function setupFetch(messages: ReturnType<typeof imapMsg>[]) {
     imap.fetch.mockReturnValue({
-      [Symbol.asyncIterator]: async function* () { for (const x of messages) yield x; },
+      [Symbol.asyncIterator]: async function* () {
+        for (const x of messages) yield x;
+      },
     });
   }
   function imapWf(extra: Record<string, unknown> = {}) {
     return makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p', ...extra } }],
+      nodes: [
+        {
+          id: 'n1',
+          defId: 'trigger_imap',
+          config: { host: 'x', username: 'u', password: 'p', ...extra },
+        },
+      ],
     });
   }
-  async function flushMicro(n = 25) { for (let i = 0; i < n; i += 1) await Promise.resolve(); }
+  async function flushMicro(n = 25) {
+    for (let i = 0; i < n; i += 1) await Promise.resolve();
+  }
 
   it('CARATTERIZZAZIONE run OK + on-success → \\Seen su connessione FRESCA + dedup registrato + cursore persistito al uid', async () => {
     vi.useFakeTimers();
@@ -988,9 +1160,7 @@ describe('TriggerWatchersService — IMAP markSeen/cursore/dedup (caratterizzazi
   it('CARATTERIZZAZIONE dedup: Message-ID già processato → NESSUN run (at-most-once RFC 5322)', async () => {
     vi.useFakeTimers();
     // 1° get: imap_state (cursore) → undefined; 2° get: imap_processed_messages → riga ESISTENTE.
-    sqliteStmt.get
-      .mockReturnValueOnce(undefined)
-      .mockReturnValueOnce({ 1: 1 });
+    sqliteStmt.get.mockReturnValueOnce(undefined).mockReturnValueOnce({ 1: 1 });
     setupFetch([imapMsg(180)]);
     m.workflowsList.mockResolvedValue([imapWf()]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
@@ -1017,10 +1187,12 @@ describe('TriggerWatchersService — env overrides', () => {
 
   it('MEDEA_DATA_DIR override il base path tenant files', async () => {
     process.env.MEDEA_DATA_DIR = '/custom/data';
-    m.workflowsList.mockResolvedValue([makeWf({
-      tenantId: 't-a',
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: 'inbox' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        tenantId: 't-a',
+        nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: 'inbox' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     const firstCall = m.chokidarWatch.mock.calls[0] as unknown[] | undefined;
@@ -1036,13 +1208,15 @@ describe('TriggerWatchersService — env overrides', () => {
 // ════════════════════════════════════════════════════════════════════
 describe('TriggerWatchersService — multi-trigger workflow', () => {
   it('workflow con 2 trigger node DIFFERENTI → entrambi registrati', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      id: 'wf-multi',
-      nodes: [
-        { id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/x' } },
-        { id: 'n2', defId: 'trigger_db_change', config: { databaseId: 'db-1', tableName: 't1' } },
-      ],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        id: 'wf-multi',
+        nodes: [
+          { id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/x' } },
+          { id: 'n2', defId: 'trigger_db_change', config: { databaseId: 'db-1', tableName: 't1' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     expect(m.chokidarWatch).toHaveBeenCalledTimes(1);
@@ -1052,9 +1226,20 @@ describe('TriggerWatchersService — multi-trigger workflow', () => {
 
   it('3 workflow DIFFERENTI con triggers diversi → 3 registrazioni', async () => {
     m.workflowsList.mockResolvedValue([
-      makeWf({ id: 'wf-a', nodes: [{ id: 'n', defId: 'trigger_file_watch', config: { directory: '/tmp/a' } }] }),
-      makeWf({ id: 'wf-b', nodes: [{ id: 'n', defId: 'trigger_file_watch', config: { directory: '/tmp/b' } }] }),
-      makeWf({ id: 'wf-c', nodes: [{ id: 'n', defId: 'trigger_db_change', config: { databaseId: 'db-1', tableName: 't1' } }] }),
+      makeWf({
+        id: 'wf-a',
+        nodes: [{ id: 'n', defId: 'trigger_file_watch', config: { directory: '/tmp/a' } }],
+      }),
+      makeWf({
+        id: 'wf-b',
+        nodes: [{ id: 'n', defId: 'trigger_file_watch', config: { directory: '/tmp/b' } }],
+      }),
+      makeWf({
+        id: 'wf-c',
+        nodes: [
+          { id: 'n', defId: 'trigger_db_change', config: { databaseId: 'db-1', tableName: 't1' } },
+        ],
+      }),
     ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
@@ -1085,9 +1270,11 @@ describe('TriggerWatchersService — ensureOdooPoller', () => {
   }
 
   it('SKIP when baseUrl is empty', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_odoo_polling', config: baseCfg({ baseUrl: '' }) }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [{ id: 'n1', defId: 'trigger_odoo_polling', config: baseCfg({ baseUrl: '' }) }],
+      }),
+    ]);
     const spy = vi.spyOn(global, 'setInterval');
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
@@ -1097,9 +1284,17 @@ describe('TriggerWatchersService — ensureOdooPoller', () => {
   });
 
   it('SKIP when model name is invalid (anti-injection)', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_odoo_polling', config: baseCfg({ model: 'res.partner; DROP' }) }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_odoo_polling',
+            config: baseCfg({ model: 'res.partner; DROP' }),
+          },
+        ],
+      }),
+    ]);
     const spy = vi.spyOn(global, 'setInterval');
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
@@ -1109,9 +1304,11 @@ describe('TriggerWatchersService — ensureOdooPoller', () => {
   });
 
   it('SKIP when password is missing', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_odoo_polling', config: baseCfg({ password: '' }) }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [{ id: 'n1', defId: 'trigger_odoo_polling', config: baseCfg({ password: '' }) }],
+      }),
+    ]);
     const spy = vi.spyOn(global, 'setInterval');
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
@@ -1122,9 +1319,13 @@ describe('TriggerWatchersService — ensureOdooPoller', () => {
 
   it('intervalSec is clamped to [10, 3600]', async () => {
     vi.useFakeTimers();
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_odoo_polling', config: baseCfg({ pollIntervalSec: 1 }) }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_odoo_polling', config: baseCfg({ pollIntervalSec: 1 }) },
+        ],
+      }),
+    ]);
     const spy = vi.spyOn(global, 'setInterval');
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
@@ -1137,9 +1338,13 @@ describe('TriggerWatchersService — ensureOdooPoller', () => {
 
   it('intervalSec=99999 clamped to 3600 max', async () => {
     vi.useFakeTimers();
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_odoo_polling', config: baseCfg({ pollIntervalSec: 99_999 }) }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_odoo_polling', config: baseCfg({ pollIntervalSec: 99_999 }) },
+        ],
+      }),
+    ]);
     const spy = vi.spyOn(global, 'setInterval');
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
@@ -1150,24 +1355,28 @@ describe('TriggerWatchersService — ensureOdooPoller', () => {
   });
 
   it('registers a poller when config is complete', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_odoo_polling', config: baseCfg() }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [{ id: 'n1', defId: 'trigger_odoo_polling', config: baseCfg() }],
+      }),
+    ]);
     const spy = vi.spyOn(global, 'setInterval');
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     expect(spy).toHaveBeenCalledTimes(1);
     // Verify the SQLite seed query targets odoo_state with workflow+model PK.
-    const prepareCalls = (sqliteStmt as unknown as { prepare?: { mock: { calls: unknown[][] } } });
+    const prepareCalls = sqliteStmt as unknown as { prepare?: { mock: { calls: unknown[][] } } };
     void prepareCalls;
     spy.mockRestore();
     await svc.stop();
   });
 
   it('idempotent — re-registering the same workflow does not create a second timer', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_odoo_polling', config: baseCfg() }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [{ id: 'n1', defId: 'trigger_odoo_polling', config: baseCfg() }],
+      }),
+    ]);
     const spy = vi.spyOn(global, 'setInterval');
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
@@ -1221,13 +1430,21 @@ describe('TriggerWatchersService — ensureOdooPoller', () => {
 describe('TriggerWatchersService — Odoo poll loop (caratterizzazione)', () => {
   function odooWf(extra: Record<string, unknown> = {}) {
     return makeWf({
-      nodes: [{
-        id: 'n1', defId: 'trigger_odoo_polling',
-        config: {
-          baseUrl: 'https://odoo.test', database: 'db', login: 'u', password: 'p',
-          model: 'res.partner', pollIntervalSec: 10, ...extra,
+      nodes: [
+        {
+          id: 'n1',
+          defId: 'trigger_odoo_polling',
+          config: {
+            baseUrl: 'https://odoo.test',
+            database: 'db',
+            login: 'u',
+            password: 'p',
+            model: 'res.partner',
+            pollIntervalSec: 10,
+            ...extra,
+          },
         },
-      }],
+      ],
     });
   }
 
@@ -1236,7 +1453,7 @@ describe('TriggerWatchersService — Odoo poll loop (caratterizzazione)', () => 
     sqliteStmt.get.mockReturnValue(undefined); // nessuno stato persistito → seed
     odooLib.executeKw
       .mockResolvedValueOnce([100]) // seed: search id desc
-      .mockResolvedValueOnce([]);   // poll: search_read
+      .mockResolvedValueOnce([]); // poll: search_read
     m.workflowsList.mockResolvedValue([odooWf()]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
@@ -1245,7 +1462,10 @@ describe('TriggerWatchersService — Odoo poll loop (caratterizzazione)', () => 
     const seedCall = odooLib.executeKw.mock.calls[0]![2] as { method: string; kwargs: unknown };
     expect(seedCall.method).toBe('search');
     expect(seedCall.kwargs).toEqual({ limit: 1, order: 'id desc' });
-    const pollCall = odooLib.executeKw.mock.calls[1]![2] as { method: string; positional: unknown[] };
+    const pollCall = odooLib.executeKw.mock.calls[1]![2] as {
+      method: string;
+      positional: unknown[];
+    };
     expect(pollCall.method).toBe('search_read');
     expect(pollCall.positional[0]).toEqual([['id', '>', 100]]);
     await svc.stop();
@@ -1256,14 +1476,21 @@ describe('TriggerWatchersService — Odoo poll loop (caratterizzazione)', () => 
     vi.useFakeTimers();
     sqliteStmt.get.mockReturnValueOnce({ last_id_seen: 100 }); // stato persistito → NO seed
     odooLib.executeKw
-      .mockResolvedValueOnce([{ id: 101, name: 'a' }, { id: 102, name: 'b' }])
+      .mockResolvedValueOnce([
+        { id: 101, name: 'a' },
+        { id: 102, name: 'b' },
+      ])
       .mockResolvedValueOnce([]);
     m.workflowsList.mockResolvedValue([odooWf()]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(10_000);
     expect(m.runsExecute).toHaveBeenCalledTimes(2);
-    const first = m.runsExecute.mock.calls[0]![0] as { triggerType: string; tenantId: string; triggerInput: { model: string; recordId: number; record: unknown } };
+    const first = m.runsExecute.mock.calls[0]![0] as {
+      triggerType: string;
+      tenantId: string;
+      triggerInput: { model: string; recordId: number; record: unknown };
+    };
     expect(first.triggerType).toBe('odoo_polling');
     expect(first.tenantId).toBe('tenant-a');
     expect(first.triggerInput.model).toBe('res.partner');
@@ -1280,9 +1507,7 @@ describe('TriggerWatchersService — Odoo poll loop (caratterizzazione)', () => 
   it('CARATTERIZZAZIONE WE-15 behaviorale: run fallito → INSERT odoo_dlq + STOP batch + cursore NON bumpato (retry al tick dopo)', async () => {
     vi.useFakeTimers();
     sqliteStmt.get.mockReturnValueOnce({ last_id_seen: 100 }); // odoo_state alla registrazione
-    odooLib.executeKw
-      .mockResolvedValueOnce([{ id: 101 }, { id: 102 }])
-      .mockResolvedValueOnce([]);
+    odooLib.executeKw.mockResolvedValueOnce([{ id: 101 }, { id: 102 }]).mockResolvedValueOnce([]);
     m.runsExecute.mockRejectedValueOnce(new Error('run boom'));
     m.workflowsList.mockResolvedValue([odooWf()]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
@@ -1313,7 +1538,10 @@ describe('TriggerWatchersService — Odoo poll loop (caratterizzazione)', () => 
     await svc.start();
     await vi.advanceTimersByTimeAsync(10_000);
     const call = odooLib.executeKw.mock.calls[0]![2] as { positional: unknown[] };
-    expect(call.positional[0]).toEqual([['id', '>', 5], ['active', '=', true]]);
+    expect(call.positional[0]).toEqual([
+      ['id', '>', 5],
+      ['active', '=', true],
+    ]);
     await svc.stop();
     vi.useRealTimers();
   });
@@ -1329,16 +1557,20 @@ describe('TriggerWatchersService — ensureImapPoller', () => {
     imap.getMailboxLock.mockResolvedValue({ release: vi.fn() });
     imap.search.mockResolvedValue([]);
     imap.fetch.mockReturnValue({
-      [Symbol.asyncIterator]: async function* () { /* empty */ },
+      [Symbol.asyncIterator]: async function* () {
+        /* empty */
+      },
     });
     sqliteStmt.get.mockReturnValue(undefined);
     sqliteStmt.run.mockReturnValue({ changes: 1 });
   });
 
   it('SKIP se manca host', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [{ id: 'n1', defId: 'trigger_imap', config: { username: 'u', password: 'p' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     // no ImapFlow constructed
@@ -1347,9 +1579,11 @@ describe('TriggerWatchersService — ensureImapPoller', () => {
   });
 
   it('SKIP se manca username', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'mail.x', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'mail.x', password: 'p' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     expect(imap.ImapFlowCtor).not.toHaveBeenCalled();
@@ -1357,9 +1591,11 @@ describe('TriggerWatchersService — ensureImapPoller', () => {
   });
 
   it('SKIP se manca password', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'mail.x', username: 'u' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'mail.x', username: 'u' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     expect(imap.ImapFlowCtor).not.toHaveBeenCalled();
@@ -1368,11 +1604,21 @@ describe('TriggerWatchersService — ensureImapPoller', () => {
 
   it('REGISTRA poller con default mailbox=INBOX + port=993 (tls)', async () => {
     vi.useFakeTimers();
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: {
-        host: 'mail.acme', username: 'user@acme', password: 'secret',
-      } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: {
+              host: 'mail.acme',
+              username: 'user@acme',
+              password: 'secret',
+            },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     // setInterval registered with min 15s clamp
@@ -1381,7 +1627,11 @@ describe('TriggerWatchersService — ensureImapPoller', () => {
     for (let i = 0; i < 10; i++) await Promise.resolve();
     vi.useRealTimers();
     expect(imap.ImapFlowCtor).toHaveBeenCalled();
-    const ctorArgs = imap.ImapFlowCtor.mock.calls[0]?.[0] as { host: string; port: number; secure: boolean };
+    const ctorArgs = imap.ImapFlowCtor.mock.calls[0]?.[0] as {
+      host: string;
+      port: number;
+      secure: boolean;
+    };
     expect(ctorArgs.host).toBe('mail.acme');
     expect(ctorArgs.port).toBe(993);
     expect(ctorArgs.secure).toBe(true);
@@ -1390,11 +1640,22 @@ describe('TriggerWatchersService — ensureImapPoller', () => {
 
   it('port=143 → tlsMode starttls (secure: false)', async () => {
     vi.useFakeTimers();
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: {
-        host: 'mail.x', port: 143, username: 'u', password: 'p',
-      } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: {
+              host: 'mail.x',
+              port: 143,
+              username: 'u',
+              password: 'p',
+            },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -1407,11 +1668,22 @@ describe('TriggerWatchersService — ensureImapPoller', () => {
   it('pollIntervalSec clamp MIN 15s', async () => {
     vi.useFakeTimers();
     const spy = vi.spyOn(global, 'setInterval');
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: {
-        host: 'x', username: 'u', password: 'p', pollIntervalSec: 1,
-      } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: {
+              host: 'x',
+              username: 'u',
+              password: 'p',
+              pollIntervalSec: 1,
+            },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     const intervalMs = spy.mock.calls[0]![1];
@@ -1426,9 +1698,11 @@ describe('TriggerWatchersService — ensureImapPoller', () => {
     m.systemEmailAcct.mockReturnValue({
       imap: { host: 'mx.system', port: 993, username: 'sys@acme', password: 'sys-pwd' },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { systemAccountId: 'acct-1' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [{ id: 'n1', defId: 'trigger_imap', config: { systemAccountId: 'acct-1' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -1441,9 +1715,11 @@ describe('TriggerWatchersService — ensureImapPoller', () => {
 
   it('systemAccountId → account senza IMAP config → WARN + skip', async () => {
     m.systemEmailAcct.mockReturnValue({ imap: null }); // no IMAP block
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { systemAccountId: 'acct-no-imap' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [{ id: 'n1', defId: 'trigger_imap', config: { systemAccountId: 'acct-no-imap' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     expect(imap.ImapFlowCtor).not.toHaveBeenCalled();
@@ -1452,11 +1728,21 @@ describe('TriggerWatchersService — ensureImapPoller', () => {
 
   it('idempotent: re-register stesso wf imap → no double ctor', async () => {
     vi.useFakeTimers();
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: {
-        host: 'x', username: 'u', password: 'p',
-      } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: {
+              host: 'x',
+              username: 'u',
+              password: 'p',
+            },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -1470,11 +1756,21 @@ describe('TriggerWatchersService — ensureImapPoller', () => {
   it('persisted cursor lastUidSeen pre-loaded da SQLite', async () => {
     vi.useFakeTimers();
     sqliteStmt.get.mockReturnValueOnce({ last_uid_seen: 42 });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: {
-        host: 'x', username: 'u', password: 'p',
-      } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: {
+              host: 'x',
+              username: 'u',
+              password: 'p',
+            },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -1511,25 +1807,37 @@ describe('TriggerWatchersService — IMAP/file/db dispatch full coverage', () =>
   }
   function setupFetchYield(messages: ReturnType<typeof msg>[]) {
     imap.fetch.mockReturnValue({
-      [Symbol.asyncIterator]: async function* () { for (const m of messages) yield m; },
+      [Symbol.asyncIterator]: async function* () {
+        for (const m of messages) yield m;
+      },
     });
   }
-  async function flush(n = 15) { for (let i = 0; i < n; i++) await Promise.resolve(); }
+  async function flush(n = 15) {
+    for (let i = 0; i < n; i++) await Promise.resolve();
+  }
 
   it('NEW msg → execute con triggerType=imap', async () => {
     vi.useFakeTimers();
     setupFetchYield([msg({ uid: 101 })]);
-    m.workflowsList.mockResolvedValue([makeWf({
-      id: 'wf-imap', tenantId: 't',
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        id: 'wf-imap',
+        tenantId: 't',
+        nodes: [
+          { id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
     await flush();
-    expect(m.runsExecute).toHaveBeenCalledWith(expect.objectContaining({
-      workflowId: 'wf-imap', triggerType: 'imap',
-    }));
+    expect(m.runsExecute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workflowId: 'wf-imap',
+        triggerType: 'imap',
+      }),
+    );
     vi.useRealTimers();
     await svc.stop();
   });
@@ -1537,9 +1845,17 @@ describe('TriggerWatchersService — IMAP/file/db dispatch full coverage', () =>
   it('subject regex mismatch → skip', async () => {
     vi.useFakeTimers();
     setupFetchYield([msg({ uid: 102, subject: 'Spam' })]);
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p', filterSubject: '^Urgent:' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: { host: 'x', username: 'u', password: 'p', filterSubject: '^Urgent:' },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -1552,9 +1868,17 @@ describe('TriggerWatchersService — IMAP/file/db dispatch full coverage', () =>
   it('from regex mismatch → skip', async () => {
     vi.useFakeTimers();
     setupFetchYield([msg({ uid: 103, from: 'bad@evil.com' })]);
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p', filterFrom: '@good.com$' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: { host: 'x', username: 'u', password: 'p', filterFrom: '@good.com$' },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -1568,9 +1892,13 @@ describe('TriggerWatchersService — IMAP/file/db dispatch full coverage', () =>
     vi.useFakeTimers();
     sqliteStmt.get.mockReturnValueOnce({ last_uid_seen: 200 });
     setupFetchYield([msg({ uid: 50 })]);
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -1583,9 +1911,17 @@ describe('TriggerWatchersService — IMAP/file/db dispatch full coverage', () =>
   it('allowlist mismatch → REJECTED warn no execute', async () => {
     vi.useFakeTimers();
     setupFetchYield([msg({ uid: 104, from: 'attacker@evil.com' })]);
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p', senderAllowlist: 'admin@acme.com' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: { host: 'x', username: 'u', password: 'p', senderAllowlist: 'admin@acme.com' },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -1599,9 +1935,17 @@ describe('TriggerWatchersService — IMAP/file/db dispatch full coverage', () =>
     vi.useFakeTimers();
     imap.search.mockResolvedValue([105]);
     setupFetchYield([msg({ uid: 105 })]);
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p', onlyUnseen: 'true' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: { host: 'x', username: 'u', password: 'p', onlyUnseen: 'true' },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -1614,10 +1958,22 @@ describe('TriggerWatchersService — IMAP/file/db dispatch full coverage', () =>
   it('onlyUnseen + search empty → short-circuit', async () => {
     vi.useFakeTimers();
     imap.search.mockResolvedValue([]);
-    imap.fetch.mockReturnValue({ [Symbol.asyncIterator]: async function* () { /* noop */ } });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p', onlyUnseen: 'true' } }],
-    })]);
+    imap.fetch.mockReturnValue({
+      [Symbol.asyncIterator]: async function* () {
+        /* noop */
+      },
+    });
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: { host: 'x', username: 'u', password: 'p', onlyUnseen: 'true' },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -1630,9 +1986,17 @@ describe('TriggerWatchersService — IMAP/file/db dispatch full coverage', () =>
   it('connect fail → no execute', async () => {
     vi.useFakeTimers();
     imap.connect.mockRejectedValueOnce(new Error('ECONNREFUSED'));
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'down', username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: { host: 'down', username: 'u', password: 'p' },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -1649,18 +2013,24 @@ describe('TriggerWatchersService — IMAP/file/db dispatch full coverage', () =>
       if (evt === 'add') onAdd = cb;
       return m.chokidarWatcher;
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      id: 'wf-f', tenantId: 't',
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/x' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        id: 'wf-f',
+        tenantId: 't',
+        nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/x' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     onAdd?.('/tmp/x/new.csv');
     await Promise.resolve();
-    expect(m.runsExecute).toHaveBeenCalledWith(expect.objectContaining({
-      workflowId: 'wf-f', triggerType: 'file_watch',
-      triggerInput: expect.objectContaining({ event: 'add' }),
-    }));
+    expect(m.runsExecute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workflowId: 'wf-f',
+        triggerType: 'file_watch',
+        triggerInput: expect.objectContaining({ event: 'add' }),
+      }),
+    );
     await svc.stop();
   });
 
@@ -1672,9 +2042,17 @@ describe('TriggerWatchersService — IMAP/file/db dispatch full coverage', () =>
       if (evt === 'change') onChange = cb;
       return m.chokidarWatcher;
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/y', events: 'change' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_file_watch',
+            config: { directory: '/tmp/y', events: 'change' },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     onAdd?.('/tmp/y/a.csv');
@@ -1690,16 +2068,26 @@ describe('TriggerWatchersService — IMAP/file/db dispatch full coverage', () =>
       if (evt === 'unlink') onUnlink = cb;
       return m.chokidarWatcher;
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/z', events: 'unlink' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_file_watch',
+            config: { directory: '/tmp/z', events: 'unlink' },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     onUnlink?.('/tmp/z/del.csv');
     await Promise.resolve();
-    expect(m.runsExecute).toHaveBeenCalledWith(expect.objectContaining({
-      triggerInput: expect.objectContaining({ event: 'unlink' }),
-    }));
+    expect(m.runsExecute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        triggerInput: expect.objectContaining({ event: 'unlink' }),
+      }),
+    );
     await svc.stop();
   });
 
@@ -1709,54 +2097,81 @@ describe('TriggerWatchersService — IMAP/file/db dispatch full coverage', () =>
     m.dbStudioChanges
       .mockReturnValueOnce([{ id: 1, op: 'insert', payload: {}, createdAt: 'now' }])
       .mockReturnValueOnce([{ id: 2, op: 'insert', payload: { x: 1 }, createdAt: 'now' }]);
-    m.workflowsList.mockResolvedValue([makeWf({
-      id: 'wf-db', tenantId: 't',
-      nodes: [{ id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db', tableName: 't1', pollIntervalSec: 5 } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        id: 'wf-db',
+        tenantId: 't',
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_db_change',
+            config: { databaseId: 'db', tableName: 't1', pollIntervalSec: 5 },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(5_000);
     await flush();
-    expect(m.runsExecute).toHaveBeenCalledWith(expect.objectContaining({
-      triggerType: 'db_change',
-      triggerInput: expect.objectContaining({ changeId: 2, op: 'insert' }),
-    }));
+    expect(m.runsExecute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        triggerType: 'db_change',
+        triggerInput: expect.objectContaining({ changeId: 2, op: 'insert' }),
+      }),
+    );
     vi.useRealTimers();
     await svc.stop();
   });
 
   it('opsFilter="update" → skip insert/delete', async () => {
     vi.useFakeTimers();
-    m.dbStudioChanges
-      .mockReturnValueOnce([])
-      .mockReturnValueOnce([
-        { id: 1, op: 'insert', payload: {}, createdAt: 'now' },
-        { id: 2, op: 'update', payload: {}, createdAt: 'now' },
-        { id: 3, op: 'delete', payload: {}, createdAt: 'now' },
-      ]);
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db', tableName: 't', ops: 'update', pollIntervalSec: 5 } }],
-    })]);
+    m.dbStudioChanges.mockReturnValueOnce([]).mockReturnValueOnce([
+      { id: 1, op: 'insert', payload: {}, createdAt: 'now' },
+      { id: 2, op: 'update', payload: {}, createdAt: 'now' },
+      { id: 3, op: 'delete', payload: {}, createdAt: 'now' },
+    ]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_db_change',
+            config: { databaseId: 'db', tableName: 't', ops: 'update', pollIntervalSec: 5 },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(5_000);
     await flush();
     expect(m.runsExecute).toHaveBeenCalledTimes(1);
-    expect(m.runsExecute).toHaveBeenCalledWith(expect.objectContaining({
-      triggerInput: expect.objectContaining({ op: 'update' }),
-    }));
+    expect(m.runsExecute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        triggerInput: expect.objectContaining({ op: 'update' }),
+      }),
+    );
     vi.useRealTimers();
     await svc.stop();
   });
 
   it('getChangesSince throw mid-poll → log error + no crash', async () => {
     vi.useFakeTimers();
-    m.dbStudioChanges
-      .mockReturnValueOnce([])
-      .mockImplementationOnce(() => { throw new Error('DB unavailable'); });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db', tableName: 't', pollIntervalSec: 5 } }],
-    })]);
+    m.dbStudioChanges.mockReturnValueOnce([]).mockImplementationOnce(() => {
+      throw new Error('DB unavailable');
+    });
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_db_change',
+            config: { databaseId: 'db', tableName: 't', pollIntervalSec: 5 },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(5_000);
@@ -1791,17 +2206,27 @@ describe('TriggerWatchersService — coverage fillers', () => {
 
   it('reload tear-down imap poller per workflow non più enabled', async () => {
     vi.useFakeTimers();
-    m.workflowsList.mockResolvedValueOnce([makeWf({
-      id: 'wf-i', enabled: true,
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValueOnce([
+      makeWf({
+        id: 'wf-i',
+        enabled: true,
+        nodes: [
+          { id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     // ora wf-i no più enabled
-    m.workflowsList.mockResolvedValueOnce([makeWf({
-      id: 'wf-i', enabled: false,
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValueOnce([
+      makeWf({
+        id: 'wf-i',
+        enabled: false,
+        nodes: [
+          { id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } },
+        ],
+      }),
+    ]);
     await svc.reload();
     vi.useRealTimers();
     await svc.stop();
@@ -1809,16 +2234,26 @@ describe('TriggerWatchersService — coverage fillers', () => {
 
   it('reload tear-down db-change poller per workflow non più enabled', async () => {
     vi.useFakeTimers();
-    m.workflowsList.mockResolvedValueOnce([makeWf({
-      id: 'wf-d', enabled: true,
-      nodes: [{ id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db', tableName: 't' } }],
-    })]);
+    m.workflowsList.mockResolvedValueOnce([
+      makeWf({
+        id: 'wf-d',
+        enabled: true,
+        nodes: [
+          { id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db', tableName: 't' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
-    m.workflowsList.mockResolvedValueOnce([makeWf({
-      id: 'wf-d', enabled: false,
-      nodes: [{ id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db', tableName: 't' } }],
-    })]);
+    m.workflowsList.mockResolvedValueOnce([
+      makeWf({
+        id: 'wf-d',
+        enabled: false,
+        nodes: [
+          { id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db', tableName: 't' } },
+        ],
+      }),
+    ]);
     await svc.reload();
     vi.useRealTimers();
     await svc.stop();
@@ -1826,10 +2261,20 @@ describe('TriggerWatchersService — coverage fillers', () => {
 
   it('db-change seed throw → log warn, poller registrato (fail-closed: cursore null, retry al tick)', async () => {
     vi.useFakeTimers();
-    m.dbStudioChanges.mockImplementationOnce(() => { throw new Error('seed boom'); });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db', tableName: 't', pollIntervalSec: 5 } }],
-    })]);
+    m.dbStudioChanges.mockImplementationOnce(() => {
+      throw new Error('seed boom');
+    });
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_db_change',
+            config: { databaseId: 'db', tableName: 't', pollIntervalSec: 5 },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     vi.useRealTimers();
@@ -1843,9 +2288,11 @@ describe('TriggerWatchersService — coverage fillers', () => {
       return m.chokidarWatcher;
     });
     m.runsExecute.mockRejectedValueOnce(new Error('execute fail'));
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/x' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [{ id: 'n1', defId: 'trigger_file_watch', config: { directory: '/tmp/x' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     onAdd?.('/tmp/x/new.csv');
@@ -1860,19 +2307,31 @@ describe('TriggerWatchersService — coverage fillers', () => {
         yield {
           uid: 200,
           envelope: {
-            subject: 'Test', from: [{ address: 'a@x.com' }],
+            subject: 'Test',
+            from: [{ address: 'a@x.com' }],
             to: [{ address: 'wrong@evil.com' }],
           },
-          source: Buffer.from('body'), flags: new Set(),
+          source: Buffer.from('body'),
+          flags: new Set(),
         };
       },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: {
-        host: 'x', username: 'u', password: 'p',
-        filterTo: '@allowed.com$',
-      } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: {
+              host: 'x',
+              username: 'u',
+              password: 'p',
+              filterTo: '@allowed.com$',
+            },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -1894,9 +2353,13 @@ describe('TriggerWatchersService — coverage fillers', () => {
         };
       },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -1931,20 +2394,27 @@ describe('TriggerWatchersService — coverage fillers', () => {
         };
       },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      id: 'wf-att', tenantId: 't',
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        id: 'wf-att',
+        tenantId: 't',
+        nodes: [
+          { id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
     for (let i = 0; i < 25; i++) await Promise.resolve();
-    expect(m.runsExecute).toHaveBeenCalledWith(expect.objectContaining({
-      triggerType: 'imap',
-      triggerInput: expect.objectContaining({
-        uid: 300,
+    expect(m.runsExecute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        triggerType: 'imap',
+        triggerInput: expect.objectContaining({
+          uid: 300,
+        }),
       }),
-    }));
+    );
     vi.useRealTimers();
     await svc.stop();
   });
@@ -1953,7 +2423,9 @@ describe('TriggerWatchersService — coverage fillers', () => {
     vi.useFakeTimers();
     const { simpleParser } = await import('mailparser');
     (simpleParser as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      text: 'body', html: '<p>h</p>', messageId: '<m2@x>',
+      text: 'body',
+      html: '<p>h</p>',
+      messageId: '<m2@x>',
       attachments: [
         { filename: 'pic.jpg', contentType: 'image/jpeg', content: Buffer.from('JPG') },
         { filename: 'doc.pdf', contentType: 'application/pdf', content: Buffer.from('PDF') },
@@ -1964,15 +2436,27 @@ describe('TriggerWatchersService — coverage fillers', () => {
         yield {
           uid: 301,
           envelope: { subject: 'X', from: [{ address: 'a@x' }], to: [{ address: 'b@x' }] },
-          source: Buffer.from('mime'), flags: new Set(),
+          source: Buffer.from('mime'),
+          flags: new Set(),
         };
       },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: {
-        host: 'x', username: 'u', password: 'p', attachmentMime: 'application/pdf',
-      } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: {
+              host: 'x',
+              username: 'u',
+              password: 'p',
+              attachmentMime: 'application/pdf',
+            },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -1985,7 +2469,9 @@ describe('TriggerWatchersService — coverage fillers', () => {
     vi.useFakeTimers();
     const { simpleParser } = await import('mailparser');
     (simpleParser as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      text: 'body', html: '', messageId: '<dup-msg@x>',
+      text: 'body',
+      html: '',
+      messageId: '<dup-msg@x>',
       attachments: [],
     });
     imap.fetch.mockReturnValue({
@@ -1993,13 +2479,18 @@ describe('TriggerWatchersService — coverage fillers', () => {
         yield {
           uid: 400,
           envelope: { subject: 'X', from: [{ address: 'a@x' }], to: [{ address: 'b@x' }] },
-          source: Buffer.from('mime'), flags: new Set(),
+          source: Buffer.from('mime'),
+          flags: new Set(),
         };
       },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -2012,7 +2503,9 @@ describe('TriggerWatchersService — coverage fillers', () => {
     vi.useFakeTimers();
     const { simpleParser } = await import('mailparser');
     (simpleParser as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      text: 'no attach', html: '', messageId: '<noatt@x>',
+      text: 'no attach',
+      html: '',
+      messageId: '<noatt@x>',
       attachments: [], // empty
     });
     imap.fetch.mockReturnValue({
@@ -2020,13 +2513,22 @@ describe('TriggerWatchersService — coverage fillers', () => {
         yield {
           uid: 500,
           envelope: { subject: 'X', from: [{ address: 'a@x' }], to: [{ address: 'b@x' }] },
-          source: Buffer.from('mime'), flags: new Set(),
+          source: Buffer.from('mime'),
+          flags: new Set(),
         };
       },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p', hasAttachment: 'true' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: { host: 'x', username: 'u', password: 'p', hasAttachment: 'true' },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -2054,9 +2556,17 @@ describe('TriggerWatchersService — coverage fillers', () => {
     m.dbStudioChanges
       .mockReturnValueOnce([])
       .mockReturnValueOnce([{ id: 1, op: 'insert', payload: {}, createdAt: 'now' }]);
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db', tableName: 't', pollIntervalSec: 5 } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_db_change',
+            config: { databaseId: 'db', tableName: 't', pollIntervalSec: 5 },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(5_000);
@@ -2067,19 +2577,26 @@ describe('TriggerWatchersService — coverage fillers', () => {
 
   it('persistCursor sqlite write fail → log warn catch', async () => {
     vi.useFakeTimers();
-    sqliteStmt.run.mockImplementationOnce(() => { throw new Error('sqlite IO fail'); });
+    sqliteStmt.run.mockImplementationOnce(() => {
+      throw new Error('sqlite IO fail');
+    });
     imap.fetch.mockReturnValue({
       [Symbol.asyncIterator]: async function* () {
         yield {
           uid: 700,
           envelope: { subject: 'X', from: [{ address: 'a@x' }], to: [{ address: 'b@x' }] },
-          source: Buffer.from('mime'), flags: new Set(),
+          source: Buffer.from('mime'),
+          flags: new Set(),
         };
       },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -2092,7 +2609,10 @@ describe('TriggerWatchersService — coverage fillers', () => {
     vi.useFakeTimers();
     const { simpleParser } = await import('mailparser');
     (simpleParser as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      text: 'b', html: '', messageId: '<rp-fail@x>', attachments: [],
+      text: 'b',
+      html: '',
+      messageId: '<rp-fail@x>',
+      attachments: [],
     });
     // Prima get/run sono ok, ma successive INSERT OR IGNORE fa throw
     let runCount = 0;
@@ -2106,13 +2626,18 @@ describe('TriggerWatchersService — coverage fillers', () => {
         yield {
           uid: 800,
           envelope: { subject: 'X', from: [{ address: 'a@x' }], to: [{ address: 'b@x' }] },
-          source: Buffer.from('mime'), flags: new Set(),
+          source: Buffer.from('mime'),
+          flags: new Set(),
         };
       },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -2125,7 +2650,10 @@ describe('TriggerWatchersService — coverage fillers', () => {
     vi.useFakeTimers();
     const { simpleParser } = await import('mailparser');
     (simpleParser as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      text: 'b', html: '', messageId: '<cd@x>', attachments: [],
+      text: 'b',
+      html: '',
+      messageId: '<cd@x>',
+      attachments: [],
     });
     sqliteStmt.get.mockImplementationOnce(((sql: string) => {
       if (sql.includes('imap_state')) return undefined;
@@ -2140,13 +2668,18 @@ describe('TriggerWatchersService — coverage fillers', () => {
         yield {
           uid: 900,
           envelope: { subject: 'X', from: [{ address: 'a@x' }], to: [{ address: 'b@x' }] },
-          source: Buffer.from('mime'), flags: new Set(),
+          source: Buffer.from('mime'),
+          flags: new Set(),
         };
       },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -2159,7 +2692,9 @@ describe('TriggerWatchersService — coverage fillers', () => {
     vi.useFakeTimers();
     const { simpleParser } = await import('mailparser');
     (simpleParser as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      text: 'body', html: '', messageId: '<seen@x>',
+      text: 'body',
+      html: '',
+      messageId: '<seen@x>',
       attachments: [],
     });
     imap.fetch.mockReturnValue({
@@ -2167,13 +2702,22 @@ describe('TriggerWatchersService — coverage fillers', () => {
         yield {
           uid: 600,
           envelope: { subject: 'X', from: [{ address: 'a@x' }], to: [{ address: 'b@x' }] },
-          source: Buffer.from('mime'), flags: new Set(),
+          source: Buffer.from('mime'),
+          flags: new Set(),
         };
       },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p', markSeen: 'always' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: { host: 'x', username: 'u', password: 'p', markSeen: 'always' },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -2186,20 +2730,27 @@ describe('TriggerWatchersService — coverage fillers', () => {
     vi.useFakeTimers();
     const { simpleParser } = await import('mailparser');
     (simpleParser as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      text: 'body', html: '', /* no messageId */ attachments: [],
+      text: 'body',
+      html: '',
+      /* no messageId */ attachments: [],
     });
     imap.fetch.mockReturnValue({
       [Symbol.asyncIterator]: async function* () {
         yield {
           uid: 999,
           envelope: { subject: 'X', from: [{ address: 'a@x' }], to: [{ address: 'b@x' }] },
-          source: Buffer.from('mime'), flags: new Set(),
+          source: Buffer.from('mime'),
+          flags: new Set(),
         };
       },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -2210,12 +2761,22 @@ describe('TriggerWatchersService — coverage fillers', () => {
 
   it('parseAllowlist: array di stringhe diretto', async () => {
     vi.useFakeTimers();
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: {
-        host: 'x', username: 'u', password: 'p',
-        senderAllowlist: ['admin@acme.com', 'sales@acme.com'] as never,
-      } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: {
+              host: 'x',
+              username: 'u',
+              password: 'p',
+              senderAllowlist: ['admin@acme.com', 'sales@acme.com'] as never,
+            },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     vi.useRealTimers();
@@ -2224,12 +2785,22 @@ describe('TriggerWatchersService — coverage fillers', () => {
 
   it('parseAllowlist: JSON-stringified array', async () => {
     vi.useFakeTimers();
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: {
-        host: 'x', username: 'u', password: 'p',
-        senderAllowlist: '["admin@x.com","sales@x.com"]',
-      } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: {
+              host: 'x',
+              username: 'u',
+              password: 'p',
+              senderAllowlist: '["admin@x.com","sales@x.com"]',
+            },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     vi.useRealTimers();
@@ -2238,12 +2809,22 @@ describe('TriggerWatchersService — coverage fillers', () => {
 
   it('parseAllowlist: stringa con [ ma JSON invalido → fallback push trimmed', async () => {
     vi.useFakeTimers();
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: {
-        host: 'x', username: 'u', password: 'p',
-        senderAllowlist: '[malformed',
-      } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: {
+              host: 'x',
+              username: 'u',
+              password: 'p',
+              senderAllowlist: '[malformed',
+            },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     vi.useRealTimers();
@@ -2252,12 +2833,22 @@ describe('TriggerWatchersService — coverage fillers', () => {
 
   it('parseAllowlist: comma+semicolon+newline separator', async () => {
     vi.useFakeTimers();
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: {
-        host: 'x', username: 'u', password: 'p',
-        senderAllowlist: 'a@x.com,b@x.com;c@x.com\nd@x.com',
-      } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: {
+              host: 'x',
+              username: 'u',
+              password: 'p',
+              senderAllowlist: 'a@x.com,b@x.com;c@x.com\nd@x.com',
+            },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     vi.useRealTimers();
@@ -2266,12 +2857,22 @@ describe('TriggerWatchersService — coverage fillers', () => {
 
   it('safeRegex: pattern invalido → log warn + null fallback', async () => {
     vi.useFakeTimers();
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: {
-        host: 'x', username: 'u', password: 'p',
-        filterSubject: '[invalid-regex(', // unbalanced
-      } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: {
+              host: 'x',
+              username: 'u',
+              password: 'p',
+              filterSubject: '[invalid-regex(', // unbalanced
+            },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     vi.useRealTimers();
@@ -2280,12 +2881,22 @@ describe('TriggerWatchersService — coverage fillers', () => {
 
   it('safeRegex: /pattern/flags format', async () => {
     vi.useFakeTimers();
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: {
-        host: 'x', username: 'u', password: 'p',
-        filterSubject: '/urgent/i',
-      } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: {
+              host: 'x',
+              username: 'u',
+              password: 'p',
+              filterSubject: '/urgent/i',
+            },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     vi.useRealTimers();
@@ -2296,7 +2907,10 @@ describe('TriggerWatchersService — coverage fillers', () => {
     vi.useFakeTimers();
     const { simpleParser } = await import('mailparser');
     (simpleParser as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      text: 'b', html: '', messageId: '<already-seen@x>', attachments: [],
+      text: 'b',
+      html: '',
+      messageId: '<already-seen@x>',
+      attachments: [],
     });
     // checkDup ritorna truthy → skip
     sqliteStmt.get.mockReturnValue({ found: 1 } as never);
@@ -2305,13 +2919,18 @@ describe('TriggerWatchersService — coverage fillers', () => {
         yield {
           uid: 1000,
           envelope: { subject: 'X', from: [{ address: 'a@x' }], to: [{ address: 'b@x' }] },
-          source: Buffer.from('mime'), flags: new Set(),
+          source: Buffer.from('mime'),
+          flags: new Set(),
         };
       },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -2332,9 +2951,17 @@ describe('TriggerWatchersService — coverage fillers', () => {
     m.dbStudioChanges
       .mockReturnValueOnce([])
       .mockReturnValueOnce([{ id: 99, op: 'insert', payload: {}, createdAt: 'now' }]);
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db', tableName: 't', pollIntervalSec: 5 } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_db_change',
+            config: { databaseId: 'db', tableName: 't', pollIntervalSec: 5 },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(5_000);
@@ -2347,12 +2974,22 @@ describe('TriggerWatchersService — coverage fillers', () => {
 
   it('parseAllowlist: input non-string non-array (numero/null) → tokens vuoti', async () => {
     vi.useFakeTimers();
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: {
-        host: 'x', username: 'u', password: 'p',
-        senderAllowlist: 42 as never, // numero, branch other
-      } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: {
+              host: 'x',
+              username: 'u',
+              password: 'p',
+              senderAllowlist: 42 as never, // numero, branch other
+            },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     vi.useRealTimers();
@@ -2361,12 +2998,22 @@ describe('TriggerWatchersService — coverage fillers', () => {
 
   it('parseAllowlist: array mista (alcuni non-string) → filtra solo string', async () => {
     vi.useFakeTimers();
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: {
-        host: 'x', username: 'u', password: 'p',
-        senderAllowlist: ['a@x.com', 42, null, 'b@x.com'] as never,
-      } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: {
+              host: 'x',
+              username: 'u',
+              password: 'p',
+              senderAllowlist: ['a@x.com', 42, null, 'b@x.com'] as never,
+            },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     vi.useRealTimers();
@@ -2377,7 +3024,10 @@ describe('TriggerWatchersService — coverage fillers', () => {
     vi.useFakeTimers();
     const { simpleParser } = await import('mailparser');
     (simpleParser as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      text: 'b', html: '', messageId: '<ms-fail@x>', attachments: [],
+      text: 'b',
+      html: '',
+      messageId: '<ms-fail@x>',
+      attachments: [],
     });
     imap.messageFlagsAdd.mockRejectedValueOnce(new Error('mark seen fail'));
     imap.logout.mockRejectedValueOnce(new Error('logout fail')); // also rejected to cover .catch(() => {})
@@ -2386,15 +3036,27 @@ describe('TriggerWatchersService — coverage fillers', () => {
         yield {
           uid: 1100,
           envelope: { subject: 'X', from: [{ address: 'a@x' }], to: [{ address: 'b@x' }] },
-          source: Buffer.from('mime'), flags: new Set(),
+          source: Buffer.from('mime'),
+          flags: new Set(),
         };
       },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: {
-        host: 'x', username: 'u', password: 'p', markSeen: 'always',
-      } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_imap',
+            config: {
+              host: 'x',
+              username: 'u',
+              password: 'p',
+              markSeen: 'always',
+            },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -2407,7 +3069,9 @@ describe('TriggerWatchersService — coverage fillers', () => {
     vi.useFakeTimers();
     const { simpleParser } = await import('mailparser');
     (simpleParser as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      text: 'b', html: '', messageId: '<grp@x>',
+      text: 'b',
+      html: '',
+      messageId: '<grp@x>',
       attachments: [],
       from: [{ value: [{ address: 'group-from@x.com' }] }],
       to: [{ value: [{ address: 'group-to@x.com' }] }],
@@ -2416,14 +3080,23 @@ describe('TriggerWatchersService — coverage fillers', () => {
       [Symbol.asyncIterator]: async function* () {
         yield {
           uid: 1200,
-          envelope: { subject: 'X', from: [{ address: 'envelope-from@x' }], to: [{ address: 'envelope-to@x' }] },
-          source: Buffer.from('mime'), flags: new Set(),
+          envelope: {
+            subject: 'X',
+            from: [{ address: 'envelope-from@x' }],
+            to: [{ address: 'envelope-to@x' }],
+          },
+          source: Buffer.from('mime'),
+          flags: new Set(),
         };
       },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -2435,15 +3108,26 @@ describe('TriggerWatchersService — coverage fillers', () => {
   it('db_change run.execute rejection con MORE wait → catch line covered', async () => {
     vi.useFakeTimers();
     let captureReject: (() => void) | undefined;
-    m.runsExecute.mockImplementationOnce(() => new Promise((_, rej) => {
-      captureReject = () => rej(new Error('db change exec capture'));
-    }));
+    m.runsExecute.mockImplementationOnce(
+      () =>
+        new Promise((_, rej) => {
+          captureReject = () => rej(new Error('db change exec capture'));
+        }),
+    );
     m.dbStudioChanges
       .mockReturnValueOnce([])
       .mockReturnValueOnce([{ id: 50, op: 'insert', payload: {}, createdAt: 'now' }]);
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db', tableName: 't', pollIntervalSec: 5 } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_db_change',
+            config: { databaseId: 'db', tableName: 't', pollIntervalSec: 5 },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(5_000);
@@ -2457,22 +3141,32 @@ describe('TriggerWatchersService — coverage fillers', () => {
     vi.useFakeTimers();
     const { simpleParser } = await import('mailparser');
     (simpleParser as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      text: 'b', html: '', messageId: '<rp@x>', attachments: [],
+      text: 'b',
+      html: '',
+      messageId: '<rp@x>',
+      attachments: [],
     });
     // recordProcessed è il PRIMO sqlite.run nella poll (INSERT OR IGNORE message_id)
-    sqliteStmt.run.mockImplementationOnce(() => { throw new Error('recordProcessed fail'); });
+    sqliteStmt.run.mockImplementationOnce(() => {
+      throw new Error('recordProcessed fail');
+    });
     imap.fetch.mockReturnValue({
       [Symbol.asyncIterator]: async function* () {
         yield {
           uid: 1300,
           envelope: { subject: 'X', from: [{ address: 'a@x' }], to: [{ address: 'b@x' }] },
-          source: Buffer.from('mime'), flags: new Set(),
+          source: Buffer.from('mime'),
+          flags: new Set(),
         };
       },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -2485,7 +3179,10 @@ describe('TriggerWatchersService — coverage fillers', () => {
     vi.useFakeTimers();
     const { simpleParser } = await import('mailparser');
     (simpleParser as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      text: 'b', html: '', messageId: '<dup-throw@x>', attachments: [],
+      text: 'b',
+      html: '',
+      messageId: '<dup-throw@x>',
+      attachments: [],
     });
     // Routing: prima get (imap_state) ok, seconda get (checkDup) throws
     let getCount = 0;
@@ -2499,13 +3196,18 @@ describe('TriggerWatchersService — coverage fillers', () => {
         yield {
           uid: 9999,
           envelope: { subject: 'X', from: [{ address: 'a@x' }], to: [{ address: 'b@x' }] },
-          source: Buffer.from('mime'), flags: new Set(),
+          source: Buffer.from('mime'),
+          flags: new Set(),
         };
       },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -2519,7 +3221,10 @@ describe('TriggerWatchersService — coverage fillers', () => {
     vi.useFakeTimers();
     const { simpleParser } = await import('mailparser');
     (simpleParser as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      text: 'b', html: '', messageId: '<rp-throw@x>', attachments: [],
+      text: 'b',
+      html: '',
+      messageId: '<rp-throw@x>',
+      attachments: [],
     });
     // run routing: tutti i run throw → primo run è recordProcessed
     sqliteStmt.run.mockImplementation((() => {
@@ -2530,13 +3235,18 @@ describe('TriggerWatchersService — coverage fillers', () => {
         yield {
           uid: 8888,
           envelope: { subject: 'X', from: [{ address: 'a@x' }], to: [{ address: 'b@x' }] },
-          source: Buffer.from('mime'), flags: new Set(),
+          source: Buffer.from('mime'),
+          flags: new Set(),
         };
       },
     });
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          { id: 'n1', defId: 'trigger_imap', config: { host: 'x', username: 'u', password: 'p' } },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await vi.advanceTimersByTimeAsync(60_000);
@@ -2547,13 +3257,23 @@ describe('TriggerWatchersService — coverage fillers', () => {
   });
 
   it('db_change run.execute fail (catch handler exercised w/ real timers)', async () => {
-    m.runsExecute.mockImplementation(async () => { throw new Error('exec catch'); });
+    m.runsExecute.mockImplementation(async () => {
+      throw new Error('exec catch');
+    });
     m.dbStudioChanges
       .mockReturnValueOnce([])
       .mockReturnValueOnce([{ id: 77, op: 'insert', payload: {}, createdAt: 'now' }]);
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_db_change', config: { databaseId: 'db', tableName: 't', pollIntervalSec: 2 } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [
+          {
+            id: 'n1',
+            defId: 'trigger_db_change',
+            config: { databaseId: 'db', tableName: 't', pollIntervalSec: 2 },
+          },
+        ],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     // Real timers — wait 2.5s for poll to fire + catch microtask
@@ -2567,29 +3287,62 @@ describe('TriggerWatchersService — coverage fillers', () => {
 // WebSocket trigger — e2e con socket REALE (ws non è mockato)
 // ════════════════════════════════════════════════════════════════════
 describe('TriggerWatchersService — WebSocket trigger (socket reale)', () => {
-  async function startWss(onConn: (ws: WebSocket) => void): Promise<{ port: number; close: () => Promise<void> }> {
+  async function startWss(
+    onConn: (ws: WebSocket) => void,
+  ): Promise<{ port: number; close: () => Promise<void> }> {
     const wss = new WebSocketServer({ port: 0 });
-    await new Promise<void>((r) => { wss.on('listening', () => { r(); }); });
+    await new Promise<void>((r) => {
+      wss.on('listening', () => {
+        r();
+      });
+    });
     wss.on('connection', onConn);
     return {
       port: (wss.address() as AddressInfo).port,
-      close: () => new Promise<void>((r) => { wss.close(() => { r(); }); }),
+      close: () =>
+        new Promise<void>((r) => {
+          wss.close(() => {
+            r();
+          });
+        }),
     };
   }
   function wsWf(port: number, extra: Record<string, unknown> = {}) {
-    return makeWf({ nodes: [{ id: 'n1', defId: 'trigger_websocket', config: { url: `ws://127.0.0.1:${port}`, pingIntervalSec: '0', maxMessagesPerSec: '0', ...extra } }] });
+    return makeWf({
+      nodes: [
+        {
+          id: 'n1',
+          defId: 'trigger_websocket',
+          config: {
+            url: `ws://127.0.0.1:${port}`,
+            pingIntervalSec: '0',
+            maxMessagesPerSec: '0',
+            ...extra,
+          },
+        },
+      ],
+    });
   }
 
   // I test usano un WebSocketServer reale su 127.0.0.1 (loopback): il guard SSRF
   // lo bloccherebbe (correttamente, in prod). Lo allowlistiamo come farebbe
   // l'operatore per un servizio WS interno legittimo → i test real-socket girano.
-  beforeEach(() => { process.env.MEDEA_INTERNAL_HOST_ALLOWLIST = '127.0.0.1'; });
-  afterEach(() => { delete process.env.MEDEA_INTERNAL_HOST_ALLOWLIST; });
+  beforeEach(() => {
+    process.env.MEDEA_INTERNAL_HOST_ALLOWLIST = '127.0.0.1';
+  });
+  afterEach(() => {
+    delete process.env.MEDEA_INTERNAL_HOST_ALLOWLIST;
+  });
 
   it('connette + riceve messaggio → run.execute(triggerType=websocket, data JSON parsata)', async () => {
-    const server = await startWss((ws) => { ws.send(JSON.stringify({ type: 'trade', price: 42 })); });
+    const server = await startWss((ws) => {
+      ws.send(JSON.stringify({ type: 'trade', price: 42 }));
+    });
     const fired = new Promise<Record<string, unknown>>((resolve) => {
-      m.runsExecute.mockImplementation(async (arg: Record<string, unknown>) => { resolve(arg); return { runId: 'r' }; });
+      m.runsExecute.mockImplementation(async (arg: Record<string, unknown>) => {
+        resolve(arg);
+        return { runId: 'r' };
+      });
     });
     m.workflowsList.mockResolvedValue([wsWf(server.port)]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
@@ -2606,7 +3359,9 @@ describe('TriggerWatchersService — WebSocket trigger (socket reale)', () => {
   }, 10_000);
 
   it('JSON pointer di filtro: messaggio senza il campo → NESSUN run', async () => {
-    const server = await startWss((ws) => { ws.send(JSON.stringify({ other: 1 })); });
+    const server = await startWss((ws) => {
+      ws.send(JSON.stringify({ other: 1 }));
+    });
     m.workflowsList.mockResolvedValue([wsWf(server.port, { messagePointer: '/type' })]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
@@ -2618,9 +3373,17 @@ describe('TriggerWatchersService — WebSocket trigger (socket reale)', () => {
 
   it('messaggio di subscribe inviato on-open', async () => {
     let resolveMsg!: (s: string) => void;
-    const received = new Promise<string>((r) => { resolveMsg = r; });
-    const server = await startWss((ws) => { ws.on('message', (d: Buffer) => { resolveMsg(d.toString('utf8')); }); });
-    m.workflowsList.mockResolvedValue([wsWf(server.port, { subscribeMessage: '{"op":"subscribe"}' })]);
+    const received = new Promise<string>((r) => {
+      resolveMsg = r;
+    });
+    const server = await startWss((ws) => {
+      ws.on('message', (d: Buffer) => {
+        resolveMsg(d.toString('utf8'));
+      });
+    });
+    m.workflowsList.mockResolvedValue([
+      wsWf(server.port, { subscribeMessage: '{"op":"subscribe"}' }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     expect(await received).toBe('{"op":"subscribe"}');
@@ -2629,9 +3392,14 @@ describe('TriggerWatchersService — WebSocket trigger (socket reale)', () => {
   }, 10_000);
 
   it('jsonParse=false → data resta la stringa grezza', async () => {
-    const server = await startWss((ws) => { ws.send('hello-raw'); });
+    const server = await startWss((ws) => {
+      ws.send('hello-raw');
+    });
     const fired = new Promise<Record<string, unknown>>((resolve) => {
-      m.runsExecute.mockImplementation(async (arg: Record<string, unknown>) => { resolve(arg); return { runId: 'r' }; });
+      m.runsExecute.mockImplementation(async (arg: Record<string, unknown>) => {
+        resolve(arg);
+        return { runId: 'r' };
+      });
     });
     m.workflowsList.mockResolvedValue([wsWf(server.port, { jsonParse: 'false' })]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
@@ -2644,9 +3412,11 @@ describe('TriggerWatchersService — WebSocket trigger (socket reale)', () => {
   }, 10_000);
 
   it('URL non ws:// → watcher skipped (nessun crash, nessun run)', async () => {
-    m.workflowsList.mockResolvedValue([makeWf({
-      nodes: [{ id: 'n1', defId: 'trigger_websocket', config: { url: 'http://nope' } }],
-    })]);
+    m.workflowsList.mockResolvedValue([
+      makeWf({
+        nodes: [{ id: 'n1', defId: 'trigger_websocket', config: { url: 'http://nope' } }],
+      }),
+    ]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
     await svc.start();
     await new Promise((r) => setTimeout(r, 200));
@@ -2660,12 +3430,18 @@ describe('TriggerWatchersService — WebSocket trigger (socket reale)', () => {
 
   it('CARATTERIZZAZIONE stop(): chiude la connessione viva — il server vede la close', async () => {
     let resolveConn!: () => void;
-    const connected = new Promise<void>((r) => { resolveConn = r; });
+    const connected = new Promise<void>((r) => {
+      resolveConn = r;
+    });
     let resolveClosed!: () => void;
-    const closed = new Promise<void>((r) => { resolveClosed = r; });
+    const closed = new Promise<void>((r) => {
+      resolveClosed = r;
+    });
     const server = await startWss((ws) => {
       resolveConn();
-      ws.on('close', () => { resolveClosed(); });
+      ws.on('close', () => {
+        resolveClosed();
+      });
     });
     m.workflowsList.mockResolvedValue([wsWf(server.port)]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
@@ -2678,12 +3454,18 @@ describe('TriggerWatchersService — WebSocket trigger (socket reale)', () => {
 
   it('CARATTERIZZAZIONE reload(): workflow rimosso → watcher smantellato, il server vede la close, NESSUN run dai messaggi successivi', async () => {
     let resolveConn!: () => void;
-    const connected = new Promise<void>((r) => { resolveConn = r; });
+    const connected = new Promise<void>((r) => {
+      resolveConn = r;
+    });
     let resolveClosed!: () => void;
-    const closed = new Promise<void>((r) => { resolveClosed = r; });
+    const closed = new Promise<void>((r) => {
+      resolveClosed = r;
+    });
     const server = await startWss((ws) => {
       resolveConn();
-      ws.on('close', () => { resolveClosed(); });
+      ws.on('close', () => {
+        resolveClosed();
+      });
     });
     m.workflowsList.mockResolvedValue([wsWf(server.port)]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);
@@ -2708,7 +3490,10 @@ describe('TriggerWatchersService — WebSocket trigger (socket reale)', () => {
       }
     });
     const fired = new Promise<Record<string, unknown>>((resolve) => {
-      m.runsExecute.mockImplementation(async (arg: Record<string, unknown>) => { resolve(arg); return { runId: 'r' }; });
+      m.runsExecute.mockImplementation(async (arg: Record<string, unknown>) => {
+        resolve(arg);
+        return { runId: 'r' };
+      });
     });
     m.workflowsList.mockResolvedValue([wsWf(server.port)]);
     const svc = new TriggerWatchersService(fakeEventBus() as never);

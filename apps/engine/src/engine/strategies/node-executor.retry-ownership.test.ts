@@ -19,7 +19,11 @@ import { __forTestRunWithRetry } from './node-executor.strategy.js';
 import type { DispatchContext, NodeExecutionContext } from './types.js';
 import { NetworkError } from '@medea/engine-nodes-stdlib';
 
-function makeCtx(opts: { selfManagedRetry?: boolean; retryStrategy?: string; retryCount?: number }): DispatchContext {
+function makeCtx(opts: {
+  selfManagedRetry?: boolean;
+  retryStrategy?: string;
+  retryCount?: number;
+}): DispatchContext {
   return {
     node: {
       id: 'n1',
@@ -32,7 +36,12 @@ function makeCtx(opts: { selfManagedRetry?: boolean; retryStrategy?: string; ret
     },
     interpolatedConfig: {},
     carriedInput: {},
-    module: { def: { label: 'Test', ...(opts.selfManagedRetry !== undefined ? { selfManagedRetry: opts.selfManagedRetry } : {}) } },
+    module: {
+      def: {
+        label: 'Test',
+        ...(opts.selfManagedRetry !== undefined ? { selfManagedRetry: opts.selfManagedRetry } : {}),
+      },
+    },
   } as unknown as DispatchContext;
 }
 const execCtx = {} as NodeExecutionContext;
@@ -50,7 +59,11 @@ async function countEngineAttempts(ctx: DispatchContext): Promise<number> {
 
 describe('🚨 [GUARD anti-doppione] runWithRetry — un solo owner del retry', () => {
   it('🚨 nodo SELF-MANAGED + retryStrategy=auto → engine NON ritenta (1 sola chiamata, il nodo ritenta da sé)', async () => {
-    expect(await countEngineAttempts(makeCtx({ selfManagedRetry: true, retryStrategy: 'auto', retryCount: 3 }))).toBe(1);
+    expect(
+      await countEngineAttempts(
+        makeCtx({ selfManagedRetry: true, retryStrategy: 'auto', retryCount: 3 }),
+      ),
+    ).toBe(1);
   });
 
   it('🚨 nodo SELF-MANAGED senza retryStrategy (default auto) → engine NON ritenta (1 chiamata)', async () => {
@@ -61,15 +74,27 @@ describe('🚨 [GUARD anti-doppione] runWithRetry — un solo owner del retry', 
     expect(await countEngineAttempts(makeCtx({ retryCount: 3 }))).toBe(4);
   });
 
-  it('🚨 override retryStrategy=workflow su nodo self-managed → engine ritenta (4) — l\'utente sposta il retry al motore', async () => {
-    expect(await countEngineAttempts(makeCtx({ selfManagedRetry: true, retryStrategy: 'workflow', retryCount: 3 }))).toBe(4);
+  it("🚨 override retryStrategy=workflow su nodo self-managed → engine ritenta (4) — l'utente sposta il retry al motore", async () => {
+    expect(
+      await countEngineAttempts(
+        makeCtx({ selfManagedRetry: true, retryStrategy: 'workflow', retryCount: 3 }),
+      ),
+    ).toBe(4);
   });
 
   it('🚨 retryStrategy=none → engine NON ritenta (1) anche su nodo NON self-managed', async () => {
-    expect(await countEngineAttempts(makeCtx({ selfManagedRetry: false, retryStrategy: 'none', retryCount: 3 }))).toBe(1);
+    expect(
+      await countEngineAttempts(
+        makeCtx({ selfManagedRetry: false, retryStrategy: 'none', retryCount: 3 }),
+      ),
+    ).toBe(1);
   });
 
   it('🚨 retryStrategy=node su nodo NON self-managed → engine NON ritenta (1) — il retry è "del nodo" (che però non lo fa → zero retry, niente engine)', async () => {
-    expect(await countEngineAttempts(makeCtx({ selfManagedRetry: false, retryStrategy: 'node', retryCount: 3 }))).toBe(1);
+    expect(
+      await countEngineAttempts(
+        makeCtx({ selfManagedRetry: false, retryStrategy: 'node', retryCount: 3 }),
+      ),
+    ).toBe(1);
   });
 });

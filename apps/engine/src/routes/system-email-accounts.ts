@@ -15,8 +15,14 @@ import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { createTransport } from 'nodemailer';
 import { ImapFlow } from 'imapflow';
-import { SystemEmailAccountsService, type SystemEmailAccount } from '@/services/system-email-accounts.service.js';
-import { EmailDeliverabilityService, type DeliverabilityReport } from '@/services/email-deliverability.service.js';
+import {
+  SystemEmailAccountsService,
+  type SystemEmailAccount,
+} from '@/services/system-email-accounts.service.js';
+import {
+  EmailDeliverabilityService,
+  type DeliverabilityReport,
+} from '@/services/email-deliverability.service.js';
 import { requireRole } from '@/middleware/rbac.js';
 import { logger } from '@/lib/logger.js';
 import { getTenantId } from '@/lib/tenant.js';
@@ -30,7 +36,12 @@ const audit = new AuditLogService();
 // I /test si connettono a SMTP/IMAP (handshake reale) → costosi e abusabili.
 // Sliding-window per (tenant,user). N3 audit: senza, un click-loop o script
 // satura connessioni e GC. Manuale → limiti generosi ma finiti.
-const emailTestRateLimit = rateLimit({ windowMs: 60_000, perUser: 10, perTenant: 20, label: 'email-test' });
+const emailTestRateLimit = rateLimit({
+  windowMs: 60_000,
+  perUser: 10,
+  perTenant: 20,
+  label: 'email-test',
+});
 
 // SSRF/port-scan: l'host SMTP/IMAP è input utente e a runtime ci si CONNETTE
 // (createTransport / ImapFlow). Senza guard un owner poteva puntarlo a host
@@ -39,7 +50,8 @@ const emailTestRateLimit = rateLimit({ windowMs: 60_000, perUser: 10, perTenant:
 function isPublicMailHost(host: string): boolean {
   return validateUrlForFetch(`https://${host}`).ok;
 }
-const HOST_SSRF_MSG = 'host interno/privato/localhost bloccato (protezione SSRF): usa un mail server pubblico';
+const HOST_SSRF_MSG =
+  'host interno/privato/localhost bloccato (protezione SSRF): usa un mail server pubblico';
 
 const UpsertSchema = z.object({
   label: z.string().min(1).max(120),
@@ -53,12 +65,14 @@ const UpsertSchema = z.object({
     /** Empty string means "keep existing password" on UPDATE. Required on CREATE. */
     password: z.string(),
   }),
-  imap: z.object({
-    host: z.string().min(1).refine(isPublicMailHost, { message: HOST_SSRF_MSG }),
-    port: z.number().int().positive(),
-    username: z.string().min(1),
-    password: z.string(),
-  }).optional(),
+  imap: z
+    .object({
+      host: z.string().min(1).refine(isPublicMailHost, { message: HOST_SSRF_MSG }),
+      port: z.number().int().positive(),
+      username: z.string().min(1),
+      password: z.string(),
+    })
+    .optional(),
 });
 
 export function createSystemEmailAccountsRoutes(): Hono {
@@ -87,7 +101,8 @@ export function createSystemEmailAccountsRoutes(): Hono {
     const auth = c.get('auth');
     if (!auth) return c.json({ error: 'Unauthorized' }, 401);
     const body = c.req.valid('json');
-    if (!body.smtp.password) return c.json({ error: 'SMTP password obbligatoria alla creazione' }, 400);
+    if (!body.smtp.password)
+      return c.json({ error: 'SMTP password obbligatoria alla creazione' }, 400);
     const tenantId = getTenantId(c);
     const upsertArgs: Parameters<typeof service.upsert>[0] = {
       tenantId,
@@ -168,7 +183,10 @@ export function createSystemEmailAccountsRoutes(): Hono {
     // pre-guard (il gate primario è il refine dell'UpsertSchema).
     assertUrlSafe(`https://${acct.smtp.host}`);
 
-    let smtpAuth: { type: 'OAuth2'; user: string; accessToken: string } | { user: string; pass: string } | undefined;
+    let smtpAuth:
+      | { type: 'OAuth2'; user: string; accessToken: string }
+      | { user: string; pass: string }
+      | undefined;
     try {
       smtpAuth = await resolveSmtpAuth(acct, tenantId, id, service);
     } catch (err) {
@@ -185,13 +203,19 @@ export function createSystemEmailAccountsRoutes(): Hono {
     });
     try {
       await transporter.verify();
-      return c.json({ ok: true, message: `Connessione SMTP a ${acct.smtp.host}:${acct.smtp.port.toString()} riuscita ✓ (${acct.authType === 'oauth2' ? 'OAuth2' : 'password'})` });
+      return c.json({
+        ok: true,
+        message: `Connessione SMTP a ${acct.smtp.host}:${acct.smtp.port.toString()} riuscita ✓ (${acct.authType === 'oauth2' ? 'OAuth2' : 'password'})`,
+      });
     } catch (err) {
       logger.warn({ err, id }, 'SMTP verify failed');
-      return c.json({
-        ok: false,
-        error: err instanceof Error ? err.message : 'Connessione fallita',
-      }, 502);
+      return c.json(
+        {
+          ok: false,
+          error: err instanceof Error ? err.message : 'Connessione fallita',
+        },
+        502,
+      );
     } finally {
       transporter.close();
     }
@@ -210,9 +234,19 @@ export function createSystemEmailAccountsRoutes(): Hono {
     assertUrlSafe(`https://${acct.smtp.host}`);
     if (acct.imap?.host) assertUrlSafe(`https://${acct.imap.host}`);
     let body: { sendProbe?: boolean; probeRecipient?: string } = {};
-    try { body = await c.req.json(); } catch { /* empty body ok */ }
+    try {
+      body = await c.req.json();
+    } catch {
+      /* empty body ok */
+    }
 
-    interface Step { phase: string; ok: boolean; latencyMs: number; detail?: string; error?: string }
+    interface Step {
+      phase: string;
+      ok: boolean;
+      latencyMs: number;
+      detail?: string;
+      error?: string;
+    }
     const steps: Step[] = [];
     let deliverability: DeliverabilityReport | null = null;
 
@@ -221,11 +255,19 @@ export function createSystemEmailAccountsRoutes(): Hono {
     {
       const t0 = Date.now();
       const tenantId = getTenantId(c);
-      let smtpAuth: { type: 'OAuth2'; user: string; accessToken: string } | { user: string; pass: string } | undefined;
+      let smtpAuth:
+        | { type: 'OAuth2'; user: string; accessToken: string }
+        | { user: string; pass: string }
+        | undefined;
       try {
         smtpAuth = await resolveSmtpAuth(acct, tenantId, id, service);
       } catch (err) {
-        steps.push({ phase: 'smtp_verify', ok: false, latencyMs: Date.now() - t0, error: err instanceof Error ? err.message : String(err) });
+        steps.push({
+          phase: 'smtp_verify',
+          ok: false,
+          latencyMs: Date.now() - t0,
+          error: err instanceof Error ? err.message : String(err),
+        });
         // Skip the rest of the SMTP block; transporter never created.
       }
       if (smtpAuth || steps[steps.length - 1]?.phase !== 'smtp_verify') {
@@ -239,9 +281,19 @@ export function createSystemEmailAccountsRoutes(): Hono {
         });
         try {
           await transporter.verify();
-          steps.push({ phase: 'smtp_verify', ok: true, latencyMs: Date.now() - t0, detail: `${acct.smtp.host}:${acct.smtp.port.toString()} (${acct.smtp.security}, ${acct.authType === 'oauth2' ? 'OAuth2' : 'password'})` });
+          steps.push({
+            phase: 'smtp_verify',
+            ok: true,
+            latencyMs: Date.now() - t0,
+            detail: `${acct.smtp.host}:${acct.smtp.port.toString()} (${acct.smtp.security}, ${acct.authType === 'oauth2' ? 'OAuth2' : 'password'})`,
+          });
         } catch (err) {
-          steps.push({ phase: 'smtp_verify', ok: false, latencyMs: Date.now() - t0, error: err instanceof Error ? err.message : String(err) });
+          steps.push({
+            phase: 'smtp_verify',
+            ok: false,
+            latencyMs: Date.now() - t0,
+            error: err instanceof Error ? err.message : String(err),
+          });
         } finally {
           transporter.close();
         }
@@ -252,41 +304,61 @@ export function createSystemEmailAccountsRoutes(): Hono {
     if (acct.imap?.host) {
       const t0 = Date.now();
       const tenantId = getTenantId(c);
-      let imapAuth: { user: string; accessToken: string } | { user: string; pass: string } | null = null;
+      let imapAuth: { user: string; accessToken: string } | { user: string; pass: string } | null =
+        null;
       try {
         imapAuth = await resolveImapAuth(acct, tenantId, id, service);
       } catch (err) {
-        steps.push({ phase: 'imap_connect', ok: false, latencyMs: Date.now() - t0, error: err instanceof Error ? err.message : String(err) });
+        steps.push({
+          phase: 'imap_connect',
+          ok: false,
+          latencyMs: Date.now() - t0,
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
       if (!imapAuth) {
         // Step already pushed by error branch above; jump out of IMAP block.
       } else {
-      const client = new ImapFlow({
-        host: acct.imap.host,
-        port: acct.imap.port,
-        secure: true,
-        auth: imapAuth,
-        logger: false,
-      });
-      try {
-        await client.connect();
-        steps.push({ phase: 'imap_connect', ok: true, latencyMs: Date.now() - t0, detail: `${acct.imap.host}:${acct.imap.port.toString()} TLS` });
-
-        const t1 = Date.now();
-        const lock = await client.getMailboxLock('INBOX');
-        const status = await client.status('INBOX', { messages: true, unseen: true });
-        lock.release();
-        steps.push({
-          phase: 'imap_inbox',
-          ok: true,
-          latencyMs: Date.now() - t1,
-          detail: `INBOX accessibile · ${status.messages?.toString() ?? '?'} messaggi · ${status.unseen?.toString() ?? '?'} non letti`,
+        const client = new ImapFlow({
+          host: acct.imap.host,
+          port: acct.imap.port,
+          secure: true,
+          auth: imapAuth,
+          logger: false,
         });
-        await client.logout();
-      } catch (err) {
-        steps.push({ phase: 'imap_connect', ok: false, latencyMs: Date.now() - t0, error: err instanceof Error ? err.message : String(err) });
-        try { client.close(); } catch { /* ignore */ }
-      }
+        try {
+          await client.connect();
+          steps.push({
+            phase: 'imap_connect',
+            ok: true,
+            latencyMs: Date.now() - t0,
+            detail: `${acct.imap.host}:${acct.imap.port.toString()} TLS`,
+          });
+
+          const t1 = Date.now();
+          const lock = await client.getMailboxLock('INBOX');
+          const status = await client.status('INBOX', { messages: true, unseen: true });
+          lock.release();
+          steps.push({
+            phase: 'imap_inbox',
+            ok: true,
+            latencyMs: Date.now() - t1,
+            detail: `INBOX accessibile · ${status.messages?.toString() ?? '?'} messaggi · ${status.unseen?.toString() ?? '?'} non letti`,
+          });
+          await client.logout();
+        } catch (err) {
+          steps.push({
+            phase: 'imap_connect',
+            ok: false,
+            latencyMs: Date.now() - t0,
+            error: err instanceof Error ? err.message : String(err),
+          });
+          try {
+            client.close();
+          } catch {
+            /* ignore */
+          }
+        }
       } // chiude else `if (imapAuth)`
     }
 
@@ -295,7 +367,12 @@ export function createSystemEmailAccountsRoutes(): Hono {
     if (body.sendProbe === true) {
       const smtpOk = steps.find((s) => s.phase === 'smtp_verify')?.ok;
       if (!smtpOk) {
-        steps.push({ phase: 'probe_send', ok: false, latencyMs: 0, error: 'SMTP non funziona — probe annullata' });
+        steps.push({
+          phase: 'probe_send',
+          ok: false,
+          latencyMs: 0,
+          error: 'SMTP non funziona — probe annullata',
+        });
       } else {
         // Recipient: caller-provided (best for deliverability), else fromAddress.
         // Note on "to-self": many providers silently drop email where from===to
@@ -308,47 +385,70 @@ export function createSystemEmailAccountsRoutes(): Hono {
         const t0 = Date.now();
         const subject = `FlowForge test probe · ${new Date().toISOString()}`;
         const tenantId = getTenantId(c);
-        let probeAuth: { type: 'OAuth2'; user: string; accessToken: string } | { user: string; pass: string } | undefined;
+        let probeAuth:
+          | { type: 'OAuth2'; user: string; accessToken: string }
+          | { user: string; pass: string }
+          | undefined;
         try {
           probeAuth = await resolveSmtpAuth(acct, tenantId, id, service);
         } catch (err) {
-          steps.push({ phase: 'probe_send', ok: false, latencyMs: Date.now() - t0, error: err instanceof Error ? err.message : String(err) });
+          steps.push({
+            phase: 'probe_send',
+            ok: false,
+            latencyMs: Date.now() - t0,
+            error: err instanceof Error ? err.message : String(err),
+          });
           probeAuth = undefined;
         }
-        const transporter = probeAuth ? createTransport({
-          host: acct.smtp.host,
-          port: acct.smtp.port,
-          secure: acct.smtp.security === 'tls',
-          requireTLS: acct.smtp.security === 'starttls',
-          auth: probeAuth,
-          connectionTimeout: 15_000,
-        }) : null;
+        const transporter = probeAuth
+          ? createTransport({
+              host: acct.smtp.host,
+              port: acct.smtp.port,
+              secure: acct.smtp.security === 'tls',
+              requireTLS: acct.smtp.security === 'starttls',
+              auth: probeAuth,
+              connectionTimeout: 15_000,
+            })
+          : null;
         if (!transporter) {
           // probe skipped — auth couldn't be built (step already pushed)
         } else {
-        try {
-          logger.info({ accountId: id, recipient, isLoopback }, 'Sending probe email');
-          const info = await transporter.sendMail({
-            from: acct.fromAddress,
-            to: recipient,
-            subject,
-            text: 'Questo è un test automatico di FlowForge per verificare la configurazione SMTP.\nSe lo ricevi (controlla anche lo spam), il setup funziona ✓',
-            headers: {
-              'X-FlowForge-Probe': '1',
-              'X-FlowForge-Account-Id': id,
-            },
-          });
-          logger.info({ accountId: id, messageId: info.messageId, accepted: info.accepted, rejected: info.rejected }, 'Probe email accepted by SMTP server');
-          const detail = isLoopback
-            ? `Inviata a ${recipient} (loopback — controlla anche SPAM) · ${info.messageId ?? ''}`
-            : `Inviata a ${recipient} · ${info.messageId ?? ''}`;
-          steps.push({ phase: 'probe_send', ok: true, latencyMs: Date.now() - t0, detail });
-        } catch (err) {
-          logger.warn({ err, accountId: id, recipient }, 'Probe send failed');
-          steps.push({ phase: 'probe_send', ok: false, latencyMs: Date.now() - t0, error: err instanceof Error ? err.message : String(err) });
-        } finally {
-          transporter.close();
-        }
+          try {
+            logger.info({ accountId: id, recipient, isLoopback }, 'Sending probe email');
+            const info = await transporter.sendMail({
+              from: acct.fromAddress,
+              to: recipient,
+              subject,
+              text: 'Questo è un test automatico di FlowForge per verificare la configurazione SMTP.\nSe lo ricevi (controlla anche lo spam), il setup funziona ✓',
+              headers: {
+                'X-FlowForge-Probe': '1',
+                'X-FlowForge-Account-Id': id,
+              },
+            });
+            logger.info(
+              {
+                accountId: id,
+                messageId: info.messageId,
+                accepted: info.accepted,
+                rejected: info.rejected,
+              },
+              'Probe email accepted by SMTP server',
+            );
+            const detail = isLoopback
+              ? `Inviata a ${recipient} (loopback — controlla anche SPAM) · ${info.messageId ?? ''}`
+              : `Inviata a ${recipient} · ${info.messageId ?? ''}`;
+            steps.push({ phase: 'probe_send', ok: true, latencyMs: Date.now() - t0, detail });
+          } catch (err) {
+            logger.warn({ err, accountId: id, recipient }, 'Probe send failed');
+            steps.push({
+              phase: 'probe_send',
+              ok: false,
+              latencyMs: Date.now() - t0,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          } finally {
+            transporter.close();
+          }
         } // chiude else `if (transporter)`
       }
     }
@@ -403,11 +503,12 @@ async function resolveSmtpAuth(
 ): Promise<{ type: 'OAuth2'; user: string; accessToken: string } | { user: string; pass: string }> {
   if (acct.authType === 'oauth2') {
     const tokens = service.resolveOAuthForExecutor(tenantId, accountId);
-    if (!tokens) throw new Error('Account OAuth2 ma tokens mancanti — riconnetti Gmail in Settings');
+    if (!tokens)
+      throw new Error('Account OAuth2 ma tokens mancanti — riconnetti Gmail in Settings');
     const accessToken = await ensureFreshAccessToken(tokens, tenantId, accountId, service);
     return { type: 'OAuth2', user: tokens.email, accessToken };
   }
-  if (!acct.smtp.password) throw new Error('Password SMTP mancante — riconfigura l\'account');
+  if (!acct.smtp.password) throw new Error("Password SMTP mancante — riconfigura l'account");
   return { user: acct.smtp.username, pass: acct.smtp.password };
 }
 
@@ -424,11 +525,12 @@ async function resolveImapAuth(
   if (!acct.imap) throw new Error('IMAP non configurato per questo account');
   if (acct.authType === 'oauth2') {
     const tokens = service.resolveOAuthForExecutor(tenantId, accountId);
-    if (!tokens) throw new Error('Account OAuth2 ma tokens mancanti — riconnetti Gmail in Settings');
+    if (!tokens)
+      throw new Error('Account OAuth2 ma tokens mancanti — riconnetti Gmail in Settings');
     const accessToken = await ensureFreshAccessToken(tokens, tenantId, accountId, service);
     return { user: tokens.email, accessToken };
   }
-  if (!acct.imap.password) throw new Error('Password IMAP mancante — riconfigura l\'account');
+  if (!acct.imap.password) throw new Error("Password IMAP mancante — riconfigura l'account");
   return { user: acct.imap.username, pass: acct.imap.password };
 }
 
@@ -457,7 +559,9 @@ async function ensureFreshAccessToken(
       });
       return refreshed.accessToken;
     } catch (err) {
-      throw new Error(`OAuth refresh fallito per ${tokens.email}: ${err instanceof Error ? err.message : String(err)} — riconnetti l'account Gmail in Settings.`);
+      throw new Error(
+        `OAuth refresh fallito per ${tokens.email}: ${err instanceof Error ? err.message : String(err)} — riconnetti l'account Gmail in Settings.`,
+      );
     }
   }
   return tokens.accessToken;

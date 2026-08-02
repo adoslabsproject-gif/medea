@@ -50,9 +50,13 @@ export function sqlSkeleton(sql: string): string {
       let depth = 1;
       i += 2;
       while (i < n && depth > 0) {
-        if (sql[i] === '/' && sql[i + 1] === '*') { depth += 1; i += 2; }
-        else if (sql[i] === '*' && sql[i + 1] === '/') { depth -= 1; i += 2; }
-        else i += 1;
+        if (sql[i] === '/' && sql[i + 1] === '*') {
+          depth += 1;
+          i += 2;
+        } else if (sql[i] === '*' && sql[i + 1] === '/') {
+          depth -= 1;
+          i += 2;
+        } else i += 1;
       }
       out += ' ';
       continue;
@@ -61,8 +65,14 @@ export function sqlSkeleton(sql: string): string {
     if (c === "'") {
       i += 1;
       while (i < n) {
-        if (sql[i] === "'" && sql[i + 1] === "'") { i += 2; continue; }
-        if (sql[i] === "'") { i += 1; break; }
+        if (sql[i] === "'" && sql[i + 1] === "'") {
+          i += 2;
+          continue;
+        }
+        if (sql[i] === "'") {
+          i += 1;
+          break;
+        }
         i += 1;
       }
       out += "''";
@@ -72,8 +82,14 @@ export function sqlSkeleton(sql: string): string {
     if (c === '"') {
       i += 1;
       while (i < n) {
-        if (sql[i] === '"' && sql[i + 1] === '"') { i += 2; continue; }
-        if (sql[i] === '"') { i += 1; break; }
+        if (sql[i] === '"' && sql[i + 1] === '"') {
+          i += 2;
+          continue;
+        }
+        if (sql[i] === '"') {
+          i += 1;
+          break;
+        }
         i += 1;
       }
       out += '""';
@@ -128,16 +144,22 @@ export function assertSelectOnly(sql: string): void {
   const skel = sqlSkeleton(trimmed);
 
   if (skel.includes(';')) {
-    throw new Error('db_sql_query: più statement non consentiti — una sola query SELECT. Rimuovi i ";" interni.');
+    throw new Error(
+      'db_sql_query: più statement non consentiti — una sola query SELECT. Rimuovi i ";" interni.',
+    );
   }
 
   const lead = skel.replace(/^\s+/, '').toLowerCase();
   if (!lead.startsWith('select') && !lead.startsWith('with')) {
-    throw new Error('db_sql_query: solo SELECT (e CTE WITH) consentiti. Per mutazioni usa db_insert / db_update / db_delete.');
+    throw new Error(
+      'db_sql_query: solo SELECT (e CTE WITH) consentiti. Per mutazioni usa db_insert / db_update / db_delete.',
+    );
   }
 
   const m = FORBIDDEN.exec(skel);
   if (m) {
-    throw new Error(`db_sql_query: parola chiave "${m[1]!.toUpperCase()}" non consentita — questo nodo è SOLO lettura (anche dentro un CTE). Per mutazioni usa db_insert / db_update / db_delete.`);
+    throw new Error(
+      `db_sql_query: parola chiave "${m[1]!.toUpperCase()}" non consentita — questo nodo è SOLO lettura (anche dentro un CTE). Per mutazioni usa db_insert / db_update / db_delete.`,
+    );
   }
 }

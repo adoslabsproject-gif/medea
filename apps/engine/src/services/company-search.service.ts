@@ -59,26 +59,68 @@ import { safeOutboundFetch } from '@/lib/safe-outbound-fetch.js';
 
 const DIRECTORY_BLOCKLIST = new Set([
   // Yacht/marine directory
-  'yachtall.com', 'yachtworld.com', 'yachtworld.co.uk', 'boats.com',
-  'yachtbrokers.com', 'theyachtmarket.com', 'boatsforsale.com',
-  'inautia.com', 'inautia.es', 'inautia.fr', 'yatco.com',
-  'yachtbuyer.com', 'boatshop24.com', 'yachtfocus.com',
-  'iyba.org', 'cyba.org',
+  'yachtall.com',
+  'yachtworld.com',
+  'yachtworld.co.uk',
+  'boats.com',
+  'yachtbrokers.com',
+  'theyachtmarket.com',
+  'boatsforsale.com',
+  'inautia.com',
+  'inautia.es',
+  'inautia.fr',
+  'yatco.com',
+  'yachtbuyer.com',
+  'boatshop24.com',
+  'yachtfocus.com',
+  'iyba.org',
+  'cyba.org',
   // Social / generic
-  'wikipedia.org', 'en.wikipedia.org', 'it.wikipedia.org', 'de.wikipedia.org',
-  'facebook.com', 'instagram.com', 'twitter.com', 'x.com', 'linkedin.com',
-  'youtube.com', 'tiktok.com', 'pinterest.com', 'reddit.com', 'quora.com',
+  'wikipedia.org',
+  'en.wikipedia.org',
+  'it.wikipedia.org',
+  'de.wikipedia.org',
+  'facebook.com',
+  'instagram.com',
+  'twitter.com',
+  'x.com',
+  'linkedin.com',
+  'youtube.com',
+  'tiktok.com',
+  'pinterest.com',
+  'reddit.com',
+  'quora.com',
   // Marketplace / e-commerce
-  'amazon.com', 'amazon.it', 'amazon.de', 'amazon.fr', 'amazon.es',
-  'ebay.com', 'ebay.it', 'aliexpress.com', 'alibaba.com',
+  'amazon.com',
+  'amazon.it',
+  'amazon.de',
+  'amazon.fr',
+  'amazon.es',
+  'ebay.com',
+  'ebay.it',
+  'aliexpress.com',
+  'alibaba.com',
   // Job/biz directory
-  'indeed.com', 'glassdoor.com', 'crunchbase.com', 'bloomberg.com',
-  'opencorporates.com', 'dnb.com', 'zoominfo.com',
+  'indeed.com',
+  'glassdoor.com',
+  'crunchbase.com',
+  'bloomberg.com',
+  'opencorporates.com',
+  'dnb.com',
+  'zoominfo.com',
   // Generic news/media
-  'forbes.com', 'reuters.com', 'bloomberg.com', 'ilsole24ore.com',
-  'corriere.it', 'repubblica.it', 'lastampa.it',
+  'forbes.com',
+  'reuters.com',
+  'bloomberg.com',
+  'ilsole24ore.com',
+  'corriere.it',
+  'repubblica.it',
+  'lastampa.it',
   // Generic blogs/aggregator
-  'medium.com', 'wordpress.com', 'blogspot.com', 'wix.com',
+  'medium.com',
+  'wordpress.com',
+  'blogspot.com',
+  'wix.com',
   'pages.tldr.tech',
 ]);
 
@@ -171,9 +213,15 @@ export async function companySearch(
         expandPrompt,
         undefined,
         [],
-        (u) => { llmUsage = { input: u.input, output: u.output, fromApi: u.fromApi }; },
+        (u) => {
+          llmUsage = { input: u.input, output: u.output, fromApi: u.fromApi };
+        },
       );
-      llmExchange = { system: 'Sei un assistente esperto di lead-gen B2B. Rispondi sempre con JSON valido.', user: expandPrompt, response: raw };
+      llmExchange = {
+        system: 'Sei un assistente esperto di lead-gen B2B. Rispondi sempre con JSON valido.',
+        user: expandPrompt,
+        response: raw,
+      };
       const expanded = parseQueries(raw);
       if (expanded.length > 0) {
         queries = [seedPrompt, ...expanded].slice(0, expansionCount + 1);
@@ -181,7 +229,10 @@ export async function companySearch(
       }
     } catch (err) {
       if (!(err instanceof NoLlmProviderError)) {
-        logger.warn({ err, tenantId: options.tenantId }, 'company-search: LLM expansion failed, fallback to seed only');
+        logger.warn(
+          { err, tenantId: options.tenantId },
+          'company-search: LLM expansion failed, fallback to seed only',
+        );
       }
     }
   }
@@ -190,30 +241,41 @@ export async function companySearch(
   // Lancio max 3 query in parallel per evitare rate-limit dei provider
   // (DDG su IP cloud blocca con CAPTCHA se vede burst di 9+ richieste).
   // Throttle inter-batch di 500ms per essere good-citizen.
-  const rawResults: { url: string; title: string; snippet: string; provider: string; query: string }[] = [];
+  const rawResults: {
+    url: string;
+    title: string;
+    snippet: string;
+    provider: string;
+    query: string;
+  }[] = [];
   const CONCURRENCY = 3;
   for (let i = 0; i < queries.length; i += CONCURRENCY) {
     const batch = queries.slice(i, i + CONCURRENCY);
-    await Promise.all(batch.map(async (q) => {
-      try {
-        const r = await webSearch(q, resultsPerQuery);
-        for (const item of r.results) {
-          rawResults.push({
-            url: item.url, title: item.title, snippet: item.snippet,
-            provider: r.provider, query: q,
-          });
+    await Promise.all(
+      batch.map(async (q) => {
+        try {
+          const r = await webSearch(q, resultsPerQuery);
+          for (const item of r.results) {
+            rawResults.push({
+              url: item.url,
+              title: item.title,
+              snippet: item.snippet,
+              provider: r.provider,
+              query: q,
+            });
+          }
+        } catch (err) {
+          logger.debug({ err, query: q }, 'company-search: query failed');
         }
-      } catch (err) {
-        logger.debug({ err, query: q }, 'company-search: query failed');
-      }
-    }));
+      }),
+    );
     // Throttle 500ms tra batch (non sull'ultimo)
     if (i + CONCURRENCY < queries.length) await new Promise((r) => setTimeout(r, 500));
   }
   const totalRaw = rawResults.length;
 
   // ─── 3. De-dup per registrable domain ──────────────────────────────
-  const byDomain = new Map<string, typeof rawResults[number]>();
+  const byDomain = new Map<string, (typeof rawResults)[number]>();
   for (const r of rawResults) {
     const dom = registrableDomain(r.url);
     if (!dom) continue;
@@ -222,7 +284,8 @@ export async function companySearch(
 
   // ─── 4. Anti-directory filtering ──────────────────────────────────
   const filteredDirectory: string[] = [];
-  const candidates: (typeof rawResults[number] & { domain: string; boostFactors: string[] })[] = [];
+  const candidates: ((typeof rawResults)[number] & { domain: string; boostFactors: string[] })[] =
+    [];
   for (const [domain, r] of byDomain) {
     if (blocklist.has(domain)) {
       filteredDirectory.push(domain);
@@ -298,7 +361,8 @@ export async function companySearch(
 // ─────────────────────────────────────────────────────────────────────────
 
 function buildExpansionPrompt(seed: string, count: number, country?: string): string {
-  return `Sei un esperto di lead-gen B2B. Genera ${count.toString()} query di ricerca DIVERSIFICATE per trovare ` +
+  return (
+    `Sei un esperto di lead-gen B2B. Genera ${count.toString()} query di ricerca DIVERSIFICATE per trovare ` +
     `AZIENDE PRODUTTRICI (non directory, non blog, non marketplace) relative a: "${seed}".\n\n` +
     `Regole:\n` +
     `- Mix italiano + inglese\n` +
@@ -307,7 +371,8 @@ function buildExpansionPrompt(seed: string, count: number, country?: string): st
     `${country ? `- Almeno 2 query mirate a ${country.toUpperCase()} (es. site:.${country} oppure "Italia")\n` : ''}` +
     `- Evita query troppo generiche\n\n` +
     `Output: SOLO una lista JSON di stringhe, una query per elemento. Niente preamble, niente markdown.\n` +
-    `Esempio output: ["query 1", "query 2", "query 3"]`;
+    `Esempio output: ["query 1", "query 2", "query 3"]`
+  );
 }
 
 function parseQueries(raw: string): string[] {
@@ -315,13 +380,20 @@ function parseQueries(raw: string): string[] {
   try {
     const parsed = JSON.parse(cleaned) as unknown;
     if (Array.isArray(parsed)) {
-      return parsed.filter((q): q is string => typeof q === 'string' && q.trim().length > 3).map((q) => q.trim());
+      return parsed
+        .filter((q): q is string => typeof q === 'string' && q.trim().length > 3)
+        .map((q) => q.trim());
     }
   } catch {
     // Fallback: split per \n e prendi righe non vuote
     return cleaned
       .split(/\n/)
-      .map((l) => l.replace(/^[-•*\d.)\s]+/, '').replace(/^["']|["']$/g, '').trim())
+      .map((l) =>
+        l
+          .replace(/^[-•*\d.)\s]+/, '')
+          .replace(/^["']|["']$/g, '')
+          .trim(),
+      )
       .filter((l) => l.length > 3 && !l.startsWith('{') && !l.startsWith('}'));
   }
   return [];
@@ -343,15 +415,18 @@ async function headValidate(url: string, timeoutMs: number): Promise<boolean> {
   if (!guard.ok) return false;
 
   const ctrl = new AbortController();
-  const to = setTimeout(() => { ctrl.abort(); }, timeoutMs);
+  const to = setTimeout(() => {
+    ctrl.abort();
+  }, timeoutMs);
   try {
     // redirect manual + re-validate (anti DNS-rebind / redirect-to-internal).
     let currentUrl = url;
-    const MAX_HOPS = 3;   // HEAD richiede meno hop di GET
+    const MAX_HOPS = 3; // HEAD richiede meno hop di GET
     for (let hop = 0; hop <= MAX_HOPS; hop += 1) {
       const res = await safeOutboundFetch(currentUrl, {
         method: 'HEAD',
-        externalSignal: ctrl.signal, timeoutMs: 0,
+        externalSignal: ctrl.signal,
+        timeoutMs: 0,
         redirect: 'manual',
         headers: { 'User-Agent': 'FlowForgeCompanySearch/1.0' },
       });
@@ -366,9 +441,17 @@ async function headValidate(url: string, timeoutMs: number): Promise<boolean> {
       }
       const next = res.headers.get('location') ?? '';
       let nextUrl: string;
-      try { nextUrl = new URL(next, currentUrl).toString(); } catch { clearTimeout(to); return false; }
+      try {
+        nextUrl = new URL(next, currentUrl).toString();
+      } catch {
+        clearTimeout(to);
+        return false;
+      }
       const hopGuard = validateUrlForFetch(nextUrl);
-      if (!hopGuard.ok) { clearTimeout(to); return false; }
+      if (!hopGuard.ok) {
+        clearTimeout(to);
+        return false;
+      }
       currentUrl = nextUrl;
     }
     clearTimeout(to);

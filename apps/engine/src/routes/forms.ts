@@ -61,8 +61,11 @@ function renderField(field: FormField): string {
   const label = `<label class="block text-sm font-medium text-gray-700 mb-1" for="${escapeHtml(field.key)}">${escapeHtml(field.label)}${field.required ? ' <span class="text-red-500">*</span>' : ''}</label>`;
   const required = field.required ? 'required' : '';
   const placeholder = field.placeholder ? `placeholder="${escapeHtml(field.placeholder)}"` : '';
-  const help = field.help ? `<p class="mt-1 text-xs text-gray-500">${escapeHtml(field.help)}</p>` : '';
-  const base = 'class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"';
+  const help = field.help
+    ? `<p class="mt-1 text-xs text-gray-500">${escapeHtml(field.help)}</p>`
+    : '';
+  const base =
+    'class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"';
 
   let input: string;
   switch (field.type) {
@@ -84,7 +87,12 @@ function renderField(field: FormField): string {
   return `<div class="mb-4">${label}${input}${help}</div>`;
 }
 
-function renderForm(opts: { title: string; submitLabel: string; fields: FormField[]; action: string }): string {
+function renderForm(opts: {
+  title: string;
+  submitLabel: string;
+  fields: FormField[];
+  action: string;
+}): string {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -141,7 +149,10 @@ export function createFormRoutes(eventBus: IEventBus): Hono {
    * Restituisce { ok: true, workflow, node, tenantId } se l'auth passa,
    * altrimenti { ok: false, status, message } per la response 4xx.
    */
-  async function authFormRequest(workflowId: string, token: string): Promise<
+  async function authFormRequest(
+    workflowId: string,
+    token: string,
+  ): Promise<
     | { ok: true; workflow: Workflow; node: CanvasNode; tenantId: string }
     | { ok: false; status: 400 | 403 | 404 | 410; message: string }
   > {
@@ -150,16 +161,25 @@ export function createFormRoutes(eventBus: IEventBus): Hono {
     if (!workflow) return { ok: false, status: 404, message: 'Form not found' };
     const node = findFormNode(workflow);
     if (!node) return { ok: false, status: 404, message: 'Workflow has no form trigger' };
-    const expectedToken = typeof node.config.publicToken === 'string' ? node.config.publicToken : '';
+    const expectedToken =
+      typeof node.config.publicToken === 'string' ? node.config.publicToken : '';
     // Se il workflow non ha publicToken configurato (es. workflow legacy
     // creati prima del fix sicurezza 2026-05-23), rifiutiamo l'accesso.
     // L'utente deve aprire l'editor, salvare il workflow (il backend
     // auto-genera il token), e condividere il nuovo URL.
     if (!expectedToken) {
-      return { ok: false, status: 410, message: 'Form non configurato per submission pubblica. Apri l\'editor, salva il workflow per generare il token, poi ri-condividi il nuovo URL.' };
+      return {
+        ok: false,
+        status: 410,
+        message:
+          "Form non configurato per submission pubblica. Apri l'editor, salva il workflow per generare il token, poi ri-condividi il nuovo URL.",
+      };
     }
     if (!safeTokenCompare(expectedToken, token)) {
-      logger.warn({ workflowId, ip: 'redacted' }, 'forms: invalid token (potential enumeration attempt)');
+      logger.warn(
+        { workflowId, ip: 'redacted' },
+        'forms: invalid token (potential enumeration attempt)',
+      );
       return { ok: false, status: 403, message: 'Forbidden' };
     }
     return { ok: true, workflow, node, tenantId: workflow.tenantId ?? 'default' };
@@ -211,7 +231,9 @@ export function createFormRoutes(eventBus: IEventBus): Hono {
       logger.error({ err: error, workflowId }, 'Form-triggered run failed');
     }
 
-    return c.html(renderSuccess(node.config.successMessage ?? 'Thank you! Your submission was received.'));
+    return c.html(
+      renderSuccess(node.config.successMessage ?? 'Thank you! Your submission was received.'),
+    );
   });
 
   return app;

@@ -154,13 +154,18 @@ export const webhookRespondExecutor: NodeExecutor = async (config, input, contex
     case 'text': {
       contentType = 'text/plain; charset=utf-8';
       const explicit = asString(config.body);
-      body = explicit !== '' ? explicit : (typeof input === 'string' ? input : JSON.stringify(input ?? ''));
+      body =
+        explicit !== ''
+          ? explicit
+          : typeof input === 'string'
+            ? input
+            : JSON.stringify(input ?? '');
       break;
     }
     case 'html': {
       contentType = 'text/html; charset=utf-8';
       const explicit = asString(config.body);
-      body = explicit !== '' ? explicit : (typeof input === 'string' ? input : '');
+      body = explicit !== '' ? explicit : typeof input === 'string' ? input : '';
       break;
     }
     case 'redirect': {
@@ -170,7 +175,9 @@ export const webhookRespondExecutor: NodeExecutor = async (config, input, contex
       const rawLoc = asString(config.redirectLocation).trim();
       const location = safeRedirectLocation(rawLoc);
       if (rawLoc && !location) {
-        throw new Error(`action_webhook_respond: redirectLocation non valido "${rawLoc}" — ammessi solo URL http(s) o path relativo "/...".`);
+        throw new Error(
+          `action_webhook_respond: redirectLocation non valido "${rawLoc}" — ammessi solo URL http(s) o path relativo "/...".`,
+        );
       }
       if (location) headers.Location = location;
       body = ''; // browsers ignore body on 3xx
@@ -183,9 +190,10 @@ export const webhookRespondExecutor: NodeExecutor = async (config, input, contex
       // config.binaryData (base64 esplicito) o input string (fail-soft). L'handler
       // HTTP fa Buffer.from(body, 'base64') prima di scrivere sul wire.
       const binBytes = await resolveBinaryValue(input, context.readBinary);
-      body = binBytes !== null
-        ? binBytes.toString('base64')
-        : (asString(config.binaryData) || (typeof input === 'string' ? input : ''));
+      body =
+        binBytes !== null
+          ? binBytes.toString('base64')
+          : asString(config.binaryData) || (typeof input === 'string' ? input : '');
       bodyIsBase64 = true;
       const filename = asString(config.binaryFilename).trim();
       if (filename) {

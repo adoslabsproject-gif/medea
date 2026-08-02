@@ -79,8 +79,11 @@ class IsoEventEmitter {
     if (!arr || arr.length === 0) return false;
     // Copy per evitare mutation durante iteration (un listener puo\` off()).
     for (const l of arr.slice()) {
-      try { l(data); }
-      catch { /* swallow — un listener difettoso non blocca gli altri */ }
+      try {
+        l(data);
+      } catch {
+        /* swallow — un listener difettoso non blocca gli altri */
+      }
     }
     return true;
   }
@@ -156,20 +159,20 @@ export interface CircuitBreakerOptions<T = unknown> {
 export interface CircuitBreakerStats {
   readonly name: string;
   readonly state: CircuitState;
-  readonly failures: number;            // gauge: failures in current window/sequence
-  readonly successes: number;           // gauge: consecutive successes in half-open
-  readonly inFlight: number;            // gauge: concurrent in flight (bulkhead)
-  readonly totalRequests: number;       // counter cumulative
-  readonly totalSuccesses: number;      // counter cumulative
-  readonly totalFailures: number;       // counter cumulative
-  readonly totalRejected: number;       // counter (short-circuit OPEN/HALF_BUSY/BULKHEAD)
+  readonly failures: number; // gauge: failures in current window/sequence
+  readonly successes: number; // gauge: consecutive successes in half-open
+  readonly inFlight: number; // gauge: concurrent in flight (bulkhead)
+  readonly totalRequests: number; // counter cumulative
+  readonly totalSuccesses: number; // counter cumulative
+  readonly totalFailures: number; // counter cumulative
+  readonly totalRejected: number; // counter (short-circuit OPEN/HALF_BUSY/BULKHEAD)
   readonly totalTimedOutProbes: number; // counter (probe hang in half-open)
-  readonly timesOpened: number;         // counter: total OPEN transitions
+  readonly timesOpened: number; // counter: total OPEN transitions
   readonly lastFailure: Date | null;
   readonly lastSuccess: Date | null;
   readonly lastStateChange: Date;
-  readonly uptimePercent: number;       // 0..100, time spent in CLOSED state
-  readonly recentFailureRate: number;   // 0..1 — solo in sliding mode
+  readonly uptimePercent: number; // 0..100, time spent in CLOSED state
+  readonly recentFailureRate: number; // 0..1 — solo in sliding mode
 }
 
 export interface StateChangeEvent {
@@ -181,14 +184,20 @@ export interface StateChangeEvent {
 }
 
 export class CircuitOpenError extends Error {
-  constructor(public readonly breakerName: string, public readonly nextProbeAt?: number) {
+  constructor(
+    public readonly breakerName: string,
+    public readonly nextProbeAt?: number,
+  ) {
     super(`Circuit breaker [${breakerName}] is OPEN — fail fast`);
     this.name = 'CircuitOpenError';
   }
 }
 
 export class BulkheadFullError extends Error {
-  constructor(public readonly breakerName: string, public readonly maxConcurrent: number) {
+  constructor(
+    public readonly breakerName: string,
+    public readonly maxConcurrent: number,
+  ) {
     super(`Circuit breaker [${breakerName}] bulkhead saturated (${String(maxConcurrent)})`);
     this.name = 'BulkheadFullError';
   }
@@ -280,7 +289,9 @@ export class CircuitBreaker<T = unknown> extends IsoEventEmitter {
       this.on('success', (e: { durationMs: number }) => options.onSuccess!(e.durationMs));
     }
     if (options.onFailure) {
-      this.on('failure', (e: { error: unknown; durationMs: number }) => options.onFailure!(e.error, e.durationMs));
+      this.on('failure', (e: { error: unknown; durationMs: number }) =>
+        options.onFailure!(e.error, e.durationMs),
+      );
     }
 
     // Auto-register di default — disattivabile per test deterministici.
@@ -323,10 +334,14 @@ export class CircuitBreaker<T = unknown> extends IsoEventEmitter {
     this._maybeTransitionOpenToHalfOpen();
     const now = Date.now();
     const currentDuration = now - this._lastStateChangeTimestamp;
-    const closedTotal = this._stateAccumulator.closed + (this._state === 'closed' ? currentDuration : 0);
-    const allTotal = closedTotal
-      + this._stateAccumulator.open + (this._state === 'open' ? currentDuration : 0)
-      + this._stateAccumulator.half_open + (this._state === 'half_open' ? currentDuration : 0);
+    const closedTotal =
+      this._stateAccumulator.closed + (this._state === 'closed' ? currentDuration : 0);
+    const allTotal =
+      closedTotal +
+      this._stateAccumulator.open +
+      (this._state === 'open' ? currentDuration : 0) +
+      this._stateAccumulator.half_open +
+      (this._state === 'half_open' ? currentDuration : 0);
 
     return {
       name: this.name,
@@ -462,7 +477,10 @@ export class CircuitBreaker<T = unknown> extends IsoEventEmitter {
     if (this._state === 'half_open') {
       this._consecutiveSuccesses += 1;
       if (this._consecutiveSuccesses >= this._successThreshold) {
-        this._transitionTo('closed', `half-open ${String(this._consecutiveSuccesses)} probe successi`);
+        this._transitionTo(
+          'closed',
+          `half-open ${String(this._consecutiveSuccesses)} probe successi`,
+        );
       }
     }
   }
@@ -491,13 +509,19 @@ export class CircuitBreaker<T = unknown> extends IsoEventEmitter {
       return;
     }
 
-    if (this._state === 'closed' && this._currentFailureCount() >= this._failureDetection.threshold) {
+    if (
+      this._state === 'closed' &&
+      this._currentFailureCount() >= this._failureDetection.threshold
+    ) {
       this._openedAt = Date.now();
       this._timesOpened += 1;
-      this._transitionTo('open',
-        `${String(this._currentFailureCount())} fallimenti ${this._failureDetection.mode === 'sliding'
-          ? `in ${String(this._failureDetection.windowMs)}ms`
-          : 'consecutivi'} — ultimo: ${this._brief(err)}`,
+      this._transitionTo(
+        'open',
+        `${String(this._currentFailureCount())} fallimenti ${
+          this._failureDetection.mode === 'sliding'
+            ? `in ${String(this._failureDetection.windowMs)}ms`
+            : 'consecutivi'
+        } — ultimo: ${this._brief(err)}`,
       );
     }
   }
@@ -556,7 +580,10 @@ export class CircuitBreaker<T = unknown> extends IsoEventEmitter {
     const jitterRange = base * RESET_JITTER_RATIO;
     const jittered = base + (Math.random() * 2 * jitterRange - jitterRange);
     const delay = Math.max(10, Math.round(jittered));
-    this._resetTimer = setTimeout(() => this._transitionTo('half_open', 'reset timer (jitter)'), delay);
+    this._resetTimer = setTimeout(
+      () => this._transitionTo('half_open', 'reset timer (jitter)'),
+      delay,
+    );
     this._resetTimer.unref?.();
   }
 

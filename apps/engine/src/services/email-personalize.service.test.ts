@@ -60,7 +60,12 @@ function baseInput(over: Partial<PersonalizeInput> = {}): PersonalizeInput {
   };
 }
 
-function makeLlmResponse(snippet: string, evidence_quote: string, prefix = '', suffix = ''): string {
+function makeLlmResponse(
+  snippet: string,
+  evidence_quote: string,
+  prefix = '',
+  suffix = '',
+): string {
   return `${prefix}{"snippet":${JSON.stringify(snippet)},"evidence_quote":${JSON.stringify(evidence_quote)}}${suffix}`;
 }
 
@@ -68,7 +73,10 @@ beforeEach(() => {
   m.resolverResolve.mockReset();
   m.dispatchLLM.mockReset();
   m.resolverResolve.mockReturnValue({
-    provider: 'anthropic', apiKey: 'sk-test', model: 'claude-sonnet-4-6', baseUrl: undefined,
+    provider: 'anthropic',
+    apiKey: 'sk-test',
+    model: 'claude-sonnet-4-6',
+    baseUrl: undefined,
   });
   // Cache lives at module level — reset by re-importing module fresh
 });
@@ -106,7 +114,9 @@ describe('input validation — early skip', () => {
 
 describe('LLM resolver errors', () => {
   it('NoLlmProviderError → success=false soft, NO throw', async () => {
-    m.resolverResolve.mockImplementation(() => { throw new NoLlmProviderError('vault sealed'); });
+    m.resolverResolve.mockImplementation(() => {
+      throw new NoLlmProviderError('vault sealed');
+    });
     const { personalizeEmail: p } = await freshImport();
     const r = await p(baseInput());
     expect(r.success).toBe(false);
@@ -114,7 +124,9 @@ describe('LLM resolver errors', () => {
   });
 
   it('🚨 errore generico (NON NoLlmProviderError) → THROW', async () => {
-    m.resolverResolve.mockImplementation(() => { throw new Error('boom'); });
+    m.resolverResolve.mockImplementation(() => {
+      throw new Error('boom');
+    });
     await expect(personalizeEmail(baseInput())).rejects.toThrow(/boom/u);
   });
 
@@ -131,10 +143,12 @@ describe('LLM resolver errors', () => {
 
 describe('JSON parsing tolerance', () => {
   it('happy path: snippet + evidence_quote estratti', async () => {
-    m.dispatchLLM.mockResolvedValue(makeLlmResponse(
-      'Ho notato che producete yacht con scafi in alluminio aerospaziale',
-      'scafi in alluminio aerospaziale',
-    ));
+    m.dispatchLLM.mockResolvedValue(
+      makeLlmResponse(
+        'Ho notato che producete yacht con scafi in alluminio aerospaziale',
+        'scafi in alluminio aerospaziale',
+      ),
+    );
     const { personalizeEmail: p } = await freshImport();
     const r = await p(baseInput());
     expect(r.success).toBe(true);
@@ -143,20 +157,27 @@ describe('JSON parsing tolerance', () => {
   });
 
   it('markdown fence ```json ... ``` stripped', async () => {
-    m.dispatchLLM.mockResolvedValue('```json\n' + makeLlmResponse(
-      'Ho notato che producete yacht con scafi in alluminio aerospaziale di alta qualita',
-      'alluminio aerospaziale',
-    ) + '\n```');
+    m.dispatchLLM.mockResolvedValue(
+      '```json\n' +
+        makeLlmResponse(
+          'Ho notato che producete yacht con scafi in alluminio aerospaziale di alta qualita',
+          'alluminio aerospaziale',
+        ) +
+        '\n```',
+    );
     const { personalizeEmail: p } = await freshImport();
     const r = await p(baseInput());
     expect(r.success).toBe(true);
   });
 
   it('preamble LLM ignorata (estrae JSON dal body)', async () => {
-    m.dispatchLLM.mockResolvedValue('Ecco il JSON richiesto:\n' + makeLlmResponse(
-      'Ho notato che producete yacht con scafi in alluminio per il mercato premium',
-      'alluminio aerospaziale',
-    ));
+    m.dispatchLLM.mockResolvedValue(
+      'Ecco il JSON richiesto:\n' +
+        makeLlmResponse(
+          'Ho notato che producete yacht con scafi in alluminio per il mercato premium',
+          'alluminio aerospaziale',
+        ),
+    );
     const { personalizeEmail: p } = await freshImport();
     const r = await p(baseInput());
     expect(r.success).toBe(true);
@@ -198,10 +219,12 @@ describe('snippet validation', () => {
 
 describe('🚨 content safety filters', () => {
   it('profanity (cazzo) → snippet rifiutato', async () => {
-    m.dispatchLLM.mockResolvedValue(makeLlmResponse(
-      'Ho notato che cazzo bello sito avete con yacht in alluminio aerospaziale',
-      'alluminio aerospaziale',
-    ));
+    m.dispatchLLM.mockResolvedValue(
+      makeLlmResponse(
+        'Ho notato che cazzo bello sito avete con yacht in alluminio aerospaziale',
+        'alluminio aerospaziale',
+      ),
+    );
     const { personalizeEmail: p } = await freshImport();
     const r = await p(baseInput());
     expect(r.success).toBe(false);
@@ -209,10 +232,12 @@ describe('🚨 content safety filters', () => {
   });
 
   it('spam trigger (urgent) → rifiutato', async () => {
-    m.dispatchLLM.mockResolvedValue(makeLlmResponse(
-      'URGENT: ho visto i vostri yacht in alluminio aerospaziale, contattatemi',
-      'alluminio aerospaziale',
-    ));
+    m.dispatchLLM.mockResolvedValue(
+      makeLlmResponse(
+        'URGENT: ho visto i vostri yacht in alluminio aerospaziale, contattatemi',
+        'alluminio aerospaziale',
+      ),
+    );
     const { personalizeEmail: p } = await freshImport();
     const r = await p(baseInput());
     expect(r.success).toBe(false);
@@ -220,10 +245,12 @@ describe('🚨 content safety filters', () => {
   });
 
   it('promessa illegale (100% guaranteed) → rifiutato', async () => {
-    m.dispatchLLM.mockResolvedValue(makeLlmResponse(
-      'Vi propongo una soluzione 100% guaranteed per i vostri yacht in alluminio aerospaziale',
-      'alluminio aerospaziale',
-    ));
+    m.dispatchLLM.mockResolvedValue(
+      makeLlmResponse(
+        'Vi propongo una soluzione 100% guaranteed per i vostri yacht in alluminio aerospaziale',
+        'alluminio aerospaziale',
+      ),
+    );
     const { personalizeEmail: p } = await freshImport();
     const r = await p(baseInput());
     expect(r.success).toBe(false);
@@ -231,10 +258,12 @@ describe('🚨 content safety filters', () => {
   });
 
   it('promessa illegale (cheapest in the world) → rifiutato', async () => {
-    m.dispatchLLM.mockResolvedValue(makeLlmResponse(
-      'I nostri motori sono cheapest in the world per yacht in alluminio aerospaziale',
-      'alluminio aerospaziale',
-    ));
+    m.dispatchLLM.mockResolvedValue(
+      makeLlmResponse(
+        'I nostri motori sono cheapest in the world per yacht in alluminio aerospaziale',
+        'alluminio aerospaziale',
+      ),
+    );
     const { personalizeEmail: p } = await freshImport();
     const r = await p(baseInput());
     expect(r.success).toBe(false);
@@ -243,10 +272,12 @@ describe('🚨 content safety filters', () => {
 
 describe('anti-hallucination — evidence_quote check', () => {
   it('evidence_quote SUBSTRING del content → confidence=100', async () => {
-    m.dispatchLLM.mockResolvedValue(makeLlmResponse(
-      'Ho notato che producete yacht con scafi in alluminio aerospaziale di alta qualita',
-      'scafi in alluminio aerospaziale',
-    ));
+    m.dispatchLLM.mockResolvedValue(
+      makeLlmResponse(
+        'Ho notato che producete yacht con scafi in alluminio aerospaziale di alta qualita',
+        'scafi in alluminio aerospaziale',
+      ),
+    );
     const { personalizeEmail: p } = await freshImport();
     const r = await p(baseInput());
     expect(r.confidence).toBe(100);
@@ -254,10 +285,12 @@ describe('anti-hallucination — evidence_quote check', () => {
   });
 
   it('🚨 evidence_quote INVENTATO → confidence=60', async () => {
-    m.dispatchLLM.mockResolvedValue(makeLlmResponse(
-      'Ho notato dal vostro sito che la vostra azienda è specializzata nel settore della nautica',
-      'questa frase NON E\\u0300 nel contenuto vero del sito target',
-    ));
+    m.dispatchLLM.mockResolvedValue(
+      makeLlmResponse(
+        'Ho notato dal vostro sito che la vostra azienda è specializzata nel settore della nautica',
+        'questa frase NON E\\u0300 nel contenuto vero del sito target',
+      ),
+    );
     const { personalizeEmail: p } = await freshImport();
     const r = await p(baseInput());
     expect(r.success).toBe(true);
@@ -266,10 +299,12 @@ describe('anti-hallucination — evidence_quote check', () => {
   });
 
   it('evidence_quote primi 5 parole match → confidence=100 (tolleranza)', async () => {
-    m.dispatchLLM.mockResolvedValue(makeLlmResponse(
-      'Ho notato la vostra ultima creazione Open 32 progettata per il premium',
-      'La nostra ultima creazione, l\'Open 32, ha caratteristiche uniche',
-    ));
+    m.dispatchLLM.mockResolvedValue(
+      makeLlmResponse(
+        'Ho notato la vostra ultima creazione Open 32 progettata per il premium',
+        "La nostra ultima creazione, l'Open 32, ha caratteristiche uniche",
+      ),
+    );
     const { personalizeEmail: p } = await freshImport();
     const r = await p(baseInput());
     // Fallback: prime 5 parole "la nostra ultima creazione l'open" presenti nel content
@@ -277,10 +312,12 @@ describe('anti-hallucination — evidence_quote check', () => {
   });
 
   it('evidence_quote < 15 char → considerato non-evidence (confidence=60)', async () => {
-    m.dispatchLLM.mockResolvedValue(makeLlmResponse(
-      'Ho notato che producete yacht con scafi in alluminio per il mercato premium',
-      'yacht',
-    ));
+    m.dispatchLLM.mockResolvedValue(
+      makeLlmResponse(
+        'Ho notato che producete yacht con scafi in alluminio per il mercato premium',
+        'yacht',
+      ),
+    );
     const { personalizeEmail: p } = await freshImport();
     const r = await p(baseInput());
     expect(r.confidence).toBe(60);
@@ -289,10 +326,12 @@ describe('anti-hallucination — evidence_quote check', () => {
 
 describe('cache LRU', () => {
   it('stesso input due volte → second call NO LLM dispatch', async () => {
-    m.dispatchLLM.mockResolvedValue(makeLlmResponse(
-      'Ho notato i vostri yacht in alluminio aerospaziale di alta qualita ingegneristica',
-      'alluminio aerospaziale',
-    ));
+    m.dispatchLLM.mockResolvedValue(
+      makeLlmResponse(
+        'Ho notato i vostri yacht in alluminio aerospaziale di alta qualita ingegneristica',
+        'alluminio aerospaziale',
+      ),
+    );
     const { personalizeEmail: p } = await freshImport();
     await p(baseInput());
     await p(baseInput());
@@ -300,10 +339,12 @@ describe('cache LRU', () => {
   });
 
   it('input differente (language) → 2 LLM call distinte', async () => {
-    m.dispatchLLM.mockResolvedValue(makeLlmResponse(
-      'Ho notato i vostri yacht in alluminio aerospaziale di alta qualita ingegneristica',
-      'alluminio aerospaziale',
-    ));
+    m.dispatchLLM.mockResolvedValue(
+      makeLlmResponse(
+        'Ho notato i vostri yacht in alluminio aerospaziale di alta qualita ingegneristica',
+        'alluminio aerospaziale',
+      ),
+    );
     const { personalizeEmail: p } = await freshImport();
     await p(baseInput({ language: 'it' }));
     await p(baseInput({ language: 'en' }));
@@ -323,11 +364,16 @@ describe('llm_usage (Fase 1b #13) — token della chiamata fresca, MAI replayed 
   /** Mock che INVOCA il tokenUsageListener (8° arg posizionale di dispatchLLMChat). */
   const respondWithUsage = (raw?: string): void => {
     m.dispatchLLM.mockImplementation(async (...args: unknown[]) => {
-      const listener = args[7] as ((u: { input: number; output: number; fromApi: boolean }) => void) | undefined;
+      const listener = args[7] as
+        | ((u: { input: number; output: number; fromApi: boolean }) => void)
+        | undefined;
       listener?.({ input: 77, output: 33, fromApi: true });
-      return raw ?? makeLlmResponse(
-        'Ho notato i vostri yacht in alluminio aerospaziale di alta qualita ingegneristica',
-        'alluminio aerospaziale',
+      return (
+        raw ??
+        makeLlmResponse(
+          'Ho notato i vostri yacht in alluminio aerospaziale di alta qualita ingegneristica',
+          'alluminio aerospaziale',
+        )
       );
     });
   };

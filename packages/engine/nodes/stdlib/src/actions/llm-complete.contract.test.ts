@@ -20,10 +20,19 @@ const providerField = def.configFields?.find((f) => f.key === 'provider');
 const options = providerField?.type === 'select' ? providerField.options : [];
 
 describe('action_llm_complete — contract description ⊆ provider (anti-drift)', () => {
-  it('il campo provider espone l\'insieme reale (10: liara + 9 BYOK)', () => {
-    expect([...options].sort()).toEqual(
-      ['anthropic', 'deepseek', 'gemini', 'groq', 'liara', 'mistral', 'openai', 'openrouter', 'perplexity', 'xai'],
-    );
+  it("il campo provider espone l'insieme reale (10: liara + 9 BYOK)", () => {
+    expect([...options].sort()).toEqual([
+      'anthropic',
+      'deepseek',
+      'gemini',
+      'groq',
+      'liara',
+      'mistral',
+      'openai',
+      'openrouter',
+      'perplexity',
+      'xai',
+    ]);
   });
 
   it('🚨 Gemini e Perplexity sono SUPPORTATI (opzione + citati in description)', () => {
@@ -36,12 +45,22 @@ describe('action_llm_complete — contract description ⊆ provider (anti-drift)
   it('🚨 ogni provider BYOK citato nella description ∈ enum del campo provider', () => {
     // Mapping nome-umano → id enum, per i provider nominati nella description.
     const named: Record<string, string> = {
-      Anthropic: 'anthropic', OpenAI: 'openai', 'Google Gemini': 'gemini', 'DeepSeek-V3': 'deepseek',
-      'xAI Grok': 'xai', OpenRouter: 'openrouter', Mistral: 'mistral', Groq: 'groq', Perplexity: 'perplexity',
+      Anthropic: 'anthropic',
+      OpenAI: 'openai',
+      'Google Gemini': 'gemini',
+      'DeepSeek-V3': 'deepseek',
+      'xAI Grok': 'xai',
+      OpenRouter: 'openrouter',
+      Mistral: 'mistral',
+      Groq: 'groq',
+      Perplexity: 'perplexity',
     };
     for (const [human, id] of Object.entries(named)) {
       if (new RegExp(human, 'i').test(description)) {
-        expect(options, `description cita "${human}" ma '${id}' non è nell'enum provider`).toContain(id);
+        expect(
+          options,
+          `description cita "${human}" ma '${id}' non è nell'enum provider`,
+        ).toContain(id);
       }
     }
   });

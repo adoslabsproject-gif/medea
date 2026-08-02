@@ -20,7 +20,7 @@ describe('extractMedia / firstMedia', () => {
     expect(extractMedia(out)[0]?.kind).toBe('video');
   });
 
-  it('kind dedotto dall\'estensione quando la chiave non è nota', () => {
+  it("kind dedotto dall'estensione quando la chiave non è nota", () => {
     const out = { '5': { media: [{ filename: 'x.webm' }] } };
     expect(extractMedia(out)[0]?.kind).toBe('video');
   });

@@ -17,7 +17,8 @@ import { getTenantId } from '@/lib/tenant.js';
 function readOnlyBlocked(c: Context): Response {
   return c.json(
     {
-      error: 'Workspace in sola lettura (spazio disco oltre il limite): scrittura vettori bloccata. Riduci i dati o riattiva un piano.',
+      error:
+        'Workspace in sola lettura (spazio disco oltre il limite): scrittura vettori bloccata. Riduci i dati o riattiva un piano.',
       code: 'WORKSPACE_READ_ONLY',
     },
     423,
@@ -32,21 +33,23 @@ const EnsureCollectionSchema = z.object({
 
 // `vector` (embeddato dal client, legacy) OPPURE `text`+provider/model
 // (embedding SERVER-SIDE, raccomandato: la API key non gira nel browser).
-const SearchSchema = z.object({
-  collection: z.string().min(1),
-  vector: z.array(z.number()).optional(),
-  text: z.string().min(1).max(10_000).optional(),
-  provider: z.enum(['openai', 'voyage', 'ollama']).optional(),
-  model: z.string().min(1).max(100).optional(),
-  apiKey: z.string().max(500).optional(),
-  baseUrl: z.string().url().max(500).optional(),
-  topK: z.number().int().positive().max(1000).default(10),
-  filter: z.record(z.string(), z.unknown()).optional(),
-  minScore: z.number().optional(),
-}).refine(
-  (d) => Boolean(d.vector && d.vector.length > 0) || Boolean(d.text && d.provider && d.model),
-  { message: 'Serve `vector` oppure `text`+`provider`+`model` (embedding server-side).' },
-);
+const SearchSchema = z
+  .object({
+    collection: z.string().min(1),
+    vector: z.array(z.number()).optional(),
+    text: z.string().min(1).max(10_000).optional(),
+    provider: z.enum(['openai', 'voyage', 'ollama']).optional(),
+    model: z.string().min(1).max(100).optional(),
+    apiKey: z.string().max(500).optional(),
+    baseUrl: z.string().url().max(500).optional(),
+    topK: z.number().int().positive().max(1000).default(10),
+    filter: z.record(z.string(), z.unknown()).optional(),
+    minScore: z.number().optional(),
+  })
+  .refine(
+    (d) => Boolean(d.vector && d.vector.length > 0) || Boolean(d.text && d.provider && d.model),
+    { message: 'Serve `vector` oppure `text`+`provider`+`model` (embedding server-side).' },
+  );
 
 const DeleteSchema = z.object({
   collection: z.string().min(1),
@@ -118,7 +121,8 @@ export function createVectorRoutes(): Hono {
           ...(body.baseUrl ? { baseUrl: body.baseUrl } : {}),
         });
       }
-      if (!vector || vector.length === 0) return c.json({ error: 'Query vuota: nessun vettore' }, 400);
+      if (!vector || vector.length === 0)
+        return c.json({ error: 'Query vuota: nessun vettore' }, 400);
       const query: Parameters<VectorService['search']>[2] = {
         vector,
         topK: body.topK,

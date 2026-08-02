@@ -24,12 +24,15 @@ function makeLlm(text: string): any {
 }
 
 const validDef = { id: 'test', type: 'action', label: 'Test' };
-const validResp = (overrides: any = {}) => '```json\n' + JSON.stringify({
-  def: validDef,
-  executorSource: 'async function execute(c, i, ctx) { return { output: 1 }; }',
-  rationale: 'r',
-  ...overrides,
-}) + '\n```';
+const validResp = (overrides: any = {}) =>
+  '```json\n' +
+  JSON.stringify({
+    def: validDef,
+    executorSource: 'async function execute(c, i, ctx) { return { output: 1 }; }',
+    rationale: 'r',
+    ...overrides,
+  }) +
+  '\n```';
 
 describe('🚨 generate — validation', () => {
   it('🚨 description < 10 char → throw', async () => {
@@ -48,7 +51,7 @@ describe('🚨 generate — validation', () => {
     const llm = makeLlm(validResp());
     const svc = new NodeGeneratorService(llm);
     await svc.generate({ description: 'a long description here', language: 'it' });
-    const msgs = (llm.complete.mock.calls[0][0]).messages;
+    const msgs = llm.complete.mock.calls[0][0].messages;
     expect(msgs[0].content).toMatch(/Sei un esperto/u);
   });
 
@@ -56,15 +59,18 @@ describe('🚨 generate — validation', () => {
     const llm = makeLlm(validResp());
     const svc = new NodeGeneratorService(llm);
     await svc.generate({ description: 'a long description here' });
-    const msgs = (llm.complete.mock.calls[0][0]).messages;
+    const msgs = llm.complete.mock.calls[0][0].messages;
     expect(msgs[0].content).toMatch(/expert FlowForge node developer/u);
   });
 
   it('🚨 openApiUrl → riferimento nel user prompt', async () => {
     const llm = makeLlm(validResp());
     const svc = new NodeGeneratorService(llm);
-    await svc.generate({ description: 'a long description here', openApiUrl: 'https://api.example.com/spec.json' });
-    const msgs = (llm.complete.mock.calls[0][0]).messages;
+    await svc.generate({
+      description: 'a long description here',
+      openApiUrl: 'https://api.example.com/spec.json',
+    });
+    const msgs = llm.complete.mock.calls[0][0].messages;
     expect(msgs[1].content).toMatch(/spec\.json/u);
   });
 });
@@ -78,11 +84,13 @@ describe('🚨 parseLLMResponse — fenced JSON extract', () => {
 
   it('🚨 plain JSON no fence → parse OK', () => {
     const svc = new NodeGeneratorService(makeLlm(''));
-    const r = svc.parseLLMResponse(JSON.stringify({
-      def: validDef,
-      executorSource: 'async function execute(c, i, ctx) { return { output: 1 }; }',
-      rationale: 'r',
-    }));
+    const r = svc.parseLLMResponse(
+      JSON.stringify({
+        def: validDef,
+        executorSource: 'async function execute(c, i, ctx) { return { output: 1 }; }',
+        rationale: 'r',
+      }),
+    );
     expect(r.def.id).toBe('test');
   });
 
@@ -98,9 +106,11 @@ describe('🚨 parseLLMResponse — fenced JSON extract', () => {
 
   it('🚨 warnings array propagato', () => {
     const svc = new NodeGeneratorService(makeLlm(''));
-    const r = svc.parseLLMResponse(validResp({
-      warnings: ['rate-limit risk', 'consumes 10 tokens'],
-    }));
+    const r = svc.parseLLMResponse(
+      validResp({
+        warnings: ['rate-limit risk', 'consumes 10 tokens'],
+      }),
+    );
     expect(r.warnings).toEqual(['rate-limit risk', 'consumes 10 tokens']);
   });
 });
@@ -109,15 +119,29 @@ describe('🚨 SECURITY forbidden tokens', () => {
   it.each([
     { name: 'require()', code: 'async function execute(c,i,x) { const fs = require("fs"); }' },
     { name: 'eval', code: 'async function execute(c,i,x) { eval(c.code); }' },
-    { name: 'process.env', code: 'async function execute(c,i,x) { console.log(process.env.SECRET); }' },
-    { name: 'child_process', code: 'async function execute(c,i,x) { const cp = require("child_process"); }' },
+    {
+      name: 'process.env',
+      code: 'async function execute(c,i,x) { console.log(process.env.SECRET); }',
+    },
+    {
+      name: 'child_process',
+      code: 'async function execute(c,i,x) { const cp = require("child_process"); }',
+    },
     { name: 'fs.', code: 'async function execute(c,i,x) { fs.readFileSync("/etc/passwd"); }' },
     { name: 'new Function', code: 'async function execute(c,i,x) { new Function("return 1")(); }' },
     { name: 'globalThis', code: 'async function execute(c,i,x) { globalThis.process.exit(0); }' },
   ])('🚨 reject "$name"', ({ code }) => {
     const svc = new NodeGeneratorService(makeLlm(''));
-    expect(() => svc.parseLLMResponse('```json\n' + JSON.stringify({
-      def: validDef, executorSource: code, rationale: 'r',
-    }) + '\n```')).toThrow(/forbidden tokens/u);
+    expect(() =>
+      svc.parseLLMResponse(
+        '```json\n' +
+          JSON.stringify({
+            def: validDef,
+            executorSource: code,
+            rationale: 'r',
+          }) +
+          '\n```',
+      ),
+    ).toThrow(/forbidden tokens/u);
   });
 });

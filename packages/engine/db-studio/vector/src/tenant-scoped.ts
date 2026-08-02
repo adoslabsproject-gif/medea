@@ -41,7 +41,9 @@ export class TenantScopedVectorStore implements IVectorAdapter {
     tenantId: string,
   ) {
     if (!TENANT_ID_RE.test(tenantId)) {
-      throw new TenantIsolationError(`tenantId non valido: "${tenantId}" (atteso ^[A-Za-z0-9_-]{1,64}$)`);
+      throw new TenantIsolationError(
+        `tenantId non valido: "${tenantId}" (atteso ^[A-Za-z0-9_-]{1,64}$)`,
+      );
     }
     this.engine = inner.engine;
     this.prefix = `${tenantId}${SEPARATOR}`;
@@ -60,7 +62,11 @@ export class TenantScopedVectorStore implements IVectorAdapter {
   // NB: metodi `async` di proposito — così un nome collection invalido produce una
   // PROMISE REJECTED (non un throw sincrono): API async coerente, il chiamante usa
   // sempre .catch()/await-try senza dover gestire eccezioni sincrone.
-  async ensureCollection(name: string, dimensions: number, distance: 'cosine' | 'euclidean' | 'dot'): Promise<void> {
+  async ensureCollection(
+    name: string,
+    dimensions: number,
+    distance: 'cosine' | 'euclidean' | 'dot',
+  ): Promise<void> {
     return this.inner.ensureCollection(this.scope(name), dimensions, distance);
   }
 
@@ -68,7 +74,10 @@ export class TenantScopedVectorStore implements IVectorAdapter {
     return this.inner.upsert(this.scope(collection), records);
   }
 
-  async search(collection: string, query: SimilaritySearchQuery): Promise<SimilaritySearchResult[]> {
+  async search(
+    collection: string,
+    query: SimilaritySearchQuery,
+  ): Promise<SimilaritySearchResult[]> {
     return this.inner.search(this.scope(collection), query);
   }
 

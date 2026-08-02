@@ -42,7 +42,11 @@ export async function sendFailureEmailViaPortal(payload: FailureEmailPayload): P
     { allow: 'portal' },
   );
   // Anti-OOM: il body non ci serve → drena/cancella senza leggere.
-  try { await res.body?.cancel(); } catch { /* best-effort */ }
+  try {
+    await res.body?.cancel();
+  } catch {
+    /* best-effort */
+  }
 
   if (!res.ok) {
     throw new Error(`portal error-email/send: HTTP ${String(res.status)}`);

@@ -71,7 +71,7 @@ describe('POST /stripe — config guards', () => {
       headers: { 'stripe-signature': 'whatever' },
     });
     expect(res.status).toBe(503);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toContain('non configurato');
   });
 
@@ -81,7 +81,7 @@ describe('POST /stripe — config guards', () => {
       body: JSON.stringify({ id: 'evt_1', type: 'invoice.paid' }),
     });
     expect(res.status).toBe(400);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toContain('Stripe-Signature');
   });
 });
@@ -95,7 +95,7 @@ describe('POST /stripe — HMAC verify', () => {
       headers: { 'stripe-signature': 't=1234567890,v1=deadbeef' },
     });
     expect(res.status).toBe(400);
-    const json = await res.json() as { error: string; reason: string };
+    const json = (await res.json()) as { error: string; reason: string };
     expect(json.error).toContain('invalid signature');
     expect(json.reason).toBeTruthy();
   });
@@ -138,7 +138,7 @@ describe('POST /stripe — Stripe Connect explicit guard', () => {
       headers: { 'stripe-signature': sig },
     });
     expect(res.status).toBe(200);
-    const json = await res.json() as { received: boolean; ignored: boolean; reason: string };
+    const json = (await res.json()) as { received: boolean; ignored: boolean; reason: string };
     expect(json.received).toBe(true);
     expect(json.ignored).toBe(true);
     expect(json.reason).toBe('connect_not_enabled');
@@ -185,7 +185,7 @@ describe('POST /stripe — Stripe Connect explicit guard', () => {
       headers: { 'stripe-signature': sig },
     });
     expect(res.status).toBe(200);
-    const json = await res.json() as { received: boolean; ignored?: boolean };
+    const json = (await res.json()) as { received: boolean; ignored?: boolean };
     expect(json.received).toBe(true);
     expect(json.ignored).toBeUndefined();
     expect(m.eventBusEmit).toHaveBeenCalled();
@@ -204,7 +204,7 @@ describe('POST /stripe — Stripe Connect explicit guard', () => {
       headers: { 'stripe-signature': sig },
     });
     expect(res.status).toBe(200);
-    const json = await res.json() as { received: boolean; ignored?: boolean };
+    const json = (await res.json()) as { received: boolean; ignored?: boolean };
     expect(json.ignored).toBeUndefined();
     expect(m.eventBusEmit).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -247,7 +247,7 @@ describe('POST /stripe — tenant attribution + dedup', () => {
       headers: { 'stripe-signature': sig },
     });
     expect(res.status).toBe(200);
-    const json = await res.json() as { received: boolean; dedup: boolean };
+    const json = (await res.json()) as { received: boolean; dedup: boolean };
     expect(json.dedup).toBe(true);
     expect(m.eventBusEmit).not.toHaveBeenCalled();
   });

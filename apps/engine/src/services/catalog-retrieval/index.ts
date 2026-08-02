@@ -42,7 +42,9 @@ export async function getCatalogRetriever(workspaceId: string): Promise<CatalogR
 }
 
 /** Reset cache — per i test e per gli hook install/publish nodo. */
-export function resetCatalogRetriever(): void { cached = null; }
+export function resetCatalogRetriever(): void {
+  cached = null;
+}
 
 /**
  * Formatta il blocco catalogo per il system prompt: mappa categorie (così il
@@ -54,7 +56,8 @@ export function formatCatalogForPrompt(
   retriever: CatalogRetriever,
   retrieved: readonly RetrievedNode[],
 ): string {
-  const categories = retriever.categoryMap()
+  const categories = retriever
+    .categoryMap()
     .map((c) => `  • ${c.category} — ${c.label} (${String(c.count)} nodi)`)
     .join('\n');
   const nodes = retrieved
@@ -66,23 +69,27 @@ export function formatCatalogForPrompt(
   // edge-case, es. partnerId NULL su miss) invece di indovinarli. È la differenza
   // tra "lo so dal contratto" e "lo deduco" (causa delle allucinazioni di dettaglio).
   const withContract = retrieved.filter((n) => n.outputContract);
-  const contractBlock = withContract.length === 0 ? '' : [
-    '',
-    'CONTRATTI DI OUTPUT DEI NODI (valori REALI — NON inventare; se un nodo NON è elencato qui, NON dedurre i suoi output: di\' all\'utente di verificarli):',
-    ...withContract.map((n) => {
-      const oc = n.outputContract!;
-      const lines = oc.fields.map((f) => `    • ${f.name}: ${f.type} — ${f.desc}`);
-      const notes = oc.notes ? [`    note: ${oc.notes}`] : [];
-      return [`  ${n.defId}:`, ...lines, ...notes].join('\n');
-    }),
-  ].join('\n');
+  const contractBlock =
+    withContract.length === 0
+      ? ''
+      : [
+          '',
+          "CONTRATTI DI OUTPUT DEI NODI (valori REALI — NON inventare; se un nodo NON è elencato qui, NON dedurre i suoi output: di' all'utente di verificarli):",
+          ...withContract.map((n) => {
+            const oc = n.outputContract!;
+            const lines = oc.fields.map((f) => `    • ${f.name}: ${f.type} — ${f.desc}`);
+            const notes = oc.notes ? [`    note: ${oc.notes}`] : [];
+            return [`  ${n.defId}:`, ...lines, ...notes].join('\n');
+          }),
+        ].join('\n');
 
   return [
     'FAMIGLIE DI NODI DISPONIBILI (il catalogo completo è accessibile — chiedi se ti serve un nodo non elencato sotto):',
     categories,
     '',
     'NODI PIÙ PERTINENTI ALLA RICHIESTA (usa questi defId; non inventarne):',
-    nodes || '  (nessun nodo particolarmente pertinente — chiedi un chiarimento o indica una categoria)',
+    nodes ||
+      '  (nessun nodo particolarmente pertinente — chiedi un chiarimento o indica una categoria)',
     contractBlock,
   ].join('\n');
 }

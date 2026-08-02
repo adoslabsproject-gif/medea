@@ -19,7 +19,10 @@ import { createHash } from 'node:crypto';
 // degli altri chiamanti dello stesso webhook.
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface RateWindow { count: number; resetAtMs: number }
+interface RateWindow {
+  count: number;
+  resetAtMs: number;
+}
 const WINDOW_MS = 60_000;
 const RATE_CACHE_CAP = 10_000;
 const rateWindows = new Map<string, RateWindow>();
@@ -36,7 +39,11 @@ export interface RateLimitResult {
  * Conta la request nella finestra corrente. `limitPerMin <= 0` = rate-limit
  * DISABILITATO (passa sempre). Supera il limite → allowed=false + Retry-After.
  */
-export function checkWebhookRateLimit(key: string, limitPerMin: number, now: number = Date.now()): RateLimitResult {
+export function checkWebhookRateLimit(
+  key: string,
+  limitPerMin: number,
+  now: number = Date.now(),
+): RateLimitResult {
   if (!Number.isFinite(limitPerMin) || limitPerMin <= 0) {
     return { allowed: true, retryAfterSec: 0, remaining: Number.POSITIVE_INFINITY };
   }
@@ -48,7 +55,11 @@ export function checkWebhookRateLimit(key: string, limitPerMin: number, now: num
   w.count += 1;
   if (rateWindows.size > RATE_CACHE_CAP) gcRate(now);
   if (w.count > limitPerMin) {
-    return { allowed: false, retryAfterSec: Math.max(1, Math.ceil((w.resetAtMs - now) / 1000)), remaining: 0 };
+    return {
+      allowed: false,
+      retryAfterSec: Math.max(1, Math.ceil((w.resetAtMs - now) / 1000)),
+      remaining: 0,
+    };
   }
   return { allowed: true, retryAfterSec: 0, remaining: limitPerMin - w.count };
 }

@@ -14,7 +14,11 @@ const VIOLATIONS: CatalogViolation[] = [
 
 describe('buildRepairPrompt', () => {
   it('include SOLO i nodi con violazioni + i messaggi del validatore', () => {
-    const p = buildRepairPrompt({ nodes: [...NODES, { id: 'n2', defId: 'x', config: {} }], violations: VIOLATIONS, goal: 'chiama una API' });
+    const p = buildRepairPrompt({
+      nodes: [...NODES, { id: 'n2', defId: 'x', config: {} }],
+      violations: VIOLATIONS,
+      goal: 'chiama una API',
+    });
     expect(p.user).toContain('n1');
     expect(p.user).not.toContain('"n2"'); // n2 non ha violazioni
     expect(p.user).toContain('url'); // messaggio del validatore
@@ -34,13 +38,17 @@ describe('makeLlmRepairFn — parsing & fail-soft', () => {
   }
 
   it('🚨 risposta valida {fixes} → RepairedNode[]', async () => {
-    const fn = repairWith(async () => JSON.stringify({ fixes: [{ id: 'n1', config: { url: 'https://x' } }] }));
+    const fn = repairWith(async () =>
+      JSON.stringify({ fixes: [{ id: 'n1', config: { url: 'https://x' } }] }),
+    );
     const out = await fn({ nodes: NODES, violations: VIOLATIONS });
     expect(out).toEqual([{ id: 'n1', config: { url: 'https://x' } }]);
   });
 
   it('risposta in fence ```json → parsata', async () => {
-    const fn = repairWith(async () => '```json\n{"fixes":[{"id":"n1","config":{"url":"https://y"}}]}\n```');
+    const fn = repairWith(
+      async () => '```json\n{"fixes":[{"id":"n1","config":{"url":"https://y"}}]}\n```',
+    );
     const out = await fn({ nodes: NODES, violations: VIOLATIONS });
     expect(out).toEqual([{ id: 'n1', config: { url: 'https://y' } }]);
   });
@@ -51,29 +59,44 @@ describe('makeLlmRepairFn — parsing & fail-soft', () => {
   });
 
   it('🚨 dispatch lancia (LLM giù) → [] (fail-soft)', async () => {
-    const fn = repairWith(vi.fn(async () => { throw new Error('Liara 502'); }));
+    const fn = repairWith(
+      vi.fn(async () => {
+        throw new Error('Liara 502');
+      }),
+    );
     await expect(fn({ nodes: NODES, violations: VIOLATIONS })).resolves.toEqual([]);
   });
 
   it('🚨 scarta entry malformate (id mancante / config non-oggetto / array)', async () => {
-    const fn = repairWith(async () => JSON.stringify({ fixes: [
-      { id: 'n1', config: { url: 'ok' } },
-      { config: { x: 1 } },            // no id
-      { id: 'n2', config: 'stringa' },  // config non-oggetto
-      { id: 'n3', config: [1, 2] },     // array
-    ] }));
+    const fn = repairWith(async () =>
+      JSON.stringify({
+        fixes: [
+          { id: 'n1', config: { url: 'ok' } },
+          { config: { x: 1 } }, // no id
+          { id: 'n2', config: 'stringa' }, // config non-oggetto
+          { id: 'n3', config: [1, 2] }, // array
+        ],
+      }),
+    );
     const out = await fn({ nodes: NODES, violations: VIOLATIONS });
     expect(out).toEqual([{ id: 'n1', config: { url: 'ok' } }]);
   });
 
   it('fixes assente / non-array → []', async () => {
-    expect(await repairWith(async () => '{}')({ nodes: NODES, violations: VIOLATIONS })).toEqual([]);
-    expect(await repairWith(async () => '{"fixes":"x"}')({ nodes: NODES, violations: VIOLATIONS })).toEqual([]);
+    expect(await repairWith(async () => '{}')({ nodes: NODES, violations: VIOLATIONS })).toEqual(
+      [],
+    );
+    expect(
+      await repairWith(async () => '{"fixes":"x"}')({ nodes: NODES, violations: VIOLATIONS }),
+    ).toEqual([]);
   });
 
   it('il dispatch riceve system+user+schema dal prompt builder', async () => {
     const dispatch = vi.fn<StructuredDispatch>(async () => '{"fixes":[]}');
-    await makeLlmRepairFn({ dispatch, goal: 'salva in DB' })({ nodes: NODES, violations: VIOLATIONS });
+    await makeLlmRepairFn({ dispatch, goal: 'salva in DB' })({
+      nodes: NODES,
+      violations: VIOLATIONS,
+    });
     expect(dispatch).toHaveBeenCalledOnce();
     const arg = dispatch.mock.calls[0]![0];
     expect(arg.schema).toBe(REPAIR_RESPONSE_SCHEMA);

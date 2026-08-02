@@ -15,12 +15,16 @@ vi.mock('@/storage/db.js', () => ({ getDatabase: () => ({ sqlite: db }) }));
 // Il modulo non usa più logger diretto: il fail-open passa da recordFailOpen.
 vi.mock('@/lib/fail-open-metrics.js', () => ({ recordFailOpen: m.recordFailOpen }));
 
-const { revokeSession, isSessionRevoked, revocationId, revokeAllUserSessions, isPayloadRevoked } = await import('./session-revocation.js');
+const { revokeSession, isSessionRevoked, revocationId, revokeAllUserSessions, isPayloadRevoked } =
+  await import('./session-revocation.js');
 
 const FUTURE = Math.floor(Date.now() / 1000) + 3600;
 const PAST = Math.floor(Date.now() / 1000) - 3600;
 
-beforeEach(() => { db = new Database(':memory:'); m.recordFailOpen.mockClear(); });
+beforeEach(() => {
+  db = new Database(':memory:');
+  m.recordFailOpen.mockClear();
+});
 
 describe('revocationId', () => {
   it('usa jti quando presente (nuovi token)', () => {
@@ -30,7 +34,9 @@ describe('revocationId', () => {
     expect(revocationId({ sub: 'u1', iat: 100 })).toBe('u1:100');
   });
   it('difensivo: non crasha se iat manca → sub:0', () => {
-    expect(revocationId({ sub: 'u1' } as unknown as Pick<SessionTokenPayload, 'jti' | 'sub' | 'iat'>)).toBe('u1:0');
+    expect(
+      revocationId({ sub: 'u1' } as unknown as Pick<SessionTokenPayload, 'jti' | 'sub' | 'iat'>),
+    ).toBe('u1:0');
   });
 });
 
@@ -58,16 +64,32 @@ describe('blocklist revoca/check', () => {
   });
   it('fail-open: se il DB lancia, isSessionRevoked ritorna false (no DoS)', () => {
     const good = db;
-    db = { prepare: () => { throw new Error('db down'); }, exec: () => { throw new Error('db down'); } } as unknown as Database.Database;
+    db = {
+      prepare: () => {
+        throw new Error('db down');
+      },
+      exec: () => {
+        throw new Error('db down');
+      },
+    } as unknown as Database.Database;
     expect(isSessionRevoked('qualunque')).toBe(false);
     db = good;
   });
   it('il fail-open è STRUMENTATO: recordFailOpen("session_revocation.single") col tokenId', () => {
     const good = db;
-    db = { prepare: () => { throw new Error('db down'); }, exec: () => { throw new Error('db down'); } } as unknown as Database.Database;
+    db = {
+      prepare: () => {
+        throw new Error('db down');
+      },
+      exec: () => {
+        throw new Error('db down');
+      },
+    } as unknown as Database.Database;
     isSessionRevoked('jti-42');
     expect(m.recordFailOpen).toHaveBeenCalledTimes(1);
-    expect(m.recordFailOpen).toHaveBeenCalledWith('session_revocation.single', expect.any(Error), { tokenId: 'jti-42' });
+    expect(m.recordFailOpen).toHaveBeenCalledWith('session_revocation.single', expect.any(Error), {
+      tokenId: 'jti-42',
+    });
     db = good;
   });
   it('nel percorso NORMALE (DB sano) recordFailOpen NON è chiamato', () => {
@@ -103,7 +125,14 @@ describe('revoca-tutte per utente (admin force-revoke / cutoff)', () => {
   });
   it('isPayloadRevoked fail-open su DB rotto', () => {
     const good = db;
-    db = { prepare: () => { throw new Error('down'); }, exec: () => { throw new Error('down'); } } as unknown as Database.Database;
+    db = {
+      prepare: () => {
+        throw new Error('down');
+      },
+      exec: () => {
+        throw new Error('down');
+      },
+    } as unknown as Database.Database;
     expect(isPayloadRevoked({ jti: 'x', sub: 'u', iat: 1 })).toBe(false);
     db = good;
   });
@@ -126,7 +155,9 @@ describe('revoca-tutte per utente (admin force-revoke / cutoff)', () => {
     } as unknown as Database.Database;
     expect(isPayloadRevoked({ jti: 'x', sub: 'user-Z', iat: 1 })).toBe(false);
     expect(calls).toBeGreaterThan(0);
-    expect(m.recordFailOpen).toHaveBeenCalledWith('session_revocation.cutoff', expect.any(Error), { sub: 'user-Z' });
+    expect(m.recordFailOpen).toHaveBeenCalledWith('session_revocation.cutoff', expect.any(Error), {
+      sub: 'user-Z',
+    });
     db = good;
   });
 });

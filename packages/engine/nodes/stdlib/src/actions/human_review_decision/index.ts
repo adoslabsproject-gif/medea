@@ -15,7 +15,4 @@ export const humanReviewDecisionNode: NodeModule = {
 };
 
 export { humanReviewDecisionExecutor, humanReviewDecisionNodeDef };
-export {
-  HumanReviewDecisionConfigSchema,
-  type HumanReviewDecisionConfig,
-} from './schema.js';
+export { HumanReviewDecisionConfigSchema, type HumanReviewDecisionConfig } from './schema.js';

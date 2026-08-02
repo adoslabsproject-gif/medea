@@ -111,9 +111,15 @@ export async function startFileWatcher(
       });
   };
 
-  watcher.on('add', (p) => { onEvent('add', p); });
-  watcher.on('change', (p) => { onEvent('change', p); });
-  watcher.on('unlink', (p) => { onEvent('unlink', p); });
+  watcher.on('add', (p) => {
+    onEvent('add', p);
+  });
+  watcher.on('change', (p) => {
+    onEvent('change', p);
+  });
+  watcher.on('unlink', (p) => {
+    onEvent('unlink', p);
+  });
 
   logger.info({ workflowId: wf.id, target }, 'File watcher registered');
   return { workflowId: wf.id, watcher };

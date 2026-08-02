@@ -33,7 +33,11 @@ export function buildGraph(input: QualityGateInput): SemGraph {
 }
 
 /** Forward-reachability bounded: esiste un nodo a valle (incluso lo start) che soddisfa `pred`? */
-export function reachesForward(g: SemGraph, startId: string, pred: (n: SemNode) => boolean): boolean {
+export function reachesForward(
+  g: SemGraph,
+  startId: string,
+  pred: (n: SemNode) => boolean,
+): boolean {
   const seen = new Set<string>();
   const stack = [startId];
   while (stack.length > 0) {

@@ -9,10 +9,21 @@
  */
 
 import { load as cheerioLoad } from 'cheerio';
-import { safeFetchWithRedirects, SsrfBlockedError, readTextTruncated } from '@medea/engine-safe-fetch';
+import {
+  safeFetchWithRedirects,
+  SsrfBlockedError,
+  readTextTruncated,
+} from '@medea/engine-safe-fetch';
 import type { NodeModule, NodeExecutor } from '../types.js';
 
-interface Hop { url: string; status: number; location: string | null; durationMs: number; server: string | null; contentType: string | null }
+interface Hop {
+  url: string;
+  status: number;
+  location: string | null;
+  durationMs: number;
+  server: string | null;
+  contentType: string | null;
+}
 
 type SeoImpact = 'good' | 'warning' | 'bad';
 
@@ -40,11 +51,34 @@ const DEFAULT_HOPS = 10;
 const TIMEOUT_PER_HOP_MS = 8_000;
 const FINAL_PAGE_CAP_BYTES = 512 * 1024;
 
-async function followHead(url: string, userAgent: string, signal: AbortSignal): Promise<{ status: number; location: string | null; durationMs: number; server: string | null; contentType: string | null }> {
+async function followHead(
+  url: string,
+  userAgent: string,
+  signal: AbortSignal,
+): Promise<{
+  status: number;
+  location: string | null;
+  durationMs: number;
+  server: string | null;
+  contentType: string | null;
+}> {
   const t0 = Date.now();
   const headers = { 'user-agent': userAgent, accept: '*/*' };
-  const opts = { redirect: 'manual' as const, signal, maxRedirects: 0, timeoutMs: TIMEOUT_PER_HOP_MS };
-  const read = (res: Response): { status: number; location: string | null; durationMs: number; server: string | null; contentType: string | null } => ({
+  const opts = {
+    redirect: 'manual' as const,
+    signal,
+    maxRedirects: 0,
+    timeoutMs: TIMEOUT_PER_HOP_MS,
+  };
+  const read = (
+    res: Response,
+  ): {
+    status: number;
+    location: string | null;
+    durationMs: number;
+    server: string | null;
+    contentType: string | null;
+  } => ({
     status: res.status,
     location: res.headers.get('location'),
     server: res.headers.get('server'),
@@ -59,14 +93,22 @@ async function followHead(url: string, userAgent: string, signal: AbortSignal): 
     // HEAD bloccato da alcuni server → fallback GET (corpo scartato).
     const res = await safeFetchWithRedirects(url, { method: 'GET', headers, ...opts });
     const out = read(res);
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime — TS narrow ottimistico
-    try { void res.body?.cancel?.(); } catch { /* ignore */ }
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime — TS narrow ottimistico
+      void res.body?.cancel?.();
+    } catch {
+      /* ignore */
+    }
     return out;
   }
 }
 
 function resolveLocation(current: string, location: string): string | null {
-  try { return new URL(location, current).toString(); } catch { return null; }
+  try {
+    return new URL(location, current).toString();
+  } catch {
+    return null;
+  }
 }
 
 /** Stesso documento? Confronto host+pathname (ignora hash/query order) per il mismatch canonical. */
@@ -74,8 +116,12 @@ function sameDocument(a: string, b: string): boolean {
   try {
     const ua = new URL(a);
     const ub = new URL(b);
-    return ua.host === ub.host && ua.pathname.replace(/\/$/u, '') === ub.pathname.replace(/\/$/u, '');
-  } catch { return false; }
+    return (
+      ua.host === ub.host && ua.pathname.replace(/\/$/u, '') === ub.pathname.replace(/\/$/u, '')
+    );
+  } catch {
+    return false;
+  }
 }
 
 /** Estrae l'URL da un valore `content` di <meta refresh> ("0; url=https://…" o "5;URL='…'"). */
@@ -84,20 +130,35 @@ function parseMetaRefresh(content: string): string | null {
   return m?.[1] ?? null;
 }
 
-interface FinalPageInfo { metaRefresh: string | null; canonical: string | null; ogUrl: string | null }
+interface FinalPageInfo {
+  metaRefresh: string | null;
+  canonical: string | null;
+  ogUrl: string | null;
+}
 
 /** GET (capped) della pagina finale 2xx HTML per estrarre meta-refresh + canonical/og:url. */
-async function analyzeFinalPage(url: string, userAgent: string, signal: AbortSignal): Promise<FinalPageInfo> {
+async function analyzeFinalPage(
+  url: string,
+  userAgent: string,
+  signal: AbortSignal,
+): Promise<FinalPageInfo> {
   const empty: FinalPageInfo = { metaRefresh: null, canonical: null, ogUrl: null };
   try {
     const res = await safeFetchWithRedirects(url, {
       method: 'GET',
       headers: { 'user-agent': userAgent, accept: 'text/html,*/*' },
-      redirect: 'manual', signal, maxRedirects: 0, timeoutMs: TIMEOUT_PER_HOP_MS,
+      redirect: 'manual',
+      signal,
+      maxRedirects: 0,
+      timeoutMs: TIMEOUT_PER_HOP_MS,
     } as never);
     if (!/html/iu.test(res.headers.get('content-type') ?? '')) {
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime
-      try { void res.body?.cancel?.(); } catch { /* ignore */ }
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime
+        void res.body?.cancel?.();
+      } catch {
+        /* ignore */
+      }
       return empty;
     }
     const { text } = await readTextTruncated(res, FINAL_PAGE_CAP_BYTES);
@@ -110,10 +171,16 @@ async function analyzeFinalPage(url: string, userAgent: string, signal: AbortSig
       canonical: canonical ? resolveLocation(url, canonical) : null,
       ogUrl: ogUrl ? resolveLocation(url, ogUrl) : null,
     };
-  } catch { return empty; }
+  } catch {
+    return empty;
+  }
 }
 
-function computeSeoImpact(hopCount: number, crossDomainCount: number, loopDetected: boolean): SeoImpact {
+function computeSeoImpact(
+  hopCount: number,
+  crossDomainCount: number,
+  loopDetected: boolean,
+): SeoImpact {
   if (loopDetected || hopCount >= 5) return 'bad';
   if (hopCount >= 3 || crossDomainCount > 0) return 'warning';
   return 'good';
@@ -125,7 +192,9 @@ const executor: NodeExecutor = async (config, _input, context) => {
   if (!startUrl) throw new Error('url required');
 
   const maxHops = Math.max(1, Math.min(Number(config.maxHops ?? DEFAULT_HOPS), MAX_HOPS_HARD));
-  const userAgent = String(config.userAgent ?? 'FlowForge-RedirectChain/1.0 (+https://flowforge.io)');
+  const userAgent = String(
+    config.userAgent ?? 'FlowForge-RedirectChain/1.0 (+https://flowforge.io)',
+  );
   const doAnalyzeFinal = config.analyzeFinalPage !== false && config.analyzeFinalPage !== 'false';
 
   const signal = context.abortSignal ?? new AbortController().signal;
@@ -144,10 +213,20 @@ const executor: NodeExecutor = async (config, _input, context) => {
     visited.add(current);
     try {
       const hop = await followHead(current, userAgent, signal);
-      chain.push({ url: current, status: hop.status, location: hop.location, durationMs: hop.durationMs, server: hop.server, contentType: hop.contentType });
+      chain.push({
+        url: current,
+        status: hop.status,
+        location: hop.location,
+        durationMs: hop.durationMs,
+        server: hop.server,
+        contentType: hop.contentType,
+      });
       if (hop.status >= 300 && hop.status < 400 && hop.location) {
         const next = resolveLocation(current, hop.location);
-        if (!next) { lastError = `Invalid Location header at hop ${chain.length}: ${hop.location}`; break; }
+        if (!next) {
+          lastError = `Invalid Location header at hop ${chain.length}: ${hop.location}`;
+          break;
+        }
         current = next;
       } else {
         current = null;
@@ -161,14 +240,21 @@ const executor: NodeExecutor = async (config, _input, context) => {
 
   const finalHop = chain[chain.length - 1];
   const finalUrl = finalHop?.url ?? null;
-  const ok = finalHop !== undefined && finalHop.status >= 200 && finalHop.status < 400 && !loopDetected && !exceededMaxHops;
+  const ok =
+    finalHop !== undefined &&
+    finalHop.status >= 200 &&
+    finalHop.status < 400 &&
+    !loopDetected &&
+    !exceededMaxHops;
 
   // Cross-domain: ogni transizione hop[i-1]→hop[i] con host diverso.
   let crossDomainCount = 0;
   for (let i = 1; i < chain.length; i += 1) {
     try {
       if (new URL(chain[i]!.url).host !== new URL(chain[i - 1]!.url).host) crossDomainCount += 1;
-    } catch { /* url non parsabile → non conta */ }
+    } catch {
+      /* url non parsabile → non conta */
+    }
   }
   const totalLatencyMs = chain.reduce((acc, h) => acc + h.durationMs, 0);
   const seoImpact = computeSeoImpact(chain.length, crossDomainCount, loopDetected);
@@ -206,7 +292,8 @@ const executor: NodeExecutor = async (config, _input, context) => {
   if (exceededMaxHops) warnings.push(`Exceeded max hops (${maxHops})`);
   if (chain.length > 3) warnings.push(`Long redirect chain (${chain.length} hops, SEO juice loss)`);
   if (crossDomainCount > 0) warnings.push(`${crossDomainCount} cross-domain redirect(s)`);
-  if (metaRefresh) warnings.push('Final page has a <meta refresh> (weak redirect, ignored by crawlers)');
+  if (metaRefresh)
+    warnings.push('Final page has a <meta refresh> (weak redirect, ignored by crawlers)');
   if (canonicalMismatch) warnings.push('Canonical/og:url of the final page points elsewhere');
 
   return {
@@ -289,10 +376,25 @@ export const redirectChainNode: NodeModule = {
         type: 'boolean',
         required: false,
         defaultValue: 'true',
-        help: 'Se ON (default): sulla pagina finale 2xx HTML fa un GET (capped a 512KB) per estrarre <meta refresh> e confrontare canonical/og:url con l\'URL finale. OFF = salta la richiesta extra (solo la catena di redirect).',
+        help: "Se ON (default): sulla pagina finale 2xx HTML fa un GET (capped a 512KB) per estrarre <meta refresh> e confrontare canonical/og:url con l'URL finale. OFF = salta la richiesta extra (solo la catena di redirect).",
       },
     ],
-    outputs: ['startUrl', 'finalUrl', 'ok', 'hopCount', 'chain', 'loopDetected', 'exceededMaxHops', 'crossDomainCount', 'totalLatencyMs', 'seoImpact', 'metaRefresh', 'canonicalUrl', 'canonicalMismatch', 'error'],
+    outputs: [
+      'startUrl',
+      'finalUrl',
+      'ok',
+      'hopCount',
+      'chain',
+      'loopDetected',
+      'exceededMaxHops',
+      'crossDomainCount',
+      'totalLatencyMs',
+      'seoImpact',
+      'metaRefresh',
+      'canonicalUrl',
+      'canonicalMismatch',
+      'error',
+    ],
   },
   executor,
 };

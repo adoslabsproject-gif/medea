@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { TableSchema, DatabaseSchema, QuerySpecSchema, MigrationActionSchema, ColumnSchema } from './index.js';
+import {
+  TableSchema,
+  DatabaseSchema,
+  QuerySpecSchema,
+  MigrationActionSchema,
+  ColumnSchema,
+} from './index.js';
 
 describe('TableSchema', () => {
   it('accepts a well-formed table with PK column', () => {

@@ -16,15 +16,21 @@
  */
 import { buildCatalogSpec, type NodeConfigSpec } from '@/services/ai-scaffold/catalog-spec.js';
 import {
-  applyDeterministicAutoConfig, type AutoConfigFix, type AutoConfigNode,
+  applyDeterministicAutoConfig,
+  type AutoConfigFix,
+  type AutoConfigNode,
 } from '@/services/ai-scaffold/semantic-autoconfig.js';
 import {
-  validateNodesAgainstCatalog, type CatalogViolation,
+  validateNodesAgainstCatalog,
+  type CatalogViolation,
 } from '@/services/ai-scaffold/catalog-validator.js';
 import type { NodeCatalogEntry } from '@/services/ai-scaffold/node-catalog.js';
 
 /** Config corretta proposta dalla riparazione per un nodo (per id). */
-export interface RepairedNode { id: string; config: Record<string, unknown> }
+export interface RepairedNode {
+  id: string;
+  config: Record<string, unknown>;
+}
 
 /** Funzione di riparazione iniettata. In prod = chiamata LLM mirata (vedi
  *  make-llm-repair.ts). Riceve i nodi correnti + le violazioni, ritorna le
@@ -57,8 +63,12 @@ export interface SemanticRepairResult<N extends AutoConfigNode> {
  *  "unknown_def" sono gestite a monte (autoFixInventedDefIds) e raramente
  *  riparabili a colpo sicuro → non innescano da sole un round LLM. */
 function isRepairable(v: CatalogViolation): boolean {
-  return v.kind === 'missing_required' || v.kind === 'invalid_enum'
-    || v.kind === 'unknown_config_key' || v.kind === 'invalid_action';
+  return (
+    v.kind === 'missing_required' ||
+    v.kind === 'invalid_enum' ||
+    v.kind === 'unknown_config_key' ||
+    v.kind === 'invalid_action'
+  );
 }
 
 /** Applica le config riparate ai nodi (per id), clonando (no mutazione input). */
@@ -91,7 +101,9 @@ export async function runSemanticRepair<N extends AutoConfigNode>(
   let rounds = 0;
 
   while (
-    remaining.length > 0 && opts.repair && rounds < maxRounds &&
+    remaining.length > 0 &&
+    opts.repair &&
+    rounds < maxRounds &&
     remaining.some(isRepairable)
   ) {
     const repaired = await opts.repair({ nodes, violations: remaining });

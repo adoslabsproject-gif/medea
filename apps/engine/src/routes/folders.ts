@@ -86,11 +86,13 @@ export function createFolderRoutes(): Hono {
       .get(folderId, tenantId) as FolderRow | undefined;
     if (!current) return c.json({ error: 'Folder not found' }, 404);
 
-    const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim() : current.name;
+    const name =
+      typeof body.name === 'string' && body.name.trim() ? body.name.trim() : current.name;
     let parentId = current.parent_id;
     if (body.parentId === null) parentId = null;
     else if (typeof body.parentId === 'string' && body.parentId) {
-      if (body.parentId === folderId) return c.json({ error: 'Cannot parent a folder under itself' }, 400);
+      if (body.parentId === folderId)
+        return c.json({ error: 'Cannot parent a folder under itself' }, 400);
       parentId = body.parentId;
     }
     const now = new Date().toISOString();
@@ -105,11 +107,17 @@ export function createFolderRoutes(): Hono {
     const folderId = c.req.param('id');
     const { sqlite } = getDatabase();
     // Detach children (re-parent to null) before delete; refuse if workflows still pinned
-    const wfCount = (sqlite
-      .prepare('SELECT COUNT(*) as c FROM workflows WHERE folder_id = ? AND tenant_id = ?')
-      .get(folderId, tenantId) as { c: number } | undefined)?.c ?? 0;
+    const wfCount =
+      (
+        sqlite
+          .prepare('SELECT COUNT(*) as c FROM workflows WHERE folder_id = ? AND tenant_id = ?')
+          .get(folderId, tenantId) as { c: number } | undefined
+      )?.c ?? 0;
     if (wfCount > 0) {
-      return c.json({ error: `Folder has ${wfCount.toString()} workflow(s); move them first` }, 409);
+      return c.json(
+        { error: `Folder has ${wfCount.toString()} workflow(s); move them first` },
+        409,
+      );
     }
     sqlite
       .prepare('UPDATE workflow_folders SET parent_id = NULL WHERE parent_id = ? AND tenant_id = ?')

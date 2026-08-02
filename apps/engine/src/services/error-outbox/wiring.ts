@@ -17,7 +17,10 @@ import { logger } from '@/lib/logger.js';
 import { safeOutboundFetch } from '@/lib/safe-outbound-fetch.js';
 import type { ErrorOutboxChannel } from '@/storage/schema.js';
 import type { ChannelDispatcher } from './worker.js';
-import { makeWebhookDispatcher, type WebhookDispatcherDeps } from './dispatchers/webhook.dispatcher.js';
+import {
+  makeWebhookDispatcher,
+  type WebhookDispatcherDeps,
+} from './dispatchers/webhook.dispatcher.js';
 import { makeEmailDispatcher, type EmailDispatcherDeps } from './dispatchers/email.dispatcher.js';
 import { makeFanoutDispatcher, type FanoutStartParams } from './dispatchers/fanout.dispatcher.js';
 import { sendFailureEmailViaPortal } from './portal-email-client.js';
@@ -51,19 +54,35 @@ function defaultSafeFetch(): WebhookDispatcherDeps['safeFetch'] {
   };
 }
 
-export function buildOutboxDispatchers(deps: OutboxWiringDeps): Record<ErrorOutboxChannel, ChannelDispatcher> {
+export function buildOutboxDispatchers(
+  deps: OutboxWiringDeps,
+): Record<ErrorOutboxChannel, ChannelDispatcher> {
   const loadOnError = async (
     workflowId: string,
     tenantId: string,
-  ): Promise<{ webhookUrl?: string | undefined; emailTo?: string | undefined; workflowName?: string | undefined } | null> => {
+  ): Promise<{
+    webhookUrl?: string | undefined;
+    emailTo?: string | undefined;
+    workflowName?: string | undefined;
+  } | null> => {
     const wf = await deps.getWorkflow(workflowId, tenantId);
     if (!wf) return null;
-    return { webhookUrl: wf.onError?.webhookUrl, emailTo: wf.onError?.emailTo, workflowName: wf.name };
+    return {
+      webhookUrl: wf.onError?.webhookUrl,
+      emailTo: wf.onError?.emailTo,
+      workflowName: wf.name,
+    };
   };
 
   return {
-    webhook: makeWebhookDispatcher({ loadOnError, safeFetch: deps.safeFetch ?? defaultSafeFetch() }),
-    email: makeEmailDispatcher({ loadOnError, sendViaPortal: deps.sendViaPortal ?? sendFailureEmailViaPortal }),
+    webhook: makeWebhookDispatcher({
+      loadOnError,
+      safeFetch: deps.safeFetch ?? defaultSafeFetch(),
+    }),
+    email: makeEmailDispatcher({
+      loadOnError,
+      sendViaPortal: deps.sendViaPortal ?? sendFailureEmailViaPortal,
+    }),
     fanout: makeFanoutDispatcher({
       resolveErrorWorkflowId: async (src, tenant) =>
         (await deps.getErrorWorkflowId(src, tenant)) ?? deps.getTenantErrorWorkflowId(),

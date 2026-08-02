@@ -13,22 +13,34 @@
 
 import type { LlmProvider } from './llm-providers.service.js';
 import {
-  getProviderSpec, isFixedOpenAiCompat, fixedOpenAiCompatTarget,
+  getProviderSpec,
+  isFixedOpenAiCompat,
+  fixedOpenAiCompatTarget,
 } from './llm/provider-registry.js';
 import { readJsonCapped, readTextTruncated } from '@/lib/capped-response.js';
 
-interface ProviderCfg { apiKey: string; defaultModel?: string; baseUrl?: string }
+interface ProviderCfg {
+  apiKey: string;
+  defaultModel?: string;
+  baseUrl?: string;
+}
 
 const PING = 'Reply with the single word OK.';
 
 /** Estrae il testo da una risposta OpenAI-compat (choices[0].message.content). */
 async function readOpenAiText(res: Response, label: string): Promise<string> {
-  if (!res.ok) throw new Error(`${label} ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`);
+  if (!res.ok)
+    throw new Error(
+      `${label} ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`,
+    );
   const data = await readJsonCapped<{ choices?: { message: { content: string } }[] }>(res);
   return data.choices?.[0]?.message.content ?? '';
 }
 
-export async function dispatchLLMForTest(provider: LlmProvider, cfg: ProviderCfg | null): Promise<string> {
+export async function dispatchLLMForTest(
+  provider: LlmProvider,
+  cfg: ProviderCfg | null,
+): Promise<string> {
   const apiKey = cfg?.apiKey ?? '';
   const model = cfg?.defaultModel ?? '';
   const baseUrl = cfg?.baseUrl;
@@ -39,8 +51,16 @@ export async function dispatchLLMForTest(provider: LlmProvider, cfg: ProviderCfg
     const target = fixedOpenAiCompatTarget(provider, model, true /* ping model */);
     const res = await fetch(target.url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(target.extraHeaders ?? {}), Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: target.model, messages: [{ role: 'user', content: PING }], max_tokens: 8 }),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(target.extraHeaders ?? {}),
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: target.model,
+        messages: [{ role: 'user', content: PING }],
+        max_tokens: 8,
+      }),
     });
     return readOpenAiText(res, providerLabel(provider));
   }
@@ -53,29 +73,57 @@ export async function dispatchLLMForTest(provider: LlmProvider, cfg: ProviderCfg
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: model || getProviderSpec('liara').pingModel, messages: [{ role: 'user', content: PING }], max_tokens: 8 }),
+        body: JSON.stringify({
+          model: model || getProviderSpec('liara').pingModel,
+          messages: [{ role: 'user', content: PING }],
+          max_tokens: 8,
+        }),
       });
       return readOpenAiText(res, 'Liara');
     }
     case 'anthropic': {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: model || getProviderSpec('anthropic').pingModel, max_tokens: 8, messages: [{ role: 'user', content: PING }] }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: model || getProviderSpec('anthropic').pingModel,
+          max_tokens: 8,
+          messages: [{ role: 'user', content: PING }],
+        }),
       });
-      if (!res.ok) throw new Error(`Anthropic ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`);
+      if (!res.ok)
+        throw new Error(
+          `Anthropic ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`,
+        );
       const data = await readJsonCapped<{ content?: { type: string; text?: string }[] }>(res);
-      return data.content?.filter((b) => b.type === 'text').map((b) => b.text ?? '').join('') ?? '';
+      return (
+        data.content
+          ?.filter((b) => b.type === 'text')
+          .map((b) => b.text ?? '')
+          .join('') ?? ''
+      );
     }
     case 'gemini': {
       const m = model || getProviderSpec('gemini').pingModel;
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: PING }] }] }),
-      });
-      if (!res.ok) throw new Error(`Gemini ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`);
-      const data = await readJsonCapped<{ candidates?: { content?: { parts?: { text?: string }[] } }[] }>(res);
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: PING }] }] }),
+        },
+      );
+      if (!res.ok)
+        throw new Error(
+          `Gemini ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`,
+        );
+      const data = await readJsonCapped<{
+        candidates?: { content?: { parts?: { text?: string }[] } }[];
+      }>(res);
       return data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
     }
     case 'ollama': {
@@ -83,9 +131,16 @@ export async function dispatchLLMForTest(provider: LlmProvider, cfg: ProviderCfg
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: model || getProviderSpec('ollama').pingModel, stream: false, messages: [{ role: 'user', content: PING }] }),
+        body: JSON.stringify({
+          model: model || getProviderSpec('ollama').pingModel,
+          stream: false,
+          messages: [{ role: 'user', content: PING }],
+        }),
       });
-      if (!res.ok) throw new Error(`Ollama ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`);
+      if (!res.ok)
+        throw new Error(
+          `Ollama ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`,
+        );
       const data = await readJsonCapped<{ message?: { content?: string } }>(res);
       return data.message?.content ?? '';
     }
@@ -95,17 +150,26 @@ export async function dispatchLLMForTest(provider: LlmProvider, cfg: ProviderCfg
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({ model: model || getProviderSpec('voyage').pingModel, input: PING }),
       });
-      if (!res.ok) throw new Error(`Voyage ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`);
+      if (!res.ok)
+        throw new Error(
+          `Voyage ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`,
+        );
       return 'OK (embeddings provider)';
     }
-    default: throw new Error(`Unknown provider: ${provider}`);
+    default:
+      throw new Error(`Unknown provider: ${provider}`);
   }
 }
 
 /** Etichetta leggibile per i messaggi di errore del ramo generico. */
 function providerLabel(p: LlmProvider): string {
   const map: Partial<Record<LlmProvider, string>> = {
-    openai: 'OpenAI', mistral: 'Mistral', groq: 'Groq', grok: 'Grok', deepseek: 'DeepSeek', openrouter: 'OpenRouter',
+    openai: 'OpenAI',
+    mistral: 'Mistral',
+    groq: 'Groq',
+    grok: 'Grok',
+    deepseek: 'DeepSeek',
+    openrouter: 'OpenRouter',
   };
   return map[p] ?? p;
 }

@@ -76,10 +76,14 @@ export function createBackupRoutes(): Hono {
   app.post('/backup/restore', async (c) => {
     const tenantId = getTenantId(c);
     const raw = (await c.req.json()) as unknown;
-    if (!raw || typeof raw !== 'object') return c.json({ error: 'Body must be a JSON envelope' }, 400);
+    if (!raw || typeof raw !== 'object')
+      return c.json({ error: 'Body must be a JSON envelope' }, 400);
     const envelope = raw as Record<string, unknown>;
     if (envelope.tenantId !== tenantId) {
-      return c.json({ error: 'Cross-tenant restore refused. Headers tenant must match envelope tenant.' }, 403);
+      return c.json(
+        { error: 'Cross-tenant restore refused. Headers tenant must match envelope tenant.' },
+        403,
+      );
     }
     const { sqlite } = getDatabase();
     const counts: Record<string, number> = {};
@@ -94,18 +98,22 @@ export function createBackupRoutes(): Hono {
         // senza whitelist sarebbe identifier-injection. Whitelisto contro lo
         // schema REALE via PRAGMA (table è da EXPORT_TABLES, allowlist → safe).
         const realCols = new Set(
-          (sqlite.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((r) => r.name),
+          (sqlite.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map(
+            (r) => r.name,
+          ),
         );
         const cols = Object.keys(sample).filter((k) => realCols.has(k));
         if (cols.length === 0) continue;
         const placeholders = cols.map(() => '?').join(', ');
-        const stmt = sqlite.prepare(`INSERT OR REPLACE INTO ${table} (${cols.join(', ')}) VALUES (${placeholders})`);
+        const stmt = sqlite.prepare(
+          `INSERT OR REPLACE INTO ${table} (${cols.join(', ')}) VALUES (${placeholders})`,
+        );
         let count = 0;
         const txn = sqlite.transaction((items: Record<string, unknown>[]) => {
           for (const item of items) {
             // Valori nell'ordine ESATTO delle colonne validate (non
             // Object.values, che includerebbe chiavi scartate / ordine errato).
-            stmt.run(...cols.map((k) => (item)[k] ?? null));
+            stmt.run(...cols.map((k) => item[k] ?? null));
             count += 1;
           }
         });

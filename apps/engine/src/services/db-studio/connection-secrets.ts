@@ -38,7 +38,12 @@ export function isSealed(value: unknown): value is string {
 
 /** True se il valore è un secret LETTERALE da cifrare (no vault:, no enc:, non vuoto). */
 function isPlainSecret(value: unknown): value is string {
-  return typeof value === 'string' && value !== '' && !value.startsWith(VAULT_PREFIX) && !value.startsWith(ENC_PREFIX);
+  return (
+    typeof value === 'string' &&
+    value !== '' &&
+    !value.startsWith(VAULT_PREFIX) &&
+    !value.startsWith(ENC_PREFIX)
+  );
 }
 
 /** Cifra un secret letterale → `enc:1:<b64nonce>:<b64ciphertext>`. */
@@ -52,7 +57,8 @@ export function unsealSecret(value: string, tenantId: string): string {
   if (!value.startsWith(ENC_PREFIX)) return value; // non nostro → invariato
   const rest = value.slice(ENC_PREFIX.length);
   const sep = rest.indexOf(':');
-  if (sep < 0) throw new Error('unsealSecret: blob malformato (manca il separatore nonce:ciphertext)');
+  if (sep < 0)
+    throw new Error('unsealSecret: blob malformato (manca il separatore nonce:ciphertext)');
   const nonce = Buffer.from(rest.slice(0, sep), 'base64');
   const ciphertext = Buffer.from(rest.slice(sep + 1), 'base64');
   return decrypt(ciphertext, nonce, getMasterPasswordOrThrow(), tenantId);
@@ -62,7 +68,10 @@ export function unsealSecret(value: string, tenantId: string): string {
  * Restituisce una COPIA della connection col secret cifrato a riposo. Idempotente:
  * `enc:`/`vault:`/vuoto/assente restano invariati (solo i literal vengono cifrati).
  */
-export function sealConnectionSecrets(connection: Database['connection'], tenantId: string): Database['connection'] {
+export function sealConnectionSecrets(
+  connection: Database['connection'],
+  tenantId: string,
+): Database['connection'] {
   const c = connection as Record<string, unknown>;
   if (!isPlainSecret(c.passwordSecretRef)) return connection;
   return { ...connection, passwordSecretRef: sealSecret(c.passwordSecretRef, tenantId) };
@@ -72,7 +81,10 @@ export function sealConnectionSecrets(connection: Database['connection'], tenant
  * Restituisce una COPIA della connection col secret DECIFRATO (per il connect).
  * `enc:` → plaintext; literal/vault:/vuoto → invariati. Mai muta l'input.
  */
-export function unsealConnectionSecrets(connection: Database['connection'], tenantId: string): Database['connection'] {
+export function unsealConnectionSecrets(
+  connection: Database['connection'],
+  tenantId: string,
+): Database['connection'] {
   const c = connection as Record<string, unknown>;
   if (!isSealed(c.passwordSecretRef)) return connection;
   return { ...connection, passwordSecretRef: unsealSecret(c.passwordSecretRef, tenantId) };

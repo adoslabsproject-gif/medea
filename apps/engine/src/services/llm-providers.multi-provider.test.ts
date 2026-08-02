@@ -19,16 +19,30 @@ vi.mock('@/storage/db.js', () => ({ getDatabase: () => ({ sqlite: db }) }));
 vi.mock('@/lib/logger.js');
 // audit + secrets mockati: niente master password reale, encrypt/decrypt passthrough
 // (il name è AAD ma qui è irrilevante — decrypt ritorna il plaintext registrato).
-vi.mock('./audit.service.js', () => ({ AuditLogService: class { append = vi.fn().mockResolvedValue(undefined); } }));
+vi.mock('./audit.service.js', () => ({
+  AuditLogService: class {
+    append = vi.fn().mockResolvedValue(undefined);
+  },
+}));
 const store = new Map<string, string>();
 vi.mock('@medea/engine-secrets', () => ({
   encryptSecret: (s: { id: string; plaintext: string }) => {
     store.set(s.id, s.plaintext);
-    return { ciphertext: s.id, nonce: 'n', authTag: 't', dekCiphertext: 'dc', dekNonce: 'dn', dekAuthTag: 'dt' };
+    return {
+      ciphertext: s.id,
+      nonce: 'n',
+      authTag: 't',
+      dekCiphertext: 'dc',
+      dekNonce: 'dn',
+      dekAuthTag: 'dt',
+    };
   },
   decryptSecret: (e: { ciphertext: string }) => store.get(e.ciphertext) ?? '',
 }));
-vi.mock('@/config.js', () => ({ liaraBaseUrl: () => 'https://liara.local', isLiaraEnabled: () => true }));
+vi.mock('@/config.js', () => ({
+  liaraBaseUrl: () => 'https://liara.local',
+  isLiaraEnabled: () => true,
+}));
 vi.mock('@/services/credentials.service.js', async () => {
   const actual = await vi.importActual<typeof CredentialsServiceModule>('./credentials.service.js');
   return { ...actual, loadMaster: () => 'master-fake-32chars-padding!!!!!!!!' };
@@ -47,15 +61,26 @@ describe('🚨 BYOK multi-provider per tenant (UNIQUE bug)', () => {
   it('🚨 salva 3 provider sullo STESSO tenant senza violare UNIQUE(tenant_id,name)', async () => {
     const svc = new LlmProvidersService();
     await svc.upsert('t1', 'anthropic', { apiKey: 'sk-ant-1' });
-    await svc.upsert('t1', 'openai', { apiKey: 'sk-oa-2' });       // ← prima: UNIQUE failed
+    await svc.upsert('t1', 'openai', { apiKey: 'sk-oa-2' }); // ← prima: UNIQUE failed
     await svc.upsert('t1', 'gemini', { apiKey: 'sk-gm-3' });
-    const configured = new Set(svc.list('t1').filter((p) => p.hasKey).map((p) => p.provider));
+    const configured = new Set(
+      svc
+        .list('t1')
+        .filter((p) => p.hasKey)
+        .map((p) => p.provider),
+    );
     // i 3 BYOK convivono (oltre a liara free-tier sempre presente)
     expect(configured.has('anthropic')).toBe(true);
     expect(configured.has('openai')).toBe(true);
     expect(configured.has('gemini')).toBe(true);
     // a livello DB: 3 righe llm distinte
-    const cnt = (db.prepare("SELECT COUNT(*) c FROM user_credentials WHERE tenant_id='t1' AND provider LIKE 'llm:%'").get() as { c: number }).c;
+    const cnt = (
+      db
+        .prepare(
+          "SELECT COUNT(*) c FROM user_credentials WHERE tenant_id='t1' AND provider LIKE 'llm:%'",
+        )
+        .get() as { c: number }
+    ).c;
     expect(cnt).toBe(3);
   });
 
@@ -73,8 +98,10 @@ describe('🚨 BYOK multi-provider per tenant (UNIQUE bug)', () => {
     // simula riga LEGACY con name costante 'default' (pre-fix)
     db.prepare("UPDATE user_credentials SET name = 'default' WHERE provider = 'llm:openai'").run();
     await svc.upsert('t1', 'openai', { apiKey: 'v2' }); // trova per provider, UPDATE
-    const rows = db.prepare("SELECT name FROM user_credentials WHERE tenant_id='t1' AND provider='llm:openai'").all() as { name: string }[];
-    expect(rows).toHaveLength(1);            // nessun duplicato
+    const rows = db
+      .prepare("SELECT name FROM user_credentials WHERE tenant_id='t1' AND provider='llm:openai'")
+      .all() as { name: string }[];
+    expect(rows).toHaveLength(1); // nessun duplicato
     expect(rows[0]!.name).toBe('llm:openai'); // name risanato
     expect(svc.get('t1', 'openai')?.apiKey).toBe('v2');
   });

@@ -30,7 +30,7 @@ describe('sanitizeEmailAddress — happy path', () => {
 });
 
 describe('sanitizeEmailAddress — header injection (CRLF) attacks', () => {
-  it('reject \\r\\n nell\'email → throw header injection', () => {
+  it("reject \\r\\n nell'email → throw header injection", () => {
     expect(() => sanitizeEmailAddress('victim@x.com\r\nBcc: leak@evil.com')).toThrow(
       /control chars.*header injection blocked/,
     );
@@ -97,7 +97,11 @@ describe('sanitizeEmailList — multi recipients', () => {
   });
 
   it('CSV string → split + sanitize', () => {
-    expect(sanitizeEmailList('a@x.com, b@y.com; c@z.com')).toEqual(['a@x.com', 'b@y.com', 'c@z.com']);
+    expect(sanitizeEmailList('a@x.com, b@y.com; c@z.com')).toEqual([
+      'a@x.com',
+      'b@y.com',
+      'c@z.com',
+    ]);
   });
 
   it('null/undefined → array vuoto', () => {
@@ -105,7 +109,7 @@ describe('sanitizeEmailList — multi recipients', () => {
     expect(sanitizeEmailList(undefined)).toEqual([]);
   });
 
-  it('uno solo invalido nell\'array → throw (no partial)', () => {
+  it("uno solo invalido nell'array → throw (no partial)", () => {
     expect(() => sanitizeEmailList(['a@x.com', 'bad\r\ninject@y.com'])).toThrow(/control chars/);
   });
 

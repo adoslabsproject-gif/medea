@@ -15,12 +15,12 @@ classici dell'observability:
 
 Le implementazioni operative vivono attualmente in `apps/runtime/src/`:
 
-| Concern | Path corrente | Estrazione futura |
-|---------|---------------|-------------------|
-| Pino logger | `apps/runtime/src/lib/logger.ts` | → `@medea/engine-observability/logger` |
-| Prometheus | `apps/runtime/src/lib/metrics-store.ts` + `routes/metrics.ts` | → `@medea/engine-observability/metrics` |
-| Audit log | `apps/runtime/src/services/audit.service.ts` | → `@medea/engine-observability/audit-log` |
-| OTel | (non ancora) | → `@medea/engine-observability/otel` |
+| Concern     | Path corrente                                                 | Estrazione futura                         |
+| ----------- | ------------------------------------------------------------- | ----------------------------------------- |
+| Pino logger | `apps/runtime/src/lib/logger.ts`                              | → `@medea/engine-observability/logger`    |
+| Prometheus  | `apps/runtime/src/lib/metrics-store.ts` + `routes/metrics.ts` | → `@medea/engine-observability/metrics`   |
+| Audit log   | `apps/runtime/src/services/audit.service.ts`                  | → `@medea/engine-observability/audit-log` |
+| OTel        | (non ancora)                                                  | → `@medea/engine-observability/otel`      |
 
 ## Perché non estratto ancora
 

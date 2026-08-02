@@ -39,7 +39,14 @@ const MAX_HTML_BYTES = 5 * 1024 * 1024; // cap difensivo anti-OOM sul parse
 /** Codice hreflang valido: ISO 639-1/2 + regione/script opzionale, oppure x-default. */
 const HREFLANG_RE = /^(x-default|[a-z]{2,3}(-[A-Za-z]{2,4})?(-[A-Za-z]{2})?)$/u;
 /** <meta name=…> già mappati in campi dedicati → non finiscono in metaExtra. */
-const KNOWN_META_NAMES = new Set(['description', 'keywords', 'robots', 'viewport', 'author', 'theme-color']);
+const KNOWN_META_NAMES = new Set([
+  'description',
+  'keywords',
+  'robots',
+  'viewport',
+  'author',
+  'theme-color',
+]);
 
 function getHtmlFromInput(config: Record<string, unknown>, input: unknown): string {
   const source = String(config.htmlSource ?? 'input');
@@ -56,7 +63,11 @@ function getHtmlFromInput(config: Record<string, unknown>, input: unknown): stri
 function safeJsonParse(raw: string): unknown {
   const trimmed = raw.trim();
   if (!trimmed) return null;
-  try { return JSON.parse(trimmed); } catch { return null; }
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return null;
+  }
 }
 
 const executor: NodeExecutor = async (config, input, _context) => {
@@ -64,7 +75,9 @@ const executor: NodeExecutor = async (config, input, _context) => {
   const rawHtml = getHtmlFromInput(config, input);
   if (!rawHtml.trim()) {
     return {
-      output: { matched: false, warnings: ['Empty HTML input'] } satisfies Partial<MetaResult> & { matched: boolean },
+      output: { matched: false, warnings: ['Empty HTML input'] } satisfies Partial<MetaResult> & {
+        matched: boolean;
+      },
       durationMs: Date.now() - start,
       warnings: ['Empty HTML input'],
     };
@@ -93,7 +106,8 @@ const executor: NodeExecutor = async (config, input, _context) => {
     metaExtra: {},
     warnings: [],
   };
-  if (truncated) result.warnings.push(`HTML troncato a ${String(MAX_HTML_BYTES)} byte (cap anti-OOM)`);
+  if (truncated)
+    result.warnings.push(`HTML troncato a ${String(MAX_HTML_BYTES)} byte (cap anti-OOM)`);
 
   // <title>
   const titleText = $('head title').first().text().trim();
@@ -113,9 +127,12 @@ const executor: NodeExecutor = async (config, input, _context) => {
     if (!name || !content) return;
     if (name === 'description') result.description = content.slice(0, TRUNC_DESC);
     else if (name === 'keywords') {
-      result.keywords = content.split(',').map((k) => k.trim()).filter(Boolean).slice(0, 50);
-    }
-    else if (name === 'robots') result.robots = content;
+      result.keywords = content
+        .split(',')
+        .map((k) => k.trim())
+        .filter(Boolean)
+        .slice(0, 50);
+    } else if (name === 'robots') result.robots = content;
     else if (name === 'viewport') result.viewport = content;
     else if (name === 'author') result.author = content;
     else if (name === 'theme-color') result.themeColor = content;
@@ -125,7 +142,11 @@ const executor: NodeExecutor = async (config, input, _context) => {
   });
 
   // Favicon: icon / shortcut icon / apple-touch-icon (il primo dichiarato).
-  const faviconHref = $('link[rel~="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]').first().attr('href');
+  const faviconHref = $(
+    'link[rel~="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]',
+  )
+    .first()
+    .attr('href');
   if (faviconHref) result.favicon = faviconHref.trim();
 
   // <meta property="og:*">
@@ -143,7 +164,8 @@ const executor: NodeExecutor = async (config, input, _context) => {
   $('link[rel="alternate"][hreflang]').each((_, el) => {
     const hreflang = ($(el).attr('hreflang') ?? '').trim();
     const href = ($(el).attr('href') ?? '').trim();
-    if (hreflang && href) result.hreflang.push({ lang: hreflang, href, valid: HREFLANG_RE.test(hreflang) });
+    if (hreflang && href)
+      result.hreflang.push({ lang: hreflang, href, valid: HREFLANG_RE.test(hreflang) });
   });
 
   // JSON-LD structured data
@@ -154,16 +176,26 @@ const executor: NodeExecutor = async (config, input, _context) => {
 
   // Soft warnings — segnalano problemi senza fallire l'esecuzione
   if (!result.title) result.warnings.push('Missing <title>');
-  else if (titleText.length > 60) result.warnings.push(`Title too long (${titleText.length} chars, recommended 50-60)`);
-  else if (titleText.length < 20) result.warnings.push(`Title too short (${titleText.length} chars, recommended 20-60)`);
+  else if (titleText.length > 60)
+    result.warnings.push(`Title too long (${titleText.length} chars, recommended 50-60)`);
+  else if (titleText.length < 20)
+    result.warnings.push(`Title too short (${titleText.length} chars, recommended 20-60)`);
   if (!result.description) result.warnings.push('Missing meta description');
-  else if (result.description.length > 160) result.warnings.push(`Description too long (${result.description.length} chars, recommended ≤160)`);
-  else if (result.description.length < 50) result.warnings.push(`Description too short (${result.description.length} chars, recommended 50-160)`);
+  else if (result.description.length > 160)
+    result.warnings.push(
+      `Description too long (${result.description.length} chars, recommended ≤160)`,
+    );
+  else if (result.description.length < 50)
+    result.warnings.push(
+      `Description too short (${result.description.length} chars, recommended 50-160)`,
+    );
   if (!result.canonical) result.warnings.push('Missing <link rel="canonical">');
   if (!result.og.title) result.warnings.push('Missing og:title (social sharing degraded)');
-  if (!result.og.image) result.warnings.push('Missing og:image (social cards will have no preview)');
+  if (!result.og.image)
+    result.warnings.push('Missing og:image (social cards will have no preview)');
   const invalidHreflang = result.hreflang.filter((h) => !h.valid).map((h) => h.lang);
-  if (invalidHreflang.length > 0) result.warnings.push(`Invalid hreflang code(s): ${invalidHreflang.join(', ')}`);
+  if (invalidHreflang.length > 0)
+    result.warnings.push(`Invalid hreflang code(s): ${invalidHreflang.join(', ')}`);
 
   return {
     output: result,
@@ -185,7 +217,7 @@ export const metaExtractNode: NodeModule = {
       'og:url), Twitter Card (twitter:card/title/description/image/site/creator), ' +
       'JSON-LD strutturato (Schema.org Article/Product/Organization/BreadcrumbList ' +
       '/FAQPage/HowTo/Recipe), favicon, hreflang multi-language (con validazione del ' +
-      'codice ISO 639-1), og:locale (dentro l\'oggetto og), theme-color, e ogni altro ' +
+      "codice ISO 639-1), og:locale (dentro l'oggetto og), theme-color, e ogni altro " +
       '<meta name=…> non standard raccolto in metaExtra. HTML oltre 5MB troncato (cap ' +
       'anti-OOM). Output strutturato per scoring SEO automatico, DB audit, report email, ' +
       'AI agent suggestion rewriting.\n\n' +
@@ -241,9 +273,23 @@ export const metaExtractNode: NodeModule = {
       },
     ],
     outputs: [
-      'title', 'description', 'keywords', 'canonical', 'robots',
-      'lang', 'charset', 'viewport', 'author', 'favicon', 'themeColor',
-      'og', 'twitter', 'jsonLd', 'hreflang', 'metaExtra', 'warnings',
+      'title',
+      'description',
+      'keywords',
+      'canonical',
+      'robots',
+      'lang',
+      'charset',
+      'viewport',
+      'author',
+      'favicon',
+      'themeColor',
+      'og',
+      'twitter',
+      'jsonLd',
+      'hreflang',
+      'metaExtra',
+      'warnings',
     ],
   },
   executor,

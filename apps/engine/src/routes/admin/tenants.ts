@@ -22,14 +22,21 @@ import { hashPassword } from '@medea/engine-auth-local';
 import { AdminStatsService } from '@/services/admin-stats.service.js';
 import { getDatabase } from '@/storage/db.js';
 import { AuditLogService } from '@/services/audit.service.js';
-import { tenantService, TenantNotFoundError, TenantSlugConflictError } from '@/services/tenant.service.js';
+import {
+  tenantService,
+  TenantNotFoundError,
+  TenantSlugConflictError,
+} from '@/services/tenant.service.js';
 import { parseIntParam } from './_shared/query-int.js';
 import { logger } from '@/lib/logger.js';
 
 const audit = new AuditLogService();
 
 const CreateTenantSchema = z.object({
-  tenantSlug: z.string().regex(/^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/u, 'Slug: 3-64 char, a-z 0-9 -').toLowerCase(),
+  tenantSlug: z
+    .string()
+    .regex(/^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/u, 'Slug: 3-64 char, a-z 0-9 -')
+    .toLowerCase(),
   ownerEmail: z.string().email(),
   ownerName: z.string().min(1).max(100),
   ownerPassword: z.string().min(12).max(200),
@@ -98,10 +105,21 @@ export function registerTenantsRoutes(app: Hono): void {
     const limit = parseIntParam(c.req.query('limit'), { def: 50, min: 1, max: 200 });
     const offset = parseIntParam(c.req.query('offset'), { def: 0, min: 0, max: 5_000_000 });
     const opts: Parameters<typeof tenantService.list>[0] = { limit, offset };
-    if (statusParam === 'trial' || statusParam === 'active' || statusParam === 'suspended' || statusParam === 'archived' || statusParam === 'all') {
+    if (
+      statusParam === 'trial' ||
+      statusParam === 'active' ||
+      statusParam === 'suspended' ||
+      statusParam === 'archived' ||
+      statusParam === 'all'
+    ) {
       opts.status = statusParam;
     }
-    if (planParam === 'trial' || planParam === 'starter' || planParam === 'pro' || planParam === 'enterprise') {
+    if (
+      planParam === 'trial' ||
+      planParam === 'starter' ||
+      planParam === 'pro' ||
+      planParam === 'enterprise'
+    ) {
       opts.plan = planParam;
     }
     const { tenants, total } = tenantService.list(opts);
@@ -109,7 +127,9 @@ export function registerTenantsRoutes(app: Hono): void {
     const statsMap = new Map(stats.tenants().map((s) => [s.tenantId, s]));
     return c.json({
       tenants: tenants.map((t) => ({ ...t, stats: statsMap.get(t.id) ?? null })),
-      total, limit, offset,
+      total,
+      limit,
+      offset,
     });
   });
 
@@ -177,7 +197,16 @@ export function registerTenantsRoutes(app: Hono): void {
         .prepare(
           'INSERT INTO users (id, tenant_id, email, display_name, password_hash, role, enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)',
         )
-        .run(userId, body.tenantSlug, body.ownerEmail, body.ownerName, passwordHash, 'owner', now, now);
+        .run(
+          userId,
+          body.tenantSlug,
+          body.ownerEmail,
+          body.ownerName,
+          passwordHash,
+          'owner',
+          now,
+          now,
+        );
       return tenant;
     });
 
@@ -199,16 +228,26 @@ export function registerTenantsRoutes(app: Hono): void {
       resourceType: 'tenant',
       resourceId: body.tenantSlug,
       ...(auth?.userId ? { actorId: auth.userId } : {}),
-      metadata: { ownerEmail: body.ownerEmail, provisionedBy: auth?.email ?? 'unknown', plan: tenant.plan },
+      metadata: {
+        ownerEmail: body.ownerEmail,
+        provisionedBy: auth?.email ?? 'unknown',
+        plan: tenant.plan,
+      },
     });
 
-    logger.info({ tenantSlug: body.tenantSlug, plan: tenant.plan, by: auth?.email }, 'Tenant provisioned (Phase 5)');
+    logger.info(
+      { tenantSlug: body.tenantSlug, plan: tenant.plan, by: auth?.email },
+      'Tenant provisioned (Phase 5)',
+    );
 
-    return c.json({
-      ok: true,
-      tenant,
-      owner: { id: userId, email: body.ownerEmail, displayName: body.ownerName },
-    }, 201);
+    return c.json(
+      {
+        ok: true,
+        tenant,
+        owner: { id: userId, email: body.ownerEmail, displayName: body.ownerName },
+      },
+      201,
+    );
   });
 
   app.patch('/admin/tenants/:tenantId', zValidator('json', UpdateTenantSchema), (c) => {

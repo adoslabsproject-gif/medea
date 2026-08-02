@@ -33,12 +33,22 @@ import { executeWithHostBreaker } from '@medea/engine-nodes-stdlib';
 // trusted come OpenAI/Anthropic/Cohere/Voyage/Ollama/runtime-loopback)
 // passano per executeWithHostBreaker — un provider impallato non droga
 // il pool, fast-fail dopo 5 trip e probe HALF_OPEN per recovery.
-import { safeFetchWithRedirects, SsrfBlockedError, readJsonCapped, readTextTruncated } from '@medea/engine-safe-fetch';
+import {
+  safeFetchWithRedirects,
+  SsrfBlockedError,
+  readJsonCapped,
+  readTextTruncated,
+} from '@medea/engine-safe-fetch';
 // CONTRATTO #2 (RAG security): il contenuto recuperato via rag_search è DATO non
 // fidato (indirect prompt-injection). Stesso guard del runtime (executor
 // rag_search) → framing identico, zero drift. RAG_SYSTEM_REINFORCEMENT è il
 // rinforzo cintura+bretelle nel system prompt.
-import { frameRagResults, RAG_SYSTEM_REINFORCEMENT, RAG_CONTENT_MARKER, type RagSearchResult } from '@medea/engine-rag-guard';
+import {
+  frameRagResults,
+  RAG_SYSTEM_REINFORCEMENT,
+  RAG_CONTENT_MARKER,
+  type RagSearchResult,
+} from '@medea/engine-rag-guard';
 // Fase 2 (#14): il nodo non è più Anthropic-only. Provider da Settings → AI
 // Providers (Liara gateway di DEFAULT, tool_calls Qwen3-VL validati live);
 // il loop OpenAI-format vive in tool-loop-openai.ts (no-monoliti), il loop
@@ -71,7 +81,14 @@ const SAFE_PATH_ID = /^[A-Za-z0-9_-]{1,128}$/;
 /** Helper: wrap fetch in per-host CB + safeFetchWithRedirects + timeout. */
 async function gatewayFetch(
   url: string,
-  init: { method?: string; headers?: Record<string, string>; body?: string; allowDockerNet?: boolean; allowedHosts?: readonly string[]; signal?: AbortSignal },
+  init: {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+    allowDockerNet?: boolean;
+    allowedHosts?: readonly string[];
+    signal?: AbortSignal;
+  },
 ): Promise<Response> {
   return executeWithHostBreaker(url, () => {
     const opts: Parameters<typeof safeFetchWithRedirects>[1] = {
@@ -93,7 +110,11 @@ async function gatewayFetch(
 
 /** Host:porta del runtime interno (per esenzione SSRF mirata; loopback/IP-privato by-design). */
 function runtimeAllowedHosts(base: string): string[] {
-  try { return [new URL(base).host.toLowerCase()]; } catch { return []; }
+  try {
+    return [new URL(base).host.toLowerCase()];
+  } catch {
+    return [];
+  }
 }
 
 /** Adapter alla firma legacy usata nei call-site: delega al primitivo CONDIVISO
@@ -129,7 +150,12 @@ interface AnthropicReply {
  * to avoid a cross-package cycle. Keep the API identical so configurations
  * are interchangeable.
  */
-async function embedText(provider: string, apiKey: string, model: string, text: string): Promise<number[]> {
+async function embedText(
+  provider: string,
+  apiKey: string,
+  model: string,
+  text: string,
+): Promise<number[]> {
   switch (provider) {
     case 'openai': {
       const res = await gatewayFetch('https://api.openai.com/v1/embeddings', {
@@ -137,7 +163,10 @@ async function embedText(provider: string, apiKey: string, model: string, text: 
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({ model: model || 'text-embedding-3-small', input: text }),
       });
-      if (!res.ok) throw new Error(`OpenAI embed ${res.status.toString()}: ${await readCappedText(res, 4096)}`);
+      if (!res.ok)
+        throw new Error(
+          `OpenAI embed ${res.status.toString()}: ${await readCappedText(res, 4096)}`,
+        );
       const data = await readJsonCapped<{ data: { embedding: number[] }[] }>(res);
       return data.data[0]?.embedding ?? [];
     }
@@ -147,7 +176,10 @@ async function embedText(provider: string, apiKey: string, model: string, text: 
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({ model: model || 'voyage-3', input: text }),
       });
-      if (!res.ok) throw new Error(`Voyage embed ${res.status.toString()}: ${await readCappedText(res, 4096)}`);
+      if (!res.ok)
+        throw new Error(
+          `Voyage embed ${res.status.toString()}: ${await readCappedText(res, 4096)}`,
+        );
       const data = await readJsonCapped<{ data: { embedding: number[] }[] }>(res);
       return data.data[0]?.embedding ?? [];
     }
@@ -162,7 +194,10 @@ async function embedText(provider: string, apiKey: string, model: string, text: 
         // è da env di sistema (non payload utente) → esenzione per host esatto.
         allowedHosts: runtimeAllowedHosts(baseUrl),
       });
-      if (!res.ok) throw new Error(`Ollama embed ${res.status.toString()}: ${await readCappedText(res, 4096)}`);
+      if (!res.ok)
+        throw new Error(
+          `Ollama embed ${res.status.toString()}: ${await readCappedText(res, 4096)}`,
+        );
       const data = await readJsonCapped<{ embedding: number[] }>(res);
       return data.embedding;
     }
@@ -278,13 +313,20 @@ async function executeTool(
     // Defaults from agent config (configured via UI dropdowns) — the LLM
     // can override per-call but if it omits the params we fall back to
     // the agent's pre-bound knowledge base. This is the n8n-superior UX.
-    const databaseId = (typeof toolInput.databaseId === 'string' && toolInput.databaseId) || ctx.defaultRagDatabaseId || '';
-    const collection = (typeof toolInput.collection === 'string' && toolInput.collection) || ctx.defaultRagCollection || '';
+    const databaseId =
+      (typeof toolInput.databaseId === 'string' && toolInput.databaseId) ||
+      ctx.defaultRagDatabaseId ||
+      '';
+    const collection =
+      (typeof toolInput.collection === 'string' && toolInput.collection) ||
+      ctx.defaultRagCollection ||
+      '';
     const query = typeof toolInput.query === 'string' ? toolInput.query : '';
     const topK = Math.min(20, Math.max(1, Number(toolInput.topK ?? 5)));
     if (!databaseId || !collection || !query) {
       return JSON.stringify({
-        error: 'rag_search requires databaseId, collection, query. Set defaults in the node config to omit them per-call.',
+        error:
+          'rag_search requires databaseId, collection, query. Set defaults in the node config to omit them per-call.',
       });
     }
     // H3 — `databaseId` è LLM-controlled e finisce in un PATH verso l'API INTERNA
@@ -295,7 +337,9 @@ async function executeTool(
       return JSON.stringify({ error: 'invalid databaseId: only [A-Za-z0-9_-], max 128 chars' });
     }
     if (!ctx.embedApiKey && ctx.embedProvider !== 'ollama') {
-      return JSON.stringify({ error: `rag_search needs embedApiKey for provider "${ctx.embedProvider}"` });
+      return JSON.stringify({
+        error: `rag_search needs embedApiKey for provider "${ctx.embedProvider}"`,
+      });
     }
     try {
       const vector = await embedText(ctx.embedProvider, ctx.embedApiKey, ctx.embedModel, query);
@@ -304,13 +348,16 @@ async function executeTool(
         'X-Tenant-Id': ctx.tenantId,
       };
       if (ctx.token) headers.Authorization = `Bearer ${ctx.token}`;
-      const res = await gatewayFetch(`${ctx.runtimeBaseUrl}/vector/${encodeURIComponent(databaseId)}/search`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ collection, vector, topK }),
-        allowDockerNet: true,
-        allowedHosts: runtimeAllowedHosts(ctx.runtimeBaseUrl),
-      });
+      const res = await gatewayFetch(
+        `${ctx.runtimeBaseUrl}/vector/${encodeURIComponent(databaseId)}/search`,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ collection, vector, topK }),
+          allowDockerNet: true,
+          allowedHosts: runtimeAllowedHosts(ctx.runtimeBaseUrl),
+        },
+      );
       const text = await readCappedText(res, 4 * 1024 * 1024); // cap anti-OOM sui risultati RAG
       // SICUREZZA contratto #2: la route /vector/:id/search ritorna { results,
       // count } con contenuto NON fidato. Ogni chunk va framato come DATO prima
@@ -366,13 +413,16 @@ async function executeTool(
       'X-Tenant-Id': ctx.tenantId,
     };
     if (ctx.token) headers.Authorization = `Bearer ${ctx.token}`;
-    const res = await gatewayFetch(`${ctx.runtimeBaseUrl}/workflows/${encodeURIComponent(workflowId)}/invoke`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(toolInput.input ?? {}),
-      allowDockerNet: true,
-      allowedHosts: runtimeAllowedHosts(ctx.runtimeBaseUrl),
-    });
+    const res = await gatewayFetch(
+      `${ctx.runtimeBaseUrl}/workflows/${encodeURIComponent(workflowId)}/invoke`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(toolInput.input ?? {}),
+        allowDockerNet: true,
+        allowedHosts: runtimeAllowedHosts(ctx.runtimeBaseUrl),
+      },
+    );
     const text = await readCappedText(res, 16_000);
     return text.slice(0, 16_000);
   }
@@ -390,9 +440,15 @@ const agentToolLoopExecutor: NodeExecutor = async (config, input, ctx) => {
   const rawProvider = typeof config.provider === 'string' ? config.provider.trim() : '';
   const rawApiKey = typeof config.apiKey === 'string' ? config.apiKey.trim() : '';
   const rawModel = typeof config.model === 'string' ? config.model.trim() : '';
-  let resolved = rawProvider === '' && rawApiKey !== ''
-    ? { provider: 'anthropic', apiKey: rawApiKey, model: rawModel, baseUrl: undefined as string | undefined }
-    : resolveLlmConfig(config, ctx.llmProviders);
+  let resolved =
+    rawProvider === '' && rawApiKey !== ''
+      ? {
+          provider: 'anthropic',
+          apiKey: rawApiKey,
+          model: rawModel,
+          baseUrl: undefined as string | undefined,
+        }
+      : resolveLlmConfig(config, ctx.llmProviders);
 
   // Provider senza tool-calling (oggi SOLO perplexity, dai Settings auto-pick:
   // NON è selezionabile sul nodo) → fallback DICHIARATO su Liara, mai un
@@ -401,7 +457,10 @@ const agentToolLoopExecutor: NodeExecutor = async (config, input, ctx) => {
   // del `degraded:'byok-fallback'` di action_llm_complete).
   let providerFallback: { from: string; reason: string } | undefined;
   if (resolved.provider !== 'anthropic' && !TOOL_CAPABLE_OPENAI_PROVIDERS.has(resolved.provider)) {
-    providerFallback = { from: resolved.provider, reason: `il provider "${resolved.provider}" non supporta il tool-calling — agent eseguito su Liara` };
+    providerFallback = {
+      from: resolved.provider,
+      reason: `il provider "${resolved.provider}" non supporta il tool-calling — agent eseguito su Liara`,
+    };
     resolved = { provider: 'liara', apiKey: '', model: '', baseUrl: undefined };
   }
 
@@ -410,7 +469,7 @@ const agentToolLoopExecutor: NodeExecutor = async (config, input, ctx) => {
   const baseSystemPrompt =
     typeof config.systemPrompt === 'string' && config.systemPrompt
       ? config.systemPrompt
-      : 'You are a senior automation agent. Use the available tools to accomplish the user\'s goal. Be concise.';
+      : "You are a senior automation agent. Use the available tools to accomplish the user's goal. Be concise.";
   // CONTRATTO #2: rag_search è SEMPRE tra i tool → il modello può ricevere
   // contenuto recuperato non fidato. Prependi sempre il rinforzo di sicurezza
   // (cintura+bretelle col framing inline applicato da frameRagSearchResponse).
@@ -420,22 +479,31 @@ const agentToolLoopExecutor: NodeExecutor = async (config, input, ctx) => {
   // #6 — CAP SUPERIORE: ogni iterazione è 1 chiamata LLM + 1 tool (costo/latenza reali);
   // senza tetto, maxIterations=100000 = runaway/DoS/toll. 50 è ampio per un agente reale.
   const rawMaxIter = Number(config.maxIterations ?? 10);
-  const maxIterations = Number.isFinite(rawMaxIter) && rawMaxIter >= 1
-    ? Math.min(Math.trunc(rawMaxIter), MAX_AGENT_ITERATIONS)
-    : 10;
-  const userGoal = typeof config.goal === 'string'
-    ? config.goal
-    : typeof input === 'string'
-      ? input
-      : JSON.stringify(input);
+  const maxIterations =
+    Number.isFinite(rawMaxIter) && rawMaxIter >= 1
+      ? Math.min(Math.trunc(rawMaxIter), MAX_AGENT_ITERATIONS)
+      : 10;
+  const userGoal =
+    typeof config.goal === 'string'
+      ? config.goal
+      : typeof input === 'string'
+        ? input
+        : JSON.stringify(input);
 
   const messages: AnthropicMessage[] = [{ role: 'user', content: userGoal }];
-  const runtimeBaseUrl = (typeof process !== 'undefined' && process.env.MEDEA_BASE_URL) || 'http://localhost:3100/api/v1';
-  const embedProvider = typeof config.embedProvider === 'string' && config.embedProvider ? config.embedProvider : 'openai';
+  const runtimeBaseUrl =
+    (typeof process !== 'undefined' && process.env.MEDEA_BASE_URL) ||
+    'http://localhost:3100/api/v1';
+  const embedProvider =
+    typeof config.embedProvider === 'string' && config.embedProvider
+      ? config.embedProvider
+      : 'openai';
   const embedApiKey = typeof config.embedApiKey === 'string' ? config.embedApiKey : '';
   const embedModel = typeof config.embedModel === 'string' ? config.embedModel : '';
-  const defaultRagDatabaseId = typeof config.defaultRagDatabaseId === 'string' ? config.defaultRagDatabaseId : '';
-  const defaultRagCollection = typeof config.defaultRagCollection === 'string' ? config.defaultRagCollection : '';
+  const defaultRagDatabaseId =
+    typeof config.defaultRagDatabaseId === 'string' ? config.defaultRagDatabaseId : '';
+  const defaultRagCollection =
+    typeof config.defaultRagCollection === 'string' ? config.defaultRagCollection : '';
   const toolCtx = {
     runtimeBaseUrl,
     tenantId: ctx.tenantId,
@@ -483,7 +551,13 @@ const agentToolLoopExecutor: NodeExecutor = async (config, input, ctx) => {
 
   // ── Ramo Anthropic nativo (tool_use/tool_result) ─────────────────────────
   if (!apiKey) {
-    return { output: { error: 'apiKey required (Anthropic key for tool-calling agent). Configura la key in Settings → AI Providers o lascia il provider vuoto per Liara.' }, durationMs: Date.now() - start };
+    return {
+      output: {
+        error:
+          'apiKey required (Anthropic key for tool-calling agent). Configura la key in Settings → AI Providers o lascia il provider vuoto per Liara.',
+      },
+      durationMs: Date.now() - start,
+    };
   }
   const anthropicModel = model || 'claude-sonnet-4-5';
 
@@ -505,7 +579,12 @@ const agentToolLoopExecutor: NodeExecutor = async (config, input, ctx) => {
 
   // Output strutturato di cancellazione (riusato: top-loop, in-flight LLM, tra i tool).
   const cancelledResult = (iter: number) => ({
-    output: withUsage({ error: 'Agent annullato (run cancellato)', cancelled: true, trace, iterations: iter }),
+    output: withUsage({
+      error: 'Agent annullato (run cancellato)',
+      cancelled: true,
+      trace,
+      iterations: iter,
+    }),
     durationMs: Date.now() - start,
   });
 
@@ -542,7 +621,11 @@ const agentToolLoopExecutor: NodeExecutor = async (config, input, ctx) => {
       // errText capped REALE (era res.text() = leggeva tutto poi sliceava → OOM).
       const errText = await readCappedText(res, 2000);
       return {
-        output: withUsage({ error: `Anthropic ${res.status.toString()}: ${errText}`, trace, iterations: iter }),
+        output: withUsage({
+          error: `Anthropic ${res.status.toString()}: ${errText}`,
+          trace,
+          iterations: iter,
+        }),
         durationMs: Date.now() - start,
       };
     }
@@ -554,8 +637,12 @@ const agentToolLoopExecutor: NodeExecutor = async (config, input, ctx) => {
       provider: 'anthropic',
       model: anthropicModel,
       system: iter === 0 ? systemPrompt : '',
-      user: iter === 0 ? userGoal : '(tool results dell\'iterazione precedente — vedi trace)',
-      response: content.map((b) => b.type === 'text' ? (b.text ?? '') : JSON.stringify({ tool_use: b.name, input: b.input })).join('\n'),
+      user: iter === 0 ? userGoal : "(tool results dell'iterazione precedente — vedi trace)",
+      response: content
+        .map((b) =>
+          b.type === 'text' ? (b.text ?? '') : JSON.stringify({ tool_use: b.name, input: b.input }),
+        )
+        .join('\n'),
       phase: `iterazione ${String(iter + 1)}`,
     });
     messages.push({ role: 'assistant', content });
@@ -568,9 +655,14 @@ const agentToolLoopExecutor: NodeExecutor = async (config, input, ctx) => {
         // non-interrompibile (latenza cancel ≤ 1 tool, non maxIterations×tutto).
         if (ctx.abortSignal?.aborted) return cancelledResult(iter);
         const toolName = tu.name ?? '';
-        const toolInput = (tu.input ?? {});
+        const toolInput = tu.input ?? {};
         const result = await executeTool(toolName, toolInput, toolCtx);
-        trace.push({ iteration: iter, tool: toolName, input: toolInput, output: result.slice(0, 500) });
+        trace.push({
+          iteration: iter,
+          tool: toolName,
+          input: toolInput,
+          output: result.slice(0, 500),
+        });
         toolResults.push({
           type: 'tool_result',
           ...(tu.id !== undefined ? { tool_use_id: tu.id } : {}),
@@ -596,7 +688,11 @@ const agentToolLoopExecutor: NodeExecutor = async (config, input, ctx) => {
   }
 
   return {
-    output: withUsage({ error: `Agent exceeded maxIterations=${maxIterations.toString()}`, trace, iterations: maxIterations }),
+    output: withUsage({
+      error: `Agent exceeded maxIterations=${maxIterations.toString()}`,
+      trace,
+      iterations: maxIterations,
+    }),
     durationMs: Date.now() - start,
   };
 };
@@ -616,11 +712,29 @@ export const agentToolLoopNode: NodeModule = {
         label: 'LLM provider (opzionale, override)',
         type: 'select',
         required: false,
-        options: ['', 'liara', 'anthropic', 'openai', 'gemini', 'deepseek', 'xai', 'openrouter', 'groq', 'mistral', 'ollama'],
+        options: [
+          '',
+          'liara',
+          'anthropic',
+          'openai',
+          'gemini',
+          'deepseek',
+          'xai',
+          'openrouter',
+          'groq',
+          'mistral',
+          'ollama',
+        ],
         defaultValue: '',
         help: 'Vuoto = usa il default da Settings → AI Providers (Liara free se non configuri nulla). NB: se compili solo la API key senza provider, vale Anthropic (compatibilità con le config esistenti del nodo).',
       },
-      { key: 'apiKey', label: 'API key (override)', type: 'secret', required: false, help: 'Vuoto = chiave da Settings → AI Providers (Liara non ne richiede). Compilata SENZA provider = Anthropic (legacy).' },
+      {
+        key: 'apiKey',
+        label: 'API key (override)',
+        type: 'secret',
+        required: false,
+        help: 'Vuoto = chiave da Settings → AI Providers (Liara non ne richiede). Compilata SENZA provider = Anthropic (legacy).',
+      },
       {
         key: 'model',
         label: 'Modello (override)',
@@ -629,13 +743,21 @@ export const agentToolLoopNode: NodeModule = {
         placeholder: 'es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, llama-3.3-70b-versatile',
         help: 'Vuoto = default del provider (Liara: decide il gateway; Anthropic: claude-sonnet-4-5).',
       },
-      { key: 'baseUrl', label: 'Base URL (per Ollama / self-hosted)', type: 'text', required: false, placeholder: 'http://localhost:11434', showIf: { field: 'provider', in: ['ollama'] } },
+      {
+        key: 'baseUrl',
+        label: 'Base URL (per Ollama / self-hosted)',
+        type: 'text',
+        required: false,
+        placeholder: 'http://localhost:11434',
+        showIf: { field: 'provider', in: ['ollama'] },
+      },
       {
         key: 'systemPrompt',
         label: 'System prompt',
         type: 'expression',
         required: false,
-        defaultValue: 'You are a senior automation agent. Use the available tools (http_request, flowforge_invoke, get_time, rag_search) to accomplish the user\'s goal. Be concise.',
+        defaultValue:
+          "You are a senior automation agent. Use the available tools (http_request, flowforge_invoke, get_time, rag_search) to accomplish the user's goal. Be concise.",
         help: 'Direttive di ruolo/tono/regole. Supporta {{espressioni}} per iniettare contesto dinamico (es. {{ctx.tenantId}}).',
       },
       {
@@ -644,7 +766,7 @@ export const agentToolLoopNode: NodeModule = {
         type: 'expression',
         required: false,
         placeholder: 'Riassumi gli ordini di {{$today}} e mandami una notifica Slack',
-        help: 'Cosa l\'agent deve fare. Se vuoto, usa l\'output del nodo precedente come obiettivo.',
+        help: "Cosa l'agent deve fare. Se vuoto, usa l'output del nodo precedente come obiettivo.",
       },
       {
         key: 'maxIterations',
@@ -652,7 +774,7 @@ export const agentToolLoopNode: NodeModule = {
         type: 'number',
         required: false,
         defaultValue: '10',
-        help: 'Quanti round tool-call → modello al massimo. Il modello chiama tool, vede l\'output, decide se chiamare altri tool o rispondere. Cap anti-loop infinito.',
+        help: "Quanti round tool-call → modello al massimo. Il modello chiama tool, vede l'output, decide se chiamare altri tool o rispondere. Cap anti-loop infinito.",
       },
       {
         key: 'embedProvider',
@@ -661,12 +783,39 @@ export const agentToolLoopNode: NodeModule = {
         required: false,
         options: ['openai', 'voyage', 'ollama'],
         defaultValue: 'openai',
-        help: 'Usato solo se l\'agent invoca il tool rag_search. Deve matchare il provider con cui hai popolato il vector DB.',
+        help: "Usato solo se l'agent invoca il tool rag_search. Deve matchare il provider con cui hai popolato il vector DB.",
       },
-      { key: 'embedApiKey', label: 'API key embedding', type: 'secret', required: false, help: 'Necessaria per openai/voyage. Vuoto per ollama (locale).', showIf: { field: 'embedProvider', in: ['openai', 'voyage'] } },
-      { key: 'embedModel', label: 'Modello embedding', type: 'text', required: false, placeholder: 'text-embedding-3-small / voyage-3 / nomic-embed-text', help: 'Modello del provider scelto. DEVE matchare quello usato per popolare il vector DB.' },
-      { key: 'defaultRagDatabaseId', label: 'Knowledge base default (DB vettoriale)', type: 'db-picker', required: false, help: 'Se impostato, l\'agente sa dove cercare quando invoca rag_search senza specificare il DB. Mantieni vuoto per richiederlo nel prompt.' },
-      { key: 'defaultRagCollection', label: 'Collezione knowledge base', type: 'db-collection-picker', required: false, dependsOn: 'defaultRagDatabaseId', help: 'Collezione (namespace) all\'interno del DB selezionato sopra.' },
+      {
+        key: 'embedApiKey',
+        label: 'API key embedding',
+        type: 'secret',
+        required: false,
+        help: 'Necessaria per openai/voyage. Vuoto per ollama (locale).',
+        showIf: { field: 'embedProvider', in: ['openai', 'voyage'] },
+      },
+      {
+        key: 'embedModel',
+        label: 'Modello embedding',
+        type: 'text',
+        required: false,
+        placeholder: 'text-embedding-3-small / voyage-3 / nomic-embed-text',
+        help: 'Modello del provider scelto. DEVE matchare quello usato per popolare il vector DB.',
+      },
+      {
+        key: 'defaultRagDatabaseId',
+        label: 'Knowledge base default (DB vettoriale)',
+        type: 'db-picker',
+        required: false,
+        help: "Se impostato, l'agente sa dove cercare quando invoca rag_search senza specificare il DB. Mantieni vuoto per richiederlo nel prompt.",
+      },
+      {
+        key: 'defaultRagCollection',
+        label: 'Collezione knowledge base',
+        type: 'db-collection-picker',
+        required: false,
+        dependsOn: 'defaultRagDatabaseId',
+        help: "Collezione (namespace) all'interno del DB selezionato sopra.",
+      },
     ],
     vendor: 'flowforge',
     version: '1.2.0',

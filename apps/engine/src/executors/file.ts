@@ -17,11 +17,25 @@ import { makeBinaryInline, getBinaryData, readBinaryBytes } from '@medea/engine-
 
 /** Mappa minima estensione→MIME per il binary output. Fallback octet-stream. */
 const MIME_BY_EXT: Record<string, string> = {
-  pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
-  gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', txt: 'text/plain',
-  csv: 'text/csv', json: 'application/json', xml: 'application/xml', html: 'text/html',
-  zip: 'application/zip', gz: 'application/gzip', mp3: 'audio/mpeg', mp4: 'video/mp4',
-  wav: 'audio/wav', doc: 'application/msword', xls: 'application/vnd.ms-excel',
+  pdf: 'application/pdf',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  svg: 'image/svg+xml',
+  txt: 'text/plain',
+  csv: 'text/csv',
+  json: 'application/json',
+  xml: 'application/xml',
+  html: 'text/html',
+  zip: 'application/zip',
+  gz: 'application/gzip',
+  mp3: 'audio/mpeg',
+  mp4: 'video/mp4',
+  wav: 'audio/wav',
+  doc: 'application/msword',
+  xls: 'application/vnd.ms-excel',
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 };
@@ -52,7 +66,11 @@ function getTenantRoot(tenantId: string): string {
 
 function getGlobalAllowlist(): string[] {
   const envList = process.env.MEDEA_FILE_ALLOWLIST ?? '';
-  return envList.split(':').map((p) => p.trim()).filter(Boolean).map((p) => resolve(p));
+  return envList
+    .split(':')
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => resolve(p));
 }
 
 function assertPathAllowed(filePath: string, tenantId: string): string {
@@ -85,7 +103,11 @@ function assertPathAllowed(filePath: string, tenantId: string): string {
  * dir + verify che il parent sia sotto il namespace.
  */
 async function safeRealpath(p: string): Promise<string> {
-  try { return await realpath(p); } catch { return p; }
+  try {
+    return await realpath(p);
+  } catch {
+    return p;
+  }
 }
 
 async function assertRealpathInsideTenant(abs: string, tenantId: string): Promise<string> {
@@ -115,7 +137,8 @@ async function assertRealpathInsideTenant(abs: string, tenantId: string): Promis
     resolved = resolve(parentReal, basename(abs));
   }
   if (resolved === tenantRootCanon || resolved.startsWith(tenantRootCanon + sep)) return resolved;
-  if (globalAllowCanon.some((root) => resolved === root || resolved.startsWith(root + sep))) return resolved;
+  if (globalAllowCanon.some((root) => resolved === root || resolved.startsWith(root + sep)))
+    return resolved;
   throw new Error(
     `Path "${abs}" resolves via symlinks to "${resolved}" — OUTSIDE tenant namespace (security violation).`,
   );
@@ -206,7 +229,12 @@ export const fileWriteExecutor: NodeExecutor = async (config, input, context) =>
 
   const stats = await stat(abs);
   return {
-    output: { path: abs, bytesWritten: Buffer.byteLength(explicitContent, 'utf8'), size: stats.size, mode },
+    output: {
+      path: abs,
+      bytesWritten: Buffer.byteLength(explicitContent, 'utf8'),
+      size: stats.size,
+      mode,
+    },
     durationMs: Date.now() - start,
   };
 };

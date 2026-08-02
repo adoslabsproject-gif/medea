@@ -1,6 +1,13 @@
 import { z } from 'zod';
 
-export const RunStepStatusSchema = z.enum(['pending', 'running', 'success', 'error', 'skipped', 'paused']);
+export const RunStepStatusSchema = z.enum([
+  'pending',
+  'running',
+  'success',
+  'error',
+  'skipped',
+  'paused',
+]);
 export type RunStepStatus = z.infer<typeof RunStepStatusSchema>;
 
 /**
@@ -22,7 +29,15 @@ export type LogLevel = z.infer<typeof LogLevelSchema>;
  *  - llm      : Liara/LLM calls + tokens/cache
  *  - db       : SQLite tenant queries + slow query alerts
  */
-export const LogSourceSchema = z.enum(['user', 'sandbox', 'engine', 'network', 'system', 'llm', 'db']);
+export const LogSourceSchema = z.enum([
+  'user',
+  'sandbox',
+  'engine',
+  'network',
+  'system',
+  'llm',
+  'db',
+]);
 export type LogSource = z.infer<typeof LogSourceSchema>;
 
 /**
@@ -58,9 +73,18 @@ export const StepLogSchema = z.object({
   /** Structured fields per query (es. { url, status, durationMs }). */
   fields: z.record(z.string(), z.unknown()).optional(),
   /** W3C Trace Context — propagated cross-step/cross-tenant for OTel. */
-  traceId: z.string().regex(/^[0-9a-f]{32}$/u).optional(),
-  spanId: z.string().regex(/^[0-9a-f]{16}$/u).optional(),
-  parentSpanId: z.string().regex(/^[0-9a-f]{16}$/u).optional(),
+  traceId: z
+    .string()
+    .regex(/^[0-9a-f]{32}$/u)
+    .optional(),
+  spanId: z
+    .string()
+    .regex(/^[0-9a-f]{16}$/u)
+    .optional(),
+  parentSpanId: z
+    .string()
+    .regex(/^[0-9a-f]{16}$/u)
+    .optional(),
   /** Marker truncation: 'msg' o 'fields' tagliati per evitare OOM. */
   truncated: z.boolean().optional(),
 });
@@ -89,7 +113,9 @@ export const RunStepSchema = z.object({
    * con l'istanza NodeError completa (include `retryable` → HTTP 5xx=network,
    * 4xx=business). Propagata per il continue-on-fail per-categoria e per la UI.
    */
-  errorCategory: z.enum(['validation', 'auth', 'network', 'rate_limit', 'business', 'aborted', 'internal']).optional(),
+  errorCategory: z
+    .enum(['validation', 'auth', 'network', 'rate_limit', 'business', 'aborted', 'internal'])
+    .optional(),
   /**
    * True quando status='error' MA il nodo aveva `continueOnFail` → il run NON
    * si è fermato: l'errore è diventato un error-item e il flusso è proseguito.

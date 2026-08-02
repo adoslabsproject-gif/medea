@@ -77,7 +77,11 @@ export function slugify(input: string): string {
  * `_`/`-` (regex Action id del community-node-sdk: /^[a-z0-9_-]+$/i).
  */
 function sanitizeId(input: string): string {
-  const s = input.trim().replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/_{2,}/g, '_').replace(/^_+|_+$/g, '');
+  const s = input
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]+/g, '_')
+    .replace(/_{2,}/g, '_')
+    .replace(/^_+|_+$/g, '');
   return s || 'op';
 }
 
@@ -86,7 +90,11 @@ function sanitizeId(input: string): string {
  * community-node-sdk). Niente trattini/punti, pena rifiuto dello schema.
  */
 function sanitizeKey(input: string): string {
-  const s = input.trim().replace(/[^a-zA-Z0-9_]+/g, '_').replace(/_{2,}/g, '_').replace(/^_+|_+$/g, '');
+  const s = input
+    .trim()
+    .replace(/[^a-zA-Z0-9_]+/g, '_')
+    .replace(/_{2,}/g, '_')
+    .replace(/^_+|_+$/g, '');
   return s || 'p';
 }
 
@@ -115,7 +123,7 @@ interface RawParam {
 /** Metadato di un parametro, embeddato nell'executor per costruire la request. */
 interface ParamMeta {
   name: string; // nome OpenAPI (per path interpolation / query key)
-  key: string;  // config field key (unico nell'azione)
+  key: string; // config field key (unico nell'azione)
   loc: 'path' | 'query' | 'header';
 }
 
@@ -144,7 +152,9 @@ interface AuthPlan {
 // ─── parsing ────────────────────────────────────────────────────────────────
 
 function asRecord(v: unknown): Record<string, unknown> | undefined {
-  return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : undefined;
+  return v && typeof v === 'object' && !Array.isArray(v)
+    ? (v as Record<string, unknown>)
+    : undefined;
 }
 
 function str(v: unknown): string | undefined {
@@ -183,18 +193,24 @@ function extractAuth(spec: Record<string, unknown>, warnings: string[]): AuthPla
   if (type === 'apiKey') {
     const inLoc = str(scheme.in);
     const name = str(scheme.name) ?? 'X-API-Key';
-    if (inLoc === 'query') return { kind: 'apiKeyQuery', paramName: name, secretKey: 'auth_api_key' };
+    if (inLoc === 'query')
+      return { kind: 'apiKeyQuery', paramName: name, secretKey: 'auth_api_key' };
     // header (default) — 'cookie' non supportato lato sandbox → trattato come header con warning
     if (inLoc === 'cookie') {
-      warnings.push('Security scheme apiKey in cookie non supportato dal sandbox; esposto come header.');
+      warnings.push(
+        'Security scheme apiKey in cookie non supportato dal sandbox; esposto come header.',
+      );
     }
     return { kind: 'apiKeyHeader', paramName: name, secretKey: 'auth_api_key' };
   }
   if (type === 'http') {
     const scheme2 = (str(scheme.scheme) ?? '').toLowerCase();
     if (scheme2 === 'bearer') return { kind: 'bearer', secretKey: 'auth_bearer_token' };
-    if (scheme2 === 'basic') return { kind: 'basic', secretKey: 'auth_basic_password', userKey: 'auth_basic_user' };
-    warnings.push(`Security scheme http "${scheme2}" non riconosciuto; auth da configurare a mano.`);
+    if (scheme2 === 'basic')
+      return { kind: 'basic', secretKey: 'auth_basic_password', userKey: 'auth_basic_user' };
+    warnings.push(
+      `Security scheme http "${scheme2}" non riconosciuto; auth da configurare a mano.`,
+    );
     return { kind: 'none' };
   }
   if (type === 'oauth2' || type === 'openIdConnect') {
@@ -231,7 +247,9 @@ function planOperations(
     const pathItem = asRecord(paths[path]);
     if (!pathItem) continue;
     // parametri condivisi a livello di path (OpenAPI 3.x).
-    const pathLevelParams = Array.isArray(pathItem.parameters) ? (pathItem.parameters as RawParam[]) : [];
+    const pathLevelParams = Array.isArray(pathItem.parameters)
+      ? (pathItem.parameters as RawParam[])
+      : [];
 
     for (const method of HTTP_METHODS) {
       const op = asRecord(pathItem[method]);
@@ -256,7 +274,10 @@ function planOperations(
       // Parametri: path-level + operation-level. Dedup per (name+in).
       // Config flat (shape custom-node) → namespace per-operazione per evitare
       // collisioni tra op diverse: key = `<actionId>_<param>` (sanitizzata).
-      const rawParams = [...pathLevelParams, ...(Array.isArray(op.parameters) ? (op.parameters as RawParam[]) : [])];
+      const rawParams = [
+        ...pathLevelParams,
+        ...(Array.isArray(op.parameters) ? (op.parameters as RawParam[]) : []),
+      ];
       const params: ParamMeta[] = [];
       const keyPrefix = sanitizeKey(actionId);
       const seen = new Set<string>();
@@ -293,7 +314,9 @@ function planOperations(
   }
 
   if (skipped > 0) {
-    warnings.push(`${skipped} operazioni oltre il cap di ${maxOps} non incluse — rigenera con maxOperations più alto se servono.`);
+    warnings.push(
+      `${skipped} operazioni oltre il cap di ${maxOps} non incluse — rigenera con maxOperations più alto se servono.`,
+    );
   }
   return { operations, resources, skipped };
 }
@@ -339,21 +362,41 @@ function sharedConfigFields(
     type: 'text',
     required: true,
     help: "URL base dell'API (senza il path dell'operazione).",
-    ...(baseUrlOverride ?? baseUrl ? { defaultValue: baseUrlOverride ?? baseUrl! } : {}),
+    ...((baseUrlOverride ?? baseUrl) ? { defaultValue: baseUrlOverride ?? baseUrl! } : {}),
   });
   switch (auth.kind) {
     case 'apiKeyHeader':
-      fields.push({ key: auth.secretKey!, label: `API key (header ${auth.paramName})`, type: 'secret', required: true });
+      fields.push({
+        key: auth.secretKey!,
+        label: `API key (header ${auth.paramName})`,
+        type: 'secret',
+        required: true,
+      });
       break;
     case 'apiKeyQuery':
-      fields.push({ key: auth.secretKey!, label: `API key (query ${auth.paramName})`, type: 'secret', required: true });
+      fields.push({
+        key: auth.secretKey!,
+        label: `API key (query ${auth.paramName})`,
+        type: 'secret',
+        required: true,
+      });
       break;
     case 'bearer':
       fields.push({ key: auth.secretKey!, label: 'Bearer token', type: 'secret', required: true });
       break;
     case 'basic':
-      fields.push({ key: auth.userKey!, label: 'Username (Basic auth)', type: 'text', required: true });
-      fields.push({ key: auth.secretKey!, label: 'Password (Basic auth)', type: 'secret', required: true });
+      fields.push({
+        key: auth.userKey!,
+        label: 'Username (Basic auth)',
+        type: 'text',
+        required: true,
+      });
+      fields.push({
+        key: auth.secretKey!,
+        label: 'Password (Basic auth)',
+        type: 'secret',
+        required: true,
+      });
       break;
     case 'none':
       break;
@@ -397,13 +440,15 @@ interface OperationRuntimeMeta {
   bodyKey: string | undefined;
 }
 
-function buildExecutorSource(
-  operations: OperationPlan[],
-  auth: AuthPlan,
-): string {
+function buildExecutorSource(operations: OperationPlan[], auth: AuthPlan): string {
   const opMeta: Record<string, OperationRuntimeMeta> = {};
   for (const op of operations) {
-    opMeta[op.actionId] = { method: op.method.toUpperCase(), path: op.path, params: op.params, bodyKey: op.bodyKey };
+    opMeta[op.actionId] = {
+      method: op.method.toUpperCase(),
+      path: op.path,
+      params: op.params,
+      bodyKey: op.bodyKey,
+    };
   }
   // JSON.stringify dei metadati: dati, non codice → nessun rischio injection di
   // pattern proibiti (il securityScan ispeziona comunque il sorgente finale).
@@ -523,14 +568,19 @@ function buildSchemaSource(sharedFields: ConfigFieldLike[]): string {
  * Genera un Custom Node FlowForge da uno spec OpenAPI 3.x (oggetto JSON).
  * Lancia `OpenApiParseError` se lo spec non è 3.x o è privo di paths.
  */
-export function generateNodeFromOpenApi(specRaw: unknown, opts: OpenApiImportOptions = {}): GeneratedCustomNode {
+export function generateNodeFromOpenApi(
+  specRaw: unknown,
+  opts: OpenApiImportOptions = {},
+): GeneratedCustomNode {
   const spec = asRecord(specRaw);
   if (!spec) throw new OpenApiParseError('Lo spec OpenAPI deve essere un oggetto JSON.');
 
   const openapiVersion = str(spec.openapi);
   if (!openapiVersion) {
     if (str(spec.swagger)) {
-      throw new OpenApiParseError('Swagger 2.0 non supportato: converti lo spec a OpenAPI 3.x (es. con swagger2openapi).');
+      throw new OpenApiParseError(
+        'Swagger 2.0 non supportato: converti lo spec a OpenAPI 3.x (es. con swagger2openapi).',
+      );
     }
     throw new OpenApiParseError('Campo "openapi" mancante: atteso uno spec OpenAPI 3.x.');
   }

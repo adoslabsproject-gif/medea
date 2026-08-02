@@ -15,7 +15,9 @@ describe('italia_fatture_in_cloud_invoice — contract', () => {
   const description = fattureInCloudInvoice.def.description ?? '';
 
   it('🚨 i campi di output dichiarati esistono nella shape normalizzata reale', () => {
-    const sample = normalizeInvoiceOutput({ data: { id: 1, number: 'n', url: 'u', ei_status: 's' } });
+    const sample = normalizeInvoiceOutput({
+      data: { id: 1, number: 'n', url: 'u', ei_status: 's' },
+    });
     for (const field of ['invoiceId', 'number', 'pdfUrl', 'sdiStatus', 'raw']) {
       expect(description, `output "${field}" non documentato`).toContain(field);
       expect(sample, `output "${field}" non prodotto`).toHaveProperty(field);
@@ -24,7 +26,9 @@ describe('italia_fatture_in_cloud_invoice — contract', () => {
 
   it('🚨 paymentDays è documentato come usato (non più campo morto)', () => {
     expect(description).toMatch(/paymentDays|termine pagamento/i);
-    const hasField = (fattureInCloudInvoice.def.configFields ?? []).some((f) => f.key === 'paymentDays');
+    const hasField = (fattureInCloudInvoice.def.configFields ?? []).some(
+      (f) => f.key === 'paymentDays',
+    );
     expect(hasField).toBe(true);
   });
 });

@@ -97,10 +97,20 @@ export function startWorker(handler: (data: RunJobData) => Promise<unknown>): Wo
     { connection: getQueueConnection() as ConnectionOptions, concurrency },
   );
   worker.on('completed', (job) => {
-    logger.info({ jobId: job.id, workflowId: (job.data as { workflowId?: string }).workflowId }, 'Queue job completed');
+    logger.info(
+      { jobId: job.id, workflowId: (job.data as { workflowId?: string }).workflowId },
+      'Queue job completed',
+    );
   });
   worker.on('failed', (job, err) => {
-    logger.error({ jobId: job?.id, workflowId: (job?.data as { workflowId?: string } | undefined)?.workflowId, err }, 'Queue job failed');
+    logger.error(
+      {
+        jobId: job?.id,
+        workflowId: (job?.data as { workflowId?: string } | undefined)?.workflowId,
+        err,
+      },
+      'Queue job failed',
+    );
   });
   logger.info({ concurrency, queue: QUEUE_NAME }, 'BullMQ worker started');
   return worker;

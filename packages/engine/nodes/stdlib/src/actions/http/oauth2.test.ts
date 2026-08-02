@@ -9,7 +9,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { acquireOAuth2Token, clearOAuth2TokenCache, type TokenFetcher } from './oauth2.js';
 
 function jsonRes(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
 }
 
 const baseParams = {
@@ -27,7 +30,9 @@ describe('acquireOAuth2Token — request shaping', () => {
   it('🚨 authStyle=header → HTTP Basic + grant_type nel body, ritorna access_token', async () => {
     const fetchToken: TokenFetcher = vi.fn(async (_url, init) => {
       const headers = init.headers as Headers;
-      expect(headers.get('Authorization')).toBe(`Basic ${Buffer.from('cid:csecret').toString('base64')}`);
+      expect(headers.get('Authorization')).toBe(
+        `Basic ${Buffer.from('cid:csecret').toString('base64')}`,
+      );
       expect(headers.get('Content-Type')).toBe('application/x-www-form-urlencoded');
       expect(String(init.body)).toContain('grant_type=client_credentials');
       // header style: le credenziali NON sono nel body
@@ -36,7 +41,10 @@ describe('acquireOAuth2Token — request shaping', () => {
     });
     const t = await acquireOAuth2Token({ ...baseParams, fetchToken });
     expect(t).toBe('AT-1');
-    expect(fetchToken).toHaveBeenCalledWith('https://login.example.com/oauth2/token', expect.objectContaining({ method: 'POST' }));
+    expect(fetchToken).toHaveBeenCalledWith(
+      'https://login.example.com/oauth2/token',
+      expect.objectContaining({ method: 'POST' }),
+    );
   });
 
   it('🚨 authStyle=body → client_id/client_secret nel form, niente Authorization', async () => {
@@ -54,7 +62,10 @@ describe('acquireOAuth2Token — request shaping', () => {
 
   it('scope incluso nel body solo se valorizzato (trim)', async () => {
     const seen: string[] = [];
-    const fetchToken: TokenFetcher = async (_url, init) => { seen.push(String(init.body)); return jsonRes({ access_token: 'x', expires_in: 99 }); };
+    const fetchToken: TokenFetcher = async (_url, init) => {
+      seen.push(String(init.body));
+      return jsonRes({ access_token: 'x', expires_in: 99 });
+    };
     await acquireOAuth2Token({ ...baseParams, scope: '  read write  ', fetchToken });
     expect(seen[0]).toContain('scope=read+write');
     clearOAuth2TokenCache();
@@ -65,7 +76,9 @@ describe('acquireOAuth2Token — request shaping', () => {
 
 describe('acquireOAuth2Token — caching & scadenza', () => {
   it('🚨 token valido in cache → NON richiama il token endpoint', async () => {
-    const fetchToken = vi.fn<TokenFetcher>(async () => jsonRes({ access_token: 'AT', expires_in: 3600 }));
+    const fetchToken = vi.fn<TokenFetcher>(async () =>
+      jsonRes({ access_token: 'AT', expires_in: 3600 }),
+    );
     let clock = 1_000_000;
     const now = () => clock;
     const t1 = await acquireOAuth2Token({ ...baseParams, fetchToken, now });
@@ -77,7 +90,8 @@ describe('acquireOAuth2Token — caching & scadenza', () => {
   });
 
   it('🚨 token scaduto → refetch', async () => {
-    const fetchToken = vi.fn<TokenFetcher>()
+    const fetchToken = vi
+      .fn<TokenFetcher>()
       .mockResolvedValueOnce(jsonRes({ access_token: 'OLD', expires_in: 100 }))
       .mockResolvedValueOnce(jsonRes({ access_token: 'NEW', expires_in: 100 }));
     let clock = 0;
@@ -89,7 +103,8 @@ describe('acquireOAuth2Token — caching & scadenza', () => {
   });
 
   it('🚨 margine refresh: token ENTRO 30s dalla scadenza → refetch anticipato', async () => {
-    const fetchToken = vi.fn<TokenFetcher>()
+    const fetchToken = vi
+      .fn<TokenFetcher>()
       .mockResolvedValueOnce(jsonRes({ access_token: 'A', expires_in: 100 }))
       .mockResolvedValueOnce(jsonRes({ access_token: 'B', expires_in: 100 }));
     let clock = 0;
@@ -101,7 +116,8 @@ describe('acquireOAuth2Token — caching & scadenza', () => {
   });
 
   it('chiavi cache distinte per scope diverso (no leak di token tra scope)', async () => {
-    const fetchToken = vi.fn<TokenFetcher>()
+    const fetchToken = vi
+      .fn<TokenFetcher>()
       .mockResolvedValueOnce(jsonRes({ access_token: 'SCOPE-A', expires_in: 3600 }))
       .mockResolvedValueOnce(jsonRes({ access_token: 'SCOPE-B', expires_in: 3600 }));
     const a = await acquireOAuth2Token({ ...baseParams, scope: 'a', fetchToken });
@@ -113,28 +129,41 @@ describe('acquireOAuth2Token — caching & scadenza', () => {
 
 describe('acquireOAuth2Token — input ROTTI del token endpoint (bug-bounty)', () => {
   it('🚨 non-2xx → throw con status + body troncato', async () => {
-    const fetchToken: TokenFetcher = async () => new Response('invalid_client', { status: 401, statusText: 'Unauthorized' });
-    await expect(acquireOAuth2Token({ ...baseParams, fetchToken })).rejects.toThrow(/401.*invalid_client/s);
+    const fetchToken: TokenFetcher = async () =>
+      new Response('invalid_client', { status: 401, statusText: 'Unauthorized' });
+    await expect(acquireOAuth2Token({ ...baseParams, fetchToken })).rejects.toThrow(
+      /401.*invalid_client/s,
+    );
   });
 
   it('🚨 2xx ma senza access_token → throw chiaro', async () => {
-    const fetchToken: TokenFetcher = async () => jsonRes({ token_type: 'Bearer', expires_in: 3600 });
-    await expect(acquireOAuth2Token({ ...baseParams, fetchToken })).rejects.toThrow(/nessun access_token/i);
+    const fetchToken: TokenFetcher = async () =>
+      jsonRes({ token_type: 'Bearer', expires_in: 3600 });
+    await expect(acquireOAuth2Token({ ...baseParams, fetchToken })).rejects.toThrow(
+      /nessun access_token/i,
+    );
   });
 
   it('🚨 access_token non-stringa (number) → trattato come assente → throw', async () => {
     const fetchToken: TokenFetcher = async () => jsonRes({ access_token: 12345, expires_in: 3600 });
-    await expect(acquireOAuth2Token({ ...baseParams, fetchToken })).rejects.toThrow(/nessun access_token/i);
+    await expect(acquireOAuth2Token({ ...baseParams, fetchToken })).rejects.toThrow(
+      /nessun access_token/i,
+    );
   });
 
   it('🚨 risposta non-JSON → throw chiaro', async () => {
-    const fetchToken: TokenFetcher = async () => new Response('<html>not json</html>', { status: 200, headers: { 'content-type': 'text/html' } });
+    const fetchToken: TokenFetcher = async () =>
+      new Response('<html>not json</html>', {
+        status: 200,
+        headers: { 'content-type': 'text/html' },
+      });
     await expect(acquireOAuth2Token({ ...baseParams, fetchToken })).rejects.toThrow(/non-JSON/i);
   });
 
   it('🚨 expires_in mancante → default 3600 (cache valida, non refetch immediato)', async () => {
     const fetchToken = vi.fn<TokenFetcher>(async () => jsonRes({ access_token: 'NOEXP' }));
-    let clock = 0; const now = () => clock;
+    let clock = 0;
+    const now = () => clock;
     await acquireOAuth2Token({ ...baseParams, fetchToken, now });
     clock = 1000_000; // ~16 min, < 1h → ancora valido
     await acquireOAuth2Token({ ...baseParams, fetchToken, now });
@@ -144,8 +173,11 @@ describe('acquireOAuth2Token — input ROTTI del token endpoint (bug-bounty)', (
   it('🚨 expires_in negativo/NaN → default 3600 (no cache già-scaduta = no refetch loop)', async () => {
     for (const bad of [-5, NaN, 0]) {
       clearOAuth2TokenCache();
-      const fetchToken = vi.fn<TokenFetcher>(async () => jsonRes({ access_token: 'T', expires_in: bad }));
-      let clock = 0; const now = () => clock;
+      const fetchToken = vi.fn<TokenFetcher>(async () =>
+        jsonRes({ access_token: 'T', expires_in: bad }),
+      );
+      let clock = 0;
+      const now = () => clock;
       await acquireOAuth2Token({ ...baseParams, fetchToken, now });
       clock = 60_000; // 1 min: col default 3600s è ancora valido
       await acquireOAuth2Token({ ...baseParams, fetchToken, now });

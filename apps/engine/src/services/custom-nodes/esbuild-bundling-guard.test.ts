@@ -25,7 +25,7 @@ const pkg = JSON.parse(readFileSync(join(runtimeRoot, 'package.json'), 'utf-8'))
 const tsup = readFileSync(join(runtimeRoot, 'tsup.config.ts'), 'utf-8');
 
 describe('🚨 esbuild bundling guard', () => {
-  it('esbuild è in dependencies (installato nell\'image prod)', () => {
+  it("esbuild è in dependencies (installato nell'image prod)", () => {
     expect(pkg.dependencies?.esbuild, 'esbuild deve stare in dependencies').toBeTruthy();
   });
 

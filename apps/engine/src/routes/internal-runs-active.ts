@@ -107,10 +107,14 @@ export function createInternalRunsActiveRoute(): Hono {
    * null = illimitato (es. Enterprise/BYOK).
    */
   app.post('/internal/workspace/vector-quota', gate, async (c) => {
-    const body = (await c.req.json().catch(() => null)) as { maxVectors?: unknown; maxDiskMb?: unknown } | null;
+    const body = (await c.req.json().catch(() => null)) as {
+      maxVectors?: unknown;
+      maxDiskMb?: unknown;
+    } | null;
     // Ogni limite deve essere number ≥ 0 oppure null (illimitato). Type-strict:
     // niente coercizione (string "0" o boolean → 400).
-    const valid = (v: unknown): v is number | null => v === null || (typeof v === 'number' && Number.isFinite(v) && v >= 0);
+    const valid = (v: unknown): v is number | null =>
+      v === null || (typeof v === 'number' && Number.isFinite(v) && v >= 0);
     if (!body || !valid(body.maxVectors) || !valid(body.maxDiskMb)) {
       return c.json({ error: 'maxVectors e maxDiskMb richiesti: number>=0 oppure null' }, 400);
     }
@@ -148,7 +152,10 @@ export function createInternalRunsActiveRoute(): Hono {
    * la PII residua nel SQLite tenant + disabilita la riga. Idempotente.
    */
   app.post('/internal/workspace/user-revoked', gate, async (c) => {
-    const body = (await c.req.json().catch(() => null)) as { email?: unknown; scrubPii?: unknown } | null;
+    const body = (await c.req.json().catch(() => null)) as {
+      email?: unknown;
+      scrubPii?: unknown;
+    } | null;
     if (!body || typeof body.email !== 'string' || body.email.length === 0) {
       return c.json({ error: 'email string required' }, 400);
     }

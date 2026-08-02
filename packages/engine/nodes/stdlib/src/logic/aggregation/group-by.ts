@@ -59,7 +59,7 @@ export const groupByNode: NodeModule = {
       'Operatore di raggruppamento enterprise stile SQL GROUP BY ma applicato in-memory a un array di oggetti ' +
       'JavaScript proveniente da uno step upstream del workflow — fondamento di tutte le pipeline di analytics, ' +
       'reporting, batch processing che lavorano su dataset rappresentati come array di records (output di ' +
-      'action_db_query, action_csv_parse, listCommits, queryDatabase Notion, ecc.). Accetta un\'espressione di ' +
+      "action_db_query, action_csv_parse, listCommits, queryDatabase Notion, ecc.). Accetta un'espressione di " +
       'path/key per identificare il campo di raggruppamento — supporto nativo per path nested con notazione ' +
       'dot/bracket: "user.country" (group per country del nested user), "customer.address[0].city" (primo ' +
       'indirizzo del cliente), con precedenza al match esatto se una chiave contiene letteralmente un punto. ' +
@@ -110,7 +110,7 @@ export const groupByNode: NodeModule = {
         type: 'number',
         required: false,
         defaultValue: '100000',
-        help: 'Hard cap anti-OOM sul numero di item processati. Se l\'input supera questa soglia viene troncato e raggruppa solo i primi N (warning emesso). Default 100k, tetto 1M.',
+        help: "Hard cap anti-OOM sul numero di item processati. Se l'input supera questa soglia viene troncato e raggruppa solo i primi N (warning emesso). Default 100k, tetto 1M.",
       },
     ],
     vendor: 'flowforge',

@@ -14,11 +14,19 @@ import { autoFixWorkflow, isPickerResolvableField } from './auto-fix.js';
 describe('autoFixWorkflow — placeholder → secret', () => {
   it('s3://bucket-name → {{secrets.S3_BUCKET}}', () => {
     const r = autoFixWorkflow({
-      nodes: [{ id: 't', defId: 'trigger_file_watch', config: { directory: 's3://bucket-name/docs', glob: '*.pdf' } }],
+      nodes: [
+        {
+          id: 't',
+          defId: 'trigger_file_watch',
+          config: { directory: 's3://bucket-name/docs', glob: '*.pdf' },
+        },
+      ],
       edges: [],
     });
     expect(r.nodes[0]!.config.directory).toBe('{{secrets.S3_BUCKET}}/docs');
-    expect(r.appliedFixes.some((f) => f.type === 'placeholder_to_secret' && f.field === 'directory')).toBe(true);
+    expect(
+      r.appliedFixes.some((f) => f.type === 'placeholder_to_secret' && f.field === 'directory'),
+    ).toBe(true);
   });
 
   it('smtp.example.com → {{secrets.SMTP_HOST}}', () => {
@@ -47,7 +55,13 @@ describe('autoFixWorkflow — placeholder → secret', () => {
 
   it('{{secrets.X}} esistenti → preservati (no replace)', () => {
     const r = autoFixWorkflow({
-      nodes: [{ id: 'h', defId: 'action_http', config: { url: '{{secrets.MY_API}}', body: '{{$node.prev.json}}' } }],
+      nodes: [
+        {
+          id: 'h',
+          defId: 'action_http',
+          config: { url: '{{secrets.MY_API}}', body: '{{$node.prev.json}}' },
+        },
+      ],
       edges: [],
     });
     expect(r.nodes[0]!.config.url).toBe('{{secrets.MY_API}}');
@@ -59,7 +73,13 @@ describe('autoFixWorkflow — placeholder → secret', () => {
 describe('autoFixWorkflow — ID risorsa → __USE_PICKER__', () => {
   it('databaseId="db_opportunities" → __USE_PICKER__', () => {
     const r = autoFixWorkflow({
-      nodes: [{ id: 'n', defId: 'community_notion', config: { databaseId: 'db_opportunities', table: 'logs' } }],
+      nodes: [
+        {
+          id: 'n',
+          defId: 'community_notion',
+          config: { databaseId: 'db_opportunities', table: 'logs' },
+        },
+      ],
       edges: [],
     });
     expect(r.nodes[0]!.config.databaseId).toBe('__USE_PICKER__');
@@ -68,7 +88,9 @@ describe('autoFixWorkflow — ID risorsa → __USE_PICKER__', () => {
 
   it('systemAccountId="email-account-1" → __USE_PICKER__', () => {
     const r = autoFixWorkflow({
-      nodes: [{ id: 'm', defId: 'action_send_email', config: { systemAccountId: 'email-account-1' } }],
+      nodes: [
+        { id: 'm', defId: 'action_send_email', config: { systemAccountId: 'email-account-1' } },
+      ],
       edges: [],
     });
     expect(r.nodes[0]!.config.systemAccountId).toBe('__USE_PICKER__');
@@ -76,7 +98,13 @@ describe('autoFixWorkflow — ID risorsa → __USE_PICKER__', () => {
 
   it('databaseId UUID reale → preservato', () => {
     const r = autoFixWorkflow({
-      nodes: [{ id: 'n', defId: 'db_insert', config: { databaseId: 'd43e6f82-b056-4481-8284-8b812f499b77' } }],
+      nodes: [
+        {
+          id: 'n',
+          defId: 'db_insert',
+          config: { databaseId: 'd43e6f82-b056-4481-8284-8b812f499b77' },
+        },
+      ],
       edges: [],
     });
     expect(r.nodes[0]!.config.databaseId).toBe('d43e6f82-b056-4481-8284-8b812f499b77');
@@ -93,7 +121,13 @@ describe('autoFixWorkflow — ID risorsa → __USE_PICKER__', () => {
 
   it('table (non-id field) → SKIP, non viene toccato', () => {
     const r = autoFixWorkflow({
-      nodes: [{ id: 'n', defId: 'db_insert', config: { table: 'orders', databaseId: 'd43e6f82-b056-4481-8284-8b812f499b77' } }],
+      nodes: [
+        {
+          id: 'n',
+          defId: 'db_insert',
+          config: { table: 'orders', databaseId: 'd43e6f82-b056-4481-8284-8b812f499b77' },
+        },
+      ],
       edges: [],
     });
     expect(r.nodes[0]!.config.table).toBe('orders');
@@ -134,7 +168,10 @@ describe('autoFixWorkflow — merge duplicate nodes', () => {
         { id: 'db1', defId: 'db_insert', config: { table: 'a' } },
         { id: 'db2', defId: 'db_insert', config: { table: 'b' } },
       ],
-      edges: [{ from: 't', to: 'db1' }, { from: 't', to: 'db2' }],
+      edges: [
+        { from: 't', to: 'db1' },
+        { from: 't', to: 'db2' },
+      ],
     });
     expect(r.nodes.filter((n) => n.defId === 'db_insert')).toHaveLength(2);
     expect(r.appliedFixes.filter((f) => f.type === 'merge_duplicate_nodes')).toHaveLength(0);
@@ -145,7 +182,11 @@ describe('autoFixWorkflow — idempotenza', () => {
   it('applicare 2 volte → stesso output al run 2', () => {
     const input = {
       nodes: [
-        { id: 'm', defId: 'action_send_email', config: { host: 'smtp.example.com', from: 'noreply@company.com' } },
+        {
+          id: 'm',
+          defId: 'action_send_email',
+          config: { host: 'smtp.example.com', from: 'noreply@company.com' },
+        },
         { id: 'n', defId: 'community_notion', config: { databaseId: 'db_opportunities' } },
       ],
       edges: [{ from: 'm', to: 'n' }],
@@ -162,7 +203,11 @@ describe('autoFixWorkflow — force_loop_strategy_batch (regression)', () => {
     const r = autoFixWorkflow({
       nodes: [
         { id: 'trig', defId: 'trigger_manual', config: {} },
-        { id: 'loop', defId: 'logic_loop', config: { itemsExpression: '{{$node.trig.json.items}}' } },
+        {
+          id: 'loop',
+          defId: 'logic_loop',
+          config: { itemsExpression: '{{$node.trig.json.items}}' },
+        },
         { id: 'fetch', defId: 'action_web_fetch_advanced', config: { url: 'https://x' } },
         { id: 'agg', defId: 'agent_data_analyst', config: { prompt: 'genera un report completo' } },
       ],
@@ -209,7 +254,11 @@ describe('autoFixWorkflow — force_loop_strategy_batch (regression)', () => {
     const r = autoFixWorkflow({
       nodes: [
         { id: 'loop', defId: 'logic_loop', config: {} },
-        { id: 'mail', defId: 'action_send_email', config: { subject: 'Welcome to {{item.name}}', body: 'Ciao!' } },
+        {
+          id: 'mail',
+          defId: 'action_send_email',
+          config: { subject: 'Welcome to {{item.name}}', body: 'Ciao!' },
+        },
       ],
       edges: [{ from: 'loop', to: 'mail' }],
     });
@@ -235,10 +284,18 @@ describe('autoFixWorkflow — combined real-case', () => {
     const r = autoFixWorkflow({
       nodes: [
         { id: 't', defId: 'trigger_cron', config: { cronExpression: '0 9 * * 1' } },
-        { id: 'web', defId: 'action_web_fetch_advanced', config: { url: 'https://api.company.com/x' } },
+        {
+          id: 'web',
+          defId: 'action_web_fetch_advanced',
+          config: { url: 'https://api.company.com/x' },
+        },
         { id: 'meta', defId: 'action_meta_extract', config: {} },
         { id: 'db', defId: 'db_insert', config: { databaseId: 'db_seo_audits', table: 'audits' } },
-        { id: 'mail', defId: 'action_send_email', config: { systemAccountId: 'email-account-1', from: 'noreply@company.com' } },
+        {
+          id: 'mail',
+          defId: 'action_send_email',
+          config: { systemAccountId: 'email-account-1', from: 'noreply@company.com' },
+        },
       ],
       edges: [
         { from: 't', to: 'web' },
@@ -287,7 +344,11 @@ describe('autoFixWorkflow — agent_* provider normalization (2026-06-07)', () =
   it('agent_* con provider gia\\` allineato al tenant default → no-op', () => {
     const r = autoFixWorkflow({
       nodes: [
-        { id: 'summ', defId: 'agent_summarizer', config: { provider: 'anthropic', model: 'claude-sonnet-4-5' } },
+        {
+          id: 'summ',
+          defId: 'agent_summarizer',
+          config: { provider: 'anthropic', model: 'claude-sonnet-4-5' },
+        },
       ],
       edges: [],
       tenantDefaultLlmProvider: 'anthropic',
@@ -324,7 +385,11 @@ describe('autoFixWorkflow — agent_* provider normalization (2026-06-07)', () =
   it('riscrittura clear solo i model knownPrefix — niente clear di custom model', () => {
     const r = autoFixWorkflow({
       nodes: [
-        { id: 'a', defId: 'agent_translator', config: { provider: 'openai', model: 'custom-fine-tune-v3' } },
+        {
+          id: 'a',
+          defId: 'agent_translator',
+          config: { provider: 'openai', model: 'custom-fine-tune-v3' },
+        },
       ],
       edges: [],
       tenantDefaultLlmProvider: 'liara',
@@ -337,7 +402,15 @@ describe('autoFixWorkflow — agent_* provider normalization (2026-06-07)', () =
   it('idempotente: girare 2x produce stesso risultato', () => {
     const input = {
       nodes: [
-        { id: 'a', defId: 'agent_validator', config: { provider: 'google', model: 'gemini-2.0-flash', apiKey: '{{secrets.GOOGLE_AI_KEY}}' } },
+        {
+          id: 'a',
+          defId: 'agent_validator',
+          config: {
+            provider: 'google',
+            model: 'gemini-2.0-flash',
+            apiKey: '{{secrets.GOOGLE_AI_KEY}}',
+          },
+        },
       ],
       edges: [],
       tenantDefaultLlmProvider: 'liara',
@@ -351,7 +424,11 @@ describe('autoFixWorkflow — agent_* provider normalization (2026-06-07)', () =
   it('nodi non-agent_* non vengono toccati anche se hanno field provider', () => {
     const r = autoFixWorkflow({
       nodes: [
-        { id: 'a', defId: 'action_http', config: { provider: 'openai', url: 'https://api.openai.com' } },
+        {
+          id: 'a',
+          defId: 'action_http',
+          config: { provider: 'openai', url: 'https://api.openai.com' },
+        },
       ],
       edges: [],
       tenantDefaultLlmProvider: 'liara',
@@ -366,7 +443,15 @@ describe('autoFixWorkflow — obsolete model auto-clear (2026-06-07)', () => {
   it('agent_data_analyst con anthropic + claude-3-haiku-20240307 → field model rimosso', () => {
     const r = autoFixWorkflow({
       nodes: [
-        { id: 'a', defId: 'agent_data_analyst', config: { provider: 'anthropic', model: 'claude-3-haiku-20240307', extraContext: 'aggrega' } },
+        {
+          id: 'a',
+          defId: 'agent_data_analyst',
+          config: {
+            provider: 'anthropic',
+            model: 'claude-3-haiku-20240307',
+            extraContext: 'aggrega',
+          },
+        },
       ],
       edges: [],
     });
@@ -379,7 +464,11 @@ describe('autoFixWorkflow — obsolete model auto-clear (2026-06-07)', () => {
   it('openai gpt-3.5-turbo-0613 → cleared', () => {
     const r = autoFixWorkflow({
       nodes: [
-        { id: 'a', defId: 'agent_classifier', config: { provider: 'openai', model: 'gpt-3.5-turbo-0613' } },
+        {
+          id: 'a',
+          defId: 'agent_classifier',
+          config: { provider: 'openai', model: 'gpt-3.5-turbo-0613' },
+        },
       ],
       edges: [],
     });
@@ -389,7 +478,11 @@ describe('autoFixWorkflow — obsolete model auto-clear (2026-06-07)', () => {
   it('modello corrente claude-sonnet-4-5 → non clearrato', () => {
     const r = autoFixWorkflow({
       nodes: [
-        { id: 'a', defId: 'agent_summarizer', config: { provider: 'anthropic', model: 'claude-sonnet-4-5' } },
+        {
+          id: 'a',
+          defId: 'agent_summarizer',
+          config: { provider: 'anthropic', model: 'claude-sonnet-4-5' },
+        },
       ],
       edges: [],
     });
@@ -414,7 +507,11 @@ describe('autoFixWorkflow — obsolete model auto-clear (2026-06-07)', () => {
   it('non-agent node con model obsoleto → ignorato (no side effect)', () => {
     const r = autoFixWorkflow({
       nodes: [
-        { id: 'a', defId: 'action_http', config: { provider: 'openai', model: 'gpt-3.5-turbo-0613' } },
+        {
+          id: 'a',
+          defId: 'action_http',
+          config: { provider: 'openai', model: 'gpt-3.5-turbo-0613' },
+        },
       ],
       edges: [],
     });
@@ -450,7 +547,11 @@ describe('autoFixWorkflow — obsolete model auto-clear (2026-06-07)', () => {
       const fromMerge = r.edges.filter((e) => e.from === merge!.id);
       expect(fromMerge).toHaveLength(1);
       expect(fromMerge[0]!.to).toBe('log_audit_12');
-      expect(r.appliedFixes.some((f) => f.type === 'fan_in_merge_inserted' && f.nodeId === 'log_audit_12')).toBe(true);
+      expect(
+        r.appliedFixes.some(
+          (f) => f.type === 'fan_in_merge_inserted' && f.nodeId === 'log_audit_12',
+        ),
+      ).toBe(true);
     });
 
     it('aggregator natural → NO merge inserito', () => {
@@ -508,8 +609,10 @@ describe('autoFixWorkflow — obsolete model auto-clear (2026-06-07)', () => {
           { id: 'email1', defId: 'action_send_email', config: {} },
         ],
         edges: [
-          { from: 'a', to: 'db1' }, { from: 'b', to: 'db1' },
-          { from: 'c', to: 'email1' }, { from: 'd', to: 'email1' },
+          { from: 'a', to: 'db1' },
+          { from: 'b', to: 'db1' },
+          { from: 'c', to: 'email1' },
+          { from: 'd', to: 'email1' },
         ],
       });
       const merges = r.nodes.filter((n) => n.defId === 'logic_merge');
@@ -523,8 +626,16 @@ describe('autoFixWorkflow — obsolete model auto-clear (2026-06-07)', () => {
         nodes: [
           { id: 'extract', defId: 'agent_extractor', config: { provider: 'anthropic' } },
           { id: 'clearbit', defId: 'action_http', config: { url: 'https://clearbit.com/api' } },
-          { id: 'fetch_home', defId: 'action_http', config: { url: 'https://{{$node.extract.json.domain}}' } },
-          { id: 'linkedin', defId: 'action_http', config: { url: 'https://linkedin.com/api/search' } },
+          {
+            id: 'fetch_home',
+            defId: 'action_http',
+            config: { url: 'https://{{$node.extract.json.domain}}' },
+          },
+          {
+            id: 'linkedin',
+            defId: 'action_http',
+            config: { url: 'https://linkedin.com/api/search' },
+          },
           { id: 'log_audit_12', defId: 'db_insert', config: { table: 'crm_log' } },
         ],
         edges: [
@@ -603,11 +714,18 @@ describe('autoFixWorkflow — obsolete model auto-clear (2026-06-07)', () => {
 
     it('action_run_js con codice Python → corretto a action_run_python', () => {
       const r = autoFixWorkflow({
-        nodes: [{
-          id: 'action_1',
-          defId: 'action_run_js',
-          config: { code: PYTHON_CODE, timeoutMs: '30000', parseStdoutJson: 'true', allowNetwork: 'false' },
-        }],
+        nodes: [
+          {
+            id: 'action_1',
+            defId: 'action_run_js',
+            config: {
+              code: PYTHON_CODE,
+              timeoutMs: '30000',
+              parseStdoutJson: 'true',
+              allowNetwork: 'false',
+            },
+          },
+        ],
         edges: [],
       });
       expect(r.nodes[0]!.defId).toBe('action_run_python');
@@ -657,7 +775,9 @@ describe('autoFixWorkflow — obsolete model auto-clear (2026-06-07)', () => {
 
     it('NON tocca nodi non-code anche se il config contiene parole tipo "import"', () => {
       const r = autoFixWorkflow({
-        nodes: [{ id: 'h', defId: 'action_http', config: { url: 'https://x.it', body: 'import json' } }],
+        nodes: [
+          { id: 'h', defId: 'action_http', config: { url: 'https://x.it', body: 'import json' } },
+        ],
         edges: [],
       });
       expect(r.nodes[0]!.defId).toBe('action_http');
@@ -702,11 +822,15 @@ describe('🔒 orphan-edge heal — merge node referenziato ma non emesso dall�
         { id: 'file_1', defId: 'action_file_write', config: {} },
       ],
       edges: [
-        { from: 'logic_loop_1', to: 'seo_1' }, { from: 'logic_loop_1', to: 'meta_1' },
-        { from: 'logic_loop_1', to: 'redir_1' }, { from: 'logic_loop_1', to: 'link_1' },
+        { from: 'logic_loop_1', to: 'seo_1' },
+        { from: 'logic_loop_1', to: 'meta_1' },
+        { from: 'logic_loop_1', to: 'redir_1' },
+        { from: 'logic_loop_1', to: 'link_1' },
         // 4 edge orfani → merge inesistente
-        { from: 'seo_1', to: 'merge_logic_loop_1' }, { from: 'meta_1', to: 'merge_logic_loop_1' },
-        { from: 'redir_1', to: 'merge_logic_loop_1' }, { from: 'link_1', to: 'merge_logic_loop_1' },
+        { from: 'seo_1', to: 'merge_logic_loop_1' },
+        { from: 'meta_1', to: 'merge_logic_loop_1' },
+        { from: 'redir_1', to: 'merge_logic_loop_1' },
+        { from: 'link_1', to: 'merge_logic_loop_1' },
         { from: 'merge_logic_loop_1', to: 'file_1' },
       ],
     });
@@ -724,11 +848,17 @@ describe('🔒 orphan-edge heal — merge node referenziato ma non emesso dall�
 
   it('edge orfano verso nodo NON-merge → scartato (grafo valido, niente save rotto)', () => {
     const r = autoFixWorkflow({
-      nodes: [{ id: 'a', defId: 'trigger_manual', config: {} }, { id: 'b', defId: 'action_http', config: {} }],
-      edges: [{ from: 'a', to: 'b' }, { from: 'b', to: 'ghost_node_42' }],
+      nodes: [
+        { id: 'a', defId: 'trigger_manual', config: {} },
+        { id: 'b', defId: 'action_http', config: {} },
+      ],
+      edges: [
+        { from: 'a', to: 'b' },
+        { from: 'b', to: 'ghost_node_42' },
+      ],
     });
     expect(r.nodes.find((n) => n.id === 'ghost_node_42')).toBeUndefined(); // NON creato
-    expect(r.edges.some((e) => e.to === 'ghost_node_42')).toBe(false);     // edge droppato
+    expect(r.edges.some((e) => e.to === 'ghost_node_42')).toBe(false); // edge droppato
     expect(r.appliedFixes.some((f) => f.type === 'orphan_edge_healed')).toBe(true);
   });
 
@@ -748,13 +878,25 @@ describe('🔒 guard sistemico: l’auto-fix non emette MAI il defId phantom flo
   it('fan-in → crea logic_merge (defId REALE), mai flow_merge', () => {
     const r = autoFixWorkflow({
       nodes: [
-        { id: 'a', defId: 'action_http', config: {} }, { id: 'b', defId: 'action_http', config: { url: 'x' } },
-        { id: 'c', defId: 'action_http', config: { url: 'y' } }, { id: 'sink', defId: 'db_insert', config: { table: 't' } },
+        { id: 'a', defId: 'action_http', config: {} },
+        { id: 'b', defId: 'action_http', config: { url: 'x' } },
+        { id: 'c', defId: 'action_http', config: { url: 'y' } },
+        { id: 'sink', defId: 'db_insert', config: { table: 't' } },
       ],
-      edges: [{ from: 'a', to: 'sink' }, { from: 'b', to: 'sink' }, { from: 'c', to: 'sink' }],
+      edges: [
+        { from: 'a', to: 'sink' },
+        { from: 'b', to: 'sink' },
+        { from: 'c', to: 'sink' },
+      ],
     });
-    expect(r.nodes.some((n) => n.defId === 'flow_merge'), 'nessun flow_merge phantom').toBe(false);
-    expect(r.nodes.some((n) => n.defId === 'logic_merge'), 'merge reale inserito').toBe(true);
+    expect(
+      r.nodes.some((n) => n.defId === 'flow_merge'),
+      'nessun flow_merge phantom',
+    ).toBe(false);
+    expect(
+      r.nodes.some((n) => n.defId === 'logic_merge'),
+      'merge reale inserito',
+    ).toBe(true);
   });
 
   it('orphan-heal → crea logic_merge, mai flow_merge', () => {
@@ -777,8 +919,8 @@ describe('isPickerResolvableField — contratto del heal pre-validation (bug dir
   it('match per TIPO catalog: table (db-table-picker) è resolvable, ma solo col tipo giusto', () => {
     expect(isPickerResolvableField('table', 'db-table-picker')).toBe(true);
     expect(isPickerResolvableField('workflowTarget', 'workflow-picker')).toBe(true);
-    expect(isPickerResolvableField('table')).toBe(false);           // senza tipo: il nome non basta
-    expect(isPickerResolvableField('table', 'text')).toBe(false);   // tipo non-picker
+    expect(isPickerResolvableField('table')).toBe(false); // senza tipo: il nome non basta
+    expect(isPickerResolvableField('table', 'text')).toBe(false); // tipo non-picker
   });
 
   it('campi NON sanabili restano fuori: schema/to/subject/code non sono picker', () => {

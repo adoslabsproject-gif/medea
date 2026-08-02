@@ -24,13 +24,18 @@ const as = (tenantId: string, role: AuthContext['role']): void => {
 };
 
 let app: Hono;
-interface SqliteLike { prepare: (s: string) => { run: (...p: unknown[]) => unknown } }
+interface SqliteLike {
+  prepare: (s: string) => { run: (...p: unknown[]) => unknown };
+}
 const db = (): SqliteLike => getDatabase().sqlite as unknown as SqliteLike;
 
 beforeAll(() => {
   runMigrations();
   app = new Hono();
-  app.use('*', async (c, next) => { c.set('auth', authCtx); await next(); });
+  app.use('*', async (c, next) => {
+    c.set('auth', authCtx);
+    await next();
+  });
   app.route('/api/v1/ux', createUxTelemetryRoutes());
 });
 
@@ -39,11 +44,13 @@ afterAll(() => {
 });
 
 const req = (method: string, path: string, body?: unknown): Promise<Response> =>
-  Promise.resolve(app.request(`/api/v1/ux${path}`, {
-    method,
-    headers: { 'content-type': 'application/json' },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  }));
+  Promise.resolve(
+    app.request(`/api/v1/ux${path}`, {
+      method,
+      headers: { 'content-type': 'application/json' },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    }),
+  );
 
 describe('ux-telemetry — tracker client', () => {
   it('senza auth → 401', async () => {
@@ -59,9 +66,13 @@ describe('ux-telemetry — tracker client', () => {
 
   it('evento valido → 200 ok', async () => {
     as(T_A, 'owner');
-    const res = await req('POST', '/events', { eventType: 'workflow_created', workflowId: 'wf1', metadata: { src: 'test' } });
+    const res = await req('POST', '/events', {
+      eventType: 'workflow_created',
+      workflowId: 'wf1',
+      metadata: { src: 'test' },
+    });
     expect(res.status).toBe(200);
-    expect((await res.json() as { ok: boolean }).ok).toBe(true);
+    expect(((await res.json()) as { ok: boolean }).ok).toBe(true);
   });
 });
 
@@ -81,7 +92,9 @@ describe('ux-telemetry — admin superadmin-only', () => {
     as(T_B, 'editor');
     await req('POST', '/events', { eventType: 'tour_completed' });
     as('platform', 'superadmin');
-    const recent = await (await req('GET', `/admin/recent?tenantId=${T_B}`)).json() as { events: { tenantId: string; eventType: string }[] };
+    const recent = (await (await req('GET', `/admin/recent?tenantId=${T_B}`)).json()) as {
+      events: { tenantId: string; eventType: string }[];
+    };
     expect(recent.events.length).toBeGreaterThan(0);
     expect(recent.events.every((e) => e.tenantId === T_B)).toBe(true);
     expect(recent.events.some((e) => e.eventType === 'tour_completed')).toBe(true);

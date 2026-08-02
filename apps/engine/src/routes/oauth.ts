@@ -54,9 +54,11 @@ interface OauthProviderRow {
 
 function findProvider(provider: string, tenantId: string): OauthProviderRow | null {
   const { sqlite } = getDatabase();
-  return (sqlite
-    .prepare('SELECT * FROM oauth_providers WHERE tenant_id = ? AND provider = ?')
-    .get(tenantId, provider) as OauthProviderRow | undefined) ?? null;
+  return (
+    (sqlite
+      .prepare('SELECT * FROM oauth_providers WHERE tenant_id = ? AND provider = ?')
+      .get(tenantId, provider) as OauthProviderRow | undefined) ?? null
+  );
 }
 
 function pkceChallenge(verifier: string): string {
@@ -76,7 +78,9 @@ export function createOauthRoutes(): Hono {
     const tenantId = getContainerTenantId();
     const { sqlite } = getDatabase();
     const rows = sqlite
-      .prepare('SELECT id, provider, issuer, redirect_uri, scopes, created_at FROM oauth_providers WHERE tenant_id = ?')
+      .prepare(
+        'SELECT id, provider, issuer, redirect_uri, scopes, created_at FROM oauth_providers WHERE tenant_id = ?',
+      )
       .all(tenantId) as Omit<OauthProviderRow, 'client_id' | 'client_secret' | 'tenant_id'>[];
     return c.json({ providers: rows });
   });
@@ -88,7 +92,8 @@ export function createOauthRoutes(): Hono {
   app.post('/oauth/providers', requireRole('owner'), async (c) => {
     const tenantId = getContainerTenantId();
     const raw = (await c.req.json()) as unknown;
-    if (!raw || typeof raw !== 'object') return c.json({ error: 'Body must be a JSON object' }, 400);
+    if (!raw || typeof raw !== 'object')
+      return c.json({ error: 'Body must be a JSON object' }, 400);
     const body = raw as Record<string, unknown>;
     const provider = typeof body.provider === 'string' ? body.provider : '';
     const issuer = typeof body.issuer === 'string' ? body.issuer : '';
@@ -104,7 +109,13 @@ export function createOauthRoutes(): Hono {
     // puntarlo a host interni (172.20.0.1 gateway/Redis, 169.254 IMDS, localhost)
     // → SSRF nella rete del server. Rifiutato al salvataggio (host pubblico only).
     if (!validateUrlForFetch(issuer).ok) {
-      return c.json({ error: 'issuer deve essere un URL HTTP(S) PUBBLICO — host interni/privati/localhost bloccati (protezione SSRF)' }, 400);
+      return c.json(
+        {
+          error:
+            'issuer deve essere un URL HTTP(S) PUBBLICO — host interni/privati/localhost bloccati (protezione SSRF)',
+        },
+        400,
+      );
     }
     const id = nanoid();
     // #5: cifra il client_secret (envelope). client_secret legacy plaintext = ''.
@@ -112,7 +123,7 @@ export function createOauthRoutes(): Hono {
     const { sqlite } = getDatabase();
     sqlite
       .prepare(
-        "INSERT INTO oauth_providers (id, tenant_id, provider, issuer, client_id, client_secret, client_secret_ciphertext, client_secret_nonce, client_secret_auth_tag, client_secret_dek_ciphertext, client_secret_dek_nonce, client_secret_dek_auth_tag, redirect_uri, scopes, created_at) " +
+        'INSERT INTO oauth_providers (id, tenant_id, provider, issuer, client_id, client_secret, client_secret_ciphertext, client_secret_nonce, client_secret_auth_tag, client_secret_dek_ciphertext, client_secret_dek_nonce, client_secret_dek_auth_tag, redirect_uri, scopes, created_at) ' +
           "VALUES (?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
           'ON CONFLICT (tenant_id, provider) DO UPDATE SET issuer = excluded.issuer, client_id = excluded.client_id, ' +
           "client_secret = '', client_secret_ciphertext = excluded.client_secret_ciphertext, client_secret_nonce = excluded.client_secret_nonce, " +
@@ -120,7 +131,22 @@ export function createOauthRoutes(): Hono {
           'client_secret_dek_nonce = excluded.client_secret_dek_nonce, client_secret_dek_auth_tag = excluded.client_secret_dek_auth_tag, ' +
           'redirect_uri = excluded.redirect_uri, scopes = excluded.scopes',
       )
-      .run(id, tenantId, provider, issuer, clientId, sec.ciphertext, sec.nonce, sec.authTag, sec.dekCiphertext, sec.dekNonce, sec.dekAuthTag, redirectUri, scopes, new Date().toISOString());
+      .run(
+        id,
+        tenantId,
+        provider,
+        issuer,
+        clientId,
+        sec.ciphertext,
+        sec.nonce,
+        sec.authTag,
+        sec.dekCiphertext,
+        sec.dekNonce,
+        sec.dekAuthTag,
+        redirectUri,
+        scopes,
+        new Date().toISOString(),
+      );
     const actorId = getActorId(c) ?? undefined;
     await audit.append({
       tenantId,
@@ -161,15 +187,28 @@ export function createOauthRoutes(): Hono {
 
     try {
       assertUrlSafe(row.issuer); // difesa-in-profondità SSRF (gate primario all'upsert)
-      const config = await oidc.discovery(new URL(row.issuer), row.client_id, resolveClientSecret(row));
+      const config = await oidc.discovery(
+        new URL(row.issuer),
+        row.client_id,
+        resolveClientSecret(row),
+      );
       const verifier = oidc.randomPKCECodeVerifier();
       const challenge = pkceChallenge(verifier);
       const state = randomBytes(32).toString('base64url');
 
       const { sqlite } = getDatabase();
       sqlite
-        .prepare('INSERT INTO oauth_state (state, tenant_id, provider, code_verifier, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)')
-        .run(state, tenantId, provider, verifier, new Date().toISOString(), new Date(Date.now() + 10 * 60_000).toISOString());
+        .prepare(
+          'INSERT INTO oauth_state (state, tenant_id, provider, code_verifier, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)',
+        )
+        .run(
+          state,
+          tenantId,
+          provider,
+          verifier,
+          new Date().toISOString(),
+          new Date(Date.now() + 10 * 60_000).toISOString(),
+        );
 
       const url = oidc.buildAuthorizationUrl(config, {
         redirect_uri: row.redirect_uri,
@@ -194,9 +233,9 @@ export function createOauthRoutes(): Hono {
     if (!state) return c.json({ error: 'Missing state' }, 400);
 
     const { sqlite } = getDatabase();
-    const stateRow = sqlite
-      .prepare('SELECT * FROM oauth_state WHERE state = ?')
-      .get(state) as { tenant_id: string; provider: string; code_verifier: string; expires_at: string } | undefined;
+    const stateRow = sqlite.prepare('SELECT * FROM oauth_state WHERE state = ?').get(state) as
+      | { tenant_id: string; provider: string; code_verifier: string; expires_at: string }
+      | undefined;
     if (!stateRow) return c.json({ error: 'Invalid state' }, 400);
     if (new Date(stateRow.expires_at) < new Date()) {
       sqlite.prepare('DELETE FROM oauth_state WHERE state = ?').run(state);
@@ -208,7 +247,11 @@ export function createOauthRoutes(): Hono {
 
     try {
       assertUrlSafe(row.issuer); // difesa-in-profondità SSRF (gate primario all'upsert)
-      const config = await oidc.discovery(new URL(row.issuer), row.client_id, resolveClientSecret(row));
+      const config = await oidc.discovery(
+        new URL(row.issuer),
+        row.client_id,
+        resolveClientSecret(row),
+      );
       const tokens = await oidc.authorizationCodeGrant(config, url, {
         pkceCodeVerifier: stateRow.code_verifier,
         expectedState: state,
@@ -237,19 +280,35 @@ export function createOauthRoutes(): Hono {
         userId = existing.id;
         role = existing.role as typeof role;
         sqlite
-          .prepare('UPDATE users SET last_login_at = ?, oauth_provider = ?, oauth_subject = ? WHERE id = ?')
+          .prepare(
+            'UPDATE users SET last_login_at = ?, oauth_provider = ?, oauth_subject = ? WHERE id = ?',
+          )
           .run(now, provider, subject, userId);
       } else {
-        const ownerCount = (sqlite
-          .prepare("SELECT COUNT(*) as c FROM users WHERE tenant_id = ? AND role = 'owner'")
-          .get(stateRow.tenant_id) as { c: number }).c;
+        const ownerCount = (
+          sqlite
+            .prepare("SELECT COUNT(*) as c FROM users WHERE tenant_id = ? AND role = 'owner'")
+            .get(stateRow.tenant_id) as { c: number }
+        ).c;
         userId = nanoid();
         role = ownerCount === 0 ? 'owner' : 'viewer';
         sqlite
           .prepare(
             'INSERT INTO users (id, tenant_id, email, display_name, password_hash, role, enabled, created_at, updated_at, last_login_at, oauth_provider, oauth_subject) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)',
           )
-          .run(userId, stateRow.tenant_id, email, displayName, '', role, now, now, now, provider, subject);
+          .run(
+            userId,
+            stateRow.tenant_id,
+            email,
+            displayName,
+            '',
+            role,
+            now,
+            now,
+            now,
+            provider,
+            subject,
+          );
       }
 
       const keys = await getAuthKeys();

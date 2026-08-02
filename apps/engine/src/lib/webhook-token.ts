@@ -81,7 +81,10 @@ export interface WebhookTokenVerdict {
  * segreto (distingue solo "corrente" da "grace", informazione già nota al
  * possessore di un token valido).
  */
-export function verifyDefaultWebhookToken(workflowId: string, providedToken: string): WebhookTokenVerdict {
+export function verifyDefaultWebhookToken(
+  workflowId: string,
+  providedToken: string,
+): WebhookTokenVerdict {
   const current = deriveDefaultWebhookToken(workflowId);
   if (current !== '' && constantTimeCompare(providedToken, current)) {
     return { valid: true, viaGraceSecret: false };

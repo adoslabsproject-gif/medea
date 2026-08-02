@@ -14,7 +14,12 @@ vi.mock('@/lib/logger.js');
 const loggerMock = vi.mocked(logger);
 
 const NOTHING = {
-  liveRefs: 0, deleted: 0, freedBytes: 0, skippedYoung: 0, tempDeleted: 0, tempFreedBytes: 0,
+  liveRefs: 0,
+  deleted: 0,
+  freedBytes: 0,
+  skippedYoung: 0,
+  tempDeleted: 0,
+  tempFreedBytes: 0,
 };
 
 beforeEach(() => {
@@ -24,9 +29,13 @@ beforeEach(() => {
   gcOnceMock.mockResolvedValue(NOTHING);
 });
 
-afterEach(() => { vi.useRealTimers(); });
+afterEach(() => {
+  vi.useRealTimers();
+});
 
-async function load() { return import('./binary-gc-cron.js'); }
+async function load() {
+  return import('./binary-gc-cron.js');
+}
 
 describe('🚨 lifecycle', () => {
   it('🚨 start: log info "started"', async () => {
@@ -134,7 +143,7 @@ describe('🚨 logging del ciclo', () => {
     m.stopBinaryGcCron();
   });
 
-  it('🚨 ciclo che fallisce → warn, il cron NON muore (riprova all\'ora dopo)', async () => {
+  it("🚨 ciclo che fallisce → warn, il cron NON muore (riprova all'ora dopo)", async () => {
     gcOnceMock.mockRejectedValueOnce(new Error('disk io'));
     const m = await load();
     m.startBinaryGcCron();

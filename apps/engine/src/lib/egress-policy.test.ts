@@ -10,23 +10,37 @@ import Database from 'better-sqlite3';
 vi.mock('@/lib/logger.js');
 
 // DB in-memory iniettato in getDatabase (holder per la hoist di vi.mock).
-const holder: { db: Database.Database | null; throwOnGet: boolean } = { db: null, throwOnGet: false };
+const holder: { db: Database.Database | null; throwOnGet: boolean } = {
+  db: null,
+  throwOnGet: false,
+};
 vi.mock('@/storage/db.js', () => ({
   getDatabase: () => {
     if (holder.throwOnGet) throw new Error('DB down');
     const db = holder.db!;
     return {
       sqlite: {
-        prepare: (sql: string) => { const s = db.prepare(sql); return { run: (...p: unknown[]) => s.run(...p), get: (...p: unknown[]) => s.get(...p), all: (...p: unknown[]) => s.all(...p) }; },
-        exec: (sql: string) => { db.exec(sql); },
+        prepare: (sql: string) => {
+          const s = db.prepare(sql);
+          return {
+            run: (...p: unknown[]) => s.run(...p),
+            get: (...p: unknown[]) => s.get(...p),
+            all: (...p: unknown[]) => s.all(...p),
+          };
+        },
+        exec: (sql: string) => {
+          db.exec(sql);
+        },
         transaction: (fn: unknown) => fn,
       },
     };
   },
 }));
 
-const { resolveOutboundDispatcher, setEgressAllowlist, __resetEgressAllowlistForTest } = await import('./egress-policy.js');
-const { getInsecureTlsDispatcher, getPermissiveDispatcher, __resetSecureDispatcherForTest } = await import('./secure-dispatcher.js');
+const { resolveOutboundDispatcher, setEgressAllowlist, __resetEgressAllowlistForTest } =
+  await import('./egress-policy.js');
+const { getInsecureTlsDispatcher, getPermissiveDispatcher, __resetSecureDispatcherForTest } =
+  await import('./secure-dispatcher.js');
 
 const ENV = 'MEDEA_INTERNAL_HOST_ALLOWLIST';
 let prevEnv: string | undefined;
@@ -41,7 +55,8 @@ beforeEach(() => {
   __resetSecureDispatcherForTest();
 });
 afterEach(() => {
-  if (prevEnv === undefined) delete process.env[ENV]; else process.env[ENV] = prevEnv;
+  if (prevEnv === undefined) delete process.env[ENV];
+  else process.env[ENV] = prevEnv;
   holder.db?.close();
 });
 
@@ -81,7 +96,7 @@ describe('resolveOutboundDispatcher — allowlist DB-backed', () => {
     expect(resolveOutboundDispatcher('erp.internal', false).allowlisted).toBe(true);
   });
 
-  it('🚨 push VINCE sull\'env e lo svuotamento DISATTIVA tutto', () => {
+  it("🚨 push VINCE sull'env e lo svuotamento DISATTIVA tutto", () => {
     process.env[ENV] = 'da-env.internal';
     __resetEgressAllowlistForTest();
     setEgressAllowlist('pushed.internal');

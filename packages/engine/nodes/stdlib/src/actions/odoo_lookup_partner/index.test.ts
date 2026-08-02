@@ -31,28 +31,41 @@ function rsp(text: string, status = 200): Response {
   return new Response(text, { status });
 }
 function intRsp(n: number): Response {
-  return rsp(`<?xml version="1.0"?><methodResponse><params><param><value><int>${n}</int></value></param></params></methodResponse>`);
+  return rsp(
+    `<?xml version="1.0"?><methodResponse><params><param><value><int>${n}</int></value></param></params></methodResponse>`,
+  );
 }
 function arrayOfStructsRsp(items: Record<string, unknown>[]): Response {
-  const inner = items.map((it) => {
-    const members = Object.entries(it).map(([k, v]) => {
-      let valueXml = '';
-      if (typeof v === 'number') valueXml = `<value><int>${v}</int></value>`;
-      else if (typeof v === 'string') valueXml = `<value><string>${v}</string></value>`;
-      else valueXml = `<value><string>${String(v)}</string></value>`;
-      return `<member><name>${k}</name>${valueXml}</member>`;
-    }).join('');
-    return `<value><struct>${members}</struct></value>`;
-  }).join('');
-  return rsp(`<?xml version="1.0"?><methodResponse><params><param><value><array><data>${inner}</data></array></value></param></params></methodResponse>`);
+  const inner = items
+    .map((it) => {
+      const members = Object.entries(it)
+        .map(([k, v]) => {
+          let valueXml = '';
+          if (typeof v === 'number') valueXml = `<value><int>${v}</int></value>`;
+          else if (typeof v === 'string') valueXml = `<value><string>${v}</string></value>`;
+          else valueXml = `<value><string>${String(v)}</string></value>`;
+          return `<member><name>${k}</name>${valueXml}</member>`;
+        })
+        .join('');
+      return `<value><struct>${members}</struct></value>`;
+    })
+    .join('');
+  return rsp(
+    `<?xml version="1.0"?><methodResponse><params><param><value><array><data>${inner}</data></array></value></param></params></methodResponse>`,
+  );
 }
 
 const AUTH = {
-  baseUrl: 'https://odoo.example', database: 'db',
-  login: 'admin', password: 'pwd',
+  baseUrl: 'https://odoo.example',
+  database: 'db',
+  login: 'admin',
+  password: 'pwd',
 };
 
-beforeEach(() => { mockedFetch.mockReset(); __clearOdooAuthCacheForTests(); });
+beforeEach(() => {
+  mockedFetch.mockReset();
+  __clearOdooAuthCacheForTests();
+});
 
 describe('OdooLookupPartnerConfigSchema', () => {
   it('rejects empty all-identifiers config', () => {
@@ -66,12 +79,22 @@ describe('OdooLookupPartnerConfigSchema', () => {
   });
 
   it('rejects createIfMissing without email OR name', () => {
-    const r = OdooLookupPartnerConfigSchema.safeParse({ ...AUTH, vat: '12345', createIfMissing: 'true' });
+    const r = OdooLookupPartnerConfigSchema.safeParse({
+      ...AUTH,
+      vat: '12345',
+      createIfMissing: 'true',
+    });
     expect(r.success).toBe(false);
   });
 
   it('coerces empty-string identifiers to undefined', () => {
-    const r = OdooLookupPartnerConfigSchema.safeParse({ ...AUTH, email: 'x@y.it', vat: '', phone: '', name: '' });
+    const r = OdooLookupPartnerConfigSchema.safeParse({
+      ...AUTH,
+      email: 'x@y.it',
+      vat: '',
+      phone: '',
+      name: '',
+    });
     expect(r.success).toBe(true);
   });
 });
@@ -89,7 +112,10 @@ describe('buildDomain', () => {
 
   it('appends company_id when set', () => {
     const d = buildDomain({ ...AUTH, email: 'x@y.it', companyId: 3 } as never);
-    expect(d).toEqual([['email', '=ilike', 'x@y.it'], ['company_id', '=', 3]]);
+    expect(d).toEqual([
+      ['email', '=ilike', 'x@y.it'],
+      ['company_id', '=', 3],
+    ]);
   });
 });
 
@@ -104,11 +130,11 @@ describe('normaliseVat / normalisePhone', () => {
 
 describe('odooLookupPartnerExecutor — happy paths', () => {
   it('found=true when search_read returns a hit', async () => {
-    mockedFetch.mockResolvedValueOnce(intRsp(7));       // authenticate
-    mockedFetch.mockResolvedValueOnce(arrayOfStructsRsp([{ id: 42, name: 'Mario Rossi', email: 'mario@x.it' }]));
-    const r = await odooLookupPartnerExecutor(
-      { ...AUTH, email: 'mario@x.it' }, {}, ctx,
+    mockedFetch.mockResolvedValueOnce(intRsp(7)); // authenticate
+    mockedFetch.mockResolvedValueOnce(
+      arrayOfStructsRsp([{ id: 42, name: 'Mario Rossi', email: 'mario@x.it' }]),
     );
+    const r = await odooLookupPartnerExecutor({ ...AUTH, email: 'mario@x.it' }, {}, ctx);
     const o = r.output as Record<string, unknown>;
     expect(o.found).toBe(true);
     expect(o.partnerId).toBe(42);
@@ -118,9 +144,7 @@ describe('odooLookupPartnerExecutor — happy paths', () => {
   it('found=false when search returns empty + no createIfMissing', async () => {
     mockedFetch.mockResolvedValueOnce(intRsp(7));
     mockedFetch.mockResolvedValueOnce(arrayOfStructsRsp([]));
-    const r = await odooLookupPartnerExecutor(
-      { ...AUTH, email: 'nobody@x.it' }, {}, ctx,
-    );
+    const r = await odooLookupPartnerExecutor({ ...AUTH, email: 'nobody@x.it' }, {}, ctx);
     const o = r.output as Record<string, unknown>;
     expect(o.found).toBe(false);
     expect(o.created).toBe(false);
@@ -128,13 +152,17 @@ describe('odooLookupPartnerExecutor — happy paths', () => {
   });
 
   it('createIfMissing → create + read returns created=true', async () => {
-    mockedFetch.mockResolvedValueOnce(intRsp(7));              // auth
-    mockedFetch.mockResolvedValueOnce(arrayOfStructsRsp([]));  // search miss
-    mockedFetch.mockResolvedValueOnce(intRsp(99));             // create → new id 99
-    mockedFetch.mockResolvedValueOnce(arrayOfStructsRsp([{ id: 99, name: 'Mario', email: 'mario@x.it' }]));
+    mockedFetch.mockResolvedValueOnce(intRsp(7)); // auth
+    mockedFetch.mockResolvedValueOnce(arrayOfStructsRsp([])); // search miss
+    mockedFetch.mockResolvedValueOnce(intRsp(99)); // create → new id 99
+    mockedFetch.mockResolvedValueOnce(
+      arrayOfStructsRsp([{ id: 99, name: 'Mario', email: 'mario@x.it' }]),
+    );
 
     const r = await odooLookupPartnerExecutor(
-      { ...AUTH, email: 'mario@x.it', name: 'Mario', createIfMissing: 'true' }, {}, ctx,
+      { ...AUTH, email: 'mario@x.it', name: 'Mario', createIfMissing: 'true' },
+      {},
+      ctx,
     );
     const o = r.output as Record<string, unknown>;
     expect(o.found).toBe(false);
@@ -143,8 +171,7 @@ describe('odooLookupPartnerExecutor — happy paths', () => {
   });
 
   it('rejects empty-all config at parse time', async () => {
-    await expect(odooLookupPartnerExecutor({ ...AUTH }, {}, ctx))
-      .rejects.toThrow(ValidationError);
+    await expect(odooLookupPartnerExecutor({ ...AUTH }, {}, ctx)).rejects.toThrow(ValidationError);
   });
 });
 
@@ -164,7 +191,7 @@ describe('🔒 outputContract ↔ executor — ANTI-DRIFT (no aspirazionale)', (
     expect(JSON.stringify(odooLookupPartnerNodeDef.outputContract)).not.toContain('=0');
   });
 
-  it('🔒 HIT: chiavi top-level dell\'output reale == campi del contract', async () => {
+  it("🔒 HIT: chiavi top-level dell'output reale == campi del contract", async () => {
     mockedFetch.mockResolvedValueOnce(intRsp(7));
     mockedFetch.mockResolvedValueOnce(arrayOfStructsRsp([{ id: 42, name: 'Mario' }]));
     const r = await odooLookupPartnerExecutor({ ...AUTH, email: 'a@b.it' }, {}, ctx);
@@ -187,7 +214,9 @@ describe('🔒 outputContract ↔ executor — ANTI-DRIFT (no aspirazionale)', (
     mockedFetch.mockResolvedValueOnce(intRsp(99));
     mockedFetch.mockResolvedValueOnce(arrayOfStructsRsp([{ id: 99, name: 'Mario' }]));
     const r = await odooLookupPartnerExecutor(
-      { ...AUTH, email: 'm@x.it', name: 'Mario', createIfMissing: 'true' }, {}, ctx,
+      { ...AUTH, email: 'm@x.it', name: 'Mario', createIfMissing: 'true' },
+      {},
+      ctx,
     );
     expect(new Set(Object.keys(r.output as object))).toEqual(contractKeys);
   });

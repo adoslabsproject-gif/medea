@@ -37,14 +37,27 @@ vi.mock('node:timers/promises', () => ({
 
 const { githubExecutor } = await import('./github.js');
 
-const ctx = () => ({
-  runId: 'r', workflowId: 'w', nodeId: 'n', tenantId: 't1',
-  defId: 'community_github', llmProviders: [], nodeOutputs: {}, secrets: {},
-} as never);
+const ctx = () =>
+  ({
+    runId: 'r',
+    workflowId: 'w',
+    nodeId: 'n',
+    tenantId: 't1',
+    defId: 'community_github',
+    llmProviders: [],
+    nodeOutputs: {},
+    secrets: {},
+  }) as never;
 
-function mockRes(body: unknown, opts: {
-  status?: number; ok?: boolean; statusText?: string; rateLimit?: string;
-} = {}): Response {
+function mockRes(
+  body: unknown,
+  opts: {
+    status?: number;
+    ok?: boolean;
+    statusText?: string;
+    rateLimit?: string;
+  } = {},
+): Response {
   const status = opts.status ?? 200;
   const headers = new Headers();
   if (opts.rateLimit !== undefined) headers.set('x-ratelimit-remaining', opts.rateLimit);
@@ -61,16 +74,18 @@ function mockRes(body: unknown, opts: {
 beforeEach(() => {
   vi.clearAllMocks();
   getIntegrationMock.mockReturnValue({
-    id: 'int-1', provider: 'github', label: null,
+    id: 'int-1',
+    provider: 'github',
+    label: null,
     credentials: { token: 'ghp_VALIDxxx123' },
   });
 });
 
 describe('🚨 mandatory fields', () => {
   it('🚨 operation missing → INVALID_PAYLOAD', async () => {
-    await expect(
-      githubExecutor({ owner: 'a', repo: 'b' } as never, null, ctx()),
-    ).rejects.toThrow(/operation/u);
+    await expect(githubExecutor({ owner: 'a', repo: 'b' } as never, null, ctx())).rejects.toThrow(
+      /operation/u,
+    );
   });
 
   it('🚨 owner missing → INVALID_PAYLOAD', async () => {
@@ -87,17 +102,30 @@ describe('🚨 mandatory fields', () => {
 
   it('🚨 owner trim whitespace', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes([]));
-    await githubExecutor({
-      operation: 'listIssues', owner: '  acme  ', repo: 'project',
-    } as never, null, ctx());
+    await githubExecutor(
+      {
+        operation: 'listIssues',
+        owner: '  acme  ',
+        repo: 'project',
+      } as never,
+      null,
+      ctx(),
+    );
     expect(safeFetchMock.mock.calls[0]![0]).toContain('/repos/acme/project/');
   });
 
   it('🚨🚨 PATH-INJECTION: owner/repo/issueNumber con caratteri di path → encodeURIComponent', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({}));
-    await githubExecutor({
-      operation: 'getIssue', owner: '../../user', repo: 'r?x=1', issueNumber: '1/../keys',
-    } as never, null, ctx());
+    await githubExecutor(
+      {
+        operation: 'getIssue',
+        owner: '../../user',
+        repo: 'r?x=1',
+        issueNumber: '1/../keys',
+      } as never,
+      null,
+      ctx(),
+    );
     const url = safeFetchMock.mock.calls[0]![0] as string;
     // i metacaratteri di path/query sono percent-encodati → l'endpoint colpito resta
     // /repos/<owner>/<repo>/issues/<n>, non un endpoint diverso scelto dall'autore.
@@ -117,7 +145,9 @@ describe('🚨 token format validation', () => {
 
   it('🚨 token github_pat_* → ok', async () => {
     getIntegrationMock.mockReturnValue({
-      id: 'int', provider: 'github', label: null,
+      id: 'int',
+      provider: 'github',
+      label: null,
       credentials: { token: 'github_pat_xxxyyy' },
     });
     safeFetchMock.mockResolvedValueOnce(mockRes([]));
@@ -127,7 +157,9 @@ describe('🚨 token format validation', () => {
 
   it('🚨 token Bearer-style → INVALID_CREDENTIALS', async () => {
     getIntegrationMock.mockReturnValue({
-      id: 'int', provider: 'github', label: null,
+      id: 'int',
+      provider: 'github',
+      label: null,
       credentials: { token: 'Bearer wrong-format' },
     });
     await expect(
@@ -138,7 +170,9 @@ describe('🚨 token format validation', () => {
 
   it('🚨 token vuoto → INVALID_CREDENTIALS', async () => {
     getIntegrationMock.mockReturnValue({
-      id: 'int', provider: 'github', label: null,
+      id: 'int',
+      provider: 'github',
+      label: null,
       credentials: { token: '' },
     });
     await expect(
@@ -157,9 +191,16 @@ describe('🚨 token format validation', () => {
 describe('🚨 createIssue', () => {
   it('🚨 happy: POST /repos/.../issues with title', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ number: 42, html_url: 'https://gh/i/42' }));
-    await githubExecutor({
-      operation: 'createIssue', owner: 'a', repo: 'b', title: 'Bug found',
-    } as never, null, ctx());
+    await githubExecutor(
+      {
+        operation: 'createIssue',
+        owner: 'a',
+        repo: 'b',
+        title: 'Bug found',
+      } as never,
+      null,
+      ctx(),
+    );
     expect(safeFetchMock.mock.calls[0]![0]).toBe('https://api.github.com/repos/a/b/issues');
     const init = safeFetchMock.mock.calls[0]![1] as RequestInit;
     expect(init.method).toBe('POST');
@@ -175,29 +216,54 @@ describe('🚨 createIssue', () => {
 
   it('🚨 labels CSV → array trim filter', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({}));
-    await githubExecutor({
-      operation: 'createIssue', owner: 'a', repo: 'b', title: 'T',
-      labels: ' bug , high-prio,  ,backend ',
-    } as never, null, ctx());
-    const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as { labels: string[] };
+    await githubExecutor(
+      {
+        operation: 'createIssue',
+        owner: 'a',
+        repo: 'b',
+        title: 'T',
+        labels: ' bug , high-prio,  ,backend ',
+      } as never,
+      null,
+      ctx(),
+    );
+    const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as {
+      labels: string[];
+    };
     expect(body.labels).toEqual(['bug', 'high-prio', 'backend']);
   });
 
   it('🚨 assignees CSV → array', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({}));
-    await githubExecutor({
-      operation: 'createIssue', owner: 'a', repo: 'b', title: 'T',
-      assignees: 'alice,bob',
-    } as never, null, ctx());
-    const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as { assignees: string[] };
+    await githubExecutor(
+      {
+        operation: 'createIssue',
+        owner: 'a',
+        repo: 'b',
+        title: 'T',
+        assignees: 'alice,bob',
+      } as never,
+      null,
+      ctx(),
+    );
+    const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as {
+      assignees: string[];
+    };
     expect(body.assignees).toEqual(['alice', 'bob']);
   });
 
   it('🚨 body opzionale: NON incluso se vuoto', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({}));
-    await githubExecutor({
-      operation: 'createIssue', owner: 'a', repo: 'b', title: 'T',
-    } as never, null, ctx());
+    await githubExecutor(
+      {
+        operation: 'createIssue',
+        owner: 'a',
+        repo: 'b',
+        title: 'T',
+      } as never,
+      null,
+      ctx(),
+    );
     const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as { body?: string };
     expect(body.body).toBeUndefined();
   });
@@ -206,57 +272,103 @@ describe('🚨 createIssue', () => {
 describe('🚨 listIssues / listCommits — perPage CLAMP', () => {
   it('🚨 perPage default 30', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes([]));
-    await githubExecutor({
-      operation: 'listIssues', owner: 'a', repo: 'b',
-    } as never, null, ctx());
+    await githubExecutor(
+      {
+        operation: 'listIssues',
+        owner: 'a',
+        repo: 'b',
+      } as never,
+      null,
+      ctx(),
+    );
     expect(safeFetchMock.mock.calls[0]![0]).toContain('per_page=30');
   });
 
   it('🚨 perPage clamp >100 → 100', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes([]));
-    await githubExecutor({
-      operation: 'listIssues', owner: 'a', repo: 'b', perPage: 999,
-    } as never, null, ctx());
+    await githubExecutor(
+      {
+        operation: 'listIssues',
+        owner: 'a',
+        repo: 'b',
+        perPage: 999,
+      } as never,
+      null,
+      ctx(),
+    );
     expect(safeFetchMock.mock.calls[0]![0]).toContain('per_page=100');
   });
 
   it('🚨 perPage clamp <1 → 1', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes([]));
-    await githubExecutor({
-      operation: 'listIssues', owner: 'a', repo: 'b', perPage: 0,
-    } as never, null, ctx());
+    await githubExecutor(
+      {
+        operation: 'listIssues',
+        owner: 'a',
+        repo: 'b',
+        perPage: 0,
+      } as never,
+      null,
+      ctx(),
+    );
     expect(safeFetchMock.mock.calls[0]![0]).toContain('per_page=1');
   });
 
   it('🚨 state default "open"', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes([]));
-    await githubExecutor({
-      operation: 'listIssues', owner: 'a', repo: 'b',
-    } as never, null, ctx());
+    await githubExecutor(
+      {
+        operation: 'listIssues',
+        owner: 'a',
+        repo: 'b',
+      } as never,
+      null,
+      ctx(),
+    );
     expect(safeFetchMock.mock.calls[0]![0]).toContain('state=open');
   });
 
   it('🚨 state custom "closed"', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes([]));
-    await githubExecutor({
-      operation: 'listIssues', owner: 'a', repo: 'b', state: 'closed',
-    } as never, null, ctx());
+    await githubExecutor(
+      {
+        operation: 'listIssues',
+        owner: 'a',
+        repo: 'b',
+        state: 'closed',
+      } as never,
+      null,
+      ctx(),
+    );
     expect(safeFetchMock.mock.calls[0]![0]).toContain('state=closed');
   });
 
   it('🚨 count = data.length', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes([{ number: 1 }, { number: 2 }, { number: 3 }]));
-    const r = await githubExecutor({
-      operation: 'listIssues', owner: 'a', repo: 'b',
-    } as never, null, ctx());
+    const r = await githubExecutor(
+      {
+        operation: 'listIssues',
+        owner: 'a',
+        repo: 'b',
+      } as never,
+      null,
+      ctx(),
+    );
     expect((r.output as { count: number }).count).toBe(3);
   });
 
   it('🚨 listCommits: GET /commits + perPage clamp', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes([]));
-    await githubExecutor({
-      operation: 'listCommits', owner: 'a', repo: 'b', perPage: 9999,
-    } as never, null, ctx());
+    await githubExecutor(
+      {
+        operation: 'listCommits',
+        owner: 'a',
+        repo: 'b',
+        perPage: 9999,
+      } as never,
+      null,
+      ctx(),
+    );
     expect(safeFetchMock.mock.calls[0]![0]).toContain('/repos/a/b/commits?per_page=100');
   });
 });
@@ -270,17 +382,31 @@ describe('🚨 getIssue / closeIssue / addComment', () => {
 
   it('🚨 getIssue happy: GET /issues/:n', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ number: 7, title: 'X' }));
-    await githubExecutor({
-      operation: 'getIssue', owner: 'a', repo: 'b', issueNumber: '7',
-    } as never, null, ctx());
+    await githubExecutor(
+      {
+        operation: 'getIssue',
+        owner: 'a',
+        repo: 'b',
+        issueNumber: '7',
+      } as never,
+      null,
+      ctx(),
+    );
     expect(safeFetchMock.mock.calls[0]![0]).toBe('https://api.github.com/repos/a/b/issues/7');
   });
 
   it('🚨 closeIssue: PATCH state=closed', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ number: 7, state: 'closed' }));
-    await githubExecutor({
-      operation: 'closeIssue', owner: 'a', repo: 'b', issueNumber: '7',
-    } as never, null, ctx());
+    await githubExecutor(
+      {
+        operation: 'closeIssue',
+        owner: 'a',
+        repo: 'b',
+        issueNumber: '7',
+      } as never,
+      null,
+      ctx(),
+    );
     const init = safeFetchMock.mock.calls[0]![1] as RequestInit;
     expect(init.method).toBe('PATCH');
     expect(JSON.parse(init.body as string)).toEqual({ state: 'closed' });
@@ -288,9 +414,17 @@ describe('🚨 getIssue / closeIssue / addComment', () => {
 
   it('🚨 addComment: body obbligatorio + issueNumber', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ id: 123 }));
-    await githubExecutor({
-      operation: 'addComment', owner: 'a', repo: 'b', issueNumber: '7', body: 'commento',
-    } as never, null, ctx());
+    await githubExecutor(
+      {
+        operation: 'addComment',
+        owner: 'a',
+        repo: 'b',
+        issueNumber: '7',
+        body: 'commento',
+      } as never,
+      null,
+      ctx(),
+    );
     expect(safeFetchMock.mock.calls[0]![0]).toContain('/issues/7/comments');
     const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as { body: string };
     expect(body.body).toBe('commento');
@@ -298,9 +432,16 @@ describe('🚨 getIssue / closeIssue / addComment', () => {
 
   it('🚨 addComment senza body → INVALID_PAYLOAD', async () => {
     await expect(
-      githubExecutor({
-        operation: 'addComment', owner: 'a', repo: 'b', issueNumber: '7',
-      } as never, null, ctx()),
+      githubExecutor(
+        {
+          operation: 'addComment',
+          owner: 'a',
+          repo: 'b',
+          issueNumber: '7',
+        } as never,
+        null,
+        ctx(),
+      ),
     ).rejects.toThrow(/body/u);
   });
 });
@@ -308,39 +449,71 @@ describe('🚨 getIssue / closeIssue / addComment', () => {
 describe('🚨 createPullRequest', () => {
   it('🚨 title + head obbligatori', async () => {
     await expect(
-      githubExecutor({
-        operation: 'createPullRequest', owner: 'a', repo: 'b', title: 'PR',
-      } as never, null, ctx()),
+      githubExecutor(
+        {
+          operation: 'createPullRequest',
+          owner: 'a',
+          repo: 'b',
+          title: 'PR',
+        } as never,
+        null,
+        ctx(),
+      ),
     ).rejects.toThrow(/headBranch/u);
   });
 
   it('🚨 base default "main"', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ number: 1 }));
-    await githubExecutor({
-      operation: 'createPullRequest', owner: 'a', repo: 'b',
-      title: 'PR', headBranch: 'feature',
-    } as never, null, ctx());
-    const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as { base: string; head: string };
+    await githubExecutor(
+      {
+        operation: 'createPullRequest',
+        owner: 'a',
+        repo: 'b',
+        title: 'PR',
+        headBranch: 'feature',
+      } as never,
+      null,
+      ctx(),
+    );
+    const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as {
+      base: string;
+      head: string;
+    };
     expect(body.base).toBe('main');
     expect(body.head).toBe('feature');
   });
 
   it('🚨 base custom', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ number: 1 }));
-    await githubExecutor({
-      operation: 'createPullRequest', owner: 'a', repo: 'b',
-      title: 'PR', headBranch: 'feat', baseBranch: 'develop',
-    } as never, null, ctx());
+    await githubExecutor(
+      {
+        operation: 'createPullRequest',
+        owner: 'a',
+        repo: 'b',
+        title: 'PR',
+        headBranch: 'feat',
+        baseBranch: 'develop',
+      } as never,
+      null,
+      ctx(),
+    );
     const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as { base: string };
     expect(body.base).toBe('develop');
   });
 
   it('🚨 body opzionale → NON incluso se vuoto (cleaner JSON)', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes({ number: 1 }));
-    await githubExecutor({
-      operation: 'createPullRequest', owner: 'a', repo: 'b',
-      title: 'PR', headBranch: 'feat',
-    } as never, null, ctx());
+    await githubExecutor(
+      {
+        operation: 'createPullRequest',
+        owner: 'a',
+        repo: 'b',
+        title: 'PR',
+        headBranch: 'feat',
+      } as never,
+      null,
+      ctx(),
+    );
     const body = JSON.parse(safeFetchMock.mock.calls[0]![1]!.body as string) as { body?: string };
     expect(body.body).toBeUndefined();
   });
@@ -349,9 +522,15 @@ describe('🚨 createPullRequest', () => {
 describe('🚨 headers API GitHub-conformant', () => {
   it('🚨 Accept vnd.github+json + X-GitHub-Api-Version + UA', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes([]));
-    await githubExecutor({
-      operation: 'listIssues', owner: 'a', repo: 'b',
-    } as never, null, ctx());
+    await githubExecutor(
+      {
+        operation: 'listIssues',
+        owner: 'a',
+        repo: 'b',
+      } as never,
+      null,
+      ctx(),
+    );
     const headers = safeFetchMock.mock.calls[0]![1]!.headers as Record<string, string>;
     expect(headers.Authorization).toBe('token ghp_VALIDxxx123');
     expect(headers.Accept).toBe('application/vnd.github+json');
@@ -363,9 +542,15 @@ describe('🚨 headers API GitHub-conformant', () => {
 describe('🚨 rate limit propagation', () => {
   it('🚨 x-ratelimit-remaining → output.rateLimitRemaining', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes([], { rateLimit: '4523' }));
-    const r = await githubExecutor({
-      operation: 'listIssues', owner: 'a', repo: 'b',
-    } as never, null, ctx());
+    const r = await githubExecutor(
+      {
+        operation: 'listIssues',
+        owner: 'a',
+        repo: 'b',
+      } as never,
+      null,
+      ctx(),
+    );
     expect((r.output as { rateLimitRemaining: number | null }).rateLimitRemaining).toBe(4523);
   });
 
@@ -374,9 +559,15 @@ describe('🚨 rate limit propagation', () => {
     // missing → null → 0 (finito). Documenta il comportamento, non lo "corregge"
     // ad-hoc (un'altra sessione potrebbe lavorare sul file).
     safeFetchMock.mockResolvedValueOnce(mockRes([]));
-    const r = await githubExecutor({
-      operation: 'listIssues', owner: 'a', repo: 'b',
-    } as never, null, ctx());
+    const r = await githubExecutor(
+      {
+        operation: 'listIssues',
+        owner: 'a',
+        repo: 'b',
+      } as never,
+      null,
+      ctx(),
+    );
     const rl = (r.output as { rateLimitRemaining: number | null }).rateLimitRemaining;
     // Accetta entrambi: 0 (header missing → Number(null)) o null (se il fix arriva)
     expect(rl === 0 || rl === null).toBe(true);
@@ -385,14 +576,22 @@ describe('🚨 rate limit propagation', () => {
 
 describe('🚨 error handling + retry policy', () => {
   it('🚨 401 → IntegrationError httpStatus 401 retryable=false', async () => {
-    safeFetchMock.mockResolvedValueOnce(mockRes(
-      { message: 'Bad credentials' },
-      { status: 401, ok: false, statusText: 'Unauthorized' },
-    ));
+    safeFetchMock.mockResolvedValueOnce(
+      mockRes(
+        { message: 'Bad credentials' },
+        { status: 401, ok: false, statusText: 'Unauthorized' },
+      ),
+    );
     try {
-      await githubExecutor({
-        operation: 'listIssues', owner: 'a', repo: 'b',
-      } as never, null, ctx());
+      await githubExecutor(
+        {
+          operation: 'listIssues',
+          owner: 'a',
+          repo: 'b',
+        } as never,
+        null,
+        ctx(),
+      );
       expect.fail('should throw');
     } catch (e) {
       const err = e as IntegrationError;
@@ -403,14 +602,19 @@ describe('🚨 error handling + retry policy', () => {
   });
 
   it('🚨 403 (rate limit GitHub) → retryable=true', async () => {
-    safeFetchMock.mockResolvedValue(mockRes(
-      { message: 'API rate limit exceeded' },
-      { status: 403, ok: false },
-    ));
+    safeFetchMock.mockResolvedValue(
+      mockRes({ message: 'API rate limit exceeded' }, { status: 403, ok: false }),
+    );
     try {
-      await githubExecutor({
-        operation: 'listIssues', owner: 'a', repo: 'b',
-      } as never, null, ctx());
+      await githubExecutor(
+        {
+          operation: 'listIssues',
+          owner: 'a',
+          repo: 'b',
+        } as never,
+        null,
+        ctx(),
+      );
       expect.fail('should throw');
     } catch (e) {
       const err = e as IntegrationError;
@@ -419,14 +623,20 @@ describe('🚨 error handling + retry policy', () => {
   });
 
   it('🚨 404 → retryable=false', async () => {
-    safeFetchMock.mockResolvedValueOnce(mockRes(
-      { message: 'Not Found' },
-      { status: 404, ok: false },
-    ));
+    safeFetchMock.mockResolvedValueOnce(
+      mockRes({ message: 'Not Found' }, { status: 404, ok: false }),
+    );
     try {
-      await githubExecutor({
-        operation: 'getIssue', owner: 'a', repo: 'b', issueNumber: '999',
-      } as never, null, ctx());
+      await githubExecutor(
+        {
+          operation: 'getIssue',
+          owner: 'a',
+          repo: 'b',
+          issueNumber: '999',
+        } as never,
+        null,
+        ctx(),
+      );
       expect.fail('should throw');
     } catch (e) {
       const err = e as IntegrationError;
@@ -436,13 +646,17 @@ describe('🚨 error handling + retry policy', () => {
   });
 
   it('🚨 503 → retryable=true', async () => {
-    safeFetchMock.mockResolvedValue(mockRes(
-      'Service Unavailable', { status: 503, ok: false },
-    ));
+    safeFetchMock.mockResolvedValue(mockRes('Service Unavailable', { status: 503, ok: false }));
     try {
-      await githubExecutor({
-        operation: 'listIssues', owner: 'a', repo: 'b',
-      } as never, null, ctx());
+      await githubExecutor(
+        {
+          operation: 'listIssues',
+          owner: 'a',
+          repo: 'b',
+        } as never,
+        null,
+        ctx(),
+      );
       expect.fail('should throw');
     } catch (e) {
       const err = e as IntegrationError;
@@ -454,9 +668,15 @@ describe('🚨 error handling + retry policy', () => {
 describe('🚨 operation sconosciuta', () => {
   it('🚨 INVALID_PAYLOAD', async () => {
     await expect(
-      githubExecutor({
-        operation: 'fakeOp', owner: 'a', repo: 'b',
-      } as never, null, ctx()),
+      githubExecutor(
+        {
+          operation: 'fakeOp',
+          owner: 'a',
+          repo: 'b',
+        } as never,
+        null,
+        ctx(),
+      ),
     ).rejects.toThrow(/fakeOp.+non supportata/u);
   });
 });
@@ -464,9 +684,15 @@ describe('🚨 operation sconosciuta', () => {
 describe('🚨 output shape', () => {
   it('🚨 ok=true + data + count + rateLimitRemaining + durationMs', async () => {
     safeFetchMock.mockResolvedValueOnce(mockRes([{ id: 1 }], { rateLimit: '100' }));
-    const r = await githubExecutor({
-      operation: 'listCommits', owner: 'a', repo: 'b',
-    } as never, null, ctx());
+    const r = await githubExecutor(
+      {
+        operation: 'listCommits',
+        owner: 'a',
+        repo: 'b',
+      } as never,
+      null,
+      ctx(),
+    );
     expect(r.output).toMatchObject({ ok: true, count: 1, rateLimitRemaining: 100 });
     expect(r.durationMs).toBeGreaterThanOrEqual(0);
   });

@@ -19,40 +19,55 @@ import { z } from 'zod';
 import { getTenantId } from '@/lib/tenant.js';
 import { logger } from '@/lib/logger.js';
 import {
-  createDbAgentContext, runDbAgentChat, makeOpenAiLlmTurn,
-  type DbAgentContext, type LlmTurn,
+  createDbAgentContext,
+  runDbAgentChat,
+  makeOpenAiLlmTurn,
+  type DbAgentContext,
+  type LlmTurn,
 } from '@/services/db-agent/index.js';
 import { llmResolver, NoLlmProviderError } from '@/services/llm-resolver.service.js';
 import { resolveToolEndpoint } from '@/services/llm/provider-registry.js';
 import { liaraBaseUrl } from '@/config.js';
 
-const ChatBodySchema = z.object({
-  // OPZIONALE: assente = modalità GLOBALE (DB Studio, nessun DB selezionato) →
-  // Liara elenca/crea database. Presente = modalità su quel DB (tenant-scoped).
-  databaseId: z.string().min(1).optional(),
-  userMessage: z.string().min(1).max(8000),
-  workflowContext: z.string().max(20_000).optional(),
-  maxIterations: z.number().int().min(1).max(16).optional(),
-  // Consenso ESPLICITO dell'utente alle scritture (toggle UI). Default false →
-  // Liara è in sola lettura finché l'utente non abilita. Gate enforced
-  // server-side in registry.executeDbAgentTool (vedi ctx.allowWrites).
-  allowWrites: z.boolean().optional(),
-}).strict();
+const ChatBodySchema = z
+  .object({
+    // OPZIONALE: assente = modalità GLOBALE (DB Studio, nessun DB selezionato) →
+    // Liara elenca/crea database. Presente = modalità su quel DB (tenant-scoped).
+    databaseId: z.string().min(1).optional(),
+    userMessage: z.string().min(1).max(8000),
+    workflowContext: z.string().max(20_000).optional(),
+    maxIterations: z.number().int().min(1).max(16).optional(),
+    // Consenso ESPLICITO dell'utente alle scritture (toggle UI). Default false →
+    // Liara è in sola lettura finché l'utente non abilita. Gate enforced
+    // server-side in registry.executeDbAgentTool (vedi ctx.allowWrites).
+    allowWrites: z.boolean().optional(),
+  })
+  .strict();
 
-interface DbLike { name: string; connection: { engine: string }; tables: { name: string; columns: { name: string; type: string }[] }[] }
+interface DbLike {
+  name: string;
+  connection: { engine: string };
+  tables: { name: string; columns: { name: string; type: string }[] }[];
+}
 
 /** Serializza lo schema del DB in testo compatto per il system prompt. */
 function serializeSchema(db: DbLike): string {
   if (db.tables.length === 0) return `Database "${db.name}": nessuna tabella.`;
-  return `Database "${db.name}":\n` + db.tables
-    .map((t) => `- ${t.name}(${t.columns.map((c) => `${c.name}:${c.type}`).join(', ')})`)
-    .join('\n');
+  return (
+    `Database "${db.name}":\n` +
+    db.tables
+      .map((t) => `- ${t.name}(${t.columns.map((c) => `${c.name}:${c.type}`).join(', ')})`)
+      .join('\n')
+  );
 }
 
 /** Panoramica dei DB del workspace (modalità globale): nome · engine · #tabelle. */
 function serializeOverview(dbs: DbLike[]): string {
-  if (dbs.length === 0) return 'Nessun database nel workspace. Puoi crearne uno con create_database.';
-  return dbs.map((d) => `- "${d.name}" (${d.connection.engine}, ${d.tables.length.toString()} tabelle)`).join('\n');
+  if (dbs.length === 0)
+    return 'Nessun database nel workspace. Puoi crearne uno con create_database.';
+  return dbs
+    .map((d) => `- "${d.name}" (${d.connection.engine}, ${d.tables.length.toString()} tabelle)`)
+    .join('\n');
 }
 
 export interface DbAgentChatRouteOptions {
@@ -70,7 +85,11 @@ export function createDbAgentChatRoutes(opts: DbAgentChatRouteOptions = {}): Hon
     const body = c.req.valid('json');
 
     // allowWrites SOLO da consenso esplicito del client (mai dall'LLM).
-    const ctx: DbAgentContext = createDbAgentContext(tenantId, undefined, body.allowWrites === true);
+    const ctx: DbAgentContext = createDbAgentContext(
+      tenantId,
+      undefined,
+      body.allowWrites === true,
+    );
     // Modalità DATABASE: databaseId presente → DEVE essere del tenant (404 anti-enum).
     // Modalità GLOBALE: databaseId assente → Liara opera su tutto il workspace.
     const db = body.databaseId ? ctx.dbStudio.get(body.databaseId, tenantId) : null;
@@ -91,9 +110,12 @@ export function createDbAgentChatRoutes(opts: DbAgentChatRouteOptions = {}): Hon
         const baseUrl = r.baseUrl ?? (r.provider === 'liara' ? liaraBaseUrl() : undefined);
         const target = resolveToolEndpoint(r.provider, r.model, baseUrl);
         if (!target) {
-          return c.json({
-            error: `Il provider "${r.provider}" non supporta il tool-calling richiesto dalla chat di DB Studio. Usa OpenAI, Gemini, Grok, DeepSeek, OpenRouter, Groq, Mistral, Liara o Ollama.`,
-          }, 400);
+          return c.json(
+            {
+              error: `Il provider "${r.provider}" non supporta il tool-calling richiesto dalla chat di DB Studio. Usa OpenAI, Gemini, Grok, DeepSeek, OpenRouter, Groq, Mistral, Liara o Ollama.`,
+            },
+            400,
+          );
         }
         // AUTH: il gateway Liara (portal) ESIGE la LICENSE KEY come Bearer (non una
         // API key del tenant). I provider BYOK usano la loro apiKey. Ollama locale
@@ -121,15 +143,26 @@ export function createDbAgentChatRoutes(opts: DbAgentChatRouteOptions = {}): Hon
         const result = await runDbAgentChat({
           ctx,
           userMessage: body.userMessage,
-          prompt: { ...promptScope, ...(body.workflowContext ? { workflowContext: body.workflowContext } : {}) },
+          prompt: {
+            ...promptScope,
+            ...(body.workflowContext ? { workflowContext: body.workflowContext } : {}),
+          },
           llmTurn,
           ...(body.maxIterations ? { maxIterations: body.maxIterations } : {}),
-          onStep: (step) => { void stream.writeSSE({ event: 'step', data: JSON.stringify(step) }); },
+          onStep: (step) => {
+            void stream.writeSSE({ event: 'step', data: JSON.stringify(step) });
+          },
         });
         await stream.writeSSE({ event: 'done', data: JSON.stringify(result) });
       } catch (err) {
-        logger.error({ err: err instanceof Error ? err.message : String(err), tenantId }, '[db-agent-chat] failed');
-        await stream.writeSSE({ event: 'error', data: JSON.stringify({ error: 'Generazione interrotta da un errore interno.' }) });
+        logger.error(
+          { err: err instanceof Error ? err.message : String(err), tenantId },
+          '[db-agent-chat] failed',
+        );
+        await stream.writeSSE({
+          event: 'error',
+          data: JSON.stringify({ error: 'Generazione interrotta da un errore interno.' }),
+        });
       }
     });
   });

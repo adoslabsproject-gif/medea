@@ -68,7 +68,7 @@ describe('allowlist — invarianti di sicurezza (anti buco-nel-tetto)', () => {
       expect(re.test('/api/v1/users/123'), `pattern troppo largo: ${re.source}`).toBe(false);
     }
   });
-  it('ogni pattern è ANCORATO (^ all\'inizio, $ alla fine)', () => {
+  it("ogni pattern è ANCORATO (^ all'inizio, $ alla fine)", () => {
     for (const re of PUBLIC_PATH_PATTERNS) {
       expect(re.source.startsWith('^'), `non ancorato a inizio: ${re.source}`).toBe(true);
       expect(re.source.endsWith('$'), `non ancorato a fine: ${re.source}`).toBe(true);
@@ -97,24 +97,46 @@ describe('allowlist — CONTRACT anti-drift (questi e SOLO questi sono pubblici)
     ['/api/v1/share/', 'share dashboard read-only, gated dal token nel path/body'],
     ['/api/v1/portal/', 'Client Portal, gated dal token nel body'],
     ['/api/v1/oauth-connect/callback', 'callback OAuth, autenticato dallo state firmato'],
-    ['/api/v1/integrations/oauth/google/callback', 'callback browser post-Google; state HMAC + TTL 10min + jti single-use'],
-    ['/api/v1/email-accounts/oauth/google/import', 'import Gmail portal-centric; JWE audience-bound al workspace'],
-    ['/api/track/', 'pixel/redirect email dai client dei destinatari; token HMAC nell\'URL È l\'auth'],
+    [
+      '/api/v1/integrations/oauth/google/callback',
+      'callback browser post-Google; state HMAC + TTL 10min + jti single-use',
+    ],
+    [
+      '/api/v1/email-accounts/oauth/google/import',
+      'import Gmail portal-centric; JWE audience-bound al workspace',
+    ],
+    [
+      '/api/track/',
+      "pixel/redirect email dai client dei destinatari; token HMAC nell'URL È l'auth",
+    ],
   ];
   const EXPECTED_PATTERNS: readonly (readonly [string, string])[] = [
-    ['^\\/api\\/v1\\/auth\\/oauth\\/[a-zA-Z0-9_-]+\\/callback$', 'callback OAuth provider dinamico; state firmato autentica'],
-    ['^\\/api\\/v1\\/auth\\/saml\\/[a-zA-Z0-9_-]+\\/callback$', 'callback SAML provider dinamico; SAMLResponse firmata autentica'],
-    ['^\\/api\\/v1\\/auth\\/saml\\/[a-zA-Z0-9_-]+\\/metadata$', 'metadata SAML pubblico per costruzione (SP metadata)'],
-    ['^\\/api\\/v1\\/auth\\/logout$', 'logout deve funzionare anche con token scaduto/assente; CSRF coperto da originCsrf'],
+    [
+      '^\\/api\\/v1\\/auth\\/oauth\\/[a-zA-Z0-9_-]+\\/callback$',
+      'callback OAuth provider dinamico; state firmato autentica',
+    ],
+    [
+      '^\\/api\\/v1\\/auth\\/saml\\/[a-zA-Z0-9_-]+\\/callback$',
+      'callback SAML provider dinamico; SAMLResponse firmata autentica',
+    ],
+    [
+      '^\\/api\\/v1\\/auth\\/saml\\/[a-zA-Z0-9_-]+\\/metadata$',
+      'metadata SAML pubblico per costruzione (SP metadata)',
+    ],
+    [
+      '^\\/api\\/v1\\/auth\\/logout$',
+      'logout deve funzionare anche con token scaduto/assente; CSRF coperto da originCsrf',
+    ],
   ];
 
-  it('l\'insieme dei PREFISSI pubblici è ESATTAMENTE quello dichiarato', () => {
+  it("l'insieme dei PREFISSI pubblici è ESATTAMENTE quello dichiarato", () => {
     expect([...PUBLIC_PREFIXES].sort()).toEqual(EXPECTED_PREFIXES.map(([p]) => p).sort());
   });
 
-  it('l\'insieme dei PATTERN pubblici è ESATTAMENTE quello dichiarato', () => {
-    expect(PUBLIC_PATH_PATTERNS.map((re) => re.source).sort())
-      .toEqual(EXPECTED_PATTERNS.map(([p]) => p).sort());
+  it("l'insieme dei PATTERN pubblici è ESATTAMENTE quello dichiarato", () => {
+    expect(PUBLIC_PATH_PATTERNS.map((re) => re.source).sort()).toEqual(
+      EXPECTED_PATTERNS.map(([p]) => p).sort(),
+    );
   });
 
   it('ogni voce dichiarata ha una motivazione non vuota (documentazione viva)', () => {

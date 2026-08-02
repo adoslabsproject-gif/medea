@@ -38,7 +38,9 @@ function assertEq(actual: unknown, expected: unknown, testName: string): void {
   if (!eq) {
     failed++;
     failures.push(testName);
-    console.error(`  ✗ FAIL: ${testName} — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+    console.error(
+      `  ✗ FAIL: ${testName} — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
+    );
   } else {
     passed++;
     console.log(`  ✓ ${testName}`);
@@ -59,13 +61,22 @@ assertEq(ipv6ToNumber('::'), BigInt(0), ':: equals 0');
 
 assert(ipv6ToNumber('2001:db8::1') !== null, '2001:db8::1 parses correctly');
 
-assert(ipv6ToNumber('::ffff:192.168.1.1') !== null, '::ffff:192.168.1.1 (IPv4-mapped) parses correctly');
+assert(
+  ipv6ToNumber('::ffff:192.168.1.1') !== null,
+  '::ffff:192.168.1.1 (IPv4-mapped) parses correctly',
+);
 
-assert(ipv6ToNumber('2001:0db8:85a3:0000:0000:8a2e:0370:7334') !== null, 'Full notation parses correctly');
+assert(
+  ipv6ToNumber('2001:0db8:85a3:0000:0000:8a2e:0370:7334') !== null,
+  'Full notation parses correctly',
+);
 
 assert(ipv6ToNumber('2001:DB8::1') !== null, 'Uppercase hex (2001:DB8::1) parses correctly');
 
-assert(ipv6ToNumber('2001:0db8:0001::1') !== null, 'Leading zeros (2001:0db8:0001::1) parses correctly');
+assert(
+  ipv6ToNumber('2001:0db8:0001::1') !== null,
+  'Leading zeros (2001:0db8:0001::1) parses correctly',
+);
 
 // Same value regardless of case
 assertEq(ipv6ToNumber('2001:DB8::1'), ipv6ToNumber('2001:db8::1'), 'Case-insensitive parsing');
@@ -79,17 +90,25 @@ assertEq(ipv6ToNumber('2001:0db8::0001'), ipv6ToNumber('2001:db8::1'), 'Leading 
 // ═══════════════════════════════════════════════════════════════════════════
 console.log('\n═══ TEST 3: IPv6 CIDR matching ═══');
 
-assert(isIpInCidr('2001:4860:4801::1', '2001:4860:4801::/48') === true,
-  'isIpInCidr(2001:4860:4801::1, 2001:4860:4801::/48) → true');
+assert(
+  isIpInCidr('2001:4860:4801::1', '2001:4860:4801::/48') === true,
+  'isIpInCidr(2001:4860:4801::1, 2001:4860:4801::/48) → true',
+);
 
-assert(isIpInCidr('2001:4860:4801:ffff:ffff:ffff:ffff:ffff', '2001:4860:4801::/48') === true,
-  'IPv6 CIDR end of range → true');
+assert(
+  isIpInCidr('2001:4860:4801:ffff:ffff:ffff:ffff:ffff', '2001:4860:4801::/48') === true,
+  'IPv6 CIDR end of range → true',
+);
 
-assert(isIpInCidr('2001:4860:4802::1', '2001:4860:4801::/48') === false,
-  'IPv6 CIDR outside range → false');
+assert(
+  isIpInCidr('2001:4860:4802::1', '2001:4860:4801::/48') === false,
+  'IPv6 CIDR outside range → false',
+);
 
-assert(isIpInCidr('66.249.66.1', '2001:4860:4801::/48') === false,
-  'IPv4 vs IPv6 CIDR → false (mixed type)');
+assert(
+  isIpInCidr('66.249.66.1', '2001:4860:4801::/48') === false,
+  'IPv4 vs IPv6 CIDR → false (mixed type)',
+);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TEST 4: Circuit Breaker state machine
@@ -110,13 +129,17 @@ console.log('\n═══ TEST 4: Circuit Breaker state machine ═══');
   // 3 failures → OPEN
   for (let i = 0; i < 3; i++) {
     try {
-      await cb.execute(async () => { throw new Error('fail'); });
-    } catch { /* expected */ }
+      await cb.execute(async () => {
+        throw new Error('fail');
+      });
+    } catch {
+      /* expected */
+    }
   }
   assertEq(cb.getState(), 'open', 'After 3 failures → OPEN');
 
   // Wait for resetTimeout + jitter (200ms ± 10%)
-  await new Promise(r => setTimeout(r, 300));
+  await new Promise((r) => setTimeout(r, 300));
   assertEq(cb.getState(), 'half_open', 'After resetTimeout → HALF_OPEN');
 
   // Success → CLOSED
@@ -142,11 +165,15 @@ console.log('\n═══ TEST 5: HALF_OPEN probe lock ═══');
 
   // Force OPEN
   try {
-    await cb.execute(async () => { throw new Error('fail'); });
-  } catch { /* expected */ }
+    await cb.execute(async () => {
+      throw new Error('fail');
+    });
+  } catch {
+    /* expected */
+  }
   assertEq(cb.getState(), 'open', 'Probe lock: forced OPEN');
 
-  await new Promise(r => setTimeout(r, 200));
+  await new Promise((r) => setTimeout(r, 200));
   assertEq(cb.getState(), 'half_open', 'Probe lock: transitioned to HALF_OPEN');
 
   // Launch 10 concurrent requests
@@ -154,14 +181,18 @@ console.log('\n═══ TEST 5: HALF_OPEN probe lock ═══');
   let probesRejected = 0;
 
   const promises = Array.from({ length: 10 }, () =>
-    cb.execute(async () => {
-      await new Promise(r => setTimeout(r, 50)); // Simulate work
-      return 'ok';
-    }).then(() => { probesPassed++; })
+    cb
+      .execute(async () => {
+        await new Promise((r) => setTimeout(r, 50)); // Simulate work
+        return 'ok';
+      })
+      .then(() => {
+        probesPassed++;
+      })
       .catch((err) => {
         if (err instanceof CircuitOpenError) probesRejected++;
         // else: other error
-      })
+      }),
   );
 
   await Promise.all(promises);
@@ -200,24 +231,32 @@ console.log('\n═══ TEST 19: Probe timeout ═══');
 
   // Force OPEN
   try {
-    await cb.execute(async () => { throw new Error('fail'); });
-  } catch { /* expected */ }
+    await cb.execute(async () => {
+      throw new Error('fail');
+    });
+  } catch {
+    /* expected */
+  }
 
   // Wait for resetTimer to fire → HALF_OPEN
-  await new Promise(r => setTimeout(r, 100));
+  await new Promise((r) => setTimeout(r, 100));
   assertEq(cb.getState(), 'half_open', 'Probe timeout: HALF_OPEN');
 
   // Launch probe that hangs — never resolves within probeTimeout
-  const hangingPromise = cb.execute(async () => {
-    await new Promise(r => setTimeout(r, 5000));
-    return 'should not reach';
-  }).catch(() => { /* expected timeout rejection */ });
+  const hangingPromise = cb
+    .execute(async () => {
+      await new Promise((r) => setTimeout(r, 5000));
+      return 'should not reach';
+    })
+    .catch(() => {
+      /* expected timeout rejection */
+    });
 
   // Wait for probeTimeout (150ms) to fire + small margin, but LESS than new resetTimer (~50ms)
   // probeTimeout fires at ~T+150ms from probe start
   // New resetTimer would fire at ~T+200ms (150ms probe + 50ms reset)
   // Check at T+160ms — after probe timeout, before new resetTimer
-  await new Promise(r => setTimeout(r, 165));
+  await new Promise((r) => setTimeout(r, 165));
   assertEq(cb.getState(), 'open', 'Probe timeout: back to OPEN after hanging promise');
 
   // Cleanup: destroy timers, let hanging promise settle
@@ -240,32 +279,40 @@ console.log('\n═══ TEST 20: Uptime percent ═══');
   });
 
   // CLOSED for 100ms
-  await new Promise(r => setTimeout(r, 100));
+  await new Promise((r) => setTimeout(r, 100));
 
   // Force OPEN
   try {
-    await cb.execute(async () => { throw new Error('fail'); });
-  } catch { /* expected */ }
+    await cb.execute(async () => {
+      throw new Error('fail');
+    });
+  } catch {
+    /* expected */
+  }
 
   // OPEN for ~100ms
-  await new Promise(r => setTimeout(r, 100));
+  await new Promise((r) => setTimeout(r, 100));
 
   // Force back to CLOSED
   cb.reset();
 
   // CLOSED for 100ms more
-  await new Promise(r => setTimeout(r, 100));
+  await new Promise((r) => setTimeout(r, 100));
 
   const stats = cb.getStats();
   // ~200ms closed, ~100ms open → ~67% uptime
-  assert(stats.uptimePercent > 50 && stats.uptimePercent < 85,
-    `Uptime percent ~67% (got ${stats.uptimePercent}%)`);
+  assert(
+    stats.uptimePercent > 50 && stats.uptimePercent < 85,
+    `Uptime percent ~67% (got ${stats.uptimePercent}%)`,
+  );
 
   // Verify getStats is read-only (two consecutive calls don't mutate)
   const stats1 = cb.getStats();
   const stats2 = cb.getStats();
-  assert(Math.abs(stats1.uptimePercent - stats2.uptimePercent) < 1,
-    'getStats() is read-only — two consecutive calls produce similar results');
+  assert(
+    Math.abs(stats1.uptimePercent - stats2.uptimePercent) < 1,
+    'getStats() is read-only — two consecutive calls produce similar results',
+  );
 
   cb.destroy();
 }
@@ -279,30 +326,72 @@ console.log('\n═══ TEST 21-23: Supply chain CIDR validation ═══');
 // We test isPrivateOrReserved since validateCidrRanges is in verified-bots.service.ts
 // But we can test the building blocks here
 
-assert(isPrivateOrReserved('192.168.0.0/16') === true, 'isPrivateOrReserved(192.168.0.0/16) → true');
+assert(
+  isPrivateOrReserved('192.168.0.0/16') === true,
+  'isPrivateOrReserved(192.168.0.0/16) → true',
+);
 assert(isPrivateOrReserved('10.0.0.0/8') === true, 'isPrivateOrReserved(10.0.0.0/8) → true');
 assert(isPrivateOrReserved('172.16.0.0/12') === true, 'isPrivateOrReserved(172.16.0.0/12) → true');
 assert(isPrivateOrReserved('127.0.0.0/8') === true, 'isPrivateOrReserved(127.0.0.0/8) → true');
-assert(isPrivateOrReserved('169.254.0.0/16') === true, 'isPrivateOrReserved(169.254.0.0/16) → true');
-assert(isPrivateOrReserved('100.64.0.0/10') === true, 'isPrivateOrReserved(100.64.0.0/10) → true (CGNAT)');
+assert(
+  isPrivateOrReserved('169.254.0.0/16') === true,
+  'isPrivateOrReserved(169.254.0.0/16) → true',
+);
+assert(
+  isPrivateOrReserved('100.64.0.0/10') === true,
+  'isPrivateOrReserved(100.64.0.0/10) → true (CGNAT)',
+);
 assert(isPrivateOrReserved('0.0.0.0/8') === true, 'isPrivateOrReserved(0.0.0.0/8) → true');
-assert(isPrivateOrReserved('224.0.0.0/4') === true, 'isPrivateOrReserved(224.0.0.0/4) → true (multicast)');
-assert(isPrivateOrReserved('240.0.0.0/4') === true, 'isPrivateOrReserved(240.0.0.0/4) → true (reserved)');
-assert(isPrivateOrReserved('192.0.2.0/24') === true, 'isPrivateOrReserved(192.0.2.0/24) → true (TEST-NET-1)');
-assert(isPrivateOrReserved('198.51.100.0/24') === true, 'isPrivateOrReserved(198.51.100.0/24) → true (TEST-NET-2)');
-assert(isPrivateOrReserved('203.0.113.0/24') === true, 'isPrivateOrReserved(203.0.113.0/24) → true (TEST-NET-3)');
+assert(
+  isPrivateOrReserved('224.0.0.0/4') === true,
+  'isPrivateOrReserved(224.0.0.0/4) → true (multicast)',
+);
+assert(
+  isPrivateOrReserved('240.0.0.0/4') === true,
+  'isPrivateOrReserved(240.0.0.0/4) → true (reserved)',
+);
+assert(
+  isPrivateOrReserved('192.0.2.0/24') === true,
+  'isPrivateOrReserved(192.0.2.0/24) → true (TEST-NET-1)',
+);
+assert(
+  isPrivateOrReserved('198.51.100.0/24') === true,
+  'isPrivateOrReserved(198.51.100.0/24) → true (TEST-NET-2)',
+);
+assert(
+  isPrivateOrReserved('203.0.113.0/24') === true,
+  'isPrivateOrReserved(203.0.113.0/24) → true (TEST-NET-3)',
+);
 
 // IPv6 private
 assert(isPrivateOrReserved('fc00::/7') === true, 'isPrivateOrReserved(fc00::/7) → true (ULA)');
-assert(isPrivateOrReserved('fe80::/10') === true, 'isPrivateOrReserved(fe80::/10) → true (link-local)');
+assert(
+  isPrivateOrReserved('fe80::/10') === true,
+  'isPrivateOrReserved(fe80::/10) → true (link-local)',
+);
 assert(isPrivateOrReserved('::1/128') === true, 'isPrivateOrReserved(::1/128) → true (loopback)');
-assert(isPrivateOrReserved('ff00::/8') === true, 'isPrivateOrReserved(ff00::/8) → true (multicast)');
-assert(isPrivateOrReserved('2001:db8::/32') === true, 'isPrivateOrReserved(2001:db8::/32) → true (documentation)');
+assert(
+  isPrivateOrReserved('ff00::/8') === true,
+  'isPrivateOrReserved(ff00::/8) → true (multicast)',
+);
+assert(
+  isPrivateOrReserved('2001:db8::/32') === true,
+  'isPrivateOrReserved(2001:db8::/32) → true (documentation)',
+);
 
 // Public ranges should NOT be private
-assert(isPrivateOrReserved('66.249.64.0/19') === false, 'isPrivateOrReserved(66.249.64.0/19) → false (Google)');
-assert(isPrivateOrReserved('2001:4860:4801::/48') === false, 'isPrivateOrReserved(2001:4860:4801::/48) → false (Google IPv6)');
-assert(isPrivateOrReserved('8.8.8.0/24') === false, 'isPrivateOrReserved(8.8.8.0/24) → false (Google DNS)');
+assert(
+  isPrivateOrReserved('66.249.64.0/19') === false,
+  'isPrivateOrReserved(66.249.64.0/19) → false (Google)',
+);
+assert(
+  isPrivateOrReserved('2001:4860:4801::/48') === false,
+  'isPrivateOrReserved(2001:4860:4801::/48) → false (Google IPv6)',
+);
+assert(
+  isPrivateOrReserved('8.8.8.0/24') === false,
+  'isPrivateOrReserved(8.8.8.0/24) → false (Google DNS)',
+);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TEST 28: Double transition (probe timeout race)
@@ -331,27 +420,37 @@ console.log('\n═══ TEST 28: Double transition (probe timeout race) ══�
     resetTimeout: 50,
     successThreshold: 1,
     probeTimeout: 150,
-    onStateChange: (from, to) => { stateChanges.push(`${from}->${to}`); },
+    onStateChange: (from, to) => {
+      stateChanges.push(`${from}->${to}`);
+    },
   });
 
   // Force OPEN
   try {
-    await cb.execute(async () => { throw new Error('fail'); });
-  } catch { /* expected */ }
+    await cb.execute(async () => {
+      throw new Error('fail');
+    });
+  } catch {
+    /* expected */
+  }
 
   // Wait for resetTimer → HALF_OPEN
-  await new Promise(r => setTimeout(r, 100));
+  await new Promise((r) => setTimeout(r, 100));
   assertEq(cb.getState(), 'half_open', 'Double transition: HALF_OPEN');
   stateChanges.length = 0; // Reset tracking
 
   // Launch probe that resolves AFTER probeTimeout (150ms timeout, 300ms resolve)
-  const probePromise = cb.execute(async () => {
-    await new Promise(r => setTimeout(r, 300));
-    return 'late-result';
-  }).catch(() => { /* timeout expected */ });
+  const probePromise = cb
+    .execute(async () => {
+      await new Promise((r) => setTimeout(r, 300));
+      return 'late-result';
+    })
+    .catch(() => {
+      /* timeout expected */
+    });
 
   // Wait for probeTimeout to fire (150ms) + small margin, BEFORE new resetTimer (50ms)
-  await new Promise(r => setTimeout(r, 165));
+  await new Promise((r) => setTimeout(r, 165));
   assertEq(cb.getState(), 'open', 'Double transition: timeout → OPEN (not CLOSED)');
 
   // Wait for fn() to fully resolve (300ms from launch ≈ T+400ms total)
@@ -360,11 +459,15 @@ console.log('\n═══ TEST 28: Double transition (probe timeout race) ══�
   // After fn() resolves late, verify NO ->closed transition occurred.
   // State may be half_open (from the second resetTimer) but NEVER closed.
   // The _timedOut flag prevents _onSuccess() from being called.
-  const closedTransitions = stateChanges.filter(s => s.includes('->closed'));
-  assertEq(closedTransitions.length, 0, 'Double transition: still not CLOSED after late resolve (no double transition)');
+  const closedTransitions = stateChanges.filter((s) => s.includes('->closed'));
+  assertEq(
+    closedTransitions.length,
+    0,
+    'Double transition: still not CLOSED after late resolve (no double transition)',
+  );
 
   // Verify half_open->open happened exactly once (from the probeTimeout)
-  const openTransitions = stateChanges.filter(s => s === 'half_open->open');
+  const openTransitions = stateChanges.filter((s) => s === 'half_open->open');
   assertEq(openTransitions.length, 1, 'Double transition: exactly 1 half_open->open transition');
 
   // The key invariant: no ->closed transition ever fired
@@ -383,8 +486,11 @@ assertEq(normalizeIp('1.2.3.4:8080'), '1.2.3.4', 'normalizeIp: IPv4 port strip')
 assertEq(normalizeIp('[::1]:443'), '::1', 'normalizeIp: bracketed IPv6 port strip');
 assertEq(normalizeIp('::ffff:66.249.66.1'), '66.249.66.1', 'normalizeIp: IPv4-mapped → pure IPv4');
 assertEq(normalizeIp('2001:DB8::1'), '2001:db8::1', 'normalizeIp: uppercase → lowercase');
-assertEq(normalizeIp('[::ffff:66.249.66.1]:443'), '66.249.66.1',
-  'normalizeIp: brackets + port + IPv4-mapped (all together)');
+assertEq(
+  normalizeIp('[::ffff:66.249.66.1]:443'),
+  '66.249.66.1',
+  'normalizeIp: brackets + port + IPv4-mapped (all together)',
+);
 assertEq(normalizeIp(''), '', 'normalizeIp: empty string → empty');
 assertEq(normalizeIp('  '), '', 'normalizeIp: whitespace only → empty');
 
@@ -422,13 +528,20 @@ console.log('\n═══ TEST 31: Jitter variance ═══');
 // ═══════════════════════════════════════════════════════════════════════════
 console.log('\n═══ TEST 32: IPv6 parser invalid inputs ═══');
 
-assertEq(ipv6ToNumber('2001:db8::::1'), null, 'ipv6ToNumber("2001:db8::::1") → null (quadruple colon)');
+assertEq(
+  ipv6ToNumber('2001:db8::::1'),
+  null,
+  'ipv6ToNumber("2001:db8::::1") → null (quadruple colon)',
+);
 assertEq(ipv6ToNumber('::2001::db8::1'), null, 'ipv6ToNumber("::2001::db8::1") → null (double ::)');
 assertEq(ipv6ToNumber('2001:db8::1::2'), null, 'ipv6ToNumber("2001:db8::1::2") → null (double ::)');
 assertEq(ipv6ToNumber(''), null, 'ipv6ToNumber("") → null (empty)');
 assertEq(ipv6ToNumber('not-an-ip'), null, 'ipv6ToNumber("not-an-ip") → null (invalid chars)');
-assertEq(ipv6ToNumber('2001:db8:85a3:0000:0000:8a2e:0370:7334:extra'), null,
-  'ipv6ToNumber with 9 groups → null');
+assertEq(
+  ipv6ToNumber('2001:db8:85a3:0000:0000:8a2e:0370:7334:extra'),
+  null,
+  'ipv6ToNumber with 9 groups → null',
+);
 assertEq(ipv6ToNumber('2001:xxxxx::1'), null, 'ipv6ToNumber with >4 hex chars → null');
 assertEq(ipv6ToNumber(':::1'), null, 'ipv6ToNumber(":::1") → null (triple colon)');
 
@@ -436,8 +549,10 @@ assertEq(ipv6ToNumber(':::1'), null, 'ipv6ToNumber(":::1") → null (triple colo
 assert(ipv6ToNumber('::') !== null, 'ipv6ToNumber("::") should parse (all zeros)');
 assert(ipv6ToNumber('::1') !== null, 'ipv6ToNumber("::1") should parse (loopback)');
 assert(ipv6ToNumber('fe80::1') !== null, 'ipv6ToNumber("fe80::1") should parse');
-assert(ipv6ToNumber('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff') !== null,
-  'ipv6ToNumber with max values should parse');
+assert(
+  ipv6ToNumber('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff') !== null,
+  'ipv6ToNumber with max values should parse',
+);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TEST: IPv4 parser edge cases
@@ -445,9 +560,16 @@ assert(ipv6ToNumber('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff') !== null,
 console.log('\n═══ TEST: IPv4 parser edge cases ═══');
 
 assertEq(ipv4ToNumber('0.0.0.0'), BigInt(0), 'ipv4ToNumber(0.0.0.0) → 0');
-assertEq(ipv4ToNumber('255.255.255.255'), BigInt(0xffffffff), 'ipv4ToNumber(255.255.255.255) → max');
-assertEq(ipv4ToNumber('66.249.66.1'), BigInt((66 << 24) + (249 << 16) + (66 << 8) + 1),
-  'ipv4ToNumber(66.249.66.1) → correct value');
+assertEq(
+  ipv4ToNumber('255.255.255.255'),
+  BigInt(0xffffffff),
+  'ipv4ToNumber(255.255.255.255) → max',
+);
+assertEq(
+  ipv4ToNumber('66.249.66.1'),
+  BigInt((66 << 24) + (249 << 16) + (66 << 8) + 1),
+  'ipv4ToNumber(66.249.66.1) → correct value',
+);
 assertEq(ipv4ToNumber('256.0.0.0'), null, 'ipv4ToNumber(256.0.0.0) → null (out of range)');
 assertEq(ipv4ToNumber('1.2.3'), null, 'ipv4ToNumber(1.2.3) → null (too few parts)');
 assertEq(ipv4ToNumber('1.2.3.4.5'), null, 'ipv4ToNumber(1.2.3.4.5) → null (too many parts)');
@@ -504,7 +626,9 @@ console.log('\n═══ TEST: Circuit Breaker Registry ═══');
   const registry = CircuitBreakerRegistry.getInstance();
 
   const cb1 = new CircuitBreaker('reg-test-1', {
-    failureThreshold: 5, resetTimeout: 30000, successThreshold: 1,
+    failureThreshold: 5,
+    resetTimeout: 30000,
+    successThreshold: 1,
   });
 
   registry.register('reg-test-1', cb1);
@@ -535,8 +659,10 @@ console.log('\n═══ TEST: Circuit Breaker Registry ═══');
   // Dates in report should be clones (immutable)
   const report1 = registry.getHealthReport();
   const report2 = registry.getHealthReport();
-  assert(report1['reg-test-1']!.stats.lastStateChange !== report2['reg-test-1']!.stats.lastStateChange,
-    'Registry: health report Date objects are cloned (different references)');
+  assert(
+    report1['reg-test-1']!.stats.lastStateChange !== report2['reg-test-1']!.stats.lastStateChange,
+    'Registry: health report Date objects are cloned (different references)',
+  );
 
   registry.destroyAll();
   CircuitBreakerRegistry.resetInstance();
@@ -562,16 +688,24 @@ console.log('\n═══ TEST: Circuit Breaker isFailure filter ═══');
   // 404 errors should NOT count as failures
   for (let i = 0; i < 10; i++) {
     try {
-      await cb.execute(async () => { throw new Error('404'); });
-    } catch { /* expected */ }
+      await cb.execute(async () => {
+        throw new Error('404');
+      });
+    } catch {
+      /* expected */
+    }
   }
   assertEq(cb.getState(), 'closed', 'isFailure filter: 404 errors do not open breaker');
 
   // Real service errors SHOULD count
   for (let i = 0; i < 2; i++) {
     try {
-      await cb.execute(async () => { throw new Error('connection refused'); });
-    } catch { /* expected */ }
+      await cb.execute(async () => {
+        throw new Error('connection refused');
+      });
+    } catch {
+      /* expected */
+    }
   }
   assertEq(cb.getState(), 'open', 'isFailure filter: service errors open breaker');
 
@@ -593,8 +727,12 @@ console.log('\n═══ TEST: Circuit Breaker stats ═══');
   await cb.execute(async () => 'ok');
   await cb.execute(async () => 'ok');
   try {
-    await cb.execute(async () => { throw new Error('fail'); });
-  } catch { /* expected */ }
+    await cb.execute(async () => {
+      throw new Error('fail');
+    });
+  } catch {
+    /* expected */
+  }
 
   const stats = cb.getStats();
   assertEq(stats.totalRequests, 3, 'Stats: totalRequests = 3');
@@ -607,15 +745,21 @@ console.log('\n═══ TEST: Circuit Breaker stats ═══');
   // Rejected count — force open by accumulating failures (each in own try/catch)
   for (let i = 0; i < 4; i++) {
     try {
-      await cb.execute(async () => { throw new Error('fail'); });
-    } catch { /* expected — each failure must be individually caught */ }
+      await cb.execute(async () => {
+        throw new Error('fail');
+      });
+    } catch {
+      /* expected — each failure must be individually caught */
+    }
   }
   // After 1 (prev) + 4 = 5 failures with failureThreshold=5, breaker should be OPEN
   assertEq(cb.getState(), 'open', 'Stats: breaker is OPEN after 5 failures');
 
   try {
     await cb.execute(async () => 'blocked');
-  } catch { /* expected CircuitOpenError */ }
+  } catch {
+    /* expected CircuitOpenError */
+  }
 
   const stats2 = cb.getStats();
   assert(stats2.totalRejected >= 1, 'Stats: totalRejected ≥ 1 after circuit open');
@@ -634,7 +778,9 @@ console.log('\n═══ TEST: _transitionTo idempotent ═══');
     failureThreshold: 1,
     resetTimeout: 100,
     successThreshold: 1,
-    onStateChange: () => { transitionCount++; },
+    onStateChange: () => {
+      transitionCount++;
+    },
   });
 
   // Multiple failures in CLOSED → should only transition ONCE to OPEN
@@ -642,7 +788,11 @@ console.log('\n═══ TEST: _transitionTo idempotent ═══');
   const errors: Promise<void>[] = [];
   for (let i = 0; i < 5; i++) {
     errors.push(
-      cb.execute(async () => { throw new Error('fail'); }).catch(() => {})
+      cb
+        .execute(async () => {
+          throw new Error('fail');
+        })
+        .catch(() => {}),
     );
   }
   await Promise.all(errors);
@@ -668,10 +818,14 @@ console.log('\n═══ TEST: Circuit Breaker successThreshold > 1 ═══');
 
   // Force OPEN
   try {
-    await cb.execute(async () => { throw new Error('fail'); });
-  } catch { /* expected */ }
+    await cb.execute(async () => {
+      throw new Error('fail');
+    });
+  } catch {
+    /* expected */
+  }
 
-  await new Promise(r => setTimeout(r, 100));
+  await new Promise((r) => setTimeout(r, 100));
   assertEq(cb.getState(), 'half_open', 'successThreshold: HALF_OPEN');
 
   // First success — stays in HALF_OPEN

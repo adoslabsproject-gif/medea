@@ -14,8 +14,11 @@
  */
 
 import type {
-  DetectedRow, DataSourceRef, QuarantineRecord,
-  QuarantineListFilter, QuarantineStats,
+  DetectedRow,
+  DataSourceRef,
+  QuarantineRecord,
+  QuarantineListFilter,
+  QuarantineStats,
 } from '@/services/janitor/domain/index.js';
 
 export interface QuarantineRequest {

@@ -116,7 +116,8 @@ describe('🚨 tick — free tier early return', () => {
     const m = await loadFresh();
     m.startLogQuotaWatcher();
     vi.advanceTimersByTime(6 * 60 * 1000); // 6 min → triggers first tick
-    await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
     expect(sendMailMock).not.toHaveBeenCalled();
     m.stopLogQuotaWatcher();
   });
@@ -126,7 +127,8 @@ describe('🚨 tick — free tier early return', () => {
     const m = await loadFresh();
     m.startLogQuotaWatcher();
     vi.advanceTimersByTime(6 * 60 * 1000);
-    await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
     expect(sendMailMock).not.toHaveBeenCalled();
     m.stopLogQuotaWatcher();
   });
@@ -144,18 +146,26 @@ describe('🚨 anti-spam DAY_MS gap', () => {
     getCurrentQuotasMock.mockReturnValue({ freeTier: false, logRetentionBytes: 1_000_000 });
     // mock measureLogUsage → 850k bytes (85%)
     const fsm = await import('node:fs');
-    (fsm.readdirSync as any).mockReturnValue([{ name: 'a.gz', isDirectory: () => false, isFile: () => true }]);
-    (fsm.statSync as any).mockReturnValue({ size: 850_000, isDirectory: () => false, isFile: () => true });
+    (fsm.readdirSync as any).mockReturnValue([
+      { name: 'a.gz', isDirectory: () => false, isFile: () => true },
+    ]);
+    (fsm.statSync as any).mockReturnValue({
+      size: 850_000,
+      isDirectory: () => false,
+      isFile: () => true,
+    });
     sendMailMock.mockResolvedValue({});
     const m = await loadFresh();
     m.startLogQuotaWatcher();
     vi.advanceTimersByTime(6 * 60 * 1000); // first tick
-    await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
     const firstCount = sendMailMock.mock.calls.length;
     expect(firstCount).toBeGreaterThanOrEqual(1);
     // advance 1h (HOUR_MS) — anti-spam DAY_MS NON ancora scaduto
     vi.advanceTimersByTime(60 * 60 * 1000);
-    await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
     expect(sendMailMock.mock.calls.length).toBe(firstCount); // no re-send
     m.stopLogQuotaWatcher();
   });
@@ -167,12 +177,19 @@ describe('🚨 SMTP env mancante', () => {
     delete process.env.MEDEA_SMTP_HOST;
     getCurrentQuotasMock.mockReturnValue({ freeTier: false, logRetentionBytes: 1000 });
     const fsm = await import('node:fs');
-    (fsm.readdirSync as any).mockReturnValue([{ name: 'a.gz', isDirectory: () => false, isFile: () => true }]);
-    (fsm.statSync as any).mockReturnValue({ size: 900, isDirectory: () => false, isFile: () => true });
+    (fsm.readdirSync as any).mockReturnValue([
+      { name: 'a.gz', isDirectory: () => false, isFile: () => true },
+    ]);
+    (fsm.statSync as any).mockReturnValue({
+      size: 900,
+      isDirectory: () => false,
+      isFile: () => true,
+    });
     const m = await loadFresh();
     m.startLogQuotaWatcher();
     vi.advanceTimersByTime(6 * 60 * 1000);
-    await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
     expect(sendMailMock).not.toHaveBeenCalled();
     expect(loggerMock.warn).toHaveBeenCalledWith(
       expect.stringContaining('SMTP env not configured'),
@@ -186,12 +203,19 @@ describe('🚨 SMTP env mancante', () => {
     delete process.env.MEDEA_TENANT_OWNER_EMAIL;
     getCurrentQuotasMock.mockReturnValue({ freeTier: false, logRetentionBytes: 1000 });
     const fsm = await import('node:fs');
-    (fsm.readdirSync as any).mockReturnValue([{ name: 'a.gz', isDirectory: () => false, isFile: () => true }]);
-    (fsm.statSync as any).mockReturnValue({ size: 900, isDirectory: () => false, isFile: () => true });
+    (fsm.readdirSync as any).mockReturnValue([
+      { name: 'a.gz', isDirectory: () => false, isFile: () => true },
+    ]);
+    (fsm.statSync as any).mockReturnValue({
+      size: 900,
+      isDirectory: () => false,
+      isFile: () => true,
+    });
     const m = await loadFresh();
     m.startLogQuotaWatcher();
     vi.advanceTimersByTime(6 * 60 * 1000);
-    await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
     expect(sendMailMock).not.toHaveBeenCalled();
     expect(loggerMock.warn).toHaveBeenCalledWith(
       expect.stringContaining('MEDEA_TENANT_OWNER_EMAIL not set'),
@@ -211,12 +235,20 @@ describe('🚨 quota threshold + auto-switch ephemeral', () => {
   it('🚨 100% → email full + forceEphemeralImplicit', async () => {
     getCurrentQuotasMock.mockReturnValue({ freeTier: false, logRetentionBytes: 1000 });
     const fsm = await import('node:fs');
-    (fsm.readdirSync as any).mockReturnValue([{ name: 'a.gz', isDirectory: () => false, isFile: () => true }]);
-    (fsm.statSync as any).mockReturnValue({ size: 1200, isDirectory: () => false, isFile: () => true });
+    (fsm.readdirSync as any).mockReturnValue([
+      { name: 'a.gz', isDirectory: () => false, isFile: () => true },
+    ]);
+    (fsm.statSync as any).mockReturnValue({
+      size: 1200,
+      isDirectory: () => false,
+      isFile: () => true,
+    });
     const m = await loadFresh();
     m.startLogQuotaWatcher();
     vi.advanceTimersByTime(6 * 60 * 1000);
-    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
     expect(sendMailMock).toHaveBeenCalled();
     const call = at(sendMailMock.mock.calls, 0, 'sendMail-calls')[0];
     expect(call.subject).toMatch(/piena/u);
@@ -228,12 +260,19 @@ describe('🚨 quota threshold + auto-switch ephemeral', () => {
   it('🚨 80-99% → email warn (NO ephemeral switch)', async () => {
     getCurrentQuotasMock.mockReturnValue({ freeTier: false, logRetentionBytes: 1000 });
     const fsm = await import('node:fs');
-    (fsm.readdirSync as any).mockReturnValue([{ name: 'a.gz', isDirectory: () => false, isFile: () => true }]);
-    (fsm.statSync as any).mockReturnValue({ size: 850, isDirectory: () => false, isFile: () => true });
+    (fsm.readdirSync as any).mockReturnValue([
+      { name: 'a.gz', isDirectory: () => false, isFile: () => true },
+    ]);
+    (fsm.statSync as any).mockReturnValue({
+      size: 850,
+      isDirectory: () => false,
+      isFile: () => true,
+    });
     const m = await loadFresh();
     m.startLogQuotaWatcher();
     vi.advanceTimersByTime(6 * 60 * 1000);
-    await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
     expect(sendMailMock).toHaveBeenCalled();
     const call = at(sendMailMock.mock.calls, 0, 'sendMail-calls')[0];
     expect(call.subject).toMatch(/85%|esaurimento|archivia/u);
@@ -245,12 +284,19 @@ describe('🚨 quota threshold + auto-switch ephemeral', () => {
   it('🚨 <80% → nessuna email', async () => {
     getCurrentQuotasMock.mockReturnValue({ freeTier: false, logRetentionBytes: 1000 });
     const fsm = await import('node:fs');
-    (fsm.readdirSync as any).mockReturnValue([{ name: 'a.gz', isDirectory: () => false, isFile: () => true }]);
-    (fsm.statSync as any).mockReturnValue({ size: 500, isDirectory: () => false, isFile: () => true });
+    (fsm.readdirSync as any).mockReturnValue([
+      { name: 'a.gz', isDirectory: () => false, isFile: () => true },
+    ]);
+    (fsm.statSync as any).mockReturnValue({
+      size: 500,
+      isDirectory: () => false,
+      isFile: () => true,
+    });
     const m = await loadFresh();
     m.startLogQuotaWatcher();
     vi.advanceTimersByTime(6 * 60 * 1000);
-    await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
     expect(sendMailMock).not.toHaveBeenCalled();
     m.stopLogQuotaWatcher();
   });
@@ -258,11 +304,14 @@ describe('🚨 quota threshold + auto-switch ephemeral', () => {
 
 describe('🚨 tick error resilience', () => {
   it('🚨 getCurrentQuotas throw → warn log MA NON crash watcher', async () => {
-    getCurrentQuotasMock.mockImplementationOnce(() => { throw new Error('DB down'); });
+    getCurrentQuotasMock.mockImplementationOnce(() => {
+      throw new Error('DB down');
+    });
     const m = await loadFresh();
     m.startLogQuotaWatcher();
     vi.advanceTimersByTime(6 * 60 * 1000);
-    await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
     expect(loggerMock.warn).toHaveBeenCalledWith(
       expect.objectContaining({ err: expect.any(Error) }),
       '[log-quota-watcher] tick failed',
@@ -278,14 +327,23 @@ describe('🚨 SMTP secure port handling', () => {
     process.env.MEDEA_TENANT_OWNER_EMAIL = 'x@y.com';
     getCurrentQuotasMock.mockReturnValue({ freeTier: false, logRetentionBytes: 1000 });
     const fsm = await import('node:fs');
-    (fsm.readdirSync as any).mockReturnValue([{ name: 'a.gz', isDirectory: () => false, isFile: () => true }]);
-    (fsm.statSync as any).mockReturnValue({ size: 850, isDirectory: () => false, isFile: () => true });
+    (fsm.readdirSync as any).mockReturnValue([
+      { name: 'a.gz', isDirectory: () => false, isFile: () => true },
+    ]);
+    (fsm.statSync as any).mockReturnValue({
+      size: 850,
+      isDirectory: () => false,
+      isFile: () => true,
+    });
     sendMailMock.mockResolvedValue({});
     const m = await loadFresh();
     m.startLogQuotaWatcher();
     vi.advanceTimersByTime(6 * 60 * 1000);
-    await Promise.resolve(); await Promise.resolve();
-    const transportOpts = at(createTransportMock.mock.calls, 0, 'createTransport-calls')[0] as { secure?: boolean };
+    await Promise.resolve();
+    await Promise.resolve();
+    const transportOpts = at(createTransportMock.mock.calls, 0, 'createTransport-calls')[0] as {
+      secure?: boolean;
+    };
     expect(transportOpts.secure).toBe(true);
     m.stopLogQuotaWatcher();
   });

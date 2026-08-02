@@ -14,7 +14,8 @@ const RUN_SELECT_DEFAULT = 100;
 
 const listDatabasesTool: DbAgentToolDef = {
   name: 'list_databases',
-  description: 'Elenca i database del workspace corrente (solo quelli del tenant). Nessun argomento.',
+  description:
+    'Elenca i database del workspace corrente (solo quelli del tenant). Nessun argomento.',
   parameters: { type: 'object', properties: {}, additionalProperties: false },
   schema: z.object({}).strict(),
   readOnly: true,
@@ -33,10 +34,13 @@ const listDatabasesTool: DbAgentToolDef = {
 
 const readDbSchemaTool: DbAgentToolDef = {
   name: 'read_db_schema',
-  description: 'Legge lo schema (tabelle + colonne) di un database del workspace. Usalo PRIMA di modificare per non sbagliare nomi.',
+  description:
+    'Legge lo schema (tabelle + colonne) di un database del workspace. Usalo PRIMA di modificare per non sbagliare nomi.',
   parameters: {
     type: 'object',
-    properties: { databaseId: { type: 'string', description: 'id del database (da list_databases)' } },
+    properties: {
+      databaseId: { type: 'string', description: 'id del database (da list_databases)' },
+    },
     required: ['databaseId'],
     additionalProperties: false,
   },
@@ -79,7 +83,9 @@ const RunSelectSchema = z
           .strict(),
       )
       .optional(),
-    orderBy: z.array(z.object({ column: z.string().min(1), direction: z.enum(['asc', 'desc']) }).strict()).optional(),
+    orderBy: z
+      .array(z.object({ column: z.string().min(1), direction: z.enum(['asc', 'desc']) }).strict())
+      .optional(),
     groupBy: z.array(z.string().min(1)).optional(),
     limit: z.number().int().positive().max(RUN_SELECT_MAX).optional(),
     offset: z.number().int().nonnegative().optional(),
@@ -88,7 +94,8 @@ const RunSelectSchema = z
 
 const runSelectTool: DbAgentToolDef = {
   name: 'run_select',
-  description: 'Legge righe da una tabella (SELECT strutturata, sola lettura). Filtri/ordinamento opzionali. Cap righe 1000.',
+  description:
+    'Legge righe da una tabella (SELECT strutturata, sola lettura). Filtri/ordinamento opzionali. Cap righe 1000.',
   parameters: {
     type: 'object',
     properties: {
@@ -97,8 +104,15 @@ const runSelectTool: DbAgentToolDef = {
       select: { type: 'array', items: { type: 'string' }, description: 'colonne; omesso = tutte' },
       filters: { type: 'array', items: { type: 'object' }, description: '[{column, op, value}]' },
       orderBy: { type: 'array', items: { type: 'object' }, description: '[{column, direction}]' },
-      groupBy: { type: 'array', items: { type: 'string' }, description: 'colonne di raggruppamento' },
-      limit: { type: 'number', description: `default ${RUN_SELECT_DEFAULT.toString()}, max ${RUN_SELECT_MAX.toString()}` },
+      groupBy: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'colonne di raggruppamento',
+      },
+      limit: {
+        type: 'number',
+        description: `default ${RUN_SELECT_DEFAULT.toString()}, max ${RUN_SELECT_MAX.toString()}`,
+      },
       offset: { type: 'number' },
     },
     required: ['databaseId', 'table'],

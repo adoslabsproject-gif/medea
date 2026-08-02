@@ -38,14 +38,37 @@ function aiSignalsColumns(): string[] {
 
 // Insieme NON-personale approvato — l'unica forma consentita per Track A.
 const ALLOWED = new Set([
-  'id', 'tenant_id', 'interaction_type', 'node_def_id',
-  'response_model', 'response_latency_ms', 'response_tokens_in', 'response_tokens_out',
-  'outcome', 'outcome_at', 'quality_score', 'created_at',
+  'id',
+  'tenant_id',
+  'interaction_type',
+  'node_def_id',
+  'response_model',
+  'response_latency_ms',
+  'response_tokens_in',
+  'response_tokens_out',
+  'outcome',
+  'outcome_at',
+  'quality_score',
+  'created_at',
 ]);
 
 // Sostringhe che tradiscono testo libero / PII / contenuto utente.
-const FORBIDDEN = ['prompt', 'message', 'response_message', 'patch', 'snapshot', 'history',
-  'conversation', 'content', 'email', 'phone', 'body', 'text', 'user_id', 'reviewer'];
+const FORBIDDEN = [
+  'prompt',
+  'message',
+  'response_message',
+  'patch',
+  'snapshot',
+  'history',
+  'conversation',
+  'content',
+  'email',
+  'phone',
+  'body',
+  'text',
+  'user_id',
+  'reviewer',
+];
 
 describe('🚨 GUARD legale — ai_signals è NON-personale', () => {
   const cols = aiSignalsColumns();
@@ -55,13 +78,18 @@ describe('🚨 GUARD legale — ai_signals è NON-personale', () => {
     expect(cols).toContain('interaction_type');
   });
 
-  it('🚨 nessuna colonna fuori dall\'insieme non-personale approvato', () => {
+  it("🚨 nessuna colonna fuori dall'insieme non-personale approvato", () => {
     const extra = cols.filter((c) => !ALLOWED.has(c));
-    expect(extra, `colonne NON approvate in ai_signals (rischio dato personale): ${extra.join(', ')}`).toEqual([]);
+    expect(
+      extra,
+      `colonne NON approvate in ai_signals (rischio dato personale): ${extra.join(', ')}`,
+    ).toEqual([]);
   });
 
   it('🚨 nessun nome-colonna evoca testo libero/PII/contenuto utente', () => {
     const offenders = cols.filter((c) => FORBIDDEN.some((bad) => c.includes(bad)));
-    expect(offenders, `colonne sospette di contenuto personale: ${offenders.join(', ')}`).toEqual([]);
+    expect(offenders, `colonne sospette di contenuto personale: ${offenders.join(', ')}`).toEqual(
+      [],
+    );
   });
 });

@@ -5,14 +5,21 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-  checkErrorBranchInverted, checkErrorHandlerNoSink, checkLookupWithoutBranch, runSemanticRules,
+  checkErrorBranchInverted,
+  checkErrorHandlerNoSink,
+  checkLookupWithoutBranch,
+  runSemanticRules,
 } from './semantic-rules.js';
 import type { QualityGateInput } from './quality-gate.js';
 
 type N = QualityGateInput['nodes'][number];
-const node = (id: string, defId: string, config: Record<string, unknown> = {}): N => ({ id, defId, config });
+const node = (id: string, defId: string, config: Record<string, unknown> = {}): N => ({
+  id,
+  defId,
+  config,
+});
 const edge = (from: string, to: string, fromPort?: string): QualityGateInput['edges'][number] =>
-  ({ from, to, ...(fromPort ? { fromPort } : {}) } as QualityGateInput['edges'][number]);
+  ({ from, to, ...(fromPort ? { fromPort } : {}) }) as QualityGateInput['edges'][number];
 const wf = (nodes: N[], edges: QualityGateInput['edges']): QualityGateInput => ({ nodes, edges });
 
 describe('checkErrorBranchInverted — DLQ-su-successo (bug reale)', () => {
@@ -24,7 +31,11 @@ describe('checkErrorBranchInverted — DLQ-su-successo (bug reale)', () => {
         node('retry_fattura', 'action_http', { method: 'POST', url: 'https://x/retry' }),
         node('dlq', 'db_insert', { table: 'fatturazione_dlq' }),
       ],
-      [edge('fattura', 'gestione_errore'), edge('gestione_errore', 'retry_fattura', 'true'), edge('gestione_errore', 'dlq', 'false')],
+      [
+        edge('fattura', 'gestione_errore'),
+        edge('gestione_errore', 'retry_fattura', 'true'),
+        edge('gestione_errore', 'dlq', 'false'),
+      ],
     );
     const issues = checkErrorBranchInverted(input);
     expect(issues).toHaveLength(1);
@@ -59,9 +70,12 @@ describe('checkErrorBranchInverted — DLQ-su-successo (bug reale)', () => {
     expect(checkErrorBranchInverted(input)).toEqual([]);
   });
 
-  it('logic_if NON d\'errore (branch normale) → ignorato', () => {
+  it("logic_if NON d'errore (branch normale) → ignorato", () => {
     const input = wf(
-      [node('h', 'logic_if', { condition: "$node.x.json.priority === 'alta'" }), node('dlq', 'db_insert', { table: 'dlq' })],
+      [
+        node('h', 'logic_if', { condition: "$node.x.json.priority === 'alta'" }),
+        node('dlq', 'db_insert', { table: 'dlq' }),
+      ],
       [edge('h', 'dlq', 'false')],
     );
     expect(checkErrorBranchInverted(input)).toEqual([]); // mut: condizione non-errore → skip
@@ -85,7 +99,11 @@ describe('checkErrorHandlerNoSink — errore che evapora', () => {
 
   it('handler errore con DLQ raggiungibile → nessun flag', () => {
     const input = wf(
-      [node('h', 'logic_if', { condition: 'status >= 500' }), node('dlq', 'db_insert', { table: 'dlq' }), node('c', 'action_send_email', {})],
+      [
+        node('h', 'logic_if', { condition: 'status >= 500' }),
+        node('dlq', 'db_insert', { table: 'dlq' }),
+        node('c', 'action_send_email', {}),
+      ],
       [edge('h', 'dlq', 'true'), edge('h', 'c', 'false')],
     );
     expect(checkErrorHandlerNoSink(input)).toEqual([]);
@@ -93,7 +111,11 @@ describe('checkErrorHandlerNoSink — errore che evapora', () => {
 
   it('🚨 retry che POI raggiunge la DLQ a valle → nessun flag (sink reachable forward)', () => {
     const input = wf(
-      [node('h', 'logic_if', { condition: "result === 'error'" }), node('retry', 'action_http', { method: 'POST', url: 'u' }), node('dlq', 'db_insert', { table: 'dlq' })],
+      [
+        node('h', 'logic_if', { condition: "result === 'error'" }),
+        node('retry', 'action_http', { method: 'POST', url: 'u' }),
+        node('dlq', 'db_insert', { table: 'dlq' }),
+      ],
       [edge('h', 'retry', 'true'), edge('retry', 'dlq')],
     );
     expect(checkErrorHandlerNoSink(input)).toEqual([]); // reachesForward attraversa retry→dlq
@@ -104,8 +126,14 @@ describe('checkLookupWithoutBranch — upsert mancante', () => {
   it('🚨 lookup GET /contact → create POST /contact diretto → medium', () => {
     const input = wf(
       [
-        node('lookup_crm', 'action_http', { method: 'GET', url: '{{secrets.HUBSPOT_API_URL}}/contacts/{{x}}' }),
-        node('crea_contatto', 'action_http', { method: 'POST', url: '{{secrets.HUBSPOT_API_URL}}/contacts' }),
+        node('lookup_crm', 'action_http', {
+          method: 'GET',
+          url: '{{secrets.HUBSPOT_API_URL}}/contacts/{{x}}',
+        }),
+        node('crea_contatto', 'action_http', {
+          method: 'POST',
+          url: '{{secrets.HUBSPOT_API_URL}}/contacts',
+        }),
       ],
       [edge('lookup_crm', 'crea_contatto')],
     );
@@ -129,7 +157,10 @@ describe('checkLookupWithoutBranch — upsert mancante', () => {
 
   it('GET generico (non lookup-entità) → create → non flaggato', () => {
     const input = wf(
-      [node('fetch_meteo', 'action_http', { method: 'GET', url: 'https://api.meteo/today' }), node('crea', 'db_insert', { table: 'log' })],
+      [
+        node('fetch_meteo', 'action_http', { method: 'GET', url: 'https://api.meteo/today' }),
+        node('crea', 'db_insert', { table: 'log' }),
+      ],
       [edge('fetch_meteo', 'crea')],
     );
     expect(checkLookupWithoutBranch(input)).toEqual([]);

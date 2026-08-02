@@ -88,9 +88,9 @@ export class AuditLogService {
    */
   appendSync(record: AuditRecord): void {
     const { sqlite } = getDatabase();
-    const last = sqlite
-      .prepare('SELECT hash FROM audit_log ORDER BY id DESC LIMIT 1')
-      .get() as { hash: string } | undefined;
+    const last = sqlite.prepare('SELECT hash FROM audit_log ORDER BY id DESC LIMIT 1').get() as
+      | { hash: string }
+      | undefined;
     const prevHash = last?.hash ?? 'GENESIS';
     const createdAt = new Date().toISOString();
     const metadataJson = JSON.stringify(record.metadata ?? {});

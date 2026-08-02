@@ -30,13 +30,18 @@ const asUser = (tenantId: string, role: AuthContext['role']): void => {
 };
 
 let app: Hono;
-interface SqliteLike { prepare: (s: string) => { get: (...p: unknown[]) => unknown; run: (...p: unknown[]) => unknown } }
+interface SqliteLike {
+  prepare: (s: string) => { get: (...p: unknown[]) => unknown; run: (...p: unknown[]) => unknown };
+}
 const db = (): SqliteLike => getDatabase().sqlite as unknown as SqliteLike;
 
 beforeAll(() => {
   runMigrations();
   app = new Hono();
-  app.use('*', async (c, next) => { c.set('auth', authCtx); await next(); });
+  app.use('*', async (c, next) => {
+    c.set('auth', authCtx);
+    await next();
+  });
   // Montaggio IDENTICO a server.ts: stesso prefix /api/v1 + route sorella
   // per il test anti-scope-leak (la lezione dashboard).
   app.route('/api/v1', createViewerShareRoutes());
@@ -51,18 +56,22 @@ afterAll(() => {
 });
 
 const req = (method: string, path: string, body?: unknown): Promise<Response> =>
-  Promise.resolve(app.request(`/api/v1${path}`, {
-    method,
-    headers: { 'content-type': 'application/json' },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  }));
+  Promise.resolve(
+    app.request(`/api/v1${path}`, {
+      method,
+      headers: { 'content-type': 'application/json' },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    }),
+  );
 
 describe('viewer-share — CRUD owner-only e scope del middleware', () => {
   it('viewer/editor/operator → 403 su list e create (gate path-specific)', async () => {
     for (const role of ['viewer', 'editor', 'operator'] as const) {
       asUser(T_A, role);
       expect((await req('GET', '/viewer-share')).status, `GET come ${role}`).toBe(403);
-      expect((await req('POST', '/viewer-share', { name: 'x' })).status, `POST come ${role}`).toBe(403);
+      expect((await req('POST', '/viewer-share', { name: 'x' })).status, `POST come ${role}`).toBe(
+        403,
+      );
     }
   });
 
@@ -81,11 +90,13 @@ describe('viewer-share — CRUD owner-only e scope del middleware', () => {
     asUser(T_A, 'owner');
     const res = await req('POST', '/viewer-share', { name: 'Cliente X', expiresInDays: 30 });
     expect(res.status).toBe(201);
-    const { token } = await res.json() as { token: { token: string; id: string } };
+    const { token } = (await res.json()) as { token: { token: string; id: string } };
     expect(token.token).toMatch(/^[0-9a-f]{64}$/);
-    const list = await (await req('GET', '/viewer-share')).json() as { tokens: { id: string }[] };
+    const list = (await (await req('GET', '/viewer-share')).json()) as { tokens: { id: string }[] };
     expect(list.tokens.some((t) => t.id === token.id)).toBe(true);
-    expect((await req('POST', '/viewer-share', { name: 'x', expiresInDays: 9999 })).status).toBe(400);
+    expect((await req('POST', '/viewer-share', { name: 'x', expiresInDays: 9999 })).status).toBe(
+      400,
+    );
   });
 });
 
@@ -96,7 +107,7 @@ describe('viewer-share — endpoint PUBBLICO (il link condivisibile)', () => {
   beforeAll(async () => {
     asUser(T_A, 'owner');
     const res = await req('POST', '/viewer-share', { name: 'pubblico' });
-    const data = await res.json() as { token: { token: string; id: string } };
+    const data = (await res.json()) as { token: { token: string; id: string } };
     tokenA = data.token.token;
     tokenIdA = data.token.id;
   });
@@ -105,7 +116,7 @@ describe('viewer-share — endpoint PUBBLICO (il link condivisibile)', () => {
     authCtx = null; // il path pubblico non richiede sessione BY DESIGN
     const res = await req('GET', `/share/${T_A}/${tokenA}/dashboard`);
     expect(res.status).toBe(200);
-    const data = await res.json() as { tenantId: string };
+    const data = (await res.json()) as { tenantId: string };
     expect(data.tenantId).toBe(T_A);
   });
 
@@ -116,7 +127,8 @@ describe('viewer-share — endpoint PUBBLICO (il link condivisibile)', () => {
   });
 
   it('token SCADUTO → 401 (expires_at nel passato, manipolato direttamente in tabella)', async () => {
-    db().prepare('UPDATE viewer_share_tokens SET expires_at = ? WHERE id = ?')
+    db()
+      .prepare('UPDATE viewer_share_tokens SET expires_at = ? WHERE id = ?')
       .run('2020-01-01T00:00:00.000Z', tokenIdA);
     authCtx = null;
     expect((await req('GET', `/share/${T_A}/${tokenA}/dashboard`)).status).toBe(401);

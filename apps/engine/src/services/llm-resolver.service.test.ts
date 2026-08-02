@@ -30,7 +30,8 @@ vi.mock('./tenant-ai-preferences.service.js', () => ({
   tenantAiPreferences: { resolveDefaultProvider: resolveDefaultProviderMock },
 }));
 
-const { LlmResolverService, NoLlmProviderError, llmResolver } = await import('./llm-resolver.service.js');
+const { LlmResolverService, NoLlmProviderError, llmResolver } =
+  await import('./llm-resolver.service.js');
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -69,9 +70,12 @@ describe('🚨 BYO mode — header key', () => {
   it('🚨 provider non supportato → fallback al flow store', () => {
     // 'fake-provider' non in SUPPORTED → cade nel branch auto-pick
     providersGetAllMock.mockReturnValueOnce({});
-    expect(() => new LlmResolverService().resolve('t-1', {
-      requestedProvider: 'fake-provider', headerApiKey: 'k',
-    })).toThrow(NoLlmProviderError);
+    expect(() =>
+      new LlmResolverService().resolve('t-1', {
+        requestedProvider: 'fake-provider',
+        headerApiKey: 'k',
+      }),
+    ).toThrow(NoLlmProviderError);
   });
 });
 
@@ -94,7 +98,9 @@ describe('🚨 grok / deepseek — desincronizzazione resolver FIXATA (2026-06-1
     providersGetAllMock.mockReturnValueOnce({ grok: { apiKey: 'xai-k' } });
     expect(new LlmResolverService().resolve('t-1').provider).toBe('grok');
     resolveDefaultProviderMock.mockReturnValueOnce('deepseek');
-    providersGetAllMock.mockReturnValueOnce({ deepseek: { apiKey: 'ds-k', defaultModel: 'deepseek-chat' } });
+    providersGetAllMock.mockReturnValueOnce({
+      deepseek: { apiKey: 'ds-k', defaultModel: 'deepseek-chat' },
+    });
     const r = new LlmResolverService().resolve('t-1');
     expect(r.provider).toBe('deepseek');
     expect(r.model).toBe('deepseek-chat');
@@ -126,8 +132,9 @@ describe('🚨 explicit provider + tenant Settings key', () => {
 
   it('🚨 no stored → NoLlmProviderError 401', () => {
     providersGetMock.mockReturnValueOnce(null);
-    expect(() => new LlmResolverService().resolve('t-1', { requestedProvider: 'openai' }))
-      .toThrow(NoLlmProviderError);
+    expect(() => new LlmResolverService().resolve('t-1', { requestedProvider: 'openai' })).toThrow(
+      NoLlmProviderError,
+    );
     try {
       new LlmResolverService().resolve('t-1', { requestedProvider: 'openai' });
     } catch (e) {
@@ -194,10 +201,19 @@ describe('🚨 auto-pick — delega a resolveDefaultProvider (STESSA fonte del b
   it('🚨 carica il descriptor (key+model+baseUrl) del NOME scelto', () => {
     resolveDefaultProviderMock.mockReturnValueOnce('anthropic');
     providersGetAllMock.mockReturnValueOnce({
-      anthropic: { apiKey: 'sk-a', defaultModel: 'claude-opus-4', baseUrl: 'https://api.anthropic.com' },
+      anthropic: {
+        apiKey: 'sk-a',
+        defaultModel: 'claude-opus-4',
+        baseUrl: 'https://api.anthropic.com',
+      },
     });
     const r = new LlmResolverService().resolve('t-1');
-    expect(r).toEqual({ provider: 'anthropic', apiKey: 'sk-a', model: 'claude-opus-4', baseUrl: 'https://api.anthropic.com' });
+    expect(r).toEqual({
+      provider: 'anthropic',
+      apiKey: 'sk-a',
+      model: 'claude-opus-4',
+      baseUrl: 'https://api.anthropic.com',
+    });
   });
 
   it('🚨 liara scelto → key vuota + baseUrl (free tier)', () => {
@@ -209,7 +225,7 @@ describe('🚨 auto-pick — delega a resolveDefaultProvider (STESSA fonte del b
     expect(r.baseUrl).toBe('http://gw/liara');
   });
 
-  it('🚨🔒 ANTI-REGRESSIONE (bug 2026-06-18): default=liara è ONORATO anche se c\'è una chiave BYOK', () => {
+  it("🚨🔒 ANTI-REGRESSIONE (bug 2026-06-18): default=liara è ONORATO anche se c'è una chiave BYOK", () => {
     // PRIMA del fix l\'auto-pick preferiva anthropic (chiave presente) IGNORANDO
     // la scelta "liara" → Claude in silenzio + avatar Liara. Ora la scelta vince:
     // niente swap nascosto sulla chiave a pagamento.
@@ -285,14 +301,26 @@ describe('resolveExternalFallback — fallback BYOK su quota Liara', () => {
   });
 
   it('un BYOK esterno (anthropic) → descrittore con chiave + model', () => {
-    providersListMock.mockReturnValue([{ provider: 'liara', hasKey: true }, { provider: 'anthropic', hasKey: true }]);
-    providersGetAllMock.mockReturnValue({ anthropic: { apiKey: 'sk-ant', defaultModel: 'claude' } });
+    providersListMock.mockReturnValue([
+      { provider: 'liara', hasKey: true },
+      { provider: 'anthropic', hasKey: true },
+    ]);
+    providersGetAllMock.mockReturnValue({
+      anthropic: { apiKey: 'sk-ant', defaultModel: 'claude' },
+    });
     resolveDefaultProviderMock.mockReturnValue('anthropic');
-    expect(new LlmResolverService().resolveExternalFallback('t1')).toEqual({ provider: 'anthropic', apiKey: 'sk-ant', model: 'claude' });
+    expect(new LlmResolverService().resolveExternalFallback('t1')).toEqual({
+      provider: 'anthropic',
+      apiKey: 'sk-ant',
+      model: 'claude',
+    });
   });
 
   it('più esterni → rispetta la preferenza del tenant', () => {
-    providersListMock.mockReturnValue([{ provider: 'anthropic', hasKey: true }, { provider: 'openai', hasKey: true }]);
+    providersListMock.mockReturnValue([
+      { provider: 'anthropic', hasKey: true },
+      { provider: 'openai', hasKey: true },
+    ]);
     providersGetAllMock.mockReturnValue({ anthropic: { apiKey: 'a' }, openai: { apiKey: 'o' } });
     resolveDefaultProviderMock.mockReturnValue('openai');
     expect(new LlmResolverService().resolveExternalFallback('t1')?.provider).toBe('openai');

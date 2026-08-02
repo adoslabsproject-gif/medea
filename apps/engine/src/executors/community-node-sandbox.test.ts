@@ -44,7 +44,10 @@ const baseInput = (over: Partial<SandboxInput> = {}): SandboxInput => ({
   config: { foo: 'bar' },
   input: { x: 1 },
   context: {
-    tenantId: 't1', runId: 'r1', workflowId: 'wf1', nodeId: 'n1',
+    tenantId: 't1',
+    runId: 'r1',
+    workflowId: 'wf1',
+    nodeId: 'n1',
   },
   ...over,
 });
@@ -128,7 +131,7 @@ describe('🚨 ISOLATION — vendor cannot access host', () => {
         return 'eval-blocked: ' + e.message;
       }
     };`;
-    const r = await runInSandbox(source, baseInput()) as string;
+    const r = (await runInSandbox(source, baseInput())) as string;
     // isolated-vm di default permette eval (codeGen NOT explicitly disabled here)
     // ma il sandbox non espone Function. Verifica almeno che globalThis NON sia host.
     expect(typeof r).toBe('string');
@@ -159,7 +162,7 @@ describe('🚨 ISOLATION — vendor cannot access host', () => {
         return 'blocked: ' + e.message;
       }
     };`;
-    const r = await runInSandbox(attack, baseInput()) as string;
+    const r = (await runInSandbox(attack, baseInput())) as string;
     expect(r).toContain('blocked:');
     expect(r).not.toContain('ALLOCATED-BAD');
   });
@@ -175,7 +178,7 @@ describe('🚨 ISOLATION — vendor cannot access host', () => {
         return 'blocked: ' + e.message;
       }
     };`;
-    const r = await runInSandbox(attack, baseInput()) as string;
+    const r = (await runInSandbox(attack, baseInput())) as string;
     expect(r).toContain('blocked:');
     expect(r).not.toContain('ALLOCATED-BAD');
   });
@@ -184,7 +187,9 @@ describe('🚨 ISOLATION — vendor cannot access host', () => {
 describe('🚨 vendor errors', () => {
   it('🚨 non-function export → throw esplicito', async () => {
     const source = `module.exports = { notAFunction: true };`;
-    await expect(runInSandbox(source, baseInput())).rejects.toThrow(/non esporta una funzione async/u);
+    await expect(runInSandbox(source, baseInput())).rejects.toThrow(
+      /non esporta una funzione async/u,
+    );
   });
 
   it('🚨 nessun module.exports → throw', async () => {
@@ -262,7 +267,11 @@ describe('🚨 fetch SSRF + breaker', () => {
     m.safeFetch.mockResolvedValue({
       status: 200,
       ok: true,
-      headers: { forEach: (cb: (v: string, k: string) => void) => { cb('application/json', 'content-type'); } },
+      headers: {
+        forEach: (cb: (v: string, k: string) => void) => {
+          cb('application/json', 'content-type');
+        },
+      },
       arrayBuffer: async () => new TextEncoder().encode('{"x":42}').buffer,
     });
     const source = `module.exports = async function () {
@@ -282,7 +291,9 @@ describe('🚨 fetch SSRF + breaker', () => {
       ok: false,
       headers: {
         get: (k: string) => (k.toLowerCase() === 'location' ? 'http://127.0.0.1:6379' : null),
-        forEach: () => { /* noop */ },
+        forEach: () => {
+          /* noop */
+        },
       },
       arrayBuffer: async () => new ArrayBuffer(0),
     });
@@ -294,7 +305,7 @@ describe('🚨 fetch SSRF + breaker', () => {
         return 'caught: ' + e.message;
       }
     };`;
-    const r = await runInSandbox(source, baseInput()) as string;
+    const r = (await runInSandbox(source, baseInput())) as string;
     expect(r).toContain('SSRF blocked');
   });
 
@@ -302,7 +313,11 @@ describe('🚨 fetch SSRF + breaker', () => {
     m.safeFetch.mockResolvedValue({
       status: 503,
       ok: false,
-      headers: { forEach: () => { /* noop */ } },
+      headers: {
+        forEach: () => {
+          /* noop */
+        },
+      },
       arrayBuffer: async () => new TextEncoder().encode('Server Error').buffer,
     });
     const source = `module.exports = async function () {
@@ -313,7 +328,7 @@ describe('🚨 fetch SSRF + breaker', () => {
         return 'caught: ' + e.message;
       }
     };`;
-    const r = await runInSandbox(source, baseInput()) as string;
+    const r = (await runInSandbox(source, baseInput())) as string;
     expect(r).toContain('HTTP 503');
     expect(r).toContain('breaker-tracked');
   });
@@ -322,7 +337,11 @@ describe('🚨 fetch SSRF + breaker', () => {
     m.safeFetch.mockResolvedValue({
       status: 429,
       ok: false,
-      headers: { forEach: () => { /* noop */ } },
+      headers: {
+        forEach: () => {
+          /* noop */
+        },
+      },
       arrayBuffer: async () => new ArrayBuffer(0),
     });
     const source = `module.exports = async function () {
@@ -333,7 +352,7 @@ describe('🚨 fetch SSRF + breaker', () => {
         return 'caught';
       }
     };`;
-    const r = await runInSandbox(source, baseInput()) as string;
+    const r = (await runInSandbox(source, baseInput())) as string;
     expect(r).toBe('caught');
   });
 
@@ -341,7 +360,11 @@ describe('🚨 fetch SSRF + breaker', () => {
     m.safeFetch.mockResolvedValue({
       status: 404,
       ok: false,
-      headers: { forEach: () => { /* noop */ } },
+      headers: {
+        forEach: () => {
+          /* noop */
+        },
+      },
       arrayBuffer: async () => new TextEncoder().encode('Not Found').buffer,
     });
     const source = `module.exports = async function () {

@@ -14,13 +14,22 @@
 import { coerceString } from '@/lib/coerce.js';
 import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { logLlmExchange } from '@medea/engine-nodes-stdlib';
-import { dispatchLLMChat, type LlmTokenUsage, type TokenUsageListener } from '@/services/llm-chat.service.js';
+import {
+  dispatchLLMChat,
+  type LlmTokenUsage,
+  type TokenUsageListener,
+} from '@/services/llm-chat.service.js';
 import { llmResolver, type ResolvedLlm } from '@/services/llm-resolver.service.js';
 import {
   LEGAL_KNOWLEDGE_INLINE,
-  chunkDocument, dedupFindings, applySeverityFloor, computeScore,
-  MIN_DOC_CHARS, MAX_DOC_CHARS,
-  type Finding, type Recommendation,
+  chunkDocument,
+  dedupFindings,
+  applySeverityFloor,
+  computeScore,
+  MIN_DOC_CHARS,
+  MAX_DOC_CHARS,
+  type Finding,
+  type Recommendation,
 } from './legal-compliance.knowledge.js';
 
 interface AnalyzeResponse {
@@ -60,11 +69,20 @@ async function analyzeChunkViaLlm(
     `summary: <2-frase>, detectedType: <best guess se "auto"> }\n\n` +
     LEGAL_KNOWLEDGE_INLINE;
 
-  const raw = (await dispatchLLMChat(
-    resolved.provider, resolved.apiKey, resolved.model,
-    sysPrompt, chunk, resolved.baseUrl, [],
-    onUsage, undefined, { maxTokens: 2000, timeoutMs: 90_000 },
-  )).trim();
+  const raw = (
+    await dispatchLLMChat(
+      resolved.provider,
+      resolved.apiKey,
+      resolved.model,
+      sysPrompt,
+      chunk,
+      resolved.baseUrl,
+      [],
+      onUsage,
+      undefined,
+      { maxTokens: 2000, timeoutMs: 90_000 },
+    )
+  ).trim();
   // Fase 3 (#15): system (col compendio) integrale SOLO al 1° chunk — è
   // identico per tutti; i chunk successivi loggano prompt utente + risposta.
   logLlmExchange(logMeta.context, {
@@ -77,8 +95,11 @@ async function analyzeChunkViaLlm(
   });
   const jsonMatch = /\{[\s\S]*\}/.exec(raw);
   if (!jsonMatch) return {};
-  try { return JSON.parse(jsonMatch[0]) as AnalyzeResponse; }
-  catch { return {}; }
+  try {
+    return JSON.parse(jsonMatch[0]) as AnalyzeResponse;
+  } catch {
+    return {};
+  }
 }
 
 export const legalComplianceExecutor: NodeExecutor = async (rawConfig, _input, context) => {
@@ -87,17 +108,22 @@ export const legalComplianceExecutor: NodeExecutor = async (rawConfig, _input, c
   const docText = coerceString(cfg.documentText ?? '').trim();
   if (!docText) throw new Error('agent_legal_compliance: campo "documentText" obbligatorio.');
   if (docText.length < MIN_DOC_CHARS) {
-    throw new Error(`agent_legal_compliance: documento troppo corto (${String(docText.length)} char, min ${String(MIN_DOC_CHARS)}).`);
+    throw new Error(
+      `agent_legal_compliance: documento troppo corto (${String(docText.length)} char, min ${String(MIN_DOC_CHARS)}).`,
+    );
   }
   if (docText.length > MAX_DOC_CHARS) {
-    throw new Error(`agent_legal_compliance: documento troppo lungo (${String(docText.length)} char, max ${String(MAX_DOC_CHARS)}).`);
+    throw new Error(
+      `agent_legal_compliance: documento troppo lungo (${String(docText.length)} char, max ${String(MAX_DOC_CHARS)}).`,
+    );
   }
 
   const frameworks = coerceString(cfg.frameworks ?? 'gdpr,eidas,ai_act');
   const documentType = coerceString(cfg.documentType ?? 'auto');
   const jurisdiction = coerceString(cfg.jurisdiction ?? 'it_eu');
   const severityFloor = coerceString(cfg.severityFloor ?? 'medium');
-  const useExternalKb = cfg.useExternalKb === true || coerceString(cfg.useExternalKb ?? 'false') === 'true';
+  const useExternalKb =
+    cfg.useExternalKb === true || coerceString(cfg.useExternalKb ?? 'false') === 'true';
 
   const chunks = chunkDocument(docText);
   const allFindings: Finding[] = [];
@@ -110,7 +136,9 @@ export const legalComplianceExecutor: NodeExecutor = async (rawConfig, _input, c
   // (mai funzionante dal container: 401). Il gateway chat non espone tools →
   // si analizza SEMPRE col compendio inline, dichiarandolo.
   if (useExternalKb) {
-    warnings.push('useExternalKb: KB esterno non supportato dal percorso gateway — analisi eseguita col compendio inline.');
+    warnings.push(
+      'useExternalKb: KB esterno non supportato dal percorso gateway — analisi eseguita col compendio inline.',
+    );
   }
 
   // Provider risolto UNA volta per tutto il documento (Liara default, BYOK override).
@@ -122,23 +150,37 @@ export const legalComplianceExecutor: NodeExecutor = async (rawConfig, _input, c
   }
 
   // Usage cumulativo su TUTTI i chunk → un solo `_llm` per il nodo.
-  let totIn = 0; let totOut = 0; let allFromApi = true; let llmCalls = 0;
+  let totIn = 0;
+  let totOut = 0;
+  let allFromApi = true;
+  let llmCalls = 0;
   const onUsage = (u: LlmTokenUsage): void => {
-    totIn += u.input; totOut += u.output; allFromApi = allFromApi && u.fromApi; llmCalls += 1;
+    totIn += u.input;
+    totOut += u.output;
+    allFromApi = allFromApi && u.fromApi;
+    llmCalls += 1;
   };
 
   for (let i = 0; i < chunks.length && resolved !== null; i++) {
     const chunk = chunks[i];
     if (chunk === undefined) continue;
     try {
-      const r = await analyzeChunkViaLlm(chunk, { frameworks, documentType, jurisdiction }, resolved, onUsage,
-        { context, phase: `chunk ${String(i + 1)}/${String(chunks.length)}`, logSystem: i === 0 });
-      if (Array.isArray(r.findings)) allFindings.push(...r.findings.filter((f) => f && typeof f === 'object'));
+      const r = await analyzeChunkViaLlm(
+        chunk,
+        { frameworks, documentType, jurisdiction },
+        resolved,
+        onUsage,
+        { context, phase: `chunk ${String(i + 1)}/${String(chunks.length)}`, logSystem: i === 0 },
+      );
+      if (Array.isArray(r.findings))
+        allFindings.push(...r.findings.filter((f) => f && typeof f === 'object'));
       if (Array.isArray(r.recommendations)) allRecommendations.push(...r.recommendations);
       if (typeof r.summary === 'string') summaries.push(r.summary);
       if (!detectedType && typeof r.detectedType === 'string') detectedType = r.detectedType;
     } catch (e) {
-      warnings.push(`chunk ${String(i + 1)}/${String(chunks.length)} failed: ${e instanceof Error ? e.message : String(e)}`);
+      warnings.push(
+        `chunk ${String(i + 1)}/${String(chunks.length)} failed: ${e instanceof Error ? e.message : String(e)}`,
+      );
     }
   }
 
@@ -158,15 +200,17 @@ export const legalComplianceExecutor: NodeExecutor = async (rawConfig, _input, c
       warnings,
       checkedAt: new Date().toISOString(),
       // Fase 2 (#14): usage standard cross-nodo, cumulativo sui chunk.
-      ...(llmCalls > 0 && resolved !== null ? {
-        _llm: {
-          inputTokens: totIn,
-          outputTokens: totOut,
-          model: resolved.model || `${resolved.provider}-default`,
-          provider: resolved.provider,
-          fromApi: allFromApi,
-        },
-      } : {}),
+      ...(llmCalls > 0 && resolved !== null
+        ? {
+            _llm: {
+              inputTokens: totIn,
+              outputTokens: totOut,
+              model: resolved.model || `${resolved.provider}-default`,
+              provider: resolved.provider,
+              fromApi: allFromApi,
+            },
+          }
+        : {}),
     },
     durationMs: Date.now() - start,
   };

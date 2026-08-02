@@ -40,11 +40,11 @@ import type { SpanProcessor, Span, ReadableSpan } from '@opentelemetry/sdk-trace
  * di production span (audit 2026-06-04).
  */
 const URL_LIKE_ATTR_KEYS: ReadonlySet<string> = new Set([
-  'http.url',           // OTel <1.20 legacy
-  'url.full',           // OTel 1.20+ standard
-  'http.target',        // path + query, vecchio
-  'url.query',          // separato, ma e\` LA query
-  'http.route',         // template, di solito ok ma defense-in-depth
+  'http.url', // OTel <1.20 legacy
+  'url.full', // OTel 1.20+ standard
+  'http.target', // path + query, vecchio
+  'url.query', // separato, ma e\` LA query
+  'http.route', // template, di solito ok ma defense-in-depth
   'messaging.url',
   'messaging.destination.name',
   'rpc.url',
@@ -68,7 +68,9 @@ export function scrubUrl(raw: string): string {
     u.password = '';
     u.hash = '';
     return u.toString();
-  } catch { /* not absolute */ }
+  } catch {
+    /* not absolute */
+  }
   // Caso 2: path relativo con query — strip da '?' o '#'
   const qIdx = raw.indexOf('?');
   const hIdx = raw.indexOf('#');

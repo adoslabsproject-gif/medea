@@ -60,15 +60,17 @@ export const companySearchExecutor: NodeExecutor = async (config, _input, contex
       count: result.companies.length,
       // Fase 1b (#13): usage standard cross-nodo. Presente SOLO se la query
       // expansion LLM è davvero avvenuta (skipLLM/no-provider → nessun token speso).
-      ...(result.llm_usage !== undefined ? {
-        _llm: {
-          inputTokens: result.llm_usage.input,
-          outputTokens: result.llm_usage.output,
-          model: result.llm_model ?? `${result.llm_provider ?? 'liara'}-default`,
-          provider: result.llm_provider ?? 'liara',
-          fromApi: result.llm_usage.fromApi,
-        },
-      } : {}),
+      ...(result.llm_usage !== undefined
+        ? {
+            _llm: {
+              inputTokens: result.llm_usage.input,
+              outputTokens: result.llm_usage.output,
+              model: result.llm_model ?? `${result.llm_provider ?? 'liara'}-default`,
+              provider: result.llm_provider ?? 'liara',
+              fromApi: result.llm_usage.fromApi,
+            },
+          }
+        : {}),
     },
     durationMs: Date.now() - start,
   };

@@ -38,10 +38,36 @@ export const GOLDEN_EXAMPLES: readonly GoldenExample[] = [
     workflow: {
       name: 'API → valida → salva → rispondi',
       nodes: [
-        { id: 'ricevi_richiesta', defId: 'trigger_webhook', config: { method: 'POST' }, x: 0, y: 0 },
-        { id: 'valida_payload', defId: 'action_run_js', config: { code: 'const d = input; if (!d || !d.email) { return { valid: false, error: "email mancante" }; } return { valid: true, email: String(d.email).toLowerCase(), name: d.name || "" };' }, x: 240, y: 0 },
-        { id: 'salva_contatto', defId: 'db_insert', config: { databaseId: '__USE_PICKER__', table: '__USE_PICKER__' }, x: 480, y: 0 },
-        { id: 'rispondi', defId: 'action_webhook_respond', config: { respondWith: 'json' }, x: 720, y: 0 },
+        {
+          id: 'ricevi_richiesta',
+          defId: 'trigger_webhook',
+          config: { method: 'POST' },
+          x: 0,
+          y: 0,
+        },
+        {
+          id: 'valida_payload',
+          defId: 'action_run_js',
+          config: {
+            code: 'const d = input; if (!d || !d.email) { return { valid: false, error: "email mancante" }; } return { valid: true, email: String(d.email).toLowerCase(), name: d.name || "" };',
+          },
+          x: 240,
+          y: 0,
+        },
+        {
+          id: 'salva_contatto',
+          defId: 'db_insert',
+          config: { databaseId: '__USE_PICKER__', table: '__USE_PICKER__' },
+          x: 480,
+          y: 0,
+        },
+        {
+          id: 'rispondi',
+          defId: 'action_webhook_respond',
+          config: { respondWith: 'json' },
+          x: 720,
+          y: 0,
+        },
       ],
       edges: [
         { from: 'ricevi_richiesta', to: 'valida_payload' },
@@ -52,15 +78,57 @@ export const GOLDEN_EXAMPLES: readonly GoldenExample[] = [
   },
   {
     id: 'daily-report',
-    keywords: ['cron', 'schedule', 'report', 'giorno', 'giornaliero', 'mattina', 'email', 'mail', 'http'],
+    keywords: [
+      'cron',
+      'schedule',
+      'report',
+      'giorno',
+      'giornaliero',
+      'mattina',
+      'email',
+      'mail',
+      'http',
+    ],
     title: 'Report giornaliero: API → filtro → email',
     workflow: {
       name: 'Report giornaliero via email',
       nodes: [
-        { id: 'ogni_mattina', defId: 'trigger_cron', config: { cronExpression: '0 8 * * *' }, x: 0, y: 0 },
-        { id: 'scarica_dati', defId: 'action_http', config: { method: 'GET', url: '{{secrets.REPORT_API_URL}}' }, x: 240, y: 0 },
-        { id: 'filtra_attivi', defId: 'action_filter', config: { conditions: '{"combinator":"AND","rules":[{"field":"status","op":"equals","value":"active"}]}' }, x: 480, y: 0 },
-        { id: 'invia_report', defId: 'action_send_email', config: { to: '{{secrets.REPORT_RECIPIENT}}', subject: 'Report giornaliero', bodyType: 'html', body: '<p>Elementi attivi: {{$node.filtra_attivi.json.keptCount}}</p>' }, x: 720, y: 0 },
+        {
+          id: 'ogni_mattina',
+          defId: 'trigger_cron',
+          config: { cronExpression: '0 8 * * *' },
+          x: 0,
+          y: 0,
+        },
+        {
+          id: 'scarica_dati',
+          defId: 'action_http',
+          config: { method: 'GET', url: '{{secrets.REPORT_API_URL}}' },
+          x: 240,
+          y: 0,
+        },
+        {
+          id: 'filtra_attivi',
+          defId: 'action_filter',
+          config: {
+            conditions:
+              '{"combinator":"AND","rules":[{"field":"status","op":"equals","value":"active"}]}',
+          },
+          x: 480,
+          y: 0,
+        },
+        {
+          id: 'invia_report',
+          defId: 'action_send_email',
+          config: {
+            to: '{{secrets.REPORT_RECIPIENT}}',
+            subject: 'Report giornaliero',
+            bodyType: 'html',
+            body: '<p>Elementi attivi: {{$node.filtra_attivi.json.keptCount}}</p>',
+          },
+          x: 720,
+          y: 0,
+        },
       ],
       edges: [
         { from: 'ogni_mattina', to: 'scarica_dati' },
@@ -77,10 +145,39 @@ export const GOLDEN_EXAMPLES: readonly GoldenExample[] = [
       name: 'Triage email: classifica e smista',
       nodes: [
         { id: 'nuova_email', defId: 'trigger_imap', config: {}, x: 0, y: 0 },
-        { id: 'classifica', defId: 'agent_classifier', config: { labels: 'supporto,vendite,spam' }, x: 240, y: 0 },
-        { id: 'e_spam', defId: 'logic_if', config: { condition: "$node.classifica.json.label === 'spam'" }, x: 480, y: 0 },
-        { id: 'log_spam', defId: 'db_insert', config: { databaseId: '__USE_PICKER__', table: '__USE_PICKER__' }, x: 720, y: -80 },
-        { id: 'inoltra_al_team', defId: 'action_send_email', config: { to: '{{secrets.TEAM_INBOX}}', subject: 'Nuova email: {{$node.classifica.json.label}}', bodyType: 'text', body: 'Categoria: {{$node.classifica.json.label}} (confidenza {{$node.classifica.json.confidence}})' }, x: 720, y: 80 },
+        {
+          id: 'classifica',
+          defId: 'agent_classifier',
+          config: { labels: 'supporto,vendite,spam' },
+          x: 240,
+          y: 0,
+        },
+        {
+          id: 'e_spam',
+          defId: 'logic_if',
+          config: { condition: "$node.classifica.json.label === 'spam'" },
+          x: 480,
+          y: 0,
+        },
+        {
+          id: 'log_spam',
+          defId: 'db_insert',
+          config: { databaseId: '__USE_PICKER__', table: '__USE_PICKER__' },
+          x: 720,
+          y: -80,
+        },
+        {
+          id: 'inoltra_al_team',
+          defId: 'action_send_email',
+          config: {
+            to: '{{secrets.TEAM_INBOX}}',
+            subject: 'Nuova email: {{$node.classifica.json.label}}',
+            bodyType: 'text',
+            body: 'Categoria: {{$node.classifica.json.label}} (confidenza {{$node.classifica.json.confidence}})',
+          },
+          x: 720,
+          y: 80,
+        },
       ],
       edges: [
         { from: 'nuova_email', to: 'classifica' },
@@ -97,9 +194,37 @@ export const GOLDEN_EXAMPLES: readonly GoldenExample[] = [
     workflow: {
       name: 'Form contatti → DB → conferma',
       nodes: [
-        { id: 'form_contatti', defId: 'trigger_form', config: { title: 'Richiesta contatto', fieldsJson: '[{"key":"nome","label":"Nome","type":"text","required":true},{"key":"email","label":"Email","type":"email","required":true}]', publicToken: '{{secrets.FORM_PUBLIC_TOKEN}}' }, x: 0, y: 0 },
-        { id: 'salva_lead', defId: 'db_insert', config: { databaseId: '__USE_PICKER__', table: '__USE_PICKER__' }, x: 240, y: 0 },
-        { id: 'conferma_iscrizione', defId: 'action_send_email', config: { to: '{{$node.form_contatti.json.email}}', subject: 'Abbiamo ricevuto la tua richiesta', bodyType: 'text', body: 'Ciao {{$node.form_contatti.json.nome}}, ti ricontatteremo presto.' }, x: 480, y: 0 },
+        {
+          id: 'form_contatti',
+          defId: 'trigger_form',
+          config: {
+            title: 'Richiesta contatto',
+            fieldsJson:
+              '[{"key":"nome","label":"Nome","type":"text","required":true},{"key":"email","label":"Email","type":"email","required":true}]',
+            publicToken: '{{secrets.FORM_PUBLIC_TOKEN}}',
+          },
+          x: 0,
+          y: 0,
+        },
+        {
+          id: 'salva_lead',
+          defId: 'db_insert',
+          config: { databaseId: '__USE_PICKER__', table: '__USE_PICKER__' },
+          x: 240,
+          y: 0,
+        },
+        {
+          id: 'conferma_iscrizione',
+          defId: 'action_send_email',
+          config: {
+            to: '{{$node.form_contatti.json.email}}',
+            subject: 'Abbiamo ricevuto la tua richiesta',
+            bodyType: 'text',
+            body: 'Ciao {{$node.form_contatti.json.nome}}, ti ricontatteremo presto.',
+          },
+          x: 480,
+          y: 0,
+        },
       ],
       edges: [
         { from: 'form_contatti', to: 'salva_lead' },
@@ -115,9 +240,30 @@ export const GOLDEN_EXAMPLES: readonly GoldenExample[] = [
       name: 'Assistente sulla knowledge base',
       nodes: [
         { id: 'ricevi_domanda', defId: 'trigger_webhook', config: { method: 'POST' }, x: 0, y: 0 },
-        { id: 'cerca_contesto', defId: 'rag_search', config: { databaseId: '__USE_PICKER__', collection: 'knowledge' }, x: 240, y: 0 },
-        { id: 'genera_risposta', defId: 'action_llm_complete', config: { prompt: 'Rispondi usando SOLO il contesto seguente.\n\nContesto:\n{{$node.cerca_contesto.json}}\n\nDomanda: {{$node.ricevi_domanda.json.question}}' }, x: 480, y: 0 },
-        { id: 'rispondi', defId: 'action_webhook_respond', config: { respondWith: 'json' }, x: 720, y: 0 },
+        {
+          id: 'cerca_contesto',
+          defId: 'rag_search',
+          config: { databaseId: '__USE_PICKER__', collection: 'knowledge' },
+          x: 240,
+          y: 0,
+        },
+        {
+          id: 'genera_risposta',
+          defId: 'action_llm_complete',
+          config: {
+            prompt:
+              'Rispondi usando SOLO il contesto seguente.\n\nContesto:\n{{$node.cerca_contesto.json}}\n\nDomanda: {{$node.ricevi_domanda.json.question}}',
+          },
+          x: 480,
+          y: 0,
+        },
+        {
+          id: 'rispondi',
+          defId: 'action_webhook_respond',
+          config: { respondWith: 'json' },
+          x: 720,
+          y: 0,
+        },
       ],
       edges: [
         { from: 'ricevi_domanda', to: 'cerca_contesto' },
@@ -151,6 +297,6 @@ export function formatGoldenExampleForPrompt(ex: GoldenExample): string {
     '```json',
     JSON.stringify(ex.workflow, null, 2),
     '```',
-    'Produci un workflow NUOVO ispirato all\'esempio ma specifico al goal corrente.',
+    "Produci un workflow NUOVO ispirato all'esempio ma specifico al goal corrente.",
   ].join('\n');
 }

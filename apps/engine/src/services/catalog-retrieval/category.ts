@@ -16,27 +16,48 @@
 /** Override espliciti dove l'euristica per-substring sbaglierebbe. */
 export const EXPLICIT_CATEGORY: Readonly<Record<string, string>> = {
   // transform — manipolazione dati
-  action_array: 'transform', action_json: 'transform', action_text: 'transform',
-  action_template: 'transform', action_datetime: 'transform', action_number: 'transform',
-  action_aggregate: 'transform', action_set_fields: 'transform', action_coalesce: 'transform',
-  action_filter: 'transform', action_diff: 'transform', action_mock_data: 'transform',
+  action_array: 'transform',
+  action_json: 'transform',
+  action_text: 'transform',
+  action_template: 'transform',
+  action_datetime: 'transform',
+  action_number: 'transform',
+  action_aggregate: 'transform',
+  action_set_fields: 'transform',
+  action_coalesce: 'transform',
+  action_filter: 'transform',
+  action_diff: 'transform',
+  action_mock_data: 'transform',
   action_markdown: 'transform',
   action_generate_chart: 'transform',
   // files — formati documento
   action_csv: 'files',
   // http / web
-  action_html_extract: 'http', action_url: 'http', action_api_response: 'http',
+  action_html_extract: 'http',
+  action_url: 'http',
+  action_api_response: 'http',
   // italia — validazioni con checksum nazionali
   action_validate: 'italia',
   // utility — crypto/id (security primitives)
-  action_crypto: 'utility', action_uuid: 'utility', action_jwt: 'utility',
+  action_crypto: 'utility',
+  action_uuid: 'utility',
+  action_jwt: 'utility',
   // integrations — bridge cross-tenant FlowForge↔FlowForge
   action_tenant_collab: 'integrations',
 };
 
 export type CatalogCategory =
-  | 'triggers' | 'logic' | 'transform' | 'email' | 'files' | 'http'
-  | 'database' | 'ai' | 'italia' | 'integrations' | 'utility';
+  | 'triggers'
+  | 'logic'
+  | 'transform'
+  | 'email'
+  | 'files'
+  | 'http'
+  | 'database'
+  | 'ai'
+  | 'italia'
+  | 'integrations'
+  | 'utility';
 
 /** Etichette human-readable per la mappa categorie mostrata al modello. */
 export const CATEGORY_LABELS: Readonly<Record<CatalogCategory, string>> = {
@@ -63,7 +84,13 @@ export function inferCategory(id: string, type: string): CatalogCategory {
   if (type === 'logic') return 'logic';
   if (id.includes('email') || id.includes('mail')) return 'email';
   if (id.includes('pdf') || id.includes('xlsx') || id.includes('file')) return 'files';
-  if (id.includes('http') || id.includes('webhook') || id.includes('fetch_url') || id.includes('web_search')) return 'http';
+  if (
+    id.includes('http') ||
+    id.includes('webhook') ||
+    id.includes('fetch_url') ||
+    id.includes('web_search')
+  )
+    return 'http';
   if (id.includes('db_')) return 'database';
   if (id.includes('ai_') || id.includes('liara')) return 'ai';
   // Community/custom node prefissati restano in integrations per default utile.

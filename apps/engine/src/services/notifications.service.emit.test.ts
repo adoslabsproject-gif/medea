@@ -22,13 +22,19 @@ beforeEach(() => {
 });
 
 describe('NotificationsService.create → notifications-bus', () => {
-  it('emette sul bus dell\'utente la notifica appena creata (coerente col DB)', () => {
+  it("emette sul bus dell'utente la notifica appena creata (coerente col DB)", () => {
     const received: Notification[] = [];
-    const off = notificationsBus.subscribe('u-ada', (n) => { received.push(n); });
+    const off = notificationsBus.subscribe('u-ada', (n) => {
+      received.push(n);
+    });
 
     new NotificationsService().create({
-      userId: 'u-ada', type: 'mention', workflowId: 'wf1', nodeId: 'n1',
-      actorName: 'marco@x.it', preview: 'guarda @ada',
+      userId: 'u-ada',
+      type: 'mention',
+      workflowId: 'wf1',
+      nodeId: 'n1',
+      actorName: 'marco@x.it',
+      preview: 'guarda @ada',
     });
 
     expect(received).toHaveLength(1);
@@ -39,16 +45,25 @@ describe('NotificationsService.create → notifications-bus', () => {
     expect(pushed.nodeId).toBe('n1');
     expect(pushed.read).toBe(false);
     // L'oggetto emesso deve combaciare con la riga persistita (id + createdAt).
-    const row = m.db!.prepare('SELECT id, created_at FROM notifications WHERE user_id = ?').get('u-ada') as { id: string; created_at: string };
+    const row = m
+      .db!.prepare('SELECT id, created_at FROM notifications WHERE user_id = ?')
+      .get('u-ada') as { id: string; created_at: string };
     expect(pushed.id).toBe(row.id);
     expect(pushed.createdAt).toBe(row.created_at);
     off();
   });
 
-  it('preview troncata a 200 char anche nell\'evento pushato', () => {
+  it("preview troncata a 200 char anche nell'evento pushato", () => {
     const received: Notification[] = [];
-    const off = notificationsBus.subscribe('u-b', (n) => { received.push(n); });
-    new NotificationsService().create({ userId: 'u-b', type: 'mention', actorName: 'x', preview: 'a'.repeat(500) });
+    const off = notificationsBus.subscribe('u-b', (n) => {
+      received.push(n);
+    });
+    new NotificationsService().create({
+      userId: 'u-b',
+      type: 'mention',
+      actorName: 'x',
+      preview: 'a'.repeat(500),
+    });
     expect(received[0]!.preview.length).toBe(200);
     off();
   });

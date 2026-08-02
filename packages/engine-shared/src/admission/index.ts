@@ -9,20 +9,38 @@
  * @module admission
  */
 export {
-  decideAdmission, releaseLease,
-  type PoolState, type Lease, type Waiter,
-  type AdmissionInput, type AdmissionDecision, type AdmissionOutcome, type RejectReason,
+  decideAdmission,
+  releaseLease,
+  type PoolState,
+  type Lease,
+  type Waiter,
+  type AdmissionInput,
+  type AdmissionDecision,
+  type AdmissionOutcome,
+  type RejectReason,
 } from './decision.js';
 export {
-  tryAdmit, release, heartbeat, ADMISSION_LUA,
-  type RedisLike, type AdmissionResult,
+  tryAdmit,
+  release,
+  heartbeat,
+  ADMISSION_LUA,
+  type RedisLike,
+  type AdmissionResult,
 } from './redis-queue.js';
 export {
-  admit, AdmissionOverloadError, AdmissionTimeoutError, AdmissionAbortError,
-  type AdmitOptions, type AdmissionHandle,
+  admit,
+  AdmissionOverloadError,
+  AdmissionTimeoutError,
+  AdmissionAbortError,
+  type AdmitOptions,
+  type AdmissionHandle,
 } from './controller.js';
 export { loadAdmissionConfig, type AdmissionConfig } from './config.js';
 export {
-  publishQueued, publishAdmitted, readPosition, clearPosition,
-  type PositionRedis, type QueuePosition,
+  publishQueued,
+  publishAdmitted,
+  readPosition,
+  clearPosition,
+  type PositionRedis,
+  type QueuePosition,
 } from './position-channel.js';

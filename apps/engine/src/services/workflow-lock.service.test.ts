@@ -25,7 +25,11 @@ describe('WorkflowLockService', () => {
   it('acquire su workflow libero → ok (free) + status mine', () => {
     const d = svc.acquire('wf1', 'marco', 'Marco', T0);
     expect(d).toEqual({ ok: true, reason: 'free' });
-    expect(svc.status('wf1', 'marco', T0)).toEqual({ locked: true, mine: true, by: { userId: 'marco', userName: 'Marco' } });
+    expect(svc.status('wf1', 'marco', T0)).toEqual({
+      locked: true,
+      mine: true,
+      by: { userId: 'marco', userName: 'Marco' },
+    });
   });
 
   it('secondo utente su lock VIVO → held (409), status not-mine con chi edita', () => {
@@ -68,7 +72,9 @@ describe('WorkflowLockService', () => {
     svc.acquire('wf1', 'marco', 'Marco', T0);
     const d = svc.acquire('wf1', 'marco', 'Marco', T0 + 10_000);
     expect(d).toEqual({ ok: true, reason: 'reacquired' });
-    const row = m.db!.prepare('SELECT acquired_at, heartbeat_at FROM workflow_locks WHERE workflow_id = ?').get('wf1') as { acquired_at: number; heartbeat_at: number };
+    const row = m
+      .db!.prepare('SELECT acquired_at, heartbeat_at FROM workflow_locks WHERE workflow_id = ?')
+      .get('wf1') as { acquired_at: number; heartbeat_at: number };
     expect(row.acquired_at).toBe(T0);
     expect(row.heartbeat_at).toBe(T0 + 10_000);
   });

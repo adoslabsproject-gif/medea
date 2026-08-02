@@ -37,7 +37,11 @@ export function createWebhookTestRoutes(): Hono {
       return c.json({ event });
     } catch (err) {
       const reason = err instanceof Error ? err.message : 'unknown';
-      if (reason === 'timeout') return c.json({ error: 'timeout', message: 'Nessuna richiesta ricevuta entro 5 minuti' }, 408);
+      if (reason === 'timeout')
+        return c.json(
+          { error: 'timeout', message: 'Nessuna richiesta ricevuta entro 5 minuti' },
+          408,
+        );
       if (reason === 'superseded') return c.json({ error: 'superseded' }, 409);
       if (reason === 'cancelled') return c.json({ error: 'cancelled' }, 410);
       return c.json({ error: reason }, 500);

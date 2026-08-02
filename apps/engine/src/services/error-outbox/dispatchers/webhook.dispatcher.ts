@@ -31,7 +31,10 @@ export interface WebhookDispatcherDeps {
   /** Re-risolve onError del workflow (config CORRENTE). null → workflow sparito. */
   loadOnError: (workflowId: string, tenantId: string) => Promise<WebhookResolvedTarget | null>;
   /** Fetch SSRF-safe iniettato (in prod: safeOutboundFetch). */
-  safeFetch: (url: string, opts: { method: string; headers: Record<string, string>; body: string; timeoutMs: number }) => Promise<FetchLikeResponse>;
+  safeFetch: (
+    url: string,
+    opts: { method: string; headers: Record<string, string>; body: string; timeoutMs: number },
+  ) => Promise<FetchLikeResponse>;
   timeoutMs?: number;
 }
 
@@ -60,7 +63,11 @@ export function makeWebhookDispatcher(deps: WebhookDispatcherDeps): ChannelDispa
       timeoutMs,
     });
     // Anti-OOM: il body non ci serve → cancella lo stream (no read).
-    try { await res.body?.cancel(); } catch { /* best-effort */ }
+    try {
+      await res.body?.cancel();
+    } catch {
+      /* best-effort */
+    }
 
     if (!res.ok) {
       throw new Error(`webhook ${url}: HTTP ${String(res.status)}`);

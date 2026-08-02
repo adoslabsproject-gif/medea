@@ -10,8 +10,17 @@ import { redactSensitive, SENSITIVE_KEYS } from './redact.js';
 
 describe('🚨 sensitive keys', () => {
   it.each([
-    'apiKey', 'api_key', 'password', 'secret', 'token',
-    'authorization', 'auth', 'cookie', 'session', 'pw', 'pwd',
+    'apiKey',
+    'api_key',
+    'password',
+    'secret',
+    'token',
+    'authorization',
+    'auth',
+    'cookie',
+    'session',
+    'pw',
+    'pwd',
   ])('🚨 key "%s" → [redacted]', (key) => {
     const out = redactSensitive({ [key]: 'super-secret-value-AAA', other: 'ok' });
     expect((out as any)[key]).toBe('[redacted]');
@@ -34,13 +43,15 @@ describe('🚨 sensitive keys', () => {
 
 describe('🚨 path leak prevention', () => {
   it('🚨 /var/lib/flowforge/* → [redacted]', () => {
-    expect(redactSensitive('Error reading /var/lib/flowforge/secrets/master.key'))
-      .toBe('Error reading /var/lib/flowforge/[redacted]');
+    expect(redactSensitive('Error reading /var/lib/flowforge/secrets/master.key')).toBe(
+      'Error reading /var/lib/flowforge/[redacted]',
+    );
   });
 
   it('🚨 /opt/flowforge/* → [redacted]', () => {
-    expect(redactSensitive('cd /opt/flowforge/dist/server.js'))
-      .toBe('cd /opt/flowforge/[redacted]');
+    expect(redactSensitive('cd /opt/flowforge/dist/server.js')).toBe(
+      'cd /opt/flowforge/[redacted]',
+    );
   });
 
   it('🚨 path normali (no flowforge) preservati', () => {

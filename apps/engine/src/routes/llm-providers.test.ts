@@ -35,7 +35,19 @@ vi.mock('@/services/llm-providers.service.js', () => ({
   LlmProvidersService: LlmProvidersServiceMock,
   // 'ollama' incluso (allineato al reale): senza, i test SSRF su /llm/ollama
   // davano 400 per "provider non valido" invece che per il refine baseUrl = green-fake.
-  SUPPORTED_PROVIDERS: ['anthropic', 'openai', 'google', 'deepseek', 'xai', 'openrouter', 'perplexity', 'mistral', 'groq', 'ollama', 'liara'] as const,
+  SUPPORTED_PROVIDERS: [
+    'anthropic',
+    'openai',
+    'google',
+    'deepseek',
+    'xai',
+    'openrouter',
+    'perplexity',
+    'mistral',
+    'groq',
+    'ollama',
+    'liara',
+  ] as const,
 }));
 
 const prefsGetMock = vi.fn();
@@ -53,18 +65,27 @@ vi.mock('@/services/tenant-ai-preferences.service.js', () => ({
 }));
 
 vi.mock('@/middleware/rbac.js', () => ({
-  requireRole: (role: string) => async (c: { get: (k: string) => { role?: string } | undefined }, next: () => Promise<void>) => {
-    const auth = c.get('auth');
-    if (!auth) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-    const userRole = auth.role ?? 'viewer';
-    const roleHierarchy = ['viewer', 'editor', 'admin', 'owner', 'superadmin'];
-    const userLevel = roleHierarchy.indexOf(userRole);
-    const requiredLevel = roleHierarchy.indexOf(role);
-    if (userLevel < requiredLevel) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
-    }
-    return next();
-  },
+  requireRole:
+    (role: string) =>
+    async (c: { get: (k: string) => { role?: string } | undefined }, next: () => Promise<void>) => {
+      const auth = c.get('auth');
+      if (!auth)
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      const userRole = auth.role ?? 'viewer';
+      const roleHierarchy = ['viewer', 'editor', 'admin', 'owner', 'superadmin'];
+      const userLevel = roleHierarchy.indexOf(userRole);
+      const requiredLevel = roleHierarchy.indexOf(role);
+      if (userLevel < requiredLevel) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return next();
+    },
 }));
 
 const dispatchLLMForTestMock = vi.fn();
@@ -116,7 +137,7 @@ describe('🚨 GET / — list providers (SECURITY: never plaintext key)', () => 
     ]);
     const res = await makeApp('viewer').request('/llm');
     expect(res.status).toBe(200);
-    const json = await res.json() as { providers: { provider: string; hasKey: boolean }[] };
+    const json = (await res.json()) as { providers: { provider: string; hasKey: boolean }[] };
     expect(json.providers).toHaveLength(2);
     expect(listMock).toHaveBeenCalledWith('tenant-A');
   });
@@ -136,7 +157,12 @@ describe('🚨 GET /preferences', () => {
 
     const res = await makeApp('viewer').request('/llm/preferences');
     expect(res.status).toBe(200);
-    const json = await res.json() as { allowLiara: boolean; liaraGloballyEnabled: boolean; liaraEffective: boolean; effectiveDefaultLlmProvider: string };
+    const json = (await res.json()) as {
+      allowLiara: boolean;
+      liaraGloballyEnabled: boolean;
+      liaraEffective: boolean;
+      effectiveDefaultLlmProvider: string;
+    };
     expect(json.allowLiara).toBe(false);
     expect(json.liaraGloballyEnabled).toBe(true);
     expect(json.liaraEffective).toBe(false);
@@ -160,7 +186,7 @@ describe('🚨 GET /preferences', () => {
   it('🚨 isLiaraEnabled() globale propagato', async () => {
     isLiaraEnabledMock.mockReturnValueOnce(false);
     const res = await makeApp('viewer').request('/llm/preferences');
-    const json = await res.json() as { liaraGloballyEnabled: boolean };
+    const json = (await res.json()) as { liaraGloballyEnabled: boolean };
     expect(json.liaraGloballyEnabled).toBe(false);
   });
 });
@@ -242,28 +268,33 @@ describe('🚨 PUT /:provider — upsert', () => {
       body: JSON.stringify({ apiKey: 'sk-ant-real', defaultModel: 'claude-3-5' }),
     });
     expect(res.status).toBe(200);
-    expect(upsertMock).toHaveBeenCalledWith('tenant-A', 'anthropic', expect.objectContaining({
-      apiKey: 'sk-ant-real',
-      defaultModel: 'claude-3-5',
-      actorId: 'actor-1',
-    }));
+    expect(upsertMock).toHaveBeenCalledWith(
+      'tenant-A',
+      'anthropic',
+      expect.objectContaining({
+        apiKey: 'sk-ant-real',
+        defaultModel: 'claude-3-5',
+        actorId: 'actor-1',
+      }),
+    );
   });
 
   describe('🔴 SSRF — baseUrl custom (BYOK Ollama/proxy) bloccato verso host interni', () => {
     const INTERNAL = [
-      'http://172.20.0.1:6379',                    // Redis/Dragonfly su flowforge-net
-      'http://172.20.0.1:3006',                    // portal gateway interno
-      'http://127.0.0.1:8080',                     // loopback runtime
-      'http://localhost:11434',                    // Ollama-locale: non ha senso nel cloud
-      'http://169.254.169.254/latest/meta-data/',  // cloud metadata (IMDS)
-      'http://10.0.0.5',                           // RFC1918
-      'http://192.168.1.1',                        // RFC1918
-      'http://[::1]:11434',                        // IPv6 loopback
-      'ftp://evil.example.com',                    // scheme non-http
+      'http://172.20.0.1:6379', // Redis/Dragonfly su flowforge-net
+      'http://172.20.0.1:3006', // portal gateway interno
+      'http://127.0.0.1:8080', // loopback runtime
+      'http://localhost:11434', // Ollama-locale: non ha senso nel cloud
+      'http://169.254.169.254/latest/meta-data/', // cloud metadata (IMDS)
+      'http://10.0.0.5', // RFC1918
+      'http://192.168.1.1', // RFC1918
+      'http://[::1]:11434', // IPv6 loopback
+      'ftp://evil.example.com', // scheme non-http
     ];
     it.each(INTERNAL)('🔴 baseUrl bloccato "%s" → 400, upsert NON chiamato', async (baseUrl) => {
       const res = await makeApp('editor').request('/llm/ollama', {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ apiKey: '', baseUrl }),
       });
       expect(res.status).toBe(400);
@@ -272,16 +303,22 @@ describe('🚨 PUT /:provider — upsert', () => {
 
     it('🟢 baseUrl PUBBLICO https → 200, upsert riceve il baseUrl', async () => {
       const res = await makeApp('editor').request('/llm/ollama', {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ apiKey: '', baseUrl: 'https://ollama.example.com' }),
       });
       expect(res.status).toBe(200);
-      expect(upsertMock).toHaveBeenCalledWith('tenant-A', 'ollama', expect.objectContaining({ baseUrl: 'https://ollama.example.com' }));
+      expect(upsertMock).toHaveBeenCalledWith(
+        'tenant-A',
+        'ollama',
+        expect.objectContaining({ baseUrl: 'https://ollama.example.com' }),
+      );
     });
 
     it('🟢 baseUrl vuoto → 200 (nessun endpoint custom, provider a endpoint fisso)', async () => {
       const res = await makeApp('editor').request('/llm/anthropic', {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ apiKey: 'sk-ant', baseUrl: '' }),
       });
       expect(res.status).toBe(200);
@@ -295,7 +332,7 @@ describe('🚨 PUT /:provider — upsert', () => {
       body: JSON.stringify({ apiKey: 'k' }),
     });
     expect(res.status).toBe(400);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toMatch(/Supportati: anthropic, openai/u);
   });
 
@@ -314,9 +351,13 @@ describe('🚨 PUT /:provider — upsert', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ apiKey: 'k', baseUrl: 'https://openrouter.ai/api' }),
     });
-    expect(upsertMock).toHaveBeenCalledWith('tenant-A', 'openrouter', expect.objectContaining({
-      baseUrl: 'https://openrouter.ai/api',
-    }));
+    expect(upsertMock).toHaveBeenCalledWith(
+      'tenant-A',
+      'openrouter',
+      expect.objectContaining({
+        baseUrl: 'https://openrouter.ai/api',
+      }),
+    );
   });
 
   it('🚨 baseUrl non-URL → 400', async () => {
@@ -336,9 +377,13 @@ describe('🚨 PUT /:provider — upsert', () => {
     });
     expect(res.status).toBe(200);
     // baseUrl='' NON propagato a service (filtered)
-    expect(upsertMock).toHaveBeenCalledWith('tenant-A', 'anthropic', expect.not.objectContaining({
-      baseUrl: '',
-    }));
+    expect(upsertMock).toHaveBeenCalledWith(
+      'tenant-A',
+      'anthropic',
+      expect.not.objectContaining({
+        baseUrl: '',
+      }),
+    );
   });
 
   it('🚨 defaultModel empty/whitespace NON propagato', async () => {
@@ -347,20 +392,26 @@ describe('🚨 PUT /:provider — upsert', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ apiKey: 'k', defaultModel: '   ' }),
     });
-    expect(upsertMock).toHaveBeenCalledWith('tenant-A', 'anthropic', expect.not.objectContaining({
-      defaultModel: expect.anything(),
-    }));
+    expect(upsertMock).toHaveBeenCalledWith(
+      'tenant-A',
+      'anthropic',
+      expect.not.objectContaining({
+        defaultModel: expect.anything(),
+      }),
+    );
   });
 
   it('🚨 service throw → 400 con err message', async () => {
-    upsertMock.mockImplementationOnce(() => { throw new Error('vault encrypt failed'); });
+    upsertMock.mockImplementationOnce(() => {
+      throw new Error('vault encrypt failed');
+    });
     const res = await makeApp('editor').request('/llm/anthropic', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ apiKey: 'k' }),
     });
     expect(res.status).toBe(400);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toBe('vault encrypt failed');
   });
 });
@@ -381,7 +432,7 @@ describe('🚨 DELETE /:provider', () => {
   it('🚨 SECURITY: Liara NON eliminabile → 400', async () => {
     const res = await makeApp('editor').request('/llm/liara', { method: 'DELETE' });
     expect(res.status).toBe(400);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toMatch(/Liara.*non eliminabile/iu);
     expect(removeMock).not.toHaveBeenCalled();
   });
@@ -421,7 +472,7 @@ describe('🚨 POST /:provider/test', () => {
     dispatchLLMForTestMock.mockResolvedValueOnce('x'.repeat(500));
     const res = await makeApp('editor').request('/llm/anthropic/test', { method: 'POST' });
     expect(res.status).toBe(200);
-    const json = await res.json() as { ok: boolean; durationMs: number; sample: string };
+    const json = (await res.json()) as { ok: boolean; durationMs: number; sample: string };
     expect(json.ok).toBe(true);
     expect(json.durationMs).toBeGreaterThanOrEqual(0);
     expect(json.sample).toHaveLength(200); // truncated
@@ -432,7 +483,7 @@ describe('🚨 POST /:provider/test', () => {
     dispatchLLMForTestMock.mockRejectedValueOnce(new Error('401 Unauthorized'));
     const res = await makeApp('editor').request('/llm/anthropic/test', { method: 'POST' });
     expect(res.status).toBe(502);
-    const json = await res.json() as { ok: boolean; error: string };
+    const json = (await res.json()) as { ok: boolean; error: string };
     expect(json.ok).toBe(false);
     expect(json.error).toBe('401 Unauthorized');
     expect(loggerMock.warn).toHaveBeenCalled();
@@ -442,7 +493,7 @@ describe('🚨 POST /:provider/test', () => {
     getMock.mockReturnValue({ provider: 'anthropic', apiKey: 'sk' });
     dispatchLLMForTestMock.mockRejectedValueOnce('plain-string-fail');
     const res = await makeApp('editor').request('/llm/anthropic/test', { method: 'POST' });
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toBe('plain-string-fail');
   });
 });

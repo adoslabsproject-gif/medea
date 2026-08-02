@@ -8,9 +8,9 @@ import type { PaginationStrategy, PaginationContext, PaginationState } from './s
 import { pickByPath } from './strategy.js';
 
 export interface PageNumberOptions {
-  pageParam?: string;       // default 'page'
-  limitParam?: string;      // default 'limit'
-  startPage?: number;       // default 1
+  pageParam?: string; // default 'page'
+  limitParam?: string; // default 'limit'
+  startPage?: number; // default 1
 }
 
 export class PageNumberStrategy implements PaginationStrategy {

@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { hostOf, getHostBreaker, executeWithHostBreaker, clearBreakerRegistry, listBreakers } from './host-circuit-breaker.js';
+import {
+  hostOf,
+  getHostBreaker,
+  executeWithHostBreaker,
+  clearBreakerRegistry,
+  listBreakers,
+} from './host-circuit-breaker.js';
 import { CircuitOpenError } from './node-error.js';
 
 describe('host-circuit-breaker', () => {
@@ -61,7 +67,9 @@ describe('host-circuit-breaker', () => {
       // 5 default failures → open
       for (let i = 0; i < 5; i += 1) {
         await expect(
-          executeWithHostBreaker(url, async () => { throw new Error('flaky'); }),
+          executeWithHostBreaker(url, async () => {
+            throw new Error('flaky');
+          }),
         ).rejects.toThrow();
       }
       // 6th call should fast-fail with our NodeCircuitOpenError
@@ -73,7 +81,11 @@ describe('host-circuit-breaker', () => {
     it('CircuitOpenError carries breakerName + nextProbeAt', async () => {
       const url = 'https://flaky2.com/x';
       for (let i = 0; i < 5; i += 1) {
-        await expect(executeWithHostBreaker(url, async () => { throw new Error('e'); })).rejects.toThrow();
+        await expect(
+          executeWithHostBreaker(url, async () => {
+            throw new Error('e');
+          }),
+        ).rejects.toThrow();
       }
       try {
         await executeWithHostBreaker(url, async () => 'x');
@@ -91,10 +103,16 @@ describe('host-circuit-breaker', () => {
       const goodUrl = 'https://good.com/x';
       const badUrl = 'https://bad.com/x';
       for (let i = 0; i < 5; i += 1) {
-        await expect(executeWithHostBreaker(badUrl, async () => { throw new Error('e'); })).rejects.toThrow();
+        await expect(
+          executeWithHostBreaker(badUrl, async () => {
+            throw new Error('e');
+          }),
+        ).rejects.toThrow();
       }
       // bad opens, good is unaffected
-      await expect(executeWithHostBreaker(badUrl, async () => 'ok')).rejects.toBeInstanceOf(CircuitOpenError);
+      await expect(executeWithHostBreaker(badUrl, async () => 'ok')).rejects.toBeInstanceOf(
+        CircuitOpenError,
+      );
       const r = await executeWithHostBreaker(goodUrl, async () => 'still-works');
       expect(r).toBe('still-works');
     });

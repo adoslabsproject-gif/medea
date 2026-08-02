@@ -12,7 +12,11 @@
 
 import type { Context } from 'hono';
 import { Hono } from 'hono';
-import { recordOpen, recordClick, TRANSPARENT_GIF_BYTES } from '@/services/email-tracking.service.js';
+import {
+  recordOpen,
+  recordClick,
+  TRANSPARENT_GIF_BYTES,
+} from '@/services/email-tracking.service.js';
 import { loadConfig } from '@/config.js';
 import { logger } from '@/lib/logger.js';
 
@@ -63,7 +67,10 @@ export function createEmailTrackingRoutes(): Hono {
         secret,
       });
       if (!res.ok) {
-        logger.warn({ reason: res.reason, component: 'email-tracking-open' }, 'open: token rejected');
+        logger.warn(
+          { reason: res.reason, component: 'email-tracking-open' },
+          'open: token rejected',
+        );
       }
     }
     for (const [k, v] of Object.entries(PIXEL_CACHE_HEADERS)) c.header(k, v);
@@ -101,7 +108,10 @@ export function createEmailTrackingRoutes(): Hono {
       secret,
     });
     if (!res.ok) {
-      logger.warn({ reason: res.reason, component: 'email-tracking-click' }, 'click: token rejected');
+      logger.warn(
+        { reason: res.reason, component: 'email-tracking-click' },
+        'click: token rejected',
+      );
       return c.html(invalidLinkPage('Link scaduto o invalido.'), 400);
     }
     return c.redirect(destUrl, 302);

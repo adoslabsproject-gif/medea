@@ -23,7 +23,9 @@ export interface RecreateOptions {
 /** Statement del table-recreate, in ordine, da eseguire in UNA transazione. */
 export function recreateTableStatements(opts: RecreateOptions): string[] {
   if (opts.columnsDdl.length === 0) {
-    throw new Error(`Table-recreate di "${opts.tableName}": nessuna colonna — rifiutato (eviterebbe una tabella vuota e perdita dati).`);
+    throw new Error(
+      `Table-recreate di "${opts.tableName}": nessuna colonna — rifiutato (eviterebbe una tabella vuota e perdita dati).`,
+    );
   }
   const tmp = `_ff_recreate_${opts.tableName}`;
   const fromCols = opts.copyColumns.map((c) => opts.quote(c.from)).join(', ');

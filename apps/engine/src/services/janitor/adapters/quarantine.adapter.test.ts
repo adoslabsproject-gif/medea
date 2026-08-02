@@ -31,24 +31,31 @@ vi.mock('@/lib/logger.js');
 const SYS = 'system' as DataSourceRef;
 const TENANT = 'tenant:t1:orders' as DataSourceRef;
 
-function makeAdapter(over: Partial<{
-  engine: string;
-  query: (...a: unknown[]) => unknown;
-  insert: (...a: unknown[]) => unknown;
-  delete: (...a: unknown[]) => unknown;
-  executeRaw: ((sql: string) => unknown) | undefined;
-  applyMigration: (...a: unknown[]) => unknown;
-}> = {}): Record<string, unknown> {
+function makeAdapter(
+  over: Partial<{
+    engine: string;
+    query: (...a: unknown[]) => unknown;
+    insert: (...a: unknown[]) => unknown;
+    delete: (...a: unknown[]) => unknown;
+    executeRaw: ((sql: string) => unknown) | undefined;
+    applyMigration: (...a: unknown[]) => unknown;
+  }> = {},
+): Record<string, unknown> {
   return {
     engine: over.engine ?? 'sqlite',
     query: vi.fn(over.query ?? (async () => ({ rows: [] }))),
     insert: vi.fn(over.insert ?? (async () => ({}))),
     delete: vi.fn(over.delete ?? (async () => ({ affectedRows: 1 }))),
-    executeRaw: 'executeRaw' in over
-      ? (over.executeRaw === undefined ? undefined : vi.fn(over.executeRaw))
-      : vi.fn(async () => ({ rows: [] })),
+    executeRaw:
+      'executeRaw' in over
+        ? over.executeRaw === undefined
+          ? undefined
+          : vi.fn(over.executeRaw)
+        : vi.fn(async () => ({ rows: [] })),
     applyMigration: vi.fn(over.applyMigration ?? (async () => ({ sql: '', affectedTables: [] }))),
-    connect: vi.fn(async () => { /* noop */ }),
+    connect: vi.fn(async () => {
+      /* noop */
+    }),
     introspect: vi.fn(async () => []),
     update: vi.fn(async () => ({})),
     previewMigration: vi.fn(async () => ''),
@@ -90,12 +97,15 @@ describe('ensureSchema — caching + engine guard', () => {
 
   it('schema assente (query throw "no such table") → applyMigration chiamato', async () => {
     const adapter = makeAdapter({
-      query: async () => { throw new Error('no such table'); },
+      query: async () => {
+        throw new Error('no such table');
+      },
     });
     const gw = new QuarantineGatewayAdapter(makeResolver(adapter) as never);
     await gw.ensureSchema(SYS);
     expect(adapter.applyMigration).toHaveBeenCalledTimes(1);
-    const actions = (adapter.applyMigration as unknown as { mock: { calls: unknown[][] } }).mock.calls[0]![0] as Record<string, unknown>[];
+    const actions = (adapter.applyMigration as unknown as { mock: { calls: unknown[][] } }).mock
+      .calls[0]![0] as Record<string, unknown>[];
     expect(actions[0]!.kind).toBe('create_table');
     const indexes = actions.filter((a) => a.kind === 'add_index');
     expect(indexes).toHaveLength(5); // table + rule + severity + tenant + UNIQUE dedup
@@ -107,7 +117,10 @@ describe('ensureSchema — caching + engine guard', () => {
   it('cache: seconda chiamata stesso ref → adapter NON re-resolve schema check', async () => {
     let queryCalls = 0;
     const adapter = makeAdapter({
-      query: async () => { queryCalls += 1; return { rows: [] }; },
+      query: async () => {
+        queryCalls += 1;
+        return { rows: [] };
+      },
     });
     const gw = new QuarantineGatewayAdapter(makeResolver(adapter) as never);
     await gw.ensureSchema(SYS);
@@ -118,7 +131,10 @@ describe('ensureSchema — caching + engine guard', () => {
   it('cache scoped per ref: SYS poi TENANT → 2 query check', async () => {
     let queryCalls = 0;
     const adapter = makeAdapter({
-      query: async () => { queryCalls += 1; return { rows: [] }; },
+      query: async () => {
+        queryCalls += 1;
+        return { rows: [] };
+      },
     });
     const gw = new QuarantineGatewayAdapter(makeResolver(adapter) as never);
     await gw.ensureSchema(SYS);
@@ -142,13 +158,17 @@ describe('quarantineRow — happy path + idempotency', () => {
     });
     const gw = new QuarantineGatewayAdapter(makeResolver(adapter) as never);
     await gw.quarantineRow({
-      originalTable: 'users', pkColumn: 'id',
-      row: sampleRow, ruleId: 'janitor.test.fk',
-      dataSourceRef: SYS, triggeredBy: 'cron',
+      originalTable: 'users',
+      pkColumn: 'id',
+      row: sampleRow,
+      ruleId: 'janitor.test.fk',
+      dataSourceRef: SYS,
+      triggeredBy: 'cron',
     });
     expect(adapter.insert).toHaveBeenCalledTimes(1);
     expect(adapter.delete).toHaveBeenCalledTimes(1);
-    const insertArgs = (adapter.insert as unknown as { mock: { calls: unknown[][] } }).mock.calls[0]!;
+    const insertArgs = (adapter.insert as unknown as { mock: { calls: unknown[][] } }).mock
+      .calls[0]!;
     expect(insertArgs[0]).toBe('quarantined_rows');
     const payload = insertArgs[1] as Record<string, unknown>;
     expect(payload.original_id).toBe('row-42');
@@ -165,47 +185,69 @@ describe('quarantineRow — happy path + idempotency', () => {
     const adapter = makeAdapter({ query: async () => ({ rows: [] }) });
     const gw = new QuarantineGatewayAdapter(makeResolver(adapter) as never);
     const noTenant: DetectedRow = Object.freeze({
-      id: 'x', reason: 'r', severity: 'warning', raw: Object.freeze({}),
+      id: 'x',
+      reason: 'r',
+      severity: 'warning',
+      raw: Object.freeze({}),
     });
     await gw.quarantineRow({
-      originalTable: 'logs', pkColumn: 'id',
-      row: noTenant, ruleId: 'janitor.test.r',
-      dataSourceRef: SYS, triggeredBy: 'cron',
+      originalTable: 'logs',
+      pkColumn: 'id',
+      row: noTenant,
+      ruleId: 'janitor.test.r',
+      dataSourceRef: SYS,
+      triggeredBy: 'cron',
     });
-    const payload = (adapter.insert as unknown as { mock: { calls: unknown[][] } }).mock.calls[0]![1] as Record<string, unknown>;
+    const payload = (adapter.insert as unknown as { mock: { calls: unknown[][] } }).mock
+      .calls[0]![1] as Record<string, unknown>;
     expect(payload.tenant_id).toBeNull();
   });
 
   it('🚨 SQL injection: originalTable con apostrofo → throw assertSafeIdentifier', async () => {
     const adapter = makeAdapter({ query: async () => ({ rows: [] }) });
     const gw = new QuarantineGatewayAdapter(makeResolver(adapter) as never);
-    await expect(gw.quarantineRow({
-      originalTable: "users'; DROP TABLE foo;--", pkColumn: 'id',
-      row: sampleRow, ruleId: 'r',
-      dataSourceRef: SYS, triggeredBy: 'cron',
-    })).rejects.toThrow(/non sicuro/u);
+    await expect(
+      gw.quarantineRow({
+        originalTable: "users'; DROP TABLE foo;--",
+        pkColumn: 'id',
+        row: sampleRow,
+        ruleId: 'r',
+        dataSourceRef: SYS,
+        triggeredBy: 'cron',
+      }),
+    ).rejects.toThrow(/non sicuro/u);
   });
 
   it('🚨 pkColumn invalido → throw', async () => {
     const adapter = makeAdapter({ query: async () => ({ rows: [] }) });
     const gw = new QuarantineGatewayAdapter(makeResolver(adapter) as never);
-    await expect(gw.quarantineRow({
-      originalTable: 'users', pkColumn: 'id; DROP',
-      row: sampleRow, ruleId: 'r',
-      dataSourceRef: SYS, triggeredBy: 'cron',
-    })).rejects.toThrow(/non sicuro/u);
+    await expect(
+      gw.quarantineRow({
+        originalTable: 'users',
+        pkColumn: 'id; DROP',
+        row: sampleRow,
+        ruleId: 'r',
+        dataSourceRef: SYS,
+        triggeredBy: 'cron',
+      }),
+    ).rejects.toThrow(/non sicuro/u);
   });
 
   it('🚨 INSERT UNIQUE conflict (crash recovery) → swallow + proceed con DELETE', async () => {
     const adapter = makeAdapter({
       query: async () => ({ rows: [] }),
-      insert: async () => { throw new Error('UNIQUE constraint failed: quarantined_rows.dedup'); },
+      insert: async () => {
+        throw new Error('UNIQUE constraint failed: quarantined_rows.dedup');
+      },
     });
     const gw = new QuarantineGatewayAdapter(makeResolver(adapter) as never);
     await gw.quarantineRow({
-      originalTable: 'users', pkColumn: 'id',
-      row: sampleRow, ruleId: 'r',
-      dataSourceRef: SYS, triggeredBy: 'cron',
+      originalTable: 'users',
+      pkColumn: 'id',
+      row: sampleRow,
+      ruleId: 'r',
+      dataSourceRef: SYS,
+      triggeredBy: 'cron',
     });
     expect(adapter.delete).toHaveBeenCalledTimes(1);
   });
@@ -213,12 +255,18 @@ describe('quarantineRow — happy path + idempotency', () => {
   it('🚨 INSERT errore "duplicate" → swallow (Postgres style)', async () => {
     const adapter = makeAdapter({
       query: async () => ({ rows: [] }),
-      insert: async () => { throw new Error('duplicate key violates'); },
+      insert: async () => {
+        throw new Error('duplicate key violates');
+      },
     });
     const gw = new QuarantineGatewayAdapter(makeResolver(adapter) as never);
     await gw.quarantineRow({
-      originalTable: 'u', pkColumn: 'id',
-      row: sampleRow, ruleId: 'r', dataSourceRef: SYS, triggeredBy: 't',
+      originalTable: 'u',
+      pkColumn: 'id',
+      row: sampleRow,
+      ruleId: 'r',
+      dataSourceRef: SYS,
+      triggeredBy: 't',
     });
     expect(adapter.delete).toHaveBeenCalled();
   });
@@ -226,13 +274,21 @@ describe('quarantineRow — happy path + idempotency', () => {
   it('INSERT errore NON-UNIQUE → throw', async () => {
     const adapter = makeAdapter({
       query: async () => ({ rows: [] }),
-      insert: async () => { throw new Error('connection lost'); },
+      insert: async () => {
+        throw new Error('connection lost');
+      },
     });
     const gw = new QuarantineGatewayAdapter(makeResolver(adapter) as never);
-    await expect(gw.quarantineRow({
-      originalTable: 'u', pkColumn: 'id',
-      row: sampleRow, ruleId: 'r', dataSourceRef: SYS, triggeredBy: 't',
-    })).rejects.toThrow(/connection lost/u);
+    await expect(
+      gw.quarantineRow({
+        originalTable: 'u',
+        pkColumn: 'id',
+        row: sampleRow,
+        ruleId: 'r',
+        dataSourceRef: SYS,
+        triggeredBy: 't',
+      }),
+    ).rejects.toThrow(/connection lost/u);
     expect(adapter.delete).not.toHaveBeenCalled();
   });
 });
@@ -257,14 +313,19 @@ describe('list — filter + limit cap', () => {
     let capturedFilters: { column: string; op: string; value: unknown }[] = [];
     const adapter = makeAdapter({
       query: async (spec: unknown) => {
-        capturedFilters = (spec as { filters: { column: string; op: string; value: unknown }[] }).filters;
+        capturedFilters = (spec as { filters: { column: string; op: string; value: unknown }[] })
+          .filters;
         return { rows: [] };
       },
     });
     const gw = new QuarantineGatewayAdapter(makeResolver(adapter) as never);
     await gw.list({
       dataSourceRef: SYS,
-      table: 'orders', tenantId: 't1', ruleId: 'r-1', severity: 'critical', cursor: 100,
+      table: 'orders',
+      tenantId: 't1',
+      ruleId: 'r-1',
+      severity: 'critical',
+      cursor: 100,
     });
     const cols = capturedFilters.map((f) => f.column);
     expect(cols).toContain('original_table');
@@ -305,11 +366,21 @@ describe('list — filter + limit cap', () => {
   it('rows mapped a QuarantineRecord shape', async () => {
     const adapter = makeAdapter({
       query: async () => ({
-        rows: [{
-          id: 5, original_id: 'x', original_table: 't', tenant_id: 'tA',
-          data_source_ref: SYS, quarantined_at: '2026', quarantined_by: 'cron',
-          rule_id: 'r', severity: 'warning', reason: 'why', raw_json: '{}',
-        }],
+        rows: [
+          {
+            id: 5,
+            original_id: 'x',
+            original_table: 't',
+            tenant_id: 'tA',
+            data_source_ref: SYS,
+            quarantined_at: '2026',
+            quarantined_by: 'cron',
+            rule_id: 'r',
+            severity: 'warning',
+            reason: 'why',
+            raw_json: '{}',
+          },
+        ],
       }),
     });
     const gw = new QuarantineGatewayAdapter(makeResolver(adapter) as never);
@@ -325,7 +396,12 @@ describe('stats', () => {
     const adapter = makeAdapter({ engine: 'mongodb' });
     const gw = new QuarantineGatewayAdapter(makeResolver(adapter) as never);
     const s = await gw.stats(SYS);
-    expect(s).toEqual({ total: 0, byTable: {}, byRule: {}, bySeverity: { critical: 0, warning: 0 } });
+    expect(s).toEqual({
+      total: 0,
+      byTable: {},
+      byRule: {},
+      bySeverity: { critical: 0, warning: 0 },
+    });
   });
 
   it('executeRaw assente → throw', async () => {
@@ -341,13 +417,32 @@ describe('stats', () => {
     let callIdx = 0;
     const responses = [
       { rows: [{ c: 10 }] }, // total
-      { rows: [{ k: 'users', c: 7 }, { k: 'orders', c: 3 }] }, // byTable
-      { rows: [{ k: 'r1', c: 5 }, { k: 'r2', c: 5 }] }, // byRule
-      { rows: [{ k: 'critical', c: 6 }, { k: 'warning', c: 4 }] }, // bySeverity
+      {
+        rows: [
+          { k: 'users', c: 7 },
+          { k: 'orders', c: 3 },
+        ],
+      }, // byTable
+      {
+        rows: [
+          { k: 'r1', c: 5 },
+          { k: 'r2', c: 5 },
+        ],
+      }, // byRule
+      {
+        rows: [
+          { k: 'critical', c: 6 },
+          { k: 'warning', c: 4 },
+        ],
+      }, // bySeverity
     ];
     const adapter = makeAdapter({
       query: async () => ({ rows: [] }),
-      executeRaw: async () => { const r = responses[callIdx]; callIdx += 1; return r; },
+      executeRaw: async () => {
+        const r = responses[callIdx];
+        callIdx += 1;
+        return r;
+      },
     });
     const gw = new QuarantineGatewayAdapter(makeResolver(adapter) as never);
     const s = await gw.stats(SYS);
@@ -368,9 +463,17 @@ describe('stats', () => {
 
 describe('restore', () => {
   const quarantineRow = {
-    id: 42, original_id: 'r1', original_table: 'users', tenant_id: 't1',
-    data_source_ref: SYS, quarantined_at: '2026', quarantined_by: 'cron',
-    rule_id: 'r', severity: 'warning', reason: 'why', raw_json: '{"id":"r1","name":"X"}',
+    id: 42,
+    original_id: 'r1',
+    original_table: 'users',
+    tenant_id: 't1',
+    data_source_ref: SYS,
+    quarantined_at: '2026',
+    quarantined_by: 'cron',
+    rule_id: 'r',
+    severity: 'warning',
+    reason: 'why',
+    raw_json: '{"id":"r1","name":"X"}',
   };
 
   it('happy path: INSERT su original_table + DELETE da quarantine', async () => {
@@ -394,7 +497,9 @@ describe('restore', () => {
   it('🚨 INSERT FK fail → throw "resta in quarantine" + NO delete', async () => {
     const adapter = makeAdapter({
       query: async () => ({ rows: [quarantineRow] }),
-      insert: async () => { throw new Error('FK violation'); },
+      insert: async () => {
+        throw new Error('FK violation');
+      },
     });
     const gw = new QuarantineGatewayAdapter(makeResolver(adapter) as never);
     await expect(gw.restore(42, SYS)).rejects.toThrow(/resta in quarantine/u);

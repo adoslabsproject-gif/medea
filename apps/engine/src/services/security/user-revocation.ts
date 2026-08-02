@@ -46,9 +46,9 @@ export interface RevokeWorkspaceUserResult {
  */
 export function revokeWorkspaceUser(input: RevokeWorkspaceUserInput): RevokeWorkspaceUserResult {
   const { sqlite } = getDatabase();
-  const row = sqlite
-    .prepare('SELECT id FROM users WHERE email = ? LIMIT 1')
-    .get(input.email) as { id: string } | undefined;
+  const row = sqlite.prepare('SELECT id FROM users WHERE email = ? LIMIT 1').get(input.email) as
+    | { id: string }
+    | undefined;
 
   if (!row) {
     return { found: false, sessionsRevoked: false, piiScrubbed: false };
@@ -64,11 +64,16 @@ export function revokeWorkspaceUser(input: RevokeWorkspaceUserInput): RevokeWork
     // impedisce che un re-SSO riattivi l'account.
     const anonEmail = `revoked-${row.id}@anonymized.flowforge`;
     sqlite
-      .prepare('UPDATE users SET email = ?, display_name = ?, enabled = 0, updated_at = ? WHERE id = ?')
+      .prepare(
+        'UPDATE users SET email = ?, display_name = ?, enabled = 0, updated_at = ? WHERE id = ?',
+      )
       .run(anonEmail, 'Deleted User', new Date().toISOString(), row.id);
     piiScrubbed = true;
   }
 
-  log.info?.({ userId: row.id, scrubbed: piiScrubbed }, '[SECURITY] workspace user revoked (portal→runtime, F3)');
+  log.info?.(
+    { userId: row.id, scrubbed: piiScrubbed },
+    '[SECURITY] workspace user revoked (portal→runtime, F3)',
+  );
   return { found: true, sessionsRevoked: true, piiScrubbed };
 }

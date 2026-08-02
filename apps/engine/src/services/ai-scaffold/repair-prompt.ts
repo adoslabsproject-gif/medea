@@ -11,7 +11,10 @@
  *
  * @module services/ai-scaffold/repair-prompt
  */
-import { describeViolation, type CatalogViolation } from '@/services/ai-scaffold/catalog-validator.js';
+import {
+  describeViolation,
+  type CatalogViolation,
+} from '@/services/ai-scaffold/catalog-validator.js';
 import type { AutoConfigNode } from '@/services/ai-scaffold/semantic-autoconfig.js';
 
 export interface RepairPromptInput {
@@ -101,7 +104,9 @@ export function buildRepairPrompt(input: RepairPromptInput): RepairPrompt {
     'Nodi da riparare:',
     '',
     blocks.join('\n\n'),
-  ].filter((l) => l !== null).join('\n');
+  ]
+    .filter((l) => l !== null)
+    .join('\n');
 
   return { system: SYSTEM, user, schema: REPAIR_RESPONSE_SCHEMA };
 }

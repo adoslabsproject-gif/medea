@@ -20,9 +20,20 @@ import type { NodeCatalogEntry } from '@/services/ai-scaffold/node-catalog.js';
 
 /** Tipi di config il cui VALORE è una stringa "semplice" (testo/segreto/picker). */
 const STRING_VALUE_TYPES = new Set<string>([
-  'text', 'textarea', 'secret', 'expression', 'code', 'rich-text',
-  'file-picker', 'directory-picker', 'timezone-picker', 'cron-builder',
-  'email-account-picker', 'db-picker', 'db-table-picker', 'db-collection-picker',
+  'text',
+  'textarea',
+  'secret',
+  'expression',
+  'code',
+  'rich-text',
+  'file-picker',
+  'directory-picker',
+  'timezone-picker',
+  'cron-builder',
+  'email-account-picker',
+  'db-picker',
+  'db-table-picker',
+  'db-collection-picker',
   'workflow-picker',
 ]);
 
@@ -30,8 +41,16 @@ const STRING_VALUE_TYPES = new Set<string>([
  *  over-vincolo della forma annidata: li lasciamo liberi, il vincolo forte è
  *  sulle CHIAVI e sui select, non sulla forma interna di una tabella-filtri). */
 const STRUCTURED_VALUE_TYPES = new Set<string>([
-  'json', 'key-value', 'chip-list', 'form-fields', 'filter-rows', 'sort-rows',
-  'invoice-lines', 'attachments', 'switch-cases', 'condition-rules',
+  'json',
+  'key-value',
+  'chip-list',
+  'form-fields',
+  'filter-rows',
+  'sort-rows',
+  'invoice-lines',
+  'attachments',
+  'switch-cases',
+  'condition-rules',
 ]);
 
 /** Categoria del valore di un config field, ai fini dello schema/validazione. */
@@ -88,7 +107,8 @@ function fieldToSpec(f: CatalogField): ConfigKeySpec {
     secret: isSecret,
   };
   if (spec.kind === 'enum' && f.options && f.options.length > 0) spec.options = [...f.options];
-  if (typeof f.defaultValue === 'string' && f.defaultValue.length > 0) spec.defaultValue = f.defaultValue;
+  if (typeof f.defaultValue === 'string' && f.defaultValue.length > 0)
+    spec.defaultValue = f.defaultValue;
   return spec;
 }
 

@@ -9,23 +9,30 @@ import { emitCommunityNodesChanged, onCommunityNodesChanged } from './community-
 
 describe('community-nodes-events — pub/sub', () => {
   it('emit chiama tutti i listener registrati', () => {
-    const a = vi.fn(); const b = vi.fn();
+    const a = vi.fn();
+    const b = vi.fn();
     const offA = onCommunityNodesChanged(a);
     const offB = onCommunityNodesChanged(b);
     emitCommunityNodesChanged();
     expect(a).toHaveBeenCalledTimes(1);
     expect(b).toHaveBeenCalledTimes(1);
-    offA(); offB();
+    offA();
+    offB();
   });
 
   it('un listener che LANCIA non impedisce agli altri di ricevere (swallow)', () => {
-    const boom = vi.fn(() => { throw new Error('listener rotto'); });
+    const boom = vi.fn(() => {
+      throw new Error('listener rotto');
+    });
     const ok = vi.fn();
     const off1 = onCommunityNodesChanged(boom);
     const off2 = onCommunityNodesChanged(ok);
-    expect(() => { emitCommunityNodesChanged(); }).not.toThrow();
+    expect(() => {
+      emitCommunityNodesChanged();
+    }).not.toThrow();
     expect(ok).toHaveBeenCalledTimes(1); // ricevuto nonostante boom
-    off1(); off2();
+    off1();
+    off2();
   });
 
   it('unsubscribe rimuove il listener (non più chiamato dopo off())', () => {
@@ -39,6 +46,8 @@ describe('community-nodes-events — pub/sub', () => {
   it('doppio unsubscribe non lancia (idempotente)', () => {
     const off = onCommunityNodesChanged(vi.fn());
     off();
-    expect(() => { off(); }).not.toThrow();
+    expect(() => {
+      off();
+    }).not.toThrow();
   });
 });

@@ -19,7 +19,9 @@ const BYTES_PER_GB = 1024 ** 3;
 function countRows(table: 'workflows' | 'runs'): number {
   try {
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as { n: number } | undefined;
+    const row = sqlite.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as
+      | { n: number }
+      | undefined;
     return row?.n ?? 0;
   } catch (e) {
     logger.warn({ err: e, table }, '[tenant-health] count failed');

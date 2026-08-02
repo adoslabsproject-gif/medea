@@ -103,7 +103,14 @@ function parseDate(v: unknown): Date {
   return new Date();
 }
 
-interface Duration { years?: number; months?: number; days?: number; hours?: number; minutes?: number; seconds?: number }
+interface Duration {
+  years?: number;
+  months?: number;
+  days?: number;
+  hours?: number;
+  minutes?: number;
+  seconds?: number;
+}
 
 function shift(v: unknown, dur: Duration, sign: 1 | -1): string {
   const d = parseDate(v);
@@ -118,7 +125,11 @@ function shift(v: unknown, dur: Duration, sign: 1 | -1): string {
 
 type DateUnit = 'days' | 'hours' | 'minutes' | 'seconds' | 'weeks';
 const UNIT_MS: Record<DateUnit, number> = {
-  seconds: 1000, minutes: 60_000, hours: 3_600_000, days: 86_400_000, weeks: 604_800_000,
+  seconds: 1000,
+  minutes: 60_000,
+  hours: 3_600_000,
+  days: 86_400_000,
+  weeks: 604_800_000,
 };
 
 export interface DateHelper {
@@ -145,8 +156,12 @@ const dateHelper: DateHelper = {
   format: (date, pattern) => {
     const d = parseDate(date);
     const map: Record<string, string> = {
-      YYYY: String(d.getUTCFullYear()), MM: PAD(d.getUTCMonth() + 1), DD: PAD(d.getUTCDate()),
-      HH: PAD(d.getUTCHours()), mm: PAD(d.getUTCMinutes()), ss: PAD(d.getUTCSeconds()),
+      YYYY: String(d.getUTCFullYear()),
+      MM: PAD(d.getUTCMonth() + 1),
+      DD: PAD(d.getUTCDate()),
+      HH: PAD(d.getUTCHours()),
+      mm: PAD(d.getUTCMinutes()),
+      ss: PAD(d.getUTCSeconds()),
     };
     return String(pattern).replace(/YYYY|MM|DD|HH|mm|ss/g, (t) => map[t] ?? t);
   },
@@ -154,7 +169,10 @@ const dateHelper: DateHelper = {
     const d = parseDate(date);
     d.setUTCHours(0, 0, 0, 0);
     if (unit === 'month') d.setUTCDate(1);
-    if (unit === 'year') { d.setUTCMonth(0); d.setUTCDate(1); }
+    if (unit === 'year') {
+      d.setUTCMonth(0);
+      d.setUTCDate(1);
+    }
     return d.toISOString();
   },
   isWeekend: (date) => {
@@ -236,23 +254,42 @@ export function buildExpressionHelpers(ctx: ExpressionContext): ExpressionHelper
     $isEmpty: isEmpty,
     $get: deepGet,
     // reduce, NON Math.min/max(...a): spread di array utente grande → RangeError stack.
-    $min: (arr) => { const a = asArray(arr).map(toNumber); return a.length ? a.reduce((m, x) => (x < m ? x : m), Infinity) : 0; },
-    $max: (arr) => { const a = asArray(arr).map(toNumber); return a.length ? a.reduce((m, x) => (x > m ? x : m), -Infinity) : 0; },
+    $min: (arr) => {
+      const a = asArray(arr).map(toNumber);
+      return a.length ? a.reduce((m, x) => (x < m ? x : m), Infinity) : 0;
+    },
+    $max: (arr) => {
+      const a = asArray(arr).map(toNumber);
+      return a.length ? a.reduce((m, x) => (x > m ? x : m), -Infinity) : 0;
+    },
     $sum: (arr) => asArray(arr).reduce<number>((s, x) => s + toNumber(x), 0),
-    $avg: (arr) => { const a = asArray(arr); return a.length ? a.reduce<number>((s, x) => s + toNumber(x), 0) / a.length : 0; },
+    $avg: (arr) => {
+      const a = asArray(arr);
+      return a.length ? a.reduce<number>((s, x) => s + toNumber(x), 0) / a.length : 0;
+    },
     $unique: (arr) => [...new Set(asArray(arr))],
     $flatten: (arr) => asArray(arr).flat(Infinity),
     $keys: (obj) => (obj && typeof obj === 'object' ? Object.keys(obj) : []),
-    $values: (obj) => (obj && typeof obj === "object" ? Object.values(obj as Record<string, unknown>) : []),
+    $values: (obj) =>
+      obj && typeof obj === 'object' ? Object.values(obj as Record<string, unknown>) : [],
     $number: toNumber,
-    $string: (val) => (val === null || val === undefined ? '' : typeof val === 'object' ? JSON.stringify(val) : coerceString(val)),
+    $string: (val) =>
+      val === null || val === undefined
+        ? ''
+        : typeof val === 'object'
+          ? JSON.stringify(val)
+          : coerceString(val),
     $date: dateHelper,
     // FASE-2: fail-soft come gli altri helper — query rotta → null, mai crash
     // del run per un typo in un'espressione di reporting.
     // FASE-2: fail-soft come gli altri helper — query rotta → null, mai crash
     // del run per un typo in un'espressione di reporting.
     $jmespath: (data, query) => {
-      try { return jmespath.search(data, String(query)) as unknown; } catch { return null; }
+      try {
+        return jmespath.search(data, String(query)) as unknown;
+      } catch {
+        return null;
+      }
     },
     DateTime,
     Duration: LuxonDuration,

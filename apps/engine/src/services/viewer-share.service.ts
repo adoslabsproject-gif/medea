@@ -73,14 +73,18 @@ export class ViewerShareService {
     return rows.map(rowToToken);
   }
 
-  async create(tenantId: string, opts: { name: string; expiresInDays?: number; createdBy?: string }): Promise<ViewerShareToken> {
+  async create(
+    tenantId: string,
+    opts: { name: string; expiresInDays?: number; createdBy?: string },
+  ): Promise<ViewerShareToken> {
     const { sqlite } = getDatabase();
     const id = nanoid();
     const token = crypto.randomBytes(32).toString('hex');
     const now = new Date().toISOString();
-    const expiresAt = opts.expiresInDays !== undefined
-      ? new Date(Date.now() + opts.expiresInDays * 24 * 60 * 60 * 1000).toISOString()
-      : null;
+    const expiresAt =
+      opts.expiresInDays !== undefined
+        ? new Date(Date.now() + opts.expiresInDays * 24 * 60 * 60 * 1000).toISOString()
+        : null;
 
     sqlite
       .prepare(
@@ -116,7 +120,9 @@ export class ViewerShareService {
     const { sqlite } = getDatabase();
     const now = new Date().toISOString();
     const info = sqlite
-      .prepare('UPDATE viewer_share_tokens SET revoked_at = ? WHERE id = ? AND tenant_id = ? AND revoked_at IS NULL')
+      .prepare(
+        'UPDATE viewer_share_tokens SET revoked_at = ? WHERE id = ? AND tenant_id = ? AND revoked_at IS NULL',
+      )
       .run(now, id, tenantId);
     if (info.changes > 0) {
       // #208 P0-9: await — audit durable.
@@ -146,7 +152,9 @@ export class ViewerShareService {
     if (row.expires_at && new Date(row.expires_at).getTime() < Date.now()) return null;
 
     sqlite
-      .prepare('UPDATE viewer_share_tokens SET access_count = access_count + 1, last_accessed_at = ? WHERE id = ?')
+      .prepare(
+        'UPDATE viewer_share_tokens SET access_count = access_count + 1, last_accessed_at = ? WHERE id = ?',
+      )
       .run(new Date().toISOString(), row.id);
 
     return { tenantId: row.tenant_id, tokenId: row.id };

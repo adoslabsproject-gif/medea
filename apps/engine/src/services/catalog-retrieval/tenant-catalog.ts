@@ -35,15 +35,20 @@ export async function listRunnableCustomEntries(workspaceId: string): Promise<No
     const { items } = await listCustomNodes({ workspaceId, filter: { limit: 200 } });
     return items
       .filter((n) => RUNNABLE_CUSTOM_STATUSES.has(n.status))
-      .map((n): NodeCatalogEntry => ({
-        defId: customNodeDefId(n.slug),
-        type: 'action', // i custom node sono action nel workflow
-        label: n.displayName,
-        description: n.description ?? n.displayName,
-        fields: [],
-      }));
+      .map(
+        (n): NodeCatalogEntry => ({
+          defId: customNodeDefId(n.slug),
+          type: 'action', // i custom node sono action nel workflow
+          label: n.displayName,
+          description: n.description ?? n.displayName,
+          fields: [],
+        }),
+      );
   } catch (err) {
-    logger.warn({ err: err instanceof Error ? err.message : String(err), workspaceId }, '[tenant-catalog] custom nodes non caricati — solo catalogo base');
+    logger.warn(
+      { err: err instanceof Error ? err.message : String(err), workspaceId },
+      '[tenant-catalog] custom nodes non caricati — solo catalogo base',
+    );
     return [];
   }
 }

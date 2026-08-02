@@ -18,7 +18,10 @@ sqlite.exec(
      updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')));`,
 );
 
-const cfg = { MEDEA_PLAN_VECTOR_MAX_VECTORS: 1000 as number | undefined, MEDEA_PLAN_VECTOR_MAX_DISK_MB: 100 as number | undefined };
+const cfg = {
+  MEDEA_PLAN_VECTOR_MAX_VECTORS: 1000 as number | undefined,
+  MEDEA_PLAN_VECTOR_MAX_DISK_MB: 100 as number | undefined,
+};
 
 vi.mock('@/storage/db.js', () => ({ getDatabase: () => ({ sqlite }) }));
 vi.mock('@/lib/logger.js');
@@ -30,7 +33,10 @@ vi.mock('@/config.js', async (importOriginal) => {
 });
 
 import { vectorPlanLimitsFromConfig } from './vector-ingest.js';
-import { setVectorQuotaOverride, __resetVectorQuotaCacheForTest } from './vector-quota-flag.service.js';
+import {
+  setVectorQuotaOverride,
+  __resetVectorQuotaCacheForTest,
+} from './vector-quota-flag.service.js';
 
 beforeEach(() => {
   sqlite.exec('DELETE FROM system_flags');
@@ -40,7 +46,7 @@ beforeEach(() => {
 });
 
 describe('vectorPlanLimitsFromConfig — precedenza override > env', () => {
-  it('nessun override → usa l\'env (limiti del provision)', () => {
+  it("nessun override → usa l'env (limiti del provision)", () => {
     expect(vectorPlanLimitsFromConfig()).toEqual({ maxVectors: 1000, maxDiskMb: 100 });
   });
 
@@ -50,7 +56,7 @@ describe('vectorPlanLimitsFromConfig — precedenza override > env', () => {
     expect(vectorPlanLimitsFromConfig()).toEqual({ maxVectors: null, maxDiskMb: null });
   });
 
-  it('DOWNGRADE: override più basso dell\'env → vince l\'override (effetto immediato)', () => {
+  it("DOWNGRADE: override più basso dell'env → vince l'override (effetto immediato)", () => {
     setVectorQuotaOverride({ maxVectors: 50, maxDiskMb: 5 });
     expect(vectorPlanLimitsFromConfig()).toEqual({ maxVectors: 50, maxDiskMb: 5 });
   });

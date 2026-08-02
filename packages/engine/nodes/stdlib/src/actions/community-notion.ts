@@ -32,12 +32,12 @@ export const communityNotionNode: NodeModule = {
       '100 pagine totali di sicurezza, configurable). Rate-limit Notion: 3 req/s media per integration, ' +
       'enforcing 429 con Retry-After header — gestito con backoff esponenziale automatico nel nodo. ' +
       'Schema validation: i campi properties devono matchare lo schema del database target — il nodo verifica ' +
-      'la coerenza Type prima dell\'invio (rich_text accetta array di rich_text, title accetta plain_text + ' +
+      "la coerenza Type prima dell'invio (rich_text accetta array di rich_text, title accetta plain_text + " +
       'rich_text, number accetta numeric, status/select accetta name esistenti, multi_select array). ' +
       'API docs ufficiali: developers.notion.com — versione API correntemente targata 2022-06-28 (la più stable). ' +
       'Use case: knowledge base auto-popolata dai workflow di customer support (ogni ticket Zendesk risolto → ' +
       'pagina sotto "/Customer Lessons" con summary AI e tags); log meeting Calendly → row nuovo nel database ' +
-      'Meetings con date, partecipanti, link Zoom, action_items estratti dall\'AI summarizer; dashboard sync ' +
+      "Meetings con date, partecipanti, link Zoom, action_items estratti dall'AI summarizer; dashboard sync " +
       'da Postgres a database Notion che il management consulta giornalmente (replace Looker per metriche ' +
       'leggere); data collection da form Typeform → row in CRM Notion con tag auto da agent_email_triage_b2b ' +
       'per qualifica lead; documentazione PR auto-generata da GitHub merge events con link diff e ' +
@@ -95,7 +95,8 @@ export const communityNotionNode: NodeModule = {
         language: 'json',
         required: false,
         placeholder: '{ "Name": { "title": [{ "text": { "content": "Hello" }}] } }',
-        help: 'Properties shape Notion (vedi developers.notion.com/reference/property-value-object). ' +
+        help:
+          'Properties shape Notion (vedi developers.notion.com/reference/property-value-object). ' +
           'Required per createPage/updatePage.',
       },
       {

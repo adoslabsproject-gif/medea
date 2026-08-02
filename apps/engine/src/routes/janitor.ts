@@ -160,12 +160,18 @@ export function createJanitorRoutes(janitor: JanitorRuntime): Hono {
         ...(patch.schedule !== undefined ? { schedule: patch.schedule } : {}),
         ...(patch.dataSourceRef !== undefined ? { dataSourceRef: patch.dataSourceRef } : {}),
         ...(patch.maxRowsPerRun !== undefined ? { maxRowsPerRun: patch.maxRowsPerRun } : {}),
-        ...((patch.severity !== undefined && isSeverity(patch.severity)) ? { severity: patch.severity } : {}),
+        ...(patch.severity !== undefined && isSeverity(patch.severity)
+          ? { severity: patch.severity }
+          : {}),
         ...(patch.params !== undefined ? { params: patch.params } : {}),
-        ...(patch.notifyOnDetection !== undefined ? { notifyOnDetection: patch.notifyOnDetection } : {}),
+        ...(patch.notifyOnDetection !== undefined
+          ? { notifyOnDetection: patch.notifyOnDetection }
+          : {}),
       };
       const updateArgs: Parameters<typeof janitor.manageRuleConfig.patch>[0] = {
-        ruleId, tenantId, patch: sanitized,
+        ruleId,
+        tenantId,
+        patch: sanitized,
       };
       if (actorId !== undefined) updateArgs.updatedBy = actorId;
       const updated = await janitor.manageRuleConfig.patch(updateArgs);
@@ -186,12 +192,15 @@ export function createJanitorRoutes(janitor: JanitorRuntime): Hono {
 
     const overrides = body.overrides
       ? {
-        ...(body.overrides.maxRowsPerRun !== undefined ? { maxRowsPerRun: body.overrides.maxRowsPerRun } : {}),
-        ...(body.overrides.params !== undefined ? { params: body.overrides.params } : {}),
-        ...(body.overrides.dataSourceRef !== undefined && isDataSourceRef(body.overrides.dataSourceRef)
-          ? { dataSourceRef: body.overrides.dataSourceRef }
-          : {}),
-      }
+          ...(body.overrides.maxRowsPerRun !== undefined
+            ? { maxRowsPerRun: body.overrides.maxRowsPerRun }
+            : {}),
+          ...(body.overrides.params !== undefined ? { params: body.overrides.params } : {}),
+          ...(body.overrides.dataSourceRef !== undefined &&
+          isDataSourceRef(body.overrides.dataSourceRef)
+            ? { dataSourceRef: body.overrides.dataSourceRef }
+            : {}),
+        }
       : undefined;
     const execArgs: Parameters<typeof janitor.executeRule.execute>[0] = {
       rule,
@@ -283,7 +292,7 @@ export function createJanitorRoutes(janitor: JanitorRuntime): Hono {
   app.get('/quarantine/stats', async (c) => {
     const dsr = c.req.query('dataSourceRef');
     const stats = await janitor.manageQuarantine.stats(
-      dsr && isDataSourceRef(dsr) ? (dsr) : undefined,
+      dsr && isDataSourceRef(dsr) ? dsr : undefined,
     );
     return c.json({ stats });
   });
@@ -305,7 +314,10 @@ export function createJanitorRoutes(janitor: JanitorRuntime): Hono {
     }
     try {
       await janitor.manageQuarantine.restore({
-        quarantineId: id, dataSourceRef: dsr, tenantId, actorId,
+        quarantineId: id,
+        dataSourceRef: dsr,
+        tenantId,
+        actorId,
       });
       return c.json({ ok: true });
     } catch (err) {
@@ -368,7 +380,9 @@ export function createJanitorRoutes(janitor: JanitorRuntime): Hono {
       ...(body.tags !== undefined ? { tags: body.tags } : {}),
       ...(body.defaultSeverity !== undefined ? { defaultSeverity: body.defaultSeverity } : {}),
       ...(body.defaultSchedule !== undefined ? { defaultSchedule: body.defaultSchedule } : {}),
-      ...(body.defaultMaxRowsPerRun !== undefined ? { defaultMaxRowsPerRun: body.defaultMaxRowsPerRun } : {}),
+      ...(body.defaultMaxRowsPerRun !== undefined
+        ? { defaultMaxRowsPerRun: body.defaultMaxRowsPerRun }
+        : {}),
       ...(actorId !== undefined ? { createdBy: actorId } : {}),
     };
     const r = await janitor.manageDslRules.create(createArgs);
@@ -376,29 +390,36 @@ export function createJanitorRoutes(janitor: JanitorRuntime): Hono {
     return c.json({ rule: r.value }, 201);
   });
 
-  app.patch('/dsl-rules/:id', requireRole('owner'), zValidator('json', UpdateDslSchema), async (c) => {
-    const tenantId = getTenantId(c);
-    const id = c.req.param('id');
-    const body = c.req.valid('json');
-    const actorId = getActorId(c) ?? undefined;
-    const updateArgs: Parameters<typeof janitor.manageDslRules.update>[0] = {
-      id,
-      tenantId,
-      ...(body.title !== undefined ? { title: body.title } : {}),
-      ...(body.description !== undefined ? { description: body.description } : {}),
-      ...(body.detectSql !== undefined ? { detectSql: body.detectSql } : {}),
-      ...(body.repairSql !== undefined ? { repairSql: body.repairSql } : {}),
-      ...(body.placeholders !== undefined ? { placeholders: body.placeholders } : {}),
-      ...(body.tags !== undefined ? { tags: body.tags } : {}),
-      ...(body.defaultSeverity !== undefined ? { defaultSeverity: body.defaultSeverity } : {}),
-      ...(body.defaultSchedule !== undefined ? { defaultSchedule: body.defaultSchedule } : {}),
-      ...(body.defaultMaxRowsPerRun !== undefined ? { defaultMaxRowsPerRun: body.defaultMaxRowsPerRun } : {}),
-      ...(actorId !== undefined ? { updatedBy: actorId } : {}),
-    };
-    const r = await janitor.manageDslRules.update(updateArgs);
-    if (!r.ok) return c.json({ error: r.error }, 400);
-    return c.json({ rule: r.value });
-  });
+  app.patch(
+    '/dsl-rules/:id',
+    requireRole('owner'),
+    zValidator('json', UpdateDslSchema),
+    async (c) => {
+      const tenantId = getTenantId(c);
+      const id = c.req.param('id');
+      const body = c.req.valid('json');
+      const actorId = getActorId(c) ?? undefined;
+      const updateArgs: Parameters<typeof janitor.manageDslRules.update>[0] = {
+        id,
+        tenantId,
+        ...(body.title !== undefined ? { title: body.title } : {}),
+        ...(body.description !== undefined ? { description: body.description } : {}),
+        ...(body.detectSql !== undefined ? { detectSql: body.detectSql } : {}),
+        ...(body.repairSql !== undefined ? { repairSql: body.repairSql } : {}),
+        ...(body.placeholders !== undefined ? { placeholders: body.placeholders } : {}),
+        ...(body.tags !== undefined ? { tags: body.tags } : {}),
+        ...(body.defaultSeverity !== undefined ? { defaultSeverity: body.defaultSeverity } : {}),
+        ...(body.defaultSchedule !== undefined ? { defaultSchedule: body.defaultSchedule } : {}),
+        ...(body.defaultMaxRowsPerRun !== undefined
+          ? { defaultMaxRowsPerRun: body.defaultMaxRowsPerRun }
+          : {}),
+        ...(actorId !== undefined ? { updatedBy: actorId } : {}),
+      };
+      const r = await janitor.manageDslRules.update(updateArgs);
+      if (!r.ok) return c.json({ error: r.error }, 400);
+      return c.json({ rule: r.value });
+    },
+  );
 
   app.delete('/dsl-rules/:id', requireRole('owner'), async (c) => {
     const tenantId = getTenantId(c);

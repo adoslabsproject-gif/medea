@@ -28,14 +28,14 @@ aggiornamento upstream come un merge invece che come una scelta.
 Il motore è di Medea e si chiama come Medea. Un solo scope per tutto il
 repository, con il prefisso `engine-` a distinguere le due metà:
 
-| Prima | Dopo |
-| --- | --- |
-| `@flowforge/tsconfig` | `@medea/engine-tsconfig` |
+| Prima                     | Dopo                         |
+| ------------------------- | ---------------------------- |
+| `@flowforge/tsconfig`     | `@medea/engine-tsconfig`     |
 | `@flowforge/nodes-stdlib` | `@medea/engine-nodes-stdlib` |
-| `@flowforge/runtime` | `@medea/engine-runtime` |
-| `@zeliai/shared` | `@medea/engine-shared` |
-| `FLOWFORGE_DATA_DIR` | `MEDEA_DATA_DIR` |
-| `flowforge.sqlite` | `medea.sqlite` |
+| `@flowforge/runtime`      | `@medea/engine-runtime`      |
+| `@zeliai/shared`          | `@medea/engine-shared`       |
+| `FLOWFORGE_DATA_DIR`      | `MEDEA_DATA_DIR`             |
+| `flowforge.sqlite`        | `medea.sqlite`               |
 
 Il prefisso serve a evitare collisioni reali: `@flowforge/tsconfig`,
 `@flowforge/eslint-config` e `@flowforge/ui-kit` avevano già un omonimo lato

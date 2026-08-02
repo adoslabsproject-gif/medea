@@ -6,7 +6,12 @@
  * completo della riga PRIMA dell'operazione.
  */
 
-import type { DataSourceRef, QuarantineRecord, QuarantineListFilter, QuarantineStats } from '@/services/janitor/domain/index.js';
+import type {
+  DataSourceRef,
+  QuarantineRecord,
+  QuarantineListFilter,
+  QuarantineStats,
+} from '@/services/janitor/domain/index.js';
 import type { IQuarantineGateway, IAuditEmitter } from '@/services/janitor/ports/index.js';
 
 export interface RestoreInput {
@@ -88,7 +93,7 @@ export class ManageQuarantineUseCase {
         originalId: record.originalId,
         ruleId: record.ruleId,
         rawJson: record.rawJson,
-        warning: 'HARD DELETE — questo è l\'ultimo record permanente della riga.',
+        warning: "HARD DELETE — questo è l'ultimo record permanente della riga.",
       },
     });
     await this.quarantine.purge(input.quarantineId, input.dataSourceRef);

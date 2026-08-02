@@ -11,7 +11,7 @@ import Database from 'better-sqlite3';
 vi.mock('@/lib/logger.js');
 
 const { SqliteLockGateway } = await import('./lock-gateway.sqlite.js');
-const loggerModule = await import('@/lib/logger.js') as any;
+const loggerModule = (await import('@/lib/logger.js')) as any;
 const loggerMock = loggerModule.logger;
 
 let sqlite: Database.Database;
@@ -43,9 +43,15 @@ describe('🚨 acquire', () => {
 
   it('🚨 lock expired → DELETE + acquire OK', () => {
     // Inserisco direttamente un lock già expired (1970)
-    sqlite.prepare(`INSERT INTO janitor_locks VALUES ('rule-1', 'worker-A', '1970-01-01T00:00:00.000Z', '1970-01-01T00:00:01.000Z')`).run();
+    sqlite
+      .prepare(
+        `INSERT INTO janitor_locks VALUES ('rule-1', 'worker-A', '1970-01-01T00:00:00.000Z', '1970-01-01T00:00:01.000Z')`,
+      )
+      .run();
     expect(gateway.acquire('rule-1', 'worker-B', 5000)).toBe(true);
-    const row = sqlite.prepare('SELECT held_by FROM janitor_locks WHERE rule_id=?').get('rule-1') as any;
+    const row = sqlite
+      .prepare('SELECT held_by FROM janitor_locks WHERE rule_id=?')
+      .get('rule-1') as any;
     expect(row.held_by).toBe('worker-B');
   });
 
@@ -89,7 +95,11 @@ describe('🚨 release', () => {
 describe('🚨 cleanupStale', () => {
   it('🚨 elimina solo expired', () => {
     gateway.acquire('rule-fresh', 'w', 60_000);
-    sqlite.prepare(`INSERT INTO janitor_locks VALUES ('rule-old', 'w', '1970-01-01T00:00:00.000Z', '1970-01-01T00:00:01.000Z')`).run();
+    sqlite
+      .prepare(
+        `INSERT INTO janitor_locks VALUES ('rule-old', 'w', '1970-01-01T00:00:00.000Z', '1970-01-01T00:00:01.000Z')`,
+      )
+      .run();
     const n = gateway.cleanupStale();
     expect(n).toBe(1);
     const remaining = sqlite.prepare('SELECT rule_id FROM janitor_locks').all() as any[];
@@ -121,7 +131,11 @@ describe('🚨 listActive', () => {
 
   it('🚨 expired exclusi', () => {
     gateway.acquire('rule-fresh', 'w-fresh', 60_000);
-    sqlite.prepare(`INSERT INTO janitor_locks VALUES ('rule-stale', 'w-stale', '1970-01-01T00:00:00.000Z', '1970-01-01T00:00:01.000Z')`).run();
+    sqlite
+      .prepare(
+        `INSERT INTO janitor_locks VALUES ('rule-stale', 'w-stale', '1970-01-01T00:00:00.000Z', '1970-01-01T00:00:01.000Z')`,
+      )
+      .run();
     const list = gateway.listActive();
     expect(list.length).toBe(1);
     expect(list[0].key).toBe('rule-fresh');

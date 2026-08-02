@@ -51,10 +51,10 @@ export type OdooScalar = string | number | boolean | null | Date;
 export type OdooValue = OdooScalar | OdooValue[] | { [key: string]: OdooValue };
 
 export interface OdooAuth {
-  baseUrl: string;          // e.g. https://my.odoo.example
-  database: string;         // db name
-  login: string;            // username or email
-  password: string;         // password OR API key (Odoo 14+ user.api-key)
+  baseUrl: string; // e.g. https://my.odoo.example
+  database: string; // db name
+  login: string; // username or email
+  password: string; // password OR API key (Odoo 14+ user.api-key)
 }
 
 export interface OdooFault {
@@ -74,7 +74,10 @@ export class OdooFaultError extends Error {
 
 export class OdooTransportError extends Error {
   readonly code = 'ODOO_TRANSPORT' as const;
-  constructor(message: string, readonly status?: number) {
+  constructor(
+    message: string,
+    readonly status?: number,
+  ) {
     super(`${ERR_PREFIX} ${message}`);
     this.name = 'OdooTransportError';
   }
@@ -87,7 +90,7 @@ export class OdooTransportError extends Error {
 export interface OdooHttpTransport {
   post(args: {
     url: string;
-    body: string;                                    // XML body
+    body: string; // XML body
     headers: Readonly<Record<string, string>>;
     timeoutMs: number;
     signal?: AbortSignal;
@@ -114,7 +117,9 @@ export function encodeValue(v: OdooValue): string {
   if (typeof v === 'string') return `<value><string>${escapeXml(v)}</string></value>`;
   if (typeof v === 'number') {
     if (!Number.isFinite(v)) {
-      throw new TypeError(`${ERR_PREFIX} encodeValue: ${String(v)} not encodable (XML-RPC has no NaN/Infinity)`);
+      throw new TypeError(
+        `${ERR_PREFIX} encodeValue: ${String(v)} not encodable (XML-RPC has no NaN/Infinity)`,
+      );
     }
     if (Number.isInteger(v) && Math.abs(v) <= 2_147_483_647) {
       return `<value><int>${v}</int></value>`;
@@ -186,8 +191,9 @@ export function decodeMethodResponse(xml: string): OdooValue {
     const decoded = decodeValue(valueXml) as Record<string, OdooValue>;
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime — TS narrow ottimistico
     const faultCode = typeof decoded?.faultCode === 'number' ? decoded.faultCode : 0;
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime — TS narrow ottimistico
-    const faultString = typeof decoded?.faultString === 'string' ? decoded.faultString : 'unknown fault';
+    const faultString =
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime — TS narrow ottimistico
+      typeof decoded?.faultString === 'string' ? decoded.faultString : 'unknown fault';
     throw new OdooFaultError({ faultCode, faultString });
   }
 
@@ -273,9 +279,7 @@ export async function authenticate(
   const cached = authCache.get(cacheKey);
   if (cached && Date.now() - cached.cachedAt < AUTH_TTL_MS) return cached.uid;
 
-  const body = encodeMethodCall('authenticate', [
-    auth.database, auth.login, auth.password, {},
-  ]);
+  const body = encodeMethodCall('authenticate', [auth.database, auth.login, auth.password, {}]);
   const url = `${stripTrailingSlash(auth.baseUrl)}/xmlrpc/2/common`;
   const fetchOpts: Parameters<OdooHttpTransport['post']>[0] = {
     url,
@@ -389,14 +393,16 @@ function parseXmlRpcDate(s: string): Date {
   // Accept both forms: `YYYYMMDDTHH:MM:SS` (XML-RPC) and ISO 8601 fallback.
   const m = /^(\d{4})(\d{2})(\d{2})T(\d{2}):(\d{2}):(\d{2})$/.exec(s);
   if (m) {
-    return new Date(Date.UTC(
-      parseInt(m[1]!, 10),
-      parseInt(m[2]!, 10) - 1,
-      parseInt(m[3]!, 10),
-      parseInt(m[4]!, 10),
-      parseInt(m[5]!, 10),
-      parseInt(m[6]!, 10),
-    ));
+    return new Date(
+      Date.UTC(
+        parseInt(m[1]!, 10),
+        parseInt(m[2]!, 10) - 1,
+        parseInt(m[3]!, 10),
+        parseInt(m[4]!, 10),
+        parseInt(m[5]!, 10),
+        parseInt(m[6]!, 10),
+      ),
+    );
   }
   const d = new Date(s);
   if (!Number.isNaN(d.getTime())) return d;
@@ -434,13 +440,24 @@ function readFirstValueIn(memberXml: string): string {
  * same-tag elements via depth tracking. Returns null when no balanced
  * span exists.
  */
-function findBalancedSpan(xml: string, tag: string, fromIndex: number): { start: number; end: number } | null {
+function findBalancedSpan(
+  xml: string,
+  tag: string,
+  fromIndex: number,
+): { start: number; end: number } | null {
   const open = `<${tag}`;
   const close = `</${tag}>`;
   const start = xml.indexOf(open, fromIndex);
   if (start === -1) return null;
   const after = xml.charAt(start + open.length);
-  if (after !== '>' && after !== '/' && after !== ' ' && after !== '\t' && after !== '\n' && after !== '\r') {
+  if (
+    after !== '>' &&
+    after !== '/' &&
+    after !== ' ' &&
+    after !== '\t' &&
+    after !== '\n' &&
+    after !== '\r'
+  ) {
     return null;
   }
   const lt = xml.indexOf('>', start);
@@ -488,7 +505,15 @@ function extractInner(xml: string, tag: string): string | null {
   if (startIdx === -1) return null;
   // Reject `<tag-foo` false positive: next char must be `>`, `/`, or whitespace.
   const after = xml.charAt(startIdx + open.length);
-  if (after !== '>' && after !== '/' && after !== ' ' && after !== '\t' && after !== '\n' && after !== '\r') return null;
+  if (
+    after !== '>' &&
+    after !== '/' &&
+    after !== ' ' &&
+    after !== '\t' &&
+    after !== '\n' &&
+    after !== '\r'
+  )
+    return null;
   // Self-closing form `<tag/>` → null (no inner text).
   const lt = xml.indexOf('>', startIdx);
   if (lt === -1) return null;

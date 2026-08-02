@@ -31,20 +31,30 @@ vi.mock('@/storage/db.js', () => ({
         // handle: distinguiamo per SQL (il COUNT non deve tornare la user-row).
         get: () =>
           /COUNT\(\*\)/i.test(sql) ? { n: sqliteState.superadminCount } : sqliteState.getResult,
-        run: (...args: unknown[]) => { sqliteState.runCalls.push({ sql, args }); return { changes: 1 }; },
+        run: (...args: unknown[]) => {
+          sqliteState.runCalls.push({ sql, args });
+          return { changes: 1 };
+        },
       }),
     },
   }),
 }));
 vi.mock('@/services/audit.service.js', () => ({
-  AuditLogService: class { append = auditAppendMock; },
+  AuditLogService: class {
+    append = auditAppendMock;
+  },
 }));
 
 import { registerUsersRoutes } from './users.js';
 
-function buildApp(auth: { userId: string; email: string } | null = { userId: 'admin-1', email: 'admin@t.it' }): Hono {
+function buildApp(
+  auth: { userId: string; email: string } | null = { userId: 'admin-1', email: 'admin@t.it' },
+): Hono {
   const app = new Hono();
-  app.use('*', async (c, next) => { c.set('auth' as never, auth as never); return next(); });
+  app.use('*', async (c, next) => {
+    c.set('auth' as never, auth as never);
+    return next();
+  });
   registerUsersRoutes(app);
   return app;
 }
@@ -59,18 +69,44 @@ beforeEach(() => {
 });
 
 const patch = (app: Hono, path: string, body: unknown) =>
-  app.request(path, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  app.request(path, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 
-const updateEnabledCall = () => sqliteState.runCalls.find((c) => c.sql.includes('UPDATE users SET enabled'));
-const updateRoleCall = () => sqliteState.runCalls.find((c) => c.sql.includes('UPDATE users SET role'));
+const updateEnabledCall = () =>
+  sqliteState.runCalls.find((c) => c.sql.includes('UPDATE users SET enabled'));
+const updateRoleCall = () =>
+  sqliteState.runCalls.find((c) => c.sql.includes('UPDATE users SET role'));
 
 describe('GET /admin/users', () => {
   it('mappa le righe DB → camelCase + enabled INTERO→boolean', async () => {
     sqliteState.rows = [
-      { id: 'u1', tenant_id: 'ta', email: 'a@x.it', display_name: 'A', role: 'owner', enabled: 1, created_at: 't', last_login_at: null },
-      { id: 'u2', tenant_id: 'tb', email: 'b@x.it', display_name: 'B', role: 'viewer', enabled: 0, created_at: 't', last_login_at: 't2' },
+      {
+        id: 'u1',
+        tenant_id: 'ta',
+        email: 'a@x.it',
+        display_name: 'A',
+        role: 'owner',
+        enabled: 1,
+        created_at: 't',
+        last_login_at: null,
+      },
+      {
+        id: 'u2',
+        tenant_id: 'tb',
+        email: 'b@x.it',
+        display_name: 'B',
+        role: 'viewer',
+        enabled: 0,
+        created_at: 't',
+        last_login_at: 't2',
+      },
     ];
-    const data = await (await buildApp().request('/admin/users')).json() as { users: { id: string; enabled: boolean; tenantId: string }[] };
+    const data = (await (await buildApp().request('/admin/users')).json()) as {
+      users: { id: string; enabled: boolean; tenantId: string }[];
+    };
     expect(data.users).toHaveLength(2);
     expect(data.users[0]).toMatchObject({ id: 'u1', tenantId: 'ta', enabled: true });
     expect(data.users[1]!.enabled).toBe(false);
@@ -93,19 +129,39 @@ describe('PATCH /admin/users/:id/role — promozione (incl. superadmin)', () => 
   });
 
   it('promozione a superadmin → UPDATE + audit DURABILE con from/to e actor', async () => {
-    sqliteState.getResult = { id: 'u1', email: 'a@x.it', role: 'owner', tenant_id: 'ta', enabled: 1 };
-    const res = await patch(buildApp({ userId: 'admin-1', email: 'admin@t.it' }), '/admin/users/u1/role', { role: 'superadmin' });
+    sqliteState.getResult = {
+      id: 'u1',
+      email: 'a@x.it',
+      role: 'owner',
+      tenant_id: 'ta',
+      enabled: 1,
+    };
+    const res = await patch(
+      buildApp({ userId: 'admin-1', email: 'admin@t.it' }),
+      '/admin/users/u1/role',
+      { role: 'superadmin' },
+    );
     expect(res.status).toBe(200);
     expect(updateRoleCall()?.args[0]).toBe('superadmin');
     expect(auditAppendMock).toHaveBeenCalledTimes(1);
-    const auditArg = auditAppendMock.mock.calls[0]![0] as { action: string; metadata: { from: string; to: string }; actorId: string };
+    const auditArg = auditAppendMock.mock.calls[0]![0] as {
+      action: string;
+      metadata: { from: string; to: string };
+      actorId: string;
+    };
     expect(auditArg.action).toBe('user.role.change');
     expect(auditArg.metadata).toMatchObject({ from: 'owner', to: 'superadmin' });
     expect(auditArg.actorId).toBe('admin-1');
   });
 
   it('tutti i 5 ruoli validi sono accettati (target viewer → nessun rischio lockout)', async () => {
-    sqliteState.getResult = { id: 'u1', email: 'a@x.it', role: 'viewer', tenant_id: 'ta', enabled: 1 };
+    sqliteState.getResult = {
+      id: 'u1',
+      email: 'a@x.it',
+      role: 'viewer',
+      tenant_id: 'ta',
+      enabled: 1,
+    };
     for (const role of ['superadmin', 'owner', 'editor', 'operator', 'viewer']) {
       const res = await patch(buildApp(), '/admin/users/u1/role', { role });
       expect(res.status, role).toBe(200);
@@ -114,25 +170,47 @@ describe('PATCH /admin/users/:id/role — promozione (incl. superadmin)', () => 
 
   // ── anti-lockout (audit #6) ──────────────────────────────────────────
   it('🚨 self-demote superadmin → 403 self_target, niente UPDATE né audit', async () => {
-    sqliteState.getResult = { id: 'admin-1', email: 'admin@t.it', role: 'superadmin', tenant_id: 'ta', enabled: 1 };
-    const res = await patch(buildApp({ userId: 'admin-1', email: 'admin@t.it' }), '/admin/users/admin-1/role', { role: 'owner' });
+    sqliteState.getResult = {
+      id: 'admin-1',
+      email: 'admin@t.it',
+      role: 'superadmin',
+      tenant_id: 'ta',
+      enabled: 1,
+    };
+    const res = await patch(
+      buildApp({ userId: 'admin-1', email: 'admin@t.it' }),
+      '/admin/users/admin-1/role',
+      { role: 'owner' },
+    );
     expect(res.status).toBe(403);
-    expect((await res.json() as { reason: string }).reason).toBe('self_target');
+    expect(((await res.json()) as { reason: string }).reason).toBe('self_target');
     expect(updateRoleCall()).toBeUndefined();
     expect(auditAppendMock).not.toHaveBeenCalled();
   });
 
   it('🚨 demote ULTIMO superadmin attivo → 403 last_superadmin', async () => {
-    sqliteState.getResult = { id: 'u1', email: 'a@x.it', role: 'superadmin', tenant_id: 'ta', enabled: 1 };
+    sqliteState.getResult = {
+      id: 'u1',
+      email: 'a@x.it',
+      role: 'superadmin',
+      tenant_id: 'ta',
+      enabled: 1,
+    };
     sqliteState.superadminCount = 1;
     const res = await patch(buildApp(), '/admin/users/u1/role', { role: 'owner' });
     expect(res.status).toBe(403);
-    expect((await res.json() as { reason: string }).reason).toBe('last_superadmin');
+    expect(((await res.json()) as { reason: string }).reason).toBe('last_superadmin');
     expect(updateRoleCall()).toBeUndefined();
   });
 
   it('demote superadmin quando ne restano altri → 200', async () => {
-    sqliteState.getResult = { id: 'u1', email: 'a@x.it', role: 'superadmin', tenant_id: 'ta', enabled: 1 };
+    sqliteState.getResult = {
+      id: 'u1',
+      email: 'a@x.it',
+      role: 'superadmin',
+      tenant_id: 'ta',
+      enabled: 1,
+    };
     sqliteState.superadminCount = 2;
     const res = await patch(buildApp(), '/admin/users/u1/role', { role: 'owner' });
     expect(res.status).toBe(200);
@@ -158,7 +236,12 @@ describe('PATCH /admin/users/:id/enabled — lockout', () => {
     expect(updateEnabledCall()?.args[0]).toBe(0);
     // 🚨 prima NON scriveva audit — ora deve, con enabled + actor
     expect(auditAppendMock).toHaveBeenCalledTimes(1);
-    const a = auditAppendMock.mock.calls[0]![0] as { action: string; metadata: { enabled: boolean }; actorId: string; resourceId: string };
+    const a = auditAppendMock.mock.calls[0]![0] as {
+      action: string;
+      metadata: { enabled: boolean };
+      actorId: string;
+      resourceId: string;
+    };
     expect(a.action).toBe('user.enabled.change');
     expect(a.metadata.enabled).toBe(false);
     expect(a.actorId).toBe('admin-1');
@@ -182,9 +265,13 @@ describe('PATCH /admin/users/:id/enabled — lockout', () => {
   // ── anti-lockout (audit #6) ──────────────────────────────────────────
   it('🚨 self-disable superadmin → 403 self_target, niente UPDATE né audit', async () => {
     sqliteState.getResult = { id: 'admin-1', role: 'superadmin', enabled: 1, tenant_id: 'ta' };
-    const res = await patch(buildApp({ userId: 'admin-1', email: 'admin@t.it' }), '/admin/users/admin-1/enabled', { enabled: false });
+    const res = await patch(
+      buildApp({ userId: 'admin-1', email: 'admin@t.it' }),
+      '/admin/users/admin-1/enabled',
+      { enabled: false },
+    );
     expect(res.status).toBe(403);
-    expect((await res.json() as { reason: string }).reason).toBe('self_target');
+    expect(((await res.json()) as { reason: string }).reason).toBe('self_target');
     expect(updateEnabledCall()).toBeUndefined();
     expect(auditAppendMock).not.toHaveBeenCalled();
   });
@@ -194,7 +281,7 @@ describe('PATCH /admin/users/:id/enabled — lockout', () => {
     sqliteState.superadminCount = 1;
     const res = await patch(buildApp(), '/admin/users/u1/enabled', { enabled: false });
     expect(res.status).toBe(403);
-    expect((await res.json() as { reason: string }).reason).toBe('last_superadmin');
+    expect(((await res.json()) as { reason: string }).reason).toBe('last_superadmin');
     expect(updateEnabledCall()).toBeUndefined();
   });
 

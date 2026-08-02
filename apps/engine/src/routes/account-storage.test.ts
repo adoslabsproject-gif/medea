@@ -14,11 +14,16 @@ vi.mock('@/services/binary-store.service.js', () => ({
 }));
 vi.mock('@/services/storage-quota.service.js', () => ({
   getCurrentQuotas: () => ({
-    planCode: 'pro', freeTier: false, totalBytes: 20 * 1024 ** 3,
-    workflowDataBytes: 10 * 1024 ** 3, logRetentionBytes: 1 * 1024 ** 3,
+    planCode: 'pro',
+    freeTier: false,
+    totalBytes: 20 * 1024 ** 3,
+    workflowDataBytes: 10 * 1024 ** 3,
+    logRetentionBytes: 1 * 1024 ** 3,
   }),
 }));
-vi.mock('@/config.js', () => ({ loadConfig: () => ({ MEDEA_DATA_DIR: '/tmp/ff-nonexistent-xyz' }) }));
+vi.mock('@/config.js', () => ({
+  loadConfig: () => ({ MEDEA_DATA_DIR: '/tmp/ff-nonexistent-xyz' }),
+}));
 vi.mock('@/lib/logger.js');
 
 import { registerAccountStorageRoute } from './account-storage.js';
@@ -29,14 +34,16 @@ function app(): Hono {
   return a;
 }
 
-beforeEach(() => { binMock.usage.mockReset(); });
+beforeEach(() => {
+  binMock.usage.mockReset();
+});
 
 describe('GET /account/storage — metrica binary (gap #13)', () => {
   it('espone binary.usedBytes da BinaryStore.usage()', async () => {
     binMock.usage.mockResolvedValue(3 * 1024 * 1024);
     const res = await app().request('/api/v1/account/storage');
     expect(res.status).toBe(200);
-    const body = await res.json() as { binary: { usedBytes: number } };
+    const body = (await res.json()) as { binary: { usedBytes: number } };
     expect(body.binary.usedBytes).toBe(3 * 1024 * 1024);
   });
 
@@ -44,14 +51,14 @@ describe('GET /account/storage — metrica binary (gap #13)', () => {
     binMock.usage.mockRejectedValue(new Error('blob dir gone'));
     const res = await app().request('/api/v1/account/storage');
     expect(res.status).toBe(200);
-    const body = await res.json() as { binary: { usedBytes: number } };
+    const body = (await res.json()) as { binary: { usedBytes: number } };
     expect(body.binary.usedBytes).toBe(0);
   });
 
   it('mantiene le sezioni storiche (plan, workflowData, log) accanto a binary', async () => {
     binMock.usage.mockResolvedValue(0);
     const res = await app().request('/api/v1/account/storage');
-    const body = await res.json() as Record<string, unknown>;
+    const body = (await res.json()) as Record<string, unknown>;
     expect(body.plan).toBeDefined();
     expect(body.workflowData).toBeDefined();
     expect(body.log).toBeDefined();

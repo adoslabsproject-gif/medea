@@ -10,7 +10,11 @@ import { mockDataNode } from './mock.js';
 const mock = mockDataNode.executor!;
 const ctx = { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {} } as never;
 const run = async (cfg: Record<string, unknown>) =>
-  (await mock(cfg, undefined, ctx)).output as { items: Record<string, unknown>[]; count: number; seed: string | null };
+  (await mock(cfg, undefined, ctx)).output as {
+    items: Record<string, unknown>[];
+    count: number;
+    seed: string | null;
+  };
 
 describe('action_mock_data', () => {
   it('🚨 stesso seed → output IDENTICO (riproducibilità)', async () => {
@@ -46,7 +50,7 @@ describe('action_mock_data', () => {
     for (const it of r.items) expect(String(it.id)).toMatch(v4);
   });
 
-  it('seed nullo riportato come null nell\'output', async () => {
+  it("seed nullo riportato come null nell'output", async () => {
     expect((await run({ count: 1 })).seed).toBeNull();
   });
 });

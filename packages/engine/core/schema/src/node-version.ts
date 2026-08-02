@@ -27,7 +27,11 @@ export type NodeVersionCompat =
 /** Delta osservabile registrato sullo step di un run (sottoinsieme "rilevante"). */
 export type NodeVersionDrift = 'major' | 'minor' | 'patch' | 'ahead';
 
-interface Semver { major: number; minor: number; patch: number }
+interface Semver {
+  major: number;
+  minor: number;
+  patch: number;
+}
 
 function parseSemver(v: string | undefined): Semver | null {
   if (!v) return null;
@@ -74,10 +78,14 @@ export function classifyNodeVersionCompat(
  */
 export function nodeVersionDrift(compat: NodeVersionCompat): NodeVersionDrift | null {
   switch (compat) {
-    case 'major-behind': return 'major';
-    case 'minor-behind': return 'minor';
-    case 'patch-behind': return 'patch';
-    case 'ahead': return 'ahead';
+    case 'major-behind':
+      return 'major';
+    case 'minor-behind':
+      return 'minor';
+    case 'patch-behind':
+      return 'patch';
+    case 'ahead':
+      return 'ahead';
     case 'current':
     case 'unversioned':
       return null;

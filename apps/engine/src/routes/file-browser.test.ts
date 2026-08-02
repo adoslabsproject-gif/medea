@@ -68,7 +68,7 @@ describe('🚨 tenant root auto-create on first browse', () => {
     const app = makeApp();
     const res = await app.request('/api/v1/file-browser');
     expect(res.status).toBe(200);
-    const json = await res.json() as { entries: unknown[]; cwd: string; parent: null };
+    const json = (await res.json()) as { entries: unknown[]; cwd: string; parent: null };
     expect(json.entries).toEqual([]);
     expect(json.cwd).toBe(tenantRoot);
     expect(json.parent).toBeNull();
@@ -81,7 +81,7 @@ describe('🚨 tenant root auto-create on first browse', () => {
     const app = makeApp();
     const res = await app.request('/api/v1/file-browser');
     expect(res.status).toBe(200);
-    const json = await res.json() as { entries: { name: string; type: string }[] };
+    const json = (await res.json()) as { entries: { name: string; type: string }[] };
     expect(json.entries.find((e) => e.name === 'test.txt' && e.type === 'file')).toBeDefined();
     expect(json.entries.find((e) => e.name === 'subdir' && e.type === 'dir')).toBeDefined();
   });
@@ -96,7 +96,7 @@ describe('🚨 SECURITY path traversal', () => {
     const app = makeApp();
     const res = await app.request('/api/v1/file-browser?path=../../../etc/passwd');
     expect(res.status).toBe(403);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toMatch(/outside allowlisted/u);
   });
 
@@ -140,7 +140,7 @@ describe('🚨 MEDEA_FILE_ALLOWLIST (global roots)', () => {
     const app = makeApp();
     const res = await app.request(`/api/v1/file-browser?path=${encodeURIComponent(sharedDir)}`);
     expect(res.status).toBe(200);
-    const json = await res.json() as { entries: { name: string }[] };
+    const json = (await res.json()) as { entries: { name: string }[] };
     expect(json.entries.find((e) => e.name === 'shared.txt')).toBeDefined();
   });
 
@@ -190,7 +190,7 @@ describe('🚨 entry listing + sort', () => {
     await mkdir(join(tenantRoot, 'a-dir'));
     const app = makeApp();
     const res = await app.request('/api/v1/file-browser');
-    const json = await res.json() as { entries: { name: string; type: string }[] };
+    const json = (await res.json()) as { entries: { name: string; type: string }[] };
     // ['a-dir', 'z-dir', 'alpha.txt', 'zebra.txt']
     expect(json.entries.map((e) => e.name)).toEqual(['a-dir', 'z-dir', 'alpha.txt', 'zebra.txt']);
   });
@@ -200,7 +200,7 @@ describe('🚨 entry listing + sort', () => {
     await mkdir(join(tenantRoot, 'subdir'));
     const app = makeApp();
     const res = await app.request('/api/v1/file-browser');
-    const json = await res.json() as { entries: { name: string; sizeBytes?: number }[] };
+    const json = (await res.json()) as { entries: { name: string; sizeBytes?: number }[] };
     const file = json.entries.find((e) => e.name === 'data.txt')!;
     const dir = json.entries.find((e) => e.name === 'subdir')!;
     expect(file.sizeBytes).toBe(123);
@@ -211,7 +211,7 @@ describe('🚨 entry listing + sort', () => {
     await writeFile(join(tenantRoot, 'f.txt'), '');
     const app = makeApp();
     const res = await app.request('/api/v1/file-browser');
-    const json = await res.json() as { entries: { mtime: string }[] };
+    const json = (await res.json()) as { entries: { mtime: string }[] };
     expect(json.entries[0]!.mtime).toMatch(/^\d{4}-\d{2}-\d{2}T/u);
   });
 
@@ -232,7 +232,7 @@ describe('🚨 parent navigation', () => {
   it('🚨 at tenant root → parent=null', async () => {
     const app = makeApp();
     const res = await app.request('/api/v1/file-browser');
-    const json = await res.json() as { parent: string | null };
+    const json = (await res.json()) as { parent: string | null };
     expect(json.parent).toBeNull();
   });
 
@@ -240,7 +240,7 @@ describe('🚨 parent navigation', () => {
     await mkdir(join(tenantRoot, 'sub'));
     const app = makeApp();
     const res = await app.request(`/api/v1/file-browser?path=sub`);
-    const json = await res.json() as { parent: string | null };
+    const json = (await res.json()) as { parent: string | null };
     expect(json.parent).toBe(tenantRoot);
   });
 
@@ -251,7 +251,7 @@ describe('🚨 parent navigation', () => {
     process.env.MEDEA_FILE_ALLOWLIST = allowed;
     const app = makeApp();
     const res = await app.request(`/api/v1/file-browser?path=${encodeURIComponent(allowed)}`);
-    const json = await res.json() as { parent: string | null };
+    const json = (await res.json()) as { parent: string | null };
     expect(json.parent).toBeNull(); // at root of allowed
   });
 });
@@ -263,7 +263,7 @@ describe('🚨 path is file (not directory)', () => {
     const app = makeApp();
     const res = await app.request('/api/v1/file-browser?path=notdir.txt');
     expect(res.status).toBe(400);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toMatch(/not a directory/u);
   });
 });
@@ -278,7 +278,7 @@ describe('🚨 roots response', () => {
     process.env.MEDEA_FILE_ALLOWLIST = `${g1}:${g2}`;
     const app = makeApp();
     const res = await app.request('/api/v1/file-browser');
-    const json = await res.json() as { roots: { label: string; path: string }[] };
+    const json = (await res.json()) as { roots: { label: string; path: string }[] };
     expect(json.roots[0]!.label).toMatch(/Sandbox/u);
     expect(json.roots[0]!.path).toBe(tenantRoot);
     expect(json.roots).toHaveLength(3);
@@ -303,7 +303,7 @@ describe('🚨 tenant id sanitization', () => {
     app.route('/api/v1/file-browser', freshCreate());
     const res = await app.request('/api/v1/file-browser');
     expect(res.status).toBe(200);
-    const json = await res.json() as { cwd: string };
+    const json = (await res.json()) as { cwd: string };
     // tenant path NON deve contenere "../../etc"
     expect(json.cwd).not.toMatch(/\.\.\//u);
     expect(json.cwd).toMatch(/_+_etc_PWNED/u); // sanitized to underscores

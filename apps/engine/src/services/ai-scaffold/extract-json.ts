@@ -18,14 +18,19 @@
 export function stripCodeFences(raw: string): string {
   const t = raw.trim();
   if (!t.startsWith('```')) return t;
-  return t.replace(/^```(?:json)?\s*\n?/u, '').replace(/\n?```\s*$/u, '').trim();
+  return t
+    .replace(/^```(?:json)?\s*\n?/u, '')
+    .replace(/\n?```\s*$/u, '')
+    .trim();
 }
 
 /** Primo oggetto JSON BILANCIATO nel testo (ignora le graffe dentro le stringhe). */
 export function firstBalancedJsonObject(raw: string): string | null {
   const start = raw.indexOf('{');
   if (start < 0) return null;
-  let depth = 0, inStr = false, esc = false;
+  let depth = 0,
+    inStr = false,
+    esc = false;
   for (let i = start; i < raw.length; i++) {
     const ch = raw.charAt(i);
     if (inStr) {

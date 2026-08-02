@@ -12,7 +12,11 @@
  *                                all'ultimo tentativo la INIETTA invece di avvisare
  */
 import { AiScaffoldError } from '@/services/ai-scaffold/types.js';
-import { extractMissingCapabilities, buildCoverageFeedback, buildCapabilityInjection } from '@/services/ai-scaffold/requirement-coverage.js';
+import {
+  extractMissingCapabilities,
+  buildCoverageFeedback,
+  buildCapabilityInjection,
+} from '@/services/ai-scaffold/requirement-coverage.js';
 import { healDataflowReachability } from '@/services/ai-scaffold/dataflow-validator.js';
 import { logger } from '@/lib/logger.js';
 
@@ -20,7 +24,14 @@ import { logger } from '@/lib/logger.js';
  *  gli opzionali sono `| undefined` perché z.infer li rende tali con
  *  exactOptionalPropertyTypes). */
 export interface PpWorkflow {
-  nodes: { id: string; defId: string; label?: string | undefined; x?: number | undefined; y?: number | undefined; config: Record<string, unknown> }[];
+  nodes: {
+    id: string;
+    defId: string;
+    label?: string | undefined;
+    x?: number | undefined;
+    y?: number | undefined;
+    config: Record<string, unknown>;
+  }[];
   edges: { from: string; to: string; fromPort?: string | undefined }[];
 }
 
@@ -36,7 +47,10 @@ export function applyReachabilityHeal(wf: PpWorkflow): void {
   );
   if (reachabilityEdges.length > 0) {
     for (const e of reachabilityEdges) wf.edges.push(e);
-    logger.info({ healed: reachabilityEdges.length, edges: reachabilityEdges }, '[SINGLESHOT] data-flow reachability HEALED (edge mancanti aggiunti)');
+    logger.info(
+      { healed: reachabilityEdges.length, edges: reachabilityEdges },
+      '[SINGLESHOT] data-flow reachability HEALED (edge mancanti aggiunti)',
+    );
   }
 }
 
@@ -49,13 +63,23 @@ export function applyReachabilityHeal(wf: PpWorkflow): void {
  *    terminale originale (fan-out) → "l'ho fatto io per te", non un warning.
  * Muta wf in place. Ritorna i warning di coverage (per le note).
  */
-export function enforceCoverageAndInject(wf: PpWorkflow, goal: string, isLastAttempt: boolean): string[] {
+export function enforceCoverageAndInject(
+  wf: PpWorkflow,
+  goal: string,
+  isLastAttempt: boolean,
+): string[] {
   const coverageWarnings: string[] = [];
-  const missingCaps = extractMissingCapabilities(goal, wf.nodes.map((n) => n.defId));
+  const missingCaps = extractMissingCapabilities(
+    goal,
+    wf.nodes.map((n) => n.defId),
+  );
   if (missingCaps.length === 0) return coverageWarnings;
 
   if (!isLastAttempt) {
-    logger.warn({ missing: missingCaps.map((m) => m.id), goal: goal.slice(0, 200) }, '[SINGLESHOT] requirement-coverage reject → retry');
+    logger.warn(
+      { missing: missingCaps.map((m) => m.id), goal: goal.slice(0, 200) },
+      '[SINGLESHOT] requirement-coverage reject → retry',
+    );
     throw new AiScaffoldError(buildCoverageFeedback(missingCaps), 502);
   }
 
@@ -68,12 +92,22 @@ export function enforceCoverageAndInject(wf: PpWorkflow, goal: string, isLastAtt
     if (inj) {
       wf.nodes.push({ id: inj.node.id, defId: inj.node.defId, config: inj.node.config });
       if (inj.edge) wf.edges.push(inj.edge);
-      logger.info({ injected: inj.node.defId, cap: cap.id }, '[SINGLESHOT] requirement-coverage: nodo INIETTATO automaticamente (last-attempt)');
-      coverageWarnings.push(`✨ Aggiunto automaticamente \`${inj.node.defId}\` (richiesto: ${cap.label}) — rivedi/personalizza la config.`);
+      logger.info(
+        { injected: inj.node.defId, cap: cap.id },
+        '[SINGLESHOT] requirement-coverage: nodo INIETTATO automaticamente (last-attempt)',
+      );
+      coverageWarnings.push(
+        `✨ Aggiunto automaticamente \`${inj.node.defId}\` (richiesto: ${cap.label}) — rivedi/personalizza la config.`,
+      );
     } else {
       // Solo se il workflow è vuoto (niente a cui agganciare) → impossibile iniettare.
-      logger.warn({ cap: cap.id }, '[SINGLESHOT] requirement-coverage: nessun nodo a cui agganciare l\'inject');
-      coverageWarnings.push(`⚠️ Richiesto ma MANCANTE: ${cap.label} — aggiungi il nodo \`${cap.suggestNode}\` nell'editor.`);
+      logger.warn(
+        { cap: cap.id },
+        "[SINGLESHOT] requirement-coverage: nessun nodo a cui agganciare l'inject",
+      );
+      coverageWarnings.push(
+        `⚠️ Richiesto ma MANCANTE: ${cap.label} — aggiungi il nodo \`${cap.suggestNode}\` nell'editor.`,
+      );
     }
   }
   return coverageWarnings;

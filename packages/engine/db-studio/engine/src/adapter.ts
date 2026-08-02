@@ -1,4 +1,10 @@
-import type { Database, MigrationAction, QuerySpec, Relation, Table } from '@medea/engine-db-studio-core';
+import type {
+  Database,
+  MigrationAction,
+  QuerySpec,
+  Relation,
+  Table,
+} from '@medea/engine-db-studio-core';
 
 export interface QueryResult<T = Record<string, unknown>> {
   rows: T[];
@@ -72,7 +78,12 @@ export type BatchOp =
 
 export interface BatchResult {
   /** Per-step result (1:1 with input ops). insertedId is the lastrowid when applicable. */
-  steps: { index: number; kind: BatchOp['kind']; affectedRows: number; insertedId?: string | number }[];
+  steps: {
+    index: number;
+    kind: BatchOp['kind'];
+    affectedRows: number;
+    insertedId?: string | number;
+  }[];
   /** Map of `as` bindings → insertedId, available for downstream callers. */
   bindings: Record<string, string | number>;
   durationMs: number;
@@ -111,7 +122,9 @@ export interface IDatabaseAdapter {
    * (for preview / audit). Implementations MUST run all actions in a single
    * transaction and roll back on any failure.
    */
-  applyMigration(actions: readonly MigrationAction[]): Promise<{ sql: string; affectedTables: string[] }>;
+  applyMigration(
+    actions: readonly MigrationAction[],
+  ): Promise<{ sql: string; affectedTables: string[] }>;
 
   /**
    * Render a migration plan to SQL WITHOUT executing it. Used for the
@@ -121,7 +134,11 @@ export interface IDatabaseAdapter {
 
   query<T = Record<string, unknown>>(spec: QuerySpec): Promise<QueryResult<T>>;
   insert(tableName: string, row: Record<string, unknown>): Promise<ExecuteResult>;
-  update(tableName: string, where: Record<string, unknown>, patch: Record<string, unknown>): Promise<ExecuteResult>;
+  update(
+    tableName: string,
+    where: Record<string, unknown>,
+    patch: Record<string, unknown>,
+  ): Promise<ExecuteResult>;
   delete(tableName: string, where: Record<string, unknown>): Promise<ExecuteResult>;
 
   /**
@@ -200,17 +217,53 @@ function maskLiteralsAndComments(sql: string): string {
   for (let i = 0; i < sql.length; i++) {
     const ch = sql[i] ?? '';
     const next = sql[i + 1] ?? '';
-    if (inLineComment) { out += ch === '\n' ? '\n' : ' '; if (ch === '\n') inLineComment = false; continue; }
-    if (inBlockComment) {
-      if (ch === '*' && next === '/') { out += '  '; inBlockComment = false; i++; } else { out += ch === '\n' ? '\n' : ' '; }
+    if (inLineComment) {
+      out += ch === '\n' ? '\n' : ' ';
+      if (ch === '\n') inLineComment = false;
       continue;
     }
-    if (inSingle) { out += ' '; if (ch === "'" && sql[i - 1] !== '\\') inSingle = false; continue; }
-    if (inDouble) { out += ' '; if (ch === '"' && sql[i - 1] !== '\\') inDouble = false; continue; }
-    if (ch === '-' && next === '-') { out += '  '; inLineComment = true; i++; continue; }
-    if (ch === '/' && next === '*') { out += '  '; inBlockComment = true; i++; continue; }
-    if (ch === "'") { out += ' '; inSingle = true; continue; }
-    if (ch === '"') { out += ' '; inDouble = true; continue; }
+    if (inBlockComment) {
+      if (ch === '*' && next === '/') {
+        out += '  ';
+        inBlockComment = false;
+        i++;
+      } else {
+        out += ch === '\n' ? '\n' : ' ';
+      }
+      continue;
+    }
+    if (inSingle) {
+      out += ' ';
+      if (ch === "'" && sql[i - 1] !== '\\') inSingle = false;
+      continue;
+    }
+    if (inDouble) {
+      out += ' ';
+      if (ch === '"' && sql[i - 1] !== '\\') inDouble = false;
+      continue;
+    }
+    if (ch === '-' && next === '-') {
+      out += '  ';
+      inLineComment = true;
+      i++;
+      continue;
+    }
+    if (ch === '/' && next === '*') {
+      out += '  ';
+      inBlockComment = true;
+      i++;
+      continue;
+    }
+    if (ch === "'") {
+      out += ' ';
+      inSingle = true;
+      continue;
+    }
+    if (ch === '"') {
+      out += ' ';
+      inDouble = true;
+      continue;
+    }
     out += ch;
   }
   return out;
@@ -318,10 +371,14 @@ export function assertSafeRawStatement(sql: string): void {
     .trim()
     .toLowerCase();
   if (FS_ESCAPE_FIRST_RE.test(stripped)) {
-    throw new Error('ATTACH/DETACH non consentito: il raw SQL non può montare database esterni (filesystem escape bloccato).');
+    throw new Error(
+      'ATTACH/DETACH non consentito: il raw SQL non può montare database esterni (filesystem escape bloccato).',
+    );
   }
   if (VACUUM_INTO_RE.test(stripped)) {
-    throw new Error('VACUUM INTO non consentito: scrittura su file arbitrari del filesystem bloccata.');
+    throw new Error(
+      'VACUUM INTO non consentito: scrittura su file arbitrari del filesystem bloccata.',
+    );
   }
   if (LOAD_EXTENSION_RE.test(stripped)) {
     throw new Error('load_extension non consentito: caricamento di estensioni native bloccato.');
@@ -374,7 +431,11 @@ export function splitStatements(sql: string): string[] {
     }
     if (inBlockComment) {
       buf += ch;
-      if (ch === '*' && next === '/') { buf += next; inBlockComment = false; i++; }
+      if (ch === '*' && next === '/') {
+        buf += next;
+        inBlockComment = false;
+        i++;
+      }
       continue;
     }
     if (inSingle) {
@@ -387,10 +448,28 @@ export function splitStatements(sql: string): string[] {
       if (ch === '"' && sql[i - 1] !== '\\') inDouble = false;
       continue;
     }
-    if (ch === '-' && next === '-') { buf += ch + next; inLineComment = true; i++; continue; }
-    if (ch === '/' && next === '*') { buf += ch + next; inBlockComment = true; i++; continue; }
-    if (ch === "'") { buf += ch; inSingle = true; continue; }
-    if (ch === '"') { buf += ch; inDouble = true; continue; }
+    if (ch === '-' && next === '-') {
+      buf += ch + next;
+      inLineComment = true;
+      i++;
+      continue;
+    }
+    if (ch === '/' && next === '*') {
+      buf += ch + next;
+      inBlockComment = true;
+      i++;
+      continue;
+    }
+    if (ch === "'") {
+      buf += ch;
+      inSingle = true;
+      continue;
+    }
+    if (ch === '"') {
+      buf += ch;
+      inDouble = true;
+      continue;
+    }
     if (ch === ';') {
       const stmt = buf.trim();
       if (stmt !== '') statements.push(stmt);

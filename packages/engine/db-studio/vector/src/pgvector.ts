@@ -69,7 +69,9 @@ export class PgVectorAdapter implements IVectorAdapter {
         payload jsonb,
         PRIMARY KEY (collection, id)
       )`);
-    await this.sql.query('CREATE INDEX IF NOT EXISTS vs_records_collection_idx ON vs_records(collection)');
+    await this.sql.query(
+      'CREATE INDEX IF NOT EXISTS vs_records_collection_idx ON vs_records(collection)',
+    );
     // ⚠️ SCALA (trade-off consapevole): nessun indice ANN (hnsw/ivfflat). La KNN
     // fa seq-scan + sort sulla distanza → O(n) per query. È una conseguenza del
     // design "colonna embedding vector NON-dimensionata" (collection di dimensioni
@@ -102,7 +104,9 @@ export class PgVectorAdapter implements IVectorAdapter {
     await this.init();
     const meta = await this.getMeta(collection);
     if (!meta) {
-      throw new Error(`Vector collection "${collection}" does not exist. Call ensureCollection() first.`);
+      throw new Error(
+        `Vector collection "${collection}" does not exist. Call ensureCollection() first.`,
+      );
     }
     if (records.length === 0) return { count: 0 };
     // Valida TUTTE le dimensioni prima di scrivere (fail-fast).
@@ -122,7 +126,12 @@ export class PgVectorAdapter implements IVectorAdapter {
     let i = 1;
     for (const r of records) {
       tuples.push(`($${i++}, $${i++}, $${i++}::vector, $${i++}::jsonb)`);
-      values.push(collection, r.id, vectorLiteral(r.vector), r.payload ? JSON.stringify(r.payload) : null);
+      values.push(
+        collection,
+        r.id,
+        vectorLiteral(r.vector),
+        r.payload ? JSON.stringify(r.payload) : null,
+      );
     }
     await this.sql.query(
       `INSERT INTO vs_records (collection, id, embedding, payload)
@@ -133,12 +142,17 @@ export class PgVectorAdapter implements IVectorAdapter {
     return { count: records.length };
   }
 
-  async search(collection: string, query: SimilaritySearchQuery): Promise<SimilaritySearchResult[]> {
+  async search(
+    collection: string,
+    query: SimilaritySearchQuery,
+  ): Promise<SimilaritySearchResult[]> {
     await this.init();
     const meta = await this.getMeta(collection);
     if (!meta) throw new Error(`Vector collection "${collection}" not found`);
     if (query.vector.length !== meta.dimensions) {
-      throw new Error(`Query vector dimensions mismatch: expected ${meta.dimensions}, got ${query.vector.length}`);
+      throw new Error(
+        `Query vector dimensions mismatch: expected ${meta.dimensions}, got ${query.vector.length}`,
+      );
     }
     const op = DISTANCE_OP[meta.distance];
     const lit = vectorLiteral(query.vector);
@@ -180,7 +194,10 @@ export class PgVectorAdapter implements IVectorAdapter {
     return rows.map((r) => {
       const out: SimilaritySearchResult = { id: String(r.id), score: Number(r.score) };
       if (r.payload) {
-        out.payload = (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) as Record<string, unknown>;
+        out.payload = (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) as Record<
+          string,
+          unknown
+        >;
       }
       return out;
     });
@@ -198,7 +215,10 @@ export class PgVectorAdapter implements IVectorAdapter {
 
   async countCollection(name: string): Promise<number> {
     await this.init();
-    const { rows } = await this.sql.query('SELECT COUNT(*)::int AS c FROM vs_records WHERE collection = $1', [name]);
+    const { rows } = await this.sql.query(
+      'SELECT COUNT(*)::int AS c FROM vs_records WHERE collection = $1',
+      [name],
+    );
     return Number(rows[0]?.c ?? 0);
   }
 

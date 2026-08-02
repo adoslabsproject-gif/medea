@@ -43,7 +43,10 @@ const breaker = new CircuitBreaker<MarketplaceSuggestion[]>('marketplace-discove
  * Cerca nel marketplace i nodi pertinenti a `query`. Ritorna [] su qualunque
  * problema (token assente, portal giù, timeout, breaker aperto). Mai throw.
  */
-export async function searchMarketplace(query: string, limit = 6): Promise<MarketplaceSuggestion[]> {
+export async function searchMarketplace(
+  query: string,
+  limit = 6,
+): Promise<MarketplaceSuggestion[]> {
   const token = getOutboundPortalToken();
   if (!token || query.trim().length < 2) return [];
   const url = `${loadConfig().MEDEA_PORTAL_URL.replace(/\/$/, '')}/api/v1/internal/marketplace/search`;
@@ -60,7 +63,10 @@ export async function searchMarketplace(query: string, limit = 6): Promise<Marke
       return Array.isArray(body.results) ? body.results : [];
     });
   } catch (err) {
-    logger.debug({ err: err instanceof Error ? err.message : String(err) }, '[marketplace-discovery] skip (fail-soft)');
+    logger.debug(
+      { err: err instanceof Error ? err.message : String(err) },
+      '[marketplace-discovery] skip (fail-soft)',
+    );
     return [];
   }
 }
@@ -69,8 +75,12 @@ export async function searchMarketplace(query: string, limit = 6): Promise<Marke
 export function formatPrice(s: MarketplaceSuggestion): string {
   if (s.pricingModel === 'free' || s.priceCents === 0) return 'gratis';
   const amount = (s.priceCents / 100).toLocaleString('it-IT', { minimumFractionDigits: 2 });
-  const suffix = s.pricingModel === 'subscription' ? '/mese'
-    : s.pricingModel === 'per_run' ? '/esecuzione' : ' una tantum';
+  const suffix =
+    s.pricingModel === 'subscription'
+      ? '/mese'
+      : s.pricingModel === 'per_run'
+        ? '/esecuzione'
+        : ' una tantum';
   return `${amount} ${s.currency}${suffix}`;
 }
 
@@ -82,11 +92,14 @@ export function formatPrice(s: MarketplaceSuggestion): string {
 export function formatMarketplaceSuggestions(items: readonly MarketplaceSuggestion[]): string {
   if (items.length === 0) return '';
   const lines = items
-    .map((s) => `- ${s.defId} (${s.category}): ${s.description.split(/(?<=[.!?])\s/u)[0] ?? s.description} — ${formatPrice(s)}`)
+    .map(
+      (s) =>
+        `- ${s.defId} (${s.category}): ${s.description.split(/(?<=[.!?])\s/u)[0] ?? s.description} — ${formatPrice(s)}`,
+    )
     .join('\n');
   return [
     '',
-    'NODI DAL MARKETPLACE (NON installati nel workspace — puoi SOLO proporli all\'utente,',
+    "NODI DAL MARKETPLACE (NON installati nel workspace — puoi SOLO proporli all'utente,",
     'NON usarli in un patch; per il free suggerisci di installarlo, per il paid di acquistarlo):',
     lines,
   ].join('\n');

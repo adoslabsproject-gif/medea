@@ -17,25 +17,47 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ExecuteCycleUseCase } from './execute-cycle.usecase.js';
 import { SYSTEM_REF } from '@/services/janitor/domain/index.js';
 import type {
-  IClock, IRuleRegistry, IRuleConfigRepository,
+  IClock,
+  IRuleRegistry,
+  IRuleConfigRepository,
 } from '@/services/janitor/ports/index.js';
 import type { Logger } from 'pino';
 import type { CodeRule, JanitorRuleReport } from '@/services/janitor/domain/index.js';
 
 const mkRule = (id: string, tags: string[] = []): CodeRule => ({
-  kind: 'code', id, title: id, description: 'd',
-  defaultDataSource: SYSTEM_REF, targetTable: 'runs', targetPkColumn: 'id',
-  tags, paramsSchema: [],
-  defaultSeverity: 'critical', defaultSchedule: '0 * * * *', defaultMaxRowsPerRun: 100,
+  kind: 'code',
+  id,
+  title: id,
+  description: 'd',
+  defaultDataSource: SYSTEM_REF,
+  targetTable: 'runs',
+  targetPkColumn: 'id',
+  tags,
+  paramsSchema: [],
+  defaultSeverity: 'critical',
+  defaultSchedule: '0 * * * *',
+  defaultMaxRowsPerRun: 100,
   detect: async () => [],
 });
 
 const mkReport = (over: Partial<JanitorRuleReport> = {}): JanitorRuleReport => ({
-  cycleId: 'c1', ruleId: 'rule.a', tenantId: 't1', dataSourceRef: SYSTEM_REF,
-  targetTable: 'runs', startedAt: '2026-06-08T12:00:00Z', endedAt: '2026-06-08T12:00:01Z',
-  durationMs: 1000, rowsDetected: 0, rowsRepaired: 0, rowsQuarantined: 0, rowsSkipped: 0,
-  bySeverity: { critical: 0, warning: 0 }, dryRun: false, success: true,
-  triggeredBy: 'scheduler', ...over,
+  cycleId: 'c1',
+  ruleId: 'rule.a',
+  tenantId: 't1',
+  dataSourceRef: SYSTEM_REF,
+  targetTable: 'runs',
+  startedAt: '2026-06-08T12:00:00Z',
+  endedAt: '2026-06-08T12:00:01Z',
+  durationMs: 1000,
+  rowsDetected: 0,
+  rowsRepaired: 0,
+  rowsQuarantined: 0,
+  rowsSkipped: 0,
+  bySeverity: { critical: 0, warning: 0 },
+  dryRun: false,
+  success: true,
+  triggeredBy: 'scheduler',
+  ...over,
 });
 
 const mkLogger = (): Logger =>
@@ -58,27 +80,30 @@ beforeEach(() => {
     get: vi.fn(),
     listAll: vi.fn(() => []),
     listForTenant: vi.fn(() => []),
-    registerCodeRule: vi.fn(), registerDslRule: vi.fn(), unregisterDslRule: vi.fn(),
+    registerCodeRule: vi.fn(),
+    registerDslRule: vi.fn(),
+    unregisterDslRule: vi.fn(),
   };
   configRepo = {
     list: vi.fn(async () => []),
     listAll: vi.fn(async () => []),
     get: vi.fn(async () => null),
-    upsert: vi.fn(), patch: vi.fn(), delete: vi.fn(),
+    upsert: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
   };
   executeRule = {
     execute: vi.fn(async () => ({ report: mkReport(), detected: [] })),
   };
-  uc = new ExecuteCycleUseCase(
-    mkClock(), registry, configRepo,
-    executeRule as never, mkLogger(),
-  );
+  uc = new ExecuteCycleUseCase(mkClock(), registry, configRepo, executeRule as never, mkLogger());
 });
 
 describe('🚨 selectRules — filter logic', () => {
   it('🚨 no filter → tutte le rules del tenant', async () => {
     (registry.listForTenant as ReturnType<typeof vi.fn>).mockReturnValue([
-      mkRule('rule.a'), mkRule('rule.b'), mkRule('rule.c'),
+      mkRule('rule.a'),
+      mkRule('rule.b'),
+      mkRule('rule.c'),
     ]);
     await uc.execute({ triggeredBy: 'manual', dryRun: false });
     expect(executeRule.execute).toHaveBeenCalledTimes(3);
@@ -86,13 +111,19 @@ describe('🚨 selectRules — filter logic', () => {
 
   it('🚨 ruleIds filter → solo i matching', async () => {
     (registry.listForTenant as ReturnType<typeof vi.fn>).mockReturnValue([
-      mkRule('rule.a'), mkRule('rule.b'), mkRule('rule.c'),
+      mkRule('rule.a'),
+      mkRule('rule.b'),
+      mkRule('rule.c'),
     ]);
     await uc.execute({
-      triggeredBy: 'manual', dryRun: false, ruleIds: ['rule.a', 'rule.c'],
+      triggeredBy: 'manual',
+      dryRun: false,
+      ruleIds: ['rule.a', 'rule.c'],
     });
     expect(executeRule.execute).toHaveBeenCalledTimes(2);
-    const ids = executeRule.execute.mock.calls.map(c => (c[0] as { rule: { id: string } }).rule.id);
+    const ids = executeRule.execute.mock.calls.map(
+      (c) => (c[0] as { rule: { id: string } }).rule.id,
+    );
     expect(ids.sort()).toEqual(['rule.a', 'rule.c']);
   });
 
@@ -109,7 +140,9 @@ describe('🚨 selectRules — filter logic', () => {
       mkRule('rule.c', ['critical', 'audit']),
     ]);
     await uc.execute({
-      triggeredBy: 'manual', dryRun: false, tagFilter: ['critical'],
+      triggeredBy: 'manual',
+      dryRun: false,
+      tagFilter: ['critical'],
     });
     expect(executeRule.execute).toHaveBeenCalledTimes(2); // a + c
   });
@@ -121,7 +154,9 @@ describe('🚨 selectRules — filter logic', () => {
       mkRule('rule.c', ['other']),
     ]);
     await uc.execute({
-      triggeredBy: 'manual', dryRun: false, tagFilter: ['critical', 'audit'],
+      triggeredBy: 'manual',
+      dryRun: false,
+      tagFilter: ['critical', 'audit'],
     });
     expect(executeRule.execute).toHaveBeenCalledTimes(2);
   });
@@ -131,7 +166,9 @@ describe('🚨 selectRules — filter logic', () => {
       mkRule('rule.a', ['critical']),
     ]);
     await uc.execute({
-      triggeredBy: 'manual', dryRun: false, tagFilter: ['nonexistent'],
+      triggeredBy: 'manual',
+      dryRun: false,
+      tagFilter: ['nonexistent'],
     });
     expect(executeRule.execute).not.toHaveBeenCalled();
   });
@@ -142,8 +179,10 @@ describe('🚨 selectRules — filter logic', () => {
       mkRule('rule.b', ['critical']),
     ]);
     await uc.execute({
-      triggeredBy: 'manual', dryRun: false,
-      ruleIds: ['rule.a'], tagFilter: ['critical'],
+      triggeredBy: 'manual',
+      dryRun: false,
+      ruleIds: ['rule.a'],
+      tagFilter: ['critical'],
     });
     expect(executeRule.execute).toHaveBeenCalledTimes(1);
   });
@@ -153,9 +192,15 @@ describe('🚨 execute — disabled/lock/skip counters', () => {
   it('🚨 config.enabled=false → SKIP execute + counter rulesSkippedDisabled', async () => {
     (registry.listForTenant as ReturnType<typeof vi.fn>).mockReturnValue([mkRule('rule.a')]);
     (configRepo.get as ReturnType<typeof vi.fn>).mockResolvedValue({
-      ruleId: 'rule.a', tenantId: 't1', enabled: false,
-      schedule: '0 * * * *', dataSourceRef: SYSTEM_REF, maxRowsPerRun: 100,
-      severity: 'critical', params: {}, notifyOnDetection: false,
+      ruleId: 'rule.a',
+      tenantId: 't1',
+      enabled: false,
+      schedule: '0 * * * *',
+      dataSourceRef: SYSTEM_REF,
+      maxRowsPerRun: 100,
+      severity: 'critical',
+      params: {},
+      notifyOnDetection: false,
       updatedAt: '2026-06-08T00:00:00Z',
     });
     const report = await uc.execute({ tenantId: 't1', triggeredBy: 'manual', dryRun: false });
@@ -195,19 +240,33 @@ describe('🚨 execute — disabled/lock/skip counters', () => {
 
   it('🚨 mix: 1 success + 1 lock + 1 disabled', async () => {
     (registry.listForTenant as ReturnType<typeof vi.fn>).mockReturnValue([
-      mkRule('rule.a'), mkRule('rule.b'), mkRule('rule.c'),
+      mkRule('rule.a'),
+      mkRule('rule.b'),
+      mkRule('rule.c'),
     ]);
     (configRepo.get as ReturnType<typeof vi.fn>).mockImplementation((id: string) =>
-      Promise.resolve(id === 'rule.c'
-        ? { ruleId: id, tenantId: 't1', enabled: false, schedule: '0 * * * *',
-            dataSourceRef: SYSTEM_REF, maxRowsPerRun: 100, severity: 'critical',
-            params: {}, notifyOnDetection: false, updatedAt: '2026-06-08' }
-        : null),
+      Promise.resolve(
+        id === 'rule.c'
+          ? {
+              ruleId: id,
+              tenantId: 't1',
+              enabled: false,
+              schedule: '0 * * * *',
+              dataSourceRef: SYSTEM_REF,
+              maxRowsPerRun: 100,
+              severity: 'critical',
+              params: {},
+              notifyOnDetection: false,
+              updatedAt: '2026-06-08',
+            }
+          : null,
+      ),
     );
     executeRule.execute
       .mockResolvedValueOnce({ report: mkReport({ success: true }), detected: [] })
       .mockResolvedValueOnce({
-        report: mkReport({ success: false, error: 'Lock held' }), detected: [],
+        report: mkReport({ success: false, error: 'Lock held' }),
+        detected: [],
       });
     const report = await uc.execute({ tenantId: 't1', triggeredBy: 'manual', dryRun: false });
     expect(report.rulesExecuted).toBe(1);
@@ -249,17 +308,21 @@ describe('🚨 execute — report shape', () => {
   it('🚨 cycleId propagato al executeRule input', async () => {
     (registry.listForTenant as ReturnType<typeof vi.fn>).mockReturnValue([mkRule('rule.a')]);
     const r = await uc.execute({ triggeredBy: 'manual', dryRun: false });
-    expect(executeRule.execute).toHaveBeenCalledWith(expect.objectContaining({
-      cycleId: r.cycleId,
-    }));
+    expect(executeRule.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cycleId: r.cycleId,
+      }),
+    );
   });
 
   it('🚨 tenantId default "default" se omesso', async () => {
     (registry.listForTenant as ReturnType<typeof vi.fn>).mockReturnValue([mkRule('rule.a')]);
     await uc.execute({ triggeredBy: 'scheduler', dryRun: false });
-    expect(executeRule.execute).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: 'default',
-    }));
+    expect(executeRule.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'default',
+      }),
+    );
     expect(registry.listForTenant).toHaveBeenCalledWith('default');
   });
 });
@@ -268,20 +331,25 @@ describe('🚨 execute — sequential ordering', () => {
   it('🚨 rule eseguite in serie (no parallel)', async () => {
     const order: string[] = [];
     (registry.listForTenant as ReturnType<typeof vi.fn>).mockReturnValue([
-      mkRule('rule.a'), mkRule('rule.b'), mkRule('rule.c'),
+      mkRule('rule.a'),
+      mkRule('rule.b'),
+      mkRule('rule.c'),
     ]);
     executeRule.execute.mockImplementation(async (input: { rule: { id: string } }) => {
       order.push(`start-${input.rule.id}`);
-      await new Promise(r => setTimeout(r, 5));
+      await new Promise((r) => setTimeout(r, 5));
       order.push(`end-${input.rule.id}`);
       return { report: mkReport(), detected: [] };
     });
     await uc.execute({ triggeredBy: 'manual', dryRun: false });
     // Sequenza attesa: start-a, end-a, start-b, end-b, start-c, end-c
     expect(order).toEqual([
-      'start-rule.a', 'end-rule.a',
-      'start-rule.b', 'end-rule.b',
-      'start-rule.c', 'end-rule.c',
+      'start-rule.a',
+      'end-rule.a',
+      'start-rule.b',
+      'end-rule.b',
+      'start-rule.c',
+      'end-rule.c',
     ]);
   });
 });

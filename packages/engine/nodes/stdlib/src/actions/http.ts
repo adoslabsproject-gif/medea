@@ -11,4 +11,10 @@
  * `actions/http.js`. Niente logica qui.
  */
 
-export { httpActionNode, httpExecutor, httpNodeDef, HttpConfigSchema, type HttpConfig } from './http/index.js';
+export {
+  httpActionNode,
+  httpExecutor,
+  httpNodeDef,
+  HttpConfigSchema,
+  type HttpConfig,
+} from './http/index.js';

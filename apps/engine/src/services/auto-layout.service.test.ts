@@ -42,7 +42,10 @@ vi.mock('elkjs/lib/elk.bundled.js', () => {
 vi.mock('@/lib/logger.js');
 
 import {
-  autoLayout, type LayoutNode, type LayoutEdge, type LayoutOptions,
+  autoLayout,
+  type LayoutNode,
+  type LayoutEdge,
+  type LayoutOptions,
 } from './auto-layout.service.js';
 
 /**
@@ -53,7 +56,9 @@ function happyPathLayout(graph: unknown): Promise<unknown> {
   const g = graph as { children?: { id: string }[] };
   return Promise.resolve({
     children: (g.children ?? []).map((c, i) => ({
-      id: c.id, x: i * 200 + 10, y: 100,
+      id: c.id,
+      x: i * 200 + 10,
+      y: 100,
     })),
   });
 }
@@ -68,7 +73,11 @@ describe('autoLayout — empty / minimal inputs', () => {
     const r = await autoLayout([], []);
     expect(r.nodes).toEqual([]);
     expect(r.stats).toEqual({
-      laidOut: 0, disconnected: 0, bboxWidth: 0, bboxHeight: 0, rankCount: 0,
+      laidOut: 0,
+      disconnected: 0,
+      bboxWidth: 0,
+      bboxHeight: 0,
+      rankCount: 0,
     });
     expect(m.layoutImpl).not.toHaveBeenCalled();
   });
@@ -110,7 +119,7 @@ describe('🚨 happy path — ELK invocato', () => {
     });
     const r = await autoLayout([{ id: 'n1', defId: 'action_http' }], []);
     expect(r.nodes[0]?.x).toBe(124); // round 123.7
-    expect(r.nodes[0]?.y).toBe(89);  // round 89.4
+    expect(r.nodes[0]?.y).toBe(89); // round 89.4
   });
 
   it('ELK NON restituisce x/y per un nodo → quel nodo mantiene posizione originale', async () => {
@@ -135,7 +144,8 @@ describe('🚨 happy path — ELK invocato', () => {
 describe('🚨 edge filtering', () => {
   it('edge con from inesistente → filtrato (passa solo edges valid)', async () => {
     const nodes: LayoutNode[] = [
-      { id: 'n1', defId: 'a' }, { id: 'n2', defId: 'b' },
+      { id: 'n1', defId: 'a' },
+      { id: 'n2', defId: 'b' },
     ];
     const edges: LayoutEdge[] = [
       { from: 'n1', to: 'n2' },
@@ -157,13 +167,18 @@ describe('🚨 edge filtering', () => {
 });
 
 describe('🚨 port resolution via fromPort', () => {
-  async function getNodePorts(fromPort: string | undefined): Promise<{ layoutOptions: { 'elk.port.side': string } }[]> {
+  async function getNodePorts(
+    fromPort: string | undefined,
+  ): Promise<{ layoutOptions: { 'elk.port.side': string } }[]> {
     const nodes: LayoutNode[] = [
-      { id: 'n1', defId: 'gate' }, { id: 'n2', defId: 'sink' },
+      { id: 'n1', defId: 'gate' },
+      { id: 'n2', defId: 'sink' },
     ];
     const edges: LayoutEdge[] = [{ from: 'n1', to: 'n2', ...(fromPort ? { fromPort } : {}) }];
     await autoLayout(nodes, edges);
-    const passed = m.lastGraphPassed as { children: { id: string; ports?: { layoutOptions: { 'elk.port.side': string } }[] }[] };
+    const passed = m.lastGraphPassed as {
+      children: { id: string; ports?: { layoutOptions: { 'elk.port.side': string } }[] }[];
+    };
     const n1 = passed.children.find((c) => c.id === 'n1');
     return n1?.ports ?? [];
   }
@@ -212,36 +227,45 @@ describe('🚨 port resolution via fromPort', () => {
   it('🚨 portConstraints=FIXED_SIDE quando > 1 porta', async () => {
     const nodes: LayoutNode[] = [
       { id: 'gate', defId: 'gate' },
-      { id: 'a', defId: 'a' }, { id: 'b', defId: 'b' },
+      { id: 'a', defId: 'a' },
+      { id: 'b', defId: 'b' },
     ];
     const edges: LayoutEdge[] = [
       { from: 'gate', to: 'a', fromPort: 'true' },
       { from: 'gate', to: 'b', fromPort: 'false' },
     ];
     await autoLayout(nodes, edges);
-    const passed = m.lastGraphPassed as { children: { id: string; layoutOptions: Record<string, string> }[] };
+    const passed = m.lastGraphPassed as {
+      children: { id: string; layoutOptions: Record<string, string> }[];
+    };
     const gate = passed.children.find((c) => c.id === 'gate');
     expect(gate?.layoutOptions['elk.portConstraints']).toBe('FIXED_SIDE');
   });
 
   it('🚨 portConstraints=FREE quando 1 porta', async () => {
     const nodes: LayoutNode[] = [
-      { id: 'n1', defId: 'a' }, { id: 'n2', defId: 'b' },
+      { id: 'n1', defId: 'a' },
+      { id: 'n2', defId: 'b' },
     ];
     const edges: LayoutEdge[] = [{ from: 'n1', to: 'n2', fromPort: 'true' }];
     await autoLayout(nodes, edges);
-    const passed = m.lastGraphPassed as { children: { id: string; layoutOptions: Record<string, string> }[] };
+    const passed = m.lastGraphPassed as {
+      children: { id: string; layoutOptions: Record<string, string> }[];
+    };
     const n1 = passed.children.find((c) => c.id === 'n1');
     expect(n1?.layoutOptions['elk.portConstraints']).toBe('FREE');
   });
 
   it('🚨 portConstraints=FREE quando NESSUNA porta (zero outbound edge)', async () => {
     const nodes: LayoutNode[] = [
-      { id: 'n1', defId: 'a' }, { id: 'n2', defId: 'b' },
+      { id: 'n1', defId: 'a' },
+      { id: 'n2', defId: 'b' },
     ];
     const edges: LayoutEdge[] = [{ from: 'n2', to: 'n1' }]; // n1 senza outbound
     await autoLayout(nodes, edges);
-    const passed = m.lastGraphPassed as { children: { id: string; layoutOptions: Record<string, string> }[] };
+    const passed = m.lastGraphPassed as {
+      children: { id: string; layoutOptions: Record<string, string> }[];
+    };
     const n1 = passed.children.find((c) => c.id === 'n1');
     expect(n1?.layoutOptions['elk.portConstraints']).toBe('FREE');
   });
@@ -251,7 +275,8 @@ describe('🚨 ELK fail → gridFallback', () => {
   it('ELK throw → grid layout cols=ceil(sqrt(N))', async () => {
     m.layoutImpl.mockRejectedValue(new Error('elk internal error'));
     const nodes: LayoutNode[] = Array.from({ length: 4 }, (_, i) => ({
-      id: `n${String(i)}`, defId: 'a',
+      id: `n${String(i)}`,
+      defId: 'a',
     }));
     const r = await autoLayout(nodes, []);
     // grid: cols = ceil(sqrt(4)) = 2 — i nodi sono piazzati in griglia 2×2
@@ -264,7 +289,10 @@ describe('🚨 ELK fail → gridFallback', () => {
 
   it('grid: 9 nodi → cols=3 (ceil(sqrt(9)))', async () => {
     m.layoutImpl.mockRejectedValue(new Error('boom'));
-    const nodes: LayoutNode[] = Array.from({ length: 9 }, (_, i) => ({ id: `n${String(i)}`, defId: 'a' }));
+    const nodes: LayoutNode[] = Array.from({ length: 9 }, (_, i) => ({
+      id: `n${String(i)}`,
+      defId: 'a',
+    }));
     const r = await autoLayout(nodes, []);
     expect(r.stats.rankCount).toBe(3);
   });
@@ -320,7 +348,7 @@ describe('🚨 sticky notes — preserve original position (BUG-FIX 25 mag 2026)
     const nodes: LayoutNode[] = [
       { id: 'n1', defId: 'a' },
       { id: 's1', defId: 'note', x: 999, y: 999 }, // con pos
-      { id: 's2', defId: 'note' },                 // senza pos
+      { id: 's2', defId: 'note' }, // senza pos
     ];
     const r = await autoLayout(nodes, []);
     expect(r.nodes.find((n) => n.id === 's1')?.x).toBe(999);
@@ -379,7 +407,10 @@ describe('🚨 options — legacy back-compat + new', () => {
 
   it('new opts: layerSpacing + nodeSpacing + edgeRouting + padding', async () => {
     const opts: LayoutOptions = {
-      layerSpacing: 200, nodeSpacing: 90, edgeRouting: 'POLYLINE', padding: 25,
+      layerSpacing: 200,
+      nodeSpacing: 90,
+      edgeRouting: 'POLYLINE',
+      padding: 25,
     };
     await autoLayout([{ id: 'n1', defId: 'a' }], [], opts);
     const passed = m.lastGraphPassed as { layoutOptions: Record<string, string> };
@@ -411,7 +442,8 @@ describe('🚨 options — legacy back-compat + new', () => {
 describe('🚨 stats', () => {
   it('happy: laidOut conta i flow nodes, disconnected conta gli sticky', async () => {
     const nodes: LayoutNode[] = [
-      { id: 'n1', defId: 'a' }, { id: 'n2', defId: 'b' },
+      { id: 'n1', defId: 'a' },
+      { id: 'n2', defId: 'b' },
       { id: 's1', defId: 'note', x: 10, y: 10 },
     ];
     const r = await autoLayout(nodes, []);
@@ -434,7 +466,9 @@ describe('🚨 stats', () => {
     // ELK mock piazza nodes a x = i*200 + 10
     // x/50 round: n1=0/0, n2=4/4, n3=8/8 → 3 buckets
     const nodes: LayoutNode[] = [
-      { id: 'n1', defId: 'a' }, { id: 'n2', defId: 'b' }, { id: 'n3', defId: 'c' },
+      { id: 'n1', defId: 'a' },
+      { id: 'n2', defId: 'b' },
+      { id: 'n3', defId: 'c' },
     ];
     const r = await autoLayout(nodes, []);
     expect(r.stats.rankCount).toBe(3);
@@ -443,13 +477,16 @@ describe('🚨 stats', () => {
 
 describe('preserve user properties on nodes', () => {
   it('proprietà extra (name, notes, config) sopravvivono al layout', async () => {
-    const nodes: LayoutNode[] = [{
-      id: 'n1', defId: 'a',
-      name: 'Custom Name',
-      notes: 'My notes',
-      config: { foo: 'bar' },
-      customField: 'value' as unknown as never,
-    }];
+    const nodes: LayoutNode[] = [
+      {
+        id: 'n1',
+        defId: 'a',
+        name: 'Custom Name',
+        notes: 'My notes',
+        config: { foo: 'bar' },
+        customField: 'value' as unknown as never,
+      },
+    ];
     const r = await autoLayout(nodes, []);
     const n = r.nodes[0];
     expect(n?.name).toBe('Custom Name');

@@ -26,10 +26,10 @@ export const emailPersonalizeNode: NodeModule = {
       'che trasforma sequence di email mass-mailing fredde "Ciao, abbiamo un prodotto per te" in messaggi ' +
       '1-to-1 che fanno apparire la comunicazione manuale e cura del prospect specifico (reply rate aumentano ' +
       '3-5x rispetto a template generico in studi A/B di sales outbound enterprise). Genera 1-2 frasi ' +
-      'personalizzate da iniettare nell\'opening del messaggio cold che CITINO una caratteristica REALE e ' +
-      'specifica dell\'azienda destinataria — estratta dal content del loro sito web reale che il workflow ' +
+      "personalizzate da iniettare nell'opening del messaggio cold che CITINO una caratteristica REALE e " +
+      "specifica dell'azienda destinataria — estratta dal content del loro sito web reale che il workflow " +
       'ha scaricato upstream (action_web_fetch_advanced sulla home/about/products del prospect). ' +
-      'Anti-hallucination check obbligatorio enterprise: l\'evidence_quote (la frase originale dal sito che ' +
+      "Anti-hallucination check obbligatorio enterprise: l'evidence_quote (la frase originale dal sito che " +
       'ha ispirato la personalizzazione) DEVE essere substring esatta del content originale fornito al nodo ' +
       '— se il LLM provasse a inventare ("la vostra certificazione ISO 9001 ottenuta nel 2024" quando NON ' +
       'è nel sito), il check fallisce e il nodo ritorna fallback graceful (saluto generico safe-default) ' +
@@ -96,11 +96,20 @@ export const emailPersonalizeNode: NodeModule = {
         label: 'Contesto prodotto sender (per guidare AI)',
         type: 'expression',
         required: false,
-        defaultValue: 'producono motori idraulici e eliche di manovra per la nautica (bow thrusters, stern thrusters, unità di propulsione)',
+        defaultValue:
+          'producono motori idraulici e eliche di manovra per la nautica (bow thrusters, stern thrusters, unità di propulsione)',
         help: 'Descrizione 1 riga di cosa vendete. Aiuta il LLM a generare snippet che COLLEGA il loro business al vostro prodotto. Default: propulsori nautici. Personalizza per altre verticali.',
       },
     ],
-    outputs: ['snippet', 'evidence_quote', 'confidence', 'success', 'reason', 'llm_provider', 'llm_model'],
+    outputs: [
+      'snippet',
+      'evidence_quote',
+      'confidence',
+      'success',
+      'reason',
+      'llm_provider',
+      'llm_model',
+    ],
     vendor: 'flowforge',
     version: '1.0.0',
   },

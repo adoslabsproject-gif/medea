@@ -33,15 +33,24 @@ interface AutomateStep {
 function parseSteps(raw: unknown): AutomateStep[] {
   let arr: unknown = raw;
   if (typeof raw === 'string' && raw.trim() !== '') {
-    try { arr = JSON.parse(raw); } catch { throw new Error('action_browser_automate: "steps" non è JSON valido'); }
+    try {
+      arr = JSON.parse(raw);
+    } catch {
+      throw new Error('action_browser_automate: "steps" non è JSON valido');
+    }
   }
   if (!Array.isArray(arr)) throw new Error('action_browser_automate: "steps" deve essere un array');
   if (arr.length === 0) throw new Error('action_browser_automate: almeno uno step richiesto');
-  if (arr.length > MAX_STEPS) throw new Error(`action_browser_automate: troppi step (max ${MAX_STEPS.toString()})`);
+  if (arr.length > MAX_STEPS)
+    throw new Error(`action_browser_automate: troppi step (max ${MAX_STEPS.toString()})`);
   return arr.map((s, i) => {
-    if (!s || typeof s !== 'object') throw new Error(`action_browser_automate: step ${i.toString()} non valido`);
+    if (!s || typeof s !== 'object')
+      throw new Error(`action_browser_automate: step ${i.toString()} non valido`);
     const step = s as AutomateStep;
-    if (!STEP_ACTIONS.has(step.action)) throw new Error(`action_browser_automate: azione sconosciuta "${step.action}" allo step ${i.toString()}`);
+    if (!STEP_ACTIONS.has(step.action))
+      throw new Error(
+        `action_browser_automate: azione sconosciuta "${step.action}" allo step ${i.toString()}`,
+      );
     return step;
   });
 }
@@ -51,7 +60,9 @@ const browserAutomateExecutor: NodeExecutor = async (config, _input, _ctx) => {
 
   const endpoint = String(config.endpoint ?? process.env.MEDEA_BROWSER_ENDPOINT ?? '').trim();
   if (!endpoint) {
-    throw new Error('action_browser_automate: endpoint non configurato. Imposta MEDEA_BROWSER_ENDPOINT o il campo "endpoint" (BYO: browserless self-host o endpoint Zeli managed).');
+    throw new Error(
+      'action_browser_automate: endpoint non configurato. Imposta MEDEA_BROWSER_ENDPOINT o il campo "endpoint" (BYO: browserless self-host o endpoint Zeli managed).',
+    );
   }
   const startUrl = String(config.startUrl ?? '').trim();
   if (!startUrl) throw new Error('action_browser_automate: startUrl richiesto');
@@ -76,9 +87,11 @@ const browserAutomateExecutor: NodeExecutor = async (config, _input, _ctx) => {
   });
   if (!res.ok) {
     const errText = await res.text().catch(() => '');
-    throw new Error(`action_browser_automate: endpoint browser ha risposto ${res.status.toString()} ${errText.slice(0, 300)}`);
+    throw new Error(
+      `action_browser_automate: endpoint browser ha risposto ${res.status.toString()} ${errText.slice(0, 300)}`,
+    );
   }
-  const data = await res.json() as {
+  const data = (await res.json()) as {
     extracted?: Record<string, unknown>;
     finalUrl?: string;
     screenshots?: string[];
@@ -115,7 +128,7 @@ export const browserAutomateNode: NodeModule = {
       'Chromium nel container (zero +300MB) — il nodo chiama un endpoint esterno configurabile ' +
       '(MEDEA_BROWSER_ENDPOINT: browserless self-host o endpoint Zeli managed). Difese SSRF integrate: ogni ' +
       'URL navigato (iniziale + ogni goto) è validato (blocco di IP privati, loopback, link-local/metadata cloud) ' +
-      'con le stesse protezioni degli altri nodi web; la chiamata all\'endpoint passa per safe-fetch. Cap di ' +
+      "con le stesse protezioni degli altri nodi web; la chiamata all'endpoint passa per safe-fetch. Cap di " +
       'sicurezza: max 50 passi, timeout 2-120s. ' +
       'Output: { extracted, finalUrl, screenshots, stepsRun }. ' +
       'Use case: login su un portale e scaricare un report dietro autenticazione (type credenziali → click → ' +
@@ -123,27 +136,44 @@ export const browserAutomateNode: NodeModule = {
       'a ogni pagina; attendere il caricamento dinamico (waitFor) prima di estrarre contenuti renderizzati da JS.',
     configFields: [
       {
-        key: 'startUrl', label: 'URL iniziale', type: 'expression', required: true,
+        key: 'startUrl',
+        label: 'URL iniziale',
+        type: 'expression',
+        required: true,
         placeholder: 'https://portale.esempio.it/login',
         help: 'La pagina da cui parte la sessione. Validata anti-SSRF (no IP interni).',
       },
       {
-        key: 'steps', label: 'Passi (JSON)', type: 'json', required: true,
-        placeholder: '[\n  { "action": "waitFor", "selector": "#user" },\n  { "action": "type", "selector": "#user", "text": "{{ $secrets.PORTAL_USER }}" },\n  { "action": "type", "selector": "#pass", "text": "{{ $secrets.PORTAL_PASS }}" },\n  { "action": "click", "selector": "button[type=submit]" },\n  { "action": "extract", "selector": ".report-total", "name": "totale" }\n]',
+        key: 'steps',
+        label: 'Passi (JSON)',
+        type: 'json',
+        required: true,
+        placeholder:
+          '[\n  { "action": "waitFor", "selector": "#user" },\n  { "action": "type", "selector": "#user", "text": "{{ $secrets.PORTAL_USER }}" },\n  { "action": "type", "selector": "#pass", "text": "{{ $secrets.PORTAL_PASS }}" },\n  { "action": "click", "selector": "button[type=submit]" },\n  { "action": "extract", "selector": ".report-total", "name": "totale" }\n]',
         help: 'Sequenza di passi: goto/waitFor/click/type/extract/screenshot. Max 50.',
       },
       {
-        key: 'endpoint', label: 'Endpoint browser (BYO)', type: 'text', required: false,
+        key: 'endpoint',
+        label: 'Endpoint browser (BYO)',
+        type: 'text',
+        required: false,
         placeholder: 'vuoto = env MEDEA_BROWSER_ENDPOINT',
         help: 'Server Playwright esterno (browserless self-host o endpoint Zeli managed). Vuoto = usa env.',
       },
       {
-        key: 'apiKey', label: 'API key endpoint', type: 'secret', required: false,
-        help: 'Token Bearer per l\'endpoint browser, se richiesto.',
+        key: 'apiKey',
+        label: 'API key endpoint',
+        type: 'secret',
+        required: false,
+        help: "Token Bearer per l'endpoint browser, se richiesto.",
       },
       {
-        key: 'timeoutMs', label: 'Timeout (ms)', type: 'number', required: false, defaultValue: '30000',
-        help: 'Tempo massimo dell\'intera sessione (2.000-120.000 ms).',
+        key: 'timeoutMs',
+        label: 'Timeout (ms)',
+        type: 'number',
+        required: false,
+        defaultValue: '30000',
+        help: "Tempo massimo dell'intera sessione (2.000-120.000 ms).",
       },
     ],
     outputs: ['default'],

@@ -55,17 +55,30 @@ async function buildApp(): Promise<Hono> {
 }
 
 async function freshOpenToken(): Promise<string> {
-  const signed = await signTrackingToken({
-    w: '00000000-0000-0000-0000-000000000ws',
-    l: 'lead-1', c: 'c1', s: 's1', k: 'open',
-  }, SECRET);
+  const signed = await signTrackingToken(
+    {
+      w: '00000000-0000-0000-0000-000000000ws',
+      l: 'lead-1',
+      c: 'c1',
+      s: 's1',
+      k: 'open',
+    },
+    SECRET,
+  );
   return signed.token;
 }
 async function freshClickToken(): Promise<string> {
-  const signed = await signTrackingToken({
-    w: '00000000-0000-0000-0000-000000000ws',
-    l: 'lead-1', c: 'c1', s: 's1', k: 'click', i: 0,
-  }, SECRET);
+  const signed = await signTrackingToken(
+    {
+      w: '00000000-0000-0000-0000-000000000ws',
+      l: 'lead-1',
+      c: 'c1',
+      s: 's1',
+      k: 'click',
+      i: 0,
+    },
+    SECRET,
+  );
   return signed.token;
 }
 
@@ -118,15 +131,20 @@ describe('GET /api/track/click/:token', () => {
   it('valid token + valid dest → 302 redirect + INSERT b2b_interactions', async () => {
     const app = await buildApp();
     const dest = 'https://redivivogin.it/catalog?ref=campaign1';
-    const res = await app.request(`/api/track/click/${await freshClickToken()}?u=${encodeURIComponent(dest)}`, {
-      headers: {
-        'user-agent': 'Mozilla/5.0 (Macintosh) AppleWebKit/537.36 Chrome/120 Safari/537.36',
+    const res = await app.request(
+      `/api/track/click/${await freshClickToken()}?u=${encodeURIComponent(dest)}`,
+      {
+        headers: {
+          'user-agent': 'Mozilla/5.0 (Macintosh) AppleWebKit/537.36 Chrome/120 Safari/537.36',
+        },
       },
-    });
+    );
     expect(res.status).toBe(302);
     expect(res.headers.get('location')).toBe(dest);
 
-    const rows = sqliteMem.prepare("SELECT payload_json FROM b2b_interactions WHERE type='email_click'").all() as { payload_json: string }[];
+    const rows = sqliteMem
+      .prepare("SELECT payload_json FROM b2b_interactions WHERE type='email_click'")
+      .all() as { payload_json: string }[];
     expect(rows).toHaveLength(1);
     expect(JSON.parse(rows[0]!.payload_json).url).toBe(dest);
   });

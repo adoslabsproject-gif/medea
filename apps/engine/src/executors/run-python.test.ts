@@ -35,9 +35,9 @@ beforeEach(() => {
 
 describe('run-python executor — validation', () => {
   it('rejecta code vuoto', async () => {
-    await expect(
-      runPythonExecutor({ code: '' }, null, baseContext),
-    ).rejects.toThrow(/obbligatorio/i);
+    await expect(runPythonExecutor({ code: '' }, null, baseContext)).rejects.toThrow(
+      /obbligatorio/i,
+    );
   });
 
   it('rejecta code > 50KB', async () => {
@@ -52,7 +52,14 @@ describe('run-python executor — input passing (inject_files pattern)', () => {
     mockFetch.mockImplementation(async (url) => {
       const u = String(url);
       if (u.includes('/health')) return healthOk();
-      return jsonResp({ success: true, stdout: '{"ok":true}', stderr: '', exit_code: 0, duration_ms: 5, files: [] });
+      return jsonResp({
+        success: true,
+        stdout: '{"ok":true}',
+        stderr: '',
+        exit_code: 0,
+        duration_ms: 5,
+        files: [],
+      });
     });
     const input = { items: [{ id: 1, amount: 99.5 }], total: 99.5 };
     await runPythonExecutor({ code: 'print("hello")' }, input, baseContext);
@@ -61,7 +68,8 @@ describe('run-python executor — input passing (inject_files pattern)', () => {
     const execCall = mockFetch.mock.calls[1];
     expect(execCall?.[0]).toMatch(/\/execute$/);
     const body = JSON.parse(coerceString(execCall?.[1]?.body ?? '{}')) as {
-      code: string; inject_files: { name: string; content: string }[];
+      code: string;
+      inject_files: { name: string; content: string }[];
     };
     expect(body.inject_files).toHaveLength(1);
     expect(body.inject_files[0]?.name).toBe('input.json');
@@ -72,7 +80,14 @@ describe('run-python executor — input passing (inject_files pattern)', () => {
     mockFetch.mockImplementation(async (url) => {
       const u = String(url);
       if (u.includes('/health')) return healthOk();
-      return jsonResp({ success: true, stdout: '', stderr: '', exit_code: 0, duration_ms: 5, files: [] });
+      return jsonResp({
+        success: true,
+        stdout: '',
+        stderr: '',
+        exit_code: 0,
+        duration_ms: 5,
+        files: [],
+      });
     });
     const USER_CODE = 'result = sum([x["amount"] for x in MEDEA_INPUT["items"]])\nprint(result)';
     await runPythonExecutor({ code: USER_CODE }, { items: [{ amount: 10 }] }, baseContext);
@@ -92,9 +107,19 @@ describe('run-python executor — input passing (inject_files pattern)', () => {
     mockFetch.mockImplementation(async (url) => {
       const u = String(url);
       if (u.includes('/health')) return healthOk();
-      return jsonResp({ success: true, stdout: '', stderr: '', exit_code: 0, duration_ms: 5, files: [] });
+      return jsonResp({
+        success: true,
+        stdout: '',
+        stderr: '',
+        exit_code: 0,
+        duration_ms: 5,
+        files: [],
+      });
     });
-    interface Circular { a: number; self?: Circular }
+    interface Circular {
+      a: number;
+      self?: Circular;
+    }
     const circular: Circular = { a: 1 };
     circular.self = circular;
     await runPythonExecutor({ code: 'print(0)' }, circular, baseContext);
@@ -114,9 +139,9 @@ describe('run-python executor — health check', () => {
       if (u.includes('/health')) throw new Error('connect refused');
       return jsonResp({});
     });
-    await expect(
-      runPythonExecutor({ code: 'print(1)' }, null, baseContext),
-    ).rejects.toThrow(/code-runner non raggiungibile/i);
+    await expect(runPythonExecutor({ code: 'print(1)' }, null, baseContext)).rejects.toThrow(
+      /code-runner non raggiungibile/i,
+    );
   });
 
   it('code-runner docker non pronto → error specifico', async () => {
@@ -125,9 +150,9 @@ describe('run-python executor — health check', () => {
       if (u.includes('/health')) return jsonResp({ status: 'ok', docker: false, image: true });
       return jsonResp({});
     });
-    await expect(
-      runPythonExecutor({ code: 'print(1)' }, null, baseContext),
-    ).rejects.toThrow(/code-runner.*Docker o immagine|sandbox non pronti/i);
+    await expect(runPythonExecutor({ code: 'print(1)' }, null, baseContext)).rejects.toThrow(
+      /code-runner.*Docker o immagine|sandbox non pronti/i,
+    );
   });
 });
 
@@ -138,9 +163,9 @@ describe('run-python executor — response handling', () => {
       if (u.includes('/health')) return healthOk();
       return new Response('rate limited', { status: 429 });
     });
-    await expect(
-      runPythonExecutor({ code: 'print(1)' }, null, baseContext),
-    ).rejects.toThrow(/rate limit/i);
+    await expect(runPythonExecutor({ code: 'print(1)' }, null, baseContext)).rejects.toThrow(
+      /rate limit/i,
+    );
   });
 
   it('503 server busy → error specifico', async () => {
@@ -149,16 +174,23 @@ describe('run-python executor — response handling', () => {
       if (u.includes('/health')) return healthOk();
       return new Response('busy', { status: 503 });
     });
-    await expect(
-      runPythonExecutor({ code: 'print(1)' }, null, baseContext),
-    ).rejects.toThrow(/occupato/i);
+    await expect(runPythonExecutor({ code: 'print(1)' }, null, baseContext)).rejects.toThrow(
+      /occupato/i,
+    );
   });
 
   it('success: stdout JSON parsed se parseStdoutJson=true (default)', async () => {
     mockFetch.mockImplementation(async (url) => {
       const u = String(url);
       if (u.includes('/health')) return healthOk();
-      return jsonResp({ success: true, stdout: '{"foo":42}', stderr: '', exit_code: 0, duration_ms: 5, files: [] });
+      return jsonResp({
+        success: true,
+        stdout: '{"foo":42}',
+        stderr: '',
+        exit_code: 0,
+        duration_ms: 5,
+        files: [],
+      });
     });
     const r = await runPythonExecutor({ code: 'print(1)' }, null, baseContext);
     const out = r.output as { stdout: unknown };
@@ -169,7 +201,14 @@ describe('run-python executor — response handling', () => {
     mockFetch.mockImplementation(async (url) => {
       const u = String(url);
       if (u.includes('/health')) return healthOk();
-      return jsonResp({ success: true, stdout: '{"foo":42}', stderr: '', exit_code: 0, duration_ms: 5, files: [] });
+      return jsonResp({
+        success: true,
+        stdout: '{"foo":42}',
+        stderr: '',
+        exit_code: 0,
+        duration_ms: 5,
+        files: [],
+      });
     });
     const r = await runPythonExecutor(
       { code: 'print(1)', parseStdoutJson: 'false' },
@@ -184,11 +223,17 @@ describe('run-python executor — response handling', () => {
     mockFetch.mockImplementation(async (url) => {
       const u = String(url);
       if (u.includes('/health')) return healthOk();
-      return jsonResp({ success: false, stdout: '', stderr: 'NameError: foo not defined', exit_code: 1, duration_ms: 5 });
+      return jsonResp({
+        success: false,
+        stdout: '',
+        stderr: 'NameError: foo not defined',
+        exit_code: 1,
+        duration_ms: 5,
+      });
     });
-    await expect(
-      runPythonExecutor({ code: 'print(foo)' }, null, baseContext),
-    ).rejects.toThrow(/NameError|exit 1/i);
+    await expect(runPythonExecutor({ code: 'print(foo)' }, null, baseContext)).rejects.toThrow(
+      /NameError|exit 1/i,
+    );
   });
 
   it('files output (grafici/csv) ritornati intatti', async () => {
@@ -201,7 +246,9 @@ describe('run-python executor — response handling', () => {
         stderr: '',
         exit_code: 0,
         duration_ms: 5,
-        files: [{ name: 'chart.png', mime: 'image/png', size_bytes: 1234, base64: 'iVBORw0KGgo...' }],
+        files: [
+          { name: 'chart.png', mime: 'image/png', size_bytes: 1234, base64: 'iVBORw0KGgo...' },
+        ],
       });
     });
     const r = await runPythonExecutor({ code: 'pass' }, null, baseContext);
@@ -219,7 +266,14 @@ describe('run-python executor — timeout clamping', () => {
       if (u.includes('/health')) return healthOk();
       const body = JSON.parse(coerceString(init?.body ?? '{}')) as { timeout_ms: number };
       timeoutSent = body.timeout_ms;
-      return jsonResp({ success: true, stdout: '', stderr: '', exit_code: 0, duration_ms: 1, files: [] });
+      return jsonResp({
+        success: true,
+        stdout: '',
+        stderr: '',
+        exit_code: 0,
+        duration_ms: 1,
+        files: [],
+      });
     });
     await runPythonExecutor({ code: 'pass', timeoutMs: 100 }, null, baseContext);
     expect(timeoutSent).toBe(5000);
@@ -232,7 +286,14 @@ describe('run-python executor — timeout clamping', () => {
       if (u.includes('/health')) return healthOk();
       const body = JSON.parse(coerceString(init?.body ?? '{}')) as { timeout_ms: number };
       timeoutSent = body.timeout_ms;
-      return jsonResp({ success: true, stdout: '', stderr: '', exit_code: 0, duration_ms: 1, files: [] });
+      return jsonResp({
+        success: true,
+        stdout: '',
+        stderr: '',
+        exit_code: 0,
+        duration_ms: 1,
+        files: [],
+      });
     });
     await runPythonExecutor({ code: 'pass', timeoutMs: 999999 }, null, baseContext);
     expect(timeoutSent).toBe(120_000);
@@ -247,7 +308,14 @@ describe('run-python executor — network opt-in (Cappella Sistina)', () => {
       if (u.includes('/health')) return healthOk();
       const body = JSON.parse(coerceString(init?.body ?? '{}')) as { allow_network?: boolean };
       allowNetworkSent = body.allow_network;
-      return jsonResp({ success: true, stdout: '', stderr: '', exit_code: 0, duration_ms: 1, files: [] });
+      return jsonResp({
+        success: true,
+        stdout: '',
+        stderr: '',
+        exit_code: 0,
+        duration_ms: 1,
+        files: [],
+      });
     });
     await runPythonExecutor({ code: 'pass' }, null, baseContext);
     expect(allowNetworkSent).toBe(false);
@@ -260,7 +328,14 @@ describe('run-python executor — network opt-in (Cappella Sistina)', () => {
       if (u.includes('/health')) return healthOk();
       const body = JSON.parse(coerceString(init?.body ?? '{}')) as { allow_network?: boolean };
       allowNetworkSent = body.allow_network;
-      return jsonResp({ success: true, stdout: '{"ok":1}', stderr: '', exit_code: 0, duration_ms: 1, files: [] });
+      return jsonResp({
+        success: true,
+        stdout: '{"ok":1}',
+        stderr: '',
+        exit_code: 0,
+        duration_ms: 1,
+        files: [],
+      });
     });
     const r = await runPythonExecutor({ code: 'pass', allowNetwork: true }, null, baseContext);
     expect(allowNetworkSent).toBe(true);
@@ -274,7 +349,14 @@ describe('run-python executor — network opt-in (Cappella Sistina)', () => {
       if (u.includes('/health')) return healthOk();
       const body = JSON.parse(coerceString(init?.body ?? '{}')) as { allow_network?: boolean };
       allowNetworkSent = body.allow_network;
-      return jsonResp({ success: true, stdout: '', stderr: '', exit_code: 0, duration_ms: 1, files: [] });
+      return jsonResp({
+        success: true,
+        stdout: '',
+        stderr: '',
+        exit_code: 0,
+        duration_ms: 1,
+        files: [],
+      });
     });
     await runPythonExecutor({ code: 'pass', allowNetwork: 'true' }, null, baseContext);
     expect(allowNetworkSent).toBe(true);
@@ -287,7 +369,14 @@ describe('run-python executor — network opt-in (Cappella Sistina)', () => {
       if (u.includes('/health')) return healthOk();
       const body = JSON.parse(coerceString(init?.body ?? '{}')) as { allow_network?: boolean };
       allowNetworkSent = body.allow_network;
-      return jsonResp({ success: true, stdout: '', stderr: '', exit_code: 0, duration_ms: 1, files: [] });
+      return jsonResp({
+        success: true,
+        stdout: '',
+        stderr: '',
+        exit_code: 0,
+        duration_ms: 1,
+        files: [],
+      });
     });
     await runPythonExecutor({ code: 'pass', allowNetwork: false }, null, baseContext);
     expect(allowNetworkSent).toBe(false);
@@ -300,7 +389,14 @@ describe('run-python executor — network opt-in (Cappella Sistina)', () => {
       if (u.includes('/health')) return healthOk();
       const body = JSON.parse(coerceString(init?.body ?? '{}')) as { allow_network?: boolean };
       allowNetworkSent = body.allow_network;
-      return jsonResp({ success: true, stdout: '', stderr: '', exit_code: 0, duration_ms: 1, files: [] });
+      return jsonResp({
+        success: true,
+        stdout: '',
+        stderr: '',
+        exit_code: 0,
+        duration_ms: 1,
+        files: [],
+      });
     });
     await runPythonExecutor({ code: 'pass', allowNetwork: 'yes' }, null, baseContext);
     // Solo boolean true o string esatta "true" → flip. Tutto altro → false safe.
@@ -314,32 +410,73 @@ describe('🚨 GAP2 FLIP — run_python: i file output diventano handle BinaryDa
     mockFetch.mockImplementation(async (url) => {
       if (String(url).includes('/health')) return healthOk();
       return jsonResp({
-        success: true, stdout: '', stderr: '', exit_code: 0, duration_ms: 5,
-        files: [{ name: 'chart.png', mime: 'image/png', size_bytes: png.length, base64: png.toString('base64') }],
+        success: true,
+        stdout: '',
+        stderr: '',
+        exit_code: 0,
+        duration_ms: 5,
+        files: [
+          {
+            name: 'chart.png',
+            mime: 'image/png',
+            size_bytes: png.length,
+            base64: png.toString('base64'),
+          },
+        ],
       });
     });
-    const r = await runPythonExecutor({ code: 'open("chart.png","wb").write(b"...")' }, null, baseContext);
+    const r = await runPythonExecutor(
+      { code: 'open("chart.png","wb").write(b"...")' },
+      null,
+      baseContext,
+    );
     const files = (r.output as { files: Record<string, unknown>[] }).files;
     expect(files).toHaveLength(1);
-    const f = files[0] as { name: string; binary: { __ffBinary: boolean; encoding: string; data?: string }; base64?: unknown };
+    const f = files[0] as {
+      name: string;
+      binary: { __ffBinary: boolean; encoding: string; data?: string };
+      base64?: unknown;
+    };
     expect(f.name).toBe('chart.png');
-    expect(f.binary.__ffBinary).toBe(true);   // handle, NON base64 grezzo
+    expect(f.binary.__ffBinary).toBe(true); // handle, NON base64 grezzo
     expect(f.base64).toBeUndefined();
     expect(Buffer.from(f.binary.data ?? '', 'base64').equals(png)).toBe(true);
   });
 
   it('🚨 CON store → il file diventa ref content-addressed (byte fuori dal payload)', async () => {
     const data = Buffer.from('output-file-bytes');
-    const writeBinary = async (buf: Buffer, meta: { mimeType: string; fileName?: string }): Promise<unknown> =>
-      ({ __ffBinary: true, encoding: 'ref', mimeType: meta.mimeType, size: buf.length, ref: 'r'.repeat(64), fileName: meta.fileName });
+    const writeBinary = async (
+      buf: Buffer,
+      meta: { mimeType: string; fileName?: string },
+    ): Promise<unknown> => ({
+      __ffBinary: true,
+      encoding: 'ref',
+      mimeType: meta.mimeType,
+      size: buf.length,
+      ref: 'r'.repeat(64),
+      fileName: meta.fileName,
+    });
     mockFetch.mockImplementation(async (url) => {
       if (String(url).includes('/health')) return healthOk();
       return jsonResp({
-        success: true, stdout: '', stderr: '', exit_code: 0, duration_ms: 5,
-        files: [{ name: 'out.bin', mime: 'application/octet-stream', size_bytes: data.length, base64: data.toString('base64') }],
+        success: true,
+        stdout: '',
+        stderr: '',
+        exit_code: 0,
+        duration_ms: 5,
+        files: [
+          {
+            name: 'out.bin',
+            mime: 'application/octet-stream',
+            size_bytes: data.length,
+            base64: data.toString('base64'),
+          },
+        ],
       });
     });
-    const ctx = { ...baseContext, writeBinary } as unknown as Parameters<typeof runPythonExecutor>[2];
+    const ctx = { ...baseContext, writeBinary } as unknown as Parameters<
+      typeof runPythonExecutor
+    >[2];
     const r = await runPythonExecutor({ code: 'x' }, null, ctx);
     const f = (r.output as { files: { binary: { encoding: string; ref: string } }[] }).files[0]!;
     expect(f.binary.encoding).toBe('ref');
@@ -351,14 +488,20 @@ describe('🚨 run-python executor — cancel cooperativo (fix 2026-06-17)', () 
   it('🚨 context.abortSignal GIÀ abortito → throw "annullato" SENZA chiamare il code-runner', async () => {
     const ac = new AbortController();
     ac.abort();
-    const ctx = { ...baseContext, abortSignal: ac.signal } as unknown as Parameters<typeof runPythonExecutor>[2];
-    await expect(runPythonExecutor({ code: 'print(1)' }, null, ctx)).rejects.toThrow(/annullato|cancellato/i);
+    const ctx = { ...baseContext, abortSignal: ac.signal } as unknown as Parameters<
+      typeof runPythonExecutor
+    >[2];
+    await expect(runPythonExecutor({ code: 'print(1)' }, null, ctx)).rejects.toThrow(
+      /annullato|cancellato/i,
+    );
     expect(mockFetch).not.toHaveBeenCalled(); // nessun round-trip sprecato al code-runner
   });
 
   it('🔒 senza abortSignal → comportamento invariato (health check parte)', async () => {
     mockFetch.mockResolvedValueOnce(healthOk());
-    mockFetch.mockResolvedValueOnce(jsonResp({ success: true, stdout: '1', stderr: '', exitCode: 0, durationMs: 5, files: [] }));
+    mockFetch.mockResolvedValueOnce(
+      jsonResp({ success: true, stdout: '1', stderr: '', exitCode: 0, durationMs: 5, files: [] }),
+    );
     await runPythonExecutor({ code: 'print(1)' }, null, baseContext);
     expect(mockFetch).toHaveBeenCalled(); // health + execute
   });

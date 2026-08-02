@@ -18,17 +18,28 @@
 import { describe, it, expect } from 'vitest';
 import { logicMergeExecutor } from './merge.js';
 
-const ctx = (nodeOutputs: Record<string, unknown> = {}) => ({
-  runId: 'r1', workflowId: 'w1', nodeId: 'merge-1', tenantId: 't1',
-  defId: 'logic_merge', llmProviders: [], secrets: {}, nodeOutputs,
-} as never);
+const ctx = (nodeOutputs: Record<string, unknown> = {}) =>
+  ({
+    runId: 'r1',
+    workflowId: 'w1',
+    nodeId: 'merge-1',
+    tenantId: 't1',
+    defId: 'logic_merge',
+    llmProviders: [],
+    secrets: {},
+    nodeOutputs,
+  }) as never;
 
 describe('🚨 strategy=all (default) — branches map', () => {
   it('🚨 ritorna mappa { branches: { nodeId: output } } + branchCount', async () => {
-    const r = await logicMergeExecutor({} as never, {} as never, ctx({
-      node1: { json: { value: 'a' } },
-      node2: { json: { value: 'b' } },
-    }));
+    const r = await logicMergeExecutor(
+      {} as never,
+      {} as never,
+      ctx({
+        node1: { json: { value: 'a' } },
+        node2: { json: { value: 'b' } },
+      }),
+    );
     expect(r.output).toEqual({
       branches: { node1: { value: 'a' }, node2: { value: 'b' } },
       branchCount: 2,
@@ -36,16 +47,24 @@ describe('🚨 strategy=all (default) — branches map', () => {
   });
 
   it('🚨 default strategy se config.strategy missing', async () => {
-    const r = await logicMergeExecutor({} as never, {} as never, ctx({
-      n1: { json: 1 },
-    }));
+    const r = await logicMergeExecutor(
+      {} as never,
+      {} as never,
+      ctx({
+        n1: { json: 1 },
+      }),
+    );
     expect(r.output).toMatchObject({ branches: { n1: 1 }, branchCount: 1 });
   });
 
   it('🚨 case insensitive "ALL"', async () => {
-    const r = await logicMergeExecutor({ strategy: 'ALL' } as never, {} as never, ctx({
-      n1: { json: 1 },
-    }));
+    const r = await logicMergeExecutor(
+      { strategy: 'ALL' } as never,
+      {} as never,
+      ctx({
+        n1: { json: 1 },
+      }),
+    );
     expect(r.output).toMatchObject({ branchCount: 1 });
   });
 
@@ -59,11 +78,16 @@ describe('🚨 strategy=all (default) — branches map', () => {
     // prototype, non una own-key → costruita via defineProperty per essere fedele al rischio).
     const nodeOutputs: Record<string, unknown> = {};
     Object.defineProperty(nodeOutputs, '__proto__', {
-      value: { json: { polluted: true } }, enumerable: true, configurable: true, writable: true,
+      value: { json: { polluted: true } },
+      enumerable: true,
+      configurable: true,
+      writable: true,
     });
     nodeOutputs.normale = { json: { ok: 1 } };
     const r = await logicMergeExecutor(
-      { sourceNodeIds: '__proto__,normale' } as never, {} as never, ctx(nodeOutputs),
+      { sourceNodeIds: '__proto__,normale' } as never,
+      {} as never,
+      ctx(nodeOutputs),
     );
     const out = r.output as { branches: Record<string, unknown> };
     // own-property innocua sull'oggetto branches (prototype null), MAI sul prototype globale
@@ -232,16 +256,24 @@ describe('🚨 sourceNodeIds — explicit selection', () => {
 
 describe('🚨 .json unwrap (n8n pattern)', () => {
   it('🚨 output wrappato { json: ... } → unwrap', async () => {
-    const r = await logicMergeExecutor({} as never, {} as never, ctx({
-      n1: { json: { user: 'alice' } },
-    }));
+    const r = await logicMergeExecutor(
+      {} as never,
+      {} as never,
+      ctx({
+        n1: { json: { user: 'alice' } },
+      }),
+    );
     expect((r.output as { branches: { n1: unknown } }).branches.n1).toEqual({ user: 'alice' });
   });
 
   it('🚨 output PLAIN (no { json: }) → preservato', async () => {
-    const r = await logicMergeExecutor({} as never, {} as never, ctx({
-      n1: 42 as unknown, // raw, not wrapped
-    }));
+    const r = await logicMergeExecutor(
+      {} as never,
+      {} as never,
+      ctx({
+        n1: 42 as unknown, // raw, not wrapped
+      }),
+    );
     expect((r.output as { branches: { n1: unknown } }).branches.n1).toBe(42);
   });
 });

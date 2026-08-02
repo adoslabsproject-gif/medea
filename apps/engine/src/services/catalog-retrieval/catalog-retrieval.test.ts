@@ -31,7 +31,7 @@ function fakeEmbedder(dim = 64): (t: string) => Promise<number[]> {
 }
 const nullEmbedder = async (): Promise<null> => null;
 
-describe('🔒 ANTI-DRIFT — ogni nodo del catalogo REALE è nell\'index', () => {
+describe("🔒 ANTI-DRIFT — ogni nodo del catalogo REALE è nell'index", () => {
   it('buildCatalogIndex copre il 100% di buildNodeCatalog (CI fail se un nodo manca)', () => {
     const catalog = buildNodeCatalog();
     const index = buildCatalogIndex(catalog);
@@ -51,7 +51,7 @@ describe('🔒 ANTI-DRIFT — ogni nodo del catalogo REALE è nell\'index', () =
   });
 });
 
-describe('inferCategory — parità con l\'euristica portal', () => {
+describe("inferCategory — parità con l'euristica portal", () => {
   it('override espliciti + euristica per-substring', () => {
     expect(inferCategory('action_send_email', 'action')).toBe('email');
     expect(inferCategory('trigger_webhook', 'trigger')).toBe('triggers');
@@ -68,7 +68,7 @@ describe('index-builder helpers', () => {
     // 'invìa' → strip accento → 'invia' → canon IT↔EN → 'send' (così "manda
     // una mail" e "send an email" convergono sugli stessi token).
     expect(tokenize('Invìa una Email città')).toEqual(['send', 'email', 'citta']);
-    expect(tokenize('nodo codice')).toEqual(['code']);   // 'nodo' stopword, 'codice'→'code'
+    expect(tokenize('nodo codice')).toEqual(['code']); // 'nodo' stopword, 'codice'→'code'
     expect(tokenize('filtra il ciclo')).toEqual(['filter', 'loop']);
   });
   it('firstSentence: prima frase troncata', () => {
@@ -118,7 +118,11 @@ describe('CatalogRetriever — lessicale (deterministico, sempre-on)', () => {
 
   it('inUseDefIds: i nodi già nel workflow sono SEMPRE inclusi, in cima', async () => {
     const r = new CatalogRetriever(catalog, nullEmbedder);
-    const top = await r.retrieve('qualcosa di non correlato xyz', { lexicalOnly: true, inUseDefIds: ['logic_loop'], k: 5 });
+    const top = await r.retrieve('qualcosa di non correlato xyz', {
+      lexicalOnly: true,
+      inUseDefIds: ['logic_loop'],
+      k: 5,
+    });
     expect(top[0]!.defId).toBe('logic_loop');
   });
 
@@ -138,15 +142,28 @@ describe('CatalogRetriever — lessicale (deterministico, sempre-on)', () => {
 
 describe('🚨 embedding lifecycle — store persistente, parallelismo, retry TTL', () => {
   const tinyCatalog = buildNodeCatalog().slice(0, 6);
-  const fakeStore = (): { map: Map<string, number[]>; get: (h: string) => number[] | null; put: (h: string, v: number[]) => void } => {
+  const fakeStore = (): {
+    map: Map<string, number[]>;
+    get: (h: string) => number[] | null;
+    put: (h: string, v: number[]) => void;
+  } => {
     const map = new Map<string, number[]>();
-    return { map, get: (h) => map.get(h) ?? null, put: (h, v) => { map.set(h, v); } };
+    return {
+      map,
+      get: (h) => map.get(h) ?? null,
+      put: (h, v) => {
+        map.set(h, v);
+      },
+    };
   };
 
   it('🚨 secondo retriever sullo STESSO store → ZERO chiamate embedder (warm-up gratis)', async () => {
     const store = fakeStore();
     let calls = 0;
-    const embed = async (): Promise<number[]> => { calls += 1; return [1, 0, 0]; };
+    const embed = async (): Promise<number[]> => {
+      calls += 1;
+      return [1, 0, 0];
+    };
     const r1 = new CatalogRetriever(tinyCatalog, embed, store);
     await r1.retrieve('qualunque cosa', { k: 3 });
     expect(calls).toBeGreaterThan(0);
@@ -190,7 +207,9 @@ describe('🚨 embedding lifecycle — store persistente, parallelismo, retry TT
     const embed = async (): Promise<number[]> => {
       inFlight += 1;
       maxInFlight = Math.max(maxInFlight, inFlight);
-      await new Promise((res) => { setTimeout(res, 5); });
+      await new Promise((res) => {
+        setTimeout(res, 5);
+      });
       inFlight -= 1;
       return [1, 1, 0];
     };
@@ -241,34 +260,72 @@ describe('CatalogRetriever — semantico + fusione', () => {
     // l'embedder per defId. La query "gamma" non ha NESSUN termine in comune con
     // i nodi → solo il semantico può far emergere il target.
     const mini = [
-      { defId: 'action_alpha', type: 'action', label: 'Alpha', description: 'gestisce alpha.', fields: [] },
-      { defId: 'action_beta', type: 'action', label: 'Beta', description: 'gestisce beta.', fields: [] },
-      { defId: 'action_delta', type: 'action', label: 'Delta', description: 'gestisce delta.', fields: [] },
+      {
+        defId: 'action_alpha',
+        type: 'action',
+        label: 'Alpha',
+        description: 'gestisce alpha.',
+        fields: [],
+      },
+      {
+        defId: 'action_beta',
+        type: 'action',
+        label: 'Beta',
+        description: 'gestisce beta.',
+        fields: [],
+      },
+      {
+        defId: 'action_delta',
+        type: 'action',
+        label: 'Delta',
+        description: 'gestisce delta.',
+        fields: [],
+      },
     ];
     // Diamo lo STESSO vettore alla query e al searchText di "beta" (contiene 'beta').
     const pilot = async (text: string): Promise<number[]> =>
-      (text.includes('gamma') || text.toLowerCase().includes('beta')) ? [1, 0, 0] : [0, 1, 0];
+      text.includes('gamma') || text.toLowerCase().includes('beta') ? [1, 0, 0] : [0, 1, 0];
     const r = new CatalogRetriever(mini, pilot);
     const fused = await r.retrieve('gamma', { k: 3 });
-    expect(fused.some((n) => n.defId === 'action_beta'), 'la fusione semantica deve far emergere beta').toBe(true);
+    expect(
+      fused.some((n) => n.defId === 'action_beta'),
+      'la fusione semantica deve far emergere beta',
+    ).toBe(true);
     const lex = await r.retrieve('gamma', { k: 3, lexicalOnly: true });
-    expect(lex.some((n) => n.defId === 'action_beta'), 'lessicale puro: gamma non matcha beta').toBe(false);
+    expect(
+      lex.some((n) => n.defId === 'action_beta'),
+      'lessicale puro: gamma non matcha beta',
+    ).toBe(false);
   });
 });
 
 describe('🔒 formatCatalogForPrompt — OUTPUT CONTRACT grounding (B: anti-allucinazione Liara)', () => {
   const entries: NodeCatalogEntry[] = [
     {
-      defId: 'action_demo_contract', type: 'action', label: 'Demo Contract', description: 'fa una demo.', fields: [],
+      defId: 'action_demo_contract',
+      type: 'action',
+      label: 'Demo Contract',
+      description: 'fa una demo.',
+      fields: [],
       outputContract: {
         fields: [
-          { name: 'partnerId', type: 'number | null', desc: 'id del partner; NULL se non trovato e !createIfMissing' },
+          {
+            name: 'partnerId',
+            type: 'number | null',
+            desc: 'id del partner; NULL se non trovato e !createIfMissing',
+          },
           { name: 'found', type: 'boolean', desc: 'true se il partner esiste' },
         ],
         notes: 'Miss + createIfMissing=false → partnerId null (NON 0).',
       },
     },
-    { defId: 'action_no_contract', type: 'action', label: 'Plain', description: 'senza contract.', fields: [] },
+    {
+      defId: 'action_no_contract',
+      type: 'action',
+      label: 'Plain',
+      description: 'senza contract.',
+      fields: [],
+    },
   ];
   const retriever = new CatalogRetriever(entries, nullEmbedder);
 

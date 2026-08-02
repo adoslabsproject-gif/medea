@@ -32,8 +32,16 @@ vi.mock('@/lib/tenant.js', () => ({
     c.req.header('x-tenant-id-resolved') ?? 'tenant-default',
 }));
 vi.mock('@/lib/logger.js');
-vi.mock('@/services/workflow.service.js', () => ({ WorkflowService: class { constructor() { /* noop */ } } }));
-vi.mock('@/services/binary-store.service.js', () => ({ getBinaryStore: () => ({ usage: async () => 4096 }) }));
+vi.mock('@/services/workflow.service.js', () => ({
+  WorkflowService: class {
+    constructor() {
+      /* noop */
+    }
+  },
+}));
+vi.mock('@/services/binary-store.service.js', () => ({
+  getBinaryStore: () => ({ usage: async () => 4096 }),
+}));
 vi.mock('@/storage/db.js', () => ({
   getDatabase: () => ({
     sqlite: { prepare: () => ({ get: () => ({ c: dbState.sqliteCount }) }) },
@@ -60,7 +68,12 @@ function buildApp(auth: { tenantId: string; role?: string } | null): Hono {
     }
     return next();
   });
-  const bus = { subscribe: vi.fn(() => vi.fn()), publish: vi.fn(), emit: vi.fn(), subscribeTo: vi.fn() };
+  const bus = {
+    subscribe: vi.fn(() => vi.fn()),
+    publish: vi.fn(),
+    emit: vi.fn(),
+    subscribeTo: vi.fn(),
+  };
   app.route('/dash', createDashboardRoutes(bus as never));
   return app;
 }
@@ -69,14 +82,24 @@ beforeEach(() => {
   dbState.sqliteCount = 0;
   dbState.rows = [];
   h.fetchUsage.mockReset();
-  for (const k of ['MEDEA_PLAN_CODE', 'MEDEA_MAX_WORKFLOWS', 'MEDEA_MAX_LIARA_TOKENS_MONTHLY', 'MEDEA_PLAN_DISK_GB']) {
+  for (const k of [
+    'MEDEA_PLAN_CODE',
+    'MEDEA_MAX_WORKFLOWS',
+    'MEDEA_MAX_LIARA_TOKENS_MONTHLY',
+    'MEDEA_PLAN_DISK_GB',
+  ]) {
     delete process.env[k];
   }
 });
 
 describe('countActiveWorkflows (pura)', () => {
   it('conta enabled=1 (quota = workflow ATTIVI, non totali)', () => {
-    const sqlite = { prepare: (sql: string) => { expect(sql).toMatch(/enabled = 1/); return { get: () => ({ c: 7 }) }; } };
+    const sqlite = {
+      prepare: (sql: string) => {
+        expect(sql).toMatch(/enabled = 1/);
+        return { get: () => ({ c: 7 }) };
+      },
+    };
     expect(countActiveWorkflows(sqlite as never, 't1')).toBe(7);
   });
   it('nessuna riga → 0 (no crash)', () => {
@@ -94,7 +117,10 @@ describe('GET /plan-usage', () => {
   it('limiti env: assenti → null (illimitato); numerici → parsati', async () => {
     dbState.sqliteCount = 3;
     let res = await buildApp({ tenantId: 't1' }).request('/dash/plan-usage');
-    const data = await res.json() as { workflows: { used: number; limit: number | null }; liara: { tokensLimit: number | null } };
+    const data = (await res.json()) as {
+      workflows: { used: number; limit: number | null };
+      liara: { tokensLimit: number | null };
+    };
     expect(data.workflows.used).toBe(3);
     expect(data.workflows.limit).toBeNull(); // env assente = illimitato
     expect(data.liara.tokensLimit).toBeNull();
@@ -102,14 +128,19 @@ describe('GET /plan-usage', () => {
     process.env.MEDEA_MAX_WORKFLOWS = '10';
     process.env.MEDEA_PLAN_CODE = 'pro';
     res = await buildApp({ tenantId: 't1' }).request('/dash/plan-usage');
-    const data2 = await res.json() as { plan: { code: string }; workflows: { limit: number | null } };
+    const data2 = (await res.json()) as {
+      plan: { code: string };
+      workflows: { limit: number | null };
+    };
     expect(data2.plan.code).toBe('pro');
     expect(data2.workflows.limit).toBe(10);
   });
 
   it('disk usedPercent = 0 quando totalBytes 0 (no divisione per zero); binaryBytes dal store', async () => {
     const res = await buildApp({ tenantId: 't1' }).request('/dash/plan-usage');
-    const data = await res.json() as { disk: { usedPercent: number; binaryBytes: number; totalBytes: number } };
+    const data = (await res.json()) as {
+      disk: { usedPercent: number; binaryBytes: number; totalBytes: number };
+    };
     expect(data.disk.usedPercent).toBe(0); // statfs /data fallisce nei test → 0
     expect(data.disk.binaryBytes).toBe(4096);
   });
@@ -122,13 +153,22 @@ describe('GET /plan-usage', () => {
     // lavorare. Il display DEVE seguire il portal (30M), non l'env stale.
     process.env.MEDEA_MAX_LIARA_TOKENS_MONTHLY = '500000'; // env STALE
     h.fetchUsage.mockResolvedValue({
-      tokensUsed: 1234, tokensLimit: 30000000, // portal = DB aggiornato
-      periodStartIso: '2026-06-15', periodEndIso: '2026-07-15', maxUsers: 10,
+      tokensUsed: 1234,
+      tokensLimit: 30000000, // portal = DB aggiornato
+      periodStartIso: '2026-06-15',
+      periodEndIso: '2026-07-15',
+      maxUsers: 10,
     });
     const res = await buildApp({ tenantId: 't1' }).request('/dash/plan-usage');
-    const data = await res.json() as { liara: { tokensLimit: number | null; tokensUsedMonth: number | null; periodEndIso: string | null } };
-    expect(data.liara.tokensLimit).toBe(30000000);     // PORTAL vince sull'env stale
-    expect(data.liara.tokensUsedMonth).toBe(1234);     // usato reale dal portal
+    const data = (await res.json()) as {
+      liara: {
+        tokensLimit: number | null;
+        tokensUsedMonth: number | null;
+        periodEndIso: string | null;
+      };
+    };
+    expect(data.liara.tokensLimit).toBe(30000000); // PORTAL vince sull'env stale
+    expect(data.liara.tokensUsedMonth).toBe(1234); // usato reale dal portal
     expect(data.liara.periodEndIso).toBe('2026-07-15');
     expect(h.fetchUsage).toHaveBeenCalledWith('tenant-default');
   });
@@ -137,11 +177,14 @@ describe('GET /plan-usage', () => {
     // niente MEDEA_MAX_LIARA_TOKENS_MONTHLY → token unlimited, MA il portal va
     // comunque interrogato per il limite sub-users.
     h.fetchUsage.mockResolvedValue({
-      tokensUsed: 0, tokensLimit: null,
-      periodStartIso: '2026-06-01', periodEndIso: '2026-07-01', maxUsers: 5,
+      tokensUsed: 0,
+      tokensLimit: null,
+      periodStartIso: '2026-06-01',
+      periodEndIso: '2026-07-01',
+      maxUsers: 5,
     });
     const res = await buildApp({ tenantId: 't1' }).request('/dash/plan-usage');
-    const data = await res.json() as { users: { used: number; limit: number | null } };
+    const data = (await res.json()) as { users: { used: number; limit: number | null } };
     expect(h.fetchUsage).toHaveBeenCalledWith('tenant-default');
     expect(data.users.limit).toBe(5); // dal portal (maxUsers del piano)
   });
@@ -149,10 +192,14 @@ describe('GET /plan-usage', () => {
   it('sub-users: used = count SQLite, limit = maxUsers del portal', async () => {
     dbState.sqliteCount = 4; // count utenti abilitati (mock condiviso)
     h.fetchUsage.mockResolvedValue({
-      tokensUsed: 0, tokensLimit: null, periodStartIso: '2026-06-01', periodEndIso: '2026-07-01', maxUsers: 10,
+      tokensUsed: 0,
+      tokensLimit: null,
+      periodStartIso: '2026-06-01',
+      periodEndIso: '2026-07-01',
+      maxUsers: 10,
     });
     const res = await buildApp({ tenantId: 't1' }).request('/dash/plan-usage');
-    const data = await res.json() as { users: { used: number; limit: number | null } };
+    const data = (await res.json()) as { users: { used: number; limit: number | null } };
     expect(data.users.used).toBe(4);
     expect(data.users.limit).toBe(10);
   });
@@ -162,7 +209,14 @@ describe('GET /plan-usage', () => {
     h.fetchUsage.mockResolvedValue(null);
     const res = await buildApp({ tenantId: 't1' }).request('/dash/plan-usage');
     expect(res.status).toBe(200);
-    const data = await res.json() as { liara: { tokensLimit: number | null; tokensUsedMonth: number | null; periodEndIso: string | null }; users: { limit: number | null } };
+    const data = (await res.json()) as {
+      liara: {
+        tokensLimit: number | null;
+        tokensUsedMonth: number | null;
+        periodEndIso: string | null;
+      };
+      users: { limit: number | null };
+    };
     expect(data.liara.tokensUsedMonth).toBeNull();
     expect(data.liara.periodEndIso).toBeNull();
     // Portal irraggiungibile → meglio l'env (stale) che nessun limite: degradazione.
@@ -173,48 +227,86 @@ describe('GET /plan-usage', () => {
 
 describe('POST /runs/progress', () => {
   const post = (app: Hono, body: unknown, headers: Record<string, string> = {}) =>
-    app.request('/dash/runs/progress', { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
+    app.request('/dash/runs/progress', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...headers },
+      body: JSON.stringify(body),
+    });
 
   it('senza auth → 401', async () => {
     expect((await post(buildApp(null), { runIds: ['r1'] })).status).toBe(401);
   });
 
   it('body non-JSON → 400', async () => {
-    const res = await buildApp({ tenantId: 't1' }).request('/dash/runs/progress', { method: 'POST', headers: { 'content-type': 'application/json' }, body: 'rotto{{' });
+    const res = await buildApp({ tenantId: 't1' }).request('/dash/runs/progress', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: 'rotto{{',
+    });
     expect(res.status).toBe(400);
   });
 
   it('runIds vuoto/assente → { runs: {} } senza toccare il DB', async () => {
     expect(await (await post(buildApp({ tenantId: 't1' }), {})).json()).toEqual({ runs: {} });
-    expect(await (await post(buildApp({ tenantId: 't1' }), { runIds: [] })).json()).toEqual({ runs: {} });
+    expect(await (await post(buildApp({ tenantId: 't1' }), { runIds: [] })).json()).toEqual({
+      runs: {},
+    });
   });
 
   it('ANTI-REGRESSIONE bug 25-mag: run RUNNING → progressPercent NULL (non 100%)', async () => {
-    dbState.rows = [{
-      id: 'r1', status: 'running', tenantId: 'tenant-default',
-      stepsJson: JSON.stringify([{ nodeId: 'a', status: 'success' }, { nodeId: 'b', status: 'success' }]),
-      startedAt: Date.now(),
-    }];
+    dbState.rows = [
+      {
+        id: 'r1',
+        status: 'running',
+        tenantId: 'tenant-default',
+        stepsJson: JSON.stringify([
+          { nodeId: 'a', status: 'success' },
+          { nodeId: 'b', status: 'success' },
+        ]),
+        startedAt: Date.now(),
+      },
+    ];
     const res = await post(buildApp({ tenantId: 't1' }), { runIds: ['r1'] });
-    const data = await res.json() as { runs: Record<string, { progressPercent: number | null; currentStep: number }> };
+    const data = (await res.json()) as {
+      runs: Record<string, { progressPercent: number | null; currentStep: number }>;
+    };
     expect(data.runs.r1!.progressPercent).toBeNull(); // il bug: prima ritornava 100
     expect(data.runs.r1!.currentStep).toBe(2);
   });
 
   it('run SUCCESS terminale → 100%; run con step error → errorCount > 0', async () => {
-    dbState.rows = [{
-      id: 'r1', status: 'success', tenantId: 'tenant-default',
-      stepsJson: JSON.stringify([{ nodeId: 'a', status: 'success' }, { nodeId: 'b', status: 'error' }]),
-      startedAt: Date.now(),
-    }];
-    const data = await (await post(buildApp({ tenantId: 't1' }), { runIds: ['r1'] })).json() as { runs: Record<string, { progressPercent: number; errorCount: number }> };
+    dbState.rows = [
+      {
+        id: 'r1',
+        status: 'success',
+        tenantId: 'tenant-default',
+        stepsJson: JSON.stringify([
+          { nodeId: 'a', status: 'success' },
+          { nodeId: 'b', status: 'error' },
+        ]),
+        startedAt: Date.now(),
+      },
+    ];
+    const data = (await (await post(buildApp({ tenantId: 't1' }), { runIds: ['r1'] })).json()) as {
+      runs: Record<string, { progressPercent: number; errorCount: number }>;
+    };
     expect(data.runs.r1!.progressPercent).toBe(100);
     expect(data.runs.r1!.errorCount).toBe(1);
   });
 
   it('stepsJson corrotto → steps [] (no crash), progress safe', async () => {
-    dbState.rows = [{ id: 'r1', status: 'success', tenantId: 'tenant-default', stepsJson: 'rotto{{', startedAt: null }];
-    const data = await (await post(buildApp({ tenantId: 't1' }), { runIds: ['r1'] })).json() as { runs: Record<string, { totalSteps: number; progressPercent: number }> };
+    dbState.rows = [
+      {
+        id: 'r1',
+        status: 'success',
+        tenantId: 'tenant-default',
+        stepsJson: 'rotto{{',
+        startedAt: null,
+      },
+    ];
+    const data = (await (await post(buildApp({ tenantId: 't1' }), { runIds: ['r1'] })).json()) as {
+      runs: Record<string, { totalSteps: number; progressPercent: number }>;
+    };
     expect(data.runs.r1!.totalSteps).toBe(0);
     expect(data.runs.r1!.progressPercent).toBe(0);
   });
@@ -230,10 +322,18 @@ describe('POST /runs/progress', () => {
   it('cross-tenant: x-tenant-id onorato SOLO per superadmin', async () => {
     // utente normale: header ignorato (getTenantId del mock NON legge x-tenant-id)
     dbState.rows = [];
-    const normal = await post(buildApp({ tenantId: 't1', role: 'editor' }), { runIds: ['r1'] }, { 'x-tenant-id': 'altro-tenant' });
+    const normal = await post(
+      buildApp({ tenantId: 't1', role: 'editor' }),
+      { runIds: ['r1'] },
+      { 'x-tenant-id': 'altro-tenant' },
+    );
     expect(normal.status).toBe(200);
     // superadmin: l'header viene usato come tenant (il path tenantId=queryTenant)
-    const admin = await post(buildApp({ tenantId: 't1', role: 'superadmin' }), { runIds: ['r1'] }, { 'x-tenant-id': 'altro-tenant' });
+    const admin = await post(
+      buildApp({ tenantId: 't1', role: 'superadmin' }),
+      { runIds: ['r1'] },
+      { 'x-tenant-id': 'altro-tenant' },
+    );
     expect(admin.status).toBe(200);
   });
 });

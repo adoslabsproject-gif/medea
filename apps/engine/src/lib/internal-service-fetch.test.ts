@@ -24,7 +24,14 @@ import {
   __resetInternalServiceCacheForTest,
 } from './internal-service-fetch.js';
 
-const ENV_KEYS = ['PORTAL_INTERNAL_URL', 'LIARA_URL', 'CODE_RUNNER_URL', 'WHISPER_URL', 'VISION_URL', 'MEDEA_RUNTIME_URL'];
+const ENV_KEYS = [
+  'PORTAL_INTERNAL_URL',
+  'LIARA_URL',
+  'CODE_RUNNER_URL',
+  'WHISPER_URL',
+  'VISION_URL',
+  'MEDEA_RUNTIME_URL',
+];
 let savedEnv: Record<string, string | undefined>;
 
 beforeEach(() => {
@@ -34,28 +41,31 @@ beforeEach(() => {
   __resetInternalServiceCacheForTest();
 });
 afterEach(() => {
-  for (const [k, v] of Object.entries(savedEnv)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
+  for (const [k, v] of Object.entries(savedEnv)) {
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
+  }
   __resetInternalServiceCacheForTest();
 });
 
 describe('isInternalServiceUrl — registro dei NOSTRI servizi', () => {
   it.each([
     'http://host.docker.internal:3006/api/v1/internal/x', // portal
-    'http://host.docker.internal:3003/v1/complete',       // liara
-    'http://host.docker.internal:5003/execute',           // code-runner
-    'http://host.docker.internal:5005/transcribe',        // whisper
-    'http://host.docker.internal:5004/analyze',           // vision
-    'http://127.0.0.1:3100/api/v1/db/insert',             // runtime loopback
+    'http://host.docker.internal:3003/v1/complete', // liara
+    'http://host.docker.internal:5003/execute', // code-runner
+    'http://host.docker.internal:5005/transcribe', // whisper
+    'http://host.docker.internal:5004/analyze', // vision
+    'http://127.0.0.1:3100/api/v1/db/insert', // runtime loopback
   ])('riconosce il servizio interno registrato: %s', (url) => {
     expect(isInternalServiceUrl(url)).toBe(true);
   });
 
   it.each([
-    'https://api.github.com/zen',          // esterno pubblico
-    'http://10.0.0.5/secret',              // IP privato ARBITRARIO (non nostro)
-    'http://169.254.169.254/latest/meta',  // cloud metadata
-    'http://host.docker.internal:9999/x',  // host.docker.internal ma PORTA non-nostra
-    'http://127.0.0.1:6379/',              // loopback ma porta Redis, non registrata
+    'https://api.github.com/zen', // esterno pubblico
+    'http://10.0.0.5/secret', // IP privato ARBITRARIO (non nostro)
+    'http://169.254.169.254/latest/meta', // cloud metadata
+    'http://host.docker.internal:9999/x', // host.docker.internal ma PORTA non-nostra
+    'http://127.0.0.1:6379/', // loopback ma porta Redis, non registrata
     'not a url',
   ])('NON è interno (resta protetto): %s', (url) => {
     expect(isInternalServiceUrl(url)).toBe(false);
@@ -90,14 +100,22 @@ describe('internalAwareFetch — concede il bypass SOLO ai servizi registrati', 
 
 describe('internalAwareFetch — scope per-callsite (allowlist minima)', () => {
   it('scope corretto (whisper→whisper) → bypass concesso', async () => {
-    await internalAwareFetch('http://host.docker.internal:5005/transcribe', {}, { allow: 'whisper' });
+    await internalAwareFetch(
+      'http://host.docker.internal:5005/transcribe',
+      {},
+      { allow: 'whisper' },
+    );
     expect(calls[0]!.opts.allowPrivateHost).toBe(true);
   });
 
   it('🔒 SICUREZZA: endpoint user DEVIATO su un ALTRO nostro servizio (whisper→Liara) → NIENTE bypass', async () => {
     // cfg.whisperEndpoint = "http://host.docker.internal:3003" (Liara, non whisper).
     // Lo scope 'whisper' NON concede il bypass per l'origin Liara.
-    await internalAwareFetch('http://host.docker.internal:3003/transcribe', {}, { allow: 'whisper' });
+    await internalAwareFetch(
+      'http://host.docker.internal:3003/transcribe',
+      {},
+      { allow: 'whisper' },
+    );
     expect(calls[0]!.opts.allowPrivateHost).toBeUndefined();
   });
 
@@ -123,7 +141,14 @@ describe('registro — env override + memoizzazione', () => {
 
   it('internalServiceUrls() espone i 6 servizi noti', () => {
     const u = internalServiceUrls();
-    expect(Object.keys(u).sort()).toEqual(['codeRunner', 'liara', 'portal', 'runtime', 'vision', 'whisper']);
+    expect(Object.keys(u).sort()).toEqual([
+      'codeRunner',
+      'liara',
+      'portal',
+      'runtime',
+      'vision',
+      'whisper',
+    ]);
   });
 
   it('i default dei servizi sono coerenti col registro (no drift)', () => {
@@ -148,7 +173,9 @@ describe('🛡 anti-regressione: i callsite interni usano internalAwareFetch (no
   ])('%s usa internalAwareFetch e NON importa safeOutboundFetch', (rel) => {
     const src = readFileSync(join(ROOT, rel), 'utf8');
     expect(src, `${rel} deve usare internalAwareFetch`).toMatch(/internalAwareFetch/);
-    expect(src, `${rel} non deve chiamare safeOutboundFetch raw`).not.toMatch(/\bsafeOutboundFetch\s*\(/);
+    expect(src, `${rel} non deve chiamare safeOutboundFetch raw`).not.toMatch(
+      /\bsafeOutboundFetch\s*\(/,
+    );
   });
 
   // Fase 2 (#14): legal-compliance e debug-run-failure NON fanno più fetch
@@ -156,13 +183,17 @@ describe('🛡 anti-regressione: i callsite interni usano internalAwareFetch (no
   // (gateway metered). Il guard qui impedisce la REINTRODUZIONE del percorso
   // morto (`LIARA_URL/v1/complete`: route inesistente + 401 internalAuth) e
   // di qualsiasi fetch raw.
-  it.each([
-    'executors/legal-compliance.ts',
-    'executors/debug-run-failure.ts',
-  ])('%s usa dispatchLLMChat e NON reintroduce /v1/complete né fetch raw', (rel) => {
-    const src = readFileSync(join(ROOT, rel), 'utf8');
-    expect(src, `${rel} deve usare dispatchLLMChat (gateway metered)`).toMatch(/dispatchLLMChat/);
-    expect(src, `${rel} non deve tornare al percorso morto /v1/complete`).not.toMatch(/v1\/complete/);
-    expect(src, `${rel} non deve chiamare safeOutboundFetch raw`).not.toMatch(/\bsafeOutboundFetch\s*\(/);
-  });
+  it.each(['executors/legal-compliance.ts', 'executors/debug-run-failure.ts'])(
+    '%s usa dispatchLLMChat e NON reintroduce /v1/complete né fetch raw',
+    (rel) => {
+      const src = readFileSync(join(ROOT, rel), 'utf8');
+      expect(src, `${rel} deve usare dispatchLLMChat (gateway metered)`).toMatch(/dispatchLLMChat/);
+      expect(src, `${rel} non deve tornare al percorso morto /v1/complete`).not.toMatch(
+        /v1\/complete/,
+      );
+      expect(src, `${rel} non deve chiamare safeOutboundFetch raw`).not.toMatch(
+        /\bsafeOutboundFetch\s*\(/,
+      );
+    },
+  );
 });

@@ -16,12 +16,19 @@ const resolveMock = vi.hoisted(() => vi.fn());
 const streamingMock = vi.hoisted(() => vi.fn());
 const completeMock = vi.hoisted(() => vi.fn());
 const insertMock = vi.hoisted(() => vi.fn(() => 'interaction-1'));
-const rateLimitMiddleware = vi.hoisted(() => vi.fn(() => async (_c: unknown, next: () => Promise<void>) => { await next(); }));
+const rateLimitMiddleware = vi.hoisted(() =>
+  vi.fn(() => async (_c: unknown, next: () => Promise<void>) => {
+    await next();
+  }),
+);
 
 vi.mock('@/services/llm-resolver.service.js', () => {
   class NoLlmProviderError extends Error {
     httpStatus = 400;
-    constructor(msg: string, status?: number) { super(msg); if (status) this.httpStatus = status; }
+    constructor(msg: string, status?: number) {
+      super(msg);
+      if (status) this.httpStatus = status;
+    }
   }
   return { llmResolver: { resolve: resolveMock }, NoLlmProviderError };
 });
@@ -64,13 +71,12 @@ const VALID_NODE = {
     icon: 'credit-card',
     color: '#635bff',
     description: 'Create a charge via Stripe API.',
-    configFields: [
-      { key: 'amount', label: 'Amount', type: 'number', required: true },
-    ],
+    configFields: [{ key: 'amount', label: 'Amount', type: 'number', required: true }],
     vendor: 'third-party',
     version: '1.0.0',
   },
-  executorSource: "async function execute(config, input, context) { const r = await fetch('https://api.stripe.com/v1/charges'); return { output: await r.json(), durationMs: 0 }; }",
+  executorSource:
+    "async function execute(config, input, context) { const r = await fetch('https://api.stripe.com/v1/charges'); return { output: await r.json(), durationMs: 0 }; }",
   rationale: 'Stripe REST API.',
   warnings: ['no idempotency key'],
 };
@@ -98,8 +104,14 @@ function parseSse(text: string): { event: string; data: unknown }[] {
   const out: { event: string; data: unknown }[] = [];
   for (const block of text.split('\n\n')) {
     const lines = block.split('\n');
-    const ev = lines.find((l) => l.startsWith('event:'))?.slice(6).trim();
-    const dataLine = lines.find((l) => l.startsWith('data:'))?.slice(5).trim();
+    const ev = lines
+      .find((l) => l.startsWith('event:'))
+      ?.slice(6)
+      .trim();
+    const dataLine = lines
+      .find((l) => l.startsWith('data:'))
+      ?.slice(5)
+      .trim();
     if (ev && dataLine !== undefined) out.push({ event: ev, data: JSON.parse(dataLine) });
   }
   return out;
@@ -154,11 +166,13 @@ describe('🚨 streaming SSE — happy path (bridge reale)', () => {
     emitChunks(chunkify(VALID_RAW, 5));
     // userId viene da c.get('auth').userId (iniettato in makeApp), NON dall'header x-user-id.
     await postStream({ description: 'crea nodo Stripe charge' });
-    expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({
-      context: { tenantId: 'tenant-1', userId: 'user-7' },
-      interactionType: 'node_generate',
-      response: expect.objectContaining({ model: 'liara/qwen3-32b' }),
-    }));
+    expect(insertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: { tenantId: 'tenant-1', userId: 'user-7' },
+        interactionType: 'node_generate',
+        response: expect.objectContaining({ model: 'liara/qwen3-32b' }),
+      }),
+    );
   });
 });
 
@@ -175,7 +189,10 @@ describe('🚨 streaming SSE — error mapping', () => {
   });
 
   it('🚨 executor con token vietati → "forbidden" → status 422', async () => {
-    const evil = { ...VALID_NODE, executorSource: 'async function execute(c,i,x){ return process.env.SECRET; }' };
+    const evil = {
+      ...VALID_NODE,
+      executorSource: 'async function execute(c,i,x){ return process.env.SECRET; }',
+    };
     emitChunks(['```json\n' + JSON.stringify(evil) + '\n```']);
     const { events } = await postStream({ description: 'descrizione abbastanza lunga' });
     const err = events.find((e) => e.event === 'error');
@@ -195,7 +212,8 @@ describe('🚨 streaming SSE — guardie a monte invariate', () => {
   it('🚨 zod: description < 10 char → 400 (no SSE)', async () => {
     const app = makeApp();
     const res = await app.request('/node-generator/generate', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ description: 'short', stream: true }),
     });
     expect(res.status).toBe(400);
@@ -203,10 +221,13 @@ describe('🚨 streaming SSE — guardie a monte invariate', () => {
 
   it('🚨 NoLlmProviderError (quota) → 402 JSON, lo stream non parte', async () => {
     const { NoLlmProviderError } = await import('@/services/llm-resolver.service.js');
-    resolveMock.mockImplementation(() => { throw new NoLlmProviderError('Quota exceeded', 402); });
+    resolveMock.mockImplementation(() => {
+      throw new NoLlmProviderError('Quota exceeded', 402);
+    });
     const app = makeApp();
     const res = await app.request('/node-generator/generate', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ description: 'descrizione abbastanza lunga', stream: true }),
     });
     expect(res.status).toBe(402);

@@ -27,7 +27,14 @@
  * per-host attraverso le call, behavior corretto out-of-the-box.
  */
 
-import { executeWithHostBreaker, withSpan, httpSpanAttrs, HttpError, NetworkError, TimeoutError } from '@medea/engine-nodes-stdlib';
+import {
+  executeWithHostBreaker,
+  withSpan,
+  httpSpanAttrs,
+  HttpError,
+  NetworkError,
+  TimeoutError,
+} from '@medea/engine-nodes-stdlib';
 import { getSecureDispatcher, getPermissiveDispatcher } from './secure-dispatcher.js';
 import { readTextTruncated } from './capped-response.js';
 
@@ -102,14 +109,20 @@ function stripCrossHostHeaders(h: HeadersInitCompat | undefined): Headers {
   return out;
 }
 
-export async function safeOutboundFetch(url: string, opts: SafeFetchOptions = {}): Promise<Response> {
+export async function safeOutboundFetch(
+  url: string,
+  opts: SafeFetchOptions = {},
+): Promise<Response> {
   // SSRF guard PRIMA di toccare la rete — saltato SOLO per host interni trusted
   // (allowPrivateHost, URL hard-coded server-side, mai user-controlled).
   const { validateUrlForFetch } = await import('@medea/engine-safe-fetch');
   if (!opts.allowPrivateHost) {
     const safety = validateUrlForFetch(url);
     if (!safety.ok) {
-      throw new NetworkError(`SSRF blocked: ${safety.reason ?? 'BLOCKED'} (${safety.detail ?? 'unsafe URL'})`, { url });
+      throw new NetworkError(
+        `SSRF blocked: ${safety.reason ?? 'BLOCKED'} (${safety.detail ?? 'unsafe URL'})`,
+        { url },
+      );
     }
     // Il DNS-rebinding (host pubblico → IP privato) è bloccato a livello
     // connessione dal dispatcher sicuro (sotto), non da una pre-risoluzione.
@@ -136,7 +149,9 @@ export async function safeOutboundFetch(url: string, opts: SafeFetchOptions = {}
   // ogni hop e ogni connessione del pool). I servizi interni trusted
   // (allowPrivateHost) restano sul dispatcher di default (devono raggiungere
   // 127.0.0.1 dei nostri servizi ML).
-  const dispatcher: unknown = opts.allowPrivateHost ? getPermissiveDispatcher() : getSecureDispatcher();
+  const dispatcher: unknown = opts.allowPrivateHost
+    ? getPermissiveDispatcher()
+    : getSecureDispatcher();
 
   return withSpan(spanName, httpSpanAttrs(method, url), async () => {
     return executeWithHostBreaker(url, async () => {
@@ -177,16 +192,29 @@ export async function safeOutboundFetch(url: string, opts: SafeFetchOptions = {}
           const isRedirect = res.status >= 300 && res.status < 400 && res.headers.has('location');
           if (!isRedirect) return res;
           if (hop === MAX_REDIRECT_HOPS) {
-            try { await res.body?.cancel(); } catch { /* drain FD: cancel non bufferizza (arrayBuffer leggeva tutto → OOM su 3xx con body enorme) */ }
-            throw new NetworkError(`too many redirects (max ${String(MAX_REDIRECT_HOPS)})`, { url: currentUrl });
+            try {
+              await res.body?.cancel();
+            } catch {
+              /* drain FD: cancel non bufferizza (arrayBuffer leggeva tutto → OOM su 3xx con body enorme) */
+            }
+            throw new NetworkError(`too many redirects (max ${String(MAX_REDIRECT_HOPS)})`, {
+              url: currentUrl,
+            });
           }
           const locationRaw = res.headers.get('location') ?? '';
           let nextUrl: string;
-          try { nextUrl = new URL(locationRaw, currentUrl).toString(); }
-          catch { return res; } // Location malformata → restituiamo la 3xx verbatim
+          try {
+            nextUrl = new URL(locationRaw, currentUrl).toString();
+          } catch {
+            return res;
+          } // Location malformata → restituiamo la 3xx verbatim
           const reval = validateUrlForFetch(nextUrl);
           if (!reval.ok) {
-            try { await res.body?.cancel(); } catch { /* drain FD: cancel non bufferizza (arrayBuffer leggeva tutto → OOM su 3xx con body enorme) */ }
+            try {
+              await res.body?.cancel();
+            } catch {
+              /* drain FD: cancel non bufferizza (arrayBuffer leggeva tutto → OOM su 3xx con body enorme) */
+            }
             throw new NetworkError(
               `SSRF blocked redirect: ${reval.reason ?? 'BLOCKED'} (${reval.detail ?? 'unsafe Location'})`,
               { url: nextUrl },
@@ -196,8 +224,13 @@ export async function safeOutboundFetch(url: string, opts: SafeFetchOptions = {}
           // bloccato a livello connessione dal dispatcher sicuro (ogni hop usa
           // lo stesso dispatcher) → niente pre-risoluzione qui.
           // Cross-host? Strip credenziali dai successivi hop.
-          if (hostOf(nextUrl) !== initialHost) currentHeaders = stripCrossHostHeaders(currentHeaders);
-          try { await res.body?.cancel(); } catch { /* drain FD: cancel non bufferizza (arrayBuffer leggeva tutto → OOM su 3xx con body enorme) */ }
+          if (hostOf(nextUrl) !== initialHost)
+            currentHeaders = stripCrossHostHeaders(currentHeaders);
+          try {
+            await res.body?.cancel();
+          } catch {
+            /* drain FD: cancel non bufferizza (arrayBuffer leggeva tutto → OOM su 3xx con body enorme) */
+          }
           currentUrl = nextUrl;
         }
         // Unreachable — il loop ritorna o throw prima.
@@ -225,15 +258,21 @@ export async function safeOutboundFetch(url: string, opts: SafeFetchOptions = {}
  * throwa HttpError tipizzato se !res.ok. Util per gli executor che vogliono
  * solo "fetch + throw on error" semantica.
  */
-export async function safeOutboundFetchOk(url: string, opts: SafeFetchOptions = {}): Promise<Response> {
+export async function safeOutboundFetchOk(
+  url: string,
+  opts: SafeFetchOptions = {},
+): Promise<Response> {
   const res = await safeOutboundFetch(url, opts);
   if (!res.ok) {
     // Excerpt errore CAPPATO (readTextTruncated ferma lo stream a 8KB): un non-2xx
     // con body enorme con `res.text()` veniva bufferizzato TUTTO → OOM (poi scartato
     // a 500 char). Tronca durante il download, non dopo.
     let bodyExcerpt: string | undefined;
-    try { bodyExcerpt = (await readTextTruncated(res, 8192)).text.slice(0, 500); }
-    catch { /* drained twice — no-op */ }
+    try {
+      bodyExcerpt = (await readTextTruncated(res, 8192)).text.slice(0, 500);
+    } catch {
+      /* drained twice — no-op */
+    }
     throw new HttpError({
       status: res.status,
       statusText: res.statusText,
@@ -245,6 +284,9 @@ export async function safeOutboundFetchOk(url: string, opts: SafeFetchOptions = 
 }
 
 function hostOf(url: string): string {
-  try { return new URL(url).host; }
-  catch { return 'unknown'; }
+  try {
+    return new URL(url).host;
+  } catch {
+    return 'unknown';
+  }
 }

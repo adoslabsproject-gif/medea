@@ -9,7 +9,16 @@ import type { Database } from '@medea/engine-db-studio-core';
 import { DuckDbAdapter } from './index.js';
 
 function makeDb(): Database {
-  return { id: 't', tenantId: 'default', name: 't', connection: { engine: 'duckdb', embedded: true }, tables: [], relations: [], createdAt: '', updatedAt: '' };
+  return {
+    id: 't',
+    tenantId: 'default',
+    name: 't',
+    connection: { engine: 'duckdb', embedded: true },
+    tables: [],
+    relations: [],
+    createdAt: '',
+    updatedAt: '',
+  };
 }
 
 const adapters: DuckDbAdapter[] = [];
@@ -19,17 +28,28 @@ async function connect(): Promise<DuckDbAdapter> {
   adapters.push(a);
   return a;
 }
-afterEach(async () => { for (const a of adapters.splice(0)) await a.disconnect().catch(() => { /* ignore */ }); });
+afterEach(async () => {
+  for (const a of adapters.splice(0))
+    await a.disconnect().catch(() => {
+      /* ignore */
+    });
+});
 
 describe('DuckDbAdapter.introspectRelations (reale)', () => {
   it('FK reale orders.user_id → users.id viene introspettata correttamente', async () => {
     const a = await connect();
     await a.executeRaw('CREATE TABLE users (id INTEGER PRIMARY KEY);');
-    await a.executeRaw('CREATE TABLE orders (id INTEGER PRIMARY KEY, user_id INTEGER REFERENCES users(id));');
+    await a.executeRaw(
+      'CREATE TABLE orders (id INTEGER PRIMARY KEY, user_id INTEGER REFERENCES users(id));',
+    );
     const rels = await a.introspectRelations();
     expect(rels).toHaveLength(1);
     expect(rels[0]).toMatchObject({
-      fromTable: 'orders', fromColumn: 'user_id', toTable: 'users', toColumn: 'id', kind: 'one-to-many',
+      fromTable: 'orders',
+      fromColumn: 'user_id',
+      toTable: 'users',
+      toColumn: 'id',
+      kind: 'one-to-many',
     });
   });
 

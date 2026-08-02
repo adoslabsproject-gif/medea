@@ -26,7 +26,10 @@ export function omit<T extends object, K extends keyof T>(obj: T, keys: readonly
 }
 
 /** Group by predicate o key. */
-export function groupBy<T>(items: readonly T[], key: keyof T | ((item: T) => string)): Record<string, T[]> {
+export function groupBy<T>(
+  items: readonly T[],
+  key: keyof T | ((item: T) => string),
+): Record<string, T[]> {
   const out: Record<string, T[]> = {};
   for (const it of items) {
     const k = typeof key === 'function' ? key(it) : String(it[key]);
@@ -38,7 +41,8 @@ export function groupBy<T>(items: readonly T[], key: keyof T | ((item: T) => str
 /** Sort by predicate. Stable: O(n log n). */
 export function sortBy<T>(items: readonly T[], by: (item: T) => number | string): T[] {
   return [...items].sort((a, b) => {
-    const va = by(a), vb = by(b);
+    const va = by(a),
+      vb = by(b);
     if (va < vb) return -1;
     if (va > vb) return 1;
     return 0;
@@ -100,7 +104,10 @@ export function minBy<T>(items: readonly T[], by: (item: T) => number): T | unde
   let bestVal = by(best);
   for (let i = 1; i < items.length; i++) {
     const v = by(items[i]!);
-    if (v < bestVal) { best = items[i]!; bestVal = v; }
+    if (v < bestVal) {
+      best = items[i]!;
+      bestVal = v;
+    }
   }
   return best;
 }
@@ -112,14 +119,20 @@ export function maxBy<T>(items: readonly T[], by: (item: T) => number): T | unde
   let bestVal = by(best);
   for (let i = 1; i < items.length; i++) {
     const v = by(items[i]!);
-    if (v > bestVal) { best = items[i]!; bestVal = v; }
+    if (v > bestVal) {
+      best = items[i]!;
+      bestVal = v;
+    }
   }
   return best;
 }
 
 /** Range [start..end) con step (default 1). */
 export function range(start: number, end?: number, step = 1): number[] {
-  if (end === undefined) { end = start; start = 0; }
+  if (end === undefined) {
+    end = start;
+    start = 0;
+  }
   if (step === 0) throw new Error('range step cannot be 0');
   const out: number[] = [];
   if (step > 0) {

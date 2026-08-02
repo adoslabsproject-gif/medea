@@ -11,8 +11,12 @@ function makeFlakeyStore(failuresFirst: number) {
         if (calls <= failuresFirst) throw new Error('redis: timeout');
         return { acquired: true };
       }),
-      complete: vi.fn(async () => { /* no-op */ }),
-      release: vi.fn(async () => { /* no-op */ }),
+      complete: vi.fn(async () => {
+        /* no-op */
+      }),
+      release: vi.fn(async () => {
+        /* no-op */
+      }),
       size: vi.fn(async () => 0),
     } as unknown as IdempotencyStore,
     getCalls: () => calls,
@@ -43,7 +47,7 @@ describe('CircuitBreakerIdempotencyStore', () => {
       await cb.release('k');
       const size = await cb.size();
       expect(size).toBe(0);
-      expect((store.complete as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith('k', { x: 1 });
+      expect(store.complete as ReturnType<typeof vi.fn>).toHaveBeenCalledWith('k', { x: 1 });
     });
   });
 
@@ -71,8 +75,14 @@ describe('CircuitBreakerIdempotencyStore', () => {
 
     it('complete su breaker OPEN = no-op silenzioso (NO throw)', async () => {
       const { store, getCalls } = makeFlakeyStore(100);
-      const cb = new CircuitBreakerIdempotencyStore(store, { failureThreshold: 5, breakerName: 'test-complete-open' });
-      for (let i = 0; i < 5; i += 1) await cb.acquire('k', 60_000).catch(() => { /* noop */ });
+      const cb = new CircuitBreakerIdempotencyStore(store, {
+        failureThreshold: 5,
+        breakerName: 'test-complete-open',
+      });
+      for (let i = 0; i < 5; i += 1)
+        await cb.acquire('k', 60_000).catch(() => {
+          /* noop */
+        });
       const callsBefore = getCalls();
       await expect(cb.complete('k', { x: 1 })).resolves.toBeUndefined();
       // complete NON ha chiamato inner perche\` breaker e\` OPEN
@@ -81,15 +91,27 @@ describe('CircuitBreakerIdempotencyStore', () => {
 
     it('release su breaker OPEN = no-op (TTL decay handles cleanup)', async () => {
       const { store } = makeFlakeyStore(100);
-      const cb = new CircuitBreakerIdempotencyStore(store, { failureThreshold: 5, breakerName: 'test-release-open' });
-      for (let i = 0; i < 5; i += 1) await cb.acquire('k', 60_000).catch(() => { /* noop */ });
+      const cb = new CircuitBreakerIdempotencyStore(store, {
+        failureThreshold: 5,
+        breakerName: 'test-release-open',
+      });
+      for (let i = 0; i < 5; i += 1)
+        await cb.acquire('k', 60_000).catch(() => {
+          /* noop */
+        });
       await expect(cb.release('k')).resolves.toBeUndefined();
     });
 
     it('size su breaker OPEN ritorna 0 (conservativo, no throw)', async () => {
       const { store } = makeFlakeyStore(100);
-      const cb = new CircuitBreakerIdempotencyStore(store, { failureThreshold: 5, breakerName: 'test-size-open' });
-      for (let i = 0; i < 5; i += 1) await cb.acquire('k', 60_000).catch(() => { /* noop */ });
+      const cb = new CircuitBreakerIdempotencyStore(store, {
+        failureThreshold: 5,
+        breakerName: 'test-size-open',
+      });
+      for (let i = 0; i < 5; i += 1)
+        await cb.acquire('k', 60_000).catch(() => {
+          /* noop */
+        });
       const s = await cb.size();
       expect(s).toBe(0);
     });
@@ -105,8 +127,12 @@ describe('CircuitBreakerIdempotencyStore', () => {
             if (failingStore.failPhase) throw new Error('redis: down');
             return { acquired: true };
           }),
-          complete: vi.fn(async () => { /* noop */ }),
-          release: vi.fn(async () => { /* noop */ }),
+          complete: vi.fn(async () => {
+            /* noop */
+          }),
+          release: vi.fn(async () => {
+            /* noop */
+          }),
           size: vi.fn(async () => 0),
         } as unknown as IdempotencyStore;
         const cb = new CircuitBreakerIdempotencyStore(store, {
@@ -116,7 +142,10 @@ describe('CircuitBreakerIdempotencyStore', () => {
           successThreshold: 2,
         });
         // Trip → OPEN
-        for (let i = 0; i < 3; i += 1) await cb.acquire('k', 60_000).catch(() => { /* noop */ });
+        for (let i = 0; i < 3; i += 1)
+          await cb.acquire('k', 60_000).catch(() => {
+            /* noop */
+          });
         expect(cb.getBreakerState()).toBe('open');
 
         // Avanza oltre resetTimeout
@@ -141,10 +170,15 @@ describe('CircuitBreakerIdempotencyStore', () => {
           failureThreshold: 3,
           resetTimeout: 100,
         });
-        for (let i = 0; i < 3; i += 1) await cb.acquire('k', 60_000).catch(() => { /* noop */ });
+        for (let i = 0; i < 3; i += 1)
+          await cb.acquire('k', 60_000).catch(() => {
+            /* noop */
+          });
         await vi.advanceTimersByTimeAsync(150);
         // Probe fails (store still down)
-        await cb.acquire('k', 60_000).catch(() => { /* noop */ });
+        await cb.acquire('k', 60_000).catch(() => {
+          /* noop */
+        });
         expect(cb.getBreakerState()).toBe('open');
       } finally {
         vi.useRealTimers();
@@ -155,7 +189,9 @@ describe('CircuitBreakerIdempotencyStore', () => {
   describe('errori NON-CircuitOpen propagano normalmente', () => {
     it('throw inner !== CircuitOpenError → re-throw (caller fa fail-open path)', async () => {
       const store = {
-        acquire: vi.fn(async () => { throw new Error('redis: timeout'); }),
+        acquire: vi.fn(async () => {
+          throw new Error('redis: timeout');
+        }),
         complete: vi.fn(),
         release: vi.fn(),
         size: vi.fn(async () => 0),

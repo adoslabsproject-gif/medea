@@ -40,20 +40,38 @@ const m = vi.hoisted(() => ({
 
 vi.mock('@/services/system-email-accounts.service.js', () => ({
   SystemEmailAccountsService: class {
-    list(t: string) { return m.list(t); }
-    picker(t: string) { return m.picker(t); }
-    getDefault(t: string) { return m.getDefault(t); }
-    upsert(args: unknown, id?: string) { return m.upsert(args, id); }
-    delete(id: string, t: string) { return m.delete(id, t); }
-    resolveForExecutor(t: string, id: string) { return m.resolveForExecutor(t, id); }
-    resolveOAuthForExecutor(t: string, id: string) { return m.resolveOAuthForExecutor(t, id); }
-    updateOAuthAccessToken(args: unknown) { return m.updateOAuthAccessToken(args); }
+    list(t: string) {
+      return m.list(t);
+    }
+    picker(t: string) {
+      return m.picker(t);
+    }
+    getDefault(t: string) {
+      return m.getDefault(t);
+    }
+    upsert(args: unknown, id?: string) {
+      return m.upsert(args, id);
+    }
+    delete(id: string, t: string) {
+      return m.delete(id, t);
+    }
+    resolveForExecutor(t: string, id: string) {
+      return m.resolveForExecutor(t, id);
+    }
+    resolveOAuthForExecutor(t: string, id: string) {
+      return m.resolveOAuthForExecutor(t, id);
+    }
+    updateOAuthAccessToken(args: unknown) {
+      return m.updateOAuthAccessToken(args);
+    }
   },
 }));
 
 vi.mock('@/services/email-deliverability.service.js', () => ({
   EmailDeliverabilityService: class {
-    check(addr: string, host: string) { return m.delivCheck(addr, host); }
+    check(addr: string, host: string) {
+      return m.delivCheck(addr, host);
+    }
   },
 }));
 
@@ -67,11 +85,21 @@ vi.mock('nodemailer', () => ({
 
 vi.mock('imapflow', () => ({
   ImapFlow: class {
-    connect() { return m.imapConnect(); }
-    logout() { return m.imapLogout(); }
-    close() { return m.imapClose(); }
-    getMailboxLock() { return m.imapLock(); }
-    status() { return m.imapStatus(); }
+    connect() {
+      return m.imapConnect();
+    }
+    logout() {
+      return m.imapLogout();
+    }
+    close() {
+      return m.imapClose();
+    }
+    getMailboxLock() {
+      return m.imapLock();
+    }
+    status() {
+      return m.imapStatus();
+    }
   },
 }));
 
@@ -79,7 +107,9 @@ vi.mock('@/lib/logger.js');
 
 const auditMock = vi.hoisted(() => ({ append: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('@/services/audit.service.js', () => ({
-  AuditLogService: class { append = auditMock.append; },
+  AuditLogService: class {
+    append = auditMock.append;
+  },
 }));
 vi.mock('@/lib/actor.js', () => ({ getActorId: () => 'actor-test' }));
 
@@ -90,7 +120,13 @@ function buildApp(auth: Partial<AuthContext> | null): Hono {
   const app = new Hono();
   app.use('*', async (c, next) => {
     if (auth) {
-      const full: AuthContext = { userId: 'u', email: 'e@x', tenantId: 't1', role: 'owner', ...auth } as AuthContext;
+      const full: AuthContext = {
+        userId: 'u',
+        email: 'e@x',
+        tenantId: 't1',
+        role: 'owner',
+        ...auth,
+      } as AuthContext;
       c.set('auth', full);
     }
     await next();
@@ -100,20 +136,41 @@ function buildApp(auth: Partial<AuthContext> | null): Hono {
 }
 
 const baseAccount = {
-  id: 'acc-1', label: 'Marketing', fromAddress: 'mkt@x.com', isDefault: false,
+  id: 'acc-1',
+  label: 'Marketing',
+  fromAddress: 'mkt@x.com',
+  isDefault: false,
   authType: 'password' as const,
-  smtp: { host: 'smtp.x', port: 587, security: 'starttls' as const, username: 'mkt@x.com', hasPassword: true, password: 'pw' },
+  smtp: {
+    host: 'smtp.x',
+    port: 587,
+    security: 'starttls' as const,
+    username: 'mkt@x.com',
+    hasPassword: true,
+    password: 'pw',
+  },
   imap: { host: 'imap.x', port: 993, username: 'mkt@x.com', hasPassword: true, password: 'pw' },
-  createdAt: '2026', updatedAt: '2026',
+  createdAt: '2026',
+  updatedAt: '2026',
 };
 
 const baseBody = {
-  label: 'Marketing', fromAddress: 'mkt@x.com', isDefault: false,
-  smtp: { host: 'smtp.x', port: 587, security: 'starttls', username: 'mkt@x.com', password: 'pw-new' },
+  label: 'Marketing',
+  fromAddress: 'mkt@x.com',
+  isDefault: false,
+  smtp: {
+    host: 'smtp.x',
+    port: 587,
+    security: 'starttls',
+    username: 'mkt@x.com',
+    password: 'pw-new',
+  },
 };
 
 beforeEach(() => {
-  Object.values(m).forEach((f) => { if (typeof f === 'function' && 'mockReset' in f) (f as { mockReset: () => void }).mockReset(); });
+  Object.values(m).forEach((f) => {
+    if (typeof f === 'function' && 'mockReset' in f) (f as { mockReset: () => void }).mockReset();
+  });
   _resetRateLimitState(); // sliding-window singleton → reset tra test
   m.list.mockReturnValue([]);
   m.picker.mockReturnValue([]);
@@ -126,7 +183,13 @@ beforeEach(() => {
   m.imapLogout.mockResolvedValue(undefined);
   m.imapLock.mockResolvedValue({ release: vi.fn() });
   m.imapStatus.mockResolvedValue({ messages: 42, unseen: 3 });
-  m.delivCheck.mockResolvedValue({ ok: true, summary: 'SPF+DKIM+DMARC OK', spf: { ok: true }, dkim: { ok: true }, dmarc: { ok: true } });
+  m.delivCheck.mockResolvedValue({
+    ok: true,
+    summary: 'SPF+DKIM+DMARC OK',
+    spf: { ok: true },
+    dkim: { ok: true },
+    dmarc: { ok: true },
+  });
 });
 
 describe('GET / + /picker + /default — auth required, tenant-scoped', () => {
@@ -139,7 +202,7 @@ describe('GET / + /picker + /default — auth required, tenant-scoped', () => {
     m.list.mockReturnValue([baseAccount]);
     const res = await buildApp({ role: 'viewer' }).request('/');
     expect(res.status).toBe(200);
-    const body = await res.json() as { accounts: unknown[] };
+    const body = (await res.json()) as { accounts: unknown[] };
     expect(body.accounts).toHaveLength(1);
     expect(m.list).toHaveBeenCalledWith('t1');
   });
@@ -165,28 +228,36 @@ describe('GET / + /picker + /default — auth required, tenant-scoped', () => {
 describe('POST / — create con role gate + zod + password required', () => {
   it('401 senza auth', async () => {
     const res = await buildApp(null).request('/', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(baseBody),
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(401);
   });
 
   it('🚨 viewer → 403 (role gate)', async () => {
     const res = await buildApp({ role: 'viewer' }).request('/', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(baseBody),
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(403);
   });
 
   it('editor → 403 (solo owner+superadmin)', async () => {
     const res = await buildApp({ role: 'editor' }).request('/', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(baseBody),
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(403);
   });
 
   it('owner happy path → 201 con account', async () => {
     const res = await buildApp({ role: 'owner' }).request('/', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(baseBody),
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(201);
     expect(m.upsert).toHaveBeenCalledTimes(1);
@@ -194,7 +265,8 @@ describe('POST / — create con role gate + zod + password required', () => {
 
   it('🚨 password SMTP vuota → 400 (no create)', async () => {
     const res = await buildApp({ role: 'owner' }).request('/', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ ...baseBody, smtp: { ...baseBody.smtp, password: '' } }),
     });
     expect(res.status).toBe(400);
@@ -203,7 +275,8 @@ describe('POST / — create con role gate + zod + password required', () => {
 
   it('zod 400 — fromAddress non email', async () => {
     const res = await buildApp({ role: 'owner' }).request('/', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ ...baseBody, fromAddress: 'not-an-email' }),
     });
     expect(res.status).toBe(400);
@@ -211,7 +284,8 @@ describe('POST / — create con role gate + zod + password required', () => {
 
   it('zod 400 — port negativo', async () => {
     const res = await buildApp({ role: 'owner' }).request('/', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ ...baseBody, smtp: { ...baseBody.smtp, port: -1 } }),
     });
     expect(res.status).toBe(400);
@@ -219,7 +293,8 @@ describe('POST / — create con role gate + zod + password required', () => {
 
   it('zod 400 — security non in enum', async () => {
     const res = await buildApp({ role: 'owner' }).request('/', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ ...baseBody, smtp: { ...baseBody.smtp, security: 'evil' } }),
     });
     expect(res.status).toBe(400);
@@ -227,8 +302,12 @@ describe('POST / — create con role gate + zod + password required', () => {
 
   it('imap optional → upsert con imap forwarded', async () => {
     await buildApp({ role: 'owner' }).request('/', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ ...baseBody, imap: { host: 'imap.x', port: 993, username: 'u', password: 'p' } }),
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        ...baseBody,
+        imap: { host: 'imap.x', port: 993, username: 'u', password: 'p' },
+      }),
     });
     expect((m.upsert.mock.calls[0]![0] as { imap?: unknown }).imap).toBeDefined();
   });
@@ -237,21 +316,27 @@ describe('POST / — create con role gate + zod + password required', () => {
 describe('PUT /:id — update con role gate, password empty consentita', () => {
   it('401', async () => {
     const res = await buildApp(null).request('/acc-1', {
-      method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(baseBody),
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(401);
   });
 
   it('viewer 403', async () => {
     const res = await buildApp({ role: 'viewer' }).request('/acc-1', {
-      method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(baseBody),
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(403);
   });
 
   it('owner happy path → 200, service.upsert chiamato con id', async () => {
     const res = await buildApp({ role: 'owner' }).request('/acc-1', {
-      method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(baseBody),
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(200);
     expect(m.upsert).toHaveBeenCalledWith(expect.any(Object), 'acc-1');
@@ -259,7 +344,8 @@ describe('PUT /:id — update con role gate, password empty consentita', () => {
 
   it('🚨 password vuota consentita su PUT (mantieni cipher esistente)', async () => {
     const res = await buildApp({ role: 'owner' }).request('/acc-1', {
-      method: 'PUT', headers: { 'content-type': 'application/json' },
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ ...baseBody, smtp: { ...baseBody.smtp, password: '' } }),
     });
     expect(res.status).toBe(200); // no 400 come su POST
@@ -304,7 +390,7 @@ describe('POST /:id/test — SMTP verify only', () => {
     m.verify.mockResolvedValue(undefined);
     const res = await buildApp({ role: 'owner' }).request('/acc-1/test', { method: 'POST' });
     expect(res.status).toBe(200);
-    const body = await res.json() as { ok: boolean; message: string };
+    const body = (await res.json()) as { ok: boolean; message: string };
     expect(body.ok).toBe(true);
     expect(body.message).toContain('smtp.x');
   });
@@ -314,7 +400,7 @@ describe('POST /:id/test — SMTP verify only', () => {
     m.verify.mockRejectedValue(new Error('EAUTH no auth'));
     const res = await buildApp({ role: 'owner' }).request('/acc-1/test', { method: 'POST' });
     expect(res.status).toBe(502);
-    const body = await res.json() as { ok: boolean; error: string };
+    const body = (await res.json()) as { ok: boolean; error: string };
     expect(body.ok).toBe(false);
     expect(body.error).toContain('EAUTH');
   });
@@ -330,7 +416,9 @@ describe('POST /:id/test — SMTP verify only', () => {
 describe('POST /:id/test-full — multi-phase diagnostic', () => {
   it('viewer 403', async () => {
     const res = await buildApp({ role: 'viewer' }).request('/acc-1/test-full', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{}',
     });
     expect(res.status).toBe(403);
   });
@@ -338,7 +426,9 @@ describe('POST /:id/test-full — multi-phase diagnostic', () => {
   it('404 se account non trovato', async () => {
     m.resolveForExecutor.mockReturnValue(null);
     const res = await buildApp({ role: 'owner' }).request('/acc-1/test-full', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{}',
     });
     expect(res.status).toBe(404);
   });
@@ -346,10 +436,12 @@ describe('POST /:id/test-full — multi-phase diagnostic', () => {
   it('happy path: 3 step (smtp_verify + imap_connect + imap_inbox + deliverability_dns)', async () => {
     m.resolveForExecutor.mockReturnValue(baseAccount);
     const res = await buildApp({ role: 'owner' }).request('/acc-1/test-full', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{}',
     });
     expect(res.status).toBe(200);
-    const body = await res.json() as { steps: { phase: string; ok: boolean }[] };
+    const body = (await res.json()) as { steps: { phase: string; ok: boolean }[] };
     const phases = body.steps.map((s) => s.phase);
     expect(phases).toContain('smtp_verify');
     expect(phases).toContain('imap_connect');
@@ -361,9 +453,11 @@ describe('POST /:id/test-full — multi-phase diagnostic', () => {
     const acctNoImap = { ...baseAccount, imap: undefined };
     m.resolveForExecutor.mockReturnValue(acctNoImap);
     const res = await buildApp({ role: 'owner' }).request('/acc-1/test-full', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{}',
     });
-    const body = await res.json() as { steps: { phase: string }[] };
+    const body = (await res.json()) as { steps: { phase: string }[] };
     expect(body.steps.find((s) => s.phase === 'imap_connect')).toBeUndefined();
     expect(body.steps.find((s) => s.phase === 'smtp_verify')).toBeDefined();
   });
@@ -372,10 +466,11 @@ describe('POST /:id/test-full — multi-phase diagnostic', () => {
     m.resolveForExecutor.mockReturnValue(baseAccount);
     m.verify.mockRejectedValue(new Error('connection refused'));
     const res = await buildApp({ role: 'owner' }).request('/acc-1/test-full', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ sendProbe: true }),
     });
-    const body = await res.json() as { steps: { phase: string; ok: boolean; error?: string }[] };
+    const body = (await res.json()) as { steps: { phase: string; ok: boolean; error?: string }[] };
     const probe = body.steps.find((s) => s.phase === 'probe_send');
     expect(probe).toBeDefined();
     expect(probe!.ok).toBe(false);
@@ -385,10 +480,11 @@ describe('POST /:id/test-full — multi-phase diagnostic', () => {
   it('sendProbe=true + SMTP ok → probe_send chiamato', async () => {
     m.resolveForExecutor.mockReturnValue(baseAccount);
     const res = await buildApp({ role: 'owner' }).request('/acc-1/test-full', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ sendProbe: true, probeRecipient: 'test@elsewhere.com' }),
     });
-    const body = await res.json() as { steps: { phase: string; ok: boolean }[] };
+    const body = (await res.json()) as { steps: { phase: string; ok: boolean }[] };
     const probe = body.steps.find((s) => s.phase === 'probe_send');
     expect(probe).toBeDefined();
     expect(probe!.ok).toBe(true);
@@ -399,16 +495,20 @@ describe('POST /:id/test-full — multi-phase diagnostic', () => {
     m.resolveForExecutor.mockReturnValue(baseAccount);
     m.verify.mockRejectedValue(new Error('x'));
     const res = await buildApp({ role: 'owner' }).request('/acc-1/test-full', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{}',
     });
-    const body = await res.json() as { steps: { phase: string; ok: boolean }[] };
+    const body = (await res.json()) as { steps: { phase: string; ok: boolean }[] };
     expect(body.steps.find((s) => s.phase === 'deliverability_dns')).toBeDefined();
   });
 
   it('body JSON malformato → continua (empty body ok)', async () => {
     m.resolveForExecutor.mockReturnValue(baseAccount);
     const res = await buildApp({ role: 'owner' }).request('/acc-1/test-full', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: 'not-json',
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: 'not-json',
     });
     expect(res.status).toBe(200);
   });
@@ -419,24 +519,37 @@ describe('🔴 #6 audit log su CRUD email accounts (era assente)', () => {
     m.upsert.mockReturnValue({ id: 'acc-9', label: 'X' });
     auditMock.append.mockClear();
     const res = await buildApp({ role: 'owner' }).request('/', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(baseBody),
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(201);
-    expect(auditMock.append).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'email_account.create', resourceType: 'email_account', resourceId: 'acc-9', actorId: 'actor-test',
-    }));
+    expect(auditMock.append).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'email_account.create',
+        resourceType: 'email_account',
+        resourceId: 'acc-9',
+        actorId: 'actor-test',
+      }),
+    );
   });
 
   it('PUT /:id → audit email_account.update', async () => {
     m.upsert.mockReturnValue({ id: 'acc-1' });
     auditMock.append.mockClear();
     const res = await buildApp({ role: 'owner' }).request('/acc-1', {
-      method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(baseBody),
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(200);
-    expect(auditMock.append).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'email_account.update', resourceType: 'email_account', resourceId: 'acc-1',
-    }));
+    expect(auditMock.append).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'email_account.update',
+        resourceType: 'email_account',
+        resourceId: 'acc-1',
+      }),
+    );
   });
 
   it('DELETE /:id → audit email_account.delete', async () => {
@@ -444,17 +557,23 @@ describe('🔴 #6 audit log su CRUD email accounts (era assente)', () => {
     auditMock.append.mockClear();
     const res = await buildApp({ role: 'owner' }).request('/acc-1', { method: 'DELETE' });
     expect(res.status).toBe(200);
-    expect(auditMock.append).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'email_account.delete', resourceType: 'email_account', resourceId: 'acc-1',
-    }));
+    expect(auditMock.append).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'email_account.delete',
+        resourceType: 'email_account',
+        resourceId: 'acc-1',
+      }),
+    );
   });
 });
 
 describe('🔴 SSRF — host SMTP/IMAP bloccato verso interni (no port-scan via /test)', () => {
   it.each(['172.20.0.1', 'localhost', '127.0.0.1', '10.0.0.5', '169.254.169.254'])(
-    'smtp.host "%s" → 400, service NON chiamato', async (host) => {
+    'smtp.host "%s" → 400, service NON chiamato',
+    async (host) => {
       const res = await buildApp({ role: 'owner' }).request('/', {
-        method: 'POST', headers: { 'content-type': 'application/json' },
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ ...baseBody, smtp: { ...baseBody.smtp, host } }),
       });
       expect(res.status).toBe(400);
@@ -464,15 +583,20 @@ describe('🔴 SSRF — host SMTP/IMAP bloccato verso interni (no port-scan via 
 
   it('🔴 imap.host interno → 400', async () => {
     const res = await buildApp({ role: 'owner' }).request('/', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ ...baseBody, imap: { host: '172.20.0.1', port: 993, username: 'u', password: 'p' } }),
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        ...baseBody,
+        imap: { host: '172.20.0.1', port: 993, username: 'u', password: 'p' },
+      }),
     });
     expect(res.status).toBe(400);
   });
 
   it('🟢 host pubblico (smtp.gmail.com) → 201', async () => {
     const res = await buildApp({ role: 'owner' }).request('/', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ ...baseBody, smtp: { ...baseBody.smtp, host: 'smtp.gmail.com' } }),
     });
     expect(res.status).toBe(201);
@@ -489,6 +613,6 @@ describe('🔴 N3 rate-limit: /test (connessione SMTP) oltre 10/min/user → 429
     }
     const limited = await app.request('/acc-1/test', { method: 'POST' });
     expect(limited.status).toBe(429);
-    expect((await limited.json() as { error: string }).error).toBe('rate_limit_exceeded');
+    expect(((await limited.json()) as { error: string }).error).toBe('rate_limit_exceeded');
   });
 });

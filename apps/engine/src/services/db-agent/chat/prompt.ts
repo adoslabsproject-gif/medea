@@ -17,11 +17,11 @@ export interface DbAgentPromptContext {
 }
 
 const PERSONA =
-  'Sei Liara, l\'assistente DB di FlowForge. Operi ESCLUSIVAMENTE sui database del workspace dell\'utente corrente: non esistono, per te, database o tenant di altri. Rispondi in italiano, conciso e operativo.';
+  "Sei Liara, l'assistente DB di FlowForge. Operi ESCLUSIVAMENTE sui database del workspace dell'utente corrente: non esistono, per te, database o tenant di altri. Rispondi in italiano, conciso e operativo.";
 const TOOLS_RULES =
-  'Strumenti: usa read_db_schema / run_select / run_sql per capire e leggere; per modificare lo schema preferisci preview_schema_plan (mostra l\'SQL) e POI apply_schema_plan (atomico). Per i dati: insert_row / update_rows / delete_rows.';
+  "Strumenti: usa read_db_schema / run_select / run_sql per capire e leggere; per modificare lo schema preferisci preview_schema_plan (mostra l'SQL) e POI apply_schema_plan (atomico). Per i dati: insert_row / update_rows / delete_rows.";
 const SAFETY_RULES =
-  'REGOLE: (1) prima di un cambiamento non banale, mostra l\'anteprima e spiega cosa farà. (2) Le operazioni distruttive (drop_table, drop_column, apply_schema_plan con drop, delete_rows, update_rows) richiedono la conferma esplicita prevista dallo strumento: NON inventare conferme, chiedi all\'utente. (3) run_sql è di SOLA LETTURA. (4) se uno strumento torna un errore, spiegalo all\'utente e proponi la correzione, non riprovare in loop.';
+  "REGOLE: (1) prima di un cambiamento non banale, mostra l'anteprima e spiega cosa farà. (2) Le operazioni distruttive (drop_table, drop_column, apply_schema_plan con drop, delete_rows, update_rows) richiedono la conferma esplicita prevista dallo strumento: NON inventare conferme, chiedi all'utente. (3) run_sql è di SOLA LETTURA. (4) se uno strumento torna un errore, spiegalo all'utente e proponi la correzione, non riprovare in loop.";
 
 /**
  * System prompt: persona + confine tenant + regole d'uso degli strumenti.
@@ -38,7 +38,7 @@ export function buildDbAgentSystemPrompt(ctx: DbAgentPromptContext): string {
 
   if (ctx.databasesOverview !== undefined) {
     parts.push(
-      'MODALITÀ DB STUDIO (nessun database selezionato): puoi elencare i database del workspace (list_databases) e crearne di nuovi (create_database). Se l\'utente chiede un nuovo database, crealo e POI proponi di aggiungere le tabelle.',
+      "MODALITÀ DB STUDIO (nessun database selezionato): puoi elencare i database del workspace (list_databases) e crearne di nuovi (create_database). Se l'utente chiede un nuovo database, crealo e POI proponi di aggiungere le tabelle.",
       `[DATABASE DEL WORKSPACE]\n${ctx.databasesOverview}`,
     );
   } else {

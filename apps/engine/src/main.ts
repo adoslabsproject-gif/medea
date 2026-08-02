@@ -30,7 +30,10 @@ process.on('uncaughtException', (err) => {
   const stack = err instanceof Error ? (err.stack ?? '') : '';
   const isYjsError = /[/\\]node_modules[/\\](?:\.pnpm[/\\])?(lib0|yjs)[@/\\]/.test(stack);
   if (isYjsError) {
-    logger.error({ err, soft: true }, '[y-collab] uncaughtException da lib0/yjs — softened (container NON exit)');
+    logger.error(
+      { err, soft: true },
+      '[y-collab] uncaughtException da lib0/yjs — softened (container NON exit)',
+    );
     return;
   }
   console.error('[FATAL] uncaughtException:', err);
@@ -38,7 +41,6 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 process.on('unhandledRejection', (reason) => {
-   
   console.error('[FATAL] unhandledRejection:', reason);
   logger.fatal({ reason }, 'unhandledRejection — process exiting');
   process.exit(1);
@@ -50,13 +52,18 @@ function redactCredentials(url: string): string {
     const u = new URL(url);
     if (u.password) u.password = '***';
     return u.toString();
-  } catch { return url; }
+  } catch {
+    return url;
+  }
 }
 
 async function main(): Promise<void> {
   const config = loadConfig();
 
-  logger.info({ env: config.NODE_ENV, port: config.PORT, host: config.HOST }, 'Starting FlowForge runtime');
+  logger.info(
+    { env: config.NODE_ENV, port: config.PORT, host: config.HOST },
+    'Starting FlowForge runtime',
+  );
 
   // SSRF: installa il dispatcher sicuro come GLOBALE per il `fetch` di Node →
   // protegge OGNI fetch raw del runtime (action_http + ogni executor stdlib) dal
@@ -88,7 +95,10 @@ async function main(): Promise<void> {
       });
       logger.info('Custom tracer registered — stdlib withSpan() emette span verso OTLP collector');
     } catch (err) {
-      logger.warn({ err: err instanceof Error ? err.message : String(err) }, 'Custom tracer register failed (OTel disabled per stdlib)');
+      logger.warn(
+        { err: err instanceof Error ? err.message : String(err) },
+        'Custom tracer register failed (OTel disabled per stdlib)',
+      );
     }
   }
 
@@ -100,7 +110,8 @@ async function main(): Promise<void> {
   //   3. MEDEA_REDIS_URL standalone (single-pod + Redis esterno)
   //   altrimenti: InMemoryIdempotencyStore (zero-config dev/test)
   // Senza Redis, multi-pod retry causerebbero duplicate POST cross-pod.
-  const { createRedisIdempotencyStoreIfEnabled, closeManagedRedisConnection } = await import('./lib/idempotency-redis.js');
+  const { createRedisIdempotencyStoreIfEnabled, closeManagedRedisConnection } =
+    await import('./lib/idempotency-redis.js');
   const resolution = await createRedisIdempotencyStoreIfEnabled();
   if (resolution) {
     // Wrap con circuit breaker: dopo 5 acquire falliti consecutivi → OPEN per
@@ -122,18 +133,28 @@ async function main(): Promise<void> {
       'Idempotency backend: Redis (multi-pod safe) + circuit breaker (fail-fast outage)',
     );
   } else {
-    logger.info('Idempotency backend: in-memory (single-pod fallback — set MEDEA_REDIS_URL per multi-pod safety)');
+    logger.info(
+      'Idempotency backend: in-memory (single-pod fallback — set MEDEA_REDIS_URL per multi-pod safety)',
+    );
   }
   // Graceful shutdown hook — chiude la connection Redis dedicata (no-op se
   // riusata da BullMQ). Senza, restart fast leakerebbe socket.
   const shutdownIdempotency = async (): Promise<void> => {
-    try { await closeManagedRedisConnection(); } catch { /* best effort */ }
+    try {
+      await closeManagedRedisConnection();
+    } catch {
+      /* best effort */
+    }
   };
   const shutdownAll = async (): Promise<void> => {
     await Promise.allSettled([shutdownIdempotency(), shutdownOtel()]);
   };
-  process.once('SIGTERM', () => { void shutdownAll(); });
-  process.once('SIGINT', () => { void shutdownAll(); });
+  process.once('SIGTERM', () => {
+    void shutdownAll();
+  });
+  process.once('SIGINT', () => {
+    void shutdownAll();
+  });
 
   const eventBus = new InMemoryEventBus();
 
@@ -148,7 +169,10 @@ async function main(): Promise<void> {
       logger.info(report, 'Migrazione webhook-ref completata: link cablati → ref:// (indirection)');
     }
   } catch (err) {
-    logger.error({ err: err instanceof Error ? err.message : String(err) }, 'Migrazione webhook-ref fallita — boot prosegue, workflow invariati');
+    logger.error(
+      { err: err instanceof Error ? err.message : String(err) },
+      'Migrazione webhook-ref fallita — boot prosegue, workflow invariati',
+    );
   }
 
   // ─── D1 telemetry emitter — battle-testing badge stable/beta ───
@@ -213,9 +237,16 @@ async function main(): Promise<void> {
   } catch (err) {
     logger.error({ err }, 'ai_interactions sweep at boot failed');
   }
-  const aiSweepTimer = setInterval(() => {
-    try { aiInteractions.sweep(); } catch (err) { logger.error({ err }, 'ai_interactions sweep failed'); }
-  }, 24 * 60 * 60 * 1000);
+  const aiSweepTimer = setInterval(
+    () => {
+      try {
+        aiInteractions.sweep();
+      } catch (err) {
+        logger.error({ err }, 'ai_interactions sweep failed');
+      }
+    },
+    24 * 60 * 60 * 1000,
+  );
   // unref so the interval doesn't keep the process alive in tests
   aiSweepTimer.unref();
 
@@ -288,13 +319,18 @@ async function main(): Promise<void> {
 
   const recovery = new CheckpointRecoveryService(
     checkpointService,
-    async (runId): Promise<void> => { await runService.resumeFromCheckpoint(runId); },
+    async (runId): Promise<void> => {
+      await runService.resumeFromCheckpoint(runId);
+    },
   );
-  void recovery.recover().then((count) => {
-    if (count > 0) logger.info({ count }, 'Recovered interrupted runs from checkpoints');
-  }).catch((err: unknown) => {
-    logger.error({ err }, 'Checkpoint recovery failed');
-  });
+  void recovery
+    .recover()
+    .then((count) => {
+      if (count > 0) logger.info({ count }, 'Recovered interrupted runs from checkpoints');
+    })
+    .catch((err: unknown) => {
+      logger.error({ err }, 'Checkpoint recovery failed');
+    });
 
   // Paused-workflows janitor — every 60s, sweep timed-out async frames
   // and fire their default payloads so workflows don't hang forever.

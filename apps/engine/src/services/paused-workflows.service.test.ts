@@ -63,21 +63,24 @@ function setupSchema(db: ReturnType<typeof Database>): void {
 
 const svc = new PausedWorkflowsService();
 
-const basePauseArgs = (over: Record<string, unknown> = {}): Parameters<typeof svc.pause>[0] => ({
-  runId: 'r-1',
-  workflowId: 'wf-1',
-  tenantId: 't1',
-  signalName: 'order_paid',
-  atNodeId: 'wait-1',
-  outputsById: new Map([['n1', { value: 1 }]]),
-  visited: new Set(['n1']),
-  pendingQueue: [{ nodeId: 'n2', carriedInput: 'x', sourceNodeId: 'n1' }],
-  // GAP #2: lineage della run — round-trip asserito nei test pause/resume.
-  itemGraph: new Map([['n1', [{ json: { value: 1 }, pairedItem: { item: 0, sourceNodeId: 'n0' } }]]]),
-  defaultPayload: { ok: true },
-  timeoutSeconds: 3600,
-  ...over,
-}) as Parameters<typeof svc.pause>[0];
+const basePauseArgs = (over: Record<string, unknown> = {}): Parameters<typeof svc.pause>[0] =>
+  ({
+    runId: 'r-1',
+    workflowId: 'wf-1',
+    tenantId: 't1',
+    signalName: 'order_paid',
+    atNodeId: 'wait-1',
+    outputsById: new Map([['n1', { value: 1 }]]),
+    visited: new Set(['n1']),
+    pendingQueue: [{ nodeId: 'n2', carriedInput: 'x', sourceNodeId: 'n1' }],
+    // GAP #2: lineage della run — round-trip asserito nei test pause/resume.
+    itemGraph: new Map([
+      ['n1', [{ json: { value: 1 }, pairedItem: { item: 0, sourceNodeId: 'n0' } }]],
+    ]),
+    defaultPayload: { ok: true },
+    timeoutSeconds: 3600,
+    ...over,
+  }) as Parameters<typeof svc.pause>[0];
 
 beforeEach(() => {
   m.sqlite = new Database(':memory:');
@@ -89,7 +92,10 @@ describe('pause()', () => {
   it('🚨 happy: INSERT row + return id', () => {
     const id = svc.pause(basePauseArgs());
     expect(id).toBe('id-0001');
-    const row = m.sqlite.prepare('SELECT * FROM paused_workflows WHERE id = ?').get(id) as Record<string, unknown>;
+    const row = m.sqlite.prepare('SELECT * FROM paused_workflows WHERE id = ?').get(id) as Record<
+      string,
+      unknown
+    >;
     expect(row.tenant_id).toBe('t1');
     expect(row.signal_name).toBe('order_paid');
     expect(row.at_node_id).toBe('wait-1');
@@ -99,26 +105,34 @@ describe('pause()', () => {
 
   it('🚨 outputsById Map → serialized as Object.fromEntries JSON', () => {
     const id = svc.pause(basePauseArgs());
-    const row = m.sqlite.prepare('SELECT outputs_by_id_json FROM paused_workflows WHERE id = ?').get(id) as { outputs_by_id_json: string };
+    const row = m.sqlite
+      .prepare('SELECT outputs_by_id_json FROM paused_workflows WHERE id = ?')
+      .get(id) as { outputs_by_id_json: string };
     expect(JSON.parse(row.outputs_by_id_json)).toEqual({ n1: { value: 1 } });
   });
 
   it('🚨 visited Set → serialized as Array JSON', () => {
     const id = svc.pause(basePauseArgs({ visited: new Set(['a', 'b', 'c']) }));
-    const row = m.sqlite.prepare('SELECT visited_json FROM paused_workflows WHERE id = ?').get(id) as { visited_json: string };
+    const row = m.sqlite
+      .prepare('SELECT visited_json FROM paused_workflows WHERE id = ?')
+      .get(id) as { visited_json: string };
     expect(JSON.parse(row.visited_json)).toEqual(['a', 'b', 'c']);
   });
 
   it('🚨 timeoutSeconds=0 → timeout_at=null (never expires)', () => {
     const id = svc.pause(basePauseArgs({ timeoutSeconds: 0 }));
-    const row = m.sqlite.prepare('SELECT timeout_at FROM paused_workflows WHERE id = ?').get(id) as { timeout_at: string | null };
+    const row = m.sqlite
+      .prepare('SELECT timeout_at FROM paused_workflows WHERE id = ?')
+      .get(id) as { timeout_at: string | null };
     expect(row.timeout_at).toBeNull();
   });
 
   it('🚨 timeoutSeconds=3600 → timeout_at = NOW + 1h (±5s tolerance)', () => {
     const before = Date.now();
     const id = svc.pause(basePauseArgs({ timeoutSeconds: 3600 }));
-    const row = m.sqlite.prepare('SELECT timeout_at FROM paused_workflows WHERE id = ?').get(id) as { timeout_at: string };
+    const row = m.sqlite
+      .prepare('SELECT timeout_at FROM paused_workflows WHERE id = ?')
+      .get(id) as { timeout_at: string };
     const tsMs = new Date(row.timeout_at).getTime();
     expect(tsMs).toBeGreaterThan(before + 3600 * 1000 - 5000);
     expect(tsMs).toBeLessThan(before + 3600 * 1000 + 5000);
@@ -126,14 +140,18 @@ describe('pause()', () => {
 
   it('matchKey + matchValue persistiti per BPMN correlation', () => {
     const id = svc.pause(basePauseArgs({ matchKey: 'order_id', matchValue: 'ord-99' }));
-    const row = m.sqlite.prepare('SELECT match_key, match_value FROM paused_workflows WHERE id = ?').get(id) as { match_key: string; match_value: string };
+    const row = m.sqlite
+      .prepare('SELECT match_key, match_value FROM paused_workflows WHERE id = ?')
+      .get(id) as { match_key: string; match_value: string };
     expect(row.match_key).toBe('order_id');
     expect(row.match_value).toBe('ord-99');
   });
 
   it('matchKey/Value undefined → null nel DB', () => {
     const id = svc.pause(basePauseArgs());
-    const row = m.sqlite.prepare('SELECT match_key, match_value FROM paused_workflows WHERE id = ?').get(id) as { match_key: string | null };
+    const row = m.sqlite
+      .prepare('SELECT match_key, match_value FROM paused_workflows WHERE id = ?')
+      .get(id) as { match_key: string | null };
     expect(row.match_key).toBeNull();
   });
 });
@@ -143,7 +161,9 @@ describe('🚨 resumeBySignal() — BPMN message correlation', () => {
     svc.pause(basePauseArgs());
     const out = svc.resumeBySignal('t1', 'order_paid', { ok: 1 });
     expect(out).toHaveLength(1);
-    const row = m.sqlite.prepare('SELECT status FROM paused_workflows WHERE id = ?').get(out[0]?.id) as { status: string };
+    const row = m.sqlite
+      .prepare('SELECT status FROM paused_workflows WHERE id = ?')
+      .get(out[0]?.id) as { status: string };
     expect(row.status).toBe('resumed');
   });
 
@@ -165,7 +185,9 @@ describe('🚨 resumeBySignal() — BPMN message correlation', () => {
     const out2 = svc.resumeBySignal('t1', 'order_paid', {});
     expect(out2).toHaveLength(0);
     // verifica che lo stato sia stabile
-    const row = m.sqlite.prepare('SELECT status FROM paused_workflows WHERE id = ?').get(id) as { status: string };
+    const row = m.sqlite.prepare('SELECT status FROM paused_workflows WHERE id = ?').get(id) as {
+      status: string;
+    };
     expect(row.status).toBe('resumed');
   });
 
@@ -220,7 +242,9 @@ describe('🚨 resumeBySignal() — BPMN message correlation', () => {
   it('resume_payload_json persistito (replay debug)', () => {
     svc.pause(basePauseArgs());
     svc.resumeBySignal('t1', 'order_paid', { x: 1 });
-    const row = m.sqlite.prepare('SELECT resume_payload_json FROM paused_workflows WHERE run_id = ?').get('r-1') as { resume_payload_json: string };
+    const row = m.sqlite
+      .prepare('SELECT resume_payload_json FROM paused_workflows WHERE run_id = ?')
+      .get('r-1') as { resume_payload_json: string };
     expect(JSON.parse(row.resume_payload_json)).toEqual({ x: 1 });
   });
 
@@ -242,7 +266,8 @@ describe('🚨 resumeBySignal() — BPMN message correlation', () => {
   it('🚨 [REGRESSION WE-7] race: row pre-claimed da altra tx → resumeBySignal skip silent', () => {
     const id = svc.pause(basePauseArgs());
     // Simula: altra tx ha pre-claimato il row → status='resumed'
-    m.sqlite.prepare("UPDATE paused_workflows SET status='resumed', resumed_at=? WHERE id=?")
+    m.sqlite
+      .prepare("UPDATE paused_workflows SET status='resumed', resumed_at=? WHERE id=?")
       .run(new Date().toISOString(), id);
     // Adesso chiama resumeBySignal → SELECT trova 0 rows (status NOT waiting)
     // → result = []
@@ -256,7 +281,9 @@ describe('🚨 resumeBySignal() — BPMN message correlation', () => {
     const __dirname = dirname(fileURLToPath(import.meta.url));
     const src = readFileSync(join(__dirname, 'paused-workflows.service.ts'), 'utf-8');
     // resumeBySignal contiene RETURNING id
-    expect(src).toMatch(/UPDATE paused_workflows[\s\S]*?WHERE id = \? AND status = 'waiting'[\s\S]*?RETURNING id/);
+    expect(src).toMatch(
+      /UPDATE paused_workflows[\s\S]*?WHERE id = \? AND status = 'waiting'[\s\S]*?RETURNING id/,
+    );
   });
 });
 
@@ -264,10 +291,14 @@ describe('🚨 sweepTimeouts() — janitor', () => {
   it('sweep: row con timeout_at scaduto → status=timeout', () => {
     const id = svc.pause(basePauseArgs({ timeoutSeconds: 1 })); // ~1s
     // Force timeout_at al passato
-    m.sqlite.prepare("UPDATE paused_workflows SET timeout_at = '2020-01-01T00:00:00.000Z' WHERE id = ?").run(id);
+    m.sqlite
+      .prepare("UPDATE paused_workflows SET timeout_at = '2020-01-01T00:00:00.000Z' WHERE id = ?")
+      .run(id);
     const out = svc.sweepTimeouts();
     expect(out).toHaveLength(1);
-    const row = m.sqlite.prepare('SELECT status FROM paused_workflows WHERE id = ?').get(id) as { status: string };
+    const row = m.sqlite.prepare('SELECT status FROM paused_workflows WHERE id = ?').get(id) as {
+      status: string;
+    };
     expect(row.status).toBe('timeout');
   });
 
@@ -285,15 +316,25 @@ describe('🚨 sweepTimeouts() — janitor', () => {
 
   it('🚨 sweep NON tocca row con status="resumed" o "cancelled"', () => {
     const id = svc.pause(basePauseArgs({ timeoutSeconds: 1 }));
-    m.sqlite.prepare("UPDATE paused_workflows SET timeout_at = '2020-01-01T00:00:00.000Z', status = 'resumed' WHERE id = ?").run(id);
+    m.sqlite
+      .prepare(
+        "UPDATE paused_workflows SET timeout_at = '2020-01-01T00:00:00.000Z', status = 'resumed' WHERE id = ?",
+      )
+      .run(id);
     const out = svc.sweepTimeouts();
     expect(out).toHaveLength(0);
   });
 
   it('sweep multi-row in batch', () => {
-    const ids = [svc.pause(basePauseArgs({ runId: 'r1' })), svc.pause(basePauseArgs({ runId: 'r2' })), svc.pause(basePauseArgs({ runId: 'r3' }))];
+    const ids = [
+      svc.pause(basePauseArgs({ runId: 'r1' })),
+      svc.pause(basePauseArgs({ runId: 'r2' })),
+      svc.pause(basePauseArgs({ runId: 'r3' })),
+    ];
     for (const id of ids) {
-      m.sqlite.prepare("UPDATE paused_workflows SET timeout_at = '2020-01-01T00:00:00.000Z' WHERE id = ?").run(id);
+      m.sqlite
+        .prepare("UPDATE paused_workflows SET timeout_at = '2020-01-01T00:00:00.000Z' WHERE id = ?")
+        .run(id);
     }
     const out = svc.sweepTimeouts();
     expect(out).toHaveLength(3);
@@ -319,9 +360,16 @@ describe('🚨 listByTenant() + cancel()', () => {
 
   it('🚨 list: LIMIT 200 (anti-DoS)', () => {
     // Inserisci 205 row direttamente
-    const insert = m.sqlite.prepare(`INSERT INTO paused_workflows (id, run_id, workflow_id, tenant_id, signal_name, at_node_id, outputs_by_id_json, visited_json, pending_queue_json, status, created_at) VALUES (?, ?, ?, 't1', 's', 'n', '{}', '[]', '[]', 'waiting', ?)`);
+    const insert = m.sqlite.prepare(
+      `INSERT INTO paused_workflows (id, run_id, workflow_id, tenant_id, signal_name, at_node_id, outputs_by_id_json, visited_json, pending_queue_json, status, created_at) VALUES (?, ?, ?, 't1', 's', 'n', '{}', '[]', '[]', 'waiting', ?)`,
+    );
     for (let i = 0; i < 205; i += 1) {
-      insert.run(`id-${String(i).padStart(4, '0')}`, `r${String(i)}`, 'wf-1', new Date(Date.now() + i).toISOString());
+      insert.run(
+        `id-${String(i).padStart(4, '0')}`,
+        `r${String(i)}`,
+        'wf-1',
+        new Date(Date.now() + i).toISOString(),
+      );
     }
     const list = svc.listByTenant('t1');
     expect(list).toHaveLength(200);
@@ -330,14 +378,18 @@ describe('🚨 listByTenant() + cancel()', () => {
   it('🚨 cancel: row waiting → cancelled + tenant scope', () => {
     const id = svc.pause(basePauseArgs());
     expect(svc.cancel(id, 't1')).toBe(true);
-    const row = m.sqlite.prepare('SELECT status FROM paused_workflows WHERE id = ?').get(id) as { status: string };
+    const row = m.sqlite.prepare('SELECT status FROM paused_workflows WHERE id = ?').get(id) as {
+      status: string;
+    };
     expect(row.status).toBe('cancelled');
   });
 
   it('🚨 cancel: cross-tenant → false (no change)', () => {
     const id = svc.pause(basePauseArgs({ tenantId: 't1' }));
     expect(svc.cancel(id, 't2-OTHER')).toBe(false);
-    const row = m.sqlite.prepare('SELECT status FROM paused_workflows WHERE id = ?').get(id) as { status: string };
+    const row = m.sqlite.prepare('SELECT status FROM paused_workflows WHERE id = ?').get(id) as {
+      status: string;
+    };
     expect(row.status).toBe('waiting');
   });
 

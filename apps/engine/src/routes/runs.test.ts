@@ -37,13 +37,17 @@ describe('N17 — POST /workflows/:id/run reads X-Subworkflow-Depth header', () 
 
   it('depth header missing → undefined (no fallback errato)', () => {
     // Pattern: depthHeader !== undefined ? Number(...) : NaN → Number.isFinite(NaN)=false → undefined
-    expect(runsSource).toMatch(/depthHeader\s*!==\s*undefined\s*\?\s*Number\(depthHeader\)\s*:\s*NaN/);
+    expect(runsSource).toMatch(
+      /depthHeader\s*!==\s*undefined\s*\?\s*Number\(depthHeader\)\s*:\s*NaN/,
+    );
   });
 });
 
 describe('N18 — POST /runs/:id/replay rate-limited', () => {
   it('importa rateLimit middleware', () => {
-    expect(runsSource).toMatch(/import\s*\{\s*rateLimit\s*\}\s*from\s*['"]@\/middleware\/rate-limit/);
+    expect(runsSource).toMatch(
+      /import\s*\{\s*rateLimit\s*\}\s*from\s*['"]@\/middleware\/rate-limit/,
+    );
   });
 
   it('rateLimit applicato direttamente sulla route /runs/:id/replay', () => {
@@ -71,8 +75,9 @@ describe('N18 — POST /runs/:id/replay rate-limited', () => {
     // /workflows/:id/run e /runs/:id/cancel non hanno rateLimit applied su questo
     // file (per design — run e\` documented entry, cancel idempotente cheap).
     // Aggiunto /runs/:id/ai-debug (D3 2026-06-06): chiama Liara, va capped.
-    const limited = [...runsSource.matchAll(/app\.post\(\s*['"](\/[^'"]+)['"]\s*,\s*rateLimit/g)]
-      .map((m) => m[1]);
+    const limited = [
+      ...runsSource.matchAll(/app\.post\(\s*['"](\/[^'"]+)['"]\s*,\s*rateLimit/g),
+    ].map((m) => m[1]);
     expect(limited.sort()).toEqual(['/runs/:id/ai-debug', '/runs/:id/replay']);
   });
 });
@@ -106,6 +111,8 @@ describe('N18 — runId guard (TS safety + 400 explicit)', () => {
   });
 
   it('throw 400 con missing run id su path corrotto', () => {
-    expect(runsSource).toMatch(/runId === ''[\s\S]{1,40}return c\.json\(\{ error: 'missing run id'/);
+    expect(runsSource).toMatch(
+      /runId === ''[\s\S]{1,40}return c\.json\(\{ error: 'missing run id'/,
+    );
   });
 });

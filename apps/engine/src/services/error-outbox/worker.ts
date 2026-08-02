@@ -46,7 +46,10 @@ export interface OutboxSweepResult {
  * Esegue UNA sweep: claim dei dovuti (max `limit`), dispatch indipendente per riga,
  * mark done/retry/dead. Non throwa: un canale che esplode è isolato (catch → retry/dead).
  */
-export async function runOutboxSweepOnce(deps: OutboxWorkerDeps, limit = 50): Promise<OutboxSweepResult> {
+export async function runOutboxSweepOnce(
+  deps: OutboxWorkerDeps,
+  limit = 50,
+): Promise<OutboxSweepResult> {
   const now = deps.now ?? ((): Date => new Date());
   const due = claimDueErrorEvents(deps.sqlite, now().toISOString(), limit);
   const res: OutboxSweepResult = { claimed: due.length, done: 0, retried: 0, dead: 0 };
@@ -70,7 +73,13 @@ export async function runOutboxSweepOnce(deps: OutboxWorkerDeps, limit = 50): Pr
         markErrorEventDead(deps.sqlite, ev.id, msg);
         res.dead += 1;
         logger.error(
-          { outboxId: ev.id, channel: ev.channel, runId: ev.runId, attempts: ev.attempts + 1, err: msg },
+          {
+            outboxId: ev.id,
+            channel: ev.channel,
+            runId: ev.runId,
+            attempts: ev.attempts + 1,
+            err: msg,
+          },
           '[error-outbox] DEAD-LETTER: dispatch fallito oltre il max — non ritento più',
         );
       } else {

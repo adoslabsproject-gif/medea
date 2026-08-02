@@ -30,7 +30,10 @@ export function requireRole(minRole: Role) {
     if (!auth) return c.json({ error: 'Unauthorized' }, 401);
     const rank = (ROLE_RANK as Record<string, number | undefined>)[auth.role] ?? -1;
     if (rank < ROLE_RANK[minRole]) {
-      return c.json({ error: `Forbidden: requires role ${minRole} or higher (you are ${auth.role})` }, 403);
+      return c.json(
+        { error: `Forbidden: requires role ${minRole} or higher (you are ${auth.role})` },
+        403,
+      );
     }
     await next();
     return;

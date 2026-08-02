@@ -23,26 +23,29 @@ import { safeFetchWithRedirects, SsrfBlockedError } from '@medea/engine-safe-fet
 import type { NodeModule, NodeExecutor } from '../types.js';
 
 const UA_PRESETS: Record<string, string> = {
-  'chrome-desktop': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
-  'chrome-mac': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
-  'safari-iphone': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1',
+  'chrome-desktop':
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+  'chrome-mac':
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+  'safari-iphone':
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1',
   'firefox-desktop': 'Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0',
   'flowforge-bot': 'FlowForge/1.0 (+https://flowforge.automazionezeli.com/bot)',
 };
 
 const PRESET_HEADER_SET: Record<string, Record<string, string>> = {
   'browser-embed': {
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
     'Accept-Language': 'it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7',
     'Cache-Control': 'no-cache',
-    'Pragma': 'no-cache',
+    Pragma: 'no-cache',
     'Sec-Fetch-Dest': 'iframe',
     'Sec-Fetch-Mode': 'navigate',
     'Sec-Fetch-Site': 'cross-site',
     'Upgrade-Insecure-Requests': '1',
   },
   'browser-document': {
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Language': 'it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7',
     'Sec-Fetch-Dest': 'document',
     'Sec-Fetch-Mode': 'navigate',
@@ -50,11 +53,11 @@ const PRESET_HEADER_SET: Record<string, Record<string, string>> = {
     'Upgrade-Insecure-Requests': '1',
   },
   'api-json': {
-    'Accept': 'application/json',
+    Accept: 'application/json',
     'Content-Type': 'application/json',
   },
-  'minimal': {
-    'Accept': '*/*',
+  minimal: {
+    Accept: '*/*',
   },
 };
 
@@ -91,13 +94,17 @@ const executor: NodeExecutor = async (config, _input, context) => {
 
   const uaPreset = String(config.userAgentPreset ?? 'flowforge-bot');
   const customUa = String(config.userAgentCustom ?? '').trim();
-   
+
   const userAgent = customUa || UA_PRESETS[uaPreset] || UA_PRESETS['flowforge-bot']!;
 
   const headerPreset = String(config.headerPreset ?? 'browser-document');
   const presetHeaders = PRESET_HEADER_SET[headerPreset] ?? {};
   const extraHeaders = parseKvJson(config.extraHeaders);
-  const headers: Record<string, string> = { ...presetHeaders, ...extraHeaders, 'User-Agent': userAgent };
+  const headers: Record<string, string> = {
+    ...presetHeaders,
+    ...extraHeaders,
+    'User-Agent': userAgent,
+  };
 
   // Referer + Origin from explicit fields or auto-derived from URL
   const referer = String(config.referer ?? '').trim();
@@ -109,9 +116,11 @@ const executor: NodeExecutor = async (config, _input, context) => {
     try {
       const u = new URL(url);
       headers.Origin = `${u.protocol}//${u.host}`;
-       
+
       if (!headers.Referer) headers.Referer = `${u.protocol}//${u.host}/`;
-    } catch { /* invalid URL caught below */ }
+    } catch {
+      /* invalid URL caught below */
+    }
   }
 
   // Cookies (from cookie jar via context — simple stateless string for now)
@@ -124,13 +133,19 @@ const executor: NodeExecutor = async (config, _input, context) => {
 
   // Retry config
   const maxRetries = Math.max(0, Math.min(Number(config.maxRetries ?? 3), 8));
-  const retryInitialDelayMs = Math.max(100, Math.min(Number(config.retryInitialDelayMs ?? 500), 10_000));
+  const retryInitialDelayMs = Math.max(
+    100,
+    Math.min(Number(config.retryInitialDelayMs ?? 500), 10_000),
+  );
   const retryFactor = Math.max(1, Math.min(Number(config.retryFactor ?? 2), 10));
   const retryStatusCodes = (() => {
     const raw = config.retryStatusCodes;
     if (Array.isArray(raw)) return raw.map((v) => Number(v)).filter(Number.isFinite);
     if (typeof raw === 'string' && raw.trim()) {
-      return raw.split(',').map((s) => Number(s.trim())).filter(Number.isFinite);
+      return raw
+        .split(',')
+        .map((s) => Number(s.trim()))
+        .filter(Number.isFinite);
     }
     return RETRYABLE_STATUS_DEFAULT;
   })();
@@ -143,8 +158,10 @@ const executor: NodeExecutor = async (config, _input, context) => {
   let reqBody: string | undefined;
   if (bodyType !== 'none' && method !== 'GET' && method !== 'HEAD' && body) {
     reqBody = body;
-    if (bodyType === 'json' && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
-    if (bodyType === 'form-urlencoded' && !headers['Content-Type']) headers['Content-Type'] = 'application/x-www-form-urlencoded';
+    if (bodyType === 'json' && !headers['Content-Type'])
+      headers['Content-Type'] = 'application/json';
+    if (bodyType === 'form-urlencoded' && !headers['Content-Type'])
+      headers['Content-Type'] = 'application/x-www-form-urlencoded';
   }
 
   let lastErr: unknown = null;
@@ -172,7 +189,10 @@ const executor: NodeExecutor = async (config, _input, context) => {
     }
     const delay = Math.round(retryInitialDelayMs * Math.pow(retryFactor, attempt));
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime — TS narrow ottimistico
-    context.logger?.warn?.(`[fetch-advanced] retry ${(attempt + 1).toString()}/${maxRetries.toString()} after ${delay.toString()}ms`, { url, lastErr });
+    context.logger?.warn?.(
+      `[fetch-advanced] retry ${(attempt + 1).toString()}/${maxRetries.toString()} after ${delay.toString()}ms`,
+      { url, lastErr },
+    );
     await sleep(delay);
     attempt++;
   }
@@ -183,17 +203,29 @@ const executor: NodeExecutor = async (config, _input, context) => {
 
   // Extract response according to responseFormat
   const respHeaders: Record<string, string> = {};
-  response.headers.forEach((v, k) => { respHeaders[k.toLowerCase()] = v; });
+  response.headers.forEach((v, k) => {
+    respHeaders[k.toLowerCase()] = v;
+  });
   const setCookieHeader = response.headers.get('set-cookie') ?? '';
   const contentType = response.headers.get('content-type') ?? '';
 
   let outBody: unknown = null;
-  if (responseFormat === 'base64' || (responseFormat === 'auto' && /^image\/|^application\/octet-stream/.test(contentType))) {
+  if (
+    responseFormat === 'base64' ||
+    (responseFormat === 'auto' && /^image\/|^application\/octet-stream/.test(contentType))
+  ) {
     const buf = Buffer.from(await response.arrayBuffer());
     outBody = buf.toString('base64');
-  } else if (responseFormat === 'json' || (responseFormat === 'auto' && contentType.includes('json'))) {
+  } else if (
+    responseFormat === 'json' ||
+    (responseFormat === 'auto' && contentType.includes('json'))
+  ) {
     const text = await response.text();
-    try { outBody = JSON.parse(text); } catch { outBody = text; }
+    try {
+      outBody = JSON.parse(text);
+    } catch {
+      outBody = text;
+    }
   } else {
     outBody = await response.text();
   }
@@ -250,7 +282,13 @@ export const webFetchAdvancedNode: NodeModule = {
         label: 'User-Agent preset',
         type: 'select',
         required: false,
-        options: ['flowforge-bot', 'chrome-desktop', 'chrome-mac', 'safari-iphone', 'firefox-desktop'],
+        options: [
+          'flowforge-bot',
+          'chrome-desktop',
+          'chrome-mac',
+          'safari-iphone',
+          'firefox-desktop',
+        ],
         defaultValue: 'flowforge-bot',
         help: 'flowforge-bot = identifica FlowForge (consigliato, RFC-compliant). Gli altri preset simulano browser reali — USA SOLO per test su PROPRI siti.',
       },
@@ -288,8 +326,8 @@ export const webFetchAdvancedNode: NodeModule = {
         label: 'Referer (esplicito)',
         type: 'text',
         required: false,
-        placeholder: 'Lascia vuoto per auto-derive dall\'URL',
-        help: 'Header Referer della richiesta. Cruciale per molti siti anti-scraping. Se vuoto, viene derivato dall\'URL (auto).',
+        placeholder: "Lascia vuoto per auto-derive dall'URL",
+        help: "Header Referer della richiesta. Cruciale per molti siti anti-scraping. Se vuoto, viene derivato dall'URL (auto).",
       },
       {
         key: 'origin',
@@ -301,7 +339,7 @@ export const webFetchAdvancedNode: NodeModule = {
       },
       {
         key: 'autoOrigin',
-        label: 'Auto-derive Referer + Origin dall\'URL',
+        label: "Auto-derive Referer + Origin dall'URL",
         type: 'boolean',
         required: false,
         defaultValue: 'true',

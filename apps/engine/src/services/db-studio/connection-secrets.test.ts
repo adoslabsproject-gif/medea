@@ -7,12 +7,21 @@
 import { describe, it, expect } from 'vitest';
 import type { Database } from '@medea/engine-db-studio-core';
 import {
-  sealSecret, unsealSecret, sealConnectionSecrets, unsealConnectionSecrets, isSealed, ENC_PREFIX,
+  sealSecret,
+  unsealSecret,
+  sealConnectionSecrets,
+  unsealConnectionSecrets,
+  isSealed,
+  ENC_PREFIX,
 } from './connection-secrets.js';
 
 const T = 'tenant-A';
 function conn(pw?: string): Database['connection'] {
-  return { engine: 'postgres', embedded: false, ...(pw !== undefined ? { passwordSecretRef: pw } : {}) } as Database['connection'];
+  return {
+    engine: 'postgres',
+    embedded: false,
+    ...(pw !== undefined ? { passwordSecretRef: pw } : {}),
+  } as Database['connection'];
 }
 function pwOf(c: Database['connection']): unknown {
   return (c as Record<string, unknown>).passwordSecretRef;
@@ -65,7 +74,7 @@ describe('sealConnectionSecrets', () => {
     expect(pwOf(sealConnectionSecrets(conn(''), T))).toBe('');
     expect(pwOf(sealConnectionSecrets(conn(), T))).toBeUndefined();
   });
-  it('NON muta l\'input', () => {
+  it("NON muta l'input", () => {
     const c = conn('plain');
     sealConnectionSecrets(c, T);
     expect(pwOf(c)).toBe('plain');

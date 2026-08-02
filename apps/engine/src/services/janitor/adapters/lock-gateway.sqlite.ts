@@ -37,11 +37,17 @@ export class SqliteLockGateway implements ILockGateway {
     let acquired = false;
     try {
       this.sqlite.exec('BEGIN IMMEDIATE');
-      this.sqlite.prepare(`
+      this.sqlite
+        .prepare(
+          `
         DELETE FROM janitor_locks
         WHERE rule_id = ? AND expires_at <= strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-      `).run(key);
-      const res = this.sqlite.prepare(`
+      `,
+        )
+        .run(key);
+      const res = this.sqlite
+        .prepare(
+          `
         INSERT INTO janitor_locks (rule_id, held_by, acquired_at, expires_at)
         VALUES (
           ?, ?,
@@ -49,11 +55,17 @@ export class SqliteLockGateway implements ILockGateway {
           strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '+' || ? || ' seconds')
         )
         ON CONFLICT(rule_id) DO NOTHING
-      `).run(key, holderId, ttlSeconds);
+      `,
+        )
+        .run(key, holderId, ttlSeconds);
       acquired = res.changes === 1;
       this.sqlite.exec('COMMIT');
     } catch (err) {
-      try { this.sqlite.exec('ROLLBACK'); } catch { /* nested ok */ }
+      try {
+        this.sqlite.exec('ROLLBACK');
+      } catch {
+        /* nested ok */
+      }
       logger.warn({ err, key, holderId }, 'Janitor lock acquire failed');
       return false;
     }
@@ -62,9 +74,13 @@ export class SqliteLockGateway implements ILockGateway {
 
   release(key: string, holderId: string): void {
     try {
-      this.sqlite.prepare(`
+      this.sqlite
+        .prepare(
+          `
         DELETE FROM janitor_locks WHERE rule_id = ? AND held_by = ?
-      `).run(key, holderId);
+      `,
+        )
+        .run(key, holderId);
     } catch (err) {
       logger.warn({ err, key, holderId }, 'Janitor lock release failed (non-fatal)');
     }
@@ -72,10 +88,14 @@ export class SqliteLockGateway implements ILockGateway {
 
   cleanupStale(): number {
     try {
-      const res = this.sqlite.prepare(`
+      const res = this.sqlite
+        .prepare(
+          `
         DELETE FROM janitor_locks
         WHERE expires_at <= strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-      `).run();
+      `,
+        )
+        .run();
       return res.changes;
     } catch (err) {
       logger.warn({ err }, 'Janitor stale lock cleanup failed');
@@ -85,12 +105,16 @@ export class SqliteLockGateway implements ILockGateway {
 
   listActive(): readonly LockEntry[] {
     try {
-      const rows = this.sqlite.prepare(`
+      const rows = this.sqlite
+        .prepare(
+          `
         SELECT rule_id, held_by, acquired_at, expires_at
         FROM janitor_locks
         WHERE expires_at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
         ORDER BY acquired_at DESC
-      `).all() as RawLockRow[];
+      `,
+        )
+        .all() as RawLockRow[];
       return rows.map((r) => ({
         key: r.rule_id,
         heldBy: r.held_by,

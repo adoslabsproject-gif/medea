@@ -82,7 +82,8 @@ describe('🚨 liveness — un blob referenziato NON viene MAI cancellato', () =
     const orphanRef = await writeAgedBlob('orfano');
     await run(
       'INSERT INTO runs (id, steps_json) VALUES (?, ?)',
-      'r1', JSON.stringify([{ output: { binary: { __ffBinary: true, encoding: 'ref', ref: liveRef } } }]),
+      'r1',
+      JSON.stringify([{ output: { binary: { __ffBinary: true, encoding: 'ref', ref: liveRef } } }]),
     );
     const res = await runBinaryGcOnce({ blobStore, db });
     expect(res.deleted).toBe(1);
@@ -105,7 +106,8 @@ describe('🚨 liveness — un blob referenziato NON viene MAI cancellato', () =
     const liveRef = await writeAgedBlob('vivo-in-paused');
     await run(
       'INSERT INTO paused_workflows (id, resume_payload_json) VALUES (?, ?)',
-      'p1', JSON.stringify({ attachment: { __ffBinary: true, encoding: 'ref', ref: liveRef } }),
+      'p1',
+      JSON.stringify({ attachment: { __ffBinary: true, encoding: 'ref', ref: liveRef } }),
     );
     await runBinaryGcOnce({ blobStore, db });
     expect(await blobStore.exists(liveRef)).toBe(true);
@@ -115,7 +117,8 @@ describe('🚨 liveness — un blob referenziato NON viene MAI cancellato', () =
     const liveRef = await writeAgedBlob('vivo-in-workflow-def');
     await run(
       'INSERT INTO workflows (id, nodes_json) VALUES (?, ?)',
-      'wf1', JSON.stringify([{ id: 'n1', config: { template: liveRef } }]),
+      'wf1',
+      JSON.stringify([{ id: 'n1', config: { template: liveRef } }]),
     );
     await runBinaryGcOnce({ blobStore, db });
     expect(await blobStore.exists(liveRef)).toBe(true);
@@ -125,7 +128,8 @@ describe('🚨 liveness — un blob referenziato NON viene MAI cancellato', () =
     const liveRef = await writeAgedBlob('annidato');
     await run(
       'INSERT INTO runs (id, input) VALUES (?, ?)',
-      'r2', `testo libero che cita il blob ${liveRef} in mezzo a una frase`,
+      'r2',
+      `testo libero che cita il blob ${liveRef} in mezzo a una frase`,
     );
     const live = await collectLiveBinaryRefs(db);
     expect(live.has(liveRef)).toBe(true);
@@ -171,7 +175,8 @@ describe('🚨 paginazione keyset — niente ref persi oltre PAGE_SIZE', () => {
       refs.push(ref);
       await run(
         'INSERT INTO runs (id, steps_json) VALUES (?, ?)',
-        `r${String(i).padStart(4, '0')}`, JSON.stringify([{ ref }]),
+        `r${String(i).padStart(4, '0')}`,
+        JSON.stringify([{ ref }]),
       );
     }
     const live = await collectLiveBinaryRefs(db);
@@ -195,7 +200,9 @@ describe('🚨 fail-closed — raccolta parziale = NESSUNA cancellazione', () =>
           Array.from({ length: Number(_params[1] ?? 200) }, () => ({ id: null })) as TRow[],
       }),
     };
-    await expect(runBinaryGcOnce({ blobStore, db: badDb })).rejects.toThrow(/cursore keyset non avanzabile/u);
+    await expect(runBinaryGcOnce({ blobStore, db: badDb })).rejects.toThrow(
+      /cursore keyset non avanzabile/u,
+    );
     expect(await blobStore.exists(orphan)).toBe(true); // il blob NON è stato toccato
   });
 });

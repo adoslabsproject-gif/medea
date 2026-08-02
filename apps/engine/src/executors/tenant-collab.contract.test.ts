@@ -29,7 +29,9 @@ vi.mock('@/executors/wait.js', () => ({ resumeWait: vi.fn() }));
 vi.mock('@/services/test-event-bus.service.js', () => ({ publishTestEvent: vi.fn() }));
 vi.mock('@/executors/webhook-respond.js', () => ({ WEBHOOK_RESPONSE_KEY: 'response' }));
 vi.mock('@/services/audit.service.js', () => ({
-  AuditLogService: class { append = vi.fn().mockResolvedValue(undefined); },
+  AuditLogService: class {
+    append = vi.fn().mockResolvedValue(undefined);
+  },
 }));
 
 import { authorize, __resetWebhookSignatureCache } from '../routes/webhooks.js';
@@ -64,8 +66,12 @@ function recipientNode(extra: Record<string, unknown> = {}): CanvasNode {
 }
 
 const ctx = {
-  tenantId: 'tenant-sender', workflowId: 'wf-src', runId: 'run-c1', nodeId: 'node-c1',
-  defId: 'action_tenant_collab', secrets: {},
+  tenantId: 'tenant-sender',
+  workflowId: 'wf-src',
+  runId: 'run-c1',
+  nodeId: 'node-c1',
+  defId: 'action_tenant_collab',
+  secrets: {},
 } as unknown as Parameters<typeof tenantCollabExecutor>[2];
 
 /** Invia col MITTENTE reale e cattura la request come la vedrebbe Hono (header lowercase). */
@@ -84,25 +90,37 @@ async function captureRealSend(): Promise<{ headers: Record<string, string>; bod
 }
 
 const origFetch = globalThis.fetch;
-beforeEach(() => { __resetWebhookSignatureCache(); });
-afterEach(() => { globalThis.fetch = origFetch; });
+beforeEach(() => {
+  __resetWebhookSignatureCache();
+});
+afterEach(() => {
+  globalThis.fetch = origFetch;
+});
 
 describe('handshake REALE mittente → authorize() ricevente', () => {
   it('la request firmata dal mittente è ACCETTATA dal ricevente configurato come da docs', async () => {
     const { headers, body } = await captureRealSend();
-    expect(authorize(recipientNode(), headers, body, 'whtok-9f8e7d6c', '203.0.113.7', 'wf-dest')).toBe(true);
+    expect(
+      authorize(recipientNode(), headers, body, 'whtok-9f8e7d6c', '203.0.113.7', 'wf-dest'),
+    ).toBe(true);
   });
 
   it('body manomesso in transito → RIFIUTATO', async () => {
     const { headers, body } = await captureRealSend();
     const tampered = body.replace('99.5', '9999.5');
-    expect(authorize(recipientNode(), headers, tampered, 'whtok-9f8e7d6c', '203.0.113.7', 'wf-dest')).toBe(false);
+    expect(
+      authorize(recipientNode(), headers, tampered, 'whtok-9f8e7d6c', '203.0.113.7', 'wf-dest'),
+    ).toBe(false);
   });
 
   it('replay della stessa request firmata → RIFIUTATO la seconda volta (dedup)', async () => {
     const { headers, body } = await captureRealSend();
-    expect(authorize(recipientNode(), headers, body, 'whtok-9f8e7d6c', '203.0.113.7', 'wf-dest')).toBe(true);
-    expect(authorize(recipientNode(), headers, body, 'whtok-9f8e7d6c', '203.0.113.7', 'wf-dest')).toBe(false);
+    expect(
+      authorize(recipientNode(), headers, body, 'whtok-9f8e7d6c', '203.0.113.7', 'wf-dest'),
+    ).toBe(true);
+    expect(
+      authorize(recipientNode(), headers, body, 'whtok-9f8e7d6c', '203.0.113.7', 'wf-dest'),
+    ).toBe(false);
   });
 
   it('token diverso lato ricevente (consenso revocato/ruotato) → RIFIUTATO', async () => {
@@ -133,7 +151,7 @@ describe('contratto def ↔ executor ↔ registrazione (3 punti)', () => {
   const stdlibRegistrySrc = read('../../../../packages/engine/nodes/stdlib/src/registry.ts');
   const stdlibIndexSrc = read('../../../../packages/engine/nodes/stdlib/src/index.ts');
 
-  it('ogni configField del def è letto dall\'executor (cfg.<key>) — zero campi fantasma', () => {
+  it("ogni configField del def è letto dall'executor (cfg.<key>) — zero campi fantasma", () => {
     const keys = (tenantCollabNode.def.configFields ?? []).map((f) => f.key);
     expect(keys.length).toBeGreaterThanOrEqual(8);
     for (const key of keys) {
@@ -146,9 +164,13 @@ describe('contratto def ↔ executor ↔ registrazione (3 punti)', () => {
   });
 
   it('punti 2+3 — stdlib registry.ts include il nodo e index.ts lo esporta', () => {
-    expect(stdlibRegistrySrc).toMatch(/import \{ tenantCollabNode \} from '\.\/actions\/tenant-collab\.js'/);
+    expect(stdlibRegistrySrc).toMatch(
+      /import \{ tenantCollabNode \} from '\.\/actions\/tenant-collab\.js'/,
+    );
     expect(stdlibRegistrySrc).toMatch(/\btenantCollabNode,/);
-    expect(stdlibIndexSrc).toMatch(/export \{ tenantCollabNode \} from '\.\/actions\/tenant-collab\.js'/);
+    expect(stdlibIndexSrc).toMatch(
+      /export \{ tenantCollabNode \} from '\.\/actions\/tenant-collab\.js'/,
+    );
   });
 
   // Il quarto punto di registrazione — il catalog generato del portal web —
@@ -165,7 +187,9 @@ describe('contratto def ↔ executor ↔ registrazione (3 punti)', () => {
   });
 
   it('il pattern UI del campo collaborationUrl accetta solo webhook FlowForge', () => {
-    const field = (tenantCollabNode.def.configFields ?? []).find((f) => f.key === 'collaborationUrl');
+    const field = (tenantCollabNode.def.configFields ?? []).find(
+      (f) => f.key === 'collaborationUrl',
+    );
     expect(field?.pattern).toBeTruthy();
     const re = new RegExp(field!.pattern!);
     expect(re.test(URL_OK)).toBe(true);

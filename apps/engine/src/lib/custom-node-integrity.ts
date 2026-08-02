@@ -62,10 +62,10 @@ export interface PackageIntegrity {
 }
 
 export type IntegrityFailureReason =
-  | 'digest_mismatch'      // i sorgenti non corrispondono al digest dichiarato (manomissione)
-  | 'signature_mismatch'   // firma non valida col secret corrente (forgiata / secret sbagliato)
-  | 'algo_unsupported'     // algoritmo non riconosciuto
-  | 'malformed';           // record di integrità incompleto
+  | 'digest_mismatch' // i sorgenti non corrispondono al digest dichiarato (manomissione)
+  | 'signature_mismatch' // firma non valida col secret corrente (forgiata / secret sbagliato)
+  | 'algo_unsupported' // algoritmo non riconosciuto
+  | 'malformed'; // record di integrità incompleto
 
 export interface IntegrityVerdict {
   valid: boolean;
@@ -81,7 +81,12 @@ export interface IntegrityVerdict {
 function canonicalize(pkg: CustomNodePackage): Buffer {
   // Ordine FISSO — non cambiare senza invalidare tutti i digest esistenti.
   const fields: (keyof CustomNodePackage)[] = [
-    'slug', 'semver', 'sourceExecutor', 'sourceDefinition', 'sourceSchema', 'compiledExecutor',
+    'slug',
+    'semver',
+    'sourceExecutor',
+    'sourceDefinition',
+    'sourceSchema',
+    'compiledExecutor',
   ];
   const parts: Buffer[] = [];
   for (const f of fields) {
@@ -107,8 +112,12 @@ function hmacOfDigest(digest: string, secret: string): string {
  * Produce il record di integrità (digest + firma) per un pacchetto. Da chiamare
  * al momento del publish nel registry, persistendo il risultato con la versione.
  */
-export function makePackageIntegrity(pkg: CustomNodePackage, registrySecret: string): PackageIntegrity {
-  if (!registrySecret) throw new Error('registrySecret mancante: impossibile firmare il pacchetto.');
+export function makePackageIntegrity(
+  pkg: CustomNodePackage,
+  registrySecret: string,
+): PackageIntegrity {
+  if (!registrySecret)
+    throw new Error('registrySecret mancante: impossibile firmare il pacchetto.');
   const digest = computePackageDigest(pkg);
   return { algo: INTEGRITY_ALGO, digest, signature: hmacOfDigest(digest, registrySecret) };
 }
@@ -137,7 +146,11 @@ export function verifyPackageIntegrity(
   integrity: Partial<PackageIntegrity> | null | undefined,
   registrySecret: string,
 ): IntegrityVerdict {
-  if (!integrity || typeof integrity.digest !== 'string' || typeof integrity.signature !== 'string') {
+  if (
+    !integrity ||
+    typeof integrity.digest !== 'string' ||
+    typeof integrity.signature !== 'string'
+  ) {
     return { valid: false, reason: 'malformed' };
   }
   if (integrity.algo !== INTEGRITY_ALGO) {

@@ -146,7 +146,7 @@ function rowToToken(r: PortalTokenRow): PortalToken {
     tenantId: r.tenant_id,
     token: r.token,
     name: r.name,
-    mode: (r.mode === 'portal' ? 'portal' : 'readonly'),
+    mode: r.mode === 'portal' ? 'portal' : 'readonly',
     permissions: parsePermissions(r.permissions_json),
     createdAt: r.created_at,
     accessCount: r.access_count,
@@ -169,10 +169,7 @@ function parseWorkflowTags(raw: string | null): string[] {
   }
 }
 
-function workflowHasAllowedTrigger(
-  nodesJson: string,
-  allowedTriggerTypes: string[],
-): boolean {
+function workflowHasAllowedTrigger(nodesJson: string, allowedTriggerTypes: string[]): boolean {
   if (allowedTriggerTypes.length === 0) return false;
   try {
     const parsed: unknown = JSON.parse(nodesJson);
@@ -208,9 +205,10 @@ export class ClientPortalService {
     const id = nanoid();
     const token = crypto.randomBytes(32).toString('hex');
     const now = new Date().toISOString();
-    const expiresAt = opts.expiresInDays !== undefined
-      ? new Date(Date.now() + opts.expiresInDays * 24 * 60 * 60 * 1000).toISOString()
-      : null;
+    const expiresAt =
+      opts.expiresInDays !== undefined
+        ? new Date(Date.now() + opts.expiresInDays * 24 * 60 * 60 * 1000).toISOString()
+        : null;
     const permissionsJson = JSON.stringify(opts.permissions);
 
     sqlite
@@ -269,7 +267,9 @@ export class ClientPortalService {
     if (row.mode !== 'portal') return null;
 
     sqlite
-      .prepare('UPDATE viewer_share_tokens SET access_count = access_count + 1, last_accessed_at = ? WHERE id = ?')
+      .prepare(
+        'UPDATE viewer_share_tokens SET access_count = access_count + 1, last_accessed_at = ? WHERE id = ?',
+      )
       .run(new Date().toISOString(), row.id);
 
     return rowToToken(row);
@@ -286,7 +286,10 @@ export class ClientPortalService {
     const { workflowIds, workflowTags, allowRun, allowedTriggerTypes } = tokenInfo.permissions;
 
     // Default deny: senza nessuna whitelist, nessun workflow visibile.
-    if ((!workflowIds || workflowIds.length === 0) && (!workflowTags || workflowTags.length === 0)) {
+    if (
+      (!workflowIds || workflowIds.length === 0) &&
+      (!workflowTags || workflowTags.length === 0)
+    ) {
       return [];
     }
 
@@ -346,7 +349,10 @@ export class ClientPortalService {
     workflow: { id: string; nodesJson: string },
   ): { ok: true } | { ok: false; reason: string } {
     if (tokenInfo.permissions.allowRun !== true) {
-      return { ok: false, reason: 'allowRun=false: il portale non ha il permesso di eseguire workflow.' };
+      return {
+        ok: false,
+        reason: 'allowRun=false: il portale non ha il permesso di eseguire workflow.',
+      };
     }
     const visible = this.listVisibleWorkflows(tokenInfo);
     if (!visible.some((w) => w.id === workflow.id)) {
@@ -518,8 +524,8 @@ export function computeExposedFields(workflow: {
 
     for (const field of fields) {
       if (field.exposeToClient !== true) continue;
-      const cfg = (node.config && typeof node.config === 'object') ? node.config : {};
-      const rawVal = (cfg)[field.key];
+      const cfg = node.config && typeof node.config === 'object' ? node.config : {};
+      const rawVal = cfg[field.key];
       const isSecret = field.type === 'secret' || field.type === 'password';
       const hasValue = typeof rawVal === 'string' && rawVal.length > 0;
       result.push({
@@ -527,12 +533,12 @@ export function computeExposedFields(workflow: {
         nodeLabel: typeof node.label === 'string' && node.label.length > 0 ? node.label : node.id,
         fieldKey: field.key,
         label: field.clientLabel ?? field.label,
-        ...(field.clientHint ?? field.help ? { hint: field.clientHint ?? field.help } : {}),
+        ...((field.clientHint ?? field.help) ? { hint: field.clientHint ?? field.help } : {}),
         type: field.type ?? 'text',
         required: field.required === true,
         ...(field.pattern ? { pattern: field.pattern } : {}),
         ...(field.patternMessage ? { patternMessage: field.patternMessage } : {}),
-        currentValue: isSecret && hasValue ? '••••••••' : (typeof rawVal === 'string' ? rawVal : ''),
+        currentValue: isSecret && hasValue ? '••••••••' : typeof rawVal === 'string' ? rawVal : '',
         redacted: isSecret && hasValue,
       });
     }

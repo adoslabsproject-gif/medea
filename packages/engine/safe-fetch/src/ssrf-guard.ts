@@ -102,13 +102,13 @@ function isPrivateIPv4(ip: string): { blocked: boolean; reason?: SsrfBlockReason
   if (a === 172 && b >= 16 && b <= 31) return { blocked: true, reason: 'BLOCKED_PRIVATE_IP' };
   if (a === 192 && b === 168) return { blocked: true, reason: 'BLOCKED_PRIVATE_IP' };
   if (a === 127) return { blocked: true, reason: 'BLOCKED_LOOPBACK' };
-  if (a === 169 && b === 254) return { blocked: true, reason: 'BLOCKED_LINK_LOCAL' };       // include 169.254.169.254 cloud metadata
-  if (a === 100 && b >= 64 && b <= 127) return { blocked: true, reason: 'BLOCKED_PRIVATE_IP' };       // RFC 6598 CGN
-  if (a === 0) return { blocked: true, reason: 'BLOCKED_RESERVED' };                                  // 0.0.0.0/8
-  if (a === 192 && b === 0) return { blocked: true, reason: 'BLOCKED_RESERVED' };                     // 192.0.0.0/24 + 192.0.2.0/24
-  if (a === 198 && b === 51) return { blocked: true, reason: 'BLOCKED_RESERVED' };                    // 198.51.100.0/24 TEST-NET-2
-  if (a === 203 && b === 0) return { blocked: true, reason: 'BLOCKED_RESERVED' };                     // 203.0.113.0/24 TEST-NET-3
-  if (a >= 224) return { blocked: true, reason: 'BLOCKED_RESERVED' };                                 // 224/4 multicast + 240/4 reserved
+  if (a === 169 && b === 254) return { blocked: true, reason: 'BLOCKED_LINK_LOCAL' }; // include 169.254.169.254 cloud metadata
+  if (a === 100 && b >= 64 && b <= 127) return { blocked: true, reason: 'BLOCKED_PRIVATE_IP' }; // RFC 6598 CGN
+  if (a === 0) return { blocked: true, reason: 'BLOCKED_RESERVED' }; // 0.0.0.0/8
+  if (a === 192 && b === 0) return { blocked: true, reason: 'BLOCKED_RESERVED' }; // 192.0.0.0/24 + 192.0.2.0/24
+  if (a === 198 && b === 51) return { blocked: true, reason: 'BLOCKED_RESERVED' }; // 198.51.100.0/24 TEST-NET-2
+  if (a === 203 && b === 0) return { blocked: true, reason: 'BLOCKED_RESERVED' }; // 203.0.113.0/24 TEST-NET-3
+  if (a >= 224) return { blocked: true, reason: 'BLOCKED_RESERVED' }; // 224/4 multicast + 240/4 reserved
   return { blocked: false };
 }
 
@@ -118,10 +118,17 @@ function isPrivateIPv4(ip: string): { blocked: boolean; reason?: SsrfBlockReason
  */
 function isPrivateIPv6(ip: string): { blocked: boolean; reason?: SsrfBlockReason } {
   const lower = ip.toLowerCase();
-  if (lower === '::1' || lower === '0:0:0:0:0:0:0:1') return { blocked: true, reason: 'BLOCKED_LOOPBACK' };
-  if (lower === '::' || lower === '0:0:0:0:0:0:0:0') return { blocked: true, reason: 'BLOCKED_RESERVED' };
+  if (lower === '::1' || lower === '0:0:0:0:0:0:0:1')
+    return { blocked: true, reason: 'BLOCKED_LOOPBACK' };
+  if (lower === '::' || lower === '0:0:0:0:0:0:0:0')
+    return { blocked: true, reason: 'BLOCKED_RESERVED' };
   // fe80::/10 link-local
-  if (lower.startsWith('fe8') || lower.startsWith('fe9') || lower.startsWith('fea') || lower.startsWith('feb')) {
+  if (
+    lower.startsWith('fe8') ||
+    lower.startsWith('fe9') ||
+    lower.startsWith('fea') ||
+    lower.startsWith('feb')
+  ) {
     return { blocked: true, reason: 'BLOCKED_LINK_LOCAL' };
   }
   // fc00::/7 unique local
@@ -157,17 +164,25 @@ function isPrivateIPv6(ip: string): { blocked: boolean; reason?: SsrfBlockReason
  * validato come IPv6 da `isIP() === 6`; questa è la normalizzazione per il match dei
  * prefissi embedded-IPv4 (indipendente dalla forma testuale che arriva al guard).
  */
-function expandIPv6Hextets(ip: string): [number, number, number, number, number, number, number, number] | null {
+function expandIPv6Hextets(
+  ip: string,
+): [number, number, number, number, number, number, number, number] | null {
   let s = ip.toLowerCase();
   const zone = s.indexOf('%'); // scarta lo zone-id (%eth0)
   if (zone >= 0) s = s.slice(0, zone);
   // IPv4 dotted finale → due hextet hex.
   let invalid = false;
-  s = s.replace(/(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/u, (_m, a: string, b: string, c: string, d: string) => {
-    const o = [a, b, c, d].map(Number);
-    if (o.some((n) => n > 255)) { invalid = true; return ''; }
-    return `${(((o[0] ?? 0) << 8) | (o[1] ?? 0)).toString(16)}:${(((o[2] ?? 0) << 8) | (o[3] ?? 0)).toString(16)}`;
-  });
+  s = s.replace(
+    /(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/u,
+    (_m, a: string, b: string, c: string, d: string) => {
+      const o = [a, b, c, d].map(Number);
+      if (o.some((n) => n > 255)) {
+        invalid = true;
+        return '';
+      }
+      return `${(((o[0] ?? 0) << 8) | (o[1] ?? 0)).toString(16)}:${(((o[2] ?? 0) << 8) | (o[3] ?? 0)).toString(16)}`;
+    },
+  );
   if (invalid) return null;
   const halves = s.split('::');
   if (halves.length > 2) return null;
@@ -272,7 +287,11 @@ export function validateUrlForFetch(
   // passano SOLO i call-site interni (mai il tool http_request dell'agent). Coerente
   // con guardCustomBaseUrl della chat (esenzione per origin del gateway interno). Lo
   // scheme è già validato sopra; i redirect verso host NON in allowedHosts restano bloccati.
-  if (opts.allowedHosts && opts.allowedHosts.length > 0 && opts.allowedHosts.includes(url.host.toLowerCase())) {
+  if (
+    opts.allowedHosts &&
+    opts.allowedHosts.length > 0 &&
+    opts.allowedHosts.includes(url.host.toLowerCase())
+  ) {
     return { ok: true };
   }
 
@@ -282,9 +301,7 @@ export function validateUrlForFetch(
   }
   // WHATWG URL conserva le quadre `[…]` per literal IPv6 in `hostname`.
   // `isIP()` non riconosce con quadre — strip per il check IP.
-  const host = rawHost.startsWith('[') && rawHost.endsWith(']')
-    ? rawHost.slice(1, -1)
-    : rawHost;
+  const host = rawHost.startsWith('[') && rawHost.endsWith(']') ? rawHost.slice(1, -1) : rawHost;
 
   if (RESERVED_HOSTS.has(host) || isLocalhostSuffix(host)) {
     return { ok: false, reason: 'BLOCKED_HOST', detail: `hostname riservato: ${host}` };
@@ -297,10 +314,20 @@ export function validateUrlForFetch(
   const ipKind = isIP(ipHost);
   if (ipKind === 4) {
     const r = isPrivateIPv4(ipHost);
-    if (r.blocked) return { ok: false, reason: r.reason ?? 'BLOCKED_PRIVATE_IP', detail: `IPv4 privato/riservato: ${host}` };
+    if (r.blocked)
+      return {
+        ok: false,
+        reason: r.reason ?? 'BLOCKED_PRIVATE_IP',
+        detail: `IPv4 privato/riservato: ${host}`,
+      };
   } else if (ipKind === 6) {
     const r = isPrivateIPv6(ipHost);
-    if (r.blocked) return { ok: false, reason: r.reason ?? 'BLOCKED_PRIVATE_IP', detail: `IPv6 privato/riservato: ${host}` };
+    if (r.blocked)
+      return {
+        ok: false,
+        reason: r.reason ?? 'BLOCKED_PRIVATE_IP',
+        detail: `IPv6 privato/riservato: ${host}`,
+      };
   }
   // Hostname non-IP: il check definitivo avverrebbe DOPO risoluzione DNS.
   // Qui blocchiamo solo letterali. La defense-in-depth è demandata al
@@ -334,12 +361,22 @@ export function validateIpForFetch(ip: string): SsrfValidationResult {
   const kind = isIP(normalized);
   if (kind === 4) {
     const r = isPrivateIPv4(normalized);
-    if (r.blocked) return { ok: false, reason: r.reason ?? 'BLOCKED_PRIVATE_IP', detail: `IPv4 privato/riservato risolto: ${ip}` };
+    if (r.blocked)
+      return {
+        ok: false,
+        reason: r.reason ?? 'BLOCKED_PRIVATE_IP',
+        detail: `IPv4 privato/riservato risolto: ${ip}`,
+      };
     return { ok: true };
   }
   if (kind === 6) {
     const r = isPrivateIPv6(ip);
-    if (r.blocked) return { ok: false, reason: r.reason ?? 'BLOCKED_PRIVATE_IP', detail: `IPv6 privato/riservato risolto: ${ip}` };
+    if (r.blocked)
+      return {
+        ok: false,
+        reason: r.reason ?? 'BLOCKED_PRIVATE_IP',
+        detail: `IPv6 privato/riservato risolto: ${ip}`,
+      };
     return { ok: true };
   }
   return { ok: false, reason: 'INVALID_URL', detail: `non è un IP valido: ${ip}` };
@@ -350,7 +387,10 @@ export function validateIpForFetch(ip: string): SsrfValidationResult {
  * dove vogliamo propagare l'errore con stack trace).
  */
 export class SsrfBlockedError extends Error {
-  constructor(public readonly reason: SsrfBlockReason, public readonly detail: string) {
+  constructor(
+    public readonly reason: SsrfBlockReason,
+    public readonly detail: string,
+  ) {
     super(`SSRF blocked (${reason}): ${detail}`);
     this.name = 'SsrfBlockedError';
   }

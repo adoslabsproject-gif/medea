@@ -35,13 +35,17 @@ const RunSqlSchema = z
 
 const runSqlTool: DbAgentToolDef = {
   name: 'run_sql',
-  description: 'Esegue SQL di SOLA LETTURA (solo SELECT/EXPLAIN) sul database del workspace e ritorna le righe. Scritture, DDL, multi-statement e verbi di filesystem-escape sono RIFIUTATI. Cap righe 5000.',
+  description:
+    'Esegue SQL di SOLA LETTURA (solo SELECT/EXPLAIN) sul database del workspace e ritorna le righe. Scritture, DDL, multi-statement e verbi di filesystem-escape sono RIFIUTATI. Cap righe 5000.',
   parameters: {
     type: 'object',
     properties: {
       databaseId: { type: 'string' },
       sql: { type: 'string', description: 'una singola query SELECT (o EXPLAIN)' },
-      rowLimit: { type: 'number', description: `default ${RAW_DEFAULT_ROWS.toString()}, max ${RAW_MAX_ROWS.toString()}` },
+      rowLimit: {
+        type: 'number',
+        description: `default ${RAW_DEFAULT_ROWS.toString()}, max ${RAW_MAX_ROWS.toString()}`,
+      },
     },
     required: ['databaseId', 'sql'],
     additionalProperties: false,
@@ -54,7 +58,9 @@ const runSqlTool: DbAgentToolDef = {
     // (1) Read-only: kind peggiore del blob deve essere select/explain.
     const kind = classifyStatement(a.sql);
     if (kind !== 'select' && kind !== 'explain') {
-      throw new ToolValidationError(`run_sql consente SOLO query di lettura (SELECT/EXPLAIN); statement classificato come "${kind}". Per modificare schema o dati usa gli strumenti dedicati (apply_schema_plan, insert_row, update_rows, delete_rows).`);
+      throw new ToolValidationError(
+        `run_sql consente SOLO query di lettura (SELECT/EXPLAIN); statement classificato come "${kind}". Per modificare schema o dati usa gli strumenti dedicati (apply_schema_plan, insert_row, update_rows, delete_rows).`,
+      );
     }
 
     // (2) Filesystem-escape: blocca ATTACH/VACUUM INTO/load_extension anche in un SELECT.

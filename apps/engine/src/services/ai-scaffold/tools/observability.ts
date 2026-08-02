@@ -20,20 +20,32 @@ import { CredentialsService } from '@/services/credentials.service.js';
 import { LlmProvidersService } from '@/services/llm-providers.service.js';
 import { getDatabase } from '@/storage/db.js';
 
-export function listRecentRunsHandler(session: ScaffoldSession, args: Record<string, unknown>): ToolResult {
+export function listRecentRunsHandler(
+  session: ScaffoldSession,
+  args: Record<string, unknown>,
+): ToolResult {
   const limit = Math.min(Math.max(Number(args.limit ?? 20), 1), 100);
   const workflowFilter = typeof args.workflowId === 'string' ? args.workflowId : '';
   try {
     const { sqlite } = getDatabase();
     const params: unknown[] = [session.tenantId];
-    let sql = 'SELECT id, workflow_id, status, error_count, total_duration_ms, started_at, trigger_type FROM runs WHERE tenant_id = ?';
+    let sql =
+      'SELECT id, workflow_id, status, error_count, total_duration_ms, started_at, trigger_type FROM runs WHERE tenant_id = ?';
     if (workflowFilter) {
       sql += ' AND workflow_id = ?';
       params.push(workflowFilter);
     }
     sql += ' ORDER BY started_at DESC LIMIT ?';
     params.push(limit);
-    const rows = sqlite.prepare(sql).all(...params) as { id: string; workflow_id: string; status: string; error_count: number; total_duration_ms: number; started_at: string; trigger_type: string | null }[];
+    const rows = sqlite.prepare(sql).all(...params) as {
+      id: string;
+      workflow_id: string;
+      status: string;
+      error_count: number;
+      total_duration_ms: number;
+      started_at: string;
+      trigger_type: string | null;
+    }[];
     return {
       ok: true,
       data: rows.map((r) => ({
@@ -47,20 +59,45 @@ export function listRecentRunsHandler(session: ScaffoldSession, args: Record<str
       })),
     };
   } catch (e) {
-    return { ok: false, error: `list_recent_runs fallito: ${e instanceof Error ? e.message : String(e)}` };
+    return {
+      ok: false,
+      error: `list_recent_runs fallito: ${e instanceof Error ? e.message : String(e)}`,
+    };
   }
 }
 
-export function readRunHandler(session: ScaffoldSession, args: Record<string, unknown>): ToolResult {
+export function readRunHandler(
+  session: ScaffoldSession,
+  args: Record<string, unknown>,
+): ToolResult {
   const runId = coerceString(args.runId ?? '');
   if (!runId) return { ok: false, error: 'read_run richiede runId.' };
   try {
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare('SELECT id, workflow_id, status, error_count, total_duration_ms, started_at, ended_at, steps_json FROM runs WHERE id = ? AND tenant_id = ? LIMIT 1')
-      .get(runId, session.tenantId) as { id: string; workflow_id: string; status: string; error_count: number; total_duration_ms: number; started_at: string; ended_at: string | null; steps_json: string } | undefined;
-    if (!row) return { ok: false, error: `Run "${runId}" non trovato (o non appartiene al tenant).` };
+    const row = sqlite
+      .prepare(
+        'SELECT id, workflow_id, status, error_count, total_duration_ms, started_at, ended_at, steps_json FROM runs WHERE id = ? AND tenant_id = ? LIMIT 1',
+      )
+      .get(runId, session.tenantId) as
+      | {
+          id: string;
+          workflow_id: string;
+          status: string;
+          error_count: number;
+          total_duration_ms: number;
+          started_at: string;
+          ended_at: string | null;
+          steps_json: string;
+        }
+      | undefined;
+    if (!row)
+      return { ok: false, error: `Run "${runId}" non trovato (o non appartiene al tenant).` };
     let steps: Record<string, unknown>[] = [];
-    try { steps = JSON.parse(row.steps_json) as Record<string, unknown>[]; } catch { steps = []; }
+    try {
+      steps = JSON.parse(row.steps_json) as Record<string, unknown>[];
+    } catch {
+      steps = [];
+    }
     // Redact step outputs — keep only diagnostic info.
     const redactedSteps = steps.map((s) => ({
       nodeId: s.nodeId,
@@ -80,7 +117,7 @@ export function readRunHandler(session: ScaffoldSession, args: Record<string, un
         startedAt: row.started_at,
         endedAt: row.ended_at,
         steps: redactedSteps,
-        note: 'Step outputs omessi per protezione PII — usa l\'UI Run Inspector per il payload completo.',
+        note: "Step outputs omessi per protezione PII — usa l'UI Run Inspector per il payload completo.",
       },
     };
   } catch (e) {
@@ -103,15 +140,27 @@ export function checkSettingsHealthHandler(session: ScaffoldSession): ToolResult
         emailAccounts: { count: emails.length, hasDefault: emails.some((a) => a.isDefault) },
         secrets: { count: creds.length, names: creds.map((c) => c.name) },
         llmProviders: { count: llms.length, providers: llms.map((p) => p.provider) },
-        databases: { count: dbs.length, totalTables: dbs.reduce((acc, d) => acc + (d.tables?.length ?? 0), 0) },
+        databases: {
+          count: dbs.length,
+          totalTables: dbs.reduce((acc, d) => acc + (d.tables?.length ?? 0), 0),
+        },
         warnings: [
-          ...(emails.length === 0 ? ['Nessun account email configurato — workflow IMAP/SMTP non funzioneranno.'] : []),
-          ...(llms.length === 0 ? ['Nessun provider LLM configurato — nodi AI/agent non funzioneranno.'] : []),
-          ...(dbs.length === 0 ? ['Nessun database configurato — nodi db_* non funzioneranno.'] : []),
+          ...(emails.length === 0
+            ? ['Nessun account email configurato — workflow IMAP/SMTP non funzioneranno.']
+            : []),
+          ...(llms.length === 0
+            ? ['Nessun provider LLM configurato — nodi AI/agent non funzioneranno.']
+            : []),
+          ...(dbs.length === 0
+            ? ['Nessun database configurato — nodi db_* non funzioneranno.']
+            : []),
         ],
       },
     };
   } catch (e) {
-    return { ok: false, error: `check_settings_health fallito: ${e instanceof Error ? e.message : String(e)}` };
+    return {
+      ok: false,
+      error: `check_settings_health fallito: ${e instanceof Error ? e.message : String(e)}`,
+    };
   }
 }

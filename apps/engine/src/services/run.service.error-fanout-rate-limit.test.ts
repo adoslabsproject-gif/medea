@@ -20,8 +20,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const runServiceSource = readFileSync(join(__dirname, 'run.service.ts'), 'utf-8');
 
 describe('🚨 [REGRESSION WE-14] error-workflow fan-out rate-limit (relocato in outbox)', () => {
-  beforeEach(() => { vi.useFakeTimers(); });
-  afterEach(() => { vi.useRealTimers(); });
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it('🚨 source-inspection: il fan-out è DUREVOLE/atomico, NON più fire-and-forget', () => {
     // Le notifiche d'errore sono enqueued atomicamente col mark-errored.
@@ -40,7 +44,9 @@ describe('🚨 [REGRESSION WE-14] error-workflow fan-out rate-limit (relocato in
   it('🚨 source-inspection: il rate-limit è stato relocato fuori da run.service', () => {
     expect(runServiceSource).not.toMatch(/function checkErrorFanoutRateLimit/);
     const rlSource = readFileSync(join(__dirname, 'error-outbox', 'fanout-rate-limit.ts'), 'utf-8');
-    expect(rlSource).toMatch(/function checkErrorFanoutRateLimit\(sourceWorkflowId: string\): boolean/);
+    expect(rlSource).toMatch(
+      /function checkErrorFanoutRateLimit\(sourceWorkflowId: string\): boolean/,
+    );
     expect(rlSource).toMatch(/MEDEA_ERROR_FANOUT_MAX_PER_MIN/);
   });
 

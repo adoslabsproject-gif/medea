@@ -37,10 +37,17 @@
 
 import { logger } from '@/lib/logger.js';
 import type {
-  DataSourceRef, QuarantineRecord,
-  QuarantineListFilter, QuarantineStats, CorruptionSeverity,
+  DataSourceRef,
+  QuarantineRecord,
+  QuarantineListFilter,
+  QuarantineStats,
+  CorruptionSeverity,
 } from '@/services/janitor/domain/index.js';
-import type { IQuarantineGateway, QuarantineRequest, IDataSourceResolver } from '@/services/janitor/ports/index.js';
+import type {
+  IQuarantineGateway,
+  QuarantineRequest,
+  IDataSourceResolver,
+} from '@/services/janitor/ports/index.js';
 import type { IDatabaseAdapter } from '@medea/engine-db-studio-engine';
 
 const QUARANTINE_TABLE = 'quarantined_rows';
@@ -72,7 +79,7 @@ export class QuarantineGatewayAdapter implements IQuarantineGateway {
     if (!this.supportsSqlQuarantine(adapter)) {
       throw new Error(
         `QuarantineGateway: engine "${adapter.engine}" non supporta SQL → ` +
-        `quarantine richiede un plugin dedicato. Fase 2.`,
+          `quarantine richiede un plugin dedicato. Fase 2.`,
       );
     }
     // Verifica se la tabella esiste già — fa una SELECT con LIMIT 0.
@@ -132,9 +139,13 @@ export class QuarantineGatewayAdapter implements IQuarantineGateway {
       await adapter.insert(QUARANTINE_TABLE, quarantineRow);
     } catch (err) {
       const msg = err instanceof Error ? err.message.toLowerCase() : '';
-      const isUniqueConflict = msg.includes('unique') || msg.includes('duplicate') || msg.includes('constraint');
+      const isUniqueConflict =
+        msg.includes('unique') || msg.includes('duplicate') || msg.includes('constraint');
       if (!isUniqueConflict) throw err;
-      logger.debug({ ruleId: req.ruleId, originalId: req.row.id }, 'Quarantine already present, proceeding to delete');
+      logger.debug(
+        { ruleId: req.ruleId, originalId: req.row.id },
+        'Quarantine already present, proceeding to delete',
+      );
     }
     await adapter.delete(req.originalTable, { [req.pkColumn]: req.row.id });
   }
@@ -209,8 +220,8 @@ export class QuarantineGatewayAdapter implements IQuarantineGateway {
     } catch (err) {
       throw new Error(
         `Restore impossibile: INSERT in "${row.original_table}" fallita. ` +
-        `Probabile violazione FK o PK esistente. La riga resta in quarantine. ` +
-        `Dettagli: ${err instanceof Error ? err.message : String(err)}`,
+          `Probabile violazione FK o PK esistente. La riga resta in quarantine. ` +
+          `Dettagli: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
     await adapter.delete(QUARANTINE_TABLE, { id: quarantineId });
@@ -234,9 +245,14 @@ export class QuarantineGatewayAdapter implements IQuarantineGateway {
   // ────────────────────────────────────────────────────────────────────
 
   private supportsSqlQuarantine(adapter: IDatabaseAdapter): boolean {
-    return adapter.engine === 'sqlite' || adapter.engine === 'postgres'
-      || adapter.engine === 'mysql' || adapter.engine === 'mssql'
-      || adapter.engine === 'duckdb' || adapter.engine === 'pgvector';
+    return (
+      adapter.engine === 'sqlite' ||
+      adapter.engine === 'postgres' ||
+      adapter.engine === 'mysql' ||
+      adapter.engine === 'mssql' ||
+      adapter.engine === 'duckdb' ||
+      adapter.engine === 'pgvector'
+    );
   }
 
   /**
@@ -248,7 +264,9 @@ export class QuarantineGatewayAdapter implements IQuarantineGateway {
     // Schema "naive but portable" generato via `applyMigration` — ogni
     // adapter sa renderlo nel proprio dialetto (SQLite INTEGER PK, Postgres
     // BIGSERIAL, MySQL INT AUTO_INCREMENT, MSSQL INT IDENTITY).
-    const cols = (defs: { name: string; type: 'text' | 'bigint'; nullable: boolean; primaryKey?: boolean }[]) =>
+    const cols = (
+      defs: { name: string; type: 'text' | 'bigint'; nullable: boolean; primaryKey?: boolean }[],
+    ) =>
       defs.map((c) => ({
         id: `col_${c.name}`,
         name: c.name,
@@ -267,35 +285,69 @@ export class QuarantineGatewayAdapter implements IQuarantineGateway {
           name: QUARANTINE_TABLE,
           description: 'Janitor — righe corrotte spostate qui da una rule',
           columns: cols([
-            { name: 'id',              type: 'bigint', nullable: false, primaryKey: true },
-            { name: 'original_id',     type: 'text',   nullable: false },
-            { name: 'original_table',  type: 'text',   nullable: false },
-            { name: 'tenant_id',       type: 'text',   nullable: true },
-            { name: 'data_source_ref', type: 'text',   nullable: false },
-            { name: 'quarantined_at',  type: 'text',   nullable: false },
-            { name: 'quarantined_by',  type: 'text',   nullable: false },
-            { name: 'rule_id',         type: 'text',   nullable: false },
-            { name: 'severity',        type: 'text',   nullable: false },
-            { name: 'reason',          type: 'text',   nullable: false },
-            { name: 'raw_json',        type: 'text',   nullable: false },
+            { name: 'id', type: 'bigint', nullable: false, primaryKey: true },
+            { name: 'original_id', type: 'text', nullable: false },
+            { name: 'original_table', type: 'text', nullable: false },
+            { name: 'tenant_id', type: 'text', nullable: true },
+            { name: 'data_source_ref', type: 'text', nullable: false },
+            { name: 'quarantined_at', type: 'text', nullable: false },
+            { name: 'quarantined_by', type: 'text', nullable: false },
+            { name: 'rule_id', type: 'text', nullable: false },
+            { name: 'severity', type: 'text', nullable: false },
+            { name: 'reason', type: 'text', nullable: false },
+            { name: 'raw_json', type: 'text', nullable: false },
           ]),
           indexes: [],
         },
       },
-      { kind: 'add_index', tableName: QUARANTINE_TABLE,
-        index: { id: 'idx_quar_table', name: 'quar_table_idx', columns: ['original_table'], unique: false } },
-      { kind: 'add_index', tableName: QUARANTINE_TABLE,
-        index: { id: 'idx_quar_rule', name: 'quar_rule_idx', columns: ['rule_id'], unique: false } },
-      { kind: 'add_index', tableName: QUARANTINE_TABLE,
-        index: { id: 'idx_quar_severity', name: 'quar_severity_idx', columns: ['severity'], unique: false } },
-      { kind: 'add_index', tableName: QUARANTINE_TABLE,
-        index: { id: 'idx_quar_tenant', name: 'quar_tenant_idx', columns: ['tenant_id'], unique: false } },
+      {
+        kind: 'add_index',
+        tableName: QUARANTINE_TABLE,
+        index: {
+          id: 'idx_quar_table',
+          name: 'quar_table_idx',
+          columns: ['original_table'],
+          unique: false,
+        },
+      },
+      {
+        kind: 'add_index',
+        tableName: QUARANTINE_TABLE,
+        index: { id: 'idx_quar_rule', name: 'quar_rule_idx', columns: ['rule_id'], unique: false },
+      },
+      {
+        kind: 'add_index',
+        tableName: QUARANTINE_TABLE,
+        index: {
+          id: 'idx_quar_severity',
+          name: 'quar_severity_idx',
+          columns: ['severity'],
+          unique: false,
+        },
+      },
+      {
+        kind: 'add_index',
+        tableName: QUARANTINE_TABLE,
+        index: {
+          id: 'idx_quar_tenant',
+          name: 'quar_tenant_idx',
+          columns: ['tenant_id'],
+          unique: false,
+        },
+      },
       // UNIQUE su (data_source_ref, original_table, original_id) → due
       // esecuzioni della stessa rule sulla stessa riga non duplicano la
       // quarantena. Crash recovery affidabile.
-      { kind: 'add_index', tableName: QUARANTINE_TABLE,
-        index: { id: 'idx_quar_dedup', name: 'quar_dedup_idx',
-          columns: ['data_source_ref', 'original_table', 'original_id'], unique: true } },
+      {
+        kind: 'add_index',
+        tableName: QUARANTINE_TABLE,
+        index: {
+          id: 'idx_quar_dedup',
+          name: 'quar_dedup_idx',
+          columns: ['data_source_ref', 'original_table', 'original_id'],
+          unique: true,
+        },
+      },
     ]);
   }
 
@@ -322,19 +374,21 @@ export class QuarantineGatewayAdapter implements IQuarantineGateway {
       limit,
     });
 
-    return res.rows.map((r): QuarantineRecord => ({
-      id: Number(r.id),
-      originalId: r.original_id,
-      originalTable: r.original_table,
-      tenantId: r.tenant_id,
-      dataSourceRef: r.data_source_ref as DataSourceRef,
-      quarantinedAt: r.quarantined_at,
-      quarantinedBy: r.quarantined_by,
-      ruleId: r.rule_id,
-      severity: r.severity as CorruptionSeverity,
-      reason: r.reason,
-      rawJson: r.raw_json,
-    }));
+    return res.rows.map(
+      (r): QuarantineRecord => ({
+        id: Number(r.id),
+        originalId: r.original_id,
+        originalTable: r.original_table,
+        tenantId: r.tenant_id,
+        dataSourceRef: r.data_source_ref as DataSourceRef,
+        quarantinedAt: r.quarantined_at,
+        quarantinedBy: r.quarantined_by,
+        ruleId: r.rule_id,
+        severity: r.severity as CorruptionSeverity,
+        reason: r.reason,
+        rawJson: r.raw_json,
+      }),
+    );
   }
 
   private async scalarCount(adapter: IDatabaseAdapter, sql: string): Promise<number> {

@@ -43,8 +43,12 @@ describe('transpileN8nExpression — riferimenti per NOME nodo → id', () => {
   });
 
   it('apici singoli e backtick gestiti', () => {
-    expect(transpileN8nExpression("={{ $node['Set'].json.x }}", NAMES).value).toBe('{{$node.set_2.json.x}}');
-    expect(transpileN8nExpression('={{ $node[`Set`].json.x }}', NAMES).value).toBe('{{$node.set_2.json.x}}');
+    expect(transpileN8nExpression("={{ $node['Set'].json.x }}", NAMES).value).toBe(
+      '{{$node.set_2.json.x}}',
+    );
+    expect(transpileN8nExpression('={{ $node[`Set`].json.x }}', NAMES).value).toBe(
+      '{{$node.set_2.json.x}}',
+    );
   });
 
   it('nodo SCONOSCIUTO → warning + nome sanitizzato (non si perde il riferimento)', () => {
@@ -64,7 +68,9 @@ describe('transpileN8nExpression — bracket → dot (e i casi che NON vanno toc
   });
 
   it('chiave con SPAZI resta bracket (non dot-izzabile)', () => {
-    expect(transpileN8nExpression('={{ $json["full name"] }}', NAMES).value).toBe('{{$json["full name"]}}');
+    expect(transpileN8nExpression('={{ $json["full name"] }}', NAMES).value).toBe(
+      '{{$json["full name"]}}',
+    );
   });
 
   it('combo: $node["Set"].json["user id"] → id risolto, chiave-spazio resta bracket', () => {
@@ -97,7 +103,11 @@ describe('transpileN8nExpression — ONESTÀ: helper non supportati segnalati', 
 describe('transpileConfigExpressions — oggetto config intero', () => {
   it('converte tutti i valori stringa + prefissa i warning con la chiave', () => {
     const { config, warnings } = transpileConfigExpressions(
-      { url: '=https://api.com/{{ $node["Set"].json.id }}', method: 'GET', body: '={{ $items.all() }}' },
+      {
+        url: '=https://api.com/{{ $node["Set"].json.id }}',
+        method: 'GET',
+        body: '={{ $items.all() }}',
+      },
       NAMES,
     );
     expect(config.url).toBe('https://api.com/{{$node.set_2.json.id}}');

@@ -72,7 +72,13 @@ export {
 export { KNOWN_CRAWLERS, isKnownCrawler, type KnownCrawler } from './known-crawlers-generated.js';
 
 // Bot IP ranges canonical (auto-sync da vendor JSON endpoints)
-export { BOT_IPRANGES, TOTAL_CIDRS, LAST_SYNC_AT, findVendorByIp, type BotIpRange } from './bot-ipranges-generated.js';
+export {
+  BOT_IPRANGES,
+  TOTAL_CIDRS,
+  LAST_SYNC_AT,
+  findVendorByIp,
+  type BotIpRange,
+} from './bot-ipranges-generated.js';
 
 // Spoofer policy — UA claim vs reverse-DNS verification → ban_immediate decision
 export {

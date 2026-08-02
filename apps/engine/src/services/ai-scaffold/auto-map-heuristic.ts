@@ -27,12 +27,12 @@
 
 /** Nodi il cui output PRINCIPALE è una lista di item di lavoro. */
 export const ARRAY_PRODUCER_DEFIDS: ReadonlySet<string> = new Set([
-  'db_query',                  // rows
-  'rag_search',                // results
-  'action_xlsx_parse',         // rows
-  'action_contact_discovery',  // contatti
-  'action_email_harvest',      // email trovate
-  'action_company_search',     // aziende
+  'db_query', // rows
+  'rag_search', // results
+  'action_xlsx_parse', // rows
+  'action_contact_discovery', // contatti
+  'action_email_harvest', // email trovate
+  'action_company_search', // aziende
 ]);
 
 /** Nodi che semanticamente lavorano su UN item (per-item è l'intento ovvio). */
@@ -45,7 +45,10 @@ export const SINGLE_ITEM_CONSUMER_DEFIDS: ReadonlySet<string> = new Set([
   'action_email_personalize',
 ]);
 
-export interface AutoMapNode { id: string; defId: string }
+export interface AutoMapNode {
+  id: string;
+  defId: string;
+}
 export interface AutoMapEdge {
   from: string;
   to: string;
@@ -57,18 +60,24 @@ export interface AutoMapEdge {
  * Applica l'euristica MUTANDO gli edge qualificati (mapMode='auto').
  * Ritorna le note umane (una per edge toccato) per log/osservabilità.
  */
-export function applyAutoMapHeuristic(wf: { nodes: AutoMapNode[]; edges: AutoMapEdge[] }): string[] {
+export function applyAutoMapHeuristic(wf: {
+  nodes: AutoMapNode[];
+  edges: AutoMapEdge[];
+}): string[] {
   const defById = new Map(wf.nodes.map((n) => [n.id, n.defId]));
   const notes: string[] = [];
   for (const edge of wf.edges) {
-    if (edge.mapMode !== undefined) continue;      // scelta esistente: intoccabile
-    if (edge.fromPort === 'error') continue;       // error-edge: mai liste di lavoro
+    if (edge.mapMode !== undefined) continue; // scelta esistente: intoccabile
+    if (edge.fromPort === 'error') continue; // error-edge: mai liste di lavoro
     const producer = defById.get(edge.from);
     const consumer = defById.get(edge.to);
     if (producer === undefined || consumer === undefined) continue;
-    if (!ARRAY_PRODUCER_DEFIDS.has(producer) || !SINGLE_ITEM_CONSUMER_DEFIDS.has(consumer)) continue;
+    if (!ARRAY_PRODUCER_DEFIDS.has(producer) || !SINGLE_ITEM_CONSUMER_DEFIDS.has(consumer))
+      continue;
     edge.mapMode = 'auto';
-    notes.push(`Auto-Map attivato su ${edge.from}(${producer}) → ${edge.to}(${consumer}): lista per-item`);
+    notes.push(
+      `Auto-Map attivato su ${edge.from}(${producer}) → ${edge.to}(${consumer}): lista per-item`,
+    );
   }
   return notes;
 }

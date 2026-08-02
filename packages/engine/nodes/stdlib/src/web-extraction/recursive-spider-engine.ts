@@ -93,14 +93,19 @@ export function normalizeUrl(href: string, base: string): string | null {
     if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
     u.hash = '';
     return u.toString();
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 export function sameOrigin(a: string, b: string): boolean {
   try {
-    const ua = new URL(a); const ub = new URL(b);
+    const ua = new URL(a);
+    const ub = new URL(b);
     return ua.host === ub.host && ua.protocol === ub.protocol;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
 // ─── Engine ─────────────────────────────────────────────────────────────────
@@ -136,12 +141,21 @@ export interface SpiderPage {
 
 export interface SpiderResult {
   pages: SpiderPage[];
-  stats: { pagesFetched: number; pagesSkippedByRobots: number; errorCount: number; durationMsTotal: number; uniqueHosts: number };
+  stats: {
+    pagesFetched: number;
+    pagesSkippedByRobots: number;
+    errorCount: number;
+    durationMsTotal: number;
+    uniqueHosts: number;
+  };
   /** URLs still in the frontier when `maxPages` cap hit — pass-through for resume. */
   frontier: string[];
 }
 
-interface FrontierItem { url: string; depth: number }
+interface FrontierItem {
+  url: string;
+  depth: number;
+}
 
 export async function runSpider(opts: SpiderOptions): Promise<SpiderResult> {
   const start = Date.now();
@@ -156,7 +170,10 @@ export async function runSpider(opts: SpiderOptions): Promise<SpiderResult> {
 
   for (const seed of opts.seeds) {
     const n = normalizeUrl(seed, seed);
-    if (n && !visited.has(n)) { visited.add(n); queue.push({ url: n, depth: 0 }); }
+    if (n && !visited.has(n)) {
+      visited.add(n);
+      queue.push({ url: n, depth: 0 });
+    }
   }
 
   async function getRobots(origin: string): Promise<RobotsRules | null> {
@@ -164,22 +181,35 @@ export async function runSpider(opts: SpiderOptions): Promise<SpiderResult> {
     if (cached !== undefined) return cached;
     try {
       const res = await safeFetchWithRedirects(`${origin}/robots.txt`, {
-        method: 'GET', headers: { 'User-Agent': opts.userAgent }, timeoutMs: 5_000,
+        method: 'GET',
+        headers: { 'User-Agent': opts.userAgent },
+        timeoutMs: 5_000,
       });
       const rules = res.ok ? parseRobotsTxt(await res.text(), opts.userAgent) : null;
-      robotsCache.set(origin, rules); return rules;
-    } catch { robotsCache.set(origin, null); return null; }
+      robotsCache.set(origin, rules);
+      return rules;
+    } catch {
+      robotsCache.set(origin, null);
+      return null;
+    }
   }
 
   async function fetchOne(item: FrontierItem): Promise<void> {
     let parsedUrl: URL;
-    try { parsedUrl = new URL(item.url); } catch { return; }
+    try {
+      parsedUrl = new URL(item.url);
+    } catch {
+      return;
+    }
     hostsSeen.add(parsedUrl.host);
     const origin = `${parsedUrl.protocol}//${parsedUrl.host}`;
 
     if (opts.respectRobots) {
       const rules = await getRobots(origin);
-      if (rules && !isPathAllowed(rules, parsedUrl.pathname)) { robotsSkipped++; return; }
+      if (rules && !isPathAllowed(rules, parsedUrl.pathname)) {
+        robotsSkipped++;
+        return;
+      }
     }
 
     const now = Date.now();
@@ -188,31 +218,46 @@ export async function runSpider(opts: SpiderOptions): Promise<SpiderResult> {
     hostNextSlot.set(parsedUrl.host, Date.now() + opts.perHostMinDelayMs);
 
     const pageStart = Date.now();
-    let html = ''; let status = 0; let contentType = ''; let bytes = 0;
-    let finalUrl = item.url; let error: string | null = null;
+    let html = '';
+    let status = 0;
+    let contentType = '';
+    let bytes = 0;
+    let finalUrl = item.url;
+    let error: string | null = null;
     try {
       const res = await safeFetchWithRedirects(item.url, {
         method: 'GET',
-        headers: { 'User-Agent': opts.userAgent, Accept: 'text/html,application/xhtml+xml,*/*;q=0.8' },
+        headers: {
+          'User-Agent': opts.userAgent,
+          Accept: 'text/html,application/xhtml+xml,*/*;q=0.8',
+        },
         timeoutMs: opts.timeoutMs,
       });
-      status = res.status; finalUrl = res.url || item.url;
+      status = res.status;
+      finalUrl = res.url || item.url;
       contentType = res.headers.get('content-type') ?? '';
       if (res.ok && /^text\/html|application\/xhtml/i.test(contentType)) {
-        html = await res.text(); bytes = Buffer.byteLength(html, 'utf8');
+        html = await res.text();
+        bytes = Buffer.byteLength(html, 'utf8');
       } else if (res.ok) {
         // HEAD-equivalent: count bytes but discard body to keep memory bounded.
-        const buf = await res.arrayBuffer(); bytes = buf.byteLength;
+        const buf = await res.arrayBuffer();
+        bytes = buf.byteLength;
       }
-    } catch (e) { error = e instanceof Error ? e.message : String(e); errorCount++; }
+    } catch (e) {
+      error = e instanceof Error ? e.message : String(e);
+      errorCount++;
+    }
 
     const links: string[] = [];
     if (html) {
       try {
         const $ = cheerioLoad(html);
         $('a[href]').each((_, el) => {
-          const href = $(el).attr('href'); if (!href) return;
-          const abs = normalizeUrl(href, finalUrl); if (!abs) return;
+          const href = $(el).attr('href');
+          if (!href) return;
+          const abs = normalizeUrl(href, finalUrl);
+          if (!abs) return;
           if (opts.sameOriginOnly && !sameOrigin(abs, item.url)) return;
           if (opts.allowDomains.length > 0) {
             const h = new URL(abs).host;
@@ -221,13 +266,23 @@ export async function runSpider(opts: SpiderOptions): Promise<SpiderResult> {
           if (opts.denyPatterns.some((re) => re.test(abs))) return;
           if (!links.includes(abs)) links.push(abs);
         });
-      } catch { /* malformed HTML — extract zero links, continue */ }
+      } catch {
+        /* malformed HTML — extract zero links, continue */
+      }
     }
 
     pages.push({
-      url: item.url, finalUrl, status, contentType, bytes, html,
-      links, depth: item.depth, fetchedAt: new Date().toISOString(),
-      durationMs: Date.now() - pageStart, error,
+      url: item.url,
+      finalUrl,
+      status,
+      contentType,
+      bytes,
+      html,
+      links,
+      depth: item.depth,
+      fetchedAt: new Date().toISOString(),
+      durationMs: Date.now() - pageStart,
+      error,
     });
 
     // Enqueue children: cap the queue size at maxPages * 10 as a sanity
@@ -239,7 +294,8 @@ export async function runSpider(opts: SpiderOptions): Promise<SpiderResult> {
       for (const l of links) {
         if (visited.has(l)) continue;
         if (queue.length >= queueCap) break;
-        visited.add(l); queue.push({ url: l, depth: item.depth + 1 });
+        visited.add(l);
+        queue.push({ url: l, depth: item.depth + 1 });
       }
     }
   }
@@ -251,7 +307,9 @@ export async function runSpider(opts: SpiderOptions): Promise<SpiderResult> {
   while ((queue.length > 0 || inflight.size > 0) && pages.length < opts.maxPages) {
     while (inflight.size < opts.concurrency && queue.length > 0 && pages.length < opts.maxPages) {
       const item = queue.shift()!;
-      const task = fetchOne(item).finally(() => { inflight.delete(task); });
+      const task = fetchOne(item).finally(() => {
+        inflight.delete(task);
+      });
       inflight.add(task);
     }
     if (inflight.size === 0) break;

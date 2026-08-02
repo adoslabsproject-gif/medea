@@ -41,18 +41,20 @@ function makeApp() {
 const wf = (over: Record<string, unknown> = {}) => ({
   id: 'wf-1',
   tenantId: 'tenant-1',
-  nodes: [{
-    id: 'form-1',
-    defId: 'trigger_form',
-    config: {
-      publicToken: 'valid-token-32-chars-long-abcdefg',
-      title: 'Contact',
-      submitLabel: 'Send',
-      fieldsJson: JSON.stringify([{ key: 'name', label: 'Name', type: 'text', required: true }]),
-      rateLimitPerMin: '10',
-      successMessage: 'Thanks!',
+  nodes: [
+    {
+      id: 'form-1',
+      defId: 'trigger_form',
+      config: {
+        publicToken: 'valid-token-32-chars-long-abcdefg',
+        title: 'Contact',
+        submitLabel: 'Send',
+        fieldsJson: JSON.stringify([{ key: 'name', label: 'Name', type: 'text', required: true }]),
+        rateLimitPerMin: '10',
+        successMessage: 'Thanks!',
+      },
     },
-  }],
+  ],
   edges: [],
   ...over,
 });
@@ -74,7 +76,8 @@ describe('🚨 SECURITY: token gate', () => {
 
   it('🚨 workflow senza trigger_form → 404', async () => {
     workflowsMock.getByIdAnyTenant.mockResolvedValue({
-      ...wf(), nodes: [{ id: 'other', defId: 'action_http', config: {} }],
+      ...wf(),
+      nodes: [{ id: 'other', defId: 'action_http', config: {} }],
     });
     const app = makeApp();
     const res = await app.request('/wf-1/token');
@@ -121,16 +124,21 @@ describe('🚨 SECURITY: token gate', () => {
 
 describe('🚨 XSS prevention escapeHtml', () => {
   it('🚨 title con HTML → escaped', async () => {
-    workflowsMock.getByIdAnyTenant.mockResolvedValue(wf({
-      nodes: [{
-        id: 'form-1', defId: 'trigger_form',
-        config: {
-          publicToken: 'tok',
-          title: '<script>alert(1)</script>',
-          fieldsJson: '[]',
-        },
-      }],
-    }));
+    workflowsMock.getByIdAnyTenant.mockResolvedValue(
+      wf({
+        nodes: [
+          {
+            id: 'form-1',
+            defId: 'trigger_form',
+            config: {
+              publicToken: 'tok',
+              title: '<script>alert(1)</script>',
+              fieldsJson: '[]',
+            },
+          },
+        ],
+      }),
+    );
     const app = makeApp();
     const res = await app.request('/wf-1/tok');
     const html = await res.text();
@@ -139,17 +147,26 @@ describe('🚨 XSS prevention escapeHtml', () => {
   });
 
   it('🚨 field.label con HTML → escaped', async () => {
-    workflowsMock.getByIdAnyTenant.mockResolvedValue(wf({
-      nodes: [{
-        id: 'form-1', defId: 'trigger_form',
-        config: {
-          publicToken: 'tok',
-          fieldsJson: JSON.stringify([{
-            key: 'k', label: '<img src=x onerror=alert(1)>', type: 'text',
-          }]),
-        },
-      }],
-    }));
+    workflowsMock.getByIdAnyTenant.mockResolvedValue(
+      wf({
+        nodes: [
+          {
+            id: 'form-1',
+            defId: 'trigger_form',
+            config: {
+              publicToken: 'tok',
+              fieldsJson: JSON.stringify([
+                {
+                  key: 'k',
+                  label: '<img src=x onerror=alert(1)>',
+                  type: 'text',
+                },
+              ]),
+            },
+          },
+        ],
+      }),
+    );
     const app = makeApp();
     const res = await app.request('/wf-1/tok');
     const html = await res.text();
@@ -157,18 +174,27 @@ describe('🚨 XSS prevention escapeHtml', () => {
   });
 
   it('🚨 select options escaped', async () => {
-    workflowsMock.getByIdAnyTenant.mockResolvedValue(wf({
-      nodes: [{
-        id: 'form-1', defId: 'trigger_form',
-        config: {
-          publicToken: 'tok',
-          fieldsJson: JSON.stringify([{
-            key: 'k', label: 'Choice', type: 'select',
-            options: ['<script>1</script>'],
-          }]),
-        },
-      }],
-    }));
+    workflowsMock.getByIdAnyTenant.mockResolvedValue(
+      wf({
+        nodes: [
+          {
+            id: 'form-1',
+            defId: 'trigger_form',
+            config: {
+              publicToken: 'tok',
+              fieldsJson: JSON.stringify([
+                {
+                  key: 'k',
+                  label: 'Choice',
+                  type: 'select',
+                  options: ['<script>1</script>'],
+                },
+              ]),
+            },
+          },
+        ],
+      }),
+    );
     const app = makeApp();
     const res = await app.request('/wf-1/tok');
     const html = await res.text();
@@ -179,24 +205,34 @@ describe('🚨 XSS prevention escapeHtml', () => {
 
 describe('🚨 fieldsJson parsing', () => {
   it('🚨 JSON invalido → fields []', async () => {
-    workflowsMock.getByIdAnyTenant.mockResolvedValue(wf({
-      nodes: [{
-        id: 'form-1', defId: 'trigger_form',
-        config: { publicToken: 'tok', fieldsJson: 'NOT-JSON{' },
-      }],
-    }));
+    workflowsMock.getByIdAnyTenant.mockResolvedValue(
+      wf({
+        nodes: [
+          {
+            id: 'form-1',
+            defId: 'trigger_form',
+            config: { publicToken: 'tok', fieldsJson: 'NOT-JSON{' },
+          },
+        ],
+      }),
+    );
     const app = makeApp();
     const res = await app.request('/wf-1/tok');
     expect(res.status).toBe(200);
   });
 
   it('🚨 fieldsJson non array → fields []', async () => {
-    workflowsMock.getByIdAnyTenant.mockResolvedValue(wf({
-      nodes: [{
-        id: 'form-1', defId: 'trigger_form',
-        config: { publicToken: 'tok', fieldsJson: '{"not":"array"}' },
-      }],
-    }));
+    workflowsMock.getByIdAnyTenant.mockResolvedValue(
+      wf({
+        nodes: [
+          {
+            id: 'form-1',
+            defId: 'trigger_form',
+            config: { publicToken: 'tok', fieldsJson: '{"not":"array"}' },
+          },
+        ],
+      }),
+    );
     const app = makeApp();
     const res = await app.request('/wf-1/tok');
     expect(res.status).toBe(200);
@@ -220,28 +256,36 @@ describe('🚨 POST submission', () => {
     const fd = new FormData();
     fd.append('name', 'Mario Rossi');
     const res = await app.request('/wf-1/valid-token-32-chars-long-abcdefg', {
-      method: 'POST', body: fd,
+      method: 'POST',
+      body: fd,
     });
     expect(res.status).toBe(200);
-    expect(runsExecuteMock).toHaveBeenCalledWith(expect.objectContaining({
-      workflowId: 'wf-1',
-      triggerType: 'form',
-      triggerInput: { name: 'Mario Rossi' },
-      tenantId: 'tenant-1',
-    }));
+    expect(runsExecuteMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workflowId: 'wf-1',
+        triggerType: 'form',
+        triggerInput: { name: 'Mario Rossi' },
+        tenantId: 'tenant-1',
+      }),
+    );
   });
 
   it('🚨 successMessage escaped nel render', async () => {
-    workflowsMock.getByIdAnyTenant.mockResolvedValue(wf({
-      nodes: [{
-        id: 'form-1', defId: 'trigger_form',
-        config: {
-          publicToken: 'tok',
-          fieldsJson: '[]',
-          successMessage: '<script>alert(1)</script>',
-        },
-      }],
-    }));
+    workflowsMock.getByIdAnyTenant.mockResolvedValue(
+      wf({
+        nodes: [
+          {
+            id: 'form-1',
+            defId: 'trigger_form',
+            config: {
+              publicToken: 'tok',
+              fieldsJson: '[]',
+              successMessage: '<script>alert(1)</script>',
+            },
+          },
+        ],
+      }),
+    );
     const app = makeApp();
     const fd = new FormData();
     const res = await app.request('/wf-1/tok', { method: 'POST', body: fd });
@@ -257,11 +301,14 @@ describe('🚨 POST submission', () => {
     fd.append('attachment', new File(['secret'], 'doc.pdf'));
     fd.append('name', 'plain');
     await app.request('/wf-1/valid-token-32-chars-long-abcdefg', {
-      method: 'POST', body: fd,
+      method: 'POST',
+      body: fd,
     });
-    expect(runsExecuteMock).toHaveBeenCalledWith(expect.objectContaining({
-      triggerInput: expect.objectContaining({ attachment: '[file]', name: 'plain' }),
-    }));
+    expect(runsExecuteMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        triggerInput: expect.objectContaining({ attachment: '[file]', name: 'plain' }),
+      }),
+    );
   });
 
   it('🚨 runs.execute throw → continua a renderizzare success (no crash)', async () => {
@@ -270,7 +317,8 @@ describe('🚨 POST submission', () => {
     const app = makeApp();
     const fd = new FormData();
     const res = await app.request('/wf-1/valid-token-32-chars-long-abcdefg', {
-      method: 'POST', body: fd,
+      method: 'POST',
+      body: fd,
     });
     expect(res.status).toBe(200);
   });
@@ -278,21 +326,28 @@ describe('🚨 POST submission', () => {
 
 describe('🚨 rate limit per IP', () => {
   it('🚨 oltre limite → 429 + NO esecuzione', async () => {
-    const slow = wf({ nodes: [{
-      id: 'form-1', defId: 'trigger_form',
-      config: {
-        publicToken: 'rl-tok',
-        fieldsJson: '[]', rateLimitPerMin: '2',
-      },
-    }] });
+    const slow = wf({
+      nodes: [
+        {
+          id: 'form-1',
+          defId: 'trigger_form',
+          config: {
+            publicToken: 'rl-tok',
+            fieldsJson: '[]',
+            rateLimitPerMin: '2',
+          },
+        },
+      ],
+    });
     workflowsMock.getByIdAnyTenant.mockResolvedValue(slow);
     const app = makeApp();
     const ip = '1.2.3.4';
-    const submit = () => app.request('/wf-1/rl-tok', {
-      method: 'POST',
-      headers: { 'x-forwarded-for': ip },
-      body: new FormData(),
-    });
+    const submit = () =>
+      app.request('/wf-1/rl-tok', {
+        method: 'POST',
+        headers: { 'x-forwarded-for': ip },
+        body: new FormData(),
+      });
     await submit();
     await submit();
     const third = await submit();
@@ -302,20 +357,30 @@ describe('🚨 rate limit per IP', () => {
   });
 
   it('🚨 IP diversi → limit separato', async () => {
-    const slow = wf({ nodes: [{
-      id: 'form-1', defId: 'trigger_form',
-      config: {
-        publicToken: 'rl-tok-2',
-        fieldsJson: '[]', rateLimitPerMin: '1',
-      },
-    }] });
+    const slow = wf({
+      nodes: [
+        {
+          id: 'form-1',
+          defId: 'trigger_form',
+          config: {
+            publicToken: 'rl-tok-2',
+            fieldsJson: '[]',
+            rateLimitPerMin: '1',
+          },
+        },
+      ],
+    });
     workflowsMock.getByIdAnyTenant.mockResolvedValue(slow);
     const app = makeApp();
     await app.request('/wf-1/rl-tok-2', {
-      method: 'POST', headers: { 'x-forwarded-for': '1.1.1.1' }, body: new FormData(),
+      method: 'POST',
+      headers: { 'x-forwarded-for': '1.1.1.1' },
+      body: new FormData(),
     });
     const r2 = await app.request('/wf-1/rl-tok-2', {
-      method: 'POST', headers: { 'x-forwarded-for': '2.2.2.2' }, body: new FormData(),
+      method: 'POST',
+      headers: { 'x-forwarded-for': '2.2.2.2' },
+      body: new FormData(),
     });
     expect(r2.status).toBe(200);
   });

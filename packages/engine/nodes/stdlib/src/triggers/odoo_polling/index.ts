@@ -38,8 +38,8 @@ export const odooPollingTriggerNode: NodeModule = {
     color: '#714B67',
     description:
       'Innesco di polling enterprise che firma un nuovo run del workflow ogni volta che compare un nuovo record ' +
-      'in un modello Odoo specificato — sostituisce l\'assenza di webhook nativi del core Odoo Community (su ' +
-      'Enterprise esiste il modulo automation ma richiede l\'installazione e setup non sempre fattibile in ' +
+      "in un modello Odoo specificato — sostituisce l'assenza di webhook nativi del core Odoo Community (su " +
+      "Enterprise esiste il modulo automation ma richiede l'installazione e setup non sempre fattibile in " +
       'tenant cliente). Architettura: il trigger scheduler del runtime FlowForge invoca questo trigger ogni ' +
       'pollIntervalSec (default 60s, range 15s-3600s in base alla criticità — 15s per ordini e-commerce, 5min ' +
       'per nuovi lead, 1h per anagrafica), autentica via /xmlrpc/2/common, esegue search_read sul modello ' +
@@ -48,14 +48,14 @@ export const odooPollingTriggerNode: NodeModule = {
       'container tra host (lastSeenId è persisto nello state store del trigger, non in memoria volatile). Per ' +
       'ogni nuovo record trovato, parte un singolo run del workflow con il record completo come trigger input — ' +
       'i tuoi nodi downstream possono leggere fields["name"], fields["email"], ecc. direttamente. Dopo ogni ' +
-      'batch processato, lastSeenId è aggiornato al MAX(id) del batch in un\'unica transazione atomica per ' +
+      "batch processato, lastSeenId è aggiornato al MAX(id) del batch in un'unica transazione atomica per " +
       'evitare race-condition tra polling overlap (es. polling interval più breve della latency del run). ' +
-      'Edge case: se un workflow downstream è lento (es. fa LLM call), un nuovo polling parte comunque (non c\'è ' +
+      "Edge case: se un workflow downstream è lento (es. fa LLM call), un nuovo polling parte comunque (non c'è " +
       'mutex globale sul trigger) ma il cursor protegge da duplicate processing — la peggiore cosa che può ' +
       'succedere è una micro-latency extra sul DB Odoo, non un duplicate run. ' +
-      'Rispetta i record rules dell\'utente di login (che vede solo i record permessi dalla sua security group), ' +
+      "Rispetta i record rules dell'utente di login (che vede solo i record permessi dalla sua security group), " +
       'quindi creare un utente Odoo dedicato "Workflow Bot FlowForge" con accessi minimi è raccomandato per ' +
-      'limitare l\'esposizione. ' +
+      "limitare l'esposizione. " +
       'Esempi tipici di modelli pollati: crm.lead per nuovi lead da form web Odoo (alimenta sales sequence), ' +
       'mail.message per nuovi messaggi nel chatter (utile per audit di interazioni cliente), res.partner per ' +
       'nuove anagrafiche aggiunte manualmente da segreteria (sincronizza con MailChimp/HubSpot), sale.order ' +
@@ -76,7 +76,8 @@ export const odooPollingTriggerNode: NodeModule = {
         type: 'text',
         required: true,
         placeholder: 'https://mio-odoo.example.it',
-        help: 'URL base della tua istanza Odoo. https:// obbligatorio in produzione. ' +
+        help:
+          'URL base della tua istanza Odoo. https:// obbligatorio in produzione. ' +
           'Senza /web, senza /xmlrpc.',
       },
       {
@@ -92,7 +93,8 @@ export const odooPollingTriggerNode: NodeModule = {
         type: 'text',
         required: true,
         placeholder: 'workflow.bot@studiocommercialista.it',
-        help: 'Utente con permessi di sola lettura sui modelli che vuoi triggherare. ' +
+        help:
+          'Utente con permessi di sola lettura sui modelli che vuoi triggherare. ' +
           'Per produzione crea un utente dedicato "Workflow Bot" con accesso minimo.',
       },
       {
@@ -110,7 +112,8 @@ export const odooPollingTriggerNode: NodeModule = {
         type: 'text',
         required: true,
         placeholder: 'crm.lead    oppure    mail.message    oppure    res.partner',
-        help: 'Nome tecnico del modello. Esempi: crm.lead (nuovi lead), ' +
+        help:
+          'Nome tecnico del modello. Esempi: crm.lead (nuovi lead), ' +
           'mail.message (nuovi messaggi/email), res.partner (nuovi contatti), ' +
           'account.move (fatture). Lowercase con punti.',
       },
@@ -121,7 +124,8 @@ export const odooPollingTriggerNode: NodeModule = {
         language: 'json',
         required: false,
         placeholder: '[["stage_id","=",1], ["team_id","=",5]]',
-        help: 'Filtra ulteriormente i nuovi record. Array di triple ' +
+        help:
+          'Filtra ulteriormente i nuovi record. Array di triple ' +
           '[campo, operatore, valore]. Solo i record che matchano avviano il workflow. ' +
           'Vuoto = tutti i nuovi record nel modello (rispetta record rules).',
       },
@@ -132,7 +136,8 @@ export const odooPollingTriggerNode: NodeModule = {
         language: 'json',
         required: false,
         placeholder: '["id","name","email","phone","partner_name","stage_id"]',
-        help: 'Array di nomi campo da includere nel trigger input. ' +
+        help:
+          'Array di nomi campo da includere nel trigger input. ' +
           'Vuoto = tutti (lento, paylod grande). ' +
           'Tipicamente leggi solo i campi che il workflow usa.',
       },
@@ -144,7 +149,8 @@ export const odooPollingTriggerNode: NodeModule = {
         type: 'number',
         required: false,
         defaultValue: '60',
-        help: 'Frequenza polling. Default 60s (1 round/min). ' +
+        help:
+          'Frequenza polling. Default 60s (1 round/min). ' +
           'Range 10-3600 (max 1h). Sotto i 30s carica troppo Odoo per nessun beneficio.',
       },
       {
@@ -153,7 +159,8 @@ export const odooPollingTriggerNode: NodeModule = {
         type: 'number',
         required: false,
         defaultValue: '50',
-        help: 'Numero massimo di nuovi record da elaborare PER POLL. ' +
+        help:
+          'Numero massimo di nuovi record da elaborare PER POLL. ' +
           'Se ne arrivano di piu`, gli altri sono presi nel poll successivo. ' +
           'Range 1-500. Protegge da burst nemicizzanti il LLM downstream.',
       },
@@ -164,7 +171,8 @@ export const odooPollingTriggerNode: NodeModule = {
         required: false,
         options: ['skip', 'last-24h', 'last-week', 'all'],
         defaultValue: 'skip',
-        help: 'Cosa fare al PRIMO avvio del trigger (quando lastSeenId e` ignoto). ' +
+        help:
+          'Cosa fare al PRIMO avvio del trigger (quando lastSeenId e` ignoto). ' +
           'skip = ignora tutto il preesistente (default, comportamento "da ora in poi"). ' +
           'last-24h / last-week = recupera solo i record creati nelle ultime 24h / settimana. ' +
           'all = scorre TUTTI i record esistenti (può essere migliaia, attento al cost).',

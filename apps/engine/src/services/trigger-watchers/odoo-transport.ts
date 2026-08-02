@@ -42,7 +42,13 @@ export interface OdooHttpTransportShim {
 
 export function makeOdooHttpTransport(): OdooHttpTransportShim {
   return {
-    async post({ url, body, headers, timeoutMs, signal }: OdooHttpPostArgs): Promise<OdooHttpResponse> {
+    async post({
+      url,
+      body,
+      headers,
+      timeoutMs,
+      signal,
+    }: OdooHttpPostArgs): Promise<OdooHttpResponse> {
       const init: RequestInit = {
         method: 'POST',
         headers: { ...headers },

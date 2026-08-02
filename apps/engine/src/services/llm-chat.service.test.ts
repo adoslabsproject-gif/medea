@@ -23,14 +23,23 @@ vi.mock('@/config.js', () => ({
 
 vi.mock('@/lib/circuit-breaker.js', () => ({
   CircuitBreaker: class {
-    async execute<T>(fn: () => Promise<T>): Promise<T> { return fn(); }
+    async execute<T>(fn: () => Promise<T>): Promise<T> {
+      return fn();
+    }
   },
   circuitBreakerRegistry: { get: () => null },
 }));
 
-interface CapturedReq { url: string; body: Record<string, unknown>; headers: Record<string, string> }
+interface CapturedReq {
+  url: string;
+  body: Record<string, unknown>;
+  headers: Record<string, string>;
+}
 let captured: CapturedReq[] = [];
-let mockResponse: { status: number; body: unknown } = { status: 200, body: { choices: [{ message: { content: 'hello world' } }] } };
+let mockResponse: { status: number; body: unknown } = {
+  status: 200,
+  body: { choices: [{ message: { content: 'hello world' } }] },
+};
 
 beforeEach(() => {
   captured = [];
@@ -69,15 +78,19 @@ describe('dispatchLLMChat — Liara branch', () => {
     expect(messages[0]?.content).toBe('sys'); // no /no_think prefix
   });
 
-  it('opts.temperature RISPETTATA (fix 2026-07: prima era 0.2 hardcoded, l\'UI ignorata)', async () => {
+  it("opts.temperature RISPETTATA (fix 2026-07: prima era 0.2 hardcoded, l'UI ignorata)", async () => {
     const { dispatchLLMChat } = await import('./llm-chat.service');
-    await dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, [], undefined, undefined, { temperature: 0.9 });
+    await dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, [], undefined, undefined, {
+      temperature: 0.9,
+    });
     expect(captured[0]!.body.temperature).toBe(0.9);
   });
 
   it('opts.temperature = 0 è rispettata (non confusa col default via ??)', async () => {
     const { dispatchLLMChat } = await import('./llm-chat.service');
-    await dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, [], undefined, undefined, { temperature: 0 });
+    await dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, [], undefined, undefined, {
+      temperature: 0,
+    });
     expect(captured[0]!.body.temperature).toBe(0);
   });
 
@@ -166,17 +179,21 @@ describe('dispatchLLMChat — Liara branch', () => {
   it('🚨 input > context → LlmContextOverflowError + NESSUNA chiamata al modello', async () => {
     const giant = 'a'.repeat(200000); // ~57142 token stimati > context 40960
     const { dispatchLLMChat, LlmContextOverflowError } = await import('./llm-chat.service');
-    await expect(dispatchLLMChat('liara', '', '', giant, 'goal', undefined, []))
-      .rejects.toBeInstanceOf(LlmContextOverflowError);
+    await expect(
+      dispatchLLMChat('liara', '', '', giant, 'goal', undefined, []),
+    ).rejects.toBeInstanceOf(LlmContextOverflowError);
     expect(captured, 'il modello NON deve essere chiamato').toHaveLength(0);
   });
 
-  it('🚨 il messaggio dell\'errore overflow è in italiano e cita i numeri', async () => {
+  it("🚨 il messaggio dell'errore overflow è in italiano e cita i numeri", async () => {
     const giant = 'a'.repeat(200000);
     const { dispatchLLMChat } = await import('./llm-chat.service');
     let err: Error | undefined;
-    try { await dispatchLLMChat('liara', '', '', giant, 'goal', undefined, []); }
-    catch (e) { err = e as Error; }
+    try {
+      await dispatchLLMChat('liara', '', '', giant, 'goal', undefined, []);
+    } catch (e) {
+      err = e as Error;
+    }
     expect(err?.message).toMatch(/troppo lunga/i);
     expect(err?.message).toMatch(/40\.?960/);
   });
@@ -184,14 +201,21 @@ describe('dispatchLLMChat — Liara branch', () => {
   it('🚨 il modello rifiuta per context (400) nonostante la stima → tradotto in LlmContextOverflowError', async () => {
     // Difesa in profondità: input borderline che passa la stima ma il modello
     // (tokenizer reale) rifiuta → non deve diventare un 500 grezzo.
-    mockResponse = { status: 400, body: { error: { message: "This model's maximum context length is 40960 tokens" } } };
+    mockResponse = {
+      status: 400,
+      body: { error: { message: "This model's maximum context length is 40960 tokens" } },
+    };
     const { dispatchLLMChat, LlmContextOverflowError } = await import('./llm-chat.service');
-    await expect(dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []))
-      .rejects.toBeInstanceOf(LlmContextOverflowError);
+    await expect(
+      dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []),
+    ).rejects.toBeInstanceOf(LlmContextOverflowError);
   });
 
   it('<think>...</think> stripped from response', async () => {
-    mockResponse = { status: 200, body: { choices: [{ message: { content: '<think>reasoning</think>final answer' } }] } };
+    mockResponse = {
+      status: 200,
+      body: { choices: [{ message: { content: '<think>reasoning</think>final answer' } }] },
+    };
     const { dispatchLLMChat } = await import('./llm-chat.service');
     const out = await dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []);
     expect(out).toBe('final answer');
@@ -227,8 +251,9 @@ describe('dispatchLLMChat — Liara branch', () => {
   it('Liara backend 5xx → LlmProviderUnavailableError (errore chiaro per UI/circuit breaker)', async () => {
     mockResponse = { status: 500, body: { error: 'gpu busy' } };
     const { dispatchLLMChat, LlmProviderUnavailableError } = await import('./llm-chat.service');
-    await expect(dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []))
-      .rejects.toBeInstanceOf(LlmProviderUnavailableError);
+    await expect(
+      dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []),
+    ).rejects.toBeInstanceOf(LlmProviderUnavailableError);
   });
 });
 
@@ -268,8 +293,9 @@ describe('dispatchLLMChat — BYOK providers (NO Zeli pays, customer brings own 
   it('REGRESSION: OpenRouter NON ha default vendor hardcoded (es. NO "anthropic/claude-3-5-sonnet")', async () => {
     const { dispatchLLMChat } = await import('./llm-chat.service');
     // Senza model esplicito → THROW (provider-agnostic, no default vendor)
-    await expect(dispatchLLMChat('openrouter', 'k', '', 'sys', 'goal', undefined, []))
-      .rejects.toThrow(/model required/);
+    await expect(
+      dispatchLLMChat('openrouter', 'k', '', 'sys', 'goal', undefined, []),
+    ).rejects.toThrow(/model required/);
   });
 
   it('OpenRouter con model esplicito (es. "x-ai/grok-2") funziona', async () => {
@@ -306,22 +332,39 @@ describe('dispatchLLMChat — BYOK providers (NO Zeli pays, customer brings own 
 
   it('Mistral usa endpoint api.mistral.ai con Bearer cliente', async () => {
     const { dispatchLLMChat } = await import('./llm-chat.service');
-    await dispatchLLMChat('mistral', 'mistral-key', 'mistral-large-latest', 'sys', 'goal', undefined, []);
+    await dispatchLLMChat(
+      'mistral',
+      'mistral-key',
+      'mistral-large-latest',
+      'sys',
+      'goal',
+      undefined,
+      [],
+    );
     expect(captured[0]?.url).toBe('https://api.mistral.ai/v1/chat/completions');
     expect(captured[0]?.headers.Authorization).toBe('Bearer mistral-key');
   });
 
   it('Groq (LPU) usa endpoint api.groq.com OpenAI-compatible', async () => {
     const { dispatchLLMChat } = await import('./llm-chat.service');
-    await dispatchLLMChat('groq', 'groq-key', 'llama-3.3-70b-versatile', 'sys', 'goal', undefined, []);
+    await dispatchLLMChat(
+      'groq',
+      'groq-key',
+      'llama-3.3-70b-versatile',
+      'sys',
+      'goal',
+      undefined,
+      [],
+    );
     expect(captured[0]?.url).toBe('https://api.groq.com/openai/v1/chat/completions');
     expect(captured[0]?.body.model).toBe('llama-3.3-70b-versatile');
   });
 
   it('REGRESSION: provider sconosciuto → throw "Unknown provider"', async () => {
     const { dispatchLLMChat } = await import('./llm-chat.service');
-    await expect(dispatchLLMChat('made-up-vendor', 'k', '', 'sys', 'goal', undefined, []))
-      .rejects.toThrow(/Unknown provider/);
+    await expect(
+      dispatchLLMChat('made-up-vendor', 'k', '', 'sys', 'goal', undefined, []),
+    ).rejects.toThrow(/Unknown provider/);
   });
 });
 
@@ -334,7 +377,9 @@ describe('dispatchLLMChat — Liara branch · disabled mode', () => {
     }));
     vi.doMock('@/lib/circuit-breaker.js', () => ({
       CircuitBreaker: class {
-        async execute<T>(fn: () => Promise<T>): Promise<T> { return fn(); }
+        async execute<T>(fn: () => Promise<T>): Promise<T> {
+          return fn();
+        }
       },
       circuitBreakerRegistry: { get: () => null },
     }));
@@ -347,8 +392,9 @@ describe('dispatchLLMChat — Liara branch · disabled mode', () => {
 
   it('throws when isLiaraEnabled()=false (MEDEA_DISABLE_LIARA)', async () => {
     const { dispatchLLMChat } = await import('./llm-chat.service');
-    await expect(dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []))
-      .rejects.toThrow(/disabilitata/);
+    await expect(dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, [])).rejects.toThrow(
+      /disabilitata/,
+    );
   });
 });
 
@@ -362,9 +408,21 @@ describe('dispatchLLMChatStructured — Liara guided_json', () => {
   it('Liara: response_format json_schema con lo schema esatto + strict:true', async () => {
     mockResponse = { status: 200, body: { choices: [{ message: { content: '{"nodes":[]}' } }] } };
     const { dispatchLLMChatStructured } = await import('./llm-chat.service');
-    const out = await dispatchLLMChatStructured('liara', '', '', 'sys', 'crea wf', undefined, [], SCHEMA);
+    const out = await dispatchLLMChatStructured(
+      'liara',
+      '',
+      '',
+      'sys',
+      'crea wf',
+      undefined,
+      [],
+      SCHEMA,
+    );
     expect(out).toBe('{"nodes":[]}');
-    const rf = captured[0]!.body.response_format as { type: string; json_schema: { strict: boolean; schema: unknown } };
+    const rf = captured[0]!.body.response_format as {
+      type: string;
+      json_schema: { strict: boolean; schema: unknown };
+    };
     expect(rf.type).toBe('json_schema');
     expect(rf.json_schema.strict).toBe(true);
     expect(rf.json_schema.schema).toEqual(SCHEMA);
@@ -381,17 +439,28 @@ describe('dispatchLLMChatStructured — Liara guided_json', () => {
   });
 
   it('Liara: <think>…</think> rimosso dal content ritornato', async () => {
-    mockResponse = { status: 200, body: { choices: [{ message: { content: '<think>ragiono</think>\n{"nodes":[1]}' } }] } };
+    mockResponse = {
+      status: 200,
+      body: { choices: [{ message: { content: '<think>ragiono</think>\n{"nodes":[1]}' } }] },
+    };
     const { dispatchLLMChatStructured } = await import('./llm-chat.service');
     const out = await dispatchLLMChatStructured('liara', '', '', 's', 'g', undefined, [], SCHEMA);
     expect(out).toBe('{"nodes":[1]}');
   });
 
   it('Liara: token usage listener fromApi=true quando il backend riporta usage', async () => {
-    mockResponse = { status: 200, body: { choices: [{ message: { content: '{}' } }], usage: { prompt_tokens: 100, completion_tokens: 40 } } };
+    mockResponse = {
+      status: 200,
+      body: {
+        choices: [{ message: { content: '{}' } }],
+        usage: { prompt_tokens: 100, completion_tokens: 40 },
+      },
+    };
     const usages: { input: number; output: number; fromApi: boolean }[] = [];
     const { dispatchLLMChatStructured } = await import('./llm-chat.service');
-    await dispatchLLMChatStructured('liara', '', '', 's', 'g', undefined, [], SCHEMA, (u) => usages.push(u));
+    await dispatchLLMChatStructured('liara', '', '', 's', 'g', undefined, [], SCHEMA, (u) =>
+      usages.push(u),
+    );
     expect(usages[0]).toEqual({ input: 100, output: 40, fromApi: true });
   });
 
@@ -399,7 +468,9 @@ describe('dispatchLLMChatStructured — Liara guided_json', () => {
     mockResponse = { status: 200, body: { choices: [{ message: { content: '{"nodes":[]}' } }] } };
     const usages: { fromApi: boolean }[] = [];
     const { dispatchLLMChatStructured } = await import('./llm-chat.service');
-    await dispatchLLMChatStructured('liara', '', '', 's', 'g', undefined, [], SCHEMA, (u) => usages.push(u));
+    await dispatchLLMChatStructured('liara', '', '', 's', 'g', undefined, [], SCHEMA, (u) =>
+      usages.push(u),
+    );
     expect(usages[0]!.fromApi).toBe(false);
   });
 
@@ -407,23 +478,37 @@ describe('dispatchLLMChatStructured — Liara guided_json', () => {
     // 4xx (≠400-context) = problema di richiesta, non indisponibilità → resta Error generico.
     mockResponse = { status: 404, body: 'not found' };
     const { dispatchLLMChatStructured } = await import('./llm-chat.service');
-    await expect(dispatchLLMChatStructured('liara', '', '', 's', 'g', undefined, [], SCHEMA))
-      .rejects.toThrow(/structured 404/);
+    await expect(
+      dispatchLLMChatStructured('liara', '', '', 's', 'g', undefined, [], SCHEMA),
+    ).rejects.toThrow(/structured 404/);
   });
 
   it('Liara disabilitata → throw', async () => {
-    vi.doMock('@/config.js', () => ({ isLiaraEnabled: () => false, liaraBaseUrl: () => 'http://x/v1' }));
+    vi.doMock('@/config.js', () => ({
+      isLiaraEnabled: () => false,
+      liaraBaseUrl: () => 'http://x/v1',
+    }));
     vi.resetModules();
     const { dispatchLLMChatStructured } = await import('./llm-chat.service');
-    await expect(dispatchLLMChatStructured('liara', '', '', 's', 'g', undefined, [], SCHEMA))
-      .rejects.toThrow(/disabilitata/);
+    await expect(
+      dispatchLLMChatStructured('liara', '', '', 's', 'g', undefined, [], SCHEMA),
+    ).rejects.toThrow(/disabilitata/);
     vi.doUnmock('@/config.js');
   });
 
   it('BYOK non-liara: delega a dispatchLLMChat con lo schema embeddato nel system + json_object', async () => {
     mockResponse = { status: 200, body: { choices: [{ message: { content: '{"ok":1}' } }] } };
     const { dispatchLLMChatStructured } = await import('./llm-chat.service');
-    await dispatchLLMChatStructured('openai', 'sk-byok', 'gpt-x', 'mySys', 'goal', 'https://api.openai.com/v1', [], SCHEMA);
+    await dispatchLLMChatStructured(
+      'openai',
+      'sk-byok',
+      'gpt-x',
+      'mySys',
+      'goal',
+      'https://api.openai.com/v1',
+      [],
+      SCHEMA,
+    );
     const sys = (captured[0]!.body.messages as { role: string; content: string }[])[0]!;
     expect(sys.content).toContain('OUTPUT JSON SCHEMA');
     expect(sys.content).toContain(JSON.stringify(SCHEMA));
@@ -431,13 +516,26 @@ describe('dispatchLLMChatStructured — Liara guided_json', () => {
 });
 
 describe('🛡️ dispatchLLMChatStructured — immagini DIRETTE a Liara (Qwen3-VL, pixel)', () => {
-  const SCHEMA = { type: 'object', properties: { message: { type: 'string' } }, required: ['message'] };
+  const SCHEMA = {
+    type: 'object',
+    properties: { message: { type: 'string' } },
+    required: ['message'],
+  };
 
-  it('🚨 con images → l\'ULTIMO user message ha content ARRAY multimodale (text + image_url data-url)', async () => {
+  it("🚨 con images → l'ULTIMO user message ha content ARRAY multimodale (text + image_url data-url)", async () => {
     const { dispatchLLMChatStructured } = await import('./llm-chat.service');
     await dispatchLLMChatStructured(
-      'liara', '', '', 'sys', 'descrivi questa foto', undefined, [], SCHEMA,
-      undefined, undefined, [{ base64: 'AAAA', mimeType: 'image/png' }],
+      'liara',
+      '',
+      '',
+      'sys',
+      'descrivi questa foto',
+      undefined,
+      [],
+      SCHEMA,
+      undefined,
+      undefined,
+      [{ base64: 'AAAA', mimeType: 'image/png' }],
     );
     const msgs = captured[0]!.body.messages as { role: string; content: unknown }[];
     const lastUser = msgs[msgs.length - 1]!;
@@ -445,19 +543,37 @@ describe('🛡️ dispatchLLMChatStructured — immagini DIRETTE a Liara (Qwen3-
     const content = lastUser.content as Record<string, unknown>[];
     expect(content[0]).toEqual({ type: 'text', text: 'descrivi questa foto' });
     // mutation-verify: il pixel-block c'è e punta al data-url corretto.
-    expect(content[1]).toEqual({ type: 'image_url', image_url: { url: 'data:image/png;base64,AAAA' } });
+    expect(content[1]).toEqual({
+      type: 'image_url',
+      image_url: { url: 'data:image/png;base64,AAAA' },
+    });
   });
 
-  it('più immagini → un image_url per ciascuna, nell\'ordine', async () => {
+  it("più immagini → un image_url per ciascuna, nell'ordine", async () => {
     const { dispatchLLMChatStructured } = await import('./llm-chat.service');
     await dispatchLLMChatStructured(
-      'liara', '', '', 'sys', 'confronta', undefined, [], SCHEMA,
-      undefined, undefined, [{ base64: 'AAAA', mimeType: 'image/png' }, { base64: 'BBBB', mimeType: 'image/jpeg' }],
+      'liara',
+      '',
+      '',
+      'sys',
+      'confronta',
+      undefined,
+      [],
+      SCHEMA,
+      undefined,
+      undefined,
+      [
+        { base64: 'AAAA', mimeType: 'image/png' },
+        { base64: 'BBBB', mimeType: 'image/jpeg' },
+      ],
     );
     const msgs = captured[0]!.body.messages as { role: string; content: unknown }[];
-    const content = (msgs[msgs.length - 1]!).content as Record<string, unknown>[];
+    const content = msgs[msgs.length - 1]!.content as Record<string, unknown>[];
     expect(content).toHaveLength(3); // text + 2 immagini
-    expect(content[2]).toEqual({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,BBBB' } });
+    expect(content[2]).toEqual({
+      type: 'image_url',
+      image_url: { url: 'data:image/jpeg;base64,BBBB' },
+    });
   });
 
   it('🚨 SENZA images → content STRINGA (retrocompat: identico al comportamento testuale)', async () => {
@@ -471,7 +587,11 @@ describe('🛡️ dispatchLLMChatStructured — immagini DIRETTE a Liara (Qwen3-
 });
 
 describe('LlmProviderUnavailableError — Liara giù → errore CHIARO, mai 500 opaco', () => {
-  const SCHEMA = { type: 'object', properties: { message: { type: 'string' } }, required: ['message'] };
+  const SCHEMA = {
+    type: 'object',
+    properties: { message: { type: 'string' } },
+    required: ['message'],
+  };
 
   it('🚨 la classe porta provider + messaggio leggibile (Liara, offline/GPU)', async () => {
     const { LlmProviderUnavailableError } = await import('./llm-chat.service');
@@ -485,35 +605,52 @@ describe('LlmProviderUnavailableError — Liara giù → errore CHIARO, mai 500 
 
   it('🚨 structured: gateway 5xx → LlmProviderUnavailableError (non Error generico → 500)', async () => {
     mockResponse = { status: 502, body: 'Bad Gateway' };
-    const { dispatchLLMChatStructured, LlmProviderUnavailableError } = await import('./llm-chat.service');
-    await expect(dispatchLLMChatStructured('liara', '', '', 'sys', 'goal', undefined, [], SCHEMA))
-      .rejects.toBeInstanceOf(LlmProviderUnavailableError);
+    const { dispatchLLMChatStructured, LlmProviderUnavailableError } =
+      await import('./llm-chat.service');
+    await expect(
+      dispatchLLMChatStructured('liara', '', '', 'sys', 'goal', undefined, [], SCHEMA),
+    ).rejects.toBeInstanceOf(LlmProviderUnavailableError);
   });
 
   it('🚨 structured: connessione rifiutata (vLLM morto in gen-mode) → LlmProviderUnavailableError', async () => {
-    globalThis.fetch = (async () => { throw new TypeError('fetch failed'); }) as unknown as typeof fetch;
-    const { dispatchLLMChatStructured, LlmProviderUnavailableError } = await import('./llm-chat.service');
-    await expect(dispatchLLMChatStructured('liara', '', '', 'sys', 'goal', undefined, [], SCHEMA))
-      .rejects.toBeInstanceOf(LlmProviderUnavailableError);
+    globalThis.fetch = (async () => {
+      throw new TypeError('fetch failed');
+    }) as unknown as typeof fetch;
+    const { dispatchLLMChatStructured, LlmProviderUnavailableError } =
+      await import('./llm-chat.service');
+    await expect(
+      dispatchLLMChatStructured('liara', '', '', 'sys', 'goal', undefined, [], SCHEMA),
+    ).rejects.toBeInstanceOf(LlmProviderUnavailableError);
   });
 
   it('🚨 non-structured (help-chat/run-explain): gateway 5xx → LlmProviderUnavailableError', async () => {
     mockResponse = { status: 503, body: 'unavailable' };
     const { dispatchLLMChat, LlmProviderUnavailableError } = await import('./llm-chat.service');
-    await expect(dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []))
-      .rejects.toBeInstanceOf(LlmProviderUnavailableError);
+    await expect(
+      dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []),
+    ).rejects.toBeInstanceOf(LlmProviderUnavailableError);
   });
 
   it('🚨 un 4xx NON-context resta errore generico (non maschera bug di richiesta)', async () => {
     mockResponse = { status: 401, body: 'unauthorized' };
-    const { dispatchLLMChatStructured, LlmProviderUnavailableError } = await import('./llm-chat.service');
-    const err = await dispatchLLMChatStructured('liara', '', '', 'sys', 'goal', undefined, [], SCHEMA).catch((e: unknown) => e);
+    const { dispatchLLMChatStructured, LlmProviderUnavailableError } =
+      await import('./llm-chat.service');
+    const err = await dispatchLLMChatStructured(
+      'liara',
+      '',
+      '',
+      'sys',
+      'goal',
+      undefined,
+      [],
+      SCHEMA,
+    ).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(Error);
     expect(err).not.toBeInstanceOf(LlmProviderUnavailableError);
   });
 });
 
-describe('dispatchLLMChat — anti-OOM: body d\'errore cappato (bug-bounty)', () => {
+describe("dispatchLLMChat — anti-OOM: body d'errore cappato (bug-bounty)", () => {
   /** Stream lazy: 8KB per pull (fino a 512 chunk = 4MB) che REGISTRA il max chunk
    *  tirati. Fixato (readTextTruncated 64KB) → ~8-9 pull. Pre-fix (res.text()) → 512.
    *  Stream FINITO → con la mutazione il test FALLISCE l'asserzione (non va in hang). */
@@ -521,7 +658,10 @@ describe('dispatchLLMChat — anti-OOM: body d\'errore cappato (bug-bounty)', ()
     let sent = 0;
     return new ReadableStream<Uint8Array>({
       pull(c) {
-        if (sent >= 512) { c.close(); return; }
+        if (sent >= 512) {
+          c.close();
+          return;
+        }
         sent += 1;
         stats.maxChunks = Math.max(stats.maxChunks, sent);
         c.enqueue(new Uint8Array(8 * 1024));
@@ -529,11 +669,14 @@ describe('dispatchLLMChat — anti-OOM: body d\'errore cappato (bug-bounty)', ()
     });
   }
 
-  it('🚨 ATTACCO: provider 500 con body d\'errore ENORME → la lettura si ferma al cap', async () => {
+  it("🚨 ATTACCO: provider 500 con body d'errore ENORME → la lettura si ferma al cap", async () => {
     const stats = { maxChunks: 0 };
-    globalThis.fetch = (async () => new Response(countingStream(stats), { status: 500 })) as unknown as typeof fetch;
+    globalThis.fetch = (async () =>
+      new Response(countingStream(stats), { status: 500 })) as unknown as typeof fetch;
     const { dispatchLLMChat } = await import('./llm-chat.service');
-    const err = await dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []).catch((e: unknown) => e);
+    const err = await dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []).catch(
+      (e: unknown) => e,
+    );
     expect(err).toBeInstanceOf(Error); // la 500 produce comunque un errore
     // 64KB / 8KB ≈ 8 pull col cap; senza cap (res.text()) tirerebbe tutti i 512.
     expect(stats.maxChunks).toBeLessThan(30);
@@ -542,30 +685,50 @@ describe('dispatchLLMChat — anti-OOM: body d\'errore cappato (bug-bounty)', ()
 
 describe('🔴 SSRF runtime — guardCustomBaseUrl: baseUrl custom interno → throw PRIMA del fetch', () => {
   it.each([
-    'http://172.20.0.1:6379',                   // Redis su flowforge-net
-    'http://127.0.0.1:8080',                    // loopback
-    'http://localhost:11434',                   // Ollama-locale (no senso cloud)
+    'http://172.20.0.1:6379', // Redis su flowforge-net
+    'http://127.0.0.1:8080', // loopback
+    'http://localhost:11434', // Ollama-locale (no senso cloud)
     'http://169.254.169.254/latest/meta-data/', // cloud IMDS
-    'http://10.0.0.5',                          // RFC1918
-    'http://[::1]:11434',                       // IPv6 loopback
-  ])('dispatchLLMChat baseUrl "%s" → reject, fetch NON parte (difesa in profondità)', async (baseUrl) => {
-    const fetchSpy = vi.fn();
-    globalThis.fetch = fetchSpy as unknown as typeof fetch;
-    const { dispatchLLMChat } = await import('./llm-chat.service');
-    await expect(dispatchLLMChat('ollama', '', 'llama3.2', 'sys', 'goal', baseUrl, [])).rejects.toThrow();
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
+    'http://10.0.0.5', // RFC1918
+    'http://[::1]:11434', // IPv6 loopback
+  ])(
+    'dispatchLLMChat baseUrl "%s" → reject, fetch NON parte (difesa in profondità)',
+    async (baseUrl) => {
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy as unknown as typeof fetch;
+      const { dispatchLLMChat } = await import('./llm-chat.service');
+      await expect(
+        dispatchLLMChat('ollama', '', 'llama3.2', 'sys', 'goal', baseUrl, []),
+      ).rejects.toThrow();
+      expect(fetchSpy).not.toHaveBeenCalled();
+    },
+  );
 
   it('🟢 baseUrl PUBBLICO → il guard NON blocca, fetch parte', async () => {
-    const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ message: { content: 'ok' } }), { status: 200 }));
+    const fetchSpy = vi.fn(
+      async () => new Response(JSON.stringify({ message: { content: 'ok' } }), { status: 200 }),
+    );
     globalThis.fetch = fetchSpy as unknown as typeof fetch;
     const { dispatchLLMChat } = await import('./llm-chat.service');
-    await dispatchLLMChat('ollama', '', 'llama3.2', 'sys', 'goal', 'https://ollama.example.com', []).catch(() => undefined);
+    await dispatchLLMChat(
+      'ollama',
+      '',
+      'llama3.2',
+      'sys',
+      'goal',
+      'https://ollama.example.com',
+      [],
+    ).catch(() => undefined);
     expect(fetchSpy).toHaveBeenCalled();
   });
 
   it('🟢 Liara (baseUrl undefined = gateway interno legittimo) → NON bloccato', async () => {
-    const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }), { status: 200 }));
+    const fetchSpy = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }), {
+          status: 200,
+        }),
+    );
     globalThis.fetch = fetchSpy as unknown as typeof fetch;
     const { dispatchLLMChat } = await import('./llm-chat.service');
     await dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []).catch(() => undefined);
@@ -577,14 +740,21 @@ describe('🔴 SSRF runtime — guardCustomBaseUrl: baseUrl custom interno → t
   // bloccava (BLOCKED_PRIVATE_IP) → chat editor + gateway /api/v1/liara/chat in 500
   // 'Errore interno'. Il guard ora esenta l'origin == liaraBaseUrl().
   it('🟢 baseUrl = gateway interno ESPLICITO (= liaraBaseUrl) → NON bloccato', async () => {
-    const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }), { status: 200 }));
+    const fetchSpy = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }), {
+          status: 200,
+        }),
+    );
     globalThis.fetch = fetchSpy as unknown as typeof fetch;
     const { dispatchLLMChat } = await import('./llm-chat.service');
     const { liaraBaseUrl } = await import('@/config.js');
     // Passa ESATTAMENTE il gateway interno come baseUrl esplicito (è ciò che fa il
     // resolver in prod). MUTATION: togliendo l'esenzione origin in guardCustomBaseUrl,
     // assertUrlSafe blocca l'IP privato → throw → fetchSpy non chiamato → rosso.
-    await dispatchLLMChat('liara', '', '', 'sys', 'goal', liaraBaseUrl(), []).catch(() => undefined);
+    await dispatchLLMChat('liara', '', '', 'sys', 'goal', liaraBaseUrl(), []).catch(
+      () => undefined,
+    );
     expect(fetchSpy).toHaveBeenCalled();
   });
 
@@ -594,7 +764,9 @@ describe('🔴 SSRF runtime — guardCustomBaseUrl: baseUrl custom interno → t
     const fetchSpy = vi.fn();
     globalThis.fetch = fetchSpy as unknown as typeof fetch;
     const { dispatchLLMChat } = await import('./llm-chat.service');
-    await expect(dispatchLLMChat('ollama', '', 'm', 'sys', 'goal', 'http://127.0.0.1:6379', [])).rejects.toThrow();
+    await expect(
+      dispatchLLMChat('ollama', '', 'm', 'sys', 'goal', 'http://127.0.0.1:6379', []),
+    ).rejects.toThrow();
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

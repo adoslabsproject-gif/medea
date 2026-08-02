@@ -72,7 +72,9 @@ describe('🚨 [REGRESSION WE-2] runWithRetry rispetta retryable=false', () => {
       calls += 1;
       throw new AuthError({ reason: 'token scaduto' });
     });
-    await expect(__forTestRunWithRetry(makeCtx(10), exec, emptyExecCtx)).rejects.toThrow(/token scaduto/);
+    await expect(__forTestRunWithRetry(makeCtx(10), exec, emptyExecCtx)).rejects.toThrow(
+      /token scaduto/,
+    );
     expect(calls).toBe(1);
   });
 
@@ -82,7 +84,9 @@ describe('🚨 [REGRESSION WE-2] runWithRetry rispetta retryable=false', () => {
       calls += 1;
       throw new ConfigError('config invalida');
     });
-    await expect(__forTestRunWithRetry(makeCtx(3), exec, emptyExecCtx)).rejects.toThrow(/config invalida/);
+    await expect(__forTestRunWithRetry(makeCtx(3), exec, emptyExecCtx)).rejects.toThrow(
+      /config invalida/,
+    );
     expect(calls).toBe(1);
   });
 
@@ -100,7 +104,10 @@ describe('🚨 [REGRESSION WE-2] runWithRetry rispetta retryable=false', () => {
     let calls = 0;
     const exec = vi.fn(async () => {
       calls += 1;
-      throw new CircuitOpenError({ breakerName: 'host:api.example.com', nextProbeAt: Date.now() + 60_000 });
+      throw new CircuitOpenError({
+        breakerName: 'host:api.example.com',
+        nextProbeAt: Date.now() + 60_000,
+      });
     });
     await expect(__forTestRunWithRetry(makeCtx(5), exec, emptyExecCtx)).rejects.toThrow();
     expect(calls).toBe(1);
@@ -165,7 +172,9 @@ describe('🚨 [REGRESSION WE-2] runWithRetry rispetta retryable=false', () => {
       calls += 1;
       throw new TypeError("Cannot read property 'x' of undefined");
     });
-    await expect(__forTestRunWithRetry(makeCtx(5), exec, emptyExecCtx)).rejects.toThrow(/Cannot read/);
+    await expect(__forTestRunWithRetry(makeCtx(5), exec, emptyExecCtx)).rejects.toThrow(
+      /Cannot read/,
+    );
     expect(calls).toBe(1);
   });
 

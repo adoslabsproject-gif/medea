@@ -55,7 +55,10 @@ afterEach(async () => {
   rmSync(tmpDir, { recursive: true, force: true });
 });
 
-function baseInsert(svc: AIInteractionsService, overrides: Partial<{ tenantId: string; type: string; prompt: string; response: string }> = {}): string | null {
+function baseInsert(
+  svc: AIInteractionsService,
+  overrides: Partial<{ tenantId: string; type: string; prompt: string; response: string }> = {},
+): string | null {
   return svc.insert({
     context: { tenantId: overrides.tenantId ?? 'acme', userId: 'u1', workflowId: 'wf1' },
     interactionType: (overrides.type as 'editor_chat') ?? 'editor_chat',
@@ -137,7 +140,11 @@ describe('AIInteractionsService', () => {
       const before = svc.get(id, 'acme')!;
       expect(before.outcome).toBe('pending');
 
-      const updated = svc.updateOutcome({ interactionId: id, tenantId: 'acme', outcome: 'accepted' });
+      const updated = svc.updateOutcome({
+        interactionId: id,
+        tenantId: 'acme',
+        outcome: 'accepted',
+      });
       expect(updated).toBe(true);
 
       const after = svc.get(id, 'acme')!;
@@ -161,7 +168,11 @@ describe('AIInteractionsService', () => {
 
     it('returns false for unknown interactionId', () => {
       const svc = new AIInteractionsService();
-      const ok = svc.updateOutcome({ interactionId: 'nope', tenantId: 'acme', outcome: 'accepted' });
+      const ok = svc.updateOutcome({
+        interactionId: 'nope',
+        tenantId: 'acme',
+        outcome: 'accepted',
+      });
       expect(ok).toBe(false);
     });
   });
@@ -170,7 +181,13 @@ describe('AIInteractionsService', () => {
     it('sets quality_score and training_split', () => {
       const svc = new AIInteractionsService();
       const id = baseInsert(svc)!;
-      svc.updateReview({ interactionId: id, tenantId: 'acme', reviewerUserId: 'admin', qualityScore: 4, trainingSplit: 'train' });
+      svc.updateReview({
+        interactionId: id,
+        tenantId: 'acme',
+        reviewerUserId: 'admin',
+        qualityScore: 4,
+        trainingSplit: 'train',
+      });
       const row = svc.get(id, 'acme')!;
       expect(row.qualityScore).toBe(4);
       expect(row.trainingSplit).toBe('train');
@@ -180,8 +197,22 @@ describe('AIInteractionsService', () => {
     it('rejects quality scores outside 0-5', () => {
       const svc = new AIInteractionsService();
       const id = baseInsert(svc)!;
-      expect(() => svc.updateReview({ interactionId: id, tenantId: 'acme', reviewerUserId: 'admin', qualityScore: 6 })).toThrow();
-      expect(() => svc.updateReview({ interactionId: id, tenantId: 'acme', reviewerUserId: 'admin', qualityScore: -1 })).toThrow();
+      expect(() =>
+        svc.updateReview({
+          interactionId: id,
+          tenantId: 'acme',
+          reviewerUserId: 'admin',
+          qualityScore: 6,
+        }),
+      ).toThrow();
+      expect(() =>
+        svc.updateReview({
+          interactionId: id,
+          tenantId: 'acme',
+          reviewerUserId: 'admin',
+          qualityScore: -1,
+        }),
+      ).toThrow();
     });
   });
 
@@ -220,18 +251,39 @@ describe('AIInteractionsService', () => {
 
       // First row: accepted + quality 4 + train → SHOULD export
       svc.updateOutcome({ interactionId: ids[0]!, tenantId: 'acme', outcome: 'accepted' });
-      svc.updateReview({ interactionId: ids[0]!, tenantId: 'acme', reviewerUserId: 'r', qualityScore: 4, trainingSplit: 'train' });
+      svc.updateReview({
+        interactionId: ids[0]!,
+        tenantId: 'acme',
+        reviewerUserId: 'r',
+        qualityScore: 4,
+        trainingSplit: 'train',
+      });
       // Second row: accepted but quality 2 → should NOT export
       svc.updateOutcome({ interactionId: ids[1]!, tenantId: 'acme', outcome: 'accepted' });
-      svc.updateReview({ interactionId: ids[1]!, tenantId: 'acme', reviewerUserId: 'r', qualityScore: 2, trainingSplit: 'train' });
+      svc.updateReview({
+        interactionId: ids[1]!,
+        tenantId: 'acme',
+        reviewerUserId: 'r',
+        qualityScore: 2,
+        trainingSplit: 'train',
+      });
       // Third row: rejected → should NOT export
       svc.updateOutcome({ interactionId: ids[2]!, tenantId: 'acme', outcome: 'rejected' });
-      svc.updateReview({ interactionId: ids[2]!, tenantId: 'acme', reviewerUserId: 'r', qualityScore: 5, trainingSplit: 'train' });
+      svc.updateReview({
+        interactionId: ids[2]!,
+        tenantId: 'acme',
+        reviewerUserId: 'r',
+        qualityScore: 5,
+        trainingSplit: 'train',
+      });
 
       const jsonl = svc.exportJsonl({ tenantId: 'acme' });
       const lines = jsonl.split('\n').filter((l) => l.length > 0);
       expect(lines.length).toBe(1);
-      const parsed = JSON.parse(lines[0]!) as { messages: { role: string; content: string }[]; metadata: { id: string } };
+      const parsed = JSON.parse(lines[0]!) as {
+        messages: { role: string; content: string }[];
+        metadata: { id: string };
+      };
       expect(parsed.messages.length).toBeGreaterThanOrEqual(2);
       expect(parsed.metadata.id).toBe(ids[0]);
     });
@@ -251,8 +303,8 @@ describe('AIInteractionsService', () => {
 
       // Manually backdate one row's retention_until to simulate expiry
       // (the service doesn't expose a setter for retention_until on purpose).
-      getDatabase().sqlite
-        .prepare('UPDATE ai_interactions SET retention_until = ? WHERE id = ?')
+      getDatabase()
+        .sqlite.prepare('UPDATE ai_interactions SET retention_until = ? WHERE id = ?')
         .run('1970-01-01T00:00:00.000Z', recent);
 
       const otherFresh = baseInsert(svc)!;

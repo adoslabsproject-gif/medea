@@ -24,7 +24,6 @@ describe('ai-assistant.prompt.ts — smoke', () => {
   });
 });
 
-
 const CATALOG_FIXTURE = [
   'FAMIGLIE DI NODI DISPONIBILI:',
   '  • triggers — Trigger (3 nodi)',
@@ -58,8 +57,8 @@ describe('SYSTEM_PROMPT identity — coerenza brand "Liara" (FIX 2026-05-30)', (
   it('istruisce a EMETTERE patch sui build request + modificabilità + wizard', () => {
     const prompt = mod.buildAiAssistantSystemPrompt(CATALOG_FIXTURE);
     expect(prompt).toMatch(/BUILD\/CREATE requests MUST emit a "patch"/i);
-    expect(prompt).toMatch(/add, remove or modify/i);   // modificabilità annunciata
-    expect(prompt).toMatch(/Wizard/);                    // suggerisce il wizard per build grandi
+    expect(prompt).toMatch(/add, remove or modify/i); // modificabilità annunciata
+    expect(prompt).toMatch(/Wizard/); // suggerisce il wizard per build grandi
     expect(prompt).toMatch(/Never reply .*the workflow is empty/i); // anti il caso osservato
   });
 
@@ -118,9 +117,15 @@ describe('patchHasOps logic — strip empty patch (FIX 2026-05-30 user-segnalato
   });
 
   it('patch con tutti array vuoti → false', () => {
-    expect(patchHasOps({
-      addNodes: [], removeNodeIds: [], addEdges: [], removeEdgeIds: [], updateNodes: [],
-    })).toBe(false);
+    expect(
+      patchHasOps({
+        addNodes: [],
+        removeNodeIds: [],
+        addEdges: [],
+        removeEdgeIds: [],
+        updateNodes: [],
+      }),
+    ).toBe(false);
   });
 
   it('patch con UN addNodes → true', () => {
@@ -132,7 +137,13 @@ describe('patchHasOps logic — strip empty patch (FIX 2026-05-30 user-segnalato
   });
 
   it('patch con SOLO updateNodes (no add/remove) → true', () => {
-    expect(patchHasOps({ updateNodes: [{ id: 'n1', patch: { x: 100 } as unknown as unknown[] }] as unknown as unknown[] })).toBe(true);
+    expect(
+      patchHasOps({
+        updateNodes: [
+          { id: 'n1', patch: { x: 100 } as unknown as unknown[] },
+        ] as unknown as unknown[],
+      }),
+    ).toBe(true);
   });
 });
 
@@ -141,7 +152,9 @@ describe('cap context chat (incidente owner 2026-06-12 — Liara 400 92408>40960
     const mod = await import('./ai-assistant.prompt.js');
     // Senza catalogBlock: il prompt non deve contenere alcun catalogo hardcoded.
     const empty = mod.buildAiAssistantSystemPrompt('');
-    const catalogLines = empty.split('\n').filter((l) => l.startsWith('- action_') || l.startsWith('- trigger_'));
+    const catalogLines = empty
+      .split('\n')
+      .filter((l) => l.startsWith('- action_') || l.startsWith('- trigger_'));
     expect(catalogLines.length, 'il builder non deve avere un catalogo proprio').toBe(0);
     // Il cap del contesto ora è garantito dal retrieval top-k a monte, non da
     // un dump troncato: il prompt base è piccolo a prescindere dal n. di nodi.
@@ -151,7 +164,10 @@ describe('cap context chat (incidente owner 2026-06-12 — Liara 400 92408>40960
   it('compactWorkflowJson: niente pretty-print + valori config lunghi troncati', async () => {
     const mod = await import('./ai-assistant.prompt.js');
     const longCode = 'x'.repeat(5000);
-    const wf = { nodes: [{ id: 'n1', defId: 'action_run_js', config: { code: longCode } }], edges: [] };
+    const wf = {
+      nodes: [{ id: 'n1', defId: 'action_run_js', config: { code: longCode } }],
+      edges: [],
+    };
     const out = mod.compactWorkflowJson(wf);
     expect(out).not.toContain('\n  '); // no indentazione pretty-print
     expect(out.length).toBeLessThan(2000); // 5000 char di code troncati
@@ -164,8 +180,13 @@ describe('cap context chat (incidente owner 2026-06-12 — Liara 400 92408>40960
 
   it('compactWorkflowJson: valori config corti restano INTATTI', async () => {
     const mod = await import('./ai-assistant.prompt.js');
-    const wf = { nodes: [{ id: 'n1', defId: 'action_send_email', config: { to: 'a@b.it' } }], edges: [] };
-    const parsed = JSON.parse(mod.compactWorkflowJson(wf)) as { nodes: { config: { to: string } }[] };
+    const wf = {
+      nodes: [{ id: 'n1', defId: 'action_send_email', config: { to: 'a@b.it' } }],
+      edges: [],
+    };
+    const parsed = JSON.parse(mod.compactWorkflowJson(wf)) as {
+      nodes: { config: { to: string } }[];
+    };
     expect(parsed.nodes[0]!.config.to).toBe('a@b.it');
   });
 });

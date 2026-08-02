@@ -25,7 +25,9 @@ let workflowGet: ReturnType<typeof vi.fn>;
 let runExecute: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
-  workflowGet = vi.fn(async (id: string) => id === 'wf-1' ? { id, tenantId: 'default', enabled: true } : null);
+  workflowGet = vi.fn(async (id: string) =>
+    id === 'wf-1' ? { id, tenantId: 'default', enabled: true } : null,
+  );
   runExecute = vi.fn();
   vi.spyOn(WorkflowService.prototype, 'get').mockImplementation(workflowGet as never);
   vi.spyOn(RunService.prototype, 'execute').mockImplementation(runExecute as never);
@@ -50,7 +52,7 @@ describe('POST /workflows/:id/invoke — input validation', () => {
       body: 'not-json{',
     });
     expect(res.status).toBe(400);
-    const body = await res.json() as { error: string };
+    const body = (await res.json()) as { error: string };
     expect(body.error).toBe('Body must be valid JSON');
   });
 
@@ -73,10 +75,12 @@ describe('POST /workflows/:id/invoke — input validation', () => {
   });
 
   it('🚨 [REGRESSION WE-16] workflow disabilitato → 409 WORKFLOW_DISABLED, runs.execute NON chiamato', async () => {
-    workflowGet.mockImplementation(async (id: string) => id === 'wf-1' ? { id, tenantId: 'default', enabled: false } : null);
+    workflowGet.mockImplementation(async (id: string) =>
+      id === 'wf-1' ? { id, tenantId: 'default', enabled: false } : null,
+    );
     const res = await makeApp().request('/workflows/wf-1/invoke', { method: 'POST', body: '{}' });
     expect(res.status).toBe(409);
-    const body = await res.json() as { error: string; message: string };
+    const body = (await res.json()) as { error: string; message: string };
     expect(body.error).toBe('WORKFLOW_DISABLED');
     expect(body.message).toMatch(/disabled/i);
     expect(runExecute).not.toHaveBeenCalled();
@@ -95,7 +99,7 @@ describe('POST /workflows/:id/invoke — error paths', () => {
     });
     const res = await makeApp().request('/workflows/wf-1/invoke', { method: 'POST', body: '{}' });
     expect(res.status).toBe(422);
-    const body = await res.json() as { runId: string; failedNodeId: string; error: string };
+    const body = (await res.json()) as { runId: string; failedNodeId: string; error: string };
     expect(body.runId).toBe('r-fail');
     expect(body.failedNodeId).toBe('n2');
     expect(body.error).toBe('connection refused');
@@ -105,7 +109,7 @@ describe('POST /workflows/:id/invoke — error paths', () => {
     runExecute.mockRejectedValue(new Error('boom'));
     const res = await makeApp().request('/workflows/wf-1/invoke', { method: 'POST', body: '{}' });
     expect(res.status).toBe(500);
-    const body = await res.json() as { error: string };
+    const body = (await res.json()) as { error: string };
     expect(body.error).toBe('boom');
   });
 });
@@ -123,7 +127,7 @@ describe('POST /workflows/:id/invoke — safeParseJson on step.output', () => {
       ],
     });
     const res = await makeApp().request('/workflows/wf-1/invoke', { method: 'POST', body: '{}' });
-    const body = await res.json() as { result: unknown };
+    const body = (await res.json()) as { result: unknown };
     expect(body.result).toEqual(finalOutput);
     expect(typeof body.result).toBe('object');
   });
@@ -136,7 +140,7 @@ describe('POST /workflows/:id/invoke — safeParseJson on step.output', () => {
       steps: [{ status: 'success', output: 'plain text not json' }],
     });
     const res = await makeApp().request('/workflows/wf-1/invoke', { method: 'POST', body: '{}' });
-    const body = await res.json() as { result: unknown };
+    const body = (await res.json()) as { result: unknown };
     expect(body.result).toBe('plain text not json');
   });
 
@@ -148,7 +152,7 @@ describe('POST /workflows/:id/invoke — safeParseJson on step.output', () => {
       steps: [{ status: 'skipped' }, { status: 'skipped' }],
     });
     const res = await makeApp().request('/workflows/wf-1/invoke', { method: 'POST', body: '{}' });
-    const body = await res.json() as { result: unknown };
+    const body = (await res.json()) as { result: unknown };
     expect(body.result).toBeNull();
   });
 
@@ -165,7 +169,7 @@ describe('POST /workflows/:id/invoke — safeParseJson on step.output', () => {
       ],
     });
     const res = await makeApp().request('/workflows/wf-1/invoke', { method: 'POST', body: '{}' });
-    const body = await res.json() as { result: { second: boolean } };
+    const body = (await res.json()) as { result: { second: boolean } };
     expect(body.result).toEqual({ second: true });
   });
 });

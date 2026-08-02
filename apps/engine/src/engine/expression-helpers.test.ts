@@ -20,7 +20,15 @@ describe('buildExpressionHelpers — accessor (parità n8n)', () => {
     expect(noLoop.$itemCount).toBe(2);
 
     const inLoop = buildExpressionHelpers({
-      loop: { item: 'x', index: 2, total: 5, first: false, last: false, loopId: 'l1', strategy: 'naive' },
+      loop: {
+        item: 'x',
+        index: 2,
+        total: 5,
+        first: false,
+        last: false,
+        loopId: 'l1',
+        strategy: 'naive',
+      },
     });
     expect(inLoop.$itemIndex).toBe(2);
     expect(inLoop.$runIndex).toBe(2);
@@ -34,7 +42,7 @@ describe('buildExpressionHelpers — accessor (parità n8n)', () => {
     expect(h.$workflow).toEqual({ id: 'wf1', name: '' });
     expect(h.$execution.id).toBe('run1');
     expect(h.$execution.mode).toBe('manual'); // default
-    expect(H().$workflow.id).toBe('');         // nessun context → safe
+    expect(H().$workflow.id).toBe(''); // nessun context → safe
   });
 });
 
@@ -89,21 +97,25 @@ describe('$date — date math pura (no luxon dep)', () => {
   it('plus/minus giorni e ore (UTC, deterministico)', () => {
     expect(h.$date.plus('2026-01-01T00:00:00.000Z', { days: 7 })).toBe('2026-01-08T00:00:00.000Z');
     expect(h.$date.minus('2026-01-08T00:00:00.000Z', { days: 7 })).toBe('2026-01-01T00:00:00.000Z');
-    expect(h.$date.plus('2026-01-01T00:00:00.000Z', { hours: 25 })).toBe('2026-01-02T01:00:00.000Z');
+    expect(h.$date.plus('2026-01-01T00:00:00.000Z', { hours: 25 })).toBe(
+      '2026-01-02T01:00:00.000Z',
+    );
   });
   it('diff in unità', () => {
     expect(h.$date.diff('2026-01-08T00:00:00Z', '2026-01-01T00:00:00Z', 'days')).toBe(7);
     expect(h.$date.diff('2026-01-01T02:00:00Z', '2026-01-01T00:00:00Z', 'hours')).toBe(2);
   });
   it('format con token', () => {
-    expect(h.$date.format('2026-03-09T14:05:09Z', 'DD/MM/YYYY HH:mm:ss')).toBe('09/03/2026 14:05:09');
+    expect(h.$date.format('2026-03-09T14:05:09Z', 'DD/MM/YYYY HH:mm:ss')).toBe(
+      '09/03/2026 14:05:09',
+    );
   });
   it('startOf', () => {
     expect(h.$date.startOf('2026-03-09T14:05:09Z', 'month')).toBe('2026-03-01T00:00:00.000Z');
     expect(h.$date.startOf('2026-03-09T14:05:09Z', 'year')).toBe('2026-01-01T00:00:00.000Z');
   });
   it('isWeekend + addBusinessDays (superiore: n8n non li ha out-of-box)', () => {
-    expect(h.$date.isWeekend('2026-06-13T00:00:00Z')).toBe(true);  // sabato
+    expect(h.$date.isWeekend('2026-06-13T00:00:00Z')).toBe(true); // sabato
     expect(h.$date.isWeekend('2026-06-15T00:00:00Z')).toBe(false); // lunedì
     // venerdì + 1 business day = lunedì (salta il weekend)
     expect(h.$date.addBusinessDays('2026-06-12T00:00:00Z', 1)).toBe('2026-06-15T00:00:00.000Z');
@@ -111,12 +123,17 @@ describe('$date — date math pura (no luxon dep)', () => {
 });
 
 describe('🔬 integrazione: evaluateExpression esegue gli helper end-to-end (sandbox reale)', () => {
-  const evalExpr = (expr: string, scope: InterpreterScope = {}): unknown => evaluateExpression(expr, scope);
+  const evalExpr = (expr: string, scope: InterpreterScope = {}): unknown =>
+    evaluateExpression(expr, scope);
 
   it('$json.<field> e $if con condizione reale', () => {
     expect(evalExpr('$json.name', { input: { name: 'Ada' } })).toBe('Ada');
-    expect(evalExpr('$if($json.age >= 18, "adult", "minor")', { input: { age: 20 } })).toBe('adult');
-    expect(evalExpr('$if($json.age >= 18, "adult", "minor")', { input: { age: 12 } })).toBe('minor');
+    expect(evalExpr('$if($json.age >= 18, "adult", "minor")', { input: { age: 20 } })).toBe(
+      'adult',
+    );
+    expect(evalExpr('$if($json.age >= 18, "adult", "minor")', { input: { age: 12 } })).toBe(
+      'minor',
+    );
   });
 
   it('$sum/$avg su $items reali', () => {
@@ -126,20 +143,36 @@ describe('🔬 integrazione: evaluateExpression esegue gli helper end-to-end (sa
 
   it('$get deep + $ifEmpty fallback in una sola espressione', () => {
     expect(evalExpr('$ifEmpty($get($json, "a.b.c"), "n/a")', { input: { a: {} } })).toBe('n/a');
-    expect(evalExpr('$get($json, "items[1].sku")', { input: { items: [{ sku: 'A' }, { sku: 'B' }] } })).toBe('B');
+    expect(
+      evalExpr('$get($json, "items[1].sku")', { input: { items: [{ sku: 'A' }, { sku: 'B' }] } }),
+    ).toBe('B');
   });
 
   it('$date math dentro espressione', () => {
-    expect(evalExpr('$date.plus("2026-01-01T00:00:00Z", {days: 30})')).toBe('2026-01-31T00:00:00.000Z');
+    expect(evalExpr('$date.plus("2026-01-01T00:00:00Z", {days: 30})')).toBe(
+      '2026-01-31T00:00:00.000Z',
+    );
   });
 
   it('$workflow/$execution accessibili', () => {
     expect(evalExpr('$workflow.id', { workflow: { id: 'wf-9' } })).toBe('wf-9');
-    expect(evalExpr('$execution.mode', { execution: { id: 'r', mode: 'webhook' } })).toBe('webhook');
+    expect(evalExpr('$execution.mode', { execution: { id: 'r', mode: 'webhook' } })).toBe(
+      'webhook',
+    );
   });
 
   it('$itemIndex riflette il loop', () => {
-    const scope: InterpreterScope = { loop: { item: 'x', index: 3, total: 10, first: false, last: false, loopId: 'l', strategy: 'naive' } };
+    const scope: InterpreterScope = {
+      loop: {
+        item: 'x',
+        index: 3,
+        total: 10,
+        first: false,
+        last: false,
+        loopId: 'l',
+        strategy: 'naive',
+      },
+    };
     expect(evalExpr('$itemIndex', scope)).toBe(3);
   });
 
@@ -156,23 +189,37 @@ describe('🔬 integrazione: evaluateExpression esegue gli helper end-to-end (sa
   });
 
   it('retro-compat: lo scope esistente (vars/secrets/input) continua a funzionare', () => {
-    expect(evalExpr('vars["x"] + secrets["k"]', { vars: { x: 'a' }, secrets: { k: 'b' } })).toBe('ab');
+    expect(evalExpr('vars["x"] + secrets["k"]', { vars: { x: 'a' }, secrets: { k: 'b' } })).toBe(
+      'ab',
+    );
     expect(evalExpr('input.v * 2', { input: { v: 21 } })).toBe(42);
   });
 });
 
 describe('🚨 FASE-2 — $jmespath (lib VERA, parità n8n)', () => {
-  const evalExpr = (expr: string, scope: InterpreterScope = {}): unknown => evaluateExpression(expr, scope);
-  const DATA = { items: [{ name: 'Anna', age: 41 }, { name: 'Bruno', age: 17 }, { name: 'Carla', age: 35 }] };
+  const evalExpr = (expr: string, scope: InterpreterScope = {}): unknown =>
+    evaluateExpression(expr, scope);
+  const DATA = {
+    items: [
+      { name: 'Anna', age: 41 },
+      { name: 'Bruno', age: 17 },
+      { name: 'Carla', age: 35 },
+    ],
+  };
 
   it('🚨 query di filtro n8n-style: items[?age > `30`].name', () => {
-    expect(evalExpr('$jmespath($json, "items[?age > `30`].name")', { input: DATA })).toEqual(['Anna', 'Carla']);
+    expect(evalExpr('$jmespath($json, "items[?age > `30`].name")', { input: DATA })).toEqual([
+      'Anna',
+      'Carla',
+    ]);
   });
 
   it('🚨 proiezioni + funzioni native jmespath (length, sort_by, max_by)', () => {
     expect(evalExpr('$jmespath($json, "length(items)")', { input: DATA })).toBe(3);
     expect(evalExpr('$jmespath($json, "max_by(items, &age).name")', { input: DATA })).toBe('Anna');
-    expect(evalExpr('$jmespath($json, "sort_by(items, &age)[0].name")', { input: DATA })).toBe('Bruno');
+    expect(evalExpr('$jmespath($json, "sort_by(items, &age)[0].name")', { input: DATA })).toBe(
+      'Bruno',
+    );
   });
 
   it('🚨 FAIL-SOFT: query sintatticamente rotta → null, MAI crash del run', () => {
@@ -182,11 +229,14 @@ describe('🚨 FASE-2 — $jmespath (lib VERA, parità n8n)', () => {
 });
 
 describe('🚨 FASE-2 — Luxon DateTime/Duration (parità n8n, timezone VERE)', () => {
-  const evalExpr = (expr: string, scope: InterpreterScope = {}): unknown => evaluateExpression(expr, scope);
+  const evalExpr = (expr: string, scope: InterpreterScope = {}): unknown =>
+    evaluateExpression(expr, scope);
 
-  it('🚨 l\'espressione n8n canonica gira IDENTICA: DateTime con setZone', () => {
+  it("🚨 l'espressione n8n canonica gira IDENTICA: DateTime con setZone", () => {
     // 12:00 UTC di un giorno fisso → 14:00 a Roma (CEST, estate)
-    const out = evalExpr('DateTime.fromISO("2026-06-12T12:00:00Z").setZone("Europe/Rome").toFormat("HH:mm")');
+    const out = evalExpr(
+      'DateTime.fromISO("2026-06-12T12:00:00Z").setZone("Europe/Rome").toFormat("HH:mm")',
+    );
     expect(out).toBe('14:00');
   });
 
@@ -195,12 +245,16 @@ describe('🚨 FASE-2 — Luxon DateTime/Duration (parità n8n, timezone VERE)',
   });
 
   it('🚨 DateTime math: plus/diff con oggetti durata (sintassi n8n)', () => {
-    const out = evalExpr('DateTime.fromISO("2026-01-31T00:00:00Z", {zone:"utc"}).plus({months: 1}).toISODate()');
+    const out = evalExpr(
+      'DateTime.fromISO("2026-01-31T00:00:00Z", {zone:"utc"}).plus({months: 1}).toISODate()',
+    );
     expect(out).toBe('2026-02-28'); // fine-mese gestito da Luxon, non a mano
   });
 
   it('🚨 locale: formato italiano out-of-the-box', () => {
-    const out = evalExpr('DateTime.fromISO("2026-06-12T00:00:00Z", {zone:"utc"}).setLocale("it").toFormat("cccc d LLLL")');
+    const out = evalExpr(
+      'DateTime.fromISO("2026-06-12T00:00:00Z", {zone:"utc"}).setLocale("it").toFormat("cccc d LLLL")',
+    );
     expect(String(out).toLowerCase()).toContain('giugno');
   });
 

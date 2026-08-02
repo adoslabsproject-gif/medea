@@ -35,9 +35,16 @@ afterEach(() => {
 
 function makeWf(tenantId = 'tenant-a'): Workflow {
   return {
-    id: 'wf-fw', tenantId, name: 'FW', enabled: true,
-    schemaVersion: '1.0.0', nodes: [], edges: [], nodeDefs: [],
-    createdAt: '2026-06-12', updatedAt: '2026-06-12',
+    id: 'wf-fw',
+    tenantId,
+    name: 'FW',
+    enabled: true,
+    schemaVersion: '1.0.0',
+    nodes: [],
+    edges: [],
+    nodeDefs: [],
+    createdAt: '2026-06-12',
+    updatedAt: '2026-06-12',
   } as unknown as Workflow;
 }
 
@@ -51,8 +58,12 @@ class FakeWatch implements WatchHandle {
     this.handlers.set(event, listener);
     return this;
   }
-  async close(): Promise<void> { /* no-op */ }
-  fire(event: string, path: string): void { this.handlers.get(event)?.(path); }
+  async close(): Promise<void> {
+    /* no-op */
+  }
+  fire(event: string, path: string): void {
+    this.handlers.get(event)?.(path);
+  }
 }
 
 function makeDeps(over: Partial<FileWatcherDeps> = {}): {
@@ -116,7 +127,11 @@ describe('startFileWatcher — gate e risoluzione path', () => {
 
   it('path assoluto → pass-through; glob appeso al TARGET ma mkdir sulla DIRECTORY', async () => {
     const { deps, watch, makeDir } = makeDeps();
-    await startFileWatcher(makeWf(), makeNode({ directory: '/var/spool/scan', glob: '*.csv' }), deps);
+    await startFileWatcher(
+      makeWf(),
+      makeNode({ directory: '/var/spool/scan', glob: '*.csv' }),
+      deps,
+    );
     expect(makeDir).toHaveBeenCalledWith('/var/spool/scan');
     expect(watch.mock.calls[0]![0]).toBe('/var/spool/scan/*.csv');
   });
@@ -134,11 +149,17 @@ describe('startFileWatcher — gate e risoluzione path', () => {
   it('FIX bug NaN: debounceMs non numerico → default 500 (MAI stabilityThreshold NaN a chokidar)', async () => {
     const { deps, watch } = makeDeps();
     await startFileWatcher(makeWf(), makeNode({ directory: '/x', debounceMs: 'abc' }), deps);
-    expect((watch.mock.calls[0]![1] as FileWatcherOptions).awaitWriteFinish.stabilityThreshold).toBe(500);
+    expect(
+      (watch.mock.calls[0]![1] as FileWatcherOptions).awaitWriteFinish.stabilityThreshold,
+    ).toBe(500);
   });
 
   it('mkdir che fallisce → swallowed, il watcher viene comunque registrato', async () => {
-    const { deps, watch } = makeDeps({ makeDir: vi.fn(async () => { throw new Error('EACCES'); }) });
+    const { deps, watch } = makeDeps({
+      makeDir: vi.fn(async () => {
+        throw new Error('EACCES');
+      }),
+    });
     const job = await startFileWatcher(makeWf(), makeNode({ directory: '/x' }), deps);
     expect(job).not.toBeNull();
     expect(watch).toHaveBeenCalledTimes(1);
@@ -179,7 +200,9 @@ describe('eventi → run dispatch', () => {
     const { logger } = await import('@/lib/logger.js');
     const errSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger);
     const { fakes, deps } = makeDeps({
-      dispatchRun: async () => { throw new Error('run boom'); },
+      dispatchRun: async () => {
+        throw new Error('run boom');
+      },
     });
     await startFileWatcher(makeWf(), makeNode({ directory: '/in' }), deps);
     fakes[0]!.fire('add', '/in/x.bin');

@@ -122,7 +122,11 @@ function mapDef(d: NodeDef, pkg: string, verified?: boolean): NodeDescriptor {
   }
   if (d.resources && d.resources.length > 0) {
     out.resources = d.resources.map((r) => {
-      const res: ResourceDescriptor = { id: r.id, label: r.label, configFields: (r.configFields ?? []).map(mapField) };
+      const res: ResourceDescriptor = {
+        id: r.id,
+        label: r.label,
+        configFields: (r.configFields ?? []).map(mapField),
+      };
       if (r.description !== undefined) res.description = r.description;
       if (r.icon !== undefined) res.icon = r.icon;
       return res;

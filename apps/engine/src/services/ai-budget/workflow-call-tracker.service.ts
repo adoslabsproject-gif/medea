@@ -67,7 +67,10 @@ export interface BudgetDailyRow {
 export function todayUtc(): string {
   const tz = process.env.MEDEA_BUDGET_TZ ?? 'Europe/Rome';
   const fmt = new Intl.DateTimeFormat('en-CA', {
-    year: 'numeric', month: '2-digit', day: '2-digit', timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: tz,
   });
   return fmt.format(new Date());
 }
@@ -86,59 +89,66 @@ export function todayUtc(): string {
  */
 const PRICING_TABLE: Record<string, { inputPerM: number; outputPerM: number }> = {
   // Liara self-hosted (GPU amortized)
-  'liara':                                { inputPerM: 0.05, outputPerM: 0.10 },
+  liara: { inputPerM: 0.05, outputPerM: 0.1 },
 
   // OpenAI (ChatGPT)
-  'openai/gpt-4o':                        { inputPerM: 2.50,  outputPerM: 10.00 },
-  'openai/gpt-4o-mini':                   { inputPerM: 0.15,  outputPerM: 0.60 },
-  'openai/gpt-4.1':                       { inputPerM: 2.00,  outputPerM: 8.00 },
-  'openai/gpt-4.1-mini':                  { inputPerM: 0.40,  outputPerM: 1.60 },
-  'openai/o1':                            { inputPerM: 15.00, outputPerM: 60.00 },
-  'openai/o1-mini':                       { inputPerM: 3.00,  outputPerM: 12.00 },
+  'openai/gpt-4o': { inputPerM: 2.5, outputPerM: 10.0 },
+  'openai/gpt-4o-mini': { inputPerM: 0.15, outputPerM: 0.6 },
+  'openai/gpt-4.1': { inputPerM: 2.0, outputPerM: 8.0 },
+  'openai/gpt-4.1-mini': { inputPerM: 0.4, outputPerM: 1.6 },
+  'openai/o1': { inputPerM: 15.0, outputPerM: 60.0 },
+  'openai/o1-mini': { inputPerM: 3.0, outputPerM: 12.0 },
 
   // Anthropic Claude
-  'anthropic/claude-sonnet-4-6':          { inputPerM: 3.00,  outputPerM: 15.00 },
-  'anthropic/claude-haiku-4-5':           { inputPerM: 0.80,  outputPerM: 4.00 },
-  'anthropic/claude-opus-4-7':            { inputPerM: 15.00, outputPerM: 75.00 },
+  'anthropic/claude-sonnet-4-6': { inputPerM: 3.0, outputPerM: 15.0 },
+  'anthropic/claude-haiku-4-5': { inputPerM: 0.8, outputPerM: 4.0 },
+  'anthropic/claude-opus-4-7': { inputPerM: 15.0, outputPerM: 75.0 },
 
   // Google Gemini
-  'gemini/gemini-2.0-flash':              { inputPerM: 0.10,  outputPerM: 0.40 },
-  'gemini/gemini-2.0-pro':                { inputPerM: 1.25,  outputPerM: 5.00 },
+  'gemini/gemini-2.0-flash': { inputPerM: 0.1, outputPerM: 0.4 },
+  'gemini/gemini-2.0-pro': { inputPerM: 1.25, outputPerM: 5.0 },
 
   // Grok (X.AI)
-  'grok/grok-2-latest':                   { inputPerM: 2.00,  outputPerM: 10.00 },
-  'grok/grok-2-mini':                     { inputPerM: 0.20,  outputPerM: 0.80 },
-  'grok/grok-3':                          { inputPerM: 5.00,  outputPerM: 25.00 },
+  'grok/grok-2-latest': { inputPerM: 2.0, outputPerM: 10.0 },
+  'grok/grok-2-mini': { inputPerM: 0.2, outputPerM: 0.8 },
+  'grok/grok-3': { inputPerM: 5.0, outputPerM: 25.0 },
   // alias xai (dispatcher matcha entrambi)
-  'xai/grok-2-latest':                    { inputPerM: 2.00,  outputPerM: 10.00 },
-  'xai/grok-3':                           { inputPerM: 5.00,  outputPerM: 25.00 },
+  'xai/grok-2-latest': { inputPerM: 2.0, outputPerM: 10.0 },
+  'xai/grok-3': { inputPerM: 5.0, outputPerM: 25.0 },
 
   // DeepSeek
-  'deepseek/deepseek-chat':               { inputPerM: 0.27,  outputPerM: 1.10 },
-  'deepseek/deepseek-coder':              { inputPerM: 0.27,  outputPerM: 1.10 },
-  'deepseek/deepseek-reasoner':           { inputPerM: 0.55,  outputPerM: 2.19 },
+  'deepseek/deepseek-chat': { inputPerM: 0.27, outputPerM: 1.1 },
+  'deepseek/deepseek-coder': { inputPerM: 0.27, outputPerM: 1.1 },
+  'deepseek/deepseek-reasoner': { inputPerM: 0.55, outputPerM: 2.19 },
 
   // Mistral
-  'mistral/mistral-large':                { inputPerM: 2.00,  outputPerM: 6.00 },
-  'mistral/mistral-medium':               { inputPerM: 0.40,  outputPerM: 2.00 },
-  'mistral/mistral-small':                { inputPerM: 0.20,  outputPerM: 0.60 },
+  'mistral/mistral-large': { inputPerM: 2.0, outputPerM: 6.0 },
+  'mistral/mistral-medium': { inputPerM: 0.4, outputPerM: 2.0 },
+  'mistral/mistral-small': { inputPerM: 0.2, outputPerM: 0.6 },
 
   // Groq (LPU — hardware fast inference)
-  'groq/llama-3.3-70b-versatile':         { inputPerM: 0.59,  outputPerM: 0.79 },
-  'groq/llama-3.1-8b-instant':            { inputPerM: 0.05,  outputPerM: 0.08 },
+  'groq/llama-3.3-70b-versatile': { inputPerM: 0.59, outputPerM: 0.79 },
+  'groq/llama-3.1-8b-instant': { inputPerM: 0.05, outputPerM: 0.08 },
 
   // OpenRouter — pass-through (no surcharge tracked here, real cost arrives
   // dal vendor backing). Cost 0 fallback finche\` non tracciamo header X-Cost.
-  'openrouter':                           { inputPerM: 0,     outputPerM: 0 },
+  openrouter: { inputPerM: 0, outputPerM: 0 },
 
   // Ollama self-hosted (free)
-  'ollama':                               { inputPerM: 0,     outputPerM: 0 },
+  ollama: { inputPerM: 0, outputPerM: 0 },
 };
 
-export function estimateCostUsd(provider: string, model: string | undefined, inputTokens: number, outputTokens: number): number {
+export function estimateCostUsd(
+  provider: string,
+  model: string | undefined,
+  inputTokens: number,
+  outputTokens: number,
+): number {
   const key = model ? `${provider}/${model}` : provider;
   const price = PRICING_TABLE[key] ?? PRICING_TABLE[provider] ?? { inputPerM: 0, outputPerM: 0 };
-  return (inputTokens / 1_000_000) * price.inputPerM + (outputTokens / 1_000_000) * price.outputPerM;
+  return (
+    (inputTokens / 1_000_000) * price.inputPerM + (outputTokens / 1_000_000) * price.outputPerM
+  );
 }
 
 export class WorkflowCallTracker {
@@ -150,41 +160,46 @@ export class WorkflowCallTracker {
     const id = randomUUID();
     const now = new Date().toISOString();
     const totalTokens = (input.inputTokens ?? 0) + (input.outputTokens ?? 0);
-    const cost = input.costUsdEstimate ?? estimateCostUsd(input.provider, input.model, input.inputTokens ?? 0, input.outputTokens ?? 0);
+    const cost =
+      input.costUsdEstimate ??
+      estimateCostUsd(input.provider, input.model, input.inputTokens ?? 0, input.outputTokens ?? 0);
 
     const txn = sqlite.transaction(() => {
-      sqlite.prepare(
-        `INSERT INTO ai_workflow_calls
+      sqlite
+        .prepare(
+          `INSERT INTO ai_workflow_calls
           (id, run_id, workflow_id, node_id, def_id, provider, model,
            input_tokens, output_tokens, total_tokens, latency_ms, cost_usd_estimate,
            status, error_message, cache_hit, queue_wait_ms, retry_attempt, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(
-        id,
-        input.runId,
-        input.workflowId,
-        input.nodeId,
-        input.defId,
-        input.provider,
-        input.model ?? null,
-        input.inputTokens ?? null,
-        input.outputTokens ?? null,
-        totalTokens,
-        input.latencyMs ?? null,
-        cost,
-        input.status,
-        input.errorMessage ?? null,
-        input.cacheHit ?? 'none',
-        input.queueWaitMs ?? null,
-        input.retryAttempt ?? 0,
-        now,
-      );
+        )
+        .run(
+          id,
+          input.runId,
+          input.workflowId,
+          input.nodeId,
+          input.defId,
+          input.provider,
+          input.model ?? null,
+          input.inputTokens ?? null,
+          input.outputTokens ?? null,
+          totalTokens,
+          input.latencyMs ?? null,
+          cost,
+          input.status,
+          input.errorMessage ?? null,
+          input.cacheHit ?? 'none',
+          input.queueWaitMs ?? null,
+          input.retryAttempt ?? 0,
+          now,
+        );
 
       // Update daily budget atomically (UPSERT).
       const date = todayUtc();
       const isError = input.status !== 'ok' ? 1 : 0;
-      sqlite.prepare(
-        `INSERT INTO ai_budget_daily (date, source, input_tokens, output_tokens, cost_usd, call_count, error_count)
+      sqlite
+        .prepare(
+          `INSERT INTO ai_budget_daily (date, source, input_tokens, output_tokens, cost_usd, call_count, error_count)
          VALUES (?, 'workflow', ?, ?, ?, 1, ?)
          ON CONFLICT(date, source) DO UPDATE SET
            input_tokens = input_tokens + ?,
@@ -192,16 +207,28 @@ export class WorkflowCallTracker {
            cost_usd = cost_usd + ?,
            call_count = call_count + 1,
            error_count = error_count + ?`,
-      ).run(
-        date, input.inputTokens ?? 0, input.outputTokens ?? 0, cost, isError,
-        input.inputTokens ?? 0, input.outputTokens ?? 0, cost, isError,
-      );
+        )
+        .run(
+          date,
+          input.inputTokens ?? 0,
+          input.outputTokens ?? 0,
+          cost,
+          isError,
+          input.inputTokens ?? 0,
+          input.outputTokens ?? 0,
+          cost,
+          isError,
+        );
     });
     try {
       txn();
     } catch (err) {
       logger.error(
-        { err: err instanceof Error ? err.message : String(err), runId: input.runId, defId: input.defId },
+        {
+          err: err instanceof Error ? err.message : String(err),
+          runId: input.runId,
+          defId: input.defId,
+        },
         '[ai-budget] record failed',
       );
       throw err;
@@ -213,13 +240,25 @@ export class WorkflowCallTracker {
    * Record a chat-side LLM call (delta on top of ai_messages). Used by
    * ai-assistant route to keep the budget table in sync.
    */
-  recordChatBudget(input: { inputTokens: number; outputTokens: number; provider: string; model?: string; isError?: boolean }): void {
+  recordChatBudget(input: {
+    inputTokens: number;
+    outputTokens: number;
+    provider: string;
+    model?: string;
+    isError?: boolean;
+  }): void {
     const { sqlite } = getDatabase();
     const date = todayUtc();
-    const cost = estimateCostUsd(input.provider, input.model, input.inputTokens, input.outputTokens);
+    const cost = estimateCostUsd(
+      input.provider,
+      input.model,
+      input.inputTokens,
+      input.outputTokens,
+    );
     const errFlag = input.isError ? 1 : 0;
-    sqlite.prepare(
-      `INSERT INTO ai_budget_daily (date, source, input_tokens, output_tokens, cost_usd, call_count, error_count)
+    sqlite
+      .prepare(
+        `INSERT INTO ai_budget_daily (date, source, input_tokens, output_tokens, cost_usd, call_count, error_count)
        VALUES (?, 'chat', ?, ?, ?, 1, ?)
        ON CONFLICT(date, source) DO UPDATE SET
          input_tokens = input_tokens + ?,
@@ -227,10 +266,18 @@ export class WorkflowCallTracker {
          cost_usd = cost_usd + ?,
          call_count = call_count + 1,
          error_count = error_count + ?`,
-    ).run(
-      date, input.inputTokens, input.outputTokens, cost, errFlag,
-      input.inputTokens, input.outputTokens, cost, errFlag,
-    );
+      )
+      .run(
+        date,
+        input.inputTokens,
+        input.outputTokens,
+        cost,
+        errFlag,
+        input.inputTokens,
+        input.outputTokens,
+        cost,
+        errFlag,
+      );
   }
 
   /**
@@ -238,12 +285,14 @@ export class WorkflowCallTracker {
    */
   readDailyBudget(fromDate: string, toDate: string): BudgetDailyRow[] {
     const { sqlite } = getDatabase();
-    const rows = sqlite.prepare(
-      `SELECT date, source, input_tokens, output_tokens, cost_usd, call_count, error_count
+    const rows = sqlite
+      .prepare(
+        `SELECT date, source, input_tokens, output_tokens, cost_usd, call_count, error_count
        FROM ai_budget_daily
        WHERE date BETWEEN ? AND ?
        ORDER BY date DESC, source`,
-    ).all(fromDate, toDate) as Record<string, unknown>[];
+      )
+      .all(fromDate, toDate) as Record<string, unknown>[];
     return rows.map((r) => ({
       date: r.date as string,
       source: r.source as 'chat' | 'workflow',
@@ -260,9 +309,9 @@ export class WorkflowCallTracker {
    */
   listByRun(runId: string, limit = 100): Record<string, unknown>[] {
     const { sqlite } = getDatabase();
-    return sqlite.prepare(
-      `SELECT * FROM ai_workflow_calls WHERE run_id = ? ORDER BY created_at LIMIT ?`,
-    ).all(runId, Math.min(limit, 1000)) as Record<string, unknown>[];
+    return sqlite
+      .prepare(`SELECT * FROM ai_workflow_calls WHERE run_id = ? ORDER BY created_at LIMIT ?`)
+      .all(runId, Math.min(limit, 1000)) as Record<string, unknown>[];
   }
 
   /**
@@ -272,7 +321,10 @@ export class WorkflowCallTracker {
    *
    * Output ordinato per cost desc — modelli più costosi in cima.
    */
-  byModelBreakdown(fromDateIso: string, toDateIso: string): {
+  byModelBreakdown(
+    fromDateIso: string,
+    toDateIso: string,
+  ): {
     provider: string;
     model: string;
     source: 'workflow' | 'chat';
@@ -285,8 +337,9 @@ export class WorkflowCallTracker {
   }[] {
     const { sqlite } = getDatabase();
     // Workflow side
-    const wfRows = sqlite.prepare(
-      `SELECT provider, COALESCE(model, '-') as model,
+    const wfRows = sqlite
+      .prepare(
+        `SELECT provider, COALESCE(model, '-') as model,
               SUM(COALESCE(input_tokens, 0))  as input_tokens,
               SUM(COALESCE(output_tokens, 0)) as output_tokens,
               SUM(COALESCE(total_tokens, 0))  as total_tokens,
@@ -296,11 +349,13 @@ export class WorkflowCallTracker {
        FROM ai_workflow_calls
        WHERE created_at >= ? AND created_at <= ?
        GROUP BY provider, COALESCE(model, '-')`,
-    ).all(fromDateIso, toDateIso) as Record<string, unknown>[];
+      )
+      .all(fromDateIso, toDateIso) as Record<string, unknown>[];
 
     // Chat side (assistant turn) — model can be NULL for older rows.
-    const chatRows = sqlite.prepare(
-      `SELECT COALESCE(provider, 'unknown') as provider,
+    const chatRows = sqlite
+      .prepare(
+        `SELECT COALESCE(provider, 'unknown') as provider,
               COALESCE(model, '-') as model,
               SUM(CASE WHEN role = 'user' THEN COALESCE(tokens, 0) ELSE 0 END) as input_tokens,
               SUM(CASE WHEN role = 'assistant' THEN COALESCE(tokens, 0) ELSE 0 END) as output_tokens,
@@ -312,7 +367,8 @@ export class WorkflowCallTracker {
        WHERE provider IS NOT NULL
          AND created_at >= ? AND created_at <= ?
        GROUP BY COALESCE(provider, 'unknown'), COALESCE(model, '-')`,
-    ).all(fromDateIso, toDateIso) as Record<string, unknown>[];
+      )
+      .all(fromDateIso, toDateIso) as Record<string, unknown>[];
 
     const mapRow = (source: 'workflow' | 'chat') => (r: Record<string, unknown>) => ({
       provider: String(r.provider),

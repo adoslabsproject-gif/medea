@@ -53,13 +53,20 @@ function parseStripeSignature(header: string): ParsedStripeSig | null {
   return { timestamp, v1 };
 }
 
-function verifyStripeSignature(rawBody: string, header: string, secret: string): { ok: true } | { ok: false; reason: string } {
+function verifyStripeSignature(
+  rawBody: string,
+  header: string,
+  secret: string,
+): { ok: true } | { ok: false; reason: string } {
   const parsed = parseStripeSignature(header);
   if (!parsed) return { ok: false, reason: 'malformed Stripe-Signature header' };
 
   const nowSec = Math.floor(Date.now() / 1000);
   if (Math.abs(nowSec - parsed.timestamp) > STRIPE_TOLERANCE_SEC) {
-    return { ok: false, reason: `timestamp drift ${(nowSec - parsed.timestamp).toString()}s (max ${STRIPE_TOLERANCE_SEC.toString()}s) — replay attack?` };
+    return {
+      ok: false,
+      reason: `timestamp drift ${(nowSec - parsed.timestamp).toString()}s (max ${STRIPE_TOLERANCE_SEC.toString()}s) — replay attack?`,
+    };
   }
 
   const signedPayload = `${parsed.timestamp.toString()}.${rawBody}`;
@@ -68,8 +75,10 @@ function verifyStripeSignature(rawBody: string, header: string, secret: string):
   // Constant-time compare: timingSafeEqual richiede same-length Buffers
   const expectedBuf = Buffer.from(expected, 'utf8');
   const actualBuf = Buffer.from(parsed.v1, 'utf8');
-  if (expectedBuf.length !== actualBuf.length) return { ok: false, reason: 'signature length mismatch' };
-  if (!timingSafeEqual(expectedBuf, actualBuf)) return { ok: false, reason: 'HMAC mismatch — secret rotated or forged request' };
+  if (expectedBuf.length !== actualBuf.length)
+    return { ok: false, reason: 'signature length mismatch' };
+  if (!timingSafeEqual(expectedBuf, actualBuf))
+    return { ok: false, reason: 'HMAC mismatch — secret rotated or forged request' };
 
   return { ok: true };
 }
@@ -99,7 +108,15 @@ function checkAndStoreEvent(
   `);
   // id = composite hash determinístico per debugging (visibile in audit)
   const compositeId = `${provider}:${externalEventId}`;
-  const result = stmt.run(compositeId, provider, tenantId, externalEventId, eventType, payloadJson, signatureValid ? 1 : 0);
+  const result = stmt.run(
+    compositeId,
+    provider,
+    tenantId,
+    externalEventId,
+    eventType,
+    payloadJson,
+    signatureValid ? 1 : 0,
+  );
   return {
     alreadyProcessed: result.changes === 0,
     insertedNew: result.changes === 1,
@@ -108,11 +125,15 @@ function checkAndStoreEvent(
 
 function markEventProcessed(provider: string, externalEventId: string): void {
   const { sqlite } = getDatabase();
-  sqlite.prepare(`
+  sqlite
+    .prepare(
+      `
     UPDATE integration_webhook_events
        SET processed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
      WHERE provider = ? AND event_id_external = ?
-  `).run(provider, externalEventId);
+  `,
+    )
+    .run(provider, externalEventId);
 }
 
 // ─── Routes ─────────────────────────────────────────────────────────
@@ -171,7 +192,12 @@ export function createIntegrationWebhookRoutes(eventBus: IEventBus): Hono {
     }
 
     // Parse event JSON dopo verifica HMAC
-    let event: { id?: string; type?: string; account?: string; data?: { object?: { metadata?: { tenantId?: string } } } };
+    let event: {
+      id?: string;
+      type?: string;
+      account?: string;
+      data?: { object?: { metadata?: { tenantId?: string } } };
+    };
     try {
       event = JSON.parse(rawBody) as typeof event;
     } catch {
@@ -191,20 +217,22 @@ export function createIntegrationWebhookRoutes(eventBus: IEventBus): Hono {
         { externalId, eventType, connectAccount: event.account },
         '[STRIPE-WEBHOOK] Connect event ignored — STRIPE_CONNECT_ENABLED=false',
       );
-      return c.json({
-        received: true,
-        ignored: true,
-        reason: 'connect_not_enabled',
-        message: 'Stripe Connect events require STRIPE_CONNECT_ENABLED=true + account→tenant mapping. Event ignored.',
-      }, 200);
+      return c.json(
+        {
+          received: true,
+          ignored: true,
+          reason: 'connect_not_enabled',
+          message:
+            'Stripe Connect events require STRIPE_CONNECT_ENABLED=true + account→tenant mapping. Event ignored.',
+        },
+        200,
+      );
     }
 
     // Tenant attribution (Connect explicit guard sopra → qui solo platform):
     //   1. event.data.object.metadata.tenantId (impostato in fase di create_*)
     //   2. 'global' fallback (per webhook applicativi — billing portal)
-    const tenantId =
-      event.data?.object?.metadata?.tenantId ??
-      'global';
+    const tenantId = event.data?.object?.metadata?.tenantId ?? 'global';
 
     // Dedup + INSERT atomic
     const dedup = checkAndStoreEvent('stripe', externalId, eventType, rawBody, tenantId, true);
@@ -226,7 +254,10 @@ export function createIntegrationWebhookRoutes(eventBus: IEventBus): Hono {
       } as unknown as Parameters<typeof eventBus.emit>[0]);
       markEventProcessed('stripe', externalId);
     } catch (err) {
-      logger.error({ err, externalId }, '[STRIPE-WEBHOOK] event emit failed — will retry on next delivery');
+      logger.error(
+        { err, externalId },
+        '[STRIPE-WEBHOOK] event emit failed — will retry on next delivery',
+      );
       // NB: NON marchiamo processed_at → Stripe ritrasmetterà, dedup salterà
       // l'INSERT ma il consumer (workflow engine) si riattiverà al retry.
     }

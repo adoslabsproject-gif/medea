@@ -28,7 +28,7 @@ interface SitemapUrl {
 async function fetchSitemap(url: string, ua: string): Promise<string> {
   const res = await safeFetchWithRedirects(url, {
     method: 'GET',
-    headers: { 'User-Agent': ua, 'Accept': 'application/xml, text/xml, */*' },
+    headers: { 'User-Agent': ua, Accept: 'application/xml, text/xml, */*' },
     timeoutMs: 15_000,
   });
   if (!res.ok) throw new Error(`Sitemap fetch ${res.status.toString()} for ${url}`);
@@ -67,7 +67,7 @@ async function parseSitemap(
           if (subUrls.length >= MAX_SITEMAP_URLS) break;
           subUrls.push(u);
         }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Reserved per estensione futura (interface compat)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Reserved per estensione futura (interface compat)
       } catch (e) {
         // Skip broken sub-sitemap, continue with others
       }
@@ -82,9 +82,12 @@ async function parseSitemap(
     const loc = $u.find('loc').first().text().trim();
     if (!loc) return;
     const item: SitemapUrl = { loc };
-    const lm = $u.find('lastmod').first().text().trim(); if (lm) item.lastmod = lm;
-    const cf = $u.find('changefreq').first().text().trim(); if (cf) item.changefreq = cf;
-    const pr = $u.find('priority').first().text().trim(); if (pr) item.priority = Number(pr);
+    const lm = $u.find('lastmod').first().text().trim();
+    if (lm) item.lastmod = lm;
+    const cf = $u.find('changefreq').first().text().trim();
+    if (cf) item.changefreq = cf;
+    const pr = $u.find('priority').first().text().trim();
+    if (pr) item.priority = Number(pr);
     urls.push(item);
   });
   return urls;
@@ -95,7 +98,9 @@ const executor: NodeExecutor = async (config, _input, _context) => {
   const url = String(config.url ?? '');
   if (!url) throw new Error('url required (sitemap.xml or sitemap index)');
 
-  const userAgent = String(config.userAgent ?? 'FlowForge/1.0 (+https://flowforge.automazionezeli.com)');
+  const userAgent = String(
+    config.userAgent ?? 'FlowForge/1.0 (+https://flowforge.automazionezeli.com)',
+  );
   const includeRegex = String(config.includeRegex ?? '').trim();
   const excludeRegex = String(config.excludeRegex ?? '').trim();
   const lastmodSinceIso = String(config.lastmodSinceIso ?? '').trim();
@@ -110,13 +115,17 @@ const executor: NodeExecutor = async (config, _input, _context) => {
     try {
       const re = safeUserRegex(includeRegex, 'i');
       filtered = filtered.filter((u) => re.test(u.loc));
-    } catch { /* invalid regex → skip */ }
+    } catch {
+      /* invalid regex → skip */
+    }
   }
   if (excludeRegex) {
     try {
       const re = safeUserRegex(excludeRegex, 'i');
       filtered = filtered.filter((u) => !re.test(u.loc));
-    } catch { /* invalid regex → skip */ }
+    } catch {
+      /* invalid regex → skip */
+    }
   }
   if (lastmodSinceIso) {
     const since = new Date(lastmodSinceIso).getTime();
@@ -155,7 +164,7 @@ export const sitemapCrawlerNode: NodeModule = {
       'Crawler enterprise specializzato per sitemap.xml — il file XML standard sitemaps.org che ogni sito web ' +
       'rispettabile espone (default /sitemap.xml o riferito da robots.txt) per dichiarare ai search engine tutto ' +
       'il proprio universo URL navigabili con metadata di update freshness, change frequency, priority. Scarica ' +
-      'il sitemap dall\'URL fornito e parsa l\'XML estraendo l\'elenco di tutte le URL dichiarate, con supporto ' +
+      "il sitemap dall'URL fornito e parsa l'XML estraendo l'elenco di tutte le URL dichiarate, con supporto " +
       'completo allo standard plus extensions: sitemap-index ricorsivo (un singolo sitemap.xml padre che linka ' +
       'N child sitemap separati, pattern usato dai siti grossi con > 50k URL — il limite hard di un singolo ' +
       'sitemap file — come Amazon, Wikipedia, CNN, RAI, Mediaset), elementi <url> con <loc> obbligatorio + ' +
@@ -242,7 +251,14 @@ export const sitemapCrawlerNode: NodeModule = {
         defaultValue: 'FlowForge/1.0 (+https://flowforge.automazionezeli.com)',
       },
     ],
-    outputs: ['totalUrlsInSitemap', 'filteredCount', 'urls', 'includeRegex', 'excludeRegex', 'lastmodSinceIso'],
+    outputs: [
+      'totalUrlsInSitemap',
+      'filteredCount',
+      'urls',
+      'includeRegex',
+      'excludeRegex',
+      'lastmodSinceIso',
+    ],
   },
   executor,
 };

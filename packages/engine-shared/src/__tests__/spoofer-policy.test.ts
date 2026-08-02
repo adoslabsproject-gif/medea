@@ -87,11 +87,9 @@ describe('decideSpooferPolicy — ua_claimed_spoofable → ban_immediate', () =>
   });
 
   it('Yandexbot senza PTR + strictMode=true → ban_immediate', () => {
-    const d = decideSpooferPolicy(
-      'Mozilla/5.0 (compatible; YandexBot/3.0)',
-      null,
-      { strictMode: true },
-    );
+    const d = decideSpooferPolicy('Mozilla/5.0 (compatible; YandexBot/3.0)', null, {
+      strictMode: true,
+    });
     expect(d.action).toBe('ban_immediate');
   });
 
@@ -125,24 +123,22 @@ describe('decideSpooferPolicy — allow_unknown (UA non bot)', () => {
 
 describe('isSpoofer — shorthand helper', () => {
   it('FAKE-Googlebot AWS → true', () => {
-    expect(isSpoofer(
-      'Mozilla/5.0 (compatible; Googlebot/2.1)',
-      'ec2-13-49-73-217.compute.amazonaws.com',
-    )).toBe(true);
+    expect(
+      isSpoofer(
+        'Mozilla/5.0 (compatible; Googlebot/2.1)',
+        'ec2-13-49-73-217.compute.amazonaws.com',
+      ),
+    ).toBe(true);
   });
 
   it('Real Googlebot → false', () => {
-    expect(isSpoofer(
-      'Mozilla/5.0 (compatible; Googlebot/2.1)',
-      'crawl-66-249-72-1.googlebot.com',
-    )).toBe(false);
+    expect(
+      isSpoofer('Mozilla/5.0 (compatible; Googlebot/2.1)', 'crawl-66-249-72-1.googlebot.com'),
+    ).toBe(false);
   });
 
   it('Chrome umano → false', () => {
-    expect(isSpoofer(
-      'Mozilla/5.0 (Windows NT 10.0) Chrome/131.0',
-      'isp.it',
-    )).toBe(false);
+    expect(isSpoofer('Mozilla/5.0 (Windows NT 10.0) Chrome/131.0', 'isp.it')).toBe(false);
   });
 });
 

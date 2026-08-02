@@ -16,9 +16,7 @@
  * gestire `ok === false` (vs `value === null` ambiguo: null è un JSON valido).
  */
 
-export type SafeJsonResult<T> =
-  | { ok: true; value: T }
-  | { ok: false; error: Error };
+export type SafeJsonResult<T> = { ok: true; value: T } | { ok: false; error: Error };
 
 export function safeJsonParse<T = unknown>(input: string): SafeJsonResult<T> {
   if (typeof input !== 'string') {

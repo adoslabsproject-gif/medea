@@ -56,49 +56,118 @@ export interface MxValidationResult {
 // Top 100 più usati. Aggiungere altri se emergono falsi negativi.
 const DISPOSABLE_DOMAINS = new Set([
   // 10minutemail variants
-  '10minutemail.com', '10minutemail.net', '10mail.org', '20minutemail.com',
+  '10minutemail.com',
+  '10minutemail.net',
+  '10mail.org',
+  '20minutemail.com',
   // Mailinator
-  'mailinator.com', 'mailinator2.com', 'reallymymail.com',
+  'mailinator.com',
+  'mailinator2.com',
+  'reallymymail.com',
   // Guerrilla Mail
-  'guerrillamail.com', 'guerrillamail.net', 'guerrillamail.org',
-  'guerrillamail.biz', 'sharklasers.com', 'grr.la', 'guerrillamail.info',
+  'guerrillamail.com',
+  'guerrillamail.net',
+  'guerrillamail.org',
+  'guerrillamail.biz',
+  'sharklasers.com',
+  'grr.la',
+  'guerrillamail.info',
   // Throwaway providers
-  'throwaway.email', 'temp-mail.org', 'tempmail.net', 'tempmail.com',
-  'temp-mail.io', 'tempinbox.com', 'tempmailo.com', 'temp-mailbox.com',
+  'throwaway.email',
+  'temp-mail.org',
+  'tempmail.net',
+  'tempmail.com',
+  'temp-mail.io',
+  'tempinbox.com',
+  'tempmailo.com',
+  'temp-mailbox.com',
   // Yopmail family
-  'yopmail.com', 'yopmail.fr', 'yopmail.net', 'cool.fr.nf', 'jetable.fr.nf',
+  'yopmail.com',
+  'yopmail.fr',
+  'yopmail.net',
+  'cool.fr.nf',
+  'jetable.fr.nf',
   // Disposable.io variants
-  'maildrop.cc', 'mailcatch.com', 'mailnesia.com', 'mailtothis.com',
+  'maildrop.cc',
+  'mailcatch.com',
+  'mailnesia.com',
+  'mailtothis.com',
   // Anti-spam aggregators
-  'spamgourmet.com', 'sneakemail.com', 'mytrashmail.com', 'trashmail.com',
+  'spamgourmet.com',
+  'sneakemail.com',
+  'mytrashmail.com',
+  'trashmail.com',
   // Generic temp
-  'fakeinbox.com', 'fakemail.fr', 'fakemailgenerator.com', 'fake-mail.live',
+  'fakeinbox.com',
+  'fakemail.fr',
+  'fakemailgenerator.com',
+  'fake-mail.live',
   // Burner
-  'getairmail.com', 'getnada.com', 'burner.email', 'burnermail.io',
+  'getairmail.com',
+  'getnada.com',
+  'burner.email',
+  'burnermail.io',
   // Random others
-  'mintemail.com', 'mvrht.net', 'nwytg.net', 'sogetthis.com',
-  'spam4.me', 'spamfree24.org', 'spamspot.com', 'tafmail.com',
-  'tmail.ws', 'tmailinator.com', 'unitybox.de', 'tempr.email',
+  'mintemail.com',
+  'mvrht.net',
+  'nwytg.net',
+  'sogetthis.com',
+  'spam4.me',
+  'spamfree24.org',
+  'spamspot.com',
+  'tafmail.com',
+  'tmail.ws',
+  'tmailinator.com',
+  'unitybox.de',
+  'tempr.email',
 ]);
 
 // ─────────────────────────────────────────────────────────────────────────
 // Role-based local parts (info-only flag, non bloccante)
 // ─────────────────────────────────────────────────────────────────────────
 const ROLE_LOCAL_PARTS = new Set([
-  'info', 'admin', 'administrator', 'webmaster',
-  'sales', 'marketing', 'commerciale', 'vendite',
-  'support', 'help', 'assistenza', 'service',
-  'office', 'team', 'staff', 'hr', 'jobs', 'careers',
-  'contact', 'contacts', 'contatto', 'contatti',
-  'press', 'media', 'pr',
-  'billing', 'accounts', 'amministrazione',
-  'noreply', 'no-reply', 'donotreply', 'postmaster', 'abuse',
+  'info',
+  'admin',
+  'administrator',
+  'webmaster',
+  'sales',
+  'marketing',
+  'commerciale',
+  'vendite',
+  'support',
+  'help',
+  'assistenza',
+  'service',
+  'office',
+  'team',
+  'staff',
+  'hr',
+  'jobs',
+  'careers',
+  'contact',
+  'contacts',
+  'contatto',
+  'contatti',
+  'press',
+  'media',
+  'pr',
+  'billing',
+  'accounts',
+  'amministrazione',
+  'noreply',
+  'no-reply',
+  'donotreply',
+  'postmaster',
+  'abuse',
 ]);
 
 // ─────────────────────────────────────────────────────────────────────────
 // LRU cache (TTL 5 min, max 5000 domini)
 // ─────────────────────────────────────────────────────────────────────────
-interface CacheEntry { result: { mx: {priority:number;exchange:string}[]; usingA: boolean }; expires: number }
+interface CacheEntry {
+  result: { mx: { priority: number; exchange: string }[]; usingA: boolean };
+  expires: number;
+}
 const cache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 5 * 60_000;
 const CACHE_MAX = 5000;
@@ -106,7 +175,10 @@ const CACHE_MAX = 5000;
 function cacheGet(domain: string): CacheEntry['result'] | null {
   const e = cache.get(domain);
   if (!e) return null;
-  if (Date.now() > e.expires) { cache.delete(domain); return null; }
+  if (Date.now() > e.expires) {
+    cache.delete(domain);
+    return null;
+  }
   return e.result;
 }
 function cacheSet(domain: string, result: CacheEntry['result']): void {
@@ -122,16 +194,26 @@ function cacheSet(domain: string, result: CacheEntry['result']): void {
 // Main validator
 // ─────────────────────────────────────────────────────────────────────────
 
-const EMAIL_BASIC_REGEX = /^[a-zA-Z0-9._%+-]+@([a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](\.[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9])+)$/;
+const EMAIL_BASIC_REGEX =
+  /^[a-zA-Z0-9._%+-]+@([a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](\.[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9])+)$/;
 
-export async function validateEmailMx(email: string, timeoutMs = 4_000): Promise<MxValidationResult> {
+export async function validateEmailMx(
+  email: string,
+  timeoutMs = 4_000,
+): Promise<MxValidationResult> {
   const lower = email.toLowerCase().trim();
   const match = EMAIL_BASIC_REGEX.exec(lower);
   if (!match?.[1]) {
     return {
-      email: lower, domain: '', mx_valid: false, mx_records: [],
-      using_a_fallback: false, disposable: false, role_based: false,
-      confidence: 0, reason: 'Email syntax invalida (RFC 5322)',
+      email: lower,
+      domain: '',
+      mx_valid: false,
+      mx_records: [],
+      using_a_fallback: false,
+      disposable: false,
+      role_based: false,
+      confidence: 0,
+      reason: 'Email syntax invalida (RFC 5322)',
     };
   }
   const domain = match[1].toLowerCase();
@@ -187,11 +269,19 @@ export async function validateEmailMx(email: string, timeoutMs = 4_000): Promise
   };
 }
 
-async function resolveDomain(domain: string, timeoutMs: number): Promise<{ mx: {priority:number;exchange:string}[]; usingA: boolean }> {
-  const withTimeout = <T>(p: Promise<T>): Promise<T> => Promise.race([
-    p,
-    new Promise<T>((_, rej) => setTimeout(() => { rej(new Error('dns timeout')); }, timeoutMs)),
-  ]);
+async function resolveDomain(
+  domain: string,
+  timeoutMs: number,
+): Promise<{ mx: { priority: number; exchange: string }[]; usingA: boolean }> {
+  const withTimeout = <T>(p: Promise<T>): Promise<T> =>
+    Promise.race([
+      p,
+      new Promise<T>((_, rej) =>
+        setTimeout(() => {
+          rej(new Error('dns timeout'));
+        }, timeoutMs),
+      ),
+    ]);
   let mx: { priority: number; exchange: string }[] = [];
   try {
     const records = await withTimeout(dns.resolveMx(domain));
@@ -207,10 +297,14 @@ async function resolveDomain(domain: string, timeoutMs: number): Promise<{ mx: {
   try {
     await withTimeout(dns.resolve4(domain));
     return { mx: [], usingA: true };
-  } catch { /* try AAAA */ }
+  } catch {
+    /* try AAAA */
+  }
   try {
     await withTimeout(dns.resolve6(domain));
     return { mx: [], usingA: true };
-  } catch { /* nothing */ }
+  } catch {
+    /* nothing */
+  }
   return { mx: [], usingA: false };
 }

@@ -21,18 +21,18 @@ export const chartGenerateNode: NodeModule = {
       'che deve VISUALIZZARE numeri: report email con andamento, dashboard inviate via mail, riepiloghi periodici, ' +
       'confronti storici. Rendering SVG PURO server-side (zero dipendenze native: niente canvas/chart.js/sharp, ' +
       'quindi nessun binario .node, bundle leggero, sandbox-safe) → output testuale embeddabile DIRETTAMENTE ' +
-      'nell\'HTML di un\'email come data-URI base64 (tag <img> già pronto nel campo imgTag), senza passare per ' +
+      "nell'HTML di un'email come data-URI base64 (tag <img> già pronto nel campo imgTag), senza passare per " +
       'filesystem o CDN. ' +
-      'Tutto configurabile dall\'editor visuale, con default sensati su ogni campo (a prova di errore): tipo di ' +
+      "Tutto configurabile dall'editor visuale, con default sensati su ogni campo (a prova di errore): tipo di " +
       'grafico (barre/linea/torta/area), array dati come espressione ({{$node.X.json.serie}}), nome del campo ' +
       'etichetta (asse X / fette torta) e del campo valore (asse Y), titolo, dimensioni in pixel, palette colori. ' +
       'Robustezza enterprise: dati vuoti o non-array → grafico placeholder "Nessun dato" invece di crash; valori ' +
       'non numerici/NaN → trattati come 0; valori negativi → scala con baseline a zero; etichette troppe → ' +
-      'diradate per non sovrapporsi; ogni testo da dato utente è XSS-escaped (l\'SVG finisce in un\'email HTML, ' +
+      "diradate per non sovrapporsi; ogni testo da dato utente è XSS-escaped (l'SVG finisce in un'email HTML, " +
       'una label malevola NON può iniettare script). ' +
       'Output: { svg, dataUri, imgTag, width, height, pointCount, primary }. ' +
       'Use case: report SEO settimanale con grafico storico degli errori vs settimana scorsa (dati da db_query ' +
-      'upstream → linea temporale nell\'email); riepilogo vendite mensile a torta per categoria prodotto allegato ' +
+      "upstream → linea temporale nell'email); riepilogo vendite mensile a torta per categoria prodotto allegato " +
       'alla riunione; andamento ticket di supporto a barre per il management; trend di iscrizioni newsletter; ' +
       'monitoraggio prezzi competitor nel tempo; cruscotto KPI inviato ogni lunedì mattina; confronto performance ' +
       'campagne marketing; istogramma distribuzione punteggi feedback clienti.',
@@ -112,7 +112,7 @@ export const chartGenerateNode: NodeModule = {
         required: false,
         options: ['dataUri', 'svg'],
         defaultValue: 'dataUri',
-        help: 'dataUri (base64, per <img> in email HTML) o svg (markup grezzo). Entrambi sono sempre disponibili nell\'output.',
+        help: "dataUri (base64, per <img> in email HTML) o svg (markup grezzo). Entrambi sono sempre disponibili nell'output.",
       },
     ],
     outputs: ['svg', 'dataUri', 'imgTag', 'width', 'height', 'pointCount', 'primary'],

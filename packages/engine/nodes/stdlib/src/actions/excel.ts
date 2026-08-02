@@ -22,7 +22,7 @@ export const xlsxParseNode: NodeModule = {
       'Trasforma il binario Excel in un dataset processabile come array di oggetti JavaScript pronto per loop, ' +
       'filter, sync, ingest in DB o pipeline downstream. La prima riga del foglio è interpretata di default ' +
       'come header (intestazioni colonne) e le righe successive diventano oggetti dove ogni cella corrisponde ' +
-      'al valore del campo identificato dall\'header — pattern naturale per non-developer che esportano CRM/' +
+      "al valore del campo identificato dall'header — pattern naturale per non-developer che esportano CRM/" +
       'ERP/gestionali in Excel e vogliono manipolare i dati programmaticamente. ' +
       'Input duale per coprire i pattern di provenienza file Excel reali in workflow business: input da disco ' +
       '(path nel sandbox del tenant, es. file uploadato via SFTP, scritto da action_file_write upstream, ' +
@@ -40,13 +40,13 @@ export const xlsxParseNode: NodeModule = {
       'Type preservation: numeri restano numeric (non stringificati con perdita di precisione), date Excel ' +
       'serial number convertite in Date object JavaScript (con timezone corretta), booleani come true/false, ' +
       'celle vuote come null (consistenza per filter downstream). ' +
-      'Cap di sicurezza: max 1M rows per evitare OOM su file enormi (l\'Excel format supporta 1M+ righe ma ' +
+      "Cap di sicurezza: max 1M rows per evitare OOM su file enormi (l'Excel format supporta 1M+ righe ma " +
       'lavorarci in JavaScript pratico < 100k), warning se headerRow > 100 (probabile sbaglio di config). ' +
       'Output: { rows (array di oggetti, un campo per header), sheetName, totalRows, columns, columnCount, ' +
       'headerRow, emptyCellsCount, truncated }. ' +
       'Use case: ingest ordini da allegato Excel di una email IMAP cliente B2B (cliente legacy che ancora ' +
       'manda ordini via Excel anziché EDI) → parse → loop su rows → action_odoo_create_lead per ogni riga; ' +
-      'import lead da export CRM xlsx caricato dall\'utente via trigger_form upload → loop → upsert HubSpot; ' +
+      "import lead da export CRM xlsx caricato dall'utente via trigger_form upload → loop → upsert HubSpot; " +
       'parse listino prezzi fornitore aggiornato periodicamente (trigger_file_watch + action_xlsx_parse + ' +
       'sync DB pricing); batch update di anagrafica clienti da spreadsheet di riconciliazione contabile mensile ' +
       'del commercialista; processing di export Salesforce SOQL salvato come Excel per dashboard custom; ' +
@@ -74,7 +74,7 @@ export const xlsxParseNode: NodeModule = {
         type: 'expression',
         required: false,
         placeholder: 'es. Ordini o Sheet1',
-        help: 'Nome del foglio da leggere. Vuoto = primo foglio del workbook. Se sbagli il nome, l\'engine ti dice nei suoi errori quali fogli ci sono.',
+        help: "Nome del foglio da leggere. Vuoto = primo foglio del workbook. Se sbagli il nome, l'engine ti dice nei suoi errori quali fogli ci sono.",
       },
       {
         key: 'headerRow',
@@ -82,10 +82,19 @@ export const xlsxParseNode: NodeModule = {
         type: 'number',
         required: false,
         defaultValue: '1',
-        help: '1 = prima riga è l\'header (default, formato Excel standard). 0 = nessun header, righe come array posizionali (col_1, col_2, …). N = la riga N è l\'header (utile per file con titolo/logo nelle prime righe).',
+        help: "1 = prima riga è l'header (default, formato Excel standard). 0 = nessun header, righe come array posizionali (col_1, col_2, …). N = la riga N è l'header (utile per file con titolo/logo nelle prime righe).",
       },
     ],
-    outputs: ['rows', 'sheetName', 'totalRows', 'columns', 'columnCount', 'headerRow', 'emptyCellsCount', 'truncated'],
+    outputs: [
+      'rows',
+      'sheetName',
+      'totalRows',
+      'columns',
+      'columnCount',
+      'headerRow',
+      'emptyCellsCount',
+      'truncated',
+    ],
     vendor: 'flowforge',
     version: '1.1.0',
   },
@@ -112,7 +121,7 @@ export const xlsxBuildNode: NodeModule = {
       'db_query, paginate, listScheduledEvents Calendly, queryDatabase Notion, qualsiasi data source upstream) ' +
       'in un file Excel pronto da scaricare, allegare a email transazionale, archiviare su S3 per long-term ' +
       'compliance, condividere via OneDrive con il team management. ' +
-      'Output disponibile in due forme per coprire i pattern d\'uso reali: base64 string (pronto per allegato ' +
+      "Output disponibile in due forme per coprire i pattern d'uso reali: base64 string (pronto per allegato " +
       'in action_send_email tramite il campo attachments senza dover passare per il filesystem intermedio — il ' +
       'pattern più comune per report inviati via email) oppure save su disco nel sandbox del tenant ' +
       '(scrittura atomica write+rename, pattern per workflow di archivio long-term o per file destinati a ' +
@@ -156,7 +165,7 @@ export const xlsxBuildNode: NodeModule = {
         type: 'expression',
         required: false,
         placeholder: '{{$node.extract_of.json.lines}}',
-        help: 'Espressione che ritorna l\'array di oggetti riga (es. {{$node.NomeNodo.json.lines}}). Se vuoto, l\'engine usa l\'input del nodo precedente. Utile quando il nodo precedente NON è la sorgente dati (es. dopo db_insert_batch che ritorna solo {headerId}).',
+        help: "Espressione che ritorna l'array di oggetti riga (es. {{$node.NomeNodo.json.lines}}). Se vuoto, l'engine usa l'input del nodo precedente. Utile quando il nodo precedente NON è la sorgente dati (es. dopo db_insert_batch che ritorna solo {headerId}).",
       },
       {
         key: 'groupByKey',
@@ -180,7 +189,7 @@ export const xlsxBuildNode: NodeModule = {
         type: 'boolean',
         required: false,
         defaultValue: 'true',
-        help: 'Quando l\'utente scrolla verso il basso, la riga header rimane visibile. Disabilita SOLO se serve compatibilità con un tool antiquato che non gestisce frozen panes.',
+        help: "Quando l'utente scrolla verso il basso, la riga header rimane visibile. Disabilita SOLO se serve compatibilità con un tool antiquato che non gestisce frozen panes.",
       },
       {
         key: 'autoFilter',
@@ -204,7 +213,7 @@ export const xlsxBuildNode: NodeModule = {
         type: 'file-picker',
         required: false,
         placeholder: 'es. output/{{$today}}/ordini.xlsx',
-        help: 'Path nel sandbox del tenant dove salvare il file. Se vuoto, il file NON viene salvato — l\'output ritorna come base64, ideale per allegato Send Email node.',
+        help: "Path nel sandbox del tenant dove salvare il file. Se vuoto, il file NON viene salvato — l'output ritorna come base64, ideale per allegato Send Email node.",
       },
     ],
     outputs: ['path', 'binary', 'fileName', 'sheetName', 'rowsWritten', 'sizeBytes', 'contentType'],

@@ -141,7 +141,7 @@ describe('mapping defId ↔ linguaggio', () => {
     expect(CODE_NODE_FOR_LANG.python).toBe('action_run_python');
     expect(CODE_NODE_FOR_LANG.javascript).toBe('action_run_js');
   });
-  it('LANG_FOR_CODE_NODE è l\'inverso esatto', () => {
+  it("LANG_FOR_CODE_NODE è l'inverso esatto", () => {
     expect(LANG_FOR_CODE_NODE.get('action_run_python')).toBe('python');
     expect(LANG_FOR_CODE_NODE.get('action_run_js')).toBe('javascript');
     expect(LANG_FOR_CODE_NODE.has('action_http')).toBe(false);

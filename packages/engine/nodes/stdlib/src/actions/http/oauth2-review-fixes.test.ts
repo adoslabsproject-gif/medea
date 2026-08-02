@@ -7,14 +7,30 @@
  * Ogni test FALLISCE sul codice pre-fix (mutation-verify).
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { acquireOAuth2Token, cacheKey, clearOAuth2TokenCache, type TokenFetcher, type OAuth2Params } from './oauth2.js';
+import {
+  acquireOAuth2Token,
+  cacheKey,
+  clearOAuth2TokenCache,
+  type TokenFetcher,
+  type OAuth2Params,
+} from './oauth2.js';
 
 function jsonRes(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
 }
-const base = { tokenUrl: 'https://id.example.com/token', clientId: 'cid', clientSecret: 'S3CR3T-RAW', authStyle: 'header' as const };
+const base = {
+  tokenUrl: 'https://id.example.com/token',
+  clientId: 'cid',
+  clientSecret: 'S3CR3T-RAW',
+  authStyle: 'header' as const,
+};
 
-beforeEach(() => { clearOAuth2TokenCache(); });
+beforeEach(() => {
+  clearOAuth2TokenCache();
+});
 
 describe('R4 — clientSecret non in chiaro nella chiave cache', () => {
   it('🚨 cacheKey è un digest hex (64 char) e NON contiene il secret raw', async () => {
@@ -34,7 +50,8 @@ describe('R4 — clientSecret non in chiaro nella chiave cache', () => {
 describe('R5 — risposta token endpoint cappata (anti-OOM)', () => {
   it('🚨 body oltre il cap (1 MB) → throw "troppo grande", niente OOM', async () => {
     const huge = 'x'.repeat(2 * 1024 * 1024); // 2 MB > cap
-    const fetchToken: TokenFetcher = async () => new Response(huge, { status: 200, headers: { 'content-type': 'application/json' } });
+    const fetchToken: TokenFetcher = async () =>
+      new Response(huge, { status: 200, headers: { 'content-type': 'application/json' } });
     await expect(acquireOAuth2Token({ ...base, fetchToken })).rejects.toThrow(/troppo grande/i);
   });
 
@@ -50,7 +67,10 @@ describe('R2 — eviction reale (cap hard + LRU recency)', () => {
   // cache-miss = una chiamata in più).
   it('🚨 cap HARD: con 250 credenziali tutte valide, le più VECCHIE sono evictate', async () => {
     let calls = 0;
-    const fetchToken: TokenFetcher = async () => { calls += 1; return jsonRes({ access_token: 'AT', expires_in: 99_999 }); };
+    const fetchToken: TokenFetcher = async () => {
+      calls += 1;
+      return jsonRes({ access_token: 'AT', expires_in: 99_999 });
+    };
     const now = () => 1_000_000; // clock fisso → niente scadenze
     for (let i = 0; i < 250; i += 1) {
       await acquireOAuth2Token({ ...base, clientId: `c${i.toString()}`, fetchToken, now });
@@ -66,7 +86,10 @@ describe('R2 — eviction reale (cap hard + LRU recency)', () => {
 
   it('🚨 LRU recency: una entry RIUSATA non viene droppata per prima', async () => {
     let calls = 0;
-    const fetchToken: TokenFetcher = async () => { calls += 1; return jsonRes({ access_token: 'AT', expires_in: 99_999 }); };
+    const fetchToken: TokenFetcher = async () => {
+      calls += 1;
+      return jsonRes({ access_token: 'AT', expires_in: 99_999 });
+    };
     const now = () => 1_000_000;
     // Riempi la cache fino al cap (200 entry: c0..c199).
     for (let i = 0; i < 200; i += 1) {
@@ -90,9 +113,14 @@ describe('NF1 — coalescing delle richieste in volo', () => {
   it('🚨 N chiamate CONCORRENTI con stesse credenziali → 1 sola fetch al token endpoint', async () => {
     let calls = 0;
     let release!: (r: Response) => void;
-    const gate = new Promise<Response>((res) => { release = res; });
+    const gate = new Promise<Response>((res) => {
+      release = res;
+    });
     // fetchToken resta "appeso" finché non rilasciamo → le 3 chiamate si sovrappongono.
-    const fetchToken: TokenFetcher = () => { calls += 1; return gate; };
+    const fetchToken: TokenFetcher = () => {
+      calls += 1;
+      return gate;
+    };
     const params = { ...base, fetchToken };
 
     const a = acquireOAuth2Token(params);
@@ -109,7 +137,10 @@ describe('NF1 — coalescing delle richieste in volo', () => {
 
   it('🚨 dopo il completamento la entry in-flight è liberata → la nuova ondata fa cache-hit', async () => {
     let calls = 0;
-    const fetchToken: TokenFetcher = () => { calls += 1; return Promise.resolve(jsonRes({ access_token: 'AT', expires_in: 99_999 })); };
+    const fetchToken: TokenFetcher = () => {
+      calls += 1;
+      return Promise.resolve(jsonRes({ access_token: 'AT', expires_in: 99_999 }));
+    };
     const now = () => 1_000_000;
     await acquireOAuth2Token({ ...base, fetchToken, now }); // 1 fetch, popola cache
     await acquireOAuth2Token({ ...base, fetchToken, now }); // cache-hit (in-flight già liberata)
@@ -118,7 +149,10 @@ describe('NF1 — coalescing delle richieste in volo', () => {
 
   it('🚨 credenziali DIVERSE in concorrenza → richieste separate (no coalescing errato)', async () => {
     let calls = 0;
-    const fetchToken: TokenFetcher = async () => { calls += 1; return jsonRes({ access_token: 'AT', expires_in: 3600 }); };
+    const fetchToken: TokenFetcher = async () => {
+      calls += 1;
+      return jsonRes({ access_token: 'AT', expires_in: 3600 });
+    };
     await Promise.all([
       acquireOAuth2Token({ ...base, clientId: 'A', fetchToken }),
       acquireOAuth2Token({ ...base, clientId: 'B', fetchToken }),

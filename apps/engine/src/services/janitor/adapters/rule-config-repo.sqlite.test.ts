@@ -50,7 +50,12 @@ beforeEach(() => {
     );
   `);
   db = drizzle(sqlite, { schema: { janitorRuleConfigs } });
-  getDatabaseMock.mockReturnValue({ db, conn: sqlite, kind: 'sqlite', close: () => Promise.resolve() });
+  getDatabaseMock.mockReturnValue({
+    db,
+    conn: sqlite,
+    kind: 'sqlite',
+    close: () => Promise.resolve(),
+  });
   repo = new SqliteRuleConfigRepository();
 });
 
@@ -124,7 +129,7 @@ describe('🚨 list + listAll — tenant isolation', () => {
     await repo.upsert(mkCfg({ ruleId: 'rule.c', tenantId: 't2' }));
     const out1 = await repo.list('t1');
     expect(out1).toHaveLength(2);
-    expect(out1.every(c => c.tenantId === 't1')).toBe(true);
+    expect(out1.every((c) => c.tenantId === 't1')).toBe(true);
   });
 
   it('🚨 SECURITY: list tenant mai esistito → []', async () => {
@@ -151,14 +156,13 @@ describe('🚨 patch — merge incrementale', () => {
   });
 
   it('🚨 patch su config INESISTENTE → throw (fail-loud)', async () => {
-    await expect(repo.patch('mai.esistito', 't1', { enabled: false }))
-      .rejects.toThrow(/not found/);
+    await expect(repo.patch('mai.esistito', 't1', { enabled: false })).rejects.toThrow(/not found/);
   });
 
   it('🚨 patch SEMPRE aggiorna updatedAt (audit trail)', async () => {
     await repo.upsert(mkCfg({ enabled: true }));
     const before = await repo.get('rule.a', 't1');
-    await new Promise(r => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 10));
     const after = await repo.patch('rule.a', 't1', { enabled: false });
     expect(after.updatedAt).not.toBe(before!.updatedAt);
   });
@@ -226,32 +230,44 @@ describe('🚨 params JSON — robust parse', () => {
 
   it('🚨 RESILIENCE: params JSON corrotto in DB → fallback {} (no crash)', async () => {
     // Insert raw bypassando il repo per simulare corruzione DB
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO janitor_rule_configs
       (rule_id, tenant_id, enabled, schedule, data_source_ref, max_rows_per_run, severity, params_json, notify_on_detection, updated_at)
       VALUES (?, ?, 1, '0 * * * *', 'system', 100, 'critical', ?, 0, '2026-06-08T00:00:00Z')
-    `).run('rule.x', 't1', 'NOT-JSON{garbage');
+    `,
+      )
+      .run('rule.x', 't1', 'NOT-JSON{garbage');
     const out = await repo.get('rule.x', 't1');
     expect(out).not.toBeNull();
     expect(out!.params).toEqual({});
   });
 
   it('🚨 RESILIENCE: params JSON null in DB → fallback {} (no crash)', async () => {
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO janitor_rule_configs
       (rule_id, tenant_id, enabled, schedule, data_source_ref, max_rows_per_run, severity, params_json, notify_on_detection, updated_at)
       VALUES (?, ?, 1, '0 * * * *', 'system', 100, 'critical', ?, 0, '2026-06-08T00:00:00Z')
-    `).run('rule.y', 't1', 'null');
+    `,
+      )
+      .run('rule.y', 't1', 'null');
     const out = await repo.get('rule.y', 't1');
     expect(out!.params).toEqual({});
   });
 
   it('🚨 RESILIENCE: params JSON array in DB → fallback {} (tipo invalido)', async () => {
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO janitor_rule_configs
       (rule_id, tenant_id, enabled, schedule, data_source_ref, max_rows_per_run, severity, params_json, notify_on_detection, updated_at)
       VALUES (?, ?, 1, '0 * * * *', 'system', 100, 'critical', ?, 0, '2026-06-08T00:00:00Z')
-    `).run('rule.z', 't1', '[1,2,3]');
+    `,
+      )
+      .run('rule.z', 't1', '[1,2,3]');
     const out = await repo.get('rule.z', 't1');
     // Drizzle accetta array come Record qui (tecnicamente è truthy object)
     expect(Object.isFrozen(out!.params)).toBe(true);

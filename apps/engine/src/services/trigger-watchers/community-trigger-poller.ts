@@ -67,7 +67,11 @@ export function startCommunityTriggerPoller(
   const config: Record<string, unknown> = { ...node.config };
 
   const job: CommunityTriggerJob = {
-    workflowId: wf.id, nodeId: node.id, timer: null, state: {}, inFlight: false,
+    workflowId: wf.id,
+    nodeId: node.id,
+    timer: null,
+    state: {},
+    inFlight: false,
   };
 
   const poll = async (): Promise<void> => {
@@ -77,7 +81,9 @@ export function startCommunityTriggerPoller(
     job.inFlight = true;
     try {
       const result = await pollRunner(installed, triggerId, config, job.state, {
-        tenantId, workflowId: wf.id, nodeId: node.id,
+        tenantId,
+        workflowId: wf.id,
+        nodeId: node.id,
       });
       // Ripersisti lo state PRIMA di avviare i run: se un run fallisce, il
       // cursore è comunque avanzato (at-most-once per evento, niente loop).
@@ -91,7 +97,10 @@ export function startCommunityTriggerPoller(
             triggerInput: event,
           })
           .catch((err: unknown) => {
-            logger.error({ err, workflowId: wf.id, defId, triggerId }, 'community trigger run failed');
+            logger.error(
+              { err, workflowId: wf.id, defId, triggerId },
+              'community trigger run failed',
+            );
           });
       }
     } catch (err) {
@@ -101,7 +110,12 @@ export function startCommunityTriggerPoller(
     }
   };
 
-  job.timer = setInterval(() => { void poll(); }, intervalSec * 1000);
-  logger.info({ workflowId: wf.id, defId, triggerId, intervalSec }, 'community trigger poller registered');
+  job.timer = setInterval(() => {
+    void poll();
+  }, intervalSec * 1000);
+  logger.info(
+    { workflowId: wf.id, defId, triggerId, intervalSec },
+    'community trigger poller registered',
+  );
   return job;
 }

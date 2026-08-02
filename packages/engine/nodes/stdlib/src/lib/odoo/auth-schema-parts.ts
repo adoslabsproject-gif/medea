@@ -42,4 +42,9 @@ export const odooHttpFields = {
 export const csvList = z
   .string()
   .max(1_000)
-  .transform((s) => s.split(/[,;\n]/).map((v) => v.trim()).filter((v) => v.length > 0));
+  .transform((s) =>
+    s
+      .split(/[,;\n]/)
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0),
+  );

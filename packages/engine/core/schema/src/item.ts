@@ -116,6 +116,8 @@ export const lineage = {
     return sourceNodeId !== undefined ? { item: inputIndex, sourceNodeId } : { item: inputIndex };
   },
   fromMany(inputIndices: number[], sourceNodeId?: string): PairedItemRef[] {
-    return inputIndices.map((i) => (sourceNodeId !== undefined ? { item: i, sourceNodeId } : { item: i }));
+    return inputIndices.map((i) =>
+      sourceNodeId !== undefined ? { item: i, sourceNodeId } : { item: i },
+    );
   },
 };

@@ -21,13 +21,22 @@ import { makeBinaryInline } from './binary.js';
 
 describe('ExecutionItemSchema — validazione Zod', () => {
   it('accetta json oggetto + binary BinaryData + pairedItem singolo', () => {
-    const bin = makeBinaryInline({ mimeType: 'text/plain', data: Buffer.from('x').toString('base64') });
-    const r = ExecutionItemSchema.safeParse({ json: { a: 1 }, binary: { data: bin }, pairedItem: { item: 0 } });
+    const bin = makeBinaryInline({
+      mimeType: 'text/plain',
+      data: Buffer.from('x').toString('base64'),
+    });
+    const r = ExecutionItemSchema.safeParse({
+      json: { a: 1 },
+      binary: { data: bin },
+      pairedItem: { item: 0 },
+    });
     expect(r.success).toBe(true);
   });
 
   it('accetta pairedItem ARRAY (merge N→1)', () => {
-    expect(ExecutionItemSchema.safeParse({ json: {}, pairedItem: [{ item: 0 }, { item: 1 }] }).success).toBe(true);
+    expect(
+      ExecutionItemSchema.safeParse({ json: {}, pairedItem: [{ item: 0 }, { item: 1 }] }).success,
+    ).toBe(true);
   });
 
   it('🚨 RIFIUTA json scalare (gli item DEVONO essere oggetti)', () => {
@@ -43,7 +52,9 @@ describe('ExecutionItemSchema — validazione Zod', () => {
   });
 
   it('🚨 RIFIUTA binary che non è un BinaryData', () => {
-    expect(ExecutionItemSchema.safeParse({ json: {}, binary: { data: { foo: 'bar' } } }).success).toBe(false);
+    expect(
+      ExecutionItemSchema.safeParse({ json: {}, binary: { data: { foo: 'bar' } } }).success,
+    ).toBe(false);
   });
 
   it('🚨 RIFIUTA sourceNodeId vuoto', () => {
@@ -71,7 +82,10 @@ describe('isExecutionItem / isPairedItemRef', () => {
 
 describe('normalizeToItems', () => {
   it('array oggetti → un item ciascuno', () => {
-    expect(normalizeToItems([{ a: 1 }, { a: 2 }])).toEqual([{ json: { a: 1 } }, { json: { a: 2 } }]);
+    expect(normalizeToItems([{ a: 1 }, { a: 2 }])).toEqual([
+      { json: { a: 1 } },
+      { json: { a: 2 } },
+    ]);
   });
   it('oggetto singolo → un item', () => {
     expect(normalizeToItems({ a: 1 })).toEqual([{ json: { a: 1 } }]);
@@ -92,7 +106,9 @@ describe('normalizeToItems', () => {
   it('🚨 ogni output di normalizeToItems passa lo schema Zod (contract)', () => {
     for (const raw of [42, 'x', null, { a: 1 }, [{ b: 2 }], [1, 2]]) {
       for (const item of normalizeToItems(raw)) {
-        expect(ExecutionItemSchema.safeParse(item).success, `raw=${JSON.stringify(raw)}`).toBe(true);
+        expect(ExecutionItemSchema.safeParse(item).success, `raw=${JSON.stringify(raw)}`).toBe(
+          true,
+        );
       }
     }
   });
@@ -108,7 +124,10 @@ describe('lineage builders + pairedRefs', () => {
   });
   it('fromMany → array di ref', () => {
     expect(lineage.fromMany([0, 1, 2])).toEqual([{ item: 0 }, { item: 1 }, { item: 2 }]);
-    expect(lineage.fromMany([0, 1], 'M')).toEqual([{ item: 0, sourceNodeId: 'M' }, { item: 1, sourceNodeId: 'M' }]);
+    expect(lineage.fromMany([0, 1], 'M')).toEqual([
+      { item: 0, sourceNodeId: 'M' },
+      { item: 1, sourceNodeId: 'M' },
+    ]);
   });
   it('pairedRefs normalizza singolo|array|undefined', () => {
     expect(pairedRefs(undefined)).toEqual([]);
@@ -118,6 +137,7 @@ describe('lineage builders + pairedRefs', () => {
   it('🚨 i ref costruiti da lineage passano lo schema', () => {
     expect(PairedItemRefSchema.safeParse(lineage.oneToOne(0)).success).toBe(true);
     expect(PairedItemRefSchema.safeParse(lineage.from(3, 'A')).success).toBe(true);
-    for (const r of lineage.fromMany([0, 1])) expect(PairedItemRefSchema.safeParse(r).success).toBe(true);
+    for (const r of lineage.fromMany([0, 1]))
+      expect(PairedItemRefSchema.safeParse(r).success).toBe(true);
   });
 });

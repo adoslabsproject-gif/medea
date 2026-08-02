@@ -40,7 +40,9 @@ describe('countActiveWorkflows — contro schema reale (anti-regressione plan-us
 
   it('CONTRATTO: la tabella workflows NON ha colonna deleted_at, HA enabled', () => {
     const db = realSchemaDb();
-    const cols = (db.prepare('PRAGMA table_info(workflows)').all() as { name: string }[]).map((c) => c.name);
+    const cols = (db.prepare('PRAGMA table_info(workflows)').all() as { name: string }[]).map(
+      (c) => c.name,
+    );
     expect(cols).not.toContain('deleted_at');
     expect(cols).toContain('enabled');
     db.close();
@@ -72,7 +74,13 @@ import { fetchRecentRunsByWorkflow } from './dashboard.js';
 
 type RunReader = Parameters<typeof fetchRecentRunsByWorkflow>[0];
 
-function seedRun(db: Database.Database, id: string, workflowId: string, startedAt: string, status = 'success'): void {
+function seedRun(
+  db: Database.Database,
+  id: string,
+  workflowId: string,
+  startedAt: string,
+  status = 'success',
+): void {
   db.prepare(
     `INSERT INTO runs (id, workflow_id, tenant_id, status, input, steps_json, error_count, started_at, ended_at, total_duration_ms)
      VALUES (?, ?, 't1', ?, '', '[]', 0, ?, ?, 100)`,
@@ -107,7 +115,12 @@ describe('fetchRecentRunsByWorkflow — UNA query, no N+1 (schema reale)', () =>
 
   it('lista id vuota → map vuota, ZERO query (no prepare su 0 id)', () => {
     let prepared = 0;
-    const spy = { prepare: () => { prepared++; return { all: () => [] }; } } as unknown as RunReader;
+    const spy = {
+      prepare: () => {
+        prepared++;
+        return { all: () => [] };
+      },
+    } as unknown as RunReader;
     const res = fetchRecentRunsByWorkflow(spy, [], 20);
     expect(res.size).toBe(0);
     expect(prepared).toBe(0);
@@ -116,7 +129,11 @@ describe('fetchRecentRunsByWorkflow — UNA query, no N+1 (schema reale)', () =>
   it('chunking: >400 workflow id → batched senza superare il limite var SQLite', () => {
     const db = realSchemaDb();
     const ids: string[] = [];
-    for (let i = 0; i < 850; i++) { const id = `w${String(i)}`; seedWorkflow(db, id, 't1', 1); ids.push(id); }
+    for (let i = 0; i < 850; i++) {
+      const id = `w${String(i)}`;
+      seedWorkflow(db, id, 't1', 1);
+      ids.push(id);
+    }
     seedRun(db, 'r-last', 'w849', '2026-06-09T00:00:00Z');
     // Non deve lanciare "too many SQL variables" + trova il run del 850° wf.
     const res = fetchRecentRunsByWorkflow(db as unknown as RunReader, ids, 20);

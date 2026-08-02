@@ -59,7 +59,10 @@ describe('classifyPecMessage — message types', () => {
   });
 
   it('X-Ricevuta=non-accettazione → pec_rejection', () => {
-    const c = classifyPecMessage({ 'X-Ricevuta': 'non-accettazione', 'X-Riferimento-Message-ID': MID });
+    const c = classifyPecMessage({
+      'X-Ricevuta': 'non-accettazione',
+      'X-Riferimento-Message-ID': MID,
+    });
     expect(c.type).toBe('pec_rejection');
   });
 
@@ -68,7 +71,9 @@ describe('classifyPecMessage — message types', () => {
   });
 
   it('X-Ricevuta=preavviso-errore-consegna → pec_rejection', () => {
-    expect(classifyPecMessage({ 'X-Ricevuta': 'preavviso-errore-consegna' }).type).toBe('pec_rejection');
+    expect(classifyPecMessage({ 'X-Ricevuta': 'preavviso-errore-consegna' }).type).toBe(
+      'pec_rejection',
+    );
   });
 
   it('X-Ricevuta=rilevazione-virus → pec_rejection', () => {
@@ -123,10 +128,14 @@ describe('classifyPecMessage — isPec flag', () => {
 
 describe('classifyPecMessage — input guards', () => {
   it('throws on null input', () => {
-    expect(() => classifyPecMessage(null as unknown as Record<string, string>)).toThrow(/headers object/);
+    expect(() => classifyPecMessage(null as unknown as Record<string, string>)).toThrow(
+      /headers object/,
+    );
   });
   it('throws on array input', () => {
-    expect(() => classifyPecMessage([] as unknown as Record<string, string>)).toThrow(/headers object/);
+    expect(() => classifyPecMessage([] as unknown as Record<string, string>)).toThrow(
+      /headers object/,
+    );
   });
 });
 

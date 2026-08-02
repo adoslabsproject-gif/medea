@@ -21,7 +21,13 @@
 interface PendingListener {
   workflowId: string;
   tenantId: string;
-  resolve: (payload: { headers: Record<string, string>; body: unknown; query: Record<string, string>; method: string; ts: string }) => void;
+  resolve: (payload: {
+    headers: Record<string, string>;
+    body: unknown;
+    query: Record<string, string>;
+    method: string;
+    ts: string;
+  }) => void;
   reject: (err: Error) => void;
   timer: ReturnType<typeof setTimeout>;
 }
@@ -36,7 +42,13 @@ export function subscribeForTestEvent(
   tenantId: string,
   workflowId: string,
   timeoutMs = 5 * 60_000,
-): Promise<{ headers: Record<string, string>; body: unknown; query: Record<string, string>; method: string; ts: string }> {
+): Promise<{
+  headers: Record<string, string>;
+  body: unknown;
+  query: Record<string, string>;
+  method: string;
+  ts: string;
+}> {
   const k = keyOf(tenantId, workflowId);
 
   // Replace any existing listener for this workflow (the user clicked Listen again).
@@ -63,7 +75,12 @@ export function hasTestListener(tenantId: string, workflowId: string): boolean {
 export function publishTestEvent(
   tenantId: string,
   workflowId: string,
-  payload: { headers: Record<string, string>; body: unknown; query: Record<string, string>; method: string },
+  payload: {
+    headers: Record<string, string>;
+    body: unknown;
+    query: Record<string, string>;
+    method: string;
+  },
 ): boolean {
   const k = keyOf(tenantId, workflowId);
   const listener = listeners.get(k);

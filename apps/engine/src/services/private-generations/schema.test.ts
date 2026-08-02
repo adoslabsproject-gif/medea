@@ -36,7 +36,9 @@ describe('schema generations — contratto DDL↔colonne', () => {
   });
 
   it('vincola kind e rating a livello DB (CHECK)', () => {
-    expect(CREATE_GENERATIONS_TABLE_SQL).toMatch(/kind TEXT NOT NULL CHECK \(kind IN \('image','video'\)\)/);
+    expect(CREATE_GENERATIONS_TABLE_SQL).toMatch(
+      /kind TEXT NOT NULL CHECK \(kind IN \('image','video'\)\)/,
+    );
     expect(CREATE_GENERATIONS_TABLE_SQL).toMatch(/rating TEXT CHECK \(rating IN \('up','down'\)\)/);
   });
 

@@ -36,8 +36,11 @@ vi.mock('@/storage/db.js', () => {
               all: (...p: unknown[]) => stmt.all(...p),
             };
           },
-          exec: (sql: string) => { conn.exec(sql); },
-          transaction: <T extends unknown[], R>(fn: (...args: T) => R) => conn.transaction(fn) as unknown as (...args: T) => R,
+          exec: (sql: string) => {
+            conn.exec(sql);
+          },
+          transaction: <T extends unknown[], R>(fn: (...args: T) => R) =>
+            conn.transaction(fn) as unknown as (...args: T) => R,
         },
       };
     },
@@ -278,7 +281,12 @@ describe('ConversationService.needsCompaction TOKEN-based', () => {
     const svc = new ConversationService();
     const conv = svc.create({ userId: 'u-1', surface: 'editor_chat' });
     for (let i = 0; i < 25; i++) {
-      svc.appendMessage({ conversationId: conv.id, role: 'user', content: `m${i.toString()}`, tokens: 10 });
+      svc.appendMessage({
+        conversationId: conv.id,
+        role: 'user',
+        content: `m${i.toString()}`,
+        tokens: 10,
+      });
     }
     // 25 * 10 = 250 token, soglia 1000 → no compaction.
     expect(svc.needsCompaction(conv.id, { maxContextTokens: 1000 })).toBe(false);
@@ -288,7 +296,12 @@ describe('ConversationService.needsCompaction TOKEN-based', () => {
     const svc = new ConversationService();
     const conv = svc.create({ userId: 'u-1', surface: 'editor_chat' });
     for (let i = 0; i < 25; i++) {
-      svc.appendMessage({ conversationId: conv.id, role: 'user', content: `m${i.toString()}`, tokens: 100 });
+      svc.appendMessage({
+        conversationId: conv.id,
+        role: 'user',
+        content: `m${i.toString()}`,
+        tokens: 100,
+      });
     }
     // 25 * 100 = 2500 ≥ soglia 1000 → compaction.
     expect(svc.needsCompaction(conv.id, { maxContextTokens: 1000 })).toBe(true);
@@ -299,7 +312,12 @@ describe('ConversationService.needsCompaction TOKEN-based', () => {
     const conv = svc.create({ userId: 'u-1', surface: 'editor_chat' });
     // Solo 4 messaggi, ma enormi → token vivi sopra soglia: DEVE comprimere.
     for (let i = 0; i < 4; i++) {
-      svc.appendMessage({ conversationId: conv.id, role: 'user', content: `m${i.toString()}`, tokens: 100000 });
+      svc.appendMessage({
+        conversationId: conv.id,
+        role: 'user',
+        content: `m${i.toString()}`,
+        tokens: 100000,
+      });
     }
     expect(svc.needsCompaction(conv.id, { maxContextTokens: 1000 })).toBe(true);
   });
@@ -308,7 +326,12 @@ describe('ConversationService.needsCompaction TOKEN-based', () => {
     const svc = new ConversationService();
     const conv = svc.create({ userId: 'u-1', surface: 'editor_chat' });
     svc.appendMessage({ conversationId: conv.id, role: 'user', content: 'enorme', tokens: 100000 });
-    svc.appendMessage({ conversationId: conv.id, role: 'assistant', content: 'pure', tokens: 100000 });
+    svc.appendMessage({
+      conversationId: conv.id,
+      role: 'assistant',
+      content: 'pure',
+      tokens: 100000,
+    });
     expect(svc.needsCompaction(conv.id, { maxContextTokens: 1000 })).toBe(false); // 2 < 3
   });
 
@@ -316,7 +339,12 @@ describe('ConversationService.needsCompaction TOKEN-based', () => {
     const svc = new ConversationService();
     const conv = svc.create({ userId: 'u-1', surface: 'editor_chat' });
     for (let i = 0; i < 21; i++) {
-      svc.appendMessage({ conversationId: conv.id, role: 'user', content: `m${i.toString()}`, tokens: 100 });
+      svc.appendMessage({
+        conversationId: conv.id,
+        role: 'user',
+        content: `m${i.toString()}`,
+        tokens: 100,
+      });
     }
     // Soglia token bassa → true; la regola a turni (50) a 21 msg darebbe false.
     expect(svc.needsCompaction(conv.id, { maxContextTokens: 500 })).toBe(true);

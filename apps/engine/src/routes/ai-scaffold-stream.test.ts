@@ -114,8 +114,10 @@ describe('AI scaffold SSE heartbeat — anti-timeout (FIX 2026-05-29)', () => {
       return m ? Number(m[1]) : 0;
     });
     for (let i = 1; i < timestamps.length; i++) {
-      expect(timestamps[i], `heartbeat ${i.toString()} >= ${(i - 1).toString()}`)
-        .toBeGreaterThanOrEqual(timestamps[i - 1]!);
+      expect(
+        timestamps[i],
+        `heartbeat ${i.toString()} >= ${(i - 1).toString()}`,
+      ).toBeGreaterThanOrEqual(timestamps[i - 1]!);
     }
     stop();
   });
@@ -136,7 +138,7 @@ describe('AI scaffold SSE — anti-buffer headers + padding', () => {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
       'X-Accel-Buffering': 'no',
-      'Connection': 'keep-alive',
+      Connection: 'keep-alive',
     };
     // Sanity: i 4 valori sono noti, non null/undefined.
     for (const [k, v] of Object.entries(REQUIRED_HEADERS)) {

@@ -26,14 +26,15 @@ describe('buildRunExplainSystemPrompt — budget di contesto (incidente 2026-07-
     expect(system.length).toBeLessThan(60_000);
   });
 
-  it('system + user content massimo teorico restano sotto la finestra Liara con margine per l\'output', () => {
+  it("system + user content massimo teorico restano sotto la finestra Liara con margine per l'output", () => {
     const estimatedSystemTokens = Math.ceil(system.length / CHARS_PER_TOKEN);
     // User content worst-case: caps del builder (8000 wf + 2000 err + 1500 out
     // + 2000 config + ~4000 nodeDef/boilerplate) ≈ 17.5k char ≈ 5k token.
     const worstCaseUserTokens = 5_000;
     const minOutputBudget = 2_048;
-    expect(estimatedSystemTokens + worstCaseUserTokens + minOutputBudget)
-      .toBeLessThan(getLiaraContextWindow());
+    expect(estimatedSystemTokens + worstCaseUserTokens + minOutputBudget).toBeLessThan(
+      getLiaraContextWindow(),
+    );
   });
 
   it('OGNI defId del catalogo stdlib è presente (il modello deve poterli citare tutti nei patch)', () => {
@@ -47,7 +48,10 @@ describe('buildRunExplainSystemPrompt — budget di contesto (incidente 2026-07-
     const lines = catalogSection.split('\n').filter((l) => l.startsWith('- '));
     expect(lines.length).toBeGreaterThanOrEqual(stdlibNodeDefs().length);
     for (const line of lines) {
-      expect(line.length, `riga catalogo oltre il cap: "${line.slice(0, 80)}…"`).toBeLessThanOrEqual(180);
+      expect(
+        line.length,
+        `riga catalogo oltre il cap: "${line.slice(0, 80)}…"`,
+      ).toBeLessThanOrEqual(180);
     }
   });
 });

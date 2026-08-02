@@ -37,20 +37,20 @@ export const janitorCleanupNode: NodeModule = {
       'business — il pattern data-quality-as-code di FlowForge che permette di automatizzare le pulizie ' +
       'ricorrenti del database del cliente (dedup duplicati, normalizzazione campi, anonimizzazione GDPR, ' +
       'rimozione record obsoleti, consolidamento anagrafica) senza dover scrivere SQL manualmente né rischiare ' +
-      'errori distruttivi su tabelle di produzione. Le regole Janitor sono definite dall\'admin del tenant ' +
+      "errori distruttivi su tabelle di produzione. Le regole Janitor sono definite dall'admin del tenant " +
       'nell\'interfaccia "Salute Dati" dell\'editor (UI no-code con builder visuale di trasformazione) e ' +
       'queste sono semplicemente eseguite da questo nodo come step di un workflow più ampio. ' +
       'Funziona su QUALUNQUE database collegato al sistema FlowForge — supporta i 5 dialetti SQL principali ' +
       'usati in produzione: SQLite (default del runtime tenant + databases del cliente locali), PostgreSQL ' +
       '(il preferred per produzione enterprise, supporta features avanzate come window functions e CTE), ' +
-      'MySQL/MariaDB (l\'altro tier-1 RDBMS open-source comune in legacy LAMP stack), Microsoft SQL Server ' +
+      "MySQL/MariaDB (l'altro tier-1 RDBMS open-source comune in legacy LAMP stack), Microsoft SQL Server " +
       '(per integrazione con enterprise Windows infrastructure), DuckDB (analytic columnar in-process database ' +
       'per workflow di analytics ETL pesanti). Il nodo astrae le differenze di syntax SQL tra i dialetti — ' +
-      'l\'admin definisce la regola UNA volta e funziona su qualsiasi DB collegato. ' +
-      'Due modalità operative complementari per coprire i pattern d\'uso: ' +
+      "l'admin definisce la regola UNA volta e funziona su qualsiasi DB collegato. " +
+      "Due modalità operative complementari per coprire i pattern d'uso: " +
       '(1) singola — applica una specifica regola identificata per nome o id, utile quando il workflow è ' +
       'focused su una pulizia specifica (es. "dedup_customers" eseguito post-import bulk); ' +
-      '(2) ciclo — itera ed esegue TUTTE le regole abilitate del database target nell\'ordine definito ' +
+      "(2) ciclo — itera ed esegue TUTTE le regole abilitate del database target nell'ordine definito " +
       'dall\'admin (priority-based), pattern per workflow di "pulizia generale notturna" che fa healthcheck ' +
       'completo. ' +
       'Report dettagliato per audit + compliance enterprise: ogni execution produce un report strutturato di ' +

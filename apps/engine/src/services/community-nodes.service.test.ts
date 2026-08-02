@@ -112,17 +112,23 @@ describe('parsePackage', () => {
 
   it('manifest.json mancante → throw esplicito', async () => {
     const { parsePackage } = await import('./community-nodes.service.js');
-    await expect(parsePackage(buildFfnodeZip({ omit: 'manifest' }))).rejects.toThrow(/manifest\.json mancante/u);
+    await expect(parsePackage(buildFfnodeZip({ omit: 'manifest' }))).rejects.toThrow(
+      /manifest\.json mancante/u,
+    );
   });
 
   it('nodedef.json mancante → throw', async () => {
     const { parsePackage } = await import('./community-nodes.service.js');
-    await expect(parsePackage(buildFfnodeZip({ omit: 'nodedef' }))).rejects.toThrow(/nodedef\.json mancante/u);
+    await expect(parsePackage(buildFfnodeZip({ omit: 'nodedef' }))).rejects.toThrow(
+      /nodedef\.json mancante/u,
+    );
   });
 
   it('executor.js mancante → throw', async () => {
     const { parsePackage } = await import('./community-nodes.service.js');
-    await expect(parsePackage(buildFfnodeZip({ omit: 'executor' }))).rejects.toThrow(/executor\.js mancante/u);
+    await expect(parsePackage(buildFfnodeZip({ omit: 'executor' }))).rejects.toThrow(
+      /executor\.js mancante/u,
+    );
   });
 
   it('manifest.json non JSON → throw "non è JSON valido"', async () => {
@@ -136,31 +142,47 @@ describe('parsePackage', () => {
 
   it('vendor mismatch nodedef vs manifest → throw', async () => {
     const { parsePackage } = await import('./community-nodes.service.js');
-    await expect(parsePackage(buildFfnodeZip({
-      defOverride: { vendor: 'evil-corp' },
-    }))).rejects.toThrow(/vendor mismatch/u);
+    await expect(
+      parsePackage(
+        buildFfnodeZip({
+          defOverride: { vendor: 'evil-corp' },
+        }),
+      ),
+    ).rejects.toThrow(/vendor mismatch/u);
   });
 
   it('id mismatch nodedef vs manifest → throw', async () => {
     const { parsePackage } = await import('./community-nodes.service.js');
-    await expect(parsePackage(buildFfnodeZip({
-      defOverride: { id: 'other_id' },
-    }))).rejects.toThrow(/id mismatch/u);
+    await expect(
+      parsePackage(
+        buildFfnodeZip({
+          defOverride: { id: 'other_id' },
+        }),
+      ),
+    ).rejects.toThrow(/id mismatch/u);
   });
 
   it('version mismatch nodedef vs manifest → throw', async () => {
     const { parsePackage } = await import('./community-nodes.service.js');
-    await expect(parsePackage(buildFfnodeZip({
-      defOverride: { version: '2.0.0' },
-    }))).rejects.toThrow(/version mismatch/u);
+    await expect(
+      parsePackage(
+        buildFfnodeZip({
+          defOverride: { version: '2.0.0' },
+        }),
+      ),
+    ).rejects.toThrow(/version mismatch/u);
   });
 
   it('manifest fields invalidi (version non-semver) → ZodError', async () => {
     const { parsePackage } = await import('./community-nodes.service.js');
-    await expect(parsePackage(buildFfnodeZip({
-      manifestOverride: { version: 'not-semver' },
-      defOverride: { version: 'not-semver' },
-    }))).rejects.toThrow();
+    await expect(
+      parsePackage(
+        buildFfnodeZip({
+          manifestOverride: { version: 'not-semver' },
+          defOverride: { version: 'not-semver' },
+        }),
+      ),
+    ).rejects.toThrow();
   });
 });
 
@@ -185,10 +207,12 @@ describe('verifyManifestSignature — Ed25519 reale', () => {
 
   it('publicKey malformato → false (no throw)', async () => {
     const { parsePackage, verifyManifestSignature } = await import('./community-nodes.service.js');
-    const pkg = await parsePackage(buildFfnodeZip({
-      signed: false,
-      manifestOverride: { signature: 'aa'.repeat(32), publicKeyPem: 'not-a-pem' },
-    }));
+    const pkg = await parsePackage(
+      buildFfnodeZip({
+        signed: false,
+        manifestOverride: { signature: 'aa'.repeat(32), publicKeyPem: 'not-a-pem' },
+      }),
+    );
     expect(verifyManifestSignature(pkg)).toBe(false);
   });
 });
@@ -233,10 +257,12 @@ describe('installFromBuffer + persistence', () => {
   it('upgrade replaces existing in registry (stesso key)', async () => {
     const svc = await import('./community-nodes.service.js');
     await svc.installFromBuffer(buildFfnodeZip());
-    const v2 = await svc.installFromBuffer(buildFfnodeZip({
-      manifestOverride: { version: '1.0.1' },
-      defOverride: { version: '1.0.1' },
-    }));
+    const v2 = await svc.installFromBuffer(
+      buildFfnodeZip({
+        manifestOverride: { version: '1.0.1' },
+        defOverride: { version: '1.0.1' },
+      }),
+    );
     expect(v2.manifest.version).toBe('1.0.1');
     expect(svc.listInstalled()).toHaveLength(1); // upgrade, not duplicate
   });
@@ -245,29 +271,43 @@ describe('installFromBuffer + persistence', () => {
 describe('installFromUrl — security guards', () => {
   it('http:// rifiutato (no https)', async () => {
     const svc = await import('./community-nodes.service.js');
-    await expect(svc.installFromUrl('http://evil.example.com/pkg.ffnode')).rejects.toThrow(/https/u);
+    await expect(svc.installFromUrl('http://evil.example.com/pkg.ffnode')).rejects.toThrow(
+      /https/u,
+    );
   });
 
   it('HTTP non-ok → throw download fallito', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }));
     const svc = await import('./community-nodes.service.js');
-    await expect(svc.installFromUrl('https://example.com/pkg.ffnode')).rejects.toThrow(/Download fallito.*404/u);
+    await expect(svc.installFromUrl('https://example.com/pkg.ffnode')).rejects.toThrow(
+      /Download fallito.*404/u,
+    );
   });
 
   it('Download vuoto → throw', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true, arrayBuffer: async () => new ArrayBuffer(0),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => new ArrayBuffer(0),
+      }),
+    );
     const svc = await import('./community-nodes.service.js');
     await expect(svc.installFromUrl('https://example.com/pkg.ffnode')).rejects.toThrow(/vuoto/u);
   });
 
   it('🚨 > 50 MB → throw "troppo grande" (cap anti-OOM; lo stop-mid-stream è provato in capped-response.test)', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true, arrayBuffer: async () => new ArrayBuffer(51 * 1024 * 1024),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => new ArrayBuffer(51 * 1024 * 1024),
+      }),
+    );
     const svc = await import('./community-nodes.service.js');
-    await expect(svc.installFromUrl('https://example.com/pkg.ffnode')).rejects.toThrow(/troppo grande/u);
+    await expect(svc.installFromUrl('https://example.com/pkg.ffnode')).rejects.toThrow(
+      /troppo grande/u,
+    );
   });
 });
 
@@ -276,19 +316,25 @@ describe('🚨 installFromUrl — verify-at-install (registry pubblico fail-clos
     const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, arrayBuffer: async () => ab }));
   }
-  afterEach(() => { delete process.env.MEDEA_ALLOW_UNSIGNED_REMOTE_NODES; });
+  afterEach(() => {
+    delete process.env.MEDEA_ALLOW_UNSIGNED_REMOTE_NODES;
+  });
 
   it('🚨 pacchetto remoto NON firmato → RIFIUTATO di default (no fail-open)', async () => {
     stubFetchWith(buildFfnodeZip()); // unsigned
     const svc = await import('./community-nodes.service.js');
-    await expect(svc.installFromUrl('https://registry.example/pkg.ffnode')).rejects.toThrow(/NON firmato/u);
+    await expect(svc.installFromUrl('https://registry.example/pkg.ffnode')).rejects.toThrow(
+      /NON firmato/u,
+    );
     expect(svc.listInstalled()).toHaveLength(0); // niente persistito
   });
 
   it('🚨 pacchetto remoto con firma INVALIDA → rifiutato', async () => {
     stubFetchWith(buildFfnodeZip({ signed: true, badSignature: true }));
     const svc = await import('./community-nodes.service.js');
-    await expect(svc.installFromUrl('https://registry.example/pkg.ffnode')).rejects.toThrow(/non valida/u);
+    await expect(svc.installFromUrl('https://registry.example/pkg.ffnode')).rejects.toThrow(
+      /non valida/u,
+    );
   });
 
   it('pacchetto remoto FIRMATO valido → installato, verified=true', async () => {
@@ -306,24 +352,28 @@ describe('🚨 installFromUrl — verify-at-install (registry pubblico fail-clos
     expect(installed.verified).toBe(false);
   });
 
-  it('param requireSignature esplicito vince sull\'assenza di env', async () => {
+  it("param requireSignature esplicito vince sull'assenza di env", async () => {
     stubFetchWith(buildFfnodeZip()); // unsigned
     const svc = await import('./community-nodes.service.js');
-    await expect(svc.installFromUrl('https://registry.example/pkg.ffnode', { requireSignature: true }))
-      .rejects.toThrow(/NON firmato/u);
+    await expect(
+      svc.installFromUrl('https://registry.example/pkg.ffnode', { requireSignature: true }),
+    ).rejects.toThrow(/NON firmato/u);
   });
 });
 
 describe('🚨 installFromBuffer — requireSignature (upload con policy stretta)', () => {
   it('requireSignature:true + unsigned → throw (canale che impone firma)', async () => {
     const svc = await import('./community-nodes.service.js');
-    await expect(svc.installFromBuffer(buildFfnodeZip(), { requireSignature: true }))
-      .rejects.toThrow(/NON firmato/u);
+    await expect(
+      svc.installFromBuffer(buildFfnodeZip(), { requireSignature: true }),
+    ).rejects.toThrow(/NON firmato/u);
   });
 
   it('requireSignature:true + firmato valido → ok', async () => {
     const svc = await import('./community-nodes.service.js');
-    const installed = await svc.installFromBuffer(buildFfnodeZip({ signed: true }), { requireSignature: true });
+    const installed = await svc.installFromBuffer(buildFfnodeZip({ signed: true }), {
+      requireSignature: true,
+    });
     expect(installed.verified).toBe(true);
   });
 
@@ -425,14 +475,18 @@ describe('loadInstalledFromDisk — boot scan + highest semver', () => {
   it('multi-version: pick highest semver', async () => {
     const svc = await import('./community-nodes.service.js');
     await svc.installFromBuffer(buildFfnodeZip());
-    await svc.installFromBuffer(buildFfnodeZip({
-      manifestOverride: { version: '2.3.4' },
-      defOverride: { version: '2.3.4' },
-    }));
-    await svc.installFromBuffer(buildFfnodeZip({
-      manifestOverride: { version: '1.5.0' },
-      defOverride: { version: '1.5.0' },
-    }));
+    await svc.installFromBuffer(
+      buildFfnodeZip({
+        manifestOverride: { version: '2.3.4' },
+        defOverride: { version: '2.3.4' },
+      }),
+    );
+    await svc.installFromBuffer(
+      buildFfnodeZip({
+        manifestOverride: { version: '1.5.0' },
+        defOverride: { version: '1.5.0' },
+      }),
+    );
     vi.resetModules();
     const fresh = await import('./community-nodes.service.js');
     expect(await fresh.loadInstalledFromDisk()).toBe(1);

@@ -20,7 +20,11 @@ function outputClause(description: string): string {
 const cases: { node: NodeModule; label: string; stale: string[] }[] = [
   // parse: columnCount/headerRow/emptyCellsCount/truncated ora IMPLEMENTATI (non più stale).
   { node: xlsxParseNode, label: 'action_xlsx_parse', stale: [] },
-  { node: xlsxBuildNode, label: 'action_xlsx_build', stale: ['base64', 'size_bytes', 'rowCount', 'columnCount', 'mimeType'] },
+  {
+    node: xlsxBuildNode,
+    label: 'action_xlsx_build',
+    stale: ['base64', 'size_bytes', 'rowCount', 'columnCount', 'mimeType'],
+  },
 ];
 
 describe('excel — contract description↔outputs (anti-drift)', () => {
@@ -29,13 +33,20 @@ describe('excel — contract description↔outputs (anti-drift)', () => {
 
     it(`[${label}] ogni def.outputs è citato nella clausola Output (description non omette i campi reali)`, () => {
       expect(clause.length).toBeGreaterThan(0);
-      const missing = (node.def.outputs ?? []).filter((o) => o !== 'default' && !new RegExp(`\\b${o}\\b`).test(clause));
-      expect(missing, `def.outputs non citati nella description: ${missing.join(', ')}`).toEqual([]);
+      const missing = (node.def.outputs ?? []).filter(
+        (o) => o !== 'default' && !new RegExp(`\\b${o}\\b`).test(clause),
+      );
+      expect(missing, `def.outputs non citati nella description: ${missing.join(', ')}`).toEqual(
+        [],
+      );
     });
 
     it(`[${label}] la clausola Output NON ripropone i nomi sbagliati rimossi`, () => {
       const offenders = stale.filter((s) => clause.includes(s));
-      expect(offenders, `nomi stale ricomparsi nella clausola Output: ${offenders.join(', ')}`).toEqual([]);
+      expect(
+        offenders,
+        `nomi stale ricomparsi nella clausola Output: ${offenders.join(', ')}`,
+      ).toEqual([]);
     });
   }
 });

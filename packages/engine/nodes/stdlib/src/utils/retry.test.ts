@@ -24,50 +24,69 @@ describe('computeDelay', () => {
 describe('withRetry', () => {
   it('succeeds on first try, no sleep', async () => {
     let calls = 0;
-    const r = await withRetry(async () => { calls += 1; return 42; });
+    const r = await withRetry(async () => {
+      calls += 1;
+      return 42;
+    });
     expect(r).toBe(42);
     expect(calls).toBe(1);
   });
 
   it('retries up to count times then succeeds', async () => {
     let calls = 0;
-    const r = await withRetry(async () => {
-      calls += 1;
-      if (calls < 3) throw new Error('flaky');
-      return 'ok';
-    }, { count: 3, initialDelayMs: 1 });
+    const r = await withRetry(
+      async () => {
+        calls += 1;
+        if (calls < 3) throw new Error('flaky');
+        return 'ok';
+      },
+      { count: 3, initialDelayMs: 1 },
+    );
     expect(r).toBe('ok');
     expect(calls).toBe(3);
   });
 
   it('throws last error if all retries exhausted', async () => {
     let calls = 0;
-    await expect(withRetry(async () => {
-      calls += 1;
-      throw new Error(`fail-${String(calls)}`);
-    }, { count: 2, initialDelayMs: 1 })).rejects.toThrow('fail-3');
+    await expect(
+      withRetry(
+        async () => {
+          calls += 1;
+          throw new Error(`fail-${String(calls)}`);
+        },
+        { count: 2, initialDelayMs: 1 },
+      ),
+    ).rejects.toThrow('fail-3');
     expect(calls).toBe(3); // 1 initial + 2 retries
   });
 
   it('shouldRetry predicate skips retry if false', async () => {
     let calls = 0;
-    await expect(withRetry(async () => {
-      calls += 1;
-      throw new Error('not-retryable');
-    }, { count: 3, initialDelayMs: 1, shouldRetry: () => false })).rejects.toThrow('not-retryable');
+    await expect(
+      withRetry(
+        async () => {
+          calls += 1;
+          throw new Error('not-retryable');
+        },
+        { count: 3, initialDelayMs: 1, shouldRetry: () => false },
+      ),
+    ).rejects.toThrow('not-retryable');
     expect(calls).toBe(1);
   });
 
   it('shouldRetryOnResult triggers retry on success value', async () => {
     let calls = 0;
-    const r = await withRetry(async () => {
-      calls += 1;
-      return calls === 1 ? 'transient' : 'final';
-    }, {
-      count: 2,
-      initialDelayMs: 1,
-      shouldRetryOnResult: (v) => v === 'transient',
-    });
+    const r = await withRetry(
+      async () => {
+        calls += 1;
+        return calls === 1 ? 'transient' : 'final';
+      },
+      {
+        count: 2,
+        initialDelayMs: 1,
+        shouldRetryOnResult: (v) => v === 'transient',
+      },
+    );
     expect(r).toBe('final');
     expect(calls).toBe(2);
   });
@@ -75,30 +94,53 @@ describe('withRetry', () => {
   it('onRetry hook called with attempt + delay + err', async () => {
     const hook = vi.fn();
     try {
-      await withRetry(async () => { throw new Error('e'); }, {
-        count: 2,
-        initialDelayMs: 1,
-        onRetry: hook,
-      });
-    } catch { /* expected */ }
+      await withRetry(
+        async () => {
+          throw new Error('e');
+        },
+        {
+          count: 2,
+          initialDelayMs: 1,
+          onRetry: hook,
+        },
+      );
+    } catch {
+      /* expected */
+    }
     expect(hook).toHaveBeenCalledTimes(2);
     expect(hook.mock.calls[0]?.[0]).toMatchObject({ attempt: 1, err: expect.any(Error) });
   });
 
   it('aborts mid-sleep when signal triggered', async () => {
     const ctrl = new AbortController();
-    setTimeout(() => { ctrl.abort(); }, 20);
-    await expect(withRetry(async () => { throw new Error('e'); }, {
-      count: 5,
-      initialDelayMs: 200,
-      signal: ctrl.signal,
-    })).rejects.toThrow(/Aborted|e/);
+    setTimeout(() => {
+      ctrl.abort();
+    }, 20);
+    await expect(
+      withRetry(
+        async () => {
+          throw new Error('e');
+        },
+        {
+          count: 5,
+          initialDelayMs: 200,
+          signal: ctrl.signal,
+        },
+      ),
+    ).rejects.toThrow(/Aborted|e/);
   });
 
   it('handles count=0 (single attempt only)', async () => {
     let calls = 0;
-    await expect(withRetry(async () => { calls += 1; throw new Error('once'); }, { count: 0 }))
-      .rejects.toThrow('once');
+    await expect(
+      withRetry(
+        async () => {
+          calls += 1;
+          throw new Error('once');
+        },
+        { count: 0 },
+      ),
+    ).rejects.toThrow('once');
     expect(calls).toBe(1);
   });
 });

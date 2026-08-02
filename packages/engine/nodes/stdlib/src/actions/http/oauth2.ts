@@ -115,8 +115,14 @@ async function readCappedText(res: Response, capBytes: number): Promise<string> 
       if (value.byteLength > 0) {
         total += value.byteLength;
         if (total > capBytes) {
-          try { await reader.cancel(); } catch { /* best-effort: connessione rilasciata comunque */ }
-          throw new Error(`OAuth2 token endpoint: risposta troppo grande (oltre ${capBytes.toString()} byte)`);
+          try {
+            await reader.cancel();
+          } catch {
+            /* best-effort: connessione rilasciata comunque */
+          }
+          throw new Error(
+            `OAuth2 token endpoint: risposta troppo grande (oltre ${capBytes.toString()} byte)`,
+          );
         }
         chunks.push(value);
       }
@@ -125,7 +131,9 @@ async function readCappedText(res: Response, capBytes: number): Promise<string> 
   }
   const text = await res.text();
   if (Buffer.byteLength(text, 'utf-8') > capBytes) {
-    throw new Error(`OAuth2 token endpoint: risposta troppo grande (oltre ${capBytes.toString()} byte)`);
+    throw new Error(
+      `OAuth2 token endpoint: risposta troppo grande (oltre ${capBytes.toString()} byte)`,
+    );
   }
   return text;
 }
@@ -137,10 +145,12 @@ async function readCappedText(res: Response, capBytes: number): Promise<string> 
  * SENZA invalidare l'intera risposta (un access_token valido non va perso per un expires_in
  * sporco). `.passthrough()` tollera i campi extra (token_type, scope, …).
  */
-const TokenResponseSchema = z.object({
-  access_token: z.string().min(1),
-  expires_in: z.coerce.number().positive().optional().catch(undefined),
-}).passthrough();
+const TokenResponseSchema = z
+  .object({
+    access_token: z.string().min(1),
+    expires_in: z.coerce.number().positive().optional().catch(undefined),
+  })
+  .passthrough();
 
 /**
  * Ritorna un access-token valido (dalla cache o richiedendolo). Lancia con messaggio
@@ -204,8 +214,14 @@ async function fetchAndCacheToken(p: OAuth2Params, key: string, tNow: number): P
 
   if (!res.ok) {
     let detail = '';
-    try { detail = (await readCappedText(res, TOKEN_RESPONSE_CAP)).slice(0, 300); } catch { /* best-effort */ }
-    throw new Error(`OAuth2 token endpoint ${res.status.toString()} ${res.statusText}${detail ? `: ${detail}` : ''}`);
+    try {
+      detail = (await readCappedText(res, TOKEN_RESPONSE_CAP)).slice(0, 300);
+    } catch {
+      /* best-effort */
+    }
+    throw new Error(
+      `OAuth2 token endpoint ${res.status.toString()} ${res.statusText}${detail ? `: ${detail}` : ''}`,
+    );
   }
 
   let json: unknown;
@@ -214,7 +230,9 @@ async function fetchAndCacheToken(p: OAuth2Params, key: string, tNow: number): P
   } catch (err) {
     // Distingui "troppo grande" (cap) da "non-JSON": il primo è un messaggio già chiaro.
     if (err instanceof Error && err.message.includes('troppo grande')) throw err;
-    throw new Error('OAuth2 token endpoint: risposta non-JSON (atteso { access_token, expires_in })');
+    throw new Error(
+      'OAuth2 token endpoint: risposta non-JSON (atteso { access_token, expires_in })',
+    );
   }
 
   const parsed = TokenResponseSchema.safeParse(json);

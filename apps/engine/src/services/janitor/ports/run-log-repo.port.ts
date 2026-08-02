@@ -23,10 +23,7 @@ export interface IRunLogRepository {
   appendCycle(report: JanitorCycleReport): Promise<void>;
   listRuleReports(q: RunLogQuery): Promise<readonly JanitorRuleReport[]>;
   /** Aggregati last 30 days, group by ruleId. */
-  trendBuckets(args: {
-    tenantId?: string;
-    daysBack: number;
-  }): Promise<readonly DailyBucket[]>;
+  trendBuckets(args: { tenantId?: string; daysBack: number }): Promise<readonly DailyBucket[]>;
   /** Ultima invocazione per ruleId (cards UI). */
   lastByRule(tenantId: string): Promise<Readonly<Record<string, JanitorRuleReport>>>;
 }

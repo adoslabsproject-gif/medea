@@ -65,7 +65,11 @@ export function parseRuleset(raw: unknown): ConditionRuleset | null {
   let obj: unknown = raw;
   if (typeof raw === 'string') {
     if (raw.trim() === '') return null;
-    try { obj = JSON.parse(raw); } catch { return null; }
+    try {
+      obj = JSON.parse(raw);
+    } catch {
+      return null;
+    }
   }
   if (!obj || typeof obj !== 'object') return null;
   const o = obj as Record<string, unknown>;
@@ -178,8 +182,14 @@ export function evaluateRule(rule: ConditionRule, context: EvalContext): boolean
       // RE2 (safeUserRegex): il pattern è attacker-controlled (output nodi upstream) →
       // `new RegExp` di V8 backtrack-erebbe (ReDoS, es. `(a+)+$`). RE2 = lineare, immune.
       // `catch` → false anche su UnsafeRegexError (pattern non-RE2/troppo lungo).
-      try { return safeUserRegex(typeof rule.right === 'string' ? rule.right : '', cs ? 'u' : 'iu').test(typeof leftVal === 'string' ? leftVal : String(leftVal ?? '')); }
-      catch { return false; }
+      try {
+        return safeUserRegex(
+          typeof rule.right === 'string' ? rule.right : '',
+          cs ? 'u' : 'iu',
+        ).test(typeof leftVal === 'string' ? leftVal : String(leftVal ?? ''));
+      } catch {
+        return false;
+      }
     }
     if (op === 'is-empty') return l === '';
     if (op === 'is-not-empty') return l !== '';
@@ -195,7 +205,8 @@ export function evaluateRule(rule: ConditionRule, context: EvalContext): boolean
     if (op === 'lt') return l < r;
     if (op === 'lte') return l <= r;
     if (op === 'between') {
-      const max = rule.rightMax !== undefined ? toComparableNumber(evalPath(rule.rightMax, context)) : NaN;
+      const max =
+        rule.rightMax !== undefined ? toComparableNumber(evalPath(rule.rightMax, context)) : NaN;
       return l >= r && l <= max;
     }
   }

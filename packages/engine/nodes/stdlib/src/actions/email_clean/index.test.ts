@@ -11,8 +11,12 @@ import { ValidationError } from '../../core/node-error.js';
 
 function ctx(): NodeExecutionContext {
   return {
-    workflowId: 'wf', runId: 'r', nodeId: 'n', tenantId: 't',
-    userId: 'u', logger: { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} },
+    workflowId: 'wf',
+    runId: 'r',
+    nodeId: 'n',
+    tenantId: 't',
+    userId: 'u',
+    logger: { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} },
   };
 }
 
@@ -40,8 +44,11 @@ describe('emailCleanExecutor', () => {
   });
 
   it('unwraps { output: {...} } nested input', async () => {
-    const r = await emailCleanActionNode.executor({},
-      { output: { subject: 'X', body: 'Ciao\n\n-- \nA' } }, ctx());
+    const r = await emailCleanActionNode.executor(
+      {},
+      { output: { subject: 'X', body: 'Ciao\n\n-- \nA' } },
+      ctx(),
+    );
     const o = r.output as Record<string, unknown>;
     expect(o.subject).toBe('X');
     expect(o.body).toBe('Ciao');
@@ -57,28 +64,36 @@ describe('emailCleanExecutor', () => {
 
   it('respects flags: all strippers disabled = body unchanged', async () => {
     const body = 'Hi\n\n-- \nSig\n\nOn 2026-01-15, X wrote:\n> q\n\nThis email is confidential.';
-    const r = await emailCleanActionNode.executor({
-      stripQuotedReply: false, stripSignatures: false,
-      stripDisclaimers: false, collapseBlankLines: false,
-    }, { body }, ctx());
+    const r = await emailCleanActionNode.executor(
+      {
+        stripQuotedReply: false,
+        stripSignatures: false,
+        stripDisclaimers: false,
+        collapseBlankLines: false,
+      },
+      { body },
+      ctx(),
+    );
     expect((r.output as Record<string, string>).body).toBe(body);
   });
 
   it('warns when cleaner drops the entire body', async () => {
     // 100% disclaimer
-    const body = 'This email and any attachments are confidential and intended solely for the addressee. ' + 'x'.repeat(200);
+    const body =
+      'This email and any attachments are confidential and intended solely for the addressee. ' +
+      'x'.repeat(200);
     const r = await emailCleanActionNode.executor({}, { body }, ctx());
     expect(r.warnings).toBeDefined();
   });
 
   it('throws ValidationError when body field missing', async () => {
-    await expect(emailCleanActionNode.executor({}, { subject: 'X' }, ctx()))
-      .rejects.toThrow(ValidationError);
+    await expect(emailCleanActionNode.executor({}, { subject: 'X' }, ctx())).rejects.toThrow(
+      ValidationError,
+    );
   });
 
   it('throws ValidationError when input is null', async () => {
-    await expect(emailCleanActionNode.executor({}, null, ctx()))
-      .rejects.toThrow(ValidationError);
+    await expect(emailCleanActionNode.executor({}, null, ctx())).rejects.toThrow(ValidationError);
   });
 
   it('integration: realistic 800-char body shrunk to ~30 chars', async () => {
@@ -92,7 +107,7 @@ describe('emailCleanExecutor', () => {
       'Tel: 06 12345 - Mobile: 333 1234567',
       'P.IVA: 12345678901',
       '',
-      'Per proteggere l\'ambiente non stampare questo messaggio.',
+      "Per proteggere l'ambiente non stampare questo messaggio.",
       '',
       'Il giorno 15 gennaio 2026 14:32, Anna Bianchi ha scritto:',
       '> Buongiorno Mario, ti chiedo cortesemente la dichiarazione 2025.',

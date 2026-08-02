@@ -13,7 +13,9 @@ export type Middleware = (next: NodeExecutor) => NodeExecutor;
  * Compose una lista di middleware. Right-fold per garantire LEFT-TO-RIGHT
  * execution order al runtime.
  */
-export function compose(middlewares: readonly Middleware[]): (executor: NodeExecutor) => NodeExecutor {
+export function compose(
+  middlewares: readonly Middleware[],
+): (executor: NodeExecutor) => NodeExecutor {
   return (executor: NodeExecutor): NodeExecutor => {
     let wrapped = executor;
     for (let i = middlewares.length - 1; i >= 0; i -= 1) {

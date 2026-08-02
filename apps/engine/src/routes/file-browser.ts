@@ -44,7 +44,11 @@ function getTenantRoot(tenantId: string): string {
 
 function getGlobalAllowlist(): string[] {
   const envList = process.env.MEDEA_FILE_ALLOWLIST ?? '';
-  return envList.split(':').map((p) => p.trim()).filter(Boolean).map((p) => resolve(p));
+  return envList
+    .split(':')
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => resolve(p));
 }
 
 function isPathAllowed(abs: string, tenantId: string): boolean {
@@ -66,7 +70,9 @@ export function createFileBrowserRoutes(): Hono {
     // Resolve the requested path. Empty/missing → tenant root.
     const rawPath = c.req.query('path') ?? '';
     const target = rawPath
-      ? rawPath.startsWith('/') ? resolve(rawPath) : resolve(tenantRoot, rawPath)
+      ? rawPath.startsWith('/')
+        ? resolve(rawPath)
+        : resolve(tenantRoot, rawPath)
       : tenantRoot;
 
     if (!isPathAllowed(target, getTenantId(c))) {
@@ -84,7 +90,10 @@ export function createFileBrowserRoutes(): Hono {
         return c.json<BrowserResponse>({
           cwd: tenantRoot,
           parent: null,
-          roots: [{ label: 'Sandbox tenant', path: tenantRoot }, ...globalRoots.map((p) => ({ label: p, path: p }))],
+          roots: [
+            { label: 'Sandbox tenant', path: tenantRoot },
+            ...globalRoots.map((p) => ({ label: p, path: p })),
+          ],
           entries: [],
         });
       }
@@ -95,19 +104,21 @@ export function createFileBrowserRoutes(): Hono {
     let entries: BrowserEntry[] = [];
     try {
       const names = await readdir(target);
-      const items = await Promise.all(names.map(async (name): Promise<BrowserEntry | null> => {
-        try {
-          const s = await stat(resolve(target, name));
-          return {
-            name,
-            type: s.isDirectory() ? 'dir' : 'file',
-            ...(s.isFile() ? { sizeBytes: s.size } : {}),
-            mtime: s.mtime.toISOString(),
-          };
-        } catch {
-          return null;
-        }
-      }));
+      const items = await Promise.all(
+        names.map(async (name): Promise<BrowserEntry | null> => {
+          try {
+            const s = await stat(resolve(target, name));
+            return {
+              name,
+              type: s.isDirectory() ? 'dir' : 'file',
+              ...(s.isFile() ? { sizeBytes: s.size } : {}),
+              mtime: s.mtime.toISOString(),
+            };
+          } catch {
+            return null;
+          }
+        }),
+      );
       entries = items.filter((x): x is BrowserEntry => x !== null);
       // Directories first, then files, both alphabetical.
       entries.sort((a, b) => {

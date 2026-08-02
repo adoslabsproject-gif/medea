@@ -56,11 +56,15 @@ describe('encodeValue', () => {
   });
   it('escapes special chars in string', () => {
     const xml = encodeValue('a < b & "c" \'d\' > e');
-    expect(xml).toBe('<value><string>a &lt; b &amp; &quot;c&quot; &apos;d&apos; &gt; e</string></value>');
+    expect(xml).toBe(
+      '<value><string>a &lt; b &amp; &quot;c&quot; &apos;d&apos; &gt; e</string></value>',
+    );
   });
   it('encodes Date as XML-RPC dateTime (NOT ISO 8601 Z)', () => {
     const d = new Date(Date.UTC(2026, 5, 4, 12, 34, 56));
-    expect(encodeValue(d)).toBe('<value><dateTime.iso8601>20260604T12:34:56</dateTime.iso8601></value>');
+    expect(encodeValue(d)).toBe(
+      '<value><dateTime.iso8601>20260604T12:34:56</dateTime.iso8601></value>',
+    );
   });
   it('throws on invalid Date', () => {
     expect(() => encodeValue(new Date('invalid'))).toThrow(/invalid Date/);
@@ -73,7 +77,9 @@ describe('encodeValue', () => {
   });
   it('encodes structs recursively, omitting undefined members', () => {
     const xml = encodeValue({ name: 'Alice', age: 30, missing: undefined as unknown as OdooValue });
-    expect(xml).toContain('<member><name>name</name><value><string>Alice</string></value></member>');
+    expect(xml).toContain(
+      '<member><name>name</name><value><string>Alice</string></value></member>',
+    );
     expect(xml).toContain('<member><name>age</name><value><int>30</int></value></member>');
     expect(xml).not.toContain('missing');
   });
@@ -124,11 +130,15 @@ describe('decodeValue', () => {
     expect((d as Date).toISOString()).toBe('2026-06-04T12:34:56.000Z');
   });
   it('decodes array of mixed', () => {
-    const a = decodeValue('<value><array><data><value><int>1</int></value><value><string>x</string></value></data></array></value>');
+    const a = decodeValue(
+      '<value><array><data><value><int>1</int></value><value><string>x</string></value></data></array></value>',
+    );
     expect(a).toEqual([1, 'x']);
   });
   it('decodes struct', () => {
-    const s = decodeValue('<value><struct><member><name>name</name><value><string>Alice</string></value></member><member><name>age</name><value><int>30</int></value></member></struct></value>');
+    const s = decodeValue(
+      '<value><struct><member><name>name</name><value><string>Alice</string></value></member><member><name>age</name><value><int>30</int></value></member></struct></value>',
+    );
     expect(s).toEqual({ name: 'Alice', age: 30 });
   });
   it('treats bare text inside <value> as string (XML-RPC default)', () => {
@@ -138,7 +148,8 @@ describe('decodeValue', () => {
 
 describe('decodeMethodResponse', () => {
   it('unwraps a single-param successful response', () => {
-    const xml = '<?xml version="1.0"?><methodResponse><params><param><value><int>123</int></value></param></params></methodResponse>';
+    const xml =
+      '<?xml version="1.0"?><methodResponse><params><param><value><int>123</int></value></param></params></methodResponse>';
     expect(decodeMethodResponse(xml)).toBe(123);
   });
   it('throws OdooFaultError on a fault response', () => {
@@ -147,14 +158,19 @@ describe('decodeMethodResponse', () => {
 <member><name>faultString</name><value><string>AccessError: access denied</string></value></member>
 </struct></value></fault></methodResponse>`;
     let caught: unknown = null;
-    try { decodeMethodResponse(xml); } catch (e) { caught = e; }
+    try {
+      decodeMethodResponse(xml);
+    } catch (e) {
+      caught = e;
+    }
     expect(caught).toBeInstanceOf(OdooFaultError);
     expect((caught as OdooFaultError).fault.faultCode).toBe(1);
     expect((caught as OdooFaultError).fault.faultString).toMatch(/AccessError/);
   });
   it('throws OdooTransportError when the body is HTML (cloudflare / nginx error page)', () => {
-    expect(() => decodeMethodResponse('<html><body>502 Bad Gateway</body></html>'))
-      .toThrow(OdooTransportError);
+    expect(() => decodeMethodResponse('<html><body>502 Bad Gateway</body></html>')).toThrow(
+      OdooTransportError,
+    );
   });
   it('throws OdooTransportError on empty body', () => {
     expect(() => decodeMethodResponse('')).toThrow(/empty response/);
@@ -192,7 +208,11 @@ describe('round-trip encode ↔ decode', () => {
 // Transport contract — authenticate + executeKw
 // ────────────────────────────────────────────────────────────────────────────
 
-function makeTransport(): { transport: OdooHttpTransport; calls: { url: string; body: string }[]; queue: { status: number; text: string }[] } {
+function makeTransport(): {
+  transport: OdooHttpTransport;
+  calls: { url: string; body: string }[];
+  queue: { status: number; text: string }[];
+} {
   const calls: { url: string; body: string }[] = [];
   const queue: { status: number; text: string }[] = [];
   const transport: OdooHttpTransport = {
@@ -211,7 +231,12 @@ beforeEach(() => {
 });
 
 describe('authenticate', () => {
-  const auth = { baseUrl: 'https://odoo.example', database: 'mydb', login: 'admin', password: 'pwd' };
+  const auth = {
+    baseUrl: 'https://odoo.example',
+    database: 'mydb',
+    login: 'admin',
+    password: 'pwd',
+  };
 
   it('returns the uid from a successful authenticate response', async () => {
     const { transport, calls, queue } = makeTransport();
@@ -227,17 +252,23 @@ describe('authenticate', () => {
 
   it('hits the cache on the second call within TTL', async () => {
     const { transport, queue, calls } = makeTransport();
-    queue.push({ status: 200, text: '<?xml version="1.0"?><methodResponse><params><param><value><int>5</int></value></param></params></methodResponse>' });
+    queue.push({
+      status: 200,
+      text: '<?xml version="1.0"?><methodResponse><params><param><value><int>5</int></value></param></params></methodResponse>',
+    });
     const a = await authenticate(auth, transport);
     const b = await authenticate(auth, transport);
     expect(a).toBe(5);
     expect(b).toBe(5);
-    expect(calls).toHaveLength(1);          // only ONE HTTP call total
+    expect(calls).toHaveLength(1); // only ONE HTTP call total
   });
 
   it('throws OdooTransportError when Odoo returns False (bad credentials)', async () => {
     const { transport, queue } = makeTransport();
-    queue.push({ status: 200, text: '<?xml version="1.0"?><methodResponse><params><param><value><boolean>0</boolean></value></param></params></methodResponse>' });
+    queue.push({
+      status: 200,
+      text: '<?xml version="1.0"?><methodResponse><params><param><value><boolean>0</boolean></value></param></params></methodResponse>',
+    });
     await expect(authenticate(auth, transport)).rejects.toBeInstanceOf(OdooTransportError);
   });
 
@@ -249,7 +280,12 @@ describe('authenticate', () => {
 });
 
 describe('executeKw', () => {
-  const auth = { baseUrl: 'https://odoo.example', database: 'mydb', login: 'admin', password: 'pwd' };
+  const auth = {
+    baseUrl: 'https://odoo.example',
+    database: 'mydb',
+    login: 'admin',
+    password: 'pwd',
+  };
 
   it('returns the decoded result on success', async () => {
     const { transport, queue, calls } = makeTransport();
@@ -257,9 +293,16 @@ describe('executeKw', () => {
       status: 200,
       text: '<?xml version="1.0"?><methodResponse><params><param><value><array><data><value><int>1</int></value><value><int>2</int></value></data></array></value></param></params></methodResponse>',
     });
-    const out = await executeKw(auth, 2, {
-      model: 'res.partner', method: 'search', positional: [[]],
-    }, transport);
+    const out = await executeKw(
+      auth,
+      2,
+      {
+        model: 'res.partner',
+        method: 'search',
+        positional: [[]],
+      },
+      transport,
+    );
     expect(out).toEqual([1, 2]);
     expect(calls[0]?.url).toBe('https://odoo.example/xmlrpc/2/object');
     expect(calls[0]?.body).toContain('<methodName>execute_kw</methodName>');
@@ -273,19 +316,22 @@ describe('executeKw', () => {
       status: 200,
       text: '<?xml version="1.0"?><methodResponse><fault><value><struct><member><name>faultCode</name><value><int>1</int></value></member><member><name>faultString</name><value><string>UserError: not allowed</string></value></member></struct></value></fault></methodResponse>',
     });
-    await expect(executeKw(auth, 2, { model: 'res.partner', method: 'unlink', positional: [[99]] }, transport))
-      .rejects.toBeInstanceOf(OdooFaultError);
+    await expect(
+      executeKw(auth, 2, { model: 'res.partner', method: 'unlink', positional: [[99]] }, transport),
+    ).rejects.toBeInstanceOf(OdooFaultError);
   });
 
   it('rejects malformed model names (anti-injection)', async () => {
     const { transport } = makeTransport();
-    await expect(executeKw(auth, 2, { model: 'res.partner; DROP TABLE', method: 'search' }, transport))
-      .rejects.toThrow(/invalid model/);
+    await expect(
+      executeKw(auth, 2, { model: 'res.partner; DROP TABLE', method: 'search' }, transport),
+    ).rejects.toThrow(/invalid model/);
   });
 
   it('rejects malformed method names', async () => {
     const { transport } = makeTransport();
-    await expect(executeKw(auth, 2, { model: 'res.partner', method: 'search();drop' }, transport))
-      .rejects.toThrow(/invalid method/);
+    await expect(
+      executeKw(auth, 2, { model: 'res.partner', method: 'search();drop' }, transport),
+    ).rejects.toThrow(/invalid method/);
   });
 });

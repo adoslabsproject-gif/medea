@@ -14,7 +14,8 @@
  * @module services/ai-scaffold/catalog-validator
  */
 import {
-  buildCatalogSpec, isExpressionValue,
+  buildCatalogSpec,
+  isExpressionValue,
   type NodeConfigSpec,
 } from '@/services/ai-scaffold/catalog-spec.js';
 import type { NodeCatalogEntry } from '@/services/ai-scaffold/node-catalog.js';
@@ -32,7 +33,14 @@ export interface ScaffoldNodeLike {
 export type CatalogViolation =
   | { kind: 'unknown_def'; nodeId: string; defId: string }
   | { kind: 'unknown_config_key'; nodeId: string; defId: string; key: string }
-  | { kind: 'invalid_enum'; nodeId: string; defId: string; key: string; value: unknown; allowed: string[] }
+  | {
+      kind: 'invalid_enum';
+      nodeId: string;
+      defId: string;
+      key: string;
+      value: unknown;
+      allowed: string[];
+    }
   | { kind: 'invalid_action'; nodeId: string; defId: string; action: string; allowed: string[] }
   | { kind: 'missing_required'; nodeId: string; defId: string; key: string };
 
@@ -67,8 +75,19 @@ function validateNode(node: ScaffoldNodeLike, spec: NodeConfigSpec, out: Catalog
     // 3. Enum: il valore (se non espressione) deve essere tra le options.
     if (keySpec.kind === 'enum' && keySpec.options) {
       const value = config[key];
-      if (typeof value === 'string' && !isExpressionValue(value) && !keySpec.options.includes(value)) {
-        out.push({ kind: 'invalid_enum', nodeId: node.id, defId: node.defId, key, value, allowed: keySpec.options });
+      if (
+        typeof value === 'string' &&
+        !isExpressionValue(value) &&
+        !keySpec.options.includes(value)
+      ) {
+        out.push({
+          kind: 'invalid_enum',
+          nodeId: node.id,
+          defId: node.defId,
+          key,
+          value,
+          allowed: keySpec.options,
+        });
       }
     }
   }

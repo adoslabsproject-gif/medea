@@ -23,7 +23,10 @@ export class AnthropicProvider implements ILLMProvider {
   }
 
   async complete(req: LLMCompletionRequest): Promise<LLMCompletionResponse> {
-    const systemMessages = req.messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n\n');
+    const systemMessages = req.messages
+      .filter((m) => m.role === 'system')
+      .map((m) => m.content)
+      .join('\n\n');
     const conversation = req.messages
       .filter((m) => m.role !== 'system')
       .map((m) => ({

@@ -28,7 +28,9 @@ function setHeaderSafe(headers: Headers, name: string, value: string): void {
   try {
     headers.set(name, value);
   } catch {
-    throw new ValidationError(`Header non valido: "${name}" (nome o valore con caratteri non ammessi dallo standard HTTP).`);
+    throw new ValidationError(
+      `Header non valido: "${name}" (nome o valore con caratteri non ammessi dallo standard HTTP).`,
+    );
   }
 }
 

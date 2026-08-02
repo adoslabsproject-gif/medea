@@ -45,7 +45,12 @@ export function createShareRoutes(eventBus: IEventBus): Hono {
     const role = auth?.role ?? 'viewer';
     const ALLOWED_SHARE_ROLES = new Set(['owner', 'admin', 'editor', 'superadmin']);
     if (!ALLOWED_SHARE_ROLES.has(role)) {
-      return c.json({ error: { code: 'ROLE_FORBIDDEN', message: 'Solo editor+ può creare share link pubblici' } }, 403);
+      return c.json(
+        {
+          error: { code: 'ROLE_FORBIDDEN', message: 'Solo editor+ può creare share link pubblici' },
+        },
+        403,
+      );
     }
 
     const ttlDays = Number(c.req.query('ttlDays') ?? '30');
@@ -53,7 +58,9 @@ export function createShareRoutes(eventBus: IEventBus): Hono {
     const expires = ttlDays > 0 ? new Date(Date.now() + ttlDays * 86_400_000).toISOString() : null;
     const { sqlite } = getDatabase();
     sqlite
-      .prepare('INSERT INTO workflow_shares (token, workflow_id, tenant_id, created_at, expires_at, created_by) VALUES (?, ?, ?, ?, ?, ?)')
+      .prepare(
+        'INSERT INTO workflow_shares (token, workflow_id, tenant_id, created_at, expires_at, created_by) VALUES (?, ?, ?, ?, ?, ?)',
+      )
       .run(token, id, tenantId, new Date().toISOString(), expires, actorId);
 
     return c.json({ token, expiresAt: expires, url: `/shared/${token}` }, 201);
@@ -65,7 +72,9 @@ export function createShareRoutes(eventBus: IEventBus): Hono {
     if (!id) return c.json({ error: 'Bad request' }, 400);
     const { sqlite } = getDatabase();
     const rows = sqlite
-      .prepare('SELECT token, created_at, expires_at, view_count FROM workflow_shares WHERE workflow_id = ? AND tenant_id = ?')
+      .prepare(
+        'SELECT token, created_at, expires_at, view_count FROM workflow_shares WHERE workflow_id = ? AND tenant_id = ?',
+      )
       .all(id, tenantId);
     return c.json({ shares: rows });
   });
@@ -76,7 +85,9 @@ export function createShareRoutes(eventBus: IEventBus): Hono {
     const token = c.req.param('token');
     if (!id || !token) return c.json({ error: 'Bad request' }, 400);
     const { sqlite } = getDatabase();
-    sqlite.prepare('DELETE FROM workflow_shares WHERE token = ? AND workflow_id = ? AND tenant_id = ?').run(token, id, tenantId);
+    sqlite
+      .prepare('DELETE FROM workflow_shares WHERE token = ? AND workflow_id = ? AND tenant_id = ?')
+      .run(token, id, tenantId);
     return c.body(null, 204);
   });
 
@@ -85,9 +96,9 @@ export function createShareRoutes(eventBus: IEventBus): Hono {
     const token = c.req.param('token');
     if (!token) return c.json({ error: 'Bad request' }, 400);
     const { sqlite } = getDatabase();
-    const row = sqlite
-      .prepare('SELECT * FROM workflow_shares WHERE token = ?')
-      .get(token) as { token: string; workflow_id: string; tenant_id: string; expires_at: string | null } | undefined;
+    const row = sqlite.prepare('SELECT * FROM workflow_shares WHERE token = ?').get(token) as
+      | { token: string; workflow_id: string; tenant_id: string; expires_at: string | null }
+      | undefined;
     if (!row) return c.json({ error: 'Not found' }, 404);
     if (row.expires_at && new Date(row.expires_at) < new Date()) {
       return c.json({ error: 'Link expired' }, 410);
@@ -95,7 +106,9 @@ export function createShareRoutes(eventBus: IEventBus): Hono {
     const wf = await workflows.get(row.workflow_id, row.tenant_id);
     if (!wf) return c.json({ error: 'Workflow no longer exists' }, 404);
 
-    sqlite.prepare('UPDATE workflow_shares SET view_count = view_count + 1 WHERE token = ?').run(token);
+    sqlite
+      .prepare('UPDATE workflow_shares SET view_count = view_count + 1 WHERE token = ?')
+      .run(token);
 
     return c.json({
       workflow: {

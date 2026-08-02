@@ -36,7 +36,15 @@ const log = loggerFor('routes.studio');
 const COOKIE = 'gs_studio';
 
 /** Metadati di un job di generazione in corso (per salvarlo a completamento nel polling). */
-interface JobMeta { prompt: string; negative: string; params: Record<string, unknown>; seed: number; checkpoint: string; conversationId: string | undefined; createdAt: number }
+interface JobMeta {
+  prompt: string;
+  negative: string;
+  params: Record<string, unknown>;
+  seed: number;
+  checkpoint: string;
+  conversationId: string | undefined;
+  createdAt: number;
+}
 const jobs = new Map<string, JobMeta>();
 /** Pulizia job vecchi (>1h) per non far crescere la mappa all'infinito. */
 function gcJobs(): void {
@@ -85,7 +93,12 @@ function coerceLoras(v: unknown): { name: string; weight: number }[] {
   if (!Array.isArray(v)) return [];
   return v.flatMap((x): { name: string; weight: number }[] => {
     if (x && typeof x === 'object' && typeof (x as { name?: unknown }).name === 'string') {
-      return [{ name: (x as { name: string }).name, weight: toNum((x as { weight?: unknown }).weight, 0.8) }];
+      return [
+        {
+          name: (x as { name: string }).name,
+          weight: toNum((x as { weight?: unknown }).weight, 0.8),
+        },
+      ];
     }
     return [];
   });
@@ -95,20 +108,25 @@ let tokenPromise: Promise<string> | null = null;
 /** Token segreto persistente del container: letto o generato (random, 0600). Memoizzato. */
 function getStudioToken(): Promise<string> {
   tokenPromise ??= (async () => {
-      const path = tokenFile();
-      try {
-        const existing = (await readFile(path, 'utf8')).trim();
-        if (existing.length >= 16) return existing;
-      } catch { /* assente → genera */ }
-      const tok = randomBytes(24).toString('hex');
-      try {
-        await mkdir(dirname(path), { recursive: true });
-        await writeFile(path, tok, { encoding: 'utf8', mode: 0o600 });
-      } catch (err) {
-        log.warn({ err: err instanceof Error ? err.message : String(err) }, 'studio token non persistito (uso in-memory)');
-      }
-      return tok;
-    })();
+    const path = tokenFile();
+    try {
+      const existing = (await readFile(path, 'utf8')).trim();
+      if (existing.length >= 16) return existing;
+    } catch {
+      /* assente → genera */
+    }
+    const tok = randomBytes(24).toString('hex');
+    try {
+      await mkdir(dirname(path), { recursive: true });
+      await writeFile(path, tok, { encoding: 'utf8', mode: 0o600 });
+    } catch (err) {
+      log.warn(
+        { err: err instanceof Error ? err.message : String(err) },
+        'studio token non persistito (uso in-memory)',
+      );
+    }
+    return tok;
+  })();
   return tokenPromise;
 }
 
@@ -118,7 +136,11 @@ function eq(a: string, b: string): boolean {
 }
 
 function cookieToken(c: Context): string {
-  const segs = c.req.header('cookie')?.split(';').map((s) => s.trim()) ?? [];
+  const segs =
+    c.req
+      .header('cookie')
+      ?.split(';')
+      .map((s) => s.trim()) ?? [];
   const m = segs.find((s) => s.startsWith(`${COOKIE}=`));
   return m ? m.slice(COOKIE.length + 1) : '';
 }
@@ -140,34 +162,47 @@ const GenerateSchema = z.object({
   hires: z.boolean().optional(),
   // immagine di partenza (data URL base64) per img2img (sdxl) o i2v (video custom)
   initImageB64: z.string().max(20_000_000).optional(),
-  loras: z.array(z.object({
-    name: z.string().max(200),
-    strengthModel: z.number().optional(),
-    strengthClip: z.number().optional(),
-  })).max(8).optional(),
+  loras: z
+    .array(
+      z.object({
+        name: z.string().max(200),
+        strengthModel: z.number().optional(),
+        strengthClip: z.number().optional(),
+      }),
+    )
+    .max(8)
+    .optional(),
   graphJson: z.string().max(200_000).optional(),
   variables: z.record(z.string()).optional(),
   timeout_s: z.number().optional(),
-  conversationId: z.string().regex(/^[\w-]{1,64}$/).optional(),
+  conversationId: z
+    .string()
+    .regex(/^[\w-]{1,64}$/)
+    .optional(),
   // Video Wan 2.2 con catena LoRA su entrambi gli stadi + ⚡Turbo (lightning).
   // Quando presente, il grafo è costruito SERVER-SIDE (buildWanVideoGraph) invece
   // del graphJson client: i nomi-file LoRA restano server-side e validati.
-  video: z.object({
-    kind: z.enum(['i2v', 't2v']),
-    width: z.number(),
-    height: z.number(),
-    length: z.number(),
-    fps: z.number(),
-    steps: z.number().optional(),
-    cfg: z.number().optional(),
-    turbo: z.boolean().optional(),
-    slowmo: z.number().int().min(1).max(4).optional(),
-    // Dimensioni naturali del file caricato (i2v): se presenti, il server tara
-    // width/height al FORMATO reale → niente foto tagliate (vedi resolveOutputDims).
-    srcWidth: z.number().optional(),
-    srcHeight: z.number().optional(),
-    loras: z.array(z.object({ name: z.string().max(40), weight: z.number().min(0).max(2) })).max(6).optional(),
-  }).optional(),
+  video: z
+    .object({
+      kind: z.enum(['i2v', 't2v']),
+      width: z.number(),
+      height: z.number(),
+      length: z.number(),
+      fps: z.number(),
+      steps: z.number().optional(),
+      cfg: z.number().optional(),
+      turbo: z.boolean().optional(),
+      slowmo: z.number().int().min(1).max(4).optional(),
+      // Dimensioni naturali del file caricato (i2v): se presenti, il server tara
+      // width/height al FORMATO reale → niente foto tagliate (vedi resolveOutputDims).
+      srcWidth: z.number().optional(),
+      srcHeight: z.number().optional(),
+      loras: z
+        .array(z.object({ name: z.string().max(40), weight: z.number().min(0).max(2) }))
+        .max(6)
+        .optional(),
+    })
+    .optional(),
 });
 
 export function createStudioRoutes(): Hono {
@@ -186,7 +221,10 @@ export function createStudioRoutes(): Hono {
       try {
         const r = await fetch(`${base}/object_info/${node}`, { signal: AbortSignal.timeout(5000) });
         if (!r.ok) return [];
-        const j = await readJsonCapped<Record<string, { input?: { required?: Record<string, unknown[]> } }>>(r);
+        const j =
+          await readJsonCapped<
+            Record<string, { input?: { required?: Record<string, unknown[]> } }>
+          >(r);
         const arr = j[node]?.input?.required?.[input]?.[0];
         return Array.isArray(arr) ? arr.filter((x): x is string => typeof x === 'string') : [];
       } catch {
@@ -212,7 +250,10 @@ export function createStudioRoutes(): Hono {
     try {
       return c.json({ ok: true, items: await createPrivateGenerationsService().conversations() });
     } catch (err) {
-      log.error({ err: err instanceof Error ? err.message : String(err) }, 'studio conversations fallito');
+      log.error(
+        { err: err instanceof Error ? err.message : String(err) },
+        'studio conversations fallito',
+      );
       return c.json({ ok: false, error: 'lista fallita' }, 500);
     }
   });
@@ -220,7 +261,10 @@ export function createStudioRoutes(): Hono {
   // Apertura via token nell'URL → set cookie → serve la pagina. Token errato → 404 (stealth).
   app.get('/studio/:token', async (c) => {
     if (!eq(c.req.param('token'), await getStudioToken())) return c.notFound();
-    c.header('Set-Cookie', `${COOKIE}=${c.req.param('token')}; HttpOnly; SameSite=Lax; Path=/studio; Max-Age=31536000`);
+    c.header(
+      'Set-Cookie',
+      `${COOKIE}=${c.req.param('token')}; HttpOnly; SameSite=Lax; Path=/studio; Max-Age=31536000`,
+    );
     return c.html(STUDIO_PAGE_HTML);
   });
 
@@ -241,7 +285,12 @@ export function createStudioRoutes(): Hono {
           return c.json({ ok: false, error: 'la modalità i2v richiede una foto di partenza' }, 400);
         }
         // Tara le dimensioni al FORMATO della foto caricata (i2v) → niente crop/stretch.
-        const vdims = resolveOutputDims(b.video.srcWidth, b.video.srcHeight, b.video.width, b.video.height);
+        const vdims = resolveOutputDims(
+          b.video.srcWidth,
+          b.video.srcHeight,
+          b.video.width,
+          b.video.height,
+        );
         graph = buildWanVideoGraph({
           mode: b.video.kind,
           prompt: b.prompt,
@@ -263,7 +312,8 @@ export function createStudioRoutes(): Hono {
         graph = substituteGraphVariables(toStr(b.graphJson), vars);
       } else {
         if (!b.prompt.trim()) return c.json({ ok: false, error: 'prompt mancante' }, 400);
-        if (!toStr(b.checkpoint).trim()) return c.json({ ok: false, error: 'checkpoint mancante' }, 400);
+        if (!toStr(b.checkpoint).trim())
+          return c.json({ ok: false, error: 'checkpoint mancante' }, 400);
         graph = buildTxt2ImgGraph({
           checkpoint: toStr(b.checkpoint).trim(),
           prompt: b.prompt,
@@ -284,7 +334,10 @@ export function createStudioRoutes(): Hono {
         });
       }
     } catch (err) {
-      return c.json({ ok: false, error: err instanceof Error ? err.message : 'grafo non valido' }, 400);
+      return c.json(
+        { ok: false, error: err instanceof Error ? err.message : 'grafo non valido' },
+        400,
+      );
     }
 
     // ASYNC: accoda in ComfyUI e ritorna SUBITO un jobId. Il client fa polling su
@@ -295,8 +348,23 @@ export function createStudioRoutes(): Hono {
       // Per i video salviamo i parametri che servono all'ESTENSIONE (kind/width/
       // height/length/fps/turbo/loras); per gli altri, i param classici.
       const params: Record<string, unknown> = b.video
-        ? { kind: b.video.kind, width: b.video.width, height: b.video.height, length: b.video.length, fps: b.video.fps, turbo: b.video.turbo ?? false, loras: b.video.loras ?? [] }
-        : { mode: b.mode, sampler: b.sampler, steps: b.steps, cfg: b.cfg, width: b.width, height: b.height };
+        ? {
+            kind: b.video.kind,
+            width: b.video.width,
+            height: b.video.height,
+            length: b.video.length,
+            fps: b.video.fps,
+            turbo: b.video.turbo ?? false,
+            loras: b.video.loras ?? [],
+          }
+        : {
+            mode: b.mode,
+            sampler: b.sampler,
+            steps: b.steps,
+            cfg: b.cfg,
+            width: b.width,
+            height: b.height,
+          };
       jobs.set(promptId, {
         prompt: b.prompt,
         negative: toStr(b.negative),
@@ -309,7 +377,10 @@ export function createStudioRoutes(): Hono {
       return c.json({ ok: true, jobId: promptId, seed });
     } catch (err) {
       log.error({ err: err instanceof Error ? err.message : String(err) }, 'studio submit fallito');
-      return c.json({ ok: false, error: err instanceof Error ? err.message : 'invio fallito' }, 502);
+      return c.json(
+        { ok: false, error: err instanceof Error ? err.message : 'invio fallito' },
+        502,
+      );
     }
   });
 
@@ -325,8 +396,14 @@ export function createStudioRoutes(): Hono {
     turbo: z.boolean().optional(),
     length: z.number().optional(),
     slowmo: z.number().int().min(1).max(4).optional(),
-    loras: z.array(z.object({ name: z.string().max(40), weight: z.number().min(0).max(2) })).max(6).optional(),
-    conversationId: z.string().regex(/^[\w-]{1,64}$/).optional(),
+    loras: z
+      .array(z.object({ name: z.string().max(40), weight: z.number().min(0).max(2) }))
+      .max(6)
+      .optional(),
+    conversationId: z
+      .string()
+      .regex(/^[\w-]{1,64}$/)
+      .optional(),
   });
   app.post('/studio/extend/:id', async (c) => {
     if (!(await authed(c))) return c.json({ ok: false, error: 'non autorizzato' }, 401);
@@ -338,10 +415,14 @@ export function createStudioRoutes(): Hono {
     try {
       src = await svc.getForExtend(c.req.param('id'));
     } catch (err) {
-      return c.json({ ok: false, error: err instanceof Error ? err.message : 'id non valido' }, 400);
+      return c.json(
+        { ok: false, error: err instanceof Error ? err.message : 'id non valido' },
+        400,
+      );
     }
     if (!src) return c.json({ ok: false, error: 'generazione non trovata' }, 404);
-    if (!src.mime.startsWith('video/')) return c.json({ ok: false, error: 'si possono estendere solo i video' }, 400);
+    if (!src.mime.startsWith('video/'))
+      return c.json({ ok: false, error: 'si possono estendere solo i video' }, 400);
 
     const p = src.params;
     const srcLen = clampInt(toNum(p.length, 121), 1, 100000, 121);
@@ -354,13 +435,29 @@ export function createStudioRoutes(): Hono {
     // Descrizione della continuazione: quella del popup, o fallback al prompt sorgente.
     const effPrompt = e.prompt?.trim() || src.prompt;
     try {
-      const comfyFile = await uploadVideoToComfy(src.bytes, `studio_src_${Date.now().toString()}.mp4`);
+      const comfyFile = await uploadVideoToComfy(
+        src.bytes,
+        `studio_src_${Date.now().toString()}.mp4`,
+      );
       const graph = buildWanExtendGraph({
-        sourceFile: comfyFile, sourceFrames: srcLen, prompt: effPrompt, negative: e.negative ?? '',
-        width, height, length: contLen, seed, steps: 30, cfg: 5, loras, turbo,
+        sourceFile: comfyFile,
+        sourceFrames: srcLen,
+        prompt: effPrompt,
+        negative: e.negative ?? '',
+        width,
+        height,
+        length: contLen,
+        seed,
+        steps: 30,
+        cfg: 5,
+        loras,
+        turbo,
         slowmo: e.slowmo ?? 1,
       });
-      const promptId = await new ComfyClient(comfyUrl()).submitPrompt(graph, `studio-ext-${seed.toString()}`);
+      const promptId = await new ComfyClient(comfyUrl()).submitPrompt(
+        graph,
+        `studio-ext-${seed.toString()}`,
+      );
       gcJobs();
       jobs.set(promptId, {
         prompt: effPrompt,
@@ -374,7 +471,10 @@ export function createStudioRoutes(): Hono {
       return c.json({ ok: true, jobId: promptId, seed });
     } catch (err) {
       log.error({ err: err instanceof Error ? err.message : String(err) }, 'studio extend fallito');
-      return c.json({ ok: false, error: err instanceof Error ? err.message : 'estensione fallita' }, 502);
+      return c.json(
+        { ok: false, error: err instanceof Error ? err.message : 'estensione fallita' },
+        502,
+      );
     }
   });
 
@@ -395,17 +495,26 @@ export function createStudioRoutes(): Hono {
     // Dimensioni naturali del video caricato → il server tara al FORMATO reale.
     srcWidth: z.number().optional(),
     srcHeight: z.number().optional(),
-    loras: z.array(z.object({ name: z.string().max(40), weight: z.number().min(0).max(2) })).max(6).optional(),
-    conversationId: z.string().regex(/^[\w-]{1,64}$/).optional(),
+    loras: z
+      .array(z.object({ name: z.string().max(40), weight: z.number().min(0).max(2) }))
+      .max(6)
+      .optional(),
+    conversationId: z
+      .string()
+      .regex(/^[\w-]{1,64}$/)
+      .optional(),
   });
   app.post('/studio/extend-upload', async (c) => {
     if (!(await authed(c))) return c.json({ ok: false, error: 'non autorizzato' }, 401);
     const parsed = ExtendUploadSchema.safeParse(await c.req.json().catch(() => ({})));
     if (!parsed.success) return c.json({ ok: false, error: 'parametri non validi' }, 400);
     const e = parsed.data;
-    const rawB64 = e.videoB64.includes(',') ? e.videoB64.slice(e.videoB64.indexOf(',') + 1) : e.videoB64;
+    const rawB64 = e.videoB64.includes(',')
+      ? e.videoB64.slice(e.videoB64.indexOf(',') + 1)
+      : e.videoB64;
     const bytes = Buffer.from(rawB64, 'base64');
-    if (bytes.length < 1000) return c.json({ ok: false, error: 'video caricato non valido o vuoto' }, 400);
+    if (bytes.length < 1000)
+      return c.json({ ok: false, error: 'video caricato non valido o vuoto' }, 400);
 
     // Tara al FORMATO del video caricato (risoluzione arbitraria) → niente crop.
     const upDims = resolveOutputDims(e.srcWidth, e.srcHeight, e.width ?? 832, e.height ?? 480);
@@ -419,12 +528,25 @@ export function createStudioRoutes(): Hono {
     try {
       const comfyFile = await uploadVideoToComfy(bytes, `studio_up_${Date.now().toString()}.mp4`);
       const graph = buildWanExtendGraph({
-        sourceFile: comfyFile, sourceFrames: 100000, scaleSourceToTarget: true,
-        prompt: effPrompt, negative: e.negative ?? '',
-        width, height, length: contLen, seed, steps: 30, cfg: 5, loras, turbo,
+        sourceFile: comfyFile,
+        sourceFrames: 100000,
+        scaleSourceToTarget: true,
+        prompt: effPrompt,
+        negative: e.negative ?? '',
+        width,
+        height,
+        length: contLen,
+        seed,
+        steps: 30,
+        cfg: 5,
+        loras,
+        turbo,
         slowmo: e.slowmo ?? 1,
       });
-      const promptId = await new ComfyClient(comfyUrl()).submitPrompt(graph, `studio-extup-${seed.toString()}`);
+      const promptId = await new ComfyClient(comfyUrl()).submitPrompt(
+        graph,
+        `studio-extup-${seed.toString()}`,
+      );
       gcJobs();
       jobs.set(promptId, {
         prompt: effPrompt,
@@ -437,8 +559,14 @@ export function createStudioRoutes(): Hono {
       });
       return c.json({ ok: true, jobId: promptId, seed });
     } catch (err) {
-      log.error({ err: err instanceof Error ? err.message : String(err) }, 'studio extend-upload fallito');
-      return c.json({ ok: false, error: err instanceof Error ? err.message : 'estensione fallita' }, 502);
+      log.error(
+        { err: err instanceof Error ? err.message : String(err) },
+        'studio extend-upload fallito',
+      );
+      return c.json(
+        { ok: false, error: err instanceof Error ? err.message : 'estensione fallita' },
+        502,
+      );
     }
   });
 
@@ -450,7 +578,10 @@ export function createStudioRoutes(): Hono {
       const client = new ComfyClient(comfyUrl());
       const res = await client.checkHistory(jobId);
       if (res.state === 'pending') return c.json({ ok: true, status: 'running' });
-      if (res.state === 'error') { jobs.delete(jobId); return c.json({ ok: false, status: 'error', error: res.error ?? 'errore' }); }
+      if (res.state === 'error') {
+        jobs.delete(jobId);
+        return c.json({ ok: false, status: 'error', error: res.error ?? 'errore' });
+      }
       // done → estrai media, salva nel DB tenant
       const ref = firstMedia(res.outputs ?? {});
       const media = await client.fetchMedia(ref);
@@ -474,10 +605,22 @@ export function createStudioRoutes(): Hono {
       });
       jobs.delete(jobId);
       const url = `/studio/media/${saved.mediaRef}?mime=${encodeURIComponent(media.mimeType)}`;
-      return c.json({ ok: true, status: 'done', id: saved.id, kind: ref.kind, seed: meta?.seed ?? 0, mime: media.mimeType, url });
+      return c.json({
+        ok: true,
+        status: 'done',
+        id: saved.id,
+        kind: ref.kind,
+        seed: meta?.seed ?? 0,
+        mime: media.mimeType,
+        url,
+      });
     } catch (err) {
       log.error({ err: err instanceof Error ? err.message : String(err) }, 'studio status fallito');
-      return c.json({ ok: false, status: 'error', error: err instanceof Error ? err.message : 'errore' });
+      return c.json({
+        ok: false,
+        status: 'error',
+        error: err instanceof Error ? err.message : 'errore',
+      });
     }
   });
 
@@ -497,7 +640,9 @@ export function createStudioRoutes(): Hono {
         signal: AbortSignal.timeout(5000),
       }).catch(() => undefined);
       // 2) interrompi l'esecuzione in corso
-      await fetch(`${base}/interrupt`, { method: 'POST', signal: AbortSignal.timeout(5000) }).catch(() => undefined);
+      await fetch(`${base}/interrupt`, { method: 'POST', signal: AbortSignal.timeout(5000) }).catch(
+        () => undefined,
+      );
       jobs.delete(jobId);
       return c.json({ ok: true });
     } catch (err) {
@@ -510,8 +655,14 @@ export function createStudioRoutes(): Hono {
     if (!(await authed(c))) return c.json({ ok: false, error: 'non autorizzato' }, 401);
     const body = (await c.req.json().catch(() => ({}))) as { id?: unknown; rating?: unknown };
     const id = toStr(body.id);
-    const rating = body.rating === 'up' || body.rating === 'down' ? body.rating : body.rating === null ? null : undefined;
-    if (!id || rating === undefined) return c.json({ ok: false, error: 'parametri non validi' }, 400);
+    const rating =
+      body.rating === 'up' || body.rating === 'down'
+        ? body.rating
+        : body.rating === null
+          ? null
+          : undefined;
+    if (!id || rating === undefined)
+      return c.json({ ok: false, error: 'parametri non validi' }, 400);
     try {
       await createPrivateGenerationsService().rate(id, rating);
       return c.json({ ok: true });
@@ -526,7 +677,11 @@ export function createStudioRoutes(): Hono {
     try {
       const bytes = await getBinaryStore().read(c.req.param('ref')); // valida ref sha256 → anti-traversal
       return new Response(new Uint8Array(bytes), {
-        headers: { 'Content-Type': mime, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, max-age=86400' },
+        headers: {
+          'Content-Type': mime,
+          'X-Content-Type-Options': 'nosniff',
+          'Cache-Control': 'private, max-age=86400',
+        },
       });
     } catch {
       return c.json({ ok: false, error: 'media non trovato' }, 404);
@@ -538,9 +693,18 @@ export function createStudioRoutes(): Hono {
     if (!(await authed(c))) return c.json({ ok: false, error: 'non autorizzato' }, 401);
     try {
       const items = await createPrivateGenerationsService().conversation(c.req.param('id'));
-      return c.json({ ok: true, items: items.map((it) => ({ ...it, url: `/studio/media/${it.media_ref}?mime=${encodeURIComponent(it.mime)}` })) });
+      return c.json({
+        ok: true,
+        items: items.map((it) => ({
+          ...it,
+          url: `/studio/media/${it.media_ref}?mime=${encodeURIComponent(it.mime)}`,
+        })),
+      });
     } catch (err) {
-      return c.json({ ok: false, error: err instanceof Error ? err.message : 'caricamento fallito' }, 400);
+      return c.json(
+        { ok: false, error: err instanceof Error ? err.message : 'caricamento fallito' },
+        400,
+      );
     }
   });
 
@@ -551,7 +715,10 @@ export function createStudioRoutes(): Hono {
       await createPrivateGenerationsService().deleteConversation(c.req.param('id'));
       return c.json({ ok: true });
     } catch (err) {
-      return c.json({ ok: false, error: err instanceof Error ? err.message : 'cancellazione fallita' }, 400);
+      return c.json(
+        { ok: false, error: err instanceof Error ? err.message : 'cancellazione fallita' },
+        400,
+      );
     }
   });
 

@@ -27,7 +27,7 @@ export const securityAuditNode: NodeModule = {
     description:
       'Auditor enterprise di security posture di un dominio web — esegue una batteria di controlli ' +
       'deterministici read-only che valutano la "salute" di sicurezza del sito target su 4 dimensioni ' +
-      'critiche dell\'IT security 2026 secondo CIS/OWASP/NIST best practices, ritornando uno score normalizzato ' +
+      "critiche dell'IT security 2026 secondo CIS/OWASP/NIST best practices, ritornando uno score normalizzato " +
       '0-100 con findings prioritizzati actionable per remediation. Le 4 categorie analizzate: ' +
       '(1) DNS Email Authentication — lookup SPF record (Sender Policy Framework, dichiara quali server SMTP ' +
       'sono autorizzati a inviare email per il dominio, presenza richiesta per non finire in spam folder di ' +
@@ -36,7 +36,7 @@ export const securityAuditNode: NodeModule = {
       'come gestire le email che falliscono SPF/DKIM check); assenza/misconfiguration di questi 3 = signal ' +
       'red flag per email security; ' +
       '(2) SSL/TLS Certificate Inspection — ispezione del certificato HTTPS del dominio: issuer (CA emittente, ' +
-      'Let\'s Encrypt è OK ma se aspettiamo enterprise tier ci aspettiamo Digicert/Comodo/Sectigo), expiry ' +
+      "Let's Encrypt è OK ma se aspettiamo enterprise tier ci aspettiamo Digicert/Comodo/Sectigo), expiry " +
       'date (warning < 30gg residui, critical < 7gg), SAN (Subject Alternative Names — il dominio matcha ' +
       'sul certificato), protocol version (TLS 1.2+ obbligatorio enterprise, TLS 1.0/1.1 deprecati 2020+), ' +
       'cipher suite strength (no SHA-1, no RC4, no MD5); ' +
@@ -46,7 +46,7 @@ export const securityAuditNode: NodeModule = {
       '(downgrade attack risk); ' +
       '(4) HTTP Security Headers — verifica presenza di HSTS (HTTP Strict Transport Security per forzare HTTPS ' +
       'browser-side), CSP (Content Security Policy contro XSS), X-Frame-Options o frame-ancestors (anti-clickjacking), ' +
-      'X-Content-Type-Options nosniff, Referrer-Policy, Permissions-Policy — l\'enterprise standard 2025-2026 ' +
+      "X-Content-Type-Options nosniff, Referrer-Policy, Permissions-Policy — l'enterprise standard 2025-2026 " +
       'che dovrebbe essere presente su ogni sito. ' +
       'Score finale weighted: critical findings (-30 ognuno), high (-15), medium (-5), low (-2). Range ' +
       'risultante 0-100 con bandi 90-100=eccellente, 70-89=buono, 50-69=da migliorare, < 50=critico. ' +

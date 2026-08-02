@@ -66,14 +66,18 @@ describe('🚨 record', () => {
 
   it('🚨 error swallow: tabella inesistente → no throw', () => {
     sqliteInst.exec('DROP TABLE ux_events');
-    expect(() => new UxTelemetryService().record({
-      tenantId: 't', eventType: 'workflow_created',
-    })).not.toThrow();
+    expect(() =>
+      new UxTelemetryService().record({
+        tenantId: 't',
+        eventType: 'workflow_created',
+      }),
+    ).not.toThrow();
   });
 
   it('🚨 NO PII: nessun field email/name accettato', () => {
     new UxTelemetryService().record({
-      tenantId: 't', userId: 'opaque-uuid-not-email',
+      tenantId: 't',
+      userId: 'opaque-uuid-not-email',
       eventType: 'workflow_created',
       metadata: { source: 'click' },
     });
@@ -94,10 +98,12 @@ describe('🚨 funnel — cross-tenant aggregation', () => {
 
   it('🚨 conta totale + utenti unique per eventType', () => {
     const f = new UxTelemetryService().funnel();
-    expect(f).toEqual(expect.arrayContaining([
-      expect.objectContaining({ eventType: 'workflow_created', count: 3, uniqueUsers: 2 }),
-      expect.objectContaining({ eventType: 'run_started', count: 1, uniqueUsers: 1 }),
-    ]));
+    expect(f).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ eventType: 'workflow_created', count: 3, uniqueUsers: 2 }),
+        expect.objectContaining({ eventType: 'run_started', count: 1, uniqueUsers: 1 }),
+      ]),
+    );
   });
 
   it('🚨 sortBy count DESC', () => {
@@ -109,7 +115,9 @@ describe('🚨 funnel — cross-tenant aggregation', () => {
 
   it('🚨 sinceHours filter window', () => {
     // Insert event vecchio 48h
-    sqliteInst.exec(`INSERT INTO ux_events (tenant_id, event_type, created_at) VALUES ('t', 'old_event', '2026-01-01')`);
+    sqliteInst.exec(
+      `INSERT INTO ux_events (tenant_id, event_type, created_at) VALUES ('t', 'old_event', '2026-01-01')`,
+    );
     const f24 = new UxTelemetryService().funnel({ sinceHours: 24 });
     expect(f24.find((s) => s.eventType === 'old_event')).toBeUndefined();
   });
@@ -154,7 +162,9 @@ describe('🚨 recent', () => {
 
   it('🚨 mapRow: metadata JSON → object', () => {
     new UxTelemetryService().record({
-      tenantId: 't-meta', eventType: 'wizard_started', metadata: { intent: 'crm' },
+      tenantId: 't-meta',
+      eventType: 'wizard_started',
+      metadata: { intent: 'crm' },
     });
     const r = new UxTelemetryService().recent(1, 't-meta');
     expect(first(r, 'recent').metadata).toEqual({ intent: 'crm' });
@@ -170,7 +180,12 @@ describe('🚨 recent', () => {
 describe('🚨 stuckUsers — drop-off detection', () => {
   it('🚨 utente con workflow_created ma NO run_started → flagged', () => {
     const svc = new UxTelemetryService();
-    svc.record({ tenantId: 't1', userId: 'stuck-user', eventType: 'workflow_created', workflowId: 'wf-x' });
+    svc.record({
+      tenantId: 't1',
+      userId: 'stuck-user',
+      eventType: 'workflow_created',
+      workflowId: 'wf-x',
+    });
     const stuck = svc.stuckUsers();
     expect(stuck.length).toBe(1);
     const s = first(stuck, 'stuck-users');
@@ -192,7 +207,9 @@ describe('🚨 stuckUsers — drop-off detection', () => {
   });
 
   it('🚨 sinceHours window strict', () => {
-    sqliteInst.exec(`INSERT INTO ux_events (tenant_id, user_id, event_type, created_at) VALUES ('t', 'old-user', 'workflow_created', '2026-01-01')`);
+    sqliteInst.exec(
+      `INSERT INTO ux_events (tenant_id, user_id, event_type, created_at) VALUES ('t', 'old-user', 'workflow_created', '2026-01-01')`,
+    );
     const stuck = new UxTelemetryService().stuckUsers({ sinceHours: 24 });
     expect(stuck.find((s) => s.userId === 'old-user')).toBeUndefined();
   });

@@ -81,10 +81,7 @@ export interface SignedToken {
 // (browser-safe) and is re-exported from the top of this file.
 
 function b64urlEncode(buf: Buffer): string {
-  return buf.toString('base64')
-    .replace(/=+$/g, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
+  return buf.toString('base64').replace(/=+$/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 }
 
 function b64urlDecode(s: string): Buffer {
@@ -260,7 +257,7 @@ function canonicalJson(o: EmailTrackingPayload): string {
  * less damaging to scoring than false positives (bot counted as human).
  */
 export function isTrackingBot(userAgent: string | undefined): boolean {
-  if (!userAgent) return true;     // empty UA: treat as bot
+  if (!userAgent) return true; // empty UA: treat as bot
   const ua = userAgent.toLowerCase();
   // Mailbox image pre-fetchers (open false-positive)
   if (ua.includes('googleimageproxy')) return true;
@@ -272,7 +269,7 @@ export function isTrackingBot(userAgent: string | undefined): boolean {
   if (ua.includes('barracuda')) return true;
   if (ua.includes('forcepoint')) return true;
   if (ua.includes('symantec')) return true;
-  if (ua.includes('safelinks')) return true;  // Office365 ATP
+  if (ua.includes('safelinks')) return true; // Office365 ATP
   // Generic crawlers we never want to count
   if (ua.includes('bot') || ua.includes('crawler') || ua.includes('spider')) return true;
   return false;

@@ -62,7 +62,10 @@ export function encodeSyncUpdate(update: Uint8Array): Uint8Array {
 }
 
 /** Frame AWARENESS per gli stati indicati, o null se nessuno. */
-export function encodeAwarenessStates(awareness: awarenessProtocol.Awareness, clients: number[]): Uint8Array | null {
+export function encodeAwarenessStates(
+  awareness: awarenessProtocol.Awareness,
+  clients: number[],
+): Uint8Array | null {
   if (clients.length === 0) return null;
   const encoder = encoding.createEncoder();
   encoding.writeVarUint(encoder, MESSAGE_AWARENESS);
@@ -157,9 +160,7 @@ export function getYjsSoftErrorCount(): number {
  * max ~150 KB per workflow con 500+ nodi). Configurabile via env per
  * use case enterprise con workflow > 1MB.
  */
-export const MAX_YJS_MESSAGE_BYTES = Number(
-  process.env.MEDEA_YJS_MAX_MESSAGE_BYTES ?? 1024 * 1024,
-);
+export const MAX_YJS_MESSAGE_BYTES = Number(process.env.MEDEA_YJS_MAX_MESSAGE_BYTES ?? 1024 * 1024);
 
 function ensureCollabTable(): void {
   const { sqlite } = getDatabase();
@@ -234,26 +235,39 @@ function getRoom(workflowId: string, tenantId: string): CollabRoom {
     if (!room) return;
     room.dirty = true;
     if (room.saveTimer) clearTimeout(room.saveTimer);
-    room.saveTimer = setTimeout(() => { saveRoom(workflowId, tenantId); }, 2000);
+    room.saveTimer = setTimeout(() => {
+      saveRoom(workflowId, tenantId);
+    }, 2000);
 
     const msg = encodeSyncUpdate(update);
     for (const client of room.clients) {
       if (client === origin || client.readyState !== WebSocket.OPEN) continue;
-      try { client.send(msg); } catch (err) { logger.warn({ err }, '[y-collab] sync broadcast failed'); }
+      try {
+        client.send(msg);
+      } catch (err) {
+        logger.warn({ err }, '[y-collab] sync broadcast failed');
+      }
     }
   });
 
   // awareness → tutti i client: presence (chi è online + cursore/colore).
-  awareness.on('update', (changes: { added: number[]; updated: number[]; removed: number[] }, _origin: unknown) => {
-    if (!room) return;
-    const changed = changes.added.concat(changes.updated, changes.removed);
-    const msg = encodeAwarenessStates(awareness, changed);
-    if (!msg) return;
-    for (const client of room.clients) {
-      if (client.readyState !== WebSocket.OPEN) continue;
-      try { client.send(msg); } catch (err) { logger.warn({ err }, '[y-collab] awareness broadcast failed'); }
-    }
-  });
+  awareness.on(
+    'update',
+    (changes: { added: number[]; updated: number[]; removed: number[] }, _origin: unknown) => {
+      if (!room) return;
+      const changed = changes.added.concat(changes.updated, changes.removed);
+      const msg = encodeAwarenessStates(awareness, changed);
+      if (!msg) return;
+      for (const client of room.clients) {
+        if (client.readyState !== WebSocket.OPEN) continue;
+        try {
+          client.send(msg);
+        } catch (err) {
+          logger.warn({ err }, '[y-collab] awareness broadcast failed');
+        }
+      }
+    },
+  );
 
   return room;
 }
@@ -378,89 +392,118 @@ export function attachCollabServer(httpServer: HttpServer, publicKeyPem: string)
       return;
     }
 
-    void verifySessionToken(token, publicKeyPem).then((payload) => {
-      if (!payload) {
-        ws.close(1008, 'Invalid token');
-        return;
-      }
-      const room = getRoom(workflowId, payload.tenantId);
-
-      // Cappella Sistina #4: quarantine check.
-      if (room.quarantined) {
-        logger.warn({ workflowId, tenantId: payload.tenantId }, '[y-collab] connection rejected — room quarantined');
-        ws.close(1011, 'Workflow temporarily unavailable (quarantined)');
-        return;
-      }
-      room.clients.add(ws);
-
-      // Traccia gli awareness clientID controllati DA QUESTA connessione, per
-      // rimuoverli puliti al disconnect (presence aggiornata all'istante).
-      const controlledIds = new Set<number>();
-      const onAwarenessChange = (changes: { added: number[]; updated: number[]; removed: number[] }, origin: unknown): void => {
-        if (origin !== ws) return;
-        for (const id of changes.added) controlledIds.add(id);
-        for (const id of changes.removed) controlledIds.delete(id);
-      };
-      room.awareness.on('update', onAwarenessChange);
-
-      // Handshake y-protocols (il protocollo che il client y-websocket parla):
-      //  1) SYNC_STEP_1 = il nostro state vector → il client risponde col diff.
-      //  2) Awareness corrente → il nuovo client vede subito chi è online.
-      try {
-        ws.send(encodeSyncStep1(room.doc));
-        const awFrame = encodeAwarenessStates(room.awareness, Array.from(room.awareness.getStates().keys()));
-        if (awFrame) ws.send(awFrame);
-      } catch (err) {
-        logger.warn({ err, workflowId }, '[y-collab] initial sync send failed');
-        recordRoomCrash(room, workflowId, payload.tenantId);
-      }
-
-      ws.on('message', (raw) => {
-        const buf = Buffer.isBuffer(raw) ? raw : Buffer.from(raw as ArrayBuffer);
-        // N9 audit: size cap PRIMA del decode (DoS guard — applyUpdate alloca
-        // proporzionalmente al payload).
-        if (buf.length > MAX_YJS_MESSAGE_BYTES) {
-          logger.warn({ workflowId, size: buf.length, max: MAX_YJS_MESSAGE_BYTES }, 'Y.js message dropped: oversized (DoS guard)');
+    void verifySessionToken(token, publicKeyPem)
+      .then((payload) => {
+        if (!payload) {
+          ws.close(1008, 'Invalid token');
           return;
         }
+        const room = getRoom(workflowId, payload.tenantId);
+
+        // Cappella Sistina #4: quarantine check.
+        if (room.quarantined) {
+          logger.warn(
+            { workflowId, tenantId: payload.tenantId },
+            '[y-collab] connection rejected — room quarantined',
+          );
+          ws.close(1011, 'Workflow temporarily unavailable (quarantined)');
+          return;
+        }
+        room.clients.add(ws);
+
+        // Traccia gli awareness clientID controllati DA QUESTA connessione, per
+        // rimuoverli puliti al disconnect (presence aggiornata all'istante).
+        const controlledIds = new Set<number>();
+        const onAwarenessChange = (
+          changes: { added: number[]; updated: number[]; removed: number[] },
+          origin: unknown,
+        ): void => {
+          if (origin !== ws) return;
+          for (const id of changes.added) controlledIds.add(id);
+          for (const id of changes.removed) controlledIds.delete(id);
+        };
+        room.awareness.on('update', onAwarenessChange);
+
+        // Handshake y-protocols (il protocollo che il client y-websocket parla):
+        //  1) SYNC_STEP_1 = il nostro state vector → il client risponde col diff.
+        //  2) Awareness corrente → il nuovo client vede subito chi è online.
         try {
-          // processCollabMessage applica sync/awareness (origin=ws → i listener
-          // doc/awareness ribroadcastano agli altri) e ritorna l'eventuale
-          // risposta diretta (es. SYNC_STEP_2 in risposta a SYNC_STEP_1).
-          const reply = processCollabMessage(room.doc, room.awareness, new Uint8Array(buf), ws);
-          if (reply) ws.send(reply);
+          ws.send(encodeSyncStep1(room.doc));
+          const awFrame = encodeAwarenessStates(
+            room.awareness,
+            Array.from(room.awareness.getStates().keys()),
+          );
+          if (awFrame) ws.send(awFrame);
         } catch (err) {
-          // Messaggio malformato / doc incompatibile: log + crash-count, MAI exit.
-          // Il soft-error-handler globale resta la rete finale anti-restart-loop.
-          logger.warn({ err, workflowId, size: buf.length }, '[y-collab] message handling failed');
+          logger.warn({ err, workflowId }, '[y-collab] initial sync send failed');
           recordRoomCrash(room, workflowId, payload.tenantId);
         }
-      });
 
-      ws.on('close', () => {
-        room.clients.delete(ws);
-        room.awareness.off('update', onAwarenessChange);
-        // Presence: rimuove subito gli stati awareness di questa connessione
-        // (senza, il peer resterebbe "online" fino al timeout outdated ~30s).
-        if (controlledIds.size > 0) {
-          awarenessProtocol.removeAwarenessStates(room.awareness, Array.from(controlledIds), null);
-        }
-        // Memory leak fix: ultimo client uscito → save dirty + destroy + unmap.
-        if (room.clients.size === 0) {
-          if (room.saveTimer) {
-            clearTimeout(room.saveTimer);
-            room.saveTimer = null;
+        ws.on('message', (raw) => {
+          const buf = Buffer.isBuffer(raw) ? raw : Buffer.from(raw as ArrayBuffer);
+          // N9 audit: size cap PRIMA del decode (DoS guard — applyUpdate alloca
+          // proporzionalmente al payload).
+          if (buf.length > MAX_YJS_MESSAGE_BYTES) {
+            logger.warn(
+              { workflowId, size: buf.length, max: MAX_YJS_MESSAGE_BYTES },
+              'Y.js message dropped: oversized (DoS guard)',
+            );
+            return;
           }
-          if (room.dirty) saveRoom(workflowId, payload.tenantId);
-          try { room.awareness.destroy(); } catch { /* ok */ }
-          try { room.doc.destroy(); } catch { /* ok */ }
-          rooms.delete(`${payload.tenantId}:${workflowId}`);
-        }
+          try {
+            // processCollabMessage applica sync/awareness (origin=ws → i listener
+            // doc/awareness ribroadcastano agli altri) e ritorna l'eventuale
+            // risposta diretta (es. SYNC_STEP_2 in risposta a SYNC_STEP_1).
+            const reply = processCollabMessage(room.doc, room.awareness, new Uint8Array(buf), ws);
+            if (reply) ws.send(reply);
+          } catch (err) {
+            // Messaggio malformato / doc incompatibile: log + crash-count, MAI exit.
+            // Il soft-error-handler globale resta la rete finale anti-restart-loop.
+            logger.warn(
+              { err, workflowId, size: buf.length },
+              '[y-collab] message handling failed',
+            );
+            recordRoomCrash(room, workflowId, payload.tenantId);
+          }
+        });
+
+        ws.on('close', () => {
+          room.clients.delete(ws);
+          room.awareness.off('update', onAwarenessChange);
+          // Presence: rimuove subito gli stati awareness di questa connessione
+          // (senza, il peer resterebbe "online" fino al timeout outdated ~30s).
+          if (controlledIds.size > 0) {
+            awarenessProtocol.removeAwarenessStates(
+              room.awareness,
+              Array.from(controlledIds),
+              null,
+            );
+          }
+          // Memory leak fix: ultimo client uscito → save dirty + destroy + unmap.
+          if (room.clients.size === 0) {
+            if (room.saveTimer) {
+              clearTimeout(room.saveTimer);
+              room.saveTimer = null;
+            }
+            if (room.dirty) saveRoom(workflowId, payload.tenantId);
+            try {
+              room.awareness.destroy();
+            } catch {
+              /* ok */
+            }
+            try {
+              room.doc.destroy();
+            } catch {
+              /* ok */
+            }
+            rooms.delete(`${payload.tenantId}:${workflowId}`);
+          }
+        });
+      })
+      .catch((err: unknown) => {
+        logger.warn({ err }, 'Collab WS auth failed');
+        ws.close(1011, 'Auth error');
       });
-    }).catch((err: unknown) => {
-      logger.warn({ err }, 'Collab WS auth failed');
-      ws.close(1011, 'Auth error');
-    });
   });
 
   return wss;

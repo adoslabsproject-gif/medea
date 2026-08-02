@@ -36,8 +36,14 @@ const SAAS_MAX_MB_LABEL = (SAAS_MAX_RESPONSE_BYTES / 1048576).toString();
 async function readTextCapped(res: Response): Promise<string> {
   const declared = Number(res.headers.get('content-length'));
   if (Number.isFinite(declared) && declared > SAAS_MAX_RESPONSE_BYTES) {
-    try { await res.body?.cancel(); } catch { /* best-effort */ }
-    throw new Error(`risposta troppo grande: ${(declared / 1048576).toFixed(1)} MB oltre il limite di ${SAAS_MAX_MB_LABEL} MB`);
+    try {
+      await res.body?.cancel();
+    } catch {
+      /* best-effort */
+    }
+    throw new Error(
+      `risposta troppo grande: ${(declared / 1048576).toFixed(1)} MB oltre il limite di ${SAAS_MAX_MB_LABEL} MB`,
+    );
   }
   const body = res.body;
   if (body && typeof body.getReader === 'function') {
@@ -52,8 +58,14 @@ async function readTextCapped(res: Response): Promise<string> {
       if (value && value.byteLength > 0) {
         total += value.byteLength;
         if (total > SAAS_MAX_RESPONSE_BYTES) {
-          try { await reader.cancel(); } catch { /* best-effort */ }
-          throw new Error(`risposta troppo grande: superato il limite di ${SAAS_MAX_MB_LABEL} MB durante il download`);
+          try {
+            await reader.cancel();
+          } catch {
+            /* best-effort */
+          }
+          throw new Error(
+            `risposta troppo grande: superato il limite di ${SAAS_MAX_MB_LABEL} MB durante il download`,
+          );
         }
         chunks.push(Buffer.from(value));
       }
@@ -92,15 +104,29 @@ async function readErrorSnippet(res: Response, maxBytes = 8192): Promise<string>
           if (total >= maxBytes) break;
         }
       }
-    } catch { /* best-effort: torna ciò che si è letto */ }
-    finally { try { await reader.cancel(); } catch { /* stream già chiuso */ } }
+    } catch {
+      /* best-effort: torna ciò che si è letto */
+    } finally {
+      try {
+        await reader.cancel();
+      } catch {
+        /* stream già chiuso */
+      }
+    }
     return Buffer.concat(chunks).toString('utf-8').slice(0, maxBytes);
   }
-  try { return (await res.text()).slice(0, maxBytes); } catch { return ''; }
+  try {
+    return (await res.text()).slice(0, maxBytes);
+  } catch {
+    return '';
+  }
 }
 
 export async function jsonFetch<T>(
-  provider: string, url: string, token: string | null, opts: SaasFetchOpts = {},
+  provider: string,
+  url: string,
+  token: string | null,
+  opts: SaasFetchOpts = {},
 ): Promise<T> {
   // ANTI-ESFILTRAZIONE (finding sistemico): se l'host può derivare da config del tenant,
   // il chiamante passa `allowHosts` → validiamo PRIMA di attaccare qualsiasi credenziale.
@@ -110,7 +136,11 @@ export async function jsonFetch<T>(
       assertHostAllowed(url, opts.allowHosts);
     } catch (e) {
       if (e instanceof HostNotAllowedError) {
-        throw new IntegrationError({ provider: provider as never, code: 'HOST_NOT_ALLOWED', message: e.message });
+        throw new IntegrationError({
+          provider: provider as never,
+          code: 'HOST_NOT_ALLOWED',
+          message: e.message,
+        });
       }
       throw e;
     }
@@ -118,7 +148,9 @@ export async function jsonFetch<T>(
   const headers: Record<string, string> = { ...(opts.headers ?? {}) };
   if (token && !headers.Authorization) headers.Authorization = `Bearer ${token}`;
   if (!headers['Content-Type'] && opts.body !== undefined) {
-    headers['Content-Type'] = opts.asForm ? 'application/x-www-form-urlencoded' : 'application/json';
+    headers['Content-Type'] = opts.asForm
+      ? 'application/x-www-form-urlencoded'
+      : 'application/json';
   }
   const init: RequestInit = {
     method: opts.method ?? 'GET',
@@ -136,8 +168,11 @@ export async function jsonFetch<T>(
     const txt = await readErrorSnippet(res);
     if (txt) errMsg += ` — ${txt.slice(0, 300)}`;
     throw new IntegrationError({
-      provider: provider as never, code: 'API_HTTP_ERROR', message: errMsg,
-      httpStatus: res.status, retryable: res.status >= 500 || res.status === 429,
+      provider: provider as never,
+      code: 'API_HTTP_ERROR',
+      message: errMsg,
+      httpStatus: res.status,
+      retryable: res.status >= 500 || res.status === 429,
     });
   }
   // Robust empty-body 2xx (es. SendGrid 202 Accepted, molte API POST):
@@ -148,7 +183,11 @@ export async function jsonFetch<T>(
   return JSON.parse(text) as T;
 }
 
-export function parseJsonObj(provider: string, raw: unknown, fieldName: string): Record<string, unknown> {
+export function parseJsonObj(
+  provider: string,
+  raw: unknown,
+  fieldName: string,
+): Record<string, unknown> {
   if (raw === undefined || raw === null || raw === '') return {};
   if (typeof raw === 'object') return raw as Record<string, unknown>;
   if (typeof raw !== 'string') return {};
@@ -158,14 +197,17 @@ export function parseJsonObj(provider: string, raw: unknown, fieldName: string):
     return p as Record<string, unknown>;
   } catch (e) {
     throw new IntegrationError({
-      provider: provider as never, code: 'INVALID_PAYLOAD',
+      provider: provider as never,
+      code: 'INVALID_PAYLOAD',
       message: `${provider}: ${fieldName} parse error — ${e instanceof Error ? e.message : String(e)}`,
     });
   }
 }
 
 export function getIntegrationLabel(cfg: Record<string, unknown>): string | null {
-  return typeof cfg.integrationLabel === 'string' && cfg.integrationLabel ? cfg.integrationLabel : null;
+  return typeof cfg.integrationLabel === 'string' && cfg.integrationLabel
+    ? cfg.integrationLabel
+    : null;
 }
 
 /** Sheets vuole 2D array; accetta [[..],..] o {values:[[..]]}. */
@@ -178,13 +220,17 @@ export function parseSheetValues(raw: unknown): unknown[][] {
       if (p && typeof p === 'object' && Array.isArray((p as { values?: unknown }).values)) {
         return (p as { values: unknown[][] }).values;
       }
-    } catch { /* */ }
+    } catch {
+      /* */
+    }
   }
   if (raw && typeof raw === 'object' && Array.isArray((raw as { values?: unknown }).values)) {
     return (raw as { values: unknown[][] }).values;
   }
   throw new IntegrationError({
-    provider: 'google_sheets', code: 'INVALID_PAYLOAD',
-    message: 'google_sheets: valuesJson deve essere array 2D ([["a","b"],["c","d"]]) o oggetto {values:[[...]]}',
+    provider: 'google_sheets',
+    code: 'INVALID_PAYLOAD',
+    message:
+      'google_sheets: valuesJson deve essere array 2D ([["a","b"],["c","d"]]) o oggetto {values:[[...]]}',
   });
 }

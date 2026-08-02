@@ -44,33 +44,63 @@ function makeFakeConnection(opts: { assertQueueThrows?: boolean } = {}): FakeCon
   let onMsg: ((msg: AmqpMessage | null) => void) | null = null;
   const chListeners: Record<string, (err?: Error) => void> = {};
   const channel: FakeChannel = {
-    assertQueue: vi.fn(async () => { if (opts.assertQueueThrows) throw new Error('queue conflict'); return {}; }),
+    assertQueue: vi.fn(async () => {
+      if (opts.assertQueueThrows) throw new Error('queue conflict');
+      return {};
+    }),
     prefetch: vi.fn(),
-    consume: vi.fn(async (_q: string, cb: (msg: AmqpMessage | null) => void) => { onMsg = cb; return { consumerTag: 'ct-1' }; }),
+    consume: vi.fn(async (_q: string, cb: (msg: AmqpMessage | null) => void) => {
+      onMsg = cb;
+      return { consumerTag: 'ct-1' };
+    }),
     ack: vi.fn(),
     nack: vi.fn(),
     close: vi.fn(async () => undefined),
-    on: vi.fn((event: 'error' | 'close', l: (err?: Error) => void) => { chListeners[event] = l; return channel; }),
-    __emit: (msg) => { onMsg?.(msg); },
-    __fire: (event, err) => { chListeners[event]?.(err); },
+    on: vi.fn((event: 'error' | 'close', l: (err?: Error) => void) => {
+      chListeners[event] = l;
+      return channel;
+    }),
+    __emit: (msg) => {
+      onMsg?.(msg);
+    },
+    __fire: (event, err) => {
+      chListeners[event]?.(err);
+    },
   };
   const connListeners: Record<string, (err?: Error) => void> = {};
   const connection: FakeConnection = {
     createChannel: vi.fn(async () => channel),
     close: vi.fn(async () => undefined),
-    on: vi.fn((event: 'error' | 'close', l: (err?: Error) => void) => { connListeners[event] = l; return connection; }),
+    on: vi.fn((event: 'error' | 'close', l: (err?: Error) => void) => {
+      connListeners[event] = l;
+      return connection;
+    }),
     channel,
-    __fire: (event, err) => { connListeners[event]?.(err); },
+    __fire: (event, err) => {
+      connListeners[event]?.(err);
+    },
   };
   return connection;
 }
 
 function wf(): Workflow {
-  return { id: 'wf-r', tenantId: 'ten-1', name: 'r', enabled: true, nodes: [], edges: [] } as unknown as Workflow;
+  return {
+    id: 'wf-r',
+    tenantId: 'ten-1',
+    name: 'r',
+    enabled: true,
+    nodes: [],
+    edges: [],
+  } as unknown as Workflow;
 }
 function node(config: Record<string, unknown> = {}): CanvasNode {
-  return { id: 'n1', defId: 'trigger_rabbitmq', x: 0, y: 0,
-    config: { url: 'amqp://guest:guest@rabbit.example.com:5672', queue: 'jobs', ...config } } as unknown as CanvasNode;
+  return {
+    id: 'n1',
+    defId: 'trigger_rabbitmq',
+    x: 0,
+    y: 0,
+    config: { url: 'amqp://guest:guest@rabbit.example.com:5672', queue: 'jobs', ...config },
+  } as unknown as CanvasNode;
 }
 const msg = (s: string): AmqpMessage => ({ content: Buffer.from(s, 'utf8') });
 
@@ -80,14 +110,20 @@ function deps(over: Partial<RabbitWatcherDeps> = {}): RabbitWatcherDeps {
   return { dispatchRun, connect: async () => conn, ...over };
 }
 /** Attende i microtask pendenti (connect() è async). */
-const flush = async (): Promise<void> => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); };
+const flush = async (): Promise<void> => {
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
   dispatchRun = vi.fn(async () => ({ runId: 'run-1', status: 'completed', steps: [] }));
   conn = makeFakeConnection();
 });
-afterEach(() => { vi.useRealTimers(); });
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('startRabbitWatcher — guard (nessun consumer)', () => {
   it('URL non amqp:// → null', () => {
@@ -97,7 +133,9 @@ describe('startRabbitWatcher — guard (nessun consumer)', () => {
     expect(startRabbitWatcher(wf(), node({ queue: '' }), deps())).toBeNull();
   });
   it('host privato (SSRF) senza allowlist → null', () => {
-    expect(startRabbitWatcher(wf(), node({ url: 'amqp://guest@127.0.0.1:5672' }), deps())).toBeNull();
+    expect(
+      startRabbitWatcher(wf(), node({ url: 'amqp://guest@127.0.0.1:5672' }), deps()),
+    ).toBeNull();
   });
 });
 
@@ -108,7 +146,10 @@ describe('startRabbitWatcher — consegna manual-ack (AT-LEAST-ONCE)', () => {
     conn.channel.__emit(msg('{"orderId":7}'));
     await flush();
     expect(dispatchRun).toHaveBeenCalledTimes(1);
-    const arg = dispatchRun.mock.calls[0]![0] as { triggerType: string; triggerInput: { data: unknown; raw: string } };
+    const arg = dispatchRun.mock.calls[0]![0] as {
+      triggerType: string;
+      triggerInput: { data: unknown; raw: string };
+    };
     expect(arg.triggerType).toBe('rabbitmq');
     expect(arg.triggerInput.data).toEqual({ orderId: 7 });
     expect(arg.triggerInput.raw).toBe('{"orderId":7}');
@@ -131,7 +172,9 @@ describe('startRabbitWatcher — consegna manual-ack (AT-LEAST-ONCE)', () => {
   it('consume è aperto in noAck=false (manual)', async () => {
     const job = startRabbitWatcher(wf(), node(), deps())!;
     await flush();
-    expect(conn.channel.consume).toHaveBeenCalledWith('jobs', expect.any(Function), { noAck: false });
+    expect(conn.channel.consume).toHaveBeenCalledWith('jobs', expect.any(Function), {
+      noAck: false,
+    });
     teardownRabbitWatcher(job);
   });
 });
@@ -141,7 +184,9 @@ describe('startRabbitWatcher — auto-ack (AT-MOST-ONCE)', () => {
     dispatchRun.mockRejectedValue(new Error('boom'));
     const job = startRabbitWatcher(wf(), node({ ackMode: 'auto' }), deps())!;
     await flush();
-    expect(conn.channel.consume).toHaveBeenCalledWith('jobs', expect.any(Function), { noAck: true });
+    expect(conn.channel.consume).toHaveBeenCalledWith('jobs', expect.any(Function), {
+      noAck: true,
+    });
     conn.channel.__emit(msg('{"x":1}'));
     await flush();
     expect(conn.channel.ack).not.toHaveBeenCalled();
@@ -166,7 +211,10 @@ describe('startRabbitWatcher — filtro pointer + parsing', () => {
     conn.channel.__emit(msg('{"type":"created"}'));
     await flush();
     expect(dispatchRun).toHaveBeenCalledTimes(1);
-    expect((dispatchRun.mock.calls[0]![0] as { triggerInput: { matched: unknown } }).triggerInput.matched).toBe('created');
+    expect(
+      (dispatchRun.mock.calls[0]![0] as { triggerInput: { matched: unknown } }).triggerInput
+        .matched,
+    ).toBe('created');
     teardownRabbitWatcher(job);
   });
   it('jsonParse=false → data resta la stringa grezza', async () => {
@@ -174,7 +222,9 @@ describe('startRabbitWatcher — filtro pointer + parsing', () => {
     await flush();
     conn.channel.__emit(msg('{"a":1}'));
     await flush();
-    expect((dispatchRun.mock.calls[0]![0] as { triggerInput: { data: unknown } }).triggerInput.data).toBe('{"a":1}');
+    expect(
+      (dispatchRun.mock.calls[0]![0] as { triggerInput: { data: unknown } }).triggerInput.data,
+    ).toBe('{"a":1}');
     teardownRabbitWatcher(job);
   });
   it('JSON malformato con jsonParse on → fallback alla stringa (no throw)', async () => {
@@ -182,7 +232,9 @@ describe('startRabbitWatcher — filtro pointer + parsing', () => {
     await flush();
     conn.channel.__emit(msg('{rotto'));
     await flush();
-    expect((dispatchRun.mock.calls[0]![0] as { triggerInput: { data: unknown } }).triggerInput.data).toBe('{rotto');
+    expect(
+      (dispatchRun.mock.calls[0]![0] as { triggerInput: { data: unknown } }).triggerInput.data,
+    ).toBe('{rotto');
     teardownRabbitWatcher(job);
   });
   it('msg null (consumer cancellato dal broker) → nessun dispatch, nessun crash', async () => {
@@ -239,7 +291,10 @@ describe('startRabbitWatcher — resilienza (reconnect/backoff/teardown)', () =>
     vi.useFakeTimers();
     let n = 0;
     const good = makeFakeConnection();
-    const connect = vi.fn(async () => { if (n++ === 0) throw new Error('ECONNREFUSED'); return good; });
+    const connect = vi.fn(async () => {
+      if (n++ === 0) throw new Error('ECONNREFUSED');
+      return good;
+    });
     const job = startRabbitWatcher(wf(), node(), deps({ connect }))!;
     await vi.advanceTimersByTimeAsync(0);
     expect(connect).toHaveBeenCalledTimes(1);
@@ -280,7 +335,10 @@ describe('teardownRabbitWatcher — idempotenza', () => {
   it('doppio teardown non lancia', async () => {
     const job = startRabbitWatcher(wf(), node(), deps())!;
     await flush();
-    expect(() => { teardownRabbitWatcher(job); teardownRabbitWatcher(job); }).not.toThrow();
+    expect(() => {
+      teardownRabbitWatcher(job);
+      teardownRabbitWatcher(job);
+    }).not.toThrow();
     expect(logger).toBeDefined();
   });
 });

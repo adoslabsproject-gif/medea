@@ -1,8 +1,15 @@
 import { z } from 'zod';
 import { NodeDefSchema, type NodeDef } from '@medea/engine-core-schema';
 import type { ILLMProvider, LLMCompletionRequest } from '@/ports/llm-provider.js';
-import { validateExecutor, hasSecurityViolation, type ExecutorViolation } from '@/services/node-generator/executor-validator.js';
-import { validateCoherence, type CoherenceViolation } from '@/services/node-generator/coherence-validator.js';
+import {
+  validateExecutor,
+  hasSecurityViolation,
+  type ExecutorViolation,
+} from '@/services/node-generator/executor-validator.js';
+import {
+  validateCoherence,
+  type CoherenceViolation,
+} from '@/services/node-generator/coherence-validator.js';
 import { buildRepairPrompt } from '@/services/node-generator/repair-prompt.js';
 
 export interface GenerateNodeInput {
@@ -99,7 +106,9 @@ function buildUserPrompt(input: GenerateNodeInput): string {
   parts.push(`Description: ${input.description}`);
   if (input.openApiUrl) {
     parts.push(`Reference OpenAPI/Swagger spec URL: ${input.openApiUrl}`);
-    parts.push('(Read the spec, identify the most relevant endpoint, and design a node that calls it.)');
+    parts.push(
+      '(Read the spec, identify the most relevant endpoint, and design a node that calls it.)',
+    );
   }
   parts.push(
     '\nReturn ONLY the JSON object with def, executorSource, rationale, and warnings (if any).',
@@ -162,7 +171,10 @@ export class NodeGeneratorService {
           ...quality.coherence.filter((v) => v.severity === 'error'),
         ].map((v) => v.message);
         if (blocking.length === 0) {
-          const warns = [...(node.warnings ?? []), ...quality.coherence.filter((v) => v.severity === 'warning').map((v) => v.message)];
+          const warns = [
+            ...(node.warnings ?? []),
+            ...quality.coherence.filter((v) => v.severity === 'warning').map((v) => v.message),
+          ];
           if (warns.length > 0) node.warnings = warns;
           return node;
         }
@@ -172,11 +184,18 @@ export class NodeGeneratorService {
         lastIssues = [err instanceof Error ? err.message : String(err)];
       }
       if (attempt === MAX_REPAIR_ATTEMPTS) break;
-      const repairPrompt = buildRepairPrompt({ description: input.description, previousRaw: raw, issues: lastIssues, language });
-      raw = (await this.llm.complete({
-        ...baseReq,
-        messages: [baseReq.messages[0]!, { role: 'user', content: repairPrompt }],
-      })).text;
+      const repairPrompt = buildRepairPrompt({
+        description: input.description,
+        previousRaw: raw,
+        issues: lastIssues,
+        language,
+      });
+      raw = (
+        await this.llm.complete({
+          ...baseReq,
+          messages: [baseReq.messages[0]!, { role: 'user', content: repairPrompt }],
+        })
+      ).text;
     }
 
     // Tentativi esauriti. Il parse finale RIPROPAGA la sicurezza ("forbidden"
@@ -192,7 +211,10 @@ export class NodeGeneratorService {
    * return) + coerenza def↔executor (config key/secret/select). La sicurezza è
    * già gestita da parseLLMResponse (hard-fail). Pura rispetto all'istanza.
    */
-  validateQuality(node: GeneratedNode): { executor: ExecutorViolation[]; coherence: CoherenceViolation[] } {
+  validateQuality(node: GeneratedNode): {
+    executor: ExecutorViolation[];
+    coherence: CoherenceViolation[];
+  } {
     return {
       executor: validateExecutor(node.executorSource).filter((v) => v.severity !== 'security'),
       coherence: validateCoherence(node.def, node.executorSource),
@@ -231,7 +253,9 @@ export class NodeGeneratorService {
     try {
       parsed = JSON.parse(jsonText);
     } catch (err) {
-      throw new Error(`LLM response is not valid JSON: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(
+        `LLM response is not valid JSON: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
 
     const result = GeneratedPayloadSchema.safeParse(parsed);
@@ -242,9 +266,13 @@ export class NodeGeneratorService {
 
     // SICUREZZA via AST (non regex): cattura anche i bypass (bracket-access,
     // spazi, import dinamico) che una blacklist testuale non vede. Hard-fail.
-    const security = validateExecutor(result.data.executorSource).filter((v) => v.severity === 'security');
+    const security = validateExecutor(result.data.executorSource).filter(
+      (v) => v.severity === 'security',
+    );
     if (hasSecurityViolation(security)) {
-      throw new Error(`Generated executor contains forbidden tokens: ${security.map((v) => v.message).join(' ')}`);
+      throw new Error(
+        `Generated executor contains forbidden tokens: ${security.map((v) => v.message).join(' ')}`,
+      );
     }
 
     const out: GeneratedNode = {

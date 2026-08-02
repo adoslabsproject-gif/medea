@@ -11,12 +11,19 @@ describe('isolated-vm sandbox (true V8 isolates)', () => {
   });
 
   it('boolean compare for if-node', () => {
-    expect(evaluateInSandbox('input.status === "active"', { input: { status: 'active' } })).toBe(true);
+    expect(evaluateInSandbox('input.status === "active"', { input: { status: 'active' } })).toBe(
+      true,
+    );
     expect(evaluateInSandbox('input.status === "active"', { input: { status: 'no' } })).toBe(false);
   });
 
   it('NO access to globalThis (isolated heap)', () => {
-    expect(() => evaluateInSandbox('typeof globalThis === "undefined" ? "ok" : (function(){ globalThis.X = 1; return "leaked"; })()', {})).not.toThrow();
+    expect(() =>
+      evaluateInSandbox(
+        'typeof globalThis === "undefined" ? "ok" : (function(){ globalThis.X = 1; return "leaked"; })()',
+        {},
+      ),
+    ).not.toThrow();
     // globalThis exists in V8 but isolate has no host references on it
     expect(evaluateInSandbox('typeof process', {})).toBe('undefined');
     expect(evaluateInSandbox('typeof require', {})).toBe('undefined');
@@ -30,7 +37,9 @@ describe('isolated-vm sandbox (true V8 isolates)', () => {
   });
 
   it('enforces timeout on infinite loops', () => {
-    expect(() => evaluateInSandbox('(function(){ while(true){} })()', {}, { timeoutMs: 50 })).toThrow(SandboxError);
+    expect(() =>
+      evaluateInSandbox('(function(){ while(true){} })()', {}, { timeoutMs: 50 }),
+    ).toThrow(SandboxError);
   });
 
   it('rejects __proto__ access at lexer level', () => {
@@ -38,7 +47,9 @@ describe('isolated-vm sandbox (true V8 isolates)', () => {
   });
 
   it('rejects constructor.constructor escape', () => {
-    expect(() => evaluateInSandbox('({}).constructor.constructor("return 1")()', {})).toThrow(SandboxError);
+    expect(() => evaluateInSandbox('({}).constructor.constructor("return 1")()', {})).toThrow(
+      SandboxError,
+    );
   });
 
   it('supports optional chaining (handles undefined safely)', () => {

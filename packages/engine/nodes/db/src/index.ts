@@ -4,7 +4,9 @@ import { assertSelectOnly } from './select-only-guard.js';
 
 // Isomorfico: importato anche dal bundle browser dell'editor (dead-code lì, ma
 // il top-level gira a load). `process` esiste solo sul runtime server → guard.
-const RUNTIME_BASE = (typeof process !== 'undefined' ? process.env.MEDEA_RUNTIME_URL : undefined) ?? 'http://127.0.0.1:3100';
+const RUNTIME_BASE =
+  (typeof process !== 'undefined' ? process.env.MEDEA_RUNTIME_URL : undefined) ??
+  'http://127.0.0.1:3100';
 
 function reqString(value: unknown, name: string): string {
   if (typeof value !== 'string' || value.trim() === '') {
@@ -60,16 +62,28 @@ function jsonParse<T>(value: unknown, fallback: T): T {
 // (drift) → erano usabili in catene di sandbox-escape da childRowsExpression.
 // Anti-drift garantito dal parity test (forbidden-identifiers.parity.test.ts).
 const DB_FORBIDDEN_IDENTIFIERS = [
-  'eval', 'Function', 'globalThis', 'global', 'process', 'require', 'import',
-  '__proto__', 'constructor', 'AsyncFunction', 'GeneratorFunction',
-  'fetch', 'setTimeout', 'setInterval', 'setImmediate',
-  'Proxy', 'Reflect', 'WeakRef',
+  'eval',
+  'Function',
+  'globalThis',
+  'global',
+  'process',
+  'require',
+  'import',
+  '__proto__',
+  'constructor',
+  'AsyncFunction',
+  'GeneratorFunction',
+  'fetch',
+  'setTimeout',
+  'setInterval',
+  'setImmediate',
+  'Proxy',
+  'Reflect',
+  'WeakRef',
 ];
 const DB_FORBIDDEN_REGEX: RegExp[] = [
   ...DB_FORBIDDEN_IDENTIFIERS.map((id) => new RegExp(`\\b${id}\\b`)),
-  ...DB_FORBIDDEN_IDENTIFIERS.map(
-    (id) => new RegExp(`\\[\\s*['"\`]${id}['"\`]\\s*\\]`),
-  ),
+  ...DB_FORBIDDEN_IDENTIFIERS.map((id) => new RegExp(`\\[\\s*['"\`]${id}['"\`]\\s*\\]`)),
   /\[\s*['"`][^'"`]*['"`]\s*\+/,
 ];
 function dbDecodeEscapesForCheck(s: string): string {
@@ -122,7 +136,12 @@ function resolveTimeout(config: unknown): number {
   return Math.min(Math.floor(n), DB_MAX_TIMEOUT_MS);
 }
 
-async function callDbApi<T>(path: string, body: unknown, tenantId: string, timeoutMs = DB_DEFAULT_TIMEOUT_MS): Promise<T> {
+async function callDbApi<T>(
+  path: string,
+  body: unknown,
+  tenantId: string,
+  timeoutMs = DB_DEFAULT_TIMEOUT_MS,
+): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'X-Tenant-Id': tenantId,
@@ -142,22 +161,29 @@ async function callDbApi<T>(path: string, body: unknown, tenantId: string, timeo
     });
   } catch (err) {
     if (err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError')) {
-      throw new Error(`db API timeout dopo ${String(timeoutMs)}ms — DB lenta o stallata. Aumenta config.timeoutMs (cap ${String(DB_MAX_TIMEOUT_MS / 1000)}s) o verifica salute della database.`);
+      throw new Error(
+        `db API timeout dopo ${String(timeoutMs)}ms — DB lenta o stallata. Aumenta config.timeoutMs (cap ${String(DB_MAX_TIMEOUT_MS / 1000)}s) o verifica salute della database.`,
+      );
     }
     throw err;
   }
   if (!res.ok) {
-    throw new Error(`db API ${String(res.status)}: ${(await readTextTruncated(res, 8192)).text.slice(0, 400)}`);
+    throw new Error(
+      `db API ${String(res.status)}: ${(await readTextTruncated(res, 8192)).text.slice(0, 400)}`,
+    );
   }
   // anti-OOM: un SELECT senza LIMIT può tornare un result-set enorme.
-  return (await readJsonCapped(res));
+  return await readJsonCapped(res);
 }
 
 const queryExecutor: NodeExecutor = async (config, _input, context) => {
   const start = Date.now();
   const databaseId = reqDatabaseId(config.databaseId);
   const table = reqString(config.table, 'table');
-  const filters = jsonParse<{ column?: unknown; op?: unknown; value?: unknown }[]>(config.filtersJson, []);
+  const filters = jsonParse<{ column?: unknown; op?: unknown; value?: unknown }[]>(
+    config.filtersJson,
+    [],
+  );
   // Reject filters where `column` matches a literal schema placeholder name.
   // Catches the "import shipped with default placeholders" bug pattern:
   // a JSON like `{column:"column", op:"eq", value:"vendor_code"}` reaches the
@@ -169,7 +195,7 @@ const queryExecutor: NodeExecutor = async (config, _input, context) => {
     if (PLACEHOLDER_COLUMN_NAMES.has(col.toLowerCase())) {
       throw new Error(
         `db_query: filtro malformato — column="${col}" è un nome segnaposto. ` +
-        `Verifica che il filtersJson sia stato compilato correttamente (column dovrebbe essere il nome di una colonna reale della tabella).`,
+          `Verifica che il filtersJson sia stato compilato correttamente (column dovrebbe essere il nome di una colonna reale della tabella).`,
       );
     }
   }
@@ -180,7 +206,10 @@ const queryExecutor: NodeExecutor = async (config, _input, context) => {
   // TUTTE le righe → OOM su tabelle grandi (fix 2026-06-17, era aspirazionale).
   // Onora il default UI (100) e clampa al max server (10000).
   const rawLimit = config.limit !== undefined && config.limit !== '' ? Number(config.limit) : NaN;
-  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(Math.floor(rawLimit), DB_QUERY_MAX_LIMIT) : DB_QUERY_DEFAULT_LIMIT;
+  const limit =
+    Number.isFinite(rawLimit) && rawLimit > 0
+      ? Math.min(Math.floor(rawLimit), DB_QUERY_MAX_LIMIT)
+      : DB_QUERY_DEFAULT_LIMIT;
   const offset = config.offset !== undefined ? Number(config.offset) : undefined;
 
   const spec: Record<string, unknown> = { table, filters, orderBy, limit };
@@ -216,7 +245,12 @@ const insertExecutor: NodeExecutor = async (config, input, context) => {
   // a true upsert — replace existing row by primary key.
   const onConflict = typeof config.onConflict === 'string' ? config.onConflict : 'fail';
   try {
-    const result = await callDbApi(`/databases/${encodeURIComponent(databaseId)}/insert`, { table, row }, context.tenantId, resolveTimeout(config));
+    const result = await callDbApi(
+      `/databases/${encodeURIComponent(databaseId)}/insert`,
+      { table, row },
+      context.tenantId,
+      resolveTimeout(config),
+    );
     return { output: result, durationMs: Date.now() - start };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -244,10 +278,34 @@ export const dbQueryNode: NodeModule = {
       'join soft-coded in JS post-query. Per query complesse (JOIN/CTE/GROUP BY) usa db_sql_query.',
     configFields: [
       { key: 'databaseId', label: 'Database', type: 'db-picker', required: true },
-      { key: 'table', label: 'Tabella', type: 'db-table-picker', required: true, dependsOn: 'databaseId' },
-      { key: 'filtersJson', label: 'Filtri (WHERE)', type: 'filter-rows', required: false, help: 'Tutti i filtri sono combinati in AND. Lascia vuoto per nessun WHERE.' },
-      { key: 'selectJson', label: 'Colonne da selezionare', type: 'chip-list', required: false, help: 'Vuoto = SELECT *. Aggiungi i nomi delle colonne.' },
-      { key: 'orderByJson', label: 'Ordina per (ORDER BY)', type: 'sort-rows', required: false, help: 'Aggiungi una o più colonne. La prima è l\'ordinamento primario.' },
+      {
+        key: 'table',
+        label: 'Tabella',
+        type: 'db-table-picker',
+        required: true,
+        dependsOn: 'databaseId',
+      },
+      {
+        key: 'filtersJson',
+        label: 'Filtri (WHERE)',
+        type: 'filter-rows',
+        required: false,
+        help: 'Tutti i filtri sono combinati in AND. Lascia vuoto per nessun WHERE.',
+      },
+      {
+        key: 'selectJson',
+        label: 'Colonne da selezionare',
+        type: 'chip-list',
+        required: false,
+        help: 'Vuoto = SELECT *. Aggiungi i nomi delle colonne.',
+      },
+      {
+        key: 'orderByJson',
+        label: 'Ordina per (ORDER BY)',
+        type: 'sort-rows',
+        required: false,
+        help: "Aggiungi una o più colonne. La prima è l'ordinamento primario.",
+      },
       { key: 'limit', label: 'Limit', type: 'number', required: false, defaultValue: '100' },
       { key: 'offset', label: 'Offset', type: 'number', required: false },
     ],
@@ -271,9 +329,29 @@ export const dbInsertNode: NodeModule = {
       'Use case: log eventi, salvare lead/contatti, marker idempotenti, inserimento dati da form/CSV.',
     configFields: [
       { key: 'databaseId', label: 'Database', type: 'db-picker', required: true },
-      { key: 'table', label: 'Tabella', type: 'db-table-picker', required: true, dependsOn: 'databaseId' },
-      { key: 'rowJson', label: 'Dati riga', type: 'key-value', required: false, help: 'Coppie colonna=valore. Vuoto = usa l\'input del nodo precedente come riga. Supporta {{espressioni}}.' },
-      { key: 'onConflict', label: 'Se la riga esiste già', type: 'select', options: ['fail', 'ignore'], required: false, defaultValue: 'fail', help: '"fail" (raccomandato per dati di business): se la riga c\'è già, segnala errore — così ti accorgi di duplicati indesiderati (es. ordine 12345 ricevuto due volte). "ignore" (raccomandato per marker idempotenti): se la riga c\'è già, considera l\'inserimento già fatto e continua senza errore — utile per tabelle "dedup" come processed_emails / processed_webhooks dove ri-eseguire lo stesso evento è normale e atteso.' },
+      {
+        key: 'table',
+        label: 'Tabella',
+        type: 'db-table-picker',
+        required: true,
+        dependsOn: 'databaseId',
+      },
+      {
+        key: 'rowJson',
+        label: 'Dati riga',
+        type: 'key-value',
+        required: false,
+        help: "Coppie colonna=valore. Vuoto = usa l'input del nodo precedente come riga. Supporta {{espressioni}}.",
+      },
+      {
+        key: 'onConflict',
+        label: 'Se la riga esiste già',
+        type: 'select',
+        options: ['fail', 'ignore'],
+        required: false,
+        defaultValue: 'fail',
+        help: '"fail" (raccomandato per dati di business): se la riga c\'è già, segnala errore — così ti accorgi di duplicati indesiderati (es. ordine 12345 ricevuto due volte). "ignore" (raccomandato per marker idempotenti): se la riga c\'è già, considera l\'inserimento già fatto e continua senza errore — utile per tabelle "dedup" come processed_emails / processed_webhooks dove ri-eseguire lo stesso evento è normale e atteso.',
+      },
     ],
     vendor: 'flowforge',
     version: '1.2.0',
@@ -295,13 +373,40 @@ export const dbUpdateNode: NodeModule = {
       'Use case: aggiornare status ordine (paid/shipped), mark email as read, increment counter, sync field da API esterna.',
     configFields: [
       { key: 'databaseId', label: 'Database', type: 'db-picker', required: true },
-      { key: 'table', label: 'Tabella', type: 'db-table-picker', required: true, dependsOn: 'databaseId' },
-      { key: 'whereJson', label: 'Riga da aggiornare (WHERE)', type: 'key-value', required: true, help: 'Coppie chiave-valore: la riga deve matchare tutte. Es. id = 42.' },
-      { key: 'patchJson', label: 'Campi da modificare', type: 'key-value', required: true, help: 'Coppie chiave-valore dei campi da aggiornare. Supporta {{espressioni}}.' },
+      {
+        key: 'table',
+        label: 'Tabella',
+        type: 'db-table-picker',
+        required: true,
+        dependsOn: 'databaseId',
+      },
+      {
+        key: 'whereJson',
+        label: 'Riga da aggiornare (WHERE)',
+        type: 'key-value',
+        required: true,
+        help: 'Coppie chiave-valore: la riga deve matchare tutte. Es. id = 42.',
+      },
+      {
+        key: 'patchJson',
+        label: 'Campi da modificare',
+        type: 'key-value',
+        required: true,
+        help: 'Coppie chiave-valore dei campi da aggiornare. Supporta {{espressioni}}.',
+      },
     ],
     // Discoverability: il nodo canonico per "aggiornare un record" nel DB.
     // Robusto contro la diluizione da nuovi nodi DB (golden eval recall@10).
-    searchAliases: ['aggiorna record', 'aggiorna riga', 'aggiorna un record nel database', 'modifica record', 'modifica riga', 'update record', 'update row', 'aggiornare dati nel database'],
+    searchAliases: [
+      'aggiorna record',
+      'aggiorna riga',
+      'aggiorna un record nel database',
+      'modifica record',
+      'modifica riga',
+      'update record',
+      'update row',
+      'aggiornare dati nel database',
+    ],
     vendor: 'flowforge',
     version: '1.0.0',
   },
@@ -322,9 +427,27 @@ export const dbDeleteNode: NodeModule = {
       'ATTENZIONE: per audit_log usa il sistema cold-storage (DELETE bloccato da trigger).',
     configFields: [
       { key: 'databaseId', label: 'Database', type: 'db-picker', required: true },
-      { key: 'table', label: 'Tabella', type: 'db-table-picker', required: true, dependsOn: 'databaseId' },
-      { key: 'whereJson', label: 'Righe da eliminare (WHERE)', type: 'key-value', required: true, help: 'Coppie chiave-valore: la riga deve matchare tutte per essere eliminata.' },
-      { key: 'confirmDelete', label: 'Confermo che questa operazione è distruttiva', type: 'boolean', required: true, defaultValue: 'false' },
+      {
+        key: 'table',
+        label: 'Tabella',
+        type: 'db-table-picker',
+        required: true,
+        dependsOn: 'databaseId',
+      },
+      {
+        key: 'whereJson',
+        label: 'Righe da eliminare (WHERE)',
+        type: 'key-value',
+        required: true,
+        help: 'Coppie chiave-valore: la riga deve matchare tutte per essere eliminata.',
+      },
+      {
+        key: 'confirmDelete',
+        label: 'Confermo che questa operazione è distruttiva',
+        type: 'boolean',
+        required: true,
+        defaultValue: 'false',
+      },
     ],
     vendor: 'flowforge',
     version: '1.0.0',
@@ -364,7 +487,8 @@ const insertBatchExecutor: NodeExecutor = async (config, input, context) => {
   // previous LLM step produced { lines: [...] } and the user types
   // `input.lines`).
   let childRows: Record<string, unknown>[];
-  const childExpr = typeof config.childRowsExpression === 'string' ? config.childRowsExpression.trim() : '';
+  const childExpr =
+    typeof config.childRowsExpression === 'string' ? config.childRowsExpression.trim() : '';
   if (childExpr.startsWith('[')) {
     childRows = jsonParse<Record<string, unknown>[]>(childExpr, []);
   } else if (childExpr) {
@@ -383,17 +507,25 @@ const insertBatchExecutor: NodeExecutor = async (config, input, context) => {
     // decode incluso. Stesso guard di apps/.../engine/interpreter.ts.
     dbAssertSafeExpression(sandboxedExpr);
     // eslint-disable-next-line @typescript-eslint/no-implied-eval
-    const fn = new Function('input', 'output', '_node', `return (${sandboxedExpr});`) as (i: unknown, o: unknown, n: unknown) => unknown;
+    const fn = new Function('input', 'output', '_node', `return (${sandboxedExpr});`) as (
+      i: unknown,
+      o: unknown,
+      n: unknown,
+    ) => unknown;
     const raw = fn(input, input, context.nodeOutputs ?? {});
     if (!Array.isArray(raw)) {
-      throw new Error(`db_insert_batch: childRowsExpression must return an array, got ${typeof raw}`);
+      throw new Error(
+        `db_insert_batch: childRowsExpression must return an array, got ${typeof raw}`,
+      );
     }
     childRows = raw as Record<string, unknown>[];
   } else {
     // Fallback: input.lines convention.
     const inputObj = (input ?? {}) as { lines?: unknown };
     if (!Array.isArray(inputObj.lines)) {
-      throw new Error('db_insert_batch: provide childRowsExpression or pipe { lines: [...] } from the previous node');
+      throw new Error(
+        'db_insert_batch: provide childRowsExpression or pipe { lines: [...] } from the previous node',
+      );
     }
     childRows = inputObj.lines as Record<string, unknown>[];
   }
@@ -402,9 +534,13 @@ const insertBatchExecutor: NodeExecutor = async (config, input, context) => {
   // colonne tipicamente GENERATED in DB SQL). Se l'utente fornisce una
   // lista comma-separated, viene rispettata. Altrimenti usiamo una blacklist
   // ragionevole che copre il 90% dei casi tipici (Italian procurement ETL).
-  const skipColumns = (typeof config.skipColumns === 'string' && config.skipColumns.trim() !== ''
-    ? config.skipColumns.split(',').map((s) => s.trim()).filter(Boolean)
-    : ['line_total', 'net_price', 'price_discrepancy_flag']);
+  const skipColumns =
+    typeof config.skipColumns === 'string' && config.skipColumns.trim() !== ''
+      ? config.skipColumns
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : ['line_total', 'net_price', 'price_discrepancy_flag'];
   if (skipColumns.length > 0) {
     childRows = childRows.map((row) => {
       const filtered: Record<string, unknown> = {};
@@ -417,7 +553,7 @@ const insertBatchExecutor: NodeExecutor = async (config, input, context) => {
   // Stesso filtro per headerRow (potrebbe avere id auto-generato o
   // colonne calcolate). Conservative — applica skipColumns anche qui.
   if (skipColumns.length > 0) {
-    for (const k of skipColumns) delete (headerRow)[k];
+    for (const k of skipColumns) delete headerRow[k];
   }
 
   // Idempotency mode: if onConflict='ignore', a UNIQUE/PK collision on the
@@ -427,12 +563,22 @@ const insertBatchExecutor: NodeExecutor = async (config, input, context) => {
   // we DO NOT re-insert the child rows — they're already linked.
   const onConflict = typeof config.onConflict === 'string' ? config.onConflict : 'fail';
   try {
-    const result = await callDbApi<{ steps: { affectedRows: number; insertedId?: number }[]; bindings: Record<string, number>; durationMs: number }>(
+    const result = await callDbApi<{
+      steps: { affectedRows: number; insertedId?: number }[];
+      bindings: Record<string, number>;
+      durationMs: number;
+    }>(
       `/databases/${encodeURIComponent(databaseId)}/transaction`,
       {
         ops: [
           { kind: 'insert', table: headerTable, row: headerRow, as: 'headerId' },
-          { kind: 'insertMany', table: childTable, rows: childRows, refColumn, refFrom: 'headerId' },
+          {
+            kind: 'insertMany',
+            table: childTable,
+            rows: childRows,
+            refColumn,
+            refFrom: 'headerId',
+          },
         ],
       },
       context.tenantId,
@@ -513,28 +659,43 @@ export const dbInsertBatchNode: NodeModule = {
     color: '#0ea5e9',
     description:
       'Inserisce in modo ATOMICO un header (es. ordine) + N righe figlie (es. order_lines), tutto in una transazione singola. ' +
-      'Se l\'inserzione delle righe fallisce, anche l\'header viene rollbackato — niente ordini fantasma in DB. ' +
+      "Se l'inserzione delle righe fallisce, anche l'header viene rollbackato — niente ordini fantasma in DB. " +
       'Tipico per: orders+order_lines, invoices+invoice_lines, deliveries+delivery_items.',
     configFields: [
       { key: 'databaseId', label: 'Database', type: 'db-picker', required: true },
-      { key: 'headerTable', label: 'Tabella header', type: 'db-table-picker', required: true, dependsOn: 'databaseId', help: 'Es. "orders". 1 riga inserita.' },
+      {
+        key: 'headerTable',
+        label: 'Tabella header',
+        type: 'db-table-picker',
+        required: true,
+        dependsOn: 'databaseId',
+        help: 'Es. "orders". 1 riga inserita.',
+      },
       {
         key: 'headerRowJson',
         label: 'Header row (JSON)',
         type: 'code',
         language: 'json',
         required: true,
-        placeholder: '{\n  "order_number": "{{input.order_number}}",\n  "supplier_code": "{{input.supplier_code}}"\n}',
-        help: 'JSON object con le colonne dell\'header. Espressioni {{}} risolte runtime.',
+        placeholder:
+          '{\n  "order_number": "{{input.order_number}}",\n  "supplier_code": "{{input.supplier_code}}"\n}',
+        help: "JSON object con le colonne dell'header. Espressioni {{}} risolte runtime.",
       },
-      { key: 'childTable', label: 'Tabella children', type: 'db-table-picker', required: true, dependsOn: 'databaseId', help: 'Es. "order_lines". N righe inserite.' },
+      {
+        key: 'childTable',
+        label: 'Tabella children',
+        type: 'db-table-picker',
+        required: true,
+        dependsOn: 'databaseId',
+        help: 'Es. "order_lines". N righe inserite.',
+      },
       {
         key: 'childRowsExpression',
         label: 'Espressione array children',
         type: 'expression',
         required: true,
         placeholder: 'input.lines',
-        help: 'Espressione JS che ritorna l\'array di righe figlie. Esempi: input.lines · input.order_lines · output.items. Riceve `input` (output del nodo precedente).',
+        help: "Espressione JS che ritorna l'array di righe figlie. Esempi: input.lines · input.order_lines · output.items. Riceve `input` (output del nodo precedente).",
       },
       {
         key: 'refColumn',
@@ -546,7 +707,7 @@ export const dbInsertBatchNode: NodeModule = {
       },
       {
         key: 'onConflict',
-        label: 'Se l\'header esiste già',
+        label: "Se l'header esiste già",
         type: 'select',
         options: ['fail', 'ignore'],
         required: false,
@@ -583,9 +744,29 @@ export const dbSubscribeNode: NodeModule = {
       'dashboard real-time KPI senza polling.',
     configFields: [
       { key: 'databaseId', label: 'Database', type: 'db-picker', required: true },
-      { key: 'table', label: 'Tabella', type: 'db-table-picker', required: true, dependsOn: 'databaseId' },
-      { key: 'events', label: 'Eventi da monitorare', type: 'select', required: true, options: ['insert', 'update', 'delete', 'all'], defaultValue: 'all', help: 'all = qualsiasi cambio. Combinazioni custom non supportate qui — usa 2 trigger separati se serve.' },
-      { key: 'filtersJson', label: 'Filtri righe', type: 'filter-rows', required: false, help: 'Trigger solo quando la riga matcha questi filtri (es. status=active AND amount>100).' },
+      {
+        key: 'table',
+        label: 'Tabella',
+        type: 'db-table-picker',
+        required: true,
+        dependsOn: 'databaseId',
+      },
+      {
+        key: 'events',
+        label: 'Eventi da monitorare',
+        type: 'select',
+        required: true,
+        options: ['insert', 'update', 'delete', 'all'],
+        defaultValue: 'all',
+        help: 'all = qualsiasi cambio. Combinazioni custom non supportate qui — usa 2 trigger separati se serve.',
+      },
+      {
+        key: 'filtersJson',
+        label: 'Filtri righe',
+        type: 'filter-rows',
+        required: false,
+        help: 'Trigger solo quando la riga matcha questi filtri (es. status=active AND amount>100).',
+      },
     ],
     vendor: 'flowforge',
     version: '1.1.0',
@@ -618,7 +799,12 @@ const sqlQueryExecutor: NodeExecutor = async (config, _input, context) => {
   // stringhe/commenti, rifiuta i ; interni e ogni keyword DML/DDL ovunque.
   assertSelectOnly(sql);
 
-  const result = await callDbApi<{ statementResults?: { rows?: unknown[] }[]; rows?: unknown[]; rowCount?: number; durationMs?: number }>(
+  const result = await callDbApi<{
+    statementResults?: { rows?: unknown[] }[];
+    rows?: unknown[];
+    rowCount?: number;
+    durationMs?: number;
+  }>(
     `/databases/${encodeURIComponent(databaseId)}/sql`,
     { sql, dryRun: false, rowLimit },
     context.tenantId,
@@ -626,7 +812,10 @@ const sqlQueryExecutor: NodeExecutor = async (config, _input, context) => {
   );
   // executeRaw returns statementResults[]; collapse to a single rows array
   // for compatibility with downstream action_xlsx_build / loop nodes.
-  const rows = (result.statementResults?.[0]?.rows ?? result.rows ?? []) as Record<string, unknown>[];
+  const rows = (result.statementResults?.[0]?.rows ?? result.rows ?? []) as Record<
+    string,
+    unknown
+  >[];
   return {
     output: { rows, rowCount: rows.length, durationMs: result.durationMs ?? Date.now() - start },
     durationMs: Date.now() - start,
@@ -648,8 +837,24 @@ export const dbSqlQueryNode: NodeModule = {
       'Use case: report multi-tabella per dashboard, analytics aggregati pre-Excel, query complesse da legacy ERP/Odoo.',
     configFields: [
       { key: 'databaseId', label: 'Database', type: 'db-picker', required: true },
-      { key: 'sql', label: 'SQL (solo SELECT)', type: 'code', language: 'sql', required: true, placeholder: 'SELECT o.order_number, ol.product_description FROM orders o JOIN order_lines ol ON ol.order_id = o.id WHERE o.order_date >= date(\'now\',\'-90 days\') ORDER BY o.order_date DESC', help: 'Statement SELECT (anche con CTE/JOIN/GROUP BY). Supporta {{espressioni}} per parametri dinamici. Limite riga applicato automaticamente.' },
-      { key: 'rowLimit', label: 'Limite righe', type: 'number', required: false, defaultValue: '5000', help: 'Cap di sicurezza per evitare di scaricare milioni di righe. Default 5000.' },
+      {
+        key: 'sql',
+        label: 'SQL (solo SELECT)',
+        type: 'code',
+        language: 'sql',
+        required: true,
+        placeholder:
+          "SELECT o.order_number, ol.product_description FROM orders o JOIN order_lines ol ON ol.order_id = o.id WHERE o.order_date >= date('now','-90 days') ORDER BY o.order_date DESC",
+        help: 'Statement SELECT (anche con CTE/JOIN/GROUP BY). Supporta {{espressioni}} per parametri dinamici. Limite riga applicato automaticamente.',
+      },
+      {
+        key: 'rowLimit',
+        label: 'Limite righe',
+        type: 'number',
+        required: false,
+        defaultValue: '5000',
+        help: 'Cap di sicurezza per evitare di scaricare milioni di righe. Default 5000.',
+      },
     ],
     vendor: 'flowforge',
     version: '1.0.0',
@@ -670,17 +875,50 @@ export const dbRemoteSshQueryNode: NodeModule = {
     description:
       'Legge da un database Postgres ESTERNO attraverso un tunnel SSH sicuro (come DBeaver). ' +
       'SOLO LETTURA (SELECT/EXPLAIN; mutazioni e multi-statement rifiutate). Host-key PINNING obbligatorio (anti-MITM), ' +
-      'SSRF + anti DNS-rebinding sull\'host SSH, credenziali dal vault per-tenant (mai in chiaro nel workflow). ' +
+      "SSRF + anti DNS-rebinding sull'host SSH, credenziali dal vault per-tenant (mai in chiaro nel workflow). " +
       'Output: { rows, rowCount, durationMs }. Use case: leggere un gestionale legacy/Postgres del cliente raggiungibile solo via bastion SSH.',
     configFields: [
-      { key: 'ssh', label: 'Connessione SSH', type: 'json', required: true, help: '{ host, port, user, hostKeyFingerprint, auth:{ method:"key", privateKeySecretRef } }' },
-      { key: 'db', label: 'Database remoto', type: 'json', required: true, help: '{ engine:"postgres", host, port, database, userSecretRef?, passwordSecretRef? }' },
-      { key: 'sql', label: 'SQL (solo SELECT)', type: 'code', language: 'sql', required: true, placeholder: 'SELECT * FROM clienti LIMIT 100' },
-      { key: 'rowLimit', label: 'Limite righe', type: 'number', required: false, defaultValue: '1000' },
+      {
+        key: 'ssh',
+        label: 'Connessione SSH',
+        type: 'json',
+        required: true,
+        help: '{ host, port, user, hostKeyFingerprint, auth:{ method:"key", privateKeySecretRef } }',
+      },
+      {
+        key: 'db',
+        label: 'Database remoto',
+        type: 'json',
+        required: true,
+        help: '{ engine:"postgres", host, port, database, userSecretRef?, passwordSecretRef? }',
+      },
+      {
+        key: 'sql',
+        label: 'SQL (solo SELECT)',
+        type: 'code',
+        language: 'sql',
+        required: true,
+        placeholder: 'SELECT * FROM clienti LIMIT 100',
+      },
+      {
+        key: 'rowLimit',
+        label: 'Limite righe',
+        type: 'number',
+        required: false,
+        defaultValue: '1000',
+      },
     ],
     // Alias SSH/remoto-specifici: si trova per "db esterno/ssh/bastion", NON per
     // le query DB generiche (es. "aggiorna un record" → resta db_update).
-    searchAliases: ['ssh tunnel', 'database remoto', 'db esterno', 'postgres remoto', 'bastion ssh', 'dbeaver', 'leggi db cliente via ssh'],
+    searchAliases: [
+      'ssh tunnel',
+      'database remoto',
+      'db esterno',
+      'postgres remoto',
+      'bastion ssh',
+      'dbeaver',
+      'leggi db cliente via ssh',
+    ],
     vendor: 'flowforge',
     version: '1.0.0',
   },
@@ -702,18 +940,69 @@ export const ragSearchNode: NodeModule = {
       'Retrieval semantico sulla knowledge base vettoriale DEL TENANT: embeddizza la query (provider a scelta — OpenAI/Voyage/Ollama, ' +
       'BYOK) e fa una KNN coseno sul vector DB selezionato, ritornando i top-k chunk più simili da passare a un nodo agente/LLM come ' +
       'contesto di grounding. Isolamento garantito: vede SOLO le collection del tenant (namespace per-database). La query arriva dal ' +
-      'campo o dall\'input (stringa, {query} o {text}). Output: { query, results: [{ id, score, payload }] }. ' +
+      "campo o dall'input (stringa, {query} o {text}). Output: { query, results: [{ id, score, payload }] }. " +
       'Use case: rispondere a domande sui documenti caricati dal tenant, FAQ aziendali, manuali, knowledge base di supporto.',
     configFields: [
-      { key: 'databaseId', label: 'Vector DB', type: 'db-picker', required: true, help: 'Un database con engine vettoriale (embedded o pgvector).' },
-      { key: 'collection', label: 'Collezione', type: 'text', required: true, help: 'Nome della collezione vettoriale dentro il DB.' },
-      { key: 'query', label: 'Query', type: 'text', required: false, help: 'Testo da cercare. Vuoto = usa l\'input del nodo precedente (stringa o {query}/{text}). Supporta {{espressioni}}.' },
-      { key: 'provider', label: 'Provider embedding', type: 'select', options: ['openai', 'voyage', 'ollama'], required: false, defaultValue: 'openai', help: 'DEVE combaciare col provider/modello usato in ingest (stesso spazio vettoriale).' },
-      { key: 'model', label: 'Modello embedding', type: 'text', required: false, defaultValue: 'text-embedding-3-small', help: 'Stesso modello dell\'ingest, altrimenti i vettori non sono confrontabili.' },
-      { key: 'apiKey', label: 'API key (BYOK)', type: 'text', required: false, help: 'Chiave del provider embedding (per openai/voyage). Ollama self-hosted non la richiede.' },
+      {
+        key: 'databaseId',
+        label: 'Vector DB',
+        type: 'db-picker',
+        required: true,
+        help: 'Un database con engine vettoriale (embedded o pgvector).',
+      },
+      {
+        key: 'collection',
+        label: 'Collezione',
+        type: 'text',
+        required: true,
+        help: 'Nome della collezione vettoriale dentro il DB.',
+      },
+      {
+        key: 'query',
+        label: 'Query',
+        type: 'text',
+        required: false,
+        help: "Testo da cercare. Vuoto = usa l'input del nodo precedente (stringa o {query}/{text}). Supporta {{espressioni}}.",
+      },
+      {
+        key: 'provider',
+        label: 'Provider embedding',
+        type: 'select',
+        options: ['openai', 'voyage', 'ollama'],
+        required: false,
+        defaultValue: 'openai',
+        help: 'DEVE combaciare col provider/modello usato in ingest (stesso spazio vettoriale).',
+      },
+      {
+        key: 'model',
+        label: 'Modello embedding',
+        type: 'text',
+        required: false,
+        defaultValue: 'text-embedding-3-small',
+        help: "Stesso modello dell'ingest, altrimenti i vettori non sono confrontabili.",
+      },
+      {
+        key: 'apiKey',
+        label: 'API key (BYOK)',
+        type: 'text',
+        required: false,
+        help: 'Chiave del provider embedding (per openai/voyage). Ollama self-hosted non la richiede.',
+      },
       { key: 'topK', label: 'Top K risultati', type: 'number', required: false, defaultValue: '5' },
-      { key: 'minScore', label: 'Similarità minima (0-1)', type: 'number', required: false, help: 'Scarta i risultati sotto questa soglia. Vuoto = nessuna soglia.' },
-      { key: 'filterJson', label: 'Filtro payload', type: 'key-value', required: false, help: 'Coppie chiave-valore: ritorna solo i chunk col payload corrispondente.' },
+      {
+        key: 'minScore',
+        label: 'Similarità minima (0-1)',
+        type: 'number',
+        required: false,
+        help: 'Scarta i risultati sotto questa soglia. Vuoto = nessuna soglia.',
+      },
+      {
+        key: 'filterJson',
+        label: 'Filtro payload',
+        type: 'key-value',
+        required: false,
+        help: 'Coppie chiave-valore: ritorna solo i chunk col payload corrispondente.',
+      },
     ],
     vendor: 'flowforge',
     version: '1.0.0',
@@ -730,23 +1019,85 @@ export const ragIngestNode: NodeModule = {
     description:
       'Indicizza un contenuto nella knowledge base vettoriale DEL TENANT: embeddizza il testo (provider a scelta, BYOK) e fa upsert nel ' +
       'vector DB selezionato, creando la collezione se non esiste (dimensioni dedotte dal modello). Idempotente: senza id esplicito ne ' +
-      'genera uno deterministico dal contenuto (ri-eseguire non duplica). Il contenuto arriva dal campo o dall\'input (stringa, {content} ' +
+      "genera uno deterministico dal contenuto (ri-eseguire non duplica). Il contenuto arriva dal campo o dall'input (stringa, {content} " +
       'o {text}). Il payload conserva sempre il testo originale per il retrieval. Isolamento: scrive SOLO nello store del tenant. ' +
       'Output: { id, upserted }. Use case: indicizzare documenti caricati, output di scraping, righe DB, email — per poi cercarli con rag_search.',
     configFields: [
-      { key: 'databaseId', label: 'Vector DB', type: 'db-picker', required: true, help: 'Un database con engine vettoriale (embedded o pgvector).' },
-      { key: 'collection', label: 'Collezione', type: 'text', required: true, help: 'Nome della collezione (creata se non esiste).' },
-      { key: 'content', label: 'Contenuto da indicizzare', type: 'text', required: false, help: 'Testo da embeddizzare. Vuoto = usa l\'input del nodo precedente (stringa o {content}/{text}).' },
-      { key: 'id', label: 'ID record', type: 'text', required: false, help: 'Vuoto = id deterministico dal contenuto (idempotenza). Fornisci un id stabile (es. {{input.docId}}) per aggiornare lo stesso record.' },
-      { key: 'provider', label: 'Provider embedding', type: 'select', options: ['openai', 'voyage', 'ollama'], required: false, defaultValue: 'openai' },
-      { key: 'model', label: 'Modello embedding', type: 'text', required: false, defaultValue: 'text-embedding-3-small', help: 'Le dimensioni della collezione derivano da questo modello — non cambiarlo dopo il primo ingest.' },
+      {
+        key: 'databaseId',
+        label: 'Vector DB',
+        type: 'db-picker',
+        required: true,
+        help: 'Un database con engine vettoriale (embedded o pgvector).',
+      },
+      {
+        key: 'collection',
+        label: 'Collezione',
+        type: 'text',
+        required: true,
+        help: 'Nome della collezione (creata se non esiste).',
+      },
+      {
+        key: 'content',
+        label: 'Contenuto da indicizzare',
+        type: 'text',
+        required: false,
+        help: "Testo da embeddizzare. Vuoto = usa l'input del nodo precedente (stringa o {content}/{text}).",
+      },
+      {
+        key: 'id',
+        label: 'ID record',
+        type: 'text',
+        required: false,
+        help: 'Vuoto = id deterministico dal contenuto (idempotenza). Fornisci un id stabile (es. {{input.docId}}) per aggiornare lo stesso record.',
+      },
+      {
+        key: 'provider',
+        label: 'Provider embedding',
+        type: 'select',
+        options: ['openai', 'voyage', 'ollama'],
+        required: false,
+        defaultValue: 'openai',
+      },
+      {
+        key: 'model',
+        label: 'Modello embedding',
+        type: 'text',
+        required: false,
+        defaultValue: 'text-embedding-3-small',
+        help: 'Le dimensioni della collezione derivano da questo modello — non cambiarlo dopo il primo ingest.',
+      },
       { key: 'apiKey', label: 'API key (BYOK)', type: 'text', required: false },
-      { key: 'distance', label: 'Distanza', type: 'select', options: ['cosine', 'euclidean', 'dot'], required: false, defaultValue: 'cosine' },
-      { key: 'payloadJson', label: 'Metadati (payload)', type: 'key-value', required: false, help: 'Coppie chiave-valore salvate col chunk (es. source, lang). Il contenuto viene sempre incluso automaticamente.' },
+      {
+        key: 'distance',
+        label: 'Distanza',
+        type: 'select',
+        options: ['cosine', 'euclidean', 'dot'],
+        required: false,
+        defaultValue: 'cosine',
+      },
+      {
+        key: 'payloadJson',
+        label: 'Metadati (payload)',
+        type: 'key-value',
+        required: false,
+        help: 'Coppie chiave-valore salvate col chunk (es. source, lang). Il contenuto viene sempre incluso automaticamente.',
+      },
     ],
     vendor: 'flowforge',
     version: '1.0.0',
   },
 };
 
-export const dbNodes: readonly NodeModule[] = [dbQueryNode, dbInsertNode, dbInsertBatchNode, dbUpdateNode, dbDeleteNode, dbSubscribeNode, dbSqlQueryNode, dbRemoteSshQueryNode, ragSearchNode, ragIngestNode] as const;
+export const dbNodes: readonly NodeModule[] = [
+  dbQueryNode,
+  dbInsertNode,
+  dbInsertBatchNode,
+  dbUpdateNode,
+  dbDeleteNode,
+  dbSubscribeNode,
+  dbSqlQueryNode,
+  dbRemoteSshQueryNode,
+  ragSearchNode,
+  ragIngestNode,
+] as const;

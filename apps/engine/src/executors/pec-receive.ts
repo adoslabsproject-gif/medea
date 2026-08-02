@@ -26,7 +26,8 @@ export const pecArubaReceiveExecutor: NodeExecutor = async (config, _input, _con
   const mailbox = asString(config.mailbox) || 'INBOX';
   const max = Number(config.maxMessages ?? 50);
   const filterSubject = asString(config.filterSubject);
-  if (!username || !password) throw new Error('italia_pec_aruba_receive: username/password required');
+  if (!username || !password)
+    throw new Error('italia_pec_aruba_receive: username/password required');
   assertConnectHostAllowed(host, 'PEC IMAP'); // SSRF: host da config → no rete interna
 
   const client = new ImapFlow({
@@ -61,5 +62,8 @@ export const pecArubaReceiveExecutor: NodeExecutor = async (config, _input, _con
     await client.logout();
   }
 
-  return { output: { count: result.length, messages: result, mailbox }, durationMs: Date.now() - start };
+  return {
+    output: { count: result.length, messages: result, mailbox },
+    durationMs: Date.now() - start,
+  };
 };

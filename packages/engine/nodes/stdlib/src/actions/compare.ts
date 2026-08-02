@@ -9,7 +9,13 @@ function str(v: unknown, fallback = ''): string {
   return v === undefined || v === null ? fallback : String(v);
 }
 function parse(v: unknown): unknown {
-  if (typeof v === 'string') { try { return JSON.parse(v); } catch { return v; } }
+  if (typeof v === 'string') {
+    try {
+      return JSON.parse(v);
+    } catch {
+      return v;
+    }
+  }
   return v;
 }
 function isObj(v: unknown): v is Record<string, unknown> {
@@ -23,8 +29,14 @@ function isObj(v: unknown): v is Record<string, unknown> {
 const MAX_DIFF_DEPTH = 64;
 
 function diffObjects(
-  a: unknown, b: unknown, prefix: string,
-  acc: { added: Record<string, unknown>; removed: Record<string, unknown>; changed: Record<string, { from: unknown; to: unknown }> },
+  a: unknown,
+  b: unknown,
+  prefix: string,
+  acc: {
+    added: Record<string, unknown>;
+    removed: Record<string, unknown>;
+    changed: Record<string, { from: unknown; to: unknown }>;
+  },
   depth = 0,
 ): void {
   if (isObj(a) && isObj(b) && depth < MAX_DIFF_DEPTH) {
@@ -64,14 +76,33 @@ const diffExecutor: NodeExecutor = async (config, input) => {
     const changes = diffText(str(a), str(b));
     const added = changes.filter((c) => c.type === 'add').length;
     const removed = changes.filter((c) => c.type === 'remove').length;
-    return { output: { changes, added, removed, equal: added === 0 && removed === 0 }, durationMs: Date.now() - startedAt };
+    return {
+      output: { changes, added, removed, equal: added === 0 && removed === 0 },
+      durationMs: Date.now() - startedAt,
+    };
   }
 
-  const acc = { added: {}, removed: {}, changed: {} as Record<string, { from: unknown; to: unknown }> };
+  const acc = {
+    added: {},
+    removed: {},
+    changed: {} as Record<string, { from: unknown; to: unknown }>,
+  };
   diffObjects(a, b, '', acc);
-  const equal = Object.keys(acc.added).length === 0 && Object.keys(acc.removed).length === 0 && Object.keys(acc.changed).length === 0;
+  const equal =
+    Object.keys(acc.added).length === 0 &&
+    Object.keys(acc.removed).length === 0 &&
+    Object.keys(acc.changed).length === 0;
   return {
-    output: { added: acc.added, removed: acc.removed, changed: acc.changed, equal, changeCount: Object.keys(acc.added).length + Object.keys(acc.removed).length + Object.keys(acc.changed).length },
+    output: {
+      added: acc.added,
+      removed: acc.removed,
+      changed: acc.changed,
+      equal,
+      changeCount:
+        Object.keys(acc.added).length +
+        Object.keys(acc.removed).length +
+        Object.keys(acc.changed).length,
+    },
     branch: equal ? 'equal' : 'different',
     durationMs: Date.now() - startedAt,
   };
@@ -98,19 +129,30 @@ export const diffNode: NodeModule = {
       'Output OGGETTO: { added, removed, changed, equal, changeCount } · TESTO: { changes, added, removed, equal }. ' +
       'Use case: rileva quali campi di un cliente sono cambiati per aggiornare solo quelli sul CRM (deep diff); ' +
       'attiva un alert solo se la configurazione monitorata è cambiata (branch different); confronta la risposta ' +
-      'di un\'API con quella precedente per change-detection; mostra le differenze tra due versioni di un testo.',
+      "di un'API con quella precedente per change-detection; mostra le differenze tra due versioni di un testo.",
     configFields: [
       {
-        key: 'mode', label: 'Modalità', type: 'select', required: true, defaultValue: 'object',
+        key: 'mode',
+        label: 'Modalità',
+        type: 'select',
+        required: true,
+        defaultValue: 'object',
         options: ['object', 'text'],
         help: 'object = deep diff tra oggetti · text = diff riga per riga.',
       },
       {
-        key: 'a', label: 'Valore A (precedente)', type: 'expression', required: false, defaultValue: 'input',
+        key: 'a',
+        label: 'Valore A (precedente)',
+        type: 'expression',
+        required: false,
+        defaultValue: 'input',
         help: 'Il primo valore (lo stato "prima"). Vuoto = usa l\'input del nodo.',
       },
       {
-        key: 'b', label: 'Valore B (nuovo)', type: 'expression', required: true,
+        key: 'b',
+        label: 'Valore B (nuovo)',
+        type: 'expression',
+        required: true,
         help: 'Il secondo valore (lo stato "dopo") da confrontare con A.',
       },
     ],

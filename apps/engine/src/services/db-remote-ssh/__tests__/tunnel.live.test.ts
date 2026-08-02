@@ -21,14 +21,21 @@ import { openSshTunnel, type SshTunnel } from '../tunnel.js';
 
 const E = process.env;
 const LIVE = Boolean(
-  E.DBSSH_LIVE_SSH_HOST && E.DBSSH_LIVE_SSH_USER && E.DBSSH_LIVE_SSH_KEY_PATH && E.DBSSH_LIVE_SSH_FP &&
-  E.DBSSH_LIVE_DB_NAME && E.DBSSH_LIVE_DB_USER && E.DBSSH_LIVE_DB_PASS,
+  E.DBSSH_LIVE_SSH_HOST &&
+  E.DBSSH_LIVE_SSH_USER &&
+  E.DBSSH_LIVE_SSH_KEY_PATH &&
+  E.DBSSH_LIVE_SSH_FP &&
+  E.DBSSH_LIVE_DB_NAME &&
+  E.DBSSH_LIVE_DB_USER &&
+  E.DBSSH_LIVE_DB_PASS,
 );
 const d = LIVE ? describe : describe.skip;
 
 let tunnel: SshTunnel | null = null;
 
-afterAll(async () => { if (tunnel) await tunnel.close(); });
+afterAll(async () => {
+  if (tunnel) await tunnel.close();
+});
 
 d('🌍 LIVE — tunnel SSH → Postgres reale (gated-env)', () => {
   it('apre il tunnel, legge dal DB remoto e conferma il read-only', async () => {
@@ -41,7 +48,10 @@ d('🌍 LIVE — tunnel SSH → Postgres reale (gated-env)', () => {
         hostKeyFingerprint: String(E.DBSSH_LIVE_SSH_FP),
         auth: { type: 'key', privateKey },
       },
-      target: { host: E.DBSSH_LIVE_DB_HOST ?? '127.0.0.1', port: Number(E.DBSSH_LIVE_DB_PORT ?? '5432') },
+      target: {
+        host: E.DBSSH_LIVE_DB_HOST ?? '127.0.0.1',
+        port: Number(E.DBSSH_LIVE_DB_PORT ?? '5432'),
+      },
       readyTimeoutMs: 15_000,
     });
     expect(tunnel.localPort).toBeGreaterThan(0);
@@ -58,7 +68,9 @@ d('🌍 LIVE — tunnel SSH → Postgres reale (gated-env)', () => {
       idle_timeout: 2,
     });
     try {
-      const rows = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM information_schema.tables WHERE table_schema = 'public'`;
+      const rows = await sql<
+        { n: number }[]
+      >`SELECT count(*)::int AS n FROM information_schema.tables WHERE table_schema = 'public'`;
       expect(rows[0]?.n ?? 0).toBeGreaterThan(0);
 
       // Conferma read-only: una scrittura DEVE essere rifiutata dal DB.

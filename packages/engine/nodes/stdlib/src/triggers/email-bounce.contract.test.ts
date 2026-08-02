@@ -19,7 +19,7 @@ describe('trigger_email_bounce — contract', () => {
     expect(def.type).toBe('trigger');
   });
 
-  it('🚨 documenta i campi REALI dell\'output BounceReport (niente di inventato)', () => {
+  it("🚨 documenta i campi REALI dell'output BounceReport (niente di inventato)", () => {
     for (const field of ['failedRecipients', 'bounceType', 'status', 'originalMessageId']) {
       expect(description, `campo output '${field}' non documentato`).toContain(field);
     }
@@ -29,8 +29,16 @@ describe('trigger_email_bounce — contract', () => {
   });
 
   it('🚨 NON promette filtri-contenuto che non ha (sono di trigger_imap): nessun configField di filtro', () => {
-    for (const ghost of ['filterSubject', 'filterFrom', 'filterTo', 'hasAttachment', 'senderAllowlist']) {
-      expect(configKeys, `il bounce trigger non deve avere il filtro '${ghost}'`).not.toContain(ghost);
+    for (const ghost of [
+      'filterSubject',
+      'filterFrom',
+      'filterTo',
+      'hasAttachment',
+      'senderAllowlist',
+    ]) {
+      expect(configKeys, `il bounce trigger non deve avere il filtro '${ghost}'`).not.toContain(
+        ghost,
+      );
     }
     // riusa invece i campi connessione IMAP reali
     expect(configKeys).toContain('systemAccountId');

@@ -39,15 +39,21 @@ export interface ErrorHandlerStarterDeps {
 
 function parseTriggerInput(json: string | null): unknown {
   if (json === null) return null;
-  try { return JSON.parse(json) as unknown; } catch { return null; }
+  try {
+    return JSON.parse(json) as unknown;
+  } catch {
+    return null;
+  }
 }
 
-export function makeErrorHandlerStarter(deps: ErrorHandlerStarterDeps): (p: FanoutStartParams) => Promise<void> {
+export function makeErrorHandlerStarter(
+  deps: ErrorHandlerStarterDeps,
+): (p: FanoutStartParams) => Promise<void> {
   return async (p: FanoutStartParams): Promise<void> => {
     const handler = await deps.getWorkflow(p.errorWorkflowId, p.tenantId);
-    const wantsTriage = handler?.nodes.some(
-      (n) => n.defId === 'trigger_error' && n.config.aiTriage === 'true',
-    ) === true;
+    const wantsTriage =
+      handler?.nodes.some((n) => n.defId === 'trigger_error' && n.config.aiTriage === 'true') ===
+      true;
 
     let aiTriage: Record<string, unknown> | undefined;
     if (wantsTriage) {
@@ -63,7 +69,7 @@ export function makeErrorHandlerStarter(deps: ErrorHandlerStarterDeps): (p: Fano
       } catch (e) {
         logger.warn(
           { err: e instanceof Error ? e.message : String(e), runId: p.runId },
-          'AI triage failed (fail-soft: l\'error-handler parte senza diagnosi)',
+          "AI triage failed (fail-soft: l'error-handler parte senza diagnosi)",
         );
       }
     }
@@ -73,7 +79,9 @@ export function makeErrorHandlerStarter(deps: ErrorHandlerStarterDeps): (p: Fano
     try {
       const source = await deps.getWorkflow(p.sourceWorkflowId, p.tenantId);
       if (source?.name) workflowName = source.name;
-    } catch { /* best-effort: l'avvio non dipende dal nome */ }
+    } catch {
+      /* best-effort: l'avvio non dipende dal nome */
+    }
 
     await deps.startAsync({
       workflowId: p.errorWorkflowId,

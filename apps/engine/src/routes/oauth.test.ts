@@ -39,7 +39,9 @@ vi.mock('./../lib/tenant.js', () => ({
 }));
 
 vi.mock('@/lib/auth-keys.js', () => ({
-  getAuthKeys: vi.fn(async () => ({ privateKeyPem: '-----BEGIN PRIVATE KEY-----\nTEST\n-----END PRIVATE KEY-----' })),
+  getAuthKeys: vi.fn(async () => ({
+    privateKeyPem: '-----BEGIN PRIVATE KEY-----\nTEST\n-----END PRIVATE KEY-----',
+  })),
 }));
 
 const issueSessionTokenMock = vi.hoisted(() => vi.fn());
@@ -68,16 +70,30 @@ vi.mock('nanoid', () => ({
 
 const auditMock = vi.hoisted(() => ({ append: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('@/services/audit.service.js', () => ({
-  AuditLogService: class { append = auditMock.append; },
+  AuditLogService: class {
+    append = auditMock.append;
+  },
 }));
 vi.mock('@/lib/actor.js', () => ({ getActorId: () => 'actor-test' }));
 
 // #5: envelope cifrato — mock deterministico (la crypto reale è in oauth-secret.test.ts).
 // encrypt produce `ct:<plaintext>`; resolve inverte (cifrato) o ritorna il legacy plaintext.
 vi.mock('@/lib/oauth-secret.js', () => ({
-  encryptClientSecret: (p: string) => ({ ciphertext: `ct:${p}`, nonce: 'n', authTag: 'a', dekCiphertext: 'dc', dekNonce: 'dn', dekAuthTag: 'da' }),
-  resolveClientSecret: (row: { client_secret: string; client_secret_ciphertext?: string | null }) =>
-    row.client_secret_ciphertext ? String(row.client_secret_ciphertext).replace(/^ct:/, '') : row.client_secret,
+  encryptClientSecret: (p: string) => ({
+    ciphertext: `ct:${p}`,
+    nonce: 'n',
+    authTag: 'a',
+    dekCiphertext: 'dc',
+    dekNonce: 'dn',
+    dekAuthTag: 'da',
+  }),
+  resolveClientSecret: (row: {
+    client_secret: string;
+    client_secret_ciphertext?: string | null;
+  }) =>
+    row.client_secret_ciphertext
+      ? String(row.client_secret_ciphertext).replace(/^ct:/, '')
+      : row.client_secret,
 }));
 
 import { Hono } from 'hono';
@@ -94,7 +110,12 @@ function appAs(role: string | null): Hono {
   const app = new Hono();
   if (role !== null) {
     app.use('*', async (c, next) => {
-      c.set('auth', { userId: 'u-test', email: 'test@x.it', tenantId: 'tenant-A', role } as AuthContext);
+      c.set('auth', {
+        userId: 'u-test',
+        email: 'test@x.it',
+        tenantId: 'tenant-A',
+        role,
+      } as AuthContext);
       await next();
     });
   }
@@ -121,10 +142,22 @@ beforeEach(() => {
   oidcMock.authorizationCodeGrant.mockReset();
   // Default for happy paths
   oidcMock.discovery.mockResolvedValue({ kind: 'fake-oidc-config' });
-  oidcMock.buildAuthorizationUrl.mockReturnValue(new URL('https://idp.example.com/authorize?fake=true'));
+  oidcMock.buildAuthorizationUrl.mockReturnValue(
+    new URL('https://idp.example.com/authorize?fake=true'),
+  );
 });
 
-function seedProvider(tenantId: string, provider: string, overrides: Partial<{ issuer: string; client_id: string; client_secret: string; redirect_uri: string; scopes: string }> = {}): void {
+function seedProvider(
+  tenantId: string,
+  provider: string,
+  overrides: Partial<{
+    issuer: string;
+    client_id: string;
+    client_secret: string;
+    redirect_uri: string;
+    scopes: string;
+  }> = {},
+): void {
   dbInstances[0]!.exec(`
     CREATE TABLE IF NOT EXISTS oauth_providers (
       id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, provider TEXT NOT NULL,
@@ -133,17 +166,20 @@ function seedProvider(tenantId: string, provider: string, overrides: Partial<{ i
       UNIQUE (tenant_id, provider)
     );
   `);
-  dbInstances[0]!.prepare(
-    `INSERT INTO oauth_providers (id, tenant_id, provider, issuer, client_id, client_secret, redirect_uri, scopes, created_at)
+  dbInstances[0]!
+    .prepare(
+      `INSERT INTO oauth_providers (id, tenant_id, provider, issuer, client_id, client_secret, redirect_uri, scopes, created_at)
      VALUES ('p1', ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
-  ).run(
-    tenantId, provider,
-    overrides.issuer ?? 'https://idp.example.com',
-    overrides.client_id ?? 'cid',
-    overrides.client_secret ?? 'csec',
-    overrides.redirect_uri ?? 'https://app.example.com/callback',
-    overrides.scopes ?? 'openid email profile',
-  );
+    )
+    .run(
+      tenantId,
+      provider,
+      overrides.issuer ?? 'https://idp.example.com',
+      overrides.client_id ?? 'cid',
+      overrides.client_secret ?? 'csec',
+      overrides.redirect_uri ?? 'https://app.example.com/callback',
+      overrides.scopes ?? 'openid email profile',
+    );
 }
 
 describe('GET /oauth/providers', () => {
@@ -152,7 +188,7 @@ describe('GET /oauth/providers', () => {
     seedProvider('tenant-A', 'google');
     const res = await app.request('/oauth/providers');
     expect(res.status).toBe(200);
-    const body = await res.json() as { providers: Record<string, unknown>[] };
+    const body = (await res.json()) as { providers: Record<string, unknown>[] };
     expect(body.providers).toHaveLength(1);
     const p = body.providers[0]!;
     expect(p.provider).toBe('google');
@@ -168,7 +204,7 @@ describe('GET /oauth/providers', () => {
     seedProvider('tenant-B', 'google');
     tenantIdMock.mockReturnValue('tenant-A');
     const res = await app.request('/oauth/providers');
-    const body = await res.json() as { providers: unknown[] };
+    const body = (await res.json()) as { providers: unknown[] };
     expect(body.providers).toHaveLength(0);
   });
 });
@@ -190,7 +226,11 @@ describe('POST /oauth/providers — validation + upsert', () => {
     it(`manca ${missingField} → 400 con error list`, async () => {
       const app = appAs('owner');
       const full = {
-        provider: 'google', issuer: 'https://i', clientId: 'c', clientSecret: 's', redirectUri: 'r',
+        provider: 'google',
+        issuer: 'https://i',
+        clientId: 'c',
+        clientSecret: 's',
+        redirectUri: 'r',
       };
       delete (full as Record<string, unknown>)[missingField];
       const res = await app.request('/oauth/providers', {
@@ -199,7 +239,7 @@ describe('POST /oauth/providers — validation + upsert', () => {
         body: JSON.stringify(full),
       });
       expect(res.status).toBe(400);
-      expect((await res.json() as { error: string }).error).toContain('required');
+      expect(((await res.json()) as { error: string }).error).toContain('required');
     });
   }
 
@@ -217,13 +257,15 @@ describe('POST /oauth/providers — validation + upsert', () => {
       }),
     });
     expect(res.status).toBe(201);
-    const body = await res.json() as { id: string; provider: string };
+    const body = (await res.json()) as { id: string; provider: string };
     expect(body.provider).toBe('github');
     expect(body.id).toMatch(/^id-/u);
 
     // Verifico DB — #5: il client_secret NON è più in chiaro (colonna vuota),
     // il valore vive cifrato nelle colonne envelope.
-    const row = dbInstances[0]!.prepare('SELECT * FROM oauth_providers WHERE provider = ?').get('github') as Record<string, unknown>;
+    const row = dbInstances[0]!
+      .prepare('SELECT * FROM oauth_providers WHERE provider = ?')
+      .get('github') as Record<string, unknown>;
     expect(row.tenant_id).toBe('tenant-A');
     expect(row.client_secret).toBe('');
     expect(row.client_secret_ciphertext).toBe('ct:gh-secret');
@@ -237,12 +279,16 @@ describe('POST /oauth/providers — validation + upsert', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         // issuer URL pubblico valido (il guard SSRF #N1 rifiuta non-URL/host interni)
-        provider: 'google', issuer: 'https://new.idp.acme-corp.io',
-        clientId: 'newcid', clientSecret: 'newsec', redirectUri: 'https://app/cb',
+        provider: 'google',
+        issuer: 'https://new.idp.acme-corp.io',
+        clientId: 'newcid',
+        clientSecret: 'newsec',
+        redirectUri: 'https://app/cb',
       }),
     });
     expect(res.status).toBe(201);
-    const rows = dbInstances[0]!.prepare('SELECT * FROM oauth_providers WHERE tenant_id = ? AND provider = ?')
+    const rows = dbInstances[0]!
+      .prepare('SELECT * FROM oauth_providers WHERE tenant_id = ? AND provider = ?')
       .all('tenant-A', 'google');
     expect(rows).toHaveLength(1);
     const r = rows[0] as { issuer: string; client_id: string };
@@ -256,10 +302,16 @@ describe('POST /oauth/providers — validation + upsert', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        provider: 'p', issuer: 'https://idp.acme-corp.io', clientId: 'c', clientSecret: 's', redirectUri: 'https://app/cb',
+        provider: 'p',
+        issuer: 'https://idp.acme-corp.io',
+        clientId: 'c',
+        clientSecret: 's',
+        redirectUri: 'https://app/cb',
       }),
     });
-    const row = dbInstances[0]!.prepare('SELECT scopes FROM oauth_providers WHERE provider = ?').get('p') as { scopes: string };
+    const row = dbInstances[0]!
+      .prepare('SELECT scopes FROM oauth_providers WHERE provider = ?')
+      .get('p') as { scopes: string };
     expect(row.scopes).toBe('openid email profile');
   });
 });
@@ -286,7 +338,9 @@ describe('DELETE /oauth/providers/:provider', () => {
     tenantIdMock.mockReturnValue('tenant-A');
     const res = await app.request('/oauth/providers/google', { method: 'DELETE' });
     expect(await res.json()).toEqual({ removed: false });
-    expect(dbInstances[0]!.prepare('SELECT COUNT(*) c FROM oauth_providers').get()).toEqual({ c: 1 });
+    expect(dbInstances[0]!.prepare('SELECT COUNT(*) c FROM oauth_providers').get()).toEqual({
+      c: 1,
+    });
   });
 });
 
@@ -295,7 +349,7 @@ describe('GET /oauth/:provider/start', () => {
     const app = appAs('owner');
     const res = await app.request('/oauth/ghost/start');
     expect(res.status).toBe(404);
-    expect((await res.json() as { error: string }).error).toContain('not configured');
+    expect(((await res.json()) as { error: string }).error).toContain('not configured');
   });
 
   it('happy: redirect a authorize URL, state row persistito, PKCE verifier salvato', async () => {
@@ -305,7 +359,12 @@ describe('GET /oauth/:provider/start', () => {
     expect(res.status).toBe(302);
     expect(res.headers.get('location')).toContain('idp.example.com/authorize');
     // state row in DB
-    const stateRows = dbInstances[0]!.prepare('SELECT * FROM oauth_state').all() as { state: string; code_verifier: string; tenant_id: string; provider: string }[];
+    const stateRows = dbInstances[0]!.prepare('SELECT * FROM oauth_state').all() as {
+      state: string;
+      code_verifier: string;
+      tenant_id: string;
+      provider: string;
+    }[];
     expect(stateRows).toHaveLength(1);
     expect(stateRows[0]!.code_verifier).toBe('test-pkce-verifier-43-chars-1234567890abcdef');
     expect(stateRows[0]!.tenant_id).toBe('tenant-A');
@@ -332,7 +391,7 @@ describe('GET /oauth/:provider/start', () => {
     seedProvider('tenant-A', 'google');
     const res = await app.request('/oauth/google/start');
     expect(res.status).toBe(500);
-    expect((await res.json() as { error: string }).error).toContain('issuer unreachable');
+    expect(((await res.json()) as { error: string }).error).toContain('issuer unreachable');
   });
 });
 
@@ -347,9 +406,11 @@ describe('GET /oauth/:provider/callback', () => {
     const expiresAt = expired
       ? new Date(Date.now() - 60_000).toISOString()
       : new Date(Date.now() + 60_000).toISOString();
-    dbInstances[0]!.prepare(
-      'INSERT INTO oauth_state (state, tenant_id, provider, code_verifier, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)',
-    ).run(state, tenantId, provider, 'verifier-stored', new Date().toISOString(), expiresAt);
+    dbInstances[0]!
+      .prepare(
+        'INSERT INTO oauth_state (state, tenant_id, provider, code_verifier, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)',
+      )
+      .run(state, tenantId, provider, 'verifier-stored', new Date().toISOString(), expiresAt);
   }
 
   it('state assente in query → 400', async () => {
@@ -357,7 +418,7 @@ describe('GET /oauth/:provider/callback', () => {
     seedProvider('tenant-A', 'google');
     const res = await app.request('/oauth/google/callback');
     expect(res.status).toBe(400);
-    expect((await res.json() as { error: string }).error).toBe('Missing state');
+    expect(((await res.json()) as { error: string }).error).toBe('Missing state');
   });
 
   it('state non in DB → 400 "Invalid state"', async () => {
@@ -365,7 +426,7 @@ describe('GET /oauth/:provider/callback', () => {
     seedProvider('tenant-A', 'google');
     const res = await app.request('/oauth/google/callback?state=unknown&code=c');
     expect(res.status).toBe(400);
-    expect((await res.json() as { error: string }).error).toBe('Invalid state');
+    expect(((await res.json()) as { error: string }).error).toBe('Invalid state');
   });
 
   it('state scaduto → 400 + state row eliminato', async () => {
@@ -374,9 +435,11 @@ describe('GET /oauth/:provider/callback', () => {
     seedState('expired-state', 'tenant-A', 'google', true);
     const res = await app.request('/oauth/google/callback?state=expired-state&code=c');
     expect(res.status).toBe(400);
-    expect((await res.json() as { error: string }).error).toBe('State expired');
+    expect(((await res.json()) as { error: string }).error).toBe('State expired');
     // state eliminato
-    const remaining = dbInstances[0]!.prepare('SELECT * FROM oauth_state WHERE state = ?').get('expired-state');
+    const remaining = dbInstances[0]!
+      .prepare('SELECT * FROM oauth_state WHERE state = ?')
+      .get('expired-state');
     expect(remaining).toBeUndefined();
   });
 
@@ -386,7 +449,7 @@ describe('GET /oauth/:provider/callback', () => {
     // Provider NON seedato → findProvider ritorna null
     const res = await app.request('/oauth/google/callback?state=valid-state&code=c');
     expect(res.status).toBe(404);
-    expect((await res.json() as { error: string }).error).toBe('Provider config missing');
+    expect(((await res.json()) as { error: string }).error).toBe('Provider config missing');
   });
 
   it('email claim mancante → 400', async () => {
@@ -398,7 +461,7 @@ describe('GET /oauth/:provider/callback', () => {
     });
     const res = await app.request('/oauth/google/callback?state=s1&code=c');
     expect(res.status).toBe(400);
-    expect((await res.json() as { error: string }).error).toContain('Email claim missing');
+    expect(((await res.json()) as { error: string }).error).toContain('Email claim missing');
   });
 
   it('claims() ritorna null → 500', async () => {
@@ -410,7 +473,7 @@ describe('GET /oauth/:provider/callback', () => {
     });
     const res = await app.request('/oauth/google/callback?state=s2&code=c');
     expect(res.status).toBe(500);
-    expect((await res.json() as { error: string }).error).toContain('No claims');
+    expect(((await res.json()) as { error: string }).error).toContain('No claims');
   });
 
   it('🚨 PRIMO user nel tenant → role=owner (bootstrap admin)', async () => {
@@ -424,15 +487,19 @@ describe('GET /oauth/:provider/callback', () => {
     const res = await app.request('/oauth/google/callback?state=s3&code=c');
     expect(res.status).toBe(302);
     expect(res.headers.get('location')).toBe('https://editor.example.com');
-    const user = dbInstances[0]!.prepare("SELECT * FROM users WHERE email = ?").get('first@example.com') as { role: string; tenant_id: string };
+    const user = dbInstances[0]!
+      .prepare('SELECT * FROM users WHERE email = ?')
+      .get('first@example.com') as { role: string; tenant_id: string };
     expect(user.role).toBe('owner');
     expect(user.tenant_id).toBe('tenant-A');
     // Session JWT issued con role=owner
-    expect(issueSessionTokenMock).toHaveBeenCalledWith(expect.objectContaining({
-      email: 'first@example.com',
-      role: 'owner',
-      tenantId: 'tenant-A',
-    }));
+    expect(issueSessionTokenMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: 'first@example.com',
+        role: 'owner',
+        tenantId: 'tenant-A',
+      }),
+    );
   });
 
   it('SECONDO user → role=viewer (default safe)', async () => {
@@ -448,15 +515,19 @@ describe('GET /oauth/:provider/callback', () => {
         last_login_at TEXT, oauth_provider TEXT, oauth_subject TEXT
       );
     `);
-    dbInstances[0]!.prepare(
-      "INSERT INTO users (id, tenant_id, email, display_name, password_hash, role, created_at, updated_at) VALUES (?, ?, ?, ?, '', 'owner', '2024-01-01', '2024-01-01')",
-    ).run('owner-id', 'tenant-A', 'owner@example.com', 'Owner');
+    dbInstances[0]!
+      .prepare(
+        "INSERT INTO users (id, tenant_id, email, display_name, password_hash, role, created_at, updated_at) VALUES (?, ?, ?, ?, '', 'owner', '2024-01-01', '2024-01-01')",
+      )
+      .run('owner-id', 'tenant-A', 'owner@example.com', 'Owner');
     seedState('s4', 'tenant-A', 'google');
     oidcMock.authorizationCodeGrant.mockResolvedValueOnce({
       claims: () => ({ email: 'second@example.com', name: 'Second', sub: 'sub-2' }),
     });
     await app.request('/oauth/google/callback?state=s4&code=c');
-    const user = dbInstances[0]!.prepare("SELECT role FROM users WHERE email = ?").get('second@example.com') as { role: string };
+    const user = dbInstances[0]!
+      .prepare('SELECT role FROM users WHERE email = ?')
+      .get('second@example.com') as { role: string };
     expect(user.role).toBe('viewer');
   });
 
@@ -472,15 +543,23 @@ describe('GET /oauth/:provider/callback', () => {
         last_login_at TEXT, oauth_provider TEXT, oauth_subject TEXT
       );
     `);
-    dbInstances[0]!.prepare(
-      "INSERT INTO users (id, tenant_id, email, display_name, password_hash, role, created_at, updated_at, last_login_at) VALUES ('uid-1', 'tenant-A', 'existing@example.com', 'Ex', '', 'editor', '2024-01-01', '2024-01-01', '2024-01-01')",
-    ).run();
+    dbInstances[0]!
+      .prepare(
+        "INSERT INTO users (id, tenant_id, email, display_name, password_hash, role, created_at, updated_at, last_login_at) VALUES ('uid-1', 'tenant-A', 'existing@example.com', 'Ex', '', 'editor', '2024-01-01', '2024-01-01', '2024-01-01')",
+      )
+      .run();
     seedState('s5', 'tenant-A', 'google');
     oidcMock.authorizationCodeGrant.mockResolvedValueOnce({
       claims: () => ({ email: 'existing@example.com', name: 'Ex', sub: 'sub-ex' }),
     });
     await app.request('/oauth/google/callback?state=s5&code=c');
-    const user = dbInstances[0]!.prepare("SELECT * FROM users WHERE email = ?").get('existing@example.com') as { role: string; last_login_at: string; oauth_provider: string };
+    const user = dbInstances[0]!
+      .prepare('SELECT * FROM users WHERE email = ?')
+      .get('existing@example.com') as {
+      role: string;
+      last_login_at: string;
+      oauth_provider: string;
+    };
     expect(user.role).toBe('editor'); // PRESERVED
     expect(user.last_login_at).not.toBe('2024-01-01');
     expect(user.oauth_provider).toBe('google');
@@ -514,7 +593,9 @@ describe('GET /oauth/:provider/callback', () => {
       claims: () => ({ email: 'u@example.com', name: 'U', sub: 's' }),
     });
     await app.request('/oauth/google/callback?state=s7&code=c');
-    const remaining = dbInstances[0]!.prepare('SELECT * FROM oauth_state WHERE state = ?').get('s7');
+    const remaining = dbInstances[0]!
+      .prepare('SELECT * FROM oauth_state WHERE state = ?')
+      .get('s7');
     expect(remaining).toBeUndefined();
   });
 
@@ -525,7 +606,7 @@ describe('GET /oauth/:provider/callback', () => {
     oidcMock.authorizationCodeGrant.mockRejectedValueOnce(new Error('invalid code'));
     const res = await app.request('/oauth/google/callback?state=s8&code=bad');
     expect(res.status).toBe(500);
-    expect((await res.json() as { error: string }).error).toContain('invalid code');
+    expect(((await res.json()) as { error: string }).error).toContain('invalid code');
   });
 
   it('MEDEA_EDITOR_URL non settato → redirect "/"', async () => {
@@ -556,29 +637,38 @@ describe('🚨🚨 F1-B — admin/start usano il tenant del container, header im
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-tenant-id': 'attacker-tenant' },
       body: JSON.stringify({
-        provider: 'github', issuer: 'https://github.com',
-        clientId: 'c', clientSecret: 's', redirectUri: 'https://app/cb',
+        provider: 'github',
+        issuer: 'https://github.com',
+        clientId: 'c',
+        clientSecret: 's',
+        redirectUri: 'https://app/cb',
       }),
     });
     expect(res.status).toBe(201);
-    const row = dbInstances[0]!.prepare('SELECT tenant_id FROM oauth_providers WHERE provider = ?').get('github') as { tenant_id: string };
+    const row = dbInstances[0]!
+      .prepare('SELECT tenant_id FROM oauth_providers WHERE provider = ?')
+      .get('github') as { tenant_id: string };
     expect(row.tenant_id).toBe('real-container-tenant');
     expect(row.tenant_id).not.toBe('attacker-tenant');
   });
 
-  it('🚨 GET /oauth/providers: lista filtrata sul tenant ENV, non sull\'header', async () => {
+  it("🚨 GET /oauth/providers: lista filtrata sul tenant ENV, non sull'header", async () => {
     containerTenantMock.value = 'real-container-tenant';
     seedProvider('real-container-tenant', 'google'); // id='p1'
     // Secondo provider sotto attacker-tenant con id distinto (seedProvider usa
     // 'p1' fisso → INSERT diretto per evitare il conflitto di PRIMARY KEY).
-    dbInstances[0]!.prepare(
-      `INSERT INTO oauth_providers (id, tenant_id, provider, issuer, client_id, client_secret, redirect_uri, scopes, created_at)
+    dbInstances[0]!
+      .prepare(
+        `INSERT INTO oauth_providers (id, tenant_id, provider, issuer, client_id, client_secret, redirect_uri, scopes, created_at)
        VALUES ('p2', 'attacker-tenant', 'okta', 'i', 'c', 's', 'r', 'openid', 'now')`,
-    ).run();
+      )
+      .run();
     tenantIdMock.mockReturnValue('attacker-tenant');
     const app = appAs('owner');
-    const res = await app.request('/oauth/providers', { headers: { 'x-tenant-id': 'attacker-tenant' } });
-    const body = await res.json() as { providers: { provider: string }[] };
+    const res = await app.request('/oauth/providers', {
+      headers: { 'x-tenant-id': 'attacker-tenant' },
+    });
+    const body = (await res.json()) as { providers: { provider: string }[] };
     // Vede SOLO il provider del container, non quello dell'attacker-tenant.
     expect(body.providers.map((p) => p.provider)).toEqual(['google']);
   });
@@ -588,10 +678,14 @@ describe('🚨🚨 F1-B — admin/start usano il tenant del container, header im
     seedProvider('real-container-tenant', 'google');
     tenantIdMock.mockReturnValue('attacker-tenant');
     const app = appAs('owner');
-    const res = await app.request('/oauth/google/start', { headers: { 'x-tenant-id': 'attacker-tenant' } });
+    const res = await app.request('/oauth/google/start', {
+      headers: { 'x-tenant-id': 'attacker-tenant' },
+    });
     expect(res.status).toBe(302);
     // Lo state persistito DEVE essere legato al tenant del container.
-    const stateRow = dbInstances[0]!.prepare('SELECT tenant_id FROM oauth_state LIMIT 1').get() as { tenant_id: string };
+    const stateRow = dbInstances[0]!.prepare('SELECT tenant_id FROM oauth_state LIMIT 1').get() as {
+      tenant_id: string;
+    };
     expect(stateRow.tenant_id).toBe('real-container-tenant');
   });
 });
@@ -607,52 +701,69 @@ describe('🚨🚨 F1-B — admin/start usano il tenant del container, header im
  */
 describe('🚨 RBAC owner-only su POST/DELETE /oauth/providers', () => {
   const validBody = JSON.stringify({
-    provider: 'google', issuer: 'https://idp.example.com', clientId: 'c',
-    clientSecret: 's', redirectUri: 'https://app.example.com/cb',
+    provider: 'google',
+    issuer: 'https://idp.example.com',
+    clientId: 'c',
+    clientSecret: 's',
+    redirectUri: 'https://app.example.com/cb',
   });
 
   for (const role of ['viewer', 'operator', 'editor'] as const) {
     it(`POST come ${role} → 403 e NESSUNA row scritta`, async () => {
       const res = await appAs(role).request('/oauth/providers', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: validBody,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: validBody,
       });
       expect(res.status).toBe(403);
-      const count = dbInstances[0]!.prepare('SELECT COUNT(*) AS c FROM oauth_providers').get() as { c: number };
+      const count = dbInstances[0]!.prepare('SELECT COUNT(*) AS c FROM oauth_providers').get() as {
+        c: number;
+      };
       expect(count.c).toBe(0);
     });
   }
 
   it('🚨 ruolo ALIENO "admin" (vocabolario portal) → 403, NON fail-open', async () => {
     const res = await appAs('admin').request('/oauth/providers', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: validBody,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: validBody,
     });
     expect(res.status).toBe(403);
   });
 
   it('🚨 ruolo garbage da token alterato → 403, NON fail-open', async () => {
     const res = await appAs('hacker-role').request('/oauth/providers', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: validBody,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: validBody,
     });
     expect(res.status).toBe(403);
   });
 
   it('nessun auth context → 401', async () => {
     const res = await appAs(null).request('/oauth/providers', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: validBody,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: validBody,
     });
     expect(res.status).toBe(401);
   });
 
   it('owner → 201 (il gate non blocca chi ha diritto)', async () => {
     const res = await appAs('owner').request('/oauth/providers', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: validBody,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: validBody,
     });
     expect(res.status).toBe(201);
   });
 
   it('superadmin → 201 (rank superiore passa)', async () => {
     const res = await appAs('superadmin').request('/oauth/providers', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: validBody,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: validBody,
     });
     expect(res.status).toBe(201);
   });
@@ -661,7 +772,9 @@ describe('🚨 RBAC owner-only su POST/DELETE /oauth/providers', () => {
     seedProvider('tenant-A', 'google');
     const res = await appAs('viewer').request('/oauth/providers/google', { method: 'DELETE' });
     expect(res.status).toBe(403);
-    const count = dbInstances[0]!.prepare('SELECT COUNT(*) AS c FROM oauth_providers').get() as { c: number };
+    const count = dbInstances[0]!.prepare('SELECT COUNT(*) AS c FROM oauth_providers').get() as {
+      c: number;
+    };
     expect(count.c).toBe(1);
   });
 
@@ -683,30 +796,52 @@ describe('🔴 #6 audit log su CRUD IdP OAuth (era assente)', () => {
   it('POST /oauth/providers → audit append oauth_provider.upsert con actor', async () => {
     auditMock.append.mockClear();
     const res = await appAs('owner').request('/oauth/providers', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ provider: 'google', issuer: 'https://accounts.google.com', clientId: 'cid', clientSecret: 'sec', redirectUri: 'https://x/cb' }),
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        provider: 'google',
+        issuer: 'https://accounts.google.com',
+        clientId: 'cid',
+        clientSecret: 'sec',
+        redirectUri: 'https://x/cb',
+      }),
     });
     expect(res.status).toBe(201);
-    expect(auditMock.append).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'oauth_provider.upsert', resourceType: 'oauth_provider', resourceId: 'google', actorId: 'actor-test',
-    }));
+    expect(auditMock.append).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'oauth_provider.upsert',
+        resourceType: 'oauth_provider',
+        resourceId: 'google',
+        actorId: 'actor-test',
+      }),
+    );
   });
 
   it('DELETE /oauth/providers/:provider → audit append oauth_provider.remove', async () => {
     auditMock.append.mockClear();
     const res = await appAs('owner').request('/oauth/providers/google', { method: 'DELETE' });
     expect(res.status).toBe(200);
-    expect(auditMock.append).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'oauth_provider.remove', resourceType: 'oauth_provider',
-    }));
+    expect(auditMock.append).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'oauth_provider.remove',
+        resourceType: 'oauth_provider',
+      }),
+    );
   });
 
   it('🚨 nessun audit senza il record? (POST resta loggato anche se upsert idempotente)', async () => {
     // mutation-guard: se rimuovo audit.append dalla route, questi diventano rossi.
     auditMock.append.mockClear();
     await appAs('owner').request('/oauth/providers', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ provider: 'okta', issuer: 'https://okta.example', clientId: 'c', clientSecret: 's', redirectUri: 'https://x/cb' }),
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        provider: 'okta',
+        issuer: 'https://okta.example',
+        clientId: 'c',
+        clientSecret: 's',
+        redirectUri: 'https://x/cb',
+      }),
     });
     expect(auditMock.append).toHaveBeenCalledTimes(1);
   });
@@ -715,22 +850,33 @@ describe('🔴 #6 audit log su CRUD IdP OAuth (era assente)', () => {
 describe('🔴 #5 client_secret cifrato at-rest (era plaintext in SQLite)', () => {
   it('POST salva client_secret CIFRATO: colonna plaintext vuota, ciphertext valorizzato', async () => {
     const res = await appAs('owner').request('/oauth/providers', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ provider: 'google', issuer: 'https://accounts.google.com', clientId: 'cid', clientSecret: 'SECRET_XYZ', redirectUri: 'https://x/cb' }),
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        provider: 'google',
+        issuer: 'https://accounts.google.com',
+        clientId: 'cid',
+        clientSecret: 'SECRET_XYZ',
+        redirectUri: 'https://x/cb',
+      }),
     });
     expect(res.status).toBe(201);
     const row = dbInstances[0]!
-      .prepare('SELECT client_secret, client_secret_ciphertext FROM oauth_providers WHERE provider = ?')
+      .prepare(
+        'SELECT client_secret, client_secret_ciphertext FROM oauth_providers WHERE provider = ?',
+      )
       .get('google') as { client_secret: string; client_secret_ciphertext: string | null };
-    expect(row.client_secret).toBe('');               // 🔴 niente plaintext nel DB
+    expect(row.client_secret).toBe(''); // 🔴 niente plaintext nel DB
     expect(row.client_secret_ciphertext).toBe('ct:SECRET_XYZ'); // cifrato presente
   });
 
   it('start usa il client_secret DECIFRATO (record cifrato) per oidc.discovery', async () => {
     // seed un record cifrato (client_secret plaintext vuoto)
-    dbInstances[0]!.prepare(
-      "INSERT INTO oauth_providers (id, tenant_id, provider, issuer, client_id, client_secret, client_secret_ciphertext, redirect_uri, scopes, created_at) VALUES ('p2','tenant-A','okta','https://okta','cid','', 'ct:REALSEC','https://x/cb','openid', datetime('now'))",
-    ).run();
+    dbInstances[0]!
+      .prepare(
+        "INSERT INTO oauth_providers (id, tenant_id, provider, issuer, client_id, client_secret, client_secret_ciphertext, redirect_uri, scopes, created_at) VALUES ('p2','tenant-A','okta','https://okta','cid','', 'ct:REALSEC','https://x/cb','openid', datetime('now'))",
+      )
+      .run();
     await appAs('owner').request('/oauth/okta/start');
     expect(oidcMock.discovery).toHaveBeenCalledWith(expect.any(URL), 'cid', 'REALSEC');
   });
@@ -743,25 +889,34 @@ describe('🔴 #5 client_secret cifrato at-rest (era plaintext in SQLite)', () =
 });
 
 describe('🔴 SSRF — issuer OAuth bloccato verso host interni (oidc.discovery fa fetch)', () => {
-  const base = { provider: 'google', clientId: 'cid', clientSecret: 'sec', redirectUri: 'https://x/cb' };
+  const base = {
+    provider: 'google',
+    clientId: 'cid',
+    clientSecret: 'sec',
+    redirectUri: 'https://x/cb',
+  };
   it.each([
-    'http://172.20.0.1:6379',          // Redis interno
-    'http://localhost/idp',            // loopback
-    'http://169.254.169.254',          // IMDS
-    'http://10.0.0.1',                 // RFC1918
-    'ftp://evil.example.org',          // scheme non-http
+    'http://172.20.0.1:6379', // Redis interno
+    'http://localhost/idp', // loopback
+    'http://169.254.169.254', // IMDS
+    'http://10.0.0.1', // RFC1918
+    'ftp://evil.example.org', // scheme non-http
   ])('issuer "%s" → 400, nessun INSERT', async (issuer) => {
     const res = await appAs('owner').request('/oauth/providers', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ ...base, issuer }),
     });
     expect(res.status).toBe(400);
-    expect(dbInstances[0]!.prepare('SELECT * FROM oauth_providers WHERE provider = ?').get('google')).toBeUndefined();
+    expect(
+      dbInstances[0]!.prepare('SELECT * FROM oauth_providers WHERE provider = ?').get('google'),
+    ).toBeUndefined();
   });
 
   it('🟢 issuer PUBBLICO → 201', async () => {
     const res = await appAs('owner').request('/oauth/providers', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ ...base, issuer: 'https://accounts.google.com' }),
     });
     expect(res.status).toBe(201);

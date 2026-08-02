@@ -118,7 +118,9 @@ async function hostFetch(url: string, initJson?: string): Promise<FetchProxyResp
     if ('signal' in init) delete (init as Record<string, unknown>).signal;
     if ('timeoutMs' in init) delete (init as Record<string, unknown>).timeoutMs;
   }
-  process.stderr.write(`[community-fetch.worker] BEFORE url=${url} method=${(init?.method ?? 'GET')}\n`);
+  process.stderr.write(
+    `[community-fetch.worker] BEFORE url=${url} method=${init?.method ?? 'GET'}\n`,
+  );
   // Redirect-following SICURO (parità con il path inline community-node-sandbox.ts):
   // `redirect: 'manual'` + RI-VALIDAZIONE SSRF di OGNI Location (no redirect-chain
   // bypass verso IP interni) + cap hop + downgrade POST→GET. PRIMA il worker faceva
@@ -138,17 +140,22 @@ async function hostFetch(url: string, initJson?: string): Promise<FetchProxyResp
         spanName: 'node.community.fetch.worker',
       });
     } catch (e) {
-      process.stderr.write(`[community-fetch.worker] ERR url=${currentUrl} msg=${(e as Error).message}\n`);
+      process.stderr.write(
+        `[community-fetch.worker] ERR url=${currentUrl} msg=${(e as Error).message}\n`,
+      );
       throw e;
     }
     if (res.status < 300 || res.status >= 400) break; // risposta finale (non redirect)
     const loc = res.headers.get('location');
     if (!loc) break; // 3xx senza Location → trattala come finale
-    if (++hops > MAX_REDIRECTS) throw new Error(`SSRF guard: troppi redirect (>${String(MAX_REDIRECTS)})`);
+    if (++hops > MAX_REDIRECTS)
+      throw new Error(`SSRF guard: troppi redirect (>${String(MAX_REDIRECTS)})`);
     const next = new URL(loc, currentUrl).toString();
     const ssrf = validateUrlForFetch(next);
     if (!ssrf.ok) {
-      throw new Error(`SSRF blocked: redirect verso host non permesso (${ssrf.reason ?? 'invalid'})`);
+      throw new Error(
+        `SSRF blocked: redirect verso host non permesso (${ssrf.reason ?? 'invalid'})`,
+      );
     }
     // Semantica HTTP: dopo un redirect un POST/PUT diventa GET senza body.
     if (reqInit.method && reqInit.method !== 'GET' && reqInit.method !== 'HEAD') {
@@ -158,9 +165,13 @@ async function hostFetch(url: string, initJson?: string): Promise<FetchProxyResp
     currentUrl = next;
   }
   const buf = await readBytesCapped(res, SANDBOX_FETCH_MAX_BYTES); // anti-OOM (era arrayBuffer integrale ×3 marshalling)
-  process.stderr.write(`[community-fetch.worker] AFTER url=${currentUrl} status=${String(res.status)} ok=${String(res.ok)} bytes=${String(buf.length)}\n`);
+  process.stderr.write(
+    `[community-fetch.worker] AFTER url=${currentUrl} status=${String(res.status)} ok=${String(res.ok)} bytes=${String(buf.length)}\n`,
+  );
   const headers: Record<string, string> = {};
-  res.headers.forEach((v, k) => { headers[k.toLowerCase()] = v; });
+  res.headers.forEach((v, k) => {
+    headers[k.toLowerCase()] = v;
+  });
   const response: FetchProxyResponse = {
     status: res.status,
     ok: res.ok,
@@ -171,7 +182,9 @@ async function hostFetch(url: string, initJson?: string): Promise<FetchProxyResp
   };
   // 5xx + 429 attivano il breaker count anche su body parsato OK (same pattern main thread)
   if (res.status >= 500 || res.status === 429) {
-    throw new Error(`HTTP ${String(res.status)} from ${new URL(currentUrl).host} (breaker-tracked)`);
+    throw new Error(
+      `HTTP ${String(res.status)} from ${new URL(currentUrl).host} (breaker-tracked)`,
+    );
   }
   return response;
 }
@@ -196,13 +209,17 @@ async function run(d: WorkerInput): Promise<void> {
     await jail.set('__context', new ivm.ExternalCopy(d.contextMeta).copyInto());
 
     // Log capture
-    await jail.set('__log', new ivm.Callback((level: string, msg: string) => {
-      if (logCapture.length >= TRACE_MAX_LOG_ENTRIES) return;
-      const truncated = msg.length > TRACE_MAX_LOG_CHARS
-        ? `${msg.slice(0, TRACE_MAX_LOG_CHARS)}… [${String(msg.length - TRACE_MAX_LOG_CHARS)} chars truncated]`
-        : msg;
-      logCapture.push(`[${level}] ${truncated}`);
-    }));
+    await jail.set(
+      '__log',
+      new ivm.Callback((level: string, msg: string) => {
+        if (logCapture.length >= TRACE_MAX_LOG_ENTRIES) return;
+        const truncated =
+          msg.length > TRACE_MAX_LOG_CHARS
+            ? `${msg.slice(0, TRACE_MAX_LOG_CHARS)}… [${String(msg.length - TRACE_MAX_LOG_CHARS)} chars truncated]`
+            : msg;
+        logCapture.push(`[${level}] ${truncated}`);
+      }),
+    );
     // ROOT CAUSE #3 (2026-06-09): `const console = ...` ha block-scope nello
     // script eval — NON è visibile al successivo `script.run(ctx)` del vendor
     // bundle. Devo assegnarlo a globalThis perché diventi proprietà del global
@@ -217,30 +234,49 @@ async function run(d: WorkerInput): Promise<void> {
     `);
 
     // Fetch proxy
-    await jail.set('__fetch', new ivm.Reference(async (url: string, initJson?: string) => {
-      const t0 = Date.now();
-      const init = initJson ? (JSON.parse(initJson) as { method?: string }) : undefined;
-      let res: FetchProxyResponse;
-      try {
-        res = await hostFetch(url, initJson);
-      } catch (err) {
-        const errMsg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-        // Cappella Sistina+: log host fetch failure nel buffer logs del sandbox
-        // così il LogCollector lo forwarda allo step + dashboard senza
-        // dover decompilare il bundle vendor.
-        if (logCapture.length < TRACE_MAX_LOG_ENTRIES) {
-          logCapture.push(`[error] [ff/host-fetch] ${url} → ${errMsg}`);
+    await jail.set(
+      '__fetch',
+      new ivm.Reference(async (url: string, initJson?: string) => {
+        const t0 = Date.now();
+        const init = initJson ? (JSON.parse(initJson) as { method?: string }) : undefined;
+        let res: FetchProxyResponse;
+        try {
+          res = await hostFetch(url, initJson);
+        } catch (err) {
+          const errMsg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+          // Cappella Sistina+: log host fetch failure nel buffer logs del sandbox
+          // così il LogCollector lo forwarda allo step + dashboard senza
+          // dover decompilare il bundle vendor.
+          if (logCapture.length < TRACE_MAX_LOG_ENTRIES) {
+            logCapture.push(`[error] [ff/host-fetch] ${url} → ${errMsg}`);
+          }
+          if (d.captureTrace && network.length < TRACE_MAX_NETWORK_EVENTS) {
+            network.push({
+              url,
+              method: init?.method ?? 'GET',
+              status: 0,
+              durationMs: Date.now() - t0,
+              bytesIn: 0,
+              ok: false,
+              startedAt: t0,
+            });
+          }
+          throw err;
         }
         if (d.captureTrace && network.length < TRACE_MAX_NETWORK_EVENTS) {
-          network.push({ url, method: init?.method ?? 'GET', status: 0, durationMs: Date.now() - t0, bytesIn: 0, ok: false, startedAt: t0 });
+          network.push({
+            url,
+            method: init?.method ?? 'GET',
+            status: res.status,
+            durationMs: Date.now() - t0,
+            bytesIn: res.bodyLength,
+            ok: res.ok,
+            startedAt: t0,
+          });
         }
-        throw err;
-      }
-      if (d.captureTrace && network.length < TRACE_MAX_NETWORK_EVENTS) {
-        network.push({ url, method: init?.method ?? 'GET', status: res.status, durationMs: Date.now() - t0, bytesIn: res.bodyLength, ok: res.ok, startedAt: t0 });
-      }
-      return new ivm.ExternalCopy(res).copyInto();
-    }));
+        return new ivm.ExternalCopy(res).copyInto();
+      }),
+    );
     await ctx.eval(`
       globalThis.fetch = async (url, init) => {
         try {
@@ -291,19 +327,31 @@ async function run(d: WorkerInput): Promise<void> {
     `);
 
     // Buffer shim
-    await jail.set('__bufferFrom', new ivm.Reference((data: string, encoding: string) => {
-      const buf = Buffer.from(data, encoding as BufferEncoding);
-      return new ivm.ExternalCopy({ bytes: buf.toString('base64'), length: buf.length }).copyInto();
-    }));
-    await jail.set('__bufferToString', new ivm.Reference((base64: string, encoding: string) => {
-      return Buffer.from(base64, 'base64').toString(encoding as BufferEncoding);
-    }));
+    await jail.set(
+      '__bufferFrom',
+      new ivm.Reference((data: string, encoding: string) => {
+        const buf = Buffer.from(data, encoding as BufferEncoding);
+        return new ivm.ExternalCopy({
+          bytes: buf.toString('base64'),
+          length: buf.length,
+        }).copyInto();
+      }),
+    );
+    await jail.set(
+      '__bufferToString',
+      new ivm.Reference((base64: string, encoding: string) => {
+        return Buffer.from(base64, 'base64').toString(encoding as BufferEncoding);
+      }),
+    );
     // ROOT CAUSE #8 (2026-06-09): Buffer.byteLength(str, enc) — usato dal
     // bundle catalog_page per calcolare Content-Length della render HTML.
     // Senza shim: TypeError "Buffer.byteLength is not a function".
-    await jail.set('__bufferByteLength', new ivm.Reference((data: string, encoding: string) => {
-      return Buffer.byteLength(data, encoding as BufferEncoding);
-    }));
+    await jail.set(
+      '__bufferByteLength',
+      new ivm.Reference((data: string, encoding: string) => {
+        return Buffer.byteLength(data, encoding as BufferEncoding);
+      }),
+    );
 
     // ROOT CAUSE #10 (2026-06-09): node:crypto bridge — sistemico per OGNI
     // custom node che firma HMAC/hash payload (rotator HMAC signed URLs,
@@ -312,26 +360,47 @@ async function run(d: WorkerInput): Promise<void> {
     // → TypeError "createHmac is not a function".
     // Espongo i metodi più usati via Reference sync (host-bridge): createHmac,
     // createHash, randomBytes, randomUUID, timingSafeEqual.
-    await jail.set('__cryptoHmac', new ivm.Reference((algo: string, secret: string, data: string, outEncoding: string) => {
-      return createHmac(algo, secret).update(data, 'utf8').digest(outEncoding as 'hex' | 'base64' | 'binary');
-    }));
-    await jail.set('__cryptoHash', new ivm.Reference((algo: string, data: string, outEncoding: string) => {
-      return createHash(algo).update(data, 'utf8').digest(outEncoding as 'hex' | 'base64' | 'binary');
-    }));
-    await jail.set('__cryptoRandomBytes', new ivm.Reference((size: number, outEncoding: string) => {
-      // Guardia anti-OOM host (vedi sandbox-crypto-guard): stesso bridge dell'inline.
-      const buf = guardedRandomBytes(size);
-      return outEncoding === 'buffer' ? buf.toString('base64') : buf.toString(outEncoding as 'hex' | 'base64' | 'binary');
-    }));
-    await jail.set('__cryptoRandomUUID', new ivm.Reference(() => {
-      return randomUUID();
-    }));
-    await jail.set('__cryptoTimingSafeEqual', new ivm.Reference((a: string, b: string, encoding: string) => {
-      const ba = Buffer.from(a, encoding as BufferEncoding);
-      const bb = Buffer.from(b, encoding as BufferEncoding);
-      if (ba.length !== bb.length) return false;
-      return timingSafeEqual(ba, bb);
-    }));
+    await jail.set(
+      '__cryptoHmac',
+      new ivm.Reference((algo: string, secret: string, data: string, outEncoding: string) => {
+        return createHmac(algo, secret)
+          .update(data, 'utf8')
+          .digest(outEncoding as 'hex' | 'base64' | 'binary');
+      }),
+    );
+    await jail.set(
+      '__cryptoHash',
+      new ivm.Reference((algo: string, data: string, outEncoding: string) => {
+        return createHash(algo)
+          .update(data, 'utf8')
+          .digest(outEncoding as 'hex' | 'base64' | 'binary');
+      }),
+    );
+    await jail.set(
+      '__cryptoRandomBytes',
+      new ivm.Reference((size: number, outEncoding: string) => {
+        // Guardia anti-OOM host (vedi sandbox-crypto-guard): stesso bridge dell'inline.
+        const buf = guardedRandomBytes(size);
+        return outEncoding === 'buffer'
+          ? buf.toString('base64')
+          : buf.toString(outEncoding as 'hex' | 'base64' | 'binary');
+      }),
+    );
+    await jail.set(
+      '__cryptoRandomUUID',
+      new ivm.Reference(() => {
+        return randomUUID();
+      }),
+    );
+    await jail.set(
+      '__cryptoTimingSafeEqual',
+      new ivm.Reference((a: string, b: string, encoding: string) => {
+        const ba = Buffer.from(a, encoding as BufferEncoding);
+        const bb = Buffer.from(b, encoding as BufferEncoding);
+        if (ba.length !== bb.length) return false;
+        return timingSafeEqual(ba, bb);
+      }),
+    );
     await ctx.eval(`
       // ROOT CAUSE #11 (2026-06-09): Buffer.from accept binary data (ArrayBuffer/
       // Uint8Array). Stream proxy fa Buffer.from(await res.arrayBuffer()) per
@@ -413,30 +482,33 @@ async function run(d: WorkerInput): Promise<void> {
     // FIX Cappella Sistina+: bridge il WHATWG URL del Node host nell'isolate
     // via Reference sync. Fidelity completa (protocol/host/hostname/port/
     // pathname/search/hash/origin/href + URLSearchParams via search).
-    await jail.set('__urlParse', new ivm.Reference((raw: string, base?: string) => {
-      try {
-        const u = base ? new URL(raw, base) : new URL(raw);
-        return new ivm.ExternalCopy({
-          ok: true,
-          protocol: u.protocol,
-          host: u.host,
-          hostname: u.hostname,
-          port: u.port,
-          pathname: u.pathname,
-          search: u.search,
-          hash: u.hash,
-          origin: u.origin,
-          href: u.href,
-          username: u.username,
-          password: u.password,
-        }).copyInto();
-      } catch (err) {
-        return new ivm.ExternalCopy({
-          ok: false,
-          error: err instanceof Error ? err.message : String(err),
-        }).copyInto();
-      }
-    }));
+    await jail.set(
+      '__urlParse',
+      new ivm.Reference((raw: string, base?: string) => {
+        try {
+          const u = base ? new URL(raw, base) : new URL(raw);
+          return new ivm.ExternalCopy({
+            ok: true,
+            protocol: u.protocol,
+            host: u.host,
+            hostname: u.hostname,
+            port: u.port,
+            pathname: u.pathname,
+            search: u.search,
+            hash: u.hash,
+            origin: u.origin,
+            href: u.href,
+            username: u.username,
+            password: u.password,
+          }).copyInto();
+        } catch (err) {
+          return new ivm.ExternalCopy({
+            ok: false,
+            error: err instanceof Error ? err.message : String(err),
+          }).copyInto();
+        }
+      }),
+    );
 
     // ─── #223 + ROOT CAUSE #2 fix: setTimeout/clearTimeout/setInterval ────
     // ROOT CAUSE #2 (NO_LIVE_HOST workflow Streammy):
@@ -450,50 +522,88 @@ async function run(d: WorkerInput): Promise<void> {
     // FIX: separare il payload. Numeri passati come COPY (deserializzati
     // correttamente lato host), callbacks passati via registry isolate-side
     // con un id (number). Il host triggera l'eval via __invokeCb(id).
-    await jail.set('__hostSetTimeout', new ivm.Reference((delayMs: number, cbId: number) => {
-      if (hostTimers.size >= MAX_HOST_TIMERS) {
-        throw new Error(`Limite timer sandbox superato (${String(MAX_HOST_TIMERS)}): troppi setTimeout/setInterval attivi.`);
-      }
-      const id = nextTimerId++;
-      const effectiveMs = Math.max(0, Math.floor(delayMs));
-      // Diagnostic: log del delay reale ricevuto host-side, push in logCapture
-      // così appare nel step.logs (verifica fix cb registry: delayMs=15000 atteso).
-      if (logCapture.length < TRACE_MAX_LOG_ENTRIES) {
-        logCapture.push(`[debug] [ff/setTimeout] id=${String(id)} cbId=${String(cbId)} requestedMs=${String(delayMs)} effectiveMs=${String(effectiveMs)}`);
-      }
-      const handle = setTimeout(() => {
-        hostTimers.delete(id);
-        try {
-          ctx.evalSync(`globalThis.__cbRegistry && globalThis.__cbRegistry[${String(cbId)}] && globalThis.__cbRegistry[${String(cbId)}](); delete globalThis.__cbRegistry[${String(cbId)}];`, { timeout: 1_000 });
-        } catch { /* cb crash inside isolate — swallow per evitare worker death */ }
-      }, effectiveMs);
-      hostTimers.set(id, handle);
-      return id;
-    }));
-    await jail.set('__hostClearTimeout', new ivm.Reference((id: number) => {
-      const h = hostTimers.get(id);
-      if (h) { clearTimeout(h); hostTimers.delete(id); }
-    }));
-    await jail.set('__hostSetInterval', new ivm.Reference((delayMs: number, cbId: number) => {
-      if (hostTimers.size >= MAX_HOST_TIMERS) {
-        throw new Error(`Limite timer sandbox superato (${String(MAX_HOST_TIMERS)}): troppi setTimeout/setInterval attivi.`);
-      }
-      const id = nextTimerId++;
-      const handle = setInterval(() => {
-        try {
-          ctx.evalSync(`globalThis.__cbRegistry && globalThis.__cbRegistry[${String(cbId)}] && globalThis.__cbRegistry[${String(cbId)}]();`, { timeout: 1_000 });
-        } catch { /* swallow */ }
-      }, Math.max(1, Math.floor(delayMs)));
-      hostTimers.set(id, handle);
-      return id;
-    }));
-    await jail.set('__hostClearInterval', new ivm.Reference((id: number) => {
-      const h = hostTimers.get(id);
-      if (h) { clearInterval(h); hostTimers.delete(id); }
-    }));
+    await jail.set(
+      '__hostSetTimeout',
+      new ivm.Reference((delayMs: number, cbId: number) => {
+        if (hostTimers.size >= MAX_HOST_TIMERS) {
+          throw new Error(
+            `Limite timer sandbox superato (${String(MAX_HOST_TIMERS)}): troppi setTimeout/setInterval attivi.`,
+          );
+        }
+        const id = nextTimerId++;
+        const effectiveMs = Math.max(0, Math.floor(delayMs));
+        // Diagnostic: log del delay reale ricevuto host-side, push in logCapture
+        // così appare nel step.logs (verifica fix cb registry: delayMs=15000 atteso).
+        if (logCapture.length < TRACE_MAX_LOG_ENTRIES) {
+          logCapture.push(
+            `[debug] [ff/setTimeout] id=${String(id)} cbId=${String(cbId)} requestedMs=${String(delayMs)} effectiveMs=${String(effectiveMs)}`,
+          );
+        }
+        const handle = setTimeout(() => {
+          hostTimers.delete(id);
+          try {
+            ctx.evalSync(
+              `globalThis.__cbRegistry && globalThis.__cbRegistry[${String(cbId)}] && globalThis.__cbRegistry[${String(cbId)}](); delete globalThis.__cbRegistry[${String(cbId)}];`,
+              { timeout: 1_000 },
+            );
+          } catch {
+            /* cb crash inside isolate — swallow per evitare worker death */
+          }
+        }, effectiveMs);
+        hostTimers.set(id, handle);
+        return id;
+      }),
+    );
+    await jail.set(
+      '__hostClearTimeout',
+      new ivm.Reference((id: number) => {
+        const h = hostTimers.get(id);
+        if (h) {
+          clearTimeout(h);
+          hostTimers.delete(id);
+        }
+      }),
+    );
+    await jail.set(
+      '__hostSetInterval',
+      new ivm.Reference((delayMs: number, cbId: number) => {
+        if (hostTimers.size >= MAX_HOST_TIMERS) {
+          throw new Error(
+            `Limite timer sandbox superato (${String(MAX_HOST_TIMERS)}): troppi setTimeout/setInterval attivi.`,
+          );
+        }
+        const id = nextTimerId++;
+        const handle = setInterval(
+          () => {
+            try {
+              ctx.evalSync(
+                `globalThis.__cbRegistry && globalThis.__cbRegistry[${String(cbId)}] && globalThis.__cbRegistry[${String(cbId)}]();`,
+                { timeout: 1_000 },
+              );
+            } catch {
+              /* swallow */
+            }
+          },
+          Math.max(1, Math.floor(delayMs)),
+        );
+        hostTimers.set(id, handle);
+        return id;
+      }),
+    );
+    await jail.set(
+      '__hostClearInterval',
+      new ivm.Reference((id: number) => {
+        const h = hostTimers.get(id);
+        if (h) {
+          clearInterval(h);
+          hostTimers.delete(id);
+        }
+      }),
+    );
 
     // Web globals shim (AbortController, structuredClone, queueMicrotask, timers)
-    await ctx.eval(`
+    await ctx.eval(
+      `
       // Timer shim — host-bridged via cb registry isolate-side.
       // I numeri sono passati come COPY (deserializzati correttamente),
       // i callback registrati in __cbRegistry con id numerico.
@@ -727,21 +837,29 @@ async function run(d: WorkerInput): Promise<void> {
           return out;
         };
       }
-    `, { timeout: 1_000 });
+    `,
+      { timeout: 1_000 },
+    );
 
     // STDLIB INJECTION (Pipedream dollar pattern) — pre-eval bundle prima del vendor source.
     // Espone globalThis.ff dentro l'isolate con ff.csv/ff.crypto/ff.transform/etc.
     await ctx.eval(STDLIB_BUNDLE, { timeout: 2_000 });
 
     const script = await isolate.compileScript(d.bootstrapSource);
-    const resultJson = await script.run(ctx, { timeout: EXEC_TIMEOUT_MS, promise: true }) as string;
+    const resultJson = (await script.run(ctx, {
+      timeout: EXEC_TIMEOUT_MS,
+      promise: true,
+    })) as string;
 
     // Cappella Sistina+ error propagation: il bootstrap del sandbox include
     // serializeError → questo parsed include errorName/errorCode/errorMeta/
     // errorCause (con probes/outcomes)/errorStackHead. Forwarda TUTTO al
     // chiamante in modo che il collector loggi le ragioni reali per ogni
     // candidate fallito (es. rotator 6 probes con reason network/status/marker).
-    interface ParsedOk { ok: true; value: unknown }
+    interface ParsedOk {
+      ok: true;
+      value: unknown;
+    }
     interface ParsedErr {
       ok: false;
       error: string;
@@ -756,7 +874,10 @@ async function run(d: WorkerInput): Promise<void> {
     try {
       parsed = JSON.parse(resultJson) as ParsedOk | ParsedErr;
     } catch {
-      parentPort!.postMessage({ ok: false, error: 'Community node returned non-serializable value' });
+      parentPort!.postMessage({
+        ok: false,
+        error: 'Community node returned non-serializable value',
+      });
       return;
     }
     if (!parsed.ok) {
@@ -769,25 +890,36 @@ async function run(d: WorkerInput): Promise<void> {
         ...(parsed.errorContext ? { errorContext: parsed.errorContext } : {}),
         ...(parsed.errorCause ? { errorCause: parsed.errorCause } : {}),
         ...(parsed.errorStackHead ? { errorStackHead: parsed.errorStackHead } : {}),
-        trace: d.captureTrace ? { logs: logCapture, network, durationMs: Date.now() - startMs } : undefined,
+        trace: d.captureTrace
+          ? { logs: logCapture, network, durationMs: Date.now() - startMs }
+          : undefined,
       });
       return;
     }
     parentPort!.postMessage({
       ok: true,
       value: parsed.value,
-      trace: d.captureTrace ? { logs: logCapture, network, durationMs: Date.now() - startMs } : undefined,
+      trace: d.captureTrace
+        ? { logs: logCapture, network, durationMs: Date.now() - startMs }
+        : undefined,
     });
   } catch (err) {
     parentPort!.postMessage({
       ok: false,
       error: err instanceof Error ? err.message : String(err),
-      trace: d.captureTrace ? { logs: logCapture, network, durationMs: Date.now() - startMs } : undefined,
+      trace: d.captureTrace
+        ? { logs: logCapture, network, durationMs: Date.now() - startMs }
+        : undefined,
     });
   } finally {
     // #223: clear host-bridged timers BEFORE isolate.dispose
     for (const h of hostTimers.values()) {
-      try { clearTimeout(h); clearInterval(h); } catch { /* swallow */ }
+      try {
+        clearTimeout(h);
+        clearInterval(h);
+      } catch {
+        /* swallow */
+      }
     }
     hostTimers.clear();
     isolate.dispose();

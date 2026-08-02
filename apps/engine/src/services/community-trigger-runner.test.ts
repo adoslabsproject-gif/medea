@@ -39,8 +39,16 @@ describe('normalizePollResult — robustezza', () => {
   });
 
   it('events non-array → [] ; state array o null → {}', () => {
-    expect(normalizePollResult({ events: 'nope', state: [1] })).toEqual({ events: [], state: {}, truncated: false });
-    expect(normalizePollResult({ events: [{ a: 1 }], state: null })).toEqual({ events: [{ a: 1 }], state: {}, truncated: false });
+    expect(normalizePollResult({ events: 'nope', state: [1] })).toEqual({
+      events: [],
+      state: {},
+      truncated: false,
+    });
+    expect(normalizePollResult({ events: [{ a: 1 }], state: null })).toEqual({
+      events: [{ a: 1 }],
+      state: {},
+      truncated: false,
+    });
   });
 
   it('🚨 anti-flood: oltre MAX_EVENTS_PER_POLL → troncato a cap + truncated=true', () => {
@@ -90,10 +98,21 @@ describe('runCommunityTriggerPoll — integrazione sandbox (inline)', () => {
   function fakeInstalled(executorSource: string): InstalledNode {
     return {
       manifest: {
-        id: 'acme_poll', vendor: 'acme', version: '1.0.0',
-        displayName: 'Acme Poll', description: 'x', license: 'MIT',
+        id: 'acme_poll',
+        vendor: 'acme',
+        version: '1.0.0',
+        displayName: 'Acme Poll',
+        description: 'x',
+        license: 'MIT',
       } as InstalledNode['manifest'],
-      def: { id: 'acme_poll', type: 'trigger', label: 'Acme Poll', icon: 'cube', color: '#3b82f6', description: 'x' } as InstalledNode['def'],
+      def: {
+        id: 'acme_poll',
+        type: 'trigger',
+        label: 'Acme Poll',
+        icon: 'cube',
+        color: '#3b82f6',
+        description: 'x',
+      } as InstalledNode['def'],
       executorSource,
       installedAt: new Date().toISOString(),
       verified: true,
@@ -130,7 +149,11 @@ describe('runCommunityTriggerPoll — integrazione sandbox (inline)', () => {
   });
 
   it('un poll che throwa → propaga (il caller logga per-poll, non silenziato)', async () => {
-    const installed = fakeInstalled(`module.exports = async function () { throw new Error('config invalida: API key mancante'); };`);
-    await expect(runCommunityTriggerPoll(installed, 'rows', {}, {}, ctx)).rejects.toThrow(/API key mancante/u);
+    const installed = fakeInstalled(
+      `module.exports = async function () { throw new Error('config invalida: API key mancante'); };`,
+    );
+    await expect(runCommunityTriggerPoll(installed, 'rows', {}, {}, ctx)).rejects.toThrow(
+      /API key mancante/u,
+    );
   });
 });

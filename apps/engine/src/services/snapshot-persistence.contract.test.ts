@@ -25,13 +25,8 @@ const { CheckpointService } = await import('./checkpoint.service.js');
 const { PausedWorkflowsService } = await import('./paused-workflows.service.js');
 
 const GRAPH = new Map([
-  ['src', [
-    { json: { value: 'a' } },
-    { json: { value: 'b' } },
-  ]],
-  ['filter', [
-    { json: { value: 'b' }, pairedItem: { item: 1, sourceNodeId: 'src' } },
-  ]],
+  ['src', [{ json: { value: 'a' } }, { json: { value: 'b' } }]],
+  ['filter', [{ json: { value: 'b' }, pairedItem: { item: 1, sourceNodeId: 'src' } }]],
 ]);
 const GRAPH_AS_RECORD = {
   src: [{ json: { value: 'a' } }, { json: { value: 'b' } }],
@@ -50,7 +45,10 @@ describe('🚨🚨 contract: schema da runMigrations() ↔ servizi snapshot', ()
   it('🚨 checkpoint: save sullo schema REALE → latest() round-trippa itemGraph + sourceNodeId', () => {
     const svc = new CheckpointService();
     svc.save({
-      runId: 'r-1', workflowId: 'wf-1', tenantId: 't-1', atNodeId: 'filter',
+      runId: 'r-1',
+      workflowId: 'wf-1',
+      tenantId: 't-1',
+      atNodeId: 'filter',
       outputsById: new Map([['src', ['a', 'b']]]),
       visited: new Set(['src', 'filter']),
       pendingQueue: [{ nodeId: 'next', carriedInput: { kept: ['b'] }, sourceNodeId: 'filter' }],
@@ -60,16 +58,24 @@ describe('🚨🚨 contract: schema da runMigrations() ↔ servizi snapshot', ()
     const cp = svc.latest('r-1');
     expect(cp).not.toBeNull();
     expect(cp!.itemGraph).toEqual(GRAPH_AS_RECORD);
-    expect(cp!.pendingQueue).toEqual([{ nodeId: 'next', carriedInput: { kept: ['b'] }, sourceNodeId: 'filter' }]);
+    expect(cp!.pendingQueue).toEqual([
+      { nodeId: 'next', carriedInput: { kept: ['b'] }, sourceNodeId: 'filter' },
+    ]);
   });
 
   it('🚨 pause: pause sullo schema REALE → list() round-trippa itemGraph + sourceNodeId', () => {
     const svc = new PausedWorkflowsService();
     const id = svc.pause({
-      runId: 'r-2', workflowId: 'wf-1', tenantId: 't-1', signalName: 'go', atNodeId: 'wait',
+      runId: 'r-2',
+      workflowId: 'wf-1',
+      tenantId: 't-1',
+      signalName: 'go',
+      atNodeId: 'wait',
       outputsById: new Map([['src', ['a', 'b']]]),
       visited: new Set(['src', 'wait']),
-      pendingQueue: [{ nodeId: 'P', carriedInput: ['a', 'b'], mapMode: 'auto', sourceNodeId: 'src' }],
+      pendingQueue: [
+        { nodeId: 'P', carriedInput: ['a', 'b'], mapMode: 'auto', sourceNodeId: 'src' },
+      ],
       itemGraph: GRAPH,
       timeoutSeconds: 60,
       defaultPayload: {},
@@ -79,7 +85,9 @@ describe('🚨🚨 contract: schema da runMigrations() ↔ servizi snapshot', ()
     const row = rows.find((r) => r.runId === 'r-2');
     expect(row).toBeDefined();
     expect(row!.itemGraph).toEqual(GRAPH_AS_RECORD);
-    expect(row!.pendingQueue).toEqual([{ nodeId: 'P', carriedInput: ['a', 'b'], mapMode: 'auto', sourceNodeId: 'src' }]);
+    expect(row!.pendingQueue).toEqual([
+      { nodeId: 'P', carriedInput: ['a', 'b'], mapMode: 'auto', sourceNodeId: 'src' },
+    ]);
   });
 
   it('🚨 upgrade path pre-4.2: DB con tabelle SENZA item_graph_json → runMigrations aggiunge la colonna e i servizi scrivono', () => {
@@ -97,9 +105,13 @@ describe('🚨🚨 contract: schema da runMigrations() ↔ servizi snapshot', ()
       );
     `);
     // Riga legacy scritta dal runtime vecchio.
-    sqliteInst.prepare(`INSERT INTO workflow_checkpoints
+    sqliteInst
+      .prepare(
+        `INSERT INTO workflow_checkpoints
       (run_id, workflow_id, tenant_id, at_node_id, outputs_by_id_json, visited_json, pending_queue_json, step_count, created_at)
-      VALUES ('r-legacy', 'wf', 't-1', 'n', '{}', '[]', '[]', 1, '2026-01-01')`).run();
+      VALUES ('r-legacy', 'wf', 't-1', 'n', '{}', '[]', '[]', 1, '2026-01-01')`,
+      )
+      .run();
 
     runMigrations(); // ← ensureColumn deve aggiungere item_graph_json SENZA rompere la riga legacy
 
@@ -110,9 +122,15 @@ describe('🚨🚨 contract: schema da runMigrations() ↔ servizi snapshot', ()
     expect(legacy!.itemGraph).toEqual({});
     // E il runtime nuovo scrive nella colonna migrata.
     svc.save({
-      runId: 'r-new', workflowId: 'wf', tenantId: 't-1', atNodeId: 'n',
-      outputsById: new Map(), visited: new Set(),
-      pendingQueue: [], itemGraph: GRAPH, stepCount: 1,
+      runId: 'r-new',
+      workflowId: 'wf',
+      tenantId: 't-1',
+      atNodeId: 'n',
+      outputsById: new Map(),
+      visited: new Set(),
+      pendingQueue: [],
+      itemGraph: GRAPH,
+      stepCount: 1,
     });
     expect(svc.latest('r-new')!.itemGraph).toEqual(GRAPH_AS_RECORD);
   });

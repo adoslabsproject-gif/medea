@@ -19,7 +19,11 @@ import { loggerFor } from '@/lib/logger.js';
 
 const log = loggerFor('ai-signals');
 
-export type SignalInteractionType = 'editor_chat' | 'run_explain' | 'node_generate' | 'workflow_from_text';
+export type SignalInteractionType =
+  | 'editor_chat'
+  | 'run_explain'
+  | 'node_generate'
+  | 'workflow_from_text';
 export type SignalOutcome = 'pending' | 'accepted' | 'rejected' | 'edited' | 'ignored' | 'failed';
 
 export interface RecordSignalArgs {
@@ -52,13 +56,15 @@ export class AISignalsService {
     try {
       const { sqlite } = getDatabase();
       sqlite
-        .prepare(`
+        .prepare(
+          `
           INSERT INTO ai_signals (
             id, tenant_id, interaction_type, node_def_id,
             response_model, response_latency_ms, response_tokens_in, response_tokens_out
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT(id) DO NOTHING
-        `)
+        `,
+        )
         .run(
           id,
           args.tenantId,
@@ -70,7 +76,10 @@ export class AISignalsService {
           args.tokensOut ?? null,
         );
     } catch (err) {
-      log.error({ err, tenantId: args.tenantId, interactionType: args.interactionType }, 'ai_signals record failed');
+      log.error(
+        { err, tenantId: args.tenantId, interactionType: args.interactionType },
+        'ai_signals record failed',
+      );
     }
     return id;
   }
@@ -80,11 +89,13 @@ export class AISignalsService {
     try {
       const { sqlite } = getDatabase();
       const res = sqlite
-        .prepare(`
+        .prepare(
+          `
           UPDATE ai_signals
           SET outcome = ?, outcome_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
           WHERE id = ? AND tenant_id = ?
-        `)
+        `,
+        )
         .run(outcome, id, tenantId);
       return res.changes > 0;
     } catch (err) {
@@ -110,9 +121,11 @@ export class AISignalsService {
   /** Aggregati per-tenant (non-personali) per dashboard/analytics. */
   stats(tenantId: string): SignalStats {
     const { sqlite } = getDatabase();
-    const total = (sqlite
-      .prepare('SELECT COUNT(*) AS c FROM ai_signals WHERE tenant_id = ?')
-      .get(tenantId) as { c: number }).c;
+    const total = (
+      sqlite.prepare('SELECT COUNT(*) AS c FROM ai_signals WHERE tenant_id = ?').get(tenantId) as {
+        c: number;
+      }
+    ).c;
     const byOutcome: Record<string, number> = {};
     for (const r of sqlite
       .prepare('SELECT outcome, COUNT(*) AS c FROM ai_signals WHERE tenant_id = ? GROUP BY outcome')
@@ -121,7 +134,9 @@ export class AISignalsService {
     }
     const byInteractionType: Record<string, number> = {};
     for (const r of sqlite
-      .prepare('SELECT interaction_type, COUNT(*) AS c FROM ai_signals WHERE tenant_id = ? GROUP BY interaction_type')
+      .prepare(
+        'SELECT interaction_type, COUNT(*) AS c FROM ai_signals WHERE tenant_id = ? GROUP BY interaction_type',
+      )
       .all(tenantId) as { interaction_type: string; c: number }[]) {
       byInteractionType[r.interaction_type] = r.c;
     }

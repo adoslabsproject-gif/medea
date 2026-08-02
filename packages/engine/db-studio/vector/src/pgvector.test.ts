@@ -11,9 +11,10 @@ import { randomBytes } from 'node:crypto';
 import { PgVectorAdapter } from './pgvector.js';
 
 const USER = process.env.USER ?? 'postgres';
-const adminCfg = () => (process.env.MEDEA_TEST_PG_URL
-  ? { connectionString: process.env.MEDEA_TEST_PG_URL }
-  : { host: '/tmp', database: 'postgres', user: USER });
+const adminCfg = () =>
+  process.env.MEDEA_TEST_PG_URL
+    ? { connectionString: process.env.MEDEA_TEST_PG_URL }
+    : { host: '/tmp', database: 'postgres', user: USER };
 
 let dbName: string;
 let client: Client;
@@ -54,7 +55,9 @@ describe('PgVectorAdapter — collection lifecycle', () => {
   });
 
   it('upsert su collection inesistente → errore esplicito', async () => {
-    await expect(adapter.upsert('ghost', [{ id: 'x', vector: [1, 2, 3] }])).rejects.toThrow(/does not exist/);
+    await expect(adapter.upsert('ghost', [{ id: 'x', vector: [1, 2, 3] }])).rejects.toThrow(
+      /does not exist/,
+    );
   });
 });
 
@@ -64,7 +67,9 @@ describe('PgVectorAdapter — dimension enforcement (bug-hunt)', () => {
   });
 
   it('upsert con dimensione errata → rifiutato PRIMA di scrivere (fail-fast)', async () => {
-    await expect(adapter.upsert('docs', [{ id: 'a', vector: [1, 2, 3, 4] }])).rejects.toThrow(/dimensions mismatch/);
+    await expect(adapter.upsert('docs', [{ id: 'a', vector: [1, 2, 3, 4] }])).rejects.toThrow(
+      /dimensions mismatch/,
+    );
     expect(await adapter.countCollection('docs')).toBe(0); // niente scrittura parziale
   });
 
@@ -104,7 +109,11 @@ describe('PgVectorAdapter — KNN cosine reale', () => {
   });
 
   it('filter payload: solo i record che combaciano', async () => {
-    const res = await adapter.search('docs', { vector: [1, 0, 0], topK: 10, filter: { lang: 'en' } });
+    const res = await adapter.search('docs', {
+      vector: [1, 0, 0],
+      topK: 10,
+      filter: { lang: 'en' },
+    });
     expect(res.map((r) => r.id)).toEqual(['orthogonal']);
   });
 

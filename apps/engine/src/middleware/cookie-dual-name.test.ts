@@ -81,7 +81,11 @@ describe('cookie dual-name: tokenFromCookie helper (middleware/auth)', () => {
   it('REGRESSION: PRE-FIX legacy-only check fallisce con prod __Host- cookie', () => {
     // Simula il bug pre-fix: cerca solo `ff_session=`
     const preFixCheck = (raw: string) =>
-      raw.split(';').map((s) => s.trim()).find((s) => s.startsWith('ff_session='))?.slice('ff_session='.length) ?? null;
+      raw
+        .split(';')
+        .map((s) => s.trim())
+        .find((s) => s.startsWith('ff_session='))
+        ?.slice('ff_session='.length) ?? null;
     // In prod il cookie e\` solo __Host-ff_session — pre-fix ritorna null.
     expect(preFixCheck('__Host-ff_session=valid.token')).toBeNull();
     // POST-fix invece ritorna il token correttamente.
@@ -152,7 +156,10 @@ describe('cookie dual-name: /auth/bootstrap sanity check', () => {
 
   it('REGRESSION loop SSO: PRE-FIX rifiutava __Host- → 401 → /sso → bootstrap → 401 → ...', () => {
     const preFix = (raw: string) =>
-      raw.split(';').map((s) => s.trim()).some((s) => s.startsWith('ff_session='));
+      raw
+        .split(';')
+        .map((s) => s.trim())
+        .some((s) => s.startsWith('ff_session='));
     // Pre-fix: con __Host- cookie reale, bootstrap rifiutava → loop infinito.
     expect(preFix('__Host-ff_session=valid')).toBe(false);
     // Post-fix: bootstrap ora accetta.
@@ -184,7 +191,7 @@ describe('integration: /auth/bootstrap end-to-end via Hono', () => {
       headers: { cookie: '__Host-ff_session=valid.jwt.token' },
     });
     expect(res.status).toBe(200);
-    const body = await res.json() as { user: { userId: string } };
+    const body = (await res.json()) as { user: { userId: string } };
     expect(body.user.userId).toBe('u-1');
   });
 
@@ -192,9 +199,10 @@ describe('integration: /auth/bootstrap end-to-end via Hono', () => {
     const app = new Hono();
     app.get('/auth/bootstrap', (c) => {
       const cookie = c.req.header('cookie') ?? '';
-      const has = cookie.split(';').map((s) => s.trim()).some((s) =>
-        s.startsWith('__Host-ff_session=') || s.startsWith('ff_session='),
-      );
+      const has = cookie
+        .split(';')
+        .map((s) => s.trim())
+        .some((s) => s.startsWith('__Host-ff_session=') || s.startsWith('ff_session='));
       if (!has) return c.json({ error: 'No session cookie' }, 401);
       return c.json({ user: { userId: 'u-1' } });
     });

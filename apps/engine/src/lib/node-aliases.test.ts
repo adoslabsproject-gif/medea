@@ -11,7 +11,12 @@
  *   - fallback dei tipi senza equivalente → action_http reale, mai defId fantasma.
  */
 import { describe, it, expect } from 'vitest';
-import { resolveNodeAlias, n8nTypeToDefId, normalizeAliasKey, aliasTargets } from './node-aliases.js';
+import {
+  resolveNodeAlias,
+  n8nTypeToDefId,
+  normalizeAliasKey,
+  aliasTargets,
+} from './node-aliases.js';
 import { ALL_NODE_MODULES } from '@/engine/workflow-engine.js';
 
 describe('normalizeAliasKey — collassa i formati', () => {
@@ -31,7 +36,11 @@ describe('normalizeAliasKey — collassa i formati', () => {
 describe('resolveNodeAlias — invarianza di formato (lo stesso nodo comunque scritto)', () => {
   // Un utente può digitare il nome in 5 modi diversi: TUTTI devono risolvere uguale.
   it.each([
-    'HTTP Request', 'httpRequest', 'http_request', 'HTTPREQUEST', 'n8n-nodes-base.httpRequest',
+    'HTTP Request',
+    'httpRequest',
+    'http_request',
+    'HTTPREQUEST',
+    'n8n-nodes-base.httpRequest',
   ])('"%s" → action_http', (term) => {
     expect(resolveNodeAlias(term)).toBe('action_http');
   });
@@ -93,9 +102,12 @@ describe('resolveNodeAlias — semantica corretta (i tranelli)', () => {
 });
 
 describe('resolveNodeAlias — termine sconosciuto → undefined (il chiamante sceglie)', () => {
-  it.each(['quantum_teleporter', 'foobar', 'n8n-nodes-base.salesforce', ''])('"%s" → undefined', (term) => {
-    expect(resolveNodeAlias(term)).toBeUndefined();
-  });
+  it.each(['quantum_teleporter', 'foobar', 'n8n-nodes-base.salesforce', ''])(
+    '"%s" → undefined',
+    (term) => {
+      expect(resolveNodeAlias(term)).toBeUndefined();
+    },
+  );
 });
 
 describe('AI: openai/anthropic → nodo LLM REALE (non fallback HTTP)', () => {

@@ -111,12 +111,22 @@ export async function autoLayout(
   options: LayoutOptions = {},
 ): Promise<LayoutResult> {
   if (nodes.length === 0) {
-    return { nodes, stats: { laidOut: 0, disconnected: 0, bboxWidth: 0, bboxHeight: 0, rankCount: 0 } };
+    return {
+      nodes,
+      stats: { laidOut: 0, disconnected: 0, bboxWidth: 0, bboxHeight: 0, rankCount: 0 },
+    };
   }
 
   // Resolve options (back-compat: rankdir LR → direction RIGHT)
-  const direction = options.direction
-    ?? (options.rankdir === 'TB' ? 'DOWN' : options.rankdir === 'BT' ? 'UP' : options.rankdir === 'RL' ? 'LEFT' : 'RIGHT');
+  const direction =
+    options.direction ??
+    (options.rankdir === 'TB'
+      ? 'DOWN'
+      : options.rankdir === 'BT'
+        ? 'UP'
+        : options.rankdir === 'RL'
+          ? 'LEFT'
+          : 'RIGHT');
   // Spacing generoso priorità ORDINE > COMPATTEZZA — l'utente ha esplicitato:
   // "puoi prendere più spazio, basta che siano ordinati". 140 layer + 80 node
   // dà aria sufficiente da rendere visibili i gomiti delle edge ortogonali
@@ -130,7 +140,10 @@ export async function autoLayout(
   const flowNodes = nodes.filter((n) => !STICKY_DEF_IDS.has(n.defId));
 
   if (flowNodes.length === 0) {
-    return { nodes, stats: { laidOut: 0, disconnected: nodes.length, bboxWidth: 0, bboxHeight: 0, rankCount: 0 } };
+    return {
+      nodes,
+      stats: { laidOut: 0, disconnected: nodes.length, bboxWidth: 0, bboxHeight: 0, rankCount: 0 },
+    };
   }
 
   // Costruisci ELK graph
@@ -267,9 +280,17 @@ export async function autoLayout(
   };
 }
 
-function computeBBox(nodes: LayoutNode[]): { minX: number; minY: number; maxX: number; maxY: number } {
+function computeBBox(nodes: LayoutNode[]): {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+} {
   if (nodes.length === 0) return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
   for (const n of nodes) {
     const x = n.x ?? 0;
     const y = n.y ?? 0;

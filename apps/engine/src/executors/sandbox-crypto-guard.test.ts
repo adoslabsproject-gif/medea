@@ -38,7 +38,7 @@ describe('guardedRandomBytes — 🚨 guardia anti-OOM (il finding)', () => {
     expect(() => guardedRandomBytes(undefined as unknown as number)).toThrow();
   });
 
-  it('il messaggio d\'errore è chiaro e cita il limite (il vendor lo vede nel run)', () => {
+  it("il messaggio d'errore è chiaro e cita il limite (il vendor lo vede nel run)", () => {
     try {
       guardedRandomBytes(1e9);
       throw new Error('doveva lanciare');

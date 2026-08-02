@@ -26,7 +26,7 @@ import { describe, expect, it, vi } from 'vitest';
 export function transientFailure<T>(
   failCount: number,
   errorMessage: string,
-  realImpl: () => Promise<T> = (() => Promise.resolve('OK' as T)),
+  realImpl: () => Promise<T> = () => Promise.resolve('OK' as T),
 ): () => Promise<T> {
   let calls = 0;
   return async () => {

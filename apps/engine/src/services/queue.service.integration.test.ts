@@ -57,7 +57,10 @@ describe.skipIf(!REDIS_OK)('🚨 BullMQ queue — roundtrip REALE su Redis', () 
 
   afterAll(async () => {
     if (mod) {
-      await mod.getRunQueue().obliterate({ force: true }).catch(() => undefined);
+      await mod
+        .getRunQueue()
+        .obliterate({ force: true })
+        .catch(() => undefined);
       await mod.shutdownQueue().catch(() => undefined);
     }
     delete process.env.MEDEA_QUEUE_MODE;
@@ -87,7 +90,12 @@ describe.skipIf(!REDIS_OK)('🚨 BullMQ queue — roundtrip REALE su Redis', () 
     // Attendi che il worker consumi (timeout di sicurezza per non appendere CI).
     await Promise.race([
       deferred,
-      new Promise<void>((_, reject) => setTimeout(() => reject(new Error('timeout: il worker non ha consumato il job entro 8s')), 8000)),
+      new Promise<void>((_, reject) =>
+        setTimeout(
+          () => reject(new Error('timeout: il worker non ha consumato il job entro 8s')),
+          8000,
+        ),
+      ),
     ]);
 
     expect(received).toHaveLength(1);

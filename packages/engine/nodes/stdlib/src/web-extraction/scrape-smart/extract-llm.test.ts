@@ -31,7 +31,9 @@ describe('sanitizeHtmlForLlm', () => {
   });
 
   it('rimuove inline event handlers (onclick, onload)', () => {
-    expect(sanitizeHtmlForLlm('<a href="x" onclick="evil()">click</a>')).toBe('<a href="x">click</a>');
+    expect(sanitizeHtmlForLlm('<a href="x" onclick="evil()">click</a>')).toBe(
+      '<a href="x">click</a>',
+    );
     expect(sanitizeHtmlForLlm('<img src="x" onload="bad()" alt="">')).toBe('<img src="x" alt="">');
   });
 
@@ -78,14 +80,15 @@ describe('extractJsonLoose', () => {
 
 describe('extractWithLlm', () => {
   it('html empty after sanitize → throw', async () => {
-    await expect(
-      extractWithLlm({ html: '<script>only</script>', prompt: 'p' }),
-    ).rejects.toThrow(/html empty/);
+    await expect(extractWithLlm({ html: '<script>only</script>', prompt: 'p' })).rejects.toThrow(
+      /html empty/,
+    );
   });
 
   it('happy: sanitize → LLM → parse JSON', async () => {
     mockedFetch.mockResolvedValue({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({ choices: [{ message: { content: '{"title":"OK","price":99}' } }] }),
     } as unknown as Response);
 
@@ -100,7 +103,8 @@ describe('extractWithLlm', () => {
 
   it('LLM ritorna JSON in fence ```json → parsato', async () => {
     mockedFetch.mockResolvedValue({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({ choices: [{ message: { content: '```json\n{"a":1}\n```' } }] }),
     } as unknown as Response);
 
@@ -109,15 +113,20 @@ describe('extractWithLlm', () => {
   });
 
   it('LLM 500 → throw', async () => {
-    mockedFetch.mockResolvedValue({ ok: false, status: 500, text: async () => 'srv err' } as unknown as Response);
-    await expect(
-      extractWithLlm({ html: '<p>x</p>', prompt: 'p' }),
-    ).rejects.toThrow(/LLM extract failed: 500/);
+    mockedFetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: async () => 'srv err',
+    } as unknown as Response);
+    await expect(extractWithLlm({ html: '<p>x</p>', prompt: 'p' })).rejects.toThrow(
+      /LLM extract failed: 500/,
+    );
   });
 
   it('LLM ritorna garbage → parseError set, extracted=null', async () => {
     mockedFetch.mockResolvedValue({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({ choices: [{ message: { content: 'no json sorry' } }] }),
     } as unknown as Response);
 
@@ -128,7 +137,9 @@ describe('extractWithLlm', () => {
 
   it('apiKey → Authorization header', async () => {
     mockedFetch.mockResolvedValue({
-      ok: true, status: 200, json: async () => ({ choices: [{ message: { content: '{}' } }] }),
+      ok: true,
+      status: 200,
+      json: async () => ({ choices: [{ message: { content: '{}' } }] }),
     } as unknown as Response);
 
     await extractWithLlm({ html: '<p>x</p>', prompt: 'p', apiKey: 'sk-liara' });
@@ -138,11 +149,16 @@ describe('extractWithLlm', () => {
 
   it('schema → user prompt include "SCHEMA JSON TARGET"', async () => {
     mockedFetch.mockResolvedValue({
-      ok: true, status: 200, json: async () => ({ choices: [{ message: { content: '{}' } }] }),
+      ok: true,
+      status: 200,
+      json: async () => ({ choices: [{ message: { content: '{}' } }] }),
     } as unknown as Response);
 
     await extractWithLlm({ html: '<p>x</p>', prompt: 'p', schemaJson: '{"t":"string"}' });
-    const body = JSON.parse((mockedFetch.mock.calls[0]![1] as { body: string }).body) as { messages: { role: string; content: string }[]; response_format: { type: string } };
+    const body = JSON.parse((mockedFetch.mock.calls[0]![1] as { body: string }).body) as {
+      messages: { role: string; content: string }[];
+      response_format: { type: string };
+    };
     expect(body.messages[1]?.content).toContain('SCHEMA JSON TARGET');
     expect(body.response_format.type).toBe('json_object');
   });
@@ -151,10 +167,12 @@ describe('extractWithLlm', () => {
 // ─── Fase 2 (#14): routing gateway metered + usage ──────────────────────────
 describe('extractWithLlm — gateway metered (Fase 2 #14)', () => {
   const GW = 'http://172.20.0.1:3006/api/v1/llm';
-  const okBody = (extra: Record<string, unknown> = {}) => ({
-    ok: true, status: 200,
-    json: async () => ({ choices: [{ message: { content: '{"a":1}' } }], ...extra }),
-  } as unknown as Response);
+  const okBody = (extra: Record<string, unknown> = {}) =>
+    ({
+      ok: true,
+      status: 200,
+      json: async () => ({ choices: [{ message: { content: '{"a":1}' } }], ...extra }),
+    }) as unknown as Response;
 
   beforeEach(() => {
     vi.stubEnv('MEDEA_LIARA_BASE_URL', GW);
@@ -162,12 +180,17 @@ describe('extractWithLlm — gateway metered (Fase 2 #14)', () => {
     vi.stubEnv('MEDEA_LIARA_ENDPOINT', '');
     vi.stubEnv('MEDEA_LIARA_API_KEY', '');
   });
-  afterEach(() => { vi.unstubAllEnvs(); });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
 
   it('🚨 endpoint assente → gateway metered + Bearer license + host esente dal guard', async () => {
     mockedFetch.mockResolvedValue(okBody());
     await extractWithLlm({ html: '<p>x</p>', prompt: 'p' });
-    const [url, opts] = mockedFetch.mock.calls[0] as [string, { headers: Record<string, string>; allowedHosts?: string[] }];
+    const [url, opts] = mockedFetch.mock.calls[0] as [
+      string,
+      { headers: Record<string, string>; allowedHosts?: string[] },
+    ];
     expect(url).toBe(`${GW}/chat/completions`);
     expect(opts.headers.Authorization).toBe('Bearer lic-123');
     expect(opts.allowedHosts).toEqual(['172.20.0.1:3006']);
@@ -175,17 +198,31 @@ describe('extractWithLlm — gateway metered (Fase 2 #14)', () => {
 
   it('🚨 sentinella legacy localhost:3003 salvata in config → trattata come NON impostata (gateway)', async () => {
     mockedFetch.mockResolvedValue(okBody());
-    const r = await extractWithLlm({ html: '<p>x</p>', prompt: 'p', endpoint: 'http://localhost:3003/v1/chat/completions', model: 'liara-distilled' });
+    const r = await extractWithLlm({
+      html: '<p>x</p>',
+      prompt: 'p',
+      endpoint: 'http://localhost:3003/v1/chat/completions',
+      model: 'liara-distilled',
+    });
     expect(mockedFetch.mock.calls[0]![0]).toBe(`${GW}/chat/completions`);
     // model sentinella → campo OMESSO → decide il gateway
-    const body = JSON.parse((mockedFetch.mock.calls[0]![1] as { body: string }).body) as Record<string, unknown>;
+    const body = JSON.parse((mockedFetch.mock.calls[0]![1] as { body: string }).body) as Record<
+      string,
+      unknown
+    >;
     expect('model' in body).toBe(false);
     expect(r.provider).toBe('liara');
   });
 
   it('endpoint BYOK custom → NESSUNA esenzione guard, provider=custom', async () => {
     mockedFetch.mockResolvedValue(okBody());
-    const r = await extractWithLlm({ html: '<p>x</p>', prompt: 'p', endpoint: 'https://api.openai.com/v1/chat/completions', apiKey: 'sk-x', model: 'gpt-4o-mini' });
+    const r = await extractWithLlm({
+      html: '<p>x</p>',
+      prompt: 'p',
+      endpoint: 'https://api.openai.com/v1/chat/completions',
+      apiKey: 'sk-x',
+      model: 'gpt-4o-mini',
+    });
     const [url, opts] = mockedFetch.mock.calls[0] as [string, { allowedHosts?: string[] }];
     expect(url).toBe('https://api.openai.com/v1/chat/completions');
     expect(opts.allowedHosts).toBeUndefined();
@@ -193,7 +230,9 @@ describe('extractWithLlm — gateway metered (Fase 2 #14)', () => {
   });
 
   it('usage dalla risposta API → fromApi:true; modelUsed dal campo model della risposta', async () => {
-    mockedFetch.mockResolvedValue(okBody({ model: 'liara', usage: { prompt_tokens: 88, completion_tokens: 14 } }));
+    mockedFetch.mockResolvedValue(
+      okBody({ model: 'liara', usage: { prompt_tokens: 88, completion_tokens: 14 } }),
+    );
     const r = await extractWithLlm({ html: '<p>x</p>', prompt: 'p' });
     expect(r.usage).toEqual({ input: 88, output: 14, fromApi: true });
     expect(r.modelUsed).toBe('liara');

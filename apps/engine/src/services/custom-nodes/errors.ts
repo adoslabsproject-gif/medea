@@ -24,7 +24,12 @@ export class CustomNodeError extends Error {
   readonly status: number;
   readonly meta: Record<string, unknown>;
 
-  constructor(opts: { code: string; message: string; status: number; meta?: Record<string, unknown> }) {
+  constructor(opts: {
+    code: string;
+    message: string;
+    status: number;
+    meta?: Record<string, unknown>;
+  }) {
     super(opts.message);
     this.name = 'CustomNodeError';
     this.code = opts.code;
@@ -42,7 +47,12 @@ export class CustomNodeValidationError extends CustomNodeError {
 
 export class CustomNodeNotFoundError extends CustomNodeError {
   constructor(id: string) {
-    super({ code: 'CUSTOM_NODE_NOT_FOUND', message: `Custom node ${id} not found`, status: 404, meta: { id } });
+    super({
+      code: 'CUSTOM_NODE_NOT_FOUND',
+      message: `Custom node ${id} not found`,
+      status: 404,
+      meta: { id },
+    });
     this.name = 'CustomNodeNotFoundError';
   }
 }
@@ -55,10 +65,16 @@ export class CustomNodeConflictError extends CustomNodeError {
 }
 
 export class CustomNodeQuotaExceededError extends CustomNodeError {
-  constructor(opts: { current: number; limit: number; planCode: string; suggestedPlan?: string | undefined }) {
+  constructor(opts: {
+    current: number;
+    limit: number;
+    planCode: string;
+    suggestedPlan?: string | undefined;
+  }) {
     super({
       code: 'CUSTOM_NODE_QUOTA_EXCEEDED',
-      message: `Custom node quota exceeded: ${opts.current.toString()}/${opts.limit.toString()} for plan "${opts.planCode}". ` +
+      message:
+        `Custom node quota exceeded: ${opts.current.toString()}/${opts.limit.toString()} for plan "${opts.planCode}". ` +
         (opts.suggestedPlan ? `Upgrade to "${opts.suggestedPlan}" for more.` : ''),
       status: 402,
       meta: opts,
@@ -82,7 +98,10 @@ export class CustomNodeCompileError extends CustomNodeError {
 }
 
 export class CustomNodeSecurityViolationError extends CustomNodeError {
-  constructor(violation: string, meta: { pattern?: string; line?: number; file?: string; diagnostics?: unknown[] }) {
+  constructor(
+    violation: string,
+    meta: { pattern?: string; line?: number; file?: string; diagnostics?: unknown[] },
+  ) {
     super({
       code: 'CUSTOM_NODE_SECURITY_VIOLATION',
       message: `Security violation: ${violation}`,

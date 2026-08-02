@@ -23,12 +23,7 @@ import { cidrToRange } from '../ip-utils.js';
 
 /** Ricostruisce un IP stringa dal numero (per testare boundary dei range). */
 function v4FromNum(n: bigint): string {
-  return [
-    (n >> 24n) & 0xffn,
-    (n >> 16n) & 0xffn,
-    (n >> 8n) & 0xffn,
-    n & 0xffn,
-  ].join('.');
+  return [(n >> 24n) & 0xffn, (n >> 16n) & 0xffn, (n >> 8n) & 0xffn, n & 0xffn].join('.');
 }
 
 describe('classifyBanSafety — Cloudflare (mai bannare)', () => {

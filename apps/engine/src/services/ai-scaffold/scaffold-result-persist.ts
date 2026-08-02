@@ -33,10 +33,14 @@ export function persistScaffoldResult(id: string, result: unknown): void {
     const { sqlite } = getDatabase();
     ensureTable(sqlite);
     sqlite
-      .prepare('INSERT OR REPLACE INTO ai_scaffold_job_results (id, result_json, created_at) VALUES (?, ?, ?)')
+      .prepare(
+        'INSERT OR REPLACE INTO ai_scaffold_job_results (id, result_json, created_at) VALUES (?, ?, ?)',
+      )
       .run(id, JSON.stringify(result), Date.now());
     // Cleanup lazy dei risultati scaduti (no cron dedicato).
-    sqlite.prepare('DELETE FROM ai_scaffold_job_results WHERE created_at < ?').run(Date.now() - TTL_MS);
+    sqlite
+      .prepare('DELETE FROM ai_scaffold_job_results WHERE created_at < ?')
+      .run(Date.now() - TTL_MS);
   } catch {
     /* best-effort: la persistenza non deve mai far fallire la generazione */
   }

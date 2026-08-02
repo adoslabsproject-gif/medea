@@ -90,15 +90,25 @@ describe('EmailSendTrackedConfigSchema', () => {
   });
 
   it('accepts sampleRate in [0,1]', () => {
-    expect(EmailSendTrackedConfigSchema.safeParse({ ...valid, sampleRate: 0.5 }).success).toBe(true);
+    expect(EmailSendTrackedConfigSchema.safeParse({ ...valid, sampleRate: 0.5 }).success).toBe(
+      true,
+    );
     expect(EmailSendTrackedConfigSchema.safeParse({ ...valid, sampleRate: 0 }).success).toBe(true);
     expect(EmailSendTrackedConfigSchema.safeParse({ ...valid, sampleRate: 1 }).success).toBe(true);
-    expect(EmailSendTrackedConfigSchema.safeParse({ ...valid, sampleRate: 1.5 }).success).toBe(false);
-    expect(EmailSendTrackedConfigSchema.safeParse({ ...valid, sampleRate: -0.1 }).success).toBe(false);
+    expect(EmailSendTrackedConfigSchema.safeParse({ ...valid, sampleRate: 1.5 }).success).toBe(
+      false,
+    );
+    expect(EmailSendTrackedConfigSchema.safeParse({ ...valid, sampleRate: -0.1 }).success).toBe(
+      false,
+    );
   });
 
   it('coerces string "true"/"false" for boolean fields', () => {
-    const r = EmailSendTrackedConfigSchema.safeParse({ ...valid, trackOpens: 'false', requireConsent: 'false' });
+    const r = EmailSendTrackedConfigSchema.safeParse({
+      ...valid,
+      trackOpens: 'false',
+      requireConsent: 'false',
+    });
     expect(r.success).toBe(true);
     if (r.success) {
       expect(r.data.trackOpens).toBe(false);
@@ -107,8 +117,13 @@ describe('EmailSendTrackedConfigSchema', () => {
   });
 
   it('accepts URLs in trackingBaseUrl, rejects non-URLs', () => {
-    expect(EmailSendTrackedConfigSchema.safeParse({ ...valid, trackingBaseUrl: 'https://x.com' }).success).toBe(true);
-    expect(EmailSendTrackedConfigSchema.safeParse({ ...valid, trackingBaseUrl: 'not a url' }).success).toBe(false);
+    expect(
+      EmailSendTrackedConfigSchema.safeParse({ ...valid, trackingBaseUrl: 'https://x.com' })
+        .success,
+    ).toBe(true);
+    expect(
+      EmailSendTrackedConfigSchema.safeParse({ ...valid, trackingBaseUrl: 'not a url' }).success,
+    ).toBe(false);
   });
 
   it('passthrough preserves unknown fields (forward-compat)', () => {
@@ -127,7 +142,9 @@ describe('injectTracking — pixel placement', () => {
       html: '<html><body><p>Ciao</p></body></html>',
     });
     expect(out.html).toMatch(/<img[^>]*src="https:[^"]*\/api\/track\/open\/[^"]+"[^>]*><\/body>/);
-    expect(out.pixelUrl).toMatch(/^https:\/\/fabio-musicco\.app\.automazionezeli\.com\/api\/track\/open\//);
+    expect(out.pixelUrl).toMatch(
+      /^https:\/\/fabio-musicco\.app\.automazionezeli\.com\/api\/track\/open\//,
+    );
   });
 
   it('appends pixel at end when no </body>', async () => {
@@ -299,15 +316,13 @@ describe('NodeDef contract', () => {
     expect(fields.length).toBeGreaterThan(10);
     for (const f of fields) {
       expect(typeof f.help).toBe('string');
-      expect((f.help!).length).toBeGreaterThan(20);
+      expect(f.help!.length).toBeGreaterThan(20);
     }
   });
 
   it('declares the critical required fields', () => {
     const required = new Set(
-      (emailSendTrackedNodeDef.configFields ?? [])
-        .filter((f) => f.required)
-        .map((f) => f.key),
+      (emailSendTrackedNodeDef.configFields ?? []).filter((f) => f.required).map((f) => f.key),
     );
     expect(required).toContain('to');
     expect(required).toContain('subject');

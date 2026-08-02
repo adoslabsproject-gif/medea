@@ -31,7 +31,11 @@ import { SCHEMA_SQL } from './src/storage/migrate.schema.js';
 const dbPath = join(tmpdir(), `flowforge-test-${String(process.pid)}.sqlite`);
 // WAL lascia anche -wal/-shm: ripulisci tutto per partire da uno schema pulito.
 for (const suffix of ['', '-wal', '-shm']) {
-  try { rmSync(`${dbPath}${suffix}`, { force: true }); } catch { /* assente → ok */ }
+  try {
+    rmSync(`${dbPath}${suffix}`, { force: true });
+  } catch {
+    /* assente → ok */
+  }
 }
 process.env.MEDEA_DB_PATH = dbPath;
 

@@ -12,14 +12,18 @@ import { compose, wrap } from './compose.js';
 import type { NodeExecutor, NodeExecutionContext, NodeExecutionResult } from '../../types.js';
 
 const ctx: NodeExecutionContext = {
-  tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {},
+  tenantId: 't',
+  workflowId: 'w',
+  runId: 'r',
+  nodeId: 'n',
+  secrets: {},
 };
 
 function makeExecutor(label: string, trace: string[]): NodeExecutor {
-  return (async () => {
+  return async () => {
     trace.push(`exec:${label}`);
     return { output: label, durationMs: 1 } satisfies NodeExecutionResult;
-  });
+  };
 }
 
 describe('🚨 compose — onion execution order', () => {
@@ -35,12 +39,14 @@ describe('🚨 compose — onion execution order', () => {
   it('🚨 1 middleware: before → exec → after', async () => {
     const trace: string[] = [];
     const exec = makeExecutor('inner', trace);
-    const mw = (next: NodeExecutor): NodeExecutor => async (cfg, inp, c) => {
-      trace.push('a:before');
-      const r = await next(cfg, inp, c);
-      trace.push('a:after');
-      return r;
-    };
+    const mw =
+      (next: NodeExecutor): NodeExecutor =>
+      async (cfg, inp, c) => {
+        trace.push('a:before');
+        const r = await next(cfg, inp, c);
+        trace.push('a:after');
+        return r;
+      };
     await compose([mw])(exec)({}, {}, ctx);
     expect(trace).toEqual(['a:before', 'exec:inner', 'a:after']);
   });
@@ -48,12 +54,15 @@ describe('🚨 compose — onion execution order', () => {
   it('🚨 3 middleware: left-to-right onion (a out, c in)', async () => {
     const trace: string[] = [];
     const exec = makeExecutor('core', trace);
-    const mk = (name: string) => (next: NodeExecutor): NodeExecutor => async (cfg, inp, c) => {
-      trace.push(`${name}:before`);
-      const r = await next(cfg, inp, c);
-      trace.push(`${name}:after`);
-      return r;
-    };
+    const mk =
+      (name: string) =>
+      (next: NodeExecutor): NodeExecutor =>
+      async (cfg, inp, c) => {
+        trace.push(`${name}:before`);
+        const r = await next(cfg, inp, c);
+        trace.push(`${name}:after`);
+        return r;
+      };
     await compose([mk('a'), mk('b'), mk('c')])(exec)({}, {}, ctx);
     expect(trace).toEqual([
       'a:before',
@@ -69,10 +78,12 @@ describe('🚨 compose — onion execution order', () => {
   it('🚨 middleware can short-circuit (no next() call)', async () => {
     const trace: string[] = [];
     const exec = makeExecutor('inner', trace);
-    const blockerMw = (_next: NodeExecutor): NodeExecutor => async () => {
-      trace.push('blocked');
-      return { output: 'short-circuit', durationMs: 0 } satisfies NodeExecutionResult;
-    };
+    const blockerMw =
+      (_next: NodeExecutor): NodeExecutor =>
+      async () => {
+        trace.push('blocked');
+        return { output: 'short-circuit', durationMs: 0 } satisfies NodeExecutionResult;
+      };
     const result = await compose([blockerMw])(exec)({}, {}, ctx);
     expect(result.output).toBe('short-circuit');
     expect(trace).toEqual(['blocked']);
@@ -81,19 +92,24 @@ describe('🚨 compose — onion execution order', () => {
 
   it('🚨 middleware errors propagate', async () => {
     const exec = makeExecutor('inner', []);
-    const errMw = (_next: NodeExecutor): NodeExecutor => async () => {
-      throw new Error('mw blocked');
-    };
+    const errMw =
+      (_next: NodeExecutor): NodeExecutor =>
+      async () => {
+        throw new Error('mw blocked');
+      };
     await expect(compose([errMw])(exec)({}, {}, ctx)).rejects.toThrow('mw blocked');
   });
 
   it('🚨 sparse undefined middleware (es. [a, undefined, c]) → skip undefined', async () => {
     const trace: string[] = [];
     const exec = makeExecutor('e', trace);
-    const mw = (name: string) => (next: NodeExecutor): NodeExecutor => async (cfg, inp, c) => {
-      trace.push(name);
-      return next(cfg, inp, c);
-    };
+    const mw =
+      (name: string) =>
+      (next: NodeExecutor): NodeExecutor =>
+      async (cfg, inp, c) => {
+        trace.push(name);
+        return next(cfg, inp, c);
+      };
     // Source: `if (mw) wrapped = mw(wrapped)` → undefined skip-safe
     const middlewares = [mw('a'), undefined, mw('c')] as unknown as Parameters<typeof compose>[0];
     await compose(middlewares)(exec)({}, {}, ctx);
@@ -105,10 +121,13 @@ describe('🚨 wrap — convenience helper', () => {
   it('🚨 wrap = compose + apply (1 call)', async () => {
     const trace: string[] = [];
     const exec = makeExecutor('core', trace);
-    const mw = (name: string) => (next: NodeExecutor): NodeExecutor => async (cfg, inp, c) => {
-      trace.push(name);
-      return next(cfg, inp, c);
-    };
+    const mw =
+      (name: string) =>
+      (next: NodeExecutor): NodeExecutor =>
+      async (cfg, inp, c) => {
+        trace.push(name);
+        return next(cfg, inp, c);
+      };
     const wrapped = wrap(exec, [mw('outer'), mw('inner')]);
     await wrapped({}, {}, ctx);
     expect(trace).toEqual(['outer', 'inner', 'exec:core']);
@@ -131,7 +150,10 @@ describe('🚨 compose — context/config/input passed-through', () => {
       seen.ctxRef = c;
       return { output: null, durationMs: 0 };
     };
-    const passthroughMw = (next: NodeExecutor): NodeExecutor => async (cfg, inp, c) => next(cfg, inp, c);
+    const passthroughMw =
+      (next: NodeExecutor): NodeExecutor =>
+      async (cfg, inp, c) =>
+        next(cfg, inp, c);
     const cfg = { key: 'value' };
     const inp = [1, 2, 3];
     await compose([passthroughMw])(exec)(cfg, inp, ctx);
@@ -146,8 +168,10 @@ describe('🚨 compose — context/config/input passed-through', () => {
       seen.cfg = cfg;
       return { output: null, durationMs: 0 };
     };
-    const enrichMw: ReturnType<typeof vi.fn> = vi.fn((next: NodeExecutor): NodeExecutor =>
-      async (cfg, inp, c) => next({ ...cfg, injected: true }, inp, c),
+    const enrichMw: ReturnType<typeof vi.fn> = vi.fn(
+      (next: NodeExecutor): NodeExecutor =>
+        async (cfg, inp, c) =>
+          next({ ...cfg, injected: true }, inp, c),
     );
     await compose([enrichMw])(exec)({ original: true }, {}, ctx);
     expect(seen.cfg).toEqual({ original: true, injected: true });

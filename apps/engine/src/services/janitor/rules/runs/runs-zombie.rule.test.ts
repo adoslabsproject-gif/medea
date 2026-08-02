@@ -18,7 +18,9 @@ const baseCtx = {
   params: { zombieThresholdMs: 1_800_000 }, // 30 min
 };
 
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('🚨 rule metadata', () => {
   it('🚨 id stabile + critical severity', () => {
@@ -60,11 +62,17 @@ describe('🚨 detect', () => {
 
   it('🚨 happy: detected zombie row → critical + reason age + threshold', async () => {
     executeRawMock.mockResolvedValueOnce({
-      rows: [{
-        id: 'r-zombie', workflow_id: 'wf', tenant_id: 't-1',
-        status: 'running', started_at: '2026-06-07T08:00:00Z',
-        ended_at: null, steps_json: '[]',
-      }],
+      rows: [
+        {
+          id: 'r-zombie',
+          workflow_id: 'wf',
+          tenant_id: 't-1',
+          status: 'running',
+          started_at: '2026-06-07T08:00:00Z',
+          ended_at: null,
+          steps_json: '[]',
+        },
+      ],
     });
     const r = await runsZombieRule.detect!(baseCtx as any);
     expect(r.length).toBe(1);
@@ -77,11 +85,17 @@ describe('🚨 detect', () => {
 
   it('🚨 humanizeAge: < 1s → "0s", 5s → "5s", 5m → "5m", 1h → "1.0h"', async () => {
     executeRawMock.mockResolvedValueOnce({
-      rows: [{
-        id: 'r', workflow_id: 'w', tenant_id: null, status: 'pending',
-        started_at: '2026-06-07T09:00:00Z', // 1h ago
-        ended_at: null, steps_json: '[]',
-      }],
+      rows: [
+        {
+          id: 'r',
+          workflow_id: 'w',
+          tenant_id: null,
+          status: 'pending',
+          started_at: '2026-06-07T09:00:00Z', // 1h ago
+          ended_at: null,
+          steps_json: '[]',
+        },
+      ],
     });
     const r = await runsZombieRule.detect!(baseCtx as any);
     expect(first(r, 'zombie-rows').reason).toMatch(/1\.0h|60m/u); // age window
@@ -96,10 +110,17 @@ describe('🚨 detect', () => {
 
   it('🚨 tenant_id null → tenantId absent in result', async () => {
     executeRawMock.mockResolvedValueOnce({
-      rows: [{
-        id: 'r', workflow_id: 'w', tenant_id: null, status: 'running',
-        started_at: '2026-06-07T08:00:00Z', ended_at: null, steps_json: '[]',
-      }],
+      rows: [
+        {
+          id: 'r',
+          workflow_id: 'w',
+          tenant_id: null,
+          status: 'running',
+          started_at: '2026-06-07T08:00:00Z',
+          ended_at: null,
+          steps_json: '[]',
+        },
+      ],
     });
     const r = await runsZombieRule.detect!(baseCtx as any);
     expect(first(r, 'zombie-rows').tenantId).toBeUndefined();

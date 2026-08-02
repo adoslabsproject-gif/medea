@@ -14,17 +14,22 @@ const executor: NodeExecutor = async (config, input) => {
   const { items, warning } = capItems(input, config.maxItems);
   // `field` accetta UN campo o PIÙ campi separati da virgola (dedup composta:
   // "vat,country"). Vuoto = confronta l'intero item.
-  const fields = String(config.field ?? '').split(',').map((f) => f.trim()).filter(Boolean);
+  const fields = String(config.field ?? '')
+    .split(',')
+    .map((f) => f.trim())
+    .filter(Boolean);
   const normalize = config.normalize === true || config.normalize === 'true';
 
   // Chiave CANONICA (stableStringify ordina le chiavi → `{a,b}`=={b,a}). Con `normalize`
   // i valori-stringa dei campi sono trim+lowercase (dedup "Mario@X" == "mario@x ").
   const keyOf = (item: unknown): string => {
     if (fields.length === 0) return stableStringify(item);
-    return fields.map((f) => {
-      const v = getField(item, f);
-      return stableStringify(normalize && typeof v === 'string' ? v.trim().toLowerCase() : v);
-    }).join('');
+    return fields
+      .map((f) => {
+        const v = getField(item, f);
+        return stableStringify(normalize && typeof v === 'string' ? v.trim().toLowerCase() : v);
+      })
+      .join('');
   };
 
   const seen = new Set<string>();
@@ -46,7 +51,7 @@ const executor: NodeExecutor = async (config, input) => {
       original: items.length,
       distinct: out.length,
       removed,
-      removalPercent: items.length > 0 ? Number((removed / items.length * 100).toFixed(2)) : 0,
+      removalPercent: items.length > 0 ? Number(((removed / items.length) * 100).toFixed(2)) : 0,
       exampleDuplicates,
     },
     durationMs: Date.now() - startedAt,
@@ -70,7 +75,7 @@ export const distinctNode: NodeModule = {
       'inevitabilmente con record fantasma duplicati che inquinano analytics, popolano email a stesso cliente ' +
       'più volte, generano notifiche multiple del stesso evento, gonfiano i counter di KPI. ' +
       'Due modalità complementari per coprire tutti i pattern di equality semantic: ' +
-      '(1) Mode senza key (deep equality structural) — compara l\'intero oggetto serializzato come JSON ' +
+      "(1) Mode senza key (deep equality structural) — compara l'intero oggetto serializzato come JSON " +
       'canonical-form (ordering deterministico dei field per evitare false positive su { name: "A", city: "X" } ' +
       'vs { city: "X", name: "A" } che son lo stesso oggetto), match esatto bit-perfect tra item considerati ' +
       'duplicati, drop dei subsequent occurrences preservando il PRIMO inserito (preserve order originale array ' +
@@ -80,7 +85,7 @@ export const distinctNode: NodeModule = {
       'vengono droppati anche se diversi in altri campi (use case: dedup per email_address di un merge di N ' +
       'sorgenti CRM dove la stessa persona compare con nomi formattati diversamente — "Mario Rossi" vs "M. ' +
       'Rossi" vs "MARIO ROSSI" tutti via email mario@acme.com → tieni solo il primo, scarta gli altri 2). ' +
-      'Performance: l\'algoritmo usa un Set per lookup O(N) invece di O(N²) naïve double-loop — gestisce ' +
+      "Performance: l'algoritmo usa un Set per lookup O(N) invece di O(N²) naïve double-loop — gestisce " +
       'array di 100k+ item senza saturare la CPU. La normalizzazione opzionale (flag "normalize") applica ' +
       'trim+lowercase ai valori-stringa dei campi prima del confronto (dedup "Mario@X" == "mario@x ").\n\n' +
       'Output: { items (array dedupped, ordine originale preservato, primo match tenuto), original, distinct, ' +
@@ -124,7 +129,7 @@ export const distinctNode: NodeModule = {
         type: 'number',
         required: false,
         defaultValue: '100000',
-        help: 'Hard cap anti-OOM sul numero di item processati. Se l\'input supera questa soglia viene troncato e deduplica solo i primi N (warning emesso). Default 100k, tetto 1M.',
+        help: "Hard cap anti-OOM sul numero di item processati. Se l'input supera questa soglia viene troncato e deduplica solo i primi N (warning emesso). Default 100k, tetto 1M.",
       },
     ],
     vendor: 'flowforge',

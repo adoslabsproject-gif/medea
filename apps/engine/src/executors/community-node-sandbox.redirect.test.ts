@@ -11,12 +11,18 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { readFileSync } from 'node:fs';
 
-beforeAll(() => { process.env.MEDEA_SANDBOX_DISABLE_WORKER = 'true'; });
+beforeAll(() => {
+  process.env.MEDEA_SANDBOX_DISABLE_WORKER = 'true';
+});
 
 const m = vi.hoisted(() => ({ safeFetch: vi.fn(), validate: vi.fn() }));
-vi.mock('@/lib/safe-outbound-fetch.js', () => ({ safeOutboundFetch: (...a: unknown[]) => m.safeFetch(...a) }));
+vi.mock('@/lib/safe-outbound-fetch.js', () => ({
+  safeOutboundFetch: (...a: unknown[]) => m.safeFetch(...a),
+}));
 vi.mock('@medea/engine-safe-fetch', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@medea/engine-safe-fetch')>()), validateUrlForFetch: (...a: unknown[]) => m.validate(...a) }));
+  ...(await importOriginal<typeof import('@medea/engine-safe-fetch')>()),
+  validateUrlForFetch: (...a: unknown[]) => m.validate(...a),
+}));
 vi.mock('@/lib/logger.js');
 
 const { hostFetch } = await import('./community-node-sandbox.js');
@@ -27,13 +33,18 @@ function resp(status: number, opts: { location?: string; body?: string } = {}): 
     ok: status >= 200 && status < 300,
     headers: {
       get: (k: string) => (opts.location && k.toLowerCase() === 'location' ? opts.location : null),
-      forEach: (cb: (v: string, k: string) => void) => { cb('text/html', 'content-type'); },
+      forEach: (cb: (v: string, k: string) => void) => {
+        cb('text/html', 'content-type');
+      },
     },
     arrayBuffer: async () => new TextEncoder().encode(opts.body ?? '').buffer,
   };
 }
 
-beforeEach(() => { vi.clearAllMocks(); m.validate.mockReturnValue({ ok: true }); });
+beforeEach(() => {
+  vi.clearAllMocks();
+  m.validate.mockReturnValue({ ok: true });
+});
 
 describe('hostFetch — redirect SSRF-safe', () => {
   it('✅ 301 verso host SAFE → SEGUITO, ritorna il body finale (il bug Streammy)', async () => {

@@ -45,7 +45,9 @@ export interface BinaryWriteResult {
 /** Errore tipato: `ref` non è un content-address valido (anti-traversal). */
 export class InvalidBinaryRefError extends Error {
   constructor(ref: string) {
-    super(`BinaryStore: ref non valido (atteso sha256 64-hex): ${JSON.stringify(ref).slice(0, 80)}`);
+    super(
+      `BinaryStore: ref non valido (atteso sha256 64-hex): ${JSON.stringify(ref).slice(0, 80)}`,
+    );
     this.name = 'InvalidBinaryRefError';
   }
 }
@@ -189,7 +191,11 @@ export class BinaryStore {
     for (const shard of shards) {
       if (shard.length !== 2) continue; // salta .staging-*, .tmp-*
       let files: string[];
-      try { files = await readdir(join(this.baseDir, shard)); } catch { continue; }
+      try {
+        files = await readdir(join(this.baseDir, shard));
+      } catch {
+        continue;
+      }
       for (const f of files) if (REF_RE.test(f)) out.push(f);
     }
     return out;
@@ -228,7 +234,9 @@ export class BinaryStore {
         await unlink(path);
         freedBytes += st.size;
         deleted++;
-      } catch { /* race con altra GC → ok */ }
+      } catch {
+        /* race con altra GC → ok */
+      }
     }
     return { deleted, freedBytes, skippedYoung };
   }
@@ -251,23 +259,43 @@ export class BinaryStore {
         freedBytes += st.size;
         await unlink(p);
         deleted++;
-      } catch { /* race con un'altra sweep / write → ok */ }
+      } catch {
+        /* race con un'altra sweep / write → ok */
+      }
     };
     let entries: string[];
-    try { entries = await readdir(this.baseDir); } catch { return { deleted, freedBytes }; }
+    try {
+      entries = await readdir(this.baseDir);
+    } catch {
+      return { deleted, freedBytes };
+    }
     for (const e of entries) {
-      if (e.startsWith(STAGING_PREFIX)) { await tryUnlink(join(this.baseDir, e)); continue; }
-      if (e.length === 2) { // shard dir → cerca .tmp-* dei writeBuffer
+      if (e.startsWith(STAGING_PREFIX)) {
+        await tryUnlink(join(this.baseDir, e));
+        continue;
+      }
+      if (e.length === 2) {
+        // shard dir → cerca .tmp-* dei writeBuffer
         let files: string[];
-        try { files = await readdir(join(this.baseDir, e)); } catch { continue; }
-        for (const f of files) if (f.includes(TMP_SUFFIX)) await tryUnlink(join(this.baseDir, e, f));
+        try {
+          files = await readdir(join(this.baseDir, e));
+        } catch {
+          continue;
+        }
+        for (const f of files)
+          if (f.includes(TMP_SUFFIX)) await tryUnlink(join(this.baseDir, e, f));
       }
     }
     return { deleted, freedBytes };
   }
 
   private async pathExists(path: string): Promise<boolean> {
-    try { await stat(path); return true; } catch { return false; }
+    try {
+      await stat(path);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**

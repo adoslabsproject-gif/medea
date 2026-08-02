@@ -30,9 +30,13 @@ function dirSizeBytes(path: string): number {
       try {
         if (entry.isDirectory()) total += dirSizeBytes(child);
         else if (entry.isFile()) total += statSync(child).size;
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     }
-  } catch { /* dir not present yet */ }
+  } catch {
+    /* dir not present yet */
+  }
   return total;
 }
 
@@ -45,10 +49,18 @@ export function registerAccountStorageRoute(app: Hono): void {
     try {
       // Workflow data = SQLite + user-databases + installed-nodes
       const sqliteSize = (() => {
-        try { return statSync(join(dataDir, 'flowforge.sqlite')).size; } catch { return 0; }
+        try {
+          return statSync(join(dataDir, 'flowforge.sqlite')).size;
+        } catch {
+          return 0;
+        }
       })();
       const walSize = (() => {
-        try { return statSync(join(dataDir, 'flowforge.sqlite-wal')).size; } catch { return 0; }
+        try {
+          return statSync(join(dataDir, 'flowforge.sqlite-wal')).size;
+        } catch {
+          return 0;
+        }
       })();
       const userDbs = dirSizeBytes(join(dataDir, 'user-databases'));
       workflowDataUsedBytes = sqliteSize + walSize + userDbs;
@@ -76,14 +88,18 @@ export function registerAccountStorageRoute(app: Hono): void {
       workflowData: {
         quotaBytes: quotas.workflowDataBytes,
         usedBytes: workflowDataUsedBytes,
-        usedPercent: quotas.workflowDataBytes === 0 ? 0
-          : Math.min(100, Math.round((workflowDataUsedBytes / quotas.workflowDataBytes) * 100)),
+        usedPercent:
+          quotas.workflowDataBytes === 0
+            ? 0
+            : Math.min(100, Math.round((workflowDataUsedBytes / quotas.workflowDataBytes) * 100)),
       },
       log: {
         quotaBytes: quotas.logRetentionBytes,
         usedBytes: logUsedBytes,
-        usedPercent: quotas.logRetentionBytes === 0 ? 0
-          : Math.min(100, Math.round((logUsedBytes / quotas.logRetentionBytes) * 100)),
+        usedPercent:
+          quotas.logRetentionBytes === 0
+            ? 0
+            : Math.min(100, Math.round((logUsedBytes / quotas.logRetentionBytes) * 100)),
       },
       // Sottoinsieme del workflowData (i blob sono sotto MEDEA_DATA_DIR/blobs):
       // informativo, non una quota separata.

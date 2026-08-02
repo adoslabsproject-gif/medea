@@ -60,7 +60,9 @@ export class VariablesService {
   get(workflowId: string, name: string, tenantId = 'default'): unknown {
     const { sqlite } = getDatabase();
     const row = sqlite
-      .prepare('SELECT * FROM workflow_variables WHERE tenant_id = ? AND workflow_id = ? AND name = ?')
+      .prepare(
+        'SELECT * FROM workflow_variables WHERE tenant_id = ? AND workflow_id = ? AND name = ?',
+      )
       .get(tenantId, workflowId, name) as VariableRow | undefined;
     if (!row) return undefined;
     try {
@@ -70,7 +72,13 @@ export class VariablesService {
     }
   }
 
-  async set(workflowId: string, name: string, value: unknown, tenantId = 'default', actorId?: string): Promise<void> {
+  async set(
+    workflowId: string,
+    name: string,
+    value: unknown,
+    tenantId = 'default',
+    actorId?: string,
+  ): Promise<void> {
     const { sqlite } = getDatabase();
     const valueJson = JSON.stringify(value);
     const now = new Date().toISOString();
@@ -90,10 +98,17 @@ export class VariablesService {
     });
   }
 
-  async delete(workflowId: string, name: string, tenantId = 'default', actorId?: string): Promise<boolean> {
+  async delete(
+    workflowId: string,
+    name: string,
+    tenantId = 'default',
+    actorId?: string,
+  ): Promise<boolean> {
     const { sqlite } = getDatabase();
     const info = sqlite
-      .prepare('DELETE FROM workflow_variables WHERE tenant_id = ? AND workflow_id = ? AND name = ?')
+      .prepare(
+        'DELETE FROM workflow_variables WHERE tenant_id = ? AND workflow_id = ? AND name = ?',
+      )
       .run(tenantId, workflowId, name);
     if (info.changes === 0) return false;
 

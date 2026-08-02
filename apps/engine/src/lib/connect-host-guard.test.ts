@@ -16,23 +16,26 @@ vi.mock('./egress-policy.js', () => ({
 
 import { assertConnectHostAllowed } from './connect-host-guard.js';
 
-beforeEach(() => { allowlistMock.allowed.clear(); });
+beforeEach(() => {
+  allowlistMock.allowed.clear();
+});
 
 describe('assertConnectHostAllowed — SSRF su host di connessione', () => {
   it.each([
-    '172.20.0.1',          // flowforge-net gateway
-    '127.0.0.1',           // loopback
-    'localhost',           // reserved
-    '10.0.0.5',            // RFC1918
-    '192.168.1.1',         // RFC1918
-    '169.254.169.254',     // cloud IMDS
-    '[::1]',               // IPv6 loopback
+    '172.20.0.1', // flowforge-net gateway
+    '127.0.0.1', // loopback
+    'localhost', // reserved
+    '10.0.0.5', // RFC1918
+    '192.168.1.1', // RFC1918
+    '169.254.169.254', // cloud IMDS
+    '[::1]', // IPv6 loopback
   ])('🔴 host interno "%s" → throw (no allowlist)', (host) => {
     expect(() => assertConnectHostAllowed(host)).toThrow();
   });
 
   it.each(['smtp.gmail.com', 'smtps.aruba.it', 'imaps.pec.aruba.it', '8.8.8.8'])(
-    '🟢 host pubblico "%s" → ok', (host) => {
+    '🟢 host pubblico "%s" → ok',
+    (host) => {
       expect(() => assertConnectHostAllowed(host)).not.toThrow();
     },
   );

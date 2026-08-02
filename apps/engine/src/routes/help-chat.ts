@@ -60,7 +60,10 @@ export function createHelpChatRoutes(): Hono {
     // Last message is the user prompt; the rest is history (excluding it).
     const lastMessage = messages[messages.length - 1];
     if (lastMessage?.role !== 'user') {
-      return c.json({ error: 'bad_request', message: 'L\'ultimo messaggio deve essere dell\'utente' }, 400);
+      return c.json(
+        { error: 'bad_request', message: "L'ultimo messaggio deve essere dell'utente" },
+        400,
+      );
     }
     const history = messages.slice(0, -1);
 
@@ -88,11 +91,17 @@ export function createHelpChatRoutes(): Hono {
       );
       return c.json({ reply, provider: resolved.provider });
     } catch (err) {
-      logger.error({ err, tenantId: getTenantId(c), provider: resolved.provider }, 'Help-chat dispatch failed');
-      return c.json({
-        error: 'llm_failed',
-        message: err instanceof Error ? err.message : 'Errore LLM',
-      }, 502);
+      logger.error(
+        { err, tenantId: getTenantId(c), provider: resolved.provider },
+        'Help-chat dispatch failed',
+      );
+      return c.json(
+        {
+          error: 'llm_failed',
+          message: err instanceof Error ? err.message : 'Errore LLM',
+        },
+        502,
+      );
     }
   });
 

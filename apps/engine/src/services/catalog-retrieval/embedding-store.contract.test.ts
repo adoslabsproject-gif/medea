@@ -21,7 +21,9 @@ beforeEach(() => {
   sqliteInst = new Database(':memory:');
   runMigrations();
 });
-afterEach(() => { sqliteInst.close(); });
+afterEach(() => {
+  sqliteInst.close();
+});
 
 describe('🚨 contract: catalog_embeddings da runMigrations() ↔ SqliteEmbeddingStore', () => {
   it('round-trip put → get sul DB migrato per davvero', () => {
@@ -34,15 +36,19 @@ describe('🚨 contract: catalog_embeddings da runMigrations() ↔ SqliteEmbeddi
     // put idempotente (INSERT OR REPLACE): aggiorna, non duplica.
     store.put(hash, [9, 9, 9]);
     expect(store.get(hash)).toEqual([9, 9, 9]);
-    const count = sqliteInst.prepare('SELECT COUNT(*) AS n FROM catalog_embeddings').get() as { n: number };
+    const count = sqliteInst.prepare('SELECT COUNT(*) AS n FROM catalog_embeddings').get() as {
+      n: number;
+    };
     expect(count.n).toBe(1);
   });
 
   it('riga corrotta (dims ≠ lunghezza) → null, mai crash (fail-soft → re-embed)', () => {
     const store = new SqliteEmbeddingStore();
-    sqliteInst.prepare(
-      'INSERT INTO catalog_embeddings (text_hash, vector_json, dims, created_at) VALUES (?, ?, ?, ?)',
-    ).run('h-corrotto', '[1,2]', 999, '2026-01-01');
+    sqliteInst
+      .prepare(
+        'INSERT INTO catalog_embeddings (text_hash, vector_json, dims, created_at) VALUES (?, ?, ?, ?)',
+      )
+      .run('h-corrotto', '[1,2]', 999, '2026-01-01');
     expect(store.get('h-corrotto')).toBeNull();
   });
 

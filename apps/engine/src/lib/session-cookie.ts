@@ -15,9 +15,7 @@ export const SESSION_COOKIE_HOST = '__Host-ff_session';
 
 /** Nome cookie da usare per WRITE. */
 export function sessionCookieName(): string {
-  return process.env.NODE_ENV === 'production'
-    ? SESSION_COOKIE_HOST
-    : SESSION_COOKIE_LEGACY;
+  return process.env.NODE_ENV === 'production' ? SESSION_COOKIE_HOST : SESSION_COOKIE_LEGACY;
 }
 
 /**

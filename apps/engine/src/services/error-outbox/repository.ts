@@ -119,15 +119,29 @@ export function enqueueErrorEvent(sqlite: SqliteCompatProxy, ev: ErrorOutboxInse
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?)`,
     )
     .run(
-      ev.id, ev.runId, ev.channel, ev.workflowId, ev.tenantId, ev.errorNodeId, msg,
-      ev.errorHash, ev.durationMs, ev.startedAt, ev.triggerType, ev.triggerInputJson,
+      ev.id,
+      ev.runId,
+      ev.channel,
+      ev.workflowId,
+      ev.tenantId,
+      ev.errorNodeId,
+      msg,
+      ev.errorHash,
+      ev.durationMs,
+      ev.startedAt,
+      ev.triggerType,
+      ev.triggerInputJson,
       ev.nextAttemptAt,
     );
   return res.changes > 0;
 }
 
 /** Pending "dovuti" (next_attempt_at ≤ now), FIFO. Esclude done/dead/futuri. */
-export function claimDueErrorEvents(sqlite: SqliteCompatProxy, now: string, limit: number): ErrorOutboxRecord[] {
+export function claimDueErrorEvents(
+  sqlite: SqliteCompatProxy,
+  now: string,
+  limit: number,
+): ErrorOutboxRecord[] {
   const rows = sqlite
     .prepare(
       `SELECT * FROM error_outbox
@@ -141,20 +155,31 @@ export function claimDueErrorEvents(sqlite: SqliteCompatProxy, now: string, limi
 
 /** Consegnato → 'done' (non più claimato). */
 export function markErrorEventDone(sqlite: SqliteCompatProxy, id: string): void {
-  sqlite.prepare(`UPDATE error_outbox SET status = 'done', updated_at = ? WHERE id = ?`).run(nowIso(), id);
+  sqlite
+    .prepare(`UPDATE error_outbox SET status = 'done', updated_at = ? WHERE id = ?`)
+    .run(nowIso(), id);
 }
 
 /** Fallimento ritentabile → attempts+1 + prossimo tentativo schedulato (resta pending). */
-export function markErrorEventRetry(sqlite: SqliteCompatProxy, id: string, nextAttemptAt: string, lastError: string): void {
+export function markErrorEventRetry(
+  sqlite: SqliteCompatProxy,
+  id: string,
+  nextAttemptAt: string,
+  lastError: string,
+): void {
   sqlite
-    .prepare(`UPDATE error_outbox SET attempts = attempts + 1, next_attempt_at = ?, last_error = ?, updated_at = ? WHERE id = ?`)
+    .prepare(
+      `UPDATE error_outbox SET attempts = attempts + 1, next_attempt_at = ?, last_error = ?, updated_at = ? WHERE id = ?`,
+    )
     .run(nextAttemptAt, lastError.slice(0, MAX_ERROR_MESSAGE), nowIso(), id);
 }
 
 /** Capolinea poison (#2) → 'dead' (non più claimato, non blocca la coda). */
 export function markErrorEventDead(sqlite: SqliteCompatProxy, id: string, lastError: string): void {
   sqlite
-    .prepare(`UPDATE error_outbox SET status = 'dead', attempts = attempts + 1, last_error = ?, updated_at = ? WHERE id = ?`)
+    .prepare(
+      `UPDATE error_outbox SET status = 'dead', attempts = attempts + 1, last_error = ?, updated_at = ? WHERE id = ?`,
+    )
     .run(lastError.slice(0, MAX_ERROR_MESSAGE), nowIso(), id);
 }
 

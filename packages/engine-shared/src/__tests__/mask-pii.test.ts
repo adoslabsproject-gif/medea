@@ -82,7 +82,7 @@ describe('maskEmail', () => {
       expect(maskEmail('not-an-email')).toBe('[redacted]');
     });
 
-    it('@ all\'inizio → [redacted]', () => {
+    it("@ all'inizio → [redacted]", () => {
       expect(maskEmail('@gmail.com')).toBe('[redacted]');
     });
 

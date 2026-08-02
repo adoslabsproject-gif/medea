@@ -39,21 +39,37 @@ export type BinaryData = z.infer<typeof BinaryDataSchema>;
 /** Type guard: true se `v` è un BinaryData ben formato. */
 export function isBinaryData(v: unknown): v is BinaryData {
   return (
-    v !== null && typeof v === 'object'
-    && (v as { __ffBinary?: unknown }).__ffBinary === true
-    && typeof (v as { mimeType?: unknown }).mimeType === 'string'
-    && typeof (v as { size?: unknown }).size === 'number'
+    v !== null &&
+    typeof v === 'object' &&
+    (v as { __ffBinary?: unknown }).__ffBinary === true &&
+    typeof (v as { mimeType?: unknown }).mimeType === 'string' &&
+    typeof (v as { size?: unknown }).size === 'number'
   );
 }
 
-interface MakeBinaryInlineOpts { mimeType: string; data: string; fileName?: string; sha256?: string }
-interface MakeBinaryRefOpts { mimeType: string; ref: string; size: number; fileName?: string; sha256?: string }
+interface MakeBinaryInlineOpts {
+  mimeType: string;
+  data: string;
+  fileName?: string;
+  sha256?: string;
+}
+interface MakeBinaryRefOpts {
+  mimeType: string;
+  ref: string;
+  size: number;
+  fileName?: string;
+  sha256?: string;
+}
 
 /** Costruisce un BinaryData inline (base64). `size` derivato dai byte decodificati. */
 export function makeBinaryInline(opts: MakeBinaryInlineOpts): BinaryData {
   const size = Buffer.byteLength(opts.data, 'base64');
   return {
-    __ffBinary: true, encoding: 'base64', mimeType: opts.mimeType, data: opts.data, size,
+    __ffBinary: true,
+    encoding: 'base64',
+    mimeType: opts.mimeType,
+    data: opts.data,
+    size,
     ...(opts.fileName !== undefined ? { fileName: opts.fileName } : {}),
     ...(opts.sha256 !== undefined ? { sha256: opts.sha256 } : {}),
   };
@@ -62,7 +78,11 @@ export function makeBinaryInline(opts: MakeBinaryInlineOpts): BinaryData {
 /** Costruisce un BinaryData per riferimento (streaming-to-disk). */
 export function makeBinaryRef(opts: MakeBinaryRefOpts): BinaryData {
   return {
-    __ffBinary: true, encoding: 'ref', mimeType: opts.mimeType, ref: opts.ref, size: opts.size,
+    __ffBinary: true,
+    encoding: 'ref',
+    mimeType: opts.mimeType,
+    ref: opts.ref,
+    size: opts.size,
     ...(opts.fileName !== undefined ? { fileName: opts.fileName } : {}),
     ...(opts.sha256 !== undefined ? { sha256: opts.sha256 } : {}),
   };
@@ -109,7 +129,8 @@ export async function readBinaryBytes(b: BinaryData, refReader?: BinaryRefReader
   }
   // encoding === 'ref'
   if (!b.ref) throw new Error('BinaryData encoding=ref senza campo "ref"');
-  if (!refReader) throw new Error('readBinaryBytes: refReader richiesto per BinaryData encoding=ref');
+  if (!refReader)
+    throw new Error('readBinaryBytes: refReader richiesto per BinaryData encoding=ref');
   return await refReader(b.ref);
 }
 
@@ -126,7 +147,10 @@ export async function readBinaryBytes(b: BinaryData, refReader?: BinaryRefReader
  * content-addressed su disco o un base64 inline. Così il `ref` può diventare la
  * forma PRIMARIA senza che i consumatori cambino logica.
  */
-export async function resolveBinaryValue(value: unknown, refReader?: BinaryRefReader): Promise<Buffer | null> {
+export async function resolveBinaryValue(
+  value: unknown,
+  refReader?: BinaryRefReader,
+): Promise<Buffer | null> {
   const bin = getBinaryData(value);
   return bin !== null ? await readBinaryBytes(bin, refReader) : null;
 }

@@ -43,7 +43,12 @@ async function main() {
   //  - Esclude pattern che potrebbero matchare browser legitimi
   //    (es. solo "Mozilla", "Safari" — già fanno parte del flow umano)
   const FILTER_OUT_PATTERNS = new Set([
-    'Mozilla', 'Safari', 'AppleWebKit', 'Chrome', 'Firefox', 'Edge',
+    'Mozilla',
+    'Safari',
+    'AppleWebKit',
+    'Chrome',
+    'Firefox',
+    'Edge',
     'compatible',
   ]);
 
@@ -60,7 +65,9 @@ async function main() {
     });
   }
 
-  console.log(`[sync-bot-list] ${entries.length} crawler patterns retained (filtered ${data.length - entries.length})`);
+  console.log(
+    `[sync-bot-list] ${entries.length} crawler patterns retained (filtered ${data.length - entries.length})`,
+  );
 
   const ts = `/**
  * known-crawlers-generated.ts — AUTO-GENERATED, do not edit by hand.

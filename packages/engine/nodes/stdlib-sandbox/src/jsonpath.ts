@@ -61,7 +61,8 @@ export function get(obj: unknown, path: string): unknown {
       if (!Array.isArray(cur)) return undefined;
       const idx = seg.n < 0 ? cur.length + seg.n : seg.n;
       cur = cur[idx];
-    } else { // star
+    } else {
+      // star
       if (!Array.isArray(cur)) return undefined;
       return cur; // return whole array — il caller deve gestire il restante path manualmente
     }
@@ -72,7 +73,7 @@ export function get(obj: unknown, path: string): unknown {
 /** Get with default fallback. */
 export function getOr<T>(obj: unknown, path: string, fallback: T): T {
   const v = get(obj, path);
-  return (v === undefined || v === null) ? fallback : v as T;
+  return v === undefined || v === null ? fallback : (v as T);
 }
 
 /**
@@ -89,13 +90,19 @@ export function set<T>(obj: T, path: string, value: unknown): T {
   for (let i = 0; i < segments.length - 1; i++) {
     const seg = segments[i]!;
     const next = segments[i + 1]!;
-    if (seg.kind === 'star') throw new Error('jsonpath set: wildcard non supportato in path intermedio');
+    if (seg.kind === 'star')
+      throw new Error('jsonpath set: wildcard non supportato in path intermedio');
     if (seg.kind === 'prop') {
       const k = seg.key;
       const existing: unknown = (cur as Record<string, unknown>)[k];
-      const fresh: Record<string, unknown> | unknown[] = next.kind === 'index'
-        ? (Array.isArray(existing) ? [...(existing as unknown[])] : [])
-        : (existing && typeof existing === 'object' ? { ...(existing as Record<string, unknown>) } : {});
+      const fresh: Record<string, unknown> | unknown[] =
+        next.kind === 'index'
+          ? Array.isArray(existing)
+            ? [...(existing as unknown[])]
+            : []
+          : existing && typeof existing === 'object'
+            ? { ...(existing as Record<string, unknown>) }
+            : {};
       (cur as Record<string, unknown>)[k] = fresh;
       cur = fresh;
     } else {
@@ -103,9 +110,14 @@ export function set<T>(obj: T, path: string, value: unknown): T {
       const arr = cur as unknown[];
       const idx: number = seg.n < 0 ? arr.length + seg.n : seg.n;
       const existing: unknown = arr[idx];
-      const fresh: Record<string, unknown> | unknown[] = next.kind === 'index'
-        ? (Array.isArray(existing) ? [...(existing as unknown[])] : [])
-        : (existing && typeof existing === 'object' ? { ...(existing as Record<string, unknown>) } : {});
+      const fresh: Record<string, unknown> | unknown[] =
+        next.kind === 'index'
+          ? Array.isArray(existing)
+            ? [...(existing as unknown[])]
+            : []
+          : existing && typeof existing === 'object'
+            ? { ...(existing as Record<string, unknown>) }
+            : {};
       arr[idx] = fresh;
       cur = fresh;
     }

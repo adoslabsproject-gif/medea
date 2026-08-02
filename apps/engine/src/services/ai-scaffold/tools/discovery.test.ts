@@ -20,19 +20,25 @@ class WorkflowServiceMock {
 vi.mock('@/services/workflow.service.js', () => ({ WorkflowService: WorkflowServiceMock }));
 
 const emailListMock = vi.fn((): unknown[] => []);
-class SystemEmailAccountsServiceMock { list = emailListMock; }
+class SystemEmailAccountsServiceMock {
+  list = emailListMock;
+}
 vi.mock('@/services/system-email-accounts.service.js', () => ({
   SystemEmailAccountsService: SystemEmailAccountsServiceMock,
 }));
 
 const credListMock = vi.fn((): unknown[] => []);
-class CredentialsServiceMock { list = credListMock; }
+class CredentialsServiceMock {
+  list = credListMock;
+}
 vi.mock('@/services/credentials.service.js', () => ({
   CredentialsService: CredentialsServiceMock,
 }));
 
 const llmListMock = vi.fn((): unknown[] => []);
-class LlmProvidersServiceMock { list = llmListMock; }
+class LlmProvidersServiceMock {
+  list = llmListMock;
+}
 vi.mock('@/services/llm-providers.service.js', () => ({
   LlmProvidersService: LlmProvidersServiceMock,
 }));
@@ -50,12 +56,20 @@ const baseSession: any = {
 };
 
 const {
-  listDatabasesHandler, readDbSchemaHandler, listWorkflowsHandler,
-  readWorkflowHandler, listNodeCatalogHandler, listEmailAccountsHandler,
-  listSecretsHandler, listLlmProvidersHandler, listDraftNodesHandler,
+  listDatabasesHandler,
+  readDbSchemaHandler,
+  listWorkflowsHandler,
+  readWorkflowHandler,
+  listNodeCatalogHandler,
+  listEmailAccountsHandler,
+  listSecretsHandler,
+  listLlmProvidersHandler,
+  listDraftNodesHandler,
 } = await import('./discovery.js');
 
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('🚨 listDatabasesHandler', () => {
   it('🚨 happy: dbs mapped + tableCount', () => {
@@ -83,18 +97,30 @@ describe('🚨 readDbSchemaHandler', () => {
   });
 
   it('🚨 happy: tables + columns flatten', () => {
-    dbStudioListMock.mockReturnValueOnce([{
-      id: 'db', name: 'X', tables: [
-        { name: 'users', columns: [
-          { name: 'id', type: 'INT', constraints: { primaryKey: true, nullable: false } },
-          { name: 'email', type: 'TEXT' },
-        ] },
-      ],
-    }]);
+    dbStudioListMock.mockReturnValueOnce([
+      {
+        id: 'db',
+        name: 'X',
+        tables: [
+          {
+            name: 'users',
+            columns: [
+              { name: 'id', type: 'INT', constraints: { primaryKey: true, nullable: false } },
+              { name: 'email', type: 'TEXT' },
+            ],
+          },
+        ],
+      },
+    ]);
     const r = readDbSchemaHandler(baseSession, { databaseId: 'db' });
     if (!r.ok) return;
     const d = r.data as any;
-    expect(d.tables[0].columns[0]).toEqual({ name: 'id', type: 'INT', primaryKey: true, nullable: false });
+    expect(d.tables[0].columns[0]).toEqual({
+      name: 'id',
+      type: 'INT',
+      primaryKey: true,
+      nullable: false,
+    });
     expect(d.tables[0].columns[1].nullable).toBe(true); // default true se non false
   });
 });
@@ -102,7 +128,12 @@ describe('🚨 readDbSchemaHandler', () => {
 describe('🚨 listWorkflowsHandler', () => {
   it('🚨 limit 30 + tenant scoped', async () => {
     const wf50 = Array.from({ length: 50 }, (_, i) => ({
-      id: `wf-${i}`, name: `WF ${i}`, description: '', enabled: true, nodes: [], updatedAt: '2026-06-07',
+      id: `wf-${i}`,
+      name: `WF ${i}`,
+      description: '',
+      enabled: true,
+      nodes: [],
+      updatedAt: '2026-06-07',
     }));
     wfListMock.mockResolvedValueOnce(wf50);
     const r = await listWorkflowsHandler(baseSession);
@@ -125,7 +156,10 @@ describe('🚨 readWorkflowHandler', () => {
 
   it('🚨 happy: full nodes+edges returned', async () => {
     wfGetMock.mockResolvedValueOnce({
-      id: 'wf-1', name: 'WF', description: 'd', enabled: true,
+      id: 'wf-1',
+      name: 'WF',
+      description: 'd',
+      enabled: true,
       nodes: [{ id: 'n1', defId: 'x', config: {} }],
       edges: [{ from: 'n1', to: 'n2' }],
     });
@@ -161,7 +195,13 @@ describe('🚨 listNodeCatalogHandler', () => {
 
   it('🚨 defId specifico → full entry', () => {
     buildNodeCatalogMock.mockReturnValueOnce([
-      { defId: 'action_http', type: 'action', label: 'HTTP', description: 'd', fields: [{ key: 'url' }] },
+      {
+        defId: 'action_http',
+        type: 'action',
+        label: 'HTTP',
+        description: 'd',
+        fields: [{ key: 'url' }],
+      },
     ]);
     const r = listNodeCatalogHandler(baseSession, { defId: 'action_http' });
     if (!r.ok) return;
@@ -219,7 +259,10 @@ describe('🚨 listDraftNodesHandler', () => {
     const session = {
       ...baseSession,
       draft: {
-        nodes: [{ id: 'n1', defId: 'http', name: 'My HTTP' }, { id: 'n2', defId: 'cron' }],
+        nodes: [
+          { id: 'n1', defId: 'http', name: 'My HTTP' },
+          { id: 'n2', defId: 'cron' },
+        ],
         edges: [{ from: 'n1', to: 'n2' }],
       },
     };
@@ -235,18 +278,35 @@ describe('🚨 listDraftNodesHandler', () => {
 describe('🚨 listEmailAccountsHandler', () => {
   it('🚨 imap/smtp host extract + isDefault', () => {
     emailListMock.mockReturnValueOnce([
-      { id: 'e1', label: 'Primary', fromAddress: 'a@b.it', imap: { host: 'imap' }, smtp: { host: 'smtp' }, isDefault: true },
+      {
+        id: 'e1',
+        label: 'Primary',
+        fromAddress: 'a@b.it',
+        imap: { host: 'imap' },
+        smtp: { host: 'smtp' },
+        isDefault: true,
+      },
     ]);
     const r = listEmailAccountsHandler(baseSession);
     if (!r.ok) return;
     expect((r.data as any[])[0]).toMatchObject({
-      label: 'Primary', fromAddress: 'a@b.it', imapHost: 'imap', smtpHost: 'smtp', isDefault: true,
+      label: 'Primary',
+      fromAddress: 'a@b.it',
+      imapHost: 'imap',
+      smtpHost: 'smtp',
+      isDefault: true,
     });
   });
 
   it('🚨 no imap → imapHost null', () => {
     emailListMock.mockReturnValueOnce([
-      { id: 'e2', label: 'SMTP-only', fromAddress: 'x@y.it', smtp: { host: 'smtp' }, isDefault: false },
+      {
+        id: 'e2',
+        label: 'SMTP-only',
+        fromAddress: 'x@y.it',
+        smtp: { host: 'smtp' },
+        isDefault: false,
+      },
     ]);
     const r = listEmailAccountsHandler(baseSession);
     if (!r.ok) return;

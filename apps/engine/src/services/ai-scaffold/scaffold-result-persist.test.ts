@@ -4,7 +4,11 @@ import Database from 'better-sqlite3';
 const db = new Database(':memory:');
 vi.mock('@/storage/db.js', () => ({ getDatabase: () => ({ sqlite: db }) }));
 
-import { persistScaffoldResult, loadScaffoldResult, __resetScaffoldResultPersistTableFlag } from './scaffold-result-persist.js';
+import {
+  persistScaffoldResult,
+  loadScaffoldResult,
+  __resetScaffoldResultPersistTableFlag,
+} from './scaffold-result-persist.js';
 
 beforeEach(() => {
   __resetScaffoldResultPersistTableFlag();
@@ -23,7 +27,7 @@ describe('scaffold-result-persist — il done sopravvive al restart del containe
     expect(loadScaffoldResult('nope')).toBeNull();
   });
 
-  it('INSERT OR REPLACE: l\'ultima scrittura vince (no duplicati su retry)', () => {
+  it("INSERT OR REPLACE: l'ultima scrittura vince (no duplicati su retry)", () => {
     persistScaffoldResult('j1', { v: 1 });
     persistScaffoldResult('j1', { v: 2 });
     expect(loadScaffoldResult('j1')).toEqual({ v: 2 });
@@ -31,15 +35,19 @@ describe('scaffold-result-persist — il done sopravvive al restart del containe
 
   it('risultato OLTRE il TTL (1h) → null (non si recupera roba stantia)', () => {
     persistScaffoldResult('j1', { a: 1 });
-    db.prepare('UPDATE ai_scaffold_job_results SET created_at = ? WHERE id = ?')
-      .run(Date.now() - 2 * 60 * 60_000, 'j1'); // 2h fa
+    db.prepare('UPDATE ai_scaffold_job_results SET created_at = ? WHERE id = ?').run(
+      Date.now() - 2 * 60 * 60_000,
+      'j1',
+    ); // 2h fa
     expect(loadScaffoldResult('j1')).toBeNull();
   });
 
   it('cleanup: persistere un nuovo job elimina i vecchi scaduti', () => {
     persistScaffoldResult('old', { a: 1 });
-    db.prepare('UPDATE ai_scaffold_job_results SET created_at = ? WHERE id = ?')
-      .run(Date.now() - 2 * 60 * 60_000, 'old');
+    db.prepare('UPDATE ai_scaffold_job_results SET created_at = ? WHERE id = ?').run(
+      Date.now() - 2 * 60 * 60_000,
+      'old',
+    );
     persistScaffoldResult('new', { b: 2 }); // trigghera il DELETE degli scaduti
     const row = db.prepare('SELECT id FROM ai_scaffold_job_results WHERE id = ?').get('old');
     expect(row).toBeUndefined();

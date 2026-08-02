@@ -17,7 +17,11 @@
  */
 
 import { WebSocket, type RawData } from 'ws';
-import { validateUrlForFetch, parseInternalHostAllowlist, isHostAllowlisted } from '@medea/engine-safe-fetch';
+import {
+  validateUrlForFetch,
+  parseInternalHostAllowlist,
+  isHostAllowlisted,
+} from '@medea/engine-safe-fetch';
 import { logger } from '@/lib/logger.js';
 import { resolveJsonPointer, clampNumber } from './parsing.js';
 import type { DispatchTriggerRun } from './run-dispatcher.js';
@@ -97,7 +101,10 @@ export function startWebSocketWatcher(
 ): WebSocketWatcherJob | null {
   const url = typeof node.config.url === 'string' ? node.config.url.trim() : '';
   if (!/^wss?:\/\//i.test(url)) {
-    logger.warn({ workflowId: wf.id, url }, 'trigger_websocket: URL mancante o non ws://|wss:// — skipped');
+    logger.warn(
+      { workflowId: wf.id, url },
+      'trigger_websocket: URL mancante o non ws://|wss:// — skipped',
+    );
     return null;
   }
   // H5 — SSRF: validare lo SCHEMA non basta. Senza check dell'HOST, un ws://169.254.169.254
@@ -108,7 +115,11 @@ export function startWebSocketWatcher(
   // interni legittimi). Solo gli host NON allowlisted passano per il SSRF guard.
   const httpUrl = url.replace(/^ws/i, 'http');
   let host = '';
-  try { host = new URL(httpUrl).hostname; } catch { /* URL malformata → la becca il guard sotto */ }
+  try {
+    host = new URL(httpUrl).hostname;
+  } catch {
+    /* URL malformata → la becca il guard sotto */
+  }
   const internalAllowlist = parseInternalHostAllowlist(process.env.MEDEA_INTERNAL_HOST_ALLOWLIST);
   if (!(host && isHostAllowlisted(host, internalAllowlist))) {
     const ssrf = validateUrlForFetch(httpUrl);
@@ -124,16 +135,23 @@ export function startWebSocketWatcher(
   const now = deps.now ?? Date.now;
   const tenantId = wf.tenantId ?? 'default';
   const headers = parseWsHeaders(wf.id, node.config.headersJson);
-  const subscribeMessage = typeof node.config.subscribeMessage === 'string' ? node.config.subscribeMessage.trim() : '';
+  const subscribeMessage =
+    typeof node.config.subscribeMessage === 'string' ? node.config.subscribeMessage.trim() : '';
   const jsonParse = node.config.jsonParse !== 'false';
-  const pointer = typeof node.config.messagePointer === 'string' ? node.config.messagePointer.trim() : '';
+  const pointer =
+    typeof node.config.messagePointer === 'string' ? node.config.messagePointer.trim() : '';
   const reconnect = node.config.reconnect !== 'false';
   const pingIntervalMs = clampNumber(node.config.pingIntervalSec, 0, 86_400, 30) * 1000;
   const maxPerSec = clampNumber(node.config.maxMessagesPerSec, 0, 10_000, 20);
 
   const job: WebSocketWatcherJob = {
-    workflowId: wf.id, socket: null, reconnectTimer: null, pingTimer: null,
-    closing: false, backoffMs: WS_BACKOFF_INITIAL_MS, recentFires: [],
+    workflowId: wf.id,
+    socket: null,
+    reconnectTimer: null,
+    pingTimer: null,
+    closing: false,
+    backoffMs: WS_BACKOFF_INITIAL_MS,
+    recentFires: [],
   };
 
   const fireRun = (raw: string): void => {
@@ -142,13 +160,22 @@ export function startWebSocketWatcher(
       const ts = now();
       job.recentFires = job.recentFires.filter((t) => ts - t < 1000);
       if (job.recentFires.length >= maxPerSec) {
-        logger.warn({ workflowId: wf.id, maxPerSec }, 'trigger_websocket: anti-flood budget exceeded — message dropped');
+        logger.warn(
+          { workflowId: wf.id, maxPerSec },
+          'trigger_websocket: anti-flood budget exceeded — message dropped',
+        );
         return;
       }
       job.recentFires.push(ts);
     }
     let data: unknown = raw;
-    if (jsonParse) { try { data = JSON.parse(raw); } catch { data = raw; } }
+    if (jsonParse) {
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        data = raw;
+      }
+    }
     let matched: unknown;
     if (pointer) {
       matched = resolveJsonPointer(data, pointer);
@@ -156,10 +183,19 @@ export function startWebSocketWatcher(
     }
     void deps
       .dispatchRun({
-        workflowId: wf.id, tenantId, triggerType: 'websocket',
-        triggerInput: { data, raw, receivedAt: new Date().toISOString(), ...(pointer ? { matched } : {}) },
+        workflowId: wf.id,
+        tenantId,
+        triggerType: 'websocket',
+        triggerInput: {
+          data,
+          raw,
+          receivedAt: new Date().toISOString(),
+          ...(pointer ? { matched } : {}),
+        },
       })
-      .catch((err: unknown) => { logger.error({ err, workflowId: wf.id }, 'websocket run failed'); });
+      .catch((err: unknown) => {
+        logger.error({ err, workflowId: wf.id }, 'websocket run failed');
+      });
   };
 
   const connect = (): void => {
@@ -168,9 +204,21 @@ export function startWebSocketWatcher(
     job.socket = socket;
     socket.on('open', () => {
       job.backoffMs = WS_BACKOFF_INITIAL_MS; // reset backoff su connessione riuscita
-      if (subscribeMessage) { try { socket.send(subscribeMessage); } catch (err) { logger.warn({ err, workflowId: wf.id }, 'websocket subscribe send failed'); } }
+      if (subscribeMessage) {
+        try {
+          socket.send(subscribeMessage);
+        } catch (err) {
+          logger.warn({ err, workflowId: wf.id }, 'websocket subscribe send failed');
+        }
+      }
       if (pingIntervalMs > 0) {
-        job.pingTimer = setInterval(() => { try { socket.ping(); } catch { /* socket morente */ } }, pingIntervalMs);
+        job.pingTimer = setInterval(() => {
+          try {
+            socket.ping();
+          } catch {
+            /* socket morente */
+          }
+        }, pingIntervalMs);
       }
       logger.info({ workflowId: wf.id, url }, 'websocket watcher connected');
     });
@@ -179,17 +227,27 @@ export function startWebSocketWatcher(
       // .toString() (Array.prototype.toString → join, non utf8). Normalizziamo.
       const buf = Array.isArray(raw)
         ? Buffer.concat(raw)
-        : Buffer.isBuffer(raw) ? raw : Buffer.from(raw);
+        : Buffer.isBuffer(raw)
+          ? raw
+          : Buffer.from(raw);
       fireRun(buf.toString('utf8'));
     });
-    socket.on('error', (err) => { logger.warn({ err, workflowId: wf.id }, 'websocket error'); });
+    socket.on('error', (err) => {
+      logger.warn({ err, workflowId: wf.id }, 'websocket error');
+    });
     socket.on('close', () => {
-      if (job.pingTimer) { clearInterval(job.pingTimer); job.pingTimer = null; }
+      if (job.pingTimer) {
+        clearInterval(job.pingTimer);
+        job.pingTimer = null;
+      }
       job.socket = null;
       if (job.closing || !reconnect) return;
       const delay = job.backoffMs;
       job.backoffMs = Math.min(job.backoffMs * 2, WS_BACKOFF_CAP_MS); // backoff esponenziale, cap 30s
-      logger.info({ workflowId: wf.id, delayMs: delay }, 'websocket closed — reconnecting with backoff');
+      logger.info(
+        { workflowId: wf.id, delayMs: delay },
+        'websocket closed — reconnecting with backoff',
+      );
       job.reconnectTimer = setTimeout(connect, delay);
     });
   };
@@ -202,7 +260,20 @@ export function startWebSocketWatcher(
 /** Chiusura pulita di un WebSocket watcher: stop reconnect/ping + close socket. */
 export function teardownWebSocketWatcher(job: WebSocketWatcherJob): void {
   job.closing = true;
-  if (job.reconnectTimer) { clearTimeout(job.reconnectTimer); job.reconnectTimer = null; }
-  if (job.pingTimer) { clearInterval(job.pingTimer); job.pingTimer = null; }
-  if (job.socket) { try { job.socket.close(); } catch { /* già chiuso */ } job.socket = null; }
+  if (job.reconnectTimer) {
+    clearTimeout(job.reconnectTimer);
+    job.reconnectTimer = null;
+  }
+  if (job.pingTimer) {
+    clearInterval(job.pingTimer);
+    job.pingTimer = null;
+  }
+  if (job.socket) {
+    try {
+      job.socket.close();
+    } catch {
+      /* già chiuso */
+    }
+    job.socket = null;
+  }
 }

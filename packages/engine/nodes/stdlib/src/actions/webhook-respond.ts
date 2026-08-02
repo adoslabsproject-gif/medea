@@ -81,7 +81,7 @@ export const webhookRespondNode: NodeModule = {
         help:
           'Codice HTTP da restituire. I preset coprono il 95% dei casi. ' +
           'Scegli "Custom" e usa il campo "Status personalizzato" sotto per codici non standard ' +
-          '(es. 418 I\'m a teapot, 451 Unavailable for Legal Reasons).',
+          "(es. 418 I'm a teapot, 451 Unavailable for Legal Reasons).",
       },
       {
         key: 'status',
@@ -103,7 +103,7 @@ export const webhookRespondNode: NodeModule = {
           '{"ok":true,"data":{{$node.Transform.json}}}    oppure    <html><h1>{{input.title}}</h1></html>',
         help:
           'Contenuto da restituire. Supporta {{espressioni}} con valori dai nodi precedenti. ' +
-          'Se VUOTO: per JSON serializza l\'input del nodo precedente; per Text/HTML usa l\'input come stringa.',
+          "Se VUOTO: per JSON serializza l'input del nodo precedente; per Text/HTML usa l'input come stringa.",
         showIf: { field: 'respondWith', in: ['json', 'text', 'html'] },
       },
 
@@ -128,7 +128,7 @@ export const webhookRespondNode: NodeModule = {
         required: false,
         placeholder: '{{$node.PDF_Generate.base64}}',
         help:
-          'Body binario codificato in base64. Tipicamente l\'output di un nodo File Read o PDF Generate. ' +
+          "Body binario codificato in base64. Tipicamente l'output di un nodo File Read o PDF Generate. " +
           'Viene decodificato server-side prima di scriverlo sulla response.',
         showIf: { field: 'respondWith', equals: 'binary' },
       },
@@ -184,8 +184,7 @@ export const webhookRespondNode: NodeModule = {
           'application/octet-stream',
         ],
         defaultValue: 'application/json',
-        help:
-          'MIME esplicito del body. Usato solo in modalità Custom (le altre modalità impostano automaticamente il tipo corretto).',
+        help: 'MIME esplicito del body. Usato solo in modalità Custom (le altre modalità impostano automaticamente il tipo corretto).',
         showIf: { field: 'respondWith', equals: 'custom' },
       },
       {

@@ -24,9 +24,10 @@ export interface AuthConfig {
 }
 
 export function buildAuthHeaders(config: AuthConfig): Record<string, string> {
-  const mode = ((typeof config.authMode === 'string' ? config.authMode : 'none') as AuthMode);
+  const mode = (typeof config.authMode === 'string' ? config.authMode : 'none') as AuthMode;
   switch (mode) {
-    case 'none': return {};
+    case 'none':
+      return {};
     case 'basic': {
       const user = safeString(config.basicUser);
       const pass = safeString(config.basicPass);
@@ -50,6 +51,7 @@ export function buildAuthHeaders(config: AuthConfig): Record<string, string> {
     // 'oauth2' (client_credentials) NON è gestito qui: richiede un token-fetch ASYNC
     // con cache → l'http executor ottiene l'access-token e inietta il Bearer a parte.
     // Questa funzione PURA copre solo gli schemi a header statico.
-    default: return {};
+    default:
+      return {};
   }
 }

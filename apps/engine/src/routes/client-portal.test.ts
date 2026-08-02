@@ -56,7 +56,9 @@ vi.mock('@/services/run.service.js', () => ({
 
 import { createClientPortalPublicRoutes } from './client-portal.js';
 
-const fakeBus = { emit: vi.fn(), on: vi.fn() } as unknown as Parameters<typeof createClientPortalPublicRoutes>[0];
+const fakeBus = { emit: vi.fn(), on: vi.fn() } as unknown as Parameters<
+  typeof createClientPortalPublicRoutes
+>[0];
 
 function makeApp(): Hono {
   return createClientPortalPublicRoutes(fakeBus);
@@ -92,7 +94,7 @@ describe('GET /portal/:tenantId/:token — verify + info', () => {
     m.verifyFn.mockReturnValue(null);
     const res = await makeApp().request('/portal/tenant-a/bad-token');
     expect(res.status).toBe(401);
-    const body = await res.json() as { error: string };
+    const body = (await res.json()) as { error: string };
     expect(body.error).toBe('Invalid or expired portal link');
   });
 
@@ -100,7 +102,9 @@ describe('GET /portal/:tenantId/:token — verify + info', () => {
     m.verifyFn.mockReturnValue(VALID_TOKEN_INFO);
     const res = await makeApp().request('/portal/tenant-a/good-token');
     expect(res.status).toBe(200);
-    const body = await res.json() as { portal: { name: string; permissions: Record<string, unknown>; expiresAt?: string } };
+    const body = (await res.json()) as {
+      portal: { name: string; permissions: Record<string, unknown>; expiresAt?: string };
+    };
     expect(body.portal.name).toBe('Cliente Acme');
     expect(body.portal.permissions.brandName).toBe('Acme Srl');
     expect(body.portal.permissions.allowRun).toBe(true);
@@ -111,7 +115,7 @@ describe('GET /portal/:tenantId/:token — verify + info', () => {
   it('REDACT: portal info NON include workflowIds/workflowTags/allowedTriggerTypes interne', async () => {
     m.verifyFn.mockReturnValue(VALID_TOKEN_INFO);
     const res = await makeApp().request('/portal/tenant-a/good-token');
-    const body = await res.json() as { portal: { permissions: Record<string, unknown> } };
+    const body = (await res.json()) as { portal: { permissions: Record<string, unknown> } };
     expect(body.portal.permissions.workflowIds).toBeUndefined();
     expect(body.portal.permissions.workflowTags).toBeUndefined();
     expect(body.portal.permissions.allowedTriggerTypes).toBeUndefined();
@@ -137,12 +141,19 @@ describe('GET /portal/.../workflows — lista visibile', () => {
   it('token valido → ritorna listVisibleWorkflows()', async () => {
     m.verifyFn.mockReturnValue(VALID_TOKEN_INFO);
     m.listVisibleFn.mockReturnValue([
-      { id: 'wf-1', name: 'A', description: '', enabled: true, tags: ['client-facing'], canRun: true },
+      {
+        id: 'wf-1',
+        name: 'A',
+        description: '',
+        enabled: true,
+        tags: ['client-facing'],
+        canRun: true,
+      },
       { id: 'wf-2', name: 'B', description: '', enabled: true, tags: [], canRun: false },
     ]);
     const res = await makeApp().request('/portal/tenant-a/good/workflows');
     expect(res.status).toBe(200);
-    const body = await res.json() as { workflows: { id: string }[] };
+    const body = (await res.json()) as { workflows: { id: string }[] };
     expect(body.workflows.map((w) => w.id)).toEqual(['wf-1', 'wf-2']);
   });
 });
@@ -154,7 +165,7 @@ describe('GET /portal/.../runs — cronologia filtered', () => {
       permissions: { ...VALID_TOKEN_INFO.permissions, showHistory: false },
     });
     const res = await makeApp().request('/portal/tenant-a/good/runs');
-    const body = await res.json() as { runs: unknown[] };
+    const body = (await res.json()) as { runs: unknown[] };
     expect(body.runs).toEqual([]);
     expect(m.runsListRecent).not.toHaveBeenCalled();
   });
@@ -163,26 +174,51 @@ describe('GET /portal/.../runs — cronologia filtered', () => {
     m.verifyFn.mockReturnValue(VALID_TOKEN_INFO);
     m.listVisibleFn.mockReturnValue([]);
     const res = await makeApp().request('/portal/tenant-a/good/runs');
-    const body = await res.json() as { runs: unknown[] };
+    const body = (await res.json()) as { runs: unknown[] };
     expect(body.runs).toEqual([]);
   });
 
   it('filtra cross-workflow per visibility', async () => {
     m.verifyFn.mockReturnValue(VALID_TOKEN_INFO);
-    m.listVisibleFn.mockReturnValue([{ id: 'wf-1', name: 'A', description: '', enabled: true, tags: [], canRun: true }]);
+    m.listVisibleFn.mockReturnValue([
+      { id: 'wf-1', name: 'A', description: '', enabled: true, tags: [], canRun: true },
+    ]);
     m.runsListRecent.mockResolvedValue([
-      { id: 'run-1', workflowId: 'wf-1', status: 'success', startedAt: '2026-05-29T10:00:00Z', finishedAt: '2026-05-29T10:00:05Z', totalDurationMs: 5000 },
-      { id: 'run-2', workflowId: 'wf-INVISIBLE', status: 'success', startedAt: '2026-05-29T09:00:00Z', finishedAt: '2026-05-29T09:00:05Z', totalDurationMs: 5000 },
-      { id: 'run-3', workflowId: 'wf-1', status: 'error', startedAt: '2026-05-29T08:00:00Z', finishedAt: '2026-05-29T08:00:10Z', totalDurationMs: 10000 },
+      {
+        id: 'run-1',
+        workflowId: 'wf-1',
+        status: 'success',
+        startedAt: '2026-05-29T10:00:00Z',
+        finishedAt: '2026-05-29T10:00:05Z',
+        totalDurationMs: 5000,
+      },
+      {
+        id: 'run-2',
+        workflowId: 'wf-INVISIBLE',
+        status: 'success',
+        startedAt: '2026-05-29T09:00:00Z',
+        finishedAt: '2026-05-29T09:00:05Z',
+        totalDurationMs: 5000,
+      },
+      {
+        id: 'run-3',
+        workflowId: 'wf-1',
+        status: 'error',
+        startedAt: '2026-05-29T08:00:00Z',
+        finishedAt: '2026-05-29T08:00:10Z',
+        totalDurationMs: 10000,
+      },
     ]);
     const res = await makeApp().request('/portal/tenant-a/good/runs');
-    const body = await res.json() as { runs: { id: string }[] };
+    const body = (await res.json()) as { runs: { id: string }[] };
     expect(body.runs.map((r) => r.id)).toEqual(['run-1', 'run-3']);
   });
 
   it('rispetta query ?limit=N (clamped 1-100)', async () => {
     m.verifyFn.mockReturnValue(VALID_TOKEN_INFO);
-    m.listVisibleFn.mockReturnValue([{ id: 'wf-1', name: 'A', description: '', enabled: true, tags: [], canRun: true }]);
+    m.listVisibleFn.mockReturnValue([
+      { id: 'wf-1', name: 'A', description: '', enabled: true, tags: [], canRun: true },
+    ]);
     m.runsListRecent.mockResolvedValue([]);
     await makeApp().request('/portal/tenant-a/good/runs?limit=50');
     expect(m.runsListRecent).toHaveBeenCalledWith('tenant-a', 150); // 50 * 3 over-fetch
@@ -200,10 +236,18 @@ describe('GET /portal/.../runs/:id — dettaglio gated', () => {
   it('run di workflow NON visibile → 404 (no enum ID)', async () => {
     m.verifyFn.mockReturnValue(VALID_TOKEN_INFO);
     m.runsGetById.mockResolvedValue({
-      id: 'run-X', workflowId: 'wf-INVISIBLE', status: 'success',
-      startedAt: null, finishedAt: null, totalDurationMs: null, errorCount: 0, steps: [],
+      id: 'run-X',
+      workflowId: 'wf-INVISIBLE',
+      status: 'success',
+      startedAt: null,
+      finishedAt: null,
+      totalDurationMs: null,
+      errorCount: 0,
+      steps: [],
     });
-    m.listVisibleFn.mockReturnValue([{ id: 'wf-1', name: 'A', description: '', enabled: true, tags: [], canRun: true }]);
+    m.listVisibleFn.mockReturnValue([
+      { id: 'wf-1', name: 'A', description: '', enabled: true, tags: [], canRun: true },
+    ]);
     const res = await makeApp().request('/portal/tenant-a/good/runs/run-X');
     expect(res.status).toBe(404); // NOT 403 — no enumeration
   });
@@ -211,18 +255,24 @@ describe('GET /portal/.../runs/:id — dettaglio gated', () => {
   it('run visibile → 200 con steps REDACTED (no output)', async () => {
     m.verifyFn.mockReturnValue(VALID_TOKEN_INFO);
     m.runsGetById.mockResolvedValue({
-      id: 'run-1', workflowId: 'wf-1', status: 'success',
-      startedAt: '2026-05-29T10:00:00Z', finishedAt: '2026-05-29T10:00:05Z',
-      totalDurationMs: 5000, errorCount: 0,
+      id: 'run-1',
+      workflowId: 'wf-1',
+      status: 'success',
+      startedAt: '2026-05-29T10:00:00Z',
+      finishedAt: '2026-05-29T10:00:05Z',
+      totalDurationMs: 5000,
+      errorCount: 0,
       steps: [
         { nodeId: 'n1', nodeLabel: 'Trigger', status: 'success', durationMs: 100 },
         { nodeId: 'n2', nodeLabel: 'Email', status: 'success', durationMs: 4800 },
       ],
     });
-    m.listVisibleFn.mockReturnValue([{ id: 'wf-1', name: 'A', description: '', enabled: true, tags: [], canRun: true }]);
+    m.listVisibleFn.mockReturnValue([
+      { id: 'wf-1', name: 'A', description: '', enabled: true, tags: [], canRun: true },
+    ]);
     const res = await makeApp().request('/portal/tenant-a/good/runs/run-1');
     expect(res.status).toBe(200);
-    const body = await res.json() as { run: { steps: Record<string, unknown>[] } };
+    const body = (await res.json()) as { run: { steps: Record<string, unknown>[] } };
     expect(body.run.steps).toHaveLength(2);
     expect(body.run.steps[0]!.nodeId).toBe('n1');
     expect(body.run.steps[0]!.nodeLabel).toBe('Trigger');
@@ -238,7 +288,11 @@ describe('POST /portal/.../workflows/:id/run — execute gated', () => {
   it('workflow non esiste → 404', async () => {
     m.verifyFn.mockReturnValue(VALID_TOKEN_INFO);
     m.workflowGet.mockResolvedValue(null);
-    const res = await makeApp().request(RUN_URL, { method: 'POST', body: '{}', headers: { 'Content-Type': 'application/json' } });
+    const res = await makeApp().request(RUN_URL, {
+      method: 'POST',
+      body: '{}',
+      headers: { 'Content-Type': 'application/json' },
+    });
     expect(res.status).toBe(404);
   });
 
@@ -246,9 +300,13 @@ describe('POST /portal/.../workflows/:id/run — execute gated', () => {
     m.verifyFn.mockReturnValue(VALID_TOKEN_INFO);
     m.workflowGet.mockResolvedValue({ id: 'wf-1', nodes: [{ defId: 'trigger_webhook' }] });
     m.canRunFn.mockReturnValue({ ok: false, reason: 'allowRun=false' });
-    const res = await makeApp().request(RUN_URL, { method: 'POST', body: '{}', headers: { 'Content-Type': 'application/json' } });
+    const res = await makeApp().request(RUN_URL, {
+      method: 'POST',
+      body: '{}',
+      headers: { 'Content-Type': 'application/json' },
+    });
     expect(res.status).toBe(403);
-    const body = await res.json() as { error: string; reason: string };
+    const body = (await res.json()) as { error: string; reason: string };
     expect(body.error).toBe('Not allowed');
     expect(body.reason).toBe('allowRun=false');
     expect(m.runsExecute).not.toHaveBeenCalled();
@@ -265,19 +323,23 @@ describe('POST /portal/.../workflows/:id/run — execute gated', () => {
       headers: { 'Content-Type': 'application/json' },
     });
     expect(res.status).toBe(202);
-    const body = await res.json() as { runId: string; status: string };
+    const body = (await res.json()) as { runId: string; status: string };
     expect(body.runId).toBe('run-new-1');
     expect(body.status).toBe('running');
 
     // Audit chiamato con portalTokenId, workflowId, runId
-    expect(m.auditRunFn).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: 'tenant-a',
-      tokenId: 'tok-1',
-      workflowId: 'wf-1',
-      runId: 'run-new-1',
-    }));
+    expect(m.auditRunFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant-a',
+        tokenId: 'tok-1',
+        workflowId: 'wf-1',
+        runId: 'run-new-1',
+      }),
+    );
     // PII redaction: triggerInputSummary ha valori redatti
-    const auditCall = m.auditRunFn.mock.calls[0]![0] as { triggerInputSummary: Record<string, string> };
+    const auditCall = m.auditRunFn.mock.calls[0]![0] as {
+      triggerInputSummary: Record<string, string>;
+    };
     expect(auditCall.triggerInputSummary.destinatario).toBe('<redacted>');
   });
 
@@ -286,13 +348,19 @@ describe('POST /portal/.../workflows/:id/run — execute gated', () => {
     m.workflowGet.mockResolvedValue({ id: 'wf-1', nodes: [{ defId: 'trigger_manual' }] });
     m.canRunFn.mockReturnValue({ ok: true });
     m.runsExecute.mockResolvedValue({ runId: 'run-X', status: 'running' });
-    await makeApp().request(RUN_URL, { method: 'POST', body: '{}', headers: { 'Content-Type': 'application/json' } });
-    expect(m.runsExecute).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: 'tenant-a',
-      workflowId: 'wf-1',
-      triggerType: 'portal',
-      triggeredBy: 'portal:tok-1',
-    }));
+    await makeApp().request(RUN_URL, {
+      method: 'POST',
+      body: '{}',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    expect(m.runsExecute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant-a',
+        workflowId: 'wf-1',
+        triggerType: 'portal',
+        triggeredBy: 'portal:tok-1',
+      }),
+    );
   });
 });
 

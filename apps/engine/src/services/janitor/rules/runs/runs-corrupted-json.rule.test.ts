@@ -17,7 +17,9 @@ const baseCtx = {
   dryRun: false,
 };
 
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('🚨 rule metadata', () => {
   it('🚨 id stabile', () => {
@@ -55,17 +57,34 @@ describe('🚨 detect — checkStepsJson logic', () => {
 
   it('🚨 valid JSON array → NO detection', async () => {
     executeRawMock.mockResolvedValueOnce({
-      rows: [{
-        id: 'r-ok', workflow_id: 'w', tenant_id: 't', status: 's',
-        started_at: 'a', ended_at: 'b', steps_json: JSON.stringify([{ nodeId: 'n' }]),
-      }],
+      rows: [
+        {
+          id: 'r-ok',
+          workflow_id: 'w',
+          tenant_id: 't',
+          status: 's',
+          started_at: 'a',
+          ended_at: 'b',
+          steps_json: JSON.stringify([{ nodeId: 'n' }]),
+        },
+      ],
     });
     expect(await runsCorruptedJsonRule.detect!(baseCtx as any)).toEqual([]);
   });
 
   it('🚨 NULL steps_json → detected "campo NULL"', async () => {
     executeRawMock.mockResolvedValueOnce({
-      rows: [{ id: 'r-null', workflow_id: 'w', tenant_id: null, status: 's', started_at: 'a', ended_at: null, steps_json: null }],
+      rows: [
+        {
+          id: 'r-null',
+          workflow_id: 'w',
+          tenant_id: null,
+          status: 's',
+          started_at: 'a',
+          ended_at: null,
+          steps_json: null,
+        },
+      ],
     });
     const r = await runsCorruptedJsonRule.detect!(baseCtx as any);
     expect(r.length).toBe(1);
@@ -76,7 +95,17 @@ describe('🚨 detect — checkStepsJson logic', () => {
 
   it('🚨 stringa vuota → detected', async () => {
     executeRawMock.mockResolvedValueOnce({
-      rows: [{ id: 'r-empty', workflow_id: 'w', tenant_id: null, status: 's', started_at: 'a', ended_at: null, steps_json: '' }],
+      rows: [
+        {
+          id: 'r-empty',
+          workflow_id: 'w',
+          tenant_id: null,
+          status: 's',
+          started_at: 'a',
+          ended_at: null,
+          steps_json: '',
+        },
+      ],
     });
     const r = await runsCorruptedJsonRule.detect!(baseCtx as any);
     expect(first(r, 'corrupted-rows').reason).toMatch(/stringa vuota/u);
@@ -84,7 +113,17 @@ describe('🚨 detect — checkStepsJson logic', () => {
 
   it('🚨 JSON troncato → reason "JSON troncato"', async () => {
     executeRawMock.mockResolvedValueOnce({
-      rows: [{ id: 'r-trunc', workflow_id: 'w', tenant_id: null, status: 's', started_at: 'a', ended_at: null, steps_json: '[{"nodeId":"n"' }],
+      rows: [
+        {
+          id: 'r-trunc',
+          workflow_id: 'w',
+          tenant_id: null,
+          status: 's',
+          started_at: 'a',
+          ended_at: null,
+          steps_json: '[{"nodeId":"n"',
+        },
+      ],
     });
     const r = await runsCorruptedJsonRule.detect!(baseCtx as any);
     expect(first(r, 'corrupted-rows').reason).toMatch(/troncato|non valido/u);
@@ -92,7 +131,17 @@ describe('🚨 detect — checkStepsJson logic', () => {
 
   it('🚨 JSON valido MA non-array → detected "formato inatteso"', async () => {
     executeRawMock.mockResolvedValueOnce({
-      rows: [{ id: 'r-obj', workflow_id: 'w', tenant_id: null, status: 's', started_at: 'a', ended_at: null, steps_json: '{}' }],
+      rows: [
+        {
+          id: 'r-obj',
+          workflow_id: 'w',
+          tenant_id: null,
+          status: 's',
+          started_at: 'a',
+          ended_at: null,
+          steps_json: '{}',
+        },
+      ],
     });
     const r = await runsCorruptedJsonRule.detect!(baseCtx as any);
     expect(first(r, 'corrupted-rows').reason).toMatch(/formato inatteso.*array.*object/u);
@@ -100,7 +149,17 @@ describe('🚨 detect — checkStepsJson logic', () => {
 
   it('🚨 tenantId propagato se != null', async () => {
     executeRawMock.mockResolvedValueOnce({
-      rows: [{ id: 'r-t', workflow_id: 'w', tenant_id: 't-7', status: 's', started_at: 'a', ended_at: null, steps_json: 'x' }],
+      rows: [
+        {
+          id: 'r-t',
+          workflow_id: 'w',
+          tenant_id: 't-7',
+          status: 's',
+          started_at: 'a',
+          ended_at: null,
+          steps_json: 'x',
+        },
+      ],
     });
     const r = await runsCorruptedJsonRule.detect!(baseCtx as any);
     expect(first(r, 'corrupted-rows').tenantId).toBe('t-7');
@@ -108,7 +167,13 @@ describe('🚨 detect — checkStepsJson logic', () => {
 
   it('🚨 maxRows cap', async () => {
     const rows = Array.from({ length: 200 }, (_, i) => ({
-      id: `r-${i}`, workflow_id: 'w', tenant_id: null, status: 's', started_at: 'a', ended_at: null, steps_json: 'broken',
+      id: `r-${i}`,
+      workflow_id: 'w',
+      tenant_id: null,
+      status: 's',
+      started_at: 'a',
+      ended_at: null,
+      steps_json: 'broken',
     }));
     executeRawMock.mockResolvedValueOnce({ rows });
     const r = await runsCorruptedJsonRule.detect!({ ...baseCtx, maxRows: 10 } as any);

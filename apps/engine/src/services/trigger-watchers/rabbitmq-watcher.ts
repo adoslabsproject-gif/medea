@@ -22,7 +22,11 @@
  * che non usano questo trigger.
  */
 
-import { validateUrlForFetch, parseInternalHostAllowlist, isHostAllowlisted } from '@medea/engine-safe-fetch';
+import {
+  validateUrlForFetch,
+  parseInternalHostAllowlist,
+  isHostAllowlisted,
+} from '@medea/engine-safe-fetch';
 import { logger } from '@/lib/logger.js';
 import { resolveJsonPointer, clampNumber } from './parsing.js';
 import type { DispatchTriggerRun } from './run-dispatcher.js';
@@ -97,12 +101,19 @@ const defaultConnect: AmqpConnect = async (url) => {
 function amqpHostAllowed(wfId: string, url: string): boolean {
   const httpUrl = url.replace(/^amqps:\/\//i, 'https://').replace(/^amqp:\/\//i, 'http://');
   let host = '';
-  try { host = new URL(httpUrl).hostname; } catch { /* malformata → la becca il guard */ }
+  try {
+    host = new URL(httpUrl).hostname;
+  } catch {
+    /* malformata → la becca il guard */
+  }
   const allowlist = parseInternalHostAllowlist(process.env.MEDEA_INTERNAL_HOST_ALLOWLIST);
   if (host && isHostAllowlisted(host, allowlist)) return true;
   const ssrf = validateUrlForFetch(httpUrl);
   if (!ssrf.ok) {
-    logger.warn({ workflowId: wfId, reason: ssrf.reason }, 'trigger_rabbitmq: host broker bloccato dalla SSRF guard — skipped');
+    logger.warn(
+      { workflowId: wfId, reason: ssrf.reason },
+      'trigger_rabbitmq: host broker bloccato dalla SSRF guard — skipped',
+    );
     return false;
   }
   return true;
@@ -115,7 +126,10 @@ export function startRabbitWatcher(
 ): RabbitWatcherJob | null {
   const url = typeof node.config.url === 'string' ? node.config.url.trim() : '';
   if (!/^amqps?:\/\//i.test(url)) {
-    logger.warn({ workflowId: wf.id }, 'trigger_rabbitmq: URL mancante o non amqp://|amqps:// — skipped');
+    logger.warn(
+      { workflowId: wf.id },
+      'trigger_rabbitmq: URL mancante o non amqp://|amqps:// — skipped',
+    );
     return null;
   }
   const queue = typeof node.config.queue === 'string' ? node.config.queue.trim() : '';
@@ -129,7 +143,8 @@ export function startRabbitWatcher(
   const now = deps.now ?? Date.now;
   const tenantId = wf.tenantId ?? 'default';
   const jsonParse = node.config.jsonParse !== 'false';
-  const pointer = typeof node.config.messagePointer === 'string' ? node.config.messagePointer.trim() : '';
+  const pointer =
+    typeof node.config.messagePointer === 'string' ? node.config.messagePointer.trim() : '';
   const manualAck = node.config.ackMode !== 'auto'; // default: manual (at-least-once)
   const durable = node.config.durable !== 'false';
   const prefetch = clampNumber(node.config.prefetch, 1, 10_000, 10);
@@ -137,8 +152,13 @@ export function startRabbitWatcher(
   const reconnect = node.config.reconnect !== 'false';
 
   const job: RabbitWatcherJob = {
-    workflowId: wf.id, connection: null, channel: null,
-    reconnectTimer: null, closing: false, backoffMs: RABBIT_BACKOFF_INITIAL_MS, recentFires: [],
+    workflowId: wf.id,
+    connection: null,
+    channel: null,
+    reconnectTimer: null,
+    closing: false,
+    backoffMs: RABBIT_BACKOFF_INITIAL_MS,
+    recentFires: [],
   };
 
   /** Anti-flood sliding-window: true = SCARTA (budget superato). */
@@ -147,7 +167,10 @@ export function startRabbitWatcher(
     const ts = now();
     job.recentFires = job.recentFires.filter((t) => ts - t < 1000);
     if (job.recentFires.length >= maxPerSec) {
-      logger.warn({ workflowId: wf.id, maxPerSec }, 'trigger_rabbitmq: anti-flood budget exceeded — message dropped');
+      logger.warn(
+        { workflowId: wf.id, maxPerSec },
+        'trigger_rabbitmq: anti-flood budget exceeded — message dropped',
+      );
       return true;
     }
     job.recentFires.push(ts);
@@ -159,44 +182,87 @@ export function startRabbitWatcher(
     if (job.reconnectTimer) return; // già schedulato
     const delay = job.backoffMs;
     job.backoffMs = Math.min(job.backoffMs * 2, RABBIT_BACKOFF_CAP_MS);
-    logger.info({ workflowId: wf.id, delayMs: delay }, 'trigger_rabbitmq: connessione persa — reconnect con backoff');
-    job.reconnectTimer = setTimeout(() => { job.reconnectTimer = null; void connect(); }, delay);
+    logger.info(
+      { workflowId: wf.id, delayMs: delay },
+      'trigger_rabbitmq: connessione persa — reconnect con backoff',
+    );
+    job.reconnectTimer = setTimeout(() => {
+      job.reconnectTimer = null;
+      void connect();
+    }, delay);
   };
 
   const handleMessage = (ch: AmqpChannel, msg: AmqpMessage | null): void => {
     if (msg === null) return; // consumer cancellato dal broker
-    if (floodBlocked()) { if (manualAck) ch.nack(msg, false, true); return; }
+    if (floodBlocked()) {
+      if (manualAck) ch.nack(msg, false, true);
+      return;
+    }
     const raw = msg.content.toString('utf8');
     let data: unknown = raw;
-    if (jsonParse) { try { data = JSON.parse(raw); } catch { data = raw; } }
+    if (jsonParse) {
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        data = raw;
+      }
+    }
     if (pointer) {
       const matched = resolveJsonPointer(data, pointer);
       // Filtro: nessun match → il messaggio NON è per noi. In manual-ack lo ACK-iamo
       // comunque (l'abbiamo consumato e scartato per scelta, non è un errore) per
       // non ri-consegnarlo all'infinito.
-      if (matched === undefined) { if (manualAck) ch.ack(msg); return; }
+      if (matched === undefined) {
+        if (manualAck) ch.ack(msg);
+        return;
+      }
       dispatch(ch, msg, data, raw, matched);
       return;
     }
     dispatch(ch, msg, data, raw, undefined);
   };
 
-  const dispatch = (ch: AmqpChannel, msg: AmqpMessage, data: unknown, raw: string, matched: unknown): void => {
+  const dispatch = (
+    ch: AmqpChannel,
+    msg: AmqpMessage,
+    data: unknown,
+    raw: string,
+    matched: unknown,
+  ): void => {
     const run = deps.dispatchRun({
-      workflowId: wf.id, tenantId, triggerType: 'rabbitmq',
-      triggerInput: { data, raw, receivedAt: new Date().toISOString(), ...(matched !== undefined ? { matched } : {}) },
+      workflowId: wf.id,
+      tenantId,
+      triggerType: 'rabbitmq',
+      triggerInput: {
+        data,
+        raw,
+        receivedAt: new Date().toISOString(),
+        ...(matched !== undefined ? { matched } : {}),
+      },
     });
     if (!manualAck) {
       // auto-ack: il broker ha già "consegnato"; logghiamo solo un eventuale errore.
-      run.catch((err: unknown) => { logger.error({ err, workflowId: wf.id }, 'rabbitmq run failed (auto-ack)'); });
+      run.catch((err: unknown) => {
+        logger.error({ err, workflowId: wf.id }, 'rabbitmq run failed (auto-ack)');
+      });
       return;
     }
     // manual-ack AT-LEAST-ONCE: ack SOLO su run riuscito, nack+requeue su fallimento.
     run.then(
-      () => { try { ch.ack(msg); } catch (err) { logger.warn({ err, workflowId: wf.id }, 'rabbitmq ack failed'); } },
+      () => {
+        try {
+          ch.ack(msg);
+        } catch (err) {
+          logger.warn({ err, workflowId: wf.id }, 'rabbitmq ack failed');
+        }
+      },
       (err: unknown) => {
         logger.error({ err, workflowId: wf.id }, 'rabbitmq run failed → nack+requeue');
-        try { ch.nack(msg, false, true); } catch (e) { logger.warn({ err: e, workflowId: wf.id }, 'rabbitmq nack failed'); }
+        try {
+          ch.nack(msg, false, true);
+        } catch (e) {
+          logger.warn({ err: e, workflowId: wf.id }, 'rabbitmq nack failed');
+        }
       },
     );
   };
@@ -205,22 +271,46 @@ export function startRabbitWatcher(
     if (job.closing) return;
     try {
       const conn = await connectFn(url);
-      if (job.closing) { try { await conn.close(); } catch { /* teardown in corso */ } return; }
+      if (job.closing) {
+        try {
+          await conn.close();
+        } catch {
+          /* teardown in corso */
+        }
+        return;
+      }
       job.connection = conn;
-      conn.on('error', (err) => { logger.warn({ err, workflowId: wf.id }, 'rabbitmq connection error'); });
-      conn.on('close', () => { job.connection = null; job.channel = null; scheduleReconnect(); });
+      conn.on('error', (err) => {
+        logger.warn({ err, workflowId: wf.id }, 'rabbitmq connection error');
+      });
+      conn.on('close', () => {
+        job.connection = null;
+        job.channel = null;
+        scheduleReconnect();
+      });
 
       const ch = await conn.createChannel();
       job.channel = ch;
-      ch.on('error', (err) => { logger.warn({ err, workflowId: wf.id }, 'rabbitmq channel error'); });
+      ch.on('error', (err) => {
+        logger.warn({ err, workflowId: wf.id }, 'rabbitmq channel error');
+      });
       await ch.prefetch(prefetch);
       await ch.assertQueue(queue, { durable });
-      await ch.consume(queue, (msg) => { handleMessage(ch, msg); }, { noAck: !manualAck });
+      await ch.consume(
+        queue,
+        (msg) => {
+          handleMessage(ch, msg);
+        },
+        { noAck: !manualAck },
+      );
 
       job.backoffMs = RABBIT_BACKOFF_INITIAL_MS; // reset backoff su consume avviato
       logger.info({ workflowId: wf.id, queue, manualAck, prefetch }, 'rabbitmq watcher connected');
     } catch (err) {
-      logger.warn({ err, workflowId: wf.id, queue }, 'rabbitmq connect failed — reconnect con backoff');
+      logger.warn(
+        { err, workflowId: wf.id, queue },
+        'rabbitmq connect failed — reconnect con backoff',
+      );
       job.connection = null;
       job.channel = null;
       scheduleReconnect();
@@ -235,11 +325,18 @@ export function startRabbitWatcher(
 /** Chiusura pulita: stop reconnect + close channel/connection (idempotente). */
 export function teardownRabbitWatcher(job: RabbitWatcherJob): void {
   job.closing = true;
-  if (job.reconnectTimer) { clearTimeout(job.reconnectTimer); job.reconnectTimer = null; }
+  if (job.reconnectTimer) {
+    clearTimeout(job.reconnectTimer);
+    job.reconnectTimer = null;
+  }
   const ch = job.channel;
   const conn = job.connection;
   job.channel = null;
   job.connection = null;
-  if (ch) { void Promise.resolve(ch.close()).catch(() => undefined); }
-  if (conn) { void Promise.resolve(conn.close()).catch(() => undefined); }
+  if (ch) {
+    void Promise.resolve(ch.close()).catch(() => undefined);
+  }
+  if (conn) {
+    void Promise.resolve(conn.close()).catch(() => undefined);
+  }
 }

@@ -59,7 +59,11 @@ export async function analyzeImage(
   // Cap PRIMA di toccare RAM/modello (path d'errore non dimenticato): foto enorme → stop.
   const imgBytes = base64Bytes(visionImage.base64);
   if (imgBytes > IMAGE_MAX_INPUT_BYTES) {
-    return { ok: false, error: `Immagine troppo grande (${imgBytes.toString()} bytes). Max ${(IMAGE_MAX_INPUT_BYTES / (1024 * 1024)).toString()} MB.`, elapsedMs: Date.now() - start };
+    return {
+      ok: false,
+      error: `Immagine troppo grande (${imgBytes.toString()} bytes). Max ${(IMAGE_MAX_INPUT_BYTES / (1024 * 1024)).toString()} MB.`,
+      elapsedMs: Date.now() - start,
+    };
   }
   const r = await dispatchLLMVision(target, prompt?.trim() || DEFAULT_IMAGE_PROMPT, [visionImage]);
   if (!r.ok) {
@@ -95,21 +99,37 @@ export async function extractDocument(
   const base = { mime: mimeType, size: sizeBytes };
 
   if (sizeBytes > DOC_MAX_INPUT_BYTES) {
-    return { ok: false, error: `Documento troppo grande (${sizeBytes.toString()} bytes). Max ${(DOC_MAX_INPUT_BYTES / (1024 * 1024)).toString()} MB.`, ...base, elapsedMs: Date.now() - start };
+    return {
+      ok: false,
+      error: `Documento troppo grande (${sizeBytes.toString()} bytes). Max ${(DOC_MAX_INPUT_BYTES / (1024 * 1024)).toString()} MB.`,
+      ...base,
+      elapsedMs: Date.now() - start,
+    };
   }
 
   // File di testo: decode diretto.
   if (mimeType.startsWith('text/')) {
     try {
       const text = Buffer.from(documentBase64, 'base64').toString('utf-8');
-      return { ok: true, text: text.slice(0, 200_000), pages: 1, ...base, elapsedMs: Date.now() - start };
+      return {
+        ok: true,
+        text: text.slice(0, 200_000),
+        pages: 1,
+        ...base,
+        elapsedMs: Date.now() - start,
+      };
     } catch {
       return { ok: false, error: 'UTF-8 decode failed', ...base, elapsedMs: Date.now() - start };
     }
   }
 
   if (!mimeType.startsWith('application/pdf')) {
-    return { ok: false, error: `MIME non supportato: ${mimeType}`, ...base, elapsedMs: Date.now() - start };
+    return {
+      ok: false,
+      error: `MIME non supportato: ${mimeType}`,
+      ...base,
+      elapsedMs: Date.now() - start,
+    };
   }
 
   // PDF → estrazione testo (funziona nel bundle, a differenza del render-immagine).
@@ -117,11 +137,32 @@ export async function extractDocument(
     const pdfBytes = new Uint8Array(Buffer.from(documentBase64, 'base64'));
     const { text, totalPages } = await extractPdfText(pdfBytes);
     if (text.trim().length === 0) {
-      return { ok: false, error: 'Il PDF non contiene testo estraibile (probabilmente scansionato/immagine): la lettura a immagine dei PDF non è ancora supportata.', pages: totalPages, ...base, elapsedMs: Date.now() - start };
+      return {
+        ok: false,
+        error:
+          'Il PDF non contiene testo estraibile (probabilmente scansionato/immagine): la lettura a immagine dei PDF non è ancora supportata.',
+        pages: totalPages,
+        ...base,
+        elapsedMs: Date.now() - start,
+      };
     }
-    return { ok: true, text: text.slice(0, 200_000), pages: totalPages, ...base, elapsedMs: Date.now() - start };
+    return {
+      ok: true,
+      text: text.slice(0, 200_000),
+      pages: totalPages,
+      ...base,
+      elapsedMs: Date.now() - start,
+    };
   } catch (err) {
-    logger.warn({ error: err instanceof Error ? err.message : String(err) }, '[vision] extractDocument failed');
-    return { ok: false, error: err instanceof Error ? err.message : String(err), ...base, elapsedMs: Date.now() - start };
+    logger.warn(
+      { error: err instanceof Error ? err.message : String(err) },
+      '[vision] extractDocument failed',
+    );
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+      ...base,
+      elapsedMs: Date.now() - start,
+    };
   }
 }

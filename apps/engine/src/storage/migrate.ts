@@ -1,7 +1,11 @@
 import { getDatabase } from './db.js';
 import { ERROR_OUTBOX_DDL } from './error-outbox.ddl.js';
 import { logger } from '@/lib/logger.js';
-import { makePackageIntegrity, computePackageDigest, INTEGRITY_ENFORCED_FLAG } from '@/lib/custom-node-integrity.js';
+import {
+  makePackageIntegrity,
+  computePackageDigest,
+  INTEGRITY_ENFORCED_FLAG,
+} from '@/lib/custom-node-integrity.js';
 import { registrySecret } from '@/lib/registry-secret.js';
 
 interface DbStatement {
@@ -25,7 +29,9 @@ const SQL_IDENT_RE = /^[A-Za-z_][A-Za-z0-9_]*$/u;
 
 export function assertSqlIdent(kind: string, value: string): void {
   if (!SQL_IDENT_RE.test(value)) {
-    throw new Error(`ensureColumn: ${kind} "${value}" non è un identificatore SQL valido — atteso [A-Za-z_][A-Za-z0-9_]*.`);
+    throw new Error(
+      `ensureColumn: ${kind} "${value}" non è un identificatore SQL valido — atteso [A-Za-z_][A-Za-z0-9_]*.`,
+    );
   }
 }
 
@@ -36,7 +42,9 @@ function ensureColumn(sqlite: SqliteDb, table: string, column: string, definitio
   assertSqlIdent('table', table);
   assertSqlIdent('column', column);
   if (/[;]|--/u.test(definition)) {
-    throw new Error(`ensureColumn: definition "${definition}" contiene un terminatore di statement — vietato.`);
+    throw new Error(
+      `ensureColumn: definition "${definition}" contiene un terminatore di statement — vietato.`,
+    );
   }
   const cols = sqlite.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
   const exists = cols.some((c) => c.name === column);
@@ -46,7 +54,6 @@ function ensureColumn(sqlite: SqliteDb, table: string, column: string, definitio
 }
 
 import { SCHEMA_SQL } from './migrate.schema.js';
-
 
 export function runMigrations(): void {
   const { sqlite } = getDatabase();
@@ -107,7 +114,7 @@ export function runMigrations(): void {
   // Worker control intents — admin can queue a graceful restart, drain,
   // or concurrency change. The target worker reads its own row on each
   // heartbeat and acts on the intent (then clears the columns atomically).
-  ensureColumn(sqlite, 'workers', 'requested_action', 'TEXT');             // 'restart' | 'drain' | 'resume' | NULL
+  ensureColumn(sqlite, 'workers', 'requested_action', 'TEXT'); // 'restart' | 'drain' | 'resume' | NULL
   ensureColumn(sqlite, 'workers', 'requested_concurrency', 'INTEGER');
   ensureColumn(sqlite, 'workers', 'requested_action_at', 'TEXT');
   ensureColumn(sqlite, 'workers', 'requested_action_by', 'TEXT');
@@ -513,7 +520,9 @@ export function runMigrations(): void {
   // ALTER TABLE idempotente — silenzia se la colonna esiste già.
   try {
     sqlite.exec(`ALTER TABLE ai_chat_messages ADD COLUMN attachments_json TEXT`);
-  } catch { /* column already exists — idempotente */ }
+  } catch {
+    /* column already exists — idempotente */
+  }
 
   // ───────────────────────────────────────────────────────────────────
   // Phase 5 — TENANTS first-class entity (enterprise-grade)
@@ -583,9 +592,13 @@ export function runMigrations(): void {
   // better-sqlite3 blocca UPDATE sqlite_master anche con writable_schema=1
   // (safety wrapper nativo). Soluzione: table rebuild dinamico (rename →
   // create new → copy → drop → rename + ricrea indici).
-  const checkRow = sqlite.prepare(`
+  const checkRow = sqlite
+    .prepare(
+      `
     SELECT sql FROM sqlite_master WHERE type='table' AND name='tenants'
-  `).get() as { sql: string } | undefined;
+  `,
+    )
+    .get() as { sql: string } | undefined;
   if (checkRow && !checkRow.sql.includes("'free'")) {
     const oldSql = checkRow.sql;
     const newTableSql = oldSql
@@ -601,9 +614,15 @@ export function runMigrations(): void {
       sqlite.exec('DROP TABLE tenants');
       sqlite.exec('ALTER TABLE tenants_new RENAME TO tenants');
       // Ricrea indici (sono stati droppati con la tabella)
-      sqlite.exec(`CREATE INDEX IF NOT EXISTS tenants_status_idx ON tenants(status) WHERE deleted_at IS NULL`);
-      sqlite.exec(`CREATE INDEX IF NOT EXISTS tenants_plan_idx ON tenants(plan) WHERE deleted_at IS NULL`);
-      sqlite.exec(`CREATE UNIQUE INDEX IF NOT EXISTS tenants_vat_unique ON tenants(vat_number) WHERE vat_number IS NOT NULL AND deleted_at IS NULL`);
+      sqlite.exec(
+        `CREATE INDEX IF NOT EXISTS tenants_status_idx ON tenants(status) WHERE deleted_at IS NULL`,
+      );
+      sqlite.exec(
+        `CREATE INDEX IF NOT EXISTS tenants_plan_idx ON tenants(plan) WHERE deleted_at IS NULL`,
+      );
+      sqlite.exec(
+        `CREATE UNIQUE INDEX IF NOT EXISTS tenants_vat_unique ON tenants(vat_number) WHERE vat_number IS NOT NULL AND deleted_at IS NULL`,
+      );
     } finally {
       sqlite.exec('PRAGMA foreign_keys=ON');
     }
@@ -613,9 +632,13 @@ export function runMigrations(): void {
   // 'node_editor' e 'db_studio' (contesto cross-surface: node/db produttori).
   // Stesso pattern table-rebuild della migration tenants sopra (SQLite non
   // supporta ALTER su CHECK). Idempotente: rebuilda solo se manca 'node_editor'.
-  const aiConvRow = sqlite.prepare(`
+  const aiConvRow = sqlite
+    .prepare(
+      `
     SELECT sql FROM sqlite_master WHERE type='table' AND name='ai_conversations'
-  `).get() as { sql: string } | undefined;
+  `,
+    )
+    .get() as { sql: string } | undefined;
   if (aiConvRow && !aiConvRow.sql.includes("'node_editor'")) {
     const newTableSql = aiConvRow.sql
       .replace(/CREATE TABLE\s+["']?ai_conversations["']?/i, 'CREATE TABLE ai_conversations_new')
@@ -630,10 +653,18 @@ export function runMigrations(): void {
       sqlite.exec('DROP TABLE ai_conversations');
       sqlite.exec('ALTER TABLE ai_conversations_new RENAME TO ai_conversations');
       // Ricrea gli indici (droppati con la tabella).
-      sqlite.exec(`CREATE INDEX IF NOT EXISTS ai_conv_user_idx ON ai_conversations(user_id, last_message_at DESC) WHERE deleted_at IS NULL`);
-      sqlite.exec(`CREATE INDEX IF NOT EXISTS ai_conv_workspace_idx ON ai_conversations(workspace_id, last_message_at DESC) WHERE workspace_id IS NOT NULL AND deleted_at IS NULL`);
-      sqlite.exec(`CREATE INDEX IF NOT EXISTS ai_conv_surface_idx ON ai_conversations(user_id, surface, last_message_at DESC) WHERE deleted_at IS NULL`);
-      sqlite.exec(`CREATE INDEX IF NOT EXISTS ai_conv_deleted_purge_idx ON ai_conversations(deleted_at) WHERE deleted_at IS NOT NULL`);
+      sqlite.exec(
+        `CREATE INDEX IF NOT EXISTS ai_conv_user_idx ON ai_conversations(user_id, last_message_at DESC) WHERE deleted_at IS NULL`,
+      );
+      sqlite.exec(
+        `CREATE INDEX IF NOT EXISTS ai_conv_workspace_idx ON ai_conversations(workspace_id, last_message_at DESC) WHERE workspace_id IS NOT NULL AND deleted_at IS NULL`,
+      );
+      sqlite.exec(
+        `CREATE INDEX IF NOT EXISTS ai_conv_surface_idx ON ai_conversations(user_id, surface, last_message_at DESC) WHERE deleted_at IS NULL`,
+      );
+      sqlite.exec(
+        `CREATE INDEX IF NOT EXISTS ai_conv_deleted_purge_idx ON ai_conversations(deleted_at) WHERE deleted_at IS NOT NULL`,
+      );
     } finally {
       sqlite.exec('PRAGMA foreign_keys=ON');
     }
@@ -642,13 +673,17 @@ export function runMigrations(): void {
   // BACKFILL: per ogni tenant_id distinct trovato in users + workflows,
   // crea il record tenants con status='active' se non esiste. Pattern
   // idempotente — riesegui senza danni.
-  const distinctTenants = sqlite.prepare(`
+  const distinctTenants = sqlite
+    .prepare(
+      `
     SELECT DISTINCT tenant_id FROM (
       SELECT tenant_id FROM users WHERE tenant_id IS NOT NULL
       UNION
       SELECT tenant_id FROM workflows WHERE tenant_id IS NOT NULL
     ) ORDER BY tenant_id
-  `).all() as { tenant_id: string }[];
+  `,
+    )
+    .all() as { tenant_id: string }[];
   const insertTenant = sqlite.prepare(`
     INSERT OR IGNORE INTO tenants (id, display_name, status, plan, country, locale, timezone)
     VALUES (?, ?, 'active', 'enterprise', 'IT', 'it', 'Europe/Rome')
@@ -673,15 +708,19 @@ export function runMigrations(): void {
   const planCodeEnv = process.env.MEDEA_PLAN_CODE;
   const maxWfRaw = process.env.MEDEA_MAX_WORKFLOWS;
   if (tenantIdEnv) {
-    const maxWf = (maxWfRaw === undefined || maxWfRaw === '') ? 999999 : parseInt(maxWfRaw, 10);
+    const maxWf = maxWfRaw === undefined || maxWfRaw === '' ? 999999 : parseInt(maxWfRaw, 10);
     if (!isNaN(maxWf) && maxWf > 0) {
       // INSERT OR IGNORE prima (per crearlo se non esiste), poi UPDATE per sync valori env.
       insertTenant.run(tenantIdEnv, tenantIdEnv.slice(0, 8));
-      sqlite.prepare(`
+      sqlite
+        .prepare(
+          `
         UPDATE tenants
         SET max_workflows = ?, plan = COALESCE(?, plan)
         WHERE id = ?
-      `).run(maxWf, planCodeEnv ?? null, tenantIdEnv);
+      `,
+        )
+        .run(maxWf, planCodeEnv ?? null, tenantIdEnv);
     }
   }
 
@@ -951,16 +990,18 @@ export function backfillCustomNodeIntegrity(sqlite: SqliteDb): void {
   const secret = registrySecret();
   if (!secret) return;
 
-  const flag = sqlite.prepare(
-    'SELECT value FROM system_flags WHERE key = ?',
-  ).all(INTEGRITY_ENFORCED_FLAG) as { value: string }[];
+  const flag = sqlite
+    .prepare('SELECT value FROM system_flags WHERE key = ?')
+    .all(INTEGRITY_ENFORCED_FLAG) as { value: string }[];
   if (flag.length > 0) return; // enforcement già attivo: MAI ri-firmare
 
-  const rows = sqlite.prepare(
-    `SELECT id, slug, semver, source_executor, source_definition, source_schema, compiled_executor
+  const rows = sqlite
+    .prepare(
+      `SELECT id, slug, semver, source_executor, source_definition, source_schema, compiled_executor
        FROM custom_nodes
       WHERE integrity_digest IS NULL AND compiled_executor IS NOT NULL`,
-  ).all() as {
+    )
+    .all() as {
     id: string;
     slug: string;
     semver: string;
@@ -989,10 +1030,12 @@ export function backfillCustomNodeIntegrity(sqlite: SqliteDb): void {
     update.run(integrity.digest, integrity.signature, integrity.algo, row.id);
   }
 
-  sqlite.prepare(
-    `INSERT INTO system_flags (key, value) VALUES (?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+  sqlite
+    .prepare(
+      `INSERT INTO system_flags (key, value) VALUES (?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))
      ON CONFLICT(key) DO NOTHING`,
-  ).run(INTEGRITY_ENFORCED_FLAG);
+    )
+    .run(INTEGRITY_ENFORCED_FLAG);
 
   logger.info(
     { backfilled: rows.length },
@@ -1022,17 +1065,26 @@ const INTEGRITY_RESIGNED_FLAG = 'custom_nodes_resigned_stable_secret_v1';
 export function resignCustomNodesWithStableSecret(sqlite: SqliteDb): void {
   const secret = registrySecret();
   if (!secret) return;
-  const already = sqlite.prepare('SELECT 1 FROM system_flags WHERE key = ?').all(INTEGRITY_RESIGNED_FLAG);
+  const already = sqlite
+    .prepare('SELECT 1 FROM system_flags WHERE key = ?')
+    .all(INTEGRITY_RESIGNED_FLAG);
   if (already.length > 0) return; // one-time
 
-  const rows = sqlite.prepare(
-    `SELECT id, slug, semver, source_executor, source_definition, source_schema, compiled_executor, integrity_digest
+  const rows = sqlite
+    .prepare(
+      `SELECT id, slug, semver, source_executor, source_definition, source_schema, compiled_executor, integrity_digest
        FROM custom_nodes
       WHERE integrity_digest IS NOT NULL AND compiled_executor IS NOT NULL`,
-  ).all() as {
-    id: string; slug: string; semver: string;
-    source_executor: string; source_definition: string; source_schema: string;
-    compiled_executor: string; integrity_digest: string;
+    )
+    .all() as {
+    id: string;
+    slug: string;
+    semver: string;
+    source_executor: string;
+    source_definition: string;
+    source_schema: string;
+    compiled_executor: string;
+    integrity_digest: string;
   }[];
 
   const update = sqlite.prepare(
@@ -1042,9 +1094,12 @@ export function resignCustomNodesWithStableSecret(sqlite: SqliteDb): void {
   let skippedTampered = 0;
   for (const row of rows) {
     const pkg = {
-      slug: row.slug, semver: row.semver,
-      sourceExecutor: row.source_executor, sourceDefinition: row.source_definition,
-      sourceSchema: row.source_schema, compiledExecutor: row.compiled_executor,
+      slug: row.slug,
+      semver: row.semver,
+      sourceExecutor: row.source_executor,
+      sourceDefinition: row.source_definition,
+      sourceSchema: row.source_schema,
+      compiledExecutor: row.compiled_executor,
     };
     // Ri-firma SOLO se i sorgenti sono integri rispetto al digest dichiarato
     // (rotazione del secret, non manomissione). Se il digest ricalcolato NON
@@ -1058,10 +1113,12 @@ export function resignCustomNodesWithStableSecret(sqlite: SqliteDb): void {
     resigned += 1;
   }
 
-  sqlite.prepare(
-    `INSERT INTO system_flags (key, value) VALUES (?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+  sqlite
+    .prepare(
+      `INSERT INTO system_flags (key, value) VALUES (?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))
      ON CONFLICT(key) DO NOTHING`,
-  ).run(INTEGRITY_RESIGNED_FLAG);
+    )
+    .run(INTEGRITY_RESIGNED_FLAG);
 
   if (resigned > 0 || skippedTampered > 0) {
     logger.info(

@@ -7,14 +7,25 @@
 import { describe, it, expect } from 'vitest';
 import { smokeTestWorkflow, type Workflow } from './preimport-smoke-test.js';
 
-const mkNode = (id: string, defId: string, config: Record<string, unknown> = {}): Workflow['nodes'][number] => ({
-  id, defId, config,
+const mkNode = (
+  id: string,
+  defId: string,
+  config: Record<string, unknown> = {},
+): Workflow['nodes'][number] => ({
+  id,
+  defId,
+  config,
 });
 
 describe('smokeTestWorkflow — HTTP', () => {
   it('URL valido + Authorization → pass', () => {
     const wf: Workflow = {
-      nodes: [mkNode('a', 'action_http', { url: 'https://api.x.com/v1', headers: { Authorization: 'Bearer x' } })],
+      nodes: [
+        mkNode('a', 'action_http', {
+          url: 'https://api.x.com/v1',
+          headers: { Authorization: 'Bearer x' },
+        }),
+      ],
       edges: [],
     };
     const r = smokeTestWorkflow(wf);
@@ -52,10 +63,12 @@ describe('smokeTestWorkflow — HTTP', () => {
 
   it('🚨 [bug owner 2026-06-17] URL templato {{secrets.BASE}}/path → NON è un errore (risolto a runtime)', () => {
     const wf: Workflow = {
-      nodes: [mkNode('a', 'action_http', {
-        url: '{{secrets.HUBSPOT_API_URL}}/contacts/{{$node.valida.json.email}}',
-        authMode: 'apikey-header',
-      })],
+      nodes: [
+        mkNode('a', 'action_http', {
+          url: '{{secrets.HUBSPOT_API_URL}}/contacts/{{$node.valida.json.email}}',
+          authMode: 'apikey-header',
+        }),
+      ],
       edges: [],
     };
     const r = smokeTestWorkflow(wf);
@@ -104,7 +117,9 @@ describe('smokeTestWorkflow — Email', () => {
 
   it('to via template {{...}} → pass (skip email format check)', () => {
     const wf: Workflow = {
-      nodes: [mkNode('a', 'action_send_email', { to: '{{trigger.email}}', subject: 'X', body: 'y' })],
+      nodes: [
+        mkNode('a', 'action_send_email', { to: '{{trigger.email}}', subject: 'X', body: 'y' }),
+      ],
       edges: [],
     };
     const r = smokeTestWorkflow(wf);
@@ -147,7 +162,12 @@ describe('smokeTestWorkflow — DB', () => {
 describe('smokeTestWorkflow — Agent', () => {
   it('prompt + apiKey via secrets → pass', () => {
     const wf: Workflow = {
-      nodes: [mkNode('a', 'agent_summarizer', { prompt: 'Summarize: {{input}}', apiKey: '{{secrets.OPENAI_API_KEY}}' })],
+      nodes: [
+        mkNode('a', 'agent_summarizer', {
+          prompt: 'Summarize: {{input}}',
+          apiKey: '{{secrets.OPENAI_API_KEY}}',
+        }),
+      ],
       edges: [],
     };
     const r = smokeTestWorkflow(wf);
@@ -178,7 +198,9 @@ describe('smokeTestWorkflow — Agent', () => {
   // un FALSO POSITIVO "Agente senza istruzioni". Con prePromptedDefIds passa.
   it('agent pre-istruito SENZA campo prompt + defId in prePromptedDefIds → PASS', () => {
     const wf: Workflow = {
-      nodes: [mkNode('a', 'agent_data_analyst', { provider: 'liara', extraContext: '{{$node.x.json}}' })],
+      nodes: [
+        mkNode('a', 'agent_data_analyst', { provider: 'liara', extraContext: '{{$node.x.json}}' }),
+      ],
       edges: [],
     };
     const rosso = smokeTestWorkflow(wf); // senza set = vecchio comportamento
@@ -216,7 +238,10 @@ describe('smokeTestWorkflow — Aggregator', () => {
   it('mixed pass/warn/fail → overall=fail', () => {
     const wf: Workflow = {
       nodes: [
-        mkNode('http_ok', 'action_http', { url: 'https://x.com', headers: { Authorization: 'Bearer x' } }),
+        mkNode('http_ok', 'action_http', {
+          url: 'https://x.com',
+          headers: { Authorization: 'Bearer x' },
+        }),
         mkNode('email_warn', 'action_send_email', { to: 'u@x.it', body: 'x' }),
         mkNode('db_fail', 'db_sql_query', { sql: 'DROP TABLE t' }),
       ],
@@ -233,7 +258,10 @@ describe('smokeTestWorkflow — Aggregator', () => {
     const wf: Workflow = {
       nodes: [
         mkNode('t', 'trigger_webhook', {}),
-        mkNode('h', 'action_http', { url: 'https://x.com', headers: { Authorization: 'Bearer x' } }),
+        mkNode('h', 'action_http', {
+          url: 'https://x.com',
+          headers: { Authorization: 'Bearer x' },
+        }),
       ],
       edges: [{ from: 't', to: 'h' }],
     };
@@ -245,7 +273,10 @@ describe('smokeTestWorkflow — Aggregator', () => {
   it('defId non-simulato → notSimulated, non blocca overall', () => {
     const wf: Workflow = {
       nodes: [
-        mkNode('h', 'action_http', { url: 'https://x.com', headers: { Authorization: 'Bearer x' } }),
+        mkNode('h', 'action_http', {
+          url: 'https://x.com',
+          headers: { Authorization: 'Bearer x' },
+        }),
         mkNode('u', 'unknown_node_xyz', {}),
       ],
       edges: [],
@@ -258,7 +289,10 @@ describe('smokeTestWorkflow — Aggregator', () => {
   it('registeredDefIds filter: skip i non registrati', () => {
     const wf: Workflow = {
       nodes: [
-        mkNode('a', 'action_http', { url: 'https://x.com', headers: { Authorization: 'Bearer x' } }),
+        mkNode('a', 'action_http', {
+          url: 'https://x.com',
+          headers: { Authorization: 'Bearer x' },
+        }),
         mkNode('b', 'custom_amazon-search', {}),
       ],
       edges: [],
@@ -272,24 +306,42 @@ describe('smokeTestWorkflow — Aggregator', () => {
 
 describe('🔒 [REGRESSION 2026-06-11] NO falsi positivi — campi REALI del NodeDef', () => {
   it('agent_extractor con schema (NON prompt) → pass', () => {
-    const wf: Workflow = { nodes: [mkNode('a', 'agent_extractor', { schema: '{"type":"object"}', provider: 'liara' })], edges: [] };
+    const wf: Workflow = {
+      nodes: [mkNode('a', 'agent_extractor', { schema: '{"type":"object"}', provider: 'liara' })],
+      edges: [],
+    };
     const r = smokeTestWorkflow(wf);
     expect(r.counts.fail).toBe(0);
     expect(r.nodes[0]!.status).toBe('pass');
   });
 
   it('agent_translator con targetLanguage (NON prompt) → pass', () => {
-    const wf: Workflow = { nodes: [mkNode('a', 'agent_translator', { targetLanguage: 'auto', provider: 'liara' })], edges: [] };
+    const wf: Workflow = {
+      nodes: [mkNode('a', 'agent_translator', { targetLanguage: 'auto', provider: 'liara' })],
+      edges: [],
+    };
     expect(smokeTestWorkflow(wf).nodes[0]!.status).toBe('pass');
   });
 
   it('agent SENZA alcuna istruzione → fail (il vero vuoto resta beccato)', () => {
-    const wf: Workflow = { nodes: [mkNode('a', 'agent_extractor', { provider: 'liara' })], edges: [] };
+    const wf: Workflow = {
+      nodes: [mkNode('a', 'agent_extractor', { provider: 'liara' })],
+      edges: [],
+    };
     expect(smokeTestWorkflow(wf).nodes[0]!.status).toBe('fail');
   });
 
   it('db_insert con table+rowJson (NON sql) → pass', () => {
-    const wf: Workflow = { nodes: [mkNode('a', 'db_insert', { table: 'audits', rowJson: '{"x":1}', databaseId: '{{secrets.DB}}' })], edges: [] };
+    const wf: Workflow = {
+      nodes: [
+        mkNode('a', 'db_insert', {
+          table: 'audits',
+          rowJson: '{"x":1}',
+          databaseId: '{{secrets.DB}}',
+        }),
+      ],
+      edges: [],
+    };
     const r = smokeTestWorkflow(wf);
     expect(r.counts.fail).toBe(0);
     expect(r.nodes[0]!.status).toBe('pass');
@@ -301,23 +353,49 @@ describe('🔒 [REGRESSION 2026-06-11] NO falsi positivi — campi REALI del Nod
   });
 
   it('db_query con table+selectJson (NON sql, query strutturata) → pass [caso Redirect Chain Audit]', () => {
-    const wf: Workflow = { nodes: [mkNode('a', 'db_query', { databaseId: '{{secrets.DB}}', table: 'legacy_urls', selectJson: '["url"]' })], edges: [] };
+    const wf: Workflow = {
+      nodes: [
+        mkNode('a', 'db_query', {
+          databaseId: '{{secrets.DB}}',
+          table: 'legacy_urls',
+          selectJson: '["url"]',
+        }),
+      ],
+      edges: [],
+    };
     const r = smokeTestWorkflow(wf);
     expect(r.counts.fail).toBe(0);
     expect(r.nodes[0]!.status).toBe('pass');
   });
 
   it('db_query SENZA table → fail (il required è "table", NON "sql")', () => {
-    expect(smokeTestWorkflow({ nodes: [mkNode('a', 'db_query', {})], edges: [] }).nodes[0]!.status).toBe('fail');
+    expect(
+      smokeTestWorkflow({ nodes: [mkNode('a', 'db_query', {})], edges: [] }).nodes[0]!.status,
+    ).toBe('fail');
   });
 
-  it('db_sql_query è l\'UNICO con sql grezzo: con sql → pass, senza → fail', () => {
-    expect(smokeTestWorkflow({ nodes: [mkNode('a', 'db_sql_query', { sql: 'SELECT 1' })], edges: [] }).nodes[0]!.status).toBe('pass');
-    expect(smokeTestWorkflow({ nodes: [mkNode('a', 'db_sql_query', {})], edges: [] }).nodes[0]!.status).toBe('fail');
+  it("db_sql_query è l'UNICO con sql grezzo: con sql → pass, senza → fail", () => {
+    expect(
+      smokeTestWorkflow({ nodes: [mkNode('a', 'db_sql_query', { sql: 'SELECT 1' })], edges: [] })
+        .nodes[0]!.status,
+    ).toBe('pass');
+    expect(
+      smokeTestWorkflow({ nodes: [mkNode('a', 'db_sql_query', {})], edges: [] }).nodes[0]!.status,
+    ).toBe('fail');
   });
 
   it('action_http con authMode:bearer + bearerToken → NIENTE warning auth (HubSpot)', () => {
-    const wf: Workflow = { nodes: [mkNode('a', 'action_http', { url: 'https://api.hubapi.com/contacts', method: 'POST', authMode: 'bearer', bearerToken: '{{secrets.HUBSPOT_API_KEY}}' })], edges: [] };
+    const wf: Workflow = {
+      nodes: [
+        mkNode('a', 'action_http', {
+          url: 'https://api.hubapi.com/contacts',
+          method: 'POST',
+          authMode: 'bearer',
+          bearerToken: '{{secrets.HUBSPOT_API_KEY}}',
+        }),
+      ],
+      edges: [],
+    };
     const r = smokeTestWorkflow(wf);
     expect(r.counts.warn).toBe(0);
     expect(r.nodes[0]!.status).toBe('pass');
@@ -329,10 +407,19 @@ describe('🔬 [data-flow nel smoke] il mismatch email→dominio del IMAP CRM em
     const wf: Workflow = {
       nodes: [
         mkNode('trig', 'trigger_imap', { mailbox: 'x' }),
-        mkNode('sender', 'action_json_extract', { sourceExpression: '$node.trig.json[0].from', path: '$.email' }),
-        mkNode('domain', 'action_json_extract', { sourceExpression: '$node.sender.json', path: '$.domain' }),
+        mkNode('sender', 'action_json_extract', {
+          sourceExpression: '$node.trig.json[0].from',
+          path: '$.email',
+        }),
+        mkNode('domain', 'action_json_extract', {
+          sourceExpression: '$node.sender.json',
+          path: '$.domain',
+        }),
       ],
-      edges: [{ from: 'trig', to: 'sender' }, { from: 'sender', to: 'domain' }],
+      edges: [
+        { from: 'trig', to: 'sender' },
+        { from: 'sender', to: 'domain' },
+      ],
     };
     const r = smokeTestWorkflow(wf);
     const df = r.nodes.find((n) => n.nodeId === 'domain' && n.defId === 'data-flow');
@@ -342,7 +429,11 @@ describe('🔬 [data-flow nel smoke] il mismatch email→dominio del IMAP CRM em
 
   it('riferimento a nodo non-a-monte → fail nel report (overall fail)', () => {
     const wf: Workflow = {
-      nodes: [mkNode('a', 'action_http', { url: 'https://x.com' }), mkNode('b', 'action_http', { url: '{{$node.later.json.u}}' }), mkNode('later', 'action_http', { url: 'https://y.com' })],
+      nodes: [
+        mkNode('a', 'action_http', { url: 'https://x.com' }),
+        mkNode('b', 'action_http', { url: '{{$node.later.json.u}}' }),
+        mkNode('later', 'action_http', { url: 'https://y.com' }),
+      ],
       edges: [{ from: 'a', to: 'b' }],
     };
     const r = smokeTestWorkflow(wf);

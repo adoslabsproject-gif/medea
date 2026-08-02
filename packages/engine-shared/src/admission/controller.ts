@@ -18,13 +18,22 @@ import { tryAdmit, release as releaseSlot, heartbeat, type RedisLike } from './r
 import type { RejectReason } from './decision.js';
 
 export class AdmissionOverloadError extends Error {
-  constructor(public readonly reason: RejectReason) { super(`admission overloaded: ${reason}`); this.name = 'AdmissionOverloadError'; }
+  constructor(public readonly reason: RejectReason) {
+    super(`admission overloaded: ${reason}`);
+    this.name = 'AdmissionOverloadError';
+  }
 }
 export class AdmissionTimeoutError extends Error {
-  constructor() { super('admission wait timeout'); this.name = 'AdmissionTimeoutError'; }
+  constructor() {
+    super('admission wait timeout');
+    this.name = 'AdmissionTimeoutError';
+  }
 }
 export class AdmissionAbortError extends Error {
-  constructor() { super('admission aborted by client'); this.name = 'AdmissionAbortError'; }
+  constructor() {
+    super('admission aborted by client');
+    this.name = 'AdmissionAbortError';
+  }
 }
 
 export interface AdmitOptions {
@@ -56,7 +65,11 @@ export interface AdmissionHandle {
 const defaultSleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 const defaultSchedule = (fn: () => void, ms: number): { clear: () => void } => {
   const id = setInterval(fn, ms);
-  return { clear: () => { clearInterval(id); } };
+  return {
+    clear: () => {
+      clearInterval(id);
+    },
+  };
 };
 
 export async function admit(opts: AdmitOptions): Promise<AdmissionHandle> {
@@ -68,17 +81,29 @@ export async function admit(opts: AdmitOptions): Promise<AdmissionHandle> {
   let lastEmitted = -1;
 
   const decisionInput = (): Parameters<typeof tryAdmit>[2] => ({
-    requestId, tenantId, nowMs: now(), leaseMs: opts.leaseMs,
-    maxConcurrent: opts.maxConcurrent, maxQueueDepth: opts.maxQueueDepth, maxPerTenantQueue: opts.maxPerTenantQueue,
+    requestId,
+    tenantId,
+    nowMs: now(),
+    leaseMs: opts.leaseMs,
+    maxConcurrent: opts.maxConcurrent,
+    maxQueueDepth: opts.maxQueueDepth,
+    maxPerTenantQueue: opts.maxPerTenantQueue,
   });
 
   for (;;) {
-    if (opts.signal?.aborted) { await releaseSlot(redis, pool, requestId); throw new AdmissionAbortError(); }
+    if (opts.signal?.aborted) {
+      await releaseSlot(redis, pool, requestId);
+      throw new AdmissionAbortError();
+    }
 
     const d = await tryAdmit(redis, pool, decisionInput());
 
     if (d.outcome === 'admitted') {
-      const hb = schedule(() => { void heartbeat(redis, pool, requestId, now() + opts.leaseMs).catch(() => { /* best-effort */ }); }, opts.heartbeatMs);
+      const hb = schedule(() => {
+        void heartbeat(redis, pool, requestId, now() + opts.leaseMs).catch(() => {
+          /* best-effort */
+        });
+      }, opts.heartbeatMs);
       let released = false;
       return {
         release: async () => {

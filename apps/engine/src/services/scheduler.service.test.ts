@@ -57,16 +57,30 @@ describe('🚨 matchesCron (5-field parser)', () => {
   });
 
   it('🚨 stride "*/15 * * * *" → ogni 15 min', () => {
-    const d0 = new Date(); d0.setMinutes(0); expect(m('*/15 * * * *', d0)).toBe(true);
-    const d15 = new Date(); d15.setMinutes(15); expect(m('*/15 * * * *', d15)).toBe(true);
-    const d30 = new Date(); d30.setMinutes(30); expect(m('*/15 * * * *', d30)).toBe(true);
-    const d10 = new Date(); d10.setMinutes(10); expect(m('*/15 * * * *', d10)).toBe(false);
+    const d0 = new Date();
+    d0.setMinutes(0);
+    expect(m('*/15 * * * *', d0)).toBe(true);
+    const d15 = new Date();
+    d15.setMinutes(15);
+    expect(m('*/15 * * * *', d15)).toBe(true);
+    const d30 = new Date();
+    d30.setMinutes(30);
+    expect(m('*/15 * * * *', d30)).toBe(true);
+    const d10 = new Date();
+    d10.setMinutes(10);
+    expect(m('*/15 * * * *', d10)).toBe(false);
   });
 
   it('🚨 comma list "0,15,30,45 * * * *" → solo i minuti specificati', () => {
-    const d0 = new Date(); d0.setMinutes(0); expect(m('0,15,30,45 * * * *', d0)).toBe(true);
-    const d15 = new Date(); d15.setMinutes(15); expect(m('0,15,30,45 * * * *', d15)).toBe(true);
-    const d20 = new Date(); d20.setMinutes(20); expect(m('0,15,30,45 * * * *', d20)).toBe(false);
+    const d0 = new Date();
+    d0.setMinutes(0);
+    expect(m('0,15,30,45 * * * *', d0)).toBe(true);
+    const d15 = new Date();
+    d15.setMinutes(15);
+    expect(m('0,15,30,45 * * * *', d15)).toBe(true);
+    const d20 = new Date();
+    d20.setMinutes(20);
+    expect(m('0,15,30,45 * * * *', d20)).toBe(false);
   });
 
   it('🚨 expression con < 5 fields → false (no crash)', () => {
@@ -95,7 +109,11 @@ describe('🚨 matchesCron (5-field parser)', () => {
 
   it('🚨 trim whitespace surrounding expression', () => {
     const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const d = new Date(); d.setMinutes(0); d.setHours(0); d.setDate(1); d.setMonth(0);
+    const d = new Date();
+    d.setMinutes(0);
+    d.setHours(0);
+    d.setDate(1);
+    d.setMonth(0);
     expect(m('  0 0 1 1 *  ', d, localTz)).toBe(true);
   });
 
@@ -115,9 +133,13 @@ describe('🚨 matchesCron (5-field parser)', () => {
     // → America/New_York (UTC-4 in giugno DST) = 08:00
     // → UTC = 12:00
     const utcDate = new Date('2026-06-07T12:00:00Z');
-    expect(m('0 14 * * *', utcDate, 'Europe/Rome'), 'cron alle 14 deve match Rome 12:00 UTC').toBe(true);
+    expect(m('0 14 * * *', utcDate, 'Europe/Rome'), 'cron alle 14 deve match Rome 12:00 UTC').toBe(
+      true,
+    );
     expect(m('0 14 * * *', utcDate, 'UTC'), 'cron alle 14 NON match UTC 12:00').toBe(false);
-    expect(m('0 8 * * *', utcDate, 'America/New_York'), 'cron alle 8 deve match NY 12:00 UTC').toBe(true);
+    expect(m('0 8 * * *', utcDate, 'America/New_York'), 'cron alle 8 deve match NY 12:00 UTC').toBe(
+      true,
+    );
     expect(m('0 12 * * *', utcDate, 'UTC'), 'cron alle 12 match UTC 12:00').toBe(true);
   });
 
@@ -162,9 +184,19 @@ describe('🚨 matchesCron (5-field parser)', () => {
 describe('🚨 reloadJobs', () => {
   it('🚨 carica solo workflows enabled con trigger_cron', async () => {
     listAllAcrossTenantsMock.mockResolvedValueOnce([
-      { id: 'wf-1', enabled: true, nodes: [{ defId: 'trigger_cron', config: { cronExpression: '*/5 * * * *', timezone: 'UTC' } }] },
+      {
+        id: 'wf-1',
+        enabled: true,
+        nodes: [
+          { defId: 'trigger_cron', config: { cronExpression: '*/5 * * * *', timezone: 'UTC' } },
+        ],
+      },
       { id: 'wf-2', enabled: true, nodes: [{ defId: 'trigger_webhook', config: {} }] }, // no cron
-      { id: 'wf-3', enabled: false, nodes: [{ defId: 'trigger_cron', config: { cronExpression: '* * * * *' } }] }, // disabled
+      {
+        id: 'wf-3',
+        enabled: false,
+        nodes: [{ defId: 'trigger_cron', config: { cronExpression: '* * * * *' } }],
+      }, // disabled
       { id: 'wf-4', enabled: true, nodes: [{ defId: 'trigger_cron', config: {} }] }, // no expression
     ]);
     const sched = new SchedulerService(eventBus);
@@ -181,7 +213,11 @@ describe('🚨 reloadJobs', () => {
 
   it('🚨 timezone default UTC se mancante', async () => {
     listAllAcrossTenantsMock.mockResolvedValueOnce([
-      { id: 'wf-1', enabled: true, nodes: [{ defId: 'trigger_cron', config: { cronExpression: '* * * * *' } }] },
+      {
+        id: 'wf-1',
+        enabled: true,
+        nodes: [{ defId: 'trigger_cron', config: { cronExpression: '* * * * *' } }],
+      },
     ]);
     const sched = new SchedulerService(eventBus);
     await sched.reloadJobs();
@@ -189,7 +225,13 @@ describe('🚨 reloadJobs', () => {
   });
 
   it('🚨 stesso job 2x reload → no duplicate (preserva instance per timezone)', async () => {
-    const wf = { id: 'wf-1', enabled: true, nodes: [{ defId: 'trigger_cron', config: { cronExpression: '* * * * *', timezone: 'Europe/Rome' } }] };
+    const wf = {
+      id: 'wf-1',
+      enabled: true,
+      nodes: [
+        { defId: 'trigger_cron', config: { cronExpression: '* * * * *', timezone: 'Europe/Rome' } },
+      ],
+    };
     listAllAcrossTenantsMock.mockResolvedValue([wf]);
     const sched = new SchedulerService(eventBus);
     await sched.reloadJobs();
@@ -211,7 +253,11 @@ describe('🚨 start + stop + tick', () => {
 
   it('🚨 stop → clear jobs + timer', async () => {
     listAllAcrossTenantsMock.mockResolvedValueOnce([
-      { id: 'wf-1', enabled: true, nodes: [{ defId: 'trigger_cron', config: { cronExpression: '* * * * *' } }] },
+      {
+        id: 'wf-1',
+        enabled: true,
+        nodes: [{ defId: 'trigger_cron', config: { cronExpression: '* * * * *' } }],
+      },
     ]);
     const sched = new SchedulerService(eventBus);
     await sched.start();
@@ -222,21 +268,31 @@ describe('🚨 start + stop + tick', () => {
 
   it('🚨 tick: match cron → execute(triggerType cron)', async () => {
     listAllAcrossTenantsMock.mockResolvedValueOnce([
-      { id: 'wf-1', enabled: true, nodes: [{ defId: 'trigger_cron', config: { cronExpression: '* * * * *' } }] },
+      {
+        id: 'wf-1',
+        enabled: true,
+        nodes: [{ defId: 'trigger_cron', config: { cronExpression: '* * * * *' } }],
+      },
     ]);
     const sched = new SchedulerService(eventBus);
     await sched.start();
     vi.advanceTimersByTime(60_001);
-    expect(runExecuteMock).toHaveBeenCalledWith(expect.objectContaining({
-      workflowId: 'wf-1',
-      triggerType: 'cron',
-    }));
+    expect(runExecuteMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workflowId: 'wf-1',
+        triggerType: 'cron',
+      }),
+    );
     sched.stop();
   });
 
   it('🚨 tick: cron non match → no execute', async () => {
     listAllAcrossTenantsMock.mockResolvedValueOnce([
-      { id: 'wf-1', enabled: true, nodes: [{ defId: 'trigger_cron', config: { cronExpression: '0 3 1 1 *' } }] }, // Capodanno 03:00
+      {
+        id: 'wf-1',
+        enabled: true,
+        nodes: [{ defId: 'trigger_cron', config: { cronExpression: '0 3 1 1 *' } }],
+      }, // Capodanno 03:00
     ]);
     vi.setSystemTime(new Date('2026-06-07T12:00:00Z'));
     const sched = new SchedulerService(eventBus);
@@ -248,7 +304,11 @@ describe('🚨 start + stop + tick', () => {
 
   it('🚨 tick: execute throw → log error + NON crash (workflow isolato)', async () => {
     listAllAcrossTenantsMock.mockResolvedValueOnce([
-      { id: 'wf-1', enabled: true, nodes: [{ defId: 'trigger_cron', config: { cronExpression: '* * * * *' } }] },
+      {
+        id: 'wf-1',
+        enabled: true,
+        nodes: [{ defId: 'trigger_cron', config: { cronExpression: '* * * * *' } }],
+      },
     ]);
     runExecuteMock.mockRejectedValueOnce(new Error('workflow boom'));
     const sched = new SchedulerService(eventBus);
@@ -273,8 +333,16 @@ describe('🚨 registerInstance singleton (per sweeper portal)', () => {
 
   it('🚨 registerInstance setta singleton → static getCount delega', async () => {
     listAllAcrossTenantsMock.mockResolvedValueOnce([
-      { id: 'wf-1', enabled: true, nodes: [{ defId: 'trigger_cron', config: { cronExpression: '* * * * *' } }] },
-      { id: 'wf-2', enabled: true, nodes: [{ defId: 'trigger_cron', config: { cronExpression: '*/5 * * * *' } }] },
+      {
+        id: 'wf-1',
+        enabled: true,
+        nodes: [{ defId: 'trigger_cron', config: { cronExpression: '* * * * *' } }],
+      },
+      {
+        id: 'wf-2',
+        enabled: true,
+        nodes: [{ defId: 'trigger_cron', config: { cronExpression: '*/5 * * * *' } }],
+      },
     ]);
     const sched = new SchedulerService(eventBus);
     await sched.reloadJobs();

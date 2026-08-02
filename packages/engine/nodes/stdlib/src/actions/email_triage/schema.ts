@@ -16,18 +16,20 @@ const boolish = z.union([
   z.literal('0').transform(() => false),
 ]);
 
-export const EmailTriageConfigSchema = z.object({
-  /** Body truncation length. Default 2000. Range 200-20000. */
-  bodyMaxChars: z.coerce.number().int().min(200).max(20_000).default(2_000),
+export const EmailTriageConfigSchema = z
+  .object({
+    /** Body truncation length. Default 2000. Range 200-20000. */
+    bodyMaxChars: z.coerce.number().int().min(200).max(20_000).default(2_000),
 
-  /**
-   * Dotted path into `input` that points at the email object. Default
-   * `''` (use input directly). Useful for nested run-row shapes.
-   */
-  inputPath: z.string().max(120).default(''),
+    /**
+     * Dotted path into `input` that points at the email object. Default
+     * `''` (use input directly). Useful for nested run-row shapes.
+     */
+    inputPath: z.string().max(120).default(''),
 
-  /** Embed pipelineSteps in the output. */
-  includePipelineLog: boolish.default(true),
-}).passthrough();
+    /** Embed pipelineSteps in the output. */
+    includePipelineLog: boolish.default(true),
+  })
+  .passthrough();
 
 export type EmailTriageConfig = z.infer<typeof EmailTriageConfigSchema>;

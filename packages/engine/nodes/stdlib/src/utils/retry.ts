@@ -49,7 +49,11 @@ export async function withRetry<T>(op: () => Promise<T>, opts: RetryOptions<T> =
   while (attempt <= count) {
     try {
       const result = await op();
-      if (opts.shouldRetryOnResult && attempt < count && opts.shouldRetryOnResult(result, attempt + 1)) {
+      if (
+        opts.shouldRetryOnResult &&
+        attempt < count &&
+        opts.shouldRetryOnResult(result, attempt + 1)
+      ) {
         const delay = computeDelay(initial, factor, attempt, max, jitter);
         opts.onRetry?.({ attempt: attempt + 1, delay, result });
         await sleep(delay, opts.signal);
@@ -73,7 +77,13 @@ export async function withRetry<T>(op: () => Promise<T>, opts: RetryOptions<T> =
 }
 
 /** Compute delay con cap + optional jitter. Esportata per test. */
-export function computeDelay(initial: number, factor: number, attempt: number, max: number, jitter: number): number {
+export function computeDelay(
+  initial: number,
+  factor: number,
+  attempt: number,
+  max: number,
+  jitter: number,
+): number {
   const base = Math.min(max, initial * Math.pow(factor, attempt));
   if (jitter === 0) return base;
   const j = (Math.random() * 2 - 1) * jitter * base; // ± jitter%

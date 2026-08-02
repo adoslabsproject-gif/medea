@@ -11,19 +11,25 @@ let sqliteInst: Database.Database;
 vi.mock('@/storage/db.js', () => ({ getDatabase: () => ({ sqlite: sqliteInst }) }));
 
 const emailListMock = vi.fn((): unknown[] => []);
-class SystemEmailAccountsServiceMock { list = emailListMock; }
+class SystemEmailAccountsServiceMock {
+  list = emailListMock;
+}
 vi.mock('@/services/system-email-accounts.service.js', () => ({
   SystemEmailAccountsService: SystemEmailAccountsServiceMock,
 }));
 
 const credListMock = vi.fn((): unknown[] => []);
-class CredentialsServiceMock { list = credListMock; }
+class CredentialsServiceMock {
+  list = credListMock;
+}
 vi.mock('@/services/credentials.service.js', () => ({
   CredentialsService: CredentialsServiceMock,
 }));
 
 const llmListMock = vi.fn((): unknown[] => []);
-class LlmProvidersServiceMock { list = llmListMock; }
+class LlmProvidersServiceMock {
+  list = llmListMock;
+}
 vi.mock('@/services/llm-providers.service.js', () => ({
   LlmProvidersService: LlmProvidersServiceMock,
 }));
@@ -34,9 +40,8 @@ const session: any = {
   dbStudio: { list: dbStudioListMock },
 };
 
-const {
-  listRecentRunsHandler, readRunHandler, checkSettingsHealthHandler,
-} = await import('./observability.js');
+const { listRecentRunsHandler, readRunHandler, checkSettingsHealthHandler } =
+  await import('./observability.js');
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -52,8 +57,16 @@ beforeEach(() => {
 
 describe('🚨 listRecentRunsHandler', () => {
   it('🚨 tenant isolation: solo runs del tenant session', () => {
-    sqliteInst.prepare(`INSERT INTO runs VALUES ('r1', 'wf', 't-1', 'ok', 0, 100, '2026-06-07', NULL, '[]', 'manual')`).run();
-    sqliteInst.prepare(`INSERT INTO runs VALUES ('r2', 'wf', 't-other', 'ok', 0, 100, '2026-06-07', NULL, '[]', 'manual')`).run();
+    sqliteInst
+      .prepare(
+        `INSERT INTO runs VALUES ('r1', 'wf', 't-1', 'ok', 0, 100, '2026-06-07', NULL, '[]', 'manual')`,
+      )
+      .run();
+    sqliteInst
+      .prepare(
+        `INSERT INTO runs VALUES ('r2', 'wf', 't-other', 'ok', 0, 100, '2026-06-07', NULL, '[]', 'manual')`,
+      )
+      .run();
     const r = listRecentRunsHandler(session, {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -69,8 +82,16 @@ describe('🚨 listRecentRunsHandler', () => {
   });
 
   it('🚨 workflowFilter applied', () => {
-    sqliteInst.prepare(`INSERT INTO runs VALUES ('r1', 'wf-A', 't-1', 'ok', 0, 100, '2026-06-07', NULL, '[]', 'manual')`).run();
-    sqliteInst.prepare(`INSERT INTO runs VALUES ('r2', 'wf-B', 't-1', 'ok', 0, 100, '2026-06-07', NULL, '[]', 'manual')`).run();
+    sqliteInst
+      .prepare(
+        `INSERT INTO runs VALUES ('r1', 'wf-A', 't-1', 'ok', 0, 100, '2026-06-07', NULL, '[]', 'manual')`,
+      )
+      .run();
+    sqliteInst
+      .prepare(
+        `INSERT INTO runs VALUES ('r2', 'wf-B', 't-1', 'ok', 0, 100, '2026-06-07', NULL, '[]', 'manual')`,
+      )
+      .run();
     const r = listRecentRunsHandler(session, { workflowId: 'wf-A' });
     if (!r.ok) return;
     expect((r.data as any[]).length).toBe(1);
@@ -84,18 +105,31 @@ describe('🚨 readRunHandler — PII redaction', () => {
   });
 
   it('🚨 run di altro tenant → not found', () => {
-    sqliteInst.prepare(`INSERT INTO runs VALUES ('r-x', 'wf', 't-other', 'ok', 0, 0, 'a', NULL, '[]', 'manual')`).run();
+    sqliteInst
+      .prepare(
+        `INSERT INTO runs VALUES ('r-x', 'wf', 't-other', 'ok', 0, 0, 'a', NULL, '[]', 'manual')`,
+      )
+      .run();
     const r = readRunHandler(session, { runId: 'r-x' });
     expect(r.ok).toBe(false);
   });
 
   it('🚨 happy: steps con error redacted + outputs omessi (note PII)', () => {
-    const steps = [{
-      nodeId: 'n-1', defId: 'http', status: 'success', durationMs: 100,
-      output: { apiKey: 'sk-leaked-secret', body: 'response' },
-      error: null,
-    }];
-    sqliteInst.prepare(`INSERT INTO runs VALUES ('r1', 'wf', 't-1', 'ok', 0, 100, '2026-06-07', '2026-06-07', ?, 'manual')`).run(JSON.stringify(steps));
+    const steps = [
+      {
+        nodeId: 'n-1',
+        defId: 'http',
+        status: 'success',
+        durationMs: 100,
+        output: { apiKey: 'sk-leaked-secret', body: 'response' },
+        error: null,
+      },
+    ];
+    sqliteInst
+      .prepare(
+        `INSERT INTO runs VALUES ('r1', 'wf', 't-1', 'ok', 0, 100, '2026-06-07', '2026-06-07', ?, 'manual')`,
+      )
+      .run(JSON.stringify(steps));
     const r = readRunHandler(session, { runId: 'r1' });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -106,7 +140,11 @@ describe('🚨 readRunHandler — PII redaction', () => {
   });
 
   it('🚨 steps_json malformato → array vuoto fallback', () => {
-    sqliteInst.prepare(`INSERT INTO runs VALUES ('r-broken', 'wf', 't-1', 'ok', 0, 0, 'a', NULL, 'not-json', 'manual')`).run();
+    sqliteInst
+      .prepare(
+        `INSERT INTO runs VALUES ('r-broken', 'wf', 't-1', 'ok', 0, 0, 'a', NULL, 'not-json', 'manual')`,
+      )
+      .run();
     const r = readRunHandler(session, { runId: 'r-broken' });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -133,7 +171,10 @@ describe('🚨 checkSettingsHealthHandler', () => {
   it('🚨 all configured → no warnings + count + names', () => {
     emailListMock.mockReturnValueOnce([{ isDefault: true }, { isDefault: false }]);
     credListMock.mockReturnValueOnce([{ name: 'api-token' }, { name: 'webhook-sec' }]);
-    llmListMock.mockReturnValueOnce([{ provider: 'anthropic', hasKey: true }, { provider: 'openai', hasKey: true }]);
+    llmListMock.mockReturnValueOnce([
+      { provider: 'anthropic', hasKey: true },
+      { provider: 'openai', hasKey: true },
+    ]);
     dbStudioListMock.mockReturnValueOnce([{ tables: ['t1', 't2'] }]);
     const r = checkSettingsHealthHandler(session);
     if (!r.ok) return;

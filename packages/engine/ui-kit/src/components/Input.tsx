@@ -1,4 +1,9 @@
-import { forwardRef, type InputHTMLAttributes, type TextareaHTMLAttributes, type ReactNode } from 'react';
+import {
+  forwardRef,
+  type InputHTMLAttributes,
+  type TextareaHTMLAttributes,
+  type ReactNode,
+} from 'react';
 import clsx from 'clsx';
 import type { Size } from '../tokens.js';
 
@@ -38,7 +43,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   return (
     <div className="w-full">
       {label !== undefined && (
-        <label htmlFor={inputId} className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-fg-muted">
+        <label
+          htmlFor={inputId}
+          className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-fg-muted"
+        >
           {label}
         </label>
       )}
@@ -49,7 +57,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         )}
       >
         {leftAddon !== undefined && (
-          <span className="border-r border-line bg-surface-subtle px-2 py-1 text-xs text-fg-muted">{leftAddon}</span>
+          <span className="border-r border-line bg-surface-subtle px-2 py-1 text-xs text-fg-muted">
+            {leftAddon}
+          </span>
         )}
         <input
           ref={ref}
@@ -62,7 +72,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           {...rest}
         />
         {rightAddon !== undefined && (
-          <span className="border-l border-line bg-surface-subtle px-2 py-1 text-xs text-fg-muted">{rightAddon}</span>
+          <span className="border-l border-line bg-surface-subtle px-2 py-1 text-xs text-fg-muted">
+            {rightAddon}
+          </span>
         )}
       </div>
       {error !== undefined ? (
@@ -85,7 +97,10 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   return (
     <div className="w-full">
       {label !== undefined && (
-        <label htmlFor={inputId} className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-fg-muted">
+        <label
+          htmlFor={inputId}
+          className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-fg-muted"
+        >
           {label}
         </label>
       )}
@@ -94,7 +109,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         id={inputId}
         className={clsx(
           'w-full rounded-md border bg-surface-raised text-fg outline-none placeholder-fg-subtle transition focus:border-accent',
-          inputSize === 'lg' ? 'px-3 py-2 text-base' : inputSize === 'md' ? 'px-2.5 py-1.5 text-sm' : 'px-2 py-1 text-xs',
+          inputSize === 'lg'
+            ? 'px-3 py-2 text-base'
+            : inputSize === 'md'
+              ? 'px-2.5 py-1.5 text-sm'
+              : 'px-2 py-1 text-xs',
           error ? 'border-danger/60' : 'border-line-strong',
           className,
         )}

@@ -29,7 +29,11 @@ vi.mock('../services/scheduler.service.js', () => ({
   SchedulerService: { getActiveCronScheduleCount: () => m.getActiveCronScheduleCount() },
 }));
 vi.mock('../services/workflow.service.js', () => ({
-  WorkflowService: class { countEnabled() { return m.countEnabled(); } },
+  WorkflowService: class {
+    countEnabled() {
+      return m.countEnabled();
+    }
+  },
 }));
 vi.mock('../adapters/event-bus-memory.js', () => ({
   InMemoryEventBus: class {},
@@ -206,7 +210,7 @@ describe('GET /api/v1/internal/workflows-enabled-count', () => {
       headers: { 'x-internal-token': TOKEN },
     });
     expect(res.status).toBe(200);
-    const body = await res.json() as { count: number; error?: string };
+    const body = (await res.json()) as { count: number; error?: string };
     expect(body.count).toBe(0);
     expect(body.error).toBe('count failed');
   });
@@ -228,14 +232,20 @@ describe('🔒 POST /api/v1/internal/workspace/read-only — security + validazi
   });
 
   it('🔒 token SBAGLIATO → 401, flag NON toccato', async () => {
-    const res = await postReadOnly({ 'x-internal-token': 'wrong-token-of-same-len-aaaaaaa' }, JSON.stringify({ readOnly: true }));
+    const res = await postReadOnly(
+      { 'x-internal-token': 'wrong-token-of-same-len-aaaaaaa' },
+      JSON.stringify({ readOnly: true }),
+    );
     expect(res.status).toBe(401);
     expect(m.setReadOnly).not.toHaveBeenCalled();
   });
 
   it('token env non configurato → 401 (fail-safe, no crash)', async () => {
     delete process.env.MEDEA_INTERNAL_TOKEN;
-    const res = await postReadOnly({ 'x-internal-token': TOKEN }, JSON.stringify({ readOnly: true }));
+    const res = await postReadOnly(
+      { 'x-internal-token': TOKEN },
+      JSON.stringify({ readOnly: true }),
+    );
     expect(res.status).toBe(401);
     expect(m.setReadOnly).not.toHaveBeenCalled();
   });
@@ -247,7 +257,10 @@ describe('🔒 POST /api/v1/internal/workspace/read-only — security + validazi
   });
 
   it('🔒 readOnly come STRINGA "true" (type-juggling) → 400, NON settato', async () => {
-    const res = await postReadOnly({ 'x-internal-token': TOKEN }, JSON.stringify({ readOnly: 'true' }));
+    const res = await postReadOnly(
+      { 'x-internal-token': TOKEN },
+      JSON.stringify({ readOnly: 'true' }),
+    );
     expect(res.status).toBe(400);
     expect(m.setReadOnly).not.toHaveBeenCalled();
   });
@@ -258,14 +271,20 @@ describe('🔒 POST /api/v1/internal/workspace/read-only — security + validazi
   });
 
   it('token valido + readOnly:true → 200, setWorkspaceReadOnly(true)', async () => {
-    const res = await postReadOnly({ 'x-internal-token': TOKEN }, JSON.stringify({ readOnly: true }));
+    const res = await postReadOnly(
+      { 'x-internal-token': TOKEN },
+      JSON.stringify({ readOnly: true }),
+    );
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, readOnly: true });
     expect(m.setReadOnly).toHaveBeenCalledWith(true);
   });
 
   it('token valido + readOnly:false → 200, setWorkspaceReadOnly(false) (sblocco)', async () => {
-    const res = await postReadOnly({ 'x-internal-token': TOKEN }, JSON.stringify({ readOnly: false }));
+    const res = await postReadOnly(
+      { 'x-internal-token': TOKEN },
+      JSON.stringify({ readOnly: false }),
+    );
     expect(res.status).toBe(200);
     expect(m.setReadOnly).toHaveBeenCalledWith(false);
   });
@@ -287,26 +306,38 @@ describe('🔒 POST /api/v1/internal/workspace/vector-quota — security + valid
   });
 
   it('🔒 token SBAGLIATO (stessa lunghezza) → 401', async () => {
-    const res = await postQuota({ 'x-internal-token': 'wrong-token-of-same-len-aaaaaaa' }, JSON.stringify({ maxVectors: 100, maxDiskMb: 10 }));
+    const res = await postQuota(
+      { 'x-internal-token': 'wrong-token-of-same-len-aaaaaaa' },
+      JSON.stringify({ maxVectors: 100, maxDiskMb: 10 }),
+    );
     expect(res.status).toBe(401);
     expect(m.setVectorQuota).not.toHaveBeenCalled();
   });
 
   it('token env non configurato → 401 (fail-safe)', async () => {
     delete process.env.MEDEA_INTERNAL_TOKEN;
-    const res = await postQuota({ 'x-internal-token': TOKEN }, JSON.stringify({ maxVectors: 100, maxDiskMb: 10 }));
+    const res = await postQuota(
+      { 'x-internal-token': TOKEN },
+      JSON.stringify({ maxVectors: 100, maxDiskMb: 10 }),
+    );
     expect(res.status).toBe(401);
     expect(m.setVectorQuota).not.toHaveBeenCalled();
   });
 
   it('🔒 type-juggling: maxVectors STRINGA "100" → 400, NON settato (no coercizione)', async () => {
-    const res = await postQuota({ 'x-internal-token': TOKEN }, JSON.stringify({ maxVectors: '100', maxDiskMb: 10 }));
+    const res = await postQuota(
+      { 'x-internal-token': TOKEN },
+      JSON.stringify({ maxVectors: '100', maxDiskMb: 10 }),
+    );
     expect(res.status).toBe(400);
     expect(m.setVectorQuota).not.toHaveBeenCalled();
   });
 
   it('🔒 maxVectors NEGATIVO → 400 (>=0 richiesto)', async () => {
-    const res = await postQuota({ 'x-internal-token': TOKEN }, JSON.stringify({ maxVectors: -1, maxDiskMb: 10 }));
+    const res = await postQuota(
+      { 'x-internal-token': TOKEN },
+      JSON.stringify({ maxVectors: -1, maxDiskMb: 10 }),
+    );
     expect(res.status).toBe(400);
     expect(m.setVectorQuota).not.toHaveBeenCalled();
   });
@@ -323,14 +354,20 @@ describe('🔒 POST /api/v1/internal/workspace/vector-quota — security + valid
   });
 
   it('token valido + numeri → 200, setVectorQuotaOverride({maxVectors, maxDiskMb})', async () => {
-    const res = await postQuota({ 'x-internal-token': TOKEN }, JSON.stringify({ maxVectors: 500, maxDiskMb: 50 }));
+    const res = await postQuota(
+      { 'x-internal-token': TOKEN },
+      JSON.stringify({ maxVectors: 500, maxDiskMb: 50 }),
+    );
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, maxVectors: 500, maxDiskMb: 50 });
     expect(m.setVectorQuota).toHaveBeenCalledWith({ maxVectors: 500, maxDiskMb: 50 });
   });
 
   it('token valido + null (illimitato, es. upgrade Enterprise) → 200, override illimitato', async () => {
-    const res = await postQuota({ 'x-internal-token': TOKEN }, JSON.stringify({ maxVectors: null, maxDiskMb: null }));
+    const res = await postQuota(
+      { 'x-internal-token': TOKEN },
+      JSON.stringify({ maxVectors: null, maxDiskMb: null }),
+    );
     expect(res.status).toBe(200);
     expect(m.setVectorQuota).toHaveBeenCalledWith({ maxVectors: null, maxDiskMb: null });
   });
@@ -346,8 +383,8 @@ describe('🔒 [REGRESSION 2026-06-11] il gate internal NON deve bloccare route 
     const dashboard = new Hono();
     dashboard.get('/dashboard/workflows', (c) => c.json({ ok: true }));
     dashboard.get('/dashboard/stream', (c) => c.text('stream'));
-    app.route('/api/v1', dashboard);                         // come createDashboardRoutes
-    app.route('/api/v1', createInternalRunsActiveRoute());   // riga 263 server.ts
+    app.route('/api/v1', dashboard); // come createDashboardRoutes
+    app.route('/api/v1', createInternalRunsActiveRoute()); // riga 263 server.ts
     return app;
   };
 
@@ -391,7 +428,10 @@ describe('🔒 POST /api/v1/internal/workspace/egress-allowlist — security + v
   });
 
   it('🔒 token errato (stessa lunghezza) → 401', async () => {
-    const res = await post({ 'x-internal-token': 'X'.repeat(TOKEN.length) }, JSON.stringify({ hosts: 'erp.internal' }));
+    const res = await post(
+      { 'x-internal-token': 'X'.repeat(TOKEN.length) },
+      JSON.stringify({ hosts: 'erp.internal' }),
+    );
     expect(res.status).toBe(401);
     expect(m.setEgress).not.toHaveBeenCalled();
   });
@@ -403,7 +443,10 @@ describe('🔒 POST /api/v1/internal/workspace/egress-allowlist — security + v
   });
 
   it('token valido + hosts CSV → 200, setEgressAllowlist chiamato con la CSV', async () => {
-    const res = await post({ 'x-internal-token': TOKEN }, JSON.stringify({ hosts: 'erp.internal,*.svc.cluster.local' }));
+    const res = await post(
+      { 'x-internal-token': TOKEN },
+      JSON.stringify({ hosts: 'erp.internal,*.svc.cluster.local' }),
+    );
     expect(res.status).toBe(200);
     expect(m.setEgress).toHaveBeenCalledWith('erp.internal,*.svc.cluster.local');
   });
@@ -426,7 +469,11 @@ describe('POST /api/v1/internal/workspace/user-revoked', () => {
   }
 
   beforeEach(() => {
-    m.revokeWorkspaceUser.mockReturnValue({ found: true, sessionsRevoked: true, piiScrubbed: false });
+    m.revokeWorkspaceUser.mockReturnValue({
+      found: true,
+      sessionsRevoked: true,
+      piiScrubbed: false,
+    });
   });
 
   it('🔒 SENZA token → 401, revokeWorkspaceUser NON chiamato (endpoint privilegiato)', async () => {
@@ -436,7 +483,10 @@ describe('POST /api/v1/internal/workspace/user-revoked', () => {
   });
 
   it('🔒 token sbagliato (stessa lunghezza) → 401', async () => {
-    const res = await postRevoke({ 'x-internal-token': 'X'.repeat(TOKEN.length) }, JSON.stringify({ email: 'a@b.it' }));
+    const res = await postRevoke(
+      { 'x-internal-token': 'X'.repeat(TOKEN.length) },
+      JSON.stringify({ email: 'a@b.it' }),
+    );
     expect(res.status).toBe(401);
     expect(m.revokeWorkspaceUser).not.toHaveBeenCalled();
   });
@@ -458,22 +508,35 @@ describe('POST /api/v1/internal/workspace/user-revoked', () => {
   });
 
   it('token valido + email → 200, revokeWorkspaceUser chiamato (scrubPii default false)', async () => {
-    const res = await postRevoke({ 'x-internal-token': TOKEN }, JSON.stringify({ email: 'mario@acme.it' }));
+    const res = await postRevoke(
+      { 'x-internal-token': TOKEN },
+      JSON.stringify({ email: 'mario@acme.it' }),
+    );
     expect(res.status).toBe(200);
     expect(m.revokeWorkspaceUser).toHaveBeenCalledWith({ email: 'mario@acme.it', scrubPii: false });
     expect(await res.json()).toMatchObject({ ok: true, found: true, sessionsRevoked: true });
   });
 
   it('🚨 scrubPii=true propagato al servizio (rimozione/anonimizzazione)', async () => {
-    m.revokeWorkspaceUser.mockReturnValueOnce({ found: true, sessionsRevoked: true, piiScrubbed: true });
-    const res = await postRevoke({ 'x-internal-token': TOKEN }, JSON.stringify({ email: 'gdpr@acme.it', scrubPii: true }));
+    m.revokeWorkspaceUser.mockReturnValueOnce({
+      found: true,
+      sessionsRevoked: true,
+      piiScrubbed: true,
+    });
+    const res = await postRevoke(
+      { 'x-internal-token': TOKEN },
+      JSON.stringify({ email: 'gdpr@acme.it', scrubPii: true }),
+    );
     expect(res.status).toBe(200);
     expect(m.revokeWorkspaceUser).toHaveBeenCalledWith({ email: 'gdpr@acme.it', scrubPii: true });
     expect(await res.json()).toMatchObject({ piiScrubbed: true });
   });
 
   it('scrubPii non-boolean (truthy string) → trattato come false (type-strict)', async () => {
-    await postRevoke({ 'x-internal-token': TOKEN }, JSON.stringify({ email: 'x@y.it', scrubPii: 'yes' }));
+    await postRevoke(
+      { 'x-internal-token': TOKEN },
+      JSON.stringify({ email: 'x@y.it', scrubPii: 'yes' }),
+    );
     expect(m.revokeWorkspaceUser).toHaveBeenCalledWith({ email: 'x@y.it', scrubPii: false });
   });
 });

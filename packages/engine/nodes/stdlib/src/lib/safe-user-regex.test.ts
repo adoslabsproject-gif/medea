@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { safeUserRegex, UnsafeRegexError, MAX_USER_REGEX_PATTERN_LENGTH } from './safe-user-regex.js';
+import {
+  safeUserRegex,
+  UnsafeRegexError,
+  MAX_USER_REGEX_PATTERN_LENGTH,
+} from './safe-user-regex.js';
 
 describe('safeUserRegex', () => {
   describe('drop-in RegExp compatibility', () => {
@@ -31,7 +35,7 @@ describe('safeUserRegex', () => {
     });
   });
 
-  describe('ANTI-ReDoS (la ragion d\'essere del guard)', () => {
+  describe("ANTI-ReDoS (la ragion d'essere del guard)", () => {
     // Pattern "evil": catastrophic backtracking su RegExp V8 (secondi/minuti).
     // Con RE2 (automa, tempo lineare) deve completare in millisecondi.
     // MUTATION: se safeUserRegex tornasse a `new RegExp`, questo test va in

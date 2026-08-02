@@ -77,10 +77,12 @@ describe('Runtime admin routes characterization (pre-split snapshot)', () => {
     it('responds 401 Unauthorized senza auth header (mounting intatto)', async () => {
       const res = await app.request(path, {
         method,
-        ...(method === 'POST' ? {
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ reason: 'test-reason' }),
-        } : {}),
+        ...(method === 'POST'
+          ? {
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ reason: 'test-reason' }),
+            }
+          : {}),
       });
       // 401 = requireSuperAdmin guard è applicato e route esiste
       // 404 = route NON è mounted (split regression)
@@ -95,10 +97,12 @@ describe('Runtime admin routes characterization (pre-split snapshot)', () => {
       ROUTES.map(async ([method, path]) => {
         const res = await app.request(path, {
           method,
-          ...(method === 'POST' ? {
-            headers: { 'content-type': 'application/json' },
-            body: '{}',
-          } : {}),
+          ...(method === 'POST'
+            ? {
+                headers: { 'content-type': 'application/json' },
+                body: '{}',
+              }
+            : {}),
         });
         return { method, path, status: res.status };
       }),

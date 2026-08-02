@@ -66,8 +66,12 @@ export interface ClientSecretRow {
  */
 export function resolveClientSecret(row: ClientSecretRow): string {
   if (
-    row.client_secret_ciphertext && row.client_secret_nonce && row.client_secret_auth_tag &&
-    row.client_secret_dek_ciphertext && row.client_secret_dek_nonce && row.client_secret_dek_auth_tag
+    row.client_secret_ciphertext &&
+    row.client_secret_nonce &&
+    row.client_secret_auth_tag &&
+    row.client_secret_dek_ciphertext &&
+    row.client_secret_dek_nonce &&
+    row.client_secret_dek_auth_tag
   ) {
     return decryptClientSecret({
       ciphertext: row.client_secret_ciphertext,

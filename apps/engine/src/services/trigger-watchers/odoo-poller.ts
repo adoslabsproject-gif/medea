@@ -112,9 +112,8 @@ export function startOdooPoller(
 
   const interval = clampNumber(node.config.pollIntervalSec, 10, 3600, 60) * 1000;
   const batchLimit = clampNumber(node.config.batchLimit, 1, 500, 50);
-  const initialBacklog = typeof node.config.initialBacklog === 'string'
-    ? node.config.initialBacklog
-    : 'skip';
+  const initialBacklog =
+    typeof node.config.initialBacklog === 'string' ? node.config.initialBacklog : 'skip';
   const timeoutMs = clampNumber(node.config.timeoutMs, 1_000, 180_000, 30_000);
 
   // Parse user domain (Odoo domain array form). Bad JSON → empty domain.
@@ -147,7 +146,7 @@ export function startOdooPoller(
   const createTransport = deps.createTransport ?? makeOdooHttpTransport;
 
   // Seed lastIdSeen from `odoo_state` or via initialBacklog policy.
-  const sqlite = deps.sqlite ?? (getDatabase().sqlite);
+  const sqlite = deps.sqlite ?? getDatabase().sqlite;
   const stateRow = sqlite
     .prepare('SELECT last_id_seen FROM odoo_state WHERE workflow_id = ? AND model = ?')
     .get(wf.id, model) as { last_id_seen: number } | undefined;
@@ -155,13 +154,17 @@ export function startOdooPoller(
 
   const persistState = (error?: string): void => {
     try {
-      sqlite.prepare(`
+      sqlite
+        .prepare(
+          `
         INSERT INTO odoo_state (workflow_id, model, last_id_seen, last_poll_at, last_error, updated_at)
         VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
         ON CONFLICT (workflow_id, model)
         DO UPDATE SET last_id_seen=excluded.last_id_seen, last_poll_at=excluded.last_poll_at,
                       last_error=excluded.last_error, updated_at=excluded.updated_at
-      `).run(wf.id, model, lastIdSeen, new Date().toISOString(), error ?? null);
+      `,
+        )
+        .run(wf.id, model, lastIdSeen, new Date().toISOString(), error ?? null);
     } catch (err) {
       logger.warn({ err, workflowId: wf.id }, 'odoo_state persist failed (non-fatal)');
     }
@@ -170,11 +173,20 @@ export function startOdooPoller(
   // Per-host circuit breaker keyed on the Odoo origin. Match the
   // existing imap-pattern: query the registry, fallback to a new instance.
   let hostKey = baseUrl;
-  try { hostKey = new URL(baseUrl).host; } catch { /* keep raw */ }
+  try {
+    hostKey = new URL(baseUrl).host;
+  } catch {
+    /* keep raw */
+  }
   const breakerName = `odoo:${hostKey}`;
   const breaker = (deps.getBreaker ?? resolveTriggerBreaker)(breakerName);
 
-  const job: OdooPollerJob = { workflowId: wf.id, timer: null as unknown as ReturnType<typeof setInterval>, lastIdSeen, inFlight: false };
+  const job: OdooPollerJob = {
+    workflowId: wf.id,
+    timer: null as unknown as ReturnType<typeof setInterval>,
+    lastIdSeen,
+    inFlight: false,
+  };
 
   const seed = async (): Promise<void> => {
     if (lastIdSeen >= 0) return;
@@ -186,22 +198,39 @@ export function startOdooPoller(
       let seedDomain: unknown[] = [];
       if (initialBacklog === 'skip') {
         // Search the current max id and seed cursor to it (= no historical fire).
-        const ids = await executeKw(auth, uid, {
-          model, method: 'search',
-          positional: [[] as never],
-          kwargs: { limit: 1, order: 'id desc' },
-        }, transport, { timeoutMs });
+        const ids = await executeKw(
+          auth,
+          uid,
+          {
+            model,
+            method: 'search',
+            positional: [[] as never],
+            kwargs: { limit: 1, order: 'id desc' },
+          },
+          transport,
+          { timeoutMs },
+        );
         const arr = Array.isArray(ids) ? ids : [];
         lastIdSeen = typeof arr[0] === 'number' ? arr[0] : 0;
       } else if (initialBacklog === 'last-24h' || initialBacklog === 'last-week') {
         const horizonMs = initialBacklog === 'last-24h' ? 24 * 3600_000 : 7 * 24 * 3600_000;
-        const horizonIso = new Date(Date.now() - horizonMs).toISOString().slice(0, 19).replace('T', ' ');
+        const horizonIso = new Date(Date.now() - horizonMs)
+          .toISOString()
+          .slice(0, 19)
+          .replace('T', ' ');
         seedDomain = [['create_date', '>=', horizonIso]];
-        const ids = await executeKw(auth, uid, {
-          model, method: 'search',
-          positional: [seedDomain as never],
-          kwargs: { limit: 1, order: 'id asc' },
-        }, transport, { timeoutMs });
+        const ids = await executeKw(
+          auth,
+          uid,
+          {
+            model,
+            method: 'search',
+            positional: [seedDomain as never],
+            kwargs: { limit: 1, order: 'id asc' },
+          },
+          transport,
+          { timeoutMs },
+        );
         const arr = Array.isArray(ids) ? ids : [];
         // Cursor = first matching id minus 1 so the first poll catches it.
         lastIdSeen = typeof arr[0] === 'number' ? arr[0] - 1 : 0;
@@ -235,11 +264,18 @@ export function startOdooPoller(
         const fullDomain: unknown[] = [['id', '>', lastIdSeen], ...userDomain];
         const kwargs: Record<string, unknown> = { limit: batchLimit, order: 'id asc' };
         if (fieldsList) kwargs.fields = fieldsList;
-        const records = await executeKw(auth, uid, {
-          model, method: 'search_read',
-          positional: [fullDomain as never],
-          kwargs: kwargs as never,
-        }, transport, { timeoutMs });
+        const records = await executeKw(
+          auth,
+          uid,
+          {
+            model,
+            method: 'search_read',
+            positional: [fullDomain as never],
+            kwargs: kwargs as never,
+          },
+          transport,
+          { timeoutMs },
+        );
         if (!Array.isArray(records) || records.length === 0) {
           persistState();
           return;
@@ -267,7 +303,10 @@ export function startOdooPoller(
             job.lastIdSeen = id;
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
-            logger.error({ err, workflowId: wf.id, model, recordId: id }, 'odoo_polling run failed');
+            logger.error(
+              { err, workflowId: wf.id, model, recordId: id },
+              'odoo_polling run failed',
+            );
             // AUDIT FIX WE-15 (2026-06-09 MEDIUM): poison-pill DLQ.
             //
             // Pre-fix: `break` qui lasciava lastIdSeen=N-1. Prossimo tick
@@ -280,36 +319,55 @@ export function startOdooPoller(
             const MAX_RETRY = ODOO_DLQ_MAX_RETRY;
             try {
               const existing = sqlite
-                .prepare('SELECT id, retry_count FROM odoo_dlq WHERE workflow_id = ? AND model = ? AND record_id = ? AND dlqd_at IS NULL')
+                .prepare(
+                  'SELECT id, retry_count FROM odoo_dlq WHERE workflow_id = ? AND model = ? AND record_id = ? AND dlqd_at IS NULL',
+                )
                 .get(wf.id, model, id) as { id: number; retry_count: number } | undefined;
               if (existing) {
                 const nextRetry = existing.retry_count + 1;
-                sqlite.prepare(`
+                sqlite
+                  .prepare(
+                    `
                   UPDATE odoo_dlq SET
                     retry_count = ?,
                     last_failed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
                     error_message = ?,
                     dlqd_at = CASE WHEN ? >= ? THEN strftime('%Y-%m-%dT%H:%M:%fZ', 'now') ELSE NULL END
                   WHERE id = ?
-                `).run(nextRetry, msg, nextRetry, MAX_RETRY, existing.id);
+                `,
+                  )
+                  .run(nextRetry, msg, nextRetry, MAX_RETRY, existing.id);
                 if (nextRetry >= MAX_RETRY) {
                   // Poison-pill confermato: bump cursor + log critical
-                  logger.error({
-                    workflowId: wf.id, model, recordId: id, retries: nextRetry,
-                  }, '[WE-15] poison-pill detected — record moved to DLQ, cursor bumped');
+                  logger.error(
+                    {
+                      workflowId: wf.id,
+                      model,
+                      recordId: id,
+                      retries: nextRetry,
+                    },
+                    '[WE-15] poison-pill detected — record moved to DLQ, cursor bumped',
+                  );
                   lastIdSeen = id;
                   job.lastIdSeen = id;
-                  continue;  // procedi al prossimo record nella batch
+                  continue; // procedi al prossimo record nella batch
                 }
               } else {
                 // Prima failure su questo record: INSERT con retry_count=1
-                sqlite.prepare(`
+                sqlite
+                  .prepare(
+                    `
                   INSERT INTO odoo_dlq (workflow_id, model, record_id, record_json, error_message)
                   VALUES (?, ?, ?, ?, ?)
-                `).run(wf.id, model, id, JSON.stringify(rec).slice(0, 32_768), msg);
+                `,
+                  )
+                  .run(wf.id, model, id, JSON.stringify(rec).slice(0, 32_768), msg);
               }
             } catch (dlqErr) {
-              logger.warn({ err: dlqErr, workflowId: wf.id, recordId: id }, '[WE-15] odoo_dlq write failed (non-fatal)');
+              logger.warn(
+                { err: dlqErr, workflowId: wf.id, recordId: id },
+                '[WE-15] odoo_dlq write failed (non-fatal)',
+              );
             }
             // Stop il loop su questo tick — il record verrà ritentato al prossimo
             // poll (a meno che non sia stato già marcato DLQ → cursor avanzato).
@@ -327,7 +385,12 @@ export function startOdooPoller(
     }
   };
 
-  job.timer = setInterval(() => { void poll(); }, interval);
-  logger.info({ workflowId: wf.id, model, intervalSec: interval / 1000, batchLimit }, 'odoo poller registered');
+  job.timer = setInterval(() => {
+    void poll();
+  }, interval);
+  logger.info(
+    { workflowId: wf.id, model, intervalSec: interval / 1000, batchLimit },
+    'odoo poller registered',
+  );
   return job;
 }

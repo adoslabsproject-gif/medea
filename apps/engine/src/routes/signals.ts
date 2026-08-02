@@ -40,7 +40,10 @@ export function createSignalRoutes(runs: RunService): Hono {
     // The HTTP response returns immediately with the count.
     for (const row of resumed) {
       runs.resumeFromPause(row).catch((err: unknown) => {
-        logger.error({ err, pausedId: row.id, runId: row.runId }, 'Failed to resume paused workflow');
+        logger.error(
+          { err, pausedId: row.id, runId: row.runId },
+          'Failed to resume paused workflow',
+        );
       });
     }
     return c.json({ resumed: resumed.length, signal: signalName });
@@ -50,7 +53,12 @@ export function createSignalRoutes(runs: RunService): Hono {
   app.get('/', (c) => {
     const auth = c.get('auth');
     if (!auth) return c.json({ error: 'Unauthorized' }, 401);
-    const status = c.req.query('status') as 'waiting' | 'resumed' | 'timeout' | 'cancelled' | undefined;
+    const status = c.req.query('status') as
+      | 'waiting'
+      | 'resumed'
+      | 'timeout'
+      | 'cancelled'
+      | undefined;
     const list = paused.listByTenant(getTenantId(c), status);
     return c.json({ paused: list, total: list.length });
   });

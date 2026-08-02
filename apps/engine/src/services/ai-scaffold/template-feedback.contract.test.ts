@@ -26,7 +26,8 @@ vi.mock('@/lib/logger.js');
 const { runMigrations } = await import('@/storage/migrate.js');
 const { templateCache } = await import('./template-cache/template.service.js');
 const { recordRunOutcomeForTemplate } = await import('./template-feedback.js');
-const { captureRejectedScaffold, buildNegativeFeedbackBlock } = await import('./negative-example.js');
+const { captureRejectedScaffold, buildNegativeFeedbackBlock } =
+  await import('./negative-example.js');
 const { AIInteractionsService } = await import('@/services/ai-interactions.service.js');
 
 const WF = {
@@ -35,13 +36,16 @@ const WF = {
     { id: 'code', defId: 'action_run_js' },
     { id: 'mail', defId: 'action_send_email' },
   ],
-  edges: [{ from: 'trig', to: 'code' }, { from: 'code', to: 'mail' }],
+  edges: [
+    { from: 'trig', to: 'code' },
+    { from: 'code', to: 'mail' },
+  ],
 };
 
 function counters(): { success: number; fail: number } {
-  const row = sqliteInst.prepare(
-    'SELECT success_count AS s, fail_count AS f FROM ai_workflow_templates LIMIT 1',
-  ).get() as { s: number; f: number } | undefined;
+  const row = sqliteInst
+    .prepare('SELECT success_count AS s, fail_count AS f FROM ai_workflow_templates LIMIT 1')
+    .get() as { s: number; f: number } | undefined;
   return { success: row?.s ?? -1, fail: row?.f ?? -1 };
 }
 
@@ -60,7 +64,9 @@ beforeEach(() => {
     embedding: null,
   });
 });
-afterEach(() => { sqliteInst.close(); });
+afterEach(() => {
+  sqliteInst.close();
+});
 
 describe('🚨🚨 feedback loop run→template (schema VERO)', () => {
   it('🚨 run SUCCESS sul grafo del template → bump success_count (e SOLO quello)', () => {
@@ -74,7 +80,7 @@ describe('🚨🚨 feedback loop run→template (schema VERO)', () => {
     expect(counters()).toEqual({ success: 0, fail: 1 });
   });
 
-  it('🚨 workflow MODIFICATO dopo l\'import (nodo in più) → NESSUN bump: non è più il template', () => {
+  it("🚨 workflow MODIFICATO dopo l'import (nodo in più) → NESSUN bump: non è più il template", () => {
     const modified = {
       nodes: [...WF.nodes, { id: 'extra', defId: 'logic_if' }],
       edges: [...WF.edges, { from: 'mail', to: 'extra' }],
@@ -83,7 +89,7 @@ describe('🚨🚨 feedback loop run→template (schema VERO)', () => {
     expect(counters()).toEqual({ success: 0, fail: 0 });
   });
 
-  it('DB rotto → mai throw (il feedback non deve MAI toccare l\'esito del run)', () => {
+  it("DB rotto → mai throw (il feedback non deve MAI toccare l'esito del run)", () => {
     sqliteInst.close();
     expect(() => recordRunOutcomeForTemplate(WF, true)).not.toThrow();
     sqliteInst = new Database(':memory:');
@@ -99,16 +105,21 @@ describe('🚨🚨 negative examples: CONTRATTO writer (capture) ↔ reader (blo
       model: 'liara',
       latencyMs: 1000,
     };
-    captureRejectedScaffold({ ...base, criticalIssues: [
-      { code: 'MOCK_PLACEHOLDER', message: 'smtp.example.com non è un host reale' },
-      { code: 'CIRCULAR_REFERENCE', message: 'nodo A referenzia B che non è upstream' },
-    ] });
-    captureRejectedScaffold({ ...base, criticalIssues: [
-      { code: 'MOCK_PLACEHOLDER', message: 'bucket-name è un placeholder' },
-    ] });
-    captureRejectedScaffold({ ...base, criticalIssues: [
-      { code: 'MOCK_PLACEHOLDER', message: 'noreply@company.com inventato' },
-    ] });
+    captureRejectedScaffold({
+      ...base,
+      criticalIssues: [
+        { code: 'MOCK_PLACEHOLDER', message: 'smtp.example.com non è un host reale' },
+        { code: 'CIRCULAR_REFERENCE', message: 'nodo A referenzia B che non è upstream' },
+      ],
+    });
+    captureRejectedScaffold({
+      ...base,
+      criticalIssues: [{ code: 'MOCK_PLACEHOLDER', message: 'bucket-name è un placeholder' }],
+    });
+    captureRejectedScaffold({
+      ...base,
+      criticalIssues: [{ code: 'MOCK_PLACEHOLDER', message: 'noreply@company.com inventato' }],
+    });
 
     const block = buildNegativeFeedbackBlock('t-neg');
     // Il contratto: se il formato scritto da capture divergesse da quello
@@ -124,9 +135,12 @@ describe('🚨🚨 negative examples: CONTRATTO writer (capture) ↔ reader (blo
 
   it('🚨 isolamento tenant: i reject di t-neg NON inquinano il prompt di t-altro', () => {
     captureRejectedScaffold({
-      tenantId: 't-neg', goal: 'x', rejectedWorkflow: { nodes: [], edges: [] },
+      tenantId: 't-neg',
+      goal: 'x',
+      rejectedWorkflow: { nodes: [], edges: [] },
       criticalIssues: [{ code: 'DEAD_END_BRANCH', message: 'ramo morto' }],
-      model: 'liara', latencyMs: 1,
+      model: 'liara',
+      latencyMs: 1,
     });
     expect(buildNegativeFeedbackBlock('t-altro')).toBe('');
   });

@@ -21,7 +21,11 @@ function parseDate(v: unknown): Date {
   return d;
 }
 const MS: Record<string, number> = {
-  seconds: 1000, minutes: 60_000, hours: 3_600_000, days: 86_400_000, weeks: 604_800_000,
+  seconds: 1000,
+  minutes: 60_000,
+  hours: 3_600_000,
+  days: 86_400_000,
+  weeks: 604_800_000,
 };
 /**
  * Aggiunge `months` mesi CLAMPando il giorno all'ultimo giorno del mese target —
@@ -54,7 +58,14 @@ const datetimeExecutor: NodeExecutor = async (config, input) => {
 
   if (op === 'now') {
     const d = new Date();
-    return { output: { iso: d.toISOString(), epochMs: d.getTime(), epochSec: Math.floor(d.getTime() / 1000) }, durationMs: Date.now() - startedAt };
+    return {
+      output: {
+        iso: d.toISOString(),
+        epochMs: d.getTime(),
+        epochSec: Math.floor(d.getTime() / 1000),
+      },
+      durationMs: Date.now() - startedAt,
+    };
   }
 
   if (op === 'diff') {
@@ -63,10 +74,14 @@ const datetimeExecutor: NodeExecutor = async (config, input) => {
     const unit = str(config.unit, 'days');
     const deltaMs = b.getTime() - a.getTime();
     let value: number;
-    if (unit === 'months') value = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+    if (unit === 'months')
+      value = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
     else if (unit === 'years') value = b.getFullYear() - a.getFullYear();
     else value = deltaMs / (MS[unit] ?? 1);
-    return { output: { value, rounded: Math.trunc(value), unit, absMs: Math.abs(deltaMs) }, durationMs: Date.now() - startedAt };
+    return {
+      output: { value, rounded: Math.trunc(value), unit, absMs: Math.abs(deltaMs) },
+      durationMs: Date.now() - startedAt,
+    };
   }
 
   const date = parseDate(rawDate);
@@ -74,7 +89,10 @@ const datetimeExecutor: NodeExecutor = async (config, input) => {
   if (op === 'add' || op === 'subtract') {
     const amount = (Number(config.amount) || 0) * (op === 'subtract' ? -1 : 1);
     const result = shift(date, amount, str(config.unit, 'days'));
-    return { output: { iso: result.toISOString(), epochMs: result.getTime() }, durationMs: Date.now() - startedAt };
+    return {
+      output: { iso: result.toISOString(), epochMs: result.getTime() },
+      durationMs: Date.now() - startedAt,
+    };
   }
 
   if (op === 'format') {
@@ -89,19 +107,42 @@ const datetimeExecutor: NodeExecutor = async (config, input) => {
     } else if (preset === 'time') {
       formatted = new Intl.DateTimeFormat(locale, { timeStyle: 'medium', timeZone }).format(date);
     } else if (preset === 'full') {
-      formatted = new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeStyle: 'short', timeZone }).format(date);
+      formatted = new Intl.DateTimeFormat(locale, {
+        dateStyle: 'full',
+        timeStyle: 'short',
+        timeZone,
+      }).format(date);
     } else if (preset === 'relative') {
       const diffSec = Math.round((date.getTime() - Date.now()) / 1000);
       const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
       const abs = Math.abs(diffSec);
       const [unit, div]: [Intl.RelativeTimeFormatUnit, number] =
-        abs < 60 ? ['second', 1] : abs < 3600 ? ['minute', 60] : abs < 86400 ? ['hour', 3600] : abs < 2592000 ? ['day', 86400] : abs < 31536000 ? ['month', 2592000] : ['year', 31536000];
+        abs < 60
+          ? ['second', 1]
+          : abs < 3600
+            ? ['minute', 60]
+            : abs < 86400
+              ? ['hour', 3600]
+              : abs < 2592000
+                ? ['day', 86400]
+                : abs < 31536000
+                  ? ['month', 2592000]
+                  : ['year', 31536000];
       formatted = rtf.format(Math.round(diffSec / div), unit);
     } else {
-      formatted = new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short', timeZone }).format(date);
+      formatted = new Intl.DateTimeFormat(locale, {
+        dateStyle: 'short',
+        timeStyle: 'short',
+        timeZone,
+      }).format(date);
     }
     return {
-      output: { formatted, iso: date.toISOString(), epochMs: date.getTime(), weekday: new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone }).format(date) },
+      output: {
+        formatted,
+        iso: date.toISOString(),
+        epochMs: date.getTime(),
+        weekday: new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone }).format(date),
+      },
       durationMs: Date.now() - startedAt,
     };
   }
@@ -118,7 +159,7 @@ export const datetimeNode: NodeModule = {
     color: '#0d9488',
     description:
       'Nodo data/ora completo in JavaScript puro (solo Date + Intl, zero dipendenze) con supporto NATIVO a fuso ' +
-      'orario e locale italiano — risolve il dolore numero uno dell\'automazione: lavorare con le date senza ' +
+      "orario e locale italiano — risolve il dolore numero uno dell'automazione: lavorare con le date senza " +
       'sbagliare timezone o formato. Cinque operazioni da dropdown: ' +
       '(1) NOW — istante corrente in tutti i formati utili (ISO 8601, epoch in millisecondi e secondi) per ' +
       'timestamp, idempotency, log; ' +
@@ -129,55 +170,87 @@ export const datetimeNode: NodeModule = {
       '(3) ADD / (4) SUBTRACT — aggiunge o sottrae un intervallo (secondi, minuti, ore, giorni, settimane, mesi, ' +
       'anni) gestendo correttamente i mesi di lunghezza diversa e gli anni bisestili (scadenze fattura a +30 ' +
       'giorni, promemoria, date di rinnovo, finestre temporali); ' +
-      '(5) DIFF — calcola la differenza tra due date nell\'unità scelta (giorni di ritardo di un pagamento, età di ' +
+      "(5) DIFF — calcola la differenza tra due date nell'unità scelta (giorni di ritardo di un pagamento, età di " +
       'un lead, durata tra due eventi), con valore esatto e troncato. ' +
       'Accetta in ingresso ISO, epoch (secondi o ms, riconosciuti automaticamente), stringhe di data comuni o ' +
       '"now". Output a seconda dell\'operazione: { iso, epochMs, epochSec } / { formatted, weekday, ... } / ' +
       '{ value, rounded, unit }. ' +
       'Use case: scadenza fattura = oggi + 30 giorni (ADD); "ordine ricevuto 2 ore fa" in un alert (FORMAT ' +
-      'relative); giorni di ritardo di un pagamento (DIFF); data di consegna formattata in italiano nell\'email ' +
+      "relative); giorni di ritardo di un pagamento (DIFF); data di consegna formattata in italiano nell'email " +
       '(FORMAT full it-IT); timestamp ISO per un record (NOW).',
     configFields: [
       {
-        key: 'operation', label: 'Operazione', type: 'select', required: true, defaultValue: 'format',
+        key: 'operation',
+        label: 'Operazione',
+        type: 'select',
+        required: true,
+        defaultValue: 'format',
         options: ['now', 'format', 'add', 'subtract', 'diff'],
         help: 'now = adesso · format = formatta · add/subtract = sposta · diff = differenza tra due date.',
       },
       {
-        key: 'date', label: 'Data', type: 'expression', required: false, defaultValue: 'input',
+        key: 'date',
+        label: 'Data',
+        type: 'expression',
+        required: false,
+        defaultValue: 'input',
         placeholder: 'ISO, epoch, "now" o input',
         help: 'La data di partenza (ISO, epoch sec/ms, o "now"). Vuoto = usa l\'input del nodo.',
         showIf: { field: 'operation', in: ['format', 'add', 'subtract', 'diff'] },
       },
       {
-        key: 'dateB', label: 'Seconda data', type: 'expression', required: false, defaultValue: 'now',
+        key: 'dateB',
+        label: 'Seconda data',
+        type: 'expression',
+        required: false,
+        defaultValue: 'now',
         help: 'La data di confronto per DIFF (differenza = secondaData − data).',
         showIf: { field: 'operation', equals: 'diff' },
       },
       {
-        key: 'preset', label: 'Formato', type: 'select', required: false, defaultValue: 'datetime',
+        key: 'preset',
+        label: 'Formato',
+        type: 'select',
+        required: false,
+        defaultValue: 'datetime',
         options: ['datetime', 'date', 'time', 'full', 'iso', 'relative'],
         help: 'Come formattare. "relative" = "3 ore fa" · "iso" = 8601 · gli altri rispettano locale+timezone.',
         showIf: { field: 'operation', equals: 'format' },
       },
       {
-        key: 'timezone', label: 'Fuso orario', type: 'timezone-picker', required: false, defaultValue: 'Europe/Rome',
+        key: 'timezone',
+        label: 'Fuso orario',
+        type: 'timezone-picker',
+        required: false,
+        defaultValue: 'Europe/Rome',
         help: 'Fuso IANA per la formattazione (es. Europe/Rome).',
         showIf: { field: 'operation', equals: 'format' },
       },
       {
-        key: 'locale', label: 'Lingua', type: 'select', required: false, defaultValue: 'it-IT',
+        key: 'locale',
+        label: 'Lingua',
+        type: 'select',
+        required: false,
+        defaultValue: 'it-IT',
         options: ['it-IT', 'en-US', 'en-GB', 'de-DE', 'fr-FR', 'es-ES'],
         help: 'Lingua per nomi di mese/giorno e formato relativo.',
         showIf: { field: 'operation', equals: 'format' },
       },
       {
-        key: 'amount', label: 'Quantità', type: 'number', required: false, defaultValue: '1',
+        key: 'amount',
+        label: 'Quantità',
+        type: 'number',
+        required: false,
+        defaultValue: '1',
         help: 'Quante unità aggiungere/sottrarre.',
         showIf: { field: 'operation', in: ['add', 'subtract'] },
       },
       {
-        key: 'unit', label: 'Unità', type: 'select', required: false, defaultValue: 'days',
+        key: 'unit',
+        label: 'Unità',
+        type: 'select',
+        required: false,
+        defaultValue: 'days',
         options: ['seconds', 'minutes', 'hours', 'days', 'weeks', 'months', 'years'],
         help: 'Unità di tempo per add/subtract/diff.',
         showIf: { field: 'operation', in: ['add', 'subtract', 'diff'] },

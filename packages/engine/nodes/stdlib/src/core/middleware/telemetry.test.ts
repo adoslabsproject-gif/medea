@@ -40,7 +40,11 @@ describe('🚨 default spanName + attrs flowforge.*', () => {
   it('🚨 spanName default "node.exec"', async () => {
     const wrapped = withTelemetry()(makeInner());
     await wrapped({}, {}, baseCtx);
-    expect(withSpanMock).toHaveBeenCalledWith('node.exec', expect.any(Object), expect.any(Function));
+    expect(withSpanMock).toHaveBeenCalledWith(
+      'node.exec',
+      expect.any(Object),
+      expect.any(Function),
+    );
   });
 
   it('🚨 attrs include flowforge.tenant_id + run_id + node_id + def_id', async () => {
@@ -67,7 +71,11 @@ describe('🚨 custom spanName + static attrs', () => {
   it('🚨 spanName custom', async () => {
     const wrapped = withTelemetry({ spanName: 'node.http.request' })(makeInner());
     await wrapped({}, {}, baseCtx);
-    expect(withSpanMock).toHaveBeenCalledWith('node.http.request', expect.any(Object), expect.any(Function));
+    expect(withSpanMock).toHaveBeenCalledWith(
+      'node.http.request',
+      expect.any(Object),
+      expect.any(Function),
+    );
   });
 
   it('🚨 static attrs merged dopo defaults', async () => {
@@ -138,7 +146,9 @@ describe('🚨 inner executor result propagation', () => {
     // Verifica behavior pure: span è il responsabile della cattura error.
     // Mocked withSpan delega fn() — se fn throw, withSpan re-throw.
     withSpanMock.mockImplementationOnce(async (_n, _a, fn) => fn());
-    const failingInner: NodeExecutor = async () => { throw new Error('exec failed'); };
+    const failingInner: NodeExecutor = async () => {
+      throw new Error('exec failed');
+    };
     const wrapped = withTelemetry()(failingInner);
     await expect(wrapped({}, {}, baseCtx)).rejects.toThrow('exec failed');
   });

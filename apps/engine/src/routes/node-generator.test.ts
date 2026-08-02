@@ -25,7 +25,11 @@ const resolveMock = vi.hoisted(() => vi.fn());
 const dispatchMock = vi.hoisted(() => vi.fn());
 const generateMock = vi.hoisted(() => vi.fn());
 const insertMock = vi.hoisted(() => vi.fn(() => 'interaction-1'));
-const rateLimitMiddleware = vi.hoisted(() => vi.fn(() => async (_c: unknown, next: () => Promise<void>) => { await next(); }));
+const rateLimitMiddleware = vi.hoisted(() =>
+  vi.fn(() => async (_c: unknown, next: () => Promise<void>) => {
+    await next();
+  }),
+);
 
 vi.mock('@/services/llm-resolver.service.js', () => {
   class NoLlmProviderError extends Error {
@@ -68,7 +72,13 @@ const { createNodeGeneratorRoutes } = await import('./node-generator.js');
 // La route è owner-only (requireRole('owner')) + l'attore dell'attribuzione AI
 // arriva dal context `auth` (JWT), NON dall'header x-user-id (spoofabile).
 // L'harness inietta un auth owner; passando null si testa il rifiuto 401/403.
-function makeApp(auth: { userId?: string; role?: string; tenantId?: string } | null = { userId: 'owner-user', role: 'owner', tenantId: 'tenant-1' }) {
+function makeApp(
+  auth: { userId?: string; role?: string; tenantId?: string } | null = {
+    userId: 'owner-user',
+    role: 'owner',
+    tenantId: 'tenant-1',
+  },
+) {
   const app = new Hono();
   app.use('*', async (c, next) => {
     if (auth) (c as unknown as { set: (k: string, v: unknown) => void }).set('auth', auth);
@@ -92,7 +102,8 @@ describe('🚨 Zod validation', () => {
   it('🚨 description < 10 char → 400', async () => {
     const app = makeApp();
     const res = await app.request('/node-generator/generate', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ description: 'short' }),
     });
     expect(res.status).toBe(400);
@@ -101,7 +112,8 @@ describe('🚨 Zod validation', () => {
   it('🚨 description > 2000 char → 400 (anti spam)', async () => {
     const app = makeApp();
     const res = await app.request('/node-generator/generate', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ description: 'x'.repeat(2001) }),
     });
     expect(res.status).toBe(400);
@@ -110,7 +122,8 @@ describe('🚨 Zod validation', () => {
   it('🚨 openApiUrl non URL valida → 400', async () => {
     const app = makeApp();
     const res = await app.request('/node-generator/generate', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         description: 'description with enough length here',
         openApiUrl: 'not-a-url',
@@ -122,7 +135,8 @@ describe('🚨 Zod validation', () => {
   it('🚨 language invalida (es: "fr") → 400', async () => {
     const app = makeApp();
     const res = await app.request('/node-generator/generate', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         description: 'description with enough length here',
         language: 'fr',
@@ -152,14 +166,15 @@ describe('🚨 provider resolution', () => {
     });
   });
 
-  it('🚨 NoLlmProviderError → httpStatus dall\'errore (es. 402 quota exceeded)', async () => {
+  it("🚨 NoLlmProviderError → httpStatus dall'errore (es. 402 quota exceeded)", async () => {
     const { NoLlmProviderError } = await import('@/services/llm-resolver.service.js');
     resolveMock.mockImplementation(() => {
       throw new NoLlmProviderError('Quota exceeded', 402);
     });
     const app = makeApp();
     const res = await app.request('/node-generator/generate', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ description: 'long enough description here' }),
     });
     expect(res.status).toBe(402);
@@ -172,7 +187,8 @@ describe('🚨 provider resolution', () => {
     });
     const app = makeApp();
     const res = await app.request('/node-generator/generate', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ description: 'long enough description here' }),
     });
     expect(res.status).toBe(400);
@@ -184,7 +200,8 @@ describe('🚨 provider resolution', () => {
     });
     const app = makeApp();
     const res = await app.request('/node-generator/generate', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ description: 'long enough description here' }),
     });
     expect(res.status).toBe(500);
@@ -199,7 +216,8 @@ describe('🚨 generate happy path', () => {
     });
     const app = makeApp();
     const res = await app.request('/node-generator/generate', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         description: 'crea nodo che chiama Stripe charge API',
       }),
@@ -210,7 +228,7 @@ describe('🚨 generate happy path', () => {
     expect(body.interactionId).toBe('interaction-1');
   });
 
-  it('🚨 AI interaction: userId dall\'AUTH context (NON dall\'header x-user-id spoofabile)', async () => {
+  it("🚨 AI interaction: userId dall'AUTH context (NON dall'header x-user-id spoofabile)", async () => {
     generateMock.mockResolvedValue({ def: { id: 'x' } });
     const app = makeApp({ userId: 'owner-real', role: 'owner', tenantId: 'tenant-1' });
     await app.request('/node-generator/generate', {
@@ -222,16 +240,19 @@ describe('🚨 generate happy path', () => {
       body: JSON.stringify({ description: 'long enough description here' }),
     });
     // mutation-verify: l'attribuzione usa l'auth (owner-real), non l'header spoofato.
-    expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({
-      context: { tenantId: 'tenant-1', userId: 'owner-real' },
-      interactionType: 'node_generate',
-    }));
+    expect(insertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: { tenantId: 'tenant-1', userId: 'owner-real' },
+        interactionType: 'node_generate',
+      }),
+    );
   });
 
   it('🚨 senza auth → 401 (requireRole owner) e nessuna generazione', async () => {
     const app = makeApp(null);
     const res = await app.request('/node-generator/generate', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ description: 'long enough description here' }),
     });
     expect([401, 403]).toContain(res.status);
@@ -243,12 +264,15 @@ describe('🚨 generate happy path', () => {
     generateMock.mockResolvedValue({ def: { id: 'x' } });
     const app = makeApp();
     await app.request('/node-generator/generate', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ description: 'long enough description here' }),
     });
-    expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({
-      response: expect.objectContaining({ model: 'openai/gpt-4o' }),
-    }));
+    expect(insertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        response: expect.objectContaining({ model: 'openai/gpt-4o' }),
+      }),
+    );
   });
 });
 
@@ -257,7 +281,8 @@ describe('🚨 error status mapping', () => {
     generateMock.mockRejectedValue(new Error('Operation forbidden by policy'));
     const app = makeApp();
     const res = await app.request('/node-generator/generate', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ description: 'long enough description here' }),
     });
     expect(res.status).toBe(422);
@@ -267,7 +292,8 @@ describe('🚨 error status mapping', () => {
     generateMock.mockRejectedValue(new Error('validation failed'));
     const app = makeApp();
     const res = await app.request('/node-generator/generate', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ description: 'long enough description here' }),
     });
     expect(res.status).toBe(422);
@@ -277,7 +303,8 @@ describe('🚨 error status mapping', () => {
     generateMock.mockRejectedValue(new Error('LLM crashed'));
     const app = makeApp();
     const res = await app.request('/node-generator/generate', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ description: 'long enough description here' }),
     });
     expect(res.status).toBe(500);

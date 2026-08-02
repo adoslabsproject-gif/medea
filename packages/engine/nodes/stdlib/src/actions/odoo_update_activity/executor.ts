@@ -34,8 +34,10 @@ export const odooUpdateActivityExecutor: NodeExecutor = async (rawConfig, _input
   if (context.abortSignal?.aborted) throw new AbortedError();
 
   const auth: OdooAuth = {
-    baseUrl: cfg.baseUrl, database: cfg.database,
-    login: cfg.login, password: cfg.password,
+    baseUrl: cfg.baseUrl,
+    database: cfg.database,
+    login: cfg.login,
+    password: cfg.password,
   };
   const transport = makeSafeFetchOdooTransport(cfg.followRedirects);
   const signal = context.abortSignal;
@@ -47,11 +49,18 @@ export const odooUpdateActivityExecutor: NodeExecutor = async (rawConfig, _input
   // Resolve activity_type_id.
   let activityTypeId = cfg.activityTypeId ?? null;
   if (activityTypeId === null && cfg.activityTypeName) {
-    const found = await executeKw(auth, uid, {
-      model: 'mail.activity.type', method: 'search_read',
-      positional: [[['name', '=', cfg.activityTypeName]]],
-      kwargs: { fields: ['id'], limit: 1 },
-    }, transport, fetchOpts) as { id: number }[];
+    const found = (await executeKw(
+      auth,
+      uid,
+      {
+        model: 'mail.activity.type',
+        method: 'search_read',
+        positional: [[['name', '=', cfg.activityTypeName]]],
+        kwargs: { fields: ['id'], limit: 1 },
+      },
+      transport,
+      fetchOpts,
+    )) as { id: number }[];
     if (found.length === 0) {
       throw new ValidationError(
         `ODOO_ACTIVITY_TYPE_NOT_FOUND: "${cfg.activityTypeName}" — pass activityTypeId numeric instead`,
@@ -65,11 +74,18 @@ export const odooUpdateActivityExecutor: NodeExecutor = async (rawConfig, _input
   }
 
   // Resolve res_model_id (mail.activity needs both res_model and res_model_id).
-  const irModel = await executeKw(auth, uid, {
-    model: 'ir.model', method: 'search_read',
-    positional: [[['model', '=', cfg.resModel]]],
-    kwargs: { fields: ['id'], limit: 1 },
-  }, transport, fetchOpts) as { id: number }[];
+  const irModel = (await executeKw(
+    auth,
+    uid,
+    {
+      model: 'ir.model',
+      method: 'search_read',
+      positional: [[['model', '=', cfg.resModel]]],
+      kwargs: { fields: ['id'], limit: 1 },
+    },
+    transport,
+    fetchOpts,
+  )) as { id: number }[];
   if (irModel.length === 0) {
     throw new ValidationError(`ODOO_MODEL_NOT_FOUND: "${cfg.resModel}"`);
   }
@@ -86,10 +102,18 @@ export const odooUpdateActivityExecutor: NodeExecutor = async (rawConfig, _input
   if (cfg.dateDeadline) values.date_deadline = cfg.dateDeadline;
   if (cfg.userId) values.user_id = cfg.userId;
 
-  const newId = await executeKw(auth, uid, {
-    model: 'mail.activity', method: 'create',
-    positional: [values], kwargs: {},
-  }, transport, fetchOpts) as number;
+  const newId = (await executeKw(
+    auth,
+    uid,
+    {
+      model: 'mail.activity',
+      method: 'create',
+      positional: [values],
+      kwargs: {},
+    },
+    transport,
+    fetchOpts,
+  )) as number;
 
   return {
     output: {

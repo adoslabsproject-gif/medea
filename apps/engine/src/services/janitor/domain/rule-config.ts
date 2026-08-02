@@ -13,7 +13,7 @@ export interface RuleConfig {
   readonly ruleId: string;
   readonly tenantId: string;
   readonly enabled: boolean;
-  readonly schedule: string;            // cron expression
+  readonly schedule: string; // cron expression
   readonly dataSourceRef: DataSourceRef; // può overridare defaultDataSource
   readonly maxRowsPerRun: number;
   readonly severity: CorruptionSeverity;

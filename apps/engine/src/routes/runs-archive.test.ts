@@ -52,7 +52,9 @@ describe('GET /workflows/:id/runs/archive (lista)', () => {
 
   it('200 con la lista archivi quando il workflow è del tenant', async () => {
     wfMock.get.mockResolvedValue({ id: 'wf-1' });
-    svcMock.listArchives.mockReturnValue([{ filename: 'runs-2026-06-a.jsonl.gz', sizeBytes: 10, hash: '', createdAt: '2026-06-01' }]);
+    svcMock.listArchives.mockReturnValue([
+      { filename: 'runs-2026-06-a.jsonl.gz', sizeBytes: 10, hash: '', createdAt: '2026-06-01' },
+    ]);
     const res = await app().request('/workflows/wf-1/runs/archive');
     expect(res.status).toBe(200);
     const body = (await res.json()) as { archives: unknown[] };
@@ -73,7 +75,9 @@ describe('GET /workflows/:id/runs/archive/:filename (download)', () => {
   it('400 se archivePathSafe rigetta il filename (path-traversal)', async () => {
     wfMock.get.mockResolvedValue({ id: 'wf-1' });
     svcMock.archivePathSafe.mockReturnValue(null);
-    const res = await app().request('/workflows/wf-1/runs/archive/' + encodeURIComponent('../../etc/passwd'));
+    const res = await app().request(
+      '/workflows/wf-1/runs/archive/' + encodeURIComponent('../../etc/passwd'),
+    );
     expect(res.status).toBe(400);
     expect(fsMock.readFileSync).not.toHaveBeenCalled();
   });
@@ -81,7 +85,9 @@ describe('GET /workflows/:id/runs/archive/:filename (download)', () => {
   it('404 se il file non esiste su disco (statSync throw)', async () => {
     wfMock.get.mockResolvedValue({ id: 'wf-1' });
     svcMock.archivePathSafe.mockReturnValue('/data/archives/wf-1/runs-2026-06-a.jsonl.gz');
-    fsMock.statSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    fsMock.statSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     const res = await app().request('/workflows/wf-1/runs/archive/runs-2026-06-a.jsonl.gz');
     expect(res.status).toBe(404);
     expect(fsMock.readFileSync).not.toHaveBeenCalled();

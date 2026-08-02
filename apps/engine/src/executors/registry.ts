@@ -20,7 +20,12 @@ import { waitExecutor } from './wait.js';
 import { paginateExecutor } from './paginate.js';
 import { dbUpdateExecutor, dbDeleteExecutor } from './db-write.js';
 import { ragSearchExecutor, ragIngestExecutor } from './rag.js';
-import { pecArubaSendExecutor, zucchettiPayrollExecutor, sdiSendInvoiceExecutor, sdiCheckStatusExecutor } from './italian.js';
+import {
+  pecArubaSendExecutor,
+  zucchettiPayrollExecutor,
+  sdiSendInvoiceExecutor,
+  sdiCheckStatusExecutor,
+} from './italian.js';
 import { p7mExtractExecutor } from './sdi/p7m-extract.js';
 import { fatturapaParseExecutor } from './sdi/fatturapa-parse.js';
 import { pecArubaReceiveExecutor } from './pec-receive.js';

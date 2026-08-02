@@ -32,8 +32,12 @@ describe('SingleshotStreamParser — full buffer', () => {
     const nodes: unknown[] = [];
     const edges: unknown[] = [];
     const p = new SingleshotStreamParser({
-      onNodeAdded: (n) => { nodes.push(n); },
-      onEdgeAdded: (e) => { edges.push(e); },
+      onNodeAdded: (n) => {
+        nodes.push(n);
+      },
+      onEdgeAdded: (e) => {
+        edges.push(e);
+      },
     });
     p.feed(SAMPLE_OUTPUT);
     expect(nodes.length).toBe(3);
@@ -55,7 +59,11 @@ describe('SingleshotStreamParser — full buffer', () => {
 
   it('gestisce escape `\\"` dentro stringa', () => {
     const nodes: unknown[] = [];
-    const p = new SingleshotStreamParser({ onNodeAdded: (n) => { nodes.push(n); } });
+    const p = new SingleshotStreamParser({
+      onNodeAdded: (n) => {
+        nodes.push(n);
+      },
+    });
     p.feed(SAMPLE_OUTPUT);
     const lastNode = nodes[2] as { config: { subject: string } };
     expect(lastNode.config.subject).toBe('Report "daily"');
@@ -65,7 +73,11 @@ describe('SingleshotStreamParser — full buffer', () => {
 describe('SingleshotStreamParser — chunked streaming', () => {
   it('feed character-by-character → stessi 3 nodi emessi', () => {
     const nodes: unknown[] = [];
-    const p = new SingleshotStreamParser({ onNodeAdded: (n) => { nodes.push(n); } });
+    const p = new SingleshotStreamParser({
+      onNodeAdded: (n) => {
+        nodes.push(n);
+      },
+    });
     for (const ch of SAMPLE_OUTPUT) p.feed(ch);
     expect(nodes.length).toBe(3);
   });
@@ -74,8 +86,12 @@ describe('SingleshotStreamParser — chunked streaming', () => {
     const nodes: unknown[] = [];
     const edges: unknown[] = [];
     const p = new SingleshotStreamParser({
-      onNodeAdded: (n) => { nodes.push(n); },
-      onEdgeAdded: (e) => { edges.push(e); },
+      onNodeAdded: (n) => {
+        nodes.push(n);
+      },
+      onEdgeAdded: (e) => {
+        edges.push(e);
+      },
     });
     let i = 0;
     while (i < SAMPLE_OUTPUT.length) {
@@ -89,7 +105,11 @@ describe('SingleshotStreamParser — chunked streaming', () => {
 
   it('chunk che divide a meta\\` di un nodo', () => {
     const nodes: unknown[] = [];
-    const p = new SingleshotStreamParser({ onNodeAdded: (n) => { nodes.push(n); } });
+    const p = new SingleshotStreamParser({
+      onNodeAdded: (n) => {
+        nodes.push(n);
+      },
+    });
     const midpoint = SAMPLE_OUTPUT.indexOf('"defId": "db_query"');
     p.feed(SAMPLE_OUTPUT.slice(0, midpoint + 5));
     expect(nodes.length).toBe(1); // solo n1 completo
@@ -110,7 +130,11 @@ describe('SingleshotStreamParser — stats + reset', () => {
 
   it('reset → riusabile', () => {
     const nodes: unknown[] = [];
-    const p = new SingleshotStreamParser({ onNodeAdded: (n) => { nodes.push(n); } });
+    const p = new SingleshotStreamParser({
+      onNodeAdded: (n) => {
+        nodes.push(n);
+      },
+    });
     p.feed(SAMPLE_OUTPUT);
     expect(nodes.length).toBe(3);
     p.reset();
@@ -140,8 +164,12 @@ describe('SingleshotStreamParser — edge cases', () => {
     const nodes: unknown[] = [];
     const edges: unknown[] = [];
     const p = new SingleshotStreamParser({
-      onNodeAdded: (n) => { nodes.push(n); },
-      onEdgeAdded: (e) => { edges.push(e); },
+      onNodeAdded: (n) => {
+        nodes.push(n);
+      },
+      onEdgeAdded: (e) => {
+        edges.push(e);
+      },
     });
     p.feed(partial);
     expect(nodes.length).toBe(3);

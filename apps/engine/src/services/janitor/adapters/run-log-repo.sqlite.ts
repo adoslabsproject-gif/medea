@@ -9,9 +9,15 @@
 import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { getDatabase } from '@/storage/db.js';
 import { janitorRunLog, type JanitorRunLogRow } from '@/storage/schema.js';
-import type { IRunLogRepository, RunLogQuery, DailyBucket } from '@/services/janitor/ports/index.js';
 import type {
-  JanitorRuleReport, JanitorCycleReport, DataSourceRef,
+  IRunLogRepository,
+  RunLogQuery,
+  DailyBucket,
+} from '@/services/janitor/ports/index.js';
+import type {
+  JanitorRuleReport,
+  JanitorCycleReport,
+  DataSourceRef,
 } from '@/services/janitor/domain/index.js';
 
 export class SqliteRunLogRepository implements IRunLogRepository {
@@ -69,10 +75,14 @@ export class SqliteRunLogRepository implements IRunLogRepository {
   trendBuckets(args: { tenantId?: string; daysBack: number }): Promise<readonly DailyBucket[]> {
     const { db } = getDatabase();
     const fromIso = new Date(Date.now() - args.daysBack * 86400_000).toISOString();
-    const tenantClause = args.tenantId
-      ? sql`AND tenant_id = ${args.tenantId}`
-      : sql``;
-    const result = db.all<{ date_iso: string; rule_id: string; rows_quarantined: number; rows_repaired: number; errors: number }>(sql`
+    const tenantClause = args.tenantId ? sql`AND tenant_id = ${args.tenantId}` : sql``;
+    const result = db.all<{
+      date_iso: string;
+      rule_id: string;
+      rows_quarantined: number;
+      rows_repaired: number;
+      errors: number;
+    }>(sql`
       SELECT
         substr(started_at, 1, 10) AS date_iso,
         rule_id,
@@ -84,13 +94,15 @@ export class SqliteRunLogRepository implements IRunLogRepository {
       GROUP BY substr(started_at, 1, 10), rule_id
       ORDER BY date_iso ASC, rule_id ASC
     `);
-    return Promise.resolve(result.map((r) => ({
-      dateIso: r.date_iso,
-      ruleId: r.rule_id,
-      rowsQuarantined: Number(r.rows_quarantined),
-      rowsRepaired: Number(r.rows_repaired),
-      errors: Number(r.errors),
-    })));
+    return Promise.resolve(
+      result.map((r) => ({
+        dateIso: r.date_iso,
+        ruleId: r.rule_id,
+        rowsQuarantined: Number(r.rows_quarantined),
+        rowsRepaired: Number(r.rows_repaired),
+        errors: Number(r.errors),
+      })),
+    );
   }
 
   lastByRule(tenantId: string): Promise<Readonly<Record<string, JanitorRuleReport>>> {

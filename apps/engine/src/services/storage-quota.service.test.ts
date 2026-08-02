@@ -4,7 +4,11 @@
  * Pure function coverage: split tier-aware deterministico.
  */
 import { describe, it, expect } from 'vitest';
-import { computeQuotas, canPersistRunTrace, STORAGE_QUOTA_RATIOS } from './storage-quota.service.js';
+import {
+  computeQuotas,
+  canPersistRunTrace,
+  STORAGE_QUOTA_RATIOS,
+} from './storage-quota.service.js';
 
 describe('computeQuotas — Free tier (100% data, 0% log)', () => {
   it('Free 1GB → 1GB workflow + 0 log', () => {

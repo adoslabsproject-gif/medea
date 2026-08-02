@@ -6,7 +6,16 @@
 
 import { join } from 'node:path';
 import { existsSync, mkdirSync } from 'node:fs';
-import { EmbeddedVectorAdapter, QdrantVectorAdapter, PgVectorAdapter, TenantScopedVectorStore, type IVectorAdapter, type SimilaritySearchQuery, type VectorRecord, type QdrantConfig } from '@medea/engine-db-studio-vector';
+import {
+  EmbeddedVectorAdapter,
+  QdrantVectorAdapter,
+  PgVectorAdapter,
+  TenantScopedVectorStore,
+  type IVectorAdapter,
+  type SimilaritySearchQuery,
+  type VectorRecord,
+  type QdrantConfig,
+} from '@medea/engine-db-studio-vector';
 import type { Database } from '@medea/engine-db-studio-core';
 import postgres from 'postgres';
 import { DbStudioService } from './db-studio.service.js';
@@ -17,8 +26,10 @@ export class VectorService {
   private readonly adapters = new Map<string, IVectorAdapter>();
   private readonly dbStudio = new DbStudioService();
 
-   
-  private resolveAdapter(databaseId: string, tenantId: string): Promise<{ adapter: IVectorAdapter; database: Database }> {
+  private resolveAdapter(
+    databaseId: string,
+    tenantId: string,
+  ): Promise<{ adapter: IVectorAdapter; database: Database }> {
     const database = this.dbStudio.get(databaseId, tenantId);
     if (!database) throw new Error(`Database ${databaseId} not found`);
     const engine = database.connection.engine;
@@ -64,22 +75,43 @@ export class VectorService {
     return Promise.resolve({ adapter, database });
   }
 
-  async ensureCollection(databaseId: string, name: string, dimensions: number, distance: 'cosine' | 'euclidean' | 'dot', tenantId = 'default'): Promise<void> {
+  async ensureCollection(
+    databaseId: string,
+    name: string,
+    dimensions: number,
+    distance: 'cosine' | 'euclidean' | 'dot',
+    tenantId = 'default',
+  ): Promise<void> {
     const { adapter } = await this.resolveAdapter(databaseId, tenantId);
     await adapter.ensureCollection(name, dimensions, distance);
   }
 
-  async listCollections(databaseId: string, tenantId = 'default'): Promise<{ name: string; dimensions: number; distance: 'cosine' | 'euclidean' | 'dot'; count: number }[]> {
+  async listCollections(
+    databaseId: string,
+    tenantId = 'default',
+  ): Promise<
+    { name: string; dimensions: number; distance: 'cosine' | 'euclidean' | 'dot'; count: number }[]
+  > {
     const { adapter } = await this.resolveAdapter(databaseId, tenantId);
     return adapter.listCollections();
   }
 
-  async upsert(databaseId: string, collection: string, records: readonly VectorRecord[], tenantId = 'default'): Promise<{ count: number }> {
+  async upsert(
+    databaseId: string,
+    collection: string,
+    records: readonly VectorRecord[],
+    tenantId = 'default',
+  ): Promise<{ count: number }> {
     const { adapter } = await this.resolveAdapter(databaseId, tenantId);
     return adapter.upsert(collection, records);
   }
 
-  async search(databaseId: string, collection: string, query: SimilaritySearchQuery, tenantId = 'default'): Promise<unknown> {
+  async search(
+    databaseId: string,
+    collection: string,
+    query: SimilaritySearchQuery,
+    tenantId = 'default',
+  ): Promise<unknown> {
     const { adapter } = await this.resolveAdapter(databaseId, tenantId);
     const results = await adapter.search(collection, query);
     return { results, count: results.length };
@@ -91,12 +123,22 @@ export class VectorService {
   }
 
   /** True se il record esiste già (per la quota: re-ingest idempotente = 0 vettori netti). */
-  async recordExists(databaseId: string, collection: string, id: string, tenantId = 'default'): Promise<boolean> {
+  async recordExists(
+    databaseId: string,
+    collection: string,
+    id: string,
+    tenantId = 'default',
+  ): Promise<boolean> {
     const { adapter } = await this.resolveAdapter(databaseId, tenantId);
     return adapter.existsById ? adapter.existsById(collection, id) : false;
   }
 
-  async deleteIds(databaseId: string, collection: string, ids: readonly string[], tenantId = 'default'): Promise<{ count: number }> {
+  async deleteIds(
+    databaseId: string,
+    collection: string,
+    ids: readonly string[],
+    tenantId = 'default',
+  ): Promise<{ count: number }> {
     const { adapter } = await this.resolveAdapter(databaseId, tenantId);
     return adapter.deleteByIds(collection, ids);
   }

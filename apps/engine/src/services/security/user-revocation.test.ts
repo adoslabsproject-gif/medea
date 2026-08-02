@@ -85,7 +85,7 @@ describe('revokeWorkspaceUser — scrub PII (scrubPii=true)', () => {
     expect(u.enabled).toBe(0);
   });
 
-  it('🚨 BUG-BOUNTY: l\'email anonimizzata NON contiene la PII originale', () => {
+  it("🚨 BUG-BOUNTY: l'email anonimizzata NON contiene la PII originale", () => {
     seedUser('u-4', 'sensitive.name@acme.it');
     revokeWorkspaceUser({ email: 'sensitive.name@acme.it', scrubPii: true });
     const u = getUser('u-4');

@@ -32,16 +32,24 @@ interface N8nWorkflow {
 }
 
 /** Pass 1: id/defId/posizione (il config arriva nel pass 2, serve la mappa nome→id). */
-function convertNodeMeta(n8nNode: N8nNode, idx: number): { id: string; defId: string; x: number; y: number } {
+function convertNodeMeta(
+  n8nNode: N8nNode,
+  idx: number,
+): { id: string; defId: string; x: number; y: number } {
   // Mapping n8n-type → defId via vocabolario condiviso (lib/node-aliases).
   const defId = n8nTypeToDefId(n8nNode.type);
-  const id = (n8nNode.id ?? n8nNode.name).replace(/[^a-z0-9_-]/gi, '_') + (n8nNode.id ? '' : `_${idx.toString()}`);
+  const id =
+    (n8nNode.id ?? n8nNode.name).replace(/[^a-z0-9_-]/gi, '_') +
+    (n8nNode.id ? '' : `_${idx.toString()}`);
   const x = n8nNode.position?.[0] ?? idx * 200;
   const y = n8nNode.position?.[1] ?? 100;
   return { id, defId, x, y };
 }
 
-function convertConnections(connections: NonNullable<N8nWorkflow['connections']>, nodeIdMap: Map<string, string>): { from: string; to: string }[] {
+function convertConnections(
+  connections: NonNullable<N8nWorkflow['connections']>,
+  nodeIdMap: Map<string, string>,
+): { from: string; to: string }[] {
   const edges: { from: string; to: string }[] = [];
   for (const [sourceName, conn] of Object.entries(connections)) {
     const main = conn.main ?? [];
@@ -64,7 +72,8 @@ export function createN8nImportRoutes(eventBus: IEventBus): Hono {
     const tenantId = getTenantId(c);
     const actorId = getActorId(c) ?? undefined;
     const raw = (await c.req.json()) as unknown;
-    if (!raw || typeof raw !== 'object') return c.json({ error: 'Body must be a JSON object' }, 400);
+    if (!raw || typeof raw !== 'object')
+      return c.json({ error: 'Body must be a JSON object' }, 400);
     const n8n = raw as N8nWorkflow;
 
     const n8nNodes = n8n.nodes ?? [];
@@ -106,18 +115,24 @@ export function createN8nImportRoutes(eventBus: IEventBus): Hono {
     if (actorId !== undefined) input.createdBy = actorId;
     const created = await workflows.create(input);
 
-    return c.json({
-      workflow: created,
-      stats: {
-        nodesImported: converted.length,
-        edgesImported: edges.length,
-        unmappedTypes: [...unmappedTypes],
-        // Cosa l'utente deve rivedere a mano (auth, header, espressioni non convertibili,
-        // strutture Set/IF, schedule). Trasparenza: l'import è un punto di partenza assistito.
-        mappingWarnings,
-        warnings: unmappedTypes.size > 0 ? `${unmappedTypes.size.toString()} node type(s) had no direct mapping; converted to action_http with original parameters preserved in config._n8nOriginalType.` : null,
+    return c.json(
+      {
+        workflow: created,
+        stats: {
+          nodesImported: converted.length,
+          edgesImported: edges.length,
+          unmappedTypes: [...unmappedTypes],
+          // Cosa l'utente deve rivedere a mano (auth, header, espressioni non convertibili,
+          // strutture Set/IF, schedule). Trasparenza: l'import è un punto di partenza assistito.
+          mappingWarnings,
+          warnings:
+            unmappedTypes.size > 0
+              ? `${unmappedTypes.size.toString()} node type(s) had no direct mapping; converted to action_http with original parameters preserved in config._n8nOriginalType.`
+              : null,
+        },
       },
-    }, 201);
+      201,
+    );
   });
 
   return app;

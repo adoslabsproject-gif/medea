@@ -32,7 +32,7 @@ export function guardedRandomBytes(size: number): Buffer {
   if (!Number.isInteger(size) || size < 0 || size > MAX_SANDBOX_RANDOM_BYTES) {
     throw new Error(
       `crypto.randomBytes: dimensione ${String(size)} non valida — ammesso un intero in [0, ${String(MAX_SANDBOX_RANDOM_BYTES)}] ` +
-      '(guardia anti-OOM della sandbox: allocazioni host oltre questo limite sono rifiutate).',
+        '(guardia anti-OOM della sandbox: allocazioni host oltre questo limite sono rifiutate).',
     );
   }
   return randomBytes(size);

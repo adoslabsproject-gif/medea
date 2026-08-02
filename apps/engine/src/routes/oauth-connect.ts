@@ -69,7 +69,9 @@ export function createOAuthConnectRoutes(): Hono {
     if (error) {
       // `error` arriva dalla query string del browser: escape obbligatorio
       // (XSS riflesso). Vedi html-escape.ts.
-      return c.html(`<h1>OAuth annullato</h1><p>${escapeHtml(error)}</p><script>setTimeout(()=>window.close(),3000);</script>`);
+      return c.html(
+        `<h1>OAuth annullato</h1><p>${escapeHtml(error)}</p><script>setTimeout(()=>window.close(),3000);</script>`,
+      );
     }
     if (!code || !state) {
       return c.html('<h1>Parametri mancanti</h1>', 400);
@@ -96,7 +98,10 @@ export function createOAuthConnectRoutes(): Hono {
       logger.error({ err }, 'OAuth connect callback failed');
       // err.message può contenere input non-fidato (es. valori dal provider):
       // escape obbligatorio.
-      return c.html(`<h1>Connessione fallita</h1><p>${escapeHtml(err instanceof Error ? err.message : String(err))}</p>`, 500);
+      return c.html(
+        `<h1>Connessione fallita</h1><p>${escapeHtml(err instanceof Error ? err.message : String(err))}</p>`,
+        500,
+      );
     }
   });
 

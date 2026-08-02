@@ -66,10 +66,16 @@ export async function paginationWalker(opts: WalkerOptions): Promise<WalkerResul
     // come argomenti-spread supera lo stack → RangeError. Loop = O(1) stack, qualsiasi size.
     for (const it of pageItems) items.push(it);
 
-    if (opts.strategy.shouldContinue && !opts.strategy.shouldContinue(opts.ctx, state, pageItems)) break;
+    if (opts.strategy.shouldContinue && !opts.strategy.shouldContinue(opts.ctx, state, pageItems))
+      break;
     state.pageIndex += 1;
     if (state.pageIndex >= opts.ctx.maxPages) break;
   }
 
-  return { items, pagesFetched: state.pageIndex + (lastStatus > 0 ? 1 : 0), lastStatus, lastHeaders };
+  return {
+    items,
+    pagesFetched: state.pageIndex + (lastStatus > 0 ? 1 : 0),
+    lastStatus,
+    lastHeaders,
+  };
 }

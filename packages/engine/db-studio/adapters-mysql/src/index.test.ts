@@ -11,8 +11,18 @@ describe('MysqlAdapter', () => {
           id: 't',
           name: 'orders',
           columns: [
-            { id: 'id', name: 'id', type: 'integer', constraints: { primaryKey: true, nullable: false, unique: false } },
-            { id: 'amount', name: 'amount', type: 'decimal', constraints: { primaryKey: false, nullable: true, unique: false } },
+            {
+              id: 'id',
+              name: 'id',
+              type: 'integer',
+              constraints: { primaryKey: true, nullable: false, unique: false },
+            },
+            {
+              id: 'amount',
+              name: 'amount',
+              type: 'decimal',
+              constraints: { primaryKey: false, nullable: true, unique: false },
+            },
           ],
           indexes: [],
         },
@@ -26,13 +36,27 @@ describe('MysqlAdapter', () => {
 
   it('rejects identifiers with special chars', async () => {
     const adapter = new MysqlAdapter();
-    await expect(adapter.previewMigration([{ kind: 'drop_table', tableName: '`; DROP--' }])).rejects.toThrow();
+    await expect(
+      adapter.previewMigration([{ kind: 'drop_table', tableName: '`; DROP--' }]),
+    ).rejects.toThrow();
   });
 
   it('renders FK relation with cascade', async () => {
     const adapter = new MysqlAdapter();
     const sql = await adapter.previewMigration([
-      { kind: 'add_relation', relation: { id: 'r', name: 'fk', kind: 'one-to-many', fromTable: 'orders', fromColumn: 'customer_id', toTable: 'customers', toColumn: 'id', onDelete: 'cascade' } },
+      {
+        kind: 'add_relation',
+        relation: {
+          id: 'r',
+          name: 'fk',
+          kind: 'one-to-many',
+          fromTable: 'orders',
+          fromColumn: 'customer_id',
+          toTable: 'customers',
+          toColumn: 'id',
+          onDelete: 'cascade',
+        },
+      },
     ]);
     expect(sql).toContain('FOREIGN KEY (`customer_id`)');
     expect(sql).toContain('REFERENCES `customers`(`id`)');

@@ -35,12 +35,31 @@ const SCAFFOLD_RETRIEVE_K = 45;
  * del tenant viene semplicemente ignorato (no crash).
  */
 export const SCAFFOLD_CORE_DEFIDS: readonly string[] = [
-  'trigger_manual', 'trigger_webhook', 'trigger_cron', 'trigger_imap', 'trigger_form',
-  'logic_if', 'logic_switch', 'logic_loop', 'logic_merge', 'logic_wait', 'logic_filter',
-  'action_http', 'action_run_js', 'action_run_python', 'action_set_fields', 'action_template',
-  'action_json', 'action_file_write', 'action_send_email', 'action_webhook_respond',
-  'db_query', 'db_insert', 'db_update',
-  'agent_extractor', 'agent_chat',
+  'trigger_manual',
+  'trigger_webhook',
+  'trigger_cron',
+  'trigger_imap',
+  'trigger_form',
+  'logic_if',
+  'logic_switch',
+  'logic_loop',
+  'logic_merge',
+  'logic_wait',
+  'logic_filter',
+  'action_http',
+  'action_run_js',
+  'action_run_python',
+  'action_set_fields',
+  'action_template',
+  'action_json',
+  'action_file_write',
+  'action_send_email',
+  'action_webhook_respond',
+  'db_query',
+  'db_insert',
+  'db_update',
+  'agent_extractor',
+  'agent_chat',
 ];
 
 /**
@@ -51,7 +70,10 @@ export const SCAFFOLD_CORE_DEFIDS: readonly string[] = [
  * prompt e grammatica restano allineati (zero drift). Async (retrieval semantico
  * + custom node del tenant dal DB).
  */
-export async function buildScaffoldCatalogEntries(workspaceId: string, goal: string): Promise<NodeCatalogEntry[]> {
+export async function buildScaffoldCatalogEntries(
+  workspaceId: string,
+  goal: string,
+): Promise<NodeCatalogEntry[]> {
   const entries = await buildTenantCatalog(workspaceId);
   const byDefId = new Map<string, NodeCatalogEntry>(entries.map((e) => [e.defId, e]));
 

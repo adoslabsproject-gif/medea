@@ -35,7 +35,14 @@ import { getDatabase } from '@/storage/db.js';
 import { SystemEmailAccountsService } from '../system-email-accounts.service.js';
 import { EmailOAuthService } from '../email-oauth.service.js';
 import { getBinaryStore } from '../binary-store.service.js';
-import { parseMarkSeen, parseAllowlist, safeRegex, pickAddress, collectAddresses, clampNumber } from './parsing.js';
+import {
+  parseMarkSeen,
+  parseAllowlist,
+  safeRegex,
+  pickAddress,
+  collectAddresses,
+  clampNumber,
+} from './parsing.js';
 import { buildImapAttachment, type ImapAttachment } from './imap-attachment.js';
 import { markSeenWithFreshConnection } from './imap-mark-seen.js';
 import { resolveTriggerBreaker, type TriggerBreaker } from './breaker.js';
@@ -117,7 +124,10 @@ export interface ImapPollerDeps {
   /** Parser MIME. Default: `simpleParser` (mailparser). */
   parseMail?: typeof simpleParser;
   /** Resolver degli account email di sistema. Default: `SystemEmailAccountsService`. */
-  resolveSystemAccount?: (tenantId: string, accountId: string) => ReturnType<SystemEmailAccountsService['resolveForExecutor']>;
+  resolveSystemAccount?: (
+    tenantId: string,
+    accountId: string,
+  ) => ReturnType<SystemEmailAccountsService['resolveForExecutor']>;
   /** Binary store per gli allegati ref-primario. Default: `getBinaryStore()`. */
   getStore?: typeof getBinaryStore;
   /** Marca \Seen su connessione fresca. Default: `markSeenWithFreshConnection`. */
@@ -130,7 +140,10 @@ export interface ImapPollerDeps {
    * non-bounce) e `extra` da FONDERE nel triggerInput. PURO (no IO) → testabile.
    * Eseguito dopo il parse MIME, prima del dedup (stesso punto degli altri filtri).
    */
-  messageGate?: (parsed: ParsedMail, rawSource: string) => { dispatch: boolean; extra?: Record<string, unknown> };
+  messageGate?: (
+    parsed: ParsedMail,
+    rawSource: string,
+  ) => { dispatch: boolean; extra?: Record<string, unknown> };
   // ── OAuth2 (Gmail XOAUTH2) — INIETTABILI per test/contract ──
   /** Token OAuth (refresh+access+expiry) del system account. Default: SystemEmailAccountsService. */
   resolveOAuthTokens?: (tenantId: string, accountId: string) => ImapOAuthTokens | null;
@@ -139,18 +152,37 @@ export interface ImapPollerDeps {
   /** Gate "serve refresh?" (leeway su expiry). Default: EmailOAuthService.needsRefresh. */
   oauthNeedsRefresh?: (expiresAt: Date) => boolean;
   /** Persiste l'access token refreshato (encrypted at rest). Default: SystemEmailAccountsService. */
-  updateOAuthAccess?: (args: { tenantId: string; accountId: string; accessToken: string; expiresAt: Date }) => void;
+  updateOAuthAccess?: (args: {
+    tenantId: string;
+    accountId: string;
+    accessToken: string;
+    expiresAt: Date;
+  }) => void;
 }
 
 const defaultResolveOAuthTokens = (tenantId: string, accountId: string): ImapOAuthTokens | null => {
   const t = new SystemEmailAccountsService().resolveOAuthForExecutor(tenantId, accountId);
-  return t ? { accessToken: t.accessToken, refreshToken: t.refreshToken, expiresAt: t.expiresAt, email: t.email } : null;
+  return t
+    ? {
+        accessToken: t.accessToken,
+        refreshToken: t.refreshToken,
+        expiresAt: t.expiresAt,
+        email: t.email,
+      }
+    : null;
 };
-const defaultRefreshOAuthToken = async (refreshToken: string): Promise<{ accessToken: string; expiresAt: Date }> => {
+const defaultRefreshOAuthToken = async (
+  refreshToken: string,
+): Promise<{ accessToken: string; expiresAt: Date }> => {
   const r = await new EmailOAuthService().refreshAccessToken(refreshToken);
   return { accessToken: r.accessToken, expiresAt: r.expiresAt };
 };
-const defaultUpdateOAuthAccess = (args: { tenantId: string; accountId: string; accessToken: string; expiresAt: Date }): void => {
+const defaultUpdateOAuthAccess = (args: {
+  tenantId: string;
+  accountId: string;
+  accessToken: string;
+  expiresAt: Date;
+}): void => {
   new SystemEmailAccountsService().updateOAuthAccessToken(args);
 };
 
@@ -181,9 +213,13 @@ export function startImapPoller(
   let password = typeof node.config.password === 'string' ? node.config.password : '';
   // Non-vuoto → account OAuth2 (Gmail XOAUTH2): niente password, access token per-poll.
   let oauthAccountId = '';
-  const systemAccountId = typeof node.config.systemAccountId === 'string' ? node.config.systemAccountId : '';
+  const systemAccountId =
+    typeof node.config.systemAccountId === 'string' ? node.config.systemAccountId : '';
   if (systemAccountId) {
-    const acct = (deps.resolveSystemAccount ?? defaultResolveSystemAccount)(tenantId, systemAccountId);
+    const acct = (deps.resolveSystemAccount ?? defaultResolveSystemAccount)(
+      tenantId,
+      systemAccountId,
+    );
     if (acct?.authType === 'oauth2') {
       // OAuth2: host/username dall'IMAP config se presente, altrimenti dal preset
       // del provider (Gmail → imap.gmail.com:993). La password resta VUOTA: si usa
@@ -199,7 +235,10 @@ export function startImapPoller(
       username = acct.imap.username;
       password = acct.imap.password ?? '';
     } else {
-      logger.warn({ workflowId: wf.id, systemAccountId }, 'trigger_imap references account without IMAP config');
+      logger.warn(
+        { workflowId: wf.id, systemAccountId },
+        'trigger_imap references account without IMAP config',
+      );
       return null;
     }
   }
@@ -207,7 +246,8 @@ export function startImapPoller(
 
   const mailbox = typeof node.config.mailbox === 'string' ? node.config.mailbox : 'INBOX';
   const interval = clampNumber(node.config.pollIntervalSec, 15, 86_400, 60) * 1000;
-  const filterSubject = typeof node.config.filterSubject === 'string' ? node.config.filterSubject : '';
+  const filterSubject =
+    typeof node.config.filterSubject === 'string' ? node.config.filterSubject : '';
   const filterFrom = typeof node.config.filterFrom === 'string' ? node.config.filterFrom : '';
   // Allowlist mittenti: lista esplicita di indirizzi autorizzati. Stored
   // by chip-list as comma-separated string. Empty/missing = inactive.
@@ -216,7 +256,8 @@ export function startImapPoller(
   const senderAllowlist = parseAllowlist(senderAllowlistRaw);
   const filterTo = typeof node.config.filterTo === 'string' ? node.config.filterTo : '';
   const hasAttachment = String(node.config.hasAttachment ?? 'false') === 'true';
-  const attachmentMime = typeof node.config.attachmentMime === 'string' ? node.config.attachmentMime : '';
+  const attachmentMime =
+    typeof node.config.attachmentMime === 'string' ? node.config.attachmentMime : '';
   // When ON, the poll fetches by IMAP search criterion {seen:false} rather
   // than {uid: lastUidSeen+1:*}. Lets the operator re-trigger a workflow
   // simply by marking an old email UNREAD on the webmail UI — no CLI
@@ -232,7 +273,10 @@ export function startImapPoller(
   // sincrono, niente refresh qui — quello è per-poll). Niente token → non si registra.
   const resolveOAuthTokens = deps.resolveOAuthTokens ?? defaultResolveOAuthTokens;
   if (isOauth && !resolveOAuthTokens(tenantId, oauthAccountId)) {
-    logger.warn({ workflowId: wf.id, systemAccountId }, 'trigger_imap OAuth account without usable tokens — re-link via Settings');
+    logger.warn(
+      { workflowId: wf.id, systemAccountId },
+      'trigger_imap OAuth account without usable tokens — re-link via Settings',
+    );
     return null;
   }
 
@@ -246,14 +290,17 @@ export function startImapPoller(
   const markSeen = deps.markSeen ?? markSeenWithFreshConnection;
 
   // Load persistent cursor.
-  const sqlite = deps.sqlite ?? (getDatabase().sqlite);
-  const stateRow = sqlite.prepare('SELECT last_uid_seen FROM imap_state WHERE workflow_id = ? AND mailbox = ?')
+  const sqlite = deps.sqlite ?? getDatabase().sqlite;
+  const stateRow = sqlite
+    .prepare('SELECT last_uid_seen FROM imap_state WHERE workflow_id = ? AND mailbox = ?')
     .get(wf.id, mailbox) as { last_uid_seen: number } | undefined;
   let lastUidSeen = stateRow?.last_uid_seen ?? 0;
 
   const persistCursor = (newUid: number, err?: string): void => {
     try {
-      sqlite.prepare(`
+      sqlite
+        .prepare(
+          `
         INSERT INTO imap_state (workflow_id, mailbox, last_uid_seen, last_poll_at, last_error, updated_at)
         VALUES (?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'), ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))
         ON CONFLICT(workflow_id, mailbox) DO UPDATE SET
@@ -261,7 +308,9 @@ export function startImapPoller(
           last_poll_at = excluded.last_poll_at,
           last_error = excluded.last_error,
           updated_at = excluded.updated_at
-      `).run(wf.id, mailbox, newUid, err ?? null);
+      `,
+        )
+        .run(wf.id, mailbox, newUid, err ?? null);
     } catch (e) {
       logger.warn({ err: e, workflowId: wf.id }, 'imap_state persist failed (non-fatal)');
     }
@@ -269,7 +318,8 @@ export function startImapPoller(
 
   const checkDup = (messageId: string): boolean => {
     try {
-      const row = sqlite.prepare('SELECT 1 FROM imap_processed_messages WHERE workflow_id = ? AND message_id = ?')
+      const row = sqlite
+        .prepare('SELECT 1 FROM imap_processed_messages WHERE workflow_id = ? AND message_id = ?')
         .get(wf.id, messageId);
       return Boolean(row);
     } catch {
@@ -279,10 +329,16 @@ export function startImapPoller(
 
   const recordProcessed = (messageId: string, uid: number): void => {
     try {
-      sqlite.prepare('INSERT OR IGNORE INTO imap_processed_messages (workflow_id, message_id, uid) VALUES (?, ?, ?)')
+      sqlite
+        .prepare(
+          'INSERT OR IGNORE INTO imap_processed_messages (workflow_id, message_id, uid) VALUES (?, ?, ?)',
+        )
         .run(wf.id, messageId, uid);
     } catch (e) {
-      logger.warn({ err: e, workflowId: wf.id }, 'imap_processed_messages insert failed (non-fatal)');
+      logger.warn(
+        { err: e, workflowId: wf.id },
+        'imap_processed_messages insert failed (non-fatal)',
+      );
     }
   };
 
@@ -295,24 +351,33 @@ export function startImapPoller(
   // gestisce il caso reattivo: un poll fallito con errore auth (token revocato
   // anzitempo) forza il refresh al poll successivo (spec #4).
   const refreshOAuthToken = deps.refreshOAuthToken ?? defaultRefreshOAuthToken;
-  const oauthNeedsRefresh = deps.oauthNeedsRefresh ?? ((exp: Date): boolean => EmailOAuthService.needsRefresh(exp));
+  const oauthNeedsRefresh =
+    deps.oauthNeedsRefresh ?? ((exp: Date): boolean => EmailOAuthService.needsRefresh(exp));
   const updateOAuthAccess = deps.updateOAuthAccess ?? defaultUpdateOAuthAccess;
   let forceTokenRefresh = false;
   const resolveAuth = async (): Promise<ImapAuth> => {
     if (!isOauth) return { user: username, pass: password };
     const tokens = resolveOAuthTokens(tenantId, oauthAccountId);
-    if (!tokens) throw new Error(`OAuth tokens missing for account ${oauthAccountId} — re-link via Settings`);
+    if (!tokens)
+      throw new Error(`OAuth tokens missing for account ${oauthAccountId} — re-link via Settings`);
     let accessToken = tokens.accessToken;
     if (forceTokenRefresh || oauthNeedsRefresh(tokens.expiresAt)) {
       const refreshed = await refreshOAuthToken(tokens.refreshToken);
-      updateOAuthAccess({ tenantId, accountId: oauthAccountId, accessToken: refreshed.accessToken, expiresAt: refreshed.expiresAt });
+      updateOAuthAccess({
+        tenantId,
+        accountId: oauthAccountId,
+        accessToken: refreshed.accessToken,
+        expiresAt: refreshed.expiresAt,
+      });
       accessToken = refreshed.accessToken;
       forceTokenRefresh = false;
     }
     return { user: username, accessToken };
   };
   const isAuthError = (e: unknown): boolean =>
-    /auth|xoauth|invalid_grant|401|unauthor|credential/i.test(e instanceof Error ? e.message : String(e));
+    /auth|xoauth|invalid_grant|401|unauthor|credential/i.test(
+      e instanceof Error ? e.message : String(e),
+    );
 
   const poll = (): void => {
     void (async () => {
@@ -331,7 +396,20 @@ export function startImapPoller(
             // log "polled, found N, matched M, dispatched D, filtered F".
             // Without this, a poll that finds 0 matches looks indistinguishable
             // from a poll that never ran. Federico-grade observability.
-            const stats = { total: 0, matched: 0, dispatched: 0, filteredSubject: 0, filteredFrom: 0, filteredTo: 0, filteredAttachment: 0, filteredGate: 0, rejectedAllowlist: 0, dedup: 0, staleUid: 0, errors: 0 };
+            const stats = {
+              total: 0,
+              matched: 0,
+              dispatched: 0,
+              filteredSubject: 0,
+              filteredFrom: 0,
+              filteredTo: 0,
+              filteredAttachment: 0,
+              filteredGate: 0,
+              rejectedAllowlist: 0,
+              dedup: 0,
+              staleUid: 0,
+              errors: 0,
+            };
             const lock = await client.getMailboxLock(mailbox);
             try {
               // Two fetch modes:
@@ -367,11 +445,9 @@ export function startImapPoller(
               const fetchArg = onlyUnseen
                 ? (fetchRange as number[])
                 : (fetchRange as { uid: string });
-              for await (const message of (
-                fetchExtraOpts
-                  ? client.fetch(fetchArg, fetchQuery, fetchExtraOpts)
-                  : client.fetch(fetchArg, fetchQuery)
-              )) {
+              for await (const message of fetchExtraOpts
+                ? client.fetch(fetchArg, fetchQuery, fetchExtraOpts)
+                : client.fetch(fetchArg, fetchQuery)) {
                 stats.total += 1;
                 // In UNSEEN mode, ignore the UID cursor — the operator can
                 // explicitly re-trigger via "mark as unread", which would
@@ -379,26 +455,51 @@ export function startImapPoller(
                 if (!onlyUnseen && message.uid <= lastUidSeen) continue;
                 const subjectEnv = message.envelope?.subject ?? '';
                 const fromEnv = message.envelope?.from?.[0]?.address ?? '';
-                const toEnv = (message.envelope?.to ?? []).map((a) => a.address).filter(Boolean).join(', ');
+                const toEnv = (message.envelope?.to ?? [])
+                  .map((a) => a.address)
+                  .filter(Boolean)
+                  .join(', ');
 
                 // Cheap envelope-level filters first — skip parsing if obviously irrelevant.
                 if (subjectRegex && !subjectRegex.test(subjectEnv)) {
-                  logger.info({ workflowId: wf.id, uid: message.uid, subject: subjectEnv, filter: filterSubject }, 'IMAP trigger: skipped (subject regex mismatch)');
+                  logger.info(
+                    {
+                      workflowId: wf.id,
+                      uid: message.uid,
+                      subject: subjectEnv,
+                      filter: filterSubject,
+                    },
+                    'IMAP trigger: skipped (subject regex mismatch)',
+                  );
                   stats.filteredSubject += 1;
-                  if (!onlyUnseen) lastUidSeen = message.uid; continue;
+                  if (!onlyUnseen) lastUidSeen = message.uid;
+                  continue;
                 }
                 if (fromRegex && !fromRegex.test(fromEnv)) {
-                  logger.info({ workflowId: wf.id, uid: message.uid, from: fromEnv, filter: filterFrom }, 'IMAP trigger: skipped (from regex mismatch)');
+                  logger.info(
+                    { workflowId: wf.id, uid: message.uid, from: fromEnv, filter: filterFrom },
+                    'IMAP trigger: skipped (from regex mismatch)',
+                  );
                   stats.filteredFrom += 1;
-                  if (!onlyUnseen) lastUidSeen = message.uid; continue;
+                  if (!onlyUnseen) lastUidSeen = message.uid;
+                  continue;
                 }
                 // Allowlist security check — applied AFTER regex (regex is
                 // functional filter, allowlist is the hard security gate).
                 // Rejection is logged at WARN level so admins can detect
                 // probe attempts (someone discovered the inbox & sent mail).
-                if (senderAllowlist.length > 0 && !senderAllowlist.includes(fromEnv.toLowerCase())) {
+                if (
+                  senderAllowlist.length > 0 &&
+                  !senderAllowlist.includes(fromEnv.toLowerCase())
+                ) {
                   logger.warn(
-                    { workflowId: wf.id, uid: message.uid, from: fromEnv, subject: subjectEnv, allowlistSize: senderAllowlist.length },
+                    {
+                      workflowId: wf.id,
+                      uid: message.uid,
+                      from: fromEnv,
+                      subject: subjectEnv,
+                      allowlistSize: senderAllowlist.length,
+                    },
                     'IMAP trigger: sender REJECTED by allowlist',
                   );
                   stats.rejectedAllowlist += 1;
@@ -406,14 +507,21 @@ export function startImapPoller(
                   continue;
                 }
                 if (toRegex && !toRegex.test(toEnv)) {
-                  logger.info({ workflowId: wf.id, uid: message.uid, to: toEnv, filter: filterTo }, 'IMAP trigger: skipped (to regex mismatch)');
+                  logger.info(
+                    { workflowId: wf.id, uid: message.uid, to: toEnv, filter: filterTo },
+                    'IMAP trigger: skipped (to regex mismatch)',
+                  );
                   stats.filteredTo += 1;
-                  if (!onlyUnseen) lastUidSeen = message.uid; continue;
+                  if (!onlyUnseen) lastUidSeen = message.uid;
+                  continue;
                 }
 
                 // Parse full MIME via mailparser.
                 if (!message.source) {
-                  logger.warn({ workflowId: wf.id, uid: message.uid }, 'IMAP fetch returned no source — skipping');
+                  logger.warn(
+                    { workflowId: wf.id, uid: message.uid },
+                    'IMAP fetch returned no source — skipping',
+                  );
                   stats.errors += 1;
                   if (!onlyUnseen) lastUidSeen = message.uid;
                   continue;
@@ -432,16 +540,31 @@ export function startImapPoller(
 
                 // hasAttachment / MIME filter post-parse.
                 if (hasAttachment && attachments.length === 0) {
-                  logger.info({ workflowId: wf.id, uid: message.uid, subject: subjectEnv, totalAttachments: parsed.attachments?.length ?? 0, mimeFilter: attachmentMime }, 'IMAP trigger: skipped (hasAttachment filter — no matching attachments)');
+                  logger.info(
+                    {
+                      workflowId: wf.id,
+                      uid: message.uid,
+                      subject: subjectEnv,
+                      totalAttachments: parsed.attachments?.length ?? 0,
+                      mimeFilter: attachmentMime,
+                    },
+                    'IMAP trigger: skipped (hasAttachment filter — no matching attachments)',
+                  );
                   stats.filteredAttachment += 1;
-                  if (!onlyUnseen) lastUidSeen = message.uid; continue;
+                  if (!onlyUnseen) lastUidSeen = message.uid;
+                  continue;
                 }
 
                 // messageGate (es. trigger_email_bounce): scarta i non-bounce + arricchisce
                 // il payload. Stesso punto/pattern degli altri filtri post-parse.
-                const gate = deps.messageGate?.(parsed, message.source.toString('utf-8')) ?? { dispatch: true };
+                const gate = deps.messageGate?.(parsed, message.source.toString('utf-8')) ?? {
+                  dispatch: true,
+                };
                 if (!gate.dispatch) {
-                  logger.info({ workflowId: wf.id, uid: message.uid }, 'IMAP trigger: skipped (messageGate)');
+                  logger.info(
+                    { workflowId: wf.id, uid: message.uid },
+                    'IMAP trigger: skipped (messageGate)',
+                  );
                   stats.filteredGate += 1;
                   if (!onlyUnseen) lastUidSeen = message.uid;
                   continue;
@@ -451,7 +574,10 @@ export function startImapPoller(
                 // Message-ID is the RFC-defined global identifier.
                 const messageId = parsed.messageId ?? `uid-${wf.id}-${message.uid.toString()}`;
                 if (checkDup(messageId)) {
-                  logger.info({ workflowId: wf.id, uid: message.uid, messageId }, 'IMAP trigger: skipped (already processed — dedup)');
+                  logger.info(
+                    { workflowId: wf.id, uid: message.uid, messageId },
+                    'IMAP trigger: skipped (already processed — dedup)',
+                  );
                   stats.dedup += 1;
                   if (!onlyUnseen) lastUidSeen = message.uid;
                   continue;
@@ -462,7 +588,8 @@ export function startImapPoller(
                 const toAddrs = collectAddresses(parsed.to);
                 const ccAddrs = collectAddresses(parsed.cc);
                 const textBody = (parsed.text ?? '').slice(0, MAX_BODY_CHARS);
-                const htmlBody = typeof parsed.html === 'string' ? parsed.html.slice(0, MAX_BODY_CHARS) : '';
+                const htmlBody =
+                  typeof parsed.html === 'string' ? parsed.html.slice(0, MAX_BODY_CHARS) : '';
 
                 const runResult = await deps.dispatchRun({
                   workflowId: wf.id,
@@ -493,17 +620,27 @@ export function startImapPoller(
                 // outside the dedup cache so the next poll retries it.
                 // 'always' mode: same behavior as before (mark and advance always).
                 const runSucceeded = runResult.status === 'success' && runResult.errorCount === 0;
-                const advance = markSeenMode === 'always' || (markSeenMode === 'on-success' && runSucceeded) || (markSeenMode === 'never' && runSucceeded);
+                const advance =
+                  markSeenMode === 'always' ||
+                  (markSeenMode === 'on-success' && runSucceeded) ||
+                  (markSeenMode === 'never' && runSucceeded);
                 if (advance) {
                   recordProcessed(messageId, message.uid);
                   if (!onlyUnseen) lastUidSeen = message.uid;
                   persistCursor(lastUidSeen);
                 } else {
-                  logger.info({ workflowId: wf.id, uid: message.uid, status: runResult.status, errors: runResult.errorCount }, 'IMAP trigger: cursor NOT advanced (run failed, will retry on next poll)');
+                  logger.info(
+                    {
+                      workflowId: wf.id,
+                      uid: message.uid,
+                      status: runResult.status,
+                      errors: runResult.errorCount,
+                    },
+                    'IMAP trigger: cursor NOT advanced (run failed, will retry on next poll)',
+                  );
                 }
                 const shouldMarkSeen =
-                  markSeenMode === 'always' ||
-                  (markSeenMode === 'on-success' && runSucceeded);
+                  markSeenMode === 'always' || (markSeenMode === 'on-success' && runSucceeded);
                 if (shouldMarkSeen) {
                   // Don't reuse the poll's IMAP client — it has been idle
                   // for the entire workflow duration (could be 47s+ for WF1
@@ -524,7 +661,15 @@ export function startImapPoller(
                     mode: markSeenMode,
                   });
                 } else if (markSeenMode === 'on-success' && !runSucceeded) {
-                  logger.info({ workflowId: wf.id, uid: message.uid, status: runResult.status, errors: runResult.errorCount }, 'IMAP trigger: email left UNREAD (run failed, on-success mode)');
+                  logger.info(
+                    {
+                      workflowId: wf.id,
+                      uid: message.uid,
+                      status: runResult.status,
+                      errors: runResult.errorCount,
+                    },
+                    'IMAP trigger: email left UNREAD (run failed, on-success mode)',
+                  );
                 }
               }
             } finally {
@@ -547,7 +692,10 @@ export function startImapPoller(
         // Token OAuth revocato/scaduto anzitempo → forza il refresh al prossimo poll (spec #4).
         if (isOauth && isAuthError(err)) forceTokenRefresh = true;
         persistCursor(lastUidSeen, errMsg);
-        logger.warn({ err, workflowId: wf.id, breaker: breakerName }, 'IMAP poll skipped/failed (breaker)');
+        logger.warn(
+          { err, workflowId: wf.id, breaker: breakerName },
+          'IMAP poll skipped/failed (breaker)',
+        );
       }
     })();
   };
@@ -555,6 +703,9 @@ export function startImapPoller(
   // First poll immediately, then every `interval` ms.
   poll();
   const timer = setInterval(poll, interval);
-  logger.info({ workflowId: wf.id, host, mailbox, lastUidSeen }, 'IMAP poller registered (v2: mailparser + persistent cursor)');
+  logger.info(
+    { workflowId: wf.id, host, mailbox, lastUidSeen },
+    'IMAP poller registered (v2: mailparser + persistent cursor)',
+  );
   return { workflowId: wf.id, timer, lastUidSeen };
 }

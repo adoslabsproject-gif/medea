@@ -28,7 +28,9 @@ describe('tassonomia delle categorie del catalogo', () => {
   it('ogni categoria usata negli override è una categoria dichiarata', () => {
     const known = new Set(Object.keys(CATEGORY_LABELS));
     const unknown = [...new Set(Object.values(EXPLICIT_CATEGORY))].filter((c) => !known.has(c));
-    expect(unknown, `categorie non dichiarate in CATEGORY_LABELS: ${unknown.join(', ')}`).toEqual([]);
+    expect(unknown, `categorie non dichiarate in CATEGORY_LABELS: ${unknown.join(', ')}`).toEqual(
+      [],
+    );
   });
 
   it('gli override non sono vuoti (sanity: la mappa non è stata svuotata)', () => {

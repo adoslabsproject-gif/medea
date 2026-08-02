@@ -98,7 +98,9 @@ describe('🚨 redactText — single string', () => {
   });
 
   it('🚨 multi-class string → tutti classes contati', () => {
-    const out = r.redactText('Email mario@x.it CF RSSMRA80A01H501Z IBAN IT60X0542811101000000123456');
+    const out = r.redactText(
+      'Email mario@x.it CF RSSMRA80A01H501Z IBAN IT60X0542811101000000123456',
+    );
     expect(out.classes).toEqual(expect.arrayContaining(['email', 'codice_fiscale', 'iban']));
     expect(out.counts.email).toBe(1);
     expect(out.counts.codice_fiscale).toBe(1);
@@ -195,7 +197,16 @@ describe('🚨 regression: PII non leak per training set', () => {
     `;
     const out = r.redactText(prompt);
     // Tutte le classi rilevate
-    expect(out.classes).toEqual(expect.arrayContaining(['email', 'partita_iva', 'codice_fiscale', 'iban', 'phone', 'credit_card']));
+    expect(out.classes).toEqual(
+      expect.arrayContaining([
+        'email',
+        'partita_iva',
+        'codice_fiscale',
+        'iban',
+        'phone',
+        'credit_card',
+      ]),
+    );
     // 🚨 nessuna PII originale resta
     expect(out.redacted).not.toContain('mario.rossi@cliente.it');
     expect(out.redacted).not.toContain('IT12345678901');

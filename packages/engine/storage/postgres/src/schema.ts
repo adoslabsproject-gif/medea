@@ -1,4 +1,14 @@
-import { pgTable, text, integer, boolean, timestamp, jsonb, bigint, index, uuid } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  text,
+  integer,
+  boolean,
+  timestamp,
+  jsonb,
+  bigint,
+  index,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const tenants = pgTable(
@@ -18,7 +28,9 @@ export const users = pgTable(
   'users',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
     email: text('email').notNull(),
     displayName: text('display_name').notNull(),
     passwordHash: text('password_hash').notNull(),
@@ -37,7 +49,9 @@ export const workflows = pgTable(
   'workflows',
   {
     id: text('id').primaryKey(),
-    tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     description: text('description'),
     enabled: boolean('enabled').notNull().default(false),
@@ -61,9 +75,15 @@ export const runs = pgTable(
   'runs',
   {
     id: text('id').primaryKey(),
-    workflowId: text('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
-    tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
-    status: text('status', { enum: ['pending', 'running', 'success', 'error', 'paused', 'cancelled'] }).notNull(),
+    workflowId: text('workflow_id')
+      .notNull()
+      .references(() => workflows.id, { onDelete: 'cascade' }),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    status: text('status', {
+      enum: ['pending', 'running', 'success', 'error', 'paused', 'cancelled'],
+    }).notNull(),
     triggerType: text('trigger_type'),
     triggerPayloadJson: jsonb('trigger_payload_json'),
     input: text('input').notNull().default(''),
@@ -81,37 +101,35 @@ export const runs = pgTable(
   }),
 );
 
-export const credentials = pgTable(
-  'credentials',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
-    name: text('name').notNull(),
-    provider: text('provider').notNull(),
-    ciphertext: text('ciphertext').notNull(),
-    nonce: text('nonce').notNull(),
-    metadataJson: jsonb('metadata_json'),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-    createdBy: uuid('created_by'),
-  },
-);
+export const credentials = pgTable('credentials', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id')
+    .notNull()
+    .references(() => tenants.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  provider: text('provider').notNull(),
+  ciphertext: text('ciphertext').notNull(),
+  nonce: text('nonce').notNull(),
+  metadataJson: jsonb('metadata_json'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  createdBy: uuid('created_by'),
+});
 
-export const auditLog = pgTable(
-  'audit_log',
-  {
-    id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
-    tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
-    actorId: uuid('actor_id'),
-    action: text('action').notNull(),
-    resourceType: text('resource_type').notNull(),
-    resourceId: text('resource_id'),
-    metadataJson: jsonb('metadata_json'),
-    prevHash: text('prev_hash'),
-    hash: text('hash').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-);
+export const auditLog = pgTable('audit_log', {
+  id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: uuid('tenant_id')
+    .notNull()
+    .references(() => tenants.id, { onDelete: 'cascade' }),
+  actorId: uuid('actor_id'),
+  action: text('action').notNull(),
+  resourceType: text('resource_type').notNull(),
+  resourceId: text('resource_id'),
+  metadataJson: jsonb('metadata_json'),
+  prevHash: text('prev_hash'),
+  hash: text('hash').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const usersRelations = relations(users, ({ one }) => ({
   tenant: one(tenants, { fields: [users.tenantId], references: [tenants.id] }),

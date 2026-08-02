@@ -14,7 +14,11 @@ export function toStr(v: unknown): string {
   if (typeof v === 'number' || typeof v === 'boolean' || typeof v === 'bigint') return String(v);
   if (v === null || v === undefined) return '';
   // object/function/symbol: niente '[object Object]' — serializza in modo sicuro
-  try { return JSON.stringify(v) ?? ''; } catch { return ''; }
+  try {
+    return JSON.stringify(v) ?? '';
+  } catch {
+    return '';
+  }
 }
 
 export function toNum(v: unknown, def: number): number {
@@ -50,7 +54,10 @@ export function newClientId(): string {
  * senza store (alcuni test) ripiega su base64 inline — l'handle BinaryData
  * resta valido per i nodi a valle in entrambi i casi.
  */
-export async function saveMedia(ctx: NodeExecutionContext, media: ComfyFetchedMedia): Promise<BinaryData> {
+export async function saveMedia(
+  ctx: NodeExecutionContext,
+  media: ComfyFetchedMedia,
+): Promise<BinaryData> {
   if (ctx.writeBinary) {
     return ctx.writeBinary(media.bytes, { mimeType: media.mimeType, fileName: media.filename });
   }

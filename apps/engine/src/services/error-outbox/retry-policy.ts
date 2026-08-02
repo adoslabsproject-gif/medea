@@ -14,9 +14,7 @@ export const OUTBOX_BASE_DELAY_MS = 30_000; // 30s
 /** Cap del ritardo (un poison non aspetta giorni tra un tentativo e l'altro). */
 export const OUTBOX_MAX_DELAY_MS = 3_600_000; // 1h
 
-export type RetryDecision =
-  | { kind: 'retry'; nextAttemptAt: string }
-  | { kind: 'dead' };
+export type RetryDecision = { kind: 'retry'; nextAttemptAt: string } | { kind: 'dead' };
 
 /**
  * Decide il destino di un evento dopo un fallimento di dispatch.

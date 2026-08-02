@@ -47,7 +47,9 @@ async function hit(app: Hono, path: string, ip: string): Promise<number> {
   return res.status;
 }
 
-beforeEach(() => { _resetRateLimitState(); });
+beforeEach(() => {
+  _resetRateLimitState();
+});
 
 describe('rate-limit webhook — flood da un IP → 429', () => {
   it('le prime CAP richieste passano, la CAP+1 → 429', async () => {
@@ -61,14 +63,16 @@ describe('rate-limit webhook — flood da un IP → 429', () => {
   it('il 429 ha body strutturato rate_limit_exceeded', async () => {
     const app = buildApp();
     for (let i = 0; i < CAP; i += 1) await hit(app, '/webhooks/wf-x/t', '9.9.9.9');
-    const res = await app.request('/webhooks/wf-x/t', { headers: { 'cf-connecting-ip': '9.9.9.9' } });
+    const res = await app.request('/webhooks/wf-x/t', {
+      headers: { 'cf-connecting-ip': '9.9.9.9' },
+    });
     expect(res.status).toBe(429);
     expect(await res.json()).toMatchObject({ error: 'rate_limit_exceeded' });
   });
 });
 
 describe('rate-limit webhook — bucket indipendenti', () => {
-  it('🚨 IP diversi sullo stesso webhook → indipendenti (un provider non affama l\'altro)', async () => {
+  it("🚨 IP diversi sullo stesso webhook → indipendenti (un provider non affama l'altro)", async () => {
     const app = buildApp();
     // IP A esaurisce il suo bucket
     for (let i = 0; i < CAP; i += 1) await hit(app, '/webhooks/wf-1/t', '1.1.1.1');

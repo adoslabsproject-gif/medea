@@ -16,7 +16,11 @@
  * e community-node-sandbox.ts. Task #262 traccia il consolidamento.
  */
 
-import { CircuitBreaker, CircuitOpenError as SharedCircuitOpenError, type CircuitBreakerOptions } from '@medea/engine-shared';
+import {
+  CircuitBreaker,
+  CircuitOpenError as SharedCircuitOpenError,
+  type CircuitBreakerOptions,
+} from '@medea/engine-shared';
 import { CircuitOpenError as NodeCircuitOpenError } from './node-error.js';
 
 const breakers = new Map<string, CircuitBreaker>();
@@ -28,7 +32,11 @@ export interface HostBreakerOptions extends Partial<CircuitBreakerOptions> {
 
 /** Estrae l'host da un URL. Ritorna 'unknown' se il parse fallisce. */
 export function hostOf(url: string): string {
-  try { return new URL(url).host; } catch { return 'unknown'; }
+  try {
+    return new URL(url).host;
+  } catch {
+    return 'unknown';
+  }
 }
 
 /**

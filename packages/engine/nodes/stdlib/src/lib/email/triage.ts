@@ -80,10 +80,20 @@ export interface TriageOptions {
 }
 
 const URGENCY_KEYWORDS = Object.freeze([
-  'urgent', 'urgente', 'asap', 'immediato', 'subito',
-  'scadenza', 'scaduto', 'scaduta', 'in scadenza',
-  'importante', 'critico', 'attenzione',
-  'sollecito', 'prima possibile',
+  'urgent',
+  'urgente',
+  'asap',
+  'immediato',
+  'subito',
+  'scadenza',
+  'scaduto',
+  'scaduta',
+  'in scadenza',
+  'importante',
+  'critico',
+  'attenzione',
+  'sollecito',
+  'prima possibile',
 ] as const);
 
 const SUBJECT_PREFIX_RE = /^(?:\s*(?:re|r|i|fwd?|fw|tr|aw)\s*[:-]\s*)+/i;
@@ -109,17 +119,18 @@ export function triageEmail(input: RawEmail, opts: TriageOptions = {}): TriagedE
   }
   const bodyMaxChars = opts.bodyMaxChars ?? 2000;
 
-  const { senderName, senderEmail } = parseFromHeader(input.from ?? readHeader(input.headers, 'From'));
-  const senderDomain = senderEmail ? senderEmail.split('@').pop() ?? null : null;
+  const { senderName, senderEmail } = parseFromHeader(
+    input.from ?? readHeader(input.headers, 'From'),
+  );
+  const senderDomain = senderEmail ? (senderEmail.split('@').pop() ?? null) : null;
 
   const subjectRaw = input.subject ?? readHeader(input.headers, 'Subject') ?? '';
   const subjectClean = cleanSubject(subjectRaw);
 
   const rawBody = input.bodyText ?? input.body ?? '';
   const plainBody = htmlToTextLite(rawBody);
-  const bodyTextShort = plainBody.length > bodyMaxChars
-    ? plainBody.slice(0, bodyMaxChars).trimEnd() + '…'
-    : plainBody;
+  const bodyTextShort =
+    plainBody.length > bodyMaxChars ? plainBody.slice(0, bodyMaxChars).trimEnd() + '…' : plainBody;
 
   return {
     senderName,
@@ -141,7 +152,10 @@ export function triageEmail(input: RawEmail, opts: TriageOptions = {}): TriagedE
 // Internals — pure helpers
 // ────────────────────────────────────────────────────────────────────────────
 
-export function parseFromHeader(raw: string | undefined): { senderName: string | null; senderEmail: string | null } {
+export function parseFromHeader(raw: string | undefined): {
+  senderName: string | null;
+  senderEmail: string | null;
+} {
   if (typeof raw !== 'string' || raw.length === 0) return { senderName: null, senderEmail: null };
   // Forms:
   //   "Mario Rossi <mario.rossi@x.it>"
@@ -208,10 +222,15 @@ function summariseAttachments(att: RawEmail['attachments']): TriagedEmail['attac
   let bytes = 0;
   const mimes = new Set<string>();
   for (const a of att) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Zod-parsed config: TS non puo` narrow runtime shape; Zod-parsed mix string|number → safe per design
-    if (typeof a?.sizeBytes === 'number' && a.sizeBytes > 0) bytes += a.sizeBytes;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call -- Zod-parsed config: TS non puo` narrow runtime shape; Zod-parsed input → safe per design; Zod-parsed function → safe per design
-    if (typeof a?.mimeType === 'string' && a.mimeType.length > 0) mimes.add(a.mimeType.toLowerCase());
+    // I campi si leggono una volta in variabili tipate `unknown`: da lì in poi
+    // è il narrowing di TypeScript a rispondere del tipo, e il resto della
+    // funzione non ha più bisogno di essere esentato dai controlli.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- forma a runtime non nota: la garantisce Zod a monte
+    const sizeBytes: unknown = a?.sizeBytes;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- forma a runtime non nota: la garantisce Zod a monte
+    const mimeType: unknown = a?.mimeType;
+    if (typeof sizeBytes === 'number' && sizeBytes > 0) bytes += sizeBytes;
+    if (typeof mimeType === 'string' && mimeType.length > 0) mimes.add(mimeType.toLowerCase());
   }
   return { count: att.length, bytes, mimeTypes: Object.freeze([...mimes]) };
 }
@@ -226,7 +245,10 @@ export function guessLanguage(body: string): TriagedEmail['languageGuess'] {
   for (const lang of Object.keys(LANG_STOPWORDS) as (keyof typeof LANG_STOPWORDS)[]) {
     const sw = new Set<string>(LANG_STOPWORDS[lang] as readonly string[]);
     const score = words.reduce((acc, w) => acc + (sw.has(w) ? 1 : 0), 0);
-    if (score > bestScore) { bestScore = score; bestLang = lang; }
+    if (score > bestScore) {
+      bestScore = score;
+      bestLang = lang;
+    }
   }
   return bestScore >= 3 ? bestLang : null;
 }
@@ -242,9 +264,7 @@ function detectUrgency(text: string): readonly string[] {
 
 function detectPec(headers: RawEmail['headers']): boolean {
   return Boolean(
-     
     readHeader(headers, 'X-Trasporto') ||
-     
     readHeader(headers, 'X-Ricevuta') ||
     readHeader(headers, 'X-Riferimento-Message-ID'),
   );
@@ -252,9 +272,7 @@ function detectPec(headers: RawEmail['headers']): boolean {
 
 function detectNewsletter(headers: RawEmail['headers']): boolean {
   return Boolean(
-     
     readHeader(headers, 'List-Unsubscribe') ||
-     
     readHeader(headers, 'List-ID') ||
     readHeader(headers, 'Precedence'),
   );

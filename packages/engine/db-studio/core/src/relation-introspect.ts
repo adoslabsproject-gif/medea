@@ -13,12 +13,18 @@ import type { Relation, RelationOnDelete } from './index.js';
  *  SET_NULL, NO_ACTION nei *_desc). Sconosciuto → 'no action' (default SQL). */
 export function mapOnDeleteAction(raw: string | null | undefined): RelationOnDelete {
   switch ((raw ?? '').toUpperCase().trim().replace(/_/gu, ' ')) {
-    case 'CASCADE': return 'cascade';
-    case 'RESTRICT': return 'restrict';
-    case 'SET NULL': return 'set null';
-    case 'SET DEFAULT': return 'set default';
-    case 'NO ACTION': return 'no action';
-    default: return 'no action';
+    case 'CASCADE':
+      return 'cascade';
+    case 'RESTRICT':
+      return 'restrict';
+    case 'SET NULL':
+      return 'set null';
+    case 'SET DEFAULT':
+      return 'set default';
+    case 'NO ACTION':
+      return 'no action';
+    default:
+      return 'no action';
   }
 }
 

@@ -60,7 +60,9 @@ export interface NormalizedWhatsAppStatus {
 const MEDIA_TYPES = new Set(['image', 'document', 'audio', 'video', 'sticker']);
 
 function asRecord(v: unknown): Record<string, unknown> | null {
-  return v !== null && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+  return v !== null && typeof v === 'object' && !Array.isArray(v)
+    ? (v as Record<string, unknown>)
+    : null;
 }
 
 function asString(v: unknown): string | null {
@@ -108,7 +110,11 @@ function extractInteractive(msg: Record<string, unknown>): { id: string; title: 
 }
 
 /** Corpo testuale unificato: text.body, caption media, titolo reply, emoji reaction. */
-function extractText(msg: Record<string, unknown>, type: string, interactive: { id: string; title: string } | null): string | null {
+function extractText(
+  msg: Record<string, unknown>,
+  type: string,
+  interactive: { id: string; title: string } | null,
+): string | null {
   if (type === 'text') {
     const t = asRecord(msg.text);
     return t ? asString(t.body) : null;
@@ -164,7 +170,7 @@ export function extractWhatsAppEvents(payload: unknown): ExtractedWhatsAppEvents
       if (!value) continue;
 
       const metadata = asRecord(value.metadata);
-      const phoneNumberId = metadata ? asString(metadata.phone_number_id) ?? '' : '';
+      const phoneNumberId = metadata ? (asString(metadata.phone_number_id) ?? '') : '';
       const displayPhoneNumber = metadata ? asString(metadata.display_phone_number) : null;
 
       // contacts[] è parallelo a messages[] solo in teoria; in pratica Meta

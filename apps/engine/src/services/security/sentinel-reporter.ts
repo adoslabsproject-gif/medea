@@ -74,7 +74,10 @@ export async function reportSecurityEvent(ev: SecurityEvent): Promise<void> {
       signal: controller.signal,
     });
     if (!res.ok) {
-      log.warn?.({ status: res.status, eventType: ev.eventType }, '[SENTINEL] portal returned non-2xx');
+      log.warn?.(
+        { status: res.status, eventType: ev.eventType },
+        '[SENTINEL] portal returned non-2xx',
+      );
       return;
     }
     log.info?.({ eventType: ev.eventType, severity: ev.severity }, '[SENTINEL] event reported');

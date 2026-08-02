@@ -58,7 +58,6 @@ vi.mock('@/lib/logger.js');
 const { createTestNodeRoutes } = await import('./test-node.js');
 
 function makeApp(auth: unknown = { userId: 'u-1', role: 'editor' }) {
-   
   const app: any = new Hono();
   app.use('*', async (c: { set: (k: string, v: unknown) => void }, next: () => Promise<void>) => {
     c.set('auth', auth);
@@ -81,7 +80,8 @@ describe('🚨 POST /workflows/:id/test-node/:nodeId — auth', () => {
   it('🚨 no auth → 401', async () => {
     const app = makeApp(null);
     const res = await app.request('/workflows/wf-1/test-node/node-1', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({}),
     });
     expect(res.status).toBe(401);
@@ -93,7 +93,8 @@ describe('🚨 workflow lookup', () => {
     workflowsGetMock.mockResolvedValue(null);
     const app = makeApp();
     const res = await app.request('/workflows/ghost/test-node/n1', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({}),
     });
     expect(res.status).toBe(404);
@@ -101,11 +102,14 @@ describe('🚨 workflow lookup', () => {
 
   it('🚨 nodeId non in workflow → 404', async () => {
     workflowsGetMock.mockResolvedValue({
-      id: 'wf-1', nodes: [{ id: 'other' }], edges: [],
+      id: 'wf-1',
+      nodes: [{ id: 'other' }],
+      edges: [],
     });
     const app = makeApp();
     const res = await app.request('/workflows/wf-1/test-node/missing', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({}),
     });
     expect(res.status).toBe(404);
@@ -113,12 +117,15 @@ describe('🚨 workflow lookup', () => {
 
   it('🚨 defId sconosciuto → 400', async () => {
     workflowsGetMock.mockResolvedValue({
-      id: 'wf-1', nodes: [{ id: 'n1', defId: 'unknown_node' }], edges: [],
+      id: 'wf-1',
+      nodes: [{ id: 'n1', defId: 'unknown_node' }],
+      edges: [],
     });
     resolveNodeModuleMock.mockReturnValue(null);
     const app = makeApp();
     const res = await app.request('/workflows/wf-1/test-node/n1', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({}),
     });
     expect(res.status).toBe(400);
@@ -143,80 +150,99 @@ describe('🚨 carriedInput priority', () => {
     pinsGetMock.mockReturnValue({ enabled: true, output: { from: 'pin' } });
     const app = makeApp();
     await app.request('/workflows/wf-1/test-node/n1', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ triggerInput: { from: 'body' } }),
     });
-    expect(executeNodeMock).toHaveBeenCalledWith(expect.objectContaining({
-      carriedInput: { from: 'body' },
-    }));
+    expect(executeNodeMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        carriedInput: { from: 'body' },
+      }),
+    );
   });
 
   it('🚨 no triggerInput + upstream pin enabled → usa pin', async () => {
     pinsGetMock.mockReturnValue({ enabled: true, output: { from: 'pin' } });
     const app = makeApp();
     await app.request('/workflows/wf-1/test-node/n1', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({}),
     });
-    expect(executeNodeMock).toHaveBeenCalledWith(expect.objectContaining({
-      carriedInput: { from: 'pin' },
-    }));
+    expect(executeNodeMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        carriedInput: { from: 'pin' },
+      }),
+    );
   });
 
   it('🚨 pin disabled → fallback {}', async () => {
     pinsGetMock.mockReturnValue({ enabled: false, output: { from: 'pin' } });
     const app = makeApp();
     await app.request('/workflows/wf-1/test-node/n1', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({}),
     });
-    expect(executeNodeMock).toHaveBeenCalledWith(expect.objectContaining({
-      carriedInput: {},
-    }));
+    expect(executeNodeMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        carriedInput: {},
+      }),
+    );
   });
 
   it('🚨 no pin esistente → fallback {}', async () => {
     pinsGetMock.mockReturnValue(null);
     const app = makeApp();
     await app.request('/workflows/wf-1/test-node/n1', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({}),
     });
-    expect(executeNodeMock).toHaveBeenCalledWith(expect.objectContaining({
-      carriedInput: {},
-    }));
+    expect(executeNodeMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        carriedInput: {},
+      }),
+    );
   });
 });
 
 describe('🚨 audit log su success + error', () => {
   beforeEach(() => {
     workflowsGetMock.mockResolvedValue({
-      id: 'wf-1', nodes: [{ id: 'n1', defId: 'action_http', config: {} }], edges: [],
+      id: 'wf-1',
+      nodes: [{ id: 'n1', defId: 'action_http', config: {} }],
+      edges: [],
     });
     resolveNodeModuleMock.mockReturnValue({});
   });
 
   it('🚨 success → audit append workflow.test_node + actorId', async () => {
     executeNodeMock.mockResolvedValue({
-      output: { ok: true }, step: { status: 'completed' },
+      output: { ok: true },
+      step: { status: 'completed' },
     });
     const app = makeApp();
     await app.request('/workflows/wf-1/test-node/n1', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({}),
     });
-    expect(auditAppendMock).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'workflow.test_node',
-      actorId: 'u-1',
-      resourceId: 'wf-1',
-    }));
+    expect(auditAppendMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'workflow.test_node',
+        actorId: 'u-1',
+        resourceId: 'wf-1',
+      }),
+    );
   });
 
   it('🚨 execute throw → 500 + error msg (NO crash route)', async () => {
     executeNodeMock.mockRejectedValue(new Error('node crashed'));
     const app = makeApp();
     const res = await app.request('/workflows/wf-1/test-node/n1', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({}),
     });
     expect(res.status).toBe(500);
@@ -229,7 +255,8 @@ describe('🚨 ephemeral test-node (draft non salvata)', () => {
   it('🚨 no auth → 401', async () => {
     const app = makeApp(null);
     const res = await app.request('/workflows/test-node-ephemeral', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ nodeId: 'n1', nodes: [{ id: 'n1', defId: 'x' }] }),
     });
     expect(res.status).toBe(401);
@@ -238,7 +265,8 @@ describe('🚨 ephemeral test-node (draft non salvata)', () => {
   it('🚨 nodeId non in draft.nodes → 404', async () => {
     const app = makeApp();
     const res = await app.request('/workflows/test-node-ephemeral', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         nodeId: 'ghost',
         nodes: [{ id: 'n1', defId: 'x' }],
@@ -251,7 +279,8 @@ describe('🚨 ephemeral test-node (draft non salvata)', () => {
     resolveNodeModuleMock.mockReturnValue(null);
     const app = makeApp();
     const res = await app.request('/workflows/test-node-ephemeral', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         nodeId: 'n1',
         nodes: [{ id: 'n1', defId: 'unknown' }],
@@ -263,11 +292,13 @@ describe('🚨 ephemeral test-node (draft non salvata)', () => {
   it('🚨 success → ephemeral:true + runId + audit', async () => {
     resolveNodeModuleMock.mockReturnValue({});
     executeNodeMock.mockResolvedValue({
-      output: { result: 1 }, step: { status: 'completed' },
+      output: { result: 1 },
+      step: { status: 'completed' },
     });
     const app = makeApp();
     const res = await app.request('/workflows/test-node-ephemeral', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         nodeId: 'n1',
         nodes: [{ id: 'n1', defId: 'action_http', config: {} }],
@@ -277,10 +308,12 @@ describe('🚨 ephemeral test-node (draft non salvata)', () => {
     const body = await res.json();
     expect(body.ephemeral).toBe(true);
     expect(body.runId).toMatch(/^ephemeral-/);
-    expect(auditAppendMock).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'workflow.test_node_ephemeral',
-      resourceId: '__ephemeral__',
-    }));
+    expect(auditAppendMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'workflow.test_node_ephemeral',
+        resourceId: '__ephemeral__',
+      }),
+    );
   });
 
   it('🚨 error → AUDIT comunque scritto (anti-shadow IT)', async () => {
@@ -288,16 +321,19 @@ describe('🚨 ephemeral test-node (draft non salvata)', () => {
     executeNodeMock.mockRejectedValue(new Error('eph fail'));
     const app = makeApp();
     const res = await app.request('/workflows/test-node-ephemeral', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         nodeId: 'n1',
         nodes: [{ id: 'n1', defId: 'action_http', config: {} }],
       }),
     });
     expect(res.status).toBe(500);
-    expect(auditAppendMock).toHaveBeenCalledWith(expect.objectContaining({
-      metadata: expect.objectContaining({ status: 'error' }),
-    }));
+    expect(auditAppendMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({ status: 'error' }),
+      }),
+    );
   });
 
   it('🚨 carriedInput default {}', async () => {
@@ -305,13 +341,16 @@ describe('🚨 ephemeral test-node (draft non salvata)', () => {
     executeNodeMock.mockResolvedValue({ output: {}, step: { status: 'completed' } });
     const app = makeApp();
     await app.request('/workflows/test-node-ephemeral', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ nodeId: 'n1', nodes: [{ id: 'n1', defId: 'x' }] }),
     });
-    expect(executeNodeMock).toHaveBeenCalledWith(expect.objectContaining({
-      carriedInput: {},
-      workflowId: '__ephemeral__',
-    }));
+    expect(executeNodeMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        carriedInput: {},
+        workflowId: '__ephemeral__',
+      }),
+    );
   });
 
   it('🚨 triggerInput esplicito forwardato', async () => {
@@ -319,16 +358,19 @@ describe('🚨 ephemeral test-node (draft non salvata)', () => {
     executeNodeMock.mockResolvedValue({ output: {}, step: { status: 'completed' } });
     const app = makeApp();
     await app.request('/workflows/test-node-ephemeral', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         nodeId: 'n1',
         nodes: [{ id: 'n1', defId: 'x' }],
         triggerInput: { custom: 'value' },
       }),
     });
-    expect(executeNodeMock).toHaveBeenCalledWith(expect.objectContaining({
-      carriedInput: { custom: 'value' },
-    }));
+    expect(executeNodeMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        carriedInput: { custom: 'value' },
+      }),
+    );
   });
 });
 
@@ -336,7 +378,8 @@ describe('🚨 zod schema validation', () => {
   it('🚨 ephemeral senza nodes array → 400', async () => {
     const app = makeApp();
     const res = await app.request('/workflows/test-node-ephemeral', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ nodeId: 'n1' }),
     });
     expect(res.status).toBe(400);
@@ -345,7 +388,8 @@ describe('🚨 zod schema validation', () => {
   it('🚨 ephemeral senza nodeId → 400', async () => {
     const app = makeApp();
     const res = await app.request('/workflows/test-node-ephemeral', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ nodes: [] }),
     });
     expect(res.status).toBe(400);

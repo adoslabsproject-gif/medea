@@ -47,7 +47,10 @@ export interface NodeExecutionContext {
    * base64 inline.
    */
   readBinary?: (ref: string) => Promise<Buffer>;
-  writeBinary?: (data: Buffer, meta: { mimeType: string; fileName?: string }) => Promise<BinaryData>;
+  writeBinary?: (
+    data: Buffer,
+    meta: { mimeType: string; fileName?: string },
+  ) => Promise<BinaryData>;
   /**
    * Policy egress per host INTERNI allowlisted (sicurezza, iniettata dal runtime —
    * stdlib non conosce undici). Dato un host + `allowSelfSigned` del nodo, ritorna:
@@ -59,7 +62,10 @@ export interface NodeExecutionContext {
    * → SSRF guard attivo + TLS verificato (invariante #201). DECISIONE PER-HOST → il
    * chiamante la rivaluta su OGNI hop di redirect (un redirect verso pubblico NON eredita).
    */
-  resolveOutboundDispatcher?: (host: string, allowSelfSigned: boolean) => { allowlisted: boolean; dispatcher?: unknown };
+  resolveOutboundDispatcher?: (
+    host: string,
+    allowSelfSigned: boolean,
+  ) => { allowlisted: boolean; dispatcher?: unknown };
   /**
    * Variante STREAMING di writeBinary: scrive un Readable content-addressed
    * senza materializzare i byte in memoria (hash in transito). È il path reale
@@ -67,7 +73,10 @@ export interface NodeExecutionContext {
    * vanno disco→disco, mai tutti in RAM. Usalo quando hai uno stream; usa
    * writeBinary quando hai già un Buffer in mano.
    */
-  writeBinaryStream?: (stream: Readable, meta: { mimeType: string; fileName?: string }) => Promise<BinaryData>;
+  writeBinaryStream?: (
+    stream: Readable,
+    meta: { mimeType: string; fileName?: string },
+  ) => Promise<BinaryData>;
   /**
    * Current depth in the subworkflow call chain. 0 = invoked directly by
    * the user/trigger, N = invoked from N levels of nested `logic_subworkflow`

@@ -1,6 +1,14 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { NodeDefSchema } from '@medea/engine-core-schema';
-import { dbNodes, dbQueryNode, dbInsertNode, dbInsertBatchNode, dbUpdateNode, dbDeleteNode, dbSubscribeNode } from './index.js';
+import {
+  dbNodes,
+  dbQueryNode,
+  dbInsertNode,
+  dbInsertBatchNode,
+  dbUpdateNode,
+  dbDeleteNode,
+  dbSubscribeNode,
+} from './index.js';
 
 describe('db workflow nodes', () => {
   it('esporta il SET ESATTO di id (8 db_ + 2 rag_)', () => {
@@ -66,17 +74,28 @@ describe('db workflow nodes', () => {
   // Contratto: description ≥150 char, IT first sentence, use case enumerato.
   // ────────────────────────────────────────────────────────────────────────
   describe('A3.3 stabilized DB contract', () => {
-    const A33_STABILIZED_DB_NODES = [dbQueryNode, dbInsertNode, dbUpdateNode, dbDeleteNode, dbSubscribeNode];
+    const A33_STABILIZED_DB_NODES = [
+      dbQueryNode,
+      dbInsertNode,
+      dbUpdateNode,
+      dbDeleteNode,
+      dbSubscribeNode,
+    ];
 
     it('every A3.3 stabilized DB node has description ≥150 char + ≥25 distinct words + IT + Use case (anti-gaming)', () => {
-      const englishVerbs = /^(Run|Send|Trigger|Execute|Read|Write|Get|Update|Delete|Create|Fetch|Query|Pause|Reshape|Call|Catch|Invoke|Push|Pull|Poll|Auto|Watch|Make|Build|Sleep|Wait|Receive|Calculate|Connect|Insert|Iterate)\b/;
+      const englishVerbs =
+        /^(Run|Send|Trigger|Execute|Read|Write|Get|Update|Delete|Create|Fetch|Query|Pause|Reshape|Call|Catch|Invoke|Push|Pull|Poll|Auto|Watch|Make|Build|Sleep|Wait|Receive|Calculate|Connect|Insert|Iterate)\b/;
       const offenders: string[] = [];
       for (const node of A33_STABILIZED_DB_NODES) {
         const desc = node.def.description ?? '';
         if (desc.length < 150) offenders.push(`${node.def.id}: desc ${String(desc.length)} < 150`);
-        if (englishVerbs.test(desc)) offenders.push(`${node.def.id}: EN verb start "${desc.slice(0, 40)}…"`);
+        if (englishVerbs.test(desc))
+          offenders.push(`${node.def.id}: EN verb start "${desc.slice(0, 40)}…"`);
         const distinctWords = new Set(desc.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? []);
-        if (distinctWords.size < 25) offenders.push(`${node.def.id}: only ${String(distinctWords.size)} distinct words (<25 = gameable)`);
+        if (distinctWords.size < 25)
+          offenders.push(
+            `${node.def.id}: only ${String(distinctWords.size)} distinct words (<25 = gameable)`,
+          );
         if (!/use case/i.test(desc)) offenders.push(`${node.def.id}: missing use case`);
       }
       if (offenders.length > 0) throw new Error(`A3.3 DB violations:\n${offenders.join('\n')}`);
@@ -178,7 +197,9 @@ describe('db_insert_batch — N2 audit: forbidden tokens in childRowsExpression'
 
 describe('🚨 db_query — LIMIT sempre applicato (anti-OOM, era aspirazionale: UI 100 mai enforced)', () => {
   const origFetch = globalThis.fetch;
-  afterEach(() => { globalThis.fetch = origFetch; });
+  afterEach(() => {
+    globalThis.fetch = origFetch;
+  });
 
   function captureSpec(): { specs: Record<string, unknown>[] } {
     const specs: Record<string, unknown>[] = [];
@@ -189,7 +210,8 @@ describe('🚨 db_query — LIMIT sempre applicato (anti-OOM, era aspirazionale:
     return { specs };
   }
   const ctx = { tenantId: 't1', runId: 'r1', nodeOutputs: {}, env: {} };
-  const run = (cfg: Record<string, unknown>) => dbQueryNode.executor!({ databaseId: 'db1', table: 't', ...cfg }, undefined, ctx as never);
+  const run = (cfg: Record<string, unknown>) =>
+    dbQueryNode.executor!({ databaseId: 'db1', table: 't', ...cfg }, undefined, ctx as never);
 
   it('🚨 limit ASSENTE → default 100 nello spec (NON scarica tutta la tabella)', async () => {
     const cap = captureSpec();
@@ -223,7 +245,9 @@ describe('🚨 db_query — LIMIT sempre applicato (anti-OOM, era aspirazionale:
 
 describe('🚨 SECURITY — databaseId path-injection verso API interna (X-Internal-Token)', () => {
   const origFetch = globalThis.fetch;
-  afterEach(() => { globalThis.fetch = origFetch; });
+  afterEach(() => {
+    globalThis.fetch = origFetch;
+  });
   const ctx = { tenantId: 't1', runId: 'r1', nodeOutputs: {}, env: {} };
 
   function captureUrl(): { urls: string[] } {
@@ -242,7 +266,7 @@ describe('🚨 SECURITY — databaseId path-injection verso API interna (X-Inter
     ['fragment', 'db#x'],
     ['percent-encoded dot', 'db%2e%2e'],
     ['troppo lungo (>128)', 'a'.repeat(129)],
-  ])('databaseId con %s → throw, NESSUN fetch all\'API interna', async (_l, bad) => {
+  ])("databaseId con %s → throw, NESSUN fetch all'API interna", async (_l, bad) => {
     // MUTATION: senza reqDatabaseId questi id raggiungerebbero callDbApi col
     // token interno (privilege escalation) → cap.urls non vuoto → rosso.
     const cap = captureUrl();

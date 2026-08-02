@@ -22,9 +22,7 @@
 
 import type { NodeExecutor, NodeExecutionResult } from '../../types.js';
 import { parseConfig } from '../../core/config-parser.js';
-import {
-  HttpError, NetworkError, TimeoutError, AbortedError,
-} from '../../core/node-error.js';
+import { HttpError, NetworkError, TimeoutError, AbortedError } from '../../core/node-error.js';
 import {
   authenticate,
   executeKw,
@@ -109,11 +107,19 @@ export const odooRpcExecutor: NodeExecutor = async (rawConfig, _input, context) 
       }
       throw new NetworkError(err.message, { url: cfg.baseUrl, cause: err });
     }
-    if (err instanceof TimeoutError || err instanceof AbortedError || err instanceof HttpError || err instanceof NetworkError) {
+    if (
+      err instanceof TimeoutError ||
+      err instanceof AbortedError ||
+      err instanceof HttpError ||
+      err instanceof NetworkError
+    ) {
       throw err;
     }
     const msg = err instanceof Error ? err.message : String(err);
-    throw new NetworkError(msg, { url: cfg.baseUrl, ...(err instanceof Error ? { cause: err } : {}) });
+    throw new NetworkError(msg, {
+      url: cfg.baseUrl,
+      ...(err instanceof Error ? { cause: err } : {}),
+    });
   }
 };
 
@@ -135,43 +141,73 @@ async function dispatchOperation(
       if (typeof cfg.limit === 'number') kwargs.limit = cfg.limit;
       if (typeof cfg.offset === 'number' && cfg.offset > 0) kwargs.offset = cfg.offset;
       if (cfg.order && cfg.order.trim() !== '') kwargs.order = cfg.order;
-      return executeKw(auth, uid, {
-        model: cfg.model,
-        method: 'search_read',
-        positional: [(cfg.domainJson ?? []) as OdooValue],
-        kwargs,
-      }, transport, opts);
+      return executeKw(
+        auth,
+        uid,
+        {
+          model: cfg.model,
+          method: 'search_read',
+          positional: [(cfg.domainJson ?? []) as OdooValue],
+          kwargs,
+        },
+        transport,
+        opts,
+      );
     }
     case 'create': {
-      return executeKw(auth, uid, {
-        model: cfg.model,
-        method: 'create',
-        positional: [cfg.valuesJson as OdooValue],
-      }, transport, opts);
+      return executeKw(
+        auth,
+        uid,
+        {
+          model: cfg.model,
+          method: 'create',
+          positional: [cfg.valuesJson as OdooValue],
+        },
+        transport,
+        opts,
+      );
     }
     case 'write': {
-      return executeKw(auth, uid, {
-        model: cfg.model,
-        method: 'write',
-        positional: [cfg.recordIdsJson as OdooValue, cfg.valuesJson as OdooValue],
-      }, transport, opts);
+      return executeKw(
+        auth,
+        uid,
+        {
+          model: cfg.model,
+          method: 'write',
+          positional: [cfg.recordIdsJson as OdooValue, cfg.valuesJson as OdooValue],
+        },
+        transport,
+        opts,
+      );
     }
     case 'unlink': {
-      return executeKw(auth, uid, {
-        model: cfg.model,
-        method: 'unlink',
-        positional: [cfg.recordIdsJson as OdooValue],
-      }, transport, opts);
+      return executeKw(
+        auth,
+        uid,
+        {
+          model: cfg.model,
+          method: 'unlink',
+          positional: [cfg.recordIdsJson as OdooValue],
+        },
+        transport,
+        opts,
+      );
     }
     case 'call_method': {
-      return executeKw(auth, uid, {
-        model: cfg.model,
-        method: cfg.methodName!,
-        // JSON-parsed values are by construction subsets of OdooValue
-        // (string|number|boolean|null|array|object). The cast is sound.
-        positional: (cfg.positionalJson ?? []) as readonly OdooValue[],
-        kwargs: (cfg.kwargsJson ?? {}) as Readonly<Record<string, OdooValue>>,
-      }, transport, opts);
+      return executeKw(
+        auth,
+        uid,
+        {
+          model: cfg.model,
+          method: cfg.methodName!,
+          // JSON-parsed values are by construction subsets of OdooValue
+          // (string|number|boolean|null|array|object). The cast is sound.
+          positional: (cfg.positionalJson ?? []) as readonly OdooValue[],
+          kwargs: (cfg.kwargsJson ?? {}) as Readonly<Record<string, OdooValue>>,
+        },
+        transport,
+        opts,
+      );
     }
   }
 }

@@ -14,9 +14,12 @@ export interface TriggerBreaker {
 
 export function resolveTriggerBreaker(name: string): TriggerBreaker {
   const existing = CircuitBreakerRegistry.getInstance().get(name);
-  return existing ?? new CircuitBreaker<void>(name, {
-    failureThreshold: 5,
-    windowMs: 30_000,
-    cooldownMs: 60_000,
-  });
+  return (
+    existing ??
+    new CircuitBreaker<void>(name, {
+      failureThreshold: 5,
+      windowMs: 30_000,
+      cooldownMs: 60_000,
+    })
+  );
 }

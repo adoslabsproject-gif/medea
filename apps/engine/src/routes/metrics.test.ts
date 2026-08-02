@@ -27,9 +27,15 @@ const mockDb = {
   } as Record<string, number>,
   _callIndex: 0,
   _expectedOrder: ['workflows', 'enabled', 'runsTotal', 'runsError', 'runs24h', 'audit'],
-  select: vi.fn(function (this: typeof mockDb) { return this; }),
-  from: vi.fn(function (this: typeof mockDb) { return this; }),
-  where: vi.fn(function (this: typeof mockDb) { return this; }),
+  select: vi.fn(function (this: typeof mockDb) {
+    return this;
+  }),
+  from: vi.fn(function (this: typeof mockDb) {
+    return this;
+  }),
+  where: vi.fn(function (this: typeof mockDb) {
+    return this;
+  }),
   then: function (resolve: (val: unknown) => void): void {
     const key = mockDb._expectedOrder[mockDb._callIndex] ?? 'workflows';
     const val = mockDb._values[key] ?? 0;
@@ -75,9 +81,15 @@ beforeEach(() => {
   mockDb._callIndex = 0;
   mockDb._values = { workflows: 0, enabled: 0, runsTotal: 0, runsError: 0, runs24h: 0, audit: 0 };
   // Reset chainable mock state
-  mockDb.select.mockImplementation(function (this: typeof mockDb) { return this; });
-  mockDb.from.mockImplementation(function (this: typeof mockDb) { return this; });
-  mockDb.where.mockImplementation(function (this: typeof mockDb) { return this; });
+  mockDb.select.mockImplementation(function (this: typeof mockDb) {
+    return this;
+  });
+  mockDb.from.mockImplementation(function (this: typeof mockDb) {
+    return this;
+  });
+  mockDb.where.mockImplementation(function (this: typeof mockDb) {
+    return this;
+  });
 });
 
 describe('🚨 /metrics — auth gate (SECURITY)', () => {
@@ -186,7 +198,12 @@ describe('🚨 /metrics — output Prometheus format', () => {
 
   it('🚨 zero-count safe: TUTTE le metric a 0 → no NaN, no crash', async () => {
     mockDb._values = {
-      workflows: 0, enabled: 0, runsTotal: 0, runsError: 0, runs24h: 0, audit: 0,
+      workflows: 0,
+      enabled: 0,
+      runsTotal: 0,
+      runsError: 0,
+      runs24h: 0,
+      audit: 0,
     };
     const app = makeApp();
     const res = await app.request('/metrics', {

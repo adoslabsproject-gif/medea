@@ -40,8 +40,14 @@ describe('LEGITIMATE_BOTS registry', () => {
   it('copre tutte 8 categorie', () => {
     const cats = new Set(LEGITIMATE_BOTS.map((b) => b.category));
     const expected = [
-      'search_engine', 'llm_fetcher', 'social_preview', 'seo_tool',
-      'uptime_monitor', 'security_research', 'generic_crawler', 'cdn_purge',
+      'search_engine',
+      'llm_fetcher',
+      'social_preview',
+      'seo_tool',
+      'uptime_monitor',
+      'security_research',
+      'generic_crawler',
+      'cdn_purge',
     ];
     for (const cat of expected) {
       expect(cats.has(cat as never)).toBe(true);
@@ -54,12 +60,27 @@ describe('matchLegitimateBot — search engines', () => {
     ['Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)', 'Googlebot'],
     ['Googlebot-Image/1.0', 'Googlebot'],
     ['Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)', 'Bingbot'],
-    ['Mozilla/5.0 (compatible; DuckDuckBot-Https/1.1; https://duckduckgo.com/duckduckbot)', 'DuckDuckBot'],
+    [
+      'Mozilla/5.0 (compatible; DuckDuckBot-Https/1.1; https://duckduckgo.com/duckduckbot)',
+      'DuckDuckBot',
+    ],
     ['Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)', 'Yandex'],
-    ['Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)', 'Baiduspider'],
-    ['Mozilla/5.0 (compatible; Yahoo! Slurp; http://help.yahoo.com/help/us/ysearch/slurp)', 'Slurp'],
-    ['Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/605.1.15 Applebot/0.1', 'Applebot'],
-    ['Mozilla/5.0 (compatible; PetalBot;+https://webmaster.petalsearch.com/site/petalbot)', 'PetalBot'],
+    [
+      'Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)',
+      'Baiduspider',
+    ],
+    [
+      'Mozilla/5.0 (compatible; Yahoo! Slurp; http://help.yahoo.com/help/us/ysearch/slurp)',
+      'Slurp',
+    ],
+    [
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/605.1.15 Applebot/0.1',
+      'Applebot',
+    ],
+    [
+      'Mozilla/5.0 (compatible; PetalBot;+https://webmaster.petalsearch.com/site/petalbot)',
+      'PetalBot',
+    ],
   ])('UA "%s" → %s', (ua, expectedName) => {
     const m = matchLegitimateBot(ua);
     expect(m?.name).toBe(expectedName);
@@ -69,12 +90,27 @@ describe('matchLegitimateBot — search engines', () => {
 
 describe('matchLegitimateBot — LLM fetchers', () => {
   it.each([
-    ['Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2; +https://openai.com/gptbot)', 'GPTBot'],
-    ['Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ChatGPT-User/1.0; +https://openai.com/bot)', 'ChatGPT-User'],
+    [
+      'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2; +https://openai.com/gptbot)',
+      'GPTBot',
+    ],
+    [
+      'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ChatGPT-User/1.0; +https://openai.com/bot)',
+      'ChatGPT-User',
+    ],
     ['Mozilla/5.0 (compatible; ClaudeBot/1.0; +claudebot@anthropic.com)', 'ClaudeBot'],
-    ['Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)', 'PerplexityBot'],
-    ['Mozilla/5.0 (compatible; Bytespider; spider-feedback@bytedance.com) AppleWebKit/537.36', 'Bytespider'],
-    ['Mozilla/5.0 (compatible; Amazonbot/0.1; +https://developer.amazon.com/support/amazonbot)', 'Amazonbot'],
+    [
+      'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)',
+      'PerplexityBot',
+    ],
+    [
+      'Mozilla/5.0 (compatible; Bytespider; spider-feedback@bytedance.com) AppleWebKit/537.36',
+      'Bytespider',
+    ],
+    [
+      'Mozilla/5.0 (compatible; Amazonbot/0.1; +https://developer.amazon.com/support/amazonbot)',
+      'Amazonbot',
+    ],
     ['CCBot/2.0 (https://commoncrawl.org/faq/)', 'CCBot'],
   ])('UA "%s" → %s', (ua, expectedName) => {
     const m = matchLegitimateBot(ua);
@@ -85,8 +121,14 @@ describe('matchLegitimateBot — LLM fetchers', () => {
 
 describe('matchLegitimateBot — social previews', () => {
   it.each([
-    ['facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)', 'facebookexternalhit'],
-    ['meta-externalagent/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler)', 'facebookexternalhit'],
+    [
+      'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+      'facebookexternalhit',
+    ],
+    [
+      'meta-externalagent/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler)',
+      'facebookexternalhit',
+    ],
     ['Twitterbot/1.0', 'Twitterbot'],
     ['LinkedInBot/1.0 (compatible; Mozilla/5.0; Jakarta Commons-HttpClient/3.1)', 'LinkedInBot'],
     ['WhatsApp/2.21.12.21 A', 'WhatsApp'],
@@ -107,7 +149,10 @@ describe('matchLegitimateBot — SEO tools', () => {
     ['Mozilla/5.0 (compatible; SemrushBot/7~bl; +http://www.semrush.com/bot.html)', 'SemrushBot'],
     ['Mozilla/5.0 (compatible; MJ12bot/v1.4.8; http://mj12bot.com/)', 'MJ12bot'],
     ['Mozilla/5.0 (compatible; DotBot/1.2; +https://opensiteexplorer.org/dotbot)', 'DotBot'],
-    ['Mozilla/5.0 (compatible; DataForSeoBot/1.0; +https://dataforseo.com/dataforseo-bot)', 'DataForSeoBot'],
+    [
+      'Mozilla/5.0 (compatible; DataForSeoBot/1.0; +https://dataforseo.com/dataforseo-bot)',
+      'DataForSeoBot',
+    ],
   ])('UA "%s" → %s', (ua, expectedName) => {
     const m = matchLegitimateBot(ua);
     expect(m?.name).toBe(expectedName);
@@ -161,7 +206,9 @@ describe('verifyReverseDns', () => {
   });
 
   it('PTR multi-suffix: matcha ANY (google.com + googlebot.com)', () => {
-    expect(verifyReverseDns('googlebot-instance.google.com', ['.googlebot.com', '.google.com'])).toBe(true);
+    expect(
+      verifyReverseDns('googlebot-instance.google.com', ['.googlebot.com', '.google.com']),
+    ).toBe(true);
   });
 
   it('case-insensitive (PTR uppercase)', () => {

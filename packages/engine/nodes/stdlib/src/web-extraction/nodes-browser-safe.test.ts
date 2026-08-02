@@ -26,7 +26,8 @@ const SRC_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 // solo lazy a runtime server (mai nel grafo statico browser).
 const SERVER_ONLY_ENGINES = new Set<string>(['asset-batch-download-engine.ts']);
 
-const BUILTINS = 'fs|path|crypto|os|stream|zlib|child_process|net|http|https|tls|dns|worker_threads|readline|cluster|dgram|v8|vm|perf_hooks';
+const BUILTINS =
+  'fs|path|crypto|os|stream|zlib|child_process|net|http|https|tls|dns|worker_threads|readline|cluster|dgram|v8|vm|perf_hooks';
 // import VALUE (NON `import type`) di un built-in Node, eventualmente con `node:`.
 const VALUE_BUILTIN_IMPORT = new RegExp(
   `^import\\s+(?!type\\b)[^\\n;]*\\bfrom\\s+['"](?:node:)?(?:${BUILTINS})(?:/[^'"]+)?['"]`,
@@ -38,7 +39,11 @@ function walkTs(dir: string): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) out.push(...walkTs(full));
-    else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts') && !entry.name.endsWith('.d.ts')) {
+    else if (
+      entry.name.endsWith('.ts') &&
+      !entry.name.endsWith('.test.ts') &&
+      !entry.name.endsWith('.d.ts')
+    ) {
       out.push(full);
     }
   }
@@ -69,11 +74,16 @@ describe('nodi browser-safe — confine browser/server', () => {
     const violations: string[] = [];
     for (const engine of SERVER_ONLY_ENGINES) {
       const stem = engine.replace(/\.ts$/, '');
-      const eagerRe = new RegExp(`^import\\s+(?!type\\b)[^\\n;]*\\bfrom\\s+['"][^'"]*${stem}\\.js['"]`, 'm');
+      const eagerRe = new RegExp(
+        `^import\\s+(?!type\\b)[^\\n;]*\\bfrom\\s+['"][^'"]*${stem}\\.js['"]`,
+        'm',
+      );
       for (const file of files) {
         if (basename(file) === engine) continue;
         if (eagerRe.test(readFileSync(file, 'utf8'))) {
-          violations.push(`${file.slice(SRC_ROOT.length + 1)} importa ${engine} EAGER — usa await import o import type`);
+          violations.push(
+            `${file.slice(SRC_ROOT.length + 1)} importa ${engine} EAGER — usa await import o import type`,
+          );
         }
       }
     }

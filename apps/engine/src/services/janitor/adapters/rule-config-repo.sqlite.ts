@@ -9,12 +9,18 @@ import { and, eq } from 'drizzle-orm';
 import { getDatabase } from '@/storage/db.js';
 import { janitorRuleConfigs, type JanitorRuleConfigRow } from '@/storage/schema.js';
 import type { IRuleConfigRepository } from '@/services/janitor/ports/index.js';
-import type { RuleConfig, RuleConfigPatch, DataSourceRef } from '@/services/janitor/domain/index.js';
+import type {
+  RuleConfig,
+  RuleConfigPatch,
+  DataSourceRef,
+} from '@/services/janitor/domain/index.js';
 
 export class SqliteRuleConfigRepository implements IRuleConfigRepository {
   async list(tenantId: string): Promise<readonly RuleConfig[]> {
     const { db } = getDatabase();
-    const rows = await db.select().from(janitorRuleConfigs)
+    const rows = await db
+      .select()
+      .from(janitorRuleConfigs)
       .where(eq(janitorRuleConfigs.tenantId, tenantId));
     return rows.map(rowToConfig);
   }
@@ -27,11 +33,10 @@ export class SqliteRuleConfigRepository implements IRuleConfigRepository {
 
   async get(ruleId: string, tenantId: string): Promise<RuleConfig | null> {
     const { db } = getDatabase();
-    const rows = await db.select().from(janitorRuleConfigs)
-      .where(and(
-        eq(janitorRuleConfigs.ruleId, ruleId),
-        eq(janitorRuleConfigs.tenantId, tenantId),
-      ))
+    const rows = await db
+      .select()
+      .from(janitorRuleConfigs)
+      .where(and(eq(janitorRuleConfigs.ruleId, ruleId), eq(janitorRuleConfigs.tenantId, tenantId)))
       .limit(1);
     const row = rows[0];
     return row ? rowToConfig(row) : null;
@@ -40,21 +45,11 @@ export class SqliteRuleConfigRepository implements IRuleConfigRepository {
   async upsert(config: RuleConfig): Promise<void> {
     const { db } = getDatabase();
     // Drizzle SQLite onConflictDoUpdate per PK composto.
-    await db.insert(janitorRuleConfigs).values({
-      ruleId: config.ruleId,
-      tenantId: config.tenantId,
-      enabled: config.enabled,
-      schedule: config.schedule,
-      dataSourceRef: config.dataSourceRef,
-      maxRowsPerRun: config.maxRowsPerRun,
-      severity: config.severity,
-      paramsJson: JSON.stringify(config.params),
-      notifyOnDetection: config.notifyOnDetection,
-      updatedAt: config.updatedAt,
-      updatedBy: config.updatedBy ?? null,
-    }).onConflictDoUpdate({
-      target: [janitorRuleConfigs.ruleId, janitorRuleConfigs.tenantId],
-      set: {
+    await db
+      .insert(janitorRuleConfigs)
+      .values({
+        ruleId: config.ruleId,
+        tenantId: config.tenantId,
         enabled: config.enabled,
         schedule: config.schedule,
         dataSourceRef: config.dataSourceRef,
@@ -64,8 +59,21 @@ export class SqliteRuleConfigRepository implements IRuleConfigRepository {
         notifyOnDetection: config.notifyOnDetection,
         updatedAt: config.updatedAt,
         updatedBy: config.updatedBy ?? null,
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: [janitorRuleConfigs.ruleId, janitorRuleConfigs.tenantId],
+        set: {
+          enabled: config.enabled,
+          schedule: config.schedule,
+          dataSourceRef: config.dataSourceRef,
+          maxRowsPerRun: config.maxRowsPerRun,
+          severity: config.severity,
+          paramsJson: JSON.stringify(config.params),
+          notifyOnDetection: config.notifyOnDetection,
+          updatedAt: config.updatedAt,
+          updatedBy: config.updatedBy ?? null,
+        },
+      });
   }
 
   async patch(
@@ -89,7 +97,11 @@ export class SqliteRuleConfigRepository implements IRuleConfigRepository {
       params: patch.params ?? existing.params,
       notifyOnDetection: patch.notifyOnDetection ?? existing.notifyOnDetection,
       updatedAt: new Date().toISOString(),
-      ...(updatedBy !== undefined ? { updatedBy } : (existing.updatedBy !== undefined ? { updatedBy: existing.updatedBy } : {})),
+      ...(updatedBy !== undefined
+        ? { updatedBy }
+        : existing.updatedBy !== undefined
+          ? { updatedBy: existing.updatedBy }
+          : {}),
     };
     await this.upsert(merged);
     return merged;
@@ -97,10 +109,9 @@ export class SqliteRuleConfigRepository implements IRuleConfigRepository {
 
   async delete(ruleId: string, tenantId: string): Promise<void> {
     const { db } = getDatabase();
-    await db.delete(janitorRuleConfigs).where(and(
-      eq(janitorRuleConfigs.ruleId, ruleId),
-      eq(janitorRuleConfigs.tenantId, tenantId),
-    ));
+    await db
+      .delete(janitorRuleConfigs)
+      .where(and(eq(janitorRuleConfigs.ruleId, ruleId), eq(janitorRuleConfigs.tenantId, tenantId)));
   }
 }
 
@@ -108,9 +119,10 @@ function rowToConfig(row: JanitorRuleConfigRow): RuleConfig {
   let params: Readonly<Record<string, unknown>>;
   try {
     const parsed = JSON.parse(row.paramsJson) as unknown;
-    params = (typeof parsed === 'object' && parsed !== null)
-      ? Object.freeze(parsed as Record<string, unknown>)
-      : Object.freeze({});
+    params =
+      typeof parsed === 'object' && parsed !== null
+        ? Object.freeze(parsed as Record<string, unknown>)
+        : Object.freeze({});
   } catch {
     params = Object.freeze({});
   }

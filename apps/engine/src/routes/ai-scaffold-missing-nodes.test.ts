@@ -36,8 +36,11 @@ vi.mock('@/storage/db.js', () => ({
             all: (...p: unknown[]) => stmt.all(...p),
           };
         },
-        exec: (sql: string) => { conn.exec(sql); },
-        transaction: <T extends unknown[], R>(fn: (...args: T) => R) => conn.transaction(fn) as unknown as (...args: T) => R,
+        exec: (sql: string) => {
+          conn.exec(sql);
+        },
+        transaction: <T extends unknown[], R>(fn: (...args: T) => R) =>
+          conn.transaction(fn) as unknown as (...args: T) => R,
       },
       db: {
         select: () => ({ from: () => ({ orderBy: () => ({ limit: () => [] }) }) }),
@@ -50,7 +53,9 @@ vi.mock('@/lib/logger.js');
 
 const auditAppend = vi.fn().mockResolvedValue(undefined);
 vi.mock('@/services/audit.service.js', () => ({
-  AuditLogService: class { append = auditAppend; },
+  AuditLogService: class {
+    append = auditAppend;
+  },
 }));
 
 // Catalog ridotto a 3 nodi: l'orchestrator vede missing per qualunque defId
@@ -71,31 +76,48 @@ vi.mock('@/services/custom-nodes/ai-assist.js', () => ({
 // compileAndPersist: mock — skip esbuild ma persisti compiledExecutor in DB
 // (altrimenti publishCustomNodePrivate throw "Compile required before publish").
 vi.mock('@/services/custom-nodes/compile.service.js', async () => {
-  const real = await vi.importActual<typeof CompileServiceNS>('@/services/custom-nodes/compile.service.js');
+  const real = await vi.importActual<typeof CompileServiceNS>(
+    '@/services/custom-nodes/compile.service.js',
+  );
   return {
     ...real,
-    compileAndPersist: vi.fn().mockImplementation(async (opts: { workspaceId: string; id: string }) => {
-      const { persistCompileResult } = await import('@/services/custom-nodes/service.js');
-      await persistCompileResult({
-        workspaceId: opts.workspaceId,
-        id: opts.id,
-        compiledExecutor: '/* compiled stub */',
-        warnings: [],
-      });
-      return { compiledExecutor: '/* compiled stub */', warnings: [] };
-    }),
+    compileAndPersist: vi
+      .fn()
+      .mockImplementation(async (opts: { workspaceId: string; id: string }) => {
+        const { persistCompileResult } = await import('@/services/custom-nodes/service.js');
+        await persistCompileResult({
+          workspaceId: opts.workspaceId,
+          id: opts.id,
+          compiledExecutor: '/* compiled stub */',
+          warnings: [],
+        });
+        return { compiledExecutor: '/* compiled stub */', warnings: [] };
+      }),
   };
 });
 
 const { createAiScaffoldMissingNodesRoutes } = await import('./ai-scaffold-missing-nodes.js');
 
-interface TestAuth { userId: string; role: 'viewer' | 'operator' | 'editor' | 'owner'; email: string; tenantId: string }
+interface TestAuth {
+  userId: string;
+  role: 'viewer' | 'operator' | 'editor' | 'owner';
+  email: string;
+  tenantId: string;
+}
 const OWNER: TestAuth = { userId: 'owner-1', role: 'owner', email: 'o@x.it', tenantId: 'ws-test' };
-const EDITOR: TestAuth = { userId: 'editor-1', role: 'editor', email: 'e@x.it', tenantId: 'ws-test' };
+const EDITOR: TestAuth = {
+  userId: 'editor-1',
+  role: 'editor',
+  email: 'e@x.it',
+  tenantId: 'ws-test',
+};
 
 function buildApp(auth: TestAuth | null): Hono {
   const app = new Hono();
-  app.use('*', async (c, next) => { c.set('auth', auth as never); return next(); });
+  app.use('*', async (c, next) => {
+    c.set('auth', auth as never);
+    return next();
+  });
   app.route('/api/v1/ai-scaffold', createAiScaffoldMissingNodesRoutes());
   return app;
 }
@@ -179,7 +201,7 @@ describe('POST synthesize-missing-nodes — Validation', () => {
       userPrompt: 'no missing',
     });
     expect(res.status).toBe(200);
-    const body = await res.json() as Record<string, unknown>;
+    const body = (await res.json()) as Record<string, unknown>;
     expect(body.mapping).toEqual({});
     expect(body.succeeded).toEqual([]);
     expect(llmGenerate).not.toHaveBeenCalled();
@@ -202,7 +224,7 @@ describe('POST synthesize-missing-nodes — Synthesis', () => {
       userPrompt: 'Amazon + Shopify pricing monitor',
     });
     expect(res.status).toBe(200);
-    const body = await res.json() as {
+    const body = (await res.json()) as {
       workflow: typeof VALID_WORKFLOW;
       mapping: Record<string, string>;
       succeeded: { oldDefId: string; newDefId: string; reused: boolean }[];
@@ -229,12 +251,14 @@ describe('POST synthesize-missing-nodes — Synthesis', () => {
     // Pre-popola custom node "amazon-search" via INSERT diretto SQLite.
     const conn = dbConnections[dbConnections.length - 1]!;
     const at = new Date().toISOString();
-    conn.prepare(
-      `INSERT INTO custom_nodes (id, workspace_id, owner_user_id, slug, display_name, semver, status,
+    conn
+      .prepare(
+        `INSERT INTO custom_nodes (id, workspace_id, owner_user_id, slug, display_name, semver, status,
          source_executor, source_definition, source_schema, created_at, updated_at)
        VALUES (?, 'ws-test', 'owner-1', 'amazon-search', 'Amazon Search', '0.1.0', 'published_priv',
          '/*exec*/', '/*def*/', '/*sch*/', ?, ?)`,
-    ).run('cn-pre', at, at);
+      )
+      .run('cn-pre', at, at);
 
     llmGenerate.mockImplementation(async () => ({
       text: 'ok',
@@ -246,7 +270,7 @@ describe('POST synthesize-missing-nodes — Synthesis', () => {
       userPrompt: 'test idempotenza',
     });
     expect(res.status).toBe(200);
-    const body = await res.json() as {
+    const body = (await res.json()) as {
       succeeded: { oldDefId: string; newDefId: string; reused: boolean }[];
     };
     // amazon-search reused, shopify-orders sintetizzato fresh
@@ -273,7 +297,7 @@ describe('POST synthesize-missing-nodes — Synthesis', () => {
       userPrompt: 'test fail-soft',
     });
     expect(res.status).toBe(200);
-    const body = await res.json() as {
+    const body = (await res.json()) as {
       succeeded: { oldDefId: string }[];
       failed: { oldDefId: string; reason: string }[];
     };

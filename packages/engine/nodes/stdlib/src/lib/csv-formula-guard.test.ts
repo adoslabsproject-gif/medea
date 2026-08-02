@@ -13,7 +13,7 @@ describe('neutralizeCsvFormula — trigger di formula', () => {
   it.each([
     ['=1+1', "'=1+1"],
     ['=HYPERLINK("http://evil","clic")', '\'=HYPERLINK("http://evil","clic")'],
-    ['=cmd|\'/c calc\'!A1', "'=cmd|'/c calc'!A1"],
+    ["=cmd|'/c calc'!A1", "'=cmd|'/c calc'!A1"],
     ['+1+1', "'+1+1"],
     ['-2-3', "'-2-3"],
     ['@SUM(A1:A9)', "'@SUM(A1:A9)"],

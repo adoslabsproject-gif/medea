@@ -62,7 +62,8 @@ function gatewayBase(): string | undefined {
 export function resolveVisionEndpoint(explicit: string | undefined): string {
   const cleaned = (explicit ?? '').trim();
   if (cleaned && cleaned !== LEGACY_VISION_ENDPOINT) return cleaned;
-  const envOverride = typeof process !== 'undefined' ? (process.env.MEDEA_VISION_ENDPOINT ?? '').trim() : '';
+  const envOverride =
+    typeof process !== 'undefined' ? (process.env.MEDEA_VISION_ENDPOINT ?? '').trim() : '';
   if (envOverride) return envOverride;
   const base = gatewayBase();
   if (base) return `${base}/chat/completions`;
@@ -75,19 +76,36 @@ export function extractJsonFromResponse(text: string): unknown {
   const fenceMatch = /```(?:json)?\s*([\s\S]*?)\s*```/i.exec(text);
   const candidate = fenceMatch?.[1]?.trim() ?? text.trim();
   // Try direct parse
-  try { return JSON.parse(candidate); } catch { /* fallthrough */ }
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    /* fallthrough */
+  }
   // Try strip trailing commas
   const stripped = candidate.replace(/,(\s*[}\]])/g, '$1');
-  try { return JSON.parse(stripped); } catch { /* fallthrough */ }
+  try {
+    return JSON.parse(stripped);
+  } catch {
+    /* fallthrough */
+  }
   // Try find first {...} or [...]
   const objMatch = /\{[\s\S]*\}|\[[\s\S]*\]/.exec(candidate);
   if (objMatch) {
-    try { return JSON.parse(objMatch[0]); } catch { /* fallthrough */ }
+    try {
+      return JSON.parse(objMatch[0]);
+    } catch {
+      /* fallthrough */
+    }
   }
   throw new Error(`vision response not JSON-parseable: ${candidate.slice(0, 200)}`);
 }
 
-export function buildVisionMessages(args: { screenshotBase64: string; prompt: string; schemaJson?: string | undefined; mimeType?: string | undefined }): { role: string; content: unknown }[] {
+export function buildVisionMessages(args: {
+  screenshotBase64: string;
+  prompt: string;
+  schemaJson?: string | undefined;
+  mimeType?: string | undefined;
+}): { role: string; content: unknown }[] {
   const mime = args.mimeType ?? 'image/png';
   const schemaHint = args.schemaJson
     ? `\n\nSCHEMA JSON TARGET (rispetta esattamente questa shape, types inclusi):\n\`\`\`json\n${args.schemaJson}\n\`\`\``
@@ -111,7 +129,20 @@ export function buildVisionMessages(args: { screenshotBase64: string; prompt: st
   ];
 }
 
-async function callVisionWithRetry(args: { endpoint: string; apiKey: string; messages: unknown[]; model: string; maxTokens: number; timeoutMs: number }): Promise<{ content: string; latencyMs: number; attempts: number; responseModel: string | undefined; usage: { input: number; output: number; fromApi: boolean } }> {
+async function callVisionWithRetry(args: {
+  endpoint: string;
+  apiKey: string;
+  messages: unknown[];
+  model: string;
+  maxTokens: number;
+  timeoutMs: number;
+}): Promise<{
+  content: string;
+  latencyMs: number;
+  attempts: number;
+  responseModel: string | undefined;
+  usage: { input: number; output: number; fromApi: boolean };
+}> {
   const start = Date.now();
   let lastErr: unknown = null;
   // SSRF: il gateway interno (IP privato della bridge Docker by-design) è
@@ -137,14 +168,14 @@ async function callVisionWithRetry(args: { endpoint: string; apiKey: string; mes
       });
       if (res.status >= 500 && attempt < MAX_RETRIES) {
         const jitter = Math.floor(Math.random() * 200);
-        await new Promise((r) => setTimeout(r, RETRY_BASE_MS * (2 ** (attempt - 1)) + jitter));
+        await new Promise((r) => setTimeout(r, RETRY_BASE_MS * 2 ** (attempt - 1) + jitter));
         continue;
       }
       if (!res.ok) {
         const txt = await res.text().catch(() => '');
         throw new Error(`vision API ${res.status.toString()}: ${txt.slice(0, 300)}`);
       }
-      const data = await res.json() as {
+      const data = (await res.json()) as {
         choices?: { message?: { content?: string } }[];
         model?: string;
         usage?: { prompt_tokens?: number; completion_tokens?: number };
@@ -157,12 +188,22 @@ async function callVisionWithRetry(args: { endpoint: string; apiKey: string; mes
       // marca fromApi:false (il pannello mostra "stima").
       const apiIn = data.usage?.prompt_tokens;
       const apiOut = data.usage?.completion_tokens;
-      const fromApi = typeof apiIn === 'number' && Number.isFinite(apiIn) && apiIn >= 0
-        && typeof apiOut === 'number' && Number.isFinite(apiOut) && apiOut >= 0;
+      const fromApi =
+        typeof apiIn === 'number' &&
+        Number.isFinite(apiIn) &&
+        apiIn >= 0 &&
+        typeof apiOut === 'number' &&
+        Number.isFinite(apiOut) &&
+        apiOut >= 0;
       const estimate = (s: string): number => Math.ceil(s.length / 3.5);
-      const textOfMessages = JSON.stringify(args.messages).length > 0
-        ? args.messages.map((m) => JSON.stringify(m)).join('').replace(/data:[^"]+/g, '').slice(0, 100_000)
-        : '';
+      const textOfMessages =
+        JSON.stringify(args.messages).length > 0
+          ? args.messages
+              .map((m) => JSON.stringify(m))
+              .join('')
+              .replace(/data:[^"]+/g, '')
+              .slice(0, 100_000)
+          : '';
       return {
         content,
         latencyMs: Date.now() - start,
@@ -178,7 +219,7 @@ async function callVisionWithRetry(args: { endpoint: string; apiKey: string; mes
       lastErr = err;
       if (attempt === MAX_RETRIES) break;
       const jitter = Math.floor(Math.random() * 200);
-      await new Promise((r) => setTimeout(r, RETRY_BASE_MS * (2 ** (attempt - 1)) + jitter));
+      await new Promise((r) => setTimeout(r, RETRY_BASE_MS * 2 ** (attempt - 1) + jitter));
     }
   }
   throw new Error(`vision API failed after ${MAX_RETRIES.toString()} attempts: ${String(lastErr)}`);
@@ -187,16 +228,25 @@ async function callVisionWithRetry(args: { endpoint: string; apiKey: string; mes
 const executor: NodeExecutor = async (config, _input, context) => {
   const start = Date.now();
   const screenshotBase64 = String(config.screenshotBase64 ?? '').trim();
-  if (!screenshotBase64) throw new Error('screenshotBase64 required (png/jpg base64 — usa output di action_browser_render o action_browser_stealth)');
+  if (!screenshotBase64)
+    throw new Error(
+      'screenshotBase64 required (png/jpg base64 — usa output di action_browser_render o action_browser_stealth)',
+    );
   if (screenshotBase64.length < 100) throw new Error('screenshotBase64 too short, looks malformed');
 
   const prompt = String(config.prompt ?? '').trim();
-  if (!prompt) throw new Error('prompt required (es. "estrai titolo, prezzo, immagine principale del prodotto")');
+  if (!prompt)
+    throw new Error(
+      'prompt required (es. "estrai titolo, prezzo, immagine principale del prodotto")',
+    );
 
   const schemaJson = String(config.schemaJson ?? '').trim() || undefined;
   if (schemaJson) {
-    try { JSON.parse(schemaJson); }
-    catch { throw new Error('schemaJson invalid JSON'); }
+    try {
+      JSON.parse(schemaJson);
+    } catch {
+      throw new Error('schemaJson invalid JSON');
+    }
   }
 
   const endpoint = resolveVisionEndpoint(String(config.endpoint ?? ''));
@@ -204,8 +254,10 @@ const executor: NodeExecutor = async (config, _input, context) => {
   // gateway metered ESIGE il Bearer license, come la chat e gli agent_*).
   // Catena su `||`, NON `??`: un campo secret VUOTO salvato in config (o una
   // env vuota) deve cadere sulla license, non silenziare l'auth → 401.
-  const licenseKey = typeof process !== 'undefined' ? (process.env.MEDEA_LICENSE_KEY ?? '').trim() : '';
-  const envVisionKey = typeof process !== 'undefined' ? (process.env.MEDEA_VISION_API_KEY ?? '').trim() : '';
+  const licenseKey =
+    typeof process !== 'undefined' ? (process.env.MEDEA_LICENSE_KEY ?? '').trim() : '';
+  const envVisionKey =
+    typeof process !== 'undefined' ? (process.env.MEDEA_VISION_API_KEY ?? '').trim() : '';
   const apiKey = String(config.apiKey ?? '').trim() || envVisionKey || licenseKey;
   // Model: la sentinella legacy Qwen2.5-VL (servizio dismesso) = "non impostato".
   const modelRaw = String(config.model ?? '').trim();
@@ -217,7 +269,14 @@ const executor: NodeExecutor = async (config, _input, context) => {
 
   const messages = buildVisionMessages({ screenshotBase64, prompt, schemaJson, mimeType });
 
-  const callRes = await callVisionWithRetry({ endpoint, apiKey, messages, model, maxTokens, timeoutMs });
+  const callRes = await callVisionWithRetry({
+    endpoint,
+    apiKey,
+    messages,
+    model,
+    maxTokens,
+    timeoutMs,
+  });
 
   let extracted: unknown = null;
   let parseError: string | null = null;
@@ -300,18 +359,97 @@ export const visionExtractNode: NodeModule = {
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [
-      { key: 'screenshotBase64', label: 'Screenshot base64', type: 'textarea', required: true, placeholder: '{{$.browser_stealth.screenshotBase64}}', help: 'Output base64 di action_browser_render o action_browser_stealth. Usa output binding.' },
-      { key: 'prompt', label: 'Prompt naturale', type: 'textarea', required: true, placeholder: 'Estrai dal product page: titolo prodotto, prezzo (numero + valuta), immagine principale URL, descrizione breve, stock disponibile (yes/no).', help: 'Descrivi in italiano cosa estrarre. La vision LLM capisce contesto visivo.' },
-      { key: 'schemaJson', label: 'Schema JSON target (opzionale)', type: 'textarea', required: false, placeholder: '{"title": "string", "price": {"amount": "number", "currency": "string"}, "imageUrl": "string", "inStock": "boolean"}', help: 'JSON template della shape attesa. Se vuoto, ritorna oggetto libero.' },
-      { key: 'endpoint', label: 'Vision endpoint (override)', type: 'text', required: false, help: 'Vuoto = Liara vision via gateway FlowForge (Qwen3-VL multimodale, metered sulla quota). Compila SOLO per un vision LLM OpenAI-compatible tuo.' },
-      { key: 'apiKey', label: 'API Key (override)', type: 'secret', required: false, help: 'Bearer token dell\'endpoint custom. Vuoto = license del workspace (gateway Liara).' },
-      { key: 'model', label: 'Model name (override)', type: 'text', required: false, help: 'Vuoto = modello di default del gateway (Qwen3-VL). Altri vision: gpt-4o, claude-sonnet-4-5, gemini-2.0-flash.' },
-      { key: 'maxTokens', label: 'Max tokens output', type: 'number', required: false, defaultValue: '2048', help: 'Max token risposta. Default 2048, max 8192.' },
-      { key: 'timeoutMs', label: 'Timeout (ms)', type: 'number', required: false, defaultValue: '60000', help: 'Vision e\\` lento. Default 60s. Max 180s.' },
-      { key: 'mimeType', label: 'MIME type screenshot', type: 'select', required: false, defaultValue: 'image/png', options: ['image/png', 'image/jpeg', 'image/webp'], help: 'Formato base64 dello screenshot.' },
-      { key: 'failOnInvalid', label: 'Fail on invalid output', type: 'boolean', required: false, defaultValue: 'false', help: 'Se ON: throw quando vision non ritorna JSON valido o schema mismatch. Se OFF: ritorna parseError/schemaValidationError senza throw.' },
+      {
+        key: 'screenshotBase64',
+        label: 'Screenshot base64',
+        type: 'textarea',
+        required: true,
+        placeholder: '{{$.browser_stealth.screenshotBase64}}',
+        help: 'Output base64 di action_browser_render o action_browser_stealth. Usa output binding.',
+      },
+      {
+        key: 'prompt',
+        label: 'Prompt naturale',
+        type: 'textarea',
+        required: true,
+        placeholder:
+          'Estrai dal product page: titolo prodotto, prezzo (numero + valuta), immagine principale URL, descrizione breve, stock disponibile (yes/no).',
+        help: 'Descrivi in italiano cosa estrarre. La vision LLM capisce contesto visivo.',
+      },
+      {
+        key: 'schemaJson',
+        label: 'Schema JSON target (opzionale)',
+        type: 'textarea',
+        required: false,
+        placeholder:
+          '{"title": "string", "price": {"amount": "number", "currency": "string"}, "imageUrl": "string", "inStock": "boolean"}',
+        help: 'JSON template della shape attesa. Se vuoto, ritorna oggetto libero.',
+      },
+      {
+        key: 'endpoint',
+        label: 'Vision endpoint (override)',
+        type: 'text',
+        required: false,
+        help: 'Vuoto = Liara vision via gateway FlowForge (Qwen3-VL multimodale, metered sulla quota). Compila SOLO per un vision LLM OpenAI-compatible tuo.',
+      },
+      {
+        key: 'apiKey',
+        label: 'API Key (override)',
+        type: 'secret',
+        required: false,
+        help: "Bearer token dell'endpoint custom. Vuoto = license del workspace (gateway Liara).",
+      },
+      {
+        key: 'model',
+        label: 'Model name (override)',
+        type: 'text',
+        required: false,
+        help: 'Vuoto = modello di default del gateway (Qwen3-VL). Altri vision: gpt-4o, claude-sonnet-4-5, gemini-2.0-flash.',
+      },
+      {
+        key: 'maxTokens',
+        label: 'Max tokens output',
+        type: 'number',
+        required: false,
+        defaultValue: '2048',
+        help: 'Max token risposta. Default 2048, max 8192.',
+      },
+      {
+        key: 'timeoutMs',
+        label: 'Timeout (ms)',
+        type: 'number',
+        required: false,
+        defaultValue: '60000',
+        help: 'Vision e\\` lento. Default 60s. Max 180s.',
+      },
+      {
+        key: 'mimeType',
+        label: 'MIME type screenshot',
+        type: 'select',
+        required: false,
+        defaultValue: 'image/png',
+        options: ['image/png', 'image/jpeg', 'image/webp'],
+        help: 'Formato base64 dello screenshot.',
+      },
+      {
+        key: 'failOnInvalid',
+        label: 'Fail on invalid output',
+        type: 'boolean',
+        required: false,
+        defaultValue: 'false',
+        help: 'Se ON: throw quando vision non ritorna JSON valido o schema mismatch. Se OFF: ritorna parseError/schemaValidationError senza throw.',
+      },
     ],
-    outputs: ['extracted', 'rawResponse', 'modelUsed', 'latencyMs', 'attempts', 'parseError', 'schemaValidationError', '_llm'],
+    outputs: [
+      'extracted',
+      'rawResponse',
+      'modelUsed',
+      'latencyMs',
+      'attempts',
+      'parseError',
+      'schemaValidationError',
+      '_llm',
+    ],
   },
   executor,
 };

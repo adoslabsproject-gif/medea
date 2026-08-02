@@ -31,14 +31,21 @@ vi.mock('@/lib/safe-outbound-fetch.js', () => ({
 }));
 
 /** Mock EventBus che esegue handler in sync per controllo deterministico */
-function makeMockBus(): { bus: IEventBus; emit: (defId: string, status: string, extra?: Record<string, unknown>) => Promise<void>; subscriberCount: () => number } {
+function makeMockBus(): {
+  bus: IEventBus;
+  emit: (defId: string, status: string, extra?: Record<string, unknown>) => Promise<void>;
+  subscriberCount: () => number;
+} {
   let handler: ((event: { type: string; data: unknown }) => Promise<void>) | null = null;
   let count = 0;
   const bus = {
     subscribeTo: (_type: string, h: (e: { type: string; data: unknown }) => Promise<void>) => {
       handler = h;
       count++;
-      return () => { handler = null; count--; };
+      return () => {
+        handler = null;
+        count--;
+      };
     },
   } as unknown as IEventBus;
   return {
@@ -117,7 +124,10 @@ describe('🚨 start() — guard token mancante', () => {
     telemetryEmitter.stop();
     await new Promise((r) => setImmediate(r)); // let flush settle
     expect(safeOutboundFetchMock).toHaveBeenCalled();
-    const headers = (safeOutboundFetchMock.mock.calls[0]![1] as RequestInit).headers as Record<string, string>;
+    const headers = (safeOutboundFetchMock.mock.calls[0]![1] as RequestInit).headers as Record<
+      string,
+      string
+    >;
     expect(headers['X-Internal-Token']).toBe('PRIORITY');
   });
 
@@ -156,8 +166,14 @@ describe('🚨 step handler — skip rules', () => {
     const { bus, emit } = makeMockBus();
     telemetryEmitter.start(bus, 'tenant-x');
     for (const defId of [
-      'logic_if', 'logic_switch', 'logic_loop', 'logic_merge',
-      'logic_delay', 'logic_subworkflow', 'logic_wait', 'logic_wait_signal',
+      'logic_if',
+      'logic_switch',
+      'logic_loop',
+      'logic_merge',
+      'logic_delay',
+      'logic_subworkflow',
+      'logic_wait',
+      'logic_wait_signal',
     ]) {
       await emit(defId, 'success');
     }
@@ -182,7 +198,12 @@ describe('🚨 step handler — skip rules', () => {
   it('🚨 SKIP defId mancante (step senza defId)', async () => {
     let handler: ((e: { type: string; data: unknown }) => Promise<void>) | null = null;
     const bus = {
-      subscribeTo: (_t: string, h: typeof handler) => { handler = h; return () => { /* noop */ }; },
+      subscribeTo: (_t: string, h: typeof handler) => {
+        handler = h;
+        return () => {
+          /* noop */
+        };
+      },
     } as unknown as IEventBus;
     const { telemetryEmitter } = await loadFresh();
     telemetryEmitter.start(bus, 'tenant-x');
@@ -202,7 +223,9 @@ describe('🚨 step handler — skip rules', () => {
     telemetryEmitter.stop();
     await new Promise((r) => setImmediate(r));
     expect(safeOutboundFetchMock).toHaveBeenCalledTimes(1);
-    const body = JSON.parse((safeOutboundFetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    const body = JSON.parse(
+      (safeOutboundFetchMock.mock.calls[0]![1] as RequestInit).body as string,
+    );
     expect(body.events).toHaveLength(1);
     expect(body.events[0]).toMatchObject({
       defId: 'action_http',
@@ -219,14 +242,18 @@ describe('🚨 step handler — skip rules', () => {
     await emit('action_db_insert', 'error', { error: 'NOT NULL violation' });
     telemetryEmitter.stop();
     await new Promise((r) => setImmediate(r));
-    const body = JSON.parse((safeOutboundFetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    const body = JSON.parse(
+      (safeOutboundFetchMock.mock.calls[0]![1] as RequestInit).body as string,
+    );
     expect(body.events[0].success).toBe(false);
     expect(body.events[0].errorMsg).toBe('NOT NULL violation');
   });
 });
 
 describe('🚨 durationMs sanitization', () => {
-  beforeEach(() => { process.env.PORTAL_CALLBACK_TOKEN = 't'; });
+  beforeEach(() => {
+    process.env.PORTAL_CALLBACK_TOKEN = 't';
+  });
 
   it('🚨 durationMs negativo → clamped a 0 (NO valori sotto zero in metrics)', async () => {
     safeOutboundFetchMock.mockResolvedValue({ ok: true, status: 200 });
@@ -236,7 +263,9 @@ describe('🚨 durationMs sanitization', () => {
     await emit('action_http', 'success', { durationMs: -50 });
     telemetryEmitter.stop();
     await new Promise((r) => setImmediate(r));
-    const body = JSON.parse((safeOutboundFetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    const body = JSON.parse(
+      (safeOutboundFetchMock.mock.calls[0]![1] as RequestInit).body as string,
+    );
     expect(body.events[0].durationMs).toBe(0);
   });
 
@@ -248,7 +277,9 @@ describe('🚨 durationMs sanitization', () => {
     await emit('action_http', 'success', { durationMs: 'wow' });
     telemetryEmitter.stop();
     await new Promise((r) => setImmediate(r));
-    const body = JSON.parse((safeOutboundFetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    const body = JSON.parse(
+      (safeOutboundFetchMock.mock.calls[0]![1] as RequestInit).body as string,
+    );
     expect(body.events[0].durationMs).toBe(0);
   });
 
@@ -260,13 +291,17 @@ describe('🚨 durationMs sanitization', () => {
     await emit('action_http', 'success', { durationMs: 1234 });
     telemetryEmitter.stop();
     await new Promise((r) => setImmediate(r));
-    const body = JSON.parse((safeOutboundFetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    const body = JSON.parse(
+      (safeOutboundFetchMock.mock.calls[0]![1] as RequestInit).body as string,
+    );
     expect(body.events[0].durationMs).toBe(1234);
   });
 });
 
 describe('🚨 flush — HTTP + failure modes', () => {
-  beforeEach(() => { process.env.PORTAL_CALLBACK_TOKEN = 't'; });
+  beforeEach(() => {
+    process.env.PORTAL_CALLBACK_TOKEN = 't';
+  });
 
   it('🚨 happy: POST a /api/v1/internal/node-telemetry/ingest', async () => {
     safeOutboundFetchMock.mockResolvedValue({ ok: true, status: 200 });
@@ -321,7 +356,9 @@ describe('🚨 flush — HTTP + failure modes', () => {
     telemetryEmitter.stop();
     await new Promise((r) => setImmediate(r));
     expect(safeOutboundFetchMock).toHaveBeenCalledTimes(1);
-    const body = JSON.parse((safeOutboundFetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    const body = JSON.parse(
+      (safeOutboundFetchMock.mock.calls[0]![1] as RequestInit).body as string,
+    );
     expect(body.events).toHaveLength(2);
   });
 
@@ -346,7 +383,9 @@ describe('🚨 flush — HTTP + failure modes', () => {
     // Auto-flush at 100 SENZA stop()
     await new Promise((r) => setImmediate(r));
     expect(safeOutboundFetchMock).toHaveBeenCalledTimes(1);
-    const body = JSON.parse((safeOutboundFetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    const body = JSON.parse(
+      (safeOutboundFetchMock.mock.calls[0]![1] as RequestInit).body as string,
+    );
     expect(body.events).toHaveLength(100);
     telemetryEmitter.stop();
   });

@@ -77,7 +77,11 @@ beforeEach(() => {
 
 describe('ai-interactions.ts — Track A /signals/stats (aggregati non-personali, no RBAC)', () => {
   it('🚨 GET /signals/stats → tenant-scoped, accessibile senza ruolo elevato', async () => {
-    m.signalsStats.mockReturnValueOnce({ total: 3, byOutcome: { pending: 3 }, byInteractionType: { node_generate: 3 } });
+    m.signalsStats.mockReturnValueOnce({
+      total: 3,
+      byOutcome: { pending: 3 },
+      byInteractionType: { node_generate: 3 },
+    });
     const app = await appWithRole('viewer');
     const res = await app.request('/signals/stats');
     expect(res.status).toBe(200);
@@ -95,8 +99,12 @@ describe('ai-interactions.ts — N4: reviewerUserId da auth context, NON da head
       body: JSON.stringify({ qualityScore: 4 }),
     });
     expect(res.status).toBe(200);
-    expect(m.updateReview).toHaveBeenCalledWith(expect.objectContaining({ reviewerUserId: 'user-from-auth' }));
-    expect(m.updateReview).not.toHaveBeenCalledWith(expect.objectContaining({ reviewerUserId: 'evil-from-header' }));
+    expect(m.updateReview).toHaveBeenCalledWith(
+      expect.objectContaining({ reviewerUserId: 'user-from-auth' }),
+    );
+    expect(m.updateReview).not.toHaveBeenCalledWith(
+      expect.objectContaining({ reviewerUserId: 'evil-from-header' }),
+    );
   });
 
   it('senza actor → reviewerUserId = "anonymous" (no fallback su header)', async () => {
@@ -108,8 +116,12 @@ describe('ai-interactions.ts — N4: reviewerUserId da auth context, NON da head
       body: JSON.stringify({ qualityScore: 4 }),
     });
     expect(res.status).toBe(200);
-    expect(m.updateReview).toHaveBeenCalledWith(expect.objectContaining({ reviewerUserId: 'anonymous' }));
-    expect(m.updateReview).not.toHaveBeenCalledWith(expect.objectContaining({ reviewerUserId: 'attacker' }));
+    expect(m.updateReview).toHaveBeenCalledWith(
+      expect.objectContaining({ reviewerUserId: 'anonymous' }),
+    );
+    expect(m.updateReview).not.toHaveBeenCalledWith(
+      expect.objectContaining({ reviewerUserId: 'attacker' }),
+    );
   });
 
   it('tenantId viene da getTenantId(c)', async () => {
@@ -139,8 +151,14 @@ describe('🔴 RBAC — gating per ruolo (anti-regressione: mutation rimuove req
   it('🔴 PUT /settings (toggle consenso): editor → 403, owner → 200', async () => {
     const body = JSON.stringify({ captureEnabled: true });
     const headers = { 'content-type': 'application/json' };
-    expect((await (await appWithRole('editor')).request('/settings', { method: 'PUT', headers, body })).status).toBe(403);
-    expect((await (await appWithRole('owner')).request('/settings', { method: 'PUT', headers, body })).status).toBe(200);
+    expect(
+      (await (await appWithRole('editor')).request('/settings', { method: 'PUT', headers, body }))
+        .status,
+    ).toBe(403);
+    expect(
+      (await (await appWithRole('owner')).request('/settings', { method: 'PUT', headers, body }))
+        .status,
+    ).toBe(200);
     expect(m.setCapturePreference).toHaveBeenCalledTimes(1); // solo l'owner è passato
   });
 
@@ -154,8 +172,14 @@ describe('🔴 RBAC — gating per ruolo (anti-regressione: mutation rimuove req
   it('🔴 review: viewer → 403, editor → 200', async () => {
     const body = JSON.stringify({ qualityScore: 4 });
     const headers = { 'content-type': 'application/json' };
-    expect((await (await appWithRole('viewer')).request('/i1/review', { method: 'POST', headers, body })).status).toBe(403);
-    expect((await (await appWithRole('editor')).request('/i1/review', { method: 'POST', headers, body })).status).toBe(200);
+    expect(
+      (await (await appWithRole('viewer')).request('/i1/review', { method: 'POST', headers, body }))
+        .status,
+    ).toBe(403);
+    expect(
+      (await (await appWithRole('editor')).request('/i1/review', { method: 'POST', headers, body }))
+        .status,
+    ).toBe(200);
   });
 
   it('🚨 export.jsonl: minQuality non-numerico → 400 (no NaN nel filtro SQL)', async () => {
@@ -171,6 +195,6 @@ describe('🔴 RBAC — gating per ruolo (anti-regressione: mutation rimuove req
     }
     const limited = await app.request('/export.jsonl');
     expect(limited.status).toBe(429);
-    expect((await limited.json() as { error: string }).error).toBe('rate_limit_exceeded');
+    expect(((await limited.json()) as { error: string }).error).toBe('rate_limit_exceeded');
   });
 });

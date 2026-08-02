@@ -21,12 +21,16 @@ vi.mock('@/lib/logger.js');
 const { analyzeImage, extractDocument } = await import('./vision-tools.service.js');
 
 const TARGET = { provider: 'liara', apiKey: '', model: '' };
-const PNG_B64 = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]).toString('base64');
+const PNG_B64 = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]).toString(
+  'base64',
+);
 
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('analyzeImage (foto → modello vision)', () => {
-  it('🚨 happy: passa l\'immagine al dispatch col mime dedotto, ritorna testo', async () => {
+  it("🚨 happy: passa l'immagine al dispatch col mime dedotto, ritorna testo", async () => {
     m.dispatch.mockResolvedValue({ ok: true, text: 'è una fattura da 100€' });
     const r = await analyzeImage(PNG_B64, 'estrai totale', TARGET);
     expect(r.ok).toBe(true);

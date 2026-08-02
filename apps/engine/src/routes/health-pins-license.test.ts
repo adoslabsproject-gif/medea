@@ -22,13 +22,18 @@ const asUser = (tenantId: string): void => {
 };
 
 let app: Hono;
-interface SqliteLike { prepare: (s: string) => { run: (...p: unknown[]) => unknown } }
+interface SqliteLike {
+  prepare: (s: string) => { run: (...p: unknown[]) => unknown };
+}
 const db = (): SqliteLike => getDatabase().sqlite as unknown as SqliteLike;
 
 beforeAll(() => {
   runMigrations();
   app = new Hono();
-  app.use('*', async (c, next) => { c.set('auth', authCtx); await next(); });
+  app.use('*', async (c, next) => {
+    c.set('auth', authCtx);
+    await next();
+  });
   app.route('/', healthRoutes);
   app.route('/api/v1', createPinRoutes());
   app.route('/api/v1', createLicenseRoutes());
@@ -36,19 +41,29 @@ beforeAll(() => {
 
 afterAll(() => {
   for (const t of ['workflow_pins', 'flowforge_license']) {
-    try { db().prepare(`DELETE FROM ${t} WHERE tenant_id LIKE 'test-hpl-%'`).run(); } catch { /* tabella opzionale */ }
+    try {
+      db().prepare(`DELETE FROM ${t} WHERE tenant_id LIKE 'test-hpl-%'`).run();
+    } catch {
+      /* tabella opzionale */
+    }
   }
 });
 
 const get = (path: string): Promise<Response> => Promise.resolve(app.request(path));
 const json = (method: string, path: string, body: unknown): Promise<Response> =>
-  Promise.resolve(app.request(path, { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }));
+  Promise.resolve(
+    app.request(path, {
+      method,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  );
 
 describe('health — probe del deploy', () => {
   it('GET /health → 200 con status ok e timestamp ISO (lo smoke del deploy ci si appoggia)', async () => {
     const res = await get('/health');
     expect(res.status).toBe(200);
-    const data = await res.json() as { status: string; service: string; ts: string };
+    const data = (await res.json()) as { status: string; service: string; ts: string };
     expect(data.status).toBe('ok');
     expect(data.service).toBe('flowforge-runtime');
     expect(() => new Date(data.ts).toISOString()).not.toThrow();
@@ -57,7 +72,7 @@ describe('health — probe del deploy', () => {
   it('GET /ready → 200 quando il DB risponde (SELECT 1 reale)', async () => {
     const res = await get('/ready');
     expect(res.status).toBe(200);
-    expect((await res.json() as { status: string }).status).toBe('ready');
+    expect(((await res.json()) as { status: string }).status).toBe('ready');
   });
 
   it('health/ready NON richiedono auth (sono prima del middleware)', async () => {
@@ -70,9 +85,13 @@ describe('health — probe del deploy', () => {
 describe('pins — pin output per esecuzione parziale (storage reale)', () => {
   it('PUT pin poi GET list: output round-trip + enabled di default true', async () => {
     asUser(T_A);
-    const put = await json('PUT', '/api/v1/workflows/wfp/pins/node-1', { output: { rows: [1, 2, 3] } });
+    const put = await json('PUT', '/api/v1/workflows/wfp/pins/node-1', {
+      output: { rows: [1, 2, 3] },
+    });
     expect(put.status).toBe(200);
-    const list = await (await get('/api/v1/workflows/wfp/pins')).json() as { pins: { nodeId: string; output: unknown; enabled: boolean }[] };
+    const list = (await (await get('/api/v1/workflows/wfp/pins')).json()) as {
+      pins: { nodeId: string; output: unknown; enabled: boolean }[];
+    };
     const pin = list.pins.find((p) => p.nodeId === 'node-1');
     expect(pin?.output).toEqual({ rows: [1, 2, 3] });
     expect(pin?.enabled).toBe(true);
@@ -80,13 +99,17 @@ describe('pins — pin output per esecuzione parziale (storage reale)', () => {
 
   it('PUT senza `output` → 400 (body required)', async () => {
     asUser(T_A);
-    expect((await json('PUT', '/api/v1/workflows/wfp/pins/node-2', { enabled: true })).status).toBe(400);
+    expect((await json('PUT', '/api/v1/workflows/wfp/pins/node-2', { enabled: true })).status).toBe(
+      400,
+    );
   });
 
   it('enabled:false è preservato (pin disattivato ma presente)', async () => {
     asUser(T_A);
     await json('PUT', '/api/v1/workflows/wfp/pins/node-3', { output: 'x', enabled: false });
-    const list = await (await get('/api/v1/workflows/wfp/pins')).json() as { pins: { nodeId: string; enabled: boolean }[] };
+    const list = (await (await get('/api/v1/workflows/wfp/pins')).json()) as {
+      pins: { nodeId: string; enabled: boolean }[];
+    };
     expect(list.pins.find((p) => p.nodeId === 'node-3')?.enabled).toBe(false);
   });
 
@@ -94,16 +117,20 @@ describe('pins — pin output per esecuzione parziale (storage reale)', () => {
     asUser(T_A);
     await json('PUT', '/api/v1/workflows/wfiso/pins/n', { output: 'di-A' });
     asUser(T_B);
-    const list = await (await get('/api/v1/workflows/wfiso/pins')).json() as { pins: unknown[] };
+    const list = (await (await get('/api/v1/workflows/wfiso/pins')).json()) as { pins: unknown[] };
     expect(list.pins).toHaveLength(0);
   });
 
   it('DELETE pin → removed; ri-DELETE → removed false (idempotente)', async () => {
     asUser(T_A);
     await json('PUT', '/api/v1/workflows/wfdel/pins/n', { output: 1 });
-    const d1 = await (await app.request('/api/v1/workflows/wfdel/pins/n', { method: 'DELETE' })).json() as { removed: boolean };
+    const d1 = (await (
+      await app.request('/api/v1/workflows/wfdel/pins/n', { method: 'DELETE' })
+    ).json()) as { removed: boolean };
     expect(d1.removed).toBe(true);
-    const d2 = await (await app.request('/api/v1/workflows/wfdel/pins/n', { method: 'DELETE' })).json() as { removed: boolean };
+    const d2 = (await (
+      await app.request('/api/v1/workflows/wfdel/pins/n', { method: 'DELETE' })
+    ).json()) as { removed: boolean };
     expect(d2.removed).toBe(false);
   });
 });
@@ -113,7 +140,7 @@ describe('license — status e install', () => {
     asUser(T_A);
     const res = await get('/api/v1/license/status');
     expect(res.status).toBe(200);
-    const data = await res.json() as { valid: boolean; reason?: string };
+    const data = (await res.json()) as { valid: boolean; reason?: string };
     expect(typeof data.valid).toBe('boolean');
   });
 
@@ -121,13 +148,15 @@ describe('license — status e install', () => {
     asUser(T_A);
     expect((await json('POST', '/api/v1/license/install', {})).status).toBe(400);
     expect((await json('POST', '/api/v1/license/install', { token: 123 })).status).toBe(400);
-    expect((await json('POST', '/api/v1/license/install', { token: 'non-un-jwt-valido' })).status).toBe(422);
+    expect(
+      (await json('POST', '/api/v1/license/install', { token: 'non-un-jwt-valido' })).status,
+    ).toBe(422);
   });
 
   it('DELETE /license → removed boolean (idempotente sul tenant vergine)', async () => {
     asUser(T_A);
     const res = await app.request('/api/v1/license', { method: 'DELETE' });
     expect(res.status).toBe(200);
-    expect(typeof (await res.json() as { removed: boolean }).removed).toBe('boolean');
+    expect(typeof ((await res.json()) as { removed: boolean }).removed).toBe('boolean');
   });
 });

@@ -40,7 +40,7 @@ export interface PlanQuotas {
 }
 
 /** Ratio applicato a tutti i piani paid (Free è eccezione 100/0). */
-const PAID_TIER_RATIO_LOG = 0.30;
+const PAID_TIER_RATIO_LOG = 0.3;
 const PAID_TIER_RATIO_DATA = 1 - PAID_TIER_RATIO_LOG;
 
 const GIB_TO_BYTES = 1024 * 1024 * 1024;

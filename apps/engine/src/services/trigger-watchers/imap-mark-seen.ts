@@ -23,7 +23,11 @@ import type { MarkSeenMode } from './parsing.js';
 export interface ImapMarkSeenClient {
   connect(): Promise<void>;
   getMailboxLock(mailbox: string): Promise<{ release(): void }>;
-  messageFlagsAdd(range: { uid: string }, flags: string[], opts: { uid: boolean }): Promise<unknown>;
+  messageFlagsAdd(
+    range: { uid: string },
+    flags: string[],
+    opts: { uid: boolean },
+  ): Promise<unknown>;
   logout(): Promise<void>;
 }
 
@@ -77,7 +81,9 @@ export async function markSeenWithFreshConnection(
 
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => { reject(new Error(`markSeen timeout after ${timeoutMs}ms`)); }, timeoutMs);
+    timer = setTimeout(() => {
+      reject(new Error(`markSeen timeout after ${timeoutMs}ms`));
+    }, timeoutMs);
   });
   try {
     await Promise.race([
@@ -95,9 +101,14 @@ export async function markSeenWithFreshConnection(
     ]);
     logger.info({ workflowId, uid, mode }, 'IMAP trigger: marked email as \\Seen');
   } catch (e) {
-    logger.warn({ err: e, workflowId, uid }, 'mark \\Seen failed (non-fatal — email stays UNREAD, run already persisted)');
+    logger.warn(
+      { err: e, workflowId, uid },
+      'mark \\Seen failed (non-fatal — email stays UNREAD, run already persisted)',
+    );
     // Best-effort cleanup: don't await — if connect failed, logout will hang too.
-    void client.logout().catch(() => { /* swallow */ });
+    void client.logout().catch(() => {
+      /* swallow */
+    });
   } finally {
     if (timer) clearTimeout(timer);
   }

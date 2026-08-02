@@ -51,7 +51,7 @@ const POOLS: Record<string, string[]> = {
 function hashString(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) {
-    h = ((h << 5) - h) + s.charCodeAt(i);
+    h = (h << 5) - h + s.charCodeAt(i);
     h |= 0;
   }
   return Math.abs(h);
@@ -69,7 +69,10 @@ const executor: NodeExecutor = async (config, input, _context) => {
   const customPoolRaw = config.customPool;
   let customPool: string[] = [];
   if (typeof customPoolRaw === 'string' && customPoolRaw.trim()) {
-    customPool = customPoolRaw.split('\n').map((s) => s.trim()).filter(Boolean);
+    customPool = customPoolRaw
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
   } else if (Array.isArray(customPoolRaw)) {
     customPool = (customPoolRaw as unknown[]).map((v) => String(v)).filter(Boolean);
   }
@@ -123,7 +126,7 @@ export const userAgentRotateNode: NodeModule = {
       'Chrome), bot (le UA dei crawler legittimi famosi: Googlebot/2.1, bingbot/2.0, DuckDuckBot, FacebookBot, ' +
       'Twitterbot, LinkedInBot, Slackbot, Telegrambot — utile per testare il proprio social embed cards), ' +
       'custom (pool definito dal customer per use case specifici aziendali). ' +
-      'Tre strategie di selezione complementari per coprire i pattern d\'uso: ' +
+      "Tre strategie di selezione complementari per coprire i pattern d'uso: " +
       '(1) random — pesca uniforme dalla pool selezionata, ogni invocazione del nodo restituisce un UA ' +
       'diverso (pattern naturale per test di breadth coverage); ' +
       '(2) deterministic — seed-based, prende un input field (es. user_id, session_id, transaction_id) come ' +
@@ -132,7 +135,7 @@ export const userAgentRotateNode: NodeModule = {
       '(3) sequential — round-robin time-based, ruota il pool su una sliding window per garantire uniform ' +
       'distribution del UA usage nel tempo (pattern per monitoring distributo del proprio sito senza skew). ' +
       'Politica etica enterprise: questo nodo è progettato per testing del PROPRIO sito o servizio cliente ' +
-      'authorized — il pool include FlowForge/1.0 RFC-compliant UA per dichiarare onestamente l\'identità del ' +
+      "authorized — il pool include FlowForge/1.0 RFC-compliant UA per dichiarare onestamente l'identità del " +
       'crawler. NON usarlo per spoof identità di browser legittimi verso siti di terzi che potrebbero ' +
       'considerarlo violazione ToS — il SaaS multi-tenant FlowForge non garantisce protezione legale per ' +
       'questo abuse case. ' +

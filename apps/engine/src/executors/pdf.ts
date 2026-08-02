@@ -85,7 +85,11 @@ async function extractWithPdfjs(buffer: Buffer): Promise<{ text: string; numpage
  */
 interface PdfKitDoc {
   y: number;
-  readonly page: { width: number; height: number; margins: { top: number; bottom: number; left: number; right: number } };
+  readonly page: {
+    width: number;
+    height: number;
+    margins: { top: number; bottom: number; left: number; right: number };
+  };
   font(name: string): PdfKitDoc;
   fontSize(size: number): PdfKitDoc;
   fillColor(color: string): PdfKitDoc;
@@ -118,7 +122,11 @@ function assertPathAllowed(filePath: string, tenantId: string): string {
   const abs = filePath.startsWith('/') ? resolve(filePath) : resolve(tenantRoot, filePath);
   if (abs === tenantRoot || abs.startsWith(tenantRoot + sep)) return abs;
   const envList = process.env.MEDEA_FILE_ALLOWLIST ?? '';
-  const globalAllow = envList.split(':').map((p) => p.trim()).filter(Boolean).map((p) => resolve(p));
+  const globalAllow = envList
+    .split(':')
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => resolve(p));
   if (globalAllow.some((root) => abs === root || abs.startsWith(root + sep))) return abs;
   throw new Error(`Path "${abs}" outside tenant namespace.`);
 }
@@ -151,7 +159,11 @@ function confidenceScore(text: string): number {
 
   // Bonus: presence of "real" words like "fattura", "data", "totale", "via",
   // common in Italian business docs. Detection of these = strong signal.
-  const realWordHits = (trimmed.match(/\b(fattura|data|totale|via|spa|srl|cf|piva|cap|importo|articolo|quantità|prezzo|cod\.|n\.\s*\d+)\b/gi) ?? []).length;
+  const realWordHits = (
+    trimmed.match(
+      /\b(fattura|data|totale|via|spa|srl|cf|piva|cap|importo|articolo|quantità|prezzo|cod\.|n\.\s*\d+)\b/gi,
+    ) ?? []
+  ).length;
   const bonus = Math.min(0.2, realWordHits * 0.04);
 
   const base = Math.min(1, words.length / 100) * 0.5 + letterRatio * 0.5;
@@ -181,9 +193,13 @@ async function llmVisionExtract(pdfBuffer: Buffer, tenantId: string): Promise<Ll
   if (!anthropic?.apiKey) {
     // Try Liara if globally allowed (per-tenant respected automatically)
     if (!isLiaraAllowedForTenant(tenantId)) {
-      throw new Error('LLM-vision fallback requires an Anthropic API key configured in Settings → AI Providers (or Liara enabled).');
+      throw new Error(
+        'LLM-vision fallback requires an Anthropic API key configured in Settings → AI Providers (or Liara enabled).',
+      );
     }
-    throw new Error('LLM-vision fallback non disponibile: configura una API key Anthropic in Settings → AI Providers. (Liara non supporta ancora input PDF vision.)');
+    throw new Error(
+      'LLM-vision fallback non disponibile: configura una API key Anthropic in Settings → AI Providers. (Liara non supporta ancora input PDF vision.)',
+    );
   }
 
   const model = anthropic.defaultModel ?? 'claude-sonnet-4-5';
@@ -199,23 +215,25 @@ async function llmVisionExtract(pdfBuffer: Buffer, tenantId: string): Promise<Ll
     body: JSON.stringify({
       model,
       max_tokens: 8192,
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'document',
-            source: {
-              type: 'base64',
-              media_type: 'application/pdf',
-              data: base64,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: {
+                type: 'base64',
+                media_type: 'application/pdf',
+                data: base64,
+              },
             },
-          },
-          {
-            type: 'text',
-            text: 'Estrai TUTTO il testo da questo PDF, mantenendo la struttura originale (paragrafi, tabelle, intestazioni). Restituisci SOLO il testo estratto, senza commenti o spiegazioni. Per le tabelle, usa formato Markdown.',
-          },
-        ],
-      }],
+            {
+              type: 'text',
+              text: 'Estrai TUTTO il testo da questo PDF, mantenendo la struttura originale (paragrafi, tabelle, intestazioni). Restituisci SOLO il testo estratto, senza commenti o spiegazioni. Per le tabelle, usa formato Markdown.',
+            },
+          ],
+        },
+      ],
     }),
   });
 
@@ -225,9 +243,15 @@ async function llmVisionExtract(pdfBuffer: Buffer, tenantId: string): Promise<Ll
     throw new Error(`LLM-vision (Anthropic ${res.status.toString()}): ${errText.slice(0, 500)}`);
   }
   const data = await readJsonCapped<{ content?: { type: string; text?: string }[] }>(res);
-  const text = data.content?.filter((b) => b.type === 'text').map((b) => b.text ?? '').join('') ?? '';
+  const text =
+    data.content
+      ?.filter((b) => b.type === 'text')
+      .map((b) => b.text ?? '')
+      .join('') ?? '';
   if (!text.trim()) {
-    throw new Error('LLM-vision ha restituito risposta vuota — controlla che il PDF sia valido e non troppo grande (max 32 MB Anthropic).');
+    throw new Error(
+      'LLM-vision ha restituito risposta vuota — controlla che il PDF sia valido e non troppo grande (max 32 MB Anthropic).',
+    );
   }
   return { text, model };
 }
@@ -245,7 +269,12 @@ const CONFIDENCE_FALLBACK_THRESHOLD = 0.5;
  * BinaryData è stabile e banale (encoding='base64' → decode; encoding='ref' →
  * context.readBinary(ref)) e così questo modulo resta dependency-light.
  */
-interface BinaryLike { __ffBinary: true; encoding: string; data?: string; ref?: string }
+interface BinaryLike {
+  __ffBinary: true;
+  encoding: string;
+  data?: string;
+  ref?: string;
+}
 function extractBinary(v: unknown): BinaryLike | null {
   const isBin = (x: unknown): x is BinaryLike =>
     x !== null && typeof x === 'object' && (x as { __ffBinary?: unknown }).__ffBinary === true;
@@ -263,7 +292,8 @@ export async function resolveBinaryInline(
   if (bin === null) return null;
   if (bin.encoding === 'base64') return Buffer.from(bin.data ?? '', 'base64');
   if (!bin.ref) throw new Error('action_pdf_parse: BinaryData encoding=ref senza campo "ref".');
-  if (!readBinary) throw new Error('action_pdf_parse: input BinaryData ref ma context.readBinary assente.');
+  if (!readBinary)
+    throw new Error('action_pdf_parse: input BinaryData ref ma context.readBinary assente.');
   return await readBinary(bin.ref);
 }
 
@@ -301,11 +331,15 @@ export const pdfParseExecutor: NodeExecutor = async (config, input, context) => 
   // per tenere il modulo dependency-light; l'helper condiviso assertInputSizeWithinCap
   // è usato dagli altri parser (es. excel.ts).
   if (sizeBytes > PDF_MAX_INPUT_BYTES) {
-    throw new Error(`PDF troppo grande (${sizeBytes.toString()} bytes). Max ${(PDF_MAX_INPUT_BYTES / (1024 * 1024)).toString()} MB.`);
+    throw new Error(
+      `PDF troppo grande (${sizeBytes.toString()} bytes). Max ${(PDF_MAX_INPUT_BYTES / (1024 * 1024)).toString()} MB.`,
+    );
   }
   const mode = asString(config.mode) || 'auto';
   if (!['auto', 'pdf-parse-only', 'llm-only'].includes(mode)) {
-    throw new Error(`action_pdf_parse: mode "${mode}" non valido. Accettati: auto, pdf-parse-only, llm-only.`);
+    throw new Error(
+      `action_pdf_parse: mode "${mode}" non valido. Accettati: auto, pdf-parse-only, llm-only.`,
+    );
   }
 
   // ── Step 2: estrazione locale gratis (unpdf/pdfjs) ────────────────────
@@ -320,7 +354,9 @@ export const pdfParseExecutor: NodeExecutor = async (config, input, context) => 
       // pdfjs può lanciare su PDF cifrati o malformati. Se la mode lo consente,
       // più sotto proviamo il fallback LLM-vision.
       if (mode === 'pdf-parse-only') {
-        throw new Error(`estrazione PDF locale fallita: ${err instanceof Error ? err.message : String(err)}`);
+        throw new Error(
+          `estrazione PDF locale fallita: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     }
   }
@@ -374,7 +410,10 @@ export const pdfParseExecutor: NodeExecutor = async (config, input, context) => 
       sizeBytes,
       usedLlmFallback: true,
       llmModel,
-      cheapAttempt: mode !== 'llm-only' ? { text: cheapText.slice(0, 500), confidence: cheapConfidence } : undefined,
+      cheapAttempt:
+        mode !== 'llm-only'
+          ? { text: cheapText.slice(0, 500), confidence: cheapConfidence }
+          : undefined,
     },
     durationMs: Date.now() - start,
   };
@@ -425,7 +464,11 @@ const PDF_MAX_OUTPUT_BYTES = 24 * 1024 * 1024; // 24 MB raw — base64 ~32 MB
 function parseJsonSafe<T>(raw: unknown, fallback: T): T {
   if (raw == null || raw === '') return fallback;
   if (typeof raw !== 'string') return raw as T;
-  try { return JSON.parse(raw) as T; } catch { return fallback; }
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
 }
 
 function escapePdfCell(value: unknown): string {
@@ -434,10 +477,13 @@ function escapePdfCell(value: unknown): string {
   // pdfkit renderizza Unicode UTF-8 nativo. L'unica difesa qui è evitare
   // null bytes che alcuni parser PDF rifiutano + control chars non-stampabili.
   // Filtro per codepoint (niente regex con control char → no-control-regex).
-  return [...s].filter((ch) => {
-    const c = ch.charCodeAt(0);
-    return !(c <= 8 || (c >= 0x0b && c <= 0x1f) || c === 0x7f);
-  }).join('').slice(0, 500);
+  return [...s]
+    .filter((ch) => {
+      const c = ch.charCodeAt(0);
+      return !(c <= 8 || (c >= 0x0b && c <= 0x1f) || c === 0x7f);
+    })
+    .join('')
+    .slice(0, 500);
 }
 
 export const pdfGenerateExecutor: NodeExecutor = async (config, _input, context) => {
@@ -446,7 +492,9 @@ export const pdfGenerateExecutor: NodeExecutor = async (config, _input, context)
   // Pdfkit ha import sync ma il default export ha types CJS — lazy + cast tipato
   // su un'interfaccia strutturale minima (no `any`, solo i membri usati).
   const PDFKitModule = await import('pdfkit');
-  const pdfkitInterop = PDFKitModule as unknown as { default?: PdfKitConstructor } & PdfKitConstructor;
+  const pdfkitInterop = PDFKitModule as unknown as {
+    default?: PdfKitConstructor;
+  } & PdfKitConstructor;
   const PDFDocument: PdfKitConstructor = pdfkitInterop.default ?? pdfkitInterop;
 
   const cfg = config;
@@ -456,14 +504,19 @@ export const pdfGenerateExecutor: NodeExecutor = async (config, _input, context)
   }
   const subtitle = coerceString(cfg.subtitle ?? '').trim();
   const footer = coerceString(cfg.footer ?? '').trim();
-  const pageSize = ['A4', 'A5', 'LETTER', 'LEGAL'].includes(String(cfg.pageSize)) ? String(cfg.pageSize) : 'A4';
-  const orientation = coerceString(cfg.orientation ?? 'portrait') === 'landscape' ? 'landscape' : 'portrait';
+  const pageSize = ['A4', 'A5', 'LETTER', 'LEGAL'].includes(String(cfg.pageSize))
+    ? String(cfg.pageSize)
+    : 'A4';
+  const orientation =
+    coerceString(cfg.orientation ?? 'portrait') === 'landscape' ? 'landscape' : 'portrait';
   let filename = coerceString(cfg.filename ?? 'document.pdf').trim() || 'document.pdf';
   if (!/\.pdf$/i.test(filename)) filename += '.pdf';
 
   const sections = parseJsonSafe<PdfSection[]>(cfg.sectionsJson, []);
   if (!Array.isArray(sections)) {
-    throw new Error('action_pdf_generate: sectionsJson deve essere un array JSON di {heading, body}');
+    throw new Error(
+      'action_pdf_generate: sectionsJson deve essere un array JSON di {heading, body}',
+    );
   }
 
   const tableRows = parseJsonSafe<Record<string, unknown>[]>(cfg.tableJson, []);
@@ -471,7 +524,9 @@ export const pdfGenerateExecutor: NodeExecutor = async (config, _input, context)
     throw new Error('action_pdf_generate: tableJson deve essere un array JSON di oggetti riga');
   }
   if (tableRows.length > PDF_MAX_TABLE_ROWS) {
-    throw new Error(`action_pdf_generate: tabella troppo grande (${String(tableRows.length)} righe, max ${String(PDF_MAX_TABLE_ROWS)})`);
+    throw new Error(
+      `action_pdf_generate: tabella troppo grande (${String(tableRows.length)} righe, max ${String(PDF_MAX_TABLE_ROWS)})`,
+    );
   }
 
   // ── Compone PDF ─────────────────────────────────────────────────────
@@ -497,19 +552,28 @@ export const pdfGenerateExecutor: NodeExecutor = async (config, _input, context)
   let overflowErr: Error | null = null;
   let resolveDone!: () => void;
   let rejectDone!: (e: Error) => void;
-  const done = new Promise<void>((resolve, reject) => { resolveDone = resolve; rejectDone = reject; });
+  const done = new Promise<void>((resolve, reject) => {
+    resolveDone = resolve;
+    rejectDone = reject;
+  });
   doc.on('data', (chunk: Buffer) => {
     if (overflowErr) return;
     totalBytes += chunk.length;
     if (totalBytes > PDF_MAX_OUTPUT_BYTES) {
-      overflowErr = new Error(`action_pdf_generate: output PDF troppo grande (>${String(PDF_MAX_OUTPUT_BYTES / 1024 / 1024)}MB)`);
+      overflowErr = new Error(
+        `action_pdf_generate: output PDF troppo grande (>${String(PDF_MAX_OUTPUT_BYTES / 1024 / 1024)}MB)`,
+      );
       rejectDone(overflowErr);
       return;
     }
     chunks.push(chunk);
   });
-  doc.on('end', () => { if (!overflowErr) resolveDone(); });
-  doc.on('error', (e: Error) => { if (!overflowErr) rejectDone(e); });
+  doc.on('end', () => {
+    if (!overflowErr) resolveDone();
+  });
+  doc.on('error', (e: Error) => {
+    if (!overflowErr) rejectDone(e);
+  });
 
   // Header titolo
   doc.font('Helvetica-Bold').fontSize(24).fillColor('#0b0b0d').text(title, { align: 'left' });
@@ -526,7 +590,11 @@ export const pdfGenerateExecutor: NodeExecutor = async (config, _input, context)
       doc.moveDown(0.3);
     }
     if (sec.body) {
-      doc.font('Helvetica').fontSize(11).fillColor('#27272a').text(sec.body, { align: 'left', lineGap: 2 });
+      doc
+        .font('Helvetica')
+        .fontSize(11)
+        .fillColor('#27272a')
+        .text(sec.body, { align: 'left', lineGap: 2 });
       doc.moveDown(0.8);
     }
   }
@@ -550,7 +618,10 @@ export const pdfGenerateExecutor: NodeExecutor = async (config, _input, context)
       doc.rect(startX, y, pageWidth, rowH).fill('#0ea5e9');
       doc.fillColor('#ffffff');
       headers.forEach((h, i) => {
-        doc.text(escapePdfCell(h), startX + i * colWidth + 4, y + 4, { width: colWidth - 8, ellipsis: true });
+        doc.text(escapePdfCell(h), startX + i * colWidth + 4, y + 4, {
+          width: colWidth - 8,
+          ellipsis: true,
+        });
       });
       y += rowH;
 
@@ -588,13 +659,17 @@ export const pdfGenerateExecutor: NodeExecutor = async (config, _input, context)
     const total = range.count;
     for (let i = 0; i < total; i++) {
       doc.switchToPage(range.start + i);
-      const footerText = footer.replace(/\{page\}/g, String(i + 1)).replace(/\{total\}/g, String(total));
-      doc.font('Helvetica').fontSize(9).fillColor('#71717a').text(
-        footerText,
-        doc.page.margins.left,
-        doc.page.height - 40,
-        { align: 'center', width: doc.page.width - doc.page.margins.left - doc.page.margins.right },
-      );
+      const footerText = footer
+        .replace(/\{page\}/g, String(i + 1))
+        .replace(/\{total\}/g, String(total));
+      doc
+        .font('Helvetica')
+        .fontSize(9)
+        .fillColor('#71717a')
+        .text(footerText, doc.page.margins.left, doc.page.height - 40, {
+          align: 'center',
+          width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
+        });
     }
   }
 
@@ -613,7 +688,14 @@ export const pdfGenerateExecutor: NodeExecutor = async (config, _input, context)
   // resolveBinaryInline: era un vincolo di pdf-parse, caduto con unpdf).
   const binary: BinaryData = context.writeBinary
     ? await context.writeBinary(buffer, { mimeType: 'application/pdf', fileName: filename })
-    : { __ffBinary: true, encoding: 'base64', mimeType: 'application/pdf', size: buffer.length, data: buffer.toString('base64'), fileName: filename };
+    : {
+        __ffBinary: true,
+        encoding: 'base64',
+        mimeType: 'application/pdf',
+        size: buffer.length,
+        data: buffer.toString('base64'),
+        fileName: filename,
+      };
 
   const output: PdfGenerateOutput = {
     filename,

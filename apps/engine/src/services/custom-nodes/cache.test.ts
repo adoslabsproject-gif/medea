@@ -183,14 +183,18 @@ describe('cache — stats observability', () => {
 
   it('stats snapshot frozen (immutable)', () => {
     const s = customNodeCacheStats();
-    expect(() => { (s as { hits: number }).hits = 99; }).toThrow();
+    expect(() => {
+      (s as { hits: number }).hits = 99;
+    }).toThrow();
   });
 });
 
 describe('cache — event emitter', () => {
   it('onCustomNodeUpdate riceve il payload emesso', () => {
     const seen: unknown[] = [];
-    const off = onCustomNodeUpdate((ev) => { seen.push(ev); });
+    const off = onCustomNodeUpdate((ev) => {
+      seen.push(ev);
+    });
     emitCustomNodeUpdate({
       workspaceId: 'ws-1',
       defId: 'custom_foo',
@@ -204,7 +208,9 @@ describe('cache — event emitter', () => {
 
   it('unsubscribe cancella il listener', () => {
     const seen: unknown[] = [];
-    const off = onCustomNodeUpdate((ev) => { seen.push(ev); });
+    const off = onCustomNodeUpdate((ev) => {
+      seen.push(ev);
+    });
     off();
     emitCustomNodeUpdate({
       workspaceId: 'ws-1',

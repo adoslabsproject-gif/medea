@@ -4,20 +4,40 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-  executeWorkflowTool, listWorkflowTools, isFinishTool, type WorkflowAgentContext,
+  executeWorkflowTool,
+  listWorkflowTools,
+  isFinishTool,
+  type WorkflowAgentContext,
 } from './tools.js';
 import { WorkflowBuilder } from './state.js';
 import type { NodeCatalogEntry } from '@/services/ai-scaffold/node-catalog.js';
 
 const CATALOG: NodeCatalogEntry[] = [
-  { defId: 'trigger_webhook', type: 'trigger', label: 'Webhook', description: 'avvio http', fields: [], searchAliases: ['webhook'] },
   {
-    defId: 'action_http_request', type: 'action', label: 'HTTP', description: 'chiama http endpoint', fields: [
+    defId: 'trigger_webhook',
+    type: 'trigger',
+    label: 'Webhook',
+    description: 'avvio http',
+    fields: [],
+    searchAliases: ['webhook'],
+  },
+  {
+    defId: 'action_http_request',
+    type: 'action',
+    label: 'HTTP',
+    description: 'chiama http endpoint',
+    fields: [
       { key: 'url', label: 'URL', type: 'text', required: true },
       { key: 'method', label: 'M', type: 'select', required: true, options: ['GET', 'POST'] },
     ],
   },
-  { defId: 'db_insert', type: 'action', label: 'DB Insert', description: 'salva database', fields: [{ key: 'table', label: 'T', type: 'text', required: true }] },
+  {
+    defId: 'db_insert',
+    type: 'action',
+    label: 'DB Insert',
+    description: 'salva database',
+    fields: [{ key: 'table', label: 'T', type: 'text', required: true }],
+  },
 ];
 
 function ctx(): WorkflowAgentContext {
@@ -32,7 +52,17 @@ describe('listWorkflowTools + isFinishTool', () => {
   it('espone i 9 tool (incl. delete_node/disconnect) con parameters JSON-schema', () => {
     const tools = listWorkflowTools();
     expect(tools.map((t) => t.name).sort()).toEqual(
-      ['add_node', 'connect', 'delete_node', 'disconnect', 'finish', 'get_node_schema', 'search_nodes', 'set_config', 'validate_workflow'].sort(),
+      [
+        'add_node',
+        'connect',
+        'delete_node',
+        'disconnect',
+        'finish',
+        'get_node_schema',
+        'search_nodes',
+        'set_config',
+        'validate_workflow',
+      ].sort(),
     );
     for (const t of tools) expect(t.parameters).toMatchObject({ type: 'object' });
   });
@@ -64,10 +94,19 @@ describe('add_node / connect / set_config su uno stato condiviso', () => {
   it('🚨 build completo end-to-end via tool', () => {
     const c = ctx();
     ok(executeWorkflowTool(c, 'add_node', { defId: 'trigger_webhook', id: 'w' }));
-    ok(executeWorkflowTool(c, 'add_node', { defId: 'action_http_request', id: 'h', config: { url: 'https://x', method: 'GET' } }));
+    ok(
+      executeWorkflowTool(c, 'add_node', {
+        defId: 'action_http_request',
+        id: 'h',
+        config: { url: 'https://x', method: 'GET' },
+      }),
+    );
     ok(executeWorkflowTool(c, 'connect', { from: 'w', to: 'h' }));
     const fin = ok(executeWorkflowTool(c, 'finish', {}));
-    const snap = (fin.data as { snapshot: { nodes: unknown[]; edges: unknown[] }; remainingIssues: string[] });
+    const snap = fin.data as {
+      snapshot: { nodes: unknown[]; edges: unknown[] };
+      remainingIssues: string[];
+    };
     expect(snap.snapshot.nodes).toHaveLength(2);
     expect(snap.snapshot.edges).toHaveLength(1);
     expect(snap.remainingIssues).toEqual([]);
@@ -102,11 +141,19 @@ describe('delete_node / disconnect — modifica di workflow esistente', () => {
         { id: 'h', defId: 'action_http_request', config: { url: 'https://x', method: 'GET' } },
         { id: 'd', defId: 'db_insert', config: { table: 't' } },
       ],
-      edges: [{ from: 'w', to: 'h' }, { from: 'h', to: 'd' }],
+      edges: [
+        { from: 'w', to: 'h' },
+        { from: 'h', to: 'd' },
+      ],
     });
     const r = ok(executeWorkflowTool(c, 'delete_node', { nodeId: 'h' }));
     expect((r.data as { ok: boolean }).ok).toBe(true);
-    expect(c.builder.snapshot().nodes.map((n) => n.id).sort()).toEqual(['d', 'w']);
+    expect(
+      c.builder
+        .snapshot()
+        .nodes.map((n) => n.id)
+        .sort(),
+    ).toEqual(['d', 'w']);
     expect(c.builder.orphanEdges()).toEqual([]);
   });
 
@@ -119,11 +166,17 @@ describe('delete_node / disconnect — modifica di workflow esistente', () => {
     expect(executeWorkflowTool(ctx(), 'delete_node', {}).ok).toBe(false);
   });
 
-  it('disconnect rimuove l\'edge richiesto (fromPort onorato)', () => {
+  it("disconnect rimuove l'edge richiesto (fromPort onorato)", () => {
     const c = ctx();
     c.builder.seed({
-      nodes: [{ id: 'w', defId: 'trigger_webhook', config: {} }, { id: 'd', defId: 'db_insert', config: { table: 't' } }],
-      edges: [{ from: 'w', to: 'd', fromPort: 'true' }, { from: 'w', to: 'd', fromPort: 'false' }],
+      nodes: [
+        { id: 'w', defId: 'trigger_webhook', config: {} },
+        { id: 'd', defId: 'db_insert', config: { table: 't' } },
+      ],
+      edges: [
+        { from: 'w', to: 'd', fromPort: 'true' },
+        { from: 'w', to: 'd', fromPort: 'false' },
+      ],
     });
     ok(executeWorkflowTool(c, 'disconnect', { from: 'w', to: 'd', fromPort: 'false' }));
     expect(c.builder.snapshot().edges).toEqual([{ from: 'w', to: 'd', fromPort: 'true' }]);

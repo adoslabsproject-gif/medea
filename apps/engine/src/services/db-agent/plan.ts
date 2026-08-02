@@ -19,30 +19,44 @@ const ON_DELETE = ['cascade', 'restrict', 'set null', 'set default', 'no action'
 
 /** Azione di piano (alto livello, LLM-friendly). `.strict()`: chiavi extra = errore. */
 export const PlanActionSchema = z.discriminatedUnion('op', [
-  z.object({
-    op: z.literal('create_table'),
-    table: z.string().regex(NAME).max(63),
-    columns: z.array(ColumnInputSchema).min(1),
-  }).strict(),
-  z.object({ op: z.literal('add_column'), table: z.string().min(1), column: ColumnInputSchema }).strict(),
-  z.object({ op: z.literal('drop_column'), table: z.string().min(1), columnName: z.string().min(1) }).strict(),
+  z
+    .object({
+      op: z.literal('create_table'),
+      table: z.string().regex(NAME).max(63),
+      columns: z.array(ColumnInputSchema).min(1),
+    })
+    .strict(),
+  z
+    .object({ op: z.literal('add_column'), table: z.string().min(1), column: ColumnInputSchema })
+    .strict(),
+  z
+    .object({
+      op: z.literal('drop_column'),
+      table: z.string().min(1),
+      columnName: z.string().min(1),
+    })
+    .strict(),
   z.object({ op: z.literal('drop_table'), table: z.string().min(1) }).strict(),
-  z.object({
-    op: z.literal('add_index'),
-    table: z.string().min(1),
-    indexName: z.string().regex(NAME),
-    columns: z.array(z.string().min(1)).min(1),
-    unique: z.boolean().optional(),
-  }).strict(),
-  z.object({
-    op: z.literal('add_foreign_key'),
-    name: z.string().regex(NAME),
-    fromTable: z.string().min(1),
-    fromColumn: z.string().min(1),
-    toTable: z.string().min(1),
-    toColumn: z.string().min(1),
-    onDelete: z.enum(ON_DELETE).optional(),
-  }).strict(),
+  z
+    .object({
+      op: z.literal('add_index'),
+      table: z.string().min(1),
+      indexName: z.string().regex(NAME),
+      columns: z.array(z.string().min(1)).min(1),
+      unique: z.boolean().optional(),
+    })
+    .strict(),
+  z
+    .object({
+      op: z.literal('add_foreign_key'),
+      name: z.string().regex(NAME),
+      fromTable: z.string().min(1),
+      fromColumn: z.string().min(1),
+      toTable: z.string().min(1),
+      toColumn: z.string().min(1),
+      onDelete: z.enum(ON_DELETE).optional(),
+    })
+    .strict(),
 ]);
 
 export type PlanAction = z.infer<typeof PlanActionSchema>;
@@ -60,7 +74,13 @@ export function planHasDestructive(plan: PlanAction[]): boolean {
 export function destructiveSummary(plan: PlanAction[]): string {
   return plan
     .filter((a) => DESTRUCTIVE_OPS.has(a.op))
-    .map((a) => (a.op === 'drop_table' ? `drop_table(${a.table})` : a.op === 'drop_column' ? `drop_column(${a.table}.${a.columnName})` : a.op))
+    .map((a) =>
+      a.op === 'drop_table'
+        ? `drop_table(${a.table})`
+        : a.op === 'drop_column'
+          ? `drop_column(${a.table}.${a.columnName})`
+          : a.op,
+    )
     .join(', ');
 }
 
@@ -69,7 +89,15 @@ export function buildMigrationActions(plan: PlanAction[]): MigrationAction[] {
   return plan.map((a): MigrationAction => {
     switch (a.op) {
       case 'create_table':
-        return { kind: 'create_table', table: { id: a.table, name: a.table, columns: a.columns.map((c) => buildColumn(a.table, c)), indexes: [] } };
+        return {
+          kind: 'create_table',
+          table: {
+            id: a.table,
+            name: a.table,
+            columns: a.columns.map((c) => buildColumn(a.table, c)),
+            indexes: [],
+          },
+        };
       case 'add_column':
         return { kind: 'add_column', tableName: a.table, column: buildColumn(a.table, a.column) };
       case 'drop_column':
@@ -77,7 +105,16 @@ export function buildMigrationActions(plan: PlanAction[]): MigrationAction[] {
       case 'drop_table':
         return { kind: 'drop_table', tableName: a.table };
       case 'add_index':
-        return { kind: 'add_index', tableName: a.table, index: { id: a.indexName, name: a.indexName, columns: a.columns, unique: a.unique ?? false } };
+        return {
+          kind: 'add_index',
+          tableName: a.table,
+          index: {
+            id: a.indexName,
+            name: a.indexName,
+            columns: a.columns,
+            unique: a.unique ?? false,
+          },
+        };
       case 'add_foreign_key': {
         const relation: Relation = {
           id: a.name,

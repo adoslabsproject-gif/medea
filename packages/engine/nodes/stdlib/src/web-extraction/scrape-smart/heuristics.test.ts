@@ -111,7 +111,9 @@ describe('detectAntiBot', () => {
   });
 
   it('Incapsula visid_incap cookie marker', () => {
-    expect(detectAntiBot('<script>document.cookie="visid_incap_xxx=yyy"</script>').vendor).toBe('incapsula');
+    expect(detectAntiBot('<script>document.cookie="visid_incap_xxx=yyy"</script>').vendor).toBe(
+      'incapsula',
+    );
   });
 
   it('evidence troncata a 100 chars', () => {
@@ -128,7 +130,9 @@ describe('detectVisuallyOnly', () => {
 
   it('Canvas grande (width >= 100) → needs vision', () => {
     expect(detectVisuallyOnly('<canvas width="800" height="600"></canvas>').needsVision).toBe(true);
-    expect(detectVisuallyOnly('<canvas width="800" height="600"></canvas>').reason).toContain('canvas');
+    expect(detectVisuallyOnly('<canvas width="800" height="600"></canvas>').reason).toContain(
+      'canvas',
+    );
   });
 
   it('Canvas piccolo (width 50) → NOT vision', () => {
@@ -136,7 +140,9 @@ describe('detectVisuallyOnly', () => {
   });
 
   it('PDF embedded → needs vision', () => {
-    expect(detectVisuallyOnly('<embed type="application/pdf" src="/doc.pdf">').needsVision).toBe(true);
+    expect(detectVisuallyOnly('<embed type="application/pdf" src="/doc.pdf">').needsVision).toBe(
+      true,
+    );
     expect(detectVisuallyOnly('<iframe src="/file.pdf"></iframe>').needsVision).toBe(true);
   });
 

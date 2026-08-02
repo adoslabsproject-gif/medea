@@ -75,7 +75,10 @@ function deriveTenantKey(masterPassword: string, tenantId: string): Buffer {
   // hardcoded: "a"*32 vs "b"*32 producono lo stesso cacheKey, ma hkdfSync
   // produrrebbe key diverse). Fix: usa SHA-256(password) prefix come
   // fingerprint univoco (no plaintext leak — solo hash).
-  const fingerprint = createHash('sha256').update(masterPassword, 'utf8').digest('hex').slice(0, 16);
+  const fingerprint = createHash('sha256')
+    .update(masterPassword, 'utf8')
+    .digest('hex')
+    .slice(0, 16);
   const cacheKey = `${tenantId}::${fingerprint}`;
   const cached = tenantKeyCache.get(cacheKey);
   if (cached) return cached;
@@ -121,7 +124,12 @@ export function encrypt(plain: string, masterPassword: string, tenantId: string)
  * means either the master password rotated without re-encryption, or the
  * ciphertext was tampered with.
  */
-export function decrypt(ciphertext: Buffer, nonce: Buffer, masterPassword: string, tenantId: string): string {
+export function decrypt(
+  ciphertext: Buffer,
+  nonce: Buffer,
+  masterPassword: string,
+  tenantId: string,
+): string {
   if (!Buffer.isBuffer(ciphertext) || ciphertext.length < TAG_LEN_BYTES + 1) {
     throw new Error('decrypt: ciphertext too short (missing GCM auth tag?)');
   }

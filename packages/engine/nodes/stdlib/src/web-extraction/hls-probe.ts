@@ -29,7 +29,10 @@ interface Segment {
   byterange?: string;
 }
 
-function parseM3U8(text: string, baseUrl: string): {
+function parseM3U8(
+  text: string,
+  baseUrl: string,
+): {
   isMaster: boolean;
   variants: Variant[];
   segments: Segment[];
@@ -58,7 +61,8 @@ function parseM3U8(text: string, baseUrl: string): {
       pendingVariantInfo = {
         bandwidth: Number(attrs.BANDWIDTH ?? 0),
       };
-      if (attrs['AVERAGE-BANDWIDTH']) pendingVariantInfo.averageBandwidth = Number(attrs['AVERAGE-BANDWIDTH']);
+      if (attrs['AVERAGE-BANDWIDTH'])
+        pendingVariantInfo.averageBandwidth = Number(attrs['AVERAGE-BANDWIDTH']);
       if (attrs.RESOLUTION) pendingVariantInfo.resolution = attrs.RESOLUTION;
       if (attrs.CODECS) pendingVariantInfo.codecs = attrs.CODECS;
       if (attrs['FRAME-RATE']) pendingVariantInfo.frameRate = Number(attrs['FRAME-RATE']);
@@ -132,7 +136,11 @@ function parseAttrList(s: string): Record<string, string> {
 
 function resolveUrl(url: string, baseUrl: string): string {
   if (/^https?:\/\//i.test(url)) return url;
-  try { return new URL(url, baseUrl).toString(); } catch { return url; }
+  try {
+    return new URL(url, baseUrl).toString();
+  } catch {
+    return url;
+  }
 }
 
 const executor: NodeExecutor = async (config, _input, _context) => {
@@ -142,7 +150,7 @@ const executor: NodeExecutor = async (config, _input, _context) => {
 
   const headers: Record<string, string> = {
     'User-Agent': String(config.userAgent ?? 'FlowForge/1.0'),
-    'Accept': 'application/vnd.apple.mpegurl, audio/mpegurl, */*',
+    Accept: 'application/vnd.apple.mpegurl, audio/mpegurl, */*',
   };
   const referer = String(config.referer ?? '').trim();
   if (referer) headers.Referer = referer;
@@ -238,7 +246,17 @@ export const hlsProbeNode: NodeModule = {
         help: 'Header Referer (se il CDN restringe per origin).',
       },
     ],
-    outputs: ['type', 'variants', 'segments', 'targetDuration', 'totalDuration', 'mediaSequence', 'endlist', 'url', 'raw'],
+    outputs: [
+      'type',
+      'variants',
+      'segments',
+      'targetDuration',
+      'totalDuration',
+      'mediaSequence',
+      'endlist',
+      'url',
+      'raw',
+    ],
   },
   executor,
 };

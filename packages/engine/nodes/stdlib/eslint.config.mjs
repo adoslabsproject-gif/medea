@@ -57,9 +57,9 @@ export default [
             {
               group: ['node:*'],
               message:
-                "Import statico da node:* è vietato in stdlib (rompe Vite editor bundle). " +
+                'Import statico da node:* è vietato in stdlib (rompe Vite editor bundle). ' +
                 "Usa lazy: `type X = typeof import('node:crypto');` + `await import('node:crypto')` dentro funzioni async. " +
-                "Eccezione: src/server.ts (entry server-only).",
+                'Eccezione: src/server.ts (entry server-only).',
             },
           ],
         },
@@ -110,7 +110,10 @@ export default [
       '@typescript-eslint/unbound-method': 'warn',
       // no-unused-vars con `_` prefix gia\` permesso dal base config — gli altri
       // sono debt cleanup non-bloccante.
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
       // only-throw-error / prefer-promise-reject-errors / no-unsafe-call —
       // pattern legacy con throw string in regex strategies. Da rivedere.
       '@typescript-eslint/only-throw-error': 'warn',

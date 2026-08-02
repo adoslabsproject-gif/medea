@@ -35,12 +35,7 @@ function escapeRegex(s: string): string {
  * Ritorna la stringa dentro le parentesi graffe (senza le { }).
  */
 function extractObjectBlock(scriptText: string, varName: string): string | null {
-  const variants = [
-    `${varName}={`,
-    `${varName} ={`,
-    `${varName}= {`,
-    `${varName} = {`,
-  ];
+  const variants = [`${varName}={`, `${varName} ={`, `${varName}= {`, `${varName} = {`];
   for (const v of variants) {
     const idx = scriptText.indexOf(v);
     if (idx === -1) continue;
@@ -64,7 +59,11 @@ function extractObjectBlock(scriptText: string, varName: string): string | null 
 /**
  * Estrai valore di una chiave dal blocco oggetto. Multi-variant.
  */
-function extractKeyFromBlock(block: string, key: string, expect: 'number' | 'string' | 'raw'): string | null {
+function extractKeyFromBlock(
+  block: string,
+  key: string,
+  expect: 'number' | 'string' | 'raw',
+): string | null {
   const k = escapeRegex(key);
   // 1. key: 1234 (numero senza virgolette)
   if (expect === 'number') {
@@ -87,8 +86,11 @@ function parseVarsList(raw: unknown): VarSpec[] {
   if (typeof raw === 'string' && raw.trim()) {
     try {
       const parsed = JSON.parse(raw) as unknown;
-      if (Array.isArray(parsed)) return parsed.filter((v) => v && typeof v === 'object') as VarSpec[];
-    } catch { /* fall through */ }
+      if (Array.isArray(parsed))
+        return parsed.filter((v) => v && typeof v === 'object') as VarSpec[];
+    } catch {
+      /* fall through */
+    }
   }
   if (Array.isArray(raw)) return raw as VarSpec[];
   return [];
@@ -108,7 +110,11 @@ const executor: NodeExecutor = async (config, input, _context) => {
     html = String(config.htmlExplicit ?? '');
   }
   if (!html.trim()) {
-    return { output: { extracted: {}, matched: false }, durationMs: Date.now() - start, warnings: ['Empty HTML'] };
+    return {
+      output: { extracted: {}, matched: false },
+      durationMs: Date.now() - start,
+      warnings: ['Empty HTML'],
+    };
   }
 
   const vars = parseVarsList(config.variables);
@@ -176,7 +182,7 @@ export const scriptVarExtractNode: NodeModule = {
       'eseguire il JS — pattern fondamentale per accedere ai dati strutturati che molte SPA, framework SSR ' +
       '(Next.js, Nuxt, SvelteKit, Remix), CMS embedded player (YouTube, Vimeo, Streammy, Twitch embeds), ' +
       'piattaforma sport (DAZN, Sky, ESPN) e similar mettono come state pre-popolato in window.X = {...} per ' +
-      'consumo client-side, anziché esporre un\'API REST/GraphQL pubblica documentata. Questi dati sono ' +
+      "consumo client-side, anziché esporre un'API REST/GraphQL pubblica documentata. Questi dati sono " +
       '"pubblici" nel HTML response del server ma non in JSON proper, e parsarli con browser+JS execution ' +
       '(via Puppeteer/Playwright) sarebbe overkill e 100× più lento + più costoso. ' +
       'Esempio canonico di use case: pagina video player con il tag <script>window.player = { src: "https:' +
@@ -239,7 +245,7 @@ export const scriptVarExtractNode: NodeModule = {
         help:
           'Array di {name, key?, expect?}. ' +
           'name = path variabile (es. window.video, masterPlaylist, data). ' +
-          'key = chiave da pescare dentro l\'oggetto (opzionale, se vuoto ritorna l\'intero blocco testuale). ' +
+          "key = chiave da pescare dentro l'oggetto (opzionale, se vuoto ritorna l'intero blocco testuale). " +
           'expect = number | string | raw (default raw). Number parsa solo digits.',
       },
     ],

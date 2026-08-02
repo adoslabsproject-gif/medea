@@ -12,7 +12,8 @@ import { astSecurityScan } from './ast-security-scan.js';
 async function scan(executor: string): Promise<Awaited<ReturnType<typeof astSecurityScan>>> {
   return astSecurityScan({ executor, definition: '', schema: '' });
 }
-const codes = async (snippet: string): Promise<string[]> => (await scan(snippet)).map((v) => v.code ?? '');
+const codes = async (snippet: string): Promise<string[]> =>
+  (await scan(snippet)).map((v) => v.code ?? '');
 const blocked = async (snippet: string): Promise<boolean> => (await scan(snippet)).length > 0;
 
 describe('astSecurityScan — bypass della regex-blocklist BECCATI', () => {
@@ -42,11 +43,15 @@ describe('astSecurityScan — bypass della regex-blocklist BECCATI', () => {
   });
 
   it('🚨 import() dinamico → bloccato', async () => {
-    expect(await codes('async function f(){ await import("node:fs"); }')).toContain('SECURITY_AST_DYNAMIC_IMPORT');
+    expect(await codes('async function f(){ await import("node:fs"); }')).toContain(
+      'SECURITY_AST_DYNAMIC_IMPORT',
+    );
   });
 
   it('🚨 import statico node:* → bloccato', async () => {
-    expect(await codes('import { readFile } from "node:fs";')).toContain('SECURITY_AST_FORBIDDEN_IMPORT');
+    expect(await codes('import { readFile } from "node:fs";')).toContain(
+      'SECURITY_AST_FORBIDDEN_IMPORT',
+    );
   });
 
   it('🚨 __proto__ (dot e computed) → bloccato (prototype pollution)', async () => {
@@ -64,7 +69,11 @@ describe('astSecurityScan — bypass della regex-blocklist BECCATI', () => {
 
 describe('astSecurityScan — ANTI-REGRESSIONE: codice lecito NON bloccato', () => {
   it('proprietà di nome "process"/"env" su un oggetto utente → OK (non è il globale)', async () => {
-    expect(await blocked('const cfg = { process: "etl", env: "prod" };\nconst a = cfg.process;\nconst b = cfg.env;')).toBe(false);
+    expect(
+      await blocked(
+        'const cfg = { process: "etl", env: "prod" };\nconst a = cfg.process;\nconst b = cfg.env;',
+      ),
+    ).toBe(false);
   });
 
   it('parametro/variabile locale non collide con globali (nessun uso del globale) → OK', async () => {
@@ -76,7 +85,9 @@ describe('astSecurityScan — ANTI-REGRESSIONE: codice lecito NON bloccato', () 
   });
 
   it('import statico leciti (SDK) → OK', async () => {
-    expect(await blocked('import { z } from "zod";\nimport { helper } from "./helper.js";')).toBe(false);
+    expect(await blocked('import { z } from "zod";\nimport { helper } from "./helper.js";')).toBe(
+      false,
+    );
   });
 
   it('executor realistico (business logic) → 0 violazioni', async () => {

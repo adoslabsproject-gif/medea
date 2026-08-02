@@ -13,7 +13,11 @@ const snap = (
   edges: { from: string; to: string; fromPort?: string }[] = [],
 ): WorkflowSnapshot => ({
   nodes: nodes.map((n) => ({ id: n.id, defId: n.defId, config: n.config ?? {} })),
-  edges: edges.map((e) => ({ from: e.from, to: e.to, ...(e.fromPort ? { fromPort: e.fromPort } : {}) })),
+  edges: edges.map((e) => ({
+    from: e.from,
+    to: e.to,
+    ...(e.fromPort ? { fromPort: e.fromPort } : {}),
+  })),
 });
 
 describe('diffSnapshots — nodi', () => {
@@ -31,13 +35,18 @@ describe('diffSnapshots — nodi', () => {
       { id: 'http', defId: 'action_http_request', config: { url: 'https://x' } },
     ]);
     const p = diffSnapshots(before, after);
-    expect(p.addNodes).toEqual([{ id: 'http', defId: 'action_http_request', config: { url: 'https://x' } }]);
+    expect(p.addNodes).toEqual([
+      { id: 'http', defId: 'action_http_request', config: { url: 'https://x' } },
+    ]);
     expect(p.removeNodeIds).toBeUndefined(); // mut: nessun remove
     expect(p.updateNodes).toBeUndefined();
   });
 
   it('nodo sparito → removeNodeIds', () => {
-    const before = snap([{ id: 'a', defId: 'trigger_webhook' }, { id: 'b', defId: 'db_insert' }]);
+    const before = snap([
+      { id: 'a', defId: 'trigger_webhook' },
+      { id: 'b', defId: 'db_insert' },
+    ]);
     const after = snap([{ id: 'a', defId: 'trigger_webhook' }]);
     const p = diffSnapshots(before, after);
     expect(p.removeNodeIds).toEqual(['b']);
@@ -45,22 +54,32 @@ describe('diffSnapshots — nodi', () => {
   });
 
   it('config cambiata (stesso id+defId) → updateNodes con config COMPLETA (replace)', () => {
-    const before = snap([{ id: 'h', defId: 'action_http_request', config: { url: 'https://old', method: 'GET' } }]);
-    const after = snap([{ id: 'h', defId: 'action_http_request', config: { url: 'https://new', method: 'GET' } }]);
+    const before = snap([
+      { id: 'h', defId: 'action_http_request', config: { url: 'https://old', method: 'GET' } },
+    ]);
+    const after = snap([
+      { id: 'h', defId: 'action_http_request', config: { url: 'https://new', method: 'GET' } },
+    ]);
     const p = diffSnapshots(before, after);
-    expect(p.updateNodes).toEqual([{ id: 'h', patch: { config: { url: 'https://new', method: 'GET' } } }]);
+    expect(p.updateNodes).toEqual([
+      { id: 'h', patch: { config: { url: 'https://new', method: 'GET' } } },
+    ]);
     expect(p.addNodes).toBeUndefined(); // mut: non deve diventare add
     expect(p.removeNodeIds).toBeUndefined();
   });
 
   it('🚨 config riordinata (stesse coppie) → NESSUN update (deepEqual canonico)', () => {
-    const before = snap([{ id: 'h', defId: 'action_http_request', config: { url: 'https://x', method: 'GET' } }]);
-    const after = snap([{ id: 'h', defId: 'action_http_request', config: { method: 'GET', url: 'https://x' } }]);
+    const before = snap([
+      { id: 'h', defId: 'action_http_request', config: { url: 'https://x', method: 'GET' } },
+    ]);
+    const after = snap([
+      { id: 'h', defId: 'action_http_request', config: { method: 'GET', url: 'https://x' } },
+    ]);
     const p = diffSnapshots(before, after);
     expect(patchHasOps(p)).toBe(false); // mut: se deepEqual diventa ===, fallisce
   });
 
-  it('🚨 stesso id ma defId DIVERSO → remove + add (l\'editor non patcha il tipo)', () => {
+  it("🚨 stesso id ma defId DIVERSO → remove + add (l'editor non patcha il tipo)", () => {
     const before = snap([{ id: 'n', defId: 'action_http_request', config: { url: 'https://x' } }]);
     const after = snap([{ id: 'n', defId: 'db_insert', config: { table: 'orders' } }]);
     const p = diffSnapshots(before, after);
@@ -72,16 +91,40 @@ describe('diffSnapshots — nodi', () => {
 
 describe('diffSnapshots — edge', () => {
   it('edge nuovo → addEdges con id from->to#', () => {
-    const before = snap([{ id: 'a', defId: 'trigger_webhook' }, { id: 'b', defId: 'db_insert' }], []);
-    const after = snap([{ id: 'a', defId: 'trigger_webhook' }, { id: 'b', defId: 'db_insert' }], [{ from: 'a', to: 'b' }]);
+    const before = snap(
+      [
+        { id: 'a', defId: 'trigger_webhook' },
+        { id: 'b', defId: 'db_insert' },
+      ],
+      [],
+    );
+    const after = snap(
+      [
+        { id: 'a', defId: 'trigger_webhook' },
+        { id: 'b', defId: 'db_insert' },
+      ],
+      [{ from: 'a', to: 'b' }],
+    );
     const p = diffSnapshots(before, after);
     expect(p.addEdges).toEqual([{ id: 'a->b#', from: 'a', to: 'b' }]);
     expect(p.removeEdgeIds).toBeUndefined();
   });
 
-  it('edge sparito → removeEdgeIds (id parsabile dall\'editor)', () => {
-    const before = snap([{ id: 'a', defId: 'x' }, { id: 'b', defId: 'y' }], [{ from: 'a', to: 'b' }]);
-    const after = snap([{ id: 'a', defId: 'x' }, { id: 'b', defId: 'y' }], []);
+  it("edge sparito → removeEdgeIds (id parsabile dall'editor)", () => {
+    const before = snap(
+      [
+        { id: 'a', defId: 'x' },
+        { id: 'b', defId: 'y' },
+      ],
+      [{ from: 'a', to: 'b' }],
+    );
+    const after = snap(
+      [
+        { id: 'a', defId: 'x' },
+        { id: 'b', defId: 'y' },
+      ],
+      [],
+    );
     const p = diffSnapshots(before, after);
     expect(p.removeEdgeIds).toEqual(['a->b#']);
     // l'id deve matchare la regex dell'editor ^([^>]+)->([^#]+)#
@@ -89,16 +132,40 @@ describe('diffSnapshots — edge', () => {
   });
 
   it('🚨 fromPort diverso = edge DIVERSO (if/switch a rami)', () => {
-    const before = snap([{ id: 'if', defId: 'x' }, { id: 'b', defId: 'y' }], [{ from: 'if', to: 'b', fromPort: 'true' }]);
-    const after = snap([{ id: 'if', defId: 'x' }, { id: 'b', defId: 'y' }], [{ from: 'if', to: 'b', fromPort: 'false' }]);
+    const before = snap(
+      [
+        { id: 'if', defId: 'x' },
+        { id: 'b', defId: 'y' },
+      ],
+      [{ from: 'if', to: 'b', fromPort: 'true' }],
+    );
+    const after = snap(
+      [
+        { id: 'if', defId: 'x' },
+        { id: 'b', defId: 'y' },
+      ],
+      [{ from: 'if', to: 'b', fromPort: 'false' }],
+    );
     const p = diffSnapshots(before, after);
     expect(p.addEdges).toEqual([{ id: 'if->b#false', from: 'if', to: 'b', fromPort: 'false' }]);
     expect(p.removeEdgeIds).toEqual(['if->b#true']); // mut: se fromPort ignorato, niente diff
   });
 
   it('edge fromPort preservato in addEdges', () => {
-    const before = snap([{ id: 'if', defId: 'x' }, { id: 'b', defId: 'y' }], []);
-    const after = snap([{ id: 'if', defId: 'x' }, { id: 'b', defId: 'y' }], [{ from: 'if', to: 'b', fromPort: 'true' }]);
+    const before = snap(
+      [
+        { id: 'if', defId: 'x' },
+        { id: 'b', defId: 'y' },
+      ],
+      [],
+    );
+    const after = snap(
+      [
+        { id: 'if', defId: 'x' },
+        { id: 'b', defId: 'y' },
+      ],
+      [{ from: 'if', to: 'b', fromPort: 'true' }],
+    );
     const p = diffSnapshots(before, after);
     expect(p.addEdges?.[0]?.fromPort).toBe('true');
   });
@@ -106,8 +173,14 @@ describe('diffSnapshots — edge', () => {
 
 describe('diffSnapshots — determinismo', () => {
   it('addNodes/removeNodeIds ordinati per id (output stabile)', () => {
-    const before = snap([{ id: 'z', defId: 'x' }, { id: 'a', defId: 'y' }]);
-    const after = snap([{ id: 'm', defId: 'p' }, { id: 'c', defId: 'q' }]);
+    const before = snap([
+      { id: 'z', defId: 'x' },
+      { id: 'a', defId: 'y' },
+    ]);
+    const after = snap([
+      { id: 'm', defId: 'p' },
+      { id: 'c', defId: 'q' },
+    ]);
     const p = diffSnapshots(before, after);
     expect(p.addNodes?.map((n) => n.id)).toEqual(['c', 'm']);
     expect(p.removeNodeIds).toEqual(['a', 'z']);

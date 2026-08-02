@@ -12,7 +12,8 @@ import { proposePlanHandler, requirePlan } from './plan-handler.js';
 
 const ENTERPRISE_GOAL = `Document intelligence pipeline: cartella S3 con PDF in arrivo, OCR + vision AI extract entities, classifica documento (contratto/fattura/preventivo), validazione schema, branching per tipo: contratto → legal team review queue, fattura → ERP push, preventivo → CRM opportunity, in caso di low confidence routing manuale + Slack notification, summary AI giornaliero al management.`;
 
-const REASONING_OK = 'Goal richiede ingest PDF da S3 + OCR + classificazione + branch a 3 destinazioni differenti + low confidence routing manuale + summary giornaliero. Uso trigger_webhook per ingest, agent_extractor per OCR, agent_classifier per il tipo, logic_switch a 3 rami, ognuno con community_<vendor> per destinazione.';
+const REASONING_OK =
+  'Goal richiede ingest PDF da S3 + OCR + classificazione + branch a 3 destinazioni differenti + low confidence routing manuale + summary giornaliero. Uso trigger_webhook per ingest, agent_extractor per OCR, agent_classifier per il tipo, logic_switch a 3 rami, ognuno con community_<vendor> per destinazione.';
 
 function newSession(goal: string): ScaffoldSession {
   const s = new ScaffoldSession('tenant-test');
@@ -59,7 +60,9 @@ describe('proposePlanHandler — happy path', () => {
     const r = proposePlanHandler(s, { nodes, edges: [], reasoning: REASONING_OK });
     expect(r.ok).toBe(true);
     if (r.ok) {
-      const schemas = (r.data as { schemas: Record<string, { required: string[]; allFields: unknown[] }> }).schemas;
+      const schemas = (
+        r.data as { schemas: Record<string, { required: string[]; allFields: unknown[] }> }
+      ).schemas;
       expect(schemas).toBeDefined();
       // 2 defId distinct: trigger_webhook + action_http
       expect(Object.keys(schemas).sort()).toEqual(['action_http', 'trigger_webhook']);
@@ -82,7 +85,11 @@ describe('proposePlanHandler — validation', () => {
 
   it('reasoning < 60 char → REJECT', () => {
     const s = newSession(ENTERPRISE_GOAL);
-    const r = proposePlanHandler(s, { nodes: manyPlanned(22), edges: [], reasoning: 'troppo corto' });
+    const r = proposePlanHandler(s, {
+      nodes: manyPlanned(22),
+      edges: [],
+      reasoning: 'troppo corto',
+    });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toContain('troppo corto');
   });

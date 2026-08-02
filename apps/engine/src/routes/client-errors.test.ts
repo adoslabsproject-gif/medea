@@ -38,7 +38,7 @@ beforeEach(() => {
 });
 
 describe('🚨 POST /client-errors — tenant da env, mai header', () => {
-  it('🚨 logga il tenant del container (env), non l\'header', async () => {
+  it("🚨 logga il tenant del container (env), non l'header", async () => {
     tenantMock.container = 'real-tenant-uuid';
     const app = createClientErrorsRoutes();
     const res = await app.request('/client-errors', {

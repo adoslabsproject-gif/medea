@@ -82,17 +82,21 @@ export class UxTelemetryService {
   record(input: UxEventInput): void {
     try {
       const { sqlite } = getDatabase();
-      sqlite.prepare(`
+      sqlite
+        .prepare(
+          `
         INSERT INTO ux_events (tenant_id, user_id, event_type, workflow_id, node_id, metadata_json)
         VALUES (?, ?, ?, ?, ?, ?)
-      `).run(
-        input.tenantId,
-        input.userId ?? null,
-        input.eventType,
-        input.workflowId ?? null,
-        input.nodeId ?? null,
-        input.metadata ? JSON.stringify(input.metadata) : null,
-      );
+      `,
+        )
+        .run(
+          input.tenantId,
+          input.userId ?? null,
+          input.eventType,
+          input.workflowId ?? null,
+          input.nodeId ?? null,
+          input.metadata ? JSON.stringify(input.metadata) : null,
+        );
     } catch {
       // swallow — telemetry must never fail the request
     }
@@ -103,21 +107,27 @@ export class UxTelemetryService {
     const { sqlite } = getDatabase();
     const sinceHours = opts.sinceHours ?? 24;
     const since = new Date(Date.now() - sinceHours * 3600_000).toISOString();
-    return sqlite.prepare(`
+    return sqlite
+      .prepare(
+        `
       SELECT event_type AS eventType, COUNT(*) AS count, COUNT(DISTINCT user_id) AS uniqueUsers
       FROM ux_events
       WHERE created_at >= ?
       GROUP BY event_type
       ORDER BY count DESC
-    `).all(since) as FunnelSlice[];
+    `,
+      )
+      .all(since) as FunnelSlice[];
   }
 
   /** Recent events for the admin debugger. */
   recent(limit = 200, tenantId?: string): UxEventRow[] {
     const { sqlite } = getDatabase();
     const rows = tenantId
-      ? sqlite.prepare(`SELECT * FROM ux_events WHERE tenant_id = ? ORDER BY id DESC LIMIT ?`).all(tenantId, limit) as DbRow[]
-      : sqlite.prepare(`SELECT * FROM ux_events ORDER BY id DESC LIMIT ?`).all(limit) as DbRow[];
+      ? (sqlite
+          .prepare(`SELECT * FROM ux_events WHERE tenant_id = ? ORDER BY id DESC LIMIT ?`)
+          .all(tenantId, limit) as DbRow[])
+      : (sqlite.prepare(`SELECT * FROM ux_events ORDER BY id DESC LIMIT ?`).all(limit) as DbRow[]);
     return rows.map((r) => ({
       id: r.id,
       tenantId: r.tenant_id,
@@ -134,11 +144,15 @@ export class UxTelemetryService {
    * "Stuck users" report — users with workflow_created but no run_started in
    * the last N hours. The signal that someone tried but gave up.
    */
-  stuckUsers(opts: { sinceHours?: number } = {}): { userId: string; tenantId: string; createdAt: string; workflowId: string | null }[] {
+  stuckUsers(
+    opts: { sinceHours?: number } = {},
+  ): { userId: string; tenantId: string; createdAt: string; workflowId: string | null }[] {
     const { sqlite } = getDatabase();
     const sinceHours = opts.sinceHours ?? 24;
     const since = new Date(Date.now() - sinceHours * 3600_000).toISOString();
-    return sqlite.prepare(`
+    return sqlite
+      .prepare(
+        `
       SELECT u.user_id AS userId, u.tenant_id AS tenantId, u.workflow_id AS workflowId, u.created_at AS createdAt
       FROM ux_events u
       WHERE u.event_type = 'workflow_created'
@@ -152,6 +166,13 @@ export class UxTelemetryService {
         )
       ORDER BY u.created_at DESC
       LIMIT 100
-    `).all(since) as { userId: string; tenantId: string; createdAt: string; workflowId: string | null }[];
+    `,
+      )
+      .all(since) as {
+      userId: string;
+      tenantId: string;
+      createdAt: string;
+      workflowId: string | null;
+    }[];
   }
 }

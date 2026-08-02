@@ -23,8 +23,12 @@ beforeAll(async () => {
   expect(BUNDLE_SOURCE.length).toBeGreaterThan(1000);
 });
 
-function execInContext(vendorSrc: string, captureLog = false): {
-  result: unknown; logs: string[];
+function execInContext(
+  vendorSrc: string,
+  captureLog = false,
+): {
+  result: unknown;
+  logs: string[];
 } {
   const logs: string[] = [];
   const sandboxGlobal = {
@@ -62,7 +66,10 @@ describe('🚨 STDLIB_BUNDLE — runtime injection in V8 Context', () => {
     const { result } = execInContext(`
       ff.csv.parseCsv('a,b\\n1,2\\n3,4')
     `);
-    expect(result).toEqual([{ a: '1', b: '2' }, { a: '3', b: '4' }]);
+    expect(result).toEqual([
+      { a: '1', b: '2' },
+      { a: '3', b: '4' },
+    ]);
   });
 
   it('vendor: ff.csv.stringifyCsv round-trip', () => {

@@ -35,16 +35,16 @@ export const debugRunFailureNode: NodeModule = {
       'mean-time-to-resolution da ore-giorni (debug manuale) a minuti (AI-assisted triage). Pattern di ' +
       'AIOps copilot per workflow orchestration analogo a Datadog Watchdog o New Relic AI per i monitoring ' +
       'tool tradizionali. ' +
-      'Pipeline multi-stage gestita end-to-end dall\'agent: ' +
+      "Pipeline multi-stage gestita end-to-end dall'agent: " +
       '(1) Fetch run JSON completo dal SQLite runtime tenant — recupera tutti i steps eseguiti con il loro ' +
-      'input/output, la error stack del step fallito, la config completa del nodo che ha generated l\'errore, ' +
+      "input/output, la error stack del step fallito, la config completa del nodo che ha generated l'errore, " +
       'il context delle env vars rilevanti; ' +
       '(2) Diagnose root cause via LLM analysis del context con 5 categorie di errore canoniche enterprise: ' +
       'transient (network blip, rate-limit 429 temporaneo, upstream 5xx — pattern auto-recoverable con retry), ' +
-      'config (parametro mal-configurato, URL errato, schema mismatch — richiede edit dell\'utente), payload ' +
+      "config (parametro mal-configurato, URL errato, schema mismatch — richiede edit dell'utente), payload " +
       '(input data malformato, type coercion failed, JSON parse error — issue upstream nei dati), auth ' +
-      '(credenziali scadute, token revoked, scope insufficienti — richiede rotation/re-auth dell\'integration ' +
-      'vault), quota (esauriti i limiti del piano o dell\'API upstream — richiede upgrade o ottimizzazione); ' +
+      "(credenziali scadute, token revoked, scope insufficienti — richiede rotation/re-auth dell'integration " +
+      "vault), quota (esauriti i limiti del piano o dell'API upstream — richiede upgrade o ottimizzazione); " +
       '(3) Genera 3-5 suggestedFixes ordinati per confidence + impact: config patch (modifica diff-friendly ' +
       'del config del nodo offendente), retry policy adjustment (aggiungi exponential backoff + max_retries=5 ' +
       'per transient), nodo replace (suggerimento di sostituire con un altro nodo più adatto al pattern), ' +
@@ -52,11 +52,11 @@ export const debugRunFailureNode: NodeModule = {
       '(4) Genera suggestedTests automaticamente Zod-validated — il LLM crea test case JSON che expose il ' +
       'bug specifico fixato, pattern TDD reverse per prevenire regressioni future. ' +
       'Output: { diagnosis: { rootCause (narrative description del cosa è andato storto), category (transient|' +
-      'config|payload|auth|quota), confidence (0-1 dell\'AI sul suo verdetto) }, suggestedFixes: [{ ' +
+      "config|payload|auth|quota), confidence (0-1 dell'AI sul suo verdetto) }, suggestedFixes: [{ " +
       'description, type, configPatch?, confidence, expectedImpact }], suggestedTests: [{ input, expected, ' +
       'reason }], replayCommand (one-click apply del top fix + relaunch del workflow per validation) }. ' +
       'Use case: debugging assist post-incident enterprise (il workflow di chiusura conti mensile è fallito ' +
-      'la notte → al risveglio l\'admin vede direttamente la diagnosi AI + fix proposto, applica con un click ' +
+      "la notte → al risveglio l'admin vede direttamente la diagnosi AI + fix proposto, applica con un click " +
       'invece di indagare 2 ore); suggestions DX per junior workflow author che imparano gradualmente i ' +
       'pattern enterprise (AI come "rubber duck" intelligente); auto-recovery cron su workflow critici ' +
       '(workflow di production che ha catch error handler che chiama agent_debug + auto-apply del fix se ' +
@@ -85,7 +85,7 @@ export const debugRunFailureNode: NodeModule = {
         type: 'boolean',
         required: false,
         defaultValue: 'true',
-        help: 'Se on, l\'agente genera test scenarios + mock data + expected output per ogni fix proposto.',
+        help: "Se on, l'agente genera test scenarios + mock data + expected output per ogni fix proposto.",
       },
       {
         key: 'maxFixes',

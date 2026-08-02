@@ -31,7 +31,10 @@ function realValueExports(src: string): Set<string> {
   // export { a, b }  (value re-export) — ma NON `export type { ... }`
   for (const m of src.matchAll(/^export\s+\{([^}]*)\}/gm)) {
     for (const part of (m[1] ?? '').split(',')) {
-      const id = part.trim().split(/\s+as\s+/)[0]?.trim();
+      const id = part
+        .trim()
+        .split(/\s+as\s+/)[0]
+        ?.trim();
       if (id) names.add(id);
     }
   }
@@ -80,9 +83,18 @@ describe('🚨 comportamento del manual mock', () => {
     expect(a.child()).toBe(a);
   });
 
-  it('lo spy espone l\'intera forma pino usata nei call-site', () => {
+  it("lo spy espone l'intera forma pino usata nei call-site", () => {
     const l = loggerMock.createSpyLogger();
-    for (const m of ['info', 'warn', 'error', 'debug', 'trace', 'fatal', 'silent', 'child'] as const) {
+    for (const m of [
+      'info',
+      'warn',
+      'error',
+      'debug',
+      'trace',
+      'fatal',
+      'silent',
+      'child',
+    ] as const) {
       expect(typeof l[m]).toBe('function');
     }
     expect(typeof l.level).toBe('string');

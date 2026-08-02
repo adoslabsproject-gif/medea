@@ -22,7 +22,9 @@ export function getTenantErrorWorkflowId(): string | null {
   if (cached !== undefined) return cached;
   try {
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare('SELECT value FROM system_flags WHERE key = ?').get(FLAG_KEY) as { value: string } | undefined;
+    const row = sqlite.prepare('SELECT value FROM system_flags WHERE key = ?').get(FLAG_KEY) as
+      | { value: string }
+      | undefined;
     cached = row?.value && row.value !== '' ? row.value : null;
   } catch (err) {
     logger.warn({ err: String(err) }, 'error-workflow-flag: read failed, fail-soft (no catch-all)');

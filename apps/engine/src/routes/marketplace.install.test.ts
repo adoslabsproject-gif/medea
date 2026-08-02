@@ -19,7 +19,9 @@ import { Hono } from 'hono';
 
 vi.mock('@/lib/safe-outbound-fetch.js', () => ({ safeOutboundFetch: vi.fn() }));
 vi.mock('@medea/engine-safe-fetch', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@medea/engine-safe-fetch')>()), validateUrlForFetch: vi.fn() }));
+  ...(await importOriginal<typeof import('@medea/engine-safe-fetch')>()),
+  validateUrlForFetch: vi.fn(),
+}));
 vi.mock('@/lib/tenant.js', () => ({ getTenantId: () => 'ws-test' }));
 vi.mock('@medea/engine-nodes-stdlib', () => ({ stdlibNodeDefs: () => [] }));
 
@@ -49,16 +51,23 @@ beforeEach(() => {
   validateUrlForFetchMock.mockReturnValue({ ok: true });
   // safeOutboundFetch ritorna una Response reale (readWithCap legge res.body).
   safeOutboundFetchMock.mockResolvedValue(
-    new Response(JSON.stringify(WF), { status: 200, headers: { 'content-length': String(JSON.stringify(WF).length) } }),
+    new Response(JSON.stringify(WF), {
+      status: 200,
+      headers: { 'content-length': String(JSON.stringify(WF).length) },
+    }),
   );
 });
-afterEach(() => { vi.restoreAllMocks(); vi.clearAllMocks(); });
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.clearAllMocks();
+});
 
 describe('POST /marketplace/install — SSRF 2-layer', () => {
   it('🚨 URL utente passa per safeOutboundFetch (Layer-2), NON per fetch globale raw', async () => {
     // fetch globale: solo la chiamata interna /workflows (127.0.0.1) deve usarlo.
-    const globalFetch = vi.fn(async (_url: string) =>
-      new Response(JSON.stringify({ id: 'wf-1', enabled: false }), { status: 201 }),
+    const globalFetch = vi.fn(
+      async (_url: string) =>
+        new Response(JSON.stringify({ id: 'wf-1', enabled: false }), { status: 201 }),
     );
     vi.stubGlobal('fetch', globalFetch);
 
@@ -86,7 +95,7 @@ describe('POST /marketplace/install — SSRF 2-layer', () => {
 
     const res = await post({ url: 'http://169.254.169.254/latest/meta-data/' });
     expect(res.status).toBe(400);
-    const body = await res.json() as { error: { code: string } };
+    const body = (await res.json()) as { error: { code: string } };
     expect(body.error.code).toBe('URL_BLOCKED');
     expect(safeOutboundFetchMock).not.toHaveBeenCalled();
     expect(globalFetch).not.toHaveBeenCalled();
@@ -101,7 +110,7 @@ describe('POST /marketplace/install — SSRF 2-layer', () => {
 
     const res = await post({ url: 'https://attacker.test/redir' });
     expect(res.status).toBe(400);
-    const body = await res.json() as { error: { code: string; message: string } };
+    const body = (await res.json()) as { error: { code: string; message: string } };
     expect(body.error.code).toBe('URL_BLOCKED');
     // niente chiamata interna /workflows (l'import si è fermato al redirect).
     expect(globalFetch).not.toHaveBeenCalled();
@@ -112,7 +121,7 @@ describe('POST /marketplace/install — SSRF 2-layer', () => {
     expect((await post('nope')).status).toBe(400);
   });
 
-  it('🚨 workflow importato è creato enabled:false (non esegue all\'import)', async () => {
+  it("🚨 workflow importato è creato enabled:false (non esegue all'import)", async () => {
     const globalFetch = vi.fn(async (_url: string, init?: { body?: string }) => {
       const sent = JSON.parse(init?.body ?? '{}') as { enabled?: boolean };
       // L'invariante di sicurezza: enabled DEVE essere false.

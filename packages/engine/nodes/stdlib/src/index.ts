@@ -6,7 +6,12 @@ export * from './registry.js';
 export * from './core/index.js';
 export * from './utils/index.js';
 // Fase 3 (#15): logging prompt+risposta per-nodo sul canale StepLog 'llm'.
-export { logLlmExchange, llmLogSinkFrom, type LlmExchange, type LlmLogSink } from './llm-exchange-log.js';
+export {
+  logLlmExchange,
+  llmLogSinkFrom,
+  type LlmExchange,
+  type LlmLogSink,
+} from './llm-exchange-log.js';
 export { manualTriggerNode } from './triggers/manual.js';
 export { errorTriggerNode } from './triggers/error.js';
 export { cronTriggerNode } from './triggers/cron.js';
@@ -25,34 +30,63 @@ export { subworkflowNode } from './logic/subworkflow.js';
 export { convertNode, waitNode, transformNode, paginateNode } from './logic/transform.js';
 export { groupByNode, aggregateNode, distinctNode, windowNode } from './logic/aggregation.js';
 export { waitSignalNode } from './logic/wait-signal.js';
-export { formTriggerNode, fileWatchTriggerNode, imapTriggerNode, dbChangeTriggerNode } from './triggers/form.js';
+export {
+  formTriggerNode,
+  fileWatchTriggerNode,
+  imapTriggerNode,
+  dbChangeTriggerNode,
+} from './triggers/form.js';
 export { emailBounceTriggerNode } from './triggers/email-bounce.js';
 export { sendEmailNode } from './actions/email.js';
 // Browser-safe exports for the B2B tracking suite: the NodeDef + Zod
 // schema + pure types. Anything that touches `node:crypto` is in the
 // server-only entry `@medea/engine-nodes-stdlib/server` (see `./server.ts`).
-export { emailSendTrackedNode, emailSendTrackedNodeDef, EmailSendTrackedConfigSchema, EmailSendTrackedInputSchema, type EmailSendTrackedConfig } from './actions/email_send_tracked/index.js';
 export {
-  emailSendTrackedBatchNode, emailSendTrackedBatchNodeDef,
-  EmailSendTrackedBatchConfigSchema, EmailSendTrackedBatchInputSchema, BatchRecipientSchema,
+  emailSendTrackedNode,
+  emailSendTrackedNodeDef,
+  EmailSendTrackedConfigSchema,
+  EmailSendTrackedInputSchema,
+  type EmailSendTrackedConfig,
+} from './actions/email_send_tracked/index.js';
+export {
+  emailSendTrackedBatchNode,
+  emailSendTrackedBatchNodeDef,
+  EmailSendTrackedBatchConfigSchema,
+  EmailSendTrackedBatchInputSchema,
+  BatchRecipientSchema,
   runBatch,
-  type EmailSendTrackedBatchConfig, type BatchRecipient,
-  type SchedulerOptions, type BatchItem, type BatchResult, type BatchStats, type AttemptResult,
+  type EmailSendTrackedBatchConfig,
+  type BatchRecipient,
+  type SchedulerOptions,
+  type BatchItem,
+  type BatchResult,
+  type BatchStats,
+  type AttemptResult,
 } from './actions/email_send_tracked_batch/index.js';
 export {
-  emailTriageB2BSalesNode, emailTriageB2BSalesNodeDef, emailTriageB2BSalesExecutor,
+  emailTriageB2BSalesNode,
+  emailTriageB2BSalesNodeDef,
+  emailTriageB2BSalesExecutor,
   EmailTriageB2BSalesConfigSchema,
-  classifyB2BSalesReply, detectLang,
+  classifyB2BSalesReply,
+  detectLang,
   type EmailTriageB2BSalesConfig,
-  type B2BSalesLabel, type Lang, type SuggestedAction,
-  type ClassifyInput, type ClassifyResult,
+  type B2BSalesLabel,
+  type Lang,
+  type SuggestedAction,
+  type ClassifyInput,
+  type ClassifyResult,
 } from './actions/email_triage_b2b_sales/index.js';
 // Type-only re-exports for the HMAC token suite — runtime helpers (sign /
 // verify / isBot / injectTracking) are server-only; importing them in the
 // editor browser bundle would pull `node:crypto` and break Vite.
 export type {
-  EmailTrackingKind, EmailTrackingPayload, SignedToken,
-  VerifyOptions, VerifyResult, VerifyFailReason,
+  EmailTrackingKind,
+  EmailTrackingPayload,
+  SignedToken,
+  VerifyOptions,
+  VerifyResult,
+  VerifyFailReason,
 } from './lib/email-tracking-token.js';
 export { DEFAULT_TOKEN_TTL_SECONDS } from './lib/email-tracking-token-constants.js';
 export { textTemplateNode, jsonExtractNode, dateFormatNode } from './actions/utility.js';
@@ -77,7 +111,11 @@ export { communityGithubNode } from './actions/community-github.js';
 export { communityHubspotNode } from './actions/community-hubspot.js';
 export { communityNotionNode } from './actions/community-notion.js';
 export { communitySalesforceNode } from './actions/community-salesforce.js';
-export { communitySlackNode, communityTelegramNode, communityLinearNode } from './actions/community-wrappers.js';
+export {
+  communitySlackNode,
+  communityTelegramNode,
+  communityLinearNode,
+} from './actions/community-wrappers.js';
 export { uiOpenHistoryNode } from './actions/ui-open-history.js';
 export { runPythonNode, runJsNode } from './actions/run-code.js';
 export { runTsNode } from './actions/run-ts.js';
@@ -86,8 +124,12 @@ export { securityAuditNode } from './actions/security-audit.js';
 export { videoSummarizerNode } from './actions/video-summarizer.js';
 export { legalComplianceNode } from './actions/legal-compliance.js';
 export {
-  communityGoogleSheetsNode, communityDiscordNode, communityAirtableNode,
-  communityTrelloNode, communityCalendlyNode, communityTypeformNode,
+  communityGoogleSheetsNode,
+  communityDiscordNode,
+  communityAirtableNode,
+  communityTrelloNode,
+  communityCalendlyNode,
+  communityTypeformNode,
 } from './actions/community-saas-batch.js';
 export { debugRunFailureNode } from './actions/debug-run.js';
 export { linesEnrichNode } from './actions/lines-enricher.js';

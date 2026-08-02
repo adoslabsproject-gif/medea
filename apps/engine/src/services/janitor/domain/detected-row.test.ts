@@ -14,8 +14,11 @@ import { buildDetectedRow } from './detected-row.js';
 describe('🚨 buildDetectedRow — happy', () => {
   it('🚨 con tenantId → output completo', () => {
     const r = buildDetectedRow({
-      id: 'row-1', reason: 'corrupted', severity: 'critical',
-      raw: { col_a: 1, col_b: 'x' }, tenantId: 't1',
+      id: 'row-1',
+      reason: 'corrupted',
+      severity: 'critical',
+      raw: { col_a: 1, col_b: 'x' },
+      tenantId: 't1',
     });
     expect(r.id).toBe('row-1');
     expect(r.reason).toBe('corrupted');
@@ -26,7 +29,9 @@ describe('🚨 buildDetectedRow — happy', () => {
 
   it('🚨 senza tenantId → key OMESSA (no `tenantId: undefined`)', () => {
     const r = buildDetectedRow({
-      id: 'row-2', reason: 'orphan', severity: 'warning',
+      id: 'row-2',
+      reason: 'orphan',
+      severity: 'warning',
       raw: { x: 1 },
     });
     expect(r.tenantId).toBeUndefined();
@@ -37,14 +42,20 @@ describe('🚨 buildDetectedRow — happy', () => {
 describe('🚨 buildDetectedRow — immutability', () => {
   it('🚨 output frozen', () => {
     const r = buildDetectedRow({
-      id: '1', reason: 'r', severity: 'critical', raw: {},
+      id: '1',
+      reason: 'r',
+      severity: 'critical',
+      raw: {},
     });
     expect(Object.isFrozen(r)).toBe(true);
   });
 
   it('🚨 raw frozen (deep)', () => {
     const r = buildDetectedRow({
-      id: '1', reason: 'r', severity: 'critical', raw: { a: 1 },
+      id: '1',
+      reason: 'r',
+      severity: 'critical',
+      raw: { a: 1 },
     });
     expect(Object.isFrozen(r.raw)).toBe(true);
   });
@@ -52,7 +63,10 @@ describe('🚨 buildDetectedRow — immutability', () => {
   it('🚨 SECURITY: mutation root DetectedRow → throw strict', () => {
     'use strict';
     const r = buildDetectedRow({
-      id: '1', reason: 'r', severity: 'critical', raw: {},
+      id: '1',
+      reason: 'r',
+      severity: 'critical',
+      raw: {},
     });
     expect(() => {
       (r as { id: string }).id = 'hacked';
@@ -62,7 +76,10 @@ describe('🚨 buildDetectedRow — immutability', () => {
   it('🚨 SECURITY: mutation raw → throw strict', () => {
     'use strict';
     const r = buildDetectedRow({
-      id: '1', reason: 'r', severity: 'critical', raw: { x: 1 },
+      id: '1',
+      reason: 'r',
+      severity: 'critical',
+      raw: { x: 1 },
     });
     expect(() => {
       (r.raw as Record<string, unknown>).x = 999;
@@ -72,7 +89,10 @@ describe('🚨 buildDetectedRow — immutability', () => {
   it('🚨 SECURITY: mutation raw SOURCE dopo build → no leak', () => {
     const source = { sensitive: 'before' };
     const r = buildDetectedRow({
-      id: '1', reason: 'r', severity: 'critical', raw: source,
+      id: '1',
+      reason: 'r',
+      severity: 'critical',
+      raw: source,
     });
     source.sensitive = 'mutated';
     expect((r.raw as Record<string, unknown>).sensitive).toBe('before');
@@ -82,14 +102,19 @@ describe('🚨 buildDetectedRow — immutability', () => {
 describe('🚨 buildDetectedRow — variants', () => {
   it('🚨 severity warning', () => {
     const r = buildDetectedRow({
-      id: '1', reason: 'r', severity: 'warning', raw: {},
+      id: '1',
+      reason: 'r',
+      severity: 'warning',
+      raw: {},
     });
     expect(r.severity).toBe('warning');
   });
 
   it('🚨 reason in italiano (UI/audit)', () => {
     const r = buildDetectedRow({
-      id: '1', reason: 'Riga orfana: parent_id non esiste', severity: 'critical',
+      id: '1',
+      reason: 'Riga orfana: parent_id non esiste',
+      severity: 'critical',
       raw: {},
     });
     expect(r.reason).toContain('orfana');
@@ -97,7 +122,10 @@ describe('🚨 buildDetectedRow — variants', () => {
 
   it('🚨 id PK numerico stringificato', () => {
     const r = buildDetectedRow({
-      id: '12345', reason: 'r', severity: 'critical', raw: {},
+      id: '12345',
+      reason: 'r',
+      severity: 'critical',
+      raw: {},
     });
     expect(typeof r.id).toBe('string');
   });
@@ -105,24 +133,35 @@ describe('🚨 buildDetectedRow — variants', () => {
   it('🚨 id UUID accepted', () => {
     const r = buildDetectedRow({
       id: 'ab1234ef-1234-1234-1234-abcdef123456',
-      reason: 'r', severity: 'critical', raw: {},
+      reason: 'r',
+      severity: 'critical',
+      raw: {},
     });
     expect(r.id).toContain('-');
   });
 
   it('🚨 raw con tutte le colonne (snapshot completo per restore)', () => {
     const fullRow = {
-      id: 1, name: 'foo', created_at: '2026-01-01', meta: { nested: true },
+      id: 1,
+      name: 'foo',
+      created_at: '2026-01-01',
+      meta: { nested: true },
     };
     const r = buildDetectedRow({
-      id: '1', reason: 'r', severity: 'critical', raw: fullRow,
+      id: '1',
+      reason: 'r',
+      severity: 'critical',
+      raw: fullRow,
     });
     expect(Object.keys(r.raw)).toHaveLength(4);
   });
 
   it('🚨 raw vuoto ammesso (regola può non avere raw context)', () => {
     const r = buildDetectedRow({
-      id: '1', reason: 'r', severity: 'critical', raw: {},
+      id: '1',
+      reason: 'r',
+      severity: 'critical',
+      raw: {},
     });
     expect(r.raw).toEqual({});
   });

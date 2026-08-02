@@ -40,9 +40,13 @@ function dirSizeBytes(path: string): number {
       try {
         if (entry.isDirectory()) total += dirSizeBytes(child);
         else if (entry.isFile()) total += statSync(child).size;
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     }
-  } catch { /* dir not present */ }
+  } catch {
+    /* dir not present */
+  }
   return total;
 }
 
@@ -62,7 +66,9 @@ function buildSmtpTransport(): nodemailer.Transporter | null {
   if (!host || !port) return null;
   const portNum = Number(port);
   return nodemailer.createTransport({
-    host, port: portNum, secure: portNum === 465,
+    host,
+    port: portNum,
+    secure: portNum === 465,
     ...(user && pass ? { auth: { user, pass } } : {}),
   });
 }
@@ -169,17 +175,18 @@ async function sendEmail(tpl: EmailTpl): Promise<void> {
  */
 async function forceEphemeralImplicit(): Promise<number> {
   const { db } = getDatabase();
-  const res = await db.update(workflows)
+  const res = await db
+    .update(workflows)
     .set({ runVerbosity: 'silent' })
-    .where(or(
-      isNull(workflows.runVerbosity),
-      ne(workflows.runVerbosity, 'silent'),
-    ));
+    .where(or(isNull(workflows.runVerbosity), ne(workflows.runVerbosity, 'silent')));
   // Drizzle update non sempre ritorna count su SQLite — leggiamo dopo.
   const { sqlite } = getDatabase();
-  const after = sqlite.prepare("SELECT COUNT(*) as n FROM workflows WHERE run_verbosity = 'silent'").get() as { n: number };
+  const after = sqlite
+    .prepare("SELECT COUNT(*) as n FROM workflows WHERE run_verbosity = 'silent'")
+    .get() as { n: number };
   // Suppress unused-binding warning
-  void res; void eq;
+  void res;
+  void eq;
   return after.n;
 }
 
@@ -190,19 +197,23 @@ async function tick(): Promise<void> {
     const used = measureLogUsage();
     const percent = Math.min(100, Math.round((used / quotas.logRetentionBytes) * 100));
     const now = Date.now();
-    if (percent >= 100 && (now - lastFullSentAt) > DAY_MS) {
+    if (percent >= 100 && now - lastFullSentAt > DAY_MS) {
       const tpl = emailFull100(used, quotas.logRetentionBytes);
       await sendEmail(tpl);
       lastFullSentAt = now;
       const switched = await forceEphemeralImplicit();
-      logger.warn?.({ percent, used, quota: quotas.logRetentionBytes, switched },
-        '[log-quota-watcher] FULL — auto-switch implicit ephemeral');
-    } else if (percent >= 80 && (now - lastWarnSentAt) > DAY_MS) {
+      logger.warn?.(
+        { percent, used, quota: quotas.logRetentionBytes, switched },
+        '[log-quota-watcher] FULL — auto-switch implicit ephemeral',
+      );
+    } else if (percent >= 80 && now - lastWarnSentAt > DAY_MS) {
       const tpl = emailWarn80(percent, used, quotas.logRetentionBytes);
       await sendEmail(tpl);
       lastWarnSentAt = now;
-      logger.warn?.({ percent, used, quota: quotas.logRetentionBytes },
-        '[log-quota-watcher] WARN — email sent');
+      logger.warn?.(
+        { percent, used, quota: quotas.logRetentionBytes },
+        '[log-quota-watcher] WARN — email sent',
+      );
     }
   } catch (e) {
     logger.warn?.({ err: e }, '[log-quota-watcher] tick failed');
@@ -212,8 +223,15 @@ async function tick(): Promise<void> {
 export function startLogQuotaWatcher(): void {
   if (timer) return;
   // First tick after 5 min (let archive cron eventually run)
-  setTimeout(() => { void tick(); }, 5 * 60 * 1000).unref?.();
-  timer = setInterval(() => { void tick(); }, HOUR_MS);
+  setTimeout(
+    () => {
+      void tick();
+    },
+    5 * 60 * 1000,
+  ).unref?.();
+  timer = setInterval(() => {
+    void tick();
+  }, HOUR_MS);
   timer.unref?.();
   logger.info?.('log-quota-watcher started');
 }

@@ -46,8 +46,12 @@ function main(): void {
     await shutdownQueue();
     process.exit(0);
   };
-  process.on('SIGINT', (sig) => { void shutdown(sig); });
-  process.on('SIGTERM', (sig) => { void shutdown(sig); });
+  process.on('SIGINT', (sig) => {
+    void shutdown(sig);
+  });
+  process.on('SIGTERM', (sig) => {
+    void shutdown(sig);
+  });
 }
 
 void main();

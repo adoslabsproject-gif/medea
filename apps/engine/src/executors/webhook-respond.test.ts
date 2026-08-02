@@ -16,7 +16,9 @@ const ctx: ExecCtx = {
   nodeId: 'n1',
 } as unknown as ExecCtx;
 
-function payload(result: Awaited<ReturnType<typeof webhookRespondExecutor>>): Record<string, unknown> {
+function payload(
+  result: Awaited<ReturnType<typeof webhookRespondExecutor>>,
+): Record<string, unknown> {
   const out = result.output as Record<string, unknown>;
   return out[WEBHOOK_RESPONSE_KEY] as Record<string, unknown>;
 }
@@ -41,7 +43,11 @@ describe('webhookRespondExecutor — JSON mode (default)', () => {
   });
 
   it('honors statusPreset', async () => {
-    const result = await webhookRespondExecutor({ respondWith: 'json', statusPreset: '201 Created' }, {}, ctx);
+    const result = await webhookRespondExecutor(
+      { respondWith: 'json', statusPreset: '201 Created' },
+      {},
+      ctx,
+    );
     expect(payload(result).status).toBe(201);
   });
 });
@@ -91,23 +97,44 @@ describe('webhookRespondExecutor — redirect mode', () => {
   });
 
   it('🚨🚨 OPEN-REDIRECT/XSS: schema pericoloso → throw (no javascript:/data:)', async () => {
-    for (const loc of ['javascript:alert(1)', 'data:text/html,<script>1</script>', 'vbscript:msgbox', 'file:///etc/passwd']) {
-      await expect(webhookRespondExecutor(
-        { respondWith: 'redirect', redirectLocation: loc }, {}, ctx,
-      )).rejects.toThrow(/redirectLocation non valido/u);
+    for (const loc of [
+      'javascript:alert(1)',
+      'data:text/html,<script>1</script>',
+      'vbscript:msgbox',
+      'file:///etc/passwd',
+    ]) {
+      await expect(
+        webhookRespondExecutor({ respondWith: 'redirect', redirectLocation: loc }, {}, ctx),
+      ).rejects.toThrow(/redirectLocation non valido/u);
     }
   });
 
   it('🚨 protocol-relative //evil.com → throw (porterebbe su host esterno)', async () => {
-    await expect(webhookRespondExecutor(
-      { respondWith: 'redirect', redirectLocation: '//evil.com/phish' }, {}, ctx,
-    )).rejects.toThrow(/redirectLocation non valido/u);
+    await expect(
+      webhookRespondExecutor(
+        { respondWith: 'redirect', redirectLocation: '//evil.com/phish' },
+        {},
+        ctx,
+      ),
+    ).rejects.toThrow(/redirectLocation non valido/u);
   });
 
   it('✅ http(s) assoluto e path relativo "/..." consentiti', async () => {
-    const abs = payload(await webhookRespondExecutor({ respondWith: 'redirect', redirectLocation: 'https://ok.example/x' }, {}, ctx));
+    const abs = payload(
+      await webhookRespondExecutor(
+        { respondWith: 'redirect', redirectLocation: 'https://ok.example/x' },
+        {},
+        ctx,
+      ),
+    );
     expect((abs.headers as Record<string, string>).Location).toBe('https://ok.example/x');
-    const rel = payload(await webhookRespondExecutor({ respondWith: 'redirect', redirectLocation: '/dashboard' }, {}, ctx));
+    const rel = payload(
+      await webhookRespondExecutor(
+        { respondWith: 'redirect', redirectLocation: '/dashboard' },
+        {},
+        ctx,
+      ),
+    );
     expect((rel.headers as Record<string, string>).Location).toBe('/dashboard');
   });
 });
@@ -129,7 +156,9 @@ describe('webhookRespondExecutor — binary mode', () => {
     expect(resp.contentType).toBe('application/pdf');
     expect(resp.body).toBe(b64);
     expect(resp.bodyIsBase64).toBe(true);
-    expect((resp.headers as Record<string, string>)['Content-Disposition']).toBe('attachment; filename="report.pdf"');
+    expect((resp.headers as Record<string, string>)['Content-Disposition']).toBe(
+      'attachment; filename="report.pdf"',
+    );
   });
 
   it('sanitizes filename quotes', async () => {
@@ -142,13 +171,19 @@ describe('webhookRespondExecutor — binary mode', () => {
       {},
       ctx,
     );
-    expect((payload(result).headers as Record<string, string>)['Content-Disposition'])
-      .toBe('attachment; filename="evilinjection.pdf"');
+    expect((payload(result).headers as Record<string, string>)['Content-Disposition']).toBe(
+      'attachment; filename="evilinjection.pdf"',
+    );
   });
 
   // GAP2 FLIP — il consumer accetta un handle BinaryData in input (ref-primario).
-  const inlineBin = (buf: Buffer): unknown =>
-    ({ __ffBinary: true, encoding: 'base64', mimeType: 'application/pdf', size: buf.length, data: buf.toString('base64') });
+  const inlineBin = (buf: Buffer): unknown => ({
+    __ffBinary: true,
+    encoding: 'base64',
+    mimeType: 'application/pdf',
+    size: buf.length,
+    data: buf.toString('base64'),
+  });
 
   it('🚨 input BinaryData inline → body = base64 dei byte risolti', async () => {
     const bytes = Buffer.from([0x25, 0x50, 0x44, 0x46, 0x00, 0xff]);
@@ -161,8 +196,17 @@ describe('webhookRespondExecutor — binary mode', () => {
   it('🚨 input BinaryData ref → readBinary risolve dal disco → body base64', async () => {
     const bytes = Buffer.from('disk-pdf-bytes');
     const readBinary = async (_r: string): Promise<Buffer> => bytes;
-    const refBin = { __ffBinary: true, encoding: 'ref', mimeType: 'application/pdf', size: bytes.length, ref: 'a'.repeat(64) };
-    const result = await webhookRespondExecutor({ respondWith: 'binary' }, refBin, { ...ctx, readBinary } as unknown as ExecCtx);
+    const refBin = {
+      __ffBinary: true,
+      encoding: 'ref',
+      mimeType: 'application/pdf',
+      size: bytes.length,
+      ref: 'a'.repeat(64),
+    };
+    const result = await webhookRespondExecutor({ respondWith: 'binary' }, refBin, {
+      ...ctx,
+      readBinary,
+    } as unknown as ExecCtx);
     expect(Buffer.from(payload(result).body as string, 'base64').equals(bytes)).toBe(true);
   });
 
@@ -230,13 +274,16 @@ describe('webhookRespondExecutor — CORS', () => {
       { ok: true },
       ctx,
     );
-    expect((payload(result).headers as Record<string, string>)['Access-Control-Allow-Origin'])
-      .toBe('https://app.example.com');
+    expect((payload(result).headers as Record<string, string>)['Access-Control-Allow-Origin']).toBe(
+      'https://app.example.com',
+    );
   });
 
   it('does not set CORS when empty', async () => {
     const result = await webhookRespondExecutor({ respondWith: 'json' }, {}, ctx);
-    expect((payload(result).headers as Record<string, string>)['Access-Control-Allow-Origin']).toBeUndefined();
+    expect(
+      (payload(result).headers as Record<string, string>)['Access-Control-Allow-Origin'],
+    ).toBeUndefined();
   });
 });
 
@@ -269,7 +316,8 @@ describe('🚨 webhookRespondExecutor — header injection / response splitting 
   it('strippa CR/LF/NUL dal VALORE di un header (no Set-Cookie iniettato)', async () => {
     const result = await webhookRespondExecutor(
       { respondWith: 'json', headersJson: JSON.stringify({ 'X-Foo': 'ok\r\nSet-Cookie: evil=1' }) },
-      {}, ctx,
+      {},
+      ctx,
     );
     const headers = payload(result).headers as Record<string, string>;
     // MUTATION: senza sanitizeHeaderValue → 'ok\r\nSet-Cookie: evil=1' → rosso.
@@ -280,8 +328,12 @@ describe('🚨 webhookRespondExecutor — header injection / response splitting 
 
   it('scarta un header col NOME non-token (CRLF/spazi/`:` nella chiave)', async () => {
     const result = await webhookRespondExecutor(
-      { respondWith: 'json', headersJson: JSON.stringify({ 'X-Bad\r\nSet-Cookie': 'evil', 'X-Ok': 'v' }) },
-      {}, ctx,
+      {
+        respondWith: 'json',
+        headersJson: JSON.stringify({ 'X-Bad\r\nSet-Cookie': 'evil', 'X-Ok': 'v' }),
+      },
+      {},
+      ctx,
     );
     const headers = payload(result).headers as Record<string, string>;
     expect(headers['X-Ok']).toBe('v');
@@ -292,7 +344,8 @@ describe('🚨 webhookRespondExecutor — header injection / response splitting 
   it('strippa CRLF da corsOrigin (Access-Control-Allow-Origin)', async () => {
     const result = await webhookRespondExecutor(
       { respondWith: 'json', corsOrigin: 'https://ok.example\r\nX-Injected: 1' },
-      {}, ctx,
+      {},
+      ctx,
     );
     const headers = payload(result).headers as Record<string, string>;
     expect(headers['Access-Control-Allow-Origin']).toBe('https://ok.exampleX-Injected: 1');
@@ -303,15 +356,20 @@ describe('🚨 webhookRespondExecutor — header injection / response splitting 
     // Prima: si strippava il CRLF e si teneva l'URL mangled (`https://ok.exampleSet-Cookie: x=1`).
     // Ora safeRedirectLocation valida l'URL DOPO lo strip: quell'input è un URL non
     // valido → throw. Più sicuro: nessuna Location malformata raggiunge il browser.
-    await expect(webhookRespondExecutor(
-      { respondWith: 'redirect', redirectLocation: 'https://ok.example\r\nSet-Cookie: x=1' },
-      {}, ctx,
-    )).rejects.toThrow(/redirectLocation non valido/u);
+    await expect(
+      webhookRespondExecutor(
+        { respondWith: 'redirect', redirectLocation: 'https://ok.example\r\nSet-Cookie: x=1' },
+        {},
+        ctx,
+      ),
+    ).rejects.toThrow(/redirectLocation non valido/u);
   });
 
   it('redirect Location valida con CRLF in coda → strip + accettata', async () => {
     const result = await webhookRespondExecutor(
-      { respondWith: 'redirect', redirectLocation: 'https://ok.example/path\r\n' }, {}, ctx,
+      { respondWith: 'redirect', redirectLocation: 'https://ok.example/path\r\n' },
+      {},
+      ctx,
     );
     const headers = payload(result).headers as Record<string, string>;
     expect(headers.Location).toBe('https://ok.example/path');
@@ -320,8 +378,13 @@ describe('🚨 webhookRespondExecutor — header injection / response splitting 
 
   it('strippa CRLF dal filename in Content-Disposition (binary)', async () => {
     const result = await webhookRespondExecutor(
-      { respondWith: 'binary', binaryData: 'AAAA', binaryFilename: 'report\r\nSet-Cookie: x=1.pdf' },
-      {}, ctx,
+      {
+        respondWith: 'binary',
+        binaryData: 'AAAA',
+        binaryFilename: 'report\r\nSet-Cookie: x=1.pdf',
+      },
+      {},
+      ctx,
     );
     const headers = payload(result).headers as Record<string, string>;
     expect(JSON.stringify(headers)).not.toMatch(/[\r\n]/);

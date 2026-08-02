@@ -68,21 +68,20 @@ describe('🚨 getAuthKeys — happy paths', () => {
     expect(k.privateKeyPem).toBe('PRIV-GENERATED');
     expect(k.publicKeyPem).toBe('PUB-GENERATED');
     expect(generateSessionKeyPairMock).toHaveBeenCalledTimes(1);
-    expect(loggerMock.info).toHaveBeenCalledWith(
-      expect.stringMatching(/first-run/u),
-    );
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringMatching(/first-run/u));
   });
 
   it('🚨 SECURITY: private key written with mode 0o600 (rw user only)', async () => {
     fsMock.existsSync.mockReturnValue(false);
     generateSessionKeyPairMock.mockResolvedValue({
-      privateKeyPem: 'PRIV-X', publicKeyPem: 'PUB-X',
+      privateKeyPem: 'PRIV-X',
+      publicKeyPem: 'PUB-X',
     });
     const { getAuthKeys } = await import('./auth-keys.js');
     await getAuthKeys();
     // PRIVATE call: arg 3 = { mode: 0o600 }
-    const privateWrite = fsMock.writeFileSync.mock.calls.find(
-      (call) => String(call[0]).includes('private'),
+    const privateWrite = fsMock.writeFileSync.mock.calls.find((call) =>
+      String(call[0]).includes('private'),
     );
     expect(privateWrite).toBeDefined();
     expect(privateWrite![1]).toBe('PRIV-X');
@@ -92,7 +91,8 @@ describe('🚨 getAuthKeys — happy paths', () => {
   it('🚨 SECURITY: public key NON ha mode 0o600 (deve essere readable)', async () => {
     fsMock.existsSync.mockReturnValue(false);
     generateSessionKeyPairMock.mockResolvedValue({
-      privateKeyPem: 'PRIV', publicKeyPem: 'PUB',
+      privateKeyPem: 'PRIV',
+      publicKeyPem: 'PUB',
     });
     const { getAuthKeys } = await import('./auth-keys.js');
     await getAuthKeys();
@@ -107,7 +107,8 @@ describe('🚨 getAuthKeys — happy paths', () => {
   it('🚨 mkdirSync recursive: true per supportare boot su volume nuovo', async () => {
     fsMock.existsSync.mockReturnValue(false);
     generateSessionKeyPairMock.mockResolvedValue({
-      privateKeyPem: 'a', publicKeyPem: 'b',
+      privateKeyPem: 'a',
+      publicKeyPem: 'b',
     });
     const { getAuthKeys } = await import('./auth-keys.js');
     await getAuthKeys();
@@ -142,7 +143,8 @@ describe('🚨 cache singleton — perf + consistency', () => {
   it('🚨 first-run + second call → 1 sola gen, 1 sola write', async () => {
     fsMock.existsSync.mockReturnValue(false);
     generateSessionKeyPairMock.mockResolvedValue({
-      privateKeyPem: 'P', publicKeyPem: 'U',
+      privateKeyPem: 'P',
+      publicKeyPem: 'U',
     });
     const { getAuthKeys } = await import('./auth-keys.js');
     await getAuthKeys();
@@ -156,12 +158,13 @@ describe('🚨 path construction — uses config.MEDEA_DATA_DIR', () => {
   it('🚨 path priv = <DATA_DIR>/session-private.pem', async () => {
     fsMock.existsSync.mockReturnValue(false);
     generateSessionKeyPairMock.mockResolvedValue({
-      privateKeyPem: 'a', publicKeyPem: 'b',
+      privateKeyPem: 'a',
+      publicKeyPem: 'b',
     });
     const { getAuthKeys } = await import('./auth-keys.js');
     await getAuthKeys();
-    const privateWrite = fsMock.writeFileSync.mock.calls.find(
-      (call) => String(call[0]).includes('private'),
+    const privateWrite = fsMock.writeFileSync.mock.calls.find((call) =>
+      String(call[0]).includes('private'),
     );
     expect(String(privateWrite![0])).toBe('/var/data/test/session-private.pem');
   });
@@ -169,7 +172,8 @@ describe('🚨 path construction — uses config.MEDEA_DATA_DIR', () => {
   it('🚨 path pub = <DATA_DIR>/session-public.pem', async () => {
     fsMock.existsSync.mockReturnValue(false);
     generateSessionKeyPairMock.mockResolvedValue({
-      privateKeyPem: 'a', publicKeyPem: 'b',
+      privateKeyPem: 'a',
+      publicKeyPem: 'b',
     });
     const { getAuthKeys } = await import('./auth-keys.js');
     await getAuthKeys();
@@ -189,7 +193,8 @@ describe('🚨 partial file existence — entrambi richiesti', () => {
       return calls === 1; // privPath true, pubPath false → cond false
     });
     generateSessionKeyPairMock.mockResolvedValue({
-      privateKeyPem: 'NEW-P', publicKeyPem: 'NEW-U',
+      privateKeyPem: 'NEW-P',
+      publicKeyPem: 'NEW-U',
     });
     const { getAuthKeys } = await import('./auth-keys.js');
     const k = await getAuthKeys();
@@ -204,7 +209,8 @@ describe('🚨 partial file existence — entrambi richiesti', () => {
       return calls === 1 ? false : true; // privPath false → corto-circuito
     });
     generateSessionKeyPairMock.mockResolvedValue({
-      privateKeyPem: 'X', publicKeyPem: 'Y',
+      privateKeyPem: 'X',
+      publicKeyPem: 'Y',
     });
     const { getAuthKeys } = await import('./auth-keys.js');
     const k = await getAuthKeys();

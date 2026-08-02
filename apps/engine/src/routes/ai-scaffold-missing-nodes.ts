@@ -34,11 +34,11 @@ import { zValidator } from '@hono/zod-validator';
 import { requireRole } from '@/middleware/rbac.js';
 import { llmRateLimit } from '@/middleware/rate-limit.js';
 import { logger } from '@/lib/logger.js';
-import { buildNodeCatalog, buildPrePromptedAgentDefIds } from '@/services/ai-scaffold/node-catalog.js';
 import {
-  listCustomNodes,
-  customNodeDefId,
-} from '@/services/custom-nodes/index.js';
+  buildNodeCatalog,
+  buildPrePromptedAgentDefIds,
+} from '@/services/ai-scaffold/node-catalog.js';
+import { listCustomNodes, customNodeDefId } from '@/services/custom-nodes/index.js';
 import {
   applyDefIdMapping,
   detectMissingDefIds,
@@ -50,26 +50,35 @@ import { buildRealOrchestratorDeps } from '@/services/ai-scaffold/missing-node-o
 import { AuditLogService } from '@/services/audit.service.js';
 import { smokeTestWorkflow } from '@/services/ai-scaffold/preimport-smoke-test.js';
 
-const NodeSchema = z.object({
-  id: z.string().min(1),
-  defId: z.string().min(1),
-  config: z.record(z.string(), z.unknown()).default({}),
-}).passthrough();
+const NodeSchema = z
+  .object({
+    id: z.string().min(1),
+    defId: z.string().min(1),
+    config: z.record(z.string(), z.unknown()).default({}),
+  })
+  .passthrough();
 
-const EdgeSchema = z.object({
-  from: z.string().min(1),
-  to: z.string().min(1),
-}).passthrough();
+const EdgeSchema = z
+  .object({
+    from: z.string().min(1),
+    to: z.string().min(1),
+  })
+  .passthrough();
 
 const RequestSchema = z.object({
-  workflow: z.object({
-    nodes: z.array(NodeSchema).min(1).max(200),
-    edges: z.array(EdgeSchema).max(1000),
-  }).passthrough(),
+  workflow: z
+    .object({
+      nodes: z.array(NodeSchema).min(1).max(200),
+      edges: z.array(EdgeSchema).max(1000),
+    })
+    .passthrough(),
   userPrompt: z.string().min(1).max(8_000),
 });
 
-function resolveCtx(c: { get: (k: string) => unknown }): { workspaceId: string; actorUserId: string } {
+function resolveCtx(c: { get: (k: string) => unknown }): {
+  workspaceId: string;
+  actorUserId: string;
+} {
   const auth = c.get('auth') as { userId?: string; tenantId?: string } | undefined;
   return {
     workspaceId: auth?.tenantId ?? 'default',
@@ -119,12 +128,20 @@ export function createAiScaffoldMissingNodesRoutes(): Hono {
       });
 
       logger.info(
-        { workspaceId, missingCount: missing.length, planItems: plan.items.length, skipped: plan.skipped.length },
+        {
+          workspaceId,
+          missingCount: missing.length,
+          planItems: plan.items.length,
+          skipped: plan.skipped.length,
+        },
         '[ai-scaffold] synthesize-missing-nodes: piano pronto',
       );
 
       const deps = buildRealOrchestratorDeps(workspaceId);
-      const result = await executeSynthesisPlan(plan, deps, { workspaceId, ownerUserId: actorUserId });
+      const result = await executeSynthesisPlan(plan, deps, {
+        workspaceId,
+        ownerUserId: actorUserId,
+      });
 
       // 4) Riscrivi workflow con i nuovi defId.
       const rewritten = applyDefIdMapping(wf, result.mapping);
@@ -179,12 +196,17 @@ export function createAiScaffoldMissingNodesRoutes(): Hono {
   // Step 5: pre-import smoke test. Pure, no LLM, no DB write — cost zero.
   app.post(
     '/smoke-test',
-    zValidator('json', z.object({
-      workflow: z.object({
-        nodes: z.array(NodeSchema).min(1).max(200),
-        edges: z.array(EdgeSchema).max(1000),
-      }).passthrough(),
-    })),
+    zValidator(
+      'json',
+      z.object({
+        workflow: z
+          .object({
+            nodes: z.array(NodeSchema).min(1).max(200),
+            edges: z.array(EdgeSchema).max(1000),
+          })
+          .passthrough(),
+      }),
+    ),
     async (c) => {
       const { workflow } = c.req.valid('json');
 
@@ -214,7 +236,7 @@ function hashPrompt(s: string): string {
   // senza salvare il testo PII-sensitive. SHA-256 sarebbe overkill ma OK.
   let h = 5381;
   for (let i = 0; i < s.length; i++) {
-    h = ((h << 5) + h) + s.charCodeAt(i);
+    h = (h << 5) + h + s.charCodeAt(i);
     h |= 0;
   }
   return Math.abs(h).toString(16);

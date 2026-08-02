@@ -14,7 +14,7 @@ export const emailCleanNodeDef: NodeDef = {
   color: '#3b82f6',
   description:
     'Sanitizer enterprise per il body di email destinate a un LLM downstream. Rimuove deterministicamente quattro ' +
-    'classi di rumore che gonfiano i token senza aggiungere valore semantico al messaggio originale dell\'utente: ' +
+    "classi di rumore che gonfiano i token senza aggiungere valore semantico al messaggio originale dell'utente: " +
     '(1) reply quotata multilingua — riconosce "On 2026-01-15, X wrote:" (EN), "Il giorno X ha scritto:" (IT), ' +
     '"Le DD/MM, X a écrit:" (FR), "Am DD.MM, X schrieb:" (DE), "El DD/MM, X escribió:" (ES), separatori Outlook ' +
     '"---- Forwarded message ----" e "Da: ...", catene "Re: Re: Re:" annidate, e tagli su 4+ righe prefissate ">" ' +
@@ -26,7 +26,7 @@ export const emailCleanNodeDef: NodeDef = {
     'utm_medium, utm_campaign, utm_content, utm_term) + parametri pixel proprietari (gclid Google, fbclid Facebook, ' +
     'msclkid Bing, mc_cid Mailchimp, oly_anon_id Oracle) senza toccare URL puliti. ' +
     'Riduzione token osservata: 70-90% sul corpus tipico email B2B/customer support. ' +
-    'Effetti collaterali sull\'accuratezza LLM downstream: +12-18% di accuratezza nel classifier perché il contesto ' +
+    "Effetti collaterali sull'accuratezza LLM downstream: +12-18% di accuratezza nel classifier perché il contesto " +
     'resta focalizzato sul testo originale e non è diluito da firme/disclaimer ricorrenti. ' +
     'Pure function: nessun I/O, nessun secret, output deterministico dato lo stesso input — safe da retry. ' +
     'Use case: pre-step di un workflow customer support che usa LLM per detection sentiment + reply suggestion, ' +
@@ -41,7 +41,8 @@ export const emailCleanNodeDef: NodeDef = {
       type: 'boolean',
       required: false,
       defaultValue: 'true',
-      help: 'Rileva "On 2026-01-15, X wrote:" (EN), "Il giorno X ha scritto:" (IT), ' +
+      help:
+        'Rileva "On 2026-01-15, X wrote:" (EN), "Il giorno X ha scritto:" (IT), ' +
         '"---- Forwarded message ----", "Da: …" (Outlook), oppure 4+ righe ">" ' +
         'consecutive. Taglia tutto da quel punto in poi.',
     },
@@ -51,7 +52,8 @@ export const emailCleanNodeDef: NodeDef = {
       type: 'boolean',
       required: false,
       defaultValue: 'true',
-      help: 'Rileva delimitatore RFC-3676 "-- " (dash dash space), ' +
+      help:
+        'Rileva delimitatore RFC-3676 "-- " (dash dash space), ' +
         '"Inviato da iPhone/Android/Samsung/...", "Sent from my iPhone", ' +
         'oppure euristica "ultimo paragrafo con Tel:/P.IVA:/email:".',
     },
@@ -61,7 +63,8 @@ export const emailCleanNodeDef: NodeDef = {
       type: 'boolean',
       required: false,
       defaultValue: 'true',
-      help: '"This email is confidential…", "Le informazioni contenute…", ' +
+      help:
+        '"This email is confidential…", "Le informazioni contenute…", ' +
         '"Per proteggere l\'ambiente non stampare…", "Informativa privacy GDPR…", ' +
         '"Ai sensi del Reg…". Match per paragrafo, non per body intero.',
     },
@@ -71,7 +74,8 @@ export const emailCleanNodeDef: NodeDef = {
       type: 'boolean',
       required: false,
       defaultValue: 'false',
-      help: 'Sostituisce gli URL con parametri utm_*, gclid, fbclid, mc_eid, ' +
+      help:
+        'Sostituisce gli URL con parametri utm_*, gclid, fbclid, mc_eid, ' +
         'mc_cid con la sola "https://<host>/". Utile contro marketing emails. ' +
         'Off per default — può cambiare contenuto se il workflow downstream ' +
         'usa gli URL per altri scopi.',
@@ -90,7 +94,8 @@ export const emailCleanNodeDef: NodeDef = {
       type: 'number',
       required: false,
       defaultValue: '8192',
-      help: 'Hard cap per evitare LLM context overflow. Range 64–64000. ' +
+      help:
+        'Hard cap per evitare LLM context overflow. Range 64–64000. ' +
         'Eccedenza tagliata + "…" alla fine.',
     },
     {
@@ -99,7 +104,8 @@ export const emailCleanNodeDef: NodeDef = {
       type: 'text',
       required: false,
       defaultValue: 'body',
-      help: 'Nome del campo dall\'input record che porta il body raw. ' +
+      help:
+        "Nome del campo dall'input record che porta il body raw. " +
         'Default "body". Cambia se l\'upstream usa "text", "content", "html".',
     },
   ],

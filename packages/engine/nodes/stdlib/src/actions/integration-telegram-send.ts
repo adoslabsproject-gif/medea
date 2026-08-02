@@ -16,16 +16,16 @@ export const integrationTelegramSendNode: NodeModule = {
     icon: 'send',
     color: '#0088cc',
     description:
-      'Connettore canonico Telegram via Bot API ufficiale (sendMessage + sendPhoto) — l\'endpoint primitivo ' +
+      "Connettore canonico Telegram via Bot API ufficiale (sendMessage + sendPhoto) — l'endpoint primitivo " +
       'su cui il wrapper community_telegram costruisce esperienza user-friendly per il dataset AI scaffold. ' +
       'Invia messaggi testo o foto in qualsiasi chat Telegram a cui il bot ha accesso (chat 1-to-1 con utente ' +
-      'che ha già scritto al bot per primo, group dove il bot è stato aggiunto dall\'admin, canale broadcast ' +
+      "che ha già scritto al bot per primo, group dove il bot è stato aggiunto dall'admin, canale broadcast " +
       'dove il bot ha permessi di posting). Telegram è la piattaforma di messaging cross-platform con 900M+ MAU ' +
       'particolarmente dominante in Italia, Russia, Iran, Brasile, India per community real-time e bot ' +
       'automation enterprise. ' +
       'Operations: sendMessage (messaggio testuale puro con length cap 4096 char, splitting automatico in più ' +
       'chunk se eccede), sendPhoto (foto inline con caption optional 1024 char, URL remoto o local path file — ' +
-      'NO upload binario diretto in questo nodo per semplicità, l\'upload di binary va via integration_http ' +
+      "NO upload binario diretto in questo nodo per semplicità, l'upload di binary va via integration_http " +
       'multipart custom). ' +
       'Parse modes: MarkdownV2 (the modern Telegram dialect 2017+, escape stringente di *_~`>#+-=|{}.!() per ' +
       'evitare 400 BadRequest — gestito automaticamente dal nodo che pre-escapa i caratteri pericolosi), HTML ' +
@@ -64,7 +64,8 @@ export const integrationTelegramSendNode: NodeModule = {
         type: 'expression',
         required: true,
         placeholder: '-1001234567890   oppure   @miocanale',
-        help: 'Numeric chat ID (privati: positivo, gruppi/canali: negativo con -100 prefix) o @username pubblico. ' +
+        help:
+          'Numeric chat ID (privati: positivo, gruppi/canali: negativo con -100 prefix) o @username pubblico. ' +
           'Il bot deve essere admin del canale o membro del gruppo per poter postare.',
       },
       {
@@ -73,7 +74,8 @@ export const integrationTelegramSendNode: NodeModule = {
         type: 'expression',
         required: false,
         placeholder: '*Alert* — workflow completato \\u2705',
-        help: 'Testo del messaggio (o caption se "photoUrl" valorizzato). ' +
+        help:
+          'Testo del messaggio (o caption se "photoUrl" valorizzato). ' +
           'Required se photoUrl vuoto. Max 4096 char per messaggio, 1024 per caption.',
       },
       {
@@ -82,7 +84,8 @@ export const integrationTelegramSendNode: NodeModule = {
         type: 'expression',
         required: false,
         placeholder: 'https://example.com/chart.png',
-        help: 'Quando valorizzato, usa sendPhoto invece di sendMessage. URL deve essere accessibile da Telegram (no localhost). ' +
+        help:
+          'Quando valorizzato, usa sendPhoto invece di sendMessage. URL deve essere accessibile da Telegram (no localhost). ' +
           'Max 5MB. Per testo+foto, popola anche "text" (diventa caption).',
       },
       {
@@ -92,7 +95,8 @@ export const integrationTelegramSendNode: NodeModule = {
         required: false,
         defaultValue: 'MarkdownV2',
         options: ['MarkdownV2', 'HTML', 'Markdown', 'none'],
-        help: 'MarkdownV2 (default, strict escape) / HTML / Markdown (legacy) / none (plain). ' +
+        help:
+          'MarkdownV2 (default, strict escape) / HTML / Markdown (legacy) / none (plain). ' +
           'MarkdownV2 richiede escape di . - ! ( ) [ ] _ * — vedi core.telegram.org/bots/api#markdownv2-style.',
       },
       {

@@ -36,7 +36,9 @@ const executor: NodeExecutor = async (config, _input, _context) => {
 
   const endpoint = String(config.endpoint ?? process.env.MEDEA_BROWSER_ENDPOINT ?? '').trim();
   if (!endpoint) {
-    throw new Error('Browser render endpoint not configured. Set MEDEA_BROWSER_ENDPOINT env or fill "endpoint" config field. BYO: deploy Playwright server (browserless.io or self-hosted) and point this here.');
+    throw new Error(
+      'Browser render endpoint not configured. Set MEDEA_BROWSER_ENDPOINT env or fill "endpoint" config field. BYO: deploy Playwright server (browserless.io or self-hosted) and point this here.',
+    );
   }
 
   const apiKey = String(config.apiKey ?? '').trim();
@@ -49,7 +51,11 @@ const executor: NodeExecutor = async (config, _input, _context) => {
   const extraHeadersRaw = config.extraHeaders;
   let extraHeaders: Record<string, string> = {};
   if (typeof extraHeadersRaw === 'string' && extraHeadersRaw.trim()) {
-    try { extraHeaders = JSON.parse(extraHeadersRaw) as Record<string, string>; } catch { /* ignore */ }
+    try {
+      extraHeaders = JSON.parse(extraHeadersRaw) as Record<string, string>;
+    } catch {
+      /* ignore */
+    }
   } else if (extraHeadersRaw && typeof extraHeadersRaw === 'object') {
     extraHeaders = extraHeadersRaw as Record<string, string>;
   }
@@ -77,7 +83,12 @@ const executor: NodeExecutor = async (config, _input, _context) => {
     const errText = await res.text().catch(() => '');
     throw new Error(`Browser render failed: ${res.status.toString()} ${errText.slice(0, 300)}`);
   }
-  const data = await res.json() as { html?: string; cookies?: string[]; screenshotBase64?: string; finalUrl?: string };
+  const data = (await res.json()) as {
+    html?: string;
+    cookies?: string[];
+    screenshotBase64?: string;
+    finalUrl?: string;
+  };
 
   return {
     output: {
@@ -100,7 +111,7 @@ export const browserRenderNode: NodeModule = {
     description:
       'Renderizza una pagina con browser headless (Chrome) per scraping di SPA / siti JavaScript-heavy (React/Vue/Angular). Aspetta che il selettore appaia, poi ritorna HTML completo + cookies + screenshot opzionale.\n\n' +
       'Usa quando: action_web_fetch_advanced ritorna HTML scarno perché il contenuto viene generato da JS post-load (es. listing prodotti SPA, dashboard che carica dati via fetch).\n\n' +
-      'Architettura BYO (Bring Your Own Browser): per non far esplodere ogni container con 300MB di Chromium, il nodo chiama un endpoint Playwright esterno (browserless.io self-host, Playwright Server, o managed Zeli add-on). Configura l\'endpoint in Settings → Integrazioni → Browser Render.\n\n' +
+      "Architettura BYO (Bring Your Own Browser): per non far esplodere ogni container con 300MB di Chromium, il nodo chiama un endpoint Playwright esterno (browserless.io self-host, Playwright Server, o managed Zeli add-on). Configura l'endpoint in Settings → Integrazioni → Browser Render.\n\n" +
       'Use case: (1) scraping listing prodotti SPA con prezzi caricati via fetch, (2) audit propria dashboard con screenshot SLA-grade, (3) ingest pagina React-based che action_fetch_url restituirebbe vuota, (4) screenshot per archivio legale di una landing competitor (snapshot dated).',
     vendor: 'flowforge',
     version: '1.0.0',
@@ -126,7 +137,7 @@ export const browserRenderNode: NodeModule = {
         label: 'API Key (se richiesta)',
         type: 'secret',
         required: false,
-        help: 'Bearer token per autenticare al browser endpoint. Vuoto se l\'endpoint è loopback/trusted.',
+        help: "Bearer token per autenticare al browser endpoint. Vuoto se l'endpoint è loopback/trusted.",
       },
       {
         key: 'waitFor',

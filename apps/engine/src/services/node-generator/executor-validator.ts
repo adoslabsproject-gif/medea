@@ -11,8 +11,13 @@
 import { analyzeExecutor, type ExecutorAstFacts } from '@/services/node-generator/executor-ast.js';
 
 export type ExecutorViolationKind =
-  | 'syntax_error' | 'missing_execute' | 'not_async' | 'bad_arity' | 'no_return'
-  | 'forbidden_global' | 'forbidden_import';
+  | 'syntax_error'
+  | 'missing_execute'
+  | 'not_async'
+  | 'bad_arity'
+  | 'no_return'
+  | 'forbidden_global'
+  | 'forbidden_import';
 
 export interface ExecutorViolation {
   kind: ExecutorViolationKind;
@@ -25,30 +30,55 @@ export function validateExecutorFacts(facts: ExecutorAstFacts): ExecutorViolatio
   const out: ExecutorViolation[] = [];
 
   for (const e of facts.syntaxErrors) {
-    out.push({ kind: 'syntax_error', severity: 'error', message: `Errore di sintassi nell'executor: ${e}` });
+    out.push({
+      kind: 'syntax_error',
+      severity: 'error',
+      message: `Errore di sintassi nell'executor: ${e}`,
+    });
   }
   // Senza una funzione execute parseable non ha senso giudicare il resto.
   if (!facts.execute.found) {
-    out.push({ kind: 'missing_execute', severity: 'error', message: 'Manca la funzione `async function execute(config, input, context)`.' });
+    out.push({
+      kind: 'missing_execute',
+      severity: 'error',
+      message: 'Manca la funzione `async function execute(config, input, context)`.',
+    });
   } else {
     if (!facts.execute.isAsync) {
-      out.push({ kind: 'not_async', severity: 'error', message: 'La funzione `execute` deve essere `async`.' });
+      out.push({
+        kind: 'not_async',
+        severity: 'error',
+        message: 'La funzione `execute` deve essere `async`.',
+      });
     }
     if (facts.execute.paramNames.length < 3) {
-      out.push({ kind: 'bad_arity', severity: 'error', message: 'La funzione `execute` deve avere 3 parametri: (config, input, context).' });
+      out.push({
+        kind: 'bad_arity',
+        severity: 'error',
+        message: 'La funzione `execute` deve avere 3 parametri: (config, input, context).',
+      });
     }
     if (!facts.hasReturnValue && facts.syntaxErrors.length === 0) {
-      out.push({ kind: 'no_return', severity: 'error', message: 'L\'executor deve restituire un oggetto con `return { ... }`.' });
+      out.push({
+        kind: 'no_return',
+        severity: 'error',
+        message: "L'executor deve restituire un oggetto con `return { ... }`.",
+      });
     }
   }
   if (facts.forbiddenRefs.length > 0) {
     out.push({
-      kind: 'forbidden_global', severity: 'security',
+      kind: 'forbidden_global',
+      severity: 'security',
       message: `L'executor referenzia identificatori vietati: ${facts.forbiddenRefs.join(', ')}. Vietati require/eval/process/globalThis/Function/fs/child_process e affini.`,
     });
   }
   if (facts.hasImport) {
-    out.push({ kind: 'forbidden_import', severity: 'security', message: 'L\'executor non può usare `import` (statico o dinamico). Usa il `fetch` globale.' });
+    out.push({
+      kind: 'forbidden_import',
+      severity: 'security',
+      message: "L'executor non può usare `import` (statico o dinamico). Usa il `fetch` globale.",
+    });
   }
   return out;
 }

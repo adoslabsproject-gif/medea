@@ -6,8 +6,17 @@
  * Un solo nodo copre qualunque API REST con spec OpenAPI (Stripe, Slack, …).
  */
 import type { NodeExecutor } from '../../types.js';
-import { ValidationError, HttpError, NetworkError, parseRetryAfter } from '../../core/node-error.js';
-import { parseOpenApiOperations, openApiBaseUrl, buildOpenApiRequest } from '../../lib/openapi/parser.js';
+import {
+  ValidationError,
+  HttpError,
+  NetworkError,
+  parseRetryAfter,
+} from '../../core/node-error.js';
+import {
+  parseOpenApiOperations,
+  openApiBaseUrl,
+  buildOpenApiRequest,
+} from '../../lib/openapi/parser.js';
 import { assertUrlSafe, validateUrlForFetch, readTextCapped } from '@medea/engine-safe-fetch';
 import { buildRequestHeaders } from '../../core/http-headers.js';
 
@@ -25,10 +34,16 @@ const MAX_OPENAPI_REDIRECTS = 5;
 function parseJsonObject(raw: string | undefined, field: string): Record<string, string> {
   if (!raw || raw.trim() === '') return {};
   let v: unknown;
-  try { v = JSON.parse(raw); } catch { throw new ValidationError(`OpenAPI: ${field} non è JSON valido`); }
-  if (v === null || typeof v !== 'object' || Array.isArray(v)) throw new ValidationError(`OpenAPI: ${field} deve essere un oggetto JSON`);
+  try {
+    v = JSON.parse(raw);
+  } catch {
+    throw new ValidationError(`OpenAPI: ${field} non è JSON valido`);
+  }
+  if (v === null || typeof v !== 'object' || Array.isArray(v))
+    throw new ValidationError(`OpenAPI: ${field} deve essere un oggetto JSON`);
   const out: Record<string, string> = {};
-  for (const [k, val] of Object.entries(v as Record<string, unknown>)) out[k] = typeof val === 'string' ? val : JSON.stringify(val);
+  for (const [k, val] of Object.entries(v as Record<string, unknown>))
+    out[k] = typeof val === 'string' ? val : JSON.stringify(val);
   return out;
 }
 
@@ -36,16 +51,29 @@ export const openapiExecutor: NodeExecutor = async (rawConfig, _input, context) 
   const cfg = rawConfig as Record<string, string>;
   const startedAt = Date.now();
   let spec: unknown;
-  try { spec = JSON.parse(cfg.specJson ?? ''); } catch { throw new ValidationError('OpenAPI: la spec non è JSON valido'); }
+  try {
+    spec = JSON.parse(cfg.specJson ?? '');
+  } catch {
+    throw new ValidationError('OpenAPI: la spec non è JSON valido');
+  }
 
   const ops = parseOpenApiOperations(spec);
   if (ops.length === 0) throw new ValidationError('OpenAPI: nessuna operation trovata nella spec');
   const operationId = (cfg.operationId ?? '').trim();
   const op = ops.find((o) => o.operationId === operationId);
-  if (!op) throw new ValidationError(`OpenAPI: operation "${operationId}" non trovata (disponibili: ${ops.slice(0, 8).map((o) => o.operationId).join(', ')}…)`);
+  if (!op)
+    throw new ValidationError(
+      `OpenAPI: operation "${operationId}" non trovata (disponibili: ${ops
+        .slice(0, 8)
+        .map((o) => o.operationId)
+        .join(', ')}…)`,
+    );
 
   const baseUrl = (cfg.baseUrl || openApiBaseUrl(spec) || '').trim();
-  if (!baseUrl) throw new ValidationError('OpenAPI: Base URL mancante (né in config né in servers[] della spec)');
+  if (!baseUrl)
+    throw new ValidationError(
+      'OpenAPI: Base URL mancante (né in config né in servers[] della spec)',
+    );
 
   const params = parseJsonObject(cfg.paramsJson, 'paramsJson');
   const req = buildOpenApiRequest(op, baseUrl, params);
@@ -54,7 +82,7 @@ export const openapiExecutor: NodeExecutor = async (rawConfig, _input, context) 
   assertUrlSafe(fullUrl); // sync: throw su URL non sicura (no await)
 
   const auth: Record<string, string> | undefined =
-    (cfg.authHeader && cfg.authValue) ? { [cfg.authHeader]: cfg.authValue } : undefined;
+    cfg.authHeader && cfg.authValue ? { [cfg.authHeader]: cfg.authValue } : undefined;
   let body: string | undefined;
   let contentTypeDefault: string | undefined;
   if (op.hasBody && cfg.bodyJson && cfg.bodyJson.trim() !== '') {
@@ -67,8 +95,20 @@ export const openapiExecutor: NodeExecutor = async (rawConfig, _input, context) 
   const headers = buildRequestHeaders({ base: req.headers, auth, contentTypeDefault });
 
   const ctrl = new AbortController();
-  const timer = setTimeout(() => { ctrl.abort(); }, Number(cfg.timeoutMs ?? 30000));
-  if (context.abortSignal) context.abortSignal.addEventListener('abort', () => { ctrl.abort(); }, { once: true });
+  const timer = setTimeout(
+    () => {
+      ctrl.abort();
+    },
+    Number(cfg.timeoutMs ?? 30000),
+  );
+  if (context.abortSignal)
+    context.abortSignal.addEventListener(
+      'abort',
+      () => {
+        ctrl.abort();
+      },
+      { once: true },
+    );
   let res: Response;
   try {
     // M1: manual redirect loop, per-hop SSRF re-validate.
@@ -76,17 +116,27 @@ export const openapiExecutor: NodeExecutor = async (rawConfig, _input, context) 
     let current = fullUrl;
     let hop = 0;
     for (;;) {
-      const initBase = { method: req.method, headers, signal: ctrl.signal, redirect: 'manual' as const };
+      const initBase = {
+        method: req.method,
+        headers,
+        signal: ctrl.signal,
+        redirect: 'manual' as const,
+      };
       const finalInit = body !== undefined ? { ...initBase, body } : initBase;
       const hopRes = await fetch(current, finalInit);
       const is3xx = hopRes.status >= 300 && hopRes.status < 400 && hopRes.headers.has('location');
-      if (!is3xx) { res = hopRes; break; }
+      if (!is3xx) {
+        res = hopRes;
+        break;
+      }
       if (hop >= MAX_OPENAPI_REDIRECTS) {
         throw new HttpError({ status: 0, url: current, statusText: 'too many redirects' });
       }
       const loc = hopRes.headers.get('location') ?? '';
       let nextUrl: string;
-      try { nextUrl = new URL(loc, current).toString(); } catch {
+      try {
+        nextUrl = new URL(loc, current).toString();
+      } catch {
         // Location header non parsabile → restituiamo la 3xx al caller
         res = hopRes;
         break;
@@ -99,13 +149,20 @@ export const openapiExecutor: NodeExecutor = async (rawConfig, _input, context) 
           statusText: `redirect bloccato (${check.reason ?? 'BLOCKED'}): ${check.detail ?? 'unsafe URL'}`,
         });
       }
-      try { await hopRes.body?.cancel(); } catch { /* drain to free FD senza bufferizzare */ }
+      try {
+        await hopRes.body?.cancel();
+      } catch {
+        /* drain to free FD senza bufferizzare */
+      }
       current = nextUrl;
       hop += 1;
     }
   } catch (e) {
     if (e instanceof HttpError) throw e;
-    throw new NetworkError('OpenAPI: richiesta fallita', { url: fullUrl, ...(e instanceof Error ? { cause: e } : {}) });
+    throw new NetworkError('OpenAPI: richiesta fallita', {
+      url: fullUrl,
+      ...(e instanceof Error ? { cause: e } : {}),
+    });
   } finally {
     clearTimeout(timer);
   }
@@ -116,9 +173,22 @@ export const openapiExecutor: NodeExecutor = async (rawConfig, _input, context) 
   const text = await readTextCapped(res);
   if (!res.ok) {
     const retryAfterMs = parseRetryAfter(res.headers.get('retry-after'));
-    throw new HttpError({ status: res.status, statusText: res.statusText, url: fullUrl, bodyExcerpt: text, ...(retryAfterMs !== null ? { retryAfterMs } : {}) });
+    throw new HttpError({
+      status: res.status,
+      statusText: res.statusText,
+      url: fullUrl,
+      bodyExcerpt: text,
+      ...(retryAfterMs !== null ? { retryAfterMs } : {}),
+    });
   }
   let data: unknown = text;
-  try { data = JSON.parse(text); } catch { /* non-JSON → stringa grezza */ }
-  return { output: { status: res.status, operationId: op.operationId, data }, durationMs: Date.now() - startedAt };
+  try {
+    data = JSON.parse(text);
+  } catch {
+    /* non-JSON → stringa grezza */
+  }
+  return {
+    output: { status: res.status, operationId: op.operationId, data },
+    durationMs: Date.now() - startedAt,
+  };
 };

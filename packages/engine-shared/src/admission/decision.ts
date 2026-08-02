@@ -79,7 +79,9 @@ export function decideAdmission(state: PoolState, input: AdmissionInput): Admiss
 
   // 2. Re-entry idempotente / heartbeat: già in-flight → rinnova il lease.
   if (activeLive.some((l) => l.id === requestId)) {
-    const renewed = activeLive.map((l) => (l.id === requestId ? { ...l, expiresAtMs: nowMs + leaseMs } : l));
+    const renewed = activeLive.map((l) =>
+      l.id === requestId ? { ...l, expiresAtMs: nowMs + leaseMs } : l,
+    );
     return { outcome: 'admitted', position: 0, ahead: 0, state: { active: renewed, queue } };
   }
 
@@ -91,32 +93,64 @@ export function decideAdmission(state: PoolState, input: AdmissionInput): Admiss
     // Già in coda: ammetti se rientra negli slot liberi (rank 0-based < freeSlots).
     if (rank < freeSlots) {
       return {
-        outcome: 'admitted', position: 0, ahead: 0,
-        state: { active: [...activeLive, newLease], queue: queue.filter((w) => w.id !== requestId) },
+        outcome: 'admitted',
+        position: 0,
+        ahead: 0,
+        state: {
+          active: [...activeLive, newLease],
+          queue: queue.filter((w) => w.id !== requestId),
+        },
       };
     }
-    return { outcome: 'queued', position: rank + 1, ahead: rank, state: { active: activeLive, queue } };
+    return {
+      outcome: 'queued',
+      position: rank + 1,
+      ahead: rank,
+      state: { active: activeLive, queue },
+    };
   }
 
   // Primo arrivo: fast-path SOLO se ci sono slot E la coda è vuota (fairness:
   // a coda non vuota non si salta davanti, si accoda).
   if (freeSlots > 0 && queue.length === 0) {
-    return { outcome: 'admitted', position: 0, ahead: 0, state: { active: [...activeLive, newLease], queue } };
+    return {
+      outcome: 'admitted',
+      position: 0,
+      ahead: 0,
+      state: { active: [...activeLive, newLease], queue },
+    };
   }
 
   // Backpressure prima di accodare.
   if (queue.length >= maxQueueDepth) {
-    return { outcome: 'rejected', position: 0, ahead: 0, rejectReason: 'queue_full', state: { active: activeLive, queue } };
+    return {
+      outcome: 'rejected',
+      position: 0,
+      ahead: 0,
+      rejectReason: 'queue_full',
+      state: { active: activeLive, queue },
+    };
   }
   const tenantInQueue = queue.reduce((n, w) => (w.tenantId === tenantId ? n + 1 : n), 0);
   if (tenantInQueue >= maxPerTenantQueue) {
-    return { outcome: 'rejected', position: 0, ahead: 0, rejectReason: 'tenant_flood', state: { active: activeLive, queue } };
+    return {
+      outcome: 'rejected',
+      position: 0,
+      ahead: 0,
+      rejectReason: 'tenant_flood',
+      state: { active: activeLive, queue },
+    };
   }
 
   const enqueued: Waiter = { id: requestId, enqueuedAtMs: nowMs, tenantId };
   const newQueue = [...queue, enqueued];
   const newRank = newQueue.length - 1;
-  return { outcome: 'queued', position: newRank + 1, ahead: newRank, state: { active: activeLive, queue: newQueue } };
+  return {
+    outcome: 'queued',
+    position: newRank + 1,
+    ahead: newRank,
+    state: { active: activeLive, queue: newQueue },
+  };
 }
 
 /** Rilascia uno slot (release esplicito a fine inferenza). Puro. */

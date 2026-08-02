@@ -57,7 +57,11 @@ function notifyWaiter(token: string): void {
  * dopo un restart). La riga DB resta SEMPRE la source-of-truth, ri-letta a ogni wake.
  * Prima era un busy-poll a 500ms per attese fino a 7 giorni → spreco DB/CPU a scala.
  */
-async function pollForCallback(token: string, expiresAt: number, abortSignal?: AbortSignal): Promise<{ payload: unknown; timedOut: boolean }> {
+async function pollForCallback(
+  token: string,
+  expiresAt: number,
+  abortSignal?: AbortSignal,
+): Promise<{ payload: unknown; timedOut: boolean }> {
   const { sqlite } = getDatabase();
   const FALLBACK_POLL_MS = 5_000;
   const readRow = (): WaitRow | undefined =>
@@ -68,7 +72,11 @@ async function pollForCallback(token: string, expiresAt: number, abortSignal?: A
     if (row?.completed_at) {
       let parsed: unknown = null;
       if (row.payload_json) {
-        try { parsed = JSON.parse(row.payload_json); } catch { parsed = row.payload_json; }
+        try {
+          parsed = JSON.parse(row.payload_json);
+        } catch {
+          parsed = row.payload_json;
+        }
       }
       return { payload: parsed, timedOut: false };
     }
@@ -85,7 +93,7 @@ async function pollForCallback(token: string, expiresAt: number, abortSignal?: A
         resolve();
       };
       const timer = setTimeout(wake, Math.min(FALLBACK_POLL_MS, remaining));
-      waiters.set(token, wake);            // resume del webhook → wake immediato
+      waiters.set(token, wake); // resume del webhook → wake immediato
       abortSignal?.addEventListener('abort', wake, { once: true });
     });
   }
@@ -110,11 +118,15 @@ export const waitExecutor: NodeExecutor = async (config, _input, context) => {
     await new Promise<void>((resolve) => {
       const t = setTimeout(resolve, clampedMs);
       if (context.abortSignal) {
-        context.abortSignal.addEventListener('abort', () => {
-          aborted = true;
-          clearTimeout(t);
-          resolve();
-        }, { once: true });
+        context.abortSignal.addEventListener(
+          'abort',
+          () => {
+            aborted = true;
+            clearTimeout(t);
+            resolve();
+          },
+          { once: true },
+        );
       }
     });
     if (aborted) {
@@ -130,7 +142,10 @@ export const waitExecutor: NodeExecutor = async (config, _input, context) => {
 
   // webhook or either modes — register token, poll for callback
   const token = randomBytes(24).toString('base64url');
-  const timeoutMs = Math.max(1_000, Math.min(mode === 'either' ? durationMs : maxWaitMs, 7 * 24 * 60 * 60_000));
+  const timeoutMs = Math.max(
+    1_000,
+    Math.min(mode === 'either' ? durationMs : maxWaitMs, 7 * 24 * 60 * 60_000),
+  );
   const expiresAt = Date.now() + timeoutMs;
 
   const { sqlite } = getDatabase();
@@ -138,7 +153,14 @@ export const waitExecutor: NodeExecutor = async (config, _input, context) => {
     .prepare(
       'INSERT INTO wait_states (token, run_id, workflow_id, node_id, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?)',
     )
-    .run(token, context.runId, context.workflowId, context.nodeId, expiresAt, new Date().toISOString());
+    .run(
+      token,
+      context.runId,
+      context.workflowId,
+      context.nodeId,
+      expiresAt,
+      new Date().toISOString(),
+    );
 
   const result = await pollForCallback(token, expiresAt, context.abortSignal);
   sqlite.prepare('DELETE FROM wait_states WHERE token = ?').run(token);

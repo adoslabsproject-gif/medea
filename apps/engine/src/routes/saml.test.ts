@@ -28,7 +28,10 @@ const sqliteMock = vi.hoisted(() => {
     prepare: vi.fn((sql: string) => ({
       get: vi.fn((...args: unknown[]) => {
         if (/COUNT.*FROM users/i.test(sql)) {
-          return { c: data.users!.filter((u: unknown) => (u as Record<string, unknown>).role === 'owner').length };
+          return {
+            c: data.users!.filter((u: unknown) => (u as Record<string, unknown>).role === 'owner')
+              .length,
+          };
         }
         if (/SELECT.*FROM saml_providers WHERE tenant_id = \? AND provider = \?/i.test(sql)) {
           const [tenantId, provider] = args;
@@ -50,8 +53,13 @@ const sqliteMock = vi.hoisted(() => {
       run: vi.fn((...args: unknown[]) => {
         if (/INSERT INTO saml_providers/i.test(sql)) {
           data.saml_providers!.push({
-            id: args[0], tenant_id: args[1], provider: args[2],
-            entry_point: args[3], issuer: args[4], cert: args[5], callback_url: args[6],
+            id: args[0],
+            tenant_id: args[1],
+            provider: args[2],
+            entry_point: args[3],
+            issuer: args[4],
+            cert: args[5],
+            callback_url: args[6],
             created_at: args[7],
           });
           return { changes: 1, lastInsertRowid: 1n };
@@ -67,8 +75,11 @@ const sqliteMock = vi.hoisted(() => {
         }
         if (/INSERT INTO users/i.test(sql)) {
           data.users!.push({
-            id: args[0], tenant_id: args[1], email: args[2],
-            display_name: args[3], role: args[5],
+            id: args[0],
+            tenant_id: args[1],
+            email: args[2],
+            display_name: args[3],
+            role: args[5],
           });
           return { changes: 1, lastInsertRowid: 1n };
         }
@@ -84,7 +95,9 @@ const sqliteMock = vi.hoisted(() => {
 });
 
 const samlInstanceMock = vi.hoisted(() => ({
-  generateServiceProviderMetadata: vi.fn(() => '<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata"/>'),
+  generateServiceProviderMetadata: vi.fn(
+    () => '<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata"/>',
+  ),
   getAuthorizeUrlAsync: vi.fn(),
   validatePostResponseAsync: vi.fn(),
 }));
@@ -126,7 +139,9 @@ vi.mock('@/lib/tenant.js', () => ({
 
 const auditMock = vi.hoisted(() => ({ append: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('@/services/audit.service.js', () => ({
-  AuditLogService: class { append = auditMock.append; },
+  AuditLogService: class {
+    append = auditMock.append;
+  },
 }));
 vi.mock('@/lib/actor.js', () => ({ getActorId: () => 'actor-test' }));
 
@@ -142,7 +157,12 @@ function appAs(role: string | null): InstanceType<typeof Hono> {
   const app = new Hono();
   if (role !== null) {
     app.use('*', async (c, next) => {
-      c.set('auth', { userId: 'u-test', email: 'test@x.it', tenantId: 'default', role } as AuthContext);
+      c.set('auth', {
+        userId: 'u-test',
+        email: 'test@x.it',
+        tenantId: 'default',
+        role,
+      } as AuthContext);
       await next();
     });
   }
@@ -162,16 +182,22 @@ describe('🚨 SECURITY: buildSamlConfig wantAuthnResponseSigned', () => {
     const app = appAs('owner');
     // Insert un provider
     sqliteMock._data.saml_providers!.push({
-      id: 'p1', tenant_id: 'default', provider: 'okta',
-      entry_point: 'https://okta.com/sso', issuer: 'urn:zeli',
-      cert: 'CERT', callback_url: 'https://x.com/cb',
+      id: 'p1',
+      tenant_id: 'default',
+      provider: 'okta',
+      entry_point: 'https://okta.com/sso',
+      issuer: 'urn:zeli',
+      cert: 'CERT',
+      callback_url: 'https://x.com/cb',
     });
     await app.request('/saml/okta/metadata');
-    expect(samlConstructorMock).toHaveBeenCalledWith(expect.objectContaining({
-      wantAssertionsSigned: true,
-      wantAuthnResponseSigned: true,
-      signatureAlgorithm: 'sha256',
-    }));
+    expect(samlConstructorMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        wantAssertionsSigned: true,
+        wantAuthnResponseSigned: true,
+        signatureAlgorithm: 'sha256',
+      }),
+    );
   });
 });
 
@@ -179,7 +205,8 @@ describe('🚨 POST /saml/providers validation', () => {
   it('🚨 body non oggetto → 400', async () => {
     const app = appAs('owner');
     const res = await app.request('/saml/providers', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify('not-object'),
     });
     expect(res.status).toBe(400);
@@ -188,7 +215,8 @@ describe('🚨 POST /saml/providers validation', () => {
   it('🚨 missing required fields → 400 con messaggio', async () => {
     const app = appAs('owner');
     const res = await app.request('/saml/providers', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ provider: 'okta' }),
     });
     expect(res.status).toBe(400);
@@ -199,7 +227,8 @@ describe('🚨 POST /saml/providers validation', () => {
   it('🚨 happy path → 201 + UPSERT', async () => {
     const app = appAs('owner');
     const res = await app.request('/saml/providers', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         provider: 'okta',
         entryPoint: 'https://okta.com/sso',
@@ -216,8 +245,13 @@ describe('🚨 POST /saml/providers validation', () => {
 describe('🚨 GET /saml/providers list — no cert leak', () => {
   it('🚨 SECURITY: response NON include cert field', async () => {
     sqliteMock._data.saml_providers!.push({
-      id: 'p1', tenant_id: 'default', provider: 'okta',
-      entry_point: 'x', issuer: 'y', cert: 'SECRET-CERT-X', callback_url: 'z',
+      id: 'p1',
+      tenant_id: 'default',
+      provider: 'okta',
+      entry_point: 'x',
+      issuer: 'y',
+      cert: 'SECRET-CERT-X',
+      callback_url: 'z',
       created_at: '2026-01-01',
     });
     const app = appAs('owner');
@@ -226,7 +260,9 @@ describe('🚨 GET /saml/providers list — no cert leak', () => {
     // sqlite SELECT non include cert in colonne (vedi codice)
     // verifico che il mock prepare sia chiamato con SELECT che omette cert
     expect(sqliteMock.prepare).toHaveBeenCalledWith(
-      expect.stringMatching(/SELECT id, provider, entry_point, issuer, callback_url, created_at FROM saml_providers/i),
+      expect.stringMatching(
+        /SELECT id, provider, entry_point, issuer, callback_url, created_at FROM saml_providers/i,
+      ),
     );
     expect(res.status).toBe(200);
   });
@@ -235,8 +271,13 @@ describe('🚨 GET /saml/providers list — no cert leak', () => {
 describe('🚨 DELETE /saml/providers/:provider', () => {
   it('🚨 removed=true se provider esiste', async () => {
     sqliteMock._data.saml_providers!.push({
-      id: 'p1', tenant_id: 'default', provider: 'okta',
-      entry_point: '', issuer: '', cert: '', callback_url: '',
+      id: 'p1',
+      tenant_id: 'default',
+      provider: 'okta',
+      entry_point: '',
+      issuer: '',
+      cert: '',
+      callback_url: '',
     });
     const app = appAs('owner');
     const res = await app.request('/saml/providers/okta', { method: 'DELETE' });
@@ -261,8 +302,13 @@ describe('🚨 GET /saml/:provider/metadata', () => {
 
   it('🚨 happy → XML response Content-Type application/xml', async () => {
     sqliteMock._data.saml_providers!.push({
-      id: 'p1', tenant_id: 'default', provider: 'okta',
-      entry_point: '', issuer: '', cert: '', callback_url: '',
+      id: 'p1',
+      tenant_id: 'default',
+      provider: 'okta',
+      entry_point: '',
+      issuer: '',
+      cert: '',
+      callback_url: '',
     });
     const app = appAs('owner');
     const res = await app.request('/saml/okta/metadata');
@@ -282,8 +328,13 @@ describe('🚨 GET /saml/:provider/login redirect', () => {
 
   it('🚨 happy → 302 redirect a IdP', async () => {
     sqliteMock._data.saml_providers!.push({
-      id: 'p1', tenant_id: 'default', provider: 'okta',
-      entry_point: 'https://okta/sso', issuer: '', cert: '', callback_url: '',
+      id: 'p1',
+      tenant_id: 'default',
+      provider: 'okta',
+      entry_point: 'https://okta/sso',
+      issuer: '',
+      cert: '',
+      callback_url: '',
     });
     samlInstanceMock.getAuthorizeUrlAsync.mockResolvedValueOnce('https://okta/sso?SAMLRequest=...');
     const app = appAs('owner');
@@ -294,8 +345,13 @@ describe('🚨 GET /saml/:provider/login redirect', () => {
 
   it('🚨 SAML error → 500 + log', async () => {
     sqliteMock._data.saml_providers!.push({
-      id: 'p1', tenant_id: 'default', provider: 'okta',
-      entry_point: '', issuer: '', cert: '', callback_url: '',
+      id: 'p1',
+      tenant_id: 'default',
+      provider: 'okta',
+      entry_point: '',
+      issuer: '',
+      cert: '',
+      callback_url: '',
     });
     samlInstanceMock.getAuthorizeUrlAsync.mockRejectedValueOnce(new Error('IdP unreachable'));
     const app = appAs('owner');
@@ -307,8 +363,13 @@ describe('🚨 GET /saml/:provider/login redirect', () => {
 describe('🚨 POST /saml/:provider/callback', () => {
   beforeEach(() => {
     sqliteMock._data.saml_providers!.push({
-      id: 'p1', tenant_id: 'default', provider: 'okta',
-      entry_point: '', issuer: '', cert: '', callback_url: '',
+      id: 'p1',
+      tenant_id: 'default',
+      provider: 'okta',
+      entry_point: '',
+      issuer: '',
+      cert: '',
+      callback_url: '',
     });
   });
 
@@ -331,7 +392,8 @@ describe('🚨 POST /saml/:provider/callback', () => {
     samlInstanceMock.validatePostResponseAsync.mockResolvedValueOnce({ profile: null });
     const app = appAs('owner');
     const res = await app.request('/saml/okta/callback', {
-      method: 'POST', body: formBody('B64-RESPONSE'),
+      method: 'POST',
+      body: formBody('B64-RESPONSE'),
     });
     expect(res.status).toBe(400);
   });
@@ -342,7 +404,8 @@ describe('🚨 POST /saml/:provider/callback', () => {
     });
     const app = appAs('owner');
     const res = await app.request('/saml/okta/callback', {
-      method: 'POST', body: formBody('B64'),
+      method: 'POST',
+      body: formBody('B64'),
     });
     expect(res.status).toBe(400);
     const body = await jsonBody(res);
@@ -357,7 +420,8 @@ describe('🚨 POST /saml/:provider/callback', () => {
     });
     const app = appAs('owner');
     const res = await app.request('/saml/okta/callback', {
-      method: 'POST', body: formBody('B64'),
+      method: 'POST',
+      body: formBody('B64'),
     });
     expect(res.status).toBe(302); // redirect to editor
     expect(sqliteMock._data.users).toHaveLength(1);
@@ -369,7 +433,8 @@ describe('🚨 POST /saml/:provider/callback', () => {
     });
     const app = appAs('owner');
     await app.request('/saml/okta/callback', {
-      method: 'POST', body: formBody('B64'),
+      method: 'POST',
+      body: formBody('B64'),
     });
     expect((sqliteMock._data.users![0] as Record<string, unknown>).role).toBe('owner');
   });
@@ -377,17 +442,20 @@ describe('🚨 POST /saml/:provider/callback', () => {
   it('🚨 AUTO-BOOTSTRAP: secondo user → role=viewer (non owner)', async () => {
     // Pre-popola un owner
     sqliteMock._data.users!.push({
-      tenant_id: 'default', email: 'first@x.com', role: 'owner',
+      tenant_id: 'default',
+      email: 'first@x.com',
+      role: 'owner',
     });
     samlInstanceMock.validatePostResponseAsync.mockResolvedValueOnce({
       profile: { email: 'second@x.com' },
     });
     const app = appAs('owner');
     await app.request('/saml/okta/callback', {
-      method: 'POST', body: formBody('B64'),
+      method: 'POST',
+      body: formBody('B64'),
     });
-    const second = sqliteMock._data.users!.find((u: unknown) =>
-      (u as Record<string, unknown>).email === 'second@x.com',
+    const second = sqliteMock._data.users!.find(
+      (u: unknown) => (u as Record<string, unknown>).email === 'second@x.com',
     ) as Record<string, unknown> | undefined;
     expect(second?.role).toBe('viewer');
   });
@@ -398,7 +466,8 @@ describe('🚨 POST /saml/:provider/callback', () => {
     });
     const app = appAs('owner');
     const res = await app.request('/saml/okta/callback', {
-      method: 'POST', body: formBody('B64'),
+      method: 'POST',
+      body: formBody('B64'),
     });
     const loc = res.headers.get('location') ?? '';
     expect(loc).not.toContain('token');
@@ -415,7 +484,8 @@ describe('🚨 POST /saml/:provider/callback', () => {
     );
     const app = appAs('owner');
     const res = await app.request('/saml/okta/callback', {
-      method: 'POST', body: formBody('B64'),
+      method: 'POST',
+      body: formBody('B64'),
     });
     expect(res.status).toBe(500);
     const body = await jsonBody(res);
@@ -435,9 +505,13 @@ describe('🚨🚨 F1 FIX — PUBLIC routes resolve tenant from container env, N
 
   function seedProviderUnder(tenant: string): void {
     sqliteMock._data.saml_providers!.push({
-      id: 'p-real', tenant_id: tenant, provider: 'okta',
-      entry_point: 'https://okta/sso', issuer: 'urn:zeli',
-      cert: 'CERT', callback_url: 'https://x.com/cb',
+      id: 'p-real',
+      tenant_id: tenant,
+      provider: 'okta',
+      entry_point: 'https://okta/sso',
+      issuer: 'urn:zeli',
+      cert: 'CERT',
+      callback_url: 'https://x.com/cb',
     });
   }
 
@@ -474,7 +548,7 @@ describe('🚨🚨 F1 FIX — PUBLIC routes resolve tenant from container env, N
     expect(res.headers.get('location')).toContain('okta/sso');
   });
 
-  it('🚨🚨 SPOOF-CRITICAL: la sessione coniata nel /callback eredita il tenant ENV, non l\'header', async () => {
+  it("🚨🚨 SPOOF-CRITICAL: la sessione coniata nel /callback eredita il tenant ENV, non l'header", async () => {
     seedProviderUnder(REAL_TENANT);
     tenantMock.container = REAL_TENANT;
     samlInstanceMock.validatePostResponseAsync.mockResolvedValueOnce({
@@ -488,8 +562,8 @@ describe('🚨🚨 F1 FIX — PUBLIC routes resolve tenant from container env, N
     });
     expect(res.status).toBe(302);
     // L'utente creato DEVE stare sotto REAL_TENANT, mai sotto l'header attacker.
-    const created = sqliteMock._data.users!.find((u: unknown) =>
-      (u as Record<string, unknown>).email === 'sso-user@corp.com',
+    const created = sqliteMock._data.users!.find(
+      (u: unknown) => (u as Record<string, unknown>).email === 'sso-user@corp.com',
     ) as Record<string, unknown> | undefined;
     expect(created).toBeDefined();
     expect(created?.tenant_id).toBe(REAL_TENANT);
@@ -526,13 +600,16 @@ describe('🚨🚨 F1-B — ADMIN routes /saml/providers usano il tenant del con
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-tenant-id': 'attacker-tenant' },
       body: JSON.stringify({
-        provider: 'okta', entryPoint: 'https://okta/sso', issuer: 'urn:zeli',
-        cert: '-----CERT-----', callbackUrl: 'https://x/cb',
+        provider: 'okta',
+        entryPoint: 'https://okta/sso',
+        issuer: 'urn:zeli',
+        cert: '-----CERT-----',
+        callbackUrl: 'https://x/cb',
       }),
     });
     expect(res.status).toBe(201);
-    const row = sqliteMock._data.saml_providers!.find((r: unknown) =>
-      (r as Record<string, unknown>).provider === 'okta',
+    const row = sqliteMock._data.saml_providers!.find(
+      (r: unknown) => (r as Record<string, unknown>).provider === 'okta',
     ) as Record<string, unknown> | undefined;
     expect(row?.tenant_id).toBe('real-container-tenant');
     expect(row?.tenant_id).not.toBe('attacker-tenant');
@@ -546,8 +623,11 @@ describe('🚨🚨 F1-B — ADMIN routes /saml/providers usano il tenant del con
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-tenant-id': 'attacker-tenant' },
       body: JSON.stringify({
-        provider: 'okta', entryPoint: 'https://okta/sso', issuer: 'urn:zeli',
-        cert: 'CERT', callbackUrl: 'https://x/cb',
+        provider: 'okta',
+        entryPoint: 'https://okta/sso',
+        issuer: 'urn:zeli',
+        cert: 'CERT',
+        callbackUrl: 'https://x/cb',
       }),
     });
     // 2) il callback pubblico (stesso getContainerTenantId) lo TROVA → SSO funziona
@@ -568,14 +648,19 @@ describe('🚨🚨 F1-B — ADMIN routes /saml/providers usano il tenant del con
  */
 describe('🚨 RBAC owner-only su POST/DELETE /saml/providers', () => {
   const validBody = JSON.stringify({
-    provider: 'okta', entryPoint: 'https://okta.com/sso', issuer: 'urn:zeli',
-    cert: '-----CERT-----', callbackUrl: 'https://x.com/cb',
+    provider: 'okta',
+    entryPoint: 'https://okta.com/sso',
+    issuer: 'urn:zeli',
+    cert: '-----CERT-----',
+    callbackUrl: 'https://x.com/cb',
   });
 
   for (const role of ['viewer', 'operator', 'editor'] as const) {
     it(`POST come ${role} → 403 e NESSUNA row scritta`, async () => {
       const res = await appAs(role).request('/saml/providers', {
-        method: 'POST', headers: { 'content-type': 'application/json' }, body: validBody,
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: validBody,
       });
       expect(res.status).toBe(403);
       expect(sqliteMock._data.saml_providers).toHaveLength(0);
@@ -584,30 +669,40 @@ describe('🚨 RBAC owner-only su POST/DELETE /saml/providers', () => {
 
   it('🚨 ruolo ALIENO "admin" (vocabolario portal) → 403, NON fail-open', async () => {
     const res = await appAs('admin').request('/saml/providers', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: validBody,
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: validBody,
     });
     expect(res.status).toBe(403);
   });
 
   it('nessun auth context → 401', async () => {
     const res = await appAs(null).request('/saml/providers', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: validBody,
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: validBody,
     });
     expect(res.status).toBe(401);
   });
 
   it('owner → 201', async () => {
     const res = await appAs('owner').request('/saml/providers', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: validBody,
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: validBody,
     });
     expect(res.status).toBe(201);
   });
 
   it('DELETE come editor → 403 e provider ANCORA presente', async () => {
     sqliteMock._data.saml_providers!.push({
-      id: 'p1', tenant_id: 'default', provider: 'okta',
-      entry_point: 'https://okta.com/sso', issuer: 'urn:zeli',
-      cert: 'CERT', callback_url: 'https://x.com/cb',
+      id: 'p1',
+      tenant_id: 'default',
+      provider: 'okta',
+      entry_point: 'https://okta.com/sso',
+      issuer: 'urn:zeli',
+      cert: 'CERT',
+      callback_url: 'https://x.com/cb',
     });
     const res = await appAs('editor').request('/saml/providers/okta', { method: 'DELETE' });
     expect(res.status).toBe(403);
@@ -622,28 +717,40 @@ describe('🚨 RBAC owner-only su POST/DELETE /saml/providers', () => {
 
 describe('🔴 #6 audit log su CRUD IdP SAML (era assente)', () => {
   const validBody = {
-    provider: 'okta', entryPoint: 'https://okta.com/sso', issuer: 'urn:zeli',
-    cert: '-----CERT-----', callbackUrl: 'https://app/cb',
+    provider: 'okta',
+    entryPoint: 'https://okta.com/sso',
+    issuer: 'urn:zeli',
+    cert: '-----CERT-----',
+    callbackUrl: 'https://app/cb',
   };
 
   it('POST /saml/providers → audit saml_provider.upsert con actor', async () => {
     auditMock.append.mockClear();
     const res = await appAs('owner').request('/saml/providers', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(validBody),
     });
     expect(res.status).toBe(201);
-    expect(auditMock.append).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'saml_provider.upsert', resourceType: 'saml_provider', resourceId: 'okta', actorId: 'actor-test',
-    }));
+    expect(auditMock.append).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'saml_provider.upsert',
+        resourceType: 'saml_provider',
+        resourceId: 'okta',
+        actorId: 'actor-test',
+      }),
+    );
   });
 
   it('DELETE /saml/providers/:provider → audit saml_provider.remove', async () => {
     auditMock.append.mockClear();
     const res = await appAs('owner').request('/saml/providers/okta', { method: 'DELETE' });
     expect(res.status).toBe(200);
-    expect(auditMock.append).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'saml_provider.remove', resourceType: 'saml_provider',
-    }));
+    expect(auditMock.append).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'saml_provider.remove',
+        resourceType: 'saml_provider',
+      }),
+    );
   });
 });

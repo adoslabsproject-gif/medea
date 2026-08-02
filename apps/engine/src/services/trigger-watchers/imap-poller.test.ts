@@ -32,13 +32,22 @@ import type { simpleParser } from 'mailparser';
 import type { TriggerRunInput, TriggerRunResult } from './run-dispatcher.js';
 import type { CanvasNode, Workflow } from '@medea/engine-core-schema';
 
-afterEach(() => { vi.restoreAllMocks(); });
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 function makeWf(): Workflow {
   return {
-    id: 'wf-im', tenantId: 'tenant-a', name: 'IM', enabled: true,
-    schemaVersion: '1.0.0', nodes: [], edges: [], nodeDefs: [],
-    createdAt: '2026-06-12', updatedAt: '2026-06-12',
+    id: 'wf-im',
+    tenantId: 'tenant-a',
+    name: 'IM',
+    enabled: true,
+    schemaVersion: '1.0.0',
+    nodes: [],
+    edges: [],
+    nodeDefs: [],
+    createdAt: '2026-06-12',
+    updatedAt: '2026-06-12',
   } as unknown as Workflow;
 }
 
@@ -52,7 +61,8 @@ class FakeImapClient implements ImapPollClient {
   messages: ImapFetchedMessage[] = [];
   searchResult: unknown = [];
   searchCalls: unknown[][] = [];
-  fetchCalls: { range: unknown; query: Record<string, boolean>; opts?: Record<string, boolean> }[] = [];
+  fetchCalls: { range: unknown; query: Record<string, boolean>; opts?: Record<string, boolean> }[] =
+    [];
   connects = 0;
   logouts = 0;
   releases = 0;
@@ -62,18 +72,32 @@ class FakeImapClient implements ImapPollClient {
     if (this.connectError) throw this.connectError;
   }
   async getMailboxLock(_mailbox: string): Promise<{ release(): void }> {
-    return { release: () => { this.releases += 1; } };
+    return {
+      release: () => {
+        this.releases += 1;
+      },
+    };
   }
   async search(query: { seen: boolean }, opts: { uid: boolean }): Promise<unknown> {
     this.searchCalls.push([query, opts]);
     return this.searchResult;
   }
-  fetch(range: unknown, query: Record<string, boolean>, opts?: Record<string, boolean>): AsyncIterable<ImapFetchedMessage> {
+  fetch(
+    range: unknown,
+    query: Record<string, boolean>,
+    opts?: Record<string, boolean>,
+  ): AsyncIterable<ImapFetchedMessage> {
     this.fetchCalls.push({ range, query, ...(opts ? { opts } : {}) });
     const msgs = this.messages;
-    return { async *[Symbol.asyncIterator]() { for (const x of msgs) yield x; } };
+    return {
+      async *[Symbol.asyncIterator]() {
+        for (const x of msgs) yield x;
+      },
+    };
   }
-  async logout(): Promise<void> { this.logouts += 1; }
+  async logout(): Promise<void> {
+    this.logouts += 1;
+  }
 }
 
 /** Fake SQLite comportamentale: imap_state + imap_processed_messages reali in memoria. */
@@ -87,7 +111,9 @@ class FakeImapDb implements ImapSqlite {
           const row = this.state.get(`${String(wfId)}::${String(mailbox)}`);
           return row ? { last_uid_seen: row.last_uid_seen } : undefined;
         },
-        run: () => { throw new Error('unexpected'); },
+        run: () => {
+          throw new Error('unexpected');
+        },
       };
     }
     if (sql.includes('INSERT INTO imap_state')) {
@@ -95,7 +121,8 @@ class FakeImapDb implements ImapSqlite {
         get: () => undefined,
         run: (wfId, mailbox, uid, err) => {
           this.state.set(`${String(wfId)}::${String(mailbox)}`, {
-            last_uid_seen: uid as number, last_error: err as string | null,
+            last_uid_seen: uid as number,
+            last_error: err as string | null,
           });
           return { changes: 1 };
         },
@@ -103,14 +130,20 @@ class FakeImapDb implements ImapSqlite {
     }
     if (sql.includes('SELECT 1 FROM imap_processed_messages')) {
       return {
-        get: (wfId, messageId) => (this.processed.has(`${String(wfId)}::${String(messageId)}`) ? { 1: 1 } : undefined),
-        run: () => { throw new Error('unexpected'); },
+        get: (wfId, messageId) =>
+          this.processed.has(`${String(wfId)}::${String(messageId)}`) ? { 1: 1 } : undefined,
+        run: () => {
+          throw new Error('unexpected');
+        },
       };
     }
     if (sql.includes('INSERT OR IGNORE INTO imap_processed_messages')) {
       return {
         get: () => undefined,
-        run: (wfId, messageId) => { this.processed.add(`${String(wfId)}::${String(messageId)}`); return { changes: 1 }; },
+        run: (wfId, messageId) => {
+          this.processed.add(`${String(wfId)}::${String(messageId)}`);
+          return { changes: 1 };
+        },
       };
     }
     throw new Error(`SQL inattesa nel fake: ${sql.slice(0, 50)}`);
@@ -119,7 +152,9 @@ class FakeImapDb implements ImapSqlite {
 
 type ParsedMail = Awaited<ReturnType<typeof simpleParser>>;
 
-function makeParsed(over: Partial<{ messageId: string; text: string; html: string; subject: string }> = {}): ParsedMail {
+function makeParsed(
+  over: Partial<{ messageId: string; text: string; html: string; subject: string }> = {},
+): ParsedMail {
   return {
     messageId: over.messageId ?? '<m1@x>',
     subject: over.subject ?? 'Parsed subject',
@@ -131,7 +166,10 @@ function makeParsed(over: Partial<{ messageId: string; text: string; html: strin
   } as unknown as ParsedMail;
 }
 
-function imapMsg(uid: number, over: Partial<{ subject: string; from: string }> = {}): ImapFetchedMessage {
+function imapMsg(
+  uid: number,
+  over: Partial<{ subject: string; from: string }> = {},
+): ImapFetchedMessage {
   return {
     uid,
     envelope: {
@@ -166,7 +204,10 @@ function makeDeps(over: Partial<ImapPollerDeps> = {}): {
       return dispatchResult.value;
     },
     sqlite: db,
-    createClient: (opts) => { clientOpts.push(opts); return client; },
+    createClient: (opts) => {
+      clientOpts.push(opts);
+      return client;
+    },
     parseMail: parseMail as unknown as typeof simpleParser,
     markSeen: markSeen as unknown as NonNullable<ImapPollerDeps['markSeen']>,
     getStore: (() => ({})) as unknown as NonNullable<ImapPollerDeps['getStore']>,
@@ -178,13 +219,18 @@ function makeDeps(over: Partial<ImapPollerDeps> = {}): {
 
 /** Il primo poll parte SUBITO alla registrazione: attendi che chiuda. */
 async function startAndDrain(
-  wf: Workflow, node: CanvasNode, deps: ImapPollerDeps, client: FakeImapClient,
+  wf: Workflow,
+  node: CanvasNode,
+  deps: ImapPollerDeps,
+  client: FakeImapClient,
   opts: { expectLogout?: boolean } = {},
 ): Promise<ReturnType<typeof startImapPoller>> {
   const job = startImapPoller(wf, node, deps);
   if (job) clearInterval(job.timer); // un solo poll: quello immediato
   if (opts.expectLogout !== false) {
-    await vi.waitFor(() => { expect(client.logouts + client.connects).toBeGreaterThan(0); });
+    await vi.waitFor(() => {
+      expect(client.logouts + client.connects).toBeGreaterThan(0);
+    });
   }
   // Drena le microtask residue del poll.
   for (let i = 0; i < 30; i += 1) await Promise.resolve();
@@ -215,13 +261,16 @@ describe('gate config e client options', () => {
 
   it('systemAccountId con IMAP → credenziali dell account usate per il client', async () => {
     const { deps, client, clientOpts } = makeDeps({
-      resolveSystemAccount: () => ({
-        imap: { host: 'imap.acct.test', port: 993, username: 'acct-user', password: 'acct-pass' },
-      }) as never,
+      resolveSystemAccount: () =>
+        ({
+          imap: { host: 'imap.acct.test', port: 993, username: 'acct-user', password: 'acct-pass' },
+        }) as never,
     });
     await startAndDrain(makeWf(), makeNode({ systemAccountId: 'acct-1' }), deps, client);
     expect(clientOpts[0]).toMatchObject({
-      host: 'imap.acct.test', port: 993, secure: true,
+      host: 'imap.acct.test',
+      port: 993,
+      secure: true,
       auth: { user: 'acct-user', pass: 'acct-pass' },
     });
   });
@@ -235,7 +284,12 @@ describe('gate config e client options', () => {
   it('FIX bug NaN: pollIntervalSec non numerico → default 60s, MAI setInterval(NaN)', async () => {
     const spy = vi.spyOn(global, 'setInterval');
     const { deps, client } = makeDeps();
-    const job = await startAndDrain(makeWf(), makeNode({ ...VALID, pollIntervalSec: 'abc' }), deps, client);
+    const job = await startAndDrain(
+      makeWf(),
+      makeNode({ ...VALID, pollIntervalSec: 'abc' }),
+      deps,
+      client,
+    );
     expect(spy.mock.calls[0]![1]).toBe(60_000); // default, non NaN
     if (job) clearInterval(job.timer);
     spy.mockRestore();
@@ -295,7 +349,9 @@ describe('dispatch e payload', () => {
     client.messages = [imapMsg(50)];
     parseMail.mockResolvedValueOnce(makeParsed({ text: 'x'.repeat(MAX_BODY_CHARS + 10) }));
     await startAndDrain(makeWf(), makeNode(VALID), deps, client);
-    await vi.waitFor(() => { expect(dispatched).toHaveLength(1); });
+    await vi.waitFor(() => {
+      expect(dispatched).toHaveLength(1);
+    });
     const input = dispatched[0]!;
     expect(input.triggerType).toBe('imap');
     expect(input.tenantId).toBe('tenant-a');
@@ -311,16 +367,22 @@ describe('dispatch e payload', () => {
     const { deps, db, client, dispatched } = makeDeps({ messageGate: () => ({ dispatch: false }) });
     client.messages = [imapMsg(55)];
     await startAndDrain(makeWf(), makeNode(VALID), deps, client);
-    await vi.waitFor(() => { expect(db.state.get('wf-im::INBOX')?.last_uid_seen).toBe(55); });
+    await vi.waitFor(() => {
+      expect(db.state.get('wf-im::INBOX')?.last_uid_seen).toBe(55);
+    });
     expect(dispatched).toHaveLength(0);
   });
 
   it('🚨 messageGate dispatch=true + extra → run avviato, extra FUSO nel triggerInput (es. bounce)', async () => {
     const bounce = { bounceType: 'hard', failedRecipients: ['x@y.com'], status: '5.1.1' };
-    const { deps, client, dispatched } = makeDeps({ messageGate: () => ({ dispatch: true, extra: { bounce } }) });
+    const { deps, client, dispatched } = makeDeps({
+      messageGate: () => ({ dispatch: true, extra: { bounce } }),
+    });
     client.messages = [imapMsg(56)];
     await startAndDrain(makeWf(), makeNode(VALID), deps, client);
-    await vi.waitFor(() => { expect(dispatched).toHaveLength(1); });
+    await vi.waitFor(() => {
+      expect(dispatched).toHaveLength(1);
+    });
     expect((dispatched[0]!.triggerInput as Record<string, unknown>).bounce).toEqual(bounce);
   });
 
@@ -329,8 +391,15 @@ describe('dispatch e payload', () => {
     const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => logger);
     const { deps, db, client, dispatched } = makeDeps();
     client.messages = [imapMsg(60, { from: 'attacker@evil.com' })];
-    await startAndDrain(makeWf(), makeNode({ ...VALID, senderAllowlist: 'good@x.com' }), deps, client);
-    await vi.waitFor(() => { expect(db.state.get('wf-im::INBOX')?.last_uid_seen).toBe(60); });
+    await startAndDrain(
+      makeWf(),
+      makeNode({ ...VALID, senderAllowlist: 'good@x.com' }),
+      deps,
+      client,
+    );
+    await vi.waitFor(() => {
+      expect(db.state.get('wf-im::INBOX')?.last_uid_seen).toBe(60);
+    });
     expect(dispatched).toHaveLength(0);
     expect(warnSpy).toHaveBeenCalledWith(
       expect.objectContaining({ from: 'attacker@evil.com' }),
@@ -343,15 +412,19 @@ describe('dispatch e payload', () => {
     db.processed.add('wf-im::<m1@x>');
     client.messages = [imapMsg(70)];
     await startAndDrain(makeWf(), makeNode(VALID), deps, client);
-    await vi.waitFor(() => { expect(db.state.get('wf-im::INBOX')?.last_uid_seen).toBe(70); });
+    await vi.waitFor(() => {
+      expect(db.state.get('wf-im::INBOX')?.last_uid_seen).toBe(70);
+    });
     expect(dispatched).toHaveLength(0);
   });
 });
 
 describe('matrice markSeen / idempotenza (il cuore del trigger)', () => {
   const cases: {
-    mode: string; runOk: boolean;
-    wantMarkSeen: boolean; wantAdvance: boolean;
+    mode: string;
+    runOk: boolean;
+    wantMarkSeen: boolean;
+    wantAdvance: boolean;
   }[] = [
     { mode: 'on-success', runOk: true, wantMarkSeen: true, wantAdvance: true },
     { mode: 'on-success', runOk: false, wantMarkSeen: false, wantAdvance: false },
@@ -362,32 +435,42 @@ describe('matrice markSeen / idempotenza (il cuore del trigger)', () => {
     { mode: 'never', runOk: false, wantMarkSeen: false, wantAdvance: false },
   ];
 
-  it.each(cases)('markSeen=$mode run ok=$runOk → \\Seen=$wantMarkSeen, avanzamento=$wantAdvance', async ({ mode, runOk, wantMarkSeen, wantAdvance }) => {
-    const made = makeDeps();
-    made.dispatchResult.value = runOk
-      ? { runId: 'r', status: 'success', errorCount: 0 }
-      : { runId: 'r', status: 'error', errorCount: 1 };
-    made.client.messages = [imapMsg(80)];
-    await startAndDrain(makeWf(), makeNode({ ...VALID, markSeen: mode }), made.deps, made.client);
-    await vi.waitFor(() => { expect(made.dispatched).toHaveLength(1); });
-    for (let i = 0; i < 30; i += 1) await Promise.resolve();
+  it.each(cases)(
+    'markSeen=$mode run ok=$runOk → \\Seen=$wantMarkSeen, avanzamento=$wantAdvance',
+    async ({ mode, runOk, wantMarkSeen, wantAdvance }) => {
+      const made = makeDeps();
+      made.dispatchResult.value = runOk
+        ? { runId: 'r', status: 'success', errorCount: 0 }
+        : { runId: 'r', status: 'error', errorCount: 1 };
+      made.client.messages = [imapMsg(80)];
+      await startAndDrain(makeWf(), makeNode({ ...VALID, markSeen: mode }), made.deps, made.client);
+      await vi.waitFor(() => {
+        expect(made.dispatched).toHaveLength(1);
+      });
+      for (let i = 0; i < 30; i += 1) await Promise.resolve();
 
-    if (wantMarkSeen) {
-      expect(made.markSeen).toHaveBeenCalledWith(expect.objectContaining({
-        workflowId: 'wf-im', uid: 80, mode, mailbox: 'INBOX',
-      }));
-    } else {
-      expect(made.markSeen).not.toHaveBeenCalled();
-    }
-    if (wantAdvance) {
-      expect(made.db.processed.has('wf-im::<m1@x>')).toBe(true);
-      expect(made.db.state.get('wf-im::INBOX')?.last_uid_seen).toBe(80);
-    } else {
-      expect(made.db.processed.has('wf-im::<m1@x>')).toBe(false);
-      // Cursore fermo: persist finale di fine poll resta al valore iniziale (0).
-      expect(made.db.state.get('wf-im::INBOX')?.last_uid_seen).toBe(0);
-    }
-  });
+      if (wantMarkSeen) {
+        expect(made.markSeen).toHaveBeenCalledWith(
+          expect.objectContaining({
+            workflowId: 'wf-im',
+            uid: 80,
+            mode,
+            mailbox: 'INBOX',
+          }),
+        );
+      } else {
+        expect(made.markSeen).not.toHaveBeenCalled();
+      }
+      if (wantAdvance) {
+        expect(made.db.processed.has('wf-im::<m1@x>')).toBe(true);
+        expect(made.db.state.get('wf-im::INBOX')?.last_uid_seen).toBe(80);
+      } else {
+        expect(made.db.processed.has('wf-im::<m1@x>')).toBe(false);
+        // Cursore fermo: persist finale di fine poll resta al valore iniziale (0).
+        expect(made.db.state.get('wf-im::INBOX')?.last_uid_seen).toBe(0);
+      }
+    },
+  );
 
   it('ANTI-REGRESSIONE retry: run fallito in on-success → il poll successivo rifetcha lo STESSO uid', async () => {
     const made = makeDeps();
@@ -396,11 +479,15 @@ describe('matrice markSeen / idempotenza (il cuore del trigger)', () => {
     const wf = makeWf();
     const node = makeNode({ ...VALID, markSeen: 'on-success' });
     await startAndDrain(wf, node, made.deps, made.client);
-    await vi.waitFor(() => { expect(made.dispatched).toHaveLength(1); });
+    await vi.waitFor(() => {
+      expect(made.dispatched).toHaveLength(1);
+    });
     // Secondo poller (riavvio simulato): il cursore in stato è ancora 0 → range 1:*.
     const job2 = startImapPoller(wf, node, made.deps);
     clearInterval(job2!.timer);
-    await vi.waitFor(() => { expect(made.client.fetchCalls.length).toBeGreaterThanOrEqual(2); });
+    await vi.waitFor(() => {
+      expect(made.client.fetchCalls.length).toBeGreaterThanOrEqual(2);
+    });
     expect(made.client.fetchCalls[1]!.range).toEqual({ uid: '1:*' });
   });
 });
@@ -423,7 +510,9 @@ function makeOAuthAccount(over: Record<string, unknown> = {}): unknown {
     ...over,
   };
 }
-function oauthTokens(over: Partial<{ accessToken: string; refreshToken: string; expiresAt: Date; email: string }> = {}) {
+function oauthTokens(
+  over: Partial<{ accessToken: string; refreshToken: string; expiresAt: Date; email: string }> = {},
+) {
   return {
     accessToken: over.accessToken ?? 'ACCESS-OLD',
     refreshToken: over.refreshToken ?? 'REFRESH-1',
@@ -457,7 +546,10 @@ describe('imap-poller — OAuth2 / XOAUTH2 (contract anti-regressione)', () => {
   });
 
   it('🚨 token scaduto → refresh chiamato + access token FRESCO usato + persistito', async () => {
-    const refreshSpy = vi.fn(async () => ({ accessToken: 'ACCESS-FRESH', expiresAt: new Date('2099-06-01T00:00:00Z') }));
+    const refreshSpy = vi.fn(async () => ({
+      accessToken: 'ACCESS-FRESH',
+      expiresAt: new Date('2099-06-01T00:00:00Z'),
+    }));
     const updateSpy = vi.fn();
     const { deps, client, clientOpts } = makeDeps({
       resolveSystemAccount: () => makeOAuthAccount() as never,
@@ -468,11 +560,13 @@ describe('imap-poller — OAuth2 / XOAUTH2 (contract anti-regressione)', () => {
     });
     await startAndDrain(makeWf(), makeNode({ systemAccountId: 'acct-oauth' }), deps, client);
     expect(refreshSpy).toHaveBeenCalledWith('REFRESH-1');
-    expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ accountId: 'acct-oauth', accessToken: 'ACCESS-FRESH' }));
+    expect(updateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ accountId: 'acct-oauth', accessToken: 'ACCESS-FRESH' }),
+    );
     expect(clientOpts[0]!.auth).toEqual({ user: 'michela@studio.it', accessToken: 'ACCESS-FRESH' });
   });
 
-  it('token valido → NESSUN refresh, usa l\'access token esistente', async () => {
+  it("token valido → NESSUN refresh, usa l'access token esistente", async () => {
     const refreshSpy = vi.fn(async () => ({ accessToken: 'NOPE', expiresAt: new Date() }));
     const { deps, client, clientOpts } = makeDeps({
       resolveSystemAccount: () => makeOAuthAccount() as never,

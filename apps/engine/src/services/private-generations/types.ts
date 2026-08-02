@@ -18,10 +18,26 @@ export interface DbRef {
 /** Porta su DbStudioService — solo i metodi usati qui. */
 export interface DbStudioPort {
   list(tenantId?: string): DbRef[];
-  insert(id: string, table: string, row: Record<string, unknown>, tenantId?: string): Promise<unknown>;
-  updateRow(id: string, table: string, where: Record<string, unknown>, patch: Record<string, unknown>, tenantId?: string): Promise<unknown>;
+  insert(
+    id: string,
+    table: string,
+    row: Record<string, unknown>,
+    tenantId?: string,
+  ): Promise<unknown>;
+  updateRow(
+    id: string,
+    table: string,
+    where: Record<string, unknown>,
+    patch: Record<string, unknown>,
+    tenantId?: string,
+  ): Promise<unknown>;
   query(id: string, spec: unknown, tenantId?: string): Promise<unknown>;
-  executeRaw(id: string, sql: string, opts: { dryRun?: boolean; rowLimit?: number }, tenantId?: string): Promise<unknown>;
+  executeRaw(
+    id: string,
+    sql: string,
+    opts: { dryRun?: boolean; rowLimit?: number },
+    tenantId?: string,
+  ): Promise<unknown>;
 }
 
 /** Porta su BinaryStore — solo write/read. */

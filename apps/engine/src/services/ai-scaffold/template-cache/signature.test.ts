@@ -28,7 +28,10 @@ describe('computeGraphSignature', () => {
         { id: 'h', defId: 'action_http' },
         { id: 'd', defId: 'db_insert' },
       ],
-      [{ from: 'c', to: 'h' }, { from: 'h', to: 'd' }],
+      [
+        { from: 'c', to: 'h' },
+        { from: 'h', to: 'd' },
+      ],
     );
     expect(sig).toBe('trigger_cron>action_http>db_insert');
   });
@@ -81,10 +84,7 @@ describe('computeGraphSignature', () => {
       { from: 'b', to: 'd' },
     ];
     const sig1 = computeGraphSignature(nodes, edges);
-    const sig2 = computeGraphSignature(
-      [...nodes].reverse(),
-      [...edges].reverse(),
-    );
+    const sig2 = computeGraphSignature([...nodes].reverse(), [...edges].reverse());
     expect(sig1).toBe(sig2);
   });
 
@@ -188,8 +188,9 @@ describe('defIdOverlap', () => {
 
   it('template piu\\` grande del query → penalizzato', () => {
     // query 2 defId, template ne ha 10 → overlap = 2 / max(2, 10) = 0.2
-    expect(defIdOverlap(['a', 'b'], ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']))
-      .toBeCloseTo(0.2, 5);
+    expect(
+      defIdOverlap(['a', 'b'], ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']),
+    ).toBeCloseTo(0.2, 5);
   });
 
   it('query piu\\` grande del template → penalizzato', () => {
@@ -226,37 +227,52 @@ describe('cosineSimilarity', () => {
 describe('computeRetrievalScore — pesi BUG FIX 2026-05-31', () => {
   it('pesi disponibili pre-LLM sommano a 1.0 (graph=0 reserved)', () => {
     // jaccard=1, cosine=1, success=1 → 0.50+0.40+0.10 = 1.0
-    expect(computeRetrievalScore({ graphOverlap: 0, promptJaccard: 1, successRate: 1, cosine: 1 }))
-      .toBeCloseTo(1, 5);
+    expect(
+      computeRetrievalScore({ graphOverlap: 0, promptJaccard: 1, successRate: 1, cosine: 1 }),
+    ).toBeCloseTo(1, 5);
   });
 
   it('prompt IDENTICO + cosine 1.0 + success 0.5 → 0.95 use_direct', () => {
     // SCENARIO REALE: utente fa stessa richiesta 2 volte.
     // = 0.50*1.0 + 0.40*1.0 + 0.10*0.5 = 0.50 + 0.40 + 0.05 = 0.95
-    expect(computeRetrievalScore({ graphOverlap: 0, promptJaccard: 1.0, successRate: 0.5, cosine: 1.0 }))
-      .toBeCloseTo(0.95, 5);
+    expect(
+      computeRetrievalScore({ graphOverlap: 0, promptJaccard: 1.0, successRate: 0.5, cosine: 1.0 }),
+    ).toBeCloseTo(0.95, 5);
   });
 
   it('prompt SIMILE (jaccard 0.7) + cosine 0.8 → 0.72 inject_fewshot', () => {
-    expect(computeRetrievalScore({ graphOverlap: 0, promptJaccard: 0.7, successRate: 0.5, cosine: 0.8 }))
-      .toBeCloseTo(0.72, 5);
+    expect(
+      computeRetrievalScore({ graphOverlap: 0, promptJaccard: 0.7, successRate: 0.5, cosine: 0.8 }),
+    ).toBeCloseTo(0.72, 5);
   });
 
   it('senza cosine (embedding fail): prompt identico → 0.55 inject_fewshot', () => {
     // jaccard=1, cosine=0, success=0.5 → 0.50 + 0 + 0.05 = 0.55
-    expect(computeRetrievalScore({ graphOverlap: 0, promptJaccard: 1, successRate: 0.5, cosine: 0 }))
-      .toBeCloseTo(0.55, 5);
+    expect(
+      computeRetrievalScore({ graphOverlap: 0, promptJaccard: 1, successRate: 0.5, cosine: 0 }),
+    ).toBeCloseTo(0.55, 5);
   });
 
   it('graphOverlap NON contribuisce (peso 0, reserved per second-pass)', () => {
     // Stesso input con graph 0 vs 1 → stesso score
-    const a = computeRetrievalScore({ graphOverlap: 0, promptJaccard: 0.5, successRate: 0.5, cosine: 0.5 });
-    const b = computeRetrievalScore({ graphOverlap: 1, promptJaccard: 0.5, successRate: 0.5, cosine: 0.5 });
+    const a = computeRetrievalScore({
+      graphOverlap: 0,
+      promptJaccard: 0.5,
+      successRate: 0.5,
+      cosine: 0.5,
+    });
+    const b = computeRetrievalScore({
+      graphOverlap: 1,
+      promptJaccard: 0.5,
+      successRate: 0.5,
+      cosine: 0.5,
+    });
     expect(a).toBe(b);
   });
 
   it('zero tutto → 0', () => {
-    expect(computeRetrievalScore({ graphOverlap: 0, promptJaccard: 0, successRate: 0, cosine: 0 }))
-      .toBe(0);
+    expect(
+      computeRetrievalScore({ graphOverlap: 0, promptJaccard: 0, successRate: 0, cosine: 0 }),
+    ).toBe(0);
   });
 });

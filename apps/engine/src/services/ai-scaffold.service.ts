@@ -32,7 +32,12 @@ import { DbStudioService } from './db-studio.service.js';
 // Side-effect import: registra i 28 tool nel registry al boot.
 import './ai-scaffold/register-tools.js';
 import { toolRegistry } from './ai-scaffold/tool-registry.js';
-import type { ToolResult, WorkflowDraft, AiScaffoldTrace, AiScaffoldInput } from './ai-scaffold/types.js';
+import type {
+  ToolResult,
+  WorkflowDraft,
+  AiScaffoldTrace,
+  AiScaffoldInput,
+} from './ai-scaffold/types.js';
 import { AiScaffoldError } from './ai-scaffold/types.js';
 import { runScaffold, type AiScaffoldResult } from './ai-scaffold/scaffold-runner.js';
 import {
@@ -129,39 +134,93 @@ export class ScaffoldSession {
   }
 
   // ─── Discovery (read-only) ─────────────────────────────────────────
-  toolReadDbSchema(args: Record<string, unknown>): ToolResult { return readDbSchemaHandler(this, args); }
-  toolListDatabases(): ToolResult { return listDatabasesHandler(this); }
-  toolListWorkflows(): Promise<ToolResult> { return listWorkflowsHandler(this); }
-  toolReadWorkflow(args: Record<string, unknown>): Promise<ToolResult> { return readWorkflowHandler(this, args); }
-  toolListNodeCatalog(args: Record<string, unknown>): ToolResult { return listNodeCatalogHandler(this, args); }
-  toolListEmailAccounts(): ToolResult { return listEmailAccountsHandler(this); }
-  toolListSecrets(): ToolResult { return listSecretsHandler(this); }
-  toolListLlmProviders(): ToolResult { return listLlmProvidersHandler(this); }
-  toolListDraftNodes(): ToolResult { return listDraftNodesHandler(this); }
+  toolReadDbSchema(args: Record<string, unknown>): ToolResult {
+    return readDbSchemaHandler(this, args);
+  }
+  toolListDatabases(): ToolResult {
+    return listDatabasesHandler(this);
+  }
+  toolListWorkflows(): Promise<ToolResult> {
+    return listWorkflowsHandler(this);
+  }
+  toolReadWorkflow(args: Record<string, unknown>): Promise<ToolResult> {
+    return readWorkflowHandler(this, args);
+  }
+  toolListNodeCatalog(args: Record<string, unknown>): ToolResult {
+    return listNodeCatalogHandler(this, args);
+  }
+  toolListEmailAccounts(): ToolResult {
+    return listEmailAccountsHandler(this);
+  }
+  toolListSecrets(): ToolResult {
+    return listSecretsHandler(this);
+  }
+  toolListLlmProviders(): ToolResult {
+    return listLlmProvidersHandler(this);
+  }
+  toolListDraftNodes(): ToolResult {
+    return listDraftNodesHandler(this);
+  }
 
   // ─── DB migrations (write) ─────────────────────────────────────────
-  toolCreateDatabase(args: Record<string, unknown>): Promise<ToolResult> { return createDatabaseHandler(this, args); }
-  toolCreateTable(args: Record<string, unknown>): Promise<ToolResult> { return createTableHandler(this, args); }
-  toolAddColumn(args: Record<string, unknown>): Promise<ToolResult> { return addColumnHandler(this, args); }
-  toolDropColumn(args: Record<string, unknown>): Promise<ToolResult> { return dropColumnHandler(this, args); }
-  toolDropTable(args: Record<string, unknown>): Promise<ToolResult> { return dropTableHandler(this, args); }
-  toolRenameColumn(args: Record<string, unknown>): ToolResult { return renameColumnHandler(this, args); }
-  toolAddIndex(args: Record<string, unknown>): Promise<ToolResult> { return addIndexHandler(this, args); }
+  toolCreateDatabase(args: Record<string, unknown>): Promise<ToolResult> {
+    return createDatabaseHandler(this, args);
+  }
+  toolCreateTable(args: Record<string, unknown>): Promise<ToolResult> {
+    return createTableHandler(this, args);
+  }
+  toolAddColumn(args: Record<string, unknown>): Promise<ToolResult> {
+    return addColumnHandler(this, args);
+  }
+  toolDropColumn(args: Record<string, unknown>): Promise<ToolResult> {
+    return dropColumnHandler(this, args);
+  }
+  toolDropTable(args: Record<string, unknown>): Promise<ToolResult> {
+    return dropTableHandler(this, args);
+  }
+  toolRenameColumn(args: Record<string, unknown>): ToolResult {
+    return renameColumnHandler(this, args);
+  }
+  toolAddIndex(args: Record<string, unknown>): Promise<ToolResult> {
+    return addIndexHandler(this, args);
+  }
 
   // ─── Draft mutations (workflow in-memory) ──────────────────────────
-  toolProposePlan(args: Record<string, unknown>): ToolResult { return proposePlanHandler(this, args); }
-  toolAddNode(args: Record<string, unknown>): ToolResult { return addNodeHandler(this, args); }
-  toolConnectNodes(args: Record<string, unknown>): ToolResult { return connectNodesHandler(this, args); }
-  toolFinalizeWorkflow(args: Record<string, unknown>): ToolResult { return finalizeWorkflowHandler(this, args); }
-  toolAbort(args: Record<string, unknown>): ToolResult { return abortHandler(this, args); }
-  toolUpdateNode(args: Record<string, unknown>): ToolResult { return updateNodeHandler(this, args); }
-  toolDeleteNode(args: Record<string, unknown>): ToolResult { return deleteNodeHandler(this, args); }
-  toolDisconnectNodes(args: Record<string, unknown>): ToolResult { return disconnectNodesHandler(this, args); }
+  toolProposePlan(args: Record<string, unknown>): ToolResult {
+    return proposePlanHandler(this, args);
+  }
+  toolAddNode(args: Record<string, unknown>): ToolResult {
+    return addNodeHandler(this, args);
+  }
+  toolConnectNodes(args: Record<string, unknown>): ToolResult {
+    return connectNodesHandler(this, args);
+  }
+  toolFinalizeWorkflow(args: Record<string, unknown>): ToolResult {
+    return finalizeWorkflowHandler(this, args);
+  }
+  toolAbort(args: Record<string, unknown>): ToolResult {
+    return abortHandler(this, args);
+  }
+  toolUpdateNode(args: Record<string, unknown>): ToolResult {
+    return updateNodeHandler(this, args);
+  }
+  toolDeleteNode(args: Record<string, unknown>): ToolResult {
+    return deleteNodeHandler(this, args);
+  }
+  toolDisconnectNodes(args: Record<string, unknown>): ToolResult {
+    return disconnectNodesHandler(this, args);
+  }
 
   // ─── Observability ─────────────────────────────────────────────────
-  toolListRecentRuns(args: Record<string, unknown>): ToolResult { return listRecentRunsHandler(this, args); }
-  toolReadRun(args: Record<string, unknown>): ToolResult { return readRunHandler(this, args); }
-  toolCheckSettingsHealth(): ToolResult { return checkSettingsHealthHandler(this); }
+  toolListRecentRuns(args: Record<string, unknown>): ToolResult {
+    return listRecentRunsHandler(this, args);
+  }
+  toolReadRun(args: Record<string, unknown>): ToolResult {
+    return readRunHandler(this, args);
+  }
+  toolCheckSettingsHealth(): ToolResult {
+    return checkSettingsHealthHandler(this);
+  }
 }
 
 /**
@@ -190,7 +249,8 @@ export class AiScaffoldService {
       //   02 ✨ generating ✓
       //   03 🛡 validating ✓
       // invece di 3 step bloccati a ◷.
-      let currentPhase: { iter: number; tool: string; phase: string; startedAt: number } | null = null;
+      let currentPhase: { iter: number; tool: string; phase: string; startedAt: number } | null =
+        null;
       const PHASE_TOOL_MAP: Record<string, string> = {
         analyzing: 'singleshot_analyze',
         generating: 'singleshot_generate',
@@ -223,7 +283,12 @@ export class AiScaffoldService {
           // "In coda — posizione X" senza creare un tool row distinto.
           closePhase();
           iterCounter++;
-          currentPhase = { iter: iterCounter, tool: 'singleshot_queued', phase: 'queued', startedAt: Date.now() };
+          currentPhase = {
+            iter: iterCounter,
+            tool: 'singleshot_queued',
+            phase: 'queued',
+            startedAt: Date.now(),
+          };
           void onProgress({ type: 'iter_start', iteration: iterCounter, phase: 'llm_call' });
           void onProgress({
             type: 'tool_call',
@@ -237,7 +302,12 @@ export class AiScaffoldService {
           const tool = PHASE_TOOL_MAP[e.type] ?? 'singleshot_generate';
           currentPhase = { iter: iterCounter, tool, phase: e.type, startedAt: Date.now() };
           void onProgress({ type: 'iter_start', iteration: iterCounter, phase: 'llm_call' });
-          void onProgress({ type: 'tool_call', iteration: iterCounter, tool, args: { phase: e.type, detail: e.detail ?? '' } });
+          void onProgress({
+            type: 'tool_call',
+            iteration: iterCounter,
+            tool,
+            args: { phase: e.type, detail: e.detail ?? '' },
+          });
         } else if (e.type === 'token_usage' && e.tokens) {
           void onProgress({
             type: 'token_usage',
@@ -261,9 +331,15 @@ export class AiScaffoldService {
           });
         } else if (e.type === 'meta' && e.detail) {
           try {
-            const meta = JSON.parse(e.detail) as { name?: string; description?: string; reasoning?: string };
+            const meta = JSON.parse(e.detail) as {
+              name?: string;
+              description?: string;
+              reasoning?: string;
+            };
             void onProgress({ type: 'singleshot_meta', iteration: iterCounter, meta });
-          } catch { /* ignore malformed */ }
+          } catch {
+            /* ignore malformed */
+          }
         } else if (e.type === 'done' && e.result) {
           closePhase();
           currentPhase = null;

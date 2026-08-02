@@ -27,7 +27,10 @@ vi.mock('./nodemailer-tracked.js', () => ({
     if ((config.to as string).startsWith('bad@')) {
       throw new Error('550 bad recipient — permanent');
     }
-    return { output: { messageId: `m-${(config.leadId as string)}`, sendId: `s-${(config.leadId as string)}` }, durationMs: 1 };
+    return {
+      output: { messageId: `m-${config.leadId as string}`, sendId: `s-${config.leadId as string}` },
+      durationMs: 1,
+    };
   }),
 }));
 vi.mock('@/lib/logger.js');
@@ -42,39 +45,46 @@ const baseCfg = {
   campaignId: 'redivivo-w23',
   trackingBaseUrl: 'https://fabio-musicco.app.automazionezeli.com',
   clickWhitelist: ['redivivogin.it'],
-  ratePerHour: 10_000,       // ~ every 360ms — keeps tests sub-second
+  ratePerHour: 10_000, // ~ every 360ms — keeps tests sub-second
   jitter: 0,
   maxAttempts: 2,
   backoffBaseMs: 500,
   budgetMs: 60_000,
 };
 
-beforeEach(() => { sendCalls.length = 0; });
+beforeEach(() => {
+  sendCalls.length = 0;
+});
 
 describe('validation', () => {
   it('throws when recipients absent from BOTH config and input', async () => {
-    await expect(sendEmailTrackedBatchExecutor(baseCfg, { consentVerified: true }, ctx))
-      .rejects.toThrow(/destinatari/i);
+    await expect(
+      sendEmailTrackedBatchExecutor(baseCfg, { consentVerified: true }, ctx),
+    ).rejects.toThrow(/destinatari/i);
   });
 
   it('throws when recipients is an empty array', async () => {
-    await expect(sendEmailTrackedBatchExecutor({ ...baseCfg, recipients: [] }, { consentVerified: true }, ctx))
-      .rejects.toThrow(/destinatari/i);
+    await expect(
+      sendEmailTrackedBatchExecutor({ ...baseCfg, recipients: [] }, { consentVerified: true }, ctx),
+    ).rejects.toThrow(/destinatari/i);
   });
 });
 
 describe('consent gate (batch)', () => {
   it('fails BEFORE any send when requireConsent=true and consentVerified absent', async () => {
     const recipients = [{ leadId: 'l1', to: 'x@y.it' }];
-    await expect(sendEmailTrackedBatchExecutor({ ...baseCfg, recipients }, {}, ctx))
-      .rejects.toThrow(/consentVerified/);
+    await expect(
+      sendEmailTrackedBatchExecutor({ ...baseCfg, recipients }, {}, ctx),
+    ).rejects.toThrow(/consentVerified/);
     expect(sendCalls).toHaveLength(0);
   });
 
   it('proceeds with requireConsent=false', async () => {
     const recipients = [{ leadId: 'l1', to: 'x@y.it' }];
     const res = await sendEmailTrackedBatchExecutor(
-      { ...baseCfg, recipients, requireConsent: false }, {}, ctx,
+      { ...baseCfg, recipients, requireConsent: false },
+      {},
+      ctx,
     );
     expect((res.output as { stats: { sent: number } }).stats.sent).toBe(1);
   });
@@ -82,15 +92,26 @@ describe('consent gate (batch)', () => {
 
 describe('recipient source', () => {
   it('reads recipients from config when present', async () => {
-    const recipients = [{ leadId: 'l1', to: 'a@b.it' }, { leadId: 'l2', to: 'c@d.it' }];
-    const res = await sendEmailTrackedBatchExecutor({ ...baseCfg, recipients }, { consentVerified: true }, ctx);
+    const recipients = [
+      { leadId: 'l1', to: 'a@b.it' },
+      { leadId: 'l2', to: 'c@d.it' },
+    ];
+    const res = await sendEmailTrackedBatchExecutor(
+      { ...baseCfg, recipients },
+      { consentVerified: true },
+      ctx,
+    );
     expect((res.output as { stats: { sent: number } }).stats.sent).toBe(2);
     expect(sendCalls).toHaveLength(2);
   });
 
   it('falls back to input.recipients when config field is absent', async () => {
     const recipients = [{ leadId: 'l1', to: 'a@b.it' }];
-    const res = await sendEmailTrackedBatchExecutor(baseCfg, { consentVerified: true, recipients }, ctx);
+    const res = await sendEmailTrackedBatchExecutor(
+      baseCfg,
+      { consentVerified: true, recipients },
+      ctx,
+    );
     expect((res.output as { stats: { sent: number } }).stats.sent).toBe(1);
   });
 });
@@ -108,7 +129,7 @@ describe('interpolation', () => {
   });
 
   it('leaves placeholder empty when var is missing', async () => {
-    const recipients = [{ leadId: 'l1', to: 'a@b.it' }];   // no templateVars
+    const recipients = [{ leadId: 'l1', to: 'a@b.it' }]; // no templateVars
     await sendEmailTrackedBatchExecutor({ ...baseCfg, recipients }, { consentVerified: true }, ctx);
     expect(sendCalls[0]!.config.subject).toBe('Ciao ');
   });
@@ -138,7 +159,11 @@ describe('error classification', () => {
 
   it('does NOT retry 5xx permanent errors', async () => {
     const recipients = [{ leadId: 'l1', to: 'bad@x.it' }];
-    const res = await sendEmailTrackedBatchExecutor({ ...baseCfg, recipients }, { consentVerified: true }, ctx);
+    const res = await sendEmailTrackedBatchExecutor(
+      { ...baseCfg, recipients },
+      { consentVerified: true },
+      ctx,
+    );
     const stats = (res.output as { stats: { sent: number; failed: number } }).stats;
     expect(stats.sent).toBe(0);
     expect(stats.failed).toBe(1);
@@ -154,7 +179,11 @@ describe('stats', () => {
       { leadId: 'l2', to: 'bad@x.it' },
       { leadId: 'l3', to: 'good2@x.it' },
     ];
-    const res = await sendEmailTrackedBatchExecutor({ ...baseCfg, recipients }, { consentVerified: true }, ctx);
+    const res = await sendEmailTrackedBatchExecutor(
+      { ...baseCfg, recipients },
+      { consentVerified: true },
+      ctx,
+    );
     const stats = (res.output as { stats: { sent: number; failed: number } }).stats;
     expect(stats.sent).toBe(2);
     expect(stats.failed).toBe(1);

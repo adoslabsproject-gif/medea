@@ -20,7 +20,8 @@ import { randomBytes } from 'node:crypto';
 import { rmSync, existsSync } from 'node:fs';
 
 // Mock @/config to return a writable tmp dir (no real /var/data dependency)
-const tmpDbPath = (): string => join(tmpdir(), `migrate-test-${randomBytes(8).toString('hex')}.sqlite`);
+const tmpDbPath = (): string =>
+  join(tmpdir(), `migrate-test-${randomBytes(8).toString('hex')}.sqlite`);
 
 let _dbPath = '';
 
@@ -100,7 +101,17 @@ describe('runMigrations', () => {
 
     const direct = new SqliteDatabase(_dbPath);
     expect(tableExists(direct, 'workflow_comments')).toBe(true);
-    for (const col of ['id', 'workflow_id', 'node_id', 'user_id', 'user_name', 'body', 'mentions_json', 'resolved', 'created_at']) {
+    for (const col of [
+      'id',
+      'workflow_id',
+      'node_id',
+      'user_id',
+      'user_name',
+      'body',
+      'mentions_json',
+      'resolved',
+      'created_at',
+    ]) {
       expect(columnExists(direct, 'workflow_comments', col)).toBe(true);
     }
     direct.close();
@@ -115,10 +126,22 @@ describe('runMigrations', () => {
 
     const direct = new SqliteDatabase(_dbPath);
     expect(tableExists(direct, 'notifications')).toBe(true);
-    for (const col of ['id', 'user_id', 'type', 'workflow_id', 'node_id', 'actor_name', 'preview', 'read', 'created_at']) {
+    for (const col of [
+      'id',
+      'user_id',
+      'type',
+      'workflow_id',
+      'node_id',
+      'actor_name',
+      'preview',
+      'read',
+      'created_at',
+    ]) {
       expect(columnExists(direct, 'notifications', col)).toBe(true);
     }
-    const indexes = direct.prepare(`SELECT name FROM sqlite_master WHERE type='index'`).all() as { name: string }[];
+    const indexes = direct.prepare(`SELECT name FROM sqlite_master WHERE type='index'`).all() as {
+      name: string;
+    }[];
     expect(indexes.map((i) => i.name)).toContain('notifications_user_idx');
     direct.close();
   });
@@ -154,14 +177,20 @@ describe('runMigrations', () => {
     const { runMigrations } = await import('./migrate.js');
     runMigrations();
     const direct1 = new SqliteDatabase(_dbPath);
-    const tables1 = direct1.prepare(`SELECT name FROM sqlite_master WHERE type='table' ORDER BY name`).all();
+    const tables1 = direct1
+      .prepare(`SELECT name FROM sqlite_master WHERE type='table' ORDER BY name`)
+      .all();
     direct1.close();
 
     // Second invocation — must NOT throw
-    expect(() => { runMigrations(); }).not.toThrow();
+    expect(() => {
+      runMigrations();
+    }).not.toThrow();
 
     const direct2 = new SqliteDatabase(_dbPath);
-    const tables2 = direct2.prepare(`SELECT name FROM sqlite_master WHERE type='table' ORDER BY name`).all();
+    const tables2 = direct2
+      .prepare(`SELECT name FROM sqlite_master WHERE type='table' ORDER BY name`)
+      .all();
     expect(tables2).toEqual(tables1);
     direct2.close();
   });
@@ -174,7 +203,9 @@ describe('runMigrations', () => {
     runMigrations();
 
     const direct = new SqliteDatabase(_dbPath);
-    const indexes = direct.prepare(`SELECT name FROM sqlite_master WHERE type='index'`).all() as { name: string }[];
+    const indexes = direct.prepare(`SELECT name FROM sqlite_master WHERE type='index'`).all() as {
+      name: string;
+    }[];
     const names = indexes.map((i) => i.name);
     // Spot-check critical indexes (presi dal SCHEMA_SQL split)
     expect(names).toContain('workers_heartbeat_idx');
@@ -197,12 +228,39 @@ describe('runMigrations', () => {
 describe('F2 — SSO/folders/share schema migrated out of route handlers', () => {
   // tabella → colonne che gli handler leggono/scrivono (contract reale)
   const EXPECTED: Record<string, string[]> = {
-    oauth_providers: ['id', 'tenant_id', 'provider', 'issuer', 'client_id', 'client_secret', 'redirect_uri', 'scopes', 'created_at'],
+    oauth_providers: [
+      'id',
+      'tenant_id',
+      'provider',
+      'issuer',
+      'client_id',
+      'client_secret',
+      'redirect_uri',
+      'scopes',
+      'created_at',
+    ],
     oauth_state: ['state', 'tenant_id', 'provider', 'code_verifier', 'created_at', 'expires_at'],
-    saml_providers: ['id', 'tenant_id', 'provider', 'entry_point', 'issuer', 'cert', 'callback_url', 'created_at'],
+    saml_providers: [
+      'id',
+      'tenant_id',
+      'provider',
+      'entry_point',
+      'issuer',
+      'cert',
+      'callback_url',
+      'created_at',
+    ],
     sso_jti_used: ['jti', 'expires_at'],
     workflow_folders: ['id', 'tenant_id', 'parent_id', 'name', 'created_at', 'updated_at'],
-    workflow_shares: ['token', 'workflow_id', 'tenant_id', 'created_at', 'expires_at', 'created_by', 'view_count'],
+    workflow_shares: [
+      'token',
+      'workflow_id',
+      'tenant_id',
+      'created_at',
+      'expires_at',
+      'created_by',
+      'view_count',
+    ],
   };
 
   it('crea TUTTE le 6 tabelle con le colonne esatte che gli handler usano', async () => {
@@ -228,8 +286,11 @@ describe('F2 — SSO/folders/share schema migrated out of route handlers', () =>
     runMigrations();
 
     const direct = new SqliteDatabase(_dbPath);
-    const names = (direct.prepare(`SELECT name FROM sqlite_master WHERE type='index'`).all() as { name: string }[])
-      .map((i) => i.name);
+    const names = (
+      direct.prepare(`SELECT name FROM sqlite_master WHERE type='index'`).all() as {
+        name: string;
+      }[]
+    ).map((i) => i.name);
     expect(names).toContain('oauth_state_expires_idx');
     expect(names).toContain('idx_sso_jti_expires');
     expect(names).toContain('workflow_folders_tenant_idx');
@@ -280,7 +341,9 @@ describe('F2 — SSO/folders/share schema migrated out of route handlers', () =>
     createdPaths.push(_dbPath);
     const { runMigrations } = await import('./migrate.js');
     runMigrations();
-    expect(() => { runMigrations(); }).not.toThrow();
+    expect(() => {
+      runMigrations();
+    }).not.toThrow();
 
     const direct = new SqliteDatabase(_dbPath);
     for (const table of Object.keys(EXPECTED)) {
@@ -299,7 +362,17 @@ describe('🔒 assertSqlIdent — hardening ensureColumn (audit MEDIUM)', () => 
   });
   it('rifiuta injection/identificatori non validi', async () => {
     const { assertSqlIdent } = await import('./migrate.js');
-    for (const bad of ['users; DROP TABLE x', 'a b', 'a-b', '1col', 'a)', '"x"', 'a,b', '', 'a--']) {
+    for (const bad of [
+      'users; DROP TABLE x',
+      'a b',
+      'a-b',
+      '1col',
+      'a)',
+      '"x"',
+      'a,b',
+      '',
+      'a--',
+    ]) {
       expect(() => assertSqlIdent('column', bad)).toThrow(/identificatore SQL valido/);
     }
   });
@@ -322,27 +395,60 @@ describe('runMigrations — ai_conversations.surface CHECK widening (cross-surfa
     // Pre-esistente col CHECK vecchio + una riga.
     const pre = new SqliteDatabase(_dbPath);
     pre.exec(OLD_AI_CONV);
-    pre.prepare(`INSERT INTO ai_conversations (id, user_id, workspace_id, surface, created_at, last_message_at) VALUES (?, ?, ?, ?, ?, ?)`)
+    pre
+      .prepare(
+        `INSERT INTO ai_conversations (id, user_id, workspace_id, surface, created_at, last_message_at) VALUES (?, ?, ?, ?, ?, ?)`,
+      )
       .run('c-old', 'u-1', 'ws-1', 'editor_chat', '2026-06-13T00:00:00Z', '2026-06-13T00:00:00Z');
     // sanity: il CHECK vecchio RIFIUTA node_editor
-    expect(() => pre.prepare(`INSERT INTO ai_conversations (id, user_id, surface, created_at, last_message_at) VALUES ('x','u','node_editor','t','t')`).run()).toThrow();
+    expect(() =>
+      pre
+        .prepare(
+          `INSERT INTO ai_conversations (id, user_id, surface, created_at, last_message_at) VALUES ('x','u','node_editor','t','t')`,
+        )
+        .run(),
+    ).toThrow();
     pre.close();
 
     const { runMigrations } = await import('./migrate.js');
     runMigrations();
 
     const db = new SqliteDatabase(_dbPath);
-    const sql = (db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='ai_conversations'`).get() as { sql: string }).sql;
+    const sql = (
+      db
+        .prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='ai_conversations'`)
+        .get() as { sql: string }
+    ).sql;
     expect(sql).toContain("'node_editor'");
     expect(sql).toContain("'db_studio'");
     // dato preservato
-    expect((db.prepare(`SELECT user_id FROM ai_conversations WHERE id='c-old'`).get() as { user_id: string }).user_id).toBe('u-1');
+    expect(
+      (
+        db.prepare(`SELECT user_id FROM ai_conversations WHERE id='c-old'`).get() as {
+          user_id: string;
+        }
+      ).user_id,
+    ).toBe('u-1');
     // ora node_editor è accettato
-    expect(() => db.prepare(`INSERT INTO ai_conversations (id, user_id, workspace_id, surface, created_at, last_message_at) VALUES ('c-node','u-1','ws-1','node_editor','t','t')`).run()).not.toThrow();
+    expect(() =>
+      db
+        .prepare(
+          `INSERT INTO ai_conversations (id, user_id, workspace_id, surface, created_at, last_message_at) VALUES ('c-node','u-1','ws-1','node_editor','t','t')`,
+        )
+        .run(),
+    ).not.toThrow();
     // CHECK ancora enforced: surface inventata → throw
-    expect(() => db.prepare(`INSERT INTO ai_conversations (id, user_id, surface, created_at, last_message_at) VALUES ('c-bad','u','bogus','t','t')`).run()).toThrow();
+    expect(() =>
+      db
+        .prepare(
+          `INSERT INTO ai_conversations (id, user_id, surface, created_at, last_message_at) VALUES ('c-bad','u','bogus','t','t')`,
+        )
+        .run(),
+    ).toThrow();
     // indice ricreato
-    const idx = db.prepare(`SELECT name FROM sqlite_master WHERE type='index' AND name='ai_conv_surface_idx'`).get();
+    const idx = db
+      .prepare(`SELECT name FROM sqlite_master WHERE type='index' AND name='ai_conv_surface_idx'`)
+      .get();
     expect(idx).toBeDefined();
     db.close();
   });
@@ -353,13 +459,20 @@ describe('runMigrations — ai_conversations.surface CHECK widening (cross-surfa
     const { runMigrations } = await import('./migrate.js');
     runMigrations(); // fresh → 5 surface
     const db1 = new SqliteDatabase(_dbPath);
-    db1.prepare(`INSERT INTO ai_conversations (id, user_id, workspace_id, surface, created_at, last_message_at) VALUES ('c1','u','ws','node_editor','t','t')`).run();
+    db1
+      .prepare(
+        `INSERT INTO ai_conversations (id, user_id, workspace_id, surface, created_at, last_message_at) VALUES ('c1','u','ws','node_editor','t','t')`,
+      )
+      .run();
     db1.close();
     vi.resetModules();
     const { runMigrations: again } = await import('./migrate.js');
     again(); // re-run idempotente
     const db2 = new SqliteDatabase(_dbPath);
-    expect((db2.prepare(`SELECT COUNT(*) n FROM ai_conversations WHERE id='c1'`).get() as { n: number }).n).toBe(1);
+    expect(
+      (db2.prepare(`SELECT COUNT(*) n FROM ai_conversations WHERE id='c1'`).get() as { n: number })
+        .n,
+    ).toBe(1);
     db2.close();
   });
 });

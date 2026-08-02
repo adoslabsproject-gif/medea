@@ -45,11 +45,11 @@ describe('convert — JSON ↔ CSV', () => {
     expect(out).toBe('a,b,c\n"x,y","he said ""hi""","line1\nline2"');
   });
 
-  it('FIX: json→csv con oggetti ETEROGENEI include l\'unione delle colonne (no perdita dati)', async () => {
-    const out = await convert({ from: 'json', to: 'csv' }, [
+  it("FIX: json→csv con oggetti ETEROGENEI include l'unione delle colonne (no perdita dati)", async () => {
+    const out = (await convert({ from: 'json', to: 'csv' }, [
       { name: 'Alice', age: 30 },
       { name: 'Bob', city: 'Milan' }, // 'city' assente nella prima riga
-    ]) as string;
+    ])) as string;
     const [header, row1, row2] = out.split('\n');
     expect(header).toBe('name,age,city'); // unione, non solo le chiavi della prima riga
     expect(row1).toBe('Alice,30,'); // 'city' mancante → vuoto
@@ -73,7 +73,10 @@ describe('convert — JSON ↔ CSV', () => {
   });
 
   it('FIX RFC4180: virgola dentro campo quotato NON spezza la colonna', async () => {
-    const out = await convert({ from: 'csv', to: 'json' }, '"cognome, nome",eta\n"Rossi, Mario",40');
+    const out = await convert(
+      { from: 'csv', to: 'json' },
+      '"cognome, nome",eta\n"Rossi, Mario",40',
+    );
     expect(out).toEqual([{ 'cognome, nome': 'Rossi, Mario', eta: '40' }]);
   });
 
@@ -93,7 +96,7 @@ describe('convert — JSON ↔ CSV', () => {
   });
 
   it('round-trip json→csv→json preserva valori con virgole', async () => {
-    const csv = await convert({ from: 'json', to: 'csv' }, [{ name: 'a,b', v: '1' }]) as string;
+    const csv = (await convert({ from: 'json', to: 'csv' }, [{ name: 'a,b', v: '1' }])) as string;
     const back = await convert({ from: 'csv', to: 'json' }, csv);
     expect(back).toEqual([{ name: 'a,b', v: '1' }]);
   });
@@ -104,33 +107,30 @@ describe('convert — 🚨 SECURITY: CSV formula injection (CWE-1236)', () => {
   // (action_csv ce l'aveva). Questi test bloccano la regressione su entrambi i lati.
   // Round-trip json→csv→json: riestrae il valore di cella indipendentemente dal
   // quoting RFC, così l'assert è robusto anche con payload contenenti virgolette.
-  it.each([
-    '=HYPERLINK("http://evil")',
-    '+1+1',
-    '-cmd',
-    '@SUM(A1)',
-    '\t=1+1',
-  ])('cella stringa formula %j → prefissata con apice (CWE-1236)', async (payload) => {
-    const csv = await convert({ from: 'json', to: 'csv' }, [{ nome: payload }]) as string;
-    const back = await convert({ from: 'csv', to: 'json' }, csv) as { nome: string }[];
-    // MUTATION: senza neutralizeCsvFormula il valore resterebbe "=HYPERLINK(...)" attivo → rosso.
-    expect(back[0]?.nome).toBe(`'${payload}`);
-  });
+  it.each(['=HYPERLINK("http://evil")', '+1+1', '-cmd', '@SUM(A1)', '\t=1+1'])(
+    'cella stringa formula %j → prefissata con apice (CWE-1236)',
+    async (payload) => {
+      const csv = (await convert({ from: 'json', to: 'csv' }, [{ nome: payload }])) as string;
+      const back = (await convert({ from: 'csv', to: 'json' }, csv)) as { nome: string }[];
+      // MUTATION: senza neutralizeCsvFormula il valore resterebbe "=HYPERLINK(...)" attivo → rosso.
+      expect(back[0]?.nome).toBe(`'${payload}`);
+    },
+  );
 
   it('🚨 anche le INTESTAZIONI con trigger di formula sono neutralizzate', async () => {
-    const out = await convert({ from: 'json', to: 'csv' }, [{ '=danger': 'v' }]) as string;
+    const out = (await convert({ from: 'json', to: 'csv' }, [{ '=danger': 'v' }])) as string;
     const header = out.split('\n')[0] ?? '';
     expect(header.startsWith("'=danger")).toBe(true);
   });
 
   it('i valori NUMERICI non vengono toccati (no "\'30")', async () => {
-    const out = await convert({ from: 'json', to: 'csv' }, [{ n: 30, neg: -5 }]) as string;
+    const out = (await convert({ from: 'json', to: 'csv' }, [{ n: 30, neg: -5 }])) as string;
     // numeri serializzati via JSON.stringify → "30", "-5", MAI apicizzati
     expect(out).toBe('n,neg\n30,-5');
   });
 
   it('una stringa con \\r viene quotata (RFC 4180) — prima il \\r non era nel set di quoting', async () => {
-    const out = await convert({ from: 'json', to: 'csv' }, [{ a: 'x\ry' }]) as string;
+    const out = (await convert({ from: 'json', to: 'csv' }, [{ a: 'x\ry' }])) as string;
     expect(out).toBe('a\n"x\ry"');
   });
 });
@@ -150,7 +150,10 @@ describe('convert — delimitatore configurabile + auto-detect', () => {
   });
   it('🚨 auto-detect NON conta i delimitatori dentro i campi quotati', async () => {
     // La prima riga ha 1 virgola reale e ";" solo dentro le virgolette → vince la virgola.
-    const out = await convert({ from: 'csv', to: 'json' }, '"a;b",c\n1,2') as Record<string, string>[];
+    const out = (await convert({ from: 'csv', to: 'json' }, '"a;b",c\n1,2')) as Record<
+      string,
+      string
+    >[];
     expect(Object.keys(out[0]!)).toEqual(['a;b', 'c']);
   });
   it('JSON→CSV con delimiter ";" e quoting del ";" nei valori', async () => {
@@ -158,7 +161,9 @@ describe('convert — delimitatore configurabile + auto-detect', () => {
     expect(out).toBe('a;b\n"x;y";z');
   });
   it('round-trip json→csv→json con ";" preserva i valori che contengono ";"', async () => {
-    const csv = await convert({ from: 'json', to: 'csv', delimiter: ';' }, [{ v: 'a;b' }]) as string;
+    const csv = (await convert({ from: 'json', to: 'csv', delimiter: ';' }, [
+      { v: 'a;b' },
+    ])) as string;
     const back = await convert({ from: 'csv', to: 'json', delimiter: ';' }, csv);
     expect(back).toEqual([{ v: 'a;b' }]);
   });
@@ -182,13 +187,18 @@ describe('convert — CSV→JSON coercion tipi (OPT-IN)', () => {
     expect(out).toEqual([{ a: 'ciao', b: '', c: 42 }]);
   });
   it('parseBooleans ON: "true"/"false" (case-insensitive) → boolean, gli altri invariati', async () => {
-    const out = await convert({ from: 'csv', to: 'json', parseBooleans: true }, 'f\nTrue\nFALSE\nmaybe');
+    const out = await convert(
+      { from: 'csv', to: 'json', parseBooleans: true },
+      'f\nTrue\nFALSE\nmaybe',
+    );
     expect(out).toEqual([{ f: true }, { f: false }, { f: 'maybe' }]);
   });
   it('parseNumbers ON ma "00184" CAP → resta numero? no: lo zero iniziale NON deve perdersi su un codice', async () => {
     // Number("00184") = 184: se l'utente attiva parseNumbers accetta questa semantica (è un opt-in),
     // ma documentiamo il comportamento con un test esplicito anti-sorpresa.
-    const out = await convert({ from: 'csv', to: 'json', parseNumbers: true }, 'cap\n00184') as { cap: unknown }[];
+    const out = (await convert({ from: 'csv', to: 'json', parseNumbers: true }, 'cap\n00184')) as {
+      cap: unknown;
+    }[];
     expect(out[0]!.cap).toBe(184);
   });
 });
@@ -221,7 +231,7 @@ describe('convert — edge & contratto', () => {
     expect(out).toBe('');
   });
 
-  it('json input stringa malformata → l\'executor propaga (engine gestisce il fallimento)', async () => {
+  it("json input stringa malformata → l'executor propaga (engine gestisce il fallimento)", async () => {
     await expect(convert({ from: 'json', to: 'json' }, '{invalid')).rejects.toThrow();
   });
 

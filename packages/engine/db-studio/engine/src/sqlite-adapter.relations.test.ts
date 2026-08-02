@@ -10,23 +10,40 @@ import type { Database } from '@medea/engine-db-studio-core';
 import { SqliteAdapter } from './sqlite-adapter.js';
 
 const sampleDb: Database = {
-  id: 'reltest', tenantId: 't1', name: 'rel', connection: { engine: 'sqlite', embedded: true, url: ':memory:' },
-  tables: [], relations: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+  id: 'reltest',
+  tenantId: 't1',
+  name: 'rel',
+  connection: { engine: 'sqlite', embedded: true, url: ':memory:' },
+  tables: [],
+  relations: [],
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
 };
 
 let adapter: SqliteAdapter;
-beforeEach(async () => { adapter = new SqliteAdapter(); await adapter.connect(sampleDb); });
-afterEach(async () => { await adapter.disconnect(); });
+beforeEach(async () => {
+  adapter = new SqliteAdapter();
+  await adapter.connect(sampleDb);
+});
+afterEach(async () => {
+  await adapter.disconnect();
+});
 
 describe('SqliteAdapter.introspectRelations', () => {
   it('estrae una FK reale con onDelete corretto', async () => {
     await adapter.executeRaw('CREATE TABLE customers (id INTEGER PRIMARY KEY)');
-    await adapter.executeRaw('CREATE TABLE orders (id INTEGER PRIMARY KEY, customer_id INTEGER REFERENCES customers(id) ON DELETE CASCADE)');
+    await adapter.executeRaw(
+      'CREATE TABLE orders (id INTEGER PRIMARY KEY, customer_id INTEGER REFERENCES customers(id) ON DELETE CASCADE)',
+    );
     const rels = await adapter.introspectRelations();
     expect(rels).toHaveLength(1);
     expect(rels[0]).toMatchObject({
-      fromTable: 'orders', fromColumn: 'customer_id',
-      toTable: 'customers', toColumn: 'id', onDelete: 'cascade', kind: 'one-to-many',
+      fromTable: 'orders',
+      fromColumn: 'customer_id',
+      toTable: 'customers',
+      toColumn: 'id',
+      onDelete: 'cascade',
+      kind: 'one-to-many',
     });
   });
 
@@ -37,8 +54,12 @@ describe('SqliteAdapter.introspectRelations', () => {
 
   it('FK multiple su più tabelle, onDelete mappati (RESTRICT/SET NULL/default NO ACTION)', async () => {
     await adapter.executeRaw('CREATE TABLE a (id INTEGER PRIMARY KEY)');
-    await adapter.executeRaw('CREATE TABLE b (id INTEGER PRIMARY KEY, a_id INTEGER REFERENCES a(id) ON DELETE RESTRICT)');
-    await adapter.executeRaw('CREATE TABLE c (id INTEGER PRIMARY KEY, a_id INTEGER REFERENCES a(id) ON DELETE SET NULL, b_id INTEGER REFERENCES b(id))');
+    await adapter.executeRaw(
+      'CREATE TABLE b (id INTEGER PRIMARY KEY, a_id INTEGER REFERENCES a(id) ON DELETE RESTRICT)',
+    );
+    await adapter.executeRaw(
+      'CREATE TABLE c (id INTEGER PRIMARY KEY, a_id INTEGER REFERENCES a(id) ON DELETE SET NULL, b_id INTEGER REFERENCES b(id))',
+    );
     const rels = await adapter.introspectRelations();
     expect(rels).toHaveLength(3);
     const byFrom = new Map(rels.map((r) => [`${r.fromTable}.${r.fromColumn}`, r]));
@@ -49,7 +70,9 @@ describe('SqliteAdapter.introspectRelations', () => {
 
   it('id relation univoco per ogni FK (no collisioni in ER diagram)', async () => {
     await adapter.executeRaw('CREATE TABLE a (id INTEGER PRIMARY KEY)');
-    await adapter.executeRaw('CREATE TABLE c (id INTEGER PRIMARY KEY, a_id INTEGER REFERENCES a(id), b_id INTEGER REFERENCES a(id))');
+    await adapter.executeRaw(
+      'CREATE TABLE c (id INTEGER PRIMARY KEY, a_id INTEGER REFERENCES a(id), b_id INTEGER REFERENCES a(id))',
+    );
     const rels = await adapter.introspectRelations();
     const ids = rels.map((r) => r.id);
     expect(new Set(ids).size).toBe(ids.length);

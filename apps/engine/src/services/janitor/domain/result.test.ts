@@ -142,13 +142,14 @@ describe('🚨 combineResults — fail-fast collection', () => {
 
 describe('🚨 Combinazione idiomatic — Result come builder', () => {
   it('🚨 pipeline parse → validate → transform', () => {
-    interface Parsed { n: number }
+    interface Parsed {
+      n: number;
+    }
     const parse = (s: string): ReturnType<typeof Ok<Parsed>> | ReturnType<typeof Err<string>> => {
       const n = parseInt(s, 10);
       return Number.isNaN(n) ? Err('not-a-number') : Ok({ n });
     };
-    const validate = (p: Parsed) =>
-      p.n > 0 ? Ok(p) : Err('not-positive');
+    const validate = (p: Parsed) => (p.n > 0 ? Ok(p) : Err('not-positive'));
     const double = (p: Parsed) => ({ n: p.n * 2 });
 
     const happy = mapResult(andThen(parse('5'), validate), double);

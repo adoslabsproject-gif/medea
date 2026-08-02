@@ -22,34 +22,64 @@
  */
 
 import type { z } from 'zod';
-import { AiScaffoldError, type AiScaffoldInput, type AiScaffoldTrace } from '@/services/ai-scaffold/types.js';
+import {
+  AiScaffoldError,
+  type AiScaffoldInput,
+  type AiScaffoldTrace,
+} from '@/services/ai-scaffold/types.js';
 import { type AiScaffoldResult } from '@/services/ai-scaffold/scaffold-runner.js';
 import { llmResolver, NoLlmProviderError } from '@/services/llm-resolver.service.js';
 import { buildNodeCatalog } from '@/services/ai-scaffold/node-catalog.js';
 import { parseScaffoldJson } from '@/services/ai-scaffold/extract-json.js';
-import { buildSingleshotPrompt, SINGLESHOT_SYSTEM_PROMPT, MAX_GOAL_LEN } from '@/services/ai-scaffold/prompt.js';
-import { dispatchLLMChatStructuredStreaming, dispatchLLMChatStructured } from '@/services/llm-chat.service.js';
+import {
+  buildSingleshotPrompt,
+  SINGLESHOT_SYSTEM_PROMPT,
+  MAX_GOAL_LEN,
+} from '@/services/ai-scaffold/prompt.js';
+import {
+  dispatchLLMChatStructuredStreaming,
+  dispatchLLMChatStructured,
+} from '@/services/llm-chat.service.js';
 import { SingleshotStreamParser } from '@/services/ai-scaffold/singleshot-stream-parser.js';
 import { llmQueue, QueueBackpressureError } from '@/services/llm-queue/llm-queue.service.js';
 import { runQualityGate } from '@/services/ai-scaffold/quality-gate.js';
-import { autoFixWorkflow, isPickerResolvableField, MERGE_ORPHAN_ID_RE } from '@/services/ai-scaffold/auto-fix.js';
+import {
+  autoFixWorkflow,
+  isPickerResolvableField,
+  MERGE_ORPHAN_ID_RE,
+} from '@/services/ai-scaffold/auto-fix.js';
 import { isWorkflowCacheWorthy } from '@/services/ai-scaffold/cache-quality.js';
 import { serveCachedWorkflow } from '@/services/ai-scaffold/cache.js';
 import { validateDataflow } from '@/services/ai-scaffold/dataflow-validator.js';
-import { applyReachabilityHeal, enforceCoverageAndInject } from '@/services/ai-scaffold/postprocess.js';
+import {
+  applyReachabilityHeal,
+  enforceCoverageAndInject,
+} from '@/services/ai-scaffold/postprocess.js';
 import { applyAutoMapHeuristic } from '@/services/ai-scaffold/auto-map-heuristic.js';
 import { healDbTableReferences } from '@/services/ai-scaffold/heal-db-table.js';
 import { SINGLESHOT_OUTPUT_SCHEMA, ZodOutputShape } from '@/services/ai-scaffold/schema.js';
-import { selectScaffoldSchema, pickGrammarCatalog } from '@/services/ai-scaffold/constrained-schema.js';
+import {
+  selectScaffoldSchema,
+  pickGrammarCatalog,
+} from '@/services/ai-scaffold/constrained-schema.js';
 import { buildCatalogSpec } from '@/services/ai-scaffold/catalog-spec.js';
 import { applyDeterministicAutoConfig } from '@/services/ai-scaffold/semantic-autoconfig.js';
 import { runSemanticRepair } from '@/services/ai-scaffold/semantic-repair.js';
 import { makeLlmRepairFn } from '@/services/ai-scaffold/make-llm-repair.js';
 import { validateArchitecture } from '@/services/ai-scaffold/validate-architecture.js';
 import { autoFixInventedDefIds } from '@/services/ai-scaffold/auto-fix-defid.js';
-import { buildTenantContext, formatTenantContextForPrompt } from '@/services/ai-scaffold/tenant-context.js';
-import { captureRejectedScaffold, buildNegativeFeedbackBlock } from '@/services/ai-scaffold/negative-example.js';
-import { pickGoldenExample, formatGoldenExampleForPrompt } from '@/services/ai-scaffold/golden-examples.js';
+import {
+  buildTenantContext,
+  formatTenantContextForPrompt,
+} from '@/services/ai-scaffold/tenant-context.js';
+import {
+  captureRejectedScaffold,
+  buildNegativeFeedbackBlock,
+} from '@/services/ai-scaffold/negative-example.js';
+import {
+  pickGoldenExample,
+  formatGoldenExampleForPrompt,
+} from '@/services/ai-scaffold/golden-examples.js';
 import { templateCache } from '@/services/ai-scaffold/template-cache/template.service.js';
 import { generateEmbedding } from '@/services/ai-scaffold/template-cache/embedding-client.js';
 import { workflowCallTracker } from '@/services/ai-budget/workflow-call-tracker.service.js';
@@ -57,7 +87,18 @@ import { logger } from '@/lib/logger.js';
 import { assembleWorkflow } from '@/services/ai-scaffold/assemble-workflow.js';
 
 export interface SingleshotProgressEvent {
-  type: 'start' | 'queued' | 'analyzing' | 'generating' | 'validating' | 'done' | 'error' | 'token_usage' | 'node_added' | 'edge_added' | 'meta';
+  type:
+    | 'start'
+    | 'queued'
+    | 'analyzing'
+    | 'generating'
+    | 'validating'
+    | 'done'
+    | 'error'
+    | 'token_usage'
+    | 'node_added'
+    | 'edge_added'
+    | 'meta';
   detail?: string;
   result?: AiScaffoldResult;
   error?: string;
@@ -100,20 +141,28 @@ export async function runSingleshotScaffold(
       const isQualityGateReject = e.message.startsWith('Workflow rejected — quality gate');
       if (!isQualityGateReject || attempt >= MAX_RETRIES) {
         if (attempt > 0) {
-          logger.warn({ attempts: attempt + 1, lastErr: e.message.slice(0, 200) }, '[SINGLESHOT] exhausted retries');
+          logger.warn(
+            { attempts: attempt + 1, lastErr: e.message.slice(0, 200) },
+            '[SINGLESHOT] exhausted retries',
+          );
         }
         throw e;
       }
       lastError = e;
       // Estrai issues dal messaggio per feedback al next prompt
       qualityFeedback = e.message;
-      logger.info({ attempt: attempt + 1, max: MAX_RETRIES + 1, feedbackLen: qualityFeedback.length }, '[SINGLESHOT] quality gate reject → retry with feedback');
+      logger.info(
+        { attempt: attempt + 1, max: MAX_RETRIES + 1, feedbackLen: qualityFeedback.length },
+        '[SINGLESHOT] quality gate reject → retry with feedback',
+      );
       try {
         await onProgress?.({
           type: 'analyzing',
           detail: `Workflow rifiutato (${(attempt + 1).toString()}/3). Liara sta correggendo automaticamente...`,
         });
-      } catch { /* graceful */ }
+      } catch {
+        /* graceful */
+      }
     }
   }
   // Unreachable but typescript-safe
@@ -126,10 +175,17 @@ async function runSingleshotAttempt(
   attemptIdx: number,
   onProgress?: SingleshotEmitter,
 ): Promise<AiScaffoldResult> {
-  logger.info({ tenantId: input.tenantId, goalLen: input.goal.length, attempt: attemptIdx + 1 }, '[SINGLESHOT] attempt start');
+  logger.info(
+    { tenantId: input.tenantId, goalLen: input.goal.length, attempt: attemptIdx + 1 },
+    '[SINGLESHOT] attempt start',
+  );
   const goal = input.goal.trim();
   if (goal.length < 5) throw new AiScaffoldError('Obiettivo troppo corto.', 400);
-  if (goal.length > MAX_GOAL_LEN) throw new AiScaffoldError(`Obiettivo troppo lungo (max ${MAX_GOAL_LEN.toString()} caratteri).`, 400);
+  if (goal.length > MAX_GOAL_LEN)
+    throw new AiScaffoldError(
+      `Obiettivo troppo lungo (max ${MAX_GOAL_LEN.toString()} caratteri).`,
+      400,
+    );
 
   let resolved;
   try {
@@ -158,7 +214,10 @@ async function runSingleshotAttempt(
     scaffoldCatalogText = formatScaffoldCatalogEntries(subsetEntries);
     scaffoldSubsetDefIds = new Set(subsetEntries.map((e) => e.defId));
   } catch (err) {
-    logger.warn({ err: err instanceof Error ? err.message : String(err), tenantId: input.tenantId }, '[SINGLESHOT] catalog retrieval failed — fallback catalogo completo');
+    logger.warn(
+      { err: err instanceof Error ? err.message : String(err), tenantId: input.tenantId },
+      '[SINGLESHOT] catalog retrieval failed — fallback catalogo completo',
+    );
   }
   let userPrompt = buildSingleshotPrompt(goal, input.databaseId ?? null, scaffoldCatalogText);
 
@@ -171,23 +230,39 @@ async function runSingleshotAttempt(
   // poterlo passare al Layer C auto-fix (provider-normalization) senza una
   // seconda query db. Stays null when buildTenantContext fails.
   let tenantDefaultLlmProvider: string | null = null;
-  let tenantDatabases: readonly { id: string; tables: readonly string[]; columns?: Readonly<Record<string, readonly string[]>>; writable: boolean }[] = [];
+  let tenantDatabases: readonly {
+    id: string;
+    tables: readonly string[];
+    columns?: Readonly<Record<string, readonly string[]>>;
+    writable: boolean;
+  }[] = [];
   try {
     const tenantCtx = buildTenantContext(input.tenantId);
     tenantDefaultLlmProvider = tenantCtx.defaultLlmProvider;
-    tenantDatabases = tenantCtx.databases.map((d) => ({ id: d.id, tables: d.tables, columns: d.columns, writable: d.writable }));
+    tenantDatabases = tenantCtx.databases.map((d) => ({
+      id: d.id,
+      tables: d.tables,
+      columns: d.columns,
+      writable: d.writable,
+    }));
     const ctxBlock = formatTenantContextForPrompt(tenantCtx);
     if (ctxBlock) {
       userPrompt = `${userPrompt}\n\n${ctxBlock}`;
-      logger.info({
-        tenantId: input.tenantId,
-        databases: tenantCtx.databases.length,
-        emailAccounts: tenantCtx.emailAccounts.length,
-        defaultLlmProvider: tenantCtx.defaultLlmProvider,
-      }, '[SINGLESHOT] tenant-context injected');
+      logger.info(
+        {
+          tenantId: input.tenantId,
+          databases: tenantCtx.databases.length,
+          emailAccounts: tenantCtx.emailAccounts.length,
+          defaultLlmProvider: tenantCtx.defaultLlmProvider,
+        },
+        '[SINGLESHOT] tenant-context injected',
+      );
     }
   } catch (e) {
-    logger.debug({ err: e instanceof Error ? e.message : String(e) }, '[SINGLESHOT] tenant-context build failed (graceful)');
+    logger.debug(
+      { err: e instanceof Error ? e.message : String(e) },
+      '[SINGLESHOT] tenant-context build failed (graceful)',
+    );
   }
 
   // Negative-example REUSE (gap #10, metà mancante): gli errori frequenti dei
@@ -197,10 +272,16 @@ async function runSingleshotAttempt(
     const negBlock = buildNegativeFeedbackBlock(input.tenantId);
     if (negBlock) {
       userPrompt = `${userPrompt}\n\n${negBlock}`;
-      logger.info({ tenantId: input.tenantId, blockLen: negBlock.length }, '[SINGLESHOT] negative-feedback block injected');
+      logger.info(
+        { tenantId: input.tenantId, blockLen: negBlock.length },
+        '[SINGLESHOT] negative-feedback block injected',
+      );
     }
   } catch (e) {
-    logger.debug({ err: e instanceof Error ? e.message : String(e) }, '[SINGLESHOT] negative block failed (graceful)');
+    logger.debug(
+      { err: e instanceof Error ? e.message : String(e) },
+      '[SINGLESHOT] negative block failed (graceful)',
+    );
   }
 
   // Auto-retry feedback injection (2026-05-31): se il quality gate ha
@@ -224,10 +305,17 @@ REGOLE FERREE per questo retry:
 6. Per SUSPICIOUS_RESOURCE_ID: campi tipo databaseId/systemAccountId NON accettano nomi inventati — usa \`{{secrets.X}}\`
 
 Rigenera ORA applicando i fix.`;
-    logger.info({ attemptIdx, feedbackLen: qualityFeedback.length }, '[SINGLESHOT] injecting quality-gate retry feedback');
+    logger.info(
+      { attemptIdx, feedbackLen: qualityFeedback.length },
+      '[SINGLESHOT] injecting quality-gate retry feedback',
+    );
   }
 
-  try { await onProgress?.({ type: 'start' }); } catch { /* */ }
+  try {
+    await onProgress?.({ type: 'start' });
+  } catch {
+    /* */
+  }
 
   // ─── TEMPLATE CACHE (Livello 1) — check before LLM ───
   // Retrieve best matching template; se score >= 0.90 → return cached
@@ -237,36 +325,56 @@ Rigenera ORA applicando i fix.`;
   try {
     queryEmbedding = await generateEmbedding(goal);
   } catch (e) {
-    logger.debug({ err: e instanceof Error ? e.message : String(e) }, '[SINGLESHOT] embedding failed (graceful)');
+    logger.debug(
+      { err: e instanceof Error ? e.message : String(e) },
+      '[SINGLESHOT] embedding failed (graceful)',
+    );
   }
   let cacheRetrieve: ReturnType<typeof templateCache.retrieve> = null;
   try {
     cacheRetrieve = templateCache.retrieve({ promptText: goal, queryEmbedding });
   } catch (e) {
-    logger.warn({ err: e instanceof Error ? e.message : String(e) }, '[SINGLESHOT] template-cache retrieve failed (non-fatal)');
+    logger.warn(
+      { err: e instanceof Error ? e.message : String(e) },
+      '[SINGLESHOT] template-cache retrieve failed (non-fatal)',
+    );
   }
 
   if (cacheRetrieve?.action === 'use_direct') {
-    logger.info({
-      templateId: cacheRetrieve.template.id,
-      score: cacheRetrieve.score,
-      signals: cacheRetrieve.signals,
-    }, '[SINGLESHOT] template cache hit — bypass LLM');
+    logger.info(
+      {
+        templateId: cacheRetrieve.template.id,
+        score: cacheRetrieve.score,
+        signals: cacheRetrieve.signals,
+      },
+      '[SINGLESHOT] template cache hit — bypass LLM',
+    );
     const cached = serveCachedWorkflow(cacheRetrieve, goal, start);
     if (cached) {
-      try { await onProgress?.({ type: 'done', result: cached }); } catch { /* */ }
+      try {
+        await onProgress?.({ type: 'done', result: cached });
+      } catch {
+        /* */
+      }
       return cached;
     }
     cacheRetrieve = null; // evicted/parse-fail → non usarlo nemmeno per few-shot
   }
 
   const analyzeStart = Date.now();
-  try { await onProgress?.({ type: 'analyzing', detail: 'Analizzo il goal e seleziono i nodi…' }); } catch { /* */ }
+  try {
+    await onProgress?.({ type: 'analyzing', detail: 'Analizzo il goal e seleziono i nodi…' });
+  } catch {
+    /* */
+  }
 
   // Few-shot injection: se cache match 0.70-0.90 → mostra il template come
   // "ESEMPIO" al LLM. Riduce hallucination + accelera convergence.
   if (cacheRetrieve?.action === 'inject_fewshot') {
-    logger.info({ templateId: cacheRetrieve.template.id, score: cacheRetrieve.score }, '[SINGLESHOT] template cache match → few-shot inject');
+    logger.info(
+      { templateId: cacheRetrieve.template.id, score: cacheRetrieve.score },
+      '[SINGLESHOT] template cache match → few-shot inject',
+    );
     userPrompt = `${userPrompt}\n\n### ESEMPIO DI WORKFLOW SIMILE (gia\` validato, usa come riferimento STRUTTURALE — adatta ai dettagli del goal corrente):\n\`\`\`json\n${cacheRetrieve.template.workflowJson}\n\`\`\`\nProduci un workflow NUOVO ispirato all'esempio ma specifico al goal.`;
   } else {
     // COLD START (P5 audit RAG): cache vuota o nessun match → few-shot dalla
@@ -298,14 +406,26 @@ Rigenera ORA applicando i fix.`;
           capacityTotal: queueBeforeStats.capacityTotal,
         },
       });
-    } catch { /* */ }
+    } catch {
+      /* */
+    }
   }
 
   const analyzeMs = Date.now() - analyzeStart;
   const generateStart = Date.now();
-  try { await onProgress?.({ type: 'generating', detail: 'Liara sta generando il workflow completo (1 sola chiamata)…' }); } catch { /* */ }
+  try {
+    await onProgress?.({
+      type: 'generating',
+      detail: 'Liara sta generando il workflow completo (1 sola chiamata)…',
+    });
+  } catch {
+    /* */
+  }
 
-  logger.info({ provider: resolved.provider, promptLen: userPrompt.length, queueStats: queueBeforeStats }, '[SINGLESHOT] dispatching LLM call (queued)');
+  logger.info(
+    { provider: resolved.provider, promptLen: userPrompt.length, queueStats: queueBeforeStats },
+    '[SINGLESHOT] dispatching LLM call (queued)',
+  );
   const dispatchStart = Date.now();
 
   // Catalog costruito UNA volta: alimenta sia la grammatica vincolata (sotto)
@@ -318,23 +438,32 @@ Rigenera ORA applicando i fix.`;
   // sicuro incorporato (subset assente/vuoto → full; vedi pickGrammarCatalog).
   const grammarCatalog = pickGrammarCatalog(catalog, scaffoldSubsetDefIds);
   const { schema: outputSchema, constrained: constrainedSchema } = selectScaffoldSchema(
-    grammarCatalog, resolved.provider, SINGLESHOT_OUTPUT_SCHEMA,
+    grammarCatalog,
+    resolved.provider,
+    SINGLESHOT_OUTPUT_SCHEMA,
   );
   if (constrainedSchema) {
-    logger.info({ branches: grammarCatalog.length, fullCatalog: catalog.length }, '[SINGLESHOT] guided_json grammar VINCOLATA sul subset RAG');
+    logger.info(
+      { branches: grammarCatalog.length, fullCatalog: catalog.length },
+      '[SINGLESHOT] guided_json grammar VINCOLATA sul subset RAG',
+    );
   }
 
   let rawJson: string;
-  let usage: { input: number; output: number; fromApi: boolean } = { input: 0, output: 0, fromApi: false };
+  let usage: { input: number; output: number; fromApi: boolean } = {
+    input: 0,
+    output: 0,
+    fromApi: false,
+  };
   try {
     // Plan tier dal env container (settato a provision dal portal — vedi
     // onboarding.ts buildEnv "zeliai.plan label"). Free → priorita\` bassa,
     // Enterprise → priorita\` alta. Privilegia paying customers.
     const planTierRaw = (process.env.MEDEA_PLAN_CODE ?? 'pro').toLowerCase();
     const validTiers = ['free', 'starter', 'pro', 'team', 'enterprise'] as const;
-    type Tier = typeof validTiers[number];
+    type Tier = (typeof validTiers)[number];
     const planTier: Tier = (validTiers as readonly string[]).includes(planTierRaw)
-      ? planTierRaw as Tier
+      ? (planTierRaw as Tier)
       : 'pro';
 
     // STREAMING vLLM: parser incrementale emette `node_added` SSE man
@@ -344,13 +473,25 @@ Rigenera ORA applicando i fix.`;
     // non-stream (un singolo chunk finale) — comportamento legacy.
     const parser = new SingleshotStreamParser({
       onMeta: (meta) => {
-        try { void onProgress?.({ type: 'meta', detail: JSON.stringify(meta) }); } catch { /* */ }
+        try {
+          void onProgress?.({ type: 'meta', detail: JSON.stringify(meta) });
+        } catch {
+          /* */
+        }
       },
       onNodeAdded: (node, idx) => {
-        try { void onProgress?.({ type: 'node_added', payload: node, index: idx }); } catch { /* */ }
+        try {
+          void onProgress?.({ type: 'node_added', payload: node, index: idx });
+        } catch {
+          /* */
+        }
       },
       onEdgeAdded: (edge, idx) => {
-        try { void onProgress?.({ type: 'edge_added', payload: edge, index: idx }); } catch { /* */ }
+        try {
+          void onProgress?.({ type: 'edge_added', payload: edge, index: idx });
+        } catch {
+          /* */
+        }
       },
     });
 
@@ -359,20 +500,28 @@ Rigenera ORA applicando i fix.`;
       userId: input.tenantId,
       source: 'workflow',
       planTier,
-      runner: () => dispatchLLMChatStructuredStreaming(
-        resolved.provider,
-        resolved.apiKey,
-        resolved.model,
-        SINGLESHOT_SYSTEM_PROMPT,
-        userPrompt,
-        undefined,
-        [],
-        outputSchema,
-        (chunk) => { parser.feed(chunk); },
-        (u) => { usage = u; },
-      ),
+      runner: () =>
+        dispatchLLMChatStructuredStreaming(
+          resolved.provider,
+          resolved.apiKey,
+          resolved.model,
+          SINGLESHOT_SYSTEM_PROMPT,
+          userPrompt,
+          undefined,
+          [],
+          outputSchema,
+          (chunk) => {
+            parser.feed(chunk);
+          },
+          (u) => {
+            usage = u;
+          },
+        ),
     });
-    logger.info({ rawLen: rawJson.length, durationMs: Date.now() - dispatchStart, usage }, '[SINGLESHOT] LLM response received');
+    logger.info(
+      { rawLen: rawJson.length, durationMs: Date.now() - dispatchStart, usage },
+      '[SINGLESHOT] LLM response received',
+    );
   } catch (e) {
     if (e instanceof QueueBackpressureError) {
       logger.warn({ retryAfterMs: e.retryAfterMs }, '[SINGLESHOT] queue backpressure');
@@ -381,7 +530,10 @@ Rigenera ORA applicando i fix.`;
         429,
       );
     }
-    logger.error({ err: e instanceof Error ? e.message : String(e), durationMs: Date.now() - dispatchStart }, '[SINGLESHOT] LLM dispatch failed');
+    logger.error(
+      { err: e instanceof Error ? e.message : String(e), durationMs: Date.now() - dispatchStart },
+      '[SINGLESHOT] LLM dispatch failed',
+    );
     throw new AiScaffoldError(
       `LLM single-shot fallito: ${e instanceof Error ? e.message : String(e)}`,
       502,
@@ -389,7 +541,11 @@ Rigenera ORA applicando i fix.`;
   }
 
   const generateMs = Date.now() - generateStart;
-  try { await onProgress?.({ type: 'token_usage', tokens: usage }); } catch { /* */ }
+  try {
+    await onProgress?.({ type: 'token_usage', tokens: usage });
+  } catch {
+    /* */
+  }
 
   // Persisti la call nel daily budget. Senza questa write i token del wizard
   // AI non comparirebbero nel pannello "Utilizzo AI" della dashboard (era
@@ -405,11 +561,18 @@ Rigenera ORA applicando i fix.`;
       isError: false,
     });
   } catch (e) {
-    logger.warn({ err: e instanceof Error ? e.message : String(e) }, '[SINGLESHOT] recordChatBudget failed (non-fatal)');
+    logger.warn(
+      { err: e instanceof Error ? e.message : String(e) },
+      '[SINGLESHOT] recordChatBudget failed (non-fatal)',
+    );
   }
 
   const validateStart = Date.now();
-  try { await onProgress?.({ type: 'validating', detail: 'Validazione output + config per-defId…' }); } catch { /* */ }
+  try {
+    await onProgress?.({ type: 'validating', detail: 'Validazione output + config per-defId…' });
+  } catch {
+    /* */
+  }
 
   // Parse + Zod validate (guided_json garantisce JSON valido ma Zod e\` il
   // contratto runtime di FlowForge — backstop per edge case schema-divergent).
@@ -440,11 +603,14 @@ Rigenera ORA applicando i fix.`;
     knownDefIds,
   );
   if (defIdFixResult.appliedFixes.length > 0) {
-    logger.info({
-      fixes: defIdFixResult.appliedFixes.length,
-      fixesDetail: defIdFixResult.appliedFixes.map((f) => `${f.before}→${f.after}`),
-      goal: goal.slice(0, 120),
-    }, '[SINGLESHOT] auto-fix defId inventati');
+    logger.info(
+      {
+        fixes: defIdFixResult.appliedFixes.length,
+        fixesDetail: defIdFixResult.appliedFixes.map((f) => `${f.before}→${f.after}`),
+        goal: goal.slice(0, 120),
+      },
+      '[SINGLESHOT] auto-fix defId inventati',
+    );
     const fixedById = new Map(defIdFixResult.nodes.map((n) => [n.id, n.defId]));
     for (const n of parsed.nodes) {
       const newDefId = fixedById.get(n.id);
@@ -469,13 +635,16 @@ Rigenera ORA applicando i fix.`;
       const cfg = filledById.get(n.id);
       if (cfg) n.config = cfg;
     }
-    logger.info({
-      fixes: autoConfig.applied.length,
-      types: autoConfig.applied.reduce<Record<string, number>>((acc, f) => {
-        acc[f.kind] = (acc[f.kind] ?? 0) + 1;
-        return acc;
-      }, {}),
-    }, '[SINGLESHOT] auto-config deterministica (fill default + normalize enum)');
+    logger.info(
+      {
+        fixes: autoConfig.applied.length,
+        types: autoConfig.applied.reduce<Record<string, number>>((acc, f) => {
+          acc[f.kind] = (acc[f.kind] ?? 0) + 1;
+          return acc;
+        }, {}),
+      },
+      '[SINGLESHOT] auto-config deterministica (fill default + normalize enum)',
+    );
   }
 
   // ─── #8 strato B — VALIDATORE → RIPARAZIONE LLM (flag-gated, default OFF) ───
@@ -486,9 +655,17 @@ Rigenera ORA applicando i fix.`;
   if (process.env.MEDEA_SCAFFOLD_SEMANTIC_REPAIR === 'true') {
     const repairFn = makeLlmRepairFn({
       goal,
-      dispatch: ({ system, user, schema }) => dispatchLLMChatStructured(
-        resolved.provider, resolved.apiKey, resolved.model, system, user, undefined, [], schema,
-      ),
+      dispatch: ({ system, user, schema }) =>
+        dispatchLLMChatStructured(
+          resolved.provider,
+          resolved.apiKey,
+          resolved.model,
+          system,
+          user,
+          undefined,
+          [],
+          schema,
+        ),
     });
     const repaired = await runSemanticRepair(
       parsed.nodes.map((n) => ({ id: n.id, defId: n.defId, config: n.config })),
@@ -501,7 +678,11 @@ Rigenera ORA applicando i fix.`;
         if (cfg) n.config = cfg;
       }
       logger.info(
-        { rounds: repaired.rounds, remaining: repaired.remaining.length, deterministicFixes: repaired.applied.length },
+        {
+          rounds: repaired.rounds,
+          remaining: repaired.remaining.length,
+          deterministicFixes: repaired.applied.length,
+        },
         '[SINGLESHOT] semantic-repair (validatore→repair LLM)',
       );
     }
@@ -516,7 +697,7 @@ Rigenera ORA applicando i fix.`;
       continue;
     }
     for (const field of entry.fields) {
-      const v = (n.config)[field.key];
+      const v = n.config[field.key];
       if ((v === undefined || v === '') && field.required) {
         // HEAL (bug diretta YouTube 2026-06-12): un REQUIRED *omesso* ma
         // risolvibile da picker UI (databaseId/table/…) NON è fatale — è lo
@@ -527,7 +708,7 @@ Rigenera ORA applicando i fix.`;
         // QUI; la UI forza il dropdown pre-import, quality-gate e
         // heal-db-table lo skippano già per contratto.
         if (isPickerResolvableField(field.key, field.type)) {
-          (n.config)[field.key] = '__USE_PICKER__';
+          n.config[field.key] = '__USE_PICKER__';
           healedPickerFields.push(`${n.id}.${field.key}`);
           continue;
         }
@@ -549,8 +730,10 @@ Rigenera ORA applicando i fix.`;
   // bug "Sitemap Crawler" 2026-06-10). Stesso pattern usato dall'orphan-heal.
   const nodeIds = new Set(parsed.nodes.map((n) => n.id));
   for (const e of parsed.edges) {
-    if (!nodeIds.has(e.from) && !MERGE_ORPHAN_ID_RE.test(e.from)) issues.push(`Edge from="${e.from}" non riferisce un nodo`);
-    if (!nodeIds.has(e.to) && !MERGE_ORPHAN_ID_RE.test(e.to)) issues.push(`Edge to="${e.to}" non riferisce un nodo`);
+    if (!nodeIds.has(e.from) && !MERGE_ORPHAN_ID_RE.test(e.from))
+      issues.push(`Edge from="${e.from}" non riferisce un nodo`);
+    if (!nodeIds.has(e.to) && !MERGE_ORPHAN_ID_RE.test(e.to))
+      issues.push(`Edge to="${e.to}" non riferisce un nodo`);
   }
 
   // ─── ARCHITECTURAL VALIDATION — 4 check anti-bug (vedi validate-architecture.ts) ───
@@ -576,31 +759,40 @@ Rigenera ORA applicando i fix.`;
   // vengono auto-corretti senza retry LLM costoso).
   const autoFixResult = autoFixWorkflow({
     nodes: parsed.nodes.map((n) => ({ id: n.id, defId: n.defId, config: n.config })),
-    edges: parsed.edges.map((e) => ({ from: e.from, to: e.to, ...(e.fromPort ? { fromPort: e.fromPort } : {}) })),
+    edges: parsed.edges.map((e) => ({
+      from: e.from,
+      to: e.to,
+      ...(e.fromPort ? { fromPort: e.fromPort } : {}),
+    })),
     tenantDefaultLlmProvider,
   });
   if (autoFixResult.appliedFixes.length > 0) {
-    logger.info({
-      fixes: autoFixResult.appliedFixes.length,
-      types: autoFixResult.appliedFixes.reduce<Record<string, number>>((acc, f) => {
-        acc[f.type] = (acc[f.type] ?? 0) + 1;
-        return acc;
-      }, {}),
-    }, '[SINGLESHOT] auto-fix applied');
+    logger.info(
+      {
+        fixes: autoFixResult.appliedFixes.length,
+        types: autoFixResult.appliedFixes.reduce<Record<string, number>>((acc, f) => {
+          acc[f.type] = (acc[f.type] ?? 0) + 1;
+          return acc;
+        }, {}),
+      },
+      '[SINGLESHOT] auto-fix applied',
+    );
     // Sostituisci parsed con post-fix data (struttura: id/defId/config + edges)
     // Mantieni i fields extra (x, y, label) — auto-fix preserva il resto
     const nodesById = new Map(parsed.nodes.map((n) => [n.id, n]));
     const fixedNodesById = new Map(autoFixResult.nodes.map((n) => [n.id, n]));
     // Rimuovi nodi che auto-fix ha eliminato
-    parsed.nodes = parsed.nodes.filter((n) => fixedNodesById.has(n.id)).map((n) => {
-      const fixed = fixedNodesById.get(n.id);
-      if (!fixed) return n;
-      // Propaga ANCHE il defId: l'auto-fix può correggerlo (es. §2.6
-      // code-node language heal action_run_js→action_run_python). Pre-fix il
-      // merge-back copiava solo `config`, scartando la correzione di defId →
-      // il quality-gate vedeva ancora il defId sbagliato e rigettava.
-      return { ...n, defId: fixed.defId, config: fixed.config };
-    });
+    parsed.nodes = parsed.nodes
+      .filter((n) => fixedNodesById.has(n.id))
+      .map((n) => {
+        const fixed = fixedNodesById.get(n.id);
+        if (!fixed) return n;
+        // Propaga ANCHE il defId: l'auto-fix può correggerlo (es. §2.6
+        // code-node language heal action_run_js→action_run_python). Pre-fix il
+        // merge-back copiava solo `config`, scartando la correzione di defId →
+        // il quality-gate vedeva ancora il defId sbagliato e rigettava.
+        return { ...n, defId: fixed.defId, config: fixed.config };
+      });
     // FIX 2026-06-10: aggiungi i nodi CREATI dall'auto-fix (es. logic_merge da
     // orphan-heal o fan-in) che non erano nell'output LLM. Pre-fix il merge-back
     // mappava solo i nodi esistenti → il merge nuovo veniva droppato MA gli edge
@@ -647,12 +839,20 @@ Rigenera ORA applicando i fix.`;
   // heal poteva ripuntare una scrittura a una tabella remota con colonne combacianti.
   const dbHeal = healDbTableReferences(
     parsed.nodes.map((n) => ({ id: n.id, defId: n.defId, config: n.config })),
-    tenantDatabases.filter((d) => d.writable && d.columns).map((d) => ({ id: d.id, columns: d.columns as Record<string, string[]> })),
+    tenantDatabases
+      .filter((d) => d.writable && d.columns)
+      .map((d) => ({ id: d.id, columns: d.columns as Record<string, string[]> })),
     goal,
   );
   if (dbHeal.tablesToCreate.length > 0) {
-    parsed.tablesToCreate = [...(parsed.tablesToCreate ?? []), ...dbHeal.tablesToCreate] as typeof parsed.tablesToCreate;
-    logger.info({ created: dbHeal.tablesToCreate.map((t) => t.name) }, '[SINGLESHOT] db-table heal: tabelle dedicate create');
+    parsed.tablesToCreate = [
+      ...(parsed.tablesToCreate ?? []),
+      ...dbHeal.tablesToCreate,
+    ] as typeof parsed.tablesToCreate;
+    logger.info(
+      { created: dbHeal.tablesToCreate.map((t) => t.name) },
+      '[SINGLESHOT] db-table heal: tabelle dedicate create',
+    );
   }
 
   // ─── QUALITY GATE (anti-workflow-merdosi) ───
@@ -664,16 +864,21 @@ Rigenera ORA applicando i fix.`;
   // ESISTERANNO dopo l'import → il gate (DB_TABLE/DB_COLUMN) deve vederle come
   // presenti, altrimenti rigetta una tabella che il workflow stesso crea.
   const declaredTables = parsed.tablesToCreate ?? [];
-  const augmentedDatabases = declaredTables.length === 0 ? tenantDatabases : tenantDatabases.map((d) => {
-    const cols: Record<string, string[]> = Object.fromEntries(Object.entries(d.columns ?? {}).map(([k, v]) => [k, [...v]]));
-    const tbls = [...d.tables];
-    for (const t of declaredTables) {
-      if (t.databaseId && t.databaseId !== d.id) continue;
-      tbls.push(t.name);
-      cols[t.name] = t.columns.map((c) => c.name);
-    }
-    return { id: d.id, tables: tbls, columns: cols };
-  });
+  const augmentedDatabases =
+    declaredTables.length === 0
+      ? tenantDatabases
+      : tenantDatabases.map((d) => {
+          const cols: Record<string, string[]> = Object.fromEntries(
+            Object.entries(d.columns ?? {}).map(([k, v]) => [k, [...v]]),
+          );
+          const tbls = [...d.tables];
+          for (const t of declaredTables) {
+            if (t.databaseId && t.databaseId !== d.id) continue;
+            tbls.push(t.name);
+            cols[t.name] = t.columns.map((c) => c.name);
+          }
+          return { id: d.id, tables: tbls, columns: cols };
+        });
   const qualityResult = runQualityGate({
     nodes: parsed.nodes.map((n) => ({ id: n.id, defId: n.defId, config: n.config })),
     edges: parsed.edges.map((e) => ({ from: e.from, to: e.to })),
@@ -682,11 +887,14 @@ Rigenera ORA applicando i fix.`;
   if (qualityResult.shouldReject) {
     const criticalIssues = qualityResult.issues.filter((i) => i.severity === 'critical');
     const mediumIssues = qualityResult.issues.filter((i) => i.severity === 'medium');
-    logger.warn({
-      criticalCount: criticalIssues.length,
-      mediumCount: mediumIssues.length,
-      goal: goal.slice(0, 200),
-    }, '[SINGLESHOT] quality gate rejected');
+    logger.warn(
+      {
+        criticalCount: criticalIssues.length,
+        mediumCount: mediumIssues.length,
+        goal: goal.slice(0, 200),
+      },
+      '[SINGLESHOT] quality gate rejected',
+    );
     // Negative-example learning (gap #10): registra il reject SOLO se è quello
     // FINALE (retry esauriti) — i reject intermedi vengono auto-corretti, non
     // sono negative genuini. Fail-soft: la cattura non altera il 502.
@@ -700,7 +908,10 @@ Rigenera ORA applicando i fix.`;
         latencyMs: Date.now() - start,
       });
     }
-    const msg = criticalIssues.slice(0, 5).map((i) => `• [${i.code}] ${i.message}`).join('\n');
+    const msg = criticalIssues
+      .slice(0, 5)
+      .map((i) => `• [${i.code}] ${i.message}`)
+      .join('\n');
     throw new AiScaffoldError(
       `Workflow rejected — quality gate ha trovato ${criticalIssues.length.toString()} bug critici:\n${msg}${criticalIssues.length > 5 ? `\n…+${(criticalIssues.length - 5).toString()} altri` : ''}\n\nRiprova con prompt piu\` dettagliato (es. specifica SMTP host reale, destinazioni Notion/CRM concrete, default branch per logic_switch).`,
       502,
@@ -735,36 +946,46 @@ Rigenera ORA applicando i fix.`;
       step: 2,
       tool: 'singleshot_generate',
       args: { provider: resolved.provider, model: resolved.model || 'default' },
-      result: { ok: true, data: { rawLen: rawJson.length, tokensIn: usage.input, tokensOut: usage.output } },
+      result: {
+        ok: true,
+        data: { rawLen: rawJson.length, tokensIn: usage.input, tokensOut: usage.output },
+      },
       elapsedMs: generateMs,
     },
     {
       step: 3,
       tool: 'singleshot_validate',
       args: { rules: 'zod+arch+quality-gate' },
-      result: { ok: true, data: {
-        nodes: workflow.nodes.length,
-        edges: workflow.edges.length,
-        warnings: qualityWarnings.length,
-      } },
+      result: {
+        ok: true,
+        data: {
+          nodes: workflow.nodes.length,
+          edges: workflow.edges.length,
+          warnings: qualityWarnings.length,
+        },
+      },
       elapsedMs: validateMs,
     },
   ];
 
   // Warning lines: medium issues vanno in notes (utente vede, non bloccanti)
-  const warningLines = qualityWarnings.length > 0
-    ? [
-      `Quality gate: ${qualityWarnings.length.toString()} warning (non bloccanti):`,
-      ...qualityWarnings.slice(0, 6).map((w) => `  • [${w.code}] ${w.nodeId ? `${w.nodeId}: ` : ''}${w.message}`),
-    ]
-    : [];
+  const warningLines =
+    qualityWarnings.length > 0
+      ? [
+          `Quality gate: ${qualityWarnings.length.toString()} warning (non bloccanti):`,
+          ...qualityWarnings
+            .slice(0, 6)
+            .map((w) => `  • [${w.code}] ${w.nodeId ? `${w.nodeId}: ` : ''}${w.message}`),
+        ]
+      : [];
 
   const tablesToCreate = parsed.tablesToCreate ?? [];
-  const tablesNotesLines = tablesToCreate.length > 0
-    ? [
-      `🆕 Nuove tabelle DB richieste: ${tablesToCreate.map((t) => t.name).join(', ')} — verranno create all'import.`,
-    ]
-    : [];
+  const tablesNotesLines =
+    tablesToCreate.length > 0
+      ? [
+          `🆕 Nuove tabelle DB richieste: ${tablesToCreate.map((t) => t.name).join(', ')} — verranno create all'import.`,
+        ]
+      : [];
 
   const finalResult: AiScaffoldResult = {
     workflow,
@@ -799,9 +1020,13 @@ Rigenera ORA applicando i fix.`;
     parsed.nodes.map((n) => ({ id: n.id, defId: n.defId, config: n.config })),
     parsed.edges.map((e) => ({ from: e.from, to: e.to })),
   ).filter((i) => i.status === 'fail');
-  const cacheWorthy = isWorkflowCacheWorthy(autoFixResult.appliedFixes.map((f) => f.type), qualityWarnings.length)
-    && coverageWarnings.length === 0   // capability richiesta mancante → mai template "buono"
-    && dataflowFails.length === 0;      // referenze a nodi non-a-monte → bug → no cache
+  const cacheWorthy =
+    isWorkflowCacheWorthy(
+      autoFixResult.appliedFixes.map((f) => f.type),
+      qualityWarnings.length,
+    ) &&
+    coverageWarnings.length === 0 && // capability richiesta mancante → mai template "buono"
+    dataflowFails.length === 0; // referenze a nodi non-a-monte → bug → no cache
   if (cacheWorthy) {
     try {
       templateCache.save({
@@ -815,12 +1040,22 @@ Rigenera ORA applicando i fix.`;
         embedding: queryEmbedding,
       });
     } catch (e) {
-      logger.warn({ err: e instanceof Error ? e.message : String(e) }, '[SINGLESHOT] template-cache save failed (non-fatal)');
+      logger.warn(
+        { err: e instanceof Error ? e.message : String(e) },
+        '[SINGLESHOT] template-cache save failed (non-fatal)',
+      );
     }
   } else {
-    logger.info({ fixes: autoFixResult.appliedFixes.map((f) => f.type), warnings: qualityWarnings.length }, '[SINGLESHOT] workflow NON cachato — qualità insufficiente (heal strutturale o quality-warning)');
+    logger.info(
+      { fixes: autoFixResult.appliedFixes.map((f) => f.type), warnings: qualityWarnings.length },
+      '[SINGLESHOT] workflow NON cachato — qualità insufficiente (heal strutturale o quality-warning)',
+    );
   }
 
-  try { await onProgress?.({ type: 'done', result: finalResult }); } catch { /* */ }
+  try {
+    await onProgress?.({ type: 'done', result: finalResult });
+  } catch {
+    /* */
+  }
   return finalResult;
 }

@@ -47,9 +47,7 @@ describe('parseNumberLocale — number/boolean nativi', () => {
 });
 
 describe('parseNumberLocale — non-numerico → null (mai 0)', () => {
-  it.each([
-    'abc', '', '   ', 'a,b', '1,2,3', '1.2.3,4', '12,', '€10',
-  ])('%j → null', (input) => {
+  it.each(['abc', '', '   ', 'a,b', '1,2,3', '1.2.3,4', '12,', '€10'])('%j → null', (input) => {
     expect(parseNumberLocale(input)).toBeNull();
   });
   it('null/undefined/oggetti/array → null', () => {

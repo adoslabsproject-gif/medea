@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { fitToModel, normalizeDims, resolveOutputDims, DIM_MIN, DIM_MAX, DIM_MULTIPLE, DEFAULT_AREA_BUDGET } from './fit-dims.js';
+import {
+  fitToModel,
+  normalizeDims,
+  resolveOutputDims,
+  DIM_MIN,
+  DIM_MAX,
+  DIM_MULTIPLE,
+  DEFAULT_AREA_BUDGET,
+} from './fit-dims.js';
 
 const isValidSide = (v: number): boolean => v >= DIM_MIN && v <= DIM_MAX && v % DIM_MULTIPLE === 0;
 
@@ -56,8 +64,8 @@ describe('fitToModel — bug-bounty edge cases (input rotti)', () => {
 
   it('aspect estremo panoramico (5000×200, 25:1) → lati clampati, mai fuori range', () => {
     const d = fitToModel(5000, 200);
-    expect(d.width).toBe(DIM_MAX);   // clampato al massimo
-    expect(d.height).toBe(DIM_MIN);  // clampato al minimo
+    expect(d.width).toBe(DIM_MAX); // clampato al massimo
+    expect(d.height).toBe(DIM_MIN); // clampato al minimo
     expect(isValidSide(d.width) && isValidSide(d.height)).toBe(true);
   });
 
@@ -126,7 +134,13 @@ describe('fitToModel — GUARD self-contained / iniettabile nel client', () => {
   it('ricostruita da toString() in contesto isolato dà risultati IDENTICI', () => {
     // eslint-disable-next-line @typescript-eslint/no-implied-eval -- verifica reale di iniettabilità: ricostruisce la funzione come farebbe il client
     const injected = new Function(`return (${fitToModel.toString()})`)() as typeof fitToModel;
-    for (const [w, h] of [[1920, 1080], [1080, 1920], [1000, 1000], [5000, 200], [0, 0]]) {
+    for (const [w, h] of [
+      [1920, 1080],
+      [1080, 1920],
+      [1000, 1000],
+      [5000, 200],
+      [0, 0],
+    ]) {
       expect(injected(w!, h!)).toEqual(fitToModel(w!, h!));
     }
   });

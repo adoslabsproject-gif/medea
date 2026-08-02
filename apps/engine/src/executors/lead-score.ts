@@ -14,7 +14,7 @@ export const leadScoreExecutor: NodeExecutor = (config, _input, _context) => {
   }
   const country = coerceString(config.country ?? '').trim() || undefined;
   const profileRaw = coerceString(config.profile ?? 'marine-thrusters');
-  const profile = (profileRaw === 'custom' ? 'custom' : 'marine-thrusters');
+  const profile = profileRaw === 'custom' ? 'custom' : 'marine-thrusters';
   const threshold = Number(config.threshold ?? 50);
 
   const cfg: LeadScoreConfig = { profile, threshold };
@@ -31,7 +31,9 @@ export const leadScoreExecutor: NodeExecutor = (config, _input, _context) => {
         cfg.customNegative = parsed;
       }
     } catch (e) {
-      throw new Error(`action_lead_score: customPositiveJson/customNegativeJson non parse-able: ${e instanceof Error ? e.message : String(e)}`);
+      throw new Error(
+        `action_lead_score: customPositiveJson/customNegativeJson non parse-able: ${e instanceof Error ? e.message : String(e)}`,
+      );
     }
   }
 

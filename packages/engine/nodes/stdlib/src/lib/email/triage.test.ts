@@ -14,26 +14,26 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  triageEmail,
-  parseFromHeader,
-  cleanSubject,
-  guessLanguage,
-} from './triage.js';
+import { triageEmail, parseFromHeader, cleanSubject, guessLanguage } from './triage.js';
 
 describe('parseFromHeader', () => {
   it('parses "Name Surname <addr>"', () => {
     expect(parseFromHeader('Mario Rossi <mario.rossi@x.it>')).toEqual({
-      senderName: 'Mario Rossi', senderEmail: 'mario.rossi@x.it',
+      senderName: 'Mario Rossi',
+      senderEmail: 'mario.rossi@x.it',
     });
   });
   it('parses quoted name "Name" <addr>', () => {
     expect(parseFromHeader('"Mario Rossi" <mario@x.it>')).toEqual({
-      senderName: 'Mario Rossi', senderEmail: 'mario@x.it',
+      senderName: 'Mario Rossi',
+      senderEmail: 'mario@x.it',
     });
   });
   it('parses bracket-only <addr>', () => {
-    expect(parseFromHeader('<mario@x.it>')).toEqual({ senderName: null, senderEmail: 'mario@x.it' });
+    expect(parseFromHeader('<mario@x.it>')).toEqual({
+      senderName: null,
+      senderEmail: 'mario@x.it',
+    });
   });
   it('parses bare address', () => {
     expect(parseFromHeader('mario@x.it')).toEqual({ senderName: null, senderEmail: 'mario@x.it' });
@@ -65,12 +65,14 @@ describe('guessLanguage', () => {
     expect(guessLanguage('Ciao Mario')).toBeNull();
   });
   it('detects italian from common stopwords', () => {
-    const itText = 'Buongiorno, le scrivo per confermare che il documento è stato ricevuto con successo. ' +
+    const itText =
+      'Buongiorno, le scrivo per confermare che il documento è stato ricevuto con successo. ' +
       'Non sono necessarie altre azioni da parte vostra. La ringrazio per la collaborazione.';
     expect(guessLanguage(itText)).toBe('it');
   });
   it('detects english', () => {
-    const enText = 'Hello, this is to confirm that the document has been received with success. ' +
+    const enText =
+      'Hello, this is to confirm that the document has been received with success. ' +
       'You are not required to take any further action. Thank you very much for your collaboration.';
     expect(guessLanguage(enText)).toBe('en');
   });
@@ -85,7 +87,7 @@ describe('triageEmail — body normalisation', () => {
     const huge = 'a'.repeat(3000);
     const t = triageEmail({ body: huge });
     expect(t.bodyTextOriginalLength).toBe(3000);
-    expect(t.bodyTextShort.length).toBeLessThanOrEqual(2001);  // 2000 + ellipsis
+    expect(t.bodyTextShort.length).toBeLessThanOrEqual(2001); // 2000 + ellipsis
     expect(t.bodyTextShort.endsWith('…')).toBe(true);
   });
 

@@ -13,12 +13,17 @@ import { type AddressInfo } from 'node:net';
 // Mock node:dns (callback form) — `secureLookup` lo usa internamente.
 // `impl(host)` decide la risoluzione per ogni test (host-aware).
 const dnsState = vi.hoisted(() => ({
-  impl: ((_host: string): { address: string; family: number }[] => [{ address: '93.184.216.34', family: 4 }]),
+  impl: (_host: string): { address: string; family: number }[] => [
+    { address: '93.184.216.34', family: 4 },
+  ],
 }));
 vi.mock('node:dns', () => ({
   lookup: (host: string, _opts: unknown, cb: (err: unknown, addrs: unknown) => void) => {
-    try { cb(null, dnsState.impl(String(host))); }
-    catch (e) { cb(e, undefined); }
+    try {
+      cb(null, dnsState.impl(String(host)));
+    } catch (e) {
+      cb(e, undefined);
+    }
   },
 }));
 
@@ -81,7 +86,9 @@ describe('secureLookup — validazione IP risolti', () => {
   });
 
   it('errore DNS (NXDOMAIN) → propagato verbatim (no falso "safe")', async () => {
-    dnsState.impl = () => { throw Object.assign(new Error('ENOTFOUND'), { code: 'ENOTFOUND' }); };
+    dnsState.impl = () => {
+      throw Object.assign(new Error('ENOTFOUND'), { code: 'ENOTFOUND' });
+    };
     await expect(lookupAll('nope.invalid')).rejects.toMatchObject({ code: 'ENOTFOUND' });
   });
 
@@ -150,7 +157,11 @@ describe('INTEGRAZIONE: Agent undici reale + fetch globale + server localhost', 
 
   beforeEach(async () => {
     hits = 0;
-    server = createServer((_req, res) => { hits += 1; res.statusCode = 200; res.end('REACHED'); });
+    server = createServer((_req, res) => {
+      hits += 1;
+      res.statusCode = 200;
+      res.end('REACHED');
+    });
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
     port = (server.address() as AddressInfo).port;
   });
@@ -169,9 +180,10 @@ describe('INTEGRAZIONE: Agent undici reale + fetch globale + server localhost', 
     // Simula rebinding: l'hostname "rebind.test" risolve a loopback. Il lookup
     // hook deve far fallire la connessione PRIMA che la socket raggiunga il
     // server. È la prova connection-time (zero TOCTOU).
-    dnsState.impl = (host) => host === 'rebind.test'
-      ? [{ address: '127.0.0.1', family: 4 }]
-      : [{ address: '93.184.216.34', family: 4 }];
+    dnsState.impl = (host) =>
+      host === 'rebind.test'
+        ? [{ address: '127.0.0.1', family: 4 }]
+        : [{ address: '93.184.216.34', family: 4 }];
     const dispatcher = getSecureDispatcher();
     await expect(
       // `Agent` viene da undici; il `Dispatcher` che i tipi di Node dichiarano

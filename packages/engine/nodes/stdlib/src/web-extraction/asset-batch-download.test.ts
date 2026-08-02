@@ -29,7 +29,9 @@ beforeEach(async () => {
   mockedFetch.mockReset();
   tmpBase = await fs.mkdtemp(path.join(os.tmpdir(), 'asset-test-'));
 });
-afterEach(async () => { await fs.rm(tmpBase, { recursive: true, force: true }); });
+afterEach(async () => {
+  await fs.rm(tmpBase, { recursive: true, force: true });
+});
 
 describe('deriveLocalPath', () => {
   it('maps URL pathname to nested directory', () => {
@@ -63,15 +65,23 @@ describe('runAssetBatchDownload', () => {
     mockedFetch.mockResolvedValue(bin(png, 'image/png'));
     const r = await runAssetBatchDownload({
       items: [{ url: 'https://x.test/img/logo.png' }],
-      basePath: tmpBase, userAgent: 'test', referer: undefined,
-      concurrency: 1, perHostMinDelayMs: 0, timeoutMs: 5000,
-      maxAssets: 100, maxTotalBytes: 1024 * 1024, maxPerAssetBytes: 1024 * 1024,
+      basePath: tmpBase,
+      userAgent: 'test',
+      referer: undefined,
+      concurrency: 1,
+      perHostMinDelayMs: 0,
+      timeoutMs: 5000,
+      maxAssets: 100,
+      maxTotalBytes: 1024 * 1024,
+      maxPerAssetBytes: 1024 * 1024,
       resumeOnSha256Match: true,
     });
     expect(r.stats.downloaded).toBe(1);
     const onDisk = await fs.readFile(path.join(tmpBase, 'img', 'logo.png'));
     expect(onDisk.toString()).toBe('PNG-FAKE-BODY-1');
-    expect(r.stats.assetMap['https://x.test/img/logo.png']).toBe(path.join(tmpBase, 'img', 'logo.png'));
+    expect(r.stats.assetMap['https://x.test/img/logo.png']).toBe(
+      path.join(tmpBase, 'img', 'logo.png'),
+    );
   });
 
   it('skips re-download on second run when file + sha256 match', async () => {
@@ -79,9 +89,15 @@ describe('runAssetBatchDownload', () => {
     mockedFetch.mockResolvedValue(bin(body, 'image/png'));
     const opts = {
       items: [{ url: 'https://x.test/a.png' }],
-      basePath: tmpBase, userAgent: 'test', referer: undefined,
-      concurrency: 1, perHostMinDelayMs: 0, timeoutMs: 5000,
-      maxAssets: 100, maxTotalBytes: 1024 * 1024, maxPerAssetBytes: 1024 * 1024,
+      basePath: tmpBase,
+      userAgent: 'test',
+      referer: undefined,
+      concurrency: 1,
+      perHostMinDelayMs: 0,
+      timeoutMs: 5000,
+      maxAssets: 100,
+      maxTotalBytes: 1024 * 1024,
+      maxPerAssetBytes: 1024 * 1024,
       resumeOnSha256Match: true,
     };
     const first = await runAssetBatchDownload(opts);
@@ -102,9 +118,15 @@ describe('runAssetBatchDownload', () => {
     });
     const r = await runAssetBatchDownload({
       items: [{ url: 'https://x.test/bad.png' }, { url: 'https://x.test/good.txt' }],
-      basePath: tmpBase, userAgent: 'test', referer: undefined,
-      concurrency: 1, perHostMinDelayMs: 0, timeoutMs: 5000,
-      maxAssets: 100, maxTotalBytes: 1024 * 1024, maxPerAssetBytes: 1024 * 1024,
+      basePath: tmpBase,
+      userAgent: 'test',
+      referer: undefined,
+      concurrency: 1,
+      perHostMinDelayMs: 0,
+      timeoutMs: 5000,
+      maxAssets: 100,
+      maxTotalBytes: 1024 * 1024,
+      maxPerAssetBytes: 1024 * 1024,
       resumeOnSha256Match: false,
     });
     expect(r.stats.downloaded).toBe(1);
@@ -117,9 +139,15 @@ describe('runAssetBatchDownload', () => {
     mockedFetch.mockResolvedValue(bin(big, 'application/octet-stream'));
     const r = await runAssetBatchDownload({
       items: Array.from({ length: 5 }, (_, i) => ({ url: `https://x.test/a${String(i)}.bin` })),
-      basePath: tmpBase, userAgent: 'test', referer: undefined,
-      concurrency: 1, perHostMinDelayMs: 0, timeoutMs: 5000,
-      maxAssets: 100, maxTotalBytes: 1500, maxPerAssetBytes: 1024 * 1024,
+      basePath: tmpBase,
+      userAgent: 'test',
+      referer: undefined,
+      concurrency: 1,
+      perHostMinDelayMs: 0,
+      timeoutMs: 5000,
+      maxAssets: 100,
+      maxTotalBytes: 1500,
+      maxPerAssetBytes: 1024 * 1024,
       resumeOnSha256Match: false,
     });
     // Each is 800 bytes, cap is 1500 → first 2 downloads exceed cap.
@@ -132,9 +160,15 @@ describe('runAssetBatchDownload', () => {
     mockedFetch.mockResolvedValue(bin(big, 'application/octet-stream'));
     const r = await runAssetBatchDownload({
       items: [{ url: 'https://x.test/big.bin' }],
-      basePath: tmpBase, userAgent: 'test', referer: undefined,
-      concurrency: 1, perHostMinDelayMs: 0, timeoutMs: 5000,
-      maxAssets: 100, maxTotalBytes: 1024 * 1024, maxPerAssetBytes: 1024,
+      basePath: tmpBase,
+      userAgent: 'test',
+      referer: undefined,
+      concurrency: 1,
+      perHostMinDelayMs: 0,
+      timeoutMs: 5000,
+      maxAssets: 100,
+      maxTotalBytes: 1024 * 1024,
+      maxPerAssetBytes: 1024,
       resumeOnSha256Match: false,
     });
     expect(r.stats.skippedCap).toBe(1);
@@ -148,9 +182,15 @@ describe('runAssetBatchDownload', () => {
     // `startsWith(baseAbs)` guard.
     const r = await runAssetBatchDownload({
       items: [{ url: 'https://x.test/ok.txt', savePath: '../../../etc/passwd' }],
-      basePath: tmpBase, userAgent: 'test', referer: undefined,
-      concurrency: 1, perHostMinDelayMs: 0, timeoutMs: 5000,
-      maxAssets: 100, maxTotalBytes: 1024 * 1024, maxPerAssetBytes: 1024 * 1024,
+      basePath: tmpBase,
+      userAgent: 'test',
+      referer: undefined,
+      concurrency: 1,
+      perHostMinDelayMs: 0,
+      timeoutMs: 5000,
+      maxAssets: 100,
+      maxTotalBytes: 1024 * 1024,
+      maxPerAssetBytes: 1024 * 1024,
       resumeOnSha256Match: false,
     });
     expect(r.results[0]?.status).toBe('error');
@@ -163,9 +203,15 @@ describe('runAssetBatchDownload', () => {
     mockedFetch.mockResolvedValue(bin(body, 'text/plain'));
     const r = await runAssetBatchDownload({
       items: [{ url: 'https://x.test/d.txt' }],
-      basePath: tmpBase, userAgent: 'test', referer: undefined,
-      concurrency: 1, perHostMinDelayMs: 0, timeoutMs: 5000,
-      maxAssets: 100, maxTotalBytes: 1024 * 1024, maxPerAssetBytes: 1024 * 1024,
+      basePath: tmpBase,
+      userAgent: 'test',
+      referer: undefined,
+      concurrency: 1,
+      perHostMinDelayMs: 0,
+      timeoutMs: 5000,
+      maxAssets: 100,
+      maxTotalBytes: 1024 * 1024,
+      maxPerAssetBytes: 1024 * 1024,
       resumeOnSha256Match: false,
     });
     expect(r.results[0]?.sha256).toBe(expectHash);
@@ -179,10 +225,13 @@ describe('assetBatchDownloadNode — NodeModule', () => {
   });
 
   it('rejects relative basePath', async () => {
-    await expect(assetBatchDownloadNode.executor!(
-      { items: 'https://x.com/a.png', basePath: 'relative/dir' }, {},
-      { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {} },
-    )).rejects.toThrow(/absolute path/);
+    await expect(
+      assetBatchDownloadNode.executor!(
+        { items: 'https://x.com/a.png', basePath: 'relative/dir' },
+        {},
+        { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {} },
+      ),
+    ).rejects.toThrow(/absolute path/);
   });
 
   it('parses newline-separated URLs', async () => {
@@ -190,7 +239,8 @@ describe('assetBatchDownloadNode — NodeModule', () => {
     mockedFetch.mockImplementation(async () => bin(Buffer.from('x')));
     const r = await assetBatchDownloadNode.executor!(
       { items: 'https://x.test/a.txt\nhttps://x.test/b.txt', basePath: tmpBase, concurrency: '1' },
-      {}, { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {} },
+      {},
+      { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {} },
     );
     const out = r.output as { stats: { downloaded: number } };
     expect(out.stats.downloaded).toBe(2);
@@ -199,8 +249,13 @@ describe('assetBatchDownloadNode — NodeModule', () => {
   it('parses JSON array of {url, savePath}', async () => {
     mockedFetch.mockResolvedValue(bin(Buffer.from('z')));
     const r = await assetBatchDownloadNode.executor!(
-      { items: '[{"url":"https://x.test/abc.bin","savePath":"custom/out.bin"}]', basePath: tmpBase, concurrency: '1' },
-      {}, { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {} },
+      {
+        items: '[{"url":"https://x.test/abc.bin","savePath":"custom/out.bin"}]',
+        basePath: tmpBase,
+        concurrency: '1',
+      },
+      {},
+      { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {} },
     );
     const out = r.output as { stats: { downloaded: number; assetMap: Record<string, string> } };
     expect(out.stats.downloaded).toBe(1);
@@ -208,9 +263,12 @@ describe('assetBatchDownloadNode — NodeModule', () => {
   });
 
   it('throws when items list is empty', async () => {
-    await expect(assetBatchDownloadNode.executor!(
-      { items: '', basePath: tmpBase }, {},
-      { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {} },
-    )).rejects.toThrow(/items required/);
+    await expect(
+      assetBatchDownloadNode.executor!(
+        { items: '', basePath: tmpBase },
+        {},
+        { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {} },
+      ),
+    ).rejects.toThrow(/items required/);
   });
 });

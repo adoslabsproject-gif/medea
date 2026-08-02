@@ -45,7 +45,9 @@ vi.mock('@/services/tenant.service.js', async () => {
   }
   class TenantNotActiveError extends Error {
     constructor(id: string, status: string, reason: string | null) {
-      super(`Tenant "${id}" non operativo (status=${status}${reason ? `, motivo: ${reason}` : ''})`);
+      super(
+        `Tenant "${id}" non operativo (status=${status}${reason ? `, motivo: ${reason}` : ''})`,
+      );
       this.name = 'TenantNotActiveError';
     }
   }
@@ -105,7 +107,7 @@ describe('tenantStatusMiddleware — TenantNotFoundError → 404', () => {
     });
     const res = await makeApp().request('/ping', { method: 'POST' });
     expect(res.status).toBe(404);
-    const body = await res.json() as { error: string; message: string };
+    const body = (await res.json()) as { error: string; message: string };
     expect(body.error).toBe('tenant_not_found');
     expect(body.message).toContain('ghost-tenant');
     expect(body.message).toMatch(/non esiste|eliminato/u);
@@ -130,7 +132,7 @@ describe('tenantStatusMiddleware — TenantNotActiveError → 403', () => {
     });
     const res = await makeApp().request('/ping', { method: 'POST' });
     expect(res.status).toBe(403);
-    const body = await res.json() as { error: string; message: string };
+    const body = (await res.json()) as { error: string; message: string };
     expect(body.error).toBe('tenant_not_active');
     expect(body.message).toContain('suspended-tenant');
     expect(body.message).toContain('status=suspended');
@@ -144,7 +146,7 @@ describe('tenantStatusMiddleware — TenantNotActiveError → 403', () => {
     });
     const res = await makeApp().request('/ping', { method: 'POST' });
     expect(res.status).toBe(403);
-    const body = await res.json() as { error: string; message: string };
+    const body = (await res.json()) as { error: string; message: string };
     expect(body.message).toContain('status=archived');
     expect(body.message).not.toMatch(/motivo:/u); // reason=null → no "motivo:"
   });
@@ -156,7 +158,7 @@ describe('tenantStatusMiddleware — TenantNotActiveError → 403', () => {
     });
     const res = await makeApp().request('/ping', { method: 'POST' });
     expect(res.status).toBe(403);
-    const body = await res.json() as { error: string; message: string };
+    const body = (await res.json()) as { error: string; message: string };
     expect(body.message).toContain('trial scaduto');
   });
 });
@@ -174,14 +176,17 @@ describe('tenantStatusMiddleware — errori inattesi (rethrow)', () => {
     app.onError((err, c) => c.json({ error: 'internal', message: err.message }, 500));
     const res = await app.request('/ping', { method: 'POST' });
     expect(res.status).toBe(500);
-    const body = await res.json() as { error: string; message: string };
+    const body = (await res.json()) as { error: string; message: string };
     expect(body.message).toBe('DB connection lost');
   });
 
   it('errore con name simile (es. TenantSlugConflictError) NON viene catturato → 500', async () => {
     getTenantIdOrNullMock.mockReturnValue('any-tenant');
     class TenantSlugConflictError extends Error {
-      constructor() { super('slug conflict'); this.name = 'TenantSlugConflictError'; }
+      constructor() {
+        super('slug conflict');
+        this.name = 'TenantSlugConflictError';
+      }
     }
     assertActiveMock.mockImplementation(() => {
       throw new TenantSlugConflictError();
@@ -218,9 +223,11 @@ describe('tenantStatusMiddleware — happy path (tenant attivo)', () => {
 describe('tenantStatusMiddleware — JSON body struttura esatta (machine-friendly)', () => {
   it('404 body: { error: "tenant_not_found", message: string } — NIENTE altri campi', async () => {
     getTenantIdOrNullMock.mockReturnValue('ghost');
-    assertActiveMock.mockImplementation(() => { throw new TenantNotFoundError('ghost'); });
+    assertActiveMock.mockImplementation(() => {
+      throw new TenantNotFoundError('ghost');
+    });
     const res = await makeApp().request('/ping', { method: 'POST' });
-    const body = await res.json() as Record<string, unknown>;
+    const body = (await res.json()) as Record<string, unknown>;
     expect(Object.keys(body).sort()).toEqual(['error', 'message']);
     expect(typeof body.error).toBe('string');
     expect(typeof body.message).toBe('string');
@@ -228,9 +235,11 @@ describe('tenantStatusMiddleware — JSON body struttura esatta (machine-friendl
 
   it('403 body: { error: "tenant_not_active", message: string } — NIENTE altri campi', async () => {
     getTenantIdOrNullMock.mockReturnValue('susp');
-    assertActiveMock.mockImplementation(() => { throw new TenantNotActiveError('susp', 'suspended', null); });
+    assertActiveMock.mockImplementation(() => {
+      throw new TenantNotActiveError('susp', 'suspended', null);
+    });
     const res = await makeApp().request('/ping', { method: 'POST' });
-    const body = await res.json() as Record<string, unknown>;
+    const body = (await res.json()) as Record<string, unknown>;
     expect(Object.keys(body).sort()).toEqual(['error', 'message']);
   });
 });

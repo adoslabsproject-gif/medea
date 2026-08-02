@@ -23,12 +23,19 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ExecuteRuleUseCase } from './execute-rule.usecase.js';
 import type {
-  Rule, CodeRule, DslRule, DetectedRow, RuleConfig, DataSourceRef,
+  Rule,
+  CodeRule,
+  DslRule,
+  DetectedRow,
+  RuleConfig,
+  DataSourceRef,
 } from '@/services/janitor/domain/index.js';
 
 const dataSourceRef = 'system' as DataSourceRef;
 
-function makeFakeAdapter(executeRawImpl?: (sql: string, opts?: unknown) => unknown): Record<string, unknown> {
+function makeFakeAdapter(
+  executeRawImpl?: (sql: string, opts?: unknown) => unknown,
+): Record<string, unknown> {
   return {
     engine: 'sqlite',
     executeRaw: executeRawImpl ?? (async () => ({ rows: [] })),
@@ -83,17 +90,23 @@ function makeDslRule(over: Partial<DslRule> = {}): DslRule {
   };
 }
 
-const detectedRow = (id: string, severity: DetectedRow['severity'] = 'warning'): DetectedRow => Object.freeze({
-  id, reason: 'reason', severity, raw: Object.freeze({ id }),
-});
+const detectedRow = (id: string, severity: DetectedRow['severity'] = 'warning'): DetectedRow =>
+  Object.freeze({
+    id,
+    reason: 'reason',
+    severity,
+    raw: Object.freeze({ id }),
+  });
 
-function makeUseCase(opts: {
-  acquire?: boolean;
-  configGet?: RuleConfig | null;
-  adapter?: Record<string, unknown>;
-  ensureSchema?: () => Promise<void>;
-  quarantineRow?: (args: unknown) => Promise<unknown>;
-} = {}) {
+function makeUseCase(
+  opts: {
+    acquire?: boolean;
+    configGet?: RuleConfig | null;
+    adapter?: Record<string, unknown>;
+    ensureSchema?: () => Promise<void>;
+    quarantineRow?: (args: unknown) => Promise<unknown>;
+  } = {},
+) {
   const clock = { now: () => new Date('2026-06-06T10:00:00Z') };
   const locks = {
     acquire: vi.fn(() => opts.acquire ?? true),
@@ -103,30 +116,62 @@ function makeUseCase(opts: {
     resolve: vi.fn(async () => opts.adapter ?? makeFakeAdapter()),
   };
   const quarantine = {
-    ensureSchema: vi.fn(opts.ensureSchema ?? (async () => { /* noop */ })),
+    ensureSchema: vi.fn(
+      opts.ensureSchema ??
+        (async () => {
+          /* noop */
+        }),
+    ),
     quarantineRow: vi.fn(opts.quarantineRow ?? (async () => ({}))),
   };
   const runLog = {
-    appendRule: vi.fn(async () => { /* noop */ }),
+    appendRule: vi.fn(async () => {
+      /* noop */
+    }),
   };
   const audit = {
-    emit: vi.fn(async () => { /* noop */ }),
+    emit: vi.fn(async () => {
+      /* noop */
+    }),
   };
   const notifications = {
-    notifyDetection: vi.fn(async () => { /* noop */ }),
+    notifyDetection: vi.fn(async () => {
+      /* noop */
+    }),
   };
   const configRepo = {
     get: vi.fn(async () => opts.configGet ?? null),
   };
   const logger = {
     child: () => logger,
-    info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
   };
   const uc = new ExecuteRuleUseCase(
-    clock as never, locks as never, resolver as never, quarantine as never,
-    runLog as never, audit as never, notifications as never, configRepo as never, logger as never,
+    clock as never,
+    locks as never,
+    resolver as never,
+    quarantine as never,
+    runLog as never,
+    audit as never,
+    notifications as never,
+    configRepo as never,
+    logger as never,
   );
-  return { uc, clock, locks, resolver, quarantine, runLog, audit, notifications, configRepo, logger };
+  return {
+    uc,
+    clock,
+    locks,
+    resolver,
+    quarantine,
+    runLog,
+    audit,
+    notifications,
+    configRepo,
+    logger,
+  };
 }
 
 beforeEach(() => {
@@ -139,7 +184,10 @@ describe('lock contention', () => {
     const detectSpy = vi.fn(async () => []);
     const rule = makeCodeRule({ detect: detectSpy });
     const { report, detected } = await uc.execute({
-      rule, tenantId: 't1', triggeredBy: 'test', dryRun: false,
+      rule,
+      tenantId: 't1',
+      triggeredBy: 'test',
+      dryRun: false,
     });
     expect(report.success).toBe(false);
     expect(report.error).toContain('Lock già detenuto');
@@ -159,7 +207,10 @@ describe('happy path CodeRule', () => {
     });
     const { uc, quarantine, runLog, audit, notifications, locks } = makeUseCase();
     const { report } = await uc.execute({
-      rule, tenantId: 't1', triggeredBy: 'cron', dryRun: false,
+      rule,
+      tenantId: 't1',
+      triggeredBy: 'cron',
+      dryRun: false,
     });
     expect(report.success).toBe(true);
     expect(report.rowsDetected).toBe(2);
@@ -176,7 +227,10 @@ describe('happy path CodeRule', () => {
   it('detect 0 rows: report rowsDetected=0, no quarantine call', async () => {
     const { uc, quarantine } = makeUseCase();
     const { report } = await uc.execute({
-      rule: makeCodeRule(), tenantId: 't1', triggeredBy: 'cron', dryRun: false,
+      rule: makeCodeRule(),
+      tenantId: 't1',
+      triggeredBy: 'cron',
+      dryRun: false,
     });
     expect(report.success).toBe(true);
     expect(report.rowsDetected).toBe(0);
@@ -186,10 +240,17 @@ describe('happy path CodeRule', () => {
 
 describe('detect error path', () => {
   it('detect throw → failReport con error + runLog.appendRule appended', async () => {
-    const rule = makeCodeRule({ detect: async () => { throw new Error('SQL syntax'); } });
+    const rule = makeCodeRule({
+      detect: async () => {
+        throw new Error('SQL syntax');
+      },
+    });
     const { uc, runLog, locks } = makeUseCase();
     const { report } = await uc.execute({
-      rule, tenantId: 't1', triggeredBy: 'cron', dryRun: false,
+      rule,
+      tenantId: 't1',
+      triggeredBy: 'cron',
+      dryRun: false,
     });
     expect(report.success).toBe(false);
     expect(report.error).toContain('SQL syntax');
@@ -198,10 +259,17 @@ describe('detect error path', () => {
   });
 
   it('detect throw in dry-run → failReport ma NO runLog (skip)', async () => {
-    const rule = makeCodeRule({ detect: async () => { throw new Error('boom'); } });
+    const rule = makeCodeRule({
+      detect: async () => {
+        throw new Error('boom');
+      },
+    });
     const { uc, runLog } = makeUseCase();
     const { report } = await uc.execute({
-      rule, tenantId: 't1', triggeredBy: 'preview', dryRun: true,
+      rule,
+      tenantId: 't1',
+      triggeredBy: 'preview',
+      dryRun: true,
     });
     expect(report.success).toBe(false);
     expect(runLog.appendRule).not.toHaveBeenCalled();
@@ -213,11 +281,16 @@ describe('repair fault tolerance', () => {
     const rows: DetectedRow[] = [detectedRow('r1'), detectedRow('r2')];
     const rule = makeCodeRule({
       detect: async () => rows,
-      repair: async () => { throw new Error('repair conn lost'); },
+      repair: async () => {
+        throw new Error('repair conn lost');
+      },
     });
     const { uc, quarantine } = makeUseCase();
     const { report } = await uc.execute({
-      rule, tenantId: 't1', triggeredBy: 'cron', dryRun: false,
+      rule,
+      tenantId: 't1',
+      triggeredBy: 'cron',
+      dryRun: false,
     });
     expect(report.rowsRepaired).toBe(0);
     expect(report.rowsQuarantined).toBe(2);
@@ -238,7 +311,10 @@ describe('quarantine per-row tolerance', () => {
       },
     });
     const { report } = await uc.execute({
-      rule, tenantId: 't1', triggeredBy: 'cron', dryRun: false,
+      rule,
+      tenantId: 't1',
+      triggeredBy: 'cron',
+      dryRun: false,
     });
     expect(report.rowsQuarantined).toBe(2);
     expect(report.rowsSkipped).toBe(1);
@@ -253,7 +329,10 @@ describe('dry-run mode — read-only', () => {
     const rule = makeCodeRule({ detect: async () => rows, repair: repairSpy });
     const { uc, quarantine, runLog, audit, notifications } = makeUseCase();
     const { report, detected } = await uc.execute({
-      rule, tenantId: 't1', triggeredBy: 'preview', dryRun: true,
+      rule,
+      tenantId: 't1',
+      triggeredBy: 'preview',
+      dryRun: true,
     });
     expect(report.success).toBe(true);
     expect(report.dryRun).toBe(true);
@@ -268,12 +347,19 @@ describe('dry-run mode — read-only', () => {
 });
 
 describe('notifyOnDetection', () => {
-  const persistedConfigNotify = (rule: CodeRule): RuleConfig => Object.freeze({
-    ruleId: rule.id, tenantId: 't1', enabled: true,
-    schedule: rule.defaultSchedule, dataSourceRef, maxRowsPerRun: 100,
-    severity: rule.defaultSeverity, params: {}, notifyOnDetection: true,
-    updatedAt: new Date().toISOString(),
-  });
+  const persistedConfigNotify = (rule: CodeRule): RuleConfig =>
+    Object.freeze({
+      ruleId: rule.id,
+      tenantId: 't1',
+      enabled: true,
+      schedule: rule.defaultSchedule,
+      dataSourceRef,
+      maxRowsPerRun: 100,
+      severity: rule.defaultSeverity,
+      params: {},
+      notifyOnDetection: true,
+      updatedAt: new Date().toISOString(),
+    });
 
   it('🚨 notifyOnDetection=true + non-dry-run → notifyDetection chiamato', async () => {
     const rule = makeCodeRule();
@@ -294,11 +380,17 @@ describe('DslRule path', () => {
   it('detectSql via executeRaw, rows mapped a DetectedRow', async () => {
     const rule: Rule = makeDslRule();
     const adapter = makeFakeAdapter(async () => ({
-      rows: [{ id: 42, total: -5 }, { id: 43, total: -10 }],
+      rows: [
+        { id: 42, total: -5 },
+        { id: 43, total: -10 },
+      ],
     }));
     const { uc } = makeUseCase({ adapter });
     const { detected } = await uc.execute({
-      rule, tenantId: 't1', triggeredBy: 'cron', dryRun: false,
+      rule,
+      tenantId: 't1',
+      triggeredBy: 'cron',
+      dryRun: false,
     });
     expect(detected).toHaveLength(2);
     expect(detected[0]!.id).toBe('42');
@@ -342,7 +434,10 @@ describe('DslRule path', () => {
     const adapter = { ...makeFakeAdapter(), executeRaw: undefined };
     const { uc } = makeUseCase({ adapter });
     const { detected, report } = await uc.execute({
-      rule, tenantId: 't1', triggeredBy: 'cron', dryRun: false,
+      rule,
+      tenantId: 't1',
+      triggeredBy: 'cron',
+      dryRun: false,
     });
     expect(detected).toEqual([]);
     expect(report.success).toBe(true);
@@ -356,7 +451,10 @@ describe('DslRule path', () => {
     }));
     const { uc } = makeUseCase({ adapter });
     const { detected } = await uc.execute({
-      rule, tenantId: 't1', triggeredBy: 'cron', dryRun: false,
+      rule,
+      tenantId: 't1',
+      triggeredBy: 'cron',
+      dryRun: false,
     });
     expect(detected).toHaveLength(2);
   });
@@ -373,7 +471,10 @@ describe('config overrides', () => {
     });
     const { uc } = makeUseCase();
     await uc.execute({
-      rule, tenantId: 't1', triggeredBy: 'cron', dryRun: false,
+      rule,
+      tenantId: 't1',
+      triggeredBy: 'cron',
+      dryRun: false,
       overrides: { maxRowsPerRun: 5, params: { custom: 'value' } },
     });
     expect(capturedCtx).not.toBeNull();
@@ -388,7 +489,10 @@ describe('config overrides', () => {
     const rule = makeCodeRule();
     const { uc, resolver } = makeUseCase();
     await uc.execute({
-      rule, tenantId: 't1', triggeredBy: 'cron', dryRun: false,
+      rule,
+      tenantId: 't1',
+      triggeredBy: 'cron',
+      dryRun: false,
       overrides: { dataSourceRef: customDsr },
     });
     expect(resolver.resolve).toHaveBeenCalledWith(customDsr);

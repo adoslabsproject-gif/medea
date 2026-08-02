@@ -40,7 +40,13 @@ export function readWorkerLogs(pid: number, tailLines: number): string {
     return '(invalid pid)';
   }
   const flooredTail = Math.floor(Number(tailLines));
-  const safeTail = Math.max(1, Math.min(MAX_TAIL, Number.isFinite(flooredTail) && flooredTail > 0 ? flooredTail : DEFAULT_TAIL));
+  const safeTail = Math.max(
+    1,
+    Math.min(
+      MAX_TAIL,
+      Number.isFinite(flooredTail) && flooredTail > 0 ? flooredTail : DEFAULT_TAIL,
+    ),
+  );
 
   const pidStr = String(safePid); // garantito cifre-only
   const tailStr = String(safeTail);

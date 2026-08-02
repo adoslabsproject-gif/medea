@@ -53,7 +53,7 @@ export const memoryNoteNode: NodeModule = {
       '(3) append — concatena il valore a una stringa esistente con un separator configurabile (default ' +
       'newline), crea la key se non esiste (pattern naturale per log accumulato di righe); ' +
       '(4) delete — rimuove la key (idempotent: delete su key inesistente = no-op); ' +
-      '(5) list — restituisce l\'elenco delle key esistenti per il workflow corrente, con filtro pattern glob ' +
+      "(5) list — restituisce l'elenco delle key esistenti per il workflow corrente, con filtro pattern glob " +
       'opzionale (es. "cursor:*" → tutte le key che iniziano con "cursor:"; * = molti char, ? = un char) ' +
       '(output keys[] + count + pattern). ' +
       'TTL opzionale per auto-cleanup: ogni key può avere un TTL in secondi; la pulizia è LAZY al prossimo get ' +
@@ -61,7 +61,7 @@ export const memoryNoteNode: NodeModule = {
       '"deduplica notify per 24h" → key con TTL 86400s) senza dover gestire manualmente la cleanup logic. ' +
       'Concurrency: le operazioni sono atomic (SQLite transaction per write), in caso di concurrent run dello ' +
       'stesso workflow (es. due trigger_webhook simultanei), le scritture sono serialized — no race condition ' +
-      'su counter increment (l\'idiom get → modify → set è race-prone, raccomandato pattern dedicated atomic ' +
+      "su counter increment (l'idiom get → modify → set è race-prone, raccomandato pattern dedicated atomic " +
       'increment se servisse). ' +
       'Output: { value, exists, updatedAt, expiresAt (timestamp scadenza o null), operation, usedDefault (get), ' +
       'oldValue e changed (set, per audit del cambio), keys[] + count + pattern (list) }. ' +
@@ -80,7 +80,8 @@ export const memoryNoteNode: NodeModule = {
         required: true,
         defaultValue: 'get',
         options: ['get', 'set', 'append', 'delete', 'list'],
-        help: 'get = leggi valore. set = scrivi/sovrascrivi. append = aggiungi a stringa. ' +
+        help:
+          'get = leggi valore. set = scrivi/sovrascrivi. append = aggiungi a stringa. ' +
           'delete = rimuovi. list = lista tutte le key di questo workflow.',
       },
       {
@@ -89,7 +90,8 @@ export const memoryNoteNode: NodeModule = {
         type: 'expression',
         required: false,
         placeholder: 'last_pagination_cursor',
-        help: 'Identifier univoco per workflow (snake_case raccomandato). ' +
+        help:
+          'Identifier univoco per workflow (snake_case raccomandato). ' +
           'Required per get/set/append/delete. Ignorato per list.',
       },
       {
@@ -98,7 +100,8 @@ export const memoryNoteNode: NodeModule = {
         type: 'expression',
         required: false,
         placeholder: '{{$node.lastPage.json.cursor}}',
-        help: 'Valore da scrivere. Object → serializzato JSON. Required per set/append. ' +
+        help:
+          'Valore da scrivere. Object → serializzato JSON. Required per set/append. ' +
           'Per append: viene aggiunto in coda al valore esistente (con separator se configurato).',
       },
       {
@@ -107,7 +110,8 @@ export const memoryNoteNode: NodeModule = {
         type: 'expression',
         required: false,
         placeholder: 'es. 0  oppure  {{input.fallback}}',
-        help: 'Se la key NON esiste, get ritorna questo valore (exists resta false, usedDefault=true). ' +
+        help:
+          'Se la key NON esiste, get ritorna questo valore (exists resta false, usedDefault=true). ' +
           'Vuoto = ritorna null.',
         showIf: { field: 'operation', equals: 'get' },
       },
@@ -117,7 +121,8 @@ export const memoryNoteNode: NodeModule = {
         type: 'text',
         required: false,
         placeholder: 'es. cursor:*',
-        help: 'Glob opzionale per filtrare le key: * = molti caratteri, ? = un carattere. ' +
+        help:
+          'Glob opzionale per filtrare le key: * = molti caratteri, ? = un carattere. ' +
           'Es. "cursor:*" elenca solo le key che iniziano con "cursor:". Vuoto = tutte le key.',
         showIf: { field: 'operation', equals: 'list' },
       },
@@ -127,7 +132,8 @@ export const memoryNoteNode: NodeModule = {
         type: 'text',
         required: false,
         defaultValue: '\\n',
-        help: 'Default "\\n" (newline). Usato SOLO se operation=append e key esiste gia\\`. ' +
+        help:
+          'Default "\\n" (newline). Usato SOLO se operation=append e key esiste gia\\`. ' +
           'Es. "," → "a,b,c". Empty → concat puro.',
       },
       {
@@ -136,11 +142,24 @@ export const memoryNoteNode: NodeModule = {
         type: 'number',
         required: false,
         placeholder: '86400',
-        help: 'Opzionale. Quando settato, la key scade dopo N secondi dall\'ultimo write. ' +
+        help:
+          "Opzionale. Quando settato, la key scade dopo N secondi dall'ultimo write. " +
           'Cleanup avviene lazy al prossimo read (key scaduta → output.exists=false, row deleted).',
       },
     ],
-    outputs: ['value', 'exists', 'updatedAt', 'expiresAt', 'usedDefault', 'oldValue', 'changed', 'keys', 'count', 'pattern', 'operation'],
+    outputs: [
+      'value',
+      'exists',
+      'updatedAt',
+      'expiresAt',
+      'usedDefault',
+      'oldValue',
+      'changed',
+      'keys',
+      'count',
+      'pattern',
+      'operation',
+    ],
     vendor: 'flowforge',
     version: '1.0.0',
     cost: { typicalLatencyMs: 5 },

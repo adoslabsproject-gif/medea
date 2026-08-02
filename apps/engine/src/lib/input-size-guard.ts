@@ -8,7 +8,11 @@
  */
 
 /** Lancia se `byteLength` supera `maxBytes`. `label` apre il messaggio (es. "PDF"). */
-export function assertInputSizeWithinCap(byteLength: number, maxBytes: number, label: string): void {
+export function assertInputSizeWithinCap(
+  byteLength: number,
+  maxBytes: number,
+  label: string,
+): void {
   if (byteLength > maxBytes) {
     const mb = (maxBytes / (1024 * 1024)).toString();
     throw new Error(`${label} troppo grande (${byteLength.toString()} bytes). Max ${mb} MB.`);

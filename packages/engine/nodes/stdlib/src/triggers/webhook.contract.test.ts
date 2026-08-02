@@ -44,7 +44,7 @@ describe('trigger_webhook — contract description ⊆ schema (anti-aspirazional
   it('🚨 feature ORA implementate sono documentate (Idempotency-Key, rate-limit, audit SHA-256) + anti-replay', () => {
     expect(description).toMatch(/Idempotency-Key/i);
     expect(description).toMatch(/rate.?limit/i);
-    expect(description).toMatch(/SHA-256/i);   // audit on-hit = digest del body, non payload
+    expect(description).toMatch(/SHA-256/i); // audit on-hit = digest del body, non payload
     expect(description).toMatch(/anti-replay/i); // meccanismo HMAC preesistente resta
   });
 

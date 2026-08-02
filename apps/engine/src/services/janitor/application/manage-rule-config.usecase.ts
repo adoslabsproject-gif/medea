@@ -11,11 +11,22 @@
  * emettono audit. Il chiamante UI è responsabile dei permission check.
  */
 
-import { validateParams, isCodeRule, makeDefaultRuleConfig } from '@/services/janitor/domain/index.js';
-import type {
-  Rule, CodeRule, RuleConfig, RuleConfigPatch,
+import {
+  validateParams,
+  isCodeRule,
+  makeDefaultRuleConfig,
 } from '@/services/janitor/domain/index.js';
-import type { IRuleRegistry, IRuleConfigRepository, IAuditEmitter } from '@/services/janitor/ports/index.js';
+import type {
+  Rule,
+  CodeRule,
+  RuleConfig,
+  RuleConfigPatch,
+} from '@/services/janitor/domain/index.js';
+import type {
+  IRuleRegistry,
+  IRuleConfigRepository,
+  IAuditEmitter,
+} from '@/services/janitor/ports/index.js';
 import { validateCronExpression } from './cron-evaluator.js';
 
 export interface RuleListItem {
@@ -83,7 +94,11 @@ export class ManageRuleConfigUseCase {
 
     // Validazione maxRowsPerRun
     if (args.patch.maxRowsPerRun !== undefined) {
-      if (!Number.isInteger(args.patch.maxRowsPerRun) || args.patch.maxRowsPerRun < 1 || args.patch.maxRowsPerRun > 100_000) {
+      if (
+        !Number.isInteger(args.patch.maxRowsPerRun) ||
+        args.patch.maxRowsPerRun < 1 ||
+        args.patch.maxRowsPerRun > 100_000
+      ) {
         throw new Error('maxRowsPerRun deve essere intero tra 1 e 100.000');
       }
     }
@@ -94,7 +109,12 @@ export class ManageRuleConfigUseCase {
       existing = this.defaultConfigFor(rule, args.tenantId);
       await this.configRepo.upsert(existing);
     }
-    const result = await this.configRepo.patch(args.ruleId, args.tenantId, args.patch, args.updatedBy);
+    const result = await this.configRepo.patch(
+      args.ruleId,
+      args.tenantId,
+      args.patch,
+      args.updatedBy,
+    );
 
     await this.audit.emit({
       tenantId: args.tenantId,

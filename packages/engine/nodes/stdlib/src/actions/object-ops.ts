@@ -16,7 +16,11 @@ function getPath(obj: unknown, path: string): unknown {
   let cur: unknown = obj;
   for (const p of path.split('.')) {
     if (cur === null || cur === undefined) return undefined;
-    cur = Array.isArray(cur) ? cur[Number(p)] : typeof cur === 'object' ? (cur as Record<string, unknown>)[p] : undefined;
+    cur = Array.isArray(cur)
+      ? cur[Number(p)]
+      : typeof cur === 'object'
+        ? (cur as Record<string, unknown>)[p]
+        : undefined;
   }
   return cur;
 }
@@ -47,7 +51,8 @@ function delPath(obj: Record<string, unknown>, path: string): void {
     if (!cur || typeof cur !== 'object') return;
     cur = (cur as Record<string, unknown>)[parts[i]!];
   }
-  if (cur && typeof cur === 'object') delete (cur as Record<string, unknown>)[parts[parts.length - 1]!];
+  if (cur && typeof cur === 'object')
+    delete (cur as Record<string, unknown>)[parts[parts.length - 1]!];
 }
 /** Interpreta una stringa come JSON (numero/bool/oggetto) se possibile, altrimenti la lascia stringa. */
 function coerce(v: unknown): unknown {
@@ -62,7 +67,11 @@ function coerce(v: unknown): unknown {
   if (/^-?0\d/.test(t)) return v;
   if (/^-?\d+(\.\d+)?$/.test(t)) return Number(t);
   if ((t.startsWith('{') && t.endsWith('}')) || (t.startsWith('[') && t.endsWith(']'))) {
-    try { return JSON.parse(t); } catch { return v; }
+    try {
+      return JSON.parse(t);
+    } catch {
+      return v;
+    }
   }
   return v;
 }
@@ -77,10 +86,20 @@ const setFieldsExecutor: NodeExecutor = async (config, input) => {
     if (src && typeof src === 'object' && !Array.isArray(src)) {
       // Deep-clone difensivo: un riferimento circolare farebbe lanciare
       // JSON.stringify → fallback a shallow clone (non muta comunque l'input).
-      try { return JSON.parse(JSON.stringify(src)) as Record<string, unknown>; }
-      catch { return { ...(src as Record<string, unknown>) }; }
+      try {
+        return JSON.parse(JSON.stringify(src)) as Record<string, unknown>;
+      } catch {
+        return { ...(src as Record<string, unknown>) };
+      }
     }
-    if (typeof src === 'string') { try { const p: unknown = JSON.parse(src); return p && typeof p === 'object' ? (p as Record<string, unknown>) : {}; } catch { return {}; } }
+    if (typeof src === 'string') {
+      try {
+        const p: unknown = JSON.parse(src);
+        return p && typeof p === 'object' ? (p as Record<string, unknown>) : {};
+      } catch {
+        return {};
+      }
+    }
     return {};
   })();
   const keepOnly = str(config.keepOnly) === 'true';
@@ -88,9 +107,14 @@ const setFieldsExecutor: NodeExecutor = async (config, input) => {
   // assignments: oggetto { "campo.dot": "valore" }
   let assignments: Record<string, unknown> = {};
   const rawAssign = config.assignments;
-  if (rawAssign && typeof rawAssign === 'object') assignments = rawAssign as Record<string, unknown>;
+  if (rawAssign && typeof rawAssign === 'object')
+    assignments = rawAssign as Record<string, unknown>;
   else if (typeof rawAssign === 'string' && rawAssign.trim() !== '') {
-    try { assignments = JSON.parse(rawAssign) as Record<string, unknown>; } catch { /* ignora */ }
+    try {
+      assignments = JSON.parse(rawAssign) as Record<string, unknown>;
+    } catch {
+      /* ignora */
+    }
   }
 
   const result: Record<string, unknown> = keepOnly ? {} : base;
@@ -99,7 +123,10 @@ const setFieldsExecutor: NodeExecutor = async (config, input) => {
   }
 
   // remove: lista di percorsi
-  const removeList = str(config.removeFields).split(',').map((s) => s.trim()).filter(Boolean);
+  const removeList = str(config.removeFields)
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
   for (const path of removeList) delPath(result, path);
 
   // rename: { "vecchio.path": "nuovo.path" }
@@ -107,14 +134,24 @@ const setFieldsExecutor: NodeExecutor = async (config, input) => {
   const rawRename = config.renameFields;
   if (rawRename && typeof rawRename === 'object') renames = rawRename as Record<string, string>;
   else if (typeof rawRename === 'string' && rawRename.trim() !== '') {
-    try { renames = JSON.parse(rawRename) as Record<string, string>; } catch { /* ignora */ }
+    try {
+      renames = JSON.parse(rawRename) as Record<string, string>;
+    } catch {
+      /* ignora */
+    }
   }
   for (const [from, to] of Object.entries(renames)) {
     const v = getPath(result, from);
-    if (v !== undefined) { setPath(result, str(to), v); delPath(result, from); }
+    if (v !== undefined) {
+      setPath(result, str(to), v);
+      delPath(result, from);
+    }
   }
 
-  return { output: { result, fieldCount: Object.keys(result).length }, durationMs: Date.now() - startedAt };
+  return {
+    output: { result, fieldCount: Object.keys(result).length },
+    durationMs: Date.now() - startedAt,
+  };
 };
 
 export const setFieldsNode: NodeModule = {
@@ -125,7 +162,7 @@ export const setFieldsNode: NodeModule = {
     icon: 'edit-3',
     color: '#0891b2',
     description:
-      'Modella un oggetto impostando, rinominando e rimuovendo PIÙ campi in un solo nodo — l\'equivalente del ' +
+      "Modella un oggetto impostando, rinominando e rimuovendo PIÙ campi in un solo nodo — l'equivalente del " +
       'nodo Set / Edit Fields di n8n, in JavaScript puro (zero dipendenze) e con il dot-path per i campi ' +
       'annidati. Quattro leve, tutte in UI: ' +
       '(1) IMPOSTA — un editor chiave/valore dove ogni riga è "percorso → valore": crea o sovrascrive campi anche ' +
@@ -134,37 +171,57 @@ export const setFieldsNode: NodeModule = {
       'stringhe; ' +
       '(2) RINOMINA — un editor che sposta un campo da un percorso a un altro (allinea i nomi dei campi tra ' +
       'sistemi: "Email" → "email", "user.mail" → "contatto.email"); ' +
-      '(3) RIMUOVI — elenca i campi da eliminare (togli PII, campi tecnici, rumore prima di inviare a un\'API o ' +
+      "(3) RIMUOVI — elenca i campi da eliminare (togli PII, campi tecnici, rumore prima di inviare a un'API o " +
       'salvare); ' +
       '(4) SOLO QUESTI — quando attivo, parte da un oggetto vuoto e tiene esclusivamente i campi che imposti ' +
       '(whitelist totale, payload pulito e prevedibile). ' +
-      'Opera su una copia (non muta l\'input). Output: { result, fieldCount }. ' +
+      "Opera su una copia (non muta l'input). Output: { result, fieldCount }. " +
       'Use case: normalizza un lead dal form (rinomina i campi, imposta source="web", rimuovi i campi nascosti); ' +
       'prepara il body esatto per un\'API a valle tenendo solo i campi attesi ("solo questi"); aggiungi metadati ' +
       '(timestamp, stato) a un record; ripulisci un payload webhook dai campi sensibili prima di loggarlo.',
     configFields: [
       {
-        key: 'source', label: 'Oggetto sorgente', type: 'expression', required: false, defaultValue: 'input',
-        help: 'L\'oggetto da modellare. Vuoto = usa l\'input del nodo.',
+        key: 'source',
+        label: 'Oggetto sorgente',
+        type: 'expression',
+        required: false,
+        defaultValue: 'input',
+        help: "L'oggetto da modellare. Vuoto = usa l'input del nodo.",
       },
       {
-        key: 'assignments', label: 'Imposta campi (percorso → valore)', type: 'key-value', required: false,
+        key: 'assignments',
+        label: 'Imposta campi (percorso → valore)',
+        type: 'key-value',
+        required: false,
         help: 'Ogni riga crea/sovrascrive un campo (dot-path supportato). Es. cliente.stato → attivo.',
       },
       {
-        key: 'coerceTypes', label: 'Converti tipi automaticamente', type: 'boolean', required: false, defaultValue: 'true',
+        key: 'coerceTypes',
+        label: 'Converti tipi automaticamente',
+        type: 'boolean',
+        required: false,
+        defaultValue: 'true',
         help: '"42"→numero, "true"→booleano, JSON→oggetto. Disattiva per tenere tutto come stringa.',
       },
       {
-        key: 'renameFields', label: 'Rinomina campi (da → a)', type: 'key-value', required: false,
+        key: 'renameFields',
+        label: 'Rinomina campi (da → a)',
+        type: 'key-value',
+        required: false,
         help: 'Sposta un campo da un percorso a un altro. Es. Email → email.',
       },
       {
-        key: 'removeFields', label: 'Rimuovi campi', type: 'chip-list', required: false,
+        key: 'removeFields',
+        label: 'Rimuovi campi',
+        type: 'chip-list',
+        required: false,
         help: 'Percorsi dei campi da eliminare (separati da virgola).',
       },
       {
-        key: 'keepOnly', label: 'Tieni solo i campi impostati', type: 'boolean', required: false,
+        key: 'keepOnly',
+        label: 'Tieni solo i campi impostati',
+        type: 'boolean',
+        required: false,
         help: 'Parte da un oggetto vuoto: il risultato contiene SOLO i campi che imposti (whitelist).',
       },
     ],
@@ -181,20 +238,44 @@ export const setFieldsNode: NodeModule = {
 const coalesceExecutor: NodeExecutor = async (config, input) => {
   const startedAt = Date.now();
   const src = config.source !== undefined && str(config.source) !== '' ? config.source : input;
-  const source: unknown = typeof src === 'string' ? (() => { try { return JSON.parse(src) as unknown; } catch { return src; } })() : src;
+  const source: unknown =
+    typeof src === 'string'
+      ? (() => {
+          try {
+            return JSON.parse(src) as unknown;
+          } catch {
+            return src;
+          }
+        })()
+      : src;
   const treatEmptyAsMissing = str(config.treatEmptyAsMissing, 'true') !== 'false';
-  const paths = str(config.paths).split(',').map((s) => s.trim()).filter(Boolean);
+  const paths = str(config.paths)
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
   let chosen: unknown;
   let chosenFrom: string | null = null;
   for (const p of paths) {
     const v = getPath(source, p);
     const missing = v === undefined || v === null || (treatEmptyAsMissing && v === '');
-    if (!missing) { chosen = v; chosenFrom = p; break; }
+    if (!missing) {
+      chosen = v;
+      chosenFrom = p;
+      break;
+    }
   }
   if (chosenFrom === null && config.default !== undefined && str(config.default) !== '') {
-    chosen = coerce(config.default); chosenFrom = '(default)';
+    chosen = coerce(config.default);
+    chosenFrom = '(default)';
   }
-  return { output: { result: chosen ?? null, from: chosenFrom, found: chosenFrom !== null && chosenFrom !== '(default)' }, durationMs: Date.now() - startedAt };
+  return {
+    output: {
+      result: chosen ?? null,
+      from: chosenFrom,
+      found: chosenFrom !== null && chosenFrom !== '(default)',
+    },
+    durationMs: Date.now() - startedAt,
+  };
 };
 
 export const coalesceNode: NodeModule = {
@@ -208,7 +289,7 @@ export const coalesceNode: NodeModule = {
       'Restituisce il PRIMO valore presente tra più sorgenti, con un valore di default finale — il pattern ' +
       '"fallback a catena" (coalesce) che in SQL è COALESCE() e nel codice sono i ?? concatenati, qui in un nodo ' +
       'a prova di idiota (JavaScript puro, zero dipendenze). Indichi un elenco ordinato di percorsi (dot-path) ' +
-      'dell\'oggetto in ingresso e il nodo prova il primo, se manca passa al secondo, e così via, fermandosi al ' +
+      "dell'oggetto in ingresso e il nodo prova il primo, se manca passa al secondo, e così via, fermandosi al " +
       'primo che ha un valore. Con l\'opzione "stringa vuota = mancante" (attiva di default) anche i campi ' +
       'presenti ma vuoti vengono saltati — così non propaghi mai un "" dove ti serviva un dato reale. Se nessuna ' +
       'sorgente ha un valore, usa il default che fornisci. Restituisce anche da QUALE sorgente è arrivato il ' +
@@ -219,20 +300,34 @@ export const coalesceNode: NodeModule = {
       'e prezzo_listino; lingua = primo tra preferenza_utente, header_accept_language, "it".',
     configFields: [
       {
-        key: 'source', label: 'Oggetto sorgente', type: 'expression', required: false, defaultValue: 'input',
-        help: 'L\'oggetto da cui leggere. Vuoto = usa l\'input del nodo.',
+        key: 'source',
+        label: 'Oggetto sorgente',
+        type: 'expression',
+        required: false,
+        defaultValue: 'input',
+        help: "L'oggetto da cui leggere. Vuoto = usa l'input del nodo.",
       },
       {
-        key: 'paths', label: 'Percorsi in ordine di priorità', type: 'chip-list', required: true,
+        key: 'paths',
+        label: 'Percorsi in ordine di priorità',
+        type: 'chip-list',
+        required: true,
         placeholder: 'nickname, profilo.nome, email',
         help: 'Elenco ordinato di dot-path: viene scelto il primo che ha un valore.',
       },
       {
-        key: 'default', label: 'Valore di default', type: 'text', required: false,
+        key: 'default',
+        label: 'Valore di default',
+        type: 'text',
+        required: false,
         help: 'Usato se nessuna sorgente ha un valore.',
       },
       {
-        key: 'treatEmptyAsMissing', label: 'Stringa vuota = mancante', type: 'boolean', required: false, defaultValue: 'true',
+        key: 'treatEmptyAsMissing',
+        label: 'Stringa vuota = mancante',
+        type: 'boolean',
+        required: false,
+        defaultValue: 'true',
         help: 'Salta anche i campi presenti ma vuoti ("").',
       },
     ],

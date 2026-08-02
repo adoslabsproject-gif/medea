@@ -29,9 +29,16 @@ const FLUSH_INTERVAL_MS = 30_000;
 const MAX_BUFFER = 100;
 // Skippa nodi non-executor (note, sticky, etc.) e logici (engine-handled)
 const SKIP_DEF_IDS = new Set([
-  'note', 'sticky',
-  'logic_if', 'logic_switch', 'logic_loop', 'logic_merge', 'logic_delay',
-  'logic_subworkflow', 'logic_wait', 'logic_wait_signal',
+  'note',
+  'sticky',
+  'logic_if',
+  'logic_switch',
+  'logic_loop',
+  'logic_merge',
+  'logic_delay',
+  'logic_subworkflow',
+  'logic_wait',
+  'logic_wait_signal',
 ]);
 
 class TelemetryEmitter {
@@ -46,7 +53,9 @@ class TelemetryEmitter {
       return;
     }
     this.unsubscribe = bus.subscribeTo('run.step', (event) => {
-      const data = (event.data ?? {}) as { step?: { defId?: string; status?: string; durationMs?: number; error?: string } };
+      const data = (event.data ?? {}) as {
+        step?: { defId?: string; status?: string; durationMs?: number; error?: string };
+      };
       const step = data.step;
       if (!step?.defId || SKIP_DEF_IDS.has(step.defId)) return;
       if (step.status !== 'success' && step.status !== 'error') return;
@@ -59,14 +68,22 @@ class TelemetryEmitter {
       });
       if (this.buffer.length >= MAX_BUFFER) void this.flush();
     });
-    this.timer = setInterval(() => { void this.flush(); }, FLUSH_INTERVAL_MS);
+    this.timer = setInterval(() => {
+      void this.flush();
+    }, FLUSH_INTERVAL_MS);
     if (typeof this.timer.unref === 'function') this.timer.unref();
     logger.info({}, '[TELEMETRY] emitter started');
   }
 
   stop(): void {
-    if (this.unsubscribe) { this.unsubscribe(); this.unsubscribe = null; }
-    if (this.timer) { clearInterval(this.timer); this.timer = null; }
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
     void this.flush();
   }
 
@@ -87,11 +104,17 @@ class TelemetryEmitter {
         signal: AbortSignal.timeout(10_000),
       });
       if (!res.ok) {
-        logger.warn({ status: res.status, count: batch.length }, '[TELEMETRY] portal ingest non-200');
+        logger.warn(
+          { status: res.status, count: batch.length },
+          '[TELEMETRY] portal ingest non-200',
+        );
       }
     } catch (err) {
       // Fire-and-forget: lost events sono accettabili (best-effort telemetry).
-      logger.warn({ err: err instanceof Error ? err.message : String(err) }, '[TELEMETRY] flush failed');
+      logger.warn(
+        { err: err instanceof Error ? err.message : String(err) },
+        '[TELEMETRY] flush failed',
+      );
     }
   }
 }

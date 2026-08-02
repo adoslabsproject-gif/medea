@@ -68,7 +68,11 @@ describe('appendSync — durabilità sincrona (mutation-verify)', () => {
     const before = (sqlite.prepare('SELECT COUNT(*) AS n FROM audit_log').get() as { n: number }).n;
     expect(before).toBe(0);
 
-    const ret = svc.appendSync({ action: 'tenant.deleted', resourceType: 'tenant', resourceId: 'acme' });
+    const ret = svc.appendSync({
+      action: 'tenant.deleted',
+      resourceType: 'tenant',
+      resourceId: 'acme',
+    });
 
     // Nessun await: la riga DEVE esserci subito (fire-and-forget fallirebbe qui).
     const after = (sqlite.prepare('SELECT COUNT(*) AS n FROM audit_log').get() as { n: number }).n;
@@ -77,7 +81,11 @@ describe('appendSync — durabilità sincrona (mutation-verify)', () => {
   });
 
   it('prima entry: prev_hash = GENESIS, hash = 64 hex', () => {
-    new AuditLogService().appendSync({ action: 'tenant.created', resourceType: 'tenant', resourceId: 'acme' });
+    new AuditLogService().appendSync({
+      action: 'tenant.created',
+      resourceType: 'tenant',
+      resourceId: 'acme',
+    });
     const [row] = allRows();
     expect(row!.prev_hash).toBe('GENESIS');
     expect(row!.hash).toMatch(/^[a-f0-9]{64}$/u);
@@ -86,7 +94,12 @@ describe('appendSync — durabilità sincrona (mutation-verify)', () => {
   it('catena: prev_hash[i] === hash[i-1] su più append sincroni', () => {
     const svc = new AuditLogService();
     svc.appendSync({ action: 'tenant.created', resourceType: 'tenant', resourceId: 'a' });
-    svc.appendSync({ action: 'tenant.suspended', resourceType: 'tenant', resourceId: 'a', metadata: { reason: 'x' } });
+    svc.appendSync({
+      action: 'tenant.suspended',
+      resourceType: 'tenant',
+      resourceId: 'a',
+      metadata: { reason: 'x' },
+    });
     svc.appendSync({ action: 'tenant.deleted', resourceType: 'tenant', resourceId: 'a' });
     const rows = allRows();
     expect(rows).toHaveLength(3);
@@ -96,7 +109,12 @@ describe('appendSync — durabilità sincrona (mutation-verify)', () => {
 
   it('🚨 verifyIntegrity() valida la catena prodotta da appendSync (hash coerenti con append)', async () => {
     const svc = new AuditLogService();
-    svc.appendSync({ action: 'tenant.created', resourceType: 'tenant', resourceId: 'a', metadata: { plan: 'pro' } });
+    svc.appendSync({
+      action: 'tenant.created',
+      resourceType: 'tenant',
+      resourceId: 'a',
+      metadata: { plan: 'pro' },
+    });
     svc.appendSync({ action: 'tenant.deleted', resourceType: 'tenant', resourceId: 'a' });
     const res = await svc.verifyIntegrity();
     expect(res.valid).toBe(true);
@@ -118,7 +136,7 @@ describe('appendSync — durabilità sincrona (mutation-verify)', () => {
     svc.appendSync({ action: 'tenant.created', resourceType: 'tenant', resourceId: 'a' });
     svc.appendSync({ action: 'tenant.deleted', resourceType: 'tenant', resourceId: 'a' });
     // Manomissione diretta della prima riga.
-    sqlite.prepare("UPDATE audit_log SET metadata_json = '{\"tampered\":true}' WHERE id = 1").run();
+    sqlite.prepare('UPDATE audit_log SET metadata_json = \'{"tampered":true}\' WHERE id = 1').run();
     const res = await svc.verifyIntegrity();
     expect(res.valid).toBe(false);
     expect(res.brokenAt).toBe(1);

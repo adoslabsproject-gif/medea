@@ -31,7 +31,9 @@ const H0 = new Uint32Array([
   0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
 ]);
 
-function rotr(x: number, n: number): number { return ((x >>> n) | (x << (32 - n))) >>> 0; }
+function rotr(x: number, n: number): number {
+  return ((x >>> n) | (x << (32 - n))) >>> 0;
+}
 
 function sha256Raw(bytes: Uint8Array): Uint8Array {
   const lenBits = bytes.length * 8;
@@ -57,7 +59,14 @@ function sha256Raw(bytes: Uint8Array): Uint8Array {
       const s1 = rotr(W[i - 2]!, 17) ^ rotr(W[i - 2]!, 19) ^ (W[i - 2]! >>> 10);
       W[i] = (W[i - 16]! + s0 + W[i - 7]! + s1) >>> 0;
     }
-    let a = H[0]!, b = H[1]!, c = H[2]!, d = H[3]!, e = H[4]!, f = H[5]!, g = H[6]!, h = H[7]!;
+    let a = H[0]!,
+      b = H[1]!,
+      c = H[2]!,
+      d = H[3]!,
+      e = H[4]!,
+      f = H[5]!,
+      g = H[6]!,
+      h = H[7]!;
     for (let i = 0; i < 64; i++) {
       const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
       const ch = (e & f) ^ (~e & g);
@@ -65,7 +74,14 @@ function sha256Raw(bytes: Uint8Array): Uint8Array {
       const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
       const mj = (a & b) ^ (a & c) ^ (b & c);
       const t2 = (S0 + mj) >>> 0;
-      h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+      h = g;
+      g = f;
+      f = e;
+      e = (d + t1) >>> 0;
+      d = c;
+      c = b;
+      b = a;
+      a = (t1 + t2) >>> 0;
     }
     H[0] = (H[0]! + a) >>> 0;
     H[1] = (H[1]! + b) >>> 0;
@@ -117,9 +133,16 @@ function utf8Encode(s: string): Uint8Array {
   for (const ch of s) {
     const cp = ch.codePointAt(0)!;
     if (cp < 0x80) bytes.push(cp);
-    else if (cp < 0x800) bytes.push(0xC0 | (cp >> 6), 0x80 | (cp & 0x3F));
-    else if (cp < 0x10000) bytes.push(0xE0 | (cp >> 12), 0x80 | ((cp >> 6) & 0x3F), 0x80 | (cp & 0x3F));
-    else bytes.push(0xF0 | (cp >> 18), 0x80 | ((cp >> 12) & 0x3F), 0x80 | ((cp >> 6) & 0x3F), 0x80 | (cp & 0x3F));
+    else if (cp < 0x800) bytes.push(0xc0 | (cp >> 6), 0x80 | (cp & 0x3f));
+    else if (cp < 0x10000)
+      bytes.push(0xe0 | (cp >> 12), 0x80 | ((cp >> 6) & 0x3f), 0x80 | (cp & 0x3f));
+    else
+      bytes.push(
+        0xf0 | (cp >> 18),
+        0x80 | ((cp >> 12) & 0x3f),
+        0x80 | ((cp >> 6) & 0x3f),
+        0x80 | (cp & 0x3f),
+      );
   }
   return new Uint8Array(bytes);
 }

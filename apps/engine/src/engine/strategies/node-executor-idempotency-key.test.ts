@@ -28,14 +28,19 @@ describe('🚨 [REGRESSION WE-11] Idempotency-Key derived per (runId, nodeId)', 
   });
 
   it('🚨 execCtx receives idempotencyKey field', () => {
-    expect(strategySource).toMatch(/idempotencyKey\?\s*:\s*string[\s\S]*?\.idempotencyKey\s*=\s*idempotencyKey/);
+    expect(strategySource).toMatch(
+      /idempotencyKey\?\s*:\s*string[\s\S]*?\.idempotencyKey\s*=\s*idempotencyKey/,
+    );
   });
 
   it('🚨 key deterministico (NO Date.now / randomBytes) per stesso runId+nodeId', () => {
     // Cerca DENTRO la sezione idempotencyKey assignment per garantire NO
     // randomness — la stesso runId+nodeId deve produrre lo stesso key
     // attraverso tutti i retry.
-    const match = /const idempotencyKey[\s\S]*?execCtx[\s\S]*?idempotencyKey\s*=\s*idempotencyKey;/.exec(strategySource);
+    const match =
+      /const idempotencyKey[\s\S]*?execCtx[\s\S]*?idempotencyKey\s*=\s*idempotencyKey;/.exec(
+        strategySource,
+      );
     expect(match, 'idempotencyKey block non trovato').toBeTruthy();
     const block = match![0];
     expect(block).not.toMatch(/Math\.random|Date\.now|randomBytes/);

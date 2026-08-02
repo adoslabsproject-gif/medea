@@ -15,7 +15,9 @@ import {
   _resetMetrics,
 } from './metrics-store.js';
 
-beforeEach(() => { _resetMetrics(); });
+beforeEach(() => {
+  _resetMetrics();
+});
 
 describe('counterInc', () => {
   it('starts at 1 on first call, increments on subsequent', () => {

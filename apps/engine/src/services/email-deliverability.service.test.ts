@@ -208,7 +208,12 @@ describe('🚨 DNS resilience', () => {
   });
 
   it('🚨 dns timeout (long delay) → null (race against 4s timeout)', async () => {
-    m.resolveTxt.mockImplementation(() => new Promise(() => { /* never */ }));
+    m.resolveTxt.mockImplementation(
+      () =>
+        new Promise(() => {
+          /* never */
+        }),
+    );
     // Set the timeout su 100ms per il test
     const r = await Promise.race([
       svc.check('me@example.com', undefined),

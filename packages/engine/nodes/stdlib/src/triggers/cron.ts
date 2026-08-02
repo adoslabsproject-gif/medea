@@ -8,7 +8,7 @@ export const cronTriggerNode: NodeModule = {
     icon: 'clock',
     color: '#22c55e',
     description:
-      'Scheduler enterprise per esecuzione pianificata di workflow su base cron — l\'innesco di tutte le ' +
+      "Scheduler enterprise per esecuzione pianificata di workflow su base cron — l'innesco di tutte le " +
       'pipeline di automation ricorrente tempo-based che dominano i workflow business (reporting giornaliero, ' +
       'cleanup notturno, sync periodici, email settimanali, alerting orario). Implementa il modello cron Unix ' +
       'classico (sintassi posizionale "min hour day month dow") esteso con builder visuale no-code per ' +
@@ -26,11 +26,11 @@ export const cronTriggerNode: NodeModule = {
       'alle 10:00 perché è cambiata l\'ora legale". ' +
       'Architettura distribuita: lo scheduler vive nel portal centrale (non nel container tenant) — questo ' +
       'significa che cron continuano a partire anche con container in pausa (lifecycle sweeper sospende i ' +
-      'container idle), e il portal fa wake-up automatico del container quando arriva l\'ora di execution (no ' +
+      "container idle), e il portal fa wake-up automatico del container quando arriva l'ora di execution (no " +
       'sleep penalty su piano Free). Il portal mantiene il last_fired_at di ogni cron e gestisce ' +
       'missed_runs detection (se il container era down per > 1 schedule, il portal sa quanti runs sono stati ' +
       'persi e può decidere catch-up o skip in base a policy configurable). ' +
-      'Input al workflow downstream: { triggeredAt (ISO timestamp del firing), scheduledFor (l\'orario nominale ' +
+      "Input al workflow downstream: { triggeredAt (ISO timestamp del firing), scheduledFor (l'orario nominale " +
       'configurato — può differire da triggeredAt per pochi secondi su scheduler delay), missedRuns? (count se ' +
       'sono stati saltati run precedenti), timezone, cronExpression }. ' +
       'Use case: report giornaliero KPI mattina inviato al CEO via email/Telegram con summary del business ' +

@@ -84,11 +84,12 @@ function decideFromTarget(
 ): Decision {
   if (!target) return { skip: `${describe}: workflow proprietario non trovato o ambiguo` };
   if (target.authMode !== 'none') {
-    return { skip: `${describe}: authMode "${target.authMode}" — il segmento token non è derivato, non riscrivibile` };
+    return {
+      skip: `${describe}: authMode "${target.authMode}" — il segmento token non è derivato, non riscrivibile`,
+    };
   }
-  const candidate = customPath !== undefined
-    ? { workflowId: target.id, customPath }
-    : { workflowId: target.id };
+  const candidate =
+    customPath !== undefined ? { workflowId: target.id, customPath } : { workflowId: target.id };
   if (!WebhookRefSchema.safeParse(candidate).success) {
     return { skip: `${describe}: fuori charset dello schema ref` };
   }
@@ -120,7 +121,10 @@ export async function normalizeNodesWebhookLinks(
 
   const customDecisions = new Map<string, Decision>();
   for (const path of customPaths) {
-    customDecisions.set(path, decideFromTarget(await lookup.byCustomPath(path), `/webhooks/c/${path}/…`, path));
+    customDecisions.set(
+      path,
+      decideFromTarget(await lookup.byCustomPath(path), `/webhooks/c/${path}/…`, path),
+    );
   }
   const idDecisions = new Map<string, Decision>();
   for (const id of workflowIds) {
@@ -134,7 +138,12 @@ export async function normalizeNodesWebhookLinks(
   const hostAllowed = (host: string | undefined): boolean =>
     host === undefined || sameHosts.has(host.toLowerCase());
 
-  const applyDecision = (whole: string, host: string | undefined, decision: Decision | undefined, describe: string): string => {
+  const applyDecision = (
+    whole: string,
+    host: string | undefined,
+    decision: Decision | undefined,
+    describe: string,
+  ): string => {
     if (!decision) return whole; // impossibile per costruzione (scan e replace usano lo stesso regex)
     if (!hostAllowed(host)) {
       skipped.add(`${describe}: host "${host ?? ''}" non è di questo tenant`);
@@ -151,9 +160,11 @@ export async function normalizeNodesWebhookLinks(
   const normalizeString = (s: string): string => {
     if (!s.includes('/webhooks/')) return s;
     let out = s.replace(CUSTOM_LINK_RE, (whole, host: string | undefined, path: string) =>
-      applyDecision(whole, host, customDecisions.get(path), `/webhooks/c/${path}/…`));
+      applyDecision(whole, host, customDecisions.get(path), `/webhooks/c/${path}/…`),
+    );
     out = out.replace(DEFAULT_LINK_RE, (whole, host: string | undefined, id: string) =>
-      applyDecision(whole, host, idDecisions.get(id), `/webhooks/${id}/…`));
+      applyDecision(whole, host, idDecisions.get(id), `/webhooks/${id}/…`),
+    );
     return out;
   };
 

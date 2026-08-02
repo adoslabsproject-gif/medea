@@ -100,9 +100,11 @@ describe('🚨 resolve — happy fetch', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, opts] = at(fetchMock.mock.calls, 0, 'fetch-calls');
     expect(String(url)).toBe('https://vault.example.com/v1/secret/data/myapp/db');
-    expect((opts as RequestInit).headers).toEqual(expect.objectContaining({
-      'X-Vault-Token': 'hvs.secret-token-AAA',
-    }));
+    expect((opts as RequestInit).headers).toEqual(
+      expect.objectContaining({
+        'X-Vault-Token': 'hvs.secret-token-AAA',
+      }),
+    );
   });
 
   it('🚨 path senza "data/" middle → auto-resolved', async () => {
@@ -125,7 +127,8 @@ describe('🚨 resolve — happy fetch', () => {
     });
     const { VaultSecretsService } = await loadFresh();
     await new VaultSecretsService().resolve('vault:secret/data/app#x');
-    const headers = (at(fetchMock.mock.calls, 0, 'fetch-calls')[1] as RequestInit).headers as Record<string, string>;
+    const headers = (at(fetchMock.mock.calls, 0, 'fetch-calls')[1] as RequestInit)
+      .headers as Record<string, string>;
     expect(headers['X-Vault-Namespace']).toBe('admin/team-alpha');
   });
 
@@ -137,7 +140,9 @@ describe('🚨 resolve — happy fetch', () => {
     });
     const { VaultSecretsService } = await loadFresh();
     await new VaultSecretsService().resolve('vault:secret/data/app#k');
-    expect(String(at(fetchMock.mock.calls, 0, 'fetch-calls')[0])).toBe('https://vault.example.com/v1/secret/data/app');
+    expect(String(at(fetchMock.mock.calls, 0, 'fetch-calls')[0])).toBe(
+      'https://vault.example.com/v1/secret/data/app',
+    );
   });
 });
 

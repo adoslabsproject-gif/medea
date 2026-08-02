@@ -64,7 +64,9 @@ describe('GET /api/v1/tenant/health', () => {
   });
 
   it('🚨 SQLite che lancia → counts 0 (fail-soft), response comunque 200', async () => {
-    sqliteMock.prepare.mockImplementation(() => { throw new Error('db locked'); });
+    sqliteMock.prepare.mockImplementation(() => {
+      throw new Error('db locked');
+    });
     binaryMock.usage.mockResolvedValue(0);
     const res = await app().request('/api/v1/tenant/health');
     expect(res.status).toBe(200);

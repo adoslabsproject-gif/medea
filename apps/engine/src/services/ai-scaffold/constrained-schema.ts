@@ -28,7 +28,11 @@
  * @module services/ai-scaffold/constrained-schema
  */
 import { SINGLESHOT_OUTPUT_SCHEMA } from '@/services/ai-scaffold/schema.js';
-import { buildCatalogSpec, type ConfigKeySpec, type NodeConfigSpec } from '@/services/ai-scaffold/catalog-spec.js';
+import {
+  buildCatalogSpec,
+  type ConfigKeySpec,
+  type NodeConfigSpec,
+} from '@/services/ai-scaffold/catalog-spec.js';
 import type { NodeCatalogEntry } from '@/services/ai-scaffold/node-catalog.js';
 
 /** Massimo numero di rami (defId) oltre il quale si rinuncia (fallback statico). */
@@ -65,9 +69,10 @@ function configSchema(spec: NodeConfigSpec): JsonSchema {
   if (spec.multiAction) {
     // __action vincolato agli id reali; __resource libero (le resource non sono
     // nel catalog entry → stringa generica, comunque sotto una chiave nota).
-    properties.__action = spec.actionIds && spec.actionIds.length > 0
-      ? { type: 'string', enum: [...spec.actionIds] }
-      : { type: 'string' };
+    properties.__action =
+      spec.actionIds && spec.actionIds.length > 0
+        ? { type: 'string', enum: [...spec.actionIds] }
+        : { type: 'string' };
     properties.__resource = { type: 'string' };
   }
 
@@ -184,5 +189,7 @@ export function selectScaffoldSchema(
     return { schema: staticSchema, constrained: false };
   }
   const constrained = buildConstrainedOutputSchema(catalog);
-  return constrained ? { schema: constrained, constrained: true } : { schema: staticSchema, constrained: false };
+  return constrained
+    ? { schema: constrained, constrained: true }
+    : { schema: staticSchema, constrained: false };
 }

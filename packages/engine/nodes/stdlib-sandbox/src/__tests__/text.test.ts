@@ -5,8 +5,15 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-  slugify, truncate, escapeHtml, stripHtml,
-  capitalize, toCamelCase, toSnakeCase, toKebabCase, approxTokenCount,
+  slugify,
+  truncate,
+  escapeHtml,
+  stripHtml,
+  capitalize,
+  toCamelCase,
+  toSnakeCase,
+  toKebabCase,
+  approxTokenCount,
 } from '../text.js';
 
 describe('slugify', () => {
@@ -71,11 +78,12 @@ describe('truncate', () => {
 
 describe('escapeHtml — anti-XSS', () => {
   it('& < > " \' tutti escaped', () => {
-    expect(escapeHtml('<script>alert("xss")</script>'))
-      .toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
+    expect(escapeHtml('<script>alert("xss")</script>')).toBe(
+      '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;',
+    );
   });
 
-  it("apostrofo → &#39;", () => {
+  it('apostrofo → &#39;', () => {
     expect(escapeHtml("it's")).toBe('it&#39;s');
   });
 

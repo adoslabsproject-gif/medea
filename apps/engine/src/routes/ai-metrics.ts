@@ -89,28 +89,32 @@ export function createAiMetricsRoutes(): Hono {
     const auth = c.get('auth');
     if (!auth) return Promise.resolve(c.json({ error: 'Unauthorized' }, 401));
     const { sqlite } = getDatabase();
-    const totalOpen = sqlite.prepare(
-      `SELECT COUNT(*) as c FROM ai_conversations WHERE deleted_at IS NULL`,
-    ).get() as { c: number };
-    const totalMessages = sqlite.prepare(
-      `SELECT COUNT(*) as c FROM ai_messages`,
-    ).get() as { c: number };
-    const avgMessages = sqlite.prepare(
-      `SELECT AVG(message_count) as a FROM ai_conversations WHERE deleted_at IS NULL`,
-    ).get() as { a: number | null };
-    const bySurface = sqlite.prepare(
-      `SELECT surface, COUNT(*) as c FROM ai_conversations WHERE deleted_at IS NULL GROUP BY surface`,
-    ).all() as { surface: string; c: number }[];
-    const pendingPurge = sqlite.prepare(
-      `SELECT COUNT(*) as c FROM ai_conversations WHERE deleted_at IS NOT NULL`,
-    ).get() as { c: number };
-    return Promise.resolve(c.json({
-      totalOpenConversations: totalOpen.c,
-      totalMessages: totalMessages.c,
-      avgMessagesPerConv: avgMessages.a ?? 0,
-      bySurface,
-      pendingHardPurge: pendingPurge.c,
-    }));
+    const totalOpen = sqlite
+      .prepare(`SELECT COUNT(*) as c FROM ai_conversations WHERE deleted_at IS NULL`)
+      .get() as { c: number };
+    const totalMessages = sqlite.prepare(`SELECT COUNT(*) as c FROM ai_messages`).get() as {
+      c: number;
+    };
+    const avgMessages = sqlite
+      .prepare(`SELECT AVG(message_count) as a FROM ai_conversations WHERE deleted_at IS NULL`)
+      .get() as { a: number | null };
+    const bySurface = sqlite
+      .prepare(
+        `SELECT surface, COUNT(*) as c FROM ai_conversations WHERE deleted_at IS NULL GROUP BY surface`,
+      )
+      .all() as { surface: string; c: number }[];
+    const pendingPurge = sqlite
+      .prepare(`SELECT COUNT(*) as c FROM ai_conversations WHERE deleted_at IS NOT NULL`)
+      .get() as { c: number };
+    return Promise.resolve(
+      c.json({
+        totalOpenConversations: totalOpen.c,
+        totalMessages: totalMessages.c,
+        avgMessagesPerConv: avgMessages.a ?? 0,
+        bySurface,
+        pendingHardPurge: pendingPurge.c,
+      }),
+    );
   });
 
   /** Admin manual trigger for GDPR hard purge (skip 30gg wait for testing). */

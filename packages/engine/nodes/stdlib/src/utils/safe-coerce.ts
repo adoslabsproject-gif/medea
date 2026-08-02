@@ -17,7 +17,11 @@ export function safeString(value: unknown): string {
   if (typeof value === 'string') return value;
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   if (typeof value === 'bigint') return value.toString();
-  try { return JSON.stringify(value); } catch { return '[object]'; }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return '[object]';
+  }
 }
 
 /**
@@ -51,7 +55,11 @@ export function asBool(value: unknown): boolean {
 export function parseKvJson(raw: unknown): Record<string, string> {
   if (typeof raw !== 'string' || raw.trim() === '') return {};
   let parsed: unknown;
-  try { parsed = JSON.parse(raw); } catch { return {}; }
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return {};
+  }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
@@ -66,7 +74,10 @@ export function parseKvJson(raw: unknown): Record<string, string> {
  */
 export function splitCsv(raw: unknown): string[] {
   if (typeof raw !== 'string' || raw.trim() === '') return [];
-  return raw.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
 }
 
 /**

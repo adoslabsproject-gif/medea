@@ -30,12 +30,17 @@ function allowlist(): ReadonlySet<string> {
   if (cached !== undefined) return cached;
   try {
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare('SELECT value FROM system_flags WHERE key = ?').get(FLAG_KEY) as { value: string } | undefined;
+    const row = sqlite.prepare('SELECT value FROM system_flags WHERE key = ?').get(FLAG_KEY) as
+      | { value: string }
+      | undefined;
     // Flag DB scritto dall'admin → fonte di verità. Altrimenti fallback env (bootstrap/legacy).
     cached = parseInternalHostAllowlist(row?.value ?? process.env.MEDEA_INTERNAL_HOST_ALLOWLIST);
   } catch (err) {
     // FAIL-CLOSED: errore DB → nessun host fidato → SSRF guard pieno + TLS verificato.
-    logger.warn({ err: String(err) }, 'egress-policy: read allowlist failed → fail-closed (nessun bypass)');
+    logger.warn(
+      { err: String(err) },
+      'egress-policy: read allowlist failed → fail-closed (nessun bypass)',
+    );
     cached = new Set();
   }
   return cached;
@@ -64,7 +69,10 @@ export function resolveOutboundDispatcher(
   allowSelfSigned: boolean,
 ): { allowlisted: boolean; dispatcher?: unknown } {
   if (!isHostAllowlisted(host, allowlist())) return { allowlisted: false };
-  return { allowlisted: true, dispatcher: allowSelfSigned ? getInsecureTlsDispatcher() : getPermissiveDispatcher() };
+  return {
+    allowlisted: true,
+    dispatcher: allowSelfSigned ? getInsecureTlsDispatcher() : getPermissiveDispatcher(),
+  };
 }
 
 /** Per i test: resetta la cache in-memory (rilegge dal flag DB / env). */

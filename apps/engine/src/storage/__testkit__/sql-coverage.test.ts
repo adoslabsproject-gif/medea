@@ -24,7 +24,9 @@ function driftsOf(sql: string, db: Database.Database): string[] {
   if (res.kind !== 'resolved') return [];
   const out: string[] = [];
   for (const variant of res.variants) {
-    try { db.prepare(variant); } catch (e) {
+    try {
+      db.prepare(variant);
+    } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (/no such column|no such table/i.test(msg)) out.push(msg);
     }
@@ -45,13 +47,18 @@ describe('resolveDynamicSql — classificazione', () => {
   it('IN-list dinamica → resolved, una variante neutralizzata', () => {
     const res = resolveDynamicSql('SELECT id FROM runs WHERE id IN (${ph})', ALLOWLIST);
     expect(res.kind).toBe('resolved');
-    if (res.kind === 'resolved') expect(res.variants).toEqual(['SELECT id FROM runs WHERE id IN (?)']);
+    if (res.kind === 'resolved')
+      expect(res.variants).toEqual(['SELECT id FROM runs WHERE id IN (?)']);
   });
 
   it('WHERE ${whereSql} → WHERE 1=1 + ORDER BY preservato', () => {
-    const res = resolveDynamicSql('SELECT * FROM runs WHERE ${w} ORDER BY started_at DESC', ALLOWLIST);
+    const res = resolveDynamicSql(
+      'SELECT * FROM runs WHERE ${w} ORDER BY started_at DESC',
+      ALLOWLIST,
+    );
     expect(res.kind).toBe('resolved');
-    if (res.kind === 'resolved') expect(res.variants[0]).toBe('SELECT * FROM runs WHERE 1=1 ORDER BY started_at DESC');
+    if (res.kind === 'resolved')
+      expect(res.variants[0]).toBe('SELECT * FROM runs WHERE 1=1 ORDER BY started_at DESC');
   });
 
   it('clausola trailing ${whereSql} → rimossa (tabella+colonne validate)', () => {
@@ -61,12 +68,16 @@ describe('resolveDynamicSql — classificazione', () => {
   });
 
   it('UPDATE SET dinamico → SELECT che valida tabella + WHERE', () => {
-    const res = resolveDynamicSql('UPDATE users SET ${sets} WHERE tenant_id = ? AND id = ?', ALLOWLIST);
+    const res = resolveDynamicSql(
+      'UPDATE users SET ${sets} WHERE tenant_id = ? AND id = ?',
+      ALLOWLIST,
+    );
     expect(res.kind).toBe('resolved');
-    if (res.kind === 'resolved') expect(res.variants[0]).toBe('SELECT 1 FROM users WHERE tenant_id = ? AND id = ?');
+    if (res.kind === 'resolved')
+      expect(res.variants[0]).toBe('SELECT 1 FROM users WHERE tenant_id = ? AND id = ?');
   });
 
-  it('tabella dinamica → una variante per ogni tabella dell\'allowlist', () => {
+  it("tabella dinamica → una variante per ogni tabella dell'allowlist", () => {
     const res = resolveDynamicSql('SELECT * FROM ${table} WHERE tenant_id = ?', ALLOWLIST);
     expect(res.kind).toBe('resolved');
     if (res.kind === 'resolved') {
@@ -94,7 +105,7 @@ describe('resolveDynamicSql — il gate MORDE su drift reale', () => {
     expect(drifts.length).toBeGreaterThan(0);
   });
 
-  it('drift su UNA tabella dell\'allowlist (tenant_id mancante) → catturato', () => {
+  it("drift su UNA tabella dell'allowlist (tenant_id mancante) → catturato", () => {
     db.exec('CREATE TABLE no_tenant (id TEXT)');
     const drifts = driftsOf('SELECT * FROM ${table} WHERE tenant_id = ?', db);
     // workflows/runs/audit_log hanno tenant_id → nessun drift atteso QUI.
@@ -104,7 +115,11 @@ describe('resolveDynamicSql — il gate MORDE su drift reale', () => {
     expect(res.kind).toBe('resolved');
     if (res.kind === 'resolved') {
       let caught = false;
-      try { db.prepare(res.variants[0]!); } catch { caught = true; }
+      try {
+        db.prepare(res.variants[0]!);
+      } catch {
+        caught = true;
+      }
       expect(caught).toBe(true);
     }
   });

@@ -61,7 +61,11 @@ export interface KafkaClientLike {
 export interface KafkaClientConfig {
   brokers: string[];
   ssl: boolean;
-  sasl?: { mechanism: 'plain' | 'scram-sha-256' | 'scram-sha-512'; username: string; password: string };
+  sasl?: {
+    mechanism: 'plain' | 'scram-sha-256' | 'scram-sha-512';
+    username: string;
+    password: string;
+  };
 }
 
 export type KafkaClientFactory = (config: KafkaClientConfig) => KafkaClientLike;
@@ -117,7 +121,10 @@ async function resolveDefaultFactory(): Promise<KafkaClientFactory> {
 
 function parseBrokers(raw: unknown): string[] {
   if (typeof raw !== 'string') return [];
-  return raw.split(',').map((s) => s.trim()).filter(Boolean);
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 function parseSasl(node: CanvasNode): KafkaClientConfig['sasl'] | undefined {
@@ -125,7 +132,8 @@ function parseSasl(node: CanvasNode): KafkaClientConfig['sasl'] | undefined {
   const username = typeof node.config.saslUsername === 'string' ? node.config.saslUsername : '';
   const password = typeof node.config.saslPassword === 'string' ? node.config.saslPassword : '';
   if (!mechanism || mechanism === 'none' || !username) return undefined;
-  if (mechanism !== 'plain' && mechanism !== 'scram-sha-256' && mechanism !== 'scram-sha-512') return undefined;
+  if (mechanism !== 'plain' && mechanism !== 'scram-sha-256' && mechanism !== 'scram-sha-512')
+    return undefined;
   return { mechanism, username, password };
 }
 
@@ -144,9 +152,10 @@ export function startKafkaWatcher(
     logger.warn({ workflowId: wf.id }, 'trigger_kafka: topic mancante — skipped');
     return null;
   }
-  const groupId = typeof node.config.groupId === 'string' && node.config.groupId.trim() !== ''
-    ? node.config.groupId.trim()
-    : `flowforge-${wf.id}`;
+  const groupId =
+    typeof node.config.groupId === 'string' && node.config.groupId.trim() !== ''
+      ? node.config.groupId.trim()
+      : `flowforge-${wf.id}`;
 
   const now = deps.now ?? Date.now;
   const tenantId = wf.tenantId ?? 'default';
@@ -156,13 +165,18 @@ export function startKafkaWatcher(
   const fromBeginning = node.config.fromBeginning === 'true';
   const sasl = parseSasl(node);
   const jsonParse = node.config.jsonParse !== 'false';
-  const pointer = typeof node.config.messagePointer === 'string' ? node.config.messagePointer.trim() : '';
+  const pointer =
+    typeof node.config.messagePointer === 'string' ? node.config.messagePointer.trim() : '';
   const maxPerSec = clampNumber(node.config.maxMessagesPerSec, 0, 100_000, 0);
   const reconnect = node.config.reconnect !== 'false';
 
   const job: KafkaWatcherJob = {
-    workflowId: wf.id, consumer: null, reconnectTimer: null,
-    closing: false, backoffMs: KAFKA_BACKOFF_INITIAL_MS, recentFires: [],
+    workflowId: wf.id,
+    consumer: null,
+    reconnectTimer: null,
+    closing: false,
+    backoffMs: KAFKA_BACKOFF_INITIAL_MS,
+    recentFires: [],
   };
 
   /** Anti-flood sliding-window: true = SCARTA (budget superato). */
@@ -171,7 +185,10 @@ export function startKafkaWatcher(
     const ts = now();
     job.recentFires = job.recentFires.filter((t) => ts - t < 1000);
     if (job.recentFires.length >= maxPerSec) {
-      logger.warn({ workflowId: wf.id, maxPerSec }, 'trigger_kafka: anti-flood budget exceeded — message dropped (offset committed)');
+      logger.warn(
+        { workflowId: wf.id, maxPerSec },
+        'trigger_kafka: anti-flood budget exceeded — message dropped (offset committed)',
+      );
       return true;
     }
     job.recentFires.push(ts);
@@ -183,8 +200,14 @@ export function startKafkaWatcher(
     if (job.reconnectTimer) return;
     const delay = job.backoffMs;
     job.backoffMs = Math.min(job.backoffMs * 2, KAFKA_BACKOFF_CAP_MS);
-    logger.info({ workflowId: wf.id, delayMs: delay }, 'trigger_kafka: consumer perso — reconnect con backoff');
-    job.reconnectTimer = setTimeout(() => { job.reconnectTimer = null; void connect(); }, delay);
+    logger.info(
+      { workflowId: wf.id, delayMs: delay },
+      'trigger_kafka: consumer perso — reconnect con backoff',
+    );
+    job.reconnectTimer = setTimeout(() => {
+      job.reconnectTimer = null;
+      void connect();
+    }, delay);
   };
 
   /**
@@ -198,7 +221,13 @@ export function startKafkaWatcher(
     if (floodBlocked()) return; // budget superato → committa (vedi doc semantica)
     const raw = value.toString('utf8');
     let data: unknown = raw;
-    if (jsonParse) { try { data = JSON.parse(raw); } catch { data = raw; } }
+    if (jsonParse) {
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        data = raw;
+      }
+    }
     let matched: unknown;
     if (pointer) {
       matched = resolveJsonPointer(data, pointer);
@@ -206,16 +235,24 @@ export function startKafkaWatcher(
     }
     try {
       await deps.dispatchRun({
-        workflowId: wf.id, tenantId, triggerType: 'kafka',
+        workflowId: wf.id,
+        tenantId,
+        triggerType: 'kafka',
         triggerInput: {
-          data, raw, receivedAt: new Date().toISOString(),
-          topic: payload.topic, partition: payload.partition,
+          data,
+          raw,
+          receivedAt: new Date().toISOString(),
+          topic: payload.topic,
+          partition: payload.partition,
           ...(matched !== undefined ? { matched } : {}),
         },
       });
     } catch (err) {
       // Propaga per NON committare l'offset → kafkajs ri-consuma (at-least-once).
-      logger.error({ err, workflowId: wf.id, topic }, 'kafka run failed → offset NON committato (re-consumo)');
+      logger.error(
+        { err, workflowId: wf.id, topic },
+        'kafka run failed → offset NON committato (re-consumo)',
+      );
       throw new KafkaRunFailedError(err);
     }
   };
@@ -226,7 +263,14 @@ export function startKafkaWatcher(
       const factory = deps.createClient ?? (await resolveDefaultFactory());
       const client = factory({ brokers, ssl, ...(sasl ? { sasl } : {}) });
       const consumer = client.consumer({ groupId });
-      if (job.closing) { try { await consumer.disconnect(); } catch { /* teardown */ } return; }
+      if (job.closing) {
+        try {
+          await consumer.disconnect();
+        } catch {
+          /* teardown */
+        }
+        return;
+      }
       job.consumer = consumer;
       consumer.on('consumer.crash', () => {
         logger.warn({ workflowId: wf.id, topic }, 'kafka consumer crash');
@@ -239,7 +283,10 @@ export function startKafkaWatcher(
       job.backoffMs = KAFKA_BACKOFF_INITIAL_MS; // reset backoff su run avviato
       logger.info({ workflowId: wf.id, topic, groupId }, 'kafka watcher connected');
     } catch (err) {
-      logger.warn({ err, workflowId: wf.id, topic }, 'kafka connect failed — reconnect con backoff');
+      logger.warn(
+        { err, workflowId: wf.id, topic },
+        'kafka connect failed — reconnect con backoff',
+      );
       job.consumer = null;
       scheduleReconnect();
     }
@@ -253,8 +300,13 @@ export function startKafkaWatcher(
 /** Chiusura pulita: stop reconnect + disconnect consumer (idempotente). */
 export function teardownKafkaWatcher(job: KafkaWatcherJob): void {
   job.closing = true;
-  if (job.reconnectTimer) { clearTimeout(job.reconnectTimer); job.reconnectTimer = null; }
+  if (job.reconnectTimer) {
+    clearTimeout(job.reconnectTimer);
+    job.reconnectTimer = null;
+  }
   const consumer = job.consumer;
   job.consumer = null;
-  if (consumer) { void Promise.resolve(consumer.disconnect()).catch(() => undefined); }
+  if (consumer) {
+    void Promise.resolve(consumer.disconnect()).catch(() => undefined);
+  }
 }

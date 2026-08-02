@@ -61,7 +61,17 @@ vi.mock('@/lib/tenant.js', () => ({
 
 const { createAuditRoutes } = await import('./audit.js');
 
-function makeRow(id: number, overrides: Partial<{ action: string; metadataJson: string; tenantId: string; createdAt: string; hash: string; prevHash: string }> = {}) {
+function makeRow(
+  id: number,
+  overrides: Partial<{
+    action: string;
+    metadataJson: string;
+    tenantId: string;
+    createdAt: string;
+    hash: string;
+    prevHash: string;
+  }> = {},
+) {
   return {
     id,
     tenantId: 'tenant-A',
@@ -99,7 +109,12 @@ describe('🚨 GET /audit — pagination + metadata parsing', () => {
     auditRows.push(makeRow(3), makeRow(2), makeRow(1));
     const res = await makeRequest('/api/v1/audit');
     expect(res.status).toBe(200);
-    const json = await res.json() as { entries: { id: number }[]; total: number; hasMore: boolean; nextBefore: number | null };
+    const json = (await res.json()) as {
+      entries: { id: number }[];
+      total: number;
+      hasMore: boolean;
+      nextBefore: number | null;
+    };
     expect(json.entries).toHaveLength(3);
     expect(json.total).toBe(3);
     expect(json.hasMore).toBe(false);
@@ -110,7 +125,7 @@ describe('🚨 GET /audit — pagination + metadata parsing', () => {
     // Default limit = 100. Push 101 rows → drizzle LIMIT (100+1) ritorna 101.
     for (let i = 101; i >= 1; i--) auditRows.push(makeRow(i));
     const res = await makeRequest('/api/v1/audit');
-    const json = await res.json() as { entries: unknown[]; hasMore: boolean; nextBefore: number };
+    const json = (await res.json()) as { entries: unknown[]; hasMore: boolean; nextBefore: number };
     expect(json.entries).toHaveLength(100);
     expect(json.hasMore).toBe(true);
     expect(json.nextBefore).toBe(2); // 100° elemento (id descending 101..2)
@@ -132,7 +147,7 @@ describe('🚨 GET /audit — pagination + metadata parsing', () => {
   it('🚨 INPUT VALIDATION: ?before=abc (non-numeric) → 400', async () => {
     const res = await makeRequest('/api/v1/audit?before=abc');
     expect(res.status).toBe(400);
-    const json = await res.json() as { error: string };
+    const json = (await res.json()) as { error: string };
     expect(json.error).toMatch(/numeric/u);
   });
 
@@ -151,7 +166,10 @@ describe('🚨 GET /audit — pagination + metadata parsing', () => {
     await makeRequest('/api/v1/audit?before=42');
     // where chiamato con and(eq tenant, lt id)
     expect(mockDb.where).toHaveBeenCalled();
-    const whereArg = mockDb.where.mock.calls[0]![0] as { _kind: string; conds: { _kind: string; val: unknown }[] };
+    const whereArg = mockDb.where.mock.calls[0]![0] as {
+      _kind: string;
+      conds: { _kind: string; val: unknown }[];
+    };
     expect(whereArg._kind).toBe('and');
     const ltCond = whereArg.conds.find((c) => c._kind === 'lt');
     expect(ltCond).toBeDefined();
@@ -169,21 +187,21 @@ describe('🚨 GET /audit — pagination + metadata parsing', () => {
   it('🚨 metadata JSON parsed nel response (NON raw string)', async () => {
     auditRows.push(makeRow(1, { metadataJson: '{"actorRole":"admin","ip":"1.2.3.4"}' }));
     const res = await makeRequest('/api/v1/audit');
-    const json = await res.json() as { entries: { metadata: { actorRole: string } }[] };
+    const json = (await res.json()) as { entries: { metadata: { actorRole: string } }[] };
     expect(json.entries[0]!.metadata).toEqual({ actorRole: 'admin', ip: '1.2.3.4' });
   });
 
   it('🚨 metadata JSON malformato → fallback a raw string (NO crash)', async () => {
     auditRows.push(makeRow(1, { metadataJson: 'NOT-JSON{{{' }));
     const res = await makeRequest('/api/v1/audit');
-    const json = await res.json() as { entries: { metadata: string }[] };
+    const json = (await res.json()) as { entries: { metadata: string }[] };
     expect(json.entries[0]!.metadata).toBe('NOT-JSON{{{');
   });
 
   it('🚨 metadata null → fallback "{}" parsed = {}', async () => {
     auditRows.push(makeRow(1, { metadataJson: undefined as unknown as string }));
     const res = await makeRequest('/api/v1/audit');
-    const json = await res.json() as { entries: { metadata: unknown }[] };
+    const json = (await res.json()) as { entries: { metadata: unknown }[] };
     expect(json.entries[0]!.metadata).toEqual({});
   });
 });
@@ -218,7 +236,9 @@ describe('🚨 GET /audit/export — CSV/JSON download', () => {
     const res = await makeRequest('/api/v1/audit/export');
     const csv = await res.text();
     const firstLine = csv.split('\n')[0]!;
-    expect(firstLine).toBe('id,tenant_id,actor_id,action,resource_type,resource_id,metadata,created_at,hash,prev_hash');
+    expect(firstLine).toBe(
+      'id,tenant_id,actor_id,action,resource_type,resource_id,metadata,created_at,hash,prev_hash',
+    );
   });
 
   it('🚨 CSV: data row contiene 10 colonne', async () => {

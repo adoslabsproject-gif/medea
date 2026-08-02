@@ -55,7 +55,8 @@ export const runPythonExecutor: NodeExecutor = async (rawConfig, input, context)
     throw new Error('action_run_python: annullato (run cancellato).');
   }
   const timeoutMs = clampTimeout(cfg.timeoutMs);
-  const parseJson = cfg.parseStdoutJson !== false && coerceString(cfg.parseStdoutJson ?? 'true') !== 'false';
+  const parseJson =
+    cfg.parseStdoutJson !== false && coerceString(cfg.parseStdoutJson ?? 'true') !== 'false';
   // Network opt-in: default false → sandbox --network=none. ON → rete
   // bridge dedicata con egress filter SSRF-block (vedi setup-egress-network.sh).
   const allowNetwork = cfg.allowNetwork === true || cfg.allowNetwork === 'true';
@@ -75,7 +76,7 @@ export const runPythonExecutor: NodeExecutor = async (rawConfig, input, context)
   } catch (e) {
     throw new Error(
       `action_run_python: code-runner non raggiungibile su ${CODE_RUNNER_URL} (${e instanceof Error ? e.message : String(e)}). ` +
-      'Verifica che il servizio code-runner sia attivo (systemctl status zeliai-code-runner).',
+        'Verifica che il servizio code-runner sia attivo (systemctl status zeliai-code-runner).',
     );
   }
 
@@ -84,8 +85,11 @@ export const runPythonExecutor: NodeExecutor = async (rawConfig, input, context)
   // ricevere stringa embedded nel source (che apriva quoting/escape edge case
   // e impediva debug del source come scritto dall'utente).
   let injectedInput = '{}';
-  try { injectedInput = JSON.stringify(input ?? {}); }
-  catch { /* circular / not serializable → keep {} */ }
+  try {
+    injectedInput = JSON.stringify(input ?? {});
+  } catch {
+    /* circular / not serializable → keep {} */
+  }
 
   // Prelude minimale: legge input.json e popola MEDEA_INPUT come dict +
   // come env var (back-compat con esempi vecchi). Il codice utente arriva intatto.
@@ -105,9 +109,7 @@ export const runPythonExecutor: NodeExecutor = async (rawConfig, input, context)
       code: PRELUDE + code,
       timeout_ms: timeoutMs,
       user_id: userId,
-      inject_files: [
-        { name: 'input.json', content: injectedInput },
-      ],
+      inject_files: [{ name: 'input.json', content: injectedInput }],
       allow_network: allowNetwork,
     }),
     // Signal COMBINATO: timeout per-call + cancel del run (ctx.abortSignal) → un
@@ -117,8 +119,10 @@ export const runPythonExecutor: NodeExecutor = async (rawConfig, input, context)
       : AbortSignal.timeout(timeoutMs + 5000),
   });
 
-  if (res.status === 429) throw new Error('action_run_python: rate limit superato (max 10 esecuzioni/min per tenant).');
-  if (res.status === 503) throw new Error('action_run_python: code-runner occupato, riprova tra qualche secondo.');
+  if (res.status === 429)
+    throw new Error('action_run_python: rate limit superato (max 10 esecuzioni/min per tenant).');
+  if (res.status === 503)
+    throw new Error('action_run_python: code-runner occupato, riprova tra qualche secondo.');
   if (!res.ok) {
     const txt = (await readTextTruncated(res, 65_536).catch(() => ({ text: '' }))).text;
     throw new Error(`action_run_python: HTTP ${String(res.status)} ${txt.slice(0, 200)}`);
@@ -129,26 +133,34 @@ export const runPythonExecutor: NodeExecutor = async (rawConfig, input, context)
   if (!body.success) {
     throw new Error(
       `action_run_python: esecuzione fallita (exit ${String(body.exit_code ?? -1)}). ` +
-      `stderr: ${(body.stderr ?? body.error ?? '').slice(0, 1500)}`,
+        `stderr: ${(body.stderr ?? body.error ?? '').slice(0, 1500)}`,
     );
   }
 
   const stdout = body.stdout ?? '';
   let parsedStdout: unknown = stdout;
   if (parseJson && stdout.trim().length > 0) {
-    try { parsedStdout = JSON.parse(stdout); }
-    catch { /* keep string */ }
+    try {
+      parsedStdout = JSON.parse(stdout);
+    } catch {
+      /* keep string */
+    }
   }
 
   // REF-PRIMARIO: ogni file prodotto dallo script diventa un handle BinaryData
   // (ref content-addressed con store, inline base64 senza = fail-soft) invece di
   // base64 grezzo nel payload. Si collega a Write File / email / http upload.
-  const files = await Promise.all((body.files ?? []).map(async (f) => {
-    const binary = context.writeBinary
-      ? await context.writeBinary(Buffer.from(f.base64, 'base64'), { mimeType: f.mime, fileName: f.name })
-      : makeBinaryInline({ mimeType: f.mime, data: f.base64, fileName: f.name });
-    return { name: f.name, mime: f.mime, size_bytes: f.size_bytes, binary };
-  }));
+  const files = await Promise.all(
+    (body.files ?? []).map(async (f) => {
+      const binary = context.writeBinary
+        ? await context.writeBinary(Buffer.from(f.base64, 'base64'), {
+            mimeType: f.mime,
+            fileName: f.name,
+          })
+        : makeBinaryInline({ mimeType: f.mime, data: f.base64, fileName: f.name });
+      return { name: f.name, mime: f.mime, size_bytes: f.size_bytes, binary };
+    }),
+  );
 
   return {
     output: {

@@ -20,7 +20,6 @@ export class PinnedOutputStrategy implements INodeDispatchStrategy {
     return ctx.pinnedOutputs?.get(ctx.node.id) !== undefined;
   }
 
-   
   execute(ctx: DispatchContext): Promise<DispatchResult> {
     return Promise.resolve({
       output: ctx.pinnedOutputs?.get(ctx.node.id),

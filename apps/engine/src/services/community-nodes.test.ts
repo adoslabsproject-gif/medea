@@ -41,33 +41,41 @@ function canonicalize(obj: unknown): string {
   return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalize((obj as Record<string, unknown>)[k])}`).join(',')}}`;
 }
 
-function buildFfnode(opts: {
-  vendor?: string;
-  id?: string;
-  version?: string;
-  signed?: boolean;
-  executor?: string;
-} = {}): Buffer {
+function buildFfnode(
+  opts: {
+    vendor?: string;
+    id?: string;
+    version?: string;
+    signed?: boolean;
+    executor?: string;
+  } = {},
+): Buffer {
   const vendor = opts.vendor ?? 'test-vendor';
   const id = opts.id ?? 'test_node';
   const version = opts.version ?? '1.0.0';
 
   const manifest: Record<string, unknown> = {
-    id, vendor, version,
+    id,
+    vendor,
+    version,
     displayName: 'Test Node',
     description: 'Integration test fixture',
     license: 'MIT',
   };
   const nodedef = {
-    id, type: 'action', label: 'Test Node',
-    icon: 'cube', color: '#3b82f6',
+    id,
+    type: 'action',
+    label: 'Test Node',
+    icon: 'cube',
+    color: '#3b82f6',
     description: 'Fixture',
-    vendor, version,
-    configFields: [
-      { key: 'name', label: 'Name', type: 'text', required: false },
-    ],
+    vendor,
+    version,
+    configFields: [{ key: 'name', label: 'Name', type: 'text', required: false }],
   };
-  const executorSource = opts.executor ?? `
+  const executorSource =
+    opts.executor ??
+    `
     module.exports = async function execute(config, input, context) {
       return {
         echo: 'hello',
@@ -79,7 +87,9 @@ function buildFfnode(opts: {
 
   if (opts.signed !== false) {
     const { privateKey } = generateKeyPairSync('ed25519');
-    const publicKeyPem = createPublicKey(privateKey).export({ type: 'spki', format: 'pem' }).toString();
+    const publicKeyPem = createPublicKey(privateKey)
+      .export({ type: 'spki', format: 'pem' })
+      .toString();
     const payload = canonicalize(manifest) + '|' + canonicalize(nodedef) + '|' + executorSource;
     const digest = createHash('sha256').update(payload).digest();
     const sig = edSign(null, digest, privateKey).toString('hex');
@@ -143,7 +153,8 @@ describe('verifyManifestSignature', () => {
     const pkg = await parsePackage(buf);
     const sig = pkg.manifest.signature!;
     // Flip the first hex char deterministically: 0..e → next, f → 0.
-    const flipped = (sig.startsWith('f') ? '0' : String.fromCharCode(sig.charCodeAt(0) + 1)) + sig.slice(1);
+    const flipped =
+      (sig.startsWith('f') ? '0' : String.fromCharCode(sig.charCodeAt(0) + 1)) + sig.slice(1);
     pkg.manifest.signature = flipped;
     expect(verifyManifestSignature(pkg)).toBe(false);
   });
@@ -220,7 +231,10 @@ describe('runInSandbox end-to-end via installed package', () => {
       config: { name: 'mario' },
       input: null,
       context: {
-        tenantId: 't1', runId: 'r1', workflowId: 'wf1', nodeId: 'n1',
+        tenantId: 't1',
+        runId: 'r1',
+        workflowId: 'wf1',
+        nodeId: 'n1',
       },
     });
     expect(result).toEqual({ ok: true, got: { name: 'mario', tenant: 't1' } });
@@ -238,10 +252,11 @@ describe('runInSandbox end-to-end via installed package', () => {
       `,
     });
     const installed = await installFromBuffer(buf);
-    const result = await runInSandbox(installed.executorSource, {
-      config: {}, input: null,
+    const result = (await runInSandbox(installed.executorSource, {
+      config: {},
+      input: null,
       context: { tenantId: 't', runId: 'r', workflowId: 'w', nodeId: 'n' },
-    }) as { hasProcess: boolean };
+    })) as { hasProcess: boolean };
     expect(result.hasProcess).toBe(false);
   });
 
@@ -264,10 +279,11 @@ describe('runInSandbox end-to-end via installed package', () => {
       `,
     });
     const installed = await installFromBuffer(buf);
-    const result = await runInSandbox(installed.executorSource, {
-      config: {}, input: null,
+    const result = (await runInSandbox(installed.executorSource, {
+      config: {},
+      input: null,
       context: { tenantId: 't', runId: 'r', workflowId: 'w', nodeId: 'n' },
-    }) as { hostLeak: string };
+    })) as { hostLeak: string };
     expect(result.hostLeak).toBe('undefined');
   });
 
@@ -278,9 +294,12 @@ describe('runInSandbox end-to-end via installed package', () => {
       executor: `// no exports at all\nconst x = 1;`,
     });
     const installed = await installFromBuffer(buf);
-    await expect(runInSandbox(installed.executorSource, {
-      config: {}, input: null,
-      context: { tenantId: 't', runId: 'r', workflowId: 'w', nodeId: 'n' },
-    })).rejects.toThrow(/non esporta una funzione/u);
+    await expect(
+      runInSandbox(installed.executorSource, {
+        config: {},
+        input: null,
+        context: { tenantId: 't', runId: 'r', workflowId: 'w', nodeId: 'n' },
+      }),
+    ).rejects.toThrow(/non esporta una funzione/u);
   });
 });

@@ -21,9 +21,9 @@ export const pecClassifyNodeDef: NodeDef = {
     'carico, valore legale come timbro postale), delivery_receipt (ricevuta di consegna dal gestore destinatario ' +
     'che attesta il deposito nella casella ricevente, equivalente alla raccomandata A/R), rejection (avviso di ' +
     'mancata consegna, mailbox piena, dominio non PEC, virus — tracciabile per riprovare o escalation). ' +
-    'Pattern branching: l\'engine FlowForge segue SOLO l\'edge della branch scelta (chosenBranch), evitando ' +
+    "Pattern branching: l'engine FlowForge segue SOLO l'edge della branch scelta (chosenBranch), evitando " +
     'fan-out errato sulle altre 3 branch downstream. Vincolo: usare SUBITO dopo trigger_imap_pec come primo step ' +
-    'dispatcher — l\'ordine errato porterebbe a classificare email non-PEC con header generici (falso positivo). ' +
+    "dispatcher — l'ordine errato porterebbe a classificare email non-PEC con header generici (falso positivo). " +
     'Output: { branch, headersParsed, messageRef, originalMessageId, transportInfo, gestoreCertificato }. ' +
     'Use case: studio commercialista riceve 200 PEC/giorno — separare le ricevute (archivio passive) dai veri ' +
     'messaggi cliente (workflow di lavorazione), conformità Codice CAD art. 48 per evidenza legale invio fattura, ' +
@@ -41,27 +41,29 @@ export const pecClassifyNodeDef: NodeDef = {
   configFields: [
     {
       key: 'headersPath',
-      label: 'Path agli headers nell\'input',
+      label: "Path agli headers nell'input",
       type: 'text',
       required: false,
       defaultValue: 'headers',
       placeholder: 'headers    oppure    output.headers    oppure    mail.headers',
-      help: 'Percorso "dotted" dentro l\'input che punta all\'oggetto headers email. ' +
+      help:
+        'Percorso "dotted" dentro l\'input che punta all\'oggetto headers email. ' +
         'Default headers (matcha il trigger IMAP standard). ' +
-        'Se l\'input arriva da un sub-workflow puo` servire output.headers.',
+        "Se l'input arriva da un sub-workflow puo` servire output.headers.",
     },
     {
       key: 'includeHeadersInOutput',
-      label: 'Includi headers X-* nell\'output',
+      label: "Includi headers X-* nell'output",
       type: 'boolean',
       required: false,
       defaultValue: 'false',
-      help: 'Se on, l\'output del nodo include una copia dei soli header X-* (PEC ' +
+      help:
+        "Se on, l'output del nodo include una copia dei soli header X-* (PEC " +
         'metadata). Utile per audit. NON include From/Subject/To.',
     },
     {
       key: 'includePipelineLog',
-      label: 'Includi log nell\'output',
+      label: "Includi log nell'output",
       type: 'boolean',
       required: false,
       defaultValue: 'true',

@@ -36,7 +36,11 @@ function constantTimeCompare(a: string, b: string): boolean {
  * @param appSecret        App Secret dell'app Meta
  * @returns true SOLO se secret presente, header nel formato atteso e HMAC combacia
  */
-export function verifyMetaSignature(rawBody: string, signatureHeader: string, appSecret: string): boolean {
+export function verifyMetaSignature(
+  rawBody: string,
+  signatureHeader: string,
+  appSecret: string,
+): boolean {
   if (appSecret === '') return false; // fail-closed: mai accettare senza secret
   if (!signatureHeader.startsWith('sha256=')) return false;
   const provided = signatureHeader.slice('sha256='.length);

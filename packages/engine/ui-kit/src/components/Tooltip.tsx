@@ -23,7 +23,13 @@ const PLACEMENT: Record<NonNullable<TooltipProps['placement']>, string> = {
  * Tooltip — pure-CSS, no external lib. Show on hover/focus.
  * For complex popovers (rich content, click triggers), use Dropdown.
  */
-export function Tooltip({ content, placement = 'top', delay = 300, disabled, children }: TooltipProps): React.ReactElement {
+export function Tooltip({
+  content,
+  placement = 'top',
+  delay = 300,
+  disabled,
+  children,
+}: TooltipProps): React.ReactElement {
   const [show, setShow] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -31,7 +37,9 @@ export function Tooltip({ content, placement = 'top', delay = 300, disabled, chi
 
   const open = (): void => {
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => { setShow(true); }, delay);
+    timer.current = setTimeout(() => {
+      setShow(true);
+    }, delay);
   };
   const close = (): void => {
     if (timer.current) clearTimeout(timer.current);

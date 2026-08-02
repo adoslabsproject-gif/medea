@@ -80,7 +80,9 @@ describe('PageNumberStrategy', () => {
   it('shouldContinue stop at partial page (items < pageSize)', () => {
     const s = new PageNumberStrategy();
     expect(s.shouldContinue(ctx({ pageSize: 50 }), { pageIndex: 0 }, [1, 2, 3])).toBe(false);
-    expect(s.shouldContinue(ctx({ pageSize: 50 }), { pageIndex: 0 }, new Array(50).fill(0))).toBe(true);
+    expect(s.shouldContinue(ctx({ pageSize: 50 }), { pageIndex: 0 }, new Array(50).fill(0))).toBe(
+      true,
+    );
   });
 });
 
@@ -146,7 +148,9 @@ describe('LinkHeaderStrategy', () => {
     const s = new LinkHeaderStrategy();
     const url = s.nextUrl(ctx(), {
       pageIndex: 1,
-      lastResponseHeaders: { link: '<https://api.x.com/data?page=2>; rel="next", <https://api.x.com/data?page=10>; rel="last"' },
+      lastResponseHeaders: {
+        link: '<https://api.x.com/data?page=2>; rel="next", <https://api.x.com/data?page=10>; rel="last"',
+      },
     });
     expect(url).toBe('https://api.x.com/data?page=2');
   });
@@ -171,10 +175,12 @@ describe('LinkHeaderStrategy', () => {
 
   it('returns null when no next rel', () => {
     const s = new LinkHeaderStrategy();
-    expect(s.nextUrl(ctx(), {
-      pageIndex: 1,
-      lastResponseHeaders: { link: '<https://x.com/last>; rel="last"' },
-    })).toBeNull();
+    expect(
+      s.nextUrl(ctx(), {
+        pageIndex: 1,
+        lastResponseHeaders: { link: '<https://x.com/last>; rel="last"' },
+      }),
+    ).toBeNull();
   });
 
   it('returns null when Link header missing', () => {

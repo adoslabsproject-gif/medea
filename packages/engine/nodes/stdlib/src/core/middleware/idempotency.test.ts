@@ -15,7 +15,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { IdempotencyStore } from '../idempotency.js';
 import type { NodeExecutor, NodeExecutionContext, NodeExecutionResult } from '../../types.js';
-import { withIdempotency, withConditionalIdempotency, IdempotencyInFlightError } from './idempotency.js';
+import {
+  withIdempotency,
+  withConditionalIdempotency,
+  IdempotencyInFlightError,
+} from './idempotency.js';
 import { InMemoryIdempotencyStore } from '../idempotency.js';
 
 function makeStore(): IdempotencyStore & {
@@ -51,7 +55,9 @@ function makeCtx(overrides: Partial<NodeExecutionContext> = {}): NodeExecutionCo
   };
 }
 
-function makeInner(returnValue: NodeExecutionResult = { output: { ok: true }, durationMs: 100 }): NodeExecutor {
+function makeInner(
+  returnValue: NodeExecutionResult = { output: { ok: true }, durationMs: 100 },
+): NodeExecutor {
   return vi.fn().mockResolvedValue(returnValue);
 }
 
@@ -127,12 +133,16 @@ describe('🚨 withIdempotency — cache hit (previous output)', () => {
   });
 
   // ── IN-FLIGHT (#race) — NON eseguire mentre un'altra esecuzione concorrente è viva.
-  it('🚨 in-flight poi COMPLETATA dall\'altra → replay, NIENTE next() (no doppio side-effect)', async () => {
+  it("🚨 in-flight poi COMPLETATA dall'altra → replay, NIENTE next() (no doppio side-effect)", async () => {
     const store = makeStore();
     // 1° acquire: in-flight (lock altrui, no output). 2° poll: completata (previousOutput).
     store.acquireMock
       .mockResolvedValueOnce({ acquired: false, previousOutput: undefined, previousAt: Date.now() })
-      .mockResolvedValueOnce({ acquired: false, previousOutput: { stripe_charge_id: 'ch_1' }, previousAt: Date.now() });
+      .mockResolvedValueOnce({
+        acquired: false,
+        previousOutput: { stripe_charge_id: 'ch_1' },
+        previousAt: Date.now(),
+      });
     const inner = makeInner({ output: { fresh: true }, durationMs: 50 });
     const wrapped = withIdempotency({ store, inFlightPollMs: 1, inFlightWaitMs: 1000 })(inner);
     const result = await wrapped({}, {}, makeCtx());
@@ -141,16 +151,20 @@ describe('🚨 withIdempotency — cache hit (previous output)', () => {
     expect(result.warnings).toContain('idempotency:cached');
   });
 
-  it('🚨 in-flight che NON completa entro l\'attesa → IdempotencyInFlightError, NIENTE next()', async () => {
+  it("🚨 in-flight che NON completa entro l'attesa → IdempotencyInFlightError, NIENTE next()", async () => {
     const store = makeStore();
-    store.acquireMock.mockResolvedValue({ acquired: false, previousOutput: undefined, previousAt: Date.now() });
+    store.acquireMock.mockResolvedValue({
+      acquired: false,
+      previousOutput: undefined,
+      previousAt: Date.now(),
+    });
     const inner = makeInner();
     const wrapped = withIdempotency({ store, inFlightPollMs: 1, inFlightWaitMs: 10 })(inner);
     await expect(wrapped({}, {}, makeCtx())).rejects.toBeInstanceOf(IdempotencyInFlightError);
     expect(inner).not.toHaveBeenCalled(); // mai eseguito mentre l'altra è viva
   });
 
-  it('in-flight poi il lock dell\'altra SCADE → si acquisisce e si esegue (l\'altra è morta)', async () => {
+  it("in-flight poi il lock dell'altra SCADE → si acquisisce e si esegue (l'altra è morta)", async () => {
     const store = makeStore();
     store.acquireMock
       .mockResolvedValueOnce({ acquired: false, previousOutput: undefined, previousAt: Date.now() })
@@ -169,27 +183,34 @@ describe('🚨 withIdempotency — CONCORRENZA REALE (InMemoryIdempotencyStore, 
     let calls = 0;
     let releaseFirst!: () => void;
     let firstStartedResolve!: () => void;
-    const gate = new Promise<void>((r) => { releaseFirst = r; });
-    const firstStarted = new Promise<void>((r) => { firstStartedResolve = r; });
+    const gate = new Promise<void>((r) => {
+      releaseFirst = r;
+    });
+    const firstStarted = new Promise<void>((r) => {
+      firstStartedResolve = r;
+    });
 
     const inner: NodeExecutor = vi.fn(async () => {
       calls += 1;
       const mine = calls;
-      if (mine === 1) { firstStartedResolve(); await gate; } // A blocca finché non la sblocco
+      if (mine === 1) {
+        firstStartedResolve();
+        await gate;
+      } // A blocca finché non la sblocco
       return { output: { charge: `ch_${String(mine)}` }, durationMs: 10 };
     });
     const ctx = makeCtx();
     const wrapped = withIdempotency({ store, inFlightPollMs: 2, inFlightWaitMs: 2000 })(inner);
 
-    const pA = wrapped({}, {}, ctx);   // A: acquisisce il lock, handler si blocca sul gate
-    await firstStarted;                // garantito: A tiene il lock ed è dentro l'handler
-    const pB = wrapped({}, {}, ctx);   // B: vede in-flight (A vivo, non completato) → poll
-    releaseFirst();                    // A completa → salva l'output
+    const pA = wrapped({}, {}, ctx); // A: acquisisce il lock, handler si blocca sul gate
+    await firstStarted; // garantito: A tiene il lock ed è dentro l'handler
+    const pB = wrapped({}, {}, ctx); // B: vede in-flight (A vivo, non completato) → poll
+    releaseFirst(); // A completa → salva l'output
     const [rA, rB] = await Promise.all([pA, pB]);
 
-    expect(calls).toBe(1);                                 // handler eseguito UNA SOLA VOLTA
+    expect(calls).toBe(1); // handler eseguito UNA SOLA VOLTA
     expect(rA.output).toEqual({ charge: 'ch_1' });
-    expect(rB.output).toEqual({ charge: 'ch_1' });         // B ha fatto REPLAY, non charge-bis
+    expect(rB.output).toEqual({ charge: 'ch_1' }); // B ha fatto REPLAY, non charge-bis
     expect(rB.warnings).toContain('idempotency:cached');
   });
 });
@@ -204,7 +225,9 @@ describe('🚨 withIdempotency — RESILIENCE fail-open vs fail-closed', () => {
     const result = await wrapped({}, {}, ctx);
     expect(result.output).toEqual({ fallback: true });
     expect(inner).toHaveBeenCalled();
-    expect((ctx as unknown as { logger: { warn: ReturnType<typeof vi.fn> } }).logger.warn).toHaveBeenCalledWith(
+    expect(
+      (ctx as unknown as { logger: { warn: ReturnType<typeof vi.fn> } }).logger.warn,
+    ).toHaveBeenCalledWith(
       expect.stringContaining('store-down'),
       expect.objectContaining({ err: 'Redis ECONNREFUSED' }),
     );
@@ -223,13 +246,14 @@ describe('🚨 withIdempotency — RESILIENCE fail-open vs fail-closed', () => {
     const store = makeStore();
     store.completeMock.mockRejectedValueOnce(new Error('Redis went down after acquire'));
     const ctx = makeCtx();
-    const wrapped = withIdempotency({ store })(makeInner({ output: { done: true }, durationMs: 5 }));
+    const wrapped = withIdempotency({ store })(
+      makeInner({ output: { done: true }, durationMs: 5 }),
+    );
     const result = await wrapped({}, {}, ctx);
     expect(result.output).toEqual({ done: true }); // result restituito comunque
-    expect((ctx as unknown as { logger: { warn: ReturnType<typeof vi.fn> } }).logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining('complete-failed'),
-      expect.any(Object),
-    );
+    expect(
+      (ctx as unknown as { logger: { warn: ReturnType<typeof vi.fn> } }).logger.warn,
+    ).toHaveBeenCalledWith(expect.stringContaining('complete-failed'), expect.any(Object));
   });
 });
 

@@ -34,8 +34,14 @@ import {
   teardownKafkaWatcher,
   type KafkaWatcherJob,
 } from './trigger-watchers/kafka-watcher.js';
-import { startDbChangePoller, type DbChangePollerJob } from './trigger-watchers/db-change-poller.js';
-import { startCommunityTriggerPoller, type CommunityTriggerJob } from './trigger-watchers/community-trigger-poller.js';
+import {
+  startDbChangePoller,
+  type DbChangePollerJob,
+} from './trigger-watchers/db-change-poller.js';
+import {
+  startCommunityTriggerPoller,
+  type CommunityTriggerJob,
+} from './trigger-watchers/community-trigger-poller.js';
 import { startFileWatcher, type FileWatcherJob } from './trigger-watchers/file-watcher.js';
 import { startOdooPoller, type OdooPollerJob } from './trigger-watchers/odoo-poller.js';
 import { startImapPoller, type ImapPollerJob } from './trigger-watchers/imap-poller.js';
@@ -87,7 +93,9 @@ export class TriggerWatchersService {
       this.eventBus.subscribeTo('workflow.updated', onChange),
       this.eventBus.subscribeTo('workflow.deleted', onChange),
     ];
-    this.hotReloadUnsubscribe = (): void => { for (const u of unsubs) u(); };
+    this.hotReloadUnsubscribe = (): void => {
+      for (const u of unsubs) u();
+    };
     logger.info(
       {
         fileWatchers: this.fileWatchers.size,
@@ -190,7 +198,9 @@ export class TriggerWatchersService {
               dispatchRun: (input) => this.runs.execute(input),
               messageGate: (_parsed, rawSource) => {
                 const bounce = parseBounce({ source: rawSource });
-                return bounce !== null ? { dispatch: true, extra: { bounce } } : { dispatch: false };
+                return bounce !== null
+                  ? { dispatch: true, extra: { bounce } }
+                  : { dispatch: false };
               },
             });
             if (job) this.imapPollers.set(wf.id, job);
@@ -241,8 +251,11 @@ export class TriggerWatchersService {
           // suo defId risolve a un nodo installato che dichiara un trigger
           // POLLING, e node.config.__ff_trigger seleziona quale.
           const installed = getInstalledByDefId(node.defId);
-          const triggerId = typeof node.config.__ff_trigger === 'string' ? node.config.__ff_trigger : '';
-          const trig = installed?.def.triggers?.find((t) => t.id === triggerId && t.mode === 'polling');
+          const triggerId =
+            typeof node.config.__ff_trigger === 'string' ? node.config.__ff_trigger : '';
+          const trig = installed?.def.triggers?.find(
+            (t) => t.id === triggerId && t.mode === 'polling',
+          );
           if (installed && trig) {
             const key = `${wf.id}::${node.id}`;
             wantCommunity.add(key);
@@ -314,5 +327,4 @@ export class TriggerWatchersService {
       }
     }
   }
-
 }

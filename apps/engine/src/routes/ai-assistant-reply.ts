@@ -179,7 +179,7 @@ export function coerceAssistantReply<T extends AssistantReplyLike>(
       typeof candidate === 'object' &&
       typeof (candidate as { message?: unknown }).message === 'string'
     ) {
-      const msg = ((candidate as { message: string }).message).trim();
+      const msg = (candidate as { message: string }).message.trim();
       return { reply: { message: msg || EMPTY_REPLY_MESSAGE }, conformed: false };
     }
   }

@@ -25,7 +25,14 @@ export interface TranspileResult {
 
 /** Helper n8n senza equivalente FlowForge: non convertibili, solo segnalabili. */
 const UNSUPPORTED_HELPERS = [
-  '$items', '$workflow', '$execution', '$runIndex', '$itemIndex', '$binary', '$prevNode', '$parameter',
+  '$items',
+  '$workflow',
+  '$execution',
+  '$runIndex',
+  '$itemIndex',
+  '$binary',
+  '$prevNode',
+  '$parameter',
 ] as const;
 
 /**
@@ -34,7 +41,10 @@ const UNSUPPORTED_HELPERS = [
  *   `{{ }}` senza `=` è testo letterale, non un'espressione).
  * - Valore espressione (`=...`) → strip del `=` + conversione di ogni blocco `{{ }}`.
  */
-export function transpileN8nExpression(raw: string, nodeNameToId: ReadonlyMap<string, string>): TranspileResult {
+export function transpileN8nExpression(
+  raw: string,
+  nodeNameToId: ReadonlyMap<string, string>,
+): TranspileResult {
   const warnings: string[] = [];
   if (!raw.startsWith('=')) return { value: raw, warnings };
 
@@ -55,7 +65,8 @@ export function transpileN8nExpression(raw: string, nodeNameToId: ReadonlyMap<st
     e = e.replace(/\[\s*['"`]([a-zA-Z_$][\w$]*)['"`]\s*\]/g, '.$1');
 
     for (const h of UNSUPPORTED_HELPERS) {
-      if (e.includes(h)) warnings.push(`helper "${h}" non ha equivalente FlowForge — adatta a mano`);
+      if (e.includes(h))
+        warnings.push(`helper "${h}" non ha equivalente FlowForge — adatta a mano`);
     }
     return `{{${e}}}`;
   });

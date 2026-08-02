@@ -36,14 +36,14 @@ export const newsDisplayNode: NodeModule = {
     description:
       'Reader enterprise di feed RSS/Atom — il formato standard sindacato da decenni che ogni blog, news ' +
       'site, podcast, GitHub releases, YouTube channel, e in generale ogni publisher serio espone come ' +
-      'meccanismo di distribuzione dei contenuti push-friendly per i subscriber. Scarica il feed dall\'URL ' +
+      "meccanismo di distribuzione dei contenuti push-friendly per i subscriber. Scarica il feed dall'URL " +
       'fornito (esempi tipici: feeds.feedburner.com/HackerNews, googlenews.com/news/rss, github.com/repo/' +
       'releases.atom, qualsiasi blog WordPress espone /feed/) e ne fa il parse semantico secondo i due ' +
       'standard dominanti: RSS 2.0 (il format storico più diffuso, supporta channel + item + enclosure per ' +
       'podcast audio) e Atom 1.0 (lo standard moderno IETF RFC 4287 con namespace XML rigoroso e features ' +
       'rich come content type detection — preferred dai publisher tecnici come blogger.com e GitHub). ' +
       'Estrazione strutturata degli ultimi N items (default 10, configurable 1-100): title (titolo del post), ' +
-      'link (URL canonical dell\'article), pubDate/updated (timestamp ISO 8601 dell\'pubblicazione/update), ' +
+      "link (URL canonical dell'article), pubDate/updated (timestamp ISO 8601 dell'pubblicazione/update), " +
       'snippet (description o summary del content, plain text con HTML stripped per readability), author ' +
       '(when declared nel feed), categories (array di tag/categorie dichiarati dal publisher per ' +
       'filtering downstream), enclosure (per podcast/multimedia: URL del file audio + content-type + size). ' +
@@ -72,7 +72,8 @@ export const newsDisplayNode: NodeModule = {
         type: 'expression',
         required: true,
         placeholder: 'https://news.google.com/rss?q=FlowForge',
-        help: 'URL completa del feed (https://). RSS 2.0 + Atom 1.0 supportati. ' +
+        help:
+          'URL completa del feed (https://). RSS 2.0 + Atom 1.0 supportati. ' +
           'SSRF guard attivo (no localhost/LAN). Supporta espressioni: {{secrets.MY_FEED_URL}}.',
       },
       {
@@ -90,7 +91,8 @@ export const newsDisplayNode: NodeModule = {
         required: false,
         defaultValue: 'none',
         options: ['none', 'markdown', 'html'],
-        help: '"none" = solo array items strutturato. ' +
+        help:
+          '"none" = solo array items strutturato. ' +
           '"markdown" = aggiunge campo `markdown` con bullet list (per Liara/Slack/email). ' +
           '"html" = aggiunge campo `html` con <ul><li> (per email HTML/dashboard).',
       },
@@ -100,7 +102,8 @@ export const newsDisplayNode: NodeModule = {
         type: 'number',
         required: false,
         placeholder: '24',
-        help: 'Filtro opzionale: scarta items con pubDate piu\\` vecchia di N ore. ' +
+        help:
+          'Filtro opzionale: scarta items con pubDate piu\\` vecchia di N ore. ' +
           'Vuoto = nessun filtro. Util per workflow daily digest.',
       },
       {

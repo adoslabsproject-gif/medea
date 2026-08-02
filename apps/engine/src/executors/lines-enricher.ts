@@ -32,7 +32,11 @@ interface OrderLine {
  *
  * Restituisce stringa vuota se non trovata o se è una linea-codice.
  */
-export function findSubDescription(rawText: string, productCode: string, allCodes: string[]): string {
+export function findSubDescription(
+  rawText: string,
+  productCode: string,
+  allCodes: string[],
+): string {
   if (!productCode) return '';
   const lines = rawText.split(/\r?\n/);
   // Trova la riga che contiene il code come "parola intera" all'inizio
@@ -71,7 +75,9 @@ export function codeMatchesIncludePattern(code: string, patterns: string[]): boo
       // `new RegExp(pattern)` di V8 sarebbe ReDoS (es. `(a+)+$` → CPU 100% sul
       // container tenant). RE2 rende il catastrophic backtracking IMPOSSIBILE.
       if (safeUserRegex(pattern).test(code)) return true;
-    } catch { /* regex invalida / feature non-RE2 — skip silenziosamente */ }
+    } catch {
+      /* regex invalida / feature non-RE2 — skip silenziosamente */
+    }
   }
   return false;
 }
@@ -96,15 +102,30 @@ export const linesEnrichExecutor: NodeExecutor = (config, input) => {
   const linesExpr = config.linesExpression;
   if (Array.isArray(linesExpr)) lines = linesExpr as OrderLine[];
   else if (Array.isArray(input)) lines = input as OrderLine[];
-  else if (input !== null && typeof input === 'object' && Array.isArray((input as Record<string, unknown>).lines)) {
+  else if (
+    input !== null &&
+    typeof input === 'object' &&
+    Array.isArray((input as Record<string, unknown>).lines)
+  ) {
     lines = (input as { lines: OrderLine[] }).lines;
   }
 
   const rawText = asString(config.rawTextExpression);
-  if (!rawText) return Promise.reject(new Error('action_lines_enrich: "Testo PDF grezzo" è obbligatorio (es. {{$node.pdf_extract.json.text}})'));
+  if (!rawText)
+    return Promise.reject(
+      new Error(
+        'action_lines_enrich: "Testo PDF grezzo" è obbligatorio (es. {{$node.pdf_extract.json.text}})',
+      ),
+    );
 
-  const includePatterns = asString(config.includeCodePatterns).split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
-  const excludePrefixes = asString(config.excludePrefixes).split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+  const includePatterns = asString(config.includeCodePatterns)
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const excludePrefixes = asString(config.excludePrefixes)
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
   const separator = asString(config.separator) || ' — ';
 
   const allCodes = lines.map((l) => asString(l.product_code)).filter(Boolean);
@@ -130,9 +151,10 @@ export const linesEnrichExecutor: NodeExecutor = (config, input) => {
   // {lines, enrichedCount}, validate riceverebbe payload mutilato e la
   // condizione fallirebbe portando il flow sul ramo error_alert.
   // Strategia: spread dell'input completo, sovrascrivendo SOLO `lines`.
-  const passthrough = (typeof input === 'object' && input !== null && !Array.isArray(input))
-    ? input as Record<string, unknown>
-    : {};
+  const passthrough =
+    typeof input === 'object' && input !== null && !Array.isArray(input)
+      ? (input as Record<string, unknown>)
+      : {};
   return Promise.resolve({
     output: { ...passthrough, lines: enrichedLines, enrichedCount },
     durationMs: Date.now() - start,

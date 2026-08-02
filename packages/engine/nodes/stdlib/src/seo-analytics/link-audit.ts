@@ -81,7 +81,13 @@ function severityFor(status: number | undefined, ok: boolean): LinkSeverity | un
 }
 
 /** Estrae i token rel + il flag target da un <a>. */
-function relFlags(rel: string | null, target: string | null): Pick<LinkInfo, 'nofollow' | 'sponsored' | 'ugc' | 'targetBlank' | 'noopener' | 'tabnabbingRisk'> {
+function relFlags(
+  rel: string | null,
+  target: string | null,
+): Pick<
+  LinkInfo,
+  'nofollow' | 'sponsored' | 'ugc' | 'targetBlank' | 'noopener' | 'tabnabbingRisk'
+> {
   const tokens = (rel ?? '').toLowerCase().split(/\s+/u).filter(Boolean);
   const has = (t: string): boolean => tokens.includes(t);
   const targetBlank = (target ?? '').toLowerCase() === '_blank';
@@ -96,20 +102,32 @@ function relFlags(rel: string | null, target: string | null): Pick<LinkInfo, 'no
   };
 }
 
-function getHtmlAndUrl(config: Record<string, unknown>, input: unknown): { html: string; baseUrl: string | null } {
+function getHtmlAndUrl(
+  config: Record<string, unknown>,
+  input: unknown,
+): { html: string; baseUrl: string | null } {
   const explicitRaw = config.baseUrl;
-  const explicitUrl: string | null = typeof explicitRaw === 'string' && explicitRaw.trim() !== '' ? explicitRaw.trim() : null;
+  const explicitUrl: string | null =
+    typeof explicitRaw === 'string' && explicitRaw.trim() !== '' ? explicitRaw.trim() : null;
   if (typeof input === 'string') return { html: input, baseUrl: explicitUrl };
   if (input && typeof input === 'object') {
     const obj = input as Record<string, unknown>;
-    const fromInput: string | null = typeof obj.url === 'string' ? obj.url : typeof obj.finalUrl === 'string' ? obj.finalUrl : null;
+    const fromInput: string | null =
+      typeof obj.url === 'string'
+        ? obj.url
+        : typeof obj.finalUrl === 'string'
+          ? obj.finalUrl
+          : null;
     if (typeof obj.body === 'string') return { html: obj.body, baseUrl: explicitUrl ?? fromInput };
     if (typeof obj.html === 'string') return { html: obj.html, baseUrl: explicitUrl ?? fromInput };
   }
   return { html: String(config.htmlExplicit ?? ''), baseUrl: explicitUrl };
 }
 
-function classify(href: string, base: URL | null): { scope: LinkInfo['scope']; resolved: string | null } {
+function classify(
+  href: string,
+  base: URL | null,
+): { scope: LinkInfo['scope']; resolved: string | null } {
   const t = href.trim();
   if (!t) return { scope: 'unknown', resolved: null };
   if (t.startsWith('#')) return { scope: 'anchor', resolved: null };
@@ -124,10 +142,17 @@ function classify(href: string, base: URL | null): { scope: LinkInfo['scope']; r
       scope: resolvedUrl.host === base.host ? 'internal' : 'external',
       resolved: resolvedUrl.toString(),
     };
-  } catch { return { scope: 'unknown', resolved: null }; }
+  } catch {
+    return { scope: 'unknown', resolved: null };
+  }
 }
 
-async function checkLink(url: string, userAgent: string, timeoutMs: number, signal: AbortSignal): Promise<{ status?: number; ok: boolean; error?: string; durationMs: number }> {
+async function checkLink(
+  url: string,
+  userAgent: string,
+  timeoutMs: number,
+  signal: AbortSignal,
+): Promise<{ status?: number; ok: boolean; error?: string; durationMs: number }> {
   const t0 = Date.now();
   try {
     const res = await safeFetchWithRedirects(url, {
@@ -138,11 +163,16 @@ async function checkLink(url: string, userAgent: string, timeoutMs: number, sign
       maxRedirects: 5,
       timeoutMs,
     } as never);
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime — TS narrow ottimistico
-    try { void res.body?.cancel?.(); } catch { /* ignore */ }
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime — TS narrow ottimistico
+      void res.body?.cancel?.();
+    } catch {
+      /* ignore */
+    }
     return { status: res.status, ok: res.ok, durationMs: Date.now() - t0 };
   } catch (e) {
-    if (e instanceof SsrfBlockedError) return { error: 'SSRF blocked', ok: false, durationMs: Date.now() - t0 };
+    if (e instanceof SsrfBlockedError)
+      return { error: 'SSRF blocked', ok: false, durationMs: Date.now() - t0 };
     // Fallback to GET (some servers reject HEAD with 405)
     try {
       const res = await safeFetchWithRedirects(url, {
@@ -153,8 +183,12 @@ async function checkLink(url: string, userAgent: string, timeoutMs: number, sign
         maxRedirects: 5,
         timeoutMs,
       } as never);
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime — TS narrow ottimistico
-      try { void res.body?.cancel?.(); } catch { /* ignore */ }
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime — TS narrow ottimistico
+        void res.body?.cancel?.();
+      } catch {
+        /* ignore */
+      }
       return { status: res.status, ok: res.ok, durationMs: Date.now() - t0 };
     } catch (e2) {
       const msg = e2 instanceof Error ? e2.message : String(e2);
@@ -163,21 +197,27 @@ async function checkLink(url: string, userAgent: string, timeoutMs: number, sign
   }
 }
 
-async function runWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+async function runWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Zod-parsed payload → safe per design
   const out: R[] = new Array(items.length);
   let cursor = 0;
   const workers: Promise<void>[] = [];
   for (let i = 0; i < Math.min(limit, items.length); i += 1) {
-    workers.push((async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime — TS narrow ottimistico
-      while (true) {
-        const idx = cursor;
-        cursor += 1;
-        if (idx >= items.length) return;
-        out[idx] = await fn(items[idx] as T);
-      }
-    })());
+    workers.push(
+      (async () => {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime — TS narrow ottimistico
+        while (true) {
+          const idx = cursor;
+          cursor += 1;
+          if (idx >= items.length) return;
+          out[idx] = await fn(items[idx] as T);
+        }
+      })(),
+    );
   }
   await Promise.all(workers);
   return out;
@@ -187,11 +227,23 @@ const executor: NodeExecutor = async (config, input, context) => {
   const start = Date.now();
   const { html, baseUrl } = getHtmlAndUrl(config, input);
   if (!html.trim()) {
-    return { output: { warnings: ['Empty HTML input'] }, durationMs: Date.now() - start, warnings: ['Empty HTML input'] };
+    return {
+      output: { warnings: ['Empty HTML input'] },
+      durationMs: Date.now() - start,
+      warnings: ['Empty HTML input'],
+    };
   }
 
   const $ = cheerioLoad(html);
-  const base = baseUrl ? (() => { try { return new URL(baseUrl); } catch { return null; } })() : null;
+  const base = baseUrl
+    ? (() => {
+        try {
+          return new URL(baseUrl);
+        } catch {
+          return null;
+        }
+      })()
+    : null;
 
   // Collect all <a href> + classify
   const rawLinks: LinkInfo[] = [];
@@ -215,7 +267,15 @@ const executor: NodeExecutor = async (config, input, context) => {
     unique.push(l);
   }
 
-  const byScope: Record<string, number> = { internal: 0, external: 0, anchor: 0, mailto: 0, tel: 0, data: 0, unknown: 0 };
+  const byScope: Record<string, number> = {
+    internal: 0,
+    external: 0,
+    anchor: 0,
+    mailto: 0,
+    tel: 0,
+    data: 0,
+    unknown: 0,
+  };
   for (const l of unique) byScope[l.scope] = (byScope[l.scope] ?? 0) + 1;
 
   const checkBroken = config.checkBroken !== false;
@@ -226,7 +286,8 @@ const executor: NodeExecutor = async (config, input, context) => {
   const scopeFilter = String(config.scope ?? 'all'); // 'all' | 'internal' | 'external'
 
   const checkable = unique.filter((l) => {
-    if (l.scope === 'anchor' || l.scope === 'mailto' || l.scope === 'tel' || l.scope === 'unknown') return false;
+    if (l.scope === 'anchor' || l.scope === 'mailto' || l.scope === 'tel' || l.scope === 'unknown')
+      return false;
     if (!l.resolved) return false;
     if (scopeFilter === 'internal' && l.scope !== 'internal') return false;
     if (scopeFilter === 'external' && l.scope !== 'external') return false;
@@ -257,7 +318,9 @@ const executor: NodeExecutor = async (config, input, context) => {
   });
 
   const broken = merged.filter((l) => l.ok === false);
-  const redirects = merged.filter((l) => typeof l.status === 'number' && l.status >= 300 && l.status < 400);
+  const redirects = merged.filter(
+    (l) => typeof l.status === 'number' && l.status >= 300 && l.status < 400,
+  );
   const tabnabbingRisks = merged.filter((l) => l.tabnabbingRisk);
 
   const result: LinkAuditResult = {
@@ -286,7 +349,10 @@ const executor: NodeExecutor = async (config, input, context) => {
 
   const warnings: string[] = [];
   if (broken.length > 0) warnings.push(`${broken.length} broken links`);
-  if (tabnabbingRisks.length > 0) warnings.push(`${tabnabbingRisks.length} target="_blank" senza rel="noopener" (reverse tabnabbing)`);
+  if (tabnabbingRisks.length > 0)
+    warnings.push(
+      `${tabnabbingRisks.length} target="_blank" senza rel="noopener" (reverse tabnabbing)`,
+    );
   if (!base) warnings.push('No baseUrl: internal/external classification skipped');
 
   return {
@@ -402,7 +468,20 @@ export const linkAuditNode: NodeModule = {
         help: 'User-Agent identificativo. Default identifica FlowForge.',
       },
     ],
-    outputs: ['baseUrl', 'totalLinks', 'uniqueLinks', 'checked', 'skipped', 'byScope', 'summary', 'broken', 'brokenCount', 'tabnabbingRisks', 'redirects', 'links'],
+    outputs: [
+      'baseUrl',
+      'totalLinks',
+      'uniqueLinks',
+      'checked',
+      'skipped',
+      'byScope',
+      'summary',
+      'broken',
+      'brokenCount',
+      'tabnabbingRisks',
+      'redirects',
+      'links',
+    ],
   },
   executor,
 };

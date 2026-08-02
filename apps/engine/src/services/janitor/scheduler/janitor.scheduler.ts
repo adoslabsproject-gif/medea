@@ -19,7 +19,12 @@
 import type { Logger } from 'pino';
 import { parseCron, cronMatches } from '@/services/janitor/application/cron-evaluator.js';
 import type { ExecuteRuleUseCase } from '@/services/janitor/application/execute-rule.usecase.js';
-import type { IClock, IRuleConfigRepository, IRuleRegistry, ILockGateway } from '@/services/janitor/ports/index.js';
+import type {
+  IClock,
+  IRuleConfigRepository,
+  IRuleRegistry,
+  ILockGateway,
+} from '@/services/janitor/ports/index.js';
 
 const TICK_MS = 60_000; // 1 min — granularità minima cron 5-field
 
@@ -50,7 +55,9 @@ export class JanitorScheduler {
     if (staleCount > 0) {
       this.logger.info({ staleCount }, 'Janitor stale lock cleanup al boot');
     }
-    this.timer = setInterval(() => { void this.tick(); }, TICK_MS);
+    this.timer = setInterval(() => {
+      void this.tick();
+    }, TICK_MS);
     // Tick iniziale immediato per non aspettare 1 minuto al boot.
     void this.tick();
     this.logger.info({ tickMs: TICK_MS }, 'JanitorScheduler avviato');
@@ -121,16 +128,22 @@ export class JanitorScheduler {
           });
           executed += 1;
         } catch (err) {
-          this.logger.error({ ruleId: rule.id, err }, 'Janitor scheduler: executeRule lanciato eccezione (non dovrebbe — il use case dovrebbe catturarli)');
+          this.logger.error(
+            { ruleId: rule.id, err },
+            'Janitor scheduler: executeRule lanciato eccezione (non dovrebbe — il use case dovrebbe catturarli)',
+          );
         }
       }
       if (executed > 0 || skippedNotFound > 0) {
-        this.logger.info({
-          executed,
-          skippedSchedule,
-          skippedDisabled,
-          skippedNotFound,
-        }, 'Janitor scheduler tick');
+        this.logger.info(
+          {
+            executed,
+            skippedSchedule,
+            skippedDisabled,
+            skippedNotFound,
+          },
+          'Janitor scheduler tick',
+        );
       }
     } finally {
       this.running = false;

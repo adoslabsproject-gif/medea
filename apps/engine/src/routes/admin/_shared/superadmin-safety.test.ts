@@ -23,56 +23,77 @@ const target = (over: Partial<SuperadminSafetyInput['target']> = {}) => ({
 describe('evaluateSuperadminSafety — ROLE change', () => {
   it('promozione a superadmin è sempre sicura', () => {
     const r = evaluateSuperadminSafety({
-      kind: 'role', actorUserId: 'admin', target: target({ role: 'viewer' }),
-      newRole: 'superadmin', activeSuperadminCount: 1,
+      kind: 'role',
+      actorUserId: 'admin',
+      target: target({ role: 'viewer' }),
+      newRole: 'superadmin',
+      activeSuperadminCount: 1,
     });
     expect(r.allowed).toBe(true);
   });
 
   it('🚨 self-demote → block self_target', () => {
     const r = evaluateSuperadminSafety({
-      kind: 'role', actorUserId: 'u-target', target: target(),
-      newRole: 'viewer', activeSuperadminCount: 3,
+      kind: 'role',
+      actorUserId: 'u-target',
+      target: target(),
+      newRole: 'viewer',
+      activeSuperadminCount: 3,
     });
     expect(r).toEqual({ allowed: false, reason: 'self_target' });
   });
 
   it('🚨 demote ULTIMO superadmin attivo (altro attore) → block last_superadmin', () => {
     const r = evaluateSuperadminSafety({
-      kind: 'role', actorUserId: 'admin', target: target(),
-      newRole: 'owner', activeSuperadminCount: 1,
+      kind: 'role',
+      actorUserId: 'admin',
+      target: target(),
+      newRole: 'owner',
+      activeSuperadminCount: 1,
     });
     expect(r).toEqual({ allowed: false, reason: 'last_superadmin' });
   });
 
   it('demote superadmin quando ne restano altri → consentito', () => {
     const r = evaluateSuperadminSafety({
-      kind: 'role', actorUserId: 'admin', target: target(),
-      newRole: 'owner', activeSuperadminCount: 2,
+      kind: 'role',
+      actorUserId: 'admin',
+      target: target(),
+      newRole: 'owner',
+      activeSuperadminCount: 2,
     });
     expect(r.allowed).toBe(true);
   });
 
   it('self ha precedenza su last (self-demote ultimo → self_target)', () => {
     const r = evaluateSuperadminSafety({
-      kind: 'role', actorUserId: 'u-target', target: target(),
-      newRole: 'owner', activeSuperadminCount: 1,
+      kind: 'role',
+      actorUserId: 'u-target',
+      target: target(),
+      newRole: 'owner',
+      activeSuperadminCount: 1,
     });
     expect(r.reason).toBe('self_target');
   });
 
   it('cambio ruolo su NON-superadmin → non rimuovente → sicuro', () => {
     const r = evaluateSuperadminSafety({
-      kind: 'role', actorUserId: 'admin', target: target({ role: 'viewer' }),
-      newRole: 'owner', activeSuperadminCount: 1,
+      kind: 'role',
+      actorUserId: 'admin',
+      target: target({ role: 'viewer' }),
+      newRole: 'owner',
+      activeSuperadminCount: 1,
     });
     expect(r.allowed).toBe(true);
   });
 
   it('ruolo invariato (superadmin→superadmin) → non rimuovente', () => {
     const r = evaluateSuperadminSafety({
-      kind: 'role', actorUserId: 'admin', target: target(),
-      newRole: 'superadmin', activeSuperadminCount: 1,
+      kind: 'role',
+      actorUserId: 'admin',
+      target: target(),
+      newRole: 'superadmin',
+      activeSuperadminCount: 1,
     });
     expect(r.allowed).toBe(true);
   });
@@ -81,48 +102,66 @@ describe('evaluateSuperadminSafety — ROLE change', () => {
 describe('evaluateSuperadminSafety — ENABLED toggle', () => {
   it('abilitare è sempre sicuro', () => {
     const r = evaluateSuperadminSafety({
-      kind: 'enabled', actorUserId: 'admin', target: target({ enabled: false }),
-      newEnabled: true, activeSuperadminCount: 0,
+      kind: 'enabled',
+      actorUserId: 'admin',
+      target: target({ enabled: false }),
+      newEnabled: true,
+      activeSuperadminCount: 0,
     });
     expect(r.allowed).toBe(true);
   });
 
   it('🚨 self-disable → block self_target', () => {
     const r = evaluateSuperadminSafety({
-      kind: 'enabled', actorUserId: 'u-target', target: target(),
-      newEnabled: false, activeSuperadminCount: 5,
+      kind: 'enabled',
+      actorUserId: 'u-target',
+      target: target(),
+      newEnabled: false,
+      activeSuperadminCount: 5,
     });
     expect(r).toEqual({ allowed: false, reason: 'self_target' });
   });
 
   it('🚨 disable ULTIMO superadmin attivo → block last_superadmin', () => {
     const r = evaluateSuperadminSafety({
-      kind: 'enabled', actorUserId: 'admin', target: target(),
-      newEnabled: false, activeSuperadminCount: 1,
+      kind: 'enabled',
+      actorUserId: 'admin',
+      target: target(),
+      newEnabled: false,
+      activeSuperadminCount: 1,
     });
     expect(r).toEqual({ allowed: false, reason: 'last_superadmin' });
   });
 
   it('disable superadmin già disabilitato → non rimuovente (non contribuisce)', () => {
     const r = evaluateSuperadminSafety({
-      kind: 'enabled', actorUserId: 'admin', target: target({ enabled: false }),
-      newEnabled: false, activeSuperadminCount: 1,
+      kind: 'enabled',
+      actorUserId: 'admin',
+      target: target({ enabled: false }),
+      newEnabled: false,
+      activeSuperadminCount: 1,
     });
     expect(r.allowed).toBe(true);
   });
 
   it('disable NON-superadmin → sicuro anche se count=0', () => {
     const r = evaluateSuperadminSafety({
-      kind: 'enabled', actorUserId: 'admin', target: target({ role: 'owner' }),
-      newEnabled: false, activeSuperadminCount: 0,
+      kind: 'enabled',
+      actorUserId: 'admin',
+      target: target({ role: 'owner' }),
+      newEnabled: false,
+      activeSuperadminCount: 0,
     });
     expect(r.allowed).toBe(true);
   });
 
   it('disable superadmin con altri attivi → consentito', () => {
     const r = evaluateSuperadminSafety({
-      kind: 'enabled', actorUserId: 'admin', target: target(),
-      newEnabled: false, activeSuperadminCount: 4,
+      kind: 'enabled',
+      actorUserId: 'admin',
+      target: target(),
+      newEnabled: false,
+      activeSuperadminCount: 4,
     });
     expect(r.allowed).toBe(true);
   });
@@ -130,16 +169,24 @@ describe('evaluateSuperadminSafety — ENABLED toggle', () => {
 
 describe('assertSuperadminSafe', () => {
   it('non lancia se consentito', () => {
-    expect(() => assertSuperadminSafe({
-      kind: 'role', actorUserId: 'admin', target: target({ role: 'viewer' }),
-      newRole: 'owner', activeSuperadminCount: 1,
-    })).not.toThrow();
+    expect(() =>
+      assertSuperadminSafe({
+        kind: 'role',
+        actorUserId: 'admin',
+        target: target({ role: 'viewer' }),
+        newRole: 'owner',
+        activeSuperadminCount: 1,
+      }),
+    ).not.toThrow();
   });
   it('🚨 lancia SuperadminSafetyError con reason su self-demote', () => {
     try {
       assertSuperadminSafe({
-        kind: 'role', actorUserId: 'u-target', target: target(),
-        newRole: 'viewer', activeSuperadminCount: 3,
+        kind: 'role',
+        actorUserId: 'u-target',
+        target: target(),
+        newRole: 'viewer',
+        activeSuperadminCount: 3,
       });
       expect.unreachable('doveva lanciare');
     } catch (e) {

@@ -13,11 +13,15 @@ import Database from 'better-sqlite3';
 import { at, first } from '@/__testkit__/assert.js';
 
 const auditAppendMock = vi.fn();
-class AuditLogServiceMock { append = auditAppendMock; }
+class AuditLogServiceMock {
+  append = auditAppendMock;
+}
 vi.mock('./audit.service.js', () => ({ AuditLogService: AuditLogServiceMock }));
 
 const vaultResolveMock = vi.fn();
-class VaultSecretsServiceMock { resolve = vaultResolveMock; }
+class VaultSecretsServiceMock {
+  resolve = vaultResolveMock;
+}
 vi.mock('./vault-secrets.service.js', () => ({ VaultSecretsService: VaultSecretsServiceMock }));
 
 let sqlite: Database.Database;
@@ -90,7 +94,8 @@ vi.mock('@medea/engine-secrets', () => {
   return { createVaultSalt, deriveKek, encryptSecret, decryptSecret };
 });
 
-const { CredentialsService, ensureCredentialsTable, loadMaster } = await import('./credentials.service.js');
+const { CredentialsService, ensureCredentialsTable, loadMaster } =
+  await import('./credentials.service.js');
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -103,16 +108,32 @@ describe('🚨 ensureCredentialsTable', () => {
   it('🚨 crea tabella + indici idempotente', () => {
     ensureCredentialsTable();
     ensureCredentialsTable(); // idempotente
-    const tables = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='user_credentials'").all() as any[];
+    const tables = sqlite
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='user_credentials'")
+      .all() as any[];
     expect(tables.length).toBe(1);
-    const idx = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='index' AND name='user_credentials_provider_idx'").all();
+    const idx = sqlite
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='index' AND name='user_credentials_provider_idx'",
+      )
+      .all();
     expect(idx.length).toBe(1);
   });
 
   it('🚨 UNIQUE (tenant_id, name) enforced', () => {
     new CredentialsService();
-    sqlite.prepare(`INSERT INTO user_credentials (id, tenant_id, name, provider, ciphertext, nonce, auth_tag, dek_ciphertext, dek_nonce, dek_auth_tag, metadata_json, created_at, updated_at) VALUES ('a', 't1', 'cred-1', 'http', 'x', 'x', 'x', 'x', 'x', 'x', null, 'now', 'now')`).run();
-    expect(() => sqlite.prepare(`INSERT INTO user_credentials (id, tenant_id, name, provider, ciphertext, nonce, auth_tag, dek_ciphertext, dek_nonce, dek_auth_tag, metadata_json, created_at, updated_at) VALUES ('b', 't1', 'cred-1', 'http', 'x', 'x', 'x', 'x', 'x', 'x', null, 'now', 'now')`).run()).toThrow(/UNIQUE/u);
+    sqlite
+      .prepare(
+        `INSERT INTO user_credentials (id, tenant_id, name, provider, ciphertext, nonce, auth_tag, dek_ciphertext, dek_nonce, dek_auth_tag, metadata_json, created_at, updated_at) VALUES ('a', 't1', 'cred-1', 'http', 'x', 'x', 'x', 'x', 'x', 'x', null, 'now', 'now')`,
+      )
+      .run();
+    expect(() =>
+      sqlite
+        .prepare(
+          `INSERT INTO user_credentials (id, tenant_id, name, provider, ciphertext, nonce, auth_tag, dek_ciphertext, dek_nonce, dek_auth_tag, metadata_json, created_at, updated_at) VALUES ('b', 't1', 'cred-1', 'http', 'x', 'x', 'x', 'x', 'x', 'x', null, 'now', 'now')`,
+        )
+        .run(),
+    ).toThrow(/UNIQUE/u);
   });
 });
 
@@ -155,30 +176,38 @@ describe('🚨 CredentialsService.create — envelope encryption + audit', () =>
     expect(row.ciphertext).not.toContain('super-secret-token-123');
     expect(row.ciphertext).toBe(Buffer.from('super-secret-token-123').toString('base64'));
 
-    expect(auditAppendMock).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: 'default',
-      action: 'credential.create',
-      resourceType: 'credential',
-      resourceId: id,
-      actorId: 'u-1',
-      metadata: { name: 'gmail-account', provider: 'oauth' },
-    }));
+    expect(auditAppendMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'default',
+        action: 'credential.create',
+        resourceType: 'credential',
+        resourceId: id,
+        actorId: 'u-1',
+        metadata: { name: 'gmail-account', provider: 'oauth' },
+      }),
+    );
   });
 
   it('🚨 metadata salvato come JSON serializzato', async () => {
     const svc = new CredentialsService();
     const { id } = await svc.create({
-      name: 'creds-meta', provider: 'api',
-      plaintext: 'x', metadata: { scope: 'read', expires: '2027' },
+      name: 'creds-meta',
+      provider: 'api',
+      plaintext: 'x',
+      metadata: { scope: 'read', expires: '2027' },
     });
-    const row = sqlite.prepare('SELECT metadata_json FROM user_credentials WHERE id=?').get(id) as any;
+    const row = sqlite
+      .prepare('SELECT metadata_json FROM user_credentials WHERE id=?')
+      .get(id) as any;
     expect(JSON.parse(row.metadata_json)).toEqual({ scope: 'read', expires: '2027' });
   });
 
   it('🚨 metadata undefined → metadata_json null (no "{}"" empty string)', async () => {
     const svc = new CredentialsService();
     const { id } = await svc.create({ name: 'no-meta', provider: 'http', plaintext: 'p' });
-    const row = sqlite.prepare('SELECT metadata_json FROM user_credentials WHERE id=?').get(id) as any;
+    const row = sqlite
+      .prepare('SELECT metadata_json FROM user_credentials WHERE id=?')
+      .get(id) as any;
     expect(row.metadata_json).toBeNull();
   });
 
@@ -187,7 +216,9 @@ describe('🚨 CredentialsService.create — envelope encryption + audit', () =>
     await svc.create({ name: 'shared', provider: 'http', plaintext: 'a', tenantId: 'tenant-A' });
     await svc.create({ name: 'shared', provider: 'http', plaintext: 'b', tenantId: 'tenant-B' });
     // Stesso name, tenantId diversi → entrambi accettati
-    const rows = sqlite.prepare('SELECT tenant_id FROM user_credentials WHERE name=?').all('shared') as any[];
+    const rows = sqlite
+      .prepare('SELECT tenant_id FROM user_credentials WHERE name=?')
+      .all('shared') as any[];
     expect(rows.length).toBe(2);
     expect(new Set(rows.map((r) => r.tenant_id))).toEqual(new Set(['tenant-A', 'tenant-B']));
   });
@@ -207,12 +238,14 @@ describe('🚨 list — listing senza ciphertext', () => {
     await svc.create({ name: 'b', provider: 'oauth', plaintext: 'pb' });
     const list = svc.list();
     expect(list).toHaveLength(2);
-    expect(list[0]).toEqual(expect.objectContaining({
-      name: expect.any(String),
-      provider: expect.any(String),
-      createdAt: expect.any(String),
-      updatedAt: expect.any(String),
-    }));
+    expect(list[0]).toEqual(
+      expect.objectContaining({
+        name: expect.any(String),
+        provider: expect.any(String),
+        createdAt: expect.any(String),
+        updatedAt: expect.any(String),
+      }),
+    );
     // 🚨 NON espone ciphertext, plaintext, nonce, authTag
     expect(list[0]).not.toHaveProperty('ciphertext');
     expect(list[0]).not.toHaveProperty('plaintext');
@@ -243,7 +276,12 @@ describe('🚨 reveal — decrypt locale', () => {
 
   it('🚨 wrong tenant → null (tenant isolation)', async () => {
     const svc = new CredentialsService();
-    const { id } = await svc.create({ name: 'iso', provider: 'h', plaintext: 'secret', tenantId: 'A' });
+    const { id } = await svc.create({
+      name: 'iso',
+      provider: 'h',
+      plaintext: 'secret',
+      tenantId: 'A',
+    });
     expect(svc.reveal(id, 'A')).toBe('secret');
     expect(svc.reveal(id, 'B')).toBeNull();
   });
@@ -253,7 +291,11 @@ describe('🚨 revealById — vault: reference precedence', () => {
   it('🚨 name "vault:*" → resolve via VaultSecretsService (NO decrypt locale)', async () => {
     vaultResolveMock.mockResolvedValueOnce('value-from-hashicorp-vault');
     const svc = new CredentialsService();
-    const { id } = await svc.create({ name: 'vault:kv/foo', provider: 'vault', plaintext: 'local-fallback-IGNORED' });
+    const { id } = await svc.create({
+      name: 'vault:kv/foo',
+      provider: 'vault',
+      plaintext: 'local-fallback-IGNORED',
+    });
     const revealed = await svc.revealById(id);
     expect(revealed).toBe('value-from-hashicorp-vault');
     expect(vaultResolveMock).toHaveBeenCalledWith('vault:kv/foo');
@@ -262,7 +304,11 @@ describe('🚨 revealById — vault: reference precedence', () => {
   it('🚨 vault.resolve returns undefined → fallback a decrypt locale', async () => {
     vaultResolveMock.mockResolvedValueOnce(undefined);
     const svc = new CredentialsService();
-    const { id } = await svc.create({ name: 'gmail-token', provider: 'oauth', plaintext: 'local-plaintext-OK' });
+    const { id } = await svc.create({
+      name: 'gmail-token',
+      provider: 'oauth',
+      plaintext: 'local-plaintext-OK',
+    });
     const revealed = await svc.revealById(id);
     expect(revealed).toBe('local-plaintext-OK');
   });
@@ -283,11 +329,13 @@ describe('🚨 delete — atomic + audit', () => {
     const ok = await svc.delete(id, 'default', 'u-9');
     expect(ok).toBe(true);
     expect(sqlite.prepare('SELECT * FROM user_credentials WHERE id=?').get(id)).toBeUndefined();
-    expect(auditAppendMock).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'credential.delete',
-      resourceId: id,
-      actorId: 'u-9',
-    }));
+    expect(auditAppendMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'credential.delete',
+        resourceId: id,
+        actorId: 'u-9',
+      }),
+    );
   });
 
   it('🚨 delete id inesistente → false, NO audit', async () => {

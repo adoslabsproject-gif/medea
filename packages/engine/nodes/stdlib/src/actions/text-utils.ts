@@ -25,7 +25,12 @@ function getPath(obj: unknown, path: string): unknown {
   return cur;
 }
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -33,24 +38,38 @@ function escapeHtml(s: string): string {
 // ════════════════════════════════════════════════════════════════════════
 function slugify(s: string): string {
   return s
-    .normalize('NFKD').replace(/[̀-ͯ]/g, '') // strip accenti (à→a)
-    .toLowerCase().trim()
-    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '') // strip accenti (à→a)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 const textExecutor: NodeExecutor = async (config, input) => {
   const startedAt = Date.now();
   const op = str(config.operation, 'uppercase');
-  const value = config.value !== undefined && str(config.value) !== '' ? str(config.value) : str(input);
+  const value =
+    config.value !== undefined && str(config.value) !== '' ? str(config.value) : str(input);
   let result: unknown;
   switch (op) {
-    case 'uppercase': result = value.toUpperCase(); break;
-    case 'lowercase': result = value.toLowerCase(); break;
-    case 'capitalize': result = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase(); break;
+    case 'uppercase':
+      result = value.toUpperCase();
+      break;
+    case 'lowercase':
+      result = value.toLowerCase();
+      break;
+    case 'capitalize':
+      result = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+      break;
     case 'title':
       result = value.toLowerCase().replace(/(^|\s)\S/g, (m) => m.toUpperCase());
       break;
-    case 'trim': result = value.trim(); break;
-    case 'slugify': result = slugify(value); break;
+    case 'trim':
+      result = value.trim();
+      break;
+    case 'slugify':
+      result = slugify(value);
+      break;
     case 'truncate': {
       const max = Math.max(Number(config.length) || 50, 1);
       const suffix = str(config.suffix, '…');
@@ -80,23 +99,38 @@ const textExecutor: NodeExecutor = async (config, input) => {
         if (m.length > 1) groups.push(m.slice(1));
         if (m.index === re.lastIndex) re.lastIndex += 1; // guard zero-width
       }
-      return { output: { matches, groups, count: matches.length, first: matches[0] ?? null }, durationMs: Date.now() - startedAt };
+      return {
+        output: { matches, groups, count: matches.length, first: matches[0] ?? null },
+        durationMs: Date.now() - startedAt,
+      };
     }
     case 'split': {
       const sep = str(config.search, ',');
-      result = value.split(sep === '\\n' ? '\n' : sep).map((s) => (str(config.trimParts) === 'true' ? s.trim() : s));
+      result = value
+        .split(sep === '\\n' ? '\n' : sep)
+        .map((s) => (str(config.trimParts) === 'true' ? s.trim() : s));
       break;
     }
     case 'pad': {
       const target = Math.max(Number(config.length) || value.length, 0);
       const padChar = str(config.suffix, ' ') || ' ';
-      result = str(config.padSide, 'start') === 'end' ? value.padEnd(target, padChar) : value.padStart(target, padChar);
+      result =
+        str(config.padSide, 'start') === 'end'
+          ? value.padEnd(target, padChar)
+          : value.padStart(target, padChar);
       break;
     }
     default:
       throw new Error(`action_text: operazione sconosciuta "${op}"`);
   }
-  return { output: { result, length: typeof result === 'string' ? result.length : undefined, operation: op }, durationMs: Date.now() - startedAt };
+  return {
+    output: {
+      result,
+      length: typeof result === 'string' ? result.length : undefined,
+      operation: op,
+    },
+    durationMs: Date.now() - startedAt,
+  };
 };
 
 export const textNode: NodeModule = {
@@ -129,52 +163,100 @@ export const textNode: NodeModule = {
       'tronca la descrizione prodotto a 160 caratteri per la meta-description.',
     configFields: [
       {
-        key: 'operation', label: 'Operazione', type: 'select', required: true, defaultValue: 'uppercase',
-        options: ['uppercase', 'lowercase', 'capitalize', 'title', 'trim', 'slugify', 'truncate', 'replace', 'extract', 'split', 'pad'],
+        key: 'operation',
+        label: 'Operazione',
+        type: 'select',
+        required: true,
+        defaultValue: 'uppercase',
+        options: [
+          'uppercase',
+          'lowercase',
+          'capitalize',
+          'title',
+          'trim',
+          'slugify',
+          'truncate',
+          'replace',
+          'extract',
+          'split',
+          'pad',
+        ],
         help: 'Cosa fare con il testo. Ogni operazione mostra solo i suoi parametri.',
       },
       {
-        key: 'value', label: 'Testo in ingresso', type: 'expression', required: false, defaultValue: 'input',
-        help: 'Il testo da elaborare. Vuoto = usa l\'input del nodo.',
+        key: 'value',
+        label: 'Testo in ingresso',
+        type: 'expression',
+        required: false,
+        defaultValue: 'input',
+        help: "Il testo da elaborare. Vuoto = usa l'input del nodo.",
       },
       {
-        key: 'length', label: 'Lunghezza', type: 'number', required: false, defaultValue: '50',
+        key: 'length',
+        label: 'Lunghezza',
+        type: 'number',
+        required: false,
+        defaultValue: '50',
         help: 'TRUNCATE: caratteri massimi · PAD: lunghezza finale.',
         showIf: { field: 'operation', in: ['truncate', 'pad'] },
       },
       {
-        key: 'suffix', label: 'Suffisso / carattere riempimento', type: 'text', required: false, defaultValue: '…',
+        key: 'suffix',
+        label: 'Suffisso / carattere riempimento',
+        type: 'text',
+        required: false,
+        defaultValue: '…',
         help: 'TRUNCATE: testo aggiunto in coda · PAD: carattere di riempimento.',
         showIf: { field: 'operation', in: ['truncate', 'pad'] },
       },
       {
-        key: 'padSide', label: 'Lato riempimento', type: 'select', required: false, defaultValue: 'start',
+        key: 'padSide',
+        label: 'Lato riempimento',
+        type: 'select',
+        required: false,
+        defaultValue: 'start',
         options: ['start', 'end'],
         showIf: { field: 'operation', equals: 'pad' },
       },
       {
-        key: 'search', label: 'Cerca / pattern / separatore', type: 'text', required: false,
+        key: 'search',
+        label: 'Cerca / pattern / separatore',
+        type: 'text',
+        required: false,
         help: 'REPLACE: testo o regex da cercare · EXTRACT: pattern regex · SPLIT: separatore (\\n per a-capo).',
         showIf: { field: 'operation', in: ['replace', 'extract', 'split'] },
       },
       {
-        key: 'replacement', label: 'Sostituzione', type: 'text', required: false,
+        key: 'replacement',
+        label: 'Sostituzione',
+        type: 'text',
+        required: false,
         help: 'Testo con cui sostituire (supporta $1, $2 per i gruppi se usi regex).',
         showIf: { field: 'operation', equals: 'replace' },
       },
       {
-        key: 'useRegex', label: 'Usa espressione regolare', type: 'boolean', required: false,
+        key: 'useRegex',
+        label: 'Usa espressione regolare',
+        type: 'boolean',
+        required: false,
         help: 'Interpreta "Cerca" come regex invece che testo letterale.',
         showIf: { field: 'operation', equals: 'replace' },
       },
       {
-        key: 'flags', label: 'Flag regex', type: 'text', required: false, defaultValue: 'g',
+        key: 'flags',
+        label: 'Flag regex',
+        type: 'text',
+        required: false,
+        defaultValue: 'g',
         placeholder: 'g, i, m, s',
         help: 'g=globale i=case-insensitive m=multiline s=dotall. EXTRACT forza sempre g.',
         showIf: { field: 'operation', in: ['replace', 'extract'] },
       },
       {
-        key: 'trimParts', label: 'Trim delle parti', type: 'boolean', required: false,
+        key: 'trimParts',
+        label: 'Trim delle parti',
+        type: 'boolean',
+        required: false,
         help: 'Rimuove gli spazi attorno a ogni parte dopo lo split.',
         showIf: { field: 'operation', equals: 'split' },
       },
@@ -192,10 +274,18 @@ export const textNode: NodeModule = {
 const templateExecutor: NodeExecutor = async (config, input) => {
   const startedAt = Date.now();
   const template = str(config.template);
-  const rawCtx = config.context !== undefined && str(config.context) !== '' ? config.context : input;
-  const context: unknown = typeof rawCtx === 'string'
-    ? (() => { try { return JSON.parse(rawCtx) as unknown; } catch { return { value: rawCtx }; } })()
-    : rawCtx;
+  const rawCtx =
+    config.context !== undefined && str(config.context) !== '' ? config.context : input;
+  const context: unknown =
+    typeof rawCtx === 'string'
+      ? (() => {
+          try {
+            return JSON.parse(rawCtx) as unknown;
+          } catch {
+            return { value: rawCtx };
+          }
+        })()
+      : rawCtx;
   const doEscape = str(config.escapeHtml) === 'true';
   const missing: string[] = [];
   // {{ path.dot }} oppure {{ path || fallback }}
@@ -204,12 +294,18 @@ const templateExecutor: NodeExecutor = async (config, input) => {
     let val = getPath(context, pathPart!);
     if (val === undefined || val === null || val === '') {
       if (fallbackPart !== undefined) val = fallbackPart.replace(/^['"]|['"]$/g, '');
-      else { missing.push(pathPart!); val = ''; }
+      else {
+        missing.push(pathPart!);
+        val = '';
+      }
     }
     const out = typeof val === 'object' ? JSON.stringify(val) : String(val);
     return doEscape ? escapeHtml(out) : out;
   });
-  return { output: { result, missing, hasMissing: missing.length > 0 }, durationMs: Date.now() - startedAt };
+  return {
+    output: { result, missing, hasMissing: missing.length > 0 },
+    durationMs: Date.now() - startedAt,
+  };
 };
 
 export const templateNode: NodeModule = {
@@ -225,29 +321,39 @@ export const templateNode: NodeModule = {
       'sintassi a doppie graffe `{{ percorso }}`. I segnaposto supportano il dot-path annidato ' +
       '(`{{ cliente.indirizzo.città }}`, `{{ ordine.righe.0.totale }}`) e un valore di default con `||` ' +
       '(`{{ nome || "Cliente" }}` → usa "Cliente" se nome è assente/vuoto) — niente più "undefined" o buchi nei ' +
-      'messaggi quando un campo manca. Il contesto dei dati viene dall\'input del nodo (oggetto o JSON) o da un ' +
+      "messaggi quando un campo manca. Il contesto dei dati viene dall'input del nodo (oggetto o JSON) o da un " +
       'campo dedicato. Modalità ESCAPE HTML opzionale: quando attiva, i valori interpolati vengono ' +
       'automaticamente neutralizzati (`<`, `>`, `&`, `"`, `\'`) — fondamentale quando il template genera HTML con ' +
-      'dati utente, per prevenire XSS/injection (a differenza del nodo Code dove l\'escape è a carico tuo). ' +
+      "dati utente, per prevenire XSS/injection (a differenza del nodo Code dove l'escape è a carico tuo). " +
       'Il nodo segnala anche quali segnaposto non hanno trovato un valore (output `missing` + `hasMissing`), così ' +
       'puoi accorgerti dei dati mancanti invece di inviare un messaggio rotto. ' +
       'Output: { result, missing, hasMissing }. ' +
-      'Use case: componi il corpo di un\'email di conferma ordine con nome cliente e dettagli (escape HTML on); ' +
+      "Use case: componi il corpo di un'email di conferma ordine con nome cliente e dettagli (escape HTML on); " +
       'costruisci un URL di callback con parametri dinamici; genera un messaggio Telegram/Slack personalizzato; ' +
       'prepara il body JSON di una chiamata API interpolando i valori; crea un SMS con default per i campi ' +
       'opzionali. NB: solo interpolazione di valori (no logica/cicli) — per la logica usa i nodi IF/Loop a monte.',
     configFields: [
       {
-        key: 'template', label: 'Template', type: 'textarea', required: true,
+        key: 'template',
+        label: 'Template',
+        type: 'textarea',
+        required: true,
         placeholder: 'Ciao {{ nome || "Cliente" }},\nil tuo ordine {{ ordine.id }} è confermato.',
         help: 'Testo con segnaposto {{ percorso.dot }}. Usa || per un valore di default.',
       },
       {
-        key: 'context', label: 'Dati (contesto)', type: 'expression', required: false, defaultValue: 'input',
-        help: 'Oggetto/JSON con i valori da interpolare. Vuoto = usa l\'input del nodo.',
+        key: 'context',
+        label: 'Dati (contesto)',
+        type: 'expression',
+        required: false,
+        defaultValue: 'input',
+        help: "Oggetto/JSON con i valori da interpolare. Vuoto = usa l'input del nodo.",
       },
       {
-        key: 'escapeHtml', label: 'Escape HTML (anti-XSS)', type: 'boolean', required: false,
+        key: 'escapeHtml',
+        label: 'Escape HTML (anti-XSS)',
+        type: 'boolean',
+        required: false,
         help: 'Neutralizza < > & " \' nei valori interpolati. Attiva SEMPRE se il risultato è HTML con dati utente.',
       },
     ],

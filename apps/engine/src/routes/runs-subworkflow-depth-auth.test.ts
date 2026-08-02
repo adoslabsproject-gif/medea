@@ -28,10 +28,14 @@ const m = vi.hoisted(() => ({
 }));
 
 vi.mock('@/services/run.service.js', () => ({
-  RunService: class { startAsync = m.startAsync; },
+  RunService: class {
+    startAsync = m.startAsync;
+  },
 }));
 vi.mock('@/services/workflow.service.js', () => ({
-  WorkflowService: class { get = m.getWorkflow; },
+  WorkflowService: class {
+    get = m.getWorkflow;
+  },
 }));
 
 // vi.hoisted per garantire QuotaExceededError disponibile durante vi.mock hoisting
@@ -95,7 +99,9 @@ describe('🚨 [REGRESSION WE-1] X-Subworkflow-Depth richiede X-Internal-Token',
    */
   it('🚨 external caller + workflow DISABLED + quota piena + X-Subworkflow-Depth=0 → 402 (NO bypass)', async () => {
     m.getWorkflow.mockResolvedValue({ id: 'wf-disabled', enabled: false });
-    m.checkQuota.mockImplementation(() => { throw new errors.QuotaExceededError(5, 5); });
+    m.checkQuota.mockImplementation(() => {
+      throw new errors.QuotaExceededError(5, 5);
+    });
 
     const app = makeApp({ userId: 'user-external', role: 'editor' });
     const res = await app.request('/workflows/wf-disabled/run', {
@@ -107,7 +113,7 @@ describe('🚨 [REGRESSION WE-1] X-Subworkflow-Depth richiede X-Internal-Token',
       body: JSON.stringify({ triggerType: 'manual', triggerInput: { x: 1 } }),
     });
     expect(res.status).toBe(402);
-    const body = await res.json() as { code: string };
+    const body = (await res.json()) as { code: string };
     expect(body.code).toBe('QUOTA_TEST_BLOCKED');
     // Conferma: startAsync NON è stato chiamato (request rejected)
     expect(m.startAsync).not.toHaveBeenCalled();
@@ -116,7 +122,9 @@ describe('🚨 [REGRESSION WE-1] X-Subworkflow-Depth richiede X-Internal-Token',
   it('🚨 internal caller (auth.userId="internal") + X-Subworkflow-Depth=3 → 202 (bypass legittimo)', async () => {
     m.getWorkflow.mockResolvedValue({ id: 'wf-disabled', enabled: false });
     // Anche se quota fosse piena, il bypass è legittimo per internal caller.
-    m.checkQuota.mockImplementation(() => { throw new errors.QuotaExceededError(5, 5); });
+    m.checkQuota.mockImplementation(() => {
+      throw new errors.QuotaExceededError(5, 5);
+    });
 
     const app = makeApp({ userId: 'internal', role: 'owner' });
     const res = await app.request('/workflows/wf-disabled/run', {
@@ -130,14 +138,14 @@ describe('🚨 [REGRESSION WE-1] X-Subworkflow-Depth richiede X-Internal-Token',
     expect(res.status).toBe(202);
     expect(m.startAsync).toHaveBeenCalledTimes(1);
     // Internal: depth propagato correttamente al RunService
-    expect(m.startAsync).toHaveBeenCalledWith(
-      expect.objectContaining({ subworkflowDepth: 3 }),
-    );
+    expect(m.startAsync).toHaveBeenCalledWith(expect.objectContaining({ subworkflowDepth: 3 }));
   });
 
   it('🚨 external caller NO depth header → quota gate funziona (regression base)', async () => {
     m.getWorkflow.mockResolvedValue({ id: 'wf-disabled', enabled: false });
-    m.checkQuota.mockImplementation(() => { throw new errors.QuotaExceededError(5, 5); });
+    m.checkQuota.mockImplementation(() => {
+      throw new errors.QuotaExceededError(5, 5);
+    });
 
     const app = makeApp({ userId: 'user-external', role: 'editor' });
     const res = await app.request('/workflows/wf-disabled/run', {

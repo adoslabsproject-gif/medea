@@ -23,7 +23,9 @@ describe('substituteGraphVariables', () => {
   });
 
   it('token INLINE in stringa più grande → interpolazione testuale', () => {
-    const g = substituteGraphVariables(wrap({ text: 'a photo of {{soggetto}}, hd' }), { soggetto: 'gatto' });
+    const g = substituteGraphVariables(wrap({ text: 'a photo of {{soggetto}}, hd' }), {
+      soggetto: 'gatto',
+    });
     expect(g['1']?.inputs.text).toBe('a photo of gatto, hd');
   });
 
@@ -53,7 +55,9 @@ describe('substituteGraphVariables', () => {
   });
 
   it('rigetta nodo senza class_type', () => {
-    expect(() => substituteGraphVariables(JSON.stringify({ '1': { inputs: {} } }), {})).toThrow(/class_type/);
+    expect(() => substituteGraphVariables(JSON.stringify({ '1': { inputs: {} } }), {})).toThrow(
+      /class_type/,
+    );
   });
 
   it('numero con spazi NON è trattato come numerico (resta stringa)', () => {

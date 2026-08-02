@@ -33,9 +33,7 @@ export const pecLegalArchiveExecutor: NodeExecutor = async (rawConfig, input) =>
     if (!raw) missing.push(cfg.rawField);
     if (!messageId) missing.push(cfg.messageIdField);
     if (!receivedAt) missing.push(cfg.receivedAtField);
-    throw new ValidationError(
-      `PEC_ARCHIVE_INPUT_MISSING_FIELDS: ${missing.join(', ')}`,
-    );
+    throw new ValidationError(`PEC_ARCHIVE_INPUT_MISSING_FIELDS: ${missing.join(', ')}`);
   }
 
   const archiveInput: ArchiveInput = { raw, messageId, receivedAt };

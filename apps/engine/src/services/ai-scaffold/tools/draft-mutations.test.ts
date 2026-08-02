@@ -41,14 +41,27 @@ vi.mock('@/services/ai-scaffold/tools/plan-handler.js', () => ({
 }));
 
 const {
-  addNodeHandler, connectNodesHandler, finalizeWorkflowHandler,
-  abortHandler, updateNodeHandler, deleteNodeHandler, disconnectNodesHandler,
+  addNodeHandler,
+  connectNodesHandler,
+  finalizeWorkflowHandler,
+  abortHandler,
+  updateNodeHandler,
+  deleteNodeHandler,
+  disconnectNodesHandler,
 } = await import('./draft-mutations.js');
 
 interface Session {
   draft: {
-    id: string; name: string; description: string;
-    nodes: { id: string; defId: string; name?: string; position: { x: number; y: number }; config: Record<string, string> }[];
+    id: string;
+    name: string;
+    description: string;
+    nodes: {
+      id: string;
+      defId: string;
+      name?: string;
+      position: { x: number; y: number };
+      config: Record<string, string>;
+    }[];
     edges: { from: string; to: string; fromPort?: string }[];
   };
   finalized: boolean;
@@ -56,7 +69,9 @@ interface Session {
   abortReason: string;
   goal: string;
   plan: null | {
-    accepted: boolean; proposedAt: number; reasoning: string;
+    accepted: boolean;
+    proposedAt: number;
+    reasoning: string;
     nodes: { id: string; defId: string; purpose: string }[];
     edges: { from: string; to: string; fromPort?: string }[];
   };
@@ -88,7 +103,12 @@ beforeEach(() => {
       defId: 'action_http_request',
       fields: [
         { key: 'url', type: 'string', required: true },
-        { key: 'method', type: 'string', required: false, options: ['GET', 'POST', 'PUT', 'DELETE'] },
+        {
+          key: 'method',
+          type: 'string',
+          required: false,
+          options: ['GET', 'POST', 'PUT', 'DELETE'],
+        },
         { key: 'email', type: 'string', required: false, pattern: '^\\S+@\\S+\\.\\S+$' },
       ],
     },
@@ -118,7 +138,9 @@ describe('🚨 addNodeHandler — required field enumeration', () => {
 
   it('🚨 ALL required missing → enumerati TUTTI in un solo error', () => {
     const r = addNodeHandler(makeSession() as never, {
-      id: 'n1', defId: 'action_http_request', config: {},
+      id: 'n1',
+      defId: 'action_http_request',
+      config: {},
     });
     expect(r.ok).toBe(false);
     if (!r.ok) {
@@ -129,7 +151,8 @@ describe('🚨 addNodeHandler — required field enumeration', () => {
 
   it('🚨 enum field invalid → error con opzioni elencate', () => {
     const r = addNodeHandler(makeSession() as never, {
-      id: 'n1', defId: 'action_http_request',
+      id: 'n1',
+      defId: 'action_http_request',
       config: { url: 'https://x.com', method: 'INVALID_METHOD' },
     });
     expect(r.ok).toBe(false);
@@ -141,7 +164,8 @@ describe('🚨 addNodeHandler — required field enumeration', () => {
 
   it('🚨 regex pattern violation → error', () => {
     const r = addNodeHandler(makeSession() as never, {
-      id: 'n1', defId: 'action_http_request',
+      id: 'n1',
+      defId: 'action_http_request',
       config: { url: 'https://x.com', email: 'not-email' },
     });
     expect(r.ok).toBe(false);
@@ -149,12 +173,16 @@ describe('🚨 addNodeHandler — required field enumeration', () => {
   });
 
   it('🚨 SECURITY: regex pattern INVALID → skip (no crash, no SecurityError)', () => {
-    buildNodeCatalogMock.mockReturnValue([{
-      defId: 'fake_node',
-      fields: [{ key: 'k', type: 'string', required: false, pattern: '[unclosed' }],
-    }]);
+    buildNodeCatalogMock.mockReturnValue([
+      {
+        defId: 'fake_node',
+        fields: [{ key: 'k', type: 'string', required: false, pattern: '[unclosed' }],
+      },
+    ]);
     const r = addNodeHandler(makeSession() as never, {
-      id: 'n1', defId: 'fake_node', config: { k: 'value' },
+      id: 'n1',
+      defId: 'fake_node',
+      config: { k: 'value' },
     });
     expect(r.ok).toBe(true);
   });
@@ -162,7 +190,9 @@ describe('🚨 addNodeHandler — required field enumeration', () => {
   it('🚨 id duplicato → error "già aggiunto"', () => {
     const s = makeSession({
       draft: {
-        id: '', name: '', description: '',
+        id: '',
+        name: '',
+        description: '',
         nodes: [{ id: 'n1', defId: 'trigger_manual', position: { x: 0, y: 0 }, config: {} }],
         edges: [],
       },
@@ -172,12 +202,16 @@ describe('🚨 addNodeHandler — required field enumeration', () => {
   });
 
   it('🚨 config value object → JSON.stringify normalizzato', () => {
-    buildNodeCatalogMock.mockReturnValue([{
-      defId: 'cfg_node', fields: [{ key: 'k', type: 'json', required: false }],
-    }]);
+    buildNodeCatalogMock.mockReturnValue([
+      {
+        defId: 'cfg_node',
+        fields: [{ key: 'k', type: 'json', required: false }],
+      },
+    ]);
     const s = makeSession();
     addNodeHandler(s as never, {
-      id: 'n1', defId: 'cfg_node',
+      id: 'n1',
+      defId: 'cfg_node',
       config: { k: { complex: 'object', nested: 42 } },
     });
     expect(first(s.draft.nodes).config.k).toBe('{"complex":"object","nested":42}');
@@ -221,7 +255,9 @@ describe('🚨 connectNodesHandler — orphan-edge guard', () => {
   it('🚨 from non esiste nel draft → error helpful', () => {
     const s = makeSession({
       draft: {
-        id: '', name: '', description: '',
+        id: '',
+        name: '',
+        description: '',
         nodes: [{ id: 'b', defId: 'trigger_manual', position: { x: 0, y: 0 }, config: {} }],
         edges: [],
       },
@@ -234,7 +270,9 @@ describe('🚨 connectNodesHandler — orphan-edge guard', () => {
   it('🚨 connect happy: from + to esistono → edge aggiunto', () => {
     const s = makeSession({
       draft: {
-        id: '', name: '', description: '',
+        id: '',
+        name: '',
+        description: '',
         nodes: [
           { id: 'a', defId: 'trigger_manual', position: { x: 0, y: 0 }, config: {} },
           { id: 'b', defId: 'trigger_manual', position: { x: 0, y: 0 }, config: {} },
@@ -251,7 +289,9 @@ describe('🚨 connectNodesHandler — orphan-edge guard', () => {
   it('🚨 fromPort string → preserved', () => {
     const s = makeSession({
       draft: {
-        id: '', name: '', description: '',
+        id: '',
+        name: '',
+        description: '',
         nodes: [
           { id: 'a', defId: 'trigger_manual', position: { x: 0, y: 0 }, config: {} },
           { id: 'b', defId: 'trigger_manual', position: { x: 0, y: 0 }, config: {} },
@@ -268,7 +308,9 @@ describe('🚨 finalizeWorkflowHandler — 3 gate sequenziali', () => {
   function sessionWithNode(): Session {
     return makeSession({
       draft: {
-        id: '', name: '', description: '',
+        id: '',
+        name: '',
+        description: '',
         nodes: [{ id: 'n1', defId: 'trigger_manual', position: { x: 0, y: 0 }, config: {} }],
         edges: [],
       },
@@ -276,8 +318,10 @@ describe('🚨 finalizeWorkflowHandler — 3 gate sequenziali', () => {
   }
 
   it('🚨 id o name missing → error', () => {
-    expect(finalizeWorkflowHandler(sessionWithNode() as never, { id: 'wf-1' }))
-      .toEqual({ ok: false, error: expect.stringContaining('id') });
+    expect(finalizeWorkflowHandler(sessionWithNode() as never, { id: 'wf-1' })).toEqual({
+      ok: false,
+      error: expect.stringContaining('id'),
+    });
   });
 
   it('🚨 draft vuoto → error "Nessun nodo"', () => {
@@ -288,7 +332,9 @@ describe('🚨 finalizeWorkflowHandler — 3 gate sequenziali', () => {
   it('🚨 plan accepted ma nodi missing → enumera tutti i mancanti', () => {
     const s = sessionWithNode();
     s.plan = {
-      accepted: true, proposedAt: Date.now(), reasoning: 'test',
+      accepted: true,
+      proposedAt: Date.now(),
+      reasoning: 'test',
       nodes: [
         { id: 'n1', defId: 'trigger_manual', purpose: 'p1' },
         { id: 'n2_missing', defId: 'action_x', purpose: 'p2' },
@@ -322,7 +368,9 @@ describe('🚨 finalizeWorkflowHandler — 3 gate sequenziali', () => {
   it('🚨 success: setta id+name+description, finalized=true', () => {
     const s = sessionWithNode();
     const r = finalizeWorkflowHandler(s as never, {
-      id: 'wf-001', name: 'My Workflow', description: 'desc text',
+      id: 'wf-001',
+      name: 'My Workflow',
+      description: 'desc text',
     });
     expect(r.ok).toBe(true);
     expect(s.draft.id).toBe('wf-001');
@@ -335,7 +383,8 @@ describe('🚨 finalizeWorkflowHandler — 3 gate sequenziali', () => {
 describe('🚨 abortHandler — abort-gate reject hallucinated', () => {
   it('🚨 evaluateAbort reject → ok:false + force continue + NO aborted=true', () => {
     evaluateAbortMock.mockReturnValue({
-      reject: true, replyToAgent: 'Continua, REGOLA 12: nodo X è installato',
+      reject: true,
+      replyToAgent: 'Continua, REGOLA 12: nodo X è installato',
     });
     const s = makeSession();
     const r = abortHandler(s as never, { reason: 'nodo X non esiste' });
@@ -377,8 +426,17 @@ describe('🚨 updateNodeHandler — hint dimenticato add_node', () => {
   it('🚨 patch ok: merge config + ritorna fieldsPatched', () => {
     const s = makeSession({
       draft: {
-        id: '', name: '', description: '',
-        nodes: [{ id: 'n', defId: 'trigger_manual', position: { x: 0, y: 0 }, config: { existing: 'val' } }],
+        id: '',
+        name: '',
+        description: '',
+        nodes: [
+          {
+            id: 'n',
+            defId: 'trigger_manual',
+            position: { x: 0, y: 0 },
+            config: { existing: 'val' },
+          },
+        ],
         edges: [],
       },
     });
@@ -391,8 +449,17 @@ describe('🚨 updateNodeHandler — hint dimenticato add_node', () => {
   it('🚨 enum re-validation con patch invalido → error', () => {
     const s = makeSession({
       draft: {
-        id: '', name: '', description: '',
-        nodes: [{ id: 'n', defId: 'action_http_request', position: { x: 0, y: 0 }, config: { url: 'http://x' } }],
+        id: '',
+        name: '',
+        description: '',
+        nodes: [
+          {
+            id: 'n',
+            defId: 'action_http_request',
+            position: { x: 0, y: 0 },
+            config: { url: 'http://x' },
+          },
+        ],
         edges: [],
       },
     });
@@ -404,7 +471,9 @@ describe('🚨 updateNodeHandler — hint dimenticato add_node', () => {
   it('🚨 x/y update → position aggiornata', () => {
     const s = makeSession({
       draft: {
-        id: '', name: '', description: '',
+        id: '',
+        name: '',
+        description: '',
         nodes: [{ id: 'n', defId: 'trigger_manual', position: { x: 0, y: 0 }, config: {} }],
         edges: [],
       },
@@ -416,7 +485,9 @@ describe('🚨 updateNodeHandler — hint dimenticato add_node', () => {
   it('🚨 label → node.name update', () => {
     const s = makeSession({
       draft: {
-        id: '', name: '', description: '',
+        id: '',
+        name: '',
+        description: '',
         nodes: [{ id: 'n', defId: 'trigger_manual', position: { x: 0, y: 0 }, config: {} }],
         edges: [],
       },
@@ -435,7 +506,9 @@ describe('🚨 deleteNodeHandler — cascade edges', () => {
   it('🚨 cascade: edge con from=id OR to=id rimossi', () => {
     const s = makeSession({
       draft: {
-        id: '', name: '', description: '',
+        id: '',
+        name: '',
+        description: '',
         nodes: [
           { id: 'a', defId: 'x', position: { x: 0, y: 0 }, config: {} },
           { id: 'b', defId: 'x', position: { x: 0, y: 0 }, config: {} },
@@ -451,21 +524,26 @@ describe('🚨 deleteNodeHandler — cascade edges', () => {
     const r = deleteNodeHandler(s as never, { id: 'b' });
     expect(r.ok).toBe(true);
     if (r.ok) expect((r.data as { edgesAlsoRemoved: number }).edgesAlsoRemoved).toBe(2);
-    expect(s.draft.nodes.map(n => n.id)).toEqual(['a', 'c']);
+    expect(s.draft.nodes.map((n) => n.id)).toEqual(['a', 'c']);
     expect(s.draft.edges).toEqual([{ from: 'a', to: 'c' }]);
   });
 });
 
 describe('🚨 disconnectNodesHandler — edge surgical removal', () => {
   it('🚨 from/to missing → error', () => {
-    expect(disconnectNodesHandler(makeSession() as never, { from: 'a' }))
-      .toEqual({ ok: false, error: expect.stringContaining('from e to') });
+    expect(disconnectNodesHandler(makeSession() as never, { from: 'a' })).toEqual({
+      ok: false,
+      error: expect.stringContaining('from e to'),
+    });
   });
 
   it('🚨 removed = before - after count', () => {
     const s = makeSession({
       draft: {
-        id: '', name: '', description: '', nodes: [],
+        id: '',
+        name: '',
+        description: '',
+        nodes: [],
         edges: [
           { from: 'a', to: 'b' },
           { from: 'a', to: 'b' }, // duplicate
@@ -482,7 +560,10 @@ describe('🚨 disconnectNodesHandler — edge surgical removal', () => {
   it('🚨 fromPort match strict (undefined vs string)', () => {
     const s = makeSession({
       draft: {
-        id: '', name: '', description: '', nodes: [],
+        id: '',
+        name: '',
+        description: '',
+        nodes: [],
         edges: [
           { from: 'a', to: 'b' }, // no fromPort
           { from: 'a', to: 'b', fromPort: 'true' },

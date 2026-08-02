@@ -20,9 +20,7 @@ describe('analyzePendingSecrets — base cases', () => {
       nodes: [{ id: 'http', config: { url: '{{secrets.API_URL}}' } }],
       configuredSecrets: new Set(),
     });
-    expect(r).toEqual([
-      { name: 'API_URL', referencedBy: ['http'], fields: ['url'] },
-    ]);
+    expect(r).toEqual([{ name: 'API_URL', referencedBy: ['http'], fields: ['url'] }]);
   });
 
   it('secret gia\\` configurato → escluso (case-sensitive)', () => {
@@ -64,11 +62,14 @@ describe('analyzePendingSecrets — dedupe + sorting', () => {
   it('multi-secret → output ordinato alfabeticamente per name', () => {
     const r = analyzePendingSecrets({
       nodes: [
-        { id: 'n1', config: {
-          a: '{{secrets.ZULU}}',
-          b: '{{secrets.ALPHA}}',
-          c: '{{secrets.MIKE}}',
-        } },
+        {
+          id: 'n1',
+          config: {
+            a: '{{secrets.ZULU}}',
+            b: '{{secrets.ALPHA}}',
+            c: '{{secrets.MIKE}}',
+          },
+        },
       ],
       configuredSecrets: new Set(),
     });
@@ -80,7 +81,7 @@ describe('analyzePendingSecrets — dedupe + sorting', () => {
       nodes: [
         { id: 'zebra', config: { z_field: '{{secrets.X}}' } },
         { id: 'alpha', config: { a_field: '{{secrets.X}}' } },
-        { id: 'mike',  config: { m_field: '{{secrets.X}}' } },
+        { id: 'mike', config: { m_field: '{{secrets.X}}' } },
       ],
       configuredSecrets: new Set(),
     });
@@ -108,10 +109,15 @@ describe('analyzePendingSecrets — pattern edge cases', () => {
 
   it('reference {{$node.X.json.y}} → non confuso con secret', () => {
     const r = analyzePendingSecrets({
-      nodes: [{ id: 'n', config: {
-        url: '{{$node.web.json.url}}',
-        auth: 'Bearer {{secrets.API_KEY}}',
-      } }],
+      nodes: [
+        {
+          id: 'n',
+          config: {
+            url: '{{$node.web.json.url}}',
+            auth: 'Bearer {{secrets.API_KEY}}',
+          },
+        },
+      ],
       configuredSecrets: new Set(),
     });
     expect(r).toHaveLength(1);
@@ -134,10 +140,15 @@ describe('analyzePendingSecrets — pattern edge cases', () => {
 describe('analyzePendingSecrets — nested values', () => {
   it('valore array stringhe → secrets estratti', () => {
     const r = analyzePendingSecrets({
-      nodes: [{ id: 'n', config: {
-        // Cast oltre `string` per simulare config con nested array
-        recipients: ['{{secrets.EMAIL_TO}}', 'fixed@x.com'] as unknown as string,
-      } }],
+      nodes: [
+        {
+          id: 'n',
+          config: {
+            // Cast oltre `string` per simulare config con nested array
+            recipients: ['{{secrets.EMAIL_TO}}', 'fixed@x.com'] as unknown as string,
+          },
+        },
+      ],
       configuredSecrets: new Set(),
     });
     expect(r.map((p) => p.name)).toEqual(['EMAIL_TO']);
@@ -145,9 +156,14 @@ describe('analyzePendingSecrets — nested values', () => {
 
   it('valore oggetto annidato → secrets estratti', () => {
     const r = analyzePendingSecrets({
-      nodes: [{ id: 'n', config: {
-        headers: { Authorization: 'Bearer {{secrets.JWT}}' } as unknown as string,
-      } }],
+      nodes: [
+        {
+          id: 'n',
+          config: {
+            headers: { Authorization: 'Bearer {{secrets.JWT}}' } as unknown as string,
+          },
+        },
+      ],
       configuredSecrets: new Set(),
     });
     expect(r.map((p) => p.name)).toEqual(['JWT']);
@@ -155,13 +171,18 @@ describe('analyzePendingSecrets — nested values', () => {
 
   it('null / undefined / number / boolean → ignorati', () => {
     const r = analyzePendingSecrets({
-      nodes: [{ id: 'n', config: {
-        n: null as unknown as string,
-        u: undefined as unknown as string,
-        i: 42 as unknown as string,
-        b: false as unknown as string,
-        s: '{{secrets.VALID}}',
-      } }],
+      nodes: [
+        {
+          id: 'n',
+          config: {
+            n: null as unknown as string,
+            u: undefined as unknown as string,
+            i: 42 as unknown as string,
+            b: false as unknown as string,
+            s: '{{secrets.VALID}}',
+          },
+        },
+      ],
       configuredSecrets: new Set(),
     });
     expect(r[0]?.name).toBe('VALID');

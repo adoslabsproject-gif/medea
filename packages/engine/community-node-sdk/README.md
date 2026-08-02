@@ -30,9 +30,7 @@ export default defineCommunityNode({
     icon: 'cube',
     color: '#3b82f6',
     // Configurazione condivisa a tutte le actions (es. API key)
-    configFields: [
-      { key: 'apiKey', label: 'API Key', type: 'secret', required: true },
-    ],
+    configFields: [{ key: 'apiKey', label: 'API Key', type: 'secret', required: true }],
   },
   actions: [
     action({
@@ -40,9 +38,7 @@ export default defineCommunityNode({
       label: 'Do Thing',
       description: 'Spiegazione corta visibile nel picker',
       category: 'Document',
-      configFields: [
-        { key: 'input', label: 'Input', type: 'text', required: true },
-      ],
+      configFields: [{ key: 'input', label: 'Input', type: 'text', required: true }],
       async execute(config, input, context) {
         // config = { apiKey, input, __action: 'do_thing', ... }
         // input  = output del nodo upstream
@@ -51,7 +47,7 @@ export default defineCommunityNode({
         const arg = String(config.input || '');
         const res = await fetch('https://api.example.com/things', {
           method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+          headers: { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
           body: JSON.stringify({ arg }),
         });
         if (!res.ok) throw new Error('API ' + res.status);
@@ -79,6 +75,7 @@ npx ffnode-build src/index.ts --out dist
 ```
 
 Output:
+
 - `dist/<id>-<version>.ffnode` — pacchetto zippato e firmato
 - `dist/registry-entry.json` — snippet da splicare nel registry
 
@@ -92,6 +89,7 @@ echo ".signing-key.pem" >> .gitignore
 ```
 
 Oppure passa la chiave via env:
+
 ```bash
 MEDEA_NODE_SIGNING_KEY="$(cat private.pem)" npx ffnode-build src/index.ts
 ```

@@ -77,7 +77,11 @@ export function csvHeaderLine(columns: readonly string[]): string {
  * terminatore finale). Usato dallo streaming per non tenere mai in RAM più di una
  * pagina. `columns` è fisso (derivato una volta dalla prima pagina).
  */
-export function csvBodyLines(rows: readonly Row[], columns: readonly string[], nl: '\r\n' | '\n' = '\r\n'): string {
+export function csvBodyLines(
+  rows: readonly Row[],
+  columns: readonly string[],
+  nl: '\r\n' | '\n' = '\r\n',
+): string {
   return rows
     .map((r) => {
       const row: Row = r && typeof r === 'object' ? r : {};
@@ -132,7 +136,13 @@ export async function paginateAll(
 ): Promise<{ rows: Row[]; truncated: boolean }> {
   const out: Row[] = [];
   // loop, NON out.push(...page): export DB grande → spread di una pagina → RangeError.
-  const { truncated } = await paginatePages(fetchPage, (page) => { for (const r of page) out.push(r); }, opts);
+  const { truncated } = await paginatePages(
+    fetchPage,
+    (page) => {
+      for (const r of page) out.push(r);
+    },
+    opts,
+  );
   return { rows: out, truncated };
 }
 

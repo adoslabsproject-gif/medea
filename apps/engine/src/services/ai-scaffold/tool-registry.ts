@@ -32,9 +32,7 @@ import type { ScaffoldSession } from '@/services/ai-scaffold.service.js';
  * tipato, oppure `ok: false` con `error` stringa human-readable per il
  * prompt context dell'agent.
  */
-export type ToolResult<T = unknown> =
-  | { ok: true; data: T }
-  | { ok: false; error: string };
+export type ToolResult<T = unknown> = { ok: true; data: T } | { ok: false; error: string };
 
 /**
  * Tool definition — single source of truth per ogni tool dell'agent.
@@ -52,7 +50,10 @@ export interface ToolDefinition<TSchema extends ZodTypeAny = ZodTypeAny, TData =
   name: string;
   description: string;
   schema: TSchema;
-  handler: (session: ScaffoldSession, args: z.infer<TSchema>) => ToolResult<TData> | Promise<ToolResult<TData>>;
+  handler: (
+    session: ScaffoldSession,
+    args: z.infer<TSchema>,
+  ) => ToolResult<TData> | Promise<ToolResult<TData>>;
 }
 
 /**
@@ -114,9 +115,7 @@ class ToolRegistry {
     }
     const parsed = tool.schema.safeParse(rawArgs);
     if (!parsed.success) {
-      const issues = parsed.error.issues
-        .map((i) => `${i.path.join('.')}: ${i.message}`)
-        .join('; ');
+      const issues = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
       return { ok: false, error: `Args invalidi per "${toolName}": ${issues}` };
     }
     try {
@@ -201,15 +200,19 @@ export function toOpenAIToolsSpec(): {
  * inlinato per evitare una dep extra finchè copre il use case attuale.
  */
 function zodToJsonSchema(schema: ZodType): Record<string, unknown> {
-  const def = (schema as unknown as { _def: { typeName?: string; shape?: () => Record<string, ZodType> } })._def;
+  const def = (
+    schema as unknown as { _def: { typeName?: string; shape?: () => Record<string, ZodType> } }
+  )._def;
   if (def.typeName === 'ZodObject' && typeof def.shape === 'function') {
     const shape = def.shape();
     const properties: Record<string, unknown> = {};
     const required: string[] = [];
     for (const [key, fieldSchema] of Object.entries(shape)) {
-      const fieldDef = (fieldSchema as unknown as { _def: { typeName?: string; innerType?: ZodType } })._def;
+      const fieldDef = (
+        fieldSchema as unknown as { _def: { typeName?: string; innerType?: ZodType } }
+      )._def;
       const isOptional = fieldDef.typeName === 'ZodOptional' || fieldDef.typeName === 'ZodDefault';
-      const inner = (isOptional && fieldDef.innerType) ? fieldDef.innerType : fieldSchema;
+      const inner = isOptional && fieldDef.innerType ? fieldDef.innerType : fieldSchema;
       properties[key] = zodTypeToJsonSchema(inner);
       if (!isOptional) required.push(key);
     }
@@ -226,17 +229,23 @@ function zodToJsonSchema(schema: ZodType): Record<string, unknown> {
 function zodTypeToJsonSchema(schema: ZodType): Record<string, unknown> {
   const def = (schema as unknown as { _def: { typeName?: string } })._def;
   switch (def.typeName) {
-    case 'ZodString':  return { type: 'string' };
-    case 'ZodNumber':  return { type: 'number' };
-    case 'ZodBoolean': return { type: 'boolean' };
+    case 'ZodString':
+      return { type: 'string' };
+    case 'ZodNumber':
+      return { type: 'number' };
+    case 'ZodBoolean':
+      return { type: 'boolean' };
     case 'ZodArray': {
       const elem = (def as unknown as { type: ZodType }).type;
       return { type: 'array', items: zodTypeToJsonSchema(elem) };
     }
-    case 'ZodRecord':  return { type: 'object', additionalProperties: true };
+    case 'ZodRecord':
+      return { type: 'object', additionalProperties: true };
     case 'ZodAny':
-    case 'ZodUnknown': return {};
-    default: return { type: 'string' };  // fallback safe
+    case 'ZodUnknown':
+      return {};
+    default:
+      return { type: 'string' }; // fallback safe
   }
 }
 

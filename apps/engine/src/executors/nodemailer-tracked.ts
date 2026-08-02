@@ -54,25 +54,30 @@ export const sendEmailTrackedExecutor: NodeExecutor = async (rawConfig, input, c
     const incoming = (input ?? {}) as Record<string, unknown>;
     if (incoming.consentVerified !== true) {
       throw new Error(
-        'action_email_send_tracked: invio rifiutato — l\'input upstream non porta `consentVerified=true`. ' +
-        'Sblocca il consenso (workflow GDPR Consent) PRIMA di chiamare questo nodo, ' +
-        'oppure spegni `requireConsent` SOLO per email transazionali non commerciali.',
+        "action_email_send_tracked: invio rifiutato — l'input upstream non porta `consentVerified=true`. " +
+          'Sblocca il consenso (workflow GDPR Consent) PRIMA di chiamare questo nodo, ' +
+          'oppure spegni `requireConsent` SOLO per email transazionali non commerciali.',
       );
     }
   }
 
   // ── Resolve tracking base URL + HMAC secret ──────────────────────
   const runtimeCfg = loadConfig();
-  const baseUrl = (cfg.trackingBaseUrl ?? runtimeCfg.MEDEA_PUBLIC_BASE_URL ?? '').replace(/\/$/, '');
+  const baseUrl = (cfg.trackingBaseUrl ?? runtimeCfg.MEDEA_PUBLIC_BASE_URL ?? '').replace(
+    /\/$/,
+    '',
+  );
   if (!baseUrl) {
     throw new Error(
       'action_email_send_tracked: trackingBaseUrl non impostato. ' +
-      'Configura il campo "URL base tracking" nel nodo, oppure l\'env MEDEA_PUBLIC_BASE_URL nel container.',
+        'Configura il campo "URL base tracking" nel nodo, oppure l\'env MEDEA_PUBLIC_BASE_URL nel container.',
     );
   }
   const secret = runtimeCfg.MEDEA_SSO_SECRET ?? process.env.MEDEA_SSO_SECRET ?? '';
   if (!secret || secret.length < 32) {
-    throw new Error('action_email_send_tracked: MEDEA_SSO_SECRET mancante (≥32 char) — impossibile firmare i token tracking.');
+    throw new Error(
+      'action_email_send_tracked: MEDEA_SSO_SECRET mancante (≥32 char) — impossibile firmare i token tracking.',
+    );
   }
 
   const sendId = cfg.sendId ?? randomUUID();
@@ -121,7 +126,9 @@ export const sendEmailTrackedExecutor: NodeExecutor = async (rawConfig, input, c
     leadId: cfg.leadId,
     campaignId: cfg.campaignId,
     sendId,
-    messageId: ((delegate.output as Record<string, unknown> | undefined)?.messageId as string | undefined) ?? null,
+    messageId:
+      ((delegate.output as Record<string, unknown> | undefined)?.messageId as string | undefined) ??
+      null,
   });
 
   log({
@@ -158,18 +165,23 @@ interface RecordSentArgs {
 function recordEmailSent(args: RecordSentArgs): void {
   try {
     const { sqlite } = getDatabase();
-    sqlite.prepare(
-      `INSERT INTO b2b_interactions (id, tenant_id, lead_id, campaign_id, send_id, type, payload_json)
+    sqlite
+      .prepare(
+        `INSERT INTO b2b_interactions (id, tenant_id, lead_id, campaign_id, send_id, type, payload_json)
        VALUES (?, ?, ?, ?, ?, 'email_sent', ?)`,
-    ).run(
-      randomUUID(),
-      args.tenantId,
-      args.leadId,
-      args.campaignId,
-      args.sendId,
-      JSON.stringify({ messageId: args.messageId }),
-    );
+      )
+      .run(
+        randomUUID(),
+        args.tenantId,
+        args.leadId,
+        args.campaignId,
+        args.sendId,
+        JSON.stringify({ messageId: args.messageId }),
+      );
   } catch (err) {
-    logger.error({ err, args, component: 'email-send-tracked' }, 'INSERT b2b_interactions(email_sent) failed');
+    logger.error(
+      { err, args, component: 'email-send-tracked' },
+      'INSERT b2b_interactions(email_sent) failed',
+    );
   }
 }

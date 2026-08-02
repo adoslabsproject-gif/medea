@@ -29,8 +29,11 @@ vi.mock('@/storage/db.js', () => ({
             all: (...p: unknown[]) => stmt.all(...p),
           };
         },
-        exec: (sql: string) => { conn.exec(sql); },
-        transaction: <T extends unknown[], R>(fn: (...args: T) => R) => conn.transaction(fn) as unknown as (...args: T) => R,
+        exec: (sql: string) => {
+          conn.exec(sql);
+        },
+        transaction: <T extends unknown[], R>(fn: (...args: T) => R) =>
+          conn.transaction(fn) as unknown as (...args: T) => R,
       },
     };
   },
@@ -51,20 +54,31 @@ beforeEach(() => {
   conn.exec(SCHEMA_SQL);
 
   const now = new Date().toISOString();
-  conn.prepare(`INSERT INTO workflows (id, name, description, enabled, nodes_json, edges_json, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(
-    'wf-1', 'Test Workflow', 'A test', 1,
-    JSON.stringify([
-      { id: 'n1', defId: 'trigger_webhook', config: { path: '/hook', method: 'POST' } },
-      { id: 'n2', defId: 'action_send_email', config: { to: 'a@b.it', subject: 'Hi' } },
-    ]),
-    JSON.stringify([{ from: 'n1', to: 'n2' }]),
-    now, now,
-  );
+  conn
+    .prepare(
+      `INSERT INTO workflows (id, name, description, enabled, nodes_json, edges_json, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(
+      'wf-1',
+      'Test Workflow',
+      'A test',
+      1,
+      JSON.stringify([
+        { id: 'n1', defId: 'trigger_webhook', config: { path: '/hook', method: 'POST' } },
+        { id: 'n2', defId: 'action_send_email', config: { to: 'a@b.it', subject: 'Hi' } },
+      ]),
+      JSON.stringify([{ from: 'n1', to: 'n2' }]),
+      now,
+      now,
+    );
   dbConnections.push(conn);
 });
 
-afterEach(() => { const c = dbConnections.pop(); if (c) c.close(); });
+afterEach(() => {
+  const c = dbConnections.pop();
+  if (c) c.close();
+});
 
 describe('listWorkflows', () => {
   it('returns 1 workflow with correct nodeCount', () => {
@@ -97,7 +111,8 @@ describe('getWorkflow', () => {
 describe('configureNode', () => {
   it('merges config keys (shallow)', () => {
     const res = configureNode({
-      workflowId: 'wf-1', nodeId: 'n2',
+      workflowId: 'wf-1',
+      nodeId: 'n2',
       configPatch: { subject: 'New subject', bcc: 'admin@b.it' },
     });
     expect(res).toEqual({
@@ -125,20 +140,25 @@ describe('configureNode', () => {
 
   it('workflow not found → error', () => {
     expect(configureNode({ workflowId: 'nope', nodeId: 'n1', configPatch: {} })).toEqual({
-      ok: false, error: 'Workflow not found: nope',
+      ok: false,
+      error: 'Workflow not found: nope',
     });
   });
 
   it('node not found → error', () => {
     expect(configureNode({ workflowId: 'wf-1', nodeId: 'nope', configPatch: {} })).toEqual({
-      ok: false, error: 'Node not found: nope',
+      ok: false,
+      error: 'Node not found: nope',
     });
   });
 });
 
 describe('setWorkflowEnabled', () => {
   it('disable a running workflow → enabled=false persisted', () => {
-    expect(setWorkflowEnabled({ workflowId: 'wf-1', enabled: false })).toEqual({ ok: true, enabled: false });
+    expect(setWorkflowEnabled({ workflowId: 'wf-1', enabled: false })).toEqual({
+      ok: true,
+      enabled: false,
+    });
     expect(getWorkflow('wf-1')?.enabled).toBe(false);
   });
 
@@ -150,7 +170,8 @@ describe('setWorkflowEnabled', () => {
 
   it('non-existent workflow → error', () => {
     expect(setWorkflowEnabled({ workflowId: 'nope', enabled: true })).toEqual({
-      ok: false, error: 'Workflow not found: nope',
+      ok: false,
+      error: 'Workflow not found: nope',
     });
   });
 });

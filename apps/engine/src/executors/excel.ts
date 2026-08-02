@@ -59,7 +59,11 @@ function getTenantRoot(tenantId: string): string {
 
 function getGlobalAllowlist(): string[] {
   const envList = process.env.MEDEA_FILE_ALLOWLIST ?? '';
-  return envList.split(':').map((p) => p.trim()).filter(Boolean).map((p) => resolve(p));
+  return envList
+    .split(':')
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => resolve(p));
 }
 
 function assertPathAllowed(filePath: string, tenantId: string): string {
@@ -161,9 +165,9 @@ export const xlsxParseExecutor: NodeExecutor = async (config, input, context) =>
     // reduce, NON Math.max(...spread): su un foglio con milioni di righe lo spread
     // supererebbe il limite di argomenti dello stack → RangeError "Maximum call
     // stack size exceeded" (anti-pattern già corretto altrove nel codebase).
-    const maxCells = sheet.getSheetValues().reduce<number>(
-      (max, row) => (Array.isArray(row) && row.length > max ? row.length : max), 0,
-    );
+    const maxCells = sheet
+      .getSheetValues()
+      .reduce<number>((max, row) => (Array.isArray(row) && row.length > max ? row.length : max), 0);
     columns = Array.from({ length: maxCells }, (_v, i) => `col_${(i + 1).toString()}`);
   }
 
@@ -174,7 +178,10 @@ export const xlsxParseExecutor: NodeExecutor = async (config, input, context) =>
   let emptyCellsCount = 0;
   let truncated = false;
   for (let r = startRow; r <= sheet.rowCount; r += 1) {
-    if (rows.length >= MAX_PARSE_ROWS) { truncated = true; break; }
+    if (rows.length >= MAX_PARSE_ROWS) {
+      truncated = true;
+      break;
+    }
     const xlRow = sheet.getRow(r);
     if (!xlRow.hasValues) continue;
     const obj: Record<string, unknown> = {};
@@ -183,14 +190,16 @@ export const xlsxParseExecutor: NodeExecutor = async (config, input, context) =>
       // SECURITY: l'header colonna proviene dal file (ostile). Una chiave
       // `__proto__`/`constructor`/`prototype` su un object-literal può alterare
       // il prototype della riga → la rinominiamo a col_N (difesa-in-profondità).
-      if (key === '__proto__' || key === 'constructor' || key === 'prototype') key = `col_${c.toString()}`;
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype')
+        key = `col_${c.toString()}`;
       const cell = xlRow.getCell(c);
       // Normalize cell value: dates as ISO, formulas as result, plain values as-is.
       let val: unknown = cell.value;
       if (val !== null && typeof val === 'object') {
         if (val instanceof Date) val = val.toISOString();
         else if ('result' in val && val.result !== undefined) val = val.result;
-        else if ('text' in val && typeof (val).text === 'string') val = (val as { text: string }).text;
+        else if ('text' in val && typeof val.text === 'string')
+          val = (val as { text: string }).text;
         else if ('richText' in val && Array.isArray((val as { richText: unknown[] }).richText)) {
           val = (val as { richText: { text: string }[] }).richText.map((t) => t.text).join('');
         }
@@ -203,8 +212,14 @@ export const xlsxParseExecutor: NodeExecutor = async (config, input, context) =>
 
   return {
     output: {
-      rows, sheetName: sheet.name, totalRows: rows.length, columns,
-      columnCount: columns.length, headerRow, emptyCellsCount, truncated,
+      rows,
+      sheetName: sheet.name,
+      totalRows: rows.length,
+      columns,
+      columnCount: columns.length,
+      headerRow,
+      emptyCellsCount,
+      truncated,
     },
     durationMs: Date.now() - start,
   };
@@ -230,10 +245,12 @@ export const xlsxParseExecutor: NodeExecutor = async (config, input, context) =>
  * which is fine for the supplier-name use case.
  */
 function sanitizeSheetName(raw: string): string {
-  return raw
-    .replace(/[\\/?*[\]:]/g, '_')
-    .replace(/^'+|'+$/g, '')
-    .slice(0, 31) || 'Sheet1';
+  return (
+    raw
+      .replace(/[\\/?*[\]:]/g, '_')
+      .replace(/^'+|'+$/g, '')
+      .slice(0, 31) || 'Sheet1'
+  );
 }
 
 /**
@@ -249,7 +266,17 @@ function sanitizeSheetName(raw: string): string {
  * Short codes are exposed in the node UI's "columns" syntax extension:
  *   sku:Codice:text,prezzo:Prezzo:eur_4,sconto:Sconto:percent_2
  */
-type ColumnFormat = 'auto' | 'text' | 'integer' | 'number_2' | 'number_4' | 'eur_2' | 'eur_4' | 'percent_2' | 'date_dmy' | 'datetime';
+type ColumnFormat =
+  | 'auto'
+  | 'text'
+  | 'integer'
+  | 'number_2'
+  | 'number_4'
+  | 'eur_2'
+  | 'eur_4'
+  | 'percent_2'
+  | 'date_dmy'
+  | 'datetime';
 
 export function fmtCode(format: ColumnFormat): string {
   // LCID "Italian (Italy)" = 0x410 → prefix `[$-410]` tells Excel/LibreOffice
@@ -261,17 +288,27 @@ export function fmtCode(format: ColumnFormat): string {
   // Ref: https://learn.microsoft.com/en-us/openspecs/office_standards/ms-oe376/
   const IT = '[$-410]';
   switch (format) {
-    case 'integer':   return `${IT}#,##0`;
-    case 'number_2':  return `${IT}#,##0.00`;
-    case 'number_4':  return `${IT}#,##0.0000`;
-    case 'eur_2':     return `${IT}#,##0.00\\ "€"`;
-    case 'eur_4':     return `${IT}#,##0.0000\\ "€"`;
-    case 'percent_2': return `${IT}0.00%`;
-    case 'date_dmy':  return `${IT}dd-mm-yyyy`;
-    case 'datetime':  return `${IT}dd-mm-yyyy\\ hh:mm`;
-    case 'text':      return '@';
+    case 'integer':
+      return `${IT}#,##0`;
+    case 'number_2':
+      return `${IT}#,##0.00`;
+    case 'number_4':
+      return `${IT}#,##0.0000`;
+    case 'eur_2':
+      return `${IT}#,##0.00\\ "€"`;
+    case 'eur_4':
+      return `${IT}#,##0.0000\\ "€"`;
+    case 'percent_2':
+      return `${IT}0.00%`;
+    case 'date_dmy':
+      return `${IT}dd-mm-yyyy`;
+    case 'datetime':
+      return `${IT}dd-mm-yyyy\\ hh:mm`;
+    case 'text':
+      return '@';
     case 'auto':
-    default:          return '';
+    default:
+      return '';
   }
 }
 
@@ -305,10 +342,14 @@ export function coerceForFormat(value: unknown, format: ColumnFormat): unknown {
     if (format === 'integer') return Math.trunc(value);
     return value;
   }
-  const s = coerceString(value).trim().replace(/\s/g, '').replace(/[€%$£]/g, '');
-  const normalized = s.includes(',') && !/^\d+\.\d+$/.test(s)
-    ? s.replace(/\./g, '').replace(',', '.')
-    : s.replace(/,(?=\d{3}(\D|$))/g, '');
+  const s = coerceString(value)
+    .trim()
+    .replace(/\s/g, '')
+    .replace(/[€%$£]/g, '');
+  const normalized =
+    s.includes(',') && !/^\d+\.\d+$/.test(s)
+      ? s.replace(/\./g, '').replace(',', '.')
+      : s.replace(/,(?=\d{3}(\D|$))/g, '');
   const n = Number(normalized);
   if (!Number.isFinite(n)) return value;
   if (format === 'percent_2') return percentNormalize(n);
@@ -349,37 +390,60 @@ export function inferFormatFromName(name: string): ColumnFormat {
   const n = name.toUpperCase().trim();
   // Dates first — substring match BEFORE numeric inference so that
   // "DATA CONSEGNA" doesn't accidentally hit a number rule.
-  if (/(^|[^A-Z])(DATA|DATE|CONSEGNA|SCADENZA|EMISSIONE|GIORNO|DATA\.|DOB)([^A-Z]|$)/.test(n)) return 'date_dmy';
+  if (/(^|[^A-Z])(DATA|DATE|CONSEGNA|SCADENZA|EMISSIONE|GIORNO|DATA\.|DOB)([^A-Z]|$)/.test(n))
+    return 'date_dmy';
   // Percent
   if (/(SCONTO|PERCENT|%|RATE\s*%|IVA\s*%|ALIQUOTA)/.test(n)) return 'percent_2';
   // Money — 4 decimal for unit prices, 2 decimal for totals/grand totals
   if (/(PREZZO|PREZZO\s*UN|UNIT\s*PRICE|LISTINO|COSTO)/.test(n)) return 'eur_4';
-  if (/(TOTALE|TOT\b|GRAND\s*TOT|IMPONIBILE|FATTURA|NETTO|LORDO|IMPORTO|SUBTOTAL|AMOUNT|VALORE|VALUE)/.test(n)) return 'eur_2';
+  if (
+    /(TOTALE|TOT\b|GRAND\s*TOT|IMPONIBILE|FATTURA|NETTO|LORDO|IMPORTO|SUBTOTAL|AMOUNT|VALORE|VALUE)/.test(
+      n,
+    )
+  )
+    return 'eur_2';
   // Integer (quantità)
   if (/(QUANTITA|QTA|QTY|NUMERO|N\.|COUNT|PEZZI|PCS|UNIT[A']?)/.test(n)) return 'integer';
   // Identifier-ish → text (preserves leading zeros like "001234")
-  if (/(CODICE|ID\b|SKU|CODE|REFERENZA|REF\b|MATRICOLA|EAN|UPC|TARGA|CAP|PARTITA|VAT)/.test(n)) return 'text';
+  if (/(CODICE|ID\b|SKU|CODE|REFERENZA|REF\b|MATRICOLA|EAN|UPC|TARGA|CAP|PARTITA|VAT)/.test(n))
+    return 'text';
   return 'auto';
 }
 
-export function parseColumnsConfig(raw: string): { key: string; header: string; format: ColumnFormat }[] {
-  const validFormats: ColumnFormat[] = ['auto','text','integer','number_2','number_4','eur_2','eur_4','percent_2','date_dmy','datetime'];
-  return raw.split(',').map((pair) => {
-    const parts = pair.split(':').map((s) => s.trim());
-    const key = parts[0] ?? '';
-    const header = parts[1] ?? key;
-    const formatRaw = (parts[2] ?? '').toLowerCase();
-    let format: ColumnFormat;
-    if (formatRaw && validFormats.includes(formatRaw as ColumnFormat)) {
-      // Explicit format wins.
-      format = formatRaw as ColumnFormat;
-    } else {
-      // No explicit format → infer from header AND key (whichever matches).
-      const fromHeader = inferFormatFromName(header);
-      format = fromHeader !== 'auto' ? fromHeader : inferFormatFromName(key);
-    }
-    return { key, header, format };
-  }).filter((c) => c.key);
+export function parseColumnsConfig(
+  raw: string,
+): { key: string; header: string; format: ColumnFormat }[] {
+  const validFormats: ColumnFormat[] = [
+    'auto',
+    'text',
+    'integer',
+    'number_2',
+    'number_4',
+    'eur_2',
+    'eur_4',
+    'percent_2',
+    'date_dmy',
+    'datetime',
+  ];
+  return raw
+    .split(',')
+    .map((pair) => {
+      const parts = pair.split(':').map((s) => s.trim());
+      const key = parts[0] ?? '';
+      const header = parts[1] ?? key;
+      const formatRaw = (parts[2] ?? '').toLowerCase();
+      let format: ColumnFormat;
+      if (formatRaw && validFormats.includes(formatRaw as ColumnFormat)) {
+        // Explicit format wins.
+        format = formatRaw as ColumnFormat;
+      } else {
+        // No explicit format → infer from header AND key (whichever matches).
+        const fromHeader = inferFormatFromName(header);
+        format = fromHeader !== 'auto' ? fromHeader : inferFormatFromName(key);
+      }
+      return { key, header, format };
+    })
+    .filter((c) => c.key);
 }
 
 /**
@@ -424,13 +488,20 @@ function formatItalianNumber(n: number, decimals: number): string {
 
 function formatItalianString(n: number, format: ColumnFormat): string {
   switch (format) {
-    case 'eur_2':     return `${formatItalianNumber(n, 2)} €`;
-    case 'eur_4':     return `${formatItalianNumber(n, 4)} €`;
-    case 'percent_2': return `${formatItalianNumber(n * 100, 2)}%`;
-    case 'integer':   return formatItalianNumber(n, 0);
-    case 'number_2':  return formatItalianNumber(n, 2);
-    case 'number_4':  return formatItalianNumber(n, 4);
-    default:          return String(n);
+    case 'eur_2':
+      return `${formatItalianNumber(n, 2)} €`;
+    case 'eur_4':
+      return `${formatItalianNumber(n, 4)} €`;
+    case 'percent_2':
+      return `${formatItalianNumber(n * 100, 2)}%`;
+    case 'integer':
+      return formatItalianNumber(n, 0);
+    case 'number_2':
+      return formatItalianNumber(n, 2);
+    case 'number_4':
+      return formatItalianNumber(n, 4);
+    default:
+      return String(n);
   }
 }
 
@@ -488,22 +559,36 @@ export const xlsxBuildExecutor: NodeExecutor = async (config, input, context) =>
   const dataExpr = config.dataExpression;
   if (Array.isArray(dataExpr)) {
     rows = dataExpr as Record<string, unknown>[];
-  } else if (typeof dataExpr === 'object' && dataExpr !== null && Array.isArray((dataExpr as Record<string, unknown>).rows)) {
+  } else if (
+    typeof dataExpr === 'object' &&
+    dataExpr !== null &&
+    Array.isArray((dataExpr as Record<string, unknown>).rows)
+  ) {
     rows = (dataExpr as { rows: Record<string, unknown>[] }).rows;
   } else if (typeof dataExpr === 'string' && dataExpr.trim().startsWith('[')) {
-    try { rows = JSON.parse(dataExpr) as Record<string, unknown>[]; } catch { /* fall through */ }
+    try {
+      rows = JSON.parse(dataExpr) as Record<string, unknown>[];
+    } catch {
+      /* fall through */
+    }
   }
   if (rows.length === 0) {
     if (Array.isArray(input)) {
       rows = input as Record<string, unknown>[];
-    } else if (input !== null && typeof input === 'object' && Array.isArray((input as Record<string, unknown>).rows)) {
+    } else if (
+      input !== null &&
+      typeof input === 'object' &&
+      Array.isArray((input as Record<string, unknown>).rows)
+    ) {
       rows = (input as { rows: Record<string, unknown>[] }).rows;
     } else if (typeof input === 'object' && input !== null) {
       rows = [input as Record<string, unknown>];
     }
   }
   if (rows.length === 0) {
-    throw new Error('action_xlsx_build: nothing to write — set "Sorgente righe" to e.g. {{$node.NomeNodo.json.lines}} or ensure the previous node outputs an array.');
+    throw new Error(
+      'action_xlsx_build: nothing to write — set "Sorgente righe" to e.g. {{$node.NomeNodo.json.lines}} or ensure the previous node outputs an array.',
+    );
   }
 
   // Column setup: explicit "key:Label:format,key2:Label2:format2" or
@@ -522,7 +607,11 @@ export const xlsxBuildExecutor: NodeExecutor = async (config, input, context) =>
     // Auto-discover columns from the first row, AND auto-infer format
     // from each key name (so even "ridimensiona, runa, e basta" workflows
     // get sensible Excel formatting out of the box).
-    cols = Object.keys(rows[0] ?? {}).map((k) => ({ key: k, header: k, format: inferFormatFromName(k) }));
+    cols = Object.keys(rows[0] ?? {}).map((k) => ({
+      key: k,
+      header: k,
+      format: inferFormatFromName(k),
+    }));
   }
 
   // Group rows by sheet name. When groupByKey is set, each distinct value
@@ -556,8 +645,12 @@ export const xlsxBuildExecutor: NodeExecutor = async (config, input, context) =>
   // su molti client mobili e cross-locale.
   const forceItalianStrings = coerceString(config.forceItalianStrings ?? 'true') !== 'false';
   const isNumericFmt = (f: ColumnFormat): boolean =>
-    f === 'integer' || f === 'number_2' || f === 'number_4'
-    || f === 'eur_2' || f === 'eur_4' || f === 'percent_2';
+    f === 'integer' ||
+    f === 'number_2' ||
+    f === 'number_4' ||
+    f === 'eur_2' ||
+    f === 'eur_4' ||
+    f === 'percent_2';
 
   for (const [name, sheetRows] of sheetGroups) {
     const sheet = workbook.addWorksheet(name);
@@ -569,7 +662,7 @@ export const xlsxBuildExecutor: NodeExecutor = async (config, input, context) =>
       // Quando forziamo stringhe italiane, NON applichiamo numFmt al
       // column-default: scriviamo già il testo formattato e numFmt='@'
       // farebbe il display "as-is" che è quello che vogliamo.
-      const numFmt = (forceItalianStrings && isNumericFmt(c.format)) ? '@' : fmtCode(c.format);
+      const numFmt = forceItalianStrings && isNumericFmt(c.format) ? '@' : fmtCode(c.format);
       if (numFmt) col.numFmt = numFmt;
       if (!forceItalianStrings && isNumericFmt(c.format)) {
         col.alignment = { horizontal: 'right', vertical: 'middle' };
@@ -638,7 +731,10 @@ export const xlsxBuildExecutor: NodeExecutor = async (config, input, context) =>
     // Auto-fit columns AFTER all rows are written (we need to see the
     // actual data lengths). Caps width to 60 chars so a 4KB description
     // doesn't stretch the sheet horizontally.
-    autoFitColumns(sheet, cols.map((c) => c.header));
+    autoFitColumns(
+      sheet,
+      cols.map((c) => c.header),
+    );
   }
 
   // Compose the legacy sheetName field for back-compat with downstream
@@ -670,7 +766,14 @@ export const xlsxBuildExecutor: NodeExecutor = async (config, input, context) =>
     ? await context.writeBinary(xlsxBuffer, { mimeType: contentType, fileName })
     : makeBinaryInline({ mimeType: contentType, data: xlsxBuffer.toString('base64'), fileName });
 
-  const base = { binary, sheetName, rowsWritten: rows.length, sizeBytes: xlsxBuffer.length, fileName, contentType };
+  const base = {
+    binary,
+    sheetName,
+    rowsWritten: rows.length,
+    sizeBytes: xlsxBuffer.length,
+    fileName,
+    contentType,
+  };
   return {
     output: abs !== null ? { path: abs, ...base } : base,
     durationMs: Date.now() - start,

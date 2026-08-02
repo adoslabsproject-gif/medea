@@ -30,7 +30,7 @@ export function assertConnectHostAllowed(host: string, label = 'connessione'): v
   if (!validateUrlForFetch(`https://${host}`).ok) {
     throw new Error(
       `${label}: host "${host}" non ammesso — interno/privato/localhost (protezione SSRF). ` +
-      `Usa un host PUBBLICO, oppure chiedi all'operatore di aggiungerlo all'allowlist host-interni del tenant.`,
+        `Usa un host PUBBLICO, oppure chiedi all'operatore di aggiungerlo all'allowlist host-interni del tenant.`,
     );
   }
 }

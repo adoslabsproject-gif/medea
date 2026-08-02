@@ -48,7 +48,14 @@ function jsonResp(body: unknown, status = 200): Response {
 }
 
 /** Mock dei soli servizi whisper/vision (la fusion LLM è su m.dispatch). */
-function mockServices(opts: { transcript?: unknown; scenes?: unknown; transcribeThrows?: boolean; visionThrows?: boolean } = {}): string[] {
+function mockServices(
+  opts: {
+    transcript?: unknown;
+    scenes?: unknown;
+    transcribeThrows?: boolean;
+    visionThrows?: boolean;
+  } = {},
+): string[] {
   const calls: string[] = [];
   mockFetch.mockImplementation(async (url) => {
     const u = String(url);
@@ -75,9 +82,9 @@ beforeEach(() => {
 
 describe('video-summarizer executor — validation', () => {
   it('rejecta videoUrl vuoto', async () => {
-    await expect(
-      videoSummarizerExecutor({ videoUrl: '' }, null, baseContext),
-    ).rejects.toThrow(/obbligatorio/i);
+    await expect(videoSummarizerExecutor({ videoUrl: '' }, null, baseContext)).rejects.toThrow(
+      /obbligatorio/i,
+    );
   });
 
   it('rejecta videoUrl con schema invalido (ftp://)', async () => {
@@ -96,7 +103,9 @@ describe('video-summarizer executor — validation', () => {
 
 describe('video-summarizer executor — default OFF (out-of-the-box)', () => {
   it('default = no Whisper call, solo Vision + fusion LLM', async () => {
-    const calls = mockServices({ scenes: { scenes: [{ tStart: 0, tEnd: 3, description: 'scena' }] } });
+    const calls = mockServices({
+      scenes: { scenes: [{ tStart: 0, tEnd: 3, description: 'scena' }] },
+    });
     m.dispatch.mockResolvedValue('{"tldr":"summary","bullets":[],"chapters":[]}');
     const r = await videoSummarizerExecutor(
       { videoUrl: 'https://example.com/v.mp4' },
@@ -131,7 +140,9 @@ describe('video-summarizer executor — happy path', () => {
       },
     });
     m.dispatch.mockImplementation(async (...args: unknown[]) => {
-      const listener = args[7] as ((u: { input: number; output: number; fromApi: boolean }) => void) | undefined;
+      const listener = args[7] as
+        | ((u: { input: number; output: number; fromApi: boolean }) => void)
+        | undefined;
       listener?.({ input: 300, output: 60, fromApi: true });
       return JSON.stringify({
         tldr: 'Webinar introduttivo su GDPR compliance.',
@@ -144,7 +155,11 @@ describe('video-summarizer executor — happy path', () => {
     });
 
     const r = await videoSummarizerExecutor(
-      { videoUrl: 'https://example.com/video.mp4', frameIntervalSec: '5', enableTranscription: 'true' },
+      {
+        videoUrl: 'https://example.com/video.mp4',
+        frameIntervalSec: '5',
+        enableTranscription: 'true',
+      },
       null,
       baseContext,
     );
@@ -166,7 +181,13 @@ describe('video-summarizer executor — happy path', () => {
     expect(out.warnings).toEqual([]);
     expect(out.durationSec).toBe(10);
     // Fase 2 (#14): usage standard dalla fusion
-    expect(out._llm).toEqual({ inputTokens: 300, outputTokens: 60, model: 'liara-default', provider: 'liara', fromApi: true });
+    expect(out._llm).toEqual({
+      inputTokens: 300,
+      outputTokens: 60,
+      model: 'liara-default',
+      provider: 'liara',
+      fromApi: true,
+    });
     expect(m.resolve).toHaveBeenCalledWith('tenant-test');
     // Il prompt di fusione contiene transcript + scenes (arg 4 = user message)
     const fusionUser = m.dispatch.mock.calls[0]?.[4] as string;
@@ -184,21 +205,40 @@ describe('video-summarizer executor — _llm combinato vision+fusion (Fase 2 #14
       },
     });
     m.dispatch.mockImplementation(async (...args: unknown[]) => {
-      const listener = args[7] as ((u: { input: number; output: number; fromApi: boolean }) => void) | undefined;
+      const listener = args[7] as
+        | ((u: { input: number; output: number; fromApi: boolean }) => void)
+        | undefined;
       listener?.({ input: 300, output: 60, fromApi: true });
       return '{"tldr":"ok","bullets":[],"chapters":[]}';
     });
-    const r = await videoSummarizerExecutor({ videoUrl: 'https://example.com/v.mp4' }, null, baseContext);
+    const r = await videoSummarizerExecutor(
+      { videoUrl: 'https://example.com/v.mp4' },
+      null,
+      baseContext,
+    );
     const llm = (r.output as { _llm: Record<string, unknown> })._llm;
-    expect(llm).toEqual({ inputTokens: 5300, outputTokens: 460, model: 'liara-default', provider: 'liara', fromApi: true });
+    expect(llm).toEqual({
+      inputTokens: 5300,
+      outputTokens: 460,
+      model: 'liara-default',
+      provider: 'liara',
+      fromApi: true,
+    });
   });
 
   it('🚨 metering: usage vision riportato al portal (fire-and-forget) con tenantId e source', async () => {
     mockServices({
-      scenes: { scenes: [{ tStart: 0, tEnd: 5, description: 's' }], usage: { input: 441, output: 159, fromApi: true } },
+      scenes: {
+        scenes: [{ tStart: 0, tEnd: 5, description: 's' }],
+        usage: { input: 441, output: 159, fromApi: true },
+      },
     });
     await videoSummarizerExecutor({ videoUrl: 'https://example.com/v.mp4' }, null, baseContext);
-    expect(reportUsageMock).toHaveBeenCalledWith('tenant-test', { tokensIn: 441, tokensOut: 159, source: 'video-describe-frames' });
+    expect(reportUsageMock).toHaveBeenCalledWith('tenant-test', {
+      tokensIn: 441,
+      tokensOut: 159,
+      source: 'video-describe-frames',
+    });
   });
 
   it('metering: vision senza usage (shim vecchio/zero token) → NESSUN report', async () => {
@@ -209,10 +249,17 @@ describe('video-summarizer executor — _llm combinato vision+fusion (Fase 2 #14
 
   it('fusion giù MA vision ha speso token → _llm presente con la sola gamba vision', async () => {
     mockServices({
-      scenes: { scenes: [{ tStart: 0, tEnd: 5, description: 's' }], usage: { input: 1000, output: 80, fromApi: true } },
+      scenes: {
+        scenes: [{ tStart: 0, tEnd: 5, description: 's' }],
+        usage: { input: 1000, output: 80, fromApi: true },
+      },
     });
     m.dispatch.mockRejectedValue(new Error('gateway down'));
-    const r = await videoSummarizerExecutor({ videoUrl: 'https://example.com/v.mp4' }, null, baseContext);
+    const r = await videoSummarizerExecutor(
+      { videoUrl: 'https://example.com/v.mp4' },
+      null,
+      baseContext,
+    );
     const out = r.output as { _llm: { inputTokens: number; provider: string }; warnings: string[] };
     expect(out._llm.inputTokens).toBe(1000);
     expect(out._llm.provider).toBe('liara');
@@ -222,7 +269,10 @@ describe('video-summarizer executor — _llm combinato vision+fusion (Fase 2 #14
 
 describe('video-summarizer executor — degradation graceful', () => {
   it('Whisper down con enableTranscription=true → continue + warning', async () => {
-    mockServices({ transcribeThrows: true, scenes: { scenes: [{ tStart: 0, tEnd: 5, description: 'frame 1' }] } });
+    mockServices({
+      transcribeThrows: true,
+      scenes: { scenes: [{ tStart: 0, tEnd: 5, description: 'frame 1' }] },
+    });
     m.dispatch.mockResolvedValue('{"tldr":"only video","bullets":[],"chapters":[]}');
     const r = await videoSummarizerExecutor(
       { videoUrl: 'https://example.com/v.mp4', enableTranscription: 'true' },
@@ -265,7 +315,9 @@ describe('video-summarizer executor — degradation graceful', () => {
 
   it('nessun provider (resolver throw) → summary vuoto + warning, no throw', async () => {
     mockServices();
-    m.resolve.mockImplementation(() => { throw new Error('nessun provider configurato'); });
+    m.resolve.mockImplementation(() => {
+      throw new Error('nessun provider configurato');
+    });
     const r = await videoSummarizerExecutor(
       { videoUrl: 'https://example.com/v.mp4' },
       null,
@@ -316,7 +368,8 @@ describe('video-summarizer executor — clamps', () => {
     mockFetch.mockImplementation(async (url, init) => {
       const u = String(url);
       if (u.includes('/describe-frames')) {
-        intervalSent = (JSON.parse(coerceString(init?.body ?? '{}')) as { intervalSec: number }).intervalSec;
+        intervalSent = (JSON.parse(coerceString(init?.body ?? '{}')) as { intervalSec: number })
+          .intervalSec;
         return jsonResp({ scenes: [] });
       }
       if (u.includes('/transcribe')) return jsonResp({ transcript: '' });

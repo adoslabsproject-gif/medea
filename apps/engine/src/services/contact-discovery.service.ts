@@ -67,8 +67,9 @@ const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 giorni
 const CACHE_MAX_ENTRIES = 5000;
 const RATE_LIMIT_PER_HOST_MS = 500; // 2 req/sec per host
 
-const USER_AGENT = process.env.MEDEA_BOT_UA
-  ?? 'FlowForgeContactDiscovery/1.0 (+https://flowforge.io/bot; respectful crawler)';
+const USER_AGENT =
+  process.env.MEDEA_BOT_UA ??
+  'FlowForgeContactDiscovery/1.0 (+https://flowforge.io/bot; respectful crawler)';
 
 // ─────────────────────────────────────────────────────────────────────────
 // Vocabolario keyword contatti — 14 lingue, peso decrescente
@@ -88,14 +89,30 @@ const PATH_KEYWORDS: { pattern: RegExp; weight: number; lang: string }[] = [
   { pattern: /\/(yhteystiedot|ota-yhteytta)(\/|$|\?|#)/i, weight: 100, lang: 'fi' },
   { pattern: /\/(hafdu-samband|tengilidir)(\/|$|\?|#)/i, weight: 100, lang: 'is' },
   // Pattern generico "contact" — copre /contact, /kontakt, /contato in 7+ lingue
-  { pattern: /\/(contact|kontakt|contato|contacto|kontaktirajte)(\/|$|\?|#)/i, weight: 90, lang: 'multi' },
+  {
+    pattern: /\/(contact|kontakt|contato|contacto|kontaktirajte)(\/|$|\?|#)/i,
+    weight: 90,
+    lang: 'multi',
+  },
 
   // About / Chi siamo / Impressum — secondo step (a volte info legali → email)
   { pattern: /\/(about-us|aboutus|about_us)(\/|$|\?|#)/i, weight: 70, lang: 'en' },
-  { pattern: /\/(chi-siamo|chisiamo|chi_siamo|azienda|societa)(\/|$|\?|#)/i, weight: 70, lang: 'it' },
+  {
+    pattern: /\/(chi-siamo|chisiamo|chi_siamo|azienda|societa)(\/|$|\?|#)/i,
+    weight: 70,
+    lang: 'it',
+  },
   { pattern: /\/(uber-uns|ueber-uns|impressum|unternehmen)(\/|$|\?|#)/i, weight: 75, lang: 'de' }, // DE impressum è legalmente obbligatorio
-  { pattern: /\/(a-propos|apropos|qui-sommes-nous|entreprise)(\/|$|\?|#)/i, weight: 70, lang: 'fr' },
-  { pattern: /\/(sobre-nosotros|nosotros|empresa|quienes-somos)(\/|$|\?|#)/i, weight: 70, lang: 'es' },
+  {
+    pattern: /\/(a-propos|apropos|qui-sommes-nous|entreprise)(\/|$|\?|#)/i,
+    weight: 70,
+    lang: 'fr',
+  },
+  {
+    pattern: /\/(sobre-nosotros|nosotros|empresa|quienes-somos)(\/|$|\?|#)/i,
+    weight: 70,
+    lang: 'es',
+  },
   { pattern: /\/(sobre-nos|sobre|empresa)(\/|$|\?|#)/i, weight: 70, lang: 'pt' },
   { pattern: /\/(over-ons|bedrijf|wie-zijn-wij)(\/|$|\?|#)/i, weight: 70, lang: 'nl' },
   { pattern: /\/(om-oss|om-os|om-mig|foretag|virksomhed)(\/|$|\?|#)/i, weight: 70, lang: 'scandi' },
@@ -105,13 +122,25 @@ const PATH_KEYWORDS: { pattern: RegExp; weight: number; lang: string }[] = [
   { pattern: /\/(about|company|firm)(\/|$|\?|#)/i, weight: 65, lang: 'multi' },
 
   // Team / People — terzo step (CEO/sales people)
-  { pattern: /\/(team|squadra|staff|equipo|equipe|equipa|tiimi|tim)(\/|$|\?|#)/i, weight: 50, lang: 'multi' },
+  {
+    pattern: /\/(team|squadra|staff|equipo|equipe|equipa|tiimi|tim)(\/|$|\?|#)/i,
+    weight: 50,
+    lang: 'multi',
+  },
 
   // Info / Help / Support
-  { pattern: /\/(info|informazioni|informationen|informacion|informaties)(\/|$|\?|#)/i, weight: 40, lang: 'multi' },
+  {
+    pattern: /\/(info|informazioni|informationen|informacion|informaties)(\/|$|\?|#)/i,
+    weight: 40,
+    lang: 'multi',
+  },
 
   // Sales / Commercial
-  { pattern: /\/(sales|vendite|ventas|verkauf|forsaljning|myynti)(\/|$|\?|#)/i, weight: 80, lang: 'multi' },
+  {
+    pattern: /\/(sales|vendite|ventas|verkauf|forsaljning|myynti)(\/|$|\?|#)/i,
+    weight: 80,
+    lang: 'multi',
+  },
   { pattern: /\/(commerciale|commercial|comercial)(\/|$|\?|#)/i, weight: 80, lang: 'multi' },
 
   // Generic fallback paths
@@ -120,9 +149,16 @@ const PATH_KEYWORDS: { pattern: RegExp; weight: number; lang: string }[] = [
 
 const ANCHOR_KEYWORDS: { pattern: RegExp; weight: number }[] = [
   // Direct contact CTAs
-  { pattern: /\b(contattaci|scrivici|contact us|contattare|get in touch|reach (out|us)|nous contacter|contactenos|kontaktieren|hubungi)\b/i, weight: 30 },
+  {
+    pattern:
+      /\b(contattaci|scrivici|contact us|contattare|get in touch|reach (out|us)|nous contacter|contactenos|kontaktieren|hubungi)\b/i,
+    weight: 30,
+  },
   { pattern: /\b(contact|contatto|contatti|kontakt|contato|contacto)\b/i, weight: 25 },
-  { pattern: /\b(about|chi siamo|uber uns|qui sommes|sobre nosotros|over ons|om oss|o nama)\b/i, weight: 18 },
+  {
+    pattern: /\b(about|chi siamo|uber uns|qui sommes|sobre nosotros|over ons|om oss|o nama)\b/i,
+    weight: 18,
+  },
   { pattern: /\b(impressum|imprint|legal notice|menzioni legali|mentions legales)\b/i, weight: 22 },
   { pattern: /\b(team|squadra|equipo|equipe|staff)\b/i, weight: 12 },
   { pattern: /\b(info|informazioni|information)\b/i, weight: 8 },
@@ -218,10 +254,13 @@ async function fetchRobots(origin: string): Promise<RobotsRules> {
       return { disallow: [], allow: [] };
     }
     const ctrl = new AbortController();
-    const to = setTimeout(() => { ctrl.abort(); }, 5_000);
+    const to = setTimeout(() => {
+      ctrl.abort();
+    }, 5_000);
     const res = await safeOutboundFetch(url, {
-      externalSignal: ctrl.signal, timeoutMs: 0,
-      redirect: 'manual',         // no redirect su robots.txt — pattern stretto
+      externalSignal: ctrl.signal,
+      timeoutMs: 0,
+      redirect: 'manual', // no redirect su robots.txt — pattern stretto
       headers: { 'User-Agent': USER_AGENT },
     });
     clearTimeout(to);
@@ -296,10 +335,14 @@ async function fetchRaw(url: string, signal?: AbortSignal): Promise<RawFetchResu
     await waitForHostSlot(u.hostname);
 
     const ctrl = new AbortController();
-    const to = setTimeout(() => { ctrl.abort(); }, FETCH_TIMEOUT_MS);
+    const to = setTimeout(() => {
+      ctrl.abort();
+    }, FETCH_TIMEOUT_MS);
 
     // Inoltra abort dal segnale parent
-    const onParentAbort = () => { ctrl.abort(); };
+    const onParentAbort = () => {
+      ctrl.abort();
+    };
     signal?.addEventListener('abort', onParentAbort);
 
     try {
@@ -311,11 +354,12 @@ async function fetchRaw(url: string, signal?: AbortSignal): Promise<RawFetchResu
       const MAX_HOPS = 5;
       for (let hop = 0; hop <= MAX_HOPS; hop += 1) {
         res = await safeOutboundFetch(currentUrl, {
-          externalSignal: ctrl.signal, timeoutMs: 0,
+          externalSignal: ctrl.signal,
+          timeoutMs: 0,
           redirect: 'manual',
           headers: {
             'User-Agent': USER_AGENT,
-            'Accept': 'text/html,application/xhtml+xml;q=0.9,application/xml;q=0.8,*/*;q=0.5',
+            Accept: 'text/html,application/xhtml+xml;q=0.9,application/xml;q=0.8,*/*;q=0.5',
             'Accept-Language': 'it,en;q=0.9,de;q=0.5',
           },
         });
@@ -323,15 +367,26 @@ async function fetchRaw(url: string, signal?: AbortSignal): Promise<RawFetchResu
         if (hop === MAX_HOPS) break;
         const nextRaw = res.headers.get('location') ?? '';
         let nextUrl: string;
-        try { nextUrl = new URL(nextRaw, currentUrl).toString(); } catch { break; }
+        try {
+          nextUrl = new URL(nextRaw, currentUrl).toString();
+        } catch {
+          break;
+        }
         const hopGuard = validateUrlForFetch(nextUrl);
         if (!hopGuard.ok) {
-          logger.warn({ from: currentUrl, to: nextUrl, reason: hopGuard.reason }, 'contact-discovery: redirect blocked (SSRF)');
+          logger.warn(
+            { from: currentUrl, to: nextUrl, reason: hopGuard.reason },
+            'contact-discovery: redirect blocked (SSRF)',
+          );
           return null;
         }
         // Drain del corpo 3xx SENZA leggerlo: res.text() lo bufferizzerebbe TUTTO
         // (un redirect con body enorme → OOM). cancel() scarta lo stream e libera l'FD.
-        try { await res.body?.cancel(); } catch { /* best-effort */ }
+        try {
+          await res.body?.cancel();
+        } catch {
+          /* best-effort */
+        }
         currentUrl = nextUrl;
       }
       if (!res) return null;
@@ -367,15 +422,24 @@ interface ScoredLink {
 
 function extractAndScoreLinks(html: string, baseUrl: string): ScoredLink[] {
   let baseOrigin: string;
-  try { baseOrigin = new URL(baseUrl).origin; }
-  catch { return []; }
+  try {
+    baseOrigin = new URL(baseUrl).origin;
+  } catch {
+    return [];
+  }
 
   const $ = cheerio.load(html);
   const map = new Map<string, ScoredLink>();
 
   $('a[href]').each((_, el) => {
     const href = ($(el).attr('href') ?? '').trim();
-    if (!href || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('#')) {
+    if (
+      !href ||
+      href.startsWith('javascript:') ||
+      href.startsWith('mailto:') ||
+      href.startsWith('tel:') ||
+      href.startsWith('#')
+    ) {
       return;
     }
     let abs: string;
@@ -386,8 +450,11 @@ function extractAndScoreLinks(html: string, baseUrl: string): ScoredLink[] {
     }
     // Solo same-origin
     let absUrl: URL;
-    try { absUrl = new URL(abs); }
-    catch { return; }
+    try {
+      absUrl = new URL(abs);
+    } catch {
+      return;
+    }
     if (absUrl.origin !== baseOrigin) return;
     // Strip fragment + query non rilevanti per scoring (mantieni la URL completa per la fetch)
     const normalized = absUrl.origin + absUrl.pathname;
@@ -458,7 +525,9 @@ async function fetchSitemapCandidates(origin: string, signal?: AbortSignal): Pro
         }
       }
       if (pathScore > 0) scored.push({ url: u, score: pathScore });
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
   }
   scored.sort((a, b) => b.score - a.score);
   return scored.slice(0, 5).map((s) => s.url);
@@ -515,8 +584,9 @@ export async function discoverContacts(
   const ddgFallback = options.ddgFallback ?? true;
 
   let parsedHome: URL;
-  try { parsedHome = new URL(homeUrl); }
-  catch {
+  try {
+    parsedHome = new URL(homeUrl);
+  } catch {
     return emptyResult(homeUrl, start, 'invalid_url');
   }
   const origin = parsedHome.origin;
@@ -532,7 +602,9 @@ export async function discoverContacts(
 
   // Global abort signal (timeout totale)
   const ctrl = new AbortController();
-  const globalTo = setTimeout(() => { ctrl.abort(); }, timeoutMs);
+  const globalTo = setTimeout(() => {
+    ctrl.abort();
+  }, timeoutMs);
 
   const pathsTried: string[] = [];
   const visited = new Set<string>();
@@ -549,8 +621,11 @@ export async function discoverContacts(
     const tryFetch = async (url: string): Promise<boolean> => {
       if (visited.size >= maxPages) return false;
       let parsed: URL;
-      try { parsed = new URL(url); }
-      catch { return false; }
+      try {
+        parsed = new URL(url);
+      } catch {
+        return false;
+      }
       if (visited.has(parsed.origin + parsed.pathname)) return false;
       if (respectRobots && !isAllowedByRobots(robots, parsed.pathname)) {
         pathsTried.push(`${parsed.pathname} [robots:blocked]`);
@@ -624,7 +699,9 @@ export async function discoverContacts(
           try {
             const u = new URL(r.url);
             if (u.hostname.replace(/^www\./, '') !== domain) continue;
-          } catch { continue; }
+          } catch {
+            continue;
+          }
           const found = await tryFetch(r.url);
           if (found) break;
         }
@@ -650,7 +727,9 @@ export async function discoverContacts(
       site_language: meta.site_language,
       content_text: meta.content_text,
       og_image: meta.og_image,
-      ...(allEmails.length === 0 ? { reason_if_empty: classifyEmptyReason(visited.size, pathsTried, ctrl.signal.aborted) } : {}),
+      ...(allEmails.length === 0
+        ? { reason_if_empty: classifyEmptyReason(visited.size, pathsTried, ctrl.signal.aborted) }
+        : {}),
     };
     cacheSet(homeUrl, result);
     return result;
@@ -683,7 +762,8 @@ function extractHomepageMetadata(
 } {
   // Helpers
   const decodeEntities = (s: string): string =>
-    s.replace(/&amp;/g, '&')
+    s
+      .replace(/&amp;/g, '&')
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
@@ -700,33 +780,36 @@ function extractHomepageMetadata(
 
   // og:site_name / application-name / title
   const ogSite =
-    metaContent(/<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']+)["']/i)
-    ?? metaContent(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:site_name["']/i);
+    metaContent(/<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']+)["']/i) ??
+    metaContent(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:site_name["']/i);
   const appName =
-    metaContent(/<meta[^>]+name=["']application-name["'][^>]+content=["']([^"']+)["']/i)
-    ?? metaContent(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']application-name["']/i);
+    metaContent(/<meta[^>]+name=["']application-name["'][^>]+content=["']([^"']+)["']/i) ??
+    metaContent(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']application-name["']/i);
   const titleRaw = metaContent(/<title[^>]*>([^<]+)<\/title>/i);
   // Title spesso è "Brand | Tagline" — prendi solo la prima parte se contiene separatori
-  const title = titleRaw
-    ? titleRaw.split(/\s+[|–—-]\s+/)[0]?.trim() ?? titleRaw.trim()
-    : null;
+  const title = titleRaw ? (titleRaw.split(/\s+[|–—-]\s+/)[0]?.trim() ?? titleRaw.trim()) : null;
 
   // Description
   const description =
-    metaContent(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)
-    ?? metaContent(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i)
-    ?? metaContent(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)
-    ?? '';
+    metaContent(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) ??
+    metaContent(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i) ??
+    metaContent(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i) ??
+    '';
 
   // Site language: <html lang="..">
   const langMatch = /<html\s[^>]*\blang=["']([a-zA-Z-]+)["']/i.exec(html);
   const siteLanguage = langMatch?.[1] ? langMatch[1].slice(0, 2).toLowerCase() : null;
 
   // og:image (assoluto)
-  let ogImage = metaContent(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
-    ?? metaContent(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+  let ogImage =
+    metaContent(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ??
+    metaContent(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
   if (ogImage && !/^https?:\/\//i.test(ogImage)) {
-    try { ogImage = new URL(ogImage, origin).toString(); } catch { ogImage = null; }
+    try {
+      ogImage = new URL(ogImage, origin).toString();
+    } catch {
+      ogImage = null;
+    }
   }
 
   // Content text: rimuovi script/style/svg/noscript, poi tag, poi normalizza whitespace
@@ -774,8 +857,11 @@ function classifyEmptyReason(pagesVisited: number, paths: string[], aborted: boo
 
 function emptyResult(homeUrl: string, start: number, reason: string): ContactDiscoveryResult {
   let domain = '';
-  try { domain = new URL(homeUrl).hostname.replace(/^www\./i, ''); }
-  catch { /* keep empty */ }
+  try {
+    domain = new URL(homeUrl).hostname.replace(/^www\./i, '');
+  } catch {
+    /* keep empty */
+  }
   // Fallback metadata: titlecase(domain), tutto il resto vuoto.
   const meta = extractHomepageMetadata('', '', domain);
   return {

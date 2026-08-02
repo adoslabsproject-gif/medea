@@ -90,22 +90,29 @@ export class ConversationService {
     const { sqlite } = getDatabase();
     const id = randomUUID();
     const now = nowIso();
-    sqlite.prepare(
-      `INSERT INTO ai_conversations
+    sqlite
+      .prepare(
+        `INSERT INTO ai_conversations
         (id, user_id, workspace_id, workflow_id, surface, provider_pin, created_at, last_message_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      id,
-      input.userId,
-      input.workspaceId ?? null,
-      input.workflowId ?? null,
-      input.surface,
-      input.providerPin ?? null,
-      now,
-      now,
+      )
+      .run(
+        id,
+        input.userId,
+        input.workspaceId ?? null,
+        input.workflowId ?? null,
+        input.surface,
+        input.providerPin ?? null,
+        now,
+        now,
+      );
+    logger.info(
+      { conversationId: id, userId: input.userId, surface: input.surface },
+      '[ai-conv] created',
     );
-    logger.info({ conversationId: id, userId: input.userId, surface: input.surface }, '[ai-conv] created');
-    const row = sqlite.prepare(`SELECT * FROM ai_conversations WHERE id = ?`).get(id) as Record<string, unknown> | undefined;
+    const row = sqlite.prepare(`SELECT * FROM ai_conversations WHERE id = ?`).get(id) as
+      | Record<string, unknown>
+      | undefined;
     if (!row) throw new Error(`Conversation insert failed: ${id}`);
     return rowToConversation(row);
   }
@@ -115,9 +122,9 @@ export class ConversationService {
    */
   getById(id: string): AiConversationRow | null {
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare(
-      `SELECT * FROM ai_conversations WHERE id = ? AND deleted_at IS NULL`,
-    ).get(id) as Record<string, unknown> | undefined;
+    const row = sqlite
+      .prepare(`SELECT * FROM ai_conversations WHERE id = ? AND deleted_at IS NULL`)
+      .get(id) as Record<string, unknown> | undefined;
     return row ? rowToConversation(row) : null;
   }
 
@@ -163,12 +170,14 @@ export class ConversationService {
     }
     const limit = Math.max(1, Math.min(opts.limit ?? 50, 200));
     params.push(limit);
-    const rows = sqlite.prepare(
-      `SELECT * FROM ai_conversations
+    const rows = sqlite
+      .prepare(
+        `SELECT * FROM ai_conversations
        WHERE ${conditions.join(' AND ')}
        ORDER BY last_message_at DESC
        LIMIT ?`,
-    ).all(...params) as Record<string, unknown>[];
+      )
+      .all(...params) as Record<string, unknown>[];
     return rows.map(rowToConversation);
   }
 
@@ -183,37 +192,43 @@ export class ConversationService {
     const tokens = input.tokens ?? estimateTokens(input.content);
 
     const txn = sqlite.transaction(() => {
-      sqlite.prepare(
-        `INSERT INTO ai_messages
+      sqlite
+        .prepare(
+          `INSERT INTO ai_messages
           (id, conversation_id, role, content, tokens, provider, model, latency_ms, cost_usd_estimate, patch_json, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(
-        id,
-        input.conversationId,
-        input.role,
-        input.content,
-        tokens,
-        input.provider ?? null,
-        input.model ?? null,
-        input.latencyMs ?? null,
-        input.costUsdEstimate ?? null,
-        input.patch != null ? JSON.stringify(input.patch) : null,
-        now,
-      );
+        )
+        .run(
+          id,
+          input.conversationId,
+          input.role,
+          input.content,
+          tokens,
+          input.provider ?? null,
+          input.model ?? null,
+          input.latencyMs ?? null,
+          input.costUsdEstimate ?? null,
+          input.patch != null ? JSON.stringify(input.patch) : null,
+          now,
+        );
       const inputDelta = input.role === 'user' || input.role === 'system' ? tokens : 0;
       const outputDelta = input.role === 'assistant' ? tokens : 0;
-      sqlite.prepare(
-        `UPDATE ai_conversations
+      sqlite
+        .prepare(
+          `UPDATE ai_conversations
          SET message_count = message_count + 1,
              total_input_tokens = total_input_tokens + ?,
              total_output_tokens = total_output_tokens + ?,
              last_message_at = ?
          WHERE id = ?`,
-      ).run(inputDelta, outputDelta, now, input.conversationId);
+        )
+        .run(inputDelta, outputDelta, now, input.conversationId);
     });
     txn();
 
-    const row = sqlite.prepare(`SELECT * FROM ai_messages WHERE id = ?`).get(id) as Record<string, unknown> | undefined;
+    const row = sqlite.prepare(`SELECT * FROM ai_messages WHERE id = ?`).get(id) as
+      | Record<string, unknown>
+      | undefined;
     if (!row) throw new Error(`Message insert failed: ${id}`);
     return rowToMessage(row);
   }
@@ -224,12 +239,14 @@ export class ConversationService {
    */
   getRecentMessages(conversationId: string, limit = 40): AiMessageRow[] {
     const { sqlite } = getDatabase();
-    const rows = sqlite.prepare(
-      `SELECT * FROM ai_messages
+    const rows = sqlite
+      .prepare(
+        `SELECT * FROM ai_messages
        WHERE conversation_id = ? AND in_summary = 0
        ORDER BY created_at DESC
        LIMIT ?`,
-    ).all(conversationId, Math.max(1, Math.min(limit, 200))) as Record<string, unknown>[];
+      )
+      .all(conversationId, Math.max(1, Math.min(limit, 200))) as Record<string, unknown>[];
     return rows.map(rowToMessage).reverse(); // chronological for LLM input
   }
 
@@ -237,10 +254,7 @@ export class ConversationService {
    * Build the LLM-ready context: summary (if any) + sliding window of recent turns.
    * Caps to `maxTokens` (default 8K) from the tail, with `maxTurns` ceiling.
    */
-  buildContext(
-    conversationId: string,
-    opts: SlidingWindowOptions = {},
-  ): BuiltContext {
+  buildContext(conversationId: string, opts: SlidingWindowOptions = {}): BuiltContext {
     const maxTurns = opts.maxTurns ?? 20;
     const maxTokens = opts.maxTokens ?? 8192;
     const conv = this.getById(conversationId);
@@ -279,10 +293,12 @@ export class ConversationService {
     const { sqlite } = getDatabase();
     const conv = this.getById(conversationId);
     if (!conv) return 0;
-    const rows = sqlite.prepare(
-      `SELECT content, tokens FROM ai_messages
+    const rows = sqlite
+      .prepare(
+        `SELECT content, tokens FROM ai_messages
        WHERE conversation_id = ? AND in_summary = 0`,
-    ).all(conversationId) as { content: string; tokens: number | null }[];
+      )
+      .all(conversationId) as { content: string; tokens: number | null }[];
     let total = conv.summary ? estimateTokens(conv.summary) : 0;
     for (const r of rows) {
       total += r.tokens != null ? Number(r.tokens) : estimateTokens(r.content);
@@ -323,18 +339,22 @@ export class ConversationService {
     const { sqlite } = getDatabase();
     const now = nowIso();
     const txn = sqlite.transaction(() => {
-      sqlite.prepare(
-        `UPDATE ai_conversations
+      sqlite
+        .prepare(
+          `UPDATE ai_conversations
          SET summary = ?,
              summary_at = ?,
              summary_message_count = message_count
          WHERE id = ?`,
-      ).run(summary, now, conversationId);
-      sqlite.prepare(
-        `UPDATE ai_messages
+        )
+        .run(summary, now, conversationId);
+      sqlite
+        .prepare(
+          `UPDATE ai_messages
          SET in_summary = 1
          WHERE conversation_id = ? AND created_at <= ? AND in_summary = 0`,
-      ).run(conversationId, foldUpToTimestamp);
+        )
+        .run(conversationId, foldUpToTimestamp);
     });
     txn();
     logger.info({ conversationId, summaryLength: summary.length }, '[ai-conv] summary applied');
@@ -345,11 +365,15 @@ export class ConversationService {
    */
   softDelete(conversationId: string, userId: string): boolean {
     const { sqlite } = getDatabase();
-    const owned = sqlite.prepare(
-      `SELECT id FROM ai_conversations WHERE id = ? AND user_id = ? AND deleted_at IS NULL`,
-    ).get(conversationId, userId) as { id: string } | undefined;
+    const owned = sqlite
+      .prepare(
+        `SELECT id FROM ai_conversations WHERE id = ? AND user_id = ? AND deleted_at IS NULL`,
+      )
+      .get(conversationId, userId) as { id: string } | undefined;
     if (!owned) return false;
-    sqlite.prepare(`UPDATE ai_conversations SET deleted_at = ? WHERE id = ?`).run(nowIso(), conversationId);
+    sqlite
+      .prepare(`UPDATE ai_conversations SET deleted_at = ? WHERE id = ?`)
+      .run(nowIso(), conversationId);
     return true;
   }
 
@@ -359,13 +383,13 @@ export class ConversationService {
    */
   hardPurgeExpired(olderThanIso: string): number {
     const { sqlite } = getDatabase();
-    const rows = sqlite.prepare(
-      `SELECT id FROM ai_conversations WHERE deleted_at IS NOT NULL AND deleted_at < ?`,
-    ).all(olderThanIso) as { id: string }[];
+    const rows = sqlite
+      .prepare(`SELECT id FROM ai_conversations WHERE deleted_at IS NOT NULL AND deleted_at < ?`)
+      .all(olderThanIso) as { id: string }[];
     if (rows.length === 0) return 0;
-    sqlite.prepare(
-      `DELETE FROM ai_conversations WHERE deleted_at IS NOT NULL AND deleted_at < ?`,
-    ).run(olderThanIso);
+    sqlite
+      .prepare(`DELETE FROM ai_conversations WHERE deleted_at IS NOT NULL AND deleted_at < ?`)
+      .run(olderThanIso);
     logger.warn({ purgedCount: rows.length, olderThanIso }, '[ai-conv] GDPR hard purge');
     return rows.length;
   }

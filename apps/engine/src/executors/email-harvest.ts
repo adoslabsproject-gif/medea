@@ -18,17 +18,26 @@ export const emailHarvestExecutor: NodeExecutor = (config, _input, _context) => 
 
   // Custom preferred local parts (override default selection rule)
   const preferredCsv = coerceString(config.preferredLocalParts ?? '').trim();
-  const preferred = preferredCsv ? preferredCsv.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean) : [];
+  const preferred = preferredCsv
+    ? preferredCsv
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean)
+    : [];
 
   const result = harvestEmails(html);
 
   // Re-rank primary_email se preferredLocalParts forniti
   if (preferred.length > 0 && result.all_emails.length > 0) {
-    const rerank = result.all_emails.map((e) => {
-      const local = e.email.split('@')[0] ?? '';
-      const prio = preferred.findIndex((p) => local === p || local.startsWith(`${p}.`) || local.startsWith(`${p}-`));
-      return { ...e, _prio: prio < 0 ? 999 : prio };
-    }).sort((a, b) => (a._prio - b._prio) || (b.confidence - a.confidence));
+    const rerank = result.all_emails
+      .map((e) => {
+        const local = e.email.split('@')[0] ?? '';
+        const prio = preferred.findIndex(
+          (p) => local === p || local.startsWith(`${p}.`) || local.startsWith(`${p}-`),
+        );
+        return { ...e, _prio: prio < 0 ? 999 : prio };
+      })
+      .sort((a, b) => a._prio - b._prio || b.confidence - a.confidence);
     result.primary_email = rerank[0]?.email ?? null;
   }
 

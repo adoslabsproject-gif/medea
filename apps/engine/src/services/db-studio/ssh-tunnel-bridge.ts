@@ -28,7 +28,8 @@ function makeResolver(vault = new VaultSecretsService()): SecretResolver {
     const v = await vault.resolve(ref);
     if (v === null) throw new Error(`Segreto SSH non risolvibile dal vault: "${ref}".`);
     if (v === undefined) {
-      if (ref.trim().toLowerCase().startsWith('vault:')) throw new Error(`Riferimento vault malformato: "${ref}".`);
+      if (ref.trim().toLowerCase().startsWith('vault:'))
+        throw new Error(`Riferimento vault malformato: "${ref}".`);
       return ref;
     }
     return v;
@@ -62,9 +63,13 @@ export async function openDbStudioSshTunnel(
     },
     db: {
       engine,
-      host: connection.hostname && connection.hostname.trim() !== '' ? connection.hostname : '127.0.0.1',
+      host:
+        connection.hostname && connection.hostname.trim() !== ''
+          ? connection.hostname
+          : '127.0.0.1',
       port: connection.port ?? 5432,
-      database: connection.database && connection.database.trim() !== '' ? connection.database : 'db',
+      database:
+        connection.database && connection.database.trim() !== '' ? connection.database : 'db',
     },
     readOnly: true,
   });

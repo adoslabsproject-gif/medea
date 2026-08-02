@@ -18,7 +18,8 @@ import { coerceString } from '@/lib/coerce.js';
 
 // RFC 5322 simplified (production-grade, accetta i casi comuni inclusi
 // quoted-local + IDN host. Reject domini con caratteri pericolosi).
-const EMAIL_RE = /^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+const EMAIL_RE =
+  /^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
 
 // Caratteri di control che permettono header injection in SMTP
 const FORBIDDEN_CHARS = /[\r\n\0]/;
@@ -48,7 +49,9 @@ export function sanitizeEmailAddress(input: unknown): string {
     throw new EmailSanitizeError('email exceeds RFC 5321 limit (320 chars)');
   }
   if (FORBIDDEN_CHARS.test(trimmed)) {
-    throw new EmailSanitizeError('email contains control chars (\\r/\\n/\\0) — header injection blocked');
+    throw new EmailSanitizeError(
+      'email contains control chars (\\r/\\n/\\0) — header injection blocked',
+    );
   }
   if (!EMAIL_RE.test(trimmed)) {
     throw new EmailSanitizeError(`email format invalid: ${trimmed.slice(0, 100)}`);
@@ -66,7 +69,10 @@ export function sanitizeEmailList(input: unknown): string[] {
   if (Array.isArray(input)) {
     raw = input.map((x) => String(x));
   } else if (typeof input === 'string') {
-    raw = input.split(/[,;]/).map((s) => s.trim()).filter((s) => s.length > 0);
+    raw = input
+      .split(/[,;]/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
   } else {
     throw new EmailSanitizeError('email list must be string or array');
   }
@@ -80,7 +86,9 @@ export function sanitizeEmailList(input: unknown): string[] {
  */
 export function sanitizeEmailHeader(input: unknown): string {
   if (input == null) return '';
-  return coerceString(input).replace(/[\r\n\0]+/g, ' ').trim();
+  return coerceString(input)
+    .replace(/[\r\n\0]+/g, ' ')
+    .trim();
 }
 
 /**

@@ -40,8 +40,10 @@ export function registerWorkersRoutes(app: Hono): void {
     const ok = workerCoord.requestAction(workerId, 'restart', auth?.email ?? 'admin');
     if (!ok) return c.json({ error: `Worker ${workerId} not found` }, 404);
     await audit.append({
-      tenantId: 'system', action: 'admin.worker.restart',
-      resourceType: 'worker', resourceId: workerId,
+      tenantId: 'system',
+      action: 'admin.worker.restart',
+      resourceType: 'worker',
+      resourceId: workerId,
       ...(auth?.userId ? { actorId: auth.userId } : {}),
       metadata: { action: 'restart', actorEmail: auth?.email ?? null },
     });
@@ -55,8 +57,10 @@ export function registerWorkersRoutes(app: Hono): void {
     const ok = workerCoord.requestAction(workerId, 'drain', auth?.email ?? 'admin');
     if (!ok) return c.json({ error: `Worker ${workerId} not found` }, 404);
     await audit.append({
-      tenantId: 'system', action: 'admin.worker.drain',
-      resourceType: 'worker', resourceId: workerId,
+      tenantId: 'system',
+      action: 'admin.worker.drain',
+      resourceType: 'worker',
+      resourceId: workerId,
       ...(auth?.userId ? { actorId: auth.userId } : {}),
       metadata: { action: 'drain', actorEmail: auth?.email ?? null },
     });
@@ -72,8 +76,10 @@ export function registerWorkersRoutes(app: Hono): void {
     // audit #7: resume È un cambio di stato del worker → audit come restart/drain
     // (prima era l'UNICA azione fleet senza traccia).
     await audit.append({
-      tenantId: 'system', action: 'admin.worker.resume',
-      resourceType: 'worker', resourceId: workerId,
+      tenantId: 'system',
+      action: 'admin.worker.resume',
+      resourceType: 'worker',
+      resourceId: workerId,
       ...(auth?.userId ? { actorId: auth.userId } : {}),
       metadata: { action: 'resume', actorEmail: auth?.email ?? null },
     });
@@ -89,14 +95,18 @@ export function registerWorkersRoutes(app: Hono): void {
       const ok = workerCoord.requestConcurrency(workerId, concurrency, auth?.email ?? 'admin');
       if (!ok) return Promise.resolve(c.json({ error: `Worker ${workerId} not found` }, 404));
       await audit.append({
-        tenantId: 'system', action: 'admin.worker.concurrency',
-        resourceType: 'worker', resourceId: workerId,
+        tenantId: 'system',
+        action: 'admin.worker.concurrency',
+        resourceType: 'worker',
+        resourceId: workerId,
         ...(auth?.userId ? { actorId: auth.userId } : {}),
         metadata: { concurrency, actorEmail: auth?.email ?? null },
       });
       return Promise.resolve(c.json({ ok: true, concurrency, appliedWithin: '10s' }));
     } catch (err) {
-      return Promise.resolve(c.json({ error: err instanceof Error ? err.message : String(err) }, 400));
+      return Promise.resolve(
+        c.json({ error: err instanceof Error ? err.message : String(err) }, 400),
+      );
     }
   });
 
@@ -113,7 +123,9 @@ export function registerWorkersRoutes(app: Hono): void {
     const tail = parseIntParam(c.req.query('tail'), { def: 200, min: 1, max: 2000 });
     if (!workerId) return c.json({ error: 'Bad request' }, 400);
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare(`SELECT pid, hostname FROM workers WHERE id = ?`).get(workerId) as { pid: number; hostname: string } | undefined;
+    const row = sqlite.prepare(`SELECT pid, hostname FROM workers WHERE id = ?`).get(workerId) as
+      | { pid: number; hostname: string }
+      | undefined;
     if (!row) return c.json({ error: `Worker ${workerId} not found` }, 404);
     try {
       // Hardening #1: lettura via execFile (argv array, zero shell) — vedi worker-logs.ts.
@@ -121,7 +133,10 @@ export function registerWorkersRoutes(app: Hono): void {
       const out = readWorkerLogs(row.pid, tail);
       return c.json({ workerId, pid: row.pid, tail, lines: out.split('\n') });
     } catch (err) {
-      return c.json({ error: 'Log fetch failed', detail: err instanceof Error ? err.message : String(err) }, 500);
+      return c.json(
+        { error: 'Log fetch failed', detail: err instanceof Error ? err.message : String(err) },
+        500,
+      );
     }
   });
 
@@ -136,9 +151,11 @@ export function registerWorkersRoutes(app: Hono): void {
     const workerId = c.req.param('id');
     if (!workerId) return c.json({ error: 'Bad request' }, 400);
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare(`SELECT pid FROM workers WHERE id = ?`).get(workerId) as { pid: number } | undefined;
+    const row = sqlite.prepare(`SELECT pid FROM workers WHERE id = ?`).get(workerId) as
+      | { pid: number }
+      | undefined;
     if (!row) return c.json({ error: `Worker ${workerId} not found` }, 404);
-    const pid = Math.floor(Math.abs(Number(row.pid))).toString();   // sanitize → digits only
+    const pid = Math.floor(Math.abs(Number(row.pid))).toString(); // sanitize → digits only
 
     const { streamSSENoTransform } = await import('@/lib/sse-no-transform.js');
     const { spawn } = await import('node:child_process');
@@ -146,15 +163,24 @@ export function registerWorkersRoutes(app: Hono): void {
     return streamSSENoTransform(c, async (stream) => {
       // CF anti-buffer padding (vedi dashboard.ts per dettagli)
       await stream.writeComment(' '.repeat(16_384));
-      const child = spawn('sh', ['-c',
-        `journalctl _PID=${pid} -f -n 50 -o cat 2>/dev/null || tail -F /var/log/flowforge/worker-${pid}.log 2>/dev/null || echo "(no journalctl/no file for pid ${pid})"`,
-      ], { stdio: ['ignore', 'pipe', 'pipe'] });
+      const child = spawn(
+        'sh',
+        [
+          '-c',
+          `journalctl _PID=${pid} -f -n 50 -o cat 2>/dev/null || tail -F /var/log/flowforge/worker-${pid}.log 2>/dev/null || echo "(no journalctl/no file for pid ${pid})"`,
+        ],
+        { stdio: ['ignore', 'pipe', 'pipe'] },
+      );
 
       let closed = false;
       const cleanup = (): void => {
         if (closed) return;
         closed = true;
-        try { child.kill('SIGTERM'); } catch { /* already exited */ }
+        try {
+          child.kill('SIGTERM');
+        } catch {
+          /* already exited */
+        }
       };
       c.req.raw.signal.addEventListener('abort', cleanup);
 
@@ -173,11 +199,19 @@ export function registerWorkersRoutes(app: Hono): void {
         void stream.writeSSE({ event: 'error', data: err.message });
         cleanup();
       });
-      const hb = setInterval(() => { void stream.writeSSE({ event: 'heartbeat', data: '·' }); }, 15_000);
+      const hb = setInterval(() => {
+        void stream.writeSSE({ event: 'heartbeat', data: '·' });
+      }, 15_000);
 
       await new Promise<void>((resolve) => {
-        child.on('exit', () => { clearInterval(hb); resolve(); });
-        c.req.raw.signal.addEventListener('abort', () => { clearInterval(hb); resolve(); });
+        child.on('exit', () => {
+          clearInterval(hb);
+          resolve();
+        });
+        c.req.raw.signal.addEventListener('abort', () => {
+          clearInterval(hb);
+          resolve();
+        });
       });
     });
   });

@@ -83,7 +83,11 @@ describe('honeypot middleware runtime', () => {
     const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
     expect(url).toContain('/honeypot/hit');
     expect(init.method).toBe('POST');
-    const body = JSON.parse(init.body as string) as { ip: string; endpoint: string; user_agent: string };
+    const body = JSON.parse(init.body as string) as {
+      ip: string;
+      endpoint: string;
+      user_agent: string;
+    };
     expect(body.ip).toBe('1.2.3.4');
     expect(body.endpoint).toBe('/.env');
     expect(body.user_agent).toContain('ScannerBot');

@@ -37,10 +37,15 @@ export class PinService {
     ensurePinsTable();
   }
 
-  list(workflowId: string, tenantId = 'default'): { nodeId: string; output: unknown; enabled: boolean; updatedAt: string }[] {
+  list(
+    workflowId: string,
+    tenantId = 'default',
+  ): { nodeId: string; output: unknown; enabled: boolean; updatedAt: string }[] {
     const { sqlite } = getDatabase();
     const rows = sqlite
-      .prepare('SELECT * FROM workflow_pins WHERE tenant_id = ? AND workflow_id = ? ORDER BY node_id')
+      .prepare(
+        'SELECT * FROM workflow_pins WHERE tenant_id = ? AND workflow_id = ? ORDER BY node_id',
+      )
       .all(tenantId, workflowId) as PinRow[];
     return rows.map((r) => ({
       nodeId: r.node_id,
@@ -50,7 +55,13 @@ export class PinService {
     }));
   }
 
-  set(workflowId: string, nodeId: string, output: unknown, enabled = true, tenantId = 'default'): void {
+  set(
+    workflowId: string,
+    nodeId: string,
+    output: unknown,
+    enabled = true,
+    tenantId = 'default',
+  ): void {
     const { sqlite } = getDatabase();
     sqlite
       .prepare(
@@ -75,11 +86,19 @@ export class PinService {
   }
 
   /** Single-row lookup — returns null when no pin exists for the (workflow, node) pair. */
-  get(workflowId: string, nodeId: string, tenantId = 'default'): { output: unknown; enabled: boolean; updatedAt: string } | null {
+  get(
+    workflowId: string,
+    nodeId: string,
+    tenantId = 'default',
+  ): { output: unknown; enabled: boolean; updatedAt: string } | null {
     const { sqlite } = getDatabase();
     const row = sqlite
-      .prepare('SELECT output_json, enabled, updated_at FROM workflow_pins WHERE tenant_id = ? AND workflow_id = ? AND node_id = ?')
-      .get(tenantId, workflowId, nodeId) as { output_json: string; enabled: number; updated_at: string } | undefined;
+      .prepare(
+        'SELECT output_json, enabled, updated_at FROM workflow_pins WHERE tenant_id = ? AND workflow_id = ? AND node_id = ?',
+      )
+      .get(tenantId, workflowId, nodeId) as
+      | { output_json: string; enabled: number; updated_at: string }
+      | undefined;
     if (!row) return null;
     return {
       output: JSON.parse(row.output_json) as unknown,
@@ -91,7 +110,9 @@ export class PinService {
   getEnabledMap(workflowId: string, tenantId = 'default'): Map<string, unknown> {
     const { sqlite } = getDatabase();
     const rows = sqlite
-      .prepare('SELECT node_id, output_json FROM workflow_pins WHERE tenant_id = ? AND workflow_id = ? AND enabled = 1')
+      .prepare(
+        'SELECT node_id, output_json FROM workflow_pins WHERE tenant_id = ? AND workflow_id = ? AND enabled = 1',
+      )
       .all(tenantId, workflowId) as { node_id: string; output_json: string }[];
     const out = new Map<string, unknown>();
     for (const r of rows) {

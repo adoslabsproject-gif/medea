@@ -292,8 +292,12 @@ describe('SYSTEM_PROMPT — anti-hallucinate vendor IDs (FIX 2026-05-30)', () =>
 
   it('REGRESSION: il prompt NON contiene più i 7 id legacy (slack_post_message, github_create_issue, ecc.)', () => {
     const LEGACY_IDS = [
-      'slack_post_message', 'github_create_issue', 'notion_create_page',
-      'stripe_charge', 'linear_create_issue', 'discord_webhook_post',
+      'slack_post_message',
+      'github_create_issue',
+      'notion_create_page',
+      'stripe_charge',
+      'linear_create_issue',
+      'discord_webhook_post',
       'telegram_send_message',
     ];
     for (const id of LEGACY_IDS) {
@@ -402,16 +406,25 @@ describe('SYSTEM_PROMPT_LORA — 15 micro-regole critiche embedded', () => {
 
   it('contiene keyword critici per ogni categoria', () => {
     const required = [
-      'DEFID-WHITELIST', 'SECRETS', '__USE_PICKER__',
-      'FAN-IN HARD', 'flow_merge', 'agent_data_analyst',
-      'SWITCH', 'defaultCase',
+      'DEFID-WHITELIST',
+      'SECRETS',
+      '__USE_PICKER__',
+      'FAN-IN HARD',
+      'flow_merge',
+      'agent_data_analyst',
+      'SWITCH',
+      'defaultCase',
       'DEAD-END',
       'CIRCULAR',
-      'LOOP+AGGR', 'strategy="batch"',
-      'ERROR HANDLING', 'retryPolicy',
-      'EXPRESSIONS', '$node',
+      'LOOP+AGGR',
+      'strategy="batch"',
+      'ERROR HANDLING',
+      'retryPolicy',
+      'EXPRESSIONS',
+      '$node',
       'MIN-NODI',
-      'TABELLE NUOVE', 'tablesToCreate',
+      'TABELLE NUOVE',
+      'tablesToCreate',
       'AGENT WIRING',
       'SCAFFOLD COMPLETO',
     ];

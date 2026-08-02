@@ -83,10 +83,17 @@ function makeApp(role: string | null = 'owner') {
 }
 
 const sampleTemplate = (over: Record<string, unknown> = {}) => ({
-  id: 't-1', name: 'Template A', promptText: 'Crea workflow X',
-  graphSignature: 'sig-1', graphDefIds: ['action_http'],
-  language: 'it', importedCount: 5, successCount: 4, failCount: 1,
-  lastUsedAt: '2026-01-01', createdAt: '2026-01-01',
+  id: 't-1',
+  name: 'Template A',
+  promptText: 'Crea workflow X',
+  graphSignature: 'sig-1',
+  graphDefIds: ['action_http'],
+  language: 'it',
+  importedCount: 5,
+  successCount: 4,
+  failCount: 1,
+  lastUsedAt: '2026-01-01',
+  createdAt: '2026-01-01',
   sharedWithCommunity: false,
   workflowJson: JSON.stringify({ nodes: [], edges: [] }),
   promptTokens: ['crea', 'workflow'],
@@ -136,7 +143,8 @@ describe('🚨 GET /list', () => {
 describe('🚨 GET /community', () => {
   it('🚨 community raggiungibile → ok + templates', async () => {
     portalClientMock.retrieveFromCommunity.mockResolvedValue({
-      templates: [{ id: 'ct-1', name: 'Community' }], count: 1,
+      templates: [{ id: 'ct-1', name: 'Community' }],
+      count: 1,
     });
     const app = makeApp();
     const res = await app.request('/community?language=en&limit=10');
@@ -144,7 +152,8 @@ describe('🚨 GET /community', () => {
     expect(body.ok).toBe(true);
     expect(body.count).toBe(1);
     expect(portalClientMock.retrieveFromCommunity).toHaveBeenCalledWith({
-      language: 'en', limit: 10,
+      language: 'en',
+      limit: 10,
     });
   });
 
@@ -172,7 +181,8 @@ describe('🚨 POST /:id/share', () => {
     templateCacheMock.getById.mockReturnValue(null);
     const app = makeApp();
     const res = await app.request('/missing-id/share', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({}),
     });
     expect(res.status).toBe(404);
@@ -182,7 +192,8 @@ describe('🚨 POST /:id/share', () => {
     templateCacheMock.getById.mockReturnValue(sampleTemplate());
     const app = makeApp();
     const res = await app.request('/t-1/share', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ description: 'x'.repeat(2001) }),
     });
     expect(res.status).toBe(400);
@@ -192,7 +203,8 @@ describe('🚨 POST /:id/share', () => {
     templateCacheMock.getById.mockReturnValue(sampleTemplate());
     const app = makeApp();
     const res = await app.request('/t-1/share', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ language: 'ru' }),
     });
     expect(res.status).toBe(400);
@@ -203,7 +215,8 @@ describe('🚨 POST /:id/share', () => {
     portalClientMock.promoteToCommunity.mockResolvedValue(null);
     const app = makeApp();
     const res = await app.request('/t-1/share', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({}),
     });
     expect(res.status).toBe(502);
@@ -212,11 +225,13 @@ describe('🚨 POST /:id/share', () => {
   it('🚨 happy path → ok + sharedTemplateId + isNew', async () => {
     templateCacheMock.getById.mockReturnValue(sampleTemplate());
     portalClientMock.promoteToCommunity.mockResolvedValue({
-      id: 'shared-uuid', isNew: true,
+      id: 'shared-uuid',
+      isNew: true,
     });
     const app = makeApp();
     const res = await app.request('/t-1/share', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ description: 'My desc', language: 'it' }),
     });
     expect(res.status).toBe(200);
@@ -229,7 +244,8 @@ describe('🚨 POST /:id/share', () => {
     portalClientMock.promoteToCommunity.mockResolvedValue({ id: 's', isNew: false });
     const app = makeApp();
     await app.request('/t-1/share', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({}),
     });
     expect(portalClientMock.promoteToCommunity).toHaveBeenCalledWith(
@@ -242,7 +258,8 @@ describe('🚨 POST /:id/unshare', () => {
   it('🚨 body senza sharedTemplateId → 400', async () => {
     const app = makeApp();
     const res = await app.request('/t-1/unshare', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({}),
     });
     expect(res.status).toBe(400);
@@ -251,7 +268,8 @@ describe('🚨 POST /:id/unshare', () => {
   it('🚨 sharedTemplateId non UUID → 400', async () => {
     const app = makeApp();
     const res = await app.request('/t-1/unshare', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ sharedTemplateId: 'not-uuid' }),
     });
     expect(res.status).toBe(400);
@@ -261,7 +279,8 @@ describe('🚨 POST /:id/unshare', () => {
     portalClientMock.unshareFromCommunity.mockResolvedValue(true);
     const app = makeApp();
     const res = await app.request('/t-1/unshare', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         sharedTemplateId: '00000000-0000-0000-0000-000000000001',
         reason: 'GDPR removal request',
@@ -294,9 +313,12 @@ describe('🔴 RBAC share/unshare/delete (anti-regressione: mutation rimuove req
   it('🔴 share: viewer → 403, editor → 403, owner → passa il gate', async () => {
     templateCacheMock.getById.mockReturnValue(sampleTemplate());
     portalClientMock.promoteToCommunity.mockResolvedValue({ id: 's', isNew: true });
-    const post = (role: string) => makeApp(role).request('/t-1/share', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
-    });
+    const post = (role: string) =>
+      makeApp(role).request('/t-1/share', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{}',
+      });
     expect((await post('viewer')).status).toBe(403);
     expect((await post('editor')).status).toBe(403);
     expect((await post('owner')).status).toBe(200);
@@ -304,7 +326,9 @@ describe('🔴 RBAC share/unshare/delete (anti-regressione: mutation rimuove req
 
   it('🔴 share senza auth → 401', async () => {
     const res = await makeApp(null).request('/t-1/share', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{}',
     });
     expect(res.status).toBe(401);
   });
@@ -313,8 +337,12 @@ describe('🔴 RBAC share/unshare/delete (anti-regressione: mutation rimuove req
     portalClientMock.unshareFromCommunity.mockResolvedValue(true);
     const body = JSON.stringify({ sharedTemplateId: '00000000-0000-0000-0000-000000000001' });
     const headers = { 'content-type': 'application/json' };
-    expect((await makeApp('editor').request('/t-1/unshare', { method: 'POST', headers, body })).status).toBe(403);
-    expect((await makeApp('owner').request('/t-1/unshare', { method: 'POST', headers, body })).status).toBe(200);
+    expect(
+      (await makeApp('editor').request('/t-1/unshare', { method: 'POST', headers, body })).status,
+    ).toBe(403);
+    expect(
+      (await makeApp('owner').request('/t-1/unshare', { method: 'POST', headers, body })).status,
+    ).toBe(200);
   });
 
   it('🔴 delete: viewer → 403, editor → 200', async () => {
@@ -327,7 +355,9 @@ describe('🔴 RBAC share/unshare/delete (anti-regressione: mutation rimuove req
 describe('🚨 GET /metrics', () => {
   it('🚨 hit rate × 1000/10 = percent rounded, gpu seconds → minutes', async () => {
     templateCacheMock.getMetrics.mockReturnValue({
-      cacheHitRate: 0.234, gpuSecondsSaved: 250, total: 100,
+      cacheHitRate: 0.234,
+      gpuSecondsSaved: 250,
+      total: 100,
     });
     const app = makeApp();
     const res = await app.request('/metrics');
@@ -364,7 +394,9 @@ describe('🚨 GET /search', () => {
   it('🚨 embedding server down → embedded:false ma local cont.', async () => {
     embeddingMock.mockRejectedValue(new Error('embed down'));
     templateCacheMock.retrieve.mockReturnValue({
-      template: sampleTemplate(), score: 0.8, action: 'inject_fewshot',
+      template: sampleTemplate(),
+      score: 0.8,
+      action: 'inject_fewshot',
       signals: { graphOverlap: 0, promptJaccard: 0.8, successRate: 0.8, cosine: 0 },
     });
     const app = makeApp();
@@ -378,18 +410,26 @@ describe('🚨 GET /search', () => {
   it('🚨 results sorted by score DESC', async () => {
     templateCacheMock.retrieve.mockReturnValue({
       template: sampleTemplate(),
-      score: 0.5, action: 'fallback',
+      score: 0.5,
+      action: 'fallback',
       signals: { graphOverlap: 0, promptJaccard: 0, successRate: 0, cosine: 0.5 },
     });
     portalClientMock.retrieveFromCommunity.mockResolvedValue({
       templates: [
         {
-          id: 'c-1', name: 'Comm', promptText: '', graphSignature: '',
-          graphDefIds: [], language: 'it', workflowJson: {},
+          id: 'c-1',
+          name: 'Comm',
+          promptText: '',
+          graphSignature: '',
+          graphDefIds: [],
+          language: 'it',
+          workflowJson: {},
           promptTokens: ['workflow', 'example'],
-          importedCount: 200, successCount: 100,
+          importedCount: 200,
+          successCount: 100,
         },
-      ], count: 1,
+      ],
+      count: 1,
     });
     const app = makeApp();
     const res = await app.request('/search?query=workflow+example&includeCommunity=true');
@@ -401,7 +441,9 @@ describe('🚨 GET /search', () => {
 
   it('🚨 includeCommunity=true + community fail → results SOLO local (no throw)', async () => {
     templateCacheMock.retrieve.mockReturnValue({
-      template: sampleTemplate(), score: 0.7, action: 'inject_fewshot',
+      template: sampleTemplate(),
+      score: 0.7,
+      action: 'inject_fewshot',
       signals: { graphOverlap: 0, promptJaccard: 0.7, successRate: 0, cosine: 0 },
     });
     portalClientMock.retrieveFromCommunity.mockRejectedValue(new Error('502'));
@@ -430,7 +472,8 @@ describe('🚨 GET /search', () => {
   it('🚨 workflowJson parse fail → null nel result (no crash)', async () => {
     templateCacheMock.retrieve.mockReturnValue({
       template: sampleTemplate({ workflowJson: 'NOT-JSON{' }),
-      score: 0.5, action: 'fallback',
+      score: 0.5,
+      action: 'fallback',
       signals: { graphOverlap: 0, promptJaccard: 0, successRate: 0, cosine: 0 },
     });
     const app = makeApp();

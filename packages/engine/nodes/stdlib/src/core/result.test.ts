@@ -1,5 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { ok, err, isOk, isErr, map, flatMap, mapErr, unwrap, unwrapOr, fromTry, fromPromise, collect } from './result.js';
+import {
+  ok,
+  err,
+  isOk,
+  isErr,
+  map,
+  flatMap,
+  mapErr,
+  unwrap,
+  unwrapOr,
+  fromTry,
+  fromPromise,
+  collect,
+} from './result.js';
 
 describe('Result<T, E>', () => {
   describe('constructors + type guards', () => {

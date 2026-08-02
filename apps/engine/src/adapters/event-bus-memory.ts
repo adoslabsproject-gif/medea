@@ -1,4 +1,10 @@
-import type { IEventBus, EventListener, EventPayload, EventName, Unsubscribe } from '@/ports/event-bus.js';
+import type {
+  IEventBus,
+  EventListener,
+  EventPayload,
+  EventName,
+  Unsubscribe,
+} from '@/ports/event-bus.js';
 import { logger } from '@/lib/logger.js';
 
 export class InMemoryEventBus implements IEventBus {

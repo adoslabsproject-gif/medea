@@ -110,7 +110,7 @@ export async function fetchRegistry(force = false): Promise<RegistryIndex> {
   const url = getUrl();
   try {
     const res = await safeOutboundFetch(url, {
-      headers: { 'User-Agent': 'flowforge-runtime', 'Accept': 'application/json' },
+      headers: { 'User-Agent': 'flowforge-runtime', Accept: 'application/json' },
       spanName: 'registry.fetch',
     });
     if (!res.ok) throw new Error(`Registry HTTP ${res.status.toString()}`);

@@ -84,8 +84,8 @@ Da UI puoi:
       type: 'duration_ms',
       required: true,
       default: 1_800_000, // 30 min
-      minMs: 60_000,      // 1 min minimo (per non catturare run normali)
-      maxMs: 86_400_000,  // 24h massimo
+      minMs: 60_000, // 1 min minimo (per non catturare run normali)
+      maxMs: 86_400_000, // 24h massimo
     },
   ],
   defaultSeverity: 'critical',
@@ -109,21 +109,23 @@ Da UI puoi:
     `;
     const res: RawQueryResult = await ctx.adapter.executeRaw(sql);
     const rows = res.rows as unknown as ZombieRow[];
-    return rows.map((r) => buildDetectedRow({
-      id: r.id,
-      reason: `Status=${r.status} da ${humanizeAge(ctx.now, r.started_at)} (soglia ${humanMs(threshold)})`,
-      severity: 'critical',
-      raw: {
+    return rows.map((r) =>
+      buildDetectedRow({
         id: r.id,
-        workflow_id: r.workflow_id,
-        tenant_id: r.tenant_id,
-        status: r.status,
-        started_at: r.started_at,
-        ended_at: r.ended_at,
-        steps_json: r.steps_json,
-      },
-      ...(r.tenant_id ? { tenantId: r.tenant_id } : {}),
-    }));
+        reason: `Status=${r.status} da ${humanizeAge(ctx.now, r.started_at)} (soglia ${humanMs(threshold)})`,
+        severity: 'critical',
+        raw: {
+          id: r.id,
+          workflow_id: r.workflow_id,
+          tenant_id: r.tenant_id,
+          status: r.status,
+          started_at: r.started_at,
+          ended_at: r.ended_at,
+          steps_json: r.steps_json,
+        },
+        ...(r.tenant_id ? { tenantId: r.tenant_id } : {}),
+      }),
+    );
   },
 };
 

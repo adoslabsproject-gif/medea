@@ -15,10 +15,18 @@ vi.mock('@/services/email-personalize.service.js', () => ({
 
 import { emailPersonalizeExecutor } from './email-personalize.js';
 
-const ctx = (tenantId = 'tenant-x') => ({
-  workflowId: 'wf', runId: 'r', nodeId: 'n', tenantId, userId: 'u',
-  defId: 'action_email_personalize', secrets: {}, llmProviders: [], nodeOutputs: {},
-}) as unknown as Parameters<typeof emailPersonalizeExecutor>[2];
+const ctx = (tenantId = 'tenant-x') =>
+  ({
+    workflowId: 'wf',
+    runId: 'r',
+    nodeId: 'n',
+    tenantId,
+    userId: 'u',
+    defId: 'action_email_personalize',
+    secrets: {},
+    llmProviders: [],
+    nodeOutputs: {},
+  }) as unknown as Parameters<typeof emailPersonalizeExecutor>[2];
 
 const run = (config: Record<string, unknown>, tenantId?: string) =>
   emailPersonalizeExecutor(config as never, null as never, ctx(tenantId));
@@ -28,20 +36,31 @@ const VALID = { content: 'azienda nautica', company_name: 'Cantiere X', language
 beforeEach(() => {
   personalizeMock.mockReset();
   personalizeMock.mockResolvedValue({
-    snippet: 'ciao', evidence_quote: 'nautica', confidence: 80, success: true,
-    reason: 'ok', llm_provider: 'liara', llm_model: 'qwen',
+    snippet: 'ciao',
+    evidence_quote: 'nautica',
+    confidence: 80,
+    success: true,
+    reason: 'ok',
+    llm_provider: 'liara',
+    llm_model: 'qwen',
   });
 });
 
 describe('email-personalize — validazione (3 obbligatori)', () => {
   it('content mancante → throw', async () => {
-    await expect(run({ company_name: 'X', language: 'it' })).rejects.toThrow(/content è obbligatorio/);
+    await expect(run({ company_name: 'X', language: 'it' })).rejects.toThrow(
+      /content è obbligatorio/,
+    );
   });
   it('company_name mancante → throw', async () => {
-    await expect(run({ content: 'x', language: 'it' })).rejects.toThrow(/company_name è obbligatorio/);
+    await expect(run({ content: 'x', language: 'it' })).rejects.toThrow(
+      /company_name è obbligatorio/,
+    );
   });
   it('language mancante → throw (codice 2-letter)', async () => {
-    await expect(run({ content: 'x', company_name: 'X' })).rejects.toThrow(/language è obbligatorio/);
+    await expect(run({ content: 'x', company_name: 'X' })).rejects.toThrow(
+      /language è obbligatorio/,
+    );
   });
   it('validazione fallita → il service NON viene chiamato', async () => {
     await run({}).catch(() => undefined);
@@ -66,7 +85,9 @@ describe('email-personalize — normalizzazione argomenti', () => {
 
   it('senderProductContext: presente → passato; assente → chiave OMESSA (non stringa vuota)', async () => {
     await run({ ...VALID, sender_product_context: '  eliche di prua  ' });
-    expect((personalizeMock.mock.calls[0]![0] as { senderProductContext?: string }).senderProductContext).toBe('eliche di prua');
+    expect(
+      (personalizeMock.mock.calls[0]![0] as { senderProductContext?: string }).senderProductContext,
+    ).toBe('eliche di prua');
     await run({ ...VALID });
     expect('senderProductContext' in (personalizeMock.mock.calls[1]![0] as object)).toBe(false);
   });
@@ -76,13 +97,24 @@ describe('email-personalize — mapping output', () => {
   it('tutti i campi del service mappati 1:1 nell output del nodo', async () => {
     const res = await run(VALID);
     expect(res.output).toEqual({
-      snippet: 'ciao', evidence_quote: 'nautica', confidence: 80, success: true,
-      reason: 'ok', llm_provider: 'liara', llm_model: 'qwen',
+      snippet: 'ciao',
+      evidence_quote: 'nautica',
+      confidence: 80,
+      success: true,
+      reason: 'ok',
+      llm_provider: 'liara',
+      llm_model: 'qwen',
     });
   });
 
   it('llm_provider/llm_model assenti dal service → null (non undefined)', async () => {
-    personalizeMock.mockResolvedValue({ snippet: '', evidence_quote: '', confidence: 0, success: false, reason: 'llm fail' });
+    personalizeMock.mockResolvedValue({
+      snippet: '',
+      evidence_quote: '',
+      confidence: 0,
+      success: false,
+      reason: 'llm fail',
+    });
     const res = await run(VALID);
     const o = res.output as { llm_provider: unknown; llm_model: unknown; success: boolean };
     expect(o.llm_provider).toBeNull();
@@ -93,13 +125,22 @@ describe('email-personalize — mapping output', () => {
   // Fase 1b (#13): llm_usage del service → campo standard _llm del nodo.
   it('service con llm_usage → output._llm standard {inputTokens,outputTokens,model,provider,fromApi}', async () => {
     personalizeMock.mockResolvedValue({
-      snippet: 'ciao', evidence_quote: 'nautica', confidence: 80, success: true,
-      reason: 'ok', llm_provider: 'liara', llm_model: 'qwen',
+      snippet: 'ciao',
+      evidence_quote: 'nautica',
+      confidence: 80,
+      success: true,
+      reason: 'ok',
+      llm_provider: 'liara',
+      llm_model: 'qwen',
       llm_usage: { input: 77, output: 33, fromApi: true },
     });
     const res = await run(VALID);
     expect((res.output as { _llm: unknown })._llm).toEqual({
-      inputTokens: 77, outputTokens: 33, model: 'qwen', provider: 'liara', fromApi: true,
+      inputTokens: 77,
+      outputTokens: 33,
+      model: 'qwen',
+      provider: 'liara',
+      fromApi: true,
     });
   });
 

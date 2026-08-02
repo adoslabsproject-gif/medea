@@ -25,23 +25,24 @@ beforeEach(() => {
 });
 
 describe('validateFatturaPaXsd — fattura ufficiale', () => {
-  it('🚨 fattura ufficiale FPR01 dell\'Agenzia → VALIDA (zero errori)', () => {
+  it("🚨 fattura ufficiale FPR01 dell'Agenzia → VALIDA (zero errori)", () => {
     const r = validateFatturaPaXsd(validInvoice);
     expect(r.errors).toEqual([]);
     expect(r.valid).toBe(true);
   });
 
   it('validator riusabile: 2 validazioni consecutive della stessa fattura → entrambe valide', () => {
-    expect((validateFatturaPaXsd(validInvoice)).valid).toBe(true);
-    expect((validateFatturaPaXsd(validInvoice)).valid).toBe(true);
+    expect(validateFatturaPaXsd(validInvoice).valid).toBe(true);
+    expect(validateFatturaPaXsd(validInvoice).valid).toBe(true);
   });
 });
 
 describe('validateFatturaPaXsd — non conformi (devono essere INVALIDI)', () => {
   it('🚨 root FatturaElettronica ma contenuto fuori schema (Bogus) → INVALIDO', () => {
-    const xml = '<?xml version="1.0"?><p:FatturaElettronica versione="FPR12" '
-      + 'xmlns:p="http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2">'
-      + '<Bogus>non conforme</Bogus></p:FatturaElettronica>';
+    const xml =
+      '<?xml version="1.0"?><p:FatturaElettronica versione="FPR12" ' +
+      'xmlns:p="http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2">' +
+      '<Bogus>non conforme</Bogus></p:FatturaElettronica>';
     const r = validateFatturaPaXsd(xml);
     expect(r.valid).toBe(false);
     expect(r.errors.length).toBeGreaterThan(0);
@@ -55,8 +56,9 @@ describe('validateFatturaPaXsd — non conformi (devono essere INVALIDI)', () =>
   });
 
   it('🚨 namespace sbagliato sulla root → INVALIDO (no matching global declaration)', () => {
-    const xml = '<?xml version="1.0"?><FatturaElettronica xmlns="urn:wrong-namespace">'
-      + '<x/></FatturaElettronica>';
+    const xml =
+      '<?xml version="1.0"?><FatturaElettronica xmlns="urn:wrong-namespace">' +
+      '<x/></FatturaElettronica>';
     const r = validateFatturaPaXsd(xml);
     expect(r.valid).toBe(false);
   });

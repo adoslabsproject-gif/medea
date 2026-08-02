@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { evaluateLockAcquire, isLockAlive, LOCK_TTL_MS, type LockState } from './workflow-lock.logic.js';
+import {
+  evaluateLockAcquire,
+  isLockAlive,
+  LOCK_TTL_MS,
+  type LockState,
+} from './workflow-lock.logic.js';
 
 const now = 1_000_000;
 const marco: LockState = { userId: 'u-marco', userName: 'Marco', heartbeatAt: now };
@@ -31,7 +36,13 @@ describe('evaluateLockAcquire', () => {
 });
 
 describe('isLockAlive', () => {
-  it('null → non vivo', () => { expect(isLockAlive(null, now)).toBe(false); });
-  it('heartbeat recente → vivo', () => { expect(isLockAlive(marco, now + 1000)).toBe(true); });
-  it('heartbeat vecchio → non vivo', () => { expect(isLockAlive(marco, now + LOCK_TTL_MS + 1)).toBe(false); });
+  it('null → non vivo', () => {
+    expect(isLockAlive(null, now)).toBe(false);
+  });
+  it('heartbeat recente → vivo', () => {
+    expect(isLockAlive(marco, now + 1000)).toBe(true);
+  });
+  it('heartbeat vecchio → non vivo', () => {
+    expect(isLockAlive(marco, now + LOCK_TTL_MS + 1)).toBe(false);
+  });
 });

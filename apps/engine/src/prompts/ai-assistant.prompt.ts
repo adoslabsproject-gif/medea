@@ -73,7 +73,9 @@ export function compactWorkflowJson(workflow: unknown): string {
 
 function truncateLongStrings(value: unknown, max: number): unknown {
   if (typeof value === 'string') {
-    return value.length <= max ? value : `${value.slice(0, max)}…[+${String(value.length - max)} char troncati]`;
+    return value.length <= max
+      ? value
+      : `${value.slice(0, max)}…[+${String(value.length - max)} char troncati]`;
   }
   if (Array.isArray(value)) return value.map((v) => truncateLongStrings(v, max));
   if (value !== null && typeof value === 'object') {

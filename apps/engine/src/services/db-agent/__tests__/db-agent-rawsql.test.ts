@@ -23,15 +23,31 @@ const m = vi.hoisted(() => {
   };
   class FakeAdapter {
     engine = 'sqlite';
-    async connect(d: unknown) { return mockFns.connect(d); }
-    async applyMigration() { return { sql: '', affectedTables: [] }; }
-    async previewMigration() { return ''; }
-    async query() { return []; }
+    async connect(d: unknown) {
+      return mockFns.connect(d);
+    }
+    async applyMigration() {
+      return { sql: '', affectedTables: [] };
+    }
+    async previewMigration() {
+      return '';
+    }
+    async query() {
+      return [];
+    }
     executeRaw = (sql: string, opts: unknown) => mockFns.executeRaw(sql, opts) as unknown;
-    async insert() { return {}; }
-    async update() { return {}; }
-    async delete() { return {}; }
-    async introspect() { return mockFns.introspect(); }
+    async insert() {
+      return {};
+    }
+    async update() {
+      return {};
+    }
+    async delete() {
+      return {};
+    }
+    async introspect() {
+      return mockFns.introspect();
+    }
   }
   return { ...mockFns, FakeAdapter };
 });
@@ -60,10 +76,34 @@ const TENANT_A = 'tenant-a';
 const TENANT_B = 'tenant-b';
 
 function seedTable(name = 'orders'): Table {
-  return { id: name, name, columns: [{ id: `${name}.id`, name: 'id', type: 'integer', constraints: { primaryKey: true, nullable: false, unique: true } }], indexes: [] };
+  return {
+    id: name,
+    name,
+    columns: [
+      {
+        id: `${name}.id`,
+        name: 'id',
+        type: 'integer',
+        constraints: { primaryKey: true, nullable: false, unique: true },
+      },
+    ],
+    indexes: [],
+  };
 }
-function makeDb(svc: DbStudioService, tenantId: string, name: string, tables: Table[] = []): string {
-  return svc.create({ tenantId, name, description: 'seed', connection: { engine: 'sqlite', embedded: true }, tables, relations: [] }).id;
+function makeDb(
+  svc: DbStudioService,
+  tenantId: string,
+  name: string,
+  tables: Table[] = [],
+): string {
+  return svc.create({
+    tenantId,
+    name,
+    description: 'seed',
+    connection: { engine: 'sqlite', embedded: true },
+    tables,
+    relations: [],
+  }).id;
 }
 
 let svc: DbStudioService;
@@ -85,7 +125,11 @@ beforeEach(() => {
 
 describe('run_sql — happy path lettura', () => {
   it('SELECT valido → executeRaw chiamato con rowLimit, ritorna le righe', async () => {
-    const r = (await executeDbAgentTool(ctxA, 'run_sql', { databaseId: dbA, sql: 'SELECT * FROM orders', rowLimit: 50 })) as { ok: true; data: unknown };
+    const r = (await executeDbAgentTool(ctxA, 'run_sql', {
+      databaseId: dbA,
+      sql: 'SELECT * FROM orders',
+      rowLimit: 50,
+    })) as { ok: true; data: unknown };
     expect(r.ok).toBe(true);
     expect(m.executeRaw).toHaveBeenCalledTimes(1);
     const [sql, opts] = m.executeRaw.mock.calls[0]!;
@@ -94,7 +138,10 @@ describe('run_sql — happy path lettura', () => {
   });
 
   it('EXPLAIN consentito', async () => {
-    const r = await executeDbAgentTool(ctxA, 'run_sql', { databaseId: dbA, sql: 'EXPLAIN QUERY PLAN SELECT 1' });
+    const r = await executeDbAgentTool(ctxA, 'run_sql', {
+      databaseId: dbA,
+      sql: 'EXPLAIN QUERY PLAN SELECT 1',
+    });
     expect(r.ok).toBe(true);
   });
 
@@ -109,11 +156,14 @@ describe('🚨 run_sql — bug-bounty injection (executeRaw MAI chiamato)', () =
     ['DROP nascosta dopo SELECT', 'SELECT 1; DROP TABLE orders'],
     ['DELETE diretto', 'DELETE FROM orders'],
     ['UPDATE diretto', 'UPDATE orders SET id = 2'],
-    ['INSERT diretto', "INSERT INTO orders (id) VALUES (9)"],
+    ['INSERT diretto', 'INSERT INTO orders (id) VALUES (9)'],
     ['DDL CREATE', 'CREATE TABLE evil (x int)'],
     ['DDL ALTER', 'ALTER TABLE orders ADD COLUMN leak text'],
     ['TRUNCATE', 'TRUNCATE TABLE orders'],
-    ['CTE modificante (DELETE)', 'WITH d AS (DELETE FROM orders RETURNING *) SELECT count(*) FROM d'],
+    [
+      'CTE modificante (DELETE)',
+      'WITH d AS (DELETE FROM orders RETURNING *) SELECT count(*) FROM d',
+    ],
     // BYPASS revisore 2026-06-14: DML PRIMARIO dopo CTE benigno (pre-fix passava come 'select').
     ['CTE benigno + DELETE primario', 'WITH x AS (SELECT 1) DELETE FROM orders WHERE id > 0'],
     ['CTE benigno + UPDATE primario', 'WITH x AS (SELECT 1) UPDATE orders SET id = 2'],
@@ -124,7 +174,10 @@ describe('🚨 run_sql — bug-bounty injection (executeRaw MAI chiamato)', () =
   ];
   for (const [label, sql] of blocked) {
     it(`rifiuta: ${label}`, async () => {
-      const r = (await executeDbAgentTool(ctxA, 'run_sql', { databaseId: dbA, sql })) as { ok: false; code: string };
+      const r = (await executeDbAgentTool(ctxA, 'run_sql', { databaseId: dbA, sql })) as {
+        ok: false;
+        code: string;
+      };
       expect(r.ok, sql).toBe(false);
       expect(r.code, sql).toBe('TOOL_VALIDATION');
       expect(m.executeRaw, sql).not.toHaveBeenCalled();
@@ -138,7 +191,10 @@ describe('🚨 run_sql — bug-bounty injection (executeRaw MAI chiamato)', () =
   ];
   for (const [label, sql] of fsEscape) {
     it(`rifiuta filesystem-escape: ${label}`, async () => {
-      const r = (await executeDbAgentTool(ctxA, 'run_sql', { databaseId: dbA, sql })) as { ok: false; code: string };
+      const r = (await executeDbAgentTool(ctxA, 'run_sql', { databaseId: dbA, sql })) as {
+        ok: false;
+        code: string;
+      };
       expect(r.ok, sql).toBe(false);
       expect(r.code, sql).toBe('TOOL_VALIDATION');
       expect(m.executeRaw, sql).not.toHaveBeenCalled();
@@ -147,14 +203,26 @@ describe('🚨 run_sql — bug-bounty injection (executeRaw MAI chiamato)', () =
 
   it('🚨 SELECT valido ma su DB di un altro tenant → TENANT_SCOPE, executeRaw mai chiamato', async () => {
     const dbB = makeDb(svc, TENANT_B, 'secret', [seedTable()]);
-    const r = (await executeDbAgentTool(ctxA, 'run_sql', { databaseId: dbB, sql: 'SELECT * FROM orders' })) as { ok: false; code: string };
+    const r = (await executeDbAgentTool(ctxA, 'run_sql', {
+      databaseId: dbB,
+      sql: 'SELECT * FROM orders',
+    })) as { ok: false; code: string };
     expect(r.code).toBe('TENANT_SCOPE');
     expect(m.executeRaw).not.toHaveBeenCalled();
   });
 
   it('sql vuoto / oltre il cap → TOOL_VALIDATION', async () => {
-    expect((await executeDbAgentTool(ctxA, 'run_sql', { databaseId: dbA, sql: '' })).ok).toBe(false);
-    expect((await executeDbAgentTool(ctxA, 'run_sql', { databaseId: dbA, sql: `SELECT '${'x'.repeat(20_001)}'` })).ok).toBe(false);
+    expect((await executeDbAgentTool(ctxA, 'run_sql', { databaseId: dbA, sql: '' })).ok).toBe(
+      false,
+    );
+    expect(
+      (
+        await executeDbAgentTool(ctxA, 'run_sql', {
+          databaseId: dbA,
+          sql: `SELECT '${'x'.repeat(20_001)}'`,
+        })
+      ).ok,
+    ).toBe(false);
     expect(m.executeRaw).not.toHaveBeenCalled();
   });
 });

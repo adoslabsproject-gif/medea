@@ -9,7 +9,14 @@ import { resolveServerExecutor } from './registry.js';
 
 describe('resolveServerExecutor — no prototype-pollution dispatch', () => {
   it('🚨🚨 chiavi del prototype di Object → undefined (mai chiamate come executor)', () => {
-    for (const evil of ['constructor', 'toString', '__proto__', 'hasOwnProperty', 'valueOf', 'isPrototypeOf']) {
+    for (const evil of [
+      'constructor',
+      'toString',
+      '__proto__',
+      'hasOwnProperty',
+      'valueOf',
+      'isPrototypeOf',
+    ]) {
       expect(resolveServerExecutor(evil), `"${evil}" non deve risolvere`).toBeUndefined();
     }
   });

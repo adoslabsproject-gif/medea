@@ -22,7 +22,9 @@ describe('memory_note — contract description↔outputs (anti-drift)', () => {
 
   it('ogni def.outputs è citato nella clausola Output', () => {
     expect(clause.length).toBeGreaterThan(0);
-    const missing = (memoryNoteNode.def.outputs ?? []).filter((o) => !new RegExp(`\\b${o}\\b`).test(clause));
+    const missing = (memoryNoteNode.def.outputs ?? []).filter(
+      (o) => !new RegExp(`\\b${o}\\b`).test(clause),
+    );
     expect(missing, `def.outputs non citati: ${missing.join(', ')}`).toEqual([]);
   });
 

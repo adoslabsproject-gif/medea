@@ -4,11 +4,19 @@ import type { CommunityNodeDefinition } from './index.js';
 
 function makeNode(): CommunityNodeDefinition {
   return {
-    manifest: { id: 'demo', vendor: 'acme', version: '1.0.0', displayName: 'Demo', description: 'x', license: 'MIT' },
+    manifest: {
+      id: 'demo',
+      vendor: 'acme',
+      version: '1.0.0',
+      displayName: 'Demo',
+      description: 'x',
+      license: 'MIT',
+    },
     def: { type: 'action', icon: 'box', color: '#000' },
     actions: [
       {
-        id: 'sum', label: 'Sum',
+        id: 'sum',
+        label: 'Sum',
         execute: async (config, input) => {
           const a = Number((input as { a: number }).a);
           const b = Number(config.b);
@@ -17,7 +25,8 @@ function makeNode(): CommunityNodeDefinition {
         },
       },
       {
-        id: 'echo', label: 'Echo',
+        id: 'echo',
+        label: 'Echo',
         execute: async (_c, input) => input,
       },
     ],
@@ -38,34 +47,66 @@ describe('deepEqual', () => {
 
 describe('runNodeFixture', () => {
   it('output atteso (deep-equal) → pass', async () => {
-    const r = await runNodeFixture(makeNode(), { name: 'sum 2+3', action: 'sum', config: { b: '3' }, input: { a: 2 }, expect: { output: { result: 5 } } });
+    const r = await runNodeFixture(makeNode(), {
+      name: 'sum 2+3',
+      action: 'sum',
+      config: { b: '3' },
+      input: { a: 2 },
+      expect: { output: { result: 5 } },
+    });
     expect(r.passed).toBe(true);
   });
 
   it('output diverso → fail con dettaglio atteso/ricevuto', async () => {
-    const r = await runNodeFixture(makeNode(), { name: 'sum wrong', action: 'sum', config: { b: '3' }, input: { a: 2 }, expect: { output: { result: 99 } } });
+    const r = await runNodeFixture(makeNode(), {
+      name: 'sum wrong',
+      action: 'sum',
+      config: { b: '3' },
+      input: { a: 2 },
+      expect: { output: { result: 99 } },
+    });
     expect(r.passed).toBe(false);
     expect(r.detail).toMatch(/atteso/u);
     expect(r.detail).toMatch(/ricevuto/u);
   });
 
-  it('errorMatch → pass se l\'azione fallisce col messaggio atteso', async () => {
-    const r = await runNodeFixture(makeNode(), { name: 'sum no config', action: 'sum', input: { a: 2 }, expect: { errorMatch: 'config.b mancante' } });
+  it("errorMatch → pass se l'azione fallisce col messaggio atteso", async () => {
+    const r = await runNodeFixture(makeNode(), {
+      name: 'sum no config',
+      action: 'sum',
+      input: { a: 2 },
+      expect: { errorMatch: 'config.b mancante' },
+    });
     expect(r.passed).toBe(true);
   });
 
-  it('errorMatch atteso ma l\'azione riesce → fail', async () => {
-    const r = await runNodeFixture(makeNode(), { name: 'expects error', action: 'echo', input: { x: 1 }, expect: { errorMatch: 'boom' } });
+  it("errorMatch atteso ma l'azione riesce → fail", async () => {
+    const r = await runNodeFixture(makeNode(), {
+      name: 'expects error',
+      action: 'echo',
+      input: { x: 1 },
+      expect: { errorMatch: 'boom' },
+    });
     expect(r.passed).toBe(false);
   });
 
   it('action di default = la prima quando non specificata', async () => {
-    const r = await runNodeFixture(makeNode(), { name: 'default action', config: { b: '1' }, input: { a: 1 }, expect: { output: { result: 2 } } });
+    const r = await runNodeFixture(makeNode(), {
+      name: 'default action',
+      config: { b: '1' },
+      input: { a: 1 },
+      expect: { output: { result: 2 } },
+    });
     expect(r.passed).toBe(true);
   });
 
   it('action inesistente → fail con messaggio chiaro', async () => {
-    const r = await runNodeFixture(makeNode(), { name: 'bad action', action: 'nope', input: {}, expect: { output: {} } });
+    const r = await runNodeFixture(makeNode(), {
+      name: 'bad action',
+      action: 'nope',
+      input: {},
+      expect: { output: {} },
+    });
     expect(r.passed).toBe(false);
     expect(r.detail).toMatch(/non trovata/u);
   });
@@ -74,8 +115,20 @@ describe('runNodeFixture', () => {
 describe('runNodeFixtures (summary)', () => {
   it('aggrega pass/fail su più fixture', async () => {
     const fixtures: NodeFixture[] = [
-      { name: 'ok1', action: 'sum', config: { b: '3' }, input: { a: 2 }, expect: { output: { result: 5 } } },
-      { name: 'ko1', action: 'sum', config: { b: '3' }, input: { a: 2 }, expect: { output: { result: 6 } } },
+      {
+        name: 'ok1',
+        action: 'sum',
+        config: { b: '3' },
+        input: { a: 2 },
+        expect: { output: { result: 5 } },
+      },
+      {
+        name: 'ko1',
+        action: 'sum',
+        config: { b: '3' },
+        input: { a: 2 },
+        expect: { output: { result: 6 } },
+      },
       { name: 'ok2', action: 'echo', input: { hi: true }, expect: { output: { hi: true } } },
     ];
     const s = await runNodeFixtures(makeNode(), fixtures);

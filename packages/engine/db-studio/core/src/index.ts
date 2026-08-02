@@ -43,7 +43,13 @@ export type Column = z.infer<typeof ColumnSchema>;
 export const RelationKindSchema = z.enum(['one-to-one', 'one-to-many', 'many-to-many']);
 export type RelationKind = z.infer<typeof RelationKindSchema>;
 
-export const RelationOnDeleteSchema = z.enum(['cascade', 'restrict', 'set null', 'set default', 'no action']);
+export const RelationOnDeleteSchema = z.enum([
+  'cascade',
+  'restrict',
+  'set null',
+  'set default',
+  'no action',
+]);
 export type RelationOnDelete = z.infer<typeof RelationOnDeleteSchema>;
 
 export const RelationSchema = z.object({
@@ -126,14 +132,16 @@ export const DatabaseConnectionSchema = z.object({
   provisionStatus: z.enum(['provisioning', 'ready', 'error']).optional(),
   /** Tunnel SSH per DB esterni dietro bastion (stile DBeaver). Quando presente,
    *  il runtime apre il tunnel (db-remote-ssh) e punta l'adapter al forward locale. */
-  sshTunnel: z.object({
-    host: z.string().min(1).max(255),
-    port: z.number().int().min(1).max(65535).default(22),
-    user: z.string().min(1).max(255),
-    privateKeySecretRef: z.string().min(1),
-    passphraseSecretRef: z.string().optional(),
-    hostKeyFingerprint: z.string().min(1),
-  }).optional(),
+  sshTunnel: z
+    .object({
+      host: z.string().min(1).max(255),
+      port: z.number().int().min(1).max(65535).default(22),
+      user: z.string().min(1).max(255),
+      privateKeySecretRef: z.string().min(1),
+      passphraseSecretRef: z.string().optional(),
+      hostKeyFingerprint: z.string().min(1),
+    })
+    .optional(),
 });
 export type DatabaseConnection = z.infer<typeof DatabaseConnectionSchema>;
 
@@ -161,7 +169,9 @@ export const QuerySpecSchema = z.object({
   table: z.string().min(1),
   select: z.array(z.string()).optional(),
   filters: z.array(QueryFilterSchema).default([]),
-  orderBy: z.array(z.object({ column: z.string(), direction: z.enum(['asc', 'desc']) })).default([]),
+  orderBy: z
+    .array(z.object({ column: z.string(), direction: z.enum(['asc', 'desc']) }))
+    .default([]),
   groupBy: z.array(z.string()).optional(),
   limit: z.number().int().positive().max(10_000).optional(),
   offset: z.number().int().nonnegative().optional(),
@@ -174,7 +184,12 @@ export const MigrationActionSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('rename_table'), from: z.string(), to: z.string() }),
   z.object({ kind: z.literal('add_column'), tableName: z.string(), column: ColumnSchema }),
   z.object({ kind: z.literal('drop_column'), tableName: z.string(), columnName: z.string() }),
-  z.object({ kind: z.literal('rename_column'), tableName: z.string(), from: z.string(), to: z.string() }),
+  z.object({
+    kind: z.literal('rename_column'),
+    tableName: z.string(),
+    from: z.string(),
+    to: z.string(),
+  }),
   z.object({
     kind: z.literal('alter_column'),
     tableName: z.string(),
@@ -208,4 +223,9 @@ export { renderCreateViewSql, renderDropViewSql, type QuoteIdent } from './view-
 
 // Helper condiviso per l'introspezione delle FOREIGN KEY (ER diagram) — usato
 // dagli adapter SQL (postgres/mysql/mssql/sqlite/duckdb).
-export { mapOnDeleteAction, fkRowToRelation, fkRowsToRelations, type ForeignKeyRow } from './relation-introspect.js';
+export {
+  mapOnDeleteAction,
+  fkRowToRelation,
+  fkRowsToRelations,
+  type ForeignKeyRow,
+} from './relation-introspect.js';

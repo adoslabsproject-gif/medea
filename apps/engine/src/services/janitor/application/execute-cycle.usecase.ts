@@ -15,8 +15,16 @@
 
 import { nanoid } from 'nanoid';
 import type { Logger } from 'pino';
-import type { JanitorCycleReport, JanitorRuleReport, Rule } from '@/services/janitor/domain/index.js';
-import type { IClock, IRuleRegistry, IRuleConfigRepository } from '@/services/janitor/ports/index.js';
+import type {
+  JanitorCycleReport,
+  JanitorRuleReport,
+  Rule,
+} from '@/services/janitor/domain/index.js';
+import type {
+  IClock,
+  IRuleRegistry,
+  IRuleConfigRepository,
+} from '@/services/janitor/ports/index.js';
 import type { ExecuteRuleUseCase } from './execute-rule.usecase.js';
 
 export interface ExecuteCycleInput {
@@ -44,12 +52,15 @@ export class ExecuteCycleUseCase {
     const tenantId = input.tenantId ?? 'default';
 
     const candidates = this.selectRules(tenantId, input);
-    this.logger.info({
-      cycleId,
-      tenantId,
-      candidateCount: candidates.length,
-      dryRun: input.dryRun,
-    }, 'Janitor cycle start');
+    this.logger.info(
+      {
+        cycleId,
+        tenantId,
+        candidateCount: candidates.length,
+        dryRun: input.dryRun,
+      },
+      'Janitor cycle start',
+    );
 
     const ruleReports: JanitorRuleReport[] = [];
     let rulesSkippedLock = 0;

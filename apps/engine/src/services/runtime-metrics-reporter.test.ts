@@ -155,7 +155,9 @@ describe('reportOnce — token precedence', () => {
     process.env.MEDEA_INTERNAL_TOKEN = 'fallback-per-tenant';
 
     const stubFetch = vi.fn().mockResolvedValue({
-      ok: true, status: 200, text: () => Promise.resolve(''),
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve(''),
     });
     vi.stubGlobal('fetch', stubFetch);
 
@@ -172,7 +174,9 @@ describe('reportOnce — token precedence', () => {
     process.env.MEDEA_INTERNAL_TOKEN = 'fallback-per-tenant';
 
     const stubFetch = vi.fn().mockResolvedValue({
-      ok: true, status: 200, text: () => Promise.resolve(''),
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve(''),
     });
     vi.stubGlobal('fetch', stubFetch);
 
@@ -193,7 +197,9 @@ describe('reportOnce — happy path body + URL', () => {
     });
     process.env.PORTAL_CALLBACK_TOKEN = 'tok';
     const stubFetch = vi.fn().mockResolvedValue({
-      ok: true, status: 200, text: () => Promise.resolve(''),
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve(''),
     });
     vi.stubGlobal('fetch', stubFetch);
 
@@ -210,7 +216,9 @@ describe('reportOnce — happy path body + URL', () => {
   it('body JSON contiene workspaceId + percentili null (runsTotal=0)', async () => {
     process.env.PORTAL_CALLBACK_TOKEN = 'tok';
     const stubFetch = vi.fn().mockResolvedValue({
-      ok: true, status: 200, text: () => Promise.resolve(''),
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve(''),
     });
     vi.stubGlobal('fetch', stubFetch);
 
@@ -219,7 +227,10 @@ describe('reportOnce — happy path body + URL', () => {
 
     const [, opts] = stubFetch.mock.calls[0]!;
     const body = JSON.parse((opts as { body: string }).body) as {
-      workspaceId: string; runsTotal7d: number; latencyP50Ms: number | null; lastRunAt: string | null;
+      workspaceId: string;
+      runsTotal7d: number;
+      latencyP50Ms: number | null;
+      lastRunAt: string | null;
     };
     expect(body.workspaceId).toBe('ws-abc-1');
     expect(body.runsTotal7d).toBe(0);
@@ -242,14 +253,17 @@ describe('reportOnce — happy path body + URL', () => {
             return { get: () => ({ c: 10 }), all: () => [] };
           }
           if (sql.includes('COUNT(*)')) return { get: () => ({ c: 1000 }), all: () => [] };
-          if (sql.includes('MAX(started_at)')) return { get: () => ({ last: lastIso }), all: () => [] };
+          if (sql.includes('MAX(started_at)'))
+            return { get: () => ({ last: lastIso }), all: () => [] };
           // sample query
           return { get: () => undefined, all: () => sample };
         },
       },
     });
     const stubFetch = vi.fn().mockResolvedValue({
-      ok: true, status: 200, text: () => Promise.resolve(''),
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve(''),
     });
     vi.stubGlobal('fetch', stubFetch);
 
@@ -258,8 +272,13 @@ describe('reportOnce — happy path body + URL', () => {
 
     const [, opts] = stubFetch.mock.calls[0]!;
     const body = JSON.parse((opts as { body: string }).body) as {
-      runsTotal7d: number; runsErrored7d: number; runsPartial7d: number;
-      latencyP50Ms: number; latencyP95Ms: number; latencyP99Ms: number; latencyMaxMs: number;
+      runsTotal7d: number;
+      runsErrored7d: number;
+      runsPartial7d: number;
+      latencyP50Ms: number;
+      latencyP95Ms: number;
+      latencyP99Ms: number;
+      latencyMaxMs: number;
       lastRunAt: string;
     };
     expect(body.runsTotal7d).toBe(1000);
@@ -276,7 +295,9 @@ describe('reportOnce — happy path body + URL', () => {
     process.env.PORTAL_CALLBACK_TOKEN = 'tok';
     process.env.npm_package_version = '1.2.3';
     const stubFetch = vi.fn().mockResolvedValue({
-      ok: true, status: 200, text: () => Promise.resolve(''),
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve(''),
     });
     vi.stubGlobal('fetch', stubFetch);
 
@@ -291,7 +312,9 @@ describe('reportOnce — happy path body + URL', () => {
   it('Content-Type application/json header settato', async () => {
     process.env.PORTAL_CALLBACK_TOKEN = 'tok';
     const stubFetch = vi.fn().mockResolvedValue({
-      ok: true, status: 200, text: () => Promise.resolve(''),
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve(''),
     });
     vi.stubGlobal('fetch', stubFetch);
 
@@ -307,7 +330,9 @@ describe('reportOnce — happy path body + URL', () => {
   it('AbortSignal.timeout(10000) wired sul fetch (no infinite hang)', async () => {
     process.env.PORTAL_CALLBACK_TOKEN = 'tok';
     const stubFetch = vi.fn().mockResolvedValue({
-      ok: true, status: 200, text: () => Promise.resolve(''),
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve(''),
     });
     vi.stubGlobal('fetch', stubFetch);
 
@@ -322,10 +347,15 @@ describe('reportOnce — happy path body + URL', () => {
 describe('reportOnce — error paths', () => {
   it('response 401 → log warn con status + body snippet, NO throw', async () => {
     process.env.PORTAL_CALLBACK_TOKEN = 'tok';
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: false, status: 401,
-      text: () => Promise.resolve('{"error":{"code":"UNAUTHORIZED","message":"invalid internal token"}}'),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        text: () =>
+          Promise.resolve('{"error":{"code":"UNAUTHORIZED","message":"invalid internal token"}}'),
+      }),
+    );
 
     const { reportOnce } = await import('./runtime-metrics-reporter.js');
     await expect(reportOnce()).resolves.toBeUndefined();
@@ -342,10 +372,14 @@ describe('reportOnce — error paths', () => {
 
   it('response 5xx → log warn + NO throw', async () => {
     process.env.PORTAL_CALLBACK_TOKEN = 'tok';
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: false, status: 503,
-      text: () => Promise.resolve('maintenance window'),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+        text: () => Promise.resolve('maintenance window'),
+      }),
+    );
 
     const { reportOnce } = await import('./runtime-metrics-reporter.js');
     await expect(reportOnce()).resolves.toBeUndefined();
@@ -359,17 +393,21 @@ describe('reportOnce — error paths', () => {
   it('response body snippet truncato a 200 char nel log', async () => {
     process.env.PORTAL_CALLBACK_TOKEN = 'tok';
     const huge = 'x'.repeat(500);
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: false, status: 500,
-      text: () => Promise.resolve(huge),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve(huge),
+      }),
+    );
 
     const { reportOnce } = await import('./runtime-metrics-reporter.js');
     await reportOnce();
 
-    const warnCall = vi.mocked(logger).warn.mock.calls.find((c) =>
-      typeof (c[0] as { err?: string })?.err === 'string',
-    );
+    const warnCall = vi
+      .mocked(logger)
+      .warn.mock.calls.find((c) => typeof (c[0] as { err?: string })?.err === 'string');
     expect((warnCall![0] as { err: string }).err.length).toBeLessThanOrEqual(200);
   });
 
@@ -391,10 +429,14 @@ describe('reportOnce — error paths', () => {
 
   it('response.text() reject (body stream broken) → log con err vuoto, no crash', async () => {
     process.env.PORTAL_CALLBACK_TOKEN = 'tok';
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: false, status: 502,
-      text: () => Promise.reject(new Error('stream consumed')),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 502,
+        text: () => Promise.reject(new Error('stream consumed')),
+      }),
+    );
 
     const { reportOnce } = await import('./runtime-metrics-reporter.js');
     await expect(reportOnce()).resolves.toBeUndefined();

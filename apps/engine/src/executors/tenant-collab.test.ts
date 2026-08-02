@@ -17,7 +17,9 @@ import { createHmac, createHash } from 'node:crypto';
 
 const auditAppend = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 vi.mock('@/services/audit.service.js', () => ({
-  AuditLogService: class { append = auditAppend; },
+  AuditLogService: class {
+    append = auditAppend;
+  },
 }));
 
 import { tenantCollabExecutor } from './tenant-collab.js';
@@ -33,8 +35,12 @@ const TOKEN = 'tok-collab-0123456789abcdef';
 const URL_OK = 'https://acme.app.automazionezeli.com/api/v1/webhooks/wf-123/whtok-abcdef123456';
 
 const ctx = {
-  tenantId: 'tenant-a', workflowId: 'wf-src', runId: 'run-1', nodeId: 'node-1',
-  defId: 'action_tenant_collab', secrets: {},
+  tenantId: 'tenant-a',
+  workflowId: 'wf-src',
+  runId: 'run-1',
+  nodeId: 'node-1',
+  defId: 'action_tenant_collab',
+  secrets: {},
 } as unknown as Parameters<typeof tenantCollabExecutor>[2];
 
 const baseCfg = { collaborationUrl: URL_OK, connectionToken: TOKEN };
@@ -51,17 +57,25 @@ beforeEach(() => {
   fetchMock = vi.fn().mockResolvedValue(ok202());
   globalThis.fetch = fetchMock as unknown as typeof fetch;
 });
-afterEach(() => { globalThis.fetch = origFetch; });
+afterEach(() => {
+  globalThis.fetch = origFetch;
+});
 
 describe('allowlist SSRF — il nodo NON è un HTTP generico', () => {
   const rejected = [
     ['host esterno', 'https://evil.com/api/v1/webhooks/wf/t'],
-    ['suffix lookalike (dominio attacker)', 'https://acme.app.automazionezeli.com.evil.io/api/v1/webhooks/wf/t'],
+    [
+      'suffix lookalike (dominio attacker)',
+      'https://acme.app.automazionezeli.com.evil.io/api/v1/webhooks/wf/t',
+    ],
     ['apex senza slug tenant', 'https://app.automazionezeli.com/api/v1/webhooks/wf/t'],
     ['schema http', 'http://acme.app.automazionezeli.com/api/v1/webhooks/wf/t'],
     ['porta esplicita', 'https://acme.app.automazionezeli.com:8443/api/v1/webhooks/wf/t'],
     ['credenziali in-URL', 'https://x.app.automazionezeli.com@evil.com/api/v1/webhooks/wf/t'],
-    ['path fuori dai webhook (API admin)', 'https://acme.app.automazionezeli.com/api/v1/admin/tenants'],
+    [
+      'path fuori dai webhook (API admin)',
+      'https://acme.app.automazionezeli.com/api/v1/admin/tenants',
+    ],
     ['path webhook vuoto', 'https://acme.app.automazionezeli.com/api/v1/webhooks/'],
   ] as const;
 
@@ -72,7 +86,7 @@ describe('allowlist SSRF — il nodo NON è un HTTP generico', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('accetta un webhook FlowForge valido e POSTa esattamente quell\'URL', async () => {
+  it("accetta un webhook FlowForge valido e POSTa esattamente quell'URL", async () => {
     const r = await tenantCollabExecutor(baseCfg, { hello: 'world' }, ctx);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]![0]).toBe(URL_OK);
@@ -117,7 +131,11 @@ describe('firma HMAC — contratto ts.body + stabilità sui retry', () => {
   }, 10_000);
 
   it('signPayload=false → nessun header firma, output.signed=false', async () => {
-    const r = await tenantCollabExecutor({ collaborationUrl: URL_OK, signPayload: 'false' }, {}, ctx);
+    const r = await tenantCollabExecutor(
+      { collaborationUrl: URL_OK, signPayload: 'false' },
+      {},
+      ctx,
+    );
     const headers = (fetchMock.mock.calls[0]![1] as { headers: Record<string, string> }).headers;
     expect(headers[COLLAB_SIGNATURE_HEADER]).toBeUndefined();
     expect(headers[COLLAB_TIMESTAMP_HEADER]).toBeUndefined();
@@ -128,7 +146,9 @@ describe('firma HMAC — contratto ts.body + stabilità sui retry', () => {
     await expect(
       tenantCollabExecutor({ collaborationUrl: URL_OK, connectionToken: 'corto' }, {}, ctx),
     ).rejects.toThrow(/token di connessione/);
-    await expect(tenantCollabExecutor({ collaborationUrl: URL_OK }, {}, ctx)).rejects.toThrow(/token/);
+    await expect(tenantCollabExecutor({ collaborationUrl: URL_OK }, {}, ctx)).rejects.toThrow(
+      /token/,
+    );
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
@@ -146,7 +166,7 @@ describe('idempotenza + header di correlazione', () => {
     expect(keys[2]).not.toBe(keys[0]);
   });
 
-  it('idempotencyKey custom (ID di business) vince sull\'auto', async () => {
+  it("idempotencyKey custom (ID di business) vince sull'auto", async () => {
     await tenantCollabExecutor({ ...baseCfg, idempotencyKey: 'order-42' }, {}, ctx);
     const headers = (fetchMock.mock.calls[0]![1] as { headers: Record<string, string> }).headers;
     expect(headers[COLLAB_IDEMPOTENCY_HEADER]).toBe('order-42');
@@ -156,20 +176,26 @@ describe('idempotenza + header di correlazione', () => {
     const r = await tenantCollabExecutor(baseCfg, {}, ctx);
     const headers = (fetchMock.mock.calls[0]![1] as { headers: Record<string, string> }).headers;
     expect(headers[COLLAB_SOURCE_HEADER]).toBe('tenant-a');
-    expect(headers[COLLAB_CORRELATION_HEADER]).toBe((r.output as { correlationId: string }).correlationId);
+    expect(headers[COLLAB_CORRELATION_HEADER]).toBe(
+      (r.output as { correlationId: string }).correlationId,
+    );
   });
 });
 
 describe('retry policy — transitori sì, config sbagliata MAI', () => {
   it('4xx del ricevente: NESSUN retry + messaggio che spiega cosa sistemare', async () => {
     fetchMock.mockResolvedValue(new Response('nope', { status: 401 }));
-    await expect(tenantCollabExecutor(baseCfg, {}, ctx)).rejects.toThrow(/RIFIUTATO la firma|token/);
+    await expect(tenantCollabExecutor(baseCfg, {}, ctx)).rejects.toThrow(
+      /RIFIUTATO la firma|token/,
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('maxRetries=0 → un solo tentativo anche su 5xx', async () => {
     fetchMock.mockResolvedValue(new Response('down', { status: 500 }));
-    await expect(tenantCollabExecutor({ ...baseCfg, maxRetries: '0' }, {}, ctx)).rejects.toThrow(/destinatario in errore/);
+    await expect(tenantCollabExecutor({ ...baseCfg, maxRetries: '0' }, {}, ctx)).rejects.toThrow(
+      /destinatario in errore/,
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -184,8 +210,11 @@ describe('retry policy — transitori sì, config sbagliata MAI', () => {
   it('errore di rete definitivo: token e webhook-token scrubbed dal messaggio', async () => {
     fetchMock.mockRejectedValue(new Error(`getaddrinfo EAI_AGAIN for ${URL_OK} key=${TOKEN}`));
     let lastErr: Error | undefined;
-    try { await tenantCollabExecutor({ ...baseCfg, maxRetries: '0' }, {}, ctx); }
-    catch (e) { lastErr = e as Error; }
+    try {
+      await tenantCollabExecutor({ ...baseCfg, maxRetries: '0' }, {}, ctx);
+    } catch (e) {
+      lastErr = e as Error;
+    }
     expect(lastErr).toBeInstanceOf(Error);
     expect(lastErr!.message).not.toContain(TOKEN);
     expect(lastErr!.message).not.toContain('whtok-abcdef123456');
@@ -201,7 +230,7 @@ describe('payload — parsing, fallback input, cap dimensione', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('payloadJson vuoto → inoltra l\'input del nodo', async () => {
+  it("payloadJson vuoto → inoltra l'input del nodo", async () => {
     await tenantCollabExecutor(baseCfg, { from: 'upstream', n: 7 }, ctx);
     const body = (fetchMock.mock.calls[0]![1] as { body: string }).body;
     expect(JSON.parse(body)).toEqual({ from: 'upstream', n: 7 });
@@ -209,9 +238,9 @@ describe('payload — parsing, fallback input, cap dimensione', () => {
 
   it('payload > 1MB → PAYLOAD_TOO_LARGE senza rete', async () => {
     const big = JSON.stringify({ blob: 'x'.repeat(1024 * 1024 + 10) });
-    await expect(
-      tenantCollabExecutor({ ...baseCfg, payloadJson: big }, {}, ctx),
-    ).rejects.toThrow(/PAYLOAD|cap/i);
+    await expect(tenantCollabExecutor({ ...baseCfg, payloadJson: big }, {}, ctx)).rejects.toThrow(
+      /PAYLOAD|cap/i,
+    );
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
@@ -222,7 +251,10 @@ describe('audit GDPR — data-transfer tracciato, payload MAI', () => {
     await tenantCollabExecutor({ ...baseCfg, payloadJson: JSON.stringify(secret) }, {}, ctx);
     expect(auditAppend).toHaveBeenCalledTimes(1);
     const rec = auditAppend.mock.calls[0]![0] as {
-      action: string; resourceType: string; tenantId: string; metadata: Record<string, unknown>;
+      action: string;
+      resourceType: string;
+      tenantId: string;
+      metadata: Record<string, unknown>;
     };
     expect(rec.action).toBe('collab.data_transfer.sent');
     expect(rec.resourceType).toBe('tenant_collab');
@@ -236,22 +268,27 @@ describe('audit GDPR — data-transfer tracciato, payload MAI', () => {
   it('audit con URL REDATTO: il token webhook non finisce nella scatola nera', async () => {
     await tenantCollabExecutor(baseCfg, {}, ctx);
     const rec = auditAppend.mock.calls[0]![0] as { metadata: Record<string, unknown> };
-    expect(rec.metadata.targetUrl).toBe('https://acme.app.automazionezeli.com/api/v1/webhooks/wf-123/***');
+    expect(rec.metadata.targetUrl).toBe(
+      'https://acme.app.automazionezeli.com/api/v1/webhooks/wf-123/***',
+    );
     expect(JSON.stringify(rec)).not.toContain('whtok-abcdef123456');
     expect(JSON.stringify(rec)).not.toContain(TOKEN);
   });
 
-  it('fallimento → collab.data_transfer.failed con errorCode+httpStatus, e l\'errore RIMBALZA', async () => {
+  it("fallimento → collab.data_transfer.failed con errorCode+httpStatus, e l'errore RIMBALZA", async () => {
     fetchMock.mockResolvedValue(new Response('no', { status: 403 }));
     await expect(tenantCollabExecutor(baseCfg, {}, ctx)).rejects.toThrow();
     expect(auditAppend).toHaveBeenCalledTimes(1);
-    const rec = auditAppend.mock.calls[0]![0] as { action: string; metadata: Record<string, unknown> };
+    const rec = auditAppend.mock.calls[0]![0] as {
+      action: string;
+      metadata: Record<string, unknown>;
+    };
     expect(rec.action).toBe('collab.data_transfer.failed');
     expect(rec.metadata.httpStatus).toBe(403);
     expect(rec.metadata.errorCode).toBe('RECIPIENT_REJECTED');
   });
 
-  it('audit in errore → l\'invio (già partito) NON fallisce, ma warning visibile', async () => {
+  it("audit in errore → l'invio (già partito) NON fallisce, ma warning visibile", async () => {
     auditAppend.mockRejectedValueOnce(new Error('disk full'));
     const r = await tenantCollabExecutor(baseCfg, {}, ctx);
     expect((r.output as { delivered: boolean }).delivered).toBe(true);
@@ -260,9 +297,12 @@ describe('audit GDPR — data-transfer tracciato, payload MAI', () => {
 });
 
 describe('waitForResponse', () => {
-  it('true (default) → risposta del ricevente nell\'output', async () => {
+  it("true (default) → risposta del ricevente nell'output", async () => {
     const r = await tenantCollabExecutor(baseCfg, {}, ctx);
-    expect((r.output as { response: unknown }).response).toEqual({ ok: true, runId: 'recipient-run' });
+    expect((r.output as { response: unknown }).response).toEqual({
+      ok: true,
+      runId: 'recipient-run',
+    });
   });
 
   it('false → fire-and-forget: conta solo la consegna', async () => {

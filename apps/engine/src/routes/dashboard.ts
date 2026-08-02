@@ -87,7 +87,9 @@ export function fetchRecentRunsByWorkflow(
   for (let i = 0; i < workflowIds.length; i += CHUNK) {
     const chunk = workflowIds.slice(i, i + CHUNK);
     const placeholders = chunk.map(() => '?').join(',');
-    const rows = sqlite.prepare(`
+    const rows = sqlite
+      .prepare(
+        `
       SELECT id, workflow_id, status, error_count, started_at, ended_at, total_duration_ms
       FROM (
         SELECT id, workflow_id, status, error_count, started_at, ended_at, total_duration_ms,
@@ -95,10 +97,19 @@ export function fetchRecentRunsByWorkflow(
         FROM runs WHERE workflow_id IN (${placeholders})
       ) WHERE rn <= ${String(cap)}
       ORDER BY workflow_id, rn
-    `).all(...chunk) as (RunSummaryRow & { workflow_id: string })[];
+    `,
+      )
+      .all(...chunk) as (RunSummaryRow & { workflow_id: string })[];
     for (const r of rows) {
       const arr = out.get(r.workflow_id) ?? [];
-      arr.push({ id: r.id, status: r.status, error_count: r.error_count, started_at: r.started_at, ended_at: r.ended_at, total_duration_ms: r.total_duration_ms });
+      arr.push({
+        id: r.id,
+        status: r.status,
+        error_count: r.error_count,
+        started_at: r.started_at,
+        ended_at: r.ended_at,
+        total_duration_ms: r.total_duration_ms,
+      });
       out.set(r.workflow_id, arr);
     }
   }
@@ -136,8 +147,9 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
     const planCode = process.env.MEDEA_PLAN_CODE ?? 'free';
     const maxWfRaw = process.env.MEDEA_MAX_WORKFLOWS;
     const maxTokenRaw = process.env.MEDEA_MAX_LIARA_TOKENS_MONTHLY;
-    const maxWorkflows = (!maxWfRaw || maxWfRaw === '') ? null : parseInt(maxWfRaw, 10);
-    const maxLiaraTokensMonthly = (!maxTokenRaw || maxTokenRaw === '') ? null : parseInt(maxTokenRaw, 10);
+    const maxWorkflows = !maxWfRaw || maxWfRaw === '' ? null : parseInt(maxWfRaw, 10);
+    const maxLiaraTokensMonthly =
+      !maxTokenRaw || maxTokenRaw === '' ? null : parseInt(maxTokenRaw, 10);
 
     // Count active (enabled=1) workflows del tenant. Policy 2026-06-04: quota
     // max_workflows = parallelamente abilitati, non totali. Allineato a
@@ -164,7 +176,9 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
       diskUsedBytes = (st.blocks - st.bavail) * st.bsize;
       // Fallback total se env non set (pre-2026-06-04 tenants).
       if (diskTotalBytes === 0) diskTotalBytes = st.blocks * st.bsize;
-    } catch { /* not available, leave 0 */ }
+    } catch {
+      /* not available, leave 0 */
+    }
 
     // Binary blob usage (gap #13): sottoinsieme del disk usage (i blob vivono
     // in MEDEA_DATA_DIR/blobs, già contati nello statfs). Esposto per dare
@@ -173,7 +187,9 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
     try {
       const { getBinaryStore } = await import('@/services/binary-store.service.js');
       diskBinaryBytes = await getBinaryStore().usage();
-    } catch { /* not available, leave 0 */ }
+    } catch {
+      /* not available, leave 0 */
+    }
 
     // Dati quota dal PORTAL (S2S, fail-soft, cache 25s): usato token del periodo
     // (tabella llm_quotas vive nel portal) + limite sub-users del piano. Fetch
@@ -185,17 +201,23 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
     // in alcuni contesti di test → 0).
     let usersUsed = 0;
     try {
-      const row = (getDatabase().sqlite as unknown as {
-        prepare: (s: string) => { get: () => { c: number } | undefined };
-      }).prepare('SELECT COUNT(*) AS c FROM users WHERE enabled = 1').get();
+      const row = (
+        getDatabase().sqlite as unknown as {
+          prepare: (s: string) => { get: () => { c: number } | undefined };
+        }
+      )
+        .prepare('SELECT COUNT(*) AS c FROM users WHERE enabled = 1')
+        .get();
       usersUsed = row?.c ?? 0;
-    } catch { /* users table missing → 0 */ }
+    } catch {
+      /* users table missing → 0 */
+    }
 
     return c.json({
       plan: { code: planCode },
       workflows: {
         used: workflowsUsed,
-        limit: maxWorkflows,                   // null = unlimited
+        limit: maxWorkflows, // null = unlimited
       },
       disk: {
         usedBytes: diskUsedBytes,
@@ -205,7 +227,7 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
       },
       users: {
         used: usersUsed,
-        limit: tokenUsage?.maxUsers ?? null,   // null = illimitato (o portal irraggiungibile)
+        limit: tokenUsage?.maxUsers ?? null, // null = illimitato (o portal irraggiungibile)
       },
       liara: {
         // tokensLimit dal PORTAL (DB-backed = source of truth). Bug 2026-06-26:
@@ -218,7 +240,7 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
         // Fallback all'env SOLO se il portal è irraggiungibile (degradazione).
         tokensLimit: tokenUsage ? tokenUsage.tokensLimit : maxLiaraTokensMonthly,
         tokensUsedMonth: tokenUsage?.tokensUsed ?? null, // dato REALE dal portal (no più stub)
-        periodEndIso: tokenUsage?.periodEndIso ?? null,  // prossimo reset (giorno abbonamento)
+        periodEndIso: tokenUsage?.periodEndIso ?? null, // prossimo reset (giorno abbonamento)
       },
     });
   });
@@ -232,7 +254,12 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
    * page load before the SSE stream catches up.
    */
   app.get('/workflows', async (c) => {
-    const auth = c.get('auth') as { tenantId: string; role?: string; userId?: string; email?: string } | null;
+    const auth = c.get('auth') as {
+      tenantId: string;
+      role?: string;
+      userId?: string;
+      email?: string;
+    } | null;
     if (!auth) return c.json({ error: 'Unauthorized' }, 401);
     // Vista cross-tenant per superadmin SENZA impersonate (Federico-grade):
     //   • Se il caller è superadmin e NON sta impersonando un tenant
@@ -248,7 +275,13 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
     // Audit: il superadmin sta per leggere i workflow di TUTTI i tenant.
     if (isCrossTenant) {
       const ip = clientIp(c);
-      auditCrossTenantAccess({ userId: auth.userId ?? 'unknown', ...(auth.email ? { email: auth.email } : {}), action: 'dashboard.workflows', scope: 'all-tenants', ...(ip ? { ip } : {}) });
+      auditCrossTenantAccess({
+        userId: auth.userId ?? 'unknown',
+        ...(auth.email ? { email: auth.email } : {}),
+        action: 'dashboard.workflows',
+        scope: 'all-tenants',
+        ...(ip ? { ip } : {}),
+      });
     }
 
     const all = isCrossTenant
@@ -257,7 +290,11 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
 
     // UNA query per TUTTI i workflow (no più N+1, vedi fetchRecentRunsByWorkflow).
     const sqlite = getDatabase().sqlite as unknown as SqliteRunReader;
-    const runsByWf = fetchRecentRunsByWorkflow(sqlite, all.map((wf) => wf.id), 20);
+    const runsByWf = fetchRecentRunsByWorkflow(
+      sqlite,
+      all.map((wf) => wf.id),
+      20,
+    );
     const enriched = all.map((wf) => {
       const recentRuns = runsByWf.get(wf.id) ?? [];
       const last = recentRuns[0] ?? null; // più-recente-prima → rn=1
@@ -312,13 +349,11 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
     const auth = c.get('auth') as { tenantId: string; role?: string } | null;
     if (!auth) return c.json({ error: 'Unauthorized' }, 401);
     const queryTenant = c.req.header('x-tenant-id');
-    const tenantId = (auth.role === 'superadmin' && queryTenant)
-      ? queryTenant
-      : getTenantId(c);
+    const tenantId = auth.role === 'superadmin' && queryTenant ? queryTenant : getTenantId(c);
 
     let body: { runIds?: unknown };
     try {
-      body = (await c.req.json());
+      body = await c.req.json();
     } catch {
       return c.json({ error: 'Body JSON non valido' }, 400);
     }
@@ -330,14 +365,22 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
     const { db } = getDatabase();
     const { runs } = await import('../storage/schema.js');
     const { inArray, and, eq } = await import('drizzle-orm');
-    const rows = await db.select().from(runs)
+    const rows = await db
+      .select()
+      .from(runs)
       .where(and(inArray(runs.id, runIds), eq(runs.tenantId, tenantId)));
 
     const out: Record<string, unknown> = {};
     for (const row of rows) {
       let steps: { nodeId: string; status: string; durationMs?: number; nodeLabel?: string }[] = [];
-      try { steps = (JSON.parse(row.stepsJson) as typeof steps | null) ?? []; } catch { steps = []; }
-      const completed = steps.filter((s) => s.status === 'success' || s.status === 'error' || s.status === 'skipped').length;
+      try {
+        steps = (JSON.parse(row.stepsJson) as typeof steps | null) ?? [];
+      } catch {
+        steps = [];
+      }
+      const completed = steps.filter(
+        (s) => s.status === 'success' || s.status === 'error' || s.status === 'skipped',
+      ).length;
       const errored = steps.filter((s) => s.status === 'error').length;
       // currentNode: ultimo step
       const current = steps[steps.length - 1];
@@ -352,10 +395,12 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
       // *indeterminate* (loop con N iter ignote a priori). Ritorniamo:
       //   • status terminato → 100% se success, oppure errored%
       //   • status in corso → null (UI mostra "in corso" senza %)
-      const isTerminal = row.status === 'success' || row.status === 'error' || row.status === 'partial' || row.status === 'paused';
-      const percent = !isTerminal
-        ? null
-        : (total > 0 ? Math.round((completed / total) * 100) : 0);
+      const isTerminal =
+        row.status === 'success' ||
+        row.status === 'error' ||
+        row.status === 'partial' ||
+        row.status === 'paused';
+      const percent = !isTerminal ? null : total > 0 ? Math.round((completed / total) * 100) : 0;
       out[row.id] = {
         status: row.status,
         currentStep: completed,
@@ -383,7 +428,12 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
    * survives reverse-proxy buffering.
    */
   app.get('/stream', (c) => {
-    const auth = c.get('auth') as { tenantId: string; role?: string; userId?: string; email?: string } | null;
+    const auth = c.get('auth') as {
+      tenantId: string;
+      role?: string;
+      userId?: string;
+      email?: string;
+    } | null;
     if (!auth) return c.json({ error: 'Unauthorized' }, 401);
     // Disabilita HTTP/3 (QUIC) per questo path. Chrome + Cloudflare HTTP/3
     // terminano i stream SSE long-lived con ERR_QUIC_PROTOCOL_ERROR (idle
@@ -405,9 +455,7 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
     // SOLO se il caller è superadmin. Altrimenti il caller resta
     // confinato al suo tenant home, no cross-tenant leak.
     const queryTenant = c.req.query('tenant');
-    const tenantId = (auth.role === 'superadmin' && queryTenant)
-      ? queryTenant
-      : getTenantId(c);
+    const tenantId = auth.role === 'superadmin' && queryTenant ? queryTenant : getTenantId(c);
     // Vista cross-tenant per superadmin SENZA tenant override: non
     // filtra l'event bus — vede gli eventi di TUTTI i tenant in tempo
     // reale. Quando impersona invece resta confinato a quel tenant.
@@ -416,7 +464,13 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
     // così la "vista gestore" privilegiata lascia una traccia GDPR-compliant.
     if (crossTenantSuperadmin) {
       const ip = clientIp(c);
-      auditCrossTenantAccess({ userId: auth.userId ?? 'unknown', ...(auth.email ? { email: auth.email } : {}), action: 'dashboard.stream', scope: 'all-tenants', ...(ip ? { ip } : {}) });
+      auditCrossTenantAccess({
+        userId: auth.userId ?? 'unknown',
+        ...(auth.email ? { email: auth.email } : {}),
+        action: 'dashboard.stream',
+        scope: 'all-tenants',
+        ...(ip ? { ip } : {}),
+      });
     }
 
     return streamSSENoTransform(c, async (stream) => {
@@ -464,7 +518,10 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
           // dropping condition doesn't flood the logs.
           const now = Date.now();
           if (now - lastDropWarnAt > 5_000) {
-            logger.warn({ tenantId, dropped: droppedSinceLastWarn, queueDepth: queue.length }, 'dashboard SSE queue overflowing — slow client');
+            logger.warn(
+              { tenantId, dropped: droppedSinceLastWarn, queueDepth: queue.length },
+              'dashboard SSE queue overflowing — slow client',
+            );
             droppedSinceLastWarn = 0;
             lastDropWarnAt = now;
           }
@@ -483,13 +540,18 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
       await stream.writeComment(' '.repeat(16_384));
       // Send a hello so the client knows it's connected (and survives
       // the immediate-close behavior of some browsers / curl debug runs).
-      await stream.writeSSE({ event: 'hello', data: JSON.stringify({ tenantId, ts: new Date().toISOString() }) });
+      await stream.writeSSE({
+        event: 'hello',
+        data: JSON.stringify({ tenantId, ts: new Date().toISOString() }),
+      });
 
       // Heartbeat to keep proxies from closing the connection.
       // Ridotto a 15s (CF default idle timeout è ~100s ma stream con
       // throughput basso può triggerare reset prima).
       const heartbeat = setInterval(() => {
-        void stream.writeSSE({ event: 'ping', data: String(Date.now()) }).catch(() => { /* client gone */ });
+        void stream.writeSSE({ event: 'ping', data: String(Date.now()) }).catch(() => {
+          /* client gone */
+        });
       }, 15_000);
 
       // Cleanup on disconnect.
@@ -500,7 +562,9 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
 
       // Hold the stream open. streamSSE returns when the async fn exits,
       // so we await an unresolving promise until the client aborts.
-      await new Promise<void>(() => { /* never resolves; aborted via onAbort */ });
+      await new Promise<void>(() => {
+        /* never resolves; aborted via onAbort */
+      });
     });
   });
 

@@ -18,10 +18,15 @@ import { clearBreakerRegistry } from '../core/host-circuit-breaker.js';
 
 const executor = httpActionNode.executor!;
 
-const ctx = { tenantId: 't', runId: 'r', workflowId: 'wf', nodeId: 'n' } as unknown as Parameters<typeof executor>[2];
+const ctx = { tenantId: 't', runId: 'r', workflowId: 'wf', nodeId: 'n' } as unknown as Parameters<
+  typeof executor
+>[2];
 
 type FetchInit = RequestInit & { url?: string };
-interface FetchCall { url: string; init: FetchInit }
+interface FetchCall {
+  url: string;
+  init: FetchInit;
+}
 
 function mockFetch(handler: (req: FetchCall) => Response | Promise<Response>) {
   const calls: FetchCall[] = [];
@@ -29,7 +34,8 @@ function mockFetch(handler: (req: FetchCall) => Response | Promise<Response>) {
   // la danno i tipi di @types/node. Si prende da lì invece di nominarne uno
   // che in questo ambiente non esiste.
   const spy = vi.fn(async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input).url;
+    const url =
+      typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     const call: FetchCall = { url, init: init ?? {} };
     calls.push(call);
     return await handler(call);
@@ -53,27 +59,65 @@ afterEach(() => {
 
 describe('http executor — auth headers', () => {
   it('basic auth builds the Authorization header', async () => {
-    const { calls } = mockFetch(() => new Response('{}', { headers: { 'content-type': 'application/json' } }));
-    await executor({ url: 'https://x.com', method: 'GET', authMode: 'basic', basicUser: 'alice', basicPass: 'hunter2' }, null, ctx);
+    const { calls } = mockFetch(
+      () => new Response('{}', { headers: { 'content-type': 'application/json' } }),
+    );
+    await executor(
+      {
+        url: 'https://x.com',
+        method: 'GET',
+        authMode: 'basic',
+        basicUser: 'alice',
+        basicPass: 'hunter2',
+      },
+      null,
+      ctx,
+    );
     const auth = (calls[0]!.init.headers as Headers).get('Authorization');
     expect(auth).toBe(`Basic ${Buffer.from('alice:hunter2').toString('base64')}`);
   });
 
   it('bearer builds the Authorization header', async () => {
-    const { calls } = mockFetch(() => new Response('{}', { headers: { 'content-type': 'application/json' } }));
-    await executor({ url: 'https://x.com', method: 'GET', authMode: 'bearer', bearerToken: 'tok-xyz' }, null, ctx);
+    const { calls } = mockFetch(
+      () => new Response('{}', { headers: { 'content-type': 'application/json' } }),
+    );
+    await executor(
+      { url: 'https://x.com', method: 'GET', authMode: 'bearer', bearerToken: 'tok-xyz' },
+      null,
+      ctx,
+    );
     expect((calls[0]!.init.headers as Headers).get('Authorization')).toBe('Bearer tok-xyz');
   });
 
   it('apikey-header writes to the configured header name', async () => {
     const { calls } = mockFetch(() => new Response('{}'));
-    await executor({ url: 'https://x.com', method: 'GET', authMode: 'apikey-header', apiKeyHeaderName: 'X-Auth-Token', apiKeyValue: 'k1' }, null, ctx);
+    await executor(
+      {
+        url: 'https://x.com',
+        method: 'GET',
+        authMode: 'apikey-header',
+        apiKeyHeaderName: 'X-Auth-Token',
+        apiKeyValue: 'k1',
+      },
+      null,
+      ctx,
+    );
     expect((calls[0]!.init.headers as Headers).get('X-Auth-Token')).toBe('k1');
   });
 
   it('custom writes to a fully custom header', async () => {
     const { calls } = mockFetch(() => new Response('{}'));
-    await executor({ url: 'https://x.com', method: 'GET', authMode: 'custom', customAuthHeaderName: 'X-Foo', customAuthHeaderValue: 'bar' }, null, ctx);
+    await executor(
+      {
+        url: 'https://x.com',
+        method: 'GET',
+        authMode: 'custom',
+        customAuthHeaderName: 'X-Foo',
+        customAuthHeaderValue: 'bar',
+      },
+      null,
+      ctx,
+    );
     expect((calls[0]!.init.headers as Headers).get('X-Foo')).toBe('bar');
   });
 });
@@ -81,39 +125,59 @@ describe('http executor — auth headers', () => {
 describe('http executor — body types', () => {
   it('json sets Content-Type and stringifies the body', async () => {
     const { calls } = mockFetch(() => new Response('{}'));
-    await executor({ url: 'https://x.com', method: 'POST', bodyType: 'json', body: '{"a":1}' }, null, ctx);
+    await executor(
+      { url: 'https://x.com', method: 'POST', bodyType: 'json', body: '{"a":1}' },
+      null,
+      ctx,
+    );
     expect((calls[0]!.init.headers as Headers).get('Content-Type')).toBe('application/json');
     expect(calls[0]!.init.body).toBe('{"a":1}');
   });
 
   it('form-urlencoded serializes from formFields kv', async () => {
     const { calls } = mockFetch(() => new Response('{}'));
-    await executor({
-      url: 'https://x.com',
-      method: 'POST',
-      bodyType: 'form-urlencoded',
-      formFields: JSON.stringify({ user: 'alice', age: 30 }),
-    }, null, ctx);
-    expect((calls[0]!.init.headers as Headers).get('Content-Type')).toBe('application/x-www-form-urlencoded');
+    await executor(
+      {
+        url: 'https://x.com',
+        method: 'POST',
+        bodyType: 'form-urlencoded',
+        formFields: JSON.stringify({ user: 'alice', age: 30 }),
+      },
+      null,
+      ctx,
+    );
+    expect((calls[0]!.init.headers as Headers).get('Content-Type')).toBe(
+      'application/x-www-form-urlencoded',
+    );
     expect(calls[0]!.init.body).toBe('user=alice&age=30');
   });
 
   it('raw-text uses text/plain', async () => {
     const { calls } = mockFetch(() => new Response('{}'));
-    await executor({ url: 'https://x.com', method: 'POST', bodyType: 'raw-text', body: 'hello' }, null, ctx);
-    expect((calls[0]!.init.headers as Headers).get('Content-Type')).toBe('text/plain; charset=utf-8');
+    await executor(
+      { url: 'https://x.com', method: 'POST', bodyType: 'raw-text', body: 'hello' },
+      null,
+      ctx,
+    );
+    expect((calls[0]!.init.headers as Headers).get('Content-Type')).toBe(
+      'text/plain; charset=utf-8',
+    );
     expect(calls[0]!.init.body).toBe('hello');
   });
 
   it('raw-binary-base64 decodes base64 and sets configured content type', async () => {
     const { calls } = mockFetch(() => new Response('{}'));
-    await executor({
-      url: 'https://x.com',
-      method: 'POST',
-      bodyType: 'raw-binary-base64',
-      body: Buffer.from('hello pdf').toString('base64'),
-      rawBinaryContentType: 'application/pdf',
-    }, null, ctx);
+    await executor(
+      {
+        url: 'https://x.com',
+        method: 'POST',
+        bodyType: 'raw-binary-base64',
+        body: Buffer.from('hello pdf').toString('base64'),
+        rawBinaryContentType: 'application/pdf',
+      },
+      null,
+      ctx,
+    );
     expect((calls[0]!.init.headers as Headers).get('Content-Type')).toBe('application/pdf');
     const buf = calls[0]!.init.body as Buffer;
     expect(buf.toString()).toBe('hello pdf');
@@ -129,21 +193,29 @@ describe('http executor — body types', () => {
 describe('http executor — query parameters', () => {
   it('appends queryParams to the URL', async () => {
     const { calls } = mockFetch(() => new Response('{}'));
-    await executor({
-      url: 'https://x.com/api',
-      method: 'GET',
-      queryParamsJson: JSON.stringify({ q: 'foo bar', limit: 10 }),
-    }, null, ctx);
+    await executor(
+      {
+        url: 'https://x.com/api',
+        method: 'GET',
+        queryParamsJson: JSON.stringify({ q: 'foo bar', limit: 10 }),
+      },
+      null,
+      ctx,
+    );
     expect(calls[0]!.url).toBe('https://x.com/api?q=foo+bar&limit=10');
   });
 
   it('preserves existing query in the URL', async () => {
     const { calls } = mockFetch(() => new Response('{}'));
-    await executor({
-      url: 'https://x.com/api?fixed=1',
-      method: 'GET',
-      queryParamsJson: JSON.stringify({ q: 'x' }),
-    }, null, ctx);
+    await executor(
+      {
+        url: 'https://x.com/api?fixed=1',
+        method: 'GET',
+        queryParamsJson: JSON.stringify({ q: 'x' }),
+      },
+      null,
+      ctx,
+    );
     expect(calls[0]!.url).toContain('fixed=1');
     expect(calls[0]!.url).toContain('q=x');
   });
@@ -155,16 +227,22 @@ describe('http executor — pagination', () => {
     const { calls } = mockFetch(() => {
       page += 1;
       const data = page === 1 ? [1, 2, 3] : page === 2 ? [4, 5] : [];
-      return new Response(JSON.stringify({ data, page }), { headers: { 'content-type': 'application/json' } });
+      return new Response(JSON.stringify({ data, page }), {
+        headers: { 'content-type': 'application/json' },
+      });
     });
-    const res = await executor({
-      url: 'https://x.com/list',
-      method: 'GET',
-      paginationMode: 'page-number',
-      paginationItemsField: 'data',
-      paginationPageSize: '3',
-      paginationMaxPages: '10',
-    }, null, ctx);
+    const res = await executor(
+      {
+        url: 'https://x.com/list',
+        method: 'GET',
+        paginationMode: 'page-number',
+        paginationItemsField: 'data',
+        paginationPageSize: '3',
+        paginationMaxPages: '10',
+      },
+      null,
+      ctx,
+    );
     expect(calls.length).toBe(2); // stops because 2nd page has fewer than 3 items
     const out = res.output as { body: number[]; pagesFetched: number };
     expect(out.body).toEqual([1, 2, 3, 4, 5]);
@@ -178,15 +256,24 @@ describe('http executor — pagination', () => {
       { items: ['d'], next_cursor: '' },
     ];
     let i = 0;
-    const { calls } = mockFetch(() => new Response(JSON.stringify(seq[i++]!), { headers: { 'content-type': 'application/json' } }));
-    const res = await executor({
-      url: 'https://x.com/list',
-      method: 'GET',
-      paginationMode: 'cursor',
-      paginationItemsField: 'items',
-      paginationCursorField: 'next_cursor',
-      paginationMaxPages: '10',
-    }, null, ctx);
+    const { calls } = mockFetch(
+      () =>
+        new Response(JSON.stringify(seq[i++]!), {
+          headers: { 'content-type': 'application/json' },
+        }),
+    );
+    const res = await executor(
+      {
+        url: 'https://x.com/list',
+        method: 'GET',
+        paginationMode: 'cursor',
+        paginationItemsField: 'items',
+        paginationCursorField: 'next_cursor',
+        paginationMaxPages: '10',
+      },
+      null,
+      ctx,
+    );
     expect(calls.length).toBe(3);
     const out = res.output as { body: string[] };
     expect(out.body).toEqual(['a', 'b', 'c', 'd']);
@@ -194,8 +281,16 @@ describe('http executor — pagination', () => {
 
   it('link-header follows rel="next" until absent', async () => {
     const seq = [
-      { url: 'https://x.com/list?page=1', link: '<https://x.com/list?page=2>; rel="next"', body: [1] },
-      { url: 'https://x.com/list?page=2', link: '<https://x.com/list?page=3>; rel="next"', body: [2] },
+      {
+        url: 'https://x.com/list?page=1',
+        link: '<https://x.com/list?page=2>; rel="next"',
+        body: [1],
+      },
+      {
+        url: 'https://x.com/list?page=2',
+        link: '<https://x.com/list?page=3>; rel="next"',
+        body: [2],
+      },
       { url: 'https://x.com/list?page=3', link: '', body: [3] },
     ];
     let i = 0;
@@ -205,26 +300,39 @@ describe('http executor — pagination', () => {
         headers: { 'content-type': 'application/json', link: item.link },
       });
     });
-    const res = await executor({
-      url: 'https://x.com/list?page=1',
-      method: 'GET',
-      paginationMode: 'link-header',
-      paginationMaxPages: '10',
-    }, null, ctx);
+    const res = await executor(
+      {
+        url: 'https://x.com/list?page=1',
+        method: 'GET',
+        paginationMode: 'link-header',
+        paginationMaxPages: '10',
+      },
+      null,
+      ctx,
+    );
     const out = res.output as { body: number[] };
     expect(out.body).toEqual([1, 2, 3]);
   });
 
   it('max pages caps the loop', async () => {
-    const { calls } = mockFetch(() => new Response(JSON.stringify({ data: [1, 2, 3] }), { headers: { 'content-type': 'application/json' } }));
-    await executor({
-      url: 'https://x.com/list',
-      method: 'GET',
-      paginationMode: 'page-number',
-      paginationItemsField: 'data',
-      paginationPageSize: '3',
-      paginationMaxPages: '2',
-    }, null, ctx);
+    const { calls } = mockFetch(
+      () =>
+        new Response(JSON.stringify({ data: [1, 2, 3] }), {
+          headers: { 'content-type': 'application/json' },
+        }),
+    );
+    await executor(
+      {
+        url: 'https://x.com/list',
+        method: 'GET',
+        paginationMode: 'page-number',
+        paginationItemsField: 'data',
+        paginationPageSize: '3',
+        paginationMaxPages: '2',
+      },
+      null,
+      ctx,
+    );
     expect(calls.length).toBe(2);
   });
 });
@@ -235,16 +343,23 @@ describe('http executor — retry with backoff', () => {
     mockFetch(() => {
       attempt += 1;
       if (attempt < 3) return new Response('busy', { status: 503 });
-      return new Response('{"ok":true}', { status: 200, headers: { 'content-type': 'application/json' } });
+      return new Response('{"ok":true}', {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
     });
-    const promise = executor({
-      url: 'https://x.com',
-      method: 'GET',
-      retryCount: '5',
-      retryInitialDelayMs: '10',
-      retryBackoffFactor: '2',
-      retryOnStatus: '503',
-    }, null, ctx);
+    const promise = executor(
+      {
+        url: 'https://x.com',
+        method: 'GET',
+        retryCount: '5',
+        retryInitialDelayMs: '10',
+        retryBackoffFactor: '2',
+        retryOnStatus: '503',
+      },
+      null,
+      ctx,
+    );
     // advance through the retry delays
     await vi.runAllTimersAsync();
     const res = await promise;
@@ -256,14 +371,21 @@ describe('http executor — retry with backoff', () => {
     mockFetch(() => new Response('still busy', { status: 503 }));
     // Attach catch immediately so the rejection isn't flagged as unhandled
     // when the inner fake-timer advance schedules the throw.
-    const captured = executor({
-      url: 'https://x.com',
-      method: 'GET',
-      retryCount: '2',
-      retryInitialDelayMs: '10',
-      retryOnStatus: '503',
-      throwOnError: 'true',
-    }, null, ctx).then((v) => ({ ok: true as const, value: v }), (e: unknown) => ({ ok: false as const, error: e }));
+    const captured = executor(
+      {
+        url: 'https://x.com',
+        method: 'GET',
+        retryCount: '2',
+        retryInitialDelayMs: '10',
+        retryOnStatus: '503',
+        throwOnError: 'true',
+      },
+      null,
+      ctx,
+    ).then(
+      (v) => ({ ok: true as const, value: v }),
+      (e: unknown) => ({ ok: false as const, error: e }),
+    );
     await vi.runAllTimersAsync();
     const result = await captured;
     expect(result.ok).toBe(false);
@@ -276,20 +398,34 @@ describe('http executor — retry with backoff', () => {
 describe('http executor — response format', () => {
   it('auto detects JSON from Content-Type', async () => {
     mockFetch(() => new Response('{"k":"v"}', { headers: { 'content-type': 'application/json' } }));
-    const res = await executor({ url: 'https://x.com', method: 'GET', responseFormat: 'auto' }, null, ctx);
+    const res = await executor(
+      { url: 'https://x.com', method: 'GET', responseFormat: 'auto' },
+      null,
+      ctx,
+    );
     expect((res.output as { body: unknown }).body).toEqual({ k: 'v' });
   });
 
   it('text returns string verbatim', async () => {
     mockFetch(() => new Response('hello', { headers: { 'content-type': 'text/plain' } }));
-    const res = await executor({ url: 'https://x.com', method: 'GET', responseFormat: 'text' }, null, ctx);
+    const res = await executor(
+      { url: 'https://x.com', method: 'GET', responseFormat: 'text' },
+      null,
+      ctx,
+    );
     expect((res.output as { body: unknown }).body).toBe('hello');
   });
 
   it('binary → handle BinaryData (ref-primario; senza store = inline base64)', async () => {
     const bytes = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
-    mockFetch(() => new Response(bytes, { headers: { 'content-type': 'application/octet-stream' } }));
-    const res = await executor({ url: 'https://x.com', method: 'GET', responseFormat: 'binary' }, null, ctx);
+    mockFetch(
+      () => new Response(bytes, { headers: { 'content-type': 'application/octet-stream' } }),
+    );
+    const res = await executor(
+      { url: 'https://x.com', method: 'GET', responseFormat: 'binary' },
+      null,
+      ctx,
+    );
     const body = (res.output as { body: { __ffBinary?: boolean; data?: string } }).body;
     expect(body.__ffBinary).toBe(true); // non più stringa base64
     expect(Buffer.from(body.data ?? '', 'base64').equals(Buffer.from(bytes))).toBe(true);
@@ -299,19 +435,30 @@ describe('http executor — response format', () => {
 describe('http executor — toggles', () => {
   it('throwOnError throws on 4xx when enabled', async () => {
     mockFetch(() => new Response('bad', { status: 400 }));
-    await expect(executor({ url: 'https://x.com', method: 'GET', throwOnError: 'true' }, null, ctx))
-      .rejects.toThrow(/400/u);
+    await expect(
+      executor({ url: 'https://x.com', method: 'GET', throwOnError: 'true' }, null, ctx),
+    ).rejects.toThrow(/400/u);
   });
 
   it('throwOnError off returns the error body', async () => {
     mockFetch(() => new Response('bad', { status: 400 }));
-    const res = await executor({ url: 'https://x.com', method: 'GET', throwOnError: 'false' }, null, ctx);
+    const res = await executor(
+      { url: 'https://x.com', method: 'GET', throwOnError: 'false' },
+      null,
+      ctx,
+    );
     expect((res.output as { status: number }).status).toBe(400);
   });
 
   it('statusCodeOnly omits body', async () => {
-    mockFetch(() => new Response('{"big":"payload"}', { headers: { 'content-type': 'application/json' } }));
-    const res = await executor({ url: 'https://x.com', method: 'GET', statusCodeOnly: 'true' }, null, ctx);
+    mockFetch(
+      () => new Response('{"big":"payload"}', { headers: { 'content-type': 'application/json' } }),
+    );
+    const res = await executor(
+      { url: 'https://x.com', method: 'GET', statusCodeOnly: 'true' },
+      null,
+      ctx,
+    );
     const out = res.output as Record<string, unknown>;
     expect(out.status).toBe(200);
     expect(out.body).toBeUndefined();
@@ -327,11 +474,7 @@ describe('#201 P0-2 — allowSelfSigned è fail-secure (no NODE_TLS_REJECT_UNAUT
     const original = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
     delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
     mockFetch(() => new Response('ok'));
-    await executor(
-      { url: 'https://x.com', method: 'GET', allowSelfSigned: 'true' },
-      null,
-      ctx,
-    );
+    await executor({ url: 'https://x.com', method: 'GET', allowSelfSigned: 'true' }, null, ctx);
     // CRITICAL: variabile process-wide MAI settata a '0'.
     expect(process.env.NODE_TLS_REJECT_UNAUTHORIZED).not.toBe('0');
     if (original === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
@@ -356,9 +499,9 @@ describe('#201 P0-2 — allowSelfSigned è fail-secure (no NODE_TLS_REJECT_UNAUT
 describe('#202 P0-3 — SSRF guard blocca IP privati + scheme non-http', () => {
   it('blocca scheme file:// → throw SsrfBlockedError prima della fetch', async () => {
     const { calls } = mockFetch(() => new Response('ok'));
-    await expect(
-      executor({ url: 'file:///etc/passwd', method: 'GET' }, null, ctx),
-    ).rejects.toThrow(/SSRF blocked/i);
+    await expect(executor({ url: 'file:///etc/passwd', method: 'GET' }, null, ctx)).rejects.toThrow(
+      /SSRF blocked/i,
+    );
     expect(calls).toHaveLength(0);
   });
 
@@ -379,14 +522,18 @@ describe('#202 P0-3 — SSRF guard blocca IP privati + scheme non-http', () => {
   });
 
   it('blocca host obfuscated `0177.0.0.1` (octal 127.0.0.1) → throw', async () => {
-    await expect(
-      executor({ url: 'http://0177.0.0.1/', method: 'GET' }, null, ctx),
-    ).rejects.toThrow(/SSRF blocked/i);
+    await expect(executor({ url: 'http://0177.0.0.1/', method: 'GET' }, null, ctx)).rejects.toThrow(
+      /SSRF blocked/i,
+    );
   });
 
   it('blocca *.flowforge-net (Docker internal) → throw', async () => {
     await expect(
-      executor({ url: 'http://tenant-abc.flowforge-net:3100/api/v1/admin', method: 'GET' }, null, ctx),
+      executor(
+        { url: 'http://tenant-abc.flowforge-net:3100/api/v1/admin', method: 'GET' },
+        null,
+        ctx,
+      ),
     ).rejects.toThrow(/SSRF blocked/i);
   });
 

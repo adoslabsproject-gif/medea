@@ -38,7 +38,10 @@ export const janitorCleanupExecutor: NodeExecutor = async (rawConfig, _input, co
   const failOnDetection = parseBool(config.failOnDetection);
 
   if (mode === 'cycle') {
-    const tagFilter = (config.tagFilter ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+    const tagFilter = (config.tagFilter ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
     const cycleArgs: Parameters<typeof janitor.executeCycle.execute>[0] = {
       tenantId: context.tenantId,
       triggeredBy: `workflow:${context.nodeId}`,
@@ -49,9 +52,7 @@ export const janitorCleanupExecutor: NodeExecutor = async (rawConfig, _input, co
     const totalQuarantined = cycleReport.rules.reduce((s, r) => s + r.rowsQuarantined, 0);
     const totalDetected = cycleReport.rules.reduce((s, r) => s + r.rowsDetected, 0);
     const anyError = cycleReport.rules.some((r) => !r.success);
-    const branch = anyError ? 'error'
-      : totalQuarantined > 0 ? 'detection'
-      : 'clean';
+    const branch = anyError ? 'error' : totalQuarantined > 0 ? 'detection' : 'clean';
     return {
       output: {
         mode: 'cycle',
@@ -77,12 +78,19 @@ export const janitorCleanupExecutor: NodeExecutor = async (rawConfig, _input, co
   }
   const rule = janitor.registry.get(ruleId);
   if (!rule) {
-    return errorOutput(`Rule "${ruleId}" non trovata. Apri il pannello "Salute dati" per la lista delle regole disponibili.`, start);
+    return errorOutput(
+      `Rule "${ruleId}" non trovata. Apri il pannello "Salute dati" per la lista delle regole disponibili.`,
+      start,
+    );
   }
 
   // Parse paramsOverride se presente — può essere JSON string o object
   let overrideParams: Record<string, unknown> | undefined;
-  if (config.paramsOverride !== undefined && config.paramsOverride !== null && config.paramsOverride !== '') {
+  if (
+    config.paramsOverride !== undefined &&
+    config.paramsOverride !== null &&
+    config.paramsOverride !== ''
+  ) {
     if (typeof config.paramsOverride === 'string') {
       try {
         const parsed = JSON.parse(config.paramsOverride) as unknown;
@@ -91,7 +99,10 @@ export const janitorCleanupExecutor: NodeExecutor = async (rawConfig, _input, co
         }
         overrideParams = parsed as Record<string, unknown>;
       } catch (err) {
-        return errorOutput(`paramsOverride JSON non valido: ${err instanceof Error ? err.message : 'parse error'}`, start);
+        return errorOutput(
+          `paramsOverride JSON non valido: ${err instanceof Error ? err.message : 'parse error'}`,
+          start,
+        );
       }
     } else if (typeof config.paramsOverride === 'object') {
       overrideParams = config.paramsOverride;
@@ -100,12 +111,13 @@ export const janitorCleanupExecutor: NodeExecutor = async (rawConfig, _input, co
 
   const maxRows = parseIntOrUndefined(config.maxRowsPerRun);
 
-  const overrides = (overrideParams || maxRows !== undefined)
-    ? {
-      ...(overrideParams ? { params: overrideParams } : {}),
-      ...(maxRows !== undefined ? { maxRowsPerRun: maxRows } : {}),
-    }
-    : undefined;
+  const overrides =
+    overrideParams || maxRows !== undefined
+      ? {
+          ...(overrideParams ? { params: overrideParams } : {}),
+          ...(maxRows !== undefined ? { maxRowsPerRun: maxRows } : {}),
+        }
+      : undefined;
 
   try {
     const execArgs: Parameters<typeof janitor.executeRule.execute>[0] = {
@@ -130,9 +142,12 @@ export const janitorCleanupExecutor: NodeExecutor = async (rawConfig, _input, co
         durationMs: Date.now() - start,
       };
     }
-    const branch = (failOnDetection && r.rowsQuarantined > 0) ? 'error'
-      : r.rowsQuarantined > 0 ? 'detection'
-      : 'clean';
+    const branch =
+      failOnDetection && r.rowsQuarantined > 0
+        ? 'error'
+        : r.rowsQuarantined > 0
+          ? 'detection'
+          : 'clean';
     return {
       output: {
         mode: 'single',

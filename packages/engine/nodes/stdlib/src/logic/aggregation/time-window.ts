@@ -16,22 +16,40 @@
 
 export type CalendarGranularity = 'minute' | 'hour' | 'day' | 'week' | 'month';
 
-interface TzParts { year: number; month: number; day: number; hour: number; minute: number; second: number; weekday: number }
+interface TzParts {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+  weekday: number;
+}
 
 const WEEKDAY: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 const DAY_MS = 86_400_000;
 
 function tzParts(epochMs: number, timeZone: string): TzParts {
   const dtf = new Intl.DateTimeFormat('en-US', {
-    timeZone, hourCycle: 'h23',
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit', weekday: 'short',
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    weekday: 'short',
   });
   const parts = dtf.formatToParts(new Date(epochMs));
   const get = (t: string): string => parts.find((p) => p.type === t)?.value ?? '';
   return {
-    year: Number(get('year')), month: Number(get('month')), day: Number(get('day')),
-    hour: Number(get('hour')), minute: Number(get('minute')), second: Number(get('second')),
+    year: Number(get('year')),
+    month: Number(get('month')),
+    day: Number(get('day')),
+    hour: Number(get('hour')),
+    minute: Number(get('minute')),
+    second: Number(get('second')),
     weekday: WEEKDAY[get('weekday')] ?? 0,
   };
 }
@@ -43,7 +61,15 @@ function offsetAt(epochMs: number, timeZone: string): number {
 }
 
 /** Converte una data/ora "civile" (nella timezone) in epoch-ms UTC, DST-safe. */
-function zonedToUtc(y: number, mo: number, d: number, h: number, mi: number, s: number, timeZone: string): number {
+function zonedToUtc(
+  y: number,
+  mo: number,
+  d: number,
+  h: number,
+  mi: number,
+  s: number,
+  timeZone: string,
+): number {
   const guess = Date.UTC(y, mo - 1, d, h, mi, s);
   const off1 = offsetAt(guess, timeZone);
   const utc = guess - off1;
@@ -72,10 +98,14 @@ export function bucketStart(
 ): number {
   const p = tzParts(epochMs, timeZone);
   switch (granularity) {
-    case 'minute': return zonedToUtc(p.year, p.month, p.day, p.hour, p.minute, 0, timeZone);
-    case 'hour': return zonedToUtc(p.year, p.month, p.day, p.hour, 0, 0, timeZone);
-    case 'day': return zonedToUtc(p.year, p.month, p.day, 0, 0, 0, timeZone);
-    case 'month': return zonedToUtc(p.year, p.month, 1, 0, 0, 0, timeZone);
+    case 'minute':
+      return zonedToUtc(p.year, p.month, p.day, p.hour, p.minute, 0, timeZone);
+    case 'hour':
+      return zonedToUtc(p.year, p.month, p.day, p.hour, 0, 0, timeZone);
+    case 'day':
+      return zonedToUtc(p.year, p.month, p.day, 0, 0, 0, timeZone);
+    case 'month':
+      return zonedToUtc(p.year, p.month, 1, 0, 0, 0, timeZone);
     case 'week': {
       const back = weekStartsMonday ? (p.weekday + 6) % 7 : p.weekday;
       const midnight = zonedToUtc(p.year, p.month, p.day, 0, 0, 0, timeZone);

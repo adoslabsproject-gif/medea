@@ -18,7 +18,9 @@ vi.mock('@/services/tenant.service.js', () => ({
   tenantService: { list: () => ({ tenants: tenantListMock() }) },
 }));
 vi.mock('@/services/workflow.service.js', () => ({
-  WorkflowService: class { listRowsForHealth = listRowsMock; },
+  WorkflowService: class {
+    listRowsForHealth = listRowsMock;
+  },
   diagnoseWorkflowRow: (...a: unknown[]) => diagnoseMock(...a),
 }));
 vi.mock('@/adapters/event-bus-memory.js', () => ({ InMemoryEventBus: class {} }));
@@ -60,13 +62,16 @@ describe('GET /admin/workflows/health', () => {
       { id: 'w1', name: 'Buono' },
       { id: 'w2', name: 'Rotto' },
     ]);
-    diagnoseMock
-      .mockReturnValueOnce({ ok: true })
-      .mockReturnValueOnce({ ok: false, issues: [{ path: 'nodes.0', code: 'INVALID', message: 'defId mancante' }] });
+    diagnoseMock.mockReturnValueOnce({ ok: true }).mockReturnValueOnce({
+      ok: false,
+      issues: [{ path: 'nodes.0', code: 'INVALID', message: 'defId mancante' }],
+    });
     const res = await buildApp().request('/admin/workflows/health?tenantId=t1');
     expect(res.status).toBe(200);
-    const data = await res.json() as {
-      total: number; ok: number; corrupted: number;
+    const data = (await res.json()) as {
+      total: number;
+      ok: number;
+      corrupted: number;
       workflows: { workflowId: string; ok: boolean; issues?: unknown[] }[];
     };
     expect(data.total).toBe(2);
@@ -81,18 +86,26 @@ describe('GET /admin/workflows/health', () => {
   it('nessun workflow → total 0, corrupted 0, lista vuota', async () => {
     tenantListMock.mockReturnValue([{ id: 'ta' }]);
     listRowsMock.mockResolvedValue([]);
-    const data = await (await buildApp().request('/admin/workflows/health')).json() as { total: number; corrupted: number; workflows: unknown[] };
+    const data = (await (await buildApp().request('/admin/workflows/health')).json()) as {
+      total: number;
+      corrupted: number;
+      workflows: unknown[];
+    };
     expect(data).toMatchObject({ total: 0, ok: 0, corrupted: 0 });
     expect(data.workflows).toEqual([]);
   });
 
   it('multi-tenant: aggrega i workflow di tutti i tenant nello stesso report', async () => {
     tenantListMock.mockReturnValue([{ id: 'ta' }, { id: 'tb' }]);
-    listRowsMock
-      .mockResolvedValueOnce([{ id: 'a1', name: 'A1' }])
-      .mockResolvedValueOnce([{ id: 'b1', name: 'B1' }, { id: 'b2', name: 'B2' }]);
+    listRowsMock.mockResolvedValueOnce([{ id: 'a1', name: 'A1' }]).mockResolvedValueOnce([
+      { id: 'b1', name: 'B1' },
+      { id: 'b2', name: 'B2' },
+    ]);
     diagnoseMock.mockReturnValue({ ok: true });
-    const data = await (await buildApp().request('/admin/workflows/health')).json() as { total: number; workflows: { tenantId: string }[] };
+    const data = (await (await buildApp().request('/admin/workflows/health')).json()) as {
+      total: number;
+      workflows: { tenantId: string }[];
+    };
     expect(data.total).toBe(3);
     expect(new Set(data.workflows.map((w) => w.tenantId))).toEqual(new Set(['ta', 'tb']));
   });

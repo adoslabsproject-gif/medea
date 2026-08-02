@@ -30,7 +30,12 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'no
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
-  createHash, generateKeyPairSync, createPrivateKey, createPublicKey, sign as edSign, verify as edVerify,
+  createHash,
+  generateKeyPairSync,
+  createPrivateKey,
+  createPublicKey,
+  sign as edSign,
+  verify as edVerify,
 } from 'node:crypto';
 import { execSync } from 'node:child_process';
 import AdmZip from 'adm-zip';
@@ -50,8 +55,14 @@ function parseArgs(argv: string[]): Args {
   const positional: string[] = [];
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
-    if (a === '--out') { outDir = argv[++i]!; continue; }
-    if (a === '--key') { keyPath = argv[++i]!; continue; }
+    if (a === '--out') {
+      outDir = argv[++i]!;
+      continue;
+    }
+    if (a === '--key') {
+      keyPath = argv[++i]!;
+      continue;
+    }
     if (a === '--help' || a === '-h') {
       console.log('ffnode-build [entry] [--out dist] [--key private.pem]');
       process.exit(0);
@@ -59,7 +70,11 @@ function parseArgs(argv: string[]): Args {
     if (typeof a === 'string') positional.push(a);
   }
   if (positional[0]) entry = positional[0];
-  return { entry: resolve(entry), outDir: resolve(outDir), keyPath: keyPath ? resolve(keyPath) : null };
+  return {
+    entry: resolve(entry),
+    outDir: resolve(outDir),
+    keyPath: keyPath ? resolve(keyPath) : null,
+  };
 }
 
 function canonicalize(obj: unknown): string {
@@ -69,17 +84,26 @@ function canonicalize(obj: unknown): string {
   return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalize((obj as Record<string, unknown>)[k])}`).join(',')}}`;
 }
 
-function loadOrCreateKey(keyPath: string | null): { privateKey: ReturnType<typeof createPrivateKey>; ephemeral: boolean } {
+function loadOrCreateKey(keyPath: string | null): {
+  privateKey: ReturnType<typeof createPrivateKey>;
+  ephemeral: boolean;
+} {
   const envKey = process.env.MEDEA_NODE_SIGNING_KEY;
   if (envKey) {
     return { privateKey: createPrivateKey({ key: envKey, format: 'pem' }), ephemeral: false };
   }
   if (keyPath && existsSync(keyPath)) {
-    return { privateKey: createPrivateKey({ key: readFileSync(keyPath, 'utf8'), format: 'pem' }), ephemeral: false };
+    return {
+      privateKey: createPrivateKey({ key: readFileSync(keyPath, 'utf8'), format: 'pem' }),
+      ephemeral: false,
+    };
   }
   const defaultPath = resolve('./.signing-key.pem');
   if (existsSync(defaultPath)) {
-    return { privateKey: createPrivateKey({ key: readFileSync(defaultPath, 'utf8'), format: 'pem' }), ephemeral: false };
+    return {
+      privateKey: createPrivateKey({ key: readFileSync(defaultPath, 'utf8'), format: 'pem' }),
+      ephemeral: false,
+    };
   }
   console.warn('⚠ Nessuna chiave di firma trovata — uso una chiave dev ephemera.');
   console.warn('   Per produzione: openssl genpkey -algorithm ed25519 -out ./.signing-key.pem');
@@ -96,17 +120,25 @@ async function loadSpec(entry: string): Promise<CommunityNodeDefinition> {
     try {
       execSync('npx tsx --version', { stdio: 'ignore' });
     } catch {
-      throw new Error('ffnode-build: entry file is .ts ma `tsx` non è disponibile. Installa con: npm i -D tsx');
+      throw new Error(
+        'ffnode-build: entry file is .ts ma `tsx` non è disponibile. Installa con: npm i -D tsx',
+      );
     }
     // Spawn a child node with tsx loader and serialize the default export.
     const helperScript = join(dirname(fileURLToPath(import.meta.url)), 'serialize-entry.js');
-    const serialized = execSync(`node --import tsx "${helperScript}" "${entry}"`, { encoding: 'utf8' });
+    const serialized = execSync(`node --import tsx "${helperScript}" "${entry}"`, {
+      encoding: 'utf8',
+    });
     return JSON.parse(serialized) as CommunityNodeDefinition;
   }
   const modUrl = pathToFileURL(entry).href;
-  const mod = await import(modUrl) as { default?: CommunityNodeDefinition };
+  const mod = (await import(modUrl)) as { default?: CommunityNodeDefinition };
   if (!mod.default) {
-    throw new Error('ffnode-build: ' + entry + ' has no default export. Use `export default defineCommunityNode({...})`.');
+    throw new Error(
+      'ffnode-build: ' +
+        entry +
+        ' has no default export. Use `export default defineCommunityNode({...})`.',
+    );
   }
   return mod.default;
 }
@@ -117,12 +149,16 @@ async function main(): Promise<void> {
   console.log('▸ Loading ' + args.entry);
   const spec = await loadSpec(args.entry);
 
-  console.log('▸ Compiling ' + spec.manifest.vendor + '/' + spec.manifest.id + ' v' + spec.manifest.version);
+  console.log(
+    '▸ Compiling ' + spec.manifest.vendor + '/' + spec.manifest.id + ' v' + spec.manifest.version,
+  );
   const { manifest, nodedef, executorSource } = compile(spec);
 
   console.log('▸ Signing manifest');
   const { privateKey, ephemeral } = loadOrCreateKey(args.keyPath);
-  const publicKeyPem = createPublicKey(privateKey).export({ type: 'spki', format: 'pem' }).toString();
+  const publicKeyPem = createPublicKey(privateKey)
+    .export({ type: 'spki', format: 'pem' })
+    .toString();
   const payload = canonicalize(manifest) + '|' + canonicalize(nodedef) + '|' + executorSource;
   const digest = createHash('sha256').update(payload).digest();
   const sig = edSign(null, digest, privateKey).toString('hex');
@@ -132,13 +168,16 @@ async function main(): Promise<void> {
   // asymmetry BEFORE shipping the package.
   {
     // Underscore-prefixed names = intentionally unused (lint convention).
-     
+
     const { signature: _sig, publicKeyPem: _pk, ...manifestForVerify } = signedManifest;
-    const verifyPayload = canonicalize(manifestForVerify) + '|' + canonicalize(nodedef) + '|' + executorSource;
+    const verifyPayload =
+      canonicalize(manifestForVerify) + '|' + canonicalize(nodedef) + '|' + executorSource;
     const verifyDigest = createHash('sha256').update(verifyPayload).digest();
     const ok = edVerify(null, verifyDigest, createPublicKey(publicKeyPem), Buffer.from(sig, 'hex'));
     if (!ok) {
-      throw new Error('ffnode-build: SIGNATURE SELF-VERIFY FAILED — sign/verify canonicalize asymmetry. ABORT.');
+      throw new Error(
+        'ffnode-build: SIGNATURE SELF-VERIFY FAILED — sign/verify canonicalize asymmetry. ABORT.',
+      );
     }
   }
 
@@ -187,7 +226,9 @@ async function main(): Promise<void> {
   console.log('✓ Build OK');
   console.log('  Package: ' + ffnodePath);
   console.log('  Size:    ' + (zipSize / 1024).toFixed(1) + ' KB');
-  console.log('  Sig:     ' + sig.slice(0, 32) + '...' + (ephemeral ? ' (dev key, not for production)' : ''));
+  console.log(
+    '  Sig:     ' + sig.slice(0, 32) + '...' + (ephemeral ? ' (dev key, not for production)' : ''),
+  );
   console.log('  Actions: ' + nodedef.actions.length + ' (' + aiCount + ' AI)');
   if (triggersCount > 0) console.log('  Trigger: ' + triggersCount + ' (polling)');
 }

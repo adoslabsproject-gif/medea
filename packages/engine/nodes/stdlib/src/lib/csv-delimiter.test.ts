@@ -7,9 +7,15 @@ import { describe, it, expect } from 'vitest';
 import { detectDelimiter, resolveDelimiter } from './csv-delimiter.js';
 
 describe('detectDelimiter', () => {
-  it('virgola', () => { expect(detectDelimiter('a,b,c\n1,2,3')).toBe(','); });
-  it('punto-e-virgola (IT)', () => { expect(detectDelimiter('a;b;c\n1;2;3')).toBe(';'); });
-  it('tab (TSV)', () => { expect(detectDelimiter('a\tb\n1\t2')).toBe('\t'); });
+  it('virgola', () => {
+    expect(detectDelimiter('a,b,c\n1,2,3')).toBe(',');
+  });
+  it('punto-e-virgola (IT)', () => {
+    expect(detectDelimiter('a;b;c\n1;2;3')).toBe(';');
+  });
+  it('tab (TSV)', () => {
+    expect(detectDelimiter('a\tb\n1\t2')).toBe('\t');
+  });
   it('sceglie il più frequente quando ne compaiono più di uno', () => {
     // 2 ";" vs 1 "," nella prima riga → vince ";"
     expect(detectDelimiter('a;b;c,d\n')).toBe(';');

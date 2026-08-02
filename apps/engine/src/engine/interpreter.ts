@@ -103,26 +103,48 @@ export function makeNodeAccessor(
     const paired = (fromItemIndex: number): ExecutionItem | undefined =>
       lineageCtx === undefined
         ? undefined
-        : resolvePairedItem(lineageCtx.graph, lineageCtx.nodeId, fromItemIndex, name, lineageCtx.predecessorOf);
+        : resolvePairedItem(
+            lineageCtx.graph,
+            lineageCtx.nodeId,
+            fromItemIndex,
+            name,
+            lineageCtx.predecessorOf,
+          );
     return {
       all: () => items,
       first: () => items[0] ?? EMPTY_ITEM,
       last: () => items[items.length - 1] ?? EMPTY_ITEM,
       itemAt: (index: number) => items[index],
-      get item() { return lineageCtx === undefined ? undefined : paired(lineageCtx.itemIndex); },
+      get item() {
+        return lineageCtx === undefined ? undefined : paired(lineageCtx.itemIndex);
+      },
       itemMatching: (inputIndex: number) => paired(inputIndex),
     };
   };
 }
 
 const FORBIDDEN_IDENTIFIERS = [
-  'eval', 'Function', 'globalThis', 'global', 'process', 'require', 'import',
-  '__proto__', 'constructor', 'AsyncFunction', 'GeneratorFunction',
+  'eval',
+  'Function',
+  'globalThis',
+  'global',
+  'process',
+  'require',
+  'import',
+  '__proto__',
+  'constructor',
+  'AsyncFunction',
+  'GeneratorFunction',
   // Node-specific escape vectors
-  'fetch', 'setTimeout', 'setInterval', 'setImmediate',
+  'fetch',
+  'setTimeout',
+  'setInterval',
+  'setImmediate',
   // Reflection / metaprogramming escape primitives — nessun uso legittimo in
   // un'espressione workflow, ma consentono di raggiungere il Function ctor.
-  'Reflect', 'Proxy', 'WeakRef',
+  'Reflect',
+  'Proxy',
+  'WeakRef',
 ];
 
 /**
@@ -136,9 +158,7 @@ const FORBIDDEN_REGEX: RegExp[] = [
   // Identifier word boundary catch
   ...FORBIDDEN_IDENTIFIERS.map((id) => new RegExp(`\\b${id}\\b`)),
   // String literal in computed member access
-  ...FORBIDDEN_IDENTIFIERS.map(
-    (id) => new RegExp(`\\[\\s*['"\`]${id}['"\`]\\s*\\]`),
-  ),
+  ...FORBIDDEN_IDENTIFIERS.map((id) => new RegExp(`\\[\\s*['"\`]${id}['"\`]\\s*\\]`)),
   // Generic: concatenation `+` within bracket access — common bypass shape
   // `obj["e"+"val"]`. Conservative — blocks any computed bracket with a `+`.
   /\[[^\]]*\+[^\]]*\]/,
@@ -305,7 +325,10 @@ function rewriteShortcuts(expression: string): string {
   // Inline UUID v4 generator — Math-based (not cryptographically strong but
   // adequate for workflow correlation IDs). Avoids touching globalThis,
   // which is forbidden by assertSafeExpression.
-  out = out.replace(/\$uuid\b/g, "('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0,v=c=='x'?r:(r&0x3|0x8);return v.toString(16);}))");
+  out = out.replace(
+    /\$uuid\b/g,
+    "('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0,v=c=='x'?r:(r&0x3|0x8);return v.toString(16);}))",
+  );
   // $node.<id>.json → vars["<id>"]   (id may be alphanumeric, dash, underscore)
   out = out.replace(/\$node\.([a-zA-Z0-9_-]+)\.json/g, 'vars["$1"]');
   // $env.<KEY> → (vars.__env && vars.__env["<KEY>"])
@@ -350,10 +373,23 @@ function rewriteFilterPipes(expression: string): string {
 }
 
 type FilterName =
-  | 'upper' | 'lower' | 'trim' | 'length' | 'json' | 'default'
-  | 'round' | 'currency' | 'date' | 'replace' | 'slice' | 'join';
+  | 'upper'
+  | 'lower'
+  | 'trim'
+  | 'length'
+  | 'json'
+  | 'default'
+  | 'round'
+  | 'currency'
+  | 'date'
+  | 'replace'
+  | 'slice'
+  | 'join';
 
-interface PipeScanResult { text: string; changed: boolean }
+interface PipeScanResult {
+  text: string;
+  changed: boolean;
+}
 
 function applyOnePipe(src: string): PipeScanResult {
   let depth = 0;
@@ -370,7 +406,10 @@ function applyOnePipe(src: string): PipeScanResult {
     else if (ch === '|' && depth === 0 && src[i + 1] !== '|' && src[i - 1] !== '|') {
       const rest = src.slice(i + 1);
       // Filter name + optional args (string-aware to allow commas dentro stringhe).
-      const m = /^\s*(upper|lower|trim|length|json|default|round|currency|date|replace|slice|join)\b/.exec(rest);
+      const m =
+        /^\s*(upper|lower|trim|length|json|default|round|currency|date|replace|slice|join)\b/.exec(
+          rest,
+        );
       if (!m) continue;
       const filter = m[1] as FilterName;
       const afterName = i + 1 + m[0].length;
@@ -403,15 +442,33 @@ function readPipeArgs(src: string, start: number): { args: string[]; end: number
   let inDouble = false;
   for (; i < src.length; i++) {
     const ch = src[i]!;
-    if (!inDouble && ch === "'" && src[i - 1] !== '\\') { inSingle = !inSingle; current += ch; continue; }
-    if (!inSingle && ch === '"' && src[i - 1] !== '\\') { inDouble = !inDouble; current += ch; continue; }
+    if (!inDouble && ch === "'" && src[i - 1] !== '\\') {
+      inSingle = !inSingle;
+      current += ch;
+      continue;
+    }
+    if (!inSingle && ch === '"' && src[i - 1] !== '\\') {
+      inDouble = !inDouble;
+      current += ch;
+      continue;
+    }
     if (!inSingle && !inDouble) {
-      if (ch === '(' || ch === '[' || ch === '{') { depth++; current += ch; continue; }
+      if (ch === '(' || ch === '[' || ch === '{') {
+        depth++;
+        current += ch;
+        continue;
+      }
       if (ch === ')' || ch === ']' || ch === '}') {
         if (depth === 0) break;
-        depth--; current += ch; continue;
+        depth--;
+        current += ch;
+        continue;
       }
-      if (depth === 0 && ch === ',') { args.push(current.trim()); current = ''; continue; }
+      if (depth === 0 && ch === ',') {
+        args.push(current.trim());
+        current = '';
+        continue;
+      }
       if (depth === 0 && ch === '|') break;
     }
     current += ch;
@@ -422,14 +479,21 @@ function readPipeArgs(src: string, start: number): { args: string[]; end: number
 
 function wrapFilter(filter: FilterName, lhs: string, args: string[]): string {
   switch (filter) {
-    case 'upper':   return `String(${lhs} ?? '').toUpperCase()`;
-    case 'lower':   return `String(${lhs} ?? '').toLowerCase()`;
-    case 'trim':    return `String(${lhs} ?? '').trim()`;
-    case 'length':  return `((__v)=>Array.isArray(__v)||typeof __v==='string'?__v.length:0)(${lhs})`;
-    case 'json':    return `JSON.stringify(${lhs})`;
-    case 'default': return `(${lhs} ?? ${args[0] ?? "''"})`;
+    case 'upper':
+      return `String(${lhs} ?? '').toUpperCase()`;
+    case 'lower':
+      return `String(${lhs} ?? '').toLowerCase()`;
+    case 'trim':
+      return `String(${lhs} ?? '').trim()`;
+    case 'length':
+      return `((__v)=>Array.isArray(__v)||typeof __v==='string'?__v.length:0)(${lhs})`;
+    case 'json':
+      return `JSON.stringify(${lhs})`;
+    case 'default':
+      return `(${lhs} ?? ${args[0] ?? "''"})`;
     // round:n — Number(x).toFixed(n) → string. n default 0.
-    case 'round':   return `Number(${lhs}).toFixed(${args[0] ?? '0'})`;
+    case 'round':
+      return `Number(${lhs}).toFixed(${args[0] ?? '0'})`;
     // currency:'EUR' (default), o currency:'USD','en-US'. Locale default it-IT.
     case 'currency': {
       const ccy = args[0] ?? "'EUR'";
@@ -486,7 +550,7 @@ export function evaluateExpression(expression: string, scope: InterpreterScope):
   const helperKeys = Object.keys(helpers);
   // Accessor cross-nodo `$('NodeName')` — bound ai vars (output dei nodi) dello
   // scope corrente. Iniettato come identificatore `$` nella Function.
-  const nodeAccessor = makeNodeAccessor((scope.vars ?? {}), scope.lineage);
+  const nodeAccessor = makeNodeAccessor(scope.vars ?? {}, scope.lineage);
   const allKeys = [...scopeKeys, ...helperKeys, '$'];
   const allValues = [
     ...scopeValues,
@@ -505,10 +569,9 @@ export function evaluateExpression(expression: string, scope: InterpreterScope):
     // in allKeys), nessun accesso a require/process/globalThis (vedi
     // assertSafeExpression a monte). Unica eccezione documentata al lint.
     // eslint-disable-next-line @typescript-eslint/no-implied-eval -- interprete espressioni: dynamic compile è il meccanismo stesso, sandboxed
-    fn = new Function(
-      ...allKeys,
-      `"use strict"; return (${rewritten});`,
-    ) as (...args: unknown[]) => unknown;
+    fn = new Function(...allKeys, `"use strict"; return (${rewritten});`) as (
+      ...args: unknown[]
+    ) => unknown;
   } catch (error) {
     throw new InterpreterError(
       `Syntax error in expression: ${error instanceof Error ? error.message : String(error)}`,

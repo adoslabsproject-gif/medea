@@ -23,12 +23,13 @@ import {
 
 describe('stripQuotedReply', () => {
   it('cuts at "On … wrote:" (EN)', () => {
-    const body = 'Hi, here\'s the doc.\n\nOn 2026-01-15 14:32, Mario Rossi wrote:\n> previous line';
+    const body = "Hi, here's the doc.\n\nOn 2026-01-15 14:32, Mario Rossi wrote:\n> previous line";
     expect(stripQuotedReply(body)).toBe("Hi, here's the doc.");
   });
 
   it('cuts at "Il giorno … ha scritto:" (IT)', () => {
-    const body = 'Ciao Mario,\n\nIl giorno 15 gennaio 2026 14:32, Anna Bianchi ha scritto:\n> Buongiorno';
+    const body =
+      'Ciao Mario,\n\nIl giorno 15 gennaio 2026 14:32, Anna Bianchi ha scritto:\n> Buongiorno';
     expect(stripQuotedReply(body)).toBe('Ciao Mario,');
   });
 
@@ -78,9 +79,12 @@ describe('stripQuotedReply', () => {
 
   it('anti-regressione: i divider reali (EN/IT) continuano a tagliare dopo la riscrittura', () => {
     expect(stripQuotedReply('Ciao.\n\nOn 2026-01-15 14:32, Mario Rossi wrote:\n> q')).toBe('Ciao.');
-    expect(stripQuotedReply('Salve.\n\nIl giorno 15 gennaio 2026, Anna ha scritto:\n> q')).toBe('Salve.');
+    expect(stripQuotedReply('Salve.\n\nIl giorno 15 gennaio 2026, Anna ha scritto:\n> q')).toBe(
+      'Salve.',
+    );
     // Divider lungo ma plausibile (< 140 char nel gruppo) → ancora riconosciuto.
-    const body = 'Ciao.\n\nOn 2026-01-15 14:32, ' + 'Mario Rossi '.repeat(5).trim() + ' wrote:\n> quoted';
+    const body =
+      'Ciao.\n\nOn 2026-01-15 14:32, ' + 'Mario Rossi '.repeat(5).trim() + ' wrote:\n> quoted';
     expect(stripQuotedReply(body)).toBe('Ciao.');
   });
 });
@@ -115,17 +119,20 @@ describe('stripSignature', () => {
 
 describe('stripDisclaimers', () => {
   it('drops EN confidentiality boilerplate', () => {
-    const body = 'Hi.\n\nThis email and any attachments are confidential and intended solely for the addressee.\n\nThanks.';
+    const body =
+      'Hi.\n\nThis email and any attachments are confidential and intended solely for the addressee.\n\nThanks.';
     expect(stripDisclaimers(body)).toBe('Hi.\n\nThanks.');
   });
 
   it('drops IT "Le informazioni contenute"', () => {
-    const body = 'Buongiorno.\n\nLe informazioni contenute nel presente messaggio sono riservate.\n\nGrazie.';
+    const body =
+      'Buongiorno.\n\nLe informazioni contenute nel presente messaggio sono riservate.\n\nGrazie.';
     expect(stripDisclaimers(body)).toBe('Buongiorno.\n\nGrazie.');
   });
 
   it('drops eco-disclaimer "Per proteggere l\'ambiente"', () => {
-    const body = 'Saluti.\n\nPer proteggere l\'ambiente non stampare questo messaggio se non strettamente necessario.';
+    const body =
+      "Saluti.\n\nPer proteggere l'ambiente non stampare questo messaggio se non strettamente necessario.";
     expect(stripDisclaimers(body)).toBe('Saluti.');
   });
 
@@ -188,7 +195,7 @@ describe('cleanEmailBody — integration', () => {
   it('truncates at maxBodyLength with ellipsis', () => {
     const body = 'a'.repeat(10_000);
     const r = cleanEmailBody(body, { maxBodyLength: 100 });
-    expect(r.cleanedBody.length).toBe(101);  // 100 chars + …
+    expect(r.cleanedBody.length).toBe(101); // 100 chars + …
     expect(r.cleanedBody.endsWith('…')).toBe(true);
   });
 

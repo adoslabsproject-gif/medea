@@ -70,42 +70,74 @@ export interface AutoFixResult {
  * Keep in sync with `OBSOLETE_MODELS_BY_PROVIDER` in `quality-gate.ts`.
  */
 const OBSOLETE_MODELS_BY_PROVIDER: ReadonlyMap<string, ReadonlySet<string>> = new Map([
-  ['openai', new Set([
-    'gpt-3.5-turbo-0301', 'gpt-3.5-turbo-0613', 'gpt-3.5-turbo-16k-0613',
-    'gpt-4-0314', 'gpt-4-0613', 'gpt-4-32k-0314', 'gpt-4-32k-0613',
-    'text-davinci-003', 'text-davinci-002', 'code-davinci-002',
-  ])],
-  ['anthropic', new Set([
-    'claude-instant-1', 'claude-instant-1.2',
-    'claude-1', 'claude-1.3', 'claude-2', 'claude-2.0', 'claude-2.1',
-    'claude-3-haiku-20240307', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229',
-  ])],
-  ['gemini', new Set([
-    'gemini-pro', 'gemini-pro-vision', 'gemini-1.0-pro',
-  ])],
-  ['mistral', new Set([
-    'mistral-tiny', 'mistral-small', 'mistral-medium',
-  ])],
+  [
+    'openai',
+    new Set([
+      'gpt-3.5-turbo-0301',
+      'gpt-3.5-turbo-0613',
+      'gpt-3.5-turbo-16k-0613',
+      'gpt-4-0314',
+      'gpt-4-0613',
+      'gpt-4-32k-0314',
+      'gpt-4-32k-0613',
+      'text-davinci-003',
+      'text-davinci-002',
+      'code-davinci-002',
+    ]),
+  ],
+  [
+    'anthropic',
+    new Set([
+      'claude-instant-1',
+      'claude-instant-1.2',
+      'claude-1',
+      'claude-1.3',
+      'claude-2',
+      'claude-2.0',
+      'claude-2.1',
+      'claude-3-haiku-20240307',
+      'claude-3-opus-20240229',
+      'claude-3-sonnet-20240229',
+    ]),
+  ],
+  ['gemini', new Set(['gemini-pro', 'gemini-pro-vision', 'gemini-1.0-pro'])],
+  ['mistral', new Set(['mistral-tiny', 'mistral-small', 'mistral-medium'])],
 ]);
 
 // Pattern di sostituzione: regex → secret name. Conservativi (solo casi
 // alta confidence). Ordine importante (specifici prima di generici).
 const PLACEHOLDER_TO_SECRET: { regex: RegExp; secret: string; fields?: RegExp }[] = [
   // Bucket S3/GCS (matcha SOLO scheme+name, path preservato automaticamente)
-  { regex: /\bs3:\/\/(?:my-bucket|your-bucket|bucket-name|test-bucket|sample-bucket|demo-bucket|example-bucket|company-bucket|tenant-bucket|placeholder-bucket)\b/gi, secret: 'S3_BUCKET' },
+  {
+    regex:
+      /\bs3:\/\/(?:my-bucket|your-bucket|bucket-name|test-bucket|sample-bucket|demo-bucket|example-bucket|company-bucket|tenant-bucket|placeholder-bucket)\b/gi,
+    secret: 'S3_BUCKET',
+  },
   // SMTP host
   { regex: /\bsmtp\.example\.com\b/gi, secret: 'SMTP_HOST' },
   // Email noreply placeholder
-  { regex: /\bnoreply@(?:company|yourcompany|mycompany|placeholder|example)\.[a-z]{2,}\b/gi, secret: 'NOREPLY_EMAIL' },
+  {
+    regex: /\bnoreply@(?:company|yourcompany|mycompany|placeholder|example)\.[a-z]{2,}\b/gi,
+    secret: 'NOREPLY_EMAIL',
+  },
   // Email dst placeholder
-  { regex: /\b(?:management|admin|support|info|sales)@(?:company|yourcompany|mycompany|placeholder)\.[a-z]{2,}\b/gi, secret: 'NOTIFY_EMAIL' },
+  {
+    regex:
+      /\b(?:management|admin|support|info|sales)@(?:company|yourcompany|mycompany|placeholder)\.[a-z]{2,}\b/gi,
+    secret: 'NOTIFY_EMAIL',
+  },
   // URL endpoint placeholder
-  { regex: /\bhttps?:\/\/(?:api|service|endpoint|server)\.(?:company|yourcompany|placeholder|example)\.[a-z]{2,}(?:\/[^"]*)?/gi, secret: 'API_URL' },
+  {
+    regex:
+      /\bhttps?:\/\/(?:api|service|endpoint|server)\.(?:company|yourcompany|placeholder|example)\.[a-z]{2,}(?:\/[^"]*)?/gi,
+    secret: 'API_URL',
+  },
 ];
 
 // Field name patterns che richiedono UN ID risorsa REALE (UUID/hash).
 // Se valore non-template e non-UUID → sostituisci con __USE_PICKER__.
-const PICKER_FIELDS_RE = /^(databaseId|tableId|workspaceId|projectId|accountId|systemAccountId|botId|channelId|spaceId|orgId|emailAccountId)$/i;
+const PICKER_FIELDS_RE =
+  /^(databaseId|tableId|workspaceId|projectId|accountId|systemAccountId|botId|channelId|spaceId|orgId|emailAccountId)$/i;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const HASH_ID_RE = /^[A-Za-z0-9_-]{16,}$/;
 const TEMPLATE_RE = /\{\{|\$node\./;
@@ -146,10 +178,12 @@ function looksLikeRealId(s: string): boolean {
   if (HASH_ID_RE.test(s)) {
     // Anche se hash-like, se contiene parole sospette dentro snake_case,
     // NON è real
-    const SUSPECT = /(?:^|[_-])(name|placeholder|example|sample|here|todo|fixme|test|demo|fake|mock|your|my|company|new|generic|opportunities|account)(?:[_-]|$)/i;
+    const SUSPECT =
+      /(?:^|[_-])(name|placeholder|example|sample|here|todo|fixme|test|demo|fake|mock|your|my|company|new|generic|opportunities|account)(?:[_-]|$)/i;
     if (SUSPECT.test(s)) return false;
     // Lazy prefix tipo "db_X" "acc_X" senza alfanumerico randomico
-    const LAZY = /^(db|acc|tenant|workspace|project|user|email|smtp|imap|system|sys|table|tbl)[_-][a-z]+(?:[_-][a-z]+)?$/i;
+    const LAZY =
+      /^(db|acc|tenant|workspace|project|user|email|smtp|imap|system|sys|table|tbl)[_-][a-z]+(?:[_-][a-z]+)?$/i;
     if (LAZY.test(s)) return false;
     return true;
   }
@@ -181,9 +215,14 @@ export function autoFixWorkflow(input: AutoFixInput): AutoFixResult {
     const mergesToCreate = new Set<string>();
     const keptEdges: AutoFixResult['edges'] = [];
     for (const e of result.edges) {
-      const orphans = [!nodeIds.has(e.from) ? e.from : null, !nodeIds.has(e.to) ? e.to : null]
-        .filter((x): x is string => x !== null);
-      if (orphans.length === 0) { keptEdges.push(e); continue; }
+      const orphans = [
+        !nodeIds.has(e.from) ? e.from : null,
+        !nodeIds.has(e.to) ? e.to : null,
+      ].filter((x): x is string => x !== null);
+      if (orphans.length === 0) {
+        keptEdges.push(e);
+        continue;
+      }
       if (orphans.every((id) => MERGE_ID_RE.test(id))) {
         for (const id of orphans) mergesToCreate.add(id);
         keptEdges.push(e); // diventa valido dopo la creazione del merge
@@ -202,7 +241,8 @@ export function autoFixWorkflow(input: AutoFixInput): AutoFixResult {
         defId: 'logic_merge',
         config: {
           strategy: 'concat',
-          __auto_inserted_reason: 'Nodo merge referenziato dagli edge ma non emesso dall’LLM — ricreato dall’auto-fix.',
+          __auto_inserted_reason:
+            'Nodo merge referenziato dagli edge ma non emesso dall’LLM — ricreato dall’auto-fix.',
         },
       });
       nodeIds.add(id);
@@ -267,7 +307,8 @@ export function autoFixWorkflow(input: AutoFixInput): AutoFixResult {
   //     perché a runtime esegue N volte (1 per iteration) → costoso + spam.
   //     Fix automatico: imposta strategy=batch → loop esegue 1 volta sull'array
   //     aggregato e i downstream lavorano sul totale.
-  const AGGR_KW = /(report|riepilogo|riassunto|summary|aggregat|totale|consolidat|sintesi|recap|digest)/i;
+  const AGGR_KW =
+    /(report|riepilogo|riassunto|summary|aggregat|totale|consolidat|sintesi|recap|digest)/i;
   const downstreamCache = new Map<string, Set<string>>();
   const downstreamOf = (startId: string): Set<string> => {
     const cached = downstreamCache.get(startId);
@@ -278,7 +319,10 @@ export function autoFixWorkflow(input: AutoFixInput): AutoFixResult {
       const cur = stack.pop();
       if (!cur) continue;
       for (const e of result.edges) {
-        if (e.from === cur && !out.has(e.to)) { out.add(e.to); stack.push(e.to); }
+        if (e.from === cur && !out.has(e.to)) {
+          out.add(e.to);
+          stack.push(e.to);
+        }
       }
     }
     downstreamCache.set(startId, out);
@@ -286,18 +330,22 @@ export function autoFixWorkflow(input: AutoFixInput): AutoFixResult {
   };
   for (const loop of result.nodes.filter((n) => n.defId === 'logic_loop')) {
     const cfg = loop.config;
-    const currentStrategy = typeof cfg.strategy === 'string' ? (cfg.strategy) : 'naive';
+    const currentStrategy = typeof cfg.strategy === 'string' ? cfg.strategy : 'naive';
     if (currentStrategy === 'batch') continue;
     const ds = downstreamOf(loop.id);
     let aggrFound = '';
     for (const dsId of ds) {
       const dsNode = result.nodes.find((n) => n.id === dsId);
       if (!dsNode) continue;
-      const isAggr = dsNode.defId === 'agent_data_analyst'
-        || dsNode.defId === 'agent_summarizer'
-        || dsNode.defId === 'action_send_email';
+      const isAggr =
+        dsNode.defId === 'agent_data_analyst' ||
+        dsNode.defId === 'agent_summarizer' ||
+        dsNode.defId === 'action_send_email';
       if (!isAggr) continue;
-      if (AGGR_KW.test(JSON.stringify(dsNode.config))) { aggrFound = dsId; break; }
+      if (AGGR_KW.test(JSON.stringify(dsNode.config))) {
+        aggrFound = dsId;
+        break;
+      }
     }
     if (aggrFound) {
       loop.config.strategy = 'batch';
@@ -358,9 +406,9 @@ export function autoFixWorkflow(input: AutoFixInput): AutoFixResult {
   if (input.tenantDefaultLlmProvider) {
     const def = input.tenantDefaultLlmProvider;
     for (const node of result.nodes) {
-      if (!node.defId.startsWith("agent_")) continue;
+      if (!node.defId.startsWith('agent_')) continue;
       const cfg = node.config;
-      const currentProvider = typeof cfg.provider === 'string' ? (cfg.provider).trim() : '';
+      const currentProvider = typeof cfg.provider === 'string' ? cfg.provider.trim() : '';
       if (currentProvider === def) continue;
       // Niente fix se l'utente ha esplicitamente lasciato il provider vuoto —
       // a runtime il dispatcher cade comunque sul default tenant.
@@ -407,8 +455,9 @@ export function autoFixWorkflow(input: AutoFixInput): AutoFixResult {
   //     defaultModel corrente del provider. Idempotente.
   for (const node of result.nodes) {
     if (!node.defId.startsWith('agent_')) continue;
-    const provider = typeof node.config.provider === 'string' ? (node.config.provider).toLowerCase() : '';
-    const model = typeof node.config.model === 'string' ? (node.config.model).trim() : '';
+    const provider =
+      typeof node.config.provider === 'string' ? node.config.provider.toLowerCase() : '';
+    const model = typeof node.config.model === 'string' ? node.config.model.trim() : '';
     if (!provider || !model) continue;
     const obsolete = OBSOLETE_MODELS_BY_PROVIDER.get(provider);
     if (!obsolete?.has(model)) continue;
@@ -479,8 +528,12 @@ export function autoFixWorkflow(input: AutoFixInput): AutoFixResult {
   //    Skip se il consumer è già un aggregator (data_analyst/summarizer/
   //    flow_merge/action_aggregate) o un branch picker (logic_if/switch/join).
   const AGGREGATOR_DEFIDS = new Set([
-    'agent_data_analyst', 'agent_summarizer',
-    'action_aggregate', 'flow_merge', 'logic_merge', 'logic_join',
+    'agent_data_analyst',
+    'agent_summarizer',
+    'action_aggregate',
+    'flow_merge',
+    'logic_merge',
+    'logic_join',
   ]);
   const BRANCH_PICKERS = new Set(['logic_if', 'logic_switch']);
   const incomingByTarget = new Map<string, { from: string; edgeIdx: number }[]>();

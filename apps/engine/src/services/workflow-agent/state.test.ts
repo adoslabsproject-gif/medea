@@ -7,18 +7,35 @@ import { WorkflowBuilder } from './state.js';
 import type { NodeCatalogEntry } from '@/services/ai-scaffold/node-catalog.js';
 
 const CATALOG: NodeCatalogEntry[] = [
-  { defId: 'trigger_webhook', type: 'trigger', label: 'Webhook', description: '', fields: [{ key: 'path', label: 'Path', type: 'text', required: false }] },
   {
-    defId: 'action_http_request', type: 'action', label: 'HTTP', description: '',
+    defId: 'trigger_webhook',
+    type: 'trigger',
+    label: 'Webhook',
+    description: '',
+    fields: [{ key: 'path', label: 'Path', type: 'text', required: false }],
+  },
+  {
+    defId: 'action_http_request',
+    type: 'action',
+    label: 'HTTP',
+    description: '',
     fields: [
       { key: 'url', label: 'URL', type: 'text', required: true },
       { key: 'method', label: 'M', type: 'select', required: true, options: ['GET', 'POST'] },
     ],
   },
-  { defId: 'db_insert', type: 'action', label: 'DB Insert', description: '', fields: [{ key: 'table', label: 'T', type: 'text', required: true }] },
+  {
+    defId: 'db_insert',
+    type: 'action',
+    label: 'DB Insert',
+    description: '',
+    fields: [{ key: 'table', label: 'T', type: 'text', required: true }],
+  },
 ];
 
-function b(): WorkflowBuilder { return new WorkflowBuilder(CATALOG); }
+function b(): WorkflowBuilder {
+  return new WorkflowBuilder(CATALOG);
+}
 
 describe('addNode', () => {
   it('🚨 defId sconosciuto → ok:false (suggerisce search_nodes)', () => {
@@ -132,16 +149,23 @@ describe('seed — read-before-edit del workflow esistente', () => {
     expect(wf.hasNode('h')).toBe(true);
   });
 
-  it('🚨 PRESERVA nodi CUSTOM (defId fuori catalog, creati nell\'IDE) — non li rifiuta', () => {
+  it("🚨 PRESERVA nodi CUSTOM (defId fuori catalog, creati nell'IDE) — non li rifiuta", () => {
     const wf = b();
-    wf.seed({ nodes: [{ id: 'c', defId: 'community_mio_nodo_custom', config: { foo: 'bar' } }], edges: [] });
+    wf.seed({
+      nodes: [{ id: 'c', defId: 'community_mio_nodo_custom', config: { foo: 'bar' } }],
+      edges: [],
+    });
     // il nodo custom è presente anche se addNode lo rifiuterebbe (defId non in catalog)
     expect(wf.hasNode('c')).toBe(true);
-    expect(wf.snapshot().nodes[0]).toEqual({ id: 'c', defId: 'community_mio_nodo_custom', config: { foo: 'bar' } });
+    expect(wf.snapshot().nodes[0]).toEqual({
+      id: 'c',
+      defId: 'community_mio_nodo_custom',
+      config: { foo: 'bar' },
+    });
     expect(wf.addNode('community_mio_nodo_custom', undefined, {}).ok).toBe(false); // mut: addNode resta strict
   });
 
-  it('🚨 seed è una COPIA della config (mutare l\'input non tocca il builder)', () => {
+  it("🚨 seed è una COPIA della config (mutare l'input non tocca il builder)", () => {
     const wf = b();
     const cfg = { url: 'https://x' };
     wf.seed({ nodes: [{ id: 'h', defId: 'action_http_request', config: cfg }], edges: [] });
@@ -151,7 +175,13 @@ describe('seed — read-before-edit del workflow esistente', () => {
 
   it('seed idempotente per id (no edge duplicati su doppio seed)', () => {
     const wf = b();
-    const snap = { nodes: [{ id: 'w', defId: 'trigger_webhook', config: {} }, { id: 'd', defId: 'db_insert', config: { table: 't' } }], edges: [{ from: 'w', to: 'd' }] };
+    const snap = {
+      nodes: [
+        { id: 'w', defId: 'trigger_webhook', config: {} },
+        { id: 'd', defId: 'db_insert', config: { table: 't' } },
+      ],
+      edges: [{ from: 'w', to: 'd' }],
+    };
     wf.seed(snap);
     wf.seed(snap);
     expect(wf.snapshot().nodes).toHaveLength(2); // mut: no duplicati
@@ -160,9 +190,16 @@ describe('seed — read-before-edit del workflow esistente', () => {
 
   it('🚨 nodo CUSTOM seedato (defId fuori catalog) NON è un unknown_def in validate()', () => {
     const wf = b();
-    wf.seed({ nodes: [{ id: 'c', defId: 'custom_action_stream_proxy', config: { foo: 'bar' } }], edges: [] });
+    wf.seed({
+      nodes: [{ id: 'c', defId: 'custom_action_stream_proxy', config: { foo: 'bar' } }],
+      edges: [],
+    });
     // bug scoperto in E2E: il custom preesistente NON deve comparire come issue
-    expect(wf.validate().some((v) => v.kind === 'unknown_def' && v.defId === 'custom_action_stream_proxy')).toBe(false);
+    expect(
+      wf
+        .validate()
+        .some((v) => v.kind === 'unknown_def' && v.defId === 'custom_action_stream_proxy'),
+    ).toBe(false);
   });
 
   it('🚨 il filtro custom NON nasconde i problemi dei nodi NUOVI (required mancante)', () => {
@@ -171,12 +208,17 @@ describe('seed — read-before-edit del workflow esistente', () => {
     wf.addNode('action_http_request', 'h', {}); // nuovo, mancano url+method
     const v = wf.validate();
     expect(v.some((x) => x.kind === 'unknown_def' && x.defId === 'custom_x')).toBe(false); // custom silenziato
-    expect(v.some((x) => x.kind === 'missing_required' && x.key === 'url')).toBe(true);      // ma il nuovo è flaggato
+    expect(v.some((x) => x.kind === 'missing_required' && x.key === 'url')).toBe(true); // ma il nuovo è flaggato
   });
 
   it('dopo seed il modello può modificare (setConfig su nodo seedato)', () => {
     const wf = b();
-    wf.seed({ nodes: [{ id: 'h', defId: 'action_http_request', config: { url: 'https://x', method: 'GET' } }], edges: [] });
+    wf.seed({
+      nodes: [
+        { id: 'h', defId: 'action_http_request', config: { url: 'https://x', method: 'GET' } },
+      ],
+      edges: [],
+    });
     expect(wf.setConfig('h', { method: 'POST' }, true).ok).toBe(true);
     expect(wf.snapshot().nodes[0]!.config).toEqual({ url: 'https://x', method: 'POST' });
   });
@@ -197,7 +239,12 @@ describe('deleteNode', () => {
     const r = wf.deleteNode('h');
     expect(r.ok).toBe(true);
     expect(r.message).toMatch(/2 collegamento/u); // mut: conteggio edge caduti
-    expect(wf.snapshot().nodes.map((n) => n.id).sort()).toEqual(['d', 'w']);
+    expect(
+      wf
+        .snapshot()
+        .nodes.map((n) => n.id)
+        .sort(),
+    ).toEqual(['d', 'w']);
     expect(wf.snapshot().edges).toEqual([]); // entrambi gli edge incidenti rimossi
     expect(wf.orphanEdges()).toEqual([]);
   });
@@ -219,7 +266,7 @@ describe('disconnect', () => {
     expect(wf.disconnect('w', 'd').ok).toBe(false);
   });
 
-  it('rimuove l\'edge lasciando i nodi', () => {
+  it("rimuove l'edge lasciando i nodi", () => {
     const wf = b();
     wf.addNode('trigger_webhook', 'w', {});
     wf.addNode('db_insert', 'd', { table: 't' });
@@ -233,7 +280,7 @@ describe('disconnect', () => {
     const wf = b();
     wf.addNode('trigger_webhook', 'w', {});
     wf.addNode('db_insert', 'd', { table: 't' });
-    wf.connect('w', 'd', 'true');  // edge indice 0
+    wf.connect('w', 'd', 'true'); // edge indice 0
     wf.connect('w', 'd', 'false'); // edge indice 1
     // chiede di rimuovere 'false' (indice 1): se fromPort è ignorato verrebbe
     // tolto il PRIMO match ('true') → ramo sbagliato.

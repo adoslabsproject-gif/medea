@@ -85,7 +85,9 @@ export class WorkerCoordinationService {
   register(version?: string): void {
     const { sqlite } = getDatabase();
     const now = new Date().toISOString();
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO workers (id, hostname, pid, status, started_at, last_heartbeat_at, runs_executed, version)
       VALUES (?, ?, ?, 'idle', ?, ?, 0, ?)
       ON CONFLICT(id) DO UPDATE SET
@@ -95,14 +97,18 @@ export class WorkerCoordinationService {
         started_at = excluded.started_at,
         last_heartbeat_at = excluded.last_heartbeat_at,
         version = excluded.version
-    `).run(this.id, hostname(), process.pid, now, now, version ?? null);
+    `,
+      )
+      .run(this.id, hostname(), process.pid, now, now, version ?? null);
     logger.info({ workerId: this.id, hostname: hostname(), pid: process.pid }, 'Worker registered');
   }
 
   /** Start the periodic heartbeat + janitor + control-intent poller.
    *  Pass `onControlAction` to react to admin-queued restart/drain/concurrency
    *  intents (e.g. wire to the BullMQ worker's concurrency setter). */
-  start(onControlAction?: (action: WorkerControlAction | null, concurrency: number | null) => void): void {
+  start(
+    onControlAction?: (action: WorkerControlAction | null, concurrency: number | null) => void,
+  ): void {
     this.heartbeatTimer = setInterval(() => {
       this.heartbeat();
       try {
@@ -117,7 +123,10 @@ export class WorkerCoordinationService {
             // Give the caller a tick to log & flush, then SIGTERM ourselves.
             // systemd / PM2 restart policy brings the worker back up.
             setTimeout(() => {
-              logger.warn({ workerId: this.id }, 'Worker honoring admin restart intent → SIGTERM self');
+              logger.warn(
+                { workerId: this.id },
+                'Worker honoring admin restart intent → SIGTERM self',
+              );
               process.kill(process.pid, 'SIGTERM');
             }, 200);
           }
@@ -126,7 +135,9 @@ export class WorkerCoordinationService {
         logger.warn({ err, workerId: this.id }, 'Control-intent poll failed');
       }
     }, HEARTBEAT_INTERVAL_MS);
-    this.janitorTimer = setInterval(() => { this.janitor(); }, STALE_AFTER_MS);
+    this.janitorTimer = setInterval(() => {
+      this.janitor();
+    }, STALE_AFTER_MS);
   }
 
   /** Gracefully unregister this worker. Call on SIGTERM / SIGINT. */
@@ -145,7 +156,8 @@ export class WorkerCoordinationService {
   heartbeat(): void {
     try {
       const { sqlite } = getDatabase();
-      sqlite.prepare(`UPDATE workers SET last_heartbeat_at = ? WHERE id = ?`)
+      sqlite
+        .prepare(`UPDATE workers SET last_heartbeat_at = ? WHERE id = ?`)
         .run(new Date().toISOString(), this.id);
     } catch (err) {
       logger.warn({ err, workerId: this.id }, 'Heartbeat write failed');
@@ -163,10 +175,14 @@ export class WorkerCoordinationService {
     try {
       const { sqlite } = getDatabase();
       const cutoff = new Date(Date.now() - STALE_AFTER_MS).toISOString();
-      const res = sqlite.prepare(`
+      const res = sqlite
+        .prepare(
+          `
         UPDATE workers SET status = 'dead', current_run_id = NULL
         WHERE last_heartbeat_at < ? AND status != 'dead'
-      `).run(cutoff);
+      `,
+        )
+        .run(cutoff);
       if (res.changes > 0) {
         logger.warn({ count: res.changes }, 'Janitor marked stale workers as dead');
       }
@@ -178,24 +194,33 @@ export class WorkerCoordinationService {
   /** Called when this worker picks up a run (for the admin UI). */
   markBusy(runId: string): void {
     const { sqlite } = getDatabase();
-    sqlite.prepare(`UPDATE workers SET status = 'busy', current_run_id = ? WHERE id = ?`)
+    sqlite
+      .prepare(`UPDATE workers SET status = 'busy', current_run_id = ? WHERE id = ?`)
       .run(runId, this.id);
   }
 
   /** Called when this worker finishes a run. */
   markIdle(): void {
     const { sqlite } = getDatabase();
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       UPDATE workers SET status = 'idle', current_run_id = NULL, runs_executed = runs_executed + 1
       WHERE id = ?
-    `).run(this.id);
+    `,
+      )
+      .run(this.id);
   }
 
   listActive(): WorkerRow[] {
     const { sqlite } = getDatabase();
-    const rows = sqlite.prepare(`
+    const rows = sqlite
+      .prepare(
+        `
       SELECT * FROM workers ORDER BY last_heartbeat_at DESC
-    `).all() as DbRow[];
+    `,
+      )
+      .all() as DbRow[];
     return rows.map((r) => ({
       id: r.id,
       hostname: r.hostname,
@@ -221,11 +246,15 @@ export class WorkerCoordinationService {
    */
   requestAction(workerId: string, action: WorkerControlAction, actorEmail: string): boolean {
     const { sqlite } = getDatabase();
-    const res = sqlite.prepare(`
+    const res = sqlite
+      .prepare(
+        `
       UPDATE workers
       SET requested_action = ?, requested_action_at = ?, requested_action_by = ?
       WHERE id = ?
-    `).run(action, new Date().toISOString(), actorEmail, workerId);
+    `,
+      )
+      .run(action, new Date().toISOString(), actorEmail, workerId);
     if (res.changes > 0) {
       logger.info({ workerId, action, actor: actorEmail }, 'Admin queued worker control action');
     }
@@ -241,11 +270,15 @@ export class WorkerCoordinationService {
       throw new Error('concurrency must be integer between 1 and 64');
     }
     const { sqlite } = getDatabase();
-    const res = sqlite.prepare(`
+    const res = sqlite
+      .prepare(
+        `
       UPDATE workers
       SET requested_concurrency = ?, requested_action_at = ?, requested_action_by = ?
       WHERE id = ?
-    `).run(concurrency, new Date().toISOString(), actorEmail, workerId);
+    `,
+      )
+      .run(concurrency, new Date().toISOString(), actorEmail, workerId);
     if (res.changes > 0) {
       logger.info({ workerId, concurrency, actor: actorEmail }, 'Admin queued concurrency change');
     }
@@ -260,15 +293,25 @@ export class WorkerCoordinationService {
    */
   consumePendingAction(): { action: WorkerControlAction | null; concurrency: number | null } {
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare(`
+    const row = sqlite
+      .prepare(
+        `
       SELECT requested_action, requested_concurrency FROM workers WHERE id = ?
-    `).get(this.id) as { requested_action: string | null; requested_concurrency: number | null } | undefined;
+    `,
+      )
+      .get(this.id) as
+      | { requested_action: string | null; requested_concurrency: number | null }
+      | undefined;
     if (!row || (row.requested_action === null && row.requested_concurrency === null)) {
       return { action: null, concurrency: null };
     }
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       UPDATE workers SET requested_action = NULL, requested_concurrency = NULL WHERE id = ?
-    `).run(this.id);
+    `,
+      )
+      .run(this.id);
     return {
       action: (row.requested_action ?? null) as WorkerControlAction | null,
       concurrency: row.requested_concurrency,
@@ -284,12 +327,16 @@ export class WorkerCoordinationService {
   /** Mark this worker as 'draining' (no new jobs, finish in-flight). */
   setDraining(): void {
     const { sqlite } = getDatabase();
-    sqlite.prepare(`UPDATE workers SET status = 'draining' WHERE id = ? AND status != 'dead'`).run(this.id);
+    sqlite
+      .prepare(`UPDATE workers SET status = 'draining' WHERE id = ? AND status != 'dead'`)
+      .run(this.id);
   }
 
   /** Resume from drain (status back to idle). */
   setIdle(): void {
     const { sqlite } = getDatabase();
-    sqlite.prepare(`UPDATE workers SET status = 'idle' WHERE id = ? AND status = 'draining'`).run(this.id);
+    sqlite
+      .prepare(`UPDATE workers SET status = 'idle' WHERE id = ? AND status = 'draining'`)
+      .run(this.id);
   }
 }

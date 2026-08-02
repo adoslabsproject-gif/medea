@@ -27,8 +27,18 @@ import { parse } from 'acorn';
 
 /** Identificatori che un executor sandboxed non deve MAI referenziare. */
 export const FORBIDDEN_GLOBALS: ReadonlySet<string> = new Set([
-  'require', 'eval', 'process', 'globalThis', 'Function',
-  'child_process', 'fs', '__dirname', '__filename', 'Deno', 'Bun', 'module',
+  'require',
+  'eval',
+  'process',
+  'globalThis',
+  'Function',
+  'child_process',
+  'fs',
+  '__dirname',
+  '__filename',
+  'Deno',
+  'Bun',
+  'module',
 ]);
 
 export interface ExecuteFnInfo {
@@ -82,7 +92,11 @@ function isNode(v: unknown): v is EsNode {
 }
 
 /** Visita ricorsiva generica dell'AST: (nodo, genitore) per ogni nodo. */
-function walk(node: EsNode, parent: EsNode | null, visit: (n: EsNode, p: EsNode | null) => void): void {
+function walk(
+  node: EsNode,
+  parent: EsNode | null,
+  visit: (n: EsNode, p: EsNode | null) => void,
+): void {
   visit(node, parent);
   for (const key of Object.keys(node)) {
     if (key === 'type') continue;
@@ -101,13 +115,25 @@ function findExecute(program: EsNode): ExecuteFnInfo {
   const body = Array.isArray(program.body) ? program.body : [];
   for (const stmt of body) {
     if (stmt.type === 'FunctionDeclaration' && stmt.id?.name === 'execute') {
-      return { found: true, isAsync: stmt.async === true, paramNames: (stmt.params ?? []).map(paramName) };
+      return {
+        found: true,
+        isAsync: stmt.async === true,
+        paramNames: (stmt.params ?? []).map(paramName),
+      };
     }
     if (stmt.type === 'VariableDeclaration') {
       for (const d of stmt.declarations ?? []) {
         const init = d.init;
-        if (d.id?.name === 'execute' && init && (init.type === 'ArrowFunctionExpression' || init.type === 'FunctionExpression')) {
-          return { found: true, isAsync: init.async === true, paramNames: (init.params ?? []).map(paramName) };
+        if (
+          d.id?.name === 'execute' &&
+          init &&
+          (init.type === 'ArrowFunctionExpression' || init.type === 'FunctionExpression')
+        ) {
+          return {
+            found: true,
+            isAsync: init.async === true,
+            paramNames: (init.params ?? []).map(paramName),
+          };
         }
       }
     }
@@ -118,18 +144,25 @@ function findExecute(program: EsNode): ExecuteFnInfo {
 /** True se l'Identifier è un NOME di proprietà (`a.process`, `{process:1}`) → non un riferimento al global. */
 function isPropertyName(node: EsNode, parent: EsNode | null): boolean {
   if (!parent) return false;
-  if (parent.type === 'MemberExpression' && parent.computed === false && parent.property === node) return true;
+  if (parent.type === 'MemberExpression' && parent.computed === false && parent.property === node)
+    return true;
   if (parent.type === 'Property' && parent.computed === false && parent.key === node) return true;
   return false;
 }
 
 /** Da `x.key` o `x['key']` con x===rootName ritorna la chiave, altrimenti null. */
 function memberKeyOf(node: EsNode, rootName: string): string | null {
-  if (node.type !== 'MemberExpression' || node.object?.type !== 'Identifier' || node.object.name !== rootName) return null;
+  if (
+    node.type !== 'MemberExpression' ||
+    node.object?.type !== 'Identifier' ||
+    node.object.name !== rootName
+  )
+    return null;
   const prop = node.property;
   if (!prop) return null;
   if (node.computed === false && prop.type === 'Identifier' && prop.name) return prop.name;
-  if (node.computed === true && prop.type === 'Literal' && typeof prop.value === 'string') return prop.value;
+  if (node.computed === true && prop.type === 'Literal' && typeof prop.value === 'string')
+    return prop.value;
   return null;
 }
 
@@ -145,8 +178,13 @@ export function analyzeExecutor(source: string): ExecutorAstFacts {
 
   if (!program) {
     return {
-      syntaxErrors, execute: { found: false, isAsync: false, paramNames: [] },
-      forbiddenRefs: [], hasImport: false, configKeysUsed: [], secretsUsed: [], hasReturnValue: false,
+      syntaxErrors,
+      execute: { found: false, isAsync: false, paramNames: [] },
+      forbiddenRefs: [],
+      hasImport: false,
+      configKeysUsed: [],
+      secretsUsed: [],
+      hasReturnValue: false,
     };
   }
 
@@ -162,7 +200,12 @@ export function analyzeExecutor(source: string): ExecutorAstFacts {
 
   walk(program, null, (node, parent) => {
     if (node.type === 'ImportDeclaration' || node.type === 'ImportExpression') hasImport = true;
-    if (node.type === 'Identifier' && node.name && FORBIDDEN_GLOBALS.has(node.name) && !isPropertyName(node, parent)) {
+    if (
+      node.type === 'Identifier' &&
+      node.name &&
+      FORBIDDEN_GLOBALS.has(node.name) &&
+      !isPropertyName(node, parent)
+    ) {
       forbidden.add(node.name);
     }
     if (node.type === 'ReturnStatement' && node.argument) hasReturnValue = true;
@@ -171,11 +214,21 @@ export function analyzeExecutor(source: string): ExecutorAstFacts {
       if (k) configKeys.add(k);
     }
     // context.secrets['NAME']: MemberExpression computed con object = <ctx>.secrets
-    if (contextParam && node.type === 'MemberExpression' && node.computed === true &&
-        node.property?.type === 'Literal' && typeof node.property.value === 'string') {
+    if (
+      contextParam &&
+      node.type === 'MemberExpression' &&
+      node.computed === true &&
+      node.property?.type === 'Literal' &&
+      typeof node.property.value === 'string'
+    ) {
       const inner = node.object;
-      if (inner?.type === 'MemberExpression' && inner.property?.type === 'Identifier' && inner.property.name === 'secrets' &&
-          inner.object?.type === 'Identifier' && inner.object.name === contextParam) {
+      if (
+        inner?.type === 'MemberExpression' &&
+        inner.property?.type === 'Identifier' &&
+        inner.property.name === 'secrets' &&
+        inner.object?.type === 'Identifier' &&
+        inner.object.name === contextParam
+      ) {
         secrets.add(node.property.value);
       }
     }

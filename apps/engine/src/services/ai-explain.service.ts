@@ -38,7 +38,7 @@ export class RunNotFoundError extends Error {
 
 export class RunSucceededError extends Error {
   constructor() {
-    super('Il run è andato a buon fine — non c\'è nulla da spiegare.');
+    super("Il run è andato a buon fine — non c'è nulla da spiegare.");
     this.name = 'RunSucceededError';
   }
 }
@@ -51,7 +51,10 @@ export class NoFailedStepError extends Error {
 }
 
 export class LlmResponseError extends Error {
-  constructor(message: string, public readonly raw?: unknown) {
+  constructor(
+    message: string,
+    public readonly raw?: unknown,
+  ) {
     super(message);
     this.name = 'LlmResponseError';
   }
@@ -179,15 +182,17 @@ const defaultDispatcher: LlmDispatcher = async (args) => {
     return response.text.trim();
   }
   const dispatcher = await import('./llm-chat.service.js');
-  return (await dispatcher.dispatchLLMChat(
-    args.provider,
-    args.apiKey,
-    args.model,
-    args.system,
-    args.userContent,
-    args.baseUrl,
-    [],
-  )).trim();
+  return (
+    await dispatcher.dispatchLLMChat(
+      args.provider,
+      args.apiKey,
+      args.model,
+      args.system,
+      args.userContent,
+      args.baseUrl,
+      [],
+    )
+  ).trim();
 };
 
 export class AiExplainService {
@@ -208,13 +213,19 @@ export class AiExplainService {
 
     // 2. Parse steps, find first failed
     let steps: RunStep[] = [];
-    try { steps = JSON.parse(runRow.steps_json) as RunStep[]; } catch { /* keep empty */ }
+    try {
+      steps = JSON.parse(runRow.steps_json) as RunStep[];
+    } catch {
+      /* keep empty */
+    }
     const failedStep = steps.find((s) => s.status === 'error');
     if (!failedStep) throw new NoFailedStepError();
 
     // 3. Load workflow snapshot for the LLM to reason about structure
     const wfRow = sqlite
-      .prepare('SELECT id, name, nodes_json, edges_json FROM workflows WHERE tenant_id = ? AND id = ?')
+      .prepare(
+        'SELECT id, name, nodes_json, edges_json FROM workflows WHERE tenant_id = ? AND id = ?',
+      )
       .get(args.tenantId, runRow.workflow_id) as WorkflowRow | undefined;
     let workflowSnapshot: unknown = null;
     if (wfRow) {
@@ -225,7 +236,9 @@ export class AiExplainService {
           nodes: JSON.parse(wfRow.nodes_json) as unknown[],
           edges: JSON.parse(wfRow.edges_json) as unknown[],
         };
-      } catch { /* keep null */ }
+      } catch {
+        /* keep null */
+      }
     }
 
     // 4. Resolve provider (throws NoLlmProviderError on miss — bubble up)
@@ -247,7 +260,9 @@ export class AiExplainService {
     // come evidenza. Senza questo, il modello vede solo nodeId+defId+error
     // → diagnosi necessariamente generica.
     if (workflowSnapshot && typeof workflowSnapshot === 'object') {
-      const nodes = (workflowSnapshot as { nodes?: { id?: string; config?: Record<string, unknown> }[] }).nodes ?? [];
+      const nodes =
+        (workflowSnapshot as { nodes?: { id?: string; config?: Record<string, unknown> }[] })
+          .nodes ?? [];
       const failedNode = nodes.find((n) => n.id === failedStep.nodeId);
       if (failedNode?.config) userContentArgs.failedNodeConfig = failedNode.config;
     }
@@ -271,16 +286,24 @@ export class AiExplainService {
         help: 'Total AI explain requests by provider + outcome',
         tags: { provider: resolved.provider, outcome: 'error' },
       });
-      logger.error({ err, runId: args.runId, provider: resolved.provider }, 'AI explain LLM dispatch failed');
+      logger.error(
+        { err, runId: args.runId, provider: resolved.provider },
+        'AI explain LLM dispatch failed',
+      );
       throw err;
     }
 
     // 7. Strip code fences, parse JSON, validate
     const stripped = text.startsWith('```')
-      ? text.replace(/^```(?:json)?\n?/u, '').replace(/```$/u, '').trim()
+      ? text
+          .replace(/^```(?:json)?\n?/u, '')
+          .replace(/```$/u, '')
+          .trim()
       : text;
     let parsed: unknown;
-    try { parsed = JSON.parse(stripped); } catch (err) {
+    try {
+      parsed = JSON.parse(stripped);
+    } catch (err) {
       throw new LlmResponseError(
         `AI ha risposto con un formato non valido (non JSON): ${err instanceof Error ? err.message : String(err)}`,
         stripped.slice(0, 1000),
@@ -288,7 +311,10 @@ export class AiExplainService {
     }
     const validated = ReplySchema.safeParse(parsed);
     if (!validated.success) {
-      throw new LlmResponseError('AI reply failed schema validation', { issues: validated.error.issues, raw: parsed });
+      throw new LlmResponseError('AI reply failed schema validation', {
+        issues: validated.error.issues,
+        raw: parsed,
+      });
     }
 
     // Observability: emit counter + latency histogram for /metrics scraping.
@@ -349,7 +375,8 @@ export class AiExplainService {
     if (validated.data.self_check) {
       result.self_check = {
         patch_keys_exist_in_nodedef: validated.data.self_check.patch_keys_exist_in_nodedef ?? false,
-        patch_modifies_only_target_node: validated.data.self_check.patch_modifies_only_target_node ?? false,
+        patch_modifies_only_target_node:
+          validated.data.self_check.patch_modifies_only_target_node ?? false,
         explanation_cites_evidence: validated.data.self_check.explanation_cites_evidence ?? false,
       };
     }
@@ -391,7 +418,9 @@ function validatePatchAgainstWorkflow(
     }
     const def = node.defId ? catalog.get(node.defId) : undefined;
     if (!def) {
-      issues.push(`updateNodes: defId "${node.defId ?? '?'}" del nodo "${upd.id}" non è nel catalog`);
+      issues.push(
+        `updateNodes: defId "${node.defId ?? '?'}" del nodo "${upd.id}" non è nel catalog`,
+      );
       continue;
     }
     const configPatch = (upd.patch as { config?: Record<string, unknown> })?.config;
@@ -399,7 +428,9 @@ function validatePatchAgainstWorkflow(
       const validKeys = new Set((def.configFields ?? []).map((f) => f.key));
       for (const key of Object.keys(configPatch)) {
         if (!validKeys.has(key)) {
-          issues.push(`updateNodes[${upd.id}].config.${key} → NON è un configField valido di "${def.id}". Accetta: ${[...validKeys].join(', ')}`);
+          issues.push(
+            `updateNodes[${upd.id}].config.${key} → NON è un configField valido di "${def.id}". Accetta: ${[...validKeys].join(', ')}`,
+          );
         }
       }
     }
@@ -424,8 +455,10 @@ function validatePatchAgainstWorkflow(
 function stdlibNodeDefsList(): { id: string; configFields?: { key: string }[] }[] {
   // Lazy import via require fallback isn't possible in ESM — already imported
   // via prompt builder. Use the export here.
-   
-  return (stdlibNodeDefsExport as unknown as () => { id: string; configFields?: { key: string }[] }[])();
+
+  return (
+    stdlibNodeDefsExport as unknown as () => { id: string; configFields?: { key: string }[] }[]
+  )();
 }
 
 /** Module-level singleton. Service is stateless. */

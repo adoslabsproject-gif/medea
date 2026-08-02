@@ -62,7 +62,10 @@ const SAMPLE_WF = {
     { id: 'q', defId: 'db_query' },
     { id: 'm', defId: 'action_send_email' },
   ],
-  edges: [{ from: 'c', to: 'q' }, { from: 'q', to: 'm' }],
+  edges: [
+    { from: 'c', to: 'q' },
+    { from: 'q', to: 'm' },
+  ],
 };
 
 describe('TemplateCacheService.save', () => {
@@ -126,7 +129,7 @@ describe('TemplateCacheService.retrieve', () => {
     });
     const r = svc.retrieve({ promptText: 'invia report email giornaliero alle 9' });
     expect(r).not.toBeNull();
-    expect(r!.score).toBeGreaterThan(0.30);
+    expect(r!.score).toBeGreaterThan(0.3);
     expect(r!.signals.promptJaccard).toBeGreaterThan(0.9);
   });
 
@@ -162,7 +165,7 @@ describe('TemplateCacheService.retrieve', () => {
     });
     expect(r).not.toBeNull();
     expect(r!.signals.cosine).toBeCloseTo(1, 5);
-    expect(r!.score).toBeGreaterThan(0.40);
+    expect(r!.score).toBeGreaterThan(0.4);
   });
 
   it('candidate ordering: best score vince', () => {
@@ -171,7 +174,10 @@ describe('TemplateCacheService.retrieve', () => {
       promptText: 'pdf scan invoice',
       workflow: {
         name: 'A',
-        nodes: [{ id: 't', defId: 'trigger_webhook' }, { id: 'p', defId: 'action_pdf_parse' }],
+        nodes: [
+          { id: 't', defId: 'trigger_webhook' },
+          { id: 'p', defId: 'action_pdf_parse' },
+        ],
         edges: [{ from: 't', to: 'p' }],
       },
       workflowJson: '{}',

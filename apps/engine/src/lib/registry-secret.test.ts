@@ -28,7 +28,10 @@ const ENV_KEYS = [
 const saved: Record<string, string | undefined> = {};
 
 beforeEach(() => {
-  for (const k of ENV_KEYS) { saved[k] = process.env[k]; delete process.env[k]; }
+  for (const k of ENV_KEYS) {
+    saved[k] = process.env[k];
+    delete process.env[k];
+  }
 });
 afterEach(() => {
   for (const k of ENV_KEYS) {

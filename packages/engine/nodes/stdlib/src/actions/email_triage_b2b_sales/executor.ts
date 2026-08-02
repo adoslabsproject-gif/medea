@@ -21,7 +21,9 @@ export const emailTriageB2BSalesExecutor: NodeExecutor = async (rawConfig, input
   const from = pickString(obj?.[cfg.fromField]);
 
   const classifyArgs: Parameters<typeof classifyB2BSalesReply>[0] = {
-    subject, body, lang: cfg.lang,
+    subject,
+    body,
+    lang: cfg.lang,
   };
   if (from !== null) classifyArgs.from = from;
   const result = classifyB2BSalesReply(classifyArgs);

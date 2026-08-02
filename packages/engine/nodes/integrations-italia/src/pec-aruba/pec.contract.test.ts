@@ -18,8 +18,17 @@ import { pecArubaSend, pecArubaReceive } from './index.js';
 describe('italia_pec_aruba_receive — contract description ⊆ output reale (anti-drift)', () => {
   const description = pecArubaReceive.def.description ?? '';
 
-  it('🚨 dichiara i campi di output REALMENTE prodotti dall\'executor', () => {
-    for (const field of ['messageId', 'from', 'to', 'subject', 'body', 'attachments', 'pecHeaders', 'pecType']) {
+  it("🚨 dichiara i campi di output REALMENTE prodotti dall'executor", () => {
+    for (const field of [
+      'messageId',
+      'from',
+      'to',
+      'subject',
+      'body',
+      'attachments',
+      'pecHeaders',
+      'pecType',
+    ]) {
       expect(description, `campo "${field}" non documentato`).toContain(field);
     }
   });

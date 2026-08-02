@@ -5,7 +5,13 @@
  */
 
 import { Redis } from 'ioredis';
-import type { Database, MigrationAction, QueryFilter, QuerySpec, Table } from '@medea/engine-db-studio-core';
+import type {
+  Database,
+  MigrationAction,
+  QueryFilter,
+  QuerySpec,
+  Table,
+} from '@medea/engine-db-studio-core';
 import type { IDatabaseAdapter, QueryResult, ExecuteResult } from '@medea/engine-db-studio-engine';
 
 /** Coercizione sicura unknown→string per chiavi/sort (mai "[object Object]"). */
@@ -13,22 +19,44 @@ function toStr(v: unknown): string {
   if (typeof v === 'string') return v;
   if (typeof v === 'number' || typeof v === 'boolean' || typeof v === 'bigint') return String(v);
   if (v == null) return '';
-  try { return JSON.stringify(v); } catch { return ''; }
+  try {
+    return JSON.stringify(v);
+  } catch {
+    return '';
+  }
 }
 
 function matchFilter(row: Record<string, unknown>, filters: readonly QueryFilter[]): boolean {
   for (const f of filters) {
     const v = row[f.column];
     switch (f.op) {
-      case 'eq': if (v !== f.value) return false; break;
-      case 'neq': if (v === f.value) return false; break;
-      case 'gt': if (!((v as number | string) > (f.value as number | string))) return false; break;
-      case 'gte': if (!((v as number | string) >= (f.value as number | string))) return false; break;
-      case 'lt': if (!((v as number | string) < (f.value as number | string))) return false; break;
-      case 'lte': if (!((v as number | string) <= (f.value as number | string))) return false; break;
-      case 'like': if (typeof v !== 'string' || !v.includes(String(f.value))) return false; break;
-      case 'isNull': if (v !== null && v !== undefined) return false; break;
-      case 'notNull': if (v === null || v === undefined) return false; break;
+      case 'eq':
+        if (v !== f.value) return false;
+        break;
+      case 'neq':
+        if (v === f.value) return false;
+        break;
+      case 'gt':
+        if (!((v as number | string) > (f.value as number | string))) return false;
+        break;
+      case 'gte':
+        if (!((v as number | string) >= (f.value as number | string))) return false;
+        break;
+      case 'lt':
+        if (!((v as number | string) < (f.value as number | string))) return false;
+        break;
+      case 'lte':
+        if (!((v as number | string) <= (f.value as number | string))) return false;
+        break;
+      case 'like':
+        if (typeof v !== 'string' || !v.includes(String(f.value))) return false;
+        break;
+      case 'isNull':
+        if (v !== null && v !== undefined) return false;
+        break;
+      case 'notNull':
+        if (v === null || v === undefined) return false;
+        break;
       case 'in': {
         const arr = Array.isArray(f.value) ? f.value : [f.value];
         if (!arr.includes(v)) return false;
@@ -65,10 +93,14 @@ export class RedisAdapter implements IDatabaseAdapter {
   }
 
   previewMigration(_actions: readonly MigrationAction[]): Promise<string> {
-    return Promise.resolve('// Redis is schema-less. Migrations are no-ops; key prefixes are created implicitly on first write.');
+    return Promise.resolve(
+      '// Redis is schema-less. Migrations are no-ops; key prefixes are created implicitly on first write.',
+    );
   }
 
-  applyMigration(actions: readonly MigrationAction[]): Promise<{ sql: string; affectedTables: string[] }> {
+  applyMigration(
+    actions: readonly MigrationAction[],
+  ): Promise<{ sql: string; affectedTables: string[] }> {
     const affected = new Set<string>();
     for (const a of actions) {
       if (a.kind === 'create_table') affected.add(a.table.name);
@@ -108,13 +140,17 @@ export class RedisAdapter implements IDatabaseAdapter {
       : filtered;
     const offset = spec.offset ?? 0;
     const limit = spec.limit ?? sorted.length;
-    return { rows: sorted.slice(offset, offset + limit) as T[], rowCount: sorted.length, durationMs: Date.now() - start };
+    return {
+      rows: sorted.slice(offset, offset + limit) as T[],
+      rowCount: sorted.length,
+      durationMs: Date.now() - start,
+    };
   }
 
   async insert(tableName: string, row: Record<string, unknown>): Promise<ExecuteResult> {
     const client = this.requireClient();
     const start = Date.now();
-    const id = row.id ?? (row._id) ?? crypto.randomUUID();
+    const id = row.id ?? row._id ?? crypto.randomUUID();
     const key = `${tableName}:${toStr(id)}`;
     const entries: string[] = [];
     for (const [k, v] of Object.entries(row)) {
@@ -124,7 +160,11 @@ export class RedisAdapter implements IDatabaseAdapter {
     return { affectedRows: 1, insertedId: toStr(id), durationMs: Date.now() - start };
   }
 
-  async update(tableName: string, where: Record<string, unknown>, patch: Record<string, unknown>): Promise<ExecuteResult> {
+  async update(
+    tableName: string,
+    where: Record<string, unknown>,
+    patch: Record<string, unknown>,
+  ): Promise<ExecuteResult> {
     const client = this.requireClient();
     const start = Date.now();
     const id = where.id ?? where._id;

@@ -13,7 +13,11 @@ import type { NodeModule, NodeExecutor } from '../../types.js';
 import { getField, numericStats, capItems, groupKeyString } from './helpers.js';
 
 /** Esito di un reducer: il valore + quanti item ha effettivamente processato/skippato. */
-interface ReduceResult { value: unknown; processed: number; skipped: number }
+interface ReduceResult {
+  value: unknown;
+  processed: number;
+  skipped: number;
+}
 type Reducer = (arr: readonly unknown[], field: string | undefined) => ReduceResult;
 
 /** Mediana dei valori numerici (più robusta dell'avg in presenza di outlier). */
@@ -30,13 +34,36 @@ function median(values: readonly number[]): number {
 // finti falserebbero la media). count/concat/collect operano su tutti gli item.
 const REDUCERS: Record<string, Reducer> = {
   count: (arr) => ({ value: arr.length, processed: arr.length, skipped: 0 }),
-  sum: (arr, field) => { const s = numericStats(arr, field); return { value: s.sum, processed: s.count, skipped: s.skipped }; },
-  avg: (arr, field) => { const s = numericStats(arr, field); return { value: s.count === 0 ? 0 : s.sum / s.count, processed: s.count, skipped: s.skipped }; },
-  min: (arr, field) => { const s = numericStats(arr, field); return { value: s.count === 0 ? 0 : s.min, processed: s.count, skipped: s.skipped }; },
-  max: (arr, field) => { const s = numericStats(arr, field); return { value: s.count === 0 ? 0 : s.max, processed: s.count, skipped: s.skipped }; },
-  median: (arr, field) => { const s = numericStats(arr, field); return { value: median(s.values), processed: s.count, skipped: s.skipped }; },
-  concat: (arr, field) => ({ value: arr.map((it) => String(getField(it, field) ?? '')).join(','), processed: arr.length, skipped: 0 }),
-  collect: (arr, field) => ({ value: arr.map((it) => getField(it, field)), processed: arr.length, skipped: 0 }),
+  sum: (arr, field) => {
+    const s = numericStats(arr, field);
+    return { value: s.sum, processed: s.count, skipped: s.skipped };
+  },
+  avg: (arr, field) => {
+    const s = numericStats(arr, field);
+    return { value: s.count === 0 ? 0 : s.sum / s.count, processed: s.count, skipped: s.skipped };
+  },
+  min: (arr, field) => {
+    const s = numericStats(arr, field);
+    return { value: s.count === 0 ? 0 : s.min, processed: s.count, skipped: s.skipped };
+  },
+  max: (arr, field) => {
+    const s = numericStats(arr, field);
+    return { value: s.count === 0 ? 0 : s.max, processed: s.count, skipped: s.skipped };
+  },
+  median: (arr, field) => {
+    const s = numericStats(arr, field);
+    return { value: median(s.values), processed: s.count, skipped: s.skipped };
+  },
+  concat: (arr, field) => ({
+    value: arr.map((it) => String(getField(it, field) ?? '')).join(','),
+    processed: arr.length,
+    skipped: 0,
+  }),
+  collect: (arr, field) => ({
+    value: arr.map((it) => getField(it, field)),
+    processed: arr.length,
+    skipped: 0,
+  }),
 };
 
 const executor: NodeExecutor = async (config, input) => {
@@ -45,12 +72,16 @@ const executor: NodeExecutor = async (config, input) => {
   const reducerName = String(config.reducer ?? 'count');
   const reduce: Reducer = REDUCERS[reducerName] ?? REDUCERS.count!;
   const field = config.field !== undefined ? String(config.field) : undefined;
-  const groupByField = config.groupBy !== undefined && String(config.groupBy) !== ''
-    ? String(config.groupBy) : undefined;
+  const groupByField =
+    config.groupBy !== undefined && String(config.groupBy) !== ''
+      ? String(config.groupBy)
+      : undefined;
   // Precisione decimale per i reducer a media (avg/median): default 2 (€/percentuali).
   const precision = Math.max(0, Math.min(Number(config.precision ?? 2), 12));
   const roundIf = (v: unknown): unknown =>
-    (reducerName === 'avg' || reducerName === 'median') && typeof v === 'number' && Number.isFinite(v)
+    (reducerName === 'avg' || reducerName === 'median') &&
+    typeof v === 'number' &&
+    Number.isFinite(v)
       ? Number(v.toFixed(precision))
       : v;
 
@@ -71,7 +102,12 @@ const executor: NodeExecutor = async (config, input) => {
       reduced[k] = roundIf(r.value);
       skippedNonNumeric += r.skipped;
     }
-    output = { reduced, groupCount: Object.keys(groups).length, inputCount: items.length, skippedNonNumeric };
+    output = {
+      reduced,
+      groupCount: Object.keys(groups).length,
+      inputCount: items.length,
+      skippedNonNumeric,
+    };
   } else {
     const r = reduce(items, field);
     output = {
@@ -83,7 +119,11 @@ const executor: NodeExecutor = async (config, input) => {
     };
   }
 
-  return { output, durationMs: Date.now() - startedAt, ...(warning ? { warnings: [warning] } : {}) };
+  return {
+    output,
+    durationMs: Date.now() - startedAt,
+    ...(warning ? { warnings: [warning] } : {}),
+  };
 };
 
 export const aggregateNode: NodeModule = {
@@ -95,21 +135,21 @@ export const aggregateNode: NodeModule = {
     color: '#f59e0b',
     description:
       'Operatore enterprise di aggregazione (reducer) che collassa un array di N oggetti in un singolo valore ' +
-      'aggregato secondo una funzione di reduce configurabile — l\'equivalent della funzione SQL aggregate ' +
+      "aggregato secondo una funzione di reduce configurabile — l'equivalent della funzione SQL aggregate " +
       '(SUM, COUNT, AVG, MIN, MAX, GROUP_CONCAT) applicato in-memory ai workflow business. Sette funzioni di ' +
       'aggregazione coprono il 95% dei use case business analytics e reporting: ' +
       '(1) sum — somma totale dei valori numerici di un campo (es. expectedRevenue di crm.lead per il forecast ' +
       'di pipeline del mese), (2) count — conteggio degli item (con filtro opzionale "count where status=open"), ' +
       '(3) avg — media aritmetica con gestione precision (default 2 decimal places), (4) min/max — estremi del ' +
-      'dataset (utile per trovare l\'ordine più alto/basso, la fattura più recente/vecchia), (5) concat — ' +
+      "dataset (utile per trovare l'ordine più alto/basso, la fattura più recente/vecchia), (5) concat — " +
       'concatenazione di stringhe con separator configurabile (es. concat di tutti i nomi cliente del segmento ' +
       'separati da virgola per email digest), (6) collect — raccolta in array di tutti i valori di un campo ' +
-      '(es. tutti gli email del segmento per bulk send), (7) median — mediana statistica più robusta dell\'avg ' +
+      "(es. tutti gli email del segmento per bulk send), (7) median — mediana statistica più robusta dell'avg " +
       'in presenza di outlier che distorcono la media. ' +
-      'Group-by opzionale potentissimo: oltre all\'aggregazione globale sull\'intero array, è possibile ' +
+      "Group-by opzionale potentissimo: oltre all'aggregazione globale sull'intero array, è possibile " +
       'aggregare PER GRUPPO sulla base di un campo discriminante (es. somma amount per customer_id, count ' +
-      'orders per region, avg sentiment per source) — l\'output diventa una Map { group_key: aggregatedValue, ' +
-      '... } che è pronta per essere serializzata come tabella di summary report nell\'email cliente o nel ' +
+      "orders per region, avg sentiment per source) — l'output diventa una Map { group_key: aggregatedValue, " +
+      "... } che è pronta per essere serializzata come tabella di summary report nell'email cliente o nel " +
       'PDF mensile del controlling. Pattern composto group_by + aggregate è il workhorse delle pipeline ETL ' +
       'leggere che evitano di dover scrivere SQL diretto al database. ' +
       'Gestione robusta dei valori non-numeric: per sum/avg/min/max, gli item con valore null/undefined/' +
@@ -175,7 +215,7 @@ export const aggregateNode: NodeModule = {
         type: 'number',
         required: false,
         defaultValue: '100000',
-        help: 'Hard cap anti-OOM sul numero di item processati. Se l\'input supera questa soglia viene troncato e l\'aggregato è calcolato sui primi N (warning emesso). Default 100k, tetto 1M.',
+        help: "Hard cap anti-OOM sul numero di item processati. Se l'input supera questa soglia viene troncato e l'aggregato è calcolato sui primi N (warning emesso). Default 100k, tetto 1M.",
       },
     ],
     vendor: 'flowforge',

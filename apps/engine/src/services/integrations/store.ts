@@ -129,7 +129,9 @@ function normalizeLabel(label: string | null | undefined): string | null {
  * (tenant_id, provider, COALESCE(label,'')) — saving the "same" integration
  * twice rotates the credentials in place AND audits the rotation.
  */
-export async function saveIntegration(input: SaveIntegrationInput): Promise<{ id: string; rotated: boolean }> {
+export async function saveIntegration(
+  input: SaveIntegrationInput,
+): Promise<{ id: string; rotated: boolean }> {
   if (!input.tenantId) throw new Error('saveIntegration: tenantId is required');
   if (!input.provider) throw new Error('saveIntegration: provider is required');
   if (!input.credentials || typeof input.credentials !== 'object') {
@@ -177,7 +179,16 @@ export async function saveIntegration(input: SaveIntegrationInput): Promise<{ id
          (id, provider, tenant_id, label, credentials_encrypted, credentials_nonce, expires_at, created_by_user_id)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       )
-      .run(id, input.provider, input.tenantId, label, ciphertext, nonce, expiresAt, input.createdByUserId ?? null);
+      .run(
+        id,
+        input.provider,
+        input.tenantId,
+        label,
+        ciphertext,
+        nonce,
+        expiresAt,
+        input.createdByUserId ?? null,
+      );
   }
 
   await audit.append({
@@ -191,7 +202,10 @@ export async function saveIntegration(input: SaveIntegrationInput): Promise<{ id
     // there is irreversible.
     metadata: { provider: input.provider, label, expiresAt },
   });
-  logger.info({ provider: input.provider, tenantId: input.tenantId, label, rotated }, 'Integration saved');
+  logger.info(
+    { provider: input.provider, tenantId: input.tenantId, label, rotated },
+    'Integration saved',
+  );
   return { id, rotated };
 }
 
@@ -224,7 +238,9 @@ export function getIntegration(args: {
   // result is already consistent; an audit-trail race here doesn't matter).
   try {
     sqlite
-      .prepare(`UPDATE tenant_integrations SET last_used_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`)
+      .prepare(
+        `UPDATE tenant_integrations SET last_used_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`,
+      )
       .run(row.id);
   } catch (e) {
     logger.warn({ err: e, id: row.id }, 'Failed to update last_used_at — non-fatal');
@@ -263,7 +279,8 @@ export function updateIntegrationCredentials(args: {
   expiresAt?: number | null;
 }): Promise<boolean> {
   if (!args.id) return Promise.reject(new Error('updateIntegrationCredentials: id is required'));
-  if (!args.tenantId) return Promise.reject(new Error('updateIntegrationCredentials: tenantId is required'));
+  if (!args.tenantId)
+    return Promise.reject(new Error('updateIntegrationCredentials: tenantId is required'));
 
   const masterPwd = getMasterPasswordOrThrow();
   const plain = JSON.stringify(args.credentials);
@@ -323,7 +340,10 @@ export async function deleteIntegration(args: {
       resourceId: args.id,
       metadata: { provider: row.provider, label: row.label },
     });
-    logger.info({ provider: row.provider, tenantId: args.tenantId, label: row.label }, 'Integration deleted');
+    logger.info(
+      { provider: row.provider, tenantId: args.tenantId, label: row.label },
+      'Integration deleted',
+    );
   }
   return result.changes;
 }
@@ -341,7 +361,10 @@ export function listIntegrations(tenantId: string): IntegrationMetadata[] {
        FROM tenant_integrations WHERE tenant_id = ?
        ORDER BY provider ASC, updated_at DESC`,
     )
-    .all(tenantId) as Omit<IntegrationRow, 'credentials_encrypted' | 'credentials_nonce' | 'tenant_id'>[];
+    .all(tenantId) as Omit<
+    IntegrationRow,
+    'credentials_encrypted' | 'credentials_nonce' | 'tenant_id'
+  >[];
 
   return rows.map((r) => ({
     id: r.id,

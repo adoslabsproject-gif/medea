@@ -3,7 +3,16 @@ import { groupByNode } from './group-by.js';
 import { aggregateNode } from './aggregate.js';
 import { distinctNode } from './distinct.js';
 import { windowNode } from './window.js';
-import { normalizeItems, getField, toNumber, toNumberOrNull, capItems, resolveMaxItems, DEFAULT_MAX_ITEMS, HARD_MAX_ITEMS } from './helpers.js';
+import {
+  normalizeItems,
+  getField,
+  toNumber,
+  toNumberOrNull,
+  capItems,
+  resolveMaxItems,
+  DEFAULT_MAX_ITEMS,
+  HARD_MAX_ITEMS,
+} from './helpers.js';
 
 const ctx = { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {} } as never;
 
@@ -83,7 +92,11 @@ describe('groupByNode', () => {
       { id: 3, customer: 'A' },
     ];
     const r = await exec({ groupKey: 'customer' }, items, ctx);
-    const out = r.output as { groups: Record<string, unknown[]>; groupCount: number; totalItems: number };
+    const out = r.output as {
+      groups: Record<string, unknown[]>;
+      groupCount: number;
+      totalItems: number;
+    };
     expect(out.groupCount).toBe(2);
     expect(out.totalItems).toBe(3);
     expect(out.groups.A).toHaveLength(2);
@@ -114,11 +127,15 @@ describe('aggregateNode', () => {
   const exec = aggregateNode.executor!;
 
   it('🚨 groupBy field con valore "__proto__" → NESSUN crash (Object.create(null))', async () => {
-    const r = await exec({ reducer: 'sum', field: 'amount', groupBy: 'k' }, [
-      { k: '__proto__', amount: 10 },
-      { k: '__proto__', amount: 5 },
-      { k: 'normal', amount: 1 },
-    ], ctx);
+    const r = await exec(
+      { reducer: 'sum', field: 'amount', groupBy: 'k' },
+      [
+        { k: '__proto__', amount: 10 },
+        { k: '__proto__', amount: 5 },
+        { k: 'normal', amount: 1 },
+      ],
+      ctx,
+    );
     const out = r.output as { reduced: Record<string, unknown>; groupCount: number };
     expect(out.groupCount).toBe(2);
     expect(out.reduced.__proto__).toBe(15);
@@ -131,9 +148,11 @@ describe('aggregateNode', () => {
   });
 
   it('sum su field', async () => {
-    const r = await exec({ reducer: 'sum', field: 'amount' }, [
-      { amount: 10 }, { amount: 20 }, { amount: 30 },
-    ], ctx);
+    const r = await exec(
+      { reducer: 'sum', field: 'amount' },
+      [{ amount: 10 }, { amount: 20 }, { amount: 30 }],
+      ctx,
+    );
     expect((r.output as { value: number }).value).toBe(60);
   });
 
@@ -152,8 +171,12 @@ describe('aggregateNode', () => {
 
   it('min/max corretti (caso base + tutti negativi)', async () => {
     const data = [{ v: -5 }, { v: -1 }, { v: -9 }];
-    expect(((await exec({ reducer: 'min', field: 'v' }, data, ctx)).output as { value: number }).value).toBe(-9);
-    expect(((await exec({ reducer: 'max', field: 'v' }, data, ctx)).output as { value: number }).value).toBe(-1);
+    expect(
+      ((await exec({ reducer: 'min', field: 'v' }, data, ctx)).output as { value: number }).value,
+    ).toBe(-9);
+    expect(
+      ((await exec({ reducer: 'max', field: 'v' }, data, ctx)).output as { value: number }).value,
+    ).toBe(-1);
   });
 
   it('avg corretto', async () => {
@@ -168,23 +191,33 @@ describe('aggregateNode', () => {
 
   it('min/max', async () => {
     const items = [{ v: 5 }, { v: 1 }, { v: 9 }];
-    expect(((await exec({ reducer: 'min', field: 'v' }, items, ctx)).output as { value: number }).value).toBe(1);
-    expect(((await exec({ reducer: 'max', field: 'v' }, items, ctx)).output as { value: number }).value).toBe(9);
+    expect(
+      ((await exec({ reducer: 'min', field: 'v' }, items, ctx)).output as { value: number }).value,
+    ).toBe(1);
+    expect(
+      ((await exec({ reducer: 'max', field: 'v' }, items, ctx)).output as { value: number }).value,
+    ).toBe(9);
   });
 
   it('concat join CSV', async () => {
-    const r = await exec({ reducer: 'concat', field: 'name' }, [
-      { name: 'alice' }, { name: 'bob' }, { name: 'carol' },
-    ], ctx);
+    const r = await exec(
+      { reducer: 'concat', field: 'name' },
+      [{ name: 'alice' }, { name: 'bob' }, { name: 'carol' }],
+      ctx,
+    );
     expect((r.output as { value: string }).value).toBe('alice,bob,carol');
   });
 
   it('group-by + sum per gruppo', async () => {
-    const r = await exec({ reducer: 'sum', field: 'amount', groupBy: 'customer' }, [
-      { customer: 'A', amount: 10 },
-      { customer: 'B', amount: 20 },
-      { customer: 'A', amount: 5 },
-    ], ctx);
+    const r = await exec(
+      { reducer: 'sum', field: 'amount', groupBy: 'customer' },
+      [
+        { customer: 'A', amount: 10 },
+        { customer: 'B', amount: 20 },
+        { customer: 'A', amount: 5 },
+      ],
+      ctx,
+    );
     const out = r.output as { reduced: Record<string, number>; groupCount: number };
     expect(out.reduced.A).toBe(15);
     expect(out.reduced.B).toBe(20);
@@ -209,11 +242,15 @@ describe('distinctNode', () => {
   });
 
   it('dedup per campo (preserva primo match)', async () => {
-    const r = await exec({ field: 'email' }, [
-      { email: 'a@x', name: 'first' },
-      { email: 'b@x', name: 'other' },
-      { email: 'a@x', name: 'second' },
-    ], ctx);
+    const r = await exec(
+      { field: 'email' },
+      [
+        { email: 'a@x', name: 'first' },
+        { email: 'b@x', name: 'other' },
+        { email: 'a@x', name: 'second' },
+      ],
+      ctx,
+    );
     const out = r.output as { items: { name: string }[]; distinct: number };
     expect(out.distinct).toBe(2);
     expect(out.items[0]?.name).toBe('first');
@@ -258,11 +295,17 @@ describe('windowNode', () => {
   });
 
   it('🚨 timestamp invalido → tracciato in undated (NON perso in silenzio)', async () => {
-    const r = await exec({ timestampField: 'ts', windowSeconds: 3600 }, [
-      { ts: 'not a date' },
-      { ts: '2026-05-20T12:00:00Z' },
-    ], ctx);
-    const out = r.output as { totalItems: number; windowCount: number; undated: unknown[]; undatedCount: number };
+    const r = await exec(
+      { timestampField: 'ts', windowSeconds: 3600 },
+      [{ ts: 'not a date' }, { ts: '2026-05-20T12:00:00Z' }],
+      ctx,
+    );
+    const out = r.output as {
+      totalItems: number;
+      windowCount: number;
+      undated: unknown[];
+      undatedCount: number;
+    };
     expect(out.totalItems).toBe(2);
     expect(out.windowCount).toBe(1); // solo la finestra temporale valida
     // MUTATION: il vecchio comportamento scartava l'item invalido → undated sarebbe [].
@@ -272,22 +315,36 @@ describe('windowNode', () => {
 
   describe('🔬 granularità di CALENDARIO timezone-aware', () => {
     it('default = fixed: comportamento UTC invariato (non-regressione) + windowSizeSec presente', async () => {
-      const r = await exec({ timestampField: 'ts', windowSeconds: 3600 }, [
-        { ts: '2026-05-20T12:30:00Z' }, { ts: '2026-05-20T12:45:00Z' },
-      ], ctx);
-      const out = r.output as { windows: Record<string, unknown[]>; windowSizeSec: number; granularity: string };
+      const r = await exec(
+        { timestampField: 'ts', windowSeconds: 3600 },
+        [{ ts: '2026-05-20T12:30:00Z' }, { ts: '2026-05-20T12:45:00Z' }],
+        ctx,
+      );
+      const out = r.output as {
+        windows: Record<string, unknown[]>;
+        windowSizeSec: number;
+        granularity: string;
+      };
       expect(out.granularity).toBe('fixed');
       expect(out.windowSizeSec).toBe(3600);
       expect(out.windows['2026-05-20T12:00:00.000Z']).toHaveLength(2);
     });
 
     it('🚨 granularity=day timezone Europe/Rome: bucket alla mezzanotte LOCALE', async () => {
-      const r = await exec({ timestampField: 'ts', granularity: 'day', timezone: 'Europe/Rome' }, [
-        { ts: '2026-05-19T23:30:00Z' }, // 01:30 locale 20/5
-        { ts: '2026-05-20T20:00:00Z' }, // 22:00 locale 20/5  → STESSO giorno locale
-        { ts: '2026-05-20T22:30:00Z' }, // 00:30 locale 21/5  → giorno DOPO
-      ], ctx);
-      const out = r.output as { windows: Record<string, unknown[]>; windowCount: number; timezone: string };
+      const r = await exec(
+        { timestampField: 'ts', granularity: 'day', timezone: 'Europe/Rome' },
+        [
+          { ts: '2026-05-19T23:30:00Z' }, // 01:30 locale 20/5
+          { ts: '2026-05-20T20:00:00Z' }, // 22:00 locale 20/5  → STESSO giorno locale
+          { ts: '2026-05-20T22:30:00Z' }, // 00:30 locale 21/5  → giorno DOPO
+        ],
+        ctx,
+      );
+      const out = r.output as {
+        windows: Record<string, unknown[]>;
+        windowCount: number;
+        timezone: string;
+      };
       expect(out.timezone).toBe('Europe/Rome');
       expect(out.windowCount).toBe(2);
       expect(out.windows['2026-05-19T22:00:00.000Z']).toHaveLength(2); // i primi due
@@ -295,18 +352,26 @@ describe('windowNode', () => {
     });
 
     it('granularity=month raggruppa per mese di calendario', async () => {
-      const r = await exec({ timestampField: 'ts', granularity: 'month', timezone: 'UTC' }, [
-        { ts: '2026-05-02T00:00:00Z' }, { ts: '2026-05-30T23:00:00Z' }, { ts: '2026-06-01T00:00:00Z' },
-      ], ctx);
+      const r = await exec(
+        { timestampField: 'ts', granularity: 'month', timezone: 'UTC' },
+        [
+          { ts: '2026-05-02T00:00:00Z' },
+          { ts: '2026-05-30T23:00:00Z' },
+          { ts: '2026-06-01T00:00:00Z' },
+        ],
+        ctx,
+      );
       const out = r.output as { windowCount: number; windows: Record<string, unknown[]> };
       expect(out.windowCount).toBe(2);
       expect(out.windows['2026-05-01T00:00:00.000Z']).toHaveLength(2);
     });
 
     it('timezone non valida → fail-soft su UTC (no throw)', async () => {
-      const r = await exec({ timestampField: 'ts', granularity: 'day', timezone: 'Bogus/Zone' }, [
-        { ts: '2026-05-20T12:00:00Z' },
-      ], ctx);
+      const r = await exec(
+        { timestampField: 'ts', granularity: 'day', timezone: 'Bogus/Zone' },
+        [{ ts: '2026-05-20T12:00:00Z' }],
+        ctx,
+      );
       const out = r.output as { timezone: string; windows: Record<string, unknown[]> };
       expect(out.timezone).toBe('UTC');
       expect(out.windows['2026-05-20T00:00:00.000Z']).toHaveLength(1);
@@ -361,15 +426,21 @@ describe('🛡️ cap difensivo anti-OOM (maxItems)', () => {
 
   // Integrazione per-nodo: mutation-verify → senza cap il conteggio sarebbe 5.
   it('🚨 aggregate: count su 5 item con maxItems=3 → value=3 + warning', async () => {
-    const r = await aggregateNode.executor!({ reducer: 'count', maxItems: 3 }, [1, 2, 3, 4, 5], ctx);
+    const r = await aggregateNode.executor!(
+      { reducer: 'count', maxItems: 3 },
+      [1, 2, 3, 4, 5],
+      ctx,
+    );
     expect((r.output as { value: number }).value).toBe(3);
     expect(r.warnings?.[0]).toMatch(/troncato/i);
   });
 
   it('🚨 group_by: 5 item maxItems=2 → totalItems=2 + warning', async () => {
-    const r = await groupByNode.executor!({ groupKey: 'k', maxItems: 2 }, [
-      { k: 'a' }, { k: 'b' }, { k: 'c' }, { k: 'd' }, { k: 'e' },
-    ], ctx);
+    const r = await groupByNode.executor!(
+      { groupKey: 'k', maxItems: 2 },
+      [{ k: 'a' }, { k: 'b' }, { k: 'c' }, { k: 'd' }, { k: 'e' }],
+      ctx,
+    );
     expect((r.output as { totalItems: number }).totalItems).toBe(2);
     expect(r.warnings).toHaveLength(1);
   });
@@ -381,10 +452,17 @@ describe('🛡️ cap difensivo anti-OOM (maxItems)', () => {
   });
 
   it('🚨 window: 5 item maxItems=2 → totalItems=2 + warning', async () => {
-    const r = await windowNode.executor!({ timestampField: 'ts', windowSeconds: 3600, maxItems: 2 }, [
-      { ts: '2026-05-20T12:00:00Z' }, { ts: '2026-05-20T12:10:00Z' }, { ts: '2026-05-20T12:20:00Z' },
-      { ts: '2026-05-20T12:30:00Z' }, { ts: '2026-05-20T12:40:00Z' },
-    ], ctx);
+    const r = await windowNode.executor!(
+      { timestampField: 'ts', windowSeconds: 3600, maxItems: 2 },
+      [
+        { ts: '2026-05-20T12:00:00Z' },
+        { ts: '2026-05-20T12:10:00Z' },
+        { ts: '2026-05-20T12:20:00Z' },
+        { ts: '2026-05-20T12:30:00Z' },
+        { ts: '2026-05-20T12:40:00Z' },
+      ],
+      ctx,
+    );
     expect((r.output as { totalItems: number }).totalItems).toBe(2);
     expect(r.warnings).toHaveLength(1);
   });
@@ -457,8 +535,17 @@ describe('🔬 toNumberOrNull — distinzione non-numerico + locale IT', () => {
 describe('🔬 aggregate — skip dei valori NON-numerici', () => {
   const exec = aggregateNode.executor!;
   it('sum ignora i non-numerici e li conta in skippedNonNumeric', async () => {
-    const r = await exec({ reducer: 'sum', field: 'a' }, [{ a: 10 }, { a: 'x' }, { a: 20 }, { a: null }], ctx);
-    const out = r.output as { value: number; processedCount: number; skippedNonNumeric: number; inputCount: number };
+    const r = await exec(
+      { reducer: 'sum', field: 'a' },
+      [{ a: 10 }, { a: 'x' }, { a: 20 }, { a: null }],
+      ctx,
+    );
+    const out = r.output as {
+      value: number;
+      processedCount: number;
+      skippedNonNumeric: number;
+      inputCount: number;
+    };
     expect(out.value).toBe(30);
     expect(out.processedCount).toBe(2);
     expect(out.skippedNonNumeric).toBe(2);
@@ -471,8 +558,12 @@ describe('🔬 aggregate — skip dei valori NON-numerici', () => {
   });
   it('min/max ignorano i non-numerici (no -Infinity/+Infinity spurio)', async () => {
     const data = [{ v: 'na' }, { v: 5 }, { v: 'boh' }, { v: 2 }];
-    expect(((await exec({ reducer: 'min', field: 'v' }, data, ctx)).output as { value: number }).value).toBe(2);
-    expect(((await exec({ reducer: 'max', field: 'v' }, data, ctx)).output as { value: number }).value).toBe(5);
+    expect(
+      ((await exec({ reducer: 'min', field: 'v' }, data, ctx)).output as { value: number }).value,
+    ).toBe(2);
+    expect(
+      ((await exec({ reducer: 'max', field: 'v' }, data, ctx)).output as { value: number }).value,
+    ).toBe(5);
   });
   it('tutti non-numerici → value 0 (no NaN/Infinity in output)', async () => {
     const r = await exec({ reducer: 'avg', field: 'v' }, [{ v: 'a' }, { v: 'b' }], ctx);
@@ -481,9 +572,11 @@ describe('🔬 aggregate — skip dei valori NON-numerici', () => {
     expect(out.skippedNonNumeric).toBe(2);
   });
   it('importi in formato italiano sommati correttamente', async () => {
-    const r = await exec({ reducer: 'sum', field: 'imponibile' }, [
-      { imponibile: '1.234,56' }, { imponibile: '1.000,00' },
-    ], ctx);
+    const r = await exec(
+      { reducer: 'sum', field: 'imponibile' },
+      [{ imponibile: '1.234,56' }, { imponibile: '1.000,00' }],
+      ctx,
+    );
     expect((r.output as { value: number }).value).toBeCloseTo(2234.56, 2);
   });
 });
@@ -491,46 +584,66 @@ describe('🔬 aggregate — skip dei valori NON-numerici', () => {
 describe('🔬 aggregate — reducer median + collect (erano descritti ma inesistenti)', () => {
   const exec = aggregateNode.executor!;
   it('median dispari → elemento centrale', async () => {
-    const r = await exec({ reducer: 'median', field: 'v' }, [{ v: 3 }, { v: 1 }, { v: 2 }, { v: 5 }, { v: 4 }], ctx);
+    const r = await exec(
+      { reducer: 'median', field: 'v' },
+      [{ v: 3 }, { v: 1 }, { v: 2 }, { v: 5 }, { v: 4 }],
+      ctx,
+    );
     expect((r.output as { value: number }).value).toBe(3);
   });
   it('median pari → media dei due centrali', async () => {
-    const r = await exec({ reducer: 'median', field: 'v' }, [{ v: 1 }, { v: 2 }, { v: 3 }, { v: 4 }], ctx);
+    const r = await exec(
+      { reducer: 'median', field: 'v' },
+      [{ v: 1 }, { v: 2 }, { v: 3 }, { v: 4 }],
+      ctx,
+    );
     expect((r.output as { value: number }).value).toBe(2.5);
   });
   it('median robusta agli outlier (vs avg)', async () => {
     const data = [{ v: 1 }, { v: 2 }, { v: 3 }, { v: 1000 }];
-    const med = (await exec({ reducer: 'median', field: 'v' }, data, ctx)).output as { value: number };
+    const med = (await exec({ reducer: 'median', field: 'v' }, data, ctx)).output as {
+      value: number;
+    };
     const avg = (await exec({ reducer: 'avg', field: 'v' }, data, ctx)).output as { value: number };
     expect(med.value).toBe(2.5);
     expect(avg.value).toBe(251.5); // l'outlier 1000 trascina la media, non la mediana
   });
   it('collect → array dei valori del campo (preserva ordine e duplicati)', async () => {
-    const r = await exec({ reducer: 'collect', field: 'email' }, [
-      { email: 'a@x' }, { email: 'b@x' }, { email: 'a@x' },
-    ], ctx);
+    const r = await exec(
+      { reducer: 'collect', field: 'email' },
+      [{ email: 'a@x' }, { email: 'b@x' }, { email: 'a@x' }],
+      ctx,
+    );
     expect((r.output as { value: string[] }).value).toEqual(['a@x', 'b@x', 'a@x']);
   });
 });
 
 describe('🔬 group_by / aggregate — group-by su path ANNIDATO', () => {
   it('group_by per "user.country"', async () => {
-    const r = await groupByNode.executor!({ groupKey: 'user.country' }, [
-      { id: 1, user: { country: 'IT' } },
-      { id: 2, user: { country: 'ES' } },
-      { id: 3, user: { country: 'IT' } },
-    ], ctx);
+    const r = await groupByNode.executor!(
+      { groupKey: 'user.country' },
+      [
+        { id: 1, user: { country: 'IT' } },
+        { id: 2, user: { country: 'ES' } },
+        { id: 3, user: { country: 'IT' } },
+      ],
+      ctx,
+    );
     const out = r.output as { groups: Record<string, unknown[]>; groupCount: number };
     expect(out.groupCount).toBe(2);
     expect(out.groups.IT).toHaveLength(2);
     expect(out.groups.ES).toHaveLength(1);
   });
   it('aggregate sum group-by "addr.region"', async () => {
-    const r = await aggregateNode.executor!({ reducer: 'sum', field: 'amount', groupBy: 'addr.region' }, [
-      { addr: { region: 'Lazio' }, amount: 10 },
-      { addr: { region: 'Lazio' }, amount: 5 },
-      { addr: { region: 'Lombardia' }, amount: 20 },
-    ], ctx);
+    const r = await aggregateNode.executor!(
+      { reducer: 'sum', field: 'amount', groupBy: 'addr.region' },
+      [
+        { addr: { region: 'Lazio' }, amount: 10 },
+        { addr: { region: 'Lazio' }, amount: 5 },
+        { addr: { region: 'Lombardia' }, amount: 20 },
+      ],
+      ctx,
+    );
     const out = r.output as { reduced: Record<string, number> };
     expect(out.reduced.Lazio).toBe(15);
     expect(out.reduced.Lombardia).toBe(20);
@@ -541,24 +654,36 @@ describe('🔬 distinct — equivalenza strutturale CANONICA', () => {
   const exec = distinctNode.executor!;
   it('🚨 MUTATION: {a:1,b:2} e {b:2,a:1} sono DUPLICATI (key-order irrilevante)', async () => {
     // Col JSON.stringify nativo le due stringhe differivano → non deduplicati (bug).
-    const r = await exec({}, [{ a: 1, b: 2 }, { b: 2, a: 1 }, { a: 1, b: 3 }], ctx);
+    const r = await exec(
+      {},
+      [
+        { a: 1, b: 2 },
+        { b: 2, a: 1 },
+        { a: 1, b: 3 },
+      ],
+      ctx,
+    );
     const out = r.output as { items: unknown[]; distinct: number };
     expect(out.distinct).toBe(2);
-    expect(out.items).toEqual([{ a: 1, b: 2 }, { a: 1, b: 3 }]);
+    expect(out.items).toEqual([
+      { a: 1, b: 2 },
+      { a: 1, b: 3 },
+    ]);
   });
   it('canonicalizzazione ricorsiva (oggetti annidati)', async () => {
-    const r = await exec({}, [
-      { x: { p: 1, q: 2 } },
-      { x: { q: 2, p: 1 } },
-    ], ctx);
+    const r = await exec({}, [{ x: { p: 1, q: 2 } }, { x: { q: 2, p: 1 } }], ctx);
     expect((r.output as { distinct: number }).distinct).toBe(1);
   });
   it('dedup per campo nested ("user.email")', async () => {
-    const r = await exec({ field: 'user.email' }, [
-      { user: { email: 'a@x' }, n: 1 },
-      { user: { email: 'a@x' }, n: 2 },
-      { user: { email: 'b@x' }, n: 3 },
-    ], ctx);
+    const r = await exec(
+      { field: 'user.email' },
+      [
+        { user: { email: 'a@x' }, n: 1 },
+        { user: { email: 'a@x' }, n: 2 },
+        { user: { email: 'b@x' }, n: 3 },
+      ],
+      ctx,
+    );
     expect((r.output as { distinct: number }).distinct).toBe(2);
   });
   it('🛡️ input con riferimento circolare → NON crasha (marcato [Circular])', async () => {
@@ -579,10 +704,16 @@ describe('🔬 distinct — equivalenza strutturale CANONICA', () => {
 describe('🔬 group_by — counts / largestGroup / smallestGroup / floatPrecision', () => {
   const exec = groupByNode.executor!;
   it('counts per gruppo + gruppo più grande/piccolo', async () => {
-    const r = await exec({ groupKey: 'c' }, [
-      { c: 'A' }, { c: 'A' }, { c: 'A' }, { c: 'B' }, { c: 'C' }, { c: 'C' },
-    ], ctx);
-    const out = r.output as { counts: Record<string, number>; largestGroup: string; smallestGroup: string };
+    const r = await exec(
+      { groupKey: 'c' },
+      [{ c: 'A' }, { c: 'A' }, { c: 'A' }, { c: 'B' }, { c: 'C' }, { c: 'C' }],
+      ctx,
+    );
+    const out = r.output as {
+      counts: Record<string, number>;
+      largestGroup: string;
+      smallestGroup: string;
+    };
     expect(out.counts).toEqual({ A: 3, B: 1, C: 2 });
     expect(out.largestGroup).toBe('A');
     expect(out.smallestGroup).toBe('B');
@@ -601,19 +732,25 @@ describe('🔬 group_by — counts / largestGroup / smallestGroup / floatPrecisi
 describe('🔬 distinct — multi-key / normalize / removalPercent / exampleDuplicates', () => {
   const exec = distinctNode.executor!;
   it('🚨 dedup composta su più campi "vat,country"', async () => {
-    const r = await exec({ field: 'vat,country' }, [
-      { vat: '1', country: 'IT', n: 1 },
-      { vat: '1', country: 'ES', n: 2 },
-      { vat: '1', country: 'IT', n: 3 },
-    ], ctx);
+    const r = await exec(
+      { field: 'vat,country' },
+      [
+        { vat: '1', country: 'IT', n: 1 },
+        { vat: '1', country: 'ES', n: 2 },
+        { vat: '1', country: 'IT', n: 3 },
+      ],
+      ctx,
+    );
     const out = r.output as { distinct: number; items: { n: number }[] };
     expect(out.distinct).toBe(2);
     expect(out.items.map((i) => i.n)).toEqual([1, 2]);
   });
   it('🚨 normalize: email case/space-insensitive', async () => {
-    const r = await exec({ field: 'email', normalize: true }, [
-      { email: 'Mario@X.com' }, { email: 'mario@x.com ' }, { email: 'altro@x.com' },
-    ], ctx);
+    const r = await exec(
+      { field: 'email', normalize: true },
+      [{ email: 'Mario@X.com' }, { email: 'mario@x.com ' }, { email: 'altro@x.com' }],
+      ctx,
+    );
     expect((r.output as { distinct: number }).distinct).toBe(2);
   });
   it('normalize OFF (default): "Mario@X" e "mario@x" sono distinti', async () => {
@@ -622,7 +759,11 @@ describe('🔬 distinct — multi-key / normalize / removalPercent / exampleDupl
   });
   it('removalPercent + exampleDuplicates (max 5)', async () => {
     const r = await exec({}, [1, 1, 1, 1, 2], ctx);
-    const out = r.output as { removalPercent: number; exampleDuplicates: unknown[]; removed: number };
+    const out = r.output as {
+      removalPercent: number;
+      exampleDuplicates: unknown[];
+      removed: number;
+    };
     expect(out.removed).toBe(3);
     expect(out.removalPercent).toBe(60);
     expect(out.exampleDuplicates).toEqual([1, 1, 1]);
@@ -637,8 +778,20 @@ describe('🔬 aggregate — precisione avg/median', () => {
   });
   it('precision configurabile (0 → intero, 4 → 4 decimali)', async () => {
     const data = [{ v: 10 }, { v: 11 }, { v: 10 }];
-    expect(((await exec({ reducer: 'avg', field: 'v', precision: 0 }, data, ctx)).output as { value: number }).value).toBe(10);
-    expect(((await exec({ reducer: 'avg', field: 'v', precision: 4 }, data, ctx)).output as { value: number }).value).toBe(10.3333);
+    expect(
+      (
+        (await exec({ reducer: 'avg', field: 'v', precision: 0 }, data, ctx)).output as {
+          value: number;
+        }
+      ).value,
+    ).toBe(10);
+    expect(
+      (
+        (await exec({ reducer: 'avg', field: 'v', precision: 4 }, data, ctx)).output as {
+          value: number;
+        }
+      ).value,
+    ).toBe(10.3333);
   });
   it('sum NON arrotondato (precision tocca solo avg/median)', async () => {
     const r = await exec({ reducer: 'sum', field: 'v' }, [{ v: 0.111 }, { v: 0.222 }], ctx);

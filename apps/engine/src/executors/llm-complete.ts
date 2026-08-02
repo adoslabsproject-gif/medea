@@ -26,7 +26,11 @@ import { coerceString } from '@/lib/coerce.js';
 import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { logLlmExchange } from '@medea/engine-nodes-stdlib';
 import type { AgentLlmUsage } from '@medea/engine-nodes-ai-agents';
-import { dispatchLLMChat, LlmQuotaExceededError, type LlmTokenUsage } from '@/services/llm-chat.service.js';
+import {
+  dispatchLLMChat,
+  LlmQuotaExceededError,
+  type LlmTokenUsage,
+} from '@/services/llm-chat.service.js';
 import { llmResolver, NoLlmProviderError } from '@/services/llm-resolver.service.js';
 
 interface LlmCompleteOutput {
@@ -50,10 +54,21 @@ interface LlmCompleteOutput {
 
 // Provider realmente gestiti dal gateway per action_llm_complete. Esportato per il
 // test anti-drift (deve combaciare col configField `provider` del nodo in stdlib).
-export const ALLOWED_PROVIDERS = new Set(['liara', 'anthropic', 'openai', 'gemini', 'mistral', 'groq', 'openrouter', 'deepseek', 'xai', 'perplexity']);
+export const ALLOWED_PROVIDERS = new Set([
+  'liara',
+  'anthropic',
+  'openai',
+  'gemini',
+  'mistral',
+  'groq',
+  'openrouter',
+  'deepseek',
+  'xai',
+  'perplexity',
+]);
 
 const PROVIDER_DEFAULT_MODEL: Record<string, string> = {
-  liara: '',                              // Liara backend decide (qwen3-32b)
+  liara: '', // Liara backend decide (qwen3-32b)
   anthropic: 'claude-sonnet-4-6',
   openai: 'gpt-4o-mini',
   gemini: 'gemini-2.0-flash',
@@ -74,23 +89,30 @@ export const llmCompleteExecutor: NodeExecutor = async (config, _input, context)
     throw new Error('action_llm_complete: "prompt" è obbligatorio');
   }
   const systemPrompt = coerceString(cfg.systemPrompt ?? '').trim();
-  const providerHint = coerceString(cfg.provider ?? 'liara').trim().toLowerCase();
+  const providerHint = coerceString(cfg.provider ?? 'liara')
+    .trim()
+    .toLowerCase();
   const allowed = ALLOWED_PROVIDERS.has(providerHint) ? providerHint : 'liara';
   const modelHint = coerceString(cfg.model ?? '').trim();
   // temperature: clampata a [0,2] e passata a dispatchLLMChat via opts.temperature
   // (rispettata sia dal ramo Liara sia dai provider openai-compat). Prima era
   // documentata nell'UI ma IGNORATA (0.2 hardcoded per Liara) — fix 2026-07.
   const temperatureRaw = Number(cfg.temperature ?? 0.7);
-  const temperature = Number.isFinite(temperatureRaw) ? Math.max(0, Math.min(2, temperatureRaw)) : 0.7;
+  const temperature = Number.isFinite(temperatureRaw)
+    ? Math.max(0, Math.min(2, temperatureRaw))
+    : 0.7;
   const maxTokensRaw = Number(cfg.maxTokens ?? 2048);
-  const maxTokens = Number.isFinite(maxTokensRaw) && maxTokensRaw > 0
-    ? Math.min(Math.floor(maxTokensRaw), 32_768)
-    : 2048;
-  const responseFormat: 'text' | 'json' = coerceString(cfg.responseFormat ?? 'text') === 'json' ? 'json' : 'text';
+  const maxTokens =
+    Number.isFinite(maxTokensRaw) && maxTokensRaw > 0
+      ? Math.min(Math.floor(maxTokensRaw), 32_768)
+      : 2048;
+  const responseFormat: 'text' | 'json' =
+    coerceString(cfg.responseFormat ?? 'text') === 'json' ? 'json' : 'text';
   const timeoutMsRaw = Number(cfg.timeoutMs ?? 60_000);
-  const timeoutMs = Number.isFinite(timeoutMsRaw) && timeoutMsRaw > 0
-    ? Math.min(Math.floor(timeoutMsRaw), 300_000)
-    : 60_000;
+  const timeoutMs =
+    Number.isFinite(timeoutMsRaw) && timeoutMsRaw > 0
+      ? Math.min(Math.floor(timeoutMsRaw), 300_000)
+      : 60_000;
 
   // Provider resolution:
   //   - liara: nessuna API key (lic key del container fa da auth via portal gateway)
@@ -111,7 +133,9 @@ export const llmCompleteExecutor: NodeExecutor = async (config, _input, context)
       if (resolved.baseUrl) baseUrl = resolved.baseUrl;
     } catch (err) {
       if (err instanceof NoLlmProviderError) {
-        throw new Error(`action_llm_complete: provider "${providerHint}" richiede API key configurata in Settings → AI Providers (${err.message})`);
+        throw new Error(
+          `action_llm_complete: provider "${providerHint}" richiede API key configurata in Settings → AI Providers (${err.message})`,
+        );
       }
       throw err;
     }
@@ -120,9 +144,10 @@ export const llmCompleteExecutor: NodeExecutor = async (config, _input, context)
   // Forza JSON nel system prompt quando responseFormat=json — pattern
   // industriale (OpenAI/Anthropic structured output): istruzione esplicita
   // di rispondere SOLO con JSON valido, niente prosa attorno.
-  const effectiveSystem = responseFormat === 'json'
-    ? `${systemPrompt}\n\nIMPORTANTE: rispondi SOLO con un oggetto JSON valido. Niente testo prima o dopo. Niente backtick \`\`\`json\`\`\` wrapper.`
-    : systemPrompt;
+  const effectiveSystem =
+    responseFormat === 'json'
+      ? `${systemPrompt}\n\nIMPORTANTE: rispondi SOLO con un oggetto JSON valido. Niente testo prima o dopo. Niente backtick \`\`\`json\`\`\` wrapper.`
+      : systemPrompt;
 
   // Override PER-CHIAMATA di timeout/maxTokens passati ESPLICITAMENTE a dispatchLLMChat.
   // ⛔ PRIMA: si mutava process.env.MEDEA_LIARA_{TIMEOUT_MS,MAX_TOKENS} attorno
@@ -144,8 +169,10 @@ export const llmCompleteExecutor: NodeExecutor = async (config, _input, context)
       effectiveSystem,
       prompt,
       baseUrl, // BYOK custom endpoint (es. proxy aziendale OpenAI-compatible) o undefined per default
-      [],      // history vuota — single-shot
-      (u) => { usage = u; },
+      [], // history vuota — single-shot
+      (u) => {
+        usage = u;
+      },
       undefined, // requestId
       llmOpts,
     );
@@ -171,7 +198,9 @@ export const llmCompleteExecutor: NodeExecutor = async (config, _input, context)
           prompt,
           fb.baseUrl,
           [],
-          (u) => { usage = u; },
+          (u) => {
+            usage = u;
+          },
           undefined, // requestId
           llmOpts,
         );

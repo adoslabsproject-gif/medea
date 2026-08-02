@@ -29,10 +29,10 @@ export const textTemplateNode: NodeModule = {
       'Composizione stringhe da template con segnaposti `{{var}}` interpolati con dati runtime del workflow. È il nodo glue-code per qualunque pipeline che debba COSTRUIRE testo dinamico: oggetto email per ogni destinatario di una campagna, prompt LLM contestualizzato sui dati del trigger, messaggio alert Slack/Telegram con valori da DB, body PDF generato per fattura cliente. Senza questo nodo il workflow autore deve fare string concatenation a mano dentro ogni expression `{{$node...}}` — illeggibile, non riutilizzabile, soggetto a typo.\n\n' +
       'Differenza con i sibling: action_text_template = sostituzione di placeholder in stringa OUTPUT (string in → string out). Per generare struttura JSON output da template usa action_json_extract con jsonpath. Per trasformazione semantica JSON con DSL completo usa logic_transform (JSONata). Per generare HTML/PDF strutturato non text-only usa action_pdf_generate o action_catalog_page. Pensa a action_text_template come al "printf" del workflow.\n\n' +
       'Sintassi template completa: (a) variabile semplice `{{nome}}` pesca da input root; (b) path nested `{{cliente.indirizzo.citta}}` traversa oggetti annidati con dot-notation (gestisce undefined sicuro — un nodo non si schianta su path mancante, restituisce stringa vuota o fallback); (c) fallback inline `{{nome|default Anonimo}}` = stringa "Anonimo" se nome è undefined/null/empty (pattern Mustache); (d) coalescing nested `{{cliente.nome|cliente.username|default Utente}}` = prova in ordine, usa il primo non-vuoto; (e) escape HTML on/off per output destinato a email HTML body (XSS protection) vs prompt LLM (raw). Niente loop o condition inline by design (Cappella Sistina rule: una responsabilità per nodo — per loop usa logic_loop, per condition usa logic_if).\n\n' +
-      'Anti-injection: il template è scritto dall\'autore workflow (trusted), le variabili pescano da input (possibly untrusted). Quando escapeHtml=true, ogni variabile interpolata passa per `&`/`<`/`>`/`"`/`\'` escape → safe per email body HTML che andra\\` in client tipo Outlook. Quando escapeHtml=false (default per prompt LLM), nessun escape — l\'autore sa cosa fa. Niente escape JavaScript/SQL by design: se serve quello, ci sono nodi dedicati downstream (action_run_js sandboxed, db_query parametrizzato).\n\n' +
+      "Anti-injection: il template è scritto dall'autore workflow (trusted), le variabili pescano da input (possibly untrusted). Quando escapeHtml=true, ogni variabile interpolata passa per `&`/`<`/`>`/`\"`/`'` escape → safe per email body HTML che andra\\` in client tipo Outlook. Quando escapeHtml=false (default per prompt LLM), nessun escape — l'autore sa cosa fa. Niente escape JavaScript/SQL by design: se serve quello, ci sono nodi dedicati downstream (action_run_js sandboxed, db_query parametrizzato).\n\n" +
       'Performance: parser template compilato lazily al primo run e cachato per (workflow_id, node_id) → run successivi 0.1ms invece di ~2ms parse. Idempotente: lo stesso input produce sempre lo stesso output (no random, no Date.now() — se serve quello usa action_date_format + intermedio).\n\n' +
       'Use case Cappella-Sistina-grade: (1) **personalizzazione oggetto email B2B cold outreach** — template `"{{cliente.nome|cliente.azienda|default Imprenditore}}, abbiamo notato {{evidence_quote|default un\'opportunita\\` interessante}} sul suo cantiere"` consumato da action_email_send_tracked per personalize-at-scale senza chiamare LLM ogni volta; (2) **prompt LLM dinamico** per agent_classifier che richiede contesto specifico per ogni trigger PEC — `"Classifica questa email del commercialista. Mittente: {{from}}. Subject: {{subject}}. Body primi 500 char: {{body|truncate 500}}. Categorie attese: f24, ricevute, oneri."` (truncate filter futuro); (3) **messaggio Telegram alert SRE** post-workflow-error con context — `"Workflow {{workflow.name}} run #{{run.id}} fallito su step {{failed_node.id}}. Errore: {{failed_node.error.message}}. {{$signedRunUrl}}"` per consentire one-click access al dettaglio run; (4) **body fattura PDF** per action_pdf_generate sections, con interpolazione voci numerate `"Voce {{i}}: {{descrizione}}, importo EUR {{importo|number 2}}"` dentro logic_loop su `righe[]`.\n\n' +
-      'Safety budget (implementato e testato): la regex di parsing dei segnaposti è FISSA (non fornita dall\'autore) → nessun ReDoS possibile, nessun timeout necessario. Output cap 1.000.000 caratteri per render: oltre → troncato con flag `truncated:true` nell\'output (anti-OOM su variabile interpolata enorme). Il rendered output non viene loggato per privacy (un template email contiene PII).',
+      "Safety budget (implementato e testato): la regex di parsing dei segnaposti è FISSA (non fornita dall'autore) → nessun ReDoS possibile, nessun timeout necessario. Output cap 1.000.000 caratteri per render: oltre → troncato con flag `truncated:true` nell'output (anti-OOM su variabile interpolata enorme). Il rendered output non viene loggato per privacy (un template email contiene PII).",
     configFields: [
       {
         key: 'template',
@@ -48,7 +48,7 @@ export const textTemplateNode: NodeModule = {
         type: 'expression',
         required: false,
         placeholder: '{{$node.lookup_cliente.json.rows.0}}',
-        help: 'Espressione che ritorna un oggetto da cui pescare le variabili del template. Se vuoto, usa l\'input del nodo precedente.',
+        help: "Espressione che ritorna un oggetto da cui pescare le variabili del template. Se vuoto, usa l'input del nodo precedente.",
       },
       {
         key: 'trim',
@@ -95,7 +95,7 @@ export const jsonExtractNode: NodeModule = {
         type: 'expression',
         required: false,
         placeholder: '{{$node.api_response.json}}',
-        help: 'Espressione che ritorna l\'oggetto JSON sorgente. Se vuoto, usa l\'input del nodo precedente.',
+        help: "Espressione che ritorna l'oggetto JSON sorgente. Se vuoto, usa l'input del nodo precedente.",
       },
       {
         key: 'path',
@@ -153,7 +153,7 @@ export const dateFormatNode: NodeModule = {
       '(passato da nodi upstream come $date.now), formato italiano comune "23/05/2026" o "23-05-2026" anche con ' +
       'ora "23/05/2026 10:30:00" (formato che arriva da spreadsheet Excel italiani con configurazione locale ' +
       'default), formato US "05/23/2026" (rilevato per separator e contesto), stringa speciale "now" per la ' +
-      'data corrente al momento dell\'esecuzione del nodo. Parsing fallback intelligente: se nessun pattern ' +
+      "data corrente al momento dell'esecuzione del nodo. Parsing fallback intelligente: se nessun pattern " +
       'matcha, prova ad usare new Date(input) di JavaScript come last resort (parser permissivo che gestisce ' +
       'casi inattesi come "May 23 2026 10:30 AM"). ' +
       'Output con doppia struttura per massima flessibilità downstream: { formatted (stringa nel formato target ' +
@@ -205,7 +205,7 @@ export const dateFormatNode: NodeModule = {
         required: false,
         defaultValue: 'Europe/Rome',
         placeholder: 'Europe/Rome',
-        help: 'IANA tz database. Default Europe/Rome (gestisce ora legale automaticamente). Altri: UTC, America/New_York, Asia/Tokyo. Se l\'input è ISO con offset, viene convertito a questo TZ prima del formatting.',
+        help: "IANA tz database. Default Europe/Rome (gestisce ora legale automaticamente). Altri: UTC, America/New_York, Asia/Tokyo. Se l'input è ISO con offset, viene convertito a questo TZ prima del formatting.",
       },
     ],
     outputs: ['formatted', 'iso', 'unix', 'year', 'month', 'day', 'weekday', 'hour', 'minute'],

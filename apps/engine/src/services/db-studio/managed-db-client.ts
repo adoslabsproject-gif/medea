@@ -14,15 +14,30 @@ import { readJsonCapped } from '@/lib/capped-response.js';
 import { getOutboundPortalToken } from '@/lib/internal-token.js';
 import { loggerFor } from '@/lib/logger.js';
 
-interface ProvisionBody { ok?: boolean; connection?: ManagedDbConnection; code?: string; error?: string }
+interface ProvisionBody {
+  ok?: boolean;
+  connection?: ManagedDbConnection;
+  code?: string;
+  error?: string;
+}
 
 const log = loggerFor('db-studio.managed-client');
 const PORTAL_URL = process.env.PORTAL_INTERNAL_URL ?? 'http://host.docker.internal:3006';
 const PROVISION_TIMEOUT_MS = 180_000; // pull immagine + init DB può richiedere minuti
 
 /** Engine che possono essere provisionati come sidecar nel tenant (managed). */
-const MANAGED_ENGINES = new Set(['postgres', 'pgvector', 'mysql', 'mssql', 'mongodb', 'redis', 'qdrant']);
-export function isManagedEngine(engine: string): boolean { return MANAGED_ENGINES.has(engine); }
+const MANAGED_ENGINES = new Set([
+  'postgres',
+  'pgvector',
+  'mysql',
+  'mssql',
+  'mongodb',
+  'redis',
+  'qdrant',
+]);
+export function isManagedEngine(engine: string): boolean {
+  return MANAGED_ENGINES.has(engine);
+}
 
 export interface ManagedDbConnection {
   engine: string;
@@ -34,14 +49,20 @@ export interface ManagedDbConnection {
 }
 
 export class ManagedDbError extends Error {
-  constructor(readonly code: string, message: string) {
+  constructor(
+    readonly code: string,
+    message: string,
+  ) {
     super(message);
     this.name = 'ManagedDbError';
   }
 }
 
 /** Provisiona (o riusa) il sidecar e ritorna la connessione interna. */
-export async function provisionManagedDb(workspaceId: string, engine: string): Promise<ManagedDbConnection> {
+export async function provisionManagedDb(
+  workspaceId: string,
+  engine: string,
+): Promise<ManagedDbConnection> {
   const res = await internalAwareFetch(`${PORTAL_URL}/api/v1/internal/tenant-db/provision`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Internal-Token': getOutboundPortalToken() },
@@ -50,8 +71,14 @@ export async function provisionManagedDb(workspaceId: string, engine: string): P
   });
   const body = await readJsonCapped<ProvisionBody>(res).catch((): ProvisionBody => ({}));
   if (!res.ok || !body.ok || !body.connection) {
-    log.warn({ workspaceId, engine, status: res.status, code: body.code }, 'managed DB provision failed');
-    throw new ManagedDbError(body.code ?? `HTTP_${res.status.toString()}`, body.error ?? `Provisioning del DB "${engine}" non riuscito.`);
+    log.warn(
+      { workspaceId, engine, status: res.status, code: body.code },
+      'managed DB provision failed',
+    );
+    throw new ManagedDbError(
+      body.code ?? `HTTP_${res.status.toString()}`,
+      body.error ?? `Provisioning del DB "${engine}" non riuscito.`,
+    );
   }
   log.info({ workspaceId, engine, host: body.connection.host }, 'managed DB provisioned');
   return body.connection;
@@ -67,6 +94,9 @@ export async function destroyManagedDb(workspaceId: string, engine: string): Pro
       signal: AbortSignal.timeout(60_000),
     });
   } catch (err) {
-    log.warn({ workspaceId, engine, err: err instanceof Error ? err.message : String(err) }, 'managed DB destroy failed (best-effort)');
+    log.warn(
+      { workspaceId, engine, err: err instanceof Error ? err.message : String(err) },
+      'managed DB destroy failed (best-effort)',
+    );
   }
 }

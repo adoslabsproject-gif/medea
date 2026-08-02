@@ -18,7 +18,11 @@ function ctx(): NodeExecutionContext {
   return { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {} };
 }
 
-const creds = { baseUrl: 'https://wp.example', username: 'admin', appPassword: 'abcd efgh ijkl mnop' };
+const creds = {
+  baseUrl: 'https://wp.example',
+  username: 'admin',
+  appPassword: 'abcd efgh ijkl mnop',
+};
 const run = wordpressNode.executor!;
 
 describe('italia_wordpress — behavior (input rotto)', () => {
@@ -30,13 +34,27 @@ describe('italia_wordpress — behavior (input rotto)', () => {
 
   it('🚨 update con data JSON malformato → errore PULITO (scatta prima della rete)', async () => {
     await expect(
-      run({ ...creds, action: 'update', resource: 'posts', id: '7', data: 'NOPE' }, undefined, ctx()),
+      run(
+        { ...creds, action: 'update', resource: 'posts', id: '7', data: 'NOPE' },
+        undefined,
+        ctx(),
+      ),
     ).rejects.toThrow(/il campo "data" non è JSON valido/);
   });
 
   it('credenziali validate PRIMA del parse (appPassword assente)', async () => {
     await expect(
-      run({ baseUrl: 'https://wp.example', username: 'a', action: 'create', resource: 'posts', data: '{bad' }, undefined, ctx()),
+      run(
+        {
+          baseUrl: 'https://wp.example',
+          username: 'a',
+          action: 'create',
+          resource: 'posts',
+          data: '{bad',
+        },
+        undefined,
+        ctx(),
+      ),
     ).rejects.toThrow(/baseUrl \+ username \+ appPassword/);
   });
 

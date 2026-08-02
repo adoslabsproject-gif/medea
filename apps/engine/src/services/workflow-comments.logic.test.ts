@@ -9,7 +9,7 @@ describe('parseMentions', () => {
   it('handle con . _ -', () => {
     expect(parseMentions('@marco.rossi e @ada_b e @x-1')).toEqual(['marco.rossi', 'ada_b', 'x-1']);
   });
-  it('dedup mantenendo l\'ordine', () => {
+  it("dedup mantenendo l'ordine", () => {
     expect(parseMentions('@ada @marco @ada')).toEqual(['ada', 'marco']);
   });
   it('NON matcha le email nel mezzo (a@b.it)', () => {

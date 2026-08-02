@@ -44,6 +44,10 @@ export function evaluateLockAcquire(
 }
 
 /** True se il lock corrente è considerato vivo (heartbeat recente). */
-export function isLockAlive(current: LockState | null, now: number, ttlMs: number = LOCK_TTL_MS): boolean {
+export function isLockAlive(
+  current: LockState | null,
+  now: number,
+  ttlMs: number = LOCK_TTL_MS,
+): boolean {
   return current !== null && now - current.heartbeatAt <= ttlMs;
 }

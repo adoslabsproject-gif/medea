@@ -22,7 +22,10 @@ import { shouldRejectFinalize } from '@/services/ai-scaffold/tools/complexity-ga
 import { evaluateAbort } from '@/services/ai-scaffold/tools/abort-gate.js';
 import { requirePlan } from '@/services/ai-scaffold/tools/plan-handler.js';
 
-export function addNodeHandler(session: ScaffoldSession, args: Record<string, unknown>): ToolResult {
+export function addNodeHandler(
+  session: ScaffoldSession,
+  args: Record<string, unknown>,
+): ToolResult {
   const planReject = requirePlan(session, 'add_node');
   if (planReject) return planReject;
   const id = coerceString(args.id ?? '');
@@ -32,7 +35,10 @@ export function addNodeHandler(session: ScaffoldSession, args: Record<string, un
   const catalog = buildNodeCatalog();
   const entry = catalog.find((c) => c.defId === defId);
   if (!entry) {
-    return { ok: false, error: `defId "${defId}" non nel catalogo runtime. ${catalog.length.toString()} nodi disponibili. Usa list_node_catalog per la lista completa.` };
+    return {
+      ok: false,
+      error: `defId "${defId}" non nel catalogo runtime. ${catalog.length.toString()} nodi disponibili. Usa list_node_catalog per la lista completa.`,
+    };
   }
   // Validate config values against field schema (enum / pattern).
   const config = (args.config as Record<string, unknown>) ?? {};
@@ -52,17 +58,26 @@ export function addNodeHandler(session: ScaffoldSession, args: Record<string, un
     if (value === undefined || value === '') continue;
     const strVal = typeof value === 'string' ? value : JSON.stringify(value);
     if (field.options && field.options.length > 0 && !field.options.includes(strVal)) {
-      return { ok: false, error: `Nodo ${defId}: campo "${field.key}" = "${strVal}" non è in [${field.options.join('|')}]` };
+      return {
+        ok: false,
+        error: `Nodo ${defId}: campo "${field.key}" = "${strVal}" non è in [${field.options.join('|')}]`,
+      };
     }
     if (field.pattern) {
       try {
         if (!new RegExp(field.pattern).test(strVal)) {
-          return { ok: false, error: `Nodo ${defId}: campo "${field.key}" non rispetta il formato richiesto (regex: ${field.pattern})` };
+          return {
+            ok: false,
+            error: `Nodo ${defId}: campo "${field.key}" non rispetta il formato richiesto (regex: ${field.pattern})`,
+          };
         }
-      } catch { /* invalid regex from registry — skip */ }
+      } catch {
+        /* invalid regex from registry — skip */
+      }
     }
   }
-  if (session.draft.nodes.some((n) => n.id === id)) return { ok: false, error: `Nodo "${id}" già aggiunto. Usa un id diverso.` };
+  if (session.draft.nodes.some((n) => n.id === id))
+    return { ok: false, error: `Nodo "${id}" già aggiunto. Usa un id diverso.` };
   const cfgNorm: Record<string, string> = {};
   for (const [k, v] of Object.entries(config)) {
     cfgNorm[k] = typeof v === 'string' ? v : JSON.stringify(v);
@@ -71,8 +86,8 @@ export function addNodeHandler(session: ScaffoldSession, args: Record<string, un
     id,
     defId,
     position: {
-      x: typeof args.x === 'number' ? (args.x) : session.draft.nodes.length * 220 + 100,
-      y: typeof args.y === 'number' ? (args.y) : 200,
+      x: typeof args.x === 'number' ? args.x : session.draft.nodes.length * 220 + 100,
+      y: typeof args.y === 'number' ? args.y : 200,
     },
     config: cfgNorm,
   };
@@ -81,27 +96,45 @@ export function addNodeHandler(session: ScaffoldSession, args: Record<string, un
   return { ok: true, data: { added: id } };
 }
 
-export function connectNodesHandler(session: ScaffoldSession, args: Record<string, unknown>): ToolResult {
+export function connectNodesHandler(
+  session: ScaffoldSession,
+  args: Record<string, unknown>,
+): ToolResult {
   const planReject = requirePlan(session, 'connect_nodes');
   if (planReject) return planReject;
   const from = coerceString(args.from ?? '');
   const to = coerceString(args.to ?? '');
   if (!from || !to) return { ok: false, error: 'connect_nodes richiede "from" e "to"' };
-  if (!session.draft.nodes.some((n) => n.id === from)) return { ok: false, error: `from="${from}" non è un nodo aggiunto. Aggiungilo PRIMA con add_node.` };
-  if (!session.draft.nodes.some((n) => n.id === to)) return { ok: false, error: `to="${to}" non è un nodo aggiunto. Aggiungilo PRIMA con add_node.` };
+  if (!session.draft.nodes.some((n) => n.id === from))
+    return {
+      ok: false,
+      error: `from="${from}" non è un nodo aggiunto. Aggiungilo PRIMA con add_node.`,
+    };
+  if (!session.draft.nodes.some((n) => n.id === to))
+    return {
+      ok: false,
+      error: `to="${to}" non è un nodo aggiunto. Aggiungilo PRIMA con add_node.`,
+    };
   const edge: DraftEdge = { from, to };
   if (typeof args.fromPort === 'string') edge.fromPort = args.fromPort;
   session.draft.edges.push(edge);
-  return { ok: true, data: { connected: `${from} → ${to}${edge.fromPort ? ` [${edge.fromPort}]` : ''}` } };
+  return {
+    ok: true,
+    data: { connected: `${from} → ${to}${edge.fromPort ? ` [${edge.fromPort}]` : ''}` },
+  };
 }
 
-export function finalizeWorkflowHandler(session: ScaffoldSession, args: Record<string, unknown>): ToolResult {
+export function finalizeWorkflowHandler(
+  session: ScaffoldSession,
+  args: Record<string, unknown>,
+): ToolResult {
   const planReject = requirePlan(session, 'finalize_workflow');
   if (planReject) return planReject;
   const id = coerceString(args.id ?? '');
   const name = coerceString(args.name ?? '');
   if (!id || !name) return { ok: false, error: 'finalize_workflow richiede "id" + "name"' };
-  if (session.draft.nodes.length === 0) return { ok: false, error: 'Nessun nodo nel draft. Aggiungi nodi prima di finalizzare.' };
+  if (session.draft.nodes.length === 0)
+    return { ok: false, error: 'Nessun nodo nel draft. Aggiungi nodi prima di finalizzare.' };
 
   // Plan-vs-actual completeness check: tutti i planned nodes devono essere stati aggiunti.
   if (session.plan?.accepted) {
@@ -124,14 +157,18 @@ export function finalizeWorkflowHandler(session: ScaffoldSession, args: Record<s
   // Orphan edge double-check.
   const nodeIds = new Set(session.draft.nodes.map((n) => n.id));
   for (const e of session.draft.edges) {
-    if (!nodeIds.has(e.from)) return { ok: false, error: `Edge orfano: from="${e.from}" non esiste` };
+    if (!nodeIds.has(e.from))
+      return { ok: false, error: `Edge orfano: from="${e.from}" non esiste` };
     if (!nodeIds.has(e.to)) return { ok: false, error: `Edge orfano: to="${e.to}" non esiste` };
   }
   session.draft.id = id;
   session.draft.name = name;
   if (typeof args.description === 'string') session.draft.description = args.description;
   session.finalized = true;
-  return { ok: true, data: { finalized: true, nodes: session.draft.nodes.length, edges: session.draft.edges.length } };
+  return {
+    ok: true,
+    data: { finalized: true, nodes: session.draft.nodes.length, edges: session.draft.edges.length },
+  };
 }
 
 export function abortHandler(session: ScaffoldSession, args: Record<string, unknown>): ToolResult {
@@ -152,13 +189,20 @@ export function abortHandler(session: ScaffoldSession, args: Record<string, unkn
   return { ok: true, data: { aborted: true, reason: session.abortReason } };
 }
 
-export function updateNodeHandler(session: ScaffoldSession, args: Record<string, unknown>): ToolResult {
+export function updateNodeHandler(
+  session: ScaffoldSession,
+  args: Record<string, unknown>,
+): ToolResult {
   const id = coerceString(args.id ?? '');
   if (!id) return { ok: false, error: 'update_node richiede id.' };
   const node = session.draft.nodes.find((n) => n.id === id);
   if (!node) {
     // FIX 2026-05-31: Liara confondeva update_node con add_node. Hint esplicito.
-    const existing = session.draft.nodes.map((n) => n.id).slice(0, 10).join(', ') || '(draft vuoto)';
+    const existing =
+      session.draft.nodes
+        .map((n) => n.id)
+        .slice(0, 10)
+        .join(', ') || '(draft vuoto)';
     return {
       ok: false,
       error: `Nodo "${id}" non esiste nel draft. Hai forse dimenticato di add_node? Sequenza corretta: PRIMA add_node({id:"${id}",defId:"...",config:{...}}) POI eventualmente update_node per patch. Nodi attuali nel draft: ${existing}.`,
@@ -176,10 +220,21 @@ export function updateNodeHandler(session: ScaffoldSession, args: Record<string,
       const value = merged[field.key];
       if (value === undefined || value === '') continue;
       if (field.options && !field.options.includes(value)) {
-        return { ok: false, error: `update_node ${id}: ${field.key}="${value}" non in [${field.options.join('|')}]` };
+        return {
+          ok: false,
+          error: `update_node ${id}: ${field.key}="${value}" non in [${field.options.join('|')}]`,
+        };
       }
       if (field.pattern) {
-        try { if (!new RegExp(field.pattern).test(value)) return { ok: false, error: `update_node ${id}: ${field.key} viola regex ${field.pattern}` }; } catch { /* ignore invalid regex */ }
+        try {
+          if (!new RegExp(field.pattern).test(value))
+            return {
+              ok: false,
+              error: `update_node ${id}: ${field.key} viola regex ${field.pattern}`,
+            };
+        } catch {
+          /* ignore invalid regex */
+        }
       }
     }
   }
@@ -190,23 +245,35 @@ export function updateNodeHandler(session: ScaffoldSession, args: Record<string,
   return { ok: true, data: { updated: id, fieldsPatched: Object.keys(patch) } };
 }
 
-export function deleteNodeHandler(session: ScaffoldSession, args: Record<string, unknown>): ToolResult {
+export function deleteNodeHandler(
+  session: ScaffoldSession,
+  args: Record<string, unknown>,
+): ToolResult {
   const id = coerceString(args.id ?? '');
   if (!id) return { ok: false, error: 'delete_node richiede id.' };
   const before = session.draft.nodes.length;
   session.draft.nodes = session.draft.nodes.filter((n) => n.id !== id);
-  if (session.draft.nodes.length === before) return { ok: false, error: `Nodo "${id}" non esisteva.` };
+  if (session.draft.nodes.length === before)
+    return { ok: false, error: `Nodo "${id}" non esisteva.` };
   const beforeEdges = session.draft.edges.length;
   session.draft.edges = session.draft.edges.filter((e) => e.from !== id && e.to !== id);
-  return { ok: true, data: { deleted: id, edgesAlsoRemoved: beforeEdges - session.draft.edges.length } };
+  return {
+    ok: true,
+    data: { deleted: id, edgesAlsoRemoved: beforeEdges - session.draft.edges.length },
+  };
 }
 
-export function disconnectNodesHandler(session: ScaffoldSession, args: Record<string, unknown>): ToolResult {
+export function disconnectNodesHandler(
+  session: ScaffoldSession,
+  args: Record<string, unknown>,
+): ToolResult {
   const from = coerceString(args.from ?? '');
   const to = coerceString(args.to ?? '');
-  const fromPort = typeof args.fromPort === 'string' ? (args.fromPort) : undefined;
+  const fromPort = typeof args.fromPort === 'string' ? args.fromPort : undefined;
   if (!from || !to) return { ok: false, error: 'disconnect_nodes richiede from e to.' };
   const before = session.draft.edges.length;
-  session.draft.edges = session.draft.edges.filter((e) => !(e.from === from && e.to === to && e.fromPort === fromPort));
+  session.draft.edges = session.draft.edges.filter(
+    (e) => !(e.from === from && e.to === to && e.fromPort === fromPort),
+  );
   return { ok: true, data: { removed: before - session.draft.edges.length, from, to } };
 }

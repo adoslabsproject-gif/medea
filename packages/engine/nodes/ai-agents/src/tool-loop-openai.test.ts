@@ -24,17 +24,34 @@ const GW = 'http://172.20.0.1:3006/api/v1/llm';
 const ctx = { tenantId: 't1', runId: 'r1', nodeId: 'n1', workflowId: 'w1' };
 
 const okReply = (body: unknown) => ({
-  ok: true, status: 200, headers: new Headers(),
-  json: async () => body, text: async () => JSON.stringify(body),
+  ok: true,
+  status: 200,
+  headers: new Headers(),
+  json: async () => body,
+  text: async () => JSON.stringify(body),
 });
 const assistantFinal = (text: string, usage = { prompt_tokens: 100, completion_tokens: 20 }) =>
-  okReply({ choices: [{ message: { role: 'assistant', content: text }, finish_reason: 'stop' }], model: 'liara', usage });
-const assistantToolCall = (name: string, args: string, usage = { prompt_tokens: 150, completion_tokens: 30 }) =>
   okReply({
-    choices: [{
-      message: { role: 'assistant', content: null, tool_calls: [{ id: 'tc-1', type: 'function', function: { name, arguments: args } }] },
-      finish_reason: 'tool_calls',
-    }],
+    choices: [{ message: { role: 'assistant', content: text }, finish_reason: 'stop' }],
+    model: 'liara',
+    usage,
+  });
+const assistantToolCall = (
+  name: string,
+  args: string,
+  usage = { prompt_tokens: 150, completion_tokens: 30 },
+) =>
+  okReply({
+    choices: [
+      {
+        message: {
+          role: 'assistant',
+          content: null,
+          tool_calls: [{ id: 'tc-1', type: 'function', function: { name, arguments: args } }],
+        },
+        finish_reason: 'tool_calls',
+      },
+    ],
     model: 'liara',
     usage,
   });
@@ -53,7 +70,9 @@ beforeEach(() => {
   vi.stubEnv('MEDEA_LIARA_BASE_URL', GW);
   vi.stubEnv('MEDEA_LICENSE_KEY', 'lic-abc');
 });
-afterEach(() => { vi.unstubAllEnvs(); });
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe('openAiLoopEndpoint — routing + auth', () => {
   it('liara: gateway da env, Bearer license, host esente, model claude-* legacy → omesso', () => {
@@ -99,14 +118,17 @@ describe('openAiLoopEndpoint — routing + auth', () => {
   });
 
   it('provider ignoto → throw difensivo con messaggio esplicito', () => {
-    expect(() => openAiLoopEndpoint('perplexity', 'k', '', undefined)).toThrow(/non supporta il tool-calling/);
+    expect(() => openAiLoopEndpoint('perplexity', 'k', '', undefined)).toThrow(
+      /non supporta il tool-calling/,
+    );
   });
 });
 
 describe('toOpenAiTools — conversione formato', () => {
   it('input_schema Anthropic → function.parameters OpenAI', () => {
-    const out = toOpenAiTools([{ name: 't', description: 'd', input_schema: { type: 'object', properties: {} } }]) as
-      { type: string; function: { name: string; parameters: unknown } }[];
+    const out = toOpenAiTools([
+      { name: 't', description: 'd', input_schema: { type: 'object', properties: {} } },
+    ]) as { type: string; function: { name: string; parameters: unknown } }[];
     expect(out[0]?.type).toBe('function');
     expect(out[0]?.function.name).toBe('t');
     expect(out[0]?.function.parameters).toEqual({ type: 'object', properties: {} });
@@ -117,11 +139,13 @@ describe('ai_agent_tool_loop — ramo Liara (default senza apiKey)', () => {
   it('🚨 config VUOTA (no provider, no key) → chiama il GATEWAY con tools OpenAI + tool_choice auto', async () => {
     safeFetch.mockResolvedValueOnce(assistantFinal('fatto'));
     const r = await run({ goal: 'dimmi ciao' });
-    expect((safeFetch.mock.calls[0]![0] as string)).toBe(`${GW}/chat/completions`);
+    expect(safeFetch.mock.calls[0]![0] as string).toBe(`${GW}/chat/completions`);
     const body = sentBody();
     expect(body.tool_choice).toBe('auto');
     const tools = body.tools as { function: { name: string } }[];
-    expect(tools.map((t) => t.function.name)).toEqual(expect.arrayContaining(['http_request', 'flowforge_invoke', 'get_time', 'rag_search']));
+    expect(tools.map((t) => t.function.name)).toEqual(
+      expect.arrayContaining(['http_request', 'flowforge_invoke', 'get_time', 'rag_search']),
+    );
     const out = (r as { output: Record<string, unknown> }).output;
     expect(out.finalAnswer).toBe('fatto');
   });
@@ -131,13 +155,19 @@ describe('ai_agent_tool_loop — ramo Liara (default senza apiKey)', () => {
       .mockResolvedValueOnce(assistantToolCall('get_time', '{}'))
       .mockResolvedValueOnce(assistantFinal('sono le 10'));
     const r = await run({ goal: 'che ore sono?' });
-    const out = (r as { output: { finalAnswer: string; iterations: number; trace: { tool: string }[] } }).output;
+    const out = (
+      r as { output: { finalAnswer: string; iterations: number; trace: { tool: string }[] } }
+    ).output;
     expect(out.finalAnswer).toBe('sono le 10');
     expect(out.iterations).toBe(2);
     expect(out.trace).toHaveLength(1);
     expect(out.trace[0]?.tool).toBe('get_time');
     // La 2ª richiesta contiene il messaggio assistant CON tool_calls + il tool result
-    const msgs = sentBody(1).messages as { role: string; tool_call_id?: string; tool_calls?: unknown }[];
+    const msgs = sentBody(1).messages as {
+      role: string;
+      tool_call_id?: string;
+      tool_calls?: unknown;
+    }[];
     expect(msgs.some((m) => m.role === 'assistant' && m.tool_calls !== undefined)).toBe(true);
     const toolMsg = msgs.find((m) => m.role === 'tool');
     expect(toolMsg?.tool_call_id).toBe('tc-1');
@@ -145,14 +175,22 @@ describe('ai_agent_tool_loop — ramo Liara (default senza apiKey)', () => {
 
   it('🚨 _llm CUMULATIVO sulle iterazioni (usage API di entrambe le chiamate)', async () => {
     safeFetch
-      .mockResolvedValueOnce(assistantToolCall('get_time', '{}', { prompt_tokens: 150, completion_tokens: 30 }))
+      .mockResolvedValueOnce(
+        assistantToolCall('get_time', '{}', { prompt_tokens: 150, completion_tokens: 30 }),
+      )
       .mockResolvedValueOnce(assistantFinal('ok', { prompt_tokens: 200, completion_tokens: 10 }));
     const r = await run({ goal: 'x' });
     const llm = (r as { output: { _llm: Record<string, unknown> } }).output._llm;
-    expect(llm).toEqual({ inputTokens: 350, outputTokens: 40, model: 'liara', provider: 'liara', fromApi: true });
+    expect(llm).toEqual({
+      inputTokens: 350,
+      outputTokens: 40,
+      model: 'liara',
+      provider: 'liara',
+      fromApi: true,
+    });
   });
 
-  it('arguments GARBAGE dal modello → tool-result d\'errore strutturato, il loop prosegue', async () => {
+  it("arguments GARBAGE dal modello → tool-result d'errore strutturato, il loop prosegue", async () => {
     safeFetch
       .mockResolvedValueOnce(assistantToolCall('get_time', '{{{non-json'))
       .mockResolvedValueOnce(assistantFinal('recuperato'));
@@ -166,9 +204,13 @@ describe('ai_agent_tool_loop — ramo Liara (default senza apiKey)', () => {
   });
 
   it('HTTP error a metà loop → output.error MA _llm presente (token della 1ª chiamata spesi)', async () => {
-    safeFetch
-      .mockResolvedValueOnce(assistantToolCall('get_time', '{}'))
-      .mockResolvedValueOnce({ ok: false, status: 502, headers: new Headers(), json: async () => ({}), text: async () => 'bad gateway' });
+    safeFetch.mockResolvedValueOnce(assistantToolCall('get_time', '{}')).mockResolvedValueOnce({
+      ok: false,
+      status: 502,
+      headers: new Headers(),
+      json: async () => ({}),
+      text: async () => 'bad gateway',
+    });
     const r = await run({ goal: 'x' });
     const out = (r as { output: { error: string; _llm?: Record<string, unknown> } }).output;
     expect(out.error).toMatch(/Liara 502/);
@@ -192,33 +234,48 @@ describe('ai_agent_tool_loop — ramo Liara (default senza apiKey)', () => {
     expect(safeFetch).not.toHaveBeenCalled();
   });
 
-  it('provider gemini esplicito → loop OpenAI-format verso l\'endpoint compat di Google', async () => {
+  it("provider gemini esplicito → loop OpenAI-format verso l'endpoint compat di Google", async () => {
     safeFetch.mockResolvedValueOnce(assistantFinal('da gemini'));
     const r = await run({ provider: 'gemini', apiKey: 'g-key', goal: 'x' });
-    expect(safeFetch.mock.calls[0]![0]).toContain('generativelanguage.googleapis.com/v1beta/openai');
+    expect(safeFetch.mock.calls[0]![0]).toContain(
+      'generativelanguage.googleapis.com/v1beta/openai',
+    );
     expect((r as { output: { finalAnswer: string } }).output.finalAnswer).toBe('da gemini');
   });
 
   it('🚨 provider senza tools (perplexity da Settings) → fallback DICHIARATO su Liara, il nodo FUNZIONA', async () => {
     safeFetch.mockResolvedValueOnce(assistantFinal('eseguito su liara'));
     const r = await run({ provider: 'perplexity', apiKey: 'k', goal: 'x' });
-    const out = (r as { output: { finalAnswer: string; providerFallback: { from: string; reason: string }; _llm: { provider: string } } }).output;
+    const out = (
+      r as {
+        output: {
+          finalAnswer: string;
+          providerFallback: { from: string; reason: string };
+          _llm: { provider: string };
+        };
+      }
+    ).output;
     // La chiamata è andata al GATEWAY Liara, non a perplexity
     expect(safeFetch.mock.calls[0]![0]).toBe(`${GW}/chat/completions`);
     expect(out.finalAnswer).toBe('eseguito su liara');
     // Mai swap nascosto: fallback dichiarato + _llm mostra il provider REALE
-    expect(out.providerFallback).toEqual({ from: 'perplexity', reason: expect.stringContaining('non supporta il tool-calling') as string });
+    expect(out.providerFallback).toEqual({
+      from: 'perplexity',
+      reason: expect.stringContaining('non supporta il tool-calling') as string,
+    });
     expect(out._llm.provider).toBe('liara');
   });
 });
 
 describe('ai_agent_tool_loop — retrocompatibilità config esistenti', () => {
   it('🚨 LEGACY: apiKey compilata SENZA provider → resta ANTHROPIC (formato tool_use nativo)', async () => {
-    safeFetch.mockResolvedValueOnce(okReply({
-      stop_reason: 'end_turn',
-      content: [{ type: 'text', text: 'risposta claude' }],
-      usage: { input_tokens: 80, output_tokens: 15 },
-    }));
+    safeFetch.mockResolvedValueOnce(
+      okReply({
+        stop_reason: 'end_turn',
+        content: [{ type: 'text', text: 'risposta claude' }],
+        usage: { input_tokens: 80, output_tokens: 15 },
+      }),
+    );
     const r = await run({ apiKey: 'sk-ant-xyz', goal: 'x', model: 'claude-sonnet-4-5' });
     expect(safeFetch.mock.calls[0]![0]).toBe('https://api.anthropic.com/v1/messages');
     const headers = (safeFetch.mock.calls[0]![1] as { headers: Record<string, string> }).headers;
@@ -226,6 +283,12 @@ describe('ai_agent_tool_loop — retrocompatibilità config esistenti', () => {
     const out = (r as { output: { finalAnswer: string; _llm: Record<string, unknown> } }).output;
     expect(out.finalAnswer).toBe('risposta claude');
     // Fase 2: anche il ramo anthropic espone _llm dai campi usage API
-    expect(out._llm).toEqual({ inputTokens: 80, outputTokens: 15, model: 'claude-sonnet-4-5', provider: 'anthropic', fromApi: true });
+    expect(out._llm).toEqual({
+      inputTokens: 80,
+      outputTokens: 15,
+      model: 'claude-sonnet-4-5',
+      provider: 'anthropic',
+      fromApi: true,
+    });
   });
 });

@@ -43,7 +43,9 @@ export function Modal({
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('keydown', onKey); };
+    return () => {
+      document.removeEventListener('keydown', onKey);
+    };
   }, [open, persistent, onClose]);
 
   if (!open) return null;
@@ -59,7 +61,9 @@ export function Modal({
           'flex w-full max-h-[90vh] flex-col overflow-hidden rounded-lg border border-line bg-surface-raised shadow-raised animate-slide-up',
           SIZE[size],
         )}
-        onClick={(e) => { e.stopPropagation(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
       >
         {title !== undefined && (
           <header className="flex items-center justify-between gap-3 border-b border-line-subtle px-4 py-3">

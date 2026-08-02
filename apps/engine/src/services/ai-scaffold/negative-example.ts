@@ -47,7 +47,10 @@ export interface RejectedScaffoldArgs {
  * concreto. Vuoto se il tenant non ha storia (cold start pulito). Fail-soft:
  * un errore qui non deve mai bloccare lo scaffold.
  */
-export function buildNegativeFeedbackBlock(tenantId: string, opts: { limit?: number; topCodes?: number } = {}): string {
+export function buildNegativeFeedbackBlock(
+  tenantId: string,
+  opts: { limit?: number; topCodes?: number } = {},
+): string {
   try {
     const service = new AIInteractionsService();
     const { rows } = service.list({
@@ -89,7 +92,10 @@ export function buildNegativeFeedbackBlock(tenantId: string, opts: { limit?: num
 export function captureRejectedScaffold(args: RejectedScaffoldArgs): void {
   try {
     const service = new AIInteractionsService();
-    const reasons = args.criticalIssues.slice(0, 10).map((i) => `[${i.code}] ${i.message}`).join('\n');
+    const reasons = args.criticalIssues
+      .slice(0, 10)
+      .map((i) => `[${i.code}] ${i.message}`)
+      .join('\n');
     const id = service.insert({
       context: { tenantId: args.tenantId },
       interactionType: 'workflow_from_text',
@@ -104,9 +110,15 @@ export function captureRejectedScaffold(args: RejectedScaffoldArgs): void {
     // id === null → capture disabilitato per il tenant (opt-out). Niente da fare.
     if (id === null) return;
     service.updateOutcome({ interactionId: id, tenantId: args.tenantId, outcome: 'rejected' });
-    log.info({ tenantId: args.tenantId, id, criticalCount: args.criticalIssues.length }, 'negative example registrato');
+    log.info(
+      { tenantId: args.tenantId, id, criticalCount: args.criticalIssues.length },
+      'negative example registrato',
+    );
   } catch (err) {
     // Fail-soft assoluto: mai propagare.
-    log.warn({ tenantId: args.tenantId, err: String(err) }, 'negative example capture failed (non-fatal)');
+    log.warn(
+      { tenantId: args.tenantId, err: String(err) },
+      'negative example capture failed (non-fatal)',
+    );
   }
 }

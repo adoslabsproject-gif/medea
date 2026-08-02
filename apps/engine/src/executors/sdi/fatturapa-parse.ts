@@ -32,7 +32,10 @@ function num(el: XmlNode | null, path: string): number | null {
 
 /** Path "A/B/C" → XPath namespace-agnostic con local-name(). */
 function xp(path: string): string {
-  return path.split('/').map((seg) => `*[local-name()="${seg}"]`).join('/');
+  return path
+    .split('/')
+    .map((seg) => `*[local-name()="${seg}"]`)
+    .join('/');
 }
 
 export interface FatturaPaAnagrafica {
@@ -73,10 +76,14 @@ export interface FatturaPaParsed {
   numeroAllegati: number;
 }
 
-function parseAnagrafica(root: XmlNode, who: 'CedentePrestatore' | 'CessionarioCommittente'): FatturaPaAnagrafica {
+function parseAnagrafica(
+  root: XmlNode,
+  who: 'CedentePrestatore' | 'CessionarioCommittente',
+): FatturaPaAnagrafica {
   const base = root.get(xp(`FatturaElettronicaHeader/${who}/DatiAnagrafici`));
-  const denominazione = text(base, 'Anagrafica/Denominazione')
-    ?? (() => {
+  const denominazione =
+    text(base, 'Anagrafica/Denominazione') ??
+    (() => {
       // Ditte individuali: Nome + Cognome al posto della Denominazione.
       const nome = text(base, 'Anagrafica/Nome');
       const cognome = text(base, 'Anagrafica/Cognome');
@@ -107,14 +114,21 @@ export function parseFatturaPa(xml: string): FatturaPaParsed[] {
     if (!root.name.endsWith('FatturaElettronica')) {
       throw new Error(`radice <${root.name}>: non è una FatturaElettronica`);
     }
-    const formato = root.attrs.find((a) => a.name === 'versione')?.value
-      ?? text(root, 'FatturaElettronicaHeader/DatiTrasmissione/FormatoTrasmissione');
+    const formato =
+      root.attrs.find((a) => a.name === 'versione')?.value ??
+      text(root, 'FatturaElettronicaHeader/DatiTrasmissione/FormatoTrasmissione');
     const bodies = root.find(`${xp('FatturaElettronicaBody')}`);
     if (bodies.length === 0) throw new Error('nessun FatturaElettronicaBody presente');
     const cedente = parseAnagrafica(root, 'CedentePrestatore');
     const cessionario = parseAnagrafica(root, 'CessionarioCommittente');
-    const progressivoInvio = text(root, 'FatturaElettronicaHeader/DatiTrasmissione/ProgressivoInvio');
-    const codiceDestinatario = text(root, 'FatturaElettronicaHeader/DatiTrasmissione/CodiceDestinatario');
+    const progressivoInvio = text(
+      root,
+      'FatturaElettronicaHeader/DatiTrasmissione/ProgressivoInvio',
+    );
+    const codiceDestinatario = text(
+      root,
+      'FatturaElettronicaHeader/DatiTrasmissione/CodiceDestinatario',
+    );
 
     return bodies.map((b) => {
       const righe = b.find(xp('DatiBeniServizi/DettaglioLinee')).map((line) => {
@@ -168,12 +182,20 @@ export function parseFatturaPa(xml: string): FatturaPaParsed[] {
  */
 export const fatturapaParseExecutor: NodeExecutor = (config, input) => {
   const start = Date.now();
-  const xml = typeof config.xml === 'string' && config.xml !== ''
-    ? config.xml
-    : (input && typeof input === 'object' && typeof (input as Record<string, unknown>).content === 'string'
-      ? (input as Record<string, unknown>).content as string
-      : '');
-  if (xml === '') return Promise.reject(new Error('italia_fatturapa_parse: nessun XML — passa la fattura nel campo "xml" o concatena italia_p7m_extract'));
+  const xml =
+    typeof config.xml === 'string' && config.xml !== ''
+      ? config.xml
+      : input &&
+          typeof input === 'object' &&
+          typeof (input as Record<string, unknown>).content === 'string'
+        ? ((input as Record<string, unknown>).content as string)
+        : '';
+  if (xml === '')
+    return Promise.reject(
+      new Error(
+        'italia_fatturapa_parse: nessun XML — passa la fattura nel campo "xml" o concatena italia_p7m_extract',
+      ),
+    );
 
   let xsd: { valid: boolean; errors: string[] } | undefined;
   if (config.validateXsd === 'true') {
@@ -183,7 +205,9 @@ export const fatturapaParseExecutor: NodeExecutor = (config, input) => {
   try {
     fatture = parseFatturaPa(xml);
   } catch (e) {
-    return Promise.reject(new Error(`italia_fatturapa_parse: ${e instanceof Error ? e.message : String(e)}`));
+    return Promise.reject(
+      new Error(`italia_fatturapa_parse: ${e instanceof Error ? e.message : String(e)}`),
+    );
   }
   return Promise.resolve({
     output: { fatture, count: fatture.length, ...(xsd !== undefined ? { xsd } : {}) },

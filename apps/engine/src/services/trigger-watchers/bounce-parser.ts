@@ -76,7 +76,8 @@ function classifyStatus(status: string | null, diagnostic: string | null): Bounc
   return 'unknown';
 }
 
-const DSN_SUBJECT_RE = /(delivery\s+status|undeliverable|returned\s+mail|delivery\s+has\s+failed|mail\s+delivery\s+failed|failure\s+notice|mail\s+system\s+error)/i;
+const DSN_SUBJECT_RE =
+  /(delivery\s+status|undeliverable|returned\s+mail|delivery\s+has\s+failed|mail\s+delivery\s+failed|failure\s+notice|mail\s+system\s+error)/i;
 const DAEMON_RE = /(mailer-daemon|postmaster)@/i;
 
 /**
@@ -100,8 +101,11 @@ export function parseBounce(input: BounceParseInput): BounceReport | null {
   const finalRecipientRaw = src.match(/^Final-Recipient\s*:[^\r\n]*/gim) ?? [];
   const hasDsnFields = action !== null && (status !== null || finalRecipientRaw.length > 0);
 
-  const fromDaemon = DAEMON_RE.test(input.from ?? '') || DAEMON_RE.test(headerValue(src, 'From') ?? '');
-  const failureSubject = DSN_SUBJECT_RE.test(input.subject ?? '') || DSN_SUBJECT_RE.test(headerValue(src, 'Subject') ?? '');
+  const fromDaemon =
+    DAEMON_RE.test(input.from ?? '') || DAEMON_RE.test(headerValue(src, 'From') ?? '');
+  const failureSubject =
+    DSN_SUBJECT_RE.test(input.subject ?? '') ||
+    DSN_SUBJECT_RE.test(headerValue(src, 'Subject') ?? '');
 
   const strong = hasReportType || hasDeliveryStatusPart || hasDsnFields;
   const weak = (fromDaemon ? 1 : 0) + (failureSubject ? 1 : 0);

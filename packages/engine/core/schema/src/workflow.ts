@@ -34,17 +34,15 @@ const BLACKLIST_CHARS =
   '\\u0000-\\u001F' +
   '\\u007F' +
   '\\u200B-\\u200F' +
-  '\\u202A-\\u202E' +              // RLO/LRO/PDF/LRE/RLE (anti-homoglyph)
+  '\\u202A-\\u202E' + // RLO/LRO/PDF/LRE/RLE (anti-homoglyph)
   '\\u2028-\\u2029';
 
-const NODE_NAME_REGEX = new RegExp(
-  '^[\\p{L}\\p{N}_][\\p{L}\\p{N}\\s\\-_.\'()\\[\\]]{0,119}$',
-  'u',
-);
+const NODE_NAME_REGEX = new RegExp("^[\\p{L}\\p{N}_][\\p{L}\\p{N}\\s\\-_.'()\\[\\]]{0,119}$", 'u');
 const NODE_NAME_BLACKLIST = new RegExp('[' + BLACKLIST_CHARS + ']', 'u');
 const NODE_NAME_BLACKLIST_GLOBAL = new RegExp('[' + BLACKLIST_CHARS + ']', 'gu');
 
-export const NodeNameSchema = z.string()
+export const NodeNameSchema = z
+  .string()
   .min(1)
   .max(120)
   .refine((s) => !NODE_NAME_BLACKLIST.test(s), {
@@ -52,7 +50,7 @@ export const NodeNameSchema = z.string()
   })
   .refine((s) => !/\s{2,}/.test(s), { message: 'Spazi consecutivi non permessi' })
   .refine((s) => NODE_NAME_REGEX.test(s), {
-    message: 'Solo lettere/numeri/spazi e punteggiatura sicura (_ - . \' ( ) [ ])',
+    message: "Solo lettere/numeri/spazi e punteggiatura sicura (_ - . ' ( ) [ ])",
   });
 
 /**
@@ -73,10 +71,7 @@ export const NodeNameSchema = z.string()
  */
 // Whitelist `not-allowed` set (negato del NODE_NAME_REGEX body):
 // rimuove qualsiasi char fuori da [letters, numbers, whitespace, _-.'()[]]
-const NODE_NAME_NOT_ALLOWED_GLOBAL = new RegExp(
-  '[^\\p{L}\\p{N}\\s\\-_.\'()\\[\\]]',
-  'gu',
-);
+const NODE_NAME_NOT_ALLOWED_GLOBAL = new RegExp("[^\\p{L}\\p{N}\\s\\-_.'()\\[\\]]", 'gu');
 
 export function sanitizeNodeName(input: unknown): string {
   if (typeof input !== 'string') return 'node';
@@ -107,7 +102,10 @@ export const CanvasNodeSchema = z.object({
   // coerciamo a string → un client che invia retryCount:3 o retryDelayMs:1000 come number
   // (es. retry-policy trasversale) non causa più ZodError 500 al PUT. Object/array restano
   // rifiutati (non ammessi dal contratto). Coercion idempotente: '3'→'3', 3→'3'.
-  config: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]).transform((v) => String(v))),
+  config: z.record(
+    z.string(),
+    z.union([z.string(), z.number(), z.boolean()]).transform((v) => String(v)),
+  ),
   /**
    * Optional user-facing alias for this node. When set, expressions can
    * reference the node as `$node.<name>.json` instead of the cryptic
@@ -145,7 +143,11 @@ export const CanvasNodeSchema = z.object({
    * I valori sono le NodeErrorCategory di @medea/engine-nodes-stdlib (duplicate qui
    * per non invertire la dipendenza core-schema → stdlib).
    */
-  continueOnFailOn: z.array(z.enum(['validation', 'auth', 'network', 'rate_limit', 'business', 'aborted', 'internal'])).optional(),
+  continueOnFailOn: z
+    .array(
+      z.enum(['validation', 'auth', 'network', 'rate_limit', 'business', 'aborted', 'internal']),
+    )
+    .optional(),
   /**
    * Versioned Node API (n8n `typeVersion`): semver del NodeDef PINNATA quando
    * il nodo fu creato/configurato. L'editor la imposta da `def.version` al drop;
@@ -153,7 +155,10 @@ export const CanvasNodeSchema = z.object({
    * (vedi `classifyNodeVersionCompat`). Optional → workflow legacy = 'unversioned',
    * nessun enforcement, backward-compat totale.
    */
-  defVersion: z.string().regex(/^\d+\.\d+\.\d+$/).optional(),
+  defVersion: z
+    .string()
+    .regex(/^\d+\.\d+\.\d+$/)
+    .optional(),
 });
 export type CanvasNode = z.infer<typeof CanvasNodeSchema>;
 

@@ -33,9 +33,13 @@ const RESIGNED_FLAG = 'custom_nodes_resigned_stable_secret_v1';
 const OLD_SECRET = 'ephemeral-internal-token-OLD-32byte!!';
 const NEW_SECRET = 'stable-sso-derived-registry-NEW-32by!';
 
-function asSqliteDb(c: SqliteDatabase.Database): Parameters<typeof resignCustomNodesWithStableSecret>[0] {
+function asSqliteDb(
+  c: SqliteDatabase.Database,
+): Parameters<typeof resignCustomNodesWithStableSecret>[0] {
   return {
-    exec: (sql: string) => { c.exec(sql); },
+    exec: (sql: string) => {
+      c.exec(sql);
+    },
     prepare: (sql: string) => {
       const stmt = c.prepare(sql);
       return {
@@ -69,10 +73,20 @@ afterEach(() => {
 });
 
 /** Pacchetto reale ricostruito dai campi del nodo (stesso shape del loader). */
-function pkgOf(id: string, executor = 'exec', def = 'def', schema = 'schema', compiled = 'bundle'): CustomNodePackage {
+function pkgOf(
+  id: string,
+  executor = 'exec',
+  def = 'def',
+  schema = 'schema',
+  compiled = 'bundle',
+): CustomNodePackage {
   return {
-    slug: `slug-${id}`, semver: '0.1.0',
-    sourceExecutor: executor, sourceDefinition: def, sourceSchema: schema, compiledExecutor: compiled,
+    slug: `slug-${id}`,
+    semver: '0.1.0',
+    sourceExecutor: executor,
+    sourceDefinition: def,
+    sourceSchema: schema,
+    compiledExecutor: compiled,
   };
 }
 
@@ -90,22 +104,34 @@ function insertSignedNode(
   let algo: string | null = null;
   if (compiled !== null) {
     const integ = makePackageIntegrity(pkgOf(id, executor, 'def', 'schema', compiled), secret);
-    digest = integ.digest; signature = integ.signature; algo = integ.algo;
+    digest = integ.digest;
+    signature = integ.signature;
+    algo = integ.algo;
   }
-  conn.prepare(`
+  conn
+    .prepare(
+      `
     INSERT INTO custom_nodes (
       id, workspace_id, owner_user_id, slug, display_name, status, semver,
       source_executor, source_definition, source_schema, compiled_executor,
       integrity_digest, integrity_signature, integrity_algo,
       created_at, updated_at
     ) VALUES (?, 'ws-A', 'owner', ?, ?, 'published_priv', '0.1.0', ?, 'def', 'schema', ?, ?, ?, ?, ?, ?)
-  `).run(id, `slug-${id}`, `Node ${id}`, executor, compiled, digest, signature, algo, at, at);
+  `,
+    )
+    .run(id, `slug-${id}`, `Node ${id}`, executor, compiled, digest, signature, algo, at, at);
 }
 
-function readIntegrity(id: string): { digest: string | null; signature: string | null; algo: string | null } {
-  return conn.prepare(
-    'SELECT integrity_digest AS digest, integrity_signature AS signature, integrity_algo AS algo FROM custom_nodes WHERE id = ?',
-  ).get(id) as { digest: string | null; signature: string | null; algo: string | null };
+function readIntegrity(id: string): {
+  digest: string | null;
+  signature: string | null;
+  algo: string | null;
+} {
+  return conn
+    .prepare(
+      'SELECT integrity_digest AS digest, integrity_signature AS signature, integrity_algo AS algo FROM custom_nodes WHERE id = ?',
+    )
+    .get(id) as { digest: string | null; signature: string | null; algo: string | null };
 }
 
 /**
@@ -114,27 +140,44 @@ function readIntegrity(id: string): { digest: string | null; signature: string |
  * non da valori di comodo — così il test riflette il comportamento di produzione.
  */
 function loaderVerdict(id: string, secret: string): ReturnType<typeof verifyPackageIntegrity> {
-  const row = conn.prepare(
-    `SELECT slug, semver, source_executor, source_definition, source_schema, compiled_executor,
+  const row = conn
+    .prepare(
+      `SELECT slug, semver, source_executor, source_definition, source_schema, compiled_executor,
             integrity_digest, integrity_signature, integrity_algo FROM custom_nodes WHERE id = ?`,
-  ).get(id) as {
-    slug: string; semver: string; source_executor: string; source_definition: string;
-    source_schema: string; compiled_executor: string | null;
-    integrity_digest: string | null; integrity_signature: string | null; integrity_algo: string | null;
+    )
+    .get(id) as {
+    slug: string;
+    semver: string;
+    source_executor: string;
+    source_definition: string;
+    source_schema: string;
+    compiled_executor: string | null;
+    integrity_digest: string | null;
+    integrity_signature: string | null;
+    integrity_algo: string | null;
   };
   return verifyPackageIntegrity(
     {
-      slug: row.slug, semver: row.semver,
-      sourceExecutor: row.source_executor, sourceDefinition: row.source_definition,
-      sourceSchema: row.source_schema, compiledExecutor: row.compiled_executor ?? '',
+      slug: row.slug,
+      semver: row.semver,
+      sourceExecutor: row.source_executor,
+      sourceDefinition: row.source_definition,
+      sourceSchema: row.source_schema,
+      compiledExecutor: row.compiled_executor ?? '',
     },
-    { algo: row.integrity_algo as never, digest: row.integrity_digest ?? '', signature: row.integrity_signature ?? '' },
+    {
+      algo: row.integrity_algo as never,
+      digest: row.integrity_digest ?? '',
+      signature: row.integrity_signature ?? '',
+    },
     secret,
   );
 }
 
 function flagSet(): boolean {
-  return conn.prepare('SELECT value FROM system_flags WHERE key = ?').get(RESIGNED_FLAG) !== undefined;
+  return (
+    conn.prepare('SELECT value FROM system_flags WHERE key = ?').get(RESIGNED_FLAG) !== undefined
+  );
 }
 
 describe('🚨 resignCustomNodesWithStableSecret — rotazione sicura del registry secret', () => {
@@ -143,7 +186,10 @@ describe('🚨 resignCustomNodesWithStableSecret — rotazione sicura del regist
 
     // Pre-fix: il loader (secret stabile NUOVO) vede una firma fatta col vecchio
     // token → signature_mismatch → blocco. Esattamente il bug Streammy.
-    expect(loaderVerdict('streammy', NEW_SECRET)).toEqual({ valid: false, reason: 'signature_mismatch' });
+    expect(loaderVerdict('streammy', NEW_SECRET)).toEqual({
+      valid: false,
+      reason: 'signature_mismatch',
+    });
 
     resignCustomNodesWithStableSecret(asSqliteDb(conn));
 
@@ -157,7 +203,7 @@ describe('🚨 resignCustomNodesWithStableSecret — rotazione sicura del regist
     const before = readIntegrity('n1');
     resignCustomNodesWithStableSecret(asSqliteDb(conn));
     const after = readIntegrity('n1');
-    expect(after.digest).toBe(before.digest);       // stesso contenuto → stesso digest
+    expect(after.digest).toBe(before.digest); // stesso contenuto → stesso digest
     expect(after.signature).not.toBe(before.signature); // firma nuova (secret nuovo)
     expect(after.algo).toBe(before.algo);
   });
@@ -166,7 +212,9 @@ describe('🚨 resignCustomNodesWithStableSecret — rotazione sicura del regist
     // Firma col vecchio secret, poi un attaccante manomette l'executor lasciando
     // il digest pregresso. Il digest NON corrisponde più ai sorgenti reali.
     insertSignedNode('evil', OLD_SECRET);
-    conn.prepare("UPDATE custom_nodes SET source_executor = 'STEAL_SECRETS()' WHERE id = 'evil'").run();
+    conn
+      .prepare("UPDATE custom_nodes SET source_executor = 'STEAL_SECRETS()' WHERE id = 'evil'")
+      .run();
     const tamperedBefore = readIntegrity('evil');
 
     resignCustomNodesWithStableSecret(asSqliteDb(conn));
@@ -192,19 +240,26 @@ describe('🚨 resignCustomNodesWithStableSecret — rotazione sicura del regist
     const at = new Date().toISOString();
     const evil = pkgOf('forge', 'STEAL_ALL_SECRETS()');
     const selfConsistentDigest = makePackageIntegrity(evil, 'qualunque-secret-attaccante').digest;
-    conn.prepare(`
+    conn
+      .prepare(
+        `
       INSERT INTO custom_nodes (id, workspace_id, owner_user_id, slug, display_name, status, semver,
         source_executor, source_definition, source_schema, compiled_executor,
         integrity_digest, integrity_signature, integrity_algo, created_at, updated_at)
       VALUES ('forge', 'ws-A', 'owner', 'slug-forge', 'Forge', 'published_priv', '0.1.0',
         'STEAL_ALL_SECRETS()', 'def', 'schema', 'bundle', ?, 'firma-fasulla', 'sha256+hmac-sha256', ?, ?)
-    `).run(selfConsistentDigest, at, at);
+    `,
+      )
+      .run(selfConsistentDigest, at, at);
 
     resignCustomNodesWithStableSecret(asSqliteDb(conn)); // secondo boot
 
     // Il forge NON deve avere una firma valida col secret stabile.
     expect(readIntegrity('forge').signature).toBe('firma-fasulla'); // intoccato dal gate
-    expect(loaderVerdict('forge', NEW_SECRET)).toEqual({ valid: false, reason: 'signature_mismatch' });
+    expect(loaderVerdict('forge', NEW_SECRET)).toEqual({
+      valid: false,
+      reason: 'signature_mismatch',
+    });
   });
 
   it('idempotente sui nodi sani: ri-eseguito (flag resettato) produce lo stesso record', () => {
@@ -228,12 +283,16 @@ describe('🚨 resignCustomNodesWithStableSecret — rotazione sicura del regist
   it('IGNORA i nodi legacy SENZA integrity_digest (li gestisce il backfill, non il resign)', () => {
     // compiled presente ma nessun record di integrità (nodo legacy pre-enforcement).
     const at = new Date().toISOString();
-    conn.prepare(`
+    conn
+      .prepare(
+        `
       INSERT INTO custom_nodes (id, workspace_id, owner_user_id, slug, display_name, status, semver,
         source_executor, source_definition, source_schema, compiled_executor, created_at, updated_at)
       VALUES ('legacy', 'ws-A', 'owner', 'slug-legacy', 'Legacy', 'published_priv', '0.1.0',
         'exec', 'def', 'schema', 'bundle', ?, ?)
-    `).run(at, at);
+    `,
+      )
+      .run(at, at);
     resignCustomNodesWithStableSecret(asSqliteDb(conn));
     expect(readIntegrity('legacy').digest).toBeNull(); // intoccato
     expect(flagSet()).toBe(true); // il flag si setta comunque (one-time per-DB)
@@ -245,7 +304,7 @@ describe('🚨 resignCustomNodesWithStableSecret — rotazione sicura del regist
     expect(readIntegrity('draft').digest).toBeNull();
   });
 
-  it('senza secret nell\'env → no-op totale, NESSUN flag (back-compat dev/test)', () => {
+  it("senza secret nell'env → no-op totale, NESSUN flag (back-compat dev/test)", () => {
     delete process.env.MEDEA_REGISTRY_SECRET;
     delete process.env.MEDEA_INTERNAL_TOKEN;
     insertSignedNode('n1', OLD_SECRET);

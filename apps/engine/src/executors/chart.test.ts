@@ -6,18 +6,45 @@ const ctx = {} as never;
 
 describe('coerceChartData — normalizza qualsiasi forma di input', () => {
   it('array di oggetti → usa labelField/valueField', () => {
-    expect(coerceChartData([{ k: 'A', v: 10 }, { k: 'B', v: 20 }], 'k', 'v'))
-      .toEqual([{ label: 'A', value: 10 }, { label: 'B', value: 20 }]);
+    expect(
+      coerceChartData(
+        [
+          { k: 'A', v: 10 },
+          { k: 'B', v: 20 },
+        ],
+        'k',
+        'v',
+      ),
+    ).toEqual([
+      { label: 'A', value: 10 },
+      { label: 'B', value: 20 },
+    ]);
   });
   it('array di numeri → indice come label', () => {
-    expect(coerceChartData([5, 9], 'label', 'value')).toEqual([{ label: 0, value: 5 }, { label: 1, value: 9 }]);
+    expect(coerceChartData([5, 9], 'label', 'value')).toEqual([
+      { label: 0, value: 5 },
+      { label: 1, value: 9 },
+    ]);
   });
   it('array di coppie [label, value]', () => {
-    expect(coerceChartData([['Lun', 3], ['Mar', 7]], 'label', 'value'))
-      .toEqual([{ label: 'Lun', value: 3 }, { label: 'Mar', value: 7 }]);
+    expect(
+      coerceChartData(
+        [
+          ['Lun', 3],
+          ['Mar', 7],
+        ],
+        'label',
+        'value',
+      ),
+    ).toEqual([
+      { label: 'Lun', value: 3 },
+      { label: 'Mar', value: 7 },
+    ]);
   });
   it('JSON string → parsata', () => {
-    expect(coerceChartData('[{"label":"x","value":1}]', 'label', 'value')).toEqual([{ label: 'x', value: 1 }]);
+    expect(coerceChartData('[{"label":"x","value":1}]', 'label', 'value')).toEqual([
+      { label: 'x', value: 1 },
+    ]);
   });
   it('non-array / JSON invalido / stringa vuota → [] (mai throw)', () => {
     expect(coerceChartData('{not json', 'label', 'value')).toEqual([]);
@@ -34,8 +61,13 @@ describe('coerceChartData — normalizza qualsiasi forma di input', () => {
 describe('chartGenerateExecutor', () => {
   it('genera output completo {svg,dataUri,imgTag,width,height,pointCount}', async () => {
     const r = await chartGenerateExecutor(
-      { chartType: 'bar', dataJson: '[{"label":"A","value":10},{"label":"B","value":20}]', title: 'T' },
-      undefined, ctx,
+      {
+        chartType: 'bar',
+        dataJson: '[{"label":"A","value":10},{"label":"B","value":20}]',
+        title: 'T',
+      },
+      undefined,
+      ctx,
     );
     const o = r.output as Record<string, unknown>;
     expect(String(o.svg).startsWith('<svg')).toBe(true);
@@ -46,10 +78,11 @@ describe('chartGenerateExecutor', () => {
     expect(o.height).toBe(400);
   });
 
-  it('🚨🚨 XSS: title con `"` non rompe l\'attributo alt dell\'imgTag (email HTML)', async () => {
+  it("🚨🚨 XSS: title con `\"` non rompe l'attributo alt dell'imgTag (email HTML)", async () => {
     const r = await chartGenerateExecutor(
       { chartType: 'bar', dataJson: '[1,2]', title: '"><script>alert(1)</script>' },
-      undefined, ctx,
+      undefined,
+      ctx,
     );
     const imgTag = String((r.output as Record<string, unknown>).imgTag);
     // niente tag/quote raw che escano dall'attributo: tutto escaped
@@ -60,14 +93,22 @@ describe('chartGenerateExecutor', () => {
   });
 
   it('width/height fuori range → clampati a [100,4000]', async () => {
-    const r = await chartGenerateExecutor({ chartType: 'bar', dataJson: '[1,2]', width: '99999', height: '1' }, undefined, ctx);
+    const r = await chartGenerateExecutor(
+      { chartType: 'bar', dataJson: '[1,2]', width: '99999', height: '1' },
+      undefined,
+      ctx,
+    );
     const o = r.output as Record<string, unknown>;
     expect(o.width).toBe(4000);
     expect(o.height).toBe(100);
   });
 
   it('chartType invalido → fallback a bar (mai crash)', async () => {
-    const r = await chartGenerateExecutor({ chartType: 'hacker', dataJson: '[1,2,3]' }, undefined, ctx);
+    const r = await chartGenerateExecutor(
+      { chartType: 'hacker', dataJson: '[1,2,3]' },
+      undefined,
+      ctx,
+    );
     expect(String((r.output as Record<string, unknown>).svg)).toContain('<rect');
   });
 
@@ -87,12 +128,28 @@ describe('🔒 [CONTRACT anti-drift] NodeDef ↔ executor: i campi config combac
   it('ogni config.X letto dall’executor è dichiarato come campo UI, e viceversa', () => {
     const declared = new Set(chartGenerateNode.def.configFields?.map((f) => f.key) ?? []);
     // chiavi che l’executor legge da config (vedi chart.ts)
-    const readByExecutor = ['chartType', 'dataJson', 'labelField', 'valueField', 'title', 'width', 'height', 'palette', 'outputFormat'];
+    const readByExecutor = [
+      'chartType',
+      'dataJson',
+      'labelField',
+      'valueField',
+      'title',
+      'width',
+      'height',
+      'palette',
+      'outputFormat',
+    ];
     for (const k of readByExecutor) {
-      expect(declared.has(k), `campo "${k}" letto dall’executor ma NON dichiarato nel NodeDef`).toBe(true);
+      expect(
+        declared.has(k),
+        `campo "${k}" letto dall’executor ma NON dichiarato nel NodeDef`,
+      ).toBe(true);
     }
     for (const k of declared) {
-      expect(readByExecutor.includes(k), `campo "${k}" dichiarato nel NodeDef ma MAI letto dall’executor (morto)`).toBe(true);
+      expect(
+        readByExecutor.includes(k),
+        `campo "${k}" dichiarato nel NodeDef ma MAI letto dall’executor (morto)`,
+      ).toBe(true);
     }
   });
 

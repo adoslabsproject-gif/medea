@@ -31,7 +31,8 @@ import { describe, it, expect } from 'vitest';
 import { stdlibNodes } from './registry.js';
 
 /** Regex shared with the A3.3 block — keep alignments to avoid contract drift. */
-const ENGLISH_VERB_OPENER = /^(Run|Send|Trigger|Execute|Read|Write|Get|Update|Delete|Create|Fetch|Query|Pause|Reshape|Call|Catch|Invoke|Push|Pull|Poll|Auto|Watch|Make|Build|Sleep|Wait|Receive|Calculate|Connect|Insert|Iterate|Iterates|Schedule|Subscribe|Classify|Extract|Translate|Faithful|Produce|Generate)\b/;
+const ENGLISH_VERB_OPENER =
+  /^(Run|Send|Trigger|Execute|Read|Write|Get|Update|Delete|Create|Fetch|Query|Pause|Reshape|Call|Catch|Invoke|Push|Pull|Poll|Auto|Watch|Make|Build|Sleep|Wait|Receive|Calculate|Connect|Insert|Iterate|Iterates|Schedule|Subscribe|Classify|Extract|Translate|Faithful|Produce|Generate)\b/;
 
 interface ContractViolation {
   defId: string;
@@ -46,9 +47,7 @@ function checkContract(defId: string, description: string): string[] {
   if (ENGLISH_VERB_OPENER.test(description)) {
     reasons.push(`opens with English imperative verb`);
   }
-  const distinctWords = new Set(
-    description.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? [],
-  );
+  const distinctWords = new Set(description.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? []);
   if (distinctWords.size < 25) {
     reasons.push(`distinct words=${distinctWords.size} < 25 (gameable)`);
   }
@@ -131,12 +130,15 @@ describe('description contract — every NodeDef passes the A3.3 anti-gaming bar
     // eslint-disable-next-line no-console
     console.log(
       `[description-contract] catalog=${stdlibNodes.length} ` +
-      `passing=${passing} knownFailing=${failingKnown} newFailing=${failingNew} ` +
-      `whitelistDrift=${drift.length}`,
+        `passing=${passing} knownFailing=${failingKnown} newFailing=${failingNew} ` +
+        `whitelistDrift=${drift.length}`,
     );
     // 🚨 GATE 1: whitelist drift — nodi promossi a passing devono essere rimossi
     // dalla allowlist (altrimenti la allowlist diventa stale e nasconde regression).
-    expect(drift, `Nodes ora passing ma ancora in KNOWN_SUB_CONTRACT_NODES (rimuovili): ${drift.join(', ')}`).toEqual([]);
+    expect(
+      drift,
+      `Nodes ora passing ma ancora in KNOWN_SUB_CONTRACT_NODES (rimuovili): ${drift.join(', ')}`,
+    ).toEqual([]);
     // 🚨 GATE 2: catalog non vuoto (regression detection — se import fail, 0 nodes)
     expect(stdlibNodes.length).toBeGreaterThan(50);
   });
@@ -151,14 +153,12 @@ describe('description contract — every NodeDef passes the A3.3 anti-gaming bar
       if (reasons.length > 0) offenders.push({ defId: id, reasons });
     }
     if (offenders.length > 0) {
-      const lines = offenders.map(
-        (o) => `  • ${o.defId} — ${o.reasons.join(' | ')}`,
-      );
+      const lines = offenders.map((o) => `  • ${o.defId} — ${o.reasons.join(' | ')}`);
       throw new Error(
         `${offenders.length} NEW description-contract violation(s) — enrich ` +
-        `the NodeDef description (≥150 char IT, ≥25 distinct words, NO English ` +
-        `verb opener, "Use case:" enumerated) OR add to KNOWN_SUB_CONTRACT_NODES ` +
-        `with a tracked TODO ref:\n${lines.join('\n')}`,
+          `the NodeDef description (≥150 char IT, ≥25 distinct words, NO English ` +
+          `verb opener, "Use case:" enumerated) OR add to KNOWN_SUB_CONTRACT_NODES ` +
+          `with a tracked TODO ref:\n${lines.join('\n')}`,
       );
     }
     expect(offenders).toHaveLength(0);
@@ -176,7 +176,7 @@ describe('description contract — every NodeDef passes the A3.3 anti-gaming bar
     expect(
       accidentallyFixed,
       `Whitelist drift: ${accidentallyFixed.length} node(s) now PASS the ` +
-      `contract — remove from KNOWN_SUB_CONTRACT_NODES: ${accidentallyFixed.join(', ')}`,
+        `contract — remove from KNOWN_SUB_CONTRACT_NODES: ${accidentallyFixed.join(', ')}`,
     ).toEqual([]);
   });
 
@@ -184,7 +184,11 @@ describe('description contract — every NodeDef passes the A3.3 anti-gaming bar
     // Anchor test: lock-in the standard for nodes added in the same sprint
     // as this contract file. Refactor of these descriptions must keep them
     // passing — no silent regression.
-    for (const id of ['action_recursive_spider', 'action_asset_batch_download', 'action_html_mirror_rewrite']) {
+    for (const id of [
+      'action_recursive_spider',
+      'action_asset_batch_download',
+      'action_html_mirror_rewrite',
+    ]) {
       const mod = stdlibNodes.find((n) => n.def.id === id);
       expect(mod, `${id} must be in stdlibNodes`).toBeDefined();
       const desc = mod!.def.description;

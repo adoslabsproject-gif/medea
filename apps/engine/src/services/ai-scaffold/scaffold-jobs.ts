@@ -25,7 +25,7 @@ export interface ScaffoldJob {
 }
 
 const TTL_MS = 15 * 60_000; // 15 min: copre generazioni lunghe + finestra di retrieval
-const MAX_JOBS = 200;       // cap anti-leak (in pratica 1-2 generazioni concorrenti)
+const MAX_JOBS = 200; // cap anti-leak (in pratica 1-2 generazioni concorrenti)
 const jobs = new Map<string, ScaffoldJob>();
 
 function cleanup(): void {

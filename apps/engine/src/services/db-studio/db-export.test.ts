@@ -12,7 +12,9 @@ import {
 } from './db-export.js';
 
 /** Fetcher di test: una tabella in-memory di `total` righe, pagina su limit/offset. */
-function pagedSource(total: number): (limit: number, offset: number) => Promise<Record<string, unknown>[]> {
+function pagedSource(
+  total: number,
+): (limit: number, offset: number) => Promise<Record<string, unknown>[]> {
   const all = Array.from({ length: total }, (_, i) => ({ id: i }));
   return (limit, offset) => Promise.resolve(all.slice(offset, offset + limit));
 }
@@ -57,7 +59,7 @@ describe('paginateAll — accumulo + truncated onesto', () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
-  it('🔒 l\'ultima pagina richiede SOLO le righe mancanti al cap (limit = maxRows-out.length)', async () => {
+  it("🔒 l'ultima pagina richiede SOLO le righe mancanti al cap (limit = maxRows-out.length)", async () => {
     const fetch = vi.fn(pagedSource(100));
     await paginateAll(fetch, { pageSize: 5, maxRows: 7 });
     // prima pagina: limit 5; seconda: limit min(5, 7-5)=2 → mai più di maxRows.
@@ -67,14 +69,25 @@ describe('paginateAll — accumulo + truncated onesto', () => {
 });
 
 describe('unionColumns', () => {
-  it('unione delle chiavi nell\'ordine di prima apparizione', () => {
-    expect(unionColumns([{ a: 1, b: 2 }, { b: 3, c: 4 }])).toEqual(['a', 'b', 'c']);
+  it("unione delle chiavi nell'ordine di prima apparizione", () => {
+    expect(
+      unionColumns([
+        { a: 1, b: 2 },
+        { b: 3, c: 4 },
+      ]),
+    ).toEqual(['a', 'b', 'c']);
   });
   it('righe sparse → non perde colonne presenti solo in alcune righe', () => {
     expect(unionColumns([{ id: 1 }, { id: 2, extra: 'x' }])).toEqual(['id', 'extra']);
   });
   it('ignora righe non-oggetto / null', () => {
-    expect(unionColumns([{ a: 1 }, null as unknown as Record<string, unknown>, 5 as unknown as Record<string, unknown>])).toEqual(['a']);
+    expect(
+      unionColumns([
+        { a: 1 },
+        null as unknown as Record<string, unknown>,
+        5 as unknown as Record<string, unknown>,
+      ]),
+    ).toEqual(['a']);
   });
   it('lista vuota → []', () => {
     expect(unionColumns([])).toEqual([]);
@@ -88,12 +101,17 @@ describe('rowsToCsv — RFC 4180 + anti-injection', () => {
   });
 
   it('🔒 quota i campi con virgola, doppio apice (raddoppiato), newline', () => {
-    const csv = rowsToCsv([{ x: 'ha, virgola', y: 'dice "ciao"', z: 'riga1\nriga2' }], { newline: '\n' });
+    const csv = rowsToCsv([{ x: 'ha, virgola', y: 'dice "ciao"', z: 'riga1\nriga2' }], {
+      newline: '\n',
+    });
     expect(csv).toBe('x,y,z\n"ha, virgola","dice ""ciao""","riga1\nriga2"');
   });
 
   it('null/undefined → cella vuota; cella mancante → vuota', () => {
-    const csv = rowsToCsv([{ a: null, b: undefined, c: 'ok' }], { columns: ['a', 'b', 'c', 'd'], newline: '\n' });
+    const csv = rowsToCsv([{ a: null, b: undefined, c: 'ok' }], {
+      columns: ['a', 'b', 'c', 'd'],
+      newline: '\n',
+    });
     expect(csv).toBe('a,b,c,d\n,,ok,');
   });
 
@@ -103,7 +121,9 @@ describe('rowsToCsv — RFC 4180 + anti-injection', () => {
   });
 
   it('🔒 CSV-injection: valore che inizia con = + @ - viene neutralizzato con apice + quote', () => {
-    const csv = rowsToCsv([{ f: '=SUM(A1:A2)' }, { f: '+1' }, { f: '@x' }, { f: '-3' }], { newline: '\n' });
+    const csv = rowsToCsv([{ f: '=SUM(A1:A2)' }, { f: '+1' }, { f: '@x' }, { f: '-3' }], {
+      newline: '\n',
+    });
     const lines = csv.split('\n');
     expect(lines[1]).toBe(`"'=SUM(A1:A2)"`);
     expect(lines[2]).toBe(`"'+1"`);
@@ -130,13 +150,25 @@ describe('csvHeaderLine / csvBodyLines — streaming a memoria limitata', () => 
     expect(csvHeaderLine(['a', 'b, c'])).toBe('a,"b, c"');
   });
   it('body di una pagina = righe escapate, colonne FISSE, senza header', () => {
-    expect(csvBodyLines([{ a: 1, b: 'x,y' }, { a: 2, b: 'z' }], ['a', 'b'], '\n')).toBe('1,"x,y"\n2,z');
+    expect(
+      csvBodyLines(
+        [
+          { a: 1, b: 'x,y' },
+          { a: 2, b: 'z' },
+        ],
+        ['a', 'b'],
+        '\n',
+      ),
+    ).toBe('1,"x,y"\n2,z');
   });
   it('celle mancanti nella pagina → vuote (colonne fisse dalla 1ª pagina)', () => {
     expect(csvBodyLines([{ a: 1 }], ['a', 'b'], '\n')).toBe('1,');
   });
   it('🔒 rowsToCsv === header + body (le due strade danno lo stesso CSV)', () => {
-    const rows = [{ a: 1, b: 'x' }, { a: 2, b: 'y' }];
+    const rows = [
+      { a: 1, b: 'x' },
+      { a: 2, b: 'y' },
+    ];
     const cols = ['a', 'b'];
     expect(rowsToCsv(rows, { columns: cols, newline: '\n' })).toBe(
       `${csvHeaderLine(cols)}\n${csvBodyLines(rows, cols, '\n')}`,
@@ -145,21 +177,39 @@ describe('csvHeaderLine / csvBodyLines — streaming a memoria limitata', () => 
 });
 
 describe('paginatePages — streaming (NON accumula: anti-OOM)', () => {
-  function pagedSource(total: number): (limit: number, offset: number) => Promise<Record<string, unknown>[]> {
+  function pagedSource(
+    total: number,
+  ): (limit: number, offset: number) => Promise<Record<string, unknown>[]> {
     const all = Array.from({ length: total }, (_, i) => ({ id: i }));
     return (limit, offset) => Promise.resolve(all.slice(offset, offset + limit));
   }
 
   it('🚨 invoca onPage per OGNI pagina in ordine, senza accumulare', async () => {
     const seen: number[][] = [];
-    const r = await paginatePages(pagedSource(12), (rows) => { seen.push(rows.map((x) => x.id as number)); }, { pageSize: 5, maxRows: 100 });
-    expect(seen).toEqual([[0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11]]);
+    const r = await paginatePages(
+      pagedSource(12),
+      (rows) => {
+        seen.push(rows.map((x) => x.id as number));
+      },
+      { pageSize: 5, maxRows: 100 },
+    );
+    expect(seen).toEqual([
+      [0, 1, 2, 3, 4],
+      [5, 6, 7, 8, 9],
+      [10, 11],
+    ]);
     expect(r).toEqual({ rows: 12, truncated: false });
   });
 
   it('🚨 oltre il cap → tronca a maxRows + truncated:true', async () => {
     const seen: number[] = [];
-    const r = await paginatePages(pagedSource(50), (rows) => { seen.push(rows.length); }, { pageSize: 5, maxRows: 10 });
+    const r = await paginatePages(
+      pagedSource(50),
+      (rows) => {
+        seen.push(rows.length);
+      },
+      { pageSize: 5, maxRows: 10 },
+    );
     expect(seen.reduce((a, b) => a + b, 0)).toBe(10);
     expect(r.truncated).toBe(true);
   });
@@ -173,10 +223,14 @@ describe('paginatePages — streaming (NON accumula: anti-OOM)', () => {
 
   it('🔒 supporta onPage async (backpressure dello stream)', async () => {
     const seen: number[] = [];
-    await paginatePages(pagedSource(7), async (rows) => {
-      await Promise.resolve();
-      seen.push(rows.length);
-    }, { pageSize: 3, maxRows: 100 });
+    await paginatePages(
+      pagedSource(7),
+      async (rows) => {
+        await Promise.resolve();
+        seen.push(rows.length);
+      },
+      { pageSize: 3, maxRows: 100 },
+    );
     expect(seen).toEqual([3, 3, 1]);
   });
 

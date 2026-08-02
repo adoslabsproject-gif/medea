@@ -15,7 +15,4 @@ export const pecLegalArchiveActionNode: NodeModule = {
 };
 
 export { pecLegalArchiveExecutor, pecLegalArchiveNodeDef };
-export {
-  PecLegalArchiveConfigSchema,
-  type PecLegalArchiveConfig,
-} from './schema.js';
+export { PecLegalArchiveConfigSchema, type PecLegalArchiveConfig } from './schema.js';

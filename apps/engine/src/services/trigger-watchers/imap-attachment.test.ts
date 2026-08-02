@@ -15,8 +15,12 @@ import { isBinaryData } from '@medea/engine-core-schema';
 import { buildImapAttachment, MAX_ATTACHMENT_BYTES } from './imap-attachment.js';
 import { BinaryStore } from '../binary-store.service.js';
 
-const att = (content: Buffer, over: Record<string, unknown> = {}) =>
-  ({ filename: 'doc.pdf', contentType: 'application/pdf', content, ...over });
+const att = (content: Buffer, over: Record<string, unknown> = {}) => ({
+  filename: 'doc.pdf',
+  contentType: 'application/pdf',
+  content,
+  ...over,
+});
 
 async function withStore<T>(fn: (store: BinaryStore) => Promise<T>): Promise<T> {
   const root = await mkdtemp(join(tmpdir(), 'imap-att-'));

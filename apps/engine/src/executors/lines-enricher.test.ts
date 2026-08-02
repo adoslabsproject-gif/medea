@@ -29,8 +29,9 @@ import {
 describe('🚨 findSubDescription — PDF line lookup', () => {
   it('🚨 happy: code trovato → next line ritornata trimmed', () => {
     const text = `Header\nVAL-123 Valvola standard\n  descrizione aggiuntiva DN50\nVAL-456 Altra valvola`;
-    expect(findSubDescription(text, 'VAL-123', ['VAL-123', 'VAL-456']))
-      .toBe('descrizione aggiuntiva DN50');
+    expect(findSubDescription(text, 'VAL-123', ['VAL-123', 'VAL-456'])).toBe(
+      'descrizione aggiuntiva DN50',
+    );
   });
 
   it('🚨 code non trovato → "" vuoto', () => {
@@ -43,8 +44,7 @@ describe('🚨 findSubDescription — PDF line lookup', () => {
 
   it('🚨 SECURITY: code con regex char "." → escapato', () => {
     const text = `V.123 prima valvola\n  sub desc per V.123\nV.456 seconda`;
-    expect(findSubDescription(text, 'V.123', ['V.123', 'V.456']))
-      .toBe('sub desc per V.123');
+    expect(findSubDescription(text, 'V.123', ['V.123', 'V.456'])).toBe('sub desc per V.123');
     // Verifica che "." NON ha matchato qualsiasi char
     expect(findSubDescription(text, 'V.XYZ', ['V.123', 'V.XYZ'])).toBe('');
   });
@@ -72,8 +72,9 @@ describe('🚨 findSubDescription — PDF line lookup', () => {
   it('🚨 next line contiene proprio codice nel testo → comunque accettata', () => {
     // Il check escluda solo "altri" codes — il proprio code può comparire
     const text = `VAL-1 prima\n  ulteriore desc VAL-1 codice ripetuto`;
-    expect(findSubDescription(text, 'VAL-1', ['VAL-1']))
-      .toBe('ulteriore desc VAL-1 codice ripetuto');
+    expect(findSubDescription(text, 'VAL-1', ['VAL-1'])).toBe(
+      'ulteriore desc VAL-1 codice ripetuto',
+    );
   });
 
   it('🚨 CRLF line endings supportati', () => {
@@ -169,15 +170,19 @@ describe('🚨 linesEnrichExecutor — flow end-to-end', () => {
   const ctx = {} as never;
 
   it('🚨 happy path: enrichment applicato + count', async () => {
-    const r = await linesEnrichExecutor({
-      rawTextExpression: 'VAL-1 prima\n  Sub desc per 1\nVAL-2 seconda\n  Sub desc per 2',
-      includeCodePatterns: '^VAL',
-      excludePrefixes: '',
-      linesExpression: [
-        { product_code: 'VAL-1', product_description: 'Base 1' },
-        { product_code: 'VAL-2', product_description: 'Base 2' },
-      ],
-    } as never, null, ctx);
+    const r = await linesEnrichExecutor(
+      {
+        rawTextExpression: 'VAL-1 prima\n  Sub desc per 1\nVAL-2 seconda\n  Sub desc per 2',
+        includeCodePatterns: '^VAL',
+        excludePrefixes: '',
+        linesExpression: [
+          { product_code: 'VAL-1', product_description: 'Base 1' },
+          { product_code: 'VAL-2', product_description: 'Base 2' },
+        ],
+      } as never,
+      null,
+      ctx,
+    );
     const out = r.output as { lines: { product_description: string }[]; enrichedCount: number };
     expect(out.enrichedCount).toBe(2);
     expect(out.lines[0]!.product_description).toBe('Base 1 — Sub desc per 1');
@@ -197,11 +202,20 @@ describe('🚨 linesEnrichExecutor — flow end-to-end', () => {
       is_purchase_order: true,
       lines: [{ product_code: 'VAL-1', product_description: 'B' }],
     };
-    const r = await linesEnrichExecutor({
-      rawTextExpression: 'VAL-1\n  Sub desc',
-      includeCodePatterns: '^VAL',
-    } as never, input, ctx);
-    const out = r.output as { order_number: string; totale_imponibile: number; is_purchase_order: boolean; lines: { product_description: string }[] };
+    const r = await linesEnrichExecutor(
+      {
+        rawTextExpression: 'VAL-1\n  Sub desc',
+        includeCodePatterns: '^VAL',
+      } as never,
+      input,
+      ctx,
+    );
+    const out = r.output as {
+      order_number: string;
+      totale_imponibile: number;
+      is_purchase_order: boolean;
+      lines: { product_description: string }[];
+    };
     expect(out.order_number).toBe('ORD-100');
     expect(out.totale_imponibile).toBe(999.99);
     expect(out.is_purchase_order).toBe(true);
@@ -209,98 +223,134 @@ describe('🚨 linesEnrichExecutor — flow end-to-end', () => {
   });
 
   it('🚨 separator custom override default " — "', async () => {
-    const r = await linesEnrichExecutor({
-      rawTextExpression: 'VAL-1\n  Sub',
-      includeCodePatterns: '^VAL',
-      separator: ' | ',
-      linesExpression: [{ product_code: 'VAL-1', product_description: 'Base' }],
-    } as never, null, ctx);
+    const r = await linesEnrichExecutor(
+      {
+        rawTextExpression: 'VAL-1\n  Sub',
+        includeCodePatterns: '^VAL',
+        separator: ' | ',
+        linesExpression: [{ product_code: 'VAL-1', product_description: 'Base' }],
+      } as never,
+      null,
+      ctx,
+    );
     const out = r.output as { lines: { product_description: string }[] };
     expect(out.lines[0]!.product_description).toBe('Base | Sub');
   });
 
   it('🚨 line senza product_code → passthrough', async () => {
-    const r = await linesEnrichExecutor({
-      rawTextExpression: 'nothing',
-      includeCodePatterns: '^VAL',
-      linesExpression: [{ product_description: 'No code line' }],
-    } as never, null, ctx);
+    const r = await linesEnrichExecutor(
+      {
+        rawTextExpression: 'nothing',
+        includeCodePatterns: '^VAL',
+        linesExpression: [{ product_description: 'No code line' }],
+      } as never,
+      null,
+      ctx,
+    );
     const out = r.output as { lines: { product_description: string }[]; enrichedCount: number };
     expect(out.enrichedCount).toBe(0);
     expect(out.lines[0]!.product_description).toBe('No code line');
   });
 
   it('🚨 line con code NON matching include → passthrough', async () => {
-    const r = await linesEnrichExecutor({
-      rawTextExpression: 'XYZ-999\n  sub',
-      includeCodePatterns: '^VAL',
-      linesExpression: [{ product_code: 'XYZ-999', product_description: 'Base' }],
-    } as never, null, ctx);
+    const r = await linesEnrichExecutor(
+      {
+        rawTextExpression: 'XYZ-999\n  sub',
+        includeCodePatterns: '^VAL',
+        linesExpression: [{ product_code: 'XYZ-999', product_description: 'Base' }],
+      } as never,
+      null,
+      ctx,
+    );
     const out = r.output as { lines: { product_description: string }[]; enrichedCount: number };
     expect(out.enrichedCount).toBe(0);
     expect(out.lines[0]!.product_description).toBe('Base');
   });
 
   it('🚨 sub desc in excludePrefixes → skip enrich', async () => {
-    const r = await linesEnrichExecutor({
-      rawTextExpression: 'VAL-1\n  OMAGGIO promozionale',
-      includeCodePatterns: '^VAL',
-      excludePrefixes: 'OMAGGIO\nNOTA',
-      linesExpression: [{ product_code: 'VAL-1', product_description: 'Base' }],
-    } as never, null, ctx);
+    const r = await linesEnrichExecutor(
+      {
+        rawTextExpression: 'VAL-1\n  OMAGGIO promozionale',
+        includeCodePatterns: '^VAL',
+        excludePrefixes: 'OMAGGIO\nNOTA',
+        linesExpression: [{ product_code: 'VAL-1', product_description: 'Base' }],
+      } as never,
+      null,
+      ctx,
+    );
     const out = r.output as { lines: { product_description: string }[]; enrichedCount: number };
     expect(out.enrichedCount).toBe(0);
     expect(out.lines[0]!.product_description).toBe('Base');
   });
 
   it('🚨 baseDesc vuoto → solo sub desc (no separator)', async () => {
-    const r = await linesEnrichExecutor({
-      rawTextExpression: 'VAL-1\n  Only sub',
-      includeCodePatterns: '^VAL',
-      linesExpression: [{ product_code: 'VAL-1', product_description: '' }],
-    } as never, null, ctx);
+    const r = await linesEnrichExecutor(
+      {
+        rawTextExpression: 'VAL-1\n  Only sub',
+        includeCodePatterns: '^VAL',
+        linesExpression: [{ product_code: 'VAL-1', product_description: '' }],
+      } as never,
+      null,
+      ctx,
+    );
     const out = r.output as { lines: { product_description: string }[] };
     expect(out.lines[0]!.product_description).toBe('Only sub');
   });
 
   it('🚨 input array diretto → usato come lines', async () => {
-    const r = await linesEnrichExecutor({
-      rawTextExpression: 'VAL-1\n  Sub',
-      includeCodePatterns: '^VAL',
-    } as never, [{ product_code: 'VAL-1', product_description: 'B' }] as never, ctx);
+    const r = await linesEnrichExecutor(
+      {
+        rawTextExpression: 'VAL-1\n  Sub',
+        includeCodePatterns: '^VAL',
+      } as never,
+      [{ product_code: 'VAL-1', product_description: 'B' }] as never,
+      ctx,
+    );
     const out = r.output as { lines: { product_description: string }[]; enrichedCount: number };
     expect(out.enrichedCount).toBe(1);
     expect(out.lines[0]!.product_description).toBe('B — Sub');
   });
 
   it('🚨 input array → passthrough vuoto (Array no spread)', async () => {
-    const r = await linesEnrichExecutor({
-      rawTextExpression: 'nothing',
-      includeCodePatterns: '^VAL',
-    } as never, [{ product_code: 'A', product_description: 'B' }] as never, ctx);
+    const r = await linesEnrichExecutor(
+      {
+        rawTextExpression: 'nothing',
+        includeCodePatterns: '^VAL',
+      } as never,
+      [{ product_code: 'A', product_description: 'B' }] as never,
+      ctx,
+    );
     const out = r.output as Record<string, unknown>;
     // Array input → no passthrough, solo lines + enrichedCount
     expect(Object.keys(out).sort()).toEqual(['enrichedCount', 'lines']);
   });
 
   it('🚨 multiple patterns include su righe diverse', async () => {
-    const r = await linesEnrichExecutor({
-      rawTextExpression: 'VAL-1\n  S1\nXYZ-2\n  S2',
-      includeCodePatterns: '^VAL\n^XYZ',
-      linesExpression: [
-        { product_code: 'VAL-1', product_description: 'B1' },
-        { product_code: 'XYZ-2', product_description: 'B2' },
-      ],
-    } as never, null, ctx);
+    const r = await linesEnrichExecutor(
+      {
+        rawTextExpression: 'VAL-1\n  S1\nXYZ-2\n  S2',
+        includeCodePatterns: '^VAL\n^XYZ',
+        linesExpression: [
+          { product_code: 'VAL-1', product_description: 'B1' },
+          { product_code: 'XYZ-2', product_description: 'B2' },
+        ],
+      } as never,
+      null,
+      ctx,
+    );
     const out = r.output as { lines: { product_description: string }[]; enrichedCount: number };
     expect(out.enrichedCount).toBe(2);
   });
 
   it('🚨 durationMs ritornato', async () => {
-    const r = await linesEnrichExecutor({
-      rawTextExpression: 'x',
-      includeCodePatterns: '',
-    } as never, [] as never, ctx);
+    const r = await linesEnrichExecutor(
+      {
+        rawTextExpression: 'x',
+        includeCodePatterns: '',
+      } as never,
+      [] as never,
+      ctx,
+    );
     expect(r.durationMs).toBeGreaterThanOrEqual(0);
   });
 });

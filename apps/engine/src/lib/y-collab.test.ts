@@ -18,7 +18,10 @@ import * as awarenessProtocol from 'y-protocols/awareness';
 import * as encoding from 'lib0/encoding';
 import * as decoding from 'lib0/decoding';
 import {
-  encodeSyncStep1, encodeSyncUpdate, encodeAwarenessStates, processCollabMessage,
+  encodeSyncStep1,
+  encodeSyncUpdate,
+  encodeAwarenessStates,
+  processCollabMessage,
 } from './y-collab.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -61,7 +64,9 @@ describe('y-collab — 🚨 ROUND-TRIP protocollo (server ↔ client y-protocols
     const serverAw = new awarenessProtocol.Awareness(serverDoc);
     const clientDoc = new Y.Doc();
     let frame: Uint8Array | null = null;
-    clientDoc.on('update', (update: Uint8Array) => { frame = encodeSyncUpdate(update); });
+    clientDoc.on('update', (update: Uint8Array) => {
+      frame = encodeSyncUpdate(update);
+    });
     clientDoc.getMap('nodes').set('n2', 'slack');
 
     expect(frame).not.toBeNull();
@@ -80,7 +85,11 @@ describe('y-collab — 🚨 ROUND-TRIP protocollo (server ↔ client y-protocols
     // "Unexpected end of array" o legge garbage — in NESSUN caso converge.
     const rawFrame = Uint8Array.from([MESSAGE_SYNC, 1, ...rawUpdate]);
     const brokenClient = new Y.Doc();
-    try { clientProcessSync(brokenClient, rawFrame); } catch { /* end-of-array atteso */ }
+    try {
+      clientProcessSync(brokenClient, rawFrame);
+    } catch {
+      /* end-of-array atteso */
+    }
     expect(brokenClient.getMap('m').get('k')).not.toBe('v'); // NON converge
 
     // Nuovo protocollo: client chiede con STEP_1, server risponde, converge.
@@ -96,7 +105,9 @@ describe('y-collab — 🚨 ROUND-TRIP protocollo (server ↔ client y-protocols
     const serverAw = new awarenessProtocol.Awareness(serverDoc);
     const clientDoc = new Y.Doc();
     const frames: Uint8Array[] = [];
-    clientDoc.on('update', (u: Uint8Array) => { frames.push(encodeSyncUpdate(u)); });
+    clientDoc.on('update', (u: Uint8Array) => {
+      frames.push(encodeSyncUpdate(u));
+    });
     clientDoc.getMap('nodes').set('a', '1');
     clientDoc.getMap('nodes').set('b', '2');
     for (const f of frames) processCollabMessage(serverDoc, serverAw, f, 'wsC');
@@ -155,7 +166,7 @@ describe('y-collab — memory leak fix on ws.close', () => {
   it('cleanup chiama saveRoom se dirty', () => {
     expect(yCollabSource).toMatch(/if\s*\(room\.dirty\)\s*saveRoom/);
   });
-  it('cleanup distrugge il Y.Doc e l\'awareness', () => {
+  it("cleanup distrugge il Y.Doc e l'awareness", () => {
     expect(yCollabSource).toMatch(/room\.doc\.destroy/);
     expect(yCollabSource).toMatch(/room\.awareness\.destroy/);
   });
@@ -166,7 +177,9 @@ describe('y-collab — WS auth dual-name cookie', () => {
     expect(yCollabSource).toMatch(/parseSessionFromCookieHeader/);
   });
   it('cookie preferito su URL query (anti-leak nginx logs)', () => {
-    expect(yCollabSource).toMatch(/cookieToken\s*!==\s*''\s*\?\s*cookieToken\s*:\s*\(?url\.searchParams\.get\(['"]token['"]\)/);
+    expect(yCollabSource).toMatch(
+      /cookieToken\s*!==\s*''\s*\?\s*cookieToken\s*:\s*\(?url\.searchParams\.get\(['"]token['"]\)/,
+    );
   });
 });
 
@@ -181,7 +194,9 @@ describe('y-collab — N16 audit: WS Origin allowlist (CSWSH defense)', () => {
     expect(yCollabSource).toMatch(/socket\.destroy\(\)/);
   });
   it('check Origin PRECEDE wss.handleUpgrade', () => {
-    expect(yCollabSource.indexOf('isOriginAllowed(origin)')).toBeLessThan(yCollabSource.indexOf('wss.handleUpgrade(request, socket, head'));
+    expect(yCollabSource.indexOf('isOriginAllowed(origin)')).toBeLessThan(
+      yCollabSource.indexOf('wss.handleUpgrade(request, socket, head'),
+    );
   });
 });
 
@@ -192,7 +207,9 @@ describe('y-collab — N9 audit: size cap (DoS guard)', () => {
     expect(yCollabSource).toMatch(/MEDEA_YJS_MAX_MESSAGE_BYTES/);
   });
   it('drop con log.warn + return su oversize (no disconnect)', () => {
-    expect(yCollabSource).toMatch(/buf\.length\s*>\s*MAX_YJS_MESSAGE_BYTES[\s\S]+?logger\.warn[\s\S]+?return/);
+    expect(yCollabSource).toMatch(
+      /buf\.length\s*>\s*MAX_YJS_MESSAGE_BYTES[\s\S]+?logger\.warn[\s\S]+?return/,
+    );
   });
   it('🚨 il size-cap PRECEDE processCollabMessage (no decode prima del cap)', () => {
     const capIdx = yCollabSource.indexOf('buf.length > MAX_YJS_MESSAGE_BYTES');
@@ -218,7 +235,8 @@ describe('y-collab — soft uncaughtException handler', () => {
     expect(mainSrc).toMatch(/softened|NON exit|return/);
   });
   it('installYjsSoftErrorHandler idempotente', async () => {
-    const { installYjsSoftErrorHandler, __resetYjsSoftErrorHandler } = await import('./y-collab.js');
+    const { installYjsSoftErrorHandler, __resetYjsSoftErrorHandler } =
+      await import('./y-collab.js');
     __resetYjsSoftErrorHandler();
     installYjsSoftErrorHandler();
     expect(() => installYjsSoftErrorHandler()).not.toThrow();
@@ -228,13 +246,24 @@ describe('y-collab — soft uncaughtException handler', () => {
 
 describe('y-collab — auto-recovery on corrupt snapshot', () => {
   it('getRoom DELETE riga workflow_collab su applyUpdate fail (rehydrate)', () => {
-    expect(yCollabSource).toMatch(/Y\.applyUpdate\(doc, new Uint8Array\(row\.doc_snapshot\)\)[\s\S]+?catch[\s\S]+?DELETE FROM workflow_collab/);
+    expect(yCollabSource).toMatch(
+      /Y\.applyUpdate\(doc, new Uint8Array\(row\.doc_snapshot\)\)[\s\S]+?catch[\s\S]+?DELETE FROM workflow_collab/,
+    );
   });
 });
 
 describe('y-collab — crash quarantine', () => {
-  const mkRoom = (over: Partial<{ crashCount: number; lastCrashAt: number }> = {}) =>
-    ({ doc: null as never, awareness: null as never, clients: new Set(), dirty: false, saveTimer: null, crashCount: 0, lastCrashAt: 0, quarantined: false, ...over });
+  const mkRoom = (over: Partial<{ crashCount: number; lastCrashAt: number }> = {}) => ({
+    doc: null as never,
+    awareness: null as never,
+    clients: new Set(),
+    dirty: false,
+    saveTimer: null,
+    crashCount: 0,
+    lastCrashAt: 0,
+    quarantined: false,
+    ...over,
+  });
 
   it('under threshold → no quarantena', async () => {
     const { recordRoomCrash } = await import('./y-collab.js');

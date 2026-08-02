@@ -45,7 +45,9 @@ describe('N17 — subworkflow source inspection (anti-recursion-bomb guards)', (
     // ISOMORFICA `(typeof process … ? process.env.X : undefined) ?? 10` (guard
     // anti "process is not defined" nel bundle browser dell'editor). In tutte
     // il default resta 10.
-    expect(subworkflowSource).toMatch(/MEDEA_MAX_SUBWORKFLOW_DEPTH(?:'])?(?:\s*:\s*undefined\s*\))?\s*\?\?\s*10/);
+    expect(subworkflowSource).toMatch(
+      /MEDEA_MAX_SUBWORKFLOW_DEPTH(?:'])?(?:\s*:\s*undefined\s*\))?\s*\?\?\s*10/,
+    );
   });
 
   it('self-recursion guard PRECEDE qualsiasi fetch', () => {
@@ -78,7 +80,7 @@ describe('N17 — subworkflow source inspection (anti-recursion-bomb guards)', (
     expect(validIdx).toBeLessThan(fetchIdx);
   });
 
-  it('SECURITY: l\'URL usa encodeURIComponent(workflowId) (difesa-in-profondità)', () => {
+  it("SECURITY: l'URL usa encodeURIComponent(workflowId) (difesa-in-profondità)", () => {
     expect(subworkflowSource).toMatch(/workflows\/\$\{encodeURIComponent\(workflowId\)\}\/run/);
   });
 });
@@ -95,7 +97,9 @@ describe('N17 — subworkflowExecutor behavioural', () => {
     fetchSpy = vi.fn().mockImplementation(() =>
       Promise.resolve(
         new Response(
-          JSON.stringify({ run: { runId: 'r-child', status: 'success', steps: [], totalDurationMs: 5 } }),
+          JSON.stringify({
+            run: { runId: 'r-child', status: 'success', steps: [], totalDurationMs: 5 },
+          }),
           { status: 200 },
         ),
       ),
@@ -110,15 +114,19 @@ describe('N17 — subworkflowExecutor behavioural', () => {
   });
 
   it('missing workflowId → throw "missing workflowId"', async () => {
-    await expect(
-      subworkflowNode.executor!({}, null, makeContext()),
-    ).rejects.toThrow(/missing workflowId/);
+    await expect(subworkflowNode.executor!({}, null, makeContext())).rejects.toThrow(
+      /missing workflowId/,
+    );
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('SECURITY: self-recursion (same id as caller) → throw, no fetch', async () => {
     await expect(
-      subworkflowNode.executor!({ workflowId: 'wf-parent' }, null, makeContext({ workflowId: 'wf-parent' })),
+      subworkflowNode.executor!(
+        { workflowId: 'wf-parent' },
+        null,
+        makeContext({ workflowId: 'wf-parent' }),
+      ),
     ).rejects.toThrow(/self-recursion not allowed/);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -151,7 +159,7 @@ describe('N17 — subworkflowExecutor behavioural', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('workflowId valido (nanoid/UUID) → fetch chiamato sull\'URL atteso', async () => {
+  it("workflowId valido (nanoid/UUID) → fetch chiamato sull'URL atteso", async () => {
     await subworkflowNode.executor!({ workflowId: 'wf-child_AbZ09-1' }, null, makeContext());
     // La PRIMA chiamata è il dispatch. Da quando `wait` aspetta davvero ne
     // segue almeno un'altra su `/runs/:id`: fissare il conteggio a uno
@@ -262,10 +270,14 @@ describe('subworkflow — attesa del completamento', () => {
       // `/runs/<id>` contiene `/run`: distinguere male fa credere al finto
       // che ogni interrogazione sia un dispatch, e l'attesa non finisce mai.
       const isDispatch = url.endsWith('/run');
-      const status = isDispatch ? 'running' : (stati[Math.min(letture++, stati.length - 1)] ?? 'success');
+      const status = isDispatch
+        ? 'running'
+        : (stati[Math.min(letture++, stati.length - 1)] ?? 'success');
       return Promise.resolve(
         new Response(
-          JSON.stringify({ run: { runId: 'r-child', status, steps: [{ nodeId: 'x' }], totalDurationMs: 12 } }),
+          JSON.stringify({
+            run: { runId: 'r-child', status, steps: [{ nodeId: 'x' }], totalDurationMs: 12 },
+          }),
           { status: 200 },
         ),
       );

@@ -87,7 +87,7 @@ export class SuperadminSafetyError extends Error {
     super(
       reason === 'self_target'
         ? 'Operazione non consentita sul proprio account superadmin dal pannello admin (rischio auto-lockout).'
-        : 'Operazione bloccata: è l\'ultimo superadmin attivo. Promuovi/abilita prima un altro superadmin.',
+        : "Operazione bloccata: è l'ultimo superadmin attivo. Promuovi/abilita prima un altro superadmin.",
     );
     this.name = 'SuperadminSafetyError';
     this.reason = reason;

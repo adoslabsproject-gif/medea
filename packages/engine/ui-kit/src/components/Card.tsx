@@ -49,7 +49,9 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
               <p className="mt-0.5 text-xs text-fg-muted">{description}</p>
             )}
           </div>
-          {actions !== undefined && <div className="flex flex-shrink-0 items-center gap-1.5">{actions}</div>}
+          {actions !== undefined && (
+            <div className="flex flex-shrink-0 items-center gap-1.5">{actions}</div>
+          )}
         </header>
       )}
       <div className={clsx(!noPadding && 'p-4')}>{children}</div>

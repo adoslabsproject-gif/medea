@@ -21,12 +21,14 @@ export const uiOpenHistoryExecutor: NodeExecutor = (rawConfig, _input, context) 
   const search = coerceString(cfg.searchQuery ?? '').trim();
 
   const runtime = loadConfig();
-  const baseUrl = coerceString(cfg.baseUrl ?? '').trim()
-    || runtime.MEDEA_PUBLIC_BASE_URL
-    || '';
+  const baseUrl = coerceString(cfg.baseUrl ?? '').trim() || runtime.MEDEA_PUBLIC_BASE_URL || '';
 
   if (!baseUrl) {
-    return Promise.reject(new Error('ui_open_history: nessun baseUrl disponibile. Imposta cfg.baseUrl o MEDEA_PUBLIC_BASE_URL env.'));
+    return Promise.reject(
+      new Error(
+        'ui_open_history: nessun baseUrl disponibile. Imposta cfg.baseUrl o MEDEA_PUBLIC_BASE_URL env.',
+      ),
+    );
   }
 
   const url = new URL(`${baseUrl.replace(/\/$/, '')}/`);

@@ -50,8 +50,10 @@ describe('sqlLiteral — ANTI SQL-INJECTION', () => {
   it('stringa → quotata', () => {
     expect(sqlLiteral('mario')).toBe("'mario'");
   });
-  it("🔒🔒 apici singoli RADDOPPIATI — il payload di injection è neutralizzato", () => {
-    expect(sqlLiteral("Robert'); DROP TABLE students;--")).toBe("'Robert''); DROP TABLE students;--'");
+  it('🔒🔒 apici singoli RADDOPPIATI — il payload di injection è neutralizzato', () => {
+    expect(sqlLiteral("Robert'); DROP TABLE students;--")).toBe(
+      "'Robert''); DROP TABLE students;--'",
+    );
     expect(sqlLiteral("d'Annunzio")).toBe("'d''Annunzio'");
   });
   it('oggetto/array → JSON quotato (apici raddoppiati)', () => {
@@ -88,31 +90,41 @@ describe('insertStatement', () => {
     );
   });
   it('cella mancante → NULL', () => {
-    expect(insertStatement('t', ['id', 'manca'], { id: 1 })).toBe('INSERT INTO "t" ("id", "manca") VALUES (1, NULL);');
+    expect(insertStatement('t', ['id', 'manca'], { id: 1 })).toBe(
+      'INSERT INTO "t" ("id", "manca") VALUES (1, NULL);',
+    );
   });
 });
 
 describe('parseDumpTables — estrazione type-safe da introspect (unknown)', () => {
   it('estrae name + columns (con nullable/primaryKey dai constraints)', () => {
     const tables = parseDumpTables([
-      { name: 'clienti', columns: [
-        { name: 'id', type: 'uuid', constraints: { primaryKey: true, nullable: false } },
-        { name: 'nome', type: 'varchar', constraints: { nullable: true } },
-      ] },
+      {
+        name: 'clienti',
+        columns: [
+          { name: 'id', type: 'uuid', constraints: { primaryKey: true, nullable: false } },
+          { name: 'nome', type: 'varchar', constraints: { nullable: true } },
+        ],
+      },
     ]);
     expect(tables).toEqual([
-      { name: 'clienti', columns: [
-        { name: 'id', type: 'uuid', nullable: false, primaryKey: true },
-        { name: 'nome', type: 'varchar', nullable: true },
-      ] },
+      {
+        name: 'clienti',
+        columns: [
+          { name: 'id', type: 'uuid', nullable: false, primaryKey: true },
+          { name: 'nome', type: 'varchar', nullable: true },
+        ],
+      },
     ]);
   });
   it('🔒 scarta tabelle/colonne malformate, non lancia', () => {
     expect(parseDumpTables('non un array')).toEqual([]);
     expect(parseDumpTables([null, 5, { columns: [] }, { name: '' }])).toEqual([]);
-    expect(parseDumpTables([{ name: 't', columns: [null, { type: 'x' }, { name: 'ok', type: 'integer' }] }])).toEqual([
-      { name: 't', columns: [{ name: 'ok', type: 'integer' }] },
-    ]);
+    expect(
+      parseDumpTables([
+        { name: 't', columns: [null, { type: 'x' }, { name: 'ok', type: 'integer' }] },
+      ]),
+    ).toEqual([{ name: 't', columns: [{ name: 'ok', type: 'integer' }] }]);
   });
   it('type colonna assente → "text" (default sicuro)', () => {
     expect(parseDumpTables([{ name: 't', columns: [{ name: 'c' }] }])).toEqual([

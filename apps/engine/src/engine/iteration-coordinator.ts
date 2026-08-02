@@ -28,7 +28,12 @@
 import { coerceString } from '@/lib/coerce.js';
 import type { CanvasNode, Edge, Workflow, RunStep } from '@medea/engine-core-schema';
 import type { NodeModule } from '@medea/engine-nodes-stdlib';
-import { evaluateExpression, interpolateConfig, InterpreterError, type LoopContext } from './interpreter.js';
+import {
+  evaluateExpression,
+  interpolateConfig,
+  InterpreterError,
+  type LoopContext,
+} from './interpreter.js';
 import type { NodeLineageArgs } from './item-model.js';
 import { logger } from '@/lib/logger.js';
 
@@ -115,7 +120,12 @@ export class IterationCoordinator {
     const startedAt = Date.now();
     const scope = {
       input: args.carriedInput,
-      ctx: { tenantId: args.tenantId, runId: args.runId, workflowId: args.workflowId, nodeId: args.loopNode.id },
+      ctx: {
+        tenantId: args.tenantId,
+        runId: args.runId,
+        workflowId: args.workflowId,
+        nodeId: args.loopNode.id,
+      },
       vars: Object.fromEntries(args.outerOutputs),
     };
     const interpolated = interpolateConfig(args.loopNode.config, scope);
@@ -146,18 +156,20 @@ export class IterationCoordinator {
     const allOutgoing = args.adj.outgoing.get(args.loopNode.id) ?? [];
     const bodyEdges = allOutgoing.filter((e) => e.fromPort === 'body' || e.fromPort === undefined);
     const bodyStartIds = bodyEdges.map((e) => e.to);
-    const bodyNodeIds = bodyStartIds.length > 0
-      ? collectReachable(args.adj, bodyStartIds)
-      : new Set<string>();
+    const bodyNodeIds =
+      bodyStartIds.length > 0 ? collectReachable(args.adj, bodyStartIds) : new Set<string>();
 
     // Pre-mark body nodes as visited in the OUTER BFS so the main engine
     // doesn't try to execute them sequentially after the loop completes.
     for (const id of bodyNodeIds) args.outerVisited.add(id);
 
     // Resolve 'auto' strategy now that we know body+size.
-    const strategy = declaredStrategy === 'auto'
-      ? resolveAutoStrategy(items.length, bodyNodeIds, args.adj, (id) => this.executor.resolveNodeModule(id))
-      : declaredStrategy;
+    const strategy =
+      declaredStrategy === 'auto'
+        ? resolveAutoStrategy(items.length, bodyNodeIds, args.adj, (id) =>
+            this.executor.resolveNodeModule(id),
+          )
+        : declaredStrategy;
 
     let results: unknown[] = [];
     let succeeded = 0;
@@ -180,13 +192,20 @@ export class IterationCoordinator {
         { loopId: args.loopNode.id, items: items.length },
         'Loop strategy=queue but no BullMQ worker is attached — falling back to naive',
       );
-      const r = await this.runIterations(args, items, bodyStartIds, bodyNodeIds, {
-        strategy: 'naive',
-        concurrency,
-        errorPolicy,
-        rateLimitPerMin,
-        batchSize,
-      }, bodyLineage);
+      const r = await this.runIterations(
+        args,
+        items,
+        bodyStartIds,
+        bodyNodeIds,
+        {
+          strategy: 'naive',
+          concurrency,
+          errorPolicy,
+          rateLimitPerMin,
+          batchSize,
+        },
+        bodyLineage,
+      );
       results = r.results;
       succeeded = r.succeeded;
       failed = r.failed;
@@ -197,13 +216,20 @@ export class IterationCoordinator {
       results = r.results;
       succeeded = r.succeeded;
     } else {
-      const r = await this.runIterations(args, items, bodyStartIds, bodyNodeIds, {
-        strategy,
-        concurrency,
-        errorPolicy,
-        rateLimitPerMin,
-        batchSize,
-      }, bodyLineage);
+      const r = await this.runIterations(
+        args,
+        items,
+        bodyStartIds,
+        bodyNodeIds,
+        {
+          strategy,
+          concurrency,
+          errorPolicy,
+          rateLimitPerMin,
+          batchSize,
+        },
+        bodyLineage,
+      );
       results = r.results;
       succeeded = r.succeeded;
       failed = r.failed;
@@ -264,14 +290,23 @@ export class IterationCoordinator {
     };
     // Bulk: il body vede l'array INTERO in un'unica iterazione (index 0) —
     // stessa ancora deterministica del nodo standard fuori dal loop.
-    const iter = await this.runBodyIteration(args, bodyStartIds, bodyNodeIds, loopCtx, items, lineage);
+    const iter = await this.runBodyIteration(
+      args,
+      bodyStartIds,
+      bodyNodeIds,
+      loopCtx,
+      items,
+      lineage,
+    );
     if (iter.errors > 0) {
       return {
         results: [iter.output],
         succeeded: 0,
         failed: 1,
         skipped: 0,
-        errors: [{ index: 0, message: `bulk iteration had ${iter.errors.toString()} node error(s)` }],
+        errors: [
+          { index: 0, message: `bulk iteration had ${iter.errors.toString()} node error(s)` },
+        ],
       };
     }
     return { results: [iter.output], succeeded: 1, failed: 0, skipped: 0, errors: [] };
@@ -285,16 +320,22 @@ export class IterationCoordinator {
   ): { results: unknown[]; succeeded: number } {
     const groupKey = coerceString(interpolated.aggregateBy ?? '');
     const reducer = coerceString(interpolated.aggregateReducer ?? 'count');
-    const field = interpolated.aggregateField !== undefined ? coerceString(interpolated.aggregateField) : undefined;
+    const field =
+      interpolated.aggregateField !== undefined
+        ? coerceString(interpolated.aggregateField)
+        : undefined;
 
-    const results: unknown[] = groupKey === ''
-      ? [reduceGroup(items, reducer, field)]
-      : [(() => {
-          const groups = groupBy(items, groupKey);
-          const aggregated: Record<string, unknown> = {};
-          for (const [k, v] of groups.entries()) aggregated[k] = reduceGroup(v, reducer, field);
-          return aggregated;
-        })()];
+    const results: unknown[] =
+      groupKey === ''
+        ? [reduceGroup(items, reducer, field)]
+        : [
+            (() => {
+              const groups = groupBy(items, groupKey);
+              const aggregated: Record<string, unknown> = {};
+              for (const [k, v] of groups.entries()) aggregated[k] = reduceGroup(v, reducer, field);
+              return aggregated;
+            })(),
+          ];
 
     // Body nodes are skipped — push a synthetic step for each so the run
     // inspector clearly shows "aggregate strategy → body not executed".
@@ -322,15 +363,22 @@ export class IterationCoordinator {
     items: unknown[],
     bodyStartIds: string[],
     bodyNodeIds: ReadonlySet<string>,
-    opts: { strategy: string; concurrency: number; errorPolicy: string; rateLimitPerMin: number; batchSize: number },
+    opts: {
+      strategy: string;
+      concurrency: number;
+      errorPolicy: string;
+      rateLimitPerMin: number;
+      batchSize: number;
+    },
     lineage?: NodeLineageArgs,
   ): Promise<StrategyResult> {
-    const iterUnits: { item: unknown; chunkIndices?: number[] }[] = opts.strategy === 'batch'
-      ? chunkArray(items, opts.batchSize).map((chunk, i) => ({
-          item: chunk,
-          chunkIndices: chunk.map((_, j) => i * opts.batchSize + j),
-        }))
-      : items.map((it) => ({ item: it }));
+    const iterUnits: { item: unknown; chunkIndices?: number[] }[] =
+      opts.strategy === 'batch'
+        ? chunkArray(items, opts.batchSize).map((chunk, i) => ({
+            item: chunk,
+            chunkIndices: chunk.map((_, j) => i * opts.batchSize + j),
+          }))
+        : items.map((it) => ({ item: it }));
 
     const total = iterUnits.length;
     const results: unknown[] = new Array<unknown>(total);
@@ -360,28 +408,43 @@ export class IterationCoordinator {
       // Solo le strategy item-indexed (naive, e il fallback queue→naive)
       // portano l'ancora (S, i) nel body.
       const iterLineage = opts.strategy === 'batch' ? undefined : lineage;
-      const iter = await this.runBodyIteration(args, bodyStartIds, bodyNodeIds, loopCtx, unit.item, iterLineage);
+      const iter = await this.runBodyIteration(
+        args,
+        bodyStartIds,
+        bodyNodeIds,
+        loopCtx,
+        unit.item,
+        iterLineage,
+      );
       results[i] = iter.output;
       if (iter.errors > 0) {
         failed += 1;
-        errors.push({ index: i, message: `iteration ${i.toString()} had ${iter.errors.toString()} node error(s)` });
+        errors.push({
+          index: i,
+          message: `iteration ${i.toString()} had ${iter.errors.toString()} node error(s)`,
+        });
         if (opts.errorPolicy === 'stop') cursor = total;
       } else {
         succeeded += 1;
       }
-      if (rateDelay > 0) await new Promise<void>((r) => { setTimeout(r, rateDelay); });
+      if (rateDelay > 0)
+        await new Promise<void>((r) => {
+          setTimeout(r, rateDelay);
+        });
     };
 
     const workers: Promise<void>[] = [];
     const pool = Math.min(effConcurrency, total);
     for (let w = 0; w < pool; w += 1) {
-      workers.push((async (): Promise<void> => {
-        while (cursor < total) {
-          const i = cursor;
-          cursor += 1;
-          await runOne(i);
-        }
-      })());
+      workers.push(
+        (async (): Promise<void> => {
+          while (cursor < total) {
+            const i = cursor;
+            cursor += 1;
+            await runOne(i);
+          }
+        })(),
+      );
     }
     await Promise.all(workers);
 
@@ -444,9 +507,10 @@ export class IterationCoordinator {
 
       const downstream = args.adj.outgoing.get(nodeId) ?? [];
       const branchable = module?.def.outputs !== undefined && module.def.outputs.length > 0;
-      const toFollow = branchable && res.chosenBranch !== undefined
-        ? downstream.filter((e) => e.fromPort === res.chosenBranch)
-        : downstream;
+      const toFollow =
+        branchable && res.chosenBranch !== undefined
+          ? downstream.filter((e) => e.fromPort === res.chosenBranch)
+          : downstream;
       for (const edge of toFollow) {
         if (bodyNodeIds.has(edge.to) && !visited.has(edge.to)) {
           queue.push({ nodeId: edge.to, carriedInput: res.output });
@@ -530,9 +594,10 @@ export function chunkArray<T>(arr: readonly T[], size: number): T[][] {
 function groupBy<T>(arr: readonly T[], key: string): Map<string, T[]> {
   const out = new Map<string, T[]>();
   for (const item of arr) {
-    const k = item !== null && typeof item === 'object'
-      ? coerceString((item as Record<string, unknown>)[key] ?? '__missing__')
-      : String(item);
+    const k =
+      item !== null && typeof item === 'object'
+        ? coerceString((item as Record<string, unknown>)[key] ?? '__missing__')
+        : String(item);
     const bucket = out.get(k) ?? [];
     bucket.push(item);
     out.set(k, bucket);
@@ -540,16 +605,24 @@ function groupBy<T>(arr: readonly T[], key: string): Map<string, T[]> {
   return out;
 }
 
-function reduceGroup(items: readonly unknown[], reducer: string, field: string | undefined): unknown {
-  const numeric = (): number[] => items.map((it) => {
-    if (it !== null && typeof it === 'object' && field) {
-      return Number((it as Record<string, unknown>)[field] ?? 0);
-    }
-    return Number(it);
-  }).filter((n) => Number.isFinite(n));
+function reduceGroup(
+  items: readonly unknown[],
+  reducer: string,
+  field: string | undefined,
+): unknown {
+  const numeric = (): number[] =>
+    items
+      .map((it) => {
+        if (it !== null && typeof it === 'object' && field) {
+          return Number((it as Record<string, unknown>)[field] ?? 0);
+        }
+        return Number(it);
+      })
+      .filter((n) => Number.isFinite(n));
 
   switch (reducer) {
-    case 'count': return items.length;
+    case 'count':
+      return items.length;
     case 'sum': {
       const v = numeric();
       return v.reduce((a, b) => a + b, 0);
@@ -567,12 +640,16 @@ function reduceGroup(items: readonly unknown[], reducer: string, field: string |
       const v = numeric();
       return v.length === 0 ? 0 : v.reduce((m, b) => (b > m ? b : m), -Infinity);
     }
-    case 'concat': return items.map((it) => {
-      if (it !== null && typeof it === 'object' && field) {
-        return coerceString((it as Record<string, unknown>)[field] ?? '');
-      }
-      return String(it);
-    }).join(',');
-    default: return items.slice();
+    case 'concat':
+      return items
+        .map((it) => {
+          if (it !== null && typeof it === 'object' && field) {
+            return coerceString((it as Record<string, unknown>)[field] ?? '');
+          }
+          return String(it);
+        })
+        .join(',');
+    default:
+      return items.slice();
   }
 }

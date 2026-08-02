@@ -23,7 +23,9 @@ beforeEach(() => {
 describe('🚨 ensurePinsTable', () => {
   it('🚨 tabella creata + PK composta (tenant, wf, node)', () => {
     new PinService();
-    const t = sqliteInst.prepare("SELECT sql FROM sqlite_master WHERE name='workflow_pins'").get() as any;
+    const t = sqliteInst
+      .prepare("SELECT sql FROM sqlite_master WHERE name='workflow_pins'")
+      .get() as any;
     expect(t.sql).toContain('PRIMARY KEY (tenant_id, workflow_id, node_id)');
   });
 });

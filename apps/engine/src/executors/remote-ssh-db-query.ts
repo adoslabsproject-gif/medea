@@ -12,15 +12,34 @@
  * @module executors/remote-ssh-db-query
  */
 import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
-import { parseSshDbConfig, assertReadOnlyQuery, SshPolicyError } from '@/services/db-remote-ssh/policy.js';
-import { connectRemoteDbOverSsh, type SecretResolver, type DnsResolver, type TunnelOpener } from '@/services/db-remote-ssh/connect.js';
+import {
+  parseSshDbConfig,
+  assertReadOnlyQuery,
+  SshPolicyError,
+} from '@/services/db-remote-ssh/policy.js';
+import {
+  connectRemoteDbOverSsh,
+  type SecretResolver,
+  type DnsResolver,
+  type TunnelOpener,
+} from '@/services/db-remote-ssh/connect.js';
 import { VaultSecretsService } from '@/services/vault-secrets.service.js';
 
 const DEFAULT_ROW_LIMIT = 1000;
 const MAX_ROW_LIMIT = 50_000;
 
-export interface PgConn { host: string; port: number; database: string; user: string; password: string }
-export type PgRunner = (conn: PgConn, sql: string, rowLimit: number) => Promise<Record<string, unknown>[]>;
+export interface PgConn {
+  host: string;
+  port: number;
+  database: string;
+  user: string;
+  password: string;
+}
+export type PgRunner = (
+  conn: PgConn,
+  sql: string,
+  rowLimit: number,
+) => Promise<Record<string, unknown>[]>;
 
 export interface RemoteSshDeps {
   resolveSecret: SecretResolver;
@@ -40,9 +59,16 @@ async function mustSecret(resolve: SecretResolver, ref: string): Promise<string>
 const defaultPgRun: PgRunner = async (conn, sql, rowLimit) => {
   const { default: postgres } = await import('postgres');
   const sql_ = postgres({
-    host: conn.host, port: conn.port, database: conn.database,
-    username: conn.user, password: conn.password,
-    ssl: false, max: 1, connect_timeout: 10, idle_timeout: 2, prepare: false,
+    host: conn.host,
+    port: conn.port,
+    database: conn.database,
+    username: conn.user,
+    password: conn.password,
+    ssl: false,
+    max: 1,
+    connect_timeout: 10,
+    idle_timeout: 2,
+    prepare: false,
     // DIFESA IN PROFONDITÀ (revisore 2026-06-14): sessione read-only LATO SERVER.
     // assertReadOnlyQuery (classifyStatement) resta la prima barriera; se mai un
     // bypass del classificatore passasse, Postgres rifiuta comunque ogni scrittura
@@ -76,11 +102,19 @@ export async function executeRemoteSshDbQuery(
     ...(deps.openTunnel ? { openTunnel: deps.openTunnel } : {}),
   });
   try {
-    const user = config.db.userSecretRef ? await mustSecret(deps.resolveSecret, config.db.userSecretRef) : 'postgres';
-    const password = config.db.passwordSecretRef ? await mustSecret(deps.resolveSecret, config.db.passwordSecretRef) : '';
+    const user = config.db.userSecretRef
+      ? await mustSecret(deps.resolveSecret, config.db.userSecretRef)
+      : 'postgres';
+    const password = config.db.passwordSecretRef
+      ? await mustSecret(deps.resolveSecret, config.db.passwordSecretRef)
+      : '';
     const pgRun = deps.pgRun ?? defaultPgRun;
     const limit = Math.min(Math.max(1, rowLimit || DEFAULT_ROW_LIMIT), MAX_ROW_LIMIT);
-    return await pgRun({ host: '127.0.0.1', port: tunnel.localPort, database: config.db.database, user, password }, sql, limit);
+    return await pgRun(
+      { host: '127.0.0.1', port: tunnel.localPort, database: config.db.database, user, password },
+      sql,
+      limit,
+    );
   } finally {
     await tunnel.close();
   }
@@ -98,15 +132,23 @@ export async function executeRemoteSshDbQuery(
  * tornava undefined → usato come password in chiaro, mascherando un typo). Solo i
  * valori chiaramente non-vault restano letterali (back-compat dev/local).
  */
-export function makeVaultResolverFrom(resolveRef: (ref: string) => Promise<string | null | undefined>): SecretResolver {
+export function makeVaultResolverFrom(
+  resolveRef: (ref: string) => Promise<string | null | undefined>,
+): SecretResolver {
   return async (ref: string) => {
     const v = await resolveRef(ref);
     if (v === null) {
-      throw new SshPolicyError('CONFIG', `Segreto vault non risolvibile (vault non configurato o path errato): "${ref}".`);
+      throw new SshPolicyError(
+        'CONFIG',
+        `Segreto vault non risolvibile (vault non configurato o path errato): "${ref}".`,
+      );
     }
     if (v === undefined) {
       if (ref.trim().toLowerCase().startsWith('vault:')) {
-        throw new SshPolicyError('CONFIG', `Riferimento vault malformato: "${ref}" (atteso "vault:<mount>/<path>#<key>"). Non uso il valore come segreto letterale.`);
+        throw new SshPolicyError(
+          'CONFIG',
+          `Riferimento vault malformato: "${ref}" (atteso "vault:<mount>/<path>#<key>"). Non uso il valore come segreto letterale.`,
+        );
       }
       return ref; // valore letterale/local legittimo (non ha forma vault)
     }
@@ -131,5 +173,8 @@ export const remoteSshDbQueryExecutor: NodeExecutor = async (config, _input, _co
     rowLimit,
     { resolveSecret: makeVaultResolver() },
   );
-  return { output: { rows, rowCount: rows.length, durationMs: Date.now() - start }, durationMs: Date.now() - start };
+  return {
+    output: { rows, rowCount: rows.length, durationMs: Date.now() - start },
+    durationMs: Date.now() - start,
+  };
 };

@@ -35,7 +35,13 @@ realSqlite.exec(`
 // ─── Mocks dei sub-services (no business logic, only stub) ───────────
 const m = vi.hoisted(() => ({
   workflowsList: vi.fn(),
-  runsExecute: vi.fn().mockResolvedValue({ runId: 'integ-r-1', status: 'success', errorCount: 0, steps: [], totalDurationMs: 1 }),
+  runsExecute: vi.fn().mockResolvedValue({
+    runId: 'integ-r-1',
+    status: 'success',
+    errorCount: 0,
+    steps: [],
+    totalDurationMs: 1,
+  }),
   dbStudioChanges: vi.fn().mockReturnValue([]),
   systemEmailAcct: vi.fn(),
   emit: vi.fn(),
@@ -43,7 +49,12 @@ const m = vi.hoisted(() => ({
 }));
 
 vi.mock('chokidar', () => ({
-  default: { watch: vi.fn(() => ({ on: vi.fn().mockReturnThis(), close: vi.fn().mockResolvedValue(undefined) })) },
+  default: {
+    watch: vi.fn(() => ({
+      on: vi.fn().mockReturnThis(),
+      close: vi.fn().mockResolvedValue(undefined),
+    })),
+  },
 }));
 
 const imap = vi.hoisted(() => ({
@@ -130,10 +141,15 @@ function makeWf() {
     name: 'Integration IMAP WF',
     enabled: true,
     schemaVersion: '1.0.0' as const,
-    nodes: [{
-      id: 'n1', defId: 'trigger_imap', x: 0, y: 0,
-      config: { host: 'mx.test', username: 'user', password: 'pass' },
-    }],
+    nodes: [
+      {
+        id: 'n1',
+        defId: 'trigger_imap',
+        x: 0,
+        y: 0,
+        config: { host: 'mx.test', username: 'user', password: 'pass' },
+      },
+    ],
     edges: [],
     nodeDefs: [],
     createdAt: '2026-05-30',
@@ -205,7 +221,10 @@ describe('IMAP poll integration — SQLite reale per defensive catch coverage', 
     // Quindi questo test copre ENTRAMBI i catch (checkDup + recordProcessed).
     const { simpleParser } = await import('mailparser');
     (simpleParser as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      text: 'b', html: '', messageId: '<test-checkdup@x>', attachments: [],
+      text: 'b',
+      html: '',
+      messageId: '<test-checkdup@x>',
+      attachments: [],
       from: { value: [{ address: 'a@x' }] },
       to: { value: [{ address: 'b@x' }] },
     });
@@ -214,9 +233,12 @@ describe('IMAP poll integration — SQLite reale per defensive catch coverage', 
         yield {
           uid: 43,
           envelope: {
-            subject: 'T', from: [{ address: 'a@x' }], to: [{ address: 'b@x' }],
+            subject: 'T',
+            from: [{ address: 'a@x' }],
+            to: [{ address: 'b@x' }],
           },
-          source: Buffer.from('mime'), flags: new Set(),
+          source: Buffer.from('mime'),
+          flags: new Set(),
         };
       },
     });

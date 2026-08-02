@@ -40,7 +40,13 @@ function capped(text: string, cap: number): { text: string; truncatedChars: numb
   return { text: text.slice(0, cap), truncatedChars: text.length - cap };
 }
 
-function emitChunks(sink: LlmLogSink, kind: 'llm_prompt' | 'llm_response', label: string, raw: string, cap: number): void {
+function emitChunks(
+  sink: LlmLogSink,
+  kind: 'llm_prompt' | 'llm_response',
+  label: string,
+  raw: string,
+  cap: number,
+): void {
   const { text, truncatedChars } = capped(raw, cap);
   const parts: string[] = [];
   for (let i = 0; i < text.length; i += CHUNK_CHARS) parts.push(text.slice(i, i + CHUNK_CHARS));

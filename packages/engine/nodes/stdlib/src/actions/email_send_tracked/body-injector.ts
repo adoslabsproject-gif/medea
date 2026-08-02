@@ -83,7 +83,12 @@ export async function injectTracking(args: InjectArgs): Promise<InjectResult> {
   // sostituendo dalla mappa. Mantiene ordine + zero re-parse del DOM.
   if (args.trackClicks) {
     const linkPattern = /<a\b([^>]*?)\shref\s*=\s*("([^"]*)"|'([^']*)')/gi;
-    interface Match { full: string; beforeHref: string; href: string; dq: string | undefined; }
+    interface Match {
+      full: string;
+      beforeHref: string;
+      href: string;
+      dq: string | undefined;
+    }
     const matches: Match[] = [];
     let m: RegExpExecArray | null;
     while ((m = linkPattern.exec(html)) !== null) {
@@ -101,14 +106,17 @@ export async function injectTracking(args: InjectArgs): Promise<InjectResult> {
     }
     const signed = await Promise.all(
       eligible.map(({ match, idx }) =>
-        signTrackingToken({
-          w: args.workspaceId,
-          l: args.leadId,
-          c: args.campaignId,
-          s: args.sendId,
-          k: 'click',
-          i: idx,
-        }, args.secret).then((s) => ({ match, idx, token: s.token })),
+        signTrackingToken(
+          {
+            w: args.workspaceId,
+            l: args.leadId,
+            c: args.campaignId,
+            s: args.sendId,
+            k: 'click',
+            i: idx,
+          },
+          args.secret,
+        ).then((s) => ({ match, idx, token: s.token })),
       ),
     );
     // Build replacement map per full-string-match (univoco grazie a href + ordine).
@@ -127,13 +135,16 @@ export async function injectTracking(args: InjectArgs): Promise<InjectResult> {
 
   // ── Open pixel ──
   if (args.trackOpens) {
-    const signedOpen = await signTrackingToken({
-      w: args.workspaceId,
-      l: args.leadId,
-      c: args.campaignId,
-      s: args.sendId,
-      k: 'open',
-    }, args.secret);
+    const signedOpen = await signTrackingToken(
+      {
+        w: args.workspaceId,
+        l: args.leadId,
+        c: args.campaignId,
+        s: args.sendId,
+        k: 'open',
+      },
+      args.secret,
+    );
     openToken = signedOpen.token;
     pixelUrl = `${args.trackingBaseUrl.replace(/\/$/, '')}/api/track/open/${signedOpen.token}`;
     const pixelTag = `<img src="${pixelUrl}" alt="" width="1" height="1" border="0" style="height:1px;width:1px;border:0;display:block;outline:none;text-decoration:none">`;
@@ -165,11 +176,7 @@ export async function injectTracking(args: InjectArgs): Promise<InjectResult> {
  *  5. Otherwise wrap iff the URL host endsWith one of the whitelist
  *     entries.
  */
-export function shouldRewrite(
-  href: string,
-  trackingBaseUrl: string,
-  whitelist: string[],
-): boolean {
+export function shouldRewrite(href: string, trackingBaseUrl: string, whitelist: string[]): boolean {
   if (!href) return false;
   const lower = href.toLowerCase().trim();
   if (lower.startsWith('mailto:')) return false;

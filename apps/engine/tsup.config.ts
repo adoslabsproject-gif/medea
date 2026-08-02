@@ -38,7 +38,7 @@ export default defineConfig({
   banner: {
     js:
       "import { createRequire as __medea_createRequire } from 'node:module';\n" +
-      "const require = __medea_createRequire(import.meta.url);",
+      'const require = __medea_createRequire(import.meta.url);',
   },
   // Bundla le dipendenze interne del workspace, cioè tutto `@medea/engine-*`
   // (per esempio @medea/engine-shared = maskEmail, circuit-breaker, ecc.).

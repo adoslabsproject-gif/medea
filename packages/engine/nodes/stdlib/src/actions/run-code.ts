@@ -65,7 +65,7 @@ export const runPythonNode: NodeModule = {
         required: false,
         defaultValue: 'true',
         help:
-          'Se on, prova a parsare stdout come JSON e ritorna l\'oggetto strutturato. ' +
+          "Se on, prova a parsare stdout come JSON e ritorna l'oggetto strutturato. " +
           'Se off o parsing fail, ritorna stdout come stringa.',
       },
       {
@@ -116,7 +116,7 @@ export const runJsNode: NodeModule = {
       'Variabili globali disponibili nel script: input (output JSON del nodo precedente — la fonte primaria ' +
       'di dati da processare), vars (workflow variables persistenti — ricordo cross-step), ctx (run metadata ' +
       'come runId, tenantId, workflowId, currentTime per timestamp embedding). ' +
-      'Output: il valore return-ato dallo script diventa l\'output del nodo (deve essere JSON-serializable — ' +
+      "Output: il valore return-ato dallo script diventa l'output del nodo (deve essere JSON-serializable — " +
       'no functions, no circular references, no Symbol — il check è automatic e fail con error semantic ' +
       'esplicito se viola la regola). ' +
       'Use case: trasformazione dati custom non coperta da logic_transform (es. complex map+filter+reduce ' +

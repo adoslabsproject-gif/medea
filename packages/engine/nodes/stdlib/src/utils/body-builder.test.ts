@@ -47,21 +47,27 @@ describe('buildBody', () => {
     });
 
     it('honors custom rawBinaryContentType', () => {
-      const r = buildBody({
-        bodyType: 'raw-binary-base64',
-        body: Buffer.from('PDF').toString('base64'),
-        rawBinaryContentType: 'application/pdf',
-      }, 'POST');
+      const r = buildBody(
+        {
+          bodyType: 'raw-binary-base64',
+          body: Buffer.from('PDF').toString('base64'),
+          rawBinaryContentType: 'application/pdf',
+        },
+        'POST',
+      );
       expect(r.contentType).toBe('application/pdf');
     });
   });
 
   describe('form-urlencoded', () => {
     it('builds query-string body + form Content-Type', () => {
-      const r = buildBody({
-        bodyType: 'form-urlencoded',
-        formFields: JSON.stringify({ a: '1', b: 'hello world' }),
-      }, 'POST');
+      const r = buildBody(
+        {
+          bodyType: 'form-urlencoded',
+          formFields: JSON.stringify({ a: '1', b: 'hello world' }),
+        },
+        'POST',
+      );
       expect(r.contentType).toBe('application/x-www-form-urlencoded');
       expect(r.body).toBe('a=1&b=hello+world');
     });
@@ -74,10 +80,13 @@ describe('buildBody', () => {
 
   describe('multipart', () => {
     it('builds FormData (no contentType — fetch sets boundary)', () => {
-      const r = buildBody({
-        bodyType: 'multipart',
-        formFields: JSON.stringify({ name: 'a', file: 'b' }),
-      }, 'POST');
+      const r = buildBody(
+        {
+          bodyType: 'multipart',
+          formFields: JSON.stringify({ name: 'a', file: 'b' }),
+        },
+        'POST',
+      );
       expect(r.body).toBeInstanceOf(FormData);
       expect(r.contentType).toBeUndefined();
     });

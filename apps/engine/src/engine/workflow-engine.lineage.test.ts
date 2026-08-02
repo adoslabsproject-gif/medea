@@ -22,8 +22,13 @@ let seen: Map<string, unknown[]>; // defId → valori config.probe interpolati, 
 
 function defOf(id: string) {
   return {
-    id, label: id, kind: 'action' as const, category: 'test',
-    inputs: [], outputs: [], configSchema: {} as never,
+    id,
+    label: id,
+    kind: 'action' as const,
+    category: 'test',
+    inputs: [],
+    outputs: [],
+    configSchema: {} as never,
   };
 }
 
@@ -31,7 +36,11 @@ function defOf(id: string) {
 function probeMod(defId: string) {
   return {
     def: defOf(defId),
-    executor: async (config: Record<string, unknown>, _input: unknown, _ctx: NodeExecutionContext) => {
+    executor: async (
+      config: Record<string, unknown>,
+      _input: unknown,
+      _ctx: NodeExecutionContext,
+    ) => {
       const list = seen.get(defId) ?? [];
       list.push(config.probe);
       seen.set(defId, list);
@@ -44,7 +53,10 @@ function probeMod(defId: string) {
 function passthroughMod(defId: string) {
   return {
     def: defOf(defId),
-    executor: async (_c: unknown, input: unknown, _ctx: NodeExecutionContext) => ({ output: input, chosenBranch: undefined }),
+    executor: async (_c: unknown, input: unknown, _ctx: NodeExecutionContext) => ({
+      output: input,
+      chosenBranch: undefined,
+    }),
   };
 }
 
@@ -91,13 +103,22 @@ function makeWorkflow(
   edges: Edge[],
 ): Workflow {
   return {
-    schemaVersion: '1.0.0', id: 'wf-lineage', name: 'Lineage', enabled: true,
+    schemaVersion: '1.0.0',
+    id: 'wf-lineage',
+    name: 'Lineage',
+    enabled: true,
     nodes: nodes.map((n, i) => ({
-      id: n.id, defId: n.defId, x: i, y: 0, config: n.config ?? {},
+      id: n.id,
+      defId: n.defId,
+      x: i,
+      y: 0,
+      config: n.config ?? {},
       ...(n.continueOnFail !== undefined ? { continueOnFail: n.continueOnFail } : {}),
     })),
-    edges, nodeDefs: [],
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    edges,
+    nodeDefs: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 }
 
@@ -105,9 +126,11 @@ function makeEngine(...mods: object[]): WorkflowEngine {
   return new WorkflowEngine(new InMemoryEventBus(), { nodeRegistry: mods as never[] });
 }
 
-beforeEach(() => { seen = new Map(); });
+beforeEach(() => {
+  seen = new Map();
+});
 
-describe('🚨 fan-out (edge.mapMode): $(\'src\').item è l\'item ACCOPPIATO della sorgente', () => {
+describe("🚨 fan-out (edge.mapMode): $('src').item è l'item ACCOPPIATO della sorgente", () => {
   it('per ogni iterazione i, .item risolve src[i] — allineamento per indice end-to-end', async () => {
     const workflow = makeWorkflow(
       [
@@ -144,7 +167,7 @@ describe('🚨 fan-out (edge.mapMode): $(\'src\').item è l\'item ACCOPPIATO del
     expect(seen.get('probe')).toEqual(['a', 'b', 'c']);
   });
 
-  it('🚨 soft-fail per-item: l\'error-item OCCUPA la posizione e il pairing NON slitta', async () => {
+  it("🚨 soft-fail per-item: l'error-item OCCUPA la posizione e il pairing NON slitta", async () => {
     const workflow = makeWorkflow(
       [
         { id: 'src', defId: 'src' },
@@ -175,7 +198,11 @@ describe('🚨 dichiarazione executor (NodeExecutionResult.items) — il caso NO
       [
         { id: 'src', defId: 'src' },
         { id: 'declaring', defId: 'declaring' },
-        { id: 'probe', defId: 'probe', config: { probe: "{{ $('src').itemMatching(0).json.value }}" } },
+        {
+          id: 'probe',
+          defId: 'probe',
+          config: { probe: "{{ $('src').itemMatching(0).json.value }}" },
+        },
       ],
       [
         { from: 'src', to: 'declaring' },
@@ -204,18 +231,26 @@ describe('🚨🚨 GATE (reviewer, non negoziabile) — A→filter→C col VERO 
    * (re-indicizzato sull'array compattato) darebbe a2. Il fan-out da solo,
    * senza la dichiarazione del filtro, non può saperlo.
    */
-  it('🚨 da C, $(\'A\').itemMatching(1) è a3 (paired via indice originale 2) — NON a2 (posizionale)', async () => {
+  it("🚨 da C, $('A').itemMatching(1) è a3 (paired via indice originale 2) — NON a2 (posizionale)", async () => {
     const filterNode = findStdlibNode('action_filter');
     expect(filterNode).toBeDefined();
-    const conditions = JSON.stringify({ combinator: 'AND', rules: [{ field: 'name', op: 'not_equals', value: 'a2' }] });
+    const conditions = JSON.stringify({
+      combinator: 'AND',
+      rules: [{ field: 'name', op: 'not_equals', value: 'a2' }],
+    });
     const workflow = makeWorkflow(
       [
         { id: 'A', defId: 'src' },
         { id: 'F', defId: 'action_filter', config: { conditions } },
-        { id: 'C', defId: 'probe', config: {
-          // item corrente (ancora 0) | item paired col 2° sopravvissuto | conferma vista filtro
-          probe: "{{ $('A').item.json.name }}|{{ $('A').itemMatching(1).json.name }}|{{ $('F').itemMatching(1).json.name }}",
-        } },
+        {
+          id: 'C',
+          defId: 'probe',
+          config: {
+            // item corrente (ancora 0) | item paired col 2° sopravvissuto | conferma vista filtro
+            probe:
+              "{{ $('A').item.json.name }}|{{ $('A').itemMatching(1).json.name }}|{{ $('F').itemMatching(1).json.name }}",
+          },
+        },
       ],
       [
         { from: 'A', to: 'F' },
@@ -236,17 +271,26 @@ describe('🚨🚨 GATE (reviewer, non negoziabile) — A→filter→C col VERO 
 
   it('il blob di output del filtro resta il contratto storico (kept/removed/counts)', async () => {
     const filterNode = findStdlibNode('action_filter');
-    const conditions = JSON.stringify({ combinator: 'AND', rules: [{ field: 'name', op: 'not_equals', value: 'a2' }] });
+    const conditions = JSON.stringify({
+      combinator: 'AND',
+      rules: [{ field: 'name', op: 'not_equals', value: 'a2' }],
+    });
     const workflow = makeWorkflow(
       [
         { id: 'A', defId: 'src' },
         { id: 'F', defId: 'action_filter', config: { conditions } },
         { id: 'C', defId: 'probe', config: { probe: "{{ $('F').first().json.keptCount }}" } },
       ],
-      [{ from: 'A', to: 'F' }, { from: 'F', to: 'C', fromPort: 'kept' }],
+      [
+        { from: 'A', to: 'F' },
+        { from: 'F', to: 'C', fromPort: 'kept' },
+      ],
     );
     const engine = makeEngine(passthroughMod('src'), filterNode as object, probeMod('probe'));
-    const result = await engine.run({ workflow, triggerInput: [{ name: 'a1' }, { name: 'a2' }, { name: 'a3' }] });
+    const result = await engine.run({
+      workflow,
+      triggerInput: [{ name: 'a1' }, { name: 'a2' }, { name: 'a3' }],
+    });
     expect(result.status).toBe('success');
     // $('F').first() legge da vars (il DATO che viaggia): il blob è intatto
     // anche se la vista lineage del filtro (graph) è item-native.
@@ -255,7 +299,7 @@ describe('🚨🚨 GATE (reviewer, non negoziabile) — A→filter→C col VERO 
   });
 });
 
-describe('🚨 loop body (logic_loop) — $(\'src\').item è l\'item dell\'iterazione corrente', () => {
+describe("🚨 loop body (logic_loop) — $('src').item è l'item dell'iterazione corrente", () => {
   function loopWorkflow(loopConfig: Record<string, string>, probeExpr: string): Workflow {
     return makeWorkflow(
       [
@@ -321,18 +365,31 @@ describe('🚨 pause → resume: il lineage SOPRAVVIVE allo snapshot (itemGraph 
         { id: 'P', defId: 'probe', config: { probe: "{{ $('src').item.json.value }}" } },
       ],
       [
-        { from: 'src', to: 'wait' },   // processato per primo → suspend
+        { from: 'src', to: 'wait' }, // processato per primo → suspend
         { from: 'src', to: 'P', mapMode: 'auto' }, // resta in pendingQueue
       ],
     );
   }
 
-  async function runUntilPause(): Promise<{ engine: WorkflowEngine; captured: PauseArgs; workflow: Workflow }> {
+  async function runUntilPause(): Promise<{
+    engine: WorkflowEngine;
+    captured: PauseArgs;
+    workflow: Workflow;
+  }> {
     let captured: PauseArgs | undefined;
-    const pauseHandler = { pause: (args: PauseArgs): string => { captured = args; return 'paused-1'; } };
+    const pauseHandler = {
+      pause: (args: PauseArgs): string => {
+        captured = args;
+        return 'paused-1';
+      },
+    };
     const workflow = pausedWorkflow();
     const engine = new WorkflowEngine(new InMemoryEventBus(), {
-      nodeRegistry: [passthroughMod('src'), findStdlibNode('logic_wait_signal'), probeMod('probe')] as never[],
+      nodeRegistry: [
+        passthroughMod('src'),
+        findStdlibNode('logic_wait_signal'),
+        probeMod('probe'),
+      ] as never[],
       pauseHandler,
     });
     const result = await engine.run({ workflow, triggerInput: ['a', 'b', 'c'] });
@@ -340,7 +397,9 @@ describe('🚨 pause → resume: il lineage SOPRAVVIVE allo snapshot (itemGraph 
     expect(captured).toBeDefined();
     // Il probe NON è ancora girato e il ramo residuo porta la provenienza.
     expect(seen.get('probe')).toBeUndefined();
-    expect(captured!.pendingQueue).toEqual([{ nodeId: 'P', carriedInput: ['a', 'b', 'c'], mapMode: 'auto', sourceNodeId: 'src' }]);
+    expect(captured!.pendingQueue).toEqual([
+      { nodeId: 'P', carriedInput: ['a', 'b', 'c'], mapMode: 'auto', sourceNodeId: 'src' },
+    ]);
     return { engine, captured: captured!, workflow };
   }
 
@@ -359,11 +418,13 @@ describe('🚨 pause → resume: il lineage SOPRAVVIVE allo snapshot (itemGraph 
     };
   }
 
-  it('🚨 il PauseArgs porta il grafo e al resume il fan-out residuo risolve $(\'src\').item', async () => {
+  it("🚨 il PauseArgs porta il grafo e al resume il fan-out residuo risolve $('src').item", async () => {
     const { engine, captured, workflow } = await runUntilPause();
     // Lo snapshot persistito include la vista item di src col suo contenuto.
     expect(captured.itemGraph.get('src')?.map((it) => it.json)).toEqual([
-      { value: 'a' }, { value: 'b' }, { value: 'c' },
+      { value: 'a' },
+      { value: 'b' },
+      { value: 'c' },
     ]);
     const result = await engine.resume(snapshotFrom(captured, true), workflow);
     expect(result.status).toBe('success');
@@ -383,7 +444,13 @@ describe('🚨 pause → resume: il lineage SOPRAVVIVE allo snapshot (itemGraph 
 describe('onestà semantica — dove il pairing NON è definito ritorna undefined', () => {
   it('nodo ROOT (nessuna sorgente): .item è undefined, nessun crash', async () => {
     const workflow = makeWorkflow(
-      [{ id: 'probe', defId: 'probe', config: { probe: "{{ $('probe').item === undefined ? 'no-lineage' : 'BUG' }}" } }],
+      [
+        {
+          id: 'probe',
+          defId: 'probe',
+          config: { probe: "{{ $('probe').item === undefined ? 'no-lineage' : 'BUG' }}" },
+        },
+      ],
       [],
     );
     const engine = makeEngine(probeMod('probe'));

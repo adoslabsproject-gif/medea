@@ -27,7 +27,10 @@ const m = vi.hoisted(() => {
   class NoLlmProviderError extends Error {
     override name = 'NoLlmProviderError';
     httpStatus: number;
-    constructor(msg: string, httpStatus = 503) { super(msg); this.httpStatus = httpStatus; }
+    constructor(msg: string, httpStatus = 503) {
+      super(msg);
+      this.httpStatus = httpStatus;
+    }
   }
   return {
     NoLlmProviderError,
@@ -53,7 +56,9 @@ const m = vi.hoisted(() => {
 vi.mock('@/lib/logger.js');
 
 vi.mock('@/middleware/rate-limit.js', () => ({
-  llmRateLimit: () => async (_c: unknown, next: () => Promise<void>) => { await next(); },
+  llmRateLimit: () => async (_c: unknown, next: () => Promise<void>) => {
+    await next();
+  },
 }));
 
 vi.mock('@/services/llm-resolver.service.js', () => ({
@@ -76,7 +81,9 @@ vi.mock('@/services/ai-conversations/index.js', () => ({
 
 vi.mock('@/services/ai-interactions.service.js', () => ({
   AIInteractionsService: class {
-    insert(args: unknown) { return m.aiInteractionsInsert(args); }
+    insert(args: unknown) {
+      return m.aiInteractionsInsert(args);
+    }
   },
 }));
 
@@ -93,7 +100,19 @@ vi.mock('@/prompts/ai-assistant.prompt.js', () => ({
 // Catalog retrieval mockato: la route lo importa dinamicamente; restituiamo un
 // retriever finto deterministico (no embedder, no buildNodeCatalog reale).
 vi.mock('@/services/catalog-retrieval/index.js', () => ({
-  getCatalogRetriever: async () => ({ retrieve: async () => [{ defId: 'trigger_webhook', type: 'trigger', label: 'WH', category: 'triggers', shortDesc: 'x', score: 1 }], categoryMap: () => [] }),
+  getCatalogRetriever: async () => ({
+    retrieve: async () => [
+      {
+        defId: 'trigger_webhook',
+        type: 'trigger',
+        label: 'WH',
+        category: 'triggers',
+        shortDesc: 'x',
+        score: 1,
+      },
+    ],
+    categoryMap: () => [],
+  }),
   formatCatalogForPrompt: () => 'CATALOG_BLOCK',
 }));
 vi.mock('@/services/catalog-retrieval/marketplace-discovery.js', () => ({
@@ -117,7 +136,10 @@ vi.mock('../services/llm-chat.service.js', () => ({
   // Esportata perché la route fa `instanceof LlmProviderUnavailableError` sul path 503.
   LlmProviderUnavailableError: class LlmProviderUnavailableError extends Error {
     provider: string;
-    constructor(provider: string) { super(`${provider} non è al momento raggiungibile`); this.provider = provider; }
+    constructor(provider: string) {
+      super(`${provider} non è al momento raggiungibile`);
+      this.provider = provider;
+    }
   },
 }));
 
@@ -138,7 +160,13 @@ function buildApp(auth: Partial<AuthContext> | null): Hono {
   const app = new Hono();
   app.use('*', async (c, next) => {
     if (auth) {
-      const full: AuthContext = { userId: 'u1', email: 'e@x', tenantId: 't1', role: 'owner', ...auth } as AuthContext;
+      const full: AuthContext = {
+        userId: 'u1',
+        email: 'e@x',
+        tenantId: 't1',
+        role: 'owner',
+        ...auth,
+      } as AuthContext;
       c.set('auth', full);
     }
     await next();
@@ -155,12 +183,24 @@ const baseBody = {
 };
 
 beforeEach(() => {
-  Object.values(m).forEach((f) => { if (typeof f === 'function' && 'mockReset' in f) (f as { mockReset: () => void }).mockReset(); });
-  m.resolve.mockReturnValue({ provider: 'anthropic', apiKey: 'sk-test', model: 'claude-sonnet-4-6', baseUrl: undefined });
+  Object.values(m).forEach((f) => {
+    if (typeof f === 'function' && 'mockReset' in f) (f as { mockReset: () => void }).mockReset();
+  });
+  m.resolve.mockReturnValue({
+    provider: 'anthropic',
+    apiKey: 'sk-test',
+    model: 'claude-sonnet-4-6',
+    baseUrl: undefined,
+  });
   m.findOrCreate.mockReturnValue({ id: 'conv-1', userId: 'u1', surface: 'editor_chat' });
-  m.buildContext.mockReturnValue({ messages: [{ role: 'user', content: 'add http_request' }], summary: '' });
+  m.buildContext.mockReturnValue({
+    messages: [{ role: 'user', content: 'add http_request' }],
+    summary: '',
+  });
   m.needsCompaction.mockReturnValue(false);
-  m.dispatchLLM.mockResolvedValue('{"message": "OK", "patch": {"addNodes": [{"id":"n1","defId":"http_request"}]}}');
+  m.dispatchLLM.mockResolvedValue(
+    '{"message": "OK", "patch": {"addNodes": [{"id":"n1","defId":"http_request"}]}}',
+  );
   m.detectIntents.mockReturnValue([]);
   m.executeIntents.mockResolvedValue([]);
   m.formatToolResults.mockReturnValue('');
@@ -170,7 +210,8 @@ beforeEach(() => {
 describe('POST /ai-assistant/chat — input validation', () => {
   it('zod 400 userMessage missing', async () => {
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ workflow: baseWf }),
     });
     expect(res.status).toBe(400);
@@ -178,7 +219,8 @@ describe('POST /ai-assistant/chat — input validation', () => {
 
   it('zod 400 userMessage > 8000 char', async () => {
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ workflow: baseWf, userMessage: 'a'.repeat(8001) }),
     });
     expect(res.status).toBe(400);
@@ -186,7 +228,8 @@ describe('POST /ai-assistant/chat — input validation', () => {
 
   it('zod 400 attachments > 10', async () => {
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         ...baseBody,
         attachments: Array.from({ length: 11 }, (_, i) => ({ kind: 'image', name: `a-${i}` })),
@@ -197,55 +240,79 @@ describe('POST /ai-assistant/chat — input validation', () => {
 });
 
 describe('POST /ai-assistant/chat — provider gating', () => {
-  it('🚨 NoLlmProviderError → httpStatus dell\'error', async () => {
-    m.resolve.mockImplementation(() => { throw new m.NoLlmProviderError('no provider', 402); });
+  it("🚨 NoLlmProviderError → httpStatus dell'error", async () => {
+    m.resolve.mockImplementation(() => {
+      throw new m.NoLlmProviderError('no provider', 402);
+    });
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(402);
   });
 
   it('🚨 provider non-liara/ollama senza apiKey → 401', async () => {
-    m.resolve.mockReturnValue({ provider: 'anthropic', apiKey: '', model: 'x', baseUrl: undefined });
+    m.resolve.mockReturnValue({
+      provider: 'anthropic',
+      apiKey: '',
+      model: 'x',
+      baseUrl: undefined,
+    });
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(401);
-    expect((await res.json() as { error: string }).error).toContain('API key');
+    expect(((await res.json()) as { error: string }).error).toContain('API key');
   });
 
   it('provider=liara senza apiKey OK (no 401)', async () => {
-    m.resolve.mockReturnValue({ provider: 'liara', apiKey: '', model: 'qwen3', baseUrl: undefined });
+    m.resolve.mockReturnValue({
+      provider: 'liara',
+      apiKey: '',
+      model: 'qwen3',
+      baseUrl: undefined,
+    });
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(200);
   });
 
   it('errore generico resolve → THROW', async () => {
-    m.resolve.mockImplementation(() => { throw new Error('boom'); });
+    m.resolve.mockImplementation(() => {
+      throw new Error('boom');
+    });
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(500);
   });
 
   it('🚨 provider giù (Liara offline in gen-mode) → 503 PROVIDER_UNAVAILABLE, NIENTE swap silenzioso', async () => {
-    const { LlmProviderUnavailableError } = await import('../services/llm-chat.service.js') as {
+    const { LlmProviderUnavailableError } = (await import('../services/llm-chat.service.js')) as {
       LlmProviderUnavailableError: new (p: string) => Error;
     };
-    m.resolve.mockReturnValue({ provider: 'liara', apiKey: '', model: 'qwen3', baseUrl: undefined });
+    m.resolve.mockReturnValue({
+      provider: 'liara',
+      apiKey: '',
+      model: 'qwen3',
+      baseUrl: undefined,
+    });
     m.dispatchLLM.mockRejectedValue(new LlmProviderUnavailableError('liara'));
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(503);
-    const j = await res.json() as { code: string; provider: string; error: string };
+    const j = (await res.json()) as { code: string; provider: string; error: string };
     expect(j.code).toBe('PROVIDER_UNAVAILABLE');
     expect(j.provider).toBe('liara');
     expect(j.error).toMatch(/raggiungibile/);
@@ -254,14 +321,20 @@ describe('POST /ai-assistant/chat — provider gating', () => {
 
 describe('POST /ai-assistant/chat — provider echo (avatar veritiero)', () => {
   it('🚨 la risposta riporta provider+model EFFETTIVI usati', async () => {
-    m.resolve.mockReturnValue({ provider: 'anthropic', apiKey: 'sk', model: 'claude-opus-4-8', baseUrl: undefined });
+    m.resolve.mockReturnValue({
+      provider: 'anthropic',
+      apiKey: 'sk',
+      model: 'claude-opus-4-8',
+      baseUrl: undefined,
+    });
     m.dispatchLLM.mockResolvedValue('{"message": "ciao"}');
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(200);
-    const j = await res.json() as { provider: string; model: string };
+    const j = (await res.json()) as { provider: string; model: string };
     expect(j.provider).toBe('anthropic');
     expect(j.model).toBe('claude-opus-4-8');
   });
@@ -269,30 +342,40 @@ describe('POST /ai-assistant/chat — provider echo (avatar veritiero)', () => {
 
 describe('POST /ai-assistant/chat — conversation memory', () => {
   it('findOrCreate throw → 500 "Failed to resolve conversation"', async () => {
-    m.findOrCreate.mockImplementation(() => { throw new Error('db down'); });
+    m.findOrCreate.mockImplementation(() => {
+      throw new Error('db down');
+    });
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(500);
-    expect((await res.json() as { error: string }).error).toContain('Failed to resolve');
+    expect(((await res.json()) as { error: string }).error).toContain('Failed to resolve');
   });
 
   it('🚨 user message INSERTED prima del LLM (audit anche su LLM fail)', async () => {
     m.dispatchLLM.mockRejectedValue(new Error('LLM crash'));
     await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     // appendMessage role:user chiamato indipendentemente
-    const userCall = m.appendMessage.mock.calls.find((call) => (call[0] as { role: string }).role === 'user');
+    const userCall = m.appendMessage.mock.calls.find(
+      (call) => (call[0] as { role: string }).role === 'user',
+    );
     expect(userCall).toBeDefined();
   });
 
   it('conversation summary iniettato nel system prompt', async () => {
-    m.buildContext.mockReturnValue({ messages: [{ role: 'user', content: 'x' }], summary: 'PRIOR CONTEXT' });
+    m.buildContext.mockReturnValue({
+      messages: [{ role: 'user', content: 'x' }],
+      summary: 'PRIOR CONTEXT',
+    });
     await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     const system = m.dispatchLLM.mock.calls[0]![3] as string;
@@ -303,7 +386,8 @@ describe('POST /ai-assistant/chat — conversation memory', () => {
     m.needsCompaction.mockReturnValue(true);
     m.trySummarize.mockResolvedValue(undefined);
     await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     await new Promise((r) => setTimeout(r, 10));
@@ -314,11 +398,12 @@ describe('POST /ai-assistant/chat — conversation memory', () => {
 describe('POST /ai-assistant/chat — LLM output parsing', () => {
   it('happy path JSON valido + patch valido', async () => {
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(200);
-    const body = await res.json() as { message: string; patch?: unknown; conversationId: string };
+    const body = (await res.json()) as { message: string; patch?: unknown; conversationId: string };
     expect(body.message).toBe('OK');
     expect(body.patch).toBeDefined();
     expect(body.conversationId).toBe('conv-1');
@@ -333,10 +418,14 @@ describe('POST /ai-assistant/chat — LLM output parsing', () => {
       return Promise.resolve('{"message": "OK"}');
     });
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
-    const body = await res.json() as { usage: { input: number; output: number }; context: { used: number; window: number } };
+    const body = (await res.json()) as {
+      usage: { input: number; output: number };
+      context: { used: number; window: number };
+    };
     expect(body.context).toEqual({ used: 1500, window: 40960 });
     // mutation: used = token del CONTESTO (input), non l'output né il totale
     expect(body.context.used).toBe(body.usage.input);
@@ -347,7 +436,8 @@ describe('POST /ai-assistant/chat — LLM output parsing', () => {
     m.needsCompaction.mockReturnValue(true);
     m.trySummarize.mockResolvedValue(undefined);
     await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     await new Promise((r) => setTimeout(r, 10));
@@ -361,7 +451,8 @@ describe('POST /ai-assistant/chat — LLM output parsing', () => {
   it('markdown fence ```json stripped', async () => {
     m.dispatchLLM.mockResolvedValue('```json\n{"message": "OK"}\n```');
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(200);
@@ -373,11 +464,12 @@ describe('POST /ai-assistant/chat — LLM output parsing', () => {
   it('🚨 FIX 2026-06-16: non-JSON (prosa) → 200 con message = testo grezzo (MAI 502)', async () => {
     m.dispatchLLM.mockResolvedValue('this is plain text');
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(200);
-    const body = await res.json() as { message: string; patch?: unknown };
+    const body = (await res.json()) as { message: string; patch?: unknown };
     expect(body.message).toBe('this is plain text');
     expect(body.patch).toBeUndefined();
   });
@@ -385,23 +477,27 @@ describe('POST /ai-assistant/chat — LLM output parsing', () => {
   it('🚨 FIX 2026-06-16: JSON valido ma schema invalido (no message) → 200 fallback (MAI 502)', async () => {
     m.dispatchLLM.mockResolvedValue('{"foo": "bar"}');
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(200);
-    const body = await res.json() as { message: string };
+    const body = (await res.json()) as { message: string };
     // niente campo message nell'output → il fallback usa il testo grezzo come messaggio.
     expect(body.message).toBe('{"foo": "bar"}');
   });
 
-  it('🚨 FIX 2026-06-16: prosa + JSON valido in mezzo → estrae l\'envelope (no 502)', async () => {
-    m.dispatchLLM.mockResolvedValue('Certo! Ecco la modifica:\n{"message": "Aggiunto", "patch": {"removeEdgeIds": ["e-9"]}}\nFammi sapere.');
+  it("🚨 FIX 2026-06-16: prosa + JSON valido in mezzo → estrae l'envelope (no 502)", async () => {
+    m.dispatchLLM.mockResolvedValue(
+      'Certo! Ecco la modifica:\n{"message": "Aggiunto", "patch": {"removeEdgeIds": ["e-9"]}}\nFammi sapere.',
+    );
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     expect(res.status).toBe(200);
-    const body = await res.json() as { message: string; patch?: { removeEdgeIds?: string[] } };
+    const body = (await res.json()) as { message: string; patch?: { removeEdgeIds?: string[] } };
     expect(body.message).toBe('Aggiunto');
     expect(body.patch?.removeEdgeIds).toEqual(['e-9']);
   });
@@ -409,10 +505,11 @@ describe('POST /ai-assistant/chat — LLM output parsing', () => {
   it('🚨 patch vuoto {} → scartato dal response (no fake UX)', async () => {
     m.dispatchLLM.mockResolvedValue('{"message": "ciao!", "patch": {}}');
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
-    const body = await res.json() as { message: string; patch?: unknown };
+    const body = (await res.json()) as { message: string; patch?: unknown };
     expect(body.message).toBe('ciao!');
     expect(body.patch).toBeUndefined();
   });
@@ -420,10 +517,11 @@ describe('POST /ai-assistant/chat — LLM output parsing', () => {
   it('patch con removeEdgeIds preservato', async () => {
     m.dispatchLLM.mockResolvedValue('{"message": "ok", "patch": {"removeEdgeIds": ["e-1"]}}');
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
-    const body = await res.json() as { patch: { removeEdgeIds: string[] } };
+    const body = (await res.json()) as { patch: { removeEdgeIds: string[] } };
     expect(body.patch.removeEdgeIds).toEqual(['e-1']);
   });
 });
@@ -432,7 +530,8 @@ describe('POST /ai-assistant/chat — budget tracker', () => {
   it('🚨 recordChatBudget chiamato anche se LLM throw (no over-quota silente)', async () => {
     m.dispatchLLM.mockRejectedValue(new Error('LLM died'));
     await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     expect(m.recordChatBudget).toHaveBeenCalled();
@@ -442,7 +541,8 @@ describe('POST /ai-assistant/chat — budget tracker', () => {
 
   it('recordChatBudget con isError=false su success', async () => {
     await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     const args = m.recordChatBudget.mock.calls[0]![0] as { isError: boolean };
@@ -452,9 +552,12 @@ describe('POST /ai-assistant/chat — budget tracker', () => {
 
 describe('POST /ai-assistant/chat — attachment auto-dispatch', () => {
   it('image attachment → analyze_image intent', async () => {
-    m.executeIntents.mockResolvedValue([{ intent: { type: 'analyze_image', args: {} }, data: 'OCR result' }]);
+    m.executeIntents.mockResolvedValue([
+      { intent: { type: 'analyze_image', args: {} }, data: 'OCR result' },
+    ]);
     await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         ...baseBody,
         attachments: [{ kind: 'image', name: 'foto.png', dataBase64: 'base64data' }],
@@ -466,12 +569,17 @@ describe('POST /ai-assistant/chat — attachment auto-dispatch', () => {
   });
 
   it('document attachment → extract_document intent', async () => {
-    m.executeIntents.mockResolvedValue([{ intent: { type: 'extract_document', args: {} }, data: 'extracted' }]);
+    m.executeIntents.mockResolvedValue([
+      { intent: { type: 'extract_document', args: {} }, data: 'extracted' },
+    ]);
     await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         ...baseBody,
-        attachments: [{ kind: 'document', name: 'doc.pdf', dataBase64: 'data', mimeType: 'application/pdf' }],
+        attachments: [
+          { kind: 'document', name: 'doc.pdf', dataBase64: 'data', mimeType: 'application/pdf' },
+        ],
       }),
     });
     const intents = m.executeIntents.mock.calls[0]![0] as { type: string }[];
@@ -481,7 +589,8 @@ describe('POST /ai-assistant/chat — attachment auto-dispatch', () => {
   it('URL attachment → fetch_url intent', async () => {
     m.executeIntents.mockResolvedValue([{ intent: { type: 'fetch_url', args: {} }, data: 'page' }]);
     await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         ...baseBody,
         attachments: [{ kind: 'url', name: 'site', url: 'https://x.com' }],
@@ -492,13 +601,18 @@ describe('POST /ai-assistant/chat — attachment auto-dispatch', () => {
   });
 
   it('toolEvents popolato nel response se intent executed', async () => {
-    m.detectIntents.mockReturnValue([{ type: 'fetch_url', args: { url: 'https://x' }, reason: 'inline' }]);
-    m.executeIntents.mockResolvedValue([{ intent: { type: 'fetch_url', args: { url: 'https://x' } }, data: 'page' }]);
+    m.detectIntents.mockReturnValue([
+      { type: 'fetch_url', args: { url: 'https://x' }, reason: 'inline' },
+    ]);
+    m.executeIntents.mockResolvedValue([
+      { intent: { type: 'fetch_url', args: { url: 'https://x' } }, data: 'page' },
+    ]);
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
-    const body = await res.json() as { toolEvents?: { tool: string; status: string }[] };
+    const body = (await res.json()) as { toolEvents?: { tool: string; status: string }[] };
     expect(body.toolEvents).toBeDefined();
     expect(body.toolEvents![0]!.status).toBe('ok');
   });
@@ -539,28 +653,55 @@ describe('GET /ai-assistant/conversations', () => {
 
   it('happy path: lista per user, title derivato dal first user msg se assente', async () => {
     m.listForUser.mockReturnValue([
-      { id: 'c1', title: null, surface: 'editor_chat', messageCount: 3, lastMessageAt: '2026', createdAt: '2026', workspaceId: 'ws-1' },
+      {
+        id: 'c1',
+        title: null,
+        surface: 'editor_chat',
+        messageCount: 3,
+        lastMessageAt: '2026',
+        createdAt: '2026',
+        workspaceId: 'ws-1',
+      },
     ]);
-    m.getRecentMessages.mockReturnValue([{ role: 'user', content: 'My first question that is too long to fit' }]);
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/conversations');
-    const body = await res.json() as { conversations: { title: string | null }[] };
+    m.getRecentMessages.mockReturnValue([
+      { role: 'user', content: 'My first question that is too long to fit' },
+    ]);
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      '/ai-assistant/conversations',
+    );
+    const body = (await res.json()) as { conversations: { title: string | null }[] };
     expect(body.conversations[0]!.title).toBeTruthy();
     expect(body.conversations[0]!.title!.length).toBeLessThanOrEqual(80);
   });
 
   it('title pre-esistente preservato', async () => {
     m.listForUser.mockReturnValue([
-      { id: 'c1', title: 'Existing Title', surface: 'editor_chat', messageCount: 1, lastMessageAt: '2026', createdAt: '2026', workspaceId: null },
+      {
+        id: 'c1',
+        title: 'Existing Title',
+        surface: 'editor_chat',
+        messageCount: 1,
+        lastMessageAt: '2026',
+        createdAt: '2026',
+        workspaceId: null,
+      },
     ]);
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/conversations');
-    const body = await res.json() as { conversations: { title: string }[] };
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      '/ai-assistant/conversations',
+    );
+    const body = (await res.json()) as { conversations: { title: string }[] };
     expect(body.conversations[0]!.title).toBe('Existing Title');
   });
 
   it('filter workspaceId + surface propagati', async () => {
     m.listForUser.mockReturnValue([]);
-    await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/conversations?workspaceId=ws-1&surface=help_chat');
-    expect(m.listForUser).toHaveBeenCalledWith('u1', expect.objectContaining({ workspaceId: 'ws-1', surface: 'help_chat' }));
+    await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      '/ai-assistant/conversations?workspaceId=ws-1&surface=help_chat',
+    );
+    expect(m.listForUser).toHaveBeenCalledWith(
+      'u1',
+      expect.objectContaining({ workspaceId: 'ws-1', surface: 'help_chat' }),
+    );
   });
 });
 
@@ -572,20 +713,26 @@ describe('GET /ai-assistant/conversations/:id/messages', () => {
 
   it('🚨 404 cross-user (no leak)', async () => {
     m.getById.mockReturnValue({ id: 'c1', userId: 'u-other' });
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/conversations/c1/messages');
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      '/ai-assistant/conversations/c1/messages',
+    );
     expect(res.status).toBe(404);
   });
 
   it('404 se conv inesistente', async () => {
     m.getById.mockReturnValue(null);
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/conversations/fake/messages');
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      '/ai-assistant/conversations/fake/messages',
+    );
     expect(res.status).toBe(404);
   });
 
   it('happy path: messages cap 50', async () => {
     m.getById.mockReturnValue({ id: 'c1', userId: 'u1' });
     m.getRecentMessages.mockReturnValue([{ role: 'user', content: 'hi' }]);
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/conversations/c1/messages');
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      '/ai-assistant/conversations/c1/messages',
+    );
     expect(res.status).toBe(200);
     expect(m.getRecentMessages).toHaveBeenCalledWith('c1', 50);
   });
@@ -593,20 +740,28 @@ describe('GET /ai-assistant/conversations/:id/messages', () => {
 
 describe('DELETE /ai-assistant/conversations/:id', () => {
   it('401 senza userId', async () => {
-    const res = await buildApp(null).request('/ai-assistant/conversations/c1', { method: 'DELETE' });
+    const res = await buildApp(null).request('/ai-assistant/conversations/c1', {
+      method: 'DELETE',
+    });
     expect(res.status).toBe(401);
   });
 
   it('happy path → ok:true', async () => {
     m.softDelete.mockReturnValue(true);
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/conversations/c1', { method: 'DELETE' });
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      '/ai-assistant/conversations/c1',
+      { method: 'DELETE' },
+    );
     expect(res.status).toBe(200);
     expect(m.softDelete).toHaveBeenCalledWith('c1', 'u1');
   });
 
   it('🚨 404 se softDelete returns false (cross-user no leak)', async () => {
     m.softDelete.mockReturnValue(false);
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/conversations/c1', { method: 'DELETE' });
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      '/ai-assistant/conversations/c1',
+      { method: 'DELETE' },
+    );
     expect(res.status).toBe(404);
   });
 });
@@ -616,7 +771,8 @@ describe('POST /ai-assistant/chat — constrained decoding + propagazione X-FF-R
   //   history, JSON_SCHEMA[7], tokenListener[8], requestId[9]).
   it('🚨 wiring guided_json: il JSON schema è passato come 8° argomento (strato 1)', async () => {
     await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     const schemaArg = m.dispatchLLM.mock.calls[0]![7] as { required?: string[]; type?: string };
@@ -637,7 +793,8 @@ describe('POST /ai-assistant/chat — constrained decoding + propagazione X-FF-R
 
   it('senza header rid → 10° argomento undefined (no propagazione)', async () => {
     await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(baseBody),
     });
     expect(m.dispatchLLM.mock.calls[0]![9]).toBeUndefined();
@@ -646,11 +803,19 @@ describe('POST /ai-assistant/chat — constrained decoding + propagazione X-FF-R
 
 describe('GET /ai-assistant/queue-status — proxy SSE canale-posizione', () => {
   const origFetch = globalThis.fetch;
-  afterEach(() => { globalThis.fetch = origFetch; vi.restoreAllMocks(); });
+  afterEach(() => {
+    globalThis.fetch = origFetch;
+    vi.restoreAllMocks();
+  });
 
   function sseBody(text: string): ReadableStream<Uint8Array> {
     const enc = new TextEncoder();
-    return new ReadableStream({ start(ctrl) { ctrl.enqueue(enc.encode(text)); ctrl.close(); } });
+    return new ReadableStream({
+      start(ctrl) {
+        ctrl.enqueue(enc.encode(text));
+        ctrl.close();
+      },
+    });
   }
 
   it('401 senza auth', async () => {
@@ -659,17 +824,25 @@ describe('GET /ai-assistant/queue-status — proxy SSE canale-posizione', () => 
   });
 
   it('400 senza rid', async () => {
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/queue-status');
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      '/ai-assistant/queue-status',
+    );
     expect(res.status).toBe(400);
   });
 
   it('inoltra al portal con Bearer license + rid, e fa pass-through dei frame SSE', async () => {
     process.env.MEDEA_LICENSE_KEY = 'ZFL-TEST';
-    const fetchMock = vi.fn(async (_url: string | URL, _init?: RequestInit) => new Response(sseBody('event: queued\ndata: {"position":2,"ahead":1}\n\n'), {
-      status: 200, headers: { 'content-type': 'text/event-stream' },
-    }));
+    const fetchMock = vi.fn(
+      async (_url: string | URL, _init?: RequestInit) =>
+        new Response(sseBody('event: queued\ndata: {"position":2,"ahead":1}\n\n'), {
+          status: 200,
+          headers: { 'content-type': 'text/event-stream' },
+        }),
+    );
     globalThis.fetch = fetchMock as unknown as typeof fetch;
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/queue-status?rid=rid-9');
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      '/ai-assistant/queue-status?rid=rid-9',
+    );
     expect(res.status).toBe(200);
     const [url, init] = fetchMock.mock.calls[0]!;
     expect(String(url)).toContain('/queue-status?rid=rid-9');
@@ -680,8 +853,11 @@ describe('GET /ai-assistant/queue-status — proxy SSE canale-posizione', () => 
   });
 
   it('upstream non-ok → emette gone (no crash)', async () => {
-    globalThis.fetch = (async () => new Response('nope', { status: 502 })) as unknown as typeof fetch;
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/queue-status?rid=z');
+    globalThis.fetch = (async () =>
+      new Response('nope', { status: 502 })) as unknown as typeof fetch;
+    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
+      '/ai-assistant/queue-status?rid=z',
+    );
     expect(res.status).toBe(200); // SSE aperto
     expect(await res.text()).toContain('event: gone');
   });

@@ -42,10 +42,7 @@ export class SandboxError extends Error {
 const DEFAULT_MEMORY_MB = 32;
 const DEFAULT_TIMEOUT_MS = 250;
 
-const FORBIDDEN_PATTERNS = [
-  /\b__proto__\b/,
-  /\bconstructor\.constructor\b/,
-];
+const FORBIDDEN_PATTERNS = [/\b__proto__\b/, /\bconstructor\.constructor\b/];
 
 function assertSafeExpression(expression: string): void {
   if (expression.length > 4000) {

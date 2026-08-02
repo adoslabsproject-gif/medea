@@ -16,7 +16,7 @@ export const integrationLinearCreateIssueNode: NodeModule = {
     icon: 'plus-circle',
     color: '#5E6AD2',
     description:
-      'Connettore canonico Linear via GraphQL API ufficiale (issueCreate mutation) — l\'endpoint primitivo su ' +
+      "Connettore canonico Linear via GraphQL API ufficiale (issueCreate mutation) — l'endpoint primitivo su " +
       'cui il wrapper community_linear costruisce esperienza user-friendly per il dataset AI scaffold. Linear è ' +
       'la piattaforma di project management modern preferita dai dev team distribuiti tech (10k+ paying customer ' +
       'dal 2020) per la sua UX keyboard-first ultra-veloce, cycle-based planning sostitutivo dello scrum ' +
@@ -33,11 +33,11 @@ export const integrationLinearCreateIssueNode: NodeModule = {
       'label_id automatica), state iniziale (Triage default per nuove issue non-prioritizzate, Todo per ' +
       'pronte da iniziare, In Progress per pre-assegnate, Done per import storici), parent_issue_id ' +
       'opzionale per creare sub-task agganciate a una issue padre (utile per breakdown di epic). ' +
-      'Auth via Personal API Key (formato lin_api_xxxxxxxx generato dall\'admin in Settings → API → Personal ' +
+      "Auth via Personal API Key (formato lin_api_xxxxxxxx generato dall'admin in Settings → API → Personal " +
       'API Keys con scope organization-wide oppure OAuth2 per integration multi-utente) stored nel vault. ' +
       'Resilienza: auto-retry su 5xx upstream con exponential backoff + jitter (3 retry max), retry su 429 ' +
       'rate-limit con Retry-After header (Linear non documenta hard limit ufficiale, ma raccomandiamo < 10 ' +
-      'RPS sustained), GraphQL error parsing semantico (l\'errore non viene in HTTP status ma nel body JSON ' +
+      "RPS sustained), GraphQL error parsing semantico (l'errore non viene in HTTP status ma nel body JSON " +
       'errors[] del GraphQL — il nodo li parsa e ritorna a workflow downstream errore tipizzato). ' +
       'Use case: bug-report automatic da workflow error handler global del tenant (catch errors → create issue ' +
       'in Linear team ENG con stack trace + run_id link al run viewer dashboard FlowForge); lead high-priority ' +
@@ -61,7 +61,8 @@ export const integrationLinearCreateIssueNode: NodeModule = {
         type: 'expression',
         required: true,
         placeholder: 'ENG',
-        help: 'Identifier del team (prefix delle issue, es. "ENG" per ENG-123). ' +
+        help:
+          'Identifier del team (prefix delle issue, es. "ENG" per ENG-123). ' +
           'Visibile in Linear Settings → Teams. Required.',
       },
       {
@@ -94,7 +95,8 @@ export const integrationLinearCreateIssueNode: NodeModule = {
         type: 'expression',
         required: false,
         placeholder: 'tech-lead@company.com',
-        help: 'Email del membro Linear a cui assegnare. Risolto a user ID via API. ' +
+        help:
+          'Email del membro Linear a cui assegnare. Risolto a user ID via API. ' +
           'Se utente non trovato, issue creata unassigned + warning.',
       },
       {
@@ -103,7 +105,8 @@ export const integrationLinearCreateIssueNode: NodeModule = {
         type: 'expression',
         required: false,
         placeholder: 'bug,production,p1',
-        help: 'Nomi labels esistenti nel team. Risolti via API (case-insensitive). ' +
+        help:
+          'Nomi labels esistenti nel team. Risolti via API (case-insensitive). ' +
           'Labels inesistenti vengono ignorate (warning in output).',
       },
     ],

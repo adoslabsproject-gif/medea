@@ -20,7 +20,9 @@ export class CircuitBreakerRegistry {
   private static _instance: CircuitBreakerRegistry | null = null;
   private readonly _breakers = new Map<string, CircuitBreaker<unknown>>();
 
-  private constructor() { /* singleton: istanziare solo via getInstance() */ }
+  private constructor() {
+    /* singleton: istanziare solo via getInstance() */
+  }
 
   static getInstance(): CircuitBreakerRegistry {
     CircuitBreakerRegistry._instance ??= new CircuitBreakerRegistry();
@@ -33,7 +35,11 @@ export class CircuitBreakerRegistry {
     // dismesso (destroy) per non leakare timer.
     const previous = this._breakers.get(name);
     if (previous && previous !== breaker) {
-      try { previous.destroy(); } catch { /* defensive — non bloccare register */ }
+      try {
+        previous.destroy();
+      } catch {
+        /* defensive — non bloccare register */
+      }
     }
     this._breakers.set(name, breaker);
   }
@@ -82,7 +88,11 @@ export class CircuitBreakerRegistry {
   /** Cleanup timer di tutti — chiamare al SIGTERM / process exit. */
   destroyAll(): void {
     for (const breaker of this._breakers.values()) {
-      try { breaker.destroy(); } catch { /* swallow — best effort */ }
+      try {
+        breaker.destroy();
+      } catch {
+        /* swallow — best effort */
+      }
     }
     this._breakers.clear();
   }

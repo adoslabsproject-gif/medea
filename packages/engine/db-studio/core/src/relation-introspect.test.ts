@@ -11,7 +11,7 @@ describe('mapOnDeleteAction', () => {
     ['cascade', 'cascade'],
     ['RESTRICT', 'restrict'],
     ['SET NULL', 'set null'],
-    ['SET_NULL', 'set null'],   // MSSQL *_desc usa underscore
+    ['SET_NULL', 'set null'], // MSSQL *_desc usa underscore
     ['SET DEFAULT', 'set default'],
     ['SET_DEFAULT', 'set default'],
     ['NO ACTION', 'no action'],
@@ -31,7 +31,13 @@ describe('mapOnDeleteAction', () => {
 
 describe('fkRowToRelation', () => {
   it('costruisce Relation con id/name deterministici + kind one-to-many', () => {
-    const r = fkRowToRelation({ fromTable: 'orders', fromColumn: 'user_id', toTable: 'users', toColumn: 'id', onDelete: 'CASCADE' });
+    const r = fkRowToRelation({
+      fromTable: 'orders',
+      fromColumn: 'user_id',
+      toTable: 'users',
+      toColumn: 'id',
+      onDelete: 'CASCADE',
+    });
     expect(r).toEqual({
       id: 'orders.user_id->users.id#0',
       name: 'fk_orders_user_id',
@@ -44,9 +50,11 @@ describe('fkRowToRelation', () => {
     });
   });
 
-  it('ordinal esplicito finisce nell\'id (FK multiple disambiguate)', () => {
-    expect(fkRowToRelation({ fromTable: 'a', fromColumn: 'b', toTable: 'c', toColumn: 'd', ordinal: 3 }).id)
-      .toBe('a.b->c.d#3');
+  it("ordinal esplicito finisce nell'id (FK multiple disambiguate)", () => {
+    expect(
+      fkRowToRelation({ fromTable: 'a', fromColumn: 'b', toTable: 'c', toColumn: 'd', ordinal: 3 })
+        .id,
+    ).toBe('a.b->c.d#3');
   });
 });
 

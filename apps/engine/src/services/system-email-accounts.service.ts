@@ -27,7 +27,13 @@
  */
 
 import { nanoid } from 'nanoid';
-import { createVaultSalt, deriveKek, encryptSecret, decryptSecret, type VaultMaster } from '@medea/engine-secrets';
+import {
+  createVaultSalt,
+  deriveKek,
+  encryptSecret,
+  decryptSecret,
+  type VaultMaster,
+} from '@medea/engine-secrets';
 import { getDatabase } from '@/storage/db.js';
 import { logger } from '@/lib/logger.js';
 import { loadMasterPassword } from '@/lib/master-password.js';
@@ -200,25 +206,29 @@ function ensureTable(): void {
   //               refresh expires.
   const alters = [
     "ALTER TABLE system_email_accounts ADD COLUMN auth_type TEXT NOT NULL DEFAULT 'password'",
-    "ALTER TABLE system_email_accounts ADD COLUMN oauth_provider TEXT",
-    "ALTER TABLE system_email_accounts ADD COLUMN oauth_email TEXT",
-    "ALTER TABLE system_email_accounts ADD COLUMN oauth_scope TEXT",
-    "ALTER TABLE system_email_accounts ADD COLUMN oauth_expires_at TEXT",
-    "ALTER TABLE system_email_accounts ADD COLUMN oauth_refresh_ciphertext TEXT",
-    "ALTER TABLE system_email_accounts ADD COLUMN oauth_refresh_nonce TEXT",
-    "ALTER TABLE system_email_accounts ADD COLUMN oauth_refresh_auth_tag TEXT",
-    "ALTER TABLE system_email_accounts ADD COLUMN oauth_refresh_dek_ciphertext TEXT",
-    "ALTER TABLE system_email_accounts ADD COLUMN oauth_refresh_dek_nonce TEXT",
-    "ALTER TABLE system_email_accounts ADD COLUMN oauth_refresh_dek_auth_tag TEXT",
-    "ALTER TABLE system_email_accounts ADD COLUMN oauth_access_ciphertext TEXT",
-    "ALTER TABLE system_email_accounts ADD COLUMN oauth_access_nonce TEXT",
-    "ALTER TABLE system_email_accounts ADD COLUMN oauth_access_auth_tag TEXT",
-    "ALTER TABLE system_email_accounts ADD COLUMN oauth_access_dek_ciphertext TEXT",
-    "ALTER TABLE system_email_accounts ADD COLUMN oauth_access_dek_nonce TEXT",
-    "ALTER TABLE system_email_accounts ADD COLUMN oauth_access_dek_auth_tag TEXT",
+    'ALTER TABLE system_email_accounts ADD COLUMN oauth_provider TEXT',
+    'ALTER TABLE system_email_accounts ADD COLUMN oauth_email TEXT',
+    'ALTER TABLE system_email_accounts ADD COLUMN oauth_scope TEXT',
+    'ALTER TABLE system_email_accounts ADD COLUMN oauth_expires_at TEXT',
+    'ALTER TABLE system_email_accounts ADD COLUMN oauth_refresh_ciphertext TEXT',
+    'ALTER TABLE system_email_accounts ADD COLUMN oauth_refresh_nonce TEXT',
+    'ALTER TABLE system_email_accounts ADD COLUMN oauth_refresh_auth_tag TEXT',
+    'ALTER TABLE system_email_accounts ADD COLUMN oauth_refresh_dek_ciphertext TEXT',
+    'ALTER TABLE system_email_accounts ADD COLUMN oauth_refresh_dek_nonce TEXT',
+    'ALTER TABLE system_email_accounts ADD COLUMN oauth_refresh_dek_auth_tag TEXT',
+    'ALTER TABLE system_email_accounts ADD COLUMN oauth_access_ciphertext TEXT',
+    'ALTER TABLE system_email_accounts ADD COLUMN oauth_access_nonce TEXT',
+    'ALTER TABLE system_email_accounts ADD COLUMN oauth_access_auth_tag TEXT',
+    'ALTER TABLE system_email_accounts ADD COLUMN oauth_access_dek_ciphertext TEXT',
+    'ALTER TABLE system_email_accounts ADD COLUMN oauth_access_dek_nonce TEXT',
+    'ALTER TABLE system_email_accounts ADD COLUMN oauth_access_dek_auth_tag TEXT',
   ];
   for (const stmt of alters) {
-    try { sqlite.exec(stmt); } catch { /* column already exists — fine */ }
+    try {
+      sqlite.exec(stmt);
+    } catch {
+      /* column already exists — fine */
+    }
   }
 }
 
@@ -230,13 +240,17 @@ function loadMaster(): VaultMaster {
   // vault_meta is created by CredentialsService — we read the same salt
   // so SystemEmailAccounts and Credentials share the same KEK derivation.
   sqlite.exec(`CREATE TABLE IF NOT EXISTS vault_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
-  const row = sqlite.prepare("SELECT value FROM vault_meta WHERE key = 'salt'").get() as { value: string } | undefined;
+  const row = sqlite.prepare("SELECT value FROM vault_meta WHERE key = 'salt'").get() as
+    | { value: string }
+    | undefined;
   let salt: Buffer;
   if (row) {
     salt = Buffer.from(row.value, 'base64');
   } else {
     salt = createVaultSalt();
-    sqlite.prepare("INSERT INTO vault_meta (key, value) VALUES ('salt', ?)").run(salt.toString('base64'));
+    sqlite
+      .prepare("INSERT INTO vault_meta (key, value) VALUES ('salt', ?)")
+      .run(salt.toString('base64'));
   }
   return { kek: deriveKek(password, salt), salt };
 }
@@ -268,7 +282,10 @@ export function encBlob(plaintext: string, master: VaultMaster): EncryptedBlob {
 export function decBlob(blob: EncryptedBlob, master: VaultMaster): string {
   return decryptSecret(
     {
-      id: 'sea', tenantId: 'sea', name: 'pw', provider: 'sea',
+      id: 'sea',
+      tenantId: 'sea',
+      name: 'pw',
+      provider: 'sea',
       ciphertext: blob.ciphertext,
       nonce: blob.nonce,
       authTag: blob.authTag,
@@ -290,15 +307,22 @@ export class SystemEmailAccountsService {
   list(tenantId: string): SystemEmailAccount[] {
     const { sqlite } = getDatabase();
     const rows = sqlite
-      .prepare(`SELECT * FROM system_email_accounts WHERE tenant_id = ? ORDER BY is_default DESC, label`)
+      .prepare(
+        `SELECT * FROM system_email_accounts WHERE tenant_id = ? ORDER BY is_default DESC, label`,
+      )
       .all(tenantId) as DbRow[];
     return rows.map((r) => this.mapRow(r));
   }
 
   /** Picker payload — non-secret only, used by the editor dropdowns. */
-  picker(tenantId: string): { id: string; label: string; fromAddress: string; isDefault: boolean }[] {
+  picker(
+    tenantId: string,
+  ): { id: string; label: string; fromAddress: string; isDefault: boolean }[] {
     return this.list(tenantId).map((a) => ({
-      id: a.id, label: a.label, fromAddress: a.fromAddress, isDefault: a.isDefault,
+      id: a.id,
+      label: a.label,
+      fromAddress: a.fromAddress,
+      isDefault: a.isDefault,
     }));
   }
 
@@ -312,19 +336,46 @@ export class SystemEmailAccountsService {
     const acct = this.mapRow(row);
     try {
       const master = loadMaster();
-      if (row.smtp_pw_ciphertext && row.smtp_pw_nonce && row.smtp_pw_auth_tag
-          && row.smtp_pw_dek_ciphertext && row.smtp_pw_dek_nonce && row.smtp_pw_dek_auth_tag) {
-        acct.smtp.password = decBlob({
-          ciphertext: row.smtp_pw_ciphertext, nonce: row.smtp_pw_nonce, authTag: row.smtp_pw_auth_tag,
-          dekCiphertext: row.smtp_pw_dek_ciphertext, dekNonce: row.smtp_pw_dek_nonce, dekAuthTag: row.smtp_pw_dek_auth_tag,
-        }, master);
+      if (
+        row.smtp_pw_ciphertext &&
+        row.smtp_pw_nonce &&
+        row.smtp_pw_auth_tag &&
+        row.smtp_pw_dek_ciphertext &&
+        row.smtp_pw_dek_nonce &&
+        row.smtp_pw_dek_auth_tag
+      ) {
+        acct.smtp.password = decBlob(
+          {
+            ciphertext: row.smtp_pw_ciphertext,
+            nonce: row.smtp_pw_nonce,
+            authTag: row.smtp_pw_auth_tag,
+            dekCiphertext: row.smtp_pw_dek_ciphertext,
+            dekNonce: row.smtp_pw_dek_nonce,
+            dekAuthTag: row.smtp_pw_dek_auth_tag,
+          },
+          master,
+        );
       }
-      if (acct.imap && row.imap_pw_ciphertext && row.imap_pw_nonce && row.imap_pw_auth_tag
-          && row.imap_pw_dek_ciphertext && row.imap_pw_dek_nonce && row.imap_pw_dek_auth_tag) {
-        acct.imap.password = decBlob({
-          ciphertext: row.imap_pw_ciphertext, nonce: row.imap_pw_nonce, authTag: row.imap_pw_auth_tag,
-          dekCiphertext: row.imap_pw_dek_ciphertext, dekNonce: row.imap_pw_dek_nonce, dekAuthTag: row.imap_pw_dek_auth_tag,
-        }, master);
+      if (
+        acct.imap &&
+        row.imap_pw_ciphertext &&
+        row.imap_pw_nonce &&
+        row.imap_pw_auth_tag &&
+        row.imap_pw_dek_ciphertext &&
+        row.imap_pw_dek_nonce &&
+        row.imap_pw_dek_auth_tag
+      ) {
+        acct.imap.password = decBlob(
+          {
+            ciphertext: row.imap_pw_ciphertext,
+            nonce: row.imap_pw_nonce,
+            authTag: row.imap_pw_auth_tag,
+            dekCiphertext: row.imap_pw_dek_ciphertext,
+            dekNonce: row.imap_pw_dek_nonce,
+            dekAuthTag: row.imap_pw_dek_auth_tag,
+          },
+          master,
+        );
       }
     } catch (err) {
       logger.error({ err, accountId }, 'Failed to decrypt system email account password');
@@ -348,7 +399,9 @@ export class SystemEmailAccountsService {
 
     // If marked default, clear the previous default for this tenant.
     if (input.isDefault) {
-      sqlite.prepare(`UPDATE system_email_accounts SET is_default = 0 WHERE tenant_id = ?`).run(input.tenantId);
+      sqlite
+        .prepare(`UPDATE system_email_accounts SET is_default = 0 WHERE tenant_id = ?`)
+        .run(input.tenantId);
     }
 
     // Decide whether to (re-)encrypt the SMTP password
@@ -362,11 +415,14 @@ export class SystemEmailAccountsService {
     }
 
     const existing = existingId
-      ? sqlite.prepare(`SELECT * FROM system_email_accounts WHERE id = ? AND tenant_id = ?`)
-          .get(existingId, input.tenantId) as DbRow | undefined
+      ? (sqlite
+          .prepare(`SELECT * FROM system_email_accounts WHERE id = ? AND tenant_id = ?`)
+          .get(existingId, input.tenantId) as DbRow | undefined)
       : undefined;
 
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO system_email_accounts (
         id, tenant_id, label, from_address, is_default,
         smtp_host, smtp_port, smtp_security, smtp_username,
@@ -401,25 +457,50 @@ export class SystemEmailAccountsService {
         imap_pw_dek_nonce = COALESCE(excluded.imap_pw_dek_nonce, system_email_accounts.imap_pw_dek_nonce),
         imap_pw_dek_auth_tag = COALESCE(excluded.imap_pw_dek_auth_tag, system_email_accounts.imap_pw_dek_auth_tag),
         updated_at = excluded.updated_at
-    `).run(
-      id, input.tenantId, input.label, input.fromAddress, input.isDefault ? 1 : 0,
-      input.smtp.host, input.smtp.port, input.smtp.security, input.smtp.username,
-      smtpBlob?.ciphertext ?? null, smtpBlob?.nonce ?? null, smtpBlob?.authTag ?? null,
-      smtpBlob?.dekCiphertext ?? null, smtpBlob?.dekNonce ?? null, smtpBlob?.dekAuthTag ?? null,
-      input.imap?.host ?? null, input.imap?.port ?? null, input.imap?.username ?? null,
-      imapBlob?.ciphertext ?? null, imapBlob?.nonce ?? null, imapBlob?.authTag ?? null,
-      imapBlob?.dekCiphertext ?? null, imapBlob?.dekNonce ?? null, imapBlob?.dekAuthTag ?? null,
-      existing?.created_at ?? now, now,
-    );
+    `,
+      )
+      .run(
+        id,
+        input.tenantId,
+        input.label,
+        input.fromAddress,
+        input.isDefault ? 1 : 0,
+        input.smtp.host,
+        input.smtp.port,
+        input.smtp.security,
+        input.smtp.username,
+        smtpBlob?.ciphertext ?? null,
+        smtpBlob?.nonce ?? null,
+        smtpBlob?.authTag ?? null,
+        smtpBlob?.dekCiphertext ?? null,
+        smtpBlob?.dekNonce ?? null,
+        smtpBlob?.dekAuthTag ?? null,
+        input.imap?.host ?? null,
+        input.imap?.port ?? null,
+        input.imap?.username ?? null,
+        imapBlob?.ciphertext ?? null,
+        imapBlob?.nonce ?? null,
+        imapBlob?.authTag ?? null,
+        imapBlob?.dekCiphertext ?? null,
+        imapBlob?.dekNonce ?? null,
+        imapBlob?.dekAuthTag ?? null,
+        existing?.created_at ?? now,
+        now,
+      );
 
-    logger.info({ id, label: input.label, isDefault: input.isDefault }, 'System email account upserted');
+    logger.info(
+      { id, label: input.label, isDefault: input.isDefault },
+      'System email account upserted',
+    );
     const row = sqlite.prepare(`SELECT * FROM system_email_accounts WHERE id = ?`).get(id) as DbRow;
     return this.mapRow(row);
   }
 
   delete(id: string, tenantId: string): boolean {
     const { sqlite } = getDatabase();
-    const res = sqlite.prepare(`DELETE FROM system_email_accounts WHERE id = ? AND tenant_id = ?`).run(id, tenantId);
+    const res = sqlite
+      .prepare(`DELETE FROM system_email_accounts WHERE id = ? AND tenant_id = ?`)
+      .run(id, tenantId);
     return res.changes > 0;
   }
 
@@ -454,7 +535,9 @@ export class SystemEmailAccountsService {
     const now = new Date().toISOString();
 
     if (args.isDefault) {
-      sqlite.prepare(`UPDATE system_email_accounts SET is_default = 0 WHERE tenant_id = ?`).run(args.tenantId);
+      sqlite
+        .prepare(`UPDATE system_email_accounts SET is_default = 0 WHERE tenant_id = ?`)
+        .run(args.tenantId);
     }
 
     const refreshBlob = encBlob(args.refreshToken, master);
@@ -469,7 +552,13 @@ export class SystemEmailAccountsService {
     // la TCP connection a smtp.gmail.com:465 → connection timeout. La port
     // 587 (Mail Submission, STARTTLS) e\` SEMPRE aperta. Gmail XOAUTH2 funziona
     // identico su entrambe.
-    const PROVIDER_PRESETS: Record<'google', { smtp: { host: string; port: number; security: 'tls' | 'starttls' }; imap: { host: string; port: number } }> = {
+    const PROVIDER_PRESETS: Record<
+      'google',
+      {
+        smtp: { host: string; port: number; security: 'tls' | 'starttls' };
+        imap: { host: string; port: number };
+      }
+    > = {
       google: {
         smtp: { host: 'smtp.gmail.com', port: 587, security: 'starttls' },
         imap: { host: 'imap.gmail.com', port: 993 },
@@ -477,7 +566,9 @@ export class SystemEmailAccountsService {
     };
     const preset = PROVIDER_PRESETS[args.provider];
 
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO system_email_accounts (
         id, tenant_id, label, from_address, is_default,
         smtp_host, smtp_port, smtp_security, smtp_username,
@@ -510,18 +601,44 @@ export class SystemEmailAccountsService {
         oauth_access_dek_nonce = excluded.oauth_access_dek_nonce,
         oauth_access_dek_auth_tag = excluded.oauth_access_dek_auth_tag,
         updated_at = excluded.updated_at
-    `).run(
-      id, args.tenantId, args.label, args.fromAddress, args.isDefault ? 1 : 0,
-      preset.smtp.host, preset.smtp.port, preset.smtp.security, args.email,
-      preset.imap.host, preset.imap.port, args.email,
-      args.provider, args.email, args.scope, args.expiresAt.toISOString(),
-      refreshBlob.ciphertext, refreshBlob.nonce, refreshBlob.authTag,
-      refreshBlob.dekCiphertext, refreshBlob.dekNonce, refreshBlob.dekAuthTag,
-      accessBlob.ciphertext, accessBlob.nonce, accessBlob.authTag,
-      accessBlob.dekCiphertext, accessBlob.dekNonce, accessBlob.dekAuthTag,
-      now, now,
+    `,
+      )
+      .run(
+        id,
+        args.tenantId,
+        args.label,
+        args.fromAddress,
+        args.isDefault ? 1 : 0,
+        preset.smtp.host,
+        preset.smtp.port,
+        preset.smtp.security,
+        args.email,
+        preset.imap.host,
+        preset.imap.port,
+        args.email,
+        args.provider,
+        args.email,
+        args.scope,
+        args.expiresAt.toISOString(),
+        refreshBlob.ciphertext,
+        refreshBlob.nonce,
+        refreshBlob.authTag,
+        refreshBlob.dekCiphertext,
+        refreshBlob.dekNonce,
+        refreshBlob.dekAuthTag,
+        accessBlob.ciphertext,
+        accessBlob.nonce,
+        accessBlob.authTag,
+        accessBlob.dekCiphertext,
+        accessBlob.dekNonce,
+        accessBlob.dekAuthTag,
+        now,
+        now,
+      );
+    logger.info(
+      { id, label: args.label, provider: args.provider, email: args.email },
+      'OAuth email account upserted',
     );
-    logger.info({ id, label: args.label, provider: args.provider, email: args.email }, 'OAuth email account upserted');
     const row = sqlite.prepare(`SELECT * FROM system_email_accounts WHERE id = ?`).get(id) as DbRow;
     return this.mapRow(row);
   }
@@ -540,18 +657,28 @@ export class SystemEmailAccountsService {
     const { sqlite } = getDatabase();
     const master = loadMaster();
     const accessBlob = encBlob(args.accessToken, master);
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       UPDATE system_email_accounts SET
         oauth_access_ciphertext = ?, oauth_access_nonce = ?, oauth_access_auth_tag = ?,
         oauth_access_dek_ciphertext = ?, oauth_access_dek_nonce = ?, oauth_access_dek_auth_tag = ?,
         oauth_expires_at = ?, updated_at = ?
       WHERE id = ? AND tenant_id = ? AND auth_type = 'oauth2'
-    `).run(
-      accessBlob.ciphertext, accessBlob.nonce, accessBlob.authTag,
-      accessBlob.dekCiphertext, accessBlob.dekNonce, accessBlob.dekAuthTag,
-      args.expiresAt.toISOString(), new Date().toISOString(),
-      args.accountId, args.tenantId,
-    );
+    `,
+      )
+      .run(
+        accessBlob.ciphertext,
+        accessBlob.nonce,
+        accessBlob.authTag,
+        accessBlob.dekCiphertext,
+        accessBlob.dekNonce,
+        accessBlob.dekAuthTag,
+        args.expiresAt.toISOString(),
+        new Date().toISOString(),
+        args.accountId,
+        args.tenantId,
+      );
   }
 
   /**
@@ -559,7 +686,10 @@ export class SystemEmailAccountsService {
    * tokens + the `expiresAt` so the caller can decide whether to refresh
    * first. Returns null when the account is not OAuth or not found.
    */
-  resolveOAuthForExecutor(tenantId: string, accountId: string): {
+  resolveOAuthForExecutor(
+    tenantId: string,
+    accountId: string,
+  ): {
     accountId: string;
     provider: string;
     email: string;
@@ -569,25 +699,43 @@ export class SystemEmailAccountsService {
     expiresAt: Date;
   } | null {
     const { sqlite } = getDatabase();
-    const row = sqlite.prepare(`SELECT * FROM system_email_accounts WHERE id = ? AND tenant_id = ? AND auth_type = 'oauth2'`)
+    const row = sqlite
+      .prepare(
+        `SELECT * FROM system_email_accounts WHERE id = ? AND tenant_id = ? AND auth_type = 'oauth2'`,
+      )
       .get(accountId, tenantId) as DbRow | undefined;
     if (!row?.oauth_refresh_ciphertext || !row.oauth_access_ciphertext) return null;
     const master = loadMaster();
     try {
-      const refreshToken = decBlob({
-        ciphertext: row.oauth_refresh_ciphertext, nonce: row.oauth_refresh_nonce!, authTag: row.oauth_refresh_auth_tag!,
-        dekCiphertext: row.oauth_refresh_dek_ciphertext!, dekNonce: row.oauth_refresh_dek_nonce!, dekAuthTag: row.oauth_refresh_dek_auth_tag!,
-      }, master);
-      const accessToken = decBlob({
-        ciphertext: row.oauth_access_ciphertext, nonce: row.oauth_access_nonce!, authTag: row.oauth_access_auth_tag!,
-        dekCiphertext: row.oauth_access_dek_ciphertext!, dekNonce: row.oauth_access_dek_nonce!, dekAuthTag: row.oauth_access_dek_auth_tag!,
-      }, master);
+      const refreshToken = decBlob(
+        {
+          ciphertext: row.oauth_refresh_ciphertext,
+          nonce: row.oauth_refresh_nonce!,
+          authTag: row.oauth_refresh_auth_tag!,
+          dekCiphertext: row.oauth_refresh_dek_ciphertext!,
+          dekNonce: row.oauth_refresh_dek_nonce!,
+          dekAuthTag: row.oauth_refresh_dek_auth_tag!,
+        },
+        master,
+      );
+      const accessToken = decBlob(
+        {
+          ciphertext: row.oauth_access_ciphertext,
+          nonce: row.oauth_access_nonce!,
+          authTag: row.oauth_access_auth_tag!,
+          dekCiphertext: row.oauth_access_dek_ciphertext!,
+          dekNonce: row.oauth_access_dek_nonce!,
+          dekAuthTag: row.oauth_access_dek_auth_tag!,
+        },
+        master,
+      );
       return {
         accountId: row.id,
         provider: row.oauth_provider ?? 'google',
         email: row.oauth_email ?? '',
         scope: row.oauth_scope ?? '',
-        accessToken, refreshToken,
+        accessToken,
+        refreshToken,
         expiresAt: new Date(row.oauth_expires_at ?? Date.now()),
       };
     } catch (err) {

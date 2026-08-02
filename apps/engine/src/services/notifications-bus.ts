@@ -29,7 +29,9 @@ export const notificationsBus = {
   subscribe(userId: string, handler: (n: Notification) => void): () => void {
     const ch = channel(userId);
     emitter.on(ch, handler);
-    return () => { emitter.off(ch, handler); };
+    return () => {
+      emitter.off(ch, handler);
+    };
   },
   /** Numero di stream attivi per un utente (per test/diagnostica). */
   listenerCount(userId: string): number {

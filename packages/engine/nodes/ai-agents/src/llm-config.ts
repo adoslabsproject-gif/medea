@@ -24,10 +24,14 @@ export function resolveLlmConfig(
   const overrideProvider = typeof config.provider === 'string' ? config.provider.trim() : '';
   const overrideApiKey = typeof config.apiKey === 'string' ? config.apiKey.trim() : '';
   const overrideModel = typeof config.model === 'string' ? config.model.trim() : '';
-  const overrideBaseUrl = typeof config.baseUrl === 'string' && config.baseUrl.trim() !== '' ? config.baseUrl : undefined;
+  const overrideBaseUrl =
+    typeof config.baseUrl === 'string' && config.baseUrl.trim() !== '' ? config.baseUrl : undefined;
 
   // Explicit per-node override (everything provided locally)
-  if (overrideProvider !== '' && (overrideApiKey !== '' || overrideProvider === 'liara' || overrideProvider === 'ollama')) {
+  if (
+    overrideProvider !== '' &&
+    (overrideApiKey !== '' || overrideProvider === 'liara' || overrideProvider === 'ollama')
+  ) {
     const out: ResolvedLlmConfig = {
       provider: overrideProvider,
       apiKey: overrideApiKey,
@@ -52,7 +56,16 @@ export function resolveLlmConfig(
 
   // No per-node provider → use first configured tenant provider (preference order)
   if (llmProviders) {
-    const preferenceOrder = ['anthropic', 'openai', 'gemini', 'mistral', 'groq', 'openrouter', 'ollama', 'liara'];
+    const preferenceOrder = [
+      'anthropic',
+      'openai',
+      'gemini',
+      'mistral',
+      'groq',
+      'openrouter',
+      'ollama',
+      'liara',
+    ];
     for (const p of preferenceOrder) {
       const tenant = llmProviders[p];
       if (tenant && (tenant.apiKey !== '' || p === 'liara' || p === 'ollama')) {

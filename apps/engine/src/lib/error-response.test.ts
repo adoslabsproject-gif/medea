@@ -101,7 +101,7 @@ describe('sanitizedErrorResponse', () => {
     expect(ctx.method).toBe('GET');
     expect(ctx.workspaceId).toBe('ws-1');
     expect(ctx.queryHash).toBe('abc');
-    expect(msg).toContain('confidential');                // logger sa, client no
+    expect(msg).toContain('confidential'); // logger sa, client no
   });
 
   it('reqId fallback "unknown" se header x-request-id assente', async () => {
@@ -121,7 +121,8 @@ describe('sanitizedErrorResponse', () => {
     const app = await buildAppWithRoute((c) =>
       // la route chiede 400/DB_INTROSPECT_FAILED, ma l'override lo porta a 503/DB_UNREACHABLE
       sanitizedErrorResponse(c, new Error('Timed out while waiting for handshake'), {
-        code: 'DB_INTROSPECT_FAILED', userMessage: 'Introspezione fallita',
+        code: 'DB_INTROSPECT_FAILED',
+        userMessage: 'Introspezione fallita',
       }),
     );
     const res = await app.request('/boom');
@@ -134,11 +135,14 @@ describe('sanitizedErrorResponse', () => {
     expect(ctx.code).toBe('DB_UNREACHABLE');
   });
 
-  it('🔒 errore NON di connettività → resta com\'era (status/code/message invariati)', async () => {
+  it("🔒 errore NON di connettività → resta com'era (status/code/message invariati)", async () => {
     process.env.NODE_ENV = 'production';
     const { sanitizedErrorResponse } = await import('./error-response.js');
     const app = await buildAppWithRoute((c) =>
-      sanitizedErrorResponse(c, new Error('syntax error near SELCT'), { code: 'DB_QUERY_FAILED', status: 422 }),
+      sanitizedErrorResponse(c, new Error('syntax error near SELCT'), {
+        code: 'DB_QUERY_FAILED',
+        status: 422,
+      }),
     );
     const res = await app.request('/boom');
     expect(res.status).toBe(422); // NON sovrascritto
@@ -177,10 +181,14 @@ describe('sanitizedErrorResponse — conflitto UNIQUE/PK → 409 DB_CONFLICT_UNI
     process.env.NODE_ENV = 'production';
     const { sanitizedErrorResponse } = await import('./error-response.js');
     const app = await buildAppWithRoute((c) =>
-      sanitizedErrorResponse(c, new Error('UNIQUE constraint failed: pizzeria_clienti.telefono (value 393331234567)'), {
-        code: 'DB_INSERT_FAILED',
-        userMessage: 'Insert riga fallita — verifica constraint e tipi',
-      }),
+      sanitizedErrorResponse(
+        c,
+        new Error('UNIQUE constraint failed: pizzeria_clienti.telefono (value 393331234567)'),
+        {
+          code: 'DB_INSERT_FAILED',
+          userMessage: 'Insert riga fallita — verifica constraint e tipi',
+        },
+      ),
     );
     const res = await app.request('/boom');
     expect(res.status).toBe(409);
@@ -195,7 +203,9 @@ describe('sanitizedErrorResponse — conflitto UNIQUE/PK → 409 DB_CONFLICT_UNI
     process.env.NODE_ENV = 'production';
     const { sanitizedErrorResponse } = await import('./error-response.js');
     const app = await buildAppWithRoute((c) =>
-      sanitizedErrorResponse(c, new Error('SQLITE_CONSTRAINT: UNIQUE constraint failed: t.id'), { code: 'DB_INSERT_FAILED' }),
+      sanitizedErrorResponse(c, new Error('SQLITE_CONSTRAINT: UNIQUE constraint failed: t.id'), {
+        code: 'DB_INSERT_FAILED',
+      }),
     );
     const res = await app.request('/boom');
     const body = (await res.json()) as { error: { message: string } };
@@ -207,7 +217,11 @@ describe('sanitizedErrorResponse — conflitto UNIQUE/PK → 409 DB_CONFLICT_UNI
     process.env.NODE_ENV = 'production';
     const { sanitizedErrorResponse } = await import('./error-response.js');
     const app = await buildAppWithRoute((c) =>
-      sanitizedErrorResponse(c, new Error('duplicate key value violates unique constraint "users_pk"'), { code: 'DB_INSERT_FAILED' }),
+      sanitizedErrorResponse(
+        c,
+        new Error('duplicate key value violates unique constraint "users_pk"'),
+        { code: 'DB_INSERT_FAILED' },
+      ),
     );
     const res = await app.request('/boom');
     expect(res.status).toBe(409);
@@ -217,7 +231,9 @@ describe('sanitizedErrorResponse — conflitto UNIQUE/PK → 409 DB_CONFLICT_UNI
     process.env.NODE_ENV = 'production';
     const { sanitizedErrorResponse } = await import('./error-response.js');
     const app = await buildAppWithRoute((c) =>
-      sanitizedErrorResponse(c, new Error('NOT NULL constraint failed: t.nome'), { code: 'DB_INSERT_FAILED' }),
+      sanitizedErrorResponse(c, new Error('NOT NULL constraint failed: t.nome'), {
+        code: 'DB_INSERT_FAILED',
+      }),
     );
     const res = await app.request('/boom');
     expect(res.status).toBe(400);
@@ -237,6 +253,9 @@ describe('sanitizedErrorResponse — conflitto UNIQUE/PK → 409 DB_CONFLICT_UNI
     expect(classifyDbConflictError('boom').conflict).toBe(false);
     expect(classifyDbConflictError(null).conflict).toBe(false);
     // Il generico SQLITE_CONSTRAINT_* NON-unique resta 400 (NOT NULL/CHECK).
-    expect(classifyDbConflictError(new Error('SQLITE_CONSTRAINT_NOTNULL: NOT NULL constraint failed')).conflict).toBe(false);
+    expect(
+      classifyDbConflictError(new Error('SQLITE_CONSTRAINT_NOTNULL: NOT NULL constraint failed'))
+        .conflict,
+    ).toBe(false);
   });
 });

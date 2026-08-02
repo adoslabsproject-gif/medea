@@ -50,26 +50,40 @@ describe('checkVectorQuota — vincolo aggregato (BUG-BOUNTY)', () => {
 
   it('limite NULL = illimitato (Enterprise/BYOK) → sempre consentito', () => {
     const unlimited: VectorPlanLimits = { maxVectors: null, maxDiskMb: null };
-    expect(checkVectorQuota({ totalVectors: 1_000_000, diskMb: 999_999 }, 50_000, 9999, unlimited).allowed).toBe(true);
+    expect(
+      checkVectorQuota({ totalVectors: 1_000_000, diskMb: 999_999 }, 50_000, 9999, unlimited)
+        .allowed,
+    ).toBe(true);
   });
 });
 
 describe('checkVectorQuota — quota disco PROIETTIVA', () => {
   it('disco già oltre il limite → bloccato col codice giusto', () => {
-    const d = checkVectorQuota({ totalVectors: 0, diskMb: 600 }, 0, 0, { maxVectors: null, maxDiskMb: 500 });
+    const d = checkVectorQuota({ totalVectors: 0, diskMb: 600 }, 0, 0, {
+      maxVectors: null,
+      maxDiskMb: 500,
+    });
     expect(d.allowed).toBe(false);
     expect(d.code).toBe('VECTOR_DISK_EXCEEDED');
   });
 
   it('PROIEZIONE: uso sotto soglia ma il batch aggiunto sfora → bloccato (coerente col count)', () => {
     // 400MB attuali + 150MB del batch = 550 > 500. Senza proiezione passerebbe (bug reviewer).
-    const d = checkVectorQuota({ totalVectors: 0, diskMb: 400 }, 100000, 150, { maxVectors: null, maxDiskMb: 500 });
+    const d = checkVectorQuota({ totalVectors: 0, diskMb: 400 }, 100000, 150, {
+      maxVectors: null,
+      maxDiskMb: 500,
+    });
     expect(d.allowed).toBe(false);
     expect(d.code).toBe('VECTOR_DISK_EXCEEDED');
   });
 
   it('disco + batch entro il limite → consentito', () => {
-    expect(checkVectorQuota({ totalVectors: 0, diskMb: 400 }, 100, 50, { maxVectors: null, maxDiskMb: 500 }).allowed).toBe(true);
+    expect(
+      checkVectorQuota({ totalVectors: 0, diskMb: 400 }, 100, 50, {
+        maxVectors: null,
+        maxDiskMb: 500,
+      }).allowed,
+    ).toBe(true);
   });
 });
 

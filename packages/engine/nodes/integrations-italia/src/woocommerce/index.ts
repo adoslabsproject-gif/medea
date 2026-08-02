@@ -23,7 +23,11 @@
 
 import type { NodeModule } from '@medea/engine-nodes-stdlib';
 import { executeWithHostBreaker } from '@medea/engine-nodes-stdlib';
-import { safeFetchWithRedirects, readJsonCapped, readTextTruncated } from '@medea/engine-safe-fetch';
+import {
+  safeFetchWithRedirects,
+  readJsonCapped,
+  readTextTruncated,
+} from '@medea/engine-safe-fetch';
 
 interface WcConnection {
   baseUrl: string;
@@ -78,14 +82,22 @@ async function wcFetch<T = unknown>(
   // Gateway: per-host circuit breaker (come fic/register-it) + safeFetch (timeout
   // default 30s + SSRF). baseUrl è user-provided → un host del cliente impallato
   // non deve drogare il pool degli altri workflow (breaker keyed per-host).
-  const res = await executeWithHostBreaker(url.toString(), () => safeFetchWithRedirects(url.toString(), init as never));
+  const res = await executeWithHostBreaker(url.toString(), () =>
+    safeFetchWithRedirects(url.toString(), init as never),
+  );
   if (!res.ok) {
     // anti-OOM: estratto d'errore troncato in streaming (un endpoint rotto può
     // rispondere con HTML enorme), non res.text() integrale.
     const text = (await readTextTruncated(res, 8192)).text;
     let err: { code?: string; message?: string } = {};
-    try { err = JSON.parse(text) as typeof err; } catch { /* keep raw */ }
-    throw new Error(`WooCommerce ${err.code ?? res.status.toString()}: ${err.message ?? text.slice(0, 200)}`);
+    try {
+      err = JSON.parse(text) as typeof err;
+    } catch {
+      /* keep raw */
+    }
+    throw new Error(
+      `WooCommerce ${err.code ?? res.status.toString()}: ${err.message ?? text.slice(0, 200)}`,
+    );
   }
   const totalPages = parseInt(res.headers.get('x-wp-totalpages') ?? '1', 10);
   const total = parseInt(res.headers.get('x-wp-total') ?? '0', 10);
@@ -101,11 +113,34 @@ export const woocommerceNode: NodeModule = {
     label: 'WooCommerce',
     icon: 'shopping-cart',
     color: '#7f54b3',
-    description: 'CRUD universale su WooCommerce REST API v3. Products, orders, customers, coupons, refunds, taxes, shipping zones, batch endpoint (100 ops/req). 30% e-commerce market share — cliente con shop online ne ha probabilmente uno. Auth: consumer_key + consumer_secret da WooCommerce → Settings → Advanced → REST API.',
+    description:
+      'CRUD universale su WooCommerce REST API v3. Products, orders, customers, coupons, refunds, taxes, shipping zones, batch endpoint (100 ops/req). 30% e-commerce market share — cliente con shop online ne ha probabilmente uno. Auth: consumer_key + consumer_secret da WooCommerce → Settings → Advanced → REST API.',
     configFields: [
-      { key: 'baseUrl', label: 'URL WooCommerce', type: 'text', required: true, placeholder: 'https://mio-shop.it', help: 'URL base WordPress dove gira WooCommerce. REST API: {baseUrl}/wp-json/wc/v3/*. HTTPS obbligatorio per Basic Auth (raccomandato).', pattern: '^https?://[^/]+$' },
-      { key: 'consumerKey', label: 'Consumer Key', type: 'secret', required: true, placeholder: 'ck_...', help: 'Genera da WooCommerce → Settings → Advanced → REST API → Add key. Scope: Read/Write per CRUD completo, Read per query-only.' },
-      { key: 'consumerSecret', label: 'Consumer Secret', type: 'secret', required: true, placeholder: 'cs_...', help: 'Compagno della consumer_key. Conserva al momento della generazione (NON re-visualizzabile dopo).' },
+      {
+        key: 'baseUrl',
+        label: 'URL WooCommerce',
+        type: 'text',
+        required: true,
+        placeholder: 'https://mio-shop.it',
+        help: 'URL base WordPress dove gira WooCommerce. REST API: {baseUrl}/wp-json/wc/v3/*. HTTPS obbligatorio per Basic Auth (raccomandato).',
+        pattern: '^https?://[^/]+$',
+      },
+      {
+        key: 'consumerKey',
+        label: 'Consumer Key',
+        type: 'secret',
+        required: true,
+        placeholder: 'ck_...',
+        help: 'Genera da WooCommerce → Settings → Advanced → REST API → Add key. Scope: Read/Write per CRUD completo, Read per query-only.',
+      },
+      {
+        key: 'consumerSecret',
+        label: 'Consumer Secret',
+        type: 'secret',
+        required: true,
+        placeholder: 'cs_...',
+        help: 'Compagno della consumer_key. Conserva al momento della generazione (NON re-visualizzabile dopo).',
+      },
 
       {
         key: 'action',
@@ -142,29 +177,145 @@ export const woocommerceNode: NodeModule = {
         defaultValue: 'products',
         help: 'Endpoint WC. Per nested (es. variazioni prodotto): "products/variations" con parentId nel customPath.',
       },
-      { key: 'parentId', label: 'Parent ID', type: 'expression', required: false, placeholder: '42', help: 'Per nested resources (variations under product, notes/refunds under order). Es: resource="products/variations", parentId=42 → /products/42/variations.', showIf: { field: 'resource', in: ['products/variations', 'orders/notes', 'orders/refunds'] } },
+      {
+        key: 'parentId',
+        label: 'Parent ID',
+        type: 'expression',
+        required: false,
+        placeholder: '42',
+        help: 'Per nested resources (variations under product, notes/refunds under order). Es: resource="products/variations", parentId=42 → /products/42/variations.',
+        showIf: {
+          field: 'resource',
+          in: ['products/variations', 'orders/notes', 'orders/refunds'],
+        },
+      },
 
-      { key: 'id', label: 'ID', type: 'expression', required: false, help: 'ID risorsa (intero). Obbligatorio per get/update/delete.', showIf: { field: 'action', in: ['get', 'update', 'delete'] } },
+      {
+        key: 'id',
+        label: 'ID',
+        type: 'expression',
+        required: false,
+        help: 'ID risorsa (intero). Obbligatorio per get/update/delete.',
+        showIf: { field: 'action', in: ['get', 'update', 'delete'] },
+      },
 
       // List filters (per_page, search, status, ecc.)
-      { key: 'perPage', label: 'Per page', type: 'number', required: false, defaultValue: '10', help: 'Default 10, max 100 (WC cap).', showIf: { field: 'action', equals: 'list' } },
-      { key: 'page', label: 'Page', type: 'number', required: false, defaultValue: '1', help: 'Pagination 1-indexed. X-WP-TotalPages header per loop completo.', showIf: { field: 'action', equals: 'list' } },
-      { key: 'search', label: 'Search', type: 'expression', required: false, placeholder: 'nome prodotto', help: 'Full-text WC server-side.', showIf: { field: 'action', equals: 'list' } },
-      { key: 'status', label: 'Status filter', type: 'expression', required: false, placeholder: 'pending,processing,completed', help: 'Per orders: pending/processing/on-hold/completed/cancelled/refunded/failed/trash. Per products: draft/pending/private/publish. CSV multi-status.', showIf: { field: 'action', equals: 'list' } },
-      { key: 'after', label: 'Data dopo (ISO 8601)', type: 'expression', required: false, placeholder: '2026-01-01T00:00:00', help: 'Filtra date_created >= valore. Ottimo per sync incrementale.', showIf: { field: 'action', equals: 'list' } },
-      { key: 'before', label: 'Data prima (ISO 8601)', type: 'expression', required: false, placeholder: '2026-12-31T23:59:59', help: 'Filtra date_created <= valore.', showIf: { field: 'action', equals: 'list' } },
-      { key: 'customer', label: 'Customer ID filter', type: 'expression', required: false, help: 'Solo per orders. Filtra ordini di un cliente specifico.', showIf: { field: 'action', equals: 'list' } },
-      { key: 'orderby', label: 'Order by', type: 'select', required: false, options: ['date', 'id', 'include', 'title', 'slug', 'price', 'popularity', 'rating'], defaultValue: 'date', help: 'Solo per list. price/popularity/rating solo su products.', showIf: { field: 'action', equals: 'list' } },
-      { key: 'orderDir', label: 'Order direction', type: 'select', required: false, options: ['asc', 'desc'], defaultValue: 'desc', showIf: { field: 'action', equals: 'list' } },
+      {
+        key: 'perPage',
+        label: 'Per page',
+        type: 'number',
+        required: false,
+        defaultValue: '10',
+        help: 'Default 10, max 100 (WC cap).',
+        showIf: { field: 'action', equals: 'list' },
+      },
+      {
+        key: 'page',
+        label: 'Page',
+        type: 'number',
+        required: false,
+        defaultValue: '1',
+        help: 'Pagination 1-indexed. X-WP-TotalPages header per loop completo.',
+        showIf: { field: 'action', equals: 'list' },
+      },
+      {
+        key: 'search',
+        label: 'Search',
+        type: 'expression',
+        required: false,
+        placeholder: 'nome prodotto',
+        help: 'Full-text WC server-side.',
+        showIf: { field: 'action', equals: 'list' },
+      },
+      {
+        key: 'status',
+        label: 'Status filter',
+        type: 'expression',
+        required: false,
+        placeholder: 'pending,processing,completed',
+        help: 'Per orders: pending/processing/on-hold/completed/cancelled/refunded/failed/trash. Per products: draft/pending/private/publish. CSV multi-status.',
+        showIf: { field: 'action', equals: 'list' },
+      },
+      {
+        key: 'after',
+        label: 'Data dopo (ISO 8601)',
+        type: 'expression',
+        required: false,
+        placeholder: '2026-01-01T00:00:00',
+        help: 'Filtra date_created >= valore. Ottimo per sync incrementale.',
+        showIf: { field: 'action', equals: 'list' },
+      },
+      {
+        key: 'before',
+        label: 'Data prima (ISO 8601)',
+        type: 'expression',
+        required: false,
+        placeholder: '2026-12-31T23:59:59',
+        help: 'Filtra date_created <= valore.',
+        showIf: { field: 'action', equals: 'list' },
+      },
+      {
+        key: 'customer',
+        label: 'Customer ID filter',
+        type: 'expression',
+        required: false,
+        help: 'Solo per orders. Filtra ordini di un cliente specifico.',
+        showIf: { field: 'action', equals: 'list' },
+      },
+      {
+        key: 'orderby',
+        label: 'Order by',
+        type: 'select',
+        required: false,
+        options: ['date', 'id', 'include', 'title', 'slug', 'price', 'popularity', 'rating'],
+        defaultValue: 'date',
+        help: 'Solo per list. price/popularity/rating solo su products.',
+        showIf: { field: 'action', equals: 'list' },
+      },
+      {
+        key: 'orderDir',
+        label: 'Order direction',
+        type: 'select',
+        required: false,
+        options: ['asc', 'desc'],
+        defaultValue: 'desc',
+        showIf: { field: 'action', equals: 'list' },
+      },
 
       // Create/Update body
-      { key: 'data', label: 'Body JSON', type: 'expression', required: false, placeholder: '{"name":"Maglietta XL","type":"simple","regular_price":"29.90","stock_quantity":10,"manage_stock":true}', help: 'Per create/update. Schema completo: https://woocommerce.github.io/woocommerce-rest-api-docs/. Per products: name, type, regular_price, sale_price, stock_quantity, manage_stock, categories[], images[], attributes[], variations[].', showIf: { field: 'action', in: ['create', 'update'] } },
+      {
+        key: 'data',
+        label: 'Body JSON',
+        type: 'expression',
+        required: false,
+        placeholder:
+          '{"name":"Maglietta XL","type":"simple","regular_price":"29.90","stock_quantity":10,"manage_stock":true}',
+        help: 'Per create/update. Schema completo: https://woocommerce.github.io/woocommerce-rest-api-docs/. Per products: name, type, regular_price, sale_price, stock_quantity, manage_stock, categories[], images[], attributes[], variations[].',
+        showIf: { field: 'action', in: ['create', 'update'] },
+      },
 
       // Batch
-      { key: 'batchData', label: 'Batch JSON', type: 'expression', required: false, placeholder: '{"create":[{...},{...}],"update":[{"id":42,...}],"delete":[1,2,3]}', help: 'Per action=batch. Object con chiavi create/update/delete. Max 100 ops totali per request (WC default). create[] = array di body POST. update[] = array di body PUT con id incluso. delete[] = array di IDs.', showIf: { field: 'action', equals: 'batch' } },
+      {
+        key: 'batchData',
+        label: 'Batch JSON',
+        type: 'expression',
+        required: false,
+        placeholder: '{"create":[{...},{...}],"update":[{"id":42,...}],"delete":[1,2,3]}',
+        help: 'Per action=batch. Object con chiavi create/update/delete. Max 100 ops totali per request (WC default). create[] = array di body POST. update[] = array di body PUT con id incluso. delete[] = array di IDs.',
+        showIf: { field: 'action', equals: 'batch' },
+      },
 
       // Delete force
-      { key: 'force', label: 'Force delete (hard)', type: 'select', required: false, options: ['false', 'true'], defaultValue: 'false', help: 'true = bypass trash (irreversibile). Default WC: orders e products vanno in trash.', showIf: { field: 'action', equals: 'delete' } },
+      {
+        key: 'force',
+        label: 'Force delete (hard)',
+        type: 'select',
+        required: false,
+        options: ['false', 'true'],
+        defaultValue: 'false',
+        help: 'true = bypass trash (irreversibile). Default WC: orders e products vanno in trash.',
+        showIf: { field: 'action', equals: 'delete' },
+      },
     ],
     outputs: ['result', 'totalPages', 'total'],
     vendor: 'woocommerce',
@@ -187,7 +338,12 @@ export const woocommerceNode: NodeModule = {
 
     // Path nesting: "products/variations" + parentId 42 → /products/42/variations
     let basePath: string;
-    if ((resource === 'products/variations' || resource === 'orders/notes' || resource === 'orders/refunds') && parentId) {
+    if (
+      (resource === 'products/variations' ||
+        resource === 'orders/notes' ||
+        resource === 'orders/refunds') &&
+      parentId
+    ) {
       const [parent, child] = resource.split('/');
       basePath = `/${parent}/${parentId}/${child}`;
     } else {
@@ -208,7 +364,10 @@ export const woocommerceNode: NodeModule = {
         if (cfg.orderby) query.orderby = cfg.orderby;
         if (cfg.orderDir) query.order = cfg.orderDir;
         const { data, totalPages, total } = await wcFetch(conn, 'GET', basePath, undefined, query);
-        return { output: { result: data, totalPages, total, action, resource }, durationMs: Date.now() - start };
+        return {
+          output: { result: data, totalPages, total, action, resource },
+          durationMs: Date.now() - start,
+        };
       }
       case 'get': {
         const id = cfg.id;

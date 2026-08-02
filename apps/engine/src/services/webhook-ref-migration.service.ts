@@ -36,7 +36,9 @@ export interface WebhookRefMigrationReport {
   skipped: string[];
 }
 
-export async function runWebhookRefMigration(eventBus: IEventBus): Promise<WebhookRefMigrationReport> {
+export async function runWebhookRefMigration(
+  eventBus: IEventBus,
+): Promise<WebhookRefMigrationReport> {
   const service = new WorkflowService(eventBus);
   const audit = new AuditLogService();
   const lookup = makeWebhookOwnerLookup(service);
@@ -44,10 +46,17 @@ export async function runWebhookRefMigration(eventBus: IEventBus): Promise<Webho
   const { db } = getDatabase();
 
   const all = await service.listAllAcrossTenants();
-  const report: WebhookRefMigrationReport = { scanned: all.length, workflowsConverted: 0, linksConverted: 0, skipped: [] };
+  const report: WebhookRefMigrationReport = {
+    scanned: all.length,
+    workflowsConverted: 0,
+    linksConverted: 0,
+    skipped: [],
+  };
 
   for (const wf of all) {
-    const { nodes, converted, skipped } = await normalizeNodesWebhookLinks(wf.nodes, lookup, { sameHosts });
+    const { nodes, converted, skipped } = await normalizeNodesWebhookLinks(wf.nodes, lookup, {
+      sameHosts,
+    });
     report.skipped.push(...skipped);
     if (converted === 0) continue;
 
@@ -67,11 +76,17 @@ export async function runWebhookRefMigration(eventBus: IEventBus): Promise<Webho
 
     report.workflowsConverted += 1;
     report.linksConverted += converted;
-    logger.info({ workflowId: wf.id, tenantId, converted }, 'Migrazione webhook-ref: link cablati convertiti in ref://');
+    logger.info(
+      { workflowId: wf.id, tenantId, converted },
+      'Migrazione webhook-ref: link cablati convertiti in ref://',
+    );
   }
 
   if (report.skipped.length > 0) {
-    logger.warn({ skipped: report.skipped }, 'Migrazione webhook-ref: link NON convertibili — restano com\'erano');
+    logger.warn(
+      { skipped: report.skipped },
+      "Migrazione webhook-ref: link NON convertibili — restano com'erano",
+    );
   }
   return report;
 }

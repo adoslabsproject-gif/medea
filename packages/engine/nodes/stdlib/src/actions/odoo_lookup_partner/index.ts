@@ -14,7 +14,7 @@ export const odooLookupPartnerActionNode: NodeModule = {
   executor: wrap(odooLookupPartnerExecutor, [
     httpMiddlewarePreset({
       urlFrom: (c) => {
-        const u = (c).baseUrl;
+        const u = c.baseUrl;
         return typeof u === 'string' && u.length > 0 ? u : undefined;
       },
       methodFrom: () => 'POST',
@@ -23,7 +23,4 @@ export const odooLookupPartnerActionNode: NodeModule = {
 };
 
 export { odooLookupPartnerExecutor, odooLookupPartnerNodeDef };
-export {
-  OdooLookupPartnerConfigSchema,
-  type OdooLookupPartnerConfig,
-} from './schema.js';
+export { OdooLookupPartnerConfigSchema, type OdooLookupPartnerConfig } from './schema.js';

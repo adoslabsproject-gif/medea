@@ -67,32 +67,65 @@ export type ScaffoldProgressEvent =
   | { type: 'start'; goal: string; maxIter: number }
   | { type: 'iter_start'; iteration: number; phase: 'llm_call' }
   | { type: 'tool_call'; iteration: number; tool: string; args: Record<string, unknown> }
-  | { type: 'tool_result'; iteration: number; tool: string; ok: boolean; elapsedMs: number; error?: string }
+  | {
+      type: 'tool_result';
+      iteration: number;
+      tool: string;
+      ok: boolean;
+      elapsedMs: number;
+      error?: string;
+    }
   | { type: 'iter_end'; iteration: number; truncated?: boolean; parseError?: string }
   /** LLM ha emesso output non utilizzabile (troncato / JSON malformato / tool field
    *  mancante). Iter conta ma nessun tool e\` stato eseguito. Lo emettiamo come
    *  evento dedicato cosi\` il frontend mostra il "buco" invece di nascondere
    *  l'iter (utente vedeva step saltati nel trace UI). */
-  | { type: 'llm_retry'; iteration: number; reason: 'truncated' | 'parse_error' | 'invalid_tool'; detail: string }
+  | {
+      type: 'llm_retry';
+      iteration: number;
+      reason: 'truncated' | 'parse_error' | 'invalid_tool';
+      detail: string;
+    }
   /** Token usage cumulativo dopo ogni LLM call. UI mostra contatore live + timer. */
-  | { type: 'token_usage'; iteration: number; cumulative: { input: number; output: number }; lastCall: { input: number; output: number; fromApi: boolean } }
+  | {
+      type: 'token_usage';
+      iteration: number;
+      cumulative: { input: number; output: number };
+      lastCall: { input: number; output: number; fromApi: boolean };
+    }
   /** Phase 0 (Plan-then-Execute 2026-05-31): propose_plan accettato.
    *  UI mostra checklist dei planned nodes con avanzamento real-time. */
-  | { type: 'plan_proposed'; iteration: number; plan: { nodes: { id: string; defId: string; purpose: string }[]; edges: { from: string; to: string; fromPort?: string }[]; reasoning: string } }
+  | {
+      type: 'plan_proposed';
+      iteration: number;
+      plan: {
+        nodes: { id: string; defId: string; purpose: string }[];
+        edges: { from: string; to: string; fromPort?: string }[];
+        reasoning: string;
+      };
+    }
   /** Streaming singleshot (2026-05-31): emesso man mano che il parser parser
    *  identifica un nodo / edge / meta completato durante lo stream LLM.
    *  UI usa per renderizzare nodi che si "accendono" in real-time invece
    *  di vedere "67% bloccato per 100s poi tutto insieme". */
   | { type: 'singleshot_node_added'; iteration: number; index: number; node: unknown }
   | { type: 'singleshot_edge_added'; iteration: number; index: number; edge: unknown }
-  | { type: 'singleshot_meta'; iteration: number; meta: { name?: string; description?: string; reasoning?: string } }
+  | {
+      type: 'singleshot_meta';
+      iteration: number;
+      meta: { name?: string; description?: string; reasoning?: string };
+    }
   | { type: 'done'; result: AiScaffoldResult };
 export type ScaffoldProgressEmitter = (event: ScaffoldProgressEvent) => void | Promise<void>;
 
-export async function runScaffold(input: AiScaffoldInput, onProgress?: ScaffoldProgressEmitter): Promise<AiScaffoldResult> {
+export async function runScaffold(
+  input: AiScaffoldInput,
+  onProgress?: ScaffoldProgressEmitter,
+): Promise<AiScaffoldResult> {
   const goal = input.goal.trim();
   if (goal.length < 5) throw new AiScaffoldError('Obiettivo troppo corto.');
-  if (goal.length > MAX_GOAL_LEN) throw new AiScaffoldError(`Obiettivo troppo lungo (max ${MAX_GOAL_LEN.toString()} caratteri).`);
+  if (goal.length > MAX_GOAL_LEN)
+    throw new AiScaffoldError(`Obiettivo troppo lungo (max ${MAX_GOAL_LEN.toString()} caratteri).`);
 
   let resolved;
   try {
@@ -132,9 +165,7 @@ export async function runScaffold(input: AiScaffoldInput, onProgress?: ScaffoldP
   // tokens). Liara chiama list_node_catalog(defId:"X") on-demand per i
   // configFields completi quando deve usare un nodo specifico.
   const catalog = buildNodeCatalog();
-  const catalogText = catalog.map((c) =>
-    `- ${c.defId} (${c.type}) "${c.label}"`
-  ).join('\n');
+  const catalogText = catalog.map((c) => `- ${c.defId} (${c.type}) "${c.label}"`).join('\n');
   // Pre-analisi complessita\` — mostra a Liara cosa il complexity gate ha
   // rilevato nel goal, ANCORA prima della sua prima tool call. Cosi\` il
   // propose_plan iniziale gia\` sa minNodes target invece di scoprirlo via reject.
@@ -144,23 +175,35 @@ export async function runScaffold(input: AiScaffoldInput, onProgress?: ScaffoldP
     `  Tier: "${complexity.tier}" — minNodes target: ${complexity.minNodes.toString()}`,
   ];
   if (complexity.matched.actionVerbs.length > 0) {
-    analysisLines.push(`  Verbi/azioni rilevate: ${complexity.matched.actionVerbs.join(', ')} → 1 nodo per ognuno`);
+    analysisLines.push(
+      `  Verbi/azioni rilevate: ${complexity.matched.actionVerbs.join(', ')} → 1 nodo per ognuno`,
+    );
   }
   if (complexity.matched.integrations.length > 0) {
-    analysisLines.push(`  Integrazioni esterne: ${complexity.matched.integrations.join(', ')} → community_<vendor> o action_http per ognuna`);
+    analysisLines.push(
+      `  Integrazioni esterne: ${complexity.matched.integrations.join(', ')} → community_<vendor> o action_http per ognuna`,
+    );
   }
   if (complexity.matched.branches.length > 0) {
-    analysisLines.push(`  Branching/condizioni: ${complexity.matched.branches.join(', ')} → logic_if/logic_switch + 1 nodo per ramo`);
+    analysisLines.push(
+      `  Branching/condizioni: ${complexity.matched.branches.join(', ')} → logic_if/logic_switch + 1 nodo per ramo`,
+    );
   }
   if (complexity.matched.documentTypes.length > 0) {
-    analysisLines.push(`  Tipi documento elencati: ${complexity.matched.documentTypes.join(', ')} → 1 ramo + relativi action per ognuno`);
+    analysisLines.push(
+      `  Tipi documento elencati: ${complexity.matched.documentTypes.join(', ')} → 1 ramo + relativi action per ognuno`,
+    );
   }
-  analysisLines.push(`Il tuo propose_plan DEVE coprire ALMENO ${complexity.minNodes.toString()} nodi distinti — uno per ogni entita\` sopra.`);
+  analysisLines.push(
+    `Il tuo propose_plan DEVE coprire ALMENO ${complexity.minNodes.toString()} nodi distinti — uno per ogni entita\` sopra.`,
+  );
   const initialUser = [
     `GOAL UTENTE:\n${goal}`,
     `\n${analysisLines.join('\n')}`,
     `\nCATALOGO NODI:\n${catalogText}`,
-    input.databaseId ? `\nDB TENANT DISPONIBILE: ${input.databaseId} (usa read_db_schema per leggerlo)` : '\nNESSUN DB CONFIGURATO — non usare db_query/db_insert*.',
+    input.databaseId
+      ? `\nDB TENANT DISPONIBILE: ${input.databaseId} (usa read_db_schema per leggerlo)`
+      : '\nNESSUN DB CONFIGURATO — non usare db_query/db_insert*.',
     `\nINIZIA: chiama il primo tool. Risposta JSON puro, una tool call alla volta. RICORDA REGOLA 0: il primo tool di mutation DEVE essere propose_plan.`,
   ].join('\n');
 
@@ -172,11 +215,19 @@ export async function runScaffold(input: AiScaffoldInput, onProgress?: ScaffoldP
   let iteration = 0;
 
   // Emit initial event (UI rendering "starting agent...").
-  try { await onProgress?.({ type: 'start', goal, maxIter }); } catch { /* never throw on progress */ }
+  try {
+    await onProgress?.({ type: 'start', goal, maxIter });
+  } catch {
+    /* never throw on progress */
+  }
 
   while (!session.finalized && !session.aborted && iteration < maxIter) {
     iteration++;
-    try { await onProgress?.({ type: 'iter_start', iteration, phase: 'llm_call' }); } catch { /* */ }
+    try {
+      await onProgress?.({ type: 'iter_start', iteration, phase: 'llm_call' });
+    } catch {
+      /* */
+    }
     // First iteration: no history, pass initialUser. Subsequent: latest user msg = tool result.
     const currentUser = history.length === 0 ? initialUser : history[history.length - 1]!.content;
     const priorHistory = history.length === 0 ? [] : history.slice(0, -1);
@@ -188,15 +239,21 @@ export async function runScaffold(input: AiScaffoldInput, onProgress?: ScaffoldP
     const iterStart = Date.now();
     try {
       raw = await callLlmWithRetry(
-        () => dispatchLLMChat(
-          resolved.provider, resolved.apiKey, resolved.model,
-          pickScaffoldPrompt(resolved.provider), currentUser, undefined, priorHistory,
-          (usage) => {
-            lastCallUsage = usage;
-            tokensCumulative.input += usage.input;
-            tokensCumulative.output += usage.output;
-          },
-        ),
+        () =>
+          dispatchLLMChat(
+            resolved.provider,
+            resolved.apiKey,
+            resolved.model,
+            pickScaffoldPrompt(resolved.provider),
+            currentUser,
+            undefined,
+            priorHistory,
+            (usage) => {
+              lastCallUsage = usage;
+              tokensCumulative.input += usage.input;
+              tokensCumulative.output += usage.output;
+            },
+          ),
         { maxAttempts: 4, baseDelayMs: 750 },
       );
     } catch (e) {
@@ -220,7 +277,10 @@ export async function runScaffold(input: AiScaffoldInput, onProgress?: ScaffoldP
         { iteration, provider: resolved.provider, err: e instanceof Error ? e.message : String(e) },
         '[SCAFFOLD] LLM provider call failed',
       );
-      throw new AiScaffoldError(`LLM provider error iter ${iteration.toString()}: ${e instanceof Error ? e.message : String(e)}`, 502);
+      throw new AiScaffoldError(
+        `LLM provider error iter ${iteration.toString()}: ${e instanceof Error ? e.message : String(e)}`,
+        502,
+      );
     }
 
     // Persiste token usage nel DB tenant — aggiorna ai_workflow_calls +
@@ -249,7 +309,9 @@ export async function runScaffold(input: AiScaffoldInput, onProgress?: ScaffoldP
           cumulative: { ...tokensCumulative },
           lastCall: lastCallUsage,
         });
-      } catch { /* never throw on progress */ }
+      } catch {
+        /* never throw on progress */
+      }
     }
 
     // Defensive sanitization: strip residui `<think>...</think>` (e anche
@@ -263,7 +325,8 @@ export async function runScaffold(input: AiScaffoldInput, onProgress?: ScaffoldP
 
     // Truncation detection: tail-shape heuristic. Providers diverge su finishReason exposure.
     const trailingChar = raw.trim().slice(-1);
-    const looksTruncated = raw.length > 100 && trailingChar !== '}' && trailingChar !== ']' && !raw.trim().endsWith('}');
+    const looksTruncated =
+      raw.length > 100 && trailingChar !== '}' && trailingChar !== ']' && !raw.trim().endsWith('}');
     logger.info(
       {
         iteration,
@@ -275,9 +338,21 @@ export async function runScaffold(input: AiScaffoldInput, onProgress?: ScaffoldP
       '[SCAFFOLD] iter LLM response',
     );
     if (looksTruncated) {
-      try { await onProgress?.({ type: 'llm_retry', iteration, reason: 'truncated', detail: `output ${raw.length.toString()} chars non termina con \`}\`` }); } catch { /* */ }
+      try {
+        await onProgress?.({
+          type: 'llm_retry',
+          iteration,
+          reason: 'truncated',
+          detail: `output ${raw.length.toString()} chars non termina con \`}\``,
+        });
+      } catch {
+        /* */
+      }
       history.push({ role: 'assistant', content: raw.slice(0, 500) });
-      history.push({ role: 'user', content: `Iter ${iteration.toString()}: output sembra TRONCATO (${raw.length.toString()} chars, non termina con \`}\`). Risposta più CORTA — chiama un solo tool con args minimali. Se serve dividere il lavoro, fai più tool calls invece di una grande.` });
+      history.push({
+        role: 'user',
+        content: `Iter ${iteration.toString()}: output sembra TRONCATO (${raw.length.toString()} chars, non termina con \`}\`). Risposta più CORTA — chiama un solo tool con args minimali. Se serve dividere il lavoro, fai più tool calls invece di una grande.`,
+      });
       continue;
     }
 
@@ -300,21 +375,49 @@ export async function runScaffold(input: AiScaffoldInput, onProgress?: ScaffoldP
         '[SCAFFOLD] tool call malformed — instructing retry',
       );
       const errMsg = `Iter ${iteration.toString()}: tool call malformato (JSON non parseable: ${e instanceof Error ? e.message : 'parse error'}). Riprova rispondendo SOLO con {"tool":"<nome>","args":{...}}.`;
-      try { await onProgress?.({ type: 'llm_retry', iteration, reason: 'parse_error', detail: e instanceof Error ? e.message : 'parse error' }); } catch { /* */ }
+      try {
+        await onProgress?.({
+          type: 'llm_retry',
+          iteration,
+          reason: 'parse_error',
+          detail: e instanceof Error ? e.message : 'parse error',
+        });
+      } catch {
+        /* */
+      }
       history.push({ role: 'assistant', content: raw });
       history.push({ role: 'user', content: errMsg });
       continue;
     }
     const tool = typeof parsed.tool === 'string' ? parsed.tool : '';
-    const args = (parsed.args && typeof parsed.args === 'object' ? parsed.args : {}) as Record<string, unknown>;
+    const args = (parsed.args && typeof parsed.args === 'object' ? parsed.args : {}) as Record<
+      string,
+      unknown
+    >;
     if (!tool) {
-      try { await onProgress?.({ type: 'llm_retry', iteration, reason: 'invalid_tool', detail: 'campo "tool" mancante o non stringa' }); } catch { /* */ }
+      try {
+        await onProgress?.({
+          type: 'llm_retry',
+          iteration,
+          reason: 'invalid_tool',
+          detail: 'campo "tool" mancante o non stringa',
+        });
+      } catch {
+        /* */
+      }
       history.push({ role: 'assistant', content: raw });
-      history.push({ role: 'user', content: `Iter ${iteration.toString()}: campo "tool" mancante. Risposta: {"tool":"<nome>","args":{...}}.` });
+      history.push({
+        role: 'user',
+        content: `Iter ${iteration.toString()}: campo "tool" mancante. Risposta: {"tool":"<nome>","args":{...}}.`,
+      });
       continue;
     }
 
-    try { await onProgress?.({ type: 'tool_call', iteration, tool, args }); } catch { /* */ }
+    try {
+      await onProgress?.({ type: 'tool_call', iteration, tool, args });
+    } catch {
+      /* */
+    }
     const toolStart = Date.now();
     const result = await session.execute(tool, args);
 
@@ -330,30 +433,52 @@ export async function runScaffold(input: AiScaffoldInput, onProgress?: ScaffoldP
             reasoning: session.plan.reasoning,
           },
         });
-      } catch { /* */ }
+      } catch {
+        /* */
+      }
     }
 
     try {
-      const evt: ScaffoldProgressEvent = { type: 'tool_result', iteration, tool, ok: result.ok, elapsedMs: Date.now() - toolStart };
+      const evt: ScaffoldProgressEvent = {
+        type: 'tool_result',
+        iteration,
+        tool,
+        ok: result.ok,
+        elapsedMs: Date.now() - toolStart,
+      };
       if (!result.ok && typeof result.error === 'string') evt.error = result.error.slice(0, 800);
       await onProgress?.(evt);
-    } catch { /* */ }
+    } catch {
+      /* */
+    }
     history.push({ role: 'assistant', content: JSON.stringify({ tool, args }) });
     // Redact sensitive before feeding result back: secrets, base64 payloads, abs paths.
     // "dati sensibili a parte" guard — agent designs but never sees.
-    const safeResult = result.ok ? { ok: true, data: redactSensitive(result.data) } : { ok: false, error: redactSensitive(result.error) };
+    const safeResult = result.ok
+      ? { ok: true, data: redactSensitive(result.data) }
+      : { ok: false, error: redactSensitive(result.error) };
     // Slice 8000 (era 4000) per consentire al propose_plan accepted di
     // ritornare schemas completi di tutti i defId del plan (~150 chars/defId
     // × 20-25 defId = ~3-5K chars). Senza Liara perderebbe gli schemas.
-    history.push({ role: 'user', content: `tool_result: ${JSON.stringify(safeResult).slice(0, 8000)}` });
-    try { await onProgress?.({ type: 'iter_end', iteration }); } catch { /* */ }
+    history.push({
+      role: 'user',
+      content: `tool_result: ${JSON.stringify(safeResult).slice(0, 8000)}`,
+    });
+    try {
+      await onProgress?.({ type: 'iter_end', iteration });
+    } catch {
+      /* */
+    }
   }
 
   if (session.aborted) {
     throw new AiScaffoldError(`Agente ha interrotto: ${session.abortReason}`, 502);
   }
   if (!session.finalized) {
-    throw new AiScaffoldError(`Agente non ha finalizzato il workflow entro ${maxIter.toString()} iterazioni. Trace: ${session.trace.length.toString()} step. Ultimo tool: ${session.trace[session.trace.length - 1]?.tool ?? 'nessuno'}`, 502);
+    throw new AiScaffoldError(
+      `Agente non ha finalizzato il workflow entro ${maxIter.toString()} iterazioni. Trace: ${session.trace.length.toString()} step. Ultimo tool: ${session.trace[session.trace.length - 1]?.tool ?? 'nessuno'}`,
+      502,
+    );
   }
 
   // Build canonical Workflow + WorkflowSchema.parse.
@@ -386,8 +511,14 @@ export async function runScaffold(input: AiScaffoldInput, onProgress?: ScaffoldP
   try {
     workflow = WorkflowSchema.parse(wfPlain);
   } catch (e) {
-    logger.warn({ err: e, draft: session.draft }, 'AiScaffold: finalized workflow failed schema validation');
-    throw new AiScaffoldError(`Workflow generato non valido secondo lo schema: ${e instanceof Error ? e.message : String(e)}`, 502);
+    logger.warn(
+      { err: e, draft: session.draft },
+      'AiScaffold: finalized workflow failed schema validation',
+    );
+    throw new AiScaffoldError(
+      `Workflow generato non valido secondo lo schema: ${e instanceof Error ? e.message : String(e)}`,
+      502,
+    );
   }
 
   const notes: string[] = [

@@ -65,9 +65,14 @@ export const humanReviewDecisionExecutor: NodeExecutor = async (rawConfig, input
     decision = 'auto';
   }
 
-  const renderedReason = cfg.reasonTemplate && reason
-    ? renderReasonTemplate(cfg.reasonTemplate, { label, confidence: conf, threshold: cfg.confidenceThreshold })
-    : reason;
+  const renderedReason =
+    cfg.reasonTemplate && reason
+      ? renderReasonTemplate(cfg.reasonTemplate, {
+          label,
+          confidence: conf,
+          threshold: cfg.confidenceThreshold,
+        })
+      : reason;
 
   const output: Record<string, unknown> = {
     ...(obj ?? {}),
@@ -93,8 +98,11 @@ export const humanReviewDecisionExecutor: NodeExecutor = async (rawConfig, input
 function unwrap(input: unknown): Record<string, unknown> | null {
   if (input === null || typeof input !== 'object') return null;
   const root = input as Record<string, unknown>;
-  if (root.output !== null && typeof root.output === 'object' &&
-      !('decision' in root) /* avoid double-unwrap from a previous review */) {
+  if (
+    root.output !== null &&
+    typeof root.output === 'object' &&
+    !('decision' in root) /* avoid double-unwrap from a previous review */
+  ) {
     return root.output as Record<string, unknown>;
   }
   return root;

@@ -30,7 +30,12 @@
  */
 
 import { assertUrlSafe, validateUrlForFetch } from './ssrf-guard.js';
-import { DEFAULT_RESPONSE_CAP_BYTES, readTextCapped, readJsonCapped, readBytesCapped } from './capped-response.js';
+import {
+  DEFAULT_RESPONSE_CAP_BYTES,
+  readTextCapped,
+  readJsonCapped,
+  readBytesCapped,
+} from './capped-response.js';
 
 export interface SafeFetchOptions {
   method?: string;
@@ -83,22 +88,29 @@ function withCappedBody(res: Response, capBytes: number): Response {
   return new Proxy(res, {
     get(target, prop) {
       switch (prop) {
-        case 'text': return () => readTextCapped(target, capBytes);
-        case 'json': return () => readJsonCapped(target, capBytes);
-        case 'arrayBuffer': return async () => {
-          const buf = await readBytesCapped(target, capBytes);
-          // copia esatta in un ArrayBuffer (evita di esporre il pool di Buffer)
-          return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
-        };
-        case 'blob': return async () => new Blob([await readBytesCapped(target, capBytes)]);
+        case 'text':
+          return () => readTextCapped(target, capBytes);
+        case 'json':
+          return () => readJsonCapped(target, capBytes);
+        case 'arrayBuffer':
+          return async () => {
+            const buf = await readBytesCapped(target, capBytes);
+            // copia esatta in un ArrayBuffer (evita di esporre il pool di Buffer)
+            return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+          };
+        case 'blob':
+          return async () => new Blob([await readBytesCapped(target, capBytes)]);
         // clone propaga il cap così anche la copia resta protetta
-        case 'clone': return () => withCappedBody(target.clone(), capBytes);
+        case 'clone':
+          return () => withCappedBody(target.clone(), capBytes);
         default: {
           // receiver = target (NON il proxy): i getter di Response (body/status/
           // headers/url…) leggono slot interni e con this=proxy darebbero
           // "Illegal invocation". I metodi delegati vanno bindati a target.
           const value = Reflect.get(target, prop, target) as unknown;
-          return typeof value === 'function' ? (value as (...a: unknown[]) => unknown).bind(target) : value;
+          return typeof value === 'function'
+            ? (value as (...a: unknown[]) => unknown).bind(target)
+            : value;
         }
       }
     },
@@ -185,7 +197,11 @@ export async function safeFetchWithRedirects(
 
     if (hop === maxRedirects) {
       // Drain body per evitare leak FD prima del throw.
-      try { await res.arrayBuffer(); } catch { /* ignore */ }
+      try {
+        await res.arrayBuffer();
+      } catch {
+        /* ignore */
+      }
       throw new Error(`safeFetch: too many redirects (max ${String(maxRedirects)})`);
     }
 
@@ -202,8 +218,14 @@ export async function safeFetchWithRedirects(
     // un redirect verso un host NON in allowedHosts resta comunque bloccato).
     const r = validateUrlForFetch(nextUrl, guardOpts);
     if (!r.ok) {
-      try { await res.arrayBuffer(); } catch { /* ignore */ }
-      throw new Error(`safeFetch: redirect bloccato (${r.reason ?? 'BLOCKED'}): ${r.detail ?? 'unsafe URL'}`);
+      try {
+        await res.arrayBuffer();
+      } catch {
+        /* ignore */
+      }
+      throw new Error(
+        `safeFetch: redirect bloccato (${r.reason ?? 'BLOCKED'}): ${r.detail ?? 'unsafe URL'}`,
+      );
     }
 
     // Cross-host? Strip credenziali dai successivi hop.
@@ -213,7 +235,11 @@ export async function safeFetchWithRedirects(
     }
 
     // Drain body precedente per evitare leak FD.
-    try { await res.arrayBuffer(); } catch { /* ignore */ }
+    try {
+      await res.arrayBuffer();
+    } catch {
+      /* ignore */
+    }
     currentUrl = nextUrl;
   }
 

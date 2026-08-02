@@ -24,7 +24,9 @@ import { createHash } from 'node:crypto';
 import type { NodeCatalogEntry } from '@/services/ai-scaffold/node-catalog.js';
 import { logger } from '@/lib/logger.js';
 import {
-  buildCatalogIndex, groupByCategory, tokenize,
+  buildCatalogIndex,
+  groupByCategory,
+  tokenize,
   type CatalogRecord,
 } from './index-builder.js';
 import { CATEGORY_LABELS, type CatalogCategory } from './category.js';
@@ -109,10 +111,14 @@ export class CatalogRetriever {
   }
 
   /** Tutti i defId indicizzati — usato dal test di copertura anti-drift. */
-  defIds(): string[] { return this.records.map((r) => r.defId); }
+  defIds(): string[] {
+    return this.records.map((r) => r.defId);
+  }
 
   /** Spec compatta di un nodo (per getNodeDetails on-demand). */
-  getRecord(defId: string): CatalogRecord | undefined { return this.byDefId.get(defId); }
+  getRecord(defId: string): CatalogRecord | undefined {
+    return this.byDefId.get(defId);
+  }
 
   /** Mappa categorie human-readable + conteggio — sempre nel prompt (~200 token). */
   categoryMap(): { category: CatalogCategory; label: string; count: number }[] {
@@ -179,7 +185,10 @@ export class CatalogRetriever {
     if (out.size === 0) {
       // Embedder giù: ritenta dopo il TTL (pre-fix: MAI più fino al restart).
       this.nextEmbedRetryAt = Date.now() + EMBED_RETRY_TTL_MS;
-      logger.warn({ failures, retryInMs: EMBED_RETRY_TTL_MS }, '[catalog-retrieval] embedder non disponibile — solo lessicale, retry dopo TTL');
+      logger.warn(
+        { failures, retryInMs: EMBED_RETRY_TTL_MS },
+        '[catalog-retrieval] embedder non disponibile — solo lessicale, retry dopo TTL',
+      );
       return null;
     }
     if (failures > 0) {
@@ -187,7 +196,10 @@ export class CatalogRetriever {
       // al prossimo tentativo (post-TTL) i mancanti vengono ritentati, e i
       // riusciti arrivano gratis dallo store.
       this.nextEmbedRetryAt = Date.now() + EMBED_RETRY_TTL_MS;
-      logger.warn({ embedded: out.size, failures }, '[catalog-retrieval] index semantico parziale — retry dei mancanti dopo TTL');
+      logger.warn(
+        { embedded: out.size, failures },
+        '[catalog-retrieval] index semantico parziale — retry dei mancanti dopo TTL',
+      );
       return out;
     }
     this.vectors = out;
@@ -239,7 +251,14 @@ export class CatalogRetriever {
       const r = this.byDefId.get(defId);
       if (!r) return;
       seen.add(defId);
-      const node: RetrievedNode = { defId: r.defId, type: r.type, label: r.label, category: r.category, shortDesc: r.shortDesc, score };
+      const node: RetrievedNode = {
+        defId: r.defId,
+        type: r.type,
+        label: r.label,
+        category: r.category,
+        shortDesc: r.shortDesc,
+        score,
+      };
       if (r.outputContract) node.outputContract = r.outputContract;
       result.push(node);
     };
@@ -260,26 +279,34 @@ function defaultHash(text: string): string {
 }
 
 /** Esegue `fn` su ogni item con al più `limit` promise in volo. */
-async function runPool<T>(items: readonly T[], limit: number, fn: (item: T) => Promise<void>): Promise<void> {
+async function runPool<T>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T) => Promise<void>,
+): Promise<void> {
   let cursor = 0;
   const workers: Promise<void>[] = [];
   const n = Math.min(limit, items.length);
   for (let w = 0; w < n; w += 1) {
-    workers.push((async (): Promise<void> => {
-      while (cursor < items.length) {
-        const i = cursor;
-        cursor += 1;
-        const item = items[i];
-        if (item !== undefined) await fn(item);
-      }
-    })());
+    workers.push(
+      (async (): Promise<void> => {
+        while (cursor < items.length) {
+          const i = cursor;
+          cursor += 1;
+          const item = items[i];
+          if (item !== undefined) await fn(item);
+        }
+      })(),
+    );
   }
   await Promise.all(workers);
 }
 
 /** Cosine similarity. Vettori stessa dimensione (1024 BGE-M3). */
 export function cosine(a: readonly number[], b: readonly number[]): number {
-  let dot = 0, na = 0, nb = 0;
+  let dot = 0,
+    na = 0,
+    nb = 0;
   const len = Math.min(a.length, b.length);
   for (let i = 0; i < len; i += 1) {
     dot += a[i]! * b[i]!;

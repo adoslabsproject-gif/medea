@@ -22,7 +22,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { z } from 'zod';
 import {
-  defineTool, EmptyArgs, toolRegistry, toAnthropicToolsSpec, toOpenAIToolsSpec,
+  defineTool,
+  EmptyArgs,
+  toolRegistry,
+  toAnthropicToolsSpec,
+  toOpenAIToolsSpec,
   type ToolResult,
 } from './tool-registry.js';
 
@@ -47,7 +51,8 @@ describe('defineTool', () => {
 describe('register / get / names / all', () => {
   it('register + get O(1) lookup', () => {
     toolRegistry.register({
-      name: 't1', description: 'desc',
+      name: 't1',
+      description: 'desc',
       schema: z.object({}),
       handler: () => ({ ok: true, data: null }),
     });
@@ -59,22 +64,57 @@ describe('register / get / names / all', () => {
   });
 
   it('names ritorna lista sorted', () => {
-    toolRegistry.register({ name: 'b_tool', description: 'd', schema: EmptyArgs, handler: () => ({ ok: true, data: null }) });
-    toolRegistry.register({ name: 'a_tool', description: 'd', schema: EmptyArgs, handler: () => ({ ok: true, data: null }) });
-    toolRegistry.register({ name: 'c_tool', description: 'd', schema: EmptyArgs, handler: () => ({ ok: true, data: null }) });
+    toolRegistry.register({
+      name: 'b_tool',
+      description: 'd',
+      schema: EmptyArgs,
+      handler: () => ({ ok: true, data: null }),
+    });
+    toolRegistry.register({
+      name: 'a_tool',
+      description: 'd',
+      schema: EmptyArgs,
+      handler: () => ({ ok: true, data: null }),
+    });
+    toolRegistry.register({
+      name: 'c_tool',
+      description: 'd',
+      schema: EmptyArgs,
+      handler: () => ({ ok: true, data: null }),
+    });
     expect(toolRegistry.names()).toEqual(['a_tool', 'b_tool', 'c_tool']);
   });
 
   it('🚨 register duplicate → throw fail-fast al boot', () => {
-    toolRegistry.register({ name: 't', description: 'd', schema: EmptyArgs, handler: () => ({ ok: true, data: null }) });
+    toolRegistry.register({
+      name: 't',
+      description: 'd',
+      schema: EmptyArgs,
+      handler: () => ({ ok: true, data: null }),
+    });
     expect(() => {
-      toolRegistry.register({ name: 't', description: 'd2', schema: EmptyArgs, handler: () => ({ ok: true, data: null }) });
+      toolRegistry.register({
+        name: 't',
+        description: 'd2',
+        schema: EmptyArgs,
+        handler: () => ({ ok: true, data: null }),
+      });
     }).toThrow(/duplicate registration/u);
   });
 
   it('all snapshot delle ToolDefinition (per LLM catalog)', () => {
-    toolRegistry.register({ name: 't1', description: 'd1', schema: EmptyArgs, handler: () => ({ ok: true, data: null }) });
-    toolRegistry.register({ name: 't2', description: 'd2', schema: EmptyArgs, handler: () => ({ ok: true, data: null }) });
+    toolRegistry.register({
+      name: 't1',
+      description: 'd1',
+      schema: EmptyArgs,
+      handler: () => ({ ok: true, data: null }),
+    });
+    toolRegistry.register({
+      name: 't2',
+      description: 'd2',
+      schema: EmptyArgs,
+      handler: () => ({ ok: true, data: null }),
+    });
     expect(toolRegistry.all()).toHaveLength(2);
   });
 });
@@ -83,7 +123,12 @@ describe('🚨 execute() dispatcher', () => {
   const session = {} as never; // ScaffoldSession opaco — handler non lo usa nei test
 
   it('🚨 tool sconosciuto → ok:false con elenco available', async () => {
-    toolRegistry.register({ name: 'real', description: 'd', schema: EmptyArgs, handler: () => ({ ok: true, data: null }) });
+    toolRegistry.register({
+      name: 'real',
+      description: 'd',
+      schema: EmptyArgs,
+      handler: () => ({ ok: true, data: null }),
+    });
     const res = await toolRegistry.execute(session, 'ghost', {});
     expect(res.ok).toBe(false);
     expect((res as { error: string }).error).toContain('Tool sconosciuto');
@@ -92,7 +137,8 @@ describe('🚨 execute() dispatcher', () => {
 
   it('🚨 Zod validate fail → ok:false con issues human-readable', async () => {
     toolRegistry.register({
-      name: 't', description: 'd',
+      name: 't',
+      description: 'd',
       schema: z.object({ name: z.string().min(3) }),
       handler: () => ({ ok: true, data: null }),
     });
@@ -104,7 +150,8 @@ describe('🚨 execute() dispatcher', () => {
 
   it('happy: schema valid → handler chiamato + ok:true', async () => {
     toolRegistry.register({
-      name: 'echo', description: 'echoes input',
+      name: 'echo',
+      description: 'echoes input',
       schema: z.object({ msg: z.string() }),
       handler: (_s, args) => ({ ok: true, data: { echoed: args.msg } }),
     });
@@ -115,9 +162,12 @@ describe('🚨 execute() dispatcher', () => {
 
   it('🚨 handler throws → caught + ok:false (no crash dispatcher)', async () => {
     toolRegistry.register({
-      name: 'bomb', description: 'd',
+      name: 'bomb',
+      description: 'd',
       schema: EmptyArgs,
-      handler: () => { throw new Error('boom inside handler'); },
+      handler: () => {
+        throw new Error('boom inside handler');
+      },
     });
     const res = await toolRegistry.execute(session, 'bomb', {});
     expect(res.ok).toBe(false);
@@ -126,9 +176,13 @@ describe('🚨 execute() dispatcher', () => {
 
   it('🚨 handler async throws → caught', async () => {
     toolRegistry.register({
-      name: 'async-bomb', description: 'd',
+      name: 'async-bomb',
+      description: 'd',
       schema: EmptyArgs,
-      handler: async () => { await Promise.resolve(); throw new Error('async boom'); },
+      handler: async () => {
+        await Promise.resolve();
+        throw new Error('async boom');
+      },
     });
     const res = await toolRegistry.execute(session, 'async-bomb', {});
     expect(res.ok).toBe(false);
@@ -137,9 +191,12 @@ describe('🚨 execute() dispatcher', () => {
 
   it('🚨 handler throws non-Error → coerced via String()', async () => {
     toolRegistry.register({
-      name: 't', description: 'd',
+      name: 't',
+      description: 'd',
       schema: EmptyArgs,
-      handler: () => { throw 'plain string'; },
+      handler: () => {
+        throw 'plain string';
+      },
     });
     const res = await toolRegistry.execute(session, 't', {});
     expect(res.ok).toBe(false);
@@ -148,9 +205,13 @@ describe('🚨 execute() dispatcher', () => {
 
   it('handler async ritorna direttamente ToolResult', async () => {
     toolRegistry.register({
-      name: 't', description: 'd',
+      name: 't',
+      description: 'd',
       schema: EmptyArgs,
-      handler: async () => { await Promise.resolve(); return { ok: true, data: 42 } as ToolResult<number>; },
+      handler: async () => {
+        await Promise.resolve();
+        return { ok: true, data: 42 } as ToolResult<number>;
+      },
     });
     const res = await toolRegistry.execute(session, 't', {});
     expect(res.ok).toBe(true);
@@ -160,7 +221,8 @@ describe('🚨 execute() dispatcher', () => {
 describe('🚨 toAnthropicToolsSpec — Anthropic Messages API tools[]', () => {
   it('shape: { name, description, input_schema } per ogni tool', () => {
     toolRegistry.register({
-      name: 'list_db', description: 'List databases.',
+      name: 'list_db',
+      description: 'List databases.',
       schema: z.object({ owner: z.string().optional() }),
       handler: () => ({ ok: true, data: [] }),
     });
@@ -172,8 +234,18 @@ describe('🚨 toAnthropicToolsSpec — Anthropic Messages API tools[]', () => {
   });
 
   it('multiple tools tutti serializzati', () => {
-    toolRegistry.register({ name: 'a', description: 'd', schema: EmptyArgs, handler: () => ({ ok: true, data: null }) });
-    toolRegistry.register({ name: 'b', description: 'd', schema: EmptyArgs, handler: () => ({ ok: true, data: null }) });
+    toolRegistry.register({
+      name: 'a',
+      description: 'd',
+      schema: EmptyArgs,
+      handler: () => ({ ok: true, data: null }),
+    });
+    toolRegistry.register({
+      name: 'b',
+      description: 'd',
+      schema: EmptyArgs,
+      handler: () => ({ ok: true, data: null }),
+    });
     expect(toAnthropicToolsSpec()).toHaveLength(2);
   });
 });
@@ -181,7 +253,8 @@ describe('🚨 toAnthropicToolsSpec — Anthropic Messages API tools[]', () => {
 describe('🚨 toOpenAIToolsSpec — OpenAI Chat Completions tools[]', () => {
   it('shape: { type: "function", function: { name, description, parameters } }', () => {
     toolRegistry.register({
-      name: 'fn1', description: 'desc',
+      name: 'fn1',
+      description: 'desc',
       schema: z.object({ x: z.string() }),
       handler: () => ({ ok: true, data: null }),
     });
@@ -195,7 +268,8 @@ describe('🚨 toOpenAIToolsSpec — OpenAI Chat Completions tools[]', () => {
 describe('🚨 zodToJsonSchema — inlined Zod→JSON converter', () => {
   it('z.object con required + optional → properties + required[]', () => {
     toolRegistry.register({
-      name: 't', description: 'd',
+      name: 't',
+      description: 'd',
       schema: z.object({
         name: z.string(),
         age: z.number().optional(),
@@ -205,7 +279,9 @@ describe('🚨 zodToJsonSchema — inlined Zod→JSON converter', () => {
     });
     const spec = toAnthropicToolsSpec();
     const schema = spec[0]?.input_schema as {
-      type: string; properties: Record<string, unknown>; required: string[];
+      type: string;
+      properties: Record<string, unknown>;
+      required: string[];
     };
     expect(schema.type).toBe('object');
     expect(schema.properties).toHaveProperty('name');
@@ -217,7 +293,8 @@ describe('🚨 zodToJsonSchema — inlined Zod→JSON converter', () => {
 
   it('primitivi: string/number/boolean/array', () => {
     toolRegistry.register({
-      name: 't', description: 'd',
+      name: 't',
+      description: 'd',
       schema: z.object({
         s: z.string(),
         n: z.number(),
@@ -227,7 +304,8 @@ describe('🚨 zodToJsonSchema — inlined Zod→JSON converter', () => {
       handler: () => ({ ok: true, data: null }),
     });
     const spec = toAnthropicToolsSpec();
-    const props = (spec[0]?.input_schema as { properties: Record<string, { type: string }> }).properties;
+    const props = (spec[0]?.input_schema as { properties: Record<string, { type: string }> })
+      .properties;
     expect(props.s?.type).toBe('string');
     expect(props.n?.type).toBe('number');
     expect(props.b?.type).toBe('boolean');
@@ -236,43 +314,61 @@ describe('🚨 zodToJsonSchema — inlined Zod→JSON converter', () => {
 
   it('🚨 array → items typed', () => {
     toolRegistry.register({
-      name: 't', description: 'd',
+      name: 't',
+      description: 'd',
       schema: z.object({ items: z.array(z.number()) }),
       handler: () => ({ ok: true, data: null }),
     });
-    const props = (toAnthropicToolsSpec()[0]?.input_schema as { properties: { items: { items: { type: string } } } }).properties;
+    const props = (
+      toAnthropicToolsSpec()[0]?.input_schema as {
+        properties: { items: { items: { type: string } } };
+      }
+    ).properties;
     expect(props.items.items.type).toBe('number');
   });
 
   it('z.record → object with additionalProperties=true', () => {
     toolRegistry.register({
-      name: 't', description: 'd',
+      name: 't',
+      description: 'd',
       schema: z.object({ data: z.record(z.string(), z.unknown()) }),
       handler: () => ({ ok: true, data: null }),
     });
-    const props = (toAnthropicToolsSpec()[0]?.input_schema as { properties: { data: { type: string; additionalProperties: boolean } } }).properties;
+    const props = (
+      toAnthropicToolsSpec()[0]?.input_schema as {
+        properties: { data: { type: string; additionalProperties: boolean } };
+      }
+    ).properties;
     expect(props.data.type).toBe('object');
     expect(props.data.additionalProperties).toBe(true);
   });
 
   it('🚨 additionalProperties=false sul top-level object (strict shape)', () => {
     toolRegistry.register({
-      name: 't', description: 'd',
+      name: 't',
+      description: 'd',
       schema: z.object({ x: z.string() }),
       handler: () => ({ ok: true, data: null }),
     });
     const spec = toAnthropicToolsSpec();
-    expect((spec[0]?.input_schema as { additionalProperties: boolean }).additionalProperties).toBe(false);
+    expect((spec[0]?.input_schema as { additionalProperties: boolean }).additionalProperties).toBe(
+      false,
+    );
   });
 
   it('z.object({}) (EmptyArgs) → no required, properties={}', () => {
     toolRegistry.register({
-      name: 't', description: 'd',
+      name: 't',
+      description: 'd',
       schema: EmptyArgs,
       handler: () => ({ ok: true, data: null }),
     });
     const spec = toAnthropicToolsSpec();
-    const schema = spec[0]?.input_schema as { type: string; properties: Record<string, unknown>; required?: string[] };
+    const schema = spec[0]?.input_schema as {
+      type: string;
+      properties: Record<string, unknown>;
+      required?: string[];
+    };
     expect(schema.type).toBe('object');
     expect(schema.properties).toEqual({});
     expect(schema.required).toBeUndefined(); // no required[] quando vuoto
@@ -280,17 +376,21 @@ describe('🚨 zodToJsonSchema — inlined Zod→JSON converter', () => {
 
   it('fallback safe per type sconosciuti → "string"', () => {
     toolRegistry.register({
-      name: 't', description: 'd',
+      name: 't',
+      description: 'd',
       schema: z.object({ d: z.date() }), // ZodDate non handled → fallback
       handler: () => ({ ok: true, data: null }),
     });
-    const props = (toAnthropicToolsSpec()[0]?.input_schema as { properties: { d: { type: string } } }).properties;
+    const props = (
+      toAnthropicToolsSpec()[0]?.input_schema as { properties: { d: { type: string } } }
+    ).properties;
     expect(props.d.type).toBe('string');
   });
 
   it('z.default() field treated as optional (no in required)', () => {
     toolRegistry.register({
-      name: 't', description: 'd',
+      name: 't',
+      description: 'd',
       schema: z.object({
         name: z.string(),
         page: z.number().default(1),

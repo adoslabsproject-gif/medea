@@ -7,7 +7,14 @@
 
 import { safeString, parseKvJson } from './safe-coerce.js';
 
-export type BodyType = 'none' | 'json' | 'form-urlencoded' | 'multipart' | 'raw-text' | 'raw-binary-base64' | 'binary';
+export type BodyType =
+  | 'none'
+  | 'json'
+  | 'form-urlencoded'
+  | 'multipart'
+  | 'raw-text'
+  | 'raw-binary-base64'
+  | 'binary';
 
 export interface BodyConfig {
   bodyType?: string;
@@ -26,13 +33,15 @@ const METHODS_WITHOUT_BODY = new Set(['GET', 'HEAD']);
 export function buildBody(config: BodyConfig, method: string): BuildBodyResult {
   if (METHODS_WITHOUT_BODY.has(method.toUpperCase())) return {};
 
-  const type = ((typeof config.bodyType === 'string' ? config.bodyType : 'json') as BodyType);
+  const type = (typeof config.bodyType === 'string' ? config.bodyType : 'json') as BodyType;
   switch (type) {
-    case 'none': return {};
+    case 'none':
+      return {};
     // REF-PRIMARIO upload: il body sono i byte di un handle BinaryData in INPUT.
     // buildBody è sync e senza input → l'executor risolve i byte e sovrascrive body
     // + contentType (dal mimeType dell'handle). Qui solo placeholder.
-    case 'binary': return {};
+    case 'binary':
+      return {};
     case 'json':
       return { body: safeString(config.body), contentType: 'application/json' };
     case 'raw-text':
@@ -55,7 +64,8 @@ export function buildBody(config: BodyConfig, method: string): BuildBodyResult {
       // fetch native imposta Content-Type con boundary corretto — lasciar passare undefined.
       return { body: form };
     }
-    default: return {};
+    default:
+      return {};
   }
 }
 

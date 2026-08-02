@@ -24,13 +24,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const dispatchMock = vi.fn<(...args: unknown[]) => Promise<string>>();
 vi.mock('@/services/llm-chat.service.js', () => ({
   dispatchLLMChatStructured: (...args: unknown[]) => {
-    const tokenListener = args[8] as ((u: { input: number; output: number; fromApi: boolean }) => void) | undefined;
+    const tokenListener = args[8] as
+      | ((u: { input: number; output: number; fromApi: boolean }) => void)
+      | undefined;
     if (tokenListener) tokenListener({ input: 1500, output: 800, fromApi: true });
     return dispatchMock(...args);
   },
   dispatchLLMChatStructuredStreaming: async (...args: unknown[]) => {
     const onChunk = args[8] as ((s: string) => void) | undefined;
-    const tokenListener = args[9] as ((u: { input: number; output: number; fromApi: boolean }) => void) | undefined;
+    const tokenListener = args[9] as
+      | ((u: { input: number; output: number; fromApi: boolean }) => void)
+      | undefined;
     if (tokenListener) tokenListener({ input: 1500, output: 800, fromApi: true });
     const result = await dispatchMock(...args);
     // Emette il full content come pseudo-chunk unico (per UX continuity in test)
@@ -53,25 +57,37 @@ vi.mock('@/services/llm-resolver.service.js', () => ({
 vi.mock('@/services/ai-scaffold/node-catalog.js', () => ({
   buildNodeCatalog: () => [
     {
-      defId: 'trigger_webhook', type: 'trigger', label: 'Webhook', description: '',
+      defId: 'trigger_webhook',
+      type: 'trigger',
+      label: 'Webhook',
+      description: '',
       fields: [
         { key: 'path', type: 'string', required: true },
         { key: 'method', type: 'select', options: ['GET', 'POST'], required: false },
       ],
     },
     {
-      defId: 'trigger_cron', type: 'trigger', label: 'Cron', description: '',
+      defId: 'trigger_cron',
+      type: 'trigger',
+      label: 'Cron',
+      description: '',
       fields: [{ key: 'cronExpression', type: 'string', required: true }],
     },
     {
-      defId: 'agent_extractor', type: 'agent', label: 'Extractor', description: '',
+      defId: 'agent_extractor',
+      type: 'agent',
+      label: 'Extractor',
+      description: '',
       fields: [
         { key: 'schema', type: 'code', required: true },
         { key: 'model', type: 'string', required: false },
       ],
     },
     {
-      defId: 'action_send_email', type: 'action', label: 'Email', description: '',
+      defId: 'action_send_email',
+      type: 'action',
+      label: 'Email',
+      description: '',
       fields: [
         { key: 'to', type: 'string', required: true },
         { key: 'subject', type: 'string', required: true },
@@ -79,27 +95,56 @@ vi.mock('@/services/ai-scaffold/node-catalog.js', () => ({
       ],
     },
     {
-      defId: 'logic_switch', type: 'logic', label: 'Switch', description: '',
-      fields: [
-        { key: 'expression', type: 'string', required: true },
-      ],
+      defId: 'logic_switch',
+      type: 'logic',
+      label: 'Switch',
+      description: '',
+      fields: [{ key: 'expression', type: 'string', required: true }],
     },
     { defId: 'trigger_manual', type: 'trigger', label: 'Manual', description: '', fields: [] },
     {
-      defId: 'logic_loop', type: 'logic', label: 'Loop', description: '',
-      fields: [{ key: 'itemsExpression', type: 'string', required: true }, { key: 'strategy', type: 'select', options: ['naive', 'batch'], required: false }],
-    },
-    { defId: 'logic_merge', type: 'logic', label: 'Merge', description: '', fields: [{ key: 'strategy', type: 'select', options: ['concat'], required: false }] },
-    {
-      defId: 'action_http', type: 'action', label: 'HTTP', description: '',
-      fields: [{ key: 'url', type: 'string', required: true }, { key: 'method', type: 'select', options: ['GET', 'POST'], required: false }],
-    },
-    {
-      defId: 'action_file_write', type: 'action', label: 'File Write', description: '',
-      fields: [{ key: 'path', type: 'string', required: true }, { key: 'content', type: 'textarea', required: false }, { key: 'mode', type: 'select', options: ['overwrite', 'append'], required: false }],
+      defId: 'logic_loop',
+      type: 'logic',
+      label: 'Loop',
+      description: '',
+      fields: [
+        { key: 'itemsExpression', type: 'string', required: true },
+        { key: 'strategy', type: 'select', options: ['naive', 'batch'], required: false },
+      ],
     },
     {
-      defId: 'db_insert', type: 'action', label: 'DB Insert', description: '',
+      defId: 'logic_merge',
+      type: 'logic',
+      label: 'Merge',
+      description: '',
+      fields: [{ key: 'strategy', type: 'select', options: ['concat'], required: false }],
+    },
+    {
+      defId: 'action_http',
+      type: 'action',
+      label: 'HTTP',
+      description: '',
+      fields: [
+        { key: 'url', type: 'string', required: true },
+        { key: 'method', type: 'select', options: ['GET', 'POST'], required: false },
+      ],
+    },
+    {
+      defId: 'action_file_write',
+      type: 'action',
+      label: 'File Write',
+      description: '',
+      fields: [
+        { key: 'path', type: 'string', required: true },
+        { key: 'content', type: 'textarea', required: false },
+        { key: 'mode', type: 'select', options: ['overwrite', 'append'], required: false },
+      ],
+    },
+    {
+      defId: 'db_insert',
+      type: 'action',
+      label: 'DB Insert',
+      description: '',
       fields: [
         // Tipi REALI del def (packages/engine/nodes/db): db-picker e
         // db-table-picker — servono al test del heal pre-validation (campo
@@ -110,7 +155,10 @@ vi.mock('@/services/ai-scaffold/node-catalog.js', () => ({
       ],
     },
     {
-      defId: 'community_slack', type: 'action', label: 'Slack', description: '',
+      defId: 'community_slack',
+      type: 'action',
+      label: 'Slack',
+      description: '',
       fields: [
         { key: 'botToken', type: 'secret', required: true },
         { key: 'channel', type: 'string', required: true },
@@ -118,7 +166,10 @@ vi.mock('@/services/ai-scaffold/node-catalog.js', () => ({
       ],
     },
     {
-      defId: 'action_run_js', type: 'action', label: 'Run JavaScript', description: '',
+      defId: 'action_run_js',
+      type: 'action',
+      label: 'Run JavaScript',
+      description: '',
       fields: [
         { key: 'code', type: 'code', required: true },
         { key: 'timeoutMs', type: 'number', required: false },
@@ -126,7 +177,10 @@ vi.mock('@/services/ai-scaffold/node-catalog.js', () => ({
       ],
     },
     {
-      defId: 'action_run_python', type: 'action', label: 'Run Python', description: '',
+      defId: 'action_run_python',
+      type: 'action',
+      label: 'Run Python',
+      description: '',
       fields: [
         { key: 'code', type: 'code', required: true },
         { key: 'timeoutMs', type: 'number', required: false },
@@ -142,14 +196,16 @@ vi.mock('@/services/ai-scaffold/node-catalog.js', () => ({
 // ritorna '' per non alterare i prompt degli altri test.
 vi.mock('@/services/ai-scaffold/tenant-context.js', () => ({
   buildTenantContext: () => ({
-    databases: [{
-      id: 'QhktHRtIKHL5aniYhgRvz', // id hash-like reale (≥16, no auto-picker)
-      name: 'Test DB',
-      description: null,
-      tables: ['events'],
-      columns: { events: ['id', 'payload', 'ts'] },
-      writable: true, // DB locale scrivibile → lo heal può ripuntare le scritture qui
-    }],
+    databases: [
+      {
+        id: 'QhktHRtIKHL5aniYhgRvz', // id hash-like reale (≥16, no auto-picker)
+        name: 'Test DB',
+        description: null,
+        tables: ['events'],
+        columns: { events: ['id', 'payload', 'ts'] },
+        writable: true, // DB locale scrivibile → lo heal può ripuntare le scritture qui
+      },
+    ],
     emailAccounts: [],
     defaultLlmProvider: null,
     llmProviders: [],
@@ -174,7 +230,8 @@ vi.mock('@/services/ai-scaffold/template-cache/embedding-client.js', () => ({
 // RAG Fase 2: il prompt riceve il catalogo RETRIEVED. Mockiamo il retrieval
 // con un blocco deterministico così il golden-master del prompt è stabile e
 // indipendente dal ranking (che ha i suoi test in catalog-retrieval/).
-const GOLDEN_CATALOG_TEXT = 'trigger_webhook (trigger): path:string(REQUIRED)\naction_send_email (action): to:string(REQUIRED), subject:string(REQUIRED), body:textarea(REQUIRED)';
+const GOLDEN_CATALOG_TEXT =
+  'trigger_webhook (trigger): path:string(REQUIRED)\naction_send_email (action): to:string(REQUIRED), subject:string(REQUIRED), body:textarea(REQUIRED)';
 vi.mock('@/services/catalog-retrieval/scaffold-catalog.js', () => ({
   // Il singleshot ora prende gli ENTRY del subset (per la grammatica) e li
   // formatta col formatter — il testo del prompt resta identico (equivalenza).
@@ -196,11 +253,20 @@ function makeValidOutput(): string {
   return JSON.stringify({
     name: 'Webhook → Extract → Email',
     description: 'Pipeline test',
-    reasoning: 'Goal: webhook trigger → estrazione AI → email. 3 nodi: trigger_webhook (path POST), agent_extractor (schema entities), action_send_email (to/subject/body).',
+    reasoning:
+      'Goal: webhook trigger → estrazione AI → email. 3 nodi: trigger_webhook (path POST), agent_extractor (schema entities), action_send_email (to/subject/body).',
     nodes: [
       { id: 'wh', defId: 'trigger_webhook', config: { path: '/hook', method: 'POST' } },
-      { id: 'extract', defId: 'agent_extractor', config: { schema: '{"type":"object"}', model: 'qwen3' } },
-      { id: 'send', defId: 'action_send_email', config: { to: '{{$node.extract.json.email}}', subject: 'Ricevuto', body: 'Grazie' } },
+      {
+        id: 'extract',
+        defId: 'agent_extractor',
+        config: { schema: '{"type":"object"}', model: 'qwen3' },
+      },
+      {
+        id: 'send',
+        defId: 'action_send_email',
+        config: { to: '{{$node.extract.json.email}}', subject: 'Ricevuto', body: 'Grazie' },
+      },
     ],
     edges: [
       { from: 'wh', to: 'extract' },
@@ -214,10 +280,19 @@ function makeOutputWithCircularRef(): string {
   return JSON.stringify({
     name: 'Bad workflow',
     description: 'Test circular',
-    reasoning: 'Goal con circular ref intenzionale per testare retry feedback injection del quality gate (deve generare almeno 60 chars reasoning).',
+    reasoning:
+      'Goal con circular ref intenzionale per testare retry feedback injection del quality gate (deve generare almeno 60 chars reasoning).',
     nodes: [
       { id: 'wh', defId: 'trigger_webhook', config: { path: '/x', method: 'POST' } },
-      { id: 'db', defId: 'db_insert', config: { databaseId: 'd43e6f82-b056-4481-8284-8b812f499b77', table: 'logs', rowJson: '{{$node.extract.json}}' } },
+      {
+        id: 'db',
+        defId: 'db_insert',
+        config: {
+          databaseId: 'd43e6f82-b056-4481-8284-8b812f499b77',
+          table: 'logs',
+          rowJson: '{{$node.extract.json}}',
+        },
+      },
       { id: 'extract', defId: 'agent_extractor', config: { schema: '{"type":"object"}' } },
     ],
     edges: [
@@ -233,18 +308,33 @@ function makeOutputWithOrphanMerge(): string {
   return JSON.stringify({
     name: 'Loop fan-in con merge mancante',
     description: 'Test orphan merge heal',
-    reasoning: 'Goal: loop su lista, per item 2 chiamate http parallele, poi unisci e scrivi file. Il merge node è referenziato dagli edge ma volutamente non emesso per testare l\'heal dell\'auto-fix nel merge-back di singleshot.',
+    reasoning:
+      "Goal: loop su lista, per item 2 chiamate http parallele, poi unisci e scrivi file. Il merge node è referenziato dagli edge ma volutamente non emesso per testare l'heal dell'auto-fix nel merge-back di singleshot.",
     nodes: [
       { id: 'trig', defId: 'trigger_manual', config: {} },
-      { id: 'loop', defId: 'logic_loop', config: { itemsExpression: '{{$node.trig.json.items}}', strategy: 'batch' } },
+      {
+        id: 'loop',
+        defId: 'logic_loop',
+        config: { itemsExpression: '{{$node.trig.json.items}}', strategy: 'batch' },
+      },
       { id: 'a', defId: 'action_http', config: { url: 'https://a.test', method: 'GET' } },
       { id: 'b', defId: 'action_http', config: { url: 'https://b.test', method: 'GET' } },
-      { id: 'write', defId: 'action_file_write', config: { path: '/data/out.json', content: '{{$node.merge_loop_1.json}}', mode: 'overwrite' } },
+      {
+        id: 'write',
+        defId: 'action_file_write',
+        config: {
+          path: '/data/out.json',
+          content: '{{$node.merge_loop_1.json}}',
+          mode: 'overwrite',
+        },
+      },
     ],
     edges: [
       { from: 'trig', to: 'loop' },
-      { from: 'loop', to: 'a' }, { from: 'loop', to: 'b' },
-      { from: 'a', to: 'merge_loop_1' }, { from: 'b', to: 'merge_loop_1' }, // merge_loop_1 NON nei nodi
+      { from: 'loop', to: 'a' },
+      { from: 'loop', to: 'b' },
+      { from: 'a', to: 'merge_loop_1' },
+      { from: 'b', to: 'merge_loop_1' }, // merge_loop_1 NON nei nodi
       { from: 'merge_loop_1', to: 'write' },
     ],
   });
@@ -259,11 +349,14 @@ describe('🔒 runSingleshotScaffold — orphan-merge heal end-to-end (bug Sitem
     dispatchMock.mockResolvedValueOnce(makeOutputWithOrphanMerge());
     // Goal SENZA capability speciali (email/chart/db_query) → isola il test
     // sull'orphan-heal, non sul requirement-coverage gate.
-    const result = await runSingleshotScaffold({ tenantId: 'tenant-1', goal: 'Per ogni elemento della lista fai due chiamate HTTP e unisci i risultati su file.' });
+    const result = await runSingleshotScaffold({
+      tenantId: 'tenant-1',
+      goal: 'Per ogni elemento della lista fai due chiamate HTTP e unisci i risultati su file.',
+    });
 
     // Il merge mancante è stato creato (no più "edge orfani" → no save 500).
     const merge = result.workflow.nodes.find((n) => n.id === 'merge_loop_1');
-    expect(merge, 'merge_loop_1 ricreato dall\'auto-fix + sopravvive al merge-back').toBeDefined();
+    expect(merge, "merge_loop_1 ricreato dall'auto-fix + sopravvive al merge-back").toBeDefined();
     expect(merge!.defId).toBe('logic_merge'); // defId REALE, non phantom flow_merge
     // Ogni edge referenzia un nodo esistente (il save non rigetterebbe più).
     const ids = new Set(result.workflow.nodes.map((n) => n.id));
@@ -279,26 +372,34 @@ describe('🔒 runSingleshotScaffold — heal required picker-resolvable OMESSI 
   // support_tickets ma OMETTE databaseId → la validazione 502ava un workflow
   // perfettamente sanabile (lo stesso campo con valore FITTIZIO veniva già
   // sanato dal Layer C). Il fix inietta __USE_PICKER__ nel punto di validazione.
-  const TRIAGE_GOAL = 'Quando arriva un webhook estrai i campi del ticket e salva la riga nel database.';
+  const TRIAGE_GOAL =
+    'Quando arriva un webhook estrai i campi del ticket e salva la riga nel database.';
 
   function makeTriageOutput(dbConfig: Record<string, string>): string {
     return JSON.stringify({
       name: 'Triage ticket',
       description: 'Webhook → extract → db',
-      reasoning: 'Goal: webhook con ticket → estrazione AI dei campi → insert riga nel database tenant. 3 nodi: trigger_webhook, agent_extractor, db_insert con riga JSON dal nodo extract.',
+      reasoning:
+        'Goal: webhook con ticket → estrazione AI dei campi → insert riga nel database tenant. 3 nodi: trigger_webhook, agent_extractor, db_insert con riga JSON dal nodo extract.',
       nodes: [
         { id: 'wh', defId: 'trigger_webhook', config: { path: '/ticket', method: 'POST' } },
         { id: 'extract', defId: 'agent_extractor', config: { schema: '{"type":"object"}' } },
         { id: 'db', defId: 'db_insert', config: dbConfig },
       ],
-      edges: [{ from: 'wh', to: 'extract' }, { from: 'extract', to: 'db' }],
+      edges: [
+        { from: 'wh', to: 'extract' },
+        { from: 'extract', to: 'db' },
+      ],
     });
   }
 
   it('db_insert SENZA databaseId (il caso del video) → NIENTE 502, healed a __USE_PICKER__', async () => {
-    dispatchMock.mockResolvedValueOnce(makeTriageOutput({
-      table: 'events', rowJson: '{{$node.extract.json}}', // databaseId OMESSO
-    }));
+    dispatchMock.mockResolvedValueOnce(
+      makeTriageOutput({
+        table: 'events',
+        rowJson: '{{$node.extract.json}}', // databaseId OMESSO
+      }),
+    );
     const result = await runSingleshotScaffold({ tenantId: 'tenant-1', goal: TRIAGE_GOAL });
     const db = result.workflow.nodes.find((n) => n.id === 'db');
     expect(db, 'nodo db sopravvive alla pipeline').toBeDefined();
@@ -307,35 +408,55 @@ describe('🔒 runSingleshotScaffold — heal required picker-resolvable OMESSI 
   });
 
   it('db_insert SENZA table (type-match db-table-picker, key NON in PICKER_FIELDS_RE) → healed', async () => {
-    dispatchMock.mockResolvedValueOnce(makeTriageOutput({
-      databaseId: 'QhktHRtIKHL5aniYhgRvz', rowJson: '{{$node.extract.json}}', // table OMESSA
-    }));
+    dispatchMock.mockResolvedValueOnce(
+      makeTriageOutput({
+        databaseId: 'QhktHRtIKHL5aniYhgRvz',
+        rowJson: '{{$node.extract.json}}', // table OMESSA
+      }),
+    );
     const result = await runSingleshotScaffold({ tenantId: 'tenant-1', goal: TRIAGE_GOAL });
     const db = result.workflow.nodes.find((n) => n.id === 'db');
     expect(db!.config.table).toBe('__USE_PICKER__');
     // Il guard di heal-db-table NON deve aver trattato il marker come nome
     // tabella (niente tabella letteralmente chiamata "__USE_PICKER__").
-    expect(JSON.stringify(result.workflow.nodes.map((n) => n.config))).not.toContain('"table":"__USE_PICKER__","__healed');
+    expect(JSON.stringify(result.workflow.nodes.map((n) => n.config))).not.toContain(
+      '"table":"__USE_PICKER__","__healed',
+    );
   });
 
   it('required NON picker-resolvable mancante → ANCORA 502, e il messaggio NON cita i campi healed', async () => {
-    dispatchMock.mockResolvedValueOnce(JSON.stringify({
-      name: 'Triage ticket',
-      description: 'Webhook → extract → db',
-      reasoning: 'Goal: webhook con ticket → estrazione AI dei campi → insert riga nel database tenant. Schema extractor volutamente omesso per il test del gate.',
-      nodes: [
-        { id: 'wh', defId: 'trigger_webhook', config: { path: '/ticket', method: 'POST' } },
-        { id: 'extract', defId: 'agent_extractor', config: {} }, // schema mancante: NON healable
-        { id: 'db', defId: 'db_insert', config: { table: 'events', rowJson: '{{$node.extract.json}}' } }, // databaseId mancante: healable
-      ],
-      edges: [{ from: 'wh', to: 'extract' }, { from: 'extract', to: 'db' }],
-    }));
+    dispatchMock.mockResolvedValueOnce(
+      JSON.stringify({
+        name: 'Triage ticket',
+        description: 'Webhook → extract → db',
+        reasoning:
+          'Goal: webhook con ticket → estrazione AI dei campi → insert riga nel database tenant. Schema extractor volutamente omesso per il test del gate.',
+        nodes: [
+          { id: 'wh', defId: 'trigger_webhook', config: { path: '/ticket', method: 'POST' } },
+          { id: 'extract', defId: 'agent_extractor', config: {} }, // schema mancante: NON healable
+          {
+            id: 'db',
+            defId: 'db_insert',
+            config: { table: 'events', rowJson: '{{$node.extract.json}}' },
+          }, // databaseId mancante: healable
+        ],
+        edges: [
+          { from: 'wh', to: 'extract' },
+          { from: 'extract', to: 'db' },
+        ],
+      }),
+    );
     let err: Error | undefined;
-    try { await runSingleshotScaffold({ tenantId: 'tenant-1', goal: TRIAGE_GOAL }); }
-    catch (e) { err = e as Error; }
+    try {
+      await runSingleshotScaffold({ tenantId: 'tenant-1', goal: TRIAGE_GOAL });
+    } catch (e) {
+      err = e as Error;
+    }
     expect(err).toBeInstanceOf(AiScaffoldError);
     expect(err!.message).toMatch(/"schema" mancante/);
-    expect(err!.message, 'databaseId è healable: non deve comparire come errore').not.toMatch(/databaseId/);
+    expect(err!.message, 'databaseId è healable: non deve comparire come errore').not.toMatch(
+      /databaseId/,
+    );
   });
 });
 
@@ -413,7 +534,10 @@ describe('🔒 runSingleshotScaffold — FRESH-GEN: cache write gated dalla qual
 
   it('🚨 fresh-gen con HEAL STRUTTURALE (orphan merge creato) → NO cache save', async () => {
     dispatchMock.mockResolvedValueOnce(makeOutputWithOrphanMerge());
-    const result = await runSingleshotScaffold({ tenantId: 'tenant-1', goal: 'Loop su lista, 2 http parallele per item, unisci e scrivi file.' });
+    const result = await runSingleshotScaffold({
+      tenantId: 'tenant-1',
+      goal: 'Loop su lista, 2 http parallele per item, unisci e scrivi file.',
+    });
     // il workflow è prodotto (heal ok) ma NON deve finire in cache come "template buono"
     expect(result.workflow.nodes.some((n) => n.defId === 'logic_merge')).toBe(true);
     expect(vi.mocked(templateCache.save)).not.toHaveBeenCalled();
@@ -421,133 +545,174 @@ describe('🔒 runSingleshotScaffold — FRESH-GEN: cache write gated dalla qual
 
   it('🚨 fresh-gen RIFIUTATO dal quality-gate (circular ref, retry esauriti) → NO cache save', async () => {
     dispatchMock.mockResolvedValue(makeOutputWithCircularRef());
-    await expect(runSingleshotScaffold({ tenantId: 'tenant-1', goal: VALID_GOAL })).rejects.toThrow();
+    await expect(
+      runSingleshotScaffold({ tenantId: 'tenant-1', goal: VALID_GOAL }),
+    ).rejects.toThrow();
     expect(vi.mocked(templateCache.save)).not.toHaveBeenCalled();
   });
 });
 
 describe('runSingleshotScaffold — input validation', () => {
   it('goal troppo corto (<5 chars) → AiScaffoldError 400', async () => {
-    await expect(runSingleshotScaffold({ tenantId: 't', goal: 'ok' }))
-      .rejects.toMatchObject({ message: /troppo corto/i });
+    await expect(runSingleshotScaffold({ tenantId: 't', goal: 'ok' })).rejects.toMatchObject({
+      message: /troppo corto/i,
+    });
   });
 
   it('goal troppo lungo (>4000 chars) → AiScaffoldError 400', async () => {
-    await expect(runSingleshotScaffold({ tenantId: 't', goal: 'x'.repeat(4001) }))
-      .rejects.toMatchObject({ message: /troppo lungo/i });
+    await expect(
+      runSingleshotScaffold({ tenantId: 't', goal: 'x'.repeat(4001) }),
+    ).rejects.toMatchObject({ message: /troppo lungo/i });
   });
 });
 
 describe('runSingleshotScaffold — output validation', () => {
-  it('JSON malformato dall\'LLM → AiScaffoldError con messaggio Zod', async () => {
+  it("JSON malformato dall'LLM → AiScaffoldError con messaggio Zod", async () => {
     dispatchMock.mockResolvedValueOnce('{ invalid json');
-    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL }))
-      .rejects.toMatchObject({ message: /non conforme/i });
+    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL })).rejects.toMatchObject({
+      message: /non conforme/i,
+    });
   });
 
   it('manca campo "nodes" → AiScaffoldError', async () => {
-    dispatchMock.mockResolvedValueOnce(JSON.stringify({
-      name: 'Test workflow', reasoning: 'r'.repeat(60), edges: [],
-    }));
-    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL }))
-      .rejects.toThrow(AiScaffoldError);
+    dispatchMock.mockResolvedValueOnce(
+      JSON.stringify({
+        name: 'Test workflow',
+        reasoning: 'r'.repeat(60),
+        edges: [],
+      }),
+    );
+    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL })).rejects.toThrow(
+      AiScaffoldError,
+    );
   });
 
   it('< 3 nodi → AiScaffoldError (Zod minItems)', async () => {
-    dispatchMock.mockResolvedValueOnce(JSON.stringify({
-      name: 'Test workflow', reasoning: 'r'.repeat(60),
-      nodes: [{ id: 'a', defId: 'trigger_webhook', config: { path: '/x' } }],
-      edges: [],
-    }));
-    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL }))
-      .rejects.toThrow(AiScaffoldError);
+    dispatchMock.mockResolvedValueOnce(
+      JSON.stringify({
+        name: 'Test workflow',
+        reasoning: 'r'.repeat(60),
+        nodes: [{ id: 'a', defId: 'trigger_webhook', config: { path: '/x' } }],
+        edges: [],
+      }),
+    );
+    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL })).rejects.toThrow(
+      AiScaffoldError,
+    );
   });
 
   it('reasoning < 60 chars → AiScaffoldError', async () => {
-    dispatchMock.mockResolvedValueOnce(JSON.stringify({
-      name: 'Test workflow', reasoning: 'corto',
-      nodes: makeValidNodes(), edges: makeValidEdges(),
-    }));
-    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL }))
-      .rejects.toThrow(AiScaffoldError);
+    dispatchMock.mockResolvedValueOnce(
+      JSON.stringify({
+        name: 'Test workflow',
+        reasoning: 'corto',
+        nodes: makeValidNodes(),
+        edges: makeValidEdges(),
+      }),
+    );
+    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL })).rejects.toThrow(
+      AiScaffoldError,
+    );
   });
 });
 
 describe('runSingleshotScaffold — per-defId config validation', () => {
   it('defId inesistente nel catalog → AiScaffoldError con id specifico', async () => {
-    dispatchMock.mockResolvedValueOnce(JSON.stringify({
-      name: 'Test workflow', reasoning: 'r'.repeat(60),
-      nodes: [
-        { id: 'wh', defId: 'trigger_webhook', config: { path: '/x' } },
-        { id: 'bad', defId: 'GHOST_NODE', config: {} },
-        { id: 'send', defId: 'action_send_email', config: { to: 'a', subject: 's', body: 'b' } },
-      ],
-      edges: [{ from: 'wh', to: 'bad' }, { from: 'bad', to: 'send' }],
-    }));
-    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL }))
-      .rejects.toMatchObject({
-        message: expect.stringMatching(/GHOST_NODE.*non nel catalogo/),
-      });
+    dispatchMock.mockResolvedValueOnce(
+      JSON.stringify({
+        name: 'Test workflow',
+        reasoning: 'r'.repeat(60),
+        nodes: [
+          { id: 'wh', defId: 'trigger_webhook', config: { path: '/x' } },
+          { id: 'bad', defId: 'GHOST_NODE', config: {} },
+          { id: 'send', defId: 'action_send_email', config: { to: 'a', subject: 's', body: 'b' } },
+        ],
+        edges: [
+          { from: 'wh', to: 'bad' },
+          { from: 'bad', to: 'send' },
+        ],
+      }),
+    );
+    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL })).rejects.toMatchObject({
+      message: expect.stringMatching(/GHOST_NODE.*non nel catalogo/),
+    });
   });
 
   it('REQUIRED missing per agent_extractor (schema) → AiScaffoldError enumera campi', async () => {
-    dispatchMock.mockResolvedValueOnce(JSON.stringify({
-      name: 'Test workflow', reasoning: 'r'.repeat(60),
-      nodes: [
-        { id: 'wh', defId: 'trigger_webhook', config: { path: '/x' } },
-        { id: 'ex', defId: 'agent_extractor', config: { model: 'qwen3' /* schema mancante */ } },
-        { id: 'send', defId: 'action_send_email', config: { to: 'a', subject: 's', body: 'b' } },
-      ],
-      edges: [{ from: 'wh', to: 'ex' }, { from: 'ex', to: 'send' }],
-    }));
-    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL }))
-      .rejects.toMatchObject({
-        message: expect.stringMatching(/Nodo ex.*"schema" mancante/),
-      });
+    dispatchMock.mockResolvedValueOnce(
+      JSON.stringify({
+        name: 'Test workflow',
+        reasoning: 'r'.repeat(60),
+        nodes: [
+          { id: 'wh', defId: 'trigger_webhook', config: { path: '/x' } },
+          { id: 'ex', defId: 'agent_extractor', config: { model: 'qwen3' /* schema mancante */ } },
+          { id: 'send', defId: 'action_send_email', config: { to: 'a', subject: 's', body: 'b' } },
+        ],
+        edges: [
+          { from: 'wh', to: 'ex' },
+          { from: 'ex', to: 'send' },
+        ],
+      }),
+    );
+    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL })).rejects.toMatchObject({
+      message: expect.stringMatching(/Nodo ex.*"schema" mancante/),
+    });
   });
 
   it('REQUIRED multipli missing → tutti enumerati', async () => {
-    dispatchMock.mockResolvedValueOnce(JSON.stringify({
-      name: 'Test workflow', reasoning: 'r'.repeat(60),
-      nodes: [
-        { id: 'wh', defId: 'trigger_webhook', config: { path: '/x' } },
-        { id: 'ex', defId: 'agent_extractor', config: { schema: '{}' } },
-        { id: 'send', defId: 'action_send_email', config: { to: 'x' /* subject e body mancanti */ } },
-      ],
-      edges: [{ from: 'wh', to: 'ex' }, { from: 'ex', to: 'send' }],
-    }));
-    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL }))
-      .rejects.toMatchObject({
-        message: expect.stringMatching(/"subject" mancante[\s\S]*"body" mancante/),
-      });
+    dispatchMock.mockResolvedValueOnce(
+      JSON.stringify({
+        name: 'Test workflow',
+        reasoning: 'r'.repeat(60),
+        nodes: [
+          { id: 'wh', defId: 'trigger_webhook', config: { path: '/x' } },
+          { id: 'ex', defId: 'agent_extractor', config: { schema: '{}' } },
+          {
+            id: 'send',
+            defId: 'action_send_email',
+            config: { to: 'x' /* subject e body mancanti */ },
+          },
+        ],
+        edges: [
+          { from: 'wh', to: 'ex' },
+          { from: 'ex', to: 'send' },
+        ],
+      }),
+    );
+    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL })).rejects.toMatchObject({
+      message: expect.stringMatching(/"subject" mancante[\s\S]*"body" mancante/),
+    });
   });
 
   it('edge from inesistente → AiScaffoldError', async () => {
-    dispatchMock.mockResolvedValueOnce(JSON.stringify({
-      name: 'Test workflow', reasoning: 'r'.repeat(60),
-      nodes: makeValidNodes(),
-      edges: [{ from: 'GHOST', to: 'extract' }],
-    }));
-    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL }))
-      .rejects.toMatchObject({
-        message: expect.stringMatching(/Edge from="GHOST"/),
-      });
+    dispatchMock.mockResolvedValueOnce(
+      JSON.stringify({
+        name: 'Test workflow',
+        reasoning: 'r'.repeat(60),
+        nodes: makeValidNodes(),
+        edges: [{ from: 'GHOST', to: 'extract' }],
+      }),
+    );
+    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL })).rejects.toMatchObject({
+      message: expect.stringMatching(/Edge from="GHOST"/),
+    });
   });
 });
 
 describe('runSingleshotScaffold — progress events', () => {
-  it('emette eventi macro-fase nell\'ordine giusto (streaming nodi possono apparire tra generating e validating)', async () => {
+  it("emette eventi macro-fase nell'ordine giusto (streaming nodi possono apparire tra generating e validating)", async () => {
     dispatchMock.mockResolvedValueOnce(makeValidOutput());
     const events: string[] = [];
-    await runSingleshotScaffold(
-      { tenantId: 't', goal: VALID_GOAL },
-      (e) => { events.push(e.type); },
-    );
+    await runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL }, (e) => {
+      events.push(e.type);
+    });
     // BUG FIX 2026-05-31: con streaming vLLM possono apparire eventi
     // node_added/edge_added/meta TRA generating e validating (parser fa
     // emit incrementale man mano che lo stream arriva).
     // Verifichiamo solo le macro-fasi nell'ordine giusto.
-    const macroEvents = events.filter((e) => ['start', 'analyzing', 'generating', 'token_usage', 'validating', 'done'].includes(e));
+    const macroEvents = events.filter((e) =>
+      ['start', 'analyzing', 'generating', 'token_usage', 'validating', 'done'].includes(e),
+    );
     expect(macroEvents).toEqual([
       'start',
       'analyzing',
@@ -561,10 +726,9 @@ describe('runSingleshotScaffold — progress events', () => {
   it('done event include result completo (workflow + iterations + tracerace)', async () => {
     dispatchMock.mockResolvedValueOnce(makeValidOutput());
     let doneResult: { workflow?: { nodes: unknown[] } } | undefined;
-    await runSingleshotScaffold(
-      { tenantId: 't', goal: VALID_GOAL },
-      (e) => { if (e.type === 'done') doneResult = e.result; },
-    );
+    await runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL }, (e) => {
+      if (e.type === 'done') doneResult = e.result;
+    });
     expect(doneResult).toBeDefined();
     expect(doneResult!.workflow!.nodes).toHaveLength(3);
   });
@@ -599,107 +763,153 @@ describe('runSingleshotScaffold — dispatcher integration', () => {
 describe('runSingleshotScaffold — architectural validation (anti-bug 2026-05-31)', () => {
   it('TRIGGER con edge in entrata → AiScaffoldError', async () => {
     // Bug osservato: branch_X → trigger_cron (impossible architecturally).
-    dispatchMock.mockResolvedValueOnce(JSON.stringify({
-      name: 'Bad workflow',
-      reasoning: 'r'.repeat(60),
-      nodes: [
-        { id: 'wh', defId: 'trigger_webhook', config: { path: '/x' } },
-        { id: 'ex', defId: 'agent_extractor', config: { schema: '{}' } },
-        { id: 'cron', defId: 'trigger_cron', config: { cronExpression: '0 9 * * *' } },
-      ],
-      edges: [
-        { from: 'wh', to: 'ex' },
-        { from: 'ex', to: 'cron' }, // ← INVALID: edge va in un trigger
-      ],
-    }));
-    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL }))
-      .rejects.toMatchObject({
-        message: expect.stringMatching(/trigger.*MAI da altri nodi/i),
-      });
+    dispatchMock.mockResolvedValueOnce(
+      JSON.stringify({
+        name: 'Bad workflow',
+        reasoning: 'r'.repeat(60),
+        nodes: [
+          { id: 'wh', defId: 'trigger_webhook', config: { path: '/x' } },
+          { id: 'ex', defId: 'agent_extractor', config: { schema: '{}' } },
+          { id: 'cron', defId: 'trigger_cron', config: { cronExpression: '0 9 * * *' } },
+        ],
+        edges: [
+          { from: 'wh', to: 'ex' },
+          { from: 'ex', to: 'cron' }, // ← INVALID: edge va in un trigger
+        ],
+      }),
+    );
+    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL })).rejects.toMatchObject({
+      message: expect.stringMatching(/trigger.*MAI da altri nodi/i),
+    });
   });
 
   it('Nodo orfano (senza edge in entrata) → AiScaffoldError', async () => {
-    dispatchMock.mockResolvedValueOnce(JSON.stringify({
-      name: 'Bad workflow',
-      reasoning: 'r'.repeat(60),
-      nodes: [
-        { id: 'wh', defId: 'trigger_webhook', config: { path: '/x' } },
-        { id: 'orphan', defId: 'agent_extractor', config: { schema: '{}' } },
-        { id: 'send', defId: 'action_send_email', config: { to: 'a', subject: 's', body: 'b' } },
-      ],
-      edges: [{ from: 'wh', to: 'send' }], // orphan non riceve edge
-    }));
-    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL }))
-      .rejects.toMatchObject({
-        message: expect.stringMatching(/orphan.*orfano/i),
-      });
+    dispatchMock.mockResolvedValueOnce(
+      JSON.stringify({
+        name: 'Bad workflow',
+        reasoning: 'r'.repeat(60),
+        nodes: [
+          { id: 'wh', defId: 'trigger_webhook', config: { path: '/x' } },
+          { id: 'orphan', defId: 'agent_extractor', config: { schema: '{}' } },
+          { id: 'send', defId: 'action_send_email', config: { to: 'a', subject: 's', body: 'b' } },
+        ],
+        edges: [{ from: 'wh', to: 'send' }], // orphan non riceve edge
+      }),
+    );
+    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL })).rejects.toMatchObject({
+      message: expect.stringMatching(/orphan.*orfano/i),
+    });
   });
 
   it('Switch case dichiarato senza edge outgoing fromPort → AiScaffoldError', async () => {
-    dispatchMock.mockResolvedValueOnce(JSON.stringify({
-      name: 'Bad workflow',
-      reasoning: 'r'.repeat(60),
-      nodes: [
-        { id: 'wh', defId: 'trigger_webhook', config: { path: '/x' } },
-        { id: 'sw', defId: 'logic_switch', config: { expression: 'x', cases: [{ case: 'a' }, { case: 'b' }, { case: 'c' }] } },
-        { id: 'dest_a', defId: 'action_send_email', config: { to: 'a', subject: 's', body: 'b' } },
-        { id: 'dest_b', defId: 'action_send_email', config: { to: 'b', subject: 's', body: 'b' } },
-      ],
-      edges: [
-        { from: 'wh', to: 'sw' },
-        { from: 'sw', to: 'dest_a', fromPort: 'a' },
-        { from: 'sw', to: 'dest_b', fromPort: 'b' },
-        // 'c' case dichiarato in config ma niente edge fromPort:'c'
-      ],
-    }));
-    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL }))
-      .rejects.toMatchObject({
-        message: expect.stringMatching(/case "c".*NESSUN edge in uscita/i),
-      });
+    dispatchMock.mockResolvedValueOnce(
+      JSON.stringify({
+        name: 'Bad workflow',
+        reasoning: 'r'.repeat(60),
+        nodes: [
+          { id: 'wh', defId: 'trigger_webhook', config: { path: '/x' } },
+          {
+            id: 'sw',
+            defId: 'logic_switch',
+            config: { expression: 'x', cases: [{ case: 'a' }, { case: 'b' }, { case: 'c' }] },
+          },
+          {
+            id: 'dest_a',
+            defId: 'action_send_email',
+            config: { to: 'a', subject: 's', body: 'b' },
+          },
+          {
+            id: 'dest_b',
+            defId: 'action_send_email',
+            config: { to: 'b', subject: 's', body: 'b' },
+          },
+        ],
+        edges: [
+          { from: 'wh', to: 'sw' },
+          { from: 'sw', to: 'dest_a', fromPort: 'a' },
+          { from: 'sw', to: 'dest_b', fromPort: 'b' },
+          // 'c' case dichiarato in config ma niente edge fromPort:'c'
+        ],
+      }),
+    );
+    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL })).rejects.toMatchObject({
+      message: expect.stringMatching(/case "c".*NESSUN edge in uscita/i),
+    });
   });
 
   it('Switch con 3+ rami tutti su community_slack → AiScaffoldError "anti-pigrizia"', async () => {
     // Bug user-observed: branch fattura/preventivo/contratto tutti verso slack
     // invece di destinazioni diverse.
-    dispatchMock.mockResolvedValueOnce(JSON.stringify({
-      name: 'Bad workflow',
-      reasoning: 'r'.repeat(60),
-      nodes: [
-        { id: 'wh', defId: 'trigger_webhook', config: { path: '/x' } },
-        { id: 'sw', defId: 'logic_switch', config: { expression: 'x', cases: [{ case: 'a' }, { case: 'b' }, { case: 'c' }] } },
-        { id: 'slack_a', defId: 'community_slack', config: { botToken: 'x', channel: '#a', text: 'a' } },
-        { id: 'slack_b', defId: 'community_slack', config: { botToken: 'x', channel: '#b', text: 'b' } },
-        { id: 'slack_c', defId: 'community_slack', config: { botToken: 'x', channel: '#c', text: 'c' } },
-      ],
-      edges: [
-        { from: 'wh', to: 'sw' },
-        { from: 'sw', to: 'slack_a', fromPort: 'a' },
-        { from: 'sw', to: 'slack_b', fromPort: 'b' },
-        { from: 'sw', to: 'slack_c', fromPort: 'c' },
-      ],
-    }));
-    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL }))
-      .rejects.toMatchObject({
-        message: expect.stringMatching(/rami TUTTI verso community_slack/i),
-      });
+    dispatchMock.mockResolvedValueOnce(
+      JSON.stringify({
+        name: 'Bad workflow',
+        reasoning: 'r'.repeat(60),
+        nodes: [
+          { id: 'wh', defId: 'trigger_webhook', config: { path: '/x' } },
+          {
+            id: 'sw',
+            defId: 'logic_switch',
+            config: { expression: 'x', cases: [{ case: 'a' }, { case: 'b' }, { case: 'c' }] },
+          },
+          {
+            id: 'slack_a',
+            defId: 'community_slack',
+            config: { botToken: 'x', channel: '#a', text: 'a' },
+          },
+          {
+            id: 'slack_b',
+            defId: 'community_slack',
+            config: { botToken: 'x', channel: '#b', text: 'b' },
+          },
+          {
+            id: 'slack_c',
+            defId: 'community_slack',
+            config: { botToken: 'x', channel: '#c', text: 'c' },
+          },
+        ],
+        edges: [
+          { from: 'wh', to: 'sw' },
+          { from: 'sw', to: 'slack_a', fromPort: 'a' },
+          { from: 'sw', to: 'slack_b', fromPort: 'b' },
+          { from: 'sw', to: 'slack_c', fromPort: 'c' },
+        ],
+      }),
+    );
+    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL })).rejects.toMatchObject({
+      message: expect.stringMatching(/rami TUTTI verso community_slack/i),
+    });
   });
 
   it('Workflow CORRETTO (1 trigger root + branching diversificato) → PASS', async () => {
-    dispatchMock.mockResolvedValueOnce(JSON.stringify({
-      name: 'Good workflow',
-      reasoning: 'Goal: webhook trigger → extract → branch → 3 destinazioni differenziate.',
-      nodes: [
-        { id: 'wh', defId: 'trigger_webhook', config: { path: '/x' } },
-        { id: 'sw', defId: 'logic_switch', config: { expression: 'x', cases: [{ case: 'a' }, { case: 'b' }] } },
-        { id: 'dest_a', defId: 'action_send_email', config: { to: 'a', subject: 's', body: 'b' } },
-        { id: 'dest_b', defId: 'community_slack', config: { botToken: 'x', channel: '#b', text: 'b' } },
-      ],
-      edges: [
-        { from: 'wh', to: 'sw' },
-        { from: 'sw', to: 'dest_a', fromPort: 'a' },
-        { from: 'sw', to: 'dest_b', fromPort: 'b' },
-      ],
-    }));
+    dispatchMock.mockResolvedValueOnce(
+      JSON.stringify({
+        name: 'Good workflow',
+        reasoning: 'Goal: webhook trigger → extract → branch → 3 destinazioni differenziate.',
+        nodes: [
+          { id: 'wh', defId: 'trigger_webhook', config: { path: '/x' } },
+          {
+            id: 'sw',
+            defId: 'logic_switch',
+            config: { expression: 'x', cases: [{ case: 'a' }, { case: 'b' }] },
+          },
+          {
+            id: 'dest_a',
+            defId: 'action_send_email',
+            config: { to: 'a', subject: 's', body: 'b' },
+          },
+          {
+            id: 'dest_b',
+            defId: 'community_slack',
+            config: { botToken: 'x', channel: '#b', text: 'b' },
+          },
+        ],
+        edges: [
+          { from: 'wh', to: 'sw' },
+          { from: 'sw', to: 'dest_a', fromPort: 'a' },
+          { from: 'sw', to: 'dest_b', fromPort: 'b' },
+        ],
+      }),
+    );
     const r = await runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL });
     expect(r.workflow.nodes).toHaveLength(4);
   });
@@ -722,8 +932,9 @@ describe('runSingleshotScaffold — auto-retry quality gate (2026-05-31)', () =>
       .mockResolvedValueOnce(makeOutputWithCircularRef())
       .mockResolvedValueOnce(makeOutputWithCircularRef())
       .mockResolvedValueOnce(makeOutputWithCircularRef());
-    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL }))
-      .rejects.toThrow(/quality gate/);
+    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL })).rejects.toThrow(
+      /quality gate/,
+    );
     expect(dispatchMock).toHaveBeenCalledTimes(3); // 1 + 2 retry
   });
 
@@ -741,20 +952,26 @@ describe('runSingleshotScaffold — auto-retry quality gate (2026-05-31)', () =>
 
   it('error NON-quality-gate (es. LLM 502) → NESSUN retry (early throw)', async () => {
     dispatchMock.mockRejectedValueOnce(new Error('Liara 502 upstream'));
-    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL }))
-      .rejects.toThrow(/502 upstream|single-shot fallito/);
+    await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL })).rejects.toThrow(
+      /502 upstream|single-shot fallito/,
+    );
     expect(dispatchMock).toHaveBeenCalledTimes(1); // no retry su LLM error
   });
 });
 
 describe('runSingleshotScaffold — code-node language heal end-to-end (bug user 2026-06-09)', () => {
-  const SEND = { id: 'send', defId: 'action_send_email', config: { to: '{{$node.action_1.json.email}}', subject: 'ok', body: 'fatto' } };
+  const SEND = {
+    id: 'send',
+    defId: 'action_send_email',
+    config: { to: '{{$node.action_1.json.email}}', subject: 'ok', body: 'fatto' },
+  };
 
   it('LLM genera action_run_js con codice Python → auto-fix lo corregge a action_run_python (no throw)', async () => {
     const pythonInJs = JSON.stringify({
       name: 'Crea Node Code',
       description: 'flow code',
-      reasoning: 'Goal: creare un nodo che esegue codice. Trigger webhook + un nodo code + notifica. Il codice generato usa import/json.loads/print, quindi è Python.',
+      reasoning:
+        'Goal: creare un nodo che esegue codice. Trigger webhook + un nodo code + notifica. Il codice generato usa import/json.loads/print, quindi è Python.',
       nodes: [
         { id: 'wh', defId: 'trigger_webhook', config: { path: '/c', method: 'POST' } },
         {
@@ -765,15 +982,23 @@ describe('runSingleshotScaffold — code-node language heal end-to-end (bug user
             // (import/os.environ/print/len) senza sequenze che incespicano il
             // parser di stream (è un dettaglio del mock, non del SUT).
             code: "import os\ndata = os.environ.get('MEDEA_INPUT')\nprint('count', len(data))",
-            timeoutMs: '30000', parseStdoutJson: 'true', allowNetwork: 'false',
+            timeoutMs: '30000',
+            parseStdoutJson: 'true',
+            allowNetwork: 'false',
           },
         },
         { ...SEND, config: { ...SEND.config, to: '{{$node.action_1.json.count}}' } },
       ],
-      edges: [{ from: 'wh', to: 'action_1' }, { from: 'action_1', to: 'send' }],
+      edges: [
+        { from: 'wh', to: 'action_1' },
+        { from: 'action_1', to: 'send' },
+      ],
     });
     dispatchMock.mockResolvedValueOnce(pythonInJs);
-    const r = await runSingleshotScaffold({ tenantId: 't', goal: 'creami un nodo code che processa input e notifica' });
+    const r = await runSingleshotScaffold({
+      tenantId: 't',
+      goal: 'creami un nodo code che processa input e notifica',
+    });
     const codeNode = r.workflow.nodes.find((n) => n.id === 'action_1');
     expect(codeNode).toBeDefined();
     // Auto-heal: il defId DEVE essere stato corretto a Python.
@@ -786,22 +1011,37 @@ describe('runSingleshotScaffold — code-node language heal end-to-end (bug user
     const validJs = JSON.stringify({
       name: 'JS ok',
       description: 'flow',
-      reasoning: 'Goal: trasformazione dati custom in JavaScript con const/return, va lasciato come action_run_js senza modifiche di sorta qui, più una notifica finale.',
+      reasoning:
+        'Goal: trasformazione dati custom in JavaScript con const/return, va lasciato come action_run_js senza modifiche di sorta qui, più una notifica finale.',
       nodes: [
         { id: 'wh', defId: 'trigger_webhook', config: { path: '/c', method: 'POST' } },
-        { id: 'action_1', defId: 'action_run_js', config: { code: 'const n = (input.items || []).length;\nreturn { n };' } },
+        {
+          id: 'action_1',
+          defId: 'action_run_js',
+          config: { code: 'const n = (input.items || []).length;\nreturn { n };' },
+        },
         { ...SEND, config: { ...SEND.config, to: '{{$node.action_1.json.n}}' } },
       ],
-      edges: [{ from: 'wh', to: 'action_1' }, { from: 'action_1', to: 'send' }],
+      edges: [
+        { from: 'wh', to: 'action_1' },
+        { from: 'action_1', to: 'send' },
+      ],
     });
     dispatchMock.mockResolvedValueOnce(validJs);
-    const r = await runSingleshotScaffold({ tenantId: 't', goal: 'trasforma i dati con codice js e notifica' });
+    const r = await runSingleshotScaffold({
+      tenantId: 't',
+      goal: 'trasforma i dati con codice js e notifica',
+    });
     expect(r.workflow.nodes.find((n) => n.id === 'action_1')!.defId).toBe('action_run_js');
   });
 });
 
 describe('runSingleshotScaffold — DB column validation end-to-end (bug user 2026-06-09)', () => {
-  const SEND = { id: 'send', defId: 'action_send_email', config: { to: '{{$node.wh.json.email}}', subject: 'ok', body: 'fatto' } };
+  const SEND = {
+    id: 'send',
+    defId: 'action_send_email',
+    config: { to: '{{$node.wh.json.email}}', subject: 'ok', body: 'fatto' },
+  };
 
   it('db_insert con colonne inesistenti → rigettato dal gate (colonne arrivano dal tenant-context)', async () => {
     // rowJson referenzia "code"/"created_at": NON esistono nella tabella
@@ -810,28 +1050,36 @@ describe('runSingleshotScaffold — DB column validation end-to-end (bug user 20
     const badInsert = JSON.stringify({
       name: 'Bad insert',
       description: 'flow',
-      reasoning: 'Goal con db_insert su colonne sbagliate, serve almeno sessanta caratteri di reasoning per superare la soglia minima del validatore server.',
+      reasoning:
+        'Goal con db_insert su colonne sbagliate, serve almeno sessanta caratteri di reasoning per superare la soglia minima del validatore server.',
       nodes: [
         { id: 'wh', defId: 'trigger_webhook', config: { path: '/c', method: 'POST' } },
         {
           id: 'ins',
           defId: 'db_insert',
           config: {
-            databaseId: 'QhktHRtIKHL5aniYhgRvz', table: 'events',
+            databaseId: 'QhktHRtIKHL5aniYhgRvz',
+            table: 'events',
             rowJson: '{"code":"x","created_at":"{{$now}}"}',
           },
         },
         SEND,
       ],
-      edges: [{ from: 'wh', to: 'ins' }, { from: 'ins', to: 'send' }],
+      edges: [
+        { from: 'wh', to: 'ins' },
+        { from: 'ins', to: 'send' },
+      ],
     });
     // NUOVO comportamento (2026-06-11): l'auto-heal DB-table RIPARA invece di
     // rigettare. db_insert su "events" (id/payload/ts) con colonne code/created_at
     // → nessuna tabella esistente matcha → CREA una tabella dedicata + ripunta.
     dispatchMock.mockResolvedValue(badInsert);
-    const r = await runSingleshotScaffold({ tenantId: 't', goal: 'inserisci nel db gli eventi ricevuti e notifica' });
+    const r = await runSingleshotScaffold({
+      tenantId: 't',
+      goal: 'inserisci nel db gli eventi ricevuti e notifica',
+    });
     const ins = r.workflow.nodes.find((n) => n.id === 'ins')!;
-    expect((ins.config as { table?: string }).table).not.toBe('events');   // ripuntato
+    expect((ins.config as { table?: string }).table).not.toBe('events'); // ripuntato
     expect(r.tablesToCreate?.some((t) => t.columns.some((c) => c.name === 'code'))).toBe(true); // tabella creata con le colonne
     expect(dispatchMock).toHaveBeenCalledTimes(1); // heal al primo colpo, no retry
   });
@@ -840,23 +1088,32 @@ describe('runSingleshotScaffold — DB column validation end-to-end (bug user 20
     const goodInsert = JSON.stringify({
       name: 'Good insert',
       description: 'flow',
-      reasoning: 'Goal con db_insert su colonne valide della tabella events, reasoning sufficientemente lungo per superare la soglia minima del validatore server interno.',
+      reasoning:
+        'Goal con db_insert su colonne valide della tabella events, reasoning sufficientemente lungo per superare la soglia minima del validatore server interno.',
       nodes: [
         { id: 'wh', defId: 'trigger_webhook', config: { path: '/c', method: 'POST' } },
         {
           id: 'ins',
           defId: 'db_insert',
           config: {
-            databaseId: 'QhktHRtIKHL5aniYhgRvz', table: 'events',
-            rowJson: '{"id":"{{$node.wh.json.id}}","payload":"{{$node.wh.json.body}}","ts":"{{$now}}"}',
+            databaseId: 'QhktHRtIKHL5aniYhgRvz',
+            table: 'events',
+            rowJson:
+              '{"id":"{{$node.wh.json.id}}","payload":"{{$node.wh.json.body}}","ts":"{{$now}}"}',
           },
         },
         SEND,
       ],
-      edges: [{ from: 'wh', to: 'ins' }, { from: 'ins', to: 'send' }],
+      edges: [
+        { from: 'wh', to: 'ins' },
+        { from: 'ins', to: 'send' },
+      ],
     });
     dispatchMock.mockResolvedValueOnce(goodInsert);
-    const r = await runSingleshotScaffold({ tenantId: 't', goal: 'inserisci nel db gli eventi ricevuti e notifica' });
+    const r = await runSingleshotScaffold({
+      tenantId: 't',
+      goal: 'inserisci nel db gli eventi ricevuti e notifica',
+    });
     expect(r.workflow.nodes.find((n) => n.id === 'ins')).toBeDefined();
     expect(dispatchMock).toHaveBeenCalledTimes(1);
   });
@@ -871,7 +1128,10 @@ function makeValidNodes() {
   ];
 }
 function makeValidEdges() {
-  return [{ from: 'wh', to: 'extract' }, { from: 'extract', to: 'send' }];
+  return [
+    { from: 'wh', to: 'extract' },
+    { from: 'extract', to: 'send' },
+  ];
 }
 
 // ─── GOLDEN-MASTER / CHARACTERIZATION (pre-split, anti-downgrade) ───
@@ -879,12 +1139,26 @@ function makeValidEdges() {
 // chiave. Se lo split di singleshot cambia anche un byte (un nodo, un edge, una
 // nota, un config), questo test URLA. È la rete di sicurezza del refactor:
 // "nessuna feature deve subire downgrade". Il timing (Xms/Xs) è normalizzato.
-function snap(r: { workflow: { nodes: { id: string; defId: string; x?: number; y?: number; config: unknown }[]; edges: { from: string; to: string }[] }; modelUsed?: string; iterations?: number; notes: string[] }) {
+function snap(r: {
+  workflow: {
+    nodes: { id: string; defId: string; x?: number; y?: number; config: unknown }[];
+    edges: { from: string; to: string }[];
+  };
+  modelUsed?: string;
+  iterations?: number;
+  notes: string[];
+}) {
   return {
     // x/y inclusi: coprono il posizionamento di build-canonical (split #6).
-    nodes: r.workflow.nodes.map((n) => ({ id: n.id, defId: n.defId, x: n.x, y: n.y, config: n.config })),
+    nodes: r.workflow.nodes.map((n) => ({
+      id: n.id,
+      defId: n.defId,
+      x: n.x,
+      y: n.y,
+      config: n.config,
+    })),
     edges: r.workflow.edges.map((e) => ({ from: e.from, to: e.to })),
-    modelUsed: r.modelUsed,   // build-canonical: provider/model+guided_json (o template-cache)
+    modelUsed: r.modelUsed, // build-canonical: provider/model+guided_json (o template-cache)
     iterations: r.iterations, // build-canonical
     notes: r.notes.map((n) => n.replace(/\d+\.\d+s/g, 'N.Ns').replace(/\d+ms/g, 'Nms')),
   };
@@ -892,10 +1166,17 @@ function snap(r: { workflow: { nodes: { id: string; defId: string; x?: number; y
 describe('🔒🔒 CHARACTERIZATION golden-master (pre-split singleshot — anti-downgrade)', () => {
   it('PASS-THROUGH: workflow valido esce identico (3 nodi, 2 edge)', async () => {
     dispatchMock.mockResolvedValue(makeValidOutput());
-    const r = await runSingleshotScaffold({ tenantId: 't', goal: 'Quando arriva un webhook estrai dati e logga.' });
+    const r = await runSingleshotScaffold({
+      tenantId: 't',
+      goal: 'Quando arriva un webhook estrai dati e logga.',
+    });
     const s = snap(r as never);
     // invarianti chiave (leggibili) + golden completo (lock totale)
-    expect(s.nodes.map((n) => n.defId)).toEqual(['trigger_webhook', 'agent_extractor', 'action_send_email']);
+    expect(s.nodes.map((n) => n.defId)).toEqual([
+      'trigger_webhook',
+      'agent_extractor',
+      'action_send_email',
+    ]);
     expect(s.edges).toHaveLength(2);
     expect(s).toMatchInlineSnapshot(`
       {
@@ -958,12 +1239,17 @@ describe('🔒🔒 CHARACTERIZATION golden-master (pre-split singleshot — anti
 
   it('STRUCTURAL HEAL: merge orfano ricreato (logic_merge) + ZERO edge orfani', async () => {
     dispatchMock.mockResolvedValue(makeOutputWithOrphanMerge());
-    const r = await runSingleshotScaffold({ tenantId: 't', goal: 'Per ogni elemento fai due http e unisci su file.' });
+    const r = await runSingleshotScaffold({
+      tenantId: 't',
+      goal: 'Per ogni elemento fai due http e unisci su file.',
+    });
     const s = snap(r as never);
     const merge = s.nodes.find((n) => n.defId === 'logic_merge');
     expect(merge, 'merge ricreato').toBeDefined();
     const ids = new Set(s.nodes.map((n) => n.id));
-    for (const e of s.edges) { expect(ids.has(e.from) && ids.has(e.to), `edge ${e.from}->${e.to} non orfano`).toBe(true); }
+    for (const e of s.edges) {
+      expect(ids.has(e.from) && ids.has(e.to), `edge ${e.from}->${e.to} non orfano`).toBe(true);
+    }
     expect(s).toMatchInlineSnapshot(`
       {
         "edges": [
@@ -1070,7 +1356,10 @@ describe('🔒🔒 CHARACTERIZATION golden-master (pre-split singleshot — anti
 
   it('PROMPT golden: system + user prompt passati alla LLM (protegge il move di prompt.ts — il mock ignora il prompt, quindi serve QUESTO)', async () => {
     dispatchMock.mockResolvedValue(makeValidOutput());
-    await runSingleshotScaffold({ tenantId: 't', goal: 'Manda una email quando arriva un webhook.' });
+    await runSingleshotScaffold({
+      tenantId: 't',
+      goal: 'Manda una email quando arriva un webhook.',
+    });
     const call = dispatchMock.mock.calls[0]!;
     const systemPrompt = call[3] as string;
     const userPrompt = call[4] as string;
@@ -1262,11 +1551,17 @@ describe('🔒🔒 CHARACTERIZATION golden-master (pre-split singleshot — anti
 
   it('COVERAGE INJECT: grafico richiesto ma assente → action_generate_chart iniettato + cablato', async () => {
     dispatchMock.mockResolvedValue(makeValidOutput());
-    const r = await runSingleshotScaffold({ tenantId: 't', goal: 'Quando arriva un webhook, estrai dati e mandami un grafico storico via email.' });
+    const r = await runSingleshotScaffold({
+      tenantId: 't',
+      goal: 'Quando arriva un webhook, estrai dati e mandami un grafico storico via email.',
+    });
     const s = snap(r as never);
     const chart = s.nodes.find((n) => n.defId === 'action_generate_chart');
     expect(chart, 'chart iniettato').toBeDefined();
-    expect(s.edges.some((e) => e.to === chart!.id), 'chart cablato a valle').toBe(true);
+    expect(
+      s.edges.some((e) => e.to === chart!.id),
+      'chart cablato a valle',
+    ).toBe(true);
     expect(s).toMatchInlineSnapshot(`
       {
         "edges": [
@@ -1348,34 +1643,80 @@ describe('🔒🔒 CHARACTERIZATION golden-master (pre-split singleshot — anti
 
 // ─── SAFETY NET cache-hit (pre-split #5: il path cache è UNTESTATO, i goldens non
 //     lo coprono perché mockano la LLM. Questi unit dedicati lo blindano). ───
-function makeTemplateRow(workflowJson: string): Parameters<typeof templateCache.save>[0] extends never ? never : {
-  id: string; promptText: string; promptTokens: string[]; graphSignature: string; graphDefIds: string[];
-  workflowJson: string; name: string; language: string; embedding: number[] | null; importedCount: number;
-  successCount: number; failCount: number; lastUsedAt: string; createdAt: string; sharedWithCommunity: boolean;
-} {
+function makeTemplateRow(workflowJson: string): Parameters<
+  typeof templateCache.save
+>[0] extends never
+  ? never
+  : {
+      id: string;
+      promptText: string;
+      promptTokens: string[];
+      graphSignature: string;
+      graphDefIds: string[];
+      workflowJson: string;
+      name: string;
+      language: string;
+      embedding: number[] | null;
+      importedCount: number;
+      successCount: number;
+      failCount: number;
+      lastUsedAt: string;
+      createdAt: string;
+      sharedWithCommunity: boolean;
+    } {
   return {
-    id: 'cached-1', promptText: 'webhook estrai email', promptTokens: ['webhook'], graphSignature: 'sig',
-    graphDefIds: ['trigger_webhook'], workflowJson, name: 'Template Cachato', language: 'it',
-    embedding: [0.1], importedCount: 7, successCount: 5, failCount: 0,
-    lastUsedAt: '2026-06-01T00:00:00.000Z', createdAt: '2026-06-01T00:00:00.000Z', sharedWithCommunity: false,
+    id: 'cached-1',
+    promptText: 'webhook estrai email',
+    promptTokens: ['webhook'],
+    graphSignature: 'sig',
+    graphDefIds: ['trigger_webhook'],
+    workflowJson,
+    name: 'Template Cachato',
+    language: 'it',
+    embedding: [0.1],
+    importedCount: 7,
+    successCount: 5,
+    failCount: 0,
+    lastUsedAt: '2026-06-01T00:00:00.000Z',
+    createdAt: '2026-06-01T00:00:00.000Z',
+    sharedWithCommunity: false,
   };
 }
-const WF_META = { nodeDefs: [], createdAt: '2026-06-01T00:00:00.000Z', updatedAt: '2026-06-01T00:00:00.000Z' };
+const WF_META = {
+  nodeDefs: [],
+  createdAt: '2026-06-01T00:00:00.000Z',
+  updatedAt: '2026-06-01T00:00:00.000Z',
+};
 const CLEAN_CACHED_WF = JSON.stringify({
-  schemaVersion: '1.0.0', id: 'wf_cached', name: 'Cached', enabled: false, ...WF_META,
+  schemaVersion: '1.0.0',
+  id: 'wf_cached',
+  name: 'Cached',
+  enabled: false,
+  ...WF_META,
   nodes: [
     { id: 'wh', defId: 'trigger_webhook', x: 0, y: 200, config: { path: '/hook', method: 'POST' } },
     { id: 'ex', defId: 'agent_extractor', x: 220, y: 200, config: { schema: '{"type":"object"}' } },
-    { id: 'send', defId: 'action_send_email', x: 440, y: 200, config: { to: 'x@y.it', subject: 'S', body: '{{$node.ex.json.text}}' } },
+    {
+      id: 'send',
+      defId: 'action_send_email',
+      x: 440,
+      y: 200,
+      config: { to: 'x@y.it', subject: 'S', body: '{{$node.ex.json.text}}' },
+    },
   ],
-  edges: [{ from: 'wh', to: 'ex' }, { from: 'ex', to: 'send' }],
+  edges: [
+    { from: 'wh', to: 'ex' },
+    { from: 'ex', to: 'send' },
+  ],
 });
 
 describe('🔒 cache-hit SAFETY NET (pre-split #5)', () => {
   it('use_direct con workflow PULITO → servito dalla CACHE (no LLM call)', async () => {
     vi.mocked(templateCache.retrieve).mockReturnValueOnce({
-      template: makeTemplateRow(CLEAN_CACHED_WF), score: 0.95,
-      signals: { graphOverlap: 0.9, promptJaccard: 0.8, successRate: 0.9, cosine: 0.95 }, action: 'use_direct',
+      template: makeTemplateRow(CLEAN_CACHED_WF),
+      score: 0.95,
+      signals: { graphOverlap: 0.9, promptJaccard: 0.8, successRate: 0.9, cosine: 0.95 },
+      action: 'use_direct',
     } as never);
     const r = await runSingleshotScaffold({ tenantId: 't', goal: 'webhook estrai email e invia' });
     expect(r.modelUsed).toContain('template-cache');
@@ -1385,18 +1726,51 @@ describe('🔒 cache-hit SAFETY NET (pre-split #5)', () => {
 
   it('use_direct con workflow ROTTO (reachability fail) → EVICT + fallback a generazione', async () => {
     const brokenWf = JSON.stringify({
-      schemaVersion: '1.0.0', id: 'wf_broken', name: 'Broken', enabled: false, ...WF_META,
+      schemaVersion: '1.0.0',
+      id: 'wf_broken',
+      name: 'Broken',
+      enabled: false,
+      ...WF_META,
       nodes: [
-        { id: 'wh', defId: 'trigger_webhook', x: 0, y: 200, config: { path: '/h', method: 'POST' } },
-        { id: 'ex', defId: 'agent_extractor', x: 220, y: 200, config: { schema: '{"type":"object"}' } },
-        { id: 'send', defId: 'action_send_email', x: 440, y: 200, config: { to: 'a@b.it', subject: 'S', body: '{{$node.ghost.json}}' } },
-        { id: 'ghost', defId: 'action_http', x: 0, y: 400, config: { url: 'https://x.com', method: 'GET' } },
+        {
+          id: 'wh',
+          defId: 'trigger_webhook',
+          x: 0,
+          y: 200,
+          config: { path: '/h', method: 'POST' },
+        },
+        {
+          id: 'ex',
+          defId: 'agent_extractor',
+          x: 220,
+          y: 200,
+          config: { schema: '{"type":"object"}' },
+        },
+        {
+          id: 'send',
+          defId: 'action_send_email',
+          x: 440,
+          y: 200,
+          config: { to: 'a@b.it', subject: 'S', body: '{{$node.ghost.json}}' },
+        },
+        {
+          id: 'ghost',
+          defId: 'action_http',
+          x: 0,
+          y: 400,
+          config: { url: 'https://x.com', method: 'GET' },
+        },
       ],
-      edges: [{ from: 'wh', to: 'ex' }, { from: 'ex', to: 'send' }], // ghost scollegato, send lo referenzia
+      edges: [
+        { from: 'wh', to: 'ex' },
+        { from: 'ex', to: 'send' },
+      ], // ghost scollegato, send lo referenzia
     });
     vi.mocked(templateCache.retrieve).mockReturnValueOnce({
-      template: makeTemplateRow(brokenWf), score: 0.95,
-      signals: { graphOverlap: 0.9, promptJaccard: 0.8, successRate: 0.9, cosine: 0.95 }, action: 'use_direct',
+      template: makeTemplateRow(brokenWf),
+      score: 0.95,
+      signals: { graphOverlap: 0.9, promptJaccard: 0.8, successRate: 0.9, cosine: 0.95 },
+      action: 'use_direct',
     } as never);
     dispatchMock.mockResolvedValue(makeValidOutput());
     const r = await runSingleshotScaffold({ tenantId: 't', goal: 'webhook estrai email e invia' });

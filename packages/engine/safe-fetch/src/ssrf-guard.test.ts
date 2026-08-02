@@ -13,7 +13,13 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { validateUrlForFetch, validateIpForFetch, assertUrlSafe, SsrfBlockedError, normalizeObfuscatedIPv4 } from './ssrf-guard.js';
+import {
+  validateUrlForFetch,
+  validateIpForFetch,
+  assertUrlSafe,
+  SsrfBlockedError,
+  normalizeObfuscatedIPv4,
+} from './ssrf-guard.js';
 
 describe('🚨 SSRF — IPv4 OFFUSCATI (decimale/hex/ottale) normalizzati e bloccati', () => {
   // Senza host-normalization, isIP ritorna 0 → isPrivateIPv4 mai chiamato → bypass del
@@ -29,7 +35,9 @@ describe('🚨 SSRF — IPv4 OFFUSCATI (decimale/hex/ottale) normalizzati e bloc
   ])('blocca %s (%s)', (url) => {
     const r = validateUrlForFetch(url);
     expect(r.ok).toBe(false);
-    expect(r.reason).toMatch(/BLOCKED_PRIVATE_IP|BLOCKED_LOOPBACK|BLOCKED_LINK_LOCAL|BLOCKED_RESERVED/);
+    expect(r.reason).toMatch(
+      /BLOCKED_PRIVATE_IP|BLOCKED_LOOPBACK|BLOCKED_LINK_LOCAL|BLOCKED_RESERVED/,
+    );
   });
 
   it('anti-regressione: un IP PUBBLICO offuscato NON viene falsamente bloccato', () => {
@@ -75,11 +83,11 @@ describe('validateUrlForFetch — IPv4 RFC1918 + loopback + link-local', () => {
     ['http://192.168.1.1', 'BLOCKED_PRIVATE_IP'],
     ['http://127.0.0.1', 'BLOCKED_LOOPBACK'],
     ['http://127.255.255.255', 'BLOCKED_LOOPBACK'],
-    ['http://169.254.169.254', 'BLOCKED_LINK_LOCAL'],   // AWS IMDS
+    ['http://169.254.169.254', 'BLOCKED_LINK_LOCAL'], // AWS IMDS
     ['http://0.0.0.0', 'BLOCKED_RESERVED'],
-    ['http://100.64.0.1', 'BLOCKED_PRIVATE_IP'],        // CGN RFC 6598 (shared address space — usato come privato)
-    ['http://224.0.0.1', 'BLOCKED_RESERVED'],           // multicast
-    ['http://240.0.0.1', 'BLOCKED_RESERVED'],           // reserved
+    ['http://100.64.0.1', 'BLOCKED_PRIVATE_IP'], // CGN RFC 6598 (shared address space — usato come privato)
+    ['http://224.0.0.1', 'BLOCKED_RESERVED'], // multicast
+    ['http://240.0.0.1', 'BLOCKED_RESERVED'], // reserved
   ])('blocks %s as %s', (url, reason) => {
     const r = validateUrlForFetch(url);
     expect(r.ok).toBe(false);
@@ -161,7 +169,7 @@ describe('validateUrlForFetch — IPv6', () => {
   });
 
   it('🚨 NAT64 verso IMDS/loopback → bloccato', () => {
-    expect(validateIpForFetch('64:ff9b::7f00:1').ok).toBe(false);   // 127.0.0.1
+    expect(validateIpForFetch('64:ff9b::7f00:1').ok).toBe(false); // 127.0.0.1
     expect(validateIpForFetch('64:ff9b::a9fe:a9fe').ok).toBe(false); // 169.254.169.254
   });
 
@@ -172,10 +180,10 @@ describe('validateUrlForFetch — IPv6', () => {
 
   it('🚨🚨 NAT64/mapped in forma ESPANSA (non `::`) → comunque bloccato (form-agnostic)', () => {
     // Il guard non deve dipendere dalla forma testuale: espande gli hextet e matcha /96.
-    expect(validateIpForFetch('64:ff9b:0:0:0:0:a00:1').ok).toBe(false);       // NAT64 10.0.0.1 espanso
-    expect(validateIpForFetch('64:ff9b:0:0:0:0:7f00:1').ok).toBe(false);      // NAT64 127.0.0.1 espanso
-    expect(validateIpForFetch('0:0:0:0:0:ffff:7f00:1').ok).toBe(false);       // ::ffff:127.0.0.1 espanso
-    expect(validateIpForFetch('64:ff9b:0:0:0:0:10.0.0.1').ok).toBe(false);    // NAT64 dotted espanso
+    expect(validateIpForFetch('64:ff9b:0:0:0:0:a00:1').ok).toBe(false); // NAT64 10.0.0.1 espanso
+    expect(validateIpForFetch('64:ff9b:0:0:0:0:7f00:1').ok).toBe(false); // NAT64 127.0.0.1 espanso
+    expect(validateIpForFetch('0:0:0:0:0:ffff:7f00:1').ok).toBe(false); // ::ffff:127.0.0.1 espanso
+    expect(validateIpForFetch('64:ff9b:0:0:0:0:10.0.0.1').ok).toBe(false); // NAT64 dotted espanso
   });
 
   it('🚨 NAT64 espanso verso IPv4 pubblico → consentito', () => {
@@ -267,7 +275,7 @@ describe('validateIpForFetch — IP risolto (difesa DNS-rebinding)', () => {
     ['172.16.3.4', 'BLOCKED_PRIVATE_IP'],
     ['192.168.1.10', 'BLOCKED_PRIVATE_IP'],
     ['169.254.169.254', 'BLOCKED_LINK_LOCAL'], // cloud metadata IMDS
-    ['100.64.0.1', 'BLOCKED_PRIVATE_IP'],      // CGNAT RFC6598
+    ['100.64.0.1', 'BLOCKED_PRIVATE_IP'], // CGNAT RFC6598
     ['0.0.0.0', 'BLOCKED_RESERVED'],
   ])('blocca IPv4 interno %s con reason %s', (ip, reason) => {
     const r = validateIpForFetch(ip);
@@ -311,8 +319,10 @@ describe('validateIpForFetch — IP risolto (difesa DNS-rebinding)', () => {
 });
 
 describe('allowedHosts — esenzione host:porta fidati (gateway interno di sistema)', () => {
-  it('🚨 esenta l\'IP privato per host:porta ESATTO (gateway interno 172.20.0.1:3006)', () => {
-    const r = validateUrlForFetch('http://172.20.0.1:3006/v1/chat/completions', { allowedHosts: ['172.20.0.1:3006'] });
+  it("🚨 esenta l'IP privato per host:porta ESATTO (gateway interno 172.20.0.1:3006)", () => {
+    const r = validateUrlForFetch('http://172.20.0.1:3006/v1/chat/completions', {
+      allowedHosts: ['172.20.0.1:3006'],
+    });
     expect(r.ok).toBe(true);
   });
 
@@ -323,7 +333,9 @@ describe('allowedHosts — esenzione host:porta fidati (gateway interno di siste
   });
 
   it('🚨 MUTATION: allowedHosts NON apre un IP privato DIVERSO (porta diversa → bloccato)', () => {
-    const r = validateUrlForFetch('http://172.20.0.1:9999/x', { allowedHosts: ['172.20.0.1:3006'] });
+    const r = validateUrlForFetch('http://172.20.0.1:9999/x', {
+      allowedHosts: ['172.20.0.1:3006'],
+    });
     expect(r.ok).toBe(false);
     expect(r.reason).toBe('BLOCKED_PRIVATE_IP');
   });
@@ -334,7 +346,9 @@ describe('allowedHosts — esenzione host:porta fidati (gateway interno di siste
   });
 
   it('🚨 allowedHosts NON bypassa il blocco scheme (gopher:// bloccato anche se host in lista)', () => {
-    const r = validateUrlForFetch('gopher://172.20.0.1:3006/x', { allowedHosts: ['172.20.0.1:3006'] });
+    const r = validateUrlForFetch('gopher://172.20.0.1:3006/x', {
+      allowedHosts: ['172.20.0.1:3006'],
+    });
     expect(r.ok).toBe(false);
     expect(r.reason).toBe('BLOCKED_SCHEME'); // lo scheme è validato PRIMA dell'esenzione host
   });
@@ -346,16 +360,28 @@ describe('allowedHosts — esenzione host:porta fidati (gateway interno di siste
 
 describe('allowedHosts — esenta anche loopback (runtime interno 127.0.0.1:3100, ollama localhost)', () => {
   it('🚨 127.0.0.1:3100 (runtime interno) esente con allowedHosts (allowDockerNet NON bastava)', () => {
-    expect(validateUrlForFetch('http://127.0.0.1:3100/api/v1/vector/x/search', { allowedHosts: ['127.0.0.1:3100'] }).ok).toBe(true);
+    expect(
+      validateUrlForFetch('http://127.0.0.1:3100/api/v1/vector/x/search', {
+        allowedHosts: ['127.0.0.1:3100'],
+      }).ok,
+    ).toBe(true);
   });
   it('🚨 localhost:11434 (ollama) esente con allowedHosts', () => {
-    expect(validateUrlForFetch('http://localhost:11434/api/embeddings', { allowedHosts: ['localhost:11434'] }).ok).toBe(true);
+    expect(
+      validateUrlForFetch('http://localhost:11434/api/embeddings', {
+        allowedHosts: ['localhost:11434'],
+      }).ok,
+    ).toBe(true);
   });
   it('🚨 MUTATION: allowDockerNet da solo NON esenta il loopback (perché serviva allowedHosts)', () => {
     expect(validateUrlForFetch('http://127.0.0.1:3100/x', { allowDockerNet: true }).ok).toBe(false);
-    expect(validateUrlForFetch('http://localhost:11434/x', { allowDockerNet: true }).ok).toBe(false);
+    expect(validateUrlForFetch('http://localhost:11434/x', { allowDockerNet: true }).ok).toBe(
+      false,
+    );
   });
   it('🚨 MUTATION: loopback NON in lista → ancora bloccato', () => {
-    expect(validateUrlForFetch('http://127.0.0.1:9999/x', { allowedHosts: ['127.0.0.1:3100'] }).ok).toBe(false);
+    expect(
+      validateUrlForFetch('http://127.0.0.1:9999/x', { allowedHosts: ['127.0.0.1:3100'] }).ok,
+    ).toBe(false);
   });
 });

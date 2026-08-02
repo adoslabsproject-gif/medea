@@ -18,7 +18,13 @@ beforeEach(() => {
 
 describe('WorkflowCommentsService', () => {
   it('add estrae @mentions + persiste + ritorna il commento', () => {
-    const c = svc.add({ workflowId: 'wf1', nodeId: 'n1', userId: 'u1', userName: 'marco@x.it', body: 'ehi @ada vedi qui' });
+    const c = svc.add({
+      workflowId: 'wf1',
+      nodeId: 'n1',
+      userId: 'u1',
+      userName: 'marco@x.it',
+      body: 'ehi @ada vedi qui',
+    });
     expect(c.mentions).toEqual(['ada']);
     expect(c.resolved).toBe(false);
     expect(c.nodeId).toBe('n1');
@@ -35,14 +41,26 @@ describe('WorkflowCommentsService', () => {
 
   it('countsByNode conta solo i non risolti, per nodo', () => {
     svc.add({ workflowId: 'wf1', nodeId: 'n1', userId: 'u1', userName: 'a', body: 'c1' });
-    const c2 = svc.add({ workflowId: 'wf1', nodeId: 'n1', userId: 'u1', userName: 'a', body: 'c2' });
+    const c2 = svc.add({
+      workflowId: 'wf1',
+      nodeId: 'n1',
+      userId: 'u1',
+      userName: 'a',
+      body: 'c2',
+    });
     svc.add({ workflowId: 'wf1', nodeId: 'n2', userId: 'u1', userName: 'a', body: 'c3' });
     svc.setResolved(c2.id, true, 'wf1');
     expect(svc.countsByNode('wf1')).toEqual({ n1: 1, n2: 1 });
   });
 
   it('remove solo del proprietario + workflow_id check', () => {
-    const c = svc.add({ workflowId: 'wf1', nodeId: 'n1', userId: 'marco', userName: 'm', body: 'x' });
+    const c = svc.add({
+      workflowId: 'wf1',
+      nodeId: 'n1',
+      userId: 'marco',
+      userName: 'm',
+      body: 'x',
+    });
     expect(svc.remove(c.id, 'ada', 'wf1')).toBe(false); // non suo
     expect(svc.list('wf1')).toHaveLength(1);
     expect(svc.remove(c.id, 'marco', 'wf1')).toBe(true);
@@ -77,7 +95,13 @@ describe('WorkflowCommentsService', () => {
    * remove richiede ora workflow_id come defense-in-depth (collisione id).
    */
   it('🚨 [REGRESSION H3] remove con workflow_id sbagliato → ritorna false', () => {
-    const c = svc.add({ workflowId: 'wf1', nodeId: 'n1', userId: 'marco', userName: 'm', body: 'x' });
+    const c = svc.add({
+      workflowId: 'wf1',
+      nodeId: 'n1',
+      userId: 'marco',
+      userName: 'm',
+      body: 'x',
+    });
     expect(svc.remove(c.id, 'marco', 'wf-OTHER')).toBe(false);
     expect(svc.list('wf1')).toHaveLength(1);
     expect(svc.remove(c.id, 'marco', 'wf1')).toBe(true);

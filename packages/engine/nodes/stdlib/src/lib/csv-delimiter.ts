@@ -35,7 +35,10 @@ export function detectDelimiter(text: string): CsvDelimiter {
   let bestCount = 0;
   for (const cand of CANDIDATES) {
     const n = countOutsideQuotes(sample, cand);
-    if (n > bestCount) { bestCount = n; best = cand; }
+    if (n > bestCount) {
+      bestCount = n;
+      best = cand;
+    }
   }
   return best;
 }

@@ -4,11 +4,14 @@ import { z } from 'zod';
  * Coerce common truthy strings ("1", "true", "yes", "on") to boolean true.
  * Used by env-var booleans so admins can write any of those without surprises.
  */
-const truthyString = z.string().optional().transform((v) => {
-  if (!v) return false;
-  const norm = v.toLowerCase().trim();
-  return norm === '1' || norm === 'true' || norm === 'yes' || norm === 'on';
-});
+const truthyString = z
+  .string()
+  .optional()
+  .transform((v) => {
+    if (!v) return false;
+    const norm = v.toLowerCase().trim();
+    return norm === '1' || norm === 'true' || norm === 'yes' || norm === 'on';
+  });
 
 const ConfigSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -123,7 +126,9 @@ export function loadConfig(): Config {
   if (cachedConfig) return cachedConfig;
   const parsed = ConfigSchema.safeParse(process.env);
   if (!parsed.success) {
-    const issues = parsed.error.issues.map((issue) => `  - ${issue.path.join('.')}: ${issue.message}`).join('\n');
+    const issues = parsed.error.issues
+      .map((issue) => `  - ${issue.path.join('.')}: ${issue.message}`)
+      .join('\n');
     throw new Error(`Invalid configuration:\n${issues}`);
   }
   cachedConfig = parsed.data;

@@ -14,21 +14,21 @@ FlowForge design system — TypeScript-typed primitives backed by a single sourc
 ```ts
 import { SURFACE_LEVELS, type ButtonVariant, surfaceBg, fgText } from '@medea/engine-ui-kit';
 
-SURFACE_LEVELS;          // ['base', 'raised', 'subtle', 'hover', 'overlay']
-surfaceBg('raised');     // 'bg-surface-raised'
-fgText('muted');         // 'text-fg-muted'
+SURFACE_LEVELS; // ['base', 'raised', 'subtle', 'hover', 'overlay']
+surfaceBg('raised'); // 'bg-surface-raised'
+fgText('muted'); // 'text-fg-muted'
 ```
 
-| Namespace | Levels | Tailwind class examples |
-|---|---|---|
-| `surface` | base / raised / subtle / hover / overlay | `bg-surface-raised`, `bg-surface/50` |
-| `line` | subtle / default / strong | `border-line`, `border-line-strong` |
-| `fg` | default / muted / subtle / inverse / on-accent | `text-fg`, `text-fg-muted` |
-| `accent` | default / soft / strong | `bg-accent`, `text-accent-soft` |
-| `success` | default / soft / strong | `bg-success/15`, `text-success-soft` |
-| `danger` | default / soft / strong | `bg-danger/10`, `text-danger` |
-| `warning` | default / soft / strong | `bg-warning`, `text-warning-soft` |
-| `info` | default / soft / strong | `bg-info`, `text-info-soft` |
+| Namespace | Levels                                         | Tailwind class examples              |
+| --------- | ---------------------------------------------- | ------------------------------------ |
+| `surface` | base / raised / subtle / hover / overlay       | `bg-surface-raised`, `bg-surface/50` |
+| `line`    | subtle / default / strong                      | `border-line`, `border-line-strong`  |
+| `fg`      | default / muted / subtle / inverse / on-accent | `text-fg`, `text-fg-muted`           |
+| `accent`  | default / soft / strong                        | `bg-accent`, `text-accent-soft`      |
+| `success` | default / soft / strong                        | `bg-success/15`, `text-success-soft` |
+| `danger`  | default / soft / strong                        | `bg-danger/10`, `text-danger`        |
+| `warning` | default / soft / strong                        | `bg-warning`, `text-warning-soft`    |
+| `info`    | default / soft / strong                        | `bg-info`, `text-info-soft`          |
 
 ## Components
 

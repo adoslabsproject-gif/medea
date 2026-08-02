@@ -30,7 +30,12 @@ vi.mock('@/lib/logger.js');
 import { createOAuthConnectRoutes } from './oauth-connect.js';
 import type { AuthContext } from '@/middleware/auth.js';
 
-const AUTH: AuthContext = { userId: 'u1', tenantId: 'tenant-1', email: 'u1@test.dev', role: 'owner' };
+const AUTH: AuthContext = {
+  userId: 'u1',
+  tenantId: 'tenant-1',
+  email: 'u1@test.dev',
+  role: 'owner',
+};
 
 function app(auth: AuthContext | null = null): Hono {
   const a = new Hono();
@@ -69,7 +74,7 @@ describe('GET /providers', () => {
 });
 
 describe('POST /start', () => {
-  it('400 su body invalido (provider fuori enum) — gate zod prima dell\'auth', async () => {
+  it("400 su body invalido (provider fuori enum) — gate zod prima dell'auth", async () => {
     const res = await app(AUTH).request('/start', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -87,8 +92,10 @@ describe('POST /start', () => {
     expect(res.status).toBe(401);
   });
 
-  it('ritorna authorizeUrl e costruisce redirect_uri dall\'origin della request', async () => {
-    svcMock.start.mockReturnValue({ authorizeUrl: 'https://accounts.google.com/o/oauth2/auth?x=1' });
+  it("ritorna authorizeUrl e costruisce redirect_uri dall'origin della request", async () => {
+    svcMock.start.mockReturnValue({
+      authorizeUrl: 'https://accounts.google.com/o/oauth2/auth?x=1',
+    });
     const res = await app(AUTH).request('http://host.test/start', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -110,7 +117,9 @@ describe('GET /callback — anti-XSS riflesso', () => {
   });
 
   it('SECURITY: il parametro `error` riflesso è escapato (no script grezzo)', async () => {
-    const res = await app().request('/callback?error=' + encodeURIComponent('<script>alert(1)</script>'));
+    const res = await app().request(
+      '/callback?error=' + encodeURIComponent('<script>alert(1)</script>'),
+    );
     const html = await res.text();
     expect(html).not.toContain('<script>alert(1)');
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');

@@ -90,21 +90,34 @@ describe('NodeDefSchema — community triggers (FEAT community-trigger runtime)'
     // sopravvivono al parse.
     expect(parsed.triggers).toBeDefined();
     expect(parsed.triggers).toHaveLength(1);
-    expect(parsed.triggers?.[0]).toMatchObject({ id: 'new_order', mode: 'polling', pollIntervalSec: 30 });
+    expect(parsed.triggers?.[0]).toMatchObject({
+      id: 'new_order',
+      mode: 'polling',
+      pollIntervalSec: 30,
+    });
   });
 
   it('rifiuta un mode non valido', () => {
-    const r = NodeDefSchema.safeParse({ ...base, triggers: [{ id: 'x', label: 'X', mode: 'webhook' }] });
+    const r = NodeDefSchema.safeParse({
+      ...base,
+      triggers: [{ id: 'x', label: 'X', mode: 'webhook' }],
+    });
     expect(r.success).toBe(false);
   });
 
   it('rifiuta un trigger id malformato', () => {
-    const r = NodeDefSchema.safeParse({ ...base, triggers: [{ id: 'bad id!', label: 'X', mode: 'polling' }] });
+    const r = NodeDefSchema.safeParse({
+      ...base,
+      triggers: [{ id: 'bad id!', label: 'X', mode: 'polling' }],
+    });
     expect(r.success).toBe(false);
   });
 
   it('rifiuta pollIntervalSec non intero positivo', () => {
-    const r = NodeDefSchema.safeParse({ ...base, triggers: [{ id: 'x', label: 'X', mode: 'polling', pollIntervalSec: -5 }] });
+    const r = NodeDefSchema.safeParse({
+      ...base,
+      triggers: [{ id: 'x', label: 'X', mode: 'polling', pollIntervalSec: -5 }],
+    });
     expect(r.success).toBe(false);
   });
 

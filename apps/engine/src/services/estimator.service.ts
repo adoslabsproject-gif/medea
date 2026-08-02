@@ -147,7 +147,9 @@ export class EstimatorService {
       }
 
       const declaredStrategy = String(node.config.strategy ?? 'naive');
-      const bodyEdges = (outgoing.get(node.id) ?? []).filter((e) => e.fromPort === 'body' || e.fromPort === undefined);
+      const bodyEdges = (outgoing.get(node.id) ?? []).filter(
+        (e) => e.fromPort === 'body' || e.fromPort === undefined,
+      );
       const bodyNodeIds = reachableFrom(bodyEdges.map((e) => e.to));
 
       // Per-iteration cost + latency from body NodeDefs
@@ -163,12 +165,14 @@ export class EstimatorService {
         if (!def) continue;
         if (def.bulk?.supports === true) hasBulkCapable = true;
         if (def.cost?.costPerCall !== undefined) perIterationCost += def.cost.costPerCall;
-        if (def.cost?.typicalLatencyMs !== undefined) perIterationLatency += def.cost.typicalLatencyMs;
+        if (def.cost?.typicalLatencyMs !== undefined)
+          perIterationLatency += def.cost.typicalLatencyMs;
         const rl = def.cost?.rateLimit;
         if (rl?.reqPerMin !== undefined) {
-          mostRestrictiveRate = mostRestrictiveRate === undefined
-            ? rl.reqPerMin
-            : Math.min(mostRestrictiveRate, rl.reqPerMin);
+          mostRestrictiveRate =
+            mostRestrictiveRate === undefined
+              ? rl.reqPerMin
+              : Math.min(mostRestrictiveRate, rl.reqPerMin);
         }
       }
 
@@ -203,9 +207,10 @@ export class EstimatorService {
 
       // Rate limit pressure check
       if (mostRestrictiveRate !== undefined && declaredStrategy === 'naive') {
-        const expectedRunMinutes = perIterationLatency > 0
-          ? (iterationCount * perIterationLatency) / 60_000
-          : Math.max(1, iterationCount / 60); // assume 1 req/sec
+        const expectedRunMinutes =
+          perIterationLatency > 0
+            ? (iterationCount * perIterationLatency) / 60_000
+            : Math.max(1, iterationCount / 60); // assume 1 req/sec
         const expectedReqPerMin = iterationCount / Math.max(1, expectedRunMinutes);
         if (expectedReqPerMin > mostRestrictiveRate) {
           warnings.push(
@@ -218,7 +223,9 @@ export class EstimatorService {
         warnings.push('itemsExpression evaluates to an empty array — loop will not run');
       }
       if (countSource === 'fallback') {
-        warnings.push(`Iteration count is an estimate (${String(fallbackCount)}) — provide sample input for accurate forecasting`);
+        warnings.push(
+          `Iteration count is an estimate (${String(fallbackCount)}) — provide sample input for accurate forecasting`,
+        );
       }
 
       const totalLoopCost = perIterationCost * iterationCount;

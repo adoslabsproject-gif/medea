@@ -47,7 +47,9 @@ describe('🚨 ws-handler — endpoint path pattern', () => {
   it('path match check (regex semantica del handler)', () => {
     const pathStartsWith = (url: string, prefix: string): boolean => url.startsWith(prefix);
     expect(pathStartsWith('/api/v1/custom-nodes/lsp', '/api/v1/custom-nodes/lsp')).toBe(true);
-    expect(pathStartsWith('/api/v1/custom-nodes/lsp?token=x', '/api/v1/custom-nodes/lsp')).toBe(true);
+    expect(pathStartsWith('/api/v1/custom-nodes/lsp?token=x', '/api/v1/custom-nodes/lsp')).toBe(
+      true,
+    );
     expect(pathStartsWith('/api/v1/custom-nodes', '/api/v1/custom-nodes/lsp')).toBe(false);
     expect(pathStartsWith('/api/v1/lsp', '/api/v1/custom-nodes/lsp')).toBe(false);
   });
@@ -87,13 +89,15 @@ describe('🚨 ws-handler — JSON-RPC method dispatching', () => {
   });
 
   it('🚨 update con file invalido → throw', () => {
-    expect(() => dispatch('update', { file: '../../etc/passwd', content: 'x' }))
-      .toThrow(/invalid update params/);
+    expect(() => dispatch('update', { file: '../../etc/passwd', content: 'x' })).toThrow(
+      /invalid update params/,
+    );
   });
 
   it('🚨 update con content non-string → throw', () => {
-    expect(() => dispatch('update', { file: 'executor', content: 123 }))
-      .toThrow(/typeof content=number/);
+    expect(() => dispatch('update', { file: 'executor', content: 123 })).toThrow(
+      /typeof content=number/,
+    );
   });
 
   it('🚨 completion: invalid file → throw', () => {

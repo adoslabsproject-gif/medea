@@ -125,7 +125,9 @@ describe('🚨 initOtel — happy path', () => {
   it('🚨 SDK options: spanProcessors include solo scrubbing (NO batch direct)', async () => {
     const { initOtel } = await loadFresh();
     initOtel();
-    const firstCall = NodeSDKMock.mock.calls[0] as unknown as readonly [unknown, ...unknown[]] | undefined;
+    const firstCall = NodeSDKMock.mock.calls[0] as unknown as
+      | readonly [unknown, ...unknown[]]
+      | undefined;
     if (!firstCall) throw new Error('NodeSDK constructor not invoked');
     const sdkOpts = firstCall[0] as { spanProcessors: unknown[] };
     expect(sdkOpts.spanProcessors).toHaveLength(1);
@@ -215,7 +217,9 @@ describe('🚨 initOtel — fail-safe boot', () => {
   });
 
   it('🚨 sdk.start() throw → log warn + sdk = null (no crash)', async () => {
-    sdkStartMock.mockImplementationOnce(() => { throw new Error('OTLP unreachable'); });
+    sdkStartMock.mockImplementationOnce(() => {
+      throw new Error('OTLP unreachable');
+    });
     const { initOtel, shutdownOtel } = await loadFresh();
     expect(() => initOtel()).not.toThrow();
     expect(loggerMock.warn).toHaveBeenCalledWith(
@@ -230,14 +234,18 @@ describe('🚨 initOtel — fail-safe boot', () => {
   });
 
   it('🚨 NodeSDK constructor throw → log warn + sdk = null', async () => {
-    NodeSDKMock.mockImplementationOnce(() => { throw new Error('config invalid'); });
+    NodeSDKMock.mockImplementationOnce(() => {
+      throw new Error('config invalid');
+    });
     const { initOtel } = await loadFresh();
     expect(() => initOtel()).not.toThrow();
     expect(loggerMock.warn).toHaveBeenCalled();
   });
 
   it('🚨 non-Error throw → coerced a String safely', async () => {
-    sdkStartMock.mockImplementationOnce(() => { throw 'string-not-Error'; });
+    sdkStartMock.mockImplementationOnce(() => {
+      throw 'string-not-Error';
+    });
     const { initOtel } = await loadFresh();
     expect(() => initOtel()).not.toThrow();
     expect(loggerMock.warn).toHaveBeenCalledWith(

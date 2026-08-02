@@ -109,11 +109,19 @@ export async function reportPortalTokenUsage(
     const res = await internalAwareFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Internal-Token': getOutboundPortalToken() },
-      body: JSON.stringify({ tokensIn: Math.trunc(usage.tokensIn), tokensOut: Math.trunc(usage.tokensOut), calls: 1, source: usage.source }),
+      body: JSON.stringify({
+        tokensIn: Math.trunc(usage.tokensIn),
+        tokensOut: Math.trunc(usage.tokensOut),
+        calls: 1,
+        source: usage.source,
+      }),
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!res.ok) {
-      logger.warn({ status: res.status, workspaceId, source: usage.source }, '[PORTAL_QUOTA] increment non-200');
+      logger.warn(
+        { status: res.status, workspaceId, source: usage.source },
+        '[PORTAL_QUOTA] increment non-200',
+      );
     }
   } catch (err) {
     logger.warn(

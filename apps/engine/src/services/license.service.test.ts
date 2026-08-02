@@ -154,7 +154,9 @@ describe('🚨 install — verify + upsert', () => {
   it('🚨 senza pubkey → throw esplicito (no silent install)', async () => {
     process.env.NODE_ENV = 'production';
     const { LicenseService } = await loadFresh();
-    await expect(new LicenseService().install('default', 'token')).rejects.toThrow(/PUBLIC_KEY non configurato/u);
+    await expect(new LicenseService().install('default', 'token')).rejects.toThrow(
+      /PUBLIC_KEY non configurato/u,
+    );
   });
 
   it('🚨 token verification failed → throw con reason', async () => {
@@ -162,7 +164,9 @@ describe('🚨 install — verify + upsert', () => {
     process.env.MEDEA_LICENSE_PUBLIC_KEY = 'k';
     validateLicenseMock.mockResolvedValueOnce({ valid: false, reason: 'tampered signature' });
     const { LicenseService } = await loadFresh();
-    await expect(new LicenseService().install('default', 'fake-token')).rejects.toThrow(/Licenza non valida.*tampered/u);
+    await expect(new LicenseService().install('default', 'fake-token')).rejects.toThrow(
+      /Licenza non valida.*tampered/u,
+    );
   });
 
   it('🚨 happy: insert + ritorna getStatus', async () => {
@@ -177,7 +181,9 @@ describe('🚨 install — verify + upsert', () => {
     const status = await svc.install('default', 'valid-token');
     expect(status.tier).toBe('starter');
     expect(status.valid).toBe(true);
-    const row = sqlite.prepare('SELECT * FROM flowforge_license WHERE tenant_id=?').get('default') as any;
+    const row = sqlite
+      .prepare('SELECT * FROM flowforge_license WHERE tenant_id=?')
+      .get('default') as any;
     expect(row.token).toBe('valid-token');
   });
 
@@ -192,7 +198,9 @@ describe('🚨 install — verify + upsert', () => {
     const svc = new LicenseService();
     await svc.install('default', 'token-v1');
     await svc.install('default', 'token-v2');
-    const rows = sqlite.prepare('SELECT * FROM flowforge_license WHERE tenant_id=?').all('default') as any[];
+    const rows = sqlite
+      .prepare('SELECT * FROM flowforge_license WHERE tenant_id=?')
+      .all('default') as any[];
     expect(rows.length).toBe(1);
     expect(rows[0].token).toBe('token-v2');
   });
@@ -219,7 +227,9 @@ describe('🚨 remove', () => {
     const svc = new LicenseService();
     sqlite.exec(`INSERT INTO flowforge_license VALUES ('t1', 'tok', 'now')`);
     expect(svc.remove('t1')).toBe(true);
-    expect(sqlite.prepare('SELECT * FROM flowforge_license WHERE tenant_id=?').get('t1')).toBeUndefined();
+    expect(
+      sqlite.prepare('SELECT * FROM flowforge_license WHERE tenant_id=?').get('t1'),
+    ).toBeUndefined();
   });
 
   it('🚨 row assente → false', async () => {

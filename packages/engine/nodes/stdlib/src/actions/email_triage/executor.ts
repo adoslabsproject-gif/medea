@@ -66,7 +66,7 @@ function resolveInput(input: unknown, path: string): RawEmail {
   if (cur === null || cur === undefined || typeof cur !== 'object' || Array.isArray(cur)) {
     throw new ValidationError(
       `EMAIL_TRIAGE_NO_INPUT: expected an email object at input.${path || '(root)'} — ` +
-      `pass the IMAP / SMTP receive node output`,
+        `pass the IMAP / SMTP receive node output`,
     );
   }
   return cur;

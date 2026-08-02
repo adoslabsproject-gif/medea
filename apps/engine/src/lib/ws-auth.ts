@@ -27,7 +27,11 @@ export function readCookie(cookieHeader: string | undefined, name: string): stri
     if (trimmed.startsWith(`${name}=`)) {
       const raw = trimmed.slice(name.length + 1);
       if (!raw) return null;
-      try { return decodeURIComponent(raw); } catch { return raw; }
+      try {
+        return decodeURIComponent(raw);
+      } catch {
+        return raw;
+      }
     }
   }
   return null;
@@ -38,7 +42,9 @@ export function readCookie(cookieHeader: string | undefined, name: string): stri
  * Priorità: cookie HttpOnly (`__Host-ff_session` → `ff_session`) poi `?token=`.
  * Ritorna null se nessuna fonte è presente.
  */
-export function extractWsSessionToken(request: Pick<IncomingMessage, 'headers' | 'url'>): string | null {
+export function extractWsSessionToken(
+  request: Pick<IncomingMessage, 'headers' | 'url'>,
+): string | null {
   const cookieHeader = request.headers.cookie;
   for (const name of SESSION_COOKIE_NAMES) {
     const fromCookie = readCookie(cookieHeader, name);
@@ -48,6 +54,8 @@ export function extractWsSessionToken(request: Pick<IncomingMessage, 'headers' |
     const url = new URL(request.url ?? '/', 'http://localhost');
     const q = url.searchParams.get('token');
     if (q) return q;
-  } catch { /* URL malformata → nessun token query */ }
+  } catch {
+    /* URL malformata → nessun token query */
+  }
   return null;
 }

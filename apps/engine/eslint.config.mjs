@@ -32,8 +32,11 @@ export default [
     // mocks dentro __tests__/__testkit__/__mocks__) — stessa categoria di
     // codice-di-test, stessi idiomi (stub async-by-interface, mock con any).
     files: [
-      '**/*.test.ts', '**/*.test.tsx',
-      '**/__tests__/**/*.{ts,tsx}', '**/__testkit__/**/*.{ts,tsx}', '**/__mocks__/**/*.{ts,tsx}',
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      '**/__tests__/**/*.{ts,tsx}',
+      '**/__testkit__/**/*.{ts,tsx}',
+      '**/__mocks__/**/*.{ts,tsx}',
     ],
     rules: {
       '@typescript-eslint/no-non-null-assertion': 'off',

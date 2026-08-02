@@ -10,7 +10,10 @@ import { CircuitBreaker, CircuitBreakerRegistry } from '@medea/engine-shared';
 import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { resolveBinaryValue, type BinaryData } from '@medea/engine-core-schema';
 import { SystemEmailAccountsService } from '@/services/system-email-accounts.service.js';
-import { EmailDeliverabilityService, type DeliverabilityReport } from '@/services/email-deliverability.service.js';
+import {
+  EmailDeliverabilityService,
+  type DeliverabilityReport,
+} from '@/services/email-deliverability.service.js';
 import { logger } from '@/lib/logger.js';
 
 const systemEmailAccounts = new SystemEmailAccountsService();
@@ -26,7 +29,10 @@ const DELIVERABILITY_CACHE_TTL_MS = 60 * 60_000;
 const DELIVERABILITY_CACHE_MAX = 200;
 const deliverabilityCache = new Map<string, { ts: number; report: DeliverabilityReport }>();
 
-async function getDeliverabilityCached(fromAddress: string, smtpHost: string | undefined): Promise<DeliverabilityReport> {
+async function getDeliverabilityCached(
+  fromAddress: string,
+  smtpHost: string | undefined,
+): Promise<DeliverabilityReport> {
   const now = Date.now();
   const cached = deliverabilityCache.get(fromAddress);
   if (cached && now - cached.ts < DELIVERABILITY_CACHE_TTL_MS) return cached.report;
@@ -60,7 +66,11 @@ function asString(v: unknown): string {
   return typeof v === 'string' ? v : '';
 }
 
-async function parseAttachments(raw: unknown, readBinary?: RefReader, inline = false): Promise<SendMailOptions['attachments']> {
+async function parseAttachments(
+  raw: unknown,
+  readBinary?: RefReader,
+  inline = false,
+): Promise<SendMailOptions['attachments']> {
   if (typeof raw !== 'string' || raw.trim() === '') return undefined;
   let parsed: Attachment[];
   try {
@@ -68,30 +78,32 @@ async function parseAttachments(raw: unknown, readBinary?: RefReader, inline = f
   } catch {
     throw new Error('action_send_email: attachments JSON is not valid');
   }
-  return Promise.all(parsed.map(async (a) => {
-    const att: NonNullable<SendMailOptions['attachments']>[number] = {
-      filename: a.filename ?? a.name ?? 'attachment',
-    };
-    if (a.contentType) att.contentType = a.contentType;
-    // GAP 2 — PRECEDENZA ESATTA (come nel codice qui sotto):
-    //   binary (handle, PRIMARIO) > path (file su disco) > base64 (inline legacy) > url
-    // L'handle BinaryData vince: resolveBinaryValue risolve i byte (trasparente:
-    // ref su disco o inline). In pratica un allegato usa UNA sola fonte.
-    const binBytes = await resolveBinaryValue(a, readBinary);
-    if (binBytes) att.content = binBytes;
-    // `path`/`url` → SOLO URL http(s) validati SSRF (mai un path su filesystem: LFI →
-    // allegare /app/.env esfiltrerebbe i segreti del container). Vedi safeAttachmentPath.
-    else if (a.path) att.path = safeAttachmentPath(a.path);
-    else if (a.base64) att.content = Buffer.from(a.base64, 'base64');
-    else if (a.url) att.path = safeAttachmentPath(a.url);
-    if (inline) {
-      // Content-ID for inline images. Default to the filename when not set
-      // so <img src="cid:logo.png"> works without extra config.
-      att.cid = a.cid ?? a.filename ?? a.name ?? 'inline';
-      att.contentDisposition = 'inline';
-    }
-    return att;
-  }));
+  return Promise.all(
+    parsed.map(async (a) => {
+      const att: NonNullable<SendMailOptions['attachments']>[number] = {
+        filename: a.filename ?? a.name ?? 'attachment',
+      };
+      if (a.contentType) att.contentType = a.contentType;
+      // GAP 2 — PRECEDENZA ESATTA (come nel codice qui sotto):
+      //   binary (handle, PRIMARIO) > path (file su disco) > base64 (inline legacy) > url
+      // L'handle BinaryData vince: resolveBinaryValue risolve i byte (trasparente:
+      // ref su disco o inline). In pratica un allegato usa UNA sola fonte.
+      const binBytes = await resolveBinaryValue(a, readBinary);
+      if (binBytes) att.content = binBytes;
+      // `path`/`url` → SOLO URL http(s) validati SSRF (mai un path su filesystem: LFI →
+      // allegare /app/.env esfiltrerebbe i segreti del container). Vedi safeAttachmentPath.
+      else if (a.path) att.path = safeAttachmentPath(a.path);
+      else if (a.base64) att.content = Buffer.from(a.base64, 'base64');
+      else if (a.url) att.path = safeAttachmentPath(a.url);
+      if (inline) {
+        // Content-ID for inline images. Default to the filename when not set
+        // so <img src="cid:logo.png"> works without extra config.
+        att.cid = a.cid ?? a.filename ?? a.name ?? 'inline';
+        att.contentDisposition = 'inline';
+      }
+      return att;
+    }),
+  );
 }
 
 /** Nome header valido = token RFC 5322 semplificato (lettere/cifre/trattino). */
@@ -152,7 +164,9 @@ export const sendEmailExecutor: NodeExecutor = async (config, _input, context) =
       // explicit: send-time refresh failure → throw with the email upfront.
       const tokens = systemEmailAccounts.resolveOAuthForExecutor(context.tenantId, systemAccountId);
       if (!tokens) {
-        throw new Error(`account ${systemAccountId} marked authType=oauth2 but tokens missing — re-link via Settings`);
+        throw new Error(
+          `account ${systemAccountId} marked authType=oauth2 but tokens missing — re-link via Settings`,
+        );
       }
       const { EmailOAuthService } = await import('@/services/email-oauth.service.js');
       const oauthSvc = new EmailOAuthService();
@@ -167,7 +181,9 @@ export const sendEmailExecutor: NodeExecutor = async (config, _input, context) =
           });
           oauth2AccessToken = refreshed.accessToken;
         } catch (err) {
-          throw new Error(`OAuth refresh failed for ${tokens.email}: ${err instanceof Error ? err.message : String(err)} — re-link the Gmail account in Settings.`);
+          throw new Error(
+            `OAuth refresh failed for ${tokens.email}: ${err instanceof Error ? err.message : String(err)} — re-link the Gmail account in Settings.`,
+          );
         }
       } else {
         oauth2AccessToken = tokens.accessToken;
@@ -188,7 +204,9 @@ export const sendEmailExecutor: NodeExecutor = async (config, _input, context) =
   const priority = asString(config.priority ?? 'normal');
 
   if (!host || !from || !to || !subject) {
-    throw new Error('action_send_email: host/from/to/subject all required (configura System Email Account in Settings o compila i campi inline)');
+    throw new Error(
+      'action_send_email: host/from/to/subject all required (configura System Email Account in Settings o compila i campi inline)',
+    );
   }
 
   // Defensive guard: if the upstream node failed to produce data, the
@@ -198,10 +216,14 @@ export const sendEmailExecutor: NodeExecutor = async (config, _input, context) =
   // refuse to send. Prevents the bogus "Ordine — — compilare" emails we saw
   // in the WF1 dry-run cascade.
   if (/\{\{[^}]+\}\}/.test(subject)) {
-    throw new Error(`action_send_email: subject contains unresolved {{...}} template — upstream data missing? Subject was: "${subject.slice(0, 200)}"`);
+    throw new Error(
+      `action_send_email: subject contains unresolved {{...}} template — upstream data missing? Subject was: "${subject.slice(0, 200)}"`,
+    );
   }
   if (/\{\{[^}]+\}\}/.test(body)) {
-    throw new Error(`action_send_email: body contains unresolved {{...}} template — upstream data missing?`);
+    throw new Error(
+      `action_send_email: body contains unresolved {{...}} template — upstream data missing?`,
+    );
   }
 
   // ───────────────────────────────────────────────────────────────────
@@ -232,19 +254,28 @@ export const sendEmailExecutor: NodeExecutor = async (config, _input, context) =
         if (!deliverabilityReport.dmarc.ok) missing.push('DMARC');
         throw new Error(
           `action_send_email: deliverabilityCheck=strict ma ${missing.join('+')} mancanti sul dominio "${deliverabilityReport.domain}". ` +
-          `${deliverabilityReport.summary} ` +
-          `Per disabilitare il check: cambia "deliverabilityCheck" a "off" o "warn" nel nodo.`,
+            `${deliverabilityReport.summary} ` +
+            `Per disabilitare il check: cambia "deliverabilityCheck" a "off" o "warn" nel nodo.`,
         );
       }
       if (!deliverabilityReport.ok) {
-        logger.warn({
-          tenantId: context.tenantId, workflowId: context.workflowId, nodeId: context.nodeId,
-          fromAddress: from, deliverability: deliverabilityReport.summary,
-        }, 'Email deliverability sub-optimal — invio comunque (mode=warn)');
+        logger.warn(
+          {
+            tenantId: context.tenantId,
+            workflowId: context.workflowId,
+            nodeId: context.nodeId,
+            fromAddress: from,
+            deliverability: deliverabilityReport.summary,
+          },
+          'Email deliverability sub-optimal — invio comunque (mode=warn)',
+        );
       }
     } catch (e) {
       if (deliverabilityMode === 'strict') throw e;
-      logger.warn({ err: e, fromAddress: from }, 'Deliverability check failed (non-strict mode, continuing)');
+      logger.warn(
+        { err: e, fromAddress: from },
+        'Deliverability check failed (non-strict mode, continuing)',
+      );
     }
   }
 
@@ -252,9 +283,10 @@ export const sendEmailExecutor: NodeExecutor = async (config, _input, context) =
   const dkimDomain = asString(config.dkimDomain);
   const dkimSelector = asString(config.dkimSelector);
   const dkimPrivateKey = asString(config.dkimPrivateKey);
-  const dkim = dkimDomain && dkimSelector && dkimPrivateKey
-    ? { domainName: dkimDomain, keySelector: dkimSelector, privateKey: dkimPrivateKey }
-    : undefined;
+  const dkim =
+    dkimDomain && dkimSelector && dkimPrivateKey
+      ? { domainName: dkimDomain, keySelector: dkimSelector, privateKey: dkimPrivateKey }
+      : undefined;
 
   // Auth in 3 modalità (priorità decrescente):
   //  1. systemAccount OAuth — oauth2AccessToken già risolto sopra (oauth-connect).
@@ -271,7 +303,9 @@ export const sendEmailExecutor: NodeExecutor = async (config, _input, context) =
     if (!asString(config.oauthClientSecret)) missing.push('oauthClientSecret');
     if (!asString(config.oauthRefreshToken)) missing.push('oauthRefreshToken');
     if (missing.length > 0) {
-      throw new Error(`action_send_email: authMode=oauth2 ma mancano i campi OAuth: ${missing.join(', ')}`);
+      throw new Error(
+        `action_send_email: authMode=oauth2 ma mancano i campi OAuth: ${missing.join(', ')}`,
+      );
     }
   }
 
@@ -303,10 +337,7 @@ export const sendEmailExecutor: NodeExecutor = async (config, _input, context) =
 
   const attachments = await parseAttachments(config.attachmentsJson, context.readBinary, false);
   const inlineImages = await parseAttachments(config.inlineImagesJson, context.readBinary, true);
-  const allAttachments = [
-    ...(attachments ?? []),
-    ...(inlineImages ?? []),
-  ];
+  const allAttachments = [...(attachments ?? []), ...(inlineImages ?? [])];
 
   const headers = parseHeadersJson(config.headersJson) ?? {};
 
@@ -355,8 +386,9 @@ export const sendEmailExecutor: NodeExecutor = async (config, _input, context) =
   // or returns 4xx repeatedly, fail fast for 60s rather than queueing
   // every workflow node behind a tcp-timeout chain.
   const breakerName = `smtp:${host}:${port.toString()}`;
-  const breaker = (CircuitBreakerRegistry.getInstance().get(breakerName))
-    ?? new CircuitBreaker<unknown>(breakerName, {
+  const breaker =
+    CircuitBreakerRegistry.getInstance().get(breakerName) ??
+    new CircuitBreaker<unknown>(breakerName, {
       failureThreshold: 5,
       windowMs: 60_000,
       cooldownMs: 60_000,

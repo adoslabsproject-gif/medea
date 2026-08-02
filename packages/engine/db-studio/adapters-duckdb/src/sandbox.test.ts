@@ -50,7 +50,10 @@ async function connect(database?: string): Promise<DuckDbAdapter> {
 afterEach(async () => {
   while (adapters.length) {
     const a = adapters.pop();
-    if (a) await a.disconnect().catch(() => { /* ignore */ });
+    if (a)
+      await a.disconnect().catch(() => {
+        /* ignore */
+      });
   }
 });
 
@@ -58,9 +61,9 @@ describe('DuckDB sandbox — lettura file host bloccata', () => {
   it('read_text() su un file host esistente è rifiutato (no esfiltrazione)', async () => {
     const a = await connect();
     // /etc/hosts esiste su Linux container e macOS dev → target stabile.
-    await expect(
-      a.executeRaw(`SELECT content FROM read_text('/etc/hosts')`),
-    ).rejects.toThrow(/Permission|file system|external access|not allowed/i);
+    await expect(a.executeRaw(`SELECT content FROM read_text('/etc/hosts')`)).rejects.toThrow(
+      /Permission|file system|external access|not allowed/i,
+    );
   });
 
   it('read_csv() su un file host reale è rifiutato anche se il file esiste', async () => {
@@ -69,9 +72,9 @@ describe('DuckDB sandbox — lettura file host bloccata', () => {
     writeFileSync(csv, 'a,b\n1,2\n');
     try {
       const a = await connect();
-      await expect(
-        a.executeRaw(`SELECT * FROM read_csv('${csv}')`),
-      ).rejects.toThrow(/Permission|file system|external access|not allowed/i);
+      await expect(a.executeRaw(`SELECT * FROM read_csv('${csv}')`)).rejects.toThrow(
+        /Permission|file system|external access|not allowed/i,
+      );
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -98,23 +101,23 @@ describe('DuckDB sandbox — ATTACH/estensioni bloccati', () => {
   it('ATTACH di un DB file esterno è rifiutato con errore di dominio chiaro', async () => {
     const a = await connect();
     // 2° layer assertSafeRawStatement → messaggio FlowForge prima del motore.
-    await expect(
-      a.executeRaw(`ATTACH '/tmp/other.duckdb' AS other`),
-    ).rejects.toThrow(/ATTACH\/DETACH non consentito|Permission|external access/i);
+    await expect(a.executeRaw(`ATTACH '/tmp/other.duckdb' AS other`)).rejects.toThrow(
+      /ATTACH\/DETACH non consentito|Permission|external access/i,
+    );
   });
 
   it('INSTALL/LOAD di estensioni native da disco è rifiutato', async () => {
     const a = await connect();
-    await expect(
-      a.executeRaw(`INSTALL '/tmp/evil.duckdb_extension'`),
-    ).rejects.toThrow(/Permission|file system|external access|not allowed|Cannot/i);
+    await expect(a.executeRaw(`INSTALL '/tmp/evil.duckdb_extension'`)).rejects.toThrow(
+      /Permission|file system|external access|not allowed|Cannot/i,
+    );
   });
 
   it('il re-enable via SET enable_external_access=true è bloccato (lock_configuration)', async () => {
     const a = await connect();
-    await expect(
-      a.executeRaw(`SET enable_external_access=true`),
-    ).rejects.toThrow(/Cannot change configuration|locked|Invalid Input/i);
+    await expect(a.executeRaw(`SET enable_external_access=true`)).rejects.toThrow(
+      /Cannot change configuration|locked|Invalid Input/i,
+    );
   });
 });
 
@@ -123,7 +126,9 @@ describe('DuckDB sandbox — nessuna regressione sulle operazioni legittime', ()
     const a = await connect();
     await a.executeRaw(`CREATE TABLE t (id INTEGER, v TEXT)`);
     await a.executeRaw(`INSERT INTO t VALUES (1, 'uno'), (2, 'due')`);
-    const res = await a.executeRaw(`SELECT count(*) AS n FROM t`) as { rows: { n: number | bigint }[] };
+    const res = (await a.executeRaw(`SELECT count(*) AS n FROM t`)) as {
+      rows: { n: number | bigint }[];
+    };
     expect(Number(res.rows[0]?.n)).toBe(2);
   });
 
@@ -134,7 +139,9 @@ describe('DuckDB sandbox — nessuna regressione sulle operazioni legittime', ()
     await expect(
       a.executeRaw(`INSERT INTO t2 VALUES (1); INSERT INTO t2 VALUES (1);`),
     ).rejects.toThrow();
-    const res = await a.executeRaw(`SELECT count(*) AS n FROM t2`) as { rows: { n: number | bigint }[] };
+    const res = (await a.executeRaw(`SELECT count(*) AS n FROM t2`)) as {
+      rows: { n: number | bigint }[];
+    };
     expect(Number(res.rows[0]?.n)).toBe(0);
   });
 
@@ -151,7 +158,7 @@ describe('DuckDB sandbox — nessuna regressione sulle operazioni legittime', ()
       adapters.pop(); // già disconnesso
 
       const a2 = await connect(file);
-      const res = await a2.executeRaw(`SELECT k FROM persisted`) as { rows: { k: string }[] };
+      const res = (await a2.executeRaw(`SELECT k FROM persisted`)) as { rows: { k: string }[] };
       expect(res.rows[0]?.k).toBe('survives');
     } finally {
       rmSync(dir, { recursive: true, force: true });

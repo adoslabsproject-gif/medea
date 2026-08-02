@@ -43,7 +43,11 @@ interface ConditionalFlag {
 
 function parseConditionals(raw: unknown): ConditionalFlag[] {
   if (typeof raw === 'string' && raw.trim()) {
-    try { return parseConditionals(JSON.parse(raw)); } catch { return []; }
+    try {
+      return parseConditionals(JSON.parse(raw));
+    } catch {
+      return [];
+    }
   }
   if (!Array.isArray(raw)) return [];
   return raw.filter((it) => it && typeof it === 'object') as ConditionalFlag[];
@@ -58,13 +62,17 @@ const executor: NodeExecutor = async (config, input, _context) => {
   const varsRaw = config.vars;
   let extraVars: Record<string, unknown> = {};
   if (typeof varsRaw === 'string' && varsRaw.trim()) {
-    try { extraVars = JSON.parse(varsRaw) as Record<string, unknown>; } catch { /* ignore */ }
+    try {
+      extraVars = JSON.parse(varsRaw) as Record<string, unknown>;
+    } catch {
+      /* ignore */
+    }
   } else if (varsRaw && typeof varsRaw === 'object') {
     extraVars = varsRaw as Record<string, unknown>;
   }
   const ctx: Record<string, unknown> = {
     input: input ?? {},
-    ...((input && typeof input === 'object') ? input as Record<string, unknown> : {}),
+    ...(input && typeof input === 'object' ? (input as Record<string, unknown>) : {}),
     ...extraVars,
   };
 
@@ -83,7 +91,11 @@ const executor: NodeExecutor = async (config, input, _context) => {
   const queryRaw = config.queryParams;
   let queryParams: Record<string, unknown> = {};
   if (typeof queryRaw === 'string' && queryRaw.trim()) {
-    try { queryParams = JSON.parse(queryRaw) as Record<string, unknown>; } catch { /* ignore */ }
+    try {
+      queryParams = JSON.parse(queryRaw) as Record<string, unknown>;
+    } catch {
+      /* ignore */
+    }
   } else if (queryRaw && typeof queryRaw === 'object') {
     queryParams = queryRaw as Record<string, unknown>;
   }
@@ -96,10 +108,11 @@ const executor: NodeExecutor = async (config, input, _context) => {
   const conditionals = parseConditionals(config.conditionalFlags);
   for (const flag of conditionals) {
     const condRaw = flag.if;
-    const evaluated = typeof condRaw === 'string'
-      ? toBool(interpolate(condRaw, ctx))
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion -- String() esplicito mantenuto per chiarezza tipo: input puo` essere stringificato da Zod ma TS ha widening
-      : Boolean(condRaw);
+    const evaluated =
+      typeof condRaw === 'string'
+        ? toBool(interpolate(condRaw, ctx))
+        : // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion -- String() esplicito mantenuto per chiarezza tipo: input puo` essere stringificato da Zod ma TS ha widening
+          Boolean(condRaw);
     if (!evaluated) continue;
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive guard runtime — TS narrow ottimistico
     for (const [k, v] of Object.entries(flag.add ?? {})) {

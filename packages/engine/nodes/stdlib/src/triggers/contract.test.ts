@@ -57,24 +57,39 @@ describe('🚨 A3.3 description contract (audit anti-placeholder)', () => {
     expect(node.def.description.length).toBeGreaterThanOrEqual(150);
   });
 
-  it.each(ALL_TRIGGERS)('$name: >= 25 distinct word ≥3 char (no whitespace-stuffing)', ({ node }) => {
-    const words = node.def.description
-      .toLowerCase()
-      .split(/[^\p{L}\p{N}]+/u)
-      .filter((w) => w.length >= 3);
-    const distinct = new Set(words);
-    expect(distinct.size).toBeGreaterThanOrEqual(25);
-  });
+  it.each(ALL_TRIGGERS)(
+    '$name: >= 25 distinct word ≥3 char (no whitespace-stuffing)',
+    ({ node }) => {
+      const words = node.def.description
+        .toLowerCase()
+        .split(/[^\p{L}\p{N}]+/u)
+        .filter((w) => w.length >= 3);
+      const distinct = new Set(words);
+      expect(distinct.size).toBeGreaterThanOrEqual(25);
+    },
+  );
 
   it.each(ALL_TRIGGERS)('$name: contiene "use case" (concretezza pragmatica)', ({ node }) => {
     expect(node.def.description.toLowerCase()).toContain('use case');
   });
 
-  it.each(ALL_TRIGGERS)('$name: NON inizia con verbo imperativo inglese (placeholder smell)', ({ node }) => {
-    const firstWord = node.def.description.trim().split(/\s+/u)[0]?.toLowerCase() ?? '';
-    const ENGLISH_VERBS = ['triggers', 'starts', 'fires', 'sends', 'receives', 'calls', 'executes', 'returns'];
-    expect(ENGLISH_VERBS).not.toContain(firstWord);
-  });
+  it.each(ALL_TRIGGERS)(
+    '$name: NON inizia con verbo imperativo inglese (placeholder smell)',
+    ({ node }) => {
+      const firstWord = node.def.description.trim().split(/\s+/u)[0]?.toLowerCase() ?? '';
+      const ENGLISH_VERBS = [
+        'triggers',
+        'starts',
+        'fires',
+        'sends',
+        'receives',
+        'calls',
+        'executes',
+        'returns',
+      ];
+      expect(ENGLISH_VERBS).not.toContain(firstWord);
+    },
+  );
 });
 
 describe('🚨 cron trigger config fields', () => {

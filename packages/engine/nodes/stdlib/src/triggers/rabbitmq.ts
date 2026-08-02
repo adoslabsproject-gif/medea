@@ -22,7 +22,7 @@ export const rabbitmqTriggerNode: NodeModule = {
       'Consegna affidabile (at-least-once, default): il messaggio viene confermato (ACK) al broker SOLO dopo che il run è partito con successo. Se il run fallisce, il messaggio viene rimesso in coda (NACK + requeue) e riconsegnato: nessun lavoro perso su un crash. In modalità "auto" (at-most-once) il broker considera consegnato all\'invio — più veloce ma un run fallito perde il messaggio.\n\n' +
       'Backpressure: "prefetch" limita quanti messaggi non ancora confermati il broker invia in parallelo — è il vero regolatore di carico, evita di sommergere il runtime. Riconnessione automatica con backoff esponenziale (1s→2s→…→30s) su caduta del broker o della rete.\n\n' +
       'Output per ogni messaggio: { data } = payload parsato come JSON quando possibile (altrimenti la stringa grezza), { raw } = testo originale, { receivedAt } = timestamp ISO. Con "JSON Pointer di filtro" processi solo i messaggi che hanno un certo campo.\n\n' +
-      'Use case: (1) coda di ordini da un e-commerce → validazione → evasione, (2) job di invio email/PDF depositati da un\'altra app → generazione → invio, (3) eventi di dominio da microservizi → sync verso CRM/DB, (4) pipeline di elaborazione immagini/documenti con requeue automatico sui fallimenti.',
+      "Use case: (1) coda di ordini da un e-commerce → validazione → evasione, (2) job di invio email/PDF depositati da un'altra app → generazione → invio, (3) eventi di dominio da microservizi → sync verso CRM/DB, (4) pipeline di elaborazione immagini/documenti con requeue automatico sui fallimenti.",
     configFields: [
       // ────────── Connessione ──────────
       {
@@ -44,7 +44,7 @@ export const rabbitmqTriggerNode: NodeModule = {
         placeholder: 'orders.incoming',
         help:
           'Nome della coda da consumare. Se non esiste viene dichiarata (assertQueue). ' +
-          'La durabilità è controllata dall\'opzione qui sotto.',
+          "La durabilità è controllata dall'opzione qui sotto.",
       },
       {
         key: 'durable',
@@ -132,7 +132,18 @@ export const rabbitmqTriggerNode: NodeModule = {
           'non riabiliti/salvi il workflow.',
       },
     ],
-    searchAliases: ['rabbitmq', 'rabbit', 'amqp', 'message queue', 'coda', 'queue', 'broker', 'consumer', 'work queue', 'mq'],
+    searchAliases: [
+      'rabbitmq',
+      'rabbit',
+      'amqp',
+      'message queue',
+      'coda',
+      'queue',
+      'broker',
+      'consumer',
+      'work queue',
+      'mq',
+    ],
     vendor: 'flowforge',
     version: '1.0.0',
   },

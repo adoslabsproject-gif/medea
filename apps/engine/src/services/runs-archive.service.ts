@@ -17,7 +17,14 @@
  *
  * @module services/runs-archive
  */
-import { mkdirSync, statSync, readdirSync, createWriteStream, renameSync, unlinkSync } from 'node:fs';
+import {
+  mkdirSync,
+  statSync,
+  readdirSync,
+  createWriteStream,
+  renameSync,
+  unlinkSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { createGzip } from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
@@ -46,7 +53,11 @@ export interface ArchiveListItem {
 }
 
 function ensureDirSync(p: string): void {
-  try { mkdirSync(p, { recursive: true }); } catch { /* exists */ }
+  try {
+    mkdirSync(p, { recursive: true });
+  } catch {
+    /* exists */
+  }
 }
 
 function archivesDir(workflowId: string): string {
@@ -70,7 +81,7 @@ function archiveHmacKey(): string {
   if (process.env.NODE_ENV === 'production') {
     throw new Error(
       '[runs-archive] MEDEA_SSO_SECRET OBBLIGATORIO in production (>=32 char) ' +
-      'per firmare gli archivi run. Nessun fallback hard-coded. Vedi docs/SECRETS-RECOVERY.md.',
+        'per firmare gli archivi run. Nessun fallback hard-coded. Vedi docs/SECRETS-RECOVERY.md.',
     );
   }
   // dev/test fallback (NON in prod path)
@@ -82,7 +93,10 @@ function archiveHmacKey(): string {
  * transactional-equivalente: scrittura atomica via .tmp+rename, DELETE
  * SOLO dopo che il file è stato persistito + hashato con successo.
  */
-export async function archiveOldRuns(workflowId: string, olderThanDays: number): Promise<ArchiveResult | null> {
+export async function archiveOldRuns(
+  workflowId: string,
+  olderThanDays: number,
+): Promise<ArchiveResult | null> {
   if (olderThanDays <= 0) return null;
   const { db, sqlite } = getDatabase();
   const cutoff = new Date(Date.now() - olderThanDays * 24 * 3600 * 1000).toISOString();
@@ -108,18 +122,25 @@ export async function archiveOldRuns(workflowId: string, olderThanDays: number):
     .prepare('SELECT * FROM runs WHERE workflow_id = ? AND started_at < ? ORDER BY started_at ASC')
     .all(workflowId, cutoff) as Record<string, unknown>[];
 
-  const jsonl = rows.map((r) => {
-    const s = JSON.stringify(r);
-    hmac.update(s);
-    hmac.update('\n');
-    return s;
-  }).join('\n') + '\n';
+  const jsonl =
+    rows
+      .map((r) => {
+        const s = JSON.stringify(r);
+        hmac.update(s);
+        hmac.update('\n');
+        return s;
+      })
+      .join('\n') + '\n';
 
   try {
     await pipeline(readableFromString(jsonl), createGzip(), createWriteStream(tmpPath));
   } catch (e) {
     logger.error({ err: e, workflowId }, '[runs-archive] write failed, aborting');
-    try { unlinkSync(tmpPath); } catch { /* */ }
+    try {
+      unlinkSync(tmpPath);
+    } catch {
+      /* */
+    }
     throw e;
   }
   renameSync(tmpPath, finalPath);
@@ -127,16 +148,20 @@ export async function archiveOldRuns(workflowId: string, olderThanDays: number):
   const sizeBytes = statSync(finalPath).size;
 
   // 4. DELETE source rows + log
-  await db.delete(runs).where(and(
-    eq(runs.workflowId, workflowId),
-    lt(runs.startedAt, cutoff),
-  ));
+  await db.delete(runs).where(and(eq(runs.workflowId, workflowId), lt(runs.startedAt, cutoff)));
   // Trigger VACUUM-incremental delle pages liberate
   sqlite.exec('PRAGMA wal_checkpoint(PASSIVE)');
 
-  logger.info({
-    workflowId, archived: cntRow.n, file: baseFile, sizeBytes, hash: hash.slice(0, 12),
-  }, '[runs-archive] batch archived');
+  logger.info(
+    {
+      workflowId,
+      archived: cntRow.n,
+      file: baseFile,
+      sizeBytes,
+      hash: hash.slice(0, 12),
+    },
+    '[runs-archive] batch archived',
+  );
 
   return { workflowId, archived: cntRow.n, filename: baseFile, sizeBytes, hash };
 }
@@ -148,7 +173,11 @@ export async function archiveOldRuns(workflowId: string, olderThanDays: number):
 export function listArchives(workflowId: string): ArchiveListItem[] {
   const dir = archivesDir(workflowId);
   let entries: string[];
-  try { entries = readdirSync(dir); } catch { return []; }
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return [];
+  }
   const items: ArchiveListItem[] = [];
   for (const name of entries) {
     if (!name.endsWith('.jsonl.gz')) continue;
@@ -161,7 +190,9 @@ export function listArchives(workflowId: string): ArchiveListItem[] {
         hash: '', // verrà ricalcolato on-demand al download — niente cache su disco
         createdAt: st.mtime.toISOString(),
       });
-    } catch { /* skip broken */ }
+    } catch {
+      /* skip broken */
+    }
   }
   items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return items;
@@ -202,7 +233,10 @@ export async function archiveAllWorkflows(olderThanDays: number): Promise<{
         totalBytes += res.sizeBytes;
       }
     } catch (e) {
-      logger.warn({ err: e, workflowId: wf.id }, '[runs-archive] workflow batch failed (continuing)');
+      logger.warn(
+        { err: e, workflowId: wf.id },
+        '[runs-archive] workflow batch failed (continuing)',
+      );
     }
   }
   return { workflowsScanned: wfs.length, workflowsArchived, totalRows, totalBytes };

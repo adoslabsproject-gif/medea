@@ -19,7 +19,10 @@ export interface NodeSearchHit {
 
 /** Tokenizza una query in parole minuscole significative (≥2 char). */
 function tokens(s: string): string[] {
-  return s.toLowerCase().split(/[^a-z0-9]+/u).filter((t) => t.length >= 2);
+  return s
+    .toLowerCase()
+    .split(/[^a-z0-9]+/u)
+    .filter((t) => t.length >= 2);
 }
 
 function scoreEntry(entry: NodeCatalogEntry, queryTokens: string[], rawQuery: string): number {
@@ -39,17 +42,27 @@ function scoreEntry(entry: NodeCatalogEntry, queryTokens: string[], rawQuery: st
 }
 
 /** Ritorna i nodi più pertinenti alla query (score>0), ordinati, max `limit`. */
-export function searchNodes(catalog: NodeCatalogEntry[], query: string, limit = 8): NodeSearchHit[] {
+export function searchNodes(
+  catalog: NodeCatalogEntry[],
+  query: string,
+  limit = 8,
+): NodeSearchHit[] {
   const qt = tokens(query);
   if (qt.length === 0) return [];
   const hits: NodeSearchHit[] = [];
   for (const entry of catalog) {
     const score = scoreEntry(entry, qt, query);
     if (score > 0) {
-      hits.push({ defId: entry.defId, type: entry.type, label: entry.label, description: entry.description, score });
+      hits.push({
+        defId: entry.defId,
+        type: entry.type,
+        label: entry.label,
+        description: entry.description,
+        score,
+      });
     }
   }
   // Ordine stabile: score desc, poi defId asc (determinismo).
-  hits.sort((a, b) => (b.score - a.score) || a.defId.localeCompare(b.defId));
+  hits.sort((a, b) => b.score - a.score || a.defId.localeCompare(b.defId));
   return hits.slice(0, limit);
 }

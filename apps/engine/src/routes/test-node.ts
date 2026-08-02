@@ -48,15 +48,25 @@ const TestNodeBodySchema = z.object({
  */
 const EphemeralTestNodeBodySchema = z.object({
   nodeId: z.string().min(1),
-  nodes: z.array(z.object({
-    id: z.string(),
-    defId: z.string(),
-    config: z.record(z.string()).optional(),
-  }).passthrough()),
-  edges: z.array(z.object({
-    from: z.string(),
-    to: z.string(),
-  }).passthrough()).optional(),
+  nodes: z.array(
+    z
+      .object({
+        id: z.string(),
+        defId: z.string(),
+        config: z.record(z.string()).optional(),
+      })
+      .passthrough(),
+  ),
+  edges: z
+    .array(
+      z
+        .object({
+          from: z.string(),
+          to: z.string(),
+        })
+        .passthrough(),
+    )
+    .optional(),
   triggerInput: z.unknown().optional(),
 });
 
@@ -69,65 +79,72 @@ export function createTestNodeRoutes(eventBus: IEventBus): Hono {
   const llmProviders = new LlmProvidersService();
   const engine = new WorkflowEngine(eventBus, { llmProviders });
 
-  app.post('/workflows/:id/test-node/:nodeId', zValidator('json', TestNodeBodySchema), async (c) => {
-    const auth = c.get('auth');
-    if (!auth) return c.json({ error: 'Unauthorized' }, 401);
-    const workflowId = c.req.param('id');
-    const nodeId = c.req.param('nodeId');
-    const body = c.req.valid('json');
+  app.post(
+    '/workflows/:id/test-node/:nodeId',
+    zValidator('json', TestNodeBodySchema),
+    async (c) => {
+      const auth = c.get('auth');
+      if (!auth) return c.json({ error: 'Unauthorized' }, 401);
+      const workflowId = c.req.param('id');
+      const nodeId = c.req.param('nodeId');
+      const body = c.req.valid('json');
 
-    const workflow = await workflows.get(workflowId, getTenantId(c));
-    if (!workflow) return c.json({ error: 'Workflow not found' }, 404);
+      const workflow = await workflows.get(workflowId, getTenantId(c));
+      if (!workflow) return c.json({ error: 'Workflow not found' }, 404);
 
-    const node = workflow.nodes.find((n) => n.id === nodeId);
-    if (!node) return c.json({ error: `Node ${nodeId} not in workflow` }, 404);
+      const node = workflow.nodes.find((n) => n.id === nodeId);
+      if (!node) return c.json({ error: `Node ${nodeId} not in workflow` }, 404);
 
-    // Resolve carried input — priority: explicit request body > upstream pin > {}
-    let carriedInput: unknown = body.triggerInput ?? {};
-    const incomingEdge = workflow.edges.find((e) => e.to === nodeId);
-    if (incomingEdge && body.triggerInput === undefined) {
-      const upstreamPin = pins.get(workflowId, incomingEdge.from, getTenantId(c));
-      if (upstreamPin?.enabled) carriedInput = upstreamPin.output;
-    }
+      // Resolve carried input — priority: explicit request body > upstream pin > {}
+      let carriedInput: unknown = body.triggerInput ?? {};
+      const incomingEdge = workflow.edges.find((e) => e.to === nodeId);
+      if (incomingEdge && body.triggerInput === undefined) {
+        const upstreamPin = pins.get(workflowId, incomingEdge.from, getTenantId(c));
+        if (upstreamPin?.enabled) carriedInput = upstreamPin.output;
+      }
 
-    const module = engine.resolveNodeModule(node.defId);
-    if (!module) {
-      return c.json({ error: `Unknown node definition: ${node.defId}` }, 400);
-    }
+      const module = engine.resolveNodeModule(node.defId);
+      if (!module) {
+        return c.json({ error: `Unknown node definition: ${node.defId}` }, 400);
+      }
 
-    const startedAt = Date.now();
-    try {
-      const res = await engine.executeNode({
-        node,
-        module,
-        carriedInput,
-        outputsById: new Map(), // single-node, no vars
-        tenantId: getTenantId(c),
-        runId: `test-${Date.now().toString(36)}`,
-        workflowId,
-      });
-      await audit.append({
-        tenantId: getTenantId(c),
-        action: 'workflow.test_node',
-        resourceType: 'workflow',
-        resourceId: workflowId,
-        actorId: auth.userId,
-        metadata: { nodeId, durationMs: Date.now() - startedAt, status: res.step.status },
-      });
-      return c.json({
-        output: res.output,
-        chosenBranch: res.chosenBranch,
-        step: res.step,
-        durationMs: Date.now() - startedAt,
-      });
-    } catch (err) {
-      logger.warn({ err, workflowId, nodeId }, 'Test-node failed');
-      return c.json({
-        error: err instanceof Error ? err.message : String(err),
-        durationMs: Date.now() - startedAt,
-      }, 500);
-    }
-  });
+      const startedAt = Date.now();
+      try {
+        const res = await engine.executeNode({
+          node,
+          module,
+          carriedInput,
+          outputsById: new Map(), // single-node, no vars
+          tenantId: getTenantId(c),
+          runId: `test-${Date.now().toString(36)}`,
+          workflowId,
+        });
+        await audit.append({
+          tenantId: getTenantId(c),
+          action: 'workflow.test_node',
+          resourceType: 'workflow',
+          resourceId: workflowId,
+          actorId: auth.userId,
+          metadata: { nodeId, durationMs: Date.now() - startedAt, status: res.step.status },
+        });
+        return c.json({
+          output: res.output,
+          chosenBranch: res.chosenBranch,
+          step: res.step,
+          durationMs: Date.now() - startedAt,
+        });
+      } catch (err) {
+        logger.warn({ err, workflowId, nodeId }, 'Test-node failed');
+        return c.json(
+          {
+            error: err instanceof Error ? err.message : String(err),
+            durationMs: Date.now() - startedAt,
+          },
+          500,
+        );
+      }
+    },
+  );
 
   /**
    * POST /workflows/test-node-ephemeral
@@ -145,81 +162,88 @@ export function createTestNodeRoutes(eventBus: IEventBus): Hono {
    * regardless of whether the draft has an ID — works on a brand-new
    * workflow before the user has clicked Save.
    */
-  app.post('/workflows/test-node-ephemeral', zValidator('json', EphemeralTestNodeBodySchema), async (c) => {
-    const auth = c.get('auth');
-    if (!auth) return c.json({ error: 'Unauthorized' }, 401);
-    const body = c.req.valid('json');
+  app.post(
+    '/workflows/test-node-ephemeral',
+    zValidator('json', EphemeralTestNodeBodySchema),
+    async (c) => {
+      const auth = c.get('auth');
+      if (!auth) return c.json({ error: 'Unauthorized' }, 401);
+      const body = c.req.valid('json');
 
-    const node = body.nodes.find((n) => n.id === body.nodeId);
-    if (!node) return c.json({ error: `Node ${body.nodeId} non trovato nella bozza` }, 404);
+      const node = body.nodes.find((n) => n.id === body.nodeId);
+      if (!node) return c.json({ error: `Node ${body.nodeId} non trovato nella bozza` }, 404);
 
-    const module = engine.resolveNodeModule(node.defId);
-    if (!module) return c.json({ error: `NodeDef sconosciuto: ${node.defId}` }, 400);
+      const module = engine.resolveNodeModule(node.defId);
+      if (!module) return c.json({ error: `NodeDef sconosciuto: ${node.defId}` }, 400);
 
-    const carriedInput: unknown = body.triggerInput ?? {};
+      const carriedInput: unknown = body.triggerInput ?? {};
 
-    const startedAt = Date.now();
-    const ephemeralRunId = `ephemeral-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-    try {
-      const res = await engine.executeNode({
-        node: { id: node.id, defId: node.defId, x: 0, y: 0, config: (node.config ?? {}) },
-        module,
-        carriedInput,
-        outputsById: new Map(),
-        tenantId: getTenantId(c),
-        runId: ephemeralRunId,
-        workflowId: '__ephemeral__',
-      });
-      // Audit-log the ephemeral run so owners can see WHO ran WHAT, even
-      // though the workflow itself wasn't saved.
-      await audit.append({
-        tenantId: getTenantId(c),
-        action: 'workflow.test_node_ephemeral',
-        resourceType: 'workflow',
-        resourceId: '__ephemeral__',
-        actorId: auth.userId,
-        metadata: {
-          nodeId: body.nodeId,
-          defId: node.defId,
+      const startedAt = Date.now();
+      const ephemeralRunId = `ephemeral-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      try {
+        const res = await engine.executeNode({
+          node: { id: node.id, defId: node.defId, x: 0, y: 0, config: node.config ?? {} },
+          module,
+          carriedInput,
+          outputsById: new Map(),
+          tenantId: getTenantId(c),
           runId: ephemeralRunId,
+          workflowId: '__ephemeral__',
+        });
+        // Audit-log the ephemeral run so owners can see WHO ran WHAT, even
+        // though the workflow itself wasn't saved.
+        await audit.append({
+          tenantId: getTenantId(c),
+          action: 'workflow.test_node_ephemeral',
+          resourceType: 'workflow',
+          resourceId: '__ephemeral__',
+          actorId: auth.userId,
+          metadata: {
+            nodeId: body.nodeId,
+            defId: node.defId,
+            runId: ephemeralRunId,
+            durationMs: Date.now() - startedAt,
+            status: res.step.status,
+            totalNodesInDraft: body.nodes.length,
+          },
+        });
+        return c.json({
+          output: res.output,
+          chosenBranch: res.chosenBranch,
+          step: res.step,
           durationMs: Date.now() - startedAt,
-          status: res.step.status,
-          totalNodesInDraft: body.nodes.length,
-        },
-      });
-      return c.json({
-        output: res.output,
-        chosenBranch: res.chosenBranch,
-        step: res.step,
-        durationMs: Date.now() - startedAt,
-        ephemeral: true,
-        runId: ephemeralRunId,
-      });
-    } catch (err) {
-      logger.warn({ err, nodeId: body.nodeId }, 'Ephemeral test-node failed');
-      await audit.append({
-        tenantId: getTenantId(c),
-        action: 'workflow.test_node_ephemeral',
-        resourceType: 'workflow',
-        resourceId: '__ephemeral__',
-        actorId: auth.userId,
-        metadata: {
-          nodeId: body.nodeId,
-          defId: node.defId,
+          ephemeral: true,
           runId: ephemeralRunId,
-          durationMs: Date.now() - startedAt,
-          status: 'error',
-          error: err instanceof Error ? err.message : String(err),
-        },
-      });
-      return c.json({
-        error: err instanceof Error ? err.message : String(err),
-        durationMs: Date.now() - startedAt,
-        ephemeral: true,
-        runId: ephemeralRunId,
-      }, 500);
-    }
-  });
+        });
+      } catch (err) {
+        logger.warn({ err, nodeId: body.nodeId }, 'Ephemeral test-node failed');
+        await audit.append({
+          tenantId: getTenantId(c),
+          action: 'workflow.test_node_ephemeral',
+          resourceType: 'workflow',
+          resourceId: '__ephemeral__',
+          actorId: auth.userId,
+          metadata: {
+            nodeId: body.nodeId,
+            defId: node.defId,
+            runId: ephemeralRunId,
+            durationMs: Date.now() - startedAt,
+            status: 'error',
+            error: err instanceof Error ? err.message : String(err),
+          },
+        });
+        return c.json(
+          {
+            error: err instanceof Error ? err.message : String(err),
+            durationMs: Date.now() - startedAt,
+            ephemeral: true,
+            runId: ephemeralRunId,
+          },
+          500,
+        );
+      }
+    },
+  );
 
   return app;
 }

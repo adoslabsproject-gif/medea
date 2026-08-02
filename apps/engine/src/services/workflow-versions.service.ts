@@ -47,10 +47,14 @@ function ensureVersionsTable(): void {
   // Defense-in-depth contro IDOR — anche se container-per-tenant isola
   // oggi, se domani diventiamo shared runtime questo previene
   // /versions/:id che leak versioni cross-tenant.
-  const cols = sqlite.prepare("PRAGMA table_info(workflow_versions)").all() as { name: string }[];
+  const cols = sqlite.prepare('PRAGMA table_info(workflow_versions)').all() as { name: string }[];
   if (!cols.some((c) => c.name === 'tenant_id')) {
-    sqlite.exec(`ALTER TABLE workflow_versions ADD COLUMN tenant_id TEXT NOT NULL DEFAULT 'default'`);
-    sqlite.exec(`CREATE INDEX IF NOT EXISTS workflow_versions_tenant_workflow_idx ON workflow_versions(tenant_id, workflow_id, version_number)`);
+    sqlite.exec(
+      `ALTER TABLE workflow_versions ADD COLUMN tenant_id TEXT NOT NULL DEFAULT 'default'`,
+    );
+    sqlite.exec(
+      `CREATE INDEX IF NOT EXISTS workflow_versions_tenant_workflow_idx ON workflow_versions(tenant_id, workflow_id, version_number)`,
+    );
   }
 }
 
@@ -83,10 +87,11 @@ export class WorkflowVersionsService {
         // `id` qui è il workflowId.
         const data = ev.data as { id?: string; actorId?: string } | undefined;
         if (!data?.id) return;
-        this.autoSnapshotIfNeeded(data.id, ev.tenantId ?? 'default', data.actorId)
-          .catch((err: unknown) => {
+        this.autoSnapshotIfNeeded(data.id, ev.tenantId ?? 'default', data.actorId).catch(
+          (err: unknown) => {
             logger.warn({ err, workflowId: data.id }, 'Auto-snapshot fallito');
-          });
+          },
+        );
       });
       logger.info('WorkflowVersionsService: auto-snapshot on workflow.updated attivo');
     }
@@ -100,7 +105,11 @@ export class WorkflowVersionsService {
    *     all'ultimo snapshot (no-op save, es. utente preme Salva senza
    *     aver modificato nulla)
    */
-  private async autoSnapshotIfNeeded(workflowId: string, tenantId: string, actorId?: string): Promise<void> {
+  private async autoSnapshotIfNeeded(
+    workflowId: string,
+    tenantId: string,
+    actorId?: string,
+  ): Promise<void> {
     // Throttle
     const lastAt = lastAutoSnapshotAt.get(workflowId) ?? 0;
     const now = Date.now();
@@ -113,7 +122,9 @@ export class WorkflowVersionsService {
     // Dedup contenuto (scoped per tenant — vedi N1)
     const { sqlite } = getDatabase();
     const lastRow = sqlite
-      .prepare('SELECT spec_json FROM workflow_versions WHERE workflow_id = ? AND tenant_id = ? ORDER BY version_number DESC LIMIT 1')
+      .prepare(
+        'SELECT spec_json FROM workflow_versions WHERE workflow_id = ? AND tenant_id = ? ORDER BY version_number DESC LIMIT 1',
+      )
       .get(workflowId, tenantId) as { spec_json: string } | undefined;
     if (lastRow) {
       // Confronto stabile via JSON normalizzato (chiavi ordinate non garantito
@@ -127,12 +138,19 @@ export class WorkflowVersionsService {
     lastAutoSnapshotAt.set(workflowId, now);
   }
 
-  snapshot(workflow: Workflow, tenantId: string, actorId?: string, comment?: string): { versionId: string; versionNumber: number } {
+  snapshot(
+    workflow: Workflow,
+    tenantId: string,
+    actorId?: string,
+    comment?: string,
+  ): { versionId: string; versionNumber: number } {
     const { sqlite } = getDatabase();
     // version_number e\` scoped per (tenant_id, workflow_id) per evitare
     // collisioni cross-tenant (no UNIQUE constraint senza tenant).
     const last = sqlite
-      .prepare('SELECT MAX(version_number) as n FROM workflow_versions WHERE workflow_id = ? AND tenant_id = ?')
+      .prepare(
+        'SELECT MAX(version_number) as n FROM workflow_versions WHERE workflow_id = ? AND tenant_id = ?',
+      )
       .get(workflow.id, tenantId) as { n: number | null };
     const versionNumber = (last.n ?? 0) + 1;
     const id = nanoid();
@@ -140,17 +158,42 @@ export class WorkflowVersionsService {
       .prepare(
         'INSERT INTO workflow_versions (id, workflow_id, tenant_id, version_number, spec_json, created_at, created_by, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       )
-      .run(id, workflow.id, tenantId, versionNumber, JSON.stringify(workflow), new Date().toISOString(), actorId ?? null, comment ?? null);
+      .run(
+        id,
+        workflow.id,
+        tenantId,
+        versionNumber,
+        JSON.stringify(workflow),
+        new Date().toISOString(),
+        actorId ?? null,
+        comment ?? null,
+      );
     return { versionId: id, versionNumber };
   }
 
-  list(workflowId: string, tenantId: string, limit = 50): { id: string; versionNumber: number; createdAt: string; createdBy: string | null; comment: string | null }[] {
+  list(
+    workflowId: string,
+    tenantId: string,
+    limit = 50,
+  ): {
+    id: string;
+    versionNumber: number;
+    createdAt: string;
+    createdBy: string | null;
+    comment: string | null;
+  }[] {
     const { sqlite } = getDatabase();
     const rows = sqlite
       .prepare(
         'SELECT id, version_number, created_at, created_by, comment FROM workflow_versions WHERE workflow_id = ? AND tenant_id = ? ORDER BY version_number DESC LIMIT ?',
       )
-      .all(workflowId, tenantId, limit) as { id: string; version_number: number; created_at: string; created_by: string | null; comment: string | null }[];
+      .all(workflowId, tenantId, limit) as {
+      id: string;
+      version_number: number;
+      created_at: string;
+      created_by: string | null;
+      comment: string | null;
+    }[];
     return rows.map((r) => ({
       id: r.id,
       versionNumber: r.version_number,
@@ -169,7 +212,12 @@ export class WorkflowVersionsService {
     return JSON.parse(row.spec_json) as Workflow;
   }
 
-  async rollback(workflowId: string, versionId: string, tenantId = 'default', actorId?: string): Promise<Workflow | null> {
+  async rollback(
+    workflowId: string,
+    versionId: string,
+    tenantId = 'default',
+    actorId?: string,
+  ): Promise<Workflow | null> {
     const target = this.get(versionId, tenantId);
     if (target?.id !== workflowId) return null;
 
@@ -202,7 +250,11 @@ export class WorkflowVersionsService {
     return updated;
   }
 
-  diff(versionAId: string, versionBId: string, tenantId: string): { added: string[]; removed: string[]; changed: string[] } | null {
+  diff(
+    versionAId: string,
+    versionBId: string,
+    tenantId: string,
+  ): { added: string[]; removed: string[]; changed: string[] } | null {
     const a = this.get(versionAId, tenantId);
     const b = this.get(versionBId, tenantId);
     if (!a || !b) return null;

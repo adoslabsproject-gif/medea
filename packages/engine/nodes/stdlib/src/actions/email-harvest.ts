@@ -35,7 +35,7 @@ export const emailHarvestNode: NodeModule = {
       'sostituisce le email con span data-cfemail="abc123" e un JavaScript runtime che decodifica al ' +
       'caricamento — il nodo implementa il decoder XOR algorithm di Cloudflare per leggere le email ' +
       'server-side senza eseguire JS; ' +
-      '(3) HTML entities decode — l\'admin sostituisce @ con &#64; e . con &#46; per evitare crawler naïve ' +
+      "(3) HTML entities decode — l'admin sostituisce @ con &#64; e . con &#46; per evitare crawler naïve " +
       '(es. mario&#64;acme&#46;com) — il nodo decoda le entities e poi applica regex match; ' +
       '(4) Regex plain — match standard RFC 5322 simplified su testo plain decoded (vari pattern fallback per ' +
       'edge case come email con plus addressing mario+spam@acme.com); ' +
@@ -64,7 +64,7 @@ export const emailHarvestNode: NodeModule = {
         type: 'expression',
         required: true,
         placeholder: '{{$node.fetch_page.json.content}}',
-        help: 'HTML della pagina web da cui estrarre email. Tipicamente l\'output di un nodo action_fetch_url (campo `content` o `html`). Accetta sia HTML completo che frammenti.',
+        help: "HTML della pagina web da cui estrarre email. Tipicamente l'output di un nodo action_fetch_url (campo `content` o `html`). Accetta sia HTML completo che frammenti.",
       },
       {
         key: 'preferredLocalParts',

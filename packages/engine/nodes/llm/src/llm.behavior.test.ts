@@ -24,15 +24,22 @@ function ctx(): NodeExecutionContext {
   return { tenantId: 't', workflowId: 'w', runId: 'r', nodeId: 'n', secrets: {} };
 }
 const jsonRes = (body: unknown): Response =>
-  new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+  new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
 
-beforeEach(() => { m.fetch.mockReset(); });
+beforeEach(() => {
+  m.fetch.mockReset();
+});
 
-describe('ai_gemini — API key nell\'header, mai in URL', () => {
+describe("ai_gemini — API key nell'header, mai in URL", () => {
   it('🚨 key in x-goog-api-key header; query string SENZA key (anti-leak)', async () => {
     m.fetch.mockResolvedValue(jsonRes({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }));
     const r = await aiGeminiNode.executor!(
-      { apiKey: 'SECRET_KEY_123', model: 'gemini-2.0-flash', prompt: 'ciao' }, undefined, ctx(),
+      { apiKey: 'SECRET_KEY_123', model: 'gemini-2.0-flash', prompt: 'ciao' },
+      undefined,
+      ctx(),
     );
     const [url, init] = m.fetch.mock.calls[0] as [string, { headers: Record<string, string> }];
     expect(url).not.toContain('key=');
@@ -44,11 +51,22 @@ describe('ai_gemini — API key nell\'header, mai in URL', () => {
 
 describe('ai_embed — shape output = description', () => {
   it('🚨 output { text, vector, dimensions, provider, model, tokensUsed } + tokensUsed da usage', async () => {
-    m.fetch.mockResolvedValue(jsonRes({ data: [{ embedding: [0.1, 0.2, 0.3] }], usage: { total_tokens: 7 } }));
-    const r = await aiEmbedNode.executor!(
-      { provider: 'openai', apiKey: 'k', text: 'ciao mondo' }, undefined, ctx(),
+    m.fetch.mockResolvedValue(
+      jsonRes({ data: [{ embedding: [0.1, 0.2, 0.3] }], usage: { total_tokens: 7 } }),
     );
-    expect(Object.keys(r.output as object).sort()).toEqual(['dimensions', 'model', 'provider', 'text', 'tokensUsed', 'vector']);
+    const r = await aiEmbedNode.executor!(
+      { provider: 'openai', apiKey: 'k', text: 'ciao mondo' },
+      undefined,
+      ctx(),
+    );
+    expect(Object.keys(r.output as object).sort()).toEqual([
+      'dimensions',
+      'model',
+      'provider',
+      'text',
+      'tokensUsed',
+      'vector',
+    ]);
     const out = r.output as { vector: number[]; dimensions: number; tokensUsed: number | null };
     expect(out.vector).toEqual([0.1, 0.2, 0.3]);
     expect(out.dimensions).toBe(3);
@@ -58,7 +76,11 @@ describe('ai_embed — shape output = description', () => {
 
   it('tokensUsed = null quando il provider non riporta usage (es. Ollama)', async () => {
     m.fetch.mockResolvedValue(jsonRes({ data: [{ embedding: [1] }] })); // niente usage
-    const r = await aiEmbedNode.executor!({ provider: 'openai', apiKey: 'k', text: 'x' }, undefined, ctx());
+    const r = await aiEmbedNode.executor!(
+      { provider: 'openai', apiKey: 'k', text: 'x' },
+      undefined,
+      ctx(),
+    );
     expect((r.output as { tokensUsed: number | null }).tokensUsed).toBeNull();
   });
 });
@@ -68,10 +90,19 @@ describe('ai_rag_search — shape output = description', () => {
     // 1ª fetch = embed query (openai); 2ª = search runtime → { results, count }.
     m.fetch
       .mockResolvedValueOnce(jsonRes({ data: [{ embedding: [1, 0, 0] }] }))
-      .mockResolvedValueOnce(jsonRes({ results: [{ id: 'a', score: 0.9, payload: { content: 'x' } }], count: 1 }));
+      .mockResolvedValueOnce(
+        jsonRes({ results: [{ id: 'a', score: 0.9, payload: { content: 'x' } }], count: 1 }),
+      );
     const r = await aiRagSearchNode.executor!(
-      { databaseId: 'db1', collection: 'col', embedProvider: 'openai', apiKey: 'k', queryText: 'domanda' },
-      undefined, ctx(),
+      {
+        databaseId: 'db1',
+        collection: 'col',
+        embedProvider: 'openai',
+        apiKey: 'k',
+        queryText: 'domanda',
+      },
+      undefined,
+      ctx(),
     );
     expect(Object.keys(r.output as object).sort()).toEqual(['count', 'query', 'results']);
     const out = r.output as { query: string; results: { id: string }[]; count: number };

@@ -28,20 +28,26 @@ const SPEC = {
   paths: {
     '/charges': {
       get: {
-        operationId: 'listCharges', summary: 'Elenca i pagamenti', tags: ['Charges'],
+        operationId: 'listCharges',
+        summary: 'Elenca i pagamenti',
+        tags: ['Charges'],
         parameters: [
           { name: 'limit', in: 'query', required: false, schema: { type: 'integer' } },
           { name: 'X-Trace', in: 'header', required: false, schema: { type: 'string' } },
         ],
       },
       post: {
-        operationId: 'createCharge', summary: 'Crea un pagamento', tags: ['Charges'],
+        operationId: 'createCharge',
+        summary: 'Crea un pagamento',
+        tags: ['Charges'],
         requestBody: { content: { 'application/json': { schema: { type: 'object' } } } },
       },
     },
     '/charges/{id}': {
       get: {
-        operationId: 'getCharge', summary: 'Dettaglio pagamento', tags: ['Charges'],
+        operationId: 'getCharge',
+        summary: 'Dettaglio pagamento',
+        tags: ['Charges'],
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       },
     },
@@ -55,15 +61,31 @@ interface GenDef {
   category: string;
   inputs: string[];
   outputs: string[];
-  config: { key: string; label: string; type?: string; required?: boolean; defaultValue?: string; options?: string[]; showIf?: { field: string; equals?: string } }[];
+  config: {
+    key: string;
+    label: string;
+    type?: string;
+    required?: boolean;
+    defaultValue?: string;
+    options?: string[];
+    showIf?: { field: string; equals?: string };
+  }[];
 }
 
 function parseDef(source: string): GenDef {
-  return JSON.parse(source.replace('export const definition = ', '').replace(/;\s*$/, '')) as GenDef;
+  return JSON.parse(
+    source.replace('export const definition = ', '').replace(/;\s*$/, ''),
+  ) as GenDef;
 }
 
 /** Carica l'executor generato come funzione reale (esegue il codice prodotto). */
-function loadExecutor(source: string): (config: Record<string, unknown>, input: unknown, ctx?: unknown) => Promise<{ status: number; ok: boolean; body: unknown }> {
+function loadExecutor(
+  source: string,
+): (
+  config: Record<string, unknown>,
+  input: unknown,
+  ctx?: unknown,
+) => Promise<{ status: number; ok: boolean; body: unknown }> {
   const body = source.replace('export const executor', 'const executor') + '\nreturn executor;';
   // eslint-disable-next-line @typescript-eslint/no-implied-eval
   return new Function(body)() as never;
@@ -87,20 +109,26 @@ describe('slugify', () => {
 
 describe('parsing — rifiuti espliciti (no silent garbage)', () => {
   it('swagger 2.0 → errore chiaro che indica la conversione', () => {
-    expect(() => generateNodeFromOpenApi({ swagger: '2.0', paths: {} })).toThrow(/Swagger 2\.0 non supportato/);
+    expect(() => generateNodeFromOpenApi({ swagger: '2.0', paths: {} })).toThrow(
+      /Swagger 2\.0 non supportato/,
+    );
   });
   it('campo openapi mancante → errore', () => {
     expect(() => generateNodeFromOpenApi({ info: {}, paths: {} })).toThrow(OpenApiParseError);
   });
   it('versione non 3.x → errore', () => {
-    expect(() => generateNodeFromOpenApi({ openapi: '4.0.0', paths: {} })).toThrow(/non supportata/);
+    expect(() => generateNodeFromOpenApi({ openapi: '4.0.0', paths: {} })).toThrow(
+      /non supportata/,
+    );
   });
   it('spec non-oggetto → errore', () => {
     expect(() => generateNodeFromOpenApi('not an object')).toThrow(OpenApiParseError);
     expect(() => generateNodeFromOpenApi(null)).toThrow(OpenApiParseError);
   });
   it('zero operazioni → errore (no nodo vuoto)', () => {
-    expect(() => generateNodeFromOpenApi({ openapi: '3.0.0', info: { title: 'x' }, paths: {} })).toThrow(/non contiene operazioni/);
+    expect(() =>
+      generateNodeFromOpenApi({ openapi: '3.0.0', info: { title: 'x' }, paths: {} }),
+    ).toThrow(/non contiene operazioni/);
   });
 });
 
@@ -123,15 +151,21 @@ describe('mapping spec → nodo', () => {
     expect(opField?.defaultValue).toBe('listCharges');
   });
 
-  it('param path/query/header → config con showIf sull\'operazione, key namespaced', () => {
+  it("param path/query/header → config con showIf sull'operazione, key namespaced", () => {
     const def = parseDef(generateNodeFromOpenApi(SPEC).sourceDefinition);
     // getCharge ha path param id → key namespaced getCharge_id, showIf operation=getCharge
-    const idField = def.config.find((f) => f.showIf?.equals === 'getCharge' && f.key.endsWith("id"));
+    const idField = def.config.find(
+      (f) => f.showIf?.equals === 'getCharge' && f.key.endsWith('id'),
+    );
     expect(idField).toBeDefined();
     expect(idField!.showIf).toEqual({ field: 'operation', equals: 'getCharge' });
     // listCharges ha query limit + header X-Trace
-    const limit = def.config.find((f) => f.showIf?.equals === 'listCharges' && /limit$/i.test(f.key));
-    const trace = def.config.find((f) => f.showIf?.equals === 'listCharges' && /trace$/i.test(f.key));
+    const limit = def.config.find(
+      (f) => f.showIf?.equals === 'listCharges' && /limit$/i.test(f.key),
+    );
+    const trace = def.config.find(
+      (f) => f.showIf?.equals === 'listCharges' && /trace$/i.test(f.key),
+    );
     expect(limit).toBeDefined();
     expect(trace).toBeDefined();
   });
@@ -176,7 +210,8 @@ describe('🚨 CONTRATTO custom-node: definition strutturalmente valida', () => 
 
   it('operationId/tag con caratteri illegali → key e option valide', () => {
     const node = generateNodeFromOpenApi({
-      openapi: '3.0.0', info: { title: 'Weird API' },
+      openapi: '3.0.0',
+      info: { title: 'Weird API' },
       paths: { '/x': { get: { operationId: 'get/weird id!!', tags: ['Foo Bar'] } } },
     });
     const def = parseDef(node.sourceDefinition);
@@ -184,15 +219,25 @@ describe('🚨 CONTRATTO custom-node: definition strutturalmente valida', () => 
   });
 });
 
-describe('🚨 SICUREZZA: l\'executor generato passa il securityScan reale', () => {
+describe("🚨 SICUREZZA: l'executor generato passa il securityScan reale", () => {
   it('SPEC completo → zero violazioni', () => {
     const node = generateNodeFromOpenApi(SPEC);
-    expect(securityScan({ executor: node.sourceExecutor, definition: node.sourceDefinition, schema: node.sourceSchema })).toEqual([]);
+    expect(
+      securityScan({
+        executor: node.sourceExecutor,
+        definition: node.sourceDefinition,
+        schema: node.sourceSchema,
+      }),
+    ).toEqual([]);
   });
 });
 
-describe('🚨 COMPORTAMENTO: eseguendo l\'executor generato la request è corretta', () => {
-  function defKey(node: ReturnType<typeof generateNodeFromOpenApi>, actionId: string, match: RegExp): string {
+describe("🚨 COMPORTAMENTO: eseguendo l'executor generato la request è corretta", () => {
+  function defKey(
+    node: ReturnType<typeof generateNodeFromOpenApi>,
+    actionId: string,
+    match: RegExp,
+  ): string {
     const def = parseDef(node.sourceDefinition);
     const f = def.config.find((x) => x.showIf?.equals === actionId && match.test(x.key));
     if (!f) throw new Error(`no field ${match} for ${actionId}`);
@@ -203,11 +248,20 @@ describe('🚨 COMPORTAMENTO: eseguendo l\'executor generato la request è corre
     const node = generateNodeFromOpenApi(SPEC);
     const executor = loadExecutor(node.sourceExecutor);
     const idKey = defKey(node, 'getCharge', /id$/);
-    const fetchMock = vi.fn().mockResolvedValue({ status: 200, ok: true, text: async () => JSON.stringify({ id: 'ch_1' }) });
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 200,
+      ok: true,
+      text: async () => JSON.stringify({ id: 'ch_1' }),
+    });
     vi.stubGlobal('fetch', fetchMock);
 
     const res = await executor(
-      { operation: 'getCharge', baseUrl: 'https://api.acme.test/v2', [idKey]: 'ch_1', auth_bearer_token: 'tok_abc' },
+      {
+        operation: 'getCharge',
+        baseUrl: 'https://api.acme.test/v2',
+        [idKey]: 'ch_1',
+        auth_bearer_token: 'tok_abc',
+      },
       null,
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -223,10 +277,20 @@ describe('🚨 COMPORTAMENTO: eseguendo l\'executor generato la request è corre
     const node = generateNodeFromOpenApi(SPEC);
     const executor = loadExecutor(node.sourceExecutor);
     const bodyKey = defKey(node, 'createCharge', /body$/);
-    const fetchMock = vi.fn().mockResolvedValue({ status: 201, ok: true, text: async () => '{"created":true}' });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue({ status: 201, ok: true, text: async () => '{"created":true}' });
     vi.stubGlobal('fetch', fetchMock);
 
-    await executor({ operation: 'createCharge', baseUrl: 'https://api.acme.test/v2', [bodyKey]: '{"amount":100}', auth_bearer_token: 't' }, null);
+    await executor(
+      {
+        operation: 'createCharge',
+        baseUrl: 'https://api.acme.test/v2',
+        [bodyKey]: '{"amount":100}',
+        auth_bearer_token: 't',
+      },
+      null,
+    );
     const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toBe('https://api.acme.test/v2/charges');
     expect(init.method).toBe('POST');
@@ -241,14 +305,24 @@ describe('🚨 COMPORTAMENTO: eseguendo l\'executor generato la request è corre
     const fetchMock = vi.fn().mockResolvedValue({ status: 200, ok: true, text: async () => '[]' });
     vi.stubGlobal('fetch', fetchMock);
 
-    await executor({ operation: 'listCharges', baseUrl: 'https://api.acme.test/v2/', [limitKey]: '25', auth_bearer_token: 't' }, null);
+    await executor(
+      {
+        operation: 'listCharges',
+        baseUrl: 'https://api.acme.test/v2/',
+        [limitKey]: '25',
+        auth_bearer_token: 't',
+      },
+      null,
+    );
     expect(fetchMock.mock.calls[0]![0]).toBe('https://api.acme.test/v2/charges?limit=25');
   });
 
   it('operation sconosciuta → throw esplicito', async () => {
     const executor = loadExecutor(generateNodeFromOpenApi(SPEC).sourceExecutor);
     vi.stubGlobal('fetch', vi.fn());
-    await expect(executor({ operation: 'nope', baseUrl: 'https://x.test' }, null)).rejects.toThrow(/non riconosciuta/);
+    await expect(executor({ operation: 'nope', baseUrl: 'https://x.test' }, null)).rejects.toThrow(
+      /non riconosciuta/,
+    );
   });
 
   it('baseUrl mancante → throw (non chiama fetch)', async () => {
@@ -260,16 +334,21 @@ describe('🚨 COMPORTAMENTO: eseguendo l\'executor generato la request è corre
   });
 });
 
-describe('auth: ogni security scheme → executor che applica l\'auth giusta', () => {
+describe("auth: ogni security scheme → executor che applica l'auth giusta", () => {
   function specWithAuth(securitySchemes: Record<string, unknown>) {
     return {
-      openapi: '3.0.0', info: { title: 'AuthAPI' }, servers: [{ url: 'https://a.test' }],
-      components: { securitySchemes }, paths: { '/p': { get: { operationId: 'ping' } } },
+      openapi: '3.0.0',
+      info: { title: 'AuthAPI' },
+      servers: [{ url: 'https://a.test' }],
+      components: { securitySchemes },
+      paths: { '/p': { get: { operationId: 'ping' } } },
     };
   }
 
   it('apiKey header → header con il nome dichiarato', async () => {
-    const node = generateNodeFromOpenApi(specWithAuth({ k: { type: 'apiKey', in: 'header', name: 'X-Acme-Key' } }));
+    const node = generateNodeFromOpenApi(
+      specWithAuth({ k: { type: 'apiKey', in: 'header', name: 'X-Acme-Key' } }),
+    );
     const executor = loadExecutor(node.sourceExecutor);
     const fetchMock = vi.fn().mockResolvedValue({ status: 200, ok: true, text: async () => '{}' });
     vi.stubGlobal('fetch', fetchMock);
@@ -278,7 +357,9 @@ describe('auth: ogni security scheme → executor che applica l\'auth giusta', (
   });
 
   it('apiKey query → searchParam con il nome dichiarato', async () => {
-    const node = generateNodeFromOpenApi(specWithAuth({ k: { type: 'apiKey', in: 'query', name: 'api_key' } }));
+    const node = generateNodeFromOpenApi(
+      specWithAuth({ k: { type: 'apiKey', in: 'query', name: 'api_key' } }),
+    );
     const executor = loadExecutor(node.sourceExecutor);
     const fetchMock = vi.fn().mockResolvedValue({ status: 200, ok: true, text: async () => '{}' });
     vi.stubGlobal('fetch', fetchMock);
@@ -291,7 +372,15 @@ describe('auth: ogni security scheme → executor che applica l\'auth giusta', (
     const executor = loadExecutor(node.sourceExecutor);
     const fetchMock = vi.fn().mockResolvedValue({ status: 200, ok: true, text: async () => '{}' });
     vi.stubGlobal('fetch', fetchMock);
-    await executor({ operation: 'ping', baseUrl: 'https://a.test', auth_basic_user: 'u', auth_basic_password: 'p' }, null);
+    await executor(
+      {
+        operation: 'ping',
+        baseUrl: 'https://a.test',
+        auth_basic_user: 'u',
+        auth_basic_password: 'p',
+      },
+      null,
+    );
     expect(fetchMock.mock.calls[0]![1].headers.Authorization).toBe('Basic ' + btoa('u:p'));
   });
 
@@ -303,9 +392,12 @@ describe('auth: ogni security scheme → executor che applica l\'auth giusta', (
   });
 
   it('più security scheme → warning sul primo usato', () => {
-    const node = generateNodeFromOpenApi(specWithAuth({
-      a: { type: 'http', scheme: 'bearer' }, b: { type: 'apiKey', in: 'header', name: 'X-K' },
-    }));
+    const node = generateNodeFromOpenApi(
+      specWithAuth({
+        a: { type: 'http', scheme: 'bearer' },
+        b: { type: 'apiKey', in: 'header', name: 'X-K' },
+      }),
+    );
     expect(node.warnings.some((w) => /security scheme/i.test(w))).toBe(true);
   });
 });
@@ -313,7 +405,8 @@ describe('auth: ogni security scheme → executor che applica l\'auth giusta', (
 describe('robustezza & determinismo', () => {
   it('operationId duplicati → option suffissate, nessuna collisione', () => {
     const node = generateNodeFromOpenApi({
-      openapi: '3.0.0', info: { title: 'Dup' },
+      openapi: '3.0.0',
+      info: { title: 'Dup' },
       paths: { '/a': { get: { operationId: 'same' } }, '/b': { get: { operationId: 'same' } } },
     });
     const def = parseDef(node.sourceDefinition);
@@ -324,10 +417,14 @@ describe('robustezza & determinismo', () => {
   });
 
   it('maxOperations cap → skipped contato + warning', () => {
-    const node = generateNodeFromOpenApi({
-      openapi: '3.0.0', info: { title: 'Big' },
-      paths: { '/a': { get: {}, post: {} }, '/b': { get: {} } },
-    }, { maxOperations: 2 });
+    const node = generateNodeFromOpenApi(
+      {
+        openapi: '3.0.0',
+        info: { title: 'Big' },
+        paths: { '/a': { get: {}, post: {} }, '/b': { get: {} } },
+      },
+      { maxOperations: 2 },
+    );
     expect(node.stats.operations).toBe(2);
     expect(node.stats.skipped).toBe(1);
     expect(node.warnings.some((w) => w.includes('cap di 2'))).toBe(true);

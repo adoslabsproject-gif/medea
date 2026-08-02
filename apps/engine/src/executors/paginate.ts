@@ -27,18 +27,27 @@ const MAX_429_RETRIES = 3;
 const MAX_RETRY_AFTER_MS = 30_000;
 
 function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => { setTimeout(resolve, ms); });
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 /** Fetch con gestione 429: rispetta Retry-After (capped) e ritenta la STESSA pagina. */
-async function fetchWithRetry(url: string, method: string, headers: Record<string, string>): Promise<{ res: Response; requests: number }> {
+async function fetchWithRetry(
+  url: string,
+  method: string,
+  headers: Record<string, string>,
+): Promise<{ res: Response; requests: number }> {
   let requests = 0;
   let res = await safeOutboundFetch(url, { method, headers });
   requests += 1;
   let retries = 0;
   while (res.status === 429 && retries < MAX_429_RETRIES) {
     const raSec = Number(res.headers.get('retry-after'));
-    const waitMs = Math.min(Number.isFinite(raSec) && raSec > 0 ? raSec * 1000 : 1000, MAX_RETRY_AFTER_MS);
+    const waitMs = Math.min(
+      Number.isFinite(raSec) && raSec > 0 ? raSec * 1000 : 1000,
+      MAX_RETRY_AFTER_MS,
+    );
     await sleep(waitMs);
     res = await safeOutboundFetch(url, { method, headers });
     requests += 1;
@@ -87,7 +96,10 @@ export const paginateExecutor: NodeExecutor = async (config, _input, _context) =
 
   while (page <= maxPages) {
     // Cap di durata totale: una API che pagina all'infinito non deve bloccare il run.
-    if (Date.now() - start > maxDurationMs) { truncated = true; break; }
+    if (Date.now() - start > maxDurationMs) {
+      truncated = true;
+      break;
+    }
 
     let url: string;
     if (strategy === 'link-header' && nextUrl) {
@@ -104,13 +116,19 @@ export const paginateExecutor: NodeExecutor = async (config, _input, _context) =
 
     const { res, requests } = await fetchWithRetry(url, method, headers);
     requestsCount += requests;
-    if (!res.ok) throw new Error(`paginate ${String(res.status)}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 300)}`);
+    if (!res.ok)
+      throw new Error(
+        `paginate ${String(res.status)}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 300)}`,
+      );
     const body: unknown = await readJsonCapped<unknown>(res);
     const items: unknown = dataPath ? getNested(body, dataPath) : body;
     const itemsArr: unknown[] = Array.isArray(items) ? items : [];
     // loop, NON allItems.push(...itemsArr): una pagina con un array enorme → RangeError.
     for (const it of itemsArr) {
-      if (allItems.length >= maxItems) { truncated = true; break; }
+      if (allItems.length >= maxItems) {
+        truncated = true;
+        break;
+      }
       allItems.push(it);
     }
     if (truncated) break;

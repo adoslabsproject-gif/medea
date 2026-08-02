@@ -41,7 +41,15 @@ const SIZE: Record<'xs' | 'sm' | 'md', string> = {
  * Badge — small label for status, count, or category.
  * Uses semantic tokens via `variant`. NEVER pass raw colors.
  */
-export function Badge({ variant = 'neutral', size = 'xs', dot, icon, className, children, ...rest }: BadgeProps): React.ReactElement {
+export function Badge({
+  variant = 'neutral',
+  size = 'xs',
+  dot,
+  icon,
+  className,
+  children,
+  ...rest
+}: BadgeProps): React.ReactElement {
   return (
     <span
       className={clsx(
@@ -52,7 +60,9 @@ export function Badge({ variant = 'neutral', size = 'xs', dot, icon, className, 
       )}
       {...rest}
     >
-      {dot && <span className={clsx('h-1.5 w-1.5 rounded-full', DOT_VARIANT[variant])} aria-hidden />}
+      {dot && (
+        <span className={clsx('h-1.5 w-1.5 rounded-full', DOT_VARIANT[variant])} aria-hidden />
+      )}
       {icon !== undefined && !dot && <span aria-hidden>{icon}</span>}
       {children}
     </span>

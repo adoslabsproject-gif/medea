@@ -64,7 +64,10 @@ function loadPublicKey(): string | null {
   }
   // Build-time embedded public key (set by esbuild --define).
   try {
-    const bundled = typeof __MEDEA_BUNDLED_LICENSE_PUBKEY__ !== 'undefined' ? __MEDEA_BUNDLED_LICENSE_PUBKEY__ : '';
+    const bundled =
+      typeof __MEDEA_BUNDLED_LICENSE_PUBKEY__ !== 'undefined'
+        ? __MEDEA_BUNDLED_LICENSE_PUBKEY__
+        : '';
     if (bundled && bundled.length > 0) return bundled;
   } catch {
     /* not defined */
@@ -129,7 +132,9 @@ export class LicenseService {
   async install(tenantId: string, token: string): Promise<LicenseStatus> {
     const publicKey = cachedPublicKey;
     if (!publicKey) {
-      throw new Error('MEDEA_LICENSE_PUBLIC_KEY non configurato sul runtime — impossibile verificare la licenza.');
+      throw new Error(
+        'MEDEA_LICENSE_PUBLIC_KEY non configurato sul runtime — impossibile verificare la licenza.',
+      );
     }
     const verification = await validateLicense(token, publicKey);
     if (!verification.valid) {

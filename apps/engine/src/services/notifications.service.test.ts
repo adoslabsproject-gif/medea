@@ -13,7 +13,9 @@ import { NotificationsService } from './notifications.service.js';
 beforeEach(() => {
   m.db = new Database(':memory:');
   // 2026-06-09 M6: users ora ha tenant_id NOT NULL DEFAULT 'default'
-  m.db.exec(`CREATE TABLE users (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL DEFAULT 'default', email TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 1, role TEXT NOT NULL DEFAULT 'viewer');`);
+  m.db.exec(
+    `CREATE TABLE users (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL DEFAULT 'default', email TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 1, role TEXT NOT NULL DEFAULT 'viewer');`,
+  );
   m.db.exec(`CREATE TABLE notifications (
     id TEXT PRIMARY KEY, user_id TEXT NOT NULL, type TEXT NOT NULL, workflow_id TEXT, node_id TEXT,
     actor_name TEXT NOT NULL, preview TEXT NOT NULL, read INTEGER NOT NULL DEFAULT 0,
@@ -32,7 +34,7 @@ describe('NotificationsService', () => {
     const svc = new NotificationsService();
     expect(svc.resolveMentionUserId('ada', 't1')).toBe('u-ada');
     expect(svc.resolveMentionUserId('ADA', 't1')).toBe('u-ada'); // case-insensitive
-    expect(svc.resolveMentionUserId('gino', 't1')).toBeNull();    // enabled=0
+    expect(svc.resolveMentionUserId('gino', 't1')).toBeNull(); // enabled=0
     expect(svc.resolveMentionUserId('nessuno', 't1')).toBeNull();
   });
 
@@ -56,8 +58,12 @@ describe('NotificationsService', () => {
   it('notifyForComment crea una notifica per handle risolto (tenant-scoped), salta autore e ignoti', () => {
     const svc = new NotificationsService();
     const n = svc.notifyForComment({
-      mentions: ['ada', 'marco', 'nessuno'], authorUserId: 'u-marco', actorName: 'marco@x.it',
-      workflowId: 'wf1', nodeId: 'n1', body: 'ehi @ada e @marco e @nessuno',
+      mentions: ['ada', 'marco', 'nessuno'],
+      authorUserId: 'u-marco',
+      actorName: 'marco@x.it',
+      workflowId: 'wf1',
+      nodeId: 'n1',
+      body: 'ehi @ada e @marco e @nessuno',
       tenantId: 't1',
     });
     expect(n).toBe(1); // solo ada (marco=autore, nessuno=non risolto)
@@ -78,8 +84,12 @@ describe('NotificationsService', () => {
     const svc = new NotificationsService();
     // mention "marco" da tenant t2 — marco non esiste in t2 → 0 notifiche
     const n = svc.notifyForComment({
-      mentions: ['marco'], authorUserId: 'u-other', actorName: 'other@y.it',
-      workflowId: 'wf1', nodeId: null, body: 'ciao @marco',
+      mentions: ['marco'],
+      authorUserId: 'u-other',
+      actorName: 'other@y.it',
+      workflowId: 'wf1',
+      nodeId: null,
+      body: 'ciao @marco',
       tenantId: 't2',
     });
     expect(n).toBe(0);
@@ -122,8 +132,9 @@ describe('NotificationsService', () => {
  */
 describe('NotificationsService.tenantAdminUserIds', () => {
   function seedRole(id: string, tenantId: string, role: string, enabled = 1): void {
-    m.db!.prepare('INSERT INTO users (id, tenant_id, email, enabled, role) VALUES (?, ?, ?, ?, ?)')
-      .run(id, tenantId, `${id}@x.it`, enabled, role);
+    m.db!.prepare(
+      'INSERT INTO users (id, tenant_id, email, enabled, role) VALUES (?, ?, ?, ?, ?)',
+    ).run(id, tenantId, `${id}@x.it`, enabled, role);
   }
 
   it('🚨 ritorna SOLO owner + superadmin del tenant; esclude editor/viewer', () => {

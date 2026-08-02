@@ -38,16 +38,29 @@ beforeEach(() => {
   binaryStub.read.mockReset();
 });
 
-const validSave = JSON.stringify({ kind: 'image', prompt: 'a cat', mime: 'image/png', dataBase64: Buffer.from('PNG-DATA').toString('base64') });
+const validSave = JSON.stringify({
+  kind: 'image',
+  prompt: 'a cat',
+  mime: 'image/png',
+  dataBase64: Buffer.from('PNG-DATA').toString('base64'),
+});
 
 describe('gate internal-token (fail-closed)', () => {
   it('senza header → 401, service NON chiamato', async () => {
-    const res = await req('/internal/private-gen/save', { method: 'POST', body: validSave, token: null });
+    const res = await req('/internal/private-gen/save', {
+      method: 'POST',
+      body: validSave,
+      token: null,
+    });
     expect(res.status).toBe(401);
     expect(stub.save).not.toHaveBeenCalled();
   });
   it('token errato → 401', async () => {
-    const res = await req('/internal/private-gen/save', { method: 'POST', body: validSave, token: 'wrong' });
+    const res = await req('/internal/private-gen/save', {
+      method: 'POST',
+      body: validSave,
+      token: 'wrong',
+    });
     expect(res.status).toBe(401);
   });
 });
@@ -92,17 +105,26 @@ describe('POST save', () => {
 
 describe('POST rate', () => {
   it('rating valido → 200', async () => {
-    const res = await req('/internal/private-gen/rate', { method: 'POST', body: JSON.stringify({ id: 'g1', rating: 'up' }) });
+    const res = await req('/internal/private-gen/rate', {
+      method: 'POST',
+      body: JSON.stringify({ id: 'g1', rating: 'up' }),
+    });
     expect(res.status).toBe(200);
     expect(stub.rate).toHaveBeenCalledWith('g1', 'up');
   });
   it('rating null → 200 (azzera voto)', async () => {
-    const res = await req('/internal/private-gen/rate', { method: 'POST', body: JSON.stringify({ id: 'g1', rating: null }) });
+    const res = await req('/internal/private-gen/rate', {
+      method: 'POST',
+      body: JSON.stringify({ id: 'g1', rating: null }),
+    });
     expect(res.status).toBe(200);
     expect(stub.rate).toHaveBeenCalledWith('g1', null);
   });
   it('rating arbitrario → 400 (zod), service NON chiamato', async () => {
-    const res = await req('/internal/private-gen/rate', { method: 'POST', body: JSON.stringify({ id: 'g1', rating: 'love' }) });
+    const res = await req('/internal/private-gen/rate', {
+      method: 'POST',
+      body: JSON.stringify({ id: 'g1', rating: 'love' }),
+    });
     expect(res.status).toBe(400);
     expect(stub.rate).not.toHaveBeenCalled();
   });
@@ -116,7 +138,9 @@ describe('GET list / media', () => {
   });
   it('media ref valido → byte + content-type', async () => {
     binaryStub.read.mockResolvedValueOnce(Buffer.from('IMG'));
-    const res = await req('/internal/private-gen/media/' + 'a'.repeat(64) + '?mime=image/png', { method: 'GET' });
+    const res = await req('/internal/private-gen/media/' + 'a'.repeat(64) + '?mime=image/png', {
+      method: 'GET',
+    });
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toBe('image/png');
     expect(res.headers.get('x-content-type-options')).toBe('nosniff');

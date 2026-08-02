@@ -1,11 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { resolveDatabaseId, remapNodeDatabaseIds, localWritableDbs } from './scaffold-table-provision.js';
+import {
+  resolveDatabaseId,
+  remapNodeDatabaseIds,
+  localWritableDbs,
+} from './scaffold-table-provision.js';
 
 describe('localWritableDbs — le tabelle workflow vanno SOLO in DB locali (bug NHA read-only)', () => {
   it('🚨 mix locale+remoto → SOLO i locali (embedded), default = primo locale', () => {
     const r = localWritableDbs([
-      { id: 'nha', connection: { embedded: false } },   // remoto NHA (read-only)
-      { id: 'loc1', connection: { embedded: true } },   // locale
+      { id: 'nha', connection: { embedded: false } }, // remoto NHA (read-only)
+      { id: 'loc1', connection: { embedded: true } }, // locale
       { id: 'loc2', connection: { embedded: true } },
     ]);
     expect([...r.ids].sort()).toEqual(['loc1', 'loc2']);
@@ -19,7 +23,11 @@ describe('localWritableDbs — le tabelle workflow vanno SOLO in DB locali (bug 
   });
 
   it('🚨 connection assente / embedded undefined → ESCLUSO (non scrivibile a colpo sicuro)', () => {
-    const r = localWritableDbs([{ id: 'a' }, { id: 'b', connection: {} }, { id: 'c', connection: { embedded: true } }]);
+    const r = localWritableDbs([
+      { id: 'a' },
+      { id: 'b', connection: {} },
+      { id: 'c', connection: { embedded: true } },
+    ]);
     expect([...r.ids]).toEqual(['c']);
   });
 
@@ -30,7 +38,10 @@ describe('localWritableDbs — le tabelle workflow vanno SOLO in DB locali (bug 
   });
 
   it('🔒 contract: un remoto NON è mai un id valido per resolveDatabaseId → la tabella NON ci finisce', () => {
-    const dbs = [{ id: 'nha-remote', connection: { embedded: false } }, { id: 'local-1', connection: { embedded: true } }];
+    const dbs = [
+      { id: 'nha-remote', connection: { embedded: false } },
+      { id: 'local-1', connection: { embedded: true } },
+    ];
     const { ids, defaultId } = localWritableDbs(dbs);
     // lo scaffold ha messo l'id del remoto → resolve NON lo onora, ripiega sul locale
     expect(resolveDatabaseId('nha-remote', ids, defaultId)).toBe('local-1');
@@ -95,27 +106,38 @@ describe('remapNodeDatabaseIds — i nodi puntano al DB reale (runtime-safe)', (
  * routes/workflows.ts e riusato da /templates/:id/instantiate. DbStudio
  * iniettato (fake in-memory) → comportamentale, niente rete/fs.
  */
-import { provisionDeclaredTables, type DbStudioLike, type DeclaredTable } from './scaffold-table-provision.js';
+import {
+  provisionDeclaredTables,
+  type DbStudioLike,
+  type DeclaredTable,
+} from './scaffold-table-provision.js';
 
 function fakeLog() {
   return { info: () => undefined, warn: () => undefined };
 }
 
-function fakeDbStudio(opts: {
-  existingDbs?: { id: string; connection?: { embedded?: boolean } }[];
-  failMigrationWith?: string;
-} = {}) {
+function fakeDbStudio(
+  opts: {
+    existingDbs?: { id: string; connection?: { embedded?: boolean } }[];
+    failMigrationWith?: string;
+  } = {},
+) {
   const migrations: { dbId: string; actions: unknown[] }[] = [];
   const inserts: { dbId: string; table: string; row: Record<string, unknown> }[] = [];
   const created: string[] = [];
   const studio: DbStudioLike = {
     list: () => opts.existingDbs ?? [],
-    create: (input) => { created.push(input.name); return { id: 'db-ondemand', connection: { embedded: true } }; },
+    create: (input) => {
+      created.push(input.name);
+      return { id: 'db-ondemand', connection: { embedded: true } };
+    },
     applyMigration: (dbId, actions) => {
       if (opts.failMigrationWith !== undefined) throw new Error(opts.failMigrationWith);
       migrations.push({ dbId, actions });
     },
-    insert: (dbId, table, row) => { inserts.push({ dbId, table, row }); },
+    insert: (dbId, table, row) => {
+      inserts.push({ dbId, table, row });
+    },
   };
   return { studio, migrations, inserts, created };
 }
@@ -129,7 +151,9 @@ const TBL: DeclaredTable = {
 
 describe('provisionDeclaredTables', () => {
   it('DB locale esistente: crea la tabella lì, remap placeholder→id reale, seed inserite', async () => {
-    const { studio, migrations, inserts } = fakeDbStudio({ existingDbs: [{ id: 'db-local', connection: { embedded: true } }] });
+    const { studio, migrations, inserts } = fakeDbStudio({
+      existingDbs: [{ id: 'db-local', connection: { embedded: true } }],
+    });
     const res = await provisionDeclaredTables(studio, 't1', [TBL], fakeLog());
     expect(res.tablesCreated).toEqual([{ name: 'demo_table', ok: true }]);
     expect(res.dbRemap.get('placeholder_db')).toBe('db-local');
@@ -147,7 +171,9 @@ describe('provisionDeclaredTables', () => {
   });
 
   it('🚨 DB ESTERNO (non-embedded) ignorato: le tabelle NON vanno su DB altrui', async () => {
-    const { studio, migrations } = fakeDbStudio({ existingDbs: [{ id: 'db-remoto', connection: { embedded: false } }] });
+    const { studio, migrations } = fakeDbStudio({
+      existingDbs: [{ id: 'db-remoto', connection: { embedded: false } }],
+    });
     await provisionDeclaredTables(studio, 't1', [TBL], fakeLog());
     expect(migrations[0]!.dbId).toBe('db-ondemand'); // NON db-remoto
   });
@@ -174,9 +200,14 @@ describe('provisionDeclaredTables', () => {
   });
 
   it('seed row che fallisce non blocca le altre (best-effort per riga)', async () => {
-    const { studio } = fakeDbStudio({ existingDbs: [{ id: 'db-local', connection: { embedded: true } }] });
+    const { studio } = fakeDbStudio({
+      existingDbs: [{ id: 'db-local', connection: { embedded: true } }],
+    });
     let call = 0;
-    studio.insert = () => { call += 1; if (call === 1) throw new Error('boom'); };
+    studio.insert = () => {
+      call += 1;
+      if (call === 1) throw new Error('boom');
+    };
     const res = await provisionDeclaredTables(studio, 't1', [TBL], fakeLog());
     expect(res.seededRows).toBe(1); // la seconda riga entra comunque
   });

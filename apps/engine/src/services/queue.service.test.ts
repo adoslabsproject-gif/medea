@@ -14,13 +14,23 @@ const closeMock = vi.fn();
 class QueueMock {
   add = addMock;
   close = closeMock;
-  constructor(public name: string, public opts: unknown) {}
+  constructor(
+    public name: string,
+    public opts: unknown,
+  ) {}
 }
 
 const workerEventListeners: Record<string, (...a: unknown[]) => unknown> = {};
 class WorkerMock {
-  constructor(public name: string, public handler: any, public opts: any) {}
-  on(event: string, fn: (...a: unknown[]) => unknown) { workerEventListeners[event] = fn; return this; }
+  constructor(
+    public name: string,
+    public handler: any,
+    public opts: any,
+  ) {}
+  on(event: string, fn: (...a: unknown[]) => unknown) {
+    workerEventListeners[event] = fn;
+    return this;
+  }
 }
 
 vi.mock('bullmq', () => ({
@@ -96,7 +106,9 @@ describe('🚨 getQueueConnection', () => {
   it('🚨 maxRetriesPerRequest null (long-poll BullMQ pattern)', async () => {
     const m = await loadFresh();
     m.getQueueConnection();
-    const opts = at(IORedisCtorMock.mock.calls, 0, 'ioredis-calls')[1] as { maxRetriesPerRequest: number | null };
+    const opts = at(IORedisCtorMock.mock.calls, 0, 'ioredis-calls')[1] as {
+      maxRetriesPerRequest: number | null;
+    };
     expect(opts.maxRetriesPerRequest).toBeNull();
   });
 
@@ -136,7 +148,9 @@ describe('🚨 enqueueRun — job options', () => {
     addMock.mockResolvedValueOnce({ id: 'job-xyz' });
     const m = await loadFresh();
     const id = await m.enqueueRun({
-      workflowId: 'wf-1', tenantId: 't-1', triggerType: 'manual',
+      workflowId: 'wf-1',
+      tenantId: 't-1',
+      triggerType: 'manual',
     });
     expect(id).toBe('job-xyz');
     const [name, data, opts] = at(addMock.mock.calls, 0, 'add-calls');
@@ -173,7 +187,10 @@ describe('🚨 startWorker', () => {
   it('🚨 handler invocato con job.data', async () => {
     let captured: any = null;
     const m = await loadFresh();
-    const w = m.startWorker(async (data) => { captured = data; return 'ok'; });
+    const w = m.startWorker(async (data) => {
+      captured = data;
+      return 'ok';
+    });
     const r = await (w as any).handler({ data: { workflowId: 'wf-X', tenantId: 't' } });
     expect(captured.workflowId).toBe('wf-X');
     expect(r).toBe('ok');

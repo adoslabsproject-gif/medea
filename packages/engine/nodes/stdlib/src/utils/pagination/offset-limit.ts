@@ -8,9 +8,9 @@ import type { PaginationStrategy, PaginationContext, PaginationState } from './s
 import { pickByPath } from './strategy.js';
 
 export interface OffsetLimitOptions {
-  offsetParam?: string;     // default 'offset'
-  limitParam?: string;      // default 'limit'
-  startOffset?: number;     // default 0
+  offsetParam?: string; // default 'offset'
+  limitParam?: string; // default 'limit'
+  startOffset?: number; // default 0
 }
 
 export class OffsetLimitStrategy implements PaginationStrategy {

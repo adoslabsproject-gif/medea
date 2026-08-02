@@ -17,7 +17,11 @@ function getPath(obj: unknown, path: string): unknown {
   let cur: unknown = obj;
   for (const p of path.split('.')) {
     if (cur === null || cur === undefined) return undefined;
-    cur = Array.isArray(cur) ? cur[Number(p)] : typeof cur === 'object' ? (cur as Record<string, unknown>)[p] : undefined;
+    cur = Array.isArray(cur)
+      ? cur[Number(p)]
+      : typeof cur === 'object'
+        ? (cur as Record<string, unknown>)[p]
+        : undefined;
   }
   return cur;
 }
@@ -33,11 +37,14 @@ function clampDecimals(v: unknown): number {
 /** Parser numerico robusto: gestisce il formato italiano "1.234,56" e quello US "1,234.56". */
 function toNumber(v: unknown): number {
   if (typeof v === 'number') return v;
-  let s = str(v).trim().replace(/[^\d.,-]/g, ''); // via simboli valuta/spazi
+  let s = str(v)
+    .trim()
+    .replace(/[^\d.,-]/g, ''); // via simboli valuta/spazi
   if (s === '') return NaN;
   const lastComma = s.lastIndexOf(',');
   const lastDot = s.lastIndexOf('.');
-  if (lastComma > lastDot) s = s.replace(/\./g, '').replace(',', '.'); // IT: . migliaia, , decimale
+  if (lastComma > lastDot)
+    s = s.replace(/\./g, '').replace(',', '.'); // IT: . migliaia, , decimale
   else s = s.replace(/,/g, ''); // US: , migliaia
   return Number(s);
 }
@@ -56,14 +63,21 @@ const numberExecutor: NodeExecutor = async (config, input) => {
       // Round half-away-from-zero con correzione epsilon SCALATA alla magnitudine
       // (1+EPSILON) → neutralizza il drift di virgola mobile: 1.005→1.01, 8.575→8.58
       // (il naive Math.round(n*f)/f darebbe 1.00 / 8.57). Vedi MDN decimalAdjust.
-      const d = clampDecimals(config.decimals); const f = 10 ** d;
+      const d = clampDecimals(config.decimals);
+      const f = 10 ** d;
       const sign = n < 0 ? -1 : 1;
       result = (sign * Math.round(Math.abs(n) * f * (1 + Number.EPSILON))) / f;
       break;
     }
-    case 'floor': result = Math.floor(n); break;
-    case 'ceil': result = Math.ceil(n); break;
-    case 'abs': result = Math.abs(n); break;
+    case 'floor':
+      result = Math.floor(n);
+      break;
+    case 'ceil':
+      result = Math.ceil(n);
+      break;
+    case 'abs':
+      result = Math.abs(n);
+      break;
     case 'clamp': {
       const min = config.min !== undefined && config.min !== '' ? toNumber(config.min) : -Infinity;
       const max = config.max !== undefined && config.max !== '' ? toNumber(config.max) : Infinity;
@@ -72,7 +86,8 @@ const numberExecutor: NodeExecutor = async (config, input) => {
     }
     case 'percent': {
       // n% di total (se total dato) oppure n come frazione → percentuale formattata
-      const total = config.total !== undefined && str(config.total) !== '' ? toNumber(config.total) : null;
+      const total =
+        config.total !== undefined && str(config.total) !== '' ? toNumber(config.total) : null;
       result = total !== null ? (n / 100) * total : n * 100;
       break;
     }
@@ -80,12 +95,23 @@ const numberExecutor: NodeExecutor = async (config, input) => {
       const locale = str(config.locale, 'it-IT') || 'it-IT';
       const currency = str(config.currency, 'EUR') || 'EUR';
       const formatted = new Intl.NumberFormat(locale, { style: 'currency', currency }).format(n);
-      return { output: { result: formatted, raw: n, currency }, durationMs: Date.now() - startedAt };
+      return {
+        output: { result: formatted, raw: n, currency },
+        durationMs: Date.now() - startedAt,
+      };
     }
     case 'format': {
       const locale = str(config.locale, 'it-IT') || 'it-IT';
-      const decimals = config.decimals !== undefined && str(config.decimals) !== '' ? clampDecimals(config.decimals) : undefined;
-      const formatted = new Intl.NumberFormat(locale, decimals !== undefined ? { minimumFractionDigits: decimals, maximumFractionDigits: decimals } : {}).format(n);
+      const decimals =
+        config.decimals !== undefined && str(config.decimals) !== ''
+          ? clampDecimals(config.decimals)
+          : undefined;
+      const formatted = new Intl.NumberFormat(
+        locale,
+        decimals !== undefined
+          ? { minimumFractionDigits: decimals, maximumFractionDigits: decimals }
+          : {},
+      ).format(n);
       return { output: { result: formatted, raw: n }, durationMs: Date.now() - startedAt };
     }
     case 'parse':
@@ -121,43 +147,82 @@ export const numberNode: NodeModule = {
       'Il parser di ingresso riconosce automaticamente il formato IT (punto migliaia, virgola decimale) e US. ' +
       'Output: { result, raw, operation }. ' +
       'Use case: arrotonda il totale carrello a 2 decimali (ROUND); formatta il prezzo in "1.234,50 €" per ' +
-      'l\'email ordine (CURRENCY); calcola il 22% di IVA su un imponibile (PERCENT); importa i prezzi dal CSV ' +
+      "l'email ordine (CURRENCY); calcola il 22% di IVA su un imponibile (PERCENT); importa i prezzi dal CSV " +
       'fornitore in formato italiano (PARSE); limita lo sconto applicabile a max 50% (CLAMP).',
     configFields: [
       {
-        key: 'operation', label: 'Operazione', type: 'select', required: true, defaultValue: 'round',
-        options: ['round', 'floor', 'ceil', 'abs', 'clamp', 'percent', 'currency', 'format', 'parse'],
+        key: 'operation',
+        label: 'Operazione',
+        type: 'select',
+        required: true,
+        defaultValue: 'round',
+        options: [
+          'round',
+          'floor',
+          'ceil',
+          'abs',
+          'clamp',
+          'percent',
+          'currency',
+          'format',
+          'parse',
+        ],
         help: 'Cosa calcolare/formattare. Ogni operazione mostra solo i suoi parametri.',
       },
       {
-        key: 'value', label: 'Valore', type: 'expression', required: false, defaultValue: 'input',
-        help: 'Il numero (o stringa numerica in qualsiasi formato). Vuoto = usa l\'input del nodo.',
+        key: 'value',
+        label: 'Valore',
+        type: 'expression',
+        required: false,
+        defaultValue: 'input',
+        help: "Il numero (o stringa numerica in qualsiasi formato). Vuoto = usa l'input del nodo.",
       },
       {
-        key: 'decimals', label: 'Decimali', type: 'number', required: false, defaultValue: '2',
+        key: 'decimals',
+        label: 'Decimali',
+        type: 'number',
+        required: false,
+        defaultValue: '2',
         help: 'Numero di cifre decimali.',
         showIf: { field: 'operation', in: ['round', 'format'] },
       },
       {
-        key: 'min', label: 'Minimo', type: 'number', required: false,
+        key: 'min',
+        label: 'Minimo',
+        type: 'number',
+        required: false,
         showIf: { field: 'operation', equals: 'clamp' },
       },
       {
-        key: 'max', label: 'Massimo', type: 'number', required: false,
+        key: 'max',
+        label: 'Massimo',
+        type: 'number',
+        required: false,
         showIf: { field: 'operation', equals: 'clamp' },
       },
       {
-        key: 'total', label: 'Totale (base %)', type: 'number', required: false,
+        key: 'total',
+        label: 'Totale (base %)',
+        type: 'number',
+        required: false,
         help: 'Se valorizzato: risultato = (valore/100) × totale. Vuoto: valore × 100.',
         showIf: { field: 'operation', equals: 'percent' },
       },
       {
-        key: 'currency', label: 'Valuta', type: 'select', required: false, defaultValue: 'EUR',
+        key: 'currency',
+        label: 'Valuta',
+        type: 'select',
+        required: false,
+        defaultValue: 'EUR',
         options: ['EUR', 'USD', 'GBP', 'CHF'],
         showIf: { field: 'operation', equals: 'currency' },
       },
       {
-        key: 'locale', label: 'Lingua/formato', type: 'select', required: false, defaultValue: 'it-IT',
+        key: 'locale',
+        label: 'Lingua/formato',
+        type: 'select',
+        required: false,
+        defaultValue: 'it-IT',
         options: ['it-IT', 'en-US', 'en-GB', 'de-DE', 'fr-FR'],
         help: 'Determina separatori delle migliaia e dei decimali.',
         showIf: { field: 'operation', in: ['currency', 'format'] },
@@ -178,18 +243,42 @@ const aggregateExecutor: NodeExecutor = async (config, input) => {
   const raw = config.items !== undefined && str(config.items) !== '' ? config.items : input;
   const arr: unknown[] = Array.isArray(raw)
     ? raw
-    : typeof raw === 'string' ? (() => { try { const p: unknown = JSON.parse(raw); return Array.isArray(p) ? (p as unknown[]) : []; } catch { return []; } })() : [];
+    : typeof raw === 'string'
+      ? (() => {
+          try {
+            const p: unknown = JSON.parse(raw);
+            return Array.isArray(p) ? (p as unknown[]) : [];
+          } catch {
+            return [];
+          }
+        })()
+      : [];
   const key = str(config.key);
-  const nums = arr.map((it) => toNumber(key ? getPath(it, key) : it)).filter((n) => !Number.isNaN(n));
+  const nums = arr
+    .map((it) => toNumber(key ? getPath(it, key) : it))
+    .filter((n) => !Number.isNaN(n));
   const count = nums.length;
   const sum = nums.reduce((a, b) => a + b, 0);
   const avg = count ? sum / count : 0;
   const sorted = [...nums].sort((a, b) => a - b);
-  const median = count === 0 ? 0 : count % 2 ? sorted[(count - 1) / 2]! : (sorted[count / 2 - 1]! + sorted[count / 2]!) / 2;
+  const median =
+    count === 0
+      ? 0
+      : count % 2
+        ? sorted[(count - 1) / 2]!
+        : (sorted[count / 2 - 1]! + sorted[count / 2]!) / 2;
   const variance = count ? nums.reduce((a, b) => a + (b - avg) ** 2, 0) / count : 0;
   const stddev = Math.sqrt(variance);
   const op = str(config.operation, 'all');
-  const stats = { count, sum, avg, min: count ? sorted[0]! : 0, max: count ? sorted[count - 1]! : 0, median, stddev };
+  const stats = {
+    count,
+    sum,
+    avg,
+    min: count ? sorted[0]! : 0,
+    max: count ? sorted[count - 1]! : 0,
+    median,
+    stddev,
+  };
   const result = op === 'all' ? stats : stats[op as keyof typeof stats];
   // I campi flat (count/sum/avg/…) sono SEMPRE al top level — come promette la
   // description "Output: { result, count, sum, … }". Prima erano spread SOLO per le
@@ -218,16 +307,27 @@ export const aggregateNode: NodeModule = {
       'rilevare anomalie; conteggio di righe valide importate da un CSV.',
     configFields: [
       {
-        key: 'operation', label: 'Statistica', type: 'select', required: true, defaultValue: 'all',
+        key: 'operation',
+        label: 'Statistica',
+        type: 'select',
+        required: true,
+        defaultValue: 'all',
         options: ['all', 'sum', 'avg', 'min', 'max', 'median', 'stddev', 'count'],
         help: '"all" = tutte insieme. Oppure scegline una sola come risultato principale.',
       },
       {
-        key: 'items', label: 'Array', type: 'expression', required: false, defaultValue: 'input',
-        help: 'Array di numeri o di oggetti. Vuoto = usa l\'input del nodo.',
+        key: 'items',
+        label: 'Array',
+        type: 'expression',
+        required: false,
+        defaultValue: 'input',
+        help: "Array di numeri o di oggetti. Vuoto = usa l'input del nodo.",
       },
       {
-        key: 'key', label: 'Campo numerico (dot-path)', type: 'text', required: false,
+        key: 'key',
+        label: 'Campo numerico (dot-path)',
+        type: 'text',
+        required: false,
         placeholder: 'es. ordine.totale',
         help: 'Se gli elementi sono oggetti, il campo da aggregare. Vuoto = gli elementi sono già numeri.',
       },

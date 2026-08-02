@@ -30,7 +30,11 @@ export interface CollectionInfo {
 
 export interface IVectorAdapter {
   readonly engine: 'vector-embedded' | 'qdrant' | 'pgvector';
-  ensureCollection(name: string, dimensions: number, distance: 'cosine' | 'euclidean' | 'dot'): Promise<void>;
+  ensureCollection(
+    name: string,
+    dimensions: number,
+    distance: 'cosine' | 'euclidean' | 'dot',
+  ): Promise<void>;
   listCollections(): Promise<CollectionInfo[]>;
   upsert(collection: string, records: readonly VectorRecord[]): Promise<{ count: number }>;
   search(collection: string, query: SimilaritySearchQuery): Promise<SimilaritySearchResult[]>;

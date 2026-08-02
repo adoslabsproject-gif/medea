@@ -28,16 +28,24 @@ beforeEach(() => {
   fsMock.writeFile.mockReset().mockResolvedValue(undefined);
 });
 
-afterEach(() => { vi.useRealTimers(); });
+afterEach(() => {
+  vi.useRealTimers();
+});
 
-async function load() { return import('./gdpr-purge.cron.js'); }
+async function load() {
+  return import('./gdpr-purge.cron.js');
+}
 
 describe('🚨 startGdprPurgeCron + stop', () => {
   it('🚨 start log info', async () => {
     const m = await load();
     m.startGdprPurgeCron();
     expect(loggerMock.info).toHaveBeenCalledWith(
-      expect.objectContaining({ retentionDays: 30, intervalHours: 24, markerFile: expect.any(String) }),
+      expect.objectContaining({
+        retentionDays: 30,
+        intervalHours: 24,
+        markerFile: expect.any(String),
+      }),
       '[ai-conv.gdpr] cron started (BYOK-14 fix: persistent last_run marker)',
     );
     m.stopGdprPurgeCron();
@@ -83,7 +91,9 @@ describe('🚨 runPurgeOnce', () => {
   });
 
   it('🚨 hardPurge throw → log error + rethrow', async () => {
-    hardPurgeMock.mockImplementationOnce(() => { throw new Error('SQLite busy'); });
+    hardPurgeMock.mockImplementationOnce(() => {
+      throw new Error('SQLite busy');
+    });
     const m = await load();
     await expect(m.runPurgeOnce()).rejects.toThrow('SQLite busy');
     expect(loggerMock.error).toHaveBeenCalledWith(

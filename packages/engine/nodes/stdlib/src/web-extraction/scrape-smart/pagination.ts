@@ -30,18 +30,36 @@ export function detectNextPage(html: string, baseUrl: string): NextPageDetection
   if (!html) return { found: false, url: null, method: null, evidence: '' };
 
   // 1. rel="next" link tag
-  const relNextMatch = /<(?:a|link)[^>]+rel=["']next["'][^>]*>/i.exec(html) ?? /<(?:a|link)[^>]+rel=[^>]*\bnext\b[^>]*>/i.exec(html);
+  const relNextMatch =
+    /<(?:a|link)[^>]+rel=["']next["'][^>]*>/i.exec(html) ??
+    /<(?:a|link)[^>]+rel=[^>]*\bnext\b[^>]*>/i.exec(html);
   if (relNextMatch) {
     const hrefMatch = /href=["']([^"']+)["']/i.exec(relNextMatch[0]);
     if (hrefMatch?.[1]) {
-      return { found: true, url: resolveUrl(hrefMatch[1], baseUrl), method: 'rel-next', evidence: relNextMatch[0].slice(0, 100) };
+      return {
+        found: true,
+        url: resolveUrl(hrefMatch[1], baseUrl),
+        method: 'rel-next',
+        evidence: relNextMatch[0].slice(0, 100),
+      };
     }
   }
 
   // 2. aria-label
-  const ariaMatch = /<a[^>]+aria-label=["'][^"']*(?:next|successiv|prossim|siguiente)[^"']*["'][^>]+href=["']([^"']+)["']/i.exec(html) ?? /<a[^>]+href=["']([^"']+)["'][^>]+aria-label=["'][^"']*(?:next|successiv|prossim|siguiente)[^"']*["']/i.exec(html);
+  const ariaMatch =
+    /<a[^>]+aria-label=["'][^"']*(?:next|successiv|prossim|siguiente)[^"']*["'][^>]+href=["']([^"']+)["']/i.exec(
+      html,
+    ) ??
+    /<a[^>]+href=["']([^"']+)["'][^>]+aria-label=["'][^"']*(?:next|successiv|prossim|siguiente)[^"']*["']/i.exec(
+      html,
+    );
   if (ariaMatch?.[1]) {
-    return { found: true, url: resolveUrl(ariaMatch[1], baseUrl), method: 'aria-label', evidence: ariaMatch[0].slice(0, 100) };
+    return {
+      found: true,
+      url: resolveUrl(ariaMatch[1], baseUrl),
+      method: 'aria-label',
+      evidence: ariaMatch[0].slice(0, 100),
+    };
   }
 
   // 3. text inside <a>
@@ -53,7 +71,12 @@ export function detectNextPage(html: string, baseUrl: string): NextPageDetection
     if (!href || !text) continue;
     for (const re of NEXT_TEXT_PATTERNS) {
       if (re.test(text)) {
-        return { found: true, url: resolveUrl(href, baseUrl), method: 'text-match', evidence: `text="${text}"` };
+        return {
+          found: true,
+          url: resolveUrl(href, baseUrl),
+          method: 'text-match',
+          evidence: `text="${text}"`,
+        };
       }
     }
   }
@@ -61,7 +84,12 @@ export function detectNextPage(html: string, baseUrl: string): NextPageDetection
   // 4. URL pattern increment (page=N → page=N+1)
   const urlIncrement = incrementUrlPageParam(baseUrl);
   if (urlIncrement) {
-    return { found: true, url: urlIncrement.url, method: 'url-pattern', evidence: urlIncrement.evidence };
+    return {
+      found: true,
+      url: urlIncrement.url,
+      method: 'url-pattern',
+      evidence: urlIncrement.evidence,
+    };
   }
 
   return { found: false, url: null, method: null, evidence: '' };

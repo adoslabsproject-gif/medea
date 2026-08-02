@@ -30,21 +30,21 @@ export type HoneypotCategory =
   | 'path_traversal'
   | 'cve_probe'
   | 'info_disclosure'
-  | 'cloud_metadata'         // AWS IMDS, GCP metadata, Azure IMDS
-  | 'ssrf_probe'             // server-side request forgery
-  | 'command_injection'      // ?cmd=, ?exec=, shell metacharacters in query
-  | 'sql_injection'          // UNION SELECT, OR 1=1, sleep()
-  | 'nosql_injection'        // $gt $ne $where $regex
-  | 'cms_scan'               // Drupal/Joomla/Magento/Shopify fingerprint
-  | 'webshell_upload'        // c99/r57/jsp shell upload patterns
-  | 'java_servlet_probe'     // Tomcat /manager, /examples, JSP, Struts
-  | 'iot_default_panel'      // router/camera/printer default admin paths
-  | 'cicd_leak'              // Jenkinsfile, .gitlab-ci.yml, workflows exposed
-  | 'k8s_secret_probe'       // /api/v1/secrets, /run/secrets, etcd
-  | 'next_internal_probe'    // Next.js _next/*, __nextapi
-  | 'aspnet_legacy'          // trace.axd, ELMAH, web.config probe
-  | 'cryptominer_inject'     // coinhive / cryptominer beacon
-  | 'router_cve';            // CVE-202x router/IoT panels
+  | 'cloud_metadata' // AWS IMDS, GCP metadata, Azure IMDS
+  | 'ssrf_probe' // server-side request forgery
+  | 'command_injection' // ?cmd=, ?exec=, shell metacharacters in query
+  | 'sql_injection' // UNION SELECT, OR 1=1, sleep()
+  | 'nosql_injection' // $gt $ne $where $regex
+  | 'cms_scan' // Drupal/Joomla/Magento/Shopify fingerprint
+  | 'webshell_upload' // c99/r57/jsp shell upload patterns
+  | 'java_servlet_probe' // Tomcat /manager, /examples, JSP, Struts
+  | 'iot_default_panel' // router/camera/printer default admin paths
+  | 'cicd_leak' // Jenkinsfile, .gitlab-ci.yml, workflows exposed
+  | 'k8s_secret_probe' // /api/v1/secrets, /run/secrets, etcd
+  | 'next_internal_probe' // Next.js _next/*, __nextapi
+  | 'aspnet_legacy' // trace.axd, ELMAH, web.config probe
+  | 'cryptominer_inject' // coinhive / cryptominer beacon
+  | 'router_cve'; // CVE-202x router/IoT panels
 
 export interface HoneypotPattern {
   category: HoneypotCategory;
@@ -70,7 +70,8 @@ export const HONEYPOT_PATTERNS: readonly HoneypotPattern[] = Object.freeze([
   // IoT / router default panels
   {
     category: 'iot_default_panel',
-    pattern: /\/(?:setup\.cgi|status\.cgi|HNAP1|hndUnblock\.cgi|cgi-bin\/(?:luci|hedwig\.cgi|tmUnblock\.cgi))/i,
+    pattern:
+      /\/(?:setup\.cgi|status\.cgi|HNAP1|hndUnblock\.cgi|cgi-bin\/(?:luci|hedwig\.cgi|tmUnblock\.cgi))/i,
     description: 'Router/IoT default CGI panel (D-Link, Netgear, Linksys, etc)',
   },
   {
@@ -82,7 +83,8 @@ export const HONEYPOT_PATTERNS: readonly HoneypotPattern[] = Object.freeze([
   // Webshell upload (.php noto MA classificato come webshell se nome canonical)
   {
     category: 'webshell_upload',
-    pattern: /\/(?:c99|r57|wso|b374k|aspydoor|webadmin|FilesMan|p0wny|tinyfilemanager)(?:\.php|\.asp|\.aspx|\.jsp)?$/i,
+    pattern:
+      /\/(?:c99|r57|wso|b374k|aspydoor|webadmin|FilesMan|p0wny|tinyfilemanager)(?:\.php|\.asp|\.aspx|\.jsp)?$/i,
     description: 'Known webshell filename / upload target',
   },
   {
@@ -94,14 +96,16 @@ export const HONEYPOT_PATTERNS: readonly HoneypotPattern[] = Object.freeze([
   // K8s secrets / service account (specifico, before path_traversal /etc)
   {
     category: 'k8s_secret_probe',
-    pattern: /\/(?:api\/v1\/(?:secrets|configmaps|serviceaccounts)|run\/secrets|var\/run\/secrets|service-account-token)/i,
+    pattern:
+      /\/(?:api\/v1\/(?:secrets|configmaps|serviceaccounts)|run\/secrets|var\/run\/secrets|service-account-token)/i,
     description: 'Kubernetes secret/service-account exposure probe',
   },
 
   // Cloud metadata endpoints — IMDS abuse
   {
     category: 'cloud_metadata',
-    pattern: /\/(?:latest\/(?:meta-data|user-data|dynamic\/instance-identity)|computeMetadata\/v\d+\/|metadata\/instance|169\.254\.169\.254|fd00:ec2::254)/i,
+    pattern:
+      /\/(?:latest\/(?:meta-data|user-data|dynamic\/instance-identity)|computeMetadata\/v\d+\/|metadata\/instance|169\.254\.169\.254|fd00:ec2::254)/i,
     description: 'AWS/GCP/Azure IMDS metadata endpoint probe',
   },
   {
@@ -113,7 +117,8 @@ export const HONEYPOT_PATTERNS: readonly HoneypotPattern[] = Object.freeze([
   // Next.js internal routes
   {
     category: 'next_internal_probe',
-    pattern: /\/(?:_next\/(?:server|webpack-hmr|on-demand-entries)|__nextjs_original-stack-frame|__nextjs_(?:debug|launch-editor))/i,
+    pattern:
+      /\/(?:_next\/(?:server|webpack-hmr|on-demand-entries)|__nextjs_original-stack-frame|__nextjs_(?:debug|launch-editor))/i,
     description: 'Next.js dev/internal endpoint enumeration',
   },
 
@@ -127,7 +132,8 @@ export const HONEYPOT_PATTERNS: readonly HoneypotPattern[] = Object.freeze([
   // Java servlet / Tomcat / Struts
   {
     category: 'java_servlet_probe',
-    pattern: /\/(?:manager\/html|host-manager|examples\/servlets|examples\/jsp|axis2-admin)(?:\/|$)/i,
+    pattern:
+      /\/(?:manager\/html|host-manager|examples\/servlets|examples\/jsp|axis2-admin)(?:\/|$)/i,
     description: 'Tomcat manager / Axis2 admin probe (CVE-rich)',
   },
   {
@@ -139,12 +145,14 @@ export const HONEYPOT_PATTERNS: readonly HoneypotPattern[] = Object.freeze([
   // CI/CD secrets exposure
   {
     category: 'cicd_leak',
-    pattern: /\/(?:Jenkinsfile|\.gitlab-ci\.yml|\.travis\.yml|\.circleci\/config\.yml|azure-pipelines\.yml|bitbucket-pipelines\.yml|appveyor\.yml|\.github\/workflows\/)/i,
+    pattern:
+      /\/(?:Jenkinsfile|\.gitlab-ci\.yml|\.travis\.yml|\.circleci\/config\.yml|azure-pipelines\.yml|bitbucket-pipelines\.yml|appveyor\.yml|\.github\/workflows\/)/i,
     description: 'CI/CD pipeline config file probe (Jenkins/GitLab/Travis/etc)',
   },
   {
     category: 'cicd_leak',
-    pattern: /\/(?:docker-compose\.ya?ml|Dockerfile(?:\.[a-z]+)?|\.dockerignore|k8s\/.*\.ya?ml|deployment\.ya?ml)$/i,
+    pattern:
+      /\/(?:docker-compose\.ya?ml|Dockerfile(?:\.[a-z]+)?|\.dockerignore|k8s\/.*\.ya?ml|deployment\.ya?ml)$/i,
     description: 'Container/k8s manifest file probe',
   },
 
@@ -158,24 +166,28 @@ export const HONEYPOT_PATTERNS: readonly HoneypotPattern[] = Object.freeze([
   // CMS scan (non-WordPress) — specifico marker files
   {
     category: 'cms_scan',
-    pattern: /\/(?:CHANGELOG\.(?:txt|md)|INSTALL\.(?:txt|md)|MAINTAINERS\.(?:txt|md)|UPGRADE\.(?:txt|md))$/i,
+    pattern:
+      /\/(?:CHANGELOG\.(?:txt|md)|INSTALL\.(?:txt|md)|MAINTAINERS\.(?:txt|md)|UPGRADE\.(?:txt|md))$/i,
     description: 'CMS source-code marker leak (Drupal/Joomla style)',
   },
   {
     category: 'cms_scan',
-    pattern: /\/(?:joomla|drupal|magento|prestashop|opencart|typo3|shopify|sitecore|umbraco|kentico)(?:\/|$|\.)/i,
+    pattern:
+      /\/(?:joomla|drupal|magento|prestashop|opencart|typo3|shopify|sitecore|umbraco|kentico)(?:\/|$|\.)/i,
     description: 'CMS fingerprint probe (Joomla/Drupal/Magento/...)',
   },
   {
     category: 'cms_scan',
-    pattern: /\/(?:user\/login|administrator\/index\.php|admin\/login\.php\?action=login|index\.php\?option=com_users)/i,
+    pattern:
+      /\/(?:user\/login|administrator\/index\.php|admin\/login\.php\?action=login|index\.php\?option=com_users)/i,
     description: 'CMS admin login endpoint enumeration',
   },
 
   // Injection patterns (query string-based, very specific)
   {
     category: 'sql_injection',
-    pattern: /[?&][a-z_]+=(?:[0-9]+(?:%27|')\s*(?:OR|AND|UNION|SELECT|SLEEP|BENCHMARK)|UNION\s+(?:ALL\s+)?SELECT|';\s*(?:DROP|DELETE|UPDATE))/i,
+    pattern:
+      /[?&][a-z_]+=(?:[0-9]+(?:%27|')\s*(?:OR|AND|UNION|SELECT|SLEEP|BENCHMARK)|UNION\s+(?:ALL\s+)?SELECT|';\s*(?:DROP|DELETE|UPDATE))/i,
     description: 'SQL injection payload signature',
   },
   {
@@ -195,7 +207,8 @@ export const HONEYPOT_PATTERNS: readonly HoneypotPattern[] = Object.freeze([
   },
   {
     category: 'ssrf_probe',
-    pattern: /[?&](?:url|redirect|next|target|dest|callback|return|continue)=(?:https?:\/\/|gopher:\/\/|file:\/\/|dict:\/\/|ftp:\/\/|jar:|netdoc:)/i,
+    pattern:
+      /[?&](?:url|redirect|next|target|dest|callback|return|continue)=(?:https?:\/\/|gopher:\/\/|file:\/\/|dict:\/\/|ftp:\/\/|jar:|netdoc:)/i,
     description: 'SSRF via query param with external/internal scheme',
   },
   {
@@ -207,14 +220,16 @@ export const HONEYPOT_PATTERNS: readonly HoneypotPattern[] = Object.freeze([
   // Extended env_leak (config files & secrets)
   {
     category: 'env_leak',
-    pattern: /\/(?:config\.(?:json|ya?ml|toml|ini)|database\.ya?ml|secrets\.ya?ml|application\.properties|appsettings(?:\.[a-z]+)?\.json|\.npmrc|\.aws\/credentials|id_rsa|id_dsa|\.ssh\/(?:authorized_keys|known_hosts|config))$/i,
+    pattern:
+      /\/(?:config\.(?:json|ya?ml|toml|ini)|database\.ya?ml|secrets\.ya?ml|application\.properties|appsettings(?:\.[a-z]+)?\.json|\.npmrc|\.aws\/credentials|id_rsa|id_dsa|\.ssh\/(?:authorized_keys|known_hosts|config))$/i,
     description: 'Config / secrets / SSH key file probe',
   },
 
   // Extended info_disclosure (framework debug)
   {
     category: 'info_disclosure',
-    pattern: /\/(?:debug\.html|debug\/default\/view|console\/login|_profiler\/(?:phpinfo|info)|app_dev\.php\/_profiler|_ignition\/health-check)/i,
+    pattern:
+      /\/(?:debug\.html|debug\/default\/view|console\/login|_profiler\/(?:phpinfo|info)|app_dev\.php\/_profiler|_ignition\/health-check)/i,
     description: 'Framework debug toolbar / profiler probe',
   },
 
@@ -292,7 +307,8 @@ export const HONEYPOT_PATTERNS: readonly HoneypotPattern[] = Object.freeze([
   // ─── DevOps tool exposure (CVE-rich attack surface) ────────────
   {
     category: 'devops_tool_probe',
-    pattern: /\/(?:actuator|jenkins|gitlab|grafana|prometheus|kibana|elasticsearch|consul|vault|nomad)(?:\/|$)/i,
+    pattern:
+      /\/(?:actuator|jenkins|gitlab|grafana|prometheus|kibana|elasticsearch|consul|vault|nomad)(?:\/|$)/i,
     description: 'DevOps / observability tool probe',
   },
 
@@ -306,7 +322,8 @@ export const HONEYPOT_PATTERNS: readonly HoneypotPattern[] = Object.freeze([
   // ─── LLM proxy abuse (server used as free OpenAI/Anthropic relay) ──
   {
     category: 'llm_proxy_abuse',
-    pattern: /^\/(?:v1\/(?:chat\/completions|completions|embeddings|models)|openai\/|anthropic\/|gemini-pro\/|chatgpt\/api\/)/i,
+    pattern:
+      /^\/(?:v1\/(?:chat\/completions|completions|embeddings|models)|openai\/|anthropic\/|gemini-pro\/|chatgpt\/api\/)/i,
     description: 'LLM provider API path probe (proxy abuse)',
   },
 
@@ -320,14 +337,16 @@ export const HONEYPOT_PATTERNS: readonly HoneypotPattern[] = Object.freeze([
   // ─── CVE-specific path probes ──────────────────────────────────
   {
     category: 'cve_probe',
-    pattern: /\/(?:struts2-rest|log4j[a-z-]*|spring-cloud|webgoat|cve-\d{4}-\d+|exploit\.[a-z]+|backdoor|c99\.php|r57\.php|shell\.php)(?:$|\/)/i,
+    pattern:
+      /\/(?:struts2-rest|log4j[a-z-]*|spring-cloud|webgoat|cve-\d{4}-\d+|exploit\.[a-z]+|backdoor|c99\.php|r57\.php|shell\.php)(?:$|\/)/i,
     description: 'known CVE / exploit / webshell name',
   },
 
   // ─── Info disclosure / status pages ────────────────────────────
   {
     category: 'info_disclosure',
-    pattern: /^\/(?:server-status|server-info|phpinfo\.php|info\.php|status\.php|\.well-known\/security\.txt\.bak)$/i,
+    pattern:
+      /^\/(?:server-status|server-info|phpinfo\.php|info\.php|status\.php|\.well-known\/security\.txt\.bak)$/i,
     description: 'server status / phpinfo / debug page probe',
   },
 

@@ -36,10 +36,15 @@ sqliteMem.exec(`
 const sendCalls: { config: Record<string, unknown>; input: unknown; ctx: unknown }[] = [];
 
 vi.mock('./nodemailer.js', () => ({
-  sendEmailExecutor: vi.fn(async (config: Record<string, unknown>, input: unknown, ctx: unknown) => {
-    sendCalls.push({ config, input, ctx });
-    return { output: { messageId: '<test@mid>', accepted: ['x@y.it'], rejected: [] }, durationMs: 12 };
-  }),
+  sendEmailExecutor: vi.fn(
+    async (config: Record<string, unknown>, input: unknown, ctx: unknown) => {
+      sendCalls.push({ config, input, ctx });
+      return {
+        output: { messageId: '<test@mid>', accepted: ['x@y.it'], rejected: [] },
+        durationMs: 12,
+      };
+    },
+  ),
 }));
 vi.mock('@/storage/db.js', () => ({
   getDatabase: () => ({ sqlite: sqliteMem }),
@@ -72,14 +77,16 @@ beforeEach(() => {
 
 describe('consent gate', () => {
   it('throws when requireConsent=true (default) and consentVerified missing', async () => {
-    await expect(sendEmailTrackedExecutor(baseCfg, {}, ctx))
-      .rejects.toThrow(/consentVerified=true/);
+    await expect(sendEmailTrackedExecutor(baseCfg, {}, ctx)).rejects.toThrow(
+      /consentVerified=true/,
+    );
     expect(sendCalls).toHaveLength(0);
   });
 
   it('throws when consentVerified is "true" (string) — refuses coercion', async () => {
-    await expect(sendEmailTrackedExecutor(baseCfg, { consentVerified: 'true' }, ctx))
-      .rejects.toThrow(/consentVerified/);
+    await expect(
+      sendEmailTrackedExecutor(baseCfg, { consentVerified: 'true' }, ctx),
+    ).rejects.toThrow(/consentVerified/);
   });
 
   it('passes when consentVerified === true (literal)', async () => {
@@ -120,7 +127,7 @@ describe('body injection', () => {
     expect(typeof out.openToken).toBe('string');
     expect((out.openToken as string).length).toBeGreaterThan(20);
     expect(typeof out.pixelUrl).toBe('string');
-    expect((out.pixelUrl as string)).toMatch(/^https:.*\/api\/track\/open\//);
+    expect(out.pixelUrl as string).toMatch(/^https:.*\/api\/track\/open\//);
     expect(Array.isArray(out.clickTokens)).toBe(true);
     expect((out.clickTokens as string[]).length).toBe(1);
   });
@@ -133,8 +140,9 @@ describe('infra failures', () => {
     }));
     vi.resetModules();
     const { sendEmailTrackedExecutor: freshFn } = await import('./nodemailer-tracked.js');
-    await expect(freshFn(baseCfg, { consentVerified: true }, ctx))
-      .rejects.toThrow(/trackingBaseUrl|MEDEA_PUBLIC_BASE_URL/);
+    await expect(freshFn(baseCfg, { consentVerified: true }, ctx)).rejects.toThrow(
+      /trackingBaseUrl|MEDEA_PUBLIC_BASE_URL/,
+    );
     vi.doUnmock('@/config.js');
   });
 
@@ -145,8 +153,9 @@ describe('infra failures', () => {
     }));
     delete process.env.MEDEA_SSO_SECRET;
     const { sendEmailTrackedExecutor: freshFn } = await import('./nodemailer-tracked.js');
-    await expect(freshFn(baseCfg, { consentVerified: true }, ctx))
-      .rejects.toThrow(/MEDEA_SSO_SECRET/);
+    await expect(freshFn(baseCfg, { consentVerified: true }, ctx)).rejects.toThrow(
+      /MEDEA_SSO_SECRET/,
+    );
     vi.doUnmock('@/config.js');
   });
 });
@@ -157,9 +166,15 @@ describe('interaction logging', () => {
     const sendId = (res.output as Record<string, unknown>).sendId as string;
     expect(typeof sendId).toBe('string');
 
-    const rows = sqliteMem.prepare(
-      "SELECT * FROM b2b_interactions WHERE type='email_sent'",
-    ).all() as { tenant_id: string; lead_id: string; campaign_id: string; send_id: string; payload_json: string }[];
+    const rows = sqliteMem
+      .prepare("SELECT * FROM b2b_interactions WHERE type='email_sent'")
+      .all() as {
+      tenant_id: string;
+      lead_id: string;
+      campaign_id: string;
+      send_id: string;
+      payload_json: string;
+    }[];
     expect(rows).toHaveLength(1);
     const row = rows[0]!;
     expect(row.tenant_id).toBe('ws-1');
@@ -170,8 +185,14 @@ describe('interaction logging', () => {
   });
 
   it('honors caller-supplied sendId (idempotency)', async () => {
-    await sendEmailTrackedExecutor({ ...baseCfg, sendId: 'caller-supplied-123' }, { consentVerified: true }, ctx);
-    const rows = sqliteMem.prepare("SELECT send_id FROM b2b_interactions").all() as { send_id: string }[];
+    await sendEmailTrackedExecutor(
+      { ...baseCfg, sendId: 'caller-supplied-123' },
+      { consentVerified: true },
+      ctx,
+    );
+    const rows = sqliteMem.prepare('SELECT send_id FROM b2b_interactions').all() as {
+      send_id: string;
+    }[];
     expect(rows[0]!.send_id).toBe('caller-supplied-123');
   });
 });

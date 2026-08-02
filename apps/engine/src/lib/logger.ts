@@ -49,10 +49,18 @@ export const logger: Logger = createLogger({
  * della TTL window. ZodError completi non vengono più dumpati (serializer
  * `err` truncate a 500 char + first 5 issues).
  */
-export function dedupedWarn(fingerprint: string, payload: Record<string, unknown>, msg: string): void {
+export function dedupedWarn(
+  fingerprint: string,
+  payload: Record<string, unknown>,
+  msg: string,
+): void {
   _dedupedWarn(logger, fingerprint, payload, msg);
 }
-export function dedupedError(fingerprint: string, payload: Record<string, unknown>, msg: string): void {
+export function dedupedError(
+  fingerprint: string,
+  payload: Record<string, unknown>,
+  msg: string,
+): void {
   _dedupedError(logger, fingerprint, payload, msg);
 }
 export const errorFingerprint = _errorFingerprint;

@@ -21,12 +21,18 @@ vi.mock('@/config.js', () => ({
 
 vi.mock('@/lib/circuit-breaker.js', () => ({
   CircuitBreaker: class {
-    async execute<T>(fn: () => Promise<T>): Promise<T> { return fn(); }
+    async execute<T>(fn: () => Promise<T>): Promise<T> {
+      return fn();
+    }
   },
   circuitBreakerRegistry: { get: () => null },
 }));
 
-interface CapturedReq { url: string; body: Record<string, unknown>; headers: Record<string, string> }
+interface CapturedReq {
+  url: string;
+  body: Record<string, unknown>;
+  headers: Record<string, string>;
+}
 let captured: CapturedReq[] = [];
 
 /** Costruisce un body SSE leggibile, emesso a "frame" per simulare confini di
@@ -59,14 +65,16 @@ beforeEach(() => {
     captured.push({ url, body, headers: (init.headers ?? {}) as Record<string, string> });
     if (body.stream === true) {
       return {
-        ok: true, status: 200,
+        ok: true,
+        status: 200,
         body: sseStream(streamFramesFor(body)),
         text: async () => '',
         json: async () => ({}),
       } as unknown as Response;
     }
     return {
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       text: async () => JSON.stringify(nonStreamJson),
       json: async () => nonStreamJson,
     } as unknown as Response;
@@ -85,7 +93,19 @@ const SCHEMA = { type: 'object', properties: { x: { type: 'string' } } };
 describe('dispatchLLMChatStructuredStreaming — caratterizzazione wire (Liara)', () => {
   it('body: stream:true + include_usage + no_think + json_schema + temperature 0.1', async () => {
     const { dispatchLLMChatStructuredStreaming } = await import('./llm-chat.service');
-    await dispatchLLMChatStructuredStreaming('liara', '', '', 'SYS', 'GOAL', undefined, [], SCHEMA, () => { /* noop */ });
+    await dispatchLLMChatStructuredStreaming(
+      'liara',
+      '',
+      '',
+      'SYS',
+      'GOAL',
+      undefined,
+      [],
+      SCHEMA,
+      () => {
+        /* noop */
+      },
+    );
     const b = captured[0]!.body;
     expect(b.stream).toBe(true);
     expect(b.stream_options).toEqual({ include_usage: true });
@@ -99,9 +119,21 @@ describe('dispatchLLMChatStructuredStreaming — caratterizzazione wire (Liara)'
     expect(msgs[0]?.content).toBe('/no_think\nSYS');
   });
 
-  it('Authorization Bearer = LICENSE KEY (non l\'apiKey tenant)', async () => {
+  it("Authorization Bearer = LICENSE KEY (non l'apiKey tenant)", async () => {
     const { dispatchLLMChatStructuredStreaming } = await import('./llm-chat.service');
-    await dispatchLLMChatStructuredStreaming('liara', 'TENANT-IGNORED', '', 'S', 'G', undefined, [], SCHEMA, () => { /* noop */ });
+    await dispatchLLMChatStructuredStreaming(
+      'liara',
+      'TENANT-IGNORED',
+      '',
+      'S',
+      'G',
+      undefined,
+      [],
+      SCHEMA,
+      () => {
+        /* noop */
+      },
+    );
     expect(captured[0]!.headers.Authorization).toBe('Bearer lic-key-123');
   });
 
@@ -109,7 +141,15 @@ describe('dispatchLLMChatStructuredStreaming — caratterizzazione wire (Liara)'
     const { dispatchLLMChatStructuredStreaming } = await import('./llm-chat.service');
     const chunks: string[] = [];
     const full = await dispatchLLMChatStructuredStreaming(
-      'liara', '', '', 'S', 'G', undefined, [], SCHEMA, (d) => chunks.push(d),
+      'liara',
+      '',
+      '',
+      'S',
+      'G',
+      undefined,
+      [],
+      SCHEMA,
+      (d) => chunks.push(d),
     );
     expect(chunks).toEqual(['hello ', 'world']);
     expect(full).toBe('hello world');
@@ -123,16 +163,40 @@ describe('dispatchLLMChatStructuredStreaming — caratterizzazione wire (Liara)'
     };
     const { dispatchLLMChatStructuredStreaming } = await import('./llm-chat.service');
     const chunks: string[] = [];
-    const full = await dispatchLLMChatStructuredStreaming('liara', '', '', 'S', 'G', undefined, [], SCHEMA, (d) => chunks.push(d));
+    const full = await dispatchLLMChatStructuredStreaming(
+      'liara',
+      '',
+      '',
+      'S',
+      'G',
+      undefined,
+      [],
+      SCHEMA,
+      (d) => chunks.push(d),
+    );
     expect(chunks).toEqual(['spezzato']);
     expect(full).toBe('spezzato');
   });
 
   it('<think>...</think> stripped dal risultato finale (non dai delta)', async () => {
-    streamFramesFor = () => [deltaFrame('<think>ragiono</think>'), deltaFrame('vero'), 'data: [DONE]\n\n'];
+    streamFramesFor = () => [
+      deltaFrame('<think>ragiono</think>'),
+      deltaFrame('vero'),
+      'data: [DONE]\n\n',
+    ];
     const { dispatchLLMChatStructuredStreaming } = await import('./llm-chat.service');
     const chunks: string[] = [];
-    const full = await dispatchLLMChatStructuredStreaming('liara', '', '', 'S', 'G', undefined, [], SCHEMA, (d) => chunks.push(d));
+    const full = await dispatchLLMChatStructuredStreaming(
+      'liara',
+      '',
+      '',
+      'S',
+      'G',
+      undefined,
+      [],
+      SCHEMA,
+      (d) => chunks.push(d),
+    );
     // i delta arrivano grezzi (UX live), il finale è ripulito
     expect(chunks).toEqual(['<think>ragiono</think>', 'vero']);
     expect(full).toBe('vero');
@@ -141,7 +205,19 @@ describe('dispatchLLMChatStructuredStreaming — caratterizzazione wire (Liara)'
   it('righe malformate ignorate (stream non si rompe)', async () => {
     streamFramesFor = () => ['data: {non-json\n\n', deltaFrame('ok'), 'data: [DONE]\n\n'];
     const { dispatchLLMChatStructuredStreaming } = await import('./llm-chat.service');
-    const full = await dispatchLLMChatStructuredStreaming('liara', '', '', 'S', 'G', undefined, [], SCHEMA, () => { /* noop */ });
+    const full = await dispatchLLMChatStructuredStreaming(
+      'liara',
+      '',
+      '',
+      'S',
+      'G',
+      undefined,
+      [],
+      SCHEMA,
+      () => {
+        /* noop */
+      },
+    );
     expect(full).toBe('ok');
   });
 
@@ -153,7 +229,20 @@ describe('dispatchLLMChatStructuredStreaming — caratterizzazione wire (Liara)'
     ];
     const { dispatchLLMChatStructuredStreaming } = await import('./llm-chat.service');
     const usages: { input: number; output: number; fromApi: boolean }[] = [];
-    await dispatchLLMChatStructuredStreaming('liara', '', '', 'S', 'G', undefined, [], SCHEMA, () => { /* noop */ }, (u) => usages.push(u));
+    await dispatchLLMChatStructuredStreaming(
+      'liara',
+      '',
+      '',
+      'S',
+      'G',
+      undefined,
+      [],
+      SCHEMA,
+      () => {
+        /* noop */
+      },
+      (u) => usages.push(u),
+    );
     expect(usages).toHaveLength(1);
     expect(usages[0]).toEqual({ input: 11, output: 7, fromApi: true });
   });
@@ -162,13 +251,38 @@ describe('dispatchLLMChatStructuredStreaming — caratterizzazione wire (Liara)'
     streamFramesFor = () => [deltaFrame('abcd'), 'data: [DONE]\n\n'];
     const { dispatchLLMChatStructuredStreaming } = await import('./llm-chat.service');
     const usages: { fromApi: boolean }[] = [];
-    await dispatchLLMChatStructuredStreaming('liara', '', '', 'S', 'G', undefined, [], SCHEMA, () => { /* noop */ }, (u) => usages.push(u));
+    await dispatchLLMChatStructuredStreaming(
+      'liara',
+      '',
+      '',
+      'S',
+      'G',
+      undefined,
+      [],
+      SCHEMA,
+      () => {
+        /* noop */
+      },
+      (u) => usages.push(u),
+    );
     expect(usages[0]?.fromApi).toBe(false);
   });
 
   it('callback onChunk che lancia NON rompe lo stream', async () => {
     const { dispatchLLMChatStructuredStreaming } = await import('./llm-chat.service');
-    const full = await dispatchLLMChatStructuredStreaming('liara', '', '', 'S', 'G', undefined, [], SCHEMA, () => { throw new Error('boom'); });
+    const full = await dispatchLLMChatStructuredStreaming(
+      'liara',
+      '',
+      '',
+      'S',
+      'G',
+      undefined,
+      [],
+      SCHEMA,
+      () => {
+        throw new Error('boom');
+      },
+    );
     expect(full).toBe('hello world');
   });
 });
@@ -178,7 +292,17 @@ describe('dispatchLLMChatStructuredStreaming — non-Liara fallback', () => {
     nonStreamJson = { choices: [{ message: { content: 'STRUCT-FALLBACK' } }] };
     const { dispatchLLMChatStructuredStreaming } = await import('./llm-chat.service');
     const chunks: string[] = [];
-    const full = await dispatchLLMChatStructuredStreaming('openai', 'sk-x', 'gpt-4o', 'S', 'G', undefined, [], SCHEMA, (d) => chunks.push(d));
+    const full = await dispatchLLMChatStructuredStreaming(
+      'openai',
+      'sk-x',
+      'gpt-4o',
+      'S',
+      'G',
+      undefined,
+      [],
+      SCHEMA,
+      (d) => chunks.push(d),
+    );
     expect(full).toBe('STRUCT-FALLBACK');
     expect(chunks).toEqual(['STRUCT-FALLBACK']);
     // nessuna richiesta stream:true partita
@@ -189,7 +313,9 @@ describe('dispatchLLMChatStructuredStreaming — non-Liara fallback', () => {
 describe('dispatchLLMChatStreaming — PLAIN streaming (node-generator)', () => {
   it('Liara: body senza response_format ma stream:true + no_think', async () => {
     const { dispatchLLMChatStreaming } = await import('./llm-chat.service');
-    await dispatchLLMChatStreaming('liara', '', '', 'SYS', 'GOAL', undefined, [], () => { /* noop */ });
+    await dispatchLLMChatStreaming('liara', '', '', 'SYS', 'GOAL', undefined, [], () => {
+      /* noop */
+    });
     const b = captured[0]!.body;
     expect(b.stream).toBe(true);
     expect(b).not.toHaveProperty('response_format');
@@ -201,7 +327,9 @@ describe('dispatchLLMChatStreaming — PLAIN streaming (node-generator)', () => 
   it('Liara: onChunk in ordine + ritorna accumulato + Bearer license', async () => {
     const { dispatchLLMChatStreaming } = await import('./llm-chat.service');
     const chunks: string[] = [];
-    const full = await dispatchLLMChatStreaming('liara', 'IGN', '', 'S', 'G', undefined, [], (d) => chunks.push(d));
+    const full = await dispatchLLMChatStreaming('liara', 'IGN', '', 'S', 'G', undefined, [], (d) =>
+      chunks.push(d),
+    );
     expect(chunks).toEqual(['hello ', 'world']);
     expect(full).toBe('hello world');
     expect(captured[0]!.headers.Authorization).toBe('Bearer lic-key-123');
@@ -215,7 +343,19 @@ describe('dispatchLLMChatStreaming — PLAIN streaming (node-generator)', () => 
     ];
     const { dispatchLLMChatStreaming } = await import('./llm-chat.service');
     const usages: { input: number; output: number; fromApi: boolean }[] = [];
-    await dispatchLLMChatStreaming('liara', '', '', 'S', 'G', undefined, [], () => { /* noop */ }, (u) => usages.push(u));
+    await dispatchLLMChatStreaming(
+      'liara',
+      '',
+      '',
+      'S',
+      'G',
+      undefined,
+      [],
+      () => {
+        /* noop */
+      },
+      (u) => usages.push(u),
+    );
     expect(usages[0]).toEqual({ input: 3, output: 9, fromApi: true });
   });
 
@@ -223,17 +363,33 @@ describe('dispatchLLMChatStreaming — PLAIN streaming (node-generator)', () => 
     nonStreamJson = { choices: [{ message: { content: 'PLAIN-FALLBACK' } }] };
     const { dispatchLLMChatStreaming } = await import('./llm-chat.service');
     const chunks: string[] = [];
-    const full = await dispatchLLMChatStreaming('openai', 'sk-x', 'gpt-4o', 'S', 'G', undefined, [], (d) => chunks.push(d));
+    const full = await dispatchLLMChatStreaming(
+      'openai',
+      'sk-x',
+      'gpt-4o',
+      'S',
+      'G',
+      undefined,
+      [],
+      (d) => chunks.push(d),
+    );
     expect(full).toBe('PLAIN-FALLBACK');
     expect(chunks).toEqual(['PLAIN-FALLBACK']);
     expect(captured.every((c) => c.body.stream !== true)).toBe(true);
   });
 
   it('Liara disabilitata → throws', async () => {
-    vi.doMock('@/config.js', () => ({ isLiaraEnabled: () => false, liaraBaseUrl: () => 'http://x/v1' }));
+    vi.doMock('@/config.js', () => ({
+      isLiaraEnabled: () => false,
+      liaraBaseUrl: () => 'http://x/v1',
+    }));
     vi.resetModules();
     const { dispatchLLMChatStreaming } = await import('./llm-chat.service');
-    await expect(dispatchLLMChatStreaming('liara', '', '', 'S', 'G', undefined, [], () => { /* noop */ })).rejects.toThrow(/disabilitata/u);
+    await expect(
+      dispatchLLMChatStreaming('liara', '', '', 'S', 'G', undefined, [], () => {
+        /* noop */
+      }),
+    ).rejects.toThrow(/disabilitata/u);
     vi.doUnmock('@/config.js');
   });
 });

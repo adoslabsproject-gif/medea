@@ -33,7 +33,7 @@ describe('estimateComplexity — segnali distinti', () => {
     //   integrazioni: slack, email = 2
     //   branch: 0, tipi doc: 0
     // minNodes = 1 + ceil(3*0.8) + 2 + 0 + 0 = 1 + 3 + 2 = 6
-    const goal = 'Quando arriva una email, salva l\'allegato e invia notifica Slack.';
+    const goal = "Quando arriva una email, salva l'allegato e invia notifica Slack.";
     const r = estimateComplexity(goal);
     expect(r.minNodes).toBeGreaterThanOrEqual(5);
     expect(r.minNodes).toBeLessThanOrEqual(9);
@@ -41,7 +41,8 @@ describe('estimateComplexity — segnali distinti', () => {
   });
 
   it('cap superiore: anche goal verbosi non superano 25 nodi', () => {
-    const goal = 'classifica valida estrai analizza notifica archivia invia aggiunge aggiorna filtra trasforma calcola genera inoltra sincronizza' +
+    const goal =
+      'classifica valida estrai analizza notifica archivia invia aggiunge aggiorna filtra trasforma calcola genera inoltra sincronizza' +
       ' slack telegram discord email gmail webhook s3 stripe paypal github notion linear salesforce hubspot erp crm pec api database' +
       ' se altrimenti switch branch caso quando hot warm cold priorita threshold soglia condition contratto fattura preventivo ordine';
     const r = estimateComplexity(goal);
@@ -86,21 +87,22 @@ describe('shouldRejectFinalize — gate behavior', () => {
   it('3-azioni con N nodi >= minNodes computed → ACCEPT', () => {
     // Stesso goal, leggo prima quanti nodi servono, poi assert ACCEPT con
     // count = minNodes. Verifica la consistenza estimate/gate.
-    const goal = 'Quando arriva una email, salva l\'allegato e invia notifica.';
+    const goal = "Quando arriva una email, salva l'allegato e invia notifica.";
     const expected = estimateComplexity(goal).minNodes;
     const r = shouldRejectFinalize(goal, expected);
     expect(r.reject).toBe(false);
   });
 
   it('3-azioni con count = minNodes - 1 → REJECT (off-by-one boundary)', () => {
-    const goal = 'Quando arriva una email, salva l\'allegato e invia notifica.';
+    const goal = "Quando arriva una email, salva l'allegato e invia notifica.";
     const expected = estimateComplexity(goal).minNodes;
     const r = shouldRejectFinalize(goal, expected - 1);
     expect(r.reject).toBe(true);
   });
 
   it('reject message: cita esattamente i numeri (current count + missing)', () => {
-    const goal = 'classifica valida estrai notifica Slack ERP CRM contratto fattura preventivo branching low confidence Slack summary giornaliero S3 OCR';
+    const goal =
+      'classifica valida estrai notifica Slack ERP CRM contratto fattura preventivo branching low confidence Slack summary giornaliero S3 OCR';
     const r = shouldRejectFinalize(goal, 5);
     expect(r.reject).toBe(true);
     if (r.reject) {
@@ -111,7 +113,7 @@ describe('shouldRejectFinalize — gate behavior', () => {
 });
 
 describe('estimateComplexity — invariants critici (anti-regression)', () => {
-  it('Document intelligence pipeline ESATTO dell\'utente NON deve mai accettare < 14 nodi', () => {
+  it("Document intelligence pipeline ESATTO dell'utente NON deve mai accettare < 14 nodi", () => {
     // Anti-regression del bug 2026-05-30 — workflow 2 nodi era accettato.
     const goal = `Document intelligence pipeline: cartella S3 con PDF in arrivo, OCR + vision AI extract entities, classifica documento (contratto/fattura/preventivo), validazione schema, branching per tipo: contratto → legal team review queue, fattura → ERP push, preventivo → CRM opportunity, in caso di low confidence routing manuale + Slack notification, summary AI giornaliero al management.`;
     const e = estimateComplexity(goal);
@@ -122,9 +124,9 @@ describe('estimateComplexity — invariants critici (anti-regression)', () => {
   });
 
   it('riducendo la complessità del goal, minNodes DEVE diminuire (monotonia)', () => {
-    const heavy = 'classifica valida estrai notifica archivia Slack Telegram ERP S3 contratto fattura preventivo branching low confidence';
+    const heavy =
+      'classifica valida estrai notifica archivia Slack Telegram ERP S3 contratto fattura preventivo branching low confidence';
     const light = 'estrai email salva allegato';
-    expect(estimateComplexity(heavy).minNodes)
-      .toBeGreaterThan(estimateComplexity(light).minNodes);
+    expect(estimateComplexity(heavy).minNodes).toBeGreaterThan(estimateComplexity(light).minNodes);
   });
 });

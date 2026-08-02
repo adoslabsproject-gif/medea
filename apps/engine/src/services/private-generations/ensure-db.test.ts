@@ -12,7 +12,14 @@ function makeDeps(over: { existing?: { id: string; name: string }[] } = {}) {
   const list = vi.fn().mockReturnValue(over.existing ?? []);
   const dbStudio = { list, executeRaw } as unknown as DbStudioPort;
   const createEmbeddedDb: CreateEmbeddedDb = vi.fn(async (name) => ({ id: 'new-db-id', name }));
-  return { dbStudio, createEmbeddedDb, tenantId: 't1', list, executeRaw, createEmbeddedDb_: createEmbeddedDb as ReturnType<typeof vi.fn> };
+  return {
+    dbStudio,
+    createEmbeddedDb,
+    tenantId: 't1',
+    list,
+    executeRaw,
+    createEmbeddedDb_: createEmbeddedDb as ReturnType<typeof vi.fn>,
+  };
 }
 
 describe('ensureGenerationsDb', () => {
@@ -23,7 +30,12 @@ describe('ensureGenerationsDb', () => {
     const id = await ensureGenerationsDb(d);
     expect(d.createEmbeddedDb_).toHaveBeenCalledWith(GENERATIONS_DB_NAME);
     expect(id).toBe('new-db-id');
-    expect(d.executeRaw).toHaveBeenCalledWith('new-db-id', CREATE_GENERATIONS_TABLE_SQL, { dryRun: false, rowLimit: 0 }, 't1');
+    expect(d.executeRaw).toHaveBeenCalledWith(
+      'new-db-id',
+      CREATE_GENERATIONS_TABLE_SQL,
+      { dryRun: false, rowLimit: 0 },
+      't1',
+    );
   });
 
   it('riusa il DB esistente (NON ne crea un altro) e riapplica il DDL idempotente', async () => {
@@ -31,7 +43,12 @@ describe('ensureGenerationsDb', () => {
     const id = await ensureGenerationsDb(d);
     expect(id).toBe('exist-1');
     expect(d.createEmbeddedDb_).not.toHaveBeenCalled();
-    expect(d.executeRaw).toHaveBeenCalledWith('exist-1', CREATE_GENERATIONS_TABLE_SQL, { dryRun: false, rowLimit: 0 }, 't1');
+    expect(d.executeRaw).toHaveBeenCalledWith(
+      'exist-1',
+      CREATE_GENERATIONS_TABLE_SQL,
+      { dryRun: false, rowLimit: 0 },
+      't1',
+    );
   });
 
   it('ignora database con nome diverso', async () => {
@@ -60,7 +77,10 @@ describe('ensureGenerationsDb', () => {
   it('migrazione "colonna già presente" → ignorata in silenzio (esito atteso, no warn)', async () => {
     loggerMock.warn.mockClear();
     const d = makeDeps({ existing: [{ id: 'db1', name: GENERATIONS_DB_NAME }] });
-    d.executeRaw.mockReset().mockResolvedValueOnce({ ok: true }).mockRejectedValueOnce(new Error('duplicate column name: conversation_id'));
+    d.executeRaw
+      .mockReset()
+      .mockResolvedValueOnce({ ok: true })
+      .mockRejectedValueOnce(new Error('duplicate column name: conversation_id'));
     await expect(ensureGenerationsDb({ ...d, tenantId: 'T1' })).resolves.toBe('db1');
     expect(loggerMock.warn).not.toHaveBeenCalled();
   });
@@ -68,7 +88,10 @@ describe('ensureGenerationsDb', () => {
   it('migrazione con errore REALE → loggata (non silenziata) ma non blocca', async () => {
     loggerMock.warn.mockClear();
     const d = makeDeps({ existing: [{ id: 'db2', name: GENERATIONS_DB_NAME }] });
-    d.executeRaw.mockReset().mockResolvedValueOnce({ ok: true }).mockRejectedValueOnce(new Error('disk I/O error'));
+    d.executeRaw
+      .mockReset()
+      .mockResolvedValueOnce({ ok: true })
+      .mockRejectedValueOnce(new Error('disk I/O error'));
     await expect(ensureGenerationsDb({ ...d, tenantId: 'T2' })).resolves.toBe('db2');
     expect(loggerMock.warn).toHaveBeenCalled();
   });

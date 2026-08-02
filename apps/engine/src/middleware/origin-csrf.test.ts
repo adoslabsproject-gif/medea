@@ -62,10 +62,13 @@ describe('originCsrf — SAFE methods bypass', () => {
 describe('originCsrf — skipPaths', () => {
   it('path matcha skipPaths regex → bypass anche se mutating', async () => {
     const app = new Hono();
-    app.use('*', originCsrf({
-      allowedOrigins: ALLOWED,
-      skipPaths: [/^\/api\/v1\/internal\//u],
-    }));
+    app.use(
+      '*',
+      originCsrf({
+        allowedOrigins: ALLOWED,
+        skipPaths: [/^\/api\/v1\/internal\//u],
+      }),
+    );
     app.post('/api/v1/internal/wake', (c) => c.json({ ok: true }));
     const res = await app.request('/api/v1/internal/wake', { method: 'POST' });
     expect(res.status).toBe(200);
@@ -73,10 +76,13 @@ describe('originCsrf — skipPaths', () => {
 
   it('path NON in skipPaths → applica CSRF check normale', async () => {
     const app = new Hono();
-    app.use('*', originCsrf({
-      allowedOrigins: ALLOWED,
-      skipPaths: [/^\/api\/v1\/internal\//u],
-    }));
+    app.use(
+      '*',
+      originCsrf({
+        allowedOrigins: ALLOWED,
+        skipPaths: [/^\/api\/v1\/internal\//u],
+      }),
+    );
     app.post('/api/v1/external/foo', (c) => c.json({ ok: true }));
     // No origin + no cookie → bearer pattern, passa
     const res = await app.request('/api/v1/external/foo', { method: 'POST' });
@@ -165,7 +171,7 @@ describe('originCsrf — allowlist Origin check', () => {
       },
     });
     expect(res.status).toBe(403);
-    const body = await res.json() as { error: string };
+    const body = (await res.json()) as { error: string };
     expect(body.error).toContain('https://evil.example.org');
     expect(body.error).toContain('not allowed');
   });

@@ -25,7 +25,10 @@ const eventBus: IEventBus = { emit: vi.fn(), on: vi.fn() } as unknown as IEventB
 const APP_SECRET = 'app-secret-test';
 const VERIFY_TOKEN = 'verify-token-test';
 
-function makeWorkflow(configOver: Record<string, unknown> = {}, over: Record<string, unknown> = {}) {
+function makeWorkflow(
+  configOver: Record<string, unknown> = {},
+  over: Record<string, unknown> = {},
+) {
   return {
     id: 'wf-wa',
     tenantId: 'tenant-1',
@@ -36,7 +39,8 @@ function makeWorkflow(configOver: Record<string, unknown> = {}, over: Record<str
         id: 'wa-node-1',
         defId: 'trigger_whatsapp',
         config: { verifyToken: VERIFY_TOKEN, appSecret: APP_SECRET, ...configOver },
-        x: 0, y: 0,
+        x: 0,
+        y: 0,
       },
     ],
     edges: [],
@@ -49,19 +53,23 @@ function makeWorkflow(configOver: Record<string, unknown> = {}, over: Record<str
 function metaBody(messages: unknown[], statuses: unknown[] = [], phoneNumberId = 'PNID-1'): string {
   return JSON.stringify({
     object: 'whatsapp_business_account',
-    entry: [{
-      id: 'WABA-1',
-      changes: [{
-        field: 'messages',
-        value: {
-          messaging_product: 'whatsapp',
-          metadata: { display_phone_number: '39061234567', phone_number_id: phoneNumberId },
-          contacts: [{ wa_id: '393331234567', profile: { name: 'Nicola' } }],
-          ...(messages.length > 0 ? { messages } : {}),
-          ...(statuses.length > 0 ? { statuses } : {}),
-        },
-      }],
-    }],
+    entry: [
+      {
+        id: 'WABA-1',
+        changes: [
+          {
+            field: 'messages',
+            value: {
+              messaging_product: 'whatsapp',
+              metadata: { display_phone_number: '39061234567', phone_number_id: phoneNumberId },
+              contacts: [{ wa_id: '393331234567', profile: { name: 'Nicola' } }],
+              ...(messages.length > 0 ? { messages } : {}),
+              ...(statuses.length > 0 ? { statuses } : {}),
+            },
+          },
+        ],
+      },
+    ],
   });
 }
 
@@ -73,7 +81,11 @@ function sign(body: string, secret = APP_SECRET): string {
   return `sha256=${createHmac('sha256', secret).update(body, 'utf8').digest('hex')}`;
 }
 
-async function post(app: ReturnType<typeof createWhatsAppTriggerRoutes>, body: string, headers: Record<string, string> = {}) {
+async function post(
+  app: ReturnType<typeof createWhatsAppTriggerRoutes>,
+  body: string,
+  headers: Record<string, string> = {},
+) {
   return app.request('/whatsapp/wf-wa', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Hub-Signature-256': sign(body), ...headers },
@@ -88,7 +100,9 @@ beforeEach(() => {
   __resetWebhookIdempotency();
   workflowGetAnyTenant = vi.fn(async (id: string) => (id === 'wf-wa' ? makeWorkflow() : null));
   runExecute = vi.fn(async () => ({ runId: 'r-1', status: 'completed', steps: [] }));
-  vi.spyOn(WorkflowService.prototype, 'getByIdAnyTenant').mockImplementation(workflowGetAnyTenant as never);
+  vi.spyOn(WorkflowService.prototype, 'getByIdAnyTenant').mockImplementation(
+    workflowGetAnyTenant as never,
+  );
   vi.spyOn(RunService.prototype, 'execute').mockImplementation(runExecute as never);
 });
 
@@ -120,9 +134,14 @@ describe('GET handshake', () => {
   });
 
   it('workflow senza nodo trigger_whatsapp → 404', async () => {
-    workflowGetAnyTenant.mockResolvedValue(makeWorkflow({}, {
-      nodes: [{ id: 'n1', defId: 'trigger_webhook', config: {}, x: 0, y: 0 }],
-    }));
+    workflowGetAnyTenant.mockResolvedValue(
+      makeWorkflow(
+        {},
+        {
+          nodes: [{ id: 'n1', defId: 'trigger_webhook', config: {}, x: 0, y: 0 }],
+        },
+      ),
+    );
     const res = await makeApp().request(
       `/whatsapp/wf-wa?hub.mode=subscribe&hub.verify_token=${VERIFY_TOKEN}&hub.challenge=x`,
     );
@@ -197,7 +216,9 @@ describe('POST eventi — batching, dedup, filtri', () => {
     const res = await post(makeApp(), body);
     expect(await res.json()).toMatchObject({ received: 3 });
     expect(runExecute).toHaveBeenCalledTimes(3);
-    const ids = runExecute.mock.calls.map((call) => (call[0] as { triggerInput: { messageId: string } }).triggerInput.messageId);
+    const ids = runExecute.mock.calls.map(
+      (call) => (call[0] as { triggerInput: { messageId: string } }).triggerInput.messageId,
+    );
     expect(ids).toEqual(['wamid.a', 'wamid.b', 'wamid.c']);
   });
 
@@ -221,15 +242,21 @@ describe('POST eventi — batching, dedup, filtri', () => {
   it('includeStatuses=true → run per status, con dedup COMPOSTO (delivered e read dello stesso wamid = 2 run distinte)', async () => {
     workflowGetAnyTenant.mockResolvedValue(makeWorkflow({ includeStatuses: 'true' }));
     const app = makeApp();
-    await post(app, metaBody([], [{ id: 'wamid.out', status: 'delivered', timestamp: '1751810400' }]));
+    await post(
+      app,
+      metaBody([], [{ id: 'wamid.out', status: 'delivered', timestamp: '1751810400' }]),
+    );
     await post(app, metaBody([], [{ id: 'wamid.out', status: 'read', timestamp: '1751810401' }]));
     // Stesso status ri-consegnato → dedup
-    const res3 = await post(app, metaBody([], [{ id: 'wamid.out', status: 'read', timestamp: '1751810401' }]));
+    const res3 = await post(
+      app,
+      metaBody([], [{ id: 'wamid.out', status: 'read', timestamp: '1751810401' }]),
+    );
     expect(runExecute).toHaveBeenCalledTimes(2);
     expect(await res3.json()).toMatchObject({ received: 0 });
   });
 
-  it('phoneNumberIdFilter: eventi di un ALTRO numero dell\'app → scartati', async () => {
+  it("phoneNumberIdFilter: eventi di un ALTRO numero dell'app → scartati", async () => {
     workflowGetAnyTenant.mockResolvedValue(makeWorkflow({ phoneNumberIdFilter: 'PNID-GIUSTO' }));
     const res = await post(makeApp(), metaBody([textMsg('wamid.x')], [], 'PNID-ALTRO'));
     expect(await res.json()).toMatchObject({ received: 0 });
@@ -244,7 +271,7 @@ describe('POST eventi — batching, dedup, filtri', () => {
     expect(runExecute).not.toHaveBeenCalled();
   });
 
-  it('POST su workflow inesistente → 404 (l\'esistenza è protetta da UUID non-guessable)', async () => {
+  it("POST su workflow inesistente → 404 (l'esistenza è protetta da UUID non-guessable)", async () => {
     const body = metaBody([textMsg('wamid.k')]);
     const res = await makeApp().request('/whatsapp/wf-nope', {
       method: 'POST',

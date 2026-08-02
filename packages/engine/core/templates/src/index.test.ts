@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { WORKFLOW_TEMPLATES, WorkflowTemplateSchema, findTemplate, templatesByCategory } from './index.js';
+import {
+  WORKFLOW_TEMPLATES,
+  WorkflowTemplateSchema,
+  findTemplate,
+  templatesByCategory,
+} from './index.js';
 
 describe('workflow templates', () => {
   it('every template validates against schema', () => {
@@ -49,9 +54,13 @@ describe('tmpl_pizzeria_whatsapp_bot — contract anti-drift', () => {
     expect(tmpl.featured).toBe(true);
     expect(tmpl.nodes.some((n) => n.defId === 'trigger_whatsapp')).toBe(true);
     expect(tmpl.tablesToCreate).toHaveLength(5);
-    expect(tmpl.tablesToCreate!.map((t) => t.name).sort()).toEqual(
-      ['pizzeria_chat', 'pizzeria_clienti', 'pizzeria_info', 'pizzeria_menu', 'pizzeria_ordini'],
-    );
+    expect(tmpl.tablesToCreate!.map((t) => t.name).sort()).toEqual([
+      'pizzeria_chat',
+      'pizzeria_clienti',
+      'pizzeria_info',
+      'pizzeria_menu',
+      'pizzeria_ordini',
+    ]);
   });
 
   it('🚨 nessuna espressione con la sintassi driftata `<id>.output.` nei config', () => {
@@ -74,7 +83,8 @@ describe('tmpl_pizzeria_whatsapp_bot — contract anti-drift', () => {
     const declared = new Set(tmpl.tablesToCreate!.map((t) => t.name));
     for (const n of tmpl.nodes) {
       const table = (n.config as Record<string, unknown>).table;
-      if (typeof table === 'string') expect(declared.has(table), `nodo ${n.id} → tabella ${table}`).toBe(true);
+      if (typeof table === 'string')
+        expect(declared.has(table), `nodo ${n.id} → tabella ${table}`).toBe(true);
     }
   });
 
@@ -120,9 +130,12 @@ describe('tmpl_pizzeria_telegram_bot — contract anti-drift (variante demo)', (
     const waDb = new Set(wa.tablesToCreate!.map((t) => t.databaseId));
     expect(tgDb).toEqual(waDb);
     // Stessi nomi tabella e STESSE colonne (drift di schema fra i gemelli = dati incompatibili)
-    const shape = (tt: typeof tmpl.tablesToCreate) => JSON.stringify(
-      tt!.map((t) => ({ name: t.name, columns: t.columns })).sort((a, b) => a.name.localeCompare(b.name)),
-    );
+    const shape = (tt: typeof tmpl.tablesToCreate) =>
+      JSON.stringify(
+        tt!
+          .map((t) => ({ name: t.name, columns: t.columns }))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      );
     expect(shape(tmpl.tablesToCreate)).toBe(shape(wa.tablesToCreate));
   });
 
@@ -131,10 +144,14 @@ describe('tmpl_pizzeria_telegram_bot — contract anti-drift (variante demo)', (
     const declaredTables = new Set(tmpl.tablesToCreate!.map((t) => t.name));
     for (const n of tmpl.nodes) {
       const cfg = n.config as Record<string, unknown>;
-      if (typeof cfg.databaseId === 'string') expect(declaredDb.has(cfg.databaseId), `nodo ${n.id}`).toBe(true);
-      if (typeof cfg.table === 'string') expect(declaredTables.has(cfg.table), `nodo ${n.id}`).toBe(true);
+      if (typeof cfg.databaseId === 'string')
+        expect(declaredDb.has(cfg.databaseId), `nodo ${n.id}`).toBe(true);
+      if (typeof cfg.table === 'string')
+        expect(declaredTables.has(cfg.table), `nodo ${n.id}`).toBe(true);
     }
-    expect((tmpl.nodes.find((n) => n.id === 'tg_in')!.config as Record<string, unknown>).secretToken).toBe('');
+    expect(
+      (tmpl.nodes.find((n) => n.id === 'tg_in')!.config as Record<string, unknown>).secretToken,
+    ).toBe('');
   });
 });
 

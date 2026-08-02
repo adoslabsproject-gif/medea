@@ -33,7 +33,8 @@ export type AbortGateDecision =
  * Token pattern conservativo: cattura defId "noti" della platform.
  * Prefissi: action_, trigger_, community_, agent_, ai_, logic_, db_.
  */
-const DEFID_TOKEN_RE = /\b(?:action|trigger|community|agent|ai|logic|db|integration)_[a-z][a-z0-9_]*\b/gi;
+const DEFID_TOKEN_RE =
+  /\b(?:action|trigger|community|agent|ai|logic|db|integration)_[a-z][a-z0-9_]*\b/gi;
 
 /**
  * Pattern "ho deciso che la feature non è disponibile / non installata".

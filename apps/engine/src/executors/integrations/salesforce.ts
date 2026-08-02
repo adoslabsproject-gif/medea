@@ -31,7 +31,8 @@ const SF_IDENTIFIER = /^[A-Za-z][A-Za-z0-9_]*$/;
 function assertSfIdentifier(value: string, field: string): string {
   if (!SF_IDENTIFIER.test(value)) {
     throw new IntegrationError({
-      provider: 'salesforce', code: 'INVALID_PAYLOAD',
+      provider: 'salesforce',
+      code: 'INVALID_PAYLOAD',
       message: `community_salesforce: "${field}" non valido (atteso identificatore SObject/campo: lettera iniziale poi lettere/cifre/underscore, es. Account o Foo__c)`,
     });
   }
@@ -52,7 +53,11 @@ function guardSfHost(url: string): void {
     assertHostAllowed(url, SALESFORCE_HOSTS);
   } catch (e) {
     if (e instanceof HostNotAllowedError) {
-      throw new IntegrationError({ provider: 'salesforce', code: 'HOST_NOT_ALLOWED', message: e.message });
+      throw new IntegrationError({
+        provider: 'salesforce',
+        code: 'HOST_NOT_ALLOWED',
+        message: e.message,
+      });
     }
     throw e;
   }
@@ -66,9 +71,13 @@ interface SfCredentials {
   clientSecret: string;
 }
 
-interface SfFetchOpts { method?: string; body?: unknown; signal?: AbortSignal | undefined }
+interface SfFetchOpts {
+  method?: string;
+  body?: unknown;
+  signal?: AbortSignal | undefined;
+}
 
-async function refreshAccessToken(creds: SfCredentials, signal?: AbortSignal  ): Promise<string> {
+async function refreshAccessToken(creds: SfCredentials, signal?: AbortSignal): Promise<string> {
   const tokenUrl = `${creds.instanceUrl}/services/oauth2/token`;
   // CRITICO: NON spedire client_secret+refresh_token a un instanceUrl arbitrario.
   guardSfHost(tokenUrl);
@@ -86,7 +95,8 @@ async function refreshAccessToken(creds: SfCredentials, signal?: AbortSignal  ):
   });
   if (!res.ok) {
     throw new IntegrationError({
-      provider: 'salesforce', code: 'OAUTH_REFRESH_FAILED',
+      provider: 'salesforce',
+      code: 'OAUTH_REFRESH_FAILED',
       message: `Salesforce OAuth refresh failed: HTTP ${String(res.status)}`,
       httpStatus: res.status,
     });
@@ -94,7 +104,8 @@ async function refreshAccessToken(creds: SfCredentials, signal?: AbortSignal  ):
   const body = await readJsonCapped<{ access_token?: string; error?: string }>(res);
   if (!body.access_token) {
     throw new IntegrationError({
-      provider: 'salesforce', code: 'OAUTH_REFRESH_FAILED',
+      provider: 'salesforce',
+      code: 'OAUTH_REFRESH_FAILED',
       message: `Salesforce OAuth refresh: no access_token in response${body.error ? ` (${body.error})` : ''}`,
     });
   }
@@ -109,7 +120,9 @@ async function sfFetch<T>(
   opts: SfFetchOpts = {},
   isRetry = false,
 ): Promise<T> {
-  const url = path.startsWith('http') ? path : `${creds.instanceUrl}/services/data/${API_VERSION}${path}`;
+  const url = path.startsWith('http')
+    ? path
+    : `${creds.instanceUrl}/services/data/${API_VERSION}${path}`;
   // Anti-esfiltrazione: l'access token non deve finire su un host non-Salesforce
   // (instanceUrl o `path` assoluto derivati da config).
   guardSfHost(url);
@@ -137,7 +150,9 @@ async function sfFetch<T>(
         credentials: updatedCreds as unknown as Record<string, unknown>,
         expiresAt: null,
       });
-    } catch { /* best-effort persist */ }
+    } catch {
+      /* best-effort persist */
+    }
     return await sfFetch<T>(updatedCreds, tenantId, integrationLabel, path, opts, true);
   }
 
@@ -145,14 +160,22 @@ async function sfFetch<T>(
   if (!res.ok) {
     let errMsg = `Salesforce HTTP ${String(res.status)} ${res.statusText}`;
     try {
-      const e = await readJsonCapped<{ message?: string; errorCode?: string }[] | { message?: string }>(res);
+      const e = await readJsonCapped<
+        { message?: string; errorCode?: string }[] | { message?: string }
+      >(res);
       const arr: { message?: string; errorCode?: string }[] = Array.isArray(e) ? e : [e];
       const first = arr[0];
-      if (first?.message) errMsg += ` — ${first.message}${first.errorCode ? ` (${first.errorCode})` : ''}`;
-    } catch { /* not JSON */ }
+      if (first?.message)
+        errMsg += ` — ${first.message}${first.errorCode ? ` (${first.errorCode})` : ''}`;
+    } catch {
+      /* not JSON */
+    }
     throw new IntegrationError({
-      provider: 'salesforce', code: 'API_HTTP_ERROR', message: errMsg,
-      httpStatus: res.status, retryable: res.status >= 500 || res.status === 429,
+      provider: 'salesforce',
+      code: 'API_HTTP_ERROR',
+      message: errMsg,
+      httpStatus: res.status,
+      retryable: res.status >= 500 || res.status === 429,
     });
   }
   return await readJsonCapped<T>(res);
@@ -168,7 +191,8 @@ function parseJsonObj(raw: unknown, fieldName: string): Record<string, unknown> 
     return p as Record<string, unknown>;
   } catch (e) {
     throw new IntegrationError({
-      provider: 'salesforce', code: 'INVALID_PAYLOAD',
+      provider: 'salesforce',
+      code: 'INVALID_PAYLOAD',
       message: `community_salesforce: ${fieldName} parse error — ${e instanceof Error ? e.message : String(e)}`,
     });
   }
@@ -178,19 +202,33 @@ export const salesforceExecutor: NodeExecutor = async (rawConfig, _input, contex
   const start = Date.now();
   const cfg = rawConfig;
   const operation = coerceString(cfg.operation ?? '').trim();
-  if (!operation) throw new IntegrationError({
-    provider: 'salesforce', code: 'INVALID_PAYLOAD', message: 'community_salesforce: "operation" obbligatorio',
-  });
+  if (!operation)
+    throw new IntegrationError({
+      provider: 'salesforce',
+      code: 'INVALID_PAYLOAD',
+      message: 'community_salesforce: "operation" obbligatorio',
+    });
 
-  const integrationLabel = typeof cfg.integrationLabel === 'string' && cfg.integrationLabel ? cfg.integrationLabel : null;
+  const integrationLabel =
+    typeof cfg.integrationLabel === 'string' && cfg.integrationLabel ? cfg.integrationLabel : null;
   const integration = requireIntegration({
-    provider: 'salesforce', tenantId: context.tenantId, label: integrationLabel,
+    provider: 'salesforce',
+    tenantId: context.tenantId,
+    label: integrationLabel,
   });
   const creds = integration.credentials as unknown as SfCredentials;
-  if (!creds.instanceUrl || !creds.accessToken || !creds.refreshToken || !creds.clientId || !creds.clientSecret) {
+  if (
+    !creds.instanceUrl ||
+    !creds.accessToken ||
+    !creds.refreshToken ||
+    !creds.clientId ||
+    !creds.clientSecret
+  ) {
     throw new IntegrationError({
-      provider: 'salesforce', code: 'INVALID_CREDENTIALS',
-      message: 'community_salesforce: credentials incomplete (instanceUrl + accessToken + refreshToken + clientId + clientSecret tutti required)',
+      provider: 'salesforce',
+      code: 'INVALID_CREDENTIALS',
+      message:
+        'community_salesforce: credentials incomplete (instanceUrl + accessToken + refreshToken + clientId + clientSecret tutti required)',
     });
   }
 
@@ -200,107 +238,167 @@ export const salesforceExecutor: NodeExecutor = async (rawConfig, _input, contex
   let recordId: string | null = null;
   let created = false;
 
-  await withRetry(async () => {
-    switch (operation) {
-      case 'query': {
-        const soql = coerceString(cfg.soql ?? '').trim();
-        if (!soql) throw new IntegrationError({
-          provider: 'salesforce', code: 'INVALID_PAYLOAD', message: 'community_salesforce: "soql" obbligatorio per query',
-        });
-        const r = await sfFetch<{ records: unknown[]; totalSize: number; done: boolean }>(
-          creds, context.tenantId, integrationLabel,
-          `/query?q=${encodeURIComponent(soql)}`, { ...(context.abortSignal ? { signal: context.abortSignal } : {}) },
-        );
-        data = r; records = r.records; totalSize = r.totalSize;
-        break;
+  await withRetry(
+    async () => {
+      switch (operation) {
+        case 'query': {
+          const soql = coerceString(cfg.soql ?? '').trim();
+          if (!soql)
+            throw new IntegrationError({
+              provider: 'salesforce',
+              code: 'INVALID_PAYLOAD',
+              message: 'community_salesforce: "soql" obbligatorio per query',
+            });
+          const r = await sfFetch<{ records: unknown[]; totalSize: number; done: boolean }>(
+            creds,
+            context.tenantId,
+            integrationLabel,
+            `/query?q=${encodeURIComponent(soql)}`,
+            { ...(context.abortSignal ? { signal: context.abortSignal } : {}) },
+          );
+          data = r;
+          records = r.records;
+          totalSize = r.totalSize;
+          break;
+        }
+        case 'create': {
+          const sobject = coerceString(cfg.sobject ?? '').trim();
+          if (!sobject)
+            throw new IntegrationError({
+              provider: 'salesforce',
+              code: 'INVALID_PAYLOAD',
+              message: 'community_salesforce: "sobject" obbligatorio per create',
+            });
+          const record = parseJsonObj(cfg.recordJson, 'recordJson');
+          const r = await sfFetch<{ id: string; success: boolean }>(
+            creds,
+            context.tenantId,
+            integrationLabel,
+            `/sobjects/${assertSfIdentifier(sobject, 'sobject')}`,
+            {
+              method: 'POST',
+              body: record,
+              ...(context.abortSignal ? { signal: context.abortSignal } : {}),
+            },
+          );
+          data = r;
+          recordId = r.id;
+          created = true;
+          break;
+        }
+        case 'update': {
+          const sobject = coerceString(cfg.sobject ?? '').trim();
+          const id = coerceString(cfg.recordId ?? '').trim();
+          if (!sobject || !id)
+            throw new IntegrationError({
+              provider: 'salesforce',
+              code: 'INVALID_PAYLOAD',
+              message: 'community_salesforce: update richiede sobject + recordId',
+            });
+          const record = parseJsonObj(cfg.recordJson, 'recordJson');
+          await sfFetch<unknown>(
+            creds,
+            context.tenantId,
+            integrationLabel,
+            `/sobjects/${assertSfIdentifier(sobject, 'sobject')}/${encodeURIComponent(id)}`,
+            {
+              method: 'PATCH',
+              body: record,
+              ...(context.abortSignal ? { signal: context.abortSignal } : {}),
+            },
+          );
+          data = { id, updated: true };
+          recordId = id;
+          break;
+        }
+        case 'upsert': {
+          const sobject = coerceString(cfg.sobject ?? '').trim();
+          const extField = coerceString(cfg.externalIdField ?? '').trim();
+          const extValue = coerceString(cfg.externalIdValue ?? '').trim();
+          if (!sobject || !extField || !extValue)
+            throw new IntegrationError({
+              provider: 'salesforce',
+              code: 'INVALID_PAYLOAD',
+              message:
+                'community_salesforce: upsert richiede sobject + externalIdField + externalIdValue',
+            });
+          const record = parseJsonObj(cfg.recordJson, 'recordJson');
+          const r = await sfFetch<{ id?: string; created?: boolean }>(
+            creds,
+            context.tenantId,
+            integrationLabel,
+            `/sobjects/${assertSfIdentifier(sobject, 'sobject')}/${assertSfIdentifier(extField, 'externalIdField')}/${encodeURIComponent(extValue)}`,
+            {
+              method: 'PATCH',
+              body: record,
+              ...(context.abortSignal ? { signal: context.abortSignal } : {}),
+            },
+          );
+          data = r;
+          recordId = r.id ?? null;
+          created = r.created ?? false;
+          break;
+        }
+        case 'delete': {
+          const sobject = coerceString(cfg.sobject ?? '').trim();
+          const id = coerceString(cfg.recordId ?? '').trim();
+          if (!sobject || !id)
+            throw new IntegrationError({
+              provider: 'salesforce',
+              code: 'INVALID_PAYLOAD',
+              message: 'community_salesforce: delete richiede sobject + recordId',
+            });
+          await sfFetch<unknown>(
+            creds,
+            context.tenantId,
+            integrationLabel,
+            `/sobjects/${assertSfIdentifier(sobject, 'sobject')}/${encodeURIComponent(id)}`,
+            { method: 'DELETE', ...(context.abortSignal ? { signal: context.abortSignal } : {}) },
+          );
+          data = { id, deleted: true };
+          recordId = id;
+          break;
+        }
+        case 'get': {
+          const sobject = coerceString(cfg.sobject ?? '').trim();
+          const id = coerceString(cfg.recordId ?? '').trim();
+          if (!sobject || !id)
+            throw new IntegrationError({
+              provider: 'salesforce',
+              code: 'INVALID_PAYLOAD',
+              message: 'community_salesforce: get richiede sobject + recordId',
+            });
+          const r = await sfFetch<Record<string, unknown>>(
+            creds,
+            context.tenantId,
+            integrationLabel,
+            `/sobjects/${assertSfIdentifier(sobject, 'sobject')}/${encodeURIComponent(id)}`,
+            { ...(context.abortSignal ? { signal: context.abortSignal } : {}) },
+          );
+          data = r;
+          recordId = id;
+          break;
+        }
+        default:
+          throw new IntegrationError({
+            provider: 'salesforce',
+            code: 'INVALID_PAYLOAD',
+            message: `community_salesforce: operation "${operation}" non supportata`,
+          });
       }
-      case 'create': {
-        const sobject = coerceString(cfg.sobject ?? '').trim();
-        if (!sobject) throw new IntegrationError({
-          provider: 'salesforce', code: 'INVALID_PAYLOAD', message: 'community_salesforce: "sobject" obbligatorio per create',
-        });
-        const record = parseJsonObj(cfg.recordJson, 'recordJson');
-        const r = await sfFetch<{ id: string; success: boolean }>(
-          creds, context.tenantId, integrationLabel,
-          `/sobjects/${assertSfIdentifier(sobject, 'sobject')}`,
-          { method: 'POST', body: record, ...(context.abortSignal ? { signal: context.abortSignal } : {}) },
-        );
-        data = r; recordId = r.id; created = true;
-        break;
-      }
-      case 'update': {
-        const sobject = coerceString(cfg.sobject ?? '').trim();
-        const id = coerceString(cfg.recordId ?? '').trim();
-        if (!sobject || !id) throw new IntegrationError({
-          provider: 'salesforce', code: 'INVALID_PAYLOAD',
-          message: 'community_salesforce: update richiede sobject + recordId',
-        });
-        const record = parseJsonObj(cfg.recordJson, 'recordJson');
-        await sfFetch<unknown>(
-          creds, context.tenantId, integrationLabel,
-          `/sobjects/${assertSfIdentifier(sobject, 'sobject')}/${encodeURIComponent(id)}`,
-          { method: 'PATCH', body: record, ...(context.abortSignal ? { signal: context.abortSignal } : {}) },
-        );
-        data = { id, updated: true }; recordId = id;
-        break;
-      }
-      case 'upsert': {
-        const sobject = coerceString(cfg.sobject ?? '').trim();
-        const extField = coerceString(cfg.externalIdField ?? '').trim();
-        const extValue = coerceString(cfg.externalIdValue ?? '').trim();
-        if (!sobject || !extField || !extValue) throw new IntegrationError({
-          provider: 'salesforce', code: 'INVALID_PAYLOAD',
-          message: 'community_salesforce: upsert richiede sobject + externalIdField + externalIdValue',
-        });
-        const record = parseJsonObj(cfg.recordJson, 'recordJson');
-        const r = await sfFetch<{ id?: string; created?: boolean }>(
-          creds, context.tenantId, integrationLabel,
-          `/sobjects/${assertSfIdentifier(sobject, 'sobject')}/${assertSfIdentifier(extField, 'externalIdField')}/${encodeURIComponent(extValue)}`,
-          { method: 'PATCH', body: record, ...(context.abortSignal ? { signal: context.abortSignal } : {}) },
-        );
-        data = r; recordId = r.id ?? null; created = r.created ?? false;
-        break;
-      }
-      case 'delete': {
-        const sobject = coerceString(cfg.sobject ?? '').trim();
-        const id = coerceString(cfg.recordId ?? '').trim();
-        if (!sobject || !id) throw new IntegrationError({
-          provider: 'salesforce', code: 'INVALID_PAYLOAD',
-          message: 'community_salesforce: delete richiede sobject + recordId',
-        });
-        await sfFetch<unknown>(
-          creds, context.tenantId, integrationLabel,
-          `/sobjects/${assertSfIdentifier(sobject, 'sobject')}/${encodeURIComponent(id)}`,
-          { method: 'DELETE', ...(context.abortSignal ? { signal: context.abortSignal } : {}) },
-        );
-        data = { id, deleted: true }; recordId = id;
-        break;
-      }
-      case 'get': {
-        const sobject = coerceString(cfg.sobject ?? '').trim();
-        const id = coerceString(cfg.recordId ?? '').trim();
-        if (!sobject || !id) throw new IntegrationError({
-          provider: 'salesforce', code: 'INVALID_PAYLOAD',
-          message: 'community_salesforce: get richiede sobject + recordId',
-        });
-        const r = await sfFetch<Record<string, unknown>>(
-          creds, context.tenantId, integrationLabel,
-          `/sobjects/${assertSfIdentifier(sobject, 'sobject')}/${encodeURIComponent(id)}`, { ...(context.abortSignal ? { signal: context.abortSignal } : {}) },
-        );
-        data = r; recordId = id;
-        break;
-      }
-      default:
-        throw new IntegrationError({
-          provider: 'salesforce', code: 'INVALID_PAYLOAD',
-          message: `community_salesforce: operation "${operation}" non supportata`,
-        });
-    }
-  }, { label: `salesforce.${operation}` });
+    },
+    { label: `salesforce.${operation}` },
+  );
 
   return {
     output: {
-      ok: true, data, records, count: records.length, totalSize, recordId, created,
+      ok: true,
+      data,
+      records,
+      count: records.length,
+      totalSize,
+      recordId,
+      created,
     },
     durationMs: Date.now() - start,
   };

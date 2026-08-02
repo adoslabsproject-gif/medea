@@ -16,7 +16,7 @@
 export const PUBLIC_PREFIXES: readonly string[] = [
   // Public share dashboard for clients (read-only, token-gated in body).
   '/api/v1/share/',
-  '/api/v1/portal/',                       // Client Portal token-gated
+  '/api/v1/portal/', // Client Portal token-gated
   '/api/v1/oauth-connect/callback',
   // OAuth callback is hit by the BROWSER after Google redirects — no session
   // header present. The signed `state` token is the authenticator (HMAC + 10min

@@ -81,7 +81,15 @@ describe('NodeError — categorie semantiche + azione UI', () => {
   });
 
   it('actionHintFor dà un testo IT per ogni categoria', () => {
-    for (const cat of ['validation', 'auth', 'network', 'rate_limit', 'business', 'aborted', 'internal'] as const) {
+    for (const cat of [
+      'validation',
+      'auth',
+      'network',
+      'rate_limit',
+      'business',
+      'aborted',
+      'internal',
+    ] as const) {
       expect(actionHintFor(cat).length).toBeGreaterThan(10);
     }
     expect(actionHintFor('auth')).toMatch(/credenziali/iu);
@@ -94,7 +102,7 @@ describe('NodeError — categorie semantiche + azione UI', () => {
     expect(isTransientCategory('business')).toBe(false);
   });
 
-  it('categoryOf accetta direttamente un\'istanza NodeError', () => {
+  it("categoryOf accetta direttamente un'istanza NodeError", () => {
     expect(categoryOf(new AuthError({ reason: 'token scaduto' }))).toBe('auth');
     expect(categoryOf(new TimeoutError({ timeoutMs: 1000 }))).toBe('network');
   });
@@ -103,7 +111,12 @@ describe('NodeError — categorie semantiche + azione UI', () => {
 describe('NodeError hierarchy', () => {
   describe('NodeError base', () => {
     it('exposes code/retryable/context + toJSON', () => {
-      const e = new NodeError({ code: 'INTERNAL_ERROR', message: 'x', retryable: true, context: { a: 1 } });
+      const e = new NodeError({
+        code: 'INTERNAL_ERROR',
+        message: 'x',
+        retryable: true,
+        context: { a: 1 },
+      });
       expect(e.code).toBe('INTERNAL_ERROR');
       expect(e.retryable).toBe(true);
       expect(e.context).toEqual({ a: 1 });
@@ -151,7 +164,12 @@ describe('NodeError hierarchy', () => {
 
     it('exposes status + url + truncates bodyExcerpt to 500', () => {
       const big = 'x'.repeat(2000);
-      const e = new HttpError({ status: 500, statusText: 'oops', url: 'https://e.com', bodyExcerpt: big });
+      const e = new HttpError({
+        status: 500,
+        statusText: 'oops',
+        url: 'https://e.com',
+        bodyExcerpt: big,
+      });
       expect(e.status).toBe(500);
       expect(e.context.url).toBe('https://e.com');
       expect((e.context.bodyExcerpt as string).length).toBe(500);

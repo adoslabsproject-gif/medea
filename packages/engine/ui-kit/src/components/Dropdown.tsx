@@ -74,7 +74,13 @@ export function Dropdown({
 
   return (
     <div ref={ref} className="relative inline-block">
-      <button type="button" onClick={() => { setOpen((v) => !v); }} className="contents">
+      <button
+        type="button"
+        onClick={() => {
+          setOpen((v) => !v);
+        }}
+        className="contents"
+      >
         {trigger}
       </button>
       {open && (
@@ -88,7 +94,9 @@ export function Dropdown({
         >
           {items.map((it, idx) => {
             if (it === 'separator') {
-              return <div key={`sep-${idx.toString()}`} className="my-1 border-t border-line-subtle" />;
+              return (
+                <div key={`sep-${idx.toString()}`} className="my-1 border-t border-line-subtle" />
+              );
             }
             const isDanger = it.variant === 'danger';
             return (
@@ -97,7 +105,9 @@ export function Dropdown({
                 type="button"
                 role="menuitem"
                 disabled={it.disabled}
-                onClick={() => { handleSelect(it); }}
+                onClick={() => {
+                  handleSelect(it);
+                }}
                 className={clsx(
                   'flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs transition',
                   isDanger
@@ -106,9 +116,15 @@ export function Dropdown({
                   it.disabled && 'opacity-40 cursor-not-allowed hover:bg-transparent',
                 )}
               >
-                {it.icon !== undefined && <span aria-hidden className="flex-shrink-0">{it.icon}</span>}
+                {it.icon !== undefined && (
+                  <span aria-hidden className="flex-shrink-0">
+                    {it.icon}
+                  </span>
+                )}
                 <span className="flex-1 truncate">{it.label}</span>
-                {it.hint !== undefined && <span className="text-[10px] text-fg-subtle">{it.hint}</span>}
+                {it.hint !== undefined && (
+                  <span className="text-[10px] text-fg-subtle">{it.hint}</span>
+                )}
               </button>
             );
           })}

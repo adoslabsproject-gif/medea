@@ -71,13 +71,15 @@ export function buildOAuthClient(): Promise<GoogleOAuthClient> {
   const clientId = process.env.MEDEA_GOOGLE_CLIENT_ID;
   const clientSecret = process.env.MEDEA_GOOGLE_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
-    return Promise.reject(new IntegrationError({
-      provider: 'gmail',
-      code: 'OAUTH_NOT_CONFIGURED',
-      message:
-        'Google OAuth is not configured for this FlowForge instance. ' +
-        'Set MEDEA_GOOGLE_CLIENT_ID and MEDEA_GOOGLE_CLIENT_SECRET in the runtime env.',
-    }));
+    return Promise.reject(
+      new IntegrationError({
+        provider: 'gmail',
+        code: 'OAUTH_NOT_CONFIGURED',
+        message:
+          'Google OAuth is not configured for this FlowForge instance. ' +
+          'Set MEDEA_GOOGLE_CLIENT_ID and MEDEA_GOOGLE_CLIENT_SECRET in the runtime env.',
+      }),
+    );
   }
   return Promise.resolve({
     clientId,
@@ -242,7 +244,10 @@ export async function ensureFreshGoogleAccessToken(args: {
         credentials: newCreds as unknown as Record<string, unknown>,
         expiresAt: newExpiresAt,
       });
-      logger.info({ integrationId: args.integrationId, tenantId: args.tenantId }, 'Google access_token refreshed');
+      logger.info(
+        { integrationId: args.integrationId, tenantId: args.tenantId },
+        'Google access_token refreshed',
+      );
       return tokens.access_token;
     } finally {
       refreshLocks.delete(lockKey);

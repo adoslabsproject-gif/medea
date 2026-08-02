@@ -36,7 +36,11 @@ interface DiagnosisOutput {
 
 function safeParseJson<T = unknown>(s: string | null | undefined): T | null {
   if (!s) return null;
-  try { return JSON.parse(s) as T; } catch { return null; }
+  try {
+    return JSON.parse(s) as T;
+  } catch {
+    return null;
+  }
 }
 
 function classifyError(errMsg: string): string {
@@ -55,7 +59,8 @@ export const debugRunFailureExecutor: NodeExecutor = async (rawConfig, _input, c
   const runId = coerceString(cfg.runId ?? '').trim();
   if (!runId) throw new Error('agent_debug_run_failure: runId obbligatorio.');
 
-  const includeTests = cfg.includeTests !== false && coerceString(cfg.includeTests ?? 'true') !== 'false';
+  const includeTests =
+    cfg.includeTests !== false && coerceString(cfg.includeTests ?? 'true') !== 'false';
   const maxFixes = Math.min(Math.max(Number(cfg.maxFixes ?? 3), 1), 5);
   const autoReplay = cfg.autoReplay === true || coerceString(cfg.autoReplay ?? 'false') === 'true';
 
@@ -65,7 +70,7 @@ export const debugRunFailureExecutor: NodeExecutor = async (rawConfig, _input, c
   const run = existing[0];
   if (!run) throw new Error(`Run ${runId} non trovato`);
 
-  const steps: RunStep[] = (safeParseJson<RunStep[]>(run.stepsJson) ?? []);
+  const steps: RunStep[] = safeParseJson<RunStep[]>(run.stepsJson) ?? [];
   const triggerInput = safeParseJson(run.input);
 
   // Identify failed step
@@ -109,26 +114,48 @@ export const debugRunFailureExecutor: NodeExecutor = async (rawConfig, _input, c
     `NODE CONFIG: ${JSON.stringify(failedStep.nodeConfig ?? {}).slice(0, 1500)}\n` +
     `INPUT TO NODE: ${(failedStep.input ?? '').slice(0, 800)}\n` +
     `TRIGGER INPUT: ${JSON.stringify(triggerInput ?? {}).slice(0, 800)}\n` +
-    `DOWNSTREAM STEPS: ${steps.filter((s) => s.nodeId !== failedStep.nodeId).map((s) => `${s.nodeId}(${s.status})`).join(', ').slice(0, 500)}`;
+    `DOWNSTREAM STEPS: ${steps
+      .filter((s) => s.nodeId !== failedStep.nodeId)
+      .map((s) => `${s.nodeId}(${s.status})`)
+      .join(', ')
+      .slice(0, 500)}`;
 
   // Fase 2 (#14): resolver + gateway metered (Liara default, BYOK override) —
   // PRIMA: LIARA_URL "v1 complete" diretto, route inesistente + 401 internalAuth
   // → la diagnosi AI non partiva MAI, sempre fallback euristico.
   let result: DiagnosisOutput;
   let llmUsage: LlmTokenUsage | undefined;
-  let llmProvider = ''; let llmModel = '';
+  let llmProvider = '';
+  let llmModel = '';
   try {
     const resolved = llmResolver.resolve(context.tenantId);
     llmProvider = resolved.provider;
     llmModel = resolved.model || `${resolved.provider}-default`;
-    const raw = (await dispatchLLMChat(
-      resolved.provider, resolved.apiKey, resolved.model,
-      sysPrompt, userPrompt, resolved.baseUrl, [],
-      (u) => { llmUsage = u; }, undefined, { maxTokens: 2000, timeoutMs: 60_000 },
-    )).trim();
+    const raw = (
+      await dispatchLLMChat(
+        resolved.provider,
+        resolved.apiKey,
+        resolved.model,
+        sysPrompt,
+        userPrompt,
+        resolved.baseUrl,
+        [],
+        (u) => {
+          llmUsage = u;
+        },
+        undefined,
+        { maxTokens: 2000, timeoutMs: 60_000 },
+      )
+    ).trim();
     // Fase 3 (#15): prompt completo + risposta → StepLog 'llm' (anche se il
     // parse sotto fallisce: la chiamata è avvenuta).
-    logLlmExchange(context, { provider: llmProvider, model: llmModel, system: sysPrompt, user: userPrompt, response: raw });
+    logLlmExchange(context, {
+      provider: llmProvider,
+      model: llmModel,
+      system: sysPrompt,
+      user: userPrompt,
+      response: raw,
+    });
     const jsonMatch = /\{[\s\S]*\}/.exec(raw);
     if (!jsonMatch) throw new Error('LLM non ha ritornato JSON valido');
     result = JSON.parse(jsonMatch[0]) as DiagnosisOutput;
@@ -144,16 +171,21 @@ export const debugRunFailureExecutor: NodeExecutor = async (rawConfig, _input, c
         category: errorCategory,
         confidence: 0.3,
       },
-      suggestedFixes: [{
-        type: errorCategory === 'transient' ? 'retry' : 'config',
-        description: errorCategory === 'transient'
-          ? 'Aumenta retry policy: count=3, backoff=exponential da 1s, max 30s.'
-          : `Verifica config del nodo ${failedStep.nodeId} contro lo schema NodeDef.`,
-        confidence: 0.5,
-      }],
+      suggestedFixes: [
+        {
+          type: errorCategory === 'transient' ? 'retry' : 'config',
+          description:
+            errorCategory === 'transient'
+              ? 'Aumenta retry policy: count=3, backoff=exponential da 1s, max 30s.'
+              : `Verifica config del nodo ${failedStep.nodeId} contro lo schema NodeDef.`,
+          confidence: 0.5,
+        },
+      ],
       suggestedTests: [],
     };
-    (result as { warnings?: string[] }).warnings = [`liara unavailable: ${e instanceof Error ? e.message : String(e)}`];
+    (result as { warnings?: string[] }).warnings = [
+      `liara unavailable: ${e instanceof Error ? e.message : String(e)}`,
+    ];
   }
 
   // Build replay command (one-click apply)
@@ -166,7 +198,10 @@ export const debugRunFailureExecutor: NodeExecutor = async (rawConfig, _input, c
   // Auto-replay (opt-in pericoloso)
   let autoReplayResult: unknown = null;
   if (autoReplay && result.suggestedFixes.length > 0) {
-    autoReplayResult = { skipped: 'autoReplay implementato a livello workflow chiamante (no LLM-driven mutation senza human-in-loop)' };
+    autoReplayResult = {
+      skipped:
+        'autoReplay implementato a livello workflow chiamante (no LLM-driven mutation senza human-in-loop)',
+    };
   }
 
   return {
@@ -181,15 +216,17 @@ export const debugRunFailureExecutor: NodeExecutor = async (rawConfig, _input, c
       runStatus: run.status,
       // Fase 2 (#14): usage standard — presente solo se la diagnosi AI è avvenuta
       // (fallback euristico = zero token spesi).
-      ...(llmUsage !== undefined ? {
-        _llm: {
-          inputTokens: llmUsage.input,
-          outputTokens: llmUsage.output,
-          model: llmModel,
-          provider: llmProvider,
-          fromApi: llmUsage.fromApi,
-        },
-      } : {}),
+      ...(llmUsage !== undefined
+        ? {
+            _llm: {
+              inputTokens: llmUsage.input,
+              outputTokens: llmUsage.output,
+              model: llmModel,
+              provider: llmProvider,
+              fromApi: llmUsage.fromApi,
+            },
+          }
+        : {}),
     },
     durationMs: Date.now() - start,
   };

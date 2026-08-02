@@ -99,7 +99,10 @@ export interface CodeRule {
    * Repair opzionale. SOLO UPDATE non-distruttivi. Mai DELETE.
    * Ritorna gli id delle righe che NON necessitano più di quarantine.
    */
-  repair?(ctx: JanitorContext, rows: readonly DetectedRow[]): Promise<{
+  repair?(
+    ctx: JanitorContext,
+    rows: readonly DetectedRow[],
+  ): Promise<{
     readonly repairedIds: readonly string[];
   }>;
 }
@@ -134,8 +137,12 @@ export interface DslRule {
 
 export type Rule = CodeRule | DslRule;
 
-export function isCodeRule(r: Rule): r is CodeRule { return r.kind === 'code'; }
-export function isDslRule(r: Rule): r is DslRule { return r.kind === 'dsl'; }
+export function isCodeRule(r: Rule): r is CodeRule {
+  return r.kind === 'code';
+}
+export function isDslRule(r: Rule): r is DslRule {
+  return r.kind === 'dsl';
+}
 
 /** ID univoco enforcement: `<scope>.<table>.<problem>` per code, `dsl_<nanoid>` per dsl. */
 export const CODE_RULE_ID_RE = /^[a-z][a-z0-9]*\.[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/;

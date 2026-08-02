@@ -33,24 +33,26 @@ export function createAiTemplatesRoutes(): Hono {
   app.get('/', (c) => {
     const limit = Number(c.req.query('limit') ?? '50');
     const templates = templateCache.list({ limit: Math.min(Math.max(limit, 1), 200) });
-    return Promise.resolve(c.json({
-      ok: true,
-      count: templates.length,
-      templates: templates.map((t) => ({
-        id: t.id,
-        name: t.name,
-        promptText: t.promptText,
-        graphSignature: t.graphSignature,
-        graphDefIds: t.graphDefIds,
-        language: t.language,
-        importedCount: t.importedCount,
-        successCount: t.successCount,
-        failCount: t.failCount,
-        lastUsedAt: t.lastUsedAt,
-        createdAt: t.createdAt,
-        sharedWithCommunity: t.sharedWithCommunity,
-      })),
-    }));
+    return Promise.resolve(
+      c.json({
+        ok: true,
+        count: templates.length,
+        templates: templates.map((t) => ({
+          id: t.id,
+          name: t.name,
+          promptText: t.promptText,
+          graphSignature: t.graphSignature,
+          graphDefIds: t.graphDefIds,
+          language: t.language,
+          importedCount: t.importedCount,
+          successCount: t.successCount,
+          failCount: t.failCount,
+          lastUsedAt: t.lastUsedAt,
+          createdAt: t.createdAt,
+          sharedWithCommunity: t.sharedWithCommunity,
+        })),
+      }),
+    );
   });
 
   app.get('/community', async (c) => {
@@ -61,7 +63,14 @@ export function createAiTemplatesRoutes(): Hono {
       limit: Math.min(Math.max(limit, 1), 100),
     });
     if (!remote) {
-      return Promise.resolve(c.json({ ok: false, error: 'Community gallery non raggiungibile', templates: [], count: 0 }));
+      return Promise.resolve(
+        c.json({
+          ok: false,
+          error: 'Community gallery non raggiungibile',
+          templates: [],
+          count: 0,
+        }),
+      );
     }
     return Promise.resolve(c.json({ ok: true, templates: remote.templates, count: remote.count }));
   });
@@ -78,7 +87,8 @@ export function createAiTemplatesRoutes(): Hono {
     const local = templateCache.getById(id);
     if (!local) return c.json({ ok: false, error: 'template not found' }, 404);
     const body = ShareBody.safeParse(await c.req.json().catch(() => ({})));
-    if (!body.success) return c.json({ ok: false, error: 'invalid body', issues: body.error.issues }, 400);
+    if (!body.success)
+      return c.json({ ok: false, error: 'invalid body', issues: body.error.issues }, 400);
     if (!TENANT_ID) return c.json({ ok: false, error: 'tenant id missing in container env' }, 500);
     const result = await promoteToCommunity({
       name: local.name,
@@ -92,7 +102,10 @@ export function createAiTemplatesRoutes(): Hono {
       sourceWorkspaceId: TENANT_ID,
     });
     if (!result) return c.json({ ok: false, error: 'community gallery non raggiungibile' }, 502);
-    logger.info({ localId: id, sharedId: result.id, isNew: result.isNew }, '[ai-templates] shared to community');
+    logger.info(
+      { localId: id, sharedId: result.id, isNew: result.isNew },
+      '[ai-templates] shared to community',
+    );
     return c.json({ ok: true, sharedTemplateId: result.id, isNew: result.isNew });
   });
 
@@ -122,15 +135,21 @@ export function createAiTemplatesRoutes(): Hono {
 
   // N3: /metrics fa una COUNT sul cache + è ri-fetchato dalla UI ogni 30s →
   // rate-limit per-tenant generoso (copre più client del tenant) anti-DoS.
-  app.get('/metrics', rateLimit({ windowMs: 60_000, perTenant: 60, label: 'ai-templates-metrics' }), (c) => {
-    const m = templateCache.getMetrics();
-    return Promise.resolve(c.json({
-      ok: true,
-      ...m,
-      cacheHitRatePct: Math.round(m.cacheHitRate * 1000) / 10,
-      gpuMinutesSaved: Math.round(m.gpuSecondsSaved / 60),
-    }));
-  });
+  app.get(
+    '/metrics',
+    rateLimit({ windowMs: 60_000, perTenant: 60, label: 'ai-templates-metrics' }),
+    (c) => {
+      const m = templateCache.getMetrics();
+      return Promise.resolve(
+        c.json({
+          ok: true,
+          ...m,
+          cacheHitRatePct: Math.round(m.cacheHitRate * 1000) / 10,
+          gpuMinutesSaved: Math.round(m.gpuSecondsSaved / 60),
+        }),
+      );
+    },
+  );
 
   /**
    * GET /search?query=…&limit=3&includeCommunity=true
@@ -147,7 +166,9 @@ export function createAiTemplatesRoutes(): Hono {
   app.get('/search', async (c) => {
     const query = c.req.query('query');
     if (!query || query.trim().length < 3) {
-      return Promise.resolve(c.json({ ok: false, error: 'query required (min 3 chars)', templates: [] }, 400));
+      return Promise.resolve(
+        c.json({ ok: false, error: 'query required (min 3 chars)', templates: [] }, 400),
+      );
     }
     const limit = Math.min(Math.max(Number(c.req.query('limit') ?? '3'), 1), 10);
     const includeCommunity = c.req.query('includeCommunity') === 'true';
@@ -179,7 +200,12 @@ export function createAiTemplatesRoutes(): Hono {
         importedCount?: number;
         successCount?: number;
       };
-      signals?: { graphOverlap: number; promptJaccard: number; successRate: number; cosine: number };
+      signals?: {
+        graphOverlap: number;
+        promptJaccard: number;
+        successRate: number;
+        cosine: number;
+      };
     }
 
     const results: Result[] = [];
@@ -196,7 +222,13 @@ export function createAiTemplatesRoutes(): Hono {
           graphSignature: local.template.graphSignature,
           graphDefIds: local.template.graphDefIds,
           language: local.template.language,
-          workflowJson: (() => { try { return JSON.parse(local.template.workflowJson) as unknown; } catch { return null; } })(),
+          workflowJson: (() => {
+            try {
+              return JSON.parse(local.template.workflowJson) as unknown;
+            } catch {
+              return null;
+            }
+          })(),
           importedCount: local.template.importedCount,
           successCount: local.template.successCount,
         },
@@ -213,7 +245,10 @@ export function createAiTemplatesRoutes(): Hono {
         if (remote && remote.templates.length > 0) {
           for (const ct of remote.templates) {
             // Score community basato su jaccard tokens + importedCount boost
-            const queryTokens = query.toLowerCase().split(/[^a-z0-9à-ÿ]+/).filter((t) => t.length >= 3);
+            const queryTokens = query
+              .toLowerCase()
+              .split(/[^a-z0-9à-ÿ]+/)
+              .filter((t) => t.length >= 3);
             const intersection = queryTokens.filter((t) => ct.promptTokens.includes(t)).length;
             const union = new Set([...queryTokens, ...ct.promptTokens]).size;
             const jaccard = union > 0 ? intersection / union : 0;
@@ -238,7 +273,10 @@ export function createAiTemplatesRoutes(): Hono {
           }
         }
       } catch (e) {
-        logger.warn({ err: e instanceof Error ? e.message : String(e) }, '[ai-templates/search] community retrieve failed');
+        logger.warn(
+          { err: e instanceof Error ? e.message : String(e) },
+          '[ai-templates/search] community retrieve failed',
+        );
       }
     }
 
@@ -246,13 +284,15 @@ export function createAiTemplatesRoutes(): Hono {
     results.sort((a, b) => b.score - a.score);
     const top = results.slice(0, limit);
 
-    return Promise.resolve(c.json({
-      ok: true,
-      query,
-      embedded: queryEmbedding !== null,
-      count: top.length,
-      results: top,
-    }));
+    return Promise.resolve(
+      c.json({
+        ok: true,
+        query,
+        embedded: queryEmbedding !== null,
+        count: top.length,
+        results: top,
+      }),
+    );
   });
 
   return app;

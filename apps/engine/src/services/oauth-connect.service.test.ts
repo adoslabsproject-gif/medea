@@ -117,7 +117,11 @@ describe('🚨 start — authorize URL + state insert', () => {
 
   it('🚨 state inserito in DB con code_verifier per Google', () => {
     new OAuthConnectService().start({
-      provider: 'google', tenantId: 't', userId: 'u', credentialName: 'n', redirectUri: 'r',
+      provider: 'google',
+      tenantId: 't',
+      userId: 'u',
+      credentialName: 'n',
+      redirectUri: 'r',
     });
     const row = sqliteInst.prepare('SELECT * FROM oauth_connect_state').get() as any;
     expect(row.state).toBeTruthy();
@@ -131,7 +135,11 @@ describe('🚨 start — authorize URL + state insert', () => {
     process.env.MEDEA_GITHUB_OAUTH_CLIENT_ID = 'x';
     process.env.MEDEA_GITHUB_OAUTH_CLIENT_SECRET = 'y';
     new OAuthConnectService().start({
-      provider: 'github', tenantId: 't', userId: 'u', credentialName: 'n', redirectUri: 'r',
+      provider: 'github',
+      tenantId: 't',
+      userId: 'u',
+      credentialName: 'n',
+      redirectUri: 'r',
     });
     const row = sqliteInst.prepare('SELECT * FROM oauth_connect_state').get() as any;
     expect(row.code_verifier).toBeNull();
@@ -139,24 +147,44 @@ describe('🚨 start — authorize URL + state insert', () => {
   });
 
   it('🚨 provider sconosciuto → throw', () => {
-    expect(() => new OAuthConnectService().start({
-      provider: 'unknown', tenantId: 't', userId: 'u', credentialName: 'n', redirectUri: 'r',
-    })).toThrow(/sconosciuto/u);
+    expect(() =>
+      new OAuthConnectService().start({
+        provider: 'unknown',
+        tenantId: 't',
+        userId: 'u',
+        credentialName: 'n',
+        redirectUri: 'r',
+      }),
+    ).toThrow(/sconosciuto/u);
   });
 
   it('🚨 provider non configurato (no env) → throw esplicito', () => {
     delete process.env.MEDEA_GOOGLE_OAUTH_CLIENT_ID;
-    expect(() => new OAuthConnectService().start({
-      provider: 'google', tenantId: 't', userId: 'u', credentialName: 'n', redirectUri: 'r',
-    })).toThrow(/non configurato/u);
+    expect(() =>
+      new OAuthConnectService().start({
+        provider: 'google',
+        tenantId: 't',
+        userId: 'u',
+        credentialName: 'n',
+        redirectUri: 'r',
+      }),
+    ).toThrow(/non configurato/u);
   });
 
   it('🚨 state random ad ogni chiamata (no collision)', () => {
     const r1 = new OAuthConnectService().start({
-      provider: 'google', tenantId: 't', userId: 'u', credentialName: 'n', redirectUri: 'r',
+      provider: 'google',
+      tenantId: 't',
+      userId: 'u',
+      credentialName: 'n',
+      redirectUri: 'r',
     });
     const r2 = new OAuthConnectService().start({
-      provider: 'google', tenantId: 't', userId: 'u', credentialName: 'n', redirectUri: 'r',
+      provider: 'google',
+      tenantId: 't',
+      userId: 'u',
+      credentialName: 'n',
+      redirectUri: 'r',
     });
     const s1 = new URL(r1.authorizeUrl).searchParams.get('state');
     const s2 = new URL(r2.authorizeUrl).searchParams.get('state');
@@ -172,19 +200,25 @@ describe('🚨 complete — token exchange + credential persist', () => {
 
   function seedState(extra: Partial<any> = {}): string {
     const state = 'test-state-xyz';
-    sqliteInst.prepare(`INSERT INTO oauth_connect_state VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(
-      state,
-      extra.provider ?? 'google',
-      't-1', 'u-1', 'gmail-cred', 'https://app.example.com/cb',
-      extra.code_verifier ?? 'verifier-xxx',
-      '2026-06-07',
-    );
+    sqliteInst
+      .prepare(`INSERT INTO oauth_connect_state VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(
+        state,
+        extra.provider ?? 'google',
+        't-1',
+        'u-1',
+        'gmail-cred',
+        'https://app.example.com/cb',
+        extra.code_verifier ?? 'verifier-xxx',
+        '2026-06-07',
+      );
     return state;
   }
 
   it('🚨 state sconosciuto → throw (CSRF protection)', async () => {
-    await expect(new OAuthConnectService().complete('code', 'bogus-state'))
-      .rejects.toThrow(/sconosciuto o scaduto/u);
+    await expect(new OAuthConnectService().complete('code', 'bogus-state')).rejects.toThrow(
+      /sconosciuto o scaduto/u,
+    );
   });
 
   it('🚨 state usato 2x → 2a chiamata fallisce (replay prevented)', async () => {
@@ -194,31 +228,37 @@ describe('🚨 complete — token exchange + credential persist', () => {
       json: () => Promise.resolve({ access_token: 'tok' }),
     });
     await new OAuthConnectService().complete('code1', state);
-    await expect(new OAuthConnectService().complete('code1', state))
-      .rejects.toThrow(/sconosciuto o scaduto/u);
+    await expect(new OAuthConnectService().complete('code1', state)).rejects.toThrow(
+      /sconosciuto o scaduto/u,
+    );
   });
 
   it('🚨 happy: token exchange + credential.create called', async () => {
     const state = seedState();
     safeFetchMock.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        access_token: 'gho_acc',
-        refresh_token: 'gho_ref',
-        token_type: 'Bearer',
-        scope: 'drive gmail',
-        expires_in: 3600,
-      }),
+      json: () =>
+        Promise.resolve({
+          access_token: 'gho_acc',
+          refresh_token: 'gho_ref',
+          token_type: 'Bearer',
+          scope: 'drive gmail',
+          expires_in: 3600,
+        }),
     });
     const r = await new OAuthConnectService().complete('auth-code-xxx', state);
     expect(r).toEqual({ credentialId: 'cred-123', providerLabel: 'Google' });
-    expect(credentialsCreateMock).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: 't-1',
-      name: 'gmail-cred',
-      provider: 'oauth:google',
-      actorId: 'u-1',
-    }));
-    const plaintext = JSON.parse(at(credentialsCreateMock.mock.calls, 0, 'create-calls')[0].plaintext);
+    expect(credentialsCreateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 't-1',
+        name: 'gmail-cred',
+        provider: 'oauth:google',
+        actorId: 'u-1',
+      }),
+    );
+    const plaintext = JSON.parse(
+      at(credentialsCreateMock.mock.calls, 0, 'create-calls')[0].plaintext,
+    );
     expect(plaintext.access_token).toBe('gho_acc');
     expect(plaintext.refresh_token).toBe('gho_ref');
     expect(plaintext.expires_at).toBeTruthy();
@@ -242,8 +282,9 @@ describe('🚨 complete — token exchange + credential persist', () => {
       status: 401,
       text: () => Promise.resolve('invalid_client'),
     });
-    await expect(new OAuthConnectService().complete('code', state))
-      .rejects.toThrow(/Token exchange fallito \(401\).*invalid_client/u);
+    await expect(new OAuthConnectService().complete('code', state)).rejects.toThrow(
+      /Token exchange fallito \(401\).*invalid_client/u,
+    );
   });
 
   it('🚨 access_token mancante in response → throw', async () => {
@@ -252,8 +293,9 @@ describe('🚨 complete — token exchange + credential persist', () => {
       ok: true,
       json: () => Promise.resolve({ error: 'temp' }),
     });
-    await expect(new OAuthConnectService().complete('code', state))
-      .rejects.toThrow(/access_token utile/u);
+    await expect(new OAuthConnectService().complete('code', state)).rejects.toThrow(
+      /access_token utile/u,
+    );
   });
 
   it('🚨 Slack v2 authed_user.access_token (oddity) → estratto', async () => {
@@ -262,12 +304,15 @@ describe('🚨 complete — token exchange + credential persist', () => {
     const state = seedState({ provider: 'slack', code_verifier: null });
     safeFetchMock.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        authed_user: { access_token: 'xoxp-user-scoped-token' },
-      }),
+      json: () =>
+        Promise.resolve({
+          authed_user: { access_token: 'xoxp-user-scoped-token' },
+        }),
     });
     await new OAuthConnectService().complete('code', state);
-    const plaintext = JSON.parse(at(credentialsCreateMock.mock.calls, 0, 'create-calls')[0].plaintext);
+    const plaintext = JSON.parse(
+      at(credentialsCreateMock.mock.calls, 0, 'create-calls')[0].plaintext,
+    );
     expect(plaintext.access_token).toBe('xoxp-user-scoped-token');
   });
 
@@ -278,7 +323,9 @@ describe('🚨 complete — token exchange + credential persist', () => {
       json: () => Promise.resolve({ access_token: 'tok' }),
     });
     await new OAuthConnectService().complete('code', state);
-    const plaintext = JSON.parse(at(credentialsCreateMock.mock.calls, 0, 'create-calls')[0].plaintext);
+    const plaintext = JSON.parse(
+      at(credentialsCreateMock.mock.calls, 0, 'create-calls')[0].plaintext,
+    );
     expect(plaintext.expires_at).toBeNull();
   });
 
@@ -289,7 +336,9 @@ describe('🚨 complete — token exchange + credential persist', () => {
       json: () => Promise.resolve({ access_token: 'tok' }),
     });
     await new OAuthConnectService().complete('code', state);
-    const plaintext = JSON.parse(at(credentialsCreateMock.mock.calls, 0, 'create-calls')[0].plaintext);
+    const plaintext = JSON.parse(
+      at(credentialsCreateMock.mock.calls, 0, 'create-calls')[0].plaintext,
+    );
     expect(plaintext.scope).toBe(OAUTH_PROVIDERS.google!.defaultScopes);
   });
 });

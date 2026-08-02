@@ -31,7 +31,14 @@ describe('buildTxt2ImgGraph', () => {
     expect(g['6']?.inputs.text).toBe('a cat'); // positive
     expect(g['7']?.inputs.text).toBe('blurry'); // negative
     expect(g['5']?.inputs).toMatchObject({ width: 1024, height: 768, batch_size: 2 });
-    expect(g['3']?.inputs).toMatchObject({ seed: 42, steps: 28, cfg: 7, sampler_name: 'euler', scheduler: 'normal', denoise: 1 });
+    expect(g['3']?.inputs).toMatchObject({
+      seed: 42,
+      steps: 28,
+      cfg: 7,
+      sampler_name: 'euler',
+      scheduler: 'normal',
+      denoise: 1,
+    });
     expect(g['9']?.class_type).toBe('SaveImage');
   });
 
@@ -47,22 +54,29 @@ describe('buildTxt2ImgGraph', () => {
   });
 
   it('catena LoRA: model+clip passano per ogni LoRA in sequenza', () => {
-    const g = buildTxt2ImgGraph({ ...base, loras: [{ name: 'a.safetensors', strengthModel: 0.8 }, { name: 'b.safetensors' }] });
+    const g = buildTxt2ImgGraph({
+      ...base,
+      loras: [{ name: 'a.safetensors', strengthModel: 0.8 }, { name: 'b.safetensors' }],
+    });
     expect(g.lora0?.inputs.model).toEqual(['4', 0]);
     expect(g.lora0?.inputs.clip).toEqual(['4', 1]);
     expect(g.lora0?.inputs.strength_model).toBe(0.8);
     expect(g.lora1?.inputs.model).toEqual(['lora0', 0]); // catena
-    expect(g['3']?.inputs.model).toEqual(['lora1', 0]);      // sampler dal LoRA finale
-    expect(g['6']?.inputs.clip).toEqual(['lora1', 1]);       // CLIP post-LoRA
+    expect(g['3']?.inputs.model).toEqual(['lora1', 0]); // sampler dal LoRA finale
+    expect(g['6']?.inputs.clip).toEqual(['lora1', 1]); // CLIP post-LoRA
   });
 
   it('LoRA + v_prediction: il ModelSamplingDiscrete parte dal LoRA finale', () => {
-    const g = buildTxt2ImgGraph({ ...base, samplingMode: 'v_prediction', loras: [{ name: 'a.safetensors' }] });
+    const g = buildTxt2ImgGraph({
+      ...base,
+      samplingMode: 'v_prediction',
+      loras: [{ name: 'a.safetensors' }],
+    });
     expect(g['10']?.inputs.model).toEqual(['lora0', 0]);
     expect(g['3']?.inputs.model).toEqual(['10', 0]);
   });
 
-  it('img2img: initImage → LoadImage+VAEEncode, latent dall\'encode, denoise <1, niente EmptyLatentImage', () => {
+  it("img2img: initImage → LoadImage+VAEEncode, latent dall'encode, denoise <1, niente EmptyLatentImage", () => {
     const g = buildTxt2ImgGraph({ ...base, initImage: 'ref.png', denoise: 0.5 });
     expect(g.load?.class_type).toBe('LoadImage');
     expect(g.load?.inputs.image).toBe('ref.png');
@@ -103,7 +117,7 @@ describe('buildTxt2ImgGraph', () => {
 
   it('LoRA con nome vuoto/spazi → ignorato', () => {
     const g = buildTxt2ImgGraph({ ...base, loras: [{ name: '  ' }, { name: 'real.safetensors' }] });
-    expect(g.lora1).toBeUndefined();        // il blank è scartato → resta solo lora0
+    expect(g.lora1).toBeUndefined(); // il blank è scartato → resta solo lora0
     expect(g.lora0?.inputs.lora_name).toBe('real.safetensors');
     expect(g['3']?.inputs.model).toEqual(['lora0', 0]);
   });

@@ -44,8 +44,10 @@ export function registerBreakersRoutes(app: Hono): void {
     if (!breaker) return c.json({ error: `Breaker "${name}" not found` }, 404);
     breaker.forceState('closed', `admin reset by ${auth?.email ?? 'unknown'}`);
     await audit.append({
-      tenantId: 'system', action: 'admin.breaker.reset',
-      resourceType: 'breaker', resourceId: name,
+      tenantId: 'system',
+      action: 'admin.breaker.reset',
+      resourceType: 'breaker',
+      resourceId: name,
       ...(auth?.userId ? { actorId: auth.userId } : {}),
       metadata: { state: 'closed', actorEmail: auth?.email ?? null },
     });
@@ -66,8 +68,10 @@ export function registerBreakersRoutes(app: Hono): void {
     const auth = c.get('auth');
     const n = registry().resetAll();
     await audit.append({
-      tenantId: 'system', action: 'admin.breaker.reset_all',
-      resourceType: 'breaker', resourceId: '*',
+      tenantId: 'system',
+      action: 'admin.breaker.reset_all',
+      resourceType: 'breaker',
+      resourceId: '*',
       ...(auth?.userId ? { actorId: auth.userId } : {}),
       metadata: { resetCount: n, actorEmail: auth?.email ?? null },
     });
@@ -92,8 +96,10 @@ export function registerBreakersRoutes(app: Hono): void {
     breaker.simulateFailures(count, `simulated by ${auth?.email ?? 'admin'} for verification`);
     const stateAfter = breaker.getState();
     await audit.append({
-      tenantId: 'system', action: 'admin.breaker.simulate_failure',
-      resourceType: 'breaker', resourceId: name,
+      tenantId: 'system',
+      action: 'admin.breaker.simulate_failure',
+      resourceType: 'breaker',
+      resourceId: name,
       ...(auth?.userId ? { actorId: auth.userId } : {}),
       metadata: { count, stateBefore, stateAfter, actorEmail: auth?.email ?? null },
     });

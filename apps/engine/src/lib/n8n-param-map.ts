@@ -45,7 +45,7 @@ function passthroughWarn(message: string): (p: Raw) => ParamMapResult {
 function mapHttp(p: Raw): ParamMapResult {
   const warnings: string[] = [];
   const config: Record<string, string> = {};
-  config.method = (s(p.method ?? p.requestMethod ?? 'GET').toUpperCase()) || 'GET';
+  config.method = s(p.method ?? p.requestMethod ?? 'GET').toUpperCase() || 'GET';
   config.url = s(p.url ?? '');
   const body = p.jsonBody ?? p.body ?? p.bodyParametersJson;
   if (body !== undefined && body !== '') {
@@ -55,7 +55,11 @@ function mapHttp(p: Raw): ParamMapResult {
   if (p.authentication !== undefined && p.authentication !== 'none' && p.authentication !== '') {
     warnings.push('autenticazione HTTP n8n non mappata — riconfigura authMode + credenziali');
   }
-  if (p.headerParameters !== undefined || p.sendHeaders !== undefined || p.headerParametersJson !== undefined) {
+  if (
+    p.headerParameters !== undefined ||
+    p.sendHeaders !== undefined ||
+    p.headerParametersJson !== undefined
+  ) {
     warnings.push('header HTTP n8n non mappati automaticamente — compila headersJson');
   }
   return { config, warnings };
@@ -67,7 +71,9 @@ function mapRunJs(p: Raw): ParamMapResult {
   if (!code) return { config: {}, warnings: [] };
   return {
     config: { code },
-    warnings: ['il codice n8n usa $input.all()/items/return items; FlowForge espone `input` (JSON del nodo precedente) e si emette con `return <valore>` — adatta'],
+    warnings: [
+      'il codice n8n usa $input.all()/items/return items; FlowForge espone `input` (JSON del nodo precedente) e si emette con `return <valore>` — adatta',
+    ],
   };
 }
 
@@ -77,14 +83,16 @@ function mapRunPython(p: Raw): ParamMapResult {
   if (!code) return { config: {}, warnings: [] };
   return {
     config: { code },
-    warnings: ['adatta il codice: FlowForge espone `input`; l\'output va su stdout come JSON via print(...)'],
+    warnings: [
+      "adatta il codice: FlowForge espone `input`; l'output va su stdout come JSON via print(...)",
+    ],
   };
 }
 
 /** Webhook → trigger_webhook (method/path). */
 function mapWebhook(p: Raw): ParamMapResult {
   const config: Record<string, string> = {};
-  config.method = (s(p.httpMethod ?? 'POST').toUpperCase()) || 'POST';
+  config.method = s(p.httpMethod ?? 'POST').toUpperCase() || 'POST';
   if (p.path !== undefined && p.path !== '') config.customPath = s(p.path);
   return { config, warnings: [] };
 }
@@ -103,7 +111,9 @@ function mapCron(p: Raw): ParamMapResult {
     config.cronExpression = cron;
   } else {
     config.cronExpression = '0 * * * *';
-    warnings.push('lo schedule n8n (rule/interval) non è un cron diretto — impostato default "ogni ora", da rivedere');
+    warnings.push(
+      'lo schedule n8n (rule/interval) non è un cron diretto — impostato default "ogni ora", da rivedere',
+    );
   }
   return { config, warnings };
 }
@@ -117,7 +127,9 @@ const MAPPERS: Record<string, (p: Raw) => ParamMapResult> = {
   // IF: condizioni n8n (v1/v2) → conditionRules FlowForge (mapping REALE).
   logic_if: (p) => mapN8nIfConditions(p),
   // Strutture ancora complesse: passthrough RAW + warning onesto (prossimi increment).
-  logic_transform: passthroughWarn('Set/Edit Fields: la struttura assegnazioni n8n differisce dal nodo Transform FlowForge — rivedi i campi'),
+  logic_transform: passthroughWarn(
+    'Set/Edit Fields: la struttura assegnazioni n8n differisce dal nodo Transform FlowForge — rivedi i campi',
+  ),
   logic_switch: passthroughWarn('Switch: rivedi i casi/regole del nodo (struttura n8n diversa)'),
 };
 

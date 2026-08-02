@@ -29,7 +29,11 @@ import {
   getInstalled,
 } from '@/services/community-nodes.service.js';
 import { emitCommunityNodesChanged } from '@/services/community-nodes-events.js';
-import { fetchRegistry, findEntry, clearRegistryCache } from '@/services/community-registry.service.js';
+import {
+  fetchRegistry,
+  findEntry,
+  clearRegistryCache,
+} from '@/services/community-registry.service.js';
 import { logger } from '@/lib/logger.js';
 
 const InstallSchema = z.union([
@@ -90,18 +94,24 @@ export function createCommunityNodesRoutes(): Hono {
         // so users never deal with raw URLs.
         const entry = await findEntry(body.vendor, body.registryId);
         if (!entry) {
-          return c.json({ error: `Nodo "${body.vendor}/${body.registryId}" non trovato nel registry` }, 404);
+          return c.json(
+            { error: `Nodo "${body.vendor}/${body.registryId}" non trovato nel registry` },
+            404,
+          );
         }
         installed = await installFromUrl(entry.downloadUrl);
       }
       emitCommunityNodesChanged();
-      return c.json({
-        ok: true,
-        vendor: installed.manifest.vendor,
-        id: installed.manifest.id,
-        version: installed.manifest.version,
-        verified: installed.verified,
-      }, 201);
+      return c.json(
+        {
+          ok: true,
+          vendor: installed.manifest.vendor,
+          id: installed.manifest.id,
+          version: installed.manifest.version,
+          verified: installed.verified,
+        },
+        201,
+      );
     } catch (err) {
       logger.warn({ err }, 'Community node install failed');
       return c.json({ error: err instanceof Error ? err.message : String(err) }, 400);
@@ -114,17 +124,23 @@ export function createCommunityNodesRoutes(): Hono {
       const reg = await fetchRegistry();
       // Enrich each entry with `installed: true|false` so the UI can show
       // the right CTA without a second roundtrip.
-      const installedKeys = new Set(listInstalled().map((n) => `${n.manifest.vendor}/${n.manifest.id}`));
+      const installedKeys = new Set(
+        listInstalled().map((n) => `${n.manifest.vendor}/${n.manifest.id}`),
+      );
       const nodes = reg.nodes.map((n) => ({
         ...n,
         installed: installedKeys.has(`${n.vendor}/${n.id}`),
       }));
       return c.json({ updatedAt: reg.updatedAt, nodes, total: nodes.length });
     } catch (err) {
-      return c.json({
-        error: 'Registry non raggiungibile. Riprova tra qualche minuto o configura MEDEA_REGISTRY_URL.',
-        details: err instanceof Error ? err.message : String(err),
-      }, 502);
+      return c.json(
+        {
+          error:
+            'Registry non raggiungibile. Riprova tra qualche minuto o configura MEDEA_REGISTRY_URL.',
+          details: err instanceof Error ? err.message : String(err),
+        },
+        502,
+      );
     }
   });
 

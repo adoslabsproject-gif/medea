@@ -32,7 +32,10 @@ function parseCronField(field: string, min: number, max: number): (n: number) =>
     return (n) => (n - min) % step === 0;
   }
   if (field.includes(',')) {
-    const values = field.split(',').map(Number).filter((n) => Number.isFinite(n));
+    const values = field
+      .split(',')
+      .map(Number)
+      .filter((n) => Number.isFinite(n));
     return (n) => values.includes(n);
   }
   const exact = Number(field);
@@ -59,8 +62,15 @@ function parseCronField(field: string, min: number, max: number): (n: number) =>
  * il cron "30 2 * * *" NON fire (il "02:30" non esiste). Durante fall-back
  * 03:00→02:00 il cron "30 2 * * *" fire 2 volte (corretto come standard cron).
  */
-function getDatePartsInTimezone(date: Date, timezone: string): {
-  minute: number; hour: number; day: number; month: number; dayOfWeek: number;
+function getDatePartsInTimezone(
+  date: Date,
+  timezone: string,
+): {
+  minute: number;
+  hour: number;
+  day: number;
+  month: number;
+  dayOfWeek: number;
 } {
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
@@ -75,7 +85,13 @@ function getDatePartsInTimezone(date: Date, timezone: string): {
   const get = (type: string): string => parts.find((p) => p.type === type)?.value ?? '';
   const weekdayShort = get('weekday');
   const dowMap: Record<string, number> = {
-    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
   };
   return {
     minute: Number(get('minute')),

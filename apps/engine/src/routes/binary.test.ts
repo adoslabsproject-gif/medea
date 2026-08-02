@@ -99,7 +99,9 @@ describe('GET /binary/:ref — headers sicuri + streaming', () => {
   });
 
   it('🚨 svg + inline=1 → NON inline (octet-stream + attachment): anti-XSS', async () => {
-    const res = await app().request(`/binary/${VALID_REF}?inline=1&mime=image/svg+xml&name=evil.svg`);
+    const res = await app().request(
+      `/binary/${VALID_REF}?inline=1&mime=image/svg+xml&name=evil.svg`,
+    );
     expect(res.headers.get('content-type')).toBe('application/octet-stream');
     expect(res.headers.get('content-disposition')).toContain('attachment');
   });
@@ -134,7 +136,9 @@ describe('GET /binary/:ref — headers sicuri + streaming', () => {
   it('🚨 fileName con doppi apici → sanitizzato (non spezza filename="...")', async () => {
     // Senza sanitizzazione `"` chiuderebbe il fil="..." quoted-string e
     // permetterebbe di iniettare parametri arbitrari nell'header.
-    const res = await app().request(`/binary/${VALID_REF}?name=${encodeURIComponent('a";evil="1')}`);
+    const res = await app().request(
+      `/binary/${VALID_REF}?name=${encodeURIComponent('a";evil="1')}`,
+    );
     const cd = res.headers.get('content-disposition') ?? '';
     // L'unico paio di apici deve essere quello del wrapper filename="..."
     const quoteCount = (cd.match(/"/gu) ?? []).length;
@@ -143,7 +147,9 @@ describe('GET /binary/:ref — headers sicuri + streaming', () => {
   });
 
   it('fileName UTF-8 → filename* RFC 5987 presente', async () => {
-    const res = await app().request(`/binary/${VALID_REF}?name=${encodeURIComponent('relazione-€.pdf')}`);
+    const res = await app().request(
+      `/binary/${VALID_REF}?name=${encodeURIComponent('relazione-€.pdf')}`,
+    );
     const cd = res.headers.get('content-disposition') ?? '';
     expect(cd).toContain("filename*=UTF-8''");
   });

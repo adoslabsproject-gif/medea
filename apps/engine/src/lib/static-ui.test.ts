@@ -70,15 +70,21 @@ describe('pickCacheControl — policy critica PWA', () => {
   });
 
   it('registerSW.js -> no-cache + max-age=0', () => {
-    expect(pickCacheControl('/srv/dist/registerSW.js')).toBe('no-cache, max-age=0, must-revalidate');
+    expect(pickCacheControl('/srv/dist/registerSW.js')).toBe(
+      'no-cache, max-age=0, must-revalidate',
+    );
   });
 
   it('workbox-<hash>.js -> no-cache + max-age=0 (parte SW)', () => {
-    expect(pickCacheControl('/srv/dist/workbox-abeb32eb.js')).toBe('no-cache, max-age=0, must-revalidate');
+    expect(pickCacheControl('/srv/dist/workbox-abeb32eb.js')).toBe(
+      'no-cache, max-age=0, must-revalidate',
+    );
   });
 
   it('manifest.webmanifest -> max-age=300 must-revalidate (5min refresh)', () => {
-    expect(pickCacheControl('/srv/dist/manifest.webmanifest')).toBe('public, max-age=300, must-revalidate');
+    expect(pickCacheControl('/srv/dist/manifest.webmanifest')).toBe(
+      'public, max-age=300, must-revalidate',
+    );
   });
 
   it('index.html -> no-store (mai stale + anti-bfcache post-logout)', () => {
@@ -88,15 +94,21 @@ describe('pickCacheControl — policy critica PWA', () => {
   });
 
   it('REGRESSION: assets/index-<hash>.js -> immutable 1 year (filename hashato safe)', () => {
-    expect(pickCacheControl('/srv/dist/assets/index-Du35oA28.js')).toBe('public, max-age=31536000, immutable');
+    expect(pickCacheControl('/srv/dist/assets/index-Du35oA28.js')).toBe(
+      'public, max-age=31536000, immutable',
+    );
   });
 
   it('assets/index-<hash>.css -> immutable 1 year', () => {
-    expect(pickCacheControl('/srv/dist/assets/index-CYfrS9VV.css')).toBe('public, max-age=31536000, immutable');
+    expect(pickCacheControl('/srv/dist/assets/index-CYfrS9VV.css')).toBe(
+      'public, max-age=31536000, immutable',
+    );
   });
 
   it('icon-192x192.png -> immutable 1 year (asset stabile)', () => {
-    expect(pickCacheControl('/srv/dist/icon-192x192.png')).toBe('public, max-age=31536000, immutable');
+    expect(pickCacheControl('/srv/dist/icon-192x192.png')).toBe(
+      'public, max-age=31536000, immutable',
+    );
   });
 });
 

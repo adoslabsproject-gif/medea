@@ -79,7 +79,7 @@ export function rewritePlaceholders(sql: string): string {
       if (ch === inString) inString = null;
       continue;
     }
-    if (ch === '\'' || ch === '"') {
+    if (ch === "'" || ch === '"') {
       inString = ch;
       out += ch;
       continue;
@@ -160,7 +160,7 @@ function splitStatements(sql: string): string[] {
       if (ch === inString) inString = null;
       continue;
     }
-    if (ch === '\'' || ch === '"') {
+    if (ch === "'" || ch === '"') {
       inString = ch;
       buf += ch;
       continue;

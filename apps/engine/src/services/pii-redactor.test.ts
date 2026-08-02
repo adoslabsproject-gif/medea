@@ -59,7 +59,9 @@ describe('PIIRedactor', () => {
     });
 
     it('redacts CF in a sentence with multiple PII', () => {
-      const r = piiRedactor.redactText('Cliente Mario Rossi (CF: RSSMRA80A01H501Z) email: mario@test.it');
+      const r = piiRedactor.redactText(
+        'Cliente Mario Rossi (CF: RSSMRA80A01H501Z) email: mario@test.it',
+      );
       expect(r.redacted).toContain('<CF>');
       expect(r.redacted).toContain('<EMAIL>');
       expect(r.classes).toContain('codice_fiscale');
@@ -77,7 +79,7 @@ describe('PIIRedactor', () => {
     });
 
     it('redacts a bare 11-digit P.IVA', () => {
-      const r = piiRedactor.redactText('Codice 12345678901 dell\'azienda');
+      const r = piiRedactor.redactText("Codice 12345678901 dell'azienda");
       expect(r.redacted).toContain('<PIVA>');
     });
 
@@ -155,7 +157,9 @@ describe('PIIRedactor', () => {
         'IBAN: IT60X0542811101000000654321',
       ].join('\n');
       const r = piiRedactor.redactText(input);
-      expect(r.classes).toEqual(expect.arrayContaining(['email', 'phone', 'partita_iva', 'credit_card', 'iban']));
+      expect(r.classes).toEqual(
+        expect.arrayContaining(['email', 'phone', 'partita_iva', 'credit_card', 'iban']),
+      );
       expect(r.redacted).not.toContain('mario.rossi@example.com');
       expect(r.redacted).not.toContain('4242');
     });

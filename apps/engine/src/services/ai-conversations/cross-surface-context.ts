@@ -47,10 +47,14 @@ function clip(s: string, n: number): string {
 /** Riepilogo di una conversazione: summary se presente, altrimenti ultimi turni. */
 function summarize(conv: AiConversationRow, maxChars: number): string {
   if (conv.summary && conv.summary.trim().length > 0) return clip(conv.summary, maxChars);
-  const msgs = conversationService.getRecentMessages(conv.id, 4)
+  const msgs = conversationService
+    .getRecentMessages(conv.id, 4)
     .filter((m) => m.role === 'user' || m.role === 'assistant');
   if (msgs.length === 0) return '';
-  return clip(msgs.map((m) => `${m.role === 'user' ? 'U' : 'A'}: ${m.content}`).join(' · '), maxChars);
+  return clip(
+    msgs.map((m) => `${m.role === 'user' ? 'U' : 'A'}: ${m.content}`).join(' · '),
+    maxChars,
+  );
 }
 
 /**

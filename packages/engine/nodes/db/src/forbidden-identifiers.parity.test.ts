@@ -44,9 +44,12 @@ describe('🚨 parity — DB_FORBIDDEN_IDENTIFIERS ⊇ interpreter FORBIDDEN_IDE
     expect(intSet.size).toBeGreaterThan(10);
   });
 
-  it('🚨 db NON deve mancare nessun identifier dell\'interpreter (no drift debole)', () => {
+  it("🚨 db NON deve mancare nessun identifier dell'interpreter (no drift debole)", () => {
     const missing = [...intSet].filter((id) => !dbSet.has(id));
-    expect(missing, `la copia db ha perso identifier vietati dall'interpreter: ${missing.join(', ')}`).toEqual([]);
+    expect(
+      missing,
+      `la copia db ha perso identifier vietati dall'interpreter: ${missing.join(', ')}`,
+    ).toEqual([]);
   });
 
   it('include i recenti Proxy/Reflect/WeakRef (anti-regressione del drift 2026-06-20)', () => {

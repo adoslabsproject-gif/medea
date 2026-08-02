@@ -15,15 +15,21 @@ import { AnthropicProvider } from './llm-anthropic.js';
 import type { LLMCompletionRequest } from '@/ports/llm-provider.js';
 
 const fetchMock = vi.fn();
-beforeEach(() => { vi.stubGlobal('fetch', fetchMock); fetchMock.mockReset(); });
-afterEach(() => { vi.unstubAllGlobals(); });
+beforeEach(() => {
+  vi.stubGlobal('fetch', fetchMock);
+  fetchMock.mockReset();
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 function anthropicOk(body: unknown): Response {
   return { ok: true, status: 200, text: async () => JSON.stringify(body) } as unknown as Response;
 }
-const lastBody = (): Record<string, unknown> => JSON.parse((fetchMock.mock.calls[0]![1] as { body: string }).body);
+const lastBody = (): Record<string, unknown> =>
+  JSON.parse((fetchMock.mock.calls[0]![1] as { body: string }).body);
 const req = (over: Partial<LLMCompletionRequest> = {}): LLMCompletionRequest =>
-  ({ messages: [{ role: 'user', content: 'ciao' }], ...over } as LLMCompletionRequest);
+  ({ messages: [{ role: 'user', content: 'ciao' }], ...over }) as LLMCompletionRequest;
 
 describe('AnthropicProvider — costruttore', () => {
   it('apiKey vuota → throw (fail-fast, niente provider mezzo-inizializzato)', () => {
@@ -33,13 +39,19 @@ describe('AnthropicProvider — costruttore', () => {
 
 describe('complete — costruzione request', () => {
   it('i system message finiscono nel campo `system`, fuori da messages', async () => {
-    fetchMock.mockResolvedValue(anthropicOk({ content: [{ type: 'text', text: 'ok' }], stop_reason: 'end_turn' }));
+    fetchMock.mockResolvedValue(
+      anthropicOk({ content: [{ type: 'text', text: 'ok' }], stop_reason: 'end_turn' }),
+    );
     const p = new AnthropicProvider('sk-test');
-    await p.complete(req({ messages: [
-      { role: 'system', content: 'sei Liara' },
-      { role: 'system', content: 'parla italiano' },
-      { role: 'user', content: 'ciao' },
-    ] }));
+    await p.complete(
+      req({
+        messages: [
+          { role: 'system', content: 'sei Liara' },
+          { role: 'system', content: 'parla italiano' },
+          { role: 'user', content: 'ciao' },
+        ],
+      }),
+    );
     const body = lastBody();
     expect(body.system).toBe('sei Liara\n\nparla italiano'); // join \n\n
     expect((body.messages as unknown[]).length).toBe(1); // solo user, niente system
@@ -48,11 +60,15 @@ describe('complete — costruzione request', () => {
   it('ruoli non-assistant collassano a user (tool/function → user)', async () => {
     fetchMock.mockResolvedValue(anthropicOk({ content: [], stop_reason: 'end_turn' }));
     const p = new AnthropicProvider('sk-test');
-    await p.complete(req({ messages: [
-      { role: 'assistant', content: 'a' },
-      { role: 'user', content: 'u' },
-      { role: 'tool', content: 't' } as never,
-    ] }));
+    await p.complete(
+      req({
+        messages: [
+          { role: 'assistant', content: 'a' },
+          { role: 'user', content: 'u' },
+          { role: 'tool', content: 't' } as never,
+        ],
+      }),
+    );
     const roles = (lastBody().messages as { role: string }[]).map((m) => m.role);
     expect(roles).toEqual(['assistant', 'user', 'user']);
   });
@@ -93,10 +109,16 @@ describe('complete — costruzione request', () => {
 
 describe('complete — parsing response', () => {
   it('concatena SOLO i blocchi text (ignora non-text)', async () => {
-    fetchMock.mockResolvedValue(anthropicOk({
-      content: [{ type: 'text', text: 'ciao ' }, { type: 'tool_use' }, { type: 'text', text: 'mondo' }],
-      stop_reason: 'end_turn',
-    }));
+    fetchMock.mockResolvedValue(
+      anthropicOk({
+        content: [
+          { type: 'text', text: 'ciao ' },
+          { type: 'tool_use' },
+          { type: 'text', text: 'mondo' },
+        ],
+        stop_reason: 'end_turn',
+      }),
+    );
     const out = await new AnthropicProvider('sk-test').complete(req());
     expect(out.text).toBe('ciao mondo');
   });
@@ -107,22 +129,29 @@ describe('complete — parsing response', () => {
     ['tool_use', 'tool_calls'],
     ['qualcos_altro', 'stop'],
   ])('stop_reason %s → finishReason %s', async (stop, expected) => {
-    fetchMock.mockResolvedValue(anthropicOk({ content: [{ type: 'text', text: 'x' }], stop_reason: stop }));
+    fetchMock.mockResolvedValue(
+      anthropicOk({ content: [{ type: 'text', text: 'x' }], stop_reason: stop }),
+    );
     const out = await new AnthropicProvider('sk-test').complete(req());
     expect(out.finishReason).toBe(expected);
   });
 
   it('usage tokens mappati e sommati (input+output=total)', async () => {
-    fetchMock.mockResolvedValue(anthropicOk({
-      content: [{ type: 'text', text: 'x' }], stop_reason: 'end_turn',
-      usage: { input_tokens: 10, output_tokens: 25 },
-    }));
+    fetchMock.mockResolvedValue(
+      anthropicOk({
+        content: [{ type: 'text', text: 'x' }],
+        stop_reason: 'end_turn',
+        usage: { input_tokens: 10, output_tokens: 25 },
+      }),
+    );
     const out = await new AnthropicProvider('sk-test').complete(req());
     expect(out.usage).toEqual({ promptTokens: 10, completionTokens: 25, totalTokens: 35 });
   });
 
   it('senza usage → campo usage assente (non zero finto)', async () => {
-    fetchMock.mockResolvedValue(anthropicOk({ content: [{ type: 'text', text: 'x' }], stop_reason: 'end_turn' }));
+    fetchMock.mockResolvedValue(
+      anthropicOk({ content: [{ type: 'text', text: 'x' }], stop_reason: 'end_turn' }),
+    );
     const out = await new AnthropicProvider('sk-test').complete(req());
     expect(out.usage).toBeUndefined();
   });
@@ -130,19 +159,31 @@ describe('complete — parsing response', () => {
 
 describe('complete — resilienza errori', () => {
   it('HTTP non-ok → Error con status + body', async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 429, text: async () => 'rate limited' } as unknown as Response);
-    await expect(new AnthropicProvider('sk-test').complete(req())).rejects.toThrow(/429.*rate limited/);
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 429,
+      text: async () => 'rate limited',
+    } as unknown as Response);
+    await expect(new AnthropicProvider('sk-test').complete(req())).rejects.toThrow(
+      /429.*rate limited/,
+    );
   });
 
   it('200 ma body NON-JSON (CDN error page durante outage) → Error, NON crash silenzioso', async () => {
-    fetchMock.mockResolvedValue({ ok: true, status: 200, text: async () => '<html>502 Bad Gateway</html>' } as unknown as Response);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => '<html>502 Bad Gateway</html>',
+    } as unknown as Response);
     await expect(new AnthropicProvider('sk-test').complete(req())).rejects.toThrow(/non-JSON/);
   });
 });
 
 describe('stream — degrada a single-chunk via complete', () => {
   it('yield un unico chunk done=true col testo completo', async () => {
-    fetchMock.mockResolvedValue(anthropicOk({ content: [{ type: 'text', text: 'streamed' }], stop_reason: 'end_turn' }));
+    fetchMock.mockResolvedValue(
+      anthropicOk({ content: [{ type: 'text', text: 'streamed' }], stop_reason: 'end_turn' }),
+    );
     const chunks = [];
     for await (const ch of new AnthropicProvider('sk-test').stream(req())) chunks.push(ch);
     expect(chunks).toHaveLength(1);

@@ -16,9 +16,21 @@
 import type { NodeExecutor } from '../../types.js';
 import { parseConfig } from '../../core/config-parser.js';
 import { ValidationError, HttpError, parseRetryAfter } from '../../core/node-error.js';
-import { buildAuthHeaders, buildBody, applyQueryParams, parseKvJson, parseCsvInts, withRetry, sleep,
-  paginationWalker, PageNumberStrategy, OffsetLimitStrategy, CursorStrategy, LinkHeaderStrategy,
-  type PaginationStrategy } from '../../utils/index.js';
+import {
+  buildAuthHeaders,
+  buildBody,
+  applyQueryParams,
+  parseKvJson,
+  parseCsvInts,
+  withRetry,
+  sleep,
+  paginationWalker,
+  PageNumberStrategy,
+  OffsetLimitStrategy,
+  CursorStrategy,
+  LinkHeaderStrategy,
+  type PaginationStrategy,
+} from '../../utils/index.js';
 import { HttpConfigSchema, type HttpConfig } from './schema.js';
 import { acquireOAuth2Token } from './oauth2.js';
 import { readResponse } from './response-reader.js';
@@ -26,7 +38,11 @@ import { buildRequestHeaders } from '../../core/http-headers.js';
 // safe-fetch e\` server-only ma altri 25+ moduli stdlib lo importano statico —
 // dynamic qui non code-splittava nulla (warning Vite "dynamic + static").
 // Allineamento: static import in TUTTI gli executor (server-only by design).
-import { assertUrlSafe, validateUrlForFetch, CROSS_HOST_STRIP_HEADERS } from '@medea/engine-safe-fetch';
+import {
+  assertUrlSafe,
+  validateUrlForFetch,
+  CROSS_HOST_STRIP_HEADERS,
+} from '@medea/engine-safe-fetch';
 import { nodeRetriesInternally } from '@medea/engine-core-schema';
 
 const MAX_REDIRECTS = 5;
@@ -46,8 +62,16 @@ export const httpExecutor: NodeExecutor = async (rawConfig, input, context) => {
   // (#201). Valutata PER-HOST (redirect inclusi) — un redirect verso pubblico NON eredita.
   function egressFor(url: string): { allowlisted: boolean; dispatcher?: unknown } {
     let host = '';
-    try { host = new URL(url).hostname; } catch { return { allowlisted: false }; }
-    return context.resolveOutboundDispatcher?.(host, cfg.allowSelfSigned === true) ?? { allowlisted: false };
+    try {
+      host = new URL(url).hostname;
+    } catch {
+      return { allowlisted: false };
+    }
+    return (
+      context.resolveOutboundDispatcher?.(host, cfg.allowSelfSigned === true) ?? {
+        allowlisted: false,
+      }
+    );
   }
 
   // 3b. OAuth2 client_credentials: ottieni l'access-token PRIMA di costruire gli header.
@@ -66,14 +90,22 @@ export const httpExecutor: NodeExecutor = async (rawConfig, input, context) => {
         const eg = egressFor(url);
         if (!eg.allowlisted) assertUrlSafe(url);
         const ctrl = new AbortController();
-        const timer = setTimeout(() => { ctrl.abort(); }, cfg.timeoutMs);
+        const timer = setTimeout(() => {
+          ctrl.abort();
+        }, cfg.timeoutMs);
         // R1: salva il riferimento e RIMUOVILO nel finally. {once:true} rimuove il
         // listener solo se l'abort scatta — al completamento normale resterebbe attaccato,
         // accumulandosi su un signal condiviso (paginazione/retry) → leak + MaxListeners.
-        const onAbort = (): void => { ctrl.abort(); };
+        const onAbort = (): void => {
+          ctrl.abort();
+        };
         context.abortSignal?.addEventListener('abort', onAbort, { once: true });
         try {
-          const full = { ...init, signal: ctrl.signal, ...(eg.dispatcher !== undefined ? { dispatcher: eg.dispatcher } : {}) } as RequestInit & { dispatcher?: unknown };
+          const full = {
+            ...init,
+            signal: ctrl.signal,
+            ...(eg.dispatcher !== undefined ? { dispatcher: eg.dispatcher } : {}),
+          } as RequestInit & { dispatcher?: unknown };
           return await fetch(url, full);
         } finally {
           clearTimeout(timer);
@@ -104,13 +136,20 @@ export const httpExecutor: NodeExecutor = async (rawConfig, input, context) => {
   }
   // Merge header via builder condiviso (case-insensitive): explicit < auth,
   // Content-Type del body solo se assente. Vedi core/http-headers.ts.
-  const headers = buildRequestHeaders({ base: explicitHeaders, auth: authHeaders, contentTypeDefault: contentType });
+  const headers = buildRequestHeaders({
+    base: explicitHeaders,
+    auth: authHeaders,
+    contentTypeDefault: contentType,
+  });
 
   const initialUrl = applyQueryParams(cfg.url, cfg.queryParamsJson);
   const initialEgress = egressFor(initialUrl);
   // allowSelfSigned è onorato SOLO verso host allowlisted; altrove resta IGNORATO (#201).
   if (cfg.allowSelfSigned && !initialEgress.allowlisted) {
-    context.logger?.warn('[stdlib/http v3] allowSelfSigned=true IGNORATO: host non nella allowlist interna del tenant (TLS verificato, #201)', { node: 'action_http' });
+    context.logger?.warn(
+      '[stdlib/http v3] allowSelfSigned=true IGNORATO: host non nella allowlist interna del tenant (TLS verificato, #201)',
+      { node: 'action_http' },
+    );
   }
   // SSRF guard PRIMA della prima fetch — saltato SOLO per host interni allowlisted
   // (trust esplicito dell'operatore; il dispatcher permissivo/insecure raggiunge l'IP privato).
@@ -133,25 +172,36 @@ export const httpExecutor: NodeExecutor = async (rawConfig, input, context) => {
   // retryOnStatus conta SOLO se il retry interno è attivo: senza retry non ha senso
   // lanciare-per-ritentare (con 0 tentativi l'errore si propagherebbe invece di
   // restituire la response). Così il default '429,500,...' è inerte quando non si ritenta.
-  const retryStatusSet = new Set(internalRetryCount > 0 && cfg.retryOnStatus ? parseCsvInts(cfg.retryOnStatus) : []);
+  const retryStatusSet = new Set(
+    internalRetryCount > 0 && cfg.retryOnStatus ? parseCsvInts(cfg.retryOnStatus) : [],
+  );
 
   // ── Helper: single fetch con timeout + abort propagation. `headersOverride` permette
   // al redirect-loop di passare header DIVERSI da baseInit (strip cross-host, vedi H1).
   async function fetchOnce(url: string, headersOverride?: Headers): Promise<Response> {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => { ctrl.abort(); }, cfg.timeoutMs);
+    const timer = setTimeout(() => {
+      ctrl.abort();
+    }, cfg.timeoutMs);
     // R1: rimuovi il listener nel finally. In un flusso PAGINATO (fino a paginationMaxPages)
     // o con RETRY, ogni pagina/tentativo chiama fetchOnce sullo STESSO context.abortSignal:
     // senza removeEventListener i listener si accumulano (mai rimossi al completamento
     // normale) → MaxListenersExceededWarning oltre 10 + memoria.
-    const onAbort = (): void => { ctrl.abort(); };
+    const onAbort = (): void => {
+      ctrl.abort();
+    };
     context.abortSignal?.addEventListener('abort', onAbort, { once: true });
     try {
       // Dispatcher per-host: per un host interno allowlisted il runtime fornisce un
       // dispatcher permissivo (raggiunge l'IP privato) o insecure-TLS (se allowSelfSigned).
       // `dispatcher` è un'estensione undici NON nei tipi DOM di RequestInit → cast mirato.
       const { dispatcher } = egressFor(url);
-      const init = { ...baseInit, signal: ctrl.signal, ...(headersOverride !== undefined ? { headers: headersOverride } : {}), ...(dispatcher !== undefined ? { dispatcher } : {}) } as RequestInit & { dispatcher?: unknown };
+      const init = {
+        ...baseInit,
+        signal: ctrl.signal,
+        ...(headersOverride !== undefined ? { headers: headersOverride } : {}),
+        ...(dispatcher !== undefined ? { dispatcher } : {}),
+      } as RequestInit & { dispatcher?: unknown };
       return await fetch(url, init);
     } finally {
       clearTimeout(timer);
@@ -168,7 +218,11 @@ export const httpExecutor: NodeExecutor = async (rawConfig, input, context) => {
     // questo loop inline (necessario per il dispatcher per-host) lo replica con la STESSA
     // lista CROSS_HOST_STRIP_HEADERS (single source of truth, anti ri-divergenza).
     let initialHost: string;
-    try { initialHost = new URL(url).host; } catch { initialHost = ''; }
+    try {
+      initialHost = new URL(url).host;
+    } catch {
+      initialHost = '';
+    }
     let hopHeaders = new Headers(headers); // copia mutabile (headers = baseInit.headers)
     for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
       const res = await fetchOnce(current, hopHeaders);
@@ -177,10 +231,18 @@ export const httpExecutor: NodeExecutor = async (rawConfig, input, context) => {
       if (hop === MAX_REDIRECTS) return res;
       const loc = res.headers.get('location') ?? '';
       let next: string;
-      try { next = new URL(loc, current).toString(); } catch { return res; }
+      try {
+        next = new URL(loc, current).toString();
+      } catch {
+        return res;
+      }
       // Cross-host → rimuovi le credenziali dai prossimi hop (Headers.delete è case-insensitive).
       let nextHost: string;
-      try { nextHost = new URL(next).host; } catch { nextHost = ''; }
+      try {
+        nextHost = new URL(next).host;
+      } catch {
+        nextHost = '';
+      }
       if (nextHost !== initialHost) {
         hopHeaders = new Headers(hopHeaders);
         for (const h of CROSS_HOST_STRIP_HEADERS) hopHeaders.delete(h);
@@ -201,7 +263,11 @@ export const httpExecutor: NodeExecutor = async (rawConfig, input, context) => {
       // leggendolo: `res.text()` bufferizzava l'intero body SENZA cap → un server
       // che risponde 3xx con un body enorme causava OOM aggirando readBodyWithCap
       // (che protegge solo la risposta finale). cancel() chiude lo stream a costo 0.
-      try { await res.body?.cancel(); } catch { /* best-effort: connessione comunque rilasciata da undici */ }
+      try {
+        await res.body?.cancel();
+      } catch {
+        /* best-effort: connessione comunque rilasciata da undici */
+      }
       current = next;
     }
     throw new HttpError({ status: 0, url, statusText: 'too many redirects' });
@@ -209,30 +275,45 @@ export const httpExecutor: NodeExecutor = async (rawConfig, input, context) => {
 
   // ── Helper: fetch + retry su 5xx / configured statuses.
   async function fetchPage(url: string): Promise<{ res: Response; body: unknown }> {
-    return withRetry(async () => {
-      const res = await fetchWithSafeRedirects(url);
-      if (!res.ok && retryStatusSet.has(res.status)) {
-        // Throw to trigger withRetry; the catch path uses NodeError.
-        const retryAfterMs = parseRetryAfter(res.headers.get('retry-after'));
-        throw new HttpError({ status: res.status, statusText: res.statusText, url, ...(retryAfterMs !== null ? { retryAfterMs } : {}) });
-      }
-      const parsedBody = cfg.statusCodeOnly ? null : await readResponse(res, cfg.responseFormat, context.writeBinary, cfg.maxResponseMb * 1024 * 1024);
-      return { res, body: parsedBody };
-    }, {
-      count: internalRetryCount,
-      initialDelayMs: cfg.retryInitialDelayMs,
-      factor: cfg.retryBackoffFactor,
-      maxDelayMs: 30_000,
-      ...(context.abortSignal ? { signal: context.abortSignal } : {}),
-      shouldRetry: (err) => {
-        // Errori DETERMINISTICI (validazione config / risposta troppo grande):
-        // ritentare non cambia l'esito → non-retriable.
-        if (err instanceof ValidationError) return false;
-        // Retry HTTP retryable + network errors. Per HttpError uso `retryable` flag.
-        if (err instanceof HttpError) return retryStatusSet.has(err.status) || err.retryable;
-        return true; // network/timeout: retry
+    return withRetry(
+      async () => {
+        const res = await fetchWithSafeRedirects(url);
+        if (!res.ok && retryStatusSet.has(res.status)) {
+          // Throw to trigger withRetry; the catch path uses NodeError.
+          const retryAfterMs = parseRetryAfter(res.headers.get('retry-after'));
+          throw new HttpError({
+            status: res.status,
+            statusText: res.statusText,
+            url,
+            ...(retryAfterMs !== null ? { retryAfterMs } : {}),
+          });
+        }
+        const parsedBody = cfg.statusCodeOnly
+          ? null
+          : await readResponse(
+              res,
+              cfg.responseFormat,
+              context.writeBinary,
+              cfg.maxResponseMb * 1024 * 1024,
+            );
+        return { res, body: parsedBody };
       },
-    });
+      {
+        count: internalRetryCount,
+        initialDelayMs: cfg.retryInitialDelayMs,
+        factor: cfg.retryBackoffFactor,
+        maxDelayMs: 30_000,
+        ...(context.abortSignal ? { signal: context.abortSignal } : {}),
+        shouldRetry: (err) => {
+          // Errori DETERMINISTICI (validazione config / risposta troppo grande):
+          // ritentare non cambia l'esito → non-retriable.
+          if (err instanceof ValidationError) return false;
+          // Retry HTTP retryable + network errors. Per HttpError uso `retryable` flag.
+          if (err instanceof HttpError) return retryStatusSet.has(err.status) || err.retryable;
+          return true; // network/timeout: retry
+        },
+      },
+    );
   }
 
   // ── No pagination: singola chiamata.
@@ -240,11 +321,20 @@ export const httpExecutor: NodeExecutor = async (rawConfig, input, context) => {
     const { res, body: parsedBody } = await fetchPage(initialUrl);
     if (!res.ok && cfg.throwOnError) {
       const retryAfterMs = parseRetryAfter(res.headers.get('retry-after'));
-      throw new HttpError({ status: res.status, statusText: res.statusText, url: initialUrl, ...(retryAfterMs !== null ? { retryAfterMs } : {}) });
+      throw new HttpError({
+        status: res.status,
+        statusText: res.statusText,
+        url: initialUrl,
+        ...(retryAfterMs !== null ? { retryAfterMs } : {}),
+      });
     }
     const headersOut: Record<string, string> = {};
     for (const [k, v] of res.headers.entries()) headersOut[k] = v;
-    const output: Record<string, unknown> = { status: res.status, statusText: res.statusText, headers: headersOut };
+    const output: Record<string, unknown> = {
+      status: res.status,
+      statusText: res.statusText,
+      headers: headersOut,
+    };
     if (!cfg.statusCodeOnly) output.body = parsedBody;
     return { output, durationMs: Date.now() - startedAt };
   }
@@ -253,7 +343,11 @@ export const httpExecutor: NodeExecutor = async (rawConfig, input, context) => {
   const strategy = makeStrategy(cfg);
   const walker = await paginationWalker({
     strategy,
-    ctx: { baseUrl: initialUrl, maxPages: cfg.paginationMaxPages, pageSize: cfg.paginationPageSize },
+    ctx: {
+      baseUrl: initialUrl,
+      maxPages: cfg.paginationMaxPages,
+      pageSize: cfg.paginationPageSize,
+    },
     ...(cfg.paginationItemsField ? { itemsField: cfg.paginationItemsField } : {}),
     fetchPage: async (url) => {
       const { res, body: parsedBody } = await fetchPage(url);
@@ -304,7 +398,9 @@ function makeStrategy(cfg: HttpConfig): PaginationStrategy {
     case 'none':
       // makeStrategy è chiamato SOLO per paginationMode != 'none' (l'executor gestisce
       // 'none' nel ramo single-fetch) → difensivo, non raggiunto a runtime.
-      throw new ValidationError('makeStrategy: paginationMode "none" non ha strategia (gestito a parte)');
+      throw new ValidationError(
+        'makeStrategy: paginationMode "none" non ha strategia (gestito a parte)',
+      );
     default: {
       // R8: exhaustiveness check. Coperti tutti i valori dell'enum Zod → qui il tipo è
       // `never`. Se un domani si aggiunge un paginationMode senza il suo case, QUESTA

@@ -33,13 +33,19 @@ describe('describeCurrentWorkflow', () => {
   });
 
   it('edge con fromPort → mostra la porta', () => {
-    const s = describeCurrentWorkflow({ nodes: [], edges: [{ from: 'a', to: 'b', fromPort: 'true' }] });
+    const s = describeCurrentWorkflow({
+      nodes: [],
+      edges: [{ from: 'a', to: 'b', fromPort: 'true' }],
+    });
     expect(s).toContain('porta: true');
   });
 
   it('🚨 config enorme → TRONCATA (no esplosione contesto)', () => {
     const big = 'x'.repeat(2000);
-    const s = describeCurrentWorkflow({ nodes: [{ id: 'n', defId: 'd', config: { blob: big } }], edges: [] });
+    const s = describeCurrentWorkflow({
+      nodes: [{ id: 'n', defId: 'd', config: { blob: big } }],
+      edges: [],
+    });
     expect(s).toContain('[troncato]');
     expect(s.length).toBeLessThan(big.length); // mut: se non tronca, fallisce
   });
@@ -51,7 +57,10 @@ describe('describeCurrentWorkflow', () => {
 });
 
 describe('buildWorkflowModifyPrompt — comportamenti promessi', () => {
-  const p = buildWorkflowModifyPrompt({ currentWorkflow: WF, request: 'aggiungi un nodo email e collegalo' });
+  const p = buildWorkflowModifyPrompt({
+    currentWorkflow: WF,
+    request: 'aggiungi un nodo email e collegalo',
+  });
 
   it('include la richiesta utente + lo stato corrente', () => {
     expect(p).toContain('aggiungi un nodo email e collegalo');
@@ -64,7 +73,7 @@ describe('buildWorkflowModifyPrompt — comportamenti promessi', () => {
     expect(p).toContain('disconnect');
   });
 
-  it('🚨 REGOLA nodi custom: se manca nel catalogo → crealo nell\'IDE, NON improvvisare', () => {
+  it("🚨 REGOLA nodi custom: se manca nel catalogo → crealo nell'IDE, NON improvvisare", () => {
     expect(p).toMatch(/I Miei Nodi/u);
     expect(p).toMatch(/NON improvvisare|NON inventare/u);
   });
@@ -75,7 +84,11 @@ describe('buildWorkflowModifyPrompt — comportamenti promessi', () => {
   });
 
   it('extraContext incluso solo se presente', () => {
-    expect(buildWorkflowModifyPrompt({ currentWorkflow: WF, request: 'x' })).not.toContain('CONTESTO:');
-    expect(buildWorkflowModifyPrompt({ currentWorkflow: WF, request: 'x', extraContext: 'DB: clienti' })).toContain('clienti');
+    expect(buildWorkflowModifyPrompt({ currentWorkflow: WF, request: 'x' })).not.toContain(
+      'CONTESTO:',
+    );
+    expect(
+      buildWorkflowModifyPrompt({ currentWorkflow: WF, request: 'x', extraContext: 'DB: clienti' }),
+    ).toContain('clienti');
   });
 });

@@ -69,50 +69,61 @@ export function attachCustomNodeLspServer(
       ws.close(1008, 'Missing token');
       return;
     }
-    void verifySessionToken(token, publicKeyPem).then((payload) => {
-      if (!payload) {
-        ws.close(1008, 'Invalid token');
-        return;
-      }
-      // L'LSP e\` owner-only: i custom nodes sono privilege massimo.
-      // Mantengo il check leggero (solo presenza tenantId/sub).
-      const lsp = new TypeScriptLsp();
-      logger.info({ tenantId: payload.tenantId, userId: payload.sub }, '[lsp/ts] connection opened');
-
-      ws.on('message', (raw) => {
-        let req: JsonRpcRequest;
-        try {
-          const rawStr = Buffer.isBuffer(raw) ? raw.toString('utf8') : typeof raw === 'string' ? raw : '';
-          req = JSON.parse(rawStr) as JsonRpcRequest;
-        } catch {
-          // bad frame — ignora
+    void verifySessionToken(token, publicKeyPem)
+      .then((payload) => {
+        if (!payload) {
+          ws.close(1008, 'Invalid token');
           return;
         }
-        try {
-          const result = dispatch(lsp, req, (notif) => {
-            ws.send(JSON.stringify(notif));
-          });
-          if (req.id !== undefined) {
-            ws.send(JSON.stringify({ id: req.id, result }));
-          }
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          if (req.id !== undefined) {
-            ws.send(JSON.stringify({
-              id: req.id,
-              error: { code: -32000, message: msg },
-            }));
-          }
-        }
-      });
+        // L'LSP e\` owner-only: i custom nodes sono privilege massimo.
+        // Mantengo il check leggero (solo presenza tenantId/sub).
+        const lsp = new TypeScriptLsp();
+        logger.info(
+          { tenantId: payload.tenantId, userId: payload.sub },
+          '[lsp/ts] connection opened',
+        );
 
-      ws.on('close', () => {
-        lsp.dispose();
+        ws.on('message', (raw) => {
+          let req: JsonRpcRequest;
+          try {
+            const rawStr = Buffer.isBuffer(raw)
+              ? raw.toString('utf8')
+              : typeof raw === 'string'
+                ? raw
+                : '';
+            req = JSON.parse(rawStr) as JsonRpcRequest;
+          } catch {
+            // bad frame — ignora
+            return;
+          }
+          try {
+            const result = dispatch(lsp, req, (notif) => {
+              ws.send(JSON.stringify(notif));
+            });
+            if (req.id !== undefined) {
+              ws.send(JSON.stringify({ id: req.id, result }));
+            }
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (req.id !== undefined) {
+              ws.send(
+                JSON.stringify({
+                  id: req.id,
+                  error: { code: -32000, message: msg },
+                }),
+              );
+            }
+          }
+        });
+
+        ws.on('close', () => {
+          lsp.dispose();
+        });
+      })
+      .catch((err: unknown) => {
+        logger.warn({ err }, '[lsp/ts] auth error');
+        ws.close(1011, 'Auth error');
       });
-    }).catch((err: unknown) => {
-      logger.warn({ err }, '[lsp/ts] auth error');
-      ws.close(1011, 'Auth error');
-    });
   });
 
   return wss;
@@ -124,7 +135,7 @@ function dispatch(
   req: JsonRpcRequest,
   notify: (n: { method: string; params: unknown }) => void,
 ): unknown {
-  const p = (req.params ?? {});
+  const p = req.params ?? {};
   switch (req.method) {
     case 'initialize':
       return {
@@ -139,7 +150,9 @@ function dispatch(
       const file = p.file as VirtualFile;
       const content = p.content;
       if (!ALLOWED_FILES.has(file) || typeof content !== 'string') {
-        throw new Error(`invalid update params: file=${String(file)} typeof content=${typeof content}`);
+        throw new Error(
+          `invalid update params: file=${String(file)} typeof content=${typeof content}`,
+        );
       }
       lsp.update(file, content);
       // Push spontaneo dei diagnostics per il file aggiornato

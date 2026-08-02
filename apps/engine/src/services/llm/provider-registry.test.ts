@@ -9,8 +9,12 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-  getProviderSpec, resolveToolEndpoint, chatCapableProviders, isKnownProvider,
-  fixedOpenAiCompatTarget, isFixedOpenAiCompat,
+  getProviderSpec,
+  resolveToolEndpoint,
+  chatCapableProviders,
+  isKnownProvider,
+  fixedOpenAiCompatTarget,
+  isFixedOpenAiCompat,
   type ProviderSpec,
 } from './provider-registry.js';
 import { SUPPORTED_PROVIDERS, type LlmProvider } from '../llm-providers.service.js';
@@ -92,7 +96,7 @@ describe('provider-registry — URL endpoint esatti (anti-regressione hard)', ()
     expect(resolveToolEndpoint(provider, 'm')?.url).toBe(url);
   });
 
-  it('gemini tool-calling usa l\'endpoint OpenAI-compat di Google (NON generateContent)', () => {
+  it("gemini tool-calling usa l'endpoint OpenAI-compat di Google (NON generateContent)", () => {
     const r = resolveToolEndpoint('gemini', 'gemini-2.0-flash');
     expect(r?.url).toBe('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
     expect(r?.url).not.toContain('generateContent');
@@ -137,14 +141,18 @@ describe('provider-registry — model default + self-host baseUrl', () => {
   });
 
   it('self-host: baseUrl del chiamante → url; trailing slash normalizzato', () => {
-    expect(resolveToolEndpoint('liara', '', 'https://gw.portal/api/v1/llm/')?.url)
-      .toBe('https://gw.portal/api/v1/llm/chat/completions');
-    expect(resolveToolEndpoint('ollama', '', 'http://host:11434')?.url)
-      .toBe('http://host:11434/v1/chat/completions');
+    expect(resolveToolEndpoint('liara', '', 'https://gw.portal/api/v1/llm/')?.url).toBe(
+      'https://gw.portal/api/v1/llm/chat/completions',
+    );
+    expect(resolveToolEndpoint('ollama', '', 'http://host:11434')?.url).toBe(
+      'http://host:11434/v1/chat/completions',
+    );
   });
 
   it('self-host senza baseUrl → defaultBaseUrl della spec', () => {
-    expect(resolveToolEndpoint('ollama', '')?.url).toBe('http://localhost:11434/v1/chat/completions');
+    expect(resolveToolEndpoint('ollama', '')?.url).toBe(
+      'http://localhost:11434/v1/chat/completions',
+    );
   });
 
   it('OpenRouter porta gli extraHeaders di attribution', () => {

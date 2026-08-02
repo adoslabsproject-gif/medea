@@ -67,12 +67,14 @@ export interface WhatsAppTextOptions {
  */
 export interface WhatsAppTemplateComponent {
   type: 'body' | 'header' | 'button' | 'footer';
-  parameters?: readonly (| { type: 'text'; text: string }
+  parameters?: readonly (
+    | { type: 'text'; text: string }
     | { type: 'currency'; currency: { fallback_value: string; code: string; amount_1000: number } }
     | { type: 'date_time'; date_time: { fallback_value: string } }
     | { type: 'image'; image: { link: string } }
     | { type: 'document'; document: { link: string; filename?: string } }
-    | { type: 'video'; video: { link: string } })[];
+    | { type: 'video'; video: { link: string } }
+  )[];
   /**
    * Button-specific extras (sub_type/index/parameters). Optional — only
    * used when `type` is `'button'`.
@@ -116,7 +118,10 @@ export class WhatsAppApiError extends Error {
 
 export class WhatsAppTransportError extends Error {
   readonly code = 'WHATSAPP_TRANSPORT' as const;
-  constructor(message: string, readonly status?: number) {
+  constructor(
+    message: string,
+    readonly status?: number,
+  ) {
     super(`${ERR_PREFIX} ${message}`);
     this.name = 'WhatsAppTransportError';
   }
@@ -138,7 +143,9 @@ export function normaliseRecipient(input: string): string {
   }
   const stripped = input.replace(/[^0-9]/g, '');
   if (stripped.length < 8 || stripped.length > 15) {
-    throw new TypeError(`${ERR_PREFIX} recipient "${input}" → "${stripped}" not a valid E.164 phone (8-15 digits)`);
+    throw new TypeError(
+      `${ERR_PREFIX} recipient "${input}" → "${stripped}" not a valid E.164 phone (8-15 digits)`,
+    );
   }
   return stripped;
 }
@@ -178,7 +185,10 @@ export async function sendTemplate(
   if (typeof opts.templateName !== 'string' || opts.templateName.length === 0) {
     throw new TypeError(`${ERR_PREFIX} templateName required`);
   }
-  if (typeof opts.languageCode !== 'string' || !/^[a-z]{2}(?:_[A-Z]{2})?$/.test(opts.languageCode)) {
+  if (
+    typeof opts.languageCode !== 'string' ||
+    !/^[a-z]{2}(?:_[A-Z]{2})?$/.test(opts.languageCode)
+  ) {
     throw new TypeError(`${ERR_PREFIX} languageCode must be e.g. "it" or "en_US"`);
   }
   const recipient = normaliseRecipient(opts.recipient);

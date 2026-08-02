@@ -13,9 +13,9 @@ import { logger } from '@/lib/logger.js';
 
 const log = logger;
 
-const WINDOW_MS = 5 * 60 * 1000;     // 5min
+const WINDOW_MS = 5 * 60 * 1000; // 5min
 const THRESHOLD = 5;
-const RECENT_BURST_TTL_MS = 30 * 60 * 1000;  // 30min suppression dopo report
+const RECENT_BURST_TTL_MS = 30 * 60 * 1000; // 30min suppression dopo report
 
 const attempts = new Map<string, number[]>();
 const recentlyReported = new Map<string, number>();
@@ -59,6 +59,6 @@ export function trackFailedLogin(input: FailedLoginInput): void {
       },
     });
     recentlyReported.set(key, now);
-    attempts.delete(key);                  // reset counter
+    attempts.delete(key); // reset counter
   }
 }

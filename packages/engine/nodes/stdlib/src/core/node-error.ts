@@ -80,7 +80,14 @@ export class ValidationError extends NodeError {
 
 export class HttpError extends NodeError {
   readonly status: number;
-  constructor(opts: { status: number; statusText?: string; url?: string; bodyExcerpt?: string; retryAfterMs?: number; cause?: Error }) {
+  constructor(opts: {
+    status: number;
+    statusText?: string;
+    url?: string;
+    bodyExcerpt?: string;
+    retryAfterMs?: number;
+    cause?: Error;
+  }) {
     const message = `HTTP ${opts.status}${opts.statusText ? ` ${opts.statusText}` : ''}${opts.url ? ` @ ${opts.url}` : ''}`;
     const retryable = opts.status >= 500 || opts.status === 408 || opts.status === 429;
     const context: NodeErrorContext = {
@@ -92,7 +99,13 @@ export class HttpError extends NodeError {
       // rispetta al posto del backoff esponenziale (no martellamento del provider).
       ...(opts.retryAfterMs !== undefined ? { retryAfterMs: opts.retryAfterMs } : {}),
     };
-    super({ code: 'HTTP_ERROR', message, retryable, context, ...(opts.cause ? { cause: opts.cause } : {}) });
+    super({
+      code: 'HTTP_ERROR',
+      message,
+      retryable,
+      context,
+      ...(opts.cause ? { cause: opts.cause } : {}),
+    });
     this.name = 'HttpError';
     this.status = opts.status;
   }
@@ -103,7 +116,10 @@ export class HttpError extends NodeError {
  * ("Wed, 21 Oct 2025 07:28:00 GMT"). Ritorna i millisecondi da attendere, o
  * `null` se assente/non valido/nel passato.
  */
-export function parseRetryAfter(headerValue: string | null | undefined, now = Date.now()): number | null {
+export function parseRetryAfter(
+  headerValue: string | null | undefined,
+  now = Date.now(),
+): number | null {
   if (!headerValue) return null;
   const trimmed = headerValue.trim();
   if (/^\d+$/u.test(trimmed)) return Number(trimmed) * 1000;
@@ -125,7 +141,13 @@ export function retryAfterMsOf(err: unknown): number | null {
 export class NetworkError extends NodeError {
   constructor(message: string, opts?: { url?: string; cause?: Error }) {
     const context: NodeErrorContext = opts?.url ? { url: opts.url } : {};
-    super({ code: 'NETWORK_ERROR', message, retryable: true, context, ...(opts?.cause ? { cause: opts.cause } : {}) });
+    super({
+      code: 'NETWORK_ERROR',
+      message,
+      retryable: true,
+      context,
+      ...(opts?.cause ? { cause: opts.cause } : {}),
+    });
     this.name = 'NetworkError';
   }
 }
@@ -133,8 +155,17 @@ export class NetworkError extends NodeError {
 export class TimeoutError extends NodeError {
   constructor(opts: { url?: string; timeoutMs: number; cause?: Error }) {
     const message = `Timeout dopo ${String(opts.timeoutMs)}ms${opts.url ? ` @ ${opts.url}` : ''}`;
-    const context: NodeErrorContext = { timeoutMs: opts.timeoutMs, ...(opts.url ? { url: opts.url } : {}) };
-    super({ code: 'TIMEOUT', message, retryable: true, context, ...(opts.cause ? { cause: opts.cause } : {}) });
+    const context: NodeErrorContext = {
+      timeoutMs: opts.timeoutMs,
+      ...(opts.url ? { url: opts.url } : {}),
+    };
+    super({
+      code: 'TIMEOUT',
+      message,
+      retryable: true,
+      context,
+      ...(opts.cause ? { cause: opts.cause } : {}),
+    });
     this.name = 'TimeoutError';
   }
 }
@@ -142,8 +173,17 @@ export class TimeoutError extends NodeError {
 export class CircuitOpenError extends NodeError {
   constructor(opts: { breakerName: string; nextProbeAt: number; cause?: Error }) {
     const message = `Circuit breaker "${opts.breakerName}" aperto — fail fast`;
-    const context: NodeErrorContext = { breakerName: opts.breakerName, nextProbeAt: opts.nextProbeAt };
-    super({ code: 'CIRCUIT_OPEN', message, retryable: false, context, ...(opts.cause ? { cause: opts.cause } : {}) });
+    const context: NodeErrorContext = {
+      breakerName: opts.breakerName,
+      nextProbeAt: opts.nextProbeAt,
+    };
+    super({
+      code: 'CIRCUIT_OPEN',
+      message,
+      retryable: false,
+      context,
+      ...(opts.cause ? { cause: opts.cause } : {}),
+    });
     this.name = 'CircuitOpenError';
   }
 }
@@ -177,7 +217,10 @@ export class QuotaExceededError extends NodeError {
 export class AuthError extends NodeError {
   constructor(opts: { reason: string; url?: string }) {
     const message = `Auth fallita: ${opts.reason}${opts.url ? ` @ ${opts.url}` : ''}`;
-    const context: NodeErrorContext = { reason: opts.reason, ...(opts.url ? { url: opts.url } : {}) };
+    const context: NodeErrorContext = {
+      reason: opts.reason,
+      ...(opts.url ? { url: opts.url } : {}),
+    };
     super({ code: 'AUTH_ERROR', message, retryable: false, context });
     this.name = 'AuthError';
   }
@@ -226,7 +269,12 @@ export function asNodeError(e: unknown): NodeError {
       // Timeout senza ms estraibile → preserva il messaggio originale.
       return new NodeError({ code: 'TIMEOUT', message: e.message, retryable: true, cause: e });
     }
-    return new NodeError({ code: 'INTERNAL_ERROR', message: e.message, retryable: false, cause: e });
+    return new NodeError({
+      code: 'INTERNAL_ERROR',
+      message: e.message,
+      retryable: false,
+      cause: e,
+    });
   }
   return new NodeError({ code: 'INTERNAL_ERROR', message: String(e), retryable: false });
 }
@@ -281,13 +329,20 @@ export function categoryOf(err: { code: NodeErrorCode; retryable?: boolean }): N
 /** Azione suggerita (IT) per ogni categoria — testo mostrato dalla UI. */
 export function actionHintFor(category: NodeErrorCategory): string {
   switch (category) {
-    case 'validation': return 'Controlla i parametri del nodo: un valore è mancante, troppo grande o non valido.';
-    case 'auth': return 'Verifica le credenziali o la connessione: token scaduto, chiave errata o permessi insufficienti.';
-    case 'network': return 'Problema temporaneo di rete o del servizio remoto. Riprova, o attiva i tentativi automatici nel nodo.';
-    case 'rate_limit': return 'Hai raggiunto il limite di chiamate del provider. Rallenta, aggiungi un ritardo o aumenta la quota.';
-    case 'business': return 'Il servizio remoto ha rifiutato la richiesta (regola di business). Controlla i dati inviati.';
-    case 'aborted': return 'Esecuzione annullata.';
-    case 'internal': return 'Errore interno imprevisto. Controlla i log del run o segnala il problema.';
+    case 'validation':
+      return 'Controlla i parametri del nodo: un valore è mancante, troppo grande o non valido.';
+    case 'auth':
+      return 'Verifica le credenziali o la connessione: token scaduto, chiave errata o permessi insufficienti.';
+    case 'network':
+      return 'Problema temporaneo di rete o del servizio remoto. Riprova, o attiva i tentativi automatici nel nodo.';
+    case 'rate_limit':
+      return 'Hai raggiunto il limite di chiamate del provider. Rallenta, aggiungi un ritardo o aumenta la quota.';
+    case 'business':
+      return 'Il servizio remoto ha rifiutato la richiesta (regola di business). Controlla i dati inviati.';
+    case 'aborted':
+      return 'Esecuzione annullata.';
+    case 'internal':
+      return 'Errore interno imprevisto. Controlla i log del run o segnala il problema.';
   }
 }
 

@@ -32,27 +32,45 @@ beforeEach(() => {
 
 describe('fetchPortalTokenUsage', () => {
   it('200 valido → ritorna usato + confini periodo', async () => {
-    m.internalAwareFetch.mockResolvedValue(okResponse({
-      ok: true, tokensUsed: 1234, tokensLimit: 500_000,
-      periodStartIso: '2026-06-15', periodEndIso: '2026-07-15', planCode: 'pro', maxUsers: 10,
-    }));
+    m.internalAwareFetch.mockResolvedValue(
+      okResponse({
+        ok: true,
+        tokensUsed: 1234,
+        tokensLimit: 500_000,
+        periodStartIso: '2026-06-15',
+        periodEndIso: '2026-07-15',
+        planCode: 'pro',
+        maxUsers: 10,
+      }),
+    );
     const { fetchPortalTokenUsage } = await load();
     const r = await fetchPortalTokenUsage(WS, 1000);
     expect(r).toEqual({
-      tokensUsed: 1234, tokensLimit: 500_000,
-      periodStartIso: '2026-06-15', periodEndIso: '2026-07-15', maxUsers: 10,
+      tokensUsed: 1234,
+      tokensLimit: 500_000,
+      periodStartIso: '2026-06-15',
+      periodEndIso: '2026-07-15',
+      maxUsers: 10,
     });
     // header token + URL corretti
-    const [url, opts] = m.internalAwareFetch.mock.calls[0] as [string, { headers: Record<string, string> }];
+    const [url, opts] = m.internalAwareFetch.mock.calls[0] as [
+      string,
+      { headers: Record<string, string> },
+    ];
     expect(url).toContain(`/api/v1/internal/quota-usage/${WS}`);
     expect(opts.headers['X-Internal-Token']).toBe('tok');
   });
 
   it('tokensLimit null (Enterprise) → pass-through null', async () => {
-    m.internalAwareFetch.mockResolvedValue(okResponse({
-      ok: true, tokensUsed: 5, tokensLimit: null,
-      periodStartIso: '2026-06-01', periodEndIso: '2026-07-01',
-    }));
+    m.internalAwareFetch.mockResolvedValue(
+      okResponse({
+        ok: true,
+        tokensUsed: 5,
+        tokensLimit: null,
+        periodStartIso: '2026-06-01',
+        periodEndIso: '2026-07-01',
+      }),
+    );
     const { fetchPortalTokenUsage } = await load();
     const r = await fetchPortalTokenUsage(WS, 1000);
     expect(r?.tokensLimit).toBeNull();
@@ -60,7 +78,11 @@ describe('fetchPortalTokenUsage', () => {
   });
 
   it('non-200 → null (fail-soft)', async () => {
-    m.internalAwareFetch.mockResolvedValue({ ok: false, status: 401, json: () => Promise.resolve({}) });
+    m.internalAwareFetch.mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({}),
+    });
     const { fetchPortalTokenUsage } = await load();
     expect(await fetchPortalTokenUsage(WS, 1000)).toBeNull();
   });
@@ -72,7 +94,9 @@ describe('fetchPortalTokenUsage', () => {
   });
 
   it('payload malformato (manca periodEndIso) → null', async () => {
-    m.internalAwareFetch.mockResolvedValue(okResponse({ ok: true, tokensUsed: 9, periodStartIso: '2026-06-15' }));
+    m.internalAwareFetch.mockResolvedValue(
+      okResponse({ ok: true, tokensUsed: 9, periodStartIso: '2026-06-15' }),
+    );
     const { fetchPortalTokenUsage } = await load();
     expect(await fetchPortalTokenUsage(WS, 1000)).toBeNull();
   });
@@ -86,9 +110,15 @@ describe('fetchPortalTokenUsage', () => {
 
 describe('fetchPortalTokenUsage — cache TTL 25s', () => {
   it('seconda call entro 25s NON rifà la fetch', async () => {
-    m.internalAwareFetch.mockResolvedValue(okResponse({
-      ok: true, tokensUsed: 10, tokensLimit: 100, periodStartIso: '2026-06-15', periodEndIso: '2026-07-15',
-    }));
+    m.internalAwareFetch.mockResolvedValue(
+      okResponse({
+        ok: true,
+        tokensUsed: 10,
+        tokensLimit: 100,
+        periodStartIso: '2026-06-15',
+        periodEndIso: '2026-07-15',
+      }),
+    );
     const { fetchPortalTokenUsage } = await load();
     await fetchPortalTokenUsage(WS, 1_000);
     await fetchPortalTokenUsage(WS, 1_000 + 24_000); // entro TTL
@@ -96,9 +126,15 @@ describe('fetchPortalTokenUsage — cache TTL 25s', () => {
   });
 
   it('oltre 25s rifà la fetch', async () => {
-    m.internalAwareFetch.mockResolvedValue(okResponse({
-      ok: true, tokensUsed: 10, tokensLimit: 100, periodStartIso: '2026-06-15', periodEndIso: '2026-07-15',
-    }));
+    m.internalAwareFetch.mockResolvedValue(
+      okResponse({
+        ok: true,
+        tokensUsed: 10,
+        tokensLimit: 100,
+        periodStartIso: '2026-06-15',
+        periodEndIso: '2026-07-15',
+      }),
+    );
     const { fetchPortalTokenUsage } = await load();
     await fetchPortalTokenUsage(WS, 1_000);
     await fetchPortalTokenUsage(WS, 1_000 + 26_000); // oltre TTL

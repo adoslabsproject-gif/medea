@@ -42,7 +42,7 @@ describe('🚨 GET /upgrade-info — guard tenant id', () => {
   it('🚨 MEDEA_TENANT_ID mancante → 503 + ok:false', async () => {
     const res = await makeRequest('/api/v1/upgrade-info');
     expect(res.status).toBe(503);
-    const json = await res.json() as { ok: boolean; error: string };
+    const json = (await res.json()) as { ok: boolean; error: string };
     expect(json.ok).toBe(false);
     expect(json.error).toMatch(/tenant id not configured/u);
   });
@@ -66,9 +66,13 @@ describe('🚨 GET /upgrade-info — token configuration', () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: () => Promise.resolve({
-        ok: true, workspaceId: 'ws-123', currentVersion: '1.0.0', pendingUpgrade: null,
-      }),
+      json: () =>
+        Promise.resolve({
+          ok: true,
+          workspaceId: 'ws-123',
+          currentVersion: '1.0.0',
+          pendingUpgrade: null,
+        }),
     });
     await makeRequest('/api/v1/upgrade-info');
     const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Record<string, string>;
@@ -79,7 +83,13 @@ describe('🚨 GET /upgrade-info — token configuration', () => {
     process.env.MEDEA_INTERNAL_TOKEN = 'LEGACY-TOK';
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({ ok: true, workspaceId: 'ws-123', currentVersion: null, pendingUpgrade: null }),
+      json: () =>
+        Promise.resolve({
+          ok: true,
+          workspaceId: 'ws-123',
+          currentVersion: null,
+          pendingUpgrade: null,
+        }),
     });
     await makeRequest('/api/v1/upgrade-info');
     const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Record<string, string>;
@@ -89,7 +99,12 @@ describe('🚨 GET /upgrade-info — token configuration', () => {
   it('🚨 SOFT-FAIL: nessun token → fetchFromPortal throw → response neutra (NO error UI)', async () => {
     const res = await makeRequest('/api/v1/upgrade-info');
     expect(res.status).toBe(200);
-    const json = await res.json() as { ok: boolean; upgradeAvailable: boolean; pendingUpgrade: null; error: string };
+    const json = (await res.json()) as {
+      ok: boolean;
+      upgradeAvailable: boolean;
+      pendingUpgrade: null;
+      error: string;
+    };
     expect(json.ok).toBe(true);
     expect(json.upgradeAvailable).toBe(false);
     expect(json.pendingUpgrade).toBeNull();
@@ -107,41 +122,50 @@ describe('🚨 GET /upgrade-info — fetch portal success', () => {
   it('🚨 happy: pendingUpgrade non-null → upgradeAvailable=true', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        ok: true,
-        workspaceId: 'ws-prod',
-        currentVersion: '1.5.0',
-        pendingUpgrade: {
-          latestVersion: '1.6.0',
-          releasedAt: '2026-06-08T00:00:00Z',
-          releaseNotesMd: '# Upgrade Notes',
-          newNodes: ['action_xyz'],
-          breakingChanges: [],
-          securitySeverity: 'medium',
-          isRequired: false,
-        },
-      }),
+      json: () =>
+        Promise.resolve({
+          ok: true,
+          workspaceId: 'ws-prod',
+          currentVersion: '1.5.0',
+          pendingUpgrade: {
+            latestVersion: '1.6.0',
+            releasedAt: '2026-06-08T00:00:00Z',
+            releaseNotesMd: '# Upgrade Notes',
+            newNodes: ['action_xyz'],
+            breakingChanges: [],
+            securitySeverity: 'medium',
+            isRequired: false,
+          },
+        }),
     });
     const res = await makeRequest('/api/v1/upgrade-info');
-    const json = await res.json() as { ok: boolean; upgradeAvailable: boolean; pendingUpgrade: { latestVersion: string }; portalManageUrl: string };
+    const json = (await res.json()) as {
+      ok: boolean;
+      upgradeAvailable: boolean;
+      pendingUpgrade: { latestVersion: string };
+      portalManageUrl: string;
+    };
     expect(json.ok).toBe(true);
     expect(json.upgradeAvailable).toBe(true);
     expect(json.pendingUpgrade.latestVersion).toBe('1.6.0');
-    expect(json.portalManageUrl).toBe('https://flowforge.automazionezeli.com/workspaces/ws-prod/runtime');
+    expect(json.portalManageUrl).toBe(
+      'https://flowforge.automazionezeli.com/workspaces/ws-prod/runtime',
+    );
   });
 
   it('🚨 pendingUpgrade null → upgradeAvailable=false', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        ok: true,
-        workspaceId: 'ws-prod',
-        currentVersion: '1.5.0',
-        pendingUpgrade: null,
-      }),
+      json: () =>
+        Promise.resolve({
+          ok: true,
+          workspaceId: 'ws-prod',
+          currentVersion: '1.5.0',
+          pendingUpgrade: null,
+        }),
     });
     const res = await makeRequest('/api/v1/upgrade-info');
-    const json = await res.json() as { upgradeAvailable: boolean; pendingUpgrade: null };
+    const json = (await res.json()) as { upgradeAvailable: boolean; pendingUpgrade: null };
     expect(json.upgradeAvailable).toBe(false);
     expect(json.pendingUpgrade).toBeNull();
   });
@@ -149,37 +173,46 @@ describe('🚨 GET /upgrade-info — fetch portal success', () => {
   it('🚨 upgradeInProgress passed-through (graceful overlay UI)', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        ok: true,
-        workspaceId: 'ws-prod',
-        currentVersion: '1.5.0',
-        upgradeInProgress: true,
-        pendingUpgrade: null,
-      }),
+      json: () =>
+        Promise.resolve({
+          ok: true,
+          workspaceId: 'ws-prod',
+          currentVersion: '1.5.0',
+          upgradeInProgress: true,
+          pendingUpgrade: null,
+        }),
     });
     const res = await makeRequest('/api/v1/upgrade-info');
-    const json = await res.json() as { upgradeInProgress: boolean };
+    const json = (await res.json()) as { upgradeInProgress: boolean };
     expect(json.upgradeInProgress).toBe(true);
   });
 
   it('🚨 upgradeInProgress default false se portal NON include il campo', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        ok: true, workspaceId: 'ws-prod', currentVersion: '1.0', pendingUpgrade: null,
-      }),
+      json: () =>
+        Promise.resolve({
+          ok: true,
+          workspaceId: 'ws-prod',
+          currentVersion: '1.0',
+          pendingUpgrade: null,
+        }),
     });
     const res = await makeRequest('/api/v1/upgrade-info');
-    const json = await res.json() as { upgradeInProgress: boolean };
+    const json = (await res.json()) as { upgradeInProgress: boolean };
     expect(json.upgradeInProgress).toBe(false);
   });
 
   it('🚨 fetch URL costruito con workspaceId path', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        ok: true, workspaceId: 'ws-prod', currentVersion: null, pendingUpgrade: null,
-      }),
+      json: () =>
+        Promise.resolve({
+          ok: true,
+          workspaceId: 'ws-prod',
+          currentVersion: null,
+          pendingUpgrade: null,
+        }),
     });
     await makeRequest('/api/v1/upgrade-info');
     const url = String(fetchMock.mock.calls[0]![0]);
@@ -190,9 +223,13 @@ describe('🚨 GET /upgrade-info — fetch portal success', () => {
     process.env.MEDEA_PORTAL_URL = 'http://portal:3006/';
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        ok: true, workspaceId: 'ws-prod', currentVersion: null, pendingUpgrade: null,
-      }),
+      json: () =>
+        Promise.resolve({
+          ok: true,
+          workspaceId: 'ws-prod',
+          currentVersion: null,
+          pendingUpgrade: null,
+        }),
     });
     await makeRequest('/api/v1/upgrade-info');
     const url = String(fetchMock.mock.calls[0]![0]);
@@ -202,9 +239,13 @@ describe('🚨 GET /upgrade-info — fetch portal success', () => {
   it('🚨 abort timeout 8s configurato', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        ok: true, workspaceId: 'ws-prod', currentVersion: null, pendingUpgrade: null,
-      }),
+      json: () =>
+        Promise.resolve({
+          ok: true,
+          workspaceId: 'ws-prod',
+          currentVersion: null,
+          pendingUpgrade: null,
+        }),
     });
     await makeRequest('/api/v1/upgrade-info');
     const opts = fetchMock.mock.calls[0]![1] as RequestInit;
@@ -226,7 +267,12 @@ describe('🚨 GET /upgrade-info — SOFT-FAIL response shape', () => {
     });
     const res = await makeRequest('/api/v1/upgrade-info');
     expect(res.status).toBe(200);
-    const json = await res.json() as { ok: boolean; upgradeAvailable: boolean; currentVersion: null; pendingUpgrade: null };
+    const json = (await res.json()) as {
+      ok: boolean;
+      upgradeAvailable: boolean;
+      currentVersion: null;
+      pendingUpgrade: null;
+    };
     expect(json.ok).toBe(true);
     expect(json.upgradeAvailable).toBe(false);
     expect(json.currentVersion).toBeNull();
@@ -238,14 +284,14 @@ describe('🚨 GET /upgrade-info — SOFT-FAIL response shape', () => {
     fetchMock.mockRejectedValueOnce(new Error('ECONNREFUSED'));
     const res = await makeRequest('/api/v1/upgrade-info');
     expect(res.status).toBe(200);
-    const json = await res.json() as { ok: boolean };
+    const json = (await res.json()) as { ok: boolean };
     expect(json.ok).toBe(true);
   });
 
   it('🚨 soft-fail include portalManageUrl per CTA fallback UI', async () => {
     fetchMock.mockRejectedValueOnce(new Error('network'));
     const res = await makeRequest('/api/v1/upgrade-info');
-    const json = await res.json() as { portalManageUrl: string };
+    const json = (await res.json()) as { portalManageUrl: string };
     expect(json.portalManageUrl).toContain('ws-fail');
   });
 });
@@ -259,9 +305,13 @@ describe('🚨 cache TTL 5 min — anti-hammer portal', () => {
   it('🚨 2x request stesso ws → 1 sola fetch', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({
-        ok: true, workspaceId: 'ws-cache', currentVersion: '1.0', pendingUpgrade: null,
-      }),
+      json: () =>
+        Promise.resolve({
+          ok: true,
+          workspaceId: 'ws-cache',
+          currentVersion: '1.0',
+          pendingUpgrade: null,
+        }),
     });
     await makeRequest('/api/v1/upgrade-info');
     await makeRequest('/api/v1/upgrade-info');
@@ -271,30 +321,42 @@ describe('🚨 cache TTL 5 min — anti-hammer portal', () => {
   it('🚨 second call → response include cached:true', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({
-        ok: true, workspaceId: 'ws-cache', currentVersion: '1.0', pendingUpgrade: null,
-      }),
+      json: () =>
+        Promise.resolve({
+          ok: true,
+          workspaceId: 'ws-cache',
+          currentVersion: '1.0',
+          pendingUpgrade: null,
+        }),
     });
     await makeRequest('/api/v1/upgrade-info');
     const res2 = await makeRequest('/api/v1/upgrade-info');
-    const json2 = await res2.json() as { cached: boolean };
+    const json2 = (await res2.json()) as { cached: boolean };
     expect(json2.cached).toBe(true);
   });
 
   it('🚨 cache invalidata se workspaceId env change (multi-tenant scenario)', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({
-        ok: true, workspaceId: 'ws-cache', currentVersion: '1.0', pendingUpgrade: null,
-      }),
+      json: () =>
+        Promise.resolve({
+          ok: true,
+          workspaceId: 'ws-cache',
+          currentVersion: '1.0',
+          pendingUpgrade: null,
+        }),
     });
     await makeRequest('/api/v1/upgrade-info');
     process.env.MEDEA_TENANT_ID = 'ws-DIFFERENT';
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        ok: true, workspaceId: 'ws-DIFFERENT', currentVersion: '2.0', pendingUpgrade: null,
-      }),
+      json: () =>
+        Promise.resolve({
+          ok: true,
+          workspaceId: 'ws-DIFFERENT',
+          currentVersion: '2.0',
+          pendingUpgrade: null,
+        }),
     });
     await makeRequest('/api/v1/upgrade-info');
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -305,9 +367,13 @@ describe('🚨 cache TTL 5 min — anti-hammer portal', () => {
     await makeRequest('/api/v1/upgrade-info');
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        ok: true, workspaceId: 'ws-cache', currentVersion: '1.0', pendingUpgrade: null,
-      }),
+      json: () =>
+        Promise.resolve({
+          ok: true,
+          workspaceId: 'ws-cache',
+          currentVersion: '1.0',
+          pendingUpgrade: null,
+        }),
     });
     await makeRequest('/api/v1/upgrade-info');
     expect(fetchMock).toHaveBeenCalledTimes(2);

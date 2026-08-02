@@ -46,10 +46,7 @@ describe('🚨 PDF parse rule', () => {
 
 describe('🚨 Cannot read property — engine error', () => {
   it('🚨 modern node "Cannot read properties of undefined (reading X)" → estrae X', () => {
-    const r = translateError(
-      "Cannot read properties of undefined (reading 'customerEmail')",
-      ctx,
-    );
+    const r = translateError("Cannot read properties of undefined (reading 'customerEmail')", ctx);
     expect(r.title).toContain('"customerEmail"');
     expect(r.title).toContain('"Insert Order"');
     expect(r.hint).toContain('customerEmail');
@@ -63,10 +60,7 @@ describe('🚨 Cannot read property — engine error', () => {
   });
 
   it('🚨 capture group ESCLUDE "of undefined" generic match', () => {
-    const r = translateError(
-      "Cannot read properties of null (reading 'data')",
-      ctx,
-    );
+    const r = translateError("Cannot read properties of null (reading 'data')", ctx);
     expect(r.title).toContain('"data"');
     expect(r.hint).toContain('data');
   });
@@ -74,10 +68,7 @@ describe('🚨 Cannot read property — engine error', () => {
 
 describe('🚨 FK constraint — DB specificity', () => {
   it('🚨 FK message specifico NON deve cadere su CHECK generic', () => {
-    const r = translateError(
-      'FOREIGN KEY constraint failed: orders.supplier_id',
-      ctx,
-    );
+    const r = translateError('FOREIGN KEY constraint failed: orders.supplier_id', ctx);
     // CRITICAL: rule FK è BEFORE rule CHECK nella lista, FK deve scattare
     expect(r.title).toMatch(/FOREIGN KEY/u);
     expect(r.title).not.toMatch(/CHECK/u);
