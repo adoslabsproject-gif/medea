@@ -9,6 +9,7 @@
 import { logger } from '@/lib/logger.js';
 import { WorkflowService } from './workflow.service.js';
 import { RunService } from './run.service.js';
+import { findLastMissedFiring, lastCronRunAt } from './scheduler/missed-runs.js';
 import type { IEventBus } from '@/ports/event-bus.js';
 import type { Workflow } from '@medea/engine-core-schema';
 
@@ -152,10 +153,58 @@ export class SchedulerService {
 
   async start(): Promise<void> {
     await this.reloadJobs();
+    // Prima di mettersi in ascolto del futuro si guarda il passato: fra
+    // l'ultima esecuzione e adesso possono esserci scadenze mancate perché
+    // Medea era chiusa o il computer sospeso.
+    await this.catchUpMissedRuns();
     this.masterTimer = setInterval(() => {
       this.tick();
     }, 60_000);
     logger.info({ activeJobs: this.jobs.size }, 'Scheduler started');
+  }
+
+  /**
+   * Recupera, per ogni job, l'ultima scadenza passata a vuoto.
+   *
+   * Una sola esecuzione per workflow, con `recovered` nel payload del trigger:
+   * un workflow che manda una email deve poter distinguere «è l'ora» da «era
+   * l'ora mentre eri spento», e comportarsi di conseguenza.
+   *
+   * Un errore qui non impedisce allo scheduler di partire: perdere il
+   * recupero è spiacevole, non far partire i cron futuri è molto peggio.
+   */
+  private async catchUpMissedRuns(): Promise<void> {
+    const now = new Date();
+    for (const job of this.jobs.values()) {
+      try {
+        const last = await lastCronRunAt(job.workflowId);
+        // Mai eseguito da cron: le sue scadenze cominciano adesso, non c'è
+        // un passato da recuperare.
+        if (!last) continue;
+
+        const missed = findLastMissedFiring(last, now, (instant) =>
+          matchesCron(job.cronExpression, instant, job.timezone),
+        );
+        if (!missed) continue;
+
+        logger.info(
+          { workflowId: job.workflowId, missedAt: missed.toISOString() },
+          'Recupero di una esecuzione programmata mancata',
+        );
+        await this.runs.execute({
+          workflowId: job.workflowId,
+          triggerType: 'cron',
+          triggerInput: {
+            firedAt: missed.toISOString(),
+            cronExpression: job.cronExpression,
+            timezone: job.timezone,
+            recovered: true,
+          },
+        });
+      } catch (err) {
+        logger.error({ err, workflowId: job.workflowId }, 'Recupero non riuscito');
+      }
+    }
   }
 
   stop(): void {

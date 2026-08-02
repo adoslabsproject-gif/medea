@@ -25,6 +25,7 @@ export interface TopbarActions {
   onVersions: () => void;
   onNodes: () => void;
   onRelay: () => void;
+  onBackground: () => void;
   /** Etichette, quanto registra, workflow di emergenza. */
   onSettings: () => void;
   /** Salva il disegno come immagine. */
@@ -154,6 +155,12 @@ export function Topbar({
           icon: '🌐',
           hint: 'Farsi raggiungere da internet per i webhook',
           onSelect: actions.onRelay,
+        },
+        {
+          label: 'Automazioni attive',
+          icon: '⏰',
+          hint: 'Tenere in vita i workflow a finestra chiusa',
+          onSelect: actions.onBackground,
         },
         {
           label: 'Segreti',

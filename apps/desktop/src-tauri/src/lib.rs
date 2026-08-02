@@ -1,14 +1,15 @@
 //! Medea desktop shell — entry point.
 
 pub mod ai_tools;
+mod background;
 mod commands;
 pub mod db;
 pub mod runtime;
 mod security;
 
 use commands::{
-    ai_cmd, ai_tools_cmd, claude_cli_cmd, db_cmd, imap_cmd, runtime_cmd, secrets_cmd, smtp_cmd,
-    sync_cmd, template_cmd, workflow_cmd,
+    ai_cmd, ai_tools_cmd, background_cmd, claude_cli_cmd, db_cmd, imap_cmd, runtime_cmd,
+    secrets_cmd, smtp_cmd, sync_cmd, template_cmd, workflow_cmd,
 };
 use tauri::Manager;
 
@@ -24,6 +25,10 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None,
+        ))
         .invoke_handler(tauri::generate_handler![
             commands::ping,
             // IMAP
@@ -164,13 +169,24 @@ pub fn run() {
             secrets_cmd::secret_set,
             secrets_cmd::secret_get,
             secrets_cmd::secret_delete,
+            // Medea che resta al lavoro
+            background_cmd::background_status,
+            background_cmd::background_set_stay_alive,
+            background_cmd::background_set_autostart,
         ])
+        .on_window_event(|window, event| {
+            background::handle_window_event(window, event);
+        })
         .setup(|app| {
             let data_dir = app
                 .path()
                 .app_data_dir()
                 .expect("cannot resolve app_data_dir");
             db::init(data_dir).expect("DB init failed");
+            // L'icona nella barra di stato esiste sempre: e` da li` che si
+            // riapre la finestra quando Medea resta al lavoro con la finestra
+            // chiusa, e da li` che si esce davvero.
+            background::install_tray(app.handle()).expect("tray non installato");
             tracing::info!("Medea starting in dev mode");
             Ok(())
         })
