@@ -1,0 +1,43 @@
+/*
+ * Tema «Carta» — chiaro e caldo, per chi legge molto.
+ *
+ * I fondi bianchi puri con testo nero puro sono la combinazione che stanca
+ * prima: qui il fondo tira sul crema e il testo è un marrone molto scuro
+ * invece che nero. È la stessa ragione per cui i libri non si stampano su
+ * carta bianca ottica.
+ *
+ * Il corpo del testo è in grazie — Charter e Georgia sono su quasi tutti i
+ * computer, sono state disegnate per lo schermo e non hanno niente di
+ * decorativo. L'interfaccia resta senza grazie: pulsanti ed etichette si
+ * leggono meglio così.
+ */
+@layer themes {
+  [data-theme='carta'] {
+    color-scheme: light;
+
+    --color-surface-1: oklch(0.975 0.012 85);
+    --color-surface-2: oklch(0.945 0.016 85);
+    --color-surface-3: oklch(0.905 0.02 82);
+
+    --color-text-primary: oklch(0.25 0.02 60);
+    --color-text-secondary: oklch(0.42 0.022 60);
+    --color-text-muted: oklch(0.56 0.022 65);
+    --color-text-inverted: oklch(0.975 0.012 85);
+
+    --color-border-subtle: oklch(0.9 0.018 80);
+    --color-border-default: oklch(0.83 0.022 78);
+    --color-border-strong: oklch(0.7 0.026 75);
+
+    /* Verde bosco: un accento che non urla su un fondo caldo. */
+    --color-accent-subtle: oklch(0.93 0.04 150);
+    --color-accent-default: oklch(0.46 0.1 152);
+    --color-accent-emphasis: oklch(0.38 0.095 152);
+    --color-accent-on: oklch(0.98 0.01 85);
+
+    --color-focus-ring-default: oklch(0.46 0.1 152);
+
+    --font-family-sans:
+      -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue', sans-serif;
+    --font-family-serif: Charter, 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  }
+}

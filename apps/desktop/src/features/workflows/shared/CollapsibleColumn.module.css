@@ -26,7 +26,10 @@
     color: var(--color-text-muted);
     font-size: var(--font-size-sm);
     cursor: pointer;
-    opacity: 0;
+    /* Si vede sempre, anche se in sordina. Prima compariva solo passandoci
+       sopra col mouse: chi non ci passava non poteva sapere che la colonna si
+       chiude, e un comando che non si vede è un comando che non esiste. */
+    opacity: 0.55;
     transition: opacity var(--motion-duration-fast, 150ms) ease-out;
   }
   .collapse[data-side='start'] {

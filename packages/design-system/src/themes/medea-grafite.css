@@ -1,0 +1,42 @@
+/*
+ * Tema «Grafite» — scuro e neutro, senza dominanti di colore.
+ *
+ * Il tema scuro predefinito ha una punta di blu nei grigi, che è gradevole e
+ * si fa notare. Questo no: i grigi sono quasi puri, e l'unico colore in tutta
+ * l'interfaccia è l'accento. Su una schermata piena di dati — una tabella, un
+ * elenco di messaggi, un canvas — è la scelta che stanca meno, perché niente
+ * compete con quello che si sta guardando.
+ *
+ * Font di sistema, quelli che il computer usa per sé: sono i più leggibili a
+ * dimensioni piccole perché sono disegnati per quello.
+ */
+@layer themes {
+  [data-theme='grafite'] {
+    color-scheme: dark;
+
+    --color-surface-1: oklch(0.17 0.003 250);
+    --color-surface-2: oklch(0.215 0.004 250);
+    --color-surface-3: oklch(0.27 0.005 250);
+
+    --color-text-primary: oklch(0.94 0.003 250);
+    --color-text-secondary: oklch(0.78 0.004 250);
+    --color-text-muted: oklch(0.6 0.005 250);
+    --color-text-inverted: oklch(0.17 0.003 250);
+
+    --color-border-subtle: oklch(0.26 0.005 250);
+    --color-border-default: oklch(0.34 0.006 250);
+    --color-border-strong: oklch(0.46 0.007 250);
+
+    /* Ambra: calda quanto basta per distinguersi dal grigio, senza diventare
+       un semaforo. */
+    --color-accent-subtle: oklch(0.3 0.04 75);
+    --color-accent-default: oklch(0.78 0.13 75);
+    --color-accent-emphasis: oklch(0.86 0.12 78);
+    --color-accent-on: oklch(0.17 0.003 250);
+
+    --color-focus-ring-default: oklch(0.78 0.13 75);
+
+    --font-family-sans:
+      -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue', sans-serif;
+  }
+}

@@ -21,6 +21,10 @@
 
   .title {
     margin: 0;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
     text-transform: uppercase;
@@ -32,6 +36,9 @@
     display: flex;
     align-items: center;
     gap: var(--space-1);
+    /* I pulsanti tengono la loro larghezza: a cedere è il titolo, che può
+       essere accorciato senza perdere niente. */
+    flex-shrink: 0;
   }
 
   .assist {
@@ -50,6 +57,9 @@
   }
 
   .new {
+    /* Senza, «+ Nuovo» va a capo appena lo spazio si stringe: il pulsante
+       diventa un quadratino di due righe e sborda sopra il titolo. */
+    white-space: nowrap;
     padding: var(--space-1) var(--space-2);
     border: 1px solid var(--color-border-default);
     border-radius: var(--radius-sm);
@@ -123,15 +133,15 @@
     min-inline-size: 0;
   }
 
-  .dot {
-    inline-size: 0.5rem;
-    block-size: 0.5rem;
-    border-radius: var(--radius-full);
-    background: var(--color-border-strong);
+  .stato {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
+    color: var(--color-text-muted);
   }
-  .dot[data-on='true'] {
-    background: var(--color-feedback-success);
+  .stato[data-on='true'] {
+    color: var(--color-feedback-success);
   }
 
   .name {
