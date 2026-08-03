@@ -10,9 +10,13 @@
   }
 
   .head {
+    /* Titolo sopra, pulsanti sotto. Erano tutti e tre in fila e i due
+       pulsanti non lasciavano niente al titolo: si leggeva «W…», che non è
+       un titolo, è un residuo. Su una colonna di 240 pixel non ci stanno,
+       e stringere il titolo non è la risposta. */
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: stretch;
     gap: var(--space-2);
     padding: var(--space-3);
     border-block-end: 1px solid var(--color-border-subtle);
@@ -36,12 +40,16 @@
     display: flex;
     align-items: center;
     gap: var(--space-1);
+    /* I due pulsanti si dividono la riga. */
+    justify-content: stretch;
     /* I pulsanti tengono la loro larghezza: a cedere è il titolo, che può
        essere accorciato senza perdere niente. */
     flex-shrink: 0;
   }
 
   .assist {
+    flex: 1;
+    text-align: center;
     padding: var(--space-1) var(--space-2);
     border: 1px solid var(--color-border-default);
     border-radius: var(--radius-sm);
@@ -57,6 +65,7 @@
   }
 
   .new {
+    flex-shrink: 0;
     /* Senza, «+ Nuovo» va a capo appena lo spazio si stringe: il pulsante
        diventa un quadratino di due righe e sborda sopra il titolo. */
     white-space: nowrap;
