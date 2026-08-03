@@ -1,5 +1,6 @@
 //! Tauri commands esposti al frontend React.
 
+pub mod ai_abort;
 pub mod ai_cmd;
 pub mod ai_tools_cmd;
 pub mod background_cmd;

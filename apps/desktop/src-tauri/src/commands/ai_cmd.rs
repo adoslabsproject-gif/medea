@@ -48,12 +48,45 @@ pub struct ToolCallOut {
     pub arguments: serde_json::Value,
 }
 
+/// Quanto è costata una risposta, quando il provider lo dice.
+///
+/// Non tutti lo dicono e non tutti lo chiamano allo stesso modo: OpenAI e i
+/// compatibili usano `prompt_tokens`/`completion_tokens`, Anthropic
+/// `input_tokens`/`output_tokens`. Chi non lo dice lascia il campo vuoto, e
+/// l'interfaccia semplicemente non mostra il conto invece di inventarne uno.
+#[derive(Debug, Serialize, Default, Clone, Copy)]
+#[serde(rename_all = "camelCase")]
+pub struct TokenUsage {
+    pub input: u64,
+    pub output: u64,
+}
+
 /// Risposta del modello: testo e/o chiamate a tool.
 #[derive(Debug, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ChatResponse {
     pub content: String,
     pub tool_calls: Vec<ToolCallOut>,
+    /// Quanti token sono serviti, se il provider lo dichiara.
+    pub usage: Option<TokenUsage>,
+}
+
+/// Legge il conto dei token da una risposta, nei due nomi in cui si presenta.
+fn parse_usage(json: &serde_json::Value) -> Option<TokenUsage> {
+    let usage = json.get("usage")?;
+    let leggi = |nomi: [&str; 2]| -> u64 {
+        nomi.iter()
+            .find_map(|n| usage.get(*n).and_then(serde_json::Value::as_u64))
+            .unwrap_or(0)
+    };
+    let input = leggi(["prompt_tokens", "input_tokens"]);
+    let output = leggi(["completion_tokens", "output_tokens"]);
+    // Un conto a zero da entrambe le parti vuol dire che non c'era: meglio
+    // niente che «0 token», che sarebbe una informazione falsa.
+    if input == 0 && output == 0 {
+        return None;
+    }
+    Some(TokenUsage { input, output })
 }
 
 #[derive(Debug, Deserialize)]
@@ -74,6 +107,10 @@ pub struct ChatRequest {
     /// (`[{type:"function", function:{name, description, parameters}}]`).
     #[serde(default)]
     pub tools: Option<Vec<serde_json::Value>>,
+    /// Un nome per questa richiesta, se si vuole poterla fermare a metà.
+    /// Chi non lo passa non può interromperla — e non ne ha bisogno.
+    #[serde(default)]
+    pub request_id: Option<String>,
 }
 
 /// Messaggi in formato OpenAI, inclusi i turni `assistant` con tool-call e i
@@ -231,42 +268,72 @@ fn parse_openai_response(json: &serde_json::Value, label: &str) -> anyhow::Resul
     Ok(ChatResponse {
         content,
         tool_calls,
+        usage: parse_usage(json),
     })
 }
 
 #[tauri::command]
 pub async fn ai_chat(req: ChatRequest) -> Result<ChatResponse, String> {
+    // Chi vuole poter fermare la richiesta le dà un nome. Chi non lo fa —
+    // le chiamate brevi, dove lo stop non ha senso — non paga niente.
+    let token = req.request_id.as_deref().map(super::ai_abort::registra);
+    let esito = ai_chat_interna(&req, token.clone()).await;
+    if let Some(id) = req.request_id.as_deref() {
+        super::ai_abort::dimentica(id);
+    }
+    esito
+}
+
+async fn ai_chat_interna(
+    req: &ChatRequest,
+    token: Option<tokio_util::sync::CancellationToken>,
+) -> Result<ChatResponse, String> {
     let provider = req.provider.as_str();
-    let result = match provider {
-        "liara" => call_liara(&req).await,
-        "custom" => call_custom(&req).await,
-        "anthropic" => call_anthropic(&req).await,
-        "openai" => call_openai(&req).await,
-        "gemini" => call_gemini(&req).await,
-        "deepseek" => {
-            call_openai_compat(
-                &req,
-                "https://api.deepseek.com/v1/chat/completions",
-                "deepseek-chat",
-                "DEEPSEEK_API_KEY",
-                "DeepSeek",
-            )
-            .await
-        }
-        "grok" => {
-            call_openai_compat(
-                &req,
-                "https://api.x.ai/v1/chat/completions",
-                "grok-3-latest",
-                "XAI_API_KEY",
-                "Grok",
-            )
-            .await
-        }
-        "openrouter" => call_openrouter(&req).await,
-        other => Err(anyhow::anyhow!("Provider sconosciuto: {other}")),
+    let chiamata = async {
+        let result = match provider {
+            "liara" => call_liara(req).await,
+            "custom" => call_custom(req).await,
+            "anthropic" => call_anthropic(req).await,
+            "openai" => call_openai(req).await,
+            "gemini" => call_gemini(req).await,
+            "deepseek" => {
+                call_openai_compat(
+                    req,
+                    "https://api.deepseek.com/v1/chat/completions",
+                    "deepseek-chat",
+                    "DEEPSEEK_API_KEY",
+                    "DeepSeek",
+                )
+                .await
+            }
+            "grok" => {
+                call_openai_compat(
+                    req,
+                    "https://api.x.ai/v1/chat/completions",
+                    "grok-3-latest",
+                    "XAI_API_KEY",
+                    "Grok",
+                )
+                .await
+            }
+            "openrouter" => call_openrouter(req).await,
+            other => Err(anyhow::anyhow!("Provider sconosciuto: {other}")),
+        };
+        result.map_err(|e| e.to_string())
     };
-    result.map_err(|e| e.to_string())
+
+    // Con un interruttore associato, chi arriva primo vince: o la risposta, o
+    // lo stop. Se vince lo stop la richiesta HTTP viene lasciata cadere qui, e
+    // con essa la connessione: il provider se ne accorge e smette di generare.
+    match token {
+        Some(token) => {
+            tokio::select! {
+                esito = chiamata => esito,
+                () = token.cancelled() => Err("Fermato su richiesta.".to_string()),
+            }
+        }
+        None => chiamata.await,
+    }
 }
 
 async fn call_openai_compat(
@@ -358,6 +425,7 @@ async fn call_gemini(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
     Ok(ChatResponse {
         content,
         tool_calls,
+        usage: parse_usage(&json),
     })
 }
 
@@ -643,6 +711,7 @@ async fn call_anthropic(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
     Ok(ChatResponse {
         content,
         tool_calls,
+        usage: parse_usage(&json),
     })
 }
 
