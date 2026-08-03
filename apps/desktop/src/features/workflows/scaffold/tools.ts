@@ -40,6 +40,35 @@ const obj = (
 
 export const WORKFLOW_AGENT_TOOLS: ToolDef[] = [
   {
+    name: 'analyze_goal',
+    description:
+      "PRIMO passo, prima di qualunque ricerca: scomponi la richiesta dell'utente nelle sue tre parti. " +
+      'Serve a decidere COSA cercare invece di cercare le parole della richiesta. ' +
+      'Chiamalo una volta sola, all’inizio.',
+    parameters: obj(
+      {
+        whenItStarts: {
+          type: 'string',
+          description:
+            'Cosa fa partire il workflow, in una frase: a orario, all’arrivo di una email, su chiamata esterna, a mano.',
+        },
+        whatItDoes: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Le azioni in ordine, una per voce, dette come gesti: «sposta le email in una cartella», «conta quante», «manda un riepilogo».',
+        },
+        conditions: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Filtri, rami e ripetizioni, se ce ne sono: «solo quelle più vecchie di 30 giorni», «per ogni allegato». Lista vuota se non servono.',
+        },
+      },
+      ['whenItStarts', 'whatItDoes'],
+    ),
+  },
+  {
     name: 'search_nodes',
     description:
       'Cerca nel catalogo i nodi pertinenti a una descrizione (es. "invia email", "http get", "salva in database"). Usalo PRIMA di add_node per scegliere il defId giusto.',
@@ -168,6 +197,20 @@ export function executeWorkflowTool(
   args: Record<string, unknown>,
 ): ToolCallResult {
   switch (name) {
+    case 'analyze_goal': {
+      // Non tocca il workflow: serve a fissare l'intenzione prima di cercare,
+      // e a farla vedere a chi guarda. Si risponde con quello che è stato
+      // capito, così il modello ha davanti la propria analisi al passo dopo.
+      const quando = str(args.whenItStarts);
+      const cosa = Array.isArray(args.whatItDoes) ? args.whatItDoes.map((v) => str(v)) : [];
+      const condizioni = Array.isArray(args.conditions) ? args.conditions.map((v) => str(v)) : [];
+      return {
+        data: {
+          understood: { whenItStarts: quando, whatItDoes: cosa, conditions: condizioni },
+          next: 'Ora cerca un nodo per ciascuna voce di whatItDoes con search_nodes, cercando il gesto e non le parole della richiesta.',
+        },
+      };
+    }
     case 'search_nodes': {
       const query = str(args.query);
       return { data: { hits: searchNodes(ctx.catalog, query) } };

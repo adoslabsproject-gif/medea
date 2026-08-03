@@ -13,6 +13,7 @@ import type { NodeDef } from '../types';
 
 import {
   agentToolsForProvider,
+  buildAgentSystemPrompt,
   runWorkflowAgent,
   type AgentChat,
   type AgentToolCall,
@@ -65,11 +66,13 @@ const call = (name: string, args: Record<string, unknown> = {}, id = name): Agen
 });
 
 describe('strumenti esposti al provider', () => {
-  it('sono i 9, nel formato function-calling', () => {
+  it('sono i 10, nel formato function-calling', () => {
     const tools = agentToolsForProvider();
-    expect(tools).toHaveLength(9);
+    expect(tools).toHaveLength(10);
     expect(tools[0]?.type).toBe('function');
-    expect(tools[0]?.function.name).toBe('search_nodes');
+    // `analyze_goal` è il primo perché è il primo passo: scompone la
+    // richiesta prima che si cerchi qualunque cosa.
+    expect(tools[0]?.function.name).toBe('analyze_goal');
   });
 });
 
@@ -399,5 +402,53 @@ describe('quando il modello non usa gli strumenti', () => {
     // Chi legge deve capire che il problema è il modello, non la richiesta.
     expect(result.reason).toMatch(/strumenti/i);
     expect(result.reason).toMatch(/modello/i);
+  });
+});
+
+describe('l’analisi è un passo come gli altri', () => {
+  it('🚨 il prompt non chiede di rispondere a parole', () => {
+    // Il ciclo conta come «a vuoto» ogni risposta senza chiamate, e dopo tre
+    // si arrende. Un prompt che chiede di scrivere qualcosa manda il modello
+    // dritto in quel contatore: fa quello che gli si è chiesto e viene
+    // fermato per questo. È successo il 2026-08-03.
+    const prompt = buildAgentSystemPrompt('archivia le newsletter');
+    expect(prompt).not.toMatch(/scrivi le tre parti/i);
+    expect(prompt).toMatch(/analyze_goal/);
+    expect(prompt).toMatch(/non rispondere a parole/i);
+  });
+
+  it('l’analisi apre la lista degli strumenti', () => {
+    // Primo nella lista perché è il primo passo: i modelli guardano l'ordine.
+    expect(agentToolsForProvider()[0]?.function.name).toBe('analyze_goal');
+  });
+
+  it('l’analisi prepara e basta: non mette nodi sul disegno', async () => {
+    let visto = '';
+    await runWorkflowAgent({
+      goal: 'ogni lunedì manda il riepilogo',
+      catalog: [...CATALOG],
+      chat: ({ history }) => {
+        if (visto) {
+          // Al secondo giro il modello ha davanti la propria analisi.
+          visto = JSON.stringify(history);
+          return Promise.resolve({
+            content: '',
+            toolCalls: [{ id: 'f', name: 'finish', arguments: {} }],
+          });
+        }
+        visto = 'primo';
+        return Promise.resolve({
+          content: '',
+          toolCalls: [
+            {
+              id: 'a1',
+              name: 'analyze_goal',
+              arguments: { whenItStarts: 'ogni lunedì', whatItDoes: ['manda il riepilogo'] },
+            },
+          ],
+        });
+      },
+    });
+    expect(visto).toMatch(/understood/);
   });
 });
