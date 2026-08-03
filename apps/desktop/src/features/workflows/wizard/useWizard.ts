@@ -53,12 +53,21 @@ export function useWizard(): Wizard {
   /** Con cosa si ferma la costruzione in corso. */
   const controllore = useRef<AbortController | null>(null);
   const [tokens, setTokens] = useState<{ input: number; output: number } | undefined>(undefined);
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    // Il valore va **rimesso a vero all'ingresso**, non solo azzerato
+    // all'uscita. In sviluppo React monta, smonta e rimonta ogni componente
+    // per stanare proprio questo genere di errori: con il solo cleanup, il
+    // primo smontaggio lasciava `alive` a falso per sempre, e da lì ogni
+    // aggiornamento di stato veniva scartato in silenzio.
+    //
+    // Il risultato era un wizard che restava su «sta pensando» all'infinito,
+    // senza passi, senza errori e senza reagire a «Interrompi» — mentre
+    // sotto il lavoro procedeva o si fermava regolarmente. Nessuno lo vedeva.
+    alive.current = true;
+    return () => {
       alive.current = false;
-    },
-    [],
-  );
+    };
+  }, []);
 
   // Il tempo scorre solo mentre costruisce.
   useEffect(() => {

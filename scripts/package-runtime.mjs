@@ -110,6 +110,31 @@ function workspaceRoot(from) {
  */
 const NODE_EXE = process.platform === 'win32' ? 'node.exe' : 'node';
 
+/**
+ * Rifirma l'eseguibile copiato. Su macOS, e su Apple Silicon in particolare.
+ *
+ * Un binario ARM64 deve avere una firma coerente col proprio contenuto, e
+ * copiarlo la invalida: il sistema lo termina all'avvio con SIGKILL, senza un
+ * messaggio, senza scriverlo da nessuna parte. Dal lato dell'applicazione si
+ * vede solo un motore che «si è chiuso subito» e dei workflow che non partono
+ * — e nessun indizio su cosa cercare.
+ *
+ * `codesign --sign -` firma ad-hoc: basta a far girare il binario su questa
+ * macchina e su quelle a cui l'installatore arriva. Chi distribuisce con un
+ * certificato vero rifirma comunque tutto in fase di notarizzazione.
+ *
+ * Se `codesign` non c'è — non siamo su macOS — non c'è niente da fare.
+ */
+function rifirma(binario) {
+  if (process.platform !== 'darwin') return;
+  try {
+    execFileSync('codesign', ['--force', '--sign', '-', binario], { stdio: 'pipe' });
+    console.log('    Firma rifatta: senza, macOS lo ucciderebbe all’avvio.');
+  } catch (e) {
+    console.warn(`    ⚠ Firma non rifatta (${String(e)}): il motore potrebbe non partire.`);
+  }
+}
+
 /** Quanto pesa una cartella, in MB. Serve solo a dirlo a chi guarda. */
 function sizeMb(path) {
   // `du` non esiste su Windows, e questo numero serve solo a stamparlo: si
@@ -288,7 +313,9 @@ async function main() {
   console.log(`    ${String(removed)} mappe dei sorgenti rimosse.`);
 
   console.log('  Copio l’eseguibile Node…');
-  cpSync(process.execPath, join(staging, NODE_EXE), { dereference: true });
+  const nodeCopiato = join(staging, NODE_EXE);
+  cpSync(process.execPath, nodeCopiato, { dereference: true });
+  rifirma(nodeCopiato);
 
   // Solo quello che serve a eseguire: i sorgenti e la configurazione di
   // sviluppo del runtime non c'entrano niente con l'app installata.
