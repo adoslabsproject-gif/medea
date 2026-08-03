@@ -364,3 +364,40 @@ describe('modifica di un workflow esistente', () => {
     }
   });
 });
+
+describe('quando il modello non usa gli strumenti', () => {
+  /** Un modello che risponde sempre e solo a parole. */
+  const soloParole = () =>
+    Promise.resolve({ content: 'Certo! Ecco il workflow che ti serve.', toolCalls: [] });
+
+  it('🚨 si arrende dopo pochi tentativi, non dopo quaranta', async () => {
+    let chiamate = 0;
+    const result = await runWorkflowAgent({
+      goal: 'manda una email quando arriva un ordine',
+      catalog: [...CATALOG],
+      chat: () => {
+        chiamate += 1;
+        return soloParole();
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    // Tre risposte a vuoto bastano: un modello che non emette chiamate non
+    // comincerà a farlo al decimo tentativo.
+    expect(chiamate).toBeLessThanOrEqual(4);
+  });
+
+  it('🚨 lo dice chiaramente invece di parlare di passi esauriti', async () => {
+    const result = await runWorkflowAgent({
+      goal: 'manda una email',
+      catalog: [...CATALOG],
+      chat: soloParole,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    // Chi legge deve capire che il problema è il modello, non la richiesta.
+    expect(result.reason).toMatch(/strumenti/i);
+    expect(result.reason).toMatch(/modello/i);
+  });
+});
