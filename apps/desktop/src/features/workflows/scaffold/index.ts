@@ -14,6 +14,7 @@ export type {
   AgentToolCall,
   AgentTurn,
 } from './agent';
+export { avanzamento, ETICHETTA_FASE, faseCorrente, type Fase } from './fasi';
 export { WorkflowBuilder } from './builder';
 export type { AddNodeResult, OpResult, WorkflowSnapshot } from './builder';
 export {

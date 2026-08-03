@@ -13,6 +13,7 @@
 
 import { iconNameFor, resolveLucideIcon } from '../canvas/icon-registry';
 import { findNode } from '../catalog';
+import { avanzamento, ETICHETTA_FASE, faseCorrente } from '../scaffold';
 
 import styles from './BuildingStage.module.css';
 import { TraceList } from './TraceList';
@@ -59,9 +60,12 @@ export function BuildingStage({
   const fatti = trace.length;
   const riusciti = trace.filter((t) => t.ok).length;
   const falliti = fatti - riusciti;
-  // La percentuale è sui passi possibili, non su quelli fatti: dice quanto
-  // margine resta prima che l'agente si arrenda, che è l'informazione utile.
-  const percentuale = Math.min(100, Math.round((fatti / maxSteps) * 100));
+  // L'avanzamento è sulle fasi attraversate, non sui passi consumati: dice a
+  // che punto è del lavoro, non quanto margine resta prima di arrendersi.
+  // Sono due cose diverse e la seconda non interessa a chi guarda.
+  const strumenti = trace.map((t) => t.tool);
+  const fase = faseCorrente(strumenti);
+  const percentuale = Math.round(avanzamento(strumenti) * 100);
   const ultimo = trace.at(-1);
 
   return (
@@ -70,8 +74,10 @@ export function BuildingStage({
         <span className={styles.spinner} aria-hidden="true" />
         <div className={styles.heroText}>
           {provider && <p className={styles.provider}>{provider}</p>}
-          <p className={styles.title}>{ultimo?.label ?? 'Sta preparando la richiesta…'}</p>
-          {ultimo?.detail && <p className={styles.detail}>{ultimo.detail}</p>}
+          <p className={styles.title}>{ETICHETTA_FASE[fase]}</p>
+          <p className={styles.detail}>
+            {ultimo?.detail ?? ultimo?.label ?? 'Sta leggendo la richiesta…'}
+          </p>
         </div>
 
         <dl className={styles.numeri}>
