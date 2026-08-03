@@ -294,7 +294,32 @@ pub async fn ai_chat(req: ChatRequest) -> Result<ChatResponse, String> {
     // Chi vuole poter fermare la richiesta le dà un nome. Chi non lo fa —
     // le chiamate brevi, dove lo stop non ha senso — non paga niente.
     let token = req.request_id.as_deref().map(super::ai_abort::registra);
+    let quanti_tool = req.tools.as_ref().map_or(0, Vec::len);
     let esito = ai_chat_interna(&req, token.clone()).await;
+    // Una riga per chiamata: quanti strumenti sono stati offerti e quanti ne
+    // ha usati. Quando un ciclo si impunta è la prima cosa da guardare, e
+    // senza di essa si può solo indovinare — successo il 2026-08-03, con un
+    // wizard che non concludeva e nessun modo di sapere perché.
+    match &esito {
+        Ok(r) if r.tool_calls.is_empty() => tracing::warn!(
+            "AI {}: offerti {} strumenti, nessuna chiamata. Risposta: {:.200}",
+            req.provider,
+            quanti_tool,
+            r.content
+        ),
+        Ok(r) => tracing::info!(
+            "AI {}: offerti {} strumenti, {} chiamate ({})",
+            req.provider,
+            quanti_tool,
+            r.tool_calls.len(),
+            r.tool_calls
+                .iter()
+                .map(|c| c.name.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
+        Err(e) => tracing::warn!("AI {}: fallita — {e}", req.provider),
+    }
     if let Some(id) = req.request_id.as_deref() {
         super::ai_abort::dimentica(id);
     }
