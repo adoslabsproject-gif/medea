@@ -11,6 +11,8 @@ import type { AgentStep } from '../scaffold';
 import type { TraceEntry } from './types';
 
 const LABELS: Record<string, string> = {
+  '(risposta a parole)': 'Ha risposto a parole invece di usare uno strumento',
+  analyze_goal: 'Scompone la richiesta',
   search_nodes: 'Cerca il nodo giusto',
   get_node_schema: 'Legge come si configura',
   add_node: 'Aggiunge un nodo',

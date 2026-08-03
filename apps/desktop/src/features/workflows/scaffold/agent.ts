@@ -209,6 +209,19 @@ export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> 
         return finishFrom(builder, steps, req.databases);
       }
       aVuoto++;
+      // La risposta finisce nella cronologia anche quando non contiene
+      // chiamate. È l'unico modo per sapere *cosa* ha detto il modello invece
+      // di lavorare: senza, il pannello dice «ha risposto a parole» e chi
+      // guarda non ha niente su cui ragionare — né l'utente né chi deve
+      // sistemare il prompt.
+      const risposta: AgentStep = {
+        step,
+        tool: '(risposta a parole)',
+        args: { attesi: 'una chiamata a uno strumento' },
+        result: { testo: reply.content.slice(0, 2000) },
+      };
+      steps.push(risposta);
+      req.onStep?.(risposta);
       // Il richiamo è più utile se dice cosa fare adesso, non in generale: un
       // modello che si è fermato al primo giro va rimandato all'analisi, uno
       // che ha già montato dei nodi va rimandato a chiudere.
