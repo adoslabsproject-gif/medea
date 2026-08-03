@@ -711,3 +711,26 @@ pub fn db_resolve_price(
     db::with_db(|c| db::pricing::resolve_for_customer(c, customer_id, &article_code))
         .map_err(|e| e.to_string())
 }
+
+/// Gli indirizzi di un dominio che hanno scritto almeno una volta.
+#[tauri::command]
+pub fn db_rubrica_mittenti_dominio(
+    domain: String,
+) -> Result<Vec<db::rubrica::MittenteRicevuto>, String> {
+    db::with_db(|c| db::rubrica::mittenti_del_dominio(c, &domain)).map_err(|e| e.to_string())
+}
+
+/// Le email ricevute da un indirizzo, dalla più recente.
+#[tauri::command]
+pub fn db_rubrica_ricevute_da(
+    address: String,
+    limit: u32,
+) -> Result<Vec<db::rubrica::EmailRicevuta>, String> {
+    db::with_db(|c| db::rubrica::ricevute_da(c, &address, limit)).map_err(|e| e.to_string())
+}
+
+/// I domini da cui è arrivata posta.
+#[tauri::command]
+pub fn db_rubrica_domini(limit: u32) -> Result<Vec<db::rubrica::DominioRicevuto>, String> {
+    db::with_db(|c| db::rubrica::domini_ricevuti(c, limit)).map_err(|e| e.to_string())
+}
