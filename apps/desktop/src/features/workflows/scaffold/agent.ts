@@ -28,6 +28,18 @@ const MAX_STEPS = AGENT_MAX_STEPS;
  *  modello che non capisce al terzo richiamo non capirà al quarto. */
 const MAX_PUSHBACKS = 3;
 
+/**
+ * Quante volte si accetta che il modello risponda a parole invece di usare
+ * gli strumenti, prima di dire che non ce la fa.
+ *
+ * Non è pignoleria: un modello che non emette chiamate nel formato atteso non
+ * comincerà a farlo al decimo tentativo. Senza questo limite il ciclo gli
+ * ripeteva «usa gli strumenti» per tutti e quaranta i passi e poi si arrendeva
+ * con «non ha concluso entro 40 passi» — un messaggio che manda a cercare il
+ * problema nella richiesta dell'utente, che non c'entra niente.
+ */
+const MAX_RISPOSTE_A_VUOTO = 3;
+
 /** Chiamata a tool emessa dal modello, nella forma normalizzata dal backend. */
 export interface AgentToolCall {
   id: string;
@@ -146,6 +158,8 @@ export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> 
   const history: AgentTurn[] = [{ role: 'user', content: req.goal }];
   const steps: AgentStep[] = [];
   let pushbacks = 0;
+  /** Risposte senza nemmeno una chiamata a uno strumento. */
+  let aVuoto = 0;
 
   for (let step = 1; step <= MAX_STEPS; step++) {
     // Fermato: si esce con quello che si è costruito fin qui, che è più utile
@@ -166,6 +180,18 @@ export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> 
       const assessment = assess(builder, req.databases);
       if (builder.snapshot().nodes.length > 0 && assessment.blocking.length === 0) {
         return finishFrom(builder, steps, req.databases);
+      }
+      aVuoto++;
+      if (aVuoto >= MAX_RISPOSTE_A_VUOTO) {
+        return failFrom(
+          builder,
+          steps,
+          `Il modello ha risposto ${String(aVuoto)} volte a parole senza usare gli strumenti: ` +
+            'non sta pilotando la costruzione. Di solito vuol dire che il modello scelto non ' +
+            'sa chiamare gli strumenti, o che il provider non li sta passando. ' +
+            'Prova con un altro modello in Impostazioni → Modelli AI.',
+          req.databases,
+        );
       }
       history.push(
         { role: 'assistant', content: reply.content },
@@ -239,10 +265,20 @@ export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> 
     if (rejected) continue;
   }
 
+  // «Non ha concluso entro 40 passi» da solo manda a cercare il problema
+  // nella richiesta dell'utente, che quasi mai c'entra. Quello che serve è
+  // sapere *cosa* ha fatto in quei passi: se ha costruito e non è riuscito a
+  // chiudere, o se non ha costruito niente.
+  const montati = builder.snapshot().nodes.length;
+  const dettaglio =
+    montati === 0
+      ? 'Non è riuscito a mettere nemmeno un nodo: gli strumenti hanno risposto con un errore a ogni tentativo. Apri i passi qui sotto per vedere quale.'
+      : `Ha montato ${String(montati)} nodi ma non è riuscito a chiudere: guarda i passi qui sotto per vedere dove si è impuntato.`;
+
   return failFrom(
     builder,
     steps,
-    `L'agente non ha concluso entro ${String(MAX_STEPS)} passi.`,
+    `L'agente non ha concluso entro ${String(MAX_STEPS)} passi. ${dettaglio}`,
     req.databases,
   );
 }
