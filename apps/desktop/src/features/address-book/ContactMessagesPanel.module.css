@@ -141,3 +141,17 @@
     color: var(--color-text-primary);
   }
 }
+
+/* Le righe che portano da qualche parte lo devono far vedere: senza, l'unico
+   modo di scoprire che si possono aprire è provarci. */
+.row[data-clickable='true'] {
+  cursor: pointer;
+}
+.row[data-clickable='true']:hover {
+  border-color: var(--color-accent-default);
+  background: var(--color-surface-3);
+}
+.row[data-clickable='true']:focus-visible {
+  outline: 2px solid var(--color-focus-ring-default);
+  outline-offset: -2px;
+}

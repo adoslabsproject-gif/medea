@@ -152,6 +152,9 @@
 }
 
 .card {
+  /* Come i gruppi di domini: dentro una colonna flex che scorre, le righe non
+     devono comprimersi per starci dentro. */
+  flex-shrink: 0;
   border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.06));
   border-radius: var(--radius-md);
   background: var(--color-surface-1, rgba(255, 255, 255, 0.02));
@@ -434,6 +437,12 @@
   gap: 8px;
 }
 .domainGroup {
+  /* Senza questo i gruppi si schiacciano. In una colonna flex i figli hanno
+     `flex-shrink: 1`: messi dentro un contenitore alto quanto lo schermo, si
+     comprimono TUTTI per starci — con qualche migliaio di domini diventano
+     righe alte pochi pixel, vuote, e la vista sembra rotta. Ogni gruppo deve
+     tenersi la propria altezza e lasciare che sia il contenitore a scorrere. */
+  flex-shrink: 0;
   border: 1px solid var(--color-border-subtle);
   border-radius: 10px;
   background: var(--color-surface-1);

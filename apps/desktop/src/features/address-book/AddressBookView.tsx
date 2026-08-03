@@ -30,7 +30,13 @@ function initials(name: string | null, fallback: string): string {
   return (parts[0]!.charAt(0) + parts[1]!.charAt(0)).toUpperCase();
 }
 
-export function AddressBookView() {
+interface Props {
+  /** Chiede alla sezione Posta di aprire un messaggio nel pannello di
+   *  lettura. Assente quando la rubrica è usata da sola. */
+  onOpenMessage?: (id: number) => void;
+}
+
+export function AddressBookView({ onOpenMessage }: Props = {}) {
   // Si apre sulle persone: è da lì che si parte quasi sempre — si cerca chi
   // ha scritto, non l'anagrafica dell'azienda.
   const [tab, setTab] = useState<TabId>('contacts');
@@ -456,6 +462,7 @@ export function AddressBookView() {
 
       {contactPanel && (
         <ContactMessagesPanel
+          {...(onOpenMessage ? { onOpenMessage } : {})}
           contact={contactPanel}
           onClose={() => {
             setContactPanel(null);
