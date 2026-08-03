@@ -88,6 +88,12 @@ export function WorkflowList({
                     <span className={styles.name}>{wf.name}</span>
                   </span>
                   <span className={styles.meta}>
+                    {/* Lo stato scritto, non solo disegnato: un'icona la si
+                        interpreta, una parola la si legge. */}
+                    <span className={styles.statoTesto} data-on={wf.enabled ? 'true' : 'false'}>
+                      {wf.enabled ? 'Attivo' : 'Non attivo'}
+                    </span>
+                    {' · '}
                     {wf.nodeCount} nodi
                     {/* «sul server» diceva una cosa falsa: in Medea si esegue
                         sempre qui. Il campo esiste solo perché un workflow

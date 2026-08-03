@@ -15,8 +15,10 @@
     inset-block-start: 50%;
     transform: translateY(-50%);
     z-index: var(--z-raised);
-    inline-size: 1rem;
-    block-size: 2.5rem;
+    /* Più larga di prima: a 1rem era una scheggia che non si notava nemmeno
+       da visibile. Una maniglia deve sembrare afferrabile. */
+    inline-size: 1.25rem;
+    block-size: 4rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -29,7 +31,7 @@
     /* Si vede sempre, anche se in sordina. Prima compariva solo passandoci
        sopra col mouse: chi non ci passava non poteva sapere che la colonna si
        chiude, e un comando che non si vede è un comando che non esiste. */
-    opacity: 0.55;
+    opacity: 0.75;
     transition: opacity var(--motion-duration-fast, 150ms) ease-out;
   }
   .collapse[data-side='start'] {

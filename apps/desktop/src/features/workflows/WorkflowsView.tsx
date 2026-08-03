@@ -12,6 +12,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useConferma } from '../shared/conferma';
+
 import { workflowApi } from './api';
 import { AssistantPanel } from './assistant';
 import { BackgroundDialog } from './BackgroundDialog';
@@ -72,6 +74,9 @@ export function WorkflowsView() {
     () => localStorage.getItem(ASSISTANT_OPEN_KEY) !== 'false',
   );
   const { workflow } = editor;
+  // `window.confirm` nel webview di Tauri non mostra niente e risponde sempre
+  // di no: il pulsante sembrerebbe rotto. La domanda la fa l'applicazione.
+  const { chiedi, dialogo: dialogoConferma } = useConferma();
 
   useEffect(() => {
     localStorage.setItem(ASSISTANT_OPEN_KEY, String(assistantOpen));
@@ -88,10 +93,18 @@ export function WorkflowsView() {
   const eliminaWorkflow = useCallback(
     (id: number) => {
       const bersaglio = editor.items.find((i) => i.id === id);
-      if (!window.confirm(messaggioEliminazione(bersaglio))) return;
-      void editor.remove(id);
+      void (async () => {
+        const [titolo, ...resto] = messaggioEliminazione(bersaglio).split('\n\n');
+        const ok = await chiedi({
+          titolo: titolo ?? 'Eliminare il workflow?',
+          dettaglio: resto.join(' '),
+          conferma: 'Elimina',
+          pericoloso: true,
+        });
+        if (ok) await editor.remove(id);
+      })();
     },
-    [editor],
+    [editor, chiedi],
   );
 
   const defsById = useMemo(() => {
@@ -557,6 +570,8 @@ export function WorkflowsView() {
           }}
         />
       )}
+
+      {dialogoConferma}
 
       {backgroundOpen && (
         <BackgroundDialog
