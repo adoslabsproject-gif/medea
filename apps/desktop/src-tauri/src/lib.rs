@@ -114,6 +114,9 @@ pub fn run() {
             // Comunicazioni: messaggi per dominio
             db_cmd::db_list_messages_for_domain,
             db_cmd::db_list_messages_for_address,
+            db_cmd::db_rubrica_mittenti_dominio,
+            db_cmd::db_rubrica_ricevute_da,
+            db_cmd::db_rubrica_domini,
             db_cmd::db_list_all_documents,
             // Claude in abbonamento (CLI locale + tool via MCP)
             claude_cli_cmd::claude_cli_status,

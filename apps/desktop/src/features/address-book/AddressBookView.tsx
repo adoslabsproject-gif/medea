@@ -31,7 +31,9 @@ function initials(name: string | null, fallback: string): string {
 }
 
 export function AddressBookView() {
-  const [tab, setTab] = useState<TabId>('orgs');
+  // Si apre sulle persone: è da lì che si parte quasi sempre — si cerca chi
+  // ha scritto, non l'anagrafica dell'azienda.
+  const [tab, setTab] = useState<TabId>('contacts');
   const [contacts, setContacts] = useState<DbContactRow[]>([]);
   const [orgs, setOrgs] = useState<DbOrganizationRow[]>([]);
   const [search, setSearch] = useState('');

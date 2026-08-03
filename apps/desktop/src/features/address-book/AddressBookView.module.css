@@ -133,25 +133,36 @@
   font-size: 13px;
 }
 
-/* ── Grid di cards aziende ────────────────────────────────────────────── */
+/* ── Elenco delle aziende ─────────────────────────────────────────────── */
+/* Era una griglia di riquadri larghi 340px: tre per riga su uno schermo
+   grande, e per trovare un dominio si scorreva con gli occhi a zig-zag. Un
+   elenco si legge in colonna, che è come si cerca un nome. */
 .cardGrid {
   flex: 1;
+  /* In una colonna flex un figlio non scende sotto la dimensione del proprio
+     contenuto finche` non glielo si dice: `min-height` vale `auto`, l'area
+     cresce quanto l'elenco e `overflow` non entra mai in funzione. E` il
+     motivo per cui questa lista debordava invece di scorrere. */
+  min-block-size: 0;
   overflow-y: auto;
   padding: 6px 22px 22px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 12px;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .card {
   border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.06));
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--color-surface-1, rgba(255, 255, 255, 0.02));
-  padding: 12px 14px;
+  /* Righe di elenco: più basse dei riquadri di prima, e in orizzontale — il
+     nome a sinistra, i numeri a destra, come si legge una lista. */
+  padding: 10px 14px;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
   transition:
     border-color 0.12s,
     background 0.12s;
@@ -352,6 +363,11 @@
 /* ── Tabella contatti ─────────────────────────────────────────────────── */
 .tableWrap {
   flex: 1;
+  /* In una colonna flex un figlio non scende sotto la dimensione del proprio
+     contenuto finche` non glielo si dice: `min-height` vale `auto`, l'area
+     cresce quanto l'elenco e `overflow` non entra mai in funzione. E` il
+     motivo per cui questa lista debordava invece di scorrere. */
+  min-block-size: 0;
   overflow-y: auto;
   padding: 0 22px 22px;
 }

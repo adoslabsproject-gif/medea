@@ -15,6 +15,7 @@ pub mod messages;
 pub mod notes;
 pub mod pricing;
 pub mod reminders;
+pub mod rubrica;
 pub mod schema;
 pub mod settings;
 pub mod studio;
