@@ -25,6 +25,10 @@ export interface TraceEntry {
   detail?: string;
   ok: boolean;
   error?: string;
+  /** Cosa è stato chiesto allo strumento, per chi vuole guardare dentro. */
+  args?: Record<string, unknown>;
+  /** Cosa ha risposto. Insieme agli argomenti è il log del passo. */
+  result?: unknown;
 }
 
 export interface WizardState {

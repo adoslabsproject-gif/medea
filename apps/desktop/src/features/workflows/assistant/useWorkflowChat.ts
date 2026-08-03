@@ -55,6 +55,10 @@ export interface WorkflowChat {
   busy: boolean;
   /** I passi dell'agente nel giro in corso, per mostrarli mentre lavora. */
   liveSteps: AgentStep[];
+  /** Ferma il giro in corso: sul serio, non solo smettendo di guardare. */
+  stop: () => void;
+  /** I token consumati nel giro in corso, se il provider li dichiara. */
+  tokens?: { input: number; output: number } | undefined;
   send: (text: string) => Promise<void>;
   /** Corregge una richiesta già inviata e rilancia da lì. */
   editAndResend: (messageId: string, text: string) => Promise<void>;
@@ -71,6 +75,9 @@ export function useWorkflowChat({ workflow }: Options): WorkflowChat {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [busy, setBusy] = useState(false);
   const [liveSteps, setLiveSteps] = useState<AgentStep[]>([]);
+  const [tokens, setTokens] = useState<{ input: number; output: number } | undefined>(undefined);
+  /** Con cosa si ferma il giro in corso. */
+  const controllore = useRef<AbortController | null>(null);
 
   // Il workflow cambia mentre l'agente lavora (l'utente può spostare un nodo):
   // serve il valore al momento dell'invio.
@@ -138,8 +145,19 @@ export function useWorkflowChat({ workflow }: Options): WorkflowChat {
           return;
         }
 
-        const chat = await createAgentChat();
+        const controller = new AbortController();
+        controllore.current = controller;
+        setTokens(undefined);
+        // Il conto si somma sul giro: interessa quanto è costata la risposta,
+        // non l'ultima delle chiamate che l'hanno prodotta.
+        const chat = await createAgentChat((usati) => {
+          setTokens((prima) => ({
+            input: (prima?.input ?? 0) + usati.input,
+            output: (prima?.output ?? 0) + usati.output,
+          }));
+        });
         const result = await runWorkflowAgent({
+          signal: controller.signal,
           goal: intent.goal,
           catalog: [...allNodes()],
           chat,
@@ -275,12 +293,21 @@ export function useWorkflowChat({ workflow }: Options): WorkflowChat {
     [activeId, workflowId, startNew],
   );
 
+  /** Ferma il giro. La chiamata in volo viene fatta cadere dal lato Rust, e
+   *  il ciclo se ne accorge prima del passo successivo. */
+  const stop = useCallback(() => {
+    controllore.current?.abort();
+    controllore.current = null;
+  }, []);
+
   return {
     messages,
     conversations,
     activeId,
     busy,
     liveSteps,
+    stop,
+    tokens,
     send,
     editAndResend,
     applyPatch,

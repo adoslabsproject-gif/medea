@@ -88,6 +88,23 @@ export function AssistantPanel({ workflow, onApply, onClose }: Props) {
         }}
       />
 
+      {chat.busy && (
+        <div className={styles.inCorso}>
+          <button
+            type="button"
+            className={styles.stop}
+            onClick={chat.stop}
+            title="Ferma la risposta in corso"
+          >
+            ✕ Interrompi
+          </button>
+          <span className={styles.conto}>
+            {chat.liveSteps.length > 0 && `${String(chat.liveSteps.length)} passi`}
+            {chat.tokens && ` · ↓${String(chat.tokens.input)} ↑${String(chat.tokens.output)} token`}
+          </span>
+        </div>
+      )}
+
       <Composer
         busy={chat.busy}
         placeholder={
