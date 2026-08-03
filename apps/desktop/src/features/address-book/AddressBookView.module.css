@@ -419,6 +419,16 @@
 
 /* ── Raggruppamento contatti per dominio ── */
 .groupList {
+  /* Questa lista non aveva scorrimento: cresceva quanto i domini che
+     contiene — migliaia — e tutto quello sotto il primo schermo era
+     irraggiungibile. `flex: 1` le dà l'altezza che avanza, `min-block-size: 0`
+     le permette di stare più stretta del proprio contenuto (senza, in una
+     colonna flex `min-height` vale `auto` e l'overflow non entra mai in
+     funzione) e `overflow-y` fa il resto. */
+  flex: 1;
+  min-block-size: 0;
+  overflow-y: auto;
+  padding: 6px 22px 22px;
   display: flex;
   flex-direction: column;
   gap: 8px;
