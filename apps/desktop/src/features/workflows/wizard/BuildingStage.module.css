@@ -67,3 +67,119 @@
     background: var(--color-surface-1);
   }
 }
+
+/* ── I numeri che dicono a che punto è ────────────────────────────────── */
+
+.heroText {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.provider {
+  margin: 0 0 2px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-accent-default);
+}
+
+.detail {
+  margin: 2px 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.numeri {
+  display: flex;
+  gap: var(--space-4);
+  margin: 0;
+  flex-shrink: 0;
+}
+.numero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.numero dt {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+.numero dd {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+}
+.su {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.barraRiga {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.barra {
+  flex: 1;
+  block-size: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-3);
+  overflow: hidden;
+}
+.barraPiena {
+  display: block;
+  block-size: 100%;
+  background: var(--color-accent-default);
+  transition: inline-size var(--motion-duration-normal, 250ms) ease-out;
+}
+
+.esiti {
+  display: flex;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.ok {
+  color: var(--color-feedback-success);
+}
+.ko {
+  color: var(--color-text-muted);
+}
+/* Il rosso arriva solo quando c'è davvero qualcosa che non è andato. */
+.ko[data-ce='true'] {
+  color: var(--color-feedback-danger);
+}
+
+.azioni {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.stop {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-feedback-danger);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-feedback-danger);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.stop:hover {
+  background: var(--color-feedback-danger);
+  color: var(--color-text-inverted);
+}
+.nota {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}

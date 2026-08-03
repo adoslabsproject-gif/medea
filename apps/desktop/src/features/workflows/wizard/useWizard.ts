@@ -36,6 +36,10 @@ const EMPTY: WizardState = {
 export interface Wizard extends WizardState {
   setGoal: (goal: string) => void;
   start: () => void;
+  /** Ferma la costruzione: sul serio, non solo smettendo di guardare. */
+  stop: () => void;
+  /** I token consumati finora, se il provider li dichiara. */
+  tokens?: { input: number; output: number } | undefined;
   /** Torna al punto di partenza tenendo l'obiettivo: si riprova a ritoccarlo. */
   retry: () => void;
   reset: () => void;
@@ -46,6 +50,9 @@ export function useWizard(): Wizard {
   /** Vero finché il wizard è a schermo: chiuderlo non deve far scrivere
    *  stato su un componente che non c'è più. */
   const alive = useRef(true);
+  /** Con cosa si ferma la costruzione in corso. */
+  const controllore = useRef<AbortController | null>(null);
+  const [tokens, setTokens] = useState<{ input: number; output: number } | undefined>(undefined);
   useEffect(
     () => () => {
       alive.current = false;
@@ -89,12 +96,25 @@ export function useWizard(): Wizard {
       if (!goal) return;
       const steps: AgentStep[] = [];
 
+      const controller = new AbortController();
+      controllore.current = controller;
+      setTokens(undefined);
+
       try {
-        const chat = await createAgentChat();
+        // Il conto dei token si somma man mano: quello che interessa è quanto
+        // è costato tutto, non l'ultima chiamata.
+        const chat = await createAgentChat((usati) => {
+          if (!alive.current) return;
+          setTokens((prima) => ({
+            input: (prima?.input ?? 0) + usati.input,
+            output: (prima?.output ?? 0) + usati.output,
+          }));
+        });
         const result = await runWorkflowAgent({
           goal,
           catalog: [...allNodes()],
           chat,
+          signal: controller.signal,
           onStep: (step) => {
             steps.push(step);
             if (!alive.current) return;
@@ -154,5 +174,12 @@ export function useWizard(): Wizard {
     setState(EMPTY);
   }, []);
 
-  return { ...state, setGoal, start, retry, reset };
+  /** Ferma la costruzione. Il ciclo se ne accorge fra un passo e l'altro, e
+   *  la chiamata in volo viene fatta cadere dal lato Rust. */
+  const stop = useCallback(() => {
+    controllore.current?.abort();
+    controllore.current = null;
+  }, []);
+
+  return { ...state, setGoal, start, stop, retry, reset, tokens };
 }
