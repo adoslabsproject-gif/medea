@@ -18,6 +18,14 @@ import styles from './MailLayout.module.css';
 interface Props {
   account: MailAccount;
   onSwitchAccount: () => void;
+  /** Un messaggio che un'altra sezione ha chiesto di aprire qui — per esempio
+   *  un'email scelta dalla rubrica. Si apre nel pannello di lettura come se lo
+   *  si fosse cliccato nell'elenco. */
+  openMessageId?: number | null;
+  /** Detto quando la richiesta è stata servita, così chi l'ha fatta può
+   *  dimenticarsene: senza, tornando sulla posta si riaprirebbe ogni volta lo
+   *  stesso messaggio. */
+  onMessageOpened?: () => void;
 }
 
 function classifyFolderType(f: FolderInfo): string {
@@ -32,7 +40,12 @@ function classifyFolderType(f: FolderInfo): string {
   return 'custom';
 }
 
-export function MailLayout({ account, onSwitchAccount }: Props) {
+export function MailLayout({
+  account,
+  onSwitchAccount,
+  openMessageId = null,
+  onMessageOpened,
+}: Props) {
   const [folders, setFolders] = useState<FolderInfo[]>([]);
   const [folderPath, setFolderPath] = useState<string>(account.defaultFolder ?? 'INBOX');
   const [folderId, setFolderId] = useState<number | null>(null);
@@ -231,6 +244,15 @@ export function MailLayout({ account, onSwitchAccount }: Props) {
   useEffect(() => {
     void loadFolders();
   }, [loadFolders]);
+  // Una sezione diversa — la rubrica — ha chiesto di aprire un messaggio qui.
+  // Selezionarlo basta: il resto è già cablato, il pannello di lettura carica
+  // da sé quello che gli si indica.
+  useEffect(() => {
+    if (openMessageId === null) return;
+    setActiveId(openMessageId);
+    onMessageOpened?.();
+  }, [openMessageId, onMessageOpened]);
+
   /* Refresh lista dopo che AI invia/archivia. */
   useEffect(() => {
     function onMailboxChanged() {

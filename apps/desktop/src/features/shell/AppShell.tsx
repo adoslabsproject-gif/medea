@@ -23,6 +23,9 @@ interface Props {
 
 export function AppShell({ account, onSwitchAccount }: Props) {
   const [active, setActive] = useState<SectionId>('mail');
+  /** Un messaggio che la rubrica ha chiesto di aprire nella posta. Vive qui
+   *  perché è l'unico punto che vede tutte e due le sezioni. */
+  const [messaggioDaAprire, setMessaggioDaAprire] = useState<number | null>(null);
 
   return (
     <div className={styles.root}>
@@ -30,11 +33,25 @@ export function AppShell({ account, onSwitchAccount }: Props) {
       <div className={styles.workspace}>
         {active === 'mail' &&
           (account ? (
-            <MailLayout account={account} onSwitchAccount={onSwitchAccount} />
+            <MailLayout
+              account={account}
+              onSwitchAccount={onSwitchAccount}
+              openMessageId={messaggioDaAprire}
+              onMessageOpened={() => {
+                setMessaggioDaAprire(null);
+              }}
+            />
           ) : (
             <NoAccount what="La posta" onConfigure={onSwitchAccount} />
           ))}
-        {active === 'address-book' && <AddressBookView />}
+        {active === 'address-book' && (
+          <AddressBookView
+            onOpenMessage={(id) => {
+              setMessaggioDaAprire(id);
+              setActive('mail');
+            }}
+          />
+        )}
         {active === 'contacts' && <ContactsView />}
         {active === 'articles' && <ArticlesView />}
         {active === 'price-lists' && <PriceListsView />}

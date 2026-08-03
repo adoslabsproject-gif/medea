@@ -8,6 +8,9 @@ import styles from './ContactMessagesPanel.module.css';
 interface Props {
   contact: DbContactRow;
   onClose: () => void;
+  /** Apre il messaggio nel pannello di lettura della sezione Posta. Assente
+   *  quando non c'è una sezione Posta a cui passarlo. */
+  onOpenMessage?: (id: number) => void;
 }
 
 function fmtDateTime(iso: string | null): string {
@@ -26,7 +29,7 @@ function fmtDateTime(iso: string | null): string {
 }
 
 /** Drawer con tutte le email scambiate con un contatto (in/out). */
-export function ContactMessagesPanel({ contact, onClose }: Props) {
+export function ContactMessagesPanel({ contact, onClose, onOpenMessage }: Props) {
   const [messages, setMessages] = useState<DbListedMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +77,30 @@ export function ContactMessagesPanel({ contact, onClose }: Props) {
           const incoming =
             (m.fromAddress ?? '').toLowerCase() === contact.emailAddress.toLowerCase();
           return (
-            <article key={m.id} className={styles.row}>
+            <article
+              key={m.id}
+              className={styles.row}
+              {...(onOpenMessage
+                ? {
+                    // Non è un `button`: dentro c'è già del testo strutturato,
+                    // e un pulsante che ne contiene altro non si annuncia
+                    // bene. Ruolo e tastiera restituiscono quello che serve.
+                    role: 'button',
+                    tabIndex: 0,
+                    'data-clickable': 'true',
+                    title: 'Apri nella posta',
+                    onClick: () => {
+                      onOpenMessage(m.id);
+                    },
+                    onKeyDown: (e: React.KeyboardEvent) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onOpenMessage(m.id);
+                      }
+                    },
+                  }
+                : {})}
+            >
               <div className={styles.rowHead}>
                 <span className={incoming ? styles.dirIn : styles.dirOut}>
                   {incoming ? '↓ Ricevuta' : '↑ Inviata'}
