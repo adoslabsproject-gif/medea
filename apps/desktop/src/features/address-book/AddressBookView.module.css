@@ -482,3 +482,82 @@
   color: var(--color-text-muted);
   font-size: 12px;
 }
+
+/* ── I contatti dentro la riga di un'azienda ──────────────────────────── */
+
+/* «N contatti» non è più solo un numero: è il comando che apre l'elenco. */
+.espandi {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+  margin-inline-start: -6px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.espandi:hover {
+  background: var(--color-surface-3);
+  color: var(--color-text-primary);
+}
+
+.contattiDominio {
+  inline-size: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-block-start: 8px;
+  padding-block-start: 8px;
+  border-block-start: 1px dashed var(--color-border-subtle);
+}
+
+.contattoRiga {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  inline-size: 100%;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: start;
+  cursor: pointer;
+}
+.contattoRiga:hover {
+  border-color: var(--color-border-default);
+  background: var(--color-surface-2);
+}
+.contattoRiga:focus-visible {
+  outline: 2px solid var(--color-focus-ring-default);
+  outline-offset: -2px;
+}
+
+.contattoEmail {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-primary);
+}
+.contattoNome {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+.contattoMsg {
+  margin-inline-start: auto;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.contattoVuoto {
+  padding: 6px 8px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* Il gruppo su cui si è appena arrivati da un'azienda: si deve capire quale
+   è, altrimenti in un elenco lungo si resta a cercarlo. */
+.domainGroupInEvidenza {
+  border-color: var(--color-accent-default);
+}

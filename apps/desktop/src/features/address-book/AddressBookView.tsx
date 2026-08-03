@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { mailApi } from '../mail/api';
 import type { DbContactRow, DbOrganizationRow } from '../mail/api';
@@ -49,6 +49,12 @@ export function AddressBookView({ onOpenMessage }: Props = {}) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [confirmingBulk, setConfirmingBulk] = useState(false);
   const [contactPanel, setContactPanel] = useState<DbContactRow | null>(null);
+  /** Il dominio aperto nella scheda Aziende, per vederne i contatti senza
+   *  cambiare scheda. */
+  const [dominioAperto, setDominioAperto] = useState<string | null>(null);
+  /** Il dominio su cui aprire la scheda Persone quando ci si arriva da
+   *  un'azienda: si apre già espanso e si porta sotto gli occhi. */
+  const [dominioDaMostrare, setDominioDaMostrare] = useState<string | null>(null);
 
   async function refresh() {
     setLoading(true);
@@ -158,6 +164,25 @@ export function AddressBookView({ onOpenMessage }: Props = {}) {
   }, [contacts, search]);
 
   /** Contatti raggruppati per dominio, gruppi ordinati per numerosità. */
+  /** I contatti di un dominio, per l'espansione nella scheda Aziende. */
+  const contattiPerDominio = useMemo(() => {
+    const mappa = new Map<string, DbContactRow[]>();
+    for (const c of contacts) {
+      const dominio = (c.emailAddress.split('@')[1] ?? '').toLowerCase();
+      if (!dominio) continue;
+      const gruppo = mappa.get(dominio) ?? [];
+      gruppo.push(c);
+      mappa.set(dominio, gruppo);
+    }
+    return mappa;
+  }, [contacts]);
+
+  /** Da un'azienda al suo contatto, nell'altra scheda. */
+  const vaiAlContatto = useCallback((dominio: string) => {
+    setDominioDaMostrare(dominio);
+    setTab('contacts');
+  }, []);
+
   const groupedContacts = useMemo(() => {
     const groups = new Map<
       string,
@@ -326,9 +351,17 @@ export function AddressBookView({ onOpenMessage }: Props = {}) {
                   </div>
 
                   <div className={styles.cardMeta}>
-                    <span>
-                      <strong>{o.contactCount}</strong> contatti
-                    </span>
+                    <button
+                      type="button"
+                      className={styles.espandi}
+                      aria-expanded={dominioAperto === o.domain}
+                      onClick={() => {
+                        setDominioAperto((corrente) => (corrente === o.domain ? null : o.domain));
+                      }}
+                    >
+                      {dominioAperto === o.domain ? '▾' : '▸'} <strong>{o.contactCount}</strong>{' '}
+                      contatti
+                    </button>
                     {o.vatNumber && (
                       <span>
                         P.IVA <code>{o.vatNumber}</code>
@@ -371,6 +404,34 @@ export function AddressBookView({ onOpenMessage }: Props = {}) {
                       {confirmingDelete === o.id ? '✓' : '🗑'}
                     </button>
                   </div>
+
+                  {dominioAperto === o.domain && (
+                    <div className={styles.contattiDominio}>
+                      {(contattiPerDominio.get(o.domain.toLowerCase()) ?? []).length === 0 ? (
+                        <div className={styles.contattoVuoto}>
+                          Nessun indirizzo di questo dominio è ancora arrivato nella posta.
+                        </div>
+                      ) : (
+                        (contattiPerDominio.get(o.domain.toLowerCase()) ?? []).map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            className={styles.contattoRiga}
+                            title="Aprilo nella scheda Persone"
+                            onClick={() => {
+                              vaiAlContatto(o.domain.toLowerCase());
+                            }}
+                          >
+                            <span className={styles.contattoEmail}>{c.emailAddress}</span>
+                            {c.displayName && (
+                              <span className={styles.contattoNome}>{c.displayName}</span>
+                            )}
+                            <span className={styles.contattoMsg}>{c.messageCount} msg</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -386,8 +447,21 @@ export function AddressBookView({ onOpenMessage }: Props = {}) {
           {groupedContacts.map((g) => (
             <details
               key={g.domain}
-              className={styles.domainGroup}
-              open={groupedContacts.length <= 8 || search.trim().length > 0}
+              ref={(nodo) => {
+                // Arrivando da un'azienda, il suo dominio va portato sotto gli
+                // occhi: in un elenco di migliaia di voci, aprirlo e basta
+                // vorrebbe dire lasciarlo dove non si vede.
+                if (nodo && g.domain === dominioDaMostrare) {
+                  nodo.scrollIntoView({ block: 'start' });
+                  setDominioDaMostrare(null);
+                }
+              }}
+              className={`${styles.domainGroup} ${g.domain === dominioDaMostrare ? styles.domainGroupInEvidenza : ''}`}
+              open={
+                groupedContacts.length <= 8 ||
+                search.trim().length > 0 ||
+                g.domain === dominioDaMostrare
+              }
             >
               <summary className={styles.domainSummary}>
                 <span className={styles.domainName}>@{g.domain}</span>
