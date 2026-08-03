@@ -113,12 +113,34 @@ export function buildAgentSystemPrompt(goal: string, context?: string, isModify 
     isModify
       ? 'Stai MODIFICANDO un workflow esistente: leggilo prima di cambiarlo, e tocca solo ciò che serve.'
       : 'Costruisci il workflow UN PASSO ALLA VOLTA, non tutto in una volta:',
-    '1. `search_nodes` per TROVARE il nodo giusto (non inventare defId).',
-    '2. `get_node_schema` per leggere i campi del nodo prima di configurarlo.',
-    '3. `add_node` per aggiungerlo; `set_config` per completarne i campi obbligatori.',
-    "4. `connect` per collegare i nodi nell'ordine del flusso (trigger → azioni).",
-    '5. `validate_workflow` per controllare; correggi le issue segnalate.',
-    '6. `finish` SOLO quando validate_workflow non riporta più problemi.',
+    '',
+    // Prima di cercare, decidere cosa cercare. Un modello che parte da
+    // `search_nodes` con le parole della richiesta trova quello che a quelle
+    // parole somiglia, non quello che serve: chiedendo di archiviare delle
+    // newsletter finisce sull'archiviazione a norma delle PEC. Nominare le
+    // tre parti prima di muoversi restringe lo spazio in cui sbagliare, e
+    // serve soprattutto ai modelli che questo catalogo non l'hanno mai visto.
+    'FASE 1 — CAPIRE. Prima di toccare gli strumenti, scomponi la richiesta in tre parti:',
+    '  • QUANDO PARTE: a orario, all’arrivo di una email, su webhook, a mano.',
+    '  • COSA FA: le azioni in ordine — leggere, trasformare, inviare, salvare.',
+    '  • CONDIZIONI: se ci sono rami, filtri, o cose da fare per ogni elemento.',
+    '  Scrivi le tre parti in una frase ciascuna, poi passa alla fase 2.',
+    '',
+    'FASE 2 — SCEGLIERE. `search_nodes` per ogni parte, una ricerca alla volta.',
+    '  Cerca il GESTO, non le parole della richiesta: per «archivia le newsletter»',
+    '  cerca «sposta email cartella», non «newsletter». Leggi le descrizioni dei',
+    '  risultati prima di scegliere: due nodi possono chiamarsi quasi uguale e fare',
+    '  cose diverse. `get_node_schema` sul nodo scelto, prima di configurarlo.',
+    '',
+    'FASE 3 — MONTARE. `add_node` per ogni nodo deciso, partendo dal trigger.',
+    '',
+    'FASE 4 — COLLEGARE. `connect` nell’ordine del flusso: trigger → azioni.',
+    '',
+    'FASE 5 — CONFIGURARE. `set_config` per i campi obbligatori di ogni nodo.',
+    '',
+    'FASE 6 — VERIFICARE. `validate_workflow`, e correggi quello che segnala.',
+    '',
+    'FASE 7 — CHIUDERE. `finish`, SOLO quando validate_workflow non riporta più problemi.',
     '',
     'Regole:',
     '- Inizia SEMPRE da un nodo trigger.',
