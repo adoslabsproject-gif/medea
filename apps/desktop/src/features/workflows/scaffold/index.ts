@@ -35,7 +35,7 @@ export {
   SCAFFOLD_SYSTEM_PROMPT,
   SCAFFOLD_SYSTEM_PROMPT_TUNED,
 } from './prompt';
-export { createAgentChat } from './provider';
+export { createAgentChat, createScaffoldLlm } from './provider';
 export { normalizeTables, repairScaffold } from './repair';
 export type { RepairLog } from './repair';
 export { runScaffold, SCAFFOLD_CORE_DEFIDS } from './run';

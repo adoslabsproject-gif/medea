@@ -11,6 +11,7 @@ import { aiApi } from '../../ai/api';
 import { activeProvider, providerConnection } from '../../ai/connection';
 
 import type { AgentChat } from './agent';
+import type { ScaffoldLlm } from './run';
 
 /**
  * Costruisce il canale verso il modello per l'agente.
@@ -20,6 +21,44 @@ import type { AgentChat } from './agent';
  * pilotare questo ciclo. Per quel provider la strada è esporre i workflow via
  * MCP, non usarlo qui.
  */
+/**
+ * Il modello nella forma che serve alla generazione in una volta sola.
+ *
+ * È l'altra strada per costruire un workflow, e per molti modelli è l'unica
+ * praticabile: invece di chiedere di *pilotare* la costruzione chiamando
+ * strumenti a ogni passo, si chiede di *scriverlo* — un JSON conforme allo
+ * schema, in una risposta. Qualunque modello sa scrivere; non tutti sanno
+ * chiamare strumenti nel formato che ci aspettiamo.
+ */
+export async function createScaffoldLlm(
+  onTokens?: (usati: { input: number; output: number }) => void,
+): Promise<ScaffoldLlm> {
+  const provider = activeProvider();
+  const conn = await providerConnection(provider);
+  const requestId = `singleshot-${String(Date.now())}`;
+
+  return {
+    // Nessun provider qui garantisce l'output vincolato allo schema: lo schema
+    // si mette nel prompt e si ripara quello che torna. È il motivo per cui
+    // `runScaffold` ha una fase di riparazione e tre tentativi.
+    supportsStructuredOutput: false,
+    isTuned: provider === 'liara',
+    async complete({ system, user }) {
+      const reply = await aiApi.chat({
+        provider,
+        systemPrompt: system,
+        history: [{ role: 'user', content: user }],
+        apiKey: conn.apiKey,
+        baseUrl: conn.baseUrl,
+        model: conn.model,
+        requestId,
+      });
+      if (reply.usage) onTokens?.(reply.usage);
+      return reply.content;
+    },
+  };
+}
+
 export async function createAgentChat(
   /** Chiamata dopo ogni risposta con quanti token è costata, se il provider
    *  lo dichiara. Serve a mostrare il conto mentre l'agente lavora. */

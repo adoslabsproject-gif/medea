@@ -12,7 +12,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { autoLayout, needsLayout } from '../canvas/layout';
 import { allNodes } from '../catalog';
 import { gateWorkflow } from '../quality';
-import { createAgentChat, runWorkflowAgent, type AgentStep } from '../scaffold';
+import {
+  createAgentChat,
+  createScaffoldLlm,
+  runScaffold,
+  runWorkflowAgent,
+  type AgentStep,
+} from '../scaffold';
 import type { Workflow } from '../types';
 
 import { builtNodes, toTraceEntry } from './tool-labels';
@@ -109,16 +115,76 @@ export function useWizard(): Wizard {
       controllore.current = controller;
       setTokens(undefined);
 
+      // Il conto dei token si somma man mano: quello che interessa è quanto
+      // è costato tutto, non l'ultima chiamata.
+      const contaToken = (usati: { input: number; output: number }) => {
+        if (!alive.current) return;
+        setTokens((prima) => ({
+          input: (prima?.input ?? 0) + usati.input,
+          output: (prima?.output ?? 0) + usati.output,
+        }));
+      };
+
+      /** Un passo finto per la cronologia: le fasi che non passano dagli
+       *  strumenti devono comunque vedersi. */
+      const annota = (tool: string, args: Record<string, unknown>, result: unknown) => {
+        const passo: AgentStep = { step: steps.length + 1, tool, args, result };
+        steps.push(passo);
+        if (!alive.current) return;
+        setState((s) => ({ ...s, trace: [...s.trace, toTraceEntry(passo)] }));
+      };
+
       try {
-        // Il conto dei token si somma man mano: quello che interessa è quanto
-        // è costato tutto, non l'ultima chiamata.
-        const chat = await createAgentChat((usati) => {
-          if (!alive.current) return;
-          setTokens((prima) => ({
-            input: (prima?.input ?? 0) + usati.input,
-            output: (prima?.output ?? 0) + usati.output,
-          }));
+        // ── Prima strada: scrivere il workflow in una volta sola. ──
+        //
+        // È quella che regge con qualunque modello, perché chiede di
+        // *scrivere* invece di *pilotare*: un JSON conforme allo schema, in
+        // una risposta. Chiamare strumenti a ogni passo è una richiesta molto
+        // più difficile, e i modelli che non sanno soddisfarla finivano per
+        // rispondere a parole finché il ciclo si arrendeva.
+        //
+        // Se questa strada porta a casa un workflow valido, l'agente non
+        // serve. Se non ce la fa, si prosegue con lui — e allora i suoi passi
+        // partono da zero, non da un mezzo lavoro.
+        annota('singleshot_generate', { goal }, { stato: 'in corso' });
+        const llm = await createScaffoldLlm(contaToken);
+        const singolo = await runScaffold({
+          goal,
+          catalog: [...allNodes()],
+          llm,
+          signal: controller.signal,
         });
+
+        if (!alive.current) return;
+
+        if (singolo.ok) {
+          annota(
+            'singleshot_generate',
+            { goal },
+            { nodi: singolo.workflow.nodes.length, tentativi: singolo.attempts },
+          );
+          const disegnato: Workflow = {
+            ...singolo.workflow,
+            nodes: needsLayout(singolo.workflow.nodes)
+              ? autoLayout(singolo.workflow.nodes, singolo.workflow.edges)
+              : singolo.workflow.nodes,
+          };
+          const gate = gateWorkflow(disegnato);
+          setState((s) => ({
+            ...s,
+            stage: 'review',
+            result: disegnato,
+            issues: [...gate.issues],
+            warnings: [...singolo.warnings],
+            built: builtNodes(steps),
+          }));
+          return;
+        }
+
+        annota('singleshot_generate', { goal }, { fallito: singolo.reason });
+
+        // ── Seconda strada: costruire a passi, con gli strumenti. ──
+        const chat = await createAgentChat(contaToken);
         const result = await runWorkflowAgent({
           goal,
           catalog: [...allNodes()],

@@ -39,6 +39,9 @@ export const ETICHETTA_FASE: Record<Fase, string> = {
 
 /** Quale fase corrisponde a ogni strumento. */
 const FASE_DELLO_STRUMENTO: Record<string, Fase> = {
+  // La prima strada: scrivere il workflow in una volta sola. Copre le fasi
+  // dalla scelta alla configurazione tutte insieme, quindi vale «montare».
+  singleshot_generate: 'montare',
   analyze_goal: 'capire',
   search_nodes: 'scegliere',
   get_node_schema: 'scegliere',
