@@ -7,6 +7,7 @@
  * riceve. Si aggiungono capacità, non si toccano queste.
  */
 
+import { ordinaPerPertinenza } from '../catalog/punteggio';
 import { describeIssues, type QualityDatabase } from '../quality';
 import type { NodeDef } from '../types';
 
@@ -112,24 +113,28 @@ export const WORKFLOW_AGENT_TOOLS: ToolDef[] = [
   },
 ];
 
-/** Ricerca lessicale nel catalogo: nome, etichetta, descrizione e alias. */
-function searchNodes(catalog: NodeDef[], query: string, limit = 8): unknown[] {
-  const terms = query
-    .toLowerCase()
-    .split(/[^\p{L}\p{N}]+/u)
-    .filter((t) => t.length >= 2);
-  return catalog
-    .map((def) => {
-      const hay = [def.defId, def.label, def.description ?? '', (def.searchAliases ?? []).join(' ')]
-        .join(' ')
-        .toLowerCase();
-      const score = terms.reduce((s, t) => s + (hay.includes(t) ? 1 : 0), 0);
-      return { def, score };
-    })
-    .filter((r) => r.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit)
-    .map((r) => ({ defId: r.def.defId, label: r.def.label, type: r.def.type }));
+/**
+ * I nodi che corrispondono a quello che il modello sta cercando.
+ *
+ * Usa lo stesso punteggio della palette: erano due ricerche diverse, e questa
+ * era la più grezza — ogni parola valeva uno se compariva ovunque, con il
+ * risultato che un nodo dalla descrizione lunga batteva quello giusto. Il
+ * modello ci costruiva sopra il workflow, e non aveva torto: gli avevamo detto
+ * noi che quello era il nodo più pertinente.
+ *
+ * Ne restituisce venti e non otto: il modello sceglie meglio se vede le
+ * alternative, e otto righe di catalogo costano meno di un workflow sbagliato.
+ */
+function searchNodes(catalog: NodeDef[], query: string, limit = 20): unknown[] {
+  return ordinaPerPertinenza(catalog, query, limit).map((def) => ({
+    defId: def.defId,
+    label: def.label,
+    type: def.type,
+    // La descrizione serve a distinguere due nodi che si chiamano quasi
+    // uguale: senza, il modello sceglie a caso fra «Email: invia» e
+    // «Email: invia con tracking».
+    description: def.description,
+  }));
 }
 
 /** Estrattori difensivi: se il modello passa un oggetto dove serve una
