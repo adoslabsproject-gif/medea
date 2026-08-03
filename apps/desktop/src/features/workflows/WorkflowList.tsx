@@ -41,10 +41,13 @@ export function WorkflowList({
           <button
             type="button"
             className={styles.assist}
-            title="Descrivi cosa deve fare e lo costruisce l'assistente"
+            title="Descrivi a parole cosa deve fare, e lo costruisce l'AI"
             onClick={onCreateWithAi}
           >
-            ✨ Assistente
+            {/* Non «Assistente»: quello è il pannello laterale, e due
+                pulsanti con lo stesso nome che fanno cose diverse sono un
+                modo per sbagliare. Qui si crea, e si crea con l'AI. */}
+            ✨ Crea con AI
           </button>
           <button type="button" className={styles.new} onClick={onNew}>
             + Nuovo

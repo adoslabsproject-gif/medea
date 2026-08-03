@@ -9,6 +9,8 @@
 
 import { useEffect } from 'react';
 
+import { activeProvider } from '../../ai/connection';
+import { AGENT_MAX_STEPS } from '../scaffold';
 import type { Workflow } from '../types';
 
 import { BuildingStage } from './BuildingStage';
@@ -67,7 +69,15 @@ export function WizardModal({ onClose, onImport }: Props) {
           )}
 
           {wizard.stage === 'building' && (
-            <BuildingStage elapsedMs={wizard.elapsedMs} built={wizard.built} trace={wizard.trace} />
+            <BuildingStage
+              elapsedMs={wizard.elapsedMs}
+              built={wizard.built}
+              trace={wizard.trace}
+              maxSteps={AGENT_MAX_STEPS}
+              tokens={wizard.tokens}
+              provider={activeProvider()}
+              onStop={wizard.stop}
+            />
           )}
 
           {wizard.stage === 'review' && wizard.result && (

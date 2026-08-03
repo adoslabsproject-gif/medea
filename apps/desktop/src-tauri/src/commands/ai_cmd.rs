@@ -71,6 +71,23 @@ pub struct ChatResponse {
     pub usage: Option<TokenUsage>,
 }
 
+/// Il client HTTP per parlare con i provider, con i suoi limiti di tempo.
+///
+/// `reqwest::Client::new()` **non ha timeout**: una richiesta che non riceve
+/// risposta resta appesa per sempre, e l'interfaccia con lei. È così che il
+/// wizard restava cinque minuti su «sta pensando» senza un errore e senza un
+/// modo di accorgersene — non era lento, era fermo.
+///
+/// Tre minuti per la risposta completa: un modello che ragiona su un compito
+/// lungo ci mette anche un minuto, quindi la soglia deve essere generosa. Ma
+/// finita, deve finire.
+fn client_provider() -> anyhow::Result<reqwest::Client> {
+    Ok(reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(180))
+        .connect_timeout(std::time::Duration::from_secs(15))
+        .build()?)
+}
+
 /// Legge il conto dei token da una risposta, nei due nomi in cui si presenta.
 fn parse_usage(json: &serde_json::Value) -> Option<TokenUsage> {
     let usage = json.get("usage")?;
@@ -357,7 +374,7 @@ async fn call_openai_compat(
         }),
         req,
     );
-    let resp = reqwest::Client::new()
+    let resp = client_provider()?
         .post(endpoint)
         .bearer_auth(key)
         .json(&body)
@@ -409,7 +426,7 @@ async fn call_gemini(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
         "systemInstruction": { "parts": [{ "text": req.system_prompt }] },
         "contents": contents,
     });
-    let resp = reqwest::Client::new().post(&url).json(&body).send().await?;
+    let resp = client_provider()?.post(&url).json(&body).send().await?;
     if !resp.status().is_success() {
         let status = resp.status();
         let txt = resp.text().await.unwrap_or_default();
@@ -664,7 +681,7 @@ async fn call_anthropic(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
         body["tools"] = serde_json::json!(converted);
     }
 
-    let resp = reqwest::Client::new()
+    let resp = client_provider()?
         .post("https://api.anthropic.com/v1/messages")
         .header("x-api-key", key)
         .header("anthropic-version", "2023-06-01")
@@ -741,7 +758,7 @@ async fn call_openrouter(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
         }),
         req,
     );
-    let resp = reqwest::Client::new()
+    let resp = client_provider()?
         .post("https://openrouter.ai/api/v1/chat/completions")
         .bearer_auth(key)
         .header("X-Title", "Medea")

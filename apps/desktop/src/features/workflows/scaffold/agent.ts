@@ -19,7 +19,10 @@ import type { Violation } from './validate';
 
 /** Oltre questo numero di passi si ferma: un modello che gira a vuoto non
  *  deve poter consumare all'infinito. */
-const MAX_STEPS = 40;
+/** Quanti passi al massimo prima di arrendersi. Esposto perché l'interfaccia
+ *  possa dire «passo 3 di 40» invece di un numero senza scala. */
+export const AGENT_MAX_STEPS = 40;
+const MAX_STEPS = AGENT_MAX_STEPS;
 
 /** Quante volte gli si può dire «no, non è pronto» prima di arrendersi. Un
  *  modello che non capisce al terzo richiamo non capirà al quarto. */

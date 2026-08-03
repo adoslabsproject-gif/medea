@@ -20,7 +20,11 @@ import type { AgentChat } from './agent';
  * pilotare questo ciclo. Per quel provider la strada è esporre i workflow via
  * MCP, non usarlo qui.
  */
-export async function createAgentChat(): Promise<AgentChat> {
+export async function createAgentChat(
+  /** Chiamata dopo ogni risposta con quanti token è costata, se il provider
+   *  lo dichiara. Serve a mostrare il conto mentre l'agente lavora. */
+  onTokens?: (usati: { input: number; output: number }) => void,
+): Promise<AgentChat> {
   const provider = activeProvider();
   if (provider === 'claude-cli') {
     throw new Error(
@@ -31,6 +35,10 @@ export async function createAgentChat(): Promise<AgentChat> {
 
   const conn = await providerConnection(provider);
 
+  // Un nome per il ciclo, così `stop` può fermare la chiamata in volo e non
+  // solo smettere di aspettarla.
+  const requestId = `scaffold-${String(Date.now())}`;
+
   return async ({ system, history, tools }) => {
     const reply = await aiApi.chat({
       provider,
@@ -40,7 +48,9 @@ export async function createAgentChat(): Promise<AgentChat> {
       baseUrl: conn.baseUrl,
       model: conn.model,
       tools,
+      requestId,
     });
+    if (reply.usage) onTokens?.(reply.usage);
     return {
       content: reply.content,
       toolCalls: reply.toolCalls.map((c) => ({

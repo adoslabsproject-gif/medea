@@ -1,4 +1,9 @@
-export { agentToolsForProvider, buildAgentSystemPrompt, runWorkflowAgent } from './agent';
+export {
+  AGENT_MAX_STEPS,
+  agentToolsForProvider,
+  buildAgentSystemPrompt,
+  runWorkflowAgent,
+} from './agent';
 export type {
   AgentChat,
   AgentFailure,
