@@ -144,6 +144,14 @@
     color: var(--color-feedback-success);
   }
 
+  .statoTesto {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-muted);
+  }
+  .statoTesto[data-on='true'] {
+    color: var(--color-feedback-success);
+  }
+
   .name {
     font-size: var(--font-size-sm);
     color: var(--color-text-primary);
