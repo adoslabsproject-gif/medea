@@ -78,7 +78,20 @@ export function checkOrphanTriggers(input: QualityGateInput): QualityIssue[] {
     }));
 }
 
-/** I nodi che è normale trovare in fondo a un ramo. */
+/**
+ * I nodi che è normale trovare in fondo a un ramo.
+ *
+ * Chi non è in questa lista e non ha collegamenti in uscita viene segnalato
+ * come ramo morto. Tenerla incompleta non è un dettaglio: il 2026-08-03 un
+ * workflow che finiva con l'archiviazione a norma di una PEC — cioè
+ * esattamente dove doveva finire — veniva bocciato, l'agente provava a
+ * «correggere» qualcosa che era già giusto, e bruciava tutti e quaranta i
+ * passi senza concludere. Il modello faceva il suo lavoro; era la lista a
+ * essere corta.
+ *
+ * Un nodo va qui quando **consegna qualcosa fuori dal workflow** — manda,
+ * scrive, archivia, risponde — e quindi non ha un dopo.
+ */
 const KNOWN_SINKS: ReadonlySet<string> = new Set([
   'action_send_email',
   'action_http',
@@ -94,6 +107,22 @@ const KNOWN_SINKS: ReadonlySet<string> = new Set([
   'community_linear',
   'community_github',
   'community_stripe',
+  // Posta e messaggistica: consegnano fuori, non hanno un dopo.
+  'action_email_send_tracked',
+  'action_email_send_tracked_batch',
+  'action_whatsapp_send',
+  'integration_telegram_send',
+  'community_sendgrid',
+  // Italia: PEC e fatturazione elettronica finiscono con l'invio o con
+  // l'archiviazione a norma, che è il punto d'arrivo per legge.
+  'action_pec_legal_archive',
+  'italia_pec_aruba_send',
+  'italia_sdi_send_invoice',
+  // Scrittura e risposta.
+  'action_file_write',
+  'action_webhook_respond',
+  'db_insert_batch',
+  'action_odoo_update_activity',
 ]);
 
 /** Un ramo che finisce nel vuoto: i dati arrivano lì e spariscono. */
