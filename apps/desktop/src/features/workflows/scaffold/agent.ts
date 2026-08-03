@@ -86,6 +86,9 @@ export interface AgentRequest {
   /** Schema dei database noti: accende i controlli su tabelle e colonne. */
   databases?: readonly QualityDatabase[];
   onStep?: (step: AgentStep) => void;
+  /** Con questo si può fermare il ciclo a metà: viene guardato prima di ogni
+   *  passo, e chi lo aziona ferma anche la chiamata in volo. */
+  signal?: AbortSignal;
 }
 
 export function buildAgentSystemPrompt(goal: string, context?: string, isModify = false): string {
@@ -142,6 +145,11 @@ export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> 
   let pushbacks = 0;
 
   for (let step = 1; step <= MAX_STEPS; step++) {
+    // Fermato: si esce con quello che si è costruito fin qui, che è più utile
+    // di niente — i nodi già messi restano, e si vede dove si era arrivati.
+    if (req.signal?.aborted) {
+      return failFrom(builder, steps, 'Interrotto.', req.databases);
+    }
     let reply: { content: string; toolCalls: AgentToolCall[] };
     try {
       reply = await req.chat({ system, history, tools });

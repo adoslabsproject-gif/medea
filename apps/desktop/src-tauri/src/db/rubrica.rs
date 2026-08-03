@@ -55,7 +55,10 @@ const SOLO_RICEVUTE_VIVE: &str = "
 /// Il confronto è sulla coda dell'indirizzo dopo la chiocciola, così
 /// `mario@acme.it` e `info@acme.it` stanno insieme sotto `acme.it`.
 pub fn mittenti_del_dominio(conn: &Connection, dominio: &str) -> Result<Vec<MittenteRicevuto>> {
-    let coda = format!("%@{}", dominio.trim().trim_start_matches('@').to_lowercase());
+    let coda = format!(
+        "%@{}",
+        dominio.trim().trim_start_matches('@').to_lowercase()
+    );
     let sql = format!(
         "SELECT LOWER(m.from_address)                AS indirizzo,
                 MAX(m.from_name)                     AS nome,

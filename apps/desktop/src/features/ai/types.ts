@@ -48,11 +48,22 @@ export interface ChatRequest {
   baseUrl?: string | undefined;
   /** Tool disponibili, formato OpenAI function-calling. */
   tools?: Record<string, unknown>[] | undefined;
+  /** Un nome per questa richiesta, se la si vuole poter fermare a metà.
+   *  Senza, non è interrompibile — e va bene per le chiamate brevi. */
+  requestId?: string | undefined;
+}
+
+/** Quanti token è costata una risposta, quando il provider lo dichiara. */
+export interface TokenUsage {
+  input: number;
+  output: number;
 }
 
 /** Risposta del modello: testo e/o chiamate a tool già normalizzate. */
 export interface ChatResponse {
   content: string;
+  /** Quanti token sono serviti, se il provider lo dice. */
+  usage?: TokenUsage | undefined;
   toolCalls: { id: string; name: string; arguments: Record<string, unknown> }[];
 }
 

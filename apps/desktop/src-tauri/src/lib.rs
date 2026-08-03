@@ -9,8 +9,8 @@ pub mod runtime;
 mod security;
 
 use commands::{
-    ai_cmd, ai_tools_cmd, background_cmd, claude_cli_cmd, db_cmd, imap_cmd, relay_cmd, runtime_cmd,
-    secrets_cmd, smtp_cmd, sync_cmd, template_cmd, workflow_cmd,
+    ai_abort, ai_cmd, ai_tools_cmd, background_cmd, claude_cli_cmd, db_cmd, imap_cmd, relay_cmd,
+    runtime_cmd, secrets_cmd, smtp_cmd, sync_cmd, template_cmd, workflow_cmd,
 };
 use tauri::Manager;
 
@@ -167,6 +167,7 @@ pub fn run() {
             sync_cmd::mail_sync_folder,
             // AI
             ai_cmd::ai_chat,
+            ai_abort::ai_chat_abort,
             ai_tools_cmd::ai_tools_list,
             ai_tools_cmd::ai_tools_call,
             // Segreti (keychain OS)

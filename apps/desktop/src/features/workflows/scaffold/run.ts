@@ -111,6 +111,8 @@ export interface ScaffoldRequest {
   databases?: readonly QualityDatabase[];
   /** Notifica di avanzamento per la UI. */
   onProgress?: (phase: string, attempt: number) => void;
+  /** Per fermare la costruzione a metà. */
+  signal?: AbortSignal;
 }
 
 export async function runScaffold(req: ScaffoldRequest): Promise<ScaffoldResult> {
@@ -124,6 +126,16 @@ export async function runScaffold(req: ScaffoldRequest): Promise<ScaffoldResult>
   let lastReason = '';
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    // Fermato fra un tentativo e l'altro: non se ne comincia un altro.
+    if (req.signal?.aborted) {
+      return {
+        ok: false,
+        attempts: attempt - 1,
+        reason: 'Interrotto.',
+        violations: lastViolations,
+        qualityIssues: lastQualityIssues,
+      };
+    }
     req.onProgress?.('generazione', attempt);
 
     const user = buildScaffoldPrompt({
