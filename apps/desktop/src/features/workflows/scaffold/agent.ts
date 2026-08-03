@@ -120,11 +120,14 @@ export function buildAgentSystemPrompt(goal: string, context?: string, isModify 
     // newsletter finisce sull'archiviazione a norma delle PEC. Nominare le
     // tre parti prima di muoversi restringe lo spazio in cui sbagliare, e
     // serve soprattutto ai modelli che questo catalogo non l'hanno mai visto.
-    'FASE 1 — CAPIRE. Prima di toccare gli strumenti, scomponi la richiesta in tre parti:',
-    '  • QUANDO PARTE: a orario, all’arrivo di una email, su webhook, a mano.',
-    '  • COSA FA: le azioni in ordine — leggere, trasformare, inviare, salvare.',
-    '  • CONDIZIONI: se ci sono rami, filtri, o cose da fare per ogni elemento.',
-    '  Scrivi le tre parti in una frase ciascuna, poi passa alla fase 2.',
+    // L'analisi passa da uno strumento e non da una risposta a parole. Non è
+    // una finezza: il ciclo si aspetta chiamate a ogni giro, e un modello che
+    // si ferma a scrivere viene contato come uno che non sta lavorando. Con
+    // uno strumento l'analisi è un passo come gli altri — si vede nel
+    // pannello, resta nella cronologia, e vale per qualunque modello.
+    'FASE 1 — CAPIRE. `analyze_goal` PER PRIMO, sempre, prima di ogni ricerca.',
+    '  Scompone la richiesta in quando parte, cosa fa e a quali condizioni.',
+    '  Non rispondere a parole: chiama lo strumento.',
     '',
     'FASE 2 — SCEGLIERE. `search_nodes` per ogni parte, una ricerca alla volta.',
     '  Cerca il GESTO, non le parole della richiesta: per «archivia le newsletter»',
@@ -143,6 +146,8 @@ export function buildAgentSystemPrompt(goal: string, context?: string, isModify 
     'FASE 7 — CHIUDERE. `finish`, SOLO quando validate_workflow non riporta più problemi.',
     '',
     'Regole:',
+    '- Rispondi SEMPRE chiamando uno strumento. Non scrivere spiegazioni: ogni',
+    '  passo è una chiamata, e il primo è `analyze_goal`.',
     '- Inizia SEMPRE da un nodo trigger.',
     '- Riempi i campi obbligatori con valori realistici dedotti dal goal; i segreti',
     '  (API key, password) vanno come `{{secrets.NOME}}`.',
@@ -204,6 +209,10 @@ export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> 
         return finishFrom(builder, steps, req.databases);
       }
       aVuoto++;
+      // Il richiamo è più utile se dice cosa fare adesso, non in generale: un
+      // modello che si è fermato al primo giro va rimandato all'analisi, uno
+      // che ha già montato dei nodi va rimandato a chiudere.
+      const montatiFinora = builder.snapshot().nodes.length;
       if (aVuoto >= MAX_RISPOSTE_A_VUOTO) {
         return failFrom(
           builder,
@@ -220,7 +229,9 @@ export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> 
         {
           role: 'user',
           content:
-            'Non hai chiamato nessuno strumento. Prosegui usando gli strumenti: search_nodes, add_node, connect, validate_workflow, e infine finish.',
+            montatiFinora === 0
+              ? 'Non hai chiamato nessuno strumento. Non rispondere a parole: comincia da `analyze_goal`, che scompone la richiesta nelle sue parti.'
+              : `Non hai chiamato nessuno strumento. Hai già ${String(montatiFinora)} nodi sul disegno: prosegui con connect, set_config, validate_workflow e infine finish.`,
         },
       );
       continue;

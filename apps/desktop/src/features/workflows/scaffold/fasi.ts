@@ -39,6 +39,7 @@ export const ETICHETTA_FASE: Record<Fase, string> = {
 
 /** Quale fase corrisponde a ogni strumento. */
 const FASE_DELLO_STRUMENTO: Record<string, Fase> = {
+  analyze_goal: 'capire',
   search_nodes: 'scegliere',
   get_node_schema: 'scegliere',
   add_node: 'montare',
