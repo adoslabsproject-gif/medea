@@ -18,6 +18,7 @@
 import type { NodeDef } from '../types';
 
 import { communityNodes } from './community';
+import { ordinaPerPertinenza } from './punteggio';
 import raw from './stdlib-nodes.json';
 
 /** Le famiglie in cui la palette raggruppa i nodi. L'ordine è quello in cui
@@ -62,41 +63,7 @@ export function nodesByGroup(group: NodeGroupId): NodeDef[] {
  * le stesse parole.
  */
 export function searchNodes(query: string, limit = 40): NodeDef[] {
-  const terms = query
-    .toLowerCase()
-    .split(/[^\p{L}\p{N}]+/u)
-    .filter((t) => t.length >= 2);
-  const catalog = allNodes();
-  if (terms.length === 0) return [...catalog].slice(0, limit);
-
-  return catalog
-    .map((def) => {
-      // Gli alias sono le parole con cui un nodo si cerca ma che nel suo nome
-      // non compaiono — «wa» per WhatsApp, «posta» per email. Il
-      // `search_nodes` dell'assistente li guardava già; la palette no, e chi
-      // scriveva la parola giusta non trovava niente.
-      const alias = (def.searchAliases ?? []).map((a) => a.toLowerCase());
-      const hay = [def.defId, def.label, def.description ?? '', alias.join(' ')]
-        .join(' ')
-        .toLowerCase();
-      // L'etichetta pesa il doppio: chi cerca "email" vuole prima i nodi che
-      // si chiamano così, non quelli che la nominano nella descrizione. Un
-      // alias che combacia in pieno pesa uguale: chi scrive «wa» sta cercando
-      // WhatsApp, non un nodo che contiene quelle due lettere per caso.
-      const score = terms.reduce(
-        (s, t) =>
-          s +
-          (def.label.toLowerCase().includes(t) ? 2 : 0) +
-          (alias.includes(t) ? 2 : 0) +
-          (hay.includes(t) ? 1 : 0),
-        0,
-      );
-      return { def, score };
-    })
-    .filter((r) => r.score > 0)
-    .sort((a, b) => b.score - a.score || a.def.label.localeCompare(b.def.label))
-    .slice(0, limit)
-    .map((r) => r.def);
+  return ordinaPerPertinenza(allNodes(), query, limit);
 }
 
 export {
