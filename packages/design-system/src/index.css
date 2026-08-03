@@ -18,5 +18,8 @@
 @import url('./themes/medea-dark.css');
 @import url('./themes/medea-light.css');
 @import url('./themes/medea-hc.css');
+@import url('./themes/medea-carta.css');
+@import url('./themes/medea-grafite.css');
+@import url('./themes/medea-prussia.css');
 @import url('./utilities/sr-only.css');
 @import url('./utilities/stack.css');

@@ -1,0 +1,45 @@
+/*
+ * Tema «Prussia» — scuro, blu profondo, contrastato.
+ *
+ * L'opposto di Grafite: qui il colore c'è e si vede. I fondi sono un blu di
+ * Prussia molto scuro e il testo è freddo e netto, per chi lavora con poca
+ * luce e vuole che i bordi si distinguano senza sforzo.
+ *
+ * Il contrasto è più alto degli altri temi di proposito — non abbastanza da
+ * essere il tema ad alto contrasto, che resta una cosa a parte e serve a chi
+ * ne ha bisogno, ma abbastanza da restare leggibile su uno schermo mediocre o
+ * in una stanza illuminata male.
+ *
+ * Font: la grottesca di sistema, quella dei documenti e delle interfacce da
+ * quarant'anni. Non c'è niente da inventare.
+ */
+@layer themes {
+  [data-theme='prussia'] {
+    color-scheme: dark;
+
+    --color-surface-1: oklch(0.16 0.035 255);
+    --color-surface-2: oklch(0.21 0.042 255);
+    --color-surface-3: oklch(0.27 0.05 255);
+
+    --color-text-primary: oklch(0.96 0.008 250);
+    --color-text-secondary: oklch(0.82 0.015 250);
+    --color-text-muted: oklch(0.64 0.02 250);
+    --color-text-inverted: oklch(0.16 0.035 255);
+
+    --color-border-subtle: oklch(0.27 0.045 255);
+    --color-border-default: oklch(0.37 0.055 255);
+    --color-border-strong: oklch(0.5 0.06 255);
+
+    /* Ciano: sullo stesso lato del cerchio dei fondi, quindi non stona, ma
+       abbastanza lontano da non confondersi con loro. */
+    --color-accent-subtle: oklch(0.3 0.06 220);
+    --color-accent-default: oklch(0.76 0.13 218);
+    --color-accent-emphasis: oklch(0.85 0.11 215);
+    --color-accent-on: oklch(0.16 0.035 255);
+
+    --color-focus-ring-default: oklch(0.76 0.13 218);
+
+    --font-family-sans:
+      'Helvetica Neue', Helvetica, Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+}

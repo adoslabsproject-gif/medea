@@ -5,6 +5,8 @@
  * sezione è «cosa sta girando adesso», non «come si chiamano».
  */
 
+import { Zap } from 'lucide-react';
+
 import type { WorkflowSummary } from './api';
 import styles from './WorkflowList.module.css';
 
@@ -67,11 +69,22 @@ export function WorkflowList({
                   }}
                 >
                   <span className={styles.rowTop}>
+                    {/* Un pallino colorato dice solo acceso o spento, e lo
+                        dice piano. Il fulmine è la stessa icona della sezione:
+                        pieno quando il workflow gira da sé, contornato quando
+                        aspetta di essere avviato a mano. */}
                     <span
-                      className={styles.dot}
+                      className={styles.stato}
                       data-on={wf.enabled ? 'true' : 'false'}
-                      title={wf.enabled ? 'Attivo' : 'Non attivo'}
-                    />
+                      title={wf.enabled ? 'Attivo: parte da solo' : 'Non attivo: si avvia a mano'}
+                      aria-label={wf.enabled ? 'Attivo' : 'Non attivo'}
+                    >
+                      {wf.enabled ? (
+                        <Zap size={13} strokeWidth={2.5} fill="currentColor" />
+                      ) : (
+                        <Zap size={13} strokeWidth={2} />
+                      )}
+                    </span>
                     <span className={styles.name}>{wf.name}</span>
                   </span>
                   <span className={styles.meta}>

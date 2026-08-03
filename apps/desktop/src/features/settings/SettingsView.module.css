@@ -433,3 +433,11 @@
     flex: 1;
   }
 }
+
+/* La riga sotto una scelta che spiega cosa cambia: un nome di tema da solo
+   non dice cosa aspettarsi. */
+.hint {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}

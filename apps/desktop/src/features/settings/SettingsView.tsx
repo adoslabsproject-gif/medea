@@ -2,7 +2,7 @@ import { Button, Dialog, Select, TextField } from '@medea/ui';
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
 
-import { useTheme, type ThemeMode } from '../../app/providers/ThemeProvider';
+import { TEMI, useTheme, type ThemeMode } from '../../app/providers/ThemeProvider';
 import { AccountSetup } from '../account-setup';
 import { aiApi } from '../ai/api';
 import type { ClaudeCliStatus } from '../ai/api';
@@ -293,14 +293,10 @@ function ProfileTab() {
           onChange={(e) => {
             setTheme(e.target.value as ThemeMode);
           }}
-          items={[
-            { value: 'system', label: 'Automatico (segue il sistema)' },
-            { value: 'light', label: 'Chiaro' },
-            { value: 'dark', label: 'Scuro' },
-            { value: 'hc', label: 'Alto contrasto' },
-          ]}
+          items={TEMI.map((t) => ({ value: t.id, label: t.nome }))}
           fullWidth
         />
+        <p className={styles.hint}>{TEMI.find((t) => t.id === theme)?.nota}</p>
       </div>
 
       <div className={styles.section}>
