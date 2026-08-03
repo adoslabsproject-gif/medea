@@ -84,6 +84,11 @@ export function toTraceEntry(step: AgentStep): TraceEntry {
     ...(detail ? { detail } : {}),
     ok: error === undefined,
     ...(error ? { error } : {}),
+    // Argomenti e risposta si conservano: sono il log del passo, e servono
+    // quando un workflow esce diverso da come lo si era chiesto e bisogna
+    // capire in quale punto la richiesta è stata intesa male.
+    args: step.args,
+    result: step.result,
   };
 }
 
