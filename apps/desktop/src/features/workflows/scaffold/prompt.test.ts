@@ -118,3 +118,23 @@ describe('system prompt — le regole pagate restano scritte', () => {
     expect(at(CATALOG, 0).defId).toBe('trigger_cron');
   });
 });
+
+describe('lo schema non si confonde con un output', () => {
+  it('🚨 il prompt mostra un esempio compilato, non solo lo schema', () => {
+    const p = buildScaffoldPrompt({ goal: 'manda un riepilogo', catalog: [], inlineSchema: true });
+    // Senza un esempio il modello risponde con lo schema stesso: è successo
+    // il 2026-08-04, con «{"type":"object","properties":…}» al posto dei dati.
+    expect(p).toMatch(/ESEMPIO di risposta valida/);
+    expect(p).toMatch(/trigger_cron/);
+  });
+
+  it('🚨 dice esplicitamente di non rispondere con lo schema', () => {
+    const p = buildScaffoldPrompt({ goal: 'x', catalog: [], inlineSchema: true });
+    expect(p).toMatch(/NON rispondere con lo schema/i);
+  });
+
+  it('senza schema inline non si mette nemmeno l’esempio', () => {
+    const p = buildScaffoldPrompt({ goal: 'x', catalog: [], inlineSchema: false });
+    expect(p).not.toMatch(/ESEMPIO di risposta valida/);
+  });
+});
