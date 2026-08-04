@@ -38,6 +38,7 @@ export type QualityCode =
   | 'LOOKUP_WITHOUT_BRANCH'
   | 'TRIGGER_WITHOUT_ACTION'
   | 'AUDIT_NOT_TERMINAL'
+  | 'CAMPO_OBBLIGATORIO_VUOTO'
   | 'SENSITIVE_HARDCODED'
   | 'NODE_NOT_INSTALLED';
 
@@ -75,6 +76,19 @@ export interface QualityGateInput {
   nodes: readonly QualityNode[];
   edges: readonly QualityEdge[];
   databases?: readonly QualityDatabase[];
+  /**
+   * Le definizioni dei nodi presenti, per `defId`.
+   *
+   * Servono a sapere cosa un nodo pretende per funzionare — quali campi sono
+   * obbligatori. Senza, il controllo può guardare solo la forma del disegno,
+   * ed è così che un trigger senza casella risultava «a posto».
+   */
+  defs?: ReadonlyMap<string, QualityNodeDef>;
+}
+
+/** Quel poco che serve sapere di un nodo per giudicare la sua configurazione. */
+export interface QualityNodeDef {
+  configFields?: readonly { key: string; label?: string; required?: boolean }[];
 }
 
 export interface QualityGateResult {

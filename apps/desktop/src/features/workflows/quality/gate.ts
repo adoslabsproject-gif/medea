@@ -10,6 +10,7 @@
 
 import type { CanvasNode, Workflow, WorkflowEdge } from '../types';
 
+import { checkCampiObbligatori } from './rules-campi';
 import {
   checkCodeNodeLangMismatch,
   checkObsoleteModel,
@@ -42,13 +43,14 @@ import {
 import type {
   QualityDatabase,
   QualityGateInput,
+  QualityNodeDef,
   QualityGateResult,
   QualityIssue,
   QualityRule,
   QualitySeverity,
 } from './types';
 
-/** Le 21 regole, nell'ordine in cui vengono applicate. L'ordine non cambia il
+/** Le 22 regole, nell'ordine in cui vengono applicate. L'ordine non cambia il
  *  verdetto — i problemi vengono comunque riordinati per gravità — ma tiene
  *  l'elenco leggibile: prima la struttura, poi i valori, poi il senso. */
 export const QUALITY_RULES: readonly { code: string; run: QualityRule }[] = [
@@ -73,6 +75,7 @@ export const QUALITY_RULES: readonly { code: string; run: QualityRule }[] = [
   { code: 'TRIGGER_WITHOUT_ACTION', run: checkTriggerWithoutAction },
   { code: 'AUDIT_NOT_TERMINAL', run: checkAuditNotTerminal },
   { code: 'SENSITIVE_HARDCODED', run: checkSensitiveHardcoded },
+  { code: 'CAMPO_OBBLIGATORIO_VUOTO', run: checkCampiObbligatori },
 ];
 
 const SEVERITY_RANK: Record<QualitySeverity, number> = { critical: 0, medium: 1, info: 2 };
@@ -98,16 +101,22 @@ export function runQualityGate(input: QualityGateInput): QualityGateResult {
 export function gateWorkflow(
   workflow: Pick<Workflow, 'nodes' | 'edges'>,
   databases?: readonly QualityDatabase[],
+  /** Le definizioni dei nodi: senza, il controllo sui campi obbligatori non
+   *  ha niente da guardare e tace. */
+  defs?: ReadonlyMap<string, QualityNodeDef>,
 ): QualityGateResult {
-  return runQualityGate(toGateInput(workflow.nodes, workflow.edges, databases));
+  return runQualityGate(toGateInput(workflow.nodes, workflow.edges, databases, defs));
 }
 
 export function toGateInput(
   nodes: readonly CanvasNode[],
   edges: readonly WorkflowEdge[],
   databases?: readonly QualityDatabase[],
+  /** Le definizioni dei nodi: senza, non si può giudicare la configurazione. */
+  defs?: ReadonlyMap<string, QualityNodeDef>,
 ): QualityGateInput {
   return {
+    ...(defs ? { defs } : {}),
     nodes: nodes.map((n) => ({ id: n.id, defId: n.defId, config: n.config })),
     edges: edges.map((e) => ({
       from: e.from,

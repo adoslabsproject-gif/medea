@@ -109,6 +109,10 @@ export function useWizard(): Wizard {
     void (async () => {
       const goal = stateRef.current.goal.trim();
       if (!goal) return;
+
+      // Le definizioni servono al controllo dei campi obbligatori: senza, un
+      // trigger a cui manca la casella passerebbe per buono.
+      const defsDelCatalogo = new Map(allNodes().map((d) => [d.defId, d]));
       const steps: AgentStep[] = [];
 
       const controller = new AbortController();
@@ -169,7 +173,7 @@ export function useWizard(): Wizard {
               ? autoLayout(singolo.workflow.nodes, singolo.workflow.edges)
               : singolo.workflow.nodes,
           };
-          const gate = gateWorkflow(disegnato);
+          const gate = gateWorkflow(disegnato, undefined, defsDelCatalogo);
           setState((s) => ({
             ...s,
             stage: 'review',
@@ -222,7 +226,7 @@ export function useWizard(): Wizard {
             : result.workflow.nodes,
         };
 
-        const gate = gateWorkflow(workflow);
+        const gate = gateWorkflow(workflow, undefined, defsDelCatalogo);
         setState((s) => ({
           ...s,
           stage: 'review',
