@@ -27,12 +27,14 @@ vi.mock('../scaffold', async () => {
   return {
     ...actual,
     createScaffoldLlm: vi.fn(() => Promise.resolve({})),
+    // Il punto: questa chiamata **ignora** il segnale di annullamento. È il
+    // caso che conta, perché è quello vero — annullare avvisa il ciclo, e se
+    // il ciclo non ascolta non succede niente. Una finta che si arrende
+    // all'abort proverebbe solo che l'abort parte, che non è la domanda.
     runScaffold: vi.fn(
-      (req: { signal?: AbortSignal }) =>
-        new Promise((_resolve, reject) => {
-          req.signal?.addEventListener('abort', () => {
-            reject(new DOMException('The operation was aborted', 'AbortError'));
-          });
+      () =>
+        new Promise(() => {
+          /* mai, qualunque cosa accada */
         }),
     ),
     createAgentChat: vi.fn(() => Promise.resolve({})),

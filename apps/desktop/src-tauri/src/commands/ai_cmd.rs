@@ -81,6 +81,25 @@ pub struct ChatResponse {
 /// Tre minuti per la risposta completa: un modello che ragiona su un compito
 /// lungo ci mette anche un minuto, quindi la soglia deve essere generosa. Ma
 /// finita, deve finire.
+/// L'errore per intero, causa dopo causa.
+///
+/// `reqwest::Error` stampato con `{}` dice soltanto «error sending request for
+/// url (…)», che è vero e non serve a niente: nasconde sotto di sé la causa
+/// reale — TLS rifiutato, connessione azzerata, errore di protocollo HTTP/2,
+/// DNS. Il 2026-08-04 quel messaggio ha mandato l'indagine su tre piste
+/// sbagliate, mentre la risposta era già lì, un livello più sotto.
+///
+/// Un errore che non dice cosa è successo costa più di quanto risparmia.
+fn catena_cause(e: &dyn std::error::Error) -> String {
+    let mut parti = vec![e.to_string()];
+    let mut fonte = e.source();
+    while let Some(f) = fonte {
+        parti.push(f.to_string());
+        fonte = f.source();
+    }
+    parti.join(" ← ")
+}
+
 fn client_provider() -> anyhow::Result<reqwest::Client> {
     Ok(reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(180))
@@ -594,6 +613,15 @@ async fn post_openai_compatible(
             .pool_max_idle_per_host(0)
             .connect_timeout(std::time::Duration::from_secs(15))
             .build()?;
+        // Quanto stiamo mandando: un prompt fuori scala si vede solo qui, e
+        // dall'esterno somiglia in tutto a un problema di rete.
+        if attempt == 1 {
+            tracing::info!(
+                "{label}: invio {} KB, schema guidato: {}",
+                serde_json::to_vec(body).map(|v| v.len()).unwrap_or(0) / 1024,
+                body.get("response_format").is_some()
+            );
+        }
         let mut builder = client.post(url).json(body);
         if let Some(key) = req.api_key.as_deref().filter(|k| !k.is_empty()) {
             builder = builder.bearer_auth(key);
@@ -602,10 +630,10 @@ async fn post_openai_compatible(
             Ok(r) => r,
             Err(e) => {
                 tracing::warn!(
-                    "{label} attempt {}/{} network error: {}",
+                    "{label} tentativo {}/{} — invio fallito: {}",
                     attempt,
                     MAX_ATTEMPTS,
-                    e
+                    catena_cause(&e)
                 );
                 last_err = Some(anyhow::anyhow!(
                     "{label}: rete fallita ({}): {e}. Riprova.",
