@@ -150,6 +150,23 @@ export function useWizard(): Wizard {
       const scadenza = setTimeout(() => {
         scaduto.current = true;
         controller.abort();
+        // E lo schermo si aggiorna **qui**, senza aspettare che il ciclo se ne
+        // accorga. Annullare è solo un avviso: se la chiamata in corso non
+        // onora il segnale — e non tutte lo fanno — quella promessa non si
+        // risolve mai, il `catch` non parte, e lo stato resta «in costruzione»
+        // per sempre. È lo stesso motivo per cui «Interrompi» sembrava rotto;
+        // qui l'errore era mio, e identico.
+        if (!alive.current || fermato.current) return;
+        setState((s) =>
+          s.stage === 'building'
+            ? {
+                ...s,
+                stage: 'failed',
+                reason: `Mi sono fermato dopo ${String(Math.round(BUDGET_MS / 60_000))} minuti: quello che era stato costruito resta, il resto va completato a mano. Un obiettivo più corto, o diviso in due workflow, di solito ci arriva.`,
+                built: builtNodes(steps),
+              }
+            : s,
+        );
       }, BUDGET_MS);
       const chiudiScadenza = () => {
         clearTimeout(scadenza);
