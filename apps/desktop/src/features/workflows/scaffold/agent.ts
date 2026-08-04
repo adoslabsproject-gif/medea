@@ -178,6 +178,36 @@ export function agentToolsForProvider(): { type: 'function'; function: Record<st
   }));
 }
 
+/**
+ * Che cosa dire a chi si è fermato: il passo dopo, non quello appena fatto.
+ *
+ * Si guarda cosa ha già chiamato e si indica la mossa che manca. Un richiamo
+ * generico — «usa gli strumenti» — è inutile a chi gli strumenti li sta già
+ * usando ma si è bloccato a metà; e un richiamo che nomina un passo già
+ * compiuto è peggio che inutile, perché lo fa ripetere.
+ */
+function prossimoPasso(steps: readonly AgentStep[], montati: number): string {
+  const fatti = new Set(steps.map((s) => s.tool));
+
+  if (montati === 0) {
+    if (!fatti.has('analyze_goal')) {
+      return 'Comincia da `analyze_goal`, che scompone la richiesta nelle sue parti.';
+    }
+    if (!fatti.has('search_nodes')) {
+      return 'Hai già scomposto la richiesta. Adesso chiama `search_nodes` per la prima azione: cerca il gesto, non le parole della richiesta.';
+    }
+    return 'Hai già cercato. Adesso chiama `add_node` con il defId che hai trovato, cominciando dal trigger.';
+  }
+
+  if (!fatti.has('connect')) {
+    return `Hai ${String(montati)} nodi sul disegno e nessun collegamento: chiama \`connect\` per unirli nell'ordine del flusso.`;
+  }
+  if (!fatti.has('validate_workflow')) {
+    return `Hai ${String(montati)} nodi collegati: chiama \`validate_workflow\` per vedere cosa manca.`;
+  }
+  return 'Hai già validato: correggi quello che è stato segnalato con `set_config`, poi chiama `finish`.';
+}
+
 export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> {
   const builder = new WorkflowBuilder(
     req.catalog,
@@ -265,9 +295,11 @@ export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> 
                   'Per un dato che non puoi dedurre usa `{{secrets.NOME}}` o un valore di esempio.',
                 ]
               : []),
-            montatiFinora === 0
-              ? 'Comincia da `analyze_goal`, che scompone la richiesta nelle sue parti.'
-              : `Hai già ${String(montatiFinora)} nodi sul disegno: prosegui con connect, set_config, validate_workflow e infine finish.`,
+            // Il richiamo deve indicare il passo SUCCESSIVO, non ripetere
+            // quello appena fatto. Dire «comincia da analyze_goal» a chi lo
+            // ha appena chiamato lo manda a richiamarlo: obbedisce, e ci si
+            // avvita in due mosse. Succedeva a ogni tentativo.
+            prossimoPasso(steps, montatiFinora),
           ].join('\n'),
         },
       );

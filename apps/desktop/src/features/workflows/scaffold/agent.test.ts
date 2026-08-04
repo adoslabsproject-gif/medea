@@ -452,3 +452,37 @@ describe('l’analisi è un passo come gli altri', () => {
     expect(visto).toMatch(/understood/);
   });
 });
+
+describe('il richiamo indica il passo dopo, non quello appena fatto', () => {
+  it('🚨 chi ha già scomposto la richiesta non viene rimandato a scomporla', async () => {
+    let ultimaHistory = '';
+    let giro = 0;
+    await runWorkflowAgent({
+      goal: 'archivia le newsletter vecchie',
+      catalog: [...CATALOG],
+      chat: ({ history }) => {
+        ultimaHistory = JSON.stringify(history);
+        giro += 1;
+        if (giro === 1) {
+          return Promise.resolve({
+            content: '',
+            toolCalls: [
+              {
+                id: 'a',
+                name: 'analyze_goal',
+                arguments: { whenItStarts: 'ogni domenica', whatItDoes: ['archivia'] },
+              },
+            ],
+          });
+        }
+        // Da qui in poi si blocca e risponde a parole.
+        return Promise.resolve({ content: 'Cerco un nodo. Dimmi quali trovi.', toolCalls: [] });
+      },
+    });
+
+    // Il difetto del 2026-08-04: a chi aveva appena chiamato `analyze_goal` si
+    // diceva «comincia da analyze_goal», e lui obbediva. Tre giri e la resa.
+    expect(ultimaHistory).not.toMatch(/Comincia da .analyze_goal/);
+    expect(ultimaHistory).toMatch(/search_nodes/);
+  });
+});
