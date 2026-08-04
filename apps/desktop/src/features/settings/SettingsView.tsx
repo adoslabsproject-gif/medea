@@ -586,12 +586,18 @@ function AccountsTab({ activeId }: { activeId: string }) {
         <AccountSetup
           onSaved={(acc) => {
             void (async () => {
-              await store.addAccount(acc);
+              // Prima il database: è lui a decidere l'id vero. Un indirizzo
+              // già presente non raddoppia — si tiene la riga esistente, con
+              // la posta che ci sta appesa — e va salvato quell'id, non
+              // quello appena inventato dalla schermata.
+              let daSalvare = acc;
               try {
-                await mailApi.db.accountUpsert(acc);
+                const idVero = await mailApi.db.accountUpsert(acc);
+                if (idVero !== acc.id) daSalvare = { ...acc, id: idVero };
               } catch (e) {
-                console.error(e);
+                console.error('Registrazione account nel database fallita:', e);
               }
+              await store.addAccount(daSalvare);
               setAdding(false);
             })();
           }}

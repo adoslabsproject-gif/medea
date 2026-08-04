@@ -8,6 +8,7 @@ import { useReminderNotifications } from '../features/reminders/useReminderNotif
 import { AppShell } from '../features/shell';
 import { useAutonomousRuns } from '../features/workflows';
 
+import { PortachiaviBloccato } from './PortachiaviBloccato';
 import { THEME_KEY, ThemeProvider, type ThemeMode } from './providers/ThemeProvider';
 
 export function App() {
@@ -44,28 +45,57 @@ function Root() {
     if (!store.loaded || synced.current) return;
     synced.current = true;
     void (async () => {
-      for (const acc of store.accounts) {
+      // Ripara anche gli id già disallineati: se il portachiavi contiene un
+      // account il cui id nel database non esiste — succedeva riconfigurando
+      // un indirizzo già presente — il database restituisce l'id buono e lo
+      // si riscrive. Senza questo, chi ci è già passato resta rotto per
+      // sempre, perché ogni cartella continua a cercare una riga che non c'è.
+      let corretti = false;
+      const allineati = [...store.accounts];
+      for (const [i, acc] of allineati.entries()) {
         try {
-          await mailApi.db.accountUpsert(acc);
+          const idVero = await mailApi.db.accountUpsert(acc);
+          if (idVero !== acc.id) {
+            allineati[i] = { ...acc, id: idVero };
+            corretti = true;
+          }
         } catch (e) {
-          console.error(`DB upsert ${acc.id} failed:`, e);
+          console.error(`Registrazione dell'account ${acc.id} fallita:`, e);
         }
       }
+      if (corretti) await store.replaceAll(allineati);
     })();
-  }, [store.loaded, store.accounts]);
+  }, [store.loaded, store.accounts, store]);
 
   async function persistNew(acc: MailAccount) {
-    await store.addAccount(acc);
+    // Prima il database, poi il portachiavi: è il database a decidere l'id
+    // vero. Riconfigurare un indirizzo già presente non crea una seconda riga
+    // — si tiene quella vecchia, con la posta che ci sta appesa — e l'id che
+    // torna è il suo. Salvare nel portachiavi l'id inventato dalla schermata
+    // di setup significherebbe puntare a una riga che non esiste, e ogni
+    // cartella fallirebbe con «FOREIGN KEY constraint failed».
+    let daSalvare = acc;
     try {
-      await mailApi.db.accountUpsert(acc);
+      const idVero = await mailApi.db.accountUpsert(acc);
+      if (idVero !== acc.id) daSalvare = { ...acc, id: idVero };
     } catch (e) {
-      console.error('DB upsert (new) failed:', e);
+      console.error('Registrazione account nel database fallita:', e);
     }
+    await store.addAccount(daSalvare);
     setForceSetup(false);
   }
 
   if (!store.loaded) {
     return null;
+  }
+
+  // Il portachiavi non ha risposto: gli account potrebbero esserci tutti. La
+  // schermata di configurazione qui è la cosa peggiore che si possa mostrare,
+  // perché invita a reinserire credenziali che esistono già — e un secondo
+  // account per lo stesso indirizzo il database non lo accetta, così la posta
+  // smette di caricarsi del tutto. Chiedere di riprovare non perde niente.
+  if (store.illeggibile && !forceSetup) {
+    return <PortachiaviBloccato onRiprova={() => void store.refresh()} />;
   }
 
   if (forceSetup || (!store.active && !skipped)) {

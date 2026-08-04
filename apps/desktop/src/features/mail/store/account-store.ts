@@ -21,6 +21,19 @@ export interface AccountStoreState {
   activeId: string | null;
   loaded: boolean;
   active: MailAccount | null;
+  /**
+   * Il portachiavi non ha risposto: **non sappiamo** quali account esistono.
+   *
+   * È diverso da «non ce ne sono», e confondere le due cose ha fatto danni
+   * veri il 2026-08-04: il portachiavi non ha risposto, l'app ha concluso che
+   * la posta non fosse configurata e ha chiesto le credenziali. Reinserite,
+   * hanno prodotto un account con un id nuovo per un indirizzo che nel
+   * database c'era già — colonna unica, inserimento rifiutato, e la prima
+   * cartella agganciata a un id inesistente: «FOREIGN KEY constraint failed».
+   *
+   * Chi non sa deve dirlo, non tirare a indovinare il caso peggiore.
+   */
+  illeggibile: boolean;
 }
 
 export async function loadAccounts(): Promise<AccountStoreState> {
@@ -47,10 +60,17 @@ export async function loadAccounts(): Promise<AccountStoreState> {
       activeId: active?.id ?? null,
       loaded: true,
       active,
+      illeggibile: false,
     };
   } catch (e) {
-    console.error('Failed to load accounts:', e);
-    return { accounts: [], activeId: null, loaded: true, active: null };
+    console.error('Lettura degli account fallita:', e);
+    return {
+      accounts: [],
+      activeId: null,
+      loaded: true,
+      active: null,
+      illeggibile: true,
+    };
   }
 }
 
@@ -72,6 +92,7 @@ export function useAccountStore() {
     activeId: null,
     loaded: false,
     active: null,
+    illeggibile: false,
   });
 
   useEffect(() => {
@@ -91,6 +112,7 @@ export function useAccountStore() {
       activeId: account.id,
       loaded: true,
       active: account,
+      illeggibile: false,
     });
   }
 
@@ -113,6 +135,28 @@ export function useAccountStore() {
       activeId,
       loaded: true,
       active: accounts.find((a) => a.id === activeId) ?? null,
+      illeggibile: false,
+    });
+  }
+
+  /**
+   * Riscrive l'elenco intero, tenendo attivo lo stesso indirizzo.
+   *
+   * Serve a rimettere in riga gli id quando il database ne restituisce di
+   * diversi da quelli salvati: l'attivo non si può inseguire per id, perché è
+   * proprio l'id che sta cambiando — si insegue per indirizzo, che è la cosa
+   * che l'utente riconosce.
+   */
+  async function replaceAll(accounts: MailAccount[]) {
+    const emailAttiva = state.active?.emailAddress;
+    const attivo = accounts.find((a) => a.emailAddress === emailAttiva) ?? accounts[0] ?? null;
+    await saveAccounts(accounts, attivo?.id ?? null);
+    setState({
+      accounts,
+      activeId: attivo?.id ?? null,
+      loaded: true,
+      active: attivo,
+      illeggibile: false,
     });
   }
 
@@ -122,5 +166,5 @@ export function useAccountStore() {
     setState({ ...state, activeId: id, active });
   }
 
-  return { ...state, addAccount, updateAccount, removeAccount, setActive, refresh };
+  return { ...state, addAccount, updateAccount, removeAccount, setActive, refresh, replaceAll };
 }

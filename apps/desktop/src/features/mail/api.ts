@@ -260,7 +260,16 @@ export const mailApi = {
     ): Promise<void> => invoke('mail_save_draft', { imapCreds, draftsFolder, msg }),
   },
   db: {
-    accountUpsert: (acc: MailAccount): Promise<void> => {
+    /**
+     * Registra l'account e restituisce l'id con cui è **davvero** salvato.
+     *
+     * Può non essere quello passato: se lo stesso indirizzo esisteva già, si
+     * tiene la riga vecchia — è quella a cui sono appese le cartelle e i
+     * messaggi scaricati. Chi chiama deve adottare l'id che torna, altrimenti
+     * lavora con un id che nel database non esiste e ogni cartella salvata
+     * fallisce con «FOREIGN KEY constraint failed».
+     */
+    accountUpsert: (acc: MailAccount): Promise<string> => {
       const dbAcc: StoredAccountForDb = {
         id: acc.id,
         displayName: acc.displayName,
