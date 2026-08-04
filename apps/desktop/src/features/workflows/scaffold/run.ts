@@ -199,7 +199,9 @@ export async function runScaffold(req: ScaffoldRequest): Promise<ScaffoldResult>
     req.onProgress?.('qualità', attempt);
     const nodes = toCanvasNodes(output);
     const edges = toWorkflowEdges(output);
-    const quality = runQualityGate(toGateInput(nodes, edges, req.databases));
+    const quality = runQualityGate(
+      toGateInput(nodes, edges, req.databases, new Map(req.catalog.map((d) => [d.defId, d]))),
+    );
     lastQualityIssues = quality.issues;
 
     if (quality.shouldReject) {

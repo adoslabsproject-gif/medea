@@ -142,7 +142,15 @@ export class WorkflowBuilder {
    * avere ogni campo al posto giusto e contenere `smtp.example.com`.
    */
   quality(databases?: readonly QualityDatabase[]): QualityGateResult {
-    return gateWorkflow({ nodes: this.nodes, edges: this.edges }, databases);
+    // Il catalogo ce l'ha già: passarlo al controllo è ciò che gli permette
+    // di accorgersi di un campo obbligatorio lasciato vuoto — e quindi
+    // all'agente di correggerlo mentre costruisce, invece che scoprirlo dopo.
+    return gateWorkflow(
+      { nodes: this.nodes, edges: this.edges },
+      databases,
+      // Il catalogo qui è già una mappa per defId: si passa così com'è.
+      this.catalog,
+    );
   }
 
   /** Nodi che non ricevono né emettono nulla: di solito è un pezzo dimenticato. */
