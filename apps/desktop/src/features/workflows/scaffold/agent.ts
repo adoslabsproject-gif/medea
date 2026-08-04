@@ -148,6 +148,17 @@ export function buildAgentSystemPrompt(goal: string, context?: string, isModify 
     'Regole:',
     '- Rispondi SEMPRE chiamando uno strumento. Non scrivere spiegazioni: ogni',
     '  passo è una chiamata, e il primo è `analyze_goal`.',
+    // Il modello, lasciato libero, si ferma a chiedere: quale cartella, quale
+    // indirizzo, quale soglia. Sono domande sensate — e non c'è nessuno che
+    // possa rispondere, perché dall'altra parte del ciclo non c'è una
+    // conversazione. Il risultato è che le ripete finché ci si arrende, e
+    // l'utente legge che il modello «non sa usare gli strumenti».
+    '- NON fare domande e NON chiedere conferme: nessuno può risponderti.',
+    '  Se un dato manca, scegli il valore più ragionevole e vai avanti — una',
+    '  cartella «Newsletter», un indirizzo `{{secrets.EMAIL_DESTINATARIO}}`,',
+    '  una soglia dedotta dalla richiesta. Chi guarda correggerà quello che',
+    '  non gli va: un workflow completo da correggere vale più di una domanda',
+    '  senza risposta.',
     '- Inizia SEMPRE da un nodo trigger.',
     '- Riempi i campi obbligatori con valori realistici dedotti dal goal; i segreti',
     '  (API key, password) vanno come `{{secrets.NOME}}`.',
@@ -241,10 +252,23 @@ export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> 
         { role: 'assistant', content: reply.content },
         {
           role: 'user',
-          content:
+          content: [
+            'Non hai chiamato nessuno strumento.',
+            // Se la risposta contiene un punto interrogativo, quasi sempre il
+            // modello ha chiesto qualcosa. Rispondergli «usa gli strumenti»
+            // non lo sblocca: gli si deve dire che la domanda non avrà mai
+            // risposta e che deve decidere da solo.
+            ...(reply.content.includes('?') || /mi serv|mi occorr|puoi indicar/i.test(reply.content)
+              ? [
+                  'Qui non c’è nessuno che possa risponderti: sei tu a decidere.',
+                  'Scegli il valore più ragionevole per quello che ti manca e vai avanti.',
+                  'Per un dato che non puoi dedurre usa `{{secrets.NOME}}` o un valore di esempio.',
+                ]
+              : []),
             montatiFinora === 0
-              ? 'Non hai chiamato nessuno strumento. Non rispondere a parole: comincia da `analyze_goal`, che scompone la richiesta nelle sue parti.'
-              : `Non hai chiamato nessuno strumento. Hai già ${String(montatiFinora)} nodi sul disegno: prosegui con connect, set_config, validate_workflow e infine finish.`,
+              ? 'Comincia da `analyze_goal`, che scompone la richiesta nelle sue parti.'
+              : `Hai già ${String(montatiFinora)} nodi sul disegno: prosegui con connect, set_config, validate_workflow e infine finish.`,
+          ].join('\n'),
         },
       );
       continue;

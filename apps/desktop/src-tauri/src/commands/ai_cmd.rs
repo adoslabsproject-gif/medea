@@ -177,11 +177,41 @@ fn with_tools(mut body: serde_json::Value, req: &ChatRequest) -> serde_json::Val
     body
 }
 
+/// L'altra forma testuale: `[TOOL_CALLS]nome_strumento{"arg": "valore"}`.
+///
+/// Il nome sta attaccato al marcatore e gli argomenti seguono senza
+/// separatore. Non è una variante che abbiamo scelto noi: è quella che i
+/// modelli di questa famiglia emettono da soli, anche quando la richiesta non
+/// offre nessuno strumento — e finché nessuno la leggeva, quelle chiamate
+/// venivano buttate e la risposta risultava «a parole».
+fn tool_calls_marcatore(content: &str) -> Vec<ToolCallOut> {
+    let mut out = Vec::new();
+    for (idx, chunk) in content.split("[TOOL_CALLS]").skip(1).enumerate() {
+        // Il nome arriva fino alla graffa che apre gli argomenti.
+        let taglio = chunk.find('{').unwrap_or(chunk.len());
+        let nome = chunk[..taglio]
+            .trim()
+            .trim_matches(|c: char| !c.is_ascii_alphanumeric() && c != '_');
+        if nome.is_empty() {
+            continue;
+        }
+        let arguments = first_json_object(&chunk[taglio..])
+            .and_then(|o| serde_json::from_str::<serde_json::Value>(&o).ok())
+            .unwrap_or_else(|| serde_json::json!({}));
+        out.push(ToolCallOut {
+            id: format!("mark{idx:04}"),
+            name: nome.to_string(),
+            arguments,
+        });
+    }
+    out
+}
+
 /// Recupera le tool-call che il modello ha scritto nel testo invece di usare
 /// il canale nativo: `<tool_call>{"name":…,"arguments":{…}}</tool_call>`.
 /// È il formato con cui i modelli fine-tuned in stile Liara sono addestrati.
 fn tool_calls_from_text(content: &str) -> Vec<ToolCallOut> {
-    let mut out = Vec::new();
+    let mut out = tool_calls_marcatore(content);
     for (idx, chunk) in content.split("<tool_call>").skip(1).enumerate() {
         let Some(obj) = first_json_object(chunk) else {
             continue;
@@ -812,4 +842,41 @@ async fn call_openrouter(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
     }
     let json: serde_json::Value = resp.json().await?;
     parse_openai_response(&json, "OpenRouter")
+}
+
+#[cfg(test)]
+mod tests_tool_calls {
+    use super::tool_calls_from_text;
+
+    #[test]
+    fn legge_la_forma_con_i_tag() {
+        let c =
+            r#"<tool_call>{"name":"add_node","arguments":{"defId":"trigger_cron"}}</tool_call>"#;
+        let calls = tool_calls_from_text(c);
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].name, "add_node");
+    }
+
+    #[test]
+    fn legge_la_forma_con_il_marcatore() {
+        // Vista davvero il 2026-08-04: il nome attaccato al marcatore e gli
+        // argomenti subito dopo, senza separatore.
+        let c = r#"[TOOL_CALLS]trigger_cron{"cronExpression": "0 9 * * 0"}"#;
+        let calls = tool_calls_from_text(c);
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].name, "trigger_cron");
+        assert_eq!(calls[0].arguments["cronExpression"], "0 9 * * 0");
+    }
+
+    #[test]
+    fn regge_il_marcatore_senza_argomenti() {
+        let calls = tool_calls_from_text("[TOOL_CALLS]logic_merge{}");
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].name, "logic_merge");
+    }
+
+    #[test]
+    fn un_testo_qualunque_non_produce_chiamate() {
+        assert!(tool_calls_from_text("Ho scomposto la richiesta, mi servono tre dati.").is_empty());
+    }
 }
