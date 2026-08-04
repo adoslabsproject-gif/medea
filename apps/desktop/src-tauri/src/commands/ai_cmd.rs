@@ -128,6 +128,19 @@ pub struct ChatRequest {
     /// Chi non lo passa non può interromperla — e non ne ha bisogno.
     #[serde(default)]
     pub request_id: Option<String>,
+    /// Lo schema a cui la risposta deve essere conforme, quando serve un
+    /// oggetto e non un discorso.
+    ///
+    /// Non è un suggerimento nel prompt: i server compatibili con OpenAI —
+    /// vLLM compreso, che è quello che serve Liara — vincolano la generazione
+    /// token per token. Il modello **non può** produrre qualcosa che non
+    /// rispetti lo schema: niente testo intorno, niente schema restituito al
+    /// posto dei dati, niente JSON troncato.
+    ///
+    /// Finché non lo usavamo, allo stesso modello chiedevamo un JSON sperando
+    /// che lo scrivesse bene, e rispondeva con lo schema o con un discorso.
+    #[serde(default)]
+    pub json_schema: Option<serde_json::Value>,
 }
 
 /// Messaggi in formato OpenAI, inclusi i turni `assistant` con tool-call e i
@@ -173,6 +186,22 @@ fn with_tools(mut body: serde_json::Value, req: &ChatRequest) -> serde_json::Val
     if let Some(tools) = req.tools.as_ref().filter(|t| !t.is_empty()) {
         body["tools"] = serde_json::json!(tools);
         body["tool_choice"] = serde_json::json!("auto");
+    }
+    // Lo schema e gli strumenti non convivono: o si chiede di scegliere una
+    // funzione, o si chiede un oggetto di forma fissa. Chiederli insieme
+    // confonde i server che li supportano entrambi.
+    if let Some(schema) = req.json_schema.as_ref() {
+        body["response_format"] = serde_json::json!({
+            "type": "json_schema",
+            "json_schema": {
+                "name": "workflow_scaffold",
+                "strict": true,
+                "schema": schema,
+            }
+        });
+        // Con la generazione vincolata il ragionamento a voce alta non serve e
+        // costa: la forma la garantisce il server.
+        body["temperature"] = serde_json::json!(0.1);
     }
     body
 }

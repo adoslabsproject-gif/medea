@@ -38,12 +38,16 @@ export async function createScaffoldLlm(
   const requestId = `singleshot-${String(Date.now())}`;
 
   return {
-    // Nessun provider qui garantisce l'output vincolato allo schema: lo schema
-    // si mette nel prompt e si ripara quello che torna. È il motivo per cui
-    // `runScaffold` ha una fase di riparazione e tre tentativi.
-    supportsStructuredOutput: false,
+    // Adesso l'output vincolato c'è: lo schema viaggia nella richiesta e il
+    // server lo fa rispettare token per token. Il modello non può rispondere
+    // con un discorso, né restituire lo schema al posto dei dati — erano i
+    // due modi in cui falliva.
+    //
+    // La riparazione resta: vincolare la *forma* non garantisce che i defId
+    // esistano o che i campi abbiano senso, e per quello servono i controlli.
+    supportsStructuredOutput: true,
     isTuned: provider === 'liara',
-    async complete({ system, user }) {
+    async complete({ system, user, schema }) {
       const reply = await aiApi.chat({
         provider,
         systemPrompt: system,
@@ -52,6 +56,7 @@ export async function createScaffoldLlm(
         baseUrl: conn.baseUrl,
         model: conn.model,
         requestId,
+        jsonSchema: schema as Record<string, unknown>,
       });
       if (reply.usage) onTokens?.(reply.usage);
       return reply.content;
