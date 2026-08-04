@@ -227,6 +227,13 @@ export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> 
   const steps: AgentStep[] = [];
   let pushbacks = 0;
   /** Risposte senza nemmeno una chiamata a uno strumento. */
+  /**
+   * Risposte a parole **di fila**. Il conto si azzera appena il modello torna
+   * a chiamare uno strumento: chi alterna una spiegazione e un'azione sta
+   * lavorando, e sommare quelle spiegazioni lungo tutta la costruzione voleva
+   * dire fermare un modello che stava arrivando in fondo. Solo chi si blocca
+   * davvero fa tre giri a vuoto uno dopo l'altro.
+   */
   let aVuoto = 0;
 
   for (let step = 1; step <= MAX_STEPS; step++) {
@@ -271,7 +278,7 @@ export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> 
         return failFrom(
           builder,
           steps,
-          `Il modello ha risposto ${String(aVuoto)} volte a parole senza usare gli strumenti: ` +
+          `Il modello ha risposto ${String(aVuoto)} volte di fila a parole senza usare gli strumenti: ` +
             'non sta pilotando la costruzione. Di solito vuol dire che il modello scelto non ' +
             'sa chiamare gli strumenti, o che il provider non li sta passando. ' +
             'Prova con un altro modello in Impostazioni → Modelli AI.',
@@ -288,6 +295,19 @@ export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> 
             // modello ha chiesto qualcosa. Rispondergli «usa gli strumenti»
             // non lo sblocca: gli si deve dire che la domanda non avrà mai
             // risposta e che deve decidere da solo.
+            // Il caso più insidioso: il modello racconta di aver fatto una
+            // cosa che non ha fatto — «Collegamenti pronti: email come
+            // trigger verso l'archivio». Descrive l'azione al posto di
+            // eseguirla, e sul disegno non è cambiato niente. Va detto senza
+            // giri di parole, perché altrimenti continua a raccontare.
+            ...(/collegament\w* pronti|ho collegato|ho configurato|ho aggiunto|adesso collego|controllo il workflow/i.test(
+              reply.content,
+            )
+              ? [
+                  'Attenzione: hai DESCRITTO un’azione senza eseguirla. Sul disegno non è cambiato niente.',
+                  'Descrivere non fa nulla: quello che dici di aver fatto va fatto chiamando lo strumento.',
+                ]
+              : []),
             ...(reply.content.includes('?') || /mi serv|mi occorr|puoi indicar/i.test(reply.content)
               ? [
                   'Qui non c’è nessuno che possa risponderti: sei tu a decidere.',
@@ -305,6 +325,9 @@ export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> 
       );
       continue;
     }
+
+    // Ha chiamato: qualunque cosa avesse detto prima, sta lavorando.
+    aVuoto = 0;
 
     history.push({
       role: 'assistant',
