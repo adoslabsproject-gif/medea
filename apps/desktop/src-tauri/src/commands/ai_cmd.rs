@@ -379,6 +379,56 @@ fn parse_openai_response(json: &serde_json::Value, label: &str) -> anyhow::Resul
     })
 }
 
+/// Sveglia il modello, senza chiedergli niente di utile.
+///
+/// Un server di inferenza scarica il modello dalla memoria della scheda
+/// quando nessuno lo usa, e rimetterlo su costa minuti. Chi ne ha uno tutto
+/// per sé — cioè chiunque usi Medea dal proprio computer — lo trova quasi
+/// sempre spento: la prima richiesta paga il caricamento e non riceve
+/// risposta, e chi guarda vede un wizard che non parte. Il 2026-08-04 sono
+/// stati 220 secondi di attesa per una risposta che, a modello caldo, è
+/// arrivata in sedici.
+///
+/// Non è un problema che si risolva aspettando meglio: si risolve non
+/// facendosi trovare col modello spento. Questa chiamata parte quando si apre
+/// il wizard — mentre l'utente scrive cosa vuole, che sono le decine di
+/// secondi che servono — e chiede un solo token. Se fallisce non importa a
+/// nessuno: era un favore, non un requisito, e la richiesta vera ritenta per
+/// conto suo.
+#[tauri::command]
+pub async fn ai_warmup(req: ChatRequest) -> Result<(), String> {
+    let mut scalda = req;
+    scalda.history = vec![ChatTurn {
+        role: "user".into(),
+        content: "ok".into(),
+        tool_calls: None,
+        tool_call_id: None,
+        name: None,
+        images: None,
+    }];
+    scalda.system_prompt = String::new();
+    scalda.tools = None;
+    scalda.json_schema = None;
+    // Senza nome: fermare un riscaldamento non ha senso, e registrarlo
+    // ruberebbe il posto alla richiesta vera che vuole poter essere fermata.
+    scalda.request_id = None;
+
+    match ai_chat_interna(&scalda, None).await {
+        Ok(_) => {
+            tracing::info!("Modello pronto: era già sveglio o lo è adesso.");
+            Ok(())
+        }
+        Err(e) => {
+            // Si registra e basta. Chi ha chiamato non deve nemmeno saperlo:
+            // il wizard funziona lo stesso, solo più lentamente la prima volta.
+            tracing::info!(
+                "Riscaldamento non riuscito ({e}): la prima richiesta pagherà l'attesa."
+            );
+            Ok(())
+        }
+    }
+}
+
 #[tauri::command]
 pub async fn ai_chat(req: ChatRequest) -> Result<ChatResponse, String> {
     // Chi vuole poter fermare la richiesta le dà un nome. Chi non lo fa —

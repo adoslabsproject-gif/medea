@@ -31,13 +31,18 @@ const TICK_MS = 1000;
 /**
  * Quanto può durare l'intera costruzione, comunque vada.
  *
- * Quattro minuti sono lunghi per chi guarda una barra, e sono abbastanza per
- * una generazione riuscita: quella che ha funzionato ci ha messo due passi e
- * meno di un minuto. Chi ne ha bisogno di venti non sta finendo, sta girando
- * a vuoto — e girare a vuoto davanti a un utente che aspetta è la sola cosa
- * che non deve poter succedere.
+ * Sei minuti. Erano quattro, e troncavano lavori che stavano per riuscire: se
+ * il modello era spento, il server ne impiegava quasi quattro solo per
+ * caricarlo, e il tempo per generare non restava. Adesso lo si sveglia
+ * all'apertura del wizard, quindi in pratica bastano trenta secondi — ma
+ * quando il riscaldamento non fa in tempo, meglio riuscire al quinto minuto
+ * che fallire al quarto.
+ *
+ * Resta un tetto, non una previsione: chi ne chiede venti non sta finendo,
+ * sta girando a vuoto, e girare a vuoto davanti a un utente che aspetta è la
+ * sola cosa che non deve poter succedere.
  */
-const BUDGET_MS = 4 * 60_000;
+const BUDGET_MS = 6 * 60_000;
 
 const EMPTY: WizardState = {
   stage: 'goal',

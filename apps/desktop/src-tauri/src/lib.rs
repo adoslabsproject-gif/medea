@@ -167,6 +167,7 @@ pub fn run() {
             sync_cmd::mail_sync_folder,
             // AI
             ai_cmd::ai_chat,
+            ai_cmd::ai_warmup,
             ai_abort::ai_chat_abort,
             ai_tools_cmd::ai_tools_list,
             ai_tools_cmd::ai_tools_call,

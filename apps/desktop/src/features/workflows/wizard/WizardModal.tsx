@@ -11,6 +11,7 @@ import { useEffect } from 'react';
 
 import { activeProvider } from '../../ai/connection';
 import { AGENT_MAX_STEPS } from '../scaffold';
+import { riscaldaModello } from '../scaffold';
 import type { Workflow } from '../types';
 
 import { BuildingStage } from './BuildingStage';
@@ -35,6 +36,11 @@ const TITLES: Record<string, string> = {
 export function WizardModal({ onClose, onImport }: Props) {
   const wizard = useWizard();
   const busy = wizard.stage === 'building';
+
+  // Il modello si sveglia adesso, mentre l'utente scrive cosa vuole: quelle
+  // decine di secondi sono le stesse che il server impiega a caricarlo, e
+  // altrimenti le pagherebbe lui dopo aver premuto «Costruisci».
+  useEffect(riscaldaModello, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

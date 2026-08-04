@@ -1,3 +1,4 @@
+export { riscaldaModello } from './riscalda';
 export {
   AGENT_MAX_STEPS,
   agentToolsForProvider,
