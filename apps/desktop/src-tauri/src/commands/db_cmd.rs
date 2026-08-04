@@ -17,7 +17,9 @@ pub fn db_status() -> Result<DbInitInfo, String> {
 }
 
 #[tauri::command]
-pub fn db_account_upsert(account: db::accounts::StoredAccount) -> Result<(), String> {
+/// Restituisce l'id con cui l'account è davvero registrato: può differire da
+/// quello passato, se lo stesso indirizzo esisteva già. Chi chiama lo adotta.
+pub fn db_account_upsert(account: db::accounts::StoredAccount) -> Result<String, String> {
     db::with_db(|c| db::accounts::upsert(c, &account)).map_err(|e| e.to_string())
 }
 
