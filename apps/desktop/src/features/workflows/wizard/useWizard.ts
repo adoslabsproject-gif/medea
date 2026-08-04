@@ -28,6 +28,17 @@ import type { WizardState } from './types';
  *  lunga, e un contatore che corre sarebbe solo agitazione. */
 const TICK_MS = 1000;
 
+/**
+ * Quanto può durare l'intera costruzione, comunque vada.
+ *
+ * Quattro minuti sono lunghi per chi guarda una barra, e sono abbastanza per
+ * una generazione riuscita: quella che ha funzionato ci ha messo due passi e
+ * meno di un minuto. Chi ne ha bisogno di venti non sta finendo, sta girando
+ * a vuoto — e girare a vuoto davanti a un utente che aspetta è la sola cosa
+ * che non deve poter succedere.
+ */
+const BUDGET_MS = 4 * 60_000;
+
 const EMPTY: WizardState = {
   stage: 'goal',
   goal: '',
@@ -122,6 +133,27 @@ export function useWizard(): Wizard {
       controllore.current = controller;
       fermato.current = false;
       setTokens(undefined);
+
+      // Il tempo massimo che la costruzione può prendersi, comunque vada.
+      //
+      // I limiti c'erano già, ma erano tutti sul *numero* di passi: tre
+      // tentativi per la prima strada, quaranta per l'agente. Nessuno sul
+      // tempo. Con tre minuti concessi a ogni chiamata, quaranta passi fanno
+      // due ore — ed è esattamente quanto è durato il blocco del 2026-08-04:
+      // non un difetto, il limite che funzionava come scritto.
+      //
+      // Nessun numero di passi è quello giusto, perché quello che l'utente
+      // sopporta si misura in minuti, non in passi. Scaduti, ci si ferma e si
+      // consegna quello che c'è: un workflow a metà da correggere vale più di
+      // un'attesa che non finisce.
+      const scaduto = { current: false };
+      const scadenza = setTimeout(() => {
+        scaduto.current = true;
+        controller.abort();
+      }, BUDGET_MS);
+      const chiudiScadenza = () => {
+        clearTimeout(scadenza);
+      };
 
       // Il conto dei token si somma man mano: quello che interessa è quanto
       // è costato tutto, non l'ultima chiamata.
@@ -240,11 +272,21 @@ export function useWizard(): Wizard {
         }));
       } catch (e) {
         if (!alive.current || fermato.current) return;
+        // Il tempo scaduto non è un errore del modello, e dirlo con le parole
+        // dell'eccezione («The operation was aborted») non spiegherebbe
+        // niente a chi ha soltanto aspettato troppo.
         setState((s) => ({
           ...s,
           stage: 'failed',
-          reason: e instanceof Error ? e.message : String(e),
+          reason: scaduto.current
+            ? `Mi sono fermato dopo ${String(Math.round(BUDGET_MS / 60_000))} minuti: quello che era stato costruito resta, il resto va completato a mano. Un obiettivo più corto, o diviso in due workflow, di solito ci arriva.`
+            : e instanceof Error
+              ? e.message
+              : String(e),
+          built: builtNodes(steps),
         }));
+      } finally {
+        chiudiScadenza();
       }
     })();
   }, []);
