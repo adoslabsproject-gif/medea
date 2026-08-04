@@ -295,7 +295,22 @@ pub async fn ai_chat(req: ChatRequest) -> Result<ChatResponse, String> {
     // le chiamate brevi, dove lo stop non ha senso — non paga niente.
     let token = req.request_id.as_deref().map(super::ai_abort::registra);
     let quanti_tool = req.tools.as_ref().map_or(0, Vec::len);
-    let esito = ai_chat_interna(&req, token.clone()).await;
+    let mut esito = ai_chat_interna(&req, token.clone()).await;
+
+    // I nomi storpiati si rimettono a posto qui, prima che chiunque altro li
+    // veda: chi consuma la risposta non deve sapere che esiste il problema.
+    if let Ok(risposta) = esito.as_mut() {
+        let offerti = super::tool_names::nomi_offerti(req.tools.as_ref());
+        for chiamata in &mut risposta.tool_calls {
+            if let Some(vero) = super::tool_names::ripara(&chiamata.name, &offerti) {
+                tracing::info!(
+                    "Nome dello strumento riparato: «{}» → «{vero}»",
+                    chiamata.name
+                );
+                chiamata.name = vero;
+            }
+        }
+    }
     // Una riga per chiamata: quanti strumenti sono stati offerti e quanti ne
     // ha usati. Quando un ciclo si impunta è la prima cosa da guardare, e
     // senza di essa si può solo indovinare — successo il 2026-08-03, con un
