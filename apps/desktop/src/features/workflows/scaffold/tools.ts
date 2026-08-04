@@ -29,6 +29,9 @@ export interface ToolContext {
   /** Vero dopo la prima scomposizione della richiesta: rifarla non aggiunge
    *  niente, e un modello bloccato tende a rifare l'ultima cosa riuscita. */
   analisiFatta?: boolean;
+  /** I risultati dell'ultima ricerca, per rimediare a un `add_node` senza
+   *  defId senza costringere a cercare di nuovo. */
+  ultimaRicerca?: unknown[];
 }
 
 const obj = (
@@ -194,7 +197,34 @@ export interface ToolCallResult {
 }
 
 /** Esegue un tool sul workflow in costruzione. */
+/**
+ * Il promemoria che accompagna ogni risposta degli strumenti.
+ *
+ * Il divieto di fare domande sta nel prompt di sistema, scritto una volta
+ * all'inizio. Dopo dieci scambi non ha più forza: il modello torna a chiedere
+ * «a quale indirizzo lo mando?», «dimmi la cartella», e ripete finché il ciclo
+ * si arrende. Visto succedere a ogni tentativo del 2026-08-04.
+ *
+ * Un'istruzione che arriva **dopo** l'azione è fresca. Costa una riga per
+ * chiamata e vale più di qualunque paragrafo messo in cima.
+ */
+const PROMEMORIA = 'Prosegui da solo: non fare domande, nessuno può risponderti.';
+
 export function executeWorkflowTool(
+  ctx: ToolContext,
+  name: string,
+  args: Record<string, unknown>,
+): ToolCallResult {
+  const esito = eseguiStrumento(ctx, name, args);
+  // Il promemoria si attacca a ogni risposta, non solo a quelle riuscite:
+  // dopo un errore la tentazione di chiedere aiuto è ancora più forte.
+  if (esito.data !== null && typeof esito.data === 'object' && !Array.isArray(esito.data)) {
+    return { ...esito, data: { ...esito.data, promemoria: PROMEMORIA } };
+  }
+  return esito;
+}
+
+function eseguiStrumento(
   ctx: ToolContext,
   name: string,
   args: Record<string, unknown>,
@@ -228,8 +258,11 @@ export function executeWorkflowTool(
       };
     }
     case 'search_nodes': {
-      const query = str(args.query);
-      return { data: { hits: searchNodes(ctx.catalog, query) } };
+      // L'ultima ricerca resta da parte: se subito dopo arriva un `add_node`
+      // senza defId — e succede — si può ricordargli cosa aveva appena
+      // trovato invece di rimandarlo a cercare da capo.
+      ctx.ultimaRicerca = searchNodes(ctx.catalog, str(args.query));
+      return { data: { hits: ctx.ultimaRicerca } };
     }
     case 'get_node_schema': {
       const defId = str(args.defId);
@@ -253,10 +286,29 @@ export function executeWorkflowTool(
         },
       };
     }
-    case 'add_node':
+    case 'add_node': {
+      const defId = str(args.defId);
+      if (!defId) {
+        // Chiamato senza dire cosa aggiungere. Rimandarlo a `search_nodes`
+        // sarebbe farlo ripartire da capo: se una ricerca c'è stata, i suoi
+        // risultati sono ancora quelli buoni.
+        const suggeriti = ctx.ultimaRicerca ?? [];
+        return {
+          data: {
+            error: 'Hai chiamato add_node senza defId: nessun nodo è stato aggiunto.',
+            ...(suggeriti.length > 0
+              ? {
+                  scegliUnoDiQuesti: suggeriti,
+                  come: 'Richiama add_node con defId uguale a uno di questi, esattamente com’è scritto.',
+                }
+              : { come: 'Chiama prima `search_nodes` per trovare il defId giusto.' }),
+          },
+        };
+      }
       return {
-        data: ctx.builder.addNode(str(args.defId), optStr(args.id), cfg(args.config)),
+        data: ctx.builder.addNode(defId, optStr(args.id), cfg(args.config)),
       };
+    }
     case 'connect':
       return {
         data: ctx.builder.connect(str(args.from), str(args.to), optStr(args.fromPort)),

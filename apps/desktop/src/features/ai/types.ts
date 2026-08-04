@@ -51,6 +51,12 @@ export interface ChatRequest {
   /** Un nome per questa richiesta, se la si vuole poter fermare a metà.
    *  Senza, non è interrompibile — e va bene per le chiamate brevi. */
   requestId?: string | undefined;
+  /** Lo schema a cui la risposta deve essere conforme.
+   *
+   *  Non è un suggerimento nel prompt: i server compatibili con OpenAI
+   *  vincolano la generazione, e il modello non può produrre altro. È la
+   *  differenza fra chiedere un JSON e ottenerlo. */
+  jsonSchema?: Record<string, unknown> | undefined;
 }
 
 /** Quanti token è costata una risposta, quando il provider lo dichiara. */
