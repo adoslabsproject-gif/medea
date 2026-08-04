@@ -56,3 +56,28 @@ describe('la lettura del contenuto', () => {
     expect(parseData({ event: 'x', data: 'non json' })).toBeNull();
   });
 });
+
+describe('un flusso che non si chiude mai', () => {
+  it('🚨 non accumula senza fine: il residuo ha un tetto', () => {
+    const leggi = createSseReader();
+    // Una risposta che non è SSE — un errore JSON, per dire — non contiene
+    // mai la riga vuota che chiude un messaggio. Senza tetto il residuo
+    // cresce a ogni pezzo: il 2026-08-04 il webview è arrivato a 5 GB.
+    const pezzo = 'x'.repeat(100_000);
+    for (let i = 0; i < 40; i++) leggi(pezzo);
+
+    // Dopo lo scarto il lettore continua a funzionare: la riga vuota chiude
+    // quel che resta della spazzatura, e il messaggio dopo si legge intero.
+    const messaggi = leggi('\n\nevent: run.started\ndata: {"runId":"r1"}\n\n');
+    const utile = messaggi.filter((m) => m.event === 'run.started');
+    expect(utile).toHaveLength(1);
+    expect(utile[0]?.data).toContain('r1');
+  });
+
+  it('un messaggio grosso ma legittimo passa lo stesso', () => {
+    const leggi = createSseReader();
+    const payload = JSON.stringify({ testo: 'a'.repeat(50_000) });
+    const messaggi = leggi(`event: run.step\ndata: ${payload}\n\n`);
+    expect(messaggi).toHaveLength(1);
+  });
+});

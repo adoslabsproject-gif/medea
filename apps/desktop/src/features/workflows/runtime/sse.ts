@@ -11,6 +11,15 @@
  * proxy a non trattenere lo stream, e vanno ignorati senza fare rumore.
  */
 
+/**
+ * Quanto può crescere il pezzo di messaggio ancora incompleto.
+ *
+ * Generoso rispetto a qualunque evento vero — il runtime manda 16 KB di
+ * commenti in apertura e i payload più grossi stanno in poche decine di KB —
+ * e abbastanza stretto da accorgersi subito di un flusso che non si chiude.
+ */
+const MAX_RESIDUO = 1_000_000;
+
 export interface SseMessage {
   event: string;
   data: string;
@@ -28,6 +37,26 @@ export function createSseReader(): (chunk: string) => SseMessage[] {
 
   return (chunk: string): SseMessage[] => {
     buffer += chunk;
+
+    // Un residuo che supera questa soglia non è più «una riga a metà»: è un
+    // flusso che non manda mai la riga vuota di chiusura. Succede quando la
+    // risposta non è uno stream ma un errore — un 403 JSON, una pagina di
+    // proxy — e allora il residuo cresce a ogni pezzo che arriva, senza che
+    // niente lo svuoti mai.
+    //
+    // Il 2026-08-04 il webview è arrivato a cinque gigabyte durante
+    // l'esecuzione di un workflow, per questa riga che mancava. Un messaggio
+    // legittimo non arriva a un megabyte nemmeno con un payload generoso:
+    // oltre quella soglia si butta il residuo e si riparte puliti, perché
+    // tenerlo non serve a nessuno e costa tutta la memoria della macchina.
+    if (buffer.length > MAX_RESIDUO) {
+      console.warn(
+        `[runtime] flusso senza fine messaggio: ${String(buffer.length)} byte accumulati, residuo scartato`,
+      );
+      buffer = '';
+      return [];
+    }
+
     const messages: SseMessage[] = [];
 
     // I messaggi finiscono con una riga vuota. L'ultimo pezzo resta nel
