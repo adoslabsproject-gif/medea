@@ -26,7 +26,7 @@ import {
   SCAFFOLD_SYSTEM_PROMPT_TUNED,
 } from './prompt';
 import { repairScaffold } from './repair';
-import { isScaffoldOutput, SINGLESHOT_OUTPUT_SCHEMA, type ScaffoldOutput } from './schema';
+import { isScaffoldOutput, schemaConDefIdAmmessi, type ScaffoldOutput } from './schema';
 import { describeViolations, validateScaffold, type Violation } from './validate';
 
 /**
@@ -119,6 +119,10 @@ export async function runScaffold(req: ScaffoldRequest): Promise<ScaffoldResult>
   const index = indexByDefId(req.catalog);
   const shown = selectCatalog(req.catalog, req.goal, [...SCAFFOLD_CORE_DEFIDS]);
   const system = req.llm.isTuned ? SCAFFOLD_SYSTEM_PROMPT_TUNED : SCAFFOLD_SYSTEM_PROMPT;
+  // I nodi che il modello può nominare sono esattamente quelli che gli
+  // mostriamo: elencarli nello schema rende l'invenzione impossibile invece
+  // che da correggere dopo.
+  const schemaAmmesso = schemaConDefIdAmmessi(shown.map((d) => d.defId));
 
   let previousErrors: string | undefined;
   let lastViolations: Violation[] = [];
@@ -148,7 +152,7 @@ export async function runScaffold(req: ScaffoldRequest): Promise<ScaffoldResult>
 
     let raw: string;
     try {
-      raw = await req.llm.complete({ system, user, schema: SINGLESHOT_OUTPUT_SCHEMA });
+      raw = await req.llm.complete({ system, user, schema: schemaAmmesso });
     } catch (e) {
       lastReason = `Il provider non ha risposto: ${String(e)}`;
       previousErrors = lastReason;

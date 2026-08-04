@@ -100,6 +100,18 @@ fn catena_cause(e: &dyn std::error::Error) -> String {
     parti.join(" ← ")
 }
 
+/// Quanti secondi aspettare la risposta, al tentativo numero `attempt`.
+///
+/// Vedi il commento in `post_openai_compatible`: il primo tentativo scopre se
+/// il modello c'è, i successivi aspettano che finisca di generare.
+fn attesa_tentativo(attempt: u32) -> u64 {
+    if attempt == 1 {
+        40
+    } else {
+        180
+    }
+}
+
 fn client_provider() -> anyhow::Result<reqwest::Client> {
     Ok(reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(180))
@@ -605,11 +617,25 @@ async fn post_openai_compatible(
     body: &serde_json::Value,
     label: &str,
 ) -> anyhow::Result<ChatResponse> {
-    const MAX_ATTEMPTS: u32 = 2;
+    const MAX_ATTEMPTS: u32 = 3;
     let mut last_err: Option<anyhow::Error> = None;
     for attempt in 1..=MAX_ATTEMPTS {
+        // Il primo tentativo aspetta poco, i successivi tanto.
+        //
+        // Un modello che dorme non risponde alla richiesta che lo sveglia: la
+        // paga, e intanto si carica. Il 2026-08-04 il primo tentativo ha
+        // consumato tutti e 180 i secondi per poi fallire, e il secondo —
+        // identico, sullo stesso server — è tornato in dodici. Tre minuti di
+        // attesa per scoprire una cosa che si sa in quaranta secondi, e per
+        // chi guarda lo schermo sono tre minuti di «sta pensando» senza
+        // niente che si muova.
+        //
+        // Quaranta secondi bastano a distinguere «sveglio e lento» da «non
+        // c'è»: chi risponde, a quel punto, ha già cominciato. Dal secondo in
+        // poi il tetto torna alto, perché lì la generazione è davvero in
+        // corso e interromperla sarebbe uno spreco.
         let client = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(180))
+            .timeout(std::time::Duration::from_secs(attesa_tentativo(attempt)))
             .pool_max_idle_per_host(0)
             .connect_timeout(std::time::Duration::from_secs(15))
             .build()?;

@@ -155,7 +155,7 @@ export function BuildingStage({
       )}
 
       <div className={styles.trace}>
-        <TraceList entries={trace} live />
+        <TraceList entries={trace} live elapsedMs={elapsedMs} />
       </div>
     </div>
   );
