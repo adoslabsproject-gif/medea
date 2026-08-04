@@ -39,7 +39,9 @@ describe('il wizard, montato davvero', () => {
 
   it('mostra gli esempi da cui partire', () => {
     render(<WizardModal onClose={vi.fn()} onImport={vi.fn()} />);
-    expect(screen.getByRole('button', { name: 'Riepilogo del mattino' })).toBeTruthy();
+    // Il nome accessibile contiene titolo e testo dell'esempio: si sceglie
+    // leggendo cosa si sta per chiedere, non indovinandolo dal titolo.
+    expect(screen.getByRole('button', { name: /Riepilogo del mattino/ })).toBeTruthy();
   });
 
   it('non lascia costruire finché non si è scritto niente', () => {
@@ -51,7 +53,7 @@ describe('il wizard, montato davvero', () => {
   it('un esempio riempie la casella invece di partire da solo', () => {
     // Quello che si chiede va sempre riletto prima di lanciarlo.
     render(<WizardModal onClose={vi.fn()} onImport={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Riepilogo del mattino' }));
+    fireEvent.click(screen.getByRole('button', { name: /Riepilogo del mattino/ }));
 
     const goal: HTMLTextAreaElement = screen.getByLabelText('Cosa deve fare questa automazione?');
     expect(goal.value).toContain('Ogni mattina alle 8');

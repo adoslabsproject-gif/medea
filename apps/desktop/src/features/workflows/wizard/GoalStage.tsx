@@ -7,7 +7,9 @@
  * chiede va sempre riletto prima di lanciarlo.
  */
 
-import { WIZARD_EXAMPLES } from './examples';
+import { useState } from 'react';
+
+import { WIZARD_CATEGORIES } from './examples';
 import styles from './GoalStage.module.css';
 
 interface Props {
@@ -17,6 +19,11 @@ interface Props {
 }
 
 export function GoalStage({ goal, onGoal, onStart }: Props) {
+  // Si apre sulla prima categoria invece che su una scelta da fare: chi non
+  // sa cosa chiedere ha già qualcosa davanti, e cambiare scheda è un clic.
+  const [categoria, setCategoria] = useState(WIZARD_CATEGORIES[0]?.id ?? '');
+  const attiva = WIZARD_CATEGORIES.find((c) => c.id === categoria) ?? WIZARD_CATEGORIES[0];
+
   return (
     <div className={styles.root}>
       <label className={styles.label} htmlFor="wizard-goal">
@@ -49,8 +56,31 @@ export function GoalStage({ goal, onGoal, onStart }: Props) {
 
       <div className={styles.examples}>
         <span className={styles.examplesTitle}>Oppure parti da qui</span>
+
+        {/* Le categorie prima degli esempi: dicono in un colpo d'occhio fin
+            dove arriva quello che si può chiedere — che non è solo la posta. */}
+        <div className={styles.categorie} role="tablist" aria-label="Tipi di automazione">
+          {WIZARD_CATEGORIES.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              role="tab"
+              aria-selected={c.id === attiva?.id}
+              className={c.id === attiva?.id ? styles.categoriaAttiva : styles.categoria}
+              title={c.hint}
+              onClick={() => {
+                setCategoria(c.id);
+              }}
+            >
+              <span aria-hidden="true">{c.icon}</span> {c.label}
+            </button>
+          ))}
+        </div>
+
+        {attiva && <p className={styles.categoriaHint}>{attiva.hint}</p>}
+
         <div className={styles.chips}>
-          {WIZARD_EXAMPLES.map((example) => (
+          {(attiva?.examples ?? []).map((example) => (
             <button
               key={example.title}
               type="button"
@@ -60,7 +90,10 @@ export function GoalStage({ goal, onGoal, onStart }: Props) {
                 onGoal(example.goal);
               }}
             >
-              {example.title}
+              <span className={styles.chipTitolo}>{example.title}</span>
+              {/* Il testo intero, non solo il titolo: si sceglie leggendo
+                  cosa si sta per chiedere, non indovinandolo dal nome. */}
+              <span className={styles.chipTesto}>{example.goal}</span>
             </button>
           ))}
         </div>

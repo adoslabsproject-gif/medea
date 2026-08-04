@@ -58,6 +58,9 @@ export function useWizard(): Wizard {
   const alive = useRef(true);
   /** Con cosa si ferma la costruzione in corso. */
   const controllore = useRef<AbortController | null>(null);
+  /** Vero da quando si è premuto «Interrompi»: quello che arriva dopo è di un
+   *  lavoro che non interessa più. */
+  const fermato = useRef(false);
   const [tokens, setTokens] = useState<{ input: number; output: number } | undefined>(undefined);
   useEffect(() => {
     // Il valore va **rimesso a vero all'ingresso**, non solo azzerato
@@ -117,12 +120,13 @@ export function useWizard(): Wizard {
 
       const controller = new AbortController();
       controllore.current = controller;
+      fermato.current = false;
       setTokens(undefined);
 
       // Il conto dei token si somma man mano: quello che interessa è quanto
       // è costato tutto, non l'ultima chiamata.
       const contaToken = (usati: { input: number; output: number }) => {
-        if (!alive.current) return;
+        if (!alive.current || fermato.current) return;
         setTokens((prima) => ({
           input: (prima?.input ?? 0) + usati.input,
           output: (prima?.output ?? 0) + usati.output,
@@ -134,7 +138,7 @@ export function useWizard(): Wizard {
       const annota = (tool: string, args: Record<string, unknown>, result: unknown) => {
         const passo: AgentStep = { step: steps.length + 1, tool, args, result };
         steps.push(passo);
-        if (!alive.current) return;
+        if (!alive.current || fermato.current) return;
         setState((s) => ({ ...s, trace: [...s.trace, toTraceEntry(passo)] }));
       };
 
@@ -159,7 +163,7 @@ export function useWizard(): Wizard {
           signal: controller.signal,
         });
 
-        if (!alive.current) return;
+        if (!alive.current || fermato.current) return;
 
         if (singolo.ok) {
           annota(
@@ -196,7 +200,7 @@ export function useWizard(): Wizard {
           signal: controller.signal,
           onStep: (step) => {
             steps.push(step);
-            if (!alive.current) return;
+            if (!alive.current || fermato.current) return;
             setState((s) => ({
               ...s,
               trace: [...s.trace, toTraceEntry(step)],
@@ -205,7 +209,7 @@ export function useWizard(): Wizard {
           },
         });
 
-        if (!alive.current) return;
+        if (!alive.current || fermato.current) return;
 
         if (!result.ok) {
           setState((s) => ({
@@ -235,7 +239,7 @@ export function useWizard(): Wizard {
           warnings: [...result.remainingIssues],
         }));
       } catch (e) {
-        if (!alive.current) return;
+        if (!alive.current || fermato.current) return;
         setState((s) => ({
           ...s,
           stage: 'failed',
@@ -253,11 +257,28 @@ export function useWizard(): Wizard {
     setState(EMPTY);
   }, []);
 
-  /** Ferma la costruzione. Il ciclo se ne accorge fra un passo e l'altro, e
-   *  la chiamata in volo viene fatta cadere dal lato Rust. */
+  /**
+   * Ferma la costruzione, e lo fa vedere subito.
+   *
+   * Annullare non basta: il ciclo se ne accorge **fra un passo e l'altro**, e
+   * se in quel momento è fermo dentro una chiamata che non torna — il
+   * portachiavi che aspetta una password, un provider che non risponde —
+   * quell'accorgersi non arriva mai. Da fuori il pulsante sembra rotto.
+   *
+   * Quindi lo schermo si aggiorna qui, senza chiedere permesso al ciclo. Se
+   * poi la chiamata in volo finisce per conto suo, trova `alive` a posto ma
+   * uno stato che non è più «in costruzione»: i suoi risultati vengono
+   * ignorati, ed è giusto — sono di un lavoro che l'utente ha fermato.
+   */
   const stop = useCallback(() => {
     controllore.current?.abort();
     controllore.current = null;
+    fermato.current = true;
+    setState((s) =>
+      s.stage === 'building'
+        ? { ...s, stage: 'failed', reason: 'Interrotto: quello che era già stato costruito resta.' }
+        : s,
+    );
   }, []);
 
   return { ...state, setGoal, start, stop, retry, reset, tokens };
