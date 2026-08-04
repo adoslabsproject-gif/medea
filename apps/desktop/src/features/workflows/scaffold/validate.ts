@@ -40,20 +40,27 @@ export interface Violation {
   message: string;
 }
 
-/** Campi che l'utente sceglierà da un menu: il modello non può conoscerne il
- *  valore, quindi non è colpa sua se manca. Vengono riempiti dopo. */
-const PICKER_TYPES = new Set([
-  'db-picker',
-  'db-table-picker',
-  'credential-picker',
-  'file-picker',
-  'account-picker',
-]);
-
 export { PICKER_PLACEHOLDER } from '../constants';
 
+/**
+ * Campi che l'utente sceglierà da un menu: il modello non può conoscerne il
+ * valore, quindi non è colpa sua se manca. Vengono riempiti dopo.
+ *
+ * Riconosciuti dal suffisso, non da un elenco. L'elenco c'era — cinque nomi
+ * scritti a mano — e si era staccato dal catalogo senza che nessuno se ne
+ * accorgesse: conteneva `account-picker` e `credential-picker`, che nel
+ * catalogo non esistono, e ignorava `email-account-picker` (cinque campi),
+ * `timezone-picker`, `workflow-picker`, `directory-picker` e
+ * `db-collection-picker`. Il 2026-08-04 è per questo che un
+ * `systemAccountId` valorizzato «email-account-picker» attraversava
+ * indisturbato le riparazioni e finiva per bocciare il workflow.
+ *
+ * Il suffisso è la convenzione vera del catalogo — ogni selettore la rispetta
+ * — e non richiede di ricordarsi di aggiornare un elenco quando se ne
+ * aggiunge uno. Un elenco che va tenuto allineato a mano prima o poi non lo è.
+ */
 export function isPickerField(type: string): boolean {
-  return PICKER_TYPES.has(type);
+  return type.endsWith('-picker');
 }
 
 /** Livello 1 e 2: ogni nodo contro la sua definizione. */

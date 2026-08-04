@@ -14,6 +14,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { testoAttesa } from './attesa-testo';
 import styles from './TraceList.module.css';
 import type { TraceEntry } from './types';
 
@@ -21,6 +22,8 @@ interface Props {
   entries: readonly TraceEntry[];
   /** Vero mentre l'agente lavora: l'ultima riga resta «in corso». */
   live: boolean;
+  /** Da quanto si aspetta: cambia cosa ha senso dire. */
+  elapsedMs?: number;
 }
 
 /** Il log di un passo, leggibile: niente JSON su una riga sola. */
@@ -36,7 +39,7 @@ function formatta(valore: unknown): string {
   }
 }
 
-export function TraceList({ entries, live }: Props) {
+export function TraceList({ entries, live, elapsedMs = 0 }: Props) {
   const end = useRef<HTMLDivElement>(null);
   const [aperta, setAperta] = useState<string | null>(null);
 
@@ -100,7 +103,7 @@ export function TraceList({ entries, live }: Props) {
             <span className={styles.mark} aria-hidden="true">
               ·
             </span>
-            <span className={styles.label}>Sta pensando…</span>
+            <span className={styles.label}>{testoAttesa(elapsedMs)}</span>
           </span>
         </li>
       )}

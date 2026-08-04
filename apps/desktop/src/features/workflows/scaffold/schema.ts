@@ -93,6 +93,53 @@ export const SINGLESHOT_OUTPUT_SCHEMA = {
   additionalProperties: false,
 } as const;
 
+/**
+ * Lo schema con i `defId` ammessi elencati uno per uno.
+ *
+ * Senza questo il modello inventa. Non «a volte»: il 2026-08-04, chiedendo di
+ * archiviare una fattura, ha prodotto `trigger_email`,
+ * `action_extract_fattura` e `action_add_to_table` — tre nomi plausibili e
+ * inesistenti, mentre `trigger_imap`, `db_insert` e `action_send_email` erano
+ * nell'elenco che aveva davanti. Vederli non basta: descrivere quali nodi
+ * esistono è un *suggerimento*, e un suggerimento si può ignorare.
+ *
+ * L'output vincolato invece non si ignora — il server lo fa rispettare token
+ * per token — e un `enum` trasforma l'invenzione da errore da correggere in
+ * cosa impossibile da scrivere. La differenza misurata: tre giri di
+ * riparazione falliti (oltre cinque minuti) contro diciassette secondi.
+ *
+ * Solo i nodi **mostrati**, non tutti quelli esistenti: con 193 valori la
+ * compilazione della grammatica supera i quattro minuti e la richiesta muore
+ * prima di cominciare. Con i 45 selezionati lo schema pesa 2 KB. È anche più
+ * corretto così — vincolare a un nodo che il modello non ha mai visto
+ * descritto significa chiedergli di indovinare a cosa serve.
+ */
+export function schemaConDefIdAmmessi(defIds: readonly string[]): Record<string, unknown> {
+  // Senza nodi da vincolare si torna allo schema libero: meglio un defId da
+  // correggere che una grammatica con un enum vuoto, che non ammette nulla.
+  if (defIds.length === 0) return SINGLESHOT_OUTPUT_SCHEMA;
+
+  const schema = structuredClone(SINGLESHOT_OUTPUT_SCHEMA) as unknown as SchemaConNodi;
+  schema.properties.nodes.items.properties.defId = {
+    type: 'string',
+    enum: [...defIds],
+  };
+  return schema as unknown as Record<string, unknown>;
+}
+
+/** La forma minima che serve per innestare l'enum, senza `any`. */
+interface SchemaConNodi {
+  properties: {
+    nodes: {
+      items: {
+        properties: {
+          defId: { type: string; enum?: string[]; minLength?: number; maxLength?: number };
+        };
+      };
+    };
+  };
+}
+
 /** La forma che ci aspettiamo dopo il parse, prima della validazione vera. */
 export interface ScaffoldOutput {
   name: string;

@@ -10,7 +10,6 @@ import { describe, expect, it } from 'vitest';
 import { at, CATALOG, fakeLlm, flakyLlm, makeValid } from './fixtures';
 import { SCAFFOLD_SYSTEM_PROMPT, SCAFFOLD_SYSTEM_PROMPT_TUNED } from './prompt';
 import { runScaffold } from './run';
-import { SINGLESHOT_OUTPUT_SCHEMA } from './schema';
 
 const VALID_JSON = () => JSON.stringify(makeValid());
 
@@ -195,7 +194,16 @@ describe('contratto col provider', () => {
     const native = fakeLlm([VALID_JSON()], { supportsStructuredOutput: true });
     await runScaffold({ goal: 'x', catalog: CATALOG, llm: native });
     expect(native.calls[0]?.user).not.toContain("SCHEMA JSON DELL'OUTPUT");
-    expect(native.calls[0]?.schema).toBe(SINGLESHOT_OUTPUT_SCHEMA);
+    // Non più lo schema statico: quello che viaggia porta dentro i defId
+    // ammessi, che sono esattamente i nodi mostrati. Vincolare la forma senza
+    // vincolare i nomi lasciava al modello l'unica libertà che gli faceva
+    // sbagliare — inventare un nodo che non esiste.
+    const schemaInviato = native.calls[0]?.schema as {
+      properties: { nodes: { items: { properties: { defId: { enum?: string[] } } } } };
+    };
+    expect(schemaInviato.properties.nodes.items.properties.defId.enum).toEqual(
+      CATALOG.map((d) => d.defId),
+    );
 
     const legacy = fakeLlm([VALID_JSON()]);
     await runScaffold({ goal: 'x', catalog: CATALOG, llm: legacy });

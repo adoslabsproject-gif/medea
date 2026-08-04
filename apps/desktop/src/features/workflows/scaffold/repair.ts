@@ -12,6 +12,7 @@
 
 import type { NodeDef } from '../types';
 
+import { riparaIdRisorse } from './repair-risorse';
 import type { ScaffoldOutput } from './schema';
 import { isPickerField, PICKER_PLACEHOLDER } from './validate';
 
@@ -170,6 +171,7 @@ export function repairScaffold(output: ScaffoldOutput, catalog: Map<string, Node
   applyDefaultsAndNormalize(output, catalog, log);
   pruneEdges(output, log);
   normalizeTables(output, log);
+  riparaIdRisorse(output, catalog, log);
   fillPositions(output);
   return log;
 }
