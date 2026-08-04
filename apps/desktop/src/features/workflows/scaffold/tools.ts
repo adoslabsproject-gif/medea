@@ -26,6 +26,9 @@ export interface ToolContext {
   /** Schema dei database disponibili: abilita i controlli su tabelle e
    *  colonne quando l'app lo conosce. */
   databases?: readonly QualityDatabase[];
+  /** Vero dopo la prima scomposizione della richiesta: rifarla non aggiunge
+   *  niente, e un modello bloccato tende a rifare l'ultima cosa riuscita. */
+  analisiFatta?: boolean;
 }
 
 const obj = (
@@ -198,6 +201,19 @@ export function executeWorkflowTool(
 ): ToolCallResult {
   switch (name) {
     case 'analyze_goal': {
+      // Chiamarlo due volte non aggiunge niente: la richiesta è la stessa e
+      // la risposta pure. Ma un modello che si blocca tende a rifare l'ultima
+      // cosa che gli è riuscita, e senza questo si avvita qui — visto il
+      // 2026-08-04, tre giri identici e poi la resa.
+      if (ctx.analisiFatta) {
+        return {
+          data: {
+            error:
+              'Hai già scomposto la richiesta: rifarlo non cambia niente. Passa a `search_nodes` per la prima azione.',
+          },
+        };
+      }
+      ctx.analisiFatta = true;
       // Non tocca il workflow: serve a fissare l'intenzione prima di cercare,
       // e a farla vedere a chi guarda. Si risponde con quello che è stato
       // capito, così il modello ha davanti la propria analisi al passo dopo.
