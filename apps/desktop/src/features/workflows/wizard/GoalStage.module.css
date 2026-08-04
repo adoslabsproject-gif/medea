@@ -49,12 +49,16 @@
   }
 
   .chips {
+    flex-direction: column;
+    align-items: stretch;
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
   }
 
   .chip {
+    text-align: start;
+    inline-size: 100%;
     padding: var(--space-1) var(--space-3);
     border: 1px solid var(--color-border-default);
     border-radius: var(--radius-full, 999px);
@@ -87,4 +91,61 @@
     opacity: 0.45;
     cursor: not-allowed;
   }
+}
+
+/* ── Le categorie degli esempi ────────────────────────────────────────── */
+
+.categorie {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-block-start: var(--space-2);
+}
+
+.categoria,
+.categoriaAttiva {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-default);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.categoria:hover {
+  border-color: var(--color-accent-default);
+  color: var(--color-text-primary);
+}
+.categoriaAttiva {
+  border-color: var(--color-accent-default);
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-emphasis);
+  font-weight: var(--font-weight-semibold);
+}
+
+.categoriaHint {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* Gli esempi diventano righe leggibili: il titolo e sotto cosa si sta per
+   chiedere davvero. Sceglierne uno senza leggerlo non ha senso. */
+.chipTitolo {
+  display: block;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.chipTesto {
+  display: block;
+  margin-block-start: 2px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: var(--font-leading-normal);
 }
