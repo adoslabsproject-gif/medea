@@ -493,9 +493,10 @@ export function WorkflowsView() {
             setWizardOpen(false);
           }}
           onImport={(built) => {
-            // Arriva come bozza: si apre nell'editor e si salva solo quando
-            // l'utente decide, come qualunque altra modifica.
-            editor.load(built, false);
+            // Si scrive subito, non «quando l'utente decide»: quello che ha
+            // appena richiesto minuti di generazione non deve dipendere da un
+            // clic che potrebbe non arrivare mai.
+            void editor.adotta(built);
             setWizardOpen(false);
           }}
         />

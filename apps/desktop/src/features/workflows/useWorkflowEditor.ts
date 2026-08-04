@@ -23,7 +23,7 @@ import {
 } from './topbar';
 import { useUndoRedo } from './topbar';
 import type { Workflow } from './types';
-import { useAutosave } from './useAutosave';
+import { useAutosave, worthSaving } from './useAutosave';
 
 export interface WorkflowEditor {
   workflow: Workflow;
@@ -43,6 +43,8 @@ export interface WorkflowEditor {
   changeDistinct: (next: Workflow) => void;
   /** Mette un documento nell'editor senza salvarlo: è una bozza da guardare. */
   load: (workflow: Workflow, enabled: boolean) => void;
+  /** Prende in carico un workflow venuto da fuori, scrivendolo subito. */
+  adotta: (workflow: Workflow) => Promise<void>;
   open: (id: number) => Promise<void>;
   create: () => void;
   save: () => Promise<void>;
@@ -121,15 +123,6 @@ export function useWorkflowEditor(): WorkflowEditor {
     [history],
   );
 
-  const open = useCallback(
-    async (id: number) => {
-      const loaded = await workflowApi.get(id);
-      if (!loaded) return;
-      load(loaded, items.find((i) => i.id === id)?.enabled ?? false);
-    },
-    [items, load],
-  );
-
   const create = useCallback(() => {
     load(emptyWorkflow(), false);
   }, [load]);
@@ -158,6 +151,60 @@ export function useWorkflowEditor(): WorkflowEditor {
   );
 
   const save = useCallback(() => persist(true), [persist]);
+
+  /**
+   * Apre un altro workflow, scrivendo prima quello che si sta lasciando.
+   *
+   * Il salvataggio automatico aspetta una pausa di battitura; il clic sulla
+   * riga accanto può arrivare prima di quella pausa, e allora `load`
+   * sostituisce il documento senza che nessuno abbia mai scritto la versione
+   * precedente. Nessun avviso, nessun modo di tornare indietro.
+   */
+  const open = useCallback(
+    async (id: number) => {
+      if (dirty && worthSaving(workflow)) await persist(false);
+      const loaded = await workflowApi.get(id);
+      if (!loaded) return;
+      load(loaded, items.find((i) => i.id === id)?.enabled ?? false);
+    },
+    [items, load, dirty, workflow, persist],
+  );
+
+  /**
+   * Prende in carico un workflow che arriva da fuori — oggi il wizard —
+   * scrivendolo sul disco **prima** di mostrarlo.
+   *
+   * Non è un dettaglio di ordine: `load` dichiara il documento pulito, e un
+   * documento pulito il salvataggio automatico non lo tocca. Un workflow
+   * generato e caricato con `load` risultava «Salvato» senza essere mai
+   * esistito su disco, e apriva l'ennesima riga della lista lo cancellava
+   * senza chiedere niente — il 2026-08-04 è successo davvero, con dieci minuti
+   * di generazione buttati.
+   *
+   * Aspettare l'autosave non basterebbe: parte dopo una pausa, e fra la fine
+   * del wizard e il primo clic sulla lista quella pausa può non esserci. Ciò
+   * che è costato minuti di inferenza si scrive subito.
+   */
+  const adotta = useCallback(
+    async (wf: Workflow) => {
+      try {
+        const id = await workflowApi.save(wf, false);
+        load({ ...wf, id: String(id) }, false);
+        setNotice('Salvato.');
+        await refresh();
+      } catch (e) {
+        // Il disco ha detto di no: il lavoro resta comunque nell'editor, ma
+        // marcato da salvare — così l'autosave riprova e la lista avverte
+        // prima di sostituirlo.
+        load(wf, false);
+        setDirty(true);
+        setNotice(
+          `Non sono riuscito a salvarlo: ${e instanceof Error ? e.message : String(e)}. È ancora qui, premi Salva.`,
+        );
+      }
+    },
+    [load, refresh],
+  );
 
   // Si salva da soli quando l'utente si ferma. Un documento vuoto e senza
   // nome non crea una riga solo perché la sezione è aperta.
@@ -345,6 +392,7 @@ export function useWorkflowEditor(): WorkflowEditor {
     change,
     changeDistinct,
     load,
+    adotta,
     open,
     create,
     save,
