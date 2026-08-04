@@ -102,14 +102,22 @@ fn catena_cause(e: &dyn std::error::Error) -> String {
 
 /// Quanti secondi aspettare la risposta, al tentativo numero `attempt`.
 ///
-/// Vedi il commento in `post_openai_compatible`: il primo tentativo scopre se
-/// il modello c'è, i successivi aspettano che finisca di generare.
-fn attesa_tentativo(attempt: u32) -> u64 {
-    if attempt == 1 {
-        40
-    } else {
-        180
-    }
+/// Uguale per tutti, e generoso. C'è stata una versione in cui il primo
+/// tentativo ne aspettava quaranta, per scoprire in fretta un modello spento
+/// invece di restare tre minuti su una richiesta che non sarebbe mai tornata.
+/// Risolveva quel problema e ne creava uno peggiore: **quaranta secondi non
+/// bastano a generare**. Il 2026-08-04, con il modello già sveglio e la prima
+/// generazione tornata in sedici secondi, la seconda — prompt più grande,
+/// perché contiene gli errori da correggere — è stata staccata a quaranta
+/// secondi esatti mentre stava lavorando. Poi rifatta da capo.
+///
+/// Un limite che tronca il lavoro buono è peggio di uno che aspetta troppo:
+/// il secondo costa tempo, il primo lo butta e ricomincia.
+///
+/// Il modello spento adesso lo previene il riscaldamento all'apertura del
+/// wizard, che è il posto giusto per occuparsene — prima che qualcuno aspetti.
+fn attesa_tentativo(_attempt: u32) -> u64 {
+    150
 }
 
 fn client_provider() -> anyhow::Result<reqwest::Client> {
