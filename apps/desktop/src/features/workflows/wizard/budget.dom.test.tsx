@@ -70,9 +70,9 @@ describe('il tempo che la costruzione può prendersi', () => {
     });
     expect(result.current.stage).toBe('building');
 
-    // Quattro minuti e un secondo: il budget è scaduto.
+    // Sei minuti e un secondo: il budget è scaduto.
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(4 * 60_000 + 1000);
+      await vi.advanceTimersByTimeAsync(6 * 60_000 + 1000);
     });
 
     expect(result.current.stage).toBe('failed');
@@ -89,9 +89,9 @@ describe('il tempo che la costruzione può prendersi', () => {
       result.current.start();
     });
 
-    // Tre minuti: una generazione lenta ma viva non va interrotta.
+    // Cinque minuti: una generazione lenta ma viva non va interrotta.
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(3 * 60_000);
+      await vi.advanceTimersByTimeAsync(5 * 60_000);
     });
 
     expect(result.current.stage).toBe('building');
