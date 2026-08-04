@@ -198,12 +198,39 @@ export async function createServer(
   // ATTENZIONE: tenant condividono eTLD+1 (*.app.automazionezeli.com),
   // quindi cookie cross-subdomain potrebbe essere abusato. Origin check
   // rifiuta mutating cross-origin requests.
+  /** Le origini scritte in configurazione, più quella del server di origine. */
+  const origineAmmesse = (): string[] => {
+    const dichiarate = loadConfig()
+      .CORS_ORIGINS.split(',')
+      .map((o) => o.trim())
+      .filter(Boolean);
+    return [...new Set([...dichiarate, 'https://flowforge.automazionezeli.com'])];
+  };
+
   const { originCsrf } = await import('./middleware/origin-csrf.js');
   app.use(
     '/api/v1/*',
     originCsrf({
-      allowedOrigins: ['https://flowforge.automazionezeli.com'],
-      allowedOriginPatterns: [/^https:\/\/[a-z0-9-]+\.app\.automazionezeli\.com$/],
+      // Le origini ammesse si leggono dalla configurazione, con dentro anche
+      // quelle da cui Medea parla col motore: il webview dell'applicazione e,
+      // in sviluppo, il server di Vite.
+      //
+      // Erano scritte a mano, e puntavano al dominio del server da cui il
+      // motore proviene. Su un computer, dove il motore gira in locale e le
+      // richieste arrivano dal webview, quella lista non conteneva nessuna
+      // origine valida: ogni chiamata all'API riceveva 403, compreso il
+      // «Esegui» del workflow appena creato.
+      allowedOrigins: origineAmmesse(),
+      allowedOriginPatterns: [
+        /^https:\/\/[a-z0-9-]+\.app\.automazionezeli\.com$/,
+        // Il webview di Tauri: `tauri://localhost` su macOS,
+        // `http://tauri.localhost` su Windows.
+        /^tauri:\/\/localhost$/,
+        /^https?:\/\/tauri\.localhost$/,
+        // In sviluppo il frontend gira su una porta qualunque di localhost.
+        /^https?:\/\/localhost:\d+$/,
+        /^https?:\/\/127\.0\.0\.1:\d+$/,
+      ],
       // Internal S2S endpoints + public share + portal token-gated → skip
       // perche\` autenticati via X-Internal-Token o magic-link token in path.
       skipPaths: [
