@@ -486,3 +486,67 @@ describe('il richiamo indica il passo dopo, non quello appena fatto', () => {
     expect(ultimaHistory).toMatch(/search_nodes/);
   });
 });
+
+describe('chi alterna spiegazioni e azioni sta lavorando', () => {
+  it('🚨 tre risposte a parole sparse non fermano chi costruisce', async () => {
+    // Il caso vero del 2026-08-04: analizza, spiega, cerca, spiega, monta,
+    // configura, spiega. Tre spiegazioni in tutto, mai due di fila — e il
+    // contatore cumulativo lo fermava a metà lavoro.
+    const copione: ('parole' | 'strumento')[] = [
+      'strumento',
+      'parole',
+      'strumento',
+      'parole',
+      'strumento',
+      'parole',
+      'strumento',
+    ];
+    let giro = 0;
+    const result = await runWorkflowAgent({
+      goal: 'archivia le newsletter',
+      catalog: [...CATALOG],
+      chat: () => {
+        const mossa = copione[giro];
+        giro += 1;
+        // Finito il copione chiude: quello che si verifica è che ci sia
+        // arrivato, non cosa fa dopo.
+        if (mossa === undefined) {
+          return Promise.resolve({
+            content: '',
+            toolCalls: [{ id: 'fine', name: 'finish', arguments: {} }],
+          });
+        }
+        if (mossa === 'parole') {
+          return Promise.resolve({ content: 'Adesso procedo.', toolCalls: [] });
+        }
+        return Promise.resolve({
+          content: '',
+          toolCalls: [
+            { id: `t${String(giro)}`, name: 'add_node', arguments: { defId: 'trigger_cron' } },
+          ],
+        });
+      },
+    });
+
+    // Non deve essersi arreso per «tre volte a parole»: ha attraversato tutto
+    // il copione, spiegazioni comprese.
+    if (!result.ok) {
+      expect(result.reason).not.toMatch(/volte di fila a parole/);
+    }
+    expect(giro).toBeGreaterThan(copione.length);
+  });
+
+  it('🚨 tre di fila invece lo fermano: quello è bloccato davvero', async () => {
+    let giro = 0;
+    const result = await runWorkflowAgent({
+      goal: 'archivia le newsletter',
+      catalog: [...CATALOG],
+      chat: () => {
+        giro += 1;
+        return Promise.resolve({ content: 'Ci sto pensando.', toolCalls: [] });
+      },
+    });
+    expect(result.ok).toBe(false);
+    expect(giro).toBeLessThanOrEqual(4);
+  });
+});
