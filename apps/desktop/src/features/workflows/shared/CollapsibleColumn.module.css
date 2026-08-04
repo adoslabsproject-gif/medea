@@ -15,24 +15,32 @@
     inset-block-start: 50%;
     transform: translateY(-50%);
     z-index: var(--z-raised);
-    /* Più larga di prima: a 1rem era una scheggia che non si notava nemmeno
-       da visibile. Una maniglia deve sembrare afferrabile. */
-    inline-size: 1.25rem;
-    block-size: 4rem;
+    /* Larga abbastanza da colpirla senza mirare: 1.25rem la rendevano un
+       bersaglio da mouse fermo. */
+    inline-size: 1.5rem;
+    block-size: 3.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
-    border: 1px solid var(--color-border-subtle);
-    background: var(--color-surface-2);
-    color: var(--color-text-muted);
-    font-size: var(--font-size-sm);
     cursor: pointer;
-    /* Si vede sempre, anche se in sordina. Prima compariva solo passandoci
-       sopra col mouse: chi non ci passava non poteva sapere che la colonna si
-       chiude, e un comando che non si vede è un comando che non esiste. */
-    opacity: 0.75;
-    transition: opacity var(--motion-duration-fast, 150ms) ease-out;
+    /* Tre livelli di «poco» sommati la rendevano invisibile: testo tenue su
+       fondo tenue con bordo tenue, il tutto al 75% di opacità. Ognuno da solo
+       era difendibile — messi insieme cancellavano il comando. Adesso il
+       fondo si stacca dalla colonna e il bordo si vede: una maniglia deve
+       leggersi da ferma, non solo quando ci passi sopra. */
+    border: 1px solid var(--color-border-default);
+    background: var(--color-surface-3);
+    color: var(--color-text-secondary);
+    box-shadow: var(--elevation-1);
+    transition:
+      background var(--motion-duration-fast, 150ms) ease-out,
+      color var(--motion-duration-fast, 150ms) ease-out;
+  }
+
+  .chevron {
+    inline-size: 0.875rem;
+    block-size: 0.875rem;
   }
   .collapse[data-side='start'] {
     inset-inline-end: -1px;
@@ -44,13 +52,10 @@
     border-start-start-radius: var(--radius-sm);
     border-end-start-radius: var(--radius-sm);
   }
-  .column:hover .collapse,
-  .collapse:focus-visible {
-    opacity: 1;
-  }
   .collapse:hover {
-    color: var(--color-accent-default);
+    background: var(--color-accent-default);
     border-color: var(--color-accent-default);
+    color: var(--color-text-inverted);
   }
 
   /* Rientrata resta una striscia: si riapre da lì, e si vede che c'è.

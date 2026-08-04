@@ -101,7 +101,21 @@ export function CollapsibleColumn({
         aria-expanded
         onClick={toggle}
       >
-        {side === 'start' ? '‹' : '›'}
+        {/* Disegnato, non scritto: «‹» è un carattere che ogni font rende a
+            modo suo — in alcuni è una virgoletta alta due pixel, e a quel
+            punto la maniglia non si vede più. Un tratto è un tratto ovunque. */}
+        <svg
+          className={styles.chevron}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d={side === 'start' ? 'M15 5 L8 12 L15 19' : 'M9 5 L16 12 L9 19'} />
+        </svg>
       </button>
       {children}
     </div>
