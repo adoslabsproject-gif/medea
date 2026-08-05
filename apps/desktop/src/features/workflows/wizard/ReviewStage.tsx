@@ -13,6 +13,7 @@
 import type { QualityIssue } from '../quality';
 import type { Workflow } from '../types';
 
+import { AnteprimaFlusso } from './AnteprimaFlusso';
 import styles from './ReviewStage.module.css';
 import { TablesBanner } from './TablesBanner';
 import { TraceList } from './TraceList';
@@ -41,6 +42,10 @@ export function ReviewStage({ workflow, issues, warnings, trace, onImport, onRet
         <p className={styles.name}>{workflow.name}</p>
         {workflow.description && <p className={styles.description}>{workflow.description}</p>}
       </div>
+
+      {/* Cosa è stato costruito, non quanto: «3 nodi» è un numero, e un
+          numero non è una cosa che si possa guardare. */}
+      <AnteprimaFlusso nodes={workflow.nodes} edges={workflow.edges} />
 
       <TablesBanner workflow={workflow} />
 
