@@ -1,4 +1,11 @@
-# ADR 0008 — L'editor ricco vive dentro uno schema, e arriva solo quando serve
+# ADR 0012 — L'editor ricco vive dentro uno schema, e arriva solo quando serve
+
+<!--
+  Nato come ADR 0008 il 2026-08-01, lo stesso giorno e con lo stesso numero di
+  «Il motore viaggia dentro l'installatore». Rinumerato il 2026-08-25: due
+  decisioni con lo stesso identificativo non si possono citare. Nessun
+  documento lo referenziava, quindi non si è rotto nessun collegamento.
+-->
 
 - **Data**: 2026-08-01
 - **Stato**: accettata

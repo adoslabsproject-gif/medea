@@ -107,8 +107,10 @@ preso in prestito da un altro progetto. Vedi
 
 Il canvas per chi sa cosa vuole. Per tutti gli altri c'è l'assistente: «ogni
 mattina alle 8 scarica gli ordini e mandami il riepilogo» diventa un workflow
-costruito un passo alla volta, con nove strumenti — cerca il nodo, ne legge lo
-schema, lo aggiunge, lo configura, valida, chiude.
+costruito un passo alla volta, con quindici strumenti — analizza l'obiettivo,
+cerca il nodo, ne legge lo schema, lo aggiunge, lo configura, valida, chiude. E
+guarda il tuo database: elenca le tabelle, ne legge struttura e contenuti, e su
+tua conferma esplicita ne crea di nuove o ci scrive dentro.
 
 </td><td width="50%" valign="top">
 
@@ -379,7 +381,7 @@ e `cargo check` a ogni push.
 | 🟢  | Versioni, prova del singolo nodo, riesecuzione, export ripulito  |
 | 🟢  | Nodi aggiuntivi `.ffnode` installati da file                     |
 | 🟢  | Webhook locali: un programma sulla macchina fa partire un flusso |
-| ⏳  | Relay per raggiungere il computer da internet (chiede un server) |
+| 🟢  | Relay per i webhook da internet — il tuo server, acceso da te    |
 | ⏳  | OAuth Google e Microsoft                                         |
 | ⏳  | Ricerca semantica con budget di memoria esplicito                |
 | ⏳  | Android via Tauri Mobile                                         |
