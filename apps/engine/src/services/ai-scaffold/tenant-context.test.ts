@@ -159,7 +159,7 @@ describe('formatTenantContextForPrompt', () => {
   });
 
   // ── #3 GROUNDING SCHEMA REALE: writable (locale) vs read-only (esterno) ──
-  // Bug senza1dio 2026-06-16: unico DB = NHA Postgres remoto read-only → il
+  // Bug reale 2026-06-16: unico DB = NHA Postgres remoto read-only → il
   // grounding lo listava come scrivibile → il modello pescava `admin_url_secrets`.
   it('🚨 DB locale writable + DB remoto read-only → sezioni SEPARATE, regole corrette', () => {
     const ctx = empty({
@@ -195,7 +195,7 @@ describe('formatTenantContextForPrompt', () => {
     expect(s).toContain('MAI in un DB [READ-ONLY]');
   });
 
-  it('🚨 SOLO DB remoto read-only (caso senza1dio) → NIENTE DB scrivibili + istruzione a creare locale', () => {
+  it('🚨 SOLO DB remoto read-only (caso reale) → NIENTE DB scrivibili + istruzione a creare locale', () => {
     const ctx = empty({
       databases: [
         {

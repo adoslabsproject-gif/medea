@@ -16,7 +16,7 @@ describe('localWritableDbs — le tabelle workflow vanno SOLO in DB locali (bug 
     expect(r.defaultId).toBe('loc1');
   });
 
-  it('🚨 SOLO remoto (caso senza1dio: unico DB = NHA) → vuoto + default undefined → il caller crea on-demand', () => {
+  it('🚨 SOLO remoto (caso reale: unico DB = NHA) → vuoto + default undefined → il caller crea on-demand', () => {
     const r = localWritableDbs([{ id: 'nha', connection: { embedded: false } }]);
     expect(r.ids.size).toBe(0);
     expect(r.defaultId).toBeUndefined();

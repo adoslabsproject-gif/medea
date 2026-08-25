@@ -808,7 +808,13 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
   // ─────────────────────────────────────────────────────────────
   app.post('/ai-scaffold/stream', async (c) => {
     const tenantId = getTenantId(c);
-    let body: { goal?: string; databaseId?: string; apiKey?: string; provider?: string };
+    let body: {
+      goal?: string;
+      databaseId?: string;
+      apiKey?: string;
+      provider?: string;
+      baseUrl?: string;
+    };
     try {
       body = await c.req.json();
     } catch {
@@ -905,6 +911,7 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
               databaseId?: string;
               apiKey?: string;
               provider?: string;
+              baseUrl?: string;
             } = {
               goal: body.goal!,
               tenantId,
@@ -912,6 +919,7 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
             if (body.databaseId) input.databaseId = body.databaseId;
             if (body.apiKey) input.apiKey = body.apiKey;
             if (body.provider) input.provider = body.provider;
+            if (body.baseUrl) input.baseUrl = body.baseUrl;
             await aiScaffold.scaffold(input, (event) => {
               // PERSISTI il risultato/errore nel job-store PRIMA di tentare il
               // send SSE: così sopravvive anche se il controller è già chiuso.
@@ -1013,7 +1021,13 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
   // ─────────────────────────────────────────────────────────────
   app.post('/ai-scaffold', async (c) => {
     const tenantId = getTenantId(c);
-    let body: { goal?: string; databaseId?: string; apiKey?: string; provider?: string };
+    let body: {
+      goal?: string;
+      databaseId?: string;
+      apiKey?: string;
+      provider?: string;
+      baseUrl?: string;
+    };
     try {
       body = await c.req.json();
     } catch {
@@ -1029,6 +1043,7 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
         databaseId?: string;
         apiKey?: string;
         provider?: string;
+        baseUrl?: string;
       } = {
         goal: body.goal,
         tenantId,
@@ -1036,6 +1051,7 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
       if (body.databaseId) input.databaseId = body.databaseId;
       if (body.apiKey) input.apiKey = body.apiKey;
       if (body.provider) input.provider = body.provider;
+      if (body.baseUrl) input.baseUrl = body.baseUrl;
       const result = await aiScaffold.scaffold(input);
       return c.json(result);
     } catch (err) {

@@ -1154,7 +1154,7 @@ describe('QualityGate — CODE_NODE_LANG_MISMATCH (bug user 2026-06-09)', () => 
 });
 
 describe('QualityGate — DB_COLUMN_NOT_IN_SCHEMA (bug user 2026-06-09)', () => {
-  // Schema reale price_monitoring del tenant senza1dio.
+  // Schema reale price_monitoring di un tenant privato.
   const DBS = [
     {
       id: 'QhktHRtIKHL5aniYhgRvz',

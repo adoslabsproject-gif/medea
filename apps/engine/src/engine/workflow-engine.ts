@@ -394,6 +394,37 @@ function nodeIsBranchable(module: NodeModule): boolean {
 }
 
 /**
+ * Porte dichiarate ma non istradanti: onorarle quando l'edge le NOMINA.
+ *
+ * `action_filter`, `action_validate` e `action_compare` calcolano un ramo —
+ * `kept`/`removed`, `valid`/`invalid`, `equal`/`different` — e lo restituiscono
+ * in `chosenBranch`. Nessuno dei tre dichiara `branching: true`, e il motore
+ * quel ramo lo buttava via: tutti i nodi a valle partivano comunque, su ogni
+ * porta.
+ *
+ * Il 2026-08-16 se n'è visto il prezzo. «Manda un messaggio su Telegram se
+ * arriva una email con urgente o scadenza»: il filtro non teneva niente, e
+ * Telegram partiva lo stesso — l'avviso a ogni email, che è il contrario di
+ * quello che era stato chiesto. Lo stesso esempio d'oro che insegna al modello
+ * a scrivere `fromPort: "kept"` costruiva un edge che non voleva dire niente.
+ *
+ * Qui si onora la porta SOLO quando qualcuno l'ha nominata, e solo per i nodi
+ * che un ramo lo scelgono davvero. Un edge senza porta continua a ricevere
+ * tutto, come ha sempre fatto: i workflow già in giro non cambiano
+ * comportamento, e chi scrive la porta ottiene quello che ha scritto.
+ */
+function portaDichiarataEOnorata(
+  module: NodeModule,
+  chosenBranch: string | undefined,
+  downstream: readonly Edge[],
+): boolean {
+  if (chosenBranch === undefined || nodeIsBranchable(module)) return false;
+  const porte = new Set(module.def.outputs ?? []);
+  if (porte.size === 0) return false;
+  return downstream.some((e) => e.fromPort !== undefined && porte.has(e.fromPort));
+}
+
+/**
  * Risolve il continue-on-fail effettivo combinando il flag dell'ISTANZA del
  * nodo con il default PER-OPERATION (n8n: continueOnFail granulare per
  * specifica operation). Precedenza, dalla più alta:
@@ -1414,6 +1445,14 @@ export class WorkflowEngine implements INodeExecutor {
         toFollow = downstream.filter((edge) => edge.fromPort === 'error');
       } else if (module && nodeIsBranchable(module) && res.chosenBranch !== undefined) {
         toFollow = downstream.filter((edge) => edge.fromPort === res.chosenBranch);
+      } else if (module && portaDichiarataEOnorata(module, res.chosenBranch, downstream)) {
+        // Chi ha nominato una porta ottiene la sua; chi non l'ha nominata
+        // continua a ricevere tutto l'output, come prima.
+        toFollow = downstream.filter(
+          (edge) =>
+            edge.fromPort !== 'error' &&
+            (edge.fromPort === undefined || edge.fromPort === res.chosenBranch),
+        );
       } else {
         // Healthy node OR soft-failed (continue-on-fail): segue i rami NORMALI
         // (esclusi gli error-only port). Nel caso soft-fail i downstream

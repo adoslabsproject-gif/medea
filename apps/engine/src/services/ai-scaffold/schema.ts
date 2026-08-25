@@ -12,7 +12,15 @@ export const SINGLESHOT_OUTPUT_SCHEMA = {
   properties: {
     name: { type: 'string', minLength: 3, maxLength: 100 },
     description: { type: 'string', maxLength: 500 },
-    reasoning: { type: 'string', minLength: 60, maxLength: 1500 },
+    // `description`: cosa fa il workflow, per chi lo leggerà.
+    //
+    // ⚠️ `reasoning` descrive il WORKFLOW COSTRUITO — quali nodi e perché
+    // servono — e MAI le istruzioni ricevute. Il 2026-08-06 chiedere una
+    // spiegazione faceva raccontare al modello cosa dicevano le sue istruzioni,
+    // e la sua protezione anti-leak lo interrompeva a metà JSON: tre tentativi
+    // di fila morti sulla stessa frase. Il minimo è basso apposta: obbligare a
+    // scrivere molto spinge a recitare invece che a spiegare.
+    reasoning: { type: 'string', minLength: 20, maxLength: 600 },
     nodes: {
       type: 'array',
       minItems: 3,
@@ -111,7 +119,7 @@ export const SINGLESHOT_OUTPUT_SCHEMA = {
 export const ZodOutputShape = z.object({
   name: z.string().min(3).max(100),
   description: z.string().max(500).optional(),
-  reasoning: z.string().min(60).max(1500),
+  reasoning: z.string().min(20).max(600),
   nodes: z
     .array(
       z.object({

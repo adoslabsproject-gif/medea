@@ -15,6 +15,8 @@ import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { jsonataExecutor } from './jsonata.js';
 import { sendEmailExecutor } from './nodemailer.js';
 import { sendEmailTrackedExecutor } from './nodemailer-tracked.js';
+import { emailMoveExecutor } from './email-move.js';
+import { contactLookupExecutor } from './contact-lookup.js';
 import { sendEmailTrackedBatchExecutor } from './nodemailer-tracked-batch.js';
 import { waitExecutor } from './wait.js';
 import { paginateExecutor } from './paginate.js';
@@ -93,6 +95,8 @@ export const serverExecutors: Record<string, NodeExecutor> = {
   logic_transform: jsonataExecutor,
   action_send_email: sendEmailExecutor,
   action_email_send_tracked: sendEmailTrackedExecutor,
+  action_email_move: emailMoveExecutor,
+  action_contact_lookup: contactLookupExecutor,
   action_email_send_tracked_batch: sendEmailTrackedBatchExecutor,
   logic_wait: waitExecutor,
   logic_paginate: paginateExecutor,

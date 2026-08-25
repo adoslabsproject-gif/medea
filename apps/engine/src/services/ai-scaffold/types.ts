@@ -44,6 +44,9 @@ export interface AiScaffoldInput {
   databaseId?: string;
   apiKey?: string;
   provider?: string;
+  /** Indirizzo del provider, per i self-hosted il cui host lo conosce solo
+   *  chi chiama (Liara, Ollama, endpoint privati). Non viene salvato. */
+  baseUrl?: string;
   /** Hard ceiling on agent iterations (default 12). Prevents runaway models. */
   maxIterations?: number;
 }

@@ -44,6 +44,12 @@ import { SingleshotStreamParser } from '@/services/ai-scaffold/singleshot-stream
 import { llmQueue, QueueBackpressureError } from '@/services/llm-queue/llm-queue.service.js';
 import { runQualityGate } from '@/services/ai-scaffold/quality-gate.js';
 import {
+  contieneChiamataAStrumento,
+  contieneRifiuto,
+  messaggioChiamataAStrumento,
+  messaggioRifiuto,
+} from '@/services/ai-scaffold/rifiuto-del-modello.js';
+import {
   autoFixWorkflow,
   isPickerResolvableField,
   MERGE_ORPHAN_ID_RE,
@@ -68,6 +74,8 @@ import { runSemanticRepair } from '@/services/ai-scaffold/semantic-repair.js';
 import { makeLlmRepairFn } from '@/services/ai-scaffold/make-llm-repair.js';
 import { validateArchitecture } from '@/services/ai-scaffold/validate-architecture.js';
 import { autoFixInventedDefIds } from '@/services/ai-scaffold/auto-fix-defid.js';
+import { riparaGraffeInConfig } from '@/services/ai-scaffold/ripara-graffe.js';
+import { riparaInviluppo } from '@/services/ai-scaffold/ripara-inviluppo.js';
 import {
   buildTenantContext,
   formatTenantContextForPrompt,
@@ -126,34 +134,118 @@ export type SingleshotEmitter = (e: SingleshotProgressEvent) => void | Promise<v
  */
 const MAX_RETRIES = 2; // 1 tentativo base + 2 retry = max 3 (usato anche da runSingleshotAttempt per il coverage-gate)
 
+/**
+ * Fra i motivi di più tentativi, quello che dice all'utente cosa correggere.
+ *
+ * Un «output senza un oggetto JSON valido» descrive un inciampo del modello:
+ * chi lo legge non sa cosa farsene. Un «la tabella log non esiste» descrive il
+ * suo workflow, e si può agire. Quando sono capitati entrambi, il secondo vale
+ * più del primo anche se è arrivato prima.
+ *
+ * La sostituzione avviene SOLO se l'ultimo motivo è un inciampo del modello.
+ * Un guasto d'ambiente — «fetch failed», il runtime che non risponde — non si
+ * nasconde mai dietro un vecchio rifiuto: manderebbe a sistemare una tabella
+ * mentre il problema è che non si parla con nessuno, ed è il genere di
+ * messaggio che fa perdere un pomeriggio.
+ */
+export function motivoPiuUtile(
+  precedente: AiScaffoldError | null,
+  ultimo: AiScaffoldError,
+): AiScaffoldError {
+  const sostanziale = (e: AiScaffoldError): boolean =>
+    e.message.startsWith('Workflow rejected — quality gate') ||
+    e.message.startsWith('Workflow generato con') ||
+    e.message.startsWith('Serve un\'informazione che non ho');
+  if (sostanziale(ultimo)) return ultimo;
+  const ultimoEInciampo = ultimo.message.startsWith('Output del modello non conforme');
+  if (ultimoEInciampo && precedente !== null && sostanziale(precedente)) return precedente;
+  return ultimo;
+}
+
 export async function runSingleshotScaffold(
   input: AiScaffoldInput,
   onProgress?: SingleshotEmitter,
 ): Promise<AiScaffoldResult> {
-  let lastError: AiScaffoldError | null = null;
+  // L'ultimo motivo SOSTANZIALE, non l'ultimo qualsiasi.
+  //
+  // Il 2026-08-06: il gate rifiutava al primo giro («la tabella log non
+  // esiste»), poi due output illeggibili di fila lo SOVRASCRIVEVANO, e
+  // all'utente arrivava «JSON non valido» — che di quel workflow non dice
+  // niente. Il motivo utile va tenuto da parte quando arriva, o lo si perde.
+  let ultimoSostanziale: AiScaffoldError | null = null;
   let qualityFeedback = '';
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       return await runSingleshotAttempt(input, qualityFeedback, attempt, onProgress);
     } catch (e) {
       if (!(e instanceof AiScaffoldError)) throw e;
-      // Recoverable solo per quality gate reject (codice messaggio identificabile)
+      // Ricuperabile quando il messaggio dice al modello COSA correggere.
+      //
+      // Il quality gate lo diceva già. La **validazione** no, e veniva trattata
+      // come definitiva: il 2026-08-05 «Nodo "community_slack" è orfano:
+      // aggiungi un edge o rimuovilo» ha fatto fallire il wizard al PRIMO
+      // tentativo, con in mano un'istruzione che il modello avrebbe eseguito
+      // senza fatica. Tre tentativi erano previsti e se n'è usato uno.
+      //
+      // Non tutti gli errori sono così: una chiave mancante o un provider
+      // irraggiungibile non migliorano riprovando, e ritentarli vorrebbe dire
+      // far aspettare l'utente tre volte tanto per lo stesso esito. Si ritenta
+      // ciò che descrive un difetto del workflow, non dell'ambiente.
       const isQualityGateReject = e.message.startsWith('Workflow rejected — quality gate');
-      if (!isQualityGateReject || attempt >= MAX_RETRIES) {
+      const isValidationReject = e.message.startsWith('Workflow generato con');
+      // Il modello ha risposto qualcosa che non è JSON.
+      //
+      // È il fallimento PIÙ transitorio che ci sia — la stessa richiesta, un
+      // istante dopo, di solito produce un oggetto valido — e veniva trattato
+      // come definitivo. Il 2026-08-06 il secondo tentativo è finito così e il
+      // ciclo si è fermato a 2 su 3: il terzo, che era previsto e pagato,
+      // nessuno l'ha usato. Non descrive un difetto del workflow né
+      // dell'ambiente: è un inciampo, e riprovare è esattamente ciò per cui i
+      // tentativi esistono.
+      const isOutputIllegibile = e.message.startsWith('Output del modello non conforme');
+      const recuperabile = isQualityGateReject || isValidationReject || isOutputIllegibile;
+      if (!recuperabile || attempt >= MAX_RETRIES) {
         if (attempt > 0) {
           logger.warn(
             { attempts: attempt + 1, lastErr: e.message.slice(0, 200) },
             '[SINGLESHOT] exhausted retries',
           );
         }
-        throw e;
+        // Si racconta il motivo più UTILE, non l'ultimo capitato.
+        //
+        // Il 2026-08-06 l'utente ha letto «output senza un oggetto JSON
+        // valido»: vero, ma di un tentativo intermedio. Il motivo vero stava
+        // nel primo — la tabella «log» non esiste — e si era perso per strada.
+        // Un messaggio che non dice cosa correggere manda a cercare dalla
+        // parte sbagliata, che è peggio di non dire niente.
+        throw motivoPiuUtile(ultimoSostanziale, e);
       }
-      lastError = e;
-      // Estrai issues dal messaggio per feedback al next prompt
-      qualityFeedback = e.message;
+      // Il feedback deve essere un'ISTRUZIONE, non la lamentela di chi legge.
+      //
+      // Rimandare indietro «output senza un oggetto JSON valido» — ottanta
+      // caratteri — non dice al modello che cosa fare, e il 2026-08-06 il
+      // terzo tentativo è partito proprio con quello in mano: ha risposto di
+      // nuovo qualcosa di illeggibile, e per giunta più corto. Peggio: quel
+      // testo SOSTITUIVA il motivo vero del primo rifiuto, che il modello
+      // stava per correggere.
+      //
+      // Su un output illeggibile si ripete l'istruzione precedente — se c'era
+      // qualcosa da correggere, va ancora corretto — con davanti il richiamo
+      // alla forma della risposta.
+      if (isOutputIllegibile) {
+        qualityFeedback = [
+          'La risposta precedente non conteneva un oggetto JSON leggibile.',
+          'Rispondi SOLO con l’oggetto JSON dello schema: nessun testo prima, nessun',
+          'commento dopo, nessun blocco di codice intorno.',
+          ...(qualityFeedback ? ['', 'Resta da correggere:', qualityFeedback] : []),
+        ].join(' ');
+      } else {
+        ultimoSostanziale = e;
+        qualityFeedback = e.message;
+      }
       logger.info(
         { attempt: attempt + 1, max: MAX_RETRIES + 1, feedbackLen: qualityFeedback.length },
-        '[SINGLESHOT] quality gate reject → retry with feedback',
+        '[SINGLESHOT] workflow rifiutato → nuovo tentativo con il motivo in mano',
       );
       try {
         await onProgress?.({
@@ -166,7 +258,7 @@ export async function runSingleshotScaffold(
     }
   }
   // Unreachable but typescript-safe
-  throw lastError ?? new AiScaffoldError('Singleshot failed without specific error', 500);
+  throw ultimoSostanziale ?? new AiScaffoldError('Singleshot failed without specific error', 500);
 }
 
 async function runSingleshotAttempt(
@@ -189,9 +281,10 @@ async function runSingleshotAttempt(
 
   let resolved;
   try {
-    const opts: { headerApiKey?: string; requestedProvider?: string } = {};
+    const opts: { headerApiKey?: string; requestedProvider?: string; baseUrl?: string } = {};
     if (input.apiKey) opts.headerApiKey = input.apiKey;
     if (input.provider) opts.requestedProvider = input.provider;
+    if (input.baseUrl) opts.baseUrl = input.baseUrl;
     resolved = llmResolver.resolve(input.tenantId, opts);
   } catch (e) {
     if (e instanceof NoLlmProviderError) throw new AiScaffoldError(e.message, e.httpStatus ?? 400);
@@ -507,7 +600,10 @@ Rigenera ORA applicando i fix.`;
           resolved.model,
           SINGLESHOT_SYSTEM_PROMPT,
           userPrompt,
-          undefined,
+          // L'indirizzo del provider, quando c'è: per i self-hosted (Liara,
+          // Ollama, un endpoint privato) è l'unico modo di arrivarci. Era
+          // `undefined` fisso, e la richiesta partiva verso il default.
+          resolved.baseUrl,
           [],
           outputSchema,
           (chunk) => {
@@ -583,6 +679,28 @@ Rigenera ORA applicando i fix.`;
     const obj = parseScaffoldJson(rawJson);
     parsed = ZodOutputShape.parse(obj);
   } catch (err: unknown) {
+    // Cosa ha risposto DAVVERO.
+    //
+    // Senza questo il fallimento è indiagnosticabile: il 2026-08-06 tre
+    // tentativi di fila sono morti qui e nel log non c'era una riga che
+    // dicesse che cosa fosse arrivato — solo la sua lunghezza. Si guarda un
+    // assaggio, non tutto: serve a capire la FORMA della risposta (prosa?
+    // scuse? JSON troncato?), e il resto sarebbe solo rumore in un file di log.
+    logger.warn(
+      {
+        rawLen: rawJson.length,
+        rawHead: rawJson.slice(0, 300),
+        rawTail: rawJson.length > 300 ? rawJson.slice(-120) : '',
+        err: err instanceof Error ? err.message : String(err),
+      },
+      '[SINGLESHOT] output illeggibile — ecco cosa è arrivato',
+    );
+    // Un rifiuto non è un difetto di formato, e chiamarlo così manda a
+    // cercare dalla parte sbagliata: si riscrive l'obiettivo mentre il rimedio
+    // è cambiare strada o modello.
+    if (contieneRifiuto(rawJson)) throw new AiScaffoldError(messaggioRifiuto(), 502);
+    if (contieneChiamataAStrumento(rawJson))
+      throw new AiScaffoldError(messaggioChiamataAStrumento(), 502);
     throw new AiScaffoldError(
       `Output del modello non conforme allo schema: ${err instanceof Error ? err.message : String(err)}`,
       502,
@@ -592,6 +710,54 @@ Rigenera ORA applicando i fix.`;
   // Per-defId config validation usando lo stesso pattern del add_node handler.
   // `catalog` già costruito prima del dispatch (riuso, no doppio build).
   const knownDefIds = new Set(catalog.map((c) => c.defId));
+
+  // ─── Pre-validation: l'inviluppo finito dentro i nodi ───
+  //
+  // Il 2026-08-06: ventisei «nodi» con `defId: "tablesToCreate"`. Non è un
+  // nodo — è un campo di primo livello — e il modello lo ha scambiato per un
+  // tipo, ripetendolo fino a esaurire lo spazio. Il prompt adesso dice dove
+  // vive quel campo, ma un prompt è una richiesta: qui l'errore si ripara e
+  // basta, e le tabelle che il modello aveva descritto bene (solo nel posto
+  // sbagliato) non si perdono.
+  const inviluppo = riparaInviluppo(
+    parsed.nodes.map((n) => ({ id: n.id, defId: n.defId, config: n.config })),
+  );
+  if (inviluppo.tolti > 0) {
+    logger.warn(
+      { tolti: inviluppo.tolti, tabelleRecuperate: inviluppo.tabelleRecuperate.length },
+      '[SINGLESHOT] campi dell’inviluppo finiti fra i nodi: tolti',
+    );
+    const tenuti = new Set(inviluppo.nodi.map((n) => n.id));
+    parsed.nodes = parsed.nodes.filter((n) => tenuti.has(n.id));
+    // Gli archi che puntavano ai finti nodi non hanno più un capo.
+    parsed.edges = parsed.edges.filter((e) => tenuti.has(e.from) && tenuti.has(e.to));
+    if (inviluppo.tabelleRecuperate.length > 0) {
+      parsed.tablesToCreate = [
+        ...(parsed.tablesToCreate ?? []),
+        ...inviluppo.tabelleRecuperate,
+      ] as typeof parsed.tablesToCreate;
+    }
+  }
+
+  // ─── Pre-validation: graffe scompagnate nelle espressioni ───
+  //
+  // `{$node.filtro.json.kept | pluck:'nome'}` non è ambiguo: manca una graffa
+  // per parte, e così com'è finisce nel testo dell'email invece di risolversi.
+  // Il modello legge la forma giusta nel prompt, la usa, e ne perde una — il
+  // 5, il 6 e il 7 agosto, con obiettivi diversi. Ripetere l'istruzione ha
+  // smesso di funzionare: qui si corregge e basta.
+  let graffeCorrette = 0;
+  parsed.nodes = parsed.nodes.map((n) => {
+    const esito = riparaGraffeInConfig(n.config);
+    graffeCorrette += esito.corrette;
+    return esito.corrette > 0 ? { ...n, config: esito.config } : n;
+  });
+  if (graffeCorrette > 0) {
+    logger.info(
+      { corrette: graffeCorrette },
+      '[SINGLESHOT] espressioni con una graffa sola: raddoppiate',
+    );
+  }
 
   // ─── Pre-validation: rimap defId inventati con suffix → base catalog ───
   // Bug user 2026-05-31: Liara generava action_http_clearbit, action_http_hunter,
@@ -662,7 +828,7 @@ Rigenera ORA applicando i fix.`;
           resolved.model,
           system,
           user,
-          undefined,
+          resolved.baseUrl,
           [],
           schema,
         ),
@@ -912,6 +1078,23 @@ Rigenera ORA applicando i fix.`;
       .slice(0, 5)
       .map((i) => `• [${i.code}] ${i.message}`)
       .join('\n');
+
+    // Alcuni rifiuti il modello NON può correggerli, per quanti giri gli si
+    // conceda: gli manca un'informazione che nessuno gli ha dato — dove stanno
+    // i dati. Rigenerare tre volte significa far aspettare cinquanta secondi
+    // per arrivare allo stesso punto, e poi dare la colpa al modello.
+    //
+    // Il prefisso cambia perché è il prefisso a decidere se si ritenta: qui si
+    // smette subito e si parla a chi può rispondere.
+    const soloDaChiedere =
+      criticalIssues.length > 0 && criticalIssues.every((i) => i.code === 'NIENTE_DA_ELABORARE');
+    if (soloDaChiedere) {
+      throw new AiScaffoldError(
+        `Serve un'informazione che non ho:\n${msg}`,
+        502,
+      );
+    }
+
     throw new AiScaffoldError(
       `Workflow rejected — quality gate ha trovato ${criticalIssues.length.toString()} bug critici:\n${msg}${criticalIssues.length > 5 ? `\n…+${(criticalIssues.length - 5).toString()} altri` : ''}\n\nRiprova con prompt piu\` dettagliato (es. specifica SMTP host reale, destinazioni Notion/CRM concrete, default branch per logic_switch).`,
       502,

@@ -37,7 +37,7 @@ export interface TenantContextResources {
      * NHA, spesso read-only) sono `false`: le loro tabelle vanno offerte SOLO come
      * sorgenti di lettura, MAI come target di nuove tabelle/insert.
      *
-     * Bug reale (senza1dio, 2026-06-16): il grounding listava NHA → il modello
+     * Bug reale (2026-06-16): il grounding listava NHA → il modello
      * pescava `admin_url_secrets` (tabella admin di NHA) invece di creare
      * `rss_sources` in un DB locale → workflow rotto + CREATE TABLE su read-only.
      */
@@ -180,7 +180,7 @@ export function formatTenantContextForPrompt(ctx: TenantContextResources): strin
       lines.push(`- id="${db.id}" name="${db.name}"${desc}${tablesLine}`);
     }
   } else if (readonlyDbs.length > 0) {
-    // Ci sono DB ma TUTTI esterni read-only (caso senza1dio: solo NHA). Va detto
+    // Ci sono DB ma TUTTI esterni read-only (caso reale: solo NHA). Va detto
     // ESPLICITAMENTE che non sono scrivibili, altrimenti il modello ci pesca dentro.
     lines.push(
       '',

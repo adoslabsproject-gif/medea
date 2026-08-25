@@ -27,7 +27,12 @@ vi.mock('@/services/ai-scaffold/tools/complexity-gate.js', () => ({
   }),
 }));
 
-import { buildSingleshotPrompt, SINGLESHOT_SYSTEM_PROMPT, MAX_GOAL_LEN } from './prompt.js';
+import {
+  buildSingleshotPrompt,
+  formatScaffoldEntry,
+  SINGLESHOT_SYSTEM_PROMPT,
+  MAX_GOAL_LEN,
+} from './prompt.js';
 
 describe('buildSingleshotPrompt — struttura', () => {
   it('include il fence USER GOAL + il catalogo + le regole di output', () => {
@@ -98,5 +103,41 @@ describe('SINGLESHOT_SYSTEM_PROMPT — invarianti chiave (non regredire le regol
     expect(SINGLESHOT_SYSTEM_PROMPT).toContain('COMMUNITY DEFID INSTALLATI');
     expect(SINGLESHOT_SYSTEM_PROMPT).toContain('tablesToCreate');
     expect(SINGLESHOT_SYSTEM_PROMPT).toContain('TRIGGER (trigger_*) sono SEMPRE ROOT');
+  });
+});
+
+describe('formatScaffoldEntry — cosa il nodo produce', () => {
+  /**
+   * Il modello scrive espressioni che leggono dai nodi a monte. Se la riga di
+   * catalogo dice solo cosa un nodo *accetta*, i campi da cui leggere se li
+   * inventa: il 2026-08-05 sono usciti `email.id`, `attachment.base64`,
+   * `hour`, `dayOfWeek`, `rows`, `items` — nomi plausibili, nessuno esistente.
+   */
+  it('mette in riga i campi prodotti, quando il nodo li dichiara', () => {
+    const riga = formatScaffoldEntry({
+      defId: 'trigger_imap',
+      type: 'trigger',
+      fields: [{ key: 'mailbox', type: 'text' }],
+      outputContract: {
+        fields: [
+          { name: 'subject', type: 'string', desc: 'oggetto' },
+          { name: 'from', type: 'string', desc: 'mittente' },
+        ],
+      },
+    } as unknown as Parameters<typeof formatScaffoldEntry>[0]);
+
+    expect(riga).toContain('produce{subject:string,from:string}');
+  });
+
+  /** Chi non lo dichiara resta com'era: la riga non cambia forma. */
+  it('non aggiunge niente per i nodi senza contratto', () => {
+    const riga = formatScaffoldEntry({
+      defId: 'action_x',
+      type: 'action',
+      fields: [{ key: 'a', type: 'text' }],
+    } as unknown as Parameters<typeof formatScaffoldEntry>[0]);
+
+    expect(riga).not.toContain('produce');
+    expect(riga).toBe('action_x (action): a:text');
   });
 });

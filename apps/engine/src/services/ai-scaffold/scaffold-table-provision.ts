@@ -21,7 +21,7 @@ export interface DbLike {
  * la `CREATE TABLE` (tabella mai creata, flash che mente) o inquinerebbe un DB
  * altrui. Se non c'è nessun locale, il caller ne crea uno on-demand.
  *
- * Bug reale (senza1dio, 2026-06-16): unico DB = NHA remoto read-only → il default
+ * Bug reale (2026-06-16): unico DB = NHA remoto read-only → il default
  * cadeva su NHA → CREATE TABLE falliva → `news_audit` mai creata.
  */
 export function localWritableDbs(dbs: readonly DbLike[]): {
