@@ -36,11 +36,11 @@ listini, promemoria, e un assistente AI con 63 strumenti che agisce davvero sul
 sistema — con conferma esplicita su ogni scrittura. La chiave del modello è tua
 e sta nel portachiavi del sistema operativo, non in un file di configurazione.
 
-C'è l'editor visuale dei workflow con 193 nodi: si disegnano, si configurano,
-si descrivono a parole all'assistente, e passano un controllo di qualità a 21
+C'è l'editor visuale dei workflow con 194 nodi: si disegnano, si configurano,
+si descrivono a parole all'assistente, e passano un controllo di qualità a 26
 regole prima di poter essere attivati.
 
-**E si eseguono.** Da questa versione il motore viaggia dentro l'installatore,
+**E si eseguono.** Dalla 0.4.0 il motore viaggia dentro l'installatore,
 con il suo Node e le sue librerie compilate per il tuo sistema: non devi
 installare niente, non serve un account e non passa niente da un server. Ci
 sono esecuzione locale, orari e trigger che partono da soli, segreti nel
@@ -48,36 +48,71 @@ portachiavi, prova del singolo nodo, dati fissati, riesecuzione da un punto —
 anche cambiando i dati di prima — tester dei webhook con firma vera, confronto
 fra versioni ed elenco dei form pubblici.
 
-È il motivo per cui i file pesano più di prima: 150 MB su macOS, 77 MB su
-Windows, contro i 9 della versione precedente. Quei 9 MB erano un editor che
-disegnava automazioni e non ne eseguiva nessuna.
+È il motivo per cui i file pesano quello che pesano: 150 MB su macOS, 77 MB su
+Windows, contro i 9 delle versioni fino alla 0.3.0. Quei 9 MB erano un editor
+che disegnava automazioni e non ne eseguiva nessuna.
 
-## Novità della 0.4.0
+## Novità della 0.5.0
 
-**Le automazioni restano in vita.** Chiudere la finestra non spegne più il
-motore, se si vuole: resta un'icona nella barra di stato, e con l'avvio al
-login le automazioni ripartono da sole dopo un riavvio del computer. Entrambe
-le cose si accendono in _Credenziali → Automazioni attive_ e sono spente
-finché non le si accende.
+Questa versione ha un tema solo: **i workflow che l'assistente costruisce
+devono funzionare davvero**. Non «sembrare giusti» — funzionare.
 
-E le scadenze non si perdono più in silenzio: se un orario cade mentre Medea è
-chiusa o il portatile dorme, alla ripartenza viene recuperato — una volta
-sola, non una per ogni ora saltata.
+**Ogni nodo dichiara cosa produce.** Tutti e 194. Prima il modello doveva
+indovinare i nomi dei campi da usare nelle espressioni, e li inventava:
+`{{tldr}}`, `{{summary}}`, campi plausibili che a runtime non esistevano. Il
+workflow partiva, non falliva, e mandava email con un buco al posto del testo.
+Adesso ogni nodo porta scritto cosa restituisce, campo per campo, e un test
+verifica che quella promessa combaci con il codice che la mantiene.
 
-**Si torna a trascinare i nodi.** Sul Mac il trascinamento dalla palette al
-disegno non arrivava a destinazione: il nodo si prendeva, compariva il segno
-di aggiunta, e lasciandolo non succedeva niente.
+**Le tabelle nascono insieme al workflow.** Chi chiedeva «salva i contatti del
+modulo in una tabella» si ritrovava un workflow che al primo colpo diceva «no
+such table», e in DB Studio non c'era niente da gestire perché niente era mai
+stato creato. Adesso le tabelle si creano quando accetti il workflow, con le
+colonne giuste, e ogni workflow ha le sue: due automazioni che nominano
+entrambe una tabella `log` non si pestano più i piedi, nemmeno se si chiamano
+allo stesso modo. Le tabelle che avevi già restano tue e vengono usate, non
+duplicate.
 
-**Il menu delle azioni scorre.** Con la finestra bassa le ultime voci non si
-raggiungevano.
+E quando cancelli un workflow, la conferma ti chiede se vuoi portarti via anche
+i suoi dati — con una spunta, che di suo è spenta.
 
-**Cancellare un workflow chiede conferma**, dicendo quale e avvertendo se è
-attivo. Prima spariva al primo clic.
+**L'assistente vede il database.** Può elencare le tabelle, leggerne la
+struttura e i contenuti, e — su tua conferma esplicita, una per volta — creare
+una tabella o scriverci dentro. Prima, alla domanda «leggi gli articoli dalla
+tabella magazzino», si inventava strumenti che non aveva e rispondeva con una
+riga di codice al posto di una risposta.
 
-Sotto il cofano il motore ha smesso di portare il nome del progetto da cui
-deriva e adesso si chiama come l'applicazione che lo ospita. Chi ha scritto
-nodi personalizzati che importano `@flowforge/safe-fetch` o
-`@flowforge/community-node-sdk` deve aggiornarli a `@medea/engine-*`.
+**Cinque difetti di generazione che passavano in silenzio.** Erano i peggiori:
+non rompono niente, non segnalano niente, e trasformano un'automazione in un
+rituale a vuoto. Una condizione scritta in una forma che non verrà mai
+valutata, e quindi sempre falsa — l'avviso che non arriva mai. Un filtro
+puntato su un singolo messaggio invece che su un elenco, con l'effetto opposto:
+l'avviso che arriva **sempre**, per ogni email. Un nodo che riassume l'orario
+in cui è scattato perché nessuno gli ha passato niente da riassumere. Ognuno
+adesso ha un controllo che lo riconosce prima che tu lo importi, e lo spiega
+con parole a cui il modello sa rispondere.
+
+Lo stesso vale per l'esempio che insegna al modello a costruire i workflow: era
+rotto nello stesso modo, e glielo stavamo insegnando noi.
+
+**Le porte collegate contano.** Il filtro ha due uscite — quello che passa e
+quello che viene scartato — ma il motore le ignorava, e i nodi a valle
+partivano comunque su entrambe. Adesso chi collega l'uscita «tenuti» ottiene
+solo i tenuti, e gli scartati si possono mandare da un'altra parte davvero. I
+workflow già salvati non cambiano comportamento: un collegamento senza uscita
+specificata continua a ricevere tutto. Vedi
+[ADR 0011](docs/architecture/adr/0011-le-porte-nominate-si-rispettano.md).
+
+**Il wizard non resta più appeso.** La costruzione ha un tempo massimo e
+finisce; si vede a che punto è, passo per passo, con la richiesta e la risposta
+di ognuno; e alla fine un verdetto racconta cosa ha costruito. Se il modello si
+rifiuta o risponde fuori formato, adesso lo si riconosce e lo si dice, invece
+di aspettare.
+
+**Il resto.** Tre temi nuovi e l'editor dei workflow che si sistema. La rubrica
+naviga dalle aziende ai loro contatti e dai contatti alla scheda. Il relay dei
+webhook può essere il tuo, non solo quello di esempio. Si può fermare
+l'inferenza a metà, e si vede quanto è costata.
 
 ## Cosa non c'è ancora, e va detto
 
