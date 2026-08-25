@@ -274,6 +274,15 @@ export const odooNode: NodeModule = {
       },
     ],
     outputs: ['result', 'count'],
+    outputContract: {
+      notes: 'La risposta di Odoo sta in `result`, e la sua forma dipende dall\'azione: cercando e` una lista, creando e` un numero.',
+      fields: [
+        { name: 'result', type: 'object|array|number|boolean', desc: 'La risposta di Odoo, con la forma che ha per quell\'azione.' },
+        { name: 'count', type: 'number', desc: 'Quanti record, quando la risposta e` una lista.' },
+        { name: 'model', type: 'string', desc: 'Il modello Odoo interrogato.' },
+        { name: 'action', type: 'string', desc: 'L\'azione eseguita.' },
+      ],
+    },
     vendor: 'odoo',
     version: '1.0.0',
   },

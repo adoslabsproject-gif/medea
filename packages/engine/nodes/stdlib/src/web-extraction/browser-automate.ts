@@ -177,6 +177,15 @@ export const browserAutomateNode: NodeModule = {
       },
     ],
     outputs: ['default'],
+    outputContract: {
+      notes: 'I valori raccolti stanno DENTRO `extracted`, sotto i nomi dati ai passi: si legge `{{$node.<id>.json.extracted.<nome>}}`. `stepsRun` inferiore ai passi configurati significa che si e` fermato prima.',
+      fields: [
+        { name: 'extracted', type: 'object', desc: 'I valori raccolti dai passi, sotto il nome dato a ciascuno.' },
+        { name: 'finalUrl', type: 'string', desc: 'Dove e` arrivato alla fine della sequenza.' },
+        { name: 'screenshots', type: 'array', desc: 'Le immagini catturate durante i passi.' },
+        { name: 'stepsRun', type: 'number', desc: 'Quanti passi ha eseguito davvero.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

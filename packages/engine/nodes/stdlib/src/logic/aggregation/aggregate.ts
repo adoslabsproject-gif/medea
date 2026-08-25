@@ -218,6 +218,18 @@ export const aggregateNode: NodeModule = {
         help: "Hard cap anti-OOM sul numero di item processati. Se l'input supera questa soglia viene troncato e l'aggregato è calcolato sui primi N (warning emesso). Default 100k, tetto 1M.",
       },
     ],
+    outputContract: {
+      notes: 'Due forme diverse. SENZA raggruppamento escono `value`, `itemCount`, `inputCount`, `processedCount`, `skippedNonNumeric`. CON raggruppamento escono `reduced`, `groupCount`, `inputCount`, `skippedNonNumeric` — e `value` NON c\'e`.',
+      fields: [
+        { name: 'value', type: 'number|string', desc: 'Il valore aggregato. Solo senza raggruppamento.' },
+        { name: 'itemCount', type: 'number', desc: 'Quanti elementi sono entrati. Solo senza raggruppamento.' },
+        { name: 'reduced', type: 'object', desc: 'Il valore aggregato di ogni gruppo, sotto la chiave del gruppo. Solo con raggruppamento.' },
+        { name: 'groupCount', type: 'number', desc: 'Quanti gruppi. Solo con raggruppamento.' },
+        { name: 'inputCount', type: 'number', desc: 'Quanti elementi sono entrati, in entrambe le forme.' },
+        { name: 'processedCount', type: 'number', desc: 'Quanti sono stati davvero aggregati. Solo senza raggruppamento.' },
+        { name: 'skippedNonNumeric', type: 'number', desc: 'Quanti sono stati saltati perche` non numerici: se e` alto, il campo indicato non contiene numeri.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

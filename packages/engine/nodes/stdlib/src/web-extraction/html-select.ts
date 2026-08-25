@@ -175,6 +175,15 @@ export const htmlSelectNode: NodeModule = {
       'open data CSV equivalent); ingest content blog per RAG/embedding pipeline partendo dalla homepage ' +
       'del blog (extract title+author+date+content_html di ogni post per indicizzazione knowledge base AI); ' +
       'parsing di SERP page (Google/Bing search result) per analisi SEO competitive intelligence.',
+    outputContract: {
+      notes: 'I valori estratti stanno DENTRO `fields`, sotto i nomi dati in configurazione: `{{$node.<id>.json.fields.<nome>}}`. Un selettore che non trova niente NON fa fallire il nodo: quel campo esce null e `matchedCount` scende.',
+      fields: [
+        { name: 'fields', type: 'object', desc: 'Un valore per ogni selettore, sotto il nome che gli e` stato dato. Null per quelli che non hanno trovato niente.' },
+        { name: 'matched', type: 'boolean', desc: 'Se almeno un selettore ha trovato qualcosa.' },
+        { name: 'matchedCount', type: 'number', desc: 'Quanti selettori hanno trovato un valore.' },
+        { name: 'totalFields', type: 'number', desc: 'Quanti selettori erano stati chiesti.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

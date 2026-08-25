@@ -63,6 +63,19 @@ export const pdfParseNode: NodeModule = {
       'llmModel',
       'cheapAttempt',
     ],
+    outputContract: {
+      notes: '`confidence` e` il campo su cui decidere se fidarsi: un PDF scansionato senza testo estraibile da` un valore basso. Quando il ripiego sul modello visivo entra in gioco escono anche `llmModel` e `cheapAttempt`, che mostra cosa aveva letto il primo tentativo.',
+      fields: [
+        { name: 'text', type: 'string', desc: 'Il testo estratto dal documento.' },
+        { name: 'confidence', type: 'number', desc: 'Quanto e` attendibile l\'estrazione, da 0 a 1.' },
+        { name: 'mode', type: 'string', desc: 'Come l\'ha estratto: \'pdf-parse\', \'llm-fallback\' o \'llm-only\'.' },
+        { name: 'pages', type: 'number', desc: 'Quante pagine ha il documento.' },
+        { name: 'sizeBytes', type: 'number', desc: 'La dimensione del PDF in byte.' },
+        { name: 'usedLlmFallback', type: 'boolean', desc: 'Vero se e` servito il modello visivo.' },
+        { name: 'llmModel', type: 'string', desc: 'Il modello usato per il ripiego. Presente solo se c\'e` stato.' },
+        { name: 'cheapAttempt', type: 'object', desc: 'Cosa aveva letto il primo tentativo, con la sua confidenza. Presente solo col ripiego.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     cost: {
@@ -220,6 +233,16 @@ export const pdfGenerateNode: NodeModule = {
     // REF-PRIMARIO: l'output binario è SEMPRE un handle `binary` (ref content-
     // addressed con store, inline senza). Niente più `base64` nel JSON.
     outputs: ['filename', 'binary', 'sizeBytes', 'pageCount', 'mimeType'],
+    outputContract: {
+      notes: 'Il PDF esce come riferimento binario in `binary`, non come testo: si passa a un `action_file_write` o a un allegato di `action_send_email` cosi` com\'e`, senza convertirlo.',
+      fields: [
+        { name: 'filename', type: 'string', desc: 'Il nome del file generato.' },
+        { name: 'binary', type: 'object', desc: 'Il riferimento ai byte del PDF, da passare tale e quale a chi lo salva o lo allega.' },
+        { name: 'sizeBytes', type: 'number', desc: 'La dimensione del PDF in byte.' },
+        { name: 'pageCount', type: 'number', desc: 'Quante pagine ha prodotto.' },
+        { name: 'mimeType', type: 'string', desc: 'Sempre \'application/pdf\'.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     cost: {

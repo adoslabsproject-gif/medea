@@ -141,6 +141,25 @@ export const videoMetadataNode: NodeModule = {
       'italiana obbligatoria + subtitle stereo per accessibilità); check size pre-CDN upload con cap budget ' +
       '(se file > 10GB → reject prima di consumare bandwidth/storage); compliance broadcast FCC USA/AGCOM ' +
       'Italia che richiede metadata standardizzati nel container per ingest nei sistemi broadcast.',
+    outputContract: {
+      notes: 'Legge i dati tecnici di un video senza scaricarlo per intero. `videoFps` e` una FRAZIONE in forma di testo, per esempio «30000/1001»: non e` un numero da usare nei conti cosi` com\'e`.',
+      fields: [
+        { name: 'duration', type: 'number', desc: 'La durata in secondi.' },
+        { name: 'bitRate', type: 'number', desc: 'Il bitrate complessivo.' },
+        { name: 'formatName', type: 'string', desc: 'Il contenitore del file.' },
+        { name: 'size', type: 'number', desc: 'La dimensione in byte.' },
+        { name: 'videoCodec', type: 'string', desc: 'Il codec video.' },
+        { name: 'videoWidth', type: 'number', desc: 'La larghezza in pixel.' },
+        { name: 'videoHeight', type: 'number', desc: 'L\'altezza in pixel.' },
+        { name: 'videoFps', type: 'string', desc: 'I fotogrammi al secondo, come frazione: va convertito prima di usarlo come numero.' },
+        { name: 'audioTracks', type: 'number', desc: 'Quante tracce audio.' },
+        { name: 'audioCodecs', type: 'array', desc: 'I codec audio presenti.' },
+        { name: 'audioLanguages', type: 'array', desc: 'Le lingue delle tracce audio.' },
+        { name: 'subtitleTracks', type: 'number', desc: 'Quante tracce di sottotitoli.' },
+        { name: 'subtitleLanguages', type: 'array', desc: 'Le lingue dei sottotitoli.' },
+        { name: 'raw', type: 'object', desc: 'I dati completi, per quello che non e` stato normalizzato.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.1.0',
     configFields: [

@@ -118,6 +118,18 @@ export const communityNotionNode: NodeModule = {
       },
     ],
     outputs: ['ok', 'data', 'pageId', 'results', 'count', 'hasMore', 'nextCursor'],
+    outputContract: {
+      notes: 'Interrogando una base dati i risultati stanno in `results`, e `hasMore` con `nextCursor` dicono che ce n\'e` altro: senza rifare la chiamata col cursore si perde il resto.',
+      fields: [
+        { name: 'ok', type: 'boolean', desc: 'Se la chiamata e` riuscita.' },
+        { name: 'data', type: 'object', desc: 'La risposta di Notion, per i dettagli.' },
+        { name: 'pageId', type: 'string|null', desc: 'La pagina creata o modificata. Null quando l\'operazione non ne tocca una.' },
+        { name: 'results', type: 'array', desc: 'I risultati dell\'interrogazione.' },
+        { name: 'count', type: 'number', desc: 'Quanti risultati in questa pagina.' },
+        { name: 'hasMore', type: 'boolean', desc: 'Vero se ci sono altri risultati oltre questi.' },
+        { name: 'nextCursor', type: 'string|null', desc: 'Da dove riprendere. Null quando non c\'e` altro.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     cost: { typicalLatencyMs: 700 },

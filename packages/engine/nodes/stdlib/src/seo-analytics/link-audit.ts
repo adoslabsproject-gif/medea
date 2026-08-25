@@ -407,6 +407,24 @@ export const linkAuditNode: NodeModule = {
       'Safety budget: SSRF guard, concorrenza max 20, timeout 8s per probe, hard ' +
       'cap 200 link probati (config 1000), audit log con linksTotal + broken count ' +
       'per detect site degradation trends.',
+    outputContract: {
+      notes: 'Su un HTML vuoto NON fallisce: esce il solo campo `warnings` e nessuno degli altri. `checked` inferiore a `uniqueLinks` significa che non li ha provati tutti: `broken` e` allora una fotografia parziale.',
+      fields: [
+        { name: 'baseUrl', type: 'string', desc: 'La pagina da cui sono stati letti i collegamenti.' },
+        { name: 'totalLinks', type: 'number', desc: 'Quanti collegamenti ha trovato in tutto.' },
+        { name: 'uniqueLinks', type: 'number', desc: 'Quanti sono distinti.' },
+        { name: 'checked', type: 'number', desc: 'Quanti ne ha davvero provati.' },
+        { name: 'skipped', type: 'number', desc: 'Quanti ha saltato.' },
+        { name: 'byScope', type: 'object', desc: 'Quanti puntano allo stesso sito e quanti fuori.' },
+        { name: 'summary', type: 'object', desc: 'Il quadro d\'insieme dell\'esito dei controlli.' },
+        { name: 'broken', type: 'array', desc: 'I collegamenti rotti, con il codice che hanno risposto.' },
+        { name: 'brokenCount', type: 'number', desc: 'Quanti sono rotti.' },
+        { name: 'tabnabbingRisks', type: 'array', desc: 'I collegamenti che aprono una scheda nuova senza le protezioni: un rischio di sicurezza.' },
+        { name: 'redirects', type: 'array', desc: 'I collegamenti che passano da un reindirizzamento.' },
+        { name: 'links', type: 'array', desc: 'Tutti i collegamenti esaminati, con il loro esito.' },
+        { name: 'warnings', type: 'array', desc: 'I problemi incontrati. E` l\'unico campo presente su un HTML vuoto.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

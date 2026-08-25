@@ -226,6 +226,13 @@ export const setFieldsNode: NodeModule = {
       },
     ],
     outputs: ['default'],
+    outputContract: {
+      notes: 'L\'oggetto modificato sta in `result`, NON al primo livello: le espressioni a valle devono passare da li` — `{{$node.<id>.json.result.<campo>}}`. Leggere il campo direttamente sul nodo non trova niente.',
+      fields: [
+        { name: 'result', type: 'object', desc: 'L\'oggetto con i campi impostati, rinominati o tolti.' },
+        { name: 'fieldCount', type: 'number', desc: 'Quanti campi ha l\'oggetto risultante.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },
@@ -332,6 +339,14 @@ export const coalesceNode: NodeModule = {
       },
     ],
     outputs: ['default'],
+    outputContract: {
+      notes: '`found` distingue un valore trovato davvero da uno preso dal ripiego: e` la differenza che serve per non trattare un predefinito come un dato reale.',
+      fields: [
+        { name: 'result', type: 'object|string|number|null', desc: 'Il primo valore non vuoto fra quelli provati. Null se non ce n\'era nessuno e non c\'era un ripiego.' },
+        { name: 'from', type: 'string|null', desc: 'Da quale campo l\'ha preso, oppure \'(default)\' se e` il ripiego. Null se non ha trovato niente.' },
+        { name: 'found', type: 'boolean', desc: 'Vero solo se il valore viene da un campo vero e non dal ripiego.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

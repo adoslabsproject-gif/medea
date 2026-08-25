@@ -93,6 +93,13 @@ export const linesEnrichNode: NodeModule = {
       },
     ],
     outputs: ['lines', 'enrichedCount'],
+    outputContract: {
+      notes: 'I campi in ingresso NON vengono persi: il nodo li ricopia e sostituisce `lines` con la versione arricchita. `enrichedCount` inferiore al numero di righe significa che per alcune non ha trovato niente.',
+      fields: [
+        { name: 'lines', type: 'array', desc: 'Le righe arricchite, nello stesso ordine di quelle in ingresso.' },
+        { name: 'enrichedCount', type: 'number', desc: 'Quante righe sono state effettivamente arricchite.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

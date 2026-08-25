@@ -126,6 +126,22 @@ export const websocketTriggerNode: NodeModule = {
           'troppo verbosi. 0 = nessun limite (usa con cautela).',
       },
     ],
+    /**
+     * Cosa il trigger consegna. Rispecchia `triggerInput` di
+     * `trigger-watchers/websocket-watcher.ts`.
+     */
+    outputContract: {
+      fields: [
+        { name: 'data', type: 'unknown', desc: 'Il frame interpretato: oggetto se JSON, stringa altrimenti' },
+        { name: 'raw', type: 'string', desc: 'Il frame come è arrivato, non interpretato' },
+        { name: 'receivedAt', type: 'string', desc: 'Quando è arrivato, in ISO 8601' },
+        {
+          name: 'matched',
+          type: 'unknown | undefined',
+          desc: 'Il valore estratto dal puntatore configurato; assente senza puntatore',
+        },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

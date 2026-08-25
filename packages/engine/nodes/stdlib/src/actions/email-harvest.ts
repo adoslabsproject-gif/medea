@@ -84,6 +84,15 @@ export const emailHarvestNode: NodeModule = {
       },
     ],
     outputs: ['primary_email', 'all_emails', 'counts', 'has_emails'],
+    outputContract: {
+      notes: 'Estrae INDIRIZZI EMAIL da una pagina HTML: non serve a tirar fuori dati strutturati da un messaggio — per quello c\'e` `agent_extractor` con uno schema. `has_emails` e` il campo su cui diramare quando la pagina non ne contiene.',
+      fields: [
+        { name: 'primary_email', type: 'string|null', desc: 'L\'indirizzo piu` promettente fra quelli trovati. Null se non ce n\'e` nessuno.' },
+        { name: 'all_emails', type: 'array', desc: 'Tutti gli indirizzi trovati, senza doppioni.' },
+        { name: 'counts', type: 'object', desc: 'Quanti ne ha trovati per tipo.' },
+        { name: 'has_emails', type: 'boolean', desc: 'Se ne ha trovato almeno uno.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

@@ -148,6 +148,13 @@ export const htmlExtractNode: NodeModule = {
       },
     ],
     outputs: ['default'],
+    outputContract: {
+      notes: '`result` cambia forma con l\'operazione: il testo ripulito e il titolo danno una stringa, i link danno una lista di oggetti con `href` e `text`, le immagini una lista di indirizzi, i meta un oggetto. `count` c\'e` solo quando il risultato e` una lista.',
+      fields: [
+        { name: 'result', type: 'string|array|object', desc: 'Quello che ha estratto. La forma dipende dall\'operazione scelta.' },
+        { name: 'count', type: 'number', desc: 'Quanti elementi ha trovato. Presente solo quando il risultato e` una lista.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },
@@ -268,6 +275,13 @@ export const markdownNode: NodeModule = {
       },
     ],
     outputs: ['default'],
+    outputContract: {
+      notes: 'L\'HTML e` gia` ripulito: il testo viene protetto prima della formattazione e passano solo i tag di un elenco sicuro, quindi si puo` mettere nel corpo di una email senza altri passaggi.',
+      fields: [
+        { name: 'html', type: 'string', desc: 'Il Markdown convertito in HTML sicuro.' },
+        { name: 'length', type: 'number', desc: 'Quanti caratteri ha l\'HTML prodotto.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

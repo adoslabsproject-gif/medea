@@ -356,6 +356,19 @@ export const visionExtractNode: NodeModule = {
       'Pipeline: screenshot → prompt + schema JSON target → vision LLM → parse JSON (fence/trailing-commas tollerati) → schema validation → output strutturato.\n\n' +
       'Retry: exponential backoff + jitter su 5xx (3 attempts). Cache: hash(image+prompt) → Redis TTL 24h (se Redis configurato).\n\n' +
       'Tipico pairing: action_browser_stealth → action_vision_extract (chain).',
+    outputContract: {
+      notes: 'I dati stanno in `extracted`, coi nomi dello schema in configurazione. `parseError` o `schemaValidationError` presenti significano che `extracted` non e` affidabile: vanno controllati prima di usarlo.',
+      fields: [
+        { name: 'extracted', type: 'object|array', desc: 'I dati letti dall\'immagine, coi nomi dello schema in configurazione.' },
+        { name: 'rawResponse', type: 'string', desc: 'La risposta grezza del modello, utile quando l\'interpretazione fallisce.' },
+        { name: 'modelUsed', type: 'string', desc: 'Il modello interpellato.' },
+        { name: 'latencyMs', type: 'number', desc: 'Quanto ci ha messo il modello.' },
+        { name: 'attempts', type: 'number', desc: 'Quanti tentativi sono serviti.' },
+        { name: 'parseError', type: 'string', desc: 'Presente se la risposta non era JSON valido.' },
+        { name: 'schemaValidationError', type: 'string', desc: 'Presente se il JSON non rispettava lo schema chiesto.' },
+        { name: '_llm', type: 'object', desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

@@ -163,6 +163,18 @@ export const dashProbeNode: NodeModule = {
       'detection di codec evolution (es. migrazione progressiva H.264 → HEVC → AV1 per ridurre bandwidth CDN ' +
       'del 50%); pre-flight check prima di pubblicare un nuovo asset Live (la "vetrina" che la pubblicazione ' +
       'lavora correttamente).',
+    outputContract: {
+      notes: 'Legge il manifesto di uno streaming DASH: descrive quali flussi ci sono, non ne scarica nessuno.',
+      fields: [
+        { name: 'type', type: 'string', desc: 'Il tipo di manifesto: statico o in diretta.' },
+        { name: 'profiles', type: 'string', desc: 'I profili DASH dichiarati.' },
+        { name: 'totalDurationSec', type: 'number', desc: 'La durata complessiva in secondi.' },
+        { name: 'minBufferTime', type: 'number', desc: 'Il tempo di riempimento minimo dichiarato.' },
+        { name: 'adaptationSets', type: 'array', desc: 'I gruppi di flussi disponibili, per qualita` e lingua.' },
+        { name: 'counts', type: 'object', desc: 'Quanti flussi per tipo.' },
+        { name: 'url', type: 'string', desc: 'Il manifesto esaminato.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

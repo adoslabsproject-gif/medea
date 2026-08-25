@@ -16,8 +16,16 @@ import { describe, expect, it } from 'vitest';
 
 import { allNodes, findNode, searchNodes } from './index';
 
-/** Quanti nodi dichiara il runtime di FlowForge su `/api/v1/nodes`. */
-const NODI_DEL_MOTORE = 193;
+/**
+ * Quanti nodi dichiara il runtime su `/api/v1/nodes`.
+ *
+ * Erano 195 fino al 2026-08-06: `db_subscribe` è stato tolto perché non aveva
+ * né executor né watcher — nessun codice lo eseguiva, e la eval del catalogo
+ * lo dava per risposta valida a «quando cambia una tabella», così un workflow
+ * che lo sceglieva non partiva mai, in silenzio. `trigger_db_change` fa la
+ * stessa cosa davvero (ADR 0010).
+ */
+const NODI_DEL_MOTORE = 194;
 
 describe('il catalogo rispetto al motore', () => {
   it('ha esattamente i nodi che il motore sa eseguire', () => {
@@ -86,7 +94,7 @@ describe('come si presentano sul disegno', () => {
   it('ogni nodo ha un’icona che si risolve davvero', async () => {
     // Un'icona che non si risolve è un nodo che sul canvas resta vuoto:
     // riconoscibile solo leggendo l'etichetta, che è il modo in cui una
-    // palette da 193 voci diventa inutilizzabile.
+    // palette da 194 voci diventa inutilizzabile.
     const { iconNameFor, resolveLucideIcon } = await import('../canvas/icon-registry');
     const senzaIcona = allNodes().filter((n) => !resolveLucideIcon(iconNameFor(n.defId, n.icon)));
     expect(senzaIcona.map((n) => `${n.defId} (${n.icon ?? 'nessuna'})`)).toEqual([]);

@@ -63,6 +63,24 @@ export const emailTriageNodeDef: NodeDef = {
     },
   ],
 
+  outputContract: {
+    notes: 'Nessun LLM: legge e normalizza il messaggio con regole, quindi lo stesso messaggio da` sempre lo stesso esito. Il corpo esce ACCORCIATO in `bodyTextShort`; la lunghezza vera e` in `bodyTextOriginalLength`, e se i due numeri non coincidono il testo e` tagliato.',
+    fields: [
+      { name: 'senderName', type: 'string', desc: 'Il nome del mittente, separato dall\'indirizzo.' },
+      { name: 'senderEmail', type: 'string', desc: 'Il solo indirizzo del mittente, senza il nome.' },
+      { name: 'senderDomain', type: 'string', desc: 'Il dominio del mittente: comodo per raggruppare o filtrare.' },
+      { name: 'subjectClean', type: 'string', desc: 'L\'oggetto senza i prefissi di risposta e inoltro.' },
+      { name: 'bodyTextShort', type: 'string', desc: 'Il corpo testuale accorciato al limite scelto.' },
+      { name: 'bodyTextOriginalLength', type: 'number', desc: 'Quanto era lungo davvero il corpo.' },
+      { name: 'attachments', type: 'object', desc: 'Il quadro degli allegati: quanti sono e che tipo.' },
+      { name: 'languageGuess', type: 'string', desc: 'La lingua riconosciuta nel messaggio.' },
+      { name: 'urgencySignals', type: 'array', desc: 'Le espressioni di urgenza trovate nel testo.' },
+      { name: 'isPec', type: 'boolean', desc: 'Se il messaggio arriva da una casella certificata.' },
+      { name: 'isNewsletter', type: 'boolean', desc: 'Se sembra una newsletter e non una email personale.' },
+      { name: 'messageId', type: 'string', desc: 'Il Message-ID, per correlare le risposte.' },
+      { name: 'pipelineSteps', type: 'array', desc: 'Il diario del passaggio. Presente solo col registro acceso.' },
+    ],
+  },
   vendor: 'flowforge',
   version: '1.0.0',
   cost: {

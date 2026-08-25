@@ -343,6 +343,25 @@ export const redirectChainNode: NodeModule = {
       'Safety budget: SSRF guard via @medea/engine-safe-fetch (no fetch a 127/10/192/ ' +
       'link-local), timeout 8s per hop, max 20 hop totali (oltre → loop break), ' +
       'audit log con startUrl + finalUrl + hopCount per SEO traceability.',
+    outputContract: {
+      notes: 'Segue i reindirizzamenti uno per uno. `loopDetected` e `exceededMaxHops` sono i due modi in cui la catena non arriva a destinazione: `finalUrl` in quel caso non e` la meta vera.',
+      fields: [
+        { name: 'startUrl', type: 'string', desc: 'L\'indirizzo di partenza.' },
+        { name: 'finalUrl', type: 'string', desc: 'Dove e` arrivato alla fine della catena.' },
+        { name: 'ok', type: 'boolean', desc: 'Se la catena si e` chiusa senza problemi.' },
+        { name: 'hopCount', type: 'number', desc: 'Quanti salti ha fatto.' },
+        { name: 'chain', type: 'array', desc: 'Ogni salto, con indirizzo, codice e destinazione.' },
+        { name: 'loopDetected', type: 'boolean', desc: 'Vero se i reindirizzamenti girano in tondo.' },
+        { name: 'exceededMaxHops', type: 'boolean', desc: 'Vero se ha smesso di seguire per il tetto di salti.' },
+        { name: 'crossDomainCount', type: 'number', desc: 'Quanti salti cambiano dominio.' },
+        { name: 'totalLatencyMs', type: 'number', desc: 'Quanto e` durata l\'intera catena.' },
+        { name: 'seoImpact', type: 'object', desc: 'Il giudizio sull\'effetto della catena per i motori di ricerca.' },
+        { name: 'metaRefresh', type: 'object|null', desc: 'Il reindirizzamento fatto via meta refresh, se c\'e`.' },
+        { name: 'canonicalUrl', type: 'string|null', desc: 'L\'indirizzo canonico dichiarato dalla pagina d\'arrivo.' },
+        { name: 'canonicalMismatch', type: 'boolean', desc: 'Vero se il canonico non coincide con l\'indirizzo d\'arrivo.' },
+        { name: 'error', type: 'string|null', desc: 'Cosa ha interrotto la catena. Null se e` filato tutto.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

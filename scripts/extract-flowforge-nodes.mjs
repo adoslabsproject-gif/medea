@@ -1,5 +1,6 @@
 /**
- * Estrae le definizioni dei nodi dalla stdlib compilata di FlowForge.
+ * Estrae le definizioni dei nodi dai pacchetti compilati e ne fa il catalogo
+ * che l'app desktop mostra nella palette.
  *
  * Le descrizioni originali sono lunghe migliaia di caratteri: servono al
  * modello sul server, non alla palette. Qui si tiene la prima frase.
@@ -11,27 +12,28 @@
  * peggio di uno che fallisce: il catalogo sembra completo.
  */
 import { writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 
 /**
- * Dove sta il repository di FlowForge, da cui si leggono i pacchetti
- * compilati.
+ * Da dove si leggono i nodi.
  *
- * Arriva dall'ambiente e non è scritto qui dentro: un percorso che esiste su
- * una macchina sola è una bugia che funziona finché non la si prova altrove —
- * e, in un repository pubblico, dice a chiunque come sono organizzate le
- * cartelle di chi lo ha scritto.
+ * **Questo repository**, e non più FlowForge: i pacchetti sotto
+ * `packages/engine/nodes/` sono la verità: è lì che si aggiunge un nodo, è lì
+ * che si dichiara cosa produce. Puntare altrove significava che ogni campo
+ * dichiarato qui restava invisibile alla palette e all'assistente — la
+ * generazione «riusciva» e non cambiava niente, che è il modo peggiore di
+ * sbagliare.
+ *
+ * `FLOWFORGE_SRC` resta per rileggere l'originale quando serve confrontarsi
+ * con lui, ma non è più il predefinito.
  *
  * Uso:
+ *   node scripts/extract-flowforge-nodes.mjs [destinazione]
  *   FLOWFORGE_SRC=/percorso/a/zeliAI node scripts/extract-flowforge-nodes.mjs <destinazione>
  */
-const SORGENTE = process.env.FLOWFORGE_SRC;
-if (!SORGENTE) {
-  console.error(
-    'Manca FLOWFORGE_SRC: indica la radice del repository di FlowForge.\n' +
-      '  FLOWFORGE_SRC=/percorso/a/zeliAI node scripts/extract-flowforge-nodes.mjs <destinazione>',
-  );
-  process.exit(1);
-}
+const RADICE = join(dirname(fileURLToPath(import.meta.url)), '..');
+const SORGENTE = process.env.FLOWFORGE_SRC ?? RADICE;
 
 const PACKAGES = ['stdlib', 'db', 'ai-agents', 'llm', 'integrations-core', 'integrations-italia'];
 
@@ -204,9 +206,17 @@ const out = [...defs.values()]
       : {}),
   }));
 
+/**
+ * Dove finisce il catalogo. Il predefinito è il posto da cui l'app lo legge:
+ * doverlo ricordare ogni volta è il genere di dettaglio che, sbagliato una
+ * volta, lascia in giro un catalogo aggiornato che nessuno usa.
+ */
+const DESTINAZIONE =
+  process.argv[2] ?? join(RADICE, 'apps/desktop/src/features/workflows/catalog/stdlib-nodes.json');
+
 // La riga a capo finale non è un vezzo: senza, il controllo di formato
 // della CI boccia il file a ogni rigenerazione.
-writeFileSync(process.argv[2], `${JSON.stringify(out, null, 2)}\n`);
+writeFileSync(DESTINAZIONE, `${JSON.stringify(out, null, 2)}\n`);
 console.log(`${out.length} nodi estratti`);
 const byType = {};
 for (const d of out) byType[d.type] = (byType[d.type] ?? 0) + 1;

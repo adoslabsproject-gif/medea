@@ -108,6 +108,18 @@ export const pecArubaSend: NodeModule = {
         showIf: { field: 'transport', equals: 'soap' },
       },
     ],
+    outputContract: {
+      notes: '`sent` vero significa che il gestore ha PRESO IN CARICO il messaggio, non che sia stato consegnato: le ricevute arrivano dopo, in casella, e si riconoscono con `action_pec_classify`. I campi cambiano con il trasporto: via SOAP escono `messageId` e `rawResponse`, via SMTP escono anche `accepted`, `rejected` e `response`.',
+      fields: [
+        { name: 'sent', type: 'boolean', desc: 'Se il gestore ha preso in carico il messaggio. Non e` la consegna.' },
+        { name: 'transport', type: 'string', desc: 'Come e` stato mandato: \'soap\' o \'smtp\'.' },
+        { name: 'messageId', type: 'string|null', desc: 'Il Message-ID: serve a riconoscere la ricevuta che arrivera` dopo.' },
+        { name: 'accepted', type: 'array', desc: 'I destinatari accettati dal server. Solo via SMTP.' },
+        { name: 'rejected', type: 'array', desc: 'Quelli rifiutati. Solo via SMTP.' },
+        { name: 'response', type: 'string', desc: 'L\'ultima risposta del server. Solo via SMTP.' },
+        { name: 'rawResponse', type: 'string', desc: 'La risposta grezza del gestore, troncata. Solo via SOAP.' },
+      ],
+    },
     vendor: 'flowforge-italia',
     version: '0.4.0',
   },
@@ -189,6 +201,21 @@ export const pecArubaReceive: NodeModule = {
         help: 'Porta IMAPS. Default 993. Cambiala solo per provider non-standard.',
       },
     ],
+    outputContract: {
+      notes: 'I messaggi PEC non letti trovati nella casella, già interpretati.',
+      fields: [
+        { name: 'count', type: 'number', desc: 'Quanti messaggi ha letto.' },
+        {
+          name: 'messages',
+          type: 'array',
+          desc:
+            'Un elemento per messaggio: messageId, from, to, subject, body, attachments, ' +
+            'pecHeaders e pecType (received|acceptance|delivery|reject). ' +
+            'Su `pecType` si distingue la PEC vera dalle ricevute.',
+        },
+        { name: 'mailbox', type: 'string', desc: 'La cartella IMAP letta.' },
+      ],
+    },
     vendor: 'flowforge-italia',
     version: '0.4.0',
   },

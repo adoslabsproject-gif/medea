@@ -127,6 +127,12 @@ export const pecLegalArchiveNodeDef: NodeDef = {
     },
   ],
 
+  outputContract: {
+    notes: 'I campi in ingresso NON vengono persi: il nodo li ricopia e ci aggiunge `archiveReceipt`. La ricevuta e` la prova dell\'archiviazione — `hashHex` e `archivedAt` sono cio` che rende opponibile la conservazione.',
+    fields: [
+      { name: 'archiveReceipt', type: 'object', desc: 'La ricevuta: archiveId, archivePath, hashAlgorithm, hashHex, byteLength, archivedAt, conservationUntil, messageId, pecType e sidecarPath.' },
+    ],
+  },
   vendor: 'flowforge',
   version: '1.0.0',
   cost: {

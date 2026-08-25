@@ -107,6 +107,17 @@ export const emailTriageCommercialistaNodeDef: NodeDef = {
     },
   ],
 
+  outputContract: {
+    notes: 'I campi in ingresso NON vengono persi: il nodo li ricopia e ci aggiunge sopra i propri. Il messaggio che arriva dal trigger resta quindi leggibile anche dopo. Nessun LLM: la classificazione e` a parole chiave, quindi lo stesso testo da` sempre lo stesso esito.',
+    fields: [
+      { name: 'label', type: 'string', desc: 'La categoria riconosciuta della richiesta.' },
+      { name: 'confidence', type: 'number', desc: 'Quanto e` sicuro, da 0 a 1, ricavato da quante e quanto specifiche sono le parole chiave trovate.' },
+      { name: 'matchedKeywords', type: 'array', desc: 'I termini che hanno fatto scattare la categoria: servono per capire perche` ha deciso cosi`.' },
+      { name: 'suggestedOperator', type: 'string', desc: 'L\'indirizzo a cui instradare, secondo la mappa in configurazione.' },
+      { name: 'suggestedReplyTemplate', type: 'string', desc: 'Il testo di risposta pronto, con le variabili gia` sostituite.' },
+      { name: 'urgencyTier', type: 'string', desc: 'L\'urgenza: low, medium, high o critical.' },
+    ],
+  },
   vendor: 'flowforge',
   version: '1.0.0',
   cost: { typicalLatencyMs: 4 },

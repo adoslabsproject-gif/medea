@@ -125,6 +125,16 @@ export const humanReviewDecisionNodeDef: NodeDef = {
     },
   ],
 
+  outputContract: {
+    notes: 'I campi in ingresso NON vengono persi: il nodo li ricopia e ci aggiunge sopra i propri, cosi` chi sta a valle continua a vedere il dato originale. `decision` e` anche il ramo su cui prosegue il flusso.',
+    fields: [
+      { name: 'decision', type: 'string', desc: '\'auto\' se il dato puo` proseguire da solo, \'review\' se serve un occhio umano. E` anche il nome del ramo imboccato.' },
+      { name: 'confidence', type: 'number|null', desc: 'La confidenza letta dal dato in ingresso. Null se non c\'era.' },
+      { name: 'threshold', type: 'number', desc: 'La soglia con cui e` stata confrontata.' },
+      { name: 'reason', type: 'string|null', desc: 'Perche` ha chiesto la revisione: \'always_review_label\', \'missing_confidence\' o \'low_confidence\'. Null quando la decisione e` \'auto\'.' },
+      { name: 'reviewedLabel', type: 'string|null', desc: 'L\'etichetta letta dal dato in ingresso. Null se non c\'era.' },
+    ],
+  },
   vendor: 'flowforge',
   version: '1.0.0',
   cost: {

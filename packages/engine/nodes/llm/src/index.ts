@@ -385,6 +385,26 @@ function makeLlmNode(id: string, providerId: string, label: string, color: strin
           help: 'Il prompt vero e proprio. Usa {{input}} per il valore dal nodo precedente, {{$node.X.json.field}} per specifici nodi.',
         },
       ],
+      // Il contratto sta nella FABBRICA e non nei singoli nodi perché qui —
+      // al contrario degli `agent_*`, che hanno ognuno la propria forma — i
+      // cinque provider passano tutti dallo stesso `makeProviderExecutor` e
+      // producono le stesse tre chiavi. Scriverlo cinque volte significherebbe
+      // solo cinque posti da tenere allineati.
+      outputContract: {
+        notes:
+          'Il nodo NON interpreta la risposta: `text` è quello che il modello ha scritto, ' +
+          'virgolette del JSON comprese se gliene hai chiesto uno. Per avere campi separati ' +
+          'serve un `agent_*`, oppure un `action_json_extract` a valle.',
+        fields: [
+          { name: 'text', type: 'string', desc: 'La risposta del modello, testo grezzo.' },
+          {
+            name: 'model',
+            type: 'string',
+            desc: 'Il modello usato davvero, con il predefinito del provider già applicato.',
+          },
+          { name: 'provider', type: 'string', desc: 'Il fornitore interpellato.' },
+        ],
+      },
       vendor: 'flowforge',
       version: '1.1.0',
     },

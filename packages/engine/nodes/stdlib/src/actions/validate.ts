@@ -215,6 +215,15 @@ export const validateNode: NodeModule = {
       },
     ],
     outputs: ['valid', 'invalid'],
+    outputContract: {
+      notes: '`normalized` e` il valore ripulito — spazi tolti, maiuscole sistemate — ed e` quello da usare a valle: usare il valore d\'origine vanifica il controllo. Un valore non valido NON ferma il flusso: `valid` resta falso e si dirama con un `logic_if`.',
+      fields: [
+        { name: 'valid', type: 'boolean', desc: 'Se il valore rispetta il formato. E` il campo su cui diramare.' },
+        { name: 'normalized', type: 'string', desc: 'Il valore ripulito, da usare al posto dell\'originale.' },
+        { name: 'type', type: 'string', desc: 'Il formato controllato: email, partita IVA, codice fiscale, IBAN e simili.' },
+        { name: 'value', type: 'string', desc: 'Il valore come era stato passato.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

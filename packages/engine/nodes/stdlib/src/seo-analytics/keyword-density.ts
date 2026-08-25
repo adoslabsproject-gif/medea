@@ -716,6 +716,20 @@ export const keywordDensityNode: NodeModule = {
       'Safety budget: token cap 1M (oltre = truncate con warning), target keyword cap ' +
       '200, regex target machine-built (lineare, no ReDoS). Audit log con totalTokens + ' +
       'density top-3 per cost monitoring.',
+    outputContract: {
+      notes: 'Su un testo troppo corto escono solo `totalTokens` e `warnings`, e nessuna delle liste. Le frequenze sono su parole singole, coppie e terzine: tre liste separate, non una sola.',
+      fields: [
+        { name: 'totalTokens', type: 'number', desc: 'Quante parole ha contato.' },
+        { name: 'uniqueTokens', type: 'number', desc: 'Quante parole distinte.' },
+        { name: 'stoplistSize', type: 'number', desc: 'Quante parole comuni ha escluso dal conteggio.' },
+        { name: 'lang', type: 'string', desc: 'La lingua riconosciuta, che determina le parole da escludere.' },
+        { name: 'unigrams', type: 'array', desc: 'Le parole singole piu` frequenti, con conteggio e densita`.' },
+        { name: 'bigrams', type: 'array', desc: 'Le coppie di parole piu` frequenti.' },
+        { name: 'trigrams', type: 'array', desc: 'Le terzine piu` frequenti.' },
+        { name: 'targetKeywords', type: 'array', desc: 'Le parole indicate in configurazione, con la loro presenza effettiva nel testo.' },
+        { name: 'warnings', type: 'array', desc: 'I problemi incontrati. Presente solo se ce ne sono.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

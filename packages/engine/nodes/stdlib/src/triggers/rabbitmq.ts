@@ -144,6 +144,23 @@ export const rabbitmqTriggerNode: NodeModule = {
       'work queue',
       'mq',
     ],
+    /**
+     * Cosa il trigger consegna. Rispecchia `triggerInput` di
+     * `trigger-watchers/rabbitmq-watcher.ts`.
+     */
+    outputContract: {
+      fields: [
+        { name: 'data', type: 'unknown', desc: 'Il messaggio interpretato: oggetto se JSON, stringa altrimenti' },
+        { name: 'raw', type: 'string', desc: 'Il messaggio come è arrivato, non interpretato' },
+        { name: 'receivedAt', type: 'string', desc: 'Quando è stato consumato, in ISO 8601' },
+        {
+          name: 'matched',
+          type: 'unknown | undefined',
+          desc: 'Il valore estratto dal filtro; assente quando nessun filtro è configurato',
+        },
+      ],
+      notes: 'Il messaggio viene confermato al broker appena consegnato al workflow.',
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

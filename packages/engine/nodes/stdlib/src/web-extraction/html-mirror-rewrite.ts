@@ -314,6 +314,14 @@ export const htmlMirrorRewriteNode: NodeModule = {
       'NON riscrive: data:/mailto:/tel:/javascript:/blob: URIs, fragment-only links (#anchor), URL non presenti in assetMap (preservati assoluti — utile per link "external" verso il web live). ' +
       'Use case: pipeline mirror completo (spider → asset download → mirror rewrite → file_write), backup statico navigabile, snapshot legale di una pagina. ' +
       'Output: html riscritto + stats {rewritten, unchanged, skippedScheme} per audit.',
+    outputContract: {
+      notes: 'Riscrive i riferimenti della pagina perche` puntino ai file scaricati in locale. `stats.rewritten` a zero con `assetMapSize` maggiore di zero significa che la mappa non corrispondeva a nessun riferimento della pagina.',
+      fields: [
+        { name: 'html', type: 'string', desc: 'La pagina con i riferimenti riscritti verso i file locali.' },
+        { name: 'stats', type: 'object', desc: 'Il conto delle riscritture: rewritten, unchanged e skippedScheme.' },
+        { name: 'assetMapSize', type: 'number', desc: 'Quante corrispondenze conteneva la mappa ricevuta.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

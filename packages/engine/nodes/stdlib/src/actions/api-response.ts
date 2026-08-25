@@ -270,6 +270,14 @@ export const apiResponseNode: NodeModule = {
       },
     ],
     outputs: ['default'],
+    outputContract: {
+      notes: 'Come `action_webhook_respond`, prepara la risposta HTTP: parte alla fine dell\'esecuzione. Il campo `__webhookResponse` e` di servizio — lo legge il motore, non le espressioni.',
+      fields: [
+        { name: '__webhookResponse', type: 'object', desc: 'La risposta pronta, che il motore consegnera` a chi ha chiamato. Non serve leggerla a valle.' },
+        { name: 'status', type: 'number', desc: 'Il codice HTTP che verra` restituito.' },
+        { name: 'ok', type: 'boolean', desc: 'Se il codice e` di successo.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

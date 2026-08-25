@@ -169,6 +169,16 @@ export const whatsAppSendNodeDef: NodeDef = {
     },
   ],
 
+  outputContract: {
+    notes: '`messageId` serve a correlare la conferma di consegna che arrivera` dopo per webhook: la consegna NON e` in questo output — qui c\'e` solo l\'accettazione da parte di WhatsApp.',
+    fields: [
+      { name: 'messageId', type: 'string', desc: 'L\'identificativo che WhatsApp ha assegnato al messaggio.' },
+      { name: 'recipient', type: 'string', desc: 'Il numero a cui e` stato mandato.' },
+      { name: 'mode', type: 'string', desc: 'Come e` stato mandato: testo libero o modello approvato.' },
+      { name: 'response', type: 'object', desc: 'La risposta grezza dell\'API, per i dettagli.' },
+      { name: 'pipelineSteps', type: 'array', desc: 'Il diario del passaggio. Presente solo col registro acceso.' },
+    ],
+  },
   vendor: 'flowforge',
   version: '1.0.0',
   cost: {

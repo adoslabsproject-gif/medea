@@ -219,6 +219,20 @@ export const hlsProbeNode: NodeModule = {
       'rights monitoring, broadcaster legali vs piratato) prima di aggregarlo nel catalogo streaming come ' +
       'Streammy; setup automatic di player JavaScript (hls.js, video.js) — il client legge le varianti ' +
       'disponibili e seleziona quella migliore in base a bandwidth misurato real-time.',
+    outputContract: {
+      notes: 'Legge una playlist HLS. Su una playlist PRINCIPALE escono le `variants` e i segmenti sono vuoti; su una playlist di segmenti e` il contrario. `endlist` falso significa diretta in corso.',
+      fields: [
+        { name: 'type', type: 'string', desc: 'Se e` una playlist principale o di segmenti.' },
+        { name: 'variants', type: 'array', desc: 'Le qualita` disponibili. Solo sulla playlist principale.' },
+        { name: 'segments', type: 'array', desc: 'I segmenti video. Solo sulla playlist di segmenti.' },
+        { name: 'targetDuration', type: 'number', desc: 'La durata dichiarata di un segmento.' },
+        { name: 'totalDuration', type: 'number', desc: 'La durata complessiva dei segmenti.' },
+        { name: 'mediaSequence', type: 'number', desc: 'Il numero del primo segmento della lista.' },
+        { name: 'endlist', type: 'boolean', desc: 'Vero se la lista e` chiusa: falso significa diretta in corso.' },
+        { name: 'url', type: 'string', desc: 'La playlist esaminata.' },
+        { name: 'raw', type: 'string', desc: 'Il testo della playlist, per i casi non previsti.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

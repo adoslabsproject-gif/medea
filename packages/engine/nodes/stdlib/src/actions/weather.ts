@@ -99,6 +99,14 @@ export const weatherNode: NodeModule = {
       },
     ],
     outputs: ['location', 'current', 'forecast'],
+    outputContract: {
+      notes: 'Le temperature sono in gradi Celsius e il vento in chilometri orari: i nomi dei campi lo dicono, e usarli come se fossero altre unita` da` numeri plausibili e sbagliati.',
+      fields: [
+        { name: 'location', type: 'object', desc: 'Il luogo riconosciuto: name, lat, lon, country e timezone.' },
+        { name: 'current', type: 'object', desc: 'Il tempo adesso: tempC, feelsLikeC, humidity, windKmh, windDir, condition e icon.' },
+        { name: 'forecast', type: 'array', desc: 'Le previsioni, un elemento per giorno.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     cost: { typicalLatencyMs: 250 },

@@ -1,7 +1,7 @@
 /**
  * I nodi aggiuntivi, quelli che non erano preinstallati.
  *
- * I 193 nodi del catalogo arrivano compilati dentro l'app: sono un file JSON,
+ * I 194 nodi del catalogo arrivano compilati dentro l'app: sono un file JSON,
  * disponibili subito e anche senza motore acceso. I nodi di comunità no —
  * vivono nel motore, che li installa da un pacchetto `.ffnode` firmato — e
  * quindi si sanno solo quando il motore risponde.

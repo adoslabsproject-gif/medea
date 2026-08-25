@@ -220,6 +220,16 @@ export const filterNode: NodeModule = {
       },
     ],
     outputs: ['kept', 'removed'],
+    outputContract: {
+      notes: 'Gli scartati non vengono buttati: restano in `removed`, cosi` si puo` mandarli da un\'altra parte invece di perderli.',
+      fields: [
+        { name: 'kept', type: 'array', desc: 'Gli elementi che hanno superato il filtro.' },
+        { name: 'removed', type: 'array', desc: 'Quelli scartati: ci sono ancora, non sono persi.' },
+        { name: 'keptCount', type: 'number', desc: 'Quanti ne sono rimasti.' },
+        { name: 'removedCount', type: 'number', desc: 'Quanti ne sono stati scartati.' },
+        { name: 'total', type: 'number', desc: 'Quanti erano entrati.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

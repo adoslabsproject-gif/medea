@@ -248,6 +248,18 @@ export const odooRpcNodeDef: NodeDef = {
     },
   ],
 
+  outputContract: {
+    notes: 'La risposta di Odoo sta in `body`, e la sua forma dipende dall\'operazione: creando un record e` un numero, cercando e` una lista. Gli altri campi compaiono solo per l\'operazione che li riguarda — `createdId` creando, `success` scrivendo o cancellando, `count` cercando.',
+    fields: [
+      { name: 'operation', type: 'string', desc: 'L\'operazione eseguita.' },
+      { name: 'model', type: 'string', desc: 'Il modello Odoo interrogato.' },
+      { name: 'body', type: 'object|array|number|boolean', desc: 'La risposta di Odoo, con la forma che ha per quell\'operazione.' },
+      { name: 'createdId', type: 'number', desc: 'Il record creato. Solo creando.' },
+      { name: 'success', type: 'boolean', desc: 'Se l\'operazione e` andata a buon fine. Solo scrivendo o cancellando.' },
+      { name: 'count', type: 'number', desc: 'Quanti record ha riportato. Solo cercando.' },
+      { name: 'pipelineSteps', type: 'array', desc: 'Il diario del passaggio. Presente solo col registro acceso.' },
+    ],
+  },
   vendor: 'flowforge',
   version: '1.0.0',
   cost: {

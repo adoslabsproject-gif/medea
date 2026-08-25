@@ -222,6 +222,14 @@ export const mockDataNode: NodeModule = {
       },
     ],
     outputs: ['default'],
+    outputContract: {
+      notes: 'Con lo stesso `seed` produce sempre gli stessi dati: e` cio` che rende ripetibile una prova. Sono dati FINTI — un flusso che li usa per davvero manda in giro nomi e importi inventati.',
+      fields: [
+        { name: 'items', type: 'array', desc: 'Gli elementi generati, con la forma chiesta in configurazione.' },
+        { name: 'count', type: 'number', desc: 'Quanti ne ha generati.' },
+        { name: 'seed', type: 'string', desc: 'Il seme usato: rimettendolo si riottengono gli stessi dati.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

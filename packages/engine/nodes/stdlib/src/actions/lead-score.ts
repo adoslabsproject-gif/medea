@@ -112,6 +112,18 @@ export const leadScoreNode: NodeModule = {
       'send_recommended',
       'reason',
     ],
+    outputContract: {
+      notes: 'Nessun LLM: il punteggio nasce da regole, quindi lo stesso testo da` sempre lo stesso numero — ed e` questo che lo rende verificabile. `matched_positive` e `matched_negative` mostrano su cosa si e` basato: senza guardarli il punteggio e` una scatola chiusa.',
+      fields: [
+        { name: 'score', type: 'number', desc: 'Il punteggio da 0 a 100.' },
+        { name: 'category', type: 'string', desc: 'La fascia in cui cade il punteggio.' },
+        { name: 'matched_positive', type: 'array', desc: 'Le parole che hanno alzato il punteggio.' },
+        { name: 'matched_negative', type: 'array', desc: 'Quelle che l\'hanno abbassato.' },
+        { name: 'country_bonus', type: 'number', desc: 'Quanto ha pesato il paese, in piu` o in meno.' },
+        { name: 'send_recommended', type: 'boolean', desc: 'Se conviene contattarlo. E` il campo su cui diramare.' },
+        { name: 'reason', type: 'string', desc: 'La spiegazione del punteggio, per esteso.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

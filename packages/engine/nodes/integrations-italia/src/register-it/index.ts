@@ -102,6 +102,12 @@ export const registerItDomain: NodeModule = {
         help: 'Time-to-live cache DNS. 3600 = 1 ora (default). 300 = 5 min (per cambi frequenti). 86400 = 1 giorno.',
       },
     ],
+    outputContract: {
+      notes: 'Restituisce la risposta di Register.it tale e quale: i nomi dei campi sono quelli della loro API.',
+      fields: [
+        { name: '<la risposta di Register.it>', type: 'object', desc: 'Il corpo restituito dall\'API, senza nessuna trasformazione.' },
+      ],
+    },
     vendor: 'flowforge-italia',
     version: '0.2.0',
   },

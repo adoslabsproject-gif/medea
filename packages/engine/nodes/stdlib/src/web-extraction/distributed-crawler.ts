@@ -229,6 +229,21 @@ export const distributedCrawlerNode: NodeModule = {
       'future; monitoraggio modifiche periodiche di un sito (re-crawl settimanale + diff con previous run); ' +
       'link audit complessivo per individuazione 404 broken link + redirect chain inefficienti; data ' +
       'collection per training di LLM/NLP model su corpus dominio-specifico autorizzato.',
+    outputContract: {
+      notes: 'Tre forme, una per operazione. AVVIANDO escono `jobId`, `status`, `queueDepth`, `seeds`, `maxDepth` e `maxPages`. FERMANDO escono `jobId` e `stopped`. RACCOGLIENDO i risultati escono `items`, `nextCursor` e `count` — e si continua passando `nextCursor` al giro seguente finche` non e` vuoto.',
+      fields: [
+        { name: 'jobId', type: 'string', desc: 'Il lavoro avviato, da riusare per raccoglierne i risultati.' },
+        { name: 'status', type: 'string', desc: 'Lo stato del lavoro.' },
+        { name: 'queueDepth', type: 'number', desc: 'Quanti indirizzi sono in coda.' },
+        { name: 'seeds', type: 'array', desc: 'Gli indirizzi di partenza.' },
+        { name: 'maxDepth', type: 'number', desc: 'Fin dove si spinge nei collegamenti.' },
+        { name: 'maxPages', type: 'number', desc: 'Il tetto di pagine.' },
+        { name: 'stopped', type: 'boolean', desc: 'Se il lavoro e` stato fermato. Solo fermando.' },
+        { name: 'items', type: 'array', desc: 'Le pagine raccolte in questa pagina di risultati.' },
+        { name: 'nextCursor', type: 'string', desc: 'Da dove riprendere la raccolta. Vuoto quando non c\'e` altro.' },
+        { name: 'count', type: 'number', desc: 'Quanti elementi in questa pagina di risultati.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

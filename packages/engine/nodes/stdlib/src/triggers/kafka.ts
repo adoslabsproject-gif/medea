@@ -168,6 +168,24 @@ export const kafkaTriggerNode: NodeModule = {
       'event bus',
       'mq',
     ],
+    /**
+     * Cosa il trigger consegna. Rispecchia `triggerInput` di
+     * `trigger-watchers/kafka-watcher.ts`.
+     */
+    outputContract: {
+      fields: [
+        { name: 'data', type: 'unknown', desc: 'Il messaggio interpretato: oggetto se JSON, stringa altrimenti' },
+        { name: 'raw', type: 'string', desc: 'Il messaggio come è arrivato, non interpretato' },
+        { name: 'receivedAt', type: 'string', desc: 'Quando è stato consumato, in ISO 8601' },
+        { name: 'topic', type: 'string', desc: 'Il topic da cui proviene' },
+        { name: 'partition', type: 'number', desc: 'La partizione da cui proviene' },
+        {
+          name: 'matched',
+          type: 'unknown | undefined',
+          desc: 'Il valore estratto dal filtro; assente quando nessun filtro è configurato',
+        },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },
