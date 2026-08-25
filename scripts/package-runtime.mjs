@@ -276,18 +276,34 @@ async function main() {
   // `node-linker=hoisted`: senza, pnpm scrive un albero di collegamenti che
   // puntano al suo deposito. Copiarlo altrove lascia collegamenti rotti, e il
   // runtime muore al primo `import` con «Cannot find package». Provato.
-  run(
-    'pnpm',
-    [
-      `--filter=${PACKAGE}`,
-      'deploy',
-      '--prod',
-      '--legacy',
-      '--config.node-linker=hoisted',
-      staging,
-    ],
-    workspace,
-  );
+  try {
+    run(
+      'pnpm',
+      [
+        `--filter=${PACKAGE}`,
+        'deploy',
+        '--prod',
+        '--legacy',
+        '--config.node-linker=hoisted',
+        staging,
+      ],
+      workspace,
+    );
+  } finally {
+    // `deploy --node-linker=hoisted` non si limita alla cartella di lavoro:
+    // riscrive PIATTO anche il `node_modules` del pacchetto sorgente. Alcuni
+    // pacchetti sopravvivono solo alla forma a collegamenti — `@opentelemetry`
+    // spedisce moduli-ponte che importano un pacchetto fratello (`sdk-trace`)
+    // che in forma piatta non c'è più. Il risultato è una build che fallisce
+    // DOPO, con un errore che non nomina questo script: «Could not resolve
+    // @opentelemetry/sdk-trace». Ci è già costato due diagnosi.
+    //
+    // `finally`: il workspace va rimesso a posto anche quando il deploy
+    // fallisce a metà — anzi, soprattutto allora.
+    console.log('  Rimetto a posto i moduli del workspace…');
+    rmSync(join(source, 'node_modules'), { recursive: true, force: true });
+    run('pnpm', ['install', '--frozen-lockfile'], workspace);
+  }
 
   console.log('  Aggiungo i moduli che il runtime carica ma non dichiara…');
   for (const name of EXTRA_MODULES) {

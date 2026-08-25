@@ -427,7 +427,6 @@ export const NODE_ICON_OVERRIDE: Record<string, string> = {
   db_update: 'DatabaseZap',
   db_delete: 'Trash2',
   db_sql_query: 'TerminalSquare',
-  db_subscribe: 'Radio',
   // Logic (16)
   logic_if: 'GitBranch',
   logic_switch: 'GitFork',

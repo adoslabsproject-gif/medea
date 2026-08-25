@@ -91,7 +91,11 @@ afterEach(() => {
 const SCHEMA = { type: 'object', properties: { x: { type: 'string' } } };
 
 describe('dispatchLLMChatStructuredStreaming — caratterizzazione wire (Liara)', () => {
-  it('body: stream:true + include_usage + no_think + json_schema + temperature 0.1', async () => {
+  /**
+   * Il predefinito è MISTRAL: `/no_think` e `enable_thinking` sono convenzioni
+   * di Qwen3 e non si mandano. Restano disponibili con MEDEA_LIARA_FAMILY=qwen.
+   */
+  it('body: stream:true + include_usage + json_schema + temperature 0.1, senza convenzioni Qwen', async () => {
     const { dispatchLLMChatStructuredStreaming } = await import('./llm-chat.service');
     await dispatchLLMChatStructuredStreaming(
       'liara',
@@ -110,13 +114,13 @@ describe('dispatchLLMChatStructuredStreaming — caratterizzazione wire (Liara)'
     expect(b.stream).toBe(true);
     expect(b.stream_options).toEqual({ include_usage: true });
     expect(b.temperature).toBe(0.1);
-    expect(b.chat_template_kwargs).toEqual({ enable_thinking: false });
+    expect(b.chat_template_kwargs).toBeUndefined();
     expect(b.response_format).toEqual({
       type: 'json_schema',
       json_schema: { name: 'workflow_scaffold', strict: true, schema: SCHEMA },
     });
     const msgs = b.messages as { role: string; content: string }[];
-    expect(msgs[0]?.content).toBe('/no_think\nSYS');
+    expect(msgs[0]?.content).toBe('SYS');
   });
 
   it("Authorization Bearer = LICENSE KEY (non l'apiKey tenant)", async () => {
@@ -311,7 +315,7 @@ describe('dispatchLLMChatStructuredStreaming — non-Liara fallback', () => {
 });
 
 describe('dispatchLLMChatStreaming — PLAIN streaming (node-generator)', () => {
-  it('Liara: body senza response_format ma stream:true + no_think', async () => {
+  it('Liara: body senza response_format ma stream:true, senza convenzioni Qwen', async () => {
     const { dispatchLLMChatStreaming } = await import('./llm-chat.service');
     await dispatchLLMChatStreaming('liara', '', '', 'SYS', 'GOAL', undefined, [], () => {
       /* noop */
@@ -319,9 +323,9 @@ describe('dispatchLLMChatStreaming — PLAIN streaming (node-generator)', () => 
     const b = captured[0]!.body;
     expect(b.stream).toBe(true);
     expect(b).not.toHaveProperty('response_format');
-    expect(b.chat_template_kwargs).toEqual({ enable_thinking: false });
+    expect(b.chat_template_kwargs).toBeUndefined();
     const msgs = b.messages as { role: string; content: string }[];
-    expect(msgs[0]?.content).toBe('/no_think\nSYS');
+    expect(msgs[0]?.content).toBe('SYS');
   });
 
   it('Liara: onChunk in ordine + ritorna accumulato + Bearer license', async () => {

@@ -33,6 +33,12 @@ const SCAFFOLD_RETRIEVE_K = 45;
  * prescindere dal retrieval del goal. Trigger comuni, controllo di flusso,
  * primitive HTTP/codice/file/db/email/risposta. Un defId qui non nel catalogo
  * del tenant viene semplicemente ignorato (no crash).
+ *
+ * Quel "no crash" ha nascosto per mesi due voci inesistenti — `logic_filter`
+ * (il nodo si chiama `action_filter`) e `agent_chat` (non esiste): venivano
+ * filtrate via, e il modello non vedeva mai il nodo per filtrare. Corretto il
+ * 2026-08-05; la lista è tenuta identica a quella del desktop
+ * (`features/workflows/scaffold/run.ts`), che ha il guard test.
  */
 export const SCAFFOLD_CORE_DEFIDS: readonly string[] = [
   'trigger_manual',
@@ -45,7 +51,7 @@ export const SCAFFOLD_CORE_DEFIDS: readonly string[] = [
   'logic_loop',
   'logic_merge',
   'logic_wait',
-  'logic_filter',
+  'action_filter',
   'action_http',
   'action_run_js',
   'action_run_python',
@@ -59,7 +65,6 @@ export const SCAFFOLD_CORE_DEFIDS: readonly string[] = [
   'db_insert',
   'db_update',
   'agent_extractor',
-  'agent_chat',
 ];
 
 /**

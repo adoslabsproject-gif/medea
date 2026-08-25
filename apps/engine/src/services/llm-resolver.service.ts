@@ -57,6 +57,19 @@ export interface ResolveOptions {
   requestedProvider?: string;
   /** BYO key from HTTP header (legacy "X-LLM-API-Key" pattern). */
   headerApiKey?: string;
+  /**
+   * Indirizzo del provider, quando lo conosce solo il chiamante.
+   *
+   * Serve ai provider self-hosted — Liara, Ollama, un endpoint
+   * OpenAI-compatibile privato — dove l'indirizzo non è una costante del
+   * registry ma una scelta di chi chiama. Con la sola chiave in mano il
+   * resolver tornava senza indirizzo, il dispatch usava quello di default e la
+   * richiesta finiva su un host che per un motore locale non esiste:
+   * «fetch failed», senza altro dettaglio.
+   *
+   * Vive per la durata della richiesta come la chiave: non viene salvato.
+   */
+  baseUrl?: string;
 }
 
 /**
@@ -92,15 +105,26 @@ export class LlmResolverService {
   resolve(tenantId: string, options: ResolveOptions = {}): ResolvedLlm {
     const requested = (options.requestedProvider ?? '').trim();
     const headerKey = (options.headerApiKey ?? '').trim();
+    const baseUrl = (options.baseUrl ?? '').trim();
 
     // ── (1) Explicit provider + explicit header key (BYO mode) ──────────
     if (requested && isSupportedProvider(requested) && headerKey) {
-      return { provider: requested, apiKey: headerKey, model: '' };
+      return {
+        provider: requested,
+        apiKey: headerKey,
+        model: '',
+        ...(baseUrl ? { baseUrl } : {}),
+      };
     }
 
     // ── (2) Legacy: only header key (assume anthropic) ──────────────────
     if (!requested && headerKey) {
-      return { provider: 'anthropic', apiKey: headerKey, model: '' };
+      return {
+        provider: 'anthropic',
+        apiKey: headerKey,
+        model: '',
+        ...(baseUrl ? { baseUrl } : {}),
+      };
     }
 
     // ── (3) Explicit provider, pull key from tenant Settings ────────────

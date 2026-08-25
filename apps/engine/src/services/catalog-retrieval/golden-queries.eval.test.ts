@@ -70,10 +70,10 @@ const GOLDEN: GoldenQuery[] = [
   { query: 'quando arriva una richiesta webhook', expectAnyOf: ['trigger_webhook'] },
   { query: 'quando un form viene compilato', expectAnyOf: ['trigger_form'] },
   { query: 'leggi un feed rss', expectAnyOf: ['trigger_rss_feed'] },
-  {
-    query: 'quando cambia una tabella del database',
-    expectAnyOf: ['trigger_db_change', 'db_subscribe'],
-  },
+  // Una risposta sola, e non per severità: `db_subscribe` era l'alternativa
+  // ammessa qui, e non aveva né executor né watcher — sceglierlo dava un
+  // workflow che non parte mai, in silenzio. Rimosso il 2026-08-06 (ADR 0010).
+  { query: 'quando cambia una tabella del database', expectAnyOf: ['trigger_db_change'] },
   // ── Logic / flow ──
   { query: 'aggiungi una condizione if', expectAnyOf: ['logic_if'] },
   { query: 'switch su più casi', expectAnyOf: ['logic_switch'] },

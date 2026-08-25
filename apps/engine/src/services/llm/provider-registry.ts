@@ -64,9 +64,20 @@ const SPECS: Readonly<Record<LlmProvider, ProviderSpec>> = {
     pingModel: 'nha-v1',
     openAiToolCompat: true,
     // baseUrl runtime = gateway portal (MEDEA_LIARA_BASE_URL); il chiamante lo passa.
+    //
+    // Il `/v1` fa parte dell'indirizzo, e non è decorazione: nginx davanti al
+    // gateway instrada con corrispondenza **esatta** su `/v1/chat/completions`,
+    // e tutto il resto cade in `location / { return 444; }` — connessione
+    // chiusa senza risposta. A chi chiama arriva «fetch failed», non un 404,
+    // quindi sembra un guasto di rete e si va a cercare dalla parte sbagliata.
+    //
+    // Senza il `/v1` questo default componeva `.../chat/completions` e ogni
+    // richiesta del motore veniva chiusa in faccia: è ciò che ha tenuto fermo
+    // il wizard il 2026-08-05, mentre la stessa chiamata dal desktop — che il
+    // `/v1` ce l'aveva — funzionava.
     endpoint: {
       kind: 'self-host',
-      defaultBaseUrl: 'https://liara.nothumanallowed.com',
+      defaultBaseUrl: 'https://liara.nothumanallowed.com/v1',
       chatPath: OPENAI_PATH,
       toolPath: OPENAI_PATH,
     },

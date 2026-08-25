@@ -9,7 +9,9 @@
  *  - Liara: model esplicito override (BYOK enterprise)
  *  - Liara: temperature 0.2
  *  - Liara: <think>...</think> stripped dal response
- *  - Liara: MEDEA_LIARA_THINKING=false → /no_think prefix + enable_thinking=false
+ *  - Liara: le convenzioni Qwen3 (/no_think, enable_thinking) si mandano SOLO
+ *    se MEDEA_LIARA_FAMILY=qwen. Il predefinito è mistral, che è ciò che
+ *    risponde davvero su Liara (vedi llm-chat.service.ts).
  *  - Liara: MEDEA_LIARA_MAX_TOKENS=8192 → applicato
  *  - Liara: disabled (MEDEA_DISABLE_LIARA=true) → throws
  */
@@ -58,6 +60,7 @@ beforeEach(() => {
     } as Response;
   }) as unknown as typeof fetch;
   delete process.env.MEDEA_LIARA_THINKING;
+  delete process.env.MEDEA_LIARA_FAMILY;
   delete process.env.MEDEA_LIARA_MAX_TOKENS;
 });
 
@@ -66,16 +69,22 @@ afterEach(() => {
 });
 
 describe('dispatchLLMChat — Liara branch', () => {
-  it('default: thinking ENABLED + max_tokens 24000 + temperature 0.2', async () => {
+  /**
+   * Il predefinito è MISTRAL, che è ciò che risponde davvero su Liara: niente
+   * `/no_think` in testa al prompt e niente `enable_thinking` fra i parametri
+   * del template — sono convenzioni di Qwen3, e mandarle a un Mistral vuol
+   * dire cominciare ogni richiesta con una direttiva che non capisce.
+   */
+  it('predefinito mistral: nessuna convenzione Qwen + max_tokens 24000 + temperature 0.2', async () => {
     const { dispatchLLMChat } = await import('./llm-chat.service');
     await dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []);
     expect(captured).toHaveLength(1);
     const body = captured[0]!.body;
     expect(body.max_tokens).toBe(24000);
     expect(body.temperature).toBe(0.2);
-    expect(body.chat_template_kwargs).toEqual({ enable_thinking: true });
+    expect(body.chat_template_kwargs).toBeUndefined();
     const messages = body.messages as { role: string; content: string }[];
-    expect(messages[0]?.content).toBe('sys'); // no /no_think prefix
+    expect(messages[0]?.content).toBe('sys');
   });
 
   it("opts.temperature RISPETTATA (fix 2026-07: prima era 0.2 hardcoded, l'UI ignorata)", async () => {
@@ -112,8 +121,8 @@ describe('dispatchLLMChat — Liara branch', () => {
     expect(captured[0]!.body.model).toBe('qwen3-32b-special');
   });
 
-  it('MEDEA_LIARA_THINKING=false → /no_think + enable_thinking=false', async () => {
-    process.env.MEDEA_LIARA_THINKING = 'false';
+  it('MEDEA_LIARA_FAMILY=qwen → /no_think + enable_thinking=false', async () => {
+    process.env.MEDEA_LIARA_FAMILY = 'qwen';
     const { dispatchLLMChat } = await import('./llm-chat.service');
     await dispatchLLMChat('liara', '', '', 'sys', 'goal', undefined, []);
     const body = captured[0]!.body;
@@ -428,14 +437,14 @@ describe('dispatchLLMChatStructured — Liara guided_json', () => {
     expect(rf.json_schema.schema).toEqual(SCHEMA);
   });
 
-  it('Liara: single-shot → /no_think prefix + enable_thinking=false + temperature 0.1', async () => {
+  it('Liara (mistral, predefinito): niente prefisso Qwen + temperature 0.1', async () => {
     const { dispatchLLMChatStructured } = await import('./llm-chat.service');
     await dispatchLLMChatStructured('liara', '', '', 'mySystem', 'goal', undefined, [], SCHEMA);
     const body = captured[0]!.body;
     const sys = (body.messages as { role: string; content: string }[])[0]!;
-    expect(sys.content.startsWith('/no_think')).toBe(true);
+    expect(sys.content.startsWith('/no_think')).toBe(false);
     expect(body.temperature).toBe(0.1);
-    expect((body.chat_template_kwargs as { enable_thinking: boolean }).enable_thinking).toBe(false);
+    expect(body.chat_template_kwargs).toBeUndefined();
   });
 
   it('Liara: <think>…</think> rimosso dal content ritornato', async () => {
