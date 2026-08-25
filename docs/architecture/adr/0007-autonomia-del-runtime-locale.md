@@ -11,7 +11,7 @@ nodi, anche quando non c'è nessuno davanti allo schermo. Un editor che non
 esegue è un disegnatore di diagrammi.
 
 La strada è quella dell'ADR 0005: **riusare il runtime vero come processo
-figlio**, non riscriverlo. Riscrivere 193 esecutori significa inseguire per
+figlio**, non riscriverlo. Riscrivere 194 esecutori significa inseguire per
 sempre, e «quasi tutti funzionano» non è una risposta.
 
 ## Cosa è già dimostrato

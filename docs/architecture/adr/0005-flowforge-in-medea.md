@@ -36,7 +36,7 @@ verifica che il workflow sia valido — verifica che sia _sensato_.
 
 Il runtime Node viene avviato da Tauri su porta effimera, con controllo di
 salute e spegnimento legato al processo padre. È l'unica strada che conserva
-**193 nodi** e la sandbox `isolated-vm` (modulo nativo C++, senza equivalente
+**194 nodi** e la sandbox `isolated-vm` (modulo nativo C++, senza equivalente
 in Rust).
 
 > Correzione rispetto alla stesura originale: i nodi sono 193, non 186, ed è il
@@ -122,7 +122,7 @@ apps/desktop/src/features/workflows/
 ├── types.ts                    schema workflow (port di core-schema)
 ├── api.ts                      wrapper invoke() verso i comandi Tauri
 ├── canvas/                     editor xyflow, icone, disposizione automatica
-├── catalog/                    i 193 nodi, generati dai pacchetti di FlowForge
+├── catalog/                    i 194 nodi, generati dai pacchetti di questo repo
 ├── scaffold/                   generazione da linguaggio naturale (agente)
 ├── quality/                    le 21 regole del controllo di qualità
 ├── wizard/                     creazione guidata, con i passi in chiaro

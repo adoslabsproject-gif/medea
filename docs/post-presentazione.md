@@ -12,7 +12,8 @@ locale con ricerca full-text, la invia via SMTP. Fin qui niente di nuovo.
 La differenza è cosa ci sta accanto: una tab **Workflow** con un editor visuale
 di automazioni. Si trascinano i nodi sul canvas, si collegano, si configurano.
 Trigger a orario, webhook, chiamate HTTP, query su database, invio email, agenti
-AI, integrazioni con servizi esterni: 193 nodi, gli stessi di FlowForge, con le
+AI, integrazioni con servizi esterni: 194 nodi, gli stessi di FlowForge meno uno
+che non era eseguibile, con le
 stesse definizioni e le stesse icone.
 
 E si eseguono. Non «si esporteranno da qualche parte che li esegue»: girano sul
@@ -54,7 +55,7 @@ Un workflow può essere formalmente perfetto e non funzionare. Tutti i campi
 compilati, tutti i nodi collegati, e dentro un `smtp.example.com` che il modello
 ha messo perché non sapeva cosa scrivere. Al primo giro fallisce.
 
-Ci sono 21 controlli che guardano il senso, non la forma:
+Ci sono 26 controlli che guardano il senso, non la forma:
 
 - riferimenti a nodi che, quando quel passo viene eseguito, non sono ancora stati eseguiti;
 - valori inventati — `example.com`, `your-api-key`, `my-bucket`, identificativi che non sono identificativi;
@@ -103,7 +104,7 @@ Niente Electron, niente server.
 Il motore dei workflow è l'eccezione: è il runtime di FlowForge, quindi Node, e
 viaggia dentro l'app con le sue dipendenze e il suo interprete. Sono 595 MB,
 quasi tutti moduli nativi che non si possono impacchettare altrimenti. È il
-prezzo per avere 193 nodi veri e la sandbox `isolated-vm`, invece di una
+prezzo per avere 194 nodi veri e la sandbox `isolated-vm`, invece di una
 manciata di nodi riscritti che fanno il 10% del lavoro.
 
 L'assistente ha 63 strumenti che agiscono davvero sul sistema — leggere la

@@ -88,7 +88,7 @@ Anagrafiche, articoli, listini e documenti quando servono.
 ### ⚡ Workflow con i nodi
 
 Una tab con un editor visuale di automazioni: si trascinano i nodi, si collegano,
-si configurano. **193 nodi** — trigger a orario, webhook, chiamate HTTP, database,
+si configurano. **194 nodi** — trigger a orario, webhook, chiamate HTTP, database,
 email, agenti AI, integrazioni — con le stesse icone e le stesse definizioni del
 catalogo da cui derivano, più i pacchetti `.ffnode` che si installano da file. E
 si **eseguono**: il motore viaggia dentro l'app, con il suo Node e le sue
@@ -96,7 +96,7 @@ dipendenze, e gira sul computer senza chiedere niente a nessun server.
 
 Il motore **è di Medea**: vive in questo repository sotto `@medea/engine-*`, si
 compila da qui e si impacchetta negli installatori. Deriva da FlowForge — è da
-lì che arrivano i 193 nodi e la compatibilità del formato — ma non è un pezzo
+lì che arrivano i 194 nodi e la compatibilità del formato — ma non è un pezzo
 preso in prestito da un altro progetto. Vedi
 [ADR 0009](docs/architecture/adr/0009-il-motore-porta-il-nome-di-medea.md).
 
@@ -114,11 +114,12 @@ schema, lo aggiunge, lo configura, valida, chiude.
 
 **Non si salva ciò che non funziona**
 
-Ventuno regole controllano il senso, non solo la forma: riferimenti a nodi che
+Ventisei regole controllano il senso, non solo la forma: riferimenti a nodi che
 a runtime non sono ancora stati eseguiti, `example.com` rimasti nei campi,
-trigger che non portano a nulla, liste collegate a nodi che elaborano un
-elemento per volta, segreti scritti in chiaro. Un workflow con problemi critici
-non si attiva — né disegnato a mano né generato dall'AI.
+trigger che non portano a nulla, condizioni scritte in un modo che non verrà
+mai valutato, un filtro puntato su un singolo messaggio invece che su un
+elenco, segreti scritti in chiaro. Un workflow con problemi critici non si
+attiva — né disegnato a mano né generato dall'AI.
 
 </td></tr>
 </table>
@@ -371,7 +372,7 @@ e `cargo check` a ogni push.
 | 🟢  | BYOK con portachiavi, endpoint personale, abbonamento via MCP    |
 | 🟢  | Rubrica, anagrafiche, articoli, listini, documenti               |
 | 🟢  | Template email, promemoria con notifiche, DB Studio              |
-| 🟢  | Workflow: canvas, 193 nodi, generazione a parole, 21 controlli   |
+| 🟢  | Workflow: canvas, 194 nodi, generazione a parole, 26 controlli   |
 | 🟢  | Esecuzione locale: motore impacchettato, cron e trigger attivi   |
 | 🟢  | Autonomia: barra di stato, avvio al login, scadenze recuperate   |
 | 🟢  | Segreti nel portachiavi, account di posta consegnati ai nodi     |
