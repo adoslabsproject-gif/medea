@@ -12,6 +12,13 @@ import { describeIssues, type QualityDatabase } from '../quality';
 import type { NodeDef } from '../types';
 
 import type { WorkflowBuilder, WorkflowSnapshot } from './builder';
+import { DB_READ_TOOLS, eseguiStrumentoDb, STRUMENTI_DB } from './tools-db';
+import {
+  DB_WRITE_TOOLS,
+  eseguiStrumentoDbScrittura,
+  STRUMENTI_DB_SCRITTURA,
+  type ChiediConferma,
+} from './tools-db-scrittura';
 
 export interface ToolDef {
   name: string;
@@ -74,6 +81,15 @@ export const WORKFLOW_AGENT_TOOLS: ToolDef[] = [
       ['whenItStarts', 'whatItDoes'],
     ),
   },
+  // Dopo l'analisi e PRIMA di cercare i nodi: una tabella che l'utente ha
+  // nominato si verifica, non si dà per esistente. Senza questi, il
+  // 2026-08-07 il modello si inventava `read_table` su un file del disco.
+  // `analyze_goal` resta primo perché è il primo passo, e i modelli guardano
+  // l'ordine in cui gli strumenti sono elencati.
+  ...DB_READ_TOOLS,
+  // E, dopo aver guardato, poter fare. Ogni scrittura passa dalla conferma
+  // esplicita dell'utente: senza un modo per chiederla, questi non partono.
+  ...DB_WRITE_TOOLS,
   {
     name: 'search_nodes',
     description:
@@ -210,12 +226,21 @@ export interface ToolCallResult {
  */
 const PROMEMORIA = 'Prosegui da solo: non fare domande, nessuno può risponderti.';
 
-export function executeWorkflowTool(
+export async function executeWorkflowTool(
   ctx: ToolContext,
   name: string,
   args: Record<string, unknown>,
-): ToolCallResult {
-  const esito = eseguiStrumento(ctx, name, args);
+  /** Come chiedere il permesso prima di modificare. Assente = non si modifica. */
+  chiediConferma?: ChiediConferma,
+): Promise<ToolCallResult> {
+  // Gli strumenti che guardano nel database vivono in un modulo loro: parlano
+  // col runtime, quindi sono asincroni, e qui dentro non ci starebbero senza
+  // sfondare il tetto di righe del progetto.
+  const esito = STRUMENTI_DB.has(name)
+    ? await eseguiStrumentoDb(name, args)
+    : STRUMENTI_DB_SCRITTURA.has(name)
+      ? await eseguiStrumentoDbScrittura(name, args, chiediConferma)
+      : eseguiStrumento(ctx, name, args);
   // Il promemoria si attacca a ogni risposta, non solo a quelle riuscite:
   // dopo un errore la tentazione di chiedere aiuto è ancora più forte.
   if (esito.data !== null && typeof esito.data === 'object' && !Array.isArray(esito.data)) {

@@ -63,6 +63,33 @@ export function isPickerField(type: string): boolean {
   return type.endsWith('-picker');
 }
 
+/**
+ * Un campo che chiede il CONSENSO di una persona, non una configurazione.
+ *
+ * `db_delete.confirmDelete` è l'unico oggi: una spunta obbligatoria che dice
+ * «so che questo cancella dei dati». Non è un valore che si possa dedurre dal
+ * goal — è un'assunzione di responsabilità, e un generatore non ha il diritto
+ * di darla al posto di chi userà il workflow.
+ *
+ * Trattarlo come un campo qualunque rendeva `db_delete` **impossibile da
+ * generare**: il 2026-08-06 l'obiettivo «ogni primo del mese cancella dalla
+ * tabella log le righe più vecchie di novanta giorni» ha fatto tre tentativi e
+ * si è arreso su questo, con tutto il resto già a posto. Un'automazione di
+ * pulizia periodica è una richiesta ordinaria, e il wizard non poteva
+ * soddisfarla in nessun caso.
+ *
+ * Qui si smette di pretenderlo dal modello. NON viene riempito
+ * automaticamente — sarebbe consentire per conto altrui — ma il workflow
+ * arriva all'editor, dove il controllo di qualità lo chiede a chi legge e
+ * impedisce l'attivazione finché non c'è.
+ *
+ * Il prefisso è la convenzione: chi aggiungerà una seconda conferma la
+ * chiamerà `confirm…`, come quella che c'è già.
+ */
+export function eConsensoUmano(key: string): boolean {
+  return /^confirm/i.test(key);
+}
+
 /** Livello 1 e 2: ogni nodo contro la sua definizione. */
 export function validateNodes(output: ScaffoldOutput, catalog: Map<string, NodeDef>): Violation[] {
   const violations: Violation[] = [];
@@ -118,7 +145,7 @@ export function validateNodes(output: ScaffoldOutput, catalog: Map<string, NodeD
       // dire "non lo so", e non deve contare come valore fornito.
       const raw = node.config[field.key];
       const present = raw !== undefined && raw !== null && raw !== '';
-      if (field.required && !present && !isPickerField(field.type)) {
+      if (field.required && !present && !isPickerField(field.type) && !eConsensoUmano(field.key)) {
         violations.push({
           kind: 'missing_required',
           nodeId: node.id,

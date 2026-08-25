@@ -101,6 +101,14 @@ export interface AgentRequest {
   /** Schema dei database noti: accende i controlli su tabelle e colonne. */
   databases?: readonly QualityDatabase[];
   onStep?: (step: AgentStep) => void;
+  /**
+   * Come chiedere il permesso prima di modificare l'archivio.
+   *
+   * Gli strumenti che scrivono — `crea_tabella`, `scrivi_righe` — non partono
+   * senza. È voluto: un domani questo agente potrebbe girare in un contesto
+   * senza interfaccia, e il valore predefinito deve essere «non fare».
+   */
+  chiediConferma?: (richiesta: { titolo: string; dettaglio: string }) => Promise<boolean>;
   /** Con questo si può fermare il ciclo a metà: viene guardato prima di ogni
    *  passo, e chi lo aziona ferma anche la chiamata in volo. */
   signal?: AbortSignal;
@@ -341,7 +349,7 @@ export async function runWorkflowAgent(req: AgentRequest): Promise<AgentResult> 
 
     let rejected = false;
     for (const call of reply.toolCalls) {
-      const outcome = executeWorkflowTool(ctx, call.name, call.arguments);
+      const outcome = await executeWorkflowTool(ctx, call.name, call.arguments, req.chiediConferma);
       const record: AgentStep = {
         step: steps.length + 1,
         tool: call.name,

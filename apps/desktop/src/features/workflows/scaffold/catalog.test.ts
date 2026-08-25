@@ -6,6 +6,7 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { STDLIB_NODES } from '../catalog';
 import type { NodeDef } from '../types';
 
 import {
@@ -16,6 +17,7 @@ import {
   selectCatalog,
 } from './catalog';
 import { at, CATALOG } from './fixtures';
+import { SCAFFOLD_CORE_DEFIDS } from './run';
 
 describe('formatCatalogEntry — contratto di formato', () => {
   it('mantiene la forma compatta attesa dal modello', () => {
@@ -124,5 +126,30 @@ describe('indexByDefId', () => {
       { defId: 'x', type: 'action', label: 'secondo' },
     ]);
     expect(index.get('x')?.label).toBe('secondo');
+  });
+});
+
+describe('SCAFFOLD_CORE_DEFIDS — nodi sempre mostrati al modello', () => {
+  /**
+   * Ogni nodo di base deve esistere davvero.
+   *
+   * La lista decide cosa il modello vede **sempre**, a prescindere dalla
+   * ricerca sull'obiettivo. Un defId che nel catalogo non c'è non produce un
+   * errore da nessuna parte: `selectCatalog` non lo trova e passa oltre, il
+   * server fa lo stesso filtrando per esistenza. Sparisce, e basta.
+   *
+   * È così che `logic_filter` è rimasto in lista per mesi mentre il nodo si
+   * chiama `action_filter`: il modello non ha mai visto il nodo per filtrare —
+   * uno dei più richiesti — e nessuno poteva accorgersene guardando un errore,
+   * perché non ce n'era uno. Insieme a lui `agent_chat`, che non esiste.
+   */
+  it('esistono tutti nel catalogo', () => {
+    const noti = new Set(STDLIB_NODES.map((n) => n.defId));
+    const fantasmi = SCAFFOLD_CORE_DEFIDS.filter((d) => !noti.has(d));
+    expect(fantasmi).toEqual([]);
+  });
+
+  it('non ha duplicati: mostrare due volte lo stesso nodo spreca prompt', () => {
+    expect(new Set(SCAFFOLD_CORE_DEFIDS).size).toBe(SCAFFOLD_CORE_DEFIDS.length);
   });
 });

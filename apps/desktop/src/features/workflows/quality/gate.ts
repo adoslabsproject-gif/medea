@@ -17,7 +17,9 @@ import {
   checkSwitchDefault,
   checkSwitchInvalidCaseKey,
 } from './rules-config';
+import { checkDatiInventati } from './rules-dati-inventati';
 import { checkDbColumnNotInSchema, checkDbTableNotInSchema } from './rules-db';
+import { checkEspressioniNonRisolvibili } from './rules-espressioni';
 import {
   checkCircularReferences,
   checkDeadEnd,
@@ -29,6 +31,8 @@ import {
   checkSensitiveHardcoded,
   checkTriggerWithoutAction,
 } from './rules-intent';
+import { checkListaCheNonArriva } from './rules-liste';
+import { checkNienteDaElaborare } from './rules-materia';
 import { checkMockPlaceholders, checkSuspiciousResourceIds } from './rules-placeholder';
 import {
   checkErrorBranchInverted,
@@ -50,7 +54,7 @@ import type {
   QualitySeverity,
 } from './types';
 
-/** Le 22 regole, nell'ordine in cui vengono applicate. L'ordine non cambia il
+/** Le 26 regole, nell'ordine in cui vengono applicate. L'ordine non cambia il
  *  verdetto — i problemi vengono comunque riordinati per gravità — ma tiene
  *  l'elenco leggibile: prima la struttura, poi i valori, poi il senso. */
 export const QUALITY_RULES: readonly { code: string; run: QualityRule }[] = [
@@ -76,6 +80,10 @@ export const QUALITY_RULES: readonly { code: string; run: QualityRule }[] = [
   { code: 'AUDIT_NOT_TERMINAL', run: checkAuditNotTerminal },
   { code: 'SENSITIVE_HARDCODED', run: checkSensitiveHardcoded },
   { code: 'CAMPO_OBBLIGATORIO_VUOTO', run: checkCampiObbligatori },
+  { code: 'DATI_INVENTATI', run: checkDatiInventati },
+  { code: 'ESPRESSIONE_NON_RISOLVIBILE', run: checkEspressioniNonRisolvibili },
+  { code: 'NIENTE_DA_ELABORARE', run: checkNienteDaElaborare },
+  { code: 'LISTA_CHE_NON_ARRIVA', run: checkListaCheNonArriva },
 ];
 
 const SEVERITY_RANK: Record<QualitySeverity, number> = { critical: 0, medium: 1, info: 2 };

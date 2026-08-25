@@ -190,15 +190,28 @@ describe('contratto col provider', () => {
     expect(generic.calls[0]?.system).toBe(SCAFFOLD_SYSTEM_PROMPT);
   });
 
-  it('incolla lo schema nel prompt solo se il provider non sa vincolarsi', async () => {
-    const native = fakeLlm([VALID_JSON()], { supportsStructuredOutput: true });
-    await runScaffold({ goal: 'x', catalog: CATALOG, llm: native });
-    expect(native.calls[0]?.user).not.toContain("SCHEMA JSON DELL'OUTPUT");
+  it('risparmia lo schema nel prompt solo al modello addestrato', async () => {
+    // Lui è stato allenato sul prompt compatto e il server lo vincola token
+    // per token: aggiungerglielo lo allontana da come ha imparato a lavorare.
+    const tuned = fakeLlm([VALID_JSON()], { supportsStructuredOutput: true, isTuned: true });
+    await runScaffold({ goal: 'x', catalog: CATALOG, llm: tuned });
+    expect(tuned.calls[0]?.user).not.toContain("SCHEMA JSON DELL'OUTPUT");
+
+    // Tutti gli altri lo ricevono due volte, vincolo nativo compreso. Non è
+    // ridondanza inutile: il vincolo nativo è una richiesta a un server, e un
+    // server che la ignora in silenzio — o un gateway in mezzo che la toglie —
+    // lascia il modello senza niente. È già successo, ed è costato un wizard
+    // che non partiva con nessun messaggio che dicesse perché. Uno schema
+    // scritto nel prompt non si può togliere per configurazione.
+    const nativo = fakeLlm([VALID_JSON()], { supportsStructuredOutput: true });
+    await runScaffold({ goal: 'x', catalog: CATALOG, llm: nativo });
+    expect(nativo.calls[0]?.user).toContain("SCHEMA JSON DELL'OUTPUT");
+
     // Non più lo schema statico: quello che viaggia porta dentro i defId
     // ammessi, che sono esattamente i nodi mostrati. Vincolare la forma senza
     // vincolare i nomi lasciava al modello l'unica libertà che gli faceva
     // sbagliare — inventare un nodo che non esiste.
-    const schemaInviato = native.calls[0]?.schema as {
+    const schemaInviato = nativo.calls[0]?.schema as {
       properties: { nodes: { items: { properties: { defId: { enum?: string[] } } } } };
     };
     expect(schemaInviato.properties.nodes.items.properties.defId.enum).toEqual(

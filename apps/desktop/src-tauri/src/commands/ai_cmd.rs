@@ -234,13 +234,172 @@ fn with_tools(mut body: serde_json::Value, req: &ChatRequest) -> serde_json::Val
             "type": "json_schema",
             "json_schema": {
                 "name": "workflow_scaffold",
-                "strict": true,
                 "schema": schema,
             }
         });
         // Con la generazione vincolata il ragionamento a voce alta non serve e
         // costa: la forma la garantisce il server.
         body["temperature"] = serde_json::json!(0.1);
+    }
+    body
+}
+
+/// Le chiavi che un sotto-schema può portare senza far arrabbiare Gemini.
+///
+/// Gemini accetta un sottoinsieme di JSON Schema e **rifiuta la richiesta** se
+/// incontra una chiave che non conosce, invece di ignorarla. Non è una
+/// preferenza di stile: `additionalProperties` o `minLength` nello schema
+/// valgono un HTTP 400 e un wizard che si ferma senza aver mai interpellato il
+/// modello.
+const CHIAVI_SCHEMA_GEMINI: [&str; 8] = [
+    "type",
+    "description",
+    "properties",
+    "required",
+    "items",
+    "enum",
+    "anyOf",
+    "nullable",
+];
+
+/// Lo stesso schema, ridotto a ciò che Gemini sa leggere.
+///
+/// Ricorsivo perché i vincoli non stanno solo in cima: `minLength` su una
+/// proprietà annidata fa fallire la richiesta esattamente come in radice.
+fn schema_per_gemini(schema: &serde_json::Value) -> serde_json::Value {
+    match schema {
+        serde_json::Value::Object(map) => {
+            let mut out = serde_json::Map::new();
+            for (k, v) in map {
+                if !CHIAVI_SCHEMA_GEMINI.contains(&k.as_str()) {
+                    continue;
+                }
+                // `properties` è una mappa di schemi, non uno schema: i suoi
+                // valori vanno ripuliti uno per uno, le sue chiavi lasciate
+                // stare (sono nomi di campo, non parole chiave).
+                if k == "properties" {
+                    if let serde_json::Value::Object(props) = v {
+                        let ripuliti: serde_json::Map<String, serde_json::Value> = props
+                            .iter()
+                            .map(|(nome, sub)| (nome.clone(), schema_per_gemini(sub)))
+                            .collect();
+                        out.insert(k.clone(), serde_json::Value::Object(ripuliti));
+                        continue;
+                    }
+                }
+                out.insert(k.clone(), schema_per_gemini(v));
+            }
+            serde_json::Value::Object(out)
+        }
+        serde_json::Value::Array(items) => {
+            serde_json::Value::Array(items.iter().map(schema_per_gemini).collect())
+        }
+        altro => altro.clone(),
+    }
+}
+
+/// Il nome della funzione con cui si chiede un oggetto conforme allo schema ai
+/// provider che non hanno un `response_format`, ma sanno che una chiamata a
+/// funzione ha argomenti di forma dichiarata.
+const TOOL_SCAFFOLD: &str = "workflow_scaffold";
+
+/// Il gateway di Liara, `/v1` compreso.
+///
+/// Pubblica perché non la usa solo la chat: il motore dei workflow, che gira
+/// come processo figlio, riceve **questo** indirizzo all'avvio. Il suo default
+/// interno è `http://172.17.0.1:3006/api/v1/llm` — l'host visto da dentro un
+/// container Docker sul server — che su un computer qualunque non esiste: la
+/// connessione resta appesa dieci secondi e muore con «fetch failed», senza
+/// dire a chi guarda che stava chiamando un indirizzo del server.
+///
+/// Il `/v1` fa parte dell'indirizzo: nginx davanti al gateway instrada con
+/// corrispondenza esatta su `/v1/chat/completions`, e tutto il resto finisce in
+/// `location / { return 444; }` — connessione chiusa senza risposta.
+pub const LIARA_BASE_URL: &str = "https://liara.nothumanallowed.com/v1";
+
+/// Aggiunge al corpo Gemini gli strumenti e, se c'è, lo schema.
+///
+/// Separata dalla chiamata perché il pezzo che sbagliava era proprio questo, e
+/// un pezzo che sbaglia in silenzio va messo dove un test lo può guardare
+/// senza rete.
+fn con_strumenti_gemini(mut body: serde_json::Value, req: &ChatRequest) -> serde_json::Value {
+    if let Some(tools) = req.tools.as_ref().filter(|t| !t.is_empty()) {
+        let dichiarazioni: Vec<serde_json::Value> = tools
+            .iter()
+            .filter_map(|t| t.get("function"))
+            .map(|f| {
+                serde_json::json!({
+                    "name": f.get("name"),
+                    "description": f.get("description"),
+                    "parameters": f
+                        .get("parameters")
+                        .map(schema_per_gemini)
+                        .unwrap_or_else(|| serde_json::json!({ "type": "object" })),
+                })
+            })
+            .collect();
+        if !dichiarazioni.is_empty() {
+            body["tools"] = serde_json::json!([{ "functionDeclarations": dichiarazioni }]);
+        }
+    }
+
+    // Lo schema passa da una chiamata a funzione obbligata, non da
+    // `responseSchema`: quest'ultimo accetta un sottoinsieme più stretto e
+    // rifiuta gli oggetti a chiavi libere come la `config` di un nodo. Una
+    // funzione con `mode: ANY` ottiene la stessa garanzia — il modello *deve*
+    // rispondere con argomenti conformi — su uno schema che passa.
+    if let Some(schema) = req.json_schema.as_ref() {
+        body["tools"] = serde_json::json!([{
+            "functionDeclarations": [{
+                "name": TOOL_SCAFFOLD,
+                "description": "Restituisce il workflow completo.",
+                "parameters": schema_per_gemini(schema),
+            }],
+        }]);
+        body["toolConfig"] = serde_json::json!({
+            "functionCallingConfig": {
+                "mode": "ANY",
+                "allowedFunctionNames": [TOOL_SCAFFOLD],
+            }
+        });
+    }
+    body
+}
+
+/// Aggiunge al corpo Anthropic gli strumenti e, se c'è, lo schema.
+///
+/// Lo schema passa da uno strumento obbligato, non da `output_config`:
+/// quest'ultimo pretende `additionalProperties: false` su ogni oggetto, e la
+/// `config` di un nodo è per definizione a chiavi libere. Un `input_schema` non
+/// ha quel vincolo, e `tool_choice` su un solo strumento dà la stessa garanzia.
+///
+/// Fino al 2026-08-05 il ramo dello schema non esisteva: `json_schema` arrivava
+/// fin qui e veniva buttato in silenzio, mentre il lato TypeScript dichiarava
+/// `supportsStructuredOutput: true` e quindi ometteva anche di incollarlo nel
+/// prompt. Il modello riceveva **nessuno schema, in nessuna forma**, e il
+/// wizard lo rimproverava per la risposta che ne usciva.
+fn con_strumenti_anthropic(mut body: serde_json::Value, req: &ChatRequest) -> serde_json::Value {
+    if let Some(tools) = req.tools.as_ref().filter(|t| !t.is_empty()) {
+        let converted: Vec<serde_json::Value> = tools
+            .iter()
+            .filter_map(|t| t.get("function"))
+            .map(|f| {
+                serde_json::json!({
+                    "name": f.get("name"),
+                    "description": f.get("description"),
+                    "input_schema": f.get("parameters"),
+                })
+            })
+            .collect();
+        body["tools"] = serde_json::json!(converted);
+    }
+    if let Some(schema) = req.json_schema.as_ref() {
+        body["tools"] = serde_json::json!([{
+            "name": TOOL_SCAFFOLD,
+            "description": "Restituisce il workflow completo.",
+            "input_schema": schema,
+        }]);
+        body["tool_choice"] = serde_json::json!({ "type": "tool", "name": TOOL_SCAFFOLD });
     }
     body
 }
@@ -577,8 +736,15 @@ async fn call_openai_compat(
     parse_openai_response(&json, label)
 }
 
-/// Gemini: niente tool-use nativo qui — le eventuali chiamate arrivano dal
-/// fallback testuale `<tool_call>` (vedi `tool_calls_from_text`).
+/// Gemini: tool-use nativo (`functionDeclarations`) più il fallback testuale
+/// `<tool_call>` per i casi in cui il modello scriva la chiamata invece di
+/// emetterla (vedi `tool_calls_from_text`).
+///
+/// Fino al 2026-08-05 questa funzione costruiva il corpo con il solo prompt:
+/// né strumenti né schema. Il modello quindi **non poteva** chiamare niente, e
+/// il ciclo dell'agente lo contava come uno che non sa farlo — «prova con un
+/// altro modello», mentre la richiesta non li conteneva. Lo schema seguiva la
+/// stessa sorte: il wizard chiedeva un JSON conforme senza mai dire a cosa.
 async fn call_gemini(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
     let key = req
         .api_key
@@ -610,10 +776,14 @@ async fn call_gemini(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
             })
         })
         .collect();
-    let body = serde_json::json!({
-        "systemInstruction": { "parts": [{ "text": req.system_prompt }] },
-        "contents": contents,
-    });
+    let body = con_strumenti_gemini(
+        serde_json::json!({
+            "systemInstruction": { "parts": [{ "text": req.system_prompt }] },
+            "contents": contents,
+        }),
+        req,
+    );
+
     let resp = client_provider()?.post(&url).json(&body).send().await?;
     if !resp.status().is_success() {
         let status = resp.status();
@@ -621,12 +791,55 @@ async fn call_gemini(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
         anyhow::bail!("Gemini HTTP {status}: {txt}");
     }
     let json: serde_json::Value = resp.json().await?;
-    let content = json
-        .pointer("/candidates/0/content/parts/0/text")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| anyhow::anyhow!("Gemini: risposta inattesa"))?
-        .to_string();
-    let tool_calls = tool_calls_from_text(&content);
+    let parti = json
+        .pointer("/candidates/0/content/parts")
+        .and_then(|v| v.as_array())
+        .ok_or_else(|| anyhow::anyhow!("Gemini: risposta inattesa: {json}"))?;
+
+    let mut content = String::new();
+    let mut tool_calls: Vec<ToolCallOut> = Vec::new();
+    for (idx, parte) in parti.iter().enumerate() {
+        if let Some(testo) = parte.get("text").and_then(|v| v.as_str()) {
+            content.push_str(testo);
+            continue;
+        }
+        if let Some(call) = parte.get("functionCall") {
+            let nome = call
+                .get("name")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_string();
+            if nome.is_empty() {
+                continue;
+            }
+            let arguments = call
+                .get("args")
+                .cloned()
+                .unwrap_or_else(|| serde_json::json!({}));
+            tool_calls.push(ToolCallOut {
+                id: format!("gem{idx:04}"),
+                name: nome,
+                arguments,
+            });
+        }
+    }
+
+    // Con lo schema la risposta *è* gli argomenti della funzione obbligata: chi
+    // ha chiesto un oggetto si aspetta di leggerlo in `content`, come da ogni
+    // altro provider, non di sapere che qui era una chiamata a funzione.
+    if req.json_schema.is_some() {
+        if let Some(call) = tool_calls.iter().find(|c| c.name == TOOL_SCAFFOLD) {
+            return Ok(ChatResponse {
+                content: serde_json::to_string(&call.arguments)?,
+                tool_calls: Vec::new(),
+                usage: parse_usage(&json),
+            });
+        }
+    }
+
+    if tool_calls.is_empty() {
+        tool_calls = tool_calls_from_text(&content);
+    }
     Ok(ChatResponse {
         content,
         tool_calls,
@@ -638,7 +851,6 @@ async fn call_gemini(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
 /// Resta BYOK: la chiave è dell'utente, l'URL e il modello sono i default noti
 /// e restano sovrascrivibili da `baseUrl` / `model`.
 async fn call_liara(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
-    const LIARA_BASE_URL: &str = "https://liara.nothumanallowed.com/v1";
     const LIARA_MODEL: &str = "nha-v1";
 
     let base_url = req
@@ -871,26 +1083,15 @@ async fn call_anthropic(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
         }
     }
 
-    let mut body = serde_json::json!({
-        "model": req.model.as_deref().unwrap_or("claude-sonnet-5"),
-        "max_tokens": 4096,
-        "system": req.system_prompt,
-        "messages": messages,
-    });
-    if let Some(tools) = req.tools.as_ref().filter(|t| !t.is_empty()) {
-        let converted: Vec<serde_json::Value> = tools
-            .iter()
-            .filter_map(|t| t.get("function"))
-            .map(|f| {
-                serde_json::json!({
-                    "name": f.get("name"),
-                    "description": f.get("description"),
-                    "input_schema": f.get("parameters"),
-                })
-            })
-            .collect();
-        body["tools"] = serde_json::json!(converted);
-    }
+    let body = con_strumenti_anthropic(
+        serde_json::json!({
+            "model": req.model.as_deref().unwrap_or("claude-sonnet-5"),
+            "max_tokens": 4096,
+            "system": req.system_prompt,
+            "messages": messages,
+        }),
+        req,
+    );
 
     let resp = client_provider()?
         .post("https://api.anthropic.com/v1/messages")
@@ -933,6 +1134,20 @@ async fn call_anthropic(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
             _ => {}
         }
     }
+
+    // Con lo schema la risposta *è* gli argomenti dello strumento obbligato:
+    // chi ha chiesto un oggetto lo legge in `content`, come da ogni altro
+    // provider, senza dover sapere che qui passava da uno strumento.
+    if req.json_schema.is_some() {
+        if let Some(call) = tool_calls.iter().find(|c| c.name == TOOL_SCAFFOLD) {
+            return Ok(ChatResponse {
+                content: serde_json::to_string(&call.arguments)?,
+                tool_calls: Vec::new(),
+                usage: parse_usage(&json),
+            });
+        }
+    }
+
     if tool_calls.is_empty() {
         tool_calls = tool_calls_from_text(&content);
     }
@@ -1019,5 +1234,191 @@ mod tests_tool_calls {
     #[test]
     fn un_testo_qualunque_non_produce_chiamate() {
         assert!(tool_calls_from_text("Ho scomposto la richiesta, mi servono tre dati.").is_empty());
+    }
+}
+
+/// Quello che arriva davvero al provider quando il wizard chiede un workflow.
+///
+/// Il 2026-08-05 il wizard non partiva con nessun provider, e per tre motivi
+/// diversi che avevano in comune una cosa sola: **la richiesta partiva senza
+/// quello che serviva**, e il messaggio d'errore incolpava il modello. Con
+/// Gemini mancavano gli strumenti, con Anthropic lo schema, con OpenAI lo
+/// schema c'era ma marcato `strict` e quindi rifiutato in blocco.
+///
+/// Nessuno dei tre lasciava una traccia leggibile, perché il corpo della
+/// richiesta non lo guardava nessuno. Adesso lo guardano questi test.
+#[cfg(test)]
+mod tests_corpo_richiesta {
+    use super::{
+        con_strumenti_anthropic, con_strumenti_gemini, schema_per_gemini, with_tools, ChatRequest,
+    };
+
+    /// Una richiesta minima, a cui i test aggiungono solo ciò che verificano.
+    fn richiesta(
+        tools: Option<serde_json::Value>,
+        schema: Option<serde_json::Value>,
+    ) -> ChatRequest {
+        ChatRequest {
+            provider: "test".into(),
+            system_prompt: "sei un ingegnere".into(),
+            history: Vec::new(),
+            api_key: Some("k".into()),
+            model: None,
+            base_url: None,
+            tools: tools.map(|t| t.as_array().expect("tools è un array").clone()),
+            request_id: None,
+            json_schema: schema,
+        }
+    }
+
+    fn uno_strumento() -> serde_json::Value {
+        serde_json::json!([{
+            "type": "function",
+            "function": {
+                "name": "add_node",
+                "description": "Aggiunge un nodo",
+                "parameters": {
+                    "type": "object",
+                    "properties": { "defId": { "type": "string", "maxLength": 80 } },
+                    "required": ["defId"],
+                    "additionalProperties": false,
+                },
+            },
+        }])
+    }
+
+    fn uno_schema() -> serde_json::Value {
+        serde_json::json!({
+            "type": "object",
+            "properties": {
+                "name": { "type": "string", "minLength": 3 },
+                "nodes": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "object",
+                        "properties": { "config": { "type": "object", "additionalProperties": true } },
+                        "required": ["config"],
+                        "additionalProperties": false,
+                    },
+                },
+            },
+            "required": ["name", "nodes"],
+            "additionalProperties": false,
+        })
+    }
+
+    // ── OpenAI e compatibili ───────────────────────────────────────────────
+
+    /// `strict: true` impegna OpenAI a validare lo schema contro un
+    /// sottoinsieme ristretto: ogni proprietà in `required`,
+    /// `additionalProperties: false` ovunque, niente `minLength` né `minItems`.
+    /// Lo schema del wizard li usa tutti — e la risposta era un HTTP 400 a ogni
+    /// tentativo, che il ciclo mostrava come «il provider non ha risposto».
+    ///
+    /// Senza `strict` lo schema passa come guida su OpenAI e resta un vincolo
+    /// pieno su vLLM, che è quello che serve il modello addestrato.
+    #[test]
+    fn openai_manda_lo_schema_senza_strict() {
+        let body = with_tools(serde_json::json!({}), &richiesta(None, Some(uno_schema())));
+        let formato = &body["response_format"];
+        assert_eq!(formato["type"], "json_schema");
+        assert_eq!(formato["json_schema"]["schema"], uno_schema());
+        assert!(
+            formato["json_schema"].get("strict").is_none(),
+            "strict marcherebbe come non valido uno schema che invece va bene"
+        );
+    }
+
+    // ── Gemini ─────────────────────────────────────────────────────────────
+
+    /// Il difetto originario: nessuno strumento nel corpo, quindi nessuna
+    /// chiamata possibile, e il ciclo che conclude «questo modello non sa
+    /// chiamare gli strumenti».
+    #[test]
+    fn gemini_manda_gli_strumenti() {
+        let body = con_strumenti_gemini(
+            serde_json::json!({}),
+            &richiesta(Some(uno_strumento()), None),
+        );
+        let dichiarate = &body["tools"][0]["functionDeclarations"];
+        assert_eq!(dichiarate[0]["name"], "add_node");
+        assert_eq!(
+            dichiarate[0]["parameters"]["properties"]["defId"]["type"],
+            "string"
+        );
+    }
+
+    #[test]
+    fn gemini_obbliga_la_funzione_quando_c_e_lo_schema() {
+        let body =
+            con_strumenti_gemini(serde_json::json!({}), &richiesta(None, Some(uno_schema())));
+        assert_eq!(
+            body["tools"][0]["functionDeclarations"][0]["name"],
+            "workflow_scaffold"
+        );
+        assert_eq!(body["toolConfig"]["functionCallingConfig"]["mode"], "ANY");
+    }
+
+    /// Gemini non ignora le parole chiave che non conosce: le rifiuta, con un
+    /// 400 che parla dello schema e non del wizard.
+    #[test]
+    fn gemini_toglie_le_parole_chiave_che_non_capisce() {
+        let ripulito = schema_per_gemini(&uno_schema());
+        let come_testo = serde_json::to_string(&ripulito).expect("serializzabile");
+        for vietata in ["additionalProperties", "minLength", "minItems", "maxLength"] {
+            assert!(
+                !come_testo.contains(vietata),
+                "«{vietata}» è rimasta nello schema: Gemini rifiuterebbe la richiesta"
+            );
+        }
+        // Ripulito non vuol dire svuotato: la struttura deve sopravvivere.
+        assert_eq!(ripulito["properties"]["name"]["type"], "string");
+        assert_eq!(ripulito["required"][0], "name");
+        assert_eq!(
+            ripulito["properties"]["nodes"]["items"]["properties"]["config"]["type"], "object",
+            "la pulizia deve scendere fino in fondo, non fermarsi al primo livello"
+        );
+    }
+
+    // ── Anthropic ──────────────────────────────────────────────────────────
+
+    /// Il difetto originario: `json_schema` arrivava e non finiva da nessuna
+    /// parte. Il modello non riceveva lo schema né qui né nel prompt, perché
+    /// il lato TypeScript credeva che questo ramo esistesse.
+    #[test]
+    fn anthropic_obbliga_lo_strumento_quando_c_e_lo_schema() {
+        let body =
+            con_strumenti_anthropic(serde_json::json!({}), &richiesta(None, Some(uno_schema())));
+        assert_eq!(body["tools"][0]["name"], "workflow_scaffold");
+        assert_eq!(body["tools"][0]["input_schema"], uno_schema());
+        assert_eq!(body["tool_choice"]["type"], "tool");
+        assert_eq!(body["tool_choice"]["name"], "workflow_scaffold");
+    }
+
+    /// Lo schema vince sugli strumenti dell'agente: sono due modi diversi di
+    /// chiedere, e chiederli insieme confonde i server che li supportano
+    /// entrambi. Chi ha passato uno schema vuole un oggetto, non una mossa.
+    #[test]
+    fn anthropic_con_schema_non_lascia_anche_gli_strumenti() {
+        let body = con_strumenti_anthropic(
+            serde_json::json!({}),
+            &richiesta(Some(uno_strumento()), Some(uno_schema())),
+        );
+        let strumenti = body["tools"].as_array().expect("tools è un array");
+        assert_eq!(strumenti.len(), 1);
+        assert_eq!(strumenti[0]["name"], "workflow_scaffold");
+    }
+
+    /// Senza schema si resta agente: gli strumenti passano tutti, e nessuno è
+    /// obbligato.
+    #[test]
+    fn anthropic_senza_schema_passa_gli_strumenti_e_basta() {
+        let body = con_strumenti_anthropic(
+            serde_json::json!({}),
+            &richiesta(Some(uno_strumento()), None),
+        );
+        assert_eq!(body["tools"][0]["name"], "add_node");
+        assert!(body.get("tool_choice").is_none());
     }
 }

@@ -77,7 +77,9 @@ export interface PromptContext {
   resources?: string[];
   /** Errori del tentativo precedente, se stiamo riprovando. */
   previousErrors?: string;
-  /** Il provider non sa vincolare l'output: lo schema va nel prompt. */
+  /** Lo schema va scritto nel prompt: o perché il provider non sa vincolare
+   *  l'output, o perché il modello non è quello addestrato e conviene dirglielo
+   *  due volte. */
   inlineSchema?: boolean;
 }
 

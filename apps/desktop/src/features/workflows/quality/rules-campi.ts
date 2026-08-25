@@ -18,6 +18,8 @@
  * @module features/workflows/quality/rules-campi
  */
 
+import { eConsensoUmano } from '../scaffold/validate';
+
 import type { QualityGateInput, QualityIssue } from './types';
 
 /**
@@ -42,9 +44,29 @@ export function checkCampiObbligatori(input: QualityGateInput): QualityIssue[] {
     if (!def?.configFields) continue;
 
     const config = nodo.config ?? {};
-    const mancanti = def.configFields
-      .filter((campo) => campo.required && vuoto(config[campo.key]))
+    const vuoti = def.configFields.filter((campo) => campo.required && vuoto(config[campo.key]));
+
+    // Le conferme umane si contano a parte: non sono una configurazione
+    // dimenticata, sono un'assunzione di responsabilità che spetta a chi userà
+    // il workflow. Un generatore non può darla al posto suo — e finché non
+    // c'è, il workflow non si attiva.
+    const consensi = vuoti.filter((campo) => eConsensoUmano(campo.key));
+    const mancanti = vuoti
+      .filter((campo) => !eConsensoUmano(campo.key))
       .map((campo) => campo.label ?? campo.key);
+
+    for (const consenso of consensi) {
+      problemi.push({
+        severity: 'critical',
+        code: 'CONSENSO_MANCANTE',
+        nodeId: nodo.id,
+        field: consenso.key,
+        message:
+          `Il nodo "${nodo.id}" fa un'operazione distruttiva e aspetta la tua conferma: ` +
+          `spunta «${consenso.label ?? consenso.key}». Nessuno può darla al posto tuo, ` +
+          'nemmeno l’assistente che ha costruito il workflow.',
+      });
+    }
 
     if (mancanti.length === 0) continue;
 
