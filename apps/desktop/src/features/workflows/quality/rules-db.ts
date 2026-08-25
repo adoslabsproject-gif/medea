@@ -18,7 +18,6 @@ const DB_NODES_WITH_TABLE: ReadonlySet<string> = new Set([
   'db_insert_batch',
   'db_update',
   'db_delete',
-  'db_subscribe',
 ]);
 
 /** Un valore da configurare dopo (menu a tendina o espressione) non è un

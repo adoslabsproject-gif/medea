@@ -217,12 +217,44 @@ fn spawn(resource_dir: &Path, data_dir: &Path) -> Result<u16> {
 
     tracing::info!("Avvio runtime workflow: {} (porta {port})", entry.display());
 
+    // Quello che il motore ha da dire, scritto da qualche parte invece che
+    // buttato.
+    //
+    // Prima `stdout` e `stderr` andavano entrambi in `Stdio::null()`: il motore
+    // registrava diligentemente ogni richiesta, ogni URL e ogni errore, e
+    // nessuno poteva leggerne una riga. Quando il 2026-08-05 la generazione ha
+    // cominciato a fallire con «fetch failed», l'indirizzo che aveva provato lo
+    // sapeva soltanto lui — e per ricostruirlo è servito andare a leggere la
+    // configurazione di nginx sul server. Un processo che parla in una stanza
+    // vuota costa più di quanto risparmi in disco.
+    //
+    // Se il file non si apre si riparte da capo con l'uscita scartata: senza
+    // log il motore funziona lo stesso, e rifiutarsi di avviarlo per un file di
+    // diagnostica sarebbe sproporzionato.
+    let log_path = runtime_data.join("runtime.log");
+    let (out, err) = match std::fs::File::create(&log_path) {
+        Ok(file) => match file.try_clone() {
+            Ok(copia) => {
+                tracing::info!("Log del runtime: {}", log_path.display());
+                (Stdio::from(file), Stdio::from(copia))
+            }
+            Err(e) => {
+                tracing::warn!("Log del runtime non duplicabile ({e}): uscita scartata");
+                (Stdio::null(), Stdio::null())
+            }
+        },
+        Err(e) => {
+            tracing::warn!("Log del runtime non apribile ({e}): uscita scartata");
+            (Stdio::null(), Stdio::null())
+        }
+    };
+
     let child = Command::new(&node)
         .arg(&entry)
         .env("NODE_ENV", "production")
         .env("HOST", "127.0.0.1")
         .env("PORT", port.to_string())
-        .env("LOG_LEVEL", "warn")
+        .env("LOG_LEVEL", "info")
         .env("MEDEA_DATA_DIR", &runtime_data)
         .env("MEDEA_DB_PATH", runtime_data.join(DATABASE_FILE))
         // Nessun portale, nessuna licenza: qui non c'è un tenant remoto a cui
@@ -241,8 +273,26 @@ fn spawn(resource_dir: &Path, data_dir: &Path) -> Result<u16> {
         .env("MEDEA_RUNTIME_URL", format!("http://127.0.0.1:{port}"))
         .env("MEDEA_INTERNAL_TOKEN", &webhook_secret)
         .env("MEDEA_PUBLIC_BASE_URL", format!("http://127.0.0.1:{port}"))
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        // Dove sta Liara. Senza, il motore usa il proprio default —
+        // `http://172.17.0.1:3006/api/v1/llm`, l'host visto da dentro un
+        // container Docker sul server — che qui non esiste: la connessione
+        // resta appesa dieci secondi e muore con «fetch failed». È ciò che ha
+        // tenuto fermo il wizard il 2026-08-05, mentre la stessa chiamata dal
+        // desktop funzionava: il desktop l'indirizzo giusto ce l'aveva, il
+        // motore no, e nessuno glielo diceva.
+        .env(
+            "MEDEA_LIARA_BASE_URL",
+            crate::commands::ai_cmd::LIARA_BASE_URL,
+        )
+        // Dove sta la rubrica. Il motore gira sulla stessa macchina e con lo
+        // stesso utente, quindi può leggerla direttamente invece di tenerne una
+        // copia che comincerebbe subito a divergere. La apre in sola lettura.
+        .env("MEDEA_APP_DB_PATH", data_dir.join("medea.db"))
+        // `warn` teneva zitto proprio il livello che serve a capire dove va una
+        // richiesta. Ora che l'uscita finisce in un file, `info` costa un file
+        // che cresce piano e vale ogni riga.
+        .stdout(out)
+        .stderr(err)
         .spawn()
         .with_context(|| format!("impossibile avviare {}", node.display()))?;
 

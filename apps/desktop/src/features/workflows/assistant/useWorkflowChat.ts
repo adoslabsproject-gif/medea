@@ -19,8 +19,9 @@
  * stesso punto.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
+import { useConferma } from '../../shared/conferma';
 import { autoLayout, needsLayout } from '../canvas/layout';
 import { allNodes } from '../catalog';
 import { createAgentChat, runWorkflowAgent, type AgentStep } from '../scaffold';
@@ -67,9 +68,20 @@ export interface WorkflowChat {
   startNew: () => void;
   open: (conversationId: string) => void;
   remove: (conversationId: string) => void;
+  /**
+   * La finestra con cui l'assistente chiede il permesso di modificare.
+   *
+   * Va resa dal pannello: senza, gli strumenti che scrivono non trovano a chi
+   * chiedere e si rifiutano di agire — che è il comportamento voluto, ma qui
+   * significherebbe un assistente che non può fare niente.
+   */
+  dialogoConferma: ReactNode;
 }
 
 export function useWorkflowChat({ workflow }: Options): WorkflowChat {
+  // `window.confirm` nel webview di Tauri non mostra niente e risponde sempre
+  // di no: la domanda la fa l'applicazione.
+  const { chiedi, dialogo: dialogoConferma } = useConferma();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -165,6 +177,11 @@ export function useWorkflowChat({ workflow }: Options): WorkflowChat {
           onStep: (step) => {
             setLiveSteps((prev) => [...prev, step]);
           },
+          // Il permesso di modificare l'archivio lo dà una persona, sempre.
+          // Il tasto è rosso e il testo dice cosa succede: «Crea la tabella
+          // ordini» si valuta, «Procedi» no.
+          chiediConferma: async (richiesta) =>
+            (await chiedi({ ...richiesta, conferma: 'Procedi', pericoloso: true })).ok,
         });
 
         if (!result.ok) {
@@ -315,5 +332,6 @@ export function useWorkflowChat({ workflow }: Options): WorkflowChat {
     startNew,
     open,
     remove,
+    dialogoConferma,
   };
 }

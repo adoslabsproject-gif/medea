@@ -14,9 +14,9 @@ import { codes, edge, healthyWorkflow, input, node } from './fixtures';
 import { describeIssues, gateWorkflow, QUALITY_RULES, runQualityGate } from './gate';
 
 describe('regole registrate', () => {
-  it('sono le 22 previste, senza doppioni', () => {
-    expect(QUALITY_RULES).toHaveLength(22);
-    expect(new Set(QUALITY_RULES.map((r) => r.code)).size).toBe(22);
+  it('sono le 26 previste, senza doppioni', () => {
+    expect(QUALITY_RULES).toHaveLength(26);
+    expect(new Set(QUALITY_RULES.map((r) => r.code)).size).toBe(26);
   });
 });
 

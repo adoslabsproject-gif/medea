@@ -66,9 +66,13 @@ const call = (name: string, args: Record<string, unknown> = {}, id = name): Agen
 });
 
 describe('strumenti esposti al provider', () => {
-  it('sono i 10, nel formato function-calling', () => {
+  it('sono i 15, nel formato function-calling', () => {
     const tools = agentToolsForProvider();
-    expect(tools).toHaveLength(10);
+    // Dieci per costruire il workflow, tre per GUARDARE nel database, due per
+    // MODIFICARLO. I tre di lettura sono nati il 2026-08-07 — senza, il
+    // modello si inventava `read_table` su un file del disco; i due di
+    // scrittura subito dopo, ognuno dietro la conferma esplicita dell'utente.
+    expect(tools).toHaveLength(15);
     expect(tools[0]?.type).toBe('function');
     // `analyze_goal` è il primo perché è il primo passo: scompone la
     // richiesta prima che si cerchi qualunque cosa.

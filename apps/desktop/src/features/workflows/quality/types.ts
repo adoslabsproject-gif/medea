@@ -39,8 +39,13 @@ export type QualityCode =
   | 'TRIGGER_WITHOUT_ACTION'
   | 'AUDIT_NOT_TERMINAL'
   | 'CAMPO_OBBLIGATORIO_VUOTO'
+  | 'DATI_INVENTATI'
+  | 'ESPRESSIONE_NON_RISOLVIBILE'
   | 'SENSITIVE_HARDCODED'
-  | 'NODE_NOT_INSTALLED';
+  | 'NODE_NOT_INSTALLED'
+  | 'NIENTE_DA_ELABORARE'
+  | 'LISTA_CHE_NON_ARRIVA'
+  | 'CONSENSO_MANCANTE';
 
 export interface QualityIssue {
   severity: QualitySeverity;
@@ -88,7 +93,18 @@ export interface QualityGateInput {
 
 /** Quel poco che serve sapere di un nodo per giudicare la sua configurazione. */
 export interface QualityNodeDef {
+  /** A quale famiglia appartiene: trigger, action, logic o ai. */
+  type?: string;
   configFields?: readonly { key: string; label?: string; required?: boolean }[];
+  /**
+   * Cosa il nodo produce, campo per campo.
+   *
+   * Serve a giudicare le espressioni che LEGGONO da lui. Fino al 2026-08-06
+   * questo dato non esisteva per quasi nessun nodo, e senza non si poteva
+   * distinguere `{{tldr}}` — un campo vero, riferito male — da una qualunque
+   * parola dentro le graffe. Vedi ADR 0010.
+   */
+  outputContract?: { fields: readonly { name: string; type?: string }[] };
 }
 
 export interface QualityGateResult {

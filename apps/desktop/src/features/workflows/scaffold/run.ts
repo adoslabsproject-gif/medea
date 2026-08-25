@@ -36,6 +36,12 @@ import { describeViolations, validateScaffold, type Violation } from './validate
  * (`services/catalog-retrieval/scaffold-catalog.ts`). Non è una lista di
  * comodo: il dataset di addestramento è costruito su questi, quindi togliere
  * o aggiungere una voce disallinea il modello dal catalogo che riceve.
+ *
+ * Fino al 2026-08-05 conteneva `logic_filter` e `agent_chat`, che nel catalogo
+ * non esistono: il primo si chiama `action_filter`, il secondo non c'è. Il
+ * server li tollerava filtrando per esistenza, il desktop li perdeva in
+ * silenzio — e in entrambi i casi il modello non vedeva mai il nodo per
+ * filtrare, che è tra i più richiesti. `catalog.test.ts` adesso lo impedisce.
  */
 export const SCAFFOLD_CORE_DEFIDS: readonly string[] = [
   'trigger_manual',
@@ -48,7 +54,7 @@ export const SCAFFOLD_CORE_DEFIDS: readonly string[] = [
   'logic_loop',
   'logic_merge',
   'logic_wait',
-  'logic_filter',
+  'action_filter',
   'action_http',
   'action_run_js',
   'action_run_python',
@@ -62,7 +68,6 @@ export const SCAFFOLD_CORE_DEFIDS: readonly string[] = [
   'db_insert',
   'db_update',
   'agent_extractor',
-  'agent_chat',
 ];
 
 const MAX_ATTEMPTS = 3;
@@ -147,7 +152,13 @@ export async function runScaffold(req: ScaffoldRequest): Promise<ScaffoldResult>
       catalog: shown,
       ...(req.resources ? { resources: req.resources } : {}),
       ...(previousErrors ? { previousErrors } : {}),
-      inlineSchema: !req.llm.supportsStructuredOutput,
+      // Lo schema va nel prompt tranne che per il modello addestrato: lui è
+      // stato allenato sul prompt compatto, e il server lo vincola comunque
+      // token per token. Per tutti gli altri vale la cintura oltre le
+      // bretelle — il vincolo nativo c'è, ma un gateway che lo ignora in
+      // silenzio è già costato un wizard che non partiva, e uno schema
+      // scritto nel prompt non può essere ignorato per configurazione.
+      inlineSchema: !req.llm.supportsStructuredOutput || !req.llm.isTuned,
     });
 
     let raw: string;

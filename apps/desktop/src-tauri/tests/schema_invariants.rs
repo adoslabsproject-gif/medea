@@ -72,6 +72,7 @@ fn every_table_exists_and_none_extra() {
             "price_lists",
             "reminders",
             "schema_version",
+            "workflow_runs",
             "workflows",
         ])
     );
@@ -437,6 +438,30 @@ fn assistant_tables_keep_their_exact_columns() {
             "enabled",
             "created_at",
             "updated_at",
+            // Aggiunte dalle migrazioni v13 e v14, nell'ordine in cui le
+            // `ALTER TABLE` le hanno appese: le due copie che il motore
+            // conosce — quella pubblicata e quella di prova — e quando la
+            // bozza è diventata pubblicata.
+            "runtime_id",
+            "draft_runtime_id",
+            "published_at",
+        ],
+    );
+    assert_columns(
+        &c,
+        "workflow_runs",
+        &[
+            "id",
+            "workflow_id",
+            "status",
+            "trigger_type",
+            "trigger_payload_json",
+            "steps_json",
+            "error_count",
+            "total_duration_ms",
+            "triggered_by",
+            "started_at",
+            "ended_at",
         ],
     );
 }
@@ -487,6 +512,8 @@ fn every_declared_index_exists_and_none_extra() {
             "idx_priceitems_list",
             "idx_reminders_due",
             "idx_reminders_org",
+            "idx_runs_status",
+            "idx_runs_workflow",
             "idx_workflows_updated",
         ])
     );

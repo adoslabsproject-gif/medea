@@ -108,6 +108,9 @@ const KNOWN_SINKS: ReadonlySet<string> = new Set([
   'community_github',
   'community_stripe',
   // Posta e messaggistica: consegnano fuori, non hanno un dopo.
+  // `action_email_move` archivia o segna: l'effetto è sulla casella, non un
+  // valore da passare a qualcun altro. Chiudere un flusso lì è normale.
+  'action_email_move',
   'action_email_send_tracked',
   'action_email_send_tracked_batch',
   'action_whatsapp_send',

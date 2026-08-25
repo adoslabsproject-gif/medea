@@ -30,7 +30,6 @@ const ARRAY_PRODUCERS: ReadonlySet<string> = new Set([
   'action_streammy_catalog',
   'action_email_harvest',
   'db_query',
-  'db_subscribe',
   'action_paginate',
   'action_distinct',
   'action_group_by',

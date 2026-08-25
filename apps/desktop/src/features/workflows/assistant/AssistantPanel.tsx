@@ -115,6 +115,11 @@ export function AssistantPanel({ workflow, onApply, onClose }: Props) {
           void chat.send(text);
         }}
       />
+
+      {/* La finestra con cui l'assistente chiede il permesso di modificare
+          l'archivio. Senza, gli strumenti che scrivono non trovano a chi
+          chiedere e si rifiutano di agire. */}
+      {chat.dialogoConferma}
     </aside>
   );
 }

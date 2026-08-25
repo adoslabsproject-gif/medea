@@ -38,10 +38,17 @@ export async function createScaffoldLlm(
   const requestId = `singleshot-${String(Date.now())}`;
 
   return {
-    // Adesso l'output vincolato c'è: lo schema viaggia nella richiesta e il
-    // server lo fa rispettare token per token. Il modello non può rispondere
-    // con un discorso, né restituire lo schema al posto dei dati — erano i
-    // due modi in cui falliva.
+    // L'output vincolato c'è per ogni provider, ognuno col meccanismo che ha:
+    // `response_format` per i compatibili OpenAI, uno strumento obbligato per
+    // Anthropic, una chiamata a funzione obbligata per Gemini. Il modello non
+    // può rispondere con un discorso, né restituire lo schema al posto dei
+    // dati — erano i due modi in cui falliva.
+    //
+    // Fino al 2026-08-05 questo `true` era una dichiarazione e non un fatto:
+    // per Anthropic e Gemini il backend buttava via lo schema, e siccome qui
+    // si diceva di saperlo vincolare, non veniva nemmeno scritto nel prompt.
+    // Il modello non ne vedeva traccia. Un flag che mente su una capacità è
+    // peggio di una capacità che manca: toglie anche il ripiego.
     //
     // La riparazione resta: vincolare la *forma* non garantisce che i defId
     // esistano o che i campi abbiano senso, e per quello servono i controlli.
