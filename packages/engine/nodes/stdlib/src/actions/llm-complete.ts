@@ -157,6 +157,19 @@ export const llmCompleteNode: NodeModule = {
       'cost',
       'finishReason',
     ],
+    outputContract: {
+      notes: '`completion` e` sempre testo grezzo. Chiedendo una risposta in JSON, il testo interpretato sta in `jsonParsed` — e se il modello non ha prodotto JSON valido quel campo NON c\'e`: leggerlo senza controllarlo e` il modo tipico di ritrovarsi con dei vuoti. `finishReason` a \'length\' significa risposta troncata.',
+      fields: [
+        { name: 'completion', type: 'string', desc: 'La risposta del modello, testo grezzo.' },
+        { name: 'model', type: 'string', desc: 'Il modello usato davvero.' },
+        { name: 'provider', type: 'string', desc: 'Il fornitore interpellato.' },
+        { name: 'tokensUsed', type: 'object', desc: 'Il consumo in forma storica: prompt, completion, total.' },
+        { name: '_llm', type: 'object', desc: 'Il consumo nella forma comune a tutti i nodi: inputTokens, outputTokens, model, provider, fromApi.' },
+        { name: 'responseFormat', type: 'string', desc: 'Cosa era stato chiesto: testo o JSON.' },
+        { name: 'jsonParsed', type: 'object|array', desc: 'La risposta interpretata. Presente SOLO se era stato chiesto JSON e il modello ne ha prodotto uno valido.' },
+        { name: 'finishReason', type: 'string', desc: 'Perche` si e` fermato: \'stop\' se ha finito, \'length\' se e` stato troncato, \'error\' in caso di problemi.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     cost: {

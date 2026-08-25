@@ -113,6 +113,17 @@ export const groupByNode: NodeModule = {
         help: "Hard cap anti-OOM sul numero di item processati. Se l'input supera questa soglia viene troncato e raggruppa solo i primi N (warning emesso). Default 100k, tetto 1M.",
       },
     ],
+    outputContract: {
+      notes: 'I gruppi sono un oggetto: la chiave e` il valore del campo raggruppante, il valore la lista degli elementi. Su una lista vuota `largestGroup` e `smallestGroup` sono null.',
+      fields: [
+        { name: 'groups', type: 'object', desc: 'Gli elementi di ogni gruppo, sotto la chiave del valore che li accomuna.' },
+        { name: 'counts', type: 'object', desc: 'Quanti elementi ha ogni gruppo, con le stesse chiavi di `groups`.' },
+        { name: 'groupCount', type: 'number', desc: 'Quanti gruppi distinti.' },
+        { name: 'totalItems', type: 'number', desc: 'Quanti elementi in tutto.' },
+        { name: 'largestGroup', type: 'string|null', desc: 'La chiave del gruppo piu` numeroso. Null se non c\'e` nessun gruppo.' },
+        { name: 'smallestGroup', type: 'string|null', desc: 'La chiave del gruppo meno numeroso. Null se non c\'e` nessun gruppo.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

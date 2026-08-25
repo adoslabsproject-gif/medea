@@ -95,6 +95,21 @@ export const formTriggerNode: NodeModule = {
         help: 'Massimo numero di submit dallo stesso IP al minuto. 0 = nessun limite (sconsigliato per form pubblici).',
       },
     ],
+    /**
+     * Cosa il trigger consegna. Rispecchia `triggerInput` di `routes/forms.ts`,
+     * dove il payload è **il modulo compilato così com'è**.
+     */
+    outputContract: {
+      fields: [
+        {
+          name: '<nome del campo>',
+          type: 'string | number | boolean',
+          desc: 'Un campo per ogni voce definita nel modulo, con la chiave che gli hai dato: non esiste un involucro attorno. Un campo «email» si legge come `.json.email`',
+        },
+      ],
+      notes:
+        'Il payload dipende dal modulo: i nomi qui non si possono elencare in anticipo, sono quelli che hai configurato.',
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },
@@ -172,6 +187,22 @@ export const fileWatchTriggerNode: NodeModule = {
         help: 'Pausa minima tra eventi file consecutivi per evitare burst quando un file viene scritto in più passaggi (download multi-chunk, salvataggio temp+rename). Default 500ms. Se hai upload molto rapidi (< 500ms tra file separati) abbassa a 100-200ms. Hard cap engine 60000ms.',
       },
     ],
+    /**
+     * Cosa il trigger consegna. Rispecchia `triggerInput` di
+     * `trigger-watchers/file-watcher.ts`.
+     */
+    outputContract: {
+      fields: [
+        {
+          name: 'event',
+          type: "'add' | 'change' | 'unlink'",
+          desc: 'Cosa è successo al file: creato, modificato, o rimosso',
+        },
+        { name: 'path', type: 'string', desc: 'Il percorso completo del file coinvolto' },
+        { name: 'ts', type: 'string', desc: "Quando l'evento è stato rilevato, in ISO 8601" },
+      ],
+      notes: 'Il contenuto del file NON è nel payload: va letto con un nodo apposito a valle.',
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },
@@ -247,6 +278,24 @@ export const dbChangeTriggerNode: NodeModule = {
         defaultValue: '5',
       },
     ],
+    /**
+     * Cosa il trigger consegna. Rispecchia `triggerInput` di
+     * `trigger-watchers/db-change-poller.ts`.
+     */
+    outputContract: {
+      fields: [
+        { name: 'changeId', type: 'string', desc: 'Identificativo del cambiamento, utile per la deduplica' },
+        { name: 'op', type: "'insert' | 'update' | 'delete'", desc: "L'operazione avvenuta sulla riga" },
+        { name: 'databaseId', type: 'string', desc: 'Il database in cui è avvenuta' },
+        { name: 'tableName', type: 'string', desc: 'La tabella in cui è avvenuta' },
+        {
+          name: 'payload',
+          type: 'object',
+          desc: 'La riga coinvolta; su delete contiene i valori PRIMA della cancellazione',
+        },
+        { name: 'createdAt', type: 'string', desc: 'Quando il cambiamento è stato registrato, in ISO 8601' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },
@@ -428,6 +477,38 @@ export const imapTriggerNode: NodeModule = {
         help: 'tls = porta 993 (raccomandato). starttls = porta 143. plain = NESSUNA cifratura (usare solo in rete fidata).',
       },
     ],
+    /**
+     * Cosa il trigger consegna ai nodi a valle.
+     *
+     * Rispecchia `triggerInput` di `trigger-watchers/imap-poller.ts`: è il
+     * contratto REALE dell'executor, non una lista di buone intenzioni.
+     *
+     * Mancava, ed è il nodo da cui parte OGNI workflow di posta: senza, chi
+     * generava un workflow non aveva modo di sapere come si chiamano i campi da
+     * cui leggere, e li inventava — `email.id`, `attachment.base64`, `hour`,
+     * `dayOfWeek`. Ne uscivano workflow perfetti sul disegno che a runtime
+     * leggevano il vuoto, senza un errore che lo dicesse.
+     */
+    outputContract: {
+      fields: [
+        { name: 'uid', type: 'number', desc: 'Identificativo del messaggio nella cartella IMAP' },
+        { name: 'messageId', type: 'string', desc: 'Message-ID globale, stabile fra i server' },
+        { name: 'subject', type: 'string', desc: "L'oggetto del messaggio" },
+        { name: 'from', type: 'string', desc: 'Indirizzo del mittente, già estratto' },
+        { name: 'to', type: 'string', desc: 'Destinatari, separati da virgola' },
+        { name: 'cc', type: 'string', desc: 'Copia conoscenza, separati da virgola' },
+        { name: 'date', type: 'string', desc: 'Data di ricezione in formato ISO 8601' },
+        { name: 'text', type: 'string', desc: 'Corpo in testo semplice, troncato' },
+        { name: 'html', type: 'string', desc: 'Corpo HTML, troncato; vuoto se assente' },
+        {
+          name: 'attachments',
+          type: 'array',
+          desc: 'Allegati: nome, tipo, dimensione e riferimento binario — mai base64 grezzo',
+        },
+        { name: 'attachmentCount', type: 'number', desc: 'Quanti allegati ha il messaggio' },
+        { name: 'headers', type: 'object', desc: 'Le intestazioni complete, per chiave' },
+      ],
+    },
     vendor: 'flowforge',
     version: '2.0.0',
   },

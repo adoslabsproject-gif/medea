@@ -817,6 +817,17 @@ export const agentToolLoopNode: NodeModule = {
         help: "Collezione (namespace) all'interno del DB selezionato sopra.",
       },
     ],
+    outputContract: {
+      notes: 'Due esiti, e non hanno gli stessi campi. Riuscendo escono `finalAnswer`, `iterations` e `trace`. Fallendo esce `error` al posto di `finalAnswer` — e il nodo NON solleva un errore, quindi il flusso prosegue: chi sta a valle deve controllare `error` prima di fidarsi. Su annullamento esce anche `cancelled`.',
+      fields: [
+        { name: 'finalAnswer', type: 'string', desc: 'La risposta finale dell\'agente, dopo tutti i giri di strumenti. Assente in caso di errore.' },
+        { name: 'iterations', type: 'number', desc: 'Quanti giri ha fatto prima di rispondere.' },
+        { name: 'trace', type: 'array', desc: 'Il diario dei giri: quali strumenti ha chiamato e cosa gli hanno risposto.' },
+        { name: 'error', type: 'string', desc: 'Cosa e` andato storto. Presente SOLO in caso di errore, e al posto di `finalAnswer`.' },
+        { name: 'cancelled', type: 'boolean', desc: 'Vero se l\'esecuzione e` stata annullata mentre l\'agente lavorava.' },
+        { name: '_llm', type: 'object', desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi. Presente quando la chiamata e` avvenuta.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.2.0',
   },

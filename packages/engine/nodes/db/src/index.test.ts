@@ -7,15 +7,16 @@ import {
   dbInsertBatchNode,
   dbUpdateNode,
   dbDeleteNode,
-  dbSubscribeNode,
 } from './index.js';
 
 describe('db workflow nodes', () => {
-  it('esporta il SET ESATTO di id (8 db_ + 2 rag_)', () => {
+  it('esporta il SET ESATTO di id (7 db_ + 2 rag_)', () => {
     // Contratto per-id, non un conteggio magico: cattura sia aggiunte che
     // rimozioni e si auto-documenta. Aggiornato 2026-06-14: ai 7 storici si
     // aggiungono db_remote_ssh_query (tunnel SSH, commit f0b0124c) e
-    // rag_search/rag_ingest (retrieval, commit a0a7c881).
+    // rag_search/rag_ingest (retrieval, commit a0a7c881). Tolto il 2026-08-06
+    // db_subscribe: non aveva né executor né watcher — nessun codice lo
+    // eseguiva, e `trigger_db_change` fa la stessa cosa davvero (ADR 0010).
     expect([...dbNodes].map((n) => n.def.id).sort()).toEqual([
       'db_delete',
       'db_insert',
@@ -23,7 +24,6 @@ describe('db workflow nodes', () => {
       'db_query',
       'db_remote_ssh_query',
       'db_sql_query',
-      'db_subscribe',
       'db_update',
       'rag_ingest',
       'rag_search',
@@ -56,17 +56,12 @@ describe('db workflow nodes', () => {
     expect(typeof dbInsertNode.executor).toBe('function');
     expect(dbUpdateNode.executor).toBeUndefined();
     expect(dbDeleteNode.executor).toBeUndefined();
-    expect(dbSubscribeNode.executor).toBeUndefined();
   });
 
   it('delete node has a confirmation boolean (idiot-proof)', () => {
     const confirm = dbDeleteNode.def.configFields?.find((f) => f.key === 'confirmDelete');
     expect(confirm).toBeDefined();
     expect(confirm?.required).toBe(true);
-  });
-
-  it('subscribe node is type=trigger', () => {
-    expect(dbSubscribeNode.def.type).toBe('trigger');
   });
 
   // ────────────────────────────────────────────────────────────────────────
@@ -79,7 +74,6 @@ describe('db workflow nodes', () => {
       dbInsertNode,
       dbUpdateNode,
       dbDeleteNode,
-      dbSubscribeNode,
     ];
 
     it('every A3.3 stabilized DB node has description ≥150 char + ≥25 distinct words + IT + Use case (anti-gaming)', () => {

@@ -98,6 +98,14 @@ export const recursiveSpiderNode: NodeModule = {
       'Output per-pagina: HTML completo (solo text/html), links extracted same-origin filtrabili via allow/deny, status HTTP, content-type, bytes, durata, error. ' +
       'Use case: (1) mirror del proprio sito + asset (combinato con action_asset_batch_download), (2) audit SEO interno (broken links + orphan pages), (3) discovery URL per RAG/embedding internal docs, (4) competitor catalog monitor (USA SOLO su siti propri o con autorizzazione). ' +
       'Safety: hard cap 5000 pagine/run, SSRF guard, robots.txt rispettato di default, identifica come "FlowForge-Spider/1.0" RFC-compliant (override consentito).',
+    outputContract: {
+      notes: '`frontier` non vuoto significa che il tetto di pagine ha fermato la visita: quegli indirizzi non sono stati aperti, e si possono passare a un secondo giro per riprendere da li`.',
+      fields: [
+        { name: 'pages', type: 'array', desc: 'Le pagine visitate, con indirizzo, contenuto e profondita`.' },
+        { name: 'stats', type: 'object', desc: 'Il conto della visita: pagesFetched, pagesSkippedByRobots, errorCount, durationMsTotal e uniqueHosts.' },
+        { name: 'frontier', type: 'array', desc: 'Gli indirizzi rimasti da visitare quando si e` fermato: vuoto se ha finito.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

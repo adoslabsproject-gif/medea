@@ -103,7 +103,7 @@ import {
 
 // Streammy — i 6 nodi streammy_* + relative lib sono stati COMPLETAMENTE
 // rimossi dallo stdlib pubblico (2026-06-08). Ri-importati come custom_nodes
-// privati senza1dio via Custom Node Editor (Fase 6, task #178).
+// privati via Custom Node Editor (Fase 6, task #178).
 // NB: zero referenze residue — qualunque consumer che importava questi
 // nodi deve ora installarli dal marketplace.
 
@@ -113,6 +113,8 @@ import { whatsAppSendActionNode } from './actions/whatsapp_send/index.js';
 import { pecClassifyActionNode } from './actions/pec_classify/index.js';
 import { emailTriageActionNode } from './actions/email_triage/index.js';
 import { emailCleanActionNode } from './actions/email_clean/index.js';
+import { contactLookupNode } from './actions/contact_lookup/index.js';
+import { emailMoveNode } from './actions/email_move/index.js';
 import { humanReviewDecisionNode } from './actions/human_review_decision/index.js';
 import { pecLegalArchiveActionNode } from './actions/pec_legal_archive/index.js';
 import { odooLookupPartnerActionNode } from './actions/odoo_lookup_partner/index.js';
@@ -224,13 +226,15 @@ export const stdlibNodes: readonly NodeModule[] = [
   linkAuditNode,
   keywordDensityNode,
   // (6 streammy_* nodi RIMOSSI 2026-06-08 — re-importati come custom_nodes
-  // privati senza1dio via Fase 6 task #178 UI Custom Node Editor)
+  // privati via Fase 6 task #178 UI Custom Node Editor)
   // Studio commercialista (Sprint 2026-06-04 v2): Odoo + WhatsApp + PEC + triage
   odooRpcActionNode,
   whatsAppSendActionNode,
   pecClassifyActionNode,
   emailTriageActionNode,
   emailCleanActionNode,
+  emailMoveNode,
+  contactLookupNode,
   humanReviewDecisionNode,
   pecLegalArchiveActionNode,
   odooLookupPartnerActionNode,

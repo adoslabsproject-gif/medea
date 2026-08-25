@@ -258,6 +258,27 @@ export const webhookTriggerNode: NodeModule = {
           'Tipico: 60-120 per callback provider, più basso per form pubblici esposti a spam.',
       },
     ],
+    /**
+     * Cosa il trigger consegna. Rispecchia `triggerInput` di
+     * `routes/webhooks.ts`.
+     */
+    outputContract: {
+      fields: [
+        { name: 'method', type: 'string', desc: 'Il metodo HTTP della richiesta ricevuta' },
+        { name: 'headers', type: 'object', desc: 'Le intestazioni, per chiave minuscola' },
+        {
+          name: 'body',
+          type: 'unknown',
+          desc: 'Il corpo già interpretato: oggetto se JSON, stringa altrimenti',
+        },
+        { name: 'query', type: 'object', desc: 'I parametri della query string' },
+        {
+          name: 'rawBody',
+          type: 'string | undefined',
+          desc: 'Il corpo grezzo non interpretato; presente SOLO se richiesto in configurazione, serve a verificare le firme HMAC',
+        },
+      ],
+    },
     vendor: 'flowforge',
     version: '2.1.0',
   },

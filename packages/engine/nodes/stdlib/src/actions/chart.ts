@@ -12,6 +12,18 @@ export const chartGenerateNode: NodeModule = {
     id: 'action_generate_chart',
     type: 'action',
     label: 'Grafico: Genera (SVG)',
+    outputContract: {
+      notes: 'Tre forme dello stesso grafico: `svg` per il testo vettoriale, `dataUri` da mettere nel `src` di un\'immagine, `imgTag` gia` pronto da incollare nel corpo di una email. `primary` e` una delle tre, quella scelta in configurazione.',
+      fields: [
+        { name: 'svg', type: 'string', desc: 'Il grafico come testo vettoriale.' },
+        { name: 'dataUri', type: 'string', desc: 'Lo stesso grafico come indirizzo dati, pronto per il `src` di un\'immagine.' },
+        { name: 'imgTag', type: 'string', desc: 'Il tag immagine gia` pronto per il corpo di una email.' },
+        { name: 'width', type: 'number', desc: 'La larghezza in pixel.' },
+        { name: 'height', type: 'number', desc: 'L\'altezza in pixel.' },
+        { name: 'pointCount', type: 'number', desc: 'Quanti punti sono stati disegnati.' },
+        { name: 'primary', type: 'string', desc: 'La forma scelta in configurazione, per non dover sapere quale usare.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     icon: 'bar-chart-3',

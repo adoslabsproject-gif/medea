@@ -189,6 +189,23 @@ export const odooPollingTriggerNode: NodeModule = {
       },
     ],
 
+    outputContract: {
+      notes: 'Il record Odoo appena creato o modificato, uno per avvio.',
+      fields: [
+        { name: 'model', type: 'string', desc: 'Il modello Odoo interrogato, es. «crm.lead».' },
+        {
+          name: 'record',
+          type: 'object',
+          desc: 'Il record con i soli campi richiesti nella configurazione.',
+        },
+        { name: 'recordId', type: 'number', desc: 'L’id del record in Odoo.' },
+        {
+          name: 'triggeredAt',
+          type: 'string',
+          desc: 'Quando il poller lo ha visto, in formato ISO 8601.',
+        },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     cost: {

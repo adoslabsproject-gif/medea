@@ -52,6 +52,27 @@ export const errorTriggerNode: NodeModule = {
           "l'handler parte comunque senza. Default spento: zero costo LLM se non richiesto.",
       },
     ],
+    outputContract: {
+      notes: 'Il fallimento che ha chiamato questo workflow: quale nodo, con che errore, in quale esecuzione.',
+      fields: [
+        { name: 'failedNodeId', type: 'string', desc: 'L’id del nodo che ha fallito.' },
+        { name: 'error', type: 'string', desc: 'Il messaggio d’errore.' },
+        { name: 'runId', type: 'string', desc: 'L’esecuzione fallita, per risalire allo storico.' },
+        { name: 'workflowId', type: 'string', desc: 'Il workflow che ha fallito, non questo.' },
+        { name: 'workflowName', type: 'string', desc: 'Il nome di quel workflow.' },
+        {
+          name: 'triggerInput',
+          type: 'object',
+          desc: 'Il payload che aveva avviato l’esecuzione fallita: serve per riprovarla.',
+        },
+        { name: 'attempt', type: 'number', desc: 'Il numero del tentativo.' },
+        {
+          name: 'aiTriage',
+          type: 'object',
+          desc: 'La diagnosi automatica, presente solo se il triage AI è acceso.',
+        },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

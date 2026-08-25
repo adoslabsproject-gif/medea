@@ -125,6 +125,15 @@ export const integrationSlackPostNode: NodeModule = {
       },
     ],
     outputs: ['ok', 'ts', 'channel', 'message'],
+    outputContract: {
+      notes: '`ts` e` il marcatore del messaggio, ed e` cio` che serve per rispondere nel thread o modificarlo.',
+      fields: [
+        { name: 'ok', type: 'boolean', desc: 'Se il messaggio e` stato pubblicato.' },
+        { name: 'ts', type: 'string', desc: 'Il marcatore del messaggio: serve per rispondere nel thread o modificarlo.' },
+        { name: 'channel', type: 'string', desc: 'Il canale su cui e` stato pubblicato.' },
+        { name: 'message', type: 'object', desc: 'Il messaggio come lo restituisce Slack.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     cost: { typicalLatencyMs: 350 },

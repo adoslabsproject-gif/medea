@@ -57,6 +57,23 @@ export const cronTriggerNode: NodeModule = {
         help: 'Fuso orario IANA. La pianificazione è valutata in questo fuso (es. "alle 9:00 in Europe/Rome").',
       },
     ],
+    /**
+     * Cosa il trigger consegna. Rispecchia `triggerInput` di
+     * `services/scheduler.service.ts`.
+     */
+    outputContract: {
+      fields: [
+        { name: 'firedAt', type: 'string', desc: 'Quando è scattato, in ISO 8601' },
+        { name: 'cronExpression', type: 'string', desc: "L'espressione cron configurata" },
+        { name: 'timezone', type: 'string', desc: 'Il fuso in cui è stata interpretata' },
+        {
+          name: 'recovered',
+          type: 'boolean | undefined',
+          desc: 'Presente e true SOLO quando è un recupero di uno scatto perso mentre il motore era spento; assente nello scatto normale',
+        },
+      ],
+      notes: 'Il trigger non porta dati di dominio: sono solo le coordinate dello scatto.',
+    },
     vendor: 'flowforge',
     version: '1.1.0',
   },

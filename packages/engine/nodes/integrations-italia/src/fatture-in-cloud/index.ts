@@ -229,6 +229,16 @@ export const fattureInCloudInvoice: NodeModule = {
         help: '7 caratteri alfanumerici del codice destinatario PA/B2B. Tipicamente dinamico (dal form o da DB cliente). Usa "0000000" se il cliente fornisce PEC invece di codice SDI.',
       },
     ],
+    outputContract: {
+      notes: '`sdiStatus` e` lo stato della fattura elettronica presso lo Sdi: e` il campo da guardare per sapere se e` stata accettata, non `invoiceId`. In `raw` c\'e` la risposta completa per quello che non e` stato normalizzato.',
+      fields: [
+        { name: 'invoiceId', type: 'number|null', desc: 'La fattura creata. Null se non se ne e` potuto leggere l\'identificativo.' },
+        { name: 'number', type: 'string', desc: 'Il numero della fattura.' },
+        { name: 'pdfUrl', type: 'string', desc: 'Il collegamento al PDF.' },
+        { name: 'sdiStatus', type: 'string', desc: 'Lo stato presso lo Sdi.' },
+        { name: 'raw', type: 'object', desc: 'La risposta completa dell\'API.' },
+      ],
+    },
     vendor: 'flowforge-italia',
     version: '0.3.0',
   },
@@ -288,6 +298,15 @@ export const fattureInCloudClient: NodeModule = {
         help: 'Se on, crea un nuovo cliente con i dati passati in input quando non esiste. Se off, ritorna found=false.',
       },
     ],
+    outputContract: {
+      notes: '`found` e `created` insieme dicono cosa e` successo: trovato senza creare, creato perche` mancava, oppure ne` l\'uno ne` l\'altro — e in quel caso `clientId` e` null.',
+      fields: [
+        { name: 'clientId', type: 'number|null', desc: 'Il cliente trovato o creato. Null se nessuno dei due.' },
+        { name: 'found', type: 'boolean', desc: 'Se il cliente esisteva gia`.' },
+        { name: 'created', type: 'boolean', desc: 'Se e` stato creato adesso.' },
+        { name: 'fullData', type: 'object|null', desc: 'Il cliente completo. Null se non c\'e`.' },
+      ],
+    },
     vendor: 'flowforge-italia',
     version: '0.3.0',
   },

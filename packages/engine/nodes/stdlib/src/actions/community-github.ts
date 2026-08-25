@@ -161,6 +161,15 @@ export const communityGithubNode: NodeModule = {
       },
     ],
     outputs: ['ok', 'data', 'count', 'rateLimitRemaining'],
+    outputContract: {
+      notes: 'La risposta di GitHub sta tal quale in `data`: la sua forma dipende dall\'operazione, e i campi si leggono da li` — `{{$node.<id>.json.data.<campo>}}`. `rateLimitRemaining` va guardato nei cicli: a zero le chiamate successive falliscono.',
+      fields: [
+        { name: 'ok', type: 'boolean', desc: 'Se la chiamata e` riuscita.' },
+        { name: 'data', type: 'object|array', desc: 'La risposta di GitHub, con la forma che ha per quell\'operazione.' },
+        { name: 'count', type: 'number', desc: 'Quanti elementi, quando la risposta e` una lista.' },
+        { name: 'rateLimitRemaining', type: 'number|null', desc: 'Quante chiamate restano prima del limite. Null se GitHub non l\'ha dichiarato.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     cost: { typicalLatencyMs: 500 },

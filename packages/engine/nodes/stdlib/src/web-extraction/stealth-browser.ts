@@ -228,6 +228,18 @@ export const stealthBrowserNode: NodeModule = {
       'Features avanzate: fingerprint preset pool (desktop/mobile, IT/EN), auto-scroll lazy-load (per Infinite scroll), human-like delays (mouse jitter, typing pause), HAR capture, resource blocking (immagini/font per velocità).\n\n' +
       'Architettura BYO (Bring Your Own Browser): il nodo chiama un endpoint Playwright/Puppeteer con plugin stealth installato. Setup: docker run -p 3000:3000 ghcr.io/browserless/chromium:stealth oppure managed Zeli endpoint.\n\n' +
       'Use case: (1) monitoraggio prezzi su propri marketplace dietro CF/Akamai, (2) audit competitor pricing pages CF-protected con autorizzazione, (3) sync dati internal SPA che usa anti-bot a livello service, (4) snapshot legale di pagine sotto challenge browser-side.',
+    outputContract: {
+      notes: 'Come `action_browser_render`, con in piu` le contromisure al riconoscimento dei browser automatici. `fingerprintUsed` dice quale identita` ha presentato: serve a ripetere la stessa visita.',
+      fields: [
+        { name: 'html', type: 'string', desc: 'L\'HTML della pagina a script eseguiti.' },
+        { name: 'cookies', type: 'array', desc: 'I cookie raccolti.' },
+        { name: 'finalUrl', type: 'string', desc: 'Dove e` arrivato dopo i reindirizzamenti.' },
+        { name: 'screenshotBase64', type: 'string', desc: 'L\'immagine della pagina. Solo se richiesta.' },
+        { name: 'harBase64', type: 'string', desc: 'Il registro delle richieste di rete. Solo se richiesto.' },
+        { name: 'metrics', type: 'object', desc: 'I tempi di caricamento della pagina.' },
+        { name: 'fingerprintUsed', type: 'object', desc: 'L\'identita` presentata al sito: agente, lingua, risoluzione.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

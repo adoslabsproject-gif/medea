@@ -192,6 +192,17 @@ export const sitemapCrawlerNode: NodeModule = {
       'per indicizzazione search engine privato o RAG retrieval index aggiornato; bulk price-check pagine ' +
       'prodotto e-commerce competitor (catalogo URL → loop → action_web_fetch_advanced → estrazione prezzo); ' +
       'SEO compliance per agency che monitora 50 siti cliente in batch per detection di pagine 404 o orfane.',
+    outputContract: {
+      notes: 'Legge la mappa del sito e ne restituisce gli indirizzi FILTRATI: `filteredCount` inferiore a `totalUrlsInSitemap` e` normale ed e` l\'effetto dei filtri configurati.',
+      fields: [
+        { name: 'totalUrlsInSitemap', type: 'number', desc: 'Quanti indirizzi conteneva la mappa.' },
+        { name: 'filteredCount', type: 'number', desc: 'Quanti ne sono rimasti dopo i filtri.' },
+        { name: 'urls', type: 'array', desc: 'Gli indirizzi rimasti, da passare a un ciclo.' },
+        { name: 'includeRegex', type: 'string', desc: 'Il filtro di inclusione applicato.' },
+        { name: 'excludeRegex', type: 'string', desc: 'Il filtro di esclusione applicato.' },
+        { name: 'lastmodSinceIso', type: 'string', desc: 'La data da cui ha considerato le pagine modificate.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

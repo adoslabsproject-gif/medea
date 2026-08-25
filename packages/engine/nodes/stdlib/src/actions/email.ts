@@ -297,6 +297,16 @@ export const sendEmailNode: NodeModule = {
         showIf: { field: 'dkimDomain', truthy: true },
       },
     ],
+    outputContract: {
+      notes: '`accepted` e `rejected` sono la verita` sulla consegna: il nodo riesce anche quando il server rifiuta ALCUNI destinatari, quindi una lista `rejected` non vuota va controllata. Il rapporto `deliverability` c\'e` solo se il controllo SPF/DKIM/DMARC e` acceso.',
+      fields: [
+        { name: 'messageId', type: 'string', desc: 'Il Message-ID assegnato: serve a ritrovare il messaggio e a correlare le risposte.' },
+        { name: 'accepted', type: 'array', desc: 'I destinatari che il server ha accettato.' },
+        { name: 'rejected', type: 'array', desc: 'Quelli che ha rifiutato. Vuoto quando e` andato tutto bene.' },
+        { name: 'response', type: 'string', desc: 'L\'ultima risposta del server SMTP, testuale.' },
+        { name: 'deliverability', type: 'object', desc: 'L\'esito dei controlli SPF, DKIM e DMARC. Presente solo col controllo acceso.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '2.2.0',
   },

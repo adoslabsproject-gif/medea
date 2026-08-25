@@ -231,6 +231,16 @@ export const subworkflowNode: NodeModule = {
         help: "true = aspetta la fine e ricevi l'output. false = fire-and-forget, ritorna subito con runId del sub-workflow.",
       },
     ],
+    outputContract: {
+      notes: 'Due forme diverse a seconda dell\'attesa. Senza attendere escono solo `runId` e `started`; attendendo escono `runId`, `status`, `steps` e `durationMs` — e `started` NON c\'e`.',
+      fields: [
+        { name: 'runId', type: 'string', desc: 'L\'esecuzione avviata, per ritrovarla nello storico.' },
+        { name: 'started', type: 'boolean', desc: 'Sempre true, e presente SOLO quando il nodo non aspetta la fine.' },
+        { name: 'status', type: 'string', desc: 'Come e` finita: succeeded, failed o cancelled. Presente solo attendendo.' },
+        { name: 'steps', type: 'array', desc: 'I passi eseguiti dal sotto-workflow, uno per nodo. Presente solo attendendo.' },
+        { name: 'durationMs', type: 'number', desc: 'Quanto e` durata l\'intera esecuzione figlia. Presente solo attendendo.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

@@ -254,6 +254,15 @@ export const csvNode: NodeModule = {
       },
     ],
     outputs: ['default'],
+    outputContract: {
+      notes: 'Due forme opposte a seconda dell\'operazione. LEGGENDO un CSV escono `rows`, `headers` e `count`. SCRIVENDONE uno escono `csv` e `count` — e `rows` NON c\'e`.',
+      fields: [
+        { name: 'rows', type: 'array', desc: 'Le righe lette, una per elemento, con le intestazioni come nomi di campo. Solo leggendo.' },
+        { name: 'headers', type: 'array', desc: 'I nomi delle colonne trovate. Solo leggendo.' },
+        { name: 'csv', type: 'string', desc: 'Il testo CSV prodotto. Solo scrivendo.' },
+        { name: 'count', type: 'number', desc: 'Quante righe, in entrambe le forme.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },
@@ -512,6 +521,14 @@ export const arrayNode: NodeModule = {
       },
     ],
     outputs: ['default'],
+    outputContract: {
+      notes: 'Il risultato sta in `result`, non al primo livello: `{{$node.<id>.json.result}}`. La sua forma dipende dall\'operazione — una lista per filtri e ordinamenti, un valore solo per quelle che riducono.',
+      fields: [
+        { name: 'result', type: 'array|object|string|number', desc: 'L\'esito dell\'operazione sulla lista.' },
+        { name: 'count', type: 'number', desc: 'Quanti elementi ha il risultato, quando e` una lista.' },
+        { name: 'operation', type: 'string', desc: 'L\'operazione eseguita.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },
@@ -702,6 +719,13 @@ export const jsonNode: NodeModule = {
       },
     ],
     outputs: ['default'],
+    outputContract: {
+      notes: 'Il risultato sta in `result`, non al primo livello: `{{$node.<id>.json.result}}`.',
+      fields: [
+        { name: 'result', type: 'object|array|string|number', desc: 'L\'esito dell\'operazione. La forma dipende da quale: le chiavi e i valori danno liste, l\'unione da` un oggetto.' },
+        { name: 'operation', type: 'string', desc: 'L\'operazione eseguita.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

@@ -249,6 +249,29 @@ export const metaExtractNode: NodeModule = {
       'Safety budget: HTML parse max 5 MB (oltre → truncate), regex robust con ' +
       'timeout 100ms (anti-ReDoS), JSON-LD parse safe (no crash su malformed), ' +
       'audit log con URL hash + meta count per cost monitoring.',
+    outputContract: {
+      notes: 'Su un HTML vuoto NON fallisce: esce `matched` falso e un avviso, e tutti gli altri campi mancano. I campi non presenti nella pagina escono null: leggerli non da` errore, da` vuoto.',
+      fields: [
+        { name: 'title', type: 'string|null', desc: 'Il titolo della pagina.' },
+        { name: 'description', type: 'string|null', desc: 'La descrizione dichiarata.' },
+        { name: 'keywords', type: 'array', desc: 'Le parole chiave dichiarate.' },
+        { name: 'canonical', type: 'string|null', desc: 'L\'indirizzo canonico dichiarato.' },
+        { name: 'robots', type: 'string|null', desc: 'Le istruzioni per i motori di ricerca.' },
+        { name: 'lang', type: 'string|null', desc: 'La lingua dichiarata.' },
+        { name: 'charset', type: 'string|null', desc: 'La codifica dei caratteri.' },
+        { name: 'viewport', type: 'string|null', desc: 'Le impostazioni di visualizzazione mobile.' },
+        { name: 'author', type: 'string|null', desc: 'L\'autore dichiarato.' },
+        { name: 'favicon', type: 'string|null', desc: 'L\'icona del sito.' },
+        { name: 'themeColor', type: 'string|null', desc: 'Il colore dichiarato per l\'interfaccia.' },
+        { name: 'og', type: 'object', desc: 'I dati Open Graph, per le anteprime sui social.' },
+        { name: 'twitter', type: 'object', desc: 'I dati per le anteprime su Twitter.' },
+        { name: 'jsonLd', type: 'array', desc: 'I dati strutturati JSON-LD trovati nella pagina.' },
+        { name: 'hreflang', type: 'array', desc: 'Le versioni in altre lingue dichiarate.' },
+        { name: 'metaExtra', type: 'object', desc: 'Gli altri meta tag trovati.' },
+        { name: 'warnings', type: 'array', desc: 'I problemi incontrati leggendo la pagina.' },
+        { name: 'matched', type: 'boolean', desc: 'Presente e falso SOLO quando l\'HTML era vuoto.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

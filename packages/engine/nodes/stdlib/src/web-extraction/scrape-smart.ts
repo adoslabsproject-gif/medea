@@ -203,6 +203,18 @@ export const scrapeSmartNode: NodeModule = {
       'Observability: ogni request espone pipelineSteps con stage usato + duration + evidence + errore.\n\n' +
       'Setup BYO: configura MEDEA_BROWSER_ENDPOINT + MEDEA_STEALTH_ENDPOINT (browserless self-host o managed Zeli). LLM = qualsiasi endpoint OpenAI-compatibile (default Liara locale :3003); override endpoint/key/model nei campi.\n\n' +
       'Use case: (1) scraping listing prodotti e-commerce con pagination + extract JSON strutturato, (2) ingest dati pubblici (registri/anagrafiche) con fallback adaptive, (3) monitoring concorrenti con AI extract di prezzi e stock, (4) onboarding cliente B2B che chiede "scarica i miei dati da X" senza scrivere CSS selectors.',
+    outputContract: {
+      notes: 'I dati estratti stanno in `extracted`, con i nomi dello schema in configurazione. `pagesSuccessful` inferiore a `pagesScraped` significa che alcune pagine non hanno dato niente: i dati sono parziali.',
+      fields: [
+        { name: 'extracted', type: 'object|array', desc: 'I dati estratti, coi nomi dello schema in configurazione.' },
+        { name: 'pages', type: 'array', desc: 'Le pagine visitate, con il loro esito.' },
+        { name: 'pagesScraped', type: 'number', desc: 'Quante pagine ha aperto.' },
+        { name: 'pagesSuccessful', type: 'number', desc: 'Quante hanno dato dei dati.' },
+        { name: 'paginationDetected', type: 'boolean', desc: 'Se ha riconosciuto e seguito l\'impaginazione del sito.' },
+        { name: 'finalStages', type: 'array', desc: 'Le tecniche usate per arrivare al dato, in ordine.' },
+        { name: '_llm', type: 'object', desc: 'Il consumo di token. Presente solo se e` stato interpellato un modello.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

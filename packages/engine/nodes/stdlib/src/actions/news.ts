@@ -116,6 +116,16 @@ export const newsDisplayNode: NodeModule = {
       },
     ],
     outputs: ['feed', 'items', 'count', 'markdown', 'html'],
+    outputContract: {
+      notes: '`markdown` e `html` compaiono SOLO se la resa e` stata chiesta in configurazione: senza, ci sono i soli `items` e va formattato a valle.',
+      fields: [
+        { name: 'feed', type: 'object', desc: 'I dati della fonte: title, link, description e lang.' },
+        { name: 'items', type: 'array', desc: 'Le notizie lette.' },
+        { name: 'count', type: 'number', desc: 'Quante notizie.' },
+        { name: 'markdown', type: 'string', desc: 'Le notizie gia` impaginate in Markdown. Solo se richiesto.' },
+        { name: 'html', type: 'string', desc: 'Le notizie gia` impaginate in HTML, pronte per una email. Solo se richiesto.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     cost: { typicalLatencyMs: 600 },

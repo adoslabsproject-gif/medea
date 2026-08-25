@@ -3,10 +3,10 @@
  *
  * `stdlib-nodes.json` è **generato**, non scritto a mano: lo produce
  * `scripts/extract-flowforge-nodes.mjs` leggendo i pacchetti compilati di
- * FlowForge. È l'unico modo per tenere allineate 193 definizioni senza
+ * questo repository. È l'unico modo per tenere allineate 194 definizioni senza
  * ricopiarle — e senza ricopiarle significa che non possono divergere.
  *
- * 193 è lo stesso numero che il runtime dichiara su `/api/v1/nodes`: se le
+ * 194 è lo stesso numero che il runtime dichiara su `/api/v1/nodes`: se le
  * due cifre si separano, la palette offre nodi che nessuno sa eseguire (o
  * nasconde nodi che funzionano). `catalog.guard.test.ts` lo verifica.
  *

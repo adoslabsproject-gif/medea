@@ -132,6 +132,17 @@ export const distinctNode: NodeModule = {
         help: "Hard cap anti-OOM sul numero di item processati. Se l'input supera questa soglia viene troncato e deduplica solo i primi N (warning emesso). Default 100k, tetto 1M.",
       },
     ],
+    outputContract: {
+      notes: 'Gli elementi ripuliti dai doppioni, con il conto di quanti ne sono usciti.',
+      fields: [
+        { name: 'items', type: 'array', desc: 'Gli elementi rimasti: il primo di ogni gruppo di uguali, nell\'ordine originale.' },
+        { name: 'original', type: 'number', desc: 'Quanti elementi erano entrati.' },
+        { name: 'distinct', type: 'number', desc: 'Quanti ne restano.' },
+        { name: 'removed', type: 'number', desc: 'Quanti doppioni sono stati tolti.' },
+        { name: 'removalPercent', type: 'number', desc: 'La percentuale rimossa, con due decimali. Su una lista vuota è 0.' },
+        { name: 'exampleDuplicates', type: 'array', desc: 'Fino a cinque doppioni scartati, per vedere su cosa ha lavorato.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

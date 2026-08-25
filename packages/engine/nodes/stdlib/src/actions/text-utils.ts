@@ -262,6 +262,18 @@ export const textNode: NodeModule = {
       },
     ],
     outputs: ['default'],
+    outputContract: {
+      notes: 'Cercando con un\'espressione regolare escono `matches`, `groups`, `count` e `first` — e NON `result`. Per tutte le altre operazioni escono `result`, `length` e `operation`.',
+      fields: [
+        { name: 'result', type: 'string|array', desc: 'Il testo trasformato, o la lista se l\'operazione divide.' },
+        { name: 'length', type: 'number', desc: 'Quanti caratteri ha il risultato, quando e` testo.' },
+        { name: 'operation', type: 'string', desc: 'L\'operazione eseguita.' },
+        { name: 'matches', type: 'array', desc: 'Tutte le corrispondenze trovate. Solo cercando.' },
+        { name: 'groups', type: 'array', desc: 'I gruppi catturati dall\'espressione. Solo cercando.' },
+        { name: 'count', type: 'number', desc: 'Quante corrispondenze. Solo cercando.' },
+        { name: 'first', type: 'string|null', desc: 'La prima corrispondenza. Null se non ce ne sono. Solo cercando.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },
@@ -358,6 +370,14 @@ export const templateNode: NodeModule = {
       },
     ],
     outputs: ['default'],
+    outputContract: {
+      notes: '`hasMissing` e` il campo che segnala i segnaposto rimasti senza valore: il testo esce lo stesso, quindi senza controllarlo si mandano email con i buchi dentro. In `missing` c\'e` l\'elenco dei nomi.',
+      fields: [
+        { name: 'result', type: 'string', desc: 'Il testo con i segnaposto sostituiti.' },
+        { name: 'missing', type: 'array', desc: 'I nomi dei segnaposto per cui non c\'era un valore.' },
+        { name: 'hasMissing', type: 'boolean', desc: 'Vero se almeno un segnaposto e` rimasto senza valore.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

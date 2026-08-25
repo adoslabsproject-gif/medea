@@ -460,6 +460,16 @@ export const httpNodeDef: NodeDef = {
       help: 'Se on, lo step fallisce su errore HTTP non-recuperato dal retry.',
     },
   ],
+  outputContract: {
+    notes: '`body` e` gia` interpretato quando la risposta e` JSON: si leggono i campi direttamente, senza passare da un `action_json`. Uno stato 4xx o 5xx NON solleva un errore di suo — chi sta a valle deve guardare `status`. Con «solo lo stato» acceso `body` non c\'e`; impaginando esce anche `pagesFetched` e `body` diventa la lista di TUTTI gli elementi raccolti.',
+    fields: [
+      { name: 'status', type: 'number', desc: 'Il codice HTTP. E` il campo su cui si dirama con un `logic_if`.' },
+      { name: 'statusText', type: 'string', desc: 'La descrizione dello stato.' },
+      { name: 'headers', type: 'object', desc: 'Gli header della risposta, con i nomi in minuscolo.' },
+      { name: 'body', type: 'object|array|string', desc: 'Il corpo della risposta, gia` interpretato se era JSON. Assente con «solo lo stato».' },
+      { name: 'pagesFetched', type: 'number', desc: 'Quante pagine ha percorso. Presente SOLO impaginando.' },
+    ],
+  },
   vendor: 'flowforge',
   version: '3.0.0',
   // Il nodo ritenta INTERNAMENTE (withRetry su retryOnStatus + Retry-After): l'engine

@@ -70,6 +70,20 @@ export const pecClassifyNodeDef: NodeDef = {
     },
   ],
 
+  outputContract: {
+    notes: 'L\'uscita e` la STESSA su ogni ramo: chi sta a valle legge i campi allo stesso modo qualunque strada abbia preso il messaggio. `isPec` falso significa che non e` un messaggio certificato e gli altri campi valgono poco.',
+    fields: [
+      { name: 'type', type: 'string', desc: 'Che cosa e` il messaggio: la PEC vera, una ricevuta di accettazione, di consegna o un errore.' },
+      { name: 'branch', type: 'string', desc: 'Il ramo imboccato, che corrisponde a `type`.' },
+      { name: 'receiptCategory', type: 'string|null', desc: 'La categoria della ricevuta. Null se non e` una ricevuta.' },
+      { name: 'receiptStyle', type: 'string|null', desc: 'Il tipo di ricevuta secondo la norma: breve, completa o sintetica.' },
+      { name: 'refMessageId', type: 'string|null', desc: 'Il messaggio ORIGINALE a cui la ricevuta si riferisce: e` cio` che permette di correlarla all\'invio.' },
+      { name: 'trasporto', type: 'string|null', desc: 'Il valore dell\'header X-Trasporto.' },
+      { name: 'isPec', type: 'boolean', desc: 'Se il messaggio arriva davvero dal circuito certificato.' },
+      { name: 'headers', type: 'object', desc: 'Gli header PEC del messaggio. Presente solo se richiesto in configurazione.' },
+      { name: 'pipelineSteps', type: 'array', desc: 'Il diario del passaggio. Presente solo col registro acceso.' },
+    ],
+  },
   vendor: 'flowforge',
   version: '1.0.0',
   cost: {

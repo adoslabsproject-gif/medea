@@ -302,6 +302,17 @@ export const emailSendTrackedNodeDef: NodeDef = {
     },
   ],
 
+  outputContract: {
+    notes: 'Manda la email come `action_send_email` — quindi escono anche `messageId`, `accepted`, `rejected` e `response` — e ci aggiunge sopra i riferimenti per seguirla. Le aperture e i clic arrivano DOPO, per webhook: non sono in questo output.',
+    fields: [
+      { name: 'sendId', type: 'string', desc: 'L\'invio, per ritrovarlo nei rapporti.' },
+      { name: 'leadId', type: 'string', desc: 'Il destinatario nella campagna.' },
+      { name: 'campaignId', type: 'string', desc: 'La campagna di cui fa parte.' },
+      { name: 'pixelUrl', type: 'string', desc: 'L\'indirizzo dell\'immagine che segnala l\'apertura.' },
+      { name: 'openToken', type: 'string', desc: 'Il gettone con cui l\'apertura viene riconosciuta.' },
+      { name: 'clickTokens', type: 'array', desc: 'Un gettone per ogni collegamento riscritto, per sapere quale e` stato aperto.' },
+    ],
+  },
   vendor: 'flowforge',
   version: '1.0.0',
   cost: { typicalLatencyMs: 1200 },

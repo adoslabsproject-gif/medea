@@ -117,6 +117,16 @@ export const integrationTelegramSendNode: NodeModule = {
       },
     ],
     outputs: ['ok', 'messageId', 'chatId', 'date', 'mode'],
+    outputContract: {
+      notes: '`messageId` serve per rispondere a quel messaggio o modificarlo piu` tardi.',
+      fields: [
+        { name: 'ok', type: 'boolean', desc: 'Se il messaggio e` stato mandato.' },
+        { name: 'messageId', type: 'number', desc: 'Il messaggio creato.' },
+        { name: 'chatId', type: 'string|number', desc: 'La conversazione su cui e` stato mandato.' },
+        { name: 'date', type: 'number', desc: 'Quando e` stato mandato, in secondi dal 1970.' },
+        { name: 'mode', type: 'string', desc: 'Come e` stato formattato il testo.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     cost: { typicalLatencyMs: 400 },

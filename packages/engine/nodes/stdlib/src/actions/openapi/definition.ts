@@ -79,6 +79,14 @@ export const openapiNodeDef: NodeDef = {
     },
   ],
   outputs: ['status', 'operationId', 'data'],
+  outputContract: {
+    notes: 'Chiama un\'operazione descritta in una specifica OpenAPI. La risposta sta in `data`, con la forma che le da` quell\'API. Uno stato 4xx o 5xx non solleva un errore di suo: va guardato `status`.',
+    fields: [
+      { name: 'status', type: 'number', desc: 'Il codice HTTP della risposta.' },
+      { name: 'operationId', type: 'string', desc: 'L\'operazione chiamata, come si chiama nella specifica.' },
+      { name: 'data', type: 'object|array|string', desc: 'Il corpo della risposta, con la forma che ha in quella API.' },
+    ],
+  },
   vendor: 'flowforge',
   version: '1.0.0',
 };

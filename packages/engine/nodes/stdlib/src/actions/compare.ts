@@ -157,6 +157,17 @@ export const diffNode: NodeModule = {
       },
     ],
     outputs: ['equal', 'different'],
+    outputContract: {
+      notes: 'Due forme. Confrontando TESTI escono `changes`, `added`, `removed` ed `equal`. Confrontando OGGETTI escono `added`, `removed`, `changed`, `equal` e `changeCount` — e li` `added` e `removed` sono OGGETTI, non numeri: lo stesso nome, due tipi diversi.',
+      fields: [
+        { name: 'equal', type: 'boolean', desc: 'Se i due lati coincidono. E` il campo su cui diramare.' },
+        { name: 'changes', type: 'array', desc: 'Le righe cambiate. Solo confrontando testi.' },
+        { name: 'added', type: 'number|object', desc: 'Quante righe aggiunte confrontando testi; QUALI campi aggiunti confrontando oggetti.' },
+        { name: 'removed', type: 'number|object', desc: 'Quante righe tolte confrontando testi; QUALI campi tolti confrontando oggetti.' },
+        { name: 'changed', type: 'object', desc: 'I campi il cui valore e` cambiato, col prima e il dopo. Solo confrontando oggetti.' },
+        { name: 'changeCount', type: 'number', desc: 'Quante differenze in tutto. Solo confrontando oggetti.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

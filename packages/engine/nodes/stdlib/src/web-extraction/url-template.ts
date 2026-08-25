@@ -146,6 +146,16 @@ export const urlTemplateNode: NodeModule = {
       'Esempio: estrai videoId e token da pagina embed, poi costruisci https://${host}/playlist/${videoId}?token=${token}&expires=${expires}&language=it.\n\n' +
       'Sintassi: ${input.path.to.value} pesca da output del nodo precedente. ${customVar} pesca da Vars custom. Encoding URI automatico sui query params. Conditional flags: aggiungi query parametri solo se condizione vera.\n\n' +
       'Use case: (1) costruire URL HLS playlist con token + expires dopo extraction, (2) signed URL API per webhook callback, (3) deep-link mobile app con UTM tracking dinamico, (4) URL paginazione condizionale (page=N solo se >1).',
+    outputContract: {
+      notes: 'Costruisce un indirizzo da un modello con segnaposto. `url` e` quello da usare; gli altri campi sono i suoi pezzi, comodi per i controlli.',
+      fields: [
+        { name: 'url', type: 'string', desc: 'L\'indirizzo costruito.' },
+        { name: 'host', type: 'string', desc: 'Il nome del server.' },
+        { name: 'path', type: 'string', desc: 'Il percorso.' },
+        { name: 'protocol', type: 'string', desc: 'Lo schema.' },
+        { name: 'params', type: 'object', desc: 'I parametri come oggetto.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

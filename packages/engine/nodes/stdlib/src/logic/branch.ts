@@ -73,6 +73,14 @@ export const ifNode: NodeModule = {
     ],
     outputs: ['true', 'false'],
     branching: true,
+    outputContract: {
+      notes: 'Il nodo NON lascia passare i dati che riceve: a valle arrivano questi tre campi. Chi sta dopo un `logic_if` e vuole il messaggio originale deve leggerlo dal nodo che l\'ha prodotto, non da qui.',
+      fields: [
+        { name: 'branch', type: 'string', desc: 'Il ramo imboccato: \'true\' oppure \'false\'.' },
+        { name: 'condition', type: 'string', desc: 'La condizione come e` stata valutata, in forma leggibile: serve a capire perche` ha scelto quel ramo.' },
+        { name: 'truthy', type: 'boolean', desc: 'L\'esito della condizione.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '2.1.0',
   },
@@ -173,6 +181,15 @@ export const switchNode: NodeModule = {
     ],
     outputs: ['*'],
     branching: true,
+    outputContract: {
+      notes: 'Come il `logic_if`, non lascia passare i dati in ingresso. `matchedCase` c\'e` SOLO quando un caso ha corrisposto: sul ramo di riserva non esiste.',
+      fields: [
+        { name: 'subject', type: 'string|null', desc: 'Il valore su cui ha deciso. Null se non si e` potuto leggere.' },
+        { name: 'chosenBranch', type: 'string', desc: 'Il ramo imboccato: il nome del caso corrispondente, oppure il ramo di riserva (\'default\' se non configurato).' },
+        { name: 'matched', type: 'boolean', desc: 'Vero se un caso ha corrisposto; falso se e` finito sulla riserva.' },
+        { name: 'matchedCase', type: 'string', desc: 'Il valore del caso che ha corrisposto. Presente SOLO quando `matched` e` vero.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '2.1.0',
   },

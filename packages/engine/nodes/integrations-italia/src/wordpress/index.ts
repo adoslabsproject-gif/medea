@@ -262,6 +262,15 @@ export const wordpressNode: NodeModule = {
       },
     ],
     outputs: ['result', 'totalPages'],
+    outputContract: {
+      notes: 'La risposta sta in `result`, con la forma che le da` WordPress. Elencando, `totalPages` dice che c\'e` dell\'altro oltre la prima pagina.',
+      fields: [
+        { name: 'result', type: 'object|array', desc: 'La risposta di WordPress, con la forma che ha per quella risorsa.' },
+        { name: 'totalPages', type: 'number', desc: 'Quante pagine di risultati esistono. Solo elencando.' },
+        { name: 'action', type: 'string', desc: 'L\'operazione eseguita.' },
+        { name: 'resource', type: 'string', desc: 'La risorsa su cui ha operato: articoli, pagine, media.' },
+      ],
+    },
     vendor: 'wordpress',
     version: '1.1.0',
   },

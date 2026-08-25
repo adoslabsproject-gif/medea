@@ -125,6 +125,13 @@ export const assetBatchDownloadNode: NodeModule = {
       'Output `assetMap` (url→savePath) consumabile direttamente da action_html_mirror_rewrite per riscrivere i link nel HTML offline. ' +
       'Use case: (1) mirror immagini/PDF di un proprio catalogo prodotti, (2) backup di un proprio sito statico, (3) ingest asset per CDN privato, (4) snapshot legale di una pagina (con audit). ' +
       'Safety: SSRF guard, basePath obbligatoriamente assoluto, traversal-safe, hard caps anti-runaway.',
+    outputContract: {
+      notes: 'Il nodo riesce anche se ALCUNI scaricamenti falliscono: l\'esito di ciascuno e` in `results`, con il proprio `status`. `stats.assetMap` e` gia` nella forma che vuole `action_html_mirror_rewrite`.',
+      fields: [
+        { name: 'results', type: 'array', desc: 'Un elemento per file: url, savePath, contentType, bytes, sha256, status (downloaded, skipped-existing, skipped-cap o error), error, fetchedAt e durationMs.' },
+        { name: 'stats', type: 'object', desc: 'Il conto complessivo: downloaded, skippedExisting, skippedCap, errors, totalBytes, durationMsTotal e assetMap.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

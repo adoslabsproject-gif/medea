@@ -179,6 +179,17 @@ export const rssFeedTriggerNode: NodeModule = {
       'segmented → email digest); alert su nuovi articoli pubblicati dai principali concorrenti su loro blog ' +
       'corporate (10+ competitor monitored simultaneously); GitHub releases feed dei vendor di dependency ' +
       'critiche (postgres, nginx, kubernetes, node) per security patches notification.',
+    outputContract: {
+      notes: '`itemsCount` inferiore a `totalParsed` significa che i filtri hanno scartato qualcosa: sono due numeri diversi ed e` il secondo a dire quante notizie aveva la fonte.',
+      fields: [
+        { name: 'format', type: 'string', desc: 'Il formato riconosciuto della fonte: RSS o Atom.' },
+        { name: 'feedTitle', type: 'string', desc: 'Il titolo della fonte.' },
+        { name: 'feedLink', type: 'string', desc: 'Il sito della fonte.' },
+        { name: 'itemsCount', type: 'number', desc: 'Quante notizie sono rimaste dopo i filtri.' },
+        { name: 'totalParsed', type: 'number', desc: 'Quante ne conteneva la fonte.' },
+        { name: 'items', type: 'array', desc: 'Le notizie, con titolo, collegamento, data e descrizione.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.1.0',
     configFields: [

@@ -257,6 +257,19 @@ export const webFetchAdvancedNode: NodeModule = {
       'Differenze vs HTTP Request standard: header preset browser-like (un click per "Chrome desktop"/"iPhone Safari"), Referer/Origin auto-derivati, cookie jar persistente, retry exponential su 408/429/5xx, response format auto-detect (HTML/JSON/Binary).\n\n' +
       'NON USARE per: scraping siti di terzi senza autorizzazione, evasione paywall, accumulazione contenuti copyright. Block-list domini noti pirateria attiva. Tutti i request loggati in audit_log.\n\n' +
       'Use case: (1) monitoraggio uptime propri endpoint con cookie session, (2) integrazione API vendor partner che richiede browser headers + Referer, (3) ingest pagine news per aggregator interno, (4) price comparison del proprio catalog su marketplace autorizzati.',
+    outputContract: {
+      notes: '`ok` e` gia` il confronto sullo stato: si dirama su quello invece che su `status`. `setCookie` va rimesso nella richiesta successiva quando il sito tiene una sessione.',
+      fields: [
+        { name: 'status', type: 'number', desc: 'Il codice HTTP.' },
+        { name: 'statusText', type: 'string', desc: 'La descrizione dello stato.' },
+        { name: 'url', type: 'string', desc: 'Dove e` arrivato dopo i reindirizzamenti.' },
+        { name: 'headers', type: 'object', desc: 'Gli header della risposta.' },
+        { name: 'setCookie', type: 'string', desc: 'I cookie che il server ha impostato: vanno rimessi nelle richieste successive.' },
+        { name: 'body', type: 'object|array|string', desc: 'Il corpo della risposta, gia` interpretato se era JSON.' },
+        { name: 'attempt', type: 'number', desc: 'Quanti tentativi sono serviti.' },
+        { name: 'ok', type: 'boolean', desc: 'Se lo stato e` di successo. E` il campo su cui diramare.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

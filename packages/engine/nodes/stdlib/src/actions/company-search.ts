@@ -185,6 +185,22 @@ export const companySearchNode: NodeModule = {
       'took_ms', // number
       'count', // number
     ],
+    outputContract: {
+      notes: 'I due contatori `filtered_directory` e `filtered_validation` dicono quanti risultati sono stati SCARTATI: se `count` e` basso e quelli sono alti, il filtro sta lavorando piu` della ricerca.',
+      fields: [
+        { name: 'companies', type: 'array', desc: 'Le aziende trovate, con nome e sito.' },
+        { name: 'urls', type: 'array', desc: 'I soli indirizzi dei siti, comodi da passare a un ciclo.' },
+        { name: 'queries_used', type: 'array', desc: 'Le ricerche effettivamente eseguite.' },
+        { name: 'queries_generated_by_llm', type: 'boolean', desc: 'Se le ricerche le ha scritte un modello invece che la configurazione.' },
+        { name: 'llm_provider', type: 'string|null', desc: 'Il fornitore interpellato per generarle. Null se non e` servito.' },
+        { name: 'total_raw_results', type: 'number', desc: 'Quanti risultati grezzi sono arrivati dal motore.' },
+        { name: 'filtered_directory', type: 'number', desc: 'Quanti scartati perche` erano elenchi e non aziende.' },
+        { name: 'filtered_validation', type: 'number', desc: 'Quanti scartati perche` non hanno superato i controlli.' },
+        { name: 'took_ms', type: 'number', desc: 'Quanto ci ha messo.' },
+        { name: 'count', type: 'number', desc: 'Quante aziende sono rimaste.' },
+        { name: 'llm_usage', type: 'object', desc: 'Il consumo di token. Presente solo se e` stato interpellato un modello.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

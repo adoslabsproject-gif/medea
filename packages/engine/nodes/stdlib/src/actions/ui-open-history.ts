@@ -101,6 +101,14 @@ export const uiOpenHistoryNode: NodeModule = {
       },
     ],
     outputs: ['url', 'workflowId', 'filters'],
+    outputContract: {
+      notes: 'Costruisce l\'indirizzo con cui aprire lo storico gia` filtrato: non apre niente da solo — `url` va messo in un messaggio o in una email.',
+      fields: [
+        { name: 'url', type: 'string', desc: 'L\'indirizzo dello storico coi filtri gia` applicati.' },
+        { name: 'workflowId', type: 'string|null', desc: 'Il workflow a cui e` limitato. Null se li comprende tutti.' },
+        { name: 'filters', type: 'object', desc: 'I filtri applicati: status, dateFrom, dateTo e search. Null quelli non impostati.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     cost: { typicalLatencyMs: 1 },

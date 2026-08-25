@@ -197,6 +197,15 @@ export const regexMultiNode: NodeModule = {
       'ha format leggermente diverso → fallback chain copre tutti); capture pattern specifici da log ' +
       'applicativi per alert SLA (es. error code, response time, customer_id per detection di anomalie + ' +
       'pattern di failure analytics); migration di dati da export legacy text/CSV con format incomerente.',
+    outputContract: {
+      notes: 'I valori estratti stanno DENTRO `fields`, sotto i nomi dati in configurazione: si legge `{{$node.<id>.json.fields.<nome>}}`, non il nome direttamente sul nodo. `matched` e` falso quando nessuna espressione ha trovato niente.',
+      fields: [
+        { name: 'fields', type: 'object', desc: 'Un valore per ogni campo cercato, sotto il nome che gli e` stato dato. Null per quelli non trovati.' },
+        { name: 'matched', type: 'boolean', desc: 'Se almeno un campo e` stato trovato.' },
+        { name: 'matchedCount', type: 'number', desc: 'Quanti campi hanno trovato un valore.' },
+        { name: 'totalFields', type: 'number', desc: 'Quanti campi erano stati chiesti: confrontarlo con `matchedCount` dice quanti mancano.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     configFields: [

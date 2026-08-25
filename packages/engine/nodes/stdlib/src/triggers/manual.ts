@@ -35,6 +35,18 @@ export const manualTriggerNode: NodeModule = {
       'corretto un dato nei conti — click Esegui invece di aspettare il prossimo cron tick); execution su ' +
       "demand di workflow di reporting custom per produrre l'export richiesto al volo dal CEO; debug " +
       'interactive di workflow falliti con replay manuale step-by-step.',
+    outputContract: {
+      notes:
+        'Quello che si scrive nella finestra di avvio, così com’è. Non ci sono campi fissi: ' +
+        'chi avvia decide i nomi, e le espressioni a valle devono usare quelli.',
+      fields: [
+        {
+          name: '<campi liberi>',
+          type: 'object',
+          desc: 'Il payload passato all’avvio manuale, senza nessuna trasformazione.',
+        },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

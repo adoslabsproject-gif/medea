@@ -112,6 +112,18 @@ export const communitySalesforceNode: NodeModule = {
       },
     ],
     outputs: ['ok', 'data', 'records', 'count', 'totalSize', 'recordId', 'created'],
+    outputContract: {
+      notes: 'Interrogando, `count` sono i record TORNATI e `totalSize` quanti ne esistono: se differiscono la risposta e` parziale. `created` distingue una creazione da un aggiornamento nelle operazioni che fanno entrambe.',
+      fields: [
+        { name: 'ok', type: 'boolean', desc: 'Se la chiamata e` riuscita.' },
+        { name: 'data', type: 'object', desc: 'La risposta di Salesforce, per i dettagli.' },
+        { name: 'records', type: 'array', desc: 'I record trovati.' },
+        { name: 'count', type: 'number', desc: 'Quanti record sono tornati davvero.' },
+        { name: 'totalSize', type: 'number', desc: 'Quanti ne esistono in tutto: maggiore di `count` significa risposta parziale.' },
+        { name: 'recordId', type: 'string|null', desc: 'Il record creato o modificato.' },
+        { name: 'created', type: 'boolean', desc: 'Vero se il record e` stato creato, falso se aggiornato.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
     cost: { typicalLatencyMs: 800 },

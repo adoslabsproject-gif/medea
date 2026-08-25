@@ -152,7 +152,7 @@ describe('stdlibNodes', () => {
     });
 
     // ── Streammy nodi RIMOSSI dallo stdlib pubblico (2026-06-08) ──
-    // I 6 streammy_* sono migrati a custom_nodes privati del tenant senza1dio
+    // I 6 streammy_* sono migrati a custom_nodes privati di un tenant privato
     // via Custom Node Editor (Fase 6, task #178). Test che ne verificano
     // l'ASSENZA invece della presenza (anti-regressione).
     it('streammy nodes are NOT present in public stdlib registry', () => {

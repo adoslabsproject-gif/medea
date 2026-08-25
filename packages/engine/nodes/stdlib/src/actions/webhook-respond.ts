@@ -220,6 +220,14 @@ export const webhookRespondNode: NodeModule = {
           'Es. Cache-Control=no-cache, X-Request-Id={{$run.id}}, ETag="abc123".',
       },
     ],
+    outputContract: {
+      notes: 'Prepara la risposta da mandare a chi ha chiamato il webhook: la risposta parte alla FINE dell\'esecuzione, non qui. Questi campi dicono cosa e` stato preparato, non cosa e` stato consegnato.',
+      fields: [
+        { name: 'status', type: 'number', desc: 'Il codice HTTP che verra` restituito.' },
+        { name: 'contentType', type: 'string', desc: 'Il tipo di contenuto della risposta.' },
+        { name: 'respondWith', type: 'string', desc: 'Cosa restituira`: un testo, un JSON o il corpo di un altro nodo.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '2.0.0',
   },

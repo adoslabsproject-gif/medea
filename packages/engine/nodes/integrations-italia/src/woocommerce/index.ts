@@ -318,6 +318,16 @@ export const woocommerceNode: NodeModule = {
       },
     ],
     outputs: ['result', 'totalPages', 'total'],
+    outputContract: {
+      notes: 'La risposta sta in `result`, con la forma che le da` WooCommerce per quella risorsa. Elencando, `totalPages` e `total` dicono che c\'e` dell\'altro: senza chiedere le pagine successive si prende solo la prima.',
+      fields: [
+        { name: 'result', type: 'object|array', desc: 'La risposta di WooCommerce, con la forma che ha per quella risorsa.' },
+        { name: 'totalPages', type: 'number', desc: 'Quante pagine di risultati esistono. Solo elencando.' },
+        { name: 'total', type: 'number', desc: 'Quanti elementi in tutto. Solo elencando.' },
+        { name: 'action', type: 'string', desc: 'L\'operazione eseguita.' },
+        { name: 'resource', type: 'string', desc: 'La risorsa su cui ha operato: ordini, prodotti, clienti.' },
+      ],
+    },
     vendor: 'woocommerce',
     version: '1.0.0',
   },

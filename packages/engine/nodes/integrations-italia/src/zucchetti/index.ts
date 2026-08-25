@@ -58,6 +58,12 @@ export const zucchettiPayroll: NodeModule = {
         help: "On = simula l'elaborazione senza salvare. SEMPRE on al primo test.",
       },
     ],
+    outputContract: {
+      notes: 'Restituisce la risposta di Zucchetti tale e quale: i nomi dei campi sono quelli della loro API, e cambiano con l\'operazione chiesta.',
+      fields: [
+        { name: '<la risposta di Zucchetti>', type: 'object', desc: 'Il corpo restituito dall\'API, senza nessuna trasformazione.' },
+      ],
+    },
     vendor: 'flowforge-italia',
     version: '0.1.0',
   },

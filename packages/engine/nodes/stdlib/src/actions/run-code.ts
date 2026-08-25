@@ -84,6 +84,17 @@ export const runPythonNode: NodeModule = {
     ],
     // n8n-speak: "code node"/"function" devono trovare questo nodo (bug 2026-06-12).
     searchAliases: ['code', 'function', 'script'],
+    outputContract: {
+      notes: 'A differenza di JavaScript e TypeScript, qui NON c\'e` nessun `result`: quello che serve va STAMPATO, e si legge da `stdout` come testo — di norma con un `action_json` subito dopo per interpretarlo. `exitCode` diverso da zero segnala un errore ma il nodo riesce lo stesso: va controllato.',
+      fields: [
+        { name: 'stdout', type: 'string', desc: 'Quello che lo script ha stampato. E` da qui che si prendono i risultati.' },
+        { name: 'stderr', type: 'string', desc: 'Quello che ha scritto sull\'uscita degli errori.' },
+        { name: 'exitCode', type: 'number', desc: 'Il codice di uscita. Diverso da zero significa che qualcosa e` andato storto.' },
+        { name: 'durationMs', type: 'number', desc: 'Quanto e` durata l\'esecuzione.' },
+        { name: 'files', type: 'array', desc: 'I file che lo script ha lasciato nella cartella di lavoro.' },
+        { name: 'allowedNetwork', type: 'boolean', desc: 'Se allo script era concesso l\'accesso alla rete.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.1.0',
   },
@@ -166,6 +177,13 @@ export const runJsNode: NodeModule = {
     ],
     // n8n-speak: "code node"/"function" devono trovare questo nodo (bug 2026-06-12).
     searchAliases: ['code', 'function', 'script'],
+    outputContract: {
+      notes: 'Quello che il codice restituisce sta in `result`, NON al primo livello: a valle si legge `{{$node.<id>.json.result.<campo>}}`. Un `return` dimenticato lascia `result` indefinito e il nodo riesce lo stesso.',
+      fields: [
+        { name: 'result', type: 'object|array|string|number|null', desc: 'Quello che il codice ha restituito, con la forma che gli ha dato.' },
+        { name: 'durationMs', type: 'number', desc: 'Quanto e` durata l\'esecuzione.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

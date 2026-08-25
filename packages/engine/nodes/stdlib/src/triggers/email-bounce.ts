@@ -121,6 +121,32 @@ export const emailBounceTriggerNode: NodeModule = {
         help: 'tls = porta 993 (raccomandato). starttls = 143. plain = nessuna cifratura.',
       },
     ],
+    outputContract: {
+      notes:
+        'Il messaggio di rimbalzo come lo consegna il poller IMAP, più il rapporto ' +
+        'estratto dal DSN. I messaggi che non sono rimbalzi non avviano il workflow.',
+      fields: [
+        { name: 'uid', type: 'number', desc: 'L’UID IMAP del messaggio di rimbalzo.' },
+        { name: 'messageId', type: 'string', desc: 'Il Message-ID del rimbalzo.' },
+        { name: 'subject', type: 'string', desc: 'L’oggetto, di solito generato dal server.' },
+        { name: 'from', type: 'string', desc: 'Chi ha mandato il rimbalzo (spesso MAILER-DAEMON).' },
+        { name: 'to', type: 'string', desc: 'La casella che lo ha ricevuto.' },
+        { name: 'date', type: 'string', desc: 'La data del rimbalzo, in formato ISO 8601.' },
+        { name: 'text', type: 'string', desc: 'Il corpo testuale del rapporto.' },
+        { name: 'html', type: 'string', desc: 'Il corpo HTML, se c’è.' },
+        { name: 'attachments', type: 'array', desc: 'Gli allegati del DSN, di rado utili.' },
+        { name: 'attachmentCount', type: 'number', desc: 'Quanti allegati.' },
+        { name: 'headers', type: 'object', desc: 'Gli header del rimbalzo.' },
+        {
+          name: 'bounce',
+          type: 'object',
+          desc:
+            'Il rapporto estratto: failedRecipients (array), bounceType (hard|soft|unknown), ' +
+            'status, action, diagnosticCode, originalMessageId, reportingMta. ' +
+            'Su `bounce.bounceType` si dirama fra indirizzo morto e problema temporaneo.',
+        },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

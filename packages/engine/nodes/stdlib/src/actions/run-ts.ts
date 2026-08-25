@@ -75,6 +75,13 @@ export const runTsNode: NodeModule = {
     ],
     // n8n-speak + ricerca: "typescript"/"ts"/"code" devono trovare questo nodo.
     searchAliases: ['typescript', 'ts', 'code', 'function', 'script'],
+    outputContract: {
+      notes: 'Quello che il codice restituisce sta in `result`, NON al primo livello: a valle si legge `{{$node.<id>.json.result.<campo>}}`.',
+      fields: [
+        { name: 'result', type: 'object|array|string|number|null', desc: 'Quello che il codice ha restituito, con la forma che gli ha dato.' },
+        { name: 'durationMs', type: 'number', desc: 'Quanto e` durata l\'esecuzione.' },
+      ],
+    },
     vendor: 'flowforge',
     version: '1.0.0',
   },

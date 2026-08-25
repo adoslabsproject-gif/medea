@@ -255,6 +255,13 @@ export const emailSendTrackedBatchNodeDef: NodeDef = {
     },
   ],
 
+  outputContract: {
+    notes: 'Il nodo riesce anche se ALCUNI invii falliscono: l\'esito di ciascuno sta in `results`, e il conto complessivo in `stats`. Dare per buono l\'intero invio senza guardarli e` il modo tipico di non accorgersi di una campagna a meta`.',
+    fields: [
+      { name: 'stats', type: 'object', desc: 'Il conto complessivo: quanti inviati, quanti falliti.' },
+      { name: 'results', type: 'array', desc: 'L\'esito di ogni singolo invio, destinatario per destinatario.' },
+    ],
+  },
   vendor: 'flowforge',
   version: '1.0.0',
   cost: { typicalLatencyMs: 90_000 },

@@ -49,6 +49,18 @@ export {
   type EmailSendTrackedConfig,
 } from './actions/email_send_tracked/index.js';
 export {
+  emailMoveNode,
+  emailMoveNodeDef,
+  EmailMoveConfigSchema,
+  type EmailMoveConfig,
+} from './actions/email_move/index.js';
+export {
+  contactLookupNode,
+  contactLookupNodeDef,
+  ContactLookupConfigSchema,
+  type ContactLookupConfig,
+} from './actions/contact_lookup/index.js';
+export {
   emailSendTrackedBatchNode,
   emailSendTrackedBatchNodeDef,
   EmailSendTrackedBatchConfigSchema,
@@ -174,7 +186,7 @@ export {
 } from './seo-analytics/index.js';
 
 // Streammy: tutti i nodi streammy_* + executors sono stati RIMOSSI dallo
-// stdlib pubblico (2026-06-08). Tornano come custom_nodes privati senza1dio
+// stdlib pubblico (2026-06-08). Tornano come custom_nodes privati
 // via Fase 6 (marketplace custom node editor).
 
 // Studio commercialista (Sprint 2026-06-04 v2) — Odoo / WhatsApp / PEC / triage
@@ -199,7 +211,7 @@ export * from './lib/email/cleaner.js';
 export * from './lib/email/triage-commercialista.js';
 export * from './lib/safe-user-regex.js';
 // lib/streammy — RIMOSSO (2026-06-08). Materiale moved to private-owner
-// stash, sara\` ri-importato come parte dei custom_nodes privati senza1dio.
+// stash, sara\` ri-importato come parte dei custom_nodes privati.
 
 // Shared condition-rules evaluator — used by engine strategies (logic_if/switch).
 export {
