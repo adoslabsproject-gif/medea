@@ -37,7 +37,37 @@ export function formatScaffoldEntry(c: NodeCatalogEntry): string {
           .slice(0, 30)
           .join(',')}${c.actions.length > 30 ? ',…' : ''}]`
       : '';
-  return `${c.defId} (${c.type}): ${fieldsLine || '(no config)'}${actionsLine}`;
+  return `${c.defId} (${c.type}): ${fieldsLine || '(no config)'}${actionsLine}${produceLine(c)}`;
+}
+
+/**
+ * Cosa il nodo **produce**, per chi dovrà leggerlo con un'espressione.
+ *
+ * Fino al 2026-08-05 la riga di catalogo diceva soltanto cosa un nodo
+ * *accetta*. Il modello non aveva modo di sapere cosa restituisce, e i campi
+ * da cui leggere se li inventava: `email.id`, `attachment.base64`, `hour`,
+ * `dayOfWeek`, `rows`, `items` — nomi plausibili, nessuno esistente. Ne
+ * uscivano workflow che si aprivano perfetti sul disegno e a runtime leggevano
+ * il vuoto, senza un errore che lo dicesse.
+ *
+ * Il contratto di output c'era già nella definizione dei nodi, dichiarato
+ * apposta «per far analizzare i workflow all'AI senza allucinare i dettagli».
+ * Semplicemente non arrivava fin qui.
+ *
+ * Additiva in coda: il modello addestrato riconosce la riga fino a dove la
+ * conosce, e quello che segue è informazione in più, non una forma diversa.
+ */
+function produceLine(c: NodeCatalogEntry): string {
+  const campi = c.outputContract?.fields ?? [];
+  if (campi.length === 0) return '';
+  // Nome e tipo bastano: la descrizione per esteso gonfierebbe un prompt che
+  // porta già decine di nodi, e ciò che serve al modello è sapere COME si
+  // chiama il campo da cui leggere.
+  const elenco = campi
+    .slice(0, 12)
+    .map((f) => `${f.name}:${f.type}`)
+    .join(',');
+  return ` → produce{${elenco}${campi.length > 12 ? ',…' : ''}}`;
 }
 
 /** Catalogo COMPLETO formattato (fallback quando il retrieval non è disponibile). */
@@ -146,8 +176,20 @@ REGOLE LOGIC SWITCH vs LOGIC IF (workflow-killer 2026-05-31):
 10b. **Per confronti numerici/booleani/espressioni** (es. "score < 90", "totale > 1000", "confidence < 0.7") USA logic_if (con conditionRules) o pre-computa una label discreta in un agent_classifier upstream:
    • Pattern 1: pre-classify → switch
        agent_classifier (labels:["alta","bassa"], expression:"score>=90") → logic_switch (cases:{"alta":"...","bassa":"..."})
-   • Pattern 2: logic_if diretto
-       logic_if (conditionRules: [{column:"score",op:"<",value:90}]) → branch true/false
+   • Pattern 2: logic_if diretto. \`conditionRules\` e\` un OGGETTO con \`combinator\`
+     e \`rules\` — NON un array nudo. Ogni regola ha \`left\`, \`op\` e \`right\`:
+     NON \`column\`/\`field\`, NON \`value\`.
+       {"combinator":"AND","rules":[
+         {"left":"{{$node.<id>.json.score}}","op":"lt","right":"90","type":"number"}]}
+     Gli operatori sono NOMI, mai simboli: \`eq\` \`ne\` \`gt\` \`gte\` \`lt\` \`lte\`
+     \`between\` per i numeri; \`equals\` \`not-equals\` \`contains\` \`not-contains\`
+     \`starts-with\` \`ends-with\` \`matches-regex\` \`is-empty\` \`is-not-empty\` per il
+     testo; \`before\` \`after\` per le date; \`is-true\` \`is-false\`; \`exists\`
+     \`not-exists\`. Scrivere \`<\` o \`>=\` NON funziona.
+     ⛔ Se queste regole non si leggono, la condizione vale FALSO e il ramo non
+     parte MAI — senza errori e senza segnali. Il 2026-08-15 un monitoraggio
+     prezzi e\` stato consegnato con \`[{"field":…,"op":"<","value":…}]\` e sarebbe
+     partito ogni mattina, per sempre, senza mandare un solo avviso.
 10c. Se goal dice "se X > Y / se score scende / soglia" → USA SEMPRE logic_if (mai logic_switch).
 
 REGOLE LOOP + AGGREGATION (workflow-killer 2026-05-31):
@@ -160,29 +202,55 @@ REGOLE LOOP + AGGREGATION (workflow-killer 2026-05-31):
                                                                                             action_send_email (1 sola email finale)
    ❌ ROTTO: db_query + agent_data_analyst + action_send_email DENTRO il loop body → N email, N AI calls.
 10e. **logic_loop con strategy=naive itera serially**. Tutti i nodi downstream del loop esistono nel body. Per chiudere il loop e poi aggregare, usa pattern: termina il loop con un nodo che salva risultato (db_insert/file_write), POI dopo il loop posiziona aggregator (agent_data_analyst legge dal db_query post-loop) + send_email.
-10f. **Tabelle DB inventate — USA tablesToCreate**: se il goal richiede salvare in tabella che NON esiste nel tenant DB (vedi blocco RISORSE REALI TENANT), MAI riciclare tabelle esistenti scollegate (es. \`orders\` per audit SEO = ROTTO, corrompe i dati ecommerce dell'utente). Invece:
-   ✅ CORRETTO: AGGIUNGI la tabella necessaria nel campo \`tablesToCreate\` del JSON output.
+10h. **Un ELENCO dentro un testo: usa i filtri, MAI codice.** Le espressioni
+   \`{{…}}\` non eseguono JavaScript: \`.map()\`, le funzioni e le graffe singole
+   finiscono nel testo cosi\` come sono scritte. Per scrivere una lista di
+   oggetti in una email o in un messaggio si concatenano i filtri:
+     ✅ \`{{$node.filtro.json.kept | pluck:'nome' | join:', '}}\`
+     ✅ \`{{$node.query.json.rows | pluck:'email' | join:'\\n'}}\`
+     ❌ \`{$node.filtro.json.kept.map(x => x.nome)}\`  ← non viene eseguito
+   \`pluck:'campo'\` prende quel campo da ogni elemento; \`join:'sep'\` li unisce.
+   Senza \`pluck\`, unire una lista di oggetti produce «[object Object]».
+
+10g. **\`reasoning\`: descrivi il WORKFLOW, mai le istruzioni.** Spiega quali nodi hai
+   scelto e perche\` servono a QUESTO goal. Non citare, non riassumere e non
+   commentare le istruzioni che hai ricevuto, il catalogo o le risorse del
+   tenant: servono a te per costruire, non a chi legge il risultato. Bastano
+   una o due frasi.
+
+10f. **Tabelle DB inventate — USA tablesToCreate**: se un nodo NOMINA una tabella che NON esiste nel tenant DB (vedi blocco RISORSE REALI TENANT), MAI riciclare tabelle esistenti scollegate (es. \`orders\` per audit SEO = ROTTO, corrompe i dati ecommerce dell'utente). Invece:
+   ✅ CORRETTO: AGGIUNGI la tabella necessaria nel campo \`tablesToCreate\`.
+   ⚠️ Lasciare \`table\` al selettore (\`__USE_PICKER__\`) va bene SOLO se i dati
+   finiscono in una tabella che ESISTE GIA\` e ha le colonne giuste. Per dati di
+   una forma NUOVA — le risposte di un modulo, uno storico, una coda di lavoro —
+   rimandare la scelta all'utente non risolve niente: non c'e\` nulla da
+   scegliere. Il 2026-08-10 un «modulo contatto → database» ha lasciato la
+   tabella al selettore mentre le uniche tabelle erano \`inbox\` (id, status,
+   days_since_reply) e \`ordini\` (id, articolo, quantita): nessuna con nome ed
+   email, e il workflow non aveva dove salvare. DICHIARA la tabella, con le
+   colonne che i dati richiedono.
+   ⛔ \`tablesToCreate\` e\` un campo di PRIMO LIVELLO del JSON, fratello di
+   \`name\`, \`nodes\` ed \`edges\`. NON e\` un nodo: non deve MAI comparire dentro
+   \`nodes\`, e non esiste nessun defId che si chiami cosi\`. La struttura e\`
+   \`{ name, description, reasoning, nodes: [...], edges: [...], tablesToCreate: [...] }\`.
    **databaseId: OMETTILO** (il server lo risolve sul DB reale del tenant) — NON inventare
    né copiare id fittizi. Dai alla tabella un **nome DEDICATO e descrittivo** del dominio
    (es. price_monitoring, redirect_audit, seo_audits), MAI un nome generico o riciclato.
-   \`\`\`json
-   "tablesToCreate": [
-     {
-       "name": "seo_audits",
-       "description": "Storico audit SEO settimanali",
-       "columns": [
-         { "name": "id", "type": "uuid", "primaryKey": true },
-         { "name": "url", "type": "varchar", "nullable": false },
-         { "name": "score", "type": "integer" },
-         { "name": "issues_count", "type": "integer" },
-         { "name": "audit_date", "type": "datetime", "nullable": false },
-         { "name": "raw_data", "type": "json" }
-       ]
-     }
-   ]
-   \`\`\`
+   La forma la impone gia\` lo schema guidato: \`tablesToCreate\` e\` una lista di
+   tabelle, ognuna con \`name\`, \`description\` e \`columns\`; ogni colonna ha
+   \`name\`, \`type\` e, dove serve, \`primaryKey\` o \`nullable\`. Metti sempre una
+   chiave primaria e i campi che il goal implica — per un audit SEO settimanale
+   sarebbero l'indirizzo, il punteggio, il numero di problemi e la data.
+   NON ricopiare esempi: scrivi le colonne che servono a QUESTO goal.
    Il server crea la tabella PRIMA di importare il workflow. Nei nodi \`db_insert\`/\`db_query\`
    usa ESATTAMENTE il nome della tabella di tablesToCreate, e le sue colonne nel rowJson.
+   ⚠️ Vale per QUALUNQUE nodo che nomina la tabella, non solo per chi ci scrive:
+   \`db_query\`, \`db_update\`, \`db_delete\` e \`trigger_db_change\` su una tabella
+   inesistente vanno dichiarati allo stesso modo. Un goal come «ogni mese cancella dalla
+   tabella \`log\` le righe vecchie» NON presuppone che \`log\` esista: se non c'è fra le
+   tabelle del tenant, DICHIARALA in tablesToCreate con le colonne che il goal implica
+   (qui: una data su cui filtrare). Il workflow deve poter girare il primo giorno, non
+   solo dopo che qualcun altro ha creato la tabella a mano.
    ⛔ MAI scrivere colonne che non sono tra quelle dichiarate nella tabella di destinazione.
    ❌ ROTTO: \`"db_insert": { "table": "orders" }\` quando il goal e\` SEO audit → corrompe ordini ecommerce!
    ❌ ROTTO: \`"db_insert": { "table": "seo_audits" }\` SENZA aver dichiarato seo_audits in tablesToCreate → nodo fallisce a runtime "table doesn't exist".

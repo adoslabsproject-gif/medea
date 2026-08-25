@@ -111,6 +111,11 @@ export const GOLDEN_EXAMPLES: readonly GoldenExample[] = [
           id: 'filtra_attivi',
           defId: 'action_filter',
           config: {
+            // `action_http` produce UN oggetto — `status`, `headers`, `body` —
+            // non un elenco. Senza questa riga il filtro riceveva quell'oggetto,
+            // ripiegava su zero elementi, e il report avrebbe detto «Elementi
+            // attivi: 0» ogni mattina. L'elenco sta dentro `body`, e va detto.
+            items: '{{$node.scarica_dati.json.body}}',
             conditions:
               '{"combinator":"AND","rules":[{"field":"status","op":"equals","value":"active"}]}',
           },

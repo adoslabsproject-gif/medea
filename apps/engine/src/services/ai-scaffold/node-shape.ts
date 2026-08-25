@@ -53,7 +53,6 @@ const ARRAY_PRODUCERS: ReadonlySet<string> = new Set([
   'action_email_harvest',
   // database
   'db_query',
-  'db_subscribe',
   // generic
   'action_paginate',
   'action_distinct',

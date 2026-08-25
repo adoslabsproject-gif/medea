@@ -312,6 +312,7 @@ function assertSafeExpression(expression: string): void {
  *   x | replace:'a','b'      → String(x).replaceAll('a', 'b')
  *   x | slice:0,10           → String(x).slice(0, 10) (anche array)
  *   x | join:','             → Array(x).join(',') (skip se non array)
+ *   x | pluck:'nome'         → x.map(o => o.nome) (skip se non array)
  *
  * Le pipe sono left-associative e si concatenano: `x | trim | upper`.
  *
@@ -384,7 +385,8 @@ type FilterName =
   | 'date'
   | 'replace'
   | 'slice'
-  | 'join';
+  | 'join'
+  | 'pluck';
 
 interface PipeScanResult {
   text: string;
@@ -407,7 +409,7 @@ function applyOnePipe(src: string): PipeScanResult {
       const rest = src.slice(i + 1);
       // Filter name + optional args (string-aware to allow commas dentro stringhe).
       const m =
-        /^\s*(upper|lower|trim|length|json|default|round|currency|date|replace|slice|join)\b/.exec(
+        /^\s*(upper|lower|trim|length|json|default|round|currency|date|replace|slice|join|pluck)\b/.exec(
           rest,
         );
       if (!m) continue;
@@ -521,6 +523,34 @@ function wrapFilter(filter: FilterName, lhs: string, args: string[]): string {
     case 'join': {
       const sep = args[0] ?? "','";
       return `(Array.isArray(${lhs})?${lhs}.join(${sep}):String(${lhs} ?? ''))`;
+    }
+    /**
+     * pluck:'campo' — da una lista di oggetti alla lista dei loro campi.
+     *
+     * È il pezzo che mancava per scrivere un elenco in una email. `join` da
+     * solo, su una lista di oggetti, produce `[object Object]`: leggibile
+     * quanto niente. Senza un modo per estrarre un campo, chi genera i
+     * workflow ripiega sull'unica cosa che conosce — `.map()` dentro le
+     * graffe — che l'interprete non esegue e che finisce nel testo così com'è
+     * scritta. È successo il 2026-08-05 e di nuovo il 2026-08-06, con due
+     * modelli e due obiettivi diversi: quando lo stesso errore torna uguale,
+     * la causa non è chi lo commette.
+     *
+     * Si compone con quello che c'è già:
+     *   {{$node.filtro.json.kept | pluck:'nome' | join:', '}}
+     *
+     * I valori assenti diventano stringa vuota invece di «undefined»: in una
+     * email è la differenza fra una riga vuota e una riga sbagliata.
+     */
+    case 'pluck': {
+      const campo = args[0] ?? "''";
+      return (
+        `(Array.isArray(${lhs})?${lhs}.map((__o)=>` +
+        // Su ciò che non è una lista si torna stringa vuota, come fa `join`:
+        // una lista vuota finirebbe nel testo come «[]», che in una email è
+        // peggio di niente.
+        `(__o==null?'':(__o[${campo}] ?? ''))):'')`
+      );
     }
   }
 }

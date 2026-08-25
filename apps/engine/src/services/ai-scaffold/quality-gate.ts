@@ -36,6 +36,10 @@ import {
   isLoopBodyPassthrough,
 } from '@/services/ai-scaffold/node-shape.js';
 import { detectCodeLanguage, LANG_FOR_CODE_NODE } from '@/services/ai-scaffold/code-lang.js';
+import { checkEspressioneNuda } from '@/services/ai-scaffold/rule-espressione-nuda.js';
+import { checkNienteDaElaborare } from '@/services/ai-scaffold/rule-niente-da-elaborare.js';
+import { checkListaCheNonArriva } from '@/services/ai-scaffold/rule-lista-che-non-arriva.js';
+import { checkRegoleCondizione } from '@/services/ai-scaffold/rule-regole-condizione.js';
 import { runSemanticRules } from '@/services/ai-scaffold/semantic-rules.js';
 
 export type QualitySeverity = 'critical' | 'medium' | 'info';
@@ -61,7 +65,15 @@ export type QualityCode =
   | 'LOOKUP_WITHOUT_BRANCH'
   | 'TRIGGER_WITHOUT_ACTION'
   | 'AUDIT_NOT_TERMINAL'
-  | 'SENSITIVE_HARDCODED';
+  | 'SENSITIVE_HARDCODED'
+  // ── Espressioni (rule-espressione-nuda.ts) ─────────────────────────────
+  | 'ESPRESSIONE_NON_RISOLVIBILE'
+  // ── Flusso senza materia (rule-niente-da-elaborare.ts) ─────────────────
+  | 'NIENTE_DA_ELABORARE'
+  // ── Condizioni che non si valutano (rule-regole-condizione.ts) ─────────
+  | 'REGOLE_CONDIZIONE_MALFORMATE'
+  // ── Un filtro su ciò che lista non è (rule-lista-che-non-arriva.ts) ────
+  | 'LISTA_CHE_NON_ARRIVA';
 
 export interface QualityIssue {
   severity: QualitySeverity;
@@ -830,7 +842,6 @@ const DB_NODES_WITH_TABLE: ReadonlySet<string> = new Set([
   'db_insert_batch',
   'db_update',
   'db_delete',
-  'db_subscribe',
 ]);
 function checkDbTableNotInSchema(input: QualityGateInput): QualityIssue[] {
   const issues: QualityIssue[] = [];
@@ -864,7 +875,15 @@ function checkDbTableNotInSchema(input: QualityGateInput): QualityIssue[] {
             .map((t) => `"${t}"`)
             .join(', ') || '(nessuna)'
         }]. ` +
-        `Scegli una tabella esistente OPPURE crea prima la tabella via create_table.`,
+        // Il rimedio deve nominare uno strumento che chi legge POSSIEDE.
+        // Fino al 2026-08-06 questo messaggio diceva soltanto «crea prima la
+        // tabella via create_table»: uno strumento del percorso ad agente, che
+        // nel percorso a scrittura unica NON esiste. Il modello riceveva
+        // un'istruzione ineseguibile, i tentativi si consumavano tutti sullo
+        // stesso muro, e l'utente vedeva il wizard fallire senza capire perché.
+        `Rimedio: DICHIARA la tabella in \`tablesToCreate\` nel JSON che stai producendo ` +
+        `(il server la crea prima di importare il workflow), oppure usa una tabella ` +
+        `esistente. Se stai lavorando con gli strumenti, l'equivalente è \`create_table\`.`,
     });
   }
   return issues;
@@ -984,8 +1003,9 @@ function checkDbColumnNotInSchema(input: QualityGateInput): QualityIssue[] {
           `che NON esistono nella tabella "${table}". Colonne disponibili: [${Array.from(cols)
             .map((c) => `"${c}"`)
             .join(', ')}]. ` +
-          `A runtime: errore "no such column" (+ eventuali NOT NULL violate). Usa SOLO le colonne esistenti, ` +
-          `oppure aggiungile prima via create_table/add_column.`,
+          `A runtime: errore "no such column" (+ eventuali NOT NULL violate). Usa SOLO le colonne ` +
+          `esistenti, oppure dichiara la tabella con le colonne che ti servono in \`tablesToCreate\` ` +
+          `nel JSON che stai producendo. Con gli strumenti, l'equivalente è create_table/add_column.`,
       });
     }
   }
@@ -1080,6 +1100,18 @@ export function runQualityGate(input: QualityGateInput): QualityGateResult {
     ...checkCodeNodeLangMismatch(input),
     ...checkObsoleteModel(input),
     ...runSemanticRules(input),
+    // Un campo scritto senza `$node.` davanti: il nome è giusto, ma a runtime
+    // vale stringa vuota e nessuno lo dice. Rifiutare qui significa che il
+    // modello lo riscrive da sé, invece di consegnare il difetto all'utente.
+    ...checkEspressioneNuda(input),
+    // Un nodo che elabora un contenuto che non gli arriva mai: il grafo è
+    // connesso e i campi ci sono, ma non c'è niente su cui lavorare.
+    ...checkNienteDaElaborare(input),
+    // Una condizione che non si legge vale FALSO: il ramo non parte mai, e
+    // non lo dice nessuno. Rifiutare qui costa un giro di rigenerazione;
+    // lasciarla passare costa un'automazione che gira a vuoto per mesi.
+    ...checkRegoleCondizione(input),
+    ...checkListaCheNonArriva(input),
   ];
   // Stable sort by severity rank then nodeId for deterministic output.
   const rank: Record<QualitySeverity, number> = { critical: 0, medium: 1, info: 2 };

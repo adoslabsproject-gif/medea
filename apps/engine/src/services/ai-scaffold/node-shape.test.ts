@@ -19,7 +19,6 @@ describe('getNodeShape — array producers', () => {
     'action_sitemap_crawler',
     'action_recursive_spider',
     'db_query',
-    'db_subscribe',
     'action_link_audit',
     'action_streammy_search_multichannel',
     'action_streammy_catalog',

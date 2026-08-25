@@ -68,6 +68,30 @@ export const ENFORCED_CAPABILITIES: readonly CapabilitySpec[] = [
       /(gener\w*\s+(un\s+)?pdf|crea\w*\s+(un\s+)?pdf|report\s+pdf|fattura\s+pdf|documento\s+pdf|esport\w*\s+(in\s+)?pdf)/i,
     satisfiedBy: /^action_pdf_generate$/,
   },
+  {
+    /**
+     * «dimmi», «avvisami», «fammi sapere».
+     *
+     * Chiesto due volte in questa sessione e disatteso due volte: il workflow
+     * componeva il messaggio con un `action_text` e poi non lo consegnava a
+     * nessuno. Il flusso finiva in silenzio — nessun errore, nessuna email,
+     * e l'utente che aspettava una risposta mai arrivata.
+     *
+     * `action_text` NON soddisfa: comporre non è avvisare. Serve un nodo che
+     * porti il messaggio a una persona.
+     *
+     * I termini sono all'imperativo e rivolti a chi scrive — «dimmi», non
+     * «notifica» — perché «notifica» come sostantivo compare in mille contesti
+     * e chiederebbe un canale dove non serve.
+     */
+    id: 'notifica',
+    label: 'avvisare l’utente (il messaggio deve essere CONSEGNATO, non solo composto)',
+    suggestNode: 'action_send_email',
+    promptKeywords:
+      /(dimmi|dammi\s+conferma|fammi\s+sapere|avvisa(mi|rmi)?\b|notifica(mi|rmi)\b|mandami|inviami|segnala(mi|rmi)\b|comunicami|informami|tienimi\s+aggiornat)/i,
+    satisfiedBy:
+      /(send_email|email_send_tracked|community_slack|community_telegram|community_discord|community_twilio|community_sendgrid|integration_slack_post|integration_telegram_send|whatsapp_send|webhook_respond|api_response)/,
+  },
 ];
 
 export interface MissingCapability {

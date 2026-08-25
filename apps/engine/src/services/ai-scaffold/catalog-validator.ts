@@ -44,6 +44,16 @@ export type CatalogViolation =
   | { kind: 'invalid_action'; nodeId: string; defId: string; action: string; allowed: string[] }
   | { kind: 'missing_required'; nodeId: string; defId: string; key: string };
 
+/**
+ * Un campo che chiede il CONSENSO di una persona, non una configurazione.
+ *
+ * Il prefisso è la convenzione: oggi c'è solo `confirmDelete`, e chi ne
+ * aggiungerà un secondo lo chiamerà allo stesso modo.
+ */
+export function eConsensoUmano(key: string): boolean {
+  return /^confirm/i.test(key);
+}
+
 /** Un valore di config "presente"? (assente/null/'' = mancante per i required). */
 function isMissing(value: unknown): boolean {
   return value === undefined || value === null || value === '';
@@ -93,8 +103,20 @@ function validateNode(node: ScaffoldNodeLike, spec: NodeConfigSpec, out: Catalog
   }
 
   // 4. Required: ogni campo required (mai i secret) deve essere presente.
+  //
+  // Tranne le CONFERME UMANE. `db_delete.confirmDelete` è una spunta che dice
+  // «so che questo cancella dei dati»: non è un valore che si deduca dal goal,
+  // è un'assunzione di responsabilità, e un generatore non ha il diritto di
+  // darla al posto di chi userà il workflow.
+  //
+  // Pretenderla rendeva `db_delete` IMPOSSIBILE da generare: il 2026-08-06
+  // «ogni primo del mese cancella dalla tabella log le righe più vecchie di
+  // novanta giorni» ha bruciato tutti i tentativi lì, con tutto il resto già a
+  // posto. Una pulizia periodica è una richiesta ordinaria, e il wizard non
+  // poteva soddisfarla in nessun caso. La conferma la chiede l'editor a chi
+  // legge, e senza non si attiva niente.
   for (const keySpec of spec.keys.values()) {
-    if (keySpec.required && isMissing(config[keySpec.key])) {
+    if (keySpec.required && isMissing(config[keySpec.key]) && !eConsensoUmano(keySpec.key)) {
       out.push({ kind: 'missing_required', nodeId: node.id, defId: node.defId, key: keySpec.key });
     }
   }
