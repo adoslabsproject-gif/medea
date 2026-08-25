@@ -13,7 +13,17 @@ import type { TraceEntry } from './types';
 const LABELS: Record<string, string> = {
   '(risposta a parole)': 'Ha risposto a parole invece di usare uno strumento',
   analyze_goal: 'Scompone la richiesta',
+  // Il motore racconta il proprio lavoro con questi nomi. Sono suoi, non
+  // nostri: arrivano dal filo, e vanno tradotti qui come tutti gli altri.
+  motore: 'Il motore non se ne occupa',
+  singleshot_queued: 'In coda',
+  singleshot_analyze: 'Studia la richiesta',
   singleshot_generate: 'Scrive il workflow',
+  singleshot_validate: 'Verifica il workflow',
+  propose_plan: 'Propone il piano',
+  connect_nodes: 'Collega',
+  update_node: 'Corregge un nodo',
+  finalize_workflow: 'Consegna',
   search_nodes: 'Cerca il nodo giusto',
   get_node_schema: 'Legge come si configura',
   add_node: 'Aggiunge un nodo',

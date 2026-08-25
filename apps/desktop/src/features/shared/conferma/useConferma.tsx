@@ -12,9 +12,14 @@
  *
  *     const { chiedi, dialogo } = useConferma();
  *     …
- *     if (!(await chiedi({ titolo: 'Eliminare?', pericoloso: true }))) return;
+ *     const { ok } = await chiedi({ titolo: 'Eliminare?', pericoloso: true });
+ *     if (!ok) return;
  *
  * e `{dialogo}` va reso da qualche parte nel componente.
+ *
+ * La risposta è un OGGETTO e non un booleano perché a una conferma può
+ * accompagnarsi una scelta — «elimina anche le tabelle» — e legarla a una
+ * seconda finestra significherebbe due domande per una decisione sola.
  *
  * @module features/shared/conferma/useConferma
  */
@@ -32,32 +37,55 @@ export interface RichiestaConferma {
   conferma?: string;
   /** Colora di rosso il pulsante: per quello che non si può disfare. */
   pericoloso?: boolean;
+  /**
+   * Una scelta che si fa INSIEME alla conferma, non prima e non dopo.
+   *
+   * Serve quando l'azione ha una parte facoltativa che dipende dalla stessa
+   * decisione — «elimina il workflow, e con lui le sue tabelle». Spenta di
+   * suo: quello che porta via dei dati non si sceglie per distrazione.
+   */
+  spunta?: { etichetta: string; dettaglio?: string; predefinito?: boolean };
+}
+
+/** La risposta: se ha confermato, e com'era la spunta quando l'ha fatto. */
+export interface EsitoConferma {
+  ok: boolean;
+  /** Vero solo se la spunta era offerta ED è stata segnata. */
+  spuntato: boolean;
 }
 
 interface Aperta extends RichiestaConferma {
-  risolvi: (risposta: boolean) => void;
+  risolvi: (risposta: EsitoConferma) => void;
 }
 
 export function useConferma(): {
-  chiedi: (richiesta: RichiestaConferma) => Promise<boolean>;
+  chiedi: (richiesta: RichiestaConferma) => Promise<EsitoConferma>;
   dialogo: ReactNode;
 } {
   const [aperta, setAperta] = useState<Aperta | null>(null);
+  const [spuntato, setSpuntato] = useState(false);
   // La promessa in corso: serve a rispondere «no» se il dialogo viene chiuso
   // in un modo che non passa dai pulsanti — Esc, clic fuori.
-  const inCorso = useRef<((risposta: boolean) => void) | null>(null);
+  const inCorso = useRef<((risposta: EsitoConferma) => void) | null>(null);
+  // Letto al momento della risposta: il gestore del pulsante nasce con la
+  // chiusura sul valore del primo render, e senza questo riferirebbe sempre
+  // «non spuntato» qualunque cosa l'utente abbia fatto.
+  const spuntaCorrente = useRef(false);
 
-  const chiudi = useCallback((risposta: boolean) => {
-    inCorso.current?.(risposta);
+  const chiudi = useCallback((ok: boolean) => {
+    inCorso.current?.({ ok, spuntato: ok && spuntaCorrente.current });
     inCorso.current = null;
     setAperta(null);
   }, []);
 
-  const chiedi = useCallback((richiesta: RichiestaConferma): Promise<boolean> => {
+  const chiedi = useCallback((richiesta: RichiestaConferma): Promise<EsitoConferma> => {
     // Una domanda alla volta: se ne arriva un'altra mentre la prima è aperta,
     // la prima si chiude con un no. Meglio che sovrapporle.
-    inCorso.current?.(false);
-    return new Promise<boolean>((risolvi) => {
+    inCorso.current?.({ ok: false, spuntato: false });
+    const partenza = richiesta.spunta?.predefinito ?? false;
+    spuntaCorrente.current = partenza;
+    setSpuntato(partenza);
+    return new Promise<EsitoConferma>((risolvi) => {
       inCorso.current = risolvi;
       setAperta({ ...richiesta, risolvi });
     });
@@ -95,7 +123,24 @@ export function useConferma(): {
         </div>
       }
     >
-      {null}
+      {aperta?.spunta ? (
+        <label className={styles.spunta}>
+          <input
+            type="checkbox"
+            checked={spuntato}
+            onChange={(e) => {
+              spuntaCorrente.current = e.target.checked;
+              setSpuntato(e.target.checked);
+            }}
+          />
+          <span>
+            <span className={styles.spuntaEtichetta}>{aperta.spunta.etichetta}</span>
+            {aperta.spunta.dettaglio !== undefined && (
+              <span className={styles.spuntaDettaglio}>{aperta.spunta.dettaglio}</span>
+            )}
+          </span>
+        </label>
+      ) : null}
     </Dialog>
   );
 

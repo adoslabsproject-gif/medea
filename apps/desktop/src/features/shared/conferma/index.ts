@@ -1,1 +1,1 @@
-export { useConferma, type RichiestaConferma } from './useConferma';
+export { useConferma, type EsitoConferma, type RichiestaConferma } from './useConferma';

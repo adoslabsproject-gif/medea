@@ -10,6 +10,7 @@
 import { useEffect } from 'react';
 
 import { activeProvider } from '../../ai/connection';
+import type { PlannedTable } from '../runtime';
 import { AGENT_MAX_STEPS } from '../scaffold';
 import { riscaldaModello } from '../scaffold';
 import type { Workflow } from '../types';
@@ -22,8 +23,16 @@ import styles from './WizardModal.module.css';
 
 interface Props {
   onClose: () => void;
-  /** Il workflow costruito, da aprire nell'editor. */
-  onImport: (workflow: Workflow) => void;
+  /**
+   * Il workflow costruito, da aprire nell'editor, con le tabelle che dà per
+   * esistenti.
+   *
+   * Le tabelle viaggiano CON il workflow e non dopo: adottare l'uno senza le
+   * altre lascia un'automazione che fallisce alla prima esecuzione con un «no
+   * such table», e in DB Studio niente da gestire perché niente è stato
+   * creato.
+   */
+  onImport: (workflow: Workflow, tabelle: readonly PlannedTable[]) => void;
 }
 
 const TITLES: Record<string, string> = {
@@ -94,7 +103,7 @@ export function WizardModal({ onClose, onImport }: Props) {
               trace={wizard.trace}
               onRetry={wizard.retry}
               onImport={() => {
-                if (wizard.result) onImport(wizard.result);
+                if (wizard.result) onImport(wizard.result, wizard.tables);
               }}
             />
           )}

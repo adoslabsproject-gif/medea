@@ -39,3 +39,35 @@
   color: var(--color-text-inverted);
   font-weight: var(--font-weight-medium);
 }
+
+/* La scelta che accompagna la conferma: sta dentro il corpo del dialogo, non
+   fra i pulsanti, perché è una decisione e non un'azione. */
+.spunta {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  cursor: pointer;
+}
+
+.spunta input {
+  margin-top: 2px;
+  flex: none;
+  cursor: pointer;
+}
+
+.spuntaEtichetta {
+  display: block;
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.spuntaDettaglio {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}

@@ -13,10 +13,10 @@ import { useEffect, useMemo, useState } from 'react';
 
 import {
   createTables,
+  databaseDelWorkflow,
   existingTables,
   missingTables,
   planTables,
-  workingDatabase,
 } from '../runtime';
 import type { PlannedTable } from '../runtime';
 import type { Workflow } from '../types';
@@ -51,6 +51,12 @@ export function TablesBanner({ workflow }: Props) {
       setState({ kind: 'none' });
       return;
     }
+    // Senza id il workflow non ha ancora un archivio suo: le tabelle nascono
+    // al salvataggio, e chiederlo prima creerebbe un archivio senza padrone.
+    if (!workflow.id) {
+      setState({ kind: 'none' });
+      return;
+    }
 
     // Letto da una funzione: altrimenti il compilatore dà per scontato che il
     // valore resti quello del primo controllo.
@@ -59,7 +65,7 @@ export function TablesBanner({ workflow }: Props) {
 
     void (async () => {
       try {
-        const databaseId = await workingDatabase();
+        const databaseId = await databaseDelWorkflow(workflow.id ?? '', workflow.name);
         const missing = missingTables(planned, await existingTables(databaseId));
         if (abbandonato()) return;
         setState(missing.length > 0 ? { kind: 'missing', tables: missing } : { kind: 'none' });
@@ -75,7 +81,7 @@ export function TablesBanner({ workflow }: Props) {
     // `planned` deriva da `signature`: rimetterlo qui rifarebbe il giro a ogni
     // ridisegno.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signature]);
+  }, [signature, workflow.id, workflow.name]);
 
   if (state.kind === 'none' || state.kind === 'checking') return null;
 
@@ -121,13 +127,15 @@ export function TablesBanner({ workflow }: Props) {
         onClick={() => {
           const tables = state.tables;
           setState({ kind: 'creating', tables });
-          void createTables(tables).then((report) => {
-            setState(
-              report.problems.length > 0
-                ? { kind: 'failed', message: report.problems.join(' · ') }
-                : { kind: 'done', created: report.created },
-            );
-          });
+          void databaseDelWorkflow(workflow.id ?? '', workflow.name)
+            .then((databaseId) => createTables(databaseId, tables))
+            .then((report) => {
+              setState(
+                report.problems.length > 0
+                  ? { kind: 'failed', message: report.problems.join(' · ') }
+                  : { kind: 'done', created: report.created },
+              );
+            });
         }}
       >
         {busy ? 'Creo…' : 'Creale'}

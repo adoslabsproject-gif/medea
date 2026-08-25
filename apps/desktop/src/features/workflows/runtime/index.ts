@@ -48,7 +48,15 @@ export type { VersionDiff, WorkflowVersion } from './versions';
 export type { NodeTestResult } from './test-node';
 export { missingTables, planTables } from './table-plan';
 export type { PlannedTable, PlannedColumn, ColumnType } from './table-plan';
-export { createTables, existingTables, forgetWorkingDatabase, workingDatabase } from './tables';
+export {
+  archiviDelWorkflow,
+  createTables,
+  databaseDelWorkflow,
+  eliminaArchiviDelWorkflow,
+  existingTables,
+  forgetWorkingDatabase,
+  marcatoreWorkflow,
+} from './tables';
 export type { CreateReport } from './tables';
 export { provisionRuntime } from './provision';
 export type { ProvisionReport } from './provision';

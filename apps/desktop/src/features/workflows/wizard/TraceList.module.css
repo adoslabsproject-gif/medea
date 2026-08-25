@@ -8,10 +8,17 @@
     gap: var(--space-1);
   }
 
+  /* La voce e il suo dettaglio si IMPILANO.
+   *
+   * Era `flex` in riga, e il riquadro con richiesta e risposta finiva
+   * ACCANTO alla voce invece che sotto: mezza larghezza per uno, e la voce
+   * schiacciata a sinistra con un buco in mezzo. Il verso orizzontale ce
+   * l'ha già `.riga`, che dispone numero, esito ed etichetta. */
   .row {
     display: flex;
-    align-items: flex-start;
-    gap: var(--space-2);
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-1);
     padding: var(--space-1) var(--space-2);
     border-radius: var(--radius-sm);
     font-size: var(--font-size-xs);
@@ -54,76 +61,76 @@
   .error {
     color: var(--color-text-danger, var(--color-text-secondary));
   }
-}
 
-/* ── La riga che si apre ──────────────────────────────────────────────── */
+  /* ── La riga che si apre ────────────────────────────────────────────── */
 
-.riga {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  inline-size: 100%;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: start;
-  cursor: pointer;
-}
-.riga:disabled {
-  cursor: default;
-}
-.riga:not(:disabled):hover .label {
-  color: var(--color-text-primary);
-}
-.riga:focus-visible {
-  outline: 2px solid var(--color-focus-ring-default);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
+  .riga {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    inline-size: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+  }
+  .riga:disabled {
+    cursor: default;
+  }
+  .riga:not(:disabled):hover .label {
+    color: var(--color-text-primary);
+  }
+  .riga:focus-visible {
+    outline: 2px solid var(--color-focus-ring-default);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
 
-.numero {
-  font-variant-numeric: tabular-nums;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-}
+  .numero {
+    font-variant-numeric: tabular-nums;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
 
-.freccia {
-  margin-inline-start: auto;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-}
+  .freccia {
+    margin-inline-start: auto;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
 
-.log {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: var(--space-2) 0 var(--space-2) var(--space-5);
-  padding: var(--space-2);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-1);
-}
+  .log {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: var(--space-2) 0 var(--space-2) var(--space-5);
+    padding: var(--space-2);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+  }
 
-.logTitolo {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-text-muted);
-}
+  .logTitolo {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+  }
 
-.logCorpo {
-  margin: 2px 0 0;
-  /* Il log non allarga il pannello: scorre per conto suo. */
-  max-block-size: 14rem;
-  overflow: auto;
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  white-space: pre-wrap;
-  word-break: break-word;
+  .logCorpo {
+    margin: 2px 0 0;
+    /* Il log non allarga il pannello: scorre per conto suo. */
+    max-block-size: 14rem;
+    overflow: auto;
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
 }

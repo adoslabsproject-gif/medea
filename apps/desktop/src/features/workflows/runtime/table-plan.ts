@@ -32,7 +32,6 @@ const COLUMN_SOURCES: Record<string, readonly string[]> = {
   db_delete: ['whereJson'],
   db_query: ['filtersJson'],
   trigger_db_change: [],
-  db_subscribe: [],
 };
 
 /** Un identificatore che può finire in una DDL senza virgolette e sorprese. */
