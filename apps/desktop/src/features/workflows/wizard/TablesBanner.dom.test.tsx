@@ -16,7 +16,7 @@ vi.mock('../runtime', async () => {
   const plan = await vi.importActual<Record<string, unknown>>('../runtime/table-plan');
   return {
     ...plan,
-    workingDatabase: vi.fn(() => Promise.resolve('db1')),
+    databaseDelWorkflow: vi.fn(() => Promise.resolve('db1')),
     existingTables: vi.fn(),
     createTables: vi.fn(),
   };
@@ -32,6 +32,9 @@ const createTables = vi.mocked(runtime.createTables);
 
 function withInsert(table: string): Workflow {
   return {
+    // L'id serve: l'archivio è DI QUESTO workflow, e senza id non c'è a chi
+    // legarlo — il banner tace di proposito finché non è salvato.
+    id: '7',
     name: 'prova',
     nodes: [
       {
@@ -54,6 +57,18 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('il pannello delle tabelle mancanti', () => {
+  /**
+   * L'archivio appartiene a un workflow preciso, e prima del salvataggio quel
+   * workflow non ha un id: crearlo adesso vorrebbe dire un archivio senza
+   * padrone, che nessuna cancellazione saprebbe più portarsi via.
+   */
+  it('tace finché il workflow non è stato salvato', () => {
+    const { id: _tolto, ...senzaId } = withInsert('seguiti');
+    const { container } = render(<TablesBanner workflow={senzaId as never} />);
+    expect(container.textContent).toBe('');
+    expect(existingTables).not.toHaveBeenCalled();
+  });
+
   it('non compare su un workflow che non tocca nessun database', () => {
     const { container } = render(
       <TablesBanner

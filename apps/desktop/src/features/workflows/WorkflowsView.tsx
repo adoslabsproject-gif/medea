@@ -28,7 +28,13 @@ import { missingSecrets } from './missing-secrets';
 import { NodesDialog } from './NodesDialog';
 import { RelayDialog } from './RelayDialog';
 import { RunsModal } from './runs';
-import { secretNames, syncToRuntime, useRuntime } from './runtime';
+import {
+  archiviDelWorkflow,
+  eliminaArchiviDelWorkflow,
+  secretNames,
+  syncToRuntime,
+  useRuntime,
+} from './runtime';
 import { SecretsDialog } from './SecretsDialog';
 import { CollapsibleColumn } from './shared';
 import { Topbar } from './topbar';
@@ -37,7 +43,13 @@ import type { NodeDef } from './types';
 import { useWorkflowEditor } from './useWorkflowEditor';
 import { useWorkflowRun } from './useWorkflowRun';
 import { VersionsDialog } from './VersionsDialog';
-import { TablesBanner, WizardModal } from './wizard';
+import {
+  messaggioTabelle,
+  preparaTabelle,
+  puntaAllArchivio,
+  TablesBanner,
+  WizardModal,
+} from './wizard';
 import { WorkflowList } from './WorkflowList';
 import { WorkflowSettingsDialog } from './WorkflowSettingsDialog';
 import styles from './WorkflowsView.module.css';
@@ -89,19 +101,48 @@ export function WorkflowsView() {
    * domanda nomina il workflow — «questo» in una finestra che ha coperto
    * l'elenco non dice quale — e se è attivo lo dichiara, perché eliminarlo
    * significa anche spegnere un'automazione che sta girando.
+   *
+   * Se il workflow ha un archivio suo, la stessa domanda offre di portarselo
+   * via. È una sola decisione e si prende una volta: chiederla dopo, in una
+   * seconda finestra, significherebbe farla su un workflow che non c'è più.
+   * La spunta parte SPENTA — le tabelle contengono dati, e i dati non si
+   * cancellano per distrazione.
    */
   const eliminaWorkflow = useCallback(
     (id: number) => {
       const bersaglio = editor.items.find((i) => i.id === id);
       void (async () => {
         const [titolo, ...resto] = messaggioEliminazione(bersaglio).split('\n\n');
-        const ok = await chiedi({
+        // Si guarda PRIMA di chiedere: offrire di cancellare tabelle che non
+        // esistono è una domanda senza risposta giusta.
+        const archivi = await archiviDelWorkflow(id).catch(() => []);
+        const { ok, spuntato } = await chiedi({
           titolo: titolo ?? 'Eliminare il workflow?',
           dettaglio: resto.join(' '),
           conferma: 'Elimina',
           pericoloso: true,
+          ...(archivi.length > 0
+            ? {
+                spunta: {
+                  etichetta: 'Elimina anche le sue tabelle',
+                  dettaglio:
+                    'L’archivio di questo workflow e tutto quello che contiene. ' +
+                    'Gli archivi degli altri workflow non vengono toccati.',
+                },
+              }
+            : {}),
         });
-        if (ok) await editor.remove(id);
+        if (!ok) return;
+
+        await editor.remove(id);
+        if (!spuntato) return;
+
+        const esito = await eliminaArchiviDelWorkflow(id);
+        editor.setNotice(
+          esito.problemi.length > 0
+            ? `Workflow eliminato, ma le tabelle no: ${esito.problemi.join('; ')}.`
+            : 'Workflow eliminato, con le sue tabelle.',
+        );
       })();
     },
     [editor, chiedi],
@@ -492,12 +533,48 @@ export function WorkflowsView() {
           onClose={() => {
             setWizardOpen(false);
           }}
-          onImport={(built) => {
-            // Si scrive subito, non «quando l'utente decide»: quello che ha
-            // appena richiesto minuti di generazione non deve dipendere da un
-            // clic che potrebbe non arrivare mai.
-            void editor.adotta(built);
+          onImport={(built, tabelle) => {
             setWizardOpen(false);
+
+            void (async () => {
+              // Si scrive subito, non «quando l'utente decide»: quello che ha
+              // appena richiesto minuti di generazione non deve dipendere da
+              // un clic che potrebbe non arrivare mai.
+              const id = await editor.adotta(built);
+
+              // E con lui il suo archivio. Prima le tabelle si creavano solo
+              // premendo un avviso nell'editor: chi importava e attivava senza
+              // passare di lì aveva un workflow che falliva alla prima
+              // esecuzione con un «no such table», e in DB Studio niente da
+              // gestire perché niente era stato creato. Il consenso c'è già —
+              // è il tasto appena premuto.
+              //
+              // DOPO il salvataggio e non insieme: l'archivio è di QUESTO
+              // workflow, e prima di essere salvato il workflow non ha un id a
+              // cui legarlo.
+              if (id === null || tabelle.length === 0) return;
+              const esito = await preparaTabelle(id, built.name, tabelle);
+
+              // I nodi devono cercare le tabelle DOVE sono nate.
+              //
+              // Il modello sceglie un `databaseId` fra quelli che vede — di
+              // norma l'archivio condiviso — ma le tabelle nuove nascono
+              // nell'archivio di QUESTO workflow. Senza ripuntarli, il nodo
+              // cercherebbe la tabella dove non c'è e fallirebbe alla prima
+              // esecuzione, subito dopo che il wizard aveva annunciato di
+              // averla creata.
+              if (esito.databaseId !== undefined && esito.create.length > 0) {
+                const { workflow: puntato, ripuntati } = puntaAllArchivio(
+                  { ...built, id },
+                  esito.databaseId,
+                  esito.create,
+                );
+                if (ripuntati > 0) await editor.adotta(puntato);
+              }
+
+              const testo = messaggioTabelle(esito);
+              if (testo) editor.setNotice(testo);
+            })();
           }}
         />
       )}

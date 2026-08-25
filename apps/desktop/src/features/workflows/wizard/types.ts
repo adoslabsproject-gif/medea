@@ -9,6 +9,7 @@
  */
 
 import type { QualityIssue } from '../quality';
+import type { PlannedTable } from '../runtime';
 import type { AgentStep } from '../scaffold';
 import type { Workflow } from '../types';
 
@@ -43,8 +44,14 @@ export interface WizardState {
   /** Quello che il workflow funziona lo stesso ma merita un'occhiata. */
   warnings: string[];
   issues: QualityIssue[];
-  /** Le tabelle che il workflow dà per esistenti e vanno create. */
-  tables: { name: string; columns: { name: string; type: string }[] }[];
+  /**
+   * Le tabelle che il workflow dà per esistenti e vanno create.
+   *
+   * Il tipo è quello vero di `table-plan`, non una copia allentata: quando
+   * erano due forme diverse questo campo restava sempre vuoto e nessuno se ne
+   * accorgeva, perché niente lo confrontava con qualcosa.
+   */
+  tables: PlannedTable[];
   reason?: string;
 }
 

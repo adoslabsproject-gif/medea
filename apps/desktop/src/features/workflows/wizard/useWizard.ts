@@ -12,37 +12,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { autoLayout, needsLayout } from '../canvas/layout';
 import { allNodes } from '../catalog';
 import { gateWorkflow } from '../quality';
-import {
-  createAgentChat,
-  createScaffoldLlm,
-  runScaffold,
-  runWorkflowAgent,
-  type AgentStep,
-} from '../scaffold';
+import { databasesPerQualita } from '../runtime/tables';
+import type { AgentStep } from '../scaffold';
 import type { Workflow } from '../types';
 
+import { avviaScadenza, messaggioScaduto } from './scadenza';
+import { costruisciWorkflow, type EsitoStradeOk } from './strade';
+import { archiviConLePianificate, pianoArricchito } from './tabelle';
 import { builtNodes, toTraceEntry } from './tool-labels';
 import type { WizardState } from './types';
 
 /** Ogni quanto si aggiorna il tempo trascorso. Un secondo basta: è un'attesa
  *  lunga, e un contatore che corre sarebbe solo agitazione. */
 const TICK_MS = 1000;
-
-/**
- * Quanto può durare l'intera costruzione, comunque vada.
- *
- * Sei minuti. Erano quattro, e troncavano lavori che stavano per riuscire: se
- * il modello era spento, il server ne impiegava quasi quattro solo per
- * caricarlo, e il tempo per generare non restava. Adesso lo si sveglia
- * all'apertura del wizard, quindi in pratica bastano trenta secondi — ma
- * quando il riscaldamento non fa in tempo, meglio riuscire al quinto minuto
- * che fallire al quarto.
- *
- * Resta un tetto, non una previsione: chi ne chiede venti non sta finendo,
- * sta girando a vuoto, e girare a vuoto davanti a un utente che aspetta è la
- * sola cosa che non deve poter succedere.
- */
-const BUDGET_MS = 6 * 60_000;
 
 const EMPTY: WizardState = {
   stage: 'goal',
@@ -132,6 +114,9 @@ export function useWizard(): Wizard {
       // Le definizioni servono al controllo dei campi obbligatori: senza, un
       // trigger a cui manca la casella passerebbe per buono.
       const defsDelCatalogo = new Map(allNodes().map((d) => [d.defId, d]));
+      // Gli schemi dei database, senza i quali le regole che controllano
+      // tabelle e colonne non hanno niente da confrontare e tacciono sempre.
+      const databases = await databasesPerQualita();
       const steps: AgentStep[] = [];
 
       const controller = new AbortController();
@@ -139,43 +124,19 @@ export function useWizard(): Wizard {
       fermato.current = false;
       setTokens(undefined);
 
-      // Il tempo massimo che la costruzione può prendersi, comunque vada.
-      //
-      // I limiti c'erano già, ma erano tutti sul *numero* di passi: tre
-      // tentativi per la prima strada, quaranta per l'agente. Nessuno sul
-      // tempo. Con tre minuti concessi a ogni chiamata, quaranta passi fanno
-      // due ore — ed è esattamente quanto è durato il blocco del 2026-08-04:
-      // non un difetto, il limite che funzionava come scritto.
-      //
-      // Nessun numero di passi è quello giusto, perché quello che l'utente
-      // sopporta si misura in minuti, non in passi. Scaduti, ci si ferma e si
-      // consegna quello che c'è: un workflow a metà da correggere vale più di
-      // un'attesa che non finisce.
+      // Ricordato perché l'eccezione che arriva dopo un annullamento dice «The
+      // operation was aborted», che è vero e non spiega niente a chi ha solo
+      // aspettato troppo: serve sapere se ad annullare è stato il tempo.
       const scaduto = { current: false };
-      const scadenza = setTimeout(() => {
+      const chiudiScadenza = avviaScadenza(controller, () => {
         scaduto.current = true;
-        controller.abort();
-        // E lo schermo si aggiorna **qui**, senza aspettare che il ciclo se ne
-        // accorga. Annullare è solo un avviso: se la chiamata in corso non
-        // onora il segnale — e non tutte lo fanno — quella promessa non si
-        // risolve mai, il `catch` non parte, e lo stato resta «in costruzione»
-        // per sempre. È lo stesso motivo per cui «Interrompi» sembrava rotto;
-        // qui l'errore era mio, e identico.
         if (!alive.current || fermato.current) return;
         setState((s) =>
           s.stage === 'building'
-            ? {
-                ...s,
-                stage: 'failed',
-                reason: `Mi sono fermato dopo ${String(Math.round(BUDGET_MS / 60_000))} minuti: quello che era stato costruito resta, il resto va completato a mano. Un obiettivo più corto, o diviso in due workflow, di solito ci arriva.`,
-                built: builtNodes(steps),
-              }
+            ? { ...s, stage: 'failed', reason: messaggioScaduto(), built: builtNodes(steps) }
             : s,
         );
-      }, BUDGET_MS);
-      const chiudiScadenza = () => {
-        clearTimeout(scadenza);
-      };
+      });
 
       // Il conto dei token si somma man mano: quello che interessa è quanto
       // è costato tutto, non l'ultima chiamata.
@@ -196,102 +157,76 @@ export function useWizard(): Wizard {
         setState((s) => ({ ...s, trace: [...s.trace, toTraceEntry(passo)] }));
       };
 
+      /** Consegna un workflow riuscito, da qualunque strada arrivi. */
+      const consegna = (
+        workflow: Workflow,
+        avvisi: readonly string[],
+        tabelleDelMotore?: EsitoStradeOk['tabelle'],
+      ) => {
+        const disegnato: Workflow = {
+          ...workflow,
+          nodes: needsLayout(workflow.nodes)
+            ? autoLayout(workflow.nodes, workflow.edges)
+            : workflow.nodes,
+        };
+        // Il piano PRIMA del gate: le tabelle che stiamo per creare devono
+        // contare come esistenti, o si blocca l'attivazione per una tabella
+        // che il wizard stesso sta per fare nascere.
+        const piano = pianoArricchito(disegnato, tabelleDelMotore, databases);
+        const gate = gateWorkflow(
+          disegnato,
+          archiviConLePianificate(databases, piano),
+          defsDelCatalogo,
+        );
+        setState((s) => ({
+          ...s,
+          stage: 'review',
+          result: disegnato,
+          issues: [...gate.issues],
+          warnings: [...avvisi],
+          // Le tabelle che il workflow dà per esistenti: si dicono PRIMA di
+          // premere, e si creano dopo. Il campo esisteva già nello stato ed
+          // era sempre vuoto — nessuno lo riempiva, e chi importava non
+          // sapeva che stava adottando un workflow senza il suo archivio.
+          tables: piano,
+          built: builtNodes(steps),
+        }));
+      };
+
       try {
-        // ── Prima strada: scrivere il workflow in una volta sola. ──
-        //
-        // È quella che regge con qualunque modello, perché chiede di
-        // *scrivere* invece di *pilotare*: un JSON conforme allo schema, in
-        // una risposta. Chiamare strumenti a ogni passo è una richiesta molto
-        // più difficile, e i modelli che non sanno soddisfarla finivano per
-        // rispondere a parole finché il ciclo si arrendeva.
-        //
-        // Se questa strada porta a casa un workflow valido, l'agente non
-        // serve. Se non ce la fa, si prosegue con lui — e allora i suoi passi
-        // partono da zero, non da un mezzo lavoro.
-        annota('singleshot_generate', { goal }, { stato: 'in corso' });
-        const llm = await createScaffoldLlm(contaToken);
-        const singolo = await runScaffold({
+        const esito = await costruisciWorkflow({
           goal,
-          catalog: [...allNodes()],
-          llm,
+          catalogo: [...allNodes()],
           signal: controller.signal,
-        });
-
-        if (!alive.current || fermato.current) return;
-
-        if (singolo.ok) {
-          annota(
-            'singleshot_generate',
-            { goal },
-            { nodi: singolo.workflow.nodes.length, tentativi: singolo.attempts },
-          );
-          const disegnato: Workflow = {
-            ...singolo.workflow,
-            nodes: needsLayout(singolo.workflow.nodes)
-              ? autoLayout(singolo.workflow.nodes, singolo.workflow.edges)
-              : singolo.workflow.nodes,
-          };
-          const gate = gateWorkflow(disegnato, undefined, defsDelCatalogo);
-          setState((s) => ({
-            ...s,
-            stage: 'review',
-            result: disegnato,
-            issues: [...gate.issues],
-            warnings: [...singolo.warnings],
-            built: builtNodes(steps),
-          }));
-          return;
-        }
-
-        annota('singleshot_generate', { goal }, { fallito: singolo.reason });
-
-        // ── Seconda strada: costruire a passi, con gli strumenti. ──
-        const chat = await createAgentChat(contaToken);
-        const result = await runWorkflowAgent({
-          goal,
-          catalog: [...allNodes()],
-          chat,
-          signal: controller.signal,
-          onStep: (step) => {
-            steps.push(step);
+          annota,
+          onToken: contaToken,
+          interrotto: () => !alive.current || fermato.current,
+          onStep: (passo) => {
+            steps.push(passo);
             if (!alive.current || fermato.current) return;
             setState((s) => ({
               ...s,
-              trace: [...s.trace, toTraceEntry(step)],
+              trace: [...s.trace, toTraceEntry(passo)],
               built: builtNodes(steps),
             }));
           },
         });
 
-        if (!alive.current || fermato.current) return;
+        // Fermato a metà: non è né riuscito né fallito, e mostrare un errore a
+        // chi ha premuto «Interrompi» sarebbe rimproverarlo per averlo fatto.
+        if (esito === null || !alive.current || fermato.current) return;
 
-        if (!result.ok) {
+        if (!esito.ok) {
           setState((s) => ({
             ...s,
             stage: 'failed',
-            reason: result.reason,
-            issues: [...result.qualityIssues],
+            reason: esito.motivo,
+            issues: [...esito.problemi],
           }));
           return;
         }
 
-        // Un workflow nato da zero non ha coordinate sensate: il disegno lo
-        // facciamo noi, altrimenti arriva come una pila di nodi sovrapposti.
-        const workflow: Workflow = {
-          ...result.workflow,
-          nodes: needsLayout(result.workflow.nodes)
-            ? autoLayout(result.workflow.nodes, result.workflow.edges)
-            : result.workflow.nodes,
-        };
-
-        const gate = gateWorkflow(workflow, undefined, defsDelCatalogo);
-        setState((s) => ({
-          ...s,
-          stage: 'review',
-          result: workflow,
-          issues: [...gate.issues],
-          warnings: [...result.remainingIssues],
-        }));
+        consegna(esito.workflow, esito.avvisi, esito.tabelle);
       } catch (e) {
         if (!alive.current || fermato.current) return;
         // Il tempo scaduto non è un errore del modello, e dirlo con le parole
@@ -300,11 +235,7 @@ export function useWizard(): Wizard {
         setState((s) => ({
           ...s,
           stage: 'failed',
-          reason: scaduto.current
-            ? `Mi sono fermato dopo ${String(Math.round(BUDGET_MS / 60_000))} minuti: quello che era stato costruito resta, il resto va completato a mano. Un obiettivo più corto, o diviso in due workflow, di solito ci arriva.`
-            : e instanceof Error
-              ? e.message
-              : String(e),
+          reason: scaduto.current ? messaggioScaduto() : e instanceof Error ? e.message : String(e),
           built: builtNodes(steps),
         }));
       } finally {
