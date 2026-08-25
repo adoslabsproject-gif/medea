@@ -15,7 +15,7 @@ describe('maskEmail', () => {
     });
 
     it('maschera email lunga con punto nel local part', () => {
-      expect(maskEmail('senza1dio@gmail.com')).toBe('s*******o@g***l.com');
+      expect(maskEmail('mario.rossi@example.com')).toBe('m*********i@e*****e.com');
     });
 
     it('preserva il TLD anche con sub-domain', () => {

@@ -43,7 +43,7 @@ export const workflows = sqliteTable(
     draftJson: text('draft_json'),
     draftUpdatedAt: text('draft_updated_at'),
     /**
-     * 2026-06-07 (incident senza1dio disk-full): true → ogni run di questo
+     * 2026-06-07 (incident disk-full): true → ogni run di questo
      * workflow è EPHEMERAL — niente INSERT in `runs` table, niente subscribe
      * agli step events, niente flush incrementale steps_json. L'output viene
      * comunque emesso al webhook caller (response normale), ma il trace non

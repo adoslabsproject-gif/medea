@@ -44,7 +44,15 @@ export interface WorkflowEditor {
   /** Mette un documento nell'editor senza salvarlo: è una bozza da guardare. */
   load: (workflow: Workflow, enabled: boolean) => void;
   /** Prende in carico un workflow venuto da fuori, scrivendolo subito. */
-  adotta: (workflow: Workflow) => Promise<void>;
+  /**
+   * Adotta un workflow appena costruito e restituisce l'id con cui è stato
+   * salvato — o `null` se il salvataggio non è riuscito.
+   *
+   * L'id serve a chi deve creare le TABELLE di quel workflow: l'archivio è
+   * suo, e l'identità è l'id. Prima `adotta` non lo restituiva e chi importava
+   * dal wizard non aveva modo di sapere a quale workflow attaccare l'archivio.
+   */
+  adotta: (workflow: Workflow) => Promise<string | null>;
   open: (id: number) => Promise<void>;
   create: () => void;
   save: () => Promise<void>;
@@ -186,12 +194,13 @@ export function useWorkflowEditor(): WorkflowEditor {
    * che è costato minuti di inferenza si scrive subito.
    */
   const adotta = useCallback(
-    async (wf: Workflow) => {
+    async (wf: Workflow): Promise<string | null> => {
       try {
         const id = await workflowApi.save(wf, false);
         load({ ...wf, id: String(id) }, false);
         setNotice('Salvato.');
         await refresh();
+        return String(id);
       } catch (e) {
         // Il disco ha detto di no: il lavoro resta comunque nell'editor, ma
         // marcato da salvare — così l'autosave riprova e la lista avverte
@@ -201,6 +210,7 @@ export function useWorkflowEditor(): WorkflowEditor {
         setNotice(
           `Non sono riuscito a salvarlo: ${e instanceof Error ? e.message : String(e)}. È ancora qui, premi Salva.`,
         );
+        return null;
       }
     },
     [load, refresh],

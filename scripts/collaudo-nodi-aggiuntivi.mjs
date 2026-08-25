@@ -2,7 +2,7 @@
  * Collaudo dei nodi aggiuntivi: un pacchetto `.ffnode` si installa da file e
  * il suo nodo esegue?
  *
- * È la prova che Medea non è chiusa ai 193 nodi che ha nella scatola. Il
+ * È la prova che Medea non è chiusa ai 194 nodi che ha nella scatola. Il
  * pacchetto si costruisce qui, si installa attraverso la stessa strada che usa
  * l'app (base64 → `/community-nodes/install`), e poi si esegue.
  *
@@ -166,7 +166,7 @@ async function main() {
   for (const [cosa, ok] of esito) console.log(`  ${ok ? '✓' : '✗'} ${cosa}`);
 
   if (esito.every(([, ok]) => ok)) {
-    console.log('\nNODI AGGIUNTIVI CONFERMATI: Medea non è chiusa ai suoi 193.');
+    console.log('\nNODI AGGIUNTIVI CONFERMATI: Medea non è chiusa ai suoi 194.');
     process.exit(0);
   }
   console.log('\nNODI AGGIUNTIVI NON CONFERMATI.');

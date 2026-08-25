@@ -169,3 +169,46 @@ describe('provider-registry — model default + self-host baseUrl', () => {
 // Type-only: garantisce che ProviderSpec resti esportato e usabile dai consumer.
 const _typecheck: ProviderSpec = getProviderSpec('openai');
 void _typecheck;
+
+describe('self-host — l’URL composto deve combaciare col percorso servito', () => {
+  /**
+   * Il default di Liara deve produrre `/v1/chat/completions`, esatto.
+   *
+   * nginx davanti al gateway instrada con corrispondenza **esatta** su
+   * `location = /v1/chat/completions`; tutto ciò che non combacia finisce in
+   * `location / { return 444; }`, che chiude la connessione senza risposta.
+   *
+   * Il 444 è la ragione per cui questo difetto è costato una giornata: chi
+   * chiama non riceve un 404 da leggere, riceve `fetch failed` — che somiglia
+   * a un guasto di rete, a un ban, a un server giù. Si cerca ovunque tranne
+   * che nel percorso.
+   *
+   * Il `defaultBaseUrl` era senza `/v1` e componeva `/chat/completions`: ogni
+   * richiesta del motore veniva chiusa in faccia mentre la stessa chiamata dal
+   * desktop, che il `/v1` ce l'aveva, funzionava.
+   */
+  it('liara: default + chatPath = /v1/chat/completions', () => {
+    const spec = getProviderSpec('liara');
+    if (spec.endpoint.kind !== 'self-host') throw new Error('liara deve restare self-host');
+    const url = new URL(spec.endpoint.defaultBaseUrl + spec.endpoint.chatPath);
+    expect(url.pathname).toBe('/v1/chat/completions');
+  });
+
+  /** Il baseUrl del chiamante vince, e deve comporre allo stesso modo. */
+  it('liara: un baseUrl passato dal chiamante compone lo stesso percorso', () => {
+    const spec = getProviderSpec('liara');
+    if (spec.endpoint.kind !== 'self-host') throw new Error('liara deve restare self-host');
+    const url = new URL('https://altrove.example/v1' + spec.endpoint.chatPath);
+    expect(url.pathname).toBe('/v1/chat/completions');
+  });
+
+  /** Nessun self-host deve avere un baseUrl che finisce con `/`: `joinBaseUrl`
+   *  lo taglia, ma un default che ci conta è un default fragile. */
+  it('nessun self-host ha un baseUrl con la barra finale', () => {
+    for (const p of chatCapableProviders()) {
+      const spec = getProviderSpec(p);
+      if (spec.endpoint.kind !== 'self-host') continue;
+      expect(spec.endpoint.defaultBaseUrl.endsWith('/')).toBe(false);
+    }
+  });
+});

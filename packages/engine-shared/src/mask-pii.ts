@@ -34,7 +34,7 @@
  * @example
  *   maskEmail('mario.rossi@gmail.com')      → 'm*********i@g***l.com'
  *   maskEmail('a@b.it')                      → '*@*.it'
- *   maskEmail('senza1dio@gmail.com')        → 's*******o@g***l.com'
+ *   maskEmail('mario.rossi@example.com')    → 'm*********i@e*****e.com'
  *   maskEmail('not-an-email')                → '[redacted]'
  */
 export function maskEmail(input: unknown): string {

@@ -44,9 +44,9 @@ describe('🚨 systemRef + SYSTEM_REF', () => {
 
 describe('🚨 tenantRef — happy + validation', () => {
   it('🚨 tenantId + dbId validi → DataSourceRef formattato', () => {
-    const r = tenantRef('senza1dio', 'mydb');
+    const r = tenantRef('acme', 'mydb');
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.value).toBe('tenant:senza1dio:mydb');
+    if (r.ok) expect(r.value).toBe('tenant:acme:mydb');
   });
 
   it('🚨 tenantId con underscore + numeri → ok', () => {

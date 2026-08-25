@@ -152,7 +152,7 @@ function createSqliteHandle(): DatabaseHandle {
     addColumn('folder_id', 'TEXT');
     addColumn('on_error_json', 'TEXT');
     addColumn('concurrency_limit', 'INTEGER');
-    // 2026-06-07 (incident senza1dio disk-full): flag per workflow webhook
+    // 2026-06-07 (incident disk-full): flag per workflow webhook
     // proxy ad alta frequenza. Quando 1, ogni run è ephemeral.
     addColumn('ephemeral_runs', 'INTEGER NOT NULL DEFAULT 0');
     // 2026-06-07 sera (tier-aware logging): tri-state run verbosity.

@@ -327,7 +327,7 @@ describe('RunService — lifecycle execute()', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════
-// ephemeralRuns (2026-06-07 — incident senza1dio disk-full)
+// ephemeralRuns (2026-06-07 — incident disk-full)
 // ════════════════════════════════════════════════════════════════════
 describe('RunService — ephemeralRuns: niente INSERT/UPDATE/audit', () => {
   // Helper per non inquinare i test successivi: il beforeEach globale

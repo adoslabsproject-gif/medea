@@ -16,6 +16,42 @@ import { readJsonCapped, readTextTruncated } from '@/lib/capped-response.js';
 import { assertUrlSafe } from '@medea/engine-safe-fetch';
 
 /**
+ * A quale famiglia appartiene il modello che risponde su Liara.
+ *
+ * Non è un dettaglio di stile: `/no_think` e `enable_thinking` sono
+ * convenzioni **di Qwen3**, e questo file le mandava a ogni chiamata. Liara
+ * però è un **Mistral** — lo dice chi la gestisce, e lo conferma il modello
+ * stesso: il 2026-08-07 ha risposto emettendo `[TOOL_CALLS]fs_read{…}`, che è
+ * il token nativo con cui i Mistral chiedono uno strumento.
+ *
+ * Il risultato era che ogni prompt di sistema cominciava con una direttiva
+ * `/no_think` che quel modello non capisce, e che il template riceveva un
+ * parametro pensato per un'altra architettura.
+ *
+ * Si tiene configurabile e non cablato: se un domani dietro Liara ci fosse
+ * davvero un Qwen, basta l'ambiente. Il predefinito segue l'evidenza.
+ */
+function famigliaLiara(): 'mistral' | 'qwen' {
+  return process.env.MEDEA_LIARA_FAMILY === 'qwen' ? 'qwen' : 'mistral';
+}
+
+/** Il prefisso da anteporre al prompt di sistema: solo Qwen lo capisce. */
+function prefissoSistema(): string {
+  return famigliaLiara() === 'qwen' ? '/no_think\n' : '';
+}
+
+/**
+ * I parametri del template della chat.
+ *
+ * `enable_thinking` è di Qwen3: a un Mistral non si manda, perché un template
+ * che non lo conosce può ignorarlo o rifiutare la richiesta.
+ */
+function argomentiTemplate(): Record<string, unknown> | undefined {
+  return famigliaLiara() === 'qwen' ? { enable_thinking: false } : undefined;
+}
+
+
+/**
  * Difesa-in-profondità SSRF. Il `baseUrl` CUSTOM (BYOK Ollama / proxy
  * OpenAI-compat) è input utente e qui diventa il target `fetch` → lo validiamo
  * (host pubblico) PRIMA di usarlo.
@@ -359,9 +395,7 @@ export async function dispatchLLMChat(
         //    multi-action), input+max_tokens > 40960 → vLLM rifiuta. Ora calcoliamo
         //    output cap come (context_window - input_tokens - safety_margin).
         //  - model omesso: Liara backend usa il suo MODEL_NAME (qwen3-32b) di default.
-        const thinkingDisabled = process.env.MEDEA_LIARA_THINKING === 'false';
-        const systemPrefix = thinkingDisabled ? '/no_think\n' : '';
-        const fullSystem = `${systemPrefix}${system}`;
+        const fullSystem = `${prefissoSistema()}${system}`;
         // Token estimation: ~3.5 char/token medio per testo IT/EN misto + JSON.
         // Conservativo (overestimate) per evitare overrun. Pattern industriale
         // (Anthropic SDK usa ~4 char/token, OpenAI tiktoken precisa ma overhead).
@@ -390,7 +424,7 @@ export async function dispatchLLMChat(
           messages: [{ role: 'system', content: fullSystem }, ...msgs],
           temperature: opts?.temperature ?? 0.2,
           max_tokens: dynamicMax,
-          chat_template_kwargs: { enable_thinking: !thinkingDisabled },
+          ...(argomentiTemplate() ? { chat_template_kwargs: argomentiTemplate() } : {}),
         };
         // Permetti override del model SOLO se esplicito (BYOK enterprise).
         // Default = lasciar decidere a Liara backend (MODEL_NAME env).
@@ -630,7 +664,7 @@ export async function dispatchLLMChatStructured(
 
   // SINGLE-SHOT: niente thinking mode (guided_json fa il lavoro strutturale).
   // Risparmia 30-60% del tempo elaborazione.
-  const fullSystem = `/no_think\n${system}`;
+  const fullSystem = `${prefissoSistema()}${system}`;
   const CHARS_PER_TOKEN = 3.5;
   const estimateTokens = (s: string): number => Math.ceil(s.length / CHARS_PER_TOKEN);
   // Stima testo (history string + nuovo userMessage) + budget fisso per immagine.
@@ -653,7 +687,7 @@ export async function dispatchLLMChatStructured(
     messages: [{ role: 'system', content: fullSystem }, ...msgs],
     temperature: 0.1,
     max_tokens: dynamicMax,
-    chat_template_kwargs: { enable_thinking: false },
+    ...(argomentiTemplate() ? { chat_template_kwargs: argomentiTemplate() } : {}),
     // vLLM 0.15+ structured outputs — OpenAI-compat response_format json_schema.
     // Forza output conforme allo schema JSON. xgrammar backend auto-selected.
     response_format: {
@@ -804,7 +838,7 @@ async function streamLiaraChat(opts: {
   const { model, msgs, baseUrl, jsonSchema, onChunk, tokenUsageListener } = opts;
   const url = `${baseUrl ?? liaraBaseUrl()}/chat/completions`;
   const licenseKey = process.env.MEDEA_LICENSE_KEY ?? '';
-  const fullSystem = `/no_think\n${opts.system}`;
+  const fullSystem = `${prefissoSistema()}${opts.system}`;
   const CHARS_PER_TOKEN = 3.5;
   const estimateTokens = (s: string): number => Math.ceil(s.length / CHARS_PER_TOKEN);
   const inputTokensEstimated =
@@ -826,7 +860,7 @@ async function streamLiaraChat(opts: {
     max_tokens: dynamicMax,
     stream: true,
     stream_options: { include_usage: true },
-    chat_template_kwargs: { enable_thinking: false },
+    ...(argomentiTemplate() ? { chat_template_kwargs: argomentiTemplate() } : {}),
   };
   if (jsonSchema) {
     body.response_format = {
@@ -876,6 +910,22 @@ async function streamLiaraChat(opts: {
       accumulated += delta;
       onChunk(delta);
     });
+  } catch (err) {
+    // Lo stesso timeout, ma scattato MENTRE si legge.
+    //
+    // Il controllo sopra copre solo la `fetch`: se Liara risponde con gli
+    // header e poi la generazione si pianta, l'annullamento arriva qui e
+    // usciva nudo — «This operation was aborted», che non dice a nessuno cosa
+    // sia successo. Il 2026-08-06 ha bruciato quattro minuti e l'utente ha
+    // letto quella frase.
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error(
+        `Liara si è piantata durante la generazione: nessun dato per ` +
+          `${(liaraTimeoutMs / 1000).toFixed(0)}s, richiesta annullata. ` +
+          `Aveva già scritto ${accumulated.length.toString()} caratteri.`,
+      );
+    }
+    throw err;
   } finally {
     clearTimeout(liaraTimeoutId);
   }
