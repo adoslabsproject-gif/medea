@@ -5,9 +5,9 @@
 
 ## Il problema
 
-Lo scaffold AI deve funzionare con qualunque provider. Liara avrà un LoRA
-addestrato su FlowForge; gli altri — Claude, GPT, i modelli locali — no. Per
-loro il catalogo dei nodi è materiale nuovo a ogni richiesta.
+Lo scaffold AI deve funzionare con qualunque provider. Nessuno di loro —
+Claude, GPT, i modelli locali — è addestrato sul catalogo dei nodi: per tutti
+è materiale nuovo a ogni richiesta.
 
 La validazione strutturale (`scaffold/validate.ts`) non basta a proteggere
 l'utente. Risponde a «il workflow è ben formato?»: i `defId` esistono, i campi

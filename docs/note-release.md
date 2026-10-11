@@ -52,6 +52,33 @@ fra versioni ed elenco dei form pubblici.
 Windows, contro i 9 delle versioni fino alla 0.3.0. Quei 9 MB erano un editor
 che disegnava automazioni e non ne eseguiva nessuna.
 
+## Novità della 0.6.0
+
+**Medea non porta più con sé un modello.** Il servizio gratuito a cui si
+appoggiava è stato chiuso ed è uscito dal codice. Nessun provider è
+preconfigurato: scegli il tuo in Impostazioni → Modelli AI. Se usavi quello
+predefinito, alla prima apertura l'assistente ti chiede di sceglierne uno.
+
+**Claude in abbonamento funziona davvero.** Con la CLI `claude` installata e il
+tuo piano Pro o Max, l'assistente legge la posta, usa la rubrica, prepara le
+bozze e ti chiede conferma prima di ogni modifica, senza costi API. Fino alla
+0.5 la CLI veniva avviata in una modalità che le impediva di usare gli
+strumenti di Medea: rispondeva di non poter guardare la posta.
+
+**I nodi AI dei workflow usano la tua chiave.** La chiave salvata in
+Impostazioni arriva anche al motore che esegue i workflow, cifrata. Prima non
+ci arrivava: i nodi AI giravano solo grazie al servizio che non c'è più. Con
+Claude in abbonamento o con l'endpoint personale i workflow usano il primo
+provider che ha una chiave.
+
+**Modelli predefiniti aggiornati.** Claude 3.5 Haiku, Gemini 2.0 Flash,
+`deepseek-chat` e Grok 2 sono stati ritirati dai rispettivi provider: chi non
+scriveva un modello a mano riceveva un errore. I predefiniti sono ora quelli
+correnti.
+
+**Da sapere se aggiorni.** Un workflow salvato con il provider tolto usa ora il
+tuo provider predefinito. Le chiavi che avevi restano dove sono.
+
 ## Novità della 0.5.0
 
 Questa versione ha un tema solo: **i workflow che l'assistente costruisce

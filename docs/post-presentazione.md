@@ -45,9 +45,9 @@ nodo nel catalogo, ne legge lo schema, lo aggiunge, lo configura, valida,
 chiude. È il motivo per cui funziona anche con un modello che il catalogo di
 FlowForge non l'ha mai visto: non deve ricordarselo, lo interroga mentre lavora.
 
-Funziona con qualunque provider — Claude, GPT, Gemini, modelli locali, o il
-modello fine-tuned che sta già sul nostro server. La chiave è dell'utente e sta
-nel portachiavi del sistema operativo, non in un file di configurazione.
+Funziona con qualunque provider — Claude, GPT, Gemini, modelli locali — e con
+Claude in abbonamento. La chiave è dell'utente e sta nel portachiavi del
+sistema operativo, non in un file di configurazione.
 
 ## Quello che non si salva
 

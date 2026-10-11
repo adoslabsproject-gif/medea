@@ -1,6 +1,11 @@
 # ADR 0004 — Tool system allineato all'app Liara + BYOK-only
 
-- **Stato**: accettato (2026-07-31)
+- **Stato**: superato in parte dall'[ADR 0013](0013-medea-non-porta-con-se-un-modello.md)
+  (2026-10-11). Il servizio a cui questo documento si riferisce è stato
+  chiuso: resta valido il BYOK come unico modo e restano i nomi degli
+  strumenti, non più la ragione per cui erano stati scelti. Il testo qui sotto
+  è lasciato com'era, come memoria della decisione.
+- **Stato originale**: accettato (2026-07-31)
 - **Contesto**: pivot del prodotto — Medea diventa un client email **neutro**
   (nessun verticale Zeli/elettrovalvole), con l'obiettivo di usare **lo stesso
   modello fine-tuned** dell'app Liara (repository privato,

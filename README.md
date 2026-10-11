@@ -161,8 +161,8 @@ esportato da Medea si importa sul server, e viceversa.
 ### Gli strumenti dell'assistente
 
 L'AI non è un chatbot incollato di lato: ha **63 strumenti** che agiscono davvero
-sul sistema, con i nomi allineati all'app Liara così lo stesso modello
-fine-tuned funziona su entrambe.
+sul sistema. Funzionano con qualunque provider a chiave, con un endpoint
+OpenAI-compatibile e con Claude in abbonamento tramite la CLI.
 
 <details>
 <summary><b>Vedi tutti gli strumenti</b></summary>
