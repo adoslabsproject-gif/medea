@@ -2,7 +2,7 @@
  * Test 2026-grade — node-generator route.
  *
  * 🚨 PROVIDER-AGNOSTIC: NESSUN hardcoding vendor. llmResolver decide:
- *   header x-llm-provider OR tenant default OR Liara fallback.
+ *   header x-llm-provider OR tenant default.
  *   NoLlmProviderError → httpStatus dichiarato dall'errore.
  *
  * 🚨 RATE LIMIT: middleware llmRateLimit('node-generator') applicato
@@ -95,7 +95,7 @@ beforeEach(() => {
   dispatchMock.mockReset();
   insertMock.mockClear();
   insertMock.mockReturnValue('interaction-1');
-  resolveMock.mockReturnValue({ provider: 'liara', apiKey: 'key', model: 'qwen3-32b' });
+  resolveMock.mockReturnValue({ provider: 'openai', apiKey: 'key', model: 'qwen3-32b' });
 });
 
 describe('🚨 Zod validation', () => {

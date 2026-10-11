@@ -317,7 +317,7 @@ describe('autoFixWorkflow — combined real-case', () => {
 });
 
 describe('autoFixWorkflow — agent_* provider normalization (2026-06-07)', () => {
-  it('agent_data_analyst con openai/gpt-4o + apiKey hard-coded + tenant default=liara → riscritto a liara', () => {
+  it('agent_data_analyst con openai/gpt-4o + apiKey hard-coded + tenant default=gemini → riscritto a gemini', () => {
     const r = autoFixWorkflow({
       nodes: [
         {
@@ -332,9 +332,9 @@ describe('autoFixWorkflow — agent_* provider normalization (2026-06-07)', () =
         },
       ],
       edges: [],
-      tenantDefaultLlmProvider: 'liara',
+      tenantDefaultLlmProvider: 'gemini',
     });
-    expect(r.nodes[0]!.config.provider).toBe('liara');
+    expect(r.nodes[0]!.config.provider).toBe('gemini');
     expect(r.nodes[0]!.config.model).toBeUndefined();
     expect(r.nodes[0]!.config.apiKey).toBeUndefined();
     expect(r.nodes[0]!.config.extraContext).toBe('aggrega risultati');
@@ -376,7 +376,7 @@ describe('autoFixWorkflow — agent_* provider normalization (2026-06-07)', () =
         { id: 'a', defId: 'agent_classifier', config: { provider: '', labels: 'urgent,normal' } },
       ],
       edges: [],
-      tenantDefaultLlmProvider: 'liara',
+      tenantDefaultLlmProvider: 'gemini',
     });
     expect(r.nodes[0]!.config.provider).toBe('');
     expect(r.appliedFixes.some((f) => f.type === 'agent_provider_normalized')).toBe(false);
@@ -392,9 +392,9 @@ describe('autoFixWorkflow — agent_* provider normalization (2026-06-07)', () =
         },
       ],
       edges: [],
-      tenantDefaultLlmProvider: 'liara',
+      tenantDefaultLlmProvider: 'gemini',
     });
-    expect(r.nodes[0]!.config.provider).toBe('liara');
+    expect(r.nodes[0]!.config.provider).toBe('gemini');
     // 'custom-fine-tune-v3' non matcha gpt-/claude-/gemini-/… → preservato
     expect(r.nodes[0]!.config.model).toBe('custom-fine-tune-v3');
   });
@@ -413,11 +413,11 @@ describe('autoFixWorkflow — agent_* provider normalization (2026-06-07)', () =
         },
       ],
       edges: [],
-      tenantDefaultLlmProvider: 'liara',
+      tenantDefaultLlmProvider: 'gemini',
     };
     const r1 = autoFixWorkflow(input);
     const r2 = autoFixWorkflow({ ...input, nodes: r1.nodes, edges: r1.edges });
-    expect(r2.nodes[0]!.config.provider).toBe('liara');
+    expect(r2.nodes[0]!.config.provider).toBe('gemini');
     expect(r2.appliedFixes.some((f) => f.type === 'agent_provider_normalized')).toBe(false);
   });
 
@@ -431,7 +431,7 @@ describe('autoFixWorkflow — agent_* provider normalization (2026-06-07)', () =
         },
       ],
       edges: [],
-      tenantDefaultLlmProvider: 'liara',
+      tenantDefaultLlmProvider: 'gemini',
     });
     // action_http NON è un agent_* → no normalization
     expect(r.nodes[0]!.config.provider).toBe('openai');
@@ -699,7 +699,7 @@ describe('autoFixWorkflow — obsolete model auto-clear (2026-06-07)', () => {
   });
 
   describe('code-node language auto-heal (bug user 2026-06-09)', () => {
-    // Il codice ESATTO generato da Liara nel bug report: Python dentro run_js.
+    // Il codice ESATTO generato dal modello nel bug report: Python dentro run_js.
     const PYTHON_CODE = [
       'import json, os',
       '',
@@ -811,7 +811,7 @@ describe('autoFixWorkflow — obsolete model auto-clear (2026-06-07)', () => {
 describe('🔒 orphan-edge heal — merge node referenziato ma non emesso dall’LLM', () => {
   it('scenario user (loop → N branch → merge mancante): crea logic_merge + edge validi', () => {
     // Riproduce il bug prod 2026-06-10 (Sitemap Crawler): 4 branch SEO che
-    // convergono su "merge_logic_loop_1" che Liara NON ha messo nei nodi.
+    // convergono su "merge_logic_loop_1" che il modello NON ha messo nei nodi.
     const r = autoFixWorkflow({
       nodes: [
         { id: 'logic_loop_1', defId: 'logic_loop', config: { strategy: 'batch' } },

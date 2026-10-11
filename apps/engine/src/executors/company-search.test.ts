@@ -87,16 +87,16 @@ describe('company-search — mapping output', () => {
     searchMock.mockResolvedValue({
       ...BASE_RESULT,
       queries_generated_by_llm: true,
-      llm_provider: 'liara',
-      llm_model: 'nha-v1',
+      llm_provider: 'openai',
+      llm_model: 'gpt-4o-mini',
       llm_usage: { input: 40, output: 12, fromApi: true },
     });
     const res = await run({ seedPrompt: 'seed' });
     expect((res.output as { _llm: unknown })._llm).toEqual({
       inputTokens: 40,
       outputTokens: 12,
-      model: 'nha-v1',
-      provider: 'liara',
+      model: 'gpt-4o-mini',
+      provider: 'openai',
       fromApi: true,
     });
   });
@@ -104,10 +104,10 @@ describe('company-search — mapping output', () => {
   it('llm_usage presente ma llm_model assente → model fallback "<provider>-default"', async () => {
     searchMock.mockResolvedValue({
       ...BASE_RESULT,
-      llm_provider: 'liara',
+      llm_provider: 'openai',
       llm_usage: { input: 1, output: 1, fromApi: false },
     });
     const res = await run({ seedPrompt: 'seed' });
-    expect((res.output as { _llm: { model: string } })._llm.model).toBe('liara-default');
+    expect((res.output as { _llm: { model: string } })._llm.model).toBe('openai-default');
   });
 });

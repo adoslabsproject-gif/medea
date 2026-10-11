@@ -294,9 +294,9 @@ export const NodeDefSchema = z.object({
   outputs: z.array(z.string()).optional(),
   /**
    * OUTPUT CONTRACT — descrizione STRUTTURATA di ciò che il nodo produce, per
-   * far ANALIZZARE i workflow all'AI (Liara) SENZA allucinare i dettagli.
+   * far ANALIZZARE i workflow all'AI SENZA allucinare i dettagli.
    *
-   * Motivazione (2026-06-23): analizzando un workflow Liara riceve solo la prima
+   * Motivazione (2026-06-23): analizzando un workflow il modello riceve solo la prima
    * frase della description (≤140 char) → sui valori di output INDOVINA (es.
    * "partnerId=0" invece del vero `null` di odoo_lookup_partner su miss). Qui il
    * comportamento REALE — inclusi gli edge-case — è esplicito e iniettato nel

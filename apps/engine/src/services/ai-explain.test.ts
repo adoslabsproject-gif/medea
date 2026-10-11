@@ -39,7 +39,7 @@ beforeEach(async () => {
   originalDbPath = process.env.MEDEA_DB_PATH;
   process.env.MEDEA_DB_PATH = join(tmpDir, 'test.sqlite');
   process.env.MEDEA_DATA_DIR = tmpDir;
-  // Setup an Anthropic key so the resolver doesn't fall back to Liara/error
+  // Setup an Anthropic key so the resolver doesn't end in the no-provider error
   process.env.MEDEA_MASTER_PASSWORD = 'test-master-password-32-chars-min';
   resetConfigForTests();
   await closeDatabase();

@@ -117,8 +117,8 @@ function defToCatalogEntry(def: NodeDefLike): NodeCatalogEntry {
  *      Include i 7 vendor v2.0 (community_telegram con 75 actions, community_slack
  *      con 57, ecc.) — questi NON sono in ALL_NODE_MODULES.
  *
- * Senza la fusione il SYSTEM_PROMPT puo\` istruire Liara a usare community_<vendor>
- * ma il catalog upfront non li menziona → Liara fa abort "non nel catalogo".
+ * Senza la fusione il SYSTEM_PROMPT puo\` istruire il modello a usare community_<vendor>
+ * ma il catalog upfront non li menziona → il modello fa abort "non nel catalogo".
  * FIX 2026-05-30 user-segnalato.
  */
 export function buildNodeCatalog(): NodeCatalogEntry[] {

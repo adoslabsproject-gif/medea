@@ -9,6 +9,8 @@ import {
   extractJsonFromResponse,
   buildVisionMessages,
   VisionExtractOutputSchema,
+  VisionEndpointMissingError,
+  resolveVisionEndpoint,
 } from './vision-extract.js';
 
 vi.mock('@medea/engine-safe-fetch', async (importOriginal) => ({
@@ -29,9 +31,12 @@ const ctx = {
 } as const;
 const FAKE_SCREENSHOT = 'x'.repeat(200); // > 100 chars to pass validation
 
+/** L'endpoint di chi gestisce l'installazione: vale quando il nodo non ne indica uno. */
+const ENDPOINT = 'https://vision.example.com/v1/chat/completions';
+
 beforeEach(() => {
   mockedFetch.mockReset();
-  delete process.env.MEDEA_VISION_ENDPOINT;
+  process.env.MEDEA_VISION_ENDPOINT = ENDPOINT;
   delete process.env.MEDEA_VISION_API_KEY;
 });
 
@@ -146,9 +151,9 @@ describe('visionExtractNode.def', () => {
     expect(visionExtractNode.def.outputs).toContain('attempts');
   });
 
-  // Fase 2 (#14): il default NON è più il servizio :5004 (dismesso, e comunque
-  // loopback del container = mai raggiungibile) — endpoint vuoto = gateway.
-  it('endpoint config SENZA defaultValue legacy: vuoto = gateway metered', () => {
+  // Il campo non propone un indirizzo predefinito: l'endpoint lo sceglie chi
+  // configura il nodo, e un valore precompilato finirebbe salvato nei workflow.
+  it('endpoint config SENZA defaultValue: lo indica chi configura il nodo', () => {
     const f = visionExtractNode.def.configFields?.find((x) => x.key === 'endpoint');
     expect(f?.defaultValue).toBeUndefined();
   });
@@ -208,9 +213,9 @@ describe('visionExtractNode.executor — happy path', () => {
     expect(out.extracted).toEqual({ title: 'Prodotto X', price: 99 });
     expect(out.parseError).toBeNull();
     expect(out.attempts).toBe(1);
-    // Fase 2 (#14): model omesso → decide il gateway; la risposta mock non
-    // riporta `model` → etichetta esplicita, MAI il legacy Qwen2.5.
-    expect(out.modelUsed).toBe('gateway-default');
+    // Model omesso → decide l'endpoint; la risposta mock non riporta `model`
+    // → etichetta esplicita, MAI il legacy Qwen2.5.
+    expect(out.modelUsed).toBe('endpoint-default');
     expect(out._llm).toMatchObject({ provider: 'custom', fromApi: false });
   });
 
@@ -435,7 +440,7 @@ describe('VisionExtractOutputSchema', () => {
       attempts: 1,
       parseError: null,
       schemaValidationError: null,
-      _llm: { inputTokens: 10, outputTokens: 5, model: 'm', provider: 'liara', fromApi: true },
+      _llm: { inputTokens: 10, outputTokens: 5, model: 'm', provider: 'custom', fromApi: true },
     };
     expect(() => VisionExtractOutputSchema.parse(valid)).not.toThrow();
   });
@@ -468,9 +473,8 @@ describe('VisionExtractOutputSchema', () => {
   });
 });
 
-// ─── Fase 2 (#14): routing gateway metered + usage ──────────────────────────
-describe('visionExtractNode — gateway metered (Fase 2 #14)', () => {
-  const GW = 'http://172.20.0.1:3006/api/v1/llm';
+// ─── Da dove viene l'endpoint, e cosa succede quando non c'è ────────────────
+describe('visionExtractNode — endpoint, chiave e usage', () => {
   const okBody = (extra: Record<string, unknown> = {}) =>
     ({
       ok: true,
@@ -486,37 +490,48 @@ describe('visionExtractNode — gateway metered (Fase 2 #14)', () => {
     );
   };
 
-  beforeEach(() => {
-    vi.stubEnv('MEDEA_LIARA_BASE_URL', GW);
-    vi.stubEnv('MEDEA_LICENSE_KEY', 'lic-123');
-    vi.stubEnv('MEDEA_VISION_ENDPOINT', '');
-    vi.stubEnv('MEDEA_VISION_API_KEY', '');
-  });
   afterEach(() => {
     vi.unstubAllEnvs();
   });
 
-  it('🚨 endpoint assente → gateway metered (Qwen3-VL) + Bearer license + host esente dal guard', async () => {
+  /**
+   * Non esiste un modello vision di ripiego: senza un endpoint, né sul nodo né
+   * nell'ambiente, il nodo si ferma dicendo cosa manca. Partire verso un
+   * indirizzo predefinito vorrebbe dire mandare lo screenshot a un servizio
+   * che l'utente non ha scelto — o che non c'è più.
+   */
+  it('🚨 endpoint assente ovunque → errore che dice cosa manca, e NESSUNA richiesta parte', async () => {
+    vi.stubEnv('MEDEA_VISION_ENDPOINT', '');
+    await expect(run({})).rejects.toBeInstanceOf(VisionEndpointMissingError);
+    await expect(run({})).rejects.toThrow(/Endpoint vision non configurato/u);
+    expect(mockedFetch).not.toHaveBeenCalled();
+  });
+
+  it('endpoint assente sul nodo → quello dell’ambiente, senza Authorization se non c’è una chiave', async () => {
+    // La licenza dell'installazione NON è una chiave LLM: non deve mai
+    // diventare un Bearer verso un endpoint.
+    vi.stubEnv('MEDEA_LICENSE_KEY', 'lic-123');
     mockedFetch.mockResolvedValue(okBody());
     await run({});
     const [url, opts] = mockedFetch.mock.calls[0] as [
       string,
       { headers: Record<string, string>; allowedHosts?: string[] },
     ];
-    expect(url).toBe(`${GW}/chat/completions`);
-    expect(opts.headers.Authorization).toBe('Bearer lic-123');
-    expect(opts.allowedHosts).toEqual(['172.20.0.1:3006']);
+    expect(url).toBe(ENDPOINT);
+    expect(opts.headers.Authorization).toBeUndefined();
+    expect(opts.allowedHosts).toBeUndefined();
   });
 
-  it('🚨 sentinelle legacy (endpoint :5004 + model Qwen2.5) salvate in config → gateway, model omesso', async () => {
+  it('🚨 sentinelle legacy (endpoint :5004 + model Qwen2.5) salvate in config → non impostate: model omesso', async () => {
     mockedFetch.mockResolvedValue(
-      okBody({ model: 'liara', usage: { prompt_tokens: 500, completion_tokens: 20 } }),
+      okBody({ model: 'gpt-4o-mini', usage: { prompt_tokens: 500, completion_tokens: 20 } }),
     );
     const res = await run({
       endpoint: 'http://localhost:5004/v1/chat/completions',
       model: 'Qwen2.5-VL-7B-Instruct',
     });
-    expect(mockedFetch.mock.calls[0]![0]).toBe(`${GW}/chat/completions`);
+    expect(mockedFetch.mock.calls[0]![0]).toBe(ENDPOINT);
+    expect(resolveVisionEndpoint('http://localhost:5004/v1/chat/completions')).toBe(ENDPOINT);
     const body = JSON.parse((mockedFetch.mock.calls[0]![1] as { body: string }).body) as Record<
       string,
       unknown
@@ -526,11 +541,11 @@ describe('visionExtractNode — gateway metered (Fase 2 #14)', () => {
     expect(out._llm).toEqual({
       inputTokens: 500,
       outputTokens: 20,
-      model: 'liara',
-      provider: 'liara',
+      model: 'gpt-4o-mini',
+      provider: 'custom',
       fromApi: true,
     });
-    expect(out.modelUsed).toBe('liara');
+    expect(out.modelUsed).toBe('gpt-4o-mini');
   });
 
   it('endpoint BYOK custom → guard pieno (no allowedHosts), provider=custom', async () => {

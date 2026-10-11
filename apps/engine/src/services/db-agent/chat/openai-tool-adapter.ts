@@ -1,7 +1,7 @@
 /**
  * Adapter LLM tool-calling (formato OpenAI-compatible) per il loop DB-agent.
  *
- * L'infra FlowForge parla `/chat/completions` (Liara=default via OpenAI-compat,
+ * L'infra FlowForge parla `/chat/completions` (formato OpenAI-compat,
  * o OpenAI/BYOK). Qui traduciamo l'interfaccia astratta del loop (system +
  * ChatTurn[] + tools) in una richiesta valida, e la risposta in un LlmTurnResult.
  *

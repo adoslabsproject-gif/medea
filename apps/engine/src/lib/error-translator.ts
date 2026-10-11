@@ -147,9 +147,9 @@ const RULES: Rule[] = [
     },
   },
 
-  // ── LLM — Liara/OpenAI generic ───────────────────────────────────────
+  // ── LLM — errore generico del provider ───────────────────────────────
   {
-    match: /Liara \d+:|OpenAI \d+:|Anthropic \d+:|LLM .* error/u,
+    match: /OpenAI \d+:|Anthropic \d+:|LLM .* error/u,
     translate: (_msg, ctx) => ({
       title: `Errore LLM nel nodo "${ctx.nodeLabel}"`,
       hint: 'Il provider LLM ha rifiutato la richiesta. Tipiche cause: API key scaduta, rate limit, prompt troppo lungo, modello non disponibile. Verifica in Settings → AI Providers che la chiave sia valida.',
@@ -220,12 +220,12 @@ const RULES: Rule[] = [
     },
   },
 
-  // ── JSON parse — Liara malformato ────────────────────────────────────
+  // ── JSON parse — risposta del modello malformata ─────────────────────
   {
     match: /no balanced JSON found|JSON parse failed|_parseError/u,
     translate: (_msg, ctx) => ({
-      title: `Liara ha prodotto un JSON malformato`,
-      hint: `Il nodo "${ctx.nodeLabel}" ha ricevuto da Liara una risposta che non era JSON valido (anche dopo il retry di repair). Possibili fix: (1) semplifica lo schema atteso, (2) aggiungi più esempi nel "Contesto aggiuntivo", (3) prova con un altro LLM provider (Anthropic/OpenAI) come fallback.`,
+      title: `Il modello ha prodotto un JSON malformato`,
+      hint: `Il nodo "${ctx.nodeLabel}" ha ricevuto dal modello una risposta che non era JSON valido (anche dopo il retry di repair). Possibili fix: (1) semplifica lo schema atteso, (2) aggiungi più esempi nel "Contesto aggiuntivo", (3) prova con un altro LLM provider.`,
     }),
   },
 

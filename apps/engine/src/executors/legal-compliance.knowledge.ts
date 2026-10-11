@@ -4,7 +4,7 @@
  * Separato da legal-compliance.ts per rispettare cap 250 righe per file (regola
  * "no monoliti" CLAUDE.md). Versionato manualmente quando normative cambiano.
  *
- * Token budget ~2.5k → entro safety margin per prompt 8k context Liara.
+ * Token budget ~2.5k → entro safety margin anche per i modelli a contesto corto (8k).
  */
 
 export const LEGAL_KNOWLEDGE_INLINE = `

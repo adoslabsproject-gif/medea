@@ -46,14 +46,14 @@ describe('complete — costruzione request', () => {
     await p.complete(
       req({
         messages: [
-          { role: 'system', content: 'sei Liara' },
+          { role: 'system', content: 'sei un assistente' },
           { role: 'system', content: 'parla italiano' },
           { role: 'user', content: 'ciao' },
         ],
       }),
     );
     const body = lastBody();
-    expect(body.system).toBe('sei Liara\n\nparla italiano'); // join \n\n
+    expect(body.system).toBe('sei un assistente\n\nparla italiano'); // join \n\n
     expect((body.messages as unknown[]).length).toBe(1); // solo user, niente system
   });
 

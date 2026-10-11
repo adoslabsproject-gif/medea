@@ -80,7 +80,7 @@ export function todayUtc(): string {
  * every supported vendor included alla pari. Updated 2026-05-30.
  *
  * Estensione: aggiungi qui voci `<provider>/<model>` quando emergono nuovi
- * modelli pubblici. Quando il provider e\` self-hosted (Liara, Ollama),
+ * modelli pubblici. Quando il provider e\` self-hosted (Ollama),
  * modelliamo SOLO il cost amortizzato della GPU (no per-token outflow USD).
  *
  * Lookup: prima prova `${provider}/${model}` esatto, poi cade su `${provider}`
@@ -88,9 +88,6 @@ export function todayUtc(): string {
  * di overbill in mancanza di dati).
  */
 const PRICING_TABLE: Record<string, { inputPerM: number; outputPerM: number }> = {
-  // Liara self-hosted (GPU amortized)
-  liara: { inputPerM: 0.05, outputPerM: 0.1 },
-
   // OpenAI (ChatGPT)
   'openai/gpt-4o': { inputPerM: 2.5, outputPerM: 10.0 },
   'openai/gpt-4o-mini': { inputPerM: 0.15, outputPerM: 0.6 },

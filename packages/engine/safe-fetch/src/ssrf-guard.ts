@@ -280,8 +280,8 @@ export function validateUrlForFetch(
     return { ok: false, reason: 'BLOCKED_SCHEME', detail: `scheme "${url.protocol}" non permesso` };
   }
 
-  // Esenzione ESPLICITA per host:porta fidati (es. il gateway LLM interno di sistema,
-  // MEDEA_LIARA_BASE_URL=172.20.0.1:3006, raggiunto via la bridge docker). È
+  // Esenzione ESPLICITA per host:porta fidati (es. un servizio interno di sistema su
+  // 172.20.0.1:3006, raggiunto via la bridge docker). È
   // traffico di SISTEMA, non URL controllata dall'utente → l'IP privato è by-design.
   // Match ESATTO host+porta: NON apre la rete privata, solo l'endpoint enumerato. Lo
   // passano SOLO i call-site interni (mai il tool http_request dell'agent). Coerente

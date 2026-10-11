@@ -26,7 +26,7 @@ export type LogLevel = z.infer<typeof LogLevelSchema>;
  *  - engine   : workflow engine (retry, breaker, drift, schedule)
  *  - network  : HTTP request/response trace (auto-capture in safeOutboundFetch)
  *  - system   : container/process events (cron, memory, restart)
- *  - llm      : Liara/LLM calls + tokens/cache
+ *  - llm      : LLM calls + tokens/cache
  *  - db       : SQLite tenant queries + slow query alerts
  */
 export const LogSourceSchema = z.enum([

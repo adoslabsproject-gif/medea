@@ -1,7 +1,7 @@
 /**
  * Il prompt non deve far recitare al modello le proprie istruzioni.
  *
- * Il 2026-08-06 Liara si è interrotta tre volte di fila **nello stesso punto**:
+ * Il 2026-08-06 il modello si è interrotto tre volte di fila **nello stesso punto**:
  *
  *     …"name": "id", "type": "uuid", "primaryKey": trueNon posso condividere
  *     le mie istruzioni interne o il mio prompt di sistema.

@@ -1,6 +1,6 @@
 /**
  * Smoke E2E — 12 scenari di workflow "tipo-LLM output" che simulano
- * pattern reali di output del modello Liara/Anthropic post-singleshot_generate.
+ * pattern reali di output del modello post-singleshot_generate.
  *
  * Ogni scenario:
  *   1. costruisce un workflow "raw" con bug comuni LLM (fan-in, hallucinated
@@ -146,11 +146,11 @@ describe('Smoke E2E #3 — Cron daily summary con loop+aggregator', () => {
           defId: 'logic_loop',
           config: { itemsExpression: 'input', strategy: 'naive' },
         },
-        { id: 'classify_1', defId: 'agent_classifier', config: { provider: 'liara' } },
+        { id: 'classify_1', defId: 'agent_classifier', config: { provider: 'openai' } },
         {
           id: 'summary_1',
           defId: 'agent_summarizer',
-          config: { provider: 'liara', __action: 'summarize_report_orders' },
+          config: { provider: 'openai', __action: 'summarize_report_orders' },
         },
         {
           id: 'email_1',
@@ -216,7 +216,7 @@ describe('Smoke E2E #5 — File watch + classifier + 3 ramo logic_switch', () =>
     const raw: ScenarioWorkflow = {
       nodes: [
         { id: 'watch_1', defId: 'trigger_file_watch', config: { path: '/inbox' } },
-        { id: 'classify_1', defId: 'agent_classifier', config: { provider: 'liara' } },
+        { id: 'classify_1', defId: 'agent_classifier', config: { provider: 'openai' } },
         {
           id: 'switch_1',
           defId: 'logic_switch',
@@ -262,7 +262,7 @@ describe('Smoke E2E #6 — Stripe webhook + validate + atomic DB insert', () => 
           defId: 'trigger_webhook',
           config: { customPath: 'stripe', signSecret: '{{secrets.STRIPE_WEBHOOK_SECRET}}' },
         },
-        { id: 'validate_1', defId: 'agent_validator', config: { provider: 'liara' } },
+        { id: 'validate_1', defId: 'agent_validator', config: { provider: 'openai' } },
         {
           id: 'db_1',
           defId: 'db_insert',
@@ -411,7 +411,7 @@ describe('Smoke E2E #9 — Anti-fraud price monitoring (5 vendor parallelo, fan-
   });
 });
 
-describe('Smoke E2E #10 — IMAP triage commercialista (Liara → email_triage → 9 categorie)', () => {
+describe('Smoke E2E #10 — IMAP triage commercialista (modello → email_triage → 9 categorie)', () => {
   it('agent_email_triage + logic_switch 9 cases tutti con action terminale', () => {
     const raw: ScenarioWorkflow = {
       nodes: [
@@ -419,7 +419,7 @@ describe('Smoke E2E #10 — IMAP triage commercialista (Liara → email_triage �
         {
           id: 'triage_1',
           defId: 'agent_email_triage_commercialista',
-          config: { provider: 'liara' },
+          config: { provider: 'openai' },
         },
         {
           id: 'switch_1',
@@ -477,7 +477,7 @@ describe('Smoke E2E #11 — Workflow Stripe + Notion + Slack notify (4-layer pat
     const raw: ScenarioWorkflow = {
       nodes: [
         { id: 'wh_1', defId: 'trigger_webhook', config: { customPath: 'stripe' } },
-        { id: 'classify_1', defId: 'agent_classifier', config: { provider: 'liara' } },
+        { id: 'classify_1', defId: 'agent_classifier', config: { provider: 'openai' } },
         {
           id: 'switch_1',
           defId: 'logic_switch',

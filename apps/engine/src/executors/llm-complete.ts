@@ -6,8 +6,9 @@
  * (history, tool use, streaming) usare gli `agent_*` specifici.
  *
  * Provider:
- *   - liara (default) = Qwen3 32B self-hosted ZeliAI, gratis
- *   - anthropic/openai/gemini/mistral/groq/openrouter/deepseek/xai/perplexity = BYOK
+ *   - vuoto = quello scelto dal tenant in Settings → AI Providers
+ *   - anthropic/openai/gemini/mistral/groq/openrouter/deepseek/xai/perplexity = quello,
+ *     con la chiave configurata dal tenant
  *
  * Output:
  *   {
@@ -26,11 +27,7 @@ import { coerceString } from '@/lib/coerce.js';
 import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 import { logLlmExchange } from '@medea/engine-nodes-stdlib';
 import type { AgentLlmUsage } from '@medea/engine-nodes-ai-agents';
-import {
-  dispatchLLMChat,
-  LlmQuotaExceededError,
-  type LlmTokenUsage,
-} from '@/services/llm-chat.service.js';
+import { dispatchLLMChat, type LlmTokenUsage } from '@/services/llm-chat.service.js';
 import { llmResolver, NoLlmProviderError } from '@/services/llm-resolver.service.js';
 
 interface LlmCompleteOutput {
@@ -44,18 +41,11 @@ interface LlmCompleteOutput {
   responseFormat: 'text' | 'json';
   jsonParsed?: unknown;
   finishReason: 'stop' | 'length' | 'error';
-  /**
-   * Presente quando lo step ha degradato per quota esaurita: 'byok-fallback'
-   * = quota Liara esaurita → rieseguito con la chiave BYOK del tenant. Esplicito
-   * (mai swap nascosto): l'utente vede che il provider è cambiato.
-   */
-  degraded?: 'byok-fallback';
 }
 
-// Provider realmente gestiti dal gateway per action_llm_complete. Esportato per il
+// Provider che action_llm_complete lascia scegliere sul nodo. Esportato per il
 // test anti-drift (deve combaciare col configField `provider` del nodo in stdlib).
 export const ALLOWED_PROVIDERS = new Set([
-  'liara',
   'anthropic',
   'openai',
   'gemini',
@@ -68,7 +58,6 @@ export const ALLOWED_PROVIDERS = new Set([
 ]);
 
 const PROVIDER_DEFAULT_MODEL: Record<string, string> = {
-  liara: '', // Liara backend decide (qwen3-32b)
   anthropic: 'claude-sonnet-4-6',
   openai: 'gpt-4o-mini',
   gemini: 'gemini-2.0-flash',
@@ -89,14 +78,14 @@ export const llmCompleteExecutor: NodeExecutor = async (config, _input, context)
     throw new Error('action_llm_complete: "prompt" è obbligatorio');
   }
   const systemPrompt = coerceString(cfg.systemPrompt ?? '').trim();
-  const providerHint = coerceString(cfg.provider ?? 'liara')
+  const providerHint = coerceString(cfg.provider ?? '')
     .trim()
     .toLowerCase();
-  const allowed = ALLOWED_PROVIDERS.has(providerHint) ? providerHint : 'liara';
+  // Un nome che non è fra quelli offerti dal nodo — vuoto, o rimasto in un
+  // workflow salvato quando l'elenco era un altro — vale «quello del tenant».
+  const requested = ALLOWED_PROVIDERS.has(providerHint) ? providerHint : '';
   const modelHint = coerceString(cfg.model ?? '').trim();
-  // temperature: clampata a [0,2] e passata a dispatchLLMChat via opts.temperature
-  // (rispettata sia dal ramo Liara sia dai provider openai-compat). Prima era
-  // documentata nell'UI ma IGNORATA (0.2 hardcoded per Liara) — fix 2026-07.
+  // temperature: clampata a [0,2] e passata a dispatchLLMChat via opts.temperature.
   const temperatureRaw = Number(cfg.temperature ?? 0.7);
   const temperature = Number.isFinite(temperatureRaw)
     ? Math.max(0, Math.min(2, temperatureRaw))
@@ -114,31 +103,32 @@ export const llmCompleteExecutor: NodeExecutor = async (config, _input, context)
       ? Math.min(Math.floor(timeoutMsRaw), 300_000)
       : 60_000;
 
-  // Provider resolution:
-  //   - liara: nessuna API key (lic key del container fa da auth via portal gateway)
-  //   - BYOK (anthropic/openai/...): llmResolver.resolve(tenantId) restituisce
-  //     ResolvedLlm = { provider, apiKey, model, baseUrl? } leggendo dal
-  //     vault tenant. Se config.provider != quello configurato dal tenant,
-  //     lo ignoriamo silently (rispettiamo le preferences platform).
-  let provider = allowed;
-  let apiKey = '';
-  let model = modelHint || PROVIDER_DEFAULT_MODEL[provider] || '';
+  // Provider resolution: llmResolver.resolve(tenantId) restituisce
+  // ResolvedLlm = { provider, apiKey, model, baseUrl? } leggendo dal vault del
+  // tenant. Con un provider scelto sul nodo si chiede quello; senza, decide la
+  // preferenza del tenant. In entrambi i casi serve una chiave configurata.
+  let provider: string;
+  let apiKey: string;
+  let model: string;
   let baseUrl: string | undefined;
-  if (provider !== 'liara') {
-    try {
-      const resolved = llmResolver.resolve(context.tenantId, { requestedProvider: providerHint });
-      provider = resolved.provider;
-      apiKey = resolved.apiKey;
-      if (!modelHint && resolved.model) model = resolved.model;
-      if (resolved.baseUrl) baseUrl = resolved.baseUrl;
-    } catch (err) {
-      if (err instanceof NoLlmProviderError) {
-        throw new Error(
-          `action_llm_complete: provider "${providerHint}" richiede API key configurata in Settings → AI Providers (${err.message})`,
-        );
-      }
-      throw err;
+  try {
+    const resolved = llmResolver.resolve(
+      context.tenantId,
+      requested ? { requestedProvider: requested } : {},
+    );
+    provider = resolved.provider;
+    apiKey = resolved.apiKey;
+    model = modelHint || resolved.model || PROVIDER_DEFAULT_MODEL[provider] || '';
+    if (resolved.baseUrl) baseUrl = resolved.baseUrl;
+  } catch (err) {
+    if (err instanceof NoLlmProviderError) {
+      throw new Error(
+        requested
+          ? `action_llm_complete: provider "${requested}" richiede API key configurata in Settings → AI Providers (${err.message})`
+          : `action_llm_complete: ${err.message}`,
+      );
     }
+    throw err;
   }
 
   // Forza JSON nel system prompt quando responseFormat=json — pattern
@@ -149,75 +139,27 @@ export const llmCompleteExecutor: NodeExecutor = async (config, _input, context)
       ? `${systemPrompt}\n\nIMPORTANTE: rispondi SOLO con un oggetto JSON valido. Niente testo prima o dopo. Niente backtick \`\`\`json\`\`\` wrapper.`
       : systemPrompt;
 
-  // Override PER-CHIAMATA di timeout/maxTokens passati ESPLICITAMENTE a dispatchLLMChat.
-  // ⛔ PRIMA: si mutava process.env.MEDEA_LIARA_{TIMEOUT_MS,MAX_TOKENS} attorno
-  // all'await → race tra run/nodi concorrenti nello STESSO container (A scrive, B
-  // sovrascrive, A legge il valore di B; il restore nel finally si incrociava). L'env
-  // è globale al processo: mai mutarlo per config per-chiamata.
+  // Override PER-CHIAMATA di timeout/maxTokens passati ESPLICITAMENTE a
+  // dispatchLLMChat: l'env è globale al processo, mai mutarlo per una
+  // configurazione che vale per una chiamata (race tra run concorrenti).
   const llmOpts = { maxTokens, timeoutMs, temperature } as const;
 
-  let completion: string;
   let usage: LlmTokenUsage = { input: 0, output: 0, fromApi: false };
   let finishReason: 'stop' | 'length' | 'error' = 'stop';
-  let degraded: 'byok-fallback' | undefined;
 
-  try {
-    completion = await dispatchLLMChat(
-      provider,
-      apiKey,
-      model,
-      effectiveSystem,
-      prompt,
-      baseUrl, // BYOK custom endpoint (es. proxy aziendale OpenAI-compatible) o undefined per default
-      [], // history vuota — single-shot
-      (u) => {
-        usage = u;
-      },
-      undefined, // requestId
-      llmOpts,
-    );
-  } catch (err) {
-    // ── DEGRADAZIONE QUOTA: fallback BYOK ────────────────────────────────
-    // Quota Liara esaurita (errore TIPIZZATO) + il tenant ha una chiave BYOK →
-    // riprova con quella (i token BYOK non contano sulla quota Liara). È
-    // ESPLICITO (output.degraded='byok-fallback' + provider cambiato), mai uno
-    // swap nascosto su chiave a pagamento. Senza BYOK: propaga l'errore quota
-    // CHIARO (la pausa-su-rinnovo è gestita a livello engine, fase successiva).
-    if (provider === 'liara' && err instanceof LlmQuotaExceededError) {
-      const fb = llmResolver.resolveExternalFallback(context.tenantId);
-      if (!fb) {
-        finishReason = 'error';
-        throw err;
-      }
-      try {
-        completion = await dispatchLLMChat(
-          fb.provider,
-          fb.apiKey,
-          fb.model || PROVIDER_DEFAULT_MODEL[fb.provider] || '',
-          effectiveSystem,
-          prompt,
-          fb.baseUrl,
-          [],
-          (u) => {
-            usage = u;
-          },
-          undefined, // requestId
-          llmOpts,
-        );
-        provider = fb.provider;
-        model = fb.model || PROVIDER_DEFAULT_MODEL[fb.provider] || model;
-        degraded = 'byok-fallback';
-        finishReason = 'stop';
-      } catch (fallbackErr) {
-        finishReason = 'error';
-        throw fallbackErr;
-      }
-    } else {
-      finishReason = 'error';
-      throw err;
-    }
-  }
-  void temperature; // doc-only: pinned per UI consistency (vedi commento sopra)
+  const completion = await dispatchLLMChat(
+    provider,
+    apiKey,
+    model,
+    effectiveSystem,
+    prompt,
+    baseUrl, // endpoint configurato dal tenant per il provider, o undefined per quello fisso
+    [], // history vuota — single-shot
+    (u) => {
+      usage = u;
+    },
+    llmOpts,
+  );
 
   // Fase 3 (#15): prompt completo (system effettivo incluso) + risposta → StepLog 'llm'.
   logLlmExchange(context, {
@@ -226,7 +168,6 @@ export const llmCompleteExecutor: NodeExecutor = async (config, _input, context)
     system: effectiveSystem,
     user: prompt,
     response: completion,
-    ...(degraded ? { phase: 'byok-fallback' } : {}),
   });
 
   // Parse JSON output se richiesto (best-effort, no throw — il completion
@@ -275,7 +216,6 @@ export const llmCompleteExecutor: NodeExecutor = async (config, _input, context)
     responseFormat,
     ...(jsonParsed !== undefined ? { jsonParsed } : {}),
     finishReason,
-    ...(degraded ? { degraded } : {}),
   };
 
   return { output, durationMs: Date.now() - start };

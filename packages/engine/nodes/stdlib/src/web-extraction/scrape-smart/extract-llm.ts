@@ -1,5 +1,5 @@
 /**
- * extractWithLlm — chiama Liara LLM con HTML + prompt naturale → JSON.
+ * extractWithLlm — chiama un LLM con HTML + prompt naturale → JSON.
  *
  * Estrazione text-based (no vision). Per estrazione visiva usa vision-extract.
  *
@@ -8,42 +8,41 @@
  * response_format: json_object.
  */
 
-import { safeFetchWithRedirects, internalGatewayTrustedHost } from '@medea/engine-safe-fetch';
+import { safeFetchWithRedirects } from '@medea/engine-safe-fetch';
 
 /**
- * Default LEGACY pre-Fase 2 (#14): puntavano al loopback DEL CONTAINER dove non
- * ascolta nulla → il ramo LLM di scrape_smart non ha MAI funzionato dal tenant.
- * Restano solo come sentinelle: un workflow salvato con questi valori in config
- * li ha ereditati dal vecchio defaultValue del configField, NON li ha scelti →
- * vanno trattati come "non impostato" e instradati sul gateway.
+ * Il vecchio valore predefinito del campo endpoint: puntava al loopback, dove
+ * non ascolta nulla. Un workflow salvato con questo valore lo ha ereditato dal
+ * configField, NON lo ha scelto → vale "non impostato".
  */
 const LEGACY_ENDPOINT_DEFAULT = 'http://localhost:3003/v1/chat/completions';
-const LEGACY_MODEL_DEFAULT = 'liara-distilled';
 
 const MAX_HTML_CHARS = 60_000;
 
-/** Base del gateway metered (portal), iniettata nell'env di ogni container tenant. */
-function gatewayBase(): string | undefined {
-  const raw = typeof process !== 'undefined' ? process.env.MEDEA_LIARA_BASE_URL : undefined;
-  return raw ? raw.replace(/\/$/, '') : undefined;
+/** Manca l'endpoint del modello: il messaggio dice dove indicarlo. */
+export class LlmEndpointMissingError extends Error {
+  constructor() {
+    super(
+      'Endpoint LLM non configurato: indica sul nodo un endpoint OpenAI-compatibile ' +
+        '(es. https://api.openai.com/v1/chat/completions) con la sua API key e il modello.',
+    );
+    this.name = 'LlmEndpointMissingError';
+  }
 }
 
 /**
- * Risoluzione endpoint (Fase 2 #14 — Liara-da-gateway di DEFAULT):
- *   1. endpoint esplicito ≠ sentinella legacy → BYOK OpenAI-compat (guard SSRF pieno)
- *   2. env MEDEA_LIARA_ENDPOINT (override operatore)
- *   3. gateway metered `${MEDEA_LIARA_BASE_URL}/chat/completions`
- *   4. fallback dev locale (fuori container, es. test/CLI)
+ * Risoluzione endpoint:
+ *   1. endpoint esplicito sul nodo (OpenAI-compat, guard SSRF pieno)
+ *   2. env MEDEA_LLM_ENDPOINT (override di chi gestisce l'installazione)
+ *   3. nessuno → errore che dice cosa manca. Non esiste un modello di ripiego.
  */
 export function resolveLlmEndpoint(explicit: string | undefined): string {
   const cleaned = (explicit ?? '').trim();
   if (cleaned && cleaned !== LEGACY_ENDPOINT_DEFAULT) return cleaned;
   const envOverride =
-    typeof process !== 'undefined' ? (process.env.MEDEA_LIARA_ENDPOINT ?? '').trim() : '';
+    typeof process !== 'undefined' ? (process.env.MEDEA_LLM_ENDPOINT ?? '').trim() : '';
   if (envOverride) return envOverride;
-  const base = gatewayBase();
-  if (base) return `${base}/chat/completions`;
-  return LEGACY_ENDPOINT_DEFAULT;
+  throw new LlmEndpointMissingError();
 }
 
 export function sanitizeHtmlForLlm(html: string): string {
@@ -78,8 +77,8 @@ export interface ExtractWithLlmResult {
   htmlCharsUsed: number;
   /** Token della chiamata (Fase 2 #14) — dai campi usage della risposta OpenAI-compat quando presenti, stima ~3.5 char/token altrimenti. */
   usage: { input: number; output: number; fromApi: boolean };
-  /** 'liara' = gateway metered interno; 'custom' = endpoint BYOK OpenAI-compat dell'utente. */
-  provider: 'liara' | 'custom';
+  /** Sempre 'custom': l'endpoint OpenAI-compat è quello indicato dall'utente. */
+  provider: 'custom';
   /** Prompt come inviati (Fase 3 #15) — il CHIAMANTE (scrape-smart) li logga su StepLog 'llm'. */
   sentSystem: string;
   sentUser: string;
@@ -117,19 +116,13 @@ export async function extractWithLlm(args: ExtractWithLlmArgs): Promise<ExtractW
   if (!sanitized) throw new Error('html empty after sanitize');
 
   const endpoint = resolveLlmEndpoint(args.endpoint);
-  // Auth: apiKey esplicita (BYOK) → env dedicata → license del container (il
-  // gateway metered ESIGE il Bearer license, come la chat e gli agent_*).
-  // Catena su `||`, NON `??`: un campo secret VUOTO salvato in config (o una
-  // env vuota) deve cadere sulla license, non silenziare l'auth → 401.
-  const licenseKey =
-    typeof process !== 'undefined' ? (process.env.MEDEA_LICENSE_KEY ?? '').trim() : '';
+  // Auth: apiKey esplicita sul nodo → env dedicata. Catena su `||`, NON `??`:
+  // un campo secret VUOTO salvato in config deve cadere sull'env, non
+  // silenziare l'auth → 401.
   const envKey =
-    typeof process !== 'undefined' ? (process.env.MEDEA_LIARA_API_KEY ?? '').trim() : '';
-  const apiKey = (args.apiKey ?? '').trim() || envKey || licenseKey;
-  // Model: la sentinella legacy 'liara-distilled' (mai servita da vLLM) conta
-  // come "non impostato" → campo omesso → il gateway inietta il suo default.
-  const modelRaw = (args.model ?? '').trim();
-  const model = modelRaw === LEGACY_MODEL_DEFAULT ? '' : modelRaw;
+    typeof process !== 'undefined' ? (process.env.MEDEA_LLM_API_KEY ?? '').trim() : '';
+  const apiKey = (args.apiKey ?? '').trim() || envKey;
+  const model = (args.model ?? '').trim();
   const maxTokens = Math.max(64, Math.min(args.maxTokens ?? 2048, 8192));
   const timeoutMs = Math.max(5000, Math.min(args.timeoutMs ?? 45_000, 180_000));
 
@@ -147,10 +140,7 @@ export async function extractWithLlm(args: ExtractWithLlmArgs): Promise<ExtractW
   const reqHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
   if (apiKey) reqHeaders.Authorization = `Bearer ${apiKey}`;
 
-  // SSRF: il gateway interno (IP privato della bridge Docker by-design) è
-  // l'UNICO host esente, per confronto di origin. Endpoint BYOK → guard pieno.
-  const trustedHost = internalGatewayTrustedHost(endpoint, gatewayBase());
-
+  // SSRF: l'endpoint è scelto dall'utente → guard pieno, nessun host esente.
   const res = await safeFetchWithRedirects(endpoint, {
     method: 'POST',
     headers: reqHeaders,
@@ -165,7 +155,6 @@ export async function extractWithLlm(args: ExtractWithLlmArgs): Promise<ExtractW
       response_format: { type: 'json_object' },
     }),
     timeoutMs,
-    ...(trustedHost ? { allowedHosts: [trustedHost] } : {}),
   });
 
   if (!res.ok) {
@@ -209,14 +198,14 @@ export async function extractWithLlm(args: ExtractWithLlmArgs): Promise<ExtractW
   return {
     extracted,
     rawResponse: content,
-    // Modello EFFETTIVO: la risposta OpenAI-compat lo riporta (il gateway può
-    // aver iniettato il suo default quando il campo era omesso).
-    modelUsed: data.model ?? (model || 'gateway-default'),
+    // Modello EFFETTIVO: la risposta OpenAI-compat lo riporta (l'endpoint può
+    // aver scelto il suo default quando il campo era omesso).
+    modelUsed: data.model ?? (model || 'endpoint-default'),
     latencyMs: Date.now() - start,
     parseError,
     htmlCharsUsed: sanitized.length,
     usage,
-    provider: trustedHost ? 'liara' : 'custom',
+    provider: 'custom',
     sentSystem: systemPrompt,
     sentUser: userPrompt,
   };

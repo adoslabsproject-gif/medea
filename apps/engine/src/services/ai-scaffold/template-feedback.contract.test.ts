@@ -102,7 +102,7 @@ describe('🚨🚨 negative examples: CONTRATTO writer (capture) ↔ reader (blo
       tenantId: 't-neg',
       goal: 'workflow che manda email a tutti',
       rejectedWorkflow: { nodes: [], edges: [] },
-      model: 'liara',
+      model: 'openai',
       latencyMs: 1000,
     };
     captureRejectedScaffold({
@@ -139,7 +139,7 @@ describe('🚨🚨 negative examples: CONTRATTO writer (capture) ↔ reader (blo
       goal: 'x',
       rejectedWorkflow: { nodes: [], edges: [] },
       criticalIssues: [{ code: 'DEAD_END_BRANCH', message: 'ramo morto' }],
-      model: 'liara',
+      model: 'openai',
       latencyMs: 1,
     });
     expect(buildNegativeFeedbackBlock('t-altro')).toBe('');

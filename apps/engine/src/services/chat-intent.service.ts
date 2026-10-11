@@ -4,7 +4,7 @@
  * PATTERN: deterministic intent classification BEFORE LLM call. Stesso
  * approccio di ChatGPT Browsing, Perplexity, Claude.ai: non si delega al
  * LLM la decisione "devo chiamare un tool?" perché i modelli weak
- * (Liara/Qwen, Gemini Flash, Llama 3.x small) ignorano sistematicamente
+ * (Qwen, Gemini Flash, Llama 3.x small) ignorano sistematicamente
  * le istruzioni "USA QUESTO TOOL SE NECESSARIO" sepolte nel system prompt.
  *
  * INVECE: il backend ispeziona il messaggio utente con regex/keyword,
@@ -340,7 +340,7 @@ export function detectIntents(userMessage: string): DetectedIntent[] {
 
 export async function executeIntents(
   intents: DetectedIntent[],
-  /** Provider LLM risolto del tenant (BYOK o Liara) per i tool vision. Assente →
+  /** Provider LLM risolto del tenant per i tool vision. Assente →
    *  i tool immagine/documento ritornano un errore esplicito. */
   visionTarget?: VisionLlmTarget,
 ): Promise<ToolExecutionResult[]> {
@@ -528,7 +528,7 @@ export function formatToolResultsForPrompt(results: ToolExecutionResult[]): stri
     } else if (r.intent.type === 'analyze_image') {
       // FIX 2026-06-22: senza questo ramo il risultato vision cadeva nell'`else`
       // (cast as SearchResponse) → il testo estratto NON entrava mai nel prompt →
-      // Liara rispondeva "non vedo la foto". Ora emettiamo testo + dati strutturati,
+      // il modello rispondeva "non vedo la foto". Ora emettiamo testo + dati strutturati,
       // e su ko un avviso ESPLICITO (così non nega l'esistenza dell'allegato).
       const d = r.data as VisionAnalysisResult;
       if (d.ok && (d.text ?? '').trim().length > 0) {

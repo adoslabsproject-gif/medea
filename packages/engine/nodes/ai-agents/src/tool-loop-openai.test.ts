@@ -1,7 +1,6 @@
 /**
- * Test del loop tool-calling OpenAI-format (Fase 2 #14) — il percorso Liara
- * default di ai_agent_tool_loop (tool_calls Qwen3-VL validati live 2026-07-06)
- * e dei provider BYOK OpenAI-compat. Bug-bounty: arguments garbage, errori
+ * Test del loop tool-calling OpenAI-format (Fase 2 #14) — il percorso dei
+ * provider OpenAI-compat di ai_agent_tool_loop. Bug-bounty: arguments garbage, errori
  * HTTP a metà loop (token già spesi → _llm comunque), cancel, sentinelle
  * model legacy, provider non supportato.
  */
@@ -20,8 +19,15 @@ vi.mock('@medea/engine-nodes-stdlib', async (orig) => {
 const { agentToolLoopNode } = await import('./tool-loop.js');
 const { openAiLoopEndpoint, toOpenAiTools } = await import('./tool-loop-openai.js');
 
-const GW = 'http://172.20.0.1:3006/api/v1/llm';
-const ctx = { tenantId: 't1', runId: 'r1', nodeId: 'n1', workflowId: 'w1' };
+const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
+// Il tenant ha configurato OpenAI: è il provider che un nodo senza provider usa.
+const ctx = {
+  tenantId: 't1',
+  runId: 'r1',
+  nodeId: 'n1',
+  workflowId: 'w1',
+  llmProviders: { openai: { apiKey: 'sk-tenant' } },
+};
 
 const okReply = (body: unknown) => ({
   ok: true,
@@ -33,7 +39,7 @@ const okReply = (body: unknown) => ({
 const assistantFinal = (text: string, usage = { prompt_tokens: 100, completion_tokens: 20 }) =>
   okReply({
     choices: [{ message: { role: 'assistant', content: text }, finish_reason: 'stop' }],
-    model: 'liara',
+    model: 'gpt-4o-mini',
     usage,
   });
 const assistantToolCall = (
@@ -52,7 +58,7 @@ const assistantToolCall = (
         finish_reason: 'tool_calls',
       },
     ],
-    model: 'liara',
+    model: 'gpt-4o-mini',
     usage,
   });
 
@@ -67,7 +73,8 @@ function sentBody(i = 0): Record<string, unknown> {
 
 beforeEach(() => {
   safeFetch.mockReset();
-  vi.stubEnv('MEDEA_LIARA_BASE_URL', GW);
+  // Presente apposta: la licenza dell'installazione NON deve mai finire come
+  // Bearer verso un provider LLM.
   vi.stubEnv('MEDEA_LICENSE_KEY', 'lic-abc');
 });
 afterEach(() => {
@@ -75,15 +82,13 @@ afterEach(() => {
 });
 
 describe('openAiLoopEndpoint — routing + auth', () => {
-  it('liara: gateway da env, Bearer license, host esente, model claude-* legacy → omesso', () => {
-    const e = openAiLoopEndpoint('liara', '', 'claude-sonnet-4-5', undefined);
-    expect(e.url).toBe(`${GW}/chat/completions`);
-    expect(e.headers.Authorization).toBe('Bearer lic-abc');
-    expect(e.trustedHost).toBe('172.20.0.1:3006');
-    expect(e.effectiveModel).toBe('');
+  it('🚨 un provider che non esiste più → throw col suo nome, non un indirizzo di ripiego', () => {
+    expect(() => openAiLoopEndpoint('provider-dismesso', '', '', undefined)).toThrow(
+      /provider "provider-dismesso" non supporta il tool-calling/,
+    );
   });
 
-  it('openai BYOK: endpoint pubblico, Bearer apiKey, NESSUNA esenzione guard', () => {
+  it('openai: endpoint pubblico, Bearer apiKey (mai la licenza), NESSUNA esenzione guard', () => {
     const e = openAiLoopEndpoint('openai', 'sk-x', '', undefined);
     expect(e.url).toContain('api.openai.com');
     expect(e.headers.Authorization).toBe('Bearer sk-x');
@@ -135,11 +140,13 @@ describe('toOpenAiTools — conversione formato', () => {
   });
 });
 
-describe('ai_agent_tool_loop — ramo Liara (default senza apiKey)', () => {
-  it('🚨 config VUOTA (no provider, no key) → chiama il GATEWAY con tools OpenAI + tool_choice auto', async () => {
+describe('ai_agent_tool_loop — provider del tenant (nodo senza provider né chiave)', () => {
+  it('🚨 config VUOTA → il provider configurato dal tenant, con la SUA chiave, tools OpenAI + tool_choice auto', async () => {
     safeFetch.mockResolvedValueOnce(assistantFinal('fatto'));
     const r = await run({ goal: 'dimmi ciao' });
-    expect(safeFetch.mock.calls[0]![0] as string).toBe(`${GW}/chat/completions`);
+    expect(safeFetch.mock.calls[0]![0] as string).toBe(OPENAI_URL);
+    const headers = (safeFetch.mock.calls[0]![1] as { headers: Record<string, string> }).headers;
+    expect(headers.Authorization).toBe('Bearer sk-tenant');
     const body = sentBody();
     expect(body.tool_choice).toBe('auto');
     const tools = body.tools as { function: { name: string } }[];
@@ -184,8 +191,8 @@ describe('ai_agent_tool_loop — ramo Liara (default senza apiKey)', () => {
     expect(llm).toEqual({
       inputTokens: 350,
       outputTokens: 40,
-      model: 'liara',
-      provider: 'liara',
+      model: 'gpt-4o-mini',
+      provider: 'openai',
       fromApi: true,
     });
   });
@@ -213,7 +220,7 @@ describe('ai_agent_tool_loop — ramo Liara (default senza apiKey)', () => {
     });
     const r = await run({ goal: 'x' });
     const out = (r as { output: { error: string; _llm?: Record<string, unknown> } }).output;
-    expect(out.error).toMatch(/Liara 502/);
+    expect(out.error).toMatch(/OpenAI 502/);
     expect(out._llm).toMatchObject({ inputTokens: 150, outputTokens: 30 });
   });
 
@@ -243,27 +250,19 @@ describe('ai_agent_tool_loop — ramo Liara (default senza apiKey)', () => {
     expect((r as { output: { finalAnswer: string } }).output.finalAnswer).toBe('da gemini');
   });
 
-  it('🚨 provider senza tools (perplexity da Settings) → fallback DICHIARATO su Liara, il nodo FUNZIONA', async () => {
-    safeFetch.mockResolvedValueOnce(assistantFinal('eseguito su liara'));
+  /**
+   * Un provider che non sa chiamare strumenti non può far girare questo nodo.
+   * Non si ripiega su un altro provider — nemmeno su quello del tenant — perché
+   * spenderebbe una chiave che l'utente non ha indicato per questo nodo: ci si
+   * ferma, dicendo cosa fare.
+   */
+  it('🚨 provider senza tools (perplexity) → errore che dice di sceglierne un altro, NESSUNA chiamata', async () => {
     const r = await run({ provider: 'perplexity', apiKey: 'k', goal: 'x' });
-    const out = (
-      r as {
-        output: {
-          finalAnswer: string;
-          providerFallback: { from: string; reason: string };
-          _llm: { provider: string };
-        };
-      }
-    ).output;
-    // La chiamata è andata al GATEWAY Liara, non a perplexity
-    expect(safeFetch.mock.calls[0]![0]).toBe(`${GW}/chat/completions`);
-    expect(out.finalAnswer).toBe('eseguito su liara');
-    // Mai swap nascosto: fallback dichiarato + _llm mostra il provider REALE
-    expect(out.providerFallback).toEqual({
-      from: 'perplexity',
-      reason: expect.stringContaining('non supporta il tool-calling') as string,
-    });
-    expect(out._llm.provider).toBe('liara');
+    const out = (r as { output: Record<string, unknown> }).output;
+    expect(out.error).toMatch(/"perplexity" non supporta il tool-calling/u);
+    expect(out.error).toMatch(/Settings → AI Providers/u);
+    expect(out).not.toHaveProperty('providerFallback');
+    expect(safeFetch).not.toHaveBeenCalled();
   });
 });
 

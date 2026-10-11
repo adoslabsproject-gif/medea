@@ -7,7 +7,7 @@
  *   3. browser_stealth se anti-bot challenge (Cloudflare/Akamai/DataDome)
  *   4. vision_extract se contenuto visually-only (canvas/PDF/SVG-heavy)
  *
- * + Liara LLM extract: prompt naturale + schema target → JSON
+ * + LLM extract: prompt naturale + schema target → JSON
  * + Pagination auto-detect: rel="next", aria-label, text-match, URL pattern
  * + Multi-page follow (max pages config)
  *
@@ -57,9 +57,9 @@ const executor: NodeExecutor = async (config, _input, context) => {
     config.stealthEndpoint ?? process.env.MEDEA_STEALTH_ENDPOINT ?? '',
   ).trim();
   const stealthApiKey = String(config.stealthApiKey ?? '').trim();
-  const liaraEndpoint = String(config.liaraEndpoint ?? '').trim() || undefined;
-  const liaraApiKey = String(config.liaraApiKey ?? '').trim() || undefined;
-  const liaraModel = String(config.liaraModel ?? '').trim() || undefined;
+  const cfgLlmEndpoint = String(config.llmEndpoint ?? '').trim() || undefined;
+  const cfgLlmApiKey = String(config.llmApiKey ?? '').trim() || undefined;
+  const cfgLlmModel = String(config.llmModel ?? '').trim() || undefined;
 
   const forceStageRaw = String(config.forceStage ?? 'auto').trim();
   const forceStage: PipelineStage | undefined =
@@ -106,9 +106,9 @@ const executor: NodeExecutor = async (config, _input, context) => {
           html: pipelineRes.html,
           prompt,
           schemaJson,
-          endpoint: liaraEndpoint,
-          apiKey: liaraApiKey,
-          model: liaraModel,
+          endpoint: cfgLlmEndpoint,
+          apiKey: cfgLlmApiKey,
+          model: cfgLlmModel,
           timeoutMs,
         });
         extracted = llmRes.extracted;
@@ -198,10 +198,10 @@ export const scrapeSmartNode: NodeModule = {
       '  2. browser_render se HTML scarno (SPA shell)\n' +
       '  3. browser_stealth se anti-bot challenge (Cloudflare/Akamai/DataDome/PerimeterX)\n' +
       '  4. vision_extract se contenuto visually-only (canvas/PDF/SVG)\n\n' +
-      'Estrazione: un LLM OpenAI-compatibile (default Liara locale, ma puoi puntarlo a QUALSIASI endpoint /v1/chat/completions via i campi sotto) riceve HTML + prompt naturale ("estrai prezzo, titolo, immagine") + schema JSON target → ritorna oggetto strutturato. No CSS selectors.\n\n' +
+      'Estrazione: un LLM OpenAI-compatibile (qualsiasi endpoint /v1/chat/completions, indicato nei campi sotto) riceve HTML + prompt naturale ("estrai prezzo, titolo, immagine") + schema JSON target → ritorna oggetto strutturato. No CSS selectors.\n\n' +
       'Pagination: auto-detect rel="next", aria-label "Next", text "Successivo/Avanti/›", URL pattern page=N → page=N+1. Follow fino a maxPages.\n\n' +
       'Observability: ogni request espone pipelineSteps con stage usato + duration + evidence + errore.\n\n' +
-      'Setup BYO: configura MEDEA_BROWSER_ENDPOINT + MEDEA_STEALTH_ENDPOINT (browserless self-host o managed Zeli). LLM = qualsiasi endpoint OpenAI-compatibile (default Liara locale :3003); override endpoint/key/model nei campi.\n\n' +
+      'Setup BYO: configura MEDEA_BROWSER_ENDPOINT + MEDEA_STEALTH_ENDPOINT (browserless self-host o managed Zeli). LLM = qualsiasi endpoint OpenAI-compatibile; override endpoint/key/model nei campi.\n\n' +
       'Use case: (1) scraping listing prodotti e-commerce con pagination + extract JSON strutturato, (2) ingest dati pubblici (registri/anagrafiche) con fallback adaptive, (3) monitoring concorrenti con AI extract di prezzi e stock, (4) onboarding cliente B2B che chiede "scarica i miei dati da X" senza scrivere CSS selectors.',
     outputContract: {
       notes: 'I dati estratti stanno in `extracted`, con i nomi dello schema in configurazione. `pagesSuccessful` inferiore a `pagesScraped` significa che alcune pagine non hanno dato niente: i dati sono parziali.',
@@ -315,25 +315,26 @@ export const scrapeSmartNode: NodeModule = {
         help: 'Bearer stealth endpoint.',
       },
       {
-        key: 'liaraEndpoint',
-        label: 'LLM endpoint (OpenAI-compat, override)',
+        key: 'llmEndpoint',
+        label: 'LLM endpoint (OpenAI-compat)',
         type: 'text',
         required: false,
-        help: 'Vuoto = Liara via gateway FlowForge (default, metered sulla quota). Compila SOLO per un provider OpenAI-compatibile tuo (OpenAI, Groq, OpenRouter, vLLM, Ollama…).',
+        placeholder: 'https://api.openai.com/v1/chat/completions',
+        help: "L'endpoint del tuo provider OpenAI-compatibile (OpenAI, Groq, OpenRouter, vLLM…). Serve per l'estrazione con LLM: senza, il nodo si ferma dicendo che manca.",
       },
       {
-        key: 'liaraApiKey',
-        label: 'LLM API key (Bearer, override)',
+        key: 'llmApiKey',
+        label: 'LLM API key (Bearer)',
         type: 'secret',
         required: false,
-        help: "Bearer token dell'endpoint custom. Vuoto = license del workspace (gateway Liara).",
+        help: "Bearer token dell'endpoint indicato sopra.",
       },
       {
-        key: 'liaraModel',
-        label: 'LLM model (override)',
+        key: 'llmModel',
+        label: 'LLM model',
         type: 'text',
         required: false,
-        help: 'Vuoto = modello di default del gateway Liara. Per provider custom usa il loro model ID (es. gpt-4o-mini, llama-3.1-70b).',
+        help: 'Il model ID del tuo provider (es. gpt-4o-mini, llama-3.1-70b). Vuoto = il default del suo endpoint, se ne ha uno.',
       },
     ],
     outputs: [

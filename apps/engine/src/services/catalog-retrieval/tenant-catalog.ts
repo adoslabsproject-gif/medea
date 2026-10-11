@@ -3,15 +3,15 @@
  * custom node PRIVATI del tenant (creati nell'editor, status runnable).
  *
  * Il gap chiuso qui (owner 2026-06-12): buildNodeCatalog includeva sistema +
- * community ma NON i custom node privati (tabella custom_nodes) → Liara non li
+ * community ma NON i custom node privati (tabella custom_nodes) → l'assistente non li
  * conosceva nella chat. Ora i custom runnable entrano nel catalogo e — grazie
  * alla RAG auto-derivata — il retriever li embedda e li recupera DA SOLO. Crei
- * "Calcola sconto fedeltà", lo pubblichi nel workspace, e Liara lo trova.
+ * "Calcola sconto fedeltà", lo pubblichi nel workspace, e l'assistente lo trova.
  *
  * "Runnable" = gli stessi status che l'engine accetta a dispatch
  * (custom-nodes/runtime-loader RUNNABLE_STATUSES): published_priv e
  * marketplace_published. I draft/candidate NON sono eseguibili → restano fuori
- * (Liara non deve proporre un nodo che fallirebbe l'esecuzione).
+ * (l'assistente non deve proporre un nodo che fallirebbe l'esecuzione).
  *
  * @module services/catalog-retrieval/tenant-catalog
  */

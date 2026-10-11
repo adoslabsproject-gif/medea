@@ -1,9 +1,8 @@
 /**
  * Vision Tools — lettura immagini/documenti col modello LLM RISOLTO del tenant
- * (BYOK o Liara, NON più il microservizio VL-7B su 5004 né il pdf-service su 5002).
+ * (NON più il microservizio VL-7B su 5004 né il pdf-service su 5002).
  *
- * Liara ora è Qwen3-VL-32B (multimodale) e i provider BYOK (OpenAI/Anthropic/Gemini/…)
- * leggono immagini nativamente → instradiamo tutto via `dispatchLLMVision` col provider
+ * I provider (OpenAI/Anthropic/Gemini/…) leggono immagini nativamente → instradiamo tutto via `dispatchLLMVision` col provider
  * che l'utente sta già usando. I PDF vengono renderizzati a PNG (unpdf + @napi-rs/canvas)
  * e mandati come immagini — scelta owner 2026-06-18.
  *
@@ -87,7 +86,7 @@ export interface DocumentExtractionResult {
  * Estrae il testo da un documento. text/* → decode UTF-8 diretto. application/pdf →
  * estrazione testo con unpdf (NON render-immagine: pdfjs apre un worker che sotto il
  * bundle di produzione non trasferisce il canvas → DataCloneError; `extractText`
- * funziona). Il testo torna al chiamante che lo passa al modello (Liara/BYOK).
+ * funziona). Il testo torna al chiamante che lo passa al modello.
  * PDF scansionati (senza layer testo) → testo vuoto: lo segnaliamo esplicitamente.
  */
 export async function extractDocument(

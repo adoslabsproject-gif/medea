@@ -22,7 +22,7 @@ import type { NodeDef } from '@medea/engine-core-schema';
  * ⚠️ Post-mortem 2026-07-14: il catalogo inlinava `description` INTERA e le
  * descrizioni dei nodi sono cresciute nel tempo fino a ~4k char l'una →
  * system prompt da 372k char ≈ 106k token, TRE VOLTE il context window di
- * Liara (40.960). "Spiega errore e proponi fix" era rotta per OGNI tenant
+ * modello (40.960). "Spiega errore e proponi fix" era rotta per OGNI tenant
  * (LlmContextOverflowError) con un messaggio che incolpava il workflow
  * dell'utente — il workflow del caso reale pesava 2,4k char.
  *

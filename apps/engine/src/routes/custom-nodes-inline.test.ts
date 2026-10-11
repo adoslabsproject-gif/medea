@@ -184,7 +184,7 @@ describe('POST /:id/inline-completion', () => {
   });
 
   it('exception interna → fallback empty NO 500', async () => {
-    callInlineCompletionMock.mockRejectedValue(new Error('Liara down'));
+    callInlineCompletionMock.mockRejectedValue(new Error('provider down'));
     const app = makeApp();
     const res = await app.request('/cn_x/inline-completion', {
       method: 'POST',

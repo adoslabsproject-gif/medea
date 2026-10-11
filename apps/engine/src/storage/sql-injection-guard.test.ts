@@ -67,9 +67,9 @@ function scanSites(): SiteFile[] {
 const ALLOWED: Record<string, { count: number; reason: string }> = {
   // ── Identificatori validati / hardcoded ──────────────────────────────
   'storage/migrate.ts': {
-    count: 2,
+    count: 4,
     reason:
-      "ensureColumn(): table/column passano da assertSqlIdent() prima dell'interpolazione; definition vieta terminatori di statement.",
+      "ensureColumn() e dropColumnIfPresent(): table/column passano da assertSqlIdent() prima dell'interpolazione; definition vieta terminatori di statement.",
   },
   'storage/db.ts': {
     count: 1,

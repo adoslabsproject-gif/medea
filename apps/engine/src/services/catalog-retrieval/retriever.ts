@@ -14,7 +14,7 @@
  *
  * Risolve il problema "il catalogo non sta nel prompt": invece dei 100k token
  * di catalogo completo, il modello riceve la mappa categorie (~200 token) + i
- * top-k nodi rilevanti per la richiesta. Liara ha accesso a TUTTI i nodi, ma
+ * top-k nodi rilevanti per la richiesta. L'assistente ha accesso a TUTTI i nodi, ma
  * caricati on-demand — il pattern "leggi, scegli, dimentica" dell'owner.
  *
  * @module services/catalog-retrieval/retriever

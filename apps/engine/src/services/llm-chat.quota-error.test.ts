@@ -13,14 +13,14 @@ describe('parseQuotaError — riconosce i 429 di quota del gateway', () => {
         periodEndIso: '2026-07-15',
       },
     });
-    const e = parseQuotaError(body, 'liara');
+    const e = parseQuotaError(body, 'openai');
     expect(e).toBeInstanceOf(LlmQuotaExceededError);
     expect(e?.kind).toBe('token');
     expect(e?.used).toBe(510_000);
     expect(e?.limit).toBe(500_000);
     expect(e?.planCode).toBe('starter');
     expect(e?.periodEndIso).toBe('2026-07-15');
-    expect(e?.provider).toBe('liara');
+    expect(e?.provider).toBe('openai');
   });
 
   it('MONTHLY_CALLS_QUOTA_EXCEEDED → kind calls (usa callsUsed)', () => {
@@ -34,7 +34,7 @@ describe('parseQuotaError — riconosce i 429 di quota del gateway', () => {
           periodEndIso: '2026-07-01',
         },
       }),
-      'liara',
+      'openai',
     );
     expect(e?.kind).toBe('calls');
     expect(e?.used).toBe(101);
@@ -42,7 +42,7 @@ describe('parseQuotaError — riconosce i 429 di quota del gateway', () => {
   });
 
   it('QUOTA_EXCEEDED (daily) → kind daily', () => {
-    const e = parseQuotaError(JSON.stringify({ error: { code: 'QUOTA_EXCEEDED' } }), 'liara');
+    const e = parseQuotaError(JSON.stringify({ error: { code: 'QUOTA_EXCEEDED' } }), 'openai');
     expect(e?.kind).toBe('daily');
     expect(e?.used).toBeNull();
     expect(e?.limit).toBeNull();
@@ -50,24 +50,24 @@ describe('parseQuotaError — riconosce i 429 di quota del gateway', () => {
 
   it('codice NON-quota (es. UPSTREAM_ERROR) → null (ricade su errore generico)', () => {
     expect(
-      parseQuotaError(JSON.stringify({ error: { code: 'UPSTREAM_ERROR' } }), 'liara'),
+      parseQuotaError(JSON.stringify({ error: { code: 'UPSTREAM_ERROR' } }), 'openai'),
     ).toBeNull();
   });
 
   it('body non-JSON → null', () => {
-    expect(parseQuotaError('rate limited (plain text)', 'liara')).toBeNull();
+    expect(parseQuotaError('rate limited (plain text)', 'openai')).toBeNull();
   });
 
   it('JSON senza error.code → null', () => {
-    expect(parseQuotaError(JSON.stringify({ foo: 'bar' }), 'liara')).toBeNull();
-    expect(parseQuotaError(JSON.stringify({ error: {} }), 'liara')).toBeNull();
+    expect(parseQuotaError(JSON.stringify({ foo: 'bar' }), 'openai')).toBeNull();
+    expect(parseQuotaError(JSON.stringify({ error: {} }), 'openai')).toBeNull();
   });
 });
 
 describe('LlmQuotaExceededError — messaggio CHIARO e azionabile', () => {
   it('include uso/limite, data di reset formattata IT e suggerimento BYOK/upgrade', () => {
     const e = new LlmQuotaExceededError({
-      provider: 'liara',
+      provider: 'openai',
       kind: 'token',
       used: 510_000,
       limit: 500_000,
@@ -81,14 +81,14 @@ describe('LlmQuotaExceededError — messaggio CHIARO e azionabile', () => {
   });
 
   it('senza periodEndIso → nessuna frase di reset, ma resta azionabile', () => {
-    const e = new LlmQuotaExceededError({ provider: 'liara', kind: 'calls' });
+    const e = new LlmQuotaExceededError({ provider: 'openai', kind: 'calls' });
     expect(e.message).not.toMatch(/Si rinnova/);
     expect(e.message).toMatch(/esaurita/);
   });
 
   it('data di reset malformata → non crasha (usa ISO grezzo)', () => {
     const e = new LlmQuotaExceededError({
-      provider: 'liara',
+      provider: 'openai',
       kind: 'token',
       periodEndIso: 'not-a-date',
     });

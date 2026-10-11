@@ -114,11 +114,11 @@ describe('aiAgentNodes', () => {
   });
 });
 
-describe('internalGatewayTrustedHost — esenzione SSRF per il gateway interno (fix nLA_liara)', () => {
+describe('internalGatewayTrustedHost — esenzione SSRF per il gateway interno', () => {
   const GW = 'http://172.20.0.1:3006';
 
   it('🚨 baseUrl del gateway passato ESPLICITAMENTE (caso reale: runtime → context.llmProviders) → esente', () => {
-    // Questo è il bug che bloccava nLA_liara: il runtime passa baseUrl=liaraBaseUrl().
+    // Il caso che veniva bloccato: il runtime passa il baseUrl del gateway interno.
     const url = 'http://172.20.0.1:3006/v1/chat/completions';
     expect(internalGatewayTrustedHost(url, GW)).toBe('172.20.0.1:3006');
   });

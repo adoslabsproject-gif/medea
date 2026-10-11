@@ -6,8 +6,8 @@
  *   2. If LLM returns a tool call, execute the tool, return the result
  *   3. Otherwise, return the final text
  *
- * Fase 2 (#14): provider da Settings → AI Providers — Liara (gateway metered,
- * formato OpenAI-tools, loop in tool-loop-openai.ts) è il DEFAULT; Anthropic
+ * Fase 2 (#14): provider da Settings → AI Providers — i provider in formato
+ * OpenAI-tools passano dal loop in tool-loop-openai.ts; Anthropic
  * resta il ramo nativo (tool_use/tool_result, in questo file) e la regola
  * legacy "apiKey senza provider = anthropic" preserva le config esistenti.
  *
@@ -50,10 +50,10 @@ import {
   type RagSearchResult,
 } from '@medea/engine-rag-guard';
 // Fase 2 (#14): il nodo non è più Anthropic-only. Provider da Settings → AI
-// Providers (Liara gateway di DEFAULT, tool_calls Qwen3-VL validati live);
+// Providers;
 // il loop OpenAI-format vive in tool-loop-openai.ts (no-monoliti), il loop
 // Anthropic nativo resta qui. resolveLlmConfig è la stessa degli agent_*.
-import { resolveLlmConfig } from './llm-config.js';
+import { NoLlmProviderConfiguredError, resolveLlmConfig } from './llm-config.js';
 import { logLlmExchange } from '@medea/engine-nodes-stdlib';
 import { runOpenAiToolLoop, TOOL_CAPABLE_OPENAI_PROVIDERS } from './tool-loop-openai.js';
 import { buildAgentUsage, sumAgentUsage, type AgentLlmUsage } from './llm-usage.js';
@@ -435,33 +435,38 @@ const agentToolLoopExecutor: NodeExecutor = async (config, input, ctx) => {
   // LEGACY: il nodo era Anthropic-only (apiKey obbligatoria, NESSUN campo
   // provider). Una config salvata pre-Fase2 ha apiKey piena e provider assente
   // → resta anthropic, comportamento IDENTICO. Tutto il resto passa dallo
-  // stesso resolveLlmConfig degli agent_* (Settings → AI Providers, Liara
-  // free-tier come default finale).
+  // stesso resolveLlmConfig degli agent_* (Settings → AI Providers).
   const rawProvider = typeof config.provider === 'string' ? config.provider.trim() : '';
   const rawApiKey = typeof config.apiKey === 'string' ? config.apiKey.trim() : '';
   const rawModel = typeof config.model === 'string' ? config.model.trim() : '';
-  let resolved =
-    rawProvider === '' && rawApiKey !== ''
-      ? {
-          provider: 'anthropic',
-          apiKey: rawApiKey,
-          model: rawModel,
-          baseUrl: undefined as string | undefined,
-        }
-      : resolveLlmConfig(config, ctx.llmProviders);
+  let resolved: { provider: string; apiKey: string; model: string; baseUrl?: string | undefined };
+  try {
+    resolved =
+      rawProvider === '' && rawApiKey !== ''
+        ? { provider: 'anthropic', apiKey: rawApiKey, model: rawModel }
+        : resolveLlmConfig(config, ctx.llmProviders);
+  } catch (err) {
+    // Nessun provider utilizzabile: come ogni altro inciampo di questo nodo
+    // finisce in `output.error`, col messaggio che dice dove configurarlo.
+    if (err instanceof NoLlmProviderConfiguredError) {
+      return { output: { error: err.message }, durationMs: Date.now() - start };
+    }
+    throw err;
+  }
 
   // Provider senza tool-calling (oggi SOLO perplexity, dai Settings auto-pick:
-  // NON è selezionabile sul nodo) → fallback DICHIARATO su Liara, mai un
-  // errore né uno swap nascosto: `providerFallback` finisce nell'output e
-  // `_llm.provider` mostra il provider REALE usato (stesso pattern esplicito
-  // del `degraded:'byok-fallback'` di action_llm_complete).
-  let providerFallback: { from: string; reason: string } | undefined;
+  // NON è selezionabile sul nodo). Non c'è un provider su cui ripiegare, e
+  // sceglierne un altro di nascosto spenderebbe una chiave che l'utente non ha
+  // indicato: ci si ferma dicendo cosa fare.
   if (resolved.provider !== 'anthropic' && !TOOL_CAPABLE_OPENAI_PROVIDERS.has(resolved.provider)) {
-    providerFallback = {
-      from: resolved.provider,
-      reason: `il provider "${resolved.provider}" non supporta il tool-calling — agent eseguito su Liara`,
+    return {
+      output: {
+        error:
+          `Il provider "${resolved.provider}" non supporta il tool-calling richiesto da questo nodo. ` +
+          'Indica sul nodo un altro provider fra quelli configurati in Settings → AI Providers.',
+      },
+      durationMs: Date.now() - start,
     };
-    resolved = { provider: 'liara', apiKey: '', model: '', baseUrl: undefined };
   }
 
   const apiKey = resolved.apiKey;
@@ -516,7 +521,7 @@ const agentToolLoopExecutor: NodeExecutor = async (config, input, ctx) => {
 
   const trace: { iteration: number; tool: string; input: unknown; output: string }[] = [];
 
-  // ── Ramo OpenAI-format (liara/openai/openrouter/groq/mistral) ────────────
+  // ── Ramo OpenAI-format (openai/openrouter/groq/mistral) ──────────────────
   if (resolved.provider !== 'anthropic') {
     try {
       const loopRes = await runOpenAiToolLoop({
@@ -536,7 +541,7 @@ const agentToolLoopExecutor: NodeExecutor = async (config, input, ctx) => {
         nodeContext: ctx,
       });
       return {
-        output: providerFallback ? { ...loopRes.output, providerFallback } : loopRes.output,
+        output: loopRes.output,
         durationMs: Date.now() - start,
       };
     } catch (err) {
@@ -554,7 +559,7 @@ const agentToolLoopExecutor: NodeExecutor = async (config, input, ctx) => {
     return {
       output: {
         error:
-          'apiKey required (Anthropic key for tool-calling agent). Configura la key in Settings → AI Providers o lascia il provider vuoto per Liara.',
+          'apiKey required (Anthropic key for tool-calling agent). Configura la key in Settings → AI Providers.',
       },
       durationMs: Date.now() - start,
     };
@@ -705,7 +710,7 @@ export const agentToolLoopNode: NodeModule = {
     icon: 'bot',
     color: '#8b5cf6',
     description:
-      'Agente con tool-calling: cicla finché il modello non risponde senza richiedere altri tool. Default = Liara (gateway FlowForge, gratis, metered sulla quota); override per-nodo: Anthropic (nativo), OpenAI, Gemini, DeepSeek, xAI, OpenRouter, Groq, Mistral, Ollama. Tool disponibili: http_request, flowforge_invoke, get_time, rag_search.',
+      'Agente con tool-calling: cicla finché il modello non risponde senza richiedere altri tool. Usa il provider scelto in Settings → AI Providers; override per-nodo: Anthropic (nativo), OpenAI, Gemini, DeepSeek, xAI, OpenRouter, Groq, Mistral, Ollama. Tool disponibili: http_request, flowforge_invoke, get_time, rag_search.',
     configFields: [
       {
         key: 'provider',
@@ -714,7 +719,6 @@ export const agentToolLoopNode: NodeModule = {
         required: false,
         options: [
           '',
-          'liara',
           'anthropic',
           'openai',
           'gemini',
@@ -726,14 +730,14 @@ export const agentToolLoopNode: NodeModule = {
           'ollama',
         ],
         defaultValue: '',
-        help: 'Vuoto = usa il default da Settings → AI Providers (Liara free se non configuri nulla). NB: se compili solo la API key senza provider, vale Anthropic (compatibilità con le config esistenti del nodo).',
+        help: 'Vuoto = usa il default da Settings → AI Providers. NB: se compili solo la API key senza provider, vale Anthropic (compatibilità con le config esistenti del nodo).',
       },
       {
         key: 'apiKey',
         label: 'API key (override)',
         type: 'secret',
         required: false,
-        help: 'Vuoto = chiave da Settings → AI Providers (Liara non ne richiede). Compilata SENZA provider = Anthropic (legacy).',
+        help: 'Vuoto = chiave da Settings → AI Providers. Compilata SENZA provider = Anthropic (legacy).',
       },
       {
         key: 'model',
@@ -741,7 +745,7 @@ export const agentToolLoopNode: NodeModule = {
         type: 'text',
         required: false,
         placeholder: 'es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, llama-3.3-70b-versatile',
-        help: 'Vuoto = default del provider (Liara: decide il gateway; Anthropic: claude-sonnet-4-5).',
+        help: 'Vuoto = default del provider (Anthropic: claude-sonnet-4-5).',
       },
       {
         key: 'baseUrl',

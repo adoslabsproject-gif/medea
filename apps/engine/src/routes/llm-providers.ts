@@ -22,7 +22,6 @@ import { getActorId } from '@/lib/actor.js';
 import { TenantAiPreferencesService } from '@/services/tenant-ai-preferences.service.js';
 import { requireRole } from '@/middleware/rbac.js';
 import { logger } from '@/lib/logger.js';
-import { isLiaraEnabled } from '@/config.js';
 import { validateUrlForFetch } from '@medea/engine-safe-fetch';
 
 const UpsertSchema = z.object({
@@ -63,8 +62,7 @@ export function createLlmProvidersRoutes(): Hono {
 
   /**
    * GET /preferences — read tenant-level AI preferences + the effective
-   * Liara state + the effective default provider used by the AI scaffold.
-   * The UI uses this to render the "Allow Liara" toggle and the
+   * default provider used by the AI scaffold. The UI uses this to render the
    * "Default AI model" select.
    */
   app.get('/preferences', (c) => {
@@ -76,8 +74,6 @@ export function createLlmProvidersRoutes(): Hono {
       .map((p) => ({ provider: p.provider, hasKey: true }));
     return c.json({
       ...prefs,
-      liaraGloballyEnabled: isLiaraEnabled(),
-      liaraEffective: tenantPrefs.isLiaraAllowedForTenant(tenantId),
       effectiveDefaultLlmProvider: tenantPrefs.resolveDefaultProvider(tenantId, configured),
     });
   });
@@ -85,26 +81,21 @@ export function createLlmProvidersRoutes(): Hono {
   /**
    * PUT /preferences — update tenant AI preferences. Editor role required.
    *
-   * Both fields are optional: clients can update them independently
-   * (the UI persists the toggle and the select separately).
    * `defaultLlmProvider` accepts:
-   *   - a provider name (string) — must be one of the supported providers
-   *     or 'liara'. If it isn't currently usable (no API key, Liara off,
+   *   - a provider name (string). If it isn't currently usable (no API key,
    *     unknown name), the value is still persisted but `resolveDefaultProvider`
-   *     will fall back to the chain — so the user sees the effective value
-   *     in the GET response.
-   *   - null — clear the preference; scaffold falls back to first configured
-   *     external provider then Liara.
+   *     will fall back to the first configured provider — so the user sees the
+   *     effective value in the GET response.
+   *   - null — clear the preference; scaffold falls back to the first
+   *     configured provider.
    */
   const PreferencesSchema = z.object({
-    allowLiara: z.boolean().optional(),
     defaultLlmProvider: z.union([z.string().min(1).max(40), z.null()]).optional(),
   });
   app.put('/preferences', requireRole('editor'), zValidator('json', PreferencesSchema), (c) => {
     const tenantId = getTenantId(c);
     const body = c.req.valid('json');
-    const patch: { allowLiara?: boolean; defaultLlmProvider?: string | null } = {};
-    if (body.allowLiara !== undefined) patch.allowLiara = body.allowLiara;
+    const patch: { defaultLlmProvider?: string | null } = {};
     if (body.defaultLlmProvider !== undefined) patch.defaultLlmProvider = body.defaultLlmProvider;
     tenantPrefs.set(tenantId, patch);
     const configured = service
@@ -114,8 +105,6 @@ export function createLlmProvidersRoutes(): Hono {
     return c.json({
       ok: true,
       ...tenantPrefs.get(tenantId),
-      liaraGloballyEnabled: isLiaraEnabled(),
-      liaraEffective: tenantPrefs.isLiaraAllowedForTenant(tenantId),
       effectiveDefaultLlmProvider: tenantPrefs.resolveDefaultProvider(tenantId, configured),
     });
   });
@@ -153,9 +142,6 @@ export function createLlmProvidersRoutes(): Hono {
     if (!providerParam || !isValidProvider(providerParam)) {
       return c.json({ error: 'Provider non valido' }, 400);
     }
-    if (providerParam === 'liara') {
-      return c.json({ error: 'Liara è free-tier, non eliminabile.' }, 400);
-    }
     const ok = service.remove(tenantId, providerParam, actorId);
     return c.json({ ok });
   });
@@ -167,7 +153,7 @@ export function createLlmProvidersRoutes(): Hono {
       return c.json({ error: 'Provider non valido' }, 400);
     }
     const cfg = service.get(tenantId, providerParam);
-    if (!cfg && providerParam !== 'liara') {
+    if (!cfg) {
       return c.json({ error: 'Nessuna configurazione salvata per questo provider.' }, 404);
     }
     try {

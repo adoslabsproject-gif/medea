@@ -131,14 +131,13 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
    *    (MEDEA_MAX_WORKFLOWS, MEDEA_PLAN_CODE) + tabella `tenants`
    *  - current workflows count → SELECT FROM workflows local SQLite
    *  - disk usage / disk_total → statfs sul mount /data (loop device size)
-   *  - liara tokens del periodo → letti S2S dal portal (tabella llm_quotas,
-   *    fail-soft + cache) via services/portal-quota.service.ts. Il periodo è
-   *    ancorato al giorno di abbonamento del tenant (vedi portal quota.ts).
+   *  - max_users → letto S2S dal portal (fail-soft + cache) via
+   *    services/portal-quota.service.ts.
    *
    * Risposta:
    *   { plan: { code }, workflows: {used,limit},
    *     disk: {usedBytes, totalBytes, usedPercent, binaryBytes},
-   *     liara: {tokensLimit, tokensUsedMonth, periodEndIso} }
+   *     users: {used, limit} }
    */
   app.get('/plan-usage', async (c) => {
     const auth = c.get('auth') as { tenantId: string } | null;
@@ -146,10 +145,7 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
     const tenantId = getTenantId(c);
     const planCode = process.env.MEDEA_PLAN_CODE ?? 'free';
     const maxWfRaw = process.env.MEDEA_MAX_WORKFLOWS;
-    const maxTokenRaw = process.env.MEDEA_MAX_LIARA_TOKENS_MONTHLY;
     const maxWorkflows = !maxWfRaw || maxWfRaw === '' ? null : parseInt(maxWfRaw, 10);
-    const maxLiaraTokensMonthly =
-      !maxTokenRaw || maxTokenRaw === '' ? null : parseInt(maxTokenRaw, 10);
 
     // Count active (enabled=1) workflows del tenant. Policy 2026-06-04: quota
     // max_workflows = parallelamente abilitati, non totali. Allineato a
@@ -193,7 +189,7 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
 
     // Dati quota dal PORTAL (S2S, fail-soft, cache 25s): usato token del periodo
     // (tabella llm_quotas vive nel portal) + limite sub-users del piano. Fetch
-    // SEMPRE: maxUsers serve anche quando il piano ha token illimitati.
+    // Dal portal si legge il tetto di utenti del piano.
     const tokenUsage = await fetchPortalTokenUsage(tenantId);
 
     // Sub-users del tenant: count locale SQLite (utenti abilitati). Il container
@@ -228,19 +224,6 @@ export function createDashboardRoutes(eventBus: IEventBus): Hono {
       users: {
         used: usersUsed,
         limit: tokenUsage?.maxUsers ?? null, // null = illimitato (o portal irraggiungibile)
-      },
-      liara: {
-        // tokensLimit dal PORTAL (DB-backed = source of truth). Bug 2026-06-26:
-        // prima usava MEDEA_MAX_LIARA_TOKENS_MONTHLY (env del container,
-        // "set-and-forget" all'onboarding) → dopo un upgrade quota nel DB l'env
-        // restava STALE e il banner mostrava il vecchio limite (es. Starter
-        // 500K invece dei nuovi 30M) segnalando "quota esaurita" mentre
-        // l'enforcement reale (gateway portal, anch'esso DB-backed) la lasciava
-        // lavorare. Ora il display usa la stessa fonte dell'enforcement.
-        // Fallback all'env SOLO se il portal è irraggiungibile (degradazione).
-        tokensLimit: tokenUsage ? tokenUsage.tokensLimit : maxLiaraTokensMonthly,
-        tokensUsedMonth: tokenUsage?.tokensUsed ?? null, // dato REALE dal portal (no più stub)
-        periodEndIso: tokenUsage?.periodEndIso ?? null, // prossimo reset (giorno abbonamento)
       },
     });
   });

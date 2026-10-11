@@ -3,7 +3,7 @@
  *
  * Sostituisce il loop iter-based (30-60 iter, 5-15 min, error retry massicci)
  * con UNA chiamata LLM con `guided_json` constraint:
- *   - Liara riceve goal + catalogo + complexity analysis
+ *   - Il modello riceve goal + catalogo + complexity analysis
  *   - Risposta JSON forzata a matchare lo schema workflow completo
  *   - vLLM garantisce parseable + schema-compliant via guided_json
  *   - Server valida config per-defId
@@ -17,8 +17,7 @@
  *   - 30-60s totale (vs 5-15 min)
  *   - 100% workflow completo (vs ~50% per Enterprise goal)
  *   - 1 LLM call → no contention multi-tenant
- *   - Compatibile con KV cache vLLM (system prompt cachato)
- *   - Liara con LoRA NHA-v3 (futuro) genera output ancora piu\` accurati
+ *   - Il system prompt è fisso: i provider che fanno cache del prefisso lo riusano
  */
 
 import type { z } from 'zod';
@@ -123,7 +122,7 @@ export type SingleshotEmitter = (e: SingleshotProgressEvent) => void | Promise<v
 /**
  * Public entry — wrapper retry-con-feedback. Se il quality gate rifiuta
  * il primo tentativo per problemi RECUPERABILI (circular ref, mock
- * placeholders, suspicious resource IDs), Liara riceve gli issues + suggest
+ * placeholders, suspicious resource IDs), il modello riceve gli issues + suggest
  * come feedback e RIGENERA fino a 2 retry. Solo se tutti i 3 tentativi
  * falliscono → error utente.
  *
@@ -250,7 +249,7 @@ export async function runSingleshotScaffold(
       try {
         await onProgress?.({
           type: 'analyzing',
-          detail: `Workflow rifiutato (${(attempt + 1).toString()}/3). Liara sta correggendo automaticamente...`,
+          detail: `Workflow rifiutato (${(attempt + 1).toString()}/3). Il modello sta correggendo automaticamente...`,
         });
       } catch {
         /* graceful */
@@ -316,7 +315,7 @@ async function runSingleshotAttempt(
 
   // Layer A — Context injection PRE-LLM (2026-05-31): leggo le risorse
   // REALI del tenant (databases, email accounts) e le iniettiamo nel
-  // prompt. Cosi\` Liara usa UUID reali invece di inventare "db_opportunities"
+  // prompt. Cosi\` il modello usa UUID reali invece di inventare "db_opportunities"
   // o "email-account-1". Graceful: se la query fallisce, prosegue senza.
   //
   // ALSO: il default LLM provider del tenant viene catturato qui in modo da
@@ -509,7 +508,7 @@ Rigenera ORA applicando i fix.`;
   try {
     await onProgress?.({
       type: 'generating',
-      detail: 'Liara sta generando il workflow completo (1 sola chiamata)…',
+      detail: 'Il modello sta generando il workflow completo (1 sola chiamata)…',
     });
   } catch {
     /* */
@@ -524,21 +523,20 @@ Rigenera ORA applicando i fix.`;
   // Catalog costruito UNA volta: alimenta sia la grammatica vincolata (sotto)
   // sia la post-validation per-defId (più giù) — niente doppio build.
   const catalog = buildNodeCatalog();
-  // #1 Constrained decoding per-tipo-nodo: per Liara (dietro flag) usa la
-  // grammatica guided_json che vincola defId/chiavi/enum a decode-time; altrimenti
-  // schema statico. La grammatica è costruita sul SUBSET RAG (stessi nodi del
-  // prompt) — non sul full-catalog (proven: degrada la scelta del nodo). Fallback
-  // sicuro incorporato (subset assente/vuoto → full; vedi pickGrammarCatalog).
+  // #1 Schema per-tipo-nodo: dietro flag si usa la grammatica che elenca
+  // defId/chiavi/enum ammessi; altrimenti schema statico. La grammatica è
+  // costruita sul SUBSET RAG (stessi nodi del prompt) — non sul full-catalog
+  // (proven: degrada la scelta del nodo). Fallback sicuro incorporato (subset
+  // assente/vuoto → full; vedi pickGrammarCatalog).
   const grammarCatalog = pickGrammarCatalog(catalog, scaffoldSubsetDefIds);
   const { schema: outputSchema, constrained: constrainedSchema } = selectScaffoldSchema(
     grammarCatalog,
-    resolved.provider,
     SINGLESHOT_OUTPUT_SCHEMA,
   );
   if (constrainedSchema) {
     logger.info(
       { branches: grammarCatalog.length, fullCatalog: catalog.length },
-      '[SINGLESHOT] guided_json grammar VINCOLATA sul subset RAG',
+      '[SINGLESHOT] schema per-tipo-nodo sul subset RAG',
     );
   }
 
@@ -559,11 +557,9 @@ Rigenera ORA applicando i fix.`;
       ? (planTierRaw as Tier)
       : 'pro';
 
-    // STREAMING vLLM: parser incrementale emette `node_added` SSE man
-    // mano che la response arriva → UI vede nodi accendersi uno a uno
-    // (no piu\` "67% per 100s poi tutto insieme").
-    // Per BYOK non-Liara, dispatchLLMChatStructuredStreaming fallback a
-    // non-stream (un singolo chunk finale) — comportamento legacy.
+    // Il parser incrementale emette `node_added` SSE man mano che la
+    // risposta gli arriva. Oggi il dispatcher la consegna intera, in un solo
+    // pezzo: i nodi compaiono tutti insieme alla fine della generazione.
     const parser = new SingleshotStreamParser({
       onMeta: (meta) => {
         try {
@@ -600,8 +596,8 @@ Rigenera ORA applicando i fix.`;
           resolved.model,
           SINGLESHOT_SYSTEM_PROMPT,
           userPrompt,
-          // L'indirizzo del provider, quando c'è: per i self-hosted (Liara,
-          // Ollama, un endpoint privato) è l'unico modo di arrivarci. Era
+          // L'indirizzo del provider, quando c'è: per i self-hosted (Ollama,
+          // un endpoint privato) è l'unico modo di arrivarci. Era
           // `undefined` fisso, e la richiesta partiva verso il default.
           resolved.baseUrl,
           [],
@@ -674,8 +670,8 @@ Rigenera ORA applicando i fix.`;
   // contratto runtime di FlowForge — backstop per edge case schema-divergent).
   let parsed: z.infer<typeof ZodOutputShape>;
   try {
-    // Tollerante ai fence ```json/prosa: guided_json (Liara/vLLM) dà JSON puro,
-    // ma i BYOK (Anthropic/OpenAI…) avvolgono in ```json → estrazione robusta.
+    // Tollerante ai fence ```json/prosa: i provider (Anthropic/OpenAI…)
+    // avvolgono spesso il JSON in ```json → estrazione robusta.
     const obj = parseScaffoldJson(rawJson);
     parsed = ZodOutputShape.parse(obj);
   } catch (err: unknown) {
@@ -760,7 +756,7 @@ Rigenera ORA applicando i fix.`;
   }
 
   // ─── Pre-validation: rimap defId inventati con suffix → base catalog ───
-  // Bug user 2026-05-31: Liara generava action_http_clearbit, action_http_hunter,
+  // Bug user 2026-05-31: il modello generava action_http_clearbit, action_http_hunter,
   // action_json_extract_sender, action_json_extract_domain → 5 errori validation.
   // Strip progressivo del suffix se base catalog esiste. NON-disruptive
   // (community_*/trigger_* skippati, min 2 parts garantito).
@@ -997,7 +993,7 @@ Rigenera ORA applicando i fix.`;
   }
 
   // ─── AUTO-HEAL DB-TABLE (l'AUTOMAZIONE) — se un db_insert/update scrive colonne
-  // che NON matchano la tabella (Liara ha RICICLATO una tabella scollegata, es.
+  // che NON matchano la tabella (il modello ha RICICLATO una tabella scollegata, es.
   // `orders` per dati prezzo), ripunta alla tabella giusta o ne CREA una dedicata.
   // Becca il bug reale Anti-fraud (mario-rossi). Muta parsed in place.
   // SOLO DB locali scrivibili: lo heal ripunta SCRITTURE (db_insert/update) e crea
@@ -1172,12 +1168,12 @@ Rigenera ORA applicando i fix.`;
 
   const finalResult: AiScaffoldResult = {
     workflow,
-    modelUsed: `${resolved.provider}/${resolved.model || 'default'}+guided_json`,
+    modelUsed: `${resolved.provider}/${resolved.model || 'default'}+single-shot`,
     durationMs,
     iterations: 3,
     trace,
     notes: [
-      `Modello: ${resolved.provider}/${resolved.model || 'default'} (single-shot guided_json)`,
+      `Modello: ${resolved.provider}/${resolved.model || 'default'} (single-shot)`,
       `Durata: ${(durationMs / 1000).toFixed(1)}s (analyze ${analyzeMs.toString()}ms · generate ${generateMs.toString()}ms · validate ${validateMs.toString()}ms)`,
       `Tokens: ↓${usage.input.toString()} · ↑${usage.output.toString()}${usage.fromApi ? '' : ' (stima)'}`,
       `Nodi generati: ${workflow.nodes.length.toString()}, edges: ${workflow.edges.length.toString()}`,

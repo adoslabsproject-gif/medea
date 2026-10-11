@@ -2,7 +2,7 @@
  * Company Search — discovery aziende reali per cold outreach B2B.
  *
  * Pipeline 2026 (Apollo/Clay/Phantombuster pattern):
- *   1. LLM query expansion (Liara/Anthropic/OpenAI/Gemini — BYO)
+ *   1. LLM query expansion (Anthropic/OpenAI/Gemini — BYO)
  *   2. Multi-source: Exa→Tavily→Brave→Serper→DDG (cascade)
  *   3. Anti-directory filter: blocklist 60+ aggregator/blog/social/marketplace
  *   4. TLD preference + boost domini "puliti"
@@ -40,8 +40,8 @@ export const companySearchNode: NodeModule = {
       'Output: array di { url, domain, title (dalla SERP), description (snippet), boost_factors (lista dei ' +
       'signal positivi che hanno ranked questo result), source (quale dei 4 search engines lo ha trovato), ' +
       'confidence } — ranking finale weighted per source di trust + match strength + freshness. ' +
-      'LLM-agnostic per query expansion: lo step LLM usa il provider configurato del tenant (Liara Qwen3 ' +
-      'self-hosted default zero-cost, oppure Anthropic Claude/OpenAI GPT/Gemini via BYOK). ' +
+      'LLM-agnostic per query expansion: lo step LLM usa il provider configurato del tenant ' +
+      '(Anthropic Claude, OpenAI GPT, Gemini…). ' +
       'Use case: lead-gen B2B su nicchia verticale specifica (es. "produttori di pannelli fotovoltaici Sicilia ' +
       '20MW+", "studi commercialisti specializzati in cripto-asset Milano"); discovery competitor nel mercato ' +
       'target prima di un lancio prodotto (mapping landscape competitivo); seed list per campagne ABM ' +
@@ -178,7 +178,7 @@ export const companySearchNode: NodeModule = {
       'urls', // string[] (shortcut per JSONata downstream)
       'queries_used', // string[]
       'queries_generated_by_llm', // boolean
-      'llm_provider', // 'liara' | 'anthropic' | ... | null
+      'llm_provider', // 'anthropic' | 'openai' | ... | null
       'total_raw_results', // number
       'filtered_directory', // number
       'filtered_validation', // number

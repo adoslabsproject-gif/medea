@@ -39,10 +39,6 @@ vi.mock('@medea/engine-secrets', () => ({
   },
   decryptSecret: (e: { ciphertext: string }) => store.get(e.ciphertext) ?? '',
 }));
-vi.mock('@/config.js', () => ({
-  liaraBaseUrl: () => 'https://liara.local',
-  isLiaraEnabled: () => true,
-}));
 vi.mock('@/services/credentials.service.js', async () => {
   const actual = await vi.importActual<typeof CredentialsServiceModule>('./credentials.service.js');
   return { ...actual, loadMaster: () => 'master-fake-32chars-padding!!!!!!!!' };
@@ -69,7 +65,7 @@ describe('🚨 BYOK multi-provider per tenant (UNIQUE bug)', () => {
         .filter((p) => p.hasKey)
         .map((p) => p.provider),
     );
-    // i 3 BYOK convivono (oltre a liara free-tier sempre presente)
+    // i 3 provider configurati convivono
     expect(configured.has('anthropic')).toBe(true);
     expect(configured.has('openai')).toBe(true);
     expect(configured.has('gemini')).toBe(true);

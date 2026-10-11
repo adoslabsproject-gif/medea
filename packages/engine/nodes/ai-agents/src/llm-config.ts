@@ -7,8 +7,24 @@
  * Ordine di risoluzione:
  *   1. Override per-nodo (config.provider/apiKey/model/baseUrl)
  *   2. Settings tenant (context.llmProviders)
- *   3. Liara free-tier (nessuna key, nessun setup)
+ *   3. Nessuno: si dice cosa manca. Non esiste un modello di ripiego.
  */
+
+/**
+ * Nessun provider è utilizzabile: né indicato sul nodo, né configurato dal
+ * tenant. Il messaggio dice dove andare, perché arriva pari pari a chi guarda
+ * l'esecuzione del workflow.
+ */
+export class NoLlmProviderConfiguredError extends Error {
+  constructor(requested?: string) {
+    super(
+      requested
+        ? `Il provider "${requested}" non è configurato: aggiungi la sua API key in Settings → AI Providers, oppure indicala sul nodo.`
+        : 'Nessun provider LLM configurato: aggiungi una API key in Settings → AI Providers, oppure indica provider e chiave sul nodo.',
+    );
+    this.name = 'NoLlmProviderConfiguredError';
+  }
+}
 
 export interface ResolvedLlmConfig {
   provider: string;
@@ -30,7 +46,7 @@ export function resolveLlmConfig(
   // Explicit per-node override (everything provided locally)
   if (
     overrideProvider !== '' &&
-    (overrideApiKey !== '' || overrideProvider === 'liara' || overrideProvider === 'ollama')
+    (overrideApiKey !== '' || overrideProvider === 'ollama')
   ) {
     const out: ResolvedLlmConfig = {
       provider: overrideProvider,
@@ -64,11 +80,17 @@ export function resolveLlmConfig(
       'groq',
       'openrouter',
       'ollama',
-      'liara',
     ];
-    for (const p of preferenceOrder) {
+    // Prima quelli noti nell'ordine di preferenza, poi qualunque altro il
+    // tenant abbia configurato: un provider con la chiave non va scartato solo
+    // perché manca da questa lista.
+    const candidati = [
+      ...preferenceOrder,
+      ...Object.keys(llmProviders).filter((p) => !preferenceOrder.includes(p)),
+    ];
+    for (const p of candidati) {
       const tenant = llmProviders[p];
-      if (tenant && (tenant.apiKey !== '' || p === 'liara' || p === 'ollama')) {
+      if (tenant && (tenant.apiKey !== '' || p === 'ollama')) {
         const out: ResolvedLlmConfig = {
           provider: p,
           apiKey: tenant.apiKey,
@@ -81,12 +103,6 @@ export function resolveLlmConfig(
     }
   }
 
-  // Last resort: Liara free-tier (no key, no setup)
-  const out: ResolvedLlmConfig = {
-    provider: 'liara',
-    apiKey: '',
-    model: overrideModel !== '' ? overrideModel : 'nha-v1',
-  };
-  if (overrideBaseUrl !== undefined) out.baseUrl = overrideBaseUrl;
-  return out;
+  // Niente da usare: lo si dice, col nome di ciò che manca.
+  throw new NoLlmProviderConfiguredError(overrideProvider !== '' ? overrideProvider : undefined);
 }

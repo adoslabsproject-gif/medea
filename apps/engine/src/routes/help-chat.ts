@@ -8,7 +8,7 @@
  *   • The chat ONLY answers FlowForge usage questions (system prompt enforces it).
  *   • It MUST NOT execute workflows or call the runtime API on the user's
  *     behalf — it's a documentation/Q&A assistant, not an agent.
- *   • Uses whatever LLM provider the tenant has configured (Liara by default).
+ *   • Uses whatever LLM provider the tenant has configured.
  *     If no provider is available, returns a structured 503 so the widget
  *     can render a friendly fallback instead of crashing.
  */
@@ -31,9 +31,9 @@ const ChatRequestSchema = z.object({
   messages: z.array(ChatMessageSchema).min(1).max(20),
 });
 
-const SYSTEM_PROMPT = `Sei **Liara**, l'assistente AI di FlowForge (di Zeli SRL), una piattaforma di workflow automation enterprise per PMI italiane.
+const SYSTEM_PROMPT = `Sei l'assistente dei workflow di Medea, lo strumento di automazione integrato nel client di posta.
 
-IDENTITÀ: il tuo nome è Liara, sempre. Quando l'utente ti saluta, presentati come Liara.
+IDENTITÀ: sei l'assistente di Medea. Quando l'utente ti saluta, presentati così.
 
 Aiuti gli utenti a:
   - capire come funzionano i nodi (trigger, azioni, AI, logica)

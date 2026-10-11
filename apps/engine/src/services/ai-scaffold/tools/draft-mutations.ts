@@ -42,7 +42,7 @@ export function addNodeHandler(
   }
   // Validate config values against field schema (enum / pattern).
   const config = (args.config as Record<string, unknown>) ?? {};
-  // FIX 2026-05-31: enumera TUTTI i required mancanti in un solo error (Liara
+  // FIX 2026-05-31: enumera TUTTI i required mancanti in un solo error (il modello
   // ne poteva indovinare uno e ri-fallire sul prossimo). Cosi\` un solo retry.
   const missingRequired = entry.fields
     .filter((f) => f.required && (config[f.key] === undefined || config[f.key] === ''))
@@ -197,7 +197,7 @@ export function updateNodeHandler(
   if (!id) return { ok: false, error: 'update_node richiede id.' };
   const node = session.draft.nodes.find((n) => n.id === id);
   if (!node) {
-    // FIX 2026-05-31: Liara confondeva update_node con add_node. Hint esplicito.
+    // FIX 2026-05-31: il modello confondeva update_node con add_node. Hint esplicito.
     const existing =
       session.draft.nodes
         .map((n) => n.id)

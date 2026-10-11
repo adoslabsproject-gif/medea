@@ -42,7 +42,7 @@ export const emailPersonalizeNode: NodeModule = {
       'Cache 1h per content_hash per evitare LLM calls ridondanti su stesso target: se il workflow itera su ' +
       '100 lead della stessa azienda (es. team Sales Outreach che colpiscono CTO+CFO+CEO stesso prospect), ' +
       'il LLM call avviene UNA volta e tutti i 3 messaggi riusano la same personalization base — risparmio ' +
-      '90%+ sui token Liara/BYOK. ' +
+      '90%+ sui token. ' +
       'Fallback gracioso multi-livello: LLM fail (timeout, rate limit, content moderation) → opener generico ' +
       'safe-default "Salve {{firstName}}, le scrivo perché credo {{company}} potrebbe..."; content troppo ' +
       'corto (< 100 char) → skip personalization e usa opener default; content > 4000 char auto-truncate ' +

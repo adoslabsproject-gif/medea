@@ -1,5 +1,5 @@
 /**
- * Registry + executor del DB-agent di Liara.
+ * Registry + executor del DB-agent.
  *
  * `executeDbAgentTool` è l'UNICO ingresso: dispatch O(1), validazione Zod
  * `.strict()` (un argomento estraneo — es. un `tenantId` iniettato — fa fallire

@@ -92,7 +92,7 @@ export function inferCategory(id: string, type: string): CatalogCategory {
   )
     return 'http';
   if (id.includes('db_')) return 'database';
-  if (id.includes('ai_') || id.includes('liara')) return 'ai';
+  if (id.includes('ai_')) return 'ai';
   // Community/custom node prefissati restano in integrations per default utile.
   if (id.startsWith('community_') || id.startsWith('custom_')) return 'integrations';
   return 'utility';

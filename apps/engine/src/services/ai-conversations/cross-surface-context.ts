@@ -1,8 +1,8 @@
 /**
  * Contesto CROSS-SURFACE — memoria conversazionale condivisa per workspace.
  *
- * Obiettivo (richiesta owner): quando l'utente parla con Liara in UNA scheda
- * (workflow editor / editor nodi / db-studio) e poi passa a un'altra, Liara
+ * Obiettivo (richiesta owner): quando l'utente parla con l'assistente in UNA scheda
+ * (workflow editor / editor nodi / db-studio) e poi passa a un'altra, l'assistente
  * "ricorda" cosa stava facendo nelle ALTRE schede dello STESSO workspace —
  * senza dover rispiegare. Es. "nell'editor nodi chiedo del workflow" o "in
  * db-studio nomino il lavoro fatto nel workflow editor".

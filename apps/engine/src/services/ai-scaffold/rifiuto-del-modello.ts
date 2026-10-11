@@ -59,7 +59,7 @@ export function contieneRifiuto(raw: string): boolean {
  * Il modello ha chiesto uno STRUMENTO invece di rispondere.
  *
  * Il 2026-08-07, all'obiettivo «leggi gli articoli dalla tabella magazzino»,
- * Liara ha risposto:
+ * un modello Mistral ha risposto:
  *
  *     [TOOL_CALLS]fs_read{"path": "/Users/tu/Documenti/magazzino.txt"}
  *

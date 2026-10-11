@@ -13,7 +13,7 @@
  * Pipeline:
  *  1. Document chunking (semantic, max 2k token per chunk)
  *  2. KB retrieval (ai_rag_search su corpus normative pre-indicizzato)
- *  3. Liara LLM analysis per chunk con tool searchKnowledge
+ *  3. LLM analysis per chunk con tool searchKnowledge
  *  4. Fusion findings → severity + reference articolo + remediation
  *
  * Output: { score 0-100, findings[], frameworks[], recommendations[], summary }
@@ -43,7 +43,7 @@ export const legalComplianceNode: NodeModule = {
       'professionalmente damaging: (1) chunking semantico del documento input in segment manageable dal LLM ' +
       'context window, preservando i confini logici di paragrafi/sezioni; (2) ai_rag_search su una KB ' +
       'normative pre-indicizzata via embedding BGE-M3 1024-dim dei testi ufficiali AgID/EUR-Lex con i 1500+ ' +
-      'articoli rilevanti dei 6 framework supportati; (3) Liara LLM analizza ogni chunk con il context ' +
+      'articoli rilevanti dei 6 framework supportati; (3) il LLM analizza ogni chunk con il context ' +
       "normativo retrieved e produce findings strutturati con CITAZIONE ESPLICITA dell'articolo violato + " +
       'reasoning step-by-step; (4) fusion finale dei findings con severity ranking (critical → high → ' +
       'medium → low → info) e dedup di issue duplicate. ' +

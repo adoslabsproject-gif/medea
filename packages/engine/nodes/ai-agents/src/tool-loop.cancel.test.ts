@@ -47,17 +47,16 @@ describe('🚨 agent tool-loop — cancel cooperativo', () => {
     expect(safeFetch).not.toHaveBeenCalled(); // niente chiamata LLM dopo il cancel
   });
 
-  // Fase 2 (#14): senza apiKey NON è più un errore — il default è Liara via
-  // gateway (decisione owner: "Liara-da-settings di default"). Il vecchio
-  // contratto "apiKey required" resta SOLO per provider=anthropic esplicito.
-  it('🔒 senza apiKey → NIENTE errore apiKey: parte il loop OpenAI-format verso Liara', async () => {
-    // il fetch qui THROWA per design del mock → l'esito è un errore di rete,
-    // MAI il vecchio "apiKey required".
+  /**
+   * Senza provider sul nodo e senza provider configurati non c'è niente da
+   * chiamare: il nodo lo dice in `output.error`, e nessuna richiesta parte —
+   * non esiste un modello di ripiego verso cui mandare il goal dell'utente.
+   */
+  it('🔒 senza provider né chiave → errore che dice dove configurarlo, NESSUNA chiamata', async () => {
     const r = await agentToolLoopNode.executor!({ goal: 'x' }, undefined, baseCtx as never);
     const out = (r as { output: { error?: string } }).output;
-    expect(out.error).toBeDefined();
-    expect(out.error).not.toMatch(/apiKey required/i);
-    expect(safeFetch).toHaveBeenCalled();
+    expect(out.error).toMatch(/Nessun provider LLM configurato.*Settings → AI Providers/u);
+    expect(safeFetch).not.toHaveBeenCalled();
   });
 
   it('🔒 Settings→anthropic con key VUOTA → errore apiKey chiaro (guard difensiva intatta)', async () => {

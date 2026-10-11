@@ -16,8 +16,8 @@
  *   - get(tenantId, provider)  → decrypt + return apiKey+model+baseUrl (server-side only)
  *   - remove(tenantId, provider)
  *
- * Liara is special: free-tier hosted by NHA, no apiKey required. It is
- * always "available" — list() returns hasKey=true for liara unconditionally.
+ * Nessun provider è disponibile di suo: `hasKey` è vero solo per quelli che
+ * il tenant ha configurato.
  */
 
 import { nanoid } from 'nanoid';
@@ -26,12 +26,10 @@ import { getDatabase } from '@/storage/db.js';
 import { logger } from '@/lib/logger.js';
 import { AuditLogService } from './audit.service.js';
 import { loadMaster } from './credentials.service.js';
-import { isLiaraEnabled, liaraBaseUrl } from '@/config.js';
 
 const audit = new AuditLogService();
 
 export type LlmProvider =
-  | 'liara'
   | 'anthropic'
   | 'openai'
   | 'gemini'
@@ -45,7 +43,6 @@ export type LlmProvider =
   | 'voyage';
 
 export const SUPPORTED_PROVIDERS: readonly LlmProvider[] = [
-  'liara',
   'openai',
   'anthropic',
   'gemini',
@@ -63,12 +60,6 @@ const PROVIDER_DOC: Record<
   LlmProvider,
   { label: string; freeTier: boolean; description: string; signupUrl?: string }
 > = {
-  liara: {
-    label: 'Liara (free tier)',
-    freeTier: true,
-    description:
-      'Modello self-hosted Zeli SRL (Qwen3-VL-32B testo+vision, FP8 su Blackwell GPU). Nessuna API key richiesta.',
-  },
   openai: {
     label: 'OpenAI (ChatGPT)',
     freeTier: false,
@@ -211,17 +202,10 @@ export class LlmProvidersService {
       byProvider.set(r.provider, { metadata: meta, updatedAt: r.updated_at });
     }
 
-    // On-prem builds (MEDEA_DISABLE_LIARA=true) hide liara from the list
-    // entirely — the admin must configure a different provider.
-    const liaraOk = isLiaraEnabled();
-    const visibleProviders = liaraOk
-      ? SUPPORTED_PROVIDERS
-      : SUPPORTED_PROVIDERS.filter((p) => p !== 'liara');
-
-    return visibleProviders.map((p) => {
+    return SUPPORTED_PROVIDERS.map((p) => {
       const stored = byProvider.get(providerToStorageKey(p));
       const doc = PROVIDER_DOC[p];
-      const hasKey = (p === 'liara' && liaraOk) || stored !== undefined;
+      const hasKey = stored !== undefined;
       const entry: ProviderListEntry = {
         provider: p,
         label: doc.label,
@@ -242,10 +226,7 @@ export class LlmProvidersService {
     provider: LlmProvider,
     opts: { apiKey: string; defaultModel?: string; baseUrl?: string; actorId?: string },
   ): Promise<void> {
-    if (provider === 'liara') {
-      // Liara is free-tier, no key needed. Still allow saving defaultModel as a preference.
-      if (!opts.defaultModel) return;
-    } else if (!opts.apiKey || opts.apiKey.trim() === '') {
+    if (!opts.apiKey || opts.apiKey.trim() === '') {
       throw new Error(`apiKey richiesta per provider ${provider}`);
     }
 
@@ -340,13 +321,6 @@ export class LlmProvidersService {
     tenantId: string,
     provider: LlmProvider,
   ): { apiKey: string; defaultModel?: string; baseUrl?: string } | null {
-    if (provider === 'liara') {
-      // Free tier — no key, server uses the (configurable) Liara endpoint.
-      // BUT: when on-prem decoupling is enabled, treat as if not configured
-      // so the fallback chain skips it cleanly.
-      if (!isLiaraEnabled()) return null;
-      return { apiKey: '', baseUrl: liaraBaseUrl() };
-    }
     const { sqlite } = getDatabase();
     const storageKey = providerToStorageKey(provider);
     const row = sqlite
@@ -404,7 +378,6 @@ export class LlmProvidersService {
   }
 
   async remove(tenantId: string, provider: LlmProvider, actorId?: string): Promise<boolean> {
-    if (provider === 'liara') return false; // can't "delete" the free tier
     const { sqlite } = getDatabase();
     const storageKey = providerToStorageKey(provider);
     const info = sqlite

@@ -139,7 +139,7 @@ describe('#202 P0-3 — companySearch.headValidate SSRF guard', () => {
 
 describe('llm_usage (Fase 1b #13) — token della query expansion nel result', () => {
   it('expansion LLM avvenuta → llm_usage dal listener + llm_provider/llm_model', async () => {
-    m.llmResolve.mockReturnValue({ provider: 'liara', apiKey: '', model: 'nha-v1' });
+    m.llmResolve.mockReturnValue({ provider: 'openai', apiKey: '', model: 'gpt-4o-mini' });
     m.webSearch.mockResolvedValue({ provider: 'ddg', results: [] });
     const { dispatchLLMChat } = await import('./llm-chat.service.js');
     vi.mocked(dispatchLLMChat).mockImplementation((async (...args: unknown[]) => {
@@ -152,8 +152,8 @@ describe('llm_usage (Fase 1b #13) — token della query expansion nel result', (
     const { companySearch } = await import('./company-search.service.js');
     const r = await companySearch('seed', { tenantId: 't1', validateTimeoutMs: 0 });
     expect(r.llm_usage).toEqual({ input: 40, output: 12, fromApi: true });
-    expect(r.llm_provider).toBe('liara');
-    expect(r.llm_model).toBe('nha-v1');
+    expect(r.llm_provider).toBe('openai');
+    expect(r.llm_model).toBe('gpt-4o-mini');
     expect(r.queries_generated_by_llm).toBe(true);
   });
 
@@ -166,7 +166,7 @@ describe('llm_usage (Fase 1b #13) — token della query expansion nel result', (
   });
 
   it('expansion fallita (dispatch throw) → nessun llm_usage, fallback seed-only come prima', async () => {
-    m.llmResolve.mockReturnValue({ provider: 'liara', apiKey: '', model: 'nha-v1' });
+    m.llmResolve.mockReturnValue({ provider: 'openai', apiKey: '', model: 'gpt-4o-mini' });
     m.webSearch.mockResolvedValue({ provider: 'ddg', results: [] });
     const { dispatchLLMChat } = await import('./llm-chat.service.js');
     vi.mocked(dispatchLLMChat).mockRejectedValue(new Error('gateway giù'));

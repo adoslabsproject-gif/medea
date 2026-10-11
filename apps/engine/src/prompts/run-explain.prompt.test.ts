@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildRunExplainSystemPrompt, buildRunExplainUserContent } from './run-explain.prompt.js';
 import { stdlibNodeDefs } from '@medea/engine-nodes-stdlib';
-import { getLiaraContextWindow } from '@/services/llm-chat.service.js';
+import { getContextWindowBudget } from '@/services/llm-chat.service.js';
 
 const CHARS_PER_TOKEN = 3.5; // stessa stima del dispatcher (llm-chat.service)
 
@@ -22,18 +22,18 @@ describe('buildRunExplainSystemPrompt — budget di contesto (incidente 2026-07-
 
   it('il system prompt sta ENTRO ~17k token (60k char): il catalogo non deve mai più sfondare la finestra', () => {
     // 60k char ≈ 17k token: lascia >20k token per user content + output nella
-    // finestra Liara (40.960). Pre-fix questo valeva 372.620 → test rosso.
+    // finestra di contesto (40.960). Pre-fix questo valeva 372.620 → test rosso.
     expect(system.length).toBeLessThan(60_000);
   });
 
-  it("system + user content massimo teorico restano sotto la finestra Liara con margine per l'output", () => {
+  it("system + user content massimo teorico restano sotto la finestra di contesto con margine per l'output", () => {
     const estimatedSystemTokens = Math.ceil(system.length / CHARS_PER_TOKEN);
     // User content worst-case: caps del builder (8000 wf + 2000 err + 1500 out
     // + 2000 config + ~4000 nodeDef/boilerplate) ≈ 17.5k char ≈ 5k token.
     const worstCaseUserTokens = 5_000;
     const minOutputBudget = 2_048;
     expect(estimatedSystemTokens + worstCaseUserTokens + minOutputBudget).toBeLessThan(
-      getLiaraContextWindow(),
+      getContextWindowBudget(),
     );
   });
 

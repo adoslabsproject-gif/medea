@@ -20,7 +20,7 @@ vi.mock('@/lib/logger.js');
 
 const { analyzeImage, extractDocument } = await import('./vision-tools.service.js');
 
-const TARGET = { provider: 'liara', apiKey: '', model: '' };
+const TARGET = { provider: 'openai', apiKey: '', model: '' };
 const PNG_B64 = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]).toString(
   'base64',
 );
@@ -63,7 +63,7 @@ describe('analyzeImage (foto → modello vision)', () => {
   });
 
   it('🚨 dispatch fallisce → ok:false propaga error', async () => {
-    m.dispatch.mockResolvedValue({ ok: false, text: '', error: 'Liara HTTP 500' });
+    m.dispatch.mockResolvedValue({ ok: false, text: '', error: 'OpenAI HTTP 500' });
     const r = await analyzeImage(PNG_B64, undefined, TARGET);
     expect(r.ok).toBe(false);
     expect(r.error).toMatch(/500/u);

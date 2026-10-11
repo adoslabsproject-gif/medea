@@ -224,7 +224,7 @@ describe('executeIntents — end-to-end', () => {
     ]);
     expect(r[0]?.error).toContain('not_found');
   });
-  const VISION_TARGET = { provider: 'liara', apiKey: '', model: '' };
+  const VISION_TARGET = { provider: 'openai', apiKey: '', model: '' };
   it('analyze_image dispatched (col provider risolto)', async () => {
     const r = await executeIntents(
       [{ type: 'analyze_image', args: { imageBase64: 'b64' }, reason: 't' }],

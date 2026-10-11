@@ -199,7 +199,7 @@ describe('smokeTestWorkflow — Agent', () => {
   it('agent pre-istruito SENZA campo prompt + defId in prePromptedDefIds → PASS', () => {
     const wf: Workflow = {
       nodes: [
-        mkNode('a', 'agent_data_analyst', { provider: 'liara', extraContext: '{{$node.x.json}}' }),
+        mkNode('a', 'agent_data_analyst', { provider: 'openai', extraContext: '{{$node.x.json}}' }),
       ],
       edges: [],
     };
@@ -213,7 +213,7 @@ describe('smokeTestWorkflow — Agent', () => {
 
   it('agent NON pre-istruito (generico) senza prompt → resta FAIL anche col set', () => {
     const wf: Workflow = {
-      nodes: [mkNode('a', 'agent_chat', { provider: 'liara' })],
+      nodes: [mkNode('a', 'agent_chat', { provider: 'openai' })],
       edges: [],
     };
     const r = smokeTestWorkflow(wf, { prePromptedDefIds: new Set(['agent_data_analyst']) });
@@ -307,7 +307,7 @@ describe('smokeTestWorkflow — Aggregator', () => {
 describe('🔒 [REGRESSION 2026-06-11] NO falsi positivi — campi REALI del NodeDef', () => {
   it('agent_extractor con schema (NON prompt) → pass', () => {
     const wf: Workflow = {
-      nodes: [mkNode('a', 'agent_extractor', { schema: '{"type":"object"}', provider: 'liara' })],
+      nodes: [mkNode('a', 'agent_extractor', { schema: '{"type":"object"}', provider: 'openai' })],
       edges: [],
     };
     const r = smokeTestWorkflow(wf);
@@ -317,7 +317,7 @@ describe('🔒 [REGRESSION 2026-06-11] NO falsi positivi — campi REALI del Nod
 
   it('agent_translator con targetLanguage (NON prompt) → pass', () => {
     const wf: Workflow = {
-      nodes: [mkNode('a', 'agent_translator', { targetLanguage: 'auto', provider: 'liara' })],
+      nodes: [mkNode('a', 'agent_translator', { targetLanguage: 'auto', provider: 'openai' })],
       edges: [],
     };
     expect(smokeTestWorkflow(wf).nodes[0]!.status).toBe('pass');
@@ -325,7 +325,7 @@ describe('🔒 [REGRESSION 2026-06-11] NO falsi positivi — campi REALI del Nod
 
   it('agent SENZA alcuna istruzione → fail (il vero vuoto resta beccato)', () => {
     const wf: Workflow = {
-      nodes: [mkNode('a', 'agent_extractor', { provider: 'liara' })],
+      nodes: [mkNode('a', 'agent_extractor', { provider: 'openai' })],
       edges: [],
     };
     expect(smokeTestWorkflow(wf).nodes[0]!.status).toBe('fail');

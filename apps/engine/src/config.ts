@@ -1,18 +1,5 @@
 import { z } from 'zod';
 
-/**
- * Coerce common truthy strings ("1", "true", "yes", "on") to boolean true.
- * Used by env-var booleans so admins can write any of those without surprises.
- */
-const truthyString = z
-  .string()
-  .optional()
-  .transform((v) => {
-    if (!v) return false;
-    const norm = v.toLowerCase().trim();
-    return norm === '1' || norm === 'true' || norm === 'yes' || norm === 'on';
-  });
-
 const ConfigSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3100),
@@ -21,27 +8,6 @@ const ConfigSchema = z.object({
   MEDEA_DB_PATH: z.string().default('./data/medea.sqlite'),
   MEDEA_DATA_DIR: z.string().default('./data'),
   CORS_ORIGINS: z.string().default('http://localhost:5173'),
-
-  /**
-   * Disable the Liara (zeliai-hosted free-tier LLM) integration entirely.
-   * Set to `true` for on-prem deployments without LLM gateway access.
-   *
-   * Default: false (Liara available as the primary LLM via portal gateway).
-   */
-  MEDEA_DISABLE_LIARA: truthyString,
-
-  /**
-   * Base URL of the Liara LLM gateway. In the zeliai cloud-hosted model,
-   * every FlowForge container talks to the portal gateway, NOT directly to
-   * Liara. The portal validates the license, applies tier rate-limit, and
-   * forwards the request to the in-process Liara service on the same host.
-   *
-   *   container ─→ portal /api/v1/llm/chat/completions ─→ Liara :3003
-   *
-   * Default points at the Docker bridge gateway (172.17.0.1) which is the
-   * host from inside any container. In dev, set to http://127.0.0.1:3006.
-   */
-  MEDEA_LIARA_BASE_URL: z.string().url().default('http://172.17.0.1:3006/api/v1/llm'),
 
   /**
    * URL portal zeliai (per webhook sender + heartbeat license).
@@ -137,28 +103,4 @@ export function loadConfig(): Config {
 
 export function resetConfigForTests(): void {
   cachedConfig = null;
-}
-
-/**
- * True when Liara is allowed as a fallback LLM provider on this instance.
- *
- * Reads from the cached `loadConfig()` so the env var is parsed ONCE at boot.
- * Tests that need to flip the value mid-run should call `resetConfigForTests()`
- * AFTER mutating `process.env.MEDEA_DISABLE_LIARA`.
- *
- * This is the global gate. Per-tenant override lives in
- * `TenantAiPreferencesService.allowLiara` — combined check via
- * `isLiaraAllowedForTenant(tenantId)`.
- */
-export function isLiaraEnabled(): boolean {
-  return !loadConfig().MEDEA_DISABLE_LIARA;
-}
-
-/**
- * Resolved Liara base URL (without trailing slash) — supports on-prem
- * self-hosted Qwen3+LoRA via `MEDEA_LIARA_BASE_URL` env. Default points
- * to the NHA-hosted service.
- */
-export function liaraBaseUrl(): string {
-  return loadConfig().MEDEA_LIARA_BASE_URL.replace(/\/$/, '');
 }

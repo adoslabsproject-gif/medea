@@ -3,7 +3,6 @@
  *
  * 🚨 SECURITY-CRITICAL:
  *  - GET list NEVER ritorna plaintext apiKey
- *  - Liara NON eliminabile (free-tier, protected)
  *  - requireRole('editor') su tutte le write op
  *  - Provider name strict validation contro lista whitelist
  *
@@ -13,9 +12,8 @@
  *  - baseUrl URL valid or empty string (custom: z.url() or z.literal(''))
  *
  * 🚨 TENANT PREFERENCES:
- *  - allowLiara optional boolean
  *  - defaultLlmProvider: string | null (clear)
- *  - effective fields computed (liaraEffective, effectiveDefaultLlmProvider)
+ *  - effective field computed (effectiveDefaultLlmProvider)
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { logger } from '@/lib/logger.js';
@@ -46,18 +44,15 @@ vi.mock('@/services/llm-providers.service.js', () => ({
     'mistral',
     'groq',
     'ollama',
-    'liara',
   ] as const,
 }));
 
 const prefsGetMock = vi.fn();
 const prefsSetMock = vi.fn();
-const isLiaraAllowedForTenantMock = vi.fn();
 const resolveDefaultProviderMock = vi.fn();
 class TenantAiPreferencesServiceMock {
   get = prefsGetMock;
   set = prefsSetMock;
-  isLiaraAllowedForTenant = isLiaraAllowedForTenantMock;
   resolveDefaultProvider = resolveDefaultProviderMock;
 }
 vi.mock('@/services/tenant-ai-preferences.service.js', () => ({
@@ -96,11 +91,6 @@ vi.mock('../services/llm-test.service.js', () => ({
 vi.mock('@/lib/logger.js');
 const loggerMock = vi.mocked(logger);
 
-const isLiaraEnabledMock = vi.fn(() => true);
-vi.mock('@/config.js', () => ({
-  isLiaraEnabled: isLiaraEnabledMock,
-}));
-
 vi.mock('@/lib/tenant.js', () => ({
   getTenantId: () => 'tenant-A',
 }));
@@ -123,10 +113,8 @@ function makeApp(role: 'viewer' | 'editor' | 'admin' | 'owner' | 'superadmin' = 
 beforeEach(() => {
   vi.clearAllMocks();
   listMock.mockReturnValue([]);
-  prefsGetMock.mockReturnValue({ allowLiara: true, defaultLlmProvider: null });
-  isLiaraAllowedForTenantMock.mockReturnValue(true);
-  resolveDefaultProviderMock.mockReturnValue('liara');
-  isLiaraEnabledMock.mockReturnValue(true);
+  prefsGetMock.mockReturnValue({ defaultLlmProvider: null });
+  resolveDefaultProviderMock.mockReturnValue(null);
 });
 
 describe('🚨 GET / — list providers (SECURITY: never plaintext key)', () => {
@@ -149,24 +137,27 @@ describe('🚨 GET / — list providers (SECURITY: never plaintext key)', () => 
 });
 
 describe('🚨 GET /preferences', () => {
-  it('🚨 ritorna prefs + liaraGloballyEnabled + liaraEffective + effectiveDefault', async () => {
-    prefsGetMock.mockReturnValue({ allowLiara: false, defaultLlmProvider: 'anthropic' });
-    isLiaraAllowedForTenantMock.mockReturnValue(false);
+  it('🚨 ritorna la preferenza e il default effettivo, e nient’altro', async () => {
+    prefsGetMock.mockReturnValue({ defaultLlmProvider: 'anthropic' });
     resolveDefaultProviderMock.mockReturnValue('anthropic');
     listMock.mockReturnValue([{ provider: 'anthropic', hasKey: true }]);
 
     const res = await makeApp('viewer').request('/llm/preferences');
     expect(res.status).toBe(200);
-    const json = (await res.json()) as {
-      allowLiara: boolean;
-      liaraGloballyEnabled: boolean;
-      liaraEffective: boolean;
-      effectiveDefaultLlmProvider: string;
-    };
-    expect(json.allowLiara).toBe(false);
-    expect(json.liaraGloballyEnabled).toBe(true);
-    expect(json.liaraEffective).toBe(false);
-    expect(json.effectiveDefaultLlmProvider).toBe('anthropic');
+    // Le chiavi sono esattamente queste: nessun interruttore di un provider
+    // «di casa», che non esiste.
+    expect(await res.json()).toEqual({
+      defaultLlmProvider: 'anthropic',
+      effectiveDefaultLlmProvider: 'anthropic',
+    });
+  });
+
+  it('🚨 nessun provider configurato → il default effettivo è null, non un ripiego', async () => {
+    const res = await makeApp('viewer').request('/llm/preferences');
+    expect(await res.json()).toEqual({
+      defaultLlmProvider: null,
+      effectiveDefaultLlmProvider: null,
+    });
   });
 
   it('🚨 resolveDefaultProvider riceve SOLO provider con hasKey:true', async () => {
@@ -183,12 +174,6 @@ describe('🚨 GET /preferences', () => {
     ]);
   });
 
-  it('🚨 isLiaraEnabled() globale propagato', async () => {
-    isLiaraEnabledMock.mockReturnValueOnce(false);
-    const res = await makeApp('viewer').request('/llm/preferences');
-    const json = (await res.json()) as { liaraGloballyEnabled: boolean };
-    expect(json.liaraGloballyEnabled).toBe(false);
-  });
 });
 
 describe('🚨 PUT /preferences (editor required)', () => {
@@ -196,7 +181,7 @@ describe('🚨 PUT /preferences (editor required)', () => {
     const res = await makeApp('viewer').request('/llm/preferences', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ allowLiara: true }),
+      body: JSON.stringify({ defaultLlmProvider: 'openai' }),
     });
     expect(res.status).toBe(403);
   });
@@ -205,10 +190,10 @@ describe('🚨 PUT /preferences (editor required)', () => {
     const res = await makeApp('editor').request('/llm/preferences', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ allowLiara: false }),
+      body: JSON.stringify({ defaultLlmProvider: 'openai' }),
     });
     expect(res.status).toBe(200);
-    expect(prefsSetMock).toHaveBeenCalledWith('tenant-A', { allowLiara: false });
+    expect(prefsSetMock).toHaveBeenCalledWith('tenant-A', { defaultLlmProvider: 'openai' });
   });
 
   it('🚨 defaultLlmProvider=null → clear preference', async () => {
@@ -230,14 +215,13 @@ describe('🚨 PUT /preferences (editor required)', () => {
     expect(res.status).toBe(400);
   });
 
-  it('🚨 update PARZIALE: solo campi presenti vengono settati (no overwrite)', async () => {
+  it('🚨 un campo che non esiste più viene ignorato: non entra nel patch', async () => {
     await makeApp('editor').request('/llm/preferences', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ allowLiara: true }), // NO defaultLlmProvider
+      body: JSON.stringify({ campoDismesso: true }),
     });
-    expect(prefsSetMock).toHaveBeenCalledWith('tenant-A', { allowLiara: true });
-    // Niente defaultLlmProvider nel patch
+    expect(prefsSetMock).toHaveBeenCalledWith('tenant-A', {});
   });
 
   it('🚨 body vuoto {} → patch vuoto (no error)', async () => {
@@ -429,17 +413,24 @@ describe('🚨 DELETE /:provider', () => {
     expect(removeMock).toHaveBeenCalledWith('tenant-A', 'openai', 'actor-1');
   });
 
-  it('🚨 SECURITY: Liara NON eliminabile → 400', async () => {
-    const res = await makeApp('editor').request('/llm/liara', { method: 'DELETE' });
-    expect(res.status).toBe(400);
-    const json = (await res.json()) as { error: string };
-    expect(json.error).toMatch(/Liara.*non eliminabile/iu);
-    expect(removeMock).not.toHaveBeenCalled();
+  it('🚨 nessun provider è protetto dalla cancellazione: chi l’ha configurato lo può togliere', async () => {
+    removeMock.mockReturnValue(true);
+    for (const p of ['anthropic', 'ollama', 'groq']) {
+      const res = await makeApp('editor').request(`/llm/${p}`, { method: 'DELETE' });
+      expect(res.status).toBe(200);
+    }
+    expect(removeMock).toHaveBeenCalledTimes(3);
   });
 
   it('🚨 provider NON valido → 400', async () => {
     const res = await makeApp('editor').request('/llm/fake', { method: 'DELETE' });
     expect(res.status).toBe(400);
+  });
+
+  it('🚨 un provider che non esiste più → 400, e niente viene cancellato', async () => {
+    const res = await makeApp('editor').request('/llm/provider-dismesso', { method: 'DELETE' });
+    expect(res.status).toBe(400);
+    expect(removeMock).not.toHaveBeenCalled();
   });
 });
 
@@ -454,18 +445,21 @@ describe('🚨 POST /:provider/test', () => {
     expect(res.status).toBe(400);
   });
 
-  it('🚨 provider !== liara senza config → 404', async () => {
-    getMock.mockReturnValue(null);
-    const res = await makeApp('editor').request('/llm/anthropic/test', { method: 'POST' });
-    expect(res.status).toBe(404);
-  });
-
-  it('🚨 liara senza config → procede (Liara free-tier)', async () => {
-    getMock.mockReturnValue(null);
-    dispatchLLMForTestMock.mockResolvedValueOnce('test reply');
-    const res = await makeApp('editor').request('/llm/liara/test', { method: 'POST' });
-    expect(res.status).toBe(200);
-  });
+  /**
+   * Senza una configurazione salvata non c'è niente da provare, per NESSUN
+   * provider: una prova che partisse lo stesso andrebbe verso un servizio
+   * senza chiave, e direbbe «funziona» o «non funziona» di qualcosa che il
+   * tenant non ha.
+   */
+  it.each(['anthropic', 'openai', 'ollama'])(
+    '🚨 %s senza config → 404, e nessuna prova parte',
+    async (p) => {
+      getMock.mockReturnValue(null);
+      const res = await makeApp('editor').request(`/llm/${p}/test`, { method: 'POST' });
+      expect(res.status).toBe(404);
+      expect(dispatchLLMForTestMock).not.toHaveBeenCalled();
+    },
+  );
 
   it('🚨 happy: dispatch ok → ok:true + durationMs + sample (200 char max)', async () => {
     getMock.mockReturnValue({ provider: 'anthropic', apiKey: 'sk' });

@@ -43,7 +43,6 @@ import type { NodeExecutor } from '@medea/engine-nodes-stdlib';
 // pdfjs di pdf-parse@1.1.1 ("bad XRef entry") nello stesso processo; con `unpdf`
 // (pdfjs moderno) il vincolo è caduto, ma teniamo l'approccio dependency-light.
 import type { BinaryData } from '@medea/engine-core-schema';
-import { isLiaraAllowedForTenant } from '@/services/tenant-ai-preferences.service.js';
 import { LlmProvidersService } from '@/services/llm-providers.service.js';
 import { safeOutboundFetch } from '@/lib/safe-outbound-fetch.js';
 // Letture risposta CAPPATE (anti-OOM). Import ora sicuro: la fragilità del grafo di
@@ -191,14 +190,8 @@ async function llmVisionExtract(pdfBuffer: Buffer, tenantId: string): Promise<Ll
   const svc = new LlmProvidersService();
   const anthropic = svc.get(tenantId, 'anthropic');
   if (!anthropic?.apiKey) {
-    // Try Liara if globally allowed (per-tenant respected automatically)
-    if (!isLiaraAllowedForTenant(tenantId)) {
-      throw new Error(
-        'LLM-vision fallback requires an Anthropic API key configured in Settings → AI Providers (or Liara enabled).',
-      );
-    }
     throw new Error(
-      'LLM-vision fallback non disponibile: configura una API key Anthropic in Settings → AI Providers. (Liara non supporta ancora input PDF vision.)',
+      'LLM-vision fallback non disponibile: configura una API key Anthropic in Settings → AI Providers.',
     );
   }
 

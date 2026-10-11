@@ -78,7 +78,6 @@ function dataOf(output: unknown): unknown {
 
 beforeEach(() => {
   safeFetch.mockReset();
-  vi.stubEnv('MEDEA_LIARA_BASE_URL', '');
   vi.stubEnv('MEDEA_LICENSE_KEY', '');
 });
 afterEach(() => {
@@ -111,7 +110,6 @@ const ollamaReply = (text: string, counts?: { prompt_eval_count: number; eval_co
 
 describe('caratterizzazione: i DATI di output non cambiano (tutti i provider OpenAI-format)', () => {
   const cases: [provider: string, urlPart: string][] = [
-    ['liara', 'liara.nothumanallowed.com/chat/completions'],
     ['openai', 'api.openai.com/v1/chat/completions'],
     ['openrouter', 'openrouter.ai/api/v1/chat/completions'],
     ['mistral', 'api.mistral.ai/v1/chat/completions'],
@@ -182,7 +180,7 @@ describe('caratterizzazione: translator (outputFormat=text) → output resta la 
     expect(typeof res.output).toBe('string');
   });
 
-  it('whitespace ai bordi PRESERVATO: il provider non-liara non trimma (byte-identico davvero)', async () => {
+  it('whitespace ai bordi PRESERVATO: il provider non trimma (byte-identico davvero)', async () => {
     safeFetch.mockResolvedValue(openAiReply('  Ciao.\n'));
     const res = await node('agent_translator')(
       { provider: 'openai', apiKey: 'k', targetLanguage: 'italiano' },
@@ -194,25 +192,17 @@ describe('caratterizzazione: translator (outputFormat=text) → output resta la 
 });
 
 describe('caratterizzazione: corpo richiesta INVARIATO (nessuna deriva di prompt)', () => {
-  it('liara: /no_think prefissato al system, model default nha-v1, enable_thinking false', async () => {
-    safeFetch.mockResolvedValue(openAiReply(SUMMARY_JSON));
-    await node('agent_summarizer')({ provider: 'liara' }, 'testo', ctx);
-    const body = sentBody();
-    expect(body.model).toBe('nha-v1');
-    expect(body.chat_template_kwargs).toEqual({ enable_thinking: false });
-    const msgs = body.messages as { role: string; content: string }[];
-    expect(msgs[0]?.role).toBe('system');
-    expect(msgs[0]?.content.startsWith('/no_think\n')).toBe(true);
-    expect(msgs[0]?.content).toContain('You are a precise summarizer');
-    expect(msgs[1]).toEqual({ role: 'user', content: 'testo' });
-  });
-
   it('openai: model default gpt-4o-mini, system+user come prima', async () => {
     safeFetch.mockResolvedValue(openAiReply(SUMMARY_JSON));
     await node('agent_summarizer')({ provider: 'openai', apiKey: 'k' }, 'testo', ctx);
     const body = sentBody();
     expect(body.model).toBe('gpt-4o-mini');
     const msgs = body.messages as { role: string; content: string }[];
+    // Il prompt di sistema parte così com'è: nessun prefisso di controllo
+    // pensato per un modello particolare.
+    expect(msgs[0]?.role).toBe('system');
+    expect(msgs[0]?.content.startsWith('You are a precise summarizer')).toBe(true);
+    expect(body).not.toHaveProperty('chat_template_kwargs');
     expect(msgs[0]?.content).toContain('You are a precise summarizer');
     expect(msgs[1]).toEqual({ role: 'user', content: 'testo' });
   });
@@ -227,14 +217,24 @@ describe('caratterizzazione: corpo richiesta INVARIATO (nessuna deriva di prompt
   });
 });
 
-describe('caratterizzazione: liara strip <think> residuo', () => {
-  it('il blocco <think>…</think> è rimosso dal testo PRIMA del parse', async () => {
-    safeFetch.mockResolvedValue(
-      openAiReply(`<think>ragionamento interno</think>\n${SUMMARY_JSON}`),
+describe('🚨 senza provider non parte nessuna chiamata', () => {
+  /**
+   * Non esiste un modello di ripiego. Un nodo senza provider sul nodo e senza
+   * provider configurati dal tenant si ferma dicendo cosa manca; un nome di
+   * provider che non esiste più vale come un nome qualsiasi non configurato.
+   */
+  it('nessun provider configurato → errore che dice dove configurarlo', async () => {
+    await expect(node('agent_summarizer')({}, 'testo', ctx)).rejects.toThrow(
+      /Nessun provider LLM configurato.*Settings → AI Providers/u,
     );
-    const res = await node('agent_summarizer')({ provider: 'liara' }, 'testo', ctx);
-    expect(dataOf(res.output)).toEqual(SUMMARY_DATA);
-    expect(JSON.stringify(res.output)).not.toContain('ragionamento interno');
+    expect(safeFetch).not.toHaveBeenCalled();
+  });
+
+  it('un provider che non esiste più, indicato sul nodo → errore col suo nome, nessuna chiamata', async () => {
+    await expect(
+      node('agent_summarizer')({ provider: 'provider-dismesso' }, 'testo', ctx),
+    ).rejects.toThrow(/"provider-dismesso" non è configurato/u);
+    expect(safeFetch).not.toHaveBeenCalled();
   });
 });
 
@@ -375,20 +375,6 @@ describe('_llm: conteggi dalla API del provider (fromApi:true)', () => {
       outputTokens: 25,
       model: 'llama3.2',
       provider: 'ollama',
-      fromApi: true,
-    });
-  });
-
-  it('liara: usage del gateway + model default nha-v1', async () => {
-    safeFetch.mockResolvedValue(
-      openAiReply(SUMMARY_JSON, { prompt_tokens: 33, completion_tokens: 11 }),
-    );
-    const res = await node('agent_summarizer')({ provider: 'liara' }, 'testo', ctx);
-    expect(llmOf(res.output)).toEqual({
-      inputTokens: 33,
-      outputTokens: 11,
-      model: 'nha-v1',
-      provider: 'liara',
       fromApi: true,
     });
   });

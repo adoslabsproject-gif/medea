@@ -24,7 +24,7 @@ const riassuntoSerale = {
       defId: 'trigger_cron',
       config: { cronExpression: '0 18 * * *', timezone: 'Europe/Rome' },
     },
-    { id: 'agent_summarizer', defId: 'agent_summarizer', config: { provider: 'liara' } },
+    { id: 'agent_summarizer', defId: 'agent_summarizer', config: { provider: 'openai' } },
     {
       id: 'community_slack',
       defId: 'community_slack',

@@ -4,80 +4,27 @@
  * (single user prompt). Here we forward conversation history so the assistant
  * can answer follow-ups.
  *
- * Every provider call is wrapped in a per-provider circuit breaker — if
- * Liara goes down, calls to Liara fail fast for 60s instead of consuming
+ * Every provider call is wrapped in a per-provider circuit breaker — if one
+ * provider goes down, calls to it fail fast for 60s instead of consuming
  * worker threads in fetch timeout. Other providers stay unaffected.
  */
 
-import { isLiaraEnabled, liaraBaseUrl } from '@/config.js';
 import { CircuitBreaker, CircuitBreakerRegistry } from '@medea/engine-shared';
 import { isFixedOpenAiCompat, fixedOpenAiCompatTarget } from './llm/provider-registry.js';
 import { readJsonCapped, readTextTruncated } from '@/lib/capped-response.js';
 import { assertUrlSafe } from '@medea/engine-safe-fetch';
 
 /**
- * A quale famiglia appartiene il modello che risponde su Liara.
- *
- * Non è un dettaglio di stile: `/no_think` e `enable_thinking` sono
- * convenzioni **di Qwen3**, e questo file le mandava a ogni chiamata. Liara
- * però è un **Mistral** — lo dice chi la gestisce, e lo conferma il modello
- * stesso: il 2026-08-07 ha risposto emettendo `[TOOL_CALLS]fs_read{…}`, che è
- * il token nativo con cui i Mistral chiedono uno strumento.
- *
- * Il risultato era che ogni prompt di sistema cominciava con una direttiva
- * `/no_think` che quel modello non capisce, e che il template riceveva un
- * parametro pensato per un'altra architettura.
- *
- * Si tiene configurabile e non cablato: se un domani dietro Liara ci fosse
- * davvero un Qwen, basta l'ambiente. Il predefinito segue l'evidenza.
- */
-function famigliaLiara(): 'mistral' | 'qwen' {
-  return process.env.MEDEA_LIARA_FAMILY === 'qwen' ? 'qwen' : 'mistral';
-}
-
-/** Il prefisso da anteporre al prompt di sistema: solo Qwen lo capisce. */
-function prefissoSistema(): string {
-  return famigliaLiara() === 'qwen' ? '/no_think\n' : '';
-}
-
-/**
- * I parametri del template della chat.
- *
- * `enable_thinking` è di Qwen3: a un Mistral non si manda, perché un template
- * che non lo conosce può ignorarlo o rifiutare la richiesta.
- */
-function argomentiTemplate(): Record<string, unknown> | undefined {
-  return famigliaLiara() === 'qwen' ? { enable_thinking: false } : undefined;
-}
-
-
-/**
  * Difesa-in-profondità SSRF. Il `baseUrl` CUSTOM (BYOK Ollama / proxy
  * OpenAI-compat) è input utente e qui diventa il target `fetch` → lo validiamo
  * (host pubblico) PRIMA di usarlo.
  *
- * ⚠️ ECCEZIONE OBBLIGATORIA — il GATEWAY INTERNO di default (`liaraBaseUrl()` =
- * MEDEA_LIARA_BASE_URL) è un IP PRIVATO PER DESIGN (docker bridge verso il
- * portal-gateway con licenza, es. 172.20.0.1:3006). Il resolver Liara lo passa
- * SEMPRE come `baseUrl` (provider-registry: "il chiamante lo passa"), quindi NON è
- * `undefined` come assumeva il commento precedente: senza questa esenzione
- * `assertUrlSafe` lo blocca (BLOCKED_PRIVATE_IP) → la chat Liara default e il
- * gateway /api/v1/liara/chat (NHA) crashano con 500 'Errore interno'. Il guard SSRF
- * deve colpire SOLO i baseUrl CUSTOM, non il gateway interno legittimo.
- *
  * `assertUrlSafe` lancia (RFC1918/loopback/link-local/localhost) senza
- * `allowDockerNet` → blocca la flowforge-net per i baseUrl custom. Gate primario:
- * validazione all'upsert (routes/llm-providers.ts).
+ * `allowDockerNet`. Gate primario: validazione all'upsert
+ * (routes/llm-providers.ts).
  */
 function guardCustomBaseUrl(baseUrl: string | undefined): void {
   if (!baseUrl) return;
-  // Esente: coincide (per origin) col gateway interno di default → traffico interno
-  // legittimo e autenticato (licenza), non un target SSRF attacker-controlled.
-  try {
-    if (new URL(baseUrl).origin === new URL(liaraBaseUrl()).origin) return;
-  } catch {
-    /* baseUrl malformato → lo rifiuta assertUrlSafe qui sotto */
-  }
   assertUrlSafe(baseUrl);
 }
 
@@ -86,48 +33,22 @@ interface ChatMessage {
   content: string;
 }
 
-/**
- * Immagine allegata da passare DIRETTAMENTE al modello multimodale (Liara
- * Qwen3-VL legge i pixel nativamente — niente più pre-descrizione in testo).
- */
+/** Immagine allegata a un messaggio, per i modelli che leggono i pixel. */
 export interface ChatImage {
   base64: string;
   mimeType: string;
 }
 
-/** Content di un messaggio: testo semplice o array multimodale OpenAI-compat. */
-type LlmContentPart =
-  | { type: 'text'; text: string }
-  | { type: 'image_url'; image_url: { url: string } };
-type LlmMessageContent = string | LlmContentPart[];
-
-/** Costruisce il content dell'ultimo messaggio utente: multimodale se ci sono immagini. */
-function buildUserContent(userMessage: string, images?: ChatImage[]): LlmMessageContent {
-  if (!images || images.length === 0) return userMessage;
-  return [
-    { type: 'text', text: userMessage },
-    ...images.map((img) => ({
-      type: 'image_url' as const,
-      image_url: { url: `data:${img.mimeType};base64,${img.base64}` },
-    })),
-  ];
-}
-
-/** Token ~ stimati per immagine (tile Qwen-VL) — solo per il budget max_tokens. */
-const TOKENS_PER_IMAGE_ESTIMATE = 800;
-
 /**
- * Context window (in token) del modello Liara self-hosted. Single source of
- * truth: era duplicato in 3 punti del file (dynamic max_tokens calc) → la
- * divergenza avrebbe rotto il calcolo dell'output cap. Esportata anche per il
- * contatore di contesto del chatter (mostra `used / window`).
+ * Il budget di contesto (in token) su cui si regolano le chat del motore.
  *
- * NB: oggi FlowForge usa la stessa finestra anche per i provider BYOK — il
- * budget dinamico è tarato su Liara; per i BYOK con finestra più ampia (Claude
- * 200k, GPT 128k) resta conservativo, mai overrun.
+ * È una soglia unica e prudente, non la finestra reale di ogni modello: la
+ * usano il contatore di contesto del chatter (`used / window`) e i tagli alla
+ * storia delle conversazioni. Per i provider con finestra più ampia resta
+ * conservativa, mai in eccesso. Si alza da `MEDEA_LLM_CONTEXT_WINDOW`.
  */
-export function getLiaraContextWindow(): number {
-  const v = Number(process.env.MEDEA_LIARA_CONTEXT_WINDOW ?? '40960');
+export function getContextWindowBudget(): number {
+  const v = Number(process.env.MEDEA_LLM_CONTEXT_WINDOW ?? '40960');
   return Number.isFinite(v) && v > 0 ? v : 40960;
 }
 
@@ -153,14 +74,15 @@ export class LlmContextOverflowError extends Error {
 }
 
 /**
- * Il provider LLM selezionato NON è al momento raggiungibile: rete giù, gateway
- * 5xx, vLLM fermo (es. GPU in gen-mode), circuit breaker aperto.
+ * Il provider LLM selezionato NON è al momento raggiungibile: rete giù, 5xx a
+ * monte, circuit breaker aperto.
  *
  * Tipizzato per dare all'utente un messaggio CHIARO (503) invece di un 500
  * 'Errore interno' opaco — e, soprattutto, per NON ripiegare MAI in silenzio su
  * un altro provider/una chiave a pagamento (decisione owner 2026-06-18:
- * "rispetta la scelta + errore chiaro"). Chi ha scelto Liara e la trova giù
- * deve saperlo e scegliere lui un alternativa, non ritrovarsi addebiti BYOK.
+ * "rispetta la scelta + errore chiaro"). Chi ha scelto un provider e lo trova
+ * giù deve saperlo e scegliere lui un'alternativa, non ritrovarsi addebiti
+ * su un'altra chiave.
  */
 export class LlmProviderUnavailableError extends Error {
   readonly provider: string;
@@ -168,10 +90,7 @@ export class LlmProviderUnavailableError extends Error {
     const label = chatProviderLabel(provider);
     super(
       `${label} non è al momento raggiungibile${detail ? ` (${detail})` : ''}. ` +
-        (provider === 'liara'
-          ? 'Liara potrebbe essere offline (manutenzione o GPU occupata). Riprova tra poco, ' +
-            'oppure seleziona un altro provider in Settings → AI Providers.'
-          : 'Riprova tra poco, oppure seleziona un altro provider in Settings → AI Providers.'),
+        'Riprova tra poco, oppure seleziona un altro provider in Settings → AI Providers.',
     );
     this.name = 'LlmProviderUnavailableError';
     this.provider = provider;
@@ -184,7 +103,7 @@ export type LlmQuotaKind = 'token' | 'calls' | 'daily';
 /**
  * Quota LLM del tenant esaurita (429 dal gateway portal). DISTINTA dagli altri
  * 429/5xx perché l'engine la gestisce in modo speciale (fallback BYOK → pausa
- * su rinnovo → errore CHIARO), invece di un fallimento opaco "Liara 429: …".
+ * su rinnovo → errore CHIARO), invece di un fallimento opaco "429: …".
  */
 export class LlmQuotaExceededError extends Error {
   readonly provider: string;
@@ -281,16 +200,6 @@ export function parseQuotaError(body: string, provider: string): LlmQuotaExceede
   });
 }
 
-/** Errore di fetch da rete (connessione rifiutata / DNS / reset) — non un AbortError. */
-function isNetworkError(err: unknown): boolean {
-  return (
-    err instanceof Error &&
-    err.name !== 'AbortError' &&
-    (err.name === 'TypeError' ||
-      /fetch failed|ECONNREFUSED|ENOTFOUND|ECONNRESET|network/i.test(err.message))
-  );
-}
-
 /** One breaker per LLM provider — singletons keyed on provider name. */
 function getBreaker(provider: string): CircuitBreaker<string> {
   const name = `llm:${provider}`;
@@ -322,6 +231,22 @@ export interface LlmTokenUsage {
  */
 export type TokenUsageListener = (usage: LlmTokenUsage) => void;
 
+/** Quanto si aspetta una risposta quando chi chiama non lo dice. */
+const ATTESA_PREDEFINITA_MS = 60_000;
+
+/**
+ * Stima dei token di un testo: ~3,5 caratteri per token, media per testo
+ * misto italiano/inglese e JSON. Volutamente in eccesso.
+ */
+function stimaToken(testo: string): number {
+  return Math.ceil(testo.length / 3.5);
+}
+
+/** Il numero se è un valore utilizzabile, altrimenti niente. */
+function positivo(n: number | undefined): number | undefined {
+  return typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
 export async function dispatchLLMChat(
   provider: string,
   apiKey: string,
@@ -331,18 +256,40 @@ export async function dispatchLLMChat(
   baseUrl: string | undefined,
   history: ChatMessage[],
   tokenUsageListener?: TokenUsageListener,
-  /** Id correlato dal client (editor) → propagato al gateway portal come
-   *  X-FF-Request-Id per il canale-posizione della coda LLM (vedi admission). */
-  requestId?: string,
-  /** Override PER-CHIAMATA di max_tokens/timeout/temperature. Passati ESPLICITAMENTE
-   *  per evitare la mutazione di `process.env` globale attorno a un await (race tra run
-   *  concorrenti nello stesso container). `temperature` assente → default per-ramo
-   *  invariato (0.2 Liara, 0.1 openai-compat); presente → rispettata (il nodo
-   *  action_llm_complete la espone all'utente). maxTokens/timeout assenti → fallback env. */
-  opts?: { maxTokens?: number; timeoutMs?: number; temperature?: number },
+  /** Override PER-CHIAMATA di max_tokens/timeout/temperature, passati
+   *  ESPLICITAMENTE per evitare la mutazione di `process.env` globale attorno a
+   *  un await (race tra run concorrenti). Valgono per ogni provider, ognuno col
+   *  nome che il suo protocollo dà al limite di uscita. Assenti → i predefiniti
+   *  del ramo (60s di attesa, temperature 0.1). `stop` elenca le sequenze a
+   *  cui il modello deve fermarsi. */
+  opts?: { maxTokens?: number; timeoutMs?: number; temperature?: number; stop?: string[] },
 ): Promise<string> {
   guardCustomBaseUrl(baseUrl);
   const msgs = [...history, { role: 'user' as const, content: userMessage }];
+
+  const timeoutMs = positivo(opts?.timeoutMs) ?? ATTESA_PREDEFINITA_MS;
+  const maxTokens = positivo(opts?.maxTokens);
+  const temperature = opts?.temperature ?? 0.1;
+  const stop = opts?.stop && opts.stop.length > 0 ? opts.stop : undefined;
+
+  /**
+   * Dice al listener quanto è costata la risposta: i numeri del provider
+   * quando li dichiara, una stima dichiarata come tale altrimenti. Un
+   * contatore che resta a zero perché il provider tace è peggio di uno
+   * approssimato e marcato.
+   */
+  const reportUsage = (content: string, input?: number, output?: number): void => {
+    if (!tokenUsageListener) return;
+    if (typeof input === 'number' && typeof output === 'number') {
+      tokenUsageListener({ input, output, fromApi: true });
+      return;
+    }
+    tokenUsageListener({
+      input: stimaToken(system) + msgs.reduce((acc, m) => acc + stimaToken(m.content), 0),
+      output: stimaToken(content),
+      fromApi: false,
+    });
+  };
 
   return getBreaker(provider).execute(async () => {
     // ── Ramo generico: provider OpenAI-compat a endpoint fisso ──────────────────
@@ -365,164 +312,49 @@ export async function dispatchLLMChat(
         body: JSON.stringify({
           model: target.model,
           messages: [{ role: 'system', content: system }, ...msgs],
-          temperature: opts?.temperature ?? 0.1,
+          temperature,
+          ...(maxTokens !== undefined ? { max_tokens: maxTokens } : {}),
+          ...(stop ? { stop } : {}),
         }),
-        signal: AbortSignal.timeout(60_000),
+        signal: AbortSignal.timeout(timeoutMs),
       });
       if (!res.ok)
         throw new Error(
           `${chatProviderLabel(provider)} ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`,
         );
-      const data = await readJsonCapped<{ choices?: { message: { content: string } }[] }>(res);
-      return data.choices?.[0]?.message.content ?? '';
+      const data = await readJsonCapped<{
+        choices?: { message: { content: string } }[];
+        usage?: { prompt_tokens?: number; completion_tokens?: number };
+      }>(res);
+      const content = data.choices?.[0]?.message.content ?? '';
+      reportUsage(content, data.usage?.prompt_tokens, data.usage?.completion_tokens);
+      return content;
     }
     switch (provider) {
-      case 'liara': {
-        if (!isLiaraEnabled()) {
-          throw new Error('Liara è disabilitata su questa istanza (MEDEA_DISABLE_LIARA=true).');
-        }
-        // Route to portal gateway (path is the OpenAI-compatible endpoint
-        // exposed by the zeliai portal which forwards to the internal Liara
-        // service after Sentinel + license + quota checks).
-        const url = `${baseUrl ?? liaraBaseUrl()}/chat/completions`;
-        const licenseKey = process.env.MEDEA_LICENSE_KEY ?? '';
-
-        // Liara = Qwen3 32B FP8 self-hosted on Hetzner GPU. Pieno potere:
-        //  - Thinking mode ON (Qwen3 ragiona via <think>...</think> prima di emettere)
-        //  - max_tokens DINAMICO (FIX 2026-05-30 user-segnalato Liara 400 "too large"):
-        //    Qwen3 32B context window = 40960 tokens. Pre-fix: 24000 hardcoded →
-        //    quando input scaffold scala (~17K con SYSTEM_PROMPT esempi ADV + catalog
-        //    multi-action), input+max_tokens > 40960 → vLLM rifiuta. Ora calcoliamo
-        //    output cap come (context_window - input_tokens - safety_margin).
-        //  - model omesso: Liara backend usa il suo MODEL_NAME (qwen3-32b) di default.
-        const fullSystem = `${prefissoSistema()}${system}`;
-        // Token estimation: ~3.5 char/token medio per testo IT/EN misto + JSON.
-        // Conservativo (overestimate) per evitare overrun. Pattern industriale
-        // (Anthropic SDK usa ~4 char/token, OpenAI tiktoken precisa ma overhead).
-        const CHARS_PER_TOKEN = 3.5;
-        const estimateTokens = (s: string): number => Math.ceil(s.length / CHARS_PER_TOKEN);
-        const inputTokensEstimated =
-          estimateTokens(fullSystem) +
-          msgs.reduce((acc, m) => acc + estimateTokens(m.content), 0) +
-          msgs.length * 4; // overhead role markers per message
-        const contextWindow = getLiaraContextWindow();
-        const safetyMargin = 512;
-        // Guard input-overflow: se l'input da solo non lascia spazio nemmeno per
-        // una risposta minima, NON mandare la richiesta (il modello la rifiuta
-        // con un 400 criptico → 500). Falliamo PRESTO con un errore chiaro.
-        const MIN_OUTPUT_TOKENS = 512;
-        if (inputTokensEstimated > contextWindow - MIN_OUTPUT_TOKENS - safetyMargin) {
-          throw new LlmContextOverflowError(inputTokensEstimated, contextWindow);
-        }
-        const rawCeiling = opts?.maxTokens ?? Number(process.env.MEDEA_LIARA_MAX_TOKENS ?? '24000');
-        const maxTokensCeiling = Number.isFinite(rawCeiling) && rawCeiling > 0 ? rawCeiling : 24000;
-        const dynamicMax = Math.max(
-          1024,
-          Math.min(maxTokensCeiling, contextWindow - inputTokensEstimated - safetyMargin),
-        );
-        const body: Record<string, unknown> = {
-          messages: [{ role: 'system', content: fullSystem }, ...msgs],
-          temperature: opts?.temperature ?? 0.2,
-          max_tokens: dynamicMax,
-          ...(argomentiTemplate() ? { chat_template_kwargs: argomentiTemplate() } : {}),
-        };
-        // Permetti override del model SOLO se esplicito (BYOK enterprise).
-        // Default = lasciar decidere a Liara backend (MODEL_NAME env).
-        if (model && model.trim().length > 0) body.model = model;
-
-        // FIX 2026-05-31 (rev 2): timeout 240s per call. Qwen3 thinking + propose_plan
-        // Enterprise (22 nodi) supera 60s e a volte 90s. Portal gateway ha
-        // LIARA_TIMEOUT_MS_SYNC=240s, e il client (qui) deve essere >= per non
-        // tagliare prima di lui. Oltre 240s consideriamo hang vero.
-        const liaraTimeoutMs =
-          opts?.timeoutMs ?? Number(process.env.MEDEA_LIARA_TIMEOUT_MS ?? '240000');
-        const liaraCtrl = new AbortController();
-        const liaraTimeoutId = setTimeout(() => liaraCtrl.abort(), liaraTimeoutMs);
-        let res: Response;
-        try {
-          res = await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              // License key carried as Bearer so portal can validate + apply
-              // quota/tier. Absent header → portal will 401.
-              ...(licenseKey ? { Authorization: `Bearer ${licenseKey}` } : {}),
-              // Correlazione coda LLM → canale-posizione (l'editor apre
-              // /ai-assistant/queue-status?rid=<requestId> in parallelo).
-              ...(requestId ? { 'X-FF-Request-Id': requestId } : {}),
-            },
-            body: JSON.stringify(body),
-            signal: liaraCtrl.signal,
-          });
-        } catch (err) {
-          if (err instanceof Error && err.name === 'AbortError') {
-            throw new Error(
-              `Liara timeout dopo ${liaraTimeoutMs.toString()}ms — modello in stallo. Riprova o aumenta MEDEA_LIARA_TIMEOUT_MS.`,
-            );
-          }
-          // Connessione rifiutata/reset → Liara giù (es. GPU in gen-mode): errore chiaro.
-          if (isNetworkError(err))
-            throw new LlmProviderUnavailableError('liara', 'connessione fallita');
-          throw err;
-        } finally {
-          clearTimeout(liaraTimeoutId);
-        }
-        if (!res.ok) {
-          const errBody = (await readTextTruncated(res, 65_536)).text.slice(0, 300);
-          // Difesa in profondità: se la stima locale ha sbagliato e il modello
-          // rifiuta per context length, traduci nel nostro errore chiaro (413)
-          // invece del 400 grezzo che diventerebbe 500 'Errore interno'.
-          if (res.status === 400 && /context length|maximum context|input.?tokens/i.test(errBody)) {
-            throw new LlmContextOverflowError(inputTokensEstimated, contextWindow);
-          }
-          // 429 di QUOTA (token/chiamate/giorno) → errore TIPIZZATO così l'engine
-          // può degradare con grazia (fallback BYOK / pausa / errore chiaro) invece
-          // di un fallimento opaco. Altri 429 (rate-limit upstream) restano generici.
-          if (res.status === 429) {
-            const quotaErr = parseQuotaError(errBody, 'liara');
-            if (quotaErr) throw quotaErr;
-          }
-          // 5xx dal gateway = Liara/backend non disponibile a monte → errore chiaro (503).
-          if (res.status >= 500)
-            throw new LlmProviderUnavailableError('liara', `gateway ${res.status.toString()}`);
-          throw new Error(`Liara ${res.status.toString()}: ${errBody.slice(0, 200)}`);
-        }
-        const data = await readJsonCapped<{
-          choices?: { message: { content: string } }[];
-          usage?: { prompt_tokens?: number; completion_tokens?: number };
-        }>(res);
-        const content = (data.choices?.[0]?.message.content ?? '')
-          .replace(/<think>[\s\S]*?<\/think>\s*/g, '')
-          .trim();
-        // Liara (Qwen3) backend espone usage in formato OpenAI-compat.
-        if (tokenUsageListener) {
-          const apiInput = data.usage?.prompt_tokens;
-          const apiOutput = data.usage?.completion_tokens;
-          if (typeof apiInput === 'number' && typeof apiOutput === 'number') {
-            tokenUsageListener({ input: apiInput, output: apiOutput, fromApi: true });
-          } else {
-            tokenUsageListener({
-              input: inputTokensEstimated,
-              output: estimateTokens(content),
-              fromApi: false,
-            });
-          }
-        }
-        return content;
-      }
       case 'gemini': {
         const m = model || 'gemini-2.0-flash';
         const contents = msgs.map((x) => ({
           role: x.role === 'assistant' ? 'model' : 'user',
           parts: [{ text: x.content }],
         }));
+        // Solo ciò che è stato chiesto: senza richiesta Gemini usa i suoi
+        // predefiniti, come ha sempre fatto.
+        const generationConfig = {
+          ...(maxTokens !== undefined ? { maxOutputTokens: maxTokens } : {}),
+          ...(opts?.temperature !== undefined ? { temperature: opts.temperature } : {}),
+          ...(stop ? { stopSequences: stop } : {}),
+        };
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents }),
-            signal: AbortSignal.timeout(60_000),
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: system }] },
+              contents,
+              ...(Object.keys(generationConfig).length > 0 ? { generationConfig } : {}),
+            }),
+            signal: AbortSignal.timeout(timeoutMs),
           },
         );
         if (!res.ok)
@@ -531,10 +363,22 @@ export async function dispatchLLMChat(
           );
         const data = await readJsonCapped<{
           candidates?: { content?: { parts?: { text?: string }[] } }[];
+          usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
         }>(res);
-        return data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
+        const content =
+          data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
+        reportUsage(
+          content,
+          data.usageMetadata?.promptTokenCount,
+          data.usageMetadata?.candidatesTokenCount,
+        );
+        return content;
       }
       case 'anthropic': {
+        // Una sequenza di soli spazi o a capo fa rifiutare l'intera richiesta
+        // (400): si tolgono, perché un'opzione accessoria non deve costare la
+        // risposta.
+        const stopSequences = stop?.filter((s) => s.trim() !== '');
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
@@ -546,20 +390,27 @@ export async function dispatchLLMChat(
             model: model || 'claude-sonnet-4-5-20250929',
             system,
             messages: msgs,
-            max_tokens: 8000,
-            temperature: 0.1,
+            // Qui il limite è obbligatorio: senza richiesta se ne dà uno ampio.
+            max_tokens: maxTokens ?? 8000,
+            temperature,
+            ...(stopSequences && stopSequences.length > 0 ? { stop_sequences: stopSequences } : {}),
           }),
-          signal: AbortSignal.timeout(60_000),
+          signal: AbortSignal.timeout(timeoutMs),
         });
         if (!res.ok)
           throw new Error(
             `Anthropic ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`,
           );
-        const data = await readJsonCapped<{ content?: { type: string; text?: string }[] }>(res);
-        return (data.content ?? [])
+        const data = await readJsonCapped<{
+          content?: { type: string; text?: string }[];
+          usage?: { input_tokens?: number; output_tokens?: number };
+        }>(res);
+        const content = (data.content ?? [])
           .filter((b) => b.type === 'text')
           .map((b) => b.text ?? '')
           .join('');
+        reportUsage(content, data.usage?.input_tokens, data.usage?.output_tokens);
+        return content;
       }
       case 'ollama': {
         const url = `${baseUrl ?? 'http://localhost:11434'}/api/chat`;
@@ -570,15 +421,29 @@ export async function dispatchLLMChat(
             model: model || 'llama3.2',
             stream: false,
             messages: [{ role: 'system', content: system }, ...msgs],
+            ...(maxTokens !== undefined || stop
+              ? {
+                  options: {
+                    ...(maxTokens !== undefined ? { num_predict: maxTokens } : {}),
+                    ...(stop ? { stop } : {}),
+                  },
+                }
+              : {}),
           }),
-          signal: AbortSignal.timeout(60_000),
+          signal: AbortSignal.timeout(timeoutMs),
         });
         if (!res.ok)
           throw new Error(
             `Ollama ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 200)}`,
           );
-        const data = await readJsonCapped<{ message?: { content?: string } }>(res);
-        return data.message?.content ?? '';
+        const data = await readJsonCapped<{
+          message?: { content?: string };
+          prompt_eval_count?: number;
+          eval_count?: number;
+        }>(res);
+        const content = data.message?.content ?? '';
+        reportUsage(content, data.prompt_eval_count, data.eval_count);
+        return content;
       }
       default:
         throw new Error(`Unknown provider for chat: ${provider}`);
@@ -589,7 +454,6 @@ export async function dispatchLLMChat(
 /** Etichetta leggibile per i messaggi d'errore del ramo OpenAI-compat generico. */
 function chatProviderLabel(p: string): string {
   const map: Record<string, string> = {
-    liara: 'Liara',
     anthropic: 'Anthropic',
     gemini: 'Gemini',
     ollama: 'Ollama',
@@ -604,17 +468,12 @@ function chatProviderLabel(p: string): string {
 }
 
 /**
- * dispatchLLMChatStructured — single-shot generation con JSON schema constraint.
+ * dispatchLLMChatStructured — una generazione sola, con uno schema JSON come
+ * forma attesa.
  *
- * Per Liara/vLLM: passa `guided_json` param che FORZA l'output JSON-valid e
- * schema-compliant. UNA chiamata sola, output garantito parseable, niente loop
- * iter o retry. Stack 2026-grade per wizard / scaffold.
- *
- * Per altri provider (OpenAI / Anthropic): fallback usando `response_format`
- * JSON-only. Schema constraint best-effort (i provider gestiscono diverso).
- *
- * Disabilita THINKING su Liara per output piu\` veloce (il guided_json gia\`
- * forza struttura, niente bisogno di reasoning textuale lungo).
+ * Lo schema viaggia nel prompt di sistema, uguale per ogni provider: chi
+ * riceve la risposta la valida comunque (i chiamanti passano da Zod e dalla
+ * riparazione), quindi qui si chiede la forma e non la si dà per garantita.
  */
 export async function dispatchLLMChatStructured(
   provider: string,
@@ -626,340 +485,27 @@ export async function dispatchLLMChatStructured(
   history: ChatMessage[],
   jsonSchema: object,
   tokenUsageListener?: TokenUsageListener,
-  /** Id correlato dal client → X-FF-Request-Id per il canale-posizione coda LLM
-   *  (parità con dispatchLLMChat: la chat strutturata non perde la "posizione in coda"). */
-  requestId?: string,
-  /** Immagini allegate → passate DIRETTE a Liara come content multimodale (pixel,
-   *  1 call, fedeltà piena). Vuoto/assente → comportamento testuale identico a prima. */
-  images?: ChatImage[],
 ): Promise<string> {
-  guardCustomBaseUrl(baseUrl);
-  if (provider !== 'liara') {
-    // Per BYOK non-Liara, usiamo response_format json_object (loose) +
-    // schema embed nel system prompt. Funziona con OpenAI, Anthropic recente.
-    const systemWithSchema = `${system}\n\nOUTPUT JSON SCHEMA (rispetta esattamente):\n${JSON.stringify(jsonSchema)}\n\nRispondi SOLO con JSON valido secondo lo schema sopra.`;
-    return dispatchLLMChat(
-      provider,
-      apiKey,
-      model,
-      systemWithSchema,
-      userMessage,
-      baseUrl,
-      history,
-      tokenUsageListener,
-      requestId,
-    );
-  }
-
-  if (!isLiaraEnabled()) {
-    throw new Error('Liara è disabilitata su questa istanza (MEDEA_DISABLE_LIARA=true).');
-  }
-
-  const msgs: { role: 'user' | 'assistant'; content: LlmMessageContent }[] = [
-    ...history,
-    { role: 'user' as const, content: buildUserContent(userMessage, images) },
-  ];
-  const url = `${baseUrl ?? liaraBaseUrl()}/chat/completions`;
-  const licenseKey = process.env.MEDEA_LICENSE_KEY ?? '';
-
-  // SINGLE-SHOT: niente thinking mode (guided_json fa il lavoro strutturale).
-  // Risparmia 30-60% del tempo elaborazione.
-  const fullSystem = `${prefissoSistema()}${system}`;
-  const CHARS_PER_TOKEN = 3.5;
-  const estimateTokens = (s: string): number => Math.ceil(s.length / CHARS_PER_TOKEN);
-  // Stima testo (history string + nuovo userMessage) + budget fisso per immagine.
-  const inputTokensEstimated =
-    estimateTokens(fullSystem) +
-    estimateTokens(userMessage) +
-    history.reduce((acc, m) => acc + estimateTokens(m.content), 0) +
-    msgs.length * 4 +
-    (images?.length ?? 0) * TOKENS_PER_IMAGE_ESTIMATE;
-  const contextWindow = getLiaraContextWindow();
-  const safetyMargin = 1024;
-  const rawCeiling = Number(process.env.MEDEA_LIARA_SINGLESHOT_MAX_TOKENS ?? '16000');
-  const maxTokensCeiling = Number.isFinite(rawCeiling) && rawCeiling > 0 ? rawCeiling : 16000;
-  const dynamicMax = Math.max(
-    2048,
-    Math.min(maxTokensCeiling, contextWindow - inputTokensEstimated - safetyMargin),
+  const systemWithSchema = `${system}\n\nOUTPUT JSON SCHEMA (rispetta esattamente):\n${JSON.stringify(jsonSchema)}\n\nRispondi SOLO con JSON valido secondo lo schema sopra.`;
+  return dispatchLLMChat(
+    provider,
+    apiKey,
+    model,
+    systemWithSchema,
+    userMessage,
+    baseUrl,
+    history,
+    tokenUsageListener,
   );
-
-  const body: Record<string, unknown> = {
-    messages: [{ role: 'system', content: fullSystem }, ...msgs],
-    temperature: 0.1,
-    max_tokens: dynamicMax,
-    ...(argomentiTemplate() ? { chat_template_kwargs: argomentiTemplate() } : {}),
-    // vLLM 0.15+ structured outputs — OpenAI-compat response_format json_schema.
-    // Forza output conforme allo schema JSON. xgrammar backend auto-selected.
-    response_format: {
-      type: 'json_schema',
-      json_schema: {
-        name: 'workflow_scaffold',
-        strict: true,
-        schema: jsonSchema,
-      },
-    },
-  };
-  if (model && model.trim().length > 0) body.model = model;
-
-  const liaraTimeoutMs = Number(process.env.MEDEA_LIARA_TIMEOUT_MS ?? '240000');
-  const liaraCtrl = new AbortController();
-  const liaraTimeoutId = setTimeout(() => liaraCtrl.abort(), liaraTimeoutMs);
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(licenseKey ? { Authorization: `Bearer ${licenseKey}` } : {}),
-        // Correlazione coda LLM → canale-posizione (parità con dispatchLLMChat).
-        ...(requestId ? { 'X-FF-Request-Id': requestId } : {}),
-      },
-      body: JSON.stringify(body),
-      signal: liaraCtrl.signal,
-    });
-  } catch (err) {
-    if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error(`Liara single-shot timeout dopo ${liaraTimeoutMs.toString()}ms.`);
-    }
-    // Connessione rifiutata/reset → Liara è giù (es. GPU in gen-mode). Errore
-    // CHIARO, niente swap silenzioso su altri provider.
-    if (isNetworkError(err)) throw new LlmProviderUnavailableError('liara', 'connessione fallita');
-    throw err;
-  } finally {
-    clearTimeout(liaraTimeoutId);
-  }
-  if (!res.ok) {
-    const errBody = (await readTextTruncated(res, 65_536)).text.slice(0, 300);
-    // 5xx dal gateway = Liara/backend non disponibile a monte → errore chiaro (503).
-    if (res.status >= 500)
-      throw new LlmProviderUnavailableError('liara', `gateway ${res.status.toString()}`);
-    throw new Error(`Liara structured ${res.status.toString()}: ${errBody}`);
-  }
-  const data = await readJsonCapped<{
-    choices?: { message: { content: string } }[];
-    usage?: { prompt_tokens?: number; completion_tokens?: number };
-  }>(res);
-  const content = (data.choices?.[0]?.message.content ?? '')
-    .replace(/<think>[\s\S]*?<\/think>\s*/g, '')
-    .trim();
-  if (tokenUsageListener) {
-    const apiInput = data.usage?.prompt_tokens;
-    const apiOutput = data.usage?.completion_tokens;
-    if (typeof apiInput === 'number' && typeof apiOutput === 'number') {
-      tokenUsageListener({ input: apiInput, output: apiOutput, fromApi: true });
-    } else {
-      tokenUsageListener({
-        input: inputTokensEstimated,
-        output: estimateTokens(content),
-        fromApi: false,
-      });
-    }
-  }
-  return content;
 }
 
 /**
- * Consuma uno stream SSE OpenAI-compat (vLLM/Liara): per ogni `delta.content`
- * invoca `onDelta`, e cattura l'oggetto `usage` finale. Gestisce le righe
- * spezzate su più read (buffer del residuo) e ignora le righe malformate o
- * `[DONE]`. Non lancia mai per errori del callback (best-effort: lo stream non
- * si interrompe). Estratto da `dispatchLLMChatStructuredStreaming` per essere
- * condiviso con la variante PLAIN (`dispatchLLMChatStreaming`).
- */
-async function consumeOpenAiSseStream(
-  body: ReadableStream<Uint8Array>,
-  onDelta: (delta: string) => void,
-): Promise<{ promptTokens?: number; completionTokens?: number }> {
-  const reader = body.getReader();
-  const decoder = new TextDecoder('utf-8');
-  let sseBuffer = '';
-  let promptTokens: number | undefined;
-  let completionTokens: number | undefined;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    sseBuffer += decoder.decode(value, { stream: true });
-    // Ogni evento è delimitato da \n\n; teniamo l'ultima riga parziale nel buffer.
-    const lines = sseBuffer.split('\n');
-    sseBuffer = lines.pop() ?? '';
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed?.startsWith('data:')) continue;
-      const payload = trimmed.slice(5).trim();
-      if (payload === '[DONE]') continue;
-      try {
-        const parsed = JSON.parse(payload) as {
-          choices?: { delta?: { content?: string } }[];
-          usage?: { prompt_tokens?: number; completion_tokens?: number };
-        };
-        const delta = parsed.choices?.[0]?.delta?.content;
-        if (typeof delta === 'string' && delta.length > 0) {
-          try {
-            onDelta(delta);
-          } catch {
-            /* never fail stream on cb error */
-          }
-        }
-        if (parsed.usage) {
-          if (typeof parsed.usage.prompt_tokens === 'number')
-            promptTokens = parsed.usage.prompt_tokens;
-          if (typeof parsed.usage.completion_tokens === 'number')
-            completionTokens = parsed.usage.completion_tokens;
-        }
-      } catch {
-        // skip malformed SSE line
-      }
-    }
-  }
-  return {
-    ...(promptTokens !== undefined ? { promptTokens } : {}),
-    ...(completionTokens !== undefined ? { completionTokens } : {}),
-  };
-}
-
-/**
- * Plumbing condiviso per lo streaming Liara/vLLM (single-shot, no_think).
- * `jsonSchema` opzionale: presente → `response_format` json_schema (output
- * vincolato, usato dallo scaffold); assente → streaming PLAIN (node-generator).
- * Ritorna il content FINALE accumulato (ripulito dei tag <think>).
- */
-async function streamLiaraChat(opts: {
-  model: string;
-  system: string;
-  msgs: ChatMessage[];
-  baseUrl: string | undefined;
-  jsonSchema?: object;
-  onChunk: (delta: string) => void;
-  tokenUsageListener?: TokenUsageListener;
-}): Promise<string> {
-  if (!isLiaraEnabled()) {
-    throw new Error('Liara è disabilitata su questa istanza (MEDEA_DISABLE_LIARA=true).');
-  }
-  const { model, msgs, baseUrl, jsonSchema, onChunk, tokenUsageListener } = opts;
-  const url = `${baseUrl ?? liaraBaseUrl()}/chat/completions`;
-  const licenseKey = process.env.MEDEA_LICENSE_KEY ?? '';
-  const fullSystem = `${prefissoSistema()}${opts.system}`;
-  const CHARS_PER_TOKEN = 3.5;
-  const estimateTokens = (s: string): number => Math.ceil(s.length / CHARS_PER_TOKEN);
-  const inputTokensEstimated =
-    estimateTokens(fullSystem) +
-    msgs.reduce((acc, m) => acc + estimateTokens(m.content), 0) +
-    msgs.length * 4;
-  const contextWindow = getLiaraContextWindow();
-  const safetyMargin = 1024;
-  const rawCeiling = Number(process.env.MEDEA_LIARA_SINGLESHOT_MAX_TOKENS ?? '16000');
-  const maxTokensCeiling = Number.isFinite(rawCeiling) && rawCeiling > 0 ? rawCeiling : 16000;
-  const dynamicMax = Math.max(
-    2048,
-    Math.min(maxTokensCeiling, contextWindow - inputTokensEstimated - safetyMargin),
-  );
-
-  const body: Record<string, unknown> = {
-    messages: [{ role: 'system', content: fullSystem }, ...msgs],
-    temperature: 0.1,
-    max_tokens: dynamicMax,
-    stream: true,
-    stream_options: { include_usage: true },
-    ...(argomentiTemplate() ? { chat_template_kwargs: argomentiTemplate() } : {}),
-  };
-  if (jsonSchema) {
-    body.response_format = {
-      type: 'json_schema',
-      json_schema: { name: 'workflow_scaffold', strict: true, schema: jsonSchema },
-    };
-  }
-  if (model && model.trim().length > 0) body.model = model;
-
-  const liaraTimeoutMs = Number(process.env.MEDEA_LIARA_TIMEOUT_MS ?? '240000');
-  const liaraCtrl = new AbortController();
-  const liaraTimeoutId = setTimeout(() => liaraCtrl.abort(), liaraTimeoutMs);
-
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(licenseKey ? { Authorization: `Bearer ${licenseKey}` } : {}),
-      },
-      body: JSON.stringify(body),
-      signal: liaraCtrl.signal,
-    });
-  } catch (err) {
-    clearTimeout(liaraTimeoutId);
-    if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error(`Liara single-shot streaming timeout dopo ${liaraTimeoutMs.toString()}ms.`);
-    }
-    throw err;
-  }
-  if (!res.ok) {
-    clearTimeout(liaraTimeoutId);
-    throw new Error(
-      `Liara streaming ${res.status.toString()}: ${(await readTextTruncated(res, 65_536)).text.slice(0, 300)}`,
-    );
-  }
-  if (!res.body) {
-    clearTimeout(liaraTimeoutId);
-    throw new Error('Liara streaming: response.body missing');
-  }
-
-  let accumulated = '';
-  let usage: { promptTokens?: number; completionTokens?: number };
-  try {
-    usage = await consumeOpenAiSseStream(res.body, (delta) => {
-      accumulated += delta;
-      onChunk(delta);
-    });
-  } catch (err) {
-    // Lo stesso timeout, ma scattato MENTRE si legge.
-    //
-    // Il controllo sopra copre solo la `fetch`: se Liara risponde con gli
-    // header e poi la generazione si pianta, l'annullamento arriva qui e
-    // usciva nudo — «This operation was aborted», che non dice a nessuno cosa
-    // sia successo. Il 2026-08-06 ha bruciato quattro minuti e l'utente ha
-    // letto quella frase.
-    if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error(
-        `Liara si è piantata durante la generazione: nessun dato per ` +
-          `${(liaraTimeoutMs / 1000).toFixed(0)}s, richiesta annullata. ` +
-          `Aveva già scritto ${accumulated.length.toString()} caratteri.`,
-      );
-    }
-    throw err;
-  } finally {
-    clearTimeout(liaraTimeoutId);
-  }
-
-  // Strip residual <think> tags (no_think dovrebbe averli evitati)
-  const cleaned = accumulated.replace(/<think>[\s\S]*?<\/think>\s*/g, '').trim();
-  if (tokenUsageListener) {
-    if (typeof usage.promptTokens === 'number' && typeof usage.completionTokens === 'number') {
-      tokenUsageListener({
-        input: usage.promptTokens,
-        output: usage.completionTokens,
-        fromApi: true,
-      });
-    } else {
-      tokenUsageListener({
-        input: inputTokensEstimated,
-        output: estimateTokens(cleaned),
-        fromApi: false,
-      });
-    }
-  }
-  return cleaned;
-}
-
-/**
- * Streaming version of dispatchLLMChatStructured.
+ * Come `dispatchLLMChatStructured`, per chi segue l'avanzamento con un
+ * callback.
  *
- * vLLM SSE stream:true + onChunk callback per ogni delta.content.
- * Il caller (singleshot.service) usa SingleshotStreamParser per parsare
- * incrementalmente e emettere SSE per ogni nodo completato.
- *
- * Ritorna il content FINALE accumulato (per Zod parse downstream).
- * Funziona SOLO con Liara (vLLM). Per altri provider, fallback a non-stream
- * version (dispatchLLMChatStructured).
+ * Nessun provider qui trasmette a pezzi: la risposta arriva intera e il
+ * callback la riceve in una volta sola. Chi chiama (singleshot.service, col
+ * suo parser incrementale) vede lo stesso flusso, con un solo passo.
  */
 export async function dispatchLLMChatStructuredStreaming(
   provider: string,
@@ -973,45 +519,25 @@ export async function dispatchLLMChatStructuredStreaming(
   onChunk: (delta: string) => void,
   tokenUsageListener?: TokenUsageListener,
 ): Promise<string> {
-  // Fallback non-streaming per non-Liara
-  if (provider !== 'liara') {
-    const full = await dispatchLLMChatStructured(
-      provider,
-      apiKey,
-      model,
-      system,
-      userMessage,
-      baseUrl,
-      history,
-      jsonSchema,
-      tokenUsageListener,
-    );
-    // Emit pseudo-chunks per coerenza UX (no streaming reale ma UI same flow)
-    onChunk(full);
-    return full;
-  }
-
-  const msgs = [...history, { role: 'user' as const, content: userMessage }];
-  return streamLiaraChat({
+  const full = await dispatchLLMChatStructured(
+    provider,
+    apiKey,
     model,
     system,
-    msgs,
+    userMessage,
     baseUrl,
+    history,
     jsonSchema,
-    onChunk,
-    ...(tokenUsageListener ? { tokenUsageListener } : {}),
-  });
+    tokenUsageListener,
+  );
+  onChunk(full);
+  return full;
 }
 
 /**
- * dispatchLLMChatStreaming — streaming token-by-token PLAIN (senza JSON-schema
- * constraint). È il gemello streaming di `dispatchLLMChat`: pensato per le
- * superfici che vogliono progressione live del testo (es. node-generator AI).
- *
- * Liara/vLLM: SSE stream:true + onChunk per ogni delta (no_think per output
- * pulito e first-token rapido). Altri provider: fallback non-streaming via
- * `dispatchLLMChat` + un singolo pseudo-chunk col testo intero (UX coerente).
- * Ritorna il content finale accumulato (ripulito dei tag <think>).
+ * Il gemello di `dispatchLLMChat` per le superfici che seguono l'avanzamento
+ * con un callback (es. il generatore di nodi): la risposta arriva intera e il
+ * callback la riceve in una volta sola.
  */
 export async function dispatchLLMChatStreaming(
   provider: string,
@@ -1024,28 +550,16 @@ export async function dispatchLLMChatStreaming(
   onChunk: (delta: string) => void,
   tokenUsageListener?: TokenUsageListener,
 ): Promise<string> {
-  if (provider !== 'liara') {
-    const full = await dispatchLLMChat(
-      provider,
-      apiKey,
-      model,
-      system,
-      userMessage,
-      baseUrl,
-      history,
-      tokenUsageListener,
-    );
-    onChunk(full);
-    return full;
-  }
-
-  const msgs = [...history, { role: 'user' as const, content: userMessage }];
-  return streamLiaraChat({
+  const full = await dispatchLLMChat(
+    provider,
+    apiKey,
     model,
     system,
-    msgs,
+    userMessage,
     baseUrl,
-    onChunk,
-    ...(tokenUsageListener ? { tokenUsageListener } : {}),
-  });
+    history,
+    tokenUsageListener,
+  );
+  onChunk(full);
+  return full;
 }

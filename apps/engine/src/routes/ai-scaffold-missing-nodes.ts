@@ -6,7 +6,7 @@
  *
  * Body:
  *   {
- *     workflow: { nodes: [...], edges: [...] }   // workflow allucinato da Liara
+ *     workflow: { nodes: [...], edges: [...] }   // workflow allucinato dal modello
  *     userPrompt: string                         // prompt originale (context per LLM)
  *   }
  *

@@ -323,6 +323,6 @@ export function actionableMessage(text: string): string {
     `${text} — i custom node sono AUTO-CONTENUTI (solo executor/definition/schema). ` +
     `"${spec}" è fuori dal nodo: inlinea quel codice qui dentro, oppure usa solo ` +
     `gli import consentiti (zod, @medea/engine-safe-fetch) e le Web API (fetch, crypto). ` +
-    `Tip: chiedi alla chat Liara "rendi l'executor auto-contenuto, inlinea gli import esterni".`
+    `Tip: chiedi all'assistente "rendi l'executor auto-contenuto, inlinea gli import esterni".`
   );
 }

@@ -137,7 +137,7 @@ describe('ConversationService.appendMessage + counters', () => {
   it('appendMessage incrementa message_count + token counters', () => {
     const svc = new ConversationService();
     const conv = svc.create({ userId: 'u-1', surface: 'editor_chat' });
-    svc.appendMessage({ conversationId: conv.id, role: 'user', content: 'Ciao Liara' });
+    svc.appendMessage({ conversationId: conv.id, role: 'user', content: 'Ciao assistente' });
     svc.appendMessage({ conversationId: conv.id, role: 'assistant', content: 'Ciao!' });
     const updated = svc.getById(conv.id);
     expect(updated?.messageCount).toBe(2);

@@ -5,7 +5,7 @@
  * accetta il tool-calling in formato OpenAI.
  *
  * PRIMA di questo modulo lo stesso mapping era duplicato — e DIVERGENTE — in:
- *   • routes/db-agent-chat.ts       (endpointFor: solo openai + fallback Liara → gemini/grok/deepseek instradati MALE)
+ *   • routes/db-agent-chat.ts       (endpointFor: solo openai + un ripiego fisso → gemini/grok/deepseek instradati MALE)
  *   • services/llm-chat.service.ts  (mega-switch: url + default model hardcoded)
  *   • services/llm-test.service.ts  (mega-switch: url + default model hardcoded, grok/deepseek MANCANTI)
  *
@@ -14,7 +14,7 @@
  * accentrando. Ogni consumer ora legge da qui.
  *
  * Modulo PURO: nessun accesso a config/env/db → testabile in isolamento. I provider
- * self-host (liara/ollama) hanno baseUrl dinamico fornito dal chiamante.
+ * self-host (ollama) hanno baseUrl dinamico fornito dal chiamante.
  *
  * @module services/llm/provider-registry
  */
@@ -28,7 +28,7 @@ export type AuthScheme =
   | 'bearer' // Authorization: Bearer <key>  (OpenAI-compat, Mistral, Groq, Grok, DeepSeek, OpenRouter, Voyage)
   | 'gemini-query' // ?key=<key>  (Google Gemini nativo)
   | 'anthropic' // x-api-key + anthropic-version
-  | 'none'; // Liara gateway / Ollama locale (nessuna key)
+  | 'none'; // Ollama locale (nessuna key)
 
 /** Come si determina l'URL HTTP del provider. */
 export type EndpointKind = 'fixed' | 'self-host';
@@ -50,38 +50,10 @@ export interface ProviderSpec {
     | { kind: 'self-host'; defaultBaseUrl: string; chatPath: string; toolPath: string };
 }
 
-/** Suffisso da appendere al baseUrl per i provider self-host. */
-const OPENAI_PATH = '/chat/completions';
-
 /**
  * SSOT. Una riga per provider. Cambiare un endpoint/modello QUI lo cambia ovunque.
  */
 const SPECS: Readonly<Record<LlmProvider, ProviderSpec>> = {
-  liara: {
-    format: 'openai',
-    auth: 'none',
-    chatModel: '',
-    pingModel: 'nha-v1',
-    openAiToolCompat: true,
-    // baseUrl runtime = gateway portal (MEDEA_LIARA_BASE_URL); il chiamante lo passa.
-    //
-    // Il `/v1` fa parte dell'indirizzo, e non è decorazione: nginx davanti al
-    // gateway instrada con corrispondenza **esatta** su `/v1/chat/completions`,
-    // e tutto il resto cade in `location / { return 444; }` — connessione
-    // chiusa senza risposta. A chi chiama arriva «fetch failed», non un 404,
-    // quindi sembra un guasto di rete e si va a cercare dalla parte sbagliata.
-    //
-    // Senza il `/v1` questo default componeva `.../chat/completions` e ogni
-    // richiesta del motore veniva chiusa in faccia: è ciò che ha tenuto fermo
-    // il wizard il 2026-08-05, mentre la stessa chiamata dal desktop — che il
-    // `/v1` ce l'aveva — funzionava.
-    endpoint: {
-      kind: 'self-host',
-      defaultBaseUrl: 'https://liara.nothumanallowed.com/v1',
-      chatPath: OPENAI_PATH,
-      toolPath: OPENAI_PATH,
-    },
-  },
   openai: {
     format: 'openai',
     auth: 'bearer',
@@ -235,7 +207,7 @@ export interface ToolEndpointTarget {
  * rispondere con un errore chiaro invece di instradare a un endpoint sbagliato.
  *
  * @param requestedModel modello scelto dal tenant ('' → default del provider)
- * @param baseUrl        per i self-host (liara/ollama); ignorato per i fixed
+ * @param baseUrl        per i self-host (ollama); ignorato per i fixed
  */
 export function resolveToolEndpoint(
   provider: LlmProvider,

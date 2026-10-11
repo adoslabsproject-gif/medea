@@ -227,7 +227,7 @@ export function listLlmProvidersHandler(session: ScaffoldSession): ToolResult {
         useThisProvider: defaultProvider,
         directive: defaultProvider
           ? `For every agent_* node, set config.provider="${defaultProvider}" exactly. Do NOT pick a different one based on model knowledge.`
-          : 'No LLM provider configured for this tenant and Liara is disabled. Surface a clear error to the user — do NOT scaffold agent_* nodes.',
+          : 'No LLM provider configured for this tenant. Surface a clear error to the user — do NOT scaffold agent_* nodes.',
       },
     };
   } catch (e) {

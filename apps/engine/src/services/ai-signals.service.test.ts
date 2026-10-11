@@ -45,7 +45,7 @@ beforeEach(() => {
 const base = {
   tenantId: 't1',
   interactionType: 'node_generate' as const,
-  model: 'liara/nha-v1',
+  model: 'openai/gpt-4o',
   latencyMs: 123,
 };
 
@@ -60,7 +60,7 @@ describe('AISignalsService.record', () => {
     expect(row.tenant_id).toBe('t1');
     expect(row.interaction_type).toBe('node_generate');
     expect(row.node_def_id).toBe('action_http');
-    expect(row.response_model).toBe('liara/nha-v1');
+    expect(row.response_model).toBe('openai/gpt-4o');
     expect(row.response_latency_ms).toBe(123);
     expect(row.response_tokens_in).toBe(10);
     expect(row.outcome).toBe('pending');
@@ -85,7 +85,7 @@ describe('AISignalsService.record', () => {
     const row = m
       .sqlite!.prepare('SELECT response_model FROM ai_signals WHERE id = ?')
       .get('dup') as { response_model: string };
-    expect(row.response_model).toBe('liara/nha-v1');
+    expect(row.response_model).toBe('openai/gpt-4o');
   });
 
   it("🚨 FAIL-SOFT: DB rotto → ritorna comunque l'id, NESSUN throw (non rompe la richiesta AI)", () => {

@@ -43,7 +43,7 @@ function toFiniteCount(v: number | undefined): number | undefined {
 
 /**
  * Costruisce l'usage di UNA chiamata LLM. `sentSystem`/`sentUser` sono i testi
- * COME INVIATI (es. liara: system già prefissato /no_think); `receivedText` è
+ * COME INVIATI (prefissi compresi, se un ramo ne aggiunge); `receivedText` è
  * il testo COME RICEVUTO (pre strip <think>): la stima deve avvicinarsi ai
  * token realmente generati, non a quelli sopravvissuti al post-processing.
  * fromApi è true solo se il provider riporta ENTRAMBI i conteggi: un numero

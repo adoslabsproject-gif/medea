@@ -4,7 +4,7 @@
  * (a) anteprimate come SQL senza toccare il disco, oppure (b) applicate in
  * UN'UNICA migration ATOMICA (l'adapter SQLite avvolge tutte le statement in
  * una transazione → all-or-nothing). È il salto da "wrapper CRUD" a "modellatore
- * di schema": Liara compone tabella+indice+FK e o passa tutto, o niente.
+ * di schema": l'assistente compone tabella+indice+FK e o passa tutto, o niente.
  *
  * Mapping deterministico verso `MigrationAction[]` del core; nessuna coercizione.
  *

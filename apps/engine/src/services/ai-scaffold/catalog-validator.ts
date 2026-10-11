@@ -1,10 +1,9 @@
 /**
  * catalog-validator — vincolo "config valida per il nodo" a VALIDATE-TIME.
  *
- * Mentre constrained-schema.ts vincola la generazione a decode-time (solo
- * Liara/vLLM via guided_json), questo validatore controlla l'output GIÀ PARSATO
- * contro il catalog → vale per QUALSIASI provider (anche BYOK OpenAI/Anthropic
- * che ignorano guided_json) e produce errori tipizzati azionabili che alimentano
+ * Mentre constrained-schema.ts descrive al modello la forma ammessa, questo
+ * validatore controlla l'output GIÀ PARSATO contro il catalog → vale per
+ * QUALSIASI provider e produce errori tipizzati azionabili che alimentano
  * il loop di riparazione (rigenera solo i nodi rotti).
  *
  * Coerente by-construction con la grammatica: entrambi leggono lo stesso

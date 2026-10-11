@@ -6,7 +6,7 @@
  * Workflow che hanno bisogno di "ricordare" state cross-run:
  *  - contatore tentativi prima di skip
  *  - ultimo cursor pagination DB esterno (per polling)
- *  - cache costo API (es. "Liara generato gia\` X tokens questo mese")
+ *  - cache costo API (es. "generati gia\` X tokens questo mese")
  *  - flag "ho gia\` notificato l'utente per questo evento"
  *  - timestamp ultima esecuzione (per cron skip-if-too-recent)
  *

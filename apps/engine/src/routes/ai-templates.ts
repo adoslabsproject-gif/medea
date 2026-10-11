@@ -154,7 +154,7 @@ export function createAiTemplatesRoutes(): Hono {
   /**
    * GET /search?query=…&limit=3&includeCommunity=true
    *
-   * Endpoint usato da Liara chat tool `search_workflow_templates` per
+   * Endpoint usato dal tool di chat `search_workflow_templates` per
    * suggerire template esistenti prima di generare ex novo.
    *
    * Pipeline:

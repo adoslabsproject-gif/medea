@@ -11,7 +11,7 @@
  *
  * Multi-lingua: vocabolario 14 lingue (IT/EN/DE/FR/ES/PT/NL/EL + scandi SE/NO/DK/FI/IS + HR).
  * Robots.txt: rispettato. Rate limit: 2 req/s per host. Cache LRU 7 giorni.
- * Zero LLM dependency: funziona con qualsiasi provider (Liara, Anthropic, OpenAI, ...).
+ * Zero LLM dependency: funziona con qualsiasi provider (Anthropic, OpenAI, ...).
  */
 import type { NodeModule } from '../types.js';
 

@@ -1,7 +1,7 @@
 /**
- * Test 2026-grade — LlmResolverService (provider resolution + BYO + Liara guard).
+ * Test 2026-grade — LlmResolverService (provider resolution + BYO).
  *
- * SECURITY: BYOK header key NON loggata + Liara gated by env + per-tenant.
+ * SECURITY: BYOK header key NON loggata.
  * DRY: single source per "quale LLM" — 4 callsite consolidate prima.
  * UX: clear error message + HTTP status (401 unconfigured / 403 forbidden).
  */
@@ -19,14 +19,12 @@ vi.mock('./llm-providers.service.js', () => ({
   LlmProvidersService: LlmProvidersServiceMock,
 }));
 
-const isLiaraAllowedMock = vi.fn();
 // Auto-pick delega la SCELTA DEL NOME a resolveDefaultProvider (STESSA fonte del
 // branding). Qui lo mockiamo: la sua logica d'ordine/priorità è testata a fondo
 // in tenant-ai-preferences.service.test.ts. Il resolver, dato il nome scelto,
 // deve solo caricarne il descriptor (key/model/baseUrl) — è QUESTO il suo job.
 const resolveDefaultProviderMock = vi.fn();
 vi.mock('./tenant-ai-preferences.service.js', () => ({
-  isLiaraAllowedForTenant: isLiaraAllowedMock,
   tenantAiPreferences: { resolveDefaultProvider: resolveDefaultProviderMock },
 }));
 
@@ -38,7 +36,6 @@ beforeEach(() => {
   providersGetMock.mockReturnValue(null);
   providersGetAllMock.mockReturnValue({});
   providersListMock.mockReturnValue([]);
-  isLiaraAllowedMock.mockReturnValue(false);
   resolveDefaultProviderMock.mockReturnValue(null);
 });
 
@@ -155,46 +152,30 @@ describe('🚨 explicit provider + tenant Settings key', () => {
     expect(r).not.toHaveProperty('baseUrl');
   });
 
-  it('🚨 liara explicit + tenant NOT allowed → 403 Forbidden', () => {
-    providersGetMock.mockReturnValueOnce({ apiKey: '' }); // liara empty key valid
-    isLiaraAllowedMock.mockReturnValueOnce(false);
-    try {
-      new LlmResolverService().resolve('t-1', { requestedProvider: 'liara' });
-      throw new Error('should have thrown');
-    } catch (e) {
-      expect((e as InstanceType<typeof NoLlmProviderError>).httpStatus).toBe(403);
-      expect((e as Error).message).toMatch(/Liara è disabilitata/u);
-    }
-  });
-
-  it('🚨 liara explicit + tenant allowed → ok', () => {
-    providersGetMock.mockReturnValueOnce({ apiKey: '', defaultModel: 'qwen3-32b' });
-    isLiaraAllowedMock.mockReturnValueOnce(true);
-    const r = new LlmResolverService().resolve('t-1', { requestedProvider: 'liara' });
-    expect(r.provider).toBe('liara');
+  /**
+   * Un nome rimasto in una richiesta o in un workflow da una versione che
+   * aveva un provider in più non è «richiesto esplicitamente»: non essendo
+   * noto, si ricade sulla scelta del tenant come se non fosse stato indicato.
+   */
+  it('🚨 un provider che non esiste più viene ignorato: decide la scelta del tenant', () => {
+    resolveDefaultProviderMock.mockReturnValueOnce('openai');
+    providersGetAllMock.mockReturnValueOnce({ openai: { apiKey: 'sk-o' } });
+    const r = new LlmResolverService().resolve('t-1', { requestedProvider: 'provider-dismesso' });
+    expect(r.provider).toBe('openai');
+    expect(providersGetMock).not.toHaveBeenCalled();
   });
 });
 
 describe('🚨 auto-pick — delega a resolveDefaultProvider (STESSA fonte del branding)', () => {
-  it('🚨 nessun provider risolvibile + liara disabled → 401 message dedicato', () => {
+  it('🚨 nessun provider risolvibile → 401, col messaggio che dice dove configurarlo', () => {
     resolveDefaultProviderMock.mockReturnValueOnce(null);
-    isLiaraAllowedMock.mockReturnValueOnce(false);
     try {
       new LlmResolverService().resolve('t-1');
       throw new Error('should have thrown');
     } catch (e) {
-      expect((e as Error).message).toMatch(/Liara è disabilitata/u);
-    }
-  });
-
-  it('🚨 nessun provider risolvibile + liara enabled → message free tier suggerimento', () => {
-    resolveDefaultProviderMock.mockReturnValueOnce(null);
-    isLiaraAllowedMock.mockReturnValueOnce(true);
-    try {
-      new LlmResolverService().resolve('t-1');
-      throw new Error('should have thrown');
-    } catch (e) {
-      expect((e as Error).message).toMatch(/free tier Liara\/Ollama/u);
+      expect((e as InstanceType<typeof NoLlmProviderError>).httpStatus).toBe(401);
+      expect((e as Error).message).toMatch(/Nessun provider LLM configurato/u);
+      expect((e as Error).message).toMatch(/Settings → AI Providers/u);
     }
   });
 
@@ -216,31 +197,23 @@ describe('🚨 auto-pick — delega a resolveDefaultProvider (STESSA fonte del b
     });
   });
 
-  it('🚨 liara scelto → key vuota + baseUrl (free tier)', () => {
-    resolveDefaultProviderMock.mockReturnValueOnce('liara');
-    providersGetAllMock.mockReturnValueOnce({ liara: { apiKey: '', baseUrl: 'http://gw/liara' } });
-    const r = new LlmResolverService().resolve('t-1');
-    expect(r.provider).toBe('liara');
-    expect(r.apiKey).toBe('');
-    expect(r.baseUrl).toBe('http://gw/liara');
-  });
-
-  it("🚨🔒 ANTI-REGRESSIONE (bug 2026-06-18): default=liara è ONORATO anche se c'è una chiave BYOK", () => {
-    // PRIMA del fix l\'auto-pick preferiva anthropic (chiave presente) IGNORANDO
-    // la scelta "liara" → Claude in silenzio + avatar Liara. Ora la scelta vince:
-    // niente swap nascosto sulla chiave a pagamento.
-    resolveDefaultProviderMock.mockReturnValueOnce('liara');
+  it("🚨🔒 ANTI-REGRESSIONE (bug 2026-06-18): il default scelto è ONORATO anche se c'è un'altra chiave", () => {
+    // PRIMA del fix l'auto-pick preferiva anthropic (chiave presente) IGNORANDO
+    // la scelta del tenant → Claude in silenzio, con l'avatar del provider
+    // scelto. Ora la scelta vince: niente swap nascosto su un'altra chiave.
+    resolveDefaultProviderMock.mockReturnValueOnce('gemini');
     providersGetAllMock.mockReturnValueOnce({
-      liara: { apiKey: '', baseUrl: 'http://gw/liara' },
+      gemini: { apiKey: 'g-key' },
       anthropic: { apiKey: 'sk-paid' }, // presente ma NON deve essere scelto
     });
     const r = new LlmResolverService().resolve('t-1');
-    expect(r.provider).toBe('liara');
+    expect(r.provider).toBe('gemini');
+    expect(r.apiKey).toBe('g-key');
   });
 
   it('🚨 delega: resolveDefaultProvider riceve i provider configurati con key (da list)', () => {
     providersListMock.mockReturnValueOnce([
-      { provider: 'liara', hasKey: true },
+      { provider: 'gemini', hasKey: true },
       { provider: 'anthropic', hasKey: true },
       { provider: 'openai', hasKey: false }, // niente key → escluso
     ]);
@@ -248,7 +221,7 @@ describe('🚨 auto-pick — delega a resolveDefaultProvider (STESSA fonte del b
     providersGetAllMock.mockReturnValueOnce({ anthropic: { apiKey: 'k' } });
     new LlmResolverService().resolve('t-1');
     expect(resolveDefaultProviderMock).toHaveBeenCalledWith('t-1', [
-      { provider: 'liara', hasKey: true },
+      { provider: 'gemini', hasKey: true },
       { provider: 'anthropic', hasKey: true },
     ]);
   });
@@ -261,7 +234,6 @@ describe('🚨 auto-pick — delega a resolveDefaultProvider (STESSA fonte del b
 
   it('🚨 difensivo: nome non supportato → NoLlmProviderError (no crash)', () => {
     resolveDefaultProviderMock.mockReturnValueOnce('garbage-provider');
-    isLiaraAllowedMock.mockReturnValueOnce(true);
     expect(() => new LlmResolverService().resolve('t-1')).toThrow(NoLlmProviderError);
   });
 });
@@ -284,52 +256,3 @@ describe('🚨 singleton llmResolver', () => {
   });
 });
 
-describe('resolveExternalFallback — fallback BYOK su quota Liara', () => {
-  it('nessun provider configurato → null', () => {
-    providersListMock.mockReturnValue([]);
-    expect(new LlmResolverService().resolveExternalFallback('t1')).toBeNull();
-  });
-
-  it('solo Liara configurato → null (non è fallback alla sua stessa quota)', () => {
-    providersListMock.mockReturnValue([{ provider: 'liara', hasKey: true }]);
-    expect(new LlmResolverService().resolveExternalFallback('t1')).toBeNull();
-  });
-
-  it('provider esterno senza hasKey → filtrato → null', () => {
-    providersListMock.mockReturnValue([{ provider: 'anthropic', hasKey: false }]);
-    expect(new LlmResolverService().resolveExternalFallback('t1')).toBeNull();
-  });
-
-  it('un BYOK esterno (anthropic) → descrittore con chiave + model', () => {
-    providersListMock.mockReturnValue([
-      { provider: 'liara', hasKey: true },
-      { provider: 'anthropic', hasKey: true },
-    ]);
-    providersGetAllMock.mockReturnValue({
-      anthropic: { apiKey: 'sk-ant', defaultModel: 'claude' },
-    });
-    resolveDefaultProviderMock.mockReturnValue('anthropic');
-    expect(new LlmResolverService().resolveExternalFallback('t1')).toEqual({
-      provider: 'anthropic',
-      apiKey: 'sk-ant',
-      model: 'claude',
-    });
-  });
-
-  it('più esterni → rispetta la preferenza del tenant', () => {
-    providersListMock.mockReturnValue([
-      { provider: 'anthropic', hasKey: true },
-      { provider: 'openai', hasKey: true },
-    ]);
-    providersGetAllMock.mockReturnValue({ anthropic: { apiKey: 'a' }, openai: { apiKey: 'o' } });
-    resolveDefaultProviderMock.mockReturnValue('openai');
-    expect(new LlmResolverService().resolveExternalFallback('t1')?.provider).toBe('openai');
-  });
-
-  it('preferenza = liara (edge) → ricade sul primo esterno configurato', () => {
-    providersListMock.mockReturnValue([{ provider: 'anthropic', hasKey: true }]);
-    providersGetAllMock.mockReturnValue({ anthropic: { apiKey: 'a', defaultModel: 'claude' } });
-    resolveDefaultProviderMock.mockReturnValue('liara');
-    expect(new LlmResolverService().resolveExternalFallback('t1')?.provider).toBe('anthropic');
-  });
-});

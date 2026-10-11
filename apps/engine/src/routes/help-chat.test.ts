@@ -1,5 +1,5 @@
 /**
- * Test 2026-grade — help-chat route (Liara conversational in-app help).
+ * Test 2026-grade — help-chat route (conversational in-app help).
  *
  * 🚨 INPUT VALIDATION (Zod):
  *  - messages.length 1..20
@@ -128,7 +128,7 @@ describe('🚨 input validation (Zod)', () => {
   });
 
   it('🚨 last message NON user (assistant) → 400 "ultimo deve essere utente"', async () => {
-    llmResolverMock.resolve.mockReturnValue({ provider: 'liara', apiKey: 'k', model: 'm' });
+    llmResolverMock.resolve.mockReturnValue({ provider: 'openai', apiKey: 'k', model: 'm' });
     const app = makeApp();
     const res = await postChat(app, {
       messages: [
@@ -172,7 +172,7 @@ describe('🚨 LLM resolver failure modes', () => {
 describe('🚨 LLM dispatch happy + failure', () => {
   beforeEach(() => {
     llmResolverMock.resolve.mockReturnValue({
-      provider: 'liara',
+      provider: 'openai',
       apiKey: 'k-test',
       model: 'qwen3-32b',
       baseUrl: 'http://vllm:5000',
@@ -180,15 +180,15 @@ describe('🚨 LLM dispatch happy + failure', () => {
   });
 
   it('🚨 happy: dispatch ritorna reply → 200 + provider', async () => {
-    dispatchLLMChatMock.mockResolvedValue('Ciao! Sono Liara, come posso aiutarti?');
+    dispatchLLMChatMock.mockResolvedValue('Ciao! Sono qui per aiutarti con i workflow.');
     const app = makeApp();
     const res = await postChat(app, {
       messages: [{ role: 'user', content: 'chi sei?' }],
     });
     expect(res.status).toBe(200);
     const json = (await res.json()) as { reply: string; provider: string };
-    expect(json.reply).toMatch(/Liara/u);
-    expect(json.provider).toBe('liara');
+    expect(json.reply).toMatch(/aiutarti con i workflow/u);
+    expect(json.provider).toBe('openai');
   });
 
   it('🚨 history estratta correttamente (slice -1)', async () => {
@@ -210,15 +210,14 @@ describe('🚨 LLM dispatch happy + failure', () => {
     ]);
   });
 
-  it('🚨 system prompt include identità "Liara"', async () => {
+  it('🚨 system prompt: si presenta come l’assistente dei workflow di Medea', async () => {
     dispatchLLMChatMock.mockResolvedValue('ok');
     const app = makeApp();
     await postChat(app, {
       messages: [{ role: 'user', content: 'ciao' }],
     });
     const sysPrompt = dispatchLLMChatMock.mock.calls[0]![3] as string;
-    expect(sysPrompt).toMatch(/Liara/u);
-    expect(sysPrompt).toMatch(/FlowForge/u);
+    expect(sysPrompt).toMatch(/assistente dei workflow di Medea/u);
     expect(sysPrompt).toMatch(/italiano/iu);
   });
 
@@ -249,7 +248,7 @@ describe('🚨 LLM dispatch happy + failure', () => {
 describe('🚨 message conversation patterns', () => {
   beforeEach(() => {
     llmResolverMock.resolve.mockReturnValue({
-      provider: 'liara',
+      provider: 'openai',
       apiKey: 'k',
       model: 'm',
     });

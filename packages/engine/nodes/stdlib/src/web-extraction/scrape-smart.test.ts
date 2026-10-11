@@ -27,6 +27,8 @@ beforeEach(() => {
   mockedFetch.mockReset();
   delete process.env.MEDEA_BROWSER_ENDPOINT;
   delete process.env.MEDEA_STEALTH_ENDPOINT;
+  // L'estrazione con LLM vuole un endpoint: qui lo dà l'ambiente.
+  process.env.MEDEA_LLM_ENDPOINT = 'https://llm.example.com/v1/chat/completions';
 });
 
 describe('scrapeSmartNode.def', () => {

@@ -1,5 +1,5 @@
 /**
- * Test 2026-grade del DB-agent di Liara — caratterizzazione + bug-bounty +
+ * Test 2026-grade del DB-agent — caratterizzazione + bug-bounty +
  * isolamento tenant, su SQLite `:memory:` REALE (metadati = la superficie dove
  * vive l'isolamento) con adapter del data-plane stubbato (niente binari nativi).
  *
@@ -177,7 +177,7 @@ describe('createDbAgentContext', () => {
 
 // ───────────────────────── 🚨 ISOLAMENTO TENANT (cuore) ─────────────────────────
 
-describe('🚨 isolamento tenant — Liara non vede né tocca DB altrui', () => {
+describe('🚨 isolamento tenant — il DB-agent non vede né tocca DB altrui', () => {
   it('read_db_schema su DB di un altro tenant → TENANT_SCOPE (msg anti-enumeration)', async () => {
     const dbB = makeDb(svc, TENANT_B, 'secret_b', [seedTable()]);
     const r = await executeDbAgentTool(ctxA, 'read_db_schema', { databaseId: dbB });

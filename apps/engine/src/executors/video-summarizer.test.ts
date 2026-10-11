@@ -2,7 +2,7 @@
  * Test video-summarizer executor.
  *
  * Fase 2 (#14): la fusion finale passa da `llmResolver` + `dispatchLLMChat`
- * (gateway metered) — il vecchio `LIARA_URL/v1/complete` diretto non esisteva
+ * (gateway metered) — il vecchio indirizzo fisso `/v1/complete` non esisteva
  * più (401 sempre → summary MAI prodotto). Whisper e Vision restano su
  * safe-outbound-fetch (endpoint di servizio, opt-in/degradanti con warning).
  */
@@ -76,7 +76,7 @@ function mockServices(
 beforeEach(() => {
   vi.clearAllMocks();
   reportUsageMock.mockReset();
-  m.resolve.mockReturnValue({ provider: 'liara', apiKey: '', model: '' });
+  m.resolve.mockReturnValue({ provider: 'openai', apiKey: '', model: '' });
   m.dispatch.mockResolvedValue('{"tldr":"","bullets":[],"chapters":[]}');
 });
 
@@ -184,8 +184,8 @@ describe('video-summarizer executor — happy path', () => {
     expect(out._llm).toEqual({
       inputTokens: 300,
       outputTokens: 60,
-      model: 'liara-default',
-      provider: 'liara',
+      model: 'openai-default',
+      provider: 'openai',
       fromApi: true,
     });
     expect(m.resolve).toHaveBeenCalledWith('tenant-test');
@@ -220,8 +220,8 @@ describe('video-summarizer executor — _llm combinato vision+fusion (Fase 2 #14
     expect(llm).toEqual({
       inputTokens: 5300,
       outputTokens: 460,
-      model: 'liara-default',
-      provider: 'liara',
+      model: 'openai-default',
+      provider: 'openai',
       fromApi: true,
     });
   });
@@ -262,8 +262,8 @@ describe('video-summarizer executor — _llm combinato vision+fusion (Fase 2 #14
     );
     const out = r.output as { _llm: { inputTokens: number; provider: string }; warnings: string[] };
     expect(out._llm.inputTokens).toBe(1000);
-    expect(out._llm.provider).toBe('liara');
-    expect(out.warnings.some((w) => /liara failed/i.test(w))).toBe(true);
+    expect(out._llm.provider).toBe('openai');
+    expect(out.warnings.some((w) => /llm failed/i.test(w))).toBe(true);
   });
 });
 
@@ -309,7 +309,7 @@ describe('video-summarizer executor — degradation graceful', () => {
     const out = r.output as { summary: { tldr: string; bullets: unknown[] }; warnings: string[] };
     expect(out.summary.tldr).toBe('');
     expect(out.summary.bullets).toEqual([]);
-    expect(out.warnings.some((w) => /liara/i.test(w))).toBe(true);
+    expect(out.warnings.some((w) => /llm/i.test(w))).toBe(true);
     expect('_llm' in (r.output as Record<string, unknown>)).toBe(false);
   });
 
@@ -325,7 +325,7 @@ describe('video-summarizer executor — degradation graceful', () => {
     );
     const out = r.output as { summary: { tldr: string }; warnings: string[] };
     expect(out.summary.tldr).toBe('');
-    expect(out.warnings.some((w) => /liara failed/i.test(w))).toBe(true);
+    expect(out.warnings.some((w) => /llm failed/i.test(w))).toBe(true);
     expect(m.dispatch).not.toHaveBeenCalled();
   });
 

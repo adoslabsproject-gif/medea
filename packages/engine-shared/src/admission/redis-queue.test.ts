@@ -49,13 +49,13 @@ function newPool(): string {
   return `test-${randomUUID()}`;
 }
 async function inflightCount(pool: string): Promise<number> {
-  return client.zcard(`liara:adm:${pool}:inflight`);
+  return client.zcard(`llm:adm:${pool}:inflight`);
 }
 async function cleanup(pool: string): Promise<void> {
   await client.del(
-    `liara:adm:${pool}:inflight`,
-    `liara:adm:${pool}:queue`,
-    `liara:adm:${pool}:qmeta`,
+    `llm:adm:${pool}:inflight`,
+    `llm:adm:${pool}:queue`,
+    `llm:adm:${pool}:qmeta`,
   );
 }
 const baseInput = (over: Partial<AdmissionInput> & { requestId: string }): AdmissionInput => ({
@@ -84,7 +84,7 @@ describe.skipIf(!available)('redis-queue su Redis reale', () => {
     const now = Date.now();
     const r = await tryAdmit(redis, pool, baseInput({ requestId: 'r1', nowMs: now }));
     expect(r.outcome).toBe('admitted');
-    expect(await client.zscore(`liara:adm:${pool}:inflight`, 'r1')).toBe(String(now + 60_000));
+    expect(await client.zscore(`llm:adm:${pool}:inflight`, 'r1')).toBe(String(now + 60_000));
     await cleanup(pool);
   });
 
@@ -96,7 +96,7 @@ describe.skipIf(!available)('redis-queue su Redis reale', () => {
       baseInput({ requestId: 'r2', tenantId: 'tX', nowMs: Date.now() + 1 }),
     );
     expect(q).toMatchObject({ outcome: 'queued', position: 1, ahead: 0 });
-    expect(await client.hget(`liara:adm:${pool}:qmeta`, 'r2')).toBe('tX');
+    expect(await client.hget(`llm:adm:${pool}:qmeta`, 'r2')).toBe('tX');
 
     await release(redis, pool, 'r1');
     const r2 = await tryAdmit(
@@ -105,25 +105,25 @@ describe.skipIf(!available)('redis-queue su Redis reale', () => {
       baseInput({ requestId: 'r2', tenantId: 'tX', nowMs: Date.now() + 2 }),
     );
     expect(r2.outcome).toBe('admitted');
-    expect(await client.zscore(`liara:adm:${pool}:queue`, 'r2')).toBeNull();
-    expect(await client.hget(`liara:adm:${pool}:qmeta`, 'r2')).toBeNull();
+    expect(await client.zscore(`llm:adm:${pool}:queue`, 'r2')).toBeNull();
+    expect(await client.hget(`llm:adm:${pool}:qmeta`, 'r2')).toBeNull();
     await cleanup(pool);
   });
 
   it("reclaim: lease scaduto (score ≤ now) liberato all'admit successivo", async () => {
-    await client.zadd(`liara:adm:${pool}:inflight`, Date.now() - 1, 'dead');
+    await client.zadd(`llm:adm:${pool}:inflight`, Date.now() - 1, 'dead');
     const r = await tryAdmit(redis, pool, baseInput({ requestId: 'r1', maxConcurrent: 1 }));
     expect(r.outcome).toBe('admitted');
-    expect(await client.zscore(`liara:adm:${pool}:inflight`, 'dead')).toBeNull();
+    expect(await client.zscore(`llm:adm:${pool}:inflight`, 'dead')).toBeNull();
     await cleanup(pool);
   });
 
   it('heartbeat (XX) rinnova solo se attivo; release idempotente', async () => {
     await tryAdmit(redis, pool, baseInput({ requestId: 'r1' }));
     await heartbeat(redis, pool, 'r1', 9_999_999_999_999);
-    expect(await client.zscore(`liara:adm:${pool}:inflight`, 'r1')).toBe('9999999999999');
+    expect(await client.zscore(`llm:adm:${pool}:inflight`, 'r1')).toBe('9999999999999');
     await heartbeat(redis, pool, 'ghost', 1); // no-resurrect
-    expect(await client.zscore(`liara:adm:${pool}:inflight`, 'ghost')).toBeNull();
+    expect(await client.zscore(`llm:adm:${pool}:inflight`, 'ghost')).toBeNull();
     await release(redis, pool, 'r1');
     await expect(release(redis, pool, 'nope')).resolves.toBeUndefined();
     await cleanup(pool);

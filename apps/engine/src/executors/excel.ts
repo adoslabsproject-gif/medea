@@ -359,7 +359,7 @@ export function coerceForFormat(value: unknown, format: ColumnFormat): unknown {
 
 /**
  * Auto-detect: il valore percent in ingresso è già decimale (0.10 = 10%)
- * o percentuale numerica (10 = 10%)? Il LLM Liara estrae diversamente a
+ * o percentuale numerica (10 = 10%)? Un LLM estrae diversamente a
  * seconda della formattazione del PDF sorgente — quindi NON possiamo
  * fidarci di una convention fissa.
  *

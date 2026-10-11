@@ -111,7 +111,7 @@ export const HttpConfigSchema = z
     retryCount: z.coerce.number().int().min(0).max(10).default(0),
     retryInitialDelayMs: z.coerce.number().int().min(0).max(60_000).default(500),
     retryBackoffFactor: z.coerce.number().min(1).max(10).default(2),
-    // Default ALLINEATO al defaultValue UI (era '' → divergenza: un workflow Liara che lo
+    // Default ALLINEATO al defaultValue UI (era '' → divergenza: un workflow generato che lo
     // ometteva NON ritentava i 5xx mentre l'utente UI sì). Conta solo con retryCount>0.
     retryOnStatus: z.string().optional().default('429,500,502,503,504'),
 

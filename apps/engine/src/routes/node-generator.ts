@@ -20,7 +20,7 @@ import type {
 /**
  * Provider-agnostic dispatcher adapter — exposes the ILLMProvider interface
  * over the multi-provider `dispatchLLMChat`. Avoids hardcoding any single
- * vendor (Anthropic, OpenAI, Liara, OpenRouter, Gemini, Mistral, Groq, Ollama
+ * vendor (Anthropic, OpenAI, OpenRouter, Gemini, Mistral, Groq, Ollama
  * all flow through the same code path). NodeGeneratorService consumes only
  * the abstract interface so callers can swap the underlying provider via the
  * tenant's resolved preferences without touching this file.
@@ -66,9 +66,9 @@ class ResolvedLLMProvider implements ILLMProvider {
   }
 
   /**
-   * Streaming reale token-by-token attraverso il dispatcher multi-provider
-   * (`dispatchLLMChatStreaming`). Per Liara → SSE vLLM; per gli altri provider
-   * → fallback non-streaming + un singolo chunk col testo intero.
+   * La generazione attraverso il dispatcher multi-provider
+   * (`dispatchLLMChatStreaming`), che oggi consegna il testo intero in un
+   * singolo chunk.
    *
    * Adattatore PUSH→PULL: il dispatcher consegna i delta via callback (push),
    * mentre `AsyncIterable` è pull. Una coda con segnale di wake-up fa da ponte
@@ -207,8 +207,8 @@ export function createNodeGeneratorRoutes(): Hono {
       const headerKey = c.req.header('x-llm-api-key');
       const headerProvider = c.req.header('x-llm-provider');
 
-      // Resolve LLM provider via the tenant resolver — Liara default, BYO
-      // (Anthropic/OpenAI/Gemini/Mistral/Groq/OpenRouter/Ollama) when configured.
+      // Resolve LLM provider via the tenant resolver: whichever the tenant
+      // configured (Anthropic/OpenAI/Gemini/Mistral/Groq/OpenRouter/Ollama).
       // NEVER hardcode a vendor name here.
       let resolved;
       try {

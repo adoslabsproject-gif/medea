@@ -41,7 +41,7 @@ describe('persistScaffoldCall — happy path success', () => {
     persistScaffoldCall({
       scaffoldRunId: 'scaffold-abc-123',
       iteration: 0,
-      provider: 'liara',
+      provider: 'openai',
       model: 'qwen3-32b-fp8',
       inputTokens: 1500,
       outputTokens: 800,
@@ -94,7 +94,7 @@ describe('persistScaffoldCall — happy path success', () => {
       persistScaffoldCall({
         scaffoldRunId: 'scaffold-x',
         iteration: iter,
-        provider: 'liara',
+        provider: 'openai',
         model: 'q',
         inputTokens: 1,
         outputTokens: 1,
@@ -136,7 +136,7 @@ describe('persistScaffoldCall — happy path success', () => {
     persistScaffoldCall({
       scaffoldRunId: 'r',
       iteration: 0,
-      provider: 'liara',
+      provider: 'openai',
       model: 'q',
       inputTokens: 1,
       outputTokens: 1,
@@ -205,7 +205,7 @@ describe('persistScaffoldCall — exactOptionalPropertyTypes safety', () => {
     persistScaffoldCall({
       scaffoldRunId: 'r',
       iteration: 0,
-      provider: 'liara',
+      provider: 'openai',
       model: undefined,
       inputTokens: 100,
       outputTokens: 50,
@@ -214,14 +214,14 @@ describe('persistScaffoldCall — exactOptionalPropertyTypes safety', () => {
     });
     const args = mockRecord.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(args).not.toHaveProperty('model');
-    expect(args).toHaveProperty('provider', 'liara');
+    expect(args).toHaveProperty('provider', 'openai');
   });
 
   it('INCLUDE field "model" se input.model è una stringa valida', () => {
     persistScaffoldCall({
       scaffoldRunId: 'r',
       iteration: 0,
-      provider: 'liara',
+      provider: 'openai',
       model: 'qwen3-32b',
       inputTokens: 100,
       outputTokens: 50,
@@ -236,7 +236,7 @@ describe('persistScaffoldCall — exactOptionalPropertyTypes safety', () => {
     persistScaffoldCall({
       scaffoldRunId: 'r',
       iteration: 0,
-      provider: 'liara',
+      provider: 'openai',
       model: 'q',
       inputTokens: 1,
       outputTokens: 1,
@@ -263,7 +263,7 @@ describe('persistScaffoldCall — non-fatal failure swallowing', () => {
       persistScaffoldCall({
         scaffoldRunId: 'r',
         iteration: 0,
-        provider: 'liara',
+        provider: 'openai',
         model: 'q',
         inputTokens: 1,
         outputTokens: 1,
@@ -280,7 +280,7 @@ describe('persistScaffoldCall — non-fatal failure swallowing', () => {
     persistScaffoldCall({
       scaffoldRunId: 'scaffold-xyz',
       iteration: 2,
-      provider: 'liara',
+      provider: 'openai',
       model: 'q',
       inputTokens: 1,
       outputTokens: 1,
@@ -306,7 +306,7 @@ describe('persistScaffoldCall — non-fatal failure swallowing', () => {
     persistScaffoldCall({
       scaffoldRunId: 'r',
       iteration: 0,
-      provider: 'liara',
+      provider: 'openai',
       model: 'q',
       inputTokens: 1,
       outputTokens: 1,

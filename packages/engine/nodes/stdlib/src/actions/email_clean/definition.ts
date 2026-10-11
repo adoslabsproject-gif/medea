@@ -31,7 +31,7 @@ export const emailCleanNodeDef: NodeDef = {
     'Pure function: nessun I/O, nessun secret, output deterministico dato lo stesso input — safe da retry. ' +
     'Use case: pre-step di un workflow customer support che usa LLM per detection sentiment + reply suggestion, ' +
     'normalizzazione di archivio email storico prima di indicizzazione vettoriale per RAG retrieval, riduzione ' +
-    'costo Liara/Anthropic per cliente con 500 email/giorno, defense-in-depth contro prompt injection nascosto ' +
+    'costo LLM per cliente con 500 email/giorno, defense-in-depth contro prompt injection nascosto ' +
     'nei disclaimer (alcuni attaccanti li usano come carrier), preparazione corpus per fine-tuning interno.',
 
   configFields: [

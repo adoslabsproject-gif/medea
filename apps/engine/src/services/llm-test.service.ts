@@ -7,7 +7,7 @@
  * posto di un case duplicato per provider. Aggiungere un provider OpenAI-compat
  * = una riga nel registry, zero codice qui.
  *
- * Case dedicati solo per le shape NON OpenAI: Liara/Ollama (self-host),
+ * Case dedicati solo per le shape NON OpenAI: Ollama (self-host),
  * Gemini nativo, Anthropic, Voyage (embeddings).
  */
 
@@ -66,21 +66,6 @@ export async function dispatchLLMForTest(
   }
 
   switch (provider) {
-    case 'liara': {
-      // Self-host: il backend vLLM espone il path OpenAI /v1; baseUrl override per
-      // istanze custom. (Distinto dal gateway portal usato dalla chat runtime.)
-      const url = `${baseUrl ?? 'https://liara.nothumanallowed.com'}/v1/chat/completions`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: model || getProviderSpec('liara').pingModel,
-          messages: [{ role: 'user', content: PING }],
-          max_tokens: 8,
-        }),
-      });
-      return readOpenAiText(res, 'Liara');
-    }
     case 'anthropic': {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',

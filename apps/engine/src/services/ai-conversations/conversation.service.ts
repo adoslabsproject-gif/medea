@@ -333,7 +333,7 @@ export class ConversationService {
 
   /**
    * Persist a summary + mark old messages as folded. Called by summary.service
-   * (Phase 2) after Liara has generated the summary text.
+   * (Phase 2) after the model has generated the summary text.
    */
   applySummary(conversationId: string, summary: string, foldUpToTimestamp: string): void {
     const { sqlite } = getDatabase();

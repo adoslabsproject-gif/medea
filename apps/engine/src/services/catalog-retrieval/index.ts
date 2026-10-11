@@ -4,7 +4,7 @@
  * Sostituisce l'iniezione del catalogo COMPLETO (100k token, il bug del
  * 2026-06-12) con: mappa categorie (~200 token) + i top-k nodi rilevanti per
  * la richiesta. Provider-agnostico: il blocco finisce nel system prompt PRIMA
- * che si scelga il modello → vale identico per Liara e per i BYOK
+ * che si scelga il modello → vale identico per ogni provider
  * (ChatGPT/Gemini/Claude in Settings → AI Providers).
  *
  * @module services/catalog-retrieval

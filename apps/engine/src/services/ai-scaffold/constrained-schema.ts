@@ -173,19 +173,19 @@ export interface ScaffoldSchemaChoice {
 /**
  * Sceglie lo schema di output per lo scaffold.
  *
- * La grammatica vincolata vale SOLO per Liara/vLLM (guided_json a decode-time).
- * Per i provider BYOK lo schema finisce EMBEDDATO nel prompt (dispatchLLMChat-
- * Structured): una grammatica con ~200 rami gonfierebbe il prompt a dismisura →
- * per loro si tiene lo schema statico (piccolo) e il vincolo è dato dal
- * validatore post-parse (catalog-validator.ts). Fallback allo statico anche
+ * Di norma è lo schema statico (piccolo): lo schema finisce EMBEDDATO nel
+ * prompt (dispatchLLMChatStructured), e una grammatica con ~200 rami lo
+ * gonfierebbe a dismisura; il vincolo lo dà il validatore post-parse
+ * (catalog-validator.ts). La grammatica vincolata per-nodo si accende solo su
+ * richiesta esplicita (`MEDEA_SCAFFOLD_CONSTRAINED_SCHEMA=true`), e ha senso
+ * solo davanti a un modello con contesto ampio. Fallback allo statico anche
  * quando il compiler ritorna null (catalog vuoto / over-cap).
  */
 export function selectScaffoldSchema(
   catalog: NodeCatalogEntry[],
-  provider: string,
   staticSchema: object,
 ): ScaffoldSchemaChoice {
-  if (provider !== 'liara' || !isConstrainedSchemaEnabled()) {
+  if (!isConstrainedSchemaEnabled()) {
     return { schema: staticSchema, constrained: false };
   }
   const constrained = buildConstrainedOutputSchema(catalog);

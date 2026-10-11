@@ -77,7 +77,7 @@ export const errorFingerprint = _errorFingerprint;
  * in `docker logs` → un loro aggregator tipo Loki/Vector smista poi).
  * Qui esponiamo SOLO il binding `channel` come bridge.
  */
-export type LogChannel = 'app' | 'security' | 'audit' | 'http' | 'system' | 'liara' | 'performance';
+export type LogChannel = 'app' | 'security' | 'audit' | 'http' | 'system' | 'llm' | 'performance';
 
 const CHANNEL_RULES: readonly (readonly [RegExp, LogChannel])[] = [
   [/^security\./i, 'security'],
@@ -89,8 +89,7 @@ const CHANNEL_RULES: readonly (readonly [RegExp, LogChannel])[] = [
   [/^http(-access)?$/i, 'http'],
   [/^webhooks?\./i, 'http'],
   [/^dashboard\./i, 'http'],
-  [/^liara\./i, 'liara'],
-  [/^llm\./i, 'liara'],
+  [/^llm\./i, 'llm'],
   [/^perf(ormance)?\./i, 'performance'],
   [/^metrics\./i, 'performance'],
   [/^system\./i, 'system'],
@@ -112,7 +111,7 @@ function detectChannel(moduleName: string): LogChannel {
  *
  *   loggerFor('honeypot')           → channel='security'
  *   loggerFor('dashboard.sse')      → channel='http'
- *   loggerFor('liara.gateway')      → channel='liara'
+ *   loggerFor('llm.dispatch')       → channel='llm'
  *   loggerFor('integrations.gmail') → channel='app' (default)
  */
 export function loggerFor(moduleName: string): Logger {

@@ -40,7 +40,7 @@ export const errorTriggerNode: NodeModule = {
     configFields: [
       {
         key: 'aiTriage',
-        label: 'Triage AI (Liara)',
+        label: 'Triage AI',
         type: 'select',
         required: false,
         options: ['false', 'true'],

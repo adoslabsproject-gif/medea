@@ -2,7 +2,7 @@
  * Test legal-compliance executor.
  *
  * Fase 2 (#14): il transport è `llmResolver` + `dispatchLLMChat` (gateway
- * metered) — il vecchio `LIARA_URL/v1/complete` diretto non esisteva più
+ * metered) — il vecchio indirizzo fisso `/v1/complete` non esisteva più
  * (401 sempre) → i mock sono sul SERVICE, non su safe-outbound-fetch.
  * Le asserzioni di dominio (chunking, dedup, severity floor, score) sono
  * INVARIATE: fissano l'equivalenza della logica attorno al transport.
@@ -38,7 +38,7 @@ const SHORT_PRIVACY = 'Privacy Policy. '.repeat(20); // 320 char, > MIN_DOC_CHAR
 
 beforeEach(() => {
   vi.clearAllMocks();
-  m.resolve.mockReturnValue({ provider: 'liara', apiKey: '', model: '' });
+  m.resolve.mockReturnValue({ provider: 'openai', apiKey: '', model: '' });
 });
 
 describe('legal-compliance executor — validation', () => {
@@ -96,9 +96,9 @@ describe('legal-compliance executor — analysis', () => {
     expect(out.findings[0]?.framework).toBe('gdpr');
     expect(out.detectedType).toBe('privacy_policy');
     expect(sentSystem()).toMatch(/gdpr/i);
-    // Provider risolto dal tenant (Liara default) e passato posizionale
+    // Provider risolto dal tenant e passato posizionale
     expect(m.resolve).toHaveBeenCalledWith('tenant-test');
-    expect(m.dispatch.mock.calls[0]?.[0]).toBe('liara');
+    expect(m.dispatch.mock.calls[0]?.[0]).toBe('openai');
   });
 
   it('documento lungo → chunking + più chiamate LLM', async () => {
@@ -419,7 +419,7 @@ describe('legal-compliance executor — _llm usage (Fase 2 #14)', () => {
     expect(out.chunksProcessed).toBeGreaterThanOrEqual(2);
     expect(out._llm.inputTokens).toBe(100 * out.chunksProcessed);
     expect(out._llm.outputTokens).toBe(30 * out.chunksProcessed);
-    expect(out._llm).toMatchObject({ provider: 'liara', model: 'liara-default', fromApi: true });
+    expect(out._llm).toMatchObject({ provider: 'openai', model: 'openai-default', fromApi: true });
   });
 
   it('una chiamata stimata (fromApi:false) → fromApi cumulativo false', async () => {

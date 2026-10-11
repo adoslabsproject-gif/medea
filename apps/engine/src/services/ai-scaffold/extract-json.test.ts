@@ -1,13 +1,13 @@
 /**
  * Test extract-json — tolleranza ai fence/prosa nell'output scaffold. Bug owner
  * 2026-06-17: Anthropic (BYOK) restituisce ```json … ``` → JSON.parse diretto
- * crashava ("Unexpected token '`'"). Liara (guided_json) dà JSON puro → invariato.
+ * crashava ("Unexpected token '`'"). Il JSON puro resta invariato.
  */
 import { describe, it, expect } from 'vitest';
 import { stripCodeFences, firstBalancedJsonObject, parseScaffoldJson } from './extract-json.js';
 
 describe('parseScaffoldJson', () => {
-  it('JSON puro (Liara guided_json) → parse diretto', () => {
+  it('JSON puro → parse diretto', () => {
     expect(parseScaffoldJson('{"name":"wf","nodes":[]}')).toEqual({ name: 'wf', nodes: [] });
   });
 

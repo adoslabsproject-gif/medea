@@ -209,7 +209,7 @@ export function rateLimit(
  * - 10 req/min per user   (1 req/6s — prevents single-user denial-of-budget)
  *
  * Tighten if your LLM costs are high (Anthropic Opus). Loosen for cheap
- * providers (Liara/Ollama free).
+ * providers (Ollama free).
  */
 export function llmRateLimit(label: string): (c: Context, next: Next) => Promise<Response | void> {
   return rateLimit({

@@ -6,7 +6,7 @@
  * (return null, cosine signal in template-cache resta 0 = solo
  * graph+jaccard scoring).
  *
- * Pattern allineato a `apps/liara/src/lib/embedding.ts` per consistency.
+ * Stesso schema degli altri client verso il portal.
  */
 
 import { CircuitBreaker } from '@medea/engine-shared';

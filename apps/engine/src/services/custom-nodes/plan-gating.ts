@@ -32,7 +32,7 @@ export interface PlanCapability {
   canPublishMarketplace: boolean;
   /** Auto-publish se security scan green (admin post-review). */
   marketplaceAutoPublish: boolean;
-  /** Liara AI token quota mensile per tenant (per il sidebar Genera con AI). */
+  /** Quota mensile di token AI per tenant (per il sidebar Genera con AI). */
   aiTokenQuotaMonthly: number;
 }
 

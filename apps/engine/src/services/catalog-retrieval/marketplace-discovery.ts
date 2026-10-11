@@ -1,11 +1,11 @@
 /**
  * Client DISCOVERY marketplace — il runtime chiede al portal i nodi del
- * marketplace pertinenti a una richiesta, per farli SUGGERIRE da Liara.
+ * marketplace pertinenti a una richiesta, per farli SUGGERIRE dall'assistente.
  *
  * S2S verso il portal (MEDEA_PORTAL_URL + x-internal-token, stesso
  * meccanismo di runtime-metrics/template-cache). Fail-soft TOTALE: timeout,
  * circuit breaker, qualunque errore → [] (la chat non deve MAI rompersi per
- * colpa del discovery; un marketplace giù non blocca Liara). Liara propone, non
+ * colpa del discovery; un marketplace giù non blocca l'assistente). L'assistente propone, non
  * esegue: un nodo non installato non finisce mai in un workflow.
  *
  * @module services/catalog-retrieval/marketplace-discovery
@@ -86,7 +86,7 @@ export function formatPrice(s: MarketplaceSuggestion): string {
 
 /**
  * Blocco prompt dei suggerimenti marketplace. Vuoto se nessun risultato.
- * Marcato chiaramente come "NON installati" così Liara li PROPONE (install/
+ * Marcato chiaramente come "NON installati" così l'assistente li PROPONE (install/
  * acquisto) e NON li mette in un workflow.
  */
 export function formatMarketplaceSuggestions(items: readonly MarketplaceSuggestion[]): string {

@@ -163,10 +163,10 @@ describe('autoFixInventedDefIds — integrazione su multiple nodi', () => {
   });
 
   it('NON rimappa community_<vendor> anche se vendor inventato', () => {
-    // community_unknownvendor → catalog non lo conosce. Liara doveva
+    // community_unknownvendor → catalog non lo conosce. Il modello doveva
     // verificare prima con list_node_catalog. Auto-fix NON tenta strip
     // (vendor=identità). Il workflow fallirà la validation con messaggio
-    // esplicito → Liara riceve feedback e retry con community_X valido.
+    // esplicito → il modello riceve feedback e retry con community_X valido.
     const r = autoFixInventedDefIds(
       { nodes: [{ id: 'n1', defId: 'community_unknownvendor', config: {} }] },
       CATALOG,
@@ -241,7 +241,7 @@ describe('🔌 alias n8n / nomi generici → defId FlowForge (migrante n8n)', ()
     expect(findBaseDefId(input, CAT)).toBe(expected);
   });
 
-  it('autoFixInventedDefIds normalizza un nodo "code" emesso da Liara → action_run_js', () => {
+  it('autoFixInventedDefIds normalizza un nodo "code" emesso dal modello → action_run_js', () => {
     const r = autoFixInventedDefIds(
       {
         nodes: [{ id: 'c', defId: 'code', config: { code: 'return 1' } }],

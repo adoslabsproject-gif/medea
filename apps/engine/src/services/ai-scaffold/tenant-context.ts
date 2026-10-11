@@ -47,7 +47,7 @@ export interface TenantContextResources {
   /**
    * The LLM provider name the scaffold MUST wire into every `agent_*` node.
    * Resolved from the tenant's explicit Settings preference, then from the
-   * first configured external provider, then from Liara. `null` when nothing
+   * first configured provider. `null` when nothing
    * is available — the agent is instructed to abort with a clear UX message.
    */
   defaultLlmProvider: string | null;
@@ -163,8 +163,8 @@ export function formatTenantContextForPrompt(ctx: TenantContextResources): strin
     lines.push(
       '',
       '**LLM provider DI DEFAULT del tenant:**',
-      '- NESSUNO configurato (e Liara è disabilitato per questo tenant).',
-      '- ABORT con messaggio: "Per usare nodi `agent_*` configura un provider in Settings → AI o abilita Liara."',
+      '- NESSUNO configurato.',
+      '- ABORT con messaggio: "Per usare nodi `agent_*` configura un provider in Settings → AI."',
     );
   }
   const writableDbs = ctx.databases.filter((d) => d.writable);

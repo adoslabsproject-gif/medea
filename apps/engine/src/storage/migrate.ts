@@ -53,6 +53,23 @@ function ensureColumn(sqlite: SqliteDb, table: string, column: string, definitio
   logger.info({ table, column }, 'Schema evolved: column added');
 }
 
+/**
+ * Il contrario di `ensureColumn`: toglie una colonna se c'è ancora.
+ *
+ * Serve perché le tabelle nascono con `CREATE TABLE IF NOT EXISTS`: togliere
+ * una colonna dalla definizione non la toglie ai database già creati, che
+ * resterebbero con una forma diversa da quelli nuovi. Si può chiamare a ogni
+ * avvio: se la colonna (o la tabella) non c'è, non fa niente.
+ */
+export function dropColumnIfPresent(sqlite: SqliteDb, table: string, column: string): void {
+  assertSqlIdent('table', table);
+  assertSqlIdent('column', column);
+  const cols = sqlite.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (!cols.some((c) => c.name === column)) return;
+  sqlite.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`);
+  logger.info({ table, column }, 'Schema evolved: column dropped');
+}
+
 import { SCHEMA_SQL } from './migrate.schema.js';
 
 export function runMigrations(): void {
@@ -259,11 +276,10 @@ export function runMigrations(): void {
 
   // ai_interactions — opt-in training-set capture for AI Assistant calls.
   //
-  // Why this exists: to fine-tune a FlowForge-specific LoRA (e.g. on top of
-  // Liara/Qwen3), we need ≥ 1k high-quality (prompt, response, outcome)
-  // triples grounded in real user behavior. We capture them HERE, locally,
-  // because the upstream LLM providers (Anthropic, OpenAI, Liara) do not
-  // retain conversations for us.
+  // Why this exists: to fine-tune a workflow-specific model one day, we need
+  // ≥ 1k high-quality (prompt, response, outcome) triples grounded in real
+  // user behavior. We capture them HERE, locally, because the upstream LLM
+  // providers (Anthropic, OpenAI, …) do not retain conversations for us.
   //
   // Privacy: all prompt/response text is PII-redacted before insert by the
   // PIIRedactor service. The original (unredacted) text is NEVER persisted.
@@ -292,7 +308,7 @@ export function runMigrations(): void {
       -- Output
       response_message TEXT NOT NULL,
       response_patch_json TEXT,                  -- proposed JSON patch when applicable
-      response_model TEXT NOT NULL,              -- 'anthropic/claude-sonnet-4-5', 'liara/nha-v1', ...
+      response_model TEXT NOT NULL,              -- 'anthropic/claude-sonnet-4-5', 'openai/gpt-4o', ...
       response_latency_ms INTEGER NOT NULL,
       response_tokens_in INTEGER,
       response_tokens_out INTEGER,
@@ -359,7 +375,7 @@ export function runMigrations(): void {
       tenant_id TEXT NOT NULL,
       interaction_type TEXT NOT NULL,          -- editor_chat | run_explain | node_generate | workflow_from_text
       node_def_id TEXT,                         -- nodeDef proposto (strutturale), o NULL
-      response_model TEXT NOT NULL,             -- 'anthropic/claude-...', 'liara/nha-v1', ...
+      response_model TEXT NOT NULL,             -- 'anthropic/claude-...', 'openai/gpt-...', ...
       response_latency_ms INTEGER NOT NULL,
       response_tokens_in INTEGER,
       response_tokens_out INTEGER,
@@ -455,31 +471,28 @@ export function runMigrations(): void {
   `);
 
   // tenant_ai_preferences — per-tenant AI provider preferences (separate from
-  // training capture). Today: only allow_liara, but designed for future
-  // additions (preferred_default_provider, disabled_providers list, etc).
-  //
-  // Liara on/off is bi-level:
-  //   • Global env MEDEA_DISABLE_LIARA=true   → off for ALL tenants on this instance
-  //   • Per-tenant allow_liara=0                  → off for this tenant only
-  //   • Effective state = global_enabled AND tenant_allowed
-  // This lets a SaaS multi-tenant operator keep Liara as default but allow
-  // a specific GDPR-strict customer to exclude it for their tenant.
+  // training capture). Designed for future additions (disabled_providers
+  // list, rate limit per provider, etc).
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS tenant_ai_preferences (
       tenant_id TEXT PRIMARY KEY,
-      allow_liara INTEGER NOT NULL DEFAULT 1,
       updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     );
   `);
   // 2026-06-07: default_llm_provider — l'utente in Settings sceglie il provider
   // che TUTTI gli `agent_*` nei workflow scaffold-generati useranno per default.
-  // Senza questo campo Liara guessava (gpt-4o random) ignorando il fatto che il
-  // tenant non ha quella chiave. Source-of-truth: questa colonna.
-  //   null     = scegli automatico (primo configurato, fallback liara)
-  //   'liara'  = sempre liara (anche se altri provider sono configurati)
+  // Senza questo campo il modello ne indovinava uno (gpt-4o a caso) ignorando
+  // il fatto che il tenant non ha quella chiave. Source-of-truth: questa colonna.
+  //   null     = scegli automatico (il primo configurato)
   //   'openai' = scaffold deve sempre usare openai
   //   ecc.
   ensureColumn(sqlite, 'tenant_ai_preferences', 'default_llm_provider', 'TEXT');
+  // 2026-10-11: il provider gratuito che questa tabella sapeva spegnere per
+  // tenant è stato chiuso, e con lui l'interruttore. I database creati prima
+  // hanno ancora la colonna: la si toglie, così vecchi e nuovi hanno la stessa
+  // forma. È l'unico punto in cui quel nome compare ancora, perché una
+  // migrazione deve poter nominare ciò che rimuove.
+  dropColumnIfPresent(sqlite, 'tenant_ai_preferences', 'allow_liara');
 
   // ai_chat_sessions / ai_chat_messages — memoria conversazionale persistente
   // per Help Chat AI, AI Scaffold, e qualunque future LLM surface che

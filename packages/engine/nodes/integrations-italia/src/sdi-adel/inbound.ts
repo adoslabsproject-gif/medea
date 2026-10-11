@@ -93,7 +93,7 @@ export const fatturapaParse: NodeModule = {
       'Output: { fatture: [{cedente, cessionario, numero, data, importoTotaleDocumento, righe[], riepilogoIva[], ' +
       'scadenze[]}], count, xsd? }.\n\n' +
       'Use case: (1) scadenzario automatico — PEC in ingresso → p7m extract → parse → db_insert delle scadenze ' +
-      'con alert Telegram 5 giorni prima; (2) controllo fornitori con AI — Liara confronta i prezzi di riga con ' +
+      'con alert Telegram 5 giorni prima; (2) controllo fornitori con AI — un agente confronta i prezzi di riga con ' +
       'lo storico e segnala rincari; (3) registrazione contabile assistita verso il gestionale (Odoo/Fatture in ' +
       'Cloud) coi dati già strutturati; (4) report IVA mensile aggregando i riepiloghi per aliquota.',
     configFields: [

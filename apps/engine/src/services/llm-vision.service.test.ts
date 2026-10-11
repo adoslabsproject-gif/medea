@@ -1,10 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('@/config.js', () => ({
-  isLiaraEnabled: () => true,
-  liaraBaseUrl: () => 'https://gw.example.com/llm',
-}));
-
 const { dispatchLLMVision } = await import('./llm-vision.service.js');
 
 const IMG = { base64: 'AAAABBBB', mimeType: 'image/png' };
@@ -49,16 +44,6 @@ describe('dispatchLLMVision — formato per provider (BYOK)', () => {
     expect(content[0]).toEqual({ type: 'text', text: 'leggi' });
     expect(content[1]!.type).toBe('image_url');
     expect(content[1]!.image_url!.url).toBe('data:image/png;base64,AAAABBBB');
-  });
-
-  it('Liara: gateway /chat/completions + enable_thinking:false + image_url', async () => {
-    const fn = mockFetch({ choices: [{ message: { content: 'TESTO-LIARA' } }] });
-    const r = await dispatchLLMVision({ provider: 'liara', apiKey: '', model: '' }, 'leggi', [IMG]);
-    expect(r.ok).toBe(true);
-    expect(r.text).toBe('TESTO-LIARA');
-    expect(fn.mock.calls[0]![0]).toBe('https://gw.example.com/llm/chat/completions');
-    const body = lastBody(fn);
-    expect((body.chat_template_kwargs as { enable_thinking: boolean }).enable_thinking).toBe(false);
   });
 
   it('Anthropic: content[].image.source(base64) + header x-api-key', async () => {

@@ -93,7 +93,7 @@ export const newsDisplayNode: NodeModule = {
         options: ['none', 'markdown', 'html'],
         help:
           '"none" = solo array items strutturato. ' +
-          '"markdown" = aggiunge campo `markdown` con bullet list (per Liara/Slack/email). ' +
+          '"markdown" = aggiunge campo `markdown` con bullet list (per un LLM, Slack, email). ' +
           '"html" = aggiunge campo `html` con <ul><li> (per email HTML/dashboard).',
       },
       {

@@ -55,10 +55,10 @@ interface MessageRow {
 }
 
 const SURFACE_PROMPTS: Record<string, string> = {
-  help: "Sei **Liara**, l'assistente AI di FlowForge (Zeli SRL). Quando l'utente ti saluta, presentati come Liara. Rispondi SOLO in italiano, conciso, max 5 frasi. Aiuti l'utente con workflow, nodi, deploy, sicurezza. Se la domanda è fuori scope, dillo gentilmente.",
+  help: "Sei l'assistente dei workflow di Medea. Rispondi SOLO in italiano, conciso, max 5 frasi. Aiuti l'utente con workflow, nodi, deploy, sicurezza. Se la domanda è fuori scope, dillo gentilmente.",
   scaffold:
-    "Sei **Liara**, l'assistente AI di FlowForge (Zeli SRL) che aiuta a costruire workflow. Rispondi in italiano. Quando proponi un workflow, elenca i nodi in ordine.",
-  generic: "Sei **Liara**, l'assistente AI di FlowForge (Zeli SRL). Rispondi in italiano.",
+    "Sei l'assistente di Medea che aiuta a costruire workflow. Rispondi in italiano. Quando proponi un workflow, elenca i nodi in ordine.",
+  generic: "Sei l'assistente dei workflow di Medea. Rispondi in italiano.",
 };
 
 const CreateSessionSchema = z.object({
@@ -325,7 +325,7 @@ export function createAiChatRoutes(): Hono {
       // Layer 1 — DETERMINISTIC INTENT DETECTION + AUTO TOOL EXECUTION
       // (pattern usato da ChatGPT Browsing, Perplexity, Claude.ai)
       //
-      // I provider weak (Liara/Qwen, Gemini Flash, Llama 3.x small) NON
+      // I provider weak (Qwen, Gemini Flash, Llama 3.x small) NON
       // sono affidabili sulla decisione "devo usare un tool?". Quindi
       // SERVER-SIDE rileviamo intent (URL embedded, "cerca X", "apri
       // foo.com") e PRE-ESEGUIAMO i tool. Il risultato viene iniettato

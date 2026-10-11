@@ -7,7 +7,7 @@
  * un singolo step (= un nodo del workflow):
  *  - console.log/warn/error dal sandbox custom/community node (user code)
  *  - HTTP request/response trace dal fetch shim
- *  - LLM token/cache/latency dai Liara call
+ *  - LLM token/cache/latency dalle chiamate LLM
  *  - DB slow query alert
  *  - Engine events (retry, breaker, drift, abort)
  *

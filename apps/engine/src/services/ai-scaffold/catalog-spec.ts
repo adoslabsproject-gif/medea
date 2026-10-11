@@ -8,7 +8,7 @@
  *
  * Questo modulo NON conosce né JSON-Schema né validazione: produce solo la
  * spec normalizzata. La consumano DUE moduli, garantendo coerenza by-construction:
- *   - constrained-schema.ts → grammatica guided_json (vincolo a decode-time, Liara/vLLM)
+ *   - constrained-schema.ts → schema per-tipo-nodo (dietro flag)
  *   - catalog-validator.ts   → validazione post-parse (vincolo per TUTTI i provider)
  *
  * Un solo punto interpreta il catalog → impossibile che grammatica e validatore

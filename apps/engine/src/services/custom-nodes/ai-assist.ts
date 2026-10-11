@@ -1,5 +1,5 @@
 /**
- * Custom Node Editor — AI Assist via Liara gateway.
+ * Custom Node Editor — AI Assist, col provider del tenant.
  *
  * 5 azioni AI con prompt template ottimizzati per il custom-node context:
  *   - generate:  prompt → 3 file TS (executor + definition + schema)
@@ -9,18 +9,16 @@
  *   - refactor:  source + goal → riscrittura migliorata
  *
  * Pattern: il client editor chiama l'endpoint runtime POST /ai-assist; il
- * runtime costruisce il prompt + lo invia al gateway Liara via safeOutboundFetch
- * (URL `LLM_API_BASE`). Risposta streaming/JSON delegata al gateway.
+ * runtime costruisce il prompt e lo manda al provider configurato dal tenant
+ * (vedi `tenant-llm.ts`).
  *
  * Auth: l'endpoint runtime è owner-only (già enforced dal middleware
- * route-level). Il gateway Liara riceve `X-FF-Workspace` header per quota
- * + rate limit per-tenant.
+ * route-level).
  *
  * @module services/custom-nodes/ai-assist
  */
 
-import { logger } from '@/lib/logger.js';
-import { gatewayChatCompletions } from './llm-gateway.js';
+import { tenantChatCompletion } from './tenant-llm.js';
 
 export type AiAssistAction = 'generate' | 'explain' | 'fix' | 'test' | 'refactor' | 'chat';
 
@@ -45,8 +43,8 @@ export interface AiAssistRequest {
   workspaceId: string;
   /**
    * Contesto cross-surface (cosa l'utente stava facendo nelle altre schede del
-   * workspace, es. il workflow editor). Iniettato nel system prompt così Liara
-   * "ricorda" senza che l'utente rispieghi. Costruito dalla route (read-only).
+   * workspace, es. il workflow editor). Iniettato nel system prompt così
+   * l'assistente "ricorda" senza che l'utente rispieghi. Costruito dalla route (read-only).
    */
   crossSurfaceContext?: string;
 }
@@ -214,14 +212,12 @@ export function extractPatchFromMarkdown(md: string): AiAssistResponse['patch'] 
 }
 
 /**
- * Chiama il gateway Liara per l'AI assist.
- * Throws su HTTP error o gateway down — il caller decide se fallback.
+ * Chiede l'AI assist al provider del tenant.
+ * Throws se non c'è un provider configurato, su errore di rete o risposta
+ * non-2xx — il caller decide se fallback.
  */
 export async function callAiAssist(req: AiAssistRequest): Promise<AiAssistResponse> {
-  // Routing via GATEWAY PORTAL centralizzato in llm-gateway.ts (i container
-  // tenant NON raggiungono liara:3003). Throws su HTTP error → la route 500.
-  // Timeout 240s: Qwen3 thinking + explain/refactor coi sorgenti interi supera i
-  // 60s, specie con la GPU in coda.
+  // Timeout 240s: explain/refactor coi sorgenti interi supera spesso i 60s.
   const messages: { role: string; content: string }[] = [
     { role: 'system', content: SYSTEM_PROMPT },
   ];
@@ -230,19 +226,14 @@ export async function callAiAssist(req: AiAssistRequest): Promise<AiAssistRespon
   }
   messages.push({ role: 'user', content: buildUserPrompt(req) });
 
-  const r = await gatewayChatCompletions({
+  const r = await tenantChatCompletion({
     messages,
     temperature: 0.2,
     maxTokens: 2048,
-    timeoutMs: Number(process.env.MEDEA_LIARA_TIMEOUT_MS ?? '240000'),
+    timeoutMs: 240_000,
     workspaceId: req.workspaceId,
     ...(process.env.LLM_AI_ASSIST_MODEL ? { modelOverride: process.env.LLM_AI_ASSIST_MODEL } : {}),
   });
-
-  if (!r.ok) {
-    logger.error({ status: r.status }, '[ai-assist] gateway error');
-    throw new Error(`Liara gateway HTTP ${String(r.status)}`);
-  }
 
   const patch = extractPatchFromMarkdown(r.content);
   const result: AiAssistResponse = { text: r.content };

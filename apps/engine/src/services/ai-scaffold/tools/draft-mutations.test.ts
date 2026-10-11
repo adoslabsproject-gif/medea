@@ -1,7 +1,7 @@
 /**
  * Test 2026-grade — services/ai-scaffold/tools/draft-mutations.ts.
  *
- * 🚨 ADD NODE: required-field enumerate-all-missing in un solo error (Liara
+ * 🚨 ADD NODE: required-field enumerate-all-missing in un solo error (il modello
  *    altrimenti fa multi-retry one-by-one — produzione 2026-05-31 bug).
  *
  * 🚨 ENUM CHECK: field.options strict → throw helpful.

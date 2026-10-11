@@ -74,7 +74,7 @@ describe('N18 — POST /runs/:id/replay rate-limited', () => {
   it('REGRESSION: solo replay + ai-debug hanno rateLimit (cancel + run no)', () => {
     // /workflows/:id/run e /runs/:id/cancel non hanno rateLimit applied su questo
     // file (per design — run e\` documented entry, cancel idempotente cheap).
-    // Aggiunto /runs/:id/ai-debug (D3 2026-06-06): chiama Liara, va capped.
+    // Aggiunto /runs/:id/ai-debug (D3 2026-06-06): chiama il modello, va capped.
     const limited = [
       ...runsSource.matchAll(/app\.post\(\s*['"](\/[^'"]+)['"]\s*,\s*rateLimit/g),
     ].map((m) => m[1]);

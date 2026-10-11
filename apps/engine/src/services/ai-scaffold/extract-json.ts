@@ -1,8 +1,7 @@
 /**
  * extract-json — estrazione TOLLERANTE del JSON dall'output LLM del singleshot.
  *
- * Il constrained decoding (guided_json/xgrammar) garantisce JSON puro SOLO su
- * Liara/vLLM. Coi provider BYOK (Anthropic, OpenAI, …) che NON onorano guided_json,
+ * Nessun provider garantisce JSON puro: con Anthropic, OpenAI e gli altri
  * l'output arriva spesso avvolto in un fence ```json … ``` o con prosa attorno →
  * `JSON.parse` diretto esplode ("Unexpected token '`'"). Questo helper PURO:
  *   1. toglie il fence ```json/``` se presente;

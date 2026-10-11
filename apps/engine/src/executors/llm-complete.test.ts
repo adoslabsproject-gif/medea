@@ -1,11 +1,13 @@
 /**
  * Test 2026-grade — executors/llm-complete.ts (action_llm_complete wrapper).
  *
- * 🚨 PROVIDER WHITELIST: 8 supportati (liara/anthropic/openai/mistral/groq/
- *    openrouter/deepseek/xai). Provider sconosciuto → fallback liara.
+ * 🚨 PROVIDER: quelli offerti dal nodo (anthropic/openai/gemini/mistral/groq/
+ *    openrouter/deepseek/xai/perplexity). Vuoto o sconosciuto → quello scelto
+ *    dal tenant.
  *
- * 🚨 BYOK RESOLVER: provider != liara → llmResolver.resolve(tenantId).
- *    NoLlmProviderError → throw helpful con instruction Settings.
+ * 🚨 RESOLVER: sempre llmResolver.resolve(tenantId): nessun provider gira
+ *    senza la chiave del tenant. NoLlmProviderError → throw che dice dove
+ *    configurarla.
  *
  * 🚨 CLAMP: temperature 0..2, maxTokens 1..32768, timeoutMs 1..300_000.
  *
@@ -13,15 +15,12 @@
  *
  * 🚨 JSON PARSE CLEANING: strip ```json``` fence wrapper.
  *
- * 🚨 ENV RESTORE: MEDEA_LIARA_* save/restore (no leak inter-test).
- *
  * 🚨 finishReason: heuristic 'length' se output >=95% maxTokens senza puntegg.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const dispatchMock = vi.hoisted(() => vi.fn());
 const resolverMock = vi.hoisted(() => vi.fn());
-const fallbackMock = vi.hoisted(() => vi.fn());
 const NoLlmProviderErrorMock = vi.hoisted(() => {
   return class NoLlmProviderError extends Error {
     constructor(msg: string) {
@@ -30,26 +29,13 @@ const NoLlmProviderErrorMock = vi.hoisted(() => {
     }
   };
 });
-// Stub della classe quota: DEVE essere la stessa che llm-complete importa (per
-// l'instanceof) e che i test lanciano → definita qui ed esportata dal mock.
-const QuotaErrMock = vi.hoisted(() => {
-  return class LlmQuotaExceededError extends Error {
-    kind: string;
-    constructor(kind = 'token') {
-      super(`Quota ${kind} esaurita`);
-      this.name = 'LlmQuotaExceededError';
-      this.kind = kind;
-    }
-  };
-});
 
 vi.mock('@/services/llm-chat.service.js', () => ({
   dispatchLLMChat: dispatchMock,
-  LlmQuotaExceededError: QuotaErrMock,
 }));
 
 vi.mock('@/services/llm-resolver.service.js', () => ({
-  llmResolver: { resolve: resolverMock, resolveExternalFallback: fallbackMock },
+  llmResolver: { resolve: resolverMock },
   NoLlmProviderError: NoLlmProviderErrorMock,
 }));
 
@@ -86,8 +72,9 @@ beforeEach(() => {
       return 'Test completion output.';
     },
   );
-  delete process.env.MEDEA_LIARA_TIMEOUT_MS;
-  delete process.env.MEDEA_LIARA_MAX_TOKENS;
+  // Il tenant ha scelto OpenAI: è ciò che il resolver restituisce quando il
+  // nodo non indica un provider.
+  resolverMock.mockReturnValue({ provider: 'openai', apiKey: 'sk-tenant', model: '' });
 });
 
 describe('🚨 prompt validation', () => {
@@ -110,18 +97,41 @@ describe('🚨 prompt validation', () => {
 });
 
 describe('🚨 Provider whitelist + BYOK resolution', () => {
-  it('🚨 provider=liara → niente resolver call', async () => {
-    await llmCompleteExecutor({ prompt: 'x', provider: 'liara' } as never, {} as never, ctx());
-    expect(resolverMock).not.toHaveBeenCalled();
+  it('🚨 senza provider sul nodo → quello scelto dal tenant, con la sua chiave', async () => {
+    await llmCompleteExecutor({ prompt: 'x' } as never, {} as never, ctx());
+    expect(resolverMock).toHaveBeenCalledWith('t1', {});
+    expect(dispatchMock.mock.calls[0]![0]).toBe('openai');
+    expect(dispatchMock.mock.calls[0]![1]).toBe('sk-tenant');
   });
 
-  it('🚨 provider sconosciuto "cohere" → fallback liara (non in ALLOWED_PROVIDERS)', async () => {
-    await llmCompleteExecutor({ prompt: 'x', provider: 'cohere' } as never, {} as never, ctx());
-    expect(resolverMock).not.toHaveBeenCalled();
-    expect(dispatchMock.mock.calls[0]![0]).toBe('liara');
+  /**
+   * Un workflow salvato può portare nel campo provider un nome che il nodo non
+   * offre: uno mai esistito, o uno tolto in una versione successiva. Non è una
+   * richiesta esplicita valida, quindi decide la scelta del tenant — e quel
+   * nome non arriva mai al dispatcher.
+   */
+  it.each(['cohere', 'provider-dismesso'])(
+    '🚨 provider "%s" non offerto dal nodo → decide il tenant, il nome non viene inoltrato',
+    async (nome) => {
+      await llmCompleteExecutor({ prompt: 'x', provider: nome } as never, {} as never, ctx());
+      expect(resolverMock).toHaveBeenCalledWith('t1', {});
+      expect(dispatchMock.mock.calls[0]![0]).toBe('openai');
+    },
+  );
+
+  it('🚨 nessun provider configurato → errore che dice dove configurarlo, nessuna chiamata', async () => {
+    resolverMock.mockImplementation(() => {
+      throw new NoLlmProviderErrorMock(
+        'Nessun provider LLM configurato. Vai in Settings → AI Providers e aggiungi almeno una API key.',
+      );
+    });
+    await expect(
+      llmCompleteExecutor({ prompt: 'x' } as never, {} as never, ctx()),
+    ).rejects.toThrow(/Settings → AI Providers/u);
+    expect(dispatchMock).not.toHaveBeenCalled();
   });
 
-  it('🚨 provider=gemini → ora SUPPORTATO (BYOK): resolver call, NON fallback liara', async () => {
+  it('🚨 provider=gemini → resolver call con quel nome', async () => {
     resolverMock.mockReturnValue({
       provider: 'gemini',
       apiKey: 'AIza-key',
@@ -203,7 +213,7 @@ describe('🚨 Provider whitelist + BYOK resolution', () => {
 
 describe('🚨 Clamp temperatura / maxTokens / timeoutMs', () => {
   it('🚨 temperature -100 → clamp 0', async () => {
-    // Indiretto: no crash + completion ok (no way to inspect temperature passed since hardcoded 0.2 Liara)
+    // Qui solo: nessun crash. Il valore passato lo verifica il gruppo sulle opts.
     await expect(
       llmCompleteExecutor({ prompt: 'x', temperature: -100 } as never, {} as never, ctx()),
     ).resolves.toBeDefined();
@@ -253,26 +263,23 @@ describe('🚨 Clamp temperatura / maxTokens / timeoutMs', () => {
 });
 
 describe('🚨🚨 timeout/maxTokens via opts ESPLICITO — niente mutazione process.env (anti-race)', () => {
-  // opts è il 10° argomento posizionale di dispatchLLMChat (index 9).
+  // opts è il 9° argomento posizionale di dispatchLLMChat (index 8).
   const optsOf = (callIdx = 0): { maxTokens?: number; timeoutMs?: number } | undefined =>
-    dispatchMock.mock.calls[callIdx]?.[9] as { maxTokens?: number; timeoutMs?: number } | undefined;
+    dispatchMock.mock.calls[callIdx]?.[8] as { maxTokens?: number; timeoutMs?: number } | undefined;
 
   it('🚨 NON muta MAI process.env (né durante né dopo, neppure su throw)', async () => {
-    process.env.MEDEA_LIARA_TIMEOUT_MS = 'PRE-EXISTING';
-    process.env.MEDEA_LIARA_MAX_TOKENS = 'PRE-MAX';
+    const prima = JSON.stringify(process.env);
     await llmCompleteExecutor(
       { prompt: 'x', timeoutMs: 30_000, maxTokens: 1024 } as never,
       {} as never,
       ctx(),
     );
-    expect(process.env.MEDEA_LIARA_TIMEOUT_MS).toBe('PRE-EXISTING');
-    expect(process.env.MEDEA_LIARA_MAX_TOKENS).toBe('PRE-MAX');
+    expect(JSON.stringify(process.env)).toBe(prima);
     dispatchMock.mockRejectedValueOnce(new Error('LLM down'));
     await expect(llmCompleteExecutor({ prompt: 'x' } as never, {} as never, ctx())).rejects.toThrow(
       'LLM down',
     );
-    expect(process.env.MEDEA_LIARA_TIMEOUT_MS).toBe('PRE-EXISTING');
-    expect(process.env.MEDEA_LIARA_MAX_TOKENS).toBe('PRE-MAX');
+    expect(JSON.stringify(process.env)).toBe(prima);
   });
 
   it('🚨 timeout/maxTokens/temperature clampati passati in opts a dispatchLLMChat', async () => {
@@ -312,7 +319,7 @@ describe('🚨🚨 timeout/maxTokens via opts ESPLICITO — niente mutazione pro
       llmCompleteExecutor({ prompt: 'b', maxTokens: 2000 } as never, {} as never, ctx()),
     ]);
     const seen = dispatchMock.mock.calls
-      .map((c) => (c[9] as { maxTokens?: number }).maxTokens)
+      .map((c) => (c[8] as { maxTokens?: number }).maxTokens)
       .sort();
     expect(seen).toEqual([1000, 2000]);
   });
@@ -562,17 +569,13 @@ describe('🚨 Output shape contract', () => {
   // Fase 1b (#13): `_llm` = campo usage STANDARD cross-nodo (stesso shape degli
   // agent_*). `tokensUsed` resta come LEGACY: workflow esistenti lo referenziano.
   it('🚨 _llm standard presente ACCANTO a tokensUsed (mai al posto di)', async () => {
-    const r = await llmCompleteExecutor(
-      { prompt: 'x', provider: 'liara' } as never,
-      {} as never,
-      ctx(),
-    );
+    const r = await llmCompleteExecutor({ prompt: 'x' } as never, {} as never, ctx());
     const out = r.output as { tokensUsed: unknown; _llm: unknown };
     expect(out._llm).toEqual({
       inputTokens: 100,
       outputTokens: 50,
-      model: 'liara-default',
-      provider: 'liara',
+      model: 'gpt-4o-mini',
+      provider: 'openai',
       fromApi: true,
     });
     expect(out.tokensUsed).toEqual({ prompt: 100, completion: 50, total: 150, fromApi: true });
@@ -589,15 +592,22 @@ describe('🚨 Output shape contract', () => {
     expect(out._llm.fromApi).toBe(false);
   });
 
-  it('🚨 model default fallback `${provider}-default`', async () => {
-    await llmCompleteExecutor({ prompt: 'x', provider: 'liara' } as never, {} as never, ctx());
-    // liara default model = '' → fallback liara-default
-    const r = await llmCompleteExecutor(
-      { prompt: 'x', provider: 'liara' } as never,
-      {} as never,
-      ctx(),
-    );
-    expect((r.output as { model: string }).model).toBe('liara-default');
+  it('🚨 modello: quello del nodo, poi quello del tenant, poi il predefinito del provider', async () => {
+    const modello = async (cfg: Record<string, unknown>): Promise<string> =>
+      ((await llmCompleteExecutor(cfg as never, {} as never, ctx())).output as { model: string })
+        .model;
+
+    expect(await modello({ prompt: 'x' })).toBe('gpt-4o-mini'); // predefinito del provider
+
+    resolverMock.mockReturnValue({ provider: 'openai', apiKey: 'k', model: 'gpt-del-tenant' });
+    expect(await modello({ prompt: 'x' })).toBe('gpt-del-tenant');
+    expect(await modello({ prompt: 'x', model: 'gpt-del-nodo' })).toBe('gpt-del-nodo');
+  });
+
+  it('🚨 provider senza un modello predefinito noto → `${provider}-default`', async () => {
+    resolverMock.mockReturnValue({ provider: 'ollama', apiKey: '', model: '' });
+    const r = await llmCompleteExecutor({ prompt: 'x' } as never, {} as never, ctx());
+    expect((r.output as { model: string }).model).toBe('ollama-default');
   });
 
   it('🚨 durationMs >= 0', async () => {
@@ -623,64 +633,24 @@ describe('🚨 anti-drift: ALLOWED_PROVIDERS (executor) === provider configField
   });
 });
 
-describe('degradazione quota — fallback BYOK', () => {
+describe('🚨 un errore del provider non fa cambiare provider di nascosto', () => {
   const run = (cfg: Record<string, unknown>) =>
     llmCompleteExecutor(cfg as never, {} as never, ctx());
 
-  it('quota Liara esaurita + BYOK configurato → fallback, output.degraded + provider cambiato', async () => {
-    dispatchMock
-      .mockRejectedValueOnce(new QuotaErrMock('token'))
-      .mockImplementationOnce(
-        async (
-          _p: string,
-          _k: string,
-          _m: string,
-          _s: string,
-          _u: string,
-          _b: string | undefined,
-          _h: unknown[],
-          listener: (u: { input: number; output: number; fromApi: boolean }) => void,
-        ) => {
-          listener({ input: 10, output: 20, fromApi: true });
-          return 'BYOK output.';
-        },
-      );
-    fallbackMock.mockReturnValue({
-      provider: 'anthropic',
-      apiKey: 'sk-ant',
-      model: 'claude-sonnet-4-6',
-    });
-
-    const res = (await run({ prompt: 'ciao' })) as {
-      output: { completion: string; provider: string; degraded?: string };
-    };
-    expect(res.output.completion).toBe('BYOK output.');
-    expect(res.output.provider).toBe('anthropic');
-    expect(res.output.degraded).toBe('byok-fallback');
-    expect(fallbackMock).toHaveBeenCalledWith('t1');
-    expect(dispatchMock).toHaveBeenCalledTimes(2);
-    expect(dispatchMock.mock.calls[1]?.[0]).toBe('anthropic'); // 2° dispatch usa BYOK
-    expect(dispatchMock.mock.calls[1]?.[1]).toBe('sk-ant');
-  });
-
-  it('quota Liara esaurita + NESSUN BYOK → propaga errore quota CHIARO (no retry)', async () => {
-    dispatchMock.mockRejectedValueOnce(new QuotaErrMock('token'));
-    fallbackMock.mockReturnValue(null);
-    await expect(run({ prompt: 'ciao' })).rejects.toBeInstanceOf(QuotaErrMock);
+  /**
+   * Se il provider scelto fallisce — chiave scaduta, quota finita, timeout —
+   * l'errore arriva a chi guarda l'esecuzione. Riprovare su un altro provider
+   * spenderebbe una chiave che l'utente non ha indicato per questo nodo.
+   */
+  it('l’errore esce così com’è, dopo una sola chiamata', async () => {
+    dispatchMock.mockRejectedValueOnce(new Error('OpenAI 429: quota exceeded'));
+    await expect(run({ prompt: 'ciao' })).rejects.toThrow(/OpenAI 429/);
     expect(dispatchMock).toHaveBeenCalledTimes(1);
+    expect(resolverMock).toHaveBeenCalledTimes(1);
   });
 
-  it('quota Liara + BYOK ma anche il BYOK fallisce → propaga l’errore del BYOK', async () => {
-    dispatchMock
-      .mockRejectedValueOnce(new QuotaErrMock('token'))
-      .mockRejectedValueOnce(new Error('Anthropic 401: invalid key'));
-    fallbackMock.mockReturnValue({ provider: 'anthropic', apiKey: 'bad', model: 'x' });
-    await expect(run({ prompt: 'ciao' })).rejects.toThrow(/Anthropic 401/);
-  });
-
-  it('errore NON-quota su Liara → re-throw, nessun tentativo di fallback', async () => {
-    dispatchMock.mockRejectedValueOnce(new Error('Liara timeout'));
-    await expect(run({ prompt: 'ciao' })).rejects.toThrow(/Liara timeout/);
-    expect(fallbackMock).not.toHaveBeenCalled();
+  it('l’output non porta più un campo «degraded»', async () => {
+    const res = await run({ prompt: 'ciao' });
+    expect(res.output).not.toHaveProperty('degraded');
   });
 });

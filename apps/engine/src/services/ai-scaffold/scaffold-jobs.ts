@@ -1,11 +1,11 @@
 /**
- * Scaffold job store — disaccoppia la GENERAZIONE (server-side, Liara gira sul
+ * Scaffold job store — disaccoppia la GENERAZIONE (server-side, la generazione gira sul
  * server) dalla CONNESSIONE SSE del client.
  *
  * Problema (2026-06-11): una generazione complessa richiede ~90-100s per chiamata
  * LLM + retry (quality-gate / coverage) → 2-4 minuti totali. La connessione SSE
  * del client (o un proxy) cade a ~2min → il `done` non viene consegnato e il
- * RISULTATO — già prodotto sul server — viene PERSO. "Liara gira sul server,
+ * RISULTATO — già prodotto sul server — viene PERSO. "La generazione gira sul server,
  * perché ci ferma il timeout del client?" → giusto: non deve.
  *
  * Soluzione: ogni generazione ha un `jobId`. Il risultato viene PERSISTITO qui

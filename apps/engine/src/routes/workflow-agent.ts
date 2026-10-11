@@ -11,7 +11,7 @@
  *   secrets → diff→`patch` che l'editor già renderizza (Accept/Reject).
  *
  * Provider risolto per il tenant (resolveToolEndpoint → makeOpenAiLlmTurn);
- * license-key per Liara; LlmTurn/catalog/loaders INIETTABILI per i test in-process
+ * LlmTurn/catalog/loaders INIETTABILI per i test in-process
  * (niente modello reale → no greensmoke).
  *
  * @module routes/workflow-agent
@@ -30,7 +30,6 @@ import { assembleWorkflow } from '@/services/ai-scaffold/assemble-workflow.js';
 import type { NodeCatalogEntry } from '@/services/ai-scaffold/node-catalog.js';
 import { llmResolver, NoLlmProviderError } from '@/services/llm-resolver.service.js';
 import { resolveToolEndpoint } from '@/services/llm/provider-registry.js';
-import { liaraBaseUrl } from '@/config.js';
 import { makeOpenAiLlmTurn } from '@/services/db-agent/chat/openai-tool-adapter.js';
 import type { LlmTurn } from '@/services/db-agent/chat/types.js';
 
@@ -72,26 +71,24 @@ function resolveTurn(tenantId: string, opts: WorkflowAgentRouteOptions): TurnRes
   if (opts.llmTurnFor) return { ok: true, llmTurn: opts.llmTurnFor(tenantId) };
   try {
     const r = llmResolver.resolve(tenantId);
-    if (r.provider !== 'liara' && r.provider !== 'ollama' && !r.apiKey) {
+    if (r.provider !== 'ollama' && !r.apiKey) {
       return { ok: false, status: 401, error: `Nessuna API key per ${r.provider}.` };
     }
-    const baseUrl = r.baseUrl ?? (r.provider === 'liara' ? liaraBaseUrl() : undefined);
-    const target = resolveToolEndpoint(r.provider, r.model, baseUrl);
+    const target = resolveToolEndpoint(r.provider, r.model, r.baseUrl);
     if (!target) {
       return {
         ok: false,
         status: 400,
-        error: `Il provider "${r.provider}" non supporta il tool-calling richiesto dall'agente. Usa OpenAI, Gemini, Grok, DeepSeek, OpenRouter, Groq, Mistral, Liara o Ollama.`,
+        error: `Il provider "${r.provider}" non supporta il tool-calling richiesto dall'agente. Usa OpenAI, Gemini, Grok, DeepSeek, OpenRouter, Groq, Mistral o Ollama.`,
       };
     }
-    // AUTH: Liara (gateway portal) ESIGE la LICENSE KEY come Bearer; i BYOK usano
-    // la loro apiKey; Ollama locale nessuna. (Identico a db-agent-chat.)
-    const authKey = r.provider === 'liara' ? (process.env.MEDEA_LICENSE_KEY ?? '') : r.apiKey;
+    // AUTH: ogni provider usa la chiave del tenant; Ollama locale nessuna.
+    // (Identico a db-agent-chat.)
     return {
       ok: true,
       llmTurn: makeOpenAiLlmTurn({
         endpoint: target.url,
-        apiKey: authKey,
+        apiKey: r.apiKey,
         model: target.model,
         ...(target.extraHeaders ? { extraHeaders: target.extraHeaders } : {}),
       }),

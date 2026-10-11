@@ -1,6 +1,6 @@
 /**
  * Loop chat agentico del DB-agent — il cervello che mette i 15 strumenti
- * tenant-safe nelle mani di Liara dentro DB Studio.
+ * tenant-safe nelle mani dell'assistente dentro DB Studio.
  *
  * Ciclo: chiede un turno al modello (con i tool); se il modello chiede tool,
  * li esegue via `executeDbAgentTool` (SEMPRE tenant-scoped) e ri-alimenta i

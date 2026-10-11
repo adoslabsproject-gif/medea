@@ -25,7 +25,7 @@ export interface NodeExecutionContext {
   /**
    * Tenant-scoped LLM provider settings (configured in Settings → AI Providers).
    * AI/agent nodes use this when their per-node `apiKey` config is empty.
-   * Keyed by provider id: 'liara' | 'anthropic' | 'openai' | 'gemini' | ...
+   * Keyed by provider id: 'anthropic' | 'openai' | 'gemini' | ...
    */
   llmProviders?: Record<string, { apiKey: string; defaultModel?: string; baseUrl?: string }>;
   /**

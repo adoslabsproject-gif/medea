@@ -27,7 +27,7 @@ export const emailTriageNodeDef: NodeDef = {
     'Output: { senderEmail, senderDomain, subjectClean, bodyTextShort, attachments, languageGuess, ' +
     'urgencySignals, isPec, isNewsletter, messageId, headers }. ' +
     'Riduzione token osservata: 70-90% rispetto al passare la RawEmail al LLM. ' +
-    'Use case: pre-step di un agent LLM di classificazione per studio commercialista (riduce costo Liara per ' +
+    'Use case: pre-step di un agent LLM di classificazione per studio commercialista (riduce il costo LLM per ' +
     'email cliente da 800 a 80 token in input), filtro newsletter prima di un flow human-review (skip se ' +
     'isNewsletter=true), routing dinamico via switch per PEC vs ordinaria, alerting su signal urgency per ' +
     'inoltro al titolare studio, pre-validazione dominio mittente contro blocklist anti-phishing.',

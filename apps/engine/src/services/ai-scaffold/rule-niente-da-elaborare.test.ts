@@ -22,7 +22,7 @@ describe('il caso che è passato', () => {
   const riassuntoSerale = {
     nodes: [
       { id: 'cron', defId: 'trigger_cron', config: { cronExpression: '0 18 * * *' } },
-      { id: 'riassunto', defId: 'agent_summarizer', config: { provider: 'liara' } },
+      { id: 'riassunto', defId: 'agent_summarizer', config: { provider: 'openai' } },
       { id: 'slack', defId: 'community_slack', config: { channel: 'x', text: 'y' } },
     ],
     edges: [

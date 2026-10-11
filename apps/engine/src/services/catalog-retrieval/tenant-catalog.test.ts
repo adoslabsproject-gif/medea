@@ -1,6 +1,6 @@
 /**
- * tenant-catalog — i custom node PRIVATI del tenant entrano nel catalogo di
- * Liara (gap chiuso 2026-06-12). Solo i RUNNABLE (published_priv /
+ * tenant-catalog — i custom node PRIVATI del tenant entrano nel catalogo
+ * dell'assistente (gap chiuso 2026-06-12). Solo i RUNNABLE (published_priv /
  * marketplace_published); i draft/candidate restano fuori (non eseguibili).
  *
  * @vitest-environment node

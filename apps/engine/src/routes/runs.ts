@@ -137,7 +137,7 @@ export function createRunRoutes(eventBus: IEventBus): Hono {
   // CPU-bound (re-runs every step of the historical run). Without a cap,
   // 1000 concurrent replays from a single session drive container CPU
   // to 100% and DoS the tenant. Tighter than llmRateLimit because replay
-  // is purely compute (no LLM spend, no Liara queue) — 20/min/user gives
+  // is purely compute (no LLM spend) — 20/min/user gives
   // headroom for legitimate iterative debugging while still capping abuse.
   // ─────────────────────────────────────────────────────────────────
   app.post(
@@ -203,7 +203,7 @@ export function createRunRoutes(eventBus: IEventBus): Hono {
   // Use case: utente clicca "🤖 AI debug" nel RunInspector quando un run
   // termina in error. Restituisce diagnosis + suggestedFixes + replayCommand.
   //
-  // Rate limit STRETTO: chiama Liara (5-15s + token spend). 5/min/user +
+  // Rate limit STRETTO: chiama il modello (5-15s + token spend). 5/min/user +
   // 20/min/tenant impediscono LLM spam su click-frenzy del frontend.
   // ─────────────────────────────────────────────────────────────────
   app.post(

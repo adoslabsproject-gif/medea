@@ -1,9 +1,8 @@
 /**
  * Loop agente tool-calling in formato OpenAI-tools (Fase 2 #14).
  *
- * Percorso per Liara (gateway metered → vLLM Qwen3-VL, tool_calls VALIDATI
- * live 2026-07-06) e per i provider BYOK OpenAI-compatibili (openai,
- * openrouter, groq, mistral). Il percorso Anthropic nativo resta in
+ * Percorso per i provider OpenAI-compatibili (openai, openrouter, groq,
+ * mistral). Il percorso Anthropic nativo resta in
  * tool-loop.ts (formato tool_use/tool_result diverso, battle-tested).
  *
  * Condivide con tool-loop.ts: executeTool (guardie SSRF/H3/RAG identiche),
@@ -51,30 +50,6 @@ export function openAiLoopEndpoint(
   label: string;
 } {
   switch (provider) {
-    case 'liara': {
-      const internalGateway =
-        typeof process !== 'undefined' && process.env.MEDEA_LIARA_BASE_URL
-          ? process.env.MEDEA_LIARA_BASE_URL.replace(/\/$/, '')
-          : undefined;
-      const base = baseUrl ?? internalGateway ?? 'https://liara.nothumanallowed.com';
-      const licenseKey =
-        typeof process !== 'undefined' ? (process.env.MEDEA_LICENSE_KEY ?? '').trim() : '';
-      const bearer = licenseKey || apiKey;
-      // Model: i default legacy Claude salvati nelle config (il nodo era
-      // Anthropic-only) e 'nha-v1' senza tool-training NON hanno senso qui →
-      // campo omesso, decide il gateway. Un model esplicito diverso passa.
-      const effectiveModel = model.startsWith('claude-') || model === 'nha-v1' ? '' : model;
-      return {
-        url: `${base}/chat/completions`,
-        headers: {
-          'Content-Type': 'application/json',
-          ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
-        },
-        effectiveModel,
-        trustedHost: internalGatewayTrustedHost(base, internalGateway),
-        label: 'Liara',
-      };
-    }
     case 'openai':
       return {
         url: 'https://api.openai.com/v1/chat/completions',
@@ -160,7 +135,7 @@ export function openAiLoopEndpoint(
     default:
       throw new Error(
         `ai_agent_tool_loop: provider "${provider}" non supporta il tool-calling in questo nodo. ` +
-          'Supportati: liara (default, gratis), anthropic, openai, gemini, deepseek, xai, openrouter, groq, mistral, ollama.',
+          'Supportati: anthropic, openai, gemini, deepseek, xai, openrouter, groq, mistral, ollama.',
       );
   }
 }
@@ -168,11 +143,10 @@ export function openAiLoopEndpoint(
 /**
  * Provider con tool-calling FUNZIONANTE nel loop (nativo anthropic escluso: ha
  * il suo ramo). Chi non è qui (oggi SOLO perplexity: i modelli Sonar non
- * supportano i tools) non deve produrre un errore quando arriva dall'auto-pick
- * di Settings → il dispatcher fa fallback DICHIARATO su Liara.
+ * supportano i tools) viene fermato dal dispatcher con un messaggio che dice
+ * di sceglierne un altro.
  */
 export const TOOL_CAPABLE_OPENAI_PROVIDERS: ReadonlySet<string> = new Set([
-  'liara',
   'openai',
   'gemini',
   'deepseek',

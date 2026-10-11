@@ -96,7 +96,7 @@ describe('CatalogRetriever — lessicale (deterministico, sempre-on)', () => {
   /**
    * 🚨 BUG REALE 2026-06-12 — "creami un nodo code": 'code' matchava SOLO
    * agent_code_reviewer (substring del defId) e MAI action_run_js (keywords
-   * run/js/javascript/codice — 'code' inglese assente) → Liara: "il nodo
+   * run/js/javascript/codice — 'code' inglese assente) → il modello: "il nodo
    * code non esiste" + scaffold di un agent sbagliato. Fix: alias n8n-speak
    * EN↔IT nell'index (EXTRA_KEYWORDS_BY_DEFID).
    */
@@ -299,7 +299,7 @@ describe('CatalogRetriever — semantico + fusione', () => {
   });
 });
 
-describe('🔒 formatCatalogForPrompt — OUTPUT CONTRACT grounding (B: anti-allucinazione Liara)', () => {
+describe('🔒 formatCatalogForPrompt — OUTPUT CONTRACT grounding (B: anti-allucinazione)', () => {
   const entries: NodeCatalogEntry[] = [
     {
       defId: 'action_demo_contract',

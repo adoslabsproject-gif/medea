@@ -326,7 +326,7 @@ export async function createServer(
   // dall'utente nel suo workspace. Mount sotto sub-path per requireRole('owner').
   app.route('/api/v1/custom-nodes', createCustomNodesRoutes());
   // AI Scaffold Step 4 (2026-06-09): missing-node wizard orchestrator.
-  // Quando Liara genera defId che non esistono in nessun catalog, l'endpoint
+  // Quando il modello genera defId che non esistono in nessun catalog, l'endpoint
   // sintetizza JIT custom node tenant-private + riscrive il workflow.
   app.route('/api/v1/ai-scaffold', createAiScaffoldMissingNodesRoutes());
   // Public registry — no auth required (read-only). Lives at /registry/* so

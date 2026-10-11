@@ -8,7 +8,7 @@
  * Motivazione: erano marcati `deprecated: true` con disclaimer "usa community v2.0
  * dal Marketplace", ma la v2.0 community non e\` ancora installata. Risultato:
  *  - Confusione UX: utenti vedevano "(legacy)" + warning in palette
- *  - AI scaffold (Liara) hallucinava ID v2.0 inesistenti (es. `integration_telegram_send`)
+ *  - AI scaffold hallucinava ID v2.0 inesistenti (es. `integration_telegram_send`)
  *  - Documentation drift tra label/description e disponibilita\` reale
  *
  * Cosa fare nel frattempo per integrare Slack/Telegram/GitHub/etc.:

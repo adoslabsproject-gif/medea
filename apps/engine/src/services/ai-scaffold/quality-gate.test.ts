@@ -6,7 +6,7 @@
  *
  * Ogni test asserisce VALORE specifico (issue code + severity + node ID),
  * non boolean smoke. Esempio reale: il workflow "Document Intelligence
- * Pipeline" generato 2026-05-31 da Liara che ha 2 critical (circular ref
+ * Pipeline" generato 2026-05-31 dal modello che ha 2 critical (circular ref
  * notion→db_insert, SMTP fittizio) + 1 medium (switch no default).
  */
 import { describe, it, expect, vi } from 'vitest';
@@ -279,7 +279,7 @@ describe('QualityGate — dead-end branches', () => {
 });
 
 describe('QualityGate — Document Intelligence Pipeline (real bug case)', () => {
-  it('riproduce i 2 bug del workflow generato 2026-05-31 da Liara', () => {
+  it('riproduce i 2 bug del workflow generato 2026-05-31 dal modello', () => {
     // Sub-set realistico: notion ha circular ref a db_insert + email
     // ha SMTP fittizio + switch senza default.
     const wf: QualityGateInput = {
@@ -907,7 +907,7 @@ describe('Quality gate — FAN_IN_WITHOUT_MERGE (rule 2026-06-07)', () => {
         { id: 't', defId: 'trigger_manual', config: {} },
         { id: 'a', defId: 'action_http', config: { url: 'x' } },
         { id: 'b', defId: 'action_http', config: { url: 'y' } },
-        { id: 'agg', defId: 'agent_data_analyst', config: { provider: 'liara' } },
+        { id: 'agg', defId: 'agent_data_analyst', config: { provider: 'openai' } },
       ],
       edges: [
         { from: 't', to: 'a' },
@@ -1330,7 +1330,7 @@ describe('QualityGate — DB_COLUMN_NOT_IN_SCHEMA (bug user 2026-06-09)', () => 
 });
 
 describe('QualityGate — integrazione: workflow ROTTO REALE "Crea Node Code" (2026-06-09)', () => {
-  // Il workflow esatto generato da Liara per "creami un node code", che il
+  // Il workflow esatto generato dal modello per "creami un node code", che il
   // gate PRE-fix lasciava passare. Ora deve essere rigettato per i bug REALI.
   it('rigetta il workflow con language-mismatch + colonne db inesistenti', () => {
     const r = runQualityGate({

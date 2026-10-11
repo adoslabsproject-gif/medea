@@ -20,13 +20,14 @@ const providerField = def.configFields?.find((f) => f.key === 'provider');
 const options = providerField?.type === 'select' ? providerField.options : [];
 
 describe('action_llm_complete — contract description ⊆ provider (anti-drift)', () => {
-  it("il campo provider espone l'insieme reale (10: liara + 9 BYOK)", () => {
+  it("il campo provider espone l'insieme reale (9), e non propone un valore predefinito", () => {
+    // Vuoto = il provider scelto dal tenant: un default qui lo scavalcherebbe.
+    expect(providerField?.defaultValue).toBeUndefined();
     expect([...options].sort()).toEqual([
       'anthropic',
       'deepseek',
       'gemini',
       'groq',
-      'liara',
       'mistral',
       'openai',
       'openrouter',

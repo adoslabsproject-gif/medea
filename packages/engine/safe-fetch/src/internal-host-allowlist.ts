@@ -31,15 +31,13 @@ export function parseInternalHostAllowlist(raw: string | undefined | null): Set<
 
 /**
  * Host:porta da esentare dal guard SSRF quando l'URL LLM punta al GATEWAY INTERNO
- * di sistema (es. MEDEA_LIARA_BASE_URL, IP privato della bridge Docker
- * by-design). Decide per CONFRONTO DI ORIGIN → copre sia il default sia un
+ * di sistema (un IP privato della bridge Docker, by-design). Decide per CONFRONTO DI ORIGIN → copre sia il default sia un
  * baseUrl passato esplicitamente dal runtime. Un origin DIVERSO (endpoint BYOK
  * dell'utente) → `undefined` (guard pieno).
  *
- * SSOT condivisa (Fase 2 #14): nata in @medea/engine-nodes-ai-agents (fix SSRF
- * nLA_liara), spostata qui perché serve anche ai nodi stdlib che parlano col
- * gateway (vision-extract, scrape-smart/extract-llm) — stdlib non può dipendere
- * da ai-agents (dipendenza circolare). ai-agents la re-esporta.
+ * SSOT condivisa (Fase 2 #14): nata in @medea/engine-nodes-ai-agents, spostata
+ * qui perché stdlib non può dipendere da ai-agents (dipendenza circolare).
+ * ai-agents la re-esporta.
  */
 export function internalGatewayTrustedHost(
   url: string,

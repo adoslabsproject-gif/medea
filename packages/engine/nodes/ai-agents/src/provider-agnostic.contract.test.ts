@@ -1,10 +1,10 @@
 /**
  * Contract test ANTI-ASPIRAZIONALE — gli agent generici sono PROVIDER-AGNOSTICI.
  *
- * Bug segnalato: una description diceva "Agent LLM (Liara/Anthropic)" mentre il nodo
+ * Bug segnalato: una description diceva "Agent LLM (solo Anthropic)" mentre il nodo
  * funziona con QUALSIASI provider configurato in Settings → AI Providers (l'executor
  * `resolveLlmSettings` itera la preference order, e `dispatchLLM` supporta
- * anthropic/openai/gemini/mistral/groq/openrouter/ollama/liara). Una description che
+ * anthropic/openai/gemini/mistral/groq/openrouter/ollama). Una description che
  * nomina un sottoinsieme ristretto inganna l'utente.
  *
  * Questo guard lega description ↔ capability reale per OGNI agent generico (quelli
@@ -27,7 +27,6 @@ const SUPPORTED = [
   'groq',
   'openrouter',
   'ollama',
-  'liara',
 ] as const;
 
 const genericIds = new Set(AI_AGENT_DEFINITIONS.map((a) => a.id));
@@ -51,13 +50,13 @@ describe('agent generici — provider-agnostici (contract)', () => {
     }
   });
 
-  it('🚨 nessuna description di agent generico restringe a provider specifici (no "Liara/Anthropic", "solo Liara", ecc.)', () => {
+  it('🚨 nessuna description di agent generico restringe a provider specifici (no "OpenAI/Anthropic", "solo Anthropic", ecc.)', () => {
     // Pattern che nominano un provider come VINCOLO (non come esempio di Settings).
     const RESTRICTIVE = [
-      /\(\s*Liara\s*\/\s*Anthropic\s*\)/i,
-      /\bsolo\s+(Liara|Anthropic|OpenAI)\b/i,
-      /\bsoltanto\s+(Liara|Anthropic)\b/i,
-      /\bonly\s+(Liara|Anthropic)\b/i,
+      /\(\s*OpenAI\s*\/\s*Anthropic\s*\)/i,
+      /\bsolo\s+(Anthropic|OpenAI)\b/i,
+      /\bsoltanto\s+(Anthropic|OpenAI)\b/i,
+      /\bonly\s+(Anthropic|OpenAI)\b/i,
     ];
     for (const node of genericNodes) {
       const d = node.def.description;

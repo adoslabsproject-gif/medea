@@ -9,8 +9,8 @@
  * Verifichiamo che:
  *  - upsert(...) → await audit.append (rejection si propaga al chiamante)
  *  - remove(...) → await audit.append (idem)
- *  - Liara è il provider speciale free-tier (no apiKey, no audit per upsert
- *    sans defaultModel, remove ritorna false)
+ *  - nessun provider è «speciale»: tutti vogliono una chiave, nessuno compare
+ *    come disponibile senza
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -33,8 +33,6 @@ const m = vi.hoisted(() => {
     }),
     decryptSecret: vi.fn().mockReturnValue('plaintext-key'),
     loadMaster: vi.fn().mockReturnValue('master-fake-32-chars-min-padding!!!!'),
-    isLiaraEnabled: vi.fn().mockReturnValue(true),
-    liaraBaseUrl: vi.fn().mockReturnValue('https://liara.example.com'),
   };
 });
 
@@ -66,11 +64,6 @@ vi.mock('./audit.service.js', () => ({
 
 vi.mock('./credentials.service.js', () => ({
   loadMaster: m.loadMaster,
-}));
-
-vi.mock('@/config.js', () => ({
-  isLiaraEnabled: () => m.isLiaraEnabled(),
-  liaraBaseUrl: () => m.liaraBaseUrl(),
 }));
 
 vi.mock('@/lib/logger.js');
@@ -105,14 +98,6 @@ describe('#208 P0-9 — upsert await audit', () => {
     await expect(svc.upsert('tenant-1', 'openai', { apiKey: 'sk-test' })).rejects.toThrow(
       /audit DB down/,
     );
-  });
-
-  it('upsert(liara) senza defaultModel → no-op, NO audit', async () => {
-    const { LlmProvidersService } = await import('./llm-providers.service.js');
-    const svc = new LlmProvidersService();
-    await svc.upsert('tenant-1', 'liara', { apiKey: '' });
-    expect(m.auditAppend).not.toHaveBeenCalled();
-    expect(m.run).not.toHaveBeenCalled();
   });
 
   it('upsert(openai) senza apiKey → throw senza audit', async () => {
@@ -150,12 +135,12 @@ describe('#208 P0-9 — remove await audit', () => {
     expect(m.auditAppend).not.toHaveBeenCalled();
   });
 
-  it('remove(liara) → return false subito (free tier, no delete)', async () => {
+  it('remove di un provider non configurato → false, e nessun audit', async () => {
+    m.run.mockReturnValueOnce({ changes: 0 });
     const { LlmProvidersService } = await import('./llm-providers.service.js');
     const svc = new LlmProvidersService();
-    const r = await svc.remove('tenant-1', 'liara');
+    const r = await svc.remove('tenant-1', 'openai');
     expect(r).toBe(false);
-    expect(m.run).not.toHaveBeenCalled();
     expect(m.auditAppend).not.toHaveBeenCalled();
   });
 
@@ -170,20 +155,22 @@ describe('#208 P0-9 — remove await audit', () => {
 
 describe('list() — provider visibility rules (2026-05-29)', () => {
   // Regola: nel dropdown del client appaiono solo provider con `hasKey ||
-  // freeTier`. Quindi senza credenziale configurata:
-  //   - liara → SEMPRE visibile (freeTier=true)
-  //   - ollama → NON visibile (freeTier=false dopo fix; serve install locale)
+  // freeTier`. Quindi senza credenziale configurata non appare nessuno:
+  //   - ollama → NON visibile (freeTier=false; serve install locale)
   //   - anthropic/openai/etc → NON visibili (richiedono API key)
 
-  it('liara default = freeTier=true, hasKey=true (sempre disponibile)', async () => {
+  /**
+   * Nessun provider è disponibile di suo. Se uno risultasse «gratis» o «con
+   * chiave» senza che il tenant l'abbia configurato, il resolver lo
+   * sceglierebbe e le chiamate partirebbero verso un servizio che non c'è.
+   */
+  it('🚨 senza credenziali NESSUN provider risulta disponibile', async () => {
     m.all.mockReturnValueOnce([]); // nessuna credenziale stored
     const { LlmProvidersService } = await import('./llm-providers.service.js');
     const svc = new LlmProvidersService();
     const list = svc.list('tenant-1');
-    const liara = list.find((p) => p.provider === 'liara');
-    expect(liara).toBeDefined();
-    expect(liara!.freeTier).toBe(true);
-    expect(liara!.hasKey).toBe(true);
+    expect(list.length).toBeGreaterThan(0);
+    expect(list.filter((p) => p.hasKey || p.freeTier)).toEqual([]);
   });
 
   it('REGRESSION: ollama NON è più freeTier (serve install + setup baseUrl)', async () => {

@@ -1,11 +1,10 @@
 /**
- * Liara è un Mistral, non un Qwen.
+ * Un modello che chiede uno strumento dove strumenti non ce ne sono.
  *
- * Il codice le mandava `/no_think` in testa a ogni prompt di sistema e
- * `enable_thinking` fra i parametri del template: sono convenzioni **di
- * Qwen3**. Il 2026-08-07 il modello ha risposto emettendo
- * `[TOOL_CALLS]fs_read{…}` — il token nativo con cui i Mistral chiedono uno
- * strumento — e ha confermato quello che il proprietario diceva da giorni.
+ * Il 2026-08-07 un modello Mistral, invece di scrivere il workflow, ha
+ * risposto emettendo `[TOOL_CALLS]fs_read{…}` — il token nativo con cui i
+ * Mistral chiedono uno strumento. Non è un rifiuto e non dipende da come è
+ * scritto l'obiettivo: va riconosciuto e detto per quello che è.
  *
  * @module services/ai-scaffold/famiglia-modello.test
  */

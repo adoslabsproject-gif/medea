@@ -85,7 +85,7 @@ export function validateArchitecture(
   }
 
   // 4. Anti-pigrizia: se 3+ rami consecutivi di uno switch finiscono tutti
-  //    in community_slack, probabilmente Liara ha "sbrigato" il branching.
+  //    in community_slack, probabilmente il modello ha "sbrigato" il branching.
   //    Warning (non block) — utente puo\` deciderlo, ma log.
   for (const n of nodes) {
     if (n.defId !== 'logic_switch') continue;

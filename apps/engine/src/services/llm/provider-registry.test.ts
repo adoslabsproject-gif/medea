@@ -55,8 +55,32 @@ describe('provider-registry — INVARIANTI per ogni spec', () => {
 
   it('solo OpenRouter ha chatModel vuoto (gateway: model obbligatorio)', () => {
     const empties = all.filter((p) => getProviderSpec(p).chatModel === '');
-    expect(empties.sort()).toEqual(['liara', 'openrouter'].sort());
-    // liara: il modello è scelto dal gateway portal; openrouter: lo deve dare l'utente.
+    expect(empties).toEqual(['openrouter']);
+    // openrouter è un gateway di modelli altrui: quale usare lo deve dire l'utente.
+  });
+
+  /**
+   * L'elenco dei provider noti è questo e basta. Un nome in più qui è un
+   * endpoint in più verso cui il motore manda prompt e chiavi: va aggiunto di
+   * proposito, non per inerzia.
+   */
+  it('🚨 i provider noti sono esattamente questi', () => {
+    const noti = [
+      'anthropic',
+      'deepseek',
+      'gemini',
+      'grok',
+      'groq',
+      'mistral',
+      'ollama',
+      'openai',
+      'openrouter',
+      'perplexity',
+      'voyage', // solo embeddings
+    ];
+    expect([...all].sort()).toEqual(noti);
+    for (const p of noti) expect(isKnownProvider(p)).toBe(true);
+    expect(isKnownProvider('provider-dismesso')).toBe(false);
   });
 
   it('fixed endpoint → URL https assoluto; self-host → defaultBaseUrl + path', () => {
@@ -141,8 +165,8 @@ describe('provider-registry — model default + self-host baseUrl', () => {
   });
 
   it('self-host: baseUrl del chiamante → url; trailing slash normalizzato', () => {
-    expect(resolveToolEndpoint('liara', '', 'https://gw.portal/api/v1/llm/')?.url).toBe(
-      'https://gw.portal/api/v1/llm/chat/completions',
+    expect(resolveToolEndpoint('ollama', '', 'http://host:11434/')?.url).toBe(
+      'http://host:11434/v1/chat/completions',
     );
     expect(resolveToolEndpoint('ollama', '', 'http://host:11434')?.url).toBe(
       'http://host:11434/v1/chat/completions',
@@ -172,34 +196,21 @@ void _typecheck;
 
 describe('self-host — l’URL composto deve combaciare col percorso servito', () => {
   /**
-   * Il default di Liara deve produrre `/v1/chat/completions`, esatto.
-   *
-   * nginx davanti al gateway instrada con corrispondenza **esatta** su
-   * `location = /v1/chat/completions`; tutto ciò che non combacia finisce in
-   * `location / { return 444; }`, che chiude la connessione senza risposta.
-   *
-   * Il 444 è la ragione per cui questo difetto è costato una giornata: chi
-   * chiama non riceve un 404 da leggere, riceve `fetch failed` — che somiglia
-   * a un guasto di rete, a un ban, a un server giù. Si cerca ovunque tranne
-   * che nel percorso.
-   *
-   * Il `defaultBaseUrl` era senza `/v1` e componeva `/chat/completions`: ogni
-   * richiesta del motore veniva chiusa in faccia mentre la stessa chiamata dal
-   * desktop, che il `/v1` ce l'aveva, funzionava.
+   * Il percorso composto deve essere esatto. Un proxy che instrada per
+   * corrispondenza esatta chiude la connessione senza risposta su tutto il
+   * resto, e chi chiama non riceve un 404 da leggere ma `fetch failed`, che
+   * somiglia a un guasto di rete: si cerca ovunque tranne che nel percorso.
+   * È già costato una giornata.
    */
-  it('liara: default + chatPath = /v1/chat/completions', () => {
-    const spec = getProviderSpec('liara');
-    if (spec.endpoint.kind !== 'self-host') throw new Error('liara deve restare self-host');
-    const url = new URL(spec.endpoint.defaultBaseUrl + spec.endpoint.chatPath);
-    expect(url.pathname).toBe('/v1/chat/completions');
-  });
-
-  /** Il baseUrl del chiamante vince, e deve comporre allo stesso modo. */
-  it('liara: un baseUrl passato dal chiamante compone lo stesso percorso', () => {
-    const spec = getProviderSpec('liara');
-    if (spec.endpoint.kind !== 'self-host') throw new Error('liara deve restare self-host');
-    const url = new URL('https://altrove.example/v1' + spec.endpoint.chatPath);
-    expect(url.pathname).toBe('/v1/chat/completions');
+  it('ollama: default + toolPath = /v1/chat/completions, default + chatPath = /api/chat', () => {
+    const spec = getProviderSpec('ollama');
+    if (spec.endpoint.kind !== 'self-host') throw new Error('ollama deve restare self-host');
+    expect(new URL(spec.endpoint.defaultBaseUrl + spec.endpoint.toolPath).pathname).toBe(
+      '/v1/chat/completions',
+    );
+    expect(new URL(spec.endpoint.defaultBaseUrl + spec.endpoint.chatPath).pathname).toBe(
+      '/api/chat',
+    );
   });
 
   /** Nessun self-host deve avere un baseUrl che finisce con `/`: `joinBaseUrl`

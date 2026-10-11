@@ -102,7 +102,7 @@ const USER_AGENT =
 /**
  * Errore: il fetch ha colpito la pagina di WAKE del tenant ("Avvio del
  * workspace…") servita da nginx @waking quando un container FlowForge è in
- * pausa/riavvio. Prima, quell'HTML veniva passato a Liara come "contenuto del
+ * pausa/riavvio. Prima, quell'HTML veniva passato al modello come "contenuto del
  * sito" (spazzatura) e l'utente vedeva l'errore di wake dentro la chat.
  */
 export class WorkspaceWakingError extends Error {
@@ -516,7 +516,7 @@ export async function webSearch(query: string, limit = 10): Promise<SearchRespon
   // Searx (federated public instances) — NO API key, cloud-IP friendly.
   // Inserito PRIMA di DDG perché su IP cloud (Hetzner/AWS/GCP/Vercel) DDG
   // blocca silenziosamente con 202+CAPTCHA. Incident 24 mag 2026 confermato:
-  // DDG ha ritornato 0 risultati per 9 query Liara consecutive su Hetzner IP.
+  // DDG ha ritornato 0 risultati per 9 query consecutive su Hetzner IP.
   if (!response) {
     try {
       response = await searxSearch(q, limit);

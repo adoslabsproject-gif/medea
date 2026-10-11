@@ -54,8 +54,6 @@ vi.mock('@/storage/db.js', () => ({ getDatabase: () => ({ sqlite: m.db! }) }));
 vi.mock('@/lib/logger.js');
 vi.mock('@/config.js', () => ({
   loadConfig: () => m.configValue,
-  liaraBaseUrl: () => 'http://liara.local',
-  isLiaraEnabled: () => true,
 }));
 vi.mock('@medea/engine-db-studio-engine', () => ({ SqliteAdapter: m.FakeAdapter }));
 vi.mock('@medea/engine-db-studio-postgres', () => ({ PostgresAdapter: m.FakeAdapter }));
@@ -200,7 +198,7 @@ describe('POST /db-agent/chat', () => {
     expect(res.status).toBe(400);
   });
 
-  it('🌐 modalità GLOBALE: senza databaseId → 200, niente 404, Liara può list/create', async () => {
+  it('🌐 modalità GLOBALE: senza databaseId → 200, niente 404, l’assistente può list/create', async () => {
     makeDb(TENANT_A, 'crm'); // un DB esiste nel workspace
     const app = buildApp({ userId: 'u1', tenantId: TENANT_A, role: 'editor' }, [
       { kind: 'tools', toolCalls: [{ id: 'c1', name: 'list_databases', args: {} }] },
@@ -214,7 +212,7 @@ describe('POST /db-agent/chat', () => {
     expect(text).toContain('Hai 1 database: crm.');
   });
 
-  it('🌐 modalità GLOBALE a workspace VUOTO → funziona (Liara crea il primo DB)', async () => {
+  it('🌐 modalità GLOBALE a workspace VUOTO → funziona (l’assistente crea il primo DB)', async () => {
     const app = buildApp({ userId: 'u1', tenantId: 'tenant-empty', role: 'editor' }, [
       {
         kind: 'tools',
@@ -258,7 +256,7 @@ describe('POST /db-agent/chat', () => {
  * ROUTING REALE provider → endpoint, via UNICA fonte (provider-registry).
  * Niente stub di llmTurn: il loop chiama il fetch globale, che spiamo. Prova che
  * i provider esterni (gemini/grok/deepseek/openrouter…) ORA sono instradati
- * correttamente nel tool-calling, dove prima finivano tutti su Liara.
+ * correttamente nel tool-calling, dove prima finivano tutti su un ripiego fisso.
  */
 describe('POST /db-agent/chat — routing provider (provider-registry SSOT)', () => {
   const fetchMock = vi.fn();
@@ -311,7 +309,7 @@ describe('POST /db-agent/chat — routing provider (provider-registry SSOT)', ()
     expect(call.headers.Authorization).toBe('Bearer xai-123');
   });
 
-  it('deepseek → api.deepseek.com + deepseek-chat (prima finiva su Liara: BUG fixato)', async () => {
+  it('deepseek → api.deepseek.com + deepseek-chat (prima finiva su un ripiego fisso: BUG fixato)', async () => {
     const dbA = makeDb(TENANT_A, 'app');
     resolveMock.mockReturnValue({ provider: 'deepseek', apiKey: 'ds-key', model: '' });
     finalOnce();
@@ -349,17 +347,20 @@ describe('POST /db-agent/chat — routing provider (provider-registry SSOT)', ()
     expect(call.body.model).toBe('openai/gpt-4o');
   });
 
-  it('🚨 liara → gateway portal + LICENSE KEY come Bearer (il gateway la ESIGE; apiKey tenant vuota)', async () => {
+  /**
+   * La licenza dell'installazione non è una chiave LLM: se finisse come Bearer
+   * verso un provider, uscirebbe dal perimetro per cui è stata emessa. Senza
+   * la chiave del tenant ci si ferma, e non parte nessuna richiesta.
+   */
+  it('🚨 provider a chiave senza apiKey → 401, e la licenza NON viene usata al suo posto', async () => {
     const dbA = makeDb(TENANT_A, 'app');
     const prev = process.env.MEDEA_LICENSE_KEY;
     process.env.MEDEA_LICENSE_KEY = 'LIC-xyz';
     try {
-      resolveMock.mockReturnValue({ provider: 'liara', apiKey: '', model: '' });
-      finalOnce();
-      await post(liveApp(), { databaseId: dbA, userMessage: 'ciao' });
-      const call = firstCall();
-      expect(call.url).toBe('http://liara.local/chat/completions');
-      expect(call.headers.Authorization).toBe('Bearer LIC-xyz'); // non più assente: era il bug del 400
+      resolveMock.mockReturnValue({ provider: 'openai', apiKey: '', model: '' });
+      const res = await post(liveApp(), { databaseId: dbA, userMessage: 'ciao' });
+      expect(res.status).toBe(401);
+      expect(fetchMock).not.toHaveBeenCalled();
     } finally {
       if (prev === undefined) delete process.env.MEDEA_LICENSE_KEY;
       else process.env.MEDEA_LICENSE_KEY = prev;

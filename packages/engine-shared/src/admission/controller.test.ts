@@ -146,10 +146,10 @@ describe('ammissione diretta', () => {
       schedule,
     });
     expect(schedule).toHaveBeenCalledTimes(1); // heartbeat avviato
-    expect(redis._z.get('liara:adm:vllm:inflight')?.has('r1')).toBe(true);
+    expect(redis._z.get('llm:adm:vllm:inflight')?.has('r1')).toBe(true);
     await handle.release();
     expect(clear).toHaveBeenCalledTimes(1); // heartbeat fermato
-    expect(redis._z.get('liara:adm:vllm:inflight')?.has('r1') ?? false).toBe(false);
+    expect(redis._z.get('llm:adm:vllm:inflight')?.has('r1') ?? false).toBe(false);
     await handle.release(); // idempotente
     expect(clear).toHaveBeenCalledTimes(1);
   });
@@ -171,7 +171,7 @@ describe('coda → ammesso quando si libera uno slot', () => {
     let t = 100;
     // al primo sleep, libera il blocker → il poll successivo ammette r1
     const sleep = vi.fn(async () => {
-      redis._z.get('liara:adm:vllm:inflight')!.delete('blocker');
+      redis._z.get('llm:adm:vllm:inflight')!.delete('blocker');
     });
     const handle = await admit({
       ...OPTS,
@@ -188,7 +188,7 @@ describe('coda → ammesso quando si libera uno slot', () => {
     });
     expect(positions).toEqual([{ position: 1, ahead: 0 }]); // ha atteso una volta
     expect(sleep).toHaveBeenCalledTimes(1);
-    expect(redis._z.get('liara:adm:vllm:inflight')?.has('r1')).toBe(true);
+    expect(redis._z.get('llm:adm:vllm:inflight')?.has('r1')).toBe(true);
     await handle.release();
   });
 });
@@ -208,8 +208,8 @@ describe('abort del client (SSE chiuso)', () => {
         schedule: noopSchedule,
       }),
     ).rejects.toBeInstanceOf(AdmissionAbortError);
-    expect(redis._z.get('liara:adm:vllm:inflight')?.has('r1') ?? false).toBe(false);
-    expect(redis._z.get('liara:adm:vllm:queue')?.has('r1') ?? false).toBe(false);
+    expect(redis._z.get('llm:adm:vllm:inflight')?.has('r1') ?? false).toBe(false);
+    expect(redis._z.get('llm:adm:vllm:queue')?.has('r1') ?? false).toBe(false);
   });
 
   it('abort MENTRE in coda → esce dalla coda (cleanup) e lancia AbortError', async () => {
@@ -238,8 +238,8 @@ describe('abort del client (SSE chiuso)', () => {
         schedule: noopSchedule,
       }),
     ).rejects.toBeInstanceOf(AdmissionAbortError);
-    expect(redis._z.get('liara:adm:vllm:queue')?.has('r1') ?? false).toBe(false); // tolto dalla coda
-    expect(redis._h.get('liara:adm:vllm:qmeta')?.has('r1') ?? false).toBe(false);
+    expect(redis._z.get('llm:adm:vllm:queue')?.has('r1') ?? false).toBe(false); // tolto dalla coda
+    expect(redis._h.get('llm:adm:vllm:qmeta')?.has('r1') ?? false).toBe(false);
   });
 });
 
@@ -313,6 +313,6 @@ describe('timeout di attesa', () => {
       schedule: noopSchedule,
     }).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(AdmissionTimeoutError);
-    expect(redis._z.get('liara:adm:vllm:queue')?.has('r1') ?? false).toBe(false); // cleanup
+    expect(redis._z.get('llm:adm:vllm:queue')?.has('r1') ?? false).toBe(false); // cleanup
   });
 });

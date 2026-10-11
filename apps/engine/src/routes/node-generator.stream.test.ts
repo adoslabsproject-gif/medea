@@ -129,7 +129,7 @@ async function postStream(body: Record<string, unknown>, headers: Record<string,
 
 beforeEach(() => {
   vi.clearAllMocks();
-  resolveMock.mockReturnValue({ provider: 'liara', apiKey: 'key', model: 'qwen3-32b' });
+  resolveMock.mockReturnValue({ provider: 'openai', apiKey: 'key', model: 'gpt-4o' });
   insertMock.mockReturnValue('interaction-1');
 });
 
@@ -170,7 +170,7 @@ describe('🚨 streaming SSE — happy path (bridge reale)', () => {
       expect.objectContaining({
         context: { tenantId: 'tenant-1', userId: 'user-7' },
         interactionType: 'node_generate',
-        response: expect.objectContaining({ model: 'liara/qwen3-32b' }),
+        response: expect.objectContaining({ model: 'openai/gpt-4o' }),
       }),
     );
   });
@@ -199,12 +199,12 @@ describe('🚨 streaming SSE — error mapping', () => {
     expect((err!.data as { status: number }).status).toBe(422);
   });
 
-  it('🚨 dispatcher REJECTS (Liara down) → errore propagato dal bridge → event error', async () => {
-    streamingMock.mockRejectedValue(new Error('Liara 500: upstream'));
+  it('🚨 dispatcher REJECTS (provider giù) → errore propagato dal bridge → event error', async () => {
+    streamingMock.mockRejectedValue(new Error('OpenAI 500: upstream'));
     const { events } = await postStream({ description: 'descrizione abbastanza lunga' });
     const err = events.find((e) => e.event === 'error');
     expect(err).toBeDefined();
-    expect((err!.data as { error: string }).error).toMatch(/Liara 500/u);
+    expect((err!.data as { error: string }).error).toMatch(/OpenAI 500/u);
   });
 });
 

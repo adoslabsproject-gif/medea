@@ -3,7 +3,7 @@
  *
  * Fonte condivisa tra:
  *   - import n8n (route /n8n-import): converte i `type` n8n in defId FlowForge.
- *   - net deterministico dello scaffold (auto-fix-defid): se Liara emette un defId
+ *   - net deterministico dello scaffold (auto-fix-defid): se il modello emette un defId
  *     in stile n8n o un termine generico (es. "code", "httpRequest", "set"), lo
  *     normalizza al defId reale al confine, prima della validazione.
  *

@@ -1,12 +1,12 @@
 /**
- * STRATO 2 della robustezza chat Liara — estrazione + fallback grazioso dell'envelope.
+ * STRATO 2 della robustezza della chat — estrazione + fallback grazioso dell'envelope.
  *
- * Il constrained decoding (guided_json, strato 1) garantisce JSON valido SOLO con
- * Liara/vLLM. Per provider BYOK o edge (proxy che tronca, prosa attorno al JSON,
- * fence ```json), l'output può comunque non essere conforme. Questo modulo PURO
+ * Lo strato 1 chiede al modello un envelope JSON mostrandogli lo schema, ma
+ * chiedere non è garantire: fra proxy che troncano, prosa attorno al JSON e
+ * fence ```json, l'output può non essere conforme. Questo modulo PURO
  * estrae l'envelope nel modo più tollerante possibile e, in ultima istanza, degrada
- * a `{ message: <testo> }`. Non lancia MAI e non restituisce MAI 502: la chat di
- * Liara risponde in OGNI caso (incident 2026-06-16: Qwen3 tornava prosa → 502).
+ * a `{ message: <testo> }`. Non lancia MAI e non restituisce MAI 502: la chat
+ * risponde in OGNI caso (incident 2026-06-16: un modello tornava prosa → 502).
  *
  * PURE → testabile in isolamento (la route fa solo il wiring + la normalizzazione
  * della patch vuota + la capture).
@@ -49,7 +49,7 @@ export const AssistantReplySchema = z.object({
 /**
  * Schema JSON per il CONSTRAINED DECODING (guided_json / xgrammar su vLLM).
  *
- * Mirror strutturale di `AssistantReplySchema`: forza Liara a emettere SEMPRE un
+ * Mirror strutturale di `AssistantReplySchema`: chiede al modello di emettere un
  * envelope JSON valido `{ message, patch? }` — è il decoder a garantirlo, non il
  * prompt. La forma fine dei nodi/edge resta `object` libero (config arbitraria);
  * la validazione semantica fine la fa comunque Zod a valle, col fallback grazioso.

@@ -159,7 +159,7 @@ const DYNAMIC_PICKER_FIELD_TYPES = new Set([
  * True se un campo può essere risolto da un picker UI → un valore REQUIRED
  * *omesso* dall'LLM va sanato con `__USE_PICKER__`, NON rigettato.
  *
- * Bug diretta YouTube 2026-06-12: Liara generava db_insert SENZA `databaseId`
+ * Bug diretta YouTube 2026-06-12: il modello generava db_insert SENZA `databaseId`
  * → la validazione required (che gira PRIMA del Layer C) 502ava l'intero
  * scaffold, mentre lo stesso campo con un valore FITTIZIO veniva sanato qui
  * sotto (sezione 2). Il caso "omesso" e il caso "fittizio" devono convergere
@@ -361,7 +361,7 @@ export function autoFixWorkflow(input: AutoFixInput): AutoFixResult {
   }
 
   // 2.6 Code-node language auto-heal (2026-06-09 user-segnalato).
-  //     Liara genera un nodo `action_run_js` ma vi incolla codice PYTHON
+  //     Il modello genera un nodo `action_run_js` ma vi incolla codice PYTHON
   //     (`import json, os` / `json.loads` / `print(...)`) + params python-only
   //     (`parseStdoutJson`/`allowNetwork`). A runtime isolated-vm fallisce al
   //     parse (`import` non è JS valido) → nodo MAI eseguibile. Il codice e i
@@ -397,7 +397,7 @@ export function autoFixWorkflow(input: AutoFixInput): AutoFixResult {
   // 2.7 agent_* provider normalization — il singleshot guess'a regolarmente
   //     "openai gpt-4o" o "anthropic claude" basandosi sul training data anche
   //     quando il tenant non ha quella chiave + ha esplicitamente scelto un
-  //     altro provider come default (es. liara) in Settings. Conseguenza:
+  //     altro provider come default (es. gemini) in Settings. Conseguenza:
   //     scaffold genera workflow non-runnable senza configurazione manuale.
   //
   //     Fix: se tenant ha un default provider e il nodo agent_* usa qualcosa

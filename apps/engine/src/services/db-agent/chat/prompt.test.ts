@@ -12,7 +12,7 @@ import { buildDbAgentSystemPrompt } from './prompt.js';
 describe('buildDbAgentSystemPrompt — modalità DATABASE (storica)', () => {
   it('contiene persona + sezione schema, NON la sezione globale', () => {
     const p = buildDbAgentSystemPrompt({ schemaContext: 'Database "app": nessuna tabella.' });
-    expect(p).toContain('Sei Liara');
+    expect(p).toContain("Sei l'assistente DB di Medea");
     expect(p).toContain('[SCHEMA DEL DATABASE SELEZIONATO]');
     expect(p).toContain('Database "app": nessuna tabella.');
     expect(p).not.toContain('[DATABASE DEL WORKSPACE]');
@@ -57,7 +57,7 @@ describe('buildDbAgentSystemPrompt — modalità GLOBALE (DB Studio, nessun DB)'
   it('persona + regole tool + safety presenti in ENTRAMBE le modalità', () => {
     for (const ctx of [{ schemaContext: 's' }, { databasesOverview: 'o' }]) {
       const p = buildDbAgentSystemPrompt(ctx);
-      expect(p).toContain('Sei Liara');
+      expect(p).toContain("Sei l'assistente DB di Medea");
       expect(p).toContain('preview_schema_plan');
       expect(p).toContain('run_sql è di SOLA LETTURA');
     }

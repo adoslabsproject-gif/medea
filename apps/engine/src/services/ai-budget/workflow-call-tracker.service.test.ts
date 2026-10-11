@@ -69,11 +69,6 @@ afterEach(() => {
 });
 
 describe('estimateCostUsd', () => {
-  it('Liara cost amortizzato (~$0.05/M input)', () => {
-    const cost = estimateCostUsd('liara', undefined, 1_000_000, 0);
-    expect(cost).toBeCloseTo(0.05, 4);
-  });
-
   it('Anthropic Claude Sonnet 4.6 input + output', () => {
     const cost = estimateCostUsd('anthropic', 'claude-sonnet-4-6', 100_000, 50_000);
     // input: 0.1M * $3 = $0.30; output: 0.05M * $15 = $0.75; total = $1.05
@@ -115,12 +110,10 @@ describe('estimateCostUsd', () => {
     expect(cost).toBeCloseTo(0.1, 4);
   });
 
-  it('REGRESSION: pricing table provider-agnostic — Liara NON è 100× più cara di altri (no anti-customer bias)', () => {
-    // Verifica integrità business: Liara è self-hosted gratis o low-cost,
-    // mai prezzata sopra i più costosi BYOK come scoraggiamento ad usarla.
-    const liara = estimateCostUsd('liara', undefined, 1_000_000, 1_000_000);
+  it('un modello locale non costa più di uno a consumo', () => {
+    const locale = estimateCostUsd('ollama', undefined, 1_000_000, 1_000_000);
     const gpt4o = estimateCostUsd('openai', 'gpt-4o', 1_000_000, 1_000_000);
-    expect(liara).toBeLessThan(gpt4o);
+    expect(locale).toBeLessThan(gpt4o);
   });
 });
 
@@ -132,7 +125,7 @@ describe('WorkflowCallTracker.record', () => {
       workflowId: 'wf-1',
       nodeId: 'agent_1',
       defId: 'agent_classifier',
-      provider: 'liara',
+      provider: 'ollama',
       model: 'qwen3-32b',
       inputTokens: 1000,
       outputTokens: 200,
@@ -153,7 +146,7 @@ describe('WorkflowCallTracker.record', () => {
       workflowId: 'wf-1',
       nodeId: 'n1',
       defId: 'agent_classifier',
-      provider: 'liara',
+      provider: 'ollama',
       inputTokens: 100,
       outputTokens: 50,
       status: 'ok',
@@ -205,7 +198,7 @@ describe('WorkflowCallTracker.record', () => {
       workflowId: 'wf-1',
       nodeId: 'n1',
       defId: 'agent_classifier',
-      provider: 'liara',
+      provider: 'ollama',
       inputTokens: 100,
       outputTokens: 50,
       status: 'ok',
@@ -223,7 +216,7 @@ describe('WorkflowCallTracker.record', () => {
       workflowId: 'wf-1',
       nodeId: 'n1',
       defId: 'agent_classifier',
-      provider: 'liara',
+      provider: 'ollama',
       inputTokens: 100,
       outputTokens: 0,
       status: 'ok',
@@ -237,13 +230,13 @@ describe('WorkflowCallTracker.record', () => {
 describe('WorkflowCallTracker.recordChatBudget', () => {
   it('chat e workflow source separati nel budget table', () => {
     const tracker = new WorkflowCallTracker();
-    tracker.recordChatBudget({ inputTokens: 500, outputTokens: 200, provider: 'liara' });
+    tracker.recordChatBudget({ inputTokens: 500, outputTokens: 200, provider: 'ollama' });
     tracker.record({
       runId: 'run-1',
       workflowId: 'wf-1',
       nodeId: 'n1',
       defId: 'agent_classifier',
-      provider: 'liara',
+      provider: 'ollama',
       inputTokens: 100,
       outputTokens: 50,
       status: 'ok',
@@ -309,7 +302,7 @@ describe('WorkflowCallTracker.byModelBreakdown', () => {
       workflowId: 'wf-1',
       nodeId: 'n1',
       defId: 'd',
-      provider: 'liara',
+      provider: 'ollama',
       model: 'qwen3',
       inputTokens: 10,
       outputTokens: 5,
@@ -320,27 +313,27 @@ describe('WorkflowCallTracker.byModelBreakdown', () => {
       workflowId: 'wf-1',
       nodeId: 'n2',
       defId: 'd',
-      provider: 'liara',
+      provider: 'ollama',
       model: 'qwen3',
       inputTokens: 10,
       outputTokens: 0,
       status: 'timeout',
     });
     const rows = tracker.byModelBreakdown('2020-01-01T00:00:00.000Z', '2100-01-01T00:00:00.000Z');
-    const row = rows.find((r) => r.provider === 'liara');
+    const row = rows.find((r) => r.provider === 'ollama');
     expect(row?.callCount).toBe(2);
     expect(row?.errorCount).toBe(1);
   });
 
   it('ordina per cost desc (modello più costoso in cima)', () => {
     const tracker = new WorkflowCallTracker();
-    // openai/gpt-4o ha cost più alto di liara per stessi token
+    // openai/gpt-4o ha cost più alto di un modello locale per stessi token
     tracker.record({
       runId: 'run-1',
       workflowId: 'wf-1',
       nodeId: 'n1',
       defId: 'd',
-      provider: 'liara',
+      provider: 'ollama',
       model: 'qwen3',
       inputTokens: 1000,
       outputTokens: 500,
@@ -370,7 +363,7 @@ describe('WorkflowCallTracker.byModelBreakdown', () => {
       workflowId: 'wf-1',
       nodeId: 'n1',
       defId: 'd',
-      provider: 'liara',
+      provider: 'ollama',
       model: 'qwen3',
       inputTokens: 100,
       outputTokens: 50,
@@ -396,7 +389,7 @@ describe('WorkflowCallTracker.listByRun', () => {
       workflowId: 'wf-1',
       nodeId: 'a',
       defId: 'agent_classifier',
-      provider: 'liara',
+      provider: 'ollama',
       inputTokens: 10,
       outputTokens: 5,
       status: 'ok',
@@ -406,7 +399,7 @@ describe('WorkflowCallTracker.listByRun', () => {
       workflowId: 'wf-1',
       nodeId: 'b',
       defId: 'agent_extractor',
-      provider: 'liara',
+      provider: 'ollama',
       inputTokens: 20,
       outputTokens: 10,
       status: 'ok',
@@ -425,7 +418,7 @@ describe('WorkflowCallTracker.listByRun', () => {
       workflowId: 'wf-1',
       nodeId: 'n1',
       defId: 'd',
-      provider: 'liara',
+      provider: 'ollama',
       inputTokens: 1,
       outputTokens: 1,
       status: 'ok',
@@ -435,7 +428,7 @@ describe('WorkflowCallTracker.listByRun', () => {
       workflowId: 'wf-1',
       nodeId: 'n2',
       defId: 'd',
-      provider: 'liara',
+      provider: 'ollama',
       inputTokens: 1,
       outputTokens: 1,
       status: 'ok',

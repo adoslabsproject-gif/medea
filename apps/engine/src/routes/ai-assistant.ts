@@ -11,11 +11,9 @@
 
 import { coerceString } from '@/lib/coerce.js';
 import { Hono } from 'hono';
-import { streamSSE } from 'hono/streaming';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { logger } from '@/lib/logger.js';
-import { liaraBaseUrl } from '@/config.js';
 import { AIInteractionsService } from '@/services/ai-interactions.service.js';
 import { llmResolver, NoLlmProviderError } from '@/services/llm-resolver.service.js';
 import { llmRateLimit } from '@/middleware/rate-limit.js';
@@ -178,8 +176,7 @@ export function createAiAssistantRoutes(): Hono {
 
       // Provider resolution delegated to LlmResolverService — single source of
       // truth for "which LLM for this tenant?" (DRY across ai-assistant,
-      // run-explain, help-chat). The resolver also enforces the Liara
-      // env-or-tenant disable rule.
+      // run-explain, help-chat).
       let provider: string;
       let apiKey: string;
       let model: string;
@@ -200,7 +197,7 @@ export function createAiAssistantRoutes(): Hono {
         throw err;
       }
 
-      if (provider !== 'liara' && provider !== 'ollama' && !apiKey) {
+      if (provider !== 'ollama' && !apiKey) {
         return c.json(
           {
             error: `Nessuna API key per ${provider}. Configurala in Settings → AI Providers o passa X-LLM-API-Key in header.`,
@@ -210,9 +207,9 @@ export function createAiAssistantRoutes(): Hono {
       }
 
       // CATALOG RETRIEVAL (2026-06-12): invece del catalogo completo nel prompt
-      // (~100k token → Liara 400), recupera le famiglie + i top-k nodi pertinenti
-      // al messaggio dell'utente E ai nodi già nel workflow corrente. Provider-
-      // agnostico: vale identico per Liara e per i BYOK. Fail-soft: se il
+      // (~100k token, oltre la finestra di molti modelli), recupera le famiglie + i
+      // top-k nodi pertinenti al messaggio dell'utente E ai nodi già nel workflow
+      // corrente. Vale identico per ogni provider. Fail-soft: se il
       // retrieval esplode, il blocco resta vuoto e il modello chiede chiarimenti
       // (mai un 500 per colpa del retrieval).
       let catalogBlock = '';
@@ -264,27 +261,21 @@ export function createAiAssistantRoutes(): Hono {
       }
       const toolEvents: ToolEvent[] = [];
       const attachmentIntents: DetectedIntent[] = [];
-      // OPERA D'ARTE (2026-06-22): per LIARA le IMMAGINI vanno DIRETTE come content
-      // multimodale della chat (Qwen3-VL legge i pixel nativamente — 1 call, fedeltà
-      // piena). Per i provider BYOK non-Liara (il cui dispatch è solo testo) si tiene
-      // il pre-pass vision `analyze_image` come prima → nessuna regressione.
-      // Documenti (PDF→testo) e URL restano intent perché NON sono vision-native.
-      const chatImages: { base64: string; mimeType: string }[] = [];
+      // Il dispatch della chat è solo testo: le immagini passano dal pre-pass
+      // vision `analyze_image`, che le fa leggere al provider del tenant e ne
+      // riporta il contenuto nel prompt. Documenti (PDF→testo) e URL sono
+      // intent allo stesso modo.
       if (Array.isArray(body.attachments)) {
         for (const att of body.attachments) {
           if (att.kind === 'image' && att.dataBase64) {
-            if (provider === 'liara') {
-              chatImages.push({ base64: att.dataBase64, mimeType: att.mimeType ?? 'image/png' });
-            } else {
-              attachmentIntents.push({
-                type: 'analyze_image',
-                args: {
-                  imageBase64: att.dataBase64,
-                  imagePrompt: `Analizza ${att.name}: estrai testo e dati strutturati.`,
-                },
-                reason: `image attachment: ${att.name}`,
-              });
-            }
+            attachmentIntents.push({
+              type: 'analyze_image',
+              args: {
+                imageBase64: att.dataBase64,
+                imagePrompt: `Analizza ${att.name}: estrai testo e dati strutturati.`,
+              },
+              reason: `image attachment: ${att.name}`,
+            });
           } else if (att.kind === 'document' && att.dataBase64 && att.mimeType) {
             attachmentIntents.push({
               type: 'extract_document',
@@ -331,8 +322,8 @@ export function createAiAssistantRoutes(): Hono {
       }
 
       // Contesto cross-surface: cosa l'utente stava facendo nelle ALTRE schede
-      // (editor nodi / db-studio / aiuto) dello stesso workspace → Liara non
-      // chiede di rispiegare. Fail-soft (mai rompe la chat). Esclude la conv corrente.
+      // (editor nodi / db-studio / aiuto) dello stesso workspace → l'assistente
+      // non chiede di rispiegare. Fail-soft (mai rompe la chat). Esclude la conv corrente.
       const crossSurface = buildCrossSurfaceContext(userId, body.workspaceId, {
         excludeConversationId: conversation.id,
       });
@@ -368,11 +359,10 @@ export function createAiAssistantRoutes(): Hono {
       let contextWindow = 40960;
       try {
         const dispatcher = await import('../services/llm-chat.service.js');
-        contextWindow = dispatcher.getLiaraContextWindow();
-        const clientRequestId = (c.req.header('x-ff-request-id') ?? '').trim();
-        // STRATO 1 — constrained decoding: Liara è COSTRETTA a emettere un envelope
-        // JSON valido {message, patch?} (guided_json/xgrammar). Niente più output in
-        // prosa → 502 (incident 2026-06-16). requestId propagato → posizione coda live.
+        contextWindow = dispatcher.getContextWindowBudget();
+        // STRATO 1 — si chiede un envelope JSON {message, patch?} mostrando lo
+        // schema al modello. Non è una garanzia: lo strato 2, qui sotto, regge
+        // anche quando torna prosa (incident 2026-06-16: prosa → 502).
         llmText = (
           await dispatcher.dispatchLLMChatStructured(
             provider,
@@ -386,8 +376,6 @@ export function createAiAssistantRoutes(): Hono {
             (u) => {
               chatUsage = u;
             },
-            clientRequestId || undefined,
-            chatImages.length > 0 ? chatImages : undefined,
           )
         ).trim();
       } catch (err) {
@@ -425,7 +413,7 @@ export function createAiAssistantRoutes(): Hono {
           );
           return c.json({ error: llmError.message, code: 'CONTEXT_TOO_LONG' }, 413);
         }
-        // Provider selezionato giù (es. Liara offline in gen-mode) → 503 CHIARO,
+        // Provider selezionato giù → 503 CHIARO,
         // mai swap silenzioso su un'altra chiave. La UI mostra il messaggio + il
         // provider effettivo così l'utente sa cosa è successo e può cambiarlo.
         if (llmError instanceof LlmProviderUnavailableError) {
@@ -442,10 +430,9 @@ export function createAiAssistantRoutes(): Hono {
       }
       const text = llmText;
       try {
-        // STRATO 2 — estrazione robusta + FALLBACK GRAZIOSO (mai 502). Il constrained
-        // decoding (strato 1) garantisce JSON valido con Liara; per BYOK/edge che
-        // tornano prosa o JSON non conforme, coerceAssistantReply degrada a
-        // { message: <testo> }. La chat risponde SEMPRE.
+        // STRATO 2 — estrazione robusta + FALLBACK GRAZIOSO (mai 502). Quando il
+        // modello torna prosa o JSON non conforme, coerceAssistantReply degrada
+        // a { message: <testo> }. La chat risponde SEMPRE.
         const coerced = coerceAssistantReply(text, (v) => {
           const r = AssistantReplySchema.safeParse(v);
           return r.success
@@ -560,8 +547,8 @@ export function createAiAssistantRoutes(): Hono {
           interactionId,
           conversationId: conversation.id,
           // Provider+model EFFETTIVI che hanno risposto → la UI mostra l'avatar
-          // veritiero per QUESTO messaggio (fine della "foto di Liara mentre
-          // risponde Claude"). Niente più disallineamento brand↔provenienza.
+          // veritiero per QUESTO messaggio (fine dell'avatar di un provider
+          // mentre risponde un altro). Niente più disallineamento brand↔provenienza.
           provider,
           ...(model ? { model } : {}),
           ...(toolEvents.length > 0 ? { toolEvents } : {}),
@@ -646,57 +633,6 @@ export function createAiAssistantRoutes(): Hono {
     const ok = conversationService.softDelete(c.req.param('id'), userId);
     if (!ok) return Promise.resolve(c.json({ error: 'Not found' }, 404));
     return Promise.resolve(c.json({ ok: true }));
-  });
-
-  // ─── Queue-status SSE proxy — canale-posizione coda LLM ────────────
-  // L'editor apre questo stream con lo STESSO rid inviato sulla chat
-  // (X-FF-Request-Id) per mostrare "N persone prima di te". Pass-through SSE
-  // verso il gateway portal (/api/v1/llm/queue-status), che pubblica la
-  // posizione dal canale Redis condiviso. Niente Redis nel runtime (potrebbe
-  // non condividerlo): la posizione viaggia sulla rete. Vedi admission.
-  app.get('/ai-assistant/queue-status', (c) => {
-    const auth = c.get('auth');
-    if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401);
-    const rid = (c.req.query('rid') ?? '').trim();
-    if (!rid) return c.json({ error: 'rid query param required' }, 400);
-
-    const licenseKey = process.env.MEDEA_LICENSE_KEY ?? '';
-    const url = `${liaraBaseUrl()}/queue-status?rid=${encodeURIComponent(rid)}`;
-
-    return streamSSE(c, async (stream) => {
-      let upstream: Response;
-      try {
-        upstream = await fetch(url, {
-          headers: {
-            Accept: 'text/event-stream',
-            ...(licenseKey ? { Authorization: `Bearer ${licenseKey}` } : {}),
-          },
-          // Disconnessione dell'editor → abort → il portal chiude il pump.
-          signal: c.req.raw.signal,
-        });
-      } catch {
-        await stream.writeSSE({ event: 'gone', data: '{}' });
-        return;
-      }
-      if (!upstream.ok || !upstream.body) {
-        await stream.writeSSE({ event: 'gone', data: '{}' });
-        return;
-      }
-      // Pass-through dei frame SSE del portal (queued/admitted/gone), raw.
-      // `getReader()` non porta con sé il tipo dei blocchi letti: senza
-      // annotazione ogni `value` sarebbe `any`, e con lui tutto ciò che tocca.
-      const reader: ReadableStreamDefaultReader<Uint8Array> = upstream.body.getReader();
-      const decoder = new TextDecoder();
-      try {
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          if (value) await stream.write(decoder.decode(value, { stream: true }));
-        }
-      } catch {
-        /* abort/disconnect — fine stream */
-      }
-    });
   });
 
   return app;

@@ -2,7 +2,7 @@
  * Bug-bounty del modulo PURO di robustezza chat (strato 2: estrazione + fallback).
  *
  * Invariante centrale (incident 2026-06-16): coerceAssistantReply NON lancia MAI e
- * restituisce SEMPRE un reply con `message` stringa non vuota — la chat di Liara
+ * restituisce SEMPRE un reply con `message` stringa non vuota — la chat
  * risponde in ogni caso, anche su output spazzatura. + contract anti-drift tra lo
  * schema guided_json e lo Zod schema della route.
  */

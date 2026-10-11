@@ -3,7 +3,7 @@
  * dovrebbe avere data la descrizione del goal utente, e blocca la
  * finalizzazione prematura.
  *
- * Motivazione (bug osservato 2026-05-30): l'agente Liara talvolta finalizza
+ * Motivazione (bug osservato 2026-05-30): l'agente talvolta finalizza
  * con 2 nodi un goal Enterprise che ne richiede 14+ (es. "Document
  * intelligence pipeline: S3 → OCR → classify → branch per tipo → ERP/CRM
  * push → Slack notification → daily summary"). Senza un gate, il workflow
@@ -31,7 +31,7 @@ export interface ComplexityEstimate {
     documentTypes: number;
   };
   /** Token specifici matchati nel goal — usati per messaggi di rejection
-   *  enumeranti (Liara vede COSA le manca, non solo quanti). */
+   *  enumeranti (il modello vede COSA gli manca, non solo quanti). */
   matched: {
     actionVerbs: string[];
     integrations: string[];

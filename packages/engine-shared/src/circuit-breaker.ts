@@ -36,7 +36,7 @@
  *
  * Esempio
  * ───────
- *   const breaker = new CircuitBreaker('liara', {
+ *   const breaker = new CircuitBreaker('llm:openai', {
  *     failureDetection: { mode: 'sliding', windowMs: 60_000, threshold: 5 },
  *     resetTimeout: 30_000,
  *     successThreshold: 2,
@@ -45,7 +45,7 @@
  *     bulkhead: { maxConcurrent: 50 },
  *   });
  *   breaker.on('stateChange', ({ from, to }) => audit.log('cb', from, to));
- *   const result = await breaker.execute(() => liara.chat({ ... }));
+ *   const result = await breaker.execute(() => provider.chat({ ... }));
  */
 
 import { CircuitBreakerRegistry } from './circuit-breaker-registry.js';

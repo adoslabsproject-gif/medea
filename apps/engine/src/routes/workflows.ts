@@ -826,7 +826,7 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
 
     // Job-store: la generazione gira server-side e PERSISTE il risultato qui,
     // così se lo stream SSE cade (generazioni lunghe ~2-4min) il client lo
-    // recupera via GET /ai-scaffold/result/:jobId. "Liara gira sul server → il
+    // recupera via GET /ai-scaffold/result/:jobId. "La generazione gira sul server → il
     // timeout del client non deve far perdere il lavoro già prodotto."
     const jobId = randomUUID();
     createJob(jobId);
@@ -866,7 +866,7 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
         send('job', { jobId });
 
         // FIX 2026-05-29 (bug "Stream chiuso senza un risultato"): heartbeat
-        // SSE ogni 15s. Liara LLM (Qwen3 32B thinking ON) puo\` prendere 30-60s
+        // SSE ogni 15s. Un modello che ragiona prima di rispondere puo\` prendere 30-60s
         // per ogni tool call → tra 2 SSE event passano ~50s di silenzio sul
         // pipe → CF Worker / proxy / browser fetch chiudono per idle timeout.
         // Il client riceve EOF, mostra "Stream chiuso senza un risultato"
@@ -1058,7 +1058,7 @@ export function createWorkflowRoutes(eventBus: IEventBus): Hono {
       if (err instanceof AiScaffoldError) {
         // OBSERVABILITY: log AiScaffoldError CON messaggio + httpStatus.
         // Senza questo il container ritorna 502 silenzioso al frontend
-        // e diventa impossibile diagnosticare "LIARA NON CREA NULLA" remoto.
+        // e diventa impossibile diagnosticare "lo scaffold non crea nulla" da remoto.
         logger.warn(
           {
             tenantId,

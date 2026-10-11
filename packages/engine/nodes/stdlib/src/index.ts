@@ -103,8 +103,8 @@ export type {
 export { DEFAULT_TOKEN_TTL_SECONDS } from './lib/email-tracking-token-constants.js';
 export { textTemplateNode, jsonExtractNode, dateFormatNode } from './actions/utility.js';
 // 2026-06-05: 2 nodi enterprise post-audit consulente (gap REGOLA 20).
-// action_pdf_generate (pdfkit, cataloghi/fatture) + action_llm_complete (Liara
-// generico / BYOK). Allineano la documentazione AI scaffold ai defId reali.
+// action_pdf_generate (pdfkit, cataloghi/fatture) + action_llm_complete (LLM
+// generico). Allineano la documentazione AI scaffold ai defId reali.
 export { pdfGenerateNode } from './actions/pdf.js';
 export { chartGenerateNode } from './actions/chart.js';
 // 2026-06-12: collaborazione cross-tenant via webhook bridge HMAC-signed (SSRF-safe, audit GDPR).

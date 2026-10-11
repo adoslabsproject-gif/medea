@@ -7,7 +7,7 @@
  *
  * Pipeline:
  *  1. chunkDocument → array chunk semantici
- *  2. Liara LLM per chunk con system prompt + compendio inline (default)
+ *  2. LLM per chunk con system prompt + compendio inline (default)
  *     o tool searchKnowledge collection legal_kb_it_eu (opt-in via useExternalKb)
  *  3. dedupFindings + applySeverityFloor + computeScore
  */
@@ -46,11 +46,10 @@ interface AnalyzeCtx {
 }
 
 /**
- * Fase 2 (#14): la chiamata passa da `llmResolver` + `dispatchLLMChat`
- * (gateway metered, Liara-da-settings default, BYOK override) — PRIMA colpiva
- * `LIARA_URL "v1 complete"` diretto: route inesistente in apps/liara + 401 dal
- * middleware internalAuth → il nodo cadeva SEMPRE nel ramo warnings senza
- * produrre findings. Il listener propaga l'usage per `output._llm`.
+ * Fase 2 (#14): la chiamata passa da `llmResolver` + `dispatchLLMChat`, cioè
+ * dal provider configurato dal tenant — PRIMA colpiva un indirizzo fisso che
+ * non esisteva, e il nodo cadeva SEMPRE nel ramo warnings senza produrre
+ * findings. Il listener propaga l'usage per `output._llm`.
  */
 async function analyzeChunkViaLlm(
   chunk: string,
@@ -79,7 +78,6 @@ async function analyzeChunkViaLlm(
       resolved.baseUrl,
       [],
       onUsage,
-      undefined,
       { maxTokens: 2000, timeoutMs: 90_000 },
     )
   ).trim();
@@ -141,7 +139,7 @@ export const legalComplianceExecutor: NodeExecutor = async (rawConfig, _input, c
     );
   }
 
-  // Provider risolto UNA volta per tutto il documento (Liara default, BYOK override).
+  // Provider risolto UNA volta per tutto il documento.
   let resolved: ResolvedLlm | null = null;
   try {
     resolved = llmResolver.resolve(context.tenantId);

@@ -85,7 +85,6 @@ beforeEach(() => {
   for (const k of [
     'MEDEA_PLAN_CODE',
     'MEDEA_MAX_WORKFLOWS',
-    'MEDEA_MAX_LIARA_TOKENS_MONTHLY',
     'MEDEA_PLAN_DISK_GB',
   ]) {
     delete process.env[k];
@@ -119,11 +118,9 @@ describe('GET /plan-usage', () => {
     let res = await buildApp({ tenantId: 't1' }).request('/dash/plan-usage');
     const data = (await res.json()) as {
       workflows: { used: number; limit: number | null };
-      liara: { tokensLimit: number | null };
     };
     expect(data.workflows.used).toBe(3);
     expect(data.workflows.limit).toBeNull(); // env assente = illimitato
-    expect(data.liara.tokensLimit).toBeNull();
 
     process.env.MEDEA_MAX_WORKFLOWS = '10';
     process.env.MEDEA_PLAN_CODE = 'pro';
@@ -145,37 +142,27 @@ describe('GET /plan-usage', () => {
     expect(data.disk.binaryBytes).toBe(4096);
   });
 
-  // ── Token usage REALE dal portal (no più stub null) ────────────────────
-  it('🚨 tokensLimit viene dal PORTAL (DB-backed), NON dall’env stale (bug Michela 2026-06-26)', async () => {
-    // L'env MEDEA_MAX_LIARA_TOKENS_MONTHLY è "set-and-forget" all'onboarding:
-    // dopo un upgrade quota nel DB restava al VECCHIO limite (500K) e il banner
-    // mostrava "quota esaurita" mentre l'enforcement reale (DB) la lasciava
-    // lavorare. Il display DEVE seguire il portal (30M), non l'env stale.
-    process.env.MEDEA_MAX_LIARA_TOKENS_MONTHLY = '500000'; // env STALE
+  /**
+   * La risposta porta piano, workflow, disco e utenti. Non porta più una
+   * quota di token: non c'è un modello ospitato di cui contarli, e una voce
+   * che resta a «nessun limite» farebbe credere che ce ne sia uno.
+   */
+  it('🚨 la risposta non contiene una quota di token', async () => {
     h.fetchUsage.mockResolvedValue({
       tokensUsed: 1234,
-      tokensLimit: 30000000, // portal = DB aggiornato
+      tokensLimit: 30000000,
       periodStartIso: '2026-06-15',
       periodEndIso: '2026-07-15',
       maxUsers: 10,
     });
     const res = await buildApp({ tenantId: 't1' }).request('/dash/plan-usage');
-    const data = (await res.json()) as {
-      liara: {
-        tokensLimit: number | null;
-        tokensUsedMonth: number | null;
-        periodEndIso: string | null;
-      };
-    };
-    expect(data.liara.tokensLimit).toBe(30000000); // PORTAL vince sull'env stale
-    expect(data.liara.tokensUsedMonth).toBe(1234); // usato reale dal portal
-    expect(data.liara.periodEndIso).toBe('2026-07-15');
+    const data = (await res.json()) as Record<string, unknown>;
+    expect(Object.keys(data).sort()).toEqual(['disk', 'plan', 'users', 'workflows']);
+    expect(JSON.stringify(data)).not.toContain('tokens');
     expect(h.fetchUsage).toHaveBeenCalledWith('tenant-default');
   });
 
-  it('interroga il portal SEMPRE — anche con token illimitati (serve maxUsers)', async () => {
-    // niente MEDEA_MAX_LIARA_TOKENS_MONTHLY → token unlimited, MA il portal va
-    // comunque interrogato per il limite sub-users.
+  it('interroga il portal per il limite sub-users (maxUsers)', async () => {
     h.fetchUsage.mockResolvedValue({
       tokensUsed: 0,
       tokensLimit: null,
@@ -204,23 +191,11 @@ describe('GET /plan-usage', () => {
     expect(data.users.limit).toBe(10);
   });
 
-  it('portal giù (fetch→null) → usato/periodo null, ma tokensLimit fallback all’env (degradazione)', async () => {
-    process.env.MEDEA_MAX_LIARA_TOKENS_MONTHLY = '500000';
+  it('portal giù (fetch→null) → la pagina risponde lo stesso, col limite utenti a null', async () => {
     h.fetchUsage.mockResolvedValue(null);
     const res = await buildApp({ tenantId: 't1' }).request('/dash/plan-usage');
     expect(res.status).toBe(200);
-    const data = (await res.json()) as {
-      liara: {
-        tokensLimit: number | null;
-        tokensUsedMonth: number | null;
-        periodEndIso: string | null;
-      };
-      users: { limit: number | null };
-    };
-    expect(data.liara.tokensUsedMonth).toBeNull();
-    expect(data.liara.periodEndIso).toBeNull();
-    // Portal irraggiungibile → meglio l'env (stale) che nessun limite: degradazione.
-    expect(data.liara.tokensLimit).toBe(500000);
+    const data = (await res.json()) as { users: { limit: number | null } };
     expect(data.users.limit).toBeNull();
   });
 });

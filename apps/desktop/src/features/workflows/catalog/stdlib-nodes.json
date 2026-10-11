@@ -1081,7 +1081,7 @@
     "icon": "building-2",
     "color": "#8b5cf6",
     "description": "Discovery enterprise di URL di AZIENDE REALI per cold outreach B2B —",
-    "descriptionLong": "Discovery enterprise di URL di AZIENDE REALI per cold outreach B2B — la primitiva per costruire seed list di prospect target da zero senza dover comprare database statici come ZoomInfo/Apollo/SalesNavigator. Risolve il problema #1 del cold outreach moderno: trovare le aziende right-fit per il proprio prodotto nel territorio target, evitando il rumore di directory aggregatori (yellowpages, paginegialle, similarsites), blog content marketing che parlano del settore ma non ne sono parte attiva, link farm SEO che inquinano i risultati Google. Pipeline multi-stage avanzata: (1) LLM query expansion — l'utente passa una query high-level \"cantieri navali Croazia 20-50m\" e il LLM espande in 5-10 query specialized che catturano sinonimi industry (\"shipyard Hrvatska\", \"yacht builders Croatia\", \"boat manufacturers Dalmatian coast\", \"production lines vessel 20m\"), pattern per coverage che pura keyword search miss; (2) multi-source search parallel su 4 search engine indipendenti (Exa.ai per semantic neural search optimized per discovery, Tavily AI per recente fresh content, Brave Search per anti-Google bias, DuckDuckGo per privacy + independent results) — l'unione dei result set dei 4 sources è più completa di qualsiasi singolo; (3) anti-directory blocklist — filter post-processing che rimuove i top 200 directory/aggregator noti (yelp.com, yelp.it, paginegialle.it, europages.com, kompass.com, ecc.) che otherwise inquinano i result; (4) HEAD validation — quick HEAD request per ogni URL trovato per verificare che il sito risponde 200 (no 404/410 dead links, no 5xx down servers); (5) de-dup intelligente che matcha URL paths simili e domini canonical (www.acme.com vs acme.com). Output: array di { url, domain, title (dalla SERP), description (snippet), boost_factors (lista dei signal positivi che hanno ranked questo result), source (quale dei 4 search engines lo ha trovato), confidence } — ranking finale weighted per source di trust + match strength + freshness. LLM-agnostic per query expansion: lo step LLM usa il provider configurato del tenant (Liara Qwen3 self-hosted default zero-cost, oppure Anthropic Claude/OpenAI GPT/Gemini via BYOK). Use case: lead-gen B2B su nicchia verticale specifica (es. \"produttori di pannelli fotovoltaici Sicilia 20MW+\", \"studi commercialisti specializzati in cripto-asset Milano\"); discovery competitor nel mercato target prima di un lancio prodotto (mapping landscape competitivo); seed list per campagne ABM (account-based marketing) high-touch con messaggi ultra-customizzati per ogni account; prima fase di una pipeline downstream che poi arricchisce con contact-discovery (chi sono i decision-maker?) + email-validate-mx (sono email deliverable?) + personalization AI; analisi competitiva con scoring comparativo (chi sono i top 50 player del nostro mercato e dove sono attivi).",
+    "descriptionLong": "Discovery enterprise di URL di AZIENDE REALI per cold outreach B2B — la primitiva per costruire seed list di prospect target da zero senza dover comprare database statici come ZoomInfo/Apollo/SalesNavigator. Risolve il problema #1 del cold outreach moderno: trovare le aziende right-fit per il proprio prodotto nel territorio target, evitando il rumore di directory aggregatori (yellowpages, paginegialle, similarsites), blog content marketing che parlano del settore ma non ne sono parte attiva, link farm SEO che inquinano i risultati Google. Pipeline multi-stage avanzata: (1) LLM query expansion — l'utente passa una query high-level \"cantieri navali Croazia 20-50m\" e il LLM espande in 5-10 query specialized che catturano sinonimi industry (\"shipyard Hrvatska\", \"yacht builders Croatia\", \"boat manufacturers Dalmatian coast\", \"production lines vessel 20m\"), pattern per coverage che pura keyword search miss; (2) multi-source search parallel su 4 search engine indipendenti (Exa.ai per semantic neural search optimized per discovery, Tavily AI per recente fresh content, Brave Search per anti-Google bias, DuckDuckGo per privacy + independent results) — l'unione dei result set dei 4 sources è più completa di qualsiasi singolo; (3) anti-directory blocklist — filter post-processing che rimuove i top 200 directory/aggregator noti (yelp.com, yelp.it, paginegialle.it, europages.com, kompass.com, ecc.) che otherwise inquinano i result; (4) HEAD validation — quick HEAD request per ogni URL trovato per verificare che il sito risponde 200 (no 404/410 dead links, no 5xx down servers); (5) de-dup intelligente che matcha URL paths simili e domini canonical (www.acme.com vs acme.com). Output: array di { url, domain, title (dalla SERP), description (snippet), boost_factors (lista dei signal positivi che hanno ranked questo result), source (quale dei 4 search engines lo ha trovato), confidence } — ranking finale weighted per source di trust + match strength + freshness. LLM-agnostic per query expansion: lo step LLM usa il provider configurato del tenant (Anthropic Claude, OpenAI GPT, Gemini…). Use case: lead-gen B2B su nicchia verticale specifica (es. \"produttori di pannelli fotovoltaici Sicilia 20MW+\", \"studi commercialisti specializzati in cripto-asset Milano\"); discovery competitor nel mercato target prima di un lancio prodotto (mapping landscape competitivo); seed list per campagne ABM (account-based marketing) high-touch con messaggi ultra-customizzati per ogni account; prima fase di una pipeline downstream che poi arricchisce con contact-discovery (chi sono i decision-maker?) + email-validate-mx (sono email deliverable?) + personalization AI; analisi competitiva con scoring comparativo (chi sono i top 50 player del nostro mercato e dove sono attivi).",
     "defVersion": "1.0.0",
     "outputContract": {
       "notes": "I due contatori `filtered_directory` e `filtered_validation` dicono quanti risultati sono stati SCARTATI: se `count` e` basso e quelli sono alti, il filtro sta lavorando piu` della ricerca.",
@@ -2466,7 +2466,7 @@
     "icon": "mail",
     "color": "#3b82f6",
     "description": "Sanitizer enterprise per il body di email destinate a un LLM downstream.",
-    "descriptionLong": "Sanitizer enterprise per il body di email destinate a un LLM downstream. Rimuove deterministicamente quattro classi di rumore che gonfiano i token senza aggiungere valore semantico al messaggio originale dell'utente: (1) reply quotata multilingua — riconosce \"On 2026-01-15, X wrote:\" (EN), \"Il giorno X ha scritto:\" (IT), \"Le DD/MM, X a écrit:\" (FR), \"Am DD.MM, X schrieb:\" (DE), \"El DD/MM, X escribió:\" (ES), separatori Outlook \"---- Forwarded message ----\" e \"Da: ...\", catene \"Re: Re: Re:\" annidate, e tagli su 4+ righe prefissate \">\" consecutive (quoting RFC 3676); (2) firme email — pattern RFC 3676 \"-- \" (dash dash space) + signature mobile \"Inviato da iPhone/Android/Mail per Windows\", blocchi contatto Nome/Ruolo/Telefono/Email separati da newline doppi alla fine messaggio; (3) disclaimer legali GDPR-IT, privacy-EN, \"questo messaggio e i suoi allegati sono confidenziali...\", \"if you are not the intended recipient please delete...\", banner aziendali standard con link sito web/sede legale/codice fiscale; (4) tracking URL — rimuove query string UTM (utm_source, utm_medium, utm_campaign, utm_content, utm_term) + parametri pixel proprietari (gclid Google, fbclid Facebook, msclkid Bing, mc_cid Mailchimp, oly_anon_id Oracle) senza toccare URL puliti. Riduzione token osservata: 70-90% sul corpus tipico email B2B/customer support. Effetti collaterali sull'accuratezza LLM downstream: +12-18% di accuratezza nel classifier perché il contesto resta focalizzato sul testo originale e non è diluito da firme/disclaimer ricorrenti. Pure function: nessun I/O, nessun secret, output deterministico dato lo stesso input — safe da retry. Use case: pre-step di un workflow customer support che usa LLM per detection sentiment + reply suggestion, normalizzazione di archivio email storico prima di indicizzazione vettoriale per RAG retrieval, riduzione costo Liara/Anthropic per cliente con 500 email/giorno, defense-in-depth contro prompt injection nascosto nei disclaimer (alcuni attaccanti li usano come carrier), preparazione corpus per fine-tuning interno.",
+    "descriptionLong": "Sanitizer enterprise per il body di email destinate a un LLM downstream. Rimuove deterministicamente quattro classi di rumore che gonfiano i token senza aggiungere valore semantico al messaggio originale dell'utente: (1) reply quotata multilingua — riconosce \"On 2026-01-15, X wrote:\" (EN), \"Il giorno X ha scritto:\" (IT), \"Le DD/MM, X a écrit:\" (FR), \"Am DD.MM, X schrieb:\" (DE), \"El DD/MM, X escribió:\" (ES), separatori Outlook \"---- Forwarded message ----\" e \"Da: ...\", catene \"Re: Re: Re:\" annidate, e tagli su 4+ righe prefissate \">\" consecutive (quoting RFC 3676); (2) firme email — pattern RFC 3676 \"-- \" (dash dash space) + signature mobile \"Inviato da iPhone/Android/Mail per Windows\", blocchi contatto Nome/Ruolo/Telefono/Email separati da newline doppi alla fine messaggio; (3) disclaimer legali GDPR-IT, privacy-EN, \"questo messaggio e i suoi allegati sono confidenziali...\", \"if you are not the intended recipient please delete...\", banner aziendali standard con link sito web/sede legale/codice fiscale; (4) tracking URL — rimuove query string UTM (utm_source, utm_medium, utm_campaign, utm_content, utm_term) + parametri pixel proprietari (gclid Google, fbclid Facebook, msclkid Bing, mc_cid Mailchimp, oly_anon_id Oracle) senza toccare URL puliti. Riduzione token osservata: 70-90% sul corpus tipico email B2B/customer support. Effetti collaterali sull'accuratezza LLM downstream: +12-18% di accuratezza nel classifier perché il contesto resta focalizzato sul testo originale e non è diluito da firme/disclaimer ricorrenti. Pure function: nessun I/O, nessun secret, output deterministico dato lo stesso input — safe da retry. Use case: pre-step di un workflow customer support che usa LLM per detection sentiment + reply suggestion, normalizzazione di archivio email storico prima di indicizzazione vettoriale per RAG retrieval, riduzione costo LLM per cliente con 500 email/giorno, defense-in-depth contro prompt injection nascosto nei disclaimer (alcuni attaccanti li usano come carrier), preparazione corpus per fine-tuning interno.",
     "defVersion": "1.0.0",
     "outputContract": {
       "notes": "I campi in ingresso NON vengono persi: il nodo li ricopia tutti e SOSTITUISCE soltanto quello del corpo, quindi `subject`, `from` e gli altri restano leggibili a valle. Il nome del campo del corpo e` quello scelto in configurazione: non e` fisso.",
@@ -2812,7 +2812,7 @@
     "icon": "sparkles",
     "color": "#a855f7",
     "description": "Generatore enterprise di personalizzazioni email AI-powered per cold outreach commerciale —",
-    "descriptionLong": "Generatore enterprise di personalizzazioni email AI-powered per cold outreach commerciale — la primitiva che trasforma sequence di email mass-mailing fredde \"Ciao, abbiamo un prodotto per te\" in messaggi 1-to-1 che fanno apparire la comunicazione manuale e cura del prospect specifico (reply rate aumentano 3-5x rispetto a template generico in studi A/B di sales outbound enterprise). Genera 1-2 frasi personalizzate da iniettare nell'opening del messaggio cold che CITINO una caratteristica REALE e specifica dell'azienda destinataria — estratta dal content del loro sito web reale che il workflow ha scaricato upstream (action_web_fetch_advanced sulla home/about/products del prospect). Anti-hallucination check obbligatorio enterprise: l'evidence_quote (la frase originale dal sito che ha ispirato la personalizzazione) DEVE essere substring esatta del content originale fornito al nodo — se il LLM provasse a inventare (\"la vostra certificazione ISO 9001 ottenuta nel 2024\" quando NON è nel sito), il check fallisce e il nodo ritorna fallback graceful (saluto generico safe-default) invece di mentire al prospect. Pattern di tutela reputational vs LLM hallucination noto, critico per B2B sales dove un dato sbagliato distrugge la deal pipeline. Multi-lingua native (14 supportate): italiano, inglese, spagnolo, francese, tedesco, portoghese, olandese, danese, svedese, norvegese, finlandese, polacco, ceco, rumeno — auto-detect dalla lingua del content website oppure override esplicito per outreach internazionale targeted (es. cold outreach a distributori italiani che vendono prodotti tedeschi, language=de per matching il vendor expectation). Cache 1h per content_hash per evitare LLM calls ridondanti su stesso target: se il workflow itera su 100 lead della stessa azienda (es. team Sales Outreach che colpiscono CTO+CFO+CEO stesso prospect), il LLM call avviene UNA volta e tutti i 3 messaggi riusano la same personalization base — risparmio 90%+ sui token Liara/BYOK. Fallback gracioso multi-livello: LLM fail (timeout, rate limit, content moderation) → opener generico safe-default \"Salve {{firstName}}, le scrivo perché credo {{company}} potrebbe...\"; content troppo corto (< 100 char) → skip personalization e usa opener default; content > 4000 char auto-truncate mantenendo i primi 2000 + ultimi 2000 (capture intro + footer aziendale che contiene tipicamente la signal value). Output: { personalizedOpener (1-2 frasi pronte da iniettare nel template email), evidenceQuote (la frase originale del sito che ha ispirato — utile per debug + audit), language, contentHash, cacheUsed, fallbackReason? }. Use case: cold outreach B2B con apertura personalizzata da fatto vero del sito target (3-5x reply rate vs template generic); follow-up post-form con riferimento a sezione del sito visitata che il lead ha mostrato interesse (tracked dal form analytics); reply-handling che cita prodotto specifico chiesto dal lead in reply precedente; multi-lingua automatic per outreach internazionale targeted di settori specifici (es. outreach a buyer tedeschi del settore food italiano export); ABM (Account Based Marketing) per high-value enterprise account con messaggi totally tailored.",
+    "descriptionLong": "Generatore enterprise di personalizzazioni email AI-powered per cold outreach commerciale — la primitiva che trasforma sequence di email mass-mailing fredde \"Ciao, abbiamo un prodotto per te\" in messaggi 1-to-1 che fanno apparire la comunicazione manuale e cura del prospect specifico (reply rate aumentano 3-5x rispetto a template generico in studi A/B di sales outbound enterprise). Genera 1-2 frasi personalizzate da iniettare nell'opening del messaggio cold che CITINO una caratteristica REALE e specifica dell'azienda destinataria — estratta dal content del loro sito web reale che il workflow ha scaricato upstream (action_web_fetch_advanced sulla home/about/products del prospect). Anti-hallucination check obbligatorio enterprise: l'evidence_quote (la frase originale dal sito che ha ispirato la personalizzazione) DEVE essere substring esatta del content originale fornito al nodo — se il LLM provasse a inventare (\"la vostra certificazione ISO 9001 ottenuta nel 2024\" quando NON è nel sito), il check fallisce e il nodo ritorna fallback graceful (saluto generico safe-default) invece di mentire al prospect. Pattern di tutela reputational vs LLM hallucination noto, critico per B2B sales dove un dato sbagliato distrugge la deal pipeline. Multi-lingua native (14 supportate): italiano, inglese, spagnolo, francese, tedesco, portoghese, olandese, danese, svedese, norvegese, finlandese, polacco, ceco, rumeno — auto-detect dalla lingua del content website oppure override esplicito per outreach internazionale targeted (es. cold outreach a distributori italiani che vendono prodotti tedeschi, language=de per matching il vendor expectation). Cache 1h per content_hash per evitare LLM calls ridondanti su stesso target: se il workflow itera su 100 lead della stessa azienda (es. team Sales Outreach che colpiscono CTO+CFO+CEO stesso prospect), il LLM call avviene UNA volta e tutti i 3 messaggi riusano la same personalization base — risparmio 90%+ sui token. Fallback gracioso multi-livello: LLM fail (timeout, rate limit, content moderation) → opener generico safe-default \"Salve {{firstName}}, le scrivo perché credo {{company}} potrebbe...\"; content troppo corto (< 100 char) → skip personalization e usa opener default; content > 4000 char auto-truncate mantenendo i primi 2000 + ultimi 2000 (capture intro + footer aziendale che contiene tipicamente la signal value). Output: { personalizedOpener (1-2 frasi pronte da iniettare nel template email), evidenceQuote (la frase originale del sito che ha ispirato — utile per debug + audit), language, contentHash, cacheUsed, fallbackReason? }. Use case: cold outreach B2B con apertura personalizzata da fatto vero del sito target (3-5x reply rate vs template generic); follow-up post-form con riferimento a sezione del sito visitata che il lead ha mostrato interesse (tracked dal form analytics); reply-handling che cita prodotto specifico chiesto dal lead in reply precedente; multi-lingua automatic per outreach internazionale targeted di settori specifici (es. outreach a buyer tedeschi del settore food italiano export); ABM (Account Based Marketing) per high-value enterprise account con messaggi totally tailored.",
     "defVersion": "1.0.0",
     "outputContract": {
       "notes": "`success` va guardato prima di usare `snippet`: quando il modello non trova appigli nella pagina il nodo riesce lo stesso, ma il testo non e` utilizzabile e `reason` dice perche`.",
@@ -3374,7 +3374,7 @@
     "icon": "mail-search",
     "color": "#22c55e",
     "description": "Normalizzatore email pre-LLM enterprise: trasforma un oggetto RawEmail (subject, body, headers, attachments) in un payload denso e token-efficient pronto per un classifier downstream a base di prompting o agent LLM.",
-    "descriptionLong": "Normalizzatore email pre-LLM enterprise: trasforma un oggetto RawEmail (subject, body, headers, attachments) in un payload denso e token-efficient pronto per un classifier downstream a base di prompting o agent LLM. Estrae mittente normalizzato (lowercase, validazione RFC 5321), dominio del sender per matching domain allowlist/blocklist enterprise, soggetto pulito da prefissi noise tipo \"Re:\", \"Fwd:\", \"AW:\", \"Tr:\", \"R:\", \"Risp:\" (multilingua) e suffix marketing \"[Newsletter]\". Tronca il body a una soglia configurabile (default 4000 char) preservando la prima parte del messaggio dove l'umano ha più probabilmente messo la richiesta chiave. Riassume gli allegati raggruppandoli per MIME type (3 PDF, 1 XLSX, 2 immagini) invece di passare metadati granulari. Indovina la lingua via euristica fast (it/en/es/fr/de) sulla porzione di testo. Calcola signals euristici: urgenza (parole come \"urgente\", \"scadenza\", \"ASAP\", presenza di \"!!\" multiple), PEC (dominio nell'allowlist provider certificati + header X-Riferimento), newsletter (List-Unsubscribe header, mittente noreply@, footer \"se non vuoi più ricevere\"). Output: { senderEmail, senderDomain, subjectClean, bodyTextShort, attachments, languageGuess, urgencySignals, isPec, isNewsletter, messageId, headers }. Riduzione token osservata: 70-90% rispetto al passare la RawEmail al LLM. Use case: pre-step di un agent LLM di classificazione per studio commercialista (riduce costo Liara per email cliente da 800 a 80 token in input), filtro newsletter prima di un flow human-review (skip se isNewsletter=true), routing dinamico via switch per PEC vs ordinaria, alerting su signal urgency per inoltro al titolare studio, pre-validazione dominio mittente contro blocklist anti-phishing.",
+    "descriptionLong": "Normalizzatore email pre-LLM enterprise: trasforma un oggetto RawEmail (subject, body, headers, attachments) in un payload denso e token-efficient pronto per un classifier downstream a base di prompting o agent LLM. Estrae mittente normalizzato (lowercase, validazione RFC 5321), dominio del sender per matching domain allowlist/blocklist enterprise, soggetto pulito da prefissi noise tipo \"Re:\", \"Fwd:\", \"AW:\", \"Tr:\", \"R:\", \"Risp:\" (multilingua) e suffix marketing \"[Newsletter]\". Tronca il body a una soglia configurabile (default 4000 char) preservando la prima parte del messaggio dove l'umano ha più probabilmente messo la richiesta chiave. Riassume gli allegati raggruppandoli per MIME type (3 PDF, 1 XLSX, 2 immagini) invece di passare metadati granulari. Indovina la lingua via euristica fast (it/en/es/fr/de) sulla porzione di testo. Calcola signals euristici: urgenza (parole come \"urgente\", \"scadenza\", \"ASAP\", presenza di \"!!\" multiple), PEC (dominio nell'allowlist provider certificati + header X-Riferimento), newsletter (List-Unsubscribe header, mittente noreply@, footer \"se non vuoi più ricevere\"). Output: { senderEmail, senderDomain, subjectClean, bodyTextShort, attachments, languageGuess, urgencySignals, isPec, isNewsletter, messageId, headers }. Riduzione token osservata: 70-90% rispetto al passare la RawEmail al LLM. Use case: pre-step di un agent LLM di classificazione per studio commercialista (riduce il costo LLM per email cliente da 800 a 80 token in input), filtro newsletter prima di un flow human-review (skip se isNewsletter=true), routing dinamico via switch per PEC vs ordinaria, alerting su signal urgency per inoltro al titolare studio, pre-validazione dominio mittente contro blocklist anti-phishing.",
     "defVersion": "1.0.0",
     "outputContract": {
       "notes": "Nessun LLM: legge e normalizza il messaggio con regole, quindi lo stesso messaggio da` sempre lo stesso esito. Il corpo esce ACCORCIATO in `bodyTextShort`; la lunghezza vera e` in `bodyTextOriginalLength`, e se i due numeri non coincidono il testo e` tagliato.",
@@ -5978,7 +5978,7 @@
     "icon": "sparkles",
     "color": "#a855f7",
     "description": "Nodo generico LLM (Large Language Model) per generazione open-ended di testo o JSON strutturato, da qualsiasi prompt e con il provider configurato —",
-    "descriptionLong": "Nodo generico LLM (Large Language Model) per generazione open-ended di testo o JSON strutturato, da qualsiasi prompt e con il provider configurato — la primitiva atomic di accesso alle capacità AI sottostanti la quale sono costruiti gli agent_* specializzati. Default: Liara Qwen3-32B FP8 self-hosted on-prem (vLLM su Hetzner Blackwell GEX131 RTX PRO 6000 96GB Falkenstein DE — zero trasferimento dati extra-UE, latenza p50 800ms, costo zero per il cliente nelle quote del piano). Override via BYOK con uno dei 9 provider esterni supportati: Anthropic Claude Sonnet 4 (state-of-art reasoning, $3/MTok input), OpenAI GPT-4o ($2.5/MTok input), Google Gemini 2.0 Flash (long-context, multimodale), DeepSeek-V3 ($0.27/MTok input, sweet spot prezzo/qualità), xAI Grok-2, OpenRouter (aggregator multi-modello), Mistral Large, Groq (LPU inference ultra-veloce su Llama-3 e Mixtral), Perplexity Sonar (web search integrata con citazioni live). Routing automatico via header X-FF-Provider gestito dal gateway LLM portal con quota mensile dedicata BYOK separata da Liara. Modalità output: testo plain (default — generazione discorsiva libera) oppure JSON structured (prompt include schema target + response_format json_object per Anthropic/OpenAI, fallback parsing per altri provider — validation downstream con Zod schema raccomandata). Temperature configurabile (0.0 deterministic per classifier, 0.7 default balanced, 1.0 creative per copywriting). max_tokens cap per controllo costo. Use case: scrittura di risposta email personalizzata multilingua per customer support B2B che integra context del cliente da memory_note (ordini precedenti, ticket aperti, preferenze comunicazione); generazione di descrizioni prodotto e-commerce SEO-friendly a partire dalla scheda tecnica raw del fornitore; classificazione di testo libero in categorie business custom non coperte da agent_* pre-tunati (es. classifier su 50 categorie merceologiche del settore agroalimentare); estrazione di entità strutturate da unstructured text (es. parse di paragrafi PEC ricevuti per estrarre partita_iva+importo+data_scadenza in JSON pronto per ingest contabile); brainstorming di idee marketing su brief ridotto per content creator. IMPORTANTE: se hai un task specifico ricorrente (triage email, sales reply, summarizer, translation, classifier ufficiale, intent routing), preferisci gli agent_* dedicati — sono pre-tunati con prompt engineering ottimizzato per quel task specifico, hanno output schema fisso testato, error handling specializzato, e tipicamente 2-3× più accurate vs prompt generico al action_llm_complete.",
+    "descriptionLong": "Nodo generico LLM (Large Language Model) per generazione open-ended di testo o JSON strutturato, da qualsiasi prompt e con il provider configurato — la primitiva atomic di accesso alle capacità AI sottostanti la quale sono costruiti gli agent_* specializzati. Usa il provider scelto in Settings → AI Providers, con la tua chiave; sul nodo puoi indicarne un altro fra quelli supportati: Anthropic Claude, OpenAI GPT, Google Gemini (long-context, multimodale), DeepSeek, xAI Grok, OpenRouter (aggregator multi-modello), Mistral, Groq (inferenza molto veloce su modelli aperti), Perplexity Sonar (web search integrata con citazioni live). Modalità output: testo plain (default — generazione discorsiva libera) oppure JSON structured (prompt include schema target + response_format json_object per Anthropic/OpenAI, fallback parsing per altri provider — validation downstream con Zod schema raccomandata). Temperature configurabile (0.0 deterministic per classifier, 0.7 default balanced, 1.0 creative per copywriting). max_tokens cap per controllo costo. Use case: scrittura di risposta email personalizzata multilingua per customer support B2B che integra context del cliente da memory_note (ordini precedenti, ticket aperti, preferenze comunicazione); generazione di descrizioni prodotto e-commerce SEO-friendly a partire dalla scheda tecnica raw del fornitore; classificazione di testo libero in categorie business custom non coperte da agent_* pre-tunati (es. classifier su 50 categorie merceologiche del settore agroalimentare); estrazione di entità strutturate da unstructured text (es. parse di paragrafi PEC ricevuti per estrarre partita_iva+importo+data_scadenza in JSON pronto per ingest contabile); brainstorming di idee marketing su brief ridotto per content creator. IMPORTANTE: se hai un task specifico ricorrente (triage email, sales reply, summarizer, translation, classifier ufficiale, intent routing), preferisci gli agent_* dedicati — sono pre-tunati con prompt engineering ottimizzato per quel task specifico, hanno output schema fisso testato, error handling specializzato, e tipicamente 2-3× più accurate vs prompt generico al action_llm_complete.",
     "defVersion": "1.0.0",
     "outputContract": {
       "notes": "`completion` e` sempre testo grezzo. Chiedendo una risposta in JSON, il testo interpretato sta in `jsonParsed` — e se il modello non ha prodotto JSON valido quel campo NON c'e`: leggerlo senza controllarlo e` il modo tipico di ritrovarsi con dei vuoti. `finishReason` a 'length' significa risposta troncata.",
@@ -6046,7 +6046,6 @@
         "label": "Provider LLM",
         "type": "select",
         "options": [
-          "liara",
           "anthropic",
           "openai",
           "gemini",
@@ -6057,15 +6056,14 @@
           "xai",
           "perplexity"
         ],
-        "defaultValue": "liara",
-        "description": "liara (default) = Qwen3 32B self-hosted ZeliAI, GRATIS sul tuo piano. Gli altri richiedono BYOK API key configurata in Settings → AI Providers e sono a tuo carico."
+        "description": "Vuoto = il provider scelto in Settings → AI Providers. Indicane uno solo se questo nodo deve usarne un altro: serve comunque la sua API key configurata in Settings → AI Providers."
       },
       {
         "key": "model",
         "label": "Modello (opzionale)",
         "type": "text",
         "placeholder": "claude-sonnet-4-6 / gpt-4o-mini / lascia vuoto per default provider",
-        "description": "Vuoto = usa il default del provider (Liara: qwen3-32b, Anthropic: claude-sonnet-4-6, OpenAI: gpt-4o-mini). Per modelli specifici, inserisci l\\'id esatto del provider."
+        "description": "Vuoto = usa il default del provider (Anthropic: claude-sonnet-4-6, OpenAI: gpt-4o-mini). Per modelli specifici, inserisci l\\'id esatto del provider."
       },
       {
         "key": "temperature",
@@ -8146,7 +8144,7 @@
     "icon": "sparkles",
     "color": "#f59e0b",
     "description": "Orchestratore intelligente di scraping: combina fetch + browser + stealth + vision + LLM extract in UN nodo.",
-    "descriptionLong": "Orchestratore intelligente di scraping: combina fetch + browser + stealth + vision + LLM extract in UN nodo. Risparmia 5-10 nodi di workflow manuale.\n\nPipeline adaptive 4-stage (heuristic-driven):\n  1. fetch_simple → HTML quick\n  2. browser_render se HTML scarno (SPA shell)\n  3. browser_stealth se anti-bot challenge (Cloudflare/Akamai/DataDome/PerimeterX)\n  4. vision_extract se contenuto visually-only (canvas/PDF/SVG)\n\nEstrazione: un LLM OpenAI-compatibile (default Liara locale, ma puoi puntarlo a QUALSIASI endpoint /v1/chat/completions via i campi sotto) riceve HTML + prompt naturale (\"estrai prezzo, titolo, immagine\") + schema JSON target → ritorna oggetto strutturato. No CSS selectors.\n\nPagination: auto-detect rel=\"next\", aria-label \"Next\", text \"Successivo/Avanti/›\", URL pattern page=N → page=N+1. Follow fino a maxPages.\n\nObservability: ogni request espone pipelineSteps con stage usato + duration + evidence + errore.\n\nSetup BYO: configura MEDEA_BROWSER_ENDPOINT + MEDEA_STEALTH_ENDPOINT (browserless self-host o managed Zeli). LLM = qualsiasi endpoint OpenAI-compatibile (default Liara locale :3003); override endpoint/key/model nei campi.\n\nUse case: (1) scraping listing prodotti e-commerce con pagination + extract JSON strutturato, (2) ingest dati pubblici (registri/anagrafiche) con fallback adaptive, (3) monitoring concorrenti con AI extract di prezzi e stock, (4) onboarding cliente B2B che chiede \"scarica i miei dati da X\" senza scrivere CSS selectors.",
+    "descriptionLong": "Orchestratore intelligente di scraping: combina fetch + browser + stealth + vision + LLM extract in UN nodo. Risparmia 5-10 nodi di workflow manuale.\n\nPipeline adaptive 4-stage (heuristic-driven):\n  1. fetch_simple → HTML quick\n  2. browser_render se HTML scarno (SPA shell)\n  3. browser_stealth se anti-bot challenge (Cloudflare/Akamai/DataDome/PerimeterX)\n  4. vision_extract se contenuto visually-only (canvas/PDF/SVG)\n\nEstrazione: un LLM OpenAI-compatibile (qualsiasi endpoint /v1/chat/completions, indicato nei campi sotto) riceve HTML + prompt naturale (\"estrai prezzo, titolo, immagine\") + schema JSON target → ritorna oggetto strutturato. No CSS selectors.\n\nPagination: auto-detect rel=\"next\", aria-label \"Next\", text \"Successivo/Avanti/›\", URL pattern page=N → page=N+1. Follow fino a maxPages.\n\nObservability: ogni request espone pipelineSteps con stage usato + duration + evidence + errore.\n\nSetup BYO: configura MEDEA_BROWSER_ENDPOINT + MEDEA_STEALTH_ENDPOINT (browserless self-host o managed Zeli). LLM = qualsiasi endpoint OpenAI-compatibile; override endpoint/key/model nei campi.\n\nUse case: (1) scraping listing prodotti e-commerce con pagination + extract JSON strutturato, (2) ingest dati pubblici (registri/anagrafiche) con fallback adaptive, (3) monitoring concorrenti con AI extract di prezzi e stock, (4) onboarding cliente B2B che chiede \"scarica i miei dati da X\" senza scrivere CSS selectors.",
     "defVersion": "1.0.0",
     "outputContract": {
       "notes": "I dati estratti stanno in `extracted`, con i nomi dello schema in configurazione. `pagesSuccessful` inferiore a `pagesScraped` significa che alcune pagine non hanno dato niente: i dati sono parziali.",
@@ -8281,22 +8279,23 @@
         "description": "Bearer stealth endpoint."
       },
       {
-        "key": "liaraEndpoint",
-        "label": "LLM endpoint (OpenAI-compat, override)",
+        "key": "llmEndpoint",
+        "label": "LLM endpoint (OpenAI-compat)",
         "type": "text",
-        "description": "Vuoto = Liara via gateway FlowForge (default, metered sulla quota). Compila SOLO per un provider OpenAI-compatibile tuo (OpenAI, Groq, OpenRouter, vLLM, Ollama…)."
+        "placeholder": "https://api.openai.com/v1/chat/completions",
+        "description": "L'endpoint del tuo provider OpenAI-compatibile (OpenAI, Groq, OpenRouter, vLLM…). Serve per l'estrazione con LLM: senza, il nodo si ferma dicendo che manca."
       },
       {
-        "key": "liaraApiKey",
-        "label": "LLM API key (Bearer, override)",
+        "key": "llmApiKey",
+        "label": "LLM API key (Bearer)",
         "type": "secret",
-        "description": "Bearer token dell'endpoint custom. Vuoto = license del workspace (gateway Liara)."
+        "description": "Bearer token dell'endpoint indicato sopra."
       },
       {
-        "key": "liaraModel",
-        "label": "LLM model (override)",
+        "key": "llmModel",
+        "label": "LLM model",
         "type": "text",
-        "description": "Vuoto = modello di default del gateway Liara. Per provider custom usa il loro model ID (es. gpt-4o-mini, llama-3.1-70b)."
+        "description": "Il model ID del tuo provider (es. gpt-4o-mini, llama-3.1-70b). Vuoto = il default del suo endpoint, se ne ha uno."
       }
     ],
     "outputFields": [
@@ -10181,8 +10180,8 @@
     "label": "Vision Extract (Qwen2.5-VL)",
     "icon": "eye",
     "color": "#ec4899",
-    "description": "Estrae dati strutturati JSON da uno SCREENSHOT di pagina web usando vision LLM (Liara Qwen3-VL multimodale via gateway FlowForge, metered; endpoint OpenAI-compatible custom come override).",
-    "descriptionLong": "Estrae dati strutturati JSON da uno SCREENSHOT di pagina web usando vision LLM (Liara Qwen3-VL multimodale via gateway FlowForge, metered; endpoint OpenAI-compatible custom come override).\n\nResiliente a redesign sito: non usa CSS selectors. \"Vede\" la pagina come un umano e estrae i dati che gli chiedi in linguaggio naturale.\n\nUse case killer: scraping di siti SPA che cambiano DOM ogni release, monitoraggio competitor che modifica layout, estrazione tabelle da PDF screenshot, reverse-engineering form UI senza inspector.\n\nPipeline: screenshot → prompt + schema JSON target → vision LLM → parse JSON (fence/trailing-commas tollerati) → schema validation → output strutturato.\n\nRetry: exponential backoff + jitter su 5xx (3 attempts). Cache: hash(image+prompt) → Redis TTL 24h (se Redis configurato).\n\nTipico pairing: action_browser_stealth → action_vision_extract (chain).",
+    "description": "Estrae dati strutturati JSON da uno SCREENSHOT di pagina web usando un vision LLM OpenAI-compatible, indicato nei campi del nodo.",
+    "descriptionLong": "Estrae dati strutturati JSON da uno SCREENSHOT di pagina web usando un vision LLM OpenAI-compatible, indicato nei campi del nodo.\n\nResiliente a redesign sito: non usa CSS selectors. \"Vede\" la pagina come un umano e estrae i dati che gli chiedi in linguaggio naturale.\n\nUse case killer: scraping di siti SPA che cambiano DOM ogni release, monitoraggio competitor che modifica layout, estrazione tabelle da PDF screenshot, reverse-engineering form UI senza inspector.\n\nPipeline: screenshot → prompt + schema JSON target → vision LLM → parse JSON (fence/trailing-commas tollerati) → schema validation → output strutturato.\n\nRetry: exponential backoff + jitter su 5xx (3 attempts). Cache: hash(image+prompt) → Redis TTL 24h (se Redis configurato).\n\nTipico pairing: action_browser_stealth → action_vision_extract (chain).",
     "defVersion": "1.0.0",
     "outputContract": {
       "notes": "I dati stanno in `extracted`, coi nomi dello schema in configurazione. `parseError` o `schemaValidationError` presenti significano che `extracted` non e` affidabile: vanno controllati prima di usarlo.",
@@ -10255,15 +10254,16 @@
       },
       {
         "key": "endpoint",
-        "label": "Vision endpoint (override)",
+        "label": "Vision endpoint (OpenAI-compat)",
         "type": "text",
-        "description": "Vuoto = Liara vision via gateway FlowForge (Qwen3-VL multimodale, metered sulla quota). Compila SOLO per un vision LLM OpenAI-compatible tuo."
+        "placeholder": "https://api.openai.com/v1/chat/completions",
+        "description": "L'endpoint del tuo vision LLM OpenAI-compatible. Senza, il nodo si ferma dicendo che manca."
       },
       {
         "key": "apiKey",
-        "label": "API Key (override)",
+        "label": "API Key (Bearer)",
         "type": "secret",
-        "description": "Bearer token dell'endpoint custom. Vuoto = license del workspace (gateway Liara)."
+        "description": "Bearer token dell'endpoint indicato sopra."
       },
       {
         "key": "model",
@@ -10627,7 +10627,7 @@
     "icon": "link",
     "color": "#22c55e",
     "description": "Risponde alla richiesta HTTP del trigger_webhook con body, status code e headers personalizzati.",
-    "descriptionLong": "Risponde alla richiesta HTTP del trigger_webhook con body, status code e headers personalizzati. Da posizionare ALLA FINE del ramo workflow quando il chiamante aspetta una response sincrona — senza questo nodo (e con responseMode=\"use-respond-node\" nel trigger) il runtime restituisce JSON fallback `{runId, status}`, non quello che vuole il vendor partner B2B che ti sta chiamando.\n\nDifferenza con i sibling: action_webhook_respond = response sincrona allo stesso request del trigger_webhook (1-1 pairing). Se vuoi rispondere SUBITO + continuare workflow async usa responseMode=\"fire-and-forget\" sul trigger (no respond node necessario). Per redirect senza body usa modalità \"Redirect\" qui invece di costruire location header a mano.\n\nModalità predefinite (zero-config per il caso comune): (a) JSON — body=auto-stringify del JSON config o expression upstream, content-type application/json + charset utf-8, (b) Testo plain, (c) HTML — content-type text/html + charset utf-8 (per SSR detail pages tipo Streammy/cataloghi), (d) Redirect 302/303/307 — solo Location header (preserva method o forza GET secondo status), (e) File binario — body base64 + Content-Disposition attachment con filename, (f) 204 No Content — risposta vuota per ack-only, (g) Custom — full control su body+status+headersJson.\n\nFeatures production: interpolation espressioni nel customBody ({{$node.upstream.json.X}} per dati dinamici da step precedenti), headersJson per CORS/Cache-Control/X-* custom, status preset comuni (200 OK / 201 Created / 202 Accepted / 204 No Content / 302/303 / 400/401/403/404 / 500), supporto streaming download grandi via base64 + bodyIsBase64=true (sentinel runtime decode lazy).\n\nUse case: (1) API REST custom che restituisce JSON dopo elaborazione DB (Liara/agent_extractor → DB → respond), (2) endpoint Stripe/PayPal webhook che deve restituire 200 OK ack entro 5s (use fire-and-forget invece se elaborazione lenta), (3) servire HTML SSR dinamico (detail page Streammy + asset signed proxy URL), (4) download fattura PDF generato dal workflow con filename per-customer.\n\nSafety budget: max body 50 MB (oltre conviene S3 redirect), interpolation espressioni timeoutate 1s, header iniezione bloccata (no CRLF in valori).",
+    "descriptionLong": "Risponde alla richiesta HTTP del trigger_webhook con body, status code e headers personalizzati. Da posizionare ALLA FINE del ramo workflow quando il chiamante aspetta una response sincrona — senza questo nodo (e con responseMode=\"use-respond-node\" nel trigger) il runtime restituisce JSON fallback `{runId, status}`, non quello che vuole il vendor partner B2B che ti sta chiamando.\n\nDifferenza con i sibling: action_webhook_respond = response sincrona allo stesso request del trigger_webhook (1-1 pairing). Se vuoi rispondere SUBITO + continuare workflow async usa responseMode=\"fire-and-forget\" sul trigger (no respond node necessario). Per redirect senza body usa modalità \"Redirect\" qui invece di costruire location header a mano.\n\nModalità predefinite (zero-config per il caso comune): (a) JSON — body=auto-stringify del JSON config o expression upstream, content-type application/json + charset utf-8, (b) Testo plain, (c) HTML — content-type text/html + charset utf-8 (per SSR detail pages tipo Streammy/cataloghi), (d) Redirect 302/303/307 — solo Location header (preserva method o forza GET secondo status), (e) File binario — body base64 + Content-Disposition attachment con filename, (f) 204 No Content — risposta vuota per ack-only, (g) Custom — full control su body+status+headersJson.\n\nFeatures production: interpolation espressioni nel customBody ({{$node.upstream.json.X}} per dati dinamici da step precedenti), headersJson per CORS/Cache-Control/X-* custom, status preset comuni (200 OK / 201 Created / 202 Accepted / 204 No Content / 302/303 / 400/401/403/404 / 500), supporto streaming download grandi via base64 + bodyIsBase64=true (sentinel runtime decode lazy).\n\nUse case: (1) API REST custom che restituisce JSON dopo elaborazione DB (agent_extractor → DB → respond), (2) endpoint Stripe/PayPal webhook che deve restituire 200 OK ack entro 5s (use fire-and-forget invece se elaborazione lenta), (3) servire HTML SSR dinamico (detail page Streammy + asset signed proxy URL), (4) download fattura PDF generato dal workflow con filename per-customer.\n\nSafety budget: max body 50 MB (oltre conviene S3 redirect), interpolation espressioni timeoutate 1s, header iniezione bloccata (no CRLF in valori).",
     "defVersion": "2.0.0",
     "outputContract": {
       "notes": "Prepara la risposta da mandare a chi ha chiamato il webhook: la risposta parte alla FINE dell'esecuzione, non qui. Questi campi dicono cosa e` stato preparato, non cosa e` stato consegnato.",
@@ -11248,7 +11248,6 @@
         "type": "select",
         "options": [
           "",
-          "liara",
           "anthropic",
           "openai",
           "gemini",
@@ -11263,14 +11262,14 @@
         "key": "apiKey",
         "label": "API key (override)",
         "type": "secret",
-        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+        "description": "Vuoto = usa la chiave di Settings → AI Providers."
       },
       {
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
         "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
       },
       {
         "key": "baseUrl",
@@ -11334,7 +11333,6 @@
         "type": "select",
         "options": [
           "",
-          "liara",
           "anthropic",
           "openai",
           "gemini",
@@ -11349,14 +11347,14 @@
         "key": "apiKey",
         "label": "API key (override)",
         "type": "secret",
-        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+        "description": "Vuoto = usa la chiave di Settings → AI Providers."
       },
       {
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
         "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
       },
       {
         "key": "baseUrl",
@@ -11425,7 +11423,6 @@
         "type": "select",
         "options": [
           "",
-          "liara",
           "anthropic",
           "openai",
           "gemini",
@@ -11440,14 +11437,14 @@
         "key": "apiKey",
         "label": "API key (override)",
         "type": "secret",
-        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+        "description": "Vuoto = usa la chiave di Settings → AI Providers."
       },
       {
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
         "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
       },
       {
         "key": "baseUrl",
@@ -11477,7 +11474,7 @@
     "icon": "bug",
     "color": "#f87171",
     "description": "Agente AI enterprise specializzato nel debug post-mortem di workflow run falliti —",
-    "descriptionLong": "Agente AI enterprise specializzato nel debug post-mortem di workflow run falliti — sfrutta il LLM Liara per analizzare i dati granular di una run errored (steps json + outputs + error stack + config dei nodi coinvolti) e produrre raccomandazioni actionable di fix con confidence score, riducendo il tempo mean-time-to-resolution da ore-giorni (debug manuale) a minuti (AI-assisted triage). Pattern di AIOps copilot per workflow orchestration analogo a Datadog Watchdog o New Relic AI per i monitoring tool tradizionali. Pipeline multi-stage gestita end-to-end dall'agent: (1) Fetch run JSON completo dal SQLite runtime tenant — recupera tutti i steps eseguiti con il loro input/output, la error stack del step fallito, la config completa del nodo che ha generated l'errore, il context delle env vars rilevanti; (2) Diagnose root cause via LLM analysis del context con 5 categorie di errore canoniche enterprise: transient (network blip, rate-limit 429 temporaneo, upstream 5xx — pattern auto-recoverable con retry), config (parametro mal-configurato, URL errato, schema mismatch — richiede edit dell'utente), payload (input data malformato, type coercion failed, JSON parse error — issue upstream nei dati), auth (credenziali scadute, token revoked, scope insufficienti — richiede rotation/re-auth dell'integration vault), quota (esauriti i limiti del piano o dell'API upstream — richiede upgrade o ottimizzazione); (3) Genera 3-5 suggestedFixes ordinati per confidence + impact: config patch (modifica diff-friendly del config del nodo offendente), retry policy adjustment (aggiungi exponential backoff + max_retries=5 per transient), nodo replace (suggerimento di sostituire con un altro nodo più adatto al pattern), input guard (aggiungi logic_if upstream per validare il payload prima di processarlo); (4) Genera suggestedTests automaticamente Zod-validated — il LLM crea test case JSON che expose il bug specifico fixato, pattern TDD reverse per prevenire regressioni future. Output: { diagnosis: { rootCause (narrative description del cosa è andato storto), category (transient|config|payload|auth|quota), confidence (0-1 dell'AI sul suo verdetto) }, suggestedFixes: [{ description, type, configPatch?, confidence, expectedImpact }], suggestedTests: [{ input, expected, reason }], replayCommand (one-click apply del top fix + relaunch del workflow per validation) }. Use case: debugging assist post-incident enterprise (il workflow di chiusura conti mensile è fallito la notte → al risveglio l'admin vede direttamente la diagnosi AI + fix proposto, applica con un click invece di indagare 2 ore); suggestions DX per junior workflow author che imparano gradualmente i pattern enterprise (AI come \"rubber duck\" intelligente); auto-recovery cron su workflow critici (workflow di production che ha catch error handler che chiama agent_debug + auto-apply del fix se confidence > 0.9); training dataset per fine-tune del Liara su pattern errori reali specifici del workspace customer per personalization (i Liara LoRA del cliente che imparano nel tempo cosa è \"fine\" vs \"broken\" nel suo contesto specifico).",
+    "descriptionLong": "Agente AI enterprise specializzato nel debug post-mortem di workflow run falliti — sfrutta il LLM del tenant per analizzare i dati granular di una run errored (steps json + outputs + error stack + config dei nodi coinvolti) e produrre raccomandazioni actionable di fix con confidence score, riducendo il tempo mean-time-to-resolution da ore-giorni (debug manuale) a minuti (AI-assisted triage). Pattern di AIOps copilot per workflow orchestration analogo a Datadog Watchdog o New Relic AI per i monitoring tool tradizionali. Pipeline multi-stage gestita end-to-end dall'agent: (1) Fetch run JSON completo dal SQLite runtime tenant — recupera tutti i steps eseguiti con il loro input/output, la error stack del step fallito, la config completa del nodo che ha generated l'errore, il context delle env vars rilevanti; (2) Diagnose root cause via LLM analysis del context con 5 categorie di errore canoniche enterprise: transient (network blip, rate-limit 429 temporaneo, upstream 5xx — pattern auto-recoverable con retry), config (parametro mal-configurato, URL errato, schema mismatch — richiede edit dell'utente), payload (input data malformato, type coercion failed, JSON parse error — issue upstream nei dati), auth (credenziali scadute, token revoked, scope insufficienti — richiede rotation/re-auth dell'integration vault), quota (esauriti i limiti del piano o dell'API upstream — richiede upgrade o ottimizzazione); (3) Genera 3-5 suggestedFixes ordinati per confidence + impact: config patch (modifica diff-friendly del config del nodo offendente), retry policy adjustment (aggiungi exponential backoff + max_retries=5 per transient), nodo replace (suggerimento di sostituire con un altro nodo più adatto al pattern), input guard (aggiungi logic_if upstream per validare il payload prima di processarlo); (4) Genera suggestedTests automaticamente Zod-validated — il LLM crea test case JSON che expose il bug specifico fixato, pattern TDD reverse per prevenire regressioni future. Output: { diagnosis: { rootCause (narrative description del cosa è andato storto), category (transient|config|payload|auth|quota), confidence (0-1 dell'AI sul suo verdetto) }, suggestedFixes: [{ description, type, configPatch?, confidence, expectedImpact }], suggestedTests: [{ input, expected, reason }], replayCommand (one-click apply del top fix + relaunch del workflow per validation) }. Use case: debugging assist post-incident enterprise (il workflow di chiusura conti mensile è fallito la notte → al risveglio l'admin vede direttamente la diagnosi AI + fix proposto, applica con un click invece di indagare 2 ore); suggestions DX per junior workflow author che imparano gradualmente i pattern enterprise (AI come \"rubber duck\" intelligente); auto-recovery cron su workflow critici (workflow di production che ha catch error handler che chiama agent_debug + auto-apply del fix se confidence > 0.9); raccolta di esempi reali di errore del workspace, utile a capire nel tempo cosa è \"fine\" vs \"broken\" nel suo contesto specifico.",
     "defVersion": "1.0.0",
     "outputContract": {
       "notes": "Diagnostica un'esecuzione fallita. `suggestedFixes` sono PROPOSTE, non correzioni applicate: nessuna viene messa in atto da qui. Con la riesecuzione automatica accesa escono anche `replayCommand` e `autoReplayResult`.",
@@ -11791,7 +11788,6 @@
         "type": "select",
         "options": [
           "",
-          "liara",
           "anthropic",
           "openai",
           "gemini",
@@ -11806,14 +11802,14 @@
         "key": "apiKey",
         "label": "API key (override)",
         "type": "secret",
-        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+        "description": "Vuoto = usa la chiave di Settings → AI Providers."
       },
       {
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
         "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
       },
       {
         "key": "baseUrl",
@@ -11891,7 +11887,6 @@
         "type": "select",
         "options": [
           "",
-          "liara",
           "anthropic",
           "openai",
           "gemini",
@@ -11906,14 +11901,14 @@
         "key": "apiKey",
         "label": "API key (override)",
         "type": "secret",
-        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+        "description": "Vuoto = usa la chiave di Settings → AI Providers."
       },
       {
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
         "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
       },
       {
         "key": "baseUrl",
@@ -11985,7 +11980,6 @@
         "type": "select",
         "options": [
           "",
-          "liara",
           "anthropic",
           "openai",
           "gemini",
@@ -12000,14 +11994,14 @@
         "key": "apiKey",
         "label": "API key (override)",
         "type": "secret",
-        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+        "description": "Vuoto = usa la chiave di Settings → AI Providers."
       },
       {
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
         "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
       },
       {
         "key": "baseUrl",
@@ -12037,7 +12031,7 @@
     "icon": "scale",
     "color": "#0ea5e9",
     "description": "Agente AI enterprise specializzato in compliance legale di documenti italiani ed europei —",
-    "descriptionLong": "Agente AI enterprise specializzato in compliance legale di documenti italiani ed europei — analizza contratti, privacy policy, Terms of Service (ToS), Data Processing Agreement (DPA), cookie banner, normative interne aziendali, verificando la conformità contro la batteria completa dei principali framework normativi che si applicano al business digitale italiano nel 2025-2026: GDPR (Regolamento UE 2016/679 sul trattamento dati personali), eIDAS 2.0 (Regolamento UE 910/2014 + aggiornamento 2024 sulla identità digitale europea + firma elettronica qualificata), AI Act (Regolamento UE 2024/1689 in vigore agosto 2024 sulla classificazione dei sistemi AI in 4 livelli rischio + obblighi per fornitori e utilizzatori), DPR 445/2000 (testo unico documentazione amministrativa per archiviazione a norma), Codice del Consumo (D.lgs. 206/2005 con tutti i diritti del consumatore B2C), Direttiva e-Privacy 2002/58/EC (regola tracciamento cookie e marketing communications). Pipeline AI multi-stage che combina retrieval e generation per garantire ANTI-HALLUCINATION rigorosa — pattern critical per use case legali dove un erroneo cite di articolo non esistente sarebbe professionalmente damaging: (1) chunking semantico del documento input in segment manageable dal LLM context window, preservando i confini logici di paragrafi/sezioni; (2) ai_rag_search su una KB normative pre-indicizzata via embedding BGE-M3 1024-dim dei testi ufficiali AgID/EUR-Lex con i 1500+ articoli rilevanti dei 6 framework supportati; (3) Liara LLM analizza ogni chunk con il context normativo retrieved e produce findings strutturati con CITAZIONE ESPLICITA dell'articolo violato + reasoning step-by-step; (4) fusion finale dei findings con severity ranking (critical → high → medium → low → info) e dedup di issue duplicate. Output rich strutturato per consumo umano + machine: { score (0-100 normalizzato di compliance, < 50 critical, 50-70 da migliorare, 70-90 buono, > 90 eccellente), findings: [{ severity, framework (es. \"GDPR\"), articleNumber (es. \"art. 5(1)(c)\"), description (cosa è il problema in italiano leggibile), evidenceQuote (la frase originale del documento che ha triggered il finding), remediation (azione concrete per fix), confidence }], frameworksAnalyzed, summary (executive summary 200-400 char), recommendations (top 5 azioni prioritizzate by impact), analyzedAt, modelVersion }. Use case enterprise critical italiani: pre-firma contratto B2B per red flag clausole vessatorie e derogatorie dello consumer code (pattern delle clausole limitanti di responsabilità del fornitore verso il cliente B2B finance/services); audit privacy policy sito web pre-pubblicazione (verifica GDPR art.13 informativa completa + ePrivacy cookie banner + eIDAS link identità del titolare); DPIA (Data Protection Impact Assessment) art.35 GDPR per nuovo trattamento dati sensibili (richiesto before-launch di feature che processa dati sanitari o biometrici); compliance gate pre-launch di feature AI-powered con classifica rischio AI Act (es. \"il nostro sistema di selezione candidati rientra in high-risk Annex III del AI Act → obblighi di documentazione tecnica + audit periodico\"); review cookie banner per consenso valido art.7 GDPR + Linee Guida Garante 2024 (no pre-ticked checkbox, opt-in granular per category, dark pattern detection).",
+    "descriptionLong": "Agente AI enterprise specializzato in compliance legale di documenti italiani ed europei — analizza contratti, privacy policy, Terms of Service (ToS), Data Processing Agreement (DPA), cookie banner, normative interne aziendali, verificando la conformità contro la batteria completa dei principali framework normativi che si applicano al business digitale italiano nel 2025-2026: GDPR (Regolamento UE 2016/679 sul trattamento dati personali), eIDAS 2.0 (Regolamento UE 910/2014 + aggiornamento 2024 sulla identità digitale europea + firma elettronica qualificata), AI Act (Regolamento UE 2024/1689 in vigore agosto 2024 sulla classificazione dei sistemi AI in 4 livelli rischio + obblighi per fornitori e utilizzatori), DPR 445/2000 (testo unico documentazione amministrativa per archiviazione a norma), Codice del Consumo (D.lgs. 206/2005 con tutti i diritti del consumatore B2C), Direttiva e-Privacy 2002/58/EC (regola tracciamento cookie e marketing communications). Pipeline AI multi-stage che combina retrieval e generation per garantire ANTI-HALLUCINATION rigorosa — pattern critical per use case legali dove un erroneo cite di articolo non esistente sarebbe professionalmente damaging: (1) chunking semantico del documento input in segment manageable dal LLM context window, preservando i confini logici di paragrafi/sezioni; (2) ai_rag_search su una KB normative pre-indicizzata via embedding BGE-M3 1024-dim dei testi ufficiali AgID/EUR-Lex con i 1500+ articoli rilevanti dei 6 framework supportati; (3) il LLM analizza ogni chunk con il context normativo retrieved e produce findings strutturati con CITAZIONE ESPLICITA dell'articolo violato + reasoning step-by-step; (4) fusion finale dei findings con severity ranking (critical → high → medium → low → info) e dedup di issue duplicate. Output rich strutturato per consumo umano + machine: { score (0-100 normalizzato di compliance, < 50 critical, 50-70 da migliorare, 70-90 buono, > 90 eccellente), findings: [{ severity, framework (es. \"GDPR\"), articleNumber (es. \"art. 5(1)(c)\"), description (cosa è il problema in italiano leggibile), evidenceQuote (la frase originale del documento che ha triggered il finding), remediation (azione concrete per fix), confidence }], frameworksAnalyzed, summary (executive summary 200-400 char), recommendations (top 5 azioni prioritizzate by impact), analyzedAt, modelVersion }. Use case enterprise critical italiani: pre-firma contratto B2B per red flag clausole vessatorie e derogatorie dello consumer code (pattern delle clausole limitanti di responsabilità del fornitore verso il cliente B2B finance/services); audit privacy policy sito web pre-pubblicazione (verifica GDPR art.13 informativa completa + ePrivacy cookie banner + eIDAS link identità del titolare); DPIA (Data Protection Impact Assessment) art.35 GDPR per nuovo trattamento dati sensibili (richiesto before-launch di feature che processa dati sanitari o biometrici); compliance gate pre-launch di feature AI-powered con classifica rischio AI Act (es. \"il nostro sistema di selezione candidati rientra in high-risk Annex III del AI Act → obblighi di documentazione tecnica + audit periodico\"); review cookie banner per consenso valido art.7 GDPR + Linee Guida Garante 2024 (no pre-ticked checkbox, opt-in granular per category, dark pattern detection).",
     "defVersion": "1.0.0",
     "outputContract": {
       "notes": "E` un'analisi automatica, NON un parere legale: `findings` e `recommendations` vanno letti da qualcuno prima di agirci. `chunksProcessed` dice su quanti pezzi di documento ha lavorato — su un testo lungo non e` detto che li abbia visti tutti.",
@@ -12209,7 +12203,6 @@
         "type": "select",
         "options": [
           "",
-          "liara",
           "anthropic",
           "openai",
           "gemini",
@@ -12224,14 +12217,14 @@
         "key": "apiKey",
         "label": "API key (override)",
         "type": "secret",
-        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+        "description": "Vuoto = usa la chiave di Settings → AI Providers."
       },
       {
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
         "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
       },
       {
         "key": "baseUrl",
@@ -12318,7 +12311,6 @@
         "type": "select",
         "options": [
           "",
-          "liara",
           "anthropic",
           "openai",
           "gemini",
@@ -12333,14 +12325,14 @@
         "key": "apiKey",
         "label": "API key (override)",
         "type": "secret",
-        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+        "description": "Vuoto = usa la chiave di Settings → AI Providers."
       },
       {
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
         "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
       },
       {
         "key": "baseUrl",
@@ -12369,8 +12361,8 @@
     "label": "Agent: Summarizer",
     "icon": "file-text",
     "color": "#22c55e",
-    "description": "Agent LLM (usa il provider configurato in Settings → AI Providers: Anthropic, OpenAI, Gemini, Mistral, Groq, OpenRouter, Ollama o Liara) che produce un summary strutturato 3-tier: TL;DR (1 frase), 5 bullet point, paragrafo (~150 word).",
-    "descriptionLong": "Agent LLM (usa il provider configurato in Settings → AI Providers: Anthropic, OpenAI, Gemini, Mistral, Groq, OpenRouter, Ollama o Liara) che produce un summary strutturato 3-tier: TL;DR (1 frase), 5 bullet point, paragrafo (~150 word). Preserva named entities (people/orgs/dates/amounts/tech terms) verbatim — no parafrasi. Output JSON typed. Use case: digest email lunghe, riassunto articoli RSS per newsletter, brief meeting notes, abstract documenti legali/PDF. Token budget controllato. Compatibile output→input chain per filter/route downstream.",
+    "description": "Agent LLM (usa il provider configurato in Settings → AI Providers: Anthropic, OpenAI, Gemini, Mistral, Groq, OpenRouter o Ollama) che produce un summary strutturato 3-tier: TL;DR (1 frase), 5 bullet point, paragrafo (~150 word).",
+    "descriptionLong": "Agent LLM (usa il provider configurato in Settings → AI Providers: Anthropic, OpenAI, Gemini, Mistral, Groq, OpenRouter o Ollama) che produce un summary strutturato 3-tier: TL;DR (1 frase), 5 bullet point, paragrafo (~150 word). Preserva named entities (people/orgs/dates/amounts/tech terms) verbatim — no parafrasi. Output JSON typed. Use case: digest email lunghe, riassunto articoli RSS per newsletter, brief meeting notes, abstract documenti legali/PDF. Token budget controllato. Compatibile output→input chain per filter/route downstream.",
     "defVersion": "1.1.0",
     "searchAliases": [
       "riassumi",
@@ -12415,7 +12407,6 @@
         "type": "select",
         "options": [
           "",
-          "liara",
           "anthropic",
           "openai",
           "gemini",
@@ -12430,14 +12421,14 @@
         "key": "apiKey",
         "label": "API key (override)",
         "type": "secret",
-        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+        "description": "Vuoto = usa la chiave di Settings → AI Providers."
       },
       {
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
         "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
       },
       {
         "key": "baseUrl",
@@ -12519,7 +12510,6 @@
         "type": "select",
         "options": [
           "",
-          "liara",
           "anthropic",
           "openai",
           "gemini",
@@ -12534,14 +12524,14 @@
         "key": "apiKey",
         "label": "API key (override)",
         "type": "secret",
-        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+        "description": "Vuoto = usa la chiave di Settings → AI Providers."
       },
       {
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
         "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
       },
       {
         "key": "baseUrl",
@@ -12652,7 +12642,6 @@
         "type": "select",
         "options": [
           "",
-          "liara",
           "anthropic",
           "openai",
           "gemini",
@@ -12667,14 +12656,14 @@
         "key": "apiKey",
         "label": "API key (override)",
         "type": "secret",
-        "description": "Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria)."
+        "description": "Vuoto = usa la chiave di Settings → AI Providers."
       },
       {
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
         "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1."
+        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
       },
       {
         "key": "baseUrl",
@@ -12704,7 +12693,7 @@
     "icon": "video",
     "color": "#a855f7",
     "description": "Pipeline multimodale enterprise video-to-summary strutturato —",
-    "descriptionLong": "Pipeline multimodale enterprise video-to-summary strutturato — l'AI-powered processor che trasforma un video raw (caricato dall'utente, fetched da URL pubblico YouTube/Vimeo/CDN, output di un meeting Zoom recording) in un riassunto strutturato gerarchico pronto per consumo umano (TL;DR esecutivo) + consumo machine (chapter timestamped per navigazione + transcript completo per search). Architettura multi-stage che combina 3 modelli AI specializzati orchestrati: (1) ffmpeg extract — extraction temporale del video grezzo in 2 streams paralleli: audio mono 16kHz PCM raw (formato di input ottimale per ASR), frames JPEG sampling 1fps (un frame per secondo per analysis vision senza saturare context window dei vision model); (2) Whisper ASR transcript — il modello speech-to-text OpenAI open-source self-hosted on-premise EU (Hetzner Falkenstein GEX131 RTX PRO 6000 Blackwell 96GB) elabora l'audio producendo transcript parola-per-parola con timestamp millisecond-level di ogni token + speaker diarization (chi parla — speaker_0, speaker_1 fino a 8 partecipanti distinguibili per voce timbre), language auto-detection con supporto a 99 lingue compreso italiano alta accuracy; (3) Vision Qwen2.5-VL describe scenes — il modello multimodal vision Qwen2.5-VL-7B INT4 self-hosted analizza i frame estratti applicando scene-change detection (similarity-based clustering dei frame consecutive — quando passa una soglia di differenza visiva si dichiara nuova scena) e descrive ogni scena identificata con caption rich (es. \"Slide 3 mostra grafico fatturato Q4 con bar chart e label \"+23% YoY\"\"); (4) Liara LLM fusion stage — il LLM principale fonde i 2 stream (transcript Whisper + scenes Vision) producendo l'output finale gerarchico TL;DR + bullets + chapters timestamped, pattern che cattura sia il content auditive (parole spoken) sia visual (slide, demo screen, persone identificate dal volto). Backend interamente self-hosted Hetzner (no costi per-token sui pipeline component AI, no transferimento dati extra-UE GDPR-compliant — pattern enterprise critical per casi tipo studio medico che processa meeting con dati sanitari sensibili o studio legale con materiale confidenziale cliente). Output rich strutturato: { transcript (full text concatenated con [00:00:12] timestamps), scenes: [{ startTime, endTime, description, confidence }], summary: { tldr (200-400 char executive summary), bullets (5-10 key points), chapters: [{ title, startTime, summary }] }, durationSec, processedAt, detectedLanguage, speakerCount }. Use case: indicizzazione media library (corsi online, webinar registered, meeting recording per institutional knowledge base searchable); highlight reel automatic per social media marketing (top 3-5 chapters più engaging clip per LinkedIn/Twitter/YouTube Shorts); accessibility WCAG 2.2 compliance (caption + audio description per persone non udenti + non vedenti); search-in-video capability tramite scene timestamps (l'utente cerca \"fatturato Q4\" nella library e va direttamente al chapter relativo del video); briefing post-meeting con chapter cliccabili distribuito al team che non ha potuto partecipare; documentation di demo prodotto con auto-generated transcript per dev team reference.",
+    "descriptionLong": "Pipeline multimodale enterprise video-to-summary strutturato — l'AI-powered processor che trasforma un video raw (caricato dall'utente, fetched da URL pubblico YouTube/Vimeo/CDN, output di un meeting Zoom recording) in un riassunto strutturato gerarchico pronto per consumo umano (TL;DR esecutivo) + consumo machine (chapter timestamped per navigazione + transcript completo per search). Architettura multi-stage che combina 3 modelli AI specializzati orchestrati: (1) ffmpeg extract — extraction temporale del video grezzo in 2 streams paralleli: audio mono 16kHz PCM raw (formato di input ottimale per ASR), frames JPEG sampling 1fps (un frame per secondo per analysis vision senza saturare context window dei vision model); (2) Whisper ASR transcript — il modello speech-to-text OpenAI open-source self-hosted on-premise EU (Hetzner Falkenstein GEX131 RTX PRO 6000 Blackwell 96GB) elabora l'audio producendo transcript parola-per-parola con timestamp millisecond-level di ogni token + speaker diarization (chi parla — speaker_0, speaker_1 fino a 8 partecipanti distinguibili per voce timbre), language auto-detection con supporto a 99 lingue compreso italiano alta accuracy; (3) Vision Qwen2.5-VL describe scenes — il modello multimodal vision Qwen2.5-VL-7B INT4 self-hosted analizza i frame estratti applicando scene-change detection (similarity-based clustering dei frame consecutive — quando passa una soglia di differenza visiva si dichiara nuova scena) e descrive ogni scena identificata con caption rich (es. \"Slide 3 mostra grafico fatturato Q4 con bar chart e label \"+23% YoY\"\"); (4) LLM fusion stage — il LLM principale fonde i 2 stream (transcript Whisper + scenes Vision) producendo l'output finale gerarchico TL;DR + bullets + chapters timestamped, pattern che cattura sia il content auditive (parole spoken) sia visual (slide, demo screen, persone identificate dal volto). Backend interamente self-hosted Hetzner (no costi per-token sui pipeline component AI, no transferimento dati extra-UE GDPR-compliant — pattern enterprise critical per casi tipo studio medico che processa meeting con dati sanitari sensibili o studio legale con materiale confidenziale cliente). Output rich strutturato: { transcript (full text concatenated con [00:00:12] timestamps), scenes: [{ startTime, endTime, description, confidence }], summary: { tldr (200-400 char executive summary), bullets (5-10 key points), chapters: [{ title, startTime, summary }] }, durationSec, processedAt, detectedLanguage, speakerCount }. Use case: indicizzazione media library (corsi online, webinar registered, meeting recording per institutional knowledge base searchable); highlight reel automatic per social media marketing (top 3-5 chapters più engaging clip per LinkedIn/Twitter/YouTube Shorts); accessibility WCAG 2.2 compliance (caption + audio description per persone non udenti + non vedenti); search-in-video capability tramite scene timestamps (l'utente cerca \"fatturato Q4\" nella library e va direttamente al chapter relativo del video); briefing post-meeting con chapter cliccabili distribuito al team che non ha potuto partecipare; documentation di demo prodotto con auto-generated transcript per dev team reference.",
     "defVersion": "1.0.0",
     "outputContract": {
       "notes": "`warnings` va letto prima del riassunto: una trascrizione parziale o una lingua sbagliata rendono il riassunto plausibile e infedele.",
@@ -12819,7 +12808,7 @@
     "icon": "bot",
     "color": "#8b5cf6",
     "description": "Agente con tool-calling: cicla finché il modello non risponde senza richiedere altri tool.",
-    "descriptionLong": "Agente con tool-calling: cicla finché il modello non risponde senza richiedere altri tool. Default = Liara (gateway FlowForge, gratis, metered sulla quota); override per-nodo: Anthropic (nativo), OpenAI, Gemini, DeepSeek, xAI, OpenRouter, Groq, Mistral, Ollama. Tool disponibili: http_request, flowforge_invoke, get_time, rag_search.",
+    "descriptionLong": "Agente con tool-calling: cicla finché il modello non risponde senza richiedere altri tool. Usa il provider scelto in Settings → AI Providers; override per-nodo: Anthropic (nativo), OpenAI, Gemini, DeepSeek, xAI, OpenRouter, Groq, Mistral, Ollama. Tool disponibili: http_request, flowforge_invoke, get_time, rag_search.",
     "defVersion": "1.2.0",
     "outputContract": {
       "notes": "Due esiti, e non hanno gli stessi campi. Riuscendo escono `finalAnswer`, `iterations` e `trace`. Fallendo esce `error` al posto di `finalAnswer` — e il nodo NON solleva un errore, quindi il flusso prosegue: chi sta a valle deve controllare `error` prima di fidarsi. Su annullamento esce anche `cancelled`.",
@@ -12863,7 +12852,6 @@
         "type": "select",
         "options": [
           "",
-          "liara",
           "anthropic",
           "openai",
           "gemini",
@@ -12874,20 +12862,20 @@
           "mistral",
           "ollama"
         ],
-        "description": "Vuoto = usa il default da Settings → AI Providers (Liara free se non configuri nulla). NB: se compili solo la API key senza provider, vale Anthropic (compatibilità con le config esistenti del nodo)."
+        "description": "Vuoto = usa il default da Settings → AI Providers. NB: se compili solo la API key senza provider, vale Anthropic (compatibilità con le config esistenti del nodo)."
       },
       {
         "key": "apiKey",
         "label": "API key (override)",
         "type": "secret",
-        "description": "Vuoto = chiave da Settings → AI Providers (Liara non ne richiede). Compilata SENZA provider = Anthropic (legacy)."
+        "description": "Vuoto = chiave da Settings → AI Providers. Compilata SENZA provider = Anthropic (legacy)."
       },
       {
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
         "placeholder": "es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, llama-3.3-70b-versatile",
-        "description": "Vuoto = default del provider (Liara: decide il gateway; Anthropic: claude-sonnet-4-5)."
+        "description": "Vuoto = default del provider (Anthropic: claude-sonnet-4-5)."
       },
       {
         "key": "baseUrl",
@@ -16594,7 +16582,7 @@
     "icon": "receipt",
     "color": "#16a34a",
     "description": "Parser deterministico di fatture elettroniche FatturaPA (FPR12 e FPA12) da XML a JSON tipizzato —",
-    "descriptionLong": "Parser deterministico di fatture elettroniche FatturaPA (FPR12 e FPA12) da XML a JSON tipizzato — il pezzo che trasforma il ciclo passivo in dati lavorabili: cedente e cessionario (denominazione, Partita IVA, Codice Fiscale, con supporto Nome+Cognome delle ditte individuali), tipo documento, numero, data, valuta, importo totale, TUTTE le righe (descrizione, quantità, prezzi, aliquota), riepiloghi IVA per aliquota e scadenze di pagamento con importi. Parsing con libxml2 (lo stesso motore della validazione XSD del nodo di invio) e XPath namespace-agnostic: gli XML dei diversi gestionali vengono letti allo stesso modo. Una fattura-lotto con N corpi produce N elementi nell'array. Validazione XSD opzionale contro lo schema UFFICIALE v1.2.2 dell'Agenzia delle Entrate (offline). Deterministico per design: a differenza di un LLM che rilegge l'XML, gli importi estratti sono ESATTI e sempre uguali — l'AI a valle riceve il JSON pulito e non può sbagliare un totale.\n\nOutput: { fatture: [{cedente, cessionario, numero, data, importoTotaleDocumento, righe[], riepilogoIva[], scadenze[]}], count, xsd? }.\n\nUse case: (1) scadenzario automatico — PEC in ingresso → p7m extract → parse → db_insert delle scadenze con alert Telegram 5 giorni prima; (2) controllo fornitori con AI — Liara confronta i prezzi di riga con lo storico e segnala rincari; (3) registrazione contabile assistita verso il gestionale (Odoo/Fatture in Cloud) coi dati già strutturati; (4) report IVA mensile aggregando i riepiloghi per aliquota.",
+    "descriptionLong": "Parser deterministico di fatture elettroniche FatturaPA (FPR12 e FPA12) da XML a JSON tipizzato — il pezzo che trasforma il ciclo passivo in dati lavorabili: cedente e cessionario (denominazione, Partita IVA, Codice Fiscale, con supporto Nome+Cognome delle ditte individuali), tipo documento, numero, data, valuta, importo totale, TUTTE le righe (descrizione, quantità, prezzi, aliquota), riepiloghi IVA per aliquota e scadenze di pagamento con importi. Parsing con libxml2 (lo stesso motore della validazione XSD del nodo di invio) e XPath namespace-agnostic: gli XML dei diversi gestionali vengono letti allo stesso modo. Una fattura-lotto con N corpi produce N elementi nell'array. Validazione XSD opzionale contro lo schema UFFICIALE v1.2.2 dell'Agenzia delle Entrate (offline). Deterministico per design: a differenza di un LLM che rilegge l'XML, gli importi estratti sono ESATTI e sempre uguali — l'AI a valle riceve il JSON pulito e non può sbagliare un totale.\n\nOutput: { fatture: [{cedente, cessionario, numero, data, importoTotaleDocumento, righe[], riepilogoIva[], scadenze[]}], count, xsd? }.\n\nUse case: (1) scadenzario automatico — PEC in ingresso → p7m extract → parse → db_insert delle scadenze con alert Telegram 5 giorni prima; (2) controllo fornitori con AI — un agente confronta i prezzi di riga con lo storico e segnala rincari; (3) registrazione contabile assistita verso il gestionale (Odoo/Fatture in Cloud) coi dati già strutturati; (4) report IVA mensile aggregando i riepiloghi per aliquota.",
     "defVersion": "1.0.0",
     "searchAliases": [
       "fattura",
@@ -19719,7 +19707,7 @@
           "html"
         ],
         "defaultValue": "none",
-        "description": "\"none\" = solo array items strutturato. \"markdown\" = aggiunge campo `markdown` con bullet list (per Liara/Slack/email). \"html\" = aggiunge campo `html` con <ul><li> (per email HTML/dashboard)."
+        "description": "\"none\" = solo array items strutturato. \"markdown\" = aggiunge campo `markdown` con bullet list (per un LLM, Slack, email). \"html\" = aggiunge campo `html` con <ul><li> (per email HTML/dashboard)."
       },
       {
         "key": "sinceHours",
@@ -20290,7 +20278,7 @@
     "configFields": [
       {
         "key": "aiTriage",
-        "label": "Triage AI (Liara)",
+        "label": "Triage AI",
         "type": "select",
         "options": [
           "false",

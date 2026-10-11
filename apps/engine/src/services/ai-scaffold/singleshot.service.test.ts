@@ -3,7 +3,7 @@
  * un behavior osservabile (output, error specifico, side-effect su mock chiamato).
  *
  * Strategia: mockiamo dispatchLLMChatStructured per controllare l'output che
- * Liara "ritornerebbe", e asseriamo:
+ * il modello "ritornerebbe", e asseriamo:
  *  - happy path: workflow built correttamente
  *  - JSON malformato → AiScaffoldError 502 con messaggio
  *  - REQUIRED missing per defId → error con dettaglio enumerato
@@ -46,7 +46,7 @@ vi.mock('@/services/llm-chat.service.js', () => ({
 // Mock llm-resolver.
 vi.mock('@/services/llm-resolver.service.js', () => ({
   llmResolver: {
-    resolve: () => ({ provider: 'liara', apiKey: '', model: '' }),
+    resolve: () => ({ provider: 'openai', apiKey: '', model: '' }),
   },
   NoLlmProviderError: class extends Error {
     httpStatus = 400;
@@ -368,7 +368,7 @@ describe('🔒 runSingleshotScaffold — orphan-merge heal end-to-end (bug Sitem
 });
 
 describe('🔒 runSingleshotScaffold — heal required picker-resolvable OMESSI (bug diretta YouTube 2026-06-12)', () => {
-  // Caso REALE: goal "Triage ticket di supporto", Liara genera db_insert per
+  // Caso REALE: goal "Triage ticket di supporto", il modello genera db_insert per
   // support_tickets ma OMETTE databaseId → la validazione 502ava un workflow
   // perfettamente sanabile (lo stesso campo con valore FITTIZIO veniva già
   // sanato dal Layer C). Il fix inietta __USE_PICKER__ nel punto di validazione.
@@ -475,7 +475,7 @@ describe('runSingleshotScaffold — happy path', () => {
     // Trace 3-step (2026-05-31): analyze + generate + validate, ogni fase
     // ha 1 row distinta nella UI con elapsedMs proprio.
     expect(result.iterations).toBe(3);
-    expect(result.modelUsed).toMatch(/guided_json/);
+    expect(result.modelUsed).toMatch(/single-shot/);
     expect(result.trace).toHaveLength(3);
     expect(result.trace[0]!.tool).toBe('singleshot_analyze');
     expect(result.trace[1]!.tool).toBe('singleshot_generate');
@@ -954,7 +954,7 @@ describe('runSingleshotScaffold — auto-retry quality gate (2026-05-31)', () =>
   });
 
   it('error NON-quality-gate (es. LLM 502) → NESSUN retry (early throw)', async () => {
-    dispatchMock.mockRejectedValueOnce(new Error('Liara 502 upstream'));
+    dispatchMock.mockRejectedValueOnce(new Error('OpenAI 502 upstream'));
     await expect(runSingleshotScaffold({ tenantId: 't', goal: VALID_GOAL })).rejects.toThrow(
       /502 upstream|single-shot fallito/,
     );
@@ -1161,7 +1161,7 @@ function snap(r: {
       config: n.config,
     })),
     edges: r.workflow.edges.map((e) => ({ from: e.from, to: e.to })),
-    modelUsed: r.modelUsed, // build-canonical: provider/model+guided_json (o template-cache)
+    modelUsed: r.modelUsed, // build-canonical: provider/model+single-shot (o template-cache)
     iterations: r.iterations, // build-canonical
     notes: r.notes.map((n) => n.replace(/\d+\.\d+s/g, 'N.Ns').replace(/\d+ms/g, 'Nms')),
   };
@@ -1194,7 +1194,7 @@ describe('🔒🔒 CHARACTERIZATION golden-master (pre-split singleshot — anti
           },
         ],
         "iterations": 3,
-        "modelUsed": "liara/default+guided_json",
+        "modelUsed": "openai/default+single-shot",
         "nodes": [
           {
             "config": {
@@ -1229,7 +1229,7 @@ describe('🔒🔒 CHARACTERIZATION golden-master (pre-split singleshot — anti
           },
         ],
         "notes": [
-          "Modello: liara/default (single-shot guided_json)",
+          "Modello: openai/default (single-shot)",
           "Durata: N.Ns (analyze Nms · generate Nms · validate Nms)",
           "Tokens: ↓1500 · ↑800",
           "Nodi generati: 3, edges: 2",
@@ -1282,7 +1282,7 @@ describe('🔒🔒 CHARACTERIZATION golden-master (pre-split singleshot — anti
           },
         ],
         "iterations": 3,
-        "modelUsed": "liara/default+guided_json",
+        "modelUsed": "openai/default+single-shot",
         "nodes": [
           {
             "config": {},
@@ -1344,7 +1344,7 @@ describe('🔒🔒 CHARACTERIZATION golden-master (pre-split singleshot — anti
           },
         ],
         "notes": [
-          "Modello: liara/default (single-shot guided_json)",
+          "Modello: openai/default (single-shot)",
           "Durata: N.Ns (analyze Nms · generate Nms · validate Nms)",
           "Tokens: ↓1500 · ↑800",
           "Nodi generati: 6, edges: 6",
@@ -1620,7 +1620,7 @@ describe('🔒🔒 CHARACTERIZATION golden-master (pre-split singleshot — anti
           },
         ],
         "iterations": 3,
-        "modelUsed": "liara/default+guided_json",
+        "modelUsed": "openai/default+single-shot",
         "nodes": [
           {
             "config": {
@@ -1669,7 +1669,7 @@ describe('🔒🔒 CHARACTERIZATION golden-master (pre-split singleshot — anti
           },
         ],
         "notes": [
-          "Modello: liara/default (single-shot guided_json)",
+          "Modello: openai/default (single-shot)",
           "Durata: N.Ns (analyze Nms · generate Nms · validate Nms)",
           "Tokens: ↓1500 · ↑800",
           "Nodi generati: 4, edges: 3",

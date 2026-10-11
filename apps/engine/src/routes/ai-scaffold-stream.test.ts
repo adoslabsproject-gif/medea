@@ -2,7 +2,7 @@
  * Tests SSE heartbeat su POST /api/v1/workflows/ai-scaffold/stream — fix
  * 2026-05-29 (bug "Stream chiuso senza un risultato").
  *
- * Background: Liara LLM (Qwen3 32B thinking ON) impiega 30-60s per tool call.
+ * Background: un modello che ragiona prima di rispondere impiega 30-60s per tool call.
  * Senza heartbeat, tra 2 SSE event passano ~50s di silenzio → CF/browser
  * timeout → EOF prematuro → client mostra "Stream chiuso".
  *
@@ -98,7 +98,7 @@ describe('AI scaffold SSE heartbeat — anti-timeout (FIX 2026-05-29)', () => {
     expect(writes).toHaveLength(2);
   });
 
-  it('REGRESSION coverage: scenario Liara lenta (52s tra 2 iter) include >=3 heartbeat', () => {
+  it('REGRESSION coverage: scenario modello lento (52s tra 2 iter) include >=3 heartbeat', () => {
     const { writes, stop } = makeHeartbeatLoop();
     // 52s di silenzio LLM → 3 heartbeat (a 15s, 30s, 45s)
     vi.advanceTimersByTime(52_000);

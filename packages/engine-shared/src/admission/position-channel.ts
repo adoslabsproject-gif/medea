@@ -3,7 +3,7 @@
  * su Redis, correlata da `requestId`, così un endpoint di status SSE può
  * streammarla al client SENZA inquinare lo stream LLM (OpenAI) sottostante.
  *
- * Stato per chiave `liara:adm:pos:<requestId>` (JSON, TTL breve auto-pulente):
+ * Stato per chiave `llm:adm:pos:<requestId>` (JSON, TTL breve auto-pulente):
  *   - { s:'q', p, a }  → in coda: posizione 1-based `p`, davanti `a`
  *   - { s:'a' }        → ammessa (lo slot è stato ottenuto)
  *   - chiave assente   → 'gone' (mai esistita, scaduta, o pulita)
@@ -29,7 +29,7 @@ export type QueuePosition =
 const DEFAULT_TTL_SEC = 30;
 
 function keyFor(requestId: string): string {
-  return `liara:adm:pos:${requestId}`;
+  return `llm:adm:pos:${requestId}`;
 }
 
 /** Pubblica la posizione in coda (TTL breve). */

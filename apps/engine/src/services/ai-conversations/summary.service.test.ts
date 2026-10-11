@@ -47,7 +47,7 @@ beforeEach(() => {
 describe('🚨 guards', () => {
   it('🚨 not found → reason "not_found"', async () => {
     getByIdMock.mockReturnValueOnce(undefined);
-    const r = await trySummarize('cv-x', 'liara', '', '');
+    const r = await trySummarize('cv-x', 'openai', '', '');
     expect(r).toEqual({ summarized: false, reason: 'not_found' });
   });
 
@@ -55,28 +55,28 @@ describe('🚨 guards', () => {
     getByIdMock.mockReturnValueOnce({
       summaryAt: new Date(Date.now() - 10_000).toISOString(),
     });
-    const r = await trySummarize('cv', 'liara', '', '');
+    const r = await trySummarize('cv', 'openai', '', '');
     expect(r.reason).toBe('cooldown');
   });
 
   it('🚨 needsCompaction=false → threshold_not_met', async () => {
     getByIdMock.mockReturnValueOnce({});
     needsCompactionMock.mockReturnValueOnce(false);
-    const r = await trySummarize('cv', 'liara', '', '');
+    const r = await trySummarize('cv', 'openai', '', '');
     expect(r.reason).toBe('threshold_not_met');
   });
 
   it('🚨 PROPAGA la soglia token-based a needsCompaction (compaction al riempimento)', async () => {
     getByIdMock.mockReturnValueOnce({});
     needsCompactionMock.mockReturnValueOnce(false);
-    await trySummarize('cv', 'liara', '', '', undefined, { maxContextTokens: 30720 });
+    await trySummarize('cv', 'openai', '', '', undefined, { maxContextTokens: 30720 });
     expect(needsCompactionMock).toHaveBeenCalledWith('cv', { maxContextTokens: 30720 });
   });
 
   it('🚨 senza opts: needsCompaction chiamata con {} (fallback a turni)', async () => {
     getByIdMock.mockReturnValueOnce({});
     needsCompactionMock.mockReturnValueOnce(false);
-    await trySummarize('cv', 'liara', '', '');
+    await trySummarize('cv', 'openai', '', '');
     expect(needsCompactionMock).toHaveBeenCalledWith('cv', {});
   });
 
@@ -92,7 +92,7 @@ describe('🚨 guards', () => {
         createdAt: 'x',
       })),
     );
-    const r = await trySummarize('cv', 'liara', '', '');
+    const r = await trySummarize('cv', 'openai', '', '');
     expect(r.reason).toBe('not_enough_to_fold');
   });
 });
@@ -152,7 +152,7 @@ describe('🚨 happy fold', () => {
 
   it('🚨 fold token-based (tiene ultimi 2 entro budget, folda 28) → LLM call con turnsBlock', async () => {
     dispatchLLMChatMock.mockResolvedValueOnce('Dense summary of folded turns.');
-    const r = await trySummarize('cv', 'liara', 'key', 'model');
+    const r = await trySummarize('cv', 'openai', 'key', 'model');
     expect(r.summarized).toBe(true);
     expect(applySummaryMock).toHaveBeenCalledWith(
       'cv',
@@ -168,7 +168,7 @@ describe('🚨 happy fold', () => {
   it('🚨 previousSummary (rolling) incluso nel prompt se present', async () => {
     getByIdMock.mockReturnValueOnce({ summary: 'Existing summary text' });
     dispatchLLMChatMock.mockResolvedValueOnce('updated summary');
-    await trySummarize('cv', 'liara', 'k', 'm');
+    await trySummarize('cv', 'openai', 'k', 'm');
     const userPrompt = at(dispatchLLMChatMock.mock.calls, 0, 'dispatch-calls')[4] as string;
     expect(userPrompt).toContain('Riassunto precedente');
     expect(userPrompt).toContain('Existing summary text');
@@ -176,7 +176,7 @@ describe('🚨 happy fold', () => {
 
   it('🚨 prompt di sistema STRUTTURATO (sezioni) + target token dinamico', async () => {
     dispatchLLMChatMock.mockResolvedValueOnce('long enough summary content blah');
-    await trySummarize('cv', 'liara', 'k', 'm', undefined, { maxContextTokens: 30720 });
+    await trySummarize('cv', 'openai', 'k', 'm', undefined, { maxContextTokens: 30720 });
     const systemPrompt = at(dispatchLLMChatMock.mock.calls, 0, 'dispatch-calls')[3] as string;
     expect(systemPrompt).toContain("Obiettivo dell'utente");
     expect(systemPrompt).toContain('Stato del workflow');
@@ -193,19 +193,19 @@ describe('🚨 happy fold', () => {
 
   it('🚨 LLM ritorna empty → reason "empty"', async () => {
     dispatchLLMChatMock.mockResolvedValueOnce('');
-    const r = await trySummarize('cv', 'liara', 'k', 'm');
+    const r = await trySummarize('cv', 'openai', 'k', 'm');
     expect(r.reason).toBe('empty');
   });
 
   it('🚨 LLM ritorna < 16 char → reason "empty"', async () => {
     dispatchLLMChatMock.mockResolvedValueOnce('short');
-    const r = await trySummarize('cv', 'liara', 'k', 'm');
+    const r = await trySummarize('cv', 'openai', 'k', 'm');
     expect(r.reason).toBe('empty');
   });
 
   it('🚨 trim risposta LLM', async () => {
     dispatchLLMChatMock.mockResolvedValueOnce('  \n  long enough summary text here  \n ');
-    await trySummarize('cv', 'liara', 'k', 'm');
+    await trySummarize('cv', 'openai', 'k', 'm');
     expect(applySummaryMock).toHaveBeenCalledWith(
       'cv',
       'long enough summary text here',
@@ -215,7 +215,7 @@ describe('🚨 happy fold', () => {
 
   it('🚨 cut timestamp = createdAt ULTIMO messaggio folded', async () => {
     dispatchLLMChatMock.mockResolvedValueOnce('long enough summary content blah');
-    await trySummarize('cv', 'liara', 'k', 'm');
+    await trySummarize('cv', 'openai', 'k', 'm');
     // 30 msg, fold primi 28 → cut su createdAt msg index 27 = '2026-06-28'
     const call = at(applySummaryMock.mock.calls, 0, 'apply-calls');
     expect(call[2]).toBe('2026-06-28');
@@ -238,7 +238,7 @@ describe('🚨 cooldown over 30s', () => {
       })),
     );
     dispatchLLMChatMock.mockResolvedValueOnce('long summary text valid 16+ chars');
-    const r = await trySummarize('cv', 'liara', 'k', 'm');
+    const r = await trySummarize('cv', 'openai', 'k', 'm');
     expect(r.summarized).toBe(true);
   });
 });

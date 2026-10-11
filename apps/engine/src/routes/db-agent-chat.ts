@@ -1,10 +1,10 @@
 /**
- * Route SSE della chat DB-agent: Liara opera sul DB del workspace dal pannello
- * di DB Studio. Tenant-scoped, streaming dei passi in tempo reale.
+ * Route SSE della chat DB-agent: l'assistente opera sul DB del workspace dal
+ * pannello di DB Studio. Tenant-scoped, streaming dei passi in tempo reale.
  *
  * Flusso: auth → tenant da getTenantId (spoof-proof) → carica lo schema del DB
- * selezionato (SOLO se del tenant) → costruisce l'llmTurn (Liara/BYOK via
- * llmResolver) → runDbAgentChat con onStep → SSE 'step' per ogni tool, 'done'
+ * selezionato (SOLO se del tenant) → costruisce l'llmTurn (provider del tenant
+ * via llmResolver) → runDbAgentChat con onStep → SSE 'step' per ogni tool, 'done'
  * col messaggio finale, 'error' su guasto.
  *
  * Isolamento: ogni tool passa per executeDbAgentTool (ctx.tenantId congelato).
@@ -27,18 +27,17 @@ import {
 } from '@/services/db-agent/index.js';
 import { llmResolver, NoLlmProviderError } from '@/services/llm-resolver.service.js';
 import { resolveToolEndpoint } from '@/services/llm/provider-registry.js';
-import { liaraBaseUrl } from '@/config.js';
 
 const ChatBodySchema = z
   .object({
     // OPZIONALE: assente = modalità GLOBALE (DB Studio, nessun DB selezionato) →
-    // Liara elenca/crea database. Presente = modalità su quel DB (tenant-scoped).
+    // l'assistente elenca/crea database. Presente = modalità su quel DB (tenant-scoped).
     databaseId: z.string().min(1).optional(),
     userMessage: z.string().min(1).max(8000),
     workflowContext: z.string().max(20_000).optional(),
     maxIterations: z.number().int().min(1).max(16).optional(),
     // Consenso ESPLICITO dell'utente alle scritture (toggle UI). Default false →
-    // Liara è in sola lettura finché l'utente non abilita. Gate enforced
+    // l'assistente è in sola lettura finché l'utente non abilita. Gate enforced
     // server-side in registry.executeDbAgentTool (vedi ctx.allowWrites).
     allowWrites: z.boolean().optional(),
   })
@@ -91,7 +90,7 @@ export function createDbAgentChatRoutes(opts: DbAgentChatRouteOptions = {}): Hon
       body.allowWrites === true,
     );
     // Modalità DATABASE: databaseId presente → DEVE essere del tenant (404 anti-enum).
-    // Modalità GLOBALE: databaseId assente → Liara opera su tutto il workspace.
+    // Modalità GLOBALE: databaseId assente → l'assistente opera su tutto il workspace.
     const db = body.databaseId ? ctx.dbStudio.get(body.databaseId, tenantId) : null;
     if (body.databaseId && !db) return c.json({ error: 'Not found' }, 404); // anti-enumeration
 
@@ -102,28 +101,25 @@ export function createDbAgentChatRoutes(opts: DbAgentChatRouteOptions = {}): Hon
         llmTurn = opts.llmTurnFor(tenantId);
       } else {
         const r = llmResolver.resolve(tenantId);
-        if (r.provider !== 'liara' && r.provider !== 'ollama' && !r.apiKey) {
+        if (r.provider !== 'ollama' && !r.apiKey) {
           return c.json({ error: `Nessuna API key per ${r.provider}.` }, 401);
         }
-        // baseUrl per i provider self-host: Liara → gateway portal (config),
-        // Ollama → quello configurato dal tenant. Endpoint/model/header da UNICA fonte.
-        const baseUrl = r.baseUrl ?? (r.provider === 'liara' ? liaraBaseUrl() : undefined);
-        const target = resolveToolEndpoint(r.provider, r.model, baseUrl);
+        // baseUrl per i provider self-host (Ollama): quello configurato dal
+        // tenant. Endpoint/model/header da UNICA fonte.
+        const target = resolveToolEndpoint(r.provider, r.model, r.baseUrl);
         if (!target) {
           return c.json(
             {
-              error: `Il provider "${r.provider}" non supporta il tool-calling richiesto dalla chat di DB Studio. Usa OpenAI, Gemini, Grok, DeepSeek, OpenRouter, Groq, Mistral, Liara o Ollama.`,
+              error: `Il provider "${r.provider}" non supporta il tool-calling richiesto dalla chat di DB Studio. Usa OpenAI, Gemini, Grok, DeepSeek, OpenRouter, Groq, Mistral o Ollama.`,
             },
             400,
           );
         }
-        // AUTH: il gateway Liara (portal) ESIGE la LICENSE KEY come Bearer (non una
-        // API key del tenant). I provider BYOK usano la loro apiKey. Ollama locale
-        // non richiede auth. (Identico a llm-chat.service per la chat non-tool.)
-        const authKey = r.provider === 'liara' ? (process.env.MEDEA_LICENSE_KEY ?? '') : r.apiKey;
+        // AUTH: ogni provider usa la chiave del tenant. Ollama locale non
+        // richiede auth.
         llmTurn = makeOpenAiLlmTurn({
           endpoint: target.url,
-          apiKey: authKey,
+          apiKey: r.apiKey,
           model: target.model,
           ...(target.extraHeaders ? { extraHeaders: target.extraHeaders } : {}),
         });

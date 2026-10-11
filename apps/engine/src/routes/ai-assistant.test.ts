@@ -4,7 +4,7 @@
  * Coverage REALE con tutti i service mockati e LLM dispatch testato e2e:
  *  - POST /chat:
  *    - zod 400 (userMessage > 8000, missing workflow), 401 senza apiKey provider
- *      non-liara/ollama, NoLlmProviderError → httpStatus custom
+ *      a chiave, NoLlmProviderError → httpStatus custom
  *    - conversation findOrCreate throw → 500 "Failed to resolve conversation"
  *    - 🚨 user message inserito SEMPRE (audit anche se LLM fail dopo)
  *    - intent detection + attachment auto-dispatch (image/document/url)
@@ -20,7 +20,7 @@
  *  - GET /conversations/:id/messages: 404 cross-user, messages cap 50
  *  - DELETE /conversations/:id: 404 se softDelete false (no leak)
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
 
 const m = vi.hoisted(() => {
@@ -127,7 +127,7 @@ vi.mock('../services/llm-chat.service.js', () => ({
   dispatchLLMChatStructured: (...args: unknown[]) => m.dispatchLLM(...args),
   // Finestra di contesto — usata dalla route per il contatore (response.context)
   // e per la soglia di compaction token-based.
-  getLiaraContextWindow: () => 40960,
+  getContextWindowBudget: () => 40960,
   // Esportata perché la route fa `instanceof LlmContextOverflowError` sul path 413.
   LlmContextOverflowError: class LlmContextOverflowError extends Error {
     estimatedTokens = 0;
@@ -252,7 +252,7 @@ describe('POST /ai-assistant/chat — provider gating', () => {
     expect(res.status).toBe(402);
   });
 
-  it('🚨 provider non-liara/ollama senza apiKey → 401', async () => {
+  it('🚨 provider a chiave senza apiKey → 401', async () => {
     m.resolve.mockReturnValue({
       provider: 'anthropic',
       apiKey: '',
@@ -268,11 +268,11 @@ describe('POST /ai-assistant/chat — provider gating', () => {
     expect(((await res.json()) as { error: string }).error).toContain('API key');
   });
 
-  it('provider=liara senza apiKey OK (no 401)', async () => {
+  it('provider=ollama senza apiKey OK (no 401): è l’unico che non ne vuole', async () => {
     m.resolve.mockReturnValue({
-      provider: 'liara',
+      provider: 'ollama',
       apiKey: '',
-      model: 'qwen3',
+      model: 'llama3.2',
       baseUrl: undefined,
     });
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
@@ -295,17 +295,17 @@ describe('POST /ai-assistant/chat — provider gating', () => {
     expect(res.status).toBe(500);
   });
 
-  it('🚨 provider giù (Liara offline in gen-mode) → 503 PROVIDER_UNAVAILABLE, NIENTE swap silenzioso', async () => {
+  it('🚨 provider giù → 503 PROVIDER_UNAVAILABLE, NIENTE swap silenzioso', async () => {
     const { LlmProviderUnavailableError } = (await import('../services/llm-chat.service.js')) as {
       LlmProviderUnavailableError: new (p: string) => Error;
     };
     m.resolve.mockReturnValue({
-      provider: 'liara',
-      apiKey: '',
-      model: 'qwen3',
+      provider: 'openai',
+      apiKey: 'sk-test',
+      model: 'gpt-4o',
       baseUrl: undefined,
     });
-    m.dispatchLLM.mockRejectedValue(new LlmProviderUnavailableError('liara'));
+    m.dispatchLLM.mockRejectedValue(new LlmProviderUnavailableError('openai'));
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -314,7 +314,7 @@ describe('POST /ai-assistant/chat — provider gating', () => {
     expect(res.status).toBe(503);
     const j = (await res.json()) as { code: string; provider: string; error: string };
     expect(j.code).toBe('PROVIDER_UNAVAILABLE');
-    expect(j.provider).toBe('liara');
+    expect(j.provider).toBe('openai');
     expect(j.error).toMatch(/raggiungibile/);
   });
 });
@@ -411,7 +411,7 @@ describe('POST /ai-assistant/chat — LLM output parsing', () => {
 
   it('🚨 response espone context { used, window } per il contatore del chatter', async () => {
     // dispatch invoca la usage callback (9° arg, index 8) → chatUsage.input
-    // diventa il "contesto usato"; window = getLiaraContextWindow() mock.
+    // diventa il "contesto usato"; window = getContextWindowBudget() mock.
     m.dispatchLLM.mockImplementation((...args: unknown[]) => {
       const usageCb = args[8] as (u: { input: number; output: number; fromApi: boolean }) => void;
       usageCb({ input: 1500, output: 300, fromApi: true });
@@ -458,7 +458,7 @@ describe('POST /ai-assistant/chat — LLM output parsing', () => {
     expect(res.status).toBe(200);
   });
 
-  // CAMBIO DI COMPORTAMENTO 2026-06-16 (incident "Liara 502"): la chat NON
+  // CAMBIO DI COMPORTAMENTO 2026-06-16 (incident "chat 502"): la chat NON
   // restituisce più 502 su output non conforme. Strato 2 (fallback grazioso):
   // l'output grezzo diventa un messaggio conversazionale → la chat risponde SEMPRE.
   it('🚨 FIX 2026-06-16: non-JSON (prosa) → 200 con message = testo grezzo (MAI 502)', async () => {
@@ -766,10 +766,10 @@ describe('DELETE /ai-assistant/conversations/:id', () => {
   });
 });
 
-describe('POST /ai-assistant/chat — constrained decoding + propagazione X-FF-Request-Id', () => {
+describe('POST /ai-assistant/chat — lo schema della risposta arriva al dispatcher', () => {
   // dispatchLLMChatStructured(provider, apiKey, model, system, user, baseUrl,
-  //   history, JSON_SCHEMA[7], tokenListener[8], requestId[9]).
-  it('🚨 wiring guided_json: il JSON schema è passato come 8° argomento (strato 1)', async () => {
+  //   history, JSON_SCHEMA[7], tokenListener[8]).
+  it('🚨 il JSON schema è passato come 8° argomento (strato 1)', async () => {
     await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -780,85 +780,29 @@ describe('POST /ai-assistant/chat — constrained decoding + propagazione X-FF-R
     expect(schemaArg.required).toContain('message');
   });
 
-  it('header rid → passato a dispatchLLMChatStructured come 10° argomento', async () => {
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
+  /**
+   * La licenza dell'installazione non viaggia mai verso un provider LLM, e un
+   * identificativo di richiesta non serve a nessuno: non c'è una coda davanti
+   * al modello. Il dispatcher riceve i nove argomenti che usa e basta.
+   */
+  it('🚨 nessun argomento in più: né id di richiesta né immagini grezze', async () => {
+    await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-ff-request-id': 'rid-abc' },
       body: JSON.stringify(baseBody),
     });
-    expect(res.status).toBe(200);
-    expect(m.dispatchLLM).toHaveBeenCalledTimes(1);
-    expect(m.dispatchLLM.mock.calls[0]![9]).toBe('rid-abc'); // requestId
-  });
-
-  it('senza header rid → 10° argomento undefined (no propagazione)', async () => {
-    await buildApp({ userId: 'u1', tenantId: 't1' }).request('/ai-assistant/chat', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(baseBody),
-    });
-    expect(m.dispatchLLM.mock.calls[0]![9]).toBeUndefined();
+    expect(m.dispatchLLM.mock.calls[0]).toHaveLength(9);
   });
 });
 
-describe('GET /ai-assistant/queue-status — proxy SSE canale-posizione', () => {
-  const origFetch = globalThis.fetch;
-  afterEach(() => {
-    globalThis.fetch = origFetch;
-    vi.restoreAllMocks();
-  });
-
-  function sseBody(text: string): ReadableStream<Uint8Array> {
-    const enc = new TextEncoder();
-    return new ReadableStream({
-      start(ctrl) {
-        ctrl.enqueue(enc.encode(text));
-        ctrl.close();
-      },
-    });
-  }
-
-  it('401 senza auth', async () => {
-    const res = await buildApp(null).request('/ai-assistant/queue-status?rid=x');
-    expect(res.status).toBe(401);
-  });
-
-  it('400 senza rid', async () => {
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
-      '/ai-assistant/queue-status',
-    );
-    expect(res.status).toBe(400);
-  });
-
-  it('inoltra al portal con Bearer license + rid, e fa pass-through dei frame SSE', async () => {
-    process.env.MEDEA_LICENSE_KEY = 'ZFL-TEST';
-    const fetchMock = vi.fn(
-      async (_url: string | URL, _init?: RequestInit) =>
-        new Response(sseBody('event: queued\ndata: {"position":2,"ahead":1}\n\n'), {
-          status: 200,
-          headers: { 'content-type': 'text/event-stream' },
-        }),
-    );
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+describe('GET /ai-assistant/queue-status — non esiste più', () => {
+  it('🚨 la rotta è stata tolta: non inoltra niente a nessuno', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
       '/ai-assistant/queue-status?rid=rid-9',
     );
-    expect(res.status).toBe(200);
-    const [url, init] = fetchMock.mock.calls[0]!;
-    expect(String(url)).toContain('/queue-status?rid=rid-9');
-    expect((init!.headers as Record<string, string>).Authorization).toBe('Bearer ZFL-TEST');
-    const body = await res.text();
-    expect(body).toContain('event: queued');
-    expect(body).toContain('"position":2');
-  });
-
-  it('upstream non-ok → emette gone (no crash)', async () => {
-    globalThis.fetch = (async () =>
-      new Response('nope', { status: 502 })) as unknown as typeof fetch;
-    const res = await buildApp({ userId: 'u1', tenantId: 't1' }).request(
-      '/ai-assistant/queue-status?rid=z',
-    );
-    expect(res.status).toBe(200); // SSE aperto
-    expect(await res.text()).toContain('event: gone');
+    expect(res.status).toBe(404);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
   });
 });

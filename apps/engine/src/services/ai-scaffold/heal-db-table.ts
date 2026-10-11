@@ -1,6 +1,6 @@
 /**
  * AUTO-HEAL DB-table (2026-06-11) — l'AUTOMAZIONE che mancava: se un db_insert/
- * db_update scrive colonne che NON esistono nella tabella di destinazione (Liara
+ * db_update scrive colonne che NON esistono nella tabella di destinazione (il modello
  * ha RICICLATO una tabella scollegata, es. `orders` per dati prezzo), il sistema
  * RIPARA invece di rifiutare:
  *   1. cerca una tabella ESISTENTE le cui colonne contengono quelle del nodo → ripunta;
@@ -153,7 +153,7 @@ export function healDbTableReferences(
     // 2) Nessun match → CREA una tabella dedicata coi tipi inferiti + ripunta.
     let newName: string;
     if (!targetCols) {
-      // La tabella che Liara ha nominato NON esiste → creala col nome che ha scelto.
+      // La tabella che il modello ha nominato NON esiste → creala col nome che ha scelto.
       newName = table;
     } else {
       // Tabella riciclata (esiste ma colonne sbagliate) → nome dedicato dal goal.

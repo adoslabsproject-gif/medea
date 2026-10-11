@@ -183,7 +183,7 @@ describe('🔒 outputContract ↔ executor — ANTI-DRIFT (no aspirazionale)', (
     expect(contractKeys).toEqual(new Set(['found', 'created', 'partnerId', 'partner']));
   });
 
-  it('🚨 partnerId nel contract documenta il NULL (number | null) — il valore che Liara allucinava come 0', () => {
+  it('🚨 partnerId nel contract documenta il NULL (number | null) — il valore che il modello allucinava come 0', () => {
     const pid = fields.find((f) => f.name === 'partnerId');
     expect(pid?.type).toContain('null');
     expect(pid?.desc.toLowerCase()).toContain('null');

@@ -206,12 +206,11 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
         },
       },
       {
-        id: 'liara',
+        id: 'assistente',
         defId: 'action_llm_complete',
         x: 1500,
         y: 300,
         config: {
-          provider: 'liara',
           responseFormat: 'json',
           temperature: '0.4',
           maxTokens: '900',
@@ -254,7 +253,7 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
           databaseId: 'pizzeria_db',
           table: 'pizzeria_chat',
           rowJson:
-            '{"telefono":"{{ $node.wa_in.json.from }}","ruolo":"pizzeria","messaggio":{{ JSON.stringify(($node.liara.json.jsonParsed || {}).risposta || $node.liara.json.completion || "") }}}',
+            '{"telefono":"{{ $node.wa_in.json.from }}","ruolo":"pizzeria","messaggio":{{ JSON.stringify(($node.assistente.json.jsonParsed || {}).risposta || $node.assistente.json.completion || "") }}}',
         },
       },
       {
@@ -263,7 +262,7 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
         x: 1980,
         y: 300,
         config: {
-          condition: '($node.liara.json.jsonParsed || {}).ordine != null',
+          condition: '($node.assistente.json.jsonParsed || {}).ordine != null',
         },
       },
       {
@@ -276,10 +275,10 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
           table: 'pizzeria_ordini',
           rowJson:
             '{"telefono":"{{ $node.wa_in.json.from }}",' +
-            '"pizze":{{ JSON.stringify(JSON.stringify($node.liara.json.jsonParsed.ordine.pizze || [])) }},' +
-            '"totale":{{ $node.liara.json.jsonParsed.ordine.totale || 0 }},' +
+            '"pizze":{{ JSON.stringify(JSON.stringify($node.assistente.json.jsonParsed.ordine.pizze || [])) }},' +
+            '"totale":{{ $node.assistente.json.jsonParsed.ordine.totale || 0 }},' +
             '"stato":"ricevuto",' +
-            '"note":{{ JSON.stringify($node.liara.json.jsonParsed.ordine.note || "") }}}',
+            '"note":{{ JSON.stringify($node.assistente.json.jsonParsed.ordine.note || "") }}}',
         },
       },
       {
@@ -292,7 +291,7 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
           accessToken: '',
           recipient: '+{{ $node.wa_in.json.from }}',
           mode: 'text',
-          body: '{{ ($node.liara.json.jsonParsed || {}).risposta || $node.liara.json.completion }}',
+          body: '{{ ($node.assistente.json.jsonParsed || {}).risposta || $node.assistente.json.completion }}',
         },
       },
     ],
@@ -303,8 +302,8 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
       { from: 'info_pizzeria', to: 'carica_menu' },
       { from: 'carica_menu', to: 'storico_ordini' },
       { from: 'storico_ordini', to: 'chat_recente' },
-      { from: 'chat_recente', to: 'liara' },
-      { from: 'liara', to: 'salva_risposta' },
+      { from: 'chat_recente', to: 'assistente' },
+      { from: 'assistente', to: 'salva_risposta' },
       { from: 'salva_risposta', to: 'gate_ordine' },
       { from: 'gate_ordine', to: 'salva_ordine', fromPort: 'true' },
       { from: 'salva_ordine', to: 'rispondi' },
@@ -624,12 +623,11 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
         },
       },
       {
-        id: 'liara',
+        id: 'assistente',
         defId: 'action_llm_complete',
         x: 1500,
         y: 300,
         config: {
-          provider: 'liara',
           responseFormat: 'json',
           temperature: '0.4',
           maxTokens: '900',
@@ -672,7 +670,7 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
           databaseId: 'pizzeria_db',
           table: 'pizzeria_chat',
           rowJson:
-            '{"telefono":"{{ $node.tg_in.json.chatId }}","ruolo":"pizzeria","messaggio":{{ JSON.stringify(($node.liara.json.jsonParsed || {}).risposta || $node.liara.json.completion || "") }}}',
+            '{"telefono":"{{ $node.tg_in.json.chatId }}","ruolo":"pizzeria","messaggio":{{ JSON.stringify(($node.assistente.json.jsonParsed || {}).risposta || $node.assistente.json.completion || "") }}}',
         },
       },
       {
@@ -681,7 +679,7 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
         x: 1980,
         y: 300,
         config: {
-          condition: '($node.liara.json.jsonParsed || {}).ordine != null',
+          condition: '($node.assistente.json.jsonParsed || {}).ordine != null',
         },
       },
       {
@@ -694,10 +692,10 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
           table: 'pizzeria_ordini',
           rowJson:
             '{"telefono":"{{ $node.tg_in.json.chatId }}",' +
-            '"pizze":{{ JSON.stringify(JSON.stringify($node.liara.json.jsonParsed.ordine.pizze || [])) }},' +
-            '"totale":{{ $node.liara.json.jsonParsed.ordine.totale || 0 }},' +
+            '"pizze":{{ JSON.stringify(JSON.stringify($node.assistente.json.jsonParsed.ordine.pizze || [])) }},' +
+            '"totale":{{ $node.assistente.json.jsonParsed.ordine.totale || 0 }},' +
             '"stato":"ricevuto",' +
-            '"note":{{ JSON.stringify($node.liara.json.jsonParsed.ordine.note || "") }}}',
+            '"note":{{ JSON.stringify($node.assistente.json.jsonParsed.ordine.note || "") }}}',
         },
       },
       {
@@ -707,7 +705,7 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
         y: 300,
         config: {
           chatId: '{{ $node.tg_in.json.chatId }}',
-          text: '{{ ($node.liara.json.jsonParsed || {}).risposta || $node.liara.json.completion }}',
+          text: '{{ ($node.assistente.json.jsonParsed || {}).risposta || $node.assistente.json.completion }}',
         },
       },
     ],
@@ -718,8 +716,8 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
       { from: 'info_pizzeria', to: 'carica_menu' },
       { from: 'carica_menu', to: 'storico_ordini' },
       { from: 'storico_ordini', to: 'chat_recente' },
-      { from: 'chat_recente', to: 'liara' },
-      { from: 'liara', to: 'salva_risposta' },
+      { from: 'chat_recente', to: 'assistente' },
+      { from: 'assistente', to: 'salva_risposta' },
       { from: 'salva_risposta', to: 'gate_ordine' },
       { from: 'gate_ordine', to: 'salva_ordine', fromPort: 'true' },
       { from: 'salva_ordine', to: 'rispondi' },
@@ -1413,7 +1411,7 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
     description:
       'Manual trigger con un testo italiano → traduce in EN, classifica sentiment, estrae entità nominate.',
     category: 'ai-orchestration',
-    tags: ['test', 'AI', 'liara'],
+    tags: ['test', 'AI'],
     language: 'it',
     vendor: 'flowforge',
     difficulty: 'beginner',
@@ -1547,7 +1545,7 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
     id: 'tmpl_test_ai_tool_loop',
     name: '🧪 Test: AI Agent autonomo con tool calling',
     description:
-      'Agente Liara con accesso a rag_search e db_query — fa Q&A iterativo sul tuo DB e knowledge base.',
+      'Agente con accesso a rag_search e db_query — fa Q&A iterativo sul tuo DB e knowledge base.',
     category: 'ai-orchestration',
     tags: ['test', 'AI', 'tool-calling', 'agentic'],
     language: 'it',
@@ -2610,7 +2608,6 @@ export const WORKFLOW_TEMPLATES: readonly WorkflowTemplate[] = [
         x: 2200,
         y: 220,
         config: {
-          provider: 'liara',
           responseFormat: 'json',
           temperature: '0.55',
           maxTokens: '400',

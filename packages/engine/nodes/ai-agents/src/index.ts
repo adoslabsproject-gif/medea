@@ -67,8 +67,8 @@ async function gatewayFetch(
 
 // Fase 2 (#14): internalGatewayTrustedHost è diventata SSOT condivisa in
 // @medea/engine-safe-fetch (serve anche ai nodi stdlib che parlano col gateway).
-// Re-export per back-compat: era nata qui (fix SSRF nLA_liara) e i test/import
-// esistenti la referenziano da questo package.
+// Re-export per back-compat: era nata qui e i test/import esistenti la
+// referenziano da questo package.
 export { internalGatewayTrustedHost } from '@medea/engine-safe-fetch';
 
 interface AgentDefinition {
@@ -172,7 +172,7 @@ const AGENTS: AgentDefinition[] = [
     icon: 'file-text',
     color: '#22c55e',
     description:
-      'Agent LLM (usa il provider configurato in Settings → AI Providers: Anthropic, OpenAI, Gemini, Mistral, Groq, OpenRouter, Ollama o Liara) che produce un summary strutturato 3-tier: TL;DR (1 frase), 5 bullet point, paragrafo (~150 word). ' +
+      'Agent LLM (usa il provider configurato in Settings → AI Providers: Anthropic, OpenAI, Gemini, Mistral, Groq, OpenRouter o Ollama) che produce un summary strutturato 3-tier: TL;DR (1 frase), 5 bullet point, paragrafo (~150 word). ' +
       'Preserva named entities (people/orgs/dates/amounts/tech terms) verbatim — no parafrasi. Output JSON typed. ' +
       'Use case: digest email lunghe, riassunto articoli RSS per newsletter, brief meeting notes, abstract documenti legali/PDF. ' +
       'Token budget controllato. Compatibile output→input chain per filter/route downstream.',
@@ -344,7 +344,7 @@ const AGENTS: AgentDefinition[] = [
   },
 ];
 
-/** Shape usage OpenAI-format (liara/openai/openrouter/mistral/groq). */
+/** Shape usage OpenAI-format (openai/openrouter/mistral/groq). */
 interface OpenAiUsage {
   prompt_tokens?: number;
   completion_tokens?: number;
@@ -369,83 +369,6 @@ async function dispatchLLM(
   baseUrl?: string,
 ): Promise<{ text: string; usage: AgentLlmUsage }> {
   switch (provider) {
-    case 'liara': {
-      // Free-tier hosted model (Qwen3 32B + NHA-v1 LoRA) — no API key needed.
-      // Reachable only from the FlowForge server (IP-allowlisted at the host).
-      //
-      // Qwen3 has a "thinking" mode enabled by default that emits <think>...</think>
-      // before the answer. For structured agent tasks this adds 10-30s of latency
-      // without value. We disable it by prefixing /no_think (Qwen3 convention) and
-      // asking vLLM to stop on the closing </think> tag if any thinking leaks in.
-      // Liara base URL precedence: caller override > env > NHA default.
-      // We read env directly here because this package is browser-safe and
-      // can't import from apps/runtime/src/config.ts. The runtime callers
-      // who want to override should pass `baseUrl` via context.llmProviders.
-      const internalGateway =
-        typeof process !== 'undefined' && process.env.MEDEA_LIARA_BASE_URL
-          ? process.env.MEDEA_LIARA_BASE_URL.replace(/\/$/, '')
-          : undefined;
-      const liaraDefault = internalGateway ?? 'https://liara.nothumanallowed.com';
-      const base = baseUrl ?? liaraDefault;
-      // Path = `/chat/completions` SENZA `/v1`: il gateway Liara (MEDEA_LIARA_BASE_URL
-      // include già `/api/v1/llm`) instrada lì. Con `/v1/chat/completions` usciva un path
-      // doppio `…/api/v1/llm/v1/chat/completions` → 404 (verificato empiricamente dal
-      // container: /v1→404, /chat/completions→200). Identico alla chat (llm-chat.service).
-      const url = `${base}/chat/completions`;
-      // SSRF: il GATEWAY INTERNO di sistema (MEDEA_LIARA_BASE_URL, es. 172.20.0.1:3006
-      // sulla bridge docker) è traffico container→gateway fidato → IP privato by-design.
-      // Esente dal guard per host:porta ESATTO, deciso per CONFRONTO DI ORIGIN con il
-      // gateway: copre sia il default sia il caso (reale) in cui il runtime passa il
-      // baseUrl del gateway ESPLICITAMENTE via context.llmProviders (llm-providers.service
-      // ritorna baseUrl=liaraBaseUrl() per 'liara'). I BYOK utente hanno origin DIVERSO →
-      // restano sotto guard pieno. Coerente con guardCustomBaseUrl della chat (per origin).
-      const trustedHost = internalGatewayTrustedHost(base, internalGateway);
-      // AUTH: il gateway Liara ESIGE la license come Bearer (senza → 400 "license required").
-      // Letta dall'env del container (come la chat, llm-chat.service). BYOK (apiKey) → fallback.
-      const licenseKey =
-        typeof process !== 'undefined' ? (process.env.MEDEA_LICENSE_KEY ?? '') : '';
-      const authBearer = licenseKey || apiKey;
-      const systemNoThink = `/no_think\n${system}`;
-      const effectiveModel = model || 'nha-v1';
-      const res = await gatewayFetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authBearer ? { Authorization: `Bearer ${authBearer}` } : {}),
-        },
-        body: JSON.stringify({
-          model: effectiveModel,
-          messages: [
-            { role: 'system', content: systemNoThink },
-            { role: 'user', content: user },
-          ],
-          temperature: 0.7,
-          max_tokens: 2048,
-          chat_template_kwargs: { enable_thinking: false },
-        }),
-        ...(trustedHost ? { allowedHosts: [trustedHost] } : {}),
-      });
-      if (!res.ok) throw new Error(`Liara ${String(res.status)}: ${await errBody(res)}`);
-      const data = await readJsonCapped<{
-        choices?: { message: { content: string } }[];
-        usage?: OpenAiUsage;
-      }>(res);
-      const raw = data.choices?.[0]?.message.content ?? '';
-      return {
-        // Safety: strip any residual <think>...</think> block that may leak through
-        text: raw.replace(/<think>[\s\S]*?<\/think>\s*/g, '').trim(),
-        // Stima sul RAW pre-strip: gli eventuali token di thinking sono stati
-        // comunque generati (e contati/billati dal gateway).
-        usage: buildAgentUsage({
-          provider: 'liara',
-          model: effectiveModel,
-          sentSystem: systemNoThink,
-          sentUser: user,
-          receivedText: raw,
-          api: openAiCounts(data.usage),
-        }),
-      };
-    }
     case 'anthropic': {
       const effectiveModel = model || 'claude-sonnet-4-5';
       const res = await gatewayFetch('https://api.anthropic.com/v1/messages', {
@@ -1113,7 +1036,6 @@ function makeAgentNode(agent: AgentDefinition): NodeModule {
           required: false,
           options: [
             '',
-            'liara',
             'anthropic',
             'openai',
             'gemini',
@@ -1130,7 +1052,7 @@ function makeAgentNode(agent: AgentDefinition): NodeModule {
           label: 'API key (override)',
           type: 'secret',
           required: false,
-          help: 'Vuoto = usa la chiave di Settings → AI Providers. Liara è free-tier (nessuna key necessaria).',
+          help: 'Vuoto = usa la chiave di Settings → AI Providers.',
         },
         {
           key: 'model',
@@ -1138,7 +1060,7 @@ function makeAgentNode(agent: AgentDefinition): NodeModule {
           type: 'text',
           required: false,
           placeholder: 'es. claude-sonnet-4-5',
-          help: 'Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, nha-v1.',
+          help: 'Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash.',
         },
         {
           key: 'baseUrl',

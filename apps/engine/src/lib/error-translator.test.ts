@@ -154,9 +154,9 @@ describe('🚨 HTTP 4xx/5xx — overlap detection critico', () => {
   });
 });
 
-describe('🚨 LLM error — Liara/OpenAI/Anthropic', () => {
-  it('🚨 "Liara 429: rate limit" matcha', () => {
-    const r = translateError('Liara 429: rate limit exceeded', ctx);
+describe('🚨 LLM error — OpenAI/Anthropic', () => {
+  it('🚨 "OpenAI 429: rate limit" matcha', () => {
+    const r = translateError('OpenAI 429: rate limit exceeded', ctx);
     expect(r.title).toMatch(/Errore LLM/u);
     expect(r.hint).toMatch(/Settings → AI Providers/u);
   });
@@ -245,9 +245,9 @@ describe('🚨 Telegram rules', () => {
   });
 });
 
-describe('🚨 JSON malformed — Liara repair fallita', () => {
+describe('🚨 JSON malformed — repair fallita', () => {
   it('🚨 "no balanced JSON found" matcha', () => {
-    const r = translateError('Liara response: no balanced JSON found', ctx);
+    const r = translateError('LLM response: no balanced JSON found', ctx);
     expect(r.title).toMatch(/JSON malformato/u);
     expect(r.hint).toMatch(/Contesto aggiuntivo/u);
   });

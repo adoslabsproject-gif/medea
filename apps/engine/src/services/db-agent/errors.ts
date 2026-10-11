@@ -1,5 +1,5 @@
 /**
- * Errori tipati del DB-agent di Liara.
+ * Errori tipati del DB-agent.
  *
  * Ogni errore porta un `code` stabile (machine-readable) usato dall'executor
  * per costruire un ToolResult `{ ok:false, code, error }` deterministico — mai

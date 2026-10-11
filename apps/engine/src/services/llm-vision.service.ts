@@ -1,18 +1,16 @@
 /**
- * Dispatch VISION multi-provider — legge immagini col modello LLM RISOLTO del tenant
- * (BYOK o Liara), NON solo con Liara. Ogni famiglia di provider ha un formato immagine
- * diverso:
- *   • OpenAI-compat (openai/mistral/groq/grok/deepseek/openrouter/liara) → content[].image_url (data-URL)
- *   • Anthropic                                                          → content[].image.source(base64)
- *   • Gemini                                                             → parts[].inline_data
- *   • Ollama (llava/qwen-vl locali)                                      → message.images[] (base64 puro)
+ * Dispatch VISION multi-provider — legge immagini col modello LLM RISOLTO del tenant.
+ * Ogni famiglia di provider ha un formato immagine diverso:
+ *   • OpenAI-compat (openai/mistral/groq/grok/deepseek/openrouter) → content[].image_url (data-URL)
+ *   • Anthropic                                                    → content[].image.source(base64)
+ *   • Gemini                                                       → parts[].inline_data
+ *   • Ollama (llava/qwen-vl locali)                                → message.images[] (base64 puro)
  *
  * Speculare a `dispatchLLMChat` (stessi endpoint/auth/parsing) ma multimodale. Non
  * lancia: ritorna `{ ok:false, error }` su ogni fallimento (è un tool, non il loop).
  */
 
 import { isFixedOpenAiCompat, fixedOpenAiCompatTarget } from './llm/provider-registry.js';
-import { isLiaraEnabled, liaraBaseUrl } from '@/config.js';
 import { readJsonCapped, readTextTruncated } from '@/lib/capped-response.js';
 import type { VisionImage } from '@/lib/vision-render.js';
 
@@ -92,26 +90,6 @@ export async function dispatchLLMVision(
     }
 
     switch (provider) {
-      case 'liara': {
-        if (!isLiaraEnabled())
-          return { ok: false, text: '', error: 'Liara è disabilitata su questa istanza' };
-        const licenseKey = process.env.MEDEA_LICENSE_KEY ?? '';
-        const res = await fetch(`${baseUrl ?? liaraBaseUrl()}/chat/completions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(licenseKey ? { Authorization: `Bearer ${licenseKey}` } : {}),
-          },
-          body: JSON.stringify({
-            messages: [{ role: 'user', content: openAiCompatContent(prompt, images) }],
-            max_tokens: MAX_TOKENS,
-            temperature: 0.1,
-            chat_template_kwargs: { enable_thinking: false },
-          }),
-          signal: ctrl.signal,
-        });
-        return await parseOpenAiChoices(res, 'Liara');
-      }
       case 'ollama': {
         const res = await fetch(`${baseUrl ?? 'http://localhost:11434'}/api/chat`, {
           method: 'POST',

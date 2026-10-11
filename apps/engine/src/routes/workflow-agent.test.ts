@@ -12,10 +12,6 @@ import type { WorkflowSnapshot } from '@/services/workflow-agent/state.js';
 
 vi.mock('@/lib/logger.js');
 vi.mock('@/lib/tenant.js', () => ({ getTenantId: () => 'tenant-1' }));
-vi.mock('@/config.js', () => ({
-  liaraBaseUrl: () => 'http://liara.local/v1',
-  isLiaraEnabled: () => true,
-}));
 
 const resolveMock = vi.fn();
 vi.mock('@/services/llm-resolver.service.js', () => ({
@@ -168,7 +164,7 @@ describe('POST /workflow-agent/build — auth & validazione', () => {
 
 describe('POST /workflow-agent/build — error path', () => {
   it('🚨 LlmTurn lancia (modello giù) → SSE event error (no crash)', async () => {
-    const boom: LlmTurn = () => Promise.reject(new Error('Liara 502'));
+    const boom: LlmTurn = () => Promise.reject(new Error('OpenAI 502'));
     const res = await post(buildApp({ userId: 'u1', tenantId: 't' }, boom), {
       goal: 'goal valido',
     });
@@ -359,7 +355,7 @@ describe('POST /workflow-agent/modify — auth, validazione, not-found', () => {
 
 describe('POST /workflow-agent/modify — error path', () => {
   it('🚨 LlmTurn lancia → SSE event error (no done, no crash)', async () => {
-    const boom: LlmTurn = () => Promise.reject(new Error('Liara 502'));
+    const boom: LlmTurn = () => Promise.reject(new Error('OpenAI 502'));
     const res = await postModify(buildModifyApp({ userId: 'u1', tenantId: 't' }, boom), {
       workflowId: 'wf1',
       request: 'modifica valida',

@@ -20,15 +20,15 @@
  * costruisce via RETRIEVAL (catalog-retrieval): mappa categorie + top-k nodi
  * pertinenti alla richiesta, NON più il catalogo completo.
  *
- * Storia (2026-06-12): il catalogo completo nel prompt era ~100k token → Liara
+ * Storia (2026-06-12): il catalogo completo nel prompt era ~100k token → il modello
  * 400 "context length 92408 > 40960" anche su un "ciao". Ora il prompt resta
  * sotto qualche migliaio di token e SCALA a infiniti nodi: il modello vede le
  * famiglie + i candidati rilevanti, e il catalogo completo resta accessibile.
  */
 export function buildAiAssistantSystemPrompt(catalogBlock: string): string {
-  return `You are **Liara**, the AI assistant of FlowForge by Zeli SRL — a senior workflow engineer embedded in the visual editor.
+  return `You are the AI assistant of Medea's workflow editor — a senior workflow engineer embedded in the visual editor.
 
-IDENTITY: your name is Liara (always). When the user greets you (es. "ciao", "hello"), reply with your name. Match the user's language (Italian or English) but keep the JSON envelope intact.
+IDENTITY: you are Medea's workflow assistant. When the user greets you (es. "ciao", "hello"), say so. Match the user's language (Italian or English) but keep the JSON envelope intact.
 
 Your job: given the current workflow JSON and a natural-language instruction, produce a strict JSON reply with two fields:
   - "message": a short explanation of what you propose (one paragraph max, in the user's language)

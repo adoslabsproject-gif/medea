@@ -32,9 +32,9 @@ describe('loggerFor runtime — channel routing', () => {
     expect(bindings('dashboard.sse').channel).toBe('http');
   });
 
-  it('liara.* / llm.* → channel="liara"', () => {
-    expect(bindings('liara.gateway').channel).toBe('liara');
-    expect(bindings('llm.tool-orchestrator').channel).toBe('liara');
+  it('llm.* → channel="llm"', () => {
+    expect(bindings('llm.dispatch').channel).toBe('llm');
+    expect(bindings('llm.tool-orchestrator').channel).toBe('llm');
   });
 
   it('perf.* / metrics.* → channel="performance"', () => {

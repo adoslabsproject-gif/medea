@@ -2,7 +2,7 @@
  * Lead Score — qualifica deterministica B2B per workflow cold outreach.
  *
  * PERCHE' DETERMINISTICO E NON LLM:
- * Un LLM relevance_score può drift fra modelli (Claude vs GPT vs Liara) +
+ * Un LLM relevance_score può drift fra modelli (Claude vs GPT vs Gemini) +
  * inconsistente nel tempo (stesso input → score diverso). Per un workflow
  * production che decide CHI ricevere email reali, serve OUTPUT IDENTICO
  * AD OGNI ESECUZIONE con stesso input — solo deterministico lo garantisce.

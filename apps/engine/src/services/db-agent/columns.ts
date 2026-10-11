@@ -2,7 +2,7 @@
  * Costruzione deterministica di Column/Index del core a partire dall'input
  * (potenzialmente "creativo") del modello. Nessuna coercizione silenziosa: un
  * tipo colonna non valido viene RIFIUTATO con l'elenco di quelli ammessi, così
- * Liara corregge invece di scrivere una colonna sbagliata.
+ * l'assistente corregge invece di scrivere una colonna sbagliata.
  *
  * @module services/db-agent/columns
  */

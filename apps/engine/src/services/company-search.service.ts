@@ -10,7 +10,7 @@
  *
  *   1. LLM query expansion (opzionale, BYO key)
  *      Input: seed prompt
- *      LLM (Liara / Anthropic / OpenAI / ...) genera N query DDG variate.
+ *      LLM (Anthropic / OpenAI / ...) genera N query DDG variate.
  *      Es. "yacht builder Italia" → [
  *        "cantieri navali yacht produttori Italia contatti",
  *        "italian shipyards luxury yacht manufacturer",
@@ -44,7 +44,7 @@
  *   6. De-dup per registrable domain + cap a maxResults.
  *
  * LLM-agnostic: la query expansion usa `llmResolver`/`dispatchLLMChat`,
- * quindi gira identica con Liara (default free) o BYO key Anthropic/OpenAI/Gemini.
+ * quindi gira identica con qualunque provider configurato (Anthropic/OpenAI/Gemini…).
  */
 
 import { webSearch } from './web-tools.service.js';

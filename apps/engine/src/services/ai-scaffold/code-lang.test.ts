@@ -16,7 +16,7 @@ import {
 
 describe('detectCodeLanguage — caso reale user 2026-06-09', () => {
   it('classifica come python il template Python incollato in un nodo run_js', () => {
-    // Esattamente il codice generato da Liara nel bug report.
+    // Esattamente il codice generato dal modello nel bug report.
     const code = [
       'import json, os',
       '',

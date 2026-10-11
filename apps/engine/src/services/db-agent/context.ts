@@ -1,5 +1,5 @@
 /**
- * DbAgentContext — l'UNICO portatore del tenant per il DB-agent di Liara.
+ * DbAgentContext — l'UNICO portatore del tenant per il DB-agent.
  *
  * REGOLA DI SICUREZZA (la più importante di tutto il sottosistema):
  * il `tenantId` entra QUI, una volta sola, derivato server-side da
@@ -8,7 +8,7 @@
  * solo da `ctx.tenantId`. Il contesto è congelato (`Object.freeze`) così
  * nemmeno un tool bacato può riscriverlo a runtime.
  *
- * Conseguenza: Liara non può, per costruzione, operare su un tenant diverso
+ * Conseguenza: l'assistente non può, per costruzione, operare su un tenant diverso
  * dal proprio — anche se l'LLM "inventasse" un tenantId negli args, quello
  * verrebbe rifiutato dalla validazione `.strict()` dei tool e comunque ignorato.
  *
@@ -38,7 +38,7 @@ export interface DbAgentContext {
  * un chiamante JS che passasse un tenant assente viene RIFIUTATO qui con un
  * errore tipato, non con un TypeError più a valle.
  *
- * `allowWrites` default false: di default Liara è in SOLA LETTURA; le scritture
+ * `allowWrites` default false: di default l'assistente è in SOLA LETTURA; le scritture
  * vanno abilitate esplicitamente dall'utente (mai dal modello).
  *
  * @throws TenantScopeError se il tenant è vuoto (mai operare "senza tenant").

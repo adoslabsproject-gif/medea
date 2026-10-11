@@ -41,7 +41,7 @@ beforeEach(() => {
     confidence: 80,
     success: true,
     reason: 'ok',
-    llm_provider: 'liara',
+    llm_provider: 'openai',
     llm_model: 'qwen',
   });
 });
@@ -102,7 +102,7 @@ describe('email-personalize — mapping output', () => {
       confidence: 80,
       success: true,
       reason: 'ok',
-      llm_provider: 'liara',
+      llm_provider: 'openai',
       llm_model: 'qwen',
     });
   });
@@ -130,7 +130,7 @@ describe('email-personalize — mapping output', () => {
       confidence: 80,
       success: true,
       reason: 'ok',
-      llm_provider: 'liara',
+      llm_provider: 'openai',
       llm_model: 'qwen',
       llm_usage: { input: 77, output: 33, fromApi: true },
     });
@@ -139,7 +139,7 @@ describe('email-personalize — mapping output', () => {
       inputTokens: 77,
       outputTokens: 33,
       model: 'qwen',
-      provider: 'liara',
+      provider: 'openai',
       fromApi: true,
     });
   });

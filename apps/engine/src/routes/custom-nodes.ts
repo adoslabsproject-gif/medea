@@ -590,7 +590,7 @@ export function createCustomNodesRoutes(): Hono {
     }
   });
 
-  /** POST /api/v1/custom-nodes/:id/ai-assist — chiama Liara gateway.
+  /** POST /api/v1/custom-nodes/:id/ai-assist — chiede al provider del tenant.
    *  Rate-limit LLM standard (30 req/min tenant, 10 req/min user). */
   app.post(
     '/:id/ai-assist',
@@ -625,7 +625,7 @@ export function createCustomNodesRoutes(): Hono {
         if (body.selectedText !== undefined) req.selectedText = body.selectedText;
         if (body.diagnostic !== undefined) req.diagnostic = body.diagnostic;
         // Contesto cross-surface: cosa l'utente stava facendo nelle ALTRE schede
-        // (es. il workflow editor) → Liara nell'editor nodi "ricorda". Fail-soft.
+        // (es. il workflow editor) → l'assistente nell'editor nodi "ricorda". Fail-soft.
         const { buildCrossSurfaceContext } =
           await import('@/services/ai-conversations/cross-surface-context.js');
         const cross = buildCrossSurfaceContext(ctx.actorUserId, wsId);

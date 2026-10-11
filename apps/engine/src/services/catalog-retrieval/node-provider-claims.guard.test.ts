@@ -2,7 +2,7 @@
  * GUARD CODEBASE-WIDE — claim provider LLM nelle description ⊆ campo `provider` del nodo.
  *
  * Radice (review nodi): più nodi nominavano provider che NON gestivano
- * (agent_summarizer "(Liara/Anthropic)"; action_llm_complete "Gemini/Perplexity"
+ * (agent_summarizer citava due soli provider; action_llm_complete "Gemini/Perplexity"
  * mentre l'executor li ignora). Questo guard scansiona OGNI nodo di OGNI package del
  * catalog: se il nodo ha un campo `provider` (select) e la sua description NOMINA un
  * provider LLM, quel provider DEVE essere tra le opzioni del campo. Altrimenti è un
@@ -33,7 +33,6 @@ const ALL_NODES: NodeModule[] = [
 // Nomi-PROVIDER inequivocabili (NON model name come Claude/GPT/Grok → evitano falsi
 // positivi su esempi di modello). Token → id-opzione del campo provider.
 const PROVIDER_TOKENS: Record<string, RegExp> = {
-  liara: /\bLiara\b/,
   anthropic: /\bAnthropic\b/i,
   openai: /\bOpenAI\b/i,
   gemini: /\bGemini\b/i,

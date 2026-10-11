@@ -67,7 +67,7 @@ export const CLOUDFLARE_V6: readonly string[] = Object.freeze([
  */
 export const ZELI_INFRA_CIDRS: readonly string[] = Object.freeze([
   '198.51.100.172/32', // Hetzner GEX131 — questo server (health-check via public IP)
-  '198.51.100.3/32', // NHA production server (proxy interno → Liara gateway)
+  '198.51.100.3/32', // NHA production server (proxy interno)
 ]);
 
 /** Motivo per cui un IP NON è bannabile. `null` = bannabile (client reale). */

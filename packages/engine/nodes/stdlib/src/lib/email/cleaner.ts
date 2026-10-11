@@ -14,7 +14,7 @@
  *      > Quoted reply of 200 lines from a 3-month conversation]
  *
  * The 30-token actual message gets buried under 800 tokens of signature,
- * disclaimer and quoted reply. The downstream LLM (Liara) sees garbage,
+ * disclaimer and quoted reply. The downstream LLM sees garbage,
  * spends budget, and emits less accurate labels.
  *
  * This cleaner runs locally on the worker (zero LLM cost) and returns ONLY

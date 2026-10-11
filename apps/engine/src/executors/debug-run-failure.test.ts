@@ -2,7 +2,7 @@
  * Test debug-run-failure executor.
  *
  * Fase 2 (#14): il transport è `llmResolver` + `dispatchLLMChat` (gateway
- * metered) — il vecchio `LIARA_URL/v1/complete` diretto non esisteva più
+ * metered) — il vecchio indirizzo fisso `/v1/complete` non esisteva più
  * (401 sempre → SEMPRE fallback euristico). I mock sono sul SERVICE.
  * Le asserzioni di dominio (failed-step detection, classifyError, maxFixes,
  * replayCommand, fallback euristico) sono INVARIATE.
@@ -49,7 +49,7 @@ const llmText = (body: unknown): string => JSON.stringify(body);
 
 beforeEach(() => {
   vi.clearAllMocks();
-  m.resolve.mockReturnValue({ provider: 'liara', apiKey: '', model: '' });
+  m.resolve.mockReturnValue({ provider: 'openai', apiKey: '', model: '' });
 });
 
 describe('debugRunFailureExecutor — validation', () => {
@@ -160,8 +160,8 @@ describe('debugRunFailureExecutor — diagnosis flow', () => {
     expect(out._llm).toEqual({
       inputTokens: 250,
       outputTokens: 90,
-      model: 'liara-default',
-      provider: 'liara',
+      model: 'openai-default',
+      provider: 'openai',
       fromApi: true,
     });
     expect(m.resolve).toHaveBeenCalledWith('tenant-test');

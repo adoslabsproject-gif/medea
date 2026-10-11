@@ -1,7 +1,7 @@
 /**
  * Missing-Node Wizard Orchestrator — AI Scaffold Step 4 (Cappella Sistina).
  *
- * Quando Liara genera un workflow contenente defId che NON esistono nel
+ * Quando il modello genera un workflow contenente defId che NON esistono nel
  * catalog (es. "action_amazon_search" mentre stdlib ha solo "action_http"),
  * il sistema attuale fa:
  *   1. autoFixInventedDefIds(): strip suffix e prova base catalog
@@ -66,7 +66,7 @@ export interface MissingDefId {
   /** I node id che usano questo defId (per context-aware prompting). */
   nodeIds: string[];
   /**
-   * I config raccolti dai nodi che usano questo defId: utile a Liara per
+   * I config raccolti dai nodi che usano questo defId: utile al modello per
    * inferire input/output schema (es. tutti hanno `query` + `apiKey` → input
    * { query: string, apiKey: string }).
    */
@@ -82,7 +82,7 @@ export interface PlanItem {
   /** Display name umano (es. "Amazon Search"). */
   proposedDisplayName: string;
   /**
-   * Prompt strutturato per LLM (Liara AI assist `generate`). Contiene la
+   * Prompt strutturato per LLM (AI assist `generate`). Contiene la
    * signature di nodo, gli observed configs, hint del purpose.
    */
   llmPrompt: string;

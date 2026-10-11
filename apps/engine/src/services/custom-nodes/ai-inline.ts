@@ -1,5 +1,5 @@
 /**
- * AI Inline Completion — Copilot-style ghost text via Liara.
+ * AI Inline Completion — Copilot-style ghost text, col provider del tenant.
  *
  * Endpoint dedicato per IDE-pro ghost text:
  *  - prompt MINIMAL (no markdown, no spiegazione)
@@ -7,7 +7,7 @@
  *  - temperature 0.15 (deterministic, no creatività)
  *  - stop sequences su \n\n e \n```\n (no continuare oltre)
  *  - timeout 8s (UX target: ghost text appare entro 1s tipicamente)
- *  - cache miss → call Liara; cache hit gestito lato client
+ *  - cache miss → chiamata al provider; cache hit gestito lato client
  *
  * Differenze vs ai-assist.ts:
  *  - NO patch extraction (output è raw text da inserire)
@@ -16,7 +16,7 @@
  *
  * @module services/custom-nodes/ai-inline
  */
-import { gatewayChatCompletions, type GatewayChatResult } from './llm-gateway.js';
+import { tenantChatCompletion, type TenantChatResult } from './tenant-llm.js';
 import { logger } from '@/lib/logger.js';
 
 export interface InlineCompletionRequest {
@@ -64,7 +64,7 @@ function buildPrompt(req: InlineCompletionRequest): string {
 }
 
 /**
- * Pulisce output Liara da artifact comuni: fence markdown, prefix backtick,
+ * Pulisce l'output del modello da artifact comuni: fence markdown, prefix backtick,
  * commenti spuri "Here is the completion:", whitespace puro.
  */
 export function sanitizeCompletion(raw: string, contextBefore: string): string {
@@ -98,12 +98,12 @@ export function sanitizeCompletion(raw: string, contextBefore: string): string {
 export async function callInlineCompletion(
   req: InlineCompletionRequest,
 ): Promise<InlineCompletionResponse> {
-  // ⛔ FIX 2026-06-13: passa dal GATEWAY PORTAL (helper condiviso) — prima
-  // puntava a liara:3003, irraggiungibile dai container tenant → ghost-text
-  // MORTO in prod (fallback empty silenzioso). Fail-soft: qualunque errore → vuoto.
-  let r: GatewayChatResult;
+  // Fail-soft: qualunque errore — nessun provider configurato, rete, timeout,
+  // risposta non-2xx — vale «nessun suggerimento». Un ghost-text che non
+  // compare non deve mai diventare un errore sotto le dita di chi scrive.
+  let r: TenantChatResult;
   try {
-    r = await gatewayChatCompletions({
+    r = await tenantChatCompletion({
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: buildPrompt(req) },
@@ -113,16 +113,10 @@ export async function callInlineCompletion(
       stop: ['\n\n', '\n```', '/* >>>'],
       timeoutMs: 8_000,
       workspaceId: req.workspaceId,
-      feature: 'inline-completion',
       ...(process.env.LLM_INLINE_MODEL ? { modelOverride: process.env.LLM_INLINE_MODEL } : {}),
     });
   } catch (e) {
-    logger.warn({ err: (e as Error).message }, '[ai-inline] gateway unreachable, fallback empty');
-    return { completion: '', tokensIn: 0, tokensOut: 0, fromCache: false };
-  }
-
-  if (!r.ok) {
-    logger.warn({ status: r.status }, '[ai-inline] gateway non-ok, fallback empty');
+    logger.warn({ err: (e as Error).message }, '[ai-inline] nessuna risposta, fallback empty');
     return { completion: '', tokensIn: 0, tokensOut: 0, fromCache: false };
   }
 

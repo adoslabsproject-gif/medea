@@ -222,7 +222,7 @@ CREATE INDEX IF NOT EXISTS workers_status_idx ON workers(status);
 --   - help_chat:        docs/FAQ assistant (user-scoped)
 --
 -- Sliding window: SELECT last 20 turns OR last 8K tokens, whichever first.
--- Summary compaction: every 50 turns, Liara generates summary, stored on
+-- Summary compaction: every 50 turns, the model generates summary, stored on
 -- ai_conversations.summary; old turns kept for RAG retrieval via embedding
 -- cosine similarity (BGE-M3 1024-dim).
 --
@@ -241,7 +241,7 @@ CREATE TABLE IF NOT EXISTS ai_conversations (
   summary TEXT,                          -- compacted summary of older turns (NULL until first compaction)
   summary_at TEXT,                       -- ISO timestamp of last summary compaction
   summary_message_count INTEGER NOT NULL DEFAULT 0, -- message_count at last summary
-  provider_pin TEXT,                     -- optional: pin conversation to a specific provider (Liara/Anthropic/etc.)
+  provider_pin TEXT,                     -- optional: pin conversation to a specific provider (Anthropic/OpenAI/etc.)
   created_at TEXT NOT NULL,
   last_message_at TEXT NOT NULL,
   deleted_at TEXT                        -- soft-delete (GDPR)
@@ -305,7 +305,7 @@ CREATE TABLE IF NOT EXISTS ai_workflow_calls (
   workflow_id TEXT NOT NULL,             -- workflows.id
   node_id TEXT NOT NULL,                 -- node within the workflow
   def_id TEXT NOT NULL,                  -- node def id (e.g. agent_classifier, ai_anthropic)
-  provider TEXT NOT NULL,                -- liara | anthropic | openai | gemini | mistral | ollama
+  provider TEXT NOT NULL,                -- anthropic | openai | gemini | mistral | ollama
   model TEXT,                            -- model id used
   input_tokens INTEGER,
   output_tokens INTEGER,

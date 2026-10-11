@@ -6,7 +6,7 @@
  * Pattern documentato da HubSpot/Salesforce/Outreach.io research 2024-2026.
  *
  * STACK 2026:
- *   - LLM via `llmResolver` (BYO provider — Anthropic/OpenAI/Liara/Gemini)
+ *   - LLM via `llmResolver` (BYO provider — Anthropic/OpenAI/Gemini)
  *     NON hardcode provider, rispetta tenant settings
  *   - JSON Schema strict output (no markdown, no preamble — solo data)
  *   - Anti-hallucination: `evidence_quote` DEVE essere substring del content

@@ -5,10 +5,9 @@
  * pagina (no CSS selectors). Resiliente a redesign sito perche\` "vede"
  * la pagina come un umano.
  *
- * Endpoint (Fase 2 #14): gateway metered FlowForge → vLLM Qwen3-VL
- * multimodale (OpenAI-compatible Chat Completions con image_url, license
- * Bearer, token contati in quota). Il vecchio servizio dedicato :5004
- * (Qwen2.5-VL-7B) e\` stato dismesso. Override endpoint OpenAI-compatible
+ * Endpoint: un vision LLM OpenAI-compatible (Chat Completions con image_url)
+ * indicato sul nodo o nell'ambiente. Il vecchio servizio dedicato :5004
+ * (Qwen2.5-VL-7B) e\` stato dismesso. Endpoint OpenAI-compatible
  * custom supportato (BYOK, SSRF guard pieno).
  *
  * Pipeline interno:
@@ -27,37 +26,40 @@
  *  - Reverse-engineer form fields da screenshot UI
  */
 
-import { safeFetchWithRedirects, internalGatewayTrustedHost } from '@medea/engine-safe-fetch';
+import { safeFetchWithRedirects } from '@medea/engine-safe-fetch';
 import { z } from 'zod';
 import type { NodeModule, NodeExecutor } from '../types.js';
 import { logLlmExchange } from '../llm-exchange-log.js';
 
 /**
  * Default LEGACY pre-Fase 2 (#14): il servizio vision dedicato :5004
- * (Qwen2.5-VL-7B) è stato DISMESSO (unificato in Qwen3-VL su vLLM) e comunque
- * `localhost` dal container tenant è il suo loopback → il nodo non ha MAI
- * funzionato dal tenant. Le costanti restano come SENTINELLE: un workflow
- * salvato con questi valori li ha ereditati dal vecchio defaultValue del
- * configField → vanno trattati come "non impostato" e instradati sul gateway
- * metered (Qwen3-VL è multimodale: stessa API chat/completions con image_url).
+ * (Qwen2.5-VL-7B) è stato DISMESSO e comunque `localhost` dal container
+ * tenant è il suo loopback → il nodo non ha MAI funzionato dal tenant. Le
+ * costanti restano come SENTINELLE: un workflow salvato con questi valori li
+ * ha ereditati dal vecchio defaultValue del configField → vanno trattati come
+ * "non impostato".
  */
 const LEGACY_VISION_ENDPOINT = 'http://localhost:5004/v1/chat/completions';
 const LEGACY_VISION_MODEL = 'Qwen2.5-VL-7B-Instruct';
 const MAX_RETRIES = 3;
 const RETRY_BASE_MS = 1000;
 
-/** Base del gateway metered (portal), iniettata nell'env di ogni container tenant. */
-function gatewayBase(): string | undefined {
-  const raw = typeof process !== 'undefined' ? process.env.MEDEA_LIARA_BASE_URL : undefined;
-  return raw ? raw.replace(/\/$/, '') : undefined;
+/** Manca l'endpoint del modello vision: il messaggio dice dove indicarlo. */
+export class VisionEndpointMissingError extends Error {
+  constructor() {
+    super(
+      'Endpoint vision non configurato: indica sul nodo un endpoint OpenAI-compatibile ' +
+        'che legga immagini (es. https://api.openai.com/v1/chat/completions) con la sua API key e il modello.',
+    );
+    this.name = 'VisionEndpointMissingError';
+  }
 }
 
 /**
- * Risoluzione endpoint vision (Fase 2 #14):
- *   1. endpoint esplicito ≠ sentinella legacy → vision LLM BYOK (guard SSRF pieno)
- *   2. env MEDEA_VISION_ENDPOINT (override operatore)
- *   3. gateway metered `${MEDEA_LIARA_BASE_URL}/chat/completions` (Qwen3-VL)
- *   4. fallback dev locale (fuori container)
+ * Risoluzione endpoint vision:
+ *   1. endpoint esplicito ≠ sentinella legacy (guard SSRF pieno)
+ *   2. env MEDEA_VISION_ENDPOINT (override di chi gestisce l'installazione)
+ *   3. nessuno → errore che dice cosa manca. Non esiste un modello di ripiego.
  */
 export function resolveVisionEndpoint(explicit: string | undefined): string {
   const cleaned = (explicit ?? '').trim();
@@ -65,9 +67,7 @@ export function resolveVisionEndpoint(explicit: string | undefined): string {
   const envOverride =
     typeof process !== 'undefined' ? (process.env.MEDEA_VISION_ENDPOINT ?? '').trim() : '';
   if (envOverride) return envOverride;
-  const base = gatewayBase();
-  if (base) return `${base}/chat/completions`;
-  return LEGACY_VISION_ENDPOINT;
+  throw new VisionEndpointMissingError();
 }
 
 export function extractJsonFromResponse(text: string): unknown {
@@ -145,9 +145,7 @@ async function callVisionWithRetry(args: {
 }> {
   const start = Date.now();
   let lastErr: unknown = null;
-  // SSRF: il gateway interno (IP privato della bridge Docker by-design) è
-  // l'UNICO host esente, per confronto di origin. Endpoint BYOK → guard pieno.
-  const trustedHost = internalGatewayTrustedHost(args.endpoint, gatewayBase());
+  // SSRF: l'endpoint è scelto dall'utente → guard pieno, nessun host esente.
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const reqHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -156,7 +154,7 @@ async function callVisionWithRetry(args: {
         method: 'POST',
         headers: reqHeaders,
         body: JSON.stringify({
-          // Model omesso quando vuoto → il gateway inietta il suo default.
+          // Model omesso quando vuoto → decide l'endpoint, se ha un default.
           ...(args.model ? { model: args.model } : {}),
           messages: args.messages,
           max_tokens: args.maxTokens,
@@ -164,7 +162,6 @@ async function callVisionWithRetry(args: {
           response_format: { type: 'json_object' },
         }),
         timeoutMs: args.timeoutMs,
-        ...(trustedHost ? { allowedHosts: [trustedHost] } : {}),
       });
       if (res.status >= 500 && attempt < MAX_RETRIES) {
         const jitter = Math.floor(Math.random() * 200);
@@ -250,15 +247,12 @@ const executor: NodeExecutor = async (config, _input, context) => {
   }
 
   const endpoint = resolveVisionEndpoint(String(config.endpoint ?? ''));
-  // Auth: apiKey esplicita (BYOK) → env dedicata → license del container (il
-  // gateway metered ESIGE il Bearer license, come la chat e gli agent_*).
-  // Catena su `||`, NON `??`: un campo secret VUOTO salvato in config (o una
-  // env vuota) deve cadere sulla license, non silenziare l'auth → 401.
-  const licenseKey =
-    typeof process !== 'undefined' ? (process.env.MEDEA_LICENSE_KEY ?? '').trim() : '';
+  // Auth: apiKey esplicita sul nodo → env dedicata. Catena su `||`, NON `??`:
+  // un campo secret VUOTO salvato in config deve cadere sull'env, non
+  // silenziare l'auth → 401.
   const envVisionKey =
     typeof process !== 'undefined' ? (process.env.MEDEA_VISION_API_KEY ?? '').trim() : '';
-  const apiKey = String(config.apiKey ?? '').trim() || envVisionKey || licenseKey;
+  const apiKey = String(config.apiKey ?? '').trim() || envVisionKey;
   // Model: la sentinella legacy Qwen2.5-VL (servizio dismesso) = "non impostato".
   const modelRaw = String(config.model ?? '').trim();
   const model = modelRaw === LEGACY_VISION_MODEL ? '' : modelRaw;
@@ -308,11 +302,11 @@ const executor: NodeExecutor = async (config, _input, context) => {
     }
   }
 
-  const effectiveModel = callRes.responseModel ?? (model || 'gateway-default');
+  const effectiveModel = callRes.responseModel ?? (model || 'endpoint-default');
   // Fase 3 (#15): prompt (screenshot OMESSO: base64 enorme, non è testo) +
   // risposta → StepLog 'llm'.
   logLlmExchange(context, {
-    provider: internalGatewayTrustedHost(endpoint, gatewayBase()) ? 'liara' : 'custom',
+    provider: 'custom',
     model: effectiveModel,
     system: String(messages[0]?.content ?? ''),
     user: `${prompt}${schemaJson ? `\n\nSCHEMA JSON TARGET:\n${schemaJson}` : ''}\n\n[screenshot ${mimeType}, ${String(screenshotBase64.length)} char base64 — omesso dal log]`,
@@ -322,8 +316,8 @@ const executor: NodeExecutor = async (config, _input, context) => {
     output: {
       extracted,
       rawResponse: callRes.content,
-      // Modello EFFETTIVO: la risposta OpenAI-compat lo riporta (il gateway può
-      // aver iniettato il suo default quando il campo era omesso).
+      // Modello EFFETTIVO: la risposta OpenAI-compat lo riporta (l'endpoint può
+      // aver scelto il suo default quando il campo era omesso).
       modelUsed: effectiveModel,
       latencyMs: callRes.latencyMs,
       attempts: callRes.attempts,
@@ -334,7 +328,7 @@ const executor: NodeExecutor = async (config, _input, context) => {
         inputTokens: callRes.usage.input,
         outputTokens: callRes.usage.output,
         model: effectiveModel,
-        provider: internalGatewayTrustedHost(endpoint, gatewayBase()) ? 'liara' : 'custom',
+        provider: 'custom',
         fromApi: callRes.usage.fromApi,
       },
     },
@@ -350,7 +344,7 @@ export const visionExtractNode: NodeModule = {
     icon: 'eye',
     color: '#ec4899',
     description:
-      'Estrae dati strutturati JSON da uno SCREENSHOT di pagina web usando vision LLM (Liara Qwen3-VL multimodale via gateway FlowForge, metered; endpoint OpenAI-compatible custom come override).\n\n' +
+      'Estrae dati strutturati JSON da uno SCREENSHOT di pagina web usando un vision LLM OpenAI-compatible, indicato nei campi del nodo.\n\n' +
       'Resiliente a redesign sito: non usa CSS selectors. "Vede" la pagina come un umano e estrae i dati che gli chiedi in linguaggio naturale.\n\n' +
       'Use case killer: scraping di siti SPA che cambiano DOM ogni release, monitoraggio competitor che modifica layout, estrazione tabelle da PDF screenshot, reverse-engineering form UI senza inspector.\n\n' +
       'Pipeline: screenshot → prompt + schema JSON target → vision LLM → parse JSON (fence/trailing-commas tollerati) → schema validation → output strutturato.\n\n' +
@@ -400,24 +394,25 @@ export const visionExtractNode: NodeModule = {
       },
       {
         key: 'endpoint',
-        label: 'Vision endpoint (override)',
+        label: 'Vision endpoint (OpenAI-compat)',
         type: 'text',
         required: false,
-        help: 'Vuoto = Liara vision via gateway FlowForge (Qwen3-VL multimodale, metered sulla quota). Compila SOLO per un vision LLM OpenAI-compatible tuo.',
+        placeholder: 'https://api.openai.com/v1/chat/completions',
+        help: "L'endpoint del tuo vision LLM OpenAI-compatible. Senza, il nodo si ferma dicendo che manca.",
       },
       {
         key: 'apiKey',
-        label: 'API Key (override)',
+        label: 'API Key (Bearer)',
         type: 'secret',
         required: false,
-        help: "Bearer token dell'endpoint custom. Vuoto = license del workspace (gateway Liara).",
+        help: "Bearer token dell'endpoint indicato sopra.",
       },
       {
         key: 'model',
         label: 'Model name (override)',
         type: 'text',
         required: false,
-        help: 'Vuoto = modello di default del gateway (Qwen3-VL). Altri vision: gpt-4o, claude-sonnet-4-5, gemini-2.0-flash.',
+        help: "Il model ID vision del tuo provider (es. gpt-4o). Vuoto = il default dell'endpoint, se ne ha uno.",
       },
       {
         key: 'maxTokens',

@@ -4,9 +4,9 @@
  * Step:
  *  1. POST <whisperEndpoint>/transcribe { videoUrl } → { transcript, segments[], language }
  *  2. POST <visionEndpoint>/describe-frames { videoUrl, intervalSec } → { scenes[]: { tStart, tEnd, description } }
- *  3. Fusion transcript+scenes via llmResolver + dispatchLLMChat (gateway metered) → summary strutturato
+ *  3. Fusion transcript+scenes via llmResolver + dispatchLLMChat → summary strutturato
  *
- * Whisper/Vision/Liara possono fallire: degradiamo (transcript-only se vision down, etc.)
+ * Whisper, Vision e l'LLM possono fallire: degradiamo (transcript-only se vision down, etc.)
  * con errore tracciato nei warnings.
  */
 import { coerceString } from '@/lib/coerce.js';
@@ -59,10 +59,10 @@ async function postJson<T>(
   timeoutMs: number,
   scope: { allow: InternalServiceKey },
 ): Promise<T> {
-  // whisper/vision/Liara: l'endpoint può venire dal config nodo (user-overridable
+  // whisper/vision: l'endpoint può venire dal config nodo (user-overridable
   // — `cfg.whisperEndpoint`). internalAwareFetch con `scope` concede il bypass SSRF
   // SOLO se l'origin è ESATTAMENTE il servizio atteso da QUESTO callsite: un
-  // utente che devia whisperEndpoint verso un ALTRO nostro servizio (Liara) NON
+  // utente che devia whisperEndpoint verso un ALTRO servizio interno NON
   // ottiene il bypass; un endpoint esterno pubblico funziona; un IP privato
   // arbitrario resta BLOCCATO.
   const res = await internalAwareFetch(
@@ -97,7 +97,7 @@ export const videoSummarizerExecutor: NodeExecutor = async (rawConfig, _input, c
   const visionEndpoint = coerceString(cfg.visionEndpoint ?? DEFAULT_VISION).trim();
   const summaryLanguage = coerceString(cfg.summaryLanguage ?? 'auto').trim();
   // Whisper opt-in (default OFF): non tutte le installation hanno Whisper
-  // standup. Vision-only + Liara è la modalità out-of-the-box garantita.
+  // standup. Vision + LLM è la modalità di partenza.
   const enableTranscription =
     cfg.enableTranscription === true || coerceString(cfg.enableTranscription ?? 'false') === 'true';
 
@@ -141,9 +141,9 @@ export const videoSummarizerExecutor: NodeExecutor = async (rawConfig, _input, c
     });
   }
 
-  // Step 3 — LLM fusion via resolver + gateway metered (Fase 2 #14 — PRIMA:
-  // endpoint diretto "v1 complete" su LIARA_URL, route inesistente + 401
-  // internalAuth → il summary non veniva MAI prodotto, solo warning).
+  // Step 3 — LLM fusion via resolver, cioè col provider del tenant (Fase 2 #14
+  // — PRIMA si chiamava un indirizzo fisso che non esisteva: il summary non
+  // veniva MAI prodotto, solo warning).
   let summary: SummaryResult = { tldr: '', bullets: [], chapters: [] };
   let llmUsage: LlmTokenUsage | undefined;
   let llmProvider = '';
@@ -179,7 +179,6 @@ export const videoSummarizerExecutor: NodeExecutor = async (rawConfig, _input, c
         (u) => {
           llmUsage = u;
         },
-        undefined,
         { maxTokens: 800, timeoutMs: 60_000 },
       )
     ).trim();
@@ -207,10 +206,10 @@ export const videoSummarizerExecutor: NodeExecutor = async (rawConfig, _input, c
           : [],
       };
     } else {
-      warnings.push('liara summary: no JSON in response');
+      warnings.push('llm summary: no JSON in response');
     }
   } catch (e) {
-    warnings.push(`liara failed: ${e instanceof Error ? e.message : String(e)}`);
+    warnings.push(`llm failed: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   return {
@@ -230,8 +229,8 @@ export const videoSummarizerExecutor: NodeExecutor = async (rawConfig, _input, c
             _llm: {
               inputTokens: (llmUsage?.input ?? 0) + (visionRes.usage?.input ?? 0),
               outputTokens: (llmUsage?.output ?? 0) + (visionRes.usage?.output ?? 0),
-              model: llmModel || 'liara-default',
-              provider: llmProvider || 'liara',
+              model: llmModel || 'unknown',
+              provider: llmProvider || 'unknown',
               fromApi: (llmUsage?.fromApi ?? true) && (visionRes.usage?.fromApi ?? true),
             },
           }

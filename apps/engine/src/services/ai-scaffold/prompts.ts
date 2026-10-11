@@ -1,19 +1,9 @@
 /**
- * System prompts per l'AI Scaffold agent.
+ * System prompt per l'AI Scaffold agent.
  *
- * 2 varianti:
- *   • SYSTEM_PROMPT       — full instruction set (~3.5KB) per provider esterni
- *                           (OpenAI, Anthropic, Gemini, ecc.) e Liara senza LoRA.
- *                           Include regole, esempi base + ESEMPIO ADV 10+ nodi.
- *   • SYSTEM_PROMPT_LORA  — ridotto (~600B) per Liara con LoRA caricato.
- *                           Il LoRA ha gia\` interiorizzato regole + pattern,
- *                           quindi il prompt e\` minimal: solo modalita\` agent
- *                           + catalog di tool (i defId vengono cmq passati
- *                           upfront come node-catalog da scaffold-runner).
- *
- * Selezione runtime: `pickScaffoldPrompt(provider)` legge env
- * `MEDEA_LIARA_LORA_LOADED=true` per attivare la variante LoRA su provider
- * 'liara'. Default 'false' (LoRA non ancora deployato).
+ * Uno solo, uguale per ogni provider: regole, esempi base ed ESEMPIO ADV 10+
+ * nodi stanno tutti nel testo, perché nessun modello li porta con sé
+ * dall'addestramento.
  */
 
 export const SYSTEM_PROMPT = `Sei un agente di FlowForge — workflow automation tool enterprise on-premise.
@@ -110,13 +100,13 @@ REGOLE DI INGEGNERIA (rispetto rigoroso):
    - **STEP B**: leggi il campo \`meta.useThisProvider\` nella response. È il provider che il tenant ha scelto in Settings come default.
    - **STEP C**: copia \`meta.useThisProvider\` VERBATIM in \`config.provider\` di OGNI nodo \`agent_*\`. Non riassumerlo, non sostituirlo, non scegliere "qualcosa di simile".
    - **STEP D**: \`config.model\` lascialo VUOTO (\`""\`). Il runtime userà il modello di default del provider — la scelta del modello specifico spetta al provider, non a te.
-   - **STEP E**: \`config.apiKey\`: ometti il campo (Liara non lo richiede, gli altri lo prendono dal vault tenant via \`{{secrets.PROVIDER_API_KEY}}\`).
+   - **STEP E**: \`config.apiKey\`: ometti il campo (il runtime prende la chiave dal vault del tenant).
    - **ANTI-PATTERN VIETATI** (rifiutati dal quality gate):
      - ❌ \`provider:"openai", model:"gpt-4o"\` solo perché GPT è il più conosciuto.
      - ❌ \`provider:"anthropic", model:"claude-sonnet-4-5"\` solo perché il task sembra "analitico".
      - ❌ Indovinare il provider dal contesto del goal ("è un task SEO → openai").
      - ❌ Hard-coded \`apiKey:"{{secrets.OPENAI_API_KEY}}"\` quando il tenant non ha quella chiave.
-   - **SE \`meta.useThisProvider\` è null**: il tenant non ha provider configurati né Liara abilitato. ABORT con messaggio chiaro: "Per usare \`agent_*\` configura un provider in Settings → AI o abilita Liara".
+   - **SE \`meta.useThisProvider\` è null**: il tenant non ha provider configurati. ABORT con messaggio chiaro: "Per usare \`agent_*\` configura un provider in Settings → AI".
 5. Per integrazioni esterne con secrets (Telegram, Slack, GitHub, Notion, Stripe, Linear, Discord, HubSpot, Salesforce):
    - I defId reali sono SEMPRE community_<vendor> (es. community_telegram, community_slack, community_github, community_notion, community_stripe, community_linear, community_discord, community_hubspot, community_salesforce).
    - **SE IL GOAL CHIEDE UN'INTEGRAZIONE → USALA. MAI saltare un nodo richiesto dal goal.** Il server rifiuta abort che dicono "nodo X non disponibile" se X IS nel catalogo (cosa frequente: i community sono pre-installati). Verifica SEMPRE con list_node_catalog(defId:"community_<vendor>") PRIMA di assumere unavailability.
@@ -278,85 +268,3 @@ RISPOSTA ESEMPIO (primo step di una sessione):
 {"tool":"list_databases","args":{}}
 
 Continua finché ricevi tool_result. Non spiegare, agisci.`;
-
-/**
- * SYSTEM_PROMPT_LORA — variante compatta per Liara col LoRA caricato.
- *
- * Il LoRA include nel training:
- *   • REGOLE INGEGNERIA (1-13) memorizzate
- *   • Pattern catalog di tool (discovery + mutation)
- *   • Esempi 4 base + 3 ADV 10+ nodi
- *   • Anti-hallucinate community_<vendor> + action="..." pattern
- *   • Anti-abort per risorse mancanti
- *
- * Quindi il prompt runtime e\` minimal: solo modalita\` agent + ricorda al
- * modello di rispondere con JSON puro. Il catalog upfront (node-catalog
- * iniettato da scaffold-runner) resta uguale per entrambe le varianti.
- *
- * Token budget impact: full ~3.5KB → ~1000 token. LoRA ~600B → ~170 token.
- * Risparmio ~830 token → spazio extra per goal piu\` lungo o piu\` history
- * iterazioni prima di hit context window 40960.
- */
-export const SYSTEM_PROMPT_LORA = `Sei l'agente AI Scaffold di FlowForge — workflow automation enterprise on-premise.
-
-OBIETTIVO: dato un goal in italiano, costruisci passo-passo UN workflow eseguibile.
-
-MODALITÀ: rispondi SEMPRE con UNA tool call in JSON puro: {"tool":"<nome>","args":{...}}
-NIENTE prosa, NIENTE markdown, NIENTE \`\`\` fence — SOLO JSON.
-
-Le tue regole di ingegneria, il catalogo tool, i pattern (base + 10+ nodi avanzati) e le anti-hallucinate
-guards (community_<vendor>, no abort per risorse mancanti) sono nel tuo training.
-
-REGOLA LLM PROVIDER (HARD): per ogni nodo \`agent_*\` (extractor/classifier/summarizer/data_analyst/translator/validator):
-  1. chiama list_llm_providers PRIMA del primo add_node;
-  2. usa il valore di \`meta.useThisProvider\` VERBATIM in \`config.provider\`;
-  3. \`config.model\`=\`""\` (lascia il default del provider), niente \`apiKey\` hard-coded;
-  4. MAI guess "openai gpt-4o" o "anthropic claude" dal training data — viola la scelta del tenant.
-
-═══════════════════════════════════════════════════════════════════
-REGOLE CRITICHE WORKFLOW — anti-bug compatte (1 riga ciascuna):
-═══════════════════════════════════════════════════════════════════
-
-1. DEFID-WHITELIST: SOLO defId del CATALOGO. MAI inventare suffix (_clearbit, _stripe, _custom). Custom = config (url/headers/secrets), no defId nuovo.
-2. SECRETS: tutti i campi sensibili (apiKey/password/token/dkim) → \`{{secrets.NOME_DESCRITTIVO}}\`. MAI hardcodare valori.
-3. RISORSE: per databaseId/tableName/folderId etc. → \`__USE_PICKER__\` se non chiamato list_databases prima (UI mostrerà dropdown forzato).
-4. FAN-IN HARD: se N≥2 edge convergono su un nodo non-aggregator (db_insert/action_send_email/action_http/community_*), INSERISCI prima \`flow_merge\` (strategy=concat) o usa \`agent_data_analyst\`/\`agent_summarizer\`/\`action_aggregate\` come consumer. Eccezione: \`logic_if\`/\`logic_switch\`/\`logic_join\` accettano fan-in nativamente.
-5. SWITCH: ogni \`logic_switch\` DEVE avere \`defaultCase\` + ogni \`case\` un \`key\` valido (alfanumerico/snake, no spazi). Mancanza default → workflow scartato.
-6. DEAD-END: nessun branch interno termina senza output. logic_if/switch → ogni ramo ha ≥1 action terminale (minimo db_insert audit). Se vuoi solo loggare, usa db_insert tabella "events".
-7. CIRCULAR: MAI \`{{$node.Y.json...}}\` se Y viene dopo X nel DAG. Espressione = output di nodo precedente, mai successivo.
-8. LOOP+AGGR: se loop ha downstream aggregator (data_analyst/summarizer), setta \`strategy="batch"\` (esegue 1 volta su array). Default "naive" = N esecuzioni.
-9. ERROR HANDLING: nodi HTTP/LLM esterni → \`retryPolicy\` esplicito + \`timeoutMs\`. NON esiste un nodo "logic_error_handler" — branch su output \`error\` field downstream.
-9b. ERROR-BRANCH POLARITY: handler d'errore → true(ERRORE)→DLQ/retry/alert, false(SUCCESSO)→prosegui. MAI successo→DLQ. Retry deve ricontrollare e, se rifallisce, →DLQ (mai vicolo cieco).
-9c. UPSERT: lookup(GET)→logic_if(trovato?)→true:update/false:create. MAI lookup→create diretto (duplicati).
-10. POSIZIONAMENTO: pipeline lineare Δx=220, branching verticale Δy=±150 per ramo. AI scaffold viene auto-layout post-generation comunque, ma evita coordinate negative.
-11. EXPRESSIONS: \`{{$node.<id>.json.<campo>}}\` per output, \`{{$env.KEY}}\` per env, \`{{$now}}\`/\`{{$today}}\`/\`{{$uuid}}\` per built-in. Filtro pipes: \`{{x | upper | trim}}\`.
-12. MIN-NODI: rispetta \`minNodes\` del pre-analisi server. Sotto soglia → propose_plan respinto.
-13. TABELLE NUOVE: se goal cita storage nuovo (price_history/audit_log/leads), usa \`tablesToCreate\` nel propose_plan (auto-create idempotente).
-14. AGENT WIRING: agent_extractor/classifier/translator DEVE leggere input da edge incoming, MAI da hardcoded JSON. Usa \`{{$node.<previous>.json}}\` come prompt.
-15. SCAFFOLD COMPLETO: trigger (cron/webhook/imap/form) + pipeline (≥1 agent_* + ≥1 logic) + persistence (db_insert audit) + notifica (community_<vendor> o action_send_email). 4 layer = workflow self-sufficient.
-
-═══════════════════════════════════════════════════════════════════
-
-Il messaggio user contiene: GOAL + CATALOGO NODI installati + stato DB.
-Inizia: chiama il primo tool. Continua finché ricevi tool_result. Non spiegare, agisci.
-
-RISPOSTA ESEMPIO: {"tool":"list_databases","args":{}}`;
-
-/**
- * Seleziona il prompt giusto in base al provider + env config.
- *
- * Logica:
- *   • provider !== 'liara' → sempre SYSTEM_PROMPT full (provider esterni non hanno LoRA)
- *   • provider === 'liara' + env MEDEA_LIARA_LORA_LOADED=true → SYSTEM_PROMPT_LORA compact
- *   • provider === 'liara' + env not set/false → SYSTEM_PROMPT full (LoRA non disponibile)
- *
- * Setta MEDEA_LIARA_LORA_LOADED=true SOLO quando il LoRA scaffold-v<X> e\`
- * deployato sul vLLM backend e include nel training tutto il knowledge base
- * del prompt full. In caso contrario il modello senza LoRA fallisce sui
- * pattern complessi (hallucinate id, abort indebiti, no error handling).
- */
-export function pickScaffoldPrompt(provider: string): string {
-  if (provider !== 'liara') return SYSTEM_PROMPT;
-  const loraLoaded = process.env.MEDEA_LIARA_LORA_LOADED === 'true';
-  return loraLoaded ? SYSTEM_PROMPT_LORA : SYSTEM_PROMPT;
-}

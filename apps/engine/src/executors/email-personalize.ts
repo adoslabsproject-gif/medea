@@ -37,8 +37,8 @@ export const emailPersonalizeExecutor: NodeExecutor = async (config, _input, con
   // (cache-hit = nessun exchange, nessun log: onesto).
   if (result.llm_exchange) {
     logLlmExchange(context, {
-      provider: result.llm_provider ?? 'liara',
-      model: result.llm_model ?? `${result.llm_provider ?? 'liara'}-default`,
+      provider: result.llm_provider ?? 'unknown',
+      model: result.llm_model ?? `${result.llm_provider ?? 'unknown'}-default`,
       system: result.llm_exchange.system,
       user: result.llm_exchange.user,
       response: result.llm_exchange.response,
@@ -61,8 +61,8 @@ export const emailPersonalizeExecutor: NodeExecutor = async (config, _input, con
             _llm: {
               inputTokens: result.llm_usage.input,
               outputTokens: result.llm_usage.output,
-              model: result.llm_model ?? `${result.llm_provider ?? 'liara'}-default`,
-              provider: result.llm_provider ?? 'liara',
+              model: result.llm_model ?? `${result.llm_provider ?? 'unknown'}-default`,
+              provider: result.llm_provider ?? 'unknown',
               fromApi: result.llm_usage.fromApi,
             },
           }

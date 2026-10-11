@@ -7,7 +7,7 @@
  *  3. ffmpeg audio extract → mp3 16kHz mono
  *  4. Whisper ASR (microservizio :5005 o whisper.cpp local) → transcript con timestamp
  *  5. Vision Qwen2.5-VL :5004 → describe frames (batch, scene change detection)
- *  6. Liara LLM → fuse transcript + scene descriptions in summary strutturato
+ *  6. LLM → fuse transcript + scene descriptions in summary strutturato
  *
  * Output: { transcript, scenes[], summary: {tldr, bullets, chapters[]}, durationSec }
  *
@@ -43,7 +43,7 @@ export const videoSummarizerNode: NodeModule = {
       'dei frame consecutive — quando passa una soglia di differenza visiva si dichiara nuova scena) e ' +
       'descrive ogni scena identificata con caption rich (es. "Slide 3 mostra grafico fatturato Q4 con bar ' +
       'chart e label "+23% YoY""); ' +
-      '(4) Liara LLM fusion stage — il LLM principale fonde i 2 stream (transcript Whisper + scenes Vision) ' +
+      '(4) LLM fusion stage — il LLM principale fonde i 2 stream (transcript Whisper + scenes Vision) ' +
       "producendo l'output finale gerarchico TL;DR + bullets + chapters timestamped, pattern che cattura sia " +
       'il content auditive (parole spoken) sia visual (slide, demo screen, persone identificate dal volto). ' +
       'Backend interamente self-hosted Hetzner (no costi per-token sui pipeline component AI, no transferimento ' +

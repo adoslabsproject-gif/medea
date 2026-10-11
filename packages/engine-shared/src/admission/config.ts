@@ -1,6 +1,6 @@
 /**
  * Config della coda di ammissione — SINGLE SOURCE per tutti i front-door
- * (gateway Liara + gateway portal). Entrambi devono usare gli STESSI parametri
+ * (i gateway davanti al modello). Tutti devono usare gli STESSI parametri
  * perché condividono la stessa coda Redis: due blocchi config separati
  * divergerebbero → coda incoerente. Da qui, una sola fonte (env-driven).
  *
@@ -29,21 +29,20 @@ function intEnv(env: Env, key: string, def: number): number {
 }
 
 /**
- * Carica la config dall'environment. Le variabili usano il prefisso storico
- * `LIARA_ADMISSION_*` (la coda è nata nel gateway Liara) ma valgono per tutti.
+ * Carica la config dall'environment (variabili `MEDEA_ADMISSION_*`).
  */
 export function loadAdmissionConfig(env: Env = process.env): AdmissionConfig {
   return {
-    enabled: env.LIARA_ADMISSION_QUEUE !== 'false',
+    enabled: env.MEDEA_ADMISSION_QUEUE !== 'false',
     maxConcurrent: {
-      vllm: intEnv(env, 'LIARA_ADMISSION_MAX_VLLM', 4),
-      external: intEnv(env, 'LIARA_ADMISSION_MAX_EXTERNAL', 24),
+      vllm: intEnv(env, 'MEDEA_ADMISSION_MAX_VLLM', 4),
+      external: intEnv(env, 'MEDEA_ADMISSION_MAX_EXTERNAL', 24),
     },
-    leaseMs: intEnv(env, 'LIARA_ADMISSION_LEASE_MS', 90_000),
-    heartbeatMs: intEnv(env, 'LIARA_ADMISSION_HEARTBEAT_MS', 20_000),
-    pollMs: intEnv(env, 'LIARA_ADMISSION_POLL_MS', 750),
-    maxQueueDepth: intEnv(env, 'LIARA_ADMISSION_MAX_QUEUE', 50),
-    maxPerTenantQueue: intEnv(env, 'LIARA_ADMISSION_MAX_PER_TENANT', 5),
-    maxWaitMs: intEnv(env, 'LIARA_ADMISSION_MAX_WAIT_MS', 120_000),
+    leaseMs: intEnv(env, 'MEDEA_ADMISSION_LEASE_MS', 90_000),
+    heartbeatMs: intEnv(env, 'MEDEA_ADMISSION_HEARTBEAT_MS', 20_000),
+    pollMs: intEnv(env, 'MEDEA_ADMISSION_POLL_MS', 750),
+    maxQueueDepth: intEnv(env, 'MEDEA_ADMISSION_MAX_QUEUE', 50),
+    maxPerTenantQueue: intEnv(env, 'MEDEA_ADMISSION_MAX_PER_TENANT', 5),
+    maxWaitMs: intEnv(env, 'MEDEA_ADMISSION_MAX_WAIT_MS', 120_000),
   };
 }

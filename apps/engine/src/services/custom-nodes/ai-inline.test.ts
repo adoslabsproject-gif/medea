@@ -7,20 +7,20 @@
  *  - strip /* >>> CURSOR <<< * / marker
  *  - dedupe overlap con ultima riga contesto
  *  - callInlineCompletion: success path → completion sanitized + usage
- *  - HTTP error → fallback empty (no throw)
- *  - gateway timeout/abort → fallback empty
- *  - request body shape (model, temperature=0.15, max_tokens=100, stop sequences)
- *  - headers X-FF-Workspace / X-FF-Feature
+ *  - errore del provider / nessun provider → fallback empty (no throw)
+ *  - cosa viene chiesto (temperature=0.15, maxTokens=100, stop sequences, 8s)
  *  - empty raw → empty completion
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { sanitizeCompletion, callInlineCompletion } from './ai-inline.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('@/lib/logger.js');
 
-// ai-inline passa dal GATEWAY PORTAL via fetch RAW (helper llm-gateway).
-const mockFetch = vi.fn();
-const origFetch = globalThis.fetch;
+// ai-inline chiede la risposta al provider del tenant tramite `tenant-llm`:
+// qui lo si sostituisce e si guarda cosa gli viene chiesto.
+const { tenantChatCompletion } = vi.hoisted(() => ({ tenantChatCompletion: vi.fn() }));
+vi.mock('./tenant-llm.js', () => ({ tenantChatCompletion }));
+
+import { sanitizeCompletion, callInlineCompletion } from './ai-inline.js';
 
 describe('sanitizeCompletion', () => {
   it('passthrough plain text', () => {
@@ -79,13 +79,7 @@ describe('sanitizeCompletion', () => {
 
 describe('callInlineCompletion', () => {
   beforeEach(() => {
-    mockFetch.mockReset();
-    process.env.MEDEA_LIARA_BASE_URL = 'http://gw/api/v1/llm';
-    process.env.MEDEA_LICENSE_KEY = 'ZFL-TEST';
-    globalThis.fetch = mockFetch as unknown as typeof fetch;
-  });
-  afterEach(() => {
-    globalThis.fetch = origFetch;
+    tenantChatCompletion.mockReset();
   });
 
   const baseReq = {
@@ -97,12 +91,20 @@ describe('callInlineCompletion', () => {
     cursorColumn: 18,
   };
 
-  function mockOk(content: string, usage = { prompt_tokens: 50, completion_tokens: 10 }) {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ choices: [{ message: { content } }], usage }),
-    } as unknown as Response);
+  function mockOk(content: string, usage = { input: 50, output: 10 }) {
+    tenantChatCompletion.mockResolvedValue({ content, usage, provider: 'openai' });
+  }
+
+  /** Quello che è stato chiesto al provider. */
+  function chiesto(): {
+    messages: { role: string; content: string }[];
+    temperature: number;
+    maxTokens: number;
+    timeoutMs: number;
+    workspaceId: string;
+    stop?: string[];
+  } {
+    return tenantChatCompletion.mock.calls[0]![0] as ReturnType<typeof chiesto>;
   }
 
   it('success path: sanitized completion + usage tokens', async () => {
@@ -114,63 +116,54 @@ describe('callInlineCompletion', () => {
     expect(out.fromCache).toBe(false);
   });
 
-  it('routing GATEWAY: URL /chat/completions + Bearer license + model OMESSO (gateway inietta)', async () => {
+  it('chiede poco e in fretta: temperature 0.15, 100 token, 8 secondi, per il tenant giusto', async () => {
     mockOk('done');
     await callInlineCompletion(baseReq);
-    const [url, init] = mockFetch.mock.calls[0]! as [
-      string,
-      { headers: Record<string, string>; body: string },
-    ];
-    expect(url).toBe('http://gw/api/v1/llm/chat/completions');
-    expect(init.headers.Authorization).toBe('Bearer ZFL-TEST');
-    const body = JSON.parse(init.body);
-    expect(body.temperature).toBe(0.15);
-    expect(body.max_tokens).toBe(100);
-    expect(body.model).toBeUndefined(); // niente più liara:3003/model fittizio
+    expect(chiesto().temperature).toBe(0.15);
+    expect(chiesto().maxTokens).toBe(100);
+    expect(chiesto().timeoutMs).toBe(8_000);
+    expect(chiesto().workspaceId).toBe('ws_test');
   });
 
   it('stop sequences \\n\\n, \\n```, /* >>>', async () => {
     mockOk('done');
     await callInlineCompletion(baseReq);
-    const body = JSON.parse(mockFetch.mock.calls[0]![1]!.body as string);
-    expect(body.stop).toEqual(['\n\n', '\n```', '/* >>>']);
-  });
-
-  it('headers: X-FF-Workspace + X-FF-Feature=inline-completion', async () => {
-    mockOk('done');
-    await callInlineCompletion(baseReq);
-    const init = mockFetch.mock.calls[0]![1] as RequestInit & { headers: Record<string, string> };
-    expect(init.headers['X-FF-Workspace']).toBe('ws_test');
-    expect(init.headers['X-FF-Feature']).toBe('inline-completion');
+    expect(chiesto().stop).toEqual(['\n\n', '\n```', '/* >>>']);
   });
 
   it('messages: system prompt + user prompt che include cursor marker', async () => {
     mockOk('done');
     await callInlineCompletion(baseReq);
-    const body = JSON.parse(mockFetch.mock.calls[0]![1]!.body as string);
-    expect(body.messages).toHaveLength(2);
-    expect(body.messages[0].role).toBe('system');
-    expect(body.messages[1].role).toBe('user');
-    expect(body.messages[1].content).toContain('>>> CURSOR <<<');
-    expect(body.messages[1].content).toContain('executor.ts');
+    const { messages } = chiesto();
+    expect(messages).toHaveLength(2);
+    expect(messages[0]!.role).toBe('system');
+    expect(messages[1]!.role).toBe('user');
+    expect(messages[1]!.content).toContain('>>> CURSOR <<<');
+    expect(messages[1]!.content).toContain('executor.ts');
   });
 
-  it('HTTP 500 → fallback empty completion (no throw)', async () => {
-    mockFetch.mockResolvedValue({ ok: false, status: 500 } as unknown as Response);
+  it('errore del provider → fallback empty completion (no throw)', async () => {
+    tenantChatCompletion.mockRejectedValue(new Error('OpenAI 500: boom'));
     const out = await callInlineCompletion(baseReq);
     expect(out.completion).toBe('');
     expect(out.tokensIn).toBe(0);
     expect(out.tokensOut).toBe(0);
   });
 
-  it("gateway unreachable (throw) → fallback empty (no throw all'esterno)", async () => {
-    mockFetch.mockRejectedValue(new Error('ECONNREFUSED'));
+  it("provider irraggiungibile (throw) → fallback empty (no throw all'esterno)", async () => {
+    tenantChatCompletion.mockRejectedValue(new Error('ECONNREFUSED'));
     const out = await callInlineCompletion(baseReq);
     expect(out.completion).toBe('');
   });
 
+  it('🚨 nessun provider configurato → nessun suggerimento, mai un errore mentre si scrive', async () => {
+    tenantChatCompletion.mockRejectedValue(new Error('Nessun provider LLM configurato.'));
+    const out = await callInlineCompletion(baseReq);
+    expect(out).toEqual({ completion: '', tokensIn: 0, tokensOut: 0, fromCache: false });
+  });
+
   it('empty content → empty completion', async () => {
-    mockOk('', { prompt_tokens: 10, completion_tokens: 0 });
+    mockOk('', { input: 10, output: 0 });
     const out = await callInlineCompletion(baseReq);
     expect(out.completion).toBe('');
     expect(out.tokensIn).toBe(10);
@@ -182,21 +175,10 @@ describe('callInlineCompletion', () => {
     expect(out.completion).toBe('return ctx.input;');
   });
 
-  it('usage assente → tokens 0/0', async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ choices: [{ message: { content: 'foo' } }] }),
-    } as unknown as Response);
+  it('nessun token consumato → tokens 0/0', async () => {
+    mockOk('foo', { input: 0, output: 0 });
     const out = await callInlineCompletion(baseReq);
     expect(out.tokensIn).toBe(0);
     expect(out.tokensOut).toBe(0);
-  });
-
-  it('timeout via AbortSignal (8s, più aggressivo di ai-assist 240s)', async () => {
-    mockOk('foo');
-    await callInlineCompletion(baseReq);
-    const init = mockFetch.mock.calls[0]![1] as RequestInit;
-    expect(init.signal).toBeInstanceOf(AbortSignal); // AbortSignal.timeout(8000)
   });
 });

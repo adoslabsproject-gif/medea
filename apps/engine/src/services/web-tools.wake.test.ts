@@ -1,10 +1,10 @@
 /**
- * Bug-bounty test — fetch_url NON deve passare a Liara la pagina di WAKE del
+ * Bug-bounty test — fetch_url NON deve passare al modello la pagina di WAKE del
  * tenant ("Avvio del workspace…").
  *
- * Incidente owner 2026-06-13: nel chatter del workflow, dare a Liara un URL
+ * Incidente owner 2026-06-13: nel chatter del workflow, dare al modello un URL
  * `*.app.automazionezeli.com` di un container in pausa faceva sì che fetch_url
- * scaricasse la pagina di wake e la passasse come "contenuto del sito" → Liara
+ * scaricasse la pagina di wake e la passasse come "contenuto del sito" → il modello
  * leggeva spazzatura e l'utente vedeva l'errore di wake nella chat.
  *
  * NIENTE greensmoke: usiamo la WAKE HTML REALE (servita da nginx @waking) e
@@ -58,7 +58,7 @@ describe('isWorkspaceWakePage', () => {
   it('🎯 HTML di wake REALE → true', () => {
     expect(isWorkspaceWakePage(WAKE_HTML)).toBe(true);
   });
-  it('🎯 testo ESTRATTO dalla wake → true (è il caso che arriva a Liara)', () => {
+  it('🎯 testo ESTRATTO dalla wake → true (è il caso che arriva al modello)', () => {
     expect(isWorkspaceWakePage(WAKE_EXTRACTED)).toBe(true);
   });
   it('titolo wake + status 503 @waking (senza il testo forte) → true', () => {

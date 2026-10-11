@@ -5,7 +5,7 @@
  *  1. Fetch run row da DB locale runtime tenant (no portal call, local first)
  *  2. Identify failed step (first status='error')
  *  3. Build context: nodo def + config interpolato + input + error stack + downstream impact
- *  4. POST a Liara con system prompt strutturato → JSON output {diagnosis, fixes, tests}
+ *  4. Chiede al provider del tenant, con system prompt strutturato → JSON output {diagnosis, fixes, tests}
  *  5. Auto-replay opzionale via runService.replay({fromNodeId: failedNodeId})
  */
 import { coerceString } from '@/lib/coerce.js';
@@ -120,9 +120,9 @@ export const debugRunFailureExecutor: NodeExecutor = async (rawConfig, _input, c
       .join(', ')
       .slice(0, 500)}`;
 
-  // Fase 2 (#14): resolver + gateway metered (Liara default, BYOK override) —
-  // PRIMA: LIARA_URL "v1 complete" diretto, route inesistente + 401 internalAuth
-  // → la diagnosi AI non partiva MAI, sempre fallback euristico.
+  // Fase 2 (#14): si passa dal resolver, cioè dal provider configurato dal
+  // tenant. PRIMA si chiamava un indirizzo fisso che non esisteva: la diagnosi
+  // AI non partiva MAI, sempre fallback euristico.
   let result: DiagnosisOutput;
   let llmUsage: LlmTokenUsage | undefined;
   let llmProvider = '';
@@ -143,7 +143,6 @@ export const debugRunFailureExecutor: NodeExecutor = async (rawConfig, _input, c
         (u) => {
           llmUsage = u;
         },
-        undefined,
         { maxTokens: 2000, timeoutMs: 60_000 },
       )
     ).trim();
@@ -184,7 +183,7 @@ export const debugRunFailureExecutor: NodeExecutor = async (rawConfig, _input, c
       suggestedTests: [],
     };
     (result as { warnings?: string[] }).warnings = [
-      `liara unavailable: ${e instanceof Error ? e.message : String(e)}`,
+      `llm unavailable: ${e instanceof Error ? e.message : String(e)}`,
     ];
   }
 

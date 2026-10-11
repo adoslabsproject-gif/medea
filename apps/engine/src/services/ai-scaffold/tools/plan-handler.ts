@@ -2,7 +2,7 @@
  * propose_plan — Phase 0 obbligatoria del wizard 2-phase (2026-05-31).
  *
  * Workflow Plan-then-Execute:
- *   1. Liara legge il goal + catalog.
+ *   1. Il modello legge il goal + catalog.
  *   2. PRIMA di add_node/connect_nodes/finalize_workflow → DEVE chiamare
  *      propose_plan({nodes:[{id,defId,purpose}...], edges:[...], reasoning})
  *   3. Server valida:
@@ -10,13 +10,13 @@
  *      - Nodi >= minNodes (complexity gate)
  *      - Ogni defId esiste nel catalogo
  *      - Ogni edge.from/to riferisce un node.id del plan
- *   4. Se valida → session.plan accepted. Liara può ora eseguire.
+ *   4. Se valida → session.plan accepted. Il modello può ora eseguire.
  *   5. Se invalida → reject con messaggio prescrittivo (il modello rilegge e
  *      ripropone — meglio sprecare 1 iter qui che 15 dopo a inseguire bug).
  *
  * Vantaggi vs free-form tool calling:
  *   - Forza il modello a DECOMPORRE il goal prima di iniziare a costruire
- *   - L'utente vede il plan e capisce cosa Liara intende fare ANCORA prima
+ *   - L'utente vede il plan e capisce cosa il modello intende fare ANCORA prima
  *     che inizi a generare nodi (UI checklist con ✓ / ⌛ per planned node)
  *   - Server può validare add_node vs plan (deviation tracking)
  *   - finalize_workflow check: tutti i planned nodes presenti?
@@ -153,7 +153,7 @@ export function proposePlanHandler(
   // plan corto sapendo che il finalize gate lo bloccherebbe comunque).
   const estimate = estimateComplexity(session.goal);
   if (nodes.length < estimate.minNodes) {
-    // Enumera i token specifici matchati per dare a Liara una mappa esplicita
+    // Enumera i token specifici matchati per dare al modello una mappa esplicita
     // di cosa il goal contiene → cosa il plan deve coprire.
     const lines: string[] = [
       `propose_plan: plan troppo corto (${nodes.length.toString()} nodi proposti, minimo ${estimate.minNodes.toString()} per goal tier "${estimate.tier}").`,
@@ -217,12 +217,12 @@ export function proposePlanHandler(
   };
 
   // ── 7. Compact schema dump per OGNI defId nel plan ───────────────────
-  // FIX 2026-05-31 user-segnalato (workflow incomplete): pre-fix Liara
+  // FIX 2026-05-31 user-segnalato (workflow incomplete): pre-fix il modello
   // doveva fare add_node → fail REQUIRED missing → list_node_catalog(defId)
   // → retry add_node. 3 iter per nodo × 23 nodi = 69 iter solo per
   // schema discovery. Soluzione enterprise: il server gli dà lo schema
   // di TUTTI i defId del plan in un colpo solo, embedded nel tool_result
-  // accepted. Liara fa add_node corretto al PRIMO tentativo → 1 iter/nodo.
+  // accepted. Il modello fa add_node corretto al PRIMO tentativo → 1 iter/nodo.
   const distinctDefIds = [...new Set(nodes.map((n) => n.defId))];
   const fieldsByDefId: Record<
     string,

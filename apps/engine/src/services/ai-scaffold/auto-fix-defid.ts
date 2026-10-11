@@ -4,7 +4,7 @@
  * Bug user-osservato 2026-05-31:
  *   Prompt: "IMAP-driven CRM enrichment ... fai webhook lookup verso Clearbit/Hunter
  *            ... fetch della homepage del dominio + meta extract ..."
- *   Liara generava defId con suffix specifici del dominio (anti-pattern):
+ *   Il modello generava defId con suffix specifici del dominio (anti-pattern):
  *     • action_json_extract_sender      → action_json_extract
  *     • action_json_extract_domain      → action_json_extract
  *     • action_http_clearbit            → action_http
@@ -26,7 +26,7 @@
  *
  * Vocabolario alias (nomi n8n + termini generici → defId FlowForge) centralizzato in
  * `lib/node-aliases.ts`, condiviso con l'import n8n: un utente n8n può chiedere "Code",
- * "HTTP Request", "Set", "IF"… e se Liara emette quel termine come defId, viene
+ * "HTTP Request", "Set", "IF"… e se il modello emette quel termine come defId, viene
  * normalizzato qui al confine, senza ri-addestrare il LoRA.
  */
 import { resolveNodeAlias } from '@/lib/node-aliases.js';

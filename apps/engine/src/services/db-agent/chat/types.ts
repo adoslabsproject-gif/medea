@@ -1,7 +1,7 @@
 /**
  * Tipi del loop chat agentico del DB-agent (Fetta 2).
  *
- * Il loop è PROVIDER-AGNOSTICO: non conosce Anthropic/OpenAI/Liara. Riceve una
+ * Il loop è PROVIDER-AGNOSTICO: non conosce Anthropic né OpenAI. Riceve una
  * funzione `llmTurn` (iniettabile) che incapsula la chiamata al modello con
  * tool-calling e ritorna o un testo finale o una lista di tool da eseguire.
  * Questo rende il cervello deterministico e testabile senza un LLM reale.

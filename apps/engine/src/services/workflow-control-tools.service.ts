@@ -1,5 +1,5 @@
 /**
- * Workflow Control Tools — deterministic tool registry per Liara/chat AI
+ * Workflow Control Tools — deterministic tool registry per la chat AI
  * per gestire workflow programmaticamente:
  *   • configure_node    — modifica config di un nodo
  *   • run_workflow      — esegue manualmente un workflow

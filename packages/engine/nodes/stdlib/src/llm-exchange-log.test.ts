@@ -33,8 +33,8 @@ describe('logLlmExchange — struttura entry', () => {
   it('emette header + prompt·system + prompt·user + risposta, TUTTI source llm', () => {
     const s = makeSink();
     logLlmExchange(ctxWith(s), {
-      provider: 'liara',
-      model: 'liara',
+      provider: 'openai',
+      model: 'openai',
       system: 'SYS',
       user: 'USER',
       response: 'RESP',
@@ -43,8 +43,8 @@ describe('logLlmExchange — struttura entry', () => {
     const kinds = s.calls.map((c) => c.fields?.kind);
     expect(kinds).toEqual(['llm_exchange', 'llm_prompt', 'llm_prompt', 'llm_response']);
     expect(s.calls[0]?.fields).toMatchObject({
-      provider: 'liara',
-      model: 'liara',
+      provider: 'openai',
+      model: 'openai',
       systemChars: 3,
       userChars: 4,
       responseChars: 4,

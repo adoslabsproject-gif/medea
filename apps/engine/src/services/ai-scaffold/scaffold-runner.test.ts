@@ -1,13 +1,13 @@
 /**
  * Tests focalizzati su scaffold-runner — defensive sanitization + iter logging.
  *
- * SCOPE LIMITATO (regression guard per fix 2026-05-29 "LIARA NON CREA NULLA"):
+ * SCOPE LIMITATO (regression guard per fix 2026-05-29 "IL WIZARD NON CREA NULLA"):
  *  - Qwen3 thinking tags `<think>...</think>` strippati anche se NON chiusi
  *    (hit max_tokens prima del closing tag) — pattern caso reale che bloccava
  *    il parser tool call con regex greedy `/\{[\s\S]*\}/`
  *  - logger.info chiamato per ogni iter con rawLength + trailingChar +
- *    looksTruncated (osservabilita\` remota — senza, "perche\` LIARA NON
- *    CREA NULLA" e\` un debug senza appigli)
+ *    looksTruncated (osservabilita\` remota — senza, "perche\` IL WIZARD
+ *    NON CREA NULLA" e\` un debug senza appigli)
  *  - logger.error chiamato su LLM provider fail (no swallowing silente)
  *  - logger.warn chiamato su tool call malformed (parser retry visibile)
  *
@@ -87,7 +87,7 @@ describe('scaffold-runner — defensive <think> sanitization', () => {
 });
 
 describe('scaffold-runner — finalize wfPlain must satisfy WorkflowSchema', () => {
-  // REGRESSION 2026-05-29: Liara wizard finalize → 502 "Workflow generato non valido"
+  // REGRESSION 2026-05-29: wizard finalize → 502 "Workflow generato non valido"
   // perche\` createdAt/updatedAt NON erano popolati nel wfPlain prima del parse.
   // WorkflowSchema dichiara entrambi z.string().datetime() non-optional.
   // Replichiamo la SHAPE del wfPlain qui per garantire che, anche con un draft

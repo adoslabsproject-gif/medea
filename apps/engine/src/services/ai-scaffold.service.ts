@@ -4,7 +4,7 @@
  * Architecture: NOT single-shot. The LLM operates as an agent that calls
  * tools step-by-step until it emits `finalize_workflow`. Provider-agnostic
  * by design — uses `dispatchLLMChat` so the same code path works on
- * Anthropic/OpenAI/Liara/Gemini/Mistral/Groq/OpenRouter/Ollama.
+ * Anthropic/OpenAI/Gemini/Mistral/Groq/OpenRouter/Ollama.
  *
  * Tool protocol (provider-agnostic JSON, no vendor function-calling needed):
  *   { "tool": "<name>", "args": { ... } }
@@ -100,7 +100,7 @@ export class ScaffoldSession {
   /** Goal originale dell'utente — usato dal finalize gate per stimare min nodes. */
   goal = '';
   /**
-   * Plan-then-Execute (2026-05-31): Phase 0 obbligatoria. Liara deve emettere
+   * Plan-then-Execute (2026-05-31): Phase 0 obbligatoria. Il modello deve emettere
    * `propose_plan` PRIMA di add_node. Il plan e\` validato vs complessita\` goal,
    * tracciato vs draft, e visualizzato nell'UI come checklist.
    */

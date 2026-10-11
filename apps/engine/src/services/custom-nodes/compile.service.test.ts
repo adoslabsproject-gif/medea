@@ -375,12 +375,12 @@ export const executor = async () => x;`,
 });
 
 describe('🚨 actionableMessage (DX: errori import azionabili)', () => {
-  it('import relativo ESTERNO → aggiunge guida "auto-contenuti" + lo spec + tip Liara', () => {
+  it('import relativo ESTERNO → aggiunge guida "auto-contenuti" + lo spec + tip sull’assistente', () => {
     const out = actionableMessage('Could not resolve "../../core/config-parser.js"');
     expect(out).toContain('Could not resolve');
     expect(out).toContain('AUTO-CONTENUTI');
     expect(out).toContain('../../core/config-parser.js');
-    expect(out).toContain('Liara');
+    expect(out).toContain("chiedi all'assistente");
   });
 
   it('import fratello ./schema.js → messaggio INVARIATO (si risolve)', () => {

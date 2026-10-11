@@ -3,7 +3,13 @@
  * Asseriscono: sanitize HTML, LLM call, parsing, error handling.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { extractWithLlm, sanitizeHtmlForLlm, extractJsonLoose } from './extract-llm.js';
+import {
+  extractWithLlm,
+  sanitizeHtmlForLlm,
+  extractJsonLoose,
+  resolveLlmEndpoint,
+  LlmEndpointMissingError,
+} from './extract-llm.js';
 
 vi.mock('@medea/engine-safe-fetch', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@medea/engine-safe-fetch')>()),
@@ -13,8 +19,17 @@ vi.mock('@medea/engine-safe-fetch', async (importOriginal) => ({
 const { safeFetchWithRedirects } = await import('@medea/engine-safe-fetch');
 const mockedFetch = vi.mocked(safeFetchWithRedirects);
 
+/** L'endpoint di chi gestisce l'installazione: vale quando il nodo non ne indica uno. */
+const ENDPOINT = 'https://llm.example.com/v1/chat/completions';
+
 beforeEach(() => {
   mockedFetch.mockReset();
+  vi.stubEnv('MEDEA_LLM_ENDPOINT', ENDPOINT);
+  vi.stubEnv('MEDEA_LLM_API_KEY', '');
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe('sanitizeHtmlForLlm', () => {
@@ -142,9 +157,9 @@ describe('extractWithLlm', () => {
       json: async () => ({ choices: [{ message: { content: '{}' } }] }),
     } as unknown as Response);
 
-    await extractWithLlm({ html: '<p>x</p>', prompt: 'p', apiKey: 'sk-liara' });
+    await extractWithLlm({ html: '<p>x</p>', prompt: 'p', apiKey: 'sk-nodo' });
     const headers = (mockedFetch.mock.calls[0]![1] as { headers: Record<string, string> }).headers;
-    expect(headers.Authorization).toBe('Bearer sk-liara');
+    expect(headers.Authorization).toBe('Bearer sk-nodo');
   });
 
   it('schema → user prompt include "SCHEMA JSON TARGET"', async () => {
@@ -164,9 +179,8 @@ describe('extractWithLlm', () => {
   });
 });
 
-// ─── Fase 2 (#14): routing gateway metered + usage ──────────────────────────
-describe('extractWithLlm — gateway metered (Fase 2 #14)', () => {
-  const GW = 'http://172.20.0.1:3006/api/v1/llm';
+// ─── Da dove viene l'endpoint, e cosa succede quando non c'è ────────────────
+describe('extractWithLlm — endpoint, chiave e usage', () => {
   const okBody = (extra: Record<string, unknown> = {}) =>
     ({
       ok: true,
@@ -174,47 +188,58 @@ describe('extractWithLlm — gateway metered (Fase 2 #14)', () => {
       json: async () => ({ choices: [{ message: { content: '{"a":1}' } }], ...extra }),
     }) as unknown as Response;
 
-  beforeEach(() => {
-    vi.stubEnv('MEDEA_LIARA_BASE_URL', GW);
-    vi.stubEnv('MEDEA_LICENSE_KEY', 'lic-123');
-    vi.stubEnv('MEDEA_LIARA_ENDPOINT', '');
-    vi.stubEnv('MEDEA_LIARA_API_KEY', '');
-  });
-  afterEach(() => {
-    vi.unstubAllEnvs();
+  /**
+   * Non esiste un modello di ripiego: senza un endpoint, né sul nodo né
+   * nell'ambiente, il nodo si ferma dicendo cosa manca. Partire verso un
+   * indirizzo predefinito vorrebbe dire mandare l'HTML della pagina a un
+   * servizio che l'utente non ha scelto — o che non c'è più.
+   */
+  it('🚨 endpoint assente ovunque → errore che dice cosa manca, e NESSUNA richiesta parte', async () => {
+    vi.stubEnv('MEDEA_LLM_ENDPOINT', '');
+    await expect(extractWithLlm({ html: '<p>x</p>', prompt: 'p' })).rejects.toBeInstanceOf(
+      LlmEndpointMissingError,
+    );
+    await expect(extractWithLlm({ html: '<p>x</p>', prompt: 'p' })).rejects.toThrow(
+      /Endpoint LLM non configurato/u,
+    );
+    expect(mockedFetch).not.toHaveBeenCalled();
   });
 
-  it('🚨 endpoint assente → gateway metered + Bearer license + host esente dal guard', async () => {
+  it('endpoint assente sul nodo → quello dell’ambiente, senza Authorization se non c’è una chiave', async () => {
+    // La licenza dell'installazione NON è una chiave LLM: non deve mai
+    // diventare un Bearer verso un endpoint.
+    vi.stubEnv('MEDEA_LICENSE_KEY', 'lic-123');
     mockedFetch.mockResolvedValue(okBody());
     await extractWithLlm({ html: '<p>x</p>', prompt: 'p' });
     const [url, opts] = mockedFetch.mock.calls[0] as [
       string,
       { headers: Record<string, string>; allowedHosts?: string[] },
     ];
-    expect(url).toBe(`${GW}/chat/completions`);
-    expect(opts.headers.Authorization).toBe('Bearer lic-123');
-    expect(opts.allowedHosts).toEqual(['172.20.0.1:3006']);
+    expect(url).toBe(ENDPOINT);
+    expect(opts.headers.Authorization).toBeUndefined();
+    expect(opts.allowedHosts).toBeUndefined();
   });
 
-  it('🚨 sentinella legacy localhost:3003 salvata in config → trattata come NON impostata (gateway)', async () => {
+  it('la chiave dell’ambiente vale quando il nodo non ne indica una', async () => {
+    vi.stubEnv('MEDEA_LLM_API_KEY', 'sk-env');
     mockedFetch.mockResolvedValue(okBody());
-    const r = await extractWithLlm({
+    await extractWithLlm({ html: '<p>x</p>', prompt: 'p' });
+    const opts = mockedFetch.mock.calls[0]![1] as { headers: Record<string, string> };
+    expect(opts.headers.Authorization).toBe('Bearer sk-env');
+  });
+
+  it('🚨 il vecchio valore predefinito del campo (localhost:3003) vale «non impostato»', async () => {
+    mockedFetch.mockResolvedValue(okBody());
+    await extractWithLlm({
       html: '<p>x</p>',
       prompt: 'p',
       endpoint: 'http://localhost:3003/v1/chat/completions',
-      model: 'liara-distilled',
     });
-    expect(mockedFetch.mock.calls[0]![0]).toBe(`${GW}/chat/completions`);
-    // model sentinella → campo OMESSO → decide il gateway
-    const body = JSON.parse((mockedFetch.mock.calls[0]![1] as { body: string }).body) as Record<
-      string,
-      unknown
-    >;
-    expect('model' in body).toBe(false);
-    expect(r.provider).toBe('liara');
+    expect(mockedFetch.mock.calls[0]![0]).toBe(ENDPOINT);
+    expect(resolveLlmEndpoint('  ')).toBe(ENDPOINT);
   });
 
-  it('endpoint BYOK custom → NESSUNA esenzione guard, provider=custom', async () => {
+  it('endpoint sul nodo → NESSUNA esenzione guard, provider=custom', async () => {
     mockedFetch.mockResolvedValue(okBody());
     const r = await extractWithLlm({
       html: '<p>x</p>',
@@ -231,11 +256,11 @@ describe('extractWithLlm — gateway metered (Fase 2 #14)', () => {
 
   it('usage dalla risposta API → fromApi:true; modelUsed dal campo model della risposta', async () => {
     mockedFetch.mockResolvedValue(
-      okBody({ model: 'liara', usage: { prompt_tokens: 88, completion_tokens: 14 } }),
+      okBody({ model: 'gpt-4o-mini', usage: { prompt_tokens: 88, completion_tokens: 14 } }),
     );
     const r = await extractWithLlm({ html: '<p>x</p>', prompt: 'p' });
     expect(r.usage).toEqual({ input: 88, output: 14, fromApi: true });
-    expect(r.modelUsed).toBe('liara');
+    expect(r.modelUsed).toBe('gpt-4o-mini');
   });
 
   it('risposta senza usage → stima (fromApi:false, numeri finiti > 0)', async () => {

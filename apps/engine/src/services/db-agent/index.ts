@@ -1,8 +1,8 @@
 /**
- * DB-agent di Liara — barrel pubblico.
+ * DB-agent — barrel pubblico.
  *
  * Sottosistema tenant-safe che espone, in modo deterministico e testabile, le
- * operazioni DB che Liara può compiere nel workspace del PROPRIO tenant:
+ * operazioni DB che l'assistente può compiere nel workspace del PROPRIO tenant:
  * creare database/tabelle/indici, aggiungere/rimuovere colonne (con conferma
  * sulle DROP), inserire e leggere righe. È la base su cui poggia il pannello
  * chat di DB Studio (fetta successiva): l'agente chat non parla mai col

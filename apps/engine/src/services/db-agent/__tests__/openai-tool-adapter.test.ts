@@ -43,7 +43,7 @@ describe('buildChatCompletionsRequest', () => {
     expect(req.model).toBe('qwen3-32b');
   });
 
-  it('model omesso se vuoto (Liara usa il suo default)', () => {
+  it('model omesso se vuoto (il provider usa il suo default)', () => {
     const req = buildChatCompletionsRequest({ system: 's', messages: [], tools: [] });
     expect('model' in req).toBe(false);
   });
@@ -168,7 +168,7 @@ describe('makeOpenAiLlmTurn — trasporto con fetch stubbato', () => {
         }),
     } as Response);
     const turn = makeOpenAiLlmTurn({
-      endpoint: 'https://liara.local/chat/completions',
+      endpoint: 'https://llm.local/chat/completions',
       apiKey: 'k',
       model: 'qwen',
       fetchImpl,
@@ -183,7 +183,7 @@ describe('makeOpenAiLlmTurn — trasporto con fetch stubbato', () => {
       toolCalls: [{ id: 'c1', name: 'list_databases', args: {} }],
     });
     const [url, init] = fetchImpl.mock.calls[0]!;
-    expect(url).toBe('https://liara.local/chat/completions');
+    expect(url).toBe('https://llm.local/chat/completions');
     expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer k');
     const body = JSON.parse(coerceString(init?.body)) as { tools: unknown[]; tool_choice: string };
     expect(body.tool_choice).toBe('auto');

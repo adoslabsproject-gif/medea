@@ -26,7 +26,6 @@ import {
 
 const ENV_KEYS = [
   'PORTAL_INTERNAL_URL',
-  'LIARA_URL',
   'CODE_RUNNER_URL',
   'WHISPER_URL',
   'VISION_URL',
@@ -51,7 +50,6 @@ afterEach(() => {
 describe('isInternalServiceUrl — registro dei NOSTRI servizi', () => {
   it.each([
     'http://host.docker.internal:3006/api/v1/internal/x', // portal
-    'http://host.docker.internal:3003/v1/complete', // liara
     'http://host.docker.internal:5003/execute', // code-runner
     'http://host.docker.internal:5005/transcribe', // whisper
     'http://host.docker.internal:5004/analyze', // vision
@@ -73,8 +71,8 @@ describe('isInternalServiceUrl — registro dei NOSTRI servizi', () => {
 });
 
 describe('internalAwareFetch — concede il bypass SOLO ai servizi registrati', () => {
-  it('servizio interno (Liara) → safeOutboundFetch con allowPrivateHost:true', async () => {
-    await internalAwareFetch('http://host.docker.internal:3003/v1/complete', { method: 'POST' });
+  it('servizio interno (code-runner) → safeOutboundFetch con allowPrivateHost:true', async () => {
+    await internalAwareFetch('http://host.docker.internal:5003/run', { method: 'POST' });
     expect(calls).toHaveLength(1);
     expect(calls[0]!.opts.allowPrivateHost).toBe(true);
   });
@@ -108,11 +106,11 @@ describe('internalAwareFetch — scope per-callsite (allowlist minima)', () => {
     expect(calls[0]!.opts.allowPrivateHost).toBe(true);
   });
 
-  it('🔒 SICUREZZA: endpoint user DEVIATO su un ALTRO nostro servizio (whisper→Liara) → NIENTE bypass', async () => {
-    // cfg.whisperEndpoint = "http://host.docker.internal:3003" (Liara, non whisper).
-    // Lo scope 'whisper' NON concede il bypass per l'origin Liara.
+  it('🔒 SICUREZZA: endpoint user DEVIATO su un ALTRO nostro servizio (whisper→code-runner) → NIENTE bypass', async () => {
+    // cfg.whisperEndpoint = "http://host.docker.internal:5003" (code-runner, non whisper).
+    // Lo scope 'whisper' NON concede il bypass per l'origin di un altro servizio.
     await internalAwareFetch(
-      'http://host.docker.internal:3003/transcribe',
+      'http://host.docker.internal:5003/transcribe',
       {},
       { allow: 'whisper' },
     );
@@ -131,19 +129,24 @@ describe('internalAwareFetch — scope per-callsite (allowlist minima)', () => {
 });
 
 describe('registro — env override + memoizzazione', () => {
-  it('LIARA_URL via env entra nel registro', () => {
-    process.env.LIARA_URL = 'http://liara-prod.internal:8080';
+  it('CODE_RUNNER_URL via env entra nel registro', () => {
+    process.env.CODE_RUNNER_URL = 'http://runner-prod.internal:8080';
     __resetInternalServiceCacheForTest();
-    expect(isInternalServiceUrl('http://liara-prod.internal:8080/v1/complete')).toBe(true);
+    expect(isInternalServiceUrl('http://runner-prod.internal:8080/run')).toBe(true);
     // Il default vecchio non è più registrato.
-    expect(isInternalServiceUrl('http://host.docker.internal:3003/v1/complete')).toBe(false);
+    expect(isInternalServiceUrl('http://host.docker.internal:5003/run')).toBe(false);
   });
 
-  it('internalServiceUrls() espone i 6 servizi noti', () => {
+  /**
+   * L'elenco è chiuso: un servizio in più qui vuol dire un host privato in
+   * più raggiungibile saltando il guard SSRF. In particolare non c'è nessun
+   * servizio LLM interno: i modelli si raggiungono sugli endpoint pubblici dei
+   * provider, col guard pieno.
+   */
+  it('🚨 internalServiceUrls() espone i 5 servizi noti, e nessun servizio LLM', () => {
     const u = internalServiceUrls();
     expect(Object.keys(u).sort()).toEqual([
       'codeRunner',
-      'liara',
       'portal',
       'runtime',
       'vision',
@@ -181,7 +184,7 @@ describe('🛡 anti-regressione: i callsite interni usano internalAwareFetch (no
   // Fase 2 (#14): legal-compliance e debug-run-failure NON fanno più fetch
   // diretti verso servizi interni — la chiamata AI passa da dispatchLLMChat
   // (gateway metered). Il guard qui impedisce la REINTRODUZIONE del percorso
-  // morto (`LIARA_URL/v1/complete`: route inesistente + 401 internalAuth) e
+  // morto (un indirizzo fisso `/v1/complete`: route inesistente) e
   // di qualsiasi fetch raw.
   it.each(['executors/legal-compliance.ts', 'executors/debug-run-failure.ts'])(
     '%s usa dispatchLLMChat e NON reintroduce /v1/complete né fetch raw',

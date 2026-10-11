@@ -28,12 +28,7 @@ import type { NodeExecutionContext } from '@medea/engine-nodes-stdlib';
 
 const m = vi.hoisted(() => ({
   llmGet: vi.fn(),
-  isLiaraAllowed: vi.fn(),
   safeFetch: vi.fn(),
-}));
-
-vi.mock('@/services/tenant-ai-preferences.service.js', () => ({
-  isLiaraAllowedForTenant: (...a: unknown[]) => m.isLiaraAllowed(...a),
 }));
 
 vi.mock('@/services/llm-providers.service.js', () => ({
@@ -63,7 +58,6 @@ beforeEach(() => {
   tenantDir = mkdtempSync(join(tmpdir(), 'ff-pdf-'));
   process.env.MEDEA_DATA_DIR = tenantDir;
   m.llmGet.mockReset();
-  m.isLiaraAllowed.mockReset();
   m.safeFetch.mockReset();
 });
 
@@ -214,9 +208,8 @@ describe('🚨 mode router validation', () => {
 describe('🚨 LLM-vision fallback', () => {
   const buf = Buffer.from('not a pdf'); // forza fallback
 
-  it('🚨 mode=llm-only senza Anthropic key + senza Liara → throw esplicito', async () => {
+  it('🚨 mode=llm-only senza Anthropic key → throw che dice dove configurarla', async () => {
     m.llmGet.mockReturnValue(null);
-    m.isLiaraAllowed.mockReturnValue(false);
     await expect(
       pdfParseExecutor(
         {
@@ -226,22 +219,9 @@ describe('🚨 LLM-vision fallback', () => {
         null,
         ctx,
       ),
-    ).rejects.toThrow(/Anthropic API key.*Liara enabled/u);
-  });
-
-  it('🚨 mode=llm-only senza Anthropic + Liara enabled → throw "non supporta PDF vision"', async () => {
-    m.llmGet.mockReturnValue(null);
-    m.isLiaraAllowed.mockReturnValue(true);
-    await expect(
-      pdfParseExecutor(
-        {
-          base64: buf.toString('base64'),
-          mode: 'llm-only',
-        },
-        null,
-        ctx,
-      ),
-    ).rejects.toThrow(/Liara non supporta ancora input PDF vision/u);
+    ).rejects.toThrow(/configura una API key Anthropic in Settings → AI Providers/u);
+    // Nessuna chiamata parte verso un modello di ripiego: non ne esiste uno.
+    expect(m.safeFetch).not.toHaveBeenCalled();
   });
 
   it('mode=llm-only con Anthropic key → chiama API + ritorna text estratto', async () => {

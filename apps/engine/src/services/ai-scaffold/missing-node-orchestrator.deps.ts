@@ -3,7 +3,7 @@
  *
  * Connette i punti di pure logic dell'orchestrator alle implementazioni
  * concrete:
- *  - generateNodeBlueprint → callAiAssist({ action: 'generate' }) Liara
+ *  - generateNodeBlueprint → callAiAssist({ action: 'generate' })
  *  - persistAndPublish     → createCustomNode + publishCustomNodePrivate
  *  - findExistingCustomDefId → getCustomNodeBySlug + customNodeDefId
  *

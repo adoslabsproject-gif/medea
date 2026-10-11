@@ -1,7 +1,7 @@
 /**
  * Scaffold runner — orchestra l'agent loop end-to-end.
  *
- * - Risolve provider LLM via llmResolver (Anthropic/OpenAI/Liara/Gemini/...)
+ * - Risolve provider LLM via llmResolver (Anthropic/OpenAI/Gemini/...)
  * - Costruisce il primo user message (goal + catalogo + db hint)
  * - Loop: dispatchLLMChat → parse tool call → session.execute → append history
  * - Truncation detection (heuristica tail-shape per provider che non danno finishReason)
@@ -17,7 +17,7 @@ import { llmResolver, NoLlmProviderError } from '@/services/llm-resolver.service
 import { dispatchLLMChat } from '@/services/llm-chat.service.js';
 import { logger } from '@/lib/logger.js';
 import { ScaffoldSession } from '@/services/ai-scaffold.service.js';
-import { pickScaffoldPrompt } from './prompts.js';
+import { SYSTEM_PROMPT } from './prompts.js';
 import { buildNodeCatalog } from './node-catalog.js';
 import { redactSensitive } from './redact.js';
 import { callLlmWithRetry } from './llm-retry.js';
@@ -162,11 +162,11 @@ export async function runScaffold(
   // modello tronca e genera workflow incompleti.
   //
   // Stack 2026 corretto: catalog INDEX (solo defId + type + label, ~3K
-  // tokens). Liara chiama list_node_catalog(defId:"X") on-demand per i
+  // tokens). Il modello chiama list_node_catalog(defId:"X") on-demand per i
   // configFields completi quando deve usare un nodo specifico.
   const catalog = buildNodeCatalog();
   const catalogText = catalog.map((c) => `- ${c.defId} (${c.type}) "${c.label}"`).join('\n');
-  // Pre-analisi complessita\` — mostra a Liara cosa il complexity gate ha
+  // Pre-analisi complessita\` — mostra al modello cosa il complexity gate ha
   // rilevato nel goal, ANCORA prima della sua prima tool call. Cosi\` il
   // propose_plan iniziale gia\` sa minNodes target invece di scoprirlo via reject.
   const complexity = (await import('./tools/complexity-gate.js')).estimateComplexity(goal);
@@ -244,7 +244,7 @@ export async function runScaffold(
             resolved.provider,
             resolved.apiKey,
             resolved.model,
-            pickScaffoldPrompt(resolved.provider),
+            SYSTEM_PROMPT,
             currentUser,
             undefined,
             priorHistory,
@@ -459,7 +459,7 @@ export async function runScaffold(
       : { ok: false, error: redactSensitive(result.error) };
     // Slice 8000 (era 4000) per consentire al propose_plan accepted di
     // ritornare schemas completi di tutti i defId del plan (~150 chars/defId
-    // × 20-25 defId = ~3-5K chars). Senza Liara perderebbe gli schemas.
+    // × 20-25 defId = ~3-5K chars). Senza, il modello perderebbe gli schemas.
     history.push({
       role: 'user',
       content: `tool_result: ${JSON.stringify(safeResult).slice(0, 8000)}`,

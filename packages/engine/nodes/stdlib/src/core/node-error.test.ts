@@ -200,9 +200,9 @@ describe('NodeError hierarchy', () => {
 
   describe('CircuitOpenError', () => {
     it('is NOT retryable (waste of work)', () => {
-      const e = new CircuitOpenError({ breakerName: 'liara', nextProbeAt: 1000 });
+      const e = new CircuitOpenError({ breakerName: 'openai', nextProbeAt: 1000 });
       expect(e.retryable).toBe(false);
-      expect(e.context.breakerName).toBe('liara');
+      expect(e.context.breakerName).toBe('openai');
     });
   });
 

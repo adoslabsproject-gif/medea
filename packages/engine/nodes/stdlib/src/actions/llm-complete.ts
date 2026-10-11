@@ -1,9 +1,9 @@
 /**
- * action_llm_complete — chiamata LLM generica enterprise (Liara gateway).
+ * action_llm_complete — chiamata LLM generica.
  *
- * Use case: qualsiasi nodo workflow che ha bisogno di "Liara, fai X con questo
+ * Use case: qualsiasi nodo workflow che ha bisogno di "fai X con questo
  * testo" SENZA dover assemblare un agent_* specifico. Pattern utilizzato in
- * cataloghi/prompt dei nodi e nei dataset LoRA AI scaffold.
+ * cataloghi/prompt dei nodi.
  *
  * Output: { completion, model, provider, tokensUsed:{prompt,completion,total},
  *           cost?, responseFormat, jsonParsed? }
@@ -24,15 +24,11 @@ export const llmCompleteNode: NodeModule = {
     description:
       'Nodo generico LLM (Large Language Model) per generazione open-ended di testo o JSON strutturato, da ' +
       'qualsiasi prompt e con il provider configurato — la primitiva atomic di accesso alle capacità AI ' +
-      'sottostanti la quale sono costruiti gli agent_* specializzati. Default: Liara Qwen3-32B FP8 self-hosted ' +
-      'on-prem (vLLM su Hetzner Blackwell GEX131 RTX PRO 6000 96GB Falkenstein DE — zero trasferimento dati ' +
-      'extra-UE, latenza p50 800ms, costo zero per il cliente nelle quote del piano). Override via BYOK con uno ' +
-      'dei 9 provider esterni supportati: Anthropic Claude Sonnet 4 (state-of-art reasoning, $3/MTok input), OpenAI GPT-4o ' +
-      '($2.5/MTok input), Google Gemini 2.0 Flash (long-context, multimodale), DeepSeek-V3 ($0.27/MTok input, sweet spot ' +
-      'prezzo/qualità), xAI Grok-2, OpenRouter (aggregator multi-modello), Mistral Large, Groq (LPU inference ultra-veloce ' +
-      'su Llama-3 e Mixtral), Perplexity Sonar (web search integrata con citazioni live). Routing automatico via header ' +
-      'X-FF-Provider gestito dal gateway LLM portal con quota ' +
-      'mensile dedicata BYOK separata da Liara. ' +
+      'sottostanti la quale sono costruiti gli agent_* specializzati. Usa il provider scelto in Settings → AI ' +
+      'Providers, con la tua chiave; sul nodo puoi indicarne un altro fra quelli supportati: Anthropic Claude, ' +
+      'OpenAI GPT, Google Gemini (long-context, multimodale), DeepSeek, xAI Grok, OpenRouter (aggregator ' +
+      'multi-modello), Mistral, Groq (inferenza molto veloce su modelli aperti), Perplexity Sonar (web search ' +
+      'integrata con citazioni live). ' +
       'Modalità output: testo plain (default — generazione discorsiva libera) oppure JSON structured ' +
       '(prompt include schema target + response_format json_object per Anthropic/OpenAI, fallback parsing per ' +
       'altri provider — validation downstream con Zod schema raccomandata). Temperature configurabile (0.0 ' +
@@ -77,7 +73,6 @@ export const llmCompleteNode: NodeModule = {
         type: 'select',
         required: false,
         options: [
-          'liara',
           'anthropic',
           'openai',
           'gemini',
@@ -88,10 +83,9 @@ export const llmCompleteNode: NodeModule = {
           'xai',
           'perplexity',
         ],
-        defaultValue: 'liara',
         help:
-          'liara (default) = Qwen3 32B self-hosted ZeliAI, GRATIS sul tuo piano. ' +
-          'Gli altri richiedono BYOK API key configurata in Settings → AI Providers e sono a tuo carico.',
+          'Vuoto = il provider scelto in Settings → AI Providers. Indicane uno solo se questo nodo deve ' +
+          'usarne un altro: serve comunque la sua API key configurata in Settings → AI Providers.',
       },
       {
         key: 'model',
@@ -100,7 +94,7 @@ export const llmCompleteNode: NodeModule = {
         required: false,
         placeholder: 'claude-sonnet-4-6 / gpt-4o-mini / lascia vuoto per default provider',
         help:
-          'Vuoto = usa il default del provider (Liara: qwen3-32b, Anthropic: claude-sonnet-4-6, ' +
+          'Vuoto = usa il default del provider (Anthropic: claude-sonnet-4-6, ' +
           "OpenAI: gpt-4o-mini). Per modelli specifici, inserisci l\\'id esatto del provider.",
       },
       {
@@ -173,7 +167,6 @@ export const llmCompleteNode: NodeModule = {
     vendor: 'flowforge',
     version: '1.0.0',
     cost: {
-      // Liara self-hosted: ~$0 (costo elettrico GPU ammortizzato).
       // Anthropic Sonnet: ~$0.003 input + $0.015 output per call media (1k+500 tok).
       // Stimator UI userà questo per "stima costo workflow di N call".
       costPerCall: 0.005,

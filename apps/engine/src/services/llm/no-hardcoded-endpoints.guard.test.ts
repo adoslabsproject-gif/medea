@@ -8,7 +8,7 @@
  * È il motivo per cui la tripla-duplicazione divergente (db-agent vs llm-chat vs
  * llm-test) non può tornare di nascosto.
  *
- * NB: gemini (generativelanguage), anthropic, voyage, liara, ollama hanno shape
+ * NB: gemini (generativelanguage), anthropic, voyage, ollama hanno shape
  * NON OpenAI-compat → i loro URL restano legittimamente nei consumer e NON sono
  * sorvegliati qui.
  *

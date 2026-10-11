@@ -3,7 +3,7 @@
  * COLD-START dello scaffold.
  *
  * Il template-cache fa few-shot solo da workflow auto-generati: su un tenant
- * nuovo (cache vuota) Liara genera senza alcun esempio. Questi 5 pattern
+ * nuovo (cache vuota) il modello genera senza alcun esempio. Questi 5 pattern
  * FATTI A MANO coprono le richieste più comuni e vengono iniettati nel prompt
  * quando la cache non ha match — il modello vede com'è fatto un workflow
  * GIUSTO (config reali, {{secrets.*}} per i valori ignoti, __USE_PICKER__

@@ -1,7 +1,7 @@
 /**
  * Tests 2026-grade per buildNodeCatalog + helpers.
  *
- * FIX 2026-05-30 user-segnalato: Liara wizard faceva abort
+ * FIX 2026-05-30 user-segnalato: il wizard faceva abort
  *   "defId community_telegram non nel catalogo"
  * anche se i 7 community v2.0 erano caricati via loadInstalledFromDisk
  * (log count:7). Causa: buildNodeCatalog leggeva SOLO ALL_NODE_MODULES

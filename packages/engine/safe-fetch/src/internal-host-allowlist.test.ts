@@ -60,7 +60,7 @@ describe('isHostAllowlisted', () => {
 });
 
 // Fase 2 (#14): SSOT dell'esenzione origin-based (nata in nodes-ai-agents,
-// fix SSRF nLA_liara; qui perché serve anche ai nodi stdlib). La suite
+// fix SSRF sul gateway interno; qui perché serve anche ai nodi stdlib). La suite
 // completa vive nei consumer (ai-agents index.test.ts) — qui il contratto base.
 describe('internalGatewayTrustedHost', () => {
   const GW = 'http://172.20.0.1:3006/api/v1/llm';

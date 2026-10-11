@@ -128,12 +128,12 @@ describe('formatTenantContextForPrompt', () => {
 
   it('default LLM provider impostato → bloccato verbatim nel prompt', () => {
     const ctx = empty({
-      defaultLlmProvider: 'liara',
-      llmProviders: [{ provider: 'liara', hasKey: true }],
+      defaultLlmProvider: 'openai',
+      llmProviders: [{ provider: 'openai', hasKey: true }],
     });
     const s = formatTenantContextForPrompt(ctx);
     expect(s).toContain('LLM provider DI DEFAULT');
-    expect(s).toContain('liara');
+    expect(s).toContain('openai');
     // Hard rule: model vuoto, no apiKey hard-coded, no guess gpt-4o
     expect(s).toContain('`config.model` lascialo VUOTO');
     expect(s).toContain('NIENTE `apiKey` hard-coded');
@@ -222,14 +222,14 @@ describe('formatTenantContextForPrompt', () => {
       llmProviders: [
         { provider: 'anthropic', hasKey: true },
         { provider: 'openai', hasKey: true },
-        { provider: 'liara', hasKey: true },
+        { provider: 'gemini', hasKey: true },
       ],
     });
     const s = formatTenantContextForPrompt(ctx);
     expect(s).toContain('DEFAULT: `anthropic`');
     expect(s).toContain('"anthropic"');
     expect(s).toContain('"openai"');
-    expect(s).toContain('"liara"');
+    expect(s).toContain('"gemini"');
   });
 });
 

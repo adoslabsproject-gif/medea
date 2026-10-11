@@ -53,7 +53,7 @@ describe('proposePlanHandler — happy path', () => {
   });
 
   it('plan accepted ritorna schemas per OGNI defId distinct (anti-retry loop)', () => {
-    // FIX 2026-05-31: Liara consumava 3 iter/nodo per scoprire REQUIRED.
+    // FIX 2026-05-31: il modello consumava 3 iter/nodo per scoprire REQUIRED.
     // Server ora restituisce schemas completi nel tool_result accepted.
     const s = newSession(ENTERPRISE_GOAL);
     const nodes = manyPlanned(22); // n0=trigger_webhook, n1..n21=action_http
@@ -214,7 +214,7 @@ describe('proposePlanHandler — riproposta plan dopo correzione', () => {
     proposePlanHandler(s, { nodes: manyPlanned(22), edges: [], reasoning: REASONING_OK });
     expect(s.plan?.nodes).toHaveLength(22);
 
-    // Liara aggiunge altri 3 nodi via re-propose
+    // Il modello aggiunge altri 3 nodi via re-propose
     proposePlanHandler(s, { nodes: manyPlanned(25), edges: [], reasoning: REASONING_OK });
     expect(s.plan?.nodes).toHaveLength(25);
   });

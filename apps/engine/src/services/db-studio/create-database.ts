@@ -52,7 +52,7 @@ export interface CreateTenantDatabaseInput {
  */
 export async function createTenantDatabase(input: CreateTenantDatabaseInput): Promise<Database> {
   const { tenantId, name, engine, dbStudio } = input;
-  const description = input.description ?? 'Database creato da Liara (DB-agent)';
+  const description = input.description ?? "Database creato dall'assistente (DB-agent)";
 
   if (input.managed) {
     if (!isManagedEngine(engine)) {

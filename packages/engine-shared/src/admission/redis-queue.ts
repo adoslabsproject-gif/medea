@@ -44,9 +44,9 @@ export interface AdmissionResult {
 
 function keysFor(pool: string): { inflight: string; queue: string; qmeta: string } {
   return {
-    inflight: `liara:adm:${pool}:inflight`,
-    queue: `liara:adm:${pool}:queue`,
-    qmeta: `liara:adm:${pool}:qmeta`,
+    inflight: `llm:adm:${pool}:inflight`,
+    queue: `llm:adm:${pool}:queue`,
+    qmeta: `llm:adm:${pool}:qmeta`,
   };
 }
 

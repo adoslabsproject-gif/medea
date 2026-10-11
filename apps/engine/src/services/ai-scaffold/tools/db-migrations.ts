@@ -23,7 +23,7 @@ import { logger } from '@/lib/logger.js';
 /**
  * createDatabaseHandler — crea un nuovo database SQLite locale del tenant.
  *
- * Bug fix 2026-05-29: Liara faceva abort quando l'utente non aveva DB
+ * Bug fix 2026-05-29: il modello faceva abort quando l'utente non aveva DB
  * configurati (es. nuovo workspace). Adesso lo scaffold puo\` creare un
  * DB SQLite locale on-demand (no setup esterno richiesto).
  *

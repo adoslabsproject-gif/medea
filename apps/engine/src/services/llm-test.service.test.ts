@@ -13,33 +13,17 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe('🚨 Liara', () => {
-  it('🚨 happy → text from choices[0].message.content', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ choices: [{ message: { content: 'OK' } }] }),
-    });
-    const r = await dispatchLLMForTest('liara', { apiKey: '', defaultModel: '' });
-    expect(r).toBe('OK');
-    const [url, opts] = at(fetchMock.mock.calls, 0, 'fetch-calls');
-    expect(url).toContain('liara.nothumanallowed.com');
-    const body = JSON.parse((opts as RequestInit).body as string);
-    expect(body.max_tokens).toBe(8);
-  });
-
-  it('🚨 baseUrl override', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
-    await dispatchLLMForTest('liara', { apiKey: '', baseUrl: 'https://my-liara.com' });
-    expect(at(fetchMock.mock.calls, 0, 'fetch-calls')[0]).toContain('my-liara.com');
-  });
-
-  it('🚨 5xx → throw con preview body', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: false,
-      status: 503,
-      text: () => Promise.resolve('upstream down'),
-    });
-    await expect(dispatchLLMForTest('liara', null)).rejects.toThrow(/Liara 503.*upstream down/u);
+describe('🚨 provider che non esiste', () => {
+  /**
+   * Il bottone «Test» non deve mai partire verso un indirizzo per un nome che
+   * il registro non conosce: né uno inventato, né uno rimasto da una versione
+   * che aveva un provider in più.
+   */
+  it('🚨 un nome sconosciuto → errore per nome, e nessuna richiesta parte', async () => {
+    await expect(
+      dispatchLLMForTest('provider-dismesso' as never, { apiKey: 'k' }),
+    ).rejects.toThrow(/provider-dismesso/u);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 
@@ -219,7 +203,7 @@ describe("🚨 anti-OOM: body d'errore cappato (bug-bounty)", () => {
   it("🚨 ATTACCO: provider 500 con body d'errore ENORME → readOpenAiText si ferma al cap", async () => {
     const stats = { maxChunks: 0 };
     fetchMock.mockResolvedValueOnce(new Response(countingStream(stats), { status: 500 }));
-    await expect(dispatchLLMForTest('liara', { apiKey: '', defaultModel: '' })).rejects.toThrow();
+    await expect(dispatchLLMForTest('openai', { apiKey: 'k', defaultModel: '' })).rejects.toThrow();
     // 64KB / 8KB ≈ 8 pull col cap; senza cap (res.text()) tirerebbe tutti i 512.
     expect(stats.maxChunks).toBeLessThan(30);
   });

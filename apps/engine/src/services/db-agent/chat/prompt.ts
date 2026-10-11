@@ -9,7 +9,7 @@ export interface DbAgentPromptContext {
    *  Presente in modalità DATABASE (un DB aperto). */
   schemaContext?: string;
   /** Panoramica dei database del workspace (nome · engine · #tabelle).
-   *  Presente in modalità GLOBALE (DB Studio senza un DB selezionato) → Liara
+   *  Presente in modalità GLOBALE (DB Studio senza un DB selezionato) → l'assistente
    *  può elencare/creare un database da zero. Ha la precedenza su schemaContext. */
   databasesOverview?: string;
   /** Contesto opzionale del workflow corrente (se la chat è aperta sull'editor). */
@@ -17,7 +17,7 @@ export interface DbAgentPromptContext {
 }
 
 const PERSONA =
-  "Sei Liara, l'assistente DB di FlowForge. Operi ESCLUSIVAMENTE sui database del workspace dell'utente corrente: non esistono, per te, database o tenant di altri. Rispondi in italiano, conciso e operativo.";
+  "Sei l'assistente DB di Medea. Operi ESCLUSIVAMENTE sui database del workspace dell'utente corrente: non esistono, per te, database o tenant di altri. Rispondi in italiano, conciso e operativo.";
 const TOOLS_RULES =
   "Strumenti: usa read_db_schema / run_select / run_sql per capire e leggere; per modificare lo schema preferisci preview_schema_plan (mostra l'SQL) e POI apply_schema_plan (atomico). Per i dati: insert_row / update_rows / delete_rows.";
 const SAFETY_RULES =

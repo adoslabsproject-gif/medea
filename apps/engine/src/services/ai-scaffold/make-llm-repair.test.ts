@@ -61,7 +61,7 @@ describe('makeLlmRepairFn — parsing & fail-soft', () => {
   it('🚨 dispatch lancia (LLM giù) → [] (fail-soft)', async () => {
     const fn = repairWith(
       vi.fn(async () => {
-        throw new Error('Liara 502');
+        throw new Error('OpenAI 502');
       }),
     );
     await expect(fn({ nodes: NODES, violations: VIOLATIONS })).resolves.toEqual([]);

@@ -43,10 +43,10 @@ function makeRedis(): PositionRedis & {
 }
 
 describe('publishQueued → readPosition round-trip', () => {
-  it('scrive {s:q,p,a} con chiave liara:adm:pos:<rid> e TTL; read lo ricostruisce', async () => {
+  it('scrive {s:q,p,a} con chiave llm:adm:pos:<rid> e TTL; read lo ricostruisce', async () => {
     const r = makeRedis();
     await publishQueued(r, 'rid-1', { position: 3, ahead: 2 });
-    expect(r.setCalls[0]![0]).toBe('liara:adm:pos:rid-1');
+    expect(r.setCalls[0]![0]).toBe('llm:adm:pos:rid-1');
     expect(r.setCalls[0]![2]).toBe('EX');
     expect(r.setCalls[0]![3]).toBe(30); // TTL default
     expect(await readPosition(r, 'rid-1')).toEqual({ state: 'queued', position: 3, ahead: 2 });
@@ -72,24 +72,24 @@ describe('readPosition — fail-safe (mai posizione finta)', () => {
   });
   it('JSON malformato → gone', async () => {
     const r = makeRedis();
-    r.store.set('liara:adm:pos:x', '{not json');
+    r.store.set('llm:adm:pos:x', '{not json');
     expect(await readPosition(r, 'x')).toEqual({ state: 'gone' });
   });
   it('forma parziale (s:q senza p/a numerici) → gone, NON una posizione inventata', async () => {
     const r = makeRedis();
-    r.store.set('liara:adm:pos:x', JSON.stringify({ s: 'q' }));
+    r.store.set('llm:adm:pos:x', JSON.stringify({ s: 'q' }));
     expect(await readPosition(r, 'x')).toEqual({ state: 'gone' });
-    r.store.set('liara:adm:pos:y', JSON.stringify({ s: 'q', p: '3', a: '2' })); // stringhe, non number
+    r.store.set('llm:adm:pos:y', JSON.stringify({ s: 'q', p: '3', a: '2' })); // stringhe, non number
     expect(await readPosition(r, 'y')).toEqual({ state: 'gone' });
   });
   it('stringa vuota → gone', async () => {
     const r = makeRedis();
-    r.store.set('liara:adm:pos:z', '');
+    r.store.set('llm:adm:pos:z', '');
     expect(await readPosition(r, 'z')).toEqual({ state: 'gone' });
   });
   it('posizione 0/0 VALIDA (ammesso-imminente) → queued {0,0}, non gone', async () => {
     const r = makeRedis();
-    r.store.set('liara:adm:pos:k', JSON.stringify({ s: 'q', p: 0, a: 0 }));
+    r.store.set('llm:adm:pos:k', JSON.stringify({ s: 'q', p: 0, a: 0 }));
     expect(await readPosition(r, 'k')).toEqual({ state: 'queued', position: 0, ahead: 0 });
   });
 });
@@ -99,7 +99,7 @@ describe('clearPosition', () => {
     const r = makeRedis();
     await publishQueued(r, 'rid-1', { position: 1, ahead: 0 });
     await clearPosition(r, 'rid-1');
-    expect(r.delCalls).toEqual(['liara:adm:pos:rid-1']);
+    expect(r.delCalls).toEqual(['llm:adm:pos:rid-1']);
     expect(await readPosition(r, 'rid-1')).toEqual({ state: 'gone' });
   });
   it('clear di chiave inesistente non esplode (idempotente)', async () => {

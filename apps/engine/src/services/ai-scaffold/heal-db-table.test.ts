@@ -34,7 +34,7 @@ describe('healDbTableReferences — caso REALE Anti-fraud (mario-rossi)', () => 
 });
 
 describe('healDbTableReferences — CREA quando serve', () => {
-  it('tabella nominata ma INESISTENTE → la dichiara in tablesToCreate (nome scelto da Liara)', () => {
+  it('tabella nominata ma INESISTENTE → la dichiara in tablesToCreate (nome scelto dal modello)', () => {
     const node = insert('seo_audits', '{"url":"x","score":"90","audit_date":"d"}');
     const r = healDbTableReferences([node], [DB], 'seo audit');
     expect(node.config.table).toBe('seo_audits'); // nome invariato

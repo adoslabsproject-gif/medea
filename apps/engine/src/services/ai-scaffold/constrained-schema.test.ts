@@ -306,37 +306,30 @@ describe('pickGrammarCatalog — grammatica sul subset RAG (anti full-catalog de
   });
 });
 
-describe('selectScaffoldSchema — policy provider + flag + fallback', () => {
+describe('selectScaffoldSchema — flag + fallback', () => {
   const STATIC = { sentinel: 'static-schema' } as const;
   afterEach(() => {
     delete process.env.MEDEA_SCAFFOLD_CONSTRAINED_SCHEMA;
   });
 
-  it('flag OFF (default) → statico anche per liara (constrained:false)', () => {
+  it('🚨 flag OFF (default) → statico: la grammatica non gonfia il prompt di nessuno', () => {
     expect(isConstrainedSchemaEnabled()).toBe(false);
-    const r = selectScaffoldSchema(CATALOG, 'liara', STATIC);
+    const r = selectScaffoldSchema(CATALOG, STATIC);
     expect(r.constrained).toBe(false);
     expect(r.schema).toBe(STATIC);
   });
 
-  it('flag ON + liara → grammatica vincolata (constrained:true, ha nodes.items.anyOf)', () => {
+  it('flag ON → schema per-tipo-nodo (constrained:true, ha nodes.items.anyOf)', () => {
     process.env.MEDEA_SCAFFOLD_CONSTRAINED_SCHEMA = 'true';
-    const r = selectScaffoldSchema(CATALOG, 'liara', STATIC);
+    const r = selectScaffoldSchema(CATALOG, STATIC);
     expect(r.constrained).toBe(true);
     const nodes = ((r.schema as JS).properties as Record<string, JS>).nodes!;
     expect((nodes.items as JS).anyOf).toBeDefined();
   });
 
-  it('🚨 flag ON + provider BYOK (openai) → STATICO (no grammar embeddata nel prompt)', () => {
+  it('flag ON + catalog VUOTO → fallback statico (compiler null)', () => {
     process.env.MEDEA_SCAFFOLD_CONSTRAINED_SCHEMA = 'true';
-    const r = selectScaffoldSchema(CATALOG, 'openai', STATIC);
-    expect(r.constrained).toBe(false);
-    expect(r.schema).toBe(STATIC);
-  });
-
-  it('flag ON + liara + catalog VUOTO → fallback statico (compiler null)', () => {
-    process.env.MEDEA_SCAFFOLD_CONSTRAINED_SCHEMA = 'true';
-    const r = selectScaffoldSchema([], 'liara', STATIC);
+    const r = selectScaffoldSchema([], STATIC);
     expect(r.constrained).toBe(false);
     expect(r.schema).toBe(STATIC);
   });

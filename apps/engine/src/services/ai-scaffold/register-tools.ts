@@ -295,7 +295,7 @@ toolRegistry.register(
 
 // ─────────────────────────────────────────────────────────────────────────
 // Planning Phase (1 tool) — PHASE 0 obbligatoria del wizard 2026-05-31.
-// Liara DEVE chiamare propose_plan PRIMA di add_node/connect_nodes/finalize.
+// Il modello DEVE chiamare propose_plan PRIMA di add_node/connect_nodes/finalize.
 // Vedi plan-handler.ts per validazioni + requirePlan gate.
 // ─────────────────────────────────────────────────────────────────────────
 

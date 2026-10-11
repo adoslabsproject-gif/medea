@@ -12,7 +12,7 @@
  * Pipeline:
  *  1. Fetch run JSON da runtime (steps + outputs + errors)
  *  2. Identifica failed step (status='error', first occurrence)
- *  3. Liara analyze con context: nodo config + input + error msg + downstream impact
+ *  3. Analisi LLM con context: nodo config + input + error msg + downstream impact
  *  4. Pattern matching error → category (transient/config/payload/auth/quota)
  *  5. Genera fix proposals + test cases Zod validation
  *
@@ -29,7 +29,7 @@ export const debugRunFailureNode: NodeModule = {
     icon: 'bug',
     color: '#f87171',
     description:
-      'Agente AI enterprise specializzato nel debug post-mortem di workflow run falliti — sfrutta il LLM Liara ' +
+      'Agente AI enterprise specializzato nel debug post-mortem di workflow run falliti — sfrutta il LLM del tenant ' +
       'per analizzare i dati granular di una run errored (steps json + outputs + error stack + config dei ' +
       'nodi coinvolti) e produrre raccomandazioni actionable di fix con confidence score, riducendo il tempo ' +
       'mean-time-to-resolution da ore-giorni (debug manuale) a minuti (AI-assisted triage). Pattern di ' +
@@ -60,9 +60,8 @@ export const debugRunFailureNode: NodeModule = {
       'invece di indagare 2 ore); suggestions DX per junior workflow author che imparano gradualmente i ' +
       'pattern enterprise (AI come "rubber duck" intelligente); auto-recovery cron su workflow critici ' +
       '(workflow di production che ha catch error handler che chiama agent_debug + auto-apply del fix se ' +
-      'confidence > 0.9); training dataset per fine-tune del Liara su pattern errori reali specifici del ' +
-      'workspace customer per personalization (i Liara LoRA del cliente che imparano nel tempo cosa è "fine" ' +
-      'vs "broken" nel suo contesto specifico).',
+      'confidence > 0.9); raccolta di esempi reali di errore del workspace, utile a capire nel tempo cosa è ' +
+      '"fine" vs "broken" nel suo contesto specifico.',
     configFields: [
       {
         key: 'runId',

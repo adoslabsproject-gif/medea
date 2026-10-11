@@ -1,6 +1,6 @@
 /**
  * internal-service-fetch — confine di fiducia CENTRALIZZATO per le chiamate
- * verso i NOSTRI servizi interni (Liara LLM, code-runner, portal, whisper,
+ * verso i NOSTRI servizi interni (code-runner, portal, whisper,
  * vision, runtime loopback). Questi vivono su `host.docker.internal:PORT` o
  * loopback (IP privati) → il SSRF guard di `safeOutboundFetch` li bloccherebbe.
  *
@@ -36,7 +36,6 @@ import { safeOutboundFetch, type SafeFetchOptions } from './safe-outbound-fetch.
 export function internalServiceUrls(): Record<string, string> {
   return {
     portal: process.env.PORTAL_INTERNAL_URL ?? 'http://host.docker.internal:3006',
-    liara: process.env.LIARA_URL ?? 'http://host.docker.internal:3003',
     codeRunner: process.env.CODE_RUNNER_URL ?? 'http://host.docker.internal:5003',
     whisper: process.env.WHISPER_URL ?? 'http://host.docker.internal:5005',
     vision: process.env.VISION_URL ?? 'http://host.docker.internal:5004',
@@ -90,7 +89,7 @@ function originOf(raw: string): string {
  *   - con `scope.allow`: il bypass è concesso SOLO se l'origin dell'URL è
  *     ESATTAMENTE quello del servizio dichiarato. Così un callsite che deve
  *     chiamare "whisper" NON ottiene il bypass se l'utente devia l'endpoint
- *     verso un ALTRO nostro servizio (es. Liara) — confine minimo per-callsite.
+ *     verso un ALTRO nostro servizio — confine minimo per-callsite.
  *   - senza `scope`: back-compat → bypass per qualsiasi servizio registrato
  *     (ok per callsite a URL FISSO server-side, non user-overridable).
  */

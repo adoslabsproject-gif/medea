@@ -1,11 +1,9 @@
 /**
  * Tests 2026-grade per ai-assistant.prompt.
  *
- * FIX 2026-05-30 user-segnalato: il chat AI Assistant si presentava come
- *   "Ciao! Sono FlowForge AI, il tuo assistente..."
- * invece di Liara. Causa: SYSTEM_PROMPT diceva "You are FlowForge AI".
- * Fix: identity unificata su Liara (coerente con homepage chat + scaffold
- * wizard + help-chat + tutti gli altri surface prompts).
+ * L'assistente si presenta come l'assistente dei workflow di Medea, su ogni
+ * superficie (chat dell'editor, wizard, aiuto): non ha un nome proprio e non
+ * porta il marchio di un altro prodotto.
  */
 import { describe, it, expect } from 'vitest';
 import * as mod from './ai-assistant.prompt.js';
@@ -32,28 +30,25 @@ const CATALOG_FIXTURE = [
   '- action_send_email (action, email): Invia una email via SMTP.',
 ].join('\n');
 
-describe('SYSTEM_PROMPT identity — coerenza brand "Liara" (FIX 2026-05-30)', () => {
-  it('contiene esplicitamente "Liara" come identità assistente', () => {
+describe('SYSTEM_PROMPT identity — l’assistente dei workflow di Medea', () => {
+  it('si presenta come l’assistente dell’editor di workflow di Medea', () => {
     const prompt = mod.buildAiAssistantSystemPrompt(CATALOG_FIXTURE);
-    expect(prompt).toMatch(/Liara/);
-    expect(prompt).toMatch(/You are .*Liara/i);
+    expect(prompt).toMatch(/You are the AI assistant of Medea's workflow editor/);
+    expect(prompt).toMatch(/IDENTITY: you are Medea's workflow assistant/);
   });
 
   it('REGRESSION: NON contiene più "FlowForge AI" come nome assistente', () => {
-    // Pre-fix: "You are FlowForge AI — a senior workflow engineer..."
-    // Post-fix: "You are Liara, the AI assistant of FlowForge..."
     const prompt = mod.buildAiAssistantSystemPrompt(CATALOG_FIXTURE);
     expect(prompt).not.toMatch(/You are .*FlowForge AI/);
     expect(prompt).not.toMatch(/Sono FlowForge AI/i);
   });
 
-  it('istruzione esplicita "your name is Liara" + match user language', () => {
+  it('segue la lingua dell’utente', () => {
     const prompt = mod.buildAiAssistantSystemPrompt(CATALOG_FIXTURE);
-    expect(prompt).toMatch(/your name is Liara/i);
     expect(prompt).toMatch(/Match the user.*language/i);
   });
 
-  // FIX 2026-06-28: a "crealo tu" Liara descriveva senza emettere la patch → canvas vuota.
+  // FIX 2026-06-28: a "crealo tu" il modello descriveva senza emettere la patch → canvas vuota.
   it('istruisce a EMETTERE patch sui build request + modificabilità + wizard', () => {
     const prompt = mod.buildAiAssistantSystemPrompt(CATALOG_FIXTURE);
     expect(prompt).toMatch(/BUILD\/CREATE requests MUST emit a "patch"/i);
@@ -80,14 +75,14 @@ describe('SYSTEM_PROMPT identity — coerenza brand "Liara" (FIX 2026-05-30)', (
     expect(prompt).not.toMatch(/full catalog is:/i);
   });
 
-  it('mention Zeli SRL come producer di FlowForge (brand authority)', () => {
+  it('non porta il nome di un’azienda: Medea è un client neutro', () => {
     const prompt = mod.buildAiAssistantSystemPrompt(CATALOG_FIXTURE);
-    expect(prompt).toMatch(/Zeli SRL/);
+    expect(prompt.split('\n')[0]).not.toMatch(/SRL|FlowForge/);
   });
 });
 
 describe('patchHasOps logic — strip empty patch (FIX 2026-05-30 user-segnalato)', () => {
-  // Bug: utente scrive "ciao" → Liara risponde solo conversazionalmente
+  // Bug: utente scrive "ciao" → il modello risponde solo conversazionalmente
   // (no patch reale) ma il LLM ritornava patch:{} → frontend renderizzava
   // "Modifica proposta" con bottone Applica vuoto + nessun item.
   // Fix backend: strip patch dal response se zero ops totali.
@@ -147,7 +142,7 @@ describe('patchHasOps logic — strip empty patch (FIX 2026-05-30 user-segnalato
   });
 });
 
-describe('cap context chat (incidente owner 2026-06-12 — Liara 400 92408>40960)', () => {
+describe('cap context chat (incidente owner 2026-06-12 — 400 del modello, 92408>40960)', () => {
   it('il builder NON dumpa più il catalogo completo — lo riceve dal RETRIEVAL (route)', async () => {
     const mod = await import('./ai-assistant.prompt.js');
     // Senza catalogBlock: il prompt non deve contenere alcun catalogo hardcoded.
