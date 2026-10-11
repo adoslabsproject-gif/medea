@@ -61,6 +61,13 @@ export type { CreateReport } from './tables';
 export { provisionRuntime } from './provision';
 export type { ProvisionReport } from './provision';
 export {
+  ascoltaConfigurazioneAi,
+  consegnaProviderAi,
+  consegnaProviderAiSeInPiedi,
+  PROVIDER_DEL_MOTORE,
+} from './provider-ai';
+export type { ConsegnaProviderAi } from './provider-ai';
+export {
   allSecrets,
   deleteSecret,
   hasSecret,

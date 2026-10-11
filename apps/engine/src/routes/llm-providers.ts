@@ -135,14 +135,14 @@ export function createLlmProvidersRoutes(): Hono {
     }
   });
 
-  app.delete('/:provider', requireRole('editor'), (c) => {
+  app.delete('/:provider', requireRole('editor'), async (c) => {
     const tenantId = getTenantId(c);
     const actorId = getActorId(c) ?? undefined;
     const providerParam = c.req.param('provider');
     if (!providerParam || !isValidProvider(providerParam)) {
       return c.json({ error: 'Provider non valido' }, 400);
     }
-    const ok = service.remove(tenantId, providerParam, actorId);
+    const ok = await service.remove(tenantId, providerParam, actorId);
     return c.json({ ok });
   });
 

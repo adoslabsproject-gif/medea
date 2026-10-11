@@ -16,11 +16,14 @@ import { loadAccounts } from '../../mail/store/account-store';
 import type { MailAccount } from '../../mail/types';
 
 import { runtimeApi } from './client';
+import { consegnaProviderAi } from './provider-ai';
 import { allSecrets } from './secrets';
 
 export interface ProvisionReport {
   secrets: number;
   accounts: number;
+  /** Chiavi dei modelli AI scritte o tolte in questa passata. */
+  aiProviders: number;
   /** Cosa non è riuscito, in parole. Non blocca il resto. */
   problems: string[];
 }
@@ -58,7 +61,7 @@ function toRuntimeAccount(account: MailAccount) {
 }
 
 /**
- * Porta segreti e account di posta dentro il runtime.
+ * Porta segreti, account di posta e chiavi dei modelli AI dentro il runtime.
  *
  * Un fallimento su un pezzo non ferma gli altri: se un account ha l'host
  * sbagliato è meglio avere i segreti caricati e un avviso, che non avere
@@ -68,6 +71,7 @@ export async function provisionRuntime(): Promise<ProvisionReport> {
   const problems: string[] = [];
   let secretCount = 0;
   let accountCount = 0;
+  let aiProviderCount = 0;
 
   // ── Segreti: dal portachiavi alle variabili del runtime ────────────────
   try {
@@ -113,5 +117,19 @@ export async function provisionRuntime(): Promise<ProvisionReport> {
     problems.push(`account di posta: ${e instanceof Error ? e.message : String(e)}`);
   }
 
-  return { secrets: secretCount, accounts: accountCount, problems };
+  // ── Modelli AI: le chiavi di Impostazioni servono anche ai nodi AI ─────
+  try {
+    const consegna = await consegnaProviderAi();
+    aiProviderCount = consegna.consegnati.length + consegna.tolti.length;
+    problems.push(...consegna.problems.map((p) => `modello AI ${p}`));
+  } catch (e) {
+    problems.push(`modelli AI: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
+  return {
+    secrets: secretCount,
+    accounts: accountCount,
+    aiProviders: aiProviderCount,
+    problems,
+  };
 }

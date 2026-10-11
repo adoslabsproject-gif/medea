@@ -15,12 +15,17 @@ import { useEffect } from 'react';
 import { workflowApi } from '../api';
 
 import { startRuntime } from './client';
+import { ascoltaConfigurazioneAi } from './provider-ai';
 import { provisionRuntime } from './provision';
 import { startRelay, stopRelay } from './relay';
 import { relayEnabled, relayToken, relayUrl } from './relay-settings';
 import { startRunWatcher } from './watcher';
 
 export function useAutonomousRuns(): void {
+  // Una chiave cambiata in Impostazioni deve arrivare al motore anche se la
+  // sezione workflow è chiusa: il cron notturno usa la copia del motore.
+  useEffect(() => ascoltaConfigurazioneAi(), []);
+
   useEffect(() => {
     let stop: (() => void) | null = null;
     // Il montaggio può finire prima dell'avvio del runtime — in sviluppo

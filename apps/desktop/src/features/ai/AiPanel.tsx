@@ -9,9 +9,9 @@ import styles from './AiPanel.module.css';
 import { aiApi } from './api';
 import {
   activeProvider,
-  DEFAULT_PROVIDER_KEY,
   NessunProviderError,
   providerConnection,
+  setActiveProvider,
 } from './connection';
 import { ConsentCard } from './ConsentCard';
 import { ConversationsSidebar } from './ConversationsSidebar';
@@ -864,7 +864,7 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
                 const next = e.target.value;
                 if (!isProviderId(next)) return;
                 setProvider(next);
-                localStorage.setItem(DEFAULT_PROVIDER_KEY, next);
+                setActiveProvider(next);
               }}
               aria-label="Provider AI"
             >

@@ -6,6 +6,7 @@
  * divergere.
  */
 
+import { notifyAiConfigChanged } from './config-changes';
 import { getApiKey } from './keys';
 import type { ProviderId } from './types';
 import { CUSTOM_BASE_URL_KEY, CUSTOM_MODEL_KEY, isProviderId } from './types';
@@ -31,6 +32,19 @@ export interface ProviderConnection {
 export function activeProvider(): ProviderId | null {
   const stored = localStorage.getItem(DEFAULT_PROVIDER_KEY);
   return isProviderId(stored) ? stored : null;
+}
+
+/**
+ * Salva il provider scelto e lo annuncia a chi ne tiene una copia.
+ *
+ * È l'unico punto in cui la scelta si scrive: le schermate che la cambiano
+ * sono due, e scrivendola ognuna per conto suo una delle due dimenticava di
+ * avvisare il motore dei workflow.
+ */
+export function setActiveProvider(provider: ProviderId): void {
+  if (activeProvider() === provider) return;
+  localStorage.setItem(DEFAULT_PROVIDER_KEY, provider);
+  notifyAiConfigChanged();
 }
 
 /** Sollevato quando serve un modello e l'utente non ne ha ancora scelto uno. */

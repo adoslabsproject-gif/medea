@@ -1,5 +1,6 @@
 import { secretsApi } from '../secrets/api';
 
+import { notifyAiConfigChanged } from './config-changes';
 import type { ProviderId } from './types';
 
 /**
@@ -38,4 +39,6 @@ export async function setApiKey(p: ProviderId, value: string): Promise<void> {
   else await secretsApi.delete(keychainKey(p));
   localStorage.removeItem(LEGACY_PREFIX + p);
   cache.set(p, v);
+  // Solo a scrittura riuscita: chi ascolta rilegge la chiave dal portachiavi.
+  notifyAiConfigChanged();
 }

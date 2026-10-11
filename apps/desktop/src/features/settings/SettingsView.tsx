@@ -6,7 +6,7 @@ import { TEMI, useTheme, type ThemeMode } from '../../app/providers/ThemeProvide
 import { AccountSetup } from '../account-setup';
 import { aiApi } from '../ai/api';
 import type { ClaudeCliStatus } from '../ai/api';
-import { activeProvider, DEFAULT_PROVIDER_KEY } from '../ai/connection';
+import { activeProvider, setActiveProvider } from '../ai/connection';
 import { getApiKey, setApiKey } from '../ai/keys';
 import {
   CUSTOM_BASE_URL_KEY,
@@ -1071,10 +1071,6 @@ function AiKeysTab() {
     })();
   }, []);
 
-  useEffect(() => {
-    if (defaultProvider) localStorage.setItem(DEFAULT_PROVIDER_KEY, defaultProvider);
-  }, [defaultProvider]);
-
   async function saveKey(provider: ProviderId) {
     await setApiKey(provider, keys[provider]);
     setSaved(provider);
@@ -1100,7 +1096,9 @@ function AiKeysTab() {
           label="Modello attivo"
           value={defaultProvider ?? ''}
           onChange={(e) => {
-            if (isProviderId(e.target.value)) setDefaultProvider(e.target.value);
+            if (!isProviderId(e.target.value)) return;
+            setDefaultProvider(e.target.value);
+            setActiveProvider(e.target.value);
           }}
           placeholder="Scegli un modello…"
           items={PROVIDER_IDS.map((p) => ({ value: p, label: providerLong(p) }))}
@@ -1109,6 +1107,10 @@ function AiKeysTab() {
         <p className={styles.muted} style={{ marginBlockStart: 'var(--space-2)' }}>
           Nessun servizio è preconfigurato: scegli un provider e usa la tua chiave, oppure il tuo
           abbonamento Claude tramite la CLI installata su questo computer.
+        </p>
+        <p className={styles.muted} style={{ marginBlockStart: 'var(--space-2)' }}>
+          I nodi AI dei workflow usano lo stesso provider, se ha una chiave. Con Claude in
+          abbonamento o con l’endpoint personale usano il primo provider che ne ha una.
         </p>
         <ClaudeCliStatusRow />
       </div>

@@ -20,6 +20,7 @@ use serde::Serialize;
 
 mod orphan;
 pub mod session;
+mod vault;
 mod webhook;
 
 /// Quanto si aspetta che il runtime risponda prima di dichiararlo non partito.
@@ -215,6 +216,17 @@ fn spawn(resource_dir: &Path, data_dir: &Path) -> Result<u16> {
         String::new()
     });
 
+    // La password con cui il motore cifra le credenziali. Senza, rifiuta di
+    // salvarne: i workflow senza nodi AI girano lo stesso, quindi si parte
+    // comunque e lo si scrive nel log.
+    let vault_master = match vault::master_password() {
+        Ok(value) => Some(value),
+        Err(e) => {
+            tracing::warn!("Password maestra del motore non disponibile: {e}");
+            None
+        }
+    };
+
     tracing::info!("Avvio runtime workflow: {} (porta {port})", entry.display());
 
     // Quello che il motore ha da dire, scritto da qualche parte invece che
@@ -249,7 +261,12 @@ fn spawn(resource_dir: &Path, data_dir: &Path) -> Result<u16> {
         }
     };
 
-    let child = Command::new(&node)
+    let mut command = Command::new(&node);
+    if let Some(master) = &vault_master {
+        command.env(vault::MASTER_ENV, master);
+    }
+
+    let child = command
         .arg(&entry)
         .env("NODE_ENV", "production")
         .env("HOST", "127.0.0.1")

@@ -413,6 +413,21 @@ describe('🚨 DELETE /:provider', () => {
     expect(removeMock).toHaveBeenCalledWith('tenant-A', 'openai', 'actor-1');
   });
 
+  /**
+   * `remove` è asincrono (aspetta il registro di audit). Senza attenderlo la
+   * rotta rispondeva `{ ok: {} }` — una promessa serializzata — e chi chiamava
+   * non poteva distinguere «tolto» da «non c'era».
+   */
+  it('🚨 la risposta dice se qualcosa è stato tolto davvero', async () => {
+    removeMock.mockResolvedValue(true);
+    const tolto = await makeApp('editor').request('/llm/openai', { method: 'DELETE' });
+    expect(await tolto.json()).toEqual({ ok: true });
+
+    removeMock.mockResolvedValue(false);
+    const assente = await makeApp('editor').request('/llm/openai', { method: 'DELETE' });
+    expect(await assente.json()).toEqual({ ok: false });
+  });
+
   it('🚨 nessun provider è protetto dalla cancellazione: chi l’ha configurato lo può togliere', async () => {
     removeMock.mockReturnValue(true);
     for (const p of ['anthropic', 'ollama', 'groq']) {
