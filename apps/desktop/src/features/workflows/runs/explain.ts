@@ -16,7 +16,7 @@
  */
 
 import { aiApi } from '../../ai/api';
-import { activeProvider, providerConnection } from '../../ai/connection';
+import { providerConnection, requireActiveProvider } from '../../ai/connection';
 
 export interface DaSpiegare {
   nodeId: string;
@@ -67,7 +67,7 @@ export function buildPrompt(dati: DaSpiegare): string {
 
 /** Chiede al modello di spiegare. */
 export async function explainError(dati: DaSpiegare): Promise<string> {
-  const provider = activeProvider();
+  const provider = requireActiveProvider();
   const conn = await providerConnection(provider);
 
   const reply = await aiApi.chat({

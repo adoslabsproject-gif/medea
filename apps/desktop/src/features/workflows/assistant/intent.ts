@@ -14,7 +14,7 @@
  */
 
 import { aiApi } from '../../ai/api';
-import { activeProvider, providerConnection } from '../../ai/connection';
+import { providerConnection, requireActiveProvider } from '../../ai/connection';
 import type { Workflow } from '../types';
 
 /** Il segnale con cui il modello chiede di costruire invece di rispondere. */
@@ -71,9 +71,10 @@ export async function classify(
   workflow: Workflow,
   history: { role: 'user' | 'assistant'; text: string }[] = [],
 ): Promise<Intent> {
-  const provider = activeProvider();
-
   try {
+    // Dentro il `try`: senza un modello scelto si ricade sulla costruzione
+    // come per ogni altro inciampo, ed è lei a dire all'utente cosa manca.
+    const provider = requireActiveProvider();
     const conn = await providerConnection(provider);
     const reply = await aiApi.chat({
       provider,

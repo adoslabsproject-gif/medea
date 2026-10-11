@@ -8,7 +8,7 @@
  */
 
 import { aiApi } from '../../ai/api';
-import { activeProvider, providerConnection } from '../../ai/connection';
+import { providerConnection, requireActiveProvider } from '../../ai/connection';
 
 import type { AgentChat } from './agent';
 import type { ScaffoldLlm } from './run';
@@ -33,7 +33,7 @@ import type { ScaffoldLlm } from './run';
 export async function createScaffoldLlm(
   onTokens?: (usati: { input: number; output: number }) => void,
 ): Promise<ScaffoldLlm> {
-  const provider = activeProvider();
+  const provider = requireActiveProvider();
   const conn = await providerConnection(provider);
   const requestId = `singleshot-${String(Date.now())}`;
 
@@ -53,7 +53,6 @@ export async function createScaffoldLlm(
     // La riparazione resta: vincolare la *forma* non garantisce che i defId
     // esistano o che i campi abbiano senso, e per quello servono i controlli.
     supportsStructuredOutput: true,
-    isTuned: provider === 'liara',
     async complete({ system, user, schema }) {
       const reply = await aiApi.chat({
         provider,
@@ -76,7 +75,7 @@ export async function createAgentChat(
    *  lo dichiara. Serve a mostrare il conto mentre l'agente lavora. */
   onTokens?: (usati: { input: number; output: number }) => void,
 ): Promise<AgentChat> {
-  const provider = activeProvider();
+  const provider = requireActiveProvider();
   if (provider === 'claude-cli') {
     throw new Error(
       "Il provider «Claude (abbonamento)» non può pilotare l'agente dei workflow: " +

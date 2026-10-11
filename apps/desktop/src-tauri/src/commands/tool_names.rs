@@ -1,6 +1,6 @@
 //! Rimettere in sesto i nomi degli strumenti che il modello storpia.
 //!
-//! I modelli della famiglia Qwen — e Liara è uno di quelli — a volte emettono
+//! Alcuni modelli aperti — la famiglia Qwen, fra gli altri — a volte emettono
 //! il nome di uno strumento con dei pezzi in più attaccati. Non è casuale: è
 //! un difetto noto di come il tokenizzatore ricompone i frammenti, e si vede
 //! così, preso da una sessione vera:

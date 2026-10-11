@@ -275,7 +275,7 @@ function ComposeDraftCard({ proposal, account, execution, onExecuted }: ComposeP
   const [showHtml, setShowHtml] = useState(false);
 
   // Sincronizza lo state locale con la prop `execution` ogni volta che cambia.
-  // Risolve il bug per cui dopo refresh / re-render Liara mostrava ancora il form.
+  // Risolve il bug per cui dopo refresh / re-render la card mostrava ancora il form.
   useEffect(() => {
     if (execution?.outcome === 'sent') {
       setStatus('sent');

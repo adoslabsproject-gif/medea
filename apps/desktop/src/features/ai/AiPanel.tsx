@@ -7,7 +7,12 @@ import { Markdown } from '../shared/markdown';
 
 import styles from './AiPanel.module.css';
 import { aiApi } from './api';
-import { activeProvider, DEFAULT_PROVIDER_KEY, providerConnection } from './connection';
+import {
+  activeProvider,
+  DEFAULT_PROVIDER_KEY,
+  NessunProviderError,
+  providerConnection,
+} from './connection';
 import { ConsentCard } from './ConsentCard';
 import { ConversationsSidebar } from './ConversationsSidebar';
 import { sanitizeHtmlForLlm } from './html-sanitizer';
@@ -40,7 +45,7 @@ import {
 } from './store/memory';
 import { callTool, consentAction, listTools, toOpenAiTools } from './tools';
 import type { ToolCall, ToolCallResult, ToolDescriptor } from './tools';
-import { providerLabel } from './types';
+import { isProviderId, PROVIDER_IDS, providerLabel } from './types';
 import type { ChatTurn, ProviderId } from './types';
 
 interface Props {
@@ -146,7 +151,9 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [provider, setProvider] = useState<ProviderId>(() => activeProvider());
+  // `null` finché l'utente non sceglie: Medea non ha un modello predefinito.
+  const [provider, setProvider] = useState<ProviderId | null>(() => activeProvider());
+  const nomeAssistente = provider ? providerLabel(provider) : 'Assistente';
   const [includeMessage, setIncludeMessage] = useState(true);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(
@@ -562,8 +569,8 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
       const summary = (rr.summary as string) || 'proposta creata';
       return `${summary}. La card è mostrata all'utente: l'azione NON è ancora avvenuta, deve confermarla lui. Non ripetere il contenuto, è già nell'UI.`;
     }
-    // I tool ritornano un campo `text` in italiano (formato Liara): se c'è,
-    // è quello che il modello deve leggere.
+    // I tool ritornano un campo `text` in italiano: se c'è, è quello che il
+    // modello deve leggere.
     if (rr && typeof rr.text === 'string' && rr.text.length > 0) return rr.text;
     let json = JSON.stringify(r.result, null, 2);
     if (json.length > 8000) {
@@ -582,6 +589,8 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
     let history = opts.history.slice();
     const trace: ToolCallResult[] = [];
     let lastText = '';
+
+    if (!provider) throw new NessunProviderError();
 
     // Claude in abbonamento: il loop agentico è della CLI, che chiama i tool
     // di Medea via MCP. Qui passiamo solo il turno e riceviamo il testo finale.
@@ -737,7 +746,7 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
       setMessagesForConv(conv.id, finalMsgs);
       refreshList();
     } catch (e) {
-      setError(String(e));
+      setError(e instanceof Error ? e.message : String(e));
       setMessagesForConv(conv.id, nextHistory);
     } finally {
       setStreaming(false);
@@ -776,7 +785,7 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
         },
       ]);
     } catch (e) {
-      setError(String(e));
+      setError(e instanceof Error ? e.message : String(e));
       setActiveMessages(base);
     } finally {
       setStreaming(false);
@@ -850,23 +859,25 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
             </button>
             <select
               className={styles.providerSelect}
-              value={provider}
+              value={provider ?? ''}
               onChange={(e) => {
-                const next = e.target.value as ProviderId;
+                const next = e.target.value;
+                if (!isProviderId(next)) return;
                 setProvider(next);
                 localStorage.setItem(DEFAULT_PROVIDER_KEY, next);
               }}
               aria-label="Provider AI"
             >
-              <option value="liara">Liara</option>
-              <option value="claude-cli">Claude (abbonamento)</option>
-              <option value="custom">Endpoint personale</option>
-              <option value="anthropic">Claude</option>
-              <option value="openai">OpenAI</option>
-              <option value="gemini">Gemini</option>
-              <option value="deepseek">DeepSeek</option>
-              <option value="grok">Grok</option>
-              <option value="openrouter">OpenRouter</option>
+              {provider === null && (
+                <option value="" disabled>
+                  Scegli un modello…
+                </option>
+              )}
+              {PROVIDER_IDS.map((p) => (
+                <option key={p} value={p}>
+                  {providerLabel(p)}
+                </option>
+              ))}
             </select>
             <button
               type="button"
@@ -943,7 +954,7 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
                 <div className={styles.turnBody}>
                   <div className={styles.turnHead}>
                     <span className={styles.author}>
-                      {m.role === 'user' ? userName : providerLabel(provider)}
+                      {m.role === 'user' ? userName : nomeAssistente}
                     </span>
                     {m.timestamp && (
                       <span className={styles.time}>
@@ -1098,7 +1109,7 @@ ${t.error ? 'ERROR: ' + t.error : 'result: ' + JSON.stringify(t.result, null, 2)
                 <span className={styles.dot} />
               </span>
               <span className={styles.streamingText}>
-                {providerLabel(provider)} sta lavorando —{' '}
+                {nomeAssistente} sta lavorando —{' '}
                 {lastTrace.length > 0
                   ? `${lastTrace.length.toString()} chiamate tool eseguite`
                   : 'analisi del contesto…'}
@@ -1220,8 +1231,8 @@ ${t.error ? 'ERROR: ' + t.error : 'result: ' + JSON.stringify(t.result, null, 2)
           </div>
 
           <div className={styles.hint}>
-            Provider: <strong>{providerLabel(provider)}</strong>
-            <span> · BYOK — configura in Impostazioni → Modelli AI</span>
+            Provider: <strong>{provider ? providerLabel(provider) : 'nessuno scelto'}</strong>
+            <span> · configura in Impostazioni → Modelli AI</span>
             {lastSyncAt && (
               <span>
                 {' '}

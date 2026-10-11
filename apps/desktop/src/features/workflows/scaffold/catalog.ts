@@ -7,8 +7,9 @@
  *
  *   db_insert (action): databaseId:db-picker(REQUIRED), table:db-table-picker(REQUIRED), rowJson:json
  *
- * Cambiare questo formato significa divergere dal prompt su cui il modello
- * fine-tuned è stato addestrato: non si tocca senza aggiornare entrambi.
+ * Cambiare questo formato significa divergere da quello del motore: le due
+ * strade di generazione mostrerebbero al modello lo stesso catalogo in due
+ * forme. Non si tocca senza aggiornare entrambi.
  */
 
 import type { NodeDef } from '../types';

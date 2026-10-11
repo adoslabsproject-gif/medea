@@ -275,7 +275,7 @@ fn subject_of(message_id: i64) -> Result<String> {
         .unwrap_or_else(|| "(senza oggetto)".to_string()))
 }
 
-// ── Lettura in stile Liara: email_recent / email_sent ─────────────────────
+// ── Lettura a elenco: email_recent / email_sent ───────────────────────────
 
 fn render_list(rows: &[db::messages::ListedMessage]) -> String {
     rows.iter()

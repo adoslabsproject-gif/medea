@@ -1,7 +1,7 @@
 //! Tool di SCRITTURA — eseguono davvero la modifica sul DB locale.
 //!
 //! Sono marcati `sensitive` nel registry: il loop AI chiede conferma
-//! all'utente PRIMA di eseguirli (consent gate, come nell'app Liara).
+//! all'utente PRIMA di eseguirli (consent gate).
 //! Una volta eseguiti ritornano l'esito reale, mai una promessa.
 
 use anyhow::{anyhow, Result};

@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import type { ProviderId } from '../../ai/types';
+import { PROVIDER_IDS } from '../../ai/types';
 
 import { providerPerMotore, tabelleDalMotore, workflowDalMotore } from './motore-mappa';
 
@@ -22,7 +22,6 @@ const WORKFLOW_VALIDO = {
 
 describe('providerPerMotore', () => {
   it('traduce i provider che il motore conosce', () => {
-    expect(providerPerMotore('liara')).toBe('liara');
     expect(providerPerMotore('anthropic')).toBe('anthropic');
     expect(providerPerMotore('openai')).toBe('openai');
     expect(providerPerMotore('gemini')).toBe('gemini');
@@ -46,18 +45,9 @@ describe('providerPerMotore', () => {
   });
 
   it('ha una risposta per ogni provider esistente', () => {
-    const tutti: ProviderId[] = [
-      'liara',
-      'claude-cli',
-      'custom',
-      'anthropic',
-      'openai',
-      'gemini',
-      'deepseek',
-      'grok',
-      'openrouter',
-    ];
-    for (const p of tutti) {
+    // L'elenco vero, non una sua copia: un provider aggiunto senza dire al
+    // motore come chiamarlo deve far cadere questo test, non sfuggirgli.
+    for (const p of PROVIDER_IDS) {
       expect(providerPerMotore(p)).not.toBeUndefined();
     }
   });

@@ -137,8 +137,8 @@ CREATE INDEX IF NOT EXISTS idx_notes_topic ON notes(topic COLLATE NOCASE);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_unique ON notes(topic, text);
 "#;
 
-/// Migrazione v9 — `reminders.notes`: i tool `calendar_*` (allineati all'app
-/// Liara) distinguono titolo e note dell'appuntamento.
+/// Migrazione v9 — `reminders.notes`: i tool `calendar_*` distinguono titolo
+/// e note dell'appuntamento.
 const DDL_V9: &str = r#"
 ALTER TABLE reminders ADD COLUMN notes TEXT;
 "#;

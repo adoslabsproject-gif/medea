@@ -1,6 +1,6 @@
 /**
- * Il formato del catalogo è un contratto col modello fine-tuned: le righe
- * devono restare byte-per-byte in questa forma (vedi ADR 0005 e il commento
+ * Il formato del catalogo è un contratto col motore: le righe devono
+ * restare byte-per-byte in questa forma (vedi ADR 0005 e il commento
  * in `catalog.ts`). Questi test bloccano ogni deriva involontaria.
  */
 

@@ -13,13 +13,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AgentStep } from './agent';
 
 const { activeProvider, providerConnection, session, forgetSession } = vi.hoisted(() => ({
-  activeProvider: vi.fn(() => 'liara'),
+  activeProvider: vi.fn((): string | null => 'openai'),
   providerConnection: vi.fn(() => Promise.resolve({ apiKey: 'chiave' })),
   session: vi.fn(() => Promise.resolve({ baseUrl: 'http://127.0.0.1:1', token: 'tok' })),
   forgetSession: vi.fn(),
 }));
 
-vi.mock('../../ai/connection', () => ({ activeProvider, providerConnection }));
+// Il resto del modulo resta quello vero: l'errore «nessun modello scelto» e
+// il suo testo si leggono dalla fonte, non da una copia scritta qui.
+vi.mock('../../ai/connection', async () => ({
+  ...(await vi.importActual<Record<string, unknown>>('../../ai/connection')),
+  activeProvider,
+  providerConnection,
+}));
 vi.mock('../runtime/client', () => ({ session, forgetSession }));
 
 const { generaColMotore } = await import('./motore');
@@ -58,10 +64,31 @@ function rispostaSse(eventi: { event: string; data: unknown }[], cade = false): 
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  activeProvider.mockReturnValue('liara');
+  activeProvider.mockReturnValue('openai');
 });
 
 describe('generaColMotore — quando non si parte nemmeno', () => {
+  /**
+   * Senza un modello scelto non c'è niente da tentare, né qui né per la
+   * strada locale: ripiegare vorrebbe dire far fallire due volte la stessa
+   * cosa e mostrare l'errore della seconda. Ci si ferma e si dice dove
+   * andare a sceglierlo.
+   */
+  it('si ferma, senza ripiegare, se non è stato scelto nessun modello', async () => {
+    activeProvider.mockReturnValue(null);
+    const fetchFinta = vi.fn();
+    vi.stubGlobal('fetch', fetchFinta);
+
+    const esito = await generaColMotore({ goal: 'archivia le newsletter' });
+
+    expect(esito.ok).toBe(false);
+    if (!esito.ok) {
+      expect(esito.ripiegabile).toBe(false);
+      expect(esito.motivo).toMatch(/Impostazioni → Modelli AI/u);
+    }
+    expect(fetchFinta).not.toHaveBeenCalled();
+  });
+
   it('ripiega senza toccare la rete se il provider non è esprimibile', async () => {
     activeProvider.mockReturnValue('custom');
     const fetchFinta = vi.fn();
@@ -100,7 +127,7 @@ describe('generaColMotore — quando il motore risponde', () => {
             { event: 'tool_result', data: { tool: 'singleshot_generate', ok: true } },
             {
               event: 'done',
-              data: { result: { workflow: WORKFLOW, notes: ['fatto'], modelUsed: 'nha-v1' } },
+              data: { result: { workflow: WORKFLOW, notes: ['fatto'], modelUsed: 'gpt-prova' } },
             },
           ]),
         ),
@@ -116,7 +143,7 @@ describe('generaColMotore — quando il motore risponde', () => {
     if (esito.ok) {
       expect(esito.workflow.nodes[0]?.defId).toBe('trigger_imap');
       expect(esito.note).toEqual(['fatto']);
-      expect(esito.modello).toBe('nha-v1');
+      expect(esito.modello).toBe('gpt-prova');
     }
     expect(passi.map((p) => p.tool)).toEqual(['singleshot_generate', 'singleshot_generate']);
   });

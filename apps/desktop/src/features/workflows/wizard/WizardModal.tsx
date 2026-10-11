@@ -90,7 +90,7 @@ export function WizardModal({ onClose, onImport }: Props) {
               trace={wizard.trace}
               maxSteps={AGENT_MAX_STEPS}
               tokens={wizard.tokens}
-              provider={activeProvider()}
+              provider={activeProvider() ?? undefined}
               onStop={wizard.stop}
             />
           )}

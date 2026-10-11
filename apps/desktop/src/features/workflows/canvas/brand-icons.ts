@@ -93,14 +93,6 @@ export function brandIconFor(defId: string): BrandIcon | null {
       label: 'Linear',
     };
   }
-  // Liara — LLM provider proprietario NHA (cervello)
-  if (defId === 'liara') {
-    return {
-      svg: 'M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10C22 6.48 17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z',
-      bg: '#7C3AED',
-      label: 'Liara',
-    };
-  }
   // Italia: SDI, PEC Aruba, Zucchetti, Fatture in Cloud, Register.it
   if (defId === 'italia_fatture_in_cloud_client' || defId === 'italia_fatture_in_cloud_invoice') {
     return {

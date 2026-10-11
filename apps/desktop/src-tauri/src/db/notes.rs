@@ -1,7 +1,7 @@
 //! Appunti / memorie persistenti dell'assistente.
 //!
 //! Sono i fatti durabili che vengono iniettati nel system prompt di ogni
-//! conversazione, e la base dei tool `note_*` (nomi allineati all'app Liara).
+//! conversazione, e la base dei tool `note_*`.
 
 use anyhow::Result;
 use chrono::Utc;

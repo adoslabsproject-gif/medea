@@ -31,11 +31,7 @@ export {
   ScaffoldParseError,
   stripCodeFences,
 } from './parse';
-export {
-  buildScaffoldPrompt,
-  SCAFFOLD_SYSTEM_PROMPT,
-  SCAFFOLD_SYSTEM_PROMPT_TUNED,
-} from './prompt';
+export { buildScaffoldPrompt, SCAFFOLD_SYSTEM_PROMPT } from './prompt';
 export { generaColMotore } from './motore';
 export type { EsitoMotore, EsitoMotoreNo, EsitoMotoreOk, RichiestaMotore } from './motore';
 export { providerPerMotore, tabelleDalMotore, workflowDalMotore } from './motore-mappa';

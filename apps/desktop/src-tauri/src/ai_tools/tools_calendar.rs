@@ -1,5 +1,5 @@
-//! Tool agenda/promemoria — nomi allineati all'app Liara (`calendar_*`),
-//! così il modello fine-tuned li riconosce dal training.
+//! Tool agenda/promemoria (`calendar_*`). I nomi sono stabili: li usano le
+//! conversazioni salvate e i client MCP, quindi non si rinominano (ADR 0013).
 //!
 //! Storage: tabella `reminders` (title = `text`, when = `due_at`, notes).
 

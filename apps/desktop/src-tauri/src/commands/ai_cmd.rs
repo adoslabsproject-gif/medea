@@ -6,6 +6,8 @@ use serde::Deserialize;
 
 use serde::Serialize;
 
+use super::ai_provider::Provider;
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChatTurn {
@@ -171,8 +173,8 @@ pub struct ChatRequest {
     /// oggetto e non un discorso.
     ///
     /// Non è un suggerimento nel prompt: i server compatibili con OpenAI —
-    /// vLLM compreso, che è quello che serve Liara — vincolano la generazione
-    /// token per token. Il modello **non può** produrre qualcosa che non
+    /// vLLM compreso — vincolano la generazione token per token. Il modello
+    /// **non può** produrre qualcosa che non
     /// rispetti lo schema: niente testo intorno, niente schema restituito al
     /// posto dei dati, niente JSON troncato.
     ///
@@ -303,20 +305,6 @@ fn schema_per_gemini(schema: &serde_json::Value) -> serde_json::Value {
 /// funzione ha argomenti di forma dichiarata.
 const TOOL_SCAFFOLD: &str = "workflow_scaffold";
 
-/// Il gateway di Liara, `/v1` compreso.
-///
-/// Pubblica perché non la usa solo la chat: il motore dei workflow, che gira
-/// come processo figlio, riceve **questo** indirizzo all'avvio. Il suo default
-/// interno è `http://172.17.0.1:3006/api/v1/llm` — l'host visto da dentro un
-/// container Docker sul server — che su un computer qualunque non esiste: la
-/// connessione resta appesa dieci secondi e muore con «fetch failed», senza
-/// dire a chi guarda che stava chiamando un indirizzo del server.
-///
-/// Il `/v1` fa parte dell'indirizzo: nginx davanti al gateway instrada con
-/// corrispondenza esatta su `/v1/chat/completions`, e tutto il resto finisce in
-/// `location / { return 444; }` — connessione chiusa senza risposta.
-pub const LIARA_BASE_URL: &str = "https://liara.nothumanallowed.com/v1";
-
 /// Aggiunge al corpo Gemini gli strumenti e, se c'è, lo schema.
 ///
 /// Separata dalla chiamata perché il pezzo che sbagliava era proprio questo, e
@@ -436,7 +424,8 @@ fn tool_calls_marcatore(content: &str) -> Vec<ToolCallOut> {
 
 /// Recupera le tool-call che il modello ha scritto nel testo invece di usare
 /// il canale nativo: `<tool_call>{"name":…,"arguments":{…}}</tool_call>`.
-/// È il formato con cui i modelli fine-tuned in stile Liara sono addestrati.
+/// È il formato che molti modelli aperti usano quando l'endpoint che li serve
+/// non traduce le chiamate nel canale nativo.
 fn tool_calls_from_text(content: &str) -> Vec<ToolCallOut> {
     let mut out = tool_calls_marcatore(content);
     for (idx, chunk) in content.split("<tool_call>").skip(1).enumerate() {
@@ -652,15 +641,22 @@ async fn ai_chat_interna(
     req: &ChatRequest,
     token: Option<tokio_util::sync::CancellationToken>,
 ) -> Result<ChatResponse, String> {
-    let provider = req.provider.as_str();
+    // Un nome che non corrisponde a nessun provider si ferma qui, prima di
+    // qualunque chiamata: può arrivare da impostazioni salvate con una
+    // versione che ne aveva uno in più.
+    let Some(provider) = Provider::da_nome(&req.provider) else {
+        return Err(format!(
+            "Provider sconosciuto: «{}». Scegline uno in Impostazioni → Modelli AI.",
+            req.provider
+        ));
+    };
     let chiamata = async {
         let result = match provider {
-            "liara" => call_liara(req).await,
-            "custom" => call_custom(req).await,
-            "anthropic" => call_anthropic(req).await,
-            "openai" => call_openai(req).await,
-            "gemini" => call_gemini(req).await,
-            "deepseek" => {
+            Provider::Custom => call_custom(req).await,
+            Provider::Anthropic => call_anthropic(req).await,
+            Provider::OpenAi => call_openai(req).await,
+            Provider::Gemini => call_gemini(req).await,
+            Provider::DeepSeek => {
                 call_openai_compat(
                     req,
                     "https://api.deepseek.com/v1/chat/completions",
@@ -670,7 +666,7 @@ async fn ai_chat_interna(
                 )
                 .await
             }
-            "grok" => {
+            Provider::Grok => {
                 call_openai_compat(
                     req,
                     "https://api.x.ai/v1/chat/completions",
@@ -680,8 +676,7 @@ async fn ai_chat_interna(
                 )
                 .await
             }
-            "openrouter" => call_openrouter(req).await,
-            other => Err(anyhow::anyhow!("Provider sconosciuto: {other}")),
+            Provider::OpenRouter => call_openrouter(req).await,
         };
         result.map_err(|e| e.to_string())
     };
@@ -845,37 +840,6 @@ async fn call_gemini(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
         tool_calls,
         usage: parse_usage(&json),
     })
-}
-
-/// Liara — endpoint OpenAI-compatibile del modello proprio (`nha-v1`).
-/// Resta BYOK: la chiave è dell'utente, l'URL e il modello sono i default noti
-/// e restano sovrascrivibili da `baseUrl` / `model`.
-async fn call_liara(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
-    const LIARA_MODEL: &str = "nha-v1";
-
-    let base_url = req
-        .base_url
-        .as_deref()
-        .map(|u| u.trim_end_matches('/'))
-        .filter(|u| !u.is_empty())
-        .unwrap_or(LIARA_BASE_URL);
-    let model = req
-        .model
-        .as_deref()
-        .filter(|m| !m.trim().is_empty())
-        .unwrap_or(LIARA_MODEL);
-
-    let body = with_tools(
-        serde_json::json!({
-            "model": model,
-            "max_tokens": 8192,
-            "messages": openai_messages(req),
-            "stream": false,
-            "chat_template_kwargs": { "enable_thinking": false },
-        }),
-        req,
-    );
-    post_openai_compatible(req, &format!("{base_url}/chat/completions"), &body, "Liara").await
 }
 
 /// POST a un endpoint OpenAI-compatibile con connessione fresca e un retry.

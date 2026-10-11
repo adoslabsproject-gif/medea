@@ -8,30 +8,9 @@
 
 import { getApiKey } from './keys';
 import type { ProviderId } from './types';
-import { CUSTOM_BASE_URL_KEY, CUSTOM_MODEL_KEY } from './types';
+import { CUSTOM_BASE_URL_KEY, CUSTOM_MODEL_KEY, isProviderId } from './types';
 
 export const DEFAULT_PROVIDER_KEY = 'medea.ai.defaultProvider';
-
-/** Dove l'utente può spostare Liara senza che nessuno ricompili niente. */
-export const LIARA_BASE_URL_KEY = 'medea.ai.liara.baseUrl';
-
-/**
- * Il gateway di Liara, `/v1` compreso.
- *
- * Il `/v1` non è decorazione: nginx davanti al gateway instrada con una
- * corrispondenza **esatta** su `/v1/chat/completions`, e tutto ciò che non
- * combacia finisce in `location / { return 444; }` — connessione chiusa senza
- * risposta, che a chi chiama arriva come «fetch failed» e non come un 404.
- *
- * È il difetto che ha tenuto fermo il wizard il 2026-08-05: il motore
- * componeva l'indirizzo dal proprio default, che il `/v1` non ce l'aveva, e
- * ogni sua richiesta veniva chiusa in faccia senza una riga di spiegazione.
- *
- * Sta qui e non solo nel Rust perché ora l'indirizzo **parte da qui** anche
- * quando la richiesta la fa il motore: un default in due posti è un default
- * che prima o poi diverge.
- */
-export const LIARA_BASE_URL_PREDEFINITO = 'https://liara.nothumanallowed.com/v1';
 
 export interface ProviderConnection {
   provider: ProviderId;
@@ -40,10 +19,33 @@ export interface ProviderConnection {
   model: string | undefined;
 }
 
-/** Il provider scelto dall'utente. `liara` è il default. */
-export function activeProvider(): ProviderId {
+/**
+ * Il provider scelto dall'utente, o `null` se non ne ha scelto nessuno.
+ *
+ * Non c'è un predefinito: Medea non porta con sé un servizio, e scegliere al
+ * posto dell'utente vorrebbe dire mostrargli l'errore di un provider che non
+ * ha mai selezionato. Un valore salvato che non corrisponde più a un provider
+ * — rimasto da una versione che ne aveva uno in più — vale come nessuna
+ * scelta.
+ */
+export function activeProvider(): ProviderId | null {
   const stored = localStorage.getItem(DEFAULT_PROVIDER_KEY);
-  return (stored as ProviderId | null) ?? 'liara';
+  return isProviderId(stored) ? stored : null;
+}
+
+/** Sollevato quando serve un modello e l'utente non ne ha ancora scelto uno. */
+export class NessunProviderError extends Error {
+  constructor() {
+    super('Nessun modello AI scelto. Vai in Impostazioni → Modelli AI e scegline uno.');
+    this.name = 'NessunProviderError';
+  }
+}
+
+/** Il provider scelto, per chi senza non può lavorare. */
+export function requireActiveProvider(): ProviderId {
+  const provider = activeProvider();
+  if (!provider) throw new NessunProviderError();
+  return provider;
 }
 
 /**
@@ -57,27 +59,9 @@ export function supportsStructuredOutput(provider: ProviderId): boolean {
 export async function providerConnection(provider: ProviderId): Promise<ProviderConnection> {
   const apiKey = (await getApiKey(provider)) || undefined;
 
-  // Liara è self-hosted: il suo indirizzo non è una costante del mondo, è una
-  // scelta di chi la ospita. Chi la sposta lo cambia da qui; chi non l'ha mai
-  // toccata usa quello noto.
-  //
-  // Restituirlo **sempre** è la parte che conta: prima usciva `undefined` per
-  // ogni provider diverso da «personalizzato», quindi al motore non arrivava
-  // nessun indirizzo e lui ripiegava sul proprio — diverso, e sbagliato.
-  if (provider === 'liara') {
-    // Un campo svuotato vale «rimetti quello noto», non «nessun indirizzo»:
-    // la stringa vuota diventa assenza *prima* del ripiego, altrimenti
-    // vincerebbe lei e comporrebbe un URL che non esiste.
-    const grezzo = localStorage.getItem(LIARA_BASE_URL_KEY)?.trim();
-    const salvato = grezzo === '' ? undefined : grezzo;
-    return {
-      provider,
-      apiKey,
-      baseUrl: salvato ?? LIARA_BASE_URL_PREDEFINITO,
-      model: undefined,
-    };
-  }
-
+  // Indirizzo e modello li porta solo l'endpoint personale: gli altri provider
+  // hanno un indirizzo fisso che conosce il backend, e mandargliene uno
+  // significherebbe spedire la loro chiave a un host scelto per altro.
   if (provider !== 'custom') {
     return { provider, apiKey, baseUrl: undefined, model: undefined };
   }

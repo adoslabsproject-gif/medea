@@ -112,7 +112,7 @@ export type ObservableLlm = ScaffoldLlm & { calls: LlmCall[] };
 /** Un provider finto che risponde in sequenza e registra ogni chiamata. */
 export function fakeLlm(
   responses: string[],
-  opts: Partial<Pick<ScaffoldLlm, 'supportsStructuredOutput' | 'isTuned'>> = {},
+  opts: Partial<Pick<ScaffoldLlm, 'supportsStructuredOutput'>> = {},
 ): ObservableLlm {
   let i = 0;
   const calls: LlmCall[] = [];

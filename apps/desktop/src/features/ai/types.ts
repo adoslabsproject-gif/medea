@@ -1,15 +1,30 @@
 export type ChatRole = 'user' | 'assistant' | 'system' | 'tool';
 
-export type ProviderId =
-  | 'liara'
-  | 'claude-cli'
-  | 'custom'
-  | 'anthropic'
-  | 'openai'
-  | 'gemini'
-  | 'deepseek'
-  | 'grok'
-  | 'openrouter';
+/**
+ * I provider che Medea sa usare, nell'ordine in cui li mostra.
+ *
+ * È l'unico elenco: il tipo, i menu e i controlli sui valori salvati
+ * discendono da qui. Tenerne una copia per schermata voleva dire che un
+ * provider aggiunto o tolto restava a metà — presente in un menu, assente
+ * nell'altro.
+ */
+export const PROVIDER_IDS = [
+  'claude-cli',
+  'anthropic',
+  'openai',
+  'gemini',
+  'deepseek',
+  'grok',
+  'openrouter',
+  'custom',
+] as const;
+
+export type ProviderId = (typeof PROVIDER_IDS)[number];
+
+/** Vero se il valore è il nome di un provider che esiste in questa versione. */
+export function isProviderId(value: unknown): value is ProviderId {
+  return typeof value === 'string' && (PROVIDER_IDS as readonly string[]).includes(value);
+}
 
 export interface ChatMessage {
   role: ChatRole;
@@ -84,8 +99,6 @@ export const CUSTOM_MODEL_KEY = 'medea.ai.custom.model';
 
 export function providerLabel(p: ProviderId): string {
   switch (p) {
-    case 'liara':
-      return 'Liara';
     case 'claude-cli':
       return 'Claude (abbonamento)';
     case 'custom':
@@ -107,8 +120,6 @@ export function providerLabel(p: ProviderId): string {
 
 export function providerLong(p: ProviderId): string {
   switch (p) {
-    case 'liara':
-      return 'Liara — modello proprio (nha-v1), richiede la tua API key';
     case 'claude-cli':
       return 'Claude via CLI locale — usa il tuo abbonamento Pro/Max, nessun costo API';
     case 'custom':

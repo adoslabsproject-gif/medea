@@ -703,7 +703,7 @@ pub fn db_list_customer_documents(
         .map_err(|e| e.to_string())
 }
 
-// ── Pricing deterministico (esposto per Liara come tool) ───────────────────
+// ── Pricing deterministico (esposto all'assistente come tool) ──────────────
 
 #[tauri::command]
 pub fn db_resolve_price(

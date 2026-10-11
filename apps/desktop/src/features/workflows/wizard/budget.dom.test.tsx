@@ -49,14 +49,20 @@ vi.mock('../scaffold', async () => {
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn(() => Promise.resolve(null)) }));
 
+import { DEFAULT_PROVIDER_KEY } from '../../ai/connection';
+
 import { useWizard } from './useWizard';
 
 describe('il tempo che la costruzione può prendersi', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    // Un modello va scelto: senza, la costruzione si ferma subito a dirlo e
+    // qui si misurerebbe quel messaggio invece del tempo.
+    localStorage.setItem(DEFAULT_PROVIDER_KEY, 'openai');
   });
   afterEach(() => {
     vi.useRealTimers();
+    localStorage.clear();
   });
 
   it('🚨 si ferma da sola invece di aspettare per ore', async () => {

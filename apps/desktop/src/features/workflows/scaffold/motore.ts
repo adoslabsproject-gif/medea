@@ -20,7 +20,7 @@
  * @module features/workflows/scaffold/motore
  */
 
-import { activeProvider, providerConnection } from '../../ai/connection';
+import { activeProvider, NessunProviderError, providerConnection } from '../../ai/connection';
 import { forgetSession, session } from '../runtime/client';
 import { createSseReader, parseData } from '../runtime/sse';
 import type { Workflow } from '../types';
@@ -189,6 +189,10 @@ async function recuperaRisultato(jobId: string, signal?: AbortSignal): Promise<E
 
 export async function generaColMotore(req: RichiestaMotore): Promise<EsitoMotore> {
   const provider = activeProvider();
+  if (!provider) {
+    // Non ripiegabile: alla strada locale manca la stessa identica cosa.
+    return { ok: false, motivo: new NessunProviderError().message, ripiegabile: false };
+  }
   const nomeMotore = providerPerMotore(provider);
   if (!nomeMotore) {
     return {
@@ -202,12 +206,12 @@ export async function generaColMotore(req: RichiestaMotore): Promise<EsitoMotore
   let apiKey: string | undefined;
   // L'indirizzo va mandato insieme alla chiave, non tenuto qui.
   //
-  // Per i provider self-hosted — Liara prima di tutti — l'host lo conosce solo
-  // il desktop: sta nelle impostazioni dell'utente, non nel registro dei
-  // provider del motore. Mandando provider e chiave ma non indirizzo, il
-  // motore usava il default del registro e la richiesta finiva su un host che
-  // per un motore locale non esiste. L'utente leggeva «LLM single-shot
-  // fallito: fetch failed», che è vero e non dice niente.
+  // Quando il provider ha un indirizzo scelto dall'utente, lo conosce solo il
+  // desktop: sta nelle sue impostazioni, non nel registro dei provider del
+  // motore. Mandando provider e chiave ma non indirizzo, il motore userebbe
+  // il default del registro e la richiesta finirebbe su un host che per un
+  // motore locale non esiste. L'utente leggerebbe «LLM single-shot fallito:
+  // fetch failed», che è vero e non dice niente.
   let baseUrl: string | undefined;
   try {
     [s, { apiKey, baseUrl }] = await Promise.all([session(), providerConnection(provider)]);

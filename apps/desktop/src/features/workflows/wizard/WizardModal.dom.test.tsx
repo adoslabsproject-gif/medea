@@ -12,7 +12,7 @@
  */
 
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Il wizard parla col modello e col motore: qui non ci sono né l'uno né
 // l'altro, e non è quello che si sta verificando.
@@ -27,9 +27,20 @@ vi.mock('../scaffold', async () => {
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn(() => Promise.resolve(null)) }));
 
+import { DEFAULT_PROVIDER_KEY } from '../../ai/connection';
+
 import { WizardModal } from './WizardModal';
 
-afterEach(cleanup);
+// Un modello va scelto: senza, il wizard si ferma a dire di sceglierlo — ed è
+// il caso dell'ultimo gruppo, che lo toglie apposta.
+beforeEach(() => {
+  localStorage.setItem(DEFAULT_PROVIDER_KEY, 'openai');
+});
+
+afterEach(() => {
+  cleanup();
+  localStorage.clear();
+});
 
 describe('il wizard, montato davvero', () => {
   it('si apre chiedendo cosa deve fare l’automazione', () => {
@@ -142,5 +153,30 @@ describe('il giro completo, dall’obiettivo al verdetto', () => {
     });
     expect(screen.getByText(/Non ho trovato un nodo/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Riprova' })).toBeTruthy();
+  });
+});
+
+describe('senza un modello scelto', () => {
+  /**
+   * Medea non porta con sé un modello. Chi apre il wizard prima di averne
+   * scelto uno deve leggere cosa manca e dove andare, non l'errore di un
+   * provider che non ha mai selezionato — e nessuna costruzione deve partire.
+   */
+  it('dice dove sceglierlo e non fa partire nessuna costruzione', async () => {
+    localStorage.clear();
+    const { createAgentChat, runWorkflowAgent } = await import('../scaffold');
+    vi.mocked(createAgentChat).mockClear();
+    vi.mocked(runWorkflowAgent).mockClear();
+
+    render(<WizardModal onClose={vi.fn()} onImport={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('Cosa deve fare questa automazione?'), {
+      target: { value: 'mandami un promemoria ogni mattina' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Costruisci' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Impostazioni → Modelli AI/u)).toBeTruthy();
+    });
+    expect(runWorkflowAgent).not.toHaveBeenCalled();
   });
 });

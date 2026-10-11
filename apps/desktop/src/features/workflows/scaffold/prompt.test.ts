@@ -8,11 +8,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { at, CATALOG } from './fixtures';
-import {
-  buildScaffoldPrompt,
-  SCAFFOLD_SYSTEM_PROMPT,
-  SCAFFOLD_SYSTEM_PROMPT_TUNED,
-} from './prompt';
+import { buildScaffoldPrompt, SCAFFOLD_SYSTEM_PROMPT } from './prompt';
 
 function occurrences(haystack: string, needle: string): number {
   return haystack.split(needle).length - 1;
@@ -78,12 +74,10 @@ describe('composizione del prompt', () => {
     expect(first).not.toContain('TENTATIVO PRECEDENTE');
   });
 
-  it('incolla lo schema JSON solo per i provider che non sanno vincolarsi', () => {
-    const inline = buildScaffoldPrompt({ goal: 'x', catalog: CATALOG, inlineSchema: true });
-    expect(inline).toContain("SCHEMA JSON DELL'OUTPUT");
-    expect(inline).toContain('"reasoning"');
-    const native = buildScaffoldPrompt({ goal: 'x', catalog: CATALOG, inlineSchema: false });
-    expect(native).not.toContain("SCHEMA JSON DELL'OUTPUT");
+  it('incolla sempre lo schema JSON: il vincolo nativo non basta da solo', () => {
+    const p = buildScaffoldPrompt({ goal: 'x', catalog: CATALOG });
+    expect(p).toContain("SCHEMA JSON DELL'OUTPUT");
+    expect(p).toContain('"reasoning"');
   });
 });
 
@@ -102,15 +96,10 @@ describe('system prompt — le regole pagate restano scritte', () => {
 
   it('credenziali solo come segnaposto', () => {
     expect(SCAFFOLD_SYSTEM_PROMPT).toContain('{{secrets.NOME}}');
-    expect(SCAFFOLD_SYSTEM_PROMPT_TUNED).toContain('{{secrets.NOME}}');
   });
 
   it('vieta di inventare defId fuori catalogo', () => {
     expect(SCAFFOLD_SYSTEM_PROMPT).toContain('Non inventare defId');
-  });
-
-  it('la variante tuned è davvero compatta', () => {
-    expect(SCAFFOLD_SYSTEM_PROMPT_TUNED.length).toBeLessThan(SCAFFOLD_SYSTEM_PROMPT.length / 3);
   });
 
   it('la fixture di catalogo resta allineata al formato del prompt', () => {
@@ -121,7 +110,7 @@ describe('system prompt — le regole pagate restano scritte', () => {
 
 describe('lo schema non si confonde con un output', () => {
   it('🚨 il prompt mostra un esempio compilato, non solo lo schema', () => {
-    const p = buildScaffoldPrompt({ goal: 'manda un riepilogo', catalog: [], inlineSchema: true });
+    const p = buildScaffoldPrompt({ goal: 'manda un riepilogo', catalog: [] });
     // Senza un esempio il modello risponde con lo schema stesso: è successo
     // il 2026-08-04, con «{"type":"object","properties":…}» al posto dei dati.
     expect(p).toMatch(/ESEMPIO di risposta valida/);
@@ -129,12 +118,7 @@ describe('lo schema non si confonde con un output', () => {
   });
 
   it('🚨 dice esplicitamente di non rispondere con lo schema', () => {
-    const p = buildScaffoldPrompt({ goal: 'x', catalog: [], inlineSchema: true });
+    const p = buildScaffoldPrompt({ goal: 'x', catalog: [] });
     expect(p).toMatch(/NON rispondere con lo schema/i);
-  });
-
-  it('senza schema inline non si mette nemmeno l’esempio', () => {
-    const p = buildScaffoldPrompt({ goal: 'x', catalog: [], inlineSchema: false });
-    expect(p).not.toMatch(/ESEMPIO di risposta valida/);
   });
 });

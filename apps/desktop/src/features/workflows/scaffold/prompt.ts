@@ -5,9 +5,8 @@
  * produzione (i confronti numerici in `logic_switch`, l'aggregazione dentro il
  * loop): sono lezioni pagate, non preferenze di stile.
  *
- * Le regole sono esplicite di proposito. Un modello fine-tuned le conosce già
- * e potrebbe farne a meno, ma qui l'obiettivo è che **qualsiasi** provider
- * produca lo stesso risultato leggendo solo questo testo.
+ * Le regole sono esplicite di proposito: l'obiettivo è che **qualsiasi**
+ * provider produca lo stesso risultato leggendo solo questo testo.
  */
 
 import type { NodeDef } from '../types';
@@ -50,12 +49,6 @@ CONFIGURAZIONE:
 
 Lavora UNA SOLA volta: nessun ciclo, nessuna chiamata a strumenti. Solo l'output JSON.`;
 
-/**
- * Variante compatta per i modelli addestrati su questo compito: conoscono già
- * le regole, ripeterle spreca contesto. Non usarla sui provider generici.
- */
-export const SCAFFOLD_SYSTEM_PROMPT_TUNED = `Sei l'agente di scaffolding dei workflow. Genera un workflow completo in UN SOLO output JSON conforme allo schema. Usa solo defId e campi del catalogo fornito. I trigger sono radice, ogni ramo termina in un nodo terminale, le credenziali sono segnaposto {{secrets.NOME}}.`;
-
 /** L'obiettivo dell'utente è dato non fidato: non deve poter riscrivere le regole. */
 function sanitizeGoal(goal: string): string {
   return (
@@ -77,10 +70,6 @@ export interface PromptContext {
   resources?: string[];
   /** Errori del tentativo precedente, se stiamo riprovando. */
   previousErrors?: string;
-  /** Lo schema va scritto nel prompt: o perché il provider non sa vincolare
-   *  l'output, o perché il modello non è quello addestrato e conviene dirglielo
-   *  due volte. */
-  inlineSchema?: boolean;
 }
 
 /**
@@ -132,24 +121,27 @@ export function buildScaffoldPrompt(ctx: PromptContext): string {
     );
   }
 
-  if (ctx.inlineSchema) {
-    parts.push(
-      '',
-      "SCHEMA JSON DELL'OUTPUT (rispettalo esattamente):",
-      JSON.stringify(SINGLESHOT_OUTPUT_SCHEMA),
-      '',
-      // Lo schema da solo non basta: un modello a cui si mostra come è fatto
-      // un output valido, senza mostrargliene uno, risponde con lo schema —
-      // «{"type":"object","properties":…}» — invece che con i dati. Succede
-      // con i modelli generici come con quelli addestrati, ed è successo il
-      // 2026-08-04. Un esempio compilato toglie l'ambiguità in una riga.
-      'ESEMPIO di risposta valida (la forma, non il contenuto: il tuo workflow sarà diverso):',
-      JSON.stringify(ESEMPIO_OUTPUT),
-      '',
-      'Rispondi SOLO con un oggetto JSON come l’ESEMPIO, riempito per l’obiettivo.',
-      'NON rispondere con lo schema. NON scrivere "type" o "properties".',
-    );
-  }
+  // Lo schema viaggia sempre anche nel prompt, pure quando il provider sa
+  // vincolare l'output da solo. Il vincolo nativo è una richiesta a un
+  // server, e un server che la ignora in silenzio — o un gateway in mezzo che
+  // la toglie — lascia il modello senza niente: è già costato un wizard che
+  // non partiva. Uno schema scritto nel prompt non si toglie per
+  // configurazione.
+  parts.push(
+    '',
+    "SCHEMA JSON DELL'OUTPUT (rispettalo esattamente):",
+    JSON.stringify(SINGLESHOT_OUTPUT_SCHEMA),
+    '',
+    // Lo schema da solo non basta: un modello a cui si mostra come è fatto
+    // un output valido, senza mostrargliene uno, risponde con lo schema —
+    // «{"type":"object","properties":…}» — invece che con i dati. È successo
+    // il 2026-08-04. Un esempio compilato toglie l'ambiguità in una riga.
+    'ESEMPIO di risposta valida (la forma, non il contenuto: il tuo workflow sarà diverso):',
+    JSON.stringify(ESEMPIO_OUTPUT),
+    '',
+    'Rispondi SOLO con un oggetto JSON come l’ESEMPIO, riempito per l’obiettivo.',
+    'NON rispondere con lo schema. NON scrivere "type" o "properties".',
+  );
 
   parts.push(
     '',

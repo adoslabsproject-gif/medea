@@ -30,7 +30,6 @@ import type { ScaffoldOutput } from './schema';
  */
 export function providerPerMotore(provider: ProviderId): string | null {
   switch (provider) {
-    case 'liara':
     case 'anthropic':
     case 'openai':
     case 'gemini':

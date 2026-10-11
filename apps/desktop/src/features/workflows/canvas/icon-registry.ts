@@ -419,7 +419,6 @@ export const NODE_ICON_OVERRIDE: Record<string, string> = {
   ai_agent_tool_loop: 'Bot',
   ai_embed: 'Sparkle',
   ai_rag_search: 'BookMarked',
-  liara: 'Brain',
   // DB (7)
   db_query: 'Database',
   db_insert: 'DatabaseBackup',

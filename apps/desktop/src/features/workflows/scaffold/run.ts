@@ -5,8 +5,8 @@
  * workflow **valido** oppure un fallimento esplicito con il motivo. Non
  * esiste un terzo esito in cui salviamo qualcosa di rotto.
  *
- * Il numero di tentativi usati è la misura della qualità del provider: un
- * modello addestrato su questo compito ne usa uno, uno generico due o tre.
+ * Il numero di tentativi usati è la misura della qualità del provider: uno è
+ * l'ideale, due o tre sono la norma per un modello generico.
  */
 
 import {
@@ -20,11 +20,7 @@ import type { CanvasNode, NodeDef, Workflow, WorkflowEdge } from '../types';
 
 import { indexByDefId, selectCatalog } from './catalog';
 import { parseScaffoldJson, ScaffoldParseError } from './parse';
-import {
-  buildScaffoldPrompt,
-  SCAFFOLD_SYSTEM_PROMPT,
-  SCAFFOLD_SYSTEM_PROMPT_TUNED,
-} from './prompt';
+import { buildScaffoldPrompt, SCAFFOLD_SYSTEM_PROMPT } from './prompt';
 import { repairScaffold } from './repair';
 import { isScaffoldOutput, schemaConDefIdAmmessi, type ScaffoldOutput } from './schema';
 import { describeViolations, validateScaffold, type Violation } from './validate';
@@ -77,8 +73,6 @@ const MAX_ATTEMPTS = 3;
 export interface ScaffoldLlm {
   /** `true` se il provider sa vincolare l'output allo schema da solo. */
   supportsStructuredOutput: boolean;
-  /** `true` per i modelli addestrati su questo compito (prompt compatto). */
-  isTuned?: boolean;
   complete(args: { system: string; user: string; schema: object }): Promise<string>;
 }
 
@@ -123,7 +117,7 @@ export interface ScaffoldRequest {
 export async function runScaffold(req: ScaffoldRequest): Promise<ScaffoldResult> {
   const index = indexByDefId(req.catalog);
   const shown = selectCatalog(req.catalog, req.goal, [...SCAFFOLD_CORE_DEFIDS]);
-  const system = req.llm.isTuned ? SCAFFOLD_SYSTEM_PROMPT_TUNED : SCAFFOLD_SYSTEM_PROMPT;
+  const system = SCAFFOLD_SYSTEM_PROMPT;
   // I nodi che il modello può nominare sono esattamente quelli che gli
   // mostriamo: elencarli nello schema rende l'invenzione impossibile invece
   // che da correggere dopo.
@@ -152,13 +146,6 @@ export async function runScaffold(req: ScaffoldRequest): Promise<ScaffoldResult>
       catalog: shown,
       ...(req.resources ? { resources: req.resources } : {}),
       ...(previousErrors ? { previousErrors } : {}),
-      // Lo schema va nel prompt tranne che per il modello addestrato: lui è
-      // stato allenato sul prompt compatto, e il server lo vincola comunque
-      // token per token. Per tutti gli altri vale la cintura oltre le
-      // bretelle — il vincolo nativo c'è, ma un gateway che lo ignora in
-      // silenzio è già costato un wizard che non partiva, e uno schema
-      // scritto nel prompt non può essere ignorato per configurazione.
-      inlineSchema: !req.llm.supportsStructuredOutput || !req.llm.isTuned,
     });
 
     let raw: string;

@@ -21,9 +21,9 @@ pub fn ar<'a>(args: &'a Value, key: &str) -> Option<&'a Vec<Value>> {
 /// Account su cui operare: `accountId` se il modello lo passa, altrimenti
 /// l'unico account configurato.
 ///
-/// I tool email dell'app Liara non hanno il parametro `accountId` (là c'è
-/// una sola casella): senza questo fallback il modello fine-tuned chiamerebbe
-/// `email_recent {count}` e riceverebbe un errore di argomento mancante.
+/// Un modello chiama volentieri `email_recent {count}` senza dire su quale
+/// casella: con un solo account la risposta è ovvia, e senza questo fallback
+/// riceverebbe un errore di argomento mancante.
 pub fn account_id(args: &Value) -> Result<String> {
     if let Some(id) = s(args, "accountId").filter(|v| !v.trim().is_empty()) {
         return Ok(id);

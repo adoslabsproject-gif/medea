@@ -273,17 +273,6 @@ fn spawn(resource_dir: &Path, data_dir: &Path) -> Result<u16> {
         .env("MEDEA_RUNTIME_URL", format!("http://127.0.0.1:{port}"))
         .env("MEDEA_INTERNAL_TOKEN", &webhook_secret)
         .env("MEDEA_PUBLIC_BASE_URL", format!("http://127.0.0.1:{port}"))
-        // Dove sta Liara. Senza, il motore usa il proprio default —
-        // `http://172.17.0.1:3006/api/v1/llm`, l'host visto da dentro un
-        // container Docker sul server — che qui non esiste: la connessione
-        // resta appesa dieci secondi e muore con «fetch failed». È ciò che ha
-        // tenuto fermo il wizard il 2026-08-05, mentre la stessa chiamata dal
-        // desktop funzionava: il desktop l'indirizzo giusto ce l'aveva, il
-        // motore no, e nessuno glielo diceva.
-        .env(
-            "MEDEA_LIARA_BASE_URL",
-            crate::commands::ai_cmd::LIARA_BASE_URL,
-        )
         // Dove sta la rubrica. Il motore gira sulla stessa macchina e con lo
         // stesso utente, quindi può leggerla direttamente invece di tenerne una
         // copia che comincerebbe subito a divergere. La apre in sola lettura.

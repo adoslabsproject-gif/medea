@@ -6,8 +6,8 @@
  * controllo», «no, sposta l'email dopo» — guardando il canvas cambiare
  * accanto. È il modo in cui si costruisce davvero un workflow.
  *
- * Il provider è quello scelto in Impostazioni: Liara, Claude, GPT o un
- * modello locale. L'agente è lo stesso, cambia solo chi risponde.
+ * Il provider è quello scelto in Impostazioni: Claude, GPT, Gemini o un
+ * endpoint proprio. L'agente è lo stesso, cambia solo chi risponde.
  */
 
 import { activeProvider } from '../../ai/connection';
@@ -42,7 +42,9 @@ export function AssistantPanel({ workflow, onApply, onClose }: Props) {
       <header className={styles.head}>
         <div className={styles.titleGroup}>
           <span className={styles.title}>Assistente</span>
-          <span className={styles.provider}>{providerLabel(provider)}</span>
+          <span className={styles.provider}>
+            {provider ? providerLabel(provider) : 'nessun modello scelto'}
+          </span>
         </div>
         <div className={styles.headActions}>
           <ConversationMenu

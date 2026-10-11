@@ -1,4 +1,4 @@
-//! Tool memoria — nomi allineati all'app Liara (`note_*`).
+//! Tool memoria (`note_*`).
 //! Gli appunti sono i fatti durabili che rientrano nel system prompt.
 
 use anyhow::{anyhow, Result};

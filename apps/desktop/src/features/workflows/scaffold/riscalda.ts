@@ -33,9 +33,10 @@ export function riscaldaModello(): void {
   void (async () => {
     try {
       const provider = activeProvider();
-      // La CLI in abbonamento non ha un modello da svegliare: avviarla
-      // costerebbe un processo per niente.
-      if (provider === 'claude-cli') return;
+      // Nessun modello scelto: non c'è niente da svegliare. E la CLI in
+      // abbonamento non ha un modello da svegliare: avviarla costerebbe un
+      // processo per niente.
+      if (!provider || provider === 'claude-cli') return;
 
       const conn = await providerConnection(provider);
       await aiApi.warmup({

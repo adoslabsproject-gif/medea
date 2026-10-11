@@ -51,7 +51,7 @@ describe('costruisciWorkflow — l’ordine delle strade', () => {
       ok: true,
       workflow: WORKFLOW,
       note: ['dal motore'],
-      modello: 'nha-v1',
+      modello: 'gpt-prova',
       tabelleDaCreare: undefined,
     });
 

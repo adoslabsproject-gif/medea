@@ -1,9 +1,9 @@
 /** Tool registry — wrapper TS verso i command Rust.
  *
- *  Protocollo (allineato all'app Liara, percorso cloud):
+ *  Protocollo:
  *  - i tool sono passati al modello con il **tool-use nativo OpenAI**
  *    (`tools: [{type:"function", function:{name, description, parameters}}]`);
- *  - il modello risponde con `tool_calls`, oppure — se è un fine-tuned che
+ *  - il modello risponde con `tool_calls`, oppure — se è un modello che
  *    scrive i marker nel testo — con `<tool_call>{"name":…,"arguments":…}`,
  *    che il backend riconosce e normalizza allo stesso formato;
  *  - i risultati rientrano nella history come turni `role: "tool"`.

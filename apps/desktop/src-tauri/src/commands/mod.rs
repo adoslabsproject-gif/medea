@@ -2,6 +2,7 @@
 
 pub mod ai_abort;
 pub mod ai_cmd;
+pub mod ai_provider;
 pub mod ai_tools_cmd;
 pub mod background_cmd;
 pub mod claude_cli_cmd;

@@ -392,8 +392,9 @@ pub fn registry() -> Vec<ToolDescriptor> {
 /// Esegue un tool e ritorna il risultato come JSON.
 /// La policy è: ogni tool è chirurgicamente esposto, niente eval generico.
 pub fn execute(name: &str, args: &Value) -> Result<Value> {
-    // L'app Liara usa `count` dove qui storicamente si chiamava `limit`:
-    // normalizziamo una volta sola invece di duplicare il fallback in ogni tool.
+    // I tool dichiarano `count`, ma storicamente qui si chiamava `limit` e i
+    // modelli usano l'uno o l'altro: normalizziamo una volta sola invece di
+    // duplicare il fallback in ogni tool.
     let normalized;
     let args = match (args.get("count"), args.get("limit"), args.as_object()) {
         (Some(count), None, Some(map)) => {

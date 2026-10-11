@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { at, CATALOG, fakeLlm, flakyLlm, makeValid } from './fixtures';
-import { SCAFFOLD_SYSTEM_PROMPT, SCAFFOLD_SYSTEM_PROMPT_TUNED } from './prompt';
+import { SCAFFOLD_SYSTEM_PROMPT } from './prompt';
 import { runScaffold } from './run';
 
 const VALID_JSON = () => JSON.stringify(makeValid());
@@ -180,24 +180,18 @@ describe('tabelle richieste dal workflow', () => {
 });
 
 describe('contratto col provider', () => {
-  it('sceglie il prompt compatto per i modelli tuned, quello completo altrimenti', async () => {
-    const tuned = fakeLlm([VALID_JSON()], { isTuned: true });
-    await runScaffold({ goal: 'x', catalog: CATALOG, llm: tuned });
-    expect(tuned.calls[0]?.system).toBe(SCAFFOLD_SYSTEM_PROMPT_TUNED);
-
+  it('manda a ogni provider lo stesso prompt di sistema', async () => {
     const generic = fakeLlm([VALID_JSON()]);
     await runScaffold({ goal: 'x', catalog: CATALOG, llm: generic });
     expect(generic.calls[0]?.system).toBe(SCAFFOLD_SYSTEM_PROMPT);
+
+    const nativo = fakeLlm([VALID_JSON()], { supportsStructuredOutput: true });
+    await runScaffold({ goal: 'x', catalog: CATALOG, llm: nativo });
+    expect(nativo.calls[0]?.system).toBe(SCAFFOLD_SYSTEM_PROMPT);
   });
 
-  it('risparmia lo schema nel prompt solo al modello addestrato', async () => {
-    // Lui è stato allenato sul prompt compatto e il server lo vincola token
-    // per token: aggiungerglielo lo allontana da come ha imparato a lavorare.
-    const tuned = fakeLlm([VALID_JSON()], { supportsStructuredOutput: true, isTuned: true });
-    await runScaffold({ goal: 'x', catalog: CATALOG, llm: tuned });
-    expect(tuned.calls[0]?.user).not.toContain("SCHEMA JSON DELL'OUTPUT");
-
-    // Tutti gli altri lo ricevono due volte, vincolo nativo compreso. Non è
+  it('scrive lo schema nel prompt anche a chi sa vincolare la risposta', async () => {
+    // Chi sa vincolarsi lo riceve due volte, vincolo nativo compreso. Non è
     // ridondanza inutile: il vincolo nativo è una richiesta a un server, e un
     // server che la ignora in silenzio — o un gateway in mezzo che la toglie —
     // lascia il modello senza niente. È già successo, ed è costato un wizard

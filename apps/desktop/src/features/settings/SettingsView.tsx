@@ -6,10 +6,13 @@ import { TEMI, useTheme, type ThemeMode } from '../../app/providers/ThemeProvide
 import { AccountSetup } from '../account-setup';
 import { aiApi } from '../ai/api';
 import type { ClaudeCliStatus } from '../ai/api';
+import { activeProvider, DEFAULT_PROVIDER_KEY } from '../ai/connection';
 import { getApiKey, setApiKey } from '../ai/keys';
 import {
   CUSTOM_BASE_URL_KEY,
   CUSTOM_MODEL_KEY,
+  isProviderId,
+  PROVIDER_IDS,
   providerLong,
   providerNeedsApiKey,
   type ProviderId,
@@ -28,7 +31,6 @@ interface Props {
 
 const PROFILE_KEY = 'medea.profile.v2';
 const PROFILE_PHOTO_KEY = 'medea.profile.photo.v1';
-const DEFAULT_PROVIDER_KEY = 'medea.ai.defaultProvider';
 
 interface Profile {
   displayName: string;
@@ -53,18 +55,6 @@ const EMPTY_PROFILE: Profile = {
   website: '',
   notes: '',
 };
-
-const PROVIDERS: ProviderId[] = [
-  'liara',
-  'claude-cli',
-  'custom',
-  'anthropic',
-  'openai',
-  'gemini',
-  'deepseek',
-  'grok',
-  'openrouter',
-];
 
 function loadProfile(): Profile {
   try {
@@ -1052,17 +1042,16 @@ function AccountEditor({
 
 /* ───────────── AI KEYS (BYOK) ───────────── */
 function AiKeysTab() {
-  const [defaultProvider, setDefaultProvider] = useState<ProviderId>(
-    () => (localStorage.getItem(DEFAULT_PROVIDER_KEY) as ProviderId | null) ?? 'liara',
-  );
+  // `null` finché l'utente non sceglie: nessun modello è preconfigurato.
+  const [defaultProvider, setDefaultProvider] = useState<ProviderId | null>(() => activeProvider());
   const [keys, setKeys] = useState<Record<ProviderId, string>>(() => {
     const out: Record<string, string> = {};
-    for (const p of PROVIDERS) out[p] = '';
+    for (const p of PROVIDER_IDS) out[p] = '';
     return out;
   });
   const [showKey, setShowKey] = useState<Record<ProviderId, boolean>>(() => {
     const out: Record<string, boolean> = {};
-    for (const p of PROVIDERS) out[p] = false;
+    for (const p of PROVIDER_IDS) out[p] = false;
     return out;
   });
   const [saved, setSaved] = useState<ProviderId | null>(null);
@@ -1077,13 +1066,13 @@ function AiKeysTab() {
   useEffect(() => {
     void (async () => {
       const out: Record<string, string> = {};
-      for (const p of PROVIDERS) out[p] = await getApiKey(p);
+      for (const p of PROVIDER_IDS) out[p] = await getApiKey(p);
       setKeys(out);
     })();
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(DEFAULT_PROVIDER_KEY, defaultProvider);
+    if (defaultProvider) localStorage.setItem(DEFAULT_PROVIDER_KEY, defaultProvider);
   }, [defaultProvider]);
 
   async function saveKey(provider: ProviderId) {
@@ -1109,16 +1098,17 @@ function AiKeysTab() {
         <h2 className={styles.sectionTitle}>🎯 Provider di default</h2>
         <Select
           label="Modello attivo"
-          value={defaultProvider}
+          value={defaultProvider ?? ''}
           onChange={(e) => {
-            setDefaultProvider(e.target.value as ProviderId);
+            if (isProviderId(e.target.value)) setDefaultProvider(e.target.value);
           }}
-          items={PROVIDERS.map((p) => ({ value: p, label: providerLong(p) }))}
+          placeholder="Scegli un modello…"
+          items={PROVIDER_IDS.map((p) => ({ value: p, label: providerLong(p) }))}
           fullWidth
         />
         <p className={styles.muted} style={{ marginBlockStart: 'var(--space-2)' }}>
-          Modello BYOK (bring-your-own-key): ogni provider usa la TUA chiave. Nessun servizio è
-          preconfigurato.
+          Nessun servizio è preconfigurato: scegli un provider e usa la tua chiave, oppure il tuo
+          abbonamento Claude tramite la CLI installata su questo computer.
         </p>
         <ClaudeCliStatusRow />
       </div>
@@ -1164,7 +1154,7 @@ function AiKeysTab() {
       <div className={`${styles.section} ${styles.formWide}`}>
         <h2 className={styles.sectionTitle}>🔑 API keys</h2>
         <div className={styles.keysList}>
-          {PROVIDERS.filter(providerNeedsApiKey).map((p) => (
+          {PROVIDER_IDS.filter(providerNeedsApiKey).map((p) => (
             <div key={p} className={styles.keyRow}>
               <div className={styles.keyLabel}>{providerLong(p)}</div>
               <div className={styles.keyInputWrap}>
