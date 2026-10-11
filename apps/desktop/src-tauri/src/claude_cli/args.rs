@@ -41,6 +41,12 @@ pub fn build(turno: &Turno<'_>) -> Vec<OsString> {
         // strumenti per mostrarle e per chiedere le conferme.
         "--output-format",
         "json",
+        // Senza `--verbose` il formato json dà il solo esito finale, e le
+        // chiamate agli strumenti spariscono: niente schede delle bozze,
+        // nessuna conferma. Chi ha `verbose` nelle proprie impostazioni della
+        // CLI non se ne accorge — per questo il difetto non si vedeva sulla
+        // macchina di sviluppo ed è emerso solo su un Windows pulito.
+        "--verbose",
         // Nessuno strumento suo: né shell, né file, né web. La CLI qui legge
         // la posta attraverso Medea e basta.
         "--tools",
@@ -159,6 +165,16 @@ mod tests {
         assert_eq!(args[0], "-p");
         // Dopo `-p` viene subito un'opzione, non un testo.
         assert!(args[1].starts_with("--"));
+    }
+
+    /// Provato il 12 ottobre 2026 su Windows 11 con la CLI 2.1.296: senza
+    /// `--verbose` l'uscita json è il solo esito, e Medea non vedeva nessuna
+    /// chiamata agli strumenti.
+    #[test]
+    fn chiede_gli_eventi_del_turno_e_non_il_solo_esito() {
+        let args = testo(&build(&Turno::default()));
+        assert_eq!(valore(&args, "--output-format"), Some("json"));
+        assert!(args.iter().any(|a| a == "--verbose"));
     }
 
     #[test]

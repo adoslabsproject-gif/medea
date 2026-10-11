@@ -66,13 +66,13 @@ pub fn ai_chat_abort(request_id: String) {
     }
 }
 
-/// Quante inferenze sono in volo. Serve ai test.
+/// Vero se questa richiesta è in volo. Serve ai test.
 #[cfg(test)]
-pub fn in_volo() -> usize {
+pub fn e_in_volo(id: &str) -> bool {
     registro()
         .lock()
         .expect("registro delle inferenze avvelenato")
-        .len()
+        .contains_key(id)
 }
 
 #[cfg(test)]
@@ -102,12 +102,15 @@ mod tests {
         dimentica("prova-2");
     }
 
+    /// Si guarda la propria richiesta, non quante ce ne sono: il registro è
+    /// uno solo e gli altri test ci scrivono nello stesso momento. Contandole
+    /// tutte, questo test cadeva una volta su due su Windows.
     #[test]
     fn una_richiesta_finita_esce_dal_registro() {
-        let prima = in_volo();
+        assert!(!e_in_volo("prova-3"));
         registra("prova-3");
-        assert_eq!(in_volo(), prima + 1);
+        assert!(e_in_volo("prova-3"));
         dimentica("prova-3");
-        assert_eq!(in_volo(), prima);
+        assert!(!e_in_volo("prova-3"));
     }
 }

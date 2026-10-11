@@ -133,7 +133,11 @@ mod tests {
     #[ignore = "usa la CLI vera e un turno dell'abbonamento"]
     fn un_turno_vero_legge_prepara_una_bozza_e_non_modifica_niente_da_solo() {
         let radice = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let mcp_bin = radice.join("target/debug/medea_mcp");
+        let mcp_bin = radice.join("target/debug").join(if cfg!(windows) {
+            "medea_mcp.exe"
+        } else {
+            "medea_mcp"
+        });
         assert!(mcp_bin.is_file(), "manca {}", mcp_bin.display());
         let data_dir = std::env::temp_dir().join(format!("medea-turno-{}", std::process::id()));
         std::fs::create_dir_all(&data_dir).expect("cartella dati di prova");
