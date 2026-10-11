@@ -311,9 +311,18 @@ async function main() {
       (p) => existsSync(p),
     );
     if (!found) fail(`non trovo il modulo «${name}» da nessuna parte nel workspace`);
+    // Il deploy può aver già portato il modulo, come dipendenza di qualcun
+    // altro. In quel caso i suoi file sono collegamenti fisici allo store di
+    // pnpm — gli STESSI file da cui si sta per copiare — e su Windows copiare
+    // un file su sé stesso fallisce con «il file è utilizzato da un altro
+    // processo» (visto l'11 ottobre 2026, Node 22.23). Si toglie la copia del
+    // deploy e si mette quella che il workspace risolve davvero: togliere un
+    // collegamento fisico non tocca lo store.
+    const destination = join(staging, 'node_modules', name);
+    rmSync(destination, { recursive: true, force: true });
     // `dereference`: i collegamenti di pnpm puntano a uno store che non
     // viaggia con l'app.
-    cpSync(found, join(staging, 'node_modules', name), { recursive: true, dereference: true });
+    cpSync(found, destination, { recursive: true, dereference: true });
   }
 
   // Le cartelle `.bin` sono scorciatoie a comandi da riga: il runtime non ne
