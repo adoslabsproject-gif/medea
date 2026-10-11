@@ -17,7 +17,7 @@ export class AnthropicProvider implements ILLMProvider {
 
   constructor(
     private readonly apiKey: string,
-    private readonly defaultModel = 'claude-sonnet-4-5',
+    private readonly defaultModel = 'claude-sonnet-5-5',
   ) {
     if (!apiKey) throw new Error('AnthropicProvider requires an apiKey');
   }
@@ -40,7 +40,8 @@ export class AnthropicProvider implements ILLMProvider {
       messages: conversation,
     };
     if (systemMessages) body.system = systemMessages;
-    if (req.temperature !== undefined) body.temperature = req.temperature;
+    // `req.temperature` non viaggia: dai modelli 4.7 in poi Anthropic risponde
+    // 400 a un valore diverso dal suo predefinito.
     if (req.stopSequences) body.stop_sequences = req.stopSequences;
 
     const init: RequestInit = {

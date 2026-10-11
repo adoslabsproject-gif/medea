@@ -297,7 +297,7 @@ describe('POST /db-agent/chat — routing provider (provider-registry SSOT)', ()
     globalThis.fetch = realFetch;
   });
 
-  it('grok → POST https://api.x.ai/... + model default grok-2-latest + Bearer key', async () => {
+  it('grok → POST https://api.x.ai/... + model default grok-4.7 + Bearer key', async () => {
     const dbA = makeDb(TENANT_A, 'app');
     resolveMock.mockReturnValue({ provider: 'grok', apiKey: 'xai-123', model: '' });
     finalOnce();
@@ -305,18 +305,18 @@ describe('POST /db-agent/chat — routing provider (provider-registry SSOT)', ()
     expect(res.status).toBe(200);
     const call = firstCall();
     expect(call.url).toBe('https://api.x.ai/v1/chat/completions');
-    expect(call.body.model).toBe('grok-2-latest');
+    expect(call.body.model).toBe('grok-4.7');
     expect(call.headers.Authorization).toBe('Bearer xai-123');
   });
 
-  it('deepseek → api.deepseek.com + deepseek-chat (prima finiva su un ripiego fisso: BUG fixato)', async () => {
+  it('deepseek → api.deepseek.com + deepseek-flash (prima finiva su un ripiego fisso: BUG fixato)', async () => {
     const dbA = makeDb(TENANT_A, 'app');
     resolveMock.mockReturnValue({ provider: 'deepseek', apiKey: 'ds-key', model: '' });
     finalOnce();
     await post(liveApp(), { databaseId: dbA, userMessage: 'ciao' });
     const call = firstCall();
     expect(call.url).toBe('https://api.deepseek.com/v1/chat/completions');
-    expect(call.body.model).toBe('deepseek-chat');
+    expect(call.body.model).toBe('deepseek-flash');
   });
 
   it('gemini → endpoint OpenAI-compat di Google (tool-calling), NON generateContent', async () => {

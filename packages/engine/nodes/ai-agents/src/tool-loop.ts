@@ -564,7 +564,7 @@ const agentToolLoopExecutor: NodeExecutor = async (config, input, ctx) => {
       durationMs: Date.now() - start,
     };
   }
-  const anthropicModel = model || 'claude-sonnet-4-5';
+  const anthropicModel = model || 'claude-sonnet-5-5';
 
   // Usage cumulativo sulle iterazioni (Fase 2 #14): dai campi usage della API.
   let usage: AgentLlmUsage | null = null;
@@ -744,8 +744,8 @@ export const agentToolLoopNode: NodeModule = {
         label: 'Modello (override)',
         type: 'text',
         required: false,
-        placeholder: 'es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, llama-3.3-70b-versatile',
-        help: 'Vuoto = default del provider (Anthropic: claude-sonnet-4-5).',
+        placeholder: 'es. claude-sonnet-5-5, gpt-4o, gemini-3.8-flash, llama-3.3-70b-versatile',
+        help: 'Vuoto = default del provider (Anthropic: claude-sonnet-5-5).',
       },
       {
         key: 'baseUrl',

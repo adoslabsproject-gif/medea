@@ -299,7 +299,7 @@ export async function dispatchLLMChat(
       const target = fixedOpenAiCompatTarget(provider, model);
       if (provider === 'openrouter' && !target.model) {
         throw new Error(
-          'OpenRouter: model required (es. "openai/gpt-4o", "google/gemini-pro", "x-ai/grok-2")',
+          'OpenRouter: model required (es. "openai/gpt-4o", "google/gemini-3.8-flash", "x-ai/grok-4.7")',
         );
       }
       const res = await fetch(target.url, {
@@ -332,7 +332,7 @@ export async function dispatchLLMChat(
     }
     switch (provider) {
       case 'gemini': {
-        const m = model || 'gemini-2.0-flash';
+        const m = model || 'gemini-3.8-flash';
         const contents = msgs.map((x) => ({
           role: x.role === 'assistant' ? 'model' : 'user',
           parts: [{ text: x.content }],
@@ -387,12 +387,13 @@ export async function dispatchLLMChat(
             'anthropic-version': '2023-06-01',
           },
           body: JSON.stringify({
-            model: model || 'claude-sonnet-4-5-20250929',
+            model: model || 'claude-sonnet-5-5',
             system,
             messages: msgs,
             // Qui il limite è obbligatorio: senza richiesta se ne dà uno ampio.
             max_tokens: maxTokens ?? 8000,
-            temperature,
+            // Niente `temperature`: dai modelli 4.7 in poi Anthropic risponde
+            // 400 a un valore diverso dal suo predefinito.
             ...(stopSequences && stopSequences.length > 0 ? { stop_sequences: stopSequences } : {}),
           }),
           signal: AbortSignal.timeout(timeoutMs),

@@ -660,7 +660,7 @@ async fn ai_chat_interna(
                 call_openai_compat(
                     req,
                     "https://api.deepseek.com/v1/chat/completions",
-                    "deepseek-chat",
+                    "deepseek-flash",
                     "DEEPSEEK_API_KEY",
                     "DeepSeek",
                 )
@@ -670,7 +670,7 @@ async fn ai_chat_interna(
                 call_openai_compat(
                     req,
                     "https://api.x.ai/v1/chat/completions",
-                    "grok-3-latest",
+                    "grok-4.7",
                     "XAI_API_KEY",
                     "Grok",
                 )
@@ -748,7 +748,7 @@ async fn call_gemini(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
         .ok_or_else(|| {
             anyhow::anyhow!("Gemini richiede una API key (Impostazioni → Modelli AI)")
         })?;
-    let model = req.model.as_deref().unwrap_or("gemini-2.5-pro");
+    let model = req.model.as_deref().unwrap_or("gemini-3.8-flash");
     let url = format!(
         "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
     );
@@ -1049,7 +1049,7 @@ async fn call_anthropic(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
 
     let body = con_strumenti_anthropic(
         serde_json::json!({
-            "model": req.model.as_deref().unwrap_or("claude-sonnet-5"),
+            "model": req.model.as_deref().unwrap_or("claude-sonnet-5-5"),
             "max_tokens": 4096,
             "system": req.system_prompt,
             "messages": messages,
@@ -1143,7 +1143,7 @@ async fn call_openrouter(req: &ChatRequest) -> anyhow::Result<ChatResponse> {
         })?;
     let body = with_tools(
         serde_json::json!({
-            "model": req.model.as_deref().unwrap_or("anthropic/claude-sonnet-4.5"),
+            "model": req.model.as_deref().unwrap_or("anthropic/claude-sonnet-5.5"),
             "messages": openai_messages(req),
         }),
         req,

@@ -52,30 +52,30 @@ describe('dispatchLLMChat — ogni provider con la chiave del cliente', () => {
 
   it('Grok (X.AI) usa endpoint api.x.ai/v1/chat/completions OpenAI-compatible', async () => {
     const { dispatchLLMChat } = await import('./llm-chat.service');
-    await dispatchLLMChat('grok', 'xai-key-test', 'grok-2-latest', 'sys', 'goal', undefined, []);
+    await dispatchLLMChat('grok', 'xai-key-test', 'grok-4.7', 'sys', 'goal', undefined, []);
     expect(captured[0]?.url).toBe('https://api.x.ai/v1/chat/completions');
     expect(captured[0]?.headers.Authorization).toBe('Bearer xai-key-test');
-    expect(captured[0]?.body.model).toBe('grok-2-latest');
+    expect(captured[0]?.body.model).toBe('grok-4.7');
   });
 
   it('Grok alias "xai" funziona identicamente', async () => {
     const { dispatchLLMChat } = await import('./llm-chat.service');
     await dispatchLLMChat('xai', 'k', '', 'sys', 'goal', undefined, []);
     expect(captured[0]?.url).toBe('https://api.x.ai/v1/chat/completions');
-    expect(captured[0]?.body.model).toBe('grok-2-latest'); // default model
+    expect(captured[0]?.body.model).toBe('grok-4.7'); // default model
   });
 
   it('DeepSeek usa endpoint api.deepseek.com', async () => {
     const { dispatchLLMChat } = await import('./llm-chat.service');
-    await dispatchLLMChat('deepseek', 'ds-key', 'deepseek-chat', 'sys', 'goal', undefined, []);
+    await dispatchLLMChat('deepseek', 'ds-key', 'deepseek-flash', 'sys', 'goal', undefined, []);
     expect(captured[0]?.url).toBe('https://api.deepseek.com/v1/chat/completions');
-    expect(captured[0]?.body.model).toBe('deepseek-chat');
+    expect(captured[0]?.body.model).toBe('deepseek-flash');
   });
 
-  it('DeepSeek default model "deepseek-chat" se omesso', async () => {
+  it('DeepSeek default model "deepseek-flash" se omesso', async () => {
     const { dispatchLLMChat } = await import('./llm-chat.service');
     await dispatchLLMChat('deepseek', 'k', '', 'sys', 'goal', undefined, []);
-    expect(captured[0]?.body.model).toBe('deepseek-chat');
+    expect(captured[0]?.body.model).toBe('deepseek-flash');
   });
 
   it('REGRESSION: OpenRouter NON ha default vendor hardcoded (es. NO "anthropic/claude-3-5-sonnet")', async () => {
@@ -116,10 +116,10 @@ describe('dispatchLLMChat — ogni provider con la chiave del cliente', () => {
       body: { candidates: [{ content: { parts: [{ text: 'ok' }] } }] },
     };
     const { dispatchLLMChat } = await import('./llm-chat.service');
-    await dispatchLLMChat('gemini', 'goog-key', 'gemini-2.0-flash', 'sys', 'goal', undefined, []);
+    await dispatchLLMChat('gemini', 'goog-key', 'gemini-3.8-flash', 'sys', 'goal', undefined, []);
     expect(captured[0]?.url).toContain('generativelanguage.googleapis.com');
     expect(captured[0]?.url).toContain('key=goog-key');
-    expect(captured[0]?.url).toContain('gemini-2.0-flash');
+    expect(captured[0]?.url).toContain('gemini-3.8-flash');
   });
 
   it('Mistral usa endpoint api.mistral.ai con Bearer cliente', async () => {

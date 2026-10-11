@@ -121,7 +121,7 @@ describe('provider-registry — URL endpoint esatti (anti-regressione hard)', ()
   });
 
   it("gemini tool-calling usa l'endpoint OpenAI-compat di Google (NON generateContent)", () => {
-    const r = resolveToolEndpoint('gemini', 'gemini-2.0-flash');
+    const r = resolveToolEndpoint('gemini', 'gemini-3.8-flash');
     expect(r?.url).toBe('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
     expect(r?.url).not.toContain('generateContent');
   });
@@ -156,8 +156,8 @@ describe('provider-registry — URL endpoint esatti (anti-regressione hard)', ()
 
 describe('provider-registry — model default + self-host baseUrl', () => {
   it('requestedModel vuoto → usa chatModel del provider', () => {
-    expect(resolveToolEndpoint('grok', '')?.model).toBe('grok-2-latest');
-    expect(resolveToolEndpoint('deepseek', '   ')?.model).toBe('deepseek-chat');
+    expect(resolveToolEndpoint('grok', '')?.model).toBe('grok-4.7');
+    expect(resolveToolEndpoint('deepseek', '   ')?.model).toBe('deepseek-flash');
   });
 
   it('requestedModel esplicito vince sul default', () => {

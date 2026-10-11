@@ -84,10 +84,17 @@ describe('maxTokens arriva al provider col nome del suo protocollo', () => {
     expect(richieste[1]?.body.max_tokens).toBe(8000);
   });
 
-  it('Anthropic → la temperature richiesta non viene sostituita da 0.1', async () => {
+  /**
+   * Dai modelli 4.7 in poi Anthropic risponde 400 a una `temperature`
+   * diversa dalla sua predefinita (pagina delle deprecazioni, letta
+   * l'11 ottobre 2026): non la si manda, né quella chiesta né lo 0.1.
+   */
+  it('Anthropic → nessuna temperature, nemmeno se richiesta', async () => {
     risposta = { content: [{ type: 'text', text: 'ok' }] };
     await chiama('anthropic', { temperature: 0.7 });
-    expect(richieste[0]?.body.temperature).toBe(0.7);
+    await chiama('anthropic');
+    expect('temperature' in (richieste[0]?.body ?? {})).toBe(false);
+    expect('temperature' in (richieste[1]?.body ?? {})).toBe(false);
   });
 
   it('Gemini → generationConfig.maxOutputTokens', async () => {

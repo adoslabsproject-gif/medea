@@ -103,7 +103,7 @@ REGOLE DI INGEGNERIA (rispetto rigoroso):
    - **STEP E**: \`config.apiKey\`: ometti il campo (il runtime prende la chiave dal vault del tenant).
    - **ANTI-PATTERN VIETATI** (rifiutati dal quality gate):
      - ❌ \`provider:"openai", model:"gpt-4o"\` solo perché GPT è il più conosciuto.
-     - ❌ \`provider:"anthropic", model:"claude-sonnet-4-5"\` solo perché il task sembra "analitico".
+     - ❌ \`provider:"anthropic", model:"claude-sonnet-5-5"\` solo perché il task sembra "analitico".
      - ❌ Indovinare il provider dal contesto del goal ("è un task SEO → openai").
      - ❌ Hard-coded \`apiKey:"{{secrets.OPENAI_API_KEY}}"\` quando il tenant non ha quella chiave.
    - **SE \`meta.useThisProvider\` è null**: il tenant non ha provider configurati. ABORT con messaggio chiaro: "Per usare \`agent_*\` configura un provider in Settings → AI".

@@ -100,7 +100,7 @@ describe('openAiLoopEndpoint — routing + auth', () => {
     const e = openAiLoopEndpoint('gemini', 'g-key', '', undefined);
     expect(e.url).toBe('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
     expect(e.headers.Authorization).toBe('Bearer g-key');
-    expect(e.effectiveModel).toBe('gemini-2.0-flash');
+    expect(e.effectiveModel).toBe('gemini-3.8-flash');
     expect(e.trustedHost).toBeUndefined();
   });
 
@@ -113,8 +113,8 @@ describe('openAiLoopEndpoint — routing + auth', () => {
   });
 
   it.each([
-    ['deepseek', 'https://api.deepseek.com/chat/completions', 'deepseek-chat'],
-    ['xai', 'https://api.x.ai/v1/chat/completions', 'grok-2-latest'],
+    ['deepseek', 'https://api.deepseek.com/chat/completions', 'deepseek-flash'],
+    ['xai', 'https://api.x.ai/v1/chat/completions', 'grok-4.7'],
   ])('%s: OpenAI-compat con tools, Bearer apiKey, default %s', (provider, url, defModel) => {
     const e = openAiLoopEndpoint(provider, 'k-1', '', undefined);
     expect(e.url).toBe(url);
@@ -275,7 +275,7 @@ describe('ai_agent_tool_loop — retrocompatibilità config esistenti', () => {
         usage: { input_tokens: 80, output_tokens: 15 },
       }),
     );
-    const r = await run({ apiKey: 'sk-ant-xyz', goal: 'x', model: 'claude-sonnet-4-5' });
+    const r = await run({ apiKey: 'sk-ant-xyz', goal: 'x', model: 'claude-sonnet-5-5' });
     expect(safeFetch.mock.calls[0]![0]).toBe('https://api.anthropic.com/v1/messages');
     const headers = (safeFetch.mock.calls[0]![1] as { headers: Record<string, string> }).headers;
     expect(headers['x-api-key']).toBe('sk-ant-xyz');
@@ -285,7 +285,7 @@ describe('ai_agent_tool_loop — retrocompatibilità config esistenti', () => {
     expect(out._llm).toEqual({
       inputTokens: 80,
       outputTokens: 15,
-      model: 'claude-sonnet-4-5',
+      model: 'claude-sonnet-5-5',
       provider: 'anthropic',
       fromApi: true,
     });

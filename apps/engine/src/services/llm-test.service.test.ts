@@ -49,13 +49,13 @@ describe('🚨 Anthropic', () => {
     expect(headers['anthropic-version']).toBe('2023-06-01');
   });
 
-  it('🚨 default model claude-3-5-haiku-latest', async () => {
+  it('🚨 default model claude-haiku-5-5', async () => {
     fetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ content: [] }) });
     await dispatchLLMForTest('anthropic', { apiKey: 'k', defaultModel: '' });
     const body = JSON.parse(
       (at(fetchMock.mock.calls, 0, 'fetch-calls')[1] as RequestInit).body as string,
     );
-    expect(body.model).toBe('claude-3-5-haiku-latest');
+    expect(body.model).toBe('claude-haiku-5-5');
   });
 });
 
@@ -86,10 +86,10 @@ describe('🚨 Gemini', () => {
     expect(at(fetchMock.mock.calls, 0, 'fetch-calls')[0]).toContain('gemini-pro:generateContent');
   });
 
-  it('🚨 default model gemini-2.0-flash', async () => {
+  it('🚨 default model gemini-3.8-flash', async () => {
     fetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
     await dispatchLLMForTest('gemini', { apiKey: 'k' });
-    expect(at(fetchMock.mock.calls, 0, 'fetch-calls')[0]).toContain('gemini-2.0-flash');
+    expect(at(fetchMock.mock.calls, 0, 'fetch-calls')[0]).toContain('gemini-3.8-flash');
   });
 });
 
@@ -143,7 +143,7 @@ describe('🚨 Mistral / Groq / OpenRouter / Ollama / Voyage', () => {
 // pingabili (mancavano del tutto in dispatchLLMForTest). Ora coperti dal ramo
 // generico OpenAI-compat del provider-registry.
 describe('🚨 Grok / DeepSeek (gap chiuso)', () => {
-  it('🚨 Grok → api.x.ai + grok-2-latest + Bearer', async () => {
+  it('🚨 Grok → api.x.ai + grok-4.7 + Bearer', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ choices: [{ message: { content: 'OK' } }] }),
@@ -153,11 +153,11 @@ describe('🚨 Grok / DeepSeek (gap chiuso)', () => {
     const [url, opts] = at(fetchMock.mock.calls, 0, 'fetch-calls');
     expect(url).toBe('https://api.x.ai/v1/chat/completions');
     const body = JSON.parse((opts as RequestInit).body as string);
-    expect(body.model).toBe('grok-2-latest');
+    expect(body.model).toBe('grok-4.7');
     expect(((opts as RequestInit).headers as any).Authorization).toBe('Bearer xai-k');
   });
 
-  it('🚨 DeepSeek → api.deepseek.com + deepseek-chat', async () => {
+  it('🚨 DeepSeek → api.deepseek.com + deepseek-flash', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ choices: [{ message: { content: 'OK' } }] }),
@@ -165,7 +165,7 @@ describe('🚨 Grok / DeepSeek (gap chiuso)', () => {
     await dispatchLLMForTest('deepseek', { apiKey: 'ds-k' });
     const [url, opts] = at(fetchMock.mock.calls, 0, 'fetch-calls');
     expect(url).toBe('https://api.deepseek.com/v1/chat/completions');
-    expect(JSON.parse((opts as RequestInit).body as string).model).toBe('deepseek-chat');
+    expect(JSON.parse((opts as RequestInit).body as string).model).toBe('deepseek-flash');
   });
 
   it('🚨 Grok 5xx → throw con label Grok + preview body', async () => {

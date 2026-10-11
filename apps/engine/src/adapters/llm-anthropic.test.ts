@@ -86,7 +86,9 @@ describe('complete — costruzione request', () => {
     fetchMock.mockResolvedValue(anthropicOk({ content: [], stop_reason: 'end_turn' }));
     await p.complete(req({ temperature: 0.3, stopSequences: ['STOP'], maxTokens: 100 }));
     const body2 = JSON.parse((fetchMock.mock.calls[1]![1] as { body: string }).body);
-    expect(body2.temperature).toBe(0.3);
+    // Dai modelli 4.7 in poi Anthropic risponde 400 a una `temperature`
+    // diversa dalla sua: non la si manda nemmeno se il chiamante la chiede.
+    expect('temperature' in body2).toBe(false);
     expect(body2.stop_sequences).toEqual(['STOP']);
     expect(body2.max_tokens).toBe(100);
   });

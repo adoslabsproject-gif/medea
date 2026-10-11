@@ -126,10 +126,11 @@ export async function dispatchLLMVision(
             'anthropic-version': '2023-06-01',
           },
           body: JSON.stringify({
-            model: model || 'claude-sonnet-4-5-20250929',
+            model: model || 'claude-sonnet-5-5',
             messages: [{ role: 'user', content }],
             max_tokens: MAX_TOKENS,
-            temperature: 0.1,
+            // Niente `temperature`: dai modelli 4.7 in poi Anthropic risponde
+            // 400 a un valore diverso dal suo predefinito.
           }),
           signal: ctrl.signal,
         });
@@ -154,7 +155,7 @@ export async function dispatchLLMVision(
           ...images.map((img) => ({ inline_data: { mime_type: img.mimeType, data: img.base64 } })),
         ];
         const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model || 'gemini-2.0-flash'}:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${model || 'gemini-3.8-flash'}:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

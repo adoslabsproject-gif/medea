@@ -207,11 +207,11 @@ describe('caratterizzazione: corpo richiesta INVARIATO (nessuna deriva di prompt
     expect(msgs[1]).toEqual({ role: 'user', content: 'testo' });
   });
 
-  it('anthropic: system top-level, max_tokens 4096, model default claude-sonnet-4-5', async () => {
+  it('anthropic: system top-level, max_tokens 4096, model default claude-sonnet-5-5', async () => {
     safeFetch.mockResolvedValue(anthropicReply(SUMMARY_JSON));
     await node('agent_summarizer')({ provider: 'anthropic', apiKey: 'k' }, 'testo', ctx);
     const body = sentBody();
-    expect(body.model).toBe('claude-sonnet-4-5');
+    expect(body.model).toBe('claude-sonnet-5-5');
     expect(body.max_tokens).toBe(4096);
     expect(body.system).toContain('You are a precise summarizer');
   });
@@ -345,7 +345,7 @@ describe('_llm: conteggi dalla API del provider (fromApi:true)', () => {
     expect(llmOf(res.output)).toEqual({
       inputTokens: 120,
       outputTokens: 55,
-      model: 'claude-sonnet-4-5',
+      model: 'claude-sonnet-5-5',
       provider: 'anthropic',
       fromApi: true,
     });
@@ -359,7 +359,7 @@ describe('_llm: conteggi dalla API del provider (fromApi:true)', () => {
     expect(llmOf(res.output)).toEqual({
       inputTokens: 80,
       outputTokens: 30,
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3.8-flash',
       provider: 'gemini',
       fromApi: true,
     });

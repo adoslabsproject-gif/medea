@@ -370,7 +370,7 @@ async function dispatchLLM(
 ): Promise<{ text: string; usage: AgentLlmUsage }> {
   switch (provider) {
     case 'anthropic': {
-      const effectiveModel = model || 'claude-sonnet-4-5';
+      const effectiveModel = model || 'claude-sonnet-5-5';
       const res = await gatewayFetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -439,7 +439,7 @@ async function dispatchLLM(
       };
     }
     case 'openrouter': {
-      const effectiveModel = model || 'anthropic/claude-sonnet-4.5';
+      const effectiveModel = model || 'anthropic/claude-sonnet-5.5';
       const res = await gatewayFetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -514,7 +514,7 @@ async function dispatchLLM(
       };
     }
     case 'gemini': {
-      const m = model || 'gemini-2.0-flash';
+      const m = model || 'gemini-3.8-flash';
       // API key nell'HEADER x-goog-api-key, NON in query (?key=): una key nell'URL
       // finisce nei log/breaker-key e su redirect cross-host NON viene strippata.
       const res = await gatewayFetch(
@@ -1059,8 +1059,8 @@ function makeAgentNode(agent: AgentDefinition): NodeModule {
           label: 'Modello (override)',
           type: 'text',
           required: false,
-          placeholder: 'es. claude-sonnet-4-5',
-          help: 'Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash.',
+          placeholder: 'es. claude-sonnet-5-5',
+          help: 'Vuoto = default del provider. Es. claude-sonnet-5-5, gpt-4o, gemini-3.8-flash.',
         },
         {
           key: 'baseUrl',

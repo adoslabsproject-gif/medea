@@ -195,7 +195,7 @@ async function llmVisionExtract(pdfBuffer: Buffer, tenantId: string): Promise<Ll
     );
   }
 
-  const model = anthropic.defaultModel ?? 'claude-sonnet-4-5';
+  const model = anthropic.defaultModel ?? 'claude-sonnet-5-5';
   const base64 = pdfBuffer.toString('base64');
 
   const res = await safeOutboundFetch('https://api.anthropic.com/v1/messages', {

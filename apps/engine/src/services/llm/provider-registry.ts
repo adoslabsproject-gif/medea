@@ -65,8 +65,8 @@ const SPECS: Readonly<Record<LlmProvider, ProviderSpec>> = {
   anthropic: {
     format: 'anthropic',
     auth: 'anthropic',
-    chatModel: 'claude-3-5-haiku-latest',
-    pingModel: 'claude-3-5-haiku-latest',
+    chatModel: 'claude-haiku-5-5',
+    pingModel: 'claude-haiku-5-5',
     openAiToolCompat: false,
     endpoint: { kind: 'fixed', chatUrl: 'https://api.anthropic.com/v1/messages' },
   },
@@ -75,8 +75,8 @@ const SPECS: Readonly<Record<LlmProvider, ProviderSpec>> = {
     // c'è l'endpoint OpenAI-compat di Google (toolUrl, auth Bearer).
     format: 'gemini',
     auth: 'gemini-query',
-    chatModel: 'gemini-2.0-flash',
-    pingModel: 'gemini-2.0-flash',
+    chatModel: 'gemini-3.8-flash',
+    pingModel: 'gemini-3.8-flash',
     openAiToolCompat: true,
     endpoint: {
       kind: 'fixed',
@@ -103,16 +103,16 @@ const SPECS: Readonly<Record<LlmProvider, ProviderSpec>> = {
   grok: {
     format: 'openai',
     auth: 'bearer',
-    chatModel: 'grok-2-latest',
-    pingModel: 'grok-2-latest',
+    chatModel: 'grok-4.7',
+    pingModel: 'grok-4.7',
     openAiToolCompat: true,
     endpoint: { kind: 'fixed', chatUrl: 'https://api.x.ai/v1/chat/completions' },
   },
   deepseek: {
     format: 'openai',
     auth: 'bearer',
-    chatModel: 'deepseek-chat',
-    pingModel: 'deepseek-chat',
+    chatModel: 'deepseek-flash',
+    pingModel: 'deepseek-flash',
     openAiToolCompat: true,
     endpoint: { kind: 'fixed', chatUrl: 'https://api.deepseek.com/v1/chat/completions' },
   },
@@ -133,7 +133,7 @@ const SPECS: Readonly<Record<LlmProvider, ProviderSpec>> = {
     format: 'openai',
     auth: 'bearer',
     chatModel: '',
-    pingModel: 'anthropic/claude-3-5-haiku',
+    pingModel: 'anthropic/claude-haiku-5.5',
     openAiToolCompat: true,
     extraHeaders: {
       'X-Title': 'FlowForge',

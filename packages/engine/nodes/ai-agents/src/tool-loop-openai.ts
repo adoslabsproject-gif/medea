@@ -66,7 +66,7 @@ export function openAiLoopEndpoint(
           Authorization: `Bearer ${apiKey}`,
           'X-Title': 'FlowForge',
         },
-        effectiveModel: model || 'anthropic/claude-sonnet-4.5',
+        effectiveModel: model || 'anthropic/claude-sonnet-5.5',
         trustedHost: undefined,
         label: 'OpenRouter',
       };
@@ -92,7 +92,7 @@ export function openAiLoopEndpoint(
       return {
         url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-        effectiveModel: model || 'gemini-2.0-flash',
+        effectiveModel: model || 'gemini-3.8-flash',
         trustedHost: undefined,
         label: 'Gemini',
       };
@@ -100,7 +100,7 @@ export function openAiLoopEndpoint(
       return {
         url: 'https://api.deepseek.com/chat/completions',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-        effectiveModel: model || 'deepseek-chat',
+        effectiveModel: model || 'deepseek-flash',
         trustedHost: undefined,
         label: 'DeepSeek',
       };
@@ -108,7 +108,7 @@ export function openAiLoopEndpoint(
       return {
         url: 'https://api.x.ai/v1/chat/completions',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-        effectiveModel: model || 'grok-2-latest',
+        effectiveModel: model || 'grok-4.7',
         trustedHost: undefined,
         label: 'xAI',
       };

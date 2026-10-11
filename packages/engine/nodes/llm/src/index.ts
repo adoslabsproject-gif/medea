@@ -227,18 +227,18 @@ function makeProviderExecutor(providerId: string): NodeExecutor {
     let text: string;
     switch (providerId) {
       case 'anthropic':
-        text = await callAnthropic(apiKey, model || 'claude-sonnet-4-5', system, finalUser);
+        text = await callAnthropic(apiKey, model || 'claude-sonnet-5-5', system, finalUser);
         break;
       case 'openai':
         text = await callOpenAI(apiKey, model || 'gpt-4o-mini', system, finalUser);
         break;
       case 'gemini':
-        text = await callGemini(apiKey, model || 'gemini-2.0-flash', system, finalUser);
+        text = await callGemini(apiKey, model || 'gemini-3.8-flash', system, finalUser);
         break;
       case 'openrouter':
         text = await callOpenRouter(
           apiKey,
-          model || 'anthropic/claude-sonnet-4.5',
+          model || 'anthropic/claude-sonnet-5.5',
           system,
           finalUser,
         );
@@ -262,8 +262,8 @@ const MODEL_PRESETS: Record<
   { default: string; options: string[]; help: string; docs: string; blurb: string }
 > = {
   anthropic: {
-    default: 'claude-sonnet-4-5',
-    options: ['claude-opus-4-5', 'claude-sonnet-4-5', 'claude-haiku-4-5'],
+    default: 'claude-sonnet-5-5',
+    options: ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'],
     help: 'Opus = potenza massima (costoso). Sonnet = bilanciato (default). Haiku = economico, veloce.',
     docs: 'docs.anthropic.com/en/docs/about-claude/models',
     blurb:
@@ -278,17 +278,17 @@ const MODEL_PRESETS: Record<
       'GPT (OpenAI) è il modello generalista più diffuso, ottimo per chat, generazione di testo, function calling e con il più vasto ecosistema di tooling: gpt-4o-mini offre il miglior rapporto costo/qualità per volumi alti, gpt-4o la qualità di punta quando serve il massimo.',
   },
   gemini: {
-    default: 'gemini-2.0-flash',
-    options: ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
-    help: 'gemini-2.0-flash = nuovo, veloce (default). 1.5-pro = qualità più alta.',
+    default: 'gemini-3.8-flash',
+    options: ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'],
+    help: 'gemini-3.8-flash = il più recente (default). 3.5-flash-lite = il più economico.',
     docs: 'ai.google.dev/gemini-api/docs/models',
     blurb:
       "Gemini (Google) è forte sul multimodale e sul contesto molto lungo (fino a 1-2M token) ed è ben integrato nell'ecosistema Google: flash è economico e velocissimo per classificazione e riassunti su grandi volumi, 1.5-pro alza la qualità quando il compito è impegnativo.",
   },
   openrouter: {
-    default: 'anthropic/claude-sonnet-4.5',
+    default: 'anthropic/claude-sonnet-5.5',
     options: [
-      'anthropic/claude-sonnet-4.5',
+      'anthropic/claude-sonnet-5.5',
       'openai/gpt-4o',
       'meta-llama/llama-3.1-70b-instruct',
       'mistralai/mistral-large',

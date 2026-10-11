@@ -58,14 +58,14 @@ export const ALLOWED_PROVIDERS = new Set([
 ]);
 
 const PROVIDER_DEFAULT_MODEL: Record<string, string> = {
-  anthropic: 'claude-sonnet-4-6',
+  anthropic: 'claude-sonnet-5-5',
   openai: 'gpt-4o-mini',
-  gemini: 'gemini-2.0-flash',
+  gemini: 'gemini-3.8-flash',
   mistral: 'mistral-medium-latest',
   groq: 'llama-3.3-70b-versatile',
-  openrouter: 'anthropic/claude-sonnet-4',
-  deepseek: 'deepseek-chat',
-  xai: 'grok-2-latest',
+  openrouter: 'anthropic/claude-sonnet-5.5',
+  deepseek: 'deepseek-flash',
+  xai: 'grok-4.7',
   perplexity: 'sonar',
 };
 
