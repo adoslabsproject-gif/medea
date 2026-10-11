@@ -2,8 +2,10 @@
 
 pub mod ai_tools;
 mod background;
+pub mod claude_cli;
 mod commands;
 pub mod db;
+pub mod mcp;
 pub mod relay;
 pub mod runtime;
 mod security;

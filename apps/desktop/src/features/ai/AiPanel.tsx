@@ -7,6 +7,7 @@ import { Markdown } from '../shared/markdown';
 
 import styles from './AiPanel.module.css';
 import { aiApi } from './api';
+import { leggiTurnoCli, promptPerCli } from './claude-cli-turn';
 import {
   activeProvider,
   NessunProviderError,
@@ -592,18 +593,50 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
 
     if (!provider) throw new NessunProviderError();
 
+    /** Uno strumento che modifica dati: si esegue solo dopo il sì dell'utente. */
+    async function eseguiConConsenso(
+      call: ToolCall,
+      descriptor: ToolDescriptor | undefined,
+    ): Promise<ToolCallResult> {
+      const azione = consentAction(call, descriptor);
+      if (await askConsent(call, azione)) return callTool(call);
+      const adesso = new Date().toISOString();
+      return {
+        call,
+        result: null,
+        error: `Permesso negato dall'utente: ${azione}`,
+        startedAt: adesso,
+        finishedAt: adesso,
+        durationMs: 0,
+      };
+    }
+
     // Claude in abbonamento: il loop agentico è della CLI, che chiama i tool
-    // di Medea via MCP. Qui passiamo solo il turno e riceviamo il testo finale.
+    // di Medea via MCP. Il turno arriva a cose fatte, e a Medea restano le due
+    // cose che la CLI non può fare: mostrare le bozze e chiedere le conferme.
     if (provider === 'claude-cli') {
-      const finalText = await aiApi.claudeCliRun({
-        prompt: history
-          .filter((t) => t.role === 'user' || t.role === 'assistant')
-          .map((t) => `${t.role === 'user' ? 'Utente' : 'Assistente'}: ${t.content}`)
-          .join('\n\n'),
+      const turno = await aiApi.claudeCliRun({
+        prompt: promptPerCli(history),
         systemPrompt: opts.systemPrompt,
         allowTools: true,
       });
-      return { finalText, trace, proposals };
+      const letto = leggiTurnoCli(turno, toolRegistry);
+      trace.push(...letto.eseguiti);
+      for (const call of letto.daPreparare) {
+        const r = await callTool(call);
+        trace.push(r);
+        const proposal = proposalFrom(r.result);
+        if (proposal) proposals.push(proposal);
+      }
+      for (const call of letto.daConfermare) {
+        trace.push(
+          await eseguiConConsenso(
+            call,
+            toolRegistry.find((t) => t.name === call.name),
+          ),
+        );
+      }
+      return { finalText: turno.text, trace, proposals };
     }
 
     const conn = await providerConnection(provider);
@@ -626,22 +659,10 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
       for (const c of reply.toolCalls) {
         const call: ToolCall = { id: c.id, name: c.name, args: c.arguments };
         const descriptor = toolRegistry.find((t) => t.name === c.name);
-        let r: ToolCallResult;
-        if (descriptor?.kind === 'sensitive') {
-          const allowed = await askConsent(call, consentAction(call, descriptor));
-          r = allowed
-            ? await callTool(call)
-            : {
-                call,
-                result: null,
-                error: `Permesso negato dall'utente: ${consentAction(call, descriptor)}`,
-                startedAt: new Date().toISOString(),
-                finishedAt: new Date().toISOString(),
-                durationMs: 0,
-              };
-        } else {
-          r = await callTool(call);
-        }
+        const r =
+          descriptor?.kind === 'sensitive'
+            ? await eseguiConConsenso(call, descriptor)
+            : await callTool(call);
         results.push(r);
         trace.push(r);
         const proposal = proposalFrom(r.result);
