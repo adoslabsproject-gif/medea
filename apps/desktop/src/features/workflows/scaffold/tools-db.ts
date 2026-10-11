@@ -182,10 +182,10 @@ async function leggiRighe(args: Record<string, unknown>): Promise<ToolCallResult
   const limit = Math.max(1, Math.min(Math.floor(chieste), TETTO_RIGHE));
 
   const risposta = await runtimeApi
-    .post<{ rows?: Record<string, unknown>[]; rowCount?: number }>(
-      `/db/databases/${databaseId}/query`,
-      { table, filters: [], orderBy: [], limit },
-    )
+    .post<{
+      rows?: Record<string, unknown>[];
+      rowCount?: number;
+    }>(`/db/databases/${databaseId}/query`, { table, filters: [], orderBy: [], limit })
     .catch((e: unknown) => ({ errore: e instanceof Error ? e.message : String(e) }) as never);
 
   if ('errore' in risposta) {

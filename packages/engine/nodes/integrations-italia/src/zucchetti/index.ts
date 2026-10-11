@@ -59,9 +59,14 @@ export const zucchettiPayroll: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Restituisce la risposta di Zucchetti tale e quale: i nomi dei campi sono quelli della loro API, e cambiano con l\'operazione chiesta.',
+      notes:
+        "Restituisce la risposta di Zucchetti tale e quale: i nomi dei campi sono quelli della loro API, e cambiano con l'operazione chiesta.",
       fields: [
-        { name: '<la risposta di Zucchetti>', type: 'object', desc: 'Il corpo restituito dall\'API, senza nessuna trasformazione.' },
+        {
+          name: '<la risposta di Zucchetti>',
+          type: 'object',
+          desc: "Il corpo restituito dall'API, senza nessuna trasformazione.",
+        },
       ],
     },
     vendor: 'flowforge-italia',

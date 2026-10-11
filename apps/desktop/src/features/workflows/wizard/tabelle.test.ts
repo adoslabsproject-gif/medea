@@ -16,10 +16,7 @@ vi.mock('../runtime', () => ({
   createTables: vi.fn(),
   existingTables: vi.fn(),
   databaseDelWorkflow: vi.fn(),
-  missingTables: (
-    piano: { name: string }[],
-    presenti: string[],
-  ): { name: string }[] => {
+  missingTables: (piano: { name: string }[], presenti: string[]): { name: string }[] => {
     const noti = new Set(presenti.map((n) => n.toLowerCase()));
     return piano.filter((t) => !noti.has(t.name));
   },
@@ -47,9 +44,7 @@ import {
 } from './tabelle';
 
 const workflow = {
-  nodes: [
-    { id: 'db_insert', defId: 'db_insert', config: { table: 'riassunti' } },
-  ],
+  nodes: [{ id: 'db_insert', defId: 'db_insert', config: { table: 'riassunti' } }],
 } as never;
 
 describe('pianoArricchito — quali tabelle, e con che tipi', () => {
@@ -206,10 +201,9 @@ describe('non duplicare una tabella che esiste già', () => {
 
 describe('archiviConLePianificate — il gate non blocca ciò che sta per nascere', () => {
   it('aggiunge le tabelle pianificate agli archivi', () => {
-    const out = archiviConLePianificate(
-      [{ id: 'db1', tables: ['inbox', 'ordini'] }],
-      [{ name: 'log', columns: [{ name: 'id', type: 'text' }] }] as never,
-    );
+    const out = archiviConLePianificate([{ id: 'db1', tables: ['inbox', 'ordini'] }], [
+      { name: 'log', columns: [{ name: 'id', type: 'text' }] },
+    ] as never);
     expect(out[0]?.tables).toContain('log');
     expect(out[0]?.columns?.log).toEqual(['id']);
   });
@@ -234,8 +228,20 @@ describe('puntaAllArchivio — i nodi seguono le loro tabelle', () => {
     name: 'Pulizia log',
     nodes: [
       { id: 'cron', defId: 'trigger_cron', x: 0, y: 0, config: {} },
-      { id: 'purga', defId: 'db_delete', x: 0, y: 0, config: { databaseId: 'condiviso', table: 'log' } },
-      { id: 'leggi', defId: 'db_query', x: 0, y: 0, config: { databaseId: 'condiviso', table: 'inbox' } },
+      {
+        id: 'purga',
+        defId: 'db_delete',
+        x: 0,
+        y: 0,
+        config: { databaseId: 'condiviso', table: 'log' },
+      },
+      {
+        id: 'leggi',
+        defId: 'db_query',
+        x: 0,
+        y: 0,
+        config: { databaseId: 'condiviso', table: 'inbox' },
+      },
     ],
     edges: [],
   } as never;
@@ -257,7 +263,13 @@ describe('puntaAllArchivio — i nodi seguono le loro tabelle', () => {
     const gia = {
       ...(wf as { nodes: { id: string; config: Record<string, unknown> }[] }),
       nodes: [
-        { id: 'purga', defId: 'db_delete', x: 0, y: 0, config: { databaseId: 'suo', table: 'log' } },
+        {
+          id: 'purga',
+          defId: 'db_delete',
+          x: 0,
+          y: 0,
+          config: { databaseId: 'suo', table: 'log' },
+        },
       ],
     } as never;
     expect(puntaAllArchivio(gia, 'suo', ['log']).ripuntati).toBe(0);

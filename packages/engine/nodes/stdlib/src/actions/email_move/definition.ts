@@ -224,17 +224,46 @@ export const emailMoveNodeDef: NodeDef = {
     'truncated',
   ],
   outputContract: {
-    notes: 'In prova (`dryRun`) NON tocca niente: `affected` resta 0 e il numero da guardare e` `wouldAffect`. `truncated` a vero significa che il tetto di messaggi ha fermato l\'operazione a meta`: ne restano altri da spostare.',
+    notes:
+      "In prova (`dryRun`) NON tocca niente: `affected` resta 0 e il numero da guardare e` `wouldAffect`. `truncated` a vero significa che il tetto di messaggi ha fermato l'operazione a meta`: ne restano altri da spostare.",
     fields: [
-      { name: 'affected', type: 'number', desc: 'Quanti messaggi ha davvero spostato o segnato. Zero in prova.' },
+      {
+        name: 'affected',
+        type: 'number',
+        desc: 'Quanti messaggi ha davvero spostato o segnato. Zero in prova.',
+      },
       { name: 'found', type: 'number', desc: 'Quanti messaggi corrispondevano ai criteri.' },
-      { name: 'wouldAffect', type: 'number', desc: 'Quanti ne avrebbe toccati: e` il numero utile in prova.' },
-      { name: 'messages', type: 'array', desc: 'I messaggi interessati, con UID, oggetto e mittente.' },
+      {
+        name: 'wouldAffect',
+        type: 'number',
+        desc: 'Quanti ne avrebbe toccati: e` il numero utile in prova.',
+      },
+      {
+        name: 'messages',
+        type: 'array',
+        desc: 'I messaggi interessati, con UID, oggetto e mittente.',
+      },
       { name: 'sourceMailbox', type: 'string', desc: 'La cartella di partenza.' },
-      { name: 'targetMailbox', type: 'string', desc: 'La cartella di arrivo. Vuota per le sole operazioni di lettura.' },
-      { name: 'operation', type: 'string', desc: 'Cosa ha fatto: move, copy, mark_seen o mark_unseen.' },
-      { name: 'dryRun', type: 'boolean', desc: 'Vero se era una prova e non ha modificato niente.' },
-      { name: 'truncated', type: 'boolean', desc: 'Vero se il tetto di messaggi ha interrotto l\'operazione: ne restano fuori.' },
+      {
+        name: 'targetMailbox',
+        type: 'string',
+        desc: 'La cartella di arrivo. Vuota per le sole operazioni di lettura.',
+      },
+      {
+        name: 'operation',
+        type: 'string',
+        desc: 'Cosa ha fatto: move, copy, mark_seen o mark_unseen.',
+      },
+      {
+        name: 'dryRun',
+        type: 'boolean',
+        desc: 'Vero se era una prova e non ha modificato niente.',
+      },
+      {
+        name: 'truncated',
+        type: 'boolean',
+        desc: "Vero se il tetto di messaggi ha interrotto l'operazione: ne restano fuori.",
+      },
     ],
   },
   vendor: 'flowforge',

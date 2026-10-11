@@ -149,13 +149,18 @@ export const userAgentRotateNode: NodeModule = {
       'integrazione con action_web_fetch_advanced come userAgentCustom per testing reproducibile della ' +
       'response server in workflow di regression test.',
     outputContract: {
-      notes: 'Sceglie un agente da riusare nella richiesta successiva: da solo non fa niente — va passato al nodo che scarica la pagina.',
+      notes:
+        'Sceglie un agente da riusare nella richiesta successiva: da solo non fa niente — va passato al nodo che scarica la pagina.',
       fields: [
-        { name: 'userAgent', type: 'string', desc: 'L\'agente scelto, da mettere nella richiesta successiva.' },
-        { name: 'poolName', type: 'string', desc: 'L\'insieme da cui l\'ha preso.' },
+        {
+          name: 'userAgent',
+          type: 'string',
+          desc: "L'agente scelto, da mettere nella richiesta successiva.",
+        },
+        { name: 'poolName', type: 'string', desc: "L'insieme da cui l'ha preso." },
         { name: 'poolSize', type: 'number', desc: 'Quanti agenti contiene.' },
-        { name: 'strategy', type: 'string', desc: 'Come l\'ha scelto: a rotazione o a caso.' },
-        { name: 'index', type: 'number', desc: 'La posizione dell\'agente nell\'insieme.' },
+        { name: 'strategy', type: 'string', desc: "Come l'ha scelto: a rotazione o a caso." },
+        { name: 'index', type: 'number', desc: "La posizione dell'agente nell'insieme." },
       ],
     },
     vendor: 'flowforge',

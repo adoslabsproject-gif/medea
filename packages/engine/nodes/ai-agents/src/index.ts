@@ -109,11 +109,20 @@ const AGENTS: AgentDefinition[] = [
       'You are a senior security engineer. Audit the input for OWASP Top 10 vulnerabilities, injection vectors, secrets in plaintext, weak crypto, and supply-chain risks. Respond as JSON: {"findings":[{"severity":"critical|high|medium|low","title":"...","line":N,"remediation":"..."}],"summary":"..."}',
     outputFormat: 'json',
     outputContract: {
-      notes: 'L\'uscita e` il JSON che il modello produce seguendo il prompt di sistema. Se non ne esce JSON valido nemmeno dopo il tentativo di riparazione, al suo posto escono `_raw` e `_parseError`.',
+      notes:
+        "L'uscita e` il JSON che il modello produce seguendo il prompt di sistema. Se non ne esce JSON valido nemmeno dopo il tentativo di riparazione, al suo posto escono `_raw` e `_parseError`.",
       fields: [
-      { name: 'findings', type: 'array', desc: 'I rilievi: ognuno con `severity` (critical, high, medium, low), `title`, `line` e `remediation`.' },
-      { name: 'summary', type: 'string', desc: 'Il quadro d\'insieme.' },
-      { name: '_llm', type: 'object', desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.' },
+        {
+          name: 'findings',
+          type: 'array',
+          desc: 'I rilievi: ognuno con `severity` (critical, high, medium, low), `title`, `line` e `remediation`.',
+        },
+        { name: 'summary', type: 'string', desc: "Il quadro d'insieme." },
+        {
+          name: '_llm',
+          type: 'object',
+          desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.',
+        },
       ],
     },
   },
@@ -131,12 +140,21 @@ const AGENTS: AgentDefinition[] = [
       'You are a senior code reviewer. Review the input code for bugs, anti-patterns, performance issues, missing error handling, and idiomatic improvements. Respond as JSON: {"issues":[{"severity":"blocker|major|minor","file":"...","line":N,"message":"...","suggestion":"..."}],"overall_grade":"A|B|C|D|F","summary":"..."}',
     outputFormat: 'json',
     outputContract: {
-      notes: 'L\'uscita e` il JSON che il modello produce seguendo il prompt di sistema. Se non ne esce JSON valido nemmeno dopo il tentativo di riparazione, al suo posto escono `_raw` e `_parseError`.',
+      notes:
+        "L'uscita e` il JSON che il modello produce seguendo il prompt di sistema. Se non ne esce JSON valido nemmeno dopo il tentativo di riparazione, al suo posto escono `_raw` e `_parseError`.",
       fields: [
-      { name: 'issues', type: 'array', desc: 'I rilievi: ognuno con `severity` (blocker, major, minor), `file`, `line`, `message` e `suggestion`.' },
-      { name: 'overall_grade', type: 'string', desc: 'Il voto complessivo, da A a F.' },
-      { name: 'summary', type: 'string', desc: 'Il quadro d\'insieme.' },
-      { name: '_llm', type: 'object', desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.' },
+        {
+          name: 'issues',
+          type: 'array',
+          desc: 'I rilievi: ognuno con `severity` (blocker, major, minor), `file`, `line`, `message` e `suggestion`.',
+        },
+        { name: 'overall_grade', type: 'string', desc: 'Il voto complessivo, da A a F.' },
+        { name: 'summary', type: 'string', desc: "Il quadro d'insieme." },
+        {
+          name: '_llm',
+          type: 'object',
+          desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.',
+        },
       ],
     },
   },
@@ -155,13 +173,26 @@ const AGENTS: AgentDefinition[] = [
       'You are a data analyst. Given tabular data, identify: distribution shape per column, outliers (IQR method), correlations between columns, missing-value patterns, key trends. Respond as JSON: {"columns":[{"name":"...","type":"...","missing":N,"stats":{}}],"correlations":[{"a":"...","b":"...","r":0.0}],"anomalies":[...],"insights":[...]}',
     outputFormat: 'json',
     outputContract: {
-      notes: 'L\'uscita e` il JSON che il modello produce seguendo il prompt di sistema. Se non ne esce JSON valido nemmeno dopo il tentativo di riparazione, al suo posto escono `_raw` e `_parseError`.',
+      notes:
+        "L'uscita e` il JSON che il modello produce seguendo il prompt di sistema. Se non ne esce JSON valido nemmeno dopo il tentativo di riparazione, al suo posto escono `_raw` e `_parseError`.",
       fields: [
-      { name: 'columns', type: 'array', desc: 'Una scheda per colonna: `name`, `type`, `missing` (quanti valori mancano) e `stats`.' },
-      { name: 'correlations', type: 'array', desc: 'Le correlazioni fra colonne: `a`, `b` e `r`.' },
-      { name: 'anomalies', type: 'array', desc: 'I valori fuori scala trovati.' },
-      { name: 'insights', type: 'array', desc: 'Le osservazioni in linguaggio naturale.' },
-      { name: '_llm', type: 'object', desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.' },
+        {
+          name: 'columns',
+          type: 'array',
+          desc: 'Una scheda per colonna: `name`, `type`, `missing` (quanti valori mancano) e `stats`.',
+        },
+        {
+          name: 'correlations',
+          type: 'array',
+          desc: 'Le correlazioni fra colonne: `a`, `b` e `r`.',
+        },
+        { name: 'anomalies', type: 'array', desc: 'I valori fuori scala trovati.' },
+        { name: 'insights', type: 'array', desc: 'Le osservazioni in linguaggio naturale.' },
+        {
+          name: '_llm',
+          type: 'object',
+          desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.',
+        },
       ],
     },
   },
@@ -180,13 +211,26 @@ const AGENTS: AgentDefinition[] = [
       'You are a precise summarizer. Produce a 3-tier summary of the input: (1) one-sentence TL;DR, (2) 5 key bullet points, (3) detailed paragraph (~150 words). Preserve all named entities (people, organizations, dates, monetary values, technical terms) verbatim. Respond as JSON: {"tldr":"...","bullets":[...],"detailed":"...","entities":{"people":[],"orgs":[],"dates":[],"amounts":[],"tech":[]}}',
     outputFormat: 'json',
     outputContract: {
-      notes: 'L\'uscita e` il JSON che il modello produce seguendo il prompt di sistema. Se non ne esce JSON valido nemmeno dopo il tentativo di riparazione, al suo posto escono `_raw` e `_parseError`.',
+      notes:
+        "L'uscita e` il JSON che il modello produce seguendo il prompt di sistema. Se non ne esce JSON valido nemmeno dopo il tentativo di riparazione, al suo posto escono `_raw` e `_parseError`.",
       fields: [
-      { name: 'tldr', type: 'string', desc: 'Il riassunto in una frase.' },
-      { name: 'bullets', type: 'array', desc: 'Cinque punti chiave.' },
-      { name: 'detailed', type: 'string', desc: 'Il riassunto disteso, circa centocinquanta parole.' },
-      { name: 'entities', type: 'object', desc: 'Le entita` conservate alla lettera, divise in people, orgs, dates, amounts e tech: ognuna e` una lista.' },
-      { name: '_llm', type: 'object', desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.' },
+        { name: 'tldr', type: 'string', desc: 'Il riassunto in una frase.' },
+        { name: 'bullets', type: 'array', desc: 'Cinque punti chiave.' },
+        {
+          name: 'detailed',
+          type: 'string',
+          desc: 'Il riassunto disteso, circa centocinquanta parole.',
+        },
+        {
+          name: 'entities',
+          type: 'object',
+          desc: 'Le entita` conservate alla lettera, divise in people, orgs, dates, amounts e tech: ognuna e` una lista.',
+        },
+        {
+          name: '_llm',
+          type: 'object',
+          desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.',
+        },
       ],
     },
   },
@@ -206,9 +250,14 @@ const AGENTS: AgentDefinition[] = [
       'You are a professional translator. Translate the input into the target language specified in the targetLanguage config. Preserve markdown formatting, code blocks, URLs, named entities, and tone. If the input mixes languages, translate only the source language portion. Respond with the translated text only, no commentary.',
     outputFormat: 'text',
     outputContract: {
-      notes: 'Questo agente NON produce JSON: l\'uscita e` il testo tradotto e basta, senza campi intorno. A valle si legge il nodo direttamente.',
+      notes:
+        "Questo agente NON produce JSON: l'uscita e` il testo tradotto e basta, senza campi intorno. A valle si legge il nodo direttamente.",
       fields: [
-      { name: '<il testo tradotto>', type: 'string', desc: 'La traduzione, senza commenti e con la formattazione dell\'originale conservata.' },
+        {
+          name: '<il testo tradotto>',
+          type: 'string',
+          desc: "La traduzione, senza commenti e con la formattazione dell'originale conservata.",
+        },
       ],
     },
   },
@@ -227,12 +276,29 @@ const AGENTS: AgentDefinition[] = [
       'You are a classifier. Given input text and a list of candidate labels (in config.labels), assign the most appropriate label. If none fit well, label as "other". Respond as JSON: {"label":"...","confidence":0.0-1.0,"alternatives":[{"label":"...","confidence":0.0}]}',
     outputFormat: 'json',
     outputContract: {
-      notes: 'L\'uscita e` il JSON che il modello produce seguendo il prompt di sistema. Se non ne esce JSON valido nemmeno dopo il tentativo di riparazione, al suo posto escono `_raw` (il testo grezzo) e `_parseError`: e` il caso da controllare prima di leggere `label`.',
+      notes:
+        "L'uscita e` il JSON che il modello produce seguendo il prompt di sistema. Se non ne esce JSON valido nemmeno dopo il tentativo di riparazione, al suo posto escono `_raw` (il testo grezzo) e `_parseError`: e` il caso da controllare prima di leggere `label`.",
       fields: [
-      { name: 'label', type: 'string', desc: 'L\'etichetta scelta fra quelle in configurazione, oppure \'other\' se nessuna calza.' },
-      { name: 'confidence', type: 'number', desc: 'Quanto e` sicuro, da 0 a 1. E` il campo su cui si mette la soglia con un `logic_if`.' },
-      { name: 'alternatives', type: 'array', desc: 'Le altre etichette considerate, ognuna con la sua confidenza.' },
-      { name: '_llm', type: 'object', desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.' },
+        {
+          name: 'label',
+          type: 'string',
+          desc: "L'etichetta scelta fra quelle in configurazione, oppure 'other' se nessuna calza.",
+        },
+        {
+          name: 'confidence',
+          type: 'number',
+          desc: 'Quanto e` sicuro, da 0 a 1. E` il campo su cui si mette la soglia con un `logic_if`.',
+        },
+        {
+          name: 'alternatives',
+          type: 'array',
+          desc: 'Le altre etichette considerate, ognuna con la sua confidenza.',
+        },
+        {
+          name: '_llm',
+          type: 'object',
+          desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.',
+        },
       ],
     },
   },
@@ -252,10 +318,19 @@ const AGENTS: AgentDefinition[] = [
       'You are an entity extractor. Given input text and a JSON schema in config.schema, extract the fields conforming to the schema. If a field is not present, set it to null. If a field allows multiple, return an array. Respond as JSON matching the requested schema.',
     outputFormat: 'json',
     outputContract: {
-      notes: 'I nomi dei campi NON sono fissi: sono quelli dello schema JSON che scrivi in configurazione, e sono quelli che le espressioni a valle devono usare. I campi non trovati nel testo escono null, non assenti. Se non esce JSON valido nemmeno dopo la riparazione, al suo posto escono `_raw` e `_parseError`.',
+      notes:
+        'I nomi dei campi NON sono fissi: sono quelli dello schema JSON che scrivi in configurazione, e sono quelli che le espressioni a valle devono usare. I campi non trovati nel testo escono null, non assenti. Se non esce JSON valido nemmeno dopo la riparazione, al suo posto escono `_raw` e `_parseError`.',
       fields: [
-      { name: '<i campi dello schema in configurazione>', type: 'object', desc: 'Un campo per ogni proprieta` dello schema, con lo stesso nome. Null quando il dato non c\'e` nel testo.' },
-      { name: '_llm', type: 'object', desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.' },
+        {
+          name: '<i campi dello schema in configurazione>',
+          type: 'object',
+          desc: "Un campo per ogni proprieta` dello schema, con lo stesso nome. Null quando il dato non c'e` nel testo.",
+        },
+        {
+          name: '_llm',
+          type: 'object',
+          desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.',
+        },
       ],
     },
   },
@@ -274,12 +349,21 @@ const AGENTS: AgentDefinition[] = [
       'You are an intent classifier for a customer-facing workflow. Given the user message and a list of intent names (config.intents), return the most likely intent. If none fit, return "fallback". Respond with JSON: {"intent":"...","confidence":0.0-1.0,"reasoning":"..."}',
     outputFormat: 'json',
     outputContract: {
-      notes: 'L\'uscita e` il JSON che il modello produce seguendo il prompt di sistema. Se non ne esce JSON valido nemmeno dopo il tentativo di riparazione, al suo posto escono `_raw` e `_parseError`.',
+      notes:
+        "L'uscita e` il JSON che il modello produce seguendo il prompt di sistema. Se non ne esce JSON valido nemmeno dopo il tentativo di riparazione, al suo posto escono `_raw` e `_parseError`.",
       fields: [
-      { name: 'intent', type: 'string', desc: 'L\'intento riconosciuto fra quelli in configurazione, oppure \'fallback\' se nessuno calza.' },
-      { name: 'confidence', type: 'number', desc: 'Quanto e` sicuro, da 0 a 1.' },
-      { name: 'reasoning', type: 'string', desc: 'Perche` ha scelto quell\'intento.' },
-      { name: '_llm', type: 'object', desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.' },
+        {
+          name: 'intent',
+          type: 'string',
+          desc: "L'intento riconosciuto fra quelli in configurazione, oppure 'fallback' se nessuno calza.",
+        },
+        { name: 'confidence', type: 'number', desc: 'Quanto e` sicuro, da 0 a 1.' },
+        { name: 'reasoning', type: 'string', desc: "Perche` ha scelto quell'intento." },
+        {
+          name: '_llm',
+          type: 'object',
+          desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.',
+        },
       ],
     },
   },
@@ -294,10 +378,19 @@ const AGENTS: AgentDefinition[] = [
       'Sei un estrattore intelligente di dati da HTML. Ricevi: (1) il body HTML completo della pagina; (2) un\'instruction in linguaggio naturale che descrive COSA estrarre (es. "titolo articolo, autore, data pubblicazione, lista commenti"); (3) un JSON schema (config.schema) che definisce la forma dell\'output. Analizza il DOM, capisci la struttura, estrai i campi richiesti. Se un campo non esiste set null. Per liste di items ritorna array. NON inventare dati: se non c\'è, null. Rispondi SOLO JSON valido conforme allo schema, niente prefissi tipo "Ecco i dati:".',
     outputFormat: 'json',
     outputContract: {
-      notes: 'I nomi dei campi NON sono fissi: sono quelli dello schema JSON che scrivi in configurazione. I campi non trovati nella pagina escono null — il prompt vieta di inventarli.',
+      notes:
+        'I nomi dei campi NON sono fissi: sono quelli dello schema JSON che scrivi in configurazione. I campi non trovati nella pagina escono null — il prompt vieta di inventarli.',
       fields: [
-      { name: '<i campi dello schema in configurazione>', type: 'object', desc: 'Un campo per ogni proprieta` dello schema, con lo stesso nome. Null quando il dato non c\'e` nella pagina.' },
-      { name: '_llm', type: 'object', desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.' },
+        {
+          name: '<i campi dello schema in configurazione>',
+          type: 'object',
+          desc: "Un campo per ogni proprieta` dello schema, con lo stesso nome. Null quando il dato non c'e` nella pagina.",
+        },
+        {
+          name: '_llm',
+          type: 'object',
+          desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.',
+        },
       ],
     },
   },
@@ -312,12 +405,21 @@ const AGENTS: AgentDefinition[] = [
       'Sei un generatore esperto di selettori CSS per scraping. Ricevi: (1) HTML completo della pagina; (2) una mappa di esempi {fieldName: expectedValue} dove l\'utente dice "questo campo deve produrre questo valore" (es. {"price": "€42.50", "title": "iPhone 16 Pro"}). Analizza il DOM, trova gli elementi che contengono ESATTAMENTE quei valori, e ritorna selettori CSS robusti (preferisci classi semantiche o attributi data-* sopra :nth-child quando possibile). Per ogni campo proponi: il selettore primario + 1-2 fallback. Output JSON: {"selectors": {<fieldName>: {"primary": "...", "fallbacks": [...], "extract": "text|attr", "attr": "..."}}, "confidence": 0.0-1.0, "notes": "..."}.',
     outputFormat: 'json',
     outputContract: {
-      notes: 'L\'uscita e` il JSON che il modello produce seguendo il prompt di sistema. Se non ne esce JSON valido nemmeno dopo il tentativo di riparazione, al suo posto escono `_raw` e `_parseError`.',
+      notes:
+        "L'uscita e` il JSON che il modello produce seguendo il prompt di sistema. Se non ne esce JSON valido nemmeno dopo il tentativo di riparazione, al suo posto escono `_raw` e `_parseError`.",
       fields: [
-      { name: 'selectors', type: 'object', desc: 'Un selettore per ogni campo chiesto: `primary`, `fallbacks`, `extract` (text o attr) e `attr`.' },
-      { name: 'confidence', type: 'number', desc: 'Quanto e` sicuro dei selettori, da 0 a 1.' },
-      { name: 'notes', type: 'string', desc: 'Le sue osservazioni sulla pagina.' },
-      { name: '_llm', type: 'object', desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.' },
+        {
+          name: 'selectors',
+          type: 'object',
+          desc: 'Un selettore per ogni campo chiesto: `primary`, `fallbacks`, `extract` (text o attr) e `attr`.',
+        },
+        { name: 'confidence', type: 'number', desc: 'Quanto e` sicuro dei selettori, da 0 a 1.' },
+        { name: 'notes', type: 'string', desc: 'Le sue osservazioni sulla pagina.' },
+        {
+          name: '_llm',
+          type: 'object',
+          desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.',
+        },
       ],
     },
   },
@@ -332,13 +434,30 @@ const AGENTS: AgentDefinition[] = [
       'Sei un validatore strict di dati strutturati. Ricevi: (1) input JSON da validare; (2) schema JSON Schema (config.schema) — type/properties/required/enum/pattern/min/max; (3) opzionali regole business (config.businessRules) in linguaggio naturale; (4) flag config.strictMode (true = reject extra fields, false = allow). \n\nValuta in 3 step:\n  A. Schema-shape: tutti i required ci sono? tipi giusti? pattern/enum rispettati?\n  B. Business rules: ogni regola applicata, raccolta violazioni.\n  C. Se config.normalize=true: applica fix triviali (trim string, lowercase email, parse number da string numerica). Niente fix che cambino semantica.\n\nRispondi SOLO JSON: {"valid": bool, "errors": [{"path":"$.field","rule":"required|type|pattern|enum|min|max|business","message":"..."}], "normalized": <object o null>, "summary":"breve riassunto IT"}',
     outputFormat: 'json',
     outputContract: {
-      notes: 'L\'uscita e` il JSON che il modello produce seguendo il prompt di sistema. Se non ne esce JSON valido nemmeno dopo il tentativo di riparazione, al suo posto escono `_raw` e `_parseError`.',
+      notes:
+        "L'uscita e` il JSON che il modello produce seguendo il prompt di sistema. Se non ne esce JSON valido nemmeno dopo il tentativo di riparazione, al suo posto escono `_raw` e `_parseError`.",
       fields: [
-      { name: 'valid', type: 'boolean', desc: 'Se il dato rispetta schema e regole. E` il campo su cui si dirama con un `logic_if`.' },
-      { name: 'errors', type: 'array', desc: 'Le violazioni trovate: ognuna con `path` (il punto del dato), `rule` (quale regola) e `message`.' },
-      { name: 'normalized', type: 'object|null', desc: 'Il dato con le correzioni banali applicate, se la normalizzazione e` accesa. Null altrimenti.' },
-      { name: 'summary', type: 'string', desc: 'Un riassunto in italiano dell\'esito.' },
-      { name: '_llm', type: 'object', desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.' },
+        {
+          name: 'valid',
+          type: 'boolean',
+          desc: 'Se il dato rispetta schema e regole. E` il campo su cui si dirama con un `logic_if`.',
+        },
+        {
+          name: 'errors',
+          type: 'array',
+          desc: 'Le violazioni trovate: ognuna con `path` (il punto del dato), `rule` (quale regola) e `message`.',
+        },
+        {
+          name: 'normalized',
+          type: 'object|null',
+          desc: 'Il dato con le correzioni banali applicate, se la normalizzazione e` accesa. Null altrimenti.',
+        },
+        { name: 'summary', type: 'string', desc: "Un riassunto in italiano dell'esito." },
+        {
+          name: '_llm',
+          type: 'object',
+          desc: 'Il consumo: inputTokens, outputTokens, model, provider, fromApi.',
+        },
       ],
     },
   },
@@ -1034,16 +1153,7 @@ function makeAgentNode(agent: AgentDefinition): NodeModule {
           label: 'LLM provider (opzionale, override)',
           type: 'select',
           required: false,
-          options: [
-            '',
-            'anthropic',
-            'openai',
-            'gemini',
-            'mistral',
-            'groq',
-            'openrouter',
-            'ollama',
-          ],
+          options: ['', 'anthropic', 'openai', 'gemini', 'mistral', 'groq', 'openrouter', 'ollama'],
           defaultValue: '',
           help: 'Vuoto = usa il default da Settings → AI Providers. Selezionalo SOLO per override locale (es. account diverso per questo nodo).',
         },

@@ -210,9 +210,14 @@ export const scriptVarExtractNode: NodeModule = {
       'pronti per consumo); ingest dati da broadcaster sport che fanno embed di player con metadata ' +
       'evento/lineup/stat in window.payload.',
     outputContract: {
-      notes: 'Estrae variabili dagli script dentro la pagina — la strada per i dati che il sito carica in JavaScript invece che nell\'HTML. I valori stanno DENTRO `extracted`, sotto i nomi chiesti.',
+      notes:
+        "Estrae variabili dagli script dentro la pagina — la strada per i dati che il sito carica in JavaScript invece che nell'HTML. I valori stanno DENTRO `extracted`, sotto i nomi chiesti.",
       fields: [
-        { name: 'extracted', type: 'object', desc: 'Un valore per ogni variabile chiesta, sotto il suo nome.' },
+        {
+          name: 'extracted',
+          type: 'object',
+          desc: 'Un valore per ogni variabile chiesta, sotto il suo nome.',
+        },
         { name: 'matched', type: 'boolean', desc: 'Se almeno una variabile e` stata trovata.' },
         { name: 'matchedCount', type: 'number', desc: 'Quante variabili sono state trovate.' },
         { name: 'requested', type: 'number', desc: 'Quante erano state chieste.' },

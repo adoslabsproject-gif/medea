@@ -82,11 +82,7 @@ beforeEach(() => {
   dbState.sqliteCount = 0;
   dbState.rows = [];
   h.fetchUsage.mockReset();
-  for (const k of [
-    'MEDEA_PLAN_CODE',
-    'MEDEA_MAX_WORKFLOWS',
-    'MEDEA_PLAN_DISK_GB',
-  ]) {
+  for (const k of ['MEDEA_PLAN_CODE', 'MEDEA_MAX_WORKFLOWS', 'MEDEA_PLAN_DISK_GB']) {
     delete process.env[k];
   }
 });

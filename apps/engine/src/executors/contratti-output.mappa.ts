@@ -28,10 +28,7 @@ const RADICE = join(import.meta.dirname, '..', '..', '..', '..');
  * il workflow, non chi lo esegue. `trigger_form` consegna il modulo compilato,
  * `trigger_manual` quello che si scrive nella finestra di avvio.
  */
-export const NON_CONFRONTABILI: ReadonlySet<string> = new Set([
-  'trigger_form',
-  'trigger_manual',
-]);
+export const NON_CONFRONTABILI: ReadonlySet<string> = new Set(['trigger_form', 'trigger_manual']);
 
 /**
  * Sorgenti aggiuntive, per i nodi il cui payload nasce in più punti.
@@ -91,7 +88,10 @@ const importazioni = (): ReadonlyMap<string, string> => {
     // `./x.js` in sorgente è `./x.ts` su disco.
     const file = join('apps/engine/src/executors', da.replace(/^\.\//, '').replace(/\.js$/, '.ts'));
     for (const n of nomi.split(',')) {
-      const netto = n.trim().split(/\s+as\s+/)[0]?.trim();
+      const netto = n
+        .trim()
+        .split(/\s+as\s+/)[0]
+        ?.trim();
       if (netto) m.set(netto, file);
     }
   }

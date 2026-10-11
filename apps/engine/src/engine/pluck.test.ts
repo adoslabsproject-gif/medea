@@ -21,11 +21,7 @@ import { interpolateString } from '@/engine/interpreter.js';
 const scope = {
   vars: {
     filtro: {
-      kept: [
-        { nome: 'Viti M6', qta: 3 },
-        { nome: 'Dadi M8', qta: 0 },
-        { qta: 7 },
-      ],
+      kept: [{ nome: 'Viti M6', qta: 3 }, { nome: 'Dadi M8', qta: 0 }, { qta: 7 }],
     },
     vuoto: { kept: [] },
   },
@@ -33,9 +29,9 @@ const scope = {
 
 describe('scrivere un elenco leggibile', () => {
   it('estrae un campo e lo unisce', () => {
-    expect(
-      interpolateString("{{$node.filtro.json.kept | pluck:'nome' | join:', '}}", scope),
-    ).toBe('Viti M6, Dadi M8, ');
+    expect(interpolateString("{{$node.filtro.json.kept | pluck:'nome' | join:', '}}", scope)).toBe(
+      'Viti M6, Dadi M8, ',
+    );
   });
 
   /**

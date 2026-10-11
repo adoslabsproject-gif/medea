@@ -50,10 +50,7 @@ describe('il caso che è passato', () => {
   /** Il modo giusto di scriverlo: qualcuno procura il contenuto. */
   it('con un nodo che procura il contenuto tace', () => {
     const corretto = {
-      nodes: [
-        ...riassuntoSerale.nodes,
-        { id: 'posta', defId: 'trigger_imap', config: {} },
-      ],
+      nodes: [...riassuntoSerale.nodes, { id: 'posta', defId: 'trigger_imap', config: {} }],
       edges: [
         { from: 'cron', to: 'posta' },
         { from: 'posta', to: 'riassunto' },

@@ -104,17 +104,38 @@ export const debugRunFailureNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Diagnostica un\'esecuzione fallita. `suggestedFixes` sono PROPOSTE, non correzioni applicate: nessuna viene messa in atto da qui. Con la riesecuzione automatica accesa escono anche `replayCommand` e `autoReplayResult`.',
+      notes:
+        "Diagnostica un'esecuzione fallita. `suggestedFixes` sono PROPOSTE, non correzioni applicate: nessuna viene messa in atto da qui. Con la riesecuzione automatica accesa escono anche `replayCommand` e `autoReplayResult`.",
       fields: [
         { name: 'diagnosis', type: 'object', desc: 'Cosa e` andato storto e perche`.' },
-        { name: 'suggestedFixes', type: 'array', desc: 'Le correzioni proposte. Nessuna viene applicata.' },
-        { name: 'suggestedTests', type: 'array', desc: 'I test proposti per evitare che riaccada.' },
-        { name: 'runStatus', type: 'string', desc: 'Com\'e` finita l\'esecuzione esaminata.' },
+        {
+          name: 'suggestedFixes',
+          type: 'array',
+          desc: 'Le correzioni proposte. Nessuna viene applicata.',
+        },
+        {
+          name: 'suggestedTests',
+          type: 'array',
+          desc: 'I test proposti per evitare che riaccada.',
+        },
+        { name: 'runStatus', type: 'string', desc: "Com'e` finita l'esecuzione esaminata." },
         { name: 'failedNodeId', type: 'string', desc: 'Il nodo che ha fallito.' },
         { name: 'errorCategory', type: 'string', desc: 'Il tipo di errore riconosciuto.' },
-        { name: 'replayCommand', type: 'object', desc: 'Come rieseguire l\'esecuzione. Presente con la riesecuzione configurata.' },
-        { name: 'autoReplayResult', type: 'object', desc: 'L\'esito della riesecuzione automatica. Presente solo se e` stata fatta.' },
-        { name: '_llm', type: 'object', desc: 'Il consumo di token. Presente se e` stato interpellato un modello.' },
+        {
+          name: 'replayCommand',
+          type: 'object',
+          desc: "Come rieseguire l'esecuzione. Presente con la riesecuzione configurata.",
+        },
+        {
+          name: 'autoReplayResult',
+          type: 'object',
+          desc: "L'esito della riesecuzione automatica. Presente solo se e` stata fatta.",
+        },
+        {
+          name: '_llm',
+          type: 'object',
+          desc: 'Il consumo di token. Presente se e` stato interpellato un modello.',
+        },
       ],
     },
     vendor: 'flowforge',

@@ -52,11 +52,7 @@ async function inflightCount(pool: string): Promise<number> {
   return client.zcard(`llm:adm:${pool}:inflight`);
 }
 async function cleanup(pool: string): Promise<void> {
-  await client.del(
-    `llm:adm:${pool}:inflight`,
-    `llm:adm:${pool}:queue`,
-    `llm:adm:${pool}:qmeta`,
-  );
+  await client.del(`llm:adm:${pool}:inflight`, `llm:adm:${pool}:queue`, `llm:adm:${pool}:qmeta`);
 }
 const baseInput = (over: Partial<AdmissionInput> & { requestId: string }): AdmissionInput => ({
   tenantId: 't1',

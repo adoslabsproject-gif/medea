@@ -83,11 +83,24 @@ export const contactLookupNodeDef: NodeDef = {
 
   outputs: ['default'],
   outputContract: {
-    notes: 'Non trovare nessuno NON e` un errore, a meno di non chiederlo esplicitamente: `found` resta falso e `contact` null. E` il campo su cui si scrive «solo se il mittente e` in rubrica», con un `logic_if` subito dopo.',
+    notes:
+      'Non trovare nessuno NON e` un errore, a meno di non chiederlo esplicitamente: `found` resta falso e `contact` null. E` il campo su cui si scrive «solo se il mittente e` in rubrica», con un `logic_if` subito dopo.',
     fields: [
-      { name: 'found', type: 'boolean', desc: 'Se ha trovato almeno un contatto. E` il campo su cui diramare.' },
-      { name: 'contact', type: 'object|null', desc: 'Il primo risultato — con email, name, isClient, isSupplier, organization, messageCount, lastSeenAt. Null se non ha trovato nessuno.' },
-      { name: 'contacts', type: 'array', desc: 'Tutti i risultati. Cercando un indirizzo esatto ne contiene al piu` uno.' },
+      {
+        name: 'found',
+        type: 'boolean',
+        desc: 'Se ha trovato almeno un contatto. E` il campo su cui diramare.',
+      },
+      {
+        name: 'contact',
+        type: 'object|null',
+        desc: 'Il primo risultato — con email, name, isClient, isSupplier, organization, messageCount, lastSeenAt. Null se non ha trovato nessuno.',
+      },
+      {
+        name: 'contacts',
+        type: 'array',
+        desc: 'Tutti i risultati. Cercando un indirizzo esatto ne contiene al piu` uno.',
+      },
       { name: 'count', type: 'number', desc: 'Quanti contatti ha trovato.' },
     ],
   },

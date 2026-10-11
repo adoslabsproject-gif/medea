@@ -129,7 +129,11 @@ export const emailBounceTriggerNode: NodeModule = {
         { name: 'uid', type: 'number', desc: 'L’UID IMAP del messaggio di rimbalzo.' },
         { name: 'messageId', type: 'string', desc: 'Il Message-ID del rimbalzo.' },
         { name: 'subject', type: 'string', desc: 'L’oggetto, di solito generato dal server.' },
-        { name: 'from', type: 'string', desc: 'Chi ha mandato il rimbalzo (spesso MAILER-DAEMON).' },
+        {
+          name: 'from',
+          type: 'string',
+          desc: 'Chi ha mandato il rimbalzo (spesso MAILER-DAEMON).',
+        },
         { name: 'to', type: 'string', desc: 'La casella che lo ha ricevuto.' },
         { name: 'date', type: 'string', desc: 'La data del rimbalzo, in formato ISO 8601.' },
         { name: 'text', type: 'string', desc: 'Il corpo testuale del rapporto.' },

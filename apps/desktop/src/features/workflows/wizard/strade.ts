@@ -166,7 +166,6 @@ export async function costruisciWorkflow(ctx: ContestoStrade): Promise<EsitoStra
     //
     // L'agente, quando il modello non chiama gli strumenti, non costruisce
     // nulla: i suoi «problemi» descrivono un relitto, non un tentativo.
-    problemi:
-      singolo.qualityIssues.length > 0 ? singolo.qualityIssues : agente.qualityIssues,
+    problemi: singolo.qualityIssues.length > 0 ? singolo.qualityIssues : agente.qualityIssues,
   };
 }

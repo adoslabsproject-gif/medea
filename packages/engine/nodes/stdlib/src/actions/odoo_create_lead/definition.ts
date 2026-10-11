@@ -157,11 +157,16 @@ export const odooCreateLeadNodeDef: NodeDef = {
   ],
 
   outputContract: {
-    notes: '`leadId` e` il numero da riusare per le operazioni successive su quell\'opportunita`, per esempio con `action_odoo_update_activity`.',
+    notes:
+      "`leadId` e` il numero da riusare per le operazioni successive su quell'opportunita`, per esempio con `action_odoo_update_activity`.",
     fields: [
-      { name: 'success', type: 'boolean', desc: 'Sempre vero: un fallimento solleva un errore invece di uscire da qui.' },
-      { name: 'leadId', type: 'number', desc: 'L\'opportunita` creata in Odoo.' },
-      { name: 'lead', type: 'object', desc: 'L\'opportunita` come l\'ha restituita Odoo.' },
+      {
+        name: 'success',
+        type: 'boolean',
+        desc: 'Sempre vero: un fallimento solleva un errore invece di uscire da qui.',
+      },
+      { name: 'leadId', type: 'number', desc: "L'opportunita` creata in Odoo." },
+      { name: 'lead', type: 'object', desc: "L'opportunita` come l'ha restituita Odoo." },
       { name: 'tagIds', type: 'array', desc: 'Le etichette assegnate, per identificativo.' },
     ],
   },

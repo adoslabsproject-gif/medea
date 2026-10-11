@@ -118,12 +118,21 @@ export const sdiSendInvoice: NodeModule = {
       },
     ],
     outputContract: {
-      notes: '`identificativoSdi` e` il numero con cui si controllera` lo stato piu` avanti, con `italia_sdi_check_status`: senza quello la fattura non si puo` seguire. L\'invio riuscito NON significa fattura accettata — lo Sdi risponde dopo.',
+      notes:
+        "`identificativoSdi` e` il numero con cui si controllera` lo stato piu` avanti, con `italia_sdi_check_status`: senza quello la fattura non si puo` seguire. L'invio riuscito NON significa fattura accettata — lo Sdi risponde dopo.",
       fields: [
         { name: 'fileName', type: 'string', desc: 'Il nome del file trasmesso.' },
-        { name: 'identificativoSdi', type: 'string|null', desc: 'Il numero assegnato dallo Sdi: serve per controllare lo stato piu` avanti.' },
-        { name: 'dataOraRicezione', type: 'string|null', desc: 'Quando lo Sdi l\'ha ricevuta.' },
-        { name: 'signedXml', type: 'string|null', desc: 'L\'XML firmato, troncato. Null se la firma era disattivata.' },
+        {
+          name: 'identificativoSdi',
+          type: 'string|null',
+          desc: 'Il numero assegnato dallo Sdi: serve per controllare lo stato piu` avanti.',
+        },
+        { name: 'dataOraRicezione', type: 'string|null', desc: "Quando lo Sdi l'ha ricevuta." },
+        {
+          name: 'signedXml',
+          type: 'string|null',
+          desc: "L'XML firmato, troncato. Null se la firma era disattivata.",
+        },
         { name: 'rawResponse', type: 'string', desc: 'La risposta grezza dello Sdi, troncata.' },
       ],
     },
@@ -164,10 +173,15 @@ export const sdiCheckStatus: NodeModule = {
       },
     ],
     outputContract: {
-      notes: '`status` a \'unknown\' significa che la risposta non conteneva uno stato riconoscibile — non che la fattura sia in ordine.',
+      notes:
+        "`status` a 'unknown' significa che la risposta non conteneva uno stato riconoscibile — non che la fattura sia in ordine.",
       fields: [
         { name: 'fileName', type: 'string', desc: 'Il file di cui e` stato chiesto lo stato.' },
-        { name: 'status', type: 'string', desc: 'Lo stato dichiarato dallo Sdi. \'unknown\' se non e` stato riconosciuto.' },
+        {
+          name: 'status',
+          type: 'string',
+          desc: "Lo stato dichiarato dallo Sdi. 'unknown' se non e` stato riconosciuto.",
+        },
         { name: 'rawResponse', type: 'string', desc: 'La risposta grezza dello Sdi, troncata.' },
       ],
     },

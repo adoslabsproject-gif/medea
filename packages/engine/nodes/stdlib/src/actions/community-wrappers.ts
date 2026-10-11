@@ -87,10 +87,15 @@ export const communitySlackNode: NodeModule = {
     ],
     outputs: ['ok', 'ts', 'channel', 'message'],
     outputContract: {
-      notes: '`ts` e` il marcatore temporale del messaggio, ed e` cio` che serve per rispondere nel thread o per modificarlo: senza, non si puo` fare ne` l\'uno ne` l\'altro.',
+      notes:
+        "`ts` e` il marcatore temporale del messaggio, ed e` cio` che serve per rispondere nel thread o per modificarlo: senza, non si puo` fare ne` l'uno ne` l'altro.",
       fields: [
         { name: 'ok', type: 'boolean', desc: 'Se il messaggio e` stato pubblicato.' },
-        { name: 'ts', type: 'string', desc: 'Il marcatore del messaggio: serve per rispondere nel thread o modificarlo.' },
+        {
+          name: 'ts',
+          type: 'string',
+          desc: 'Il marcatore del messaggio: serve per rispondere nel thread o modificarlo.',
+        },
         { name: 'channel', type: 'string', desc: 'Il canale su cui e` stato pubblicato.' },
         { name: 'message', type: 'object', desc: 'Il messaggio come lo restituisce Slack.' },
       ],
@@ -200,8 +205,16 @@ export const communityTelegramNode: NodeModule = {
       notes: '`messageId` serve per rispondere a quel messaggio o modificarlo piu` tardi.',
       fields: [
         { name: 'ok', type: 'boolean', desc: 'Se il messaggio e` stato mandato.' },
-        { name: 'messageId', type: 'number', desc: 'Il messaggio creato: serve per rispondergli o modificarlo.' },
-        { name: 'chatId', type: 'string|number', desc: 'La conversazione su cui e` stato mandato.' },
+        {
+          name: 'messageId',
+          type: 'number',
+          desc: 'Il messaggio creato: serve per rispondergli o modificarlo.',
+        },
+        {
+          name: 'chatId',
+          type: 'string|number',
+          desc: 'La conversazione su cui e` stato mandato.',
+        },
         { name: 'date', type: 'number', desc: 'Quando e` stato mandato, in secondi dal 1970.' },
         { name: 'mode', type: 'string', desc: 'Come e` stato formattato il testo.' },
       ],
@@ -284,15 +297,20 @@ export const communityLinearNode: NodeModule = {
     ],
     outputs: ['ok', 'issueId', 'identifier', 'url', 'title', 'state', 'warnings'],
     outputContract: {
-      notes: '`identifier` e` il codice leggibile della segnalazione — quello che si scrive nei messaggi — mentre `issueId` e` l\'identificativo interno di Linear: sono due cose diverse ed e` facile scambiarle.',
+      notes:
+        "`identifier` e` il codice leggibile della segnalazione — quello che si scrive nei messaggi — mentre `issueId` e` l'identificativo interno di Linear: sono due cose diverse ed e` facile scambiarle.",
       fields: [
         { name: 'ok', type: 'boolean', desc: 'Se la segnalazione e` stata creata.' },
-        { name: 'issueId', type: 'string', desc: 'L\'identificativo interno della segnalazione.' },
+        { name: 'issueId', type: 'string', desc: "L'identificativo interno della segnalazione." },
         { name: 'identifier', type: 'string', desc: 'Il codice leggibile, quello da citare.' },
         { name: 'url', type: 'string', desc: 'Il collegamento alla segnalazione.' },
         { name: 'title', type: 'string', desc: 'Il titolo assegnato.' },
         { name: 'state', type: 'string', desc: 'Lo stato iniziale.' },
-        { name: 'warnings', type: 'array', desc: 'I problemi non bloccanti, per esempio un\'etichetta inesistente.' },
+        {
+          name: 'warnings',
+          type: 'array',
+          desc: "I problemi non bloccanti, per esempio un'etichetta inesistente.",
+        },
       ],
     },
     vendor: 'flowforge',

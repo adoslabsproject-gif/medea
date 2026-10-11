@@ -107,11 +107,24 @@ export const waitSignalNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Mette in pausa l\'esecuzione. Questi campi sono quelli con cui il nodo si registra al momento della pausa; alla ripresa il flusso riparte dai nodi a valle.',
+      notes:
+        "Mette in pausa l'esecuzione. Questi campi sono quelli con cui il nodo si registra al momento della pausa; alla ripresa il flusso riparte dai nodi a valle.",
       fields: [
-        { name: 'pausedOnSignal', type: 'string', desc: 'Il nome del segnale che il nodo sta aspettando.' },
-        { name: 'timeoutSeconds', type: 'number', desc: 'Dopo quanti secondi rinuncia ad aspettare.' },
-        { name: 'matchKey', type: 'string', desc: 'Il campo su cui riconoscere il segnale giusto fra piu` esecuzioni in attesa.' },
+        {
+          name: 'pausedOnSignal',
+          type: 'string',
+          desc: 'Il nome del segnale che il nodo sta aspettando.',
+        },
+        {
+          name: 'timeoutSeconds',
+          type: 'number',
+          desc: 'Dopo quanti secondi rinuncia ad aspettare.',
+        },
+        {
+          name: 'matchKey',
+          type: 'string',
+          desc: 'Il campo su cui riconoscere il segnale giusto fra piu` esecuzioni in attesa.',
+        },
         { name: 'matchValue', type: 'string', desc: 'Il valore che quel campo deve avere.' },
       ],
     },

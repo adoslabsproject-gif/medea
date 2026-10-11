@@ -103,9 +103,14 @@ export const registerItDomain: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Restituisce la risposta di Register.it tale e quale: i nomi dei campi sono quelli della loro API.',
+      notes:
+        'Restituisce la risposta di Register.it tale e quale: i nomi dei campi sono quelli della loro API.',
       fields: [
-        { name: '<la risposta di Register.it>', type: 'object', desc: 'Il corpo restituito dall\'API, senza nessuna trasformazione.' },
+        {
+          name: '<la risposta di Register.it>',
+          type: 'object',
+          desc: "Il corpo restituito dall'API, senza nessuna trasformazione.",
+        },
       ],
     },
     vendor: 'flowforge-italia',

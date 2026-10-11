@@ -50,9 +50,7 @@ describe('databaseDelWorkflow — una volta sola, e uno per workflow', () => {
 
   it('due chiamate insieme creano UN database, non due', async () => {
     vi.mocked(runtimeApi.get).mockImplementation(() => tardando({ databases: [] }));
-    vi.mocked(runtimeApi.post).mockImplementation(() =>
-      tardando({ database: archivio('nuovo') }),
-    );
+    vi.mocked(runtimeApi.post).mockImplementation(() => tardando({ database: archivio('nuovo') }));
 
     // Insieme, non in fila: è la situazione che rompeva.
     const [a, b] = await Promise.all([databaseDelWorkflow(7, 'x'), databaseDelWorkflow(7, 'x')]);
@@ -181,9 +179,7 @@ describe('ogni workflow il suo archivio', () => {
 
   it('l’archivio di un altro workflow non è il suo', async () => {
     vi.mocked(runtimeApi.get).mockResolvedValue({
-      databases: [
-        { id: 'altrui', name: 'x · #99', description: 'Tabelle. medea:workflow:99' },
-      ],
+      databases: [{ id: 'altrui', name: 'x · #99', description: 'Tabelle. medea:workflow:99' }],
     });
     vi.mocked(runtimeApi.post).mockResolvedValue({ database: { id: 'mio' } });
 

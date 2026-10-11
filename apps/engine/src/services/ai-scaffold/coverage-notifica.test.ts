@@ -54,10 +54,12 @@ describe('quello che non deve far scattare', () => {
    * serve.
    */
   it('non scatta su un obiettivo che non chiede di essere avvisato', () => {
-    expect(manca('Ogni mese cancella le righe più vecchie di novanta giorni.', [
-      'trigger_cron',
-      'db_delete',
-    ])).not.toContain('notifica');
+    expect(
+      manca('Ogni mese cancella le righe più vecchie di novanta giorni.', [
+        'trigger_cron',
+        'db_delete',
+      ]),
+    ).not.toContain('notifica');
   });
 
   it('non scatta sulla parola «notifica» usata come sostantivo', () => {

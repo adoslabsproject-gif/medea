@@ -69,12 +69,7 @@ describe('db workflow nodes', () => {
   // Contratto: description ≥150 char, IT first sentence, use case enumerato.
   // ────────────────────────────────────────────────────────────────────────
   describe('A3.3 stabilized DB contract', () => {
-    const A33_STABILIZED_DB_NODES = [
-      dbQueryNode,
-      dbInsertNode,
-      dbUpdateNode,
-      dbDeleteNode,
-    ];
+    const A33_STABILIZED_DB_NODES = [dbQueryNode, dbInsertNode, dbUpdateNode, dbDeleteNode];
 
     it('every A3.3 stabilized DB node has description ≥150 char + ≥25 distinct words + IT + Use case (anti-gaming)', () => {
       const englishVerbs =

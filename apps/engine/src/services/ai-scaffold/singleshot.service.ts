@@ -154,7 +154,7 @@ export function motivoPiuUtile(
   const sostanziale = (e: AiScaffoldError): boolean =>
     e.message.startsWith('Workflow rejected — quality gate') ||
     e.message.startsWith('Workflow generato con') ||
-    e.message.startsWith('Serve un\'informazione che non ho');
+    e.message.startsWith("Serve un'informazione che non ho");
   if (sostanziale(ultimo)) return ultimo;
   const ultimoEInciampo = ultimo.message.startsWith('Output del modello non conforme');
   if (ultimoEInciampo && precedente !== null && sostanziale(precedente)) return precedente;
@@ -1085,10 +1085,7 @@ Rigenera ORA applicando i fix.`;
     const soloDaChiedere =
       criticalIssues.length > 0 && criticalIssues.every((i) => i.code === 'NIENTE_DA_ELABORARE');
     if (soloDaChiedere) {
-      throw new AiScaffoldError(
-        `Serve un'informazione che non ho:\n${msg}`,
-        502,
-      );
+      throw new AiScaffoldError(`Serve un'informazione che non ho:\n${msg}`, 502);
     }
 
     throw new AiScaffoldError(

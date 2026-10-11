@@ -119,8 +119,7 @@ export async function extractWithLlm(args: ExtractWithLlmArgs): Promise<ExtractW
   // Auth: apiKey esplicita sul nodo → env dedicata. Catena su `||`, NON `??`:
   // un campo secret VUOTO salvato in config deve cadere sull'env, non
   // silenziare l'auth → 401.
-  const envKey =
-    typeof process !== 'undefined' ? (process.env.MEDEA_LLM_API_KEY ?? '').trim() : '';
+  const envKey = typeof process !== 'undefined' ? (process.env.MEDEA_LLM_API_KEY ?? '').trim() : '';
   const apiKey = (args.apiKey ?? '').trim() || envKey;
   const model = (args.model ?? '').trim();
   const maxTokens = Math.max(64, Math.min(args.maxTokens ?? 2048, 8192));

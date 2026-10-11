@@ -40,7 +40,9 @@ describe('cosa invece lascia libere le altre strade', () => {
 
   it('un output illeggibile non è un giudizio', () => {
     expect(
-      eUnVerdetto('Output del modello non conforme allo schema: output senza un oggetto JSON valido'),
+      eUnVerdetto(
+        'Output del modello non conforme allo schema: output senza un oggetto JSON valido',
+      ),
     ).toBe(false);
   });
 

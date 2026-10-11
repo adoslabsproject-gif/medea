@@ -272,9 +272,14 @@ export const convertNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Non incarta niente: l\'uscita E` il valore convertito. Verso JSON e` l\'oggetto o la lista; verso CSV e verso testo e` una stringa. A valle si legge il nodo direttamente, senza nome di campo.',
+      notes:
+        "Non incarta niente: l'uscita E` il valore convertito. Verso JSON e` l'oggetto o la lista; verso CSV e verso testo e` una stringa. A valle si legge il nodo direttamente, senza nome di campo.",
       fields: [
-        { name: '<il valore convertito>', type: 'object|array|string', desc: 'Il dato convertito, senza nessun campo intorno. La forma dipende dal formato d\'arrivo scelto.' },
+        {
+          name: '<il valore convertito>',
+          type: 'object|array|string',
+          desc: "Il dato convertito, senza nessun campo intorno. La forma dipende dal formato d'arrivo scelto.",
+        },
       ],
     },
     vendor: 'flowforge',
@@ -350,13 +355,26 @@ export const waitNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Ad attesa a tempo escono solo `waitedMs` e `mode`. In attesa di un richiamo escono anche `token`, `timedOut` e `payload`. Se l\'esecuzione viene annullata durante l\'attesa il nodo non produce niente: si ferma.',
+      notes:
+        "Ad attesa a tempo escono solo `waitedMs` e `mode`. In attesa di un richiamo escono anche `token`, `timedOut` e `payload`. Se l'esecuzione viene annullata durante l'attesa il nodo non produce niente: si ferma.",
       fields: [
         { name: 'waitedMs', type: 'number', desc: 'Quanti millisecondi ha aspettato davvero.' },
         { name: 'mode', type: 'string', desc: 'Come ha aspettato: timer, webhook o either.' },
-        { name: 'token', type: 'string', desc: 'Il gettone da mettere nell\'URL di richiamo per far ripartire l\'esecuzione. Solo in attesa di un richiamo.' },
-        { name: 'timedOut', type: 'boolean', desc: 'Vero se e` scaduto il tempo senza che nessuno abbia richiamato.' },
-        { name: 'payload', type: 'object|null', desc: 'Il corpo mandato da chi ha richiamato. Null se e` scaduto il tempo.' },
+        {
+          name: 'token',
+          type: 'string',
+          desc: "Il gettone da mettere nell'URL di richiamo per far ripartire l'esecuzione. Solo in attesa di un richiamo.",
+        },
+        {
+          name: 'timedOut',
+          type: 'boolean',
+          desc: 'Vero se e` scaduto il tempo senza che nessuno abbia richiamato.',
+        },
+        {
+          name: 'payload',
+          type: 'object|null',
+          desc: 'Il corpo mandato da chi ha richiamato. Null se e` scaduto il tempo.',
+        },
       ],
     },
     vendor: 'flowforge',
@@ -421,9 +439,14 @@ export const transformNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Non incarta niente: l\'uscita E` il risultato dell\'espressione JSONata scritta in configurazione. I nomi dei campi li decide quell\'espressione, quindi non si possono dichiarare qui: per sapere cosa esce si guarda l\'espressione.',
+      notes:
+        "Non incarta niente: l'uscita E` il risultato dell'espressione JSONata scritta in configurazione. I nomi dei campi li decide quell'espressione, quindi non si possono dichiarare qui: per sapere cosa esce si guarda l'espressione.",
       fields: [
-        { name: '<il risultato dell’espressione>', type: 'object|array|string|number', desc: 'Quello che l\'espressione JSONata restituisce, tale e quale.' },
+        {
+          name: '<il risultato dell’espressione>',
+          type: 'object|array|string|number',
+          desc: "Quello che l'espressione JSONata restituisce, tale e quale.",
+        },
       ],
     },
     vendor: 'flowforge',
@@ -554,14 +577,31 @@ export const paginateNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Gli elementi di TUTTE le pagine gia` uniti in una lista sola: a valle non serve rifare il giro.',
+      notes:
+        'Gli elementi di TUTTE le pagine gia` uniti in una lista sola: a valle non serve rifare il giro.',
       fields: [
-        { name: 'items', type: 'array', desc: 'Tutti gli elementi raccolti, pagina dopo pagina, nell\'ordine in cui sono arrivati.' },
+        {
+          name: 'items',
+          type: 'array',
+          desc: "Tutti gli elementi raccolti, pagina dopo pagina, nell'ordine in cui sono arrivati.",
+        },
         { name: 'pages', type: 'number', desc: 'Quante pagine ha percorso.' },
-        { name: 'totalCount', type: 'number', desc: 'Quanti elementi in tutto: la lunghezza di `items`.' },
+        {
+          name: 'totalCount',
+          type: 'number',
+          desc: 'Quanti elementi in tutto: la lunghezza di `items`.',
+        },
         { name: 'requestsCount', type: 'number', desc: 'Quante chiamate HTTP ha fatto.' },
-        { name: 'truncated', type: 'boolean', desc: 'Vero se si e` fermato per il tetto di pagine e non perche` i dati erano finiti: qui i risultati sono incompleti.' },
-        { name: 'finalCursor', type: 'string|null', desc: 'L\'ultimo cursore ricevuto, per riprendere da li`. Null con le strategie che non usano cursori.' },
+        {
+          name: 'truncated',
+          type: 'boolean',
+          desc: 'Vero se si e` fermato per il tetto di pagine e non perche` i dati erano finiti: qui i risultati sono incompleti.',
+        },
+        {
+          name: 'finalCursor',
+          type: 'string|null',
+          desc: "L'ultimo cursore ricevuto, per riprendere da li`. Null con le strategie che non usano cursori.",
+        },
       ],
     },
     vendor: 'flowforge',

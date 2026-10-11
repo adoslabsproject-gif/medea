@@ -221,11 +221,16 @@ export const webhookRespondNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Prepara la risposta da mandare a chi ha chiamato il webhook: la risposta parte alla FINE dell\'esecuzione, non qui. Questi campi dicono cosa e` stato preparato, non cosa e` stato consegnato.',
+      notes:
+        "Prepara la risposta da mandare a chi ha chiamato il webhook: la risposta parte alla FINE dell'esecuzione, non qui. Questi campi dicono cosa e` stato preparato, non cosa e` stato consegnato.",
       fields: [
         { name: 'status', type: 'number', desc: 'Il codice HTTP che verra` restituito.' },
         { name: 'contentType', type: 'string', desc: 'Il tipo di contenuto della risposta.' },
-        { name: 'respondWith', type: 'string', desc: 'Cosa restituira`: un testo, un JSON o il corpo di un altro nodo.' },
+        {
+          name: 'respondWith',
+          type: 'string',
+          desc: 'Cosa restituira`: un testo, un JSON o il corpo di un altro nodo.',
+        },
       ],
     },
     vendor: 'flowforge',

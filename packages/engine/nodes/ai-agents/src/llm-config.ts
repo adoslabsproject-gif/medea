@@ -44,10 +44,7 @@ export function resolveLlmConfig(
     typeof config.baseUrl === 'string' && config.baseUrl.trim() !== '' ? config.baseUrl : undefined;
 
   // Explicit per-node override (everything provided locally)
-  if (
-    overrideProvider !== '' &&
-    (overrideApiKey !== '' || overrideProvider === 'ollama')
-  ) {
+  if (overrideProvider !== '' && (overrideApiKey !== '' || overrideProvider === 'ollama')) {
     const out: ResolvedLlmConfig = {
       provider: overrideProvider,
       apiKey: overrideApiKey,

@@ -132,10 +132,14 @@ export const odooUpdateActivityNodeDef: NodeDef = {
   ],
 
   outputContract: {
-    notes: 'Crea un\'attivita` agganciata a un record: `resModel` e `resId` dicono a quale.',
+    notes: "Crea un'attivita` agganciata a un record: `resModel` e `resId` dicono a quale.",
     fields: [
-      { name: 'success', type: 'boolean', desc: 'Sempre vero: un fallimento solleva un errore invece di uscire da qui.' },
-      { name: 'activityId', type: 'number', desc: 'L\'attivita` creata.' },
+      {
+        name: 'success',
+        type: 'boolean',
+        desc: 'Sempre vero: un fallimento solleva un errore invece di uscire da qui.',
+      },
+      { name: 'activityId', type: 'number', desc: "L'attivita` creata." },
       { name: 'activityTypeId', type: 'number', desc: 'Il tipo di attivita` assegnato.' },
       { name: 'resModel', type: 'string', desc: 'Il modello del record a cui e` agganciata.' },
       { name: 'resId', type: 'number', desc: 'Il record a cui e` agganciata.' },

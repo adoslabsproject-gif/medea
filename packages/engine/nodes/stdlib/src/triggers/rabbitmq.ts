@@ -150,7 +150,11 @@ export const rabbitmqTriggerNode: NodeModule = {
      */
     outputContract: {
       fields: [
-        { name: 'data', type: 'unknown', desc: 'Il messaggio interpretato: oggetto se JSON, stringa altrimenti' },
+        {
+          name: 'data',
+          type: 'unknown',
+          desc: 'Il messaggio interpretato: oggetto se JSON, stringa altrimenti',
+        },
         { name: 'raw', type: 'string', desc: 'Il messaggio come è arrivato, non interpretato' },
         { name: 'receivedAt', type: 'string', desc: 'Quando è stato consumato, in ISO 8601' },
         {

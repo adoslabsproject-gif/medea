@@ -20,9 +20,9 @@ describe('🚨 provider che non esiste', () => {
    * che aveva un provider in più.
    */
   it('🚨 un nome sconosciuto → errore per nome, e nessuna richiesta parte', async () => {
-    await expect(
-      dispatchLLMForTest('provider-dismesso' as never, { apiKey: 'k' }),
-    ).rejects.toThrow(/provider-dismesso/u);
+    await expect(dispatchLLMForTest('provider-dismesso' as never, { apiKey: 'k' })).rejects.toThrow(
+      /provider-dismesso/u,
+    );
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

@@ -22,8 +22,7 @@ import { runtimeApi } from '../runtime/client';
 
 import { DB_READ_TOOLS, eseguiStrumentoDb, STRUMENTI_DB } from './tools-db';
 
-const dati = (r: { data: unknown }): Record<string, unknown> =>
-  r.data as Record<string, unknown>;
+const dati = (r: { data: unknown }): Record<string, unknown> => r.data as Record<string, unknown>;
 
 beforeEach(() => {
   vi.mocked(runtimeApi.get).mockReset();
@@ -89,7 +88,9 @@ describe('descrivi_tabella', () => {
 
   it('dà le colonne coi tipi', async () => {
     conTabelle();
-    const out = dati(await eseguiStrumentoDb('descrivi_tabella', { databaseId: 'db1', table: 'inbox' }));
+    const out = dati(
+      await eseguiStrumentoDb('descrivi_tabella', { databaseId: 'db1', table: 'inbox' }),
+    );
     expect(out.colonne).toEqual([
       { nome: 'id', tipo: 'text' },
       { nome: 'letta', tipo: 'text' },

@@ -132,7 +132,11 @@ export const websocketTriggerNode: NodeModule = {
      */
     outputContract: {
       fields: [
-        { name: 'data', type: 'unknown', desc: 'Il frame interpretato: oggetto se JSON, stringa altrimenti' },
+        {
+          name: 'data',
+          type: 'unknown',
+          desc: 'Il frame interpretato: oggetto se JSON, stringa altrimenti',
+        },
         { name: 'raw', type: 'string', desc: 'Il frame come è arrivato, non interpretato' },
         { name: 'receivedAt', type: 'string', desc: 'Quando è arrivato, in ISO 8601' },
         {

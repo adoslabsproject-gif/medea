@@ -103,12 +103,25 @@ export const communityHubspotNode: NodeModule = {
     ],
     outputs: ['ok', 'data', 'objectId', 'count'],
     outputContract: {
-      notes: 'La risposta di HubSpot sta tal quale in `data`: i campi si leggono da li`. `objectId` e` l\'identificativo del contatto o della trattativa toccata, quando l\'operazione ne tocca uno.',
+      notes:
+        "La risposta di HubSpot sta tal quale in `data`: i campi si leggono da li`. `objectId` e` l'identificativo del contatto o della trattativa toccata, quando l'operazione ne tocca uno.",
       fields: [
         { name: 'ok', type: 'boolean', desc: 'Se la chiamata e` riuscita.' },
-        { name: 'data', type: 'object|array', desc: 'La risposta di HubSpot, con la forma che ha per quell\'operazione.' },
-        { name: 'objectId', type: 'string|null', desc: 'L\'oggetto creato o modificato. Null quando l\'operazione non ne tocca uno.' },
-        { name: 'count', type: 'number', desc: 'Quanti elementi, quando la risposta e` una lista.' },
+        {
+          name: 'data',
+          type: 'object|array',
+          desc: "La risposta di HubSpot, con la forma che ha per quell'operazione.",
+        },
+        {
+          name: 'objectId',
+          type: 'string|null',
+          desc: "L'oggetto creato o modificato. Null quando l'operazione non ne tocca uno.",
+        },
+        {
+          name: 'count',
+          type: 'number',
+          desc: 'Quanti elementi, quando la risposta e` una lista.',
+        },
       ],
     },
     vendor: 'flowforge',

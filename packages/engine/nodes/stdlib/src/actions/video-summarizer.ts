@@ -121,16 +121,29 @@ export const videoSummarizerNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: '`warnings` va letto prima del riassunto: una trascrizione parziale o una lingua sbagliata rendono il riassunto plausibile e infedele.',
+      notes:
+        '`warnings` va letto prima del riassunto: una trascrizione parziale o una lingua sbagliata rendono il riassunto plausibile e infedele.',
       fields: [
         { name: 'transcript', type: 'string', desc: 'La trascrizione completa del parlato.' },
         { name: 'transcriptLanguage', type: 'string', desc: 'La lingua riconosciuta.' },
-        { name: 'transcriptSegments', type: 'array', desc: 'La trascrizione divisa in pezzi con i tempi.' },
+        {
+          name: 'transcriptSegments',
+          type: 'array',
+          desc: 'La trascrizione divisa in pezzi con i tempi.',
+        },
         { name: 'scenes', type: 'array', desc: 'Le scene riconosciute, coi loro tempi.' },
         { name: 'summary', type: 'object', desc: 'Il riassunto strutturato del video.' },
-        { name: 'warnings', type: 'array', desc: 'I limiti dell\'elaborazione: da leggere prima del riassunto.' },
+        {
+          name: 'warnings',
+          type: 'array',
+          desc: "I limiti dell'elaborazione: da leggere prima del riassunto.",
+        },
         { name: 'durationSec', type: 'number', desc: 'La durata del video in secondi.' },
-        { name: '_llm', type: 'object', desc: 'Il consumo di token. Presente se e` stato interpellato un modello.' },
+        {
+          name: '_llm',
+          type: 'object',
+          desc: 'Il consumo di token. Presente se e` stato interpellato un modello.',
+        },
       ],
     },
     vendor: 'flowforge',

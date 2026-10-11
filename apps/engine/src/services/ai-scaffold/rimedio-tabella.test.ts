@@ -48,9 +48,9 @@ describe('il rimedio che il gate propone', () => {
       ...cancellaDaLog,
       databases: [{ id: 'db1', tables: ['inbox', 'ordini', 'log'] }],
     };
-    expect(
-      runQualityGate(conLog).issues.some((i) => i.code === 'DB_TABLE_NOT_IN_SCHEMA'),
-    ).toBe(false);
+    expect(runQualityGate(conLog).issues.some((i) => i.code === 'DB_TABLE_NOT_IN_SCHEMA')).toBe(
+      false,
+    );
   });
 });
 

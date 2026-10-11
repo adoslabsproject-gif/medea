@@ -111,10 +111,19 @@ export const emailCleanNodeDef: NodeDef = {
   ],
 
   outputContract: {
-    notes: 'I campi in ingresso NON vengono persi: il nodo li ricopia tutti e SOSTITUISCE soltanto quello del corpo, quindi `subject`, `from` e gli altri restano leggibili a valle. Il nome del campo del corpo e` quello scelto in configurazione: non e` fisso.',
+    notes:
+      'I campi in ingresso NON vengono persi: il nodo li ricopia tutti e SOSTITUISCE soltanto quello del corpo, quindi `subject`, `from` e gli altri restano leggibili a valle. Il nome del campo del corpo e` quello scelto in configurazione: non e` fisso.',
     fields: [
-      { name: '<il campo del corpo scelto in configurazione>', type: 'string', desc: 'Il corpo ripulito da citazioni, firme e note legali, al posto dell\'originale.' },
-      { name: 'cleanReport', type: 'object', desc: 'Cosa ha tolto: removedQuotedReply, removedSignature, removedDisclaimer, trackingUrlsReplaced, originalLength, cleanedLength e reductionRatio.' },
+      {
+        name: '<il campo del corpo scelto in configurazione>',
+        type: 'string',
+        desc: "Il corpo ripulito da citazioni, firme e note legali, al posto dell'originale.",
+      },
+      {
+        name: 'cleanReport',
+        type: 'object',
+        desc: 'Cosa ha tolto: removedQuotedReply, removedSignature, removedDisclaimer, trackingUrlsReplaced, originalLength, cleanedLength e reductionRatio.',
+      },
     ],
   },
   vendor: 'flowforge',

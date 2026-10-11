@@ -173,7 +173,6 @@ describe('🚨 GET /preferences', () => {
       { provider: 'google', hasKey: true },
     ]);
   });
-
 });
 
 describe('🚨 PUT /preferences (editor required)', () => {

@@ -133,19 +133,40 @@ export const legalComplianceNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'E` un\'analisi automatica, NON un parere legale: `findings` e `recommendations` vanno letti da qualcuno prima di agirci. `chunksProcessed` dice su quanti pezzi di documento ha lavorato — su un testo lungo non e` detto che li abbia visti tutti.',
+      notes:
+        "E` un'analisi automatica, NON un parere legale: `findings` e `recommendations` vanno letti da qualcuno prima di agirci. `chunksProcessed` dice su quanti pezzi di documento ha lavorato — su un testo lungo non e` detto che li abbia visti tutti.",
       fields: [
         { name: 'score', type: 'number', desc: 'Il punteggio di conformita`.' },
-        { name: 'findings', type: 'array', desc: 'I rilievi, con gravita` e riferimento normativo.' },
+        {
+          name: 'findings',
+          type: 'array',
+          desc: 'I rilievi, con gravita` e riferimento normativo.',
+        },
         { name: 'frameworks', type: 'array', desc: 'Le normative rispetto a cui ha valutato.' },
         { name: 'recommendations', type: 'array', desc: 'Cosa propone di correggere.' },
-        { name: 'summary', type: 'string', desc: 'Il quadro d\'insieme.' },
+        { name: 'summary', type: 'string', desc: "Il quadro d'insieme." },
         { name: 'detectedType', type: 'string', desc: 'Che tipo di documento ha riconosciuto.' },
-        { name: 'chunksProcessed', type: 'number', desc: 'Su quanti pezzi di documento ha lavorato.' },
-        { name: 'knowledgeMode', type: 'string', desc: 'Da dove ha preso le norme di riferimento.' },
-        { name: 'warnings', type: 'array', desc: 'I limiti dell\'analisi: e` la prima cosa da leggere.' },
+        {
+          name: 'chunksProcessed',
+          type: 'number',
+          desc: 'Su quanti pezzi di documento ha lavorato.',
+        },
+        {
+          name: 'knowledgeMode',
+          type: 'string',
+          desc: 'Da dove ha preso le norme di riferimento.',
+        },
+        {
+          name: 'warnings',
+          type: 'array',
+          desc: "I limiti dell'analisi: e` la prima cosa da leggere.",
+        },
         { name: 'checkedAt', type: 'string', desc: 'Quando e` stata fatta, in ISO 8601.' },
-        { name: '_llm', type: 'object', desc: 'Il consumo di token. Presente se e` stato interpellato un modello.' },
+        {
+          name: '_llm',
+          type: 'object',
+          desc: 'Il consumo di token. Presente se e` stato interpellato un modello.',
+        },
       ],
     },
     vendor: 'flowforge',

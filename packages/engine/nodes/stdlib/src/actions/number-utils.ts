@@ -230,11 +230,20 @@ export const numberNode: NodeModule = {
     ],
     outputs: ['default'],
     outputContract: {
-      notes: '`result` e` il numero formattato quando l\'operazione formatta — quindi una STRINGA — mentre `raw` resta sempre il numero: per fare i conti a valle si usa `raw`, per mostrarlo `result`.',
+      notes:
+        "`result` e` il numero formattato quando l'operazione formatta — quindi una STRINGA — mentre `raw` resta sempre il numero: per fare i conti a valle si usa `raw`, per mostrarlo `result`.",
       fields: [
-        { name: 'result', type: 'number|string', desc: 'L\'esito: un numero per i calcoli, una stringa per le formattazioni.' },
+        {
+          name: 'result',
+          type: 'number|string',
+          desc: "L'esito: un numero per i calcoli, una stringa per le formattazioni.",
+        },
         { name: 'raw', type: 'number', desc: 'Il numero letto, sempre numerico.' },
-        { name: 'operation', type: 'string', desc: 'L\'operazione eseguita. Assente nelle formattazioni.' },
+        {
+          name: 'operation',
+          type: 'string',
+          desc: "L'operazione eseguita. Assente nelle formattazioni.",
+        },
         { name: 'currency', type: 'string', desc: 'La valuta usata. Solo formattando un importo.' },
       ],
     },
@@ -343,15 +352,24 @@ export const aggregateNode: NodeModule = {
     ],
     outputs: ['default'],
     outputContract: {
-      notes: 'Le statistiche sono SEMPRE al primo livello, anche chiedendone una sola: `count`, `sum`, `avg`, `min`, `max`, `median`, `stddev` si leggono direttamente. `result` e` in piu` — l\'intero gruppo con l\'operazione \'all\', il singolo valore altrimenti.',
+      notes:
+        "Le statistiche sono SEMPRE al primo livello, anche chiedendone una sola: `count`, `sum`, `avg`, `min`, `max`, `median`, `stddev` si leggono direttamente. `result` e` in piu` — l'intero gruppo con l'operazione 'all', il singolo valore altrimenti.",
       fields: [
-        { name: 'result', type: 'object|number', desc: 'Tutte le statistiche insieme con \'all\', il solo valore chiesto altrimenti.' },
+        {
+          name: 'result',
+          type: 'object|number',
+          desc: "Tutte le statistiche insieme con 'all', il solo valore chiesto altrimenti.",
+        },
         { name: 'count', type: 'number', desc: 'Quanti numeri ha considerato.' },
         { name: 'sum', type: 'number', desc: 'La somma.' },
         { name: 'avg', type: 'number', desc: 'La media.' },
         { name: 'min', type: 'number', desc: 'Il minimo. Zero su una lista vuota.' },
         { name: 'max', type: 'number', desc: 'Il massimo. Zero su una lista vuota.' },
-        { name: 'median', type: 'number', desc: 'La mediana, meno sensibile ai valori estremi della media.' },
+        {
+          name: 'median',
+          type: 'number',
+          desc: 'La mediana, meno sensibile ai valori estremi della media.',
+        },
         { name: 'stddev', type: 'number', desc: 'La deviazione standard.' },
       ],
     },

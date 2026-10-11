@@ -284,8 +284,16 @@ export const dbChangeTriggerNode: NodeModule = {
      */
     outputContract: {
       fields: [
-        { name: 'changeId', type: 'string', desc: 'Identificativo del cambiamento, utile per la deduplica' },
-        { name: 'op', type: "'insert' | 'update' | 'delete'", desc: "L'operazione avvenuta sulla riga" },
+        {
+          name: 'changeId',
+          type: 'string',
+          desc: 'Identificativo del cambiamento, utile per la deduplica',
+        },
+        {
+          name: 'op',
+          type: "'insert' | 'update' | 'delete'",
+          desc: "L'operazione avvenuta sulla riga",
+        },
         { name: 'databaseId', type: 'string', desc: 'Il database in cui è avvenuta' },
         { name: 'tableName', type: 'string', desc: 'La tabella in cui è avvenuta' },
         {
@@ -293,7 +301,11 @@ export const dbChangeTriggerNode: NodeModule = {
           type: 'object',
           desc: 'La riga coinvolta; su delete contiene i valori PRIMA della cancellazione',
         },
-        { name: 'createdAt', type: 'string', desc: 'Quando il cambiamento è stato registrato, in ISO 8601' },
+        {
+          name: 'createdAt',
+          type: 'string',
+          desc: 'Quando il cambiamento è stato registrato, in ISO 8601',
+        },
       ],
     },
     vendor: 'flowforge',

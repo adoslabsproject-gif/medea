@@ -67,10 +67,7 @@ const TRIGGER_SENZA_CONTENUTO: ReadonlySet<string> = new Set(['trigger_cron']);
  * quello che gli arriva dal nodo prima — ed è allora che un trigger a tempo
  * diventa un problema.
  */
-const CAMPI_CHE_INDICANO_LA_SORGENTE: ReadonlySet<string> = new Set([
-  'items',
-  'sourceExpression',
-]);
+const CAMPI_CHE_INDICANO_LA_SORGENTE: ReadonlySet<string> = new Set(['items', 'sourceExpression']);
 
 /** `defId` dei nodi che aspettano il contenuto dall'ingresso. Letto una volta. */
 let attesaCache: ReadonlySet<string> | null = null;
@@ -119,8 +116,10 @@ function haUnaSorgentePropria(config: Record<string, unknown>): boolean {
 function cosaCE(input: QualityGateInput): string {
   const tabelle = (input.databases ?? []).flatMap((d) => d.tables);
   if (tabelle.length === 0) {
-    return 'Nel tuo archivio non c\'è ancora nessuna tabella: di\' da dove leggere i dati (una ' +
-      'tabella da creare, un indirizzo web, la posta) e il workflow si completa.';
+    return (
+      "Nel tuo archivio non c'è ancora nessuna tabella: di' da dove leggere i dati (una " +
+      'tabella da creare, un indirizzo web, la posta) e il workflow si completa.'
+    );
   }
   const elenco = tabelle
     .slice(0, 8)
@@ -128,7 +127,7 @@ function cosaCE(input: QualityGateInput): string {
     .join(', ');
   return (
     `Le tabelle che hai sono ${elenco}${tabelle.length > 8 ? ' e altre' : ''}: ` +
-    'se i dati stanno in una di queste dillo nell\'obiettivo, altrimenti indica dove ' +
+    "se i dati stanno in una di queste dillo nell'obiettivo, altrimenti indica dove " +
     'prenderli (un indirizzo web, la posta) o chiedi di creare la tabella.'
   );
 }
@@ -176,7 +175,7 @@ export function checkNienteDaElaborare(input: QualityGateInput): QualityIssue[] 
       nodeId: node.id,
       message:
         `"${node.id}" (${node.defId}) lavora sul contenuto che riceve, ma a monte c'è solo un ` +
-        'trigger a tempo, che produce un istante e nient\'altro: elaborerebbe l\'orario in cui è ' +
+        "trigger a tempo, che produce un istante e nient'altro: elaborerebbe l'orario in cui è " +
         'scattato, e lo farebbe senza errori. ' +
         `Manca il nodo che procura i dati, e va detto DOVE stanno. ${cosaCE(input)}`,
     });

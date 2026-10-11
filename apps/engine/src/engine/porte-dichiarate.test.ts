@@ -98,13 +98,19 @@ describe('la porta nominata si rispetta', () => {
    */
   it('il ramo scartato non fa partire chi aspetta quello tenuto', async () => {
     const e = motore(scegliePorta('filtro', 'removed', ['kept', 'removed']), foglia('avviso'));
-    await esegui(e, workflow(['filtro', 'avviso'], [{ from: 'filtro', to: 'avviso', fromPort: 'kept' }]));
+    await esegui(
+      e,
+      workflow(['filtro', 'avviso'], [{ from: 'filtro', to: 'avviso', fromPort: 'kept' }]),
+    );
     expect(girati).toEqual(['filtro']);
   });
 
   it('e il ramo giusto lo fa partire', async () => {
     const e = motore(scegliePorta('filtro', 'kept', ['kept', 'removed']), foglia('avviso'));
-    await esegui(e, workflow(['filtro', 'avviso'], [{ from: 'filtro', to: 'avviso', fromPort: 'kept' }]));
+    await esegui(
+      e,
+      workflow(['filtro', 'avviso'], [{ from: 'filtro', to: 'avviso', fromPort: 'kept' }]),
+    );
     expect(girati).toEqual(['filtro', 'avviso']);
   });
 

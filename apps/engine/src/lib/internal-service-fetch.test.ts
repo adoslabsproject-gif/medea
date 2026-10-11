@@ -145,13 +145,7 @@ describe('registro — env override + memoizzazione', () => {
    */
   it('🚨 internalServiceUrls() espone i 5 servizi noti, e nessun servizio LLM', () => {
     const u = internalServiceUrls();
-    expect(Object.keys(u).sort()).toEqual([
-      'codeRunner',
-      'portal',
-      'runtime',
-      'vision',
-      'whisper',
-    ]);
+    expect(Object.keys(u).sort()).toEqual(['codeRunner', 'portal', 'runtime', 'vision', 'whisper']);
   });
 
   it('i default dei servizi sono coerenti col registro (no drift)', () => {

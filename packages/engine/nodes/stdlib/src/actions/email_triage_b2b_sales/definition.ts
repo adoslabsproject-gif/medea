@@ -94,14 +94,23 @@ export const emailTriageB2BSalesNodeDef: NodeDef = {
     },
   ],
   outputContract: {
-    notes: 'I campi in ingresso NON vengono persi: il nodo li ricopia e ci aggiunge i propri. Quando l\'esito e` \'needs_human_review\' la bozza di risposta esce VUOTA di proposito: non c\'e` niente da mandare senza che qualcuno guardi.',
+    notes:
+      "I campi in ingresso NON vengono persi: il nodo li ricopia e ci aggiunge i propri. Quando l'esito e` 'needs_human_review' la bozza di risposta esce VUOTA di proposito: non c'e` niente da mandare senza che qualcuno guardi.",
     fields: [
       { name: 'label', type: 'string', desc: 'La categoria riconosciuta della richiesta.' },
       { name: 'confidence', type: 'number', desc: 'Quanto e` sicuro, da 0 a 1.' },
-      { name: 'matchedKeywords', type: 'array', desc: 'I termini che hanno fatto scattare la categoria.' },
+      {
+        name: 'matchedKeywords',
+        type: 'array',
+        desc: 'I termini che hanno fatto scattare la categoria.',
+      },
       { name: 'language', type: 'string', desc: 'La lingua riconosciuta del messaggio.' },
       { name: 'suggestedAction', type: 'string', desc: 'Cosa propone di fare.' },
-      { name: 'replyDraft', type: 'string', desc: 'La bozza di risposta. Vuota quando serve una revisione umana.' },
+      {
+        name: 'replyDraft',
+        type: 'string',
+        desc: 'La bozza di risposta. Vuota quando serve una revisione umana.',
+      },
     ],
   },
   vendor: 'flowforge',

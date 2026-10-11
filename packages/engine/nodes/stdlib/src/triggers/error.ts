@@ -53,7 +53,8 @@ export const errorTriggerNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Il fallimento che ha chiamato questo workflow: quale nodo, con che errore, in quale esecuzione.',
+      notes:
+        'Il fallimento che ha chiamato questo workflow: quale nodo, con che errore, in quale esecuzione.',
       fields: [
         { name: 'failedNodeId', type: 'string', desc: 'L’id del nodo che ha fallito.' },
         { name: 'error', type: 'string', desc: 'Il messaggio d’errore.' },

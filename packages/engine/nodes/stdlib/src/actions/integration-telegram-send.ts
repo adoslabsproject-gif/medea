@@ -122,7 +122,11 @@ export const integrationTelegramSendNode: NodeModule = {
       fields: [
         { name: 'ok', type: 'boolean', desc: 'Se il messaggio e` stato mandato.' },
         { name: 'messageId', type: 'number', desc: 'Il messaggio creato.' },
-        { name: 'chatId', type: 'string|number', desc: 'La conversazione su cui e` stato mandato.' },
+        {
+          name: 'chatId',
+          type: 'string|number',
+          desc: 'La conversazione su cui e` stato mandato.',
+        },
         { name: 'date', type: 'number', desc: 'Quando e` stato mandato, in secondi dal 1970.' },
         { name: 'mode', type: 'string', desc: 'Come e` stato formattato il testo.' },
       ],

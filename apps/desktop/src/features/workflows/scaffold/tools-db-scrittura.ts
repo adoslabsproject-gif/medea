@@ -42,10 +42,7 @@ const TIPI = ['text', 'integer', 'real', 'boolean', 'datetime', 'json'] as const
  *
  * Torna `true` solo se una persona ha detto di sì. Assente = non si scrive.
  */
-export type ChiediConferma = (richiesta: {
-  titolo: string;
-  dettaglio: string;
-}) => Promise<boolean>;
+export type ChiediConferma = (richiesta: { titolo: string; dettaglio: string }) => Promise<boolean>;
 
 /** I nomi degli strumenti che scrivono: servono a chi smista le chiamate. */
 export const STRUMENTI_DB_SCRITTURA = new Set(['crea_tabella', 'scrivi_righe']);
@@ -127,7 +124,9 @@ async function creaTabella(
   const databaseId = str(args.databaseId);
   const nome = str(args.name).toLowerCase();
   if (!databaseId || !nome) {
-    return { data: { error: 'Servono `databaseId` e `name`. Prendi l’archivio da `elenca_tabelle`.' } };
+    return {
+      data: { error: 'Servono `databaseId` e `name`. Prendi l’archivio da `elenca_tabelle`.' },
+    };
   }
   if (!/^[a-z][a-z0-9_]*$/.test(nome)) {
     return {
@@ -193,7 +192,9 @@ async function creaTabella(
     return { data: { creata: nome, colonne: colonne.map((c) => c.name) } };
   } catch (e) {
     return {
-      data: { error: `Non sono riuscito a creare «${nome}»: ${e instanceof Error ? e.message : String(e)}` },
+      data: {
+        error: `Non sono riuscito a creare «${nome}»: ${e instanceof Error ? e.message : String(e)}`,
+      },
     };
   }
 }

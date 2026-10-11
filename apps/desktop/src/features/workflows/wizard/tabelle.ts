@@ -68,9 +68,7 @@ export function pianoArricchito(
   // «Ogni workflow le sue tabelle» vale per quelle che il workflow CREA. Una
   // tabella nominata dall'utente e che esiste già è sua, e va usata: duplicarla
   // significa separargli i dati in silenzio.
-  const gia = new Set(
-    archiviEsistenti.flatMap((d) => d.tables).map((t) => t.toLowerCase()),
-  );
+  const gia = new Set(archiviEsistenti.flatMap((d) => d.tables).map((t) => t.toLowerCase()));
   const piano = planTables(workflow).filter((t) => !gia.has(t.name.toLowerCase()));
   if (!dalMotore || dalMotore.length === 0) return piano;
 
@@ -82,9 +80,7 @@ export function pianoArricchito(
   );
 
   const tipoBuono = (t: string | undefined): PlannedTable['columns'][number]['type'] | null =>
-    t !== undefined && TIPI_NOTI.has(t)
-      ? (t as PlannedTable['columns'][number]['type'])
-      : null;
+    t !== undefined && TIPI_NOTI.has(t) ? (t as PlannedTable['columns'][number]['type']) : null;
 
   return piano.map((tabella) => {
     const dichiarate = perTabella.get(tabella.name);
@@ -157,7 +153,9 @@ export async function preparaTabelle(
     return {
       create: [],
       gia: [],
-      problemi: [`non ho potuto parlare con l’archivio: ${e instanceof Error ? e.message : String(e)}`],
+      problemi: [
+        `non ho potuto parlare con l’archivio: ${e instanceof Error ? e.message : String(e)}`,
+      ],
     };
   }
 }
@@ -221,7 +219,9 @@ export function puntaAllArchivio(
     return { ...n, config: { ...n.config, databaseId } };
   });
 
-  return ripuntati === 0 ? { workflow, ripuntati: 0 } : { workflow: { ...workflow, nodes }, ripuntati };
+  return ripuntati === 0
+    ? { workflow, ripuntati: 0 }
+    : { workflow: { ...workflow, nodes }, ripuntati };
 }
 
 /** La frase da mostrare dopo l'importazione. Vuota se non c'era niente da fare. */

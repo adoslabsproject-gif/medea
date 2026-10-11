@@ -101,8 +101,10 @@ function campiDelleRegole(config: Record<string, unknown>): string[] {
   }
   const regole = Array.isArray(letto)
     ? letto
-    : letto !== null && typeof letto === 'object' && Array.isArray((letto as { rules?: unknown }).rules)
-      ? ((letto as { rules: unknown[] }).rules)
+    : letto !== null &&
+        typeof letto === 'object' &&
+        Array.isArray((letto as { rules?: unknown }).rules)
+      ? (letto as { rules: unknown[] }).rules
       : [];
 
   const nomi: string[] = [];
@@ -181,7 +183,7 @@ export function checkListaCheNonArriva(input: QualityGateInput): QualityIssue[] 
         'i campi su cui filtra sono i campi di quel record, non di un elenco. ' +
         'Il filtro riceverebbe zero elementi, ' +
         'non ne farebbe passare nessuno, e i nodi a valle partirebbero lo stesso — cioè ' +
-        'l\'avviso scatterebbe SEMPRE, anche quando la condizione non è vera. ' +
+        "l'avviso scatterebbe SEMPRE, anche quando la condizione non è vera. " +
         'Per decidere su un singolo elemento usa `logic_if` con `conditionRules`, e collega il ' +
         'ramo "true" a quello che deve succedere. Tieni `action_filter` per quando gli elementi ' +
         'sono molti (le righe di una query, gli allegati, gli articoli di un feed).',

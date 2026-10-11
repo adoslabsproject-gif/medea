@@ -182,16 +182,29 @@ export const loopNode: NodeModule = {
     outputs: ['body', 'done'],
     branching: true,
     outputContract: {
-      notes: 'I risultati del corpo del ciclo stanno in `results`, uno per iterazione: e` da li` che si leggono i dati prodotti dentro il ciclo, non dal nodo del corpo (che gira N volte e non ha un output solo). Con la politica \'continua sugli errori\' il ciclo riesce anche con `failed` maggiore di zero: guardare `errors` prima di dare per buono il risultato.',
+      notes:
+        "I risultati del corpo del ciclo stanno in `results`, uno per iterazione: e` da li` che si leggono i dati prodotti dentro il ciclo, non dal nodo del corpo (che gira N volte e non ha un output solo). Con la politica 'continua sugli errori' il ciclo riesce anche con `failed` maggiore di zero: guardare `errors` prima di dare per buono il risultato.",
       fields: [
         { name: 'iterations', type: 'number', desc: 'Quante iterazioni ha fatto.' },
         { name: 'succeeded', type: 'number', desc: 'Quante sono andate a buon fine.' },
         { name: 'failed', type: 'number', desc: 'Quante hanno fallito.' },
         { name: 'skipped', type: 'number', desc: 'Quante sono state saltate.' },
-        { name: 'results', type: 'array', desc: 'Il risultato di ogni iterazione, nell\'ordine degli elementi in ingresso.' },
-        { name: 'errors', type: 'array', desc: 'Gli errori raccolti, uno per iterazione fallita. Vuoto se e` filato tutto liscio.' },
+        {
+          name: 'results',
+          type: 'array',
+          desc: "Il risultato di ogni iterazione, nell'ordine degli elementi in ingresso.",
+        },
+        {
+          name: 'errors',
+          type: 'array',
+          desc: 'Gli errori raccolti, uno per iterazione fallita. Vuoto se e` filato tutto liscio.',
+        },
         { name: 'totalDurationMs', type: 'number', desc: 'Quanto e` durato il ciclo intero.' },
-        { name: 'strategy', type: 'string', desc: 'Come ha iterato: sequenziale, parallelo o a lotti.' },
+        {
+          name: 'strategy',
+          type: 'string',
+          desc: 'Come ha iterato: sequenziale, parallelo o a lotti.',
+        },
       ],
     },
     vendor: 'flowforge',
@@ -265,12 +278,29 @@ export const mergeNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'La forma dipende dalla strategia, ed e` la differenza che fa sbagliare le espressioni. Con \'all\' (predefinita) escono `branches` e `branchCount`. Con \'concat-arrays\' escono la lista unita — sotto il nome scelto in configurazione, di norma `results` — piu` `branchCount` e `totalItems`. Con \'any\', \'first\' o \'last\' NON esce nessuno di questi campi: esce l\'output del ramo scelto tal quale, con la sua forma.',
+      notes:
+        "La forma dipende dalla strategia, ed e` la differenza che fa sbagliare le espressioni. Con 'all' (predefinita) escono `branches` e `branchCount`. Con 'concat-arrays' escono la lista unita — sotto il nome scelto in configurazione, di norma `results` — piu` `branchCount` e `totalItems`. Con 'any', 'first' o 'last' NON esce nessuno di questi campi: esce l'output del ramo scelto tal quale, con la sua forma.",
       fields: [
-        { name: 'branches', type: 'object', desc: 'L\'output di ogni ramo, sotto l\'id del nodo che l\'ha prodotto. Solo con la strategia \'all\'.' },
-        { name: 'branchCount', type: 'number', desc: 'Quanti rami ha raccolto. Con \'all\' e con \'concat-arrays\'.' },
-        { name: 'results', type: 'array', desc: 'Gli elementi di tutti i rami in una lista sola. Solo con \'concat-arrays\', e sotto il nome scelto in configurazione.' },
-        { name: 'totalItems', type: 'number', desc: 'Quanti elementi ha unito. Solo con \'concat-arrays\'.' },
+        {
+          name: 'branches',
+          type: 'object',
+          desc: "L'output di ogni ramo, sotto l'id del nodo che l'ha prodotto. Solo con la strategia 'all'.",
+        },
+        {
+          name: 'branchCount',
+          type: 'number',
+          desc: "Quanti rami ha raccolto. Con 'all' e con 'concat-arrays'.",
+        },
+        {
+          name: 'results',
+          type: 'array',
+          desc: "Gli elementi di tutti i rami in una lista sola. Solo con 'concat-arrays', e sotto il nome scelto in configurazione.",
+        },
+        {
+          name: 'totalItems',
+          type: 'number',
+          desc: "Quanti elementi ha unito. Solo con 'concat-arrays'.",
+        },
       ],
     },
     vendor: 'flowforge',
@@ -315,9 +345,7 @@ export const delayNode: NodeModule = {
     ],
     outputContract: {
       notes: 'Aspetta e basta: non tocca i dati e non ne aggiunge altri.',
-      fields: [
-        { name: 'delayedMs', type: 'number', desc: 'Quanti millisecondi ha aspettato.' },
-      ],
+      fields: [{ name: 'delayedMs', type: 'number', desc: 'Quanti millisecondi ha aspettato.' }],
     },
     vendor: 'flowforge',
     version: '1.0.0',

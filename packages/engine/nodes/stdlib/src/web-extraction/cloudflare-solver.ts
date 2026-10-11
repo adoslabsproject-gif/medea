@@ -107,15 +107,28 @@ export const cloudflareSolverNode: NodeModule = {
       'Workflow tipico: 1) cloudflare_solver(url) → cookies+UA, 2) web_fetch_advanced(url, cookies=output.cookieHeader, UA=output.userAgent) → HTML reale.\n\n' +
       'Use case: (1) monitoraggio uptime di propria pagina dietro CF, (2) audit periodico content proprio sito Cloudflare-protected, (3) integrazione partner B2B che usa CF managed challenge, (4) scraping pricing pages proprie multi-region.',
     outputContract: {
-      notes: 'Serve a ottenere i cookie con cui le richieste successive passano il filtro: `cookieHeader` e `userAgent` vanno rimessi INSIEME nelle chiamate a valle — cambiare l\'agente invalida il cookie.',
+      notes:
+        "Serve a ottenere i cookie con cui le richieste successive passano il filtro: `cookieHeader` e `userAgent` vanno rimessi INSIEME nelle chiamate a valle — cambiare l'agente invalida il cookie.",
       fields: [
         { name: 'cookies', type: 'array', desc: 'I cookie ottenuti, uno per elemento.' },
-        { name: 'cookieHeader', type: 'string', desc: 'Gli stessi cookie gia` pronti da mettere nell\'header di una richiesta.' },
+        {
+          name: 'cookieHeader',
+          type: 'string',
+          desc: "Gli stessi cookie gia` pronti da mettere nell'header di una richiesta.",
+        },
         { name: 'cfClearance', type: 'string', desc: 'Il cookie che vale come lasciapassare.' },
-        { name: 'userAgent', type: 'string', desc: 'L\'agente usato: va tenuto identico nelle chiamate successive.' },
-        { name: 'html', type: 'string', desc: 'L\'HTML della pagina una volta superato il filtro.' },
+        {
+          name: 'userAgent',
+          type: 'string',
+          desc: "L'agente usato: va tenuto identico nelle chiamate successive.",
+        },
+        { name: 'html', type: 'string', desc: "L'HTML della pagina una volta superato il filtro." },
         { name: 'finalUrl', type: 'string', desc: 'Dove e` arrivato.' },
-        { name: 'sessionId', type: 'string', desc: 'La sessione, per riusare lo stesso lasciapassare.' },
+        {
+          name: 'sessionId',
+          type: 'string',
+          desc: 'La sessione, per riusare lo stesso lasciapassare.',
+        },
       ],
     },
     vendor: 'flowforge',

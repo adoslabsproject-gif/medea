@@ -310,10 +310,19 @@ export const dbQueryNode: NodeModule = {
       { key: 'offset', label: 'Offset', type: 'number', required: false },
     ],
     outputContract: {
-      notes: 'Le righe stanno in `rows`, ed e` da li` che si leggono: `{{$node.<id>.json.rows}}` per la lista intera, `rows[0].<colonna>` per la prima. Un limite c\'e` SEMPRE, anche lasciando il campo vuoto: cento righe di predefinito, diecimila al massimo. Nessuna riga trovata NON e` un errore — `rows` e` una lista vuota e `rowCount` e` 0.',
+      notes:
+        "Le righe stanno in `rows`, ed e` da li` che si leggono: `{{$node.<id>.json.rows}}` per la lista intera, `rows[0].<colonna>` per la prima. Un limite c'e` SEMPRE, anche lasciando il campo vuoto: cento righe di predefinito, diecimila al massimo. Nessuna riga trovata NON e` un errore — `rows` e` una lista vuota e `rowCount` e` 0.",
       fields: [
-        { name: 'rows', type: 'array', desc: 'Le righe trovate, una per elemento, con le colonne come campi.' },
-        { name: 'rowCount', type: 'number', desc: 'Quante righe sono tornate. E` la lunghezza di `rows`, non il totale della tabella.' },
+        {
+          name: 'rows',
+          type: 'array',
+          desc: 'Le righe trovate, una per elemento, con le colonne come campi.',
+        },
+        {
+          name: 'rowCount',
+          type: 'number',
+          desc: 'Quante righe sono tornate. E` la lunghezza di `rows`, non il totale della tabella.',
+        },
         { name: 'durationMs', type: 'number', desc: 'Quanto ci ha messo la lettura.' },
       ],
     },
@@ -362,14 +371,35 @@ export const dbInsertNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Con «ignora i conflitti» acceso, una riga gia` presente NON fa fallire il nodo: escono invece `ok`, `alreadyExisted` a vero e `table` — e in quel caso `insertedId` NON c\'e`. E` la differenza da controllare prima di usare l\'id.',
+      notes:
+        "Con «ignora i conflitti» acceso, una riga gia` presente NON fa fallire il nodo: escono invece `ok`, `alreadyExisted` a vero e `table` — e in quel caso `insertedId` NON c'e`. E` la differenza da controllare prima di usare l'id.",
       fields: [
-        { name: 'affectedRows', type: 'number', desc: 'Quante righe ha scritto: una, in condizioni normali.' },
-        { name: 'insertedId', type: 'number', desc: 'L\'id della riga appena creata. Assente quando la riga esisteva gia`.' },
+        {
+          name: 'affectedRows',
+          type: 'number',
+          desc: 'Quante righe ha scritto: una, in condizioni normali.',
+        },
+        {
+          name: 'insertedId',
+          type: 'number',
+          desc: "L'id della riga appena creata. Assente quando la riga esisteva gia`.",
+        },
         { name: 'durationMs', type: 'number', desc: 'Quanto ci ha messo la scrittura.' },
-        { name: 'ok', type: 'boolean', desc: 'Presente SOLO quando la riga esisteva gia` e il conflitto e` stato ignorato.' },
-        { name: 'alreadyExisted', type: 'boolean', desc: 'Vero quando non ha scritto niente perche` la riga c\'era gia`.' },
-        { name: 'table', type: 'string', desc: 'La tabella su cui stava scrivendo. Presente nel caso della riga gia` esistente.' },
+        {
+          name: 'ok',
+          type: 'boolean',
+          desc: 'Presente SOLO quando la riga esisteva gia` e il conflitto e` stato ignorato.',
+        },
+        {
+          name: 'alreadyExisted',
+          type: 'boolean',
+          desc: "Vero quando non ha scritto niente perche` la riga c'era gia`.",
+        },
+        {
+          name: 'table',
+          type: 'string',
+          desc: 'La tabella su cui stava scrivendo. Presente nel caso della riga gia` esistente.',
+        },
       ],
     },
     vendor: 'flowforge',
@@ -427,7 +457,8 @@ export const dbUpdateNode: NodeModule = {
       'aggiornare dati nel database',
     ],
     outputContract: {
-      notes: '`affectedRows` a zero significa che il filtro non ha trovato nessuna riga: il nodo riesce lo stesso, quindi e` il campo da guardare per sapere se e` successo davvero qualcosa. Un filtro vuoto non e` ammesso: il nodo si rifiuta di aggiornare tutta la tabella.',
+      notes:
+        '`affectedRows` a zero significa che il filtro non ha trovato nessuna riga: il nodo riesce lo stesso, quindi e` il campo da guardare per sapere se e` successo davvero qualcosa. Un filtro vuoto non e` ammesso: il nodo si rifiuta di aggiornare tutta la tabella.',
       fields: [
         { name: 'affectedRows', type: 'number', desc: 'Quante righe sono state modificate.' },
         { name: 'durationMs', type: 'number', desc: 'Quanto ci ha messo.' },
@@ -476,7 +507,8 @@ export const dbDeleteNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: '`affectedRows` a zero significa che il filtro non ha trovato niente: il nodo riesce lo stesso. Un filtro vuoto non e` ammesso, e la conferma esplicita e` obbligatoria: il nodo si rifiuta di svuotare una tabella.',
+      notes:
+        '`affectedRows` a zero significa che il filtro non ha trovato niente: il nodo riesce lo stesso. Un filtro vuoto non e` ammesso, e la conferma esplicita e` obbligatoria: il nodo si rifiuta di svuotare una tabella.',
       fields: [
         { name: 'affectedRows', type: 'number', desc: 'Quante righe sono state cancellate.' },
         { name: 'durationMs', type: 'number', desc: 'Quanto ci ha messo.' },
@@ -757,14 +789,27 @@ export const dbInsertBatchNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Scrive una testata e le sue righe figlie in un colpo solo. Con «ignora i conflitti», una testata gia` presente NON fa fallire il nodo: `alreadyExisted` diventa vero, `headerId` e` quello della riga che c\'era gia`, e le righe figlie NON vengono riscritte — c\'erano gia` anche quelle. E` il caso da controllare prima di dare per fatta la scrittura.',
+      notes:
+        "Scrive una testata e le sue righe figlie in un colpo solo. Con «ignora i conflitti», una testata gia` presente NON fa fallire il nodo: `alreadyExisted` diventa vero, `headerId` e` quello della riga che c'era gia`, e le righe figlie NON vengono riscritte — c'erano gia` anche quelle. E` il caso da controllare prima di dare per fatta la scrittura.",
       fields: [
-        { name: 'headerId', type: 'number', desc: 'La testata scritta, o quella che esisteva gia`. E` il riferimento da usare a valle.' },
+        {
+          name: 'headerId',
+          type: 'number',
+          desc: 'La testata scritta, o quella che esisteva gia`. E` il riferimento da usare a valle.',
+        },
         { name: 'childCount', type: 'number', desc: 'Quante righe figlie ha scritto.' },
         { name: 'headerTable', type: 'string', desc: 'La tabella della testata.' },
         { name: 'childTable', type: 'string', desc: 'La tabella delle righe figlie.' },
-        { name: 'alreadyExisted', type: 'boolean', desc: 'Vero se la testata c\'era gia` e non e` stato scritto niente.' },
-        { name: 'note', type: 'string', desc: 'La spiegazione del caso di testata gia` presente. Presente solo in quel caso.' },
+        {
+          name: 'alreadyExisted',
+          type: 'boolean',
+          desc: "Vero se la testata c'era gia` e non e` stato scritto niente.",
+        },
+        {
+          name: 'note',
+          type: 'string',
+          desc: 'La spiegazione del caso di testata gia` presente. Presente solo in quel caso.',
+        },
       ],
     },
     vendor: 'flowforge',
@@ -857,9 +902,14 @@ export const dbSqlQueryNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Con piu` istruzioni SQL, `rows` contiene le righe della PRIMA soltanto. Nessuna riga trovata non e` un errore: lista vuota e `rowCount` a 0.',
+      notes:
+        'Con piu` istruzioni SQL, `rows` contiene le righe della PRIMA soltanto. Nessuna riga trovata non e` un errore: lista vuota e `rowCount` a 0.',
       fields: [
-        { name: 'rows', type: 'array', desc: 'Le righe della prima istruzione, con le colonne come campi.' },
+        {
+          name: 'rows',
+          type: 'array',
+          desc: 'Le righe della prima istruzione, con le colonne come campi.',
+        },
         { name: 'rowCount', type: 'number', desc: 'Quante righe sono tornate.' },
         { name: 'durationMs', type: 'number', desc: 'Quanto ci ha messo.' },
       ],
@@ -928,11 +978,16 @@ export const dbRemoteSshQueryNode: NodeModule = {
       'leggi db cliente via ssh',
     ],
     outputContract: {
-      notes: 'Interroga un database raggiungibile solo attraverso una macchina remota. Le righe stanno in `rows`, come per `db_query`. Nessuna riga non e` un errore: lista vuota e `rowCount` a 0.',
+      notes:
+        'Interroga un database raggiungibile solo attraverso una macchina remota. Le righe stanno in `rows`, come per `db_query`. Nessuna riga non e` un errore: lista vuota e `rowCount` a 0.',
       fields: [
         { name: 'rows', type: 'array', desc: 'Le righe trovate, con le colonne come campi.' },
         { name: 'rowCount', type: 'number', desc: 'Quante righe sono tornate.' },
-        { name: 'durationMs', type: 'number', desc: 'Quanto ci ha messo, il collegamento remoto compreso.' },
+        {
+          name: 'durationMs',
+          type: 'number',
+          desc: 'Quanto ci ha messo, il collegamento remoto compreso.',
+        },
       ],
     },
     vendor: 'flowforge',
@@ -1021,10 +1076,15 @@ export const ragSearchNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'I pezzi recuperati arrivano gia` INCAPSULATI come dati non fidati: e` la difesa contro le istruzioni nascoste in un documento indicizzato. Passarli a un modello smontando quell\'involucro riapre la porta.',
+      notes:
+        "I pezzi recuperati arrivano gia` INCAPSULATI come dati non fidati: e` la difesa contro le istruzioni nascoste in un documento indicizzato. Passarli a un modello smontando quell'involucro riapre la porta.",
       fields: [
         { name: 'query', type: 'string', desc: 'La domanda con cui ha cercato.' },
-        { name: 'results', type: 'array', desc: 'I pezzi trovati, gia` incapsulati come dati non fidati, ognuno col suo punteggio.' },
+        {
+          name: 'results',
+          type: 'array',
+          desc: 'I pezzi trovati, gia` incapsulati come dati non fidati, ognuno col suo punteggio.',
+        },
       ],
     },
     vendor: 'flowforge',
@@ -1108,10 +1168,15 @@ export const ragIngestNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: '`upserted` distingue un documento aggiunto da uno aggiornato: reindicizzare lo stesso documento non lo duplica.',
+      notes:
+        '`upserted` distingue un documento aggiunto da uno aggiornato: reindicizzare lo stesso documento non lo duplica.',
       fields: [
         { name: 'id', type: 'string', desc: 'Il documento indicizzato.' },
-        { name: 'upserted', type: 'boolean', desc: 'Se e` stato aggiunto o aggiornato al posto di un documento esistente.' },
+        {
+          name: 'upserted',
+          type: 'boolean',
+          desc: 'Se e` stato aggiunto o aggiornato al posto di un documento esistente.',
+        },
       ],
     },
     vendor: 'flowforge',

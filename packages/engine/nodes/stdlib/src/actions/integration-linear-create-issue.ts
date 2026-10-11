@@ -112,15 +112,20 @@ export const integrationLinearCreateIssueNode: NodeModule = {
     ],
     outputs: ['ok', 'issueId', 'identifier', 'url', 'title', 'state', 'warnings'],
     outputContract: {
-      notes: '`identifier` e` il codice leggibile della segnalazione — quello da citare — mentre `issueId` e` l\'identificativo interno di Linear: sono due cose diverse.',
+      notes:
+        "`identifier` e` il codice leggibile della segnalazione — quello da citare — mentre `issueId` e` l'identificativo interno di Linear: sono due cose diverse.",
       fields: [
         { name: 'ok', type: 'boolean', desc: 'Se la segnalazione e` stata creata.' },
-        { name: 'issueId', type: 'string', desc: 'L\'identificativo interno della segnalazione.' },
+        { name: 'issueId', type: 'string', desc: "L'identificativo interno della segnalazione." },
         { name: 'identifier', type: 'string', desc: 'Il codice leggibile, quello da citare.' },
         { name: 'url', type: 'string', desc: 'Il collegamento alla segnalazione.' },
         { name: 'title', type: 'string', desc: 'Il titolo assegnato.' },
         { name: 'state', type: 'string', desc: 'Lo stato iniziale.' },
-        { name: 'warnings', type: 'array', desc: 'I problemi non bloccanti, per esempio un\'etichetta inesistente.' },
+        {
+          name: 'warnings',
+          type: 'array',
+          desc: "I problemi non bloccanti, per esempio un'etichetta inesistente.",
+        },
       ],
     },
     vendor: 'flowforge',

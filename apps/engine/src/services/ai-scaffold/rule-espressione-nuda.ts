@@ -104,7 +104,8 @@ export function checkEspressioneNuda(input: QualityGateInput): QualityIssue[] {
 
           monte ??= antenati(node.id, input.edges);
           const produttore = input.nodes.find(
-            (altro) => monte?.has(altro.id) === true && perDefId.get(altro.defId)?.has(nome) === true,
+            (altro) =>
+              monte?.has(altro.id) === true && perDefId.get(altro.defId)?.has(nome) === true,
           );
           if (!produttore) continue;
 

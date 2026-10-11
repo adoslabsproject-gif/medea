@@ -62,14 +62,27 @@ export const fileReadNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Due forme, e cambiano il nome del campo che contiene i dati. Con una codifica di TESTO (utf8, utf16le — configurazione, JSON, CSV) esce `content` come stringa. Con qualunque altra esce `binary`, un riferimento ai byte, e `content` NON c\'e`: leggerlo darebbe sempre vuoto.',
+      notes:
+        "Due forme, e cambiano il nome del campo che contiene i dati. Con una codifica di TESTO (utf8, utf16le — configurazione, JSON, CSV) esce `content` come stringa. Con qualunque altra esce `binary`, un riferimento ai byte, e `content` NON c'e`: leggerlo darebbe sempre vuoto.",
       fields: [
         { name: 'path', type: 'string', desc: 'Il percorso assoluto del file letto.' },
-        { name: 'content', type: 'string', desc: 'Il contenuto come testo. Solo con codifica di testo.' },
-        { name: 'binary', type: 'object', desc: 'Il riferimento ai byte, con tipo MIME e nome del file. Solo con codifica binaria.' },
+        {
+          name: 'content',
+          type: 'string',
+          desc: 'Il contenuto come testo. Solo con codifica di testo.',
+        },
+        {
+          name: 'binary',
+          type: 'object',
+          desc: 'Il riferimento ai byte, con tipo MIME e nome del file. Solo con codifica binaria.',
+        },
         { name: 'size', type: 'number', desc: 'La dimensione del file in byte.' },
-        { name: 'encoding', type: 'string', desc: 'La codifica usata per leggerlo. Solo nella forma testuale.' },
-        { name: 'mtime', type: 'string', desc: 'L\'ultima modifica del file, in formato ISO 8601.' },
+        {
+          name: 'encoding',
+          type: 'string',
+          desc: 'La codifica usata per leggerlo. Solo nella forma testuale.',
+        },
+        { name: 'mtime', type: 'string', desc: "L'ultima modifica del file, in formato ISO 8601." },
       ],
     },
     vendor: 'flowforge',
@@ -138,13 +151,26 @@ export const fileWriteNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Scrivendo byte esce anche `binary` a vero; scrivendo testo quel campo non c\'e`. In aggiunta a un file esistente `bytesWritten` conta solo i byte AGGIUNTI, mentre `size` e` il file intero: sono due numeri diversi ed e` facile confonderli.',
+      notes:
+        "Scrivendo byte esce anche `binary` a vero; scrivendo testo quel campo non c'e`. In aggiunta a un file esistente `bytesWritten` conta solo i byte AGGIUNTI, mentre `size` e` il file intero: sono due numeri diversi ed e` facile confonderli.",
       fields: [
         { name: 'path', type: 'string', desc: 'Il percorso assoluto del file scritto.' },
-        { name: 'bytesWritten', type: 'number', desc: 'Quanti byte ha scritto in questa operazione.' },
+        {
+          name: 'bytesWritten',
+          type: 'number',
+          desc: 'Quanti byte ha scritto in questa operazione.',
+        },
         { name: 'size', type: 'number', desc: 'La dimensione del file dopo la scrittura.' },
-        { name: 'mode', type: 'string', desc: 'Come ha scritto: sovrascrivendo o aggiungendo in coda.' },
-        { name: 'binary', type: 'boolean', desc: 'Vero quando ha scritto byte e non testo. Assente scrivendo testo.' },
+        {
+          name: 'mode',
+          type: 'string',
+          desc: 'Come ha scritto: sovrascrivendo o aggiungendo in coda.',
+        },
+        {
+          name: 'binary',
+          type: 'boolean',
+          desc: 'Vero quando ha scritto byte e non testo. Assente scrivendo testo.',
+        },
       ],
     },
     vendor: 'flowforge',

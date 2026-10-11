@@ -125,9 +125,9 @@ describe('🚨 Provider whitelist + BYOK resolution', () => {
         'Nessun provider LLM configurato. Vai in Settings → AI Providers e aggiungi almeno una API key.',
       );
     });
-    await expect(
-      llmCompleteExecutor({ prompt: 'x' } as never, {} as never, ctx()),
-    ).rejects.toThrow(/Settings → AI Providers/u);
+    await expect(llmCompleteExecutor({ prompt: 'x' } as never, {} as never, ctx())).rejects.toThrow(
+      /Settings → AI Providers/u,
+    );
     expect(dispatchMock).not.toHaveBeenCalled();
   });
 

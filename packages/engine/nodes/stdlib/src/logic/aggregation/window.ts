@@ -172,16 +172,41 @@ export const windowNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Le finestre sono un oggetto: la chiave e` l\'inizio della finestra in ISO 8601, il valore gli elementi che vi cadono. Gli elementi senza data non vengono persi: finiscono in `undated`.',
+      notes:
+        "Le finestre sono un oggetto: la chiave e` l'inizio della finestra in ISO 8601, il valore gli elementi che vi cadono. Gli elementi senza data non vengono persi: finiscono in `undated`.",
       fields: [
-        { name: 'windows', type: 'object', desc: 'Gli elementi di ogni finestra, sotto la chiave dell\'istante in cui la finestra comincia.' },
+        {
+          name: 'windows',
+          type: 'object',
+          desc: "Gli elementi di ogni finestra, sotto la chiave dell'istante in cui la finestra comincia.",
+        },
         { name: 'windowCount', type: 'number', desc: 'Quante finestre non vuote.' },
-        { name: 'totalItems', type: 'number', desc: 'Quanti elementi erano entrati, quelli senza data compresi.' },
-        { name: 'undated', type: 'array', desc: 'Gli elementi da cui non si e` potuta leggere una data: sono fuori da ogni finestra.' },
+        {
+          name: 'totalItems',
+          type: 'number',
+          desc: 'Quanti elementi erano entrati, quelli senza data compresi.',
+        },
+        {
+          name: 'undated',
+          type: 'array',
+          desc: 'Gli elementi da cui non si e` potuta leggere una data: sono fuori da ogni finestra.',
+        },
         { name: 'undatedCount', type: 'number', desc: 'Quanti sono.' },
-        { name: 'granularity', type: 'string', desc: 'Il passo usato: fixed, hour, day, week, month.' },
-        { name: 'timezone', type: 'string', desc: 'Il fuso con cui sono stati calcolati i confini delle finestre.' },
-        { name: 'windowSizeSec', type: 'number', desc: 'L\'ampiezza in secondi. Presente SOLO con passo fixed.' },
+        {
+          name: 'granularity',
+          type: 'string',
+          desc: 'Il passo usato: fixed, hour, day, week, month.',
+        },
+        {
+          name: 'timezone',
+          type: 'string',
+          desc: 'Il fuso con cui sono stati calcolati i confini delle finestre.',
+        },
+        {
+          name: 'windowSizeSec',
+          type: 'number',
+          desc: "L'ampiezza in secondi. Presente SOLO con passo fixed.",
+        },
       ],
     },
     vendor: 'flowforge',

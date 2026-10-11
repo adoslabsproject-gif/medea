@@ -6,7 +6,7 @@
 
 ## Il problema
 
-Il wizard genera workflow che *sembrano* giusti e non funzionano, sempre per lo
+Il wizard genera workflow che _sembrano_ giusti e non funzionano, sempre per lo
 stesso motivo: le espressioni leggono campi che non esistono.
 
 Il modello riceveva, per ogni nodo del catalogo, il nome e **cosa accetta in
@@ -60,7 +60,7 @@ resta per rileggere l'originale quando serve confrontarsi con lui.
 
 **Un contratto sbagliato è peggio di nessun contratto.** Senza, il modello
 indovina e a volte azzecca; con un contratto errato scrive espressioni rotte
-*con fiducia*, e noi le abbiamo benedette.
+_con fiducia_, e noi le abbiamo benedette.
 
 `apps/engine/src/executors/contratti-output.guard.test.ts` prende ogni campo
 dichiarato e lo cerca nel sorgente che lo produce. Due scelte lo rendono
@@ -71,7 +71,7 @@ sostenibile:
   andata fuori sincrono al primo nodo spostato, e un guard fuori sincrono è un
   guard che non guarda. `SORGENTI_EXTRA` copre solo i payload che nascono
   altrove — i trigger che riusano il poller di un altro, i nodi di diramazione
-  il cui output nasce in una *strategia* del motore.
+  il cui output nasce in una _strategia_ del motore.
 - **Il confronto è sul testo, non sull'esecuzione**: far girare gli executor
   vorrebbe dire un server IMAP, un broker Kafka e una casella PEC in piedi per
   controllare l'ortografia di una chiave. La deriva che conta — un nome che

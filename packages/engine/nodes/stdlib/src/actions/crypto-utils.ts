@@ -231,12 +231,21 @@ export const cryptoNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Verificando una firma esce anche `valid`, ed e` quello il campo su cui decidere: `result` c\'e` comunque e contiene il valore calcolato, che da solo non dice se il confronto e` andato bene.',
+      notes:
+        "Verificando una firma esce anche `valid`, ed e` quello il campo su cui decidere: `result` c'e` comunque e contiene il valore calcolato, che da solo non dice se il confronto e` andato bene.",
       fields: [
-        { name: 'result', type: 'string', desc: 'Il valore calcolato — impronta, firma o cifratura — nella codifica scelta.' },
-        { name: 'valid', type: 'boolean', desc: 'Se la firma corrisponde. Presente SOLO verificando.' },
-        { name: 'operation', type: 'string', desc: 'L\'operazione eseguita.' },
-        { name: 'algorithm', type: 'string', desc: 'L\'algoritmo usato.' },
+        {
+          name: 'result',
+          type: 'string',
+          desc: 'Il valore calcolato — impronta, firma o cifratura — nella codifica scelta.',
+        },
+        {
+          name: 'valid',
+          type: 'boolean',
+          desc: 'Se la firma corrisponde. Presente SOLO verificando.',
+        },
+        { name: 'operation', type: 'string', desc: "L'operazione eseguita." },
+        { name: 'algorithm', type: 'string', desc: "L'algoritmo usato." },
         { name: 'encoding', type: 'string', desc: 'In che codifica e` scritto `result`.' },
       ],
     },
@@ -355,9 +364,14 @@ export const uuidNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Chiedendone UNO escono sia `id` sia `ids`; chiedendone piu` d\'uno esce solo `ids` — `id` NON c\'e`. Un\'espressione che legge sempre `id` si rompe appena si alza il numero.',
+      notes:
+        "Chiedendone UNO escono sia `id` sia `ids`; chiedendone piu` d'uno esce solo `ids` — `id` NON c'e`. Un'espressione che legge sempre `id` si rompe appena si alza il numero.",
       fields: [
-        { name: 'id', type: 'string', desc: 'L\'identificativo generato. Presente SOLO quando se ne chiede uno.' },
+        {
+          name: 'id',
+          type: 'string',
+          desc: "L'identificativo generato. Presente SOLO quando se ne chiede uno.",
+        },
         { name: 'ids', type: 'array', desc: 'Tutti gli identificativi generati. Presente sempre.' },
       ],
     },
@@ -532,15 +546,32 @@ export const jwtNode: NodeModule = {
       },
     ],
     outputContract: {
-      notes: 'Tre forme diverse. FIRMANDO escono `token` e `payload`. VERIFICANDO escono `verified`, `signatureValid`, `expired` e `payload` — e badare a `verified`, non a `signatureValid`: una firma giusta su un token SCADUTO da` `signatureValid` vero e `verified` falso. DECODIFICANDO senza chiave escono `header`, `payload` e `verified` sempre falso, perche` non ha controllato niente.',
+      notes:
+        'Tre forme diverse. FIRMANDO escono `token` e `payload`. VERIFICANDO escono `verified`, `signatureValid`, `expired` e `payload` — e badare a `verified`, non a `signatureValid`: una firma giusta su un token SCADUTO da` `signatureValid` vero e `verified` falso. DECODIFICANDO senza chiave escono `header`, `payload` e `verified` sempre falso, perche` non ha controllato niente.',
       fields: [
         { name: 'token', type: 'string', desc: 'Il token firmato. Solo firmando.' },
-        { name: 'payload', type: 'object|null', desc: 'Il contenuto del token. Null se non si e` potuto leggere.' },
-        { name: 'header', type: 'object', desc: 'L\'intestazione del token. Solo decodificando.' },
-        { name: 'verified', type: 'boolean', desc: 'Vero solo se la firma e` giusta E il token non e` scaduto. E` il campo su cui fidarsi.' },
-        { name: 'signatureValid', type: 'boolean', desc: 'Se la sola firma corrisponde, scadenza a parte. Solo verificando.' },
+        {
+          name: 'payload',
+          type: 'object|null',
+          desc: 'Il contenuto del token. Null se non si e` potuto leggere.',
+        },
+        { name: 'header', type: 'object', desc: "L'intestazione del token. Solo decodificando." },
+        {
+          name: 'verified',
+          type: 'boolean',
+          desc: 'Vero solo se la firma e` giusta E il token non e` scaduto. E` il campo su cui fidarsi.',
+        },
+        {
+          name: 'signatureValid',
+          type: 'boolean',
+          desc: 'Se la sola firma corrisponde, scadenza a parte. Solo verificando.',
+        },
         { name: 'expired', type: 'boolean', desc: 'Se il token e` scaduto. Solo verificando.' },
-        { name: 'error', type: 'string', desc: 'Cosa non ha funzionato nella lettura del token. Presente solo in quel caso.' },
+        {
+          name: 'error',
+          type: 'string',
+          desc: 'Cosa non ha funzionato nella lettura del token. Presente solo in quel caso.',
+        },
       ],
     },
     vendor: 'flowforge',
