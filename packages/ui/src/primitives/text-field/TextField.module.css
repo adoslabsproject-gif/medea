@@ -71,6 +71,35 @@
     color: var(--color-text-muted);
   }
 
+  /* L'«occhio» e la «x» che Windows aggiunge da solo ai campi: l'occhio
+     sparisce al primo carattere di un campo controllato. Chi vuole guardare
+     la password usa `revealable`, che si comporta uguale su ogni sistema. */
+  .input::-ms-reveal,
+  .input::-ms-clear {
+    display: none;
+  }
+
+  .reveal {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    font: inherit;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .reveal:hover {
+    color: var(--color-text-primary);
+  }
+  .reveal:focus-visible {
+    outline: 2px solid var(--color-accent-default);
+    outline-offset: 2px;
+  }
+
   .slot {
     display: inline-flex;
     align-items: center;

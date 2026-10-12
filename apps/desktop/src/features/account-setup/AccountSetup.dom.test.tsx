@@ -42,6 +42,28 @@ describe('la configurazione del primo account', () => {
     expect(screen.queryByRole('button', { name: /Guarda prima l’app/ })).toBeNull();
   });
 
+  /**
+   * Su Windows l'«occhio» era quello che il sistema aggiunge da solo ai campi
+   * password: compare all'inizio, e appena si digita la password torna
+   * nascosta e l'occhio sparisce. Ora il pulsante è di Medea, e resta.
+   */
+  it('la password si può guardare, e resta visibile mentre la si digita', () => {
+    render(<AccountSetup onSaved={vi.fn()} onSkip={vi.fn()} />);
+    const campo: HTMLInputElement = screen.getByLabelText('Password');
+    expect(campo.type).toBe('password');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mostra password' }));
+    expect(campo.type).toBe('text');
+
+    fireEvent.change(campo, { target: { value: 'abcd' } });
+    fireEvent.change(campo, { target: { value: 'abcd efgh' } });
+    expect(campo.type).toBe('text');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nascondi password' }));
+    expect(campo.type).toBe('password');
+    expect(campo.value).toBe('abcd efgh');
+  });
+
   it('il menù dei provider elenca le scelte, con Gmail per prima', () => {
     render(<AccountSetup onSaved={vi.fn()} onSkip={vi.fn()} />);
     const select: HTMLSelectElement = screen.getByLabelText('Provider');

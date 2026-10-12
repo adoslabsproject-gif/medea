@@ -1,4 +1,4 @@
-import { forwardRef, useId } from 'react';
+import { forwardRef, useId, useState } from 'react';
 
 import styles from './TextField.module.css';
 import type { TextFieldProps } from './TextField.types';
@@ -15,6 +15,8 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
     startSlot,
     endSlot,
     fullWidth = false,
+    revealable = false,
+    type,
     id: idProp,
     className,
     'aria-describedby': describedByProp,
@@ -22,6 +24,8 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
   },
   ref,
 ) {
+  const [revealed, setRevealed] = useState(false);
+  const canReveal = revealable && type === 'password';
   const reactId = useId();
   const id = idProp ?? `${reactId}-input`;
   const hintId = hint ? `${id}-hint` : undefined;
@@ -45,12 +49,27 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
         )}
         <input
           {...rest}
+          type={canReveal && revealed ? 'text' : type}
           ref={ref}
           id={id}
           className={styles.input}
           aria-invalid={status === 'error' || undefined}
           aria-describedby={describedBy}
         />
+        {canReveal && (
+          <button
+            type="button"
+            className={styles.reveal}
+            aria-label={revealed ? 'Nascondi password' : 'Mostra password'}
+            aria-pressed={revealed}
+            aria-controls={id}
+            onClick={() => {
+              setRevealed((v) => !v);
+            }}
+          >
+            {revealed ? '🙈' : '👁'}
+          </button>
+        )}
         {endSlot && (
           <span className={styles.slot} aria-hidden>
             {endSlot}

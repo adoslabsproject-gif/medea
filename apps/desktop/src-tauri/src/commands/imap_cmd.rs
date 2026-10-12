@@ -497,3 +497,7 @@ fn all_text_ids(hv: &HeaderValue<'_>) -> Vec<String> {
         _ => Vec::new(),
     }
 }
+
+#[cfg(test)]
+#[path = "imap_cmd_rete_tests.rs"]
+mod rete;
