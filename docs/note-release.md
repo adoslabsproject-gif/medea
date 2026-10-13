@@ -52,6 +52,14 @@ fra versioni ed elenco dei form pubblici.
 Windows, contro i 9 delle versioni fino alla 0.3.0. Quei 9 MB erano un editor
 che disegnava automazioni e non ne eseguiva nessuna.
 
+## Novità della 0.7.1
+
+Una versione di pulizia, senza funzioni nuove. Il codice del motore conteneva
+alcuni riferimenti interni — indirizzi di server e dati di esempio presi da un
+progetto precedente — che non dovevano stare in un programma distribuito.
+Sono stati tolti, e le versioni precedenti sono state ritirate. Per chi usa
+Medea non cambia niente.
+
 ## Novità della 0.7.0
 
 **L'assistente cerca sul web, con qualunque modello.** Due strumenti nuovi:
