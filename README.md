@@ -181,6 +181,7 @@ OpenAI-compatibile e con Claude in abbonamento tramite la CLI.
 | **Documenti**         | `document_list` `document_compose_html` `document_compose_chart` `document_compose_table` `document_compose_invoice` `document_compose_letter` `document_compose_csv` `document_create_quote` `document_create_order`                                       |
 | **Analisi**           | `analytics_top_customers` `analytics_top_articles` `analytics_email_volume` `analytics_customer_churn`                                                                                                                                                      |
 | **Sistema**           | `datetime` `system_status`                                                                                                                                                                                                                                  |
+| **Web**               | `web_search` `web_fetch`                                                                                                                                                                                                                                    |
 
 </details>
 
@@ -188,6 +189,10 @@ OpenAI-compatibile e con Claude in abbonamento tramite la CLI.
 > **Niente azioni a sorpresa.** Gli strumenti che modificano i dati sospendono
 > il turno e chiedono conferma esplicita. Le bozze non partono da sole: `email_draft`,
 > `email_reply` ed `email_send` preparano il messaggio, l'invio resta un tuo click.
+>
+> **Il web a porte controllate.** La ricerca parte da sola; la prima pagina di ogni
+> sito la confermi tu, vedendo l'indirizzo. L'assistente non può aprire indirizzi
+> della tua macchina o della tua rete: esce solo verso internet.
 
 ---
 
@@ -209,16 +214,18 @@ flowchart LR
     style T fill:#1e293b,stroke:#475569,color:#e2e8f0
 ```
 
-| Modalità         | Come funziona                                                                     | Costo             |
-| ---------------- | --------------------------------------------------------------------------------- | ----------------- |
-| **BYOK**         | La tua API key, custodita nel **portachiavi di sistema**                          | a consumo         |
-| **Endpoint tuo** | Qualsiasi server OpenAI-compatibile: vLLM, gateway privato                        | il tuo            |
-| **Abbonamento**  | Lancia la CLI `claude` già autenticata; gli strumenti di Medea passano da **MCP** | incluso nel piano |
+| Modalità         | Come funziona                                                                    | Costo             |
+| ---------------- | -------------------------------------------------------------------------------- | ----------------- |
+| **BYOK**         | La tua API key, custodita nel **portachiavi di sistema**                         | a consumo         |
+| **Endpoint tuo** | Qualsiasi server OpenAI-compatibile: vLLM, gateway privato                       | il tuo            |
+| **Abbonamento**  | **Claude Code dentro il pannello**: i suoi strumenti più quelli di Medea via MCP | incluso nel piano |
 
 > [!TIP]
-> Con la modalità abbonamento Medea non vede né conserva credenziali: l'autenticazione
-> resta della CLI. Il binario `medea-mcp` espone gli strumenti a qualsiasi client MCP —
-> Claude Code, Claude Desktop, Cursor.
+> Con la modalità abbonamento il pannello è Claude Code: testo che scorre, scelta del
+> modello e della cartella di lavoro, comandi con `/`. Ogni comando o modifica di file
+> compare nel pannello e parte solo col tuo sì. Medea non vede né conserva credenziali:
+> l'autenticazione resta della CLI. Il binario `medea-mcp` espone gli strumenti a
+> qualsiasi client MCP — Claude Code, Claude Desktop, Cursor.
 
 **Privacy per costruzione**: email e allegati restano sul tuo disco in SQLite. La CSP
 blocca le richieste remote dai messaggi, quindi i **tracker pixel non partono**.

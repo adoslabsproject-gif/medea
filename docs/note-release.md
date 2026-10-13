@@ -52,6 +52,29 @@ fra versioni ed elenco dei form pubblici.
 Windows, contro i 9 delle versioni fino alla 0.3.0. Quei 9 MB erano un editor
 che disegnava automazioni e non ne eseguiva nessuna.
 
+## Novità della 0.7.0
+
+**L'assistente cerca sul web, con qualunque modello.** Due strumenti nuovi:
+cerca, e apre una pagina per leggerla. Senza fare niente usa DuckDuckGo; in
+Impostazioni → Modelli AI puoi mettere una chiave Tavily o Brave. La ricerca
+parte da sola. La prima pagina di ogni sito te la fa confermare, mostrandoti
+l'indirizzo: è una protezione, perché un'email può contenere istruzioni rivolte
+al modello. Se preferisci, la conferma si toglie dalle stesse impostazioni.
+
+**Con l'abbonamento, il pannello è Claude Code.** Scegliendo «Claude
+(abbonamento)» non hai più una chat che passa per la CLI: hai Claude Code, con
+tutti i suoi strumenti e in più quelli di Medea.
+
+- Il testo scorre mentre viene scritto, e vedi quale strumento sta usando.
+- Ogni comando, scrittura o modifica di file compare nel pannello con quello che
+  sta per fare, e parte solo se premi il tasto.
+- Scegli il modello e la cartella in cui lavora. Senza una cartella lavora
+  isolato e non tocca i tuoi file.
+- Scrivendo `/` compaiono i comandi di Claude Code.
+- Il turno si può fermare, e la conversazione riprende da dove era.
+
+Usa le tue impostazioni di Claude Code, come nel terminale.
+
 ## Novità della 0.6.0
 
 **Medea non porta più con sé un modello.** Il servizio gratuito a cui si
