@@ -995,7 +995,7 @@ Rigenera ORA applicando i fix.`;
   // ─── AUTO-HEAL DB-TABLE (l'AUTOMAZIONE) — se un db_insert/update scrive colonne
   // che NON matchano la tabella (il modello ha RICICLATO una tabella scollegata, es.
   // `orders` per dati prezzo), ripunta alla tabella giusta o ne CREA una dedicata.
-  // Becca il bug reale Anti-fraud (mario-rossi). Muta parsed in place.
+  // Becca il bug reale Anti-fraud. Muta parsed in place.
   // SOLO DB locali scrivibili: lo heal ripunta SCRITTURE (db_insert/update) e crea
   // tabelle → mai contro un DB esterno read-only (es. NHA). Senza questo filtro lo
   // heal poteva ripuntare una scrittura a una tabella remota con colonne combacianti.

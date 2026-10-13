@@ -179,11 +179,11 @@ describe('GET /:id/webhook-url — authMode none (il fix "no-token")', () => {
     expect(
       ((await (await app.request('/wf1/webhook-url')).json()) as Payload).webhook.url,
     ).toBeNull();
-    process.env.MEDEA_PUBLIC_BASE_URL = 'https://rossi.app.automazionezeli.com/';
+    process.env.MEDEA_PUBLIC_BASE_URL = 'https://acme.app.automazionezeli.com/';
     resetConfigForTests();
     const body = (await (await app.request('/wf1/webhook-url')).json()) as Payload;
     expect(body.webhook.url).toBe(
-      `https://rossi.app.automazionezeli.com/webhooks/wf1/${deriveDefaultWebhookToken('wf1')}`,
+      `https://acme.app.automazionezeli.com/webhooks/wf1/${deriveDefaultWebhookToken('wf1')}`,
     );
   });
 });

@@ -243,7 +243,7 @@ function ProfileTab() {
             onChange={(e) => {
               setProfile({ ...profile, displayName: e.target.value });
             }}
-            placeholder="Es. mario-rossi"
+            placeholder="Es. Mario Rossi"
             fullWidth
           />
           <TextField

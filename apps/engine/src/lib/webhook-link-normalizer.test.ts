@@ -133,14 +133,14 @@ describe('conservatività — nel dubbio NON toccare (con motivo registrato)', (
 
   it('link ASSOLUTO: convertito solo se same-host, host estraneo intatto', async () => {
     const t = deadToken('wf_abs');
-    const mine = `https://rossi.app.automazionezeli.com/webhooks/wf_abs/${t}`;
+    const mine = `https://acme.app.automazionezeli.com/webhooks/wf_abs/${t}`;
     const foreign = `https://altro-tenant.example.com/webhooks/wf_abs/${t}`;
     const {
       nodes: out,
       converted,
       skipped,
     } = await normalizeNodesWebhookLinks([node({ mine, foreign })], makeLookup(), {
-      sameHosts: ['rossi.app.automazionezeli.com'],
+      sameHosts: ['acme.app.automazionezeli.com'],
     });
     expect(converted).toBe(1);
     const cfg = (out[0] as { config: { mine: string; foreign: string } }).config;
@@ -218,11 +218,11 @@ describe("defaultSameHosts — host del tenant dall'env di provisioning", () => 
   });
 
   it('unisce base URL + CORS origins, dedup, lowercase, ignora origin malformate', () => {
-    process.env.MEDEA_PUBLIC_BASE_URL = 'https://rossi.app.automazionezeli.com';
+    process.env.MEDEA_PUBLIC_BASE_URL = 'https://Acme.app.automazionezeli.com';
     process.env.CORS_ORIGINS =
-      'https://rossi.app.automazionezeli.com, https://flowforge.automazionezeli.com, non-un-url,';
+      'https://acme.app.automazionezeli.com, https://flowforge.automazionezeli.com, non-un-url,';
     const hosts = defaultSameHosts();
-    expect(hosts).toContain('rossi.app.automazionezeli.com');
+    expect(hosts).toContain('acme.app.automazionezeli.com');
     expect(hosts).toContain('flowforge.automazionezeli.com');
     expect(hosts).toHaveLength(2);
   });

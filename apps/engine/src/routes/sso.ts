@@ -367,7 +367,7 @@ export function createSSORoutes(): Hono {
    * token in query (sarebbe leak in access_log) — invece mostra pagina
    * con CTA che ri-lancia il flow ufficiale dal portal `/sso/launch`.
    *
-   * Fix 2026-05-31 (user-segnalato sub-user utente84): refresh dopo
+   * Fix 2026-05-31 (segnalato da un sotto-utente): refresh dopo
    * cold-start container mostrava 404 secco → ora pagina friendly +
    * link "Riprova" che ri-genera JWE dal portal.
    */

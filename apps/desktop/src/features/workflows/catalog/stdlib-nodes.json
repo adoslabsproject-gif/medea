@@ -11268,8 +11268,8 @@
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
-        "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
+        "placeholder": "es. claude-sonnet-5-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-5-5, gpt-4o, gemini-3.8-flash."
       },
       {
         "key": "baseUrl",
@@ -11353,8 +11353,8 @@
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
-        "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
+        "placeholder": "es. claude-sonnet-5-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-5-5, gpt-4o, gemini-3.8-flash."
       },
       {
         "key": "baseUrl",
@@ -11443,8 +11443,8 @@
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
-        "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
+        "placeholder": "es. claude-sonnet-5-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-5-5, gpt-4o, gemini-3.8-flash."
       },
       {
         "key": "baseUrl",
@@ -11808,8 +11808,8 @@
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
-        "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
+        "placeholder": "es. claude-sonnet-5-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-5-5, gpt-4o, gemini-3.8-flash."
       },
       {
         "key": "baseUrl",
@@ -11907,8 +11907,8 @@
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
-        "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
+        "placeholder": "es. claude-sonnet-5-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-5-5, gpt-4o, gemini-3.8-flash."
       },
       {
         "key": "baseUrl",
@@ -12000,8 +12000,8 @@
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
-        "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
+        "placeholder": "es. claude-sonnet-5-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-5-5, gpt-4o, gemini-3.8-flash."
       },
       {
         "key": "baseUrl",
@@ -12223,8 +12223,8 @@
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
-        "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
+        "placeholder": "es. claude-sonnet-5-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-5-5, gpt-4o, gemini-3.8-flash."
       },
       {
         "key": "baseUrl",
@@ -12331,8 +12331,8 @@
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
-        "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
+        "placeholder": "es. claude-sonnet-5-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-5-5, gpt-4o, gemini-3.8-flash."
       },
       {
         "key": "baseUrl",
@@ -12427,8 +12427,8 @@
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
-        "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
+        "placeholder": "es. claude-sonnet-5-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-5-5, gpt-4o, gemini-3.8-flash."
       },
       {
         "key": "baseUrl",
@@ -12530,8 +12530,8 @@
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
-        "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
+        "placeholder": "es. claude-sonnet-5-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-5-5, gpt-4o, gemini-3.8-flash."
       },
       {
         "key": "baseUrl",
@@ -12662,8 +12662,8 @@
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
-        "placeholder": "es. claude-sonnet-4-5",
-        "description": "Vuoto = default del provider. Es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash."
+        "placeholder": "es. claude-sonnet-5-5",
+        "description": "Vuoto = default del provider. Es. claude-sonnet-5-5, gpt-4o, gemini-3.8-flash."
       },
       {
         "key": "baseUrl",
@@ -12874,8 +12874,8 @@
         "key": "model",
         "label": "Modello (override)",
         "type": "text",
-        "placeholder": "es. claude-sonnet-4-5, gpt-4o, gemini-2.0-flash, llama-3.3-70b-versatile",
-        "description": "Vuoto = default del provider (Anthropic: claude-sonnet-4-5)."
+        "placeholder": "es. claude-sonnet-5-5, gpt-4o, gemini-3.8-flash, llama-3.3-70b-versatile",
+        "description": "Vuoto = default del provider (Anthropic: claude-sonnet-5-5)."
       },
       {
         "key": "baseUrl",
@@ -12999,11 +12999,11 @@
         "label": "Modello",
         "type": "select",
         "options": [
-          "claude-opus-4-5",
-          "claude-sonnet-4-5",
-          "claude-haiku-4-5"
+          "claude-opus-5-5",
+          "claude-sonnet-5-5",
+          "claude-haiku-5-5"
         ],
-        "defaultValue": "claude-sonnet-4-5",
+        "defaultValue": "claude-sonnet-5-5",
         "description": "Opus = potenza massima (costoso). Sonnet = bilanciato (default). Haiku = economico, veloce. Docs: docs.anthropic.com/en/docs/about-claude/models"
       },
       {
@@ -13037,7 +13037,7 @@
     "icon": "sparkles",
     "color": "#4285f4",
     "description": "Chiama AI: Google Gemini dai tuoi workflow con la tua API key (BYOK).",
-    "descriptionLong": "Chiama AI: Google Gemini dai tuoi workflow con la tua API key (BYOK). gemini-2.0-flash = nuovo, veloce (default). 1.5-pro = qualità più alta. Gemini (Google) è forte sul multimodale e sul contesto molto lungo (fino a 1-2M token) ed è ben integrato nell'ecosistema Google: flash è economico e velocissimo per classificazione e riassunti su grandi volumi, 1.5-pro alza la qualità quando il compito è impegnativo. Configurazione interamente in UI e a prova di idiota: modello da dropdown (con campo \"override\" per modelli custom/fine-tuned o appena rilasciati), system prompt opzionale per fissare ruolo, tono e FORMATO della risposta (es. \"rispondi solo con JSON\"), e prompt utente come espressione interpolabile con i dati degli step precedenti ({{$node.x.json...}}). La chiave è BYOK (Bring Your Own Key) e transita cifrata: il gateway LLM di FlowForge instrada la chiamata con circuit breaker per-provider (un provider giù non blocca gli altri) e contabilizzazione dei consumi. Output strutturato { text, model, provider } pronto per i nodi a valle. Use case: classificazione di email/ticket, estrazione di campi da testo libero, generazione di risposte e contenuti, riassunti, arricchimento dati e routing intelligente in un workflow agentico.",
+    "descriptionLong": "Chiama AI: Google Gemini dai tuoi workflow con la tua API key (BYOK). gemini-3.8-flash = il più recente (default). 3.5-flash-lite = il più economico. Gemini (Google) è forte sul multimodale e sul contesto molto lungo (fino a 1-2M token) ed è ben integrato nell'ecosistema Google: flash è economico e velocissimo per classificazione e riassunti su grandi volumi, 1.5-pro alza la qualità quando il compito è impegnativo. Configurazione interamente in UI e a prova di idiota: modello da dropdown (con campo \"override\" per modelli custom/fine-tuned o appena rilasciati), system prompt opzionale per fissare ruolo, tono e FORMATO della risposta (es. \"rispondi solo con JSON\"), e prompt utente come espressione interpolabile con i dati degli step precedenti ({{$node.x.json...}}). La chiave è BYOK (Bring Your Own Key) e transita cifrata: il gateway LLM di FlowForge instrada la chiamata con circuit breaker per-provider (un provider giù non blocca gli altri) e contabilizzazione dei consumi. Output strutturato { text, model, provider } pronto per i nodi a valle. Use case: classificazione di email/ticket, estrazione di campi da testo libero, generazione di risposte e contenuti, riassunti, arricchimento dati e routing intelligente in un workflow agentico.",
     "defVersion": "1.1.0",
     "outputContract": {
       "notes": "Il nodo NON interpreta la risposta: `text` è quello che il modello ha scritto, virgolette del JSON comprese se gliene hai chiesto uno. Per avere campi separati serve un `agent_*`, oppure un `action_json_extract` a valle.",
@@ -13072,12 +13072,12 @@
         "label": "Modello",
         "type": "select",
         "options": [
-          "gemini-2.0-flash",
-          "gemini-1.5-pro",
-          "gemini-1.5-flash"
+          "gemini-3.8-flash",
+          "gemini-3.6-flash",
+          "gemini-3.5-flash-lite"
         ],
-        "defaultValue": "gemini-2.0-flash",
-        "description": "gemini-2.0-flash = nuovo, veloce (default). 1.5-pro = qualità più alta. Docs: ai.google.dev/gemini-api/docs/models"
+        "defaultValue": "gemini-3.8-flash",
+        "description": "gemini-3.8-flash = il più recente (default). 3.5-flash-lite = il più economico. Docs: ai.google.dev/gemini-api/docs/models"
       },
       {
         "key": "customModel",
@@ -13297,12 +13297,12 @@
         "label": "Modello",
         "type": "select",
         "options": [
-          "anthropic/claude-sonnet-4.5",
+          "anthropic/claude-sonnet-5.5",
           "openai/gpt-4o",
           "meta-llama/llama-3.1-70b-instruct",
           "mistralai/mistral-large"
         ],
-        "defaultValue": "anthropic/claude-sonnet-4.5",
+        "defaultValue": "anthropic/claude-sonnet-5.5",
         "description": "OpenRouter dà accesso a 100+ modelli con una sola key. Formato: vendor/model. Docs: openrouter.ai/docs/models"
       },
       {

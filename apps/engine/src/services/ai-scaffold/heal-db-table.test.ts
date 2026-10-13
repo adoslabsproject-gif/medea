@@ -15,7 +15,7 @@ const insert = (table: string, rowJson: string): DbHealNode => ({
   config: { databaseId: 'db1', table, rowJson },
 });
 
-describe('healDbTableReferences — caso REALE Anti-fraud (mario-rossi)', () => {
+describe('healDbTableReferences — caso REALE Anti-fraud', () => {
   it('db_insert su "orders" con colonne prezzo → RIPUNTA a "price_monitoring" (esiste e matcha)', () => {
     const node = insert('orders', '{"url":"x","price":"1","median_price":"2","timestamp":"t"}');
     const r = healDbTableReferences([node], [DB], 'anti-fraud price monitoring');

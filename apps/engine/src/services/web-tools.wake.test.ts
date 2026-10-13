@@ -85,7 +85,7 @@ describe('fetchUrl — wake page detection (end-to-end via mock fetch)', () => {
     global.fetch = vi
       .fn()
       .mockResolvedValue(mockFetchResponse({ body: WAKE_HTML, contentType: 'text/html' })) as never;
-    await expect(fetchUrl('https://mario-rossi.app.automazionezeli.com/x')).rejects.toThrow(
+    await expect(fetchUrl('https://acme.app.automazionezeli.com/x')).rejects.toThrow(
       WorkspaceWakingError,
     );
   });

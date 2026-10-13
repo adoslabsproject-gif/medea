@@ -231,7 +231,7 @@ export function AccountSetup({ onSaved, onCancel, onSkip }: Props) {
               setUsername(e.target.value);
             }}
             autoComplete="username"
-            hint="Alcuni provider aziendali / Exchange / hosting richiedono uno username diverso dall'indirizzo email (es. 'n.rossi' invece di 'n.rossi@dominio.it'). Lascia vuoto se non sei sicuro — verrà usata l'email."
+            hint="Alcuni provider aziendali / Exchange / hosting richiedono uno username diverso dall'indirizzo email (es. 'm.rossi' invece di 'm.rossi@dominio.it'). Lascia vuoto se non sei sicuro — verrà usata l'email."
             fullWidth
           />
 

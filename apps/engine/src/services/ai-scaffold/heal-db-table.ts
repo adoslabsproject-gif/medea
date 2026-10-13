@@ -6,7 +6,7 @@
  *   1. cerca una tabella ESISTENTE le cui colonne contengono quelle del nodo → ripunta;
  *   2. altrimenti CREA una tabella DEDICATA (nome derivato dal goal) con quelle colonne
  *      + tipi inferiti, e ci ripunta il nodo.
- * Becca il bug reale "Anti-fraud Price Monitoring" (mario-rossi): db_insert su
+ * Becca il bug reale "Anti-fraud Price Monitoring": db_insert su
  * `orders` invece di `price_monitoring`. PURO → testabile in isolamento.
  */
 
