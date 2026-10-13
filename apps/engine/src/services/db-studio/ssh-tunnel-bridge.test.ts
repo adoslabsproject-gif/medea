@@ -23,11 +23,11 @@ function conn(over: Partial<Database['connection']> = {}): Database['connection'
     embedded: false,
     hostname: '127.0.0.1',
     port: 5432,
-    database: 'nothumanallowed',
+    database: 'esempio',
     username: 'flowforge_ro',
     passwordSecretRef: 'pw',
     sshTunnel: {
-      host: '198.51.100.3',
+      host: '203.0.113.7',
       port: 22,
       user: 'root',
       privateKeySecretRef: 'KEYDATA',
@@ -48,13 +48,13 @@ describe('openDbStudioSshTunnel', () => {
     const [cfg, deps] = connectMock.mock.calls[0]!;
     expect(cfg).toMatchObject({
       ssh: {
-        host: '198.51.100.3',
+        host: '203.0.113.7',
         port: 22,
         user: 'root',
         hostKeyFingerprint: FP,
         auth: { method: 'key', privateKeySecretRef: 'KEYDATA' },
       },
-      db: { engine: 'postgres', host: '127.0.0.1', port: 5432, database: 'nothumanallowed' },
+      db: { engine: 'postgres', host: '127.0.0.1', port: 5432, database: 'esempio' },
       readOnly: true,
     });
     expect((deps as { resolveSecret: unknown }).resolveSecret).toBeTypeOf('function');

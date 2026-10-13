@@ -13,8 +13,12 @@
  *     legittimi → bloccarlo = auto-DoS di massa
  *   - IP privato/loopback (127.0.0.1, 10.x, ::1) → blocca health-check interni
  *     e traffico server-to-server
- *   - IP del nostro server (198.51.100.172) → self-block
- *   - IP infra interna nota (NHA proxy 198.51.100.3) → rompe l'integrazione
+ *   - IP del server stesso → self-block
+ *   - IP dell'infrastruttura di chi ospita il motore → rompe l'integrazione
+ *
+ * Gli IP dell'infrastruttura NON stanno in questo file: il codice è pubblico
+ * e viaggia dentro gli installatori. Chi ospita il motore li passa a
+ * `classifyBanSafety` dalla propria configurazione.
  *
  * Questa è una rete di sicurezza FAIL-SAFE: nel dubbio (IP non parsabile)
  * rifiuta il ban. Meglio non bannare un attaccante che bannarsi da soli.
@@ -61,14 +65,15 @@ export const CLOUDFLARE_V6: readonly string[] = Object.freeze([
 ]);
 
 /**
- * Infra ZeliAI interna da non bannare MAI. Specchio di:
- *  - SERVER_SELF_IP in update-cloudflare-ips.sh (198.51.100.172)
- *  - memory/internal-ips-whitelist.md (NHA production proxy 198.51.100.3)
+ * Gli indirizzi dell'infrastruttura da non bannare mai, scritti nel codice.
+ *
+ * È vuoto di proposito. Fino al 13 ottobre 2026 conteneva gli IP veri di due
+ * server di produzione, con accanto a cosa servivano: in un repository
+ * pubblico, e dentro ogni installatore. Un indirizzo di infrastruttura è
+ * configurazione di chi ospita il motore, e si passa a `classifyBanSafety`
+ * come `extraProtectedCidrs`.
  */
-export const ZELI_INFRA_CIDRS: readonly string[] = Object.freeze([
-  '198.51.100.172/32', // Hetzner GEX131 — questo server (health-check via public IP)
-  '198.51.100.3/32', // NHA production server (proxy interno)
-]);
+export const INFRA_CIDRS: readonly string[] = Object.freeze([]);
 
 /** Motivo per cui un IP NON è bannabile. `null` = bannabile (client reale). */
 export type BanUnsafeReason = 'unparseable' | 'private_reserved' | 'cloudflare' | 'infrastructure';
@@ -84,7 +89,7 @@ export interface BanSafetyResult {
 
 // Pre-compute una sola volta a load-time.
 const _cloudflare = precomputeRanges([...CLOUDFLARE_V4, ...CLOUDFLARE_V6]);
-const _zeliInfra = precomputeRanges(ZELI_INFRA_CIDRS);
+const _infra = precomputeRanges(INFRA_CIDRS);
 
 function inRanges(
   ip: string,
@@ -128,7 +133,7 @@ export function classifyBanSafety(
     return { safe: false, reason: 'cloudflare', normalizedIp: ip };
   }
 
-  if (inRanges(ip, _zeliInfra)) {
+  if (inRanges(ip, _infra)) {
     return { safe: false, reason: 'infrastructure', normalizedIp: ip };
   }
 

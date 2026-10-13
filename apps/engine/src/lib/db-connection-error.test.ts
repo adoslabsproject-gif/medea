@@ -22,7 +22,7 @@ describe('classifyDbConnectionError — errori REALI di connettività → 503', 
 
   it('🚨 EHOSTUNREACH / ENETUNREACH → unreachable', () => {
     expect(
-      classifyDbConnectionError(new Error('connect EHOSTUNREACH 198.51.100.3:22')).unreachable,
+      classifyDbConnectionError(new Error('connect EHOSTUNREACH 203.0.113.7:22')).unreachable,
     ).toBe(true);
     expect(classifyDbConnectionError(new Error('connect ENETUNREACH')).unreachable).toBe(true);
   });

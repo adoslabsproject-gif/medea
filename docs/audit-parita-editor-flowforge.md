@@ -2,7 +2,7 @@
 
 > Data: 2026-08-01 · Metodo: diff deterministico dei 193 NodeDef (script, non
 > impressioni) + inventario funzione-per-funzione dei due editor.
-> Fonti: `/Users/qualcuno/zeliai/apps/flowforge-editor` vs
+> Fonti: `apps/flowforge-editor` del repository di FlowForge vs
 > `apps/desktop/src/features/workflows` (HEAD 74232d4).
 >
 > **Aggiornamento — verifica della sera (HEAD 28fcc0b)**: diff dei nodi

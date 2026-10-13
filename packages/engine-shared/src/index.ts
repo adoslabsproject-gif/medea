@@ -48,7 +48,7 @@ export {
   isBanSafe,
   CLOUDFLARE_V4,
   CLOUDFLARE_V6,
-  ZELI_INFRA_CIDRS,
+  INFRA_CIDRS,
   type BanUnsafeReason,
   type BanSafetyResult,
 } from './ban-safety.js';

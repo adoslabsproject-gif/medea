@@ -1,8 +1,8 @@
 /**
  * Tests per ban-safety.ts — guard anti-auto-ban su IP infrastruttura.
  *
- * Invariante CRITICA: NESSUN IP Cloudflare / privato / riservato / infra
- * ZeliAI deve mai risultare bannabile. Bannare un edge CF = auto-DoS di
+ * Invariante CRITICA: NESSUN IP Cloudflare / privato / riservato / di
+ * infrastruttura deve mai risultare bannabile. Bannare un edge CF = auto-DoS di
  * massa (migliaia di utenti dietro lo stesso IP). Il guard è fail-safe:
  * IP non parsabile → NON bannabile.
  *
@@ -17,7 +17,7 @@ import {
   isBanSafe,
   CLOUDFLARE_V4,
   CLOUDFLARE_V6,
-  ZELI_INFRA_CIDRS,
+  INFRA_CIDRS,
 } from '../ban-safety.js';
 import { cidrToRange } from '../ip-utils.js';
 
@@ -81,20 +81,30 @@ describe('classifyBanSafety — private / reserved (mai bannare)', () => {
   });
 });
 
-describe('classifyBanSafety — infra ZeliAI (mai bannare)', () => {
-  it('self server 198.51.100.172 → infrastructure', () => {
-    expect(classifyBanSafety('198.51.100.172').reason).toBe('infrastructure');
+describe('classifyBanSafety — infrastruttura di chi ospita (mai bannare)', () => {
+  // Due risolutori DNS pubblici e notissimi, usati qui solo come indirizzi
+  // pubblici qualunque: quelli riservati alla documentazione non servono,
+  // perché il controllo li ferma prima come «riservati».
+  const INFRA = ['9.9.9.9/32', '149.112.112.112/32'];
+
+  it('un indirizzo passato come infrastruttura → infrastructure', () => {
+    expect(classifyBanSafety('9.9.9.9', INFRA).reason).toBe('infrastructure');
+    expect(classifyBanSafety('149.112.112.112', INFRA).reason).toBe('infrastructure');
   });
-  it('NHA proxy 198.51.100.3 → infrastructure', () => {
-    expect(classifyBanSafety('198.51.100.3').reason).toBe('infrastructure');
+  it('il vicino di un indirizzo protetto → bannabile (/32 non over-blocca)', () => {
+    expect(isBanSafe('9.9.9.10', INFRA)).toBe(true);
   });
-  it('vicino di self (198.51.100.173) → bannabile (/32 non over-blocca)', () => {
-    expect(isBanSafe('198.51.100.173')).toBe(true);
+  it('senza passarlo, lo stesso indirizzo è un client qualunque', () => {
+    expect(isBanSafe('9.9.9.9')).toBe(true);
   });
-  it('ZELI_INFRA_CIDRS sono tutti /32 (no over-block accidentale)', () => {
-    for (const c of ZELI_INFRA_CIDRS) {
-      expect(c.endsWith('/32') || c.endsWith('/128')).toBe(true);
-    }
+
+  /**
+   * Un indirizzo di infrastruttura scritto qui finisce in un repository
+   * pubblico e dentro ogni installatore. È successo: per questo l'elenco nel
+   * codice deve restare vuoto.
+   */
+  it('🚨 nel codice non è scritto nessun indirizzo di infrastruttura', () => {
+    expect(INFRA_CIDRS).toEqual([]);
   });
 });
 

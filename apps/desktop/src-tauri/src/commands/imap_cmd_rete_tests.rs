@@ -17,6 +17,8 @@ async fn con_credenziali_inventate_gmail_rifiuta_il_login_e_non_il_collegamento(
     let creds = ImapCredentials {
         host: "imap.gmail.com".into(),
         port: 993,
+        // `.invalid` non può appartenere a nessuno (RFC 2606): un indirizzo
+        // Gmail inventato potrebbe essere la casella di una persona vera.
         username: "nessuno@medea-prova.invalid".into(),
         password: "abcdefghijklmnop".into(),
         secure: true,

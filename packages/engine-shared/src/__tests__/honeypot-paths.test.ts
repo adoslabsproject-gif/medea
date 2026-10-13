@@ -74,7 +74,7 @@ describe('HONEYPOT_PATTERNS', () => {
 
 describe('classifyHoneypotPath — VITE_DEV_PROBE detection (#194 audit)', () => {
   it.each([
-    '/@fs/Users/qualcuno/zeliAI/package.json',
+    '/@fs/Users/qualcuno/progetto/package.json',
     '/@id/__x00__virtual:env',
     '/@vite/client',
     '/@vite/env',
